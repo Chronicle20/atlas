@@ -36,10 +36,16 @@ import (
 	"errors"
 	"math/rand"
 	"sync"
+
+	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
-var ErrEmptySlice = errors.New("empty slice")
-var ErrNoResultFound = errors.New("no result found")
+var (
+	ErrEmptySlice    = errors.New("empty slice")
+	ErrNoResultFound = errors.New("no result found")
+)
 
 type Operator[M any] func(M) error
 
@@ -100,6 +106,21 @@ func Decorators[M any](decorators ...Decorator[M]) []Decorator[M] {
 
 type Decorator[M any] func(M) M
 
+// ErrDecorator adapts a fallible enrichment into a Decorator. On error it
+// invokes onErr (must be non-nil) and returns m unchanged — degrade loudly,
+// never fail the flow. Pair with a logging/metrics observer such as
+// atlas-rest's degrade.Observe.
+func ErrDecorator[M any](f func(M) (M, error), onErr func(M, error)) Decorator[M] {
+	return func(m M) M {
+		r, err := f(m)
+		if err != nil {
+			onErr(m, err)
+			return m
+		}
+		return r
+	}
+}
+
 //goland:noinspection GoUnusedExportedFunction
 func Flip[A any, B any, C any](f func(A) func(B) C) func(B) func(A) C {
 	return func(b B) func(A) C {
@@ -146,13 +167,13 @@ func ExecuteForEachSlice[M any](f Operator[M], configurators ...ExecuteFuncConfi
 		if c.parallel {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			
+
 			wg := &sync.WaitGroup{}
 			errChannels := make(chan error, len(models))
 			for _, m := range models {
-				var model = m
+				model := m
 				wg.Add(1)
-				go func() {
+				routine.Go(logrus.StandardLogger(), ctx, func(_ context.Context) {
 					defer wg.Done()
 					select {
 					case <-ctx.Done():
@@ -161,14 +182,14 @@ func ExecuteForEachSlice[M any](f Operator[M], configurators ...ExecuteFuncConfi
 						err := f(model)
 						errChannels <- err
 					}
-				}()
+				})
 			}
-			
-			go func() {
+
+			routine.Go(logrus.StandardLogger(), ctx, func(_ context.Context) {
 				wg.Wait()
 				close(errChannels)
-			}()
-			
+			})
+
 			for err := range errChannels {
 				if err != nil {
 					cancel() // Cancel other operations on first error
@@ -199,13 +220,13 @@ func ExecuteForEachMap[K comparable, V any](f KeyValueOperator[K, V], configurat
 		if c.parallel {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			
+
 			wg := &sync.WaitGroup{}
 			errChannels := make(chan error, len(m))
 			for k, v := range m {
-				var key, value = k, v
+				key, value := k, v
 				wg.Add(1)
-				go func() {
+				routine.Go(logrus.StandardLogger(), ctx, func(_ context.Context) {
 					defer wg.Done()
 					select {
 					case <-ctx.Done():
@@ -214,14 +235,14 @@ func ExecuteForEachMap[K comparable, V any](f KeyValueOperator[K, V], configurat
 						err := f(key)(value)
 						errChannels <- err
 					}
-				}()
+				})
 			}
-			
-			go func() {
+
+			routine.Go(logrus.StandardLogger(), ctx, func(_ context.Context) {
 				wg.Wait()
 				close(errChannels)
-			}()
-			
+			})
+
 			for err := range errChannels {
 				if err != nil {
 					cancel() // Cancel other operations on first error
@@ -429,7 +450,7 @@ func SliceMap[M any, N any](transformer Transformer[M, N]) func(provider Provide
 				if err != nil {
 					return nil, err
 				}
-				var results = make([]N, len(models))
+				results := make([]N, len(models))
 
 				if c.parallel {
 					var wg sync.WaitGroup
@@ -438,7 +459,9 @@ func SliceMap[M any, N any](transformer Transformer[M, N]) func(provider Provide
 
 					for i, m := range models {
 						wg.Add(1)
-						go parallelTransform(&wg, transformer, i, m, resCh)
+						routine.Go(logrus.StandardLogger(), context.Background(), func(_ context.Context) {
+							parallelTransform(&wg, transformer, i, m, resCh)
+						})
 					}
 					wg.Wait()
 
@@ -507,7 +530,7 @@ func Fold[M any, N any](provider Provider[[]M], supplier Provider[N], folder Fol
 //goland:noinspection GoUnusedExportedFunction
 func Decorate[M any](decorators []Decorator[M]) func(m M) (M, error) {
 	return func(m M) (M, error) {
-		var n = m
+		n := m
 		for _, d := range decorators {
 			n = d(n)
 		}
@@ -571,7 +594,7 @@ func CollectToMap[M any, K comparable, V any](mp Provider[[]M], kp KeyProvider[M
 		if err != nil {
 			return nil, err
 		}
-		var result = make(map[K]V)
+		result := make(map[K]V)
 		for _, m := range ms {
 			result[kp(m)] = vp(m)
 		}

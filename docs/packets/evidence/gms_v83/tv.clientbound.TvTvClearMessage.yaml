@@ -1,0 +1,10 @@
+packet: tv/clientbound/TvTvClearMessage
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CMapleTVMan::OnClearMessage
+    address: "0x6371ad"
+    decompile_sha256: 3910edc03e7d28139f9959f01937f5b55ddfde38792093ade287fd5236c17708
+verifies:
+    - libs/atlas-packet/tv/clientbound/clear_message_test.go#TestTvClearMessageByteOutput

@@ -6,6 +6,8 @@ import (
 	consumable2 "atlas-consumables/kafka/message/consumable"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -13,7 +15,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -31,7 +32,19 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestItemConsume))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestItemReward))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestScroll))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestSkillBookUse))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestVegaScroll))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestViciousHammer))); err != nil {
 			return err
 		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyConsumableEffect))); err != nil {
@@ -55,6 +68,16 @@ func handleRequestItemConsume(l logrus.FieldLogger, ctx context.Context, c consu
 	}
 }
 
+func handleRequestItemReward(l logrus.FieldLogger, ctx context.Context, c consumable2.Command[consumable2.RequestItemRewardBody]) {
+	if c.Type != consumable2.CommandRequestItemReward {
+		return
+	}
+	err := consumable.NewProcessor(l, ctx).RequestItemReward(uint32(c.CharacterId), c.Body.ItemId, int16(c.Body.Source))
+	if err != nil {
+		l.WithError(err).Errorf("Character [%d] unable to use reward box in slot [%d].", c.CharacterId, c.Body.Source)
+	}
+}
+
 func handleRequestScroll(l logrus.FieldLogger, ctx context.Context, c consumable2.Command[consumable2.RequestScrollBody]) {
 	if c.Type != consumable2.CommandRequestScroll {
 		return
@@ -62,6 +85,37 @@ func handleRequestScroll(l logrus.FieldLogger, ctx context.Context, c consumable
 	err := consumable.NewProcessor(l, ctx).RequestScroll(uint32(c.CharacterId), int16(c.Body.ScrollSlot), int16(c.Body.EquipSlot), c.Body.WhiteScroll, c.Body.LegendarySpirit)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to use scroll in slot [%d] as expected.", c.CharacterId, c.Body.ScrollSlot)
+	}
+}
+
+func handleRequestSkillBookUse(l logrus.FieldLogger, ctx context.Context, c consumable2.Command[consumable2.RequestSkillBookUseBody]) {
+	if c.Type != consumable2.CommandRequestSkillBookUse {
+		return
+	}
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	err := consumable.NewProcessor(l, ctx).RequestSkillBookUse(f, uint32(c.CharacterId), int16(c.Body.Slot), c.Body.ItemId)
+	if err != nil {
+		l.WithError(err).Errorf("Character [%d] unable to use skill book in slot [%d] as expected.", c.CharacterId, c.Body.Slot)
+	}
+}
+
+func handleRequestVegaScroll(l logrus.FieldLogger, ctx context.Context, c consumable2.Command[consumable2.RequestVegaScrollBody]) {
+	if c.Type != consumable2.CommandRequestVegaScroll {
+		return
+	}
+	err := consumable.NewProcessor(l, ctx).RequestVegaScroll(uint32(c.CharacterId), int16(c.Body.VegaSlot), c.Body.VegaItemId, int16(c.Body.ScrollSlot), int16(c.Body.EquipSlot))
+	if err != nil {
+		l.WithError(err).Errorf("Character [%d] unable to vega scroll with item in slot [%d] as expected.", c.CharacterId, c.Body.VegaSlot)
+	}
+}
+
+func handleRequestViciousHammer(l logrus.FieldLogger, ctx context.Context, c consumable2.Command[consumable2.RequestViciousHammerBody]) {
+	if c.Type != consumable2.CommandRequestViciousHammer {
+		return
+	}
+	err := consumable.NewProcessor(l, ctx).RequestViciousHammer(uint32(c.CharacterId), int16(c.Body.HammerSlot), int16(c.Body.EquipSlot))
+	if err != nil {
+		l.WithError(err).Errorf("Character [%d] unable to use vicious hammer in slot [%d] as expected.", c.CharacterId, c.Body.HammerSlot)
 	}
 }
 

@@ -1,0 +1,66 @@
+{
+  "WriterName": "CashShopOperationEnableEquipSlot",
+  "IDAName": "CCashShop::OnEnableEquipSlotExt",
+  "Address": "0x459928",
+  "Variant": "GMS/v61",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/shop_operation_enable_equip_slot.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode 6|7",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "pointType",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "currency",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "flag",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "serialNumber",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

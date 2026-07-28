@@ -1,19 +1,22 @@
 package warp
 
 import (
-	"context"
-
 	"atlas-maps/character/location"
 	"atlas-maps/kafka/message"
+	"context"
+
 	characterKafka "atlas-maps/kafka/message/character"
-	"atlas-maps/kafka/producer"
+	mapsproducer "atlas-maps/kafka/producer"
 	_map "atlas-maps/map"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // mapTransitioner is the narrow slice of _map.Processor that warp needs. It
@@ -60,6 +63,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // newProcessorWithDeps is the unit-test seam (mirrors location's
 // newProcessorWithInfo). It is not exported and not a *_testhelpers.go file.
 func newProcessorWithDeps(l logrus.FieldLogger, ctx context.Context, lp location.Processor, pp producer.Provider, mp mapTransitioner) *ProcessorImpl {
@@ -78,7 +83,7 @@ func (p *ProcessorImpl) ChangeMap(transactionId uuid.UUID, characterId uint32, w
 
 	if err := message.Emit(p.pp)(func(buf *message.Buffer) error {
 		return buf.Put(characterKafka.EnvEventTopicCharacterStatus,
-			producer.MapChangedStatusProvider(transactionId, characterId, worldId, oldField, dest, portalId, useTargetPosition, targetX, targetY))
+			mapsproducer.MapChangedStatusProvider(transactionId, characterId, worldId, oldField, dest, portalId, useTargetPosition, targetX, targetY))
 	}); err != nil {
 		p.l.WithError(err).Errorf("ChangeMap: failed to emit MAP_CHANGED status for character [%d].", characterId)
 	}

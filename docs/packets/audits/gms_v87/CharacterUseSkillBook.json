@@ -1,0 +1,39 @@
+{
+  "WriterName": "CharacterUseSkillBook",
+  "IDAName": "CWvsContext::SendSkillLearnItemUseRequest",
+  "Address": "0xa9fa66",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/use_skill_book.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "updateTime (get_update_time()) @0xa9fabe",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "slot (a2) @0xa9fac9",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "itemId (arg4); gated arg4/10000 == 228 || sub_512125(arg4) (skill-book/mastery-book class check) @0xa9fad4",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

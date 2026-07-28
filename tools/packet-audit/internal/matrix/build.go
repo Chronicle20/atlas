@@ -7,6 +7,10 @@ import (
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/opregistry"
 )
 
+// dispositionNote annotates a sub-struct cell graded n-a because the version
+// deliberately disposes the sub-struct as version-absent (_unimplemented.json).
+const dispositionNote = "disposition: version-absent (n-a, see _unimplemented.json)"
+
 // contains reports whether s is present in xs.
 func contains(xs []string, s string) bool {
 	for _, x := range xs {
@@ -24,6 +28,70 @@ func baseFName(idaName string) string {
 		return idaName[:i]
 	}
 	return idaName
+}
+
+// opKey builds the (op, direction) map key used by legacyConsumedSiblingWriters.
+func opKey(op string, dir opregistry.Direction) string {
+	return op + "|" + string(dir)
+}
+
+// legacyConsumedSiblingWriters is an explicit, narrowly-scoped allowlist of
+// (op, direction) -> the specific sibling WriterName(s) that get swallowed by
+// the op row in a SUBSET of versions rather than graded independently
+// everywhere (task-137 legacy NOTE_ACTION fix, see
+// docs/tasks/task-137-note-item-consumption/design.md and
+// .superpowers/sdd/task-17-legacy-diagnosis.md).
+//
+// NOTE_ACTION/serverbound: on gms_v48/v61/v72/v79 the op's registry primary
+// `fname` is CMemoListDlg::SetRet, which is ALSO the exact IDAName of the
+// separately-reported, separately-fixtured NoteOperationDiscard sub-struct —
+// so that writer gets consumed into the op row and skipped in the sub-struct
+// pass on those four versions only. On gms_v83/84/87/95/jms_v185 the op's
+// primary `fname` is a DIFFERENT writer (CCashShop::OnCashItemResLoadGiftDone,
+// NoteOperationSend's IDAName; CMemoListDlg::SetRet is only listed as an
+// fname_alt there), so NoteOperationDiscard is never consumed and grades
+// independently — hence today it already reads ✅ on those five versions and
+// ❌ ("no audit report") on the four legacy ones despite having its own
+// pinned TIER1 marker + evidence + report on all nine.
+//
+// Listed by exact WriterName, not just by op: NOTE_ACTION's OWN primary
+// writer changes identity across the version set too (NoteOperationSend's
+// IDAName IS the modern primary fname on gms_v83/84/87/95/jms_v185, so it is
+// ALSO consumed there — it is not a sibling being wrongly swallowed on those
+// five versions, it is the op row's own writer).
+//
+// task-137 notesend-verify2: NoteOperationSend itself is now ALSO listed
+// here, per-cell-verified across all nine versions (byte-golden fixture +
+// pinned TIER1 evidence + audit report for every version, including a v79
+// report generated for the first time and a v48 report corrected to cite the
+// real send-site function, CCashShop::OnCashItemResLoadLockerDone — see
+// operation_send_test.go TestOperationSendByteOutputAllVersions and
+// docs/packets/evidence/*/note.serverbound.NoteOperationSend.yaml). Listing it
+// here lets the sub-struct pass grade it from its OWN evidence on
+// gms_v83/84/87/95/jms_v185 too (where it is consumed by the op row) instead
+// of gap-filling it — mirroring exactly what NoteOperationDiscard already got
+// for the v48/61/72/79 leg. A prior pass explicitly deferred adding this entry
+// ("un-suppressing it flipped 5 cells that were not part of this fix's
+// scope") specifically because those five cells had not yet been verified;
+// now that they have (this pass), the deferral no longer applies.
+//
+// This is deliberately an explicit allowlist, NOT a structural rule (e.g.
+// "any op with more than one distinct writer across versions", or "any op
+// whose primary fname for one version is an fname_alt for another version of
+// the same op"): both were tried and measured to also flip dozens of
+// unrelated, already-correct cells (account/serverbound/RegisterPin and the
+// entire buddy clientbound result family among them) whose sibling arms are
+// legitimately meant to stay suppressed in most versions. A general rule
+// capable of distinguishing NOTE_ACTION's case from those without also
+// perturbing them does not exist as a cheap registry-topology check; if
+// another op develops the same defect, add its specific sibling WriterName
+// here explicitly after the same per-cell verification NOTE_ACTION got, not
+// by broadening this predicate.
+var legacyConsumedSiblingWriters = map[string]map[string]bool{
+	opKey("NOTE_ACTION", opregistry.DirServerbound): {
+		"NoteOperationDiscard": true,
+		"NoteOperationSend":    true,
+	},
 }
 
 // Build joins all inputs into the Matrix. versionKeys fixes column order.
@@ -58,13 +126,22 @@ func Build(in Inputs, versionKeys []string) Matrix {
 	}
 
 	usedWriters := map[string]map[string]bool{} // version -> writer consumed by an op row
+	// protectedWriters marks a (version, writer) consumed by an op row where
+	// the writer is explicitly listed in legacyConsumedSiblingWriters for that
+	// op — the sub-struct pass only bypasses the op-row consumption skip for a
+	// protected writer when its OWN pinned TIER1 evidence independently
+	// verifies the cell (never on a lesser grade), so an op is unaffected here
+	// unless its listed sibling writer is already fully verified on its own.
+	protectedWriters := map[string]map[string]bool{}
 	for _, vk := range versionKeys {
 		usedWriters[vk] = map[string]bool{}
+		protectedWriters[vk] = map[string]bool{}
 	}
 
 	var rows []MatrixRow
 	for _, od := range in.Registry.AllOps() {
 		row := MatrixRow{Kind: RowOp, Op: od.Op, Direction: od.Dir, Cells: map[string]Cell{}}
+		siblingWriters := legacyConsumedSiblingWriters[opKey(od.Op, od.Dir)]
 
 		// Pre-compute which versions have this op PRESENT and ROUTED by that
 		// version's own opcode. This is the per-packet routing set used to
@@ -105,9 +182,9 @@ func Build(in Inputs, versionKeys []string) Matrix {
 			// Prefer this version's registry entry; fall back to any version so
 			// absent ops still get an opcode for routing-conflict checks.
 			if e, ok := lookupVersion(in.Registry, od.Op, od.Dir, vk); ok {
-				ref.Opcode, ref.FName = e.Opcode, e.FName
+				ref.Opcode, ref.FName, ref.Packet = e.Opcode, e.FName, e.Packet
 			} else if e, ok := lookupAnyVersion(in.Registry, od.Op, od.Dir); ok {
-				ref.Opcode, ref.FName = e.Opcode, e.FName
+				ref.Opcode, ref.FName, ref.Packet = e.Opcode, e.FName, e.Packet
 			}
 			// routedElsewhere: the op is routed in at least one OTHER version's
 			// template by that version's own opcode.
@@ -118,7 +195,7 @@ func Build(in Inputs, versionKeys []string) Matrix {
 					break
 				}
 			}
-			cell := worstCandidateCell(in, fnameWriters, ref, vk, usedWriters, routedElsewhere, presentFnames[vk])
+			cell := worstCandidateCell(in, fnameWriters, ref, vk, usedWriters, protectedWriters, siblingWriters, routedElsewhere, presentFnames[vk])
 			// Set the per-version opcode on the cell: the registry opcode from
 			// this specific version if the op is present there, else -1.
 			if e, ok := lookupVersion(in.Registry, od.Op, od.Dir, vk); ok {
@@ -151,10 +228,24 @@ func Build(in Inputs, versionKeys []string) Matrix {
 	sub := map[string]MatrixRow{}
 	for _, vk := range versionKeys {
 		for wn, r := range in.Reports[vk] {
-			if usedWriters[vk][wn] {
-				continue
-			}
 			pkt := PacketID(r)
+			if usedWriters[vk][wn] {
+				if !protectedWriters[vk][wn] {
+					continue
+				}
+				// Protected: wn is explicitly listed in
+				// legacyConsumedSiblingWriters for the op that consumed it
+				// here, because THIS version's op primary fname happens to
+				// equal wn's own fname (see legacyConsumedSiblingWriters
+				// comment above). Bypass the skip ONLY when wn's own
+				// pinned TIER1 evidence independently verifies this cell —
+				// never on a lesser grade, so a cell that would otherwise
+				// gap-fill (or grade some non-verified state) keeps that
+				// exact state/note.
+				if gradeSubStructCell(in, r, pkt, vk).State != StateVerified {
+					continue
+				}
+			}
 			mr, ok := sub[pkt]
 			if !ok {
 				mr = MatrixRow{Kind: RowSubStruct, Packet: pkt, Cells: map[string]Cell{}}
@@ -175,7 +266,15 @@ func Build(in Inputs, versionKeys []string) Matrix {
 		mr := sub[k]
 		for _, vk := range versionKeys { // fill gaps so columns align
 			if _, ok := mr.Cells[vk]; !ok {
-				mr.Cells[vk] = Cell{State: StateIncomplete, Note: "no audit report", Opcode: -1}
+				// A gap-filled sub-struct cell (this version has no audit report)
+				// is n-a when the (packetID, version) is dispositioned as
+				// version-absent in _unimplemented.json; otherwise it is an
+				// un-audited gap (FR-4.1, task-169).
+				if in.Unimplemented[vk][k] {
+					mr.Cells[vk] = Cell{State: StateNA, Note: dispositionNote, Opcode: -1}
+				} else {
+					mr.Cells[vk] = Cell{State: StateIncomplete, Note: "no audit report", Opcode: -1}
+				}
 			}
 		}
 		rows = append(rows, mr)
@@ -258,7 +357,11 @@ func lookupAnyVersion(r opregistry.Registry, op string, dir opregistry.Direction
 // through to gradeOpCell to implement the per-packet cross-version routing rule.
 // presentFnames is the set of FNames belonging to PRESENT ops in this version;
 // it is forwarded to gradeOpCell to suppress false absent-report conflicts.
-func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntryRef, vk string, used map[string]map[string]bool, routedElsewhere bool, presentFnames map[string]bool) Cell {
+// siblingWriters is the set of WriterNames (if any) listed in
+// legacyConsumedSiblingWriters for this op; a consumed candidate whose name is
+// in this set is marked protected so the sub-struct pass may grade it from its
+// own evidence instead of gap-filling it (see legacyConsumedSiblingWriters doc).
+func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntryRef, vk string, used map[string]map[string]bool, protected map[string]map[string]bool, siblingWriters map[string]bool, routedElsewhere bool, presentFnames map[string]bool) Cell {
 	writers := fw[vk][ref.FName]
 	if len(writers) == 0 {
 		// No candidates: grade without a report; use an empty FNameToWriter for
@@ -273,6 +376,9 @@ func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntr
 	first := true
 	for _, wn := range writers {
 		used[vk][wn] = true
+		if siblingWriters[wn] {
+			protected[vk][wn] = true
+		}
 		// Build a single-entry FNameToWriter for this specific candidate.
 		singleFName := map[string]map[string]string{vk: {ref.FName: wn}}
 		inCopy := in
@@ -290,6 +396,13 @@ func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntr
 // applicability=Present, routed=true, routedElsewhere=false (sub-structs have
 // no opcode so the cross-version routing signal never fires).
 func gradeSubStructCell(in Inputs, r LoadedReport, pkt, vk string) Cell {
+	// A version that explicitly disposes this sub-struct as version-absent grades
+	// n-a even if a stray report exists (FR-4.1, task-169). In practice a
+	// dispositioned version has no report (the flip happens in the gap-fill
+	// branch), so this is a defensive guard that keeps the two paths consistent.
+	if in.Unimplemented[vk][pkt] {
+		return Cell{State: StateNA, Note: dispositionNote}
+	}
 	ev, hasEv := in.Evidence[EvKey{pkt, vk}]
 	mk := in.Markers[EvKey{pkt, vk}]
 	tier1 := in.Tier1[pkt] || r.FlatInvalid

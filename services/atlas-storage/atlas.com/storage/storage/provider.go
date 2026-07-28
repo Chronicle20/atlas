@@ -3,9 +3,10 @@ package storage
 import (
 	"atlas-storage/asset"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 func GetByWorldAndAccountId(l logrus.FieldLogger, db *gorm.DB) func(worldId world.Id, accountId uint32) (Model, error) {

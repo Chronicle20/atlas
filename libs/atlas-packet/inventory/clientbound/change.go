@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const InventoryChangeWriter = "CharacterInventoryChange"

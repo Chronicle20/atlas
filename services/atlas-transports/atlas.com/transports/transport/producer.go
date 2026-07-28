@@ -3,11 +3,12 @@ package transport
 import (
 	"atlas-transports/kafka/message/transport"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func ArrivedStatusEventProvider(routeId uuid.UUID, mapId _map.Id) model.Provider[[]kafka.Message] {

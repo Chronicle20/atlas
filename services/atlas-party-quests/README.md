@@ -28,7 +28,8 @@ The service orchestrates party quest lifecycle through Kafka commands and emits 
 | `COMMAND_TOPIC_MAP` | Kafka topic for outbound map commands |
 | `EVENT_TOPIC_CHARACTER_STATUS` | Kafka topic for inbound character status events |
 | `EVENT_TOPIC_MONSTER_STATUS` | Kafka topic for inbound monster status events |
-| `PARTY_QUEST_DEFINITIONS_PATH` | Filesystem path for JSON definition files (default: `/party-quests`) |
+| `PARTY_QUEST_DEFINITIONS_PATH` | Filesystem path for JSON definition files used by definition validation (default: `/party-quests`) |
+| `SEED_CATALOG_ROOT` | Filesystem path for the seed catalog used by the definitions seed endpoint (default: `./deploy/seed`) |
 
 ## Documentation
 

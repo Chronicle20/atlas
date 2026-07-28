@@ -10,7 +10,7 @@ export const jobSkillsKeys = {
 
 export function useJobSkills(
   tenant: Tenant | null | undefined,
-  jobId: number
+  jobId: number,
 ): UseQueryResult<number[], Error> {
   return useQuery({
     queryKey: jobSkillsKeys.detail(tenant?.id, jobId),

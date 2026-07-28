@@ -1,0 +1,137 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "endCheckRequirements",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "1142066",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    },
+                    {
+                      "operator": "<",
+                      "referenceId": "1142066",
+                      "type": "item",
+                      "value": "1"
+                    },
+                    {
+                      "operator": ">",
+                      "type": "jobId",
+                      "value": "1000"
+                    },
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "2000"
+                    }
+                  ],
+                  "nextState": "awardItemAndComplete"
+                },
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "endCheckRequirements",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "1142066",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "awardItemAndComplete",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 29906,
+      "questName": "Cygnus Knight Medal Quest",
+      "startStateMachine": {
+        "startState": "startCheckJob",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">",
+                      "type": "jobId",
+                      "value": "1000"
+                    },
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "2000"
+                    }
+                  ],
+                  "nextState": "startQuest"
+                },
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startCheckJob",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "29906",
+    "type": "quest-conversation"
+  }
+}

@@ -1,13 +1,13 @@
-import { vi, type Mocked } from 'vitest';
+import { vi, type Mocked } from "vitest";
 /**
  * @jest-environment jsdom
  */
 
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { inventoryService } from '@/services/api/inventory.service';
-import { 
-  useInventory, 
+import { renderHook, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { inventoryService } from "@/services/api/inventory.service";
+import {
+  useInventory,
   useCompartments,
   useCompartmentAssets,
   useInventorySummary,
@@ -19,19 +19,19 @@ import {
   usePrefetchCompartmentAssets,
   useCompartmentTypeName,
   useGetAssetsForCompartment,
-  inventoryKeys 
-} from '../useInventory';
-import type { 
-  Inventory, 
-  InventoryResponse, 
-  Compartment, 
-  Asset, 
-} from '@/services/api/inventory.service';
-import type { Tenant } from '@/types/models/tenant';
-import type { ReactNode } from 'react';
+  inventoryKeys,
+} from "../useInventory";
+import type {
+  Inventory,
+  InventoryResponse,
+  Compartment,
+  Asset,
+} from "@/services/api/inventory.service";
+import type { Tenant } from "@/types/models/tenant";
+import type { ReactNode } from "react";
 
 // Mock the inventory service
-vi.mock('@/services/api/inventory.service', () => ({
+vi.mock("@/services/api/inventory.service", () => ({
   inventoryService: {
     getInventory: vi.fn(),
     getCompartments: vi.fn(),
@@ -44,42 +44,44 @@ vi.mock('@/services/api/inventory.service', () => ({
   },
 }));
 
-const mockInventoryService = inventoryService as Mocked<typeof inventoryService>;
+const mockInventoryService = inventoryService as Mocked<
+  typeof inventoryService
+>;
 
 // Test data
 const mockTenant: Tenant = {
-  id: 'tenant-123',
+  id: "tenant-123",
   attributes: {
-    name: 'Test Tenant',
-    region: 'GMS',
+    name: "Test Tenant",
+    region: "GMS",
     majorVersion: 83,
     minorVersion: 1,
   },
 };
 
 const mockInventory: Inventory = {
-  type: 'inventories',
-  id: 'inventory-1',
+  type: "inventories",
+  id: "inventory-1",
   attributes: {
     characterId: 123,
   },
   relationships: {
     compartments: {
       links: {
-        related: '/api/characters/123/inventory/compartments',
-        self: '/api/characters/123/inventory/relationships/compartments',
+        related: "/api/characters/123/inventory/compartments",
+        self: "/api/characters/123/inventory/relationships/compartments",
       },
       data: [
-        { type: 'compartments', id: 'comp-1' },
-        { type: 'compartments', id: 'comp-2' },
+        { type: "compartments", id: "comp-1" },
+        { type: "compartments", id: "comp-2" },
       ],
     },
   },
 };
 
 const mockCompartment: Compartment = {
-  type: 'compartments',
-  id: 'comp-1',
+  type: "compartments",
+  id: "comp-1",
   attributes: {
     type: 1, // CompartmentType.EQUIPABLES
     capacity: 24,
@@ -87,28 +89,29 @@ const mockCompartment: Compartment = {
   relationships: {
     assets: {
       links: {
-        related: '/api/characters/123/inventory/compartments/comp-1/assets',
-        self: '/api/characters/123/inventory/compartments/comp-1/relationships/assets',
+        related: "/api/characters/123/inventory/compartments/comp-1/assets",
+        self: "/api/characters/123/inventory/compartments/comp-1/relationships/assets",
       },
       data: [
-        { type: 'assets', id: 'asset-1' },
-        { type: 'assets', id: 'asset-2' },
+        { type: "assets", id: "asset-1" },
+        { type: "assets", id: "asset-2" },
       ],
     },
   },
 };
 
 const mockAsset: Asset = {
-  type: 'assets',
-  id: 'asset-1',
+  type: "assets",
+  id: "asset-1",
   attributes: {
     id: 1,
     slot: 0,
     templateId: 1001,
-    expiration: '2024-12-31T23:59:59.999Z',
-    createdAt: '2024-01-01T00:00:00.000Z',
+    expiration: "2024-12-31T23:59:59.999Z",
+    createdAt: "2024-01-01T00:00:00.000Z",
     quantity: 1,
     ownerId: 123,
+    owner: "",
     flag: 0,
     rechargeable: 0,
     strength: 0,
@@ -131,8 +134,8 @@ const mockAsset: Asset = {
     level: 0,
     experience: 0,
     hammersApplied: 0,
-    equippedSince: '',
-    cashId: '0',
+    equippedSince: "",
+    cashId: "0",
     commodityId: 0,
     purchaseBy: 0,
     petId: 0,
@@ -145,13 +148,13 @@ const mockInventoryResponse: InventoryResponse = {
     mockCompartment,
     {
       ...mockCompartment,
-      id: 'comp-2',
+      id: "comp-2",
       attributes: { type: 2, capacity: 24 }, // CompartmentType.CONSUMABLES
     },
     mockAsset,
     {
       ...mockAsset,
-      id: 'asset-2',
+      id: "asset-2",
       attributes: { ...mockAsset.attributes, slot: 1 },
     },
   ],
@@ -161,7 +164,7 @@ const mockCompartments: Compartment[] = [
   mockCompartment,
   {
     ...mockCompartment,
-    id: 'comp-2',
+    id: "comp-2",
     attributes: { type: 2, capacity: 24 },
   },
 ];
@@ -170,7 +173,7 @@ const mockAssets: Asset[] = [
   mockAsset,
   {
     ...mockAsset,
-    id: 'asset-2',
+    id: "asset-2",
     attributes: { ...mockAsset.attributes, slot: 1 },
   },
 ];
@@ -181,13 +184,13 @@ const mockInventorySummary = {
   compartmentSummary: [
     {
       type: 1,
-      name: 'Equipables',
+      name: "Equipables",
       assetCount: 2,
       capacity: 24,
     },
     {
       type: 2,
-      name: 'Consumables',
+      name: "Consumables",
       assetCount: 0,
       capacity: 24,
     },
@@ -206,76 +209,118 @@ function createWrapper() {
   const TestWrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
-  TestWrapper.displayName = 'TestWrapper';
+  TestWrapper.displayName = "TestWrapper";
   return TestWrapper;
 }
 
-describe('useInventory hooks', () => {
+describe("useInventory hooks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('Query Keys', () => {
-    it('should generate correct query keys', () => {
-      expect(inventoryKeys.all).toEqual(['inventory']);
-      expect(inventoryKeys.inventories()).toEqual(['inventory', 'inventory']);
-      expect(inventoryKeys.inventory(mockTenant, '123')).toEqual(['inventory', 'inventory', 'tenant-123', '123', undefined]);
-      expect(inventoryKeys.compartments()).toEqual(['inventory', 'compartments']);
-      expect(inventoryKeys.compartmentsList(mockTenant, '123')).toEqual(['inventory', 'compartments', 'tenant-123', '123', undefined]);
-      expect(inventoryKeys.compartmentAssets()).toEqual(['inventory', 'compartmentAssets']);
-      expect(inventoryKeys.compartmentAssetsList(mockTenant, '123', 'comp-1')).toEqual(['inventory', 'compartmentAssets', 'tenant-123', '123', 'comp-1', undefined]);
-      expect(inventoryKeys.summaries()).toEqual(['inventory', 'summary']);
-      expect(inventoryKeys.summary(mockTenant, '123')).toEqual(['inventory', 'summary', 'tenant-123', '123', undefined]);
-      expect(inventoryKeys.assets()).toEqual(['inventory', 'assets']);
-      expect(inventoryKeys.hasAsset(mockTenant, '123', 'asset-1')).toEqual(['inventory', 'assets', 'has', 'tenant-123', '123', 'asset-1', undefined]);
+  describe("Query Keys", () => {
+    it("should generate correct query keys", () => {
+      expect(inventoryKeys.all).toEqual(["inventory"]);
+      expect(inventoryKeys.inventories()).toEqual(["inventory", "inventory"]);
+      expect(inventoryKeys.inventory(mockTenant, "123")).toEqual([
+        "inventory",
+        "inventory",
+        "tenant-123",
+        "123",
+        undefined,
+      ]);
+      expect(inventoryKeys.compartments()).toEqual([
+        "inventory",
+        "compartments",
+      ]);
+      expect(inventoryKeys.compartmentsList(mockTenant, "123")).toEqual([
+        "inventory",
+        "compartments",
+        "tenant-123",
+        "123",
+        undefined,
+      ]);
+      expect(inventoryKeys.compartmentAssets()).toEqual([
+        "inventory",
+        "compartmentAssets",
+      ]);
+      expect(
+        inventoryKeys.compartmentAssetsList(mockTenant, "123", "comp-1"),
+      ).toEqual([
+        "inventory",
+        "compartmentAssets",
+        "tenant-123",
+        "123",
+        "comp-1",
+        undefined,
+      ]);
+      expect(inventoryKeys.summaries()).toEqual(["inventory", "summary"]);
+      expect(inventoryKeys.summary(mockTenant, "123")).toEqual([
+        "inventory",
+        "summary",
+        "tenant-123",
+        "123",
+        undefined,
+      ]);
+      expect(inventoryKeys.assets()).toEqual(["inventory", "assets"]);
+      expect(inventoryKeys.hasAsset(mockTenant, "123", "asset-1")).toEqual([
+        "inventory",
+        "assets",
+        "has",
+        "tenant-123",
+        "123",
+        "asset-1",
+        undefined,
+      ]);
     });
   });
 
-  describe('useInventory', () => {
-    it('should fetch inventory successfully', async () => {
-      mockInventoryService.getInventory.mockResolvedValue(mockInventoryResponse);
-
-      const { result } = renderHook(
-        () => useInventory(mockTenant, '123'),
-        { wrapper: createWrapper() }
+  describe("useInventory", () => {
+    it("should fetch inventory successfully", async () => {
+      mockInventoryService.getInventory.mockResolvedValue(
+        mockInventoryResponse,
       );
+
+      const { result } = renderHook(() => useInventory(mockTenant, "123"), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
       expect(result.current.data).toEqual(mockInventoryResponse);
-      expect(mockInventoryService.getInventory).toHaveBeenCalledWith('123', { useCache: false });
+      expect(mockInventoryService.getInventory).toHaveBeenCalledWith("123", {
+        useCache: false,
+      });
     });
 
-    it('should not fetch when tenant is not provided', () => {
+    it("should not fetch when tenant is not provided", () => {
       const { result } = renderHook(
-        () => useInventory(null as unknown as Tenant, '123'),
-        { wrapper: createWrapper() }
+        () => useInventory(null as unknown as Tenant, "123"),
+        { wrapper: createWrapper() },
       );
 
-      expect(result.current.status).toBe('pending');
+      expect(result.current.status).toBe("pending");
       expect(mockInventoryService.getInventory).not.toHaveBeenCalled();
     });
 
-    it('should not fetch when characterId is not provided', () => {
-      const { result } = renderHook(
-        () => useInventory(mockTenant, ''),
-        { wrapper: createWrapper() }
-      );
+    it("should not fetch when characterId is not provided", () => {
+      const { result } = renderHook(() => useInventory(mockTenant, ""), {
+        wrapper: createWrapper(),
+      });
 
-      expect(result.current.status).toBe('pending');
+      expect(result.current.status).toBe("pending");
       expect(mockInventoryService.getInventory).not.toHaveBeenCalled();
     });
 
-    it('should handle errors gracefully', async () => {
-      const error = new Error('Failed to fetch inventory');
+    it("should handle errors gracefully", async () => {
+      const error = new Error("Failed to fetch inventory");
       mockInventoryService.getInventory.mockRejectedValue(error);
 
-      const { result } = renderHook(
-        () => useInventory(mockTenant, '123'),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useInventory(mockTenant, "123"), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
@@ -285,31 +330,32 @@ describe('useInventory hooks', () => {
     });
   });
 
-  describe('useCompartments', () => {
-    it('should fetch compartments successfully', async () => {
+  describe("useCompartments", () => {
+    it("should fetch compartments successfully", async () => {
       mockInventoryService.getCompartments.mockResolvedValue(mockCompartments);
 
-      const { result } = renderHook(
-        () => useCompartments(mockTenant, '123'),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useCompartments(mockTenant, "123"), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
       expect(result.current.data).toEqual(mockCompartments);
-      expect(mockInventoryService.getCompartments).toHaveBeenCalledWith('123', { useCache: false });
+      expect(mockInventoryService.getCompartments).toHaveBeenCalledWith("123", {
+        useCache: false,
+      });
     });
   });
 
-  describe('useCompartmentAssets', () => {
-    it('should fetch compartment assets successfully', async () => {
+  describe("useCompartmentAssets", () => {
+    it("should fetch compartment assets successfully", async () => {
       mockInventoryService.getCompartmentAssets.mockResolvedValue(mockAssets);
 
       const { result } = renderHook(
-        () => useCompartmentAssets(mockTenant, '123', 'comp-1'),
-        { wrapper: createWrapper() }
+        () => useCompartmentAssets(mockTenant, "123", "comp-1"),
+        { wrapper: createWrapper() },
       );
 
       await waitFor(() => {
@@ -317,27 +363,33 @@ describe('useInventory hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockAssets);
-      expect(mockInventoryService.getCompartmentAssets).toHaveBeenCalledWith('123', 'comp-1', { useCache: false });
+      expect(mockInventoryService.getCompartmentAssets).toHaveBeenCalledWith(
+        "123",
+        "comp-1",
+        { useCache: false },
+      );
     });
 
-    it('should not fetch when compartmentId is not provided', () => {
+    it("should not fetch when compartmentId is not provided", () => {
       const { result } = renderHook(
-        () => useCompartmentAssets(mockTenant, '123', ''),
-        { wrapper: createWrapper() }
+        () => useCompartmentAssets(mockTenant, "123", ""),
+        { wrapper: createWrapper() },
       );
 
-      expect(result.current.status).toBe('pending');
+      expect(result.current.status).toBe("pending");
       expect(mockInventoryService.getCompartmentAssets).not.toHaveBeenCalled();
     });
   });
 
-  describe('useInventorySummary', () => {
-    it('should fetch inventory summary successfully', async () => {
-      mockInventoryService.getInventorySummary.mockResolvedValue(mockInventorySummary);
+  describe("useInventorySummary", () => {
+    it("should fetch inventory summary successfully", async () => {
+      mockInventoryService.getInventorySummary.mockResolvedValue(
+        mockInventorySummary,
+      );
 
       const { result } = renderHook(
-        () => useInventorySummary(mockTenant, '123'),
-        { wrapper: createWrapper() }
+        () => useInventorySummary(mockTenant, "123"),
+        { wrapper: createWrapper() },
       );
 
       await waitFor(() => {
@@ -345,17 +397,20 @@ describe('useInventory hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockInventorySummary);
-      expect(mockInventoryService.getInventorySummary).toHaveBeenCalledWith('123', { useCache: false });
+      expect(mockInventoryService.getInventorySummary).toHaveBeenCalledWith(
+        "123",
+        { useCache: false },
+      );
     });
   });
 
-  describe('useHasAsset', () => {
-    it('should check asset existence successfully', async () => {
+  describe("useHasAsset", () => {
+    it("should check asset existence successfully", async () => {
       mockInventoryService.hasAsset.mockResolvedValue(true);
 
       const { result } = renderHook(
-        () => useHasAsset(mockTenant, '123', 'asset-1'),
-        { wrapper: createWrapper() }
+        () => useHasAsset(mockTenant, "123", "asset-1"),
+        { wrapper: createWrapper() },
       );
 
       await waitFor(() => {
@@ -363,22 +418,25 @@ describe('useInventory hooks', () => {
       });
 
       expect(result.current.data).toBe(true);
-      expect(mockInventoryService.hasAsset).toHaveBeenCalledWith('123', 'asset-1', { useCache: false });
+      expect(mockInventoryService.hasAsset).toHaveBeenCalledWith(
+        "123",
+        "asset-1",
+        { useCache: false },
+      );
     });
 
-    it('should not fetch when assetId is not provided', () => {
-      const { result } = renderHook(
-        () => useHasAsset(mockTenant, '123', ''),
-        { wrapper: createWrapper() }
-      );
+    it("should not fetch when assetId is not provided", () => {
+      const { result } = renderHook(() => useHasAsset(mockTenant, "123", ""), {
+        wrapper: createWrapper(),
+      });
 
-      expect(result.current.status).toBe('pending');
+      expect(result.current.status).toBe("pending");
       expect(mockInventoryService.hasAsset).not.toHaveBeenCalled();
     });
   });
 
-  describe('useDeleteAsset', () => {
-    it('should delete asset successfully', async () => {
+  describe("useDeleteAsset", () => {
+    it("should delete asset successfully", async () => {
       mockInventoryService.deleteAsset.mockResolvedValue(undefined);
 
       const wrapper = createWrapper();
@@ -386,9 +444,9 @@ describe('useInventory hooks', () => {
 
       result.current.mutate({
         tenant: mockTenant,
-        characterId: '123',
-        compartmentId: 'comp-1',
-        assetId: 'asset-1',
+        characterId: "123",
+        compartmentId: "comp-1",
+        assetId: "asset-1",
       });
 
       await waitFor(() => {
@@ -396,15 +454,15 @@ describe('useInventory hooks', () => {
       });
 
       expect(mockInventoryService.deleteAsset).toHaveBeenCalledWith(
-        '123',
-        'comp-1',
-        'asset-1',
-        undefined
+        "123",
+        "comp-1",
+        "asset-1",
+        undefined,
       );
     });
 
-    it('should handle delete errors', async () => {
-      const error = new Error('Delete failed');
+    it("should handle delete errors", async () => {
+      const error = new Error("Delete failed");
       mockInventoryService.deleteAsset.mockRejectedValue(error);
 
       const wrapper = createWrapper();
@@ -412,9 +470,9 @@ describe('useInventory hooks', () => {
 
       result.current.mutate({
         tenant: mockTenant,
-        characterId: '123',
-        compartmentId: 'comp-1',
-        assetId: 'asset-1',
+        characterId: "123",
+        compartmentId: "comp-1",
+        assetId: "asset-1",
       });
 
       await waitFor(() => {
@@ -425,78 +483,99 @@ describe('useInventory hooks', () => {
     });
   });
 
-
-  describe('Utility hooks', () => {
-    describe('useInvalidateInventory', () => {
-      it('should provide invalidation functions', () => {
+  describe("Utility hooks", () => {
+    describe("useInvalidateInventory", () => {
+      it("should provide invalidation functions", () => {
         const wrapper = createWrapper();
-        const { result } = renderHook(() => useInvalidateInventory(), { wrapper });
+        const { result } = renderHook(() => useInvalidateInventory(), {
+          wrapper,
+        });
 
-        expect(typeof result.current.invalidateAll).toBe('function');
-        expect(typeof result.current.invalidateInventory).toBe('function');
-        expect(typeof result.current.invalidateCompartments).toBe('function');
-        expect(typeof result.current.invalidateCompartmentAssets).toBe('function');
-        expect(typeof result.current.invalidateSummary).toBe('function');
-        expect(typeof result.current.invalidateHasAsset).toBe('function');
-        expect(typeof result.current.invalidateLegacy).toBe('function');
+        expect(typeof result.current.invalidateAll).toBe("function");
+        expect(typeof result.current.invalidateInventory).toBe("function");
+        expect(typeof result.current.invalidateCompartments).toBe("function");
+        expect(typeof result.current.invalidateCompartmentAssets).toBe(
+          "function",
+        );
+        expect(typeof result.current.invalidateSummary).toBe("function");
+        expect(typeof result.current.invalidateHasAsset).toBe("function");
+        expect(typeof result.current.invalidateLegacy).toBe("function");
       });
     });
 
-    describe('usePrefetchInventory', () => {
-      it('should provide prefetch function', () => {
+    describe("usePrefetchInventory", () => {
+      it("should provide prefetch function", () => {
         const wrapper = createWrapper();
-        const { result } = renderHook(() => usePrefetchInventory(), { wrapper });
+        const { result } = renderHook(() => usePrefetchInventory(), {
+          wrapper,
+        });
 
-        expect(typeof result.current).toBe('function');
+        expect(typeof result.current).toBe("function");
       });
     });
 
-    describe('usePrefetchCompartments', () => {
-      it('should provide prefetch compartments function', () => {
+    describe("usePrefetchCompartments", () => {
+      it("should provide prefetch compartments function", () => {
         const wrapper = createWrapper();
-        const { result } = renderHook(() => usePrefetchCompartments(), { wrapper });
+        const { result } = renderHook(() => usePrefetchCompartments(), {
+          wrapper,
+        });
 
-        expect(typeof result.current).toBe('function');
+        expect(typeof result.current).toBe("function");
       });
     });
 
-    describe('usePrefetchCompartmentAssets', () => {
-      it('should provide prefetch compartment assets function', () => {
+    describe("usePrefetchCompartmentAssets", () => {
+      it("should provide prefetch compartment assets function", () => {
         const wrapper = createWrapper();
-        const { result } = renderHook(() => usePrefetchCompartmentAssets(), { wrapper });
+        const { result } = renderHook(() => usePrefetchCompartmentAssets(), {
+          wrapper,
+        });
 
-        expect(typeof result.current).toBe('function');
+        expect(typeof result.current).toBe("function");
       });
     });
   });
 
-  describe('Helper hooks', () => {
-    describe('useCompartmentTypeName', () => {
-      it('should return compartment type name function', () => {
-        mockInventoryService.getCompartmentTypeName.mockReturnValue('Equipables');
+  describe("Helper hooks", () => {
+    describe("useCompartmentTypeName", () => {
+      it("should return compartment type name function", () => {
+        mockInventoryService.getCompartmentTypeName.mockReturnValue(
+          "Equipables",
+        );
 
         const wrapper = createWrapper();
-        const { result } = renderHook(() => useCompartmentTypeName(), { wrapper });
+        const { result } = renderHook(() => useCompartmentTypeName(), {
+          wrapper,
+        });
 
         const typeName = result.current(1);
-        expect(typeName).toBe('Equipables');
-        expect(mockInventoryService.getCompartmentTypeName).toHaveBeenCalledWith(1);
+        expect(typeName).toBe("Equipables");
+        expect(
+          mockInventoryService.getCompartmentTypeName,
+        ).toHaveBeenCalledWith(1);
       });
     });
 
-    describe('useGetAssetsForCompartment', () => {
-      it('should return assets for compartment function', () => {
-        mockInventoryService.getAssetsForCompartment.mockReturnValue(mockAssets);
+    describe("useGetAssetsForCompartment", () => {
+      it("should return assets for compartment function", () => {
+        mockInventoryService.getAssetsForCompartment.mockReturnValue(
+          mockAssets,
+        );
 
         const wrapper = createWrapper();
-        const { result } = renderHook(() => useGetAssetsForCompartment(), { wrapper });
+        const { result } = renderHook(() => useGetAssetsForCompartment(), {
+          wrapper,
+        });
 
-        const assets = result.current(mockCompartment, mockInventoryResponse.included);
-        expect(assets).toEqual(mockAssets);
-        expect(mockInventoryService.getAssetsForCompartment).toHaveBeenCalledWith(
-          mockCompartment, 
-          mockInventoryResponse.included
+        const assets = result.current(
+          mockCompartment,
+          mockInventoryResponse.included,
         );
+        expect(assets).toEqual(mockAssets);
+        expect(
+          mockInventoryService.getAssetsForCompartment,
+        ).toHaveBeenCalledWith(mockCompartment, mockInventoryResponse.included);
       });
     });
   });

@@ -1,0 +1,246 @@
+{
+  "WriterName": "CharacterAppearanceUpdate",
+  "IDAName": "CUserRemote::OnAvatarModified",
+  "Address": "0x7cbd86",
+  "Variant": "GMS/v61",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/appearance_update.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 8,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 9,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 10,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 11,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 12,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 13,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 14,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 15,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 16,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 17,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 18,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 19,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 20,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 21,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 22,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 23,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 24,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 25,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

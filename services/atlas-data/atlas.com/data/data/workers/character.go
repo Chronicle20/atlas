@@ -1,10 +1,18 @@
 package workers
 
 import (
+	"atlas-data/characters/templates"
+	"atlas-data/cosmetic/face"
+	"atlas-data/cosmetic/hair"
+	"atlas-data/equipment"
+	"atlas-data/item"
 	"bytes"
 	"context"
 	"fmt"
 	"path/filepath"
+
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-wz/atlas"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/atlas/pngenc"
@@ -12,14 +20,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-wz/icons"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/manifest"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 
-	"atlas-data/characters/templates"
-	"atlas-data/cosmetic/face"
-	"atlas-data/cosmetic/hair"
-	"atlas-data/equipment"
-	"atlas-data/item"
 	minio "atlas-data/storage/minio"
 )
 
@@ -55,11 +56,11 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 
 	// Face and Hair live under Character.wz/Face and Character.wz/Hair.
 	faceDir := filepath.Join(base, "Face")
-	if err := registerAllInDirectory(l, ctx, faceDir, face.RegisterFace(db)); err != nil {
+	if err := registerAllInDirectory(l, ctx, faceDir, face.NewProcessor(l, ctx, db).RegisterFace); err != nil {
 		l.WithError(err).Warnf("walk %s", faceDir)
 	}
 	hairDir := filepath.Join(base, "Hair")
-	if err := registerAllInDirectory(l, ctx, hairDir, hair.RegisterHair(db)); err != nil {
+	if err := registerAllInDirectory(l, ctx, hairDir, hair.NewProcessor(l, ctx, db).RegisterHair); err != nil {
 		l.WithError(err).Warnf("walk %s", hairDir)
 	}
 
@@ -67,7 +68,7 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 	// equipment Read tolerates non-equipment .img.xml entries because Face/Hair
 	// dirs are already registered above and equipment.Read will fail benignly
 	// for them; the walker logs and continues.
-	if err := registerAllInDirectory(l, ctx, base, equipment.RegisterEquipment(db)); err != nil {
+	if err := registerAllInDirectory(l, ctx, base, equipment.NewProcessor(l, ctx, db).RegisterEquipment); err != nil {
 		return err
 	}
 
@@ -77,7 +78,7 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 	// creation flow would have starter template data.
 	if _, err := fetchAndSerializeArchive(ctx, l, mc, p, "Etc.wz"); err == nil {
 		mkChar := filepath.Join(root, "Etc.wz", "MakeCharInfo.img.xml")
-		if err := templates.RegisterCharacterTemplate(db)(l)(ctx)(mkChar); err != nil {
+		if err := templates.NewProcessor(l, ctx, db).RegisterCharacterTemplate(mkChar); err != nil {
 			l.WithError(err).Warnf("templates.RegisterCharacterTemplate failed")
 		}
 	}
@@ -156,7 +157,7 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 // and returned so the caller logs them as warnings — none of them are fatal
 // to the Character ingest (the atlas PNG+JSON pairs were already emitted).
 func emitSmapSidecar(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p Params) error {
-	base, cleanup, err := fetchArchive(ctx, l, mc, p, "Base.wz")
+	base, cleanup, err := OpenArchive(ctx, l, mc, p, "Base.wz")
 	if err != nil {
 		return fmt.Errorf("fetch Base.wz: %w", err)
 	}
@@ -188,7 +189,7 @@ func emitSmapSidecar(ctx context.Context, l logrus.FieldLogger, mc *minio.Client
 // character-meta dir, same
 // Base.wz source vocabulary) and is emitted in the same best-effort manner.
 func emitZmapSidecar(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p Params) error {
-	base, cleanup, err := fetchArchive(ctx, l, mc, p, "Base.wz")
+	base, cleanup, err := OpenArchive(ctx, l, mc, p, "Base.wz")
 	if err != nil {
 		return fmt.Errorf("fetch Base.wz: %w", err)
 	}

@@ -10,7 +10,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
 
-
 func NPCShopBody(templateId uint32, cs []commodities.Model, skills []skill.Model) packet.Encode {
 	sc := make([]npcpkt.ShopCommodity, len(cs))
 	for i, c := range cs {

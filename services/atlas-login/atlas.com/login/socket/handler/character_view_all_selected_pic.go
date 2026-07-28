@@ -12,9 +12,10 @@ import (
 	"context"
 	"net"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/login/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 func CharacterViewAllSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -90,6 +91,11 @@ func CharacterViewAllSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Con
 		s = session.NewProcessor(l, ctx).SetWorldId(s.SessionId(), p.WorldId())
 
 		ch, err := channel.NewProcessor(l, ctx).GetRandomInWorld(p.WorldId())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to get random channel in world [%d].", p.WorldId())
+			// TODO issue error
+			return
+		}
 		s = session.NewProcessor(l, ctx).SetChannelId(s.SessionId(), ch.ChannelId())
 
 		err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelSelect{IPAddress: ch.IpAddress(), Port: uint16(ch.Port()), CharacterId: p.CharacterId()})

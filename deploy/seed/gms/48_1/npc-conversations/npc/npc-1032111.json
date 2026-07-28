@@ -1,0 +1,177 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1032111,
+      "startState": "checkQuest",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "20716",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "checkHasItem"
+              },
+              {
+                "conditions": [],
+                "nextState": "noQuest"
+              }
+            ]
+          },
+          "id": "checkQuest",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4032142",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "alreadyHasSap"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkInventorySpace"
+              }
+            ]
+          },
+          "id": "checkHasItem",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4032142",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "giveItem"
+              },
+              {
+                "conditions": [],
+                "nextState": "noInventorySpace"
+              }
+            ]
+          },
+          "id": "checkInventorySpace",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4032142",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "successMessage"
+              }
+            ]
+          },
+          "id": "giveItem",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You bottled up some of the clear tree sap.  #i4032142#"
+          },
+          "id": "successMessage",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Make sure you have a free spot in your ETC inventory."
+          },
+          "id": "noInventorySpace",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "A never ending flow of sap is coming from this small tree stump."
+          },
+          "id": "alreadyHasSap",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "A never ending flow of sap is coming from this small tree stump."
+          },
+          "id": "noQuest",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1032111",
+    "type": "npc-conversation"
+  }
+}

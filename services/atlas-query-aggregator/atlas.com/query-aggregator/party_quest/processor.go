@@ -3,9 +3,10 @@ package party_quest
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor defines the interface for party quest processing
@@ -26,6 +27,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // GetInstanceByCharacter returns the active PQ instance for a character, or a zero-value model if none exists
 func (p *ProcessorImpl) GetInstanceByCharacter(characterId uint32) model.Provider[Model] {

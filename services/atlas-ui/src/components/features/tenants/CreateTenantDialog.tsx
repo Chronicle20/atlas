@@ -109,7 +109,9 @@ export function CreateTenantDialog({
         .then((options) => {
           setTemplateOptions(options);
           if (options.length === 0) {
-            setOptionsError("No templates available. Please create a template first.");
+            setOptionsError(
+              "No templates available. Please create a template first.",
+            );
           }
         })
         .catch((err) => {
@@ -134,7 +136,7 @@ export function CreateTenantDialog({
     const versions = new Set(
       templateOptions
         .filter((t) => t.attributes.region === selectedRegion)
-        .map((t) => t.attributes.majorVersion)
+        .map((t) => t.attributes.majorVersion),
     );
     return Array.from(versions).sort((a, b) => a - b);
   }, [templateOptions, selectedRegion]);
@@ -147,9 +149,9 @@ export function CreateTenantDialog({
         .filter(
           (t) =>
             t.attributes.region === selectedRegion &&
-            t.attributes.majorVersion === selectedMajorVersion
+            t.attributes.majorVersion === selectedMajorVersion,
         )
-        .map((t) => t.attributes.minorVersion)
+        .map((t) => t.attributes.minorVersion),
     );
     return Array.from(versions).sort((a, b) => a - b);
   }, [templateOptions, selectedRegion, selectedMajorVersion]);
@@ -179,7 +181,7 @@ export function CreateTenantDialog({
         data.name,
         data.region,
         data.majorVersion,
-        data.minorVersion
+        data.minorVersion,
       );
 
       toast.success("Tenant created successfully with full configuration");
@@ -195,10 +197,12 @@ export function CreateTenantDialog({
       console.error("Failed to create tenant:", error);
 
       if (error instanceof TemplateNotFoundError) {
-        toast.error("Selected template version no longer exists. Please select a different version.");
+        toast.error(
+          "Selected template version no longer exists. Please select a different version.",
+        );
       } else if (error instanceof ConfigurationCreationError) {
         toast.error(
-          `Tenant created but configuration failed. Tenant ID: ${error.tenantId}. Please retry configuration manually.`
+          `Tenant created but configuration failed. Tenant ID: ${error.tenantId}. Please retry configuration manually.`,
         );
       } else if (error instanceof TenantCreationError) {
         toast.error("Failed to create tenant. Please try again.");
@@ -234,8 +238,8 @@ export function CreateTenantDialog({
           <DialogHeader>
             <DialogTitle>Create New Tenant</DialogTitle>
             <DialogDescription>
-              Create a new tenant based on an existing template. The tenant will be
-              configured with all settings from the selected template.
+              Create a new tenant based on an existing template. The tenant will
+              be configured with all settings from the selected template.
             </DialogDescription>
           </DialogHeader>
 
@@ -250,7 +254,9 @@ export function CreateTenantDialog({
                 disabled={isSubmitting}
               />
               {errors.name && (
-                <p className="text-sm text-destructive">{errors.name.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.name.message}
+                </p>
               )}
             </div>
 
@@ -302,7 +308,9 @@ export function CreateTenantDialog({
                     </SelectContent>
                   </Select>
                   {errors.region && (
-                    <p className="text-sm text-destructive">{errors.region.message}</p>
+                    <p className="text-sm text-destructive">
+                      {errors.region.message}
+                    </p>
                   )}
                 </div>
 
@@ -310,7 +318,11 @@ export function CreateTenantDialog({
                 <div className="grid gap-2">
                   <Label htmlFor="majorVersion">Major Version</Label>
                   <Select
-                    value={selectedMajorVersion ? selectedMajorVersion.toString() : ""}
+                    value={
+                      selectedMajorVersion
+                        ? selectedMajorVersion.toString()
+                        : ""
+                    }
                     onValueChange={handleMajorVersionChange}
                     disabled={isSubmitting || !selectedRegion}
                   >
@@ -339,9 +351,7 @@ export function CreateTenantDialog({
                     value={watch("minorVersion")?.toString() || ""}
                     onValueChange={handleMinorVersionChange}
                     disabled={
-                      isSubmitting ||
-                      !selectedRegion ||
-                      !selectedMajorVersion
+                      isSubmitting || !selectedRegion || !selectedMajorVersion
                     }
                   >
                     <SelectTrigger id="minorVersion">
@@ -374,10 +384,7 @@ export function CreateTenantDialog({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting || !canSubmit}
-            >
+            <Button type="submit" disabled={isSubmitting || !canSubmit}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

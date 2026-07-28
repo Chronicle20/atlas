@@ -1,0 +1,20 @@
+# Mirrors eslint.config.js globalIgnores. Entries are root-anchored (leading
+# slash) because .prettierignore uses gitignore semantics — an unanchored
+# name like `components` would also ignore src/components.
+/dist
+/node_modules
+/.next
+/app
+/components
+/context
+/hooks
+/lib
+/services
+/types
+/tests
+# Not lint/format surface (PRD non-goal: docs & generated content).
+/coverage
+/docs
+/public
+/package-lock.json
+*.md

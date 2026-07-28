@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterSkillLearnItemResult
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnSkillLearnItemResult
+    address: "0x969022"
+    decompile_sha256: 67bdbcb2c4db460000bd35a5a5eaf6f3bc386567225b9d01406ca8ae73fe0f61
+verifies:
+    - libs/atlas-packet/character/clientbound/skill_learn_item_result_test.go#TestSkillLearnItemResultGoldenBytesV79

@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldEffectSummon
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldEffect#Summon
+    address: "0x5174bb"
+    decompile_sha256: 53f7078e72b2bfdea4d767bc7698f6e56581a22ed27071a2aa7b99e4d84c44bd
+verifies:
+    - libs/atlas-packet/field/clientbound/effect_test.go#TestFieldEffectByteOutputV72

@@ -17,6 +17,7 @@ func TestAssetData_ScannerValuer_Roundtrip(t *testing.T) {
 		CreatedAt:      now,
 		Quantity:       50,
 		OwnerId:        1000,
+		Owner:          "Tumi",
 		Flag:           3,
 		Rechargeable:   100,
 		Strength:       10,
@@ -81,6 +82,7 @@ func TestAssetData_ScannerValuer_Roundtrip(t *testing.T) {
 	assert.Equal(t, original.PetId, restored.PetId)
 	assert.Equal(t, original.Rechargeable, restored.Rechargeable)
 	assert.Equal(t, original.OwnerId, restored.OwnerId)
+	assert.Equal(t, original.Owner, restored.Owner)
 	require.NotNil(t, restored.EquippedSince)
 	assert.True(t, original.EquippedSince.Equal(*restored.EquippedSince))
 	assert.True(t, original.Expiration.Equal(restored.Expiration))

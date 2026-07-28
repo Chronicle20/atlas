@@ -91,7 +91,6 @@ func TestRestModel_SetID(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			rm := &RestModel{}
 			err := rm.SetID(tc.idStr)
-
 			// SetID in map/rest.go never returns an error
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)

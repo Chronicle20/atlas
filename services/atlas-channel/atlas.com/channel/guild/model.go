@@ -61,7 +61,6 @@ func (m Model) Members() []member.Model {
 		return m.members[i].Name() < m.members[j].Name()
 	})
 	return m.members
-
 }
 
 func (m Model) Capacity() uint32 {

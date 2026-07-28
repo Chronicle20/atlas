@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 const Resource = "instances"

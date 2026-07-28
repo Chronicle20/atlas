@@ -8,10 +8,11 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const testXML = `
@@ -503,7 +504,6 @@ func TestReader(t *testing.T) {
 	if len(rm.Portals) != 7 {
 		t.Fatal("len(rm.Portals) != 7")
 	}
-
 }
 
 func TestLinkedReader(t *testing.T) {

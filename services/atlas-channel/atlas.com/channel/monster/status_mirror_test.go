@@ -24,14 +24,14 @@ func TestStatusMirror_OnAppliedStoresEntry(t *testing.T) {
 	eid := uuid.NewString()
 	now := time.Now()
 	body := StatusEffectAppliedBody{
-		EffectId:         eid,
-		SourceType:       "CHARACTER",
+		EffectId:          eid,
+		SourceType:        "CHARACTER",
 		SourceCharacterId: 42,
-		SourceSkillId:    1111006,
-		SourceSkillLevel: 1,
-		Statuses:         map[string]int32{"VENOM": 25},
-		Duration:         60000,
-		TickInterval:     1000,
+		SourceSkillId:     1111006,
+		SourceSkillLevel:  1,
+		Statuses:          map[string]int32{"VENOM": 25},
+		Duration:          60000,
+		TickInterval:      1000,
 	}
 	m.OnApplied(tm, 7, body, now)
 
@@ -57,20 +57,20 @@ func TestStatusMirror_GetReflectReturnsReflectInfo(t *testing.T) {
 	eid := uuid.NewString()
 	now := time.Now()
 	body := StatusEffectAppliedBody{
-		EffectId:         eid,
-		SourceType:       "CHARACTER",
+		EffectId:          eid,
+		SourceType:        "CHARACTER",
 		SourceCharacterId: 42,
-		SourceSkillId:    2121003, // Mana Reflection (example)
-		SourceSkillLevel: 20,
-		Statuses:         map[string]int32{"MAGIC_REFLECT": 1},
-		Duration:         60000,
-		ReflectKind:      "MAGIC",
-		ReflectPercent:   30,
-		ReflectLtX:       -200,
-		ReflectLtY:       -200,
-		ReflectRbX:       200,
-		ReflectRbY:       200,
-		ReflectMaxDamage: 9999,
+		SourceSkillId:     2121003, // Mana Reflection (example)
+		SourceSkillLevel:  20,
+		Statuses:          map[string]int32{"MAGIC_REFLECT": 1},
+		Duration:          60000,
+		ReflectKind:       "MAGIC",
+		ReflectPercent:    30,
+		ReflectLtX:        -200,
+		ReflectLtY:        -200,
+		ReflectRbX:        200,
+		ReflectRbY:        200,
+		ReflectMaxDamage:  9999,
 	}
 	m.OnApplied(tm, 7, body, now)
 

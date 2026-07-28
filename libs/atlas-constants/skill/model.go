@@ -70,7 +70,9 @@ func IsKeyDownSkill(skillId Id) bool {
 		WindArcherStage3HurricaneId,
 		ThunderBreakerStage2CorkscrewBlowId,
 		EvanStage4IceBreathId,
-		EvanStage7FireBreathId)
+		EvanStage7FireBreathId,
+		BrawlerCorkscrewBlowId, // 5101004 — IDA-verified keydown v61/v72/v79/v83/v87/v95/jms185 (task-161)
+		GunslingerGrenadeId)    // 5201002 — IDA-verified keydown v61/v72/v79/v83/v87/v95/jms185 (task-161)
 }
 
 func Is(skillId Id, references ...Id) bool {

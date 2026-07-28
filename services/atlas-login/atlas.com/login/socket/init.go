@@ -9,9 +9,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-socket"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	socket "github.com/Chronicle20/atlas/libs/atlas-socket"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const idleThreshold = 30 * time.Second
@@ -19,7 +21,7 @@ const idleThreshold = 30 * time.Second
 func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, port int) {
 	t := tenant.MustFromContext(ctx)
 	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, port int) {
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			l.Infof("Creating login socket service for [%s] [%d.%d] on port [%d].", t.Region(), t.MajorVersion(), t.MinorVersion(), port)
 
 			hasMapleEncryption := true
@@ -35,8 +37,8 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 
 			l.Debugf("Service locale [%d].", locale)
 
-			go func() {
-				wg.Add(1)
+			wg.Add(1)
+			routine.Go(l, ctx, func(_ context.Context) {
 				defer wg.Done()
 
 				sp := session.NewProcessor(l, ctx)
@@ -50,17 +52,16 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 					socket.SetReadWriter(rw),
 					socket.SetIdleNotifier(session.SendPing(l, ctx, wp), idleThreshold),
 				)
-
 				if err != nil {
 					if errors.Is(err, net.ErrClosed) {
 						return
 					}
 					l.WithError(err).Errorf("Socket service encountered error")
 				}
-			}()
+			})
 
 			<-ctx.Done()
 			l.Infof("Shutting down server on port %d", port)
-		}()
+		})
 	}
 }

@@ -1,0 +1,10 @@
+packet: npc/serverbound/NpcContinueConversationSelection
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskMenu#Selection
+    address: "0x6c8863"
+    decompile_sha256: ec79eaeb4877b9387f91a353ebc033796bdb0c5cac16061aa0d6a8f1859a3cd5
+verifies:
+  - libs/atlas-packet/npc/serverbound/conversation_v79_test.go#TestContinueConversationSelectionByteV79

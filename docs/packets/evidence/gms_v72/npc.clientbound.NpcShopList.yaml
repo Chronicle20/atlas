@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcShopList
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::SetShopDlg
+    address: "0x6a567e"
+    decompile_sha256: 59d909ac36cfb6eaecdf8fa2b366e281eba94f9ba0fea93d4770c59a1960a266
+verifies:
+  - libs/atlas-packet/npc/clientbound/shop_list_v72_test.go#TestNPCShopListV72

@@ -4,8 +4,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // RestFamilyMember represents a family member in REST/JSON:API format
@@ -32,23 +33,6 @@ func (r RestFamilyMember) GetID() string {
 // GetType returns the type for JSON:API compatibility
 func (r RestFamilyMember) GetType() string {
 	return "familyMembers"
-}
-
-// RestFamilyTree represents a complete family tree in REST format
-type RestFamilyTree struct {
-	ID      string             `json:"id"`
-	Type    string             `json:"type"`
-	Members []RestFamilyMember `json:"members"`
-}
-
-// GetID returns the ID for JSON:API compatibility
-func (r RestFamilyTree) GetID() string {
-	return r.ID
-}
-
-// GetType returns the type for JSON:API compatibility
-func (r RestFamilyTree) GetType() string {
-	return "familyTrees"
 }
 
 // Transform converts a domain FamilyMember to REST representation
@@ -121,39 +105,6 @@ func Extract(r RestFamilyMember) (FamilyMember, error) {
 	}
 
 	return builder.Build()
-}
-
-// TransformTree converts a slice of domain FamilyMembers to REST family tree
-func TransformTree(characterId uint32, members []FamilyMember) (RestFamilyTree, error) {
-	restMembers := make([]RestFamilyMember, 0, len(members))
-
-	for _, member := range members {
-		restMember, err := Transform(member)
-		if err != nil {
-			return RestFamilyTree{}, err
-		}
-		restMembers = append(restMembers, restMember)
-	}
-
-	return RestFamilyTree{
-		ID:      strconv.FormatUint(uint64(characterId), 10),
-		Type:    "familyTrees",
-		Members: restMembers,
-	}, nil
-}
-
-// TransformFamilyTree is an alias for TransformTree to match resource expectations
-func TransformFamilyTree(members []FamilyMember) (RestFamilyTree, error) {
-	if len(members) == 0 {
-		return RestFamilyTree{
-			ID:      "0",
-			Type:    "familyTrees",
-			Members: []RestFamilyMember{},
-		}, nil
-	}
-
-	// Use the first member's character ID as the tree ID
-	return TransformTree(members[0].CharacterId(), members)
 }
 
 // Request structures for JSON:API format

@@ -9,12 +9,13 @@ import (
 	"context"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -58,7 +59,7 @@ func handleAssetCreated(l logrus.FieldLogger, ctx context.Context, e asset.Statu
 		e.CharacterId, e.TemplateId, e.Slot)
 
 	// Check if this is a cash item with rate properties
-	cashData, err := cash.GetById(l)(ctx)(e.TemplateId)
+	cashData, err := cash.NewProcessor(l, ctx).GetById(e.TemplateId)
 	if err != nil {
 		l.Debugf("Item [%d] is not a cash item or failed to fetch: %v", e.TemplateId, err)
 		return
@@ -104,7 +105,7 @@ func handleAssetAccepted(l logrus.FieldLogger, ctx context.Context, e asset.Stat
 		e.CharacterId, e.TemplateId, e.Slot)
 
 	// Check if this is a cash item with rate properties
-	cashData, err := cash.GetById(l)(ctx)(e.TemplateId)
+	cashData, err := cash.NewProcessor(l, ctx).GetById(e.TemplateId)
 	if err != nil {
 		l.Debugf("Item [%d] is not a cash item or failed to fetch: %v", e.TemplateId, err)
 		return
@@ -211,7 +212,7 @@ func handleAssetMoved(l logrus.FieldLogger, ctx context.Context, e asset.StatusE
 
 func handleItemEquipped(l logrus.FieldLogger, ctx context.Context, characterId uint32, templateId uint32, _ time.Time) {
 	// Check if this equipment has bonusExp
-	equipData, err := equipment.GetById(l)(ctx)(templateId)
+	equipData, err := equipment.NewProcessor(l, ctx).GetById(templateId)
 	if err != nil {
 		l.Debugf("Item [%d] is not equipment or failed to fetch: %v", templateId, err)
 		return

@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultBidAuctionFailed
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#BidAuctionFailed
+    address: "0x5805a1"
+    decompile_sha256: ee2e834529367ef74ce3d1cf0eee6123a357a3a148e2f312bdcc5bb84ebab1eb
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_operation_test.go#TestMtsResultBidAuctionFailed

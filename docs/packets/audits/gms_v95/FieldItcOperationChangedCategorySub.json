@@ -1,0 +1,84 @@
+{
+  "WriterName": "FieldItcOperationChangedCategorySub",
+  "IDAName": "CITC::OnChangedCategorySub",
+  "Address": "0x5739a0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/serverbound/itc_operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode byte (5 GetItcList browse) @0x5739ed",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "category (m_nCurCategory) @0x5739fa",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "categorySub (nCategorySub) @0x573a08",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "page (const 0) @0x573a13",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "sortType (nSortType) @0x573a21",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "sortColumn (nSortColumn) @0x573a2f",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "searchOption @0x573a3f/0x573a7e",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "searchCondition @0x573aa0",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

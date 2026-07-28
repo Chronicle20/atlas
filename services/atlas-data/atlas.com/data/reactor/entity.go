@@ -1,9 +1,8 @@
 package reactor
 
 import (
-	"time"
-
 	"atlas-data/searchindex"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

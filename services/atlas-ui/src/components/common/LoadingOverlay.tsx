@@ -1,25 +1,23 @@
-import React from 'react';
-import { LoadingSpinner } from './LoadingSpinner';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { LoadingSpinner } from "./LoadingSpinner";
+import { cn } from "@/lib/utils";
 
 interface LoadingOverlayProps {
   children: React.ReactNode;
   loading: boolean;
   className?: string;
-  spinnerSize?: 'sm' | 'md' | 'lg';
+  spinnerSize?: "sm" | "md" | "lg";
 }
 
-export function LoadingOverlay({ 
-  children, 
-  loading, 
+export function LoadingOverlay({
+  children,
+  loading,
   className,
-  spinnerSize = 'md' 
+  spinnerSize = "md",
 }: LoadingOverlayProps) {
   return (
-    <div className={cn('relative', className)}>
-      <div className={cn(loading && 'pointer-events-none')}>
-        {children}
-      </div>
+    <div className={cn("relative", className)}>
+      <div className={cn(loading && "pointer-events-none")}>{children}</div>
       {loading && (
         <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
           <LoadingSpinner size={spinnerSize} />

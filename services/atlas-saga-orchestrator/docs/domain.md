@@ -42,6 +42,7 @@ Represents a single action within a saga.
 | storage_operation | Account storage operations |
 | character_respawn | Character respawn handling |
 | gachapon_transaction | Gachapon machine reward transactions |
+| mts_operation | MTS listing, withdrawal, and purchase settlement transactions |
 
 ### Step Status
 
@@ -133,6 +134,19 @@ Represents a single action within a saga.
 | stage_clear_attempt_pq | Attempts to clear the current PQ stage (synchronous) |
 | enter_party_quest_bonus | Enters the bonus stage of a party quest (synchronous, terminal failure) |
 | field_effect_weather | Shows weather effect to all characters in a field (synchronous) |
+| transfer_ap | Transfers one already-spent ability point from one stat to another |
+| transfer_sp | Transfers one skill point from one skill to another |
+| evolve_pet | Evolves a pet |
+| forfeit_quest | Forfeits a quest |
+| await_character_created | Synthetic step that awaits a character-creation status event (no dispatch; accepts CharacterCreated/CharacterCreationFailed events) |
+| await_inventory_created | Synthetic step that awaits an inventory-creation status event (no-op handler; accepts InventoryCreated/InventoryCreationFailed events) |
+| transfer_to_mts | Transfers item to an MTS listing (expanded to release_from_character + accept_to_mts_listing) |
+| withdraw_from_mts | Withdraws item from an MTS holding (expanded to release_from_mts_holding + accept_to_character) |
+| mts_settle_purchase | Settles an MTS purchase (expanded to award_currency buyer debit + award_currency seller credit + mts_move_listing_to_holding) |
+| accept_to_mts_listing | Creates an MTS listing row (internal, created by expansion) |
+| release_from_mts_holding | Soft-deletes an MTS holding row (internal, created by expansion) |
+| mts_move_listing_to_holding | Moves an MTS listing's custody to a buyer holding (internal, created by expansion) |
+| mts_bid_escrow | Escrows a buyer's prepaid currency for an MTS bid |
 
 ### AssetData
 
@@ -267,6 +281,7 @@ Compensation strategies by action type:
 - **ChangeHair/ChangeFace/ChangeSkin**: No rollback available; cosmetic already applied
 - **AwardMesos, AcceptToStorage, AcceptToCharacter, ReleaseFromStorage, ReleaseFromCharacter**: Terminal storage failures; emits error event with context-appropriate error code
 - **SelectGachaponReward**: Re-awards destroyed ticket items, then emits failure event
+- **MtsOperation saga type** (TransferToMts / WithdrawFromMts / MtsSettlePurchase): Reverse-walks completed steps and dispatches an inverse for each — ReleaseFromCharacter re-grants the item from the AcceptToMtsListing snapshot, ReleaseFromMtsHolding is undone with RestoreMtsHolding — then emits one FAILED event, cancels the saga timer, and evicts the saga
 - **Default**: Marks failed step as pending (removes failed status)
 
 ### Cache
@@ -973,3 +988,258 @@ Produces Kafka commands to the atlas-maps service for field-level operations wit
 | Method | Description |
 |--------|-------------|
 | FieldEffectWeather | Produces WEATHER_START command to COMMAND_TOPIC_MAP |
+
+---
+
+# Character (Client)
+
+## Responsibility
+
+Produces Kafka commands to the character service for map warps, experience/level/meso/fame awards, cosmetic and job changes, stat resets, AP transfer/rebalance, and character creation/deletion.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| WarpRandomAndEmit / WarpRandom | Produces CHANGE_MAP command to a random portal in a field |
+| WarpToPortalAndEmit / WarpToPortal | Produces CHANGE_MAP command to a specific portal |
+| AwardExperienceAndEmit / AwardExperience | Produces AWARD_EXPERIENCE command |
+| DeductExperienceAndEmit / DeductExperience | Produces DEDUCT_EXPERIENCE command |
+| AwardLevelAndEmit / AwardLevel | Produces AWARD_LEVEL command |
+| AwardMesosAndEmit / AwardMesos | Produces REQUEST_CHANGE_MESO command |
+| AwardFameAndEmit / AwardFame | Produces REQUEST_CHANGE_FAME command |
+| ChangeJobAndEmit / ChangeJob | Produces CHANGE_JOB command |
+| ChangeHairAndEmit / ChangeHair | Produces CHANGE_HAIR command |
+| ChangeFaceAndEmit / ChangeFace | Produces CHANGE_FACE command |
+| ChangeSkinAndEmit / ChangeSkin | Produces CHANGE_SKIN command |
+| SetHPAndEmit / SetHP | Produces SET_HP command |
+| ResetStatsAndEmit / ResetStats | Produces RESET_STATS command |
+| RebalanceAPAndEmit / RebalanceAP | Produces REBALANCE_AP command |
+| TransferAPAndEmit / TransferAP | Produces TRANSFER_AP command moving one already-spent ability point between stats |
+| RequestCreateCharacter | Produces CREATE_CHARACTER command |
+| RequestDeleteCharacter | Produces DELETE_CHARACTER command (saga-compensation dispatch for CreateCharacter) |
+
+---
+
+# Skill (Client)
+
+## Responsibility
+
+Produces Kafka commands to the skill service to create, update, delete, and transfer character skills.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| RequestCreateAndEmit / RequestCreate | Produces REQUEST_CREATE command |
+| RequestUpdateAndEmit / RequestUpdate | Produces REQUEST_UPDATE command |
+| RequestDeleteSkill | Produces REQUEST_DELETE command (saga-compensation dispatch for CreateSkill) |
+| TransferSPAndEmit | Produces TRANSFER_SP command moving one skill point between skills |
+
+---
+
+# Guild (Client)
+
+## Responsibility
+
+Produces Kafka commands to the guild service for name, emblem, disband, and capacity increase requests.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| RequestName | Produces REQUEST_NAME command |
+| RequestEmblem | Produces REQUEST_EMBLEM command |
+| RequestDisband | Produces REQUEST_DISBAND command |
+| RequestCapacityIncrease | Produces REQUEST_CAPACITY_INCREASE command |
+
+---
+
+# Invite (Client)
+
+## Responsibility
+
+Produces Kafka commands to create, accept, and reject invitations of any invite type.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| Create | Produces CREATE command |
+| Accept | Produces ACCEPT command |
+| Reject | Produces REJECT command |
+
+---
+
+# Buddy List (Client)
+
+## Responsibility
+
+Produces Kafka commands to the buddy list service to increase buddy list capacity.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| IncreaseCapacityAndEmit / IncreaseCapacity | Produces INCREASE_CAPACITY command |
+
+---
+
+# Consumable (Client)
+
+## Responsibility
+
+Produces Kafka commands to the consumable service to apply and cancel item effects on a character.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| ApplyConsumableEffect | Produces APPLY_CONSUMABLE_EFFECT command |
+| CancelConsumableEffect | Produces CANCEL_CONSUMABLE_EFFECT command |
+
+---
+
+# Pet (Client)
+
+## Responsibility
+
+Produces Kafka commands to the pet service to increase pet closeness and evolve pets.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| GainClosenessAndEmit / GainCloseness | Produces AWARD_CLOSENESS command |
+| EvolveAndEmit / Evolve | Produces EVOLVE command |
+
+---
+
+# Quest (Client)
+
+## Responsibility
+
+Produces Kafka commands to the quest service to start, complete, forfeit, and update progress on quests.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| RequestStartQuest | Produces START command |
+| RequestCompleteQuest | Produces COMPLETE command |
+| RequestForfeitQuest | Produces FORFEIT command |
+| RequestUpdateProgress | Produces UPDATE_PROGRESS command |
+
+---
+
+# MTS (Client)
+
+## Responsibility
+
+Produces Kafka custody commands to atlas-mts for listing, holding, and settlement lifecycle operations, and retrieves a character's MTS holdings via REST for withdraw-step expansion.
+
+## Core Models
+
+### HoldingRestModel
+
+The orchestrator's view of an atlas-mts holding row, carrying the full item snapshot needed to re-grant the item to a character's inventory on withdraw.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | string | Holding identifier |
+| worldId | byte | World identifier |
+| ownerId | uint32 | Owning character ID |
+| origin | string | Holding origin |
+| templateId | uint32 | Item template ID |
+| quantity | uint32 | Item quantity |
+| strength | uint16 | Strength stat bonus |
+| dexterity | uint16 | Dexterity stat bonus |
+| intelligence | uint16 | Intelligence stat bonus |
+| luck | uint16 | Luck stat bonus |
+| hp | uint16 | HP bonus |
+| mp | uint16 | MP bonus |
+| weaponAttack | uint16 | Weapon attack bonus |
+| magicAttack | uint16 | Magic attack bonus |
+| weaponDefense | uint16 | Weapon defense bonus |
+| magicDefense | uint16 | Magic defense bonus |
+| accuracy | uint16 | Accuracy bonus |
+| avoidability | uint16 | Avoidability bonus |
+| hands | uint16 | Hands bonus |
+| speed | uint16 | Speed bonus |
+| jump | uint16 | Jump bonus |
+| slots | uint16 | Available upgrade slots |
+| level | byte | Item level |
+| itemLevel | byte | Level type for leveling items |
+| itemExp | uint32 | Item experience |
+| ringId | uint32 | Ring identifier |
+| viciousCount | uint32 | Vicious hammer count |
+| flags | uint16 | Item flags |
+| createdAt | time.Time | Creation timestamp |
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| RequestHoldings | Retrieves a character's holdings (optionally world-scoped) from atlas-mts via REST, draining all pages |
+| AcceptToMtsListingAndEmit / AcceptToMtsListing | Produces ACCEPT_TO_MTS_LISTING command |
+| ReleaseFromMtsHoldingAndEmit / ReleaseFromMtsHolding | Produces RELEASE_FROM_MTS_HOLDING command |
+| RestoreMtsHoldingAndEmit / RestoreMtsHolding | Produces RESTORE_MTS_HOLDING command (compensating inverse of ReleaseFromMtsHolding) |
+| MoveListingToHoldingAndEmit / MoveListingToHolding | Produces MTS_MOVE_LISTING_TO_HOLDING command |
+| RemoveMtsListingAndEmit / RemoveMtsListing | Produces REMOVE_MTS_LISTING command (late-comp inverse of AcceptToMtsListing) |
+| RestoreListingFromHoldingAndEmit / RestoreListingFromHolding | Produces RESTORE_LISTING_FROM_HOLDING command (late-comp inverse of MtsMoveListingToHolding) |
+
+---
+
+# Data Services (Client)
+
+## Responsibility
+
+Resolves foothold, portal, and NPC data from the data service via REST for use during step execution (drop position calculation, random/named portal lookup, storage NPC fee lookup).
+
+## Core Models
+
+### Foothold Model (foothold package)
+
+Foothold lookup has no domain model; `GetFootholdBelow` returns a raw foothold ID.
+
+### Portal Model (portal package)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Portal identifier |
+| name | string | Portal name |
+| targetMapId | _map.Id | Target map identifier |
+| type | uint8 | Portal type (0 = spawn point) |
+
+### NPC Model (npc package)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | NPC identifier |
+| name | string | NPC name |
+| trunkPut | int32 | Storage deposit fee |
+| trunkGet | int32 | Storage withdrawal fee |
+| storebank | bool | Whether the NPC provides storage services |
+
+## Processors
+
+### foothold.Processor
+
+| Method | Description |
+|--------|-------------|
+| GetFootholdBelow | Looks up the foothold ID below a position in a map via REST; returns 0 if none found |
+
+### portal.Processor
+
+| Method | Description |
+|--------|-------------|
+| InMapProvider | Retrieves every portal in a map via REST, draining all pages |
+| RandomSpawnPointProvider | Selects a random spawn-point portal (type 0, no target) in a map |
+| RandomSpawnPointIdProvider | Selects a random spawn-point portal ID in a map |
+| ByNameIdProvider | Looks up a portal ID by name within a map |
+
+### npc.Processor
+
+| Method | Description |
+|--------|-------------|
+| ByIdProvider | Retrieves an NPC by ID via REST |

@@ -4,11 +4,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 )
 
 func mkTenant(t *testing.T) tenant.Model {

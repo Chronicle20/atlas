@@ -5,12 +5,7 @@ import type { Tenant } from "@/types/models/tenant";
 import { createErrorFromUnknown } from "@/types/api/errors";
 
 export type CreateAndPollStatus =
-  | "idle"
-  | "submitting"
-  | "polling"
-  | "success"
-  | "timeout"
-  | "error";
+  "idle" | "submitting" | "polling" | "success" | "timeout" | "error";
 
 export type CreateAndPollErrorKind = "duplicate-name" | "generic" | null;
 
@@ -67,7 +62,11 @@ export function useCreateAndPollAccount(tenant: Tenant): CreateAndPollResult {
   }, [tenant?.id, status, reset]);
 
   const poll = useCallback(
-    async (name: string, controller: AbortController, capturedTenantId: string) => {
+    async (
+      name: string,
+      controller: AbortController,
+      capturedTenantId: string,
+    ) => {
       setStatus("polling");
       const deadline = Date.now() + POLL_TIMEOUT_MS;
       while (Date.now() < deadline) {
@@ -92,7 +91,7 @@ export function useCreateAndPollAccount(tenant: Tenant): CreateAndPollResult {
       if (tenantIdRef.current !== capturedTenantId) return;
       setStatus("timeout");
     },
-    []
+    [],
   );
 
   const submit = useCallback(
@@ -121,7 +120,7 @@ export function useCreateAndPollAccount(tenant: Tenant): CreateAndPollResult {
       if (controller.signal.aborted) return;
       await poll(name, controller, submittedTenantIdRef.current ?? "");
     },
-    [tenant, poll]
+    [tenant, poll],
   );
 
   const retry = useCallback(async () => {
@@ -131,7 +130,11 @@ export function useCreateAndPollAccount(tenant: Tenant): CreateAndPollResult {
     abortRef.current = controller;
     setErrorMessage(null);
     setErrorKind(null);
-    await poll(submittedNameRef.current, controller, submittedTenantIdRef.current ?? "");
+    await poll(
+      submittedNameRef.current,
+      controller,
+      submittedTenantIdRef.current ?? "",
+    );
   }, [poll]);
 
   // Abort any in-flight work on unmount.

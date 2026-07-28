@@ -6,6 +6,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/serverbound/FieldLeftKnockback version=gms_v79 ida=0x55230d
 // packet-audit:verify packet=field/serverbound/FieldLeftKnockback version=gms_v83 ida=0x574df1
 // packet-audit:verify packet=field/serverbound/FieldLeftKnockback version=gms_v84 ida=0x58476f
 // packet-audit:verify packet=field/serverbound/FieldLeftKnockback version=gms_v87 ida=0x5a307b
@@ -17,6 +18,61 @@ func TestLeftKnockbackGolden(t *testing.T) {
 	actual := pt.Encode(t, ctx, input.Encode, nil)
 	if len(actual) != 0 {
 		t.Errorf("golden mismatch: got %v want empty", actual)
+	}
+}
+
+// TestLeftKnockbackByteOutputV79 pins the gms_v79 LEFT_KNOCKBACK (op 0xCC)
+// serverbound wire. IDA: CField_SnowBall::Update @0x55230d (GMS_v79_1_DEVM.exe) —
+// COutPacket(204) @0x552388 then SendPacket with NO Encode* calls: empty body.
+func TestLeftKnockbackByteOutputV79(t *testing.T) {
+	input := NewLeftKnockback()
+	ctx := pt.CreateContext("GMS", 79, 1)
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Errorf("v79 left_knockback golden mismatch: got %v want empty", actual)
+	}
+}
+
+// TestLeftKnockbackByteOutputV72 pins the gms_v72 LEFT_KNOCKBACK (op 0xCA = 202)
+// serverbound wire. IDA: CField_SnowBall::Update @0x53ff36
+// (GMS_v72.1_U_DEVM.exe) — COutPacket(202) @0x53ffb1 then SendPacket @0x53ffc4
+// with NO Encode* calls: empty body (header only) — identical to the v79 golden
+// (op 204).
+// packet-audit:verify packet=field/serverbound/FieldLeftKnockback version=gms_v72 ida=0x53ff36
+func TestLeftKnockbackByteOutputV72(t *testing.T) {
+	input := NewLeftKnockback()
+	ctx := pt.CreateContext("GMS", 72, 1)
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Errorf("v72 left_knockback golden mismatch: got %v want empty", actual)
+	}
+}
+
+// TestLeftKnockbackByteOutputV61 pins the gms_v61 LEFT_KNOCKBACK (op 0xB1 = 177)
+// serverbound wire. IDA: CField_SnowBall::Update @0x50bb50 (GMS_v61.1_U_DEVM.exe) —
+// COutPacket(177) then SendPacket with NO Encode* calls: empty body (header only)
+// — identical to the v72 golden (op 202).
+// packet-audit:verify packet=field/serverbound/FieldLeftKnockback version=gms_v61 ida=0x50bb50
+func TestLeftKnockbackByteOutputV61(t *testing.T) {
+	input := NewLeftKnockback()
+	ctx := pt.CreateContext("GMS", 61, 1)
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Errorf("v61 left_knockback golden mismatch: got %v want empty", actual)
+	}
+}
+
+// TestLeftKnockbackByteOutputV48 pins the gms_v48 LEFT_KNOCKBACK (op 0x96 = 150)
+// serverbound wire. IDA: CField_SnowBall::Update @0x4dc55c (GMS_v48_1_DEVM.exe) —
+// COutPacket(150) @0x4dc5d8 then SendPacket @0x4dc5eb with NO Encode* calls:
+// empty body (header only) — identical to the v61 golden (op 177).
+// packet-audit:verify packet=field/serverbound/FieldLeftKnockback version=gms_v48 ida=0x4dc55c
+func TestLeftKnockbackByteOutputV48(t *testing.T) {
+	input := NewLeftKnockback()
+	ctx := pt.CreateContext("GMS", 48, 1)
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Errorf("v48 left_knockback golden mismatch: got %v want empty", actual)
 	}
 }
 

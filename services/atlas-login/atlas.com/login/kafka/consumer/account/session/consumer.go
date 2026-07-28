@@ -15,14 +15,15 @@ import (
 	"sort"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	loginpkt "github.com/Chronicle20/atlas/libs/atlas-packet/login/clientbound"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -65,6 +66,7 @@ func InitHandlers(l logrus.FieldLogger) func(tenant tenant.Model) func(wp writer
 		}
 	}
 }
+
 func handleCreatedAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, e session2.StatusEvent[session2.CreatedStatusEventBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, e session2.StatusEvent[session2.CreatedStatusEventBody]) {
 		if e.Type != session2.EventStatusTypeCreated {
@@ -234,7 +236,7 @@ func announceRecommendedWorlds(l logrus.FieldLogger) func(ctx context.Context) f
 			serverListRecommendationFunc := session.Announce(l)(ctx)(wp)(loginpkt.ServerListRecommendationsWriter)
 			return func(ws []world.Model) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					var rs = make([]model2.Recommendation, 0)
+					rs := make([]model2.Recommendation, 0)
 					for _, x := range ws {
 						if x.Recommended() {
 							rs = append(rs, model2.NewWorldRecommendation(x.Id(), x.RecommendedMessage()))

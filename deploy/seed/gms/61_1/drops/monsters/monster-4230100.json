@@ -1,0 +1,262 @@
+{
+  "data": {
+    "type": "monster-drop",
+    "id": "4230100",
+    "attributes": {
+      "drops": [
+        {
+          "itemId": 0,
+          "minimumQuantity": 96,
+          "maximumQuantity": 144,
+          "questId": 0,
+          "chance": 400000
+        },
+        {
+          "itemId": 1002098,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 1287
+        },
+        {
+          "itemId": 1002103,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 1287
+        },
+        {
+          "itemId": 1002166,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 1287
+        },
+        {
+          "itemId": 1002169,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 1287
+        },
+        {
+          "itemId": 1032008,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 1000
+        },
+        {
+          "itemId": 1041075,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 800
+        },
+        {
+          "itemId": 1060057,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 800
+        },
+        {
+          "itemId": 1061070,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 800
+        },
+        {
+          "itemId": 1072090,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 800
+        },
+        {
+          "itemId": 1072132,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 800
+        },
+        {
+          "itemId": 1072140,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 800
+        },
+        {
+          "itemId": 1082066,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 1000
+        },
+        {
+          "itemId": 1412004,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 700
+        },
+        {
+          "itemId": 1422014,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 700
+        },
+        {
+          "itemId": 1462004,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 500
+        },
+        {
+          "itemId": 1472013,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 500
+        },
+        {
+          "itemId": 1472017,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 500
+        },
+        {
+          "itemId": 2000002,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 20000
+        },
+        {
+          "itemId": 2000003,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 20000
+        },
+        {
+          "itemId": 2000006,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 20000
+        },
+        {
+          "itemId": 2040001,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 300
+        },
+        {
+          "itemId": 2044412,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 300
+        },
+        {
+          "itemId": 2049100,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 150
+        },
+        {
+          "itemId": 2070002,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 400
+        },
+        {
+          "itemId": 2070010,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 500
+        },
+        {
+          "itemId": 2382039,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 8000
+        },
+        {
+          "itemId": 4000023,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 600000
+        },
+        {
+          "itemId": 4010001,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 9000
+        },
+        {
+          "itemId": 4010005,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 9000
+        },
+        {
+          "itemId": 4010006,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 9000
+        },
+        {
+          "itemId": 4030012,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 125000
+        },
+        {
+          "itemId": 4031212,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 2096,
+          "chance": 500000
+        },
+        {
+          "itemId": 4130004,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 6000
+        },
+        {
+          "itemId": 4130005,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 6000
+        },
+        {
+          "itemId": 4130009,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 0,
+          "chance": 6000
+        }
+      ]
+    }
+  }
+}

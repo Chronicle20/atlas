@@ -4,9 +4,10 @@ import (
 	"testing"
 	"time"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 func TestRouteBuilder_Success(t *testing.T) {

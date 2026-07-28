@@ -7,9 +7,9 @@ import (
 )
 
 type ProcessorMock struct {
-	GetByIdFunc          func(partyId uint32) (party.Model, error)
-	GetByMemberIdFunc    func(memberId uint32) (party.Model, error)
-	ByIdProviderFunc     func(partyId uint32) model.Provider[party.Model]
+	GetByIdFunc            func(partyId uint32) (party.Model, error)
+	GetByMemberIdFunc      func(memberId uint32) (party.Model, error)
+	ByIdProviderFunc       func(partyId uint32) model.Provider[party.Model]
 	ByMemberIdProviderFunc func(memberId uint32) model.Provider[[]party.Model]
 }
 

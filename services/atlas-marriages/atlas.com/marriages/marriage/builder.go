@@ -89,24 +89,24 @@ func (b *Builder) Build() (Marriage, error) {
 	if b.characterId1 == 0 {
 		return Marriage{}, errors.New("character ID 1 is required")
 	}
-	
+
 	if b.characterId2 == 0 {
 		return Marriage{}, errors.New("character ID 2 is required")
 	}
-	
+
 	if b.characterId1 == b.characterId2 {
 		return Marriage{}, errors.New("character cannot marry themselves")
 	}
-	
+
 	if b.tenantId == uuid.Nil {
 		return Marriage{}, errors.New("tenant ID is required")
 	}
-	
+
 	// Validate state transitions
 	if err := b.validateStateTransitions(); err != nil {
 		return Marriage{}, err
 	}
-	
+
 	return Marriage{
 		id:           b.id,
 		characterId1: b.characterId1,
@@ -178,7 +178,7 @@ func (b *Builder) validateStateTransitions() error {
 	default:
 		return errors.New("invalid marriage status")
 	}
-	
+
 	return nil
 }
 
@@ -273,28 +273,28 @@ func (b *ProposalBuilder) Build() (Proposal, error) {
 	if b.proposerId == 0 {
 		return Proposal{}, errors.New("proposer ID is required")
 	}
-	
+
 	if b.targetId == 0 {
 		return Proposal{}, errors.New("target ID is required")
 	}
-	
+
 	if b.proposerId == b.targetId {
 		return Proposal{}, errors.New("character cannot propose to themselves")
 	}
-	
+
 	if b.tenantId == uuid.Nil {
 		return Proposal{}, errors.New("tenant ID is required")
 	}
-	
+
 	if b.expiresAt.Before(b.proposedAt) {
 		return Proposal{}, errors.New("expiry time cannot be before proposal time")
 	}
-	
+
 	// Validate state transitions
 	if err := b.validateProposalStateTransitions(); err != nil {
 		return Proposal{}, err
 	}
-	
+
 	return Proposal{
 		id:             b.id,
 		proposerId:     b.proposerId,
@@ -340,7 +340,7 @@ func (b *ProposalBuilder) validateProposalStateTransitions() error {
 	default:
 		return errors.New("invalid proposal status")
 	}
-	
+
 	return nil
 }
 
@@ -451,34 +451,34 @@ func (b *CeremonyBuilder) Build() (Ceremony, error) {
 	if b.marriageId == 0 {
 		return Ceremony{}, errors.New("marriage ID is required")
 	}
-	
+
 	if b.characterId1 == 0 {
 		return Ceremony{}, errors.New("character ID 1 is required")
 	}
-	
+
 	if b.characterId2 == 0 {
 		return Ceremony{}, errors.New("character ID 2 is required")
 	}
-	
+
 	if b.characterId1 == b.characterId2 {
 		return Ceremony{}, errors.New("character cannot have ceremony with themselves")
 	}
-	
+
 	if b.tenantId == uuid.Nil {
 		return Ceremony{}, errors.New("tenant ID is required")
 	}
-	
+
 	if len(b.invitees) > MaxInvitees {
 		return Ceremony{}, errors.New("too many invitees")
 	}
-	
+
 	// Validate that invitees don't include the partners themselves
 	for _, invitee := range b.invitees {
 		if invitee == b.characterId1 || invitee == b.characterId2 {
 			return Ceremony{}, errors.New("partners cannot be invitees")
 		}
 	}
-	
+
 	// Check for duplicate invitees
 	inviteeMap := make(map[uint32]bool)
 	for _, invitee := range b.invitees {
@@ -487,16 +487,16 @@ func (b *CeremonyBuilder) Build() (Ceremony, error) {
 		}
 		inviteeMap[invitee] = true
 	}
-	
+
 	// Validate state transitions
 	if err := b.validateCeremonyStateTransitions(); err != nil {
 		return Ceremony{}, err
 	}
-	
+
 	// Copy invitees to maintain immutability
 	invitees := make([]uint32, len(b.invitees))
 	copy(invitees, b.invitees)
-	
+
 	return Ceremony{
 		id:           b.id,
 		marriageId:   b.marriageId,
@@ -571,6 +571,6 @@ func (b *CeremonyBuilder) validateCeremonyStateTransitions() error {
 	default:
 		return errors.New("invalid ceremony status")
 	}
-	
+
 	return nil
 }

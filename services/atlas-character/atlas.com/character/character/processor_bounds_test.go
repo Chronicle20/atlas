@@ -4,8 +4,9 @@ import (
 	"math"
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // TestAppliesAutoAP verifies the GMS pre-Big-Bang auto-AP version boundary.

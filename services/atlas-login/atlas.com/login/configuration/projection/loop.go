@@ -1,12 +1,11 @@
 package projection
 
 import (
-	"context"
-	"time"
-
 	"atlas-login/configuration"
 	"atlas-login/configuration/tenant"
 	"atlas-login/listener"
+	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

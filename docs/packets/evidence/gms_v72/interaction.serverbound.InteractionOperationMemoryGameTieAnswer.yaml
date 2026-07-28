@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationMemoryGameTieAnswer
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CMemoryGameDlg::OnTieRequest
+    address: "0x64e893"
+    decompile_sha256: 23a5d95565f7173c484b1508be7bb3ea5e3b266812e499e5cd3a7a357050b627
+verifies:
+  - libs/atlas-packet/interaction/serverbound/operation_memory_game_tie_answer_test.go#TestOperationMemoryGameTieAnswerV72Bytes

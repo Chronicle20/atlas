@@ -4,13 +4,15 @@ import (
 	"atlas-inventory/rest"
 	"net/http"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -29,22 +31,28 @@ func handleGetAssets(db *gorm.DB) rest.GetHandler {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return rest.ParseCompartmentId(d.Logger(), func(compartmentId uuid.UUID) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					ms, err := NewProcessor(d.Logger(), d.Context(), db).GetByCompartmentId(compartmentId)
+					page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
 					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
 						return
 					}
 
-					rm, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+					paged, err := NewProcessor(d.Logger(), d.Context(), db).ByCompartmentIdPagedProvider(compartmentId, page)()
+					if err != nil {
+						server.WriteErrorResponse(d.Logger())(w)(err)
+						return
+					}
+
+					rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					query := r.URL.Query()
 					queryParams := jsonapi.ParseQueryFields(&query)
-					server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+					server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
 				}
 			})
 		})
@@ -60,7 +68,7 @@ func handleDeleteAsset(db *gorm.DB) rest.GetHandler {
 						err := NewProcessor(d.Logger(), d.Context(), db).DeleteAndEmit(uuid.New(), characterId, compartmentId, assetId)
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Unable to delete asset [%d].", assetId)
-							w.WriteHeader(http.StatusInternalServerError)
+							server.WriteErrorResponse(d.Logger())(w)(err)
 							return
 						}
 						w.WriteHeader(http.StatusNoContent)

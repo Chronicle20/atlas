@@ -1,113 +1,132 @@
-import * as React from "react"
-import {ChevronsUpDown, Plus} from "lucide-react"
-import {useLocation} from "react-router-dom"
+import * as React from "react";
+import { ChevronsUpDown, Plus } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,} from "@/components/ui/sidebar"
-import {useTenant} from "@/context/tenant-context";
-import {CreateTenantDialog} from "@/components/features/tenants/CreateTenantDialog";
-import {isDeploymentRoute} from "@/lib/deployment-routes";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { useTenant } from "@/context/tenant-context";
+import { CreateTenantDialog } from "@/components/features/tenants/CreateTenantDialog";
+import { isDeploymentRoute } from "@/lib/deployment-routes";
 
 export function TenantSwitcher() {
-    const {isMobile} = useSidebar()
-    const {tenants, activeTenant, setActiveTenant, refreshTenants} = useTenant()
-    const [createDialogOpen, setCreateDialogOpen] = React.useState(false)
-    const {pathname} = useLocation()
+  const { isMobile } = useSidebar();
+  const { tenants, activeTenant, setActiveTenant, refreshTenants } =
+    useTenant();
+  const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
+  const { pathname } = useLocation();
 
-    // On Deployment routes the switcher is inert: purely presentational, no
-    // dropdown, no writes. TenantContext state and localStorage are never
-    // touched, so the prior selection survives the round-trip (FR-2.3).
-    if (isDeploymentRoute(pathname)) {
-        return (
-            <SidebarMenu>
-                <SidebarMenuItem>
-                    <SidebarMenuButton
-                        size="lg"
-                        asChild
-                        aria-disabled="true"
-                        className="pointer-events-none opacity-70"
-                    >
-                        <div data-testid="tenant-switcher-inert">
-                            <div className="grid flex-1 text-left text-sm leading-tight">
-                                <span className="truncate font-semibold">Deployment-wide</span>
-                                <span className="truncate text-xs text-muted-foreground">tenant selection inactive</span>
-                            </div>
-                        </div>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            </SidebarMenu>
-        )
-    }
-
+  // On Deployment routes the switcher is inert: purely presentational, no
+  // dropdown, no writes. TenantContext state and localStorage are never
+  // touched, so the prior selection survives the round-trip (FR-2.3).
+  if (isDeploymentRoute(pathname)) {
     return (
-        <SidebarMenu>
-            <SidebarMenuItem>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <SidebarMenuButton
-                            size="lg"
-                            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                        >
-                            <div className="grid flex-1 text-left text-sm leading-tight">
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            size="lg"
+            asChild
+            aria-disabled="true"
+            className="pointer-events-none opacity-70"
+          >
+            <div data-testid="tenant-switcher-inert">
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">Deployment-wide</span>
+                <span className="truncate text-xs text-muted-foreground">
+                  tenant selection inactive
+                </span>
+              </div>
+            </div>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+  }
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              size="lg"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            >
+              <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">
                   {activeTenant?.attributes.name || activeTenant?.id}
                 </span>
-                                <span
-                                    className="truncate text-xs">{activeTenant?.attributes.region} - {activeTenant?.attributes.majorVersion}.{activeTenant?.attributes.minorVersion}</span>
-                            </div>
-                            <ChevronsUpDown className="ml-auto"/>
-                        </SidebarMenuButton>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                        className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-                        align="start"
-                        side={isMobile ? "bottom" : "right"}
-                        sideOffset={4}
-                    >
-                        <DropdownMenuLabel className="text-xs text-muted-foreground">
-                            Tenants
-                        </DropdownMenuLabel>
-                        {tenants?.map((tenant) => (
-                            <DropdownMenuItem
-                                key={tenant.id}
-                                onClick={() => setActiveTenant(tenant)}
-                                className="gap-2 p-2"
-                            >
-                                <div className="flex flex-col">
-                                    <span className="font-medium">{tenant.attributes.name || tenant.id}</span>
-                                    <span className="text-xs text-muted-foreground">{tenant.attributes.region} - {tenant.attributes.majorVersion}.{tenant.attributes.minorVersion}</span>
-                                </div>
-                            </DropdownMenuItem>
-                        ))}
-                        <DropdownMenuSeparator/>
-                        <DropdownMenuItem
-                            className="gap-2 p-2"
-                            onSelect={(e) => {
-                                e.preventDefault()
-                                setCreateDialogOpen(true)
-                            }}
-                        >
-                            <div className="flex size-6 items-center justify-center rounded-md border bg-background">
-                                <Plus className="size-4"/>
-                            </div>
-                            <div className="font-medium text-muted-foreground">Add tenant</div>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </SidebarMenuItem>
+                <span className="truncate text-xs">
+                  {activeTenant?.attributes.region} -{" "}
+                  {activeTenant?.attributes.majorVersion}.
+                  {activeTenant?.attributes.minorVersion}
+                </span>
+              </div>
+              <ChevronsUpDown className="ml-auto" />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            align="start"
+            side={isMobile ? "bottom" : "right"}
+            sideOffset={4}
+          >
+            <DropdownMenuLabel className="text-xs text-muted-foreground">
+              Tenants
+            </DropdownMenuLabel>
+            {tenants?.map((tenant) => (
+              <DropdownMenuItem
+                key={tenant.id}
+                onClick={() => setActiveTenant(tenant)}
+                className="gap-2 p-2"
+              >
+                <div className="flex flex-col">
+                  <span className="font-medium">
+                    {tenant.attributes.name || tenant.id}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {tenant.attributes.region} -{" "}
+                    {tenant.attributes.majorVersion}.
+                    {tenant.attributes.minorVersion}
+                  </span>
+                </div>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="gap-2 p-2"
+              onSelect={(e) => {
+                e.preventDefault();
+                setCreateDialogOpen(true);
+              }}
+            >
+              <div className="flex size-6 items-center justify-center rounded-md border bg-background">
+                <Plus className="size-4" />
+              </div>
+              <div className="font-medium text-muted-foreground">
+                Add tenant
+              </div>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
 
-            <CreateTenantDialog
-                open={createDialogOpen}
-                onOpenChange={setCreateDialogOpen}
-                onSuccess={refreshTenants}
-            />
-        </SidebarMenu>
-    )
+      <CreateTenantDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSuccess={refreshTenants}
+      />
+    </SidebarMenu>
+  );
 }

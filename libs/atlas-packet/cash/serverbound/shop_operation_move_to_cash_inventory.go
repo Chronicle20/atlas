@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const CashShopOperationMoveToCashInventoryHandle = "CashShopOperationMoveToCashInventoryHandle"
@@ -18,8 +19,8 @@ type ShopOperationMoveToCashInventory struct {
 	inventoryType byte
 }
 
-func (m ShopOperationMoveToCashInventory) SerialNumber() uint64  { return m.serialNumber }
-func (m ShopOperationMoveToCashInventory) InventoryType() byte   { return m.inventoryType }
+func (m ShopOperationMoveToCashInventory) SerialNumber() uint64 { return m.serialNumber }
+func (m ShopOperationMoveToCashInventory) InventoryType() byte  { return m.inventoryType }
 
 func (m ShopOperationMoveToCashInventory) Operation() string {
 	return CashShopOperationMoveToCashInventoryHandle

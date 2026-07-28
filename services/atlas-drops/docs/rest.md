@@ -80,7 +80,7 @@ Retrieves a drop by ID.
 
 ### GET /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/drops
 
-Retrieves all drops for a specific map instance.
+Retrieves all drops for a specific map instance. Results are sorted by drop ID ascending and paginated.
 
 #### Parameters
 
@@ -90,6 +90,10 @@ Retrieves all drops for a specific map instance.
 | channelId | path | int | Yes | Channel identifier |
 | mapId | path | int | Yes | Map identifier |
 | instanceId | path | uuid | Yes | Instance identifier (use 00000000-0000-0000-0000-000000000000 for non-instanced maps) |
+| page[number] | query | int | No | Page number, 1-based. Default 1. |
+| page[size] | query | int | No | Page size. Default 250, maximum 250. |
+
+The legacy `limit` query parameter is rejected.
 
 #### Request Headers
 
@@ -145,14 +149,30 @@ Retrieves all drops for a specific map instance.
         "slots": 0
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": 0,
+    "page": {
+      "number": 1,
+      "size": 250,
+      "last": 1
+    }
+  },
+  "links": {
+    "self": "...",
+    "first": "...",
+    "last": "..."
+  }
 }
 ```
+
+`links` also includes `prev` (omitted on page 1) and `next` (omitted on the last page).
 
 #### Error Conditions
 
 | Status | Condition |
 |--------|-----------|
 | 400 | Invalid path parameter format |
+| 400 | Invalid `page[number]`/`page[size]` (non-integer, out of range, or `limit` supplied) |
 | 404 | No drops found |
 | 500 | Internal server error |

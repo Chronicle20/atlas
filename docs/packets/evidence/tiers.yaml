@@ -59,6 +59,28 @@ packet_prefixes:
 
 # Explicit tier-1 packets (reviewed per-packet additions).
 packets:
+  # SetAvatarMegaphone (task-123 phase 19) embeds a trailing model.Avatar
+  # (AvatarLook) block after four variable-length message-line strings. The
+  # TypeRegistry's opaque-type recursion (which correctly promotes
+  # tv/clientbound/TvSetMessage's near-identical AvatarLook-trailer shape to
+  # FlatInvalid) does not pick up this struct — WriterName
+  # "ChatSetAvatarMegaphone" vs Operation() "SetAvatarMegaphone" mismatch
+  # (a documented TypeRegistry limitation, see the header comment above).
+  # The flat differ instead attempts a raw per-field walk and misaligns on
+  # the string-run boundary (false per-field width mismatches, not a real
+  # wire-shape bug — the byte-fixture test is the ground truth). Pinned here
+  # so the cell promotes via the linked byte-fixture + evidence, never via
+  # the advisory diff.
+  - chat/clientbound/ChatSetAvatarMegaphone
+  # WorldMessageItemMegaphone (task-123 phase 19) carries a conditional
+  # (hasItem) opaque model.Asset (GW_ItemSlotBase) trailer. The TypeRegistry's
+  # opaque-type recursion misses it for the same WriterName-vs-Operation()
+  # mismatch reason as ChatSetAvatarMegaphone above ("ChatWorldMessageItemMegaphone"
+  # vs Operation() "WorldMessageItemMegaphone"); the flat differ correctly
+  # isolates the mismatch to the single opaque row ("register boundary") but
+  # that alone doesn't earn tier-1 auto-promotion. Pinned here so the cell
+  # promotes via the linked byte-fixture + evidence.
+  - chat/clientbound/ChatWorldMessageItemMegaphone
   # SummonSpawn branches on spawnHasAvatarLook (a version-gated trailing avatar
   # byte: present GMS>=95 / JMS>=185, absent on GMS v83/v84/v87), so the flat
   # diff is advisory and only a linked byte-fixture promotes. Once its IDA leaf
@@ -69,3 +91,17 @@ packets:
   # never via the advisory diff. v83 + v95 carry fixtures+evidence; v84/v87/jms
   # remain fixture-pending (unchanged from before).
   - summon/clientbound/SummonSpawn
+  # Owl of Minerva / shop-scanner packets (task-127). Design §5 mandates full
+  # tier-1 treatment on gms_v83/gms_v95: IDA-derived read orders pinned as
+  # evidence, promoted only via linked byte-fixtures. ShopScannerResult carries a
+  # conditional (nTI==1) opaque model.Asset row + count loop so its flat diff is
+  # advisory; the flat siblings are pinned as tier-1 for uniform evidence-backed
+  # grading (explicit packet ids, NOT a merchant/ prefix that would degrade the
+  # existing tier-0 merchant cells). v83+v95 verified this task; v84/v87/v92/jms
+  # remain seed-routed-but-unverified (design §5 accepted state).
+  - merchant/serverbound/OwlAction
+  - merchant/serverbound/OwlWarp
+  - merchant/serverbound/ShopScannerItemUse
+  - merchant/clientbound/ShopScannerResult
+  - merchant/clientbound/ShopScannerHotList
+  - merchant/clientbound/ShopLinkResult

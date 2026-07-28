@@ -4,7 +4,6 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	"atlas-messages/kafka/message/buff"
-	"atlas-messages/kafka/producer"
 	_map "atlas-messages/map"
 	"atlas-messages/message"
 	"context"
@@ -13,9 +12,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
 )
 
 var validDiseases = map[string]string{

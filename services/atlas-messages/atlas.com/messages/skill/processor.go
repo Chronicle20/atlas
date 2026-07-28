@@ -3,9 +3,10 @@ package skill
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
@@ -26,8 +27,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
+// ByCharacterIdProvider fetches every skill for a character. The upstream
+// atlas-skills list is now paginated (task-117); callers here need the
+// complete set, so this drains every page rather than fetching just the
+// first.
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(characterSkillsUrl(characterId), 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {

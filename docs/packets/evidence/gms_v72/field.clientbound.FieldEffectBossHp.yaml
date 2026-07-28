@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldEffectBossHp
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldEffect#BossHp
+    address: "0x5174bb"
+    decompile_sha256: bc3c53d54527f91bb9ba42cf6723b84a1e408d15df8129b11134d1752054bc7b
+verifies:
+    - libs/atlas-packet/field/clientbound/effect_test.go#TestFieldEffectByteOutputV72

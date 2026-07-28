@@ -25,25 +25,31 @@ class CharacterCacheManager {
    * Initialize the service worker for character image caching
    */
   async initialize(): Promise<boolean> {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
-      console.warn('Service Workers not supported');
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
+      console.warn("Service Workers not supported");
       return false;
     }
 
     try {
-      this.swRegistration = await navigator.serviceWorker.register('/sw-character-cache.js', {
-        scope: '/',
-      });
+      this.swRegistration = await navigator.serviceWorker.register(
+        "/sw-character-cache.js",
+        {
+          scope: "/",
+        },
+      );
 
-      console.log('Character cache service worker registered successfully');
+      console.log("Character cache service worker registered successfully");
 
       // Listen for service worker updates
-      this.swRegistration.addEventListener('updatefound', () => {
+      this.swRegistration.addEventListener("updatefound", () => {
         const newWorker = this.swRegistration?.installing;
         if (newWorker) {
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('New character cache service worker available');
+          newWorker.addEventListener("statechange", () => {
+            if (
+              newWorker.state === "installed" &&
+              navigator.serviceWorker.controller
+            ) {
+              console.log("New character cache service worker available");
               // Optionally notify user of update
             }
           });
@@ -52,7 +58,10 @@ class CharacterCacheManager {
 
       return true;
     } catch (error) {
-      console.error('Failed to register character cache service worker:', error);
+      console.error(
+        "Failed to register character cache service worker:",
+        error,
+      );
       return false;
     }
   }
@@ -60,19 +69,23 @@ class CharacterCacheManager {
   /**
    * Send a message to the service worker
    */
-  private async sendMessage(message: ServiceWorkerMessage): Promise<CacheStats | void> {
+  private async sendMessage(
+    message: ServiceWorkerMessage,
+  ): Promise<CacheStats | void> {
     if (!this.swRegistration?.active) {
-      throw new Error('Service worker not available');
+      throw new Error("Service worker not available");
     }
 
     return new Promise((resolve, reject) => {
       const messageChannel = new MessageChannel();
-      
+
       messageChannel.port1.onmessage = (event) => {
         if (event.data.success) {
           resolve(event.data.stats || event.data);
         } else {
-          reject(new Error(event.data.error || 'Service worker message failed'));
+          reject(
+            new Error(event.data.error || "Service worker message failed"),
+          );
         }
       };
 
@@ -85,10 +98,10 @@ class CharacterCacheManager {
    */
   async clearCache(): Promise<void> {
     try {
-      await this.sendMessage({ type: 'CLEAR_CHARACTER_CACHE' });
-      console.log('Character image cache cleared');
+      await this.sendMessage({ type: "CLEAR_CHARACTER_CACHE" });
+      console.log("Character image cache cleared");
     } catch (error) {
-      console.error('Failed to clear character image cache:', error);
+      console.error("Failed to clear character image cache:", error);
       throw error;
     }
   }
@@ -98,10 +111,10 @@ class CharacterCacheManager {
    */
   async getCacheStats(): Promise<CacheStats> {
     try {
-      const stats = await this.sendMessage({ type: 'GET_CACHE_STATS' });
+      const stats = await this.sendMessage({ type: "GET_CACHE_STATS" });
       return stats as CacheStats;
     } catch (error) {
-      console.error('Failed to get cache stats:', error);
+      console.error("Failed to get cache stats:", error);
       throw error;
     }
   }
@@ -113,13 +126,13 @@ class CharacterCacheManager {
     if (urls.length === 0) return;
 
     try {
-      await this.sendMessage({ 
-        type: 'PRELOAD_IMAGES',
+      await this.sendMessage({
+        type: "PRELOAD_IMAGES",
         urls,
       });
       console.log(`Preloaded ${urls.length} character images`);
     } catch (error) {
-      console.error('Failed to preload character images:', error);
+      console.error("Failed to preload character images:", error);
       throw error;
     }
   }
@@ -128,14 +141,14 @@ class CharacterCacheManager {
    * Check if service worker is available and active
    */
   isAvailable(): boolean {
-    return !!(this.swRegistration?.active);
+    return !!this.swRegistration?.active;
   }
 
   /**
    * Get formatted cache size
    */
   formatCacheSize(bytes: number): string {
-    const units = ['B', 'KB', 'MB', 'GB'];
+    const units = ["B", "KB", "MB", "GB"];
     let size = bytes;
     let unitIndex = 0;
 
@@ -163,7 +176,7 @@ class CharacterCacheManager {
     if (this.swRegistration) {
       await this.swRegistration.unregister();
       this.swRegistration = null;
-      console.log('Character cache service worker unregistered');
+      console.log("Character cache service worker unregistered");
     }
   }
 }
@@ -174,7 +187,7 @@ export const characterCacheManager = new CharacterCacheManager();
 /**
  * React hook for character cache management
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 
 interface UseCharacterCacheReturn {
   isAvailable: boolean;
@@ -198,17 +211,19 @@ export function useCharacterCache(): UseCharacterCacheReturn {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         const available = await characterCacheManager.initialize();
         setIsAvailable(available);
-        
+
         if (available) {
           const stats = await characterCacheManager.getCacheStats();
           setCacheStats(stats);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to initialize cache');
-        console.error('Cache initialization error:', err);
+        setError(
+          err instanceof Error ? err.message : "Failed to initialize cache",
+        );
+        console.error("Cache initialization error:", err);
       } finally {
         setIsLoading(false);
       }
@@ -223,35 +238,40 @@ export function useCharacterCache(): UseCharacterCacheReturn {
       await characterCacheManager.clearCache();
       setCacheStats({ totalEntries: 0, totalSize: 0, entries: [] });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to clear cache');
+      setError(err instanceof Error ? err.message : "Failed to clear cache");
       throw err;
     }
   }, []);
 
   const refreshStats = useCallback(async () => {
     if (!isAvailable) return;
-    
+
     try {
       setError(null);
       const stats = await characterCacheManager.getCacheStats();
       setCacheStats(stats);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to refresh stats');
+      setError(err instanceof Error ? err.message : "Failed to refresh stats");
       throw err;
     }
   }, [isAvailable]);
 
-  const preloadImages = useCallback(async (urls: string[]) => {
-    try {
-      setError(null);
-      await characterCacheManager.preloadImages(urls);
-      // Refresh stats after preloading
-      await refreshStats();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to preload images');
-      throw err;
-    }
-  }, [refreshStats]);
+  const preloadImages = useCallback(
+    async (urls: string[]) => {
+      try {
+        setError(null);
+        await characterCacheManager.preloadImages(urls);
+        // Refresh stats after preloading
+        await refreshStats();
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to preload images",
+        );
+        throw err;
+      }
+    },
+    [refreshStats],
+  );
 
   return {
     isAvailable,

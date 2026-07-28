@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import {
   useDropsSeedStatus,
   useGachaponsSeedStatus,
@@ -21,11 +21,11 @@ import {
   useSeedPortalScripts,
   useSeedReactorScripts,
   useSeedMapActionScripts,
-} from '../useSeed';
-import { seedService } from '@/services/api/seed.service';
-import * as tenantContext from '@/context/tenant-context';
+} from "../useSeed";
+import { seedService } from "@/services/api/seed.service";
+import * as tenantContext from "@/context/tenant-context";
 
-vi.mock('@/services/api/seed.service', () => ({
+vi.mock("@/services/api/seed.service", () => ({
   seedService: {
     getDropsSeedStatus: vi.fn(),
     getGachaponsSeedStatus: vi.fn(),
@@ -48,18 +48,18 @@ vi.mock('@/services/api/seed.service', () => ({
   },
 }));
 
-vi.mock('@/context/tenant-context', () => ({
+vi.mock("@/context/tenant-context", () => ({
   useTenant: vi.fn(),
 }));
 
 const fakeTenant = {
-  id: 'tenant-1',
-  type: 'tenants',
+  id: "tenant-1",
+  type: "tenants",
   attributes: {
-    region: 'GMS',
+    region: "GMS",
     majorVersion: 83,
     minorVersion: 1,
-    name: 'Tenant 1',
+    name: "Tenant 1",
   },
 };
 
@@ -76,84 +76,64 @@ function makeWrapper() {
 beforeEach(() => vi.clearAllMocks());
 
 describe.each([
-  ['useDropsSeedStatus', useDropsSeedStatus, 'getDropsSeedStatus', 'dropsSeedStatus'],
-  ['useGachaponsSeedStatus', useGachaponsSeedStatus, 'getGachaponsSeedStatus', 'gachaponsSeedStatus'],
   [
-    'useNpcConversationsSeedStatus',
+    "useDropsSeedStatus",
+    useDropsSeedStatus,
+    "getDropsSeedStatus",
+    "dropsSeedStatus",
+  ],
+  [
+    "useGachaponsSeedStatus",
+    useGachaponsSeedStatus,
+    "getGachaponsSeedStatus",
+    "gachaponsSeedStatus",
+  ],
+  [
+    "useNpcConversationsSeedStatus",
     useNpcConversationsSeedStatus,
-    'getNpcConversationsSeedStatus',
-    'npcConversationsSeedStatus',
+    "getNpcConversationsSeedStatus",
+    "npcConversationsSeedStatus",
   ],
   [
-    'useQuestConversationsSeedStatus',
+    "useQuestConversationsSeedStatus",
     useQuestConversationsSeedStatus,
-    'getQuestConversationsSeedStatus',
-    'questConversationsSeedStatus',
+    "getQuestConversationsSeedStatus",
+    "questConversationsSeedStatus",
   ],
-  ['useNpcShopsSeedStatus', useNpcShopsSeedStatus, 'getNpcShopsSeedStatus', 'npcShopsSeedStatus'],
   [
-    'usePortalScriptsSeedStatus',
+    "useNpcShopsSeedStatus",
+    useNpcShopsSeedStatus,
+    "getNpcShopsSeedStatus",
+    "npcShopsSeedStatus",
+  ],
+  [
+    "usePortalScriptsSeedStatus",
     usePortalScriptsSeedStatus,
-    'getPortalScriptsSeedStatus',
-    'portalScriptsSeedStatus',
+    "getPortalScriptsSeedStatus",
+    "portalScriptsSeedStatus",
   ],
   [
-    'useReactorScriptsSeedStatus',
+    "useReactorScriptsSeedStatus",
     useReactorScriptsSeedStatus,
-    'getReactorScriptsSeedStatus',
-    'reactorScriptsSeedStatus',
+    "getReactorScriptsSeedStatus",
+    "reactorScriptsSeedStatus",
   ],
   [
-    'useMapActionScriptsSeedStatus',
+    "useMapActionScriptsSeedStatus",
     useMapActionScriptsSeedStatus,
-    'getMapActionScriptsSeedStatus',
-    'mapActionScriptsSeedStatus',
+    "getMapActionScriptsSeedStatus",
+    "mapActionScriptsSeedStatus",
   ],
-] as const)('%s', (_, hook, method, key) => {
-  it('enables polling and keys by tenant id when a tenant is active', async () => {
-    (tenantContext.useTenant as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+] as const)("%s", (_, hook, method, key) => {
+  it("enables polling and keys by tenant id when a tenant is active", async () => {
+    (
+      tenantContext.useTenant as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue({
       activeTenant: fakeTenant,
     });
-    (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method]!.mockResolvedValue(
-      {
-        updatedAt: null,
-      },
-    );
-
-    const { wrapper, qc } = makeWrapper();
-    const { result } = renderHook(() => hook(), { wrapper });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(
-      (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method],
-    ).toHaveBeenCalledWith(fakeTenant);
-    expect(qc.getQueryData([key, fakeTenant.id])).toBeDefined();
-  });
-
-  it('disables polling when no tenant is active', () => {
-    (tenantContext.useTenant as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      activeTenant: null,
-    });
-
-    const { wrapper } = makeWrapper();
-    const { result } = renderHook(() => hook(), { wrapper });
-
-    expect(result.current.fetchStatus).toBe('idle');
-    expect(
-      (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method],
-    ).not.toHaveBeenCalled();
-  });
-});
-
-describe.each([
-  ['useWzInputStatus', useWzInputStatus, 'getWzInputStatus', 'wzInputStatus'],
-  ['useDataStatus', useDataStatus, 'getDataStatus', 'dataStatus'],
-] as const)('%s', (_, hook, method, keyRoot) => {
-  it('calls the service with only the tenant and keys the cache by tenant id', async () => {
-    (tenantContext.useTenant as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      activeTenant: fakeTenant,
-    });
-    (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method]!.mockResolvedValue({
+    (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[
+      method
+    ]!.mockResolvedValue({
       updatedAt: null,
     });
 
@@ -162,62 +142,120 @@ describe.each([
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(
-      (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method],
+      (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[
+        method
+      ],
+    ).toHaveBeenCalledWith(fakeTenant);
+    expect(qc.getQueryData([key, fakeTenant.id])).toBeDefined();
+  });
+
+  it("disables polling when no tenant is active", () => {
+    (
+      tenantContext.useTenant as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue({
+      activeTenant: null,
+    });
+
+    const { wrapper } = makeWrapper();
+    const { result } = renderHook(() => hook(), { wrapper });
+
+    expect(result.current.fetchStatus).toBe("idle");
+    expect(
+      (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[
+        method
+      ],
+    ).not.toHaveBeenCalled();
+  });
+});
+
+describe.each([
+  ["useWzInputStatus", useWzInputStatus, "getWzInputStatus", "wzInputStatus"],
+  ["useDataStatus", useDataStatus, "getDataStatus", "dataStatus"],
+] as const)("%s", (_, hook, method, keyRoot) => {
+  it("calls the service with only the tenant and keys the cache by tenant id", async () => {
+    (
+      tenantContext.useTenant as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue({
+      activeTenant: fakeTenant,
+    });
+    (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[
+      method
+    ]!.mockResolvedValue({
+      updatedAt: null,
+    });
+
+    const { wrapper, qc } = makeWrapper();
+    const { result } = renderHook(() => hook(), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(
+      (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[
+        method
+      ],
     ).toHaveBeenCalledWith(fakeTenant);
     expect(qc.getQueryData([keyRoot, fakeTenant.id])).toBeDefined();
   });
 });
 
 describe.each([
-  ['useSeedDrops', useSeedDrops, 'seedDrops', 'dropsSeedStatus'],
-  ['useSeedGachapons', useSeedGachapons, 'seedGachapons', 'gachaponsSeedStatus'],
+  ["useSeedDrops", useSeedDrops, "seedDrops", "dropsSeedStatus"],
   [
-    'useSeedNpcConversations',
+    "useSeedGachapons",
+    useSeedGachapons,
+    "seedGachapons",
+    "gachaponsSeedStatus",
+  ],
+  [
+    "useSeedNpcConversations",
     useSeedNpcConversations,
-    'seedNpcConversations',
-    'npcConversationsSeedStatus',
+    "seedNpcConversations",
+    "npcConversationsSeedStatus",
   ],
   [
-    'useSeedQuestConversations',
+    "useSeedQuestConversations",
     useSeedQuestConversations,
-    'seedQuestConversations',
-    'questConversationsSeedStatus',
+    "seedQuestConversations",
+    "questConversationsSeedStatus",
   ],
-  ['useSeedNpcShops', useSeedNpcShops, 'seedNpcShops', 'npcShopsSeedStatus'],
+  ["useSeedNpcShops", useSeedNpcShops, "seedNpcShops", "npcShopsSeedStatus"],
   [
-    'useSeedPortalScripts',
+    "useSeedPortalScripts",
     useSeedPortalScripts,
-    'seedPortalScripts',
-    'portalScriptsSeedStatus',
+    "seedPortalScripts",
+    "portalScriptsSeedStatus",
   ],
   [
-    'useSeedReactorScripts',
+    "useSeedReactorScripts",
     useSeedReactorScripts,
-    'seedReactorScripts',
-    'reactorScriptsSeedStatus',
+    "seedReactorScripts",
+    "reactorScriptsSeedStatus",
   ],
   [
-    'useSeedMapActionScripts',
+    "useSeedMapActionScripts",
     useSeedMapActionScripts,
-    'seedMapActionScripts',
-    'mapActionScriptsSeedStatus',
+    "seedMapActionScripts",
+    "mapActionScriptsSeedStatus",
   ],
-] as const)('%s mutation', (_, hook, method, statusKeyRoot) => {
-  it('invalidates the matching status key on success', async () => {
-    (tenantContext.useTenant as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+] as const)("%s mutation", (_, hook, method, statusKeyRoot) => {
+  it("invalidates the matching status key on success", async () => {
+    (
+      tenantContext.useTenant as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue({
       activeTenant: fakeTenant,
     });
-    (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method]!.mockResolvedValue(
-      undefined,
-    );
+    (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[
+      method
+    ]!.mockResolvedValue(undefined);
 
     const { wrapper, qc } = makeWrapper();
-    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    const invalidate = vi.spyOn(qc, "invalidateQueries");
     const { result } = renderHook(() => hook(), { wrapper });
 
     result.current.mutate();
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: [statusKeyRoot, fakeTenant.id] });
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: [statusKeyRoot, fakeTenant.id],
+    });
   });
 });

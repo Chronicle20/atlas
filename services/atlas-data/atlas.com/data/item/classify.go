@@ -1,8 +1,8 @@
 package item
 
 import (
-	itemc "github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	itemc "github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 // Classify derives (compartment, subcategory) from an item id alone.

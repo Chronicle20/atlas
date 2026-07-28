@@ -8,11 +8,12 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
+	invite2 "github.com/Chronicle20/atlas/libs/atlas-constants/invite"
 	buddy2 "github.com/Chronicle20/atlas/libs/atlas-packet/buddy"
 	buddySB "github.com/Chronicle20/atlas/libs/atlas-packet/buddy/serverbound"
-	invite2 "github.com/Chronicle20/atlas/libs/atlas-constants/invite"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 const (

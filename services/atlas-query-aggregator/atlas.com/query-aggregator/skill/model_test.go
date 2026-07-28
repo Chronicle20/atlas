@@ -1,9 +1,8 @@
 package skill_test
 
 import (
-	"testing"
-
 	"atlas-query-aggregator/skill"
+	"testing"
 
 	"github.com/jtumidanski/api2go/jsonapi"
 )

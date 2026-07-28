@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 func setupInstanceTestRegistry(t *testing.T) *InstanceRegistry {

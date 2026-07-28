@@ -13,6 +13,7 @@ type AssetRestModel struct {
 	Expiration     time.Time  `json:"expiration"`
 	Quantity       uint32     `json:"quantity"`
 	OwnerId        uint32     `json:"ownerId"`
+	Owner          string     `json:"owner"`
 	Flag           uint16     `json:"flag"`
 	Rechargeable   uint64     `json:"rechargeable"`
 	Strength       uint16     `json:"strength"`
@@ -72,6 +73,7 @@ type ProjectionAssetRestModel struct {
 	Expiration     time.Time  `json:"expiration"`
 	Quantity       uint32     `json:"quantity"`
 	OwnerId        uint32     `json:"ownerId"`
+	Owner          string     `json:"owner"`
 	Flag           uint16     `json:"flag"`
 	Rechargeable   uint64     `json:"rechargeable"`
 	Strength       uint16     `json:"strength"`

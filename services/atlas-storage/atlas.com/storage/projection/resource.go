@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -95,7 +96,7 @@ func handleGetProjectionRequest() func(d *rest.HandlerDependency, c *rest.Handle
 				restModel, err := Transform(proj)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to transform projection for character [%d]", characterId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -134,7 +135,7 @@ func handleGetProjectionAssetRequest() func(d *rest.HandlerDependency, c *rest.H
 						restModel, err := asset.Transform(assetModel)
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Unable to transform asset for character [%d]", characterId)
-							w.WriteHeader(http.StatusInternalServerError)
+							server.WriteErrorResponse(d.Logger())(w)(err)
 							return
 						}
 

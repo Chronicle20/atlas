@@ -6,15 +6,16 @@ import (
 	"atlas-pets/pet/exclude"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func testLogger() logrus.FieldLogger {

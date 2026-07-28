@@ -1,0 +1,21 @@
+{
+  "WriterName": "CharacterCover",
+  "IDAName": "CUserLocal::SetMonsterBookCover",
+  "Address": "0x8b7ab0",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/monsterbook/cover.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client setter never reads this field (send is inlined in sub_7D1772)"
+    }
+  ],
+  "Verdict": 2,
+  "FlatInvalid": false
+}

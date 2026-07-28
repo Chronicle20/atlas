@@ -1,0 +1,10 @@
+packet: guild/serverbound/GuildSetEmblem
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendSetGuildMarkMsg
+    address: "0x51c522"
+    decompile_sha256: e7e2ad464e5c5c003f2c99ed18da1ba72c6bfa612dc1f11ef779f571a533a2bc
+verifies:
+  - libs/atlas-packet/guild/serverbound/operation_set_emblem_test.go#TestSetEmblemRoundTrip

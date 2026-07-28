@@ -1,0 +1,10 @@
+packet: pet/serverbound/PetChatRequest
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CPet::DoAction
+    address: "0x691d4e"
+    decompile_sha256: fcab318414824d40c327ba93ffd8e7f3d165060b78b5538f9fb2e36091b3aa8f
+verifies:
+  - libs/atlas-packet/pet/serverbound/chat_test.go#TestChatBytesV79

@@ -20,9 +20,11 @@ Retrieves all key bindings for a character.
 
 **Parameters**
 
-| Name        | Location | Type   | Required | Description          |
-|-------------|----------|--------|----------|----------------------|
-| characterId | path     | uint32 | yes      | Character identifier |
+| Name         | Location | Type   | Required | Description                                        |
+|--------------|----------|--------|----------|-----------------------------------------------------|
+| characterId  | path     | uint32 | yes      | Character identifier                                |
+| page[number] | query    | int    | no       | Page number, 1-based. Default 1. Must be >= 1.       |
+| page[size]   | query    | int    | no       | Page size. Default 250. Must be between 1 and 250.   |
 
 **Request Headers**
 
@@ -35,7 +37,7 @@ Retrieves all key bindings for a character.
 
 **Response Model**
 
-JSON:API formatted array of `keys` resources.
+JSON:API formatted, paginated array of `keys` resources, sorted by key ascending. Includes pagination `meta` and `links`.
 
 | Field  | Type  | Description                        |
 |--------|-------|------------------------------------|
@@ -45,10 +47,11 @@ JSON:API formatted array of `keys` resources.
 
 **Error Conditions**
 
-| Status Code | Condition                      |
-|-------------|--------------------------------|
-| 400         | Invalid characterId            |
-| 500         | Database error                 |
+| Status Code | Condition                              |
+|-------------|------------------------------------------|
+| 400         | Invalid characterId                       |
+| 400         | Invalid page[number] or page[size]        |
+| 500         | Database error                            |
 
 ---
 

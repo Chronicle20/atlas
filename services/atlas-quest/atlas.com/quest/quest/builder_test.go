@@ -275,7 +275,6 @@ func TestBuildWithValidation_Success(t *testing.T) {
 		SetQuestId(456).
 		SetState(quest.StateStarted).
 		BuildWithValidation()
-
 	if err != nil {
 		t.Fatalf("BuildWithValidation() unexpected error: %v", err)
 	}

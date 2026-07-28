@@ -25,16 +25,30 @@ func TestExportCarriesPrefix(t *testing.T) {
 		export []idasrc.FieldCall
 		want   bool
 	}{
-		{"faithful: export leads with sub-op byte",
-			[]idasrc.FieldCall{{Op: idasrc.Decode1, Comment: "sub-op"}, {Op: idasrc.DecodeStr}}, true},
-		{"faithful: sub-op then int32 body (BBS list)",
-			[]idasrc.FieldCall{{Op: idasrc.Decode1, Comment: "sub-op"}, {Op: idasrc.Decode4}}, true},
-		{"incomplete: sub-op omitted, body starts with int32",
-			[]idasrc.FieldCall{{Op: idasrc.Decode4}}, false},
-		{"incomplete: sub-op omitted, body starts with string",
-			[]idasrc.FieldCall{{Op: idasrc.DecodeStr}}, false},
-		{"empty export cannot carry the wrapper",
-			nil, false},
+		{
+			"faithful: export leads with sub-op byte",
+			[]idasrc.FieldCall{{Op: idasrc.Decode1, Comment: "sub-op"}, {Op: idasrc.DecodeStr}},
+			true,
+		},
+		{
+			"faithful: sub-op then int32 body (BBS list)",
+			[]idasrc.FieldCall{{Op: idasrc.Decode1, Comment: "sub-op"}, {Op: idasrc.Decode4}},
+			true,
+		},
+		{
+			"incomplete: sub-op omitted, body starts with int32",
+			[]idasrc.FieldCall{{Op: idasrc.Decode4}},
+			false,
+		},
+		{
+			"incomplete: sub-op omitted, body starts with string",
+			[]idasrc.FieldCall{{Op: idasrc.DecodeStr}},
+			false,
+		},
+		{
+			"empty export cannot carry the wrapper",
+			nil, false,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

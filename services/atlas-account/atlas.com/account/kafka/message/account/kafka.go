@@ -57,8 +57,7 @@ type ProgressStateSessionCommandBody struct {
 	Params interface{} `json:"params"`
 }
 
-type LogoutSessionCommandBody struct {
-}
+type LogoutSessionCommandBody struct{}
 
 const (
 	EnvEventTopicStatus  = "EVENT_TOPIC_ACCOUNT_STATUS"

@@ -1,13 +1,15 @@
 package reactor
 
 import (
-	"atlas-reactors/kafka/producer"
 	"context"
 	"sync"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 var (
@@ -78,7 +80,7 @@ func scheduleStateTimeout(l logrus.FieldLogger, ctx context.Context, r Model) {
 		// be armed promptly so subsequent timeouts are not delayed.
 		scheduleStateTimeout(l, ctx, updated)
 
-		Trigger(l)(ctx)(updated, 0)
+		NewProcessor(l, ctx).Trigger(updated, 0)
 
 		if err := producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(hitStatusEventProvider(updated, false)); err != nil {
 			l.WithError(err).Warnf("Failed to emit HIT status event for reactor [%d] after timer fire.", reactorId)

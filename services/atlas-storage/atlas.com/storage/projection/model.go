@@ -6,9 +6,10 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 // Model represents an in-memory projection of storage state for a character session.
@@ -174,14 +175,14 @@ func (m Model) MarshalJSON() ([]byte, error) {
 		compartments[strconv.Itoa(int(k))] = v
 	}
 	return json.Marshal(struct {
-		CharacterId  uint32                    `json:"characterId"`
-		AccountId    uint32                    `json:"accountId"`
-		WorldId      world.Id                  `json:"worldId"`
-		StorageId    uuid.UUID                 `json:"storageId"`
-		Capacity     uint32                    `json:"capacity"`
-		Mesos        uint32                    `json:"mesos"`
-		NpcId        uint32                    `json:"npcId"`
-		Compartments map[string][]asset.Model  `json:"compartments"`
+		CharacterId  uint32                   `json:"characterId"`
+		AccountId    uint32                   `json:"accountId"`
+		WorldId      world.Id                 `json:"worldId"`
+		StorageId    uuid.UUID                `json:"storageId"`
+		Capacity     uint32                   `json:"capacity"`
+		Mesos        uint32                   `json:"mesos"`
+		NpcId        uint32                   `json:"npcId"`
+		Compartments map[string][]asset.Model `json:"compartments"`
 	}{
 		CharacterId:  m.characterId,
 		AccountId:    m.accountId,

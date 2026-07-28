@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // ChangeBatch - multi-operation inventory change with structured entries.
@@ -21,9 +22,9 @@ func NewChangeBatch(silent bool, entries ...inventory.ChangeEntry) ChangeBatch {
 	return ChangeBatch{silent: silent, entries: entries}
 }
 
-func (m ChangeBatch) Silent() bool                    { return m.silent }
+func (m ChangeBatch) Silent() bool                     { return m.silent }
 func (m ChangeBatch) Entries() []inventory.ChangeEntry { return m.entries }
-func (m ChangeBatch) Operation() string               { return InventoryChangeWriter }
+func (m ChangeBatch) Operation() string                { return InventoryChangeWriter }
 
 func (m ChangeBatch) String() string {
 	return fmt.Sprintf("change batch entries [%d]", len(m.entries))

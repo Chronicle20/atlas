@@ -16,6 +16,7 @@
 | Monster Command | `COMMAND_TOPIC_MONSTER` | Emits monster status effect commands |
 | Party Quest Command | `COMMAND_TOPIC_PARTY_QUEST` | Emits party quest commands |
 | Map Command | `COMMAND_TOPIC_MAP` | Emits map commands |
+| Pet Command | `COMMAND_TOPIC_PET` | Emits pet commands |
 
 ## Message Types
 
@@ -207,6 +208,7 @@ Monster field command structure produced to `COMMAND_TOPIC_MONSTER`.
 | CANCEL_STATUS_FIELD | CancelStatusFieldBody | statusTypes ([]string) |
 | USE_SKILL_FIELD | UseSkillFieldBody | skillId (uint16), skillLevel (uint16) |
 | DESTROY_FIELD | DestroyFieldBody | (empty) |
+| SPAWN_FIELD | SpawnFieldBody | monsterId (uint32), x (int16), y (int16), fh (int16), team (int8) |
 
 #### PartyQuestCommand
 
@@ -267,13 +269,45 @@ Map command structure produced to `COMMAND_TOPIC_MAP`.
 |------|-----------|-------------|
 | WEATHER_START | WeatherStartCommandBody | itemId (uint32), message (string), durationMs (uint32) |
 
+#### PetCommand
+
+Pet command structure produced to `COMMAND_TOPIC_PET`.
+
+```json
+{
+  "transactionId": "uuid",
+  "actorId": 0,
+  "petId": 12345,
+  "type": "AWARD_CLOSENESS",
+  "body": {
+    "amount": 100
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| transactionId | uuid.UUID | Unique transaction identifier |
+| actorId | uint32 | Actor identifier |
+| petId | uint32 | Target pet ID |
+| type | string | Command type |
+| body | object | Type-specific body |
+
+#### Pet Command Types
+
+| Type | Body Type | Body Fields |
+|------|-----------|-------------|
+| AWARD_CLOSENESS | AwardClosenessCommandBody | amount (uint16) |
+
 ## Transaction Semantics
 
 - Chat events are partitioned by actor ID for ordering
 - Saga commands are partitioned by transaction ID
 - Buff commands are partitioned by character ID
 - Monster commands are partitioned by map ID
+- SPAWN_FIELD commands emit one message per requested count, all keyed by map ID
 - Party quest commands are partitioned by character ID
 - Map commands are partitioned by map ID
+- Pet commands are partitioned by pet ID
 - Headers include span context for distributed tracing
 - Headers include tenant context for multi-tenancy

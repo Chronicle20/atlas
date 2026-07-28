@@ -1,13 +1,13 @@
-import { useTheme } from "@/components/providers/theme-provider"
-import { Toaster as Sonner, type ToasterProps } from "sonner"
+import { useTheme } from "@/components/providers/theme-provider";
+import { Toaster as Sonner, type ToasterProps } from "sonner";
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme } = useTheme()
+  const { theme } = useTheme();
 
   const toasterProps: ToasterProps = {
     className: "toaster group",
     theme,
-    ...props
+    ...props,
   };
 
   return (
@@ -25,7 +25,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         },
       }}
     />
-  )
-}
+  );
+};
 
-export { Toaster }
+export { Toaster };

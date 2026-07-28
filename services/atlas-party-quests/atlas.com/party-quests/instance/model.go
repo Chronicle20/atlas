@@ -3,9 +3,10 @@ package instance
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 type State string
@@ -33,9 +34,9 @@ func NewCharacterEntry(characterId uint32, worldId world.Id, channelId channel.I
 	}
 }
 
-func (c CharacterEntry) CharacterId() uint32     { return c.characterId }
-func (c CharacterEntry) WorldId() world.Id       { return c.worldId }
-func (c CharacterEntry) ChannelId() channel.Id   { return c.channelId }
+func (c CharacterEntry) CharacterId() uint32   { return c.characterId }
+func (c CharacterEntry) WorldId() world.Id     { return c.worldId }
+func (c CharacterEntry) ChannelId() channel.Id { return c.channelId }
 
 type StageState struct {
 	itemCounts   map[uint32]uint32
@@ -55,10 +56,10 @@ func NewStageState() StageState {
 }
 
 func (s StageState) ItemCounts() map[uint32]uint32   { return s.itemCounts }
-func (s StageState) MonsterKills() map[uint32]uint32  { return s.monsterKills }
-func (s StageState) Combination() []uint32            { return s.combination }
-func (s StageState) Attempts() uint32                 { return s.attempts }
-func (s StageState) CustomData() map[string]any       { return s.customData }
+func (s StageState) MonsterKills() map[uint32]uint32 { return s.monsterKills }
+func (s StageState) Combination() []uint32           { return s.combination }
+func (s StageState) Attempts() uint32                { return s.attempts }
+func (s StageState) CustomData() map[string]any      { return s.customData }
 
 func (s StageState) WithCombination(combo []uint32) StageState {
 	s.combination = combo
@@ -133,22 +134,22 @@ type Model struct {
 	affinityId        uint32
 }
 
-func (m Model) Id() uuid.UUID                  { return m.id }
-func (m Model) TenantId() uuid.UUID            { return m.tenantId }
-func (m Model) DefinitionId() uuid.UUID        { return m.definitionId }
-func (m Model) QuestId() string                { return m.questId }
-func (m Model) State() State                   { return m.state }
-func (m Model) WorldId() world.Id              { return m.worldId }
-func (m Model) ChannelId() channel.Id          { return m.channelId }
-func (m Model) PartyId() uint32                { return m.partyId }
-func (m Model) Characters() []CharacterEntry   { return m.characters }
-func (m Model) CurrentStageIndex() uint32      { return m.currentStageIndex }
-func (m Model) StartedAt() time.Time           { return m.startedAt }
-func (m Model) StageStartedAt() time.Time      { return m.stageStartedAt }
-func (m Model) RegisteredAt() time.Time        { return m.registeredAt }
-func (m Model) FieldInstances() []uuid.UUID    { return m.fieldInstances }
-func (m Model) StageState() StageState         { return m.stageState }
-func (m Model) AffinityId() uint32             { return m.affinityId }
+func (m Model) Id() uuid.UUID                { return m.id }
+func (m Model) TenantId() uuid.UUID          { return m.tenantId }
+func (m Model) DefinitionId() uuid.UUID      { return m.definitionId }
+func (m Model) QuestId() string              { return m.questId }
+func (m Model) State() State                 { return m.state }
+func (m Model) WorldId() world.Id            { return m.worldId }
+func (m Model) ChannelId() channel.Id        { return m.channelId }
+func (m Model) PartyId() uint32              { return m.partyId }
+func (m Model) Characters() []CharacterEntry { return m.characters }
+func (m Model) CurrentStageIndex() uint32    { return m.currentStageIndex }
+func (m Model) StartedAt() time.Time         { return m.startedAt }
+func (m Model) StageStartedAt() time.Time    { return m.stageStartedAt }
+func (m Model) RegisteredAt() time.Time      { return m.registeredAt }
+func (m Model) FieldInstances() []uuid.UUID  { return m.fieldInstances }
+func (m Model) StageState() StageState       { return m.stageState }
+func (m Model) AffinityId() uint32           { return m.affinityId }
 
 func (m Model) SetState(s State) Model {
 	m.state = s
@@ -200,4 +201,3 @@ func (m Model) RemoveCharacter(characterId uint32) Model {
 	m.characters = chars
 	return m
 }
-

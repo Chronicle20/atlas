@@ -20,7 +20,7 @@ func TestNewProcessor(t *testing.T) {
 	}
 
 	// Verify it implements the Processor interface
-	var _ = processor
+	_ = processor
 }
 
 // TestProcessorInterface verifies the Processor interface contract
@@ -42,7 +42,6 @@ func TestProcessor_CreateWithValidSaga(t *testing.T) {
 			CharacterId: 12345,
 		}).
 		Build()
-
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -69,7 +68,6 @@ func TestProcessor_CreateWithMultipleSteps(t *testing.T) {
 		AddStep("step2", Pending, AwardMesos, AwardMesosPayload{CharacterId: 1, Amount: 1000}).
 		AddStep("step3", Pending, AwardAsset, AwardItemActionPayload{CharacterId: 1}).
 		Build()
-
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -114,7 +112,6 @@ func TestProcessor_CreateWithDifferentSagaTypes(t *testing.T) {
 				SetInitiatedBy("test").
 				AddStep("test", Pending, AwardExperience, AwardExperiencePayload{}).
 				Build()
-
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -192,7 +189,6 @@ func TestProcessor_CreateWithDifferentActions(t *testing.T) {
 				SetInitiatedBy("test").
 				AddStep("test_step", Pending, tc.action, tc.payload).
 				Build()
-
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}

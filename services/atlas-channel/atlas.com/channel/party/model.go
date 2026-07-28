@@ -1,12 +1,13 @@
 package party
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 type Model struct {
@@ -107,8 +108,8 @@ func NewBuilder() *modelBuilder {
 	return &modelBuilder{}
 }
 
-func (b *modelBuilder) SetId(v uint32) *modelBuilder           { b.id = v; return b }
-func (b *modelBuilder) SetLeaderId(v uint32) *modelBuilder     { b.leaderId = v; return b }
+func (b *modelBuilder) SetId(v uint32) *modelBuilder             { b.id = v; return b }
+func (b *modelBuilder) SetLeaderId(v uint32) *modelBuilder       { b.leaderId = v; return b }
 func (b *modelBuilder) SetMembers(v []MemberModel) *modelBuilder { b.members = v; return b }
 
 func (b *modelBuilder) Build() Model {

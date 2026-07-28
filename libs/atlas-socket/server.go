@@ -11,11 +11,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/crypto"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type OpReader interface {
@@ -31,8 +33,7 @@ type OpReadWriter interface {
 	OpWriter
 }
 
-type ByteReadWriter struct {
-}
+type ByteReadWriter struct{}
 
 func (b ByteReadWriter) Read(r *request.Reader) uint16 {
 	return uint16(r.ReadByte())
@@ -44,8 +45,7 @@ func (b ByteReadWriter) Write(op uint16) func(w *response.Writer) {
 	}
 }
 
-type ShortReadWriter struct {
-}
+type ShortReadWriter struct{}
 
 func (s ShortReadWriter) Read(r *request.Reader) uint16 {
 	return r.ReadUint16()
@@ -122,7 +122,7 @@ func Run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup, configur
 		}
 	}(lis)
 
-	go func() {
+	routine.Go(l, ctx, func(_ context.Context) {
 		<-ctx.Done()
 		l.Infof("Closing listener.")
 		err := lis.Close()
@@ -132,7 +132,7 @@ func Run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup, configur
 			}
 			l.WithError(err).Errorf("Error closing listener.")
 		}
-	}()
+	})
 
 	for {
 		conn, err := lis.Accept()
@@ -149,7 +149,7 @@ func Run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup, configur
 
 		l.Infof("Client [%s] connected.", conn.RemoteAddr())
 
-		go run(l, ctx, wg)(c, conn, uuid.New(), 4)
+		routine.Go(l, ctx, func(_ context.Context) { run(l, ctx, wg)(c, conn, uuid.New(), 4) })
 	}
 }
 
@@ -170,11 +170,11 @@ func run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(con
 			}
 		}(conn)
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			<-ctx.Done()
 			l.Infof("Closing connection from [%s].", conn.RemoteAddr())
 			conn.Close()
-		}()
+		})
 
 		config.creator(sessionId, conn)
 
@@ -223,7 +223,7 @@ func run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(con
 
 				result := buffer
 				result = config.decryptor(sessionId, buffer)
-				go handle(fl)(config, sessionId, result)
+				routine.Go(fl, ctx, func(_ context.Context) { handle(fl)(config, sessionId, result) })
 			}
 
 			header = !header

@@ -1,0 +1,92 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2111000,
+      "questId": 3305,
+      "questName": "Re-acquiring Zenumist Cape",
+      "startStateMachine": {
+        "startState": "intro",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "askMaterials",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "So you have lost the #bZenumist cape#k. I can make another one for you but I'll need some materials"
+            },
+            "id": "intro",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuest",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": null,
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "To make the new cape, I need you to bring me #b5 #t4021003##k, #b10 #t4000021##k and #b10000 mesos#k"
+            },
+            "id": "askMaterials",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "confirmStart"
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Come back to me when you have all of the items"
+            },
+            "id": "confirmStart",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "3305",
+    "type": "quest-conversation"
+  }
+}

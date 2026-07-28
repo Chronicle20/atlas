@@ -1,0 +1,30 @@
+{
+  "WriterName": "FieldViciousHammerFailure",
+  "IDAName": "CField::OnItemUpgrade#Failure",
+  "Address": "0x55fa12",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/vicious_hammer.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (= 64; failure) — read in sub_88F348 (this[38]=v5), reached via sub_88F332 (gates a2==375) from the CField::OnItemUpgrade vtable forwarder",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "errorCode (v11; switch 1/2/3 -\u003e StringPool 5063/5064/5066 specific messages, default -\u003e StringPool 5910 unknown-error using this[39])",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

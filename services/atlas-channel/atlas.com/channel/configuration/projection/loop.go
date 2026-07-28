@@ -1,13 +1,12 @@
 package projection
 
 import (
-	"context"
-	"time"
-
 	"atlas-channel/configuration"
 	"atlas-channel/configuration/tenant"
 	"atlas-channel/listener"
 	"atlas-channel/server"
+	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

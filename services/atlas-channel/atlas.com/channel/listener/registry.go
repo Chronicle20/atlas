@@ -1,16 +1,17 @@
 package listener
 
 import (
+	"atlas-channel/server"
 	"context"
 	"sync"
 	"time"
 
-	"atlas-channel/server"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Dependencies is the seam between this package and the rest of
@@ -205,10 +206,10 @@ func (r *Registry) Drain(key server.Key) error {
 
 	// Phase 3: bounded wait on session goroutines.
 	done := make(chan struct{})
-	go func() {
+	routine.Go(r.l, h.Ctx, func(_ context.Context) {
 		h.Wg.Wait()
 		close(done)
-	}()
+	})
 	select {
 	case <-done:
 	case <-time.After(r.cfg.DrainDeadline):

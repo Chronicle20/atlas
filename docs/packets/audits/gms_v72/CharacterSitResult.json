@@ -1,0 +1,39 @@
+{
+  "WriterName": "CharacterSitResult",
+  "IDAName": "CUserLocal::OnSitResult",
+  "Address": "0x865e68",
+  "Variant": "GMS/v72",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/sit_result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "packet var passed to unresolved/indirect call; hand-trace",
+      "Verdict": 4,
+      "Note": "IDA read-order unresolved: packet var passed to unresolved/indirect call; hand-trace"
+    }
+  ],
+  "Verdict": 4,
+  "FlatInvalid": false
+}

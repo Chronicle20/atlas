@@ -32,8 +32,6 @@
 | Face | uint32 | no | 0 | Face ID |
 | AP | uint16 | no | 0 | Available AP |
 | SP | string | no | 0,0,0,0,0,0,0,0,0,0 | Available SP |
-| MapId | map.Id | no | 0 | Current map |
-| Instance | uuid.UUID | no | 00000000-0000-0000-0000-000000000000 | Map instance |
 | SpawnPoint | uint32 | no | 0 | Spawn point ID |
 | GM | int | no | 0 | GM level |
 | X | int16 | no | 0 | X position |
@@ -63,6 +61,10 @@
 | MapId | map.Id | no | - | Map |
 | PortalId | uint32 | no | - | Portal |
 
+### outbox_entries
+
+Provided by the shared `atlas-outbox` library (`outboxlib.Migration`, `main.go`). The transactional outbox table backing the outbox drainer. Its schema is owned by the library, not this service.
+
 ## Relationships
 
 None defined in entities.
@@ -83,5 +85,7 @@ None defined in entities.
 ## Migration Rules
 
 - Migration performed via GORM AutoMigrate
-- Table names: characters, session_history, saved_locations
+- Table names: characters, session_history, saved_locations, outbox_entries
+- `character.Migration` runs AutoMigrate for `characters`, then explicitly drops the legacy `MapId`/`Instance` columns if present (idempotent); atlas-maps owns character location state
+- `character.Migration`, `history.Migration`, `saved_location.Migration`, and `outboxlib.Migration` are registered together at service startup via `database.Connect` (`main.go`)
 - Schema changes applied on service startup

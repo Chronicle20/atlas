@@ -3,8 +3,9 @@ package inventory
 import (
 	"atlas-channel/compartment"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
 
 type Model struct {

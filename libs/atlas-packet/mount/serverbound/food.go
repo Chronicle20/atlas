@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // MountFoodHandle is the string handle the channel binds the tenant-configured
@@ -15,6 +16,7 @@ const MountFoodHandle = "MountFoodHandle"
 
 // Food is the serverbound taming-mob (mount) food packet body.
 // v83 layout (IDA, context.md §2): ts(4), slot(2), itemId(4), all little-endian.
+// packet-audit:fname CWvsContext::SendTamingMobFoodItemUseRequest
 type Food struct {
 	updateTime uint32
 	slot       int16

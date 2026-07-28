@@ -1,12 +1,13 @@
 package quest
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 )
 
 func InitSeedResource(_ jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {

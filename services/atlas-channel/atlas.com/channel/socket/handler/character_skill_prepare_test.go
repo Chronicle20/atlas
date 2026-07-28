@@ -36,8 +36,8 @@ func TestShouldBroadcastKeydown(t *testing.T) {
 	const hurricaneId = skill.BowmasterHurricaneId
 	// CorsairRapidFire is another keydown skill.
 	const rapidFireId = skill.CorsairRapidFireId
-	// HeroComboAttack (1100003) is NOT a keydown skill.
-	const comboAttackId = skill.Id(1100003)
+	// FighterFinalAttackAxe (1100003) is NOT a keydown skill.
+	const fighterFinalAttackId = skill.FighterFinalAttackAxeId
 
 	cases := []struct {
 		name    string
@@ -64,9 +64,9 @@ func TestShouldBroadcastKeydown(t *testing.T) {
 		{
 			name: "non-keydown skill at level>0 → no broadcast",
 			skills: []skill2.Model{
-				buildSkillModel(t, comboAttackId, 5),
+				buildSkillModel(t, fighterFinalAttackId, 5),
 			},
-			skillId: uint32(comboAttackId),
+			skillId: uint32(fighterFinalAttackId),
 			want:    false,
 		},
 		{
@@ -86,7 +86,7 @@ func TestShouldBroadcastKeydown(t *testing.T) {
 		{
 			name: "multiple skills in book, only keydown one matches → broadcast",
 			skills: []skill2.Model{
-				buildSkillModel(t, comboAttackId, 5),
+				buildSkillModel(t, fighterFinalAttackId, 5),
 				buildSkillModel(t, hurricaneId, 2),
 			},
 			skillId: uint32(hurricaneId),
@@ -96,9 +96,39 @@ func TestShouldBroadcastKeydown(t *testing.T) {
 			name: "multiple skills in book, queried skill is non-keydown → no broadcast",
 			skills: []skill2.Model{
 				buildSkillModel(t, hurricaneId, 2),
-				buildSkillModel(t, comboAttackId, 5),
+				buildSkillModel(t, fighterFinalAttackId, 5),
 			},
-			skillId: uint32(comboAttackId),
+			skillId: uint32(fighterFinalAttackId),
+			want:    false,
+		},
+		{
+			name: "owned Corkscrew Blow (keydown) level>0 → broadcast",
+			skills: []skill2.Model{
+				buildSkillModel(t, skill.BrawlerCorkscrewBlowId, 1),
+			},
+			skillId: uint32(skill.BrawlerCorkscrewBlowId),
+			want:    true,
+		},
+		{
+			name: "owned Grenade (keydown) level>0 → broadcast",
+			skills: []skill2.Model{
+				buildSkillModel(t, skill.GunslingerGrenadeId, 2),
+			},
+			skillId: uint32(skill.GunslingerGrenadeId),
+			want:    true,
+		},
+		{
+			name: "Corkscrew Blow at level 0 → no broadcast",
+			skills: []skill2.Model{
+				buildSkillModel(t, skill.BrawlerCorkscrewBlowId, 0),
+			},
+			skillId: uint32(skill.BrawlerCorkscrewBlowId),
+			want:    false,
+		},
+		{
+			name:    "Grenade not in character book → no broadcast",
+			skills:  []skill2.Model{},
+			skillId: uint32(skill.GunslingerGrenadeId),
 			want:    false,
 		},
 	}

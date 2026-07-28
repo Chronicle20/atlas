@@ -7,21 +7,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // TestMarriageStateTransitions tests all marriage state transition scenarios
 func TestMarriageStateTransitions(t *testing.T) {
 	tests := []struct {
-		name           string
-		currentState   MarriageState
-		targetState    MarriageState
-		canTransition  bool
-		description    string
+		name          string
+		currentState  MarriageState
+		targetState   MarriageState
+		canTransition bool
+		description   string
 	}{
 		// Proposed state transitions
 		{
@@ -120,7 +121,7 @@ func TestMarriageStateTransitions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			canTransition := tt.currentState.CanTransitionTo(tt.targetState)
 			if canTransition != tt.canTransition {
-				t.Errorf("Expected CanTransitionTo(%v -> %v) = %v, got %v for %s", 
+				t.Errorf("Expected CanTransitionTo(%v -> %v) = %v, got %v for %s",
 					tt.currentState, tt.targetState, tt.canTransition, canTransition, tt.description)
 			}
 
@@ -145,11 +146,11 @@ func TestMarriageStateTransitions(t *testing.T) {
 // TestCeremonyStateTransitionValidation tests all ceremony state transition scenarios
 func TestCeremonyStateTransitionValidation(t *testing.T) {
 	tests := []struct {
-		name           string
-		currentState   CeremonyState
-		targetState    CeremonyState
-		canTransition  bool
-		description    string
+		name          string
+		currentState  CeremonyState
+		targetState   CeremonyState
+		canTransition bool
+		description   string
 	}{
 		// Scheduled state transitions
 		{
@@ -241,7 +242,7 @@ func TestCeremonyStateTransitionValidation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			canTransition := tt.currentState.CanTransitionTo(tt.targetState)
 			if canTransition != tt.canTransition {
-				t.Errorf("Expected CanTransitionTo(%v -> %v) = %v, got %v for %s", 
+				t.Errorf("Expected CanTransitionTo(%v -> %v) = %v, got %v for %s",
 					tt.currentState, tt.targetState, tt.canTransition, canTransition, tt.description)
 			}
 
@@ -266,11 +267,11 @@ func TestCeremonyStateTransitionValidation(t *testing.T) {
 // TestMarriageStateHelperMethods tests IsActive, IsTerminated helper methods
 func TestMarriageStateHelperMethods(t *testing.T) {
 	tests := []struct {
-		name          string
-		state         MarriageState
-		isActive      bool
-		isTerminated  bool
-		description   string
+		name         string
+		state        MarriageState
+		isActive     bool
+		isTerminated bool
+		description  string
 	}{
 		{
 			name:         "proposed state",
@@ -324,12 +325,12 @@ func TestMarriageStateHelperMethods(t *testing.T) {
 // TestCeremonyStateHelperMethods tests IsActive, IsTerminated, IsInProgress helper methods
 func TestCeremonyStateHelperMethods(t *testing.T) {
 	tests := []struct {
-		name          string
-		state         CeremonyState
-		isActive      bool
-		isTerminated  bool
-		isInProgress  bool
-		description   string
+		name         string
+		state        CeremonyState
+		isActive     bool
+		isTerminated bool
+		isInProgress bool
+		description  string
 	}{
 		{
 			name:         "scheduled state",
@@ -431,16 +432,16 @@ func TestInvalidStateTransitionErrors(t *testing.T) {
 		}
 
 		proposalEntity := ProposalEntity{
-			ID:         1,
-			ProposerId: 1,
-			TargetId:   2,
-			Status:     ProposalStatusAccepted,
-			ProposedAt: now,
+			ID:          1,
+			ProposerId:  1,
+			TargetId:    2,
+			Status:      ProposalStatusAccepted,
+			ProposedAt:  now,
 			RespondedAt: &now,
-			ExpiresAt:  now.Add(24 * time.Hour),
-			TenantId:   tenantId,
-			CreatedAt:  now,
-			UpdatedAt:  now,
+			ExpiresAt:   now.Add(24 * time.Hour),
+			TenantId:    tenantId,
+			CreatedAt:   now,
+			UpdatedAt:   now,
 		}
 		err = db.Create(&proposalEntity).Error
 		if err != nil {
@@ -467,7 +468,7 @@ func TestInvalidStateTransitionErrors(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create accepted proposal: %v", err)
 		}
-		
+
 		_, err = acceptedProposal.Reject()
 		if err == nil {
 			t.Error("Expected error when trying to reject already accepted proposal")
@@ -695,14 +696,13 @@ func TestStateValidationInDomainModels(t *testing.T) {
 		// Test that proposal builder enforces business rules
 		tenantId := uuid.New()
 		now := time.Now()
-		
+
 		// Create a valid proposal
 		proposal, err := NewProposalBuilder(1, 2, tenantId).
 			SetStatus(ProposalStatusPending).
 			SetProposedAt(now).
 			SetExpiresAt(now.Add(24 * time.Hour)).
 			Build()
-		
 		if err != nil {
 			t.Fatalf("Failed to build valid proposal: %v", err)
 		}
@@ -723,14 +723,13 @@ func TestStateValidationInDomainModels(t *testing.T) {
 		// Test that marriage builder enforces business rules
 		tenantId := uuid.New()
 		now := time.Now()
-		
+
 		// Create a valid marriage
 		marriage, err := NewBuilder(1, 2, tenantId).
 			SetStatus(StatusEngaged).
 			SetProposedAt(now).
 			SetEngagedAt(&now).
 			Build()
-		
 		if err != nil {
 			t.Fatalf("Failed to build valid marriage: %v", err)
 		}
@@ -748,14 +747,13 @@ func TestStateValidationInDomainModels(t *testing.T) {
 		// Test that ceremony builder enforces business rules
 		tenantId := uuid.New()
 		now := time.Now()
-		
+
 		// Create a valid ceremony
 		ceremony, err := NewCeremonyBuilder(1, 1, 2, tenantId).
 			SetStatus(CeremonyStatusScheduled).
 			SetScheduledAt(now.Add(time.Hour)).
 			SetInvitees([]uint32{3, 4, 5}).
 			Build()
-		
 		if err != nil {
 			t.Fatalf("Failed to build valid ceremony: %v", err)
 		}
@@ -772,4 +770,3 @@ func TestStateValidationInDomainModels(t *testing.T) {
 		}
 	})
 }
-

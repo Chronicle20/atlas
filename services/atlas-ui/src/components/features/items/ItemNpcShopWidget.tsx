@@ -16,13 +16,23 @@ interface ItemNpcShopWidgetProps {
 }
 
 export function ItemNpcShopWidget({ commodity }: ItemNpcShopWidgetProps) {
-  const { npcId, mesoPrice, tokenPrice, tokenTemplateId, discountRate, period, levelLimit } = commodity;
+  const {
+    npcId,
+    mesoPrice,
+    tokenPrice,
+    tokenTemplateId,
+    discountRate,
+    period,
+    levelLimit,
+  } = commodity;
   const { name: npcName, iconUrl, isLoading: npcLoading } = useNpcData(npcId);
   const { data: spawnMaps } = useNpcSpawnMaps(npcId);
 
   const priceLine = formatPrice(mesoPrice, tokenPrice, tokenTemplateId);
-  const primarySpawnMap = spawnMaps && spawnMaps.length > 0 ? spawnMaps[0] : null;
-  const extraMapCount = spawnMaps && spawnMaps.length > 1 ? spawnMaps.length - 1 : 0;
+  const primarySpawnMap =
+    spawnMaps && spawnMaps.length > 0 ? spawnMaps[0] : null;
+  const extraMapCount =
+    spawnMaps && spawnMaps.length > 1 ? spawnMaps.length - 1 : 0;
   const mapLabel = primarySpawnMap
     ? primarySpawnMap.streetName
       ? `${primarySpawnMap.name} · ${primarySpawnMap.streetName}`
@@ -50,7 +60,9 @@ export function ItemNpcShopWidget({ commodity }: ItemNpcShopWidgetProps) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">
-          {npcLoading && !npcName ? `NPC #${npcId}` : npcName || `NPC #${npcId}`}
+          {npcLoading && !npcName
+            ? `NPC #${npcId}`
+            : npcName || `NPC #${npcId}`}
         </p>
         <p className="text-xs text-muted-foreground truncate">{priceLine}</p>
       </div>
@@ -90,7 +102,11 @@ export function ItemNpcShopWidget({ commodity }: ItemNpcShopWidgetProps) {
   );
 }
 
-function formatPrice(mesoPrice: number, tokenPrice: number, tokenTemplateId: number): string {
+function formatPrice(
+  mesoPrice: number,
+  tokenPrice: number,
+  tokenTemplateId: number,
+): string {
   const parts: string[] = [];
   if (mesoPrice > 0) parts.push(`${mesoPrice.toLocaleString()} mesos`);
   if (tokenPrice > 0 && tokenTemplateId > 0) {

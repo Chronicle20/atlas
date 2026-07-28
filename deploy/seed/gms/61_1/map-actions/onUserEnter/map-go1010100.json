@@ -1,0 +1,24 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Mushroom Town map entrance effect",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "show_field_effect",
+          "operations": [
+            {
+              "params": {
+                "path": "maplemap/enter/1010100"
+              },
+              "type": "field_effect"
+            }
+          ]
+        }
+      ],
+      "scriptName": "go1010100"
+    },
+    "id": "go1010100",
+    "type": "map-action"
+  }
+}

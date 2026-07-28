@@ -2,7 +2,7 @@
 
 ## Overview
 
-Atlas Consumables manages consumable item usage in the game. It handles consumption of potions, scrolls, pet food, summoning sacks, and equipment enhancement scrolls. The service processes item effects including HP/MP recovery, temporary stat buffs, teleportation, pet feeding, and equipment stat modifications.
+Atlas Consumables manages consumable item usage in the game. It handles consumption of potions, scrolls, pet food, summoning sacks, equipment enhancement scrolls, Vega's Spell boosted scrolls, vicious hammers, and taming-mob (mount) revitalizer food. It also relays pickup-time item consumption (e.g. monster cards) to the monster book service. The service processes item effects including HP/MP recovery, temporary stat buffs, teleportation, pet feeding, and equipment stat modifications.
 
 The service is Kafka-driven and does not expose any REST endpoints. It maintains a Redis-backed character location registry built from character status events, which is used to resolve a character's current field context when applying location-dependent effects such as teleportation and buff application.
 
@@ -12,6 +12,7 @@ The service is Kafka-driven and does not expose any REST endpoints. It maintains
 - Redis: Character location registry storage
 - OpenTelemetry (OTLP): Distributed tracing
 - atlas-characters (REST): Character data
+- atlas-maps (REST): Character location data
 - atlas-inventory (REST): Inventory data
 - atlas-pets (REST): Pet data
 - atlas-data (REST): Consumable, equipable, map, portal, cash item, and drop position reference data
@@ -23,11 +24,16 @@ The service is Kafka-driven and does not expose any REST endpoints. It maintains
 |----------|-------------|
 | `TRACE_ENDPOINT` | OpenTelemetry OTLP gRPC endpoint for distributed tracing |
 | `LOG_LEVEL` | Logging level (Panic / Fatal / Error / Warn / Info / Debug / Trace) |
+| `REST_PORT` | Port for the HTTP server (debug/readiness endpoints only) |
 | `BOOTSTRAP_SERVERS` | Kafka bootstrap servers |
 | `REDIS_URL` | Redis server address for character location registry |
 | `REDIS_PASSWORD` | Redis authentication password |
 | `COMMAND_TOPIC_CONSUMABLE` | Topic for consumable commands |
 | `EVENT_TOPIC_CONSUMABLE_STATUS` | Topic for consumable status events |
+| `COMMAND_TOPIC_TAMING_MOB_FOOD` | Topic for taming-mob (mount) food commands |
+| `EVENT_TOPIC_TAMING_MOB_FOOD` | Topic for taming-mob (mount) food events |
+| `COMMAND_TOPIC_ITEM_CONSUMED_ON_PICKUP` | Topic for item-consumed-on-pickup commands |
+| `COMMAND_TOPIC_MONSTER_BOOK` | Topic for monster book commands |
 | `COMMAND_TOPIC_CHARACTER` | Topic for character commands |
 | `EVENT_TOPIC_CHARACTER_STATUS` | Topic for character status events |
 | `COMMAND_TOPIC_COMPARTMENT` | Topic for compartment commands |

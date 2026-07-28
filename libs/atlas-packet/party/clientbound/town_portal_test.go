@@ -3,10 +3,11 @@ package clientbound
 import (
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // TestTownPortalWire pins the PARTY_OPERATION town-portal body across versions.
@@ -20,6 +21,11 @@ func TestTownPortalWire(t *testing.T) {
 	want := map[string]int{
 		"GMS v28": 14, "GMS v83": 14, "GMS v84": 14, "GMS v86": 14,
 		"GMS v87": 14, "GMS v95": 18, "JMS v185": 14,
+		// v48/v61/v72/v79: codec (town_portal.go:65-70,80-82) gates ONLY the
+		// skillId int on GMS>=95 (townPortalHasSkillId); there is no other
+		// version branch in Encode/Decode, so every pre-95 GMS version --
+		// legacy or not -- emits the same 14-byte mode1+slot1+town4+target4+x2+y2 body.
+		"GMS v48": 14, "GMS v61": 14, "GMS v72": 14, "GMS v79": 14,
 	}
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

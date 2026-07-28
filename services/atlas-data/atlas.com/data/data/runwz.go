@@ -1,17 +1,19 @@
 package data
 
 import (
+	"atlas-data/data/workers"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 	"gorm.io/gorm"
 
-	"atlas-data/data/workers"
 	minio "atlas-data/storage/minio"
 )
 
@@ -42,20 +44,34 @@ func splitPrerequisites(registered []workers.Worker) (prereq, rest []workers.Wor
 
 func RunWorkers(l logrus.FieldLogger, db *gorm.DB, mc *minio.Client) func(ctx context.Context, p workers.Params) error {
 	return func(ctx context.Context, p workers.Params) error {
+		defer workers.CloseMonolith()
 		maxParallel := envInt("INGEST_MAX_PARALLEL", 4)
 
-		// runOne fetches the worker's archive and runs it under the given
-		// (tenanted, cancellable) context.
+		// versionWarnOnce implements the C-5 declared-version cross-check:
+		// warn (never fail) once per job when the archives' detected game
+		// version disagrees with the ingest params.
+		var versionWarnOnce sync.Once
+
+		// runOne resolves the worker's archive (per-archive object or
+		// monolithic Data.wz sub-view) and runs it under the given
+		// (tenanted, cancellable) context. A category genuinely absent
+		// from a monolithic data set (v12 has no Quest) skips that worker
+		// instead of failing the whole ingest run (task-172 C-3.4).
 		runOne := func(tctx context.Context, w workers.Worker) error {
-			wzKey := fmt.Sprintf("%s/regions/%s/versions/%d.%d/%s", p.ScopeKey, p.Region, p.MajorVersion, p.MinorVersion, w.ArchiveName())
-			wzFile, localPath, err := FetchAndOpen(tctx, l, mc, mc.Cfg().BucketWZ, wzKey, p.ScratchDir)
+			wzFile, cleanup, err := workers.OpenArchive(tctx, l, mc, p, w.ArchiveName())
 			if err != nil {
-				return fmt.Errorf("%s open %s: %w", w.Name(), wzKey, err)
+				if errors.Is(err, workers.ErrCategoryAbsent) {
+					l.Warnf("%s: %s absent from monolithic Data.wz — skipping worker (category not present in this data set)", w.Name(), w.ArchiveName())
+					return nil
+				}
+				return fmt.Errorf("%s open %s: %w", w.Name(), w.ArchiveName(), err)
 			}
-			defer func() {
-				wzFile.Close()
-				_ = os.Remove(localPath)
-			}()
+			defer cleanup()
+			if gv := wzFile.GameVersion(); gv != 0 && gv != int(p.MajorVersion) {
+				versionWarnOnce.Do(func() {
+					l.Warnf("WZ data declares game version %d but ingest params are %s %d.%d — check the upload landed under the intended tenant/version", gv, p.Region, p.MajorVersion, p.MinorVersion)
+				})
+			}
 			return w.Run(tctx, l, db, mc, wzFile, p)
 		}
 

@@ -1,0 +1,39 @@
+{
+  "WriterName": "FieldTournament",
+  "IDAName": "CField_Tournament::OnTournament",
+  "Address": "",
+  "Variant": "GMS/v61",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/tournament.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 4,
+      "Note": "IDA read-order unresolved: function not found in IDB"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2,
+  "FlatInvalid": false
+}

@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashItemUseTripleMegaphone
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendConsumeCashItemUseRequest
+    address: "0x95634a"
+    decompile_sha256: 8edc4619c17b2b4dc057c4059fb7df637f00a392862e1ae3099d151b9c691aeb

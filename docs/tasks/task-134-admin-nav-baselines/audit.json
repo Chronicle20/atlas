@@ -1,0 +1,44 @@
+{
+  "service": "atlas-data",
+  "path": "services/atlas-data/atlas.com/data",
+  "date": "2026-07-04",
+  "scope": "Go changes only (task-134 Tasks 1-5); range 6260e82cfa..207b35a12d",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": -1,
+  "testsFailed": 0,
+  "testsNote": "go test -race ./... and go test ./... -count=1 both exit 0; atlas-data/baseline green",
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "baseline",
+      "type": "support-rest-operations (no model.go; Publisher/Restorer/Lister play processor role)",
+      "checks": [
+        {"id": "DOM-06", "name": "operation accepts FieldLogger", "status": "pass", "evidence": "baseline/list.go:33"},
+        {"id": "DOM-07", "name": "handlers pass d.Logger()", "status": "pass", "evidence": "baseline/handler.go:79"},
+        {"id": "DOM-08", "name": "POST RegisterInputHandler / GET RegisterHandler", "status": "pass", "evidence": "baseline/handler.go:24-28"},
+        {"id": "DOM-09", "name": "no dropped errors", "status": "pass", "evidence": "baseline/list.go:41-42,88-97"},
+        {"id": "DOM-12", "name": "no os.Getenv in handlers", "status": "pass", "evidence": "grep os.Getenv baseline/ -> 0"},
+        {"id": "DOM-14", "name": "handler doesn't call providers directly", "status": "pass", "evidence": "baseline/handler.go:79 delegates to Lister.List"},
+        {"id": "DOM-15", "name": "no db writes in handler", "status": "pass", "evidence": "listInner never touches db"},
+        {"id": "DOM-17", "name": "error to HTTP status mapping", "status": "pass", "evidence": "baseline/handler.go:71-83 (503/403/500)"},
+        {"id": "DOM-18", "name": "JSON:API interface on REST models", "status": "pass", "evidence": "baseline/rest.go:73-75"},
+        {"id": "DOM-19", "name": "flat request/response structure", "status": "pass", "evidence": "baseline/rest.go:13-71"},
+        {"id": "DOM-20", "name": "table-driven tests", "status": "pass", "evidence": "baseline/list_test.go:18,40,183"},
+        {"id": "DOM-21", "name": "no atlas-constants duplication", "status": "pass", "evidence": "Region string / version int are tenant primitives; no shared equivalent; mirrors existing baseline models"},
+        {"id": "SUB-04", "name": "no manual request-body JSON parsing", "status": "pass", "evidence": "io.ReadAll at list.go:88 reads MinIO sidecar, not HTTP body"},
+        {"id": "EXT-01", "name": "marshal-only model needs no relationship setters", "status": "pass", "evidence": "ListItemModel is response-only, never unmarshaled"}
+      ]
+    }
+  ],
+  "requirementChecks": [
+    {"id": "REQ-publishedAt", "name": "PublishedAt from MinIO LastModified not tar header", "status": "pass", "evidence": "baseline/list.go:61"},
+    {"id": "REQ-authz", "name": "gate on X-Atlas-Operator only, ignore tenant", "status": "pass", "evidence": "baseline/handler.go:75"},
+    {"id": "REQ-gate-order", "name": "nil-mc 503 -> non-operator 403 -> list", "status": "pass", "evidence": "baseline/handler.go:71-78"},
+    {"id": "REQ-empty-collection", "name": "empty bucket marshals data:[]", "status": "pass", "evidence": "baseline/list.go:45; list_test.go:99"},
+    {"id": "REQ-sizebytes", "name": "SizeBytes reflects full tar payload", "status": "pass", "evidence": "publish.go:56,106 single tar; list.go:62"},
+    {"id": "REQ-skip-and-warn", "name": "one bad key never fails listing", "status": "pass", "evidence": "baseline/list.go:50-54,81-98"}
+  ],
+  "blocking": [],
+  "nonBlocking": []
+}

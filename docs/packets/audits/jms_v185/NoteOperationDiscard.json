@@ -1,0 +1,102 @@
+{
+  "WriterName": "NoteOperationDiscard",
+  "IDAName": "CMemoListDlg::SetRet",
+  "Address": "0x6c2d43",
+  "Variant": "JMS/v185",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/note/serverbound/operation_discard.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode=1 (DISCARD confirm) @0x6c2dd5",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "totalCount = length of this+204 memo array @0x6c2def",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "specialCount = count of entries with flag==3 in the array, pre-budget @0x6c2e1d",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "emptySlots = sub_51F1E3(4) free ETC(type-4) inventory slot count @0x6c2e28",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "entry SN @0x6c2e63 (normal path)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "entry flag @0x6c2e7b (normal path)",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "entry SN @0x6c2f81 (special path, only when emptySlots budget remains)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "entry flag @0x6c2f99 (special path)",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 8,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "extra1 (v28, atoi() from a '.'-split formatted string via sub_485256) @0x6c2fa4",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 9,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "extra2 (a2.p, atoi(String) via sub_485239) @0x6c2faf",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

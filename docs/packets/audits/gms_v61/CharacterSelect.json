@@ -1,0 +1,39 @@
+{
+  "WriterName": "CharacterSelect",
+  "IDAName": "CLogin::SendSelectCharPacket",
+  "Address": "0x564f79",
+  "Variant": "GMS/v61",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/login/serverbound/character_select.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "charId @0x565003",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "mac = GetLocalMacAddress @0x56503e",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "hwid = GetLocalMacAddressWithHDDSerialNo @0x565074",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

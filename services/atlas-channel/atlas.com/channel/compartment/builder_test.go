@@ -5,8 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
 
 func TestNewModelBuilder(t *testing.T) {
@@ -30,7 +31,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 
 	model, err := compartment.NewModelBuilder(id, 100, inventory.TypeValueEquip, 24).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -63,7 +63,6 @@ func TestSetCapacity(t *testing.T) {
 	model, err := compartment.NewModelBuilder(id, 100, inventory.TypeValueEquip, 24).
 		SetCapacity(48).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}

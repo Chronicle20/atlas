@@ -1,0 +1,30 @@
+{
+  "WriterName": "FieldViciousHammerFailure",
+  "IDAName": "CField::OnItemUpgrade#Failure",
+  "Address": "0x5443af",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/vicious_hammer.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (= 62; failure) — sub_85676C a1[34]=v6",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "errorCode (v12; switch 1=not-upgradable StringPool 5057, 2=used-already StringPool 5058, 3=horntail-necklace StringPool 5060, default=unknown-error StringPool 5757 using a1[35])",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

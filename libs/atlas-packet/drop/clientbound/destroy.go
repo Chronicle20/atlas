@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const DropDestroyWriter = "DropDestroy"
@@ -23,10 +24,11 @@ const (
 )
 
 // Wire shape verified against v95 IDA CDropPool::OnDropLeaveField@0x511e20:
-//   byte(destroyType) + int(dropId)
-//   if destroyType in {2, 3}: int(pickupCharId)
-//   if destroyType == 4:      int16(tLeaveDelay)
-//   if destroyType == 5:      int(pickupCharId) + int(petPickupExtra)
+//
+//	byte(destroyType) + int(dropId)
+//	if destroyType in {2, 3}: int(pickupCharId)
+//	if destroyType == 4:      int16(tLeaveDelay)
+//	if destroyType == 5:      int(pickupCharId) + int(petPickupExtra)
 //
 // The legacy `petSlot int8` field was a wire bug — v95 reads int4 inside
 // case 5 (pet pickup), not a byte. NewDropDestroy preserves the legacy
@@ -37,11 +39,11 @@ const (
 //
 // packet-audit:fname CDropPool::OnDropLeaveField
 type Destroy struct {
-	dropId           uint32
-	destroyType      DropDestroyType
-	characterId      uint32
-	explodeDelay     int16
-	petPickupExtra   uint32
+	dropId         uint32
+	destroyType    DropDestroyType
+	characterId    uint32
+	explodeDelay   int16
+	petPickupExtra uint32
 }
 
 // NewDropDestroy preserves the pre-task-065 signature. petSlot is only
@@ -69,12 +71,12 @@ func NewDropDestroyExplode(dropId uint32, leaveDelay int16) Destroy {
 	}
 }
 
-func (m Destroy) DropId() uint32                { return m.dropId }
-func (m Destroy) DestroyType() DropDestroyType  { return m.destroyType }
-func (m Destroy) CharacterId() uint32           { return m.characterId }
-func (m Destroy) ExplodeDelay() int16           { return m.explodeDelay }
-func (m Destroy) PetPickupExtra() uint32        { return m.petPickupExtra }
-func (m Destroy) Operation() string             { return DropDestroyWriter }
+func (m Destroy) DropId() uint32               { return m.dropId }
+func (m Destroy) DestroyType() DropDestroyType { return m.destroyType }
+func (m Destroy) CharacterId() uint32          { return m.characterId }
+func (m Destroy) ExplodeDelay() int16          { return m.explodeDelay }
+func (m Destroy) PetPickupExtra() uint32       { return m.petPickupExtra }
+func (m Destroy) Operation() string            { return DropDestroyWriter }
 func (m Destroy) String() string {
 	return fmt.Sprintf("dropId [%d], destroyType [%d]", m.dropId, m.destroyType)
 }

@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"go.opentelemetry.io/otel"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 )
 
 // statsStubReader blocks every FetchMessage on ctx (so each call expires the

@@ -25,40 +25,40 @@ const (
 	CommandMarriageDivorce = "DIVORCE"
 
 	// Ceremony commands
-	CommandCeremonySchedule         = "SCHEDULE_CEREMONY"
-	CommandCeremonyStart            = "START_CEREMONY"
-	CommandCeremonyComplete         = "COMPLETE_CEREMONY"
-	CommandCeremonyCancel           = "CANCEL_CEREMONY"
-	CommandCeremonyPostpone         = "POSTPONE_CEREMONY"
-	CommandCeremonyReschedule       = "RESCHEDULE_CEREMONY"
-	CommandCeremonyAddInvitee       = "ADD_INVITEE"
-	CommandCeremonyRemoveInvitee    = "REMOVE_INVITEE"
-	CommandCeremonyAdvanceState     = "ADVANCE_CEREMONY_STATE"
+	CommandCeremonySchedule      = "SCHEDULE_CEREMONY"
+	CommandCeremonyStart         = "START_CEREMONY"
+	CommandCeremonyComplete      = "COMPLETE_CEREMONY"
+	CommandCeremonyCancel        = "CANCEL_CEREMONY"
+	CommandCeremonyPostpone      = "POSTPONE_CEREMONY"
+	CommandCeremonyReschedule    = "RESCHEDULE_CEREMONY"
+	CommandCeremonyAddInvitee    = "ADD_INVITEE"
+	CommandCeremonyRemoveInvitee = "REMOVE_INVITEE"
+	CommandCeremonyAdvanceState  = "ADVANCE_CEREMONY_STATE"
 )
 
 // Event Types
 const (
 	// Proposal events
-	EventProposalCreated = "PROPOSAL_CREATED"
-	EventProposalAccepted = "PROPOSAL_ACCEPTED"
-	EventProposalDeclined = "PROPOSAL_DECLINED"
-	EventProposalExpired  = "PROPOSAL_EXPIRED"
+	EventProposalCreated   = "PROPOSAL_CREATED"
+	EventProposalAccepted  = "PROPOSAL_ACCEPTED"
+	EventProposalDeclined  = "PROPOSAL_DECLINED"
+	EventProposalExpired   = "PROPOSAL_EXPIRED"
 	EventProposalCancelled = "PROPOSAL_CANCELLED"
 
 	// Marriage events
-	EventMarriageCreated = "MARRIAGE_CREATED"
+	EventMarriageCreated  = "MARRIAGE_CREATED"
 	EventMarriageDivorced = "MARRIAGE_DIVORCED"
-	EventMarriageDeleted = "MARRIAGE_DELETED"
+	EventMarriageDeleted  = "MARRIAGE_DELETED"
 
 	// Ceremony events
-	EventCeremonyScheduled = "CEREMONY_SCHEDULED"
-	EventCeremonyStarted   = "CEREMONY_STARTED"
-	EventCeremonyCompleted = "CEREMONY_COMPLETED"
-	EventCeremonyPostponed = "CEREMONY_POSTPONED"
-	EventCeremonyCancelled = "CEREMONY_CANCELLED"
+	EventCeremonyScheduled   = "CEREMONY_SCHEDULED"
+	EventCeremonyStarted     = "CEREMONY_STARTED"
+	EventCeremonyCompleted   = "CEREMONY_COMPLETED"
+	EventCeremonyPostponed   = "CEREMONY_POSTPONED"
+	EventCeremonyCancelled   = "CEREMONY_CANCELLED"
 	EventCeremonyRescheduled = "CEREMONY_RESCHEDULED"
-	EventInviteeAdded      = "INVITEE_ADDED"
-	EventInviteeRemoved    = "INVITEE_REMOVED"
+	EventInviteeAdded        = "INVITEE_ADDED"
+	EventInviteeRemoved      = "INVITEE_REMOVED"
 
 	// Error events
 	EventMarriageError = "MARRIAGE_ERROR"
@@ -104,7 +104,6 @@ type CancelBody struct {
 type DivorceBody struct {
 	MarriageId uint32 `json:"marriageId"`
 }
-
 
 // ScheduleCeremonyBody represents the body of a ceremony scheduling command
 type ScheduleCeremonyBody struct {
@@ -212,21 +211,21 @@ type MarriageCreatedBody struct {
 
 // MarriageDivorcedBody represents the body of a marriage divorced event
 type MarriageDivorcedBody struct {
-	MarriageId     uint32    `json:"marriageId"`
-	CharacterId1   uint32    `json:"characterId1"`
-	CharacterId2   uint32    `json:"characterId2"`
-	DivorcedAt     time.Time `json:"divorcedAt"`
-	InitiatedBy    uint32    `json:"initiatedBy"`
+	MarriageId   uint32    `json:"marriageId"`
+	CharacterId1 uint32    `json:"characterId1"`
+	CharacterId2 uint32    `json:"characterId2"`
+	DivorcedAt   time.Time `json:"divorcedAt"`
+	InitiatedBy  uint32    `json:"initiatedBy"`
 }
 
 // MarriageDeletedBody represents the body of a marriage deleted event
 type MarriageDeletedBody struct {
-	MarriageId     uint32    `json:"marriageId"`
-	CharacterId1   uint32    `json:"characterId1"`
-	CharacterId2   uint32    `json:"characterId2"`
-	DeletedAt      time.Time `json:"deletedAt"`
-	DeletedBy      uint32    `json:"deletedBy"`
-	Reason         string    `json:"reason"`
+	MarriageId   uint32    `json:"marriageId"`
+	CharacterId1 uint32    `json:"characterId1"`
+	CharacterId2 uint32    `json:"characterId2"`
+	DeletedAt    time.Time `json:"deletedAt"`
+	DeletedBy    uint32    `json:"deletedBy"`
+	Reason       string    `json:"reason"`
 }
 
 // CeremonyScheduledBody represents the body of a ceremony scheduled event
@@ -280,13 +279,13 @@ type CeremonyCancelledBody struct {
 
 // CeremonyRescheduledBody represents the body of a ceremony rescheduled event
 type CeremonyRescheduledBody struct {
-	CeremonyId      uint32    `json:"ceremonyId"`
-	MarriageId      uint32    `json:"marriageId"`
-	CharacterId1    uint32    `json:"characterId1"`
-	CharacterId2    uint32    `json:"characterId2"`
-	RescheduledAt   time.Time `json:"rescheduledAt"`
-	NewScheduledAt  time.Time `json:"newScheduledAt"`
-	RescheduledBy   uint32    `json:"rescheduledBy"`
+	CeremonyId     uint32    `json:"ceremonyId"`
+	MarriageId     uint32    `json:"marriageId"`
+	CharacterId1   uint32    `json:"characterId1"`
+	CharacterId2   uint32    `json:"characterId2"`
+	RescheduledAt  time.Time `json:"rescheduledAt"`
+	NewScheduledAt time.Time `json:"newScheduledAt"`
+	RescheduledBy  uint32    `json:"rescheduledBy"`
 }
 
 // InviteeAddedBody represents the body of an invitee added event
@@ -323,37 +322,37 @@ type MarriageErrorBody struct {
 
 // Error types for MarriageErrorBody
 const (
-	ErrorTypeProposal            = "PROPOSAL_ERROR"
-	ErrorTypeMarriage            = "MARRIAGE_ERROR"
-	ErrorTypeCeremony            = "CEREMONY_ERROR"
-	ErrorTypeValidation          = "VALIDATION_ERROR"
-	ErrorTypeCooldown            = "COOLDOWN_ERROR"
-	ErrorTypeEligibility         = "ELIGIBILITY_ERROR"
-	ErrorTypeNotFound            = "NOT_FOUND_ERROR"
-	ErrorTypeAlreadyExists       = "ALREADY_EXISTS_ERROR"
-	ErrorTypeStateTransition     = "STATE_TRANSITION_ERROR"
-	ErrorTypeInviteeLimit        = "INVITEE_LIMIT_ERROR"
+	ErrorTypeProposal             = "PROPOSAL_ERROR"
+	ErrorTypeMarriage             = "MARRIAGE_ERROR"
+	ErrorTypeCeremony             = "CEREMONY_ERROR"
+	ErrorTypeValidation           = "VALIDATION_ERROR"
+	ErrorTypeCooldown             = "COOLDOWN_ERROR"
+	ErrorTypeEligibility          = "ELIGIBILITY_ERROR"
+	ErrorTypeNotFound             = "NOT_FOUND_ERROR"
+	ErrorTypeAlreadyExists        = "ALREADY_EXISTS_ERROR"
+	ErrorTypeStateTransition      = "STATE_TRANSITION_ERROR"
+	ErrorTypeInviteeLimit         = "INVITEE_LIMIT_ERROR"
 	ErrorTypeDisconnectionTimeout = "DISCONNECTION_TIMEOUT_ERROR"
 )
 
 // Error codes for specific error scenarios
 const (
-	ErrorCodeAlreadyMarried           = "ALREADY_MARRIED"
-	ErrorCodeAlreadyEngaged           = "ALREADY_ENGAGED"
-	ErrorCodeInsufficientLevel        = "INSUFFICIENT_LEVEL"
-	ErrorCodeSelfProposal             = "SELF_PROPOSAL"
-	ErrorCodeGlobalCooldown           = "GLOBAL_COOLDOWN"
-	ErrorCodeTargetCooldown           = "TARGET_COOLDOWN"
-	ErrorCodeProposalExpired          = "PROPOSAL_EXPIRED"
-	ErrorCodeProposalNotFound         = "PROPOSAL_NOT_FOUND"
-	ErrorCodeMarriageNotFound         = "MARRIAGE_NOT_FOUND"
-	ErrorCodeCeremonyNotFound         = "CEREMONY_NOT_FOUND"
-	ErrorCodeInvalidState             = "INVALID_STATE"
-	ErrorCodeInviteeLimitExceeded     = "INVITEE_LIMIT_EXCEEDED"
-	ErrorCodeInviteeAlreadyInvited    = "INVITEE_ALREADY_INVITED"
-	ErrorCodeInviteeNotFound          = "INVITEE_NOT_FOUND"
-	ErrorCodePartnerDisconnected      = "PARTNER_DISCONNECTED"
-	ErrorCodeCeremonyTimeout          = "CEREMONY_TIMEOUT"
-	ErrorCodeConcurrentProposal       = "CONCURRENT_PROPOSAL"
-	ErrorCodeTenantMismatch           = "TENANT_MISMATCH"
+	ErrorCodeAlreadyMarried        = "ALREADY_MARRIED"
+	ErrorCodeAlreadyEngaged        = "ALREADY_ENGAGED"
+	ErrorCodeInsufficientLevel     = "INSUFFICIENT_LEVEL"
+	ErrorCodeSelfProposal          = "SELF_PROPOSAL"
+	ErrorCodeGlobalCooldown        = "GLOBAL_COOLDOWN"
+	ErrorCodeTargetCooldown        = "TARGET_COOLDOWN"
+	ErrorCodeProposalExpired       = "PROPOSAL_EXPIRED"
+	ErrorCodeProposalNotFound      = "PROPOSAL_NOT_FOUND"
+	ErrorCodeMarriageNotFound      = "MARRIAGE_NOT_FOUND"
+	ErrorCodeCeremonyNotFound      = "CEREMONY_NOT_FOUND"
+	ErrorCodeInvalidState          = "INVALID_STATE"
+	ErrorCodeInviteeLimitExceeded  = "INVITEE_LIMIT_EXCEEDED"
+	ErrorCodeInviteeAlreadyInvited = "INVITEE_ALREADY_INVITED"
+	ErrorCodeInviteeNotFound       = "INVITEE_NOT_FOUND"
+	ErrorCodePartnerDisconnected   = "PARTNER_DISCONNECTED"
+	ErrorCodeCeremonyTimeout       = "CEREMONY_TIMEOUT"
+	ErrorCodeConcurrentProposal    = "CONCURRENT_PROPOSAL"
+	ErrorCodeTenantMismatch        = "TENANT_MISMATCH"
 )

@@ -1,0 +1,30 @@
+{
+  "WriterName": "FieldViciousHammerFailure",
+  "IDAName": "CField::OnItemUpgrade#Failure",
+  "Address": "0x52a430",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/vicious_hammer.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (= 66; failure) — v5 stored to this-\u003em_nReturnResult, then `if (v5==66)` in OnItemUpgradeResult",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "errorCode (v13; switch 1=not-upgradable, 2=cap-reached, 3=horntail-necklace, default=unknown-error using this-\u003em_nResult)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

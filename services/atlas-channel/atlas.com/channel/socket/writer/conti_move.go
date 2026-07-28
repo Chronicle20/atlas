@@ -5,6 +5,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
 
-func ContiMoveBody(state byte) packet.Encode {
-	return fieldcb.NewContiMove(state).Encode
+func ContiMoveBody(state byte, subState byte) packet.Encode {
+	return fieldcb.NewContiMove(state, subState).Encode
 }

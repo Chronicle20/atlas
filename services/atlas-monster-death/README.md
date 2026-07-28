@@ -28,6 +28,7 @@ This service makes REST calls to:
 | `BOOTSTRAP_SERVERS` | Kafka bootstrap servers |
 | `TRACE_ENDPOINT` | OpenTelemetry Collector gRPC endpoint |
 | `LOG_LEVEL` | Logging level |
+| `REST_PORT` | HTTP server port |
 | `EVENT_TOPIC_MONSTER_STATUS` | Topic for monster status events |
 | `COMMAND_TOPIC_DROP` | Topic for drop spawn commands |
 | `COMMAND_TOPIC_CHARACTER` | Topic for character commands |

@@ -7,13 +7,14 @@ import (
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
 	storageCompartment "atlas-saga-orchestrator/kafka/message/storage/compartment"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func DepositCommandProvider(transactionId uuid.UUID, worldId world.Id, accountId uint32, slot int16, templateId uint32, expiration time.Time, referenceId uint32, referenceType string, referenceData storage2.ReferenceData) model.Provider[[]kafka.Message] {

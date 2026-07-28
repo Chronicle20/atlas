@@ -3,9 +3,10 @@ package party
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor defines the interface for party processing
@@ -26,6 +27,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // GetPartyByCharacter returns the party for a character, or a zero-value model if the character has no party
 func (p *ProcessorImpl) GetPartyByCharacter(characterId uint32) model.Provider[Model] {

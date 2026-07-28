@@ -15,22 +15,22 @@ func TestProposalCreatedEventProvider(t *testing.T) {
 	expiresAt := proposedAt.Add(24 * time.Hour)
 
 	provider := ProposalCreatedEventProvider(proposalId, proposerId, targetCharacterId, proposedAt, expiresAt)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(proposerId))
 	if string(msg.Key) != string(expectedKey) {
 		t.Errorf("Expected key %s, got %s", expectedKey, msg.Key)
 	}
-	
+
 	// Verify the message is properly structured
 	if msg.Value == nil {
 		t.Error("Expected message value to be set")
@@ -44,16 +44,16 @@ func TestProposalAcceptedEventProvider(t *testing.T) {
 	acceptedAt := time.Now()
 
 	provider := ProposalAcceptedEventProvider(proposalId, proposerId, targetCharacterId, acceptedAt)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(proposerId))
 	if string(msg.Key) != string(expectedKey) {
@@ -70,16 +70,16 @@ func TestProposalDeclinedEventProvider(t *testing.T) {
 	cooldownUntil := declinedAt.Add(48 * time.Hour)
 
 	provider := ProposalDeclinedEventProvider(proposalId, proposerId, targetCharacterId, declinedAt, rejectionCount, cooldownUntil)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(proposerId))
 	if string(msg.Key) != string(expectedKey) {
@@ -94,16 +94,16 @@ func TestProposalExpiredEventProvider(t *testing.T) {
 	expiredAt := time.Now()
 
 	provider := ProposalExpiredEventProvider(proposalId, proposerId, targetCharacterId, expiredAt)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(proposerId))
 	if string(msg.Key) != string(expectedKey) {
@@ -118,16 +118,16 @@ func TestProposalCancelledEventProvider(t *testing.T) {
 	cancelledAt := time.Now()
 
 	provider := ProposalCancelledEventProvider(proposalId, proposerId, targetCharacterId, cancelledAt)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(proposerId))
 	if string(msg.Key) != string(expectedKey) {
@@ -142,16 +142,16 @@ func TestMarriageCreatedEventProvider(t *testing.T) {
 	marriedAt := time.Now()
 
 	provider := MarriageCreatedEventProvider(marriageId, characterId1, characterId2, marriedAt)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(characterId1))
 	if string(msg.Key) != string(expectedKey) {
@@ -167,16 +167,16 @@ func TestMarriageDivorcedEventProvider(t *testing.T) {
 	initiator := uint32(100)
 
 	provider := MarriageDivorcedEventProvider(marriageId, characterId1, characterId2, divorcedAt, initiator)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(characterId1))
 	if string(msg.Key) != string(expectedKey) {
@@ -193,16 +193,16 @@ func TestMarriageDeletedEventProvider(t *testing.T) {
 	reason := "character_deleted"
 
 	provider := MarriageDeletedEventProvider(marriageId, characterId1, characterId2, deletedAt, deletedBy, reason)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(characterId1))
 	if string(msg.Key) != string(expectedKey) {
@@ -219,16 +219,16 @@ func TestCeremonyScheduledEventProvider(t *testing.T) {
 	invitees := []uint32{300, 400}
 
 	provider := CeremonyScheduledEventProvider(ceremonyId, marriageId, characterId1, characterId2, scheduledAt, invitees)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(characterId1))
 	if string(msg.Key) != string(expectedKey) {
@@ -244,16 +244,16 @@ func TestCeremonyStartedEventProvider(t *testing.T) {
 	startedAt := time.Now()
 
 	provider := CeremonyStartedEventProvider(ceremonyId, marriageId, characterId1, characterId2, startedAt)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(characterId1))
 	if string(msg.Key) != string(expectedKey) {
@@ -269,16 +269,16 @@ func TestCeremonyCompletedEventProvider(t *testing.T) {
 	completedAt := time.Now()
 
 	provider := CeremonyCompletedEventProvider(ceremonyId, marriageId, characterId1, characterId2, completedAt)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(characterId1))
 	if string(msg.Key) != string(expectedKey) {
@@ -295,16 +295,16 @@ func TestCeremonyPostponedEventProvider(t *testing.T) {
 	reason := "partner_disconnected"
 
 	provider := CeremonyPostponedEventProvider(ceremonyId, marriageId, characterId1, characterId2, postponedAt, reason)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(characterId1))
 	if string(msg.Key) != string(expectedKey) {
@@ -322,16 +322,16 @@ func TestCeremonyCancelledEventProvider(t *testing.T) {
 	reason := "manual_cancellation"
 
 	provider := CeremonyCancelledEventProvider(ceremonyId, marriageId, characterId1, characterId2, cancelledAt, cancelledBy, reason)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(characterId1))
 	if string(msg.Key) != string(expectedKey) {
@@ -349,16 +349,16 @@ func TestCeremonyRescheduledEventProvider(t *testing.T) {
 	rescheduledBy := uint32(100)
 
 	provider := CeremonyRescheduledEventProvider(ceremonyId, marriageId, characterId1, characterId2, rescheduledAt, newScheduledAt, rescheduledBy)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(characterId1))
 	if string(msg.Key) != string(expectedKey) {
@@ -376,16 +376,16 @@ func TestInviteeAddedEventProvider(t *testing.T) {
 	addedBy := uint32(100)
 
 	provider := InviteeAddedEventProvider(ceremonyId, marriageId, characterId1, characterId2, inviteeCharacterId, addedAt, addedBy)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(characterId1))
 	if string(msg.Key) != string(expectedKey) {
@@ -403,16 +403,16 @@ func TestInviteeRemovedEventProvider(t *testing.T) {
 	removedBy := uint32(100)
 
 	provider := InviteeRemovedEventProvider(ceremonyId, marriageId, characterId1, characterId2, inviteeCharacterId, removedAt, removedBy)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(characterId1))
 	if string(msg.Key) != string(expectedKey) {
@@ -428,16 +428,16 @@ func TestMarriageErrorEventProvider(t *testing.T) {
 	context := "proposal_validation"
 
 	provider := MarriageErrorEventProvider(characterId, errorType, errorCode, errorMessage, context)
-	
+
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	msg := messages[0]
 	expectedKey := producer.CreateKey(int(characterId))
 	if string(msg.Key) != string(expectedKey) {

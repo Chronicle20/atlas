@@ -3,6 +3,7 @@ package clientbound
 import (
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
@@ -39,7 +40,9 @@ func TestBuddyListUpdateRoundTrip(t *testing.T) {
 				if ob.ChannelId != ib.ChannelId {
 					t.Errorf("buddy[%d].ChannelId: got %v, want %v", i, ob.ChannelId, ib.ChannelId)
 				}
-				if ob.Group != ib.Group {
+				// FriendGroup is absent from the wire in GMS < 72 (v61-verified
+				// @0x4b54d8; v28 predates buddy groups by the same boundary).
+				if model.BuddyHasFriendGroup(ctx) && ob.Group != ib.Group {
 					t.Errorf("buddy[%d].Group: got %v, want %v", i, ob.Group, ib.Group)
 				}
 				if ob.InShop != ib.InShop {

@@ -1,18 +1,19 @@
 package _map
 
 import (
-	consumer2 "atlas-transports/kafka/consumer"
 	"atlas-transports/instance"
+	consumer2 "atlas-transports/kafka/consumer"
 	_map2 "atlas-transports/kafka/message/map"
 	"context"
+
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {

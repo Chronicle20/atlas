@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor interface defines the operations for channel processing
@@ -32,6 +33,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) Register(ch channel.Model, ipAddress string, port int) error {
 	return registerChannel(p.l)(p.ctx)(NewBuilder().

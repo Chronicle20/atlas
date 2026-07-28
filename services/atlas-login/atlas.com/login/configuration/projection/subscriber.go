@@ -7,11 +7,12 @@ import (
 
 	consumer2 "atlas-login/kafka/consumer"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 )
 
 // Subscriber is the consumer-side wiring for the two config-status
@@ -152,7 +153,7 @@ func (s *Subscriber) handleTenant(l logrus.FieldLogger) handler.Handler {
 }
 
 func offsetsOrEmpty(ctx context.Context, brokers []string, topic string, l logrus.FieldLogger) (map[int]int64, error) {
-	off, err := consumer.ReadEndOffsets(ctx, brokers, topic)
+	off, err := consumer.ReadReplayableEndOffsets(ctx, brokers, topic)
 	if err != nil {
 		// A missing topic shouldn't kill startup; the gate will simply
 		// stay at "needs end offsets" and the operator can debug. Log at

@@ -48,9 +48,9 @@ func TestRootImagesYieldsImgIDParseableNames(t *testing.T) {
 // `continue`, and scanned=0 across every worker on PR-544.
 func TestImgID(t *testing.T) {
 	cases := []struct {
-		name    string
-		wantId  uint32
-		wantOk  bool
+		name   string
+		wantId uint32
+		wantOk bool
 	}{
 		// Names as the wz library actually produces them (no .img suffix).
 		// These are the SHIPPING-DATA cases — must work.

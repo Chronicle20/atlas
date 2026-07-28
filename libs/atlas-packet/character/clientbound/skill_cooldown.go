@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const CharacterSkillCooldownWriter = "CharacterSkillCooldown"
@@ -22,7 +23,7 @@ func NewCharacterSkillCooldown(skillId uint32, cooldown uint16) CharacterSkillCo
 
 func (m CharacterSkillCooldown) SkillId() uint32   { return m.skillId }
 func (m CharacterSkillCooldown) Cooldown() uint16  { return m.cooldown }
-func (m CharacterSkillCooldown) Operation() string  { return CharacterSkillCooldownWriter }
+func (m CharacterSkillCooldown) Operation() string { return CharacterSkillCooldownWriter }
 func (m CharacterSkillCooldown) String() string {
 	return fmt.Sprintf("skillId [%d], cooldown [%d]", m.skillId, m.cooldown)
 }

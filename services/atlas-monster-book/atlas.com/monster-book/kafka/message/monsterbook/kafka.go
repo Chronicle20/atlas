@@ -12,9 +12,9 @@ const (
 	// Outbound (statuses)
 	EnvEventTopicStatus = "EVENT_TOPIC_MONSTER_BOOK_STATUS"
 
-	StatusEventTypeCardAdded     = "CARD_ADDED"
-	StatusEventTypeCoverChanged  = "COVER_CHANGED"
-	StatusEventTypeStatsChanged  = "STATS_CHANGED"
+	StatusEventTypeCardAdded    = "CARD_ADDED"
+	StatusEventTypeCoverChanged = "COVER_CHANGED"
+	StatusEventTypeStatsChanged = "STATS_CHANGED"
 )
 
 // Command<T> is the inbound command envelope.

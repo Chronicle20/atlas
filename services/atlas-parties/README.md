@@ -12,6 +12,7 @@ This service maintains party state in Redis and coordinates party operations thr
 - Kafka (message broker)
 - Jaeger (distributed tracing)
 - atlas-character service (foreign character data via REST)
+- atlas-maps service (character location fallback via REST)
 
 ## Environment Variables
 
@@ -28,6 +29,7 @@ This service maintains party state in Redis and coordinates party operations thr
 | EVENT_TOPIC_INVITE_STATUS | Kafka topic for invite status events |
 | COMMAND_TOPIC_INVITE | Kafka topic for invite commands |
 | CHARACTERS | Base URL for character service REST API |
+| MAPS | Base URL for atlas-maps REST API |
 
 ## Documentation
 

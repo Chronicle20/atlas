@@ -45,7 +45,13 @@ const character = (worldId: number): Character =>
   }) as unknown as Character;
 
 const worlds = [
-  { name: "Scania", flag: "0", serverMessage: "", eventMessage: "", whyAmIRecommended: "" },
+  {
+    name: "Scania",
+    flag: "0",
+    serverMessage: "",
+    eventMessage: "",
+    whyAmIRecommended: "",
+  },
 ];
 
 function renderTile(props: { character: Character; worlds: typeof worlds }) {

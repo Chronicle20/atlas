@@ -4,12 +4,13 @@ import (
 	"testing"
 	"time"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 // newVisitsDB seeds two visit rows in two tenants that overlap fully on

@@ -3,10 +3,14 @@ package _map
 import (
 	consumer2 "atlas-maps/kafka/consumer"
 	mapKafka "atlas-maps/kafka/message/map"
-	"atlas-maps/kafka/producer"
 	"atlas-maps/map/weather"
 	"context"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -14,8 +18,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {

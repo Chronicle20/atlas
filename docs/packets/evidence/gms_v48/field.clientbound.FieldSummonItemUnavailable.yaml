@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldSummonItemUnavailable
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnSummonItemInavailable
+    address: "0x4c7b1f"
+    decompile_sha256: e5efb898d19c5cb4903d927c25a5585466a0d94399023edc2c847f35f1f5d2a8
+verifies:
+    - libs/atlas-packet/field/clientbound/summon_item_unavailable_test.go#TestSummonItemUnavailableByteOutputV48

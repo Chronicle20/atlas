@@ -5,9 +5,10 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/monster/carnival/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // MonsterCarnivalHandleFunc handles the serverbound MONSTER_CARNIVAL packet

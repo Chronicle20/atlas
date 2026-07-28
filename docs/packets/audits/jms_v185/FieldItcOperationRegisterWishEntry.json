@@ -1,0 +1,75 @@
+{
+  "WriterName": "FieldItcOperationRegisterWishEntry",
+  "IDAName": "CITC::OnRegisterWishEntry",
+  "Address": "0x604a69",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/serverbound/itc_operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode byte (4) @0x604af3",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "itemId @0x604b01",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "price @0x604b0f",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "count @0x604b1d",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "duration @0x604b2e",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "feeOption @0x604b3f",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "description @0x604b56",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

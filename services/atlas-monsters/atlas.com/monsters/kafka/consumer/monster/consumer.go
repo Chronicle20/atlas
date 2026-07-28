@@ -6,6 +6,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -13,7 +15,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -48,6 +49,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 			return err
 		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDrainMpCommand))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleKillCommand))); err != nil {
 			return err
 		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyStatusFieldCommand))); err != nil {
@@ -168,6 +172,15 @@ func handleDrainMpCommand(l logrus.FieldLogger, ctx context.Context, c command[d
 	if err := p.DrainMp(f, c.MonsterId, c.Body.CharacterId, c.Body.SkillId, c.Body.Amount); err != nil {
 		l.WithError(err).Errorf("DRAIN_MP failed for monster [%d] character [%d].", c.MonsterId, c.Body.CharacterId)
 	}
+}
+
+func handleKillCommand(l logrus.FieldLogger, ctx context.Context, c command[killCommandBody]) {
+	if c.Type != CommandTypeKill {
+		return
+	}
+
+	p := monster.NewProcessor(l, ctx)
+	p.Kill(c.MonsterId, c.Body.CharacterId)
 }
 
 func handleAddPuppetCommand(l logrus.FieldLogger, ctx context.Context, c addPuppetCommand) {

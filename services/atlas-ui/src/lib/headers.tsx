@@ -1,12 +1,12 @@
-import type {Tenant} from "@/types/models/tenant";
+import type { Tenant } from "@/types/models/tenant";
 
 export function tenantHeaders(tenant: Tenant): Headers {
-    const headers = new Headers();
-    headers.set("TENANT_ID", tenant?.id);
-    headers.set("REGION", tenant?.attributes.region);
-    headers.set("MAJOR_VERSION", String(tenant?.attributes.majorVersion));
-    headers.set("MINOR_VERSION", String(tenant?.attributes.minorVersion));
-    return headers
+  const headers = new Headers();
+  headers.set("TENANT_ID", tenant?.id);
+  headers.set("REGION", tenant?.attributes.region);
+  headers.set("MAJOR_VERSION", String(tenant?.attributes.majorVersion));
+  headers.set("MINOR_VERSION", String(tenant?.attributes.minorVersion));
+  return headers;
 }
 
 /**
@@ -19,9 +19,9 @@ export function tenantHeaders(tenant: Tenant): Headers {
 export const CANONICAL_TENANT_ID = "00000000-0000-0000-0000-000000000000";
 
 export interface CanonicalSelection {
-    region: string;
-    majorVersion: number;
-    minorVersion: number;
+  region: string;
+  majorVersion: number;
+  minorVersion: number;
 }
 
 /**
@@ -30,11 +30,11 @@ export interface CanonicalSelection {
  * construction path, no drift.
  */
 export function canonicalHeaders(sel: CanonicalSelection): Headers {
-    const headers = new Headers();
-    headers.set("TENANT_ID", CANONICAL_TENANT_ID);
-    headers.set("REGION", sel.region);
-    headers.set("MAJOR_VERSION", String(sel.majorVersion));
-    headers.set("MINOR_VERSION", String(sel.minorVersion));
-    headers.set("X-Atlas-Operator", "1");
-    return headers;
+  const headers = new Headers();
+  headers.set("TENANT_ID", CANONICAL_TENANT_ID);
+  headers.set("REGION", sel.region);
+  headers.set("MAJOR_VERSION", String(sel.majorVersion));
+  headers.set("MINOR_VERSION", String(sel.minorVersion));
+  headers.set("X-Atlas-Operator", "1");
+  return headers;
 }

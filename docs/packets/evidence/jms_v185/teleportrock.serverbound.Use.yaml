@@ -1,0 +1,8 @@
+packet: teleportrock/serverbound/Use
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendMapTransferItemUseRequest
+    address: "0xaef071"
+    decompile_sha256: 71d1bf9528f4e441d1e4cb343a21638fa369f063e807f655d5cebdba07b33c7c

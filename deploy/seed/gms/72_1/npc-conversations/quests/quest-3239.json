@@ -1,0 +1,200 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "checkItems",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "referenceId": "4031092",
+                      "type": "item",
+                      "value": "10"
+                    }
+                  ],
+                  "nextState": "missingItems"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "checkInventorySpace"
+                }
+              ]
+            },
+            "id": "checkItems",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Please return me 10 #t4031092# that went missing on this room."
+            },
+            "id": "missingItems",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "referenceId": "2040704",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "noInventorySpace"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "successDialogue"
+                }
+              ]
+            },
+            "id": "checkInventorySpace",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Free a space on your USE inventory before receiving your prize."
+            },
+            "id": "noInventorySpace",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "selectReward",
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Well done! You brought back all the #t4031092# that were missing. Here, take this scroll as a token of my gratitude..."
+            },
+            "id": "successDialogue",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "items": "2040704,2040705,2040707,2040708",
+                    "outputContextKey": "rewardItemId",
+                    "weights": "1,1,1,1"
+                  },
+                  "type": "local:select_random_weighted"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "giveRewards"
+                }
+              ]
+            },
+            "id": "selectReward",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4031092",
+                    "quantity": "10"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "itemId": "{context.rewardItemId}",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "amount": "2700"
+                  },
+                  "type": "award_exp"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "giveRewards",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 3239,
+      "questName": "Quest 3239",
+      "startStateMachine": {
+        "startState": "startQuest",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "3239",
+    "type": "quest-conversation"
+  }
+}

@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	goredis "github.com/redis/go-redis/v9"
 )
 
 type RouteRegistry struct {

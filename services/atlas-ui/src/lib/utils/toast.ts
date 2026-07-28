@@ -1,24 +1,21 @@
 /**
  * Toast notification utilities for Atlas UI
- * 
+ *
  * This module provides a consistent interface for displaying toast notifications
  * throughout the application using Sonner. It integrates with the error handling
  * system to automatically transform API errors into user-friendly messages.
  */
 
-import { toast } from 'sonner';
-import { 
-  transformError, 
-  transformApiError, 
+import { toast } from "sonner";
+import {
+  transformError,
+  transformApiError,
   transformValidationError,
   logError,
   type ErrorContext,
-  createErrorConfig
-} from '@/lib/api/errors';
-import {
-  isApiError,
-  isValidationError
-} from '@/types/api/errors';
+  createErrorConfig,
+} from "@/lib/api/errors";
+import { isApiError, isValidationError } from "@/types/api/errors";
 
 /**
  * Configuration options for toast notifications
@@ -54,8 +51,8 @@ const DEFAULT_DURATIONS = {
  * Display a success toast notification
  */
 export const success = (
-  message: string, 
-  options: Omit<ToastOptions, 'context'> = {}
+  message: string,
+  options: Omit<ToastOptions, "context"> = {},
 ): string | number => {
   const { duration = DEFAULT_DURATIONS.success, description, action } = options;
 
@@ -70,27 +67,27 @@ export const success = (
  * Display an error toast notification with automatic error transformation
  */
 export const error = (
-  error: unknown, 
-  options: ToastOptions = {}
+  error: unknown,
+  options: ToastOptions = {},
 ): string | number => {
-  const { 
-    duration = DEFAULT_DURATIONS.error, 
-    description, 
+  const {
+    duration = DEFAULT_DURATIONS.error,
+    description,
     action,
     includeTechnicalDetails = false,
-    context = {}
+    context = {},
   } = options;
 
   // Log the error for debugging
   logError(error, context);
 
   // Transform the error into a user-friendly message
-  const errorConfig = createErrorConfig(context, { 
-    includeTechnicalDetails 
+  const errorConfig = createErrorConfig(context, {
+    includeTechnicalDetails,
   });
 
   let message: string;
-  
+
   if (isValidationError(error)) {
     message = transformValidationError(error, errorConfig);
   } else if (isApiError(error)) {
@@ -110,8 +107,8 @@ export const error = (
  * Display a warning toast notification
  */
 export const warning = (
-  message: string, 
-  options: Omit<ToastOptions, 'context'> = {}
+  message: string,
+  options: Omit<ToastOptions, "context"> = {},
 ): string | number => {
   const { duration = DEFAULT_DURATIONS.warning, description, action } = options;
 
@@ -126,8 +123,8 @@ export const warning = (
  * Display an info toast notification
  */
 export const info = (
-  message: string, 
-  options: Omit<ToastOptions, 'context'> = {}
+  message: string,
+  options: Omit<ToastOptions, "context"> = {},
 ): string | number => {
   const { duration = DEFAULT_DURATIONS.info, description, action } = options;
 
@@ -142,8 +139,8 @@ export const info = (
  * Display a loading toast notification
  */
 export const loading = (
-  message: string, 
-  options: Omit<ToastOptions, 'context'> = {}
+  message: string,
+  options: Omit<ToastOptions, "context"> = {},
 ): string | number => {
   const { duration = DEFAULT_DURATIONS.loading, description } = options;
 
@@ -163,27 +160,27 @@ export const promise = <T>(
     success: string | ((data: T) => string);
     error: string | ((error: unknown) => string);
   },
-  options: ToastOptions = {}
+  options: ToastOptions = {},
 ): Promise<T> => {
   const { context = {} } = options;
 
   toast.promise(promise, {
     loading: messages.loading,
     success: (data) => {
-      return typeof messages.success === 'function' 
-        ? messages.success(data) 
+      return typeof messages.success === "function"
+        ? messages.success(data)
         : messages.success;
     },
     error: (error) => {
       // Log the error for debugging
       logError(error, context);
 
-      if (typeof messages.error === 'function') {
+      if (typeof messages.error === "function") {
         return messages.error(error);
       }
 
       // Transform error to user-friendly message if it's a string
-      if (typeof messages.error === 'string') {
+      if (typeof messages.error === "string") {
         return messages.error;
       }
 
@@ -221,7 +218,7 @@ export const withRetry = (
     success: string;
     error: string;
   },
-  options: ToastOptions & { maxRetries?: number } = {}
+  options: ToastOptions & { maxRetries?: number } = {},
 ): Promise<void> => {
   const { maxRetries = 3, context = {} } = options;
   let retryCount = 0;
@@ -232,7 +229,7 @@ export const withRetry = (
       success(messages.success);
     } catch (err) {
       retryCount++;
-      
+
       if (retryCount < maxRetries) {
         error(err, {
           ...options,
@@ -260,9 +257,9 @@ export const withRetry = (
  * Utility function to create action objects for toast notifications
  */
 export const createAction = (
-  label: string, 
-  onClick: () => void
-): ToastOptions['action'] => ({
+  label: string,
+  onClick: () => void,
+): ToastOptions["action"] => ({
   label,
   onClick,
 });
@@ -277,9 +274,9 @@ export const presets = {
   save: {
     loading: (item: string) => loading(`Saving ${item}...`),
     success: (item: string) => success(`${item} saved successfully`),
-    error: (error: unknown, item: string) => 
-      notify.error(error, { 
-        context: { action: `saving ${item}` } 
+    error: (error: unknown, item: string) =>
+      notify.error(error, {
+        context: { action: `saving ${item}` },
       }),
   },
 
@@ -289,9 +286,9 @@ export const presets = {
   delete: {
     loading: (item: string) => loading(`Deleting ${item}...`),
     success: (item: string) => success(`${item} deleted successfully`),
-    error: (error: unknown, item: string) => 
-      notify.error(error, { 
-        context: { action: `deleting ${item}` } 
+    error: (error: unknown, item: string) =>
+      notify.error(error, {
+        context: { action: `deleting ${item}` },
       }),
   },
 
@@ -300,9 +297,9 @@ export const presets = {
    */
   load: {
     loading: (item: string) => loading(`Loading ${item}...`),
-    error: (error: unknown, item: string) => 
-      notify.error(error, { 
-        context: { action: `loading ${item}` } 
+    error: (error: unknown, item: string) =>
+      notify.error(error, {
+        context: { action: `loading ${item}` },
       }),
   },
 
@@ -310,11 +307,11 @@ export const presets = {
    * Authentication presets
    */
   auth: {
-    signInSuccess: () => success('Welcome back!'),
-    signOutSuccess: () => success('Signed out successfully'),
-    signInError: (error: unknown) => 
-      notify.error(error, { 
-        context: { action: 'signing in' } 
+    signInSuccess: () => success("Welcome back!"),
+    signOutSuccess: () => success("Signed out successfully"),
+    signInError: (error: unknown) =>
+      notify.error(error, {
+        context: { action: "signing in" },
       }),
   },
 
@@ -322,9 +319,9 @@ export const presets = {
    * Form validation presets
    */
   validation: {
-    error: (error: unknown, form: string) => 
-      notify.error(error, { 
-        context: { action: `validating ${form} form` } 
+    error: (error: unknown, form: string) =>
+      notify.error(error, {
+        context: { action: `validating ${form} form` },
       }),
   },
 } as const;

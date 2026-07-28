@@ -47,9 +47,9 @@ type jsonAPIDocument struct {
 }
 
 type jsonAPIResource struct {
-	Type       string              `json:"type"`
-	ID         string              `json:"id"`
-	Attributes debugAttributes     `json:"attributes"`
+	Type       string          `json:"type"`
+	ID         string          `json:"id"`
+	Attributes debugAttributes `json:"attributes"`
 }
 
 type debugAttributes struct {

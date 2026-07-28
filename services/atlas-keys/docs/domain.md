@@ -21,6 +21,7 @@ Represents a key binding for a character.
 
 - A key binding is uniquely identified by tenant, character, and key.
 - Default key bindings are created from predefined arrays when a character is created.
+- A Model requires a non-zero characterId; the ModelBuilder returns an error if characterId is 0.
 
 ## Processors
 

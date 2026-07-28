@@ -24,6 +24,23 @@ else
 	return {0, 0}
 end`)
 
+// initIfMissingAndDecrByScript atomically initializes an absent counter to
+// ARGV[1] (leaving an existing value untouched) and then decrements by
+// ARGV[2], refreshing the TTL. Both the presence check and the decrement
+// happen inside one Redis-serialized script execution, so two concurrent
+// callers racing a missing key can never both seed the same baseline and
+// independently subtract from it (which would lose one decrement) or both
+// observe the same post-seed crossing (which would double-break). The
+// second (and every later) concurrent caller instead decrements the value
+// the first caller already seeded.
+var initIfMissingAndDecrByScript = goredis.NewScript(`
+if redis.call("exists", KEYS[1]) == 0 then
+	redis.call("set", KEYS[1], ARGV[1])
+end
+local v = redis.call("decrby", KEYS[1], ARGV[2])
+redis.call("pexpire", KEYS[1], ARGV[3])
+return v`)
+
 // TenantCounter is a tenant-scoped int64 counter with a TTL-bounded
 // lifetime. Decrements are serialized by Redis, so concurrent callers never
 // lose an update and exactly one caller observes any given zero crossing
@@ -61,6 +78,21 @@ func (c *TenantCounter) DecrByIfExists(ctx context.Context, t tenant.Model, key 
 		return 0, false, fmt.Errorf("redis decr-if-exists: unexpected reply length %d", len(res))
 	}
 	return res[0], res[1] == 1, nil
+}
+
+// InitIfMissingAndDecrBy atomically seeds the counter to initial if (and
+// only if) it is currently absent, then decrements it by delta and refreshes
+// its TTL, returning the resulting value. Use this instead of a plain
+// Set-then-decrement pair when the caller cannot tell in advance whether the
+// counter still exists (e.g. lazy re-initialization after a TTL expiry or a
+// Redis restart) — a Set-then-decrement race across concurrent callers can
+// lose a decrement or double-count a zero crossing; this cannot.
+func (c *TenantCounter) InitIfMissingAndDecrBy(ctx context.Context, t tenant.Model, key string, initial int64, delta int64, ttl time.Duration) (int64, error) {
+	v, err := initIfMissingAndDecrByScript.Run(ctx, c.client, []string{c.entityKey(t, key)}, initial, delta, ttl.Milliseconds()).Int64()
+	if err != nil {
+		return 0, fmt.Errorf("redis init-if-missing-and-decr: %w", err)
+	}
+	return v, nil
 }
 
 // Remove deletes the counter. Removing a missing key is a no-op.

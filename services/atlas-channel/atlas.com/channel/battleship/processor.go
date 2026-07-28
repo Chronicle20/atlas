@@ -32,6 +32,7 @@ const fallbackStateTTL = 35 * time.Minute
 type counterStore interface {
 	Set(ctx context.Context, t tenant.Model, key string, value int64, ttl time.Duration) error
 	DecrByIfExists(ctx context.Context, t tenant.Model, key string, delta int64, ttl time.Duration) (int64, bool, error)
+	InitIfMissingAndDecrBy(ctx context.Context, t tenant.Model, key string, initial int64, delta int64, ttl time.Duration) (int64, error)
 	Remove(ctx context.Context, t tenant.Model, key string) error
 }
 
@@ -188,20 +189,31 @@ func (p *ProcessorImpl) Drain(f field.Model, characterId uint32, damage int32) D
 	}
 	if !existed {
 		// FR-3.3 lazy re-init: state lost (Redis restart / TTL expiry) is
-		// never an error and never a stuck ship — re-derive full HP.
+		// never an error and never a stuck ship — re-derive full HP. The
+		// character-level REST fetch happens ONLY on this miss path, never
+		// on the steady-state DecrByIfExists hot path above.
+		//
+		// The seed-and-decrement must be a single atomic Redis operation
+		// (InitIfMissingAndDecrBy), not a local "compute full-damage, then
+		// Set" pair: two concurrent misses would otherwise each compute
+		// against the same full baseline and race a plain Set, either
+		// losing one caller's decrement (last write wins) or letting both
+		// independently observe the same zero crossing (double break).
+		// InitIfMissingAndDecrBy seeds the counter at most once — whichever
+		// concurrent caller's script runs first — and every other racing
+		// caller decrements the value that caller already seeded.
 		charLevel, lerr := characterLevelFunc(p.l, p.ctx, characterId)
 		if lerr != nil {
 			p.l.WithError(lerr).Warnf("Battleship lazy re-init failed for character [%d]; drain skipped.", characterId)
 			return DrainResult{Status: DrainSkipped}
 		}
 		full := int64(ShipHP(p.t, rs.SkillLevel, charLevel))
-		newHp = full - int64(damage)
-		if newHp > 0 {
-			if serr := store.Set(p.ctx, p.t, shipKey(characterId), newHp, ttl); serr != nil {
-				p.l.WithError(serr).Warnf("Battleship lazy re-init store failed for character [%d]; drain skipped.", characterId)
-				return DrainResult{Status: DrainSkipped}
-			}
+		v, serr := store.InitIfMissingAndDecrBy(p.ctx, p.t, shipKey(characterId), full, int64(damage), ttl)
+		if serr != nil {
+			p.l.WithError(serr).Warnf("Battleship lazy re-init failed for character [%d]; drain skipped.", characterId)
+			return DrainResult{Status: DrainSkipped}
 		}
+		newHp = v
 		p.l.Debugf("Battleship ship HP lazily re-initialized for character [%d]: full [%d], damage [%d].", characterId, full, damage)
 	}
 
@@ -222,8 +234,13 @@ func (p *ProcessorImpl) Drain(f field.Model, characterId uint32, damage int32) D
 // breakShip performs the FR-4 break: clear state, dismount (foreign cancel
 // broadcast comes from the existing atlas-buffs → buff consumer path), and
 // apply the 5221006 cooldown with the effect's cooltime via the existing
-// atlas-skills SET_COOLDOWN command. Every step is idempotent, so a
-// theoretical double-break degrades to a no-op.
+// atlas-skills SET_COOLDOWN command. cancelBuffFunc and applyCooldownFunc
+// each emit unconditionally — a second call is NOT a no-op, it is a second
+// dismount broadcast and a second SET_COOLDOWN command. breakShip is
+// therefore safe to call only because Drain's atomic Redis crossing
+// predicate (both on the steady-state DecrByIfExists path and the
+// InitIfMissingAndDecrBy lazy re-init path) guarantees at most one caller
+// per depletion ever reaches this function.
 func (p *ProcessorImpl) breakShip(f field.Model, characterId uint32, skillLevel byte) {
 	p.Clear(characterId)
 	if err := cancelBuffFunc(p.l, p.ctx, f, characterId); err != nil {

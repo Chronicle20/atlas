@@ -145,3 +145,99 @@ func TestTenantCounter_ConcurrentDecrExactlyOneCrossing(t *testing.T) {
 		t.Fatalf("lowest observed value = %d, want %d (no decrement lost)", min, want)
 	}
 }
+
+func TestTenantCounter_InitIfMissingAndDecrBy_InitializesWhenAbsent(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	defer func() { _ = client.Close() }()
+	c := NewTenantCounter(client, "test-counter")
+	tm := newTestTenant(t, "GMS")
+	ctx := context.Background()
+
+	newV, err := c.InitIfMissingAndDecrBy(ctx, tm, "ship", 8800, 300, time.Minute)
+	if err != nil {
+		t.Fatalf("InitIfMissingAndDecrBy: %v", err)
+	}
+	if newV != 8500 {
+		t.Fatalf("InitIfMissingAndDecrBy = %d, want 8500 (8800 seeded then -300)", newV)
+	}
+}
+
+func TestTenantCounter_InitIfMissingAndDecrBy_DoesNotReinitWhenPresent(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	defer func() { _ = client.Close() }()
+	c := NewTenantCounter(client, "test-counter")
+	tm := newTestTenant(t, "GMS")
+	ctx := context.Background()
+
+	if err := c.Set(ctx, tm, "ship", 500, time.Minute); err != nil {
+		t.Fatalf("Set: %v", err)
+	}
+	// initial=9999 must be IGNORED — the key already exists at 500.
+	newV, err := c.InitIfMissingAndDecrBy(ctx, tm, "ship", 9999, 100, time.Minute)
+	if err != nil {
+		t.Fatalf("InitIfMissingAndDecrBy: %v", err)
+	}
+	if newV != 400 {
+		t.Fatalf("InitIfMissingAndDecrBy = %d, want 400 (existing 500 -100, not 9999-100)", newV)
+	}
+}
+
+func TestTenantCounter_InitIfMissingAndDecrBy_RefreshesTTL(t *testing.T) {
+	client, mr := setupTestRedis(t)
+	defer func() { _ = client.Close() }()
+	c := NewTenantCounter(client, "test-counter")
+	tm := newTestTenant(t, "GMS")
+	ctx := context.Background()
+
+	if _, err := c.InitIfMissingAndDecrBy(ctx, tm, "ship", 1000, 100, 35*time.Minute); err != nil {
+		t.Fatalf("InitIfMissingAndDecrBy: %v", err)
+	}
+	rk := tenantEntityKey("test-counter", tm, "ship")
+	if got := mr.TTL(rk); got != 35*time.Minute {
+		t.Fatalf("TTL = %v, want 35m", got)
+	}
+}
+
+// Concurrent InitIfMissingAndDecrBy calls racing an absent key must seed the
+// counter exactly once and lose no decrement — the failure mode a plain
+// "read-missing then Set(full-damage)" pair exhibits under concurrency.
+func TestTenantCounter_InitIfMissingAndDecrBy_ConcurrentNoLostDecrement(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	defer func() { _ = client.Close() }()
+	c := NewTenantCounter(client, "test-counter")
+	tm := newTestTenant(t, "GMS")
+	ctx := context.Background()
+
+	const workers = 10
+	const delta = int64(100)
+	const initial = int64(500)
+
+	var wg sync.WaitGroup
+	var finalMu sync.Mutex
+	var lastValues []int64
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			newV, err := c.InitIfMissingAndDecrBy(ctx, tm, "ship", initial, delta, time.Minute)
+			if err != nil {
+				t.Errorf("InitIfMissingAndDecrBy: %v", err)
+				return
+			}
+			finalMu.Lock()
+			lastValues = append(lastValues, newV)
+			finalMu.Unlock()
+		}()
+	}
+	wg.Wait()
+
+	var min int64
+	for _, v := range lastValues {
+		if v < min {
+			min = v
+		}
+	}
+	if want := initial - int64(workers)*delta; min != want {
+		t.Fatalf("lowest observed value = %d, want %d (initial seeded once, no decrement lost)", min, want)
+	}
+}

@@ -58,6 +58,28 @@ func (s *fakeStore) DecrByIfExists(_ context.Context, t tenant.Model, key string
 	return v, true, nil
 }
 
+// InitIfMissingAndDecrBy mirrors TenantCounter's atomic Lua script: the
+// existence check, seed, and decrement all happen under one lock, so
+// concurrent callers racing an absent key can never both seed the same
+// baseline (losing a decrement) or both independently cross zero (double
+// break) — whichever goroutine's call runs first seeds the value; every
+// other racing call decrements the value that goroutine already seeded.
+func (s *fakeStore) InitIfMissingAndDecrBy(_ context.Context, t tenant.Model, key string, initial int64, delta int64, ttl time.Duration) (int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.err != nil {
+		return 0, s.err
+	}
+	v, ok := s.values[s.k(t, key)]
+	if !ok {
+		v = initial
+	}
+	v -= delta
+	s.values[s.k(t, key)] = v
+	s.ttls[s.k(t, key)] = ttl
+	return v, nil
+}
+
 func (s *fakeStore) Remove(_ context.Context, t tenant.Model, key string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -263,6 +285,84 @@ func TestDrainBreakExactlyOnceUnderConcurrency(t *testing.T) {
 	}
 	if rec.cancels != 1 || len(rec.cooldowns) != 1 {
 		t.Fatalf("break side effects ran %d/%d times, want once", rec.cancels, len(rec.cooldowns))
+	}
+}
+
+// TestDrainLazyReinitBreakExactlyOnceUnderConcurrency exercises the lazy
+// re-init branch specifically (no InitShipHP call, so DecrByIfExists always
+// misses and every goroutine takes the InitIfMissingAndDecrBy path). Under
+// the earlier buggy implementation — compute full-damage locally, then
+// plain store.Set — every one of these goroutines observes existed=false
+// and independently computes the same full baseline; whichever Set call
+// lands last overwrites the rest, so in practice most runs never reach
+// DrainBroke at all (each goroutine's own single-hit subtraction 8800-1000
+// = 7800 > 0). This test would therefore FAIL (broke != 1, likely 0) under
+// that implementation; it passes now because InitIfMissingAndDecrBy seeds
+// the counter atomically at most once and serializes every decrement
+// through Redis (mirrored by the fakeStore's single mutex-guarded method),
+// giving the same "exactly one caller crosses zero" guarantee as the
+// steady-state DecrByIfExists path.
+func TestDrainLazyReinitBreakExactlyOnceUnderConcurrency(t *testing.T) {
+	p, _, rec, tm, _ := setupProcessor(t)
+	// No InitShipHP call: the Redis entry is absent, forcing every Drain
+	// through the lazy re-init branch.
+	GetRideMirror().Put(tm, 100, RideState{SkillLevel: 7, StateTTL: time.Minute})
+	// full = ShipHP(SLV 7, level 150) = 8800; 10 workers x 1000 damage
+	// jointly exceeds it, crossing zero exactly once.
+	var wg sync.WaitGroup
+	broke := 0
+	var mu sync.Mutex
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if res := p.Drain(field.Model{}, 100, 1000); res.Status == DrainBroke {
+				mu.Lock()
+				broke++
+				mu.Unlock()
+			}
+		}()
+	}
+	wg.Wait()
+	if broke != 1 {
+		t.Fatalf("DrainBroke observed %d times via lazy re-init, want exactly 1", broke)
+	}
+	if rec.cancels != 1 || len(rec.cooldowns) != 1 {
+		t.Fatalf("break side effects ran %d/%d times via lazy re-init, want once", rec.cancels, len(rec.cooldowns))
+	}
+}
+
+// TestDrainLazyReinitNoLostDecrementUnderConcurrency covers the
+// individually-non-lethal case (b) from the same bug class: under the
+// earlier buggy implementation, concurrent misses each independently
+// compute full-damage and the final stored value reflects only whichever
+// goroutine's plain Set ran last — silently absorbing every other hit. With
+// InitIfMissingAndDecrBy, the final stored value must reflect every hit.
+func TestDrainLazyReinitNoLostDecrementUnderConcurrency(t *testing.T) {
+	p, fs, rec, tm, _ := setupProcessor(t)
+	// No InitShipHP call: forces the lazy re-init branch on every Drain.
+	GetRideMirror().Put(tm, 100, RideState{SkillLevel: 1, StateTTL: time.Minute})
+	// full = ShipHP(SLV 1, level 150) = 6400; 8 workers x 100 damage is
+	// non-lethal both per-hit and jointly (6400-800=5600 > 0).
+	const workers = 8
+	const damage = 100
+	var wg sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if res := p.Drain(field.Model{}, 100, damage); res.Status != DrainDrained {
+				t.Errorf("Status = %v, want DrainDrained (jointly non-lethal)", res.Status)
+			}
+		}()
+	}
+	wg.Wait()
+	if want := int64(6400 - workers*damage); fs.values[fs.k(tm, "100")] != want {
+		t.Fatalf("stored HP = %d, want %d (no decrement lost across %d concurrent lazy re-inits)",
+			fs.values[fs.k(tm, "100")], want, workers)
+	}
+	if rec.cancels != 0 || len(rec.cooldowns) != 0 {
+		t.Fatal("no hit was lethal; break side effects must not have run")
 	}
 }
 

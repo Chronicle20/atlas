@@ -177,7 +177,7 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 			// package is the only cooldown trigger (FR-4.3); this hook only
 			// clears state.
 			if isBattleshipRide(e.Body.SourceId, e.Body.Changes) {
-				battleship.NewProcessor(l, ctx).Clear(e.CharacterId)
+				newBattleshipProcessor(l, ctx).Clear(e.CharacterId)
 			}
 
 			ebs := make([]buff.Model, 0)
@@ -354,6 +354,13 @@ func isBattleshipRide(sourceId int32, changes []buff2.StatChange) bool {
 	}
 	return false
 }
+
+// newBattleshipProcessor is a seam over battleship.NewProcessor (same
+// pattern as battleshipStateTTLFunc below) so tests can substitute a spy
+// implementing battleship.Processor and assert EXACTLY which methods the
+// ride-end hook invokes — in particular, that it calls Clear and never
+// Drain, the only path that can reach breakShip's cooldown emit.
+var newBattleshipProcessor = battleship.NewProcessor
 
 // battleshipStateTTLFunc derives the ship-state TTL from the effect's buff
 // duration (FR-5.2). Returns 0 on failure — the battleship package falls

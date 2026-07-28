@@ -16,9 +16,14 @@ import (
 // gms_v83/v84/v87/v95, jms_v185 only — legacy modes are Wave 3).
 
 var limitGoodsCountChangedModes = map[string]byte{
+	"GMS/v48": 0x29, "GMS/v61": 0x2B, "GMS/v72": 0x33, "GMS/v79": 0x3F,
 	"GMS/v83": 0x47, "GMS/v84": 0x4A, "GMS/v87": 0x4C, "GMS/v95": 0x54, "JMS/v185": 0x4A,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashLimitGoodsCountChanged version=gms_v48 ida=0x4536d3
+// packet-audit:verify packet=cash/clientbound/CashLimitGoodsCountChanged version=gms_v61 ida=0x4612a4
+// packet-audit:verify packet=cash/clientbound/CashLimitGoodsCountChanged version=gms_v72 ida=0x470d3e
+// packet-audit:verify packet=cash/clientbound/CashLimitGoodsCountChanged version=gms_v79 ida=0x472018
 // packet-audit:verify packet=cash/clientbound/CashLimitGoodsCountChanged version=gms_v83 ida=0x47908a
 // packet-audit:verify packet=cash/clientbound/CashLimitGoodsCountChanged version=gms_v84 ida=0x47c1bc
 // packet-audit:verify packet=cash/clientbound/CashLimitGoodsCountChanged version=gms_v87 ida=0x48471f
@@ -54,11 +59,16 @@ func TestLimitGoodsCountChangedByteFixture(t *testing.T) {
 }
 
 var destroyDoneModes = map[string]byte{
+	"GMS/v48": 0x45, "GMS/v61": 0x4E, "GMS/v72": 0x56, "GMS/v79": 0x64,
 	"GMS/v83": 0x6C, "GMS/v84": 0x6F, "GMS/v87": 0x71, "GMS/v95": 0x7B, "JMS/v185": 0x6F,
 }
 
 // TestDestroyDoneByteFixture is the red->green anchor for the true-scalar
 // shape (mode + 8-byte SN) in this file.
+// packet-audit:verify packet=cash/clientbound/CashDestroyDone version=gms_v48 ida=0x4553e0
+// packet-audit:verify packet=cash/clientbound/CashDestroyDone version=gms_v61 ida=0x463150
+// packet-audit:verify packet=cash/clientbound/CashDestroyDone version=gms_v72 ida=0x472e4f
+// packet-audit:verify packet=cash/clientbound/CashDestroyDone version=gms_v79 ida=0x47431b
 // packet-audit:verify packet=cash/clientbound/CashDestroyDone version=gms_v83 ida=0x47b420
 // packet-audit:verify packet=cash/clientbound/CashDestroyDone version=gms_v84 ida=0x47e5be
 // packet-audit:verify packet=cash/clientbound/CashDestroyDone version=gms_v87 ida=0x486bfe
@@ -93,9 +103,14 @@ func TestDestroyDoneByteFixture(t *testing.T) {
 }
 
 var expireDoneModes = map[string]byte{
+	"GMS/v48": 0x47, "GMS/v61": 0x50, "GMS/v72": 0x58, "GMS/v79": 0x66,
 	"GMS/v83": 0x6E, "GMS/v84": 0x71, "GMS/v87": 0x73, "GMS/v95": 0x7D, "JMS/v185": 0x71,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashExpireDone version=gms_v48 ida=0x455191
+// packet-audit:verify packet=cash/clientbound/CashExpireDone version=gms_v61 ida=0x462edf
+// packet-audit:verify packet=cash/clientbound/CashExpireDone version=gms_v72 ida=0x472bda
+// packet-audit:verify packet=cash/clientbound/CashExpireDone version=gms_v79 ida=0x4740a6
 // packet-audit:verify packet=cash/clientbound/CashExpireDone version=gms_v83 ida=0x47b1ab
 // packet-audit:verify packet=cash/clientbound/CashExpireDone version=gms_v84 ida=0x47e349
 // packet-audit:verify packet=cash/clientbound/CashExpireDone version=gms_v87 ida=0x486981
@@ -129,10 +144,15 @@ func TestExpireDoneByteFixture(t *testing.T) {
 	}
 }
 
+// purchaseRecordDoneModes: n-a in GMS/v48/v61 (feature does not exist yet —
+// arm-catalog.md §6). First present starting GMS/v72.
 var purchaseRecordDoneModes = map[string]byte{
+	"GMS/v72": 0x84, "GMS/v79": 0x92,
 	"GMS/v83": 0x9A, "GMS/v84": 0x9D, "GMS/v87": 0xA3, "GMS/v95": 0xAF, "JMS/v185": 0x9D,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashPurchaseRecordDone version=gms_v72 ida=0x473ac0
+// packet-audit:verify packet=cash/clientbound/CashPurchaseRecordDone version=gms_v79 ida=0x474f8c
 // packet-audit:verify packet=cash/clientbound/CashPurchaseRecordDone version=gms_v83 ida=0x47c091
 // packet-audit:verify packet=cash/clientbound/CashPurchaseRecordDone version=gms_v84 ida=0x47f22f
 // packet-audit:verify packet=cash/clientbound/CashPurchaseRecordDone version=gms_v87 ida=0x487872

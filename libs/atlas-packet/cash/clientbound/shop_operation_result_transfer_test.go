@@ -16,9 +16,14 @@ import (
 // gms_v83/v84/v87/v95, jms_v185 only — legacy modes are Wave 3).
 
 var nameChangeBuyDoneModes = map[string]byte{
+	"GMS/v48": 0x6C, "GMS/v61": 0x7D, "GMS/v72": 0x88, "GMS/v79": 0x96,
 	"GMS/v83": 0x9E, "GMS/v84": 0xA1, "GMS/v87": 0xA7, "GMS/v95": 0xB3, "JMS/v185": 0xA5,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashNameChangeBuyDone version=gms_v48 ida=0x455c5a
+// packet-audit:verify packet=cash/clientbound/CashNameChangeBuyDone version=gms_v61 ida=0x463adb
+// packet-audit:verify packet=cash/clientbound/CashNameChangeBuyDone version=gms_v72 ida=0x4736fa
+// packet-audit:verify packet=cash/clientbound/CashNameChangeBuyDone version=gms_v79 ida=0x474bc6
 // packet-audit:verify packet=cash/clientbound/CashNameChangeBuyDone version=gms_v83 ida=0x47bccb
 // packet-audit:verify packet=cash/clientbound/CashNameChangeBuyDone version=gms_v84 ida=0x47ee69
 // packet-audit:verify packet=cash/clientbound/CashNameChangeBuyDone version=gms_v87 ida=0x4874ac
@@ -57,9 +62,14 @@ func TestNameChangeBuyDoneByteFixture(t *testing.T) {
 }
 
 var transferWorldDoneModes = map[string]byte{
+	"GMS/v48": 0x6E, "GMS/v61": 0x7B, "GMS/v72": 0x8A, "GMS/v79": 0x98,
 	"GMS/v83": 0xA0, "GMS/v84": 0xA3, "GMS/v87": 0xA9, "GMS/v95": 0xB5, "JMS/v185": 0xAE,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashTransferWorldDone version=gms_v48 ida=0x455f15
+// packet-audit:verify packet=cash/clientbound/CashTransferWorldDone version=gms_v61 ida=0x463d96
+// packet-audit:verify packet=cash/clientbound/CashTransferWorldDone version=gms_v72 ida=0x4739d1
+// packet-audit:verify packet=cash/clientbound/CashTransferWorldDone version=gms_v79 ida=0x474e9d
 // packet-audit:verify packet=cash/clientbound/CashTransferWorldDone version=gms_v83 ida=0x47bfa2
 // packet-audit:verify packet=cash/clientbound/CashTransferWorldDone version=gms_v84 ida=0x47f140
 // packet-audit:verify packet=cash/clientbound/CashTransferWorldDone version=gms_v87 ida=0x487783

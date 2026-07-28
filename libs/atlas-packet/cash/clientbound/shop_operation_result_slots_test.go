@@ -6,11 +6,18 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=cash/clientbound/CashIncTrunkCountSuccess version=gms_v61 ida=0x462bcb
+// packet-audit:verify packet=cash/clientbound/CashIncTrunkCountSuccess version=gms_v72 ida=0x4727ba
+// packet-audit:verify packet=cash/clientbound/CashIncTrunkCountSuccess version=gms_v79 ida=0x473a7f
 // packet-audit:verify packet=cash/clientbound/CashIncTrunkCountSuccess version=gms_v83 ida=0x47ab2e
 // packet-audit:verify packet=cash/clientbound/CashIncTrunkCountSuccess version=gms_v84 ida=0x47dccc
 // packet-audit:verify packet=cash/clientbound/CashIncTrunkCountSuccess version=gms_v87 ida=0x4862ee
 // packet-audit:verify packet=cash/clientbound/CashIncTrunkCountSuccess version=gms_v95 ida=0x494ed0
 // packet-audit:verify packet=cash/clientbound/CashIncTrunkCountSuccess version=jms_v185 ida=0x48d682
+// packet-audit:verify packet=cash/clientbound/CashIncCharacterSlotCountSuccess version=gms_v48 ida=0x454f4f
+// packet-audit:verify packet=cash/clientbound/CashIncCharacterSlotCountSuccess version=gms_v61 ida=0x462ca2
+// packet-audit:verify packet=cash/clientbound/CashIncCharacterSlotCountSuccess version=gms_v72 ida=0x472896
+// packet-audit:verify packet=cash/clientbound/CashIncCharacterSlotCountSuccess version=gms_v79 ida=0x473b5b
 // packet-audit:verify packet=cash/clientbound/CashIncCharacterSlotCountSuccess version=gms_v83 ida=0x47ac0a
 // packet-audit:verify packet=cash/clientbound/CashIncCharacterSlotCountSuccess version=gms_v84 ida=0x47dda8
 // packet-audit:verify packet=cash/clientbound/CashIncCharacterSlotCountSuccess version=gms_v87 ida=0x4863d3
@@ -18,6 +25,7 @@ import (
 // packet-audit:verify packet=cash/clientbound/CashIncCharacterSlotCountSuccess version=jms_v185 ida=0x48d75e
 // packet-audit:verify packet=cash/clientbound/CashIncBuyCharacterCountSuccess version=gms_v95 ida=0x495000
 // packet-audit:verify packet=cash/clientbound/CashIncBuyCharacterCountSuccess version=jms_v185 ida=0x48d82f
+// packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtSuccess version=gms_v79 ida=0x473c2c
 // packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtSuccess version=gms_v83 ida=0x47acdb
 // packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtSuccess version=gms_v84 ida=0x47de79
 // packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtSuccess version=gms_v87 ida=0x4864ad
@@ -25,23 +33,38 @@ import (
 // packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtSuccess version=jms_v185 ida=0x48d8b1
 
 // Per-version dispatcher mode bytes for the counter-arm family (task-183 Wave
-// 1.2), taken from docs/tasks/task-183-cashshop-result-family/arm-catalog.md
-// (MODERN-5 scope: gms_v83/v84/v87/v95, jms_v185 only — legacy modes are Wave 3).
+// 1.2/3), taken from docs/tasks/task-183-cashshop-result-family/arm-catalog.md.
+// Legacy keys (GMS/v48/v61/v72/v79) added in Wave 3 batch MISC-L.
 
+// incTrunkCountSuccessModes: n-a in GMS/v48 (arm-catalog.md — feature does not
+// exist yet in v48; no case in the switch, func_query confirms 0 hits).
 var incTrunkCountSuccessModes = map[string]byte{
+	"GMS/v61": 0x46, "GMS/v72": 0x4E, "GMS/v79": 0x5A,
 	"GMS/v83": 0x62, "GMS/v84": 0x65, "GMS/v87": 0x67, "GMS/v95": 0x6F, "JMS/v185": 0x63,
 }
 
 var incCharacterSlotCountSuccessModes = map[string]byte{
+	"GMS/v48": 0x3F, "GMS/v61": 0x48, "GMS/v72": 0x50, "GMS/v79": 0x5C,
 	"GMS/v83": 0x64, "GMS/v84": 0x67, "GMS/v87": 0x69, "GMS/v95": 0x71, "JMS/v185": 0x65,
 }
 
-// incBuyCharacterCountSuccessModes: n-a in v83/v84/v87 (only present starting v95, per catalog).
+// incBuyCharacterCountSuccessModes: n-a in GMS/v48/v61/v79/v83/v84/v87 (only
+// present starting v95, per catalog, among MODERN + the versions verified
+// here). GMS/v72 IS present (mode 0x52) but is DELIBERATELY OMITTED from this
+// map — task-183 Wave 3 §3 confirms v72's arm is a MATERIALLY DIFFERENT wire
+// shape (slotIndex:Decode2 + GW_ItemSlotBase::Decode, a locker-item-consuming
+// operation) than this struct's bare mode+uint16 counter. See
+// .superpowers/sdd/task-3.4-legacy-misc-report.md for the decompiled v72 read
+// order — reported, not verified; the controller will gate the codec (a
+// separate v72-shaped type) before this cell can be verified.
 var incBuyCharacterCountSuccessModes = map[string]byte{
 	"GMS/v95": 0x73, "JMS/v185": 0x67,
 }
 
+// enableEquipSlotExtSuccessModes: n-a in GMS/v48/v61/v72 (feature does not
+// exist in those builds — arm-catalog.md).
 var enableEquipSlotExtSuccessModes = map[string]byte{
+	"GMS/v79": 0x5E,
 	"GMS/v83": 0x66, "GMS/v84": 0x69, "GMS/v87": 0x6B, "GMS/v95": 0x75, "JMS/v185": 0x69,
 }
 

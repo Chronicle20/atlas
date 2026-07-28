@@ -1,0 +1,21 @@
+{
+  "WriterName": "CashClientNoOp",
+  "IDAName": "CCashShop::OnCashItemResult#CLIENT_NO_OP",
+  "Address": "0x48c370",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_operation_result_jms.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0xa4=164 CLIENT_NO_OP; op-byte consumed by dispatcher; routes to shared nullsub_2 - genuine no-op, reads nothing)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

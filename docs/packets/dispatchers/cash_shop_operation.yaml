@@ -206,3 +206,41 @@ operations:
   - key: CHANGE_MAPLE_POINT_FAILED
     handler: OnCashItemResChangeMaplePointFailed
     modes: { gms_v84: 170, gms_v87: 176, gms_v95: 188 }
+  # --- JMS-only arms (task-183 follow-up) ---
+  # 10 arms present ONLY in the JMS v185 dispatcher switch (raw Decode1;
+  # CCashShop::OnCashItemResult @ 0x48b5a5, verified 2026-07). Each targets a
+  # `sub_XXXX` with NO client symbol; the handler names are BEHAVIOR-DERIVED
+  # (JMS DEVM build stripped; no PDB) — see arm-catalog.md "JMS-only arms" for
+  # the addr + decompile evidence per arm. jms_v185 mode ONLY (no GMS/legacy
+  # key = n-a: these subs are absent from every GMS/legacy switch, which were
+  # fully enumerated in task-183 and are entirely named).
+  - key: GIFT_RESULT_NOTICE
+    handler: OnCashItemResShowGiftResultNotice
+    modes: { jms_v185: 76 }
+  - key: LOAD_RECEIVED_GIFT_SUCCESS
+    handler: OnCashItemResLoadReceivedGiftDone
+    modes: { jms_v185: 77 }
+  - key: LIMIT_GOODS_STOCK_CHANGED
+    handler: OnCashItemResLimitGoodsStockChanged
+    modes: { jms_v185: 96 }
+  - key: SHOW_NOTICE_1089
+    handler: OnCashItemResShowNotice1089
+    modes: { jms_v185: 146 }
+  - key: TRANSFER_WORLD_NOTICE_REASON
+    handler: OnCashItemResTransferWorldNoticeReason
+    modes: { jms_v185: 147 }
+  - key: REFRESH_LOCKER
+    handler: OnCashItemResRefreshLocker
+    modes: { jms_v185: 162 }
+  - key: CLIENT_NO_OP
+    handler: OnCashItemResNoOp
+    modes: { jms_v185: 164 }
+  - key: SHOW_NOTICE_1465
+    handler: OnCashItemResShowNotice1465
+    modes: { jms_v185: 166 }
+  - key: REFRESH_LOCKER_OR_NOTICE
+    handler: OnCashItemResRefreshLockerOrNotice
+    modes: { jms_v185: 167 }
+  - key: SHOW_NOTICE_1464
+    handler: OnCashItemResShowNotice1464
+    modes: { jms_v185: 168 }

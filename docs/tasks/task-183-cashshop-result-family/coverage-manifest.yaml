@@ -1,6 +1,23 @@
 # coverage-manifest
 ops:
   - CASHSHOP_OPERATION            # the single aggregate op-row (D3)
+# JMS-only follow-up: 10 additional CCashShop::OnCashItemResult arms found
+# unmodeled by the code-review audit, each verified on jms_v185 ONLY (n-a on
+# every GMS/legacy version — the sub_XXXX handlers are absent from those
+# switches). All 10 aggregate into the single CASHSHOP_OPERATION op-row above;
+# listed here as the discrete jms_v185 cells this change added (see
+# arm-catalog.md "JMS-only arms" for per-arm evidence).
+jms_only_arms:                    # op-key (writer CashShopOperation) × jms_v185
+  - GIFT_RESULT_NOTICE            # mode 76  -> GiftResultNotice
+  - LOAD_RECEIVED_GIFT_SUCCESS    # mode 77  -> LoadReceivedGiftDone (176B record)
+  - LIMIT_GOODS_STOCK_CHANGED     # mode 96  -> LimitGoodsStockChanged (conditional itemId)
+  - SHOW_NOTICE_1089              # mode 146 -> ShowNotice1089 (bodyless)
+  - TRANSFER_WORLD_NOTICE_REASON  # mode 147 -> TransferWorldNoticeReason
+  - REFRESH_LOCKER                # mode 162 -> RefreshLocker (55B CashInventoryItem)
+  - CLIENT_NO_OP                  # mode 164 -> ClientNoOp (bodyless, nullsub_2)
+  - SHOW_NOTICE_1465              # mode 166 -> ShowNotice1465 (bodyless)
+  - REFRESH_LOCKER_OR_NOTICE      # mode 167 -> RefreshLockerOrNotice (55B CashInventoryItem)
+  - SHOW_NOTICE_1464              # mode 168 -> ShowNotice1464 (bodyless)
 versions:
   - gms_v48
   - gms_v61

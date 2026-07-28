@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashRefreshLockerOrNotice
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#REFRESH_LOCKER_OR_NOTICE
+    address: "0x48c373"
+    decompile_sha256: f1ebb37ebef9b2891c388ad09678b08aca932537d4ace29c5dd19275ba8536f0
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_jms_test.go#TestRefreshLockerOrNoticeByteFixture

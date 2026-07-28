@@ -2489,6 +2489,31 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "GachaponCopyDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	case "CCashShop::OnCashItemResult#CHANGE_MAPLE_POINT_SUCCESS":
 		return []candidate{{name: "ChangeMaplePointDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// JMS-only arm family (task-183 follow-up): 10 arms present only in the JMS
+	// v185 dispatcher switch (raw Decode1; @0x48b5a5). Behavior-derived IDB
+	// names + wire-truth in arm-catalog.md "JMS-only arms". Bodyless canned-notice
+	// arms (SHOW_NOTICE_1089/1465/1464) + the genuine no-op (CLIENT_NO_OP →
+	// nullsub_2) are still discrete structs per INV-1.
+	case "CCashShop::OnCashItemResult#GIFT_RESULT_NOTICE":
+		return []candidate{{name: "GiftResultNotice", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#LOAD_RECEIVED_GIFT_SUCCESS":
+		return []candidate{{name: "LoadReceivedGiftDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#LIMIT_GOODS_STOCK_CHANGED":
+		return []candidate{{name: "LimitGoodsStockChanged", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#SHOW_NOTICE_1089":
+		return []candidate{{name: "ShowNotice1089", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#TRANSFER_WORLD_NOTICE_REASON":
+		return []candidate{{name: "TransferWorldNoticeReason", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#REFRESH_LOCKER":
+		return []candidate{{name: "RefreshLocker", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#CLIENT_NO_OP":
+		return []candidate{{name: "ClientNoOp", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#SHOW_NOTICE_1465":
+		return []candidate{{name: "ShowNotice1465", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#REFRESH_LOCKER_OR_NOTICE":
+		return []candidate{{name: "RefreshLockerOrNotice", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#SHOW_NOTICE_1464":
+		return []candidate{{name: "ShowNotice1464", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	// Serverbound CCashShop senders (op-byte owned by the ShopOperation dispatcher; bodies below).
 	case "CCashShop::TrySendQueryCashRequest":
 		return []candidate{{name: "CheckWallet", dir: csvpkg.DirServerbound, pkg: "cash"}}

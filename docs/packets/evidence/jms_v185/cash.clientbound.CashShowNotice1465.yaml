@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashShowNotice1465
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#SHOW_NOTICE_1465
+    address: "0x48c26e"
+    decompile_sha256: c72614b096b710fe9d19d8318673d3aa1d59d9d96b91f5c04eef9c27205cd460
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_jms_test.go#TestShowNotice1465ByteFixture

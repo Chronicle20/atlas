@@ -3351,7 +3351,17 @@
             "PURCHASE_RECORD_FAILED": 158,
             "NAME_CHANGE_BUY_DONE": 165,
             "TRANSFER_WORLD_SUCCESS": 174,
-            "TRANSFER_WORLD_FAILED": 175
+            "TRANSFER_WORLD_FAILED": 175,
+            "GIFT_RESULT_NOTICE": 76,
+            "LOAD_RECEIVED_GIFT_SUCCESS": 77,
+            "LIMIT_GOODS_STOCK_CHANGED": 96,
+            "SHOW_NOTICE_1089": 146,
+            "TRANSFER_WORLD_NOTICE_REASON": 147,
+            "REFRESH_LOCKER": 162,
+            "CLIENT_NO_OP": 164,
+            "SHOW_NOTICE_1465": 166,
+            "REFRESH_LOCKER_OR_NOTICE": 167,
+            "SHOW_NOTICE_1464": 168
           }
         }
       },

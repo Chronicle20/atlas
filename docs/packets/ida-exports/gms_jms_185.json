@@ -14594,6 +14594,147 @@
           "comment": "item: 55 bytes GW_CashItemInfo blob (CashInventoryItem.EncodeBytes); byte-identical body shape to NAME_CHANGE_BUY_DONE"
         }
       ]
+    },
+    "CCashShop::OnCashItemResult#GIFT_RESULT_NOTICE": {
+      "address": "0x48ba24",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x4c=76 GIFT_RESULT_NOTICE; op-byte consumed by dispatcher before CCashShop__OnCashItemResShowGiftResultNotice)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "reason byte (passed to gift-result notice sub_48F0F2@0x48f0f2: 214/215/216 -> StringPool 625/626/627, else 624)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#LOAD_RECEIVED_GIFT_SUCCESS": {
+      "address": "0x48ba3f",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x4d=77 LOAD_RECEIVED_GIFT_SUCCESS; op-byte consumed by dispatcher before CCashShop__OnCashItemResLoadReceivedGiftDone)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "flag byte (v26; when 0 the client shows StringPool notice 626 after the loop)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "count (uint32, count-prefix for the received-gift list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "ReceivedGiftEntry (176B/0xB0 GW_GiftList-shaped: itemId i32@12, data1 i32@16, data2 i32@20, giftType i32@24, text char[101]@28, sender char[33]@129, itemName char[14]@162)",
+          "guard": "loop count"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#LIMIT_GOODS_STOCK_CHANGED": {
+      "address": "0x48d4d4",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x60=96 LIMIT_GOODS_STOCK_CHANGED; op-byte consumed by dispatcher before CCashShop__OnCashItemResLimitGoodsStockChanged)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "result byte (v4; NoticeFailReason code; 205/206 gate the itemId read; 177/178/179 trigger SendTransferFieldPacket)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "CONDITIONAL if result==205 or result==206: itemId (uint32, passed to UpdateStock/ChangeLimitGoodsState)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#SHOW_NOTICE_1089": {
+      "address": "0x48e6c9",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x92=146 SHOW_NOTICE_1089; op-byte consumed by dispatcher; bodyless - handler reads nothing, shows StringPool notice 0x1089)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#TRANSFER_WORLD_NOTICE_REASON": {
+      "address": "0x48e6f7",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x93=147 TRANSFER_WORLD_NOTICE_REASON; op-byte consumed by dispatcher before CCashShop__OnCashItemResTransferWorldNoticeReason)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "reason byte (v3; NoticeFailReason code; 177/178 trigger SendTransferFieldPacket)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#REFRESH_LOCKER": {
+      "address": "0x48c321",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xa2=162 REFRESH_LOCKER; op-byte consumed by dispatcher before CCashShop__OnCashItemResRefreshLocker)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "item: 55 bytes (0x37) GW_CashItemInfo blob (CashInventoryItem.EncodeBytes) decoded into a fresh locker slot"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#CLIENT_NO_OP": {
+      "address": "0x48c370",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xa4=164 CLIENT_NO_OP; op-byte consumed by dispatcher; routes to shared nullsub_2 - genuine no-op, reads nothing)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#SHOW_NOTICE_1465": {
+      "address": "0x48c26e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xa6=166 SHOW_NOTICE_1465; op-byte consumed by dispatcher; bodyless - handler reads nothing, shows StringPool notice 0x1465)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#REFRESH_LOCKER_OR_NOTICE": {
+      "address": "0x48c373",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xa7=167 REFRESH_LOCKER_OR_NOTICE; op-byte consumed by dispatcher before CCashShop__OnCashItemResRefreshLockerOrNotice)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "flag byte (v12; selects StringPool 5219 vs 5216 when the locker window is not open)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "item: 55 bytes (0x37) GW_CashItemInfo blob (CashInventoryItem.EncodeBytes) decoded into a fresh locker slot"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#SHOW_NOTICE_1464": {
+      "address": "0x48c413",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xa8=168 SHOW_NOTICE_1464; op-byte consumed by dispatcher; bodyless - handler reads nothing, shows StringPool notice 0x1464)"
+        }
+      ]
     }
   }
 }

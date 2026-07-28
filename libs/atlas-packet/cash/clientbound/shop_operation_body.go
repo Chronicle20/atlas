@@ -131,6 +131,21 @@ const (
 	CashShopOperationErrorPleaseTryAgain                    = "PLEASE_TRY_AGAIN"
 	CashShopOperationErrorCannotBePurchasedWhenUnderSeven   = "CANNOT_BE_PURCHASED_WHEN_UNDER_SEVEN"
 	CashShopOperationErrorCannotBeReceivedWhenUnderSeven    = "CANNOT_BE_RECEIVED_WHEN_UNDER_SEVEN"
+
+	// JMS-only arm operation keys (task-183 follow-up). These 10 arms exist only
+	// in the JMS v185 dispatcher switch (see shop_operation_result_jms.go +
+	// arm-catalog.md "JMS-only arms"). jms_v185 mode only; n-a on every GMS/legacy
+	// version (absent from those switches).
+	CashShopOperationGiftResultNotice          = "GIFT_RESULT_NOTICE"           // mode 76
+	CashShopOperationLoadReceivedGiftSuccess   = "LOAD_RECEIVED_GIFT_SUCCESS"   // mode 77
+	CashShopOperationLimitGoodsStockChanged    = "LIMIT_GOODS_STOCK_CHANGED"    // mode 96
+	CashShopOperationShowNotice1089            = "SHOW_NOTICE_1089"             // mode 146 (bodyless)
+	CashShopOperationTransferWorldNoticeReason = "TRANSFER_WORLD_NOTICE_REASON" // mode 147
+	CashShopOperationRefreshLocker             = "REFRESH_LOCKER"               // mode 162
+	CashShopOperationClientNoOp                = "CLIENT_NO_OP"                 // mode 164 (bodyless)
+	CashShopOperationShowNotice1465            = "SHOW_NOTICE_1465"             // mode 166 (bodyless)
+	CashShopOperationRefreshLockerOrNotice     = "REFRESH_LOCKER_OR_NOTICE"     // mode 167
+	CashShopOperationShowNotice1464            = "SHOW_NOTICE_1464"             // mode 168 (bodyless)
 )
 
 // CashShopLoadInventoryFailureBody builds the LOAD_INVENTORY_FAILURE arm
@@ -656,5 +671,105 @@ func CashShopGachaponCopyDoneBody(flag1 byte, flag2 byte, unused1 int32, unused2
 func CashShopChangeMaplePointDoneBody(sn int64, count int32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CashShopOperationChangeMaplePointDone, func(mode byte) packet.Encoder {
 		return NewChangeMaplePointDone(mode, sn, count)
+	})
+}
+
+// --- JMS-only arm bodies (task-183 follow-up) ---
+// See shop_operation_result_jms.go for the discrete structs and arm-catalog.md
+// "JMS-only arms" for the per-arm wire-truth + behavior-derived-name evidence.
+// Each body FIXES its operation key (the discrete struct never accepts a caller
+// mode) and resolves the mode from the "operations" table. The two reason-notice
+// arms (GIFT_RESULT_NOTICE, TRANSFER_WORLD_NOTICE_REASON) additionally resolve
+// their reason byte from the writer "errors" table via `message` (the sibling
+// failure-arm pattern; `message` flows into the "errors" key, never "operations"
+// — allowed per AP-4/INV-3).
+
+// CashShopGiftResultNoticeBody builds the GIFT_RESULT_NOTICE arm (mode 76,
+// CCashShop__OnCashItemResShowGiftResultNotice @ 0x48ba24).
+func CashShopGiftResultNoticeBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationGiftResultNotice)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewGiftResultNotice(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+// CashShopLoadReceivedGiftDoneBody builds the LOAD_RECEIVED_GIFT_SUCCESS arm
+// (mode 77, CCashShop__OnCashItemResLoadReceivedGiftDone @ 0x48ba3f).
+func CashShopLoadReceivedGiftDoneBody(flag byte, gifts []ReceivedGiftEntry) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationLoadReceivedGiftSuccess, func(mode byte) packet.Encoder {
+		return NewLoadReceivedGiftDone(mode, flag, gifts)
+	})
+}
+
+// CashShopLimitGoodsStockChangedBody builds the LIMIT_GOODS_STOCK_CHANGED arm
+// (mode 96, CCashShop__OnCashItemResLimitGoodsStockChanged @ 0x48d4d4). `result`
+// is a plain protocol status code that gates the conditional itemId field — see
+// LimitGoodsStockChanged for why it is not config-resolved.
+func CashShopLimitGoodsStockChangedBody(result byte, itemId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationLimitGoodsStockChanged, func(mode byte) packet.Encoder {
+		return NewLimitGoodsStockChanged(mode, result, itemId)
+	})
+}
+
+// CashShopShowNotice1089Body builds the bodyless SHOW_NOTICE_1089 arm (mode 146,
+// CCashShop__OnCashItemResShowNotice1089 @ 0x48e6c9).
+func CashShopShowNotice1089Body() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationShowNotice1089, func(mode byte) packet.Encoder {
+		return NewShowNotice1089(mode)
+	})
+}
+
+// CashShopTransferWorldNoticeReasonBody builds the TRANSFER_WORLD_NOTICE_REASON
+// arm (mode 147, CCashShop__OnCashItemResTransferWorldNoticeReason @ 0x48e6f7).
+func CashShopTransferWorldNoticeReasonBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationTransferWorldNoticeReason)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewTransferWorldNoticeReason(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+// CashShopRefreshLockerBody builds the REFRESH_LOCKER arm (mode 162,
+// CCashShop__OnCashItemResRefreshLocker @ 0x48c321).
+func CashShopRefreshLockerBody(item CashInventoryItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationRefreshLocker, func(mode byte) packet.Encoder {
+		return NewRefreshLocker(mode, item)
+	})
+}
+
+// CashShopClientNoOpBody builds the bodyless CLIENT_NO_OP arm (mode 164,
+// nullsub_2 @ 0x48c370 — genuine client no-op).
+func CashShopClientNoOpBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationClientNoOp, func(mode byte) packet.Encoder {
+		return NewClientNoOp(mode)
+	})
+}
+
+// CashShopShowNotice1465Body builds the bodyless SHOW_NOTICE_1465 arm (mode 166,
+// CCashShop__OnCashItemResShowNotice1465 @ 0x48c26e).
+func CashShopShowNotice1465Body() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationShowNotice1465, func(mode byte) packet.Encoder {
+		return NewShowNotice1465(mode)
+	})
+}
+
+// CashShopRefreshLockerOrNoticeBody builds the REFRESH_LOCKER_OR_NOTICE arm
+// (mode 167, CCashShop__OnCashItemResRefreshLockerOrNotice @ 0x48c373).
+func CashShopRefreshLockerOrNoticeBody(flag byte, item CashInventoryItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationRefreshLockerOrNotice, func(mode byte) packet.Encoder {
+		return NewRefreshLockerOrNotice(mode, flag, item)
+	})
+}
+
+// CashShopShowNotice1464Body builds the bodyless SHOW_NOTICE_1464 arm (mode 168,
+// CCashShop__OnCashItemResShowNotice1464 @ 0x48c413).
+func CashShopShowNotice1464Body() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationShowNotice1464, func(mode byte) packet.Encoder {
+		return NewShowNotice1464(mode)
 	})
 }

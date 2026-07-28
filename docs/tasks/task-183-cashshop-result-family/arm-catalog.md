@@ -289,3 +289,120 @@ inconsistency in `BUY_NORMAL_FAILED`), v79 on
 only). None of this changes the wire byte layout — it is exclusively a
 version-specific reason-code lookup table concern for the codec
 implementation (DOM-25), never a struct-shape concern.
+
+## JMS-only arms (task-183 follow-up)
+
+A code-review audit found 10 arms of the JMS v185 dispatcher
+(`CCashShop::OnCashItemResult` @ `0x48b5a5`, raw `CInPacket::Decode1` switch —
+re-verified 2026-07, IDA session `3c4bb8b1`, `MapleStory_dump_SCY.exe`) that the
+original task-183 pass left unmodeled. They target `sub_XXXX` functions with NO
+client symbol and NO GMS/legacy-canonical equivalent — absent from every GMS +
+legacy switch (all fully enumerated and named in task-183 Waves 0/1). The four
+bodyless canned-notice / no-op arms below are the "four zero-decode candidate
+handlers … cannot be disambiguated further without decoding jms's Japanese
+StringPool" flagged in §5 above: they are now modeled explicitly by their
+verifiable behavior (each shows StringPool notice #N, or is a genuine no-op) —
+the Japanese notice *text* is still not resolvable through IDA-MCP, but the
+dispatcher case, the target address, and the wire shape (bodyless) all are.
+
+**Every IDB name below is BEHAVIOR-DERIVED** (JMS DEVM build is stripped; no
+PDB). Each name describes what the handler *verifiably does* at the cited
+address; none is presented as the client's real symbol. The 9 non-shared subs
+were renamed + `idb_save`d in session `3c4bb8b1`; mode 164 targets the shared
+generic `nullsub_2` (left as-is — a genuine empty function reused elsewhere).
+
+| mode | addr | behavior-derived IDB name | atlas KEY | wire (after mode byte) | reason/result treatment |
+|---|---|---|---|---|---|
+| 76  | 0x48ba24 | `CCashShop__OnCashItemResShowGiftResultNotice` | `GIFT_RESULT_NOTICE` | `reason:Decode1` | errors-resolved (notice arm) |
+| 77  | 0x48ba3f | `CCashShop__OnCashItemResLoadReceivedGiftDone` | `LOAD_RECEIVED_GIFT_SUCCESS` | `flag:Decode1` + `count:Decode4` + N × `ReceivedGiftEntry` (176B) | plain flag |
+| 96  | 0x48d4d4 | `CCashShop__OnCashItemResLimitGoodsStockChanged` | `LIMIT_GOODS_STOCK_CHANGED` | `result:Decode1` + (result∈{205,206}) `itemId:Decode4` | plain result (gates wire shape) |
+| 146 | 0x48e6c9 | `CCashShop__OnCashItemResShowNotice1089` | `SHOW_NOTICE_1089` | *(bodyless)* | — |
+| 147 | 0x48e6f7 | `CCashShop__OnCashItemResTransferWorldNoticeReason` | `TRANSFER_WORLD_NOTICE_REASON` | `reason:Decode1` | errors-resolved (notice arm) |
+| 162 | 0x48c321 | `CCashShop__OnCashItemResRefreshLocker` | `REFRESH_LOCKER` | `item:DecodeBuffer(0x37=55)` (CashInventoryItem) | — |
+| 164 | 0x48c370 | `nullsub_2` (shared; not renamed) | `CLIENT_NO_OP` | *(bodyless)* — client no-op | — |
+| 166 | 0x48c26e | `CCashShop__OnCashItemResShowNotice1465` | `SHOW_NOTICE_1465` | *(bodyless)* | — |
+| 167 | 0x48c373 | `CCashShop__OnCashItemResRefreshLockerOrNotice` | `REFRESH_LOCKER_OR_NOTICE` | `flag:Decode1` + `item:DecodeBuffer(0x37=55)` (CashInventoryItem) | plain flag |
+| 168 | 0x48c413 | `CCashShop__OnCashItemResShowNotice1464` | `SHOW_NOTICE_1464` | *(bodyless)* | — |
+
+Per-arm decompile evidence (all cite the JMS `3c4bb8b1` decompile):
+
+- **76 `GIFT_RESULT_NOTICE`** (`0x48ba24`): reads one `Decode1` reason byte and
+  passes it to the gift-result notice `sub_48F0F2` (`0x48f0f2`), which maps
+  214/215/216 → StringPool 625/626/627 (else 624). Reason is a NoticeFailReason-
+  class UI code → body resolves it from the writer `errors` table (sibling
+  failure-arm pattern); struct field is a plain `errorCode byte`.
+- **77 `LOAD_RECEIVED_GIFT_SUCCESS`** (`0x48ba3f`): `Decode1` flag (v26; ==0 →
+  show StringPool notice 626 after the loop), `Decode4` count, then count ×
+  `DecodeBuffer(0xB0=176)` records, then ACKs `COutPacket(0xF5)`. See the
+  176-byte record layout below. Behavior-derived name: it loads the received-gift
+  list into the locker gift UI.
+- **96 `LIMIT_GOODS_STOCK_CHANGED`** (`0x48d4d4`): `Decode1` result (v4);
+  **only when result==205 or 206** it reads `Decode4` itemId and calls
+  `UpdateStock`/`ChangeLimitGoodsState`/`ChangePage`; then `NoticeFailReason(result)`;
+  then if result∈{177,178,179} `SendTransferFieldPacket`. The result byte
+  **controls the wire shape** (conditional itemId), so it is a **plain field, not
+  config-resolved** — matching the family's treatment of protocol status codes
+  (`GachaponOpenDone.resultCode`). Config-resolving a byte that gates a
+  conditional read is unsafe (the resolved value must equal 205/206 to include
+  the itemId).
+- **146 `SHOW_NOTICE_1089`** (`0x48e6c9`): no `Decode*`; shows StringPool notice
+  `0x1089` (4233) via `CUtilDlg::Notice`. Bodyless (mode byte only).
+- **147 `TRANSFER_WORLD_NOTICE_REASON`** (`0x48e6f7`): `Decode1` reason (v3) →
+  `NoticeFailReason(reason)`; then if reason∈{177,178} `SendTransferFieldPacket`.
+  Wire is unconditional (`mode + reason`); the transfer is a client side-effect,
+  not a wire read, so the reason is safely errors-resolved (notice-arm pattern);
+  plain `errorCode byte` struct field.
+- **162 `REFRESH_LOCKER`** (`0x48c321`): `DecodeBuffer(0x37=55)` a single
+  `GW_CashItemInfo` into a fresh locker slot, then refreshes the locker window.
+  No leading byte. Reuses the existing `CashInventoryItem` + `decodeCashInventoryItemSkipPadding`.
+- **164 `CLIENT_NO_OP`** (`0x48c370`): dispatcher routes mode 164 to the shared
+  `nullsub_2` — an empty function that reads nothing and does nothing. Genuine
+  client no-op; modeled bodyless per INV-1.
+- **166 `SHOW_NOTICE_1465`** (`0x48c26e`): no `Decode*`; StringPool notice
+  `0x1465` (5221). Bodyless.
+- **167 `REFRESH_LOCKER_OR_NOTICE`** (`0x48c373`): `Decode1` flag (v12),
+  `DecodeBuffer(0x37=55)` a `GW_CashItemInfo`; then either refreshes the locker
+  window (when the client-local `*(this+1236)` flag is set) or shows StringPool
+  5219/5216 (selected by the flag byte). Flag is a binary selector → plain byte
+  (like `PurchaseRecordDone.purchased`).
+- **168 `SHOW_NOTICE_1464`** (`0x48c413`): no `Decode*`; StringPool notice
+  `0x1464` (5220). Bodyless.
+
+### JMS 176-byte received-gift record (`ReceivedGiftEntry`)
+
+The mode-77 list element is one `DecodeBuffer(0xB0 = 176)` blob per entry — a
+`GW_GiftList`-shaped record with **no named type** in the stripped DEVM IDB (it
+is NOT the 98-byte `GiftListEntry`/`GW_GiftList` used by `LOAD_GIFT_SUCCESS`).
+Byte offsets derived from the `sub_48BA3F` disassembly of the field reads
+(`0x48ba9b`-`0x48bbca`):
+
+| offset | field | size | disasm evidence |
+|---|---|---|---|
+| 0x00 | reserved head | 12 | not accessed by the handler |
+| 0x0C | `itemId` (int32) | 4 | `mov edi,[eax+0Ch]`; arg1 to gift-display helpers `sub_869D96`/`sub_86A57C`, paired with `itemName` |
+| 0x10 | `data1` (int32) | 4 | `mov ecx,[eax+10h]` (helper arg2; semantics unresolved) |
+| 0x14 | `data2` (int32) | 4 | `mov ecx,[eax+14h]` (helper arg3) |
+| 0x18 | `giftType` (int32) | 4 | `cmp [eax+18h],0`; ==0 → points/coupon MapleTip path, !=0 → gift-notice path |
+| 0x1C | `text` (string) | 101 | `Assign(p+0x1C)` null-terminated within the 0x1C-0x80 region |
+| 0x81 | `sender` (string) | 33 | `Assign(p+0x81)` null-terminated within the 0x81-0xA1 region |
+| 0xA2 | `itemName` (string) | 14 | `Assign(p+0xA2)` null-terminated within the 0xA2-0xAF region |
+
+12 + 4 + 4 + 4 + 4 + 101 + 33 + 14 = **176**. The head + string regions are
+fixed-size (the strings are null-terminated within their regions), so `Encode`
+always emits exactly 176 bytes. Fields at offsets the handler does not read
+(the 12-byte head) are modeled as a reserved region rather than invented.
+
+### Verification
+
+All 10 arms are jms_v185-only cells. Each carries: a `#`-entry in
+`run.go candidatesFromFName`; a discrete struct in
+`libs/atlas-packet/cash/clientbound/shop_operation_result_jms.go`; a body func +
+operation-key const in `shop_operation_body.go`; a `jms_v185` mode in
+`cash_shop_operation.yaml` (n-a on all other versions → no key); the key in the
+`template_jms_185_1.json` CashShopOperation writer `operations` map (via
+`packet-audit operations`); a `#`-suffix export entry in `gms_jms_185.json`; a
+generated audit report in `docs/packets/audits/jms_v185/Cash*.{json,md}`
+(all ✅); a byte-fixture with a `packet-audit:verify` marker in
+`shop_operation_result_jms_test.go`; and a pinned TIER1-FIXTURE evidence record.
+The `CASHSHOP_OPERATION` op-row's `jms_v185` cell remains `verified` (worst-of
+aggregation — honest only because all 10 new arms verify).

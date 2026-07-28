@@ -1,0 +1,30 @@
+{
+  "WriterName": "CashFreeCashItemDone",
+  "IDAName": "CCashShop::OnCashItemResult#FREE_CASH_ITEM_DONE",
+  "Address": "0x4850ac",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_operation_result_misc.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0x9e FREE_CASH_ITEM_DONE; op-byte consumed by dispatcher before CCashShop::OnCashItemResFreeCashItemDone)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "item: 55 bytes GW_CashItemInfo blob (CashInventoryItem.EncodeBytes); item-blob shape, not a small scalar",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

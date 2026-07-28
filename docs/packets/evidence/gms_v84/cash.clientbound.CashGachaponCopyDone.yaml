@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashGachaponCopyDone
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#GACHAPON_COPY_SUCCESS
+    address: "0x47fae2"
+    decompile_sha256: 86a510de64c32038f1ef38467868530075c83d8129731e93a25563c5ed0eaa7e
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_gachapon_test.go#TestGachaponCopyDoneByteFixture

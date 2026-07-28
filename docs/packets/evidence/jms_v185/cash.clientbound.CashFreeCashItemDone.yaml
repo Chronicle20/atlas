@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashFreeCashItemDone
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#FREE_CASH_ITEM_DONE
+    address: "0x48c2a9"
+    decompile_sha256: d9b57f3536bc0053247a3f189124b43d5e9b55f2b6fadc69f0289d7412766b64
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_misc_test.go#TestFreeCashItemDoneByteFixture

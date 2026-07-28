@@ -1,0 +1,48 @@
+{
+  "WriterName": "CashLoadReceivedGiftDone",
+  "IDAName": "CCashShop::OnCashItemResult#LOAD_RECEIVED_GIFT_SUCCESS",
+  "Address": "0x48ba3f",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_operation_result_jms.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0x4d=77 LOAD_RECEIVED_GIFT_SUCCESS; op-byte consumed by dispatcher before CCashShop__OnCashItemResLoadReceivedGiftDone)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "flag byte (v26; when 0 the client shows StringPool notice 626 after the loop)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "count (uint32, count-prefix for the received-gift list)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "ReceivedGiftEntry (176B/0xB0 GW_GiftList-shaped: itemId i32@12, data1 i32@16, data2 i32@20, giftType i32@24, text char[101]@28, sender char[33]@129, itemName char[14]@162)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashIncBuyCharacterCountSuccess
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#INC_BUY_CHARACTER_COUNT_SUCCESS
+    address: "0x495000"
+    decompile_sha256: 9ae85c98bdb7dc4b6f9022b04ab87050c4d436111f95861f583bf9f64adf6ac8
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_slots_test.go#TestIncBuyCharacterCountSuccessByteFixture

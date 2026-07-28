@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashClientNoOp
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#CLIENT_NO_OP
+    address: "0x48c370"
+    decompile_sha256: af45174a46f20a74c47d07c3ed29312f73b30d653655109bce0431e0d4249713
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_jms_test.go#TestClientNoOpByteFixture

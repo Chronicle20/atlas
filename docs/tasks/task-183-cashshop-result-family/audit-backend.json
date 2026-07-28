@@ -1,0 +1,39 @@
+{
+  "service": "libs/atlas-packet (cash/clientbound codec family)",
+  "path": "libs/atlas-packet/cash/clientbound",
+  "date": "2026-07-27",
+  "build": "pass",
+  "testsPassed": 2,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "cash/clientbound shop_operation_result family (task-183)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25a", "name": "mode byte resolved via WithResolvedCode/ResolveCode", "status": "pass", "evidence": "libs/atlas-packet/cash/clientbound/shop_operation_body.go (82 resolver call sites)"},
+        {"id": "DOM-25b", "name": "failure reason resolved via ResolveCode(...,\"errors\",message)", "status": "pass", "evidence": "libs/atlas-packet/cash/clientbound/shop_operation_body.go:247-249"},
+        {"id": "DOM-25c", "name": "no func(_ byte) / no caller-supplied mode param", "status": "pass", "evidence": "grep zero matches across cash/clientbound/*.go"},
+        {"id": "DISCRETE-1", "name": "discrete struct per arm, incl. bodyless", "status": "pass", "evidence": "shop_operation_result_failed.go:17-876 (25 structs)"},
+        {"id": "IMMUT-1", "name": "immutable structs: private fields, getters, constructor, no setters", "status": "pass", "evidence": "grep zero Set* methods across changed files"},
+        {"id": "GATE-1", "name": "jms nxCashSpent gate uses region idiom", "status": "pass", "evidence": "shop_operation_result_gift.go:92-94"},
+        {"id": "GATE-2", "name": "v72 IncBuyCharacterCountSuccess gate uses region+exact-version idiom", "status": "pass", "evidence": "shop_operation_result_slots.go:150-156"},
+        {"id": "GATE-3", "name": "no raw MajorVersion()>N introduced in diff", "status": "pass", "evidence": "hits only in pre-existing unchanged code (shop_open.go, query_result.go, shop_inventory.go:134)"},
+        {"id": "DOM-21a", "name": "reuse CashInventoryItem for 55-byte blob arms", "status": "pass", "evidence": "shop_inventory.go:16,55; used at shop_operation_result_gift.go:484 etc."},
+        {"id": "DOM-21b", "name": "reuse packetmodel.Asset for v72 asset arm", "status": "pass", "evidence": "shop_operation_result_slots.go:9,125"},
+        {"id": "DOM-21c", "name": "GiftListEntry/PackedCashItemRef are genuinely new, not atlas-constants dup", "status": "pass", "evidence": "grep libs/atlas-constants/ zero hits"},
+        {"id": "TEST-1", "name": "byte-fixture tests assert real bytes", "status": "pass", "evidence": "shop_operation_result_failed_test.go:184; shop_operation_result_slots_test.go:94"},
+        {"id": "TEST-2", "name": "no *_testhelpers.go files", "status": "pass", "evidence": "find: no matches"},
+        {"id": "TEST-3", "name": "table-driven tests via pt.Variants + t.Run", "status": "pass", "evidence": "shop_operation_result_failed_test.go:175-176"},
+        {"id": "BUILD-1", "name": "go build ./... clean", "status": "pass", "evidence": "libs/atlas-packet and tools/packet-audit exit 0"},
+        {"id": "TEST-4", "name": "go test ./... -count=1 clean", "status": "pass", "evidence": "cash/clientbound ok, cash/serverbound ok"},
+        {"id": "FMT-1", "name": "gofmt -l clean", "status": "pass", "evidence": "no output"},
+        {"id": "VET-1", "name": "go vet ./... clean", "status": "pass", "evidence": "no output"},
+        {"id": "GOROUTINE-1", "name": "no bare go statements", "status": "pass", "evidence": "grep zero matches"},
+        {"id": "DEADCODE-1", "name": "cash_shop_entry.go change is dead-code cleanup only", "status": "pass", "evidence": "services/atlas-channel/.../cash_shop_entry.go diff removes only a commented-out block"}
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": []
+}

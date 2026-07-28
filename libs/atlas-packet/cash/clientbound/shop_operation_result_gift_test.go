@@ -16,9 +16,14 @@ import (
 // gms_v83/v84/v87/v95, jms_v185 only — legacy modes are Wave 3).
 
 var giftDoneModes = map[string]byte{
+	"GMS/v48": 0x3B, "GMS/v61": 0x42, "GMS/v72": 0x4A, "GMS/v79": 0x56,
 	"GMS/v83": 0x5E, "GMS/v84": 0x61, "GMS/v87": 0x63, "GMS/v95": 0x6B, "JMS/v185": 0x5F,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashGiftDone version=gms_v48 ida=0x454cf3
+// packet-audit:verify packet=cash/clientbound/CashGiftDone version=gms_v61 ida=0x462972
+// packet-audit:verify packet=cash/clientbound/CashGiftDone version=gms_v72 ida=0x4724e2
+// packet-audit:verify packet=cash/clientbound/CashGiftDone version=gms_v79 ida=0x4737a7
 // packet-audit:verify packet=cash/clientbound/CashGiftDone version=gms_v83 ida=0x47a856
 // packet-audit:verify packet=cash/clientbound/CashGiftDone version=gms_v84 ida=0x47d9f4
 // packet-audit:verify packet=cash/clientbound/CashGiftDone version=gms_v87 ida=0x48600e
@@ -63,6 +68,10 @@ func TestGiftDoneByteFixture(t *testing.T) {
 }
 
 var loadGiftDoneModes = map[string]byte{
+	// GMS/v48 n-a: v48 folds the LOAD_GIFT_SUCCESS payload as a trailing
+	// block into LOAD_INVENTORY_SUCCESS's own response (case 42) rather than
+	// dispatching a separate case (arm-catalog.md §3, task-0.5-v48-modes.md).
+	"GMS/v61": 0x31, "GMS/v72": 0x39, "GMS/v79": 0x45,
 	"GMS/v83": 0x4D, "GMS/v84": 0x50, "GMS/v87": 0x52, "GMS/v95": 0x5A, "JMS/v185": 0x50,
 }
 
@@ -87,6 +96,9 @@ func giftListEntryBytes(g GiftListEntry) []byte {
 	return out
 }
 
+// packet-audit:verify packet=cash/clientbound/CashLoadGiftDone version=gms_v61 ida=0x461758
+// packet-audit:verify packet=cash/clientbound/CashLoadGiftDone version=gms_v72 ida=0x47122e
+// packet-audit:verify packet=cash/clientbound/CashLoadGiftDone version=gms_v79 ida=0x47252c
 // packet-audit:verify packet=cash/clientbound/CashLoadGiftDone version=gms_v83 ida=0x47959e
 // packet-audit:verify packet=cash/clientbound/CashLoadGiftDone version=gms_v84 ida=0x47c73c
 // packet-audit:verify packet=cash/clientbound/CashLoadGiftDone version=gms_v87 ida=0x484cc5
@@ -128,9 +140,14 @@ func TestLoadGiftDoneByteFixture(t *testing.T) {
 }
 
 var coupleDoneModes = map[string]byte{
+	"GMS/v48": 0x5E, "GMS/v61": 0x67, "GMS/v72": 0x71, "GMS/v79": 0x7F,
 	"GMS/v83": 0x87, "GMS/v84": 0x8A, "GMS/v87": 0x8C, "GMS/v95": 0x98, "JMS/v185": 0x8A,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashCoupleDone version=gms_v48 ida=0x45573f
+// packet-audit:verify packet=cash/clientbound/CashCoupleDone version=gms_v61 ida=0x4634b2
+// packet-audit:verify packet=cash/clientbound/CashCoupleDone version=gms_v72 ida=0x4731bd
+// packet-audit:verify packet=cash/clientbound/CashCoupleDone version=gms_v79 ida=0x474689
 // packet-audit:verify packet=cash/clientbound/CashCoupleDone version=gms_v83 ida=0x47b78e
 // packet-audit:verify packet=cash/clientbound/CashCoupleDone version=gms_v84 ida=0x47e92c
 // packet-audit:verify packet=cash/clientbound/CashCoupleDone version=gms_v87 ida=0x486f6f
@@ -200,9 +217,14 @@ func packedRefBytes(r PackedCashItemRef) []byte {
 }
 
 var useCouponDoneModes = map[string]byte{
+	"GMS/v48": 0x36, "GMS/v61": 0x3D, "GMS/v72": 0x45, "GMS/v79": 0x51,
 	"GMS/v83": 0x59, "GMS/v84": 0x5C, "GMS/v87": 0x5E, "GMS/v95": 0x66, "JMS/v185": 0x5A,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashUseCouponDone version=gms_v48 ida=0x4542bf
+// packet-audit:verify packet=cash/clientbound/CashUseCouponDone version=gms_v61 ida=0x461f3c
+// packet-audit:verify packet=cash/clientbound/CashUseCouponDone version=gms_v72 ida=0x471a1a
+// packet-audit:verify packet=cash/clientbound/CashUseCouponDone version=gms_v79 ida=0x472d18
 // packet-audit:verify packet=cash/clientbound/CashUseCouponDone version=gms_v83 ida=0x479d8a
 // packet-audit:verify packet=cash/clientbound/CashUseCouponDone version=gms_v84 ida=0x47cf28
 // packet-audit:verify packet=cash/clientbound/CashUseCouponDone version=gms_v87 ida=0x485563
@@ -251,9 +273,14 @@ func TestUseCouponDoneByteFixture(t *testing.T) {
 }
 
 var giftCouponDoneModes = map[string]byte{
+	"GMS/v48": 0x38, "GMS/v61": 0x3F, "GMS/v72": 0x47, "GMS/v79": 0x53,
 	"GMS/v83": 0x5B, "GMS/v84": 0x5E, "GMS/v87": 0x60, "GMS/v95": 0x68, "JMS/v185": 0x5C,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashGiftCouponDone version=gms_v48 ida=0x45487a
+// packet-audit:verify packet=cash/clientbound/CashGiftCouponDone version=gms_v61 ida=0x4624f7
+// packet-audit:verify packet=cash/clientbound/CashGiftCouponDone version=gms_v72 ida=0x47202b
+// packet-audit:verify packet=cash/clientbound/CashGiftCouponDone version=gms_v79 ida=0x4732f0
 // packet-audit:verify packet=cash/clientbound/CashGiftCouponDone version=gms_v83 ida=0x47a362
 // packet-audit:verify packet=cash/clientbound/CashGiftCouponDone version=gms_v84 ida=0x47d500
 // packet-audit:verify packet=cash/clientbound/CashGiftCouponDone version=gms_v87 ida=0x485b2c
@@ -295,9 +322,14 @@ func TestGiftCouponDoneByteFixture(t *testing.T) {
 }
 
 var buyPackageDoneModes = map[string]byte{
+	"GMS/v48": 0x60, "GMS/v61": 0x69, "GMS/v72": 0x73, "GMS/v79": 0x81,
 	"GMS/v83": 0x89, "GMS/v84": 0x8C, "GMS/v87": 0x8E, "GMS/v95": 0x9A, "JMS/v185": 0x8C,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageDone version=gms_v48 ida=0x453f5a
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageDone version=gms_v61 ida=0x461bda
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageDone version=gms_v72 ida=0x4716ab
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageDone version=gms_v79 ida=0x4729a9
 // packet-audit:verify packet=cash/clientbound/CashBuyPackageDone version=gms_v83 ida=0x479a1b
 // packet-audit:verify packet=cash/clientbound/CashBuyPackageDone version=gms_v84 ida=0x47cbb9
 // packet-audit:verify packet=cash/clientbound/CashBuyPackageDone version=gms_v87 ida=0x4851f4
@@ -337,9 +369,14 @@ func TestBuyPackageDoneByteFixture(t *testing.T) {
 }
 
 var giftPackageDoneModes = map[string]byte{
+	"GMS/v48": 0x62, "GMS/v61": 0x6B, "GMS/v72": 0x75, "GMS/v79": 0x83,
 	"GMS/v83": 0x8B, "GMS/v84": 0x8E, "GMS/v87": 0x90, "GMS/v95": 0x9C, "JMS/v185": 0x8E,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashGiftPackageDone version=gms_v48 ida=0x454153
+// packet-audit:verify packet=cash/clientbound/CashGiftPackageDone version=gms_v61 ida=0x461dd9
+// packet-audit:verify packet=cash/clientbound/CashGiftPackageDone version=gms_v72 ida=0x4718b2
+// packet-audit:verify packet=cash/clientbound/CashGiftPackageDone version=gms_v79 ida=0x472bb0
 // packet-audit:verify packet=cash/clientbound/CashGiftPackageDone version=gms_v83 ida=0x479c22
 // packet-audit:verify packet=cash/clientbound/CashGiftPackageDone version=gms_v84 ida=0x47cdc0
 // packet-audit:verify packet=cash/clientbound/CashGiftPackageDone version=gms_v87 ida=0x4853fb
@@ -385,9 +422,14 @@ func TestGiftPackageDoneByteFixture(t *testing.T) {
 }
 
 var buyNormalDoneModes = map[string]byte{
+	"GMS/v48": 0x64, "GMS/v61": 0x6D, "GMS/v72": 0x77, "GMS/v79": 0x85,
 	"GMS/v83": 0x8D, "GMS/v84": 0x90, "GMS/v87": 0x92, "GMS/v95": 0x9E, "JMS/v185": 0x90,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashBuyNormalDone version=gms_v48 ida=0x4555bf
+// packet-audit:verify packet=cash/clientbound/CashBuyNormalDone version=gms_v61 ida=0x46332f
+// packet-audit:verify packet=cash/clientbound/CashBuyNormalDone version=gms_v72 ida=0x473032
+// packet-audit:verify packet=cash/clientbound/CashBuyNormalDone version=gms_v79 ida=0x4744fe
 // packet-audit:verify packet=cash/clientbound/CashBuyNormalDone version=gms_v83 ida=0x47b603
 // packet-audit:verify packet=cash/clientbound/CashBuyNormalDone version=gms_v84 ida=0x47e7a1
 // packet-audit:verify packet=cash/clientbound/CashBuyNormalDone version=gms_v87 ida=0x486de1
@@ -424,9 +466,14 @@ func TestBuyNormalDoneByteFixture(t *testing.T) {
 }
 
 var friendshipDoneModes = map[string]byte{
+	"GMS/v48": 0x68, "GMS/v61": 0x71, "GMS/v72": 0x7B, "GMS/v79": 0x89,
 	"GMS/v83": 0x91, "GMS/v84": 0x94, "GMS/v87": 0x96, "GMS/v95": 0xA2, "JMS/v185": 0x94,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashFriendshipDone version=gms_v48 ida=0x4558df
+// packet-audit:verify packet=cash/clientbound/CashFriendshipDone version=gms_v61 ida=0x463658
+// packet-audit:verify packet=cash/clientbound/CashFriendshipDone version=gms_v72 ida=0x47336b
+// packet-audit:verify packet=cash/clientbound/CashFriendshipDone version=gms_v79 ida=0x474837
 // packet-audit:verify packet=cash/clientbound/CashFriendshipDone version=gms_v83 ida=0x47b93c
 // packet-audit:verify packet=cash/clientbound/CashFriendshipDone version=gms_v84 ida=0x47eada
 // packet-audit:verify packet=cash/clientbound/CashFriendshipDone version=gms_v87 ida=0x48711d
@@ -465,9 +512,14 @@ func TestFriendshipDoneByteFixture(t *testing.T) {
 }
 
 var rebateDoneModes = map[string]byte{
+	"GMS/v48": 0x5C, "GMS/v61": 0x65, "GMS/v72": 0x6F, "GMS/v79": 0x7D,
 	"GMS/v83": 0x85, "GMS/v84": 0x88, "GMS/v87": 0x8A, "GMS/v95": 0x96, "JMS/v185": 0x88,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashRebateDone version=gms_v48 ida=0x4554a2
+// packet-audit:verify packet=cash/clientbound/CashRebateDone version=gms_v61 ida=0x463212
+// packet-audit:verify packet=cash/clientbound/CashRebateDone version=gms_v72 ida=0x472f13
+// packet-audit:verify packet=cash/clientbound/CashRebateDone version=gms_v79 ida=0x4743df
 // packet-audit:verify packet=cash/clientbound/CashRebateDone version=gms_v83 ida=0x47b4e4
 // packet-audit:verify packet=cash/clientbound/CashRebateDone version=gms_v84 ida=0x47e682
 // packet-audit:verify packet=cash/clientbound/CashRebateDone version=gms_v87 ida=0x486cc2

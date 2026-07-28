@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashBuyNormalDone
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#BUY_NORMAL_SUCCESS
+    address: "0x473032"
+    decompile_sha256: 4379830f7bb2b804a535699697a3d2e00ce67b5f67cadd145dddc4c8b19435e3
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_gift_test.go#TestBuyNormalDoneByteFixture

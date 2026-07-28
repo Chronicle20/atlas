@@ -20,6 +20,7 @@ func TestQualifiedWriterName(t *testing.T) {
 		{"reactor", "Spawn", "ReactorSpawn"},
 		{"pet", "Activated", "PetActivated"},
 		{"monster", "MovementAck", "MonsterMovementAck"},
+		{"mount", "Food", "MountFood"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.pkg+"/"+tc.name, func(t *testing.T) {
@@ -50,6 +51,7 @@ func TestLocateAtlasFileDisambiguatesByPkg(t *testing.T) {
 		{"pet", "Activated", csvpkg.DirClientbound, "/pet/clientbound/"},
 		{"monster", "Damage", csvpkg.DirClientbound, "/monster/clientbound/"},
 		{"reactor", "Hit", csvpkg.DirClientbound, "/reactor/clientbound/"},
+		{"mount", "Food", csvpkg.DirServerbound, "/mount/serverbound/"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.pkg+"/"+tc.name, func(t *testing.T) {

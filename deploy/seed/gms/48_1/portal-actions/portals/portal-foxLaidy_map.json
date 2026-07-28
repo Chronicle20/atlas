@@ -1,0 +1,70 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Korean Folk Town hidden street entry — gates entry to Gloomy Forest (922220000) on having quest 3647 started + item 4031793 (Soft Silver Fur). On success, force-starts quest 23647 (Familiar Lady follow-up) and warps; otherwise loops back to the same map.",
+      "mapId": 222010200,
+      "portalId": "foxLaidy_map",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "3647",
+              "type": "questStatus",
+              "value": "1"
+            },
+            {
+              "operator": ">=",
+              "referenceId": "4031793",
+              "type": "item",
+              "value": "1"
+            }
+          ],
+          "id": "has_silver_fur_and_quest_started",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "questId": "23647"
+                },
+                "type": "start_quest"
+              },
+              {
+                "params": {
+                  "mapId": "922220000",
+                  "portalName": "east00"
+                },
+                "type": "warp"
+              }
+            ]
+          }
+        },
+        {
+          "conditions": [],
+          "id": "default_loop_back",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "mapId": "222010200",
+                  "portalName": "east00"
+                },
+                "type": "warp"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "foxLaidy_map",
+    "type": "portal-action"
+  }
+}

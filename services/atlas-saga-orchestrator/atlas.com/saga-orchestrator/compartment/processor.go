@@ -3,15 +3,17 @@ package compartment
 import (
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"atlas-saga-orchestrator/kafka/message/compartment"
-	"atlas-saga-orchestrator/kafka/producer"
 	"context"
 	"errors"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 // ItemPayload represents an individual item in a transaction
@@ -38,6 +40,8 @@ type Processor interface {
 	RequestCreateAndEquipAsset(transactionId uuid.UUID, payload CreateAndEquipAssetPayload) error
 	RequestAcceptAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, assetData asset2.AssetData) error
 	RequestReleaseAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error
+	RequestSetOwner(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, owner string) error
+	RequestApplyLock(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error
 }
 
 type ProcessorImpl struct {
@@ -52,6 +56,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error {
 	return p.RequestCreateItemWithStats(transactionId, characterId, templateId, quantity, expiration, false)
@@ -115,4 +121,12 @@ func (p *ProcessorImpl) RequestAcceptAsset(transactionId uuid.UUID, characterId 
 
 func (p *ProcessorImpl) RequestReleaseAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestReleaseAssetCommandProvider(transactionId, characterId, inventoryType, assetId, quantity))
+}
+
+func (p *ProcessorImpl) RequestSetOwner(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, owner string) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestSetOwnerCommandProvider(transactionId, characterId, inventoryType, slot, owner))
+}
+
+func (p *ProcessorImpl) RequestApplyLock(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestApplyLockCommandProvider(transactionId, characterId, inventoryType, slot, expiration))
 }

@@ -2,7 +2,9 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LoginHistoryPage } from "@/pages/LoginHistoryPage";
 
-const activeTenant: { current: { id: string } | null } = { current: { id: "aaa" } };
+const activeTenant: { current: { id: string } | null } = {
+  current: { id: "aaa" },
+};
 const searchMock = vi.fn();
 
 vi.mock("@/context/tenant-context", () => ({
@@ -45,7 +47,9 @@ describe("LoginHistoryPage tenant switching", () => {
 
     const { rerender } = render(<LoginHistoryPage />);
 
-    fireEvent.change(screen.getByLabelText("IP Address"), { target: { value: "1.1.1.1" } });
+    fireEvent.change(screen.getByLabelText("IP Address"), {
+      target: { value: "1.1.1.1" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /search/i }));
 
     await waitFor(() => {

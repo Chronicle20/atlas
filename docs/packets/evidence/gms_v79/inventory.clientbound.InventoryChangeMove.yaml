@@ -1,0 +1,10 @@
+packet: inventory/clientbound/InventoryChangeMove
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnInventoryOperation#ChangeMove
+    address: "0x96953e"
+    decompile_sha256: 95c3df4d9d6cf0eeafed5e218ded97fbdd5ba4887b368b5a6781937b18e1a468
+verifies:
+  - libs/atlas-packet/inventory/clientbound/change_test.go#TestChangeMoveRoundTrip

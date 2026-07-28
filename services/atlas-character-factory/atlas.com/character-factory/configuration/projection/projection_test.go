@@ -1,13 +1,12 @@
 package projection_test
 
 import (
+	"atlas-character-factory/configuration/projection"
+	"atlas-character-factory/configuration/tenant"
 	"context"
 	"encoding/json"
 	"testing"
 	"time"
-
-	"atlas-character-factory/configuration/projection"
-	"atlas-character-factory/configuration/tenant"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"

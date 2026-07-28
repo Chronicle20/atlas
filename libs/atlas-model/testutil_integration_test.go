@@ -21,24 +21,23 @@ func TestGoroutineLeakDetectorIntegration(t *testing.T) {
 		// Test basic functionality that creates and cleans up goroutines
 		data := testutil.GenerateSlice(1, 50)
 		provider := testutil.FixedProvider(data)
-		
+
 		// Use model.SliceMap with ParallelMap (creates goroutines internally)
 		transform := func(val uint32) (uint32, error) {
 			time.Sleep(time.Microsecond) // Minimal work
 			return val * 3, nil
 		}
-		
+
 		transformed := model.SliceMap[uint32, uint32](transform)(provider)(model.ParallelMap())
 		result, err := transformed()
-		
 		if err != nil {
 			t.Errorf("Parallel transformation should not fail: %v", err)
 		}
-		
+
 		if len(result) != len(data) {
 			t.Errorf("Expected %d results, got %d", len(data), len(result))
 		}
-		
+
 		// Verify transformation
 		for i, val := range result {
 			expected := data[i] * 3
@@ -46,7 +45,7 @@ func TestGoroutineLeakDetectorIntegration(t *testing.T) {
 				t.Errorf("Index %d: expected %d, got %d", i, expected, val)
 			}
 		}
-		
+
 		// The defer detector.Check() will verify no goroutines leaked
 		t.Logf("Basic goroutine leak detection completed successfully")
 	})
@@ -59,11 +58,11 @@ func TestGoroutineLeakDetectorIntegration(t *testing.T) {
 		var expensiveCallCount int64
 		expensiveProvider := func() ([]uint32, error) {
 			atomic.AddInt64(&expensiveCallCount, 1)
-			
+
 			// Simulate expensive concurrent work
 			results := make([]uint32, 10)
 			var wg sync.WaitGroup
-			
+
 			for i := range results {
 				wg.Add(1)
 				go func(idx int) {
@@ -73,18 +72,18 @@ func TestGoroutineLeakDetectorIntegration(t *testing.T) {
 				}(i)
 			}
 			wg.Wait()
-			
+
 			return results, nil
 		}
 
 		memoizedProvider := model.Memoize(expensiveProvider)
-		
+
 		// Access memoized provider concurrently from multiple goroutines
 		const numAccess = 25
 		var wg sync.WaitGroup
 		results := make([][]uint32, numAccess)
 		errors := make([]error, numAccess)
-		
+
 		for i := 0; i < numAccess; i++ {
 			wg.Add(1)
 			go func(idx int) {
@@ -95,14 +94,14 @@ func TestGoroutineLeakDetectorIntegration(t *testing.T) {
 			}(i)
 		}
 		wg.Wait()
-		
+
 		// Verify results
 		for i, err := range errors {
 			if err != nil {
 				t.Errorf("Access %d failed: %v", i, err)
 			}
 		}
-		
+
 		// All results should be identical due to memoization
 		if len(results) > 0 && results[0] != nil {
 			expected := results[0]
@@ -118,12 +117,12 @@ func TestGoroutineLeakDetectorIntegration(t *testing.T) {
 				}
 			}
 		}
-		
+
 		// Verify memoization worked (expensive function called only once)
 		if expensiveCallCount != 1 {
 			t.Errorf("Expected expensive function called once, got %d", expensiveCallCount)
 		}
-		
+
 		t.Logf("Advanced goroutine leak detection completed successfully")
 	})
 
@@ -134,20 +133,20 @@ func TestGoroutineLeakDetectorIntegration(t *testing.T) {
 		// Test using context-aware providers from testutil
 		ctx, cancel := testutil.TimeoutContext(time.Millisecond * 50)
 		defer cancel()
-		
+
 		// Create a provider that respects context cancellation
 		provider := testutil.CancellableProvider(ctx, uint32(42), time.Millisecond*100)
-		
+
 		// This should be cancelled due to timeout
 		result, err := provider()
-		
+
 		// Should get a context timeout error
 		if err == nil {
 			t.Logf("Got result despite timeout (timing dependent): %d", result)
 		} else {
 			t.Logf("Expected timeout error received: %v", err)
 		}
-		
+
 		t.Logf("Context cancellation goroutine leak detection completed")
 	})
 
@@ -157,16 +156,16 @@ func TestGoroutineLeakDetectorIntegration(t *testing.T) {
 
 		// Test error scenarios don't leak goroutines
 		errorGen := testutil.NewErrorGenerator()
-		
+
 		// Create providers that return errors
 		errorProvider1 := testutil.ErrorProvider[uint32](errorGen.NetworkError())
 		errorProvider2 := testutil.ErrorProvider[[]uint32](errorGen.TimeoutError())
-		
+
 		// Call error providers multiple times
 		for i := 0; i < 10; i++ {
 			_, err1 := errorProvider1()
 			_, err2 := errorProvider2()
-			
+
 			if err1 == nil {
 				t.Error("Expected network error but got nil")
 			}
@@ -174,7 +173,7 @@ func TestGoroutineLeakDetectorIntegration(t *testing.T) {
 				t.Error("Expected timeout error but got nil")
 			}
 		}
-		
+
 		t.Logf("Error provider goroutine leak detection completed")
 	})
 
@@ -184,12 +183,12 @@ func TestGoroutineLeakDetectorIntegration(t *testing.T) {
 
 		// Use the ConcurrentRunner utility to coordinate multiple goroutines
 		runner := testutil.NewConcurrentRunner()
-		
+
 		const numOperations = 20
 		runner.Add(numOperations)
-		
+
 		var counter int64
-		
+
 		for i := 0; i < numOperations; i++ {
 			runner.Go(func() error {
 				// Each goroutine does some work
@@ -204,15 +203,15 @@ func TestGoroutineLeakDetectorIntegration(t *testing.T) {
 				return nil
 			})
 		}
-		
+
 		runner.Wait()
 		runner.CheckErrors(t)
-		
+
 		// Verify all operations executed
 		if counter != int64(numOperations) {
 			t.Errorf("Expected %d operations, got %d", numOperations, counter)
 		}
-		
+
 		t.Logf("ConcurrentRunner goroutine leak detection completed")
 	})
 }
@@ -221,23 +220,23 @@ func TestGoroutineLeakDetectorIntegration(t *testing.T) {
 func TestMemoryPressureWithGoroutineLeakDetection(t *testing.T) {
 	detector := testutil.NewGoroutineLeakDetector(t)
 	defer detector.Check()
-	
+
 	// Run under memory pressure while monitoring goroutines
 	testutil.MemoryPressureTest(t, func() error {
 		// Generate large dataset
 		data := testutil.GenerateLargeSlice(1000)
 		provider := testutil.FixedProvider(data)
-		
+
 		// Process with parallel map
 		transform := func(val uint32) (uint32, error) {
 			return val * 2, nil
 		}
-		
+
 		transformed := model.SliceMap[uint32, uint32](transform)(provider)(model.ParallelMap())
 		_, err := transformed()
 		return err
 	})
-	
+
 	t.Logf("Memory pressure test with goroutine leak detection completed")
 }
 
@@ -250,16 +249,16 @@ func BenchmarkGoroutineLeakDetectorOverhead(b *testing.B) {
 			_, _ = provider()
 		}
 	})
-	
+
 	b.Run("WithDetector", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			// Create detector per iteration to measure overhead
 			detector := testutil.NewGoroutineLeakDetector(&testing.T{})
-			
+
 			data := []uint32{1, 2, 3, 4, 5}
 			provider := model.FixedProvider(data)
 			_, _ = provider()
-			
+
 			// Skip the actual check in benchmark to avoid test framework issues
 			_ = detector
 		}

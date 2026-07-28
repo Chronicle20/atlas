@@ -3,17 +3,18 @@ package reactor
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_REACTOR"
-	CommandTypeCreate        = "CREATE"
-	CommandTypeHit           = "HIT"
+	EnvCommandTopic           = "COMMAND_TOPIC_REACTOR"
+	CommandTypeCreate         = "CREATE"
+	CommandTypeHit            = "HIT"
 	CommandTypeDestroyInField = "DESTROY_IN_FIELD"
 )
 
@@ -43,8 +44,7 @@ type HitCommandBody struct {
 	SkillId     uint32 `json:"skillId"`
 }
 
-type DestroyInFieldCommandBody struct {
-}
+type DestroyInFieldCommandBody struct{}
 
 // Reactor Actions topic and commands
 const (

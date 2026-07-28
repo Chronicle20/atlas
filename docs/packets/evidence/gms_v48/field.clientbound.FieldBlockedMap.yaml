@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldBlockedMap
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnTransferFieldReqIgnored
+    address: "0x4c6b01"
+    decompile_sha256: 22e9df1c4b0c6d75d38310236b604bede5d60d5aad0814b85efde5f1ec83c527
+verifies:
+    - libs/atlas-packet/field/clientbound/blocked_map_test.go#TestBlockedMapByteOutputV48

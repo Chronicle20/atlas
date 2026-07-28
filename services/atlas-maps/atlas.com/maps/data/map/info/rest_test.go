@@ -3,8 +3,9 @@ package info
 import (
 	"testing"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/stretchr/testify/require"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 func TestExtract_PopulatesAllFields(t *testing.T) {

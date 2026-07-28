@@ -1,0 +1,10 @@
+packet: inventory/clientbound/InventoryQuantityUpdate
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnInventoryOperation#QuantityUpdate
+    address: "0x96953e"
+    decompile_sha256: bc1b86101fc1d8c9d749d7b92a223a0e0316da1d74bf896eb010746336812466
+verifies:
+  - libs/atlas-packet/inventory/clientbound/change_test.go#TestQuantityUpdateRoundTrip

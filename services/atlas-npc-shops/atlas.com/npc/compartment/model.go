@@ -5,8 +5,9 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
 
 type Model struct {
@@ -81,7 +82,6 @@ func (m Model) FindFirstByItemId(templateId uint32) (*asset.Model, bool) {
 	}
 	return nil, false
 }
-
 
 func Clone(m Model) *ModelBuilder {
 	return &ModelBuilder{

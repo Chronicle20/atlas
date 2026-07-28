@@ -3,8 +3,9 @@ package petdata
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 // Processor provides operations for querying pet evolution data from atlas-data
@@ -24,6 +25,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*processor)(nil)
 
 // GetById retrieves pet evolution data for the given pet template id
 func (p *processor) GetById(petTemplateId uint32) (Model, error) {

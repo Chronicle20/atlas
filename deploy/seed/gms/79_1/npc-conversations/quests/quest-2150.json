@@ -1,0 +1,53 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 2150,
+      "questName": "Quest 2150",
+      "startStateMachine": {
+        "startState": "greeting",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "completeQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "The tree has a scarf upon its branches, I tell you."
+            },
+            "id": "greeting",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "2150",
+    "type": "quest-conversation"
+  }
+}

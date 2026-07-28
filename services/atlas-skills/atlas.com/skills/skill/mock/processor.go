@@ -5,8 +5,9 @@ import (
 	"atlas-skills/skill"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // ProcessorMock is a mock implementation of skill.Processor
@@ -15,9 +16,9 @@ type ProcessorMock struct {
 }
 
 // ByCharacterIdProvider mocks the ByCharacterIdProvider method
-func (m *ProcessorMock) ByCharacterIdProvider(characterId uint32) model.Provider[[]skill.Model] {
-	args := m.Called(characterId)
-	return args.Get(0).(model.Provider[[]skill.Model])
+func (m *ProcessorMock) ByCharacterIdProvider(characterId uint32, page model.Page) model.Provider[model.Paged[skill.Model]] {
+	args := m.Called(characterId, page)
+	return args.Get(0).(model.Provider[model.Paged[skill.Model]])
 }
 
 // ByIdProvider mocks the ByIdProvider method

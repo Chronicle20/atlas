@@ -13,7 +13,8 @@ Manages cash shop functionality including wallets, wishlists, and cash inventori
 - **Jaeger**: Distributed tracing
 - **atlas-characters** (REST): Character data lookups (job type, account ID)
 - **atlas-inventory** (REST): Character inventory data lookups (compartment capacities)
-- **atlas-data** (REST): Commodity catalog lookups
+- **atlas-data** (REST): Commodity catalog lookups and pet template data lookups
+- **atlas-pets** (REST): Pet creation for cash shop pet purchases
 - **Configurations service** (REST): Tenant configuration including hourly expiration settings
 
 ## Runtime Configuration
@@ -31,7 +32,8 @@ Manages cash shop functionality including wallets, wishlists, and cash inventori
 | BOOTSTRAP_SERVERS | Kafka host:port |
 | CHARACTERS | Base URL for the atlas-characters service |
 | INVENTORY | Base URL for the atlas-inventory service |
-| DATA | Base URL for the atlas-data service (commodity lookups) |
+| DATA | Base URL for the atlas-data service (commodity lookups, pet template lookups) |
+| PETS | Base URL for the atlas-pets service (pet creation on cash shop pet purchase) |
 | CONFIGURATIONS | Base URL for the configurations service (tenant config / hourly expirations) |
 | EVENT_TOPIC_ACCOUNT_STATUS | Kafka topic for account status events |
 | EVENT_TOPIC_CHARACTER_STATUS | Kafka topic for character status events |

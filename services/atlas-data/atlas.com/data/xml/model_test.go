@@ -6,12 +6,12 @@ import (
 
 func TestGetShort_StringFallback(t *testing.T) {
 	tests := []struct {
-		name        string
+		name         string
 		integerNodes []IntegerNode
 		stringNodes  []StringNode
-		field       string
-		def         uint16
-		want        uint16
+		field        string
+		def          uint16
+		want         uint16
 	}{
 		{
 			name:        "string-only matches and parses",
@@ -249,7 +249,6 @@ func TestGetDoubleFromXML(t *testing.T) {
 
 	provider := FromByteArrayProvider(xmlData)
 	parsedNode, err := provider()
-	
 	if err != nil {
 		t.Fatalf("Failed to parse XML: %v", err)
 	}

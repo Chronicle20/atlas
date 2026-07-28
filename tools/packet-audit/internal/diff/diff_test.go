@@ -304,8 +304,11 @@ func TestAbsorbBufferGroupsCollapsesSubstruct(t *testing.T) {
 
 	// (b) client reads the fields individually → group stays expanded, all match.
 	fieldClient := idasrc.Fields{Calls: []idasrc.FieldCall{
-		{Op: idasrc.Decode1}, {Op: idasrc.Decode4}, {Op: idasrc.DecodeBuf},
-		{Op: idasrc.Decode1}, {Op: idasrc.Decode1},
+		{Op: idasrc.Decode1},
+		{Op: idasrc.Decode4},
+		{Op: idasrc.DecodeBuf},
+		{Op: idasrc.Decode1},
+		{Op: idasrc.Decode1},
 	}}
 	rows := Diff(atlas, fieldClient)
 	if len(rows) != 5 {
@@ -328,8 +331,12 @@ func TestExpandRepeatRuns(t *testing.T) {
 		{Kind: atlaspacket.KindWrite, Op: atlaspacket.EncodeStr, RepeatLen: 1},
 	}
 	client := idasrc.Fields{Calls: []idasrc.FieldCall{
-		{Op: idasrc.Decode1}, {Op: idasrc.DecodeStr}, {Op: idasrc.DecodeStr},
-		{Op: idasrc.DecodeStr}, {Op: idasrc.DecodeStr}, {Op: idasrc.DecodeStr},
+		{Op: idasrc.Decode1},
+		{Op: idasrc.DecodeStr},
+		{Op: idasrc.DecodeStr},
+		{Op: idasrc.DecodeStr},
+		{Op: idasrc.DecodeStr},
+		{Op: idasrc.DecodeStr},
 	}}
 	rows := Diff(atlas, client)
 	if len(rows) != 6 {

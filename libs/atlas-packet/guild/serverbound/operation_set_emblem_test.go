@@ -6,6 +6,9 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// v48 CField::SendSetGuildMarkMsg @0x4c635c: COutPacket(96=GUILD_OPERATION)+Encode1(0xF)+Encode2(logoBg)+Encode1(logoBgColor)+Encode2(logo)+Encode1(logoColor). Body order == v83.
+// packet-audit:verify packet=guild/serverbound/GuildSetEmblem version=gms_v48 ida=0x4c635c
+// packet-audit:verify packet=guild/serverbound/GuildSetEmblem version=gms_v79 ida=0x51c522
 // packet-audit:verify packet=guild/serverbound/GuildSetEmblem version=gms_v95 ida=0x52d8c0
 // packet-audit:verify packet=guild/serverbound/GuildSetEmblem version=jms_v185 ida=0x56e325
 // packet-audit:verify packet=guild/serverbound/GuildSetEmblem version=gms_v87 ida=0x55874c

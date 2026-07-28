@@ -1,0 +1,10 @@
+packet: inventory/serverbound/InventoryMove
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_70D8DE
+    address: "0x70d8de"
+    decompile_sha256: ca18248aa94f71e566b1245a0788dd9a21ffd59aa7ffd0771482dd5b43791532
+verifies:
+  - libs/atlas-packet/inventory/serverbound/move_test.go#TestMoveBytesV48

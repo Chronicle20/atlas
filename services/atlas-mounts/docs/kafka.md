@@ -93,6 +93,8 @@ The message key is the character identifier.
 
 - TICK and FEED state mutations are wrapped in a database transaction; the Kafka message is buffered and emitted only after the transaction commits.
 - Messages are buffered via a `message.Buffer` and emitted atomically after the buffered work completes.
+- Emission is via the transactional outbox (`atlas-outbox` library, `outbox.EmitProvider`): buffered messages are written to the outbox table within the same database transaction as the state change, then published to Kafka asynchronously by a background drainer. The drainer runs leader-elected via a Postgres advisory lock (`main.go`).
+- SET events (buff-applied handling) are emitted outside the TICK/FEED transaction, via a separate outbox-backed transaction that only writes the event (no state mutation).
 
 ## Required Headers
 

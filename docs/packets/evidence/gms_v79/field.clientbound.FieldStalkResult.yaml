@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldStalkResult
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnStalkResult
+    address: "0x522dc3"
+    decompile_sha256: 72f8bbddf7e7f0c9359b920cbe1e84483d0852bbff6e7711ca4df7bf9c350e9f
+verifies:
+    - libs/atlas-packet/field/clientbound/stalk_result_test.go#TestStalkResultByteOutputV79

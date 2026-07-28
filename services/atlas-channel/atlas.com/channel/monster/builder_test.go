@@ -5,8 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 func TestNewModelBuilder(t *testing.T) {
@@ -27,7 +28,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetFH(10).
 		SetTeam(0).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -89,7 +89,6 @@ func TestCloneModel(t *testing.T) {
 		SetX(200).
 		SetControlCharacterId(50).
 		Build()
-
 	if err != nil {
 		t.Fatalf("CloneModel().Build() unexpected error: %v", err)
 	}

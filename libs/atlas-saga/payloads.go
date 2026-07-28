@@ -3,12 +3,14 @@ package saga
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 // AwardItemActionPayload represents the data needed to award an item to a character.
@@ -105,6 +107,8 @@ type DestroyAssetFromSlotPayload struct {
 	Slot          int16  `json:"slot"`          // Slot to destroy from (negative for equipped slots, positive for inventory slots)
 	Quantity      uint32 `json:"quantity"`      // Quantity to destroy (0 or 1 for equipment)
 	ShowEffect    bool   `json:"showEffect"`    // Render the item-loss chat line on the client when true
+	// TemplateId lets the compensator re-create a slot-destroyed asset
+	TemplateId uint32 `json:"templateId,omitempty"`
 }
 
 // EquipAssetPayload represents the payload required to equip an asset from one inventory slot to an equipped slot.
@@ -220,6 +224,33 @@ type RebalanceAPPayload struct {
 	WorldId     world.Id          `json:"worldId"`     // WorldId associated with the action
 	ChannelId   channel.Id        `json:"channelId"`   // ChannelId associated with the action
 	Targets     []RebalanceTarget `json:"targets"`     // Target stats and floors to apply
+}
+
+// TransferAPPayload represents the payload for transfer_ap (AP Reset,
+// item 5050000): move one already-spent ability point From -> To. From/To
+// are validated ability enums (STRENGTH/DEXTERITY/INTELLIGENCE/LUCK/HP/MP),
+// never raw client stat flags.
+type TransferAPPayload struct {
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	From        string     `json:"from"`
+	To          string     `json:"to"`
+}
+
+// TransferSPPayload represents the payload for transfer_sp (SP Reset,
+// items 5050001-5050004): move one skill point FromSkillId -> ToSkillId.
+// JobId, ItemTier, and TargetMaxLevel ride along for authoritative
+// re-validation in atlas-skills (trusted server-side caller — atlas-channel).
+type TransferSPPayload struct {
+	CharacterId    uint32     `json:"characterId"`
+	WorldId        world.Id   `json:"worldId"`
+	ChannelId      channel.Id `json:"channelId"`
+	JobId          job.Id     `json:"jobId"`
+	FromSkillId    skill.Id   `json:"fromSkillId"`
+	ToSkillId      skill.Id   `json:"toSkillId"`
+	ItemTier       byte       `json:"itemTier"`
+	TargetMaxLevel byte       `json:"targetMaxLevel"`
 }
 
 // CreateSkillPayload represents the payload required to create a skill for a character.
@@ -556,6 +587,149 @@ type ReleaseFromStoragePayload struct {
 	Quantity      uint32    `json:"quantity"`      // Quantity to release (0 = all)
 }
 
+// TransferToMtsPayload — expanded into release_from_character + accept_to_mts_listing.
+// The seller supplies the listing/sale parameters at list time; expansion copies them
+// into the accept step. The item snapshot itself is looked up from inventory during
+// expansion (NOT carried here).
+type TransferToMtsPayload struct {
+	TransactionId       uuid.UUID  `json:"transactionId"`
+	CharacterId         uint32     `json:"characterId"`
+	SellerAccountId     uint32     `json:"sellerAccountId"` // Seller's cash-shop account, captured onto the listing for the settle-at-expiry seller-points credit
+	WorldId             world.Id   `json:"worldId"`
+	SourceInventoryType byte       `json:"sourceInventoryType"`
+	AssetId             uint32     `json:"assetId"`
+	Quantity            uint32     `json:"quantity"`
+	ListingId           uuid.UUID  `json:"listingId"`
+	SellerName          string     `json:"sellerName"`       // Seller character name for the listing
+	SaleType            string     `json:"saleType"`         // Sale type (e.g. "buy_now", "auction")
+	ListValue           uint32     `json:"listValue"`        // Seller's asking/starting price in NX
+	BuyNowPrice         *uint32    `json:"buyNowPrice"`      // Optional buy-now price (nil = none)
+	CommissionRate      float64    `json:"commissionRate"`   // Commission rate applied at settlement
+	Category            string     `json:"category"`         // Listing category
+	SubCategory         string     `json:"subCategory"`      // Listing sub-category
+	EndsAt              *time.Time `json:"endsAt"`           // Auction end time (nil = none)
+	MinIncrement        uint32     `json:"minIncrement"`     // Minimum bid increment for auctions
+	OfferWishSerial     uint32     `json:"offerWishSerial"`  // Want-ad serial an `offer` listing fulfills (0 for non-offers)
+	OfferWishOwnerId    uint32     `json:"offerWishOwnerId"` // Want-ad poster id an `offer` listing fulfills (0 for non-offers)
+}
+
+// WithdrawFromMtsPayload — expanded into release_from_mts_holding + accept_to_character.
+type WithdrawFromMtsPayload struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	CharacterId   uint32    `json:"characterId"`
+	WorldId       world.Id  `json:"worldId"`
+	HoldingId     uuid.UUID `json:"holdingId"`
+	InventoryType byte      `json:"inventoryType"`
+}
+
+// AcceptToMtsListingPayload (atomic, dispatched to atlas-mts custody consumer).
+// Carries everything atlas-mts needs to CREATE the listing row in `active` state:
+// world/seller identity, the full item snapshot (looked up from inventory during
+// expansion), and the seller's sale parameters. Mirrors AcceptToCashShopPayload
+// carrying its item snapshot.
+type AcceptToMtsListingPayload struct {
+	TransactionId   uuid.UUID `json:"transactionId"`
+	ListingId       uuid.UUID `json:"listingId"`
+	WorldId         world.Id  `json:"worldId"`
+	SellerId        uint32    `json:"sellerId"`
+	SellerAccountId uint32    `json:"sellerAccountId"`
+	SellerName      string    `json:"sellerName"`
+	SaleType        string    `json:"saleType"`
+
+	// Item snapshot
+	TemplateId    uint32 `json:"templateId"`
+	Quantity      uint32 `json:"quantity"`
+	Strength      uint16 `json:"strength"`
+	Dexterity     uint16 `json:"dexterity"`
+	Intelligence  uint16 `json:"intelligence"`
+	Luck          uint16 `json:"luck"`
+	HP            uint16 `json:"hp"`
+	MP            uint16 `json:"mp"`
+	WeaponAttack  uint16 `json:"weaponAttack"`
+	MagicAttack   uint16 `json:"magicAttack"`
+	WeaponDefense uint16 `json:"weaponDefense"`
+	MagicDefense  uint16 `json:"magicDefense"`
+	Accuracy      uint16 `json:"accuracy"`
+	Avoidability  uint16 `json:"avoidability"`
+	Hands         uint16 `json:"hands"`
+	Speed         uint16 `json:"speed"`
+	Jump          uint16 `json:"jump"`
+	Slots         uint16 `json:"slots"`
+	Level         byte   `json:"level"`
+	ItemLevel     byte   `json:"itemLevel"`
+	ItemExp       uint32 `json:"itemExp"`
+	RingId        uint32 `json:"ringId"`
+	ViciousCount  uint32 `json:"viciousCount"`
+	Flags         uint16 `json:"flags"`
+	Owner         string `json:"owner"`
+
+	// Sale params
+	ListValue      uint32     `json:"listValue"`
+	BuyNowPrice    *uint32    `json:"buyNowPrice"`
+	CommissionRate float64    `json:"commissionRate"`
+	Category       string     `json:"category"`
+	SubCategory    string     `json:"subCategory"`
+	EndsAt         *time.Time `json:"endsAt"`
+	MinIncrement   uint32     `json:"minIncrement"`
+
+	// Offer link: which want-ad this `offer` listing fulfills (0 for non-offers).
+	OfferWishSerial  uint32 `json:"offerWishSerial"`
+	OfferWishOwnerId uint32 `json:"offerWishOwnerId"`
+}
+
+// ReleaseFromMtsHoldingPayload (atomic, dispatched to atlas-mts custody consumer).
+type ReleaseFromMtsHoldingPayload struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	HoldingId     uuid.UUID `json:"holdingId"`
+}
+
+// MtsMoveListingToHoldingPayload (atomic custody step): moves a sold/settled
+// listing's custody to the buyer's holding. The item snapshot is read from the
+// listing row by atlas-mts (not carried here); the buyer/world identify the
+// holding row to create.
+type MtsMoveListingToHoldingPayload struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	ListingId     uuid.UUID `json:"listingId"`
+	BuyerId       uint32    `json:"buyerId"`
+	WorldId       world.Id  `json:"worldId"`
+	// ResultKind carries which client result mode the sold notice should route to
+	// (item / zzim / wish / auction_settle) so the channel picks the matching
+	// CITC::OnNormalItemResult arm. Threaded from the buy/settle chain onto the
+	// LISTING_SOLD event.
+	ResultKind string `json:"resultKind"`
+	// Price is the settled BASE price (list value / buy-now / winning bid) carried
+	// through to the LISTING_SOLD event for the auction-settle SuccessBidInfo arm.
+	Price uint32 `json:"price"`
+}
+
+// MtsSettlePurchasePayload (composite money-mover): debit buyer prepaid, credit seller points, move custody.
+type MtsSettlePurchasePayload struct {
+	TransactionId   uuid.UUID `json:"transactionId"`
+	ListingId       uuid.UUID `json:"listingId"`
+	WorldId         world.Id  `json:"worldId"` // World scoping for the buyer holding created on the final move step
+	BuyerId         uint32    `json:"buyerId"`
+	BuyerAccountId  uint32    `json:"buyerAccountId"`
+	SellerId        uint32    `json:"sellerId"`
+	SellerAccountId uint32    `json:"sellerAccountId"`
+	MarkedUpPrice   int32     `json:"markedUpPrice"`
+	ListValue       int32     `json:"listValue"`
+	// ResultKind carries which client result mode the sold notice should route to
+	// (item / zzim / wish); threaded onto the expanded move step's payload and then
+	// the LISTING_SOLD event.
+	ResultKind string `json:"resultKind"`
+	// Price is the settled BASE price carried through to the LISTING_SOLD event.
+	Price uint32 `json:"price"`
+}
+
+// MtsBidEscrowPayload (single-step wallet hold).
+type MtsBidEscrowPayload struct {
+	TransactionId   uuid.UUID `json:"transactionId"`
+	ListingId       uuid.UUID `json:"listingId"`
+	BidderId        uint32    `json:"bidderId"`
+	BidderAccountId uint32    `json:"bidderAccountId"`
+	Amount          int32     `json:"amount"` // negative to hold, positive to release
+}
+
 // RequestGuildNamePayload represents the payload required to request a guild name.
 type RequestGuildNamePayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
@@ -677,6 +851,14 @@ type EmitGachaponWinPayload struct {
 	GachaponName string   `json:"gachaponName"` // Gachapon display name
 }
 
+// StartRPSGamePayload represents the payload required to open an RPS game session for a character.
+type StartRPSGamePayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId the game opens for
+	WorldId     world.Id   `json:"worldId"`     // WorldId of the session
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId for the client dialog routing
+	NpcId       uint32     `json:"npcId"`       // Entry NPC (9000019)
+}
+
 // RegisterPartyQuestPayload represents the payload required to register a party for a party quest.
 type RegisterPartyQuestPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId initiating the registration
@@ -746,4 +928,127 @@ type FieldEffectWeatherPayload struct {
 	ItemId    uint32     `json:"itemId"`    // Cash shop weather item ID
 	Message   string     `json:"message"`   // Weather message text
 	Duration  uint32     `json:"duration"`  // Duration in seconds
+}
+
+// SetAssetOwnerPayload represents the payload required to set the owner tag on an asset in a specific inventory slot.
+type SetAssetOwnerPayload struct {
+	CharacterId   uint32 `json:"characterId"`   // CharacterId associated with the action
+	InventoryType byte   `json:"inventoryType"` // Type of inventory (1=equip, 2=use, 3=setup, 4=etc, 5=cash)
+	Slot          int16  `json:"slot"`          // Slot of the asset to tag (negative for equipped slots, positive for inventory slots)
+	Owner         string `json:"owner"`         // Owner name to set on the asset
+}
+
+// ApplyAssetLockPayload represents the payload required to apply a sealing lock (expiration) to an asset in a specific inventory slot.
+type ApplyAssetLockPayload struct {
+	CharacterId   uint32    `json:"characterId"`   // CharacterId associated with the action
+	InventoryType byte      `json:"inventoryType"` // Type of inventory (1=equip, 2=use, 3=setup, 4=etc, 5=cash)
+	Slot          int16     `json:"slot"`          // Slot of the asset to lock (negative for equipped slots, positive for inventory slots)
+	Expiration    time.Time `json:"expiration"`    // Expiration time to apply to the asset
+}
+
+// IncubatorResultPayload represents the payload required to deliver the result of an incubator use to a character.
+type IncubatorResultPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	ItemId      uint32     `json:"itemId"`      // ItemId of the resulting item
+	Count       uint32     `json:"count"`       // Count of the resulting item
+	EggId       uint32     `json:"eggId"`       // EggId of the sacrificed Pigmy Egg (v95 client uses it to pick the region success NPC)
+}
+
+// CreateNotePayload represents the payload required to create a note (memo)
+// for a receiving character. Emitted by the orchestrator as a note CREATE
+// command carrying the saga transaction id.
+type CreateNotePayload struct {
+	SenderId   uint32 `json:"senderId"`   // Character sending the note
+	ReceiverId uint32 `json:"receiverId"` // Character receiving the note
+	Message    string `json:"message"`    // Note message text
+	Flag       byte   `json:"flag"`       // Memo flag/type; 0 = plain note (player sends). Non-zero selects reward/gift render templates client-side.
+}
+
+// AssetSnapshot captures one inventory asset at decode time (item megaphone).
+// Snapshot DTO shared by saga payloads AND the kafka message structs of
+// channel/world/orchestrator (single source of truth; PRD Q6: snapshot at
+// decode time, never re-resolved).
+type AssetSnapshot struct {
+	Slot         int16     `json:"slot"`
+	TemplateId   uint32    `json:"templateId"`
+	Expiration   time.Time `json:"expiration"`
+	CashId       int64     `json:"cashId"`
+	Quantity     uint32    `json:"quantity"`
+	Flag         uint16    `json:"flag"`
+	Rechargeable uint64    `json:"rechargeable"`
+	// equipment stats (zero for non-equips)
+	Strength       uint16 `json:"strength"`
+	Dexterity      uint16 `json:"dexterity"`
+	Intelligence   uint16 `json:"intelligence"`
+	Luck           uint16 `json:"luck"`
+	Hp             uint16 `json:"hp"`
+	Mp             uint16 `json:"mp"`
+	WeaponAttack   uint16 `json:"weaponAttack"`
+	MagicAttack    uint16 `json:"magicAttack"`
+	WeaponDefense  uint16 `json:"weaponDefense"`
+	MagicDefense   uint16 `json:"magicDefense"`
+	Accuracy       uint16 `json:"accuracy"`
+	Avoidability   uint16 `json:"avoidability"`
+	Hands          uint16 `json:"hands"`
+	Speed          uint16 `json:"speed"`
+	Jump           uint16 `json:"jump"`
+	Slots          uint16 `json:"slots"`
+	LevelType      byte   `json:"levelType"`
+	Level          byte   `json:"level"`
+	Experience     uint32 `json:"experience"`
+	HammersApplied uint32 `json:"hammersApplied"`
+	// pet fields (zero/empty for non-pets)
+	PetId     uint32 `json:"petId"`
+	PetName   string `json:"petName"`
+	PetLevel  byte   `json:"petLevel"`
+	Closeness uint16 `json:"closeness"`
+	Fullness  byte   `json:"fullness"`
+}
+
+// AvatarSnapshot captures a character's look at decode time (avatar megaphone / TV).
+// Map keys are negated slot positions exactly as packetmodel.NewAvatar expects.
+type AvatarSnapshot struct {
+	Gender       byte             `json:"gender"`
+	SkinColor    byte             `json:"skinColor"`
+	Face         uint32           `json:"face"`
+	Hair         uint32           `json:"hair"`
+	Equips       map[int16]uint32 `json:"equips"`
+	MaskedEquips map[int16]uint32 `json:"maskedEquips"`
+	Pets         map[int8]uint32  `json:"pets"`
+}
+
+// EmitMegaphonePayload represents the payload for the stateless megaphone tiers
+// (MEGAPHONE/SUPER/ITEM/TRIPLE).
+type EmitMegaphonePayload struct {
+	Tier        string         `json:"tier"`  // MEGAPHONE|SUPER|ITEM|TRIPLE
+	Scope       string         `json:"scope"` // CHANNEL|WORLD
+	WorldId     world.Id       `json:"worldId"`
+	ChannelId   channel.Id     `json:"channelId"` // sender's channel
+	CharacterId uint32         `json:"characterId"`
+	SenderName  string         `json:"senderName"`
+	SenderMedal string         `json:"senderMedal"`
+	Messages    []string       `json:"messages"`
+	WhispersOn  bool           `json:"whispersOn"`
+	Item        *AssetSnapshot `json:"item,omitempty"` // ITEM tier only
+}
+
+// EnqueueWorldBroadcastPayload represents the payload for the serialized world
+// broadcast tiers (TV/AVATAR).
+type EnqueueWorldBroadcastPayload struct {
+	Family          string          `json:"family"` // TV|AVATAR
+	WorldId         world.Id        `json:"worldId"`
+	ChannelId       channel.Id      `json:"channelId"`
+	CharacterId     uint32          `json:"characterId"`
+	SenderName      string          `json:"senderName"`
+	SenderMedal     string          `json:"senderMedal"`
+	Messages        []string        `json:"messages"` // 5 for TV, 4 for AVATAR
+	WhispersOn      bool            `json:"whispersOn"`
+	ItemId          uint32          `json:"itemId"`        // AVATAR: used item id (SET packet field)
+	TvMessageType   string          `json:"tvMessageType"` // semantic key NORMAL|STAR|HEART; resolved to a client wire byte via the tenant messageTypes writer table, never carried as a byte here (DOM-25)
+	DurationSeconds uint32          `json:"durationSeconds"`
+	SenderLook      AvatarSnapshot  `json:"senderLook"`
+	ReceiverName    string          `json:"receiverName"`
+	ReceiverLook    *AvatarSnapshot `json:"receiverLook,omitempty"`
 }

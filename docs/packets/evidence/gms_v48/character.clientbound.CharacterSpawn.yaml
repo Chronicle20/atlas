@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterSpawn
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_6BBC17
+    address: "0x6bbc17"
+    decompile_sha256: f0f545259f07f9587eccbd0bc2cd87d8365b67b43a4196a460bfe5273cd3cf31

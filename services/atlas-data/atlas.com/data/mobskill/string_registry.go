@@ -5,7 +5,7 @@ import (
 	"atlas-data/xml"
 	"sync"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type MobSkillString struct {
@@ -21,8 +21,10 @@ func (m MobSkillString) Name() string {
 	return m.name
 }
 
-var msReg *document.Registry[string, MobSkillString]
-var msOnce sync.Once
+var (
+	msReg  *document.Registry[string, MobSkillString]
+	msOnce sync.Once
+)
 
 func GetMobSkillStringRegistry() *document.Registry[string, MobSkillString] {
 	msOnce.Do(func() {

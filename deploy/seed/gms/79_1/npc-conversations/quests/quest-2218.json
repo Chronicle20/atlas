@@ -1,0 +1,115 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 2218,
+      "questName": "Lakelis Information",
+      "startStateMachine": {
+        "startState": "intro",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "completeQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Hey did you see how strange #rLakelis#k has been acting these days? We should see what's going on aabout her, her actions have been so weird lately..."
+            },
+            "id": "intro",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "amount": "7000"
+                  },
+                  "type": "award_exp"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "2216",
+                      "type": "questStatus",
+                      "value": "3"
+                    },
+                    {
+                      "operator": "=",
+                      "referenceId": "2217",
+                      "type": "questStatus",
+                      "value": "3"
+                    },
+                    {
+                      "operator": "=",
+                      "referenceId": "2218",
+                      "type": "questStatus",
+                      "value": "3"
+                    },
+                    {
+                      "operator": "=",
+                      "referenceId": "2219",
+                      "type": "questStatus",
+                      "value": "3"
+                    },
+                    {
+                      "operator": ">=",
+                      "referenceId": "4031894",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "removeSubquestItem"
+                },
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4031894",
+                    "quantity": "1"
+                  },
+                  "type": "destroy_item"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "removeSubquestItem",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "2218",
+    "type": "quest-conversation"
+  }
+}

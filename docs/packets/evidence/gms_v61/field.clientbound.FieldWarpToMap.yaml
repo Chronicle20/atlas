@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldWarpToMap
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CStage::OnSetField#WarpToMap
+    address: "0x659fd3"
+    decompile_sha256: ca68fd7607cd6d26ebb06703801932411b7001156c402388ab8d233014f395b1
+verifies:
+    - libs/atlas-packet/field/clientbound/warp_to_map_test.go#TestWarpToMapByteOutputV61

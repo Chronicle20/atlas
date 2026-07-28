@@ -1,0 +1,48 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Thieves' Hideout (1020400) - Explorer job advancement intro for Rogue path",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "gender",
+              "value": "0"
+            }
+          ],
+          "id": "intro_male",
+          "operations": [
+            {
+              "params": {
+                "path": "Effect/Direction3.img/rogue/Scene0"
+              },
+              "type": "show_intro"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "gender",
+              "value": "1"
+            }
+          ],
+          "id": "intro_female",
+          "operations": [
+            {
+              "params": {
+                "path": "Effect/Direction3.img/rogue/Scene1"
+              },
+              "type": "show_intro"
+            }
+          ]
+        }
+      ],
+      "scriptName": "goRogue"
+    },
+    "id": "goRogue",
+    "type": "map-action"
+  }
+}

@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationBuyZzim
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnBuyZzim
+    address: "0x5cf673"
+    decompile_sha256: fb1fc84d22c6da9ef628e6228512ed75b55d3e6e2d9c6e152c68efd3bf4a63b2
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationBuyZzimByteOutput_v87

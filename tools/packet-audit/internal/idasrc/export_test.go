@@ -34,6 +34,40 @@ func TestExportSourceIsAbsent(t *testing.T) {
 	}
 }
 
+// TestExportSourceResolveSkipsCOutPacket pins that a COutPacket header op in the
+// calls list is skipped (it is the opcode constructor, not a field primitive):
+// an opcode-only bodiless send resolves to an empty body, and a following Encode
+// primitive still resolves rather than the resolver erroring on "unknown
+// primitive COutPacket".
+func TestExportSourceResolveSkipsCOutPacket(t *testing.T) {
+	js := `{"functions":{
+	  "Feat::Bodiless":{"address":"0x1","direction":"serverbound","calls":[{"op":"COutPacket","comment":"opcode 220 header"}]},
+	  "Feat::HeaderThenField":{"address":"0x2","direction":"serverbound","calls":[{"op":"COutPacket","comment":"header"},{"op":"Encode1","comment":"flag"}]}
+	}}`
+	p := filepath.Join(t.TempDir(), "coutpacket.json")
+	if err := os.WriteFile(p, []byte(js), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	src, err := NewExportSource(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bodiless, err := src.Resolve(context.Background(), "Feat::Bodiless")
+	if err != nil {
+		t.Fatalf("resolve bodiless: %v", err)
+	}
+	if len(bodiless.Calls) != 0 {
+		t.Errorf("bodiless: got %d calls, want 0 (COutPacket skipped)", len(bodiless.Calls))
+	}
+	withField, err := src.Resolve(context.Background(), "Feat::HeaderThenField")
+	if err != nil {
+		t.Fatalf("resolve header+field: %v", err)
+	}
+	if len(withField.Calls) != 1 || withField.Calls[0].Op != Decode1 {
+		t.Errorf("header+field: got %+v, want single Decode1 (COutPacket skipped, Encode1 kept)", withField.Calls)
+	}
+}
+
 func TestExportSourceResolve(t *testing.T) {
 	src, err := NewExportSource("testdata/gms_v95_mini.json")
 	if err != nil {

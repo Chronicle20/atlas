@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const LoginAuthWriter = "LoginAuth"
@@ -19,9 +20,9 @@ func NewLoginAuth(screen string) LoginAuth {
 	return LoginAuth{screen: screen}
 }
 
-func (m LoginAuth) Screen() string      { return m.screen }
-func (m LoginAuth) Operation() string   { return LoginAuthWriter }
-func (m LoginAuth) String() string      { return fmt.Sprintf("screen [%s]", m.screen) }
+func (m LoginAuth) Screen() string    { return m.screen }
+func (m LoginAuth) Operation() string { return LoginAuthWriter }
+func (m LoginAuth) String() string    { return fmt.Sprintf("screen [%s]", m.screen) }
 
 func (m LoginAuth) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)

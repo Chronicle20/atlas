@@ -1,4 +1,4 @@
-import { LoadingSpinner } from './LoadingSpinner';
+import { LoadingSpinner } from "./LoadingSpinner";
 
 interface PageLoaderProps {
   className?: string;
@@ -6,8 +6,8 @@ interface PageLoaderProps {
 
 export function PageLoader({ className }: PageLoaderProps = {}) {
   return (
-    <div 
-      className={className || 'flex h-[50vh] items-center justify-center'}
+    <div
+      className={className || "flex h-[50vh] items-center justify-center"}
       data-testid="page-loader"
     >
       <LoadingSpinner size="lg" />

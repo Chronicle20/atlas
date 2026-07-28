@@ -1,0 +1,8 @@
+packet: character/clientbound/StatusMessageDropLossStackableItem
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_71B265
+    address: "0x71b265"
+    decompile_sha256: 58e693b8cb68548a4c9d56fd6b9cb9a35f9a336c79655e117c5e4c19c5d2c296

@@ -1,23 +1,23 @@
 package marriage
 
 import (
+	"atlas-marriages/character"
 	"context"
 	"errors"
 	"testing"
 	"time"
 
-	"atlas-marriages/character"
-
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // setupTestDB creates an in-memory SQLite database for testing
@@ -690,10 +690,11 @@ func TestProcessor_GetPendingProposalsByCharacter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			proposals, err := processor.GetPendingProposalsByCharacter(tt.characterId)()
+			paged, err := processor.GetPendingProposalsByCharacter(tt.characterId, model.Page{Number: 1, Size: 250})()
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
+			proposals := paged.Items
 
 			if len(proposals) != tt.expectedCount {
 				t.Errorf("Expected %d pending proposals, got %d for %s", tt.expectedCount, len(proposals), tt.description)

@@ -10,8 +10,10 @@ import (
 // TestLeftByteOutput verifies the byte output of Left across all tenant variants.
 // Wire layout: mode(1)+partyId(4)+targetId(4)+const1(1)+forced(1)+targetName(2+len)+WritePartyData(?).
 // targetName="Player1" → 2+7=9. Fixed prefix: 1+4+4+1+1+9 = 20. Total:
-//   v83/JMS: 20+298 = 318 bytes (JMS uses small PARTYDATA; IDA @0xb297e7 qmemcpy 0x12A)
-//   v95 (GMS only): 20+378 = 398 bytes
+//
+//	v83/JMS: 20+298 = 318 bytes (JMS uses small PARTYDATA; IDA @0xb297e7 qmemcpy 0x12A)
+//	v95 (GMS only): 20+378 = 398 bytes
+//
 // packet-audit:verify packet=party/clientbound/PartyLeft version=jms_v185 ida=0xb297e7
 // packet-audit:verify packet=party/clientbound/PartyLeft version=gms_v83 ida=0xa3e31c
 // packet-audit:verify packet=party/clientbound/PartyLeft version=gms_v87 ida=0xad697a
@@ -26,7 +28,7 @@ func TestLeftByteOutput(t *testing.T) {
 		variant   pt.TenantVariant
 		wantBytes int
 	}{
-		{pt.Variants[0], 318}, // GMS v28  — v83 PARTYDATA
+		{pt.Variants[0], 314}, // GMS v28  — GMS legacy PARTYDATA (294 bytes, no leaderId; task-113 close-I)
 		{pt.Variants[1], 318}, // GMS v83  — v83 PARTYDATA
 		{pt.Variants[2], 318}, // GMS v87  — v83 PARTYDATA
 		{pt.Variants[3], 398}, // GMS v95  — v95 PARTYDATA
@@ -70,8 +72,13 @@ func TestLeftRoundTrip(t *testing.T) {
 			if output.Forced() != input.Forced() {
 				t.Errorf("forced: got %v, want %v", output.Forced(), input.Forced())
 			}
-			if output.LeaderId() != input.LeaderId() {
-				t.Errorf("leaderId: got %v, want %v", output.LeaderId(), input.LeaderId())
+			// GMS legacy (< v61) carries no leaderId; it round-trips as 0 (close-I).
+			wantLeader := input.LeaderId()
+			if v.Region == "GMS" && v.MajorVersion < 61 {
+				wantLeader = 0
+			}
+			if output.LeaderId() != wantLeader {
+				t.Errorf("leaderId: got %v, want %v", output.LeaderId(), wantLeader)
 			}
 			if len(output.Members()) != len(input.Members()) {
 				t.Errorf("members length: got %v, want %v", len(output.Members()), len(input.Members()))

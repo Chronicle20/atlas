@@ -1,18 +1,20 @@
 package monsterbook
 
 import (
+	"atlas-monster-book/card"
+	"atlas-monster-book/collection"
 	"context"
 	"testing"
 
-	"atlas-monster-book/card"
-	"atlas-monster-book/collection"
 	mbmsg "atlas-monster-book/kafka/message/monsterbook"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func tenantCtx(t *testing.T, id uuid.UUID) context.Context {
@@ -34,6 +36,9 @@ func TestHandleCardPickedUpInsertsAndRecomputes(t *testing.T) {
 	}
 	if err := collection.Migration(db); err != nil {
 		t.Fatalf("collection migrate: %v", err)
+	}
+	if err := outbox.Migration(db); err != nil {
+		t.Fatalf("outbox migrate: %v", err)
 	}
 	tid := uuid.New()
 	ctx := tenantCtx(t, tid)
@@ -65,6 +70,18 @@ func TestHandleCardPickedUpInsertsAndRecomputes(t *testing.T) {
 	}
 	if col.NormalCount() != 1 || col.BookLevel() != 1 {
 		t.Fatalf("collection wrong: NormalCount=%d BookLevel=%d", col.NormalCount(), col.BookLevel())
+	}
+
+	// The CARD_ADDED status event (buffered by card.Add) and the
+	// STATS_CHANGED + EXPERIENCE_CHANGED events (buffered by
+	// collection.RecomputeAndEmit) must land as outbox rows enqueued in the
+	// SAME transaction as the domain writes above, not published directly.
+	var outboxCount int64
+	if err := db.Model(&outbox.Entity{}).Count(&outboxCount).Error; err != nil {
+		t.Fatalf("count outbox rows: %v", err)
+	}
+	if outboxCount != 3 {
+		t.Fatalf("expected 3 outbox rows (CARD_ADDED, STATS_CHANGED, EXPERIENCE_CHANGED), got %d", outboxCount)
 	}
 }
 

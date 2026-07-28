@@ -27,6 +27,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Exists(itemId uint32) bool {
 	inventoryType := byte(math.Floor(float64(itemId) / 1000000))
 	if inventoryType == 1 {

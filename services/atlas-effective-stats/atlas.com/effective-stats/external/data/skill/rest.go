@@ -47,22 +47,22 @@ func (r RestModel) GetEffectForLevel(level byte) *EffectModel {
 
 // EffectModel represents skill effect data with stat bonuses
 type EffectModel struct {
-	WeaponAttack   int16         `json:"weaponAttack"`
-	MagicAttack    int16         `json:"magicAttack"`
-	WeaponDefense  int16         `json:"weaponDefense"`
-	MagicDefense   int16         `json:"magicDefense"`
-	Accuracy       int16         `json:"accuracy"`
-	Avoidability   int16         `json:"avoidability"`
-	Speed          int16         `json:"speed"`
-	Jump           int16         `json:"jump"`
-	Hp             uint16        `json:"hp"`
-	Mp             uint16        `json:"mp"`
-	HPR            float64       `json:"hpR"`
-	MPR            float64       `json:"mpR"`
-	Duration       int32         `json:"duration"`
-	X              int16         `json:"x"`
-	Y              int16         `json:"y"`
-	Statups        []StatupModel `json:"statups"`
+	WeaponAttack  int16         `json:"weaponAttack"`
+	MagicAttack   int16         `json:"magicAttack"`
+	WeaponDefense int16         `json:"weaponDefense"`
+	MagicDefense  int16         `json:"magicDefense"`
+	Accuracy      int16         `json:"accuracy"`
+	Avoidability  int16         `json:"avoidability"`
+	Speed         int16         `json:"speed"`
+	Jump          int16         `json:"jump"`
+	Hp            uint16        `json:"hp"`
+	Mp            uint16        `json:"mp"`
+	HPR           float64       `json:"hpR"`
+	MPR           float64       `json:"mpR"`
+	Duration      int32         `json:"duration"`
+	X             int16         `json:"x"`
+	Y             int16         `json:"y"`
+	Statups       []StatupModel `json:"statups"`
 }
 
 // StatupModel represents a single stat bonus from a skill effect

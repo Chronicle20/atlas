@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/clientbound/FieldOxQuiz version=gms_v48 ida=0x4c9e20
 // packet-audit:verify packet=field/clientbound/FieldOxQuiz version=gms_v83 ida=0x535a57
 // packet-audit:verify packet=field/clientbound/FieldOxQuiz version=gms_v84 ida=0x541d5b
 // packet-audit:verify packet=field/clientbound/FieldOxQuiz version=gms_v87 ida=0x55d2da
@@ -19,6 +20,19 @@ func TestOxQuizGolden(t *testing.T) {
 	actual := test.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestOxQuizByteOutputV48 pins the gms_v48 OX_QUIZ (op 0x58=88) clientbound wire.
+// IDA: CField::OnQuiz @0x4c9e20 (GMS_v48_1_DEVM.exe) reads Decode1(enabled) +
+// Decode1(category) + Decode2(number) — byte-identical to the version-invariant golden.
+func TestOxQuizByteOutputV48(t *testing.T) {
+	input := NewOxQuiz(0x01, 0x02, 0x0010)
+	ctx := test.CreateContext("GMS", 48, 1)
+	expected := []byte{0x01, 0x02, 0x10, 0x00}
+	actual := test.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v48 golden mismatch: got %v want %v", actual, expected)
 	}
 }
 

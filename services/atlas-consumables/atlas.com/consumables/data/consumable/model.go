@@ -119,6 +119,18 @@ func (m Model) SuccessRate() uint32 {
 	return m.success
 }
 
+func (m Model) MasterLevel() uint32 {
+	return m.masterLevel
+}
+
+func (m Model) ReqSkillLevel() uint32 {
+	return m.reqSkillLevel
+}
+
+func (m Model) Skills() []uint32 {
+	return m.skills
+}
+
 func (m Model) StrengthIncrease() uint32 {
 	return m.incSTR
 }
@@ -187,8 +199,70 @@ func (m Model) MonsterSummons() []SummonModel {
 	return m.monsterSummons
 }
 
-type RewardModel struct {
-	itemId uint32
-	count  uint32
-	prob   uint32
+// Morphs returns the item's morphRandom table (morph id -> weight). The
+// returned map is the internal reference, matching the MonsterSummons()
+// accessor convention; callers are read-only.
+func (m Model) Morphs() map[uint32]uint32 {
+	return m.morphs
 }
+
+func (m Model) Rewards() []RewardModel {
+	return m.rewards
+}
+
+type RewardModel struct {
+	itemId   uint32
+	count    uint32
+	prob     uint32
+	effect   string
+	worldMsg string
+	period   int32
+}
+
+func (m RewardModel) ItemId() uint32 {
+	return m.itemId
+}
+
+func (m RewardModel) Count() uint32 {
+	return m.count
+}
+
+func (m RewardModel) Prob() uint32 {
+	return m.prob
+}
+
+func (m RewardModel) Effect() string {
+	return m.effect
+}
+
+func (m RewardModel) WorldMsg() string {
+	return m.worldMsg
+}
+
+func (m RewardModel) Period() int32 {
+	return m.period
+}
+
+type RewardModelBuilderType struct {
+	m RewardModel
+}
+
+func RewardModelBuilder() *RewardModelBuilderType { return &RewardModelBuilderType{} }
+
+func (b *RewardModelBuilderType) SetItemId(v uint32) *RewardModelBuilderType {
+	b.m.itemId = v
+	return b
+}
+func (b *RewardModelBuilderType) SetCount(v uint32) *RewardModelBuilderType { b.m.count = v; return b }
+func (b *RewardModelBuilderType) SetProb(v uint32) *RewardModelBuilderType  { b.m.prob = v; return b }
+func (b *RewardModelBuilderType) SetEffect(v string) *RewardModelBuilderType {
+	b.m.effect = v
+	return b
+}
+
+func (b *RewardModelBuilderType) SetWorldMsg(v string) *RewardModelBuilderType {
+	b.m.worldMsg = v
+	return b
+}
+func (b *RewardModelBuilderType) SetPeriod(v int32) *RewardModelBuilderType { b.m.period = v; return b }
+func (b *RewardModelBuilderType) Build() RewardModel                        { return b.m }

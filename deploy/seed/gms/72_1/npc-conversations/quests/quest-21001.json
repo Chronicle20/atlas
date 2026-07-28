@@ -1,0 +1,329 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "askAboutChild",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "relief",
+                  "text": "Yes"
+                },
+                {
+                  "nextState": "noChildMessage",
+                  "text": "No"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendYesNo",
+              "text": "You made it back safely! What about the child?! Did you bring the child with you?!"
+            },
+            "id": "askAboutChild",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "What about the child? Please give me the child!"
+            },
+            "id": "noChildMessage",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "hurryBoard",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Oh, what a relief. I'm so glad..."
+            },
+            "id": "relief",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "relief",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "noTimeToWaste",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "endChat": false,
+              "speaker": "CHARACTER",
+              "text": "Hurry and board the ship! We don't have much time!"
+            },
+            "id": "hurryBoard",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "hurryBoard",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "leaveNow",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "We don't have any time to waste. The Black Mage's forces are getting closer and closer! We're doomed if we don't leave right right this moment!"
+            },
+            "id": "noTimeToWaste",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "noTimeToWaste",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "pleaToStay",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "endChat": false,
+              "speaker": "CHARACTER",
+              "text": "Leave, now!"
+            },
+            "id": "leaveNow",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "leaveNow",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "noCant",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Aran, please! I know you want to stay and fight the Black Mage, but it's too late! Leave it to the others and come to Victoria Island with us!"
+            },
+            "id": "pleaToStay",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "pleaToStay",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "promiseToReturn",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "endChat": false,
+              "speaker": "CHARACTER",
+              "text": "No, I can't!"
+            },
+            "id": "noCant",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "noCant",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "completeQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "endChat": false,
+              "speaker": "CHARACTER",
+              "text": "Athena Pierce, why don't you leave for Victoria Island first? I promise I'll come for you later. I'll be alright. I must fight the Black Mage with the other heroes!"
+            },
+            "id": "promiseToReturn",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4001271",
+                    "quantity": "1"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "inventoryType": "1",
+                    "slot": "-11"
+                  },
+                  "type": "destroy_item_from_slot"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "mapId": "914090010",
+                    "portalId": "0"
+                  },
+                  "type": "warp_to_map"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 21001,
+      "questName": "Aran Tutorial - Save the Child",
+      "startStateMachine": {
+        "startState": "askAccept",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "giveItemAndStart",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "declineMessage",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "*Sniff sniff* I was so scared... Please take me to Athena Pierce."
+            },
+            "id": "askAccept",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "*Sob* Aran has declined my request!"
+            },
+            "id": "declineMessage",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4001271",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "mapId": "914000300",
+                    "portalId": "0"
+                  },
+                  "type": "warp_to_map"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "giveItemAndStart",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21001",
+    "type": "quest-conversation"
+  }
+}

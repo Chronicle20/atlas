@@ -1,18 +1,23 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-party-quests/definition"
 	"atlas-party-quests/instance"
+	"context"
+	"os"
+	"time"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	characterConsumer "atlas-party-quests/kafka/consumer/character"
 	monsterConsumer "atlas-party-quests/kafka/consumer/monster"
 	pqConsumer "atlas-party-quests/kafka/consumer/party_quest"
-	"atlas-party-quests/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tenant2 "atlas-party-quests/tenant"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
-	"os"
-	"time"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -20,7 +25,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-party-quests"
@@ -48,21 +52,22 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(definition.MigrateTable, func(db *gorm.DB) error {
 		return db.AutoMigrate(&seeder.SeedState{})
 	}))
 
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	pqConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	characterConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	monsterConsumer.InitConsumers(l)(cmf)(consumerGroupId)
@@ -76,25 +81,25 @@ func main() {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	tenants, err := tenant2.NewProcessor(l, tdm.Context()).GetAll()
+	tenants, err := tenant2.NewProcessor(l, rt.Context()).GetAll()
 	if err != nil {
 		l.WithError(err).Fatal("Unable to load tenants.")
 	}
 
 	// Start background ticker for PQ timers
-	go func() {
+	routine.Go(l, rt.Context(), func(_ context.Context) {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 
 		for {
 			select {
-			case <-tdm.Context().Done():
+			case <-rt.Context().Done():
 				return
 			case <-ticker.C:
 				for _, t := range tenants {
-					ctx := tenant.WithContext(tdm.Context(), t)
+					ctx := tenant.WithContext(rt.Context(), t)
 					ip := instance.NewProcessor(l, ctx, db)
 					if err := ip.TickGlobalTimerAndEmit(); err != nil {
 						l.WithError(err).Warn("Error ticking global timer.")
@@ -114,29 +119,27 @@ func main() {
 				}
 			}
 		}
-	}()
+	})
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(definition.InitResource(GetServer())(db)).
 		AddRouteInitializer(definition.InitSeedResource(GetServer())(db)).
 		AddRouteInitializer(instance.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.TeardownFunc(func() {
+	rt.TeardownFunc(func() {
 		l.Infoln("Graceful shutdown: handling active PQ instances.")
 		for _, t := range tenants {
-			ctx := tenant.WithContext(tdm.Context(), t)
+			ctx := tenant.WithContext(rt.Context(), t)
 			_ = instance.NewProcessor(l, ctx, db).GracefulShutdownAndEmit()
 		}
 	})
 
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

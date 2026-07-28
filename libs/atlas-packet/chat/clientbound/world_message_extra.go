@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // WorldMessageUnknown3 covers Unknown3 and Unknown4 modes - mode, message, "doo" string, operator uint32
@@ -24,8 +25,8 @@ func NewWorldMessageUnknown4(mode byte, message string, operator uint32) WorldMe
 	return WorldMessageUnknown3{mode: mode, message: message, operator: operator}
 }
 
-func (m WorldMessageUnknown3) Mode() byte      { return m.mode }
-func (m WorldMessageUnknown3) Message() string { return m.message }
+func (m WorldMessageUnknown3) Mode() byte       { return m.mode }
+func (m WorldMessageUnknown3) Message() string  { return m.message }
 func (m WorldMessageUnknown3) Operator() uint32 { return m.operator }
 
 func (m WorldMessageUnknown3) Operation() string { return WorldMessageWriter }
@@ -138,8 +139,8 @@ func NewWorldMessageWeather(mode byte, message string, weatherItemId uint32) Wor
 	return WorldMessageWeather{mode: mode, message: message, weatherItemId: weatherItemId}
 }
 
-func (m WorldMessageWeather) Mode() byte          { return m.mode }
-func (m WorldMessageWeather) Message() string     { return m.message }
+func (m WorldMessageWeather) Mode() byte            { return m.mode }
+func (m WorldMessageWeather) Message() string       { return m.message }
 func (m WorldMessageWeather) WeatherItemId() uint32 { return m.weatherItemId }
 
 func (m WorldMessageWeather) Operation() string { return WorldMessageWriter }

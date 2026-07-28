@@ -12,6 +12,10 @@ Retrieves the mount progression for a character. If no mount record exists yet, 
 |------|-----|------|----------|-------------|
 | characterId | path | uint32 | yes | Character identifier |
 
+#### Request Model
+
+None.
+
 #### Request Headers
 
 | Name | Required | Description |

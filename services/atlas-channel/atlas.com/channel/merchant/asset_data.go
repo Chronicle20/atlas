@@ -5,6 +5,7 @@ import "time"
 type AssetData struct {
 	Expiration     time.Time `json:"expiration"`
 	Quantity       uint32    `json:"quantity"`
+	Owner          string    `json:"owner"`
 	Flag           uint16    `json:"flag"`
 	Rechargeable   uint64    `json:"rechargeable"`
 	Strength       uint16    `json:"strength"`

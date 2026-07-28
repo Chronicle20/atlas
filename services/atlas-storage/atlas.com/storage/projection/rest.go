@@ -10,15 +10,15 @@ import (
 
 // RestModel represents a projection in JSON:API format
 type RestModel struct {
-	Id           string                           `json:"-"`
-	CharacterId  uint32                           `json:"characterId"`
-	AccountId    uint32                           `json:"accountId"`
-	WorldId      world.Id                         `json:"worldId"`
-	StorageId    string                           `json:"storageId"`
-	Capacity     uint32                           `json:"capacity"`
-	Mesos        uint32                           `json:"mesos"`
-	NpcId        uint32                           `json:"npcId"`
-	Compartments map[string][]asset.RestModel     `json:"compartments"`
+	Id           string                       `json:"-"`
+	CharacterId  uint32                       `json:"characterId"`
+	AccountId    uint32                       `json:"accountId"`
+	WorldId      world.Id                     `json:"worldId"`
+	StorageId    string                       `json:"storageId"`
+	Capacity     uint32                       `json:"capacity"`
+	Mesos        uint32                       `json:"mesos"`
+	NpcId        uint32                       `json:"npcId"`
+	Compartments map[string][]asset.RestModel `json:"compartments"`
 }
 
 func (r RestModel) GetName() string {

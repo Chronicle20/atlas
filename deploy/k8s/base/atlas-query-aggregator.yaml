@@ -14,7 +14,7 @@ spec:
         app: atlas-query-aggregator
     spec:
       containers:
-      - name: guilds
+      - name: query-aggregator
         image: ghcr.io/chronicle20/atlas-query-aggregator/atlas-query-aggregator
         ports:
         - containerPort: 8080

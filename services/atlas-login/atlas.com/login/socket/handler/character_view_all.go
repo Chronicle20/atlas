@@ -7,11 +7,12 @@ import (
 	"atlas-login/world"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	world2 "github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	loginpkt "github.com/Chronicle20/atlas/libs/atlas-packet/login/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -30,7 +31,7 @@ func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wr
 			return
 		}
 
-		var wcs = make(map[world2.Id][]character.Model)
+		wcs := make(map[world2.Id][]character.Model)
 		var count int
 		for _, w := range ws {
 			var cs []character.Model

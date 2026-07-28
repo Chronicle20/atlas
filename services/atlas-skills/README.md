@@ -21,6 +21,8 @@ A microservice that manages character skills and skill macros. It handles skill 
 | `DB_HOST` | Database host |
 | `DB_PORT` | Database port |
 | `DB_NAME` | Database name |
+| `REDIS_URL` | Redis connection address |
+| `REDIS_PASSWORD` | Redis connection password |
 | `BOOTSTRAP_SERVERS` | Kafka bootstrap servers |
 | `COMMAND_TOPIC_SKILL` | Kafka topic for skill commands |
 | `COMMAND_TOPIC_SKILL_MACRO` | Kafka topic for macro commands |

@@ -1,0 +1,90 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Black Road - Ready to Leave exit portal to Burning Forest 1 (Aran tutorial)",
+      "mapId": 914000100,
+      "portalId": "aranTutorOut1",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "21000",
+              "type": "quest_status",
+              "value": "1"
+            }
+          ],
+          "id": "quest_started_allow",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "params": {
+                  "expiration": "-1",
+                  "level": "0",
+                  "masterLevel": "-1",
+                  "skillId": "20000017"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "expiration": "-1",
+                  "level": "0",
+                  "masterLevel": "-1",
+                  "skillId": "20000018"
+                },
+                "type": "create_skill"
+              },
+              {
+                "params": {
+                  "expiration": "-1",
+                  "level": "1",
+                  "masterLevel": "0",
+                  "skillId": "20000017"
+                },
+                "type": "update_skill"
+              },
+              {
+                "params": {
+                  "expiration": "-1",
+                  "level": "1",
+                  "masterLevel": "0",
+                  "skillId": "20000018"
+                },
+                "type": "update_skill"
+              },
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "mapId": "914000200",
+                  "portalId": "1"
+                },
+                "type": "warp"
+              }
+            ]
+          }
+        },
+        {
+          "conditions": [],
+          "id": "default_deny",
+          "onMatch": {
+            "allow": false,
+            "operations": [
+              {
+                "params": {
+                  "message": "You can only exit after you accept the quest from Athena Pierce, who is to your right."
+                },
+                "type": "drop_message"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "aranTutorOut1",
+    "type": "portal-action"
+  }
+}

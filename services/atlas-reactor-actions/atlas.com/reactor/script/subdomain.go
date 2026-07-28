@@ -5,10 +5,11 @@ import (
 	"regexp"
 	"time"
 
-	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // compile-time assertion

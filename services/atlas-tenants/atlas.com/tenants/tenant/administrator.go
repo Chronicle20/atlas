@@ -1,8 +1,9 @@
 package tenant
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"errors"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

@@ -1,0 +1,48 @@
+{
+  "WriterName": "InteractionInteractionChat",
+  "IDAName": "CMiniRoomBaseDlg::OnPacketBase#Chat",
+  "Address": "0x62cd21",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/interaction/clientbound/interaction.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (6; dispatch byte routed to vtable[80] OnChat)",
+      "Verdict": 0,
+      "Note": "v79 CMiniRoomBaseDlg::OnPacketBase @0x62cd21 case 6; body verified by cross-version fixture (== IDA-verified v83/v95 read order, version-stable)"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "chatType (7=game-msg else font/0..3)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "slot (speaker position)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message (sText)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

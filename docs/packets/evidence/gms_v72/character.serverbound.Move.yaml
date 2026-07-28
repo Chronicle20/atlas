@@ -1,0 +1,10 @@
+packet: character/serverbound/Move
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CVecCtrlUser::EndUpdateActive
+    address: "0x8cb63e"
+    decompile_sha256: 9055443280b0cfabfd19993e8012d5b30c9a74e3c4124455001834445ea299f5
+verifies:
+  - libs/atlas-packet/character/serverbound/move_test.go#TestCharacterMoveByteV72

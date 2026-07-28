@@ -1,0 +1,5 @@
+# Tool version pins for tools/lint.sh — the single source of truth read by
+# both local runs and CI (task-171). gofumpt/goimports versions are embedded
+# in the golangci-lint release; Prettier is pinned exactly in
+# services/atlas-ui/package.json (package.json + lockfile own Node tooling).
+GOLANGCI_LINT_VERSION=v2.12.2

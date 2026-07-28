@@ -6,7 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Model struct {
@@ -46,9 +46,9 @@ func (m Model) ChannelId() channel.Id {
 
 func (m Model) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		WorldId     world.Id             `json:"worldId"`
-		ChannelId   channel.Id           `json:"channelId"`
-		CharacterId uint32               `json:"characterId"`
+		WorldId     world.Id              `json:"worldId"`
+		ChannelId   channel.Id            `json:"channelId"`
+		CharacterId uint32                `json:"characterId"`
 		Buffs       map[string]buff.Model `json:"buffs"`
 	}{
 		WorldId:     m.worldId,
@@ -60,9 +60,9 @@ func (m Model) MarshalJSON() ([]byte, error) {
 
 func (m *Model) UnmarshalJSON(data []byte) error {
 	var aux struct {
-		WorldId     world.Id             `json:"worldId"`
-		ChannelId   channel.Id           `json:"channelId"`
-		CharacterId uint32               `json:"characterId"`
+		WorldId     world.Id              `json:"worldId"`
+		ChannelId   channel.Id            `json:"channelId"`
+		CharacterId uint32                `json:"characterId"`
 		Buffs       map[string]buff.Model `json:"buffs"`
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {

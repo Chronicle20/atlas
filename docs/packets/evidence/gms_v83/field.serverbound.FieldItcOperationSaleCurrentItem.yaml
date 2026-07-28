@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationSaleCurrentItem
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnSaleCurrentItem
+    address: "0x59ee3f"
+    decompile_sha256: fb60503eb863ad59b6d156530f4952ce6f918843504d22301c824f0400500bc5
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationSaleCurrentItemByteOutput

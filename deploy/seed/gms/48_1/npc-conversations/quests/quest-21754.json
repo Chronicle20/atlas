@@ -1,0 +1,100 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 21754,
+      "questName": "Unknown Quest Name",
+      "startStateMachine": {
+        "startState": "checkInventorySpace",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4032328",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "requestDelivery"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "noSpace"
+                }
+              ]
+            },
+            "id": "checkInventorySpace",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Hm, I will need you to prepare a ETC slot for a letter I need to give you."
+            },
+            "id": "noSpace",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuestAndGiveItem",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Here, take this. Send it to #r#p1002104##k, it contains a relevant matter for protecting this world. Please comply to this request."
+            },
+            "id": "requestDelivery",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "itemId": "4032328",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuestAndGiveItem",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21754",
+    "type": "quest-conversation"
+  }
+}

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Registry[I string, M Identifier[I]] struct {
@@ -56,7 +56,7 @@ func (r *Registry[I, M]) GetAll(t tenant.Model) ([]M, error) {
 	r.tenantLock[t].RLock()
 	defer r.tenantLock[t].RUnlock()
 
-	var res = make([]M, 0)
+	res := make([]M, 0)
 	var tr map[I]M
 	var ok bool
 	if tr, ok = r.registry[t]; !ok || len(tr) == 0 {

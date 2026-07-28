@@ -1,0 +1,8 @@
+packet: character/clientbound/StatusMessageCashItemExpire
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_71B7D9
+    address: "0x71b7d9"
+    decompile_sha256: a86fa30eeb9bf6a813528c01bee730ee4cf52b213f3c26acc26a5f493b1c2295

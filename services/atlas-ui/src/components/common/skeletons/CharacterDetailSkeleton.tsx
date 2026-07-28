@@ -1,5 +1,5 @@
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 /**
  * CharacterDetailSkeleton provides a detailed loading state for the Character Detail page.
@@ -68,7 +68,10 @@ export function CharacterDetailSkeleton() {
       </div>
 
       {/* Equipment paper-doll skeleton */}
-      <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
+      <div
+        className="grid gap-2"
+        style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}
+      >
         {Array.from({ length: 21 }).map((_, i) => (
           <Skeleton key={i} className="aspect-square" />
         ))}
@@ -77,7 +80,6 @@ export function CharacterDetailSkeleton() {
       {/* Inventory Section */}
       <div className="space-y-4">
         <Skeleton className="h-6 w-20" /> {/* "Inventory" title */}
-        
         <div className="grid grid-cols-1 gap-4">
           {/* Skeleton for compartments - typically 3-5 compartments */}
           {Array.from({ length: 4 }).map((_, compartmentIndex) => (
@@ -89,15 +91,21 @@ export function CharacterDetailSkeleton() {
                 </div>
                 <Skeleton className="h-4 w-12" /> {/* Capacity count */}
               </div>
-              
+
               {/* Compartment content */}
               <div className="p-4 pt-0">
                 <div className="flex flex-wrap gap-3 pt-4">
                   {/* Asset skeleton items - vary the count per compartment */}
-                  {Array.from({ length: compartmentIndex === 0 ? 8 : 3 + compartmentIndex }).map((_, assetIndex) => (
-                    <Card key={assetIndex} className="overflow-hidden relative py-0 w-[100px]">
+                  {Array.from({
+                    length: compartmentIndex === 0 ? 8 : 3 + compartmentIndex,
+                  }).map((_, assetIndex) => (
+                    <Card
+                      key={assetIndex}
+                      className="overflow-hidden relative py-0 w-[100px]"
+                    >
                       <div className="absolute top-0 right-0 p-1">
-                        <Skeleton className="h-4 w-4 rounded-sm" /> {/* Delete button */}
+                        <Skeleton className="h-4 w-4 rounded-sm" />{" "}
+                        {/* Delete button */}
                       </div>
                       <div className="p-1 pl-3 pb-1 text-left">
                         <Skeleton className="h-4 w-6" /> {/* Slot number */}
@@ -135,44 +143,56 @@ export function CharacterDetailSkeleton() {
  * Enhanced Character Renderer Skeleton specifically for the character detail page.
  * Provides a more detailed loading state with character-like shape.
  */
-export function CharacterRendererDetailSkeleton({ 
-  size = 'large', 
-  className 
-}: { 
-  size?: 'small' | 'medium' | 'large';
+export function CharacterRendererDetailSkeleton({
+  size = "large",
+  className,
+}: {
+  size?: "small" | "medium" | "large";
   className?: string | undefined;
 }) {
   const sizeClasses = {
-    small: 'w-32 h-32',
-    medium: 'w-48 h-48', 
-    large: 'w-64 h-64'
+    small: "w-32 h-32",
+    medium: "w-48 h-48",
+    large: "w-64 h-64",
   };
 
   const skeletonSizes = {
-    small: { head: 'w-8 h-10', body: 'w-6 h-12', leg: 'w-2 h-8' },
-    medium: { head: 'w-12 h-15', body: 'w-9 h-18', leg: 'w-3 h-12' },
-    large: { head: 'w-16 h-20', body: 'w-12 h-24', leg: 'w-4 h-16' }
+    small: { head: "w-8 h-10", body: "w-6 h-12", leg: "w-2 h-8" },
+    medium: { head: "w-12 h-15", body: "w-9 h-18", leg: "w-3 h-12" },
+    large: { head: "w-16 h-20", body: "w-12 h-24", leg: "w-4 h-16" },
   };
 
   const currentSizes = skeletonSizes[size];
 
   return (
-    <div className={`${sizeClasses[size]} flex items-center justify-center ${className}`}>
+    <div
+      className={`${sizeClasses[size]} flex items-center justify-center ${className}`}
+    >
       <div className="relative">
         {/* Base skeleton */}
-        <Skeleton className={`${sizeClasses[size]} rounded-lg absolute inset-0`} />
-        
+        <Skeleton
+          className={`${sizeClasses[size]} rounded-lg absolute inset-0`}
+        />
+
         {/* Character-like overlay for better UX */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative">
             {/* Head */}
-            <Skeleton className={`${currentSizes.head} rounded-full mx-auto mb-2 opacity-60`} />
+            <Skeleton
+              className={`${currentSizes.head} rounded-full mx-auto mb-2 opacity-60`}
+            />
             {/* Body */}
-            <Skeleton className={`${currentSizes.body} rounded-sm mx-auto mb-2 opacity-60`} />
+            <Skeleton
+              className={`${currentSizes.body} rounded-sm mx-auto mb-2 opacity-60`}
+            />
             {/* Legs */}
             <div className="flex justify-center gap-1">
-              <Skeleton className={`${currentSizes.leg} rounded-sm opacity-60`} />
-              <Skeleton className={`${currentSizes.leg} rounded-sm opacity-60`} />
+              <Skeleton
+                className={`${currentSizes.leg} rounded-sm opacity-60`}
+              />
+              <Skeleton
+                className={`${currentSizes.leg} rounded-sm opacity-60`}
+              />
             </div>
           </div>
         </div>

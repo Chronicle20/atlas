@@ -5,8 +5,9 @@ import (
 	"errors"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func create(db *gorm.DB) func(t tenant.Model, ownerId uint32, m Model) (Model, error) {

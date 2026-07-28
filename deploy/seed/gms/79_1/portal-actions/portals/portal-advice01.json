@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Mushroom Town - Tutorial portal showing instruction to click NPC Heena",
+      "mapId": 10000,
+      "portalId": "advice01",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "show_heena_hint",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "params": {
+                  "height": "5",
+                  "hint": "Click \r\\#b<Heena>#k",
+                  "width": "100"
+                },
+                "type": "show_hint"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "advice01",
+    "type": "portal-action"
+  }
+}

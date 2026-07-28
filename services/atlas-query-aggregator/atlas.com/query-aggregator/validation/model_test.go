@@ -21,12 +21,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	inventory_type "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 // testLogger returns a logger that discards output, for use in tests that

@@ -30,6 +30,13 @@ func (r *SessionRestModel) SetID(id string) error {
 	return nil
 }
 
+// Extract is the identity transformer for SessionRestModel. This package has
+// no separate domain model, so requests.DrainProvider's transformer is a
+// pass-through.
+func Extract(r SessionRestModel) (SessionRestModel, error) {
+	return r, nil
+}
+
 // IsActive returns true if the session is still active (no logout time)
 func (r SessionRestModel) IsActive() bool {
 	return r.LogoutTime == nil

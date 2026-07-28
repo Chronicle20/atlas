@@ -8,15 +8,15 @@
 package data
 
 import (
+	"atlas-monsters/monster/information"
 	"context"
 	"os"
 	"strconv"
 
-	"atlas-monsters/monster/information"
-
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func handleDataUpdated(l logrus.FieldLogger, ctx context.Context, e event[dataUpdatedEventBody]) {

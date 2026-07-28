@@ -1,6 +1,7 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
@@ -142,7 +143,7 @@ func TestInteractionEnterRoundTrip(t *testing.T) {
 // maxUsers + per-slot avatar loop terminated by slot 0xFF).
 func TestInteractionEnterResultSuccessRoundTrip(t *testing.T) {
 	visitors := []interaction.Visitor{interaction.NewBaseVisitor(0, testAvatar(), "ShopOwner")}
-	room := interaction.NewPersonalShopRoom(visitors, "CoolShop", 16, []interaction.RoomShopItem{testShopItem()})
+	room := interaction.NewPersonalShopRoom(0, visitors, "CoolShop", 16, []interaction.RoomShopItem{testShopItem()})
 	input := NewInteractionEnterResultSuccess(5, room)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -152,10 +153,143 @@ func TestInteractionEnterResultSuccessRoundTrip(t *testing.T) {
 	}
 }
 
+// TestInteractionEnterResultSuccessBytes is the byte-exact fixture that pins the
+// EnterResultSuccess (mode 5) header — including the second header byte the encoder
+// previously omitted, which shifted the visitor list and caused the live v83
+// "error 38" over-read on personal-store setup.
+//
+// Read order (all versions read it identically — CMiniRoomBaseDlg::OnEnterResultBase
+// is version-stable: v83 @0x65ec3d, v87 sub_698F32 @0x698f32, v95 @0x638e30,
+// jms sub_6DABDB @0x6dabdb — each: Decode1 capacity, Decode1 header, visitor loop):
+//
+//	mode                 = 5     (ENTER_RESULT; passed to NewInteractionEnterResultSuccess)
+//	roomType             = 4     (PersonalShop; Room.Encode, OnEnterResultStatic Decode1 @0x65e02b)
+//	capacity             = 4     (OnEnterResultBase Decode1 -> *(this+0xCC) @0x65ec5d)
+//	position byte        = 0/n   (OnEnterResultBase Decode1 -> *(this+0xC8) @0x65ec6b; the fix)
+//	0xFF                 =       (empty visitor list; slot<0 breaks loop @0x65ec7d)
+//	title "AB"           = 02 00 41 42   (CPersonalShopDlg::OnEnterResult DecodeStr @0x6fc62a)
+//	maxItemCount = 16    = 10    (Decode1 -> *(this+109) @0x6fc683)
+//	itemCount = 0        = 00    (CPersonalShopDlg::OnRefresh Decode1 @0x6fcc64; vtable+112 @0xAFD498)
+//
+// The position byte is the recipient's position in the room: 0 = owner,
+// 1..3 = visitor slot. CPersonalShopDlg::OnEnterResult branches on it
+// @0x6fc528 (`if(*(this+50))`): ZERO = owner add-item management UI, nonzero
+// = visitor buy UI (owner polarity pinned by the entrusted dialog's
+// owner-only decode branch @0x518a7e); the previous inverted reading
+// (1 = owner) put live shop owners into the visitor buy view.
+// (The EnterResultSuccess packet-audit:verify markers for every version live in the
+// block above TestInteractionInviteRoundTrip; this fixture backs the gms_v83 one.)
+func TestInteractionEnterResultSuccessBytes(t *testing.T) {
+	cases := []struct {
+		name     string
+		position byte
+		want     []byte
+	}{
+		{"owner", 0, []byte{0x05, 0x04, 0x04, 0x00, 0xFF, 0x02, 0x00, 0x41, 0x42, 0x10, 0x00}},
+		{"visitor_slot2", 2, []byte{0x05, 0x04, 0x04, 0x02, 0xFF, 0x02, 0x00, 0x41, 0x42, 0x10, 0x00}},
+	}
+	for _, tc := range cases {
+		room := interaction.NewPersonalShopRoom(tc.position, nil, "AB", 16, nil)
+		input := NewInteractionEnterResultSuccess(5, room)
+		for _, v := range test.Variants {
+			t.Run(tc.name+"/"+v.Name, func(t *testing.T) {
+				ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+				b := test.Encode(t, ctx, input.Encode, nil)
+				if !bytes.Equal(b, tc.want) {
+					t.Fatalf("bytes: got % x, want % x", b, tc.want)
+				}
+			})
+		}
+	}
+}
+
+// TestInteractionEnterResultSuccessMerchantBytes is the byte-exact fixture for the
+// hired-merchant (roomType 5) enter-result — both owner and customer views — pinning
+// the FULL tail against CEntrustedShopDlg::OnEnterResult (v83 @0x518873).
+//
+// Read order (after the version-stable OnEnterResultBase header — roomType, capacity,
+// position byte, visitor loop terminated by slot 0xFF):
+//
+//	Decode2 msgCount; msgCount x {DecodeStr msg, Decode1 slot}    (@0x518888..)
+//	DecodeStr ownerName                                           (this+479 @0x518a54)
+//	if position == 0 (OWNER, *(this+0xC8)==0, branch @0x518a7e):
+//	    Decode4 packed open-time                                  (this[482] @0x518b04;
+//	                                                               short 0 + short minutes)
+//	    Decode1 firstTime                                         (@0x518b0a; branches owner UI)
+//	    Decode1 soldCount;                                        (DecodeSoldItemList
+//	    soldCount x {Decode4 id, Decode2 qty, Decode4 price,       sub_518EFD @0x518efd)
+//	        DecodeStr buyer}; Decode4 accrued meso total
+//	DecodeStr title                                               (this+105 @0x518c8f)
+//	Decode1 maxItem                                               (this+109 @0x518d12)
+//	Decode4 withdrawable meso;                                    (CEntrustedShopDlg::OnRefresh
+//	Decode1 itemCount; itemCount x {Decode2 perBundle, Decode2     @0x518852 -> chains
+//	    qty, Decode4 price, GW_ItemSlotBase}                       CPersonalShopDlg::OnRefresh
+//	                                                               @0x6fcc4e)
+//
+// Position semantics: the client decodes the extra block (short 0, short
+// timeOpen, byte firstTime, sold list, int merchantMeso) ONLY in the
+// position==0 branch, and that branch is the owner's — the owner-only
+// management UI open (CWvsContext::UI_Open) is gated on !position
+// @0x518d3d. So 0 = owner. The trailing OnRefresh
+// call at @0x518d27 is `call dword ptr [eax+70h]` (0x70 = 112) = off_AF3928[112] =
+// CEntrustedShopDlg::OnRefresh @0x518852 (confirmed from disassembly + vtable
+// bytes, not the decompiler's mislabelled "+28").
+func TestInteractionEnterResultSuccessMerchantBytes(t *testing.T) {
+	cases := []struct {
+		name string
+		room interaction.Room
+		want []byte
+	}{
+		// OWNER view (position 0) carries the open-time/firstTime/ledger block.
+		{"owner", interaction.NewMerchantShopRoom(0, nil, nil, "AB", "CD", 16, 1000, nil).
+			SetOwnerLedger(42, true, nil, 1000), []byte{
+			0x05, 0x05, 0x04, 0x00, 0xFF, // mode 5, roomType 5, capacity 4, position 0 (owner), no visitors
+			0x00, 0x00, // msgCount 0
+			0x02, 0x00, 0x41, 0x42, // ownerName "AB"
+			0x00, 0x00, // packed open-time low short (always 0)
+			0x2A, 0x00, // open-time 42 minutes
+			0x01,                   // firstTime 1 (creation-time view)
+			0x00,                   // soldCount 0
+			0xE8, 0x03, 0x00, 0x00, // accrued meso total 1000
+			0x02, 0x00, 0x43, 0x44, // title "CD"
+			0x10,                   // maxItem 16
+			0xE8, 0x03, 0x00, 0x00, // OnRefresh withdrawable meso 1000
+			0x00, // itemCount 0
+		}},
+		// visitor view (position = slot) goes straight from ownerName to title.
+		{"visitor_slot1", interaction.NewMerchantShopRoom(1, nil, nil, "AB", "CD", 16, 1000, nil), []byte{
+			0x05, 0x05, 0x04, 0x01, 0xFF, // mode 5, roomType 5, capacity 4, position 1 (visitor slot 1), no visitors
+			0x00, 0x00, // msgCount 0
+			0x02, 0x00, 0x41, 0x42, // ownerName "AB"
+			0x02, 0x00, 0x43, 0x44, // title "CD"
+			0x10,                   // maxItem 16
+			0xE8, 0x03, 0x00, 0x00, // OnRefresh withdrawable meso 1000
+			0x00, // itemCount 0
+		}},
+	}
+	for _, tc := range cases {
+		input := NewInteractionEnterResultSuccess(5, tc.room)
+		for _, v := range test.Variants {
+			t.Run(tc.name+"/"+v.Name, func(t *testing.T) {
+				ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+				b := test.Encode(t, ctx, input.Encode, nil)
+				if !bytes.Equal(b, tc.want) {
+					t.Fatalf("bytes: got % x, want % x", b, tc.want)
+				}
+			})
+		}
+	}
+}
+
 // TestInteractionUpdateMerchantBytes is an encode-only byte fixture for the
 // UPDATE_MERCHANT mode. The hired-merchant refresh leaf CEntrustedShopDlg::OnRefresh
 // reads Decode4(meso) then chains CPersonalShopDlg::OnRefresh: Decode1(count) +
-// count x {Decode2 perBundle, Decode2 quantity, Decode4 price, GW_ItemSlotBase}.
+// count x {Decode2 nNumber, Decode2 nSet, Decode4 price, GW_ItemSlotBase}
+// (v95 PDB CPersonalShopDlg::OnRefresh @0x698050: v5->nNumber = Decode2 FIRST
+// = total quantity available; v5->nSet = Decode2 SECOND = units per bundle).
+// So the wire order is Quantity (nNumber) then PerBundle (nSet); emitting
+// PerBundle first makes a 50-count individual item render as a bundle of 50
+// (task-127 "shows as a bundle" bug).
 // Each asserted byte traces to that read order. The leading mode byte is
 // version-dependent: 25 in gms_v83/v84/v87/v95 (IDA: v83 0x6fc42d / v95 0x69c820
 // switch case 25 -> OnRefresh), 22 in jms_v185 (IDA: CPersonalShopDlg::OnPacket
@@ -173,7 +307,7 @@ func TestInteractionUpdateMerchantBytes(t *testing.T) {
 			input := NewInteractionUpdateMerchant(wantMode, 50000, items)
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			b := test.Encode(t, ctx, input.Encode, nil)
-			// mode + meso(50000 LE) + count(1) + item{perBundle,quantity,price} + asset(...)
+			// mode + meso(50000 LE) + count(1) + item{nNumber,nSet,price} + asset(...)
 			// mode
 			if b[0] != wantMode {
 				t.Fatalf("mode: got %d, want %d", b[0], wantMode)
@@ -186,13 +320,13 @@ func TestInteractionUpdateMerchantBytes(t *testing.T) {
 			if b[5] != 1 {
 				t.Fatalf("count: got %d, want 1", b[5])
 			}
-			// perBundle (short LE) = 1
-			if b[6] != 0x01 || b[7] != 0x00 {
-				t.Fatalf("perBundle bytes: got % x, want 01 00", b[6:8])
+			// nNumber (short LE) = Quantity = 100 = 0x0064 — the FIRST short.
+			if b[6] != 0x64 || b[7] != 0x00 {
+				t.Fatalf("nNumber (quantity) bytes: got % x, want 64 00", b[6:8])
 			}
-			// quantity (short LE) = 100 = 0x0064
-			if b[8] != 0x64 || b[9] != 0x00 {
-				t.Fatalf("quantity bytes: got % x, want 64 00", b[8:10])
+			// nSet (short LE) = PerBundle = 1 — the SECOND short.
+			if b[8] != 0x01 || b[9] != 0x00 {
+				t.Fatalf("nSet (perBundle) bytes: got % x, want 01 00", b[8:10])
 			}
 			// price (int LE) = 5000 = 0x00001388
 			if b[10] != 0x88 || b[11] != 0x13 || b[12] != 0x00 || b[13] != 0x00 {
@@ -202,6 +336,92 @@ func TestInteractionUpdateMerchantBytes(t *testing.T) {
 			if len(b) <= 14 {
 				t.Fatalf("missing asset bytes after price; total len %d", len(b))
 			}
+		})
+	}
+}
+
+// TestInteractionUpdatePersonalShopBytes pins the personal-shop (item 514)
+// mode-25 refresh: CPersonalShopDlg::OnRefresh reads the item loop directly with
+// NO leading meso (only the hired-merchant override reads m_nMoney). The count
+// byte must sit immediately after the mode; a stray meso would be read as the
+// count (→ 0 items rendered, the task-127 "added item doesn't show" bug).
+func TestInteractionUpdatePersonalShopBytes(t *testing.T) {
+	items := []interaction.RoomShopItem{testShopItem()}
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			wantMode := byte(25)
+			if v.Region == "JMS" {
+				wantMode = 22
+			}
+			input := NewInteractionUpdatePersonalShop(wantMode, items)
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			b := test.Encode(t, ctx, input.Encode, nil)
+			if b[0] != wantMode {
+				t.Fatalf("mode: got %d, want %d", b[0], wantMode)
+			}
+			// count immediately after mode — NO 4-byte meso.
+			if b[1] != 1 {
+				t.Fatalf("count: got %d, want 1 (meso must be omitted for personal shops)", b[1])
+			}
+			// nNumber (short LE) = Quantity = 100 = 0x0064 follows the count
+			// directly (the FIRST short; nSet/perBundle is second).
+			if b[2] != 0x64 || b[3] != 0x00 {
+				t.Fatalf("nNumber (quantity) bytes: got % x, want 64 00", b[2:4])
+			}
+		})
+	}
+}
+
+// TestInteractionVisitListBytes pins the hired-merchant visit-list response
+// (CEntrustedShopDlg sub_519505 @0x519505, mode 0x2E): Decode2 count, then per
+// entry DecodeStr name + Decode4 count.
+func TestInteractionVisitListBytes(t *testing.T) {
+	input := NewInteractionVisitList(46, []VisitListEntry{{Name: "AB", Count: 3}})
+	want := []byte{46, 0x01, 0x00, 0x02, 0x00, 0x41, 0x42, 0x03, 0x00, 0x00, 0x00}
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			b := test.Encode(t, ctx, input.Encode, nil)
+			if !bytes.Equal(b, want) {
+				t.Fatalf("bytes: got % x, want % x", b, want)
+			}
+		})
+	}
+}
+
+// TestInteractionBlackListBytes pins the blacklist-view response
+// (CEntrustedShopDlg sub_5193D8 @0x5193d8, mode 0x2F): Decode2 count, then per
+// entry DecodeStr name.
+func TestInteractionBlackListBytes(t *testing.T) {
+	input := NewInteractionBlackList(47, []string{"AB", "CD"})
+	want := []byte{47, 0x02, 0x00, 0x02, 0x00, 0x41, 0x42, 0x02, 0x00, 0x43, 0x44}
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			b := test.Encode(t, ctx, input.Encode, nil)
+			if !bytes.Equal(b, want) {
+				t.Fatalf("bytes: got % x, want % x", b, want)
+			}
+		})
+	}
+}
+
+func TestInteractionVisitListRoundTrip(t *testing.T) {
+	input := NewInteractionVisitList(46, []VisitListEntry{{Name: "Visitor1", Count: 5}, {Name: "Visitor2", Count: 1}})
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionVisitList{}).Decode, nil)
+		})
+	}
+}
+
+func TestInteractionBlackListRoundTrip(t *testing.T) {
+	input := NewInteractionBlackList(47, []string{"Banned1", "Banned2"})
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionBlackList{}).Decode, nil)
 		})
 	}
 }

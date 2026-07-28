@@ -1,17 +1,19 @@
 package drop
 
 import (
-	"atlas-saga-orchestrator/kafka/producer"
 	queststate "atlas-saga-orchestrator/quest/state"
 	"atlas-saga-orchestrator/rates"
 	"context"
 	"math/rand"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // DropType constants for drop behavior
@@ -37,6 +39,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) SpawnReactorDrops(transactionId uuid.UUID, characterId uint32, field field.Model, reactorId uint32, classification string, x int16, y int16, dropType string, mesoEnabled bool, mesoChance uint32, mesoMin uint32, mesoMax uint32, minItems uint32) error {
 	// Fetch rates for the character

@@ -1,0 +1,10 @@
+packet: drop/serverbound/DropPickUp
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendDropPickUpRequest
+    address: "0x954e9d"
+    decompile_sha256: f766fd6fc3545db9c2ef64ba0ddf3cfa798e2ba3a15c23c8af44d7ce6a09c4f1
+verifies:
+    - libs/atlas-packet/drop/serverbound/pick_up_test.go#TestPickUpByteOutputV79

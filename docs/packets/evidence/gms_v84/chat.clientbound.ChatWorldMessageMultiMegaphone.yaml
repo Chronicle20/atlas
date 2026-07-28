@@ -1,0 +1,10 @@
+packet: chat/clientbound/ChatWorldMessageMultiMegaphone
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnBroadcastMsg#MultiMegaphone
+    address: "0xa6dc97"
+    decompile_sha256: 21b3f9034ae0510bd9f3e9bdb02d661bdf4d531bd4015d70dec2e5945bc2ccce
+verifies:
+    - libs/atlas-packet/chat/clientbound/world_message_test.go#TestWorldMessageMultiMegaphoneByteOutputV84

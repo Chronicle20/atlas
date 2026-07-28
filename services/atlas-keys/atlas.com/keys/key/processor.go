@@ -3,18 +3,21 @@ package key
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-var defaultKey = []int32{18, 65, 2, 23, 3, 4, 5, 6, 16, 17, 19, 25, 26, 27, 31, 34, 35, 37, 38, 40, 43, 44, 45, 46, 50, 56, 59, 60, 61, 62, 63, 64, 57, 48, 29, 7, 24, 33, 41, 39}
-var defaultType = []int8{4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 4, 4, 5, 6, 6, 6, 6, 6, 6, 5, 4, 5, 4, 4, 4, 4, 4}
-var defaultAction = []int32{0, 106, 10, 1, 12, 13, 18, 24, 8, 5, 4, 19, 14, 15, 2, 17, 11, 3, 20, 16, 9, 50, 51, 6, 7, 53, 100, 101, 102, 103, 104, 105, 54, 22, 52, 21, 25, 26, 23, 27}
+var (
+	defaultKey    = []int32{18, 65, 2, 23, 3, 4, 5, 6, 16, 17, 19, 25, 26, 27, 31, 34, 35, 37, 38, 40, 43, 44, 45, 46, 50, 56, 59, 60, 61, 62, 63, 64, 57, 48, 29, 7, 24, 33, 41, 39}
+	defaultType   = []int8{4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 4, 4, 5, 6, 6, 6, 6, 6, 6, 5, 4, 5, 4, 4, 4, 4, 4}
+	defaultAction = []int32{0, 106, 10, 1, 12, 13, 18, 24, 8, 5, 4, 19, 14, 15, 2, 17, 11, 3, 20, 16, 9, 50, 51, 6, 7, 53, 100, 101, 102, 103, 104, 105, 54, 22, 52, 21, 25, 26, 23, 27}
+)
 
-var entityModelMapper = model.Map(Make)
 var entitySliceMapper = model.SliceMap(Make)
 
 // Processor defines the interface for key processing operations
@@ -56,6 +59,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // ByCharacterIdProvider returns a provider for keys by character ID
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
 	return entitySliceMapper(byCharacterIdEntityProvider(characterId)(p.db.WithContext(p.ctx)))()
@@ -69,7 +74,7 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 
 // Reset resets keys for a character
 func (p *ProcessorImpl) Reset(_ uuid.UUID, characterId uint32) error {
-	return p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		err := deleteByCharacter(tx, characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to delete for character %d.", characterId)
@@ -88,7 +93,7 @@ func (p *ProcessorImpl) Reset(_ uuid.UUID, characterId uint32) error {
 
 // CreateDefault creates default keys for a character
 func (p *ProcessorImpl) CreateDefault(_ uuid.UUID, characterId uint32) error {
-	return p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		for i := 0; i < len(defaultKey); i++ {
 			_, err := create(tx, p.t.Id(), characterId, defaultKey[i], defaultType[i], defaultAction[i])
 			if err != nil {
@@ -102,7 +107,7 @@ func (p *ProcessorImpl) CreateDefault(_ uuid.UUID, characterId uint32) error {
 
 // Delete deletes keys for a character
 func (p *ProcessorImpl) Delete(_ uuid.UUID, characterId uint32) error {
-	return p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		err := deleteByCharacter(tx, characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to delete for character %d.", characterId)
@@ -114,7 +119,7 @@ func (p *ProcessorImpl) Delete(_ uuid.UUID, characterId uint32) error {
 
 // ChangeKey changes a key binding
 func (p *ProcessorImpl) ChangeKey(_ uuid.UUID, characterId uint32, key int32, theType int8, action int32) error {
-	return p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		_, err := byCharacterKeyEntityProvider(characterId, key)(tx)()
 		if err != nil {
 			_, err = create(tx, p.t.Id(), characterId, key, theType, action)

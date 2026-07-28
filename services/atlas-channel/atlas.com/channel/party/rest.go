@@ -3,13 +3,14 @@ package party
 import (
 	"strconv"
 
+	"github.com/google/uuid"
+	"github.com/jtumidanski/api2go/jsonapi"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
-	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 type RestModel struct {
@@ -110,7 +111,7 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 }
 
 func Extract(rm RestModel) (Model, error) {
-	var members = make([]MemberModel, 0)
+	members := make([]MemberModel, 0)
 	for _, m := range rm.Members {
 		mm, err := ExtractMember(m)
 		if err != nil {

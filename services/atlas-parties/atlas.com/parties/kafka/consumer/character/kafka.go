@@ -1,12 +1,13 @@
 package character
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -131,6 +132,7 @@ const (
 	StatusEventTypeFameChanged       = "FAME_CHANGED"
 	StatusEventTypeStatChanged       = "STAT_CHANGED"
 	StatusEventTypeDeleted           = "DELETED"
+	StatusEventTypeGmChanged         = "GM_CHANGED"
 
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
@@ -181,6 +183,11 @@ type JobChangedStatusEventBody struct {
 	JobId     job.Id     `json:"jobId"`
 }
 
+type GmChangedStatusEventBody struct {
+	OldGm bool `json:"oldGm"`
+	NewGm bool `json:"newGm"`
+}
+
 type ExperienceChangedStatusEventBody struct {
 	ChannelId     channel.Id                `json:"channelId"`
 	Current       uint32                    `json:"current"`
@@ -193,8 +200,7 @@ type LevelChangedStatusEventBody struct {
 	Current   byte       `json:"current"`
 }
 
-type StatusEventDeletedBody struct {
-}
+type StatusEventDeletedBody struct{}
 
 type StatusEventErrorBody[F any] struct {
 	Error string `json:"error"`

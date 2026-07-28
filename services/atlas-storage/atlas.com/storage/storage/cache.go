@@ -6,8 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	goredis "github.com/redis/go-redis/v9"
+
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
 // NpcContextCacheInterface defines the interface for the NPC context cache

@@ -1,9 +1,10 @@
 package wishlist
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func createEntity(db *gorm.DB, t tenant.Model, characterId uint32, serialNumber uint32) (Model, error) {

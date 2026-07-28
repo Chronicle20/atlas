@@ -4,9 +4,10 @@ import (
 	"atlas-cashshop/cashshop/inventory/asset"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // RestModel represents a cash shop inventory compartment for REST API

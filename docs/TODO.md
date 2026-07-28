@@ -14,6 +14,50 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 ### High Priority (Feature Incomplete)
 - [ ] **TokenItem Purchasing** - Returns "not implemented" error in NPC shops
 - [ ] **Reactor Actions** - Boss weakening, environment manipulation, mass kill sagas
+- [ ] **Lint burn-down (task-171 follow-up)** - The Go linter layer of
+  `tools/lint.sh` is rev-gated (`--new-from-rev` merge-base) so only new code
+  fails CI. Burn down: fix pre-existing `standard`-group findings per module
+  (run `tools/lint.sh --check --go --base <ancient-rev>` to enumerate), remove
+  any escape-hatch exclusions in `.golangci.yml` marked "task-171 burn-down",
+  then delete the `--new-from-rev` gating from `tools/lint.sh` so the linter
+  layer enforces whole-tree like the formatters already do.
+  - UI eslint suppressions: task-171 Task 3 (commit 947c45f71) landed 9 inline
+    `eslint-disable` suppressions in atlas-ui (6 `react-hooks/set-state-in-effect`
+    for genuine async-fetch/timer effects in
+    `services/atlas-ui/src/components/item-name-cell.tsx`,
+    `services/atlas-ui/src/components/map-cell.tsx`,
+    `services/atlas-ui/src/lib/hooks/api/useAccountByName.ts`,
+    `services/atlas-ui/src/pages/AccountsPage.tsx`,
+    `services/atlas-ui/src/components/features/npc/conversation/ConversationCanvas.tsx`,
+    and `services/atlas-ui/src/lib/hooks/useBreadcrumbs.ts`; 3
+    `react-hooks/use-memo` on variadic-dependency hooks in
+    `services/atlas-ui/src/lib/utils/debounce.ts`). Burn down by migrating the
+    ad-hoc fetch/loading-state hooks to React Query (which removes the manual
+    loading state), then removing the suppressions.
+  - atlas-tenant aliasing convention: `libs/atlas-tenant` declares `package
+    tenant` but its directory path ends in `atlas-tenant`, so every import
+    MUST be aliased as `tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"`
+    — an unaliased import makes goimports inject a duplicate and break the
+    build (CI `lint-go --check` catches it, but confusingly).
+    `.golangci.yml` carries an explanatory NOTE at the goimports settings. A
+    durable fix (rename the package/dir to match, or switch the formatter to
+    gci) can retire this convention.
+
+## MTS backend-audit follow-up — pre-existing debt (from task-102)
+
+The task-102 full-service backend audits surfaced pre-existing DOM findings in
+code task-102 did NOT create (its own additions audited clean). Deferred to a
+dedicated follow-up rather than expanding task-102 into unrelated domains. See
+`docs/tasks/task-102-mts-marketplace/audit-atlas-cashshop.md` and
+`audit-atlas-tenants.md` for file:line detail.
+
+- [ ] **atlas-cashshop `wallet` domain (Important ×4):** no `builder.go` (Model
+  from raw struct literals, no validated `Build()`); no `Model.ToEntity()`; eager
+  provider (`db.First` wrapped in `FixedProvider` instead of lazy `database.Query`);
+  POST/PATCH handlers collapse every error to 500 (should be 400/404/409).
+- [ ] **atlas-tenants configuration resource (Important ×2):** no `TransformSlice`
+  (list handlers use inline loops); no `Model.ToEntity()`. Inherited by copy-paste
+  from the Route/Vessel resources (the `mts-configs` additions themselves are clean).
 
 ## Leader-election adoption (depends on task-064)
 

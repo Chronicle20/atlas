@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Mushroom Town - Tutorial portal showing Character Stats key instructions",
+      "mapId": 10000,
+      "portalId": "advice08",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "show_stats_hint",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "params": {
+                  "height": "5",
+                  "hint": "You can check your character's stats by pressing the #e#b[S]#k#nkey.",
+                  "width": "350"
+                },
+                "type": "show_hint"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "advice08",
+    "type": "portal-action"
+  }
+}

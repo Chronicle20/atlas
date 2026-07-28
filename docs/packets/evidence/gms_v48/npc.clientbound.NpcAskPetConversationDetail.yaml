@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskPetConversationDetail
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5B1640
+    address: "0x5b1640"
+    decompile_sha256: 1f0d1e17472f9a2a8b8622abf382a2fee105ba6791c37901ed8fc45b533873b8
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v48_details_test.go#TestNpcConversationAskPetV48

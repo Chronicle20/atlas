@@ -3,17 +3,20 @@ package portal
 import (
 	portalData "atlas-channel/data/portal"
 	"atlas-channel/kafka/message/portal"
-	"atlas-channel/kafka/producer"
 	"context"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
 	Enter(f field.Model, portalName string, characterId uint32) error
 	Warp(f field.Model, characterId uint32, targetMapId _map.Id) error
+	WarpToPosition(f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16) error
 }
 
 type ProcessorImpl struct {
@@ -22,7 +25,7 @@ type ProcessorImpl struct {
 	pd  portalData.Processor
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
@@ -30,6 +33,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) Enter(f field.Model, portalName string, characterId uint32) error {
 	pm, err := p.pd.GetInMapByName(f.MapId(), portalName)

@@ -1,0 +1,39 @@
+{
+  "WriterName": "SummonMove",
+  "IDAName": "CSummonedPool::OnMove",
+  "Address": "0x67c37e",
+  "Variant": "GMS/v61",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/summon/clientbound/move.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "oid — summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "raw CMovePath movement blob — sub_67C37E@0x67c37e -\u003e CMovePath::OnMovePacket",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

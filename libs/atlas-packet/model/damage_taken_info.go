@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type DamageType int8
@@ -56,26 +57,26 @@ type DamageTakenInfo struct {
 	expression        byte
 }
 
-func (m DamageTakenInfo) CharacterId() uint32         { return m.characterId }
-func (m DamageTakenInfo) UpdateTime() uint32           { return m.updateTime }
-func (m DamageTakenInfo) AttackIdx() DamageType        { return m.nAttackIdx }
+func (m DamageTakenInfo) CharacterId() uint32              { return m.characterId }
+func (m DamageTakenInfo) UpdateTime() uint32               { return m.updateTime }
+func (m DamageTakenInfo) AttackIdx() DamageType            { return m.nAttackIdx }
 func (m DamageTakenInfo) MagicElemAttr() DamageElementType { return m.nMagicElemAttr }
-func (m DamageTakenInfo) Damage() int32                { return m.damage }
-func (m DamageTakenInfo) ObstacleData() int16          { return m.obstacleData }
-func (m DamageTakenInfo) MonsterTemplateId() uint32    { return m.monsterTemplateId }
-func (m DamageTakenInfo) MonsterId() uint32            { return m.monsterId }
-func (m DamageTakenInfo) Left() bool                   { return m.left }
-func (m DamageTakenInfo) NX() byte                     { return m.nX }
-func (m DamageTakenInfo) Guard() bool                  { return m.bGuard }
-func (m DamageTakenInfo) RelativeDir() byte            { return m.relativeDir }
-func (m DamageTakenInfo) PowerGuard() bool             { return m.bPowerGuard }
-func (m DamageTakenInfo) MonsterId2() uint32           { return m.monsterId2 }
-func (m DamageTakenInfo) PowerGuard2() bool            { return m.powerGuard }
-func (m DamageTakenInfo) HitX() int16                  { return m.hitX }
-func (m DamageTakenInfo) HitY() int16                  { return m.hitY }
-func (m DamageTakenInfo) CharacterX() int16            { return m.characterX }
-func (m DamageTakenInfo) CharacterY() int16            { return m.characterY }
-func (m DamageTakenInfo) Expression() byte             { return m.expression }
+func (m DamageTakenInfo) Damage() int32                    { return m.damage }
+func (m DamageTakenInfo) ObstacleData() int16              { return m.obstacleData }
+func (m DamageTakenInfo) MonsterTemplateId() uint32        { return m.monsterTemplateId }
+func (m DamageTakenInfo) MonsterId() uint32                { return m.monsterId }
+func (m DamageTakenInfo) Left() bool                       { return m.left }
+func (m DamageTakenInfo) NX() byte                         { return m.nX }
+func (m DamageTakenInfo) Guard() bool                      { return m.bGuard }
+func (m DamageTakenInfo) RelativeDir() byte                { return m.relativeDir }
+func (m DamageTakenInfo) PowerGuard() bool                 { return m.bPowerGuard }
+func (m DamageTakenInfo) MonsterId2() uint32               { return m.monsterId2 }
+func (m DamageTakenInfo) PowerGuard2() bool                { return m.powerGuard }
+func (m DamageTakenInfo) HitX() int16                      { return m.hitX }
+func (m DamageTakenInfo) HitY() int16                      { return m.hitY }
+func (m DamageTakenInfo) CharacterX() int16                { return m.characterX }
+func (m DamageTakenInfo) CharacterY() int16                { return m.characterY }
+func (m DamageTakenInfo) Expression() byte                 { return m.expression }
 
 func (m DamageTakenInfo) Operation() string {
 	return CharacterDamageHandle

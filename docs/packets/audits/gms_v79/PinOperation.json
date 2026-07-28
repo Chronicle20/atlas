@@ -1,0 +1,21 @@
+{
+  "WriterName": "PinOperation",
+  "IDAName": "CLogin::OnCheckPinCodeResult",
+  "Address": "0x5d0921",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/login/clientbound/pin_operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -1,9 +1,10 @@
 package writer
 
 import (
+	"github.com/sirupsen/logrus"
+
 	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
 	sw "github.com/Chronicle20/atlas/libs/atlas-socket/writer"
-	"github.com/sirupsen/logrus"
 )
 
 type BodyFunc = sw.BodyFunc

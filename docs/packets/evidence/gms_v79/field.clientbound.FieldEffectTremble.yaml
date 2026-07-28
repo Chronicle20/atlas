@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldEffectTremble
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldEffect#Tremble
+    address: "0x51e577"
+    decompile_sha256: e34bd032bb8b494e880419d855faba79991cce3975f6235b50b00e89a7d4d4ae
+verifies:
+    - libs/atlas-packet/field/clientbound/effect_test.go#TestFieldEffectByteOutputV79

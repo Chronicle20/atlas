@@ -278,7 +278,7 @@ func TestParameterTransformation(t *testing.T) {
 		return uint32(uint642)
 	}
 
-	var rf = Compose(f, tf)
+	rf := Compose(f, tf)
 	r, err := rf(5)()
 	if err != nil {
 		t.Errorf("Expected result, got err %s", err)
@@ -301,7 +301,6 @@ func TestFilters(t *testing.T) {
 	if len(r) != 2 {
 		t.Errorf("Expected 2, got %d", len(r))
 	}
-
 }
 
 func TestMapLazyEvaluation(t *testing.T) {
@@ -2001,7 +2000,6 @@ func TestNilProviderHandling(t *testing.T) {
 			}
 			return nil
 		})
-
 		if err != nil {
 			t.Errorf("Expected no error in context handling test, got: %v", err)
 		}
@@ -2575,7 +2573,6 @@ func TestExecuteForEachSliceErrorHandling(t *testing.T) {
 			atomic.AddInt32(&sum, int32(u))
 			return nil
 		}, ParallelExecute())
-
 		if err != nil {
 			t.Errorf("Expected no error, got %s", err)
 		}
@@ -2617,7 +2614,6 @@ func TestRaceConditionThreadSafety(t *testing.T) {
 
 			return nil
 		}, ParallelExecute())
-
 		if err != nil {
 			t.Errorf("Expected no error, got %s", err)
 		}
@@ -2660,7 +2656,6 @@ func TestRaceConditionThreadSafety(t *testing.T) {
 				return nil
 			}
 		}, ParallelExecute())
-
 		if err != nil {
 			t.Errorf("Expected no error, got %s", err)
 		}
@@ -2772,7 +2767,6 @@ func TestRaceConditionThreadSafety(t *testing.T) {
 
 		mappedProvider := SliceMap[uint32, uint32](transform)(provider)(ParallelMap())
 		result, err := mappedProvider()
-
 		if err != nil {
 			t.Errorf("Expected no error, got %s", err)
 		}
@@ -2924,7 +2918,6 @@ func TestRaceConditionThreadSafety(t *testing.T) {
 					}
 					return nil
 				}, ParallelExecute())
-
 				if err != nil {
 					success = false
 					t.Errorf("Test %d failed: %s", idx, err)
@@ -2971,7 +2964,6 @@ func TestRaceConditionThreadSafety(t *testing.T) {
 
 			return nil
 		}, ParallelExecute())
-
 		if err != nil {
 			t.Errorf("High contention test failed: %s", err)
 		}
@@ -3149,7 +3141,6 @@ func TestRaceConditionThreadSafety(t *testing.T) {
 				return nil
 			}, ParallelExecute())
 		}, ParallelExecute())
-
 		if err != nil {
 			t.Errorf("Nested parallel operations failed: %s", err)
 		}
@@ -3316,7 +3307,6 @@ func TestRaceConditionThreadSafety(t *testing.T) {
 
 					return nil
 				}, ParallelExecute())
-
 				if err != nil {
 					t.Errorf("Goroutine %d failed: %s", goroutineId, err)
 				}
@@ -4382,7 +4372,6 @@ func TestPartialFailureRecovery(t *testing.T) {
 		// Apply filter first, then transform
 		filteredProvider := FilteredProvider(provider, []Filter[uint32]{oddFilter})
 		result, err := SliceMap[uint32, uint32](safeTransform)(filteredProvider)()()
-
 		// Should succeed because filter prevented errors
 		if err != nil {
 			t.Errorf("Expected no error due to filtering, got error: %v", err)
@@ -4954,7 +4943,6 @@ func TestContextCancellation(t *testing.T) {
 
 		// Execute in sequential mode (default)
 		err := ExecuteForEachSlice(operation)(slice)
-
 		if err != nil {
 			t.Errorf("Expected no error in sequential mode, got %s", err)
 		}
@@ -5341,7 +5329,6 @@ func TestContextPropagationProviderChains(t *testing.T) {
 
 		// Execute the chain - in a context-aware system, transformers would access ctx
 		result, err := chain()
-
 		if err != nil {
 			t.Errorf("Expected no error, got: %v", err)
 		}
@@ -5659,7 +5646,6 @@ func TestInvalidContextHandling(t *testing.T) {
 
 		// Test with parallel execution - should handle pre-cancelled context
 		err := ExecuteForEachSlice(operation, ParallelExecute())(slice)
-
 		// Should either succeed with no operations or fail with context error
 		if err != nil {
 			if !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, context.Canceled) {
@@ -5800,7 +5786,6 @@ func TestInvalidContextHandling(t *testing.T) {
 		}
 
 		err := ExecuteForEachSlice(operation)(slice)
-
 		// Should handle zero timeout gracefully
 		if err != nil {
 			if !errors.Is(err, context.DeadlineExceeded) {
@@ -7303,7 +7288,6 @@ func TestEmptySliceOperations(t *testing.T) {
 			operationCalled = true
 			return nil
 		})
-
 		if err != nil {
 			t.Errorf("Expected no error with empty slice, got: %s", err)
 		}
@@ -7321,7 +7305,6 @@ func TestEmptySliceOperations(t *testing.T) {
 			operationCalled = true
 			return nil
 		}, ParallelExecute())
-
 		if err != nil {
 			t.Errorf("Expected no error with empty slice, got: %s", err)
 		}
@@ -7337,7 +7320,6 @@ func TestEmptySliceOperations(t *testing.T) {
 
 		merged := MergeSliceProvider(emptyProvider1, emptyProvider2)
 		result, err := merged()
-
 		if err != nil {
 			t.Errorf("Expected no error merging empty slices, got: %s", err)
 		}
@@ -7357,7 +7339,6 @@ func TestEmptySliceOperations(t *testing.T) {
 
 		merged := MergeSliceProvider(emptyProvider, nonEmptyProvider)
 		result, err := merged()
-
 		if err != nil {
 			t.Errorf("Expected no error merging empty with non-empty, got: %s", err)
 		}
@@ -7406,7 +7387,6 @@ func TestEmptySliceOperations(t *testing.T) {
 		// This should process an empty slice without issues
 		processor := ExecuteForEachSlice[uint32](operation)
 		err := processor(emptySlice)
-
 		if err != nil {
 			t.Errorf("Expected no error with empty slice, got: %s", err)
 		}
@@ -7545,7 +7525,6 @@ func TestZeroValueAndNilPointerScenarios(t *testing.T) {
 			}
 			return nil
 		})
-
 		if err != nil {
 			t.Errorf("Expected no error counting false values, got: %v", err)
 		}

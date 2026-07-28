@@ -8,8 +8,8 @@ import (
 
 // MockProcessor is a mock implementation of account.Processor for testing
 type MockProcessor struct {
-	ForAccountByNameFunc   func(name string, operator model.Operator[account.Model])
-	ForAccountByIdFunc     func(id uint32, operator model.Operator[account.Model])
+	ForAccountByNameFunc    func(name string, operator model.Operator[account.Model])
+	ForAccountByIdFunc      func(id uint32, operator model.Operator[account.Model])
 	ByNameModelProviderFunc func(name string) model.Provider[account.Model]
 	ByIdModelProviderFunc   func(id uint32) model.Provider[account.Model]
 	AllProviderFunc         func() model.Provider[[]account.Model]

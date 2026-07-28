@@ -1,8 +1,9 @@
 package database
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type EntityProvider[E any] func(db *gorm.DB) model.Provider[E]

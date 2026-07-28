@@ -11,6 +11,8 @@ Returns all messengers.
 | Name | In | Type | Description |
 |------|-----|------|-------------|
 | filter[members.id] | query | uint32 | Filter by member character ID |
+| page[number] | query | int | Page number (1-based) |
+| page[size] | query | int | Page size (default 50, max 250) |
 
 **Request Model**
 
@@ -53,6 +55,7 @@ None.
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] |
 | 400 | Invalid member ID filter |
 | 500 | Internal server error |
 
@@ -120,6 +123,8 @@ Returns members of a messenger.
 | Name | In | Type | Description |
 |------|-----|------|-------------|
 | messengerId | path | uint32 | Messenger ID |
+| page[number] | query | int | Page number (1-based) |
+| page[size] | query | int | Page size (default/max 250) |
 
 **Request Model**
 
@@ -149,6 +154,7 @@ None.
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] |
 | 500 | Messenger not found or internal error |
 
 ---
@@ -162,6 +168,8 @@ Returns members of a messenger (JSON:API relationship format).
 | Name | In | Type | Description |
 |------|-----|------|-------------|
 | messengerId | path | uint32 | Messenger ID |
+| page[number] | query | int | Page number (1-based) |
+| page[size] | query | int | Page size (default/max 250) |
 
 **Request Model**
 
@@ -191,6 +199,7 @@ None.
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] |
 | 500 | Messenger not found or internal error |
 
 ---

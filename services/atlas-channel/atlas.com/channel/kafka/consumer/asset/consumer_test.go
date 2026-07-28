@@ -94,8 +94,8 @@ func TestCreatedStatusEventBody_Deserialization(t *testing.T) {
 		Hands:          130,
 		Speed:          140,
 		Jump:           150,
-		Slots:     5,
-		LevelType: 1,
+		Slots:          5,
+		LevelType:      1,
 		Level:          10,
 		Experience:     1000,
 		HammersApplied: 2,
@@ -146,9 +146,9 @@ func TestStatusEvent_Deserialization(t *testing.T) {
 		Slot:        5,
 		Type:        asset2.StatusEventTypeCreated,
 		Body: asset2.CreatedStatusEventBody{
-			Strength:    10,
+			Strength:     10,
 			WeaponAttack: 25,
-			Slots:       7,
+			Slots:        7,
 		},
 	}
 

@@ -1,13 +1,13 @@
 package monster
 
 import (
+	"atlas-messages/character"
 	"context"
 	"testing"
 
-	"atlas-messages/character"
+	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/sirupsen/logrus/hooks/test"
 )
 
 func testCharacter(isGm bool) character.Model {

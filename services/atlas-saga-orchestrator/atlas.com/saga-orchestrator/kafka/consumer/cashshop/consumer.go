@@ -6,14 +6,15 @@ import (
 	"atlas-saga-orchestrator/saga"
 	"context"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -29,6 +30,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		var t string
 		t, _ = topic.EnvProvider(l)(cashshop2.EnvEventTopicWalletStatus)()
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleWalletUpdatedEvent))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleWalletErrorEvent))); err != nil {
 			return err
 		}
 		return nil
@@ -60,4 +64,33 @@ func handleWalletUpdatedEvent(l logrus.FieldLogger, ctx context.Context, e cashs
 	}).Debug("Wallet updated successfully, marking saga step as completed")
 
 	_ = p.StepCompleted(e.Body.TransactionId, true)
+}
+
+// handleWalletErrorEvent fails the AwardCurrency/MtsBidEscrow saga step fast when
+// atlas-cashshop reports a failed transactional adjust (missing wallet,
+// insufficient balance), rather than letting the saga wait out its timeout. The
+// resulting compensation runs the reverse-walk and emits the saga FAILED event
+// that unhangs the client (task-102).
+func handleWalletErrorEvent(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.StatusEventErrorBody]) {
+	if e.Type != cashshop2.StatusEventTypeError {
+		return
+	}
+
+	if e.Body.TransactionId == uuid.Nil {
+		l.Debugf("Wallet error event for account [%d] has no transaction ID, skipping saga failure", e.AccountId)
+		return
+	}
+
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindCashShopWalletError); !ok {
+		return
+	}
+
+	l.WithFields(logrus.Fields{
+		"transaction_id": e.Body.TransactionId.String(),
+		"account_id":     e.AccountId,
+		"reason":         e.Body.Reason,
+	}).Warn("Wallet adjust failed, marking saga step as failed")
+
+	_ = p.StepCompleted(e.Body.TransactionId, false)
 }

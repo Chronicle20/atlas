@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type SpanHandler func(logrus.FieldLogger, context.Context) http.HandlerFunc

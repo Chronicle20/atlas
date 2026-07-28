@@ -4,9 +4,10 @@ import (
 	"atlas-data/xml"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func TestParseHairId_ValidFile(t *testing.T) {

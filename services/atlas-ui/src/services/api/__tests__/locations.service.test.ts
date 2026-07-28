@@ -16,7 +16,10 @@ describe("locationsService", () => {
       attributes: { worldId: 0, channelId: 1, mapId: 100000000, instance: "" },
     });
     const res = await locationsService.getByCharacterId("7");
-    expect(api.getOne).toHaveBeenCalledWith("/api/characters/7/location", undefined);
+    expect(api.getOne).toHaveBeenCalledWith(
+      "/api/characters/7/location",
+      undefined,
+    );
     expect(res.attributes.mapId).toBe(100000000);
   });
 
@@ -25,7 +28,13 @@ describe("locationsService", () => {
     await locationsService.changeMap("7", { mapId: 104000000 });
     expect(api.patch).toHaveBeenCalledWith(
       "/api/characters/7/location",
-      { data: { type: "character-locations", id: "7", attributes: { mapId: 104000000 } } },
+      {
+        data: {
+          type: "character-locations",
+          id: "7",
+          attributes: { mapId: 104000000 },
+        },
+      },
       undefined,
     );
   });

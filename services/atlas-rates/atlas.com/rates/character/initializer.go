@@ -12,12 +12,13 @@ import (
 	"strconv"
 	"time"
 
+	goredis "github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	goredis "github.com/redis/go-redis/v9"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // initializedRegistry tracks which characters have been initialized using Redis
@@ -86,7 +87,7 @@ func InitializeCharacterRates(l logrus.FieldLogger, ctx context.Context, charact
 
 // initializeEquippedItems queries equipped items and tracks those with bonusExp
 func initializeEquippedItems(l logrus.FieldLogger, ctx context.Context, p Processor, characterId uint32) {
-	equipped, err := inventory.GetEquippedAssets(l)(ctx)(characterId)
+	equipped, err := inventory.NewProcessor(l, ctx).GetEquippedAssets(characterId)
 	if err != nil {
 		l.WithError(err).Warnf("Failed to get equipped assets for character [%d]. Skipping equipment initialization.", characterId)
 		return
@@ -94,7 +95,7 @@ func initializeEquippedItems(l logrus.FieldLogger, ctx context.Context, p Proces
 
 	for _, asset := range equipped {
 		// Check if this equipment has bonusExp
-		equipData, err := equipment.GetById(l)(ctx)(asset.TemplateId)
+		equipData, err := equipment.NewProcessor(l, ctx).GetById(asset.TemplateId)
 		if err != nil {
 			l.Debugf("Failed to get equipment data for template [%d]: %v", asset.TemplateId, err)
 			continue
@@ -135,7 +136,7 @@ func initializeEquippedItems(l logrus.FieldLogger, ctx context.Context, p Proces
 
 // initializeCashCoupons queries cash items and tracks those with rate properties
 func initializeCashCoupons(l logrus.FieldLogger, ctx context.Context, p Processor, characterId uint32) {
-	cashAssets, err := inventory.GetCashAssets(l)(ctx)(characterId)
+	cashAssets, err := inventory.NewProcessor(l, ctx).GetCashAssets(characterId)
 	if err != nil {
 		l.WithError(err).Warnf("Failed to get cash assets for character [%d]. Skipping coupon initialization.", characterId)
 		return
@@ -143,7 +144,7 @@ func initializeCashCoupons(l logrus.FieldLogger, ctx context.Context, p Processo
 
 	for _, asset := range cashAssets {
 		// Check if this is a cash item with rate properties
-		cashData, err := cash.GetById(l)(ctx)(asset.TemplateId)
+		cashData, err := cash.NewProcessor(l, ctx).GetById(asset.TemplateId)
 		if err != nil {
 			l.Debugf("Failed to get cash data for template [%d]: %v", asset.TemplateId, err)
 			continue
@@ -195,7 +196,7 @@ func GetRateTypeFromTemplateId(templateId uint32) rate.Type {
 
 // initializeActiveBuffs queries atlas-buffs for active buffs and initializes rate factors
 func initializeActiveBuffs(l logrus.FieldLogger, ctx context.Context, characterId uint32, ch channel.Model) {
-	activeBuffs, err := buffs.GetActiveBuffs(l)(ctx)(characterId)
+	activeBuffs, err := buffs.NewProcessor(l, ctx).GetActiveBuffs(characterId)
 	if err != nil {
 		l.WithError(err).Warnf("Failed to get active buffs for character [%d]. Skipping buff initialization.", characterId)
 		return

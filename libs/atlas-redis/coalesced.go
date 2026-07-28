@@ -8,6 +8,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	goredis "github.com/redis/go-redis/v9"
 )
 
@@ -77,7 +81,9 @@ func NewCoalescedRegistry[K comparable, V any](
 		stopCh:          make(chan struct{}),
 		done:            make(chan struct{}),
 	}
-	go r.run()
+	routine.Go(logrus.StandardLogger(), context.Background(), func(_ context.Context) {
+		r.run()
+	})
 	return r
 }
 

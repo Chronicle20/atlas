@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -43,7 +44,7 @@ func handleGetReactorDrops(d *rest.HandlerDependency, c *rest.HandlerContext) ht
 			ms, err := drop.NewProcessor(d.Logger(), d.Context(), d.DB()).GetForReactor(reactorId)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving drops for reactor [%d].", reactorId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -51,7 +52,7 @@ func handleGetReactorDrops(d *rest.HandlerDependency, c *rest.HandlerContext) ht
 			res, err := Transform(reactorId, ms)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

@@ -1,0 +1,21 @@
+{
+  "WriterName": "NpcShopOperationOk",
+  "IDAName": "CShopDlg::OnPacket#Ok",
+  "Address": "0x6a912b",
+  "Variant": "GMS/v72",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/npc/clientbound/shop_operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (OK mode-only notice arm: v72 mode 0)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

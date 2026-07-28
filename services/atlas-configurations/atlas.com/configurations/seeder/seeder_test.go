@@ -11,8 +11,8 @@ import (
 
 func TestDefaultConfig(t *testing.T) {
 	// Test with no environment variables set
-	os.Unsetenv("SEED_DATA_PATH")
-	os.Unsetenv("SEED_ENABLED")
+	_ = os.Unsetenv("SEED_DATA_PATH")
+	_ = os.Unsetenv("SEED_ENABLED")
 
 	config := DefaultConfig()
 
@@ -27,11 +27,11 @@ func TestDefaultConfig(t *testing.T) {
 
 func TestDefaultConfigWithEnvVars(t *testing.T) {
 	// Test with environment variables set
-	os.Setenv("SEED_DATA_PATH", "/custom/path")
-	os.Setenv("SEED_ENABLED", "false")
+	_ = os.Setenv("SEED_DATA_PATH", "/custom/path")
+	_ = os.Setenv("SEED_ENABLED", "false")
 	defer func() {
-		os.Unsetenv("SEED_DATA_PATH")
-		os.Unsetenv("SEED_ENABLED")
+		_ = os.Unsetenv("SEED_DATA_PATH")
+		_ = os.Unsetenv("SEED_ENABLED")
 	}()
 
 	config := DefaultConfig()

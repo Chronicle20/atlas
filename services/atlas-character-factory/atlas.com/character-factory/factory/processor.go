@@ -17,9 +17,10 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 var (
@@ -51,7 +52,7 @@ type ProcessorImpl struct {
 	l            logrus.FieldLogger
 	presetClient configuration.PresetClient
 	nameClient   character.NameValidityClient
-	dataClient   data.Client
+	dataClient   data.Processor
 }
 
 // NewProcessor creates a new Processor instance with real HTTP clients.
@@ -60,12 +61,14 @@ func NewProcessor(l logrus.FieldLogger) Processor {
 		l:            l,
 		presetClient: configuration.NewPresetClient(l),
 		nameClient:   character.NewNameValidityClient(l),
-		dataClient:   data.NewClient(l),
+		dataClient:   data.NewProcessor(l),
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // NewProcessorWithClients is the test seam — allows injection of mocks.
-func NewProcessorWithClients(l logrus.FieldLogger, pc configuration.PresetClient, nc character.NameValidityClient, dc data.Client) Processor {
+func NewProcessorWithClients(l logrus.FieldLogger, pc configuration.PresetClient, nc character.NameValidityClient, dc data.Processor) Processor {
 	return &ProcessorImpl{l: l, presetClient: pc, nameClient: nc, dataClient: dc}
 }
 

@@ -1,0 +1,10 @@
+packet: guild/serverbound/GuildSetMemberTitle
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendSetMemberGradeMsg
+    address: "0x51c3ad"
+    decompile_sha256: 2a5363fa1cc76101c759bbb712a09758c8ae77ad8d89cddf4668aa27cbc22ef9
+verifies:
+  - libs/atlas-packet/guild/serverbound/operation_set_member_title_test.go#TestSetMemberTitleRoundTrip

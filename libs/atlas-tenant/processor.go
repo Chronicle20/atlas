@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 const (
@@ -87,7 +88,7 @@ func MustFromContext(ctx context.Context) Model {
 
 //goland:noinspection GoUnusedExportedFunction
 func WithContext(ctx context.Context, tenant Model) context.Context {
-	var wctx = ctx
+	wctx := ctx
 	wctx = context.WithValue(wctx, ID, tenant.Id())
 	wctx = context.WithValue(wctx, Region, tenant.Region())
 	wctx = context.WithValue(wctx, MajorVersion, tenant.MajorVersion())

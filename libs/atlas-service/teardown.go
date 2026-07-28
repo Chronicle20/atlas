@@ -6,6 +6,10 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+
+	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 type Manager struct {
@@ -14,10 +18,13 @@ type Manager struct {
 	waitGroup *sync.WaitGroup
 	context   context.Context
 	cancel    context.CancelFunc
+	closeOnce sync.Once
 }
 
-var manager *Manager
-var once sync.Once
+var (
+	manager *Manager
+	once    sync.Once
+)
 
 func GetTeardownManager() *Manager {
 	once.Do(func() {
@@ -38,16 +45,21 @@ func GetTeardownManager() *Manager {
 
 func (m *Manager) TeardownFunc(f func()) {
 	m.waitGroup.Add(1)
-	go func() {
+	routine.Go(logrus.StandardLogger(), m.context, func(_ context.Context) {
 		defer m.waitGroup.Done()
 		<-m.doneChan
 		f()
-	}()
+	})
 }
 
 func (m *Manager) Wait() {
 	<-m.termChan
-	close(m.doneChan)
+	// Idempotent: the teardown singleton cannot be re-armed, so guard the
+	// close so a repeated Wait (e.g. go test -count>1) does not panic with
+	// "close of closed channel".
+	m.closeOnce.Do(func() {
+		close(m.doneChan)
+	})
 	m.cancel()
 	m.waitGroup.Wait()
 }

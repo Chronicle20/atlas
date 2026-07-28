@@ -1,0 +1,38 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Free Market entry portal - Saves current location and warps to Free Market Entrance",
+      "mapId": 0,
+      "portalId": "market22",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "enter_free_market",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "params": {
+                  "locationType": "FREE_MARKET"
+                },
+                "type": "save_location"
+              },
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "mapId": "910000000",
+                  "portalName": "out00"
+                },
+                "type": "warp"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "market22",
+    "type": "portal-action"
+  }
+}

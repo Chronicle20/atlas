@@ -5,4 +5,4 @@ category: TIER1-FIXTURE
 ida:
     function: CField_ContiMove::OnContiMove
     address: "0x577bbc"
-    decompile_sha256: 12c9efd9dd93cb7a2a176e0f87ba39b8e685de3875e1dd3db2e40ca8d06cbd33
+    decompile_sha256: 2f24d1cedd08b521753e931d19efe7937fc2f659558492817f86a5bf3fc040c6

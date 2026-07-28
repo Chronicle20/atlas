@@ -1,0 +1,32 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Amorian Party Quest - Warp to Stage 5 - Fluttering Hearts",
+      "mapId": 670010500,
+      "portalId": "apq3",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "always_allow",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "mapId": "670010600",
+                  "portalId": "0"
+                },
+                "type": "warp"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "apq3",
+    "type": "portal-action"
+  }
+}

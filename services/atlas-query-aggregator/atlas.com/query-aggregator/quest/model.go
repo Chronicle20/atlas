@@ -77,13 +77,13 @@ func (m ProgressModel) ProgressInt() int {
 
 // Model represents a quest and its progress
 type Model struct {
-	characterId    uint32
-	questId        uint32
-	state          State
-	startedAt      time.Time
-	completedAt    time.Time
-	progress       []ProgressModel
-	progressByKey  map[string]int // For string-based progress lookup (used by tests)
+	characterId   uint32
+	questId       uint32
+	state         State
+	startedAt     time.Time
+	completedAt   time.Time
+	progress      []ProgressModel
+	progressByKey map[string]int // For string-based progress lookup (used by tests)
 }
 
 // NewModel creates a new quest model

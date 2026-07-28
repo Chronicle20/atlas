@@ -7,17 +7,20 @@ import (
 	"sync"
 	"time"
 
-	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	goredis "github.com/redis/go-redis/v9"
+
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type attackCooldownRegistry struct {
 	reg *atlasredis.Registry[string, int64]
 }
 
-var attackCooldownReg *attackCooldownRegistry
-var attackCooldownOnce sync.Once
+var (
+	attackCooldownReg  *attackCooldownRegistry
+	attackCooldownOnce sync.Once
+)
 
 func InitAttackCooldownRegistry(rc *goredis.Client) {
 	attackCooldownOnce.Do(func() {

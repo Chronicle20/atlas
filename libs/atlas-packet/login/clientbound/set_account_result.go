@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const SetAccountResultWriter = "SetAccountResult"
@@ -20,8 +21,8 @@ func NewSetAccountResult(gender byte, success bool) SetAccountResult {
 	return SetAccountResult{gender: gender, success: success}
 }
 
-func (m SetAccountResult) Gender() byte     { return m.gender }
-func (m SetAccountResult) Success() bool    { return m.success }
+func (m SetAccountResult) Gender() byte      { return m.gender }
+func (m SetAccountResult) Success() bool     { return m.success }
 func (m SetAccountResult) Operation() string { return SetAccountResultWriter }
 func (m SetAccountResult) String() string {
 	return fmt.Sprintf("gender [%d], success [%t]", m.gender, m.success)

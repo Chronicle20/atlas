@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashShopOpen
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CStage::OnSetCashShop
+    address: "0x7c4d0c"
+    decompile_sha256: b599272e2a40f069ba8f430cde177db6ea94fa6b3e5837a3f355a5deae46261b
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_open_test.go#TestCashShopOpenRoundTrip

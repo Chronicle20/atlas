@@ -3,10 +3,11 @@ package drop
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 // Event topic and type constants
@@ -33,22 +34,22 @@ const (
 
 // EquipmentData carries inline equipment statistics for drops
 type EquipmentData struct {
-	Strength       uint16 `json:"strength"`
-	Dexterity      uint16 `json:"dexterity"`
-	Intelligence   uint16 `json:"intelligence"`
-	Luck           uint16 `json:"luck"`
-	Hp             uint16 `json:"hp"`
-	Mp             uint16 `json:"mp"`
-	WeaponAttack   uint16 `json:"weaponAttack"`
-	MagicAttack    uint16 `json:"magicAttack"`
-	WeaponDefense  uint16 `json:"weaponDefense"`
-	MagicDefense   uint16 `json:"magicDefense"`
-	Accuracy       uint16 `json:"accuracy"`
-	Avoidability   uint16 `json:"avoidability"`
-	Hands          uint16 `json:"hands"`
-	Speed          uint16 `json:"speed"`
-	Jump           uint16 `json:"jump"`
-	Slots          uint16 `json:"slots"`
+	Strength      uint16 `json:"strength"`
+	Dexterity     uint16 `json:"dexterity"`
+	Intelligence  uint16 `json:"intelligence"`
+	Luck          uint16 `json:"luck"`
+	Hp            uint16 `json:"hp"`
+	Mp            uint16 `json:"mp"`
+	WeaponAttack  uint16 `json:"weaponAttack"`
+	MagicAttack   uint16 `json:"magicAttack"`
+	WeaponDefense uint16 `json:"weaponDefense"`
+	MagicDefense  uint16 `json:"magicDefense"`
+	Accuracy      uint16 `json:"accuracy"`
+	Avoidability  uint16 `json:"avoidability"`
+	Hands         uint16 `json:"hands"`
+	Speed         uint16 `json:"speed"`
+	Jump          uint16 `json:"jump"`
+	Slots         uint16 `json:"slots"`
 }
 
 // StatusEvent is the generic event structure for drop status events
@@ -92,8 +93,7 @@ type StatusEventCreatedBody struct {
 }
 
 // StatusEventExpiredBody is the body for EXPIRED status events
-type StatusEventExpiredBody struct {
-}
+type StatusEventExpiredBody struct{}
 
 // StatusEventPickedUpBody is the body for PICKED_UP status events
 type StatusEventPickedUpBody struct {
@@ -183,5 +183,4 @@ type CommandConsumeBody struct {
 }
 
 // StatusEventConsumedBody is the body for CONSUMED status events
-type StatusEventConsumedBody struct {
-}
+type StatusEventConsumedBody struct{}

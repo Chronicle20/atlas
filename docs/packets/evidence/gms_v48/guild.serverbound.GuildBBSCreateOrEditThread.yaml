@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildBBSCreateOrEditThread
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CUIGuildBBS::OnRegister
+    address: "0x608d55"
+    decompile_sha256: 3c9be535dac87c3f6cc4d5b7966b515fe58eba5862a07c7035123499aca3aff3

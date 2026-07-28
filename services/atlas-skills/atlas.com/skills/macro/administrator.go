@@ -1,9 +1,10 @@
 package macro
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func deleteByCharacter(db *gorm.DB, characterId uint32) error {

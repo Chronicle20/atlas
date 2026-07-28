@@ -1,0 +1,102 @@
+{
+  "service": "atlas-cashshop",
+  "path": "services/atlas-cashshop/atlas.com/cashshop",
+  "scope": ["wallet", "kafka/producer/wallet", "kafka/message/wallet", "kafka/consumer/wallet"],
+  "date": "2026-07-10",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": 2,
+  "testsFailed": 0,
+  "testsNoFiles": 2,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "wallet",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists", "status": "fail", "evidence": "No builder.go; Model built via struct literals model.go:55, rest.go:43, entity.go:33"},
+        {"id": "DOM-02", "name": "ToEntity() method", "status": "fail", "evidence": "entity.go:32 has Make() but no Model.ToEntity()"},
+        {"id": "DOM-03", "name": "Make(Entity)", "status": "pass", "evidence": "entity.go:32"},
+        {"id": "DOM-04", "name": "Transform", "status": "pass", "evidence": "rest.go:32"},
+        {"id": "DOM-05", "name": "TransformSlice", "status": "warn", "evidence": "Absent; no list endpoint, no inline loops in resource.go (N/A)"},
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "processor.go:43"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "resource.go:32,61,86"},
+        {"id": "DOM-08", "name": "POST/PATCH RegisterInputHandler", "status": "pass", "evidence": "resource.go:22-23"},
+        {"id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "resource.go:42,67,92"},
+        {"id": "DOM-10", "name": "Test DB tenant callbacks", "status": "pass", "evidence": "provider_test.go:19 databasetest.NewInMemoryTenantDB; tenant-filter test provider_test.go:26"},
+        {"id": "DOM-11", "name": "Providers lazy", "status": "fail", "evidence": "provider.go:10-19 eager First() wrapped in FixedProvider/ErrorProvider, not database.Query"},
+        {"id": "DOM-12", "name": "No os.Getenv in handlers", "status": "pass", "evidence": "resource.go none"},
+        {"id": "DOM-13", "name": "No cross-domain logic in handlers", "status": "pass", "evidence": "handlers call wallet processor only"},
+        {"id": "DOM-14", "name": "Handlers don't call providers directly", "status": "pass", "evidence": "resource.go calls NewProcessor(...) methods"},
+        {"id": "DOM-15", "name": "No direct entity creation in handlers", "status": "pass", "evidence": "resource.go no db.Create/Save/Delete"},
+        {"id": "DOM-16", "name": "administrator.go for writes", "status": "pass", "evidence": "administrator.go:8/24/46 called from processor.go:78/102/196"},
+        {"id": "DOM-17", "name": "Domain error to HTTP mapping", "status": "fail", "evidence": "POST resource.go:62-65 and PATCH :87-90 map all errors to 500; not-found not 404, no 400"},
+        {"id": "DOM-18", "name": "JSON:API interface", "status": "pass", "evidence": "rest.go:15,19,23"},
+        {"id": "DOM-19", "name": "Flat request model", "status": "pass", "evidence": "rest.go RestModel flat"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "model_test.go/rest_test.go one-off funcs, not tests:=[]struct{}+t.Run"},
+        {"id": "DOM-21", "name": "No atlas-constants duplication", "status": "pass", "evidence": "wallet-domain DTOs; currencyType 1/2/3 has no shared equivalent (magic-number note)"},
+        {"id": "DOM-22", "name": "Dockerfile 4-block per lib", "status": "na", "evidence": "shared root Dockerfile; no new lib require (go.mod unchanged)"},
+        {"id": "DOM-23", "name": "Kafka topic naming", "status": "pass", "evidence": "env-configmap.yaml:77,152 KEY:\"KEY\"; atlas-cashshop.yaml:21-23 envFrom atlas-env, no literal override"},
+        {"id": "DOM-24", "name": "Producer stubbed in emitting tests", "status": "pass", "evidence": "no wallet test calls AndEmit/message.Emit (grep NONE)"},
+        {"id": "DOM-25", "name": "Client wire values config-resolved", "status": "pass", "evidence": "domain service emits semantic keys; no client wire literal"},
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "processor.go:18,35,43"},
+        {"id": "FILE-02", "name": "RestModel/Transform in rest.go", "status": "pass", "evidence": "rest.go"},
+        {"id": "FILE-03", "name": "requests in requests.go", "status": "na", "evidence": "no cross-service client"},
+        {"id": "FILE-04", "name": "entity/Migration/TableName in entity.go", "status": "pass", "evidence": "entity.go:8,12,21"},
+        {"id": "FILE-05", "name": "builder/model/admin/provider placement", "status": "fail", "evidence": "Builder entirely absent (no builder.go/NewBuilder); same root as DOM-01"},
+        {"id": "FILE-06", "name": "No package-named catch-all", "status": "pass", "evidence": "no wallet.go; files cleanly split"}
+      ]
+    },
+    {
+      "name": "kafka/message/wallet",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor placement", "status": "pass", "evidence": "kafka.go no processor symbols"},
+        {"id": "FILE-02", "name": "RestModel placement", "status": "pass", "evidence": "no RestModel/Transform"},
+        {"id": "FILE-03", "name": "requests placement", "status": "pass", "evidence": "no cross-service client"},
+        {"id": "FILE-04", "name": "entity placement", "status": "pass", "evidence": "no GORM entity"},
+        {"id": "FILE-05", "name": "builder/model/admin/provider placement", "status": "pass", "evidence": "message DTOs only"},
+        {"id": "FILE-06", "name": "No catch-all", "status": "pass", "evidence": "kafka.go holds only message-package responsibilities (event/command DTOs + topic env keys)"}
+      ]
+    },
+    {
+      "name": "kafka/producer/wallet",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor placement", "status": "pass", "evidence": "producer.go providers only"},
+        {"id": "FILE-02", "name": "RestModel placement", "status": "pass", "evidence": "none"},
+        {"id": "FILE-03", "name": "requests placement", "status": "pass", "evidence": "none"},
+        {"id": "FILE-04", "name": "entity placement", "status": "pass", "evidence": "none"},
+        {"id": "FILE-05", "name": "placement", "status": "pass", "evidence": "Kafka message providers only"},
+        {"id": "FILE-06", "name": "No catch-all", "status": "pass", "evidence": "producer.go correctly scoped"},
+        {"id": "DOM-24", "name": "Producer stubbed in emitting tests", "status": "pass", "evidence": "producer_test.go:18 materializes provider only, no message.Emit"}
+      ]
+    },
+    {
+      "name": "kafka/consumer/wallet",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "Uses processor for logic", "status": "pass", "evidence": "consumer.go:48 wallet2.NewProcessor; logic in processor.go:150"},
+        {"id": "SUB-02", "name": "Administrator handles writes", "status": "pass", "evidence": "writes via domain processor->administrator; no db.Create/Save in consumer.go"},
+        {"id": "SUB-03", "name": "RegisterInputHandler for POST", "status": "na", "evidence": "Kafka consumer, no REST POST"},
+        {"id": "SUB-04", "name": "No manual JSON parsing", "status": "pass", "evidence": "message.AdaptHandler typed handler; no json.Unmarshal"},
+        {"id": "FILE-06", "name": "No catch-all", "status": "pass", "evidence": "consumer.go only registration+handler"},
+        {"id": "DOM-24", "name": "Emit path tested", "status": "warn", "evidence": "transitively emits (message.Emit) but no test file in package; task-102 failure-fast emit untested"}
+      ]
+    }
+  ],
+  "security": {"applicable": false, "notes": "Not an auth/token service; SEC-01..03 N/A; SEC-04 pass (no hardcoded secrets)"},
+  "external": {"applicable": false, "notes": "No requests.RootUrl/GetRequest/PostRequest in scope; EXT N/A"},
+  "blocking": [
+    "DOM-01/FILE-05: wallet has no builder.go; Model built via struct literals (model.go:55, rest.go:43, entity.go:33)",
+    "DOM-02: no Model.ToEntity() in wallet/entity.go",
+    "DOM-11: wallet/provider.go:10-19 eager First() wrapped in FixedProvider instead of database.Query",
+    "DOM-17: wallet POST/PATCH (resource.go:62-65,87-90) map all errors to 500; not-found not 404"
+  ],
+  "nonBlocking": [
+    "DOM-20: wallet tests not table-driven",
+    "DOM-05: no TransformSlice (N/A, no list endpoint)",
+    "DOM-21 note: currencyType 1/2/3 undocumented magic numbers",
+    "kafka/consumer/wallet: task-102 adjust/failure-fast emit path has no test"
+  ]
+}

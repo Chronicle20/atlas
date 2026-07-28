@@ -11,24 +11,24 @@ import type {
   EquipmentSlotMapping,
   WeaponRange,
   MapleStoryCharacterData,
-} from '@/types/models/maplestory';
-import type { Character } from '@/types/models/character';
-import type { Asset } from '@/services/api/inventory.service';
+} from "@/types/models/maplestory";
+import type { Character } from "@/types/models/character";
+import type { Asset } from "@/services/api/inventory.service";
 
 /**
  * Skin color mapping from internal values to MapleStory.io API values
  */
 export const SKIN_COLOR_MAPPING: SkinColorMapping = {
-  0: 2000,  // Light
-  1: 2001,  // Ashen
-  2: 2002,  // Pale Pink
-  3: 2003,  // Clay
-  4: 2004,  // Mercedes
-  5: 2005,  // Alabaster
-  6: 2009,  // Ghostly
-  7: 2010,  // Pale
-  8: 2011,  // Green
-  9: 2012,  // Skeleton
+  0: 2000, // Light
+  1: 2001, // Ashen
+  2: 2002, // Pale Pink
+  3: 2003, // Clay
+  4: 2004, // Mercedes
+  5: 2005, // Alabaster
+  6: 2009, // Ghostly
+  7: 2010, // Pale
+  8: 2011, // Green
+  9: 2012, // Skeleton
   10: 2013, // Blue
 };
 
@@ -36,69 +36,69 @@ export const SKIN_COLOR_MAPPING: SkinColorMapping = {
  * Equipment slot name mapping for display purposes
  */
 export const EQUIPMENT_SLOT_MAPPING: EquipmentSlotMapping = {
-  '-1': 'Hat',
-  '-5': 'Top/Overall',
-  '-6': 'Bottom',
-  '-7': 'Shoes',
-  '-8': 'Gloves',
-  '-9': 'Cape',
-  '-10': 'Shield',
-  '-11': 'Weapon',
-  '-12': 'Ring',
-  '-13': 'Ring',
-  '-14': 'Ring',
-  '-15': 'Ring',
-  '-16': 'Pendant',
-  '-17': 'Belt',
-  '-18': 'Medal',
-  '-19': 'Shoulder',
-  '-20': 'Pocket Item',
-  '-21': 'Eye Accessory',
-  '-22': 'Face Accessory',
-  '-23': 'Earrings',
-  '-24': 'Emblem',
-  '-25': 'Badge',
-  '-101': 'Cash Hat',
-  '-102': 'Cash Face',
-  '-103': 'Cash Eye',
-  '-104': 'Cash Top',
-  '-105': 'Cash Overall',
-  '-106': 'Cash Bottom',
-  '-107': 'Cash Shoes',
-  '-108': 'Cash Gloves',
-  '-109': 'Cash Cape',
-  '-110': 'Cash Shield',
-  '-111': 'Cash Weapon',
-  '-112': 'Cash Ring',
-  '-113': 'Cash Pendant',
-  '-114': 'Cash Belt',
+  "-1": "Hat",
+  "-5": "Top/Overall",
+  "-6": "Bottom",
+  "-7": "Shoes",
+  "-8": "Gloves",
+  "-9": "Cape",
+  "-10": "Shield",
+  "-11": "Weapon",
+  "-12": "Ring",
+  "-13": "Ring",
+  "-14": "Ring",
+  "-15": "Ring",
+  "-16": "Pendant",
+  "-17": "Belt",
+  "-18": "Medal",
+  "-19": "Shoulder",
+  "-20": "Pocket Item",
+  "-21": "Eye Accessory",
+  "-22": "Face Accessory",
+  "-23": "Earrings",
+  "-24": "Emblem",
+  "-25": "Badge",
+  "-101": "Cash Hat",
+  "-102": "Cash Face",
+  "-103": "Cash Eye",
+  "-104": "Cash Top",
+  "-105": "Cash Overall",
+  "-106": "Cash Bottom",
+  "-107": "Cash Shoes",
+  "-108": "Cash Gloves",
+  "-109": "Cash Cape",
+  "-110": "Cash Shield",
+  "-111": "Cash Weapon",
+  "-112": "Cash Ring",
+  "-113": "Cash Pendant",
+  "-114": "Cash Belt",
 };
 
 /**
  * Two-handed weapon ID ranges for stance determination
  */
 export const TWO_HANDED_WEAPON_RANGES: WeaponRange[] = [
-  { min: 1300000, max: 1399999, category: 'Two-handed Swords' },
-  { min: 1400000, max: 1419999, category: 'Two-handed Axes' },
-  { min: 1420000, max: 1439999, category: 'Two-handed Blunt Weapons' },
-  { min: 1440000, max: 1449999, category: 'Spears' },
-  { min: 1450000, max: 1459999, category: 'Polearms' },
-  { min: 1520000, max: 1529999, category: 'Knuckles' },
-  { min: 1590000, max: 1599999, category: 'Guns/Cannons' },
+  { min: 1300000, max: 1399999, category: "Two-handed Swords" },
+  { min: 1400000, max: 1419999, category: "Two-handed Axes" },
+  { min: 1420000, max: 1439999, category: "Two-handed Blunt Weapons" },
+  { min: 1440000, max: 1449999, category: "Spears" },
+  { min: 1450000, max: 1459999, category: "Polearms" },
+  { min: 1520000, max: 1529999, category: "Knuckles" },
+  { min: 1590000, max: 1599999, category: "Guns/Cannons" },
 ];
 
 /**
  * Equipment rendering order for proper layering
  */
 export const EQUIPMENT_RENDER_ORDER = [
-  '-1',   // Hat
-  '-9',   // Cape  
-  '-5',   // Top/Overall
-  '-6',   // Bottom
-  '-7',   // Shoes
-  '-8',   // Gloves
-  '-10',  // Shield
-  '-11',  // Weapon
+  "-1", // Hat
+  "-9", // Cape
+  "-5", // Top/Overall
+  "-6", // Bottom
+  "-7", // Shoes
+  "-8", // Gloves
+  "-10", // Shield
+  "-11", // Weapon
 ];
 
 /**
@@ -116,7 +116,7 @@ export const mapSkinColor = (skincolor: number): number => {
  * @returns Human-readable slot name
  */
 export const getEquipmentSlotName = (slot: string): string => {
-  return EQUIPMENT_SLOT_MAPPING[slot] ?? 'Unknown';
+  return EQUIPMENT_SLOT_MAPPING[slot] ?? "Unknown";
 };
 
 /**
@@ -125,8 +125,8 @@ export const getEquipmentSlotName = (slot: string): string => {
  * @returns true if weapon is two-handed, false otherwise
  */
 export const isTwoHandedWeapon = (weaponId: number): boolean => {
-  return TWO_HANDED_WEAPON_RANGES.some(range => 
-    weaponId >= range.min && weaponId <= range.max
+  return TWO_HANDED_WEAPON_RANGES.some(
+    (range) => weaponId >= range.min && weaponId <= range.max,
   );
 };
 
@@ -136,11 +136,11 @@ export const isTwoHandedWeapon = (weaponId: number): boolean => {
  * @returns Weapon category name
  */
 export const getWeaponCategory = (weaponId: number): string => {
-  const range = TWO_HANDED_WEAPON_RANGES.find(range => 
-    weaponId >= range.min && weaponId <= range.max
+  const range = TWO_HANDED_WEAPON_RANGES.find(
+    (range) => weaponId >= range.min && weaponId <= range.max,
   );
-  
-  return range?.category ?? 'One-handed';
+
+  return range?.category ?? "One-handed";
 };
 
 /**
@@ -148,11 +148,13 @@ export const getWeaponCategory = (weaponId: number): string => {
  * @param equipment - Character equipment data
  * @returns 'stand1' for one-handed weapons, 'stand2' for two-handed weapons
  */
-export const determineStance = (equipment: EquipmentData): 'stand1' | 'stand2' => {
-  const weaponId = equipment['-11'] || equipment['-111']; // Regular or cash weapon
-  if (!weaponId) return 'stand1';
-  
-  return isTwoHandedWeapon(weaponId) ? 'stand2' : 'stand1';
+export const determineStance = (
+  equipment: EquipmentData,
+): "stand1" | "stand2" => {
+  const weaponId = equipment["-11"] || equipment["-111"]; // Regular or cash weapon
+  if (!weaponId) return "stand1";
+
+  return isTwoHandedWeapon(weaponId) ? "stand2" : "stand1";
 };
 
 /**
@@ -164,7 +166,7 @@ export const determineStance = (equipment: EquipmentData): 'stand1' | 'stand2' =
  */
 export const extractEquipmentFromInventory = (
   inventory: Asset[],
-  options: EquipmentExtractionOptions = {}
+  options: EquipmentExtractionOptions = {},
 ): EquipmentExtractionResult => {
   const {
     includeNegativeSlots = true,
@@ -179,24 +181,27 @@ export const extractEquipmentFromInventory = (
   for (const asset of inventory) {
     const slot = asset.attributes.slot.toString();
     const slotNumber = parseInt(slot);
-    
+
     // Skip non-negative slots if not including them
     if (!includeNegativeSlots && slotNumber >= 0) {
       continue;
     }
-    
+
     // Skip cash equipment if not including them
     if (!includeCashEquipment && slotNumber < -100) {
       continue;
     }
-    
+
     // Apply slot range filter if provided
     if (filterBySlotRange) {
-      if (slotNumber < filterBySlotRange.min || slotNumber > filterBySlotRange.max) {
+      if (
+        slotNumber < filterBySlotRange.min ||
+        slotNumber > filterBySlotRange.max
+      ) {
         continue;
       }
     }
-    
+
     // Only include equipped items (negative slots)
     if (slotNumber < 0) {
       equipment[slot] = asset.attributes.templateId;
@@ -225,23 +230,40 @@ export const getDefaultSlotForTemplateId = (
 ): number | null => {
   const classification = Math.floor(templateId / 10000);
   switch (classification) {
-    case 100: return -1;   // Hat
-    case 101: return -3;   // Face Accessory
-    case 102: return -2;   // Eye Accessory
-    case 103: return -4;   // Earring
-    case 104: return -5;   // Top
-    case 105: return -5;   // Overall
-    case 106: return -6;   // Bottom
-    case 107: return -7;   // Shoes
-    case 108: return -8;   // Gloves
-    case 109: return -10;  // Shield
-    case 110: return -9;   // Cape
-    case 111: return -12;  // Ring (slot 1)
-    case 112: return -17;  // Pendant
-    case 113: return -50;  // Belt
-    case 114: return -49;  // Medal
-    case 190: return -18;  // Tamed Mob
-    case 191: return -19;  // Saddle
+    case 100:
+      return -1; // Hat
+    case 101:
+      return -3; // Face Accessory
+    case 102:
+      return -2; // Eye Accessory
+    case 103:
+      return -4; // Earring
+    case 104:
+      return -5; // Top
+    case 105:
+      return -5; // Overall
+    case 106:
+      return -6; // Bottom
+    case 107:
+      return -7; // Shoes
+    case 108:
+      return -8; // Gloves
+    case 109:
+      return -10; // Shield
+    case 110:
+      return -9; // Cape
+    case 111:
+      return -12; // Ring (slot 1)
+    case 112:
+      return -17; // Pendant
+    case 113:
+      return -50; // Belt
+    case 114:
+      return -49; // Medal
+    case 190:
+      return -18; // Tamed Mob
+    case 191:
+      return -19; // Saddle
   }
   // Weapons span classifications 130-159 in atlas-constants.
   if (classification >= 130 && classification <= 159) return -11;
@@ -285,7 +307,7 @@ export const extractEquippedItems = (inventory: Asset[]): EquipmentData => {
 
   for (const asset of inventory) {
     const slot = asset.attributes.slot;
-    
+
     // Only include equipped items (negative slots)
     if (slot < 0) {
       equipment[slot.toString()] = asset.attributes.templateId;
@@ -305,13 +327,17 @@ export const extractEquippedItems = (inventory: Asset[]): EquipmentData => {
 export const filterEquipmentBySlotRange = (
   equipment: EquipmentData,
   minSlot: number,
-  maxSlot: number
+  maxSlot: number,
 ): EquipmentData => {
   const filtered: EquipmentData = {};
 
   for (const [slot, itemId] of Object.entries(equipment)) {
     const slotNumber = parseInt(slot);
-    if (slotNumber >= minSlot && slotNumber <= maxSlot && itemId !== undefined) {
+    if (
+      slotNumber >= minSlot &&
+      slotNumber <= maxSlot &&
+      itemId !== undefined
+    ) {
       filtered[slot] = itemId;
     }
   }
@@ -333,7 +359,9 @@ export const getCashEquipment = (equipment: EquipmentData): EquipmentData => {
  * @param equipment - Equipment data to filter
  * @returns Equipment data containing only regular items (slots -1 to -99)
  */
-export const getRegularEquipment = (equipment: EquipmentData): EquipmentData => {
+export const getRegularEquipment = (
+  equipment: EquipmentData,
+): EquipmentData => {
   return filterEquipmentBySlotRange(equipment, -99, -1);
 };
 
@@ -351,8 +379,8 @@ export const getRegularEquipment = (equipment: EquipmentData): EquipmentData => 
 export const characterToMapleStoryData = (
   character: Character,
   inventory: Asset[],
-  tenant = '',
-  region = '',
+  tenant = "",
+  region = "",
   majorVersion = 0,
   minorVersion = 0,
 ): MapleStoryCharacterData => {
@@ -380,12 +408,14 @@ export const characterToMapleStoryData = (
  * @param equipment - Equipment data to validate
  * @returns Validated equipment data with invalid entries removed
  */
-export const validateEquipmentData = (equipment: EquipmentData): EquipmentData => {
+export const validateEquipmentData = (
+  equipment: EquipmentData,
+): EquipmentData => {
   const validated: EquipmentData = {};
 
   for (const [slot, itemId] of Object.entries(equipment)) {
     // Check if itemId is a valid positive number
-    if (itemId && typeof itemId === 'number' && itemId > 0) {
+    if (itemId && typeof itemId === "number" && itemId > 0) {
       validated[slot] = itemId;
     }
   }
@@ -399,7 +429,8 @@ export const validateEquipmentData = (equipment: EquipmentData): EquipmentData =
  * @returns Number of equipped items
  */
 export const countEquippedItems = (equipment: EquipmentData): number => {
-  return Object.values(equipment).filter(itemId => itemId && itemId > 0).length;
+  return Object.values(equipment).filter((itemId) => itemId && itemId > 0)
+    .length;
 };
 
 /**
@@ -417,14 +448,14 @@ export const categorizeEquipment = (equipment: EquipmentData) => {
 
   for (const [slot, itemId] of Object.entries(equipment)) {
     if (!itemId) continue;
-    
+
     const slotNumber = parseInt(slot);
-    
+
     if (slotNumber < -100) {
       categories.cash[slot] = itemId;
-    } else if (slot === '-11' || slot === '-10') {
+    } else if (slot === "-11" || slot === "-10") {
       categories.weapons[slot] = itemId;
-    } else if (['-1', '-5', '-6', '-7', '-8', '-9'].includes(slot)) {
+    } else if (["-1", "-5", "-6", "-7", "-8", "-9"].includes(slot)) {
       categories.armor[slot] = itemId;
     } else {
       categories.accessories[slot] = itemId;
@@ -440,7 +471,7 @@ export const categorizeEquipment = (equipment: EquipmentData) => {
  * @returns true if equipment contains at least one item, false otherwise
  */
 export const hasEquippedItems = (equipment: EquipmentData): boolean => {
-  return Object.values(equipment).some(itemId => itemId && itemId > 0);
+  return Object.values(equipment).some((itemId) => itemId && itemId > 0);
 };
 
 /**
@@ -449,7 +480,9 @@ export const hasEquippedItems = (equipment: EquipmentData): boolean => {
  * @param equipmentSets - Array of equipment data to merge
  * @returns Merged equipment data
  */
-export const mergeEquipment = (...equipmentSets: EquipmentData[]): EquipmentData => {
+export const mergeEquipment = (
+  ...equipmentSets: EquipmentData[]
+): EquipmentData => {
   return equipmentSets.reduce((merged, equipment) => {
     return { ...merged, ...equipment };
   }, {});

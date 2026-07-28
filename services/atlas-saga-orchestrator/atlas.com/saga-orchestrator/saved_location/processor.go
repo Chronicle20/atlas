@@ -3,8 +3,9 @@ package saved_location
 import (
 	"context"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/sirupsen/logrus"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 type Processor interface {
@@ -24,6 +25,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) Put(characterId uint32, locationType string, mapId _map.Id, portalId uint32) error {
 	_, err := PutSavedLocation(p.l, p.ctx)(characterId, locationType, mapId, portalId)

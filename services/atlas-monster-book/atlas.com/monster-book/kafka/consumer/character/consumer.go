@@ -1,21 +1,23 @@
 package character
 
 import (
-	"context"
-
 	"atlas-monster-book/card"
 	"atlas-monster-book/collection"
+	"context"
+
 	consumer2 "atlas-monster-book/kafka/consumer"
 	characterMsg "atlas-monster-book/kafka/message/character"
 
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -46,7 +48,7 @@ func handleStatusEventDeleted(db *gorm.DB) message.Handler[characterMsg.StatusEv
 			return
 		}
 		characterId := character.Id(e.CharacterId)
-		if err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := database.ExecuteTransaction(db.WithContext(ctx), func(tx *gorm.DB) error {
 			cp := card.NewProcessor(l, ctx, tx)
 			colp := collection.NewProcessor(l, ctx, tx)
 			if err := cp.DeleteByCharacterId(characterId); err != nil {

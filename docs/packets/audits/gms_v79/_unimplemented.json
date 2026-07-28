@@ -1,0 +1,79 @@
+{
+ "entries": [
+  {
+   "fname": "CLogin::SendSelectCharPacket#CharacterSelectWithPic",
+   "case": 0,
+   "reason": "v79-absent: usesPin/usesPic=false. IDA CLogin::SendSelectCharPacket(sub_5CCAE3)@0x5ccae3 emits only the non-PIC CHAR_SELECT wire (COutPacket(19)+Encode4(charId)+EncodeStr(mac)+EncodeStr(hddSerial)); there is no PIC branch. The PIC character-select variant was introduced after v79 (task-113 stage E close)."
+  },
+  {
+   "fname": "CLogin::SendSelectCharPacket#CharacterSelectRegisterPic",
+   "case": 0,
+   "reason": "v79-absent: usesPic=false. IDA sub_5CCAE3@0x5ccae3 has no register-PIC branch; the register-PIC send does not exist in v79 (task-113 stage E close)."
+  },
+  {
+   "fname": "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPic",
+   "case": 0,
+   "reason": "v79-absent: usesPic=false. IDA CLogin::SendSelectCharPacketByVAC(sub_5CCC1F)@0x5ccc1f emits only the non-PIC PICK_ALL_CHAR wire (COutPacket(14)+Encode4(charId)+Encode4(worldId)+EncodeStr(mac)+EncodeStr(hddSerial)); no PIC branch (task-113 stage E close)."
+  },
+  {
+   "fname": "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPicRegister",
+   "case": 0,
+   "reason": "v79-absent: usesPic=false. IDA sub_5CCC1F@0x5ccc1f has no register-PIC branch; the view-all register-PIC send does not exist in v79 (task-113 stage E close)."
+  },
+  {
+   "fname": "CScriptMan::OnAskSlideMenu#AskSlideMenu",
+   "case": 0,
+   "reason": "v79-absent: the conversation dispatcher CScriptMan::OnScriptMessage@0x6c7d3e has no switch case for ASK_SLIDE_MENU (msgType 14). Cases present are 0,1,2,3,4,5,6,7,8,9,10,12,13; there is no slide-menu handler. The slide-menu dialog was introduced after v79 (task-113 stage E close)."
+  },
+  {
+   "fname": "CScriptMan::OnAskPet#AskPet",
+   "case": 0,
+   "reason": "v79-absent (single-pet variant): the sole v79 pet handler is CScriptMan::OnAskPet@0x6c8e82 (dispatcher case 10, msgType 10), which is the UNIFIED pet handler and always reads DecodeStr message + Decode1 count + Decode1 exceptionExists + count x (DecodeBuffer(8)+Decode1) -- i.e. the AskPetAll body (verified separately). The pre-exception single-pet AskPetConversationDetail format (no exceptionExists byte) has no distinct v79 handler; ASK_PET routes to the unified handler (task-113 stage E close)."
+  },
+  {
+   "fname": "CCashShop::SendBuyNameChangeItemPacket",
+   "case": 0,
+   "reason": "v79-absent: no name-change BUY send-site in the v79 CCashShop class. func_query name_regex over CCashShop lists only the clientbound receive CCashShop::OnCheckNameChangePossibleResult@0x474ab1; there is no SendBuyNameChangeItemPacket / OnBuyNameChange sender emitting CASHSHOP_OPERATION(221). The cash name-change BUY mode-arm postdates v79 (task-113 stage E close batch 4)."
+  },
+  {
+   "fname": "CCashShop::SendBuyTransferWorldItemPacket",
+   "case": 0,
+   "reason": "v79-absent as a CASHSHOP mode-arm: v79 CCashShop::OnBuyTransferWorldItem@0x469dd6 does NOT build a COutPacket(221); after CheckTransferWorldPossible it calls sub_46CF90@0x46cf90 which sends COutPacket(18)+Encode4+Encode4 (a separate world-transfer/migrate opcode, not CASHSHOP_OPERATION). The CASHSHOP_OPERATION world-transfer-buy mode-arm the Atlas codec models postdates v79 (task-113 stage E close batch 4)."
+  },
+  {
+   "fname": "CCashShop::OnBuySlotInc",
+   "case": 0,
+   "reason": "v79-absent: no inventory-slot-increase send in v79 CCashShop. func_query name_regex SlotInc/IncSlot returns only CUIToolTip::SetToolTip_SlotInc and CItemInfo::GetSlotIncDelta (no COutPacket sender). The IncreaseInventory (slot-inc) cash purchase mode-arm postdates v79 (task-113 stage E close batch 4)."
+  },
+  {
+   "fname": "CCashShop::OnIncTrunkCount",
+   "case": 0,
+   "reason": "v79-absent: no storage/trunk-count send in v79 CCashShop. func_query name_regex TrunkCount/IncTrunk/BuyTrunk returns no CCashShop sender. The IncreaseStorage cash purchase mode-arm postdates v79 (task-113 stage E close batch 4)."
+  },
+  {
+   "fname": "CCashShop::OnMoveCashItemLtoS",
+   "case": 0,
+   "reason": "v79-absent: no CCashShop locker->slot cash-item move send in v79. func_query name_regex MoveCashItem/LtoS/StoL returns only CITC::OnMoveITCPurchaseItemLtoSDone/Failed (CITC/ITC domain, clientbound receive) \u2014 not a CCashShop CASHSHOP_OPERATION send. The MoveFromCashInventory mode-arm postdates v79 (task-113 stage E close batch 4)."
+  },
+  {
+   "fname": "CCashShop::OnMoveCashItemStoL",
+   "case": 0,
+   "reason": "v79-absent: no CCashShop slot->locker cash-item move send in v79 (same func_query basis as OnMoveCashItemLtoS; only CITC receive handlers exist). The MoveToCashInventory mode-arm postdates v79 (task-113 stage E close batch 4)."
+  },
+  {
+   "fname": "CCashShop::OnRebateLockerItem",
+   "case": 0,
+   "reason": "v79-absent: no rebate-locker-item send in the v79 CCashShop class (full CCashShop function enumeration has no OnRebateLockerItem / rebate sender). The RebateLockerItem mode-arm postdates v79 (task-113 stage E close batch 4)."
+  },
+  {
+   "fname": "CCashShop::OnBuyNormal",
+   "case": 0,
+   "reason": "v79-absent as the Atlas BuyNormal shape: cash/serverbound/CashShopOperationBuyNormal cannot be cleanly mapped to v79. IDA CCashShop::OnBuyNormal@0x46a3b0 sends COutPacket(221) CASHSHOP_OPERATION mode 0x23 (Encode1 0x23@0x46a5ea) then Encode4@0x46a5f5 + Encode4 buyFlags@0x46a600 + Encode4 nBuyType(a2)@0x46a60b + EncodeStr@0x46a624 + EncodeStr@0x46a63d = 3 ints + 2 strings. The Atlas ShopOperationBuyNormal codec models op229/mode0x20 with a SINGLE Encode4(serialNumber) \u2014 a structurally different envelope (mode 0x23 vs 0x20; 3 ints + 2 strings vs 1 int). Mapping would require inventing v79-only fields absent from the domain type; the single-serial BuyNormal shape postdates v79 (task-113 stage E close final)."
+  },
+  {
+   "fname": "CScriptMan::OnAskPet#AskPetConversationDetail",
+   "case": 0,
+   "reason": "v79-absent (single-pet clientbound detail): npc/clientbound/NpcAskPetConversationDetail has no distinct v79 read path. The sole v79 ASK_PET client decoder is CScriptMan::OnAskPet@0x6c8e82, which ALWAYS reads the AskPetAll format (DecodeStr message@0x6c8e9c + Decode1 count@0x6c8eb3 + Decode1 exceptionExists@0x6c8ec2 + count x (DecodeBuffer(8)@0x6c8f09 + Decode1@0x6c8f11)) \u2014 verified separately as npc/clientbound/NpcAskPetAllConversationDetail (v79 evidence pinned). There is NO pre-exceptionByte single-pet AskPetConversationDetail read; ASK_PET (msgType 10) routes unconditionally to the unified all-pets handler. The single-pet detail packet postdates v79 (task-113 stage E close final)."
+  }
+ ]
+}

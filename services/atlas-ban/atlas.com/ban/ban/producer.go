@@ -4,9 +4,10 @@ import (
 	ban2 "atlas-ban/kafka/message/ban"
 	"math/rand"
 
+	"github.com/segmentio/kafka-go"
+
 	kafkago "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func createdEventProvider(banId uint32) model.Provider[[]kafka.Message] {

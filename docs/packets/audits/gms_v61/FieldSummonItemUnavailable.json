@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldSummonItemUnavailable",
+  "IDAName": "CField::OnSummonItemInavailable",
+  "Address": "0x4eb4e9",
+  "Variant": "GMS/v61",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/summon_item_unavailable.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

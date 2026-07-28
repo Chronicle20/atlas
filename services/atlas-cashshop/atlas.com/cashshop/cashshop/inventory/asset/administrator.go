@@ -4,9 +4,10 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func generateUniqueCashId(db *gorm.DB) (int64, error) {

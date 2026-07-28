@@ -4,14 +4,16 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	"atlas-messages/kafka/message/pet"
-	"atlas-messages/kafka/producer"
 	petlookup "atlas-messages/pet"
 	"context"
 	"regexp"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // AwardTamenessCommandProducer handles the GM command

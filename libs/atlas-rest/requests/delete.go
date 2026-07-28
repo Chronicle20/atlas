@@ -6,8 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-retry"
 	"github.com/sirupsen/logrus"
+
+	retry "github.com/Chronicle20/atlas/libs/atlas-retry"
 )
 
 type EmptyBodyRequest func(l logrus.FieldLogger, ctx context.Context) error

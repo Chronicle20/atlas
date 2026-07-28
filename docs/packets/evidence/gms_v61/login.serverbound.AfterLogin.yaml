@@ -1,0 +1,11 @@
+packet: login/serverbound/AfterLogin
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnSetAccountResult#AfterLogin
+    address: "0x56874d"
+    decompile_sha256: be655d5c92edc06e5528b94f04da12207cb35587966dd390eaf16e85fee69bdf
+verifies:
+  - libs/atlas-packet/login/serverbound/after_login_test.go#TestAfterLoginLegacyAccountIdWire
+  - libs/atlas-packet/login/serverbound/after_login_test.go#TestAfterLoginRoundTrip

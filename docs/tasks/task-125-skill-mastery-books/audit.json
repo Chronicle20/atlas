@@ -1,0 +1,102 @@
+{
+  "service": "atlas-consumables, atlas-channel, atlas-saga-orchestrator, atlas-saga (lib), atlas-packet (lib)",
+  "path": "services/atlas-consumables/atlas.com/consumables; services/atlas-channel/atlas.com/channel; services/atlas-saga-orchestrator/atlas.com/saga-orchestrator; libs/atlas-saga; libs/atlas-packet",
+  "date": "2026-07-25",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "reviewer": "backend-guidelines-reviewer",
+  "scope": "task-125-skill-mastery-books own diff only (review-bb513ef62..593b55e23.diff), excluding files inherited via merge from main",
+  "domains": [
+    {
+      "name": "libs/atlas-packet/character/serverbound/use_skill_book.go + clientbound/skill_learn_item_result.go",
+      "type": "codec",
+      "checks": [
+        {"id": "immutability", "name": "private fields + getters", "status": "pass", "evidence": "use_skill_book.go:26-34; skill_learn_item_result.go:40-71"},
+        {"id": "version-gate", "name": "MajorVersion() idiom for v84 exception", "status": "pass", "evidence": "skill_learn_item_result.go:51-53"},
+        {"id": "DOM-25", "name": "no unresolved client wire byte", "status": "n/a", "evidence": "no client dispatch/mode byte carried by either codec"},
+        {"id": "tests", "name": "round-trip + golden bytes all versions", "status": "pass", "evidence": "use_skill_book_test.go, skill_learn_item_result_test.go; go test PASS"}
+      ]
+    },
+    {
+      "name": "libs/atlas-saga model.go / payloads_test.go",
+      "type": "shared-library",
+      "checks": [
+        {"id": "additive-change", "name": "SkillBookUse saga type additive", "status": "pass", "evidence": "model.go:29"},
+        {"id": "scope", "name": "DestroyAssetFromSlotPayload.TemplateId", "status": "out-of-scope", "evidence": "payloads.go:110-111 pre-existed at base commit bb513ef62, not part of task-125's own diff"},
+        {"id": "tests", "name": "payloads_test.go new coverage", "status": "pass", "evidence": "payloads_test.go"}
+      ]
+    },
+    {
+      "name": "services/atlas-consumables/.../consumable (skill_book.go + processor.go additions)",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "processor.go:63-99,1332"},
+        {"id": "FILE-06", "name": "no package-named catch-all", "status": "pass", "evidence": "skill_book.go matches sibling single-purpose files reward.go/vega.go"},
+        {"id": "DOM-21", "name": "reuse atlas-constants types", "status": "pass", "evidence": "skill_book.go:9-12; processor.go:1333-1334 reuses item2.ClassificationConsumableSkillBook/MasteryBook (libs/atlas-constants/item/constants.go:41-42, unmodified)"},
+        {"id": "mock-sync", "name": "ProcessorMock updated", "status": "pass", "evidence": "consumable/mock/processor.go:30,126-131"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in tests", "status": "n/a", "evidence": "skill_book_test.go exercises only pure functions; package test run 0.026s"},
+        {"id": "test-thoroughness", "name": "BuildSkillBookSaga subtests re-assert destroy step", "status": "warn", "evidence": "skill_book_test.go:139-171 subtests 2/3 don't re-assert Steps[0]"}
+      ]
+    },
+    {
+      "name": "services/atlas-consumables/.../skill (new REST client package)",
+      "type": "external-http-client",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "processor.go:12-41"},
+        {"id": "FILE-02", "name": "RestModel + Extract + JSON:API methods in rest.go", "status": "pass", "evidence": "rest.go:8-40"},
+        {"id": "FILE-03", "name": "request funcs in requests.go", "status": "pass", "evidence": "requests.go:13-23"},
+        {"id": "FILE-06", "name": "no catch-all", "status": "pass", "evidence": "4 single-responsibility files"},
+        {"id": "EXT-01", "name": "RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "skill/rest.go has no such methods; sibling character/rest.go:86-92 has the no-op pair"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "no *_test.go file exists anywhere in services/atlas-consumables/atlas.com/consumables/skill/"},
+        {"id": "EXT-03", "name": "404 vs other failures distinguished", "status": "n/a", "evidence": "list endpoint, no domain not-found manufactured"},
+        {"id": "EXT-04", "name": "URL via RootUrl, not hardcoded", "status": "pass", "evidence": "requests.go:14 requests.RootUrl(\"SKILLS\"); resolves via BASE_SERVICE_URL fallback already wired"}
+      ]
+    },
+    {
+      "name": "services/atlas-consumables/.../saga, kafka/once/saga, kafka/consumer/saga, kafka/message/saga",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01/FILE-03", "name": "Processor/producer split", "status": "pass", "evidence": "saga/processor.go, saga/producer.go match ~10 sibling services' shape"},
+        {"id": "registration", "name": "main.go registers sagaconsumer.InitConsumers", "status": "pass", "evidence": "main.go:10,41"},
+        {"id": "DOM-23", "name": "Kafka topic naming convention", "status": "pass", "evidence": "reuses existing COMMAND_TOPIC_SAGA / EVENT_TOPIC_SAGA_STATUS, both in deploy/k8s/base/env-configmap.yaml:70,150"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/.../socket/handler/character_skill_book_use.go, consumable/, kafka/*, main.go",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "handler delegates to processor", "status": "pass", "evidence": "character_skill_book_use.go:23"},
+        {"id": "SUB-04", "name": "no manual JSON parsing", "status": "pass", "evidence": "handler only decodes typed packet"},
+        {"id": "mock-sync", "name": "ProcessorMock updated", "status": "pass", "evidence": "consumable/mock/processor.go:18,58-63"},
+        {"id": "writer-handler-registration", "name": "writer/handler present in all 10 seed templates", "status": "pass", "evidence": "main.go:700,918; templates gms_48/61/72/79/83/84/87/92/95_1, jms_185_1 all carry \"CharacterSkillLearnItemResult\" writer and \"CharacterSkillBookUseHandle\" handler entries"},
+        {"id": "shadowing", "name": "slot parameter shadows slot package", "status": "warn", "evidence": "consumable/producer.go:106; consumable/processor.go:23,66 -- compiles clean, cosmetic only"}
+      ]
+    },
+    {
+      "name": "services/atlas-saga-orchestrator/.../saga/compensator.go, model.go",
+      "type": "orchestration",
+      "checks": [
+        {"id": "routing", "name": "SkillBookUse routed to compensateSkillBookUse", "status": "pass", "evidence": "compensator.go:56,94-97,256-258"},
+        {"id": "mirroring", "name": "compensateSkillBookUse mirrors compensatePetEvolution", "status": "pass", "evidence": "compensator.go:1214-1250 vs 1114-1150; plan-mandated, graded on merits (tenant-scoped logging, error propagation) -- no defect"},
+        {"id": "reverse-walk", "name": "DispatchSkillBookUseRollbacks correctness", "status": "pass", "evidence": "compensator.go:1260-1295; TemplateId==0 guarded with Error log + continue, Quantity defaulted, chain not aborted on single failure"},
+        {"id": "test-coverage-failed-path", "name": "CompensateFailedStep path tested", "status": "pass", "evidence": "compensator_test.go:729,790,832"},
+        {"id": "late-compensation-gap", "name": "DestroyAssetFromSlot missing from lateCompensableActions", "status": "fail", "evidence": "compensator.go:1705-1741 (lateCompensableActions), :1708-1709 stale comment contradicted by this task's own compensator.go:1286; reachable item-loss on step-0 timeout + late destroy-success; untested (no CompensateLateStep test for this saga type)"},
+        {"id": "cosmetic-arrow", "name": "ASCII -> vs unicode arrow", "status": "warn", "evidence": "compensator.go:1291, consistent with adjacent sibling compensator.go:1383,1404,1414 (task-128)"},
+        {"id": "orphan-handler-deregistration", "name": "RemoveHandler on saga.Create failure", "status": "pass", "evidence": "consumables processor.go:1415-1420; no race since Create hasn't succeeded"}
+      ]
+    }
+  ],
+  "blocking": [
+    "EXT-01: services/atlas-consumables/atlas.com/consumables/skill/rest.go missing SetToOneReferenceID/SetToManyReferenceIDs no-op methods on RestModel",
+    "EXT-02: services/atlas-consumables/atlas.com/consumables/skill/ has zero test coverage, no httptest-backed integration test",
+    "compensator.go:1724-1741 lateCompensableActions excludes DestroyAssetFromSlot despite TemplateId now supporting recreation (compensator.go:1286), leaving a reachable silent item-loss path on late-arriving destroy success after a skill_book_use (or cash-item-use) saga times out"
+  ],
+  "nonBlocking": [
+    "atlas-channel consumable/producer.go:106 and processor.go:23,66 -- slot parameter shadows the slot package import (cosmetic)",
+    "skill_book_test.go:139-171 -- TestBuildSkillBookSaga subtests 2/3 don't re-assert the destroy step's payload",
+    "compensator.go:1291 -- ASCII '->' instead of unicode arrow, consistent with adjacent sibling code",
+    "kafka/consumer/saga/consumer.go -- import block split into two third-party stanzas; verified non-issue via a live tools/lint.sh --check run (golangci-lint v2.12.2, 0 issues)"
+  ]
+}

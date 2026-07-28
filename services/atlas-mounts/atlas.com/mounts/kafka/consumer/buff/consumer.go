@@ -4,20 +4,22 @@ import (
 	consumer2 "atlas-mounts/kafka/consumer"
 	mountmessage "atlas-mounts/kafka/message"
 	buffmsg "atlas-mounts/kafka/message/buff"
-	"atlas-mounts/kafka/producer"
 	"atlas-mounts/mount"
 	"context"
+
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 // Function seams. Production wires these to the real registry + processor; tests
@@ -31,9 +33,11 @@ var (
 		return mount.GetRegistry().Remove(ctx, characterId)
 	}
 	emitSet = func(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, worldId world.Id, characterId uint32) error {
-		p := mount.NewProcessor(l, ctx, db)
-		return mountmessage.Emit(producer.ProviderImpl(l)(ctx))(func(mb *mountmessage.Buffer) error {
-			return p.EmitSet(mb)(worldId, characterId)
+		return database.ExecuteTransaction(db.WithContext(ctx), func(tx *gorm.DB) error {
+			p := mount.NewProcessor(l, ctx, tx)
+			return mountmessage.Emit(outbox.EmitProvider(l, ctx, tx))(func(mb *mountmessage.Buffer) error {
+				return p.EmitSet(mb)(worldId, characterId)
+			})
 		})
 	}
 )

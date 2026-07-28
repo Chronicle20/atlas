@@ -1,0 +1,8 @@
+packet: character/serverbound/CharacterAttackMagicRequest
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_6A3AC7
+    address: "0x6a3ac7"
+    decompile_sha256: d1fb92fb27f4b38821a821139cf87bb1d1a4f861f8b07f177f28787f8a653abc

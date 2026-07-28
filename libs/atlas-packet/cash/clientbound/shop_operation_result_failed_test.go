@@ -89,38 +89,60 @@ var moveSToLFailedModes = map[string]byte{
 }
 
 var destroyFailedModes = map[string]byte{
+	"GMS/v48": 0x46, "GMS/v61": 0x4F, "GMS/v72": 0x57, "GMS/v79": 0x65,
 	"GMS/v83": 0x6D, "GMS/v84": 0x70, "GMS/v87": 0x72, "GMS/v95": 0x7C, "JMS/v185": 0x70,
 }
 
 var rebateFailedModes = map[string]byte{
+	"GMS/v48": 0x5D, "GMS/v61": 0x66, "GMS/v72": 0x70, "GMS/v79": 0x7E,
 	"GMS/v83": 0x86, "GMS/v84": 0x89, "GMS/v87": 0x8B, "GMS/v95": 0x97, "JMS/v185": 0x89,
 }
 
+// coupleFailedModes: legacy reason∈{v48:133,134 / v61:149,150 / v72:166,167 /
+// v79:180,181} triggers the same conditional goodsSN:Decode4 read as BuyFailed
+// (harvest docs task-0.5-{v48,v61,v72,v79}-modes.md) — base 2-byte shape
+// unconditionally correct; atlas never emits the conditional field (same
+// precedent as BuyFailed / FAILED-1 batch).
 var coupleFailedModes = map[string]byte{
+	"GMS/v48": 0x5F, "GMS/v61": 0x68, "GMS/v72": 0x72, "GMS/v79": 0x80,
 	"GMS/v83": 0x88, "GMS/v84": 0x8B, "GMS/v87": 0x8D, "GMS/v95": 0x99, "JMS/v185": 0x8B,
 }
 
+// buyPackageFailedModes: same goodsSN-conditional precedent as coupleFailedModes.
 var buyPackageFailedModes = map[string]byte{
+	"GMS/v48": 0x61, "GMS/v61": 0x6A, "GMS/v72": 0x74, "GMS/v79": 0x82,
 	"GMS/v83": 0x8A, "GMS/v84": 0x8D, "GMS/v87": 0x8F, "GMS/v95": 0x9B, "JMS/v185": 0x8D,
 }
 
+// giftPackageFailedModes: same goodsSN-conditional precedent as coupleFailedModes.
 var giftPackageFailedModes = map[string]byte{
+	"GMS/v48": 0x63, "GMS/v61": 0x6C, "GMS/v72": 0x76, "GMS/v79": 0x84,
 	"GMS/v83": 0x8C, "GMS/v84": 0x8F, "GMS/v87": 0x91, "GMS/v95": 0x9D, "JMS/v185": 0x8F,
 }
 
+// buyNormalFailedModes: same goodsSN-conditional precedent as coupleFailedModes.
 var buyNormalFailedModes = map[string]byte{
+	"GMS/v48": 0x65, "GMS/v61": 0x6E, "GMS/v72": 0x78, "GMS/v79": 0x86,
 	"GMS/v83": 0x8E, "GMS/v84": 0x91, "GMS/v87": 0x93, "GMS/v95": 0x9F, "JMS/v185": 0x91,
 }
 
+// friendshipFailedModes: same goodsSN-conditional precedent as coupleFailedModes.
 var friendshipFailedModes = map[string]byte{
+	"GMS/v48": 0x69, "GMS/v61": 0x72, "GMS/v72": 0x7C, "GMS/v79": 0x8A,
 	"GMS/v83": 0x92, "GMS/v84": 0x95, "GMS/v87": 0x97, "GMS/v95": 0xA3, "JMS/v185": 0x95,
 }
 
+// purchaseRecordFailedModes: n-a in v48/v61 (arm-catalog.md row 57;
+// task-0.5-{v48,v61}-modes.md — no matching case, same query covers both
+// PurchaseRecord* names / same 81-100 gap as the enumerated n-a proof table).
+// v72/v79 present, plain mode+reason(discarded) shape.
 var purchaseRecordFailedModes = map[string]byte{
+	"GMS/v72": 0x85, "GMS/v79": 0x93,
 	"GMS/v83": 0x9B, "GMS/v84": 0x9E, "GMS/v87": 0xA4, "GMS/v95": 0xB0, "JMS/v185": 0x9E,
 }
 
 var transferWorldFailedModes = map[string]byte{
+	"GMS/v48": 0x6F, "GMS/v61": 0x7E, "GMS/v72": 0x8B, "GMS/v79": 0x99,
 	"GMS/v83": 0xA1, "GMS/v84": 0xA4, "GMS/v87": 0xAA, "GMS/v95": 0xB6, "JMS/v185": 0xAF,
 }
 
@@ -523,6 +545,10 @@ func TestMoveSToLFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashDestroyFailed version=gms_v48 ida=0x455483
+// packet-audit:verify packet=cash/clientbound/CashDestroyFailed version=gms_v61 ida=0x4631f3
+// packet-audit:verify packet=cash/clientbound/CashDestroyFailed version=gms_v72 ida=0x472ef4
+// packet-audit:verify packet=cash/clientbound/CashDestroyFailed version=gms_v79 ida=0x4743c0
 // packet-audit:verify packet=cash/clientbound/CashDestroyFailed version=gms_v83 ida=0x47b4c5
 // packet-audit:verify packet=cash/clientbound/CashDestroyFailed version=gms_v84 ida=0x47e663
 // packet-audit:verify packet=cash/clientbound/CashDestroyFailed version=gms_v87 ida=0x486ca3
@@ -552,6 +578,10 @@ func TestDestroyFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashRebateFailed version=gms_v48 ida=0x4555a0
+// packet-audit:verify packet=cash/clientbound/CashRebateFailed version=gms_v61 ida=0x463310
+// packet-audit:verify packet=cash/clientbound/CashRebateFailed version=gms_v72 ida=0x473013
+// packet-audit:verify packet=cash/clientbound/CashRebateFailed version=gms_v79 ida=0x4744df
 // packet-audit:verify packet=cash/clientbound/CashRebateFailed version=gms_v83 ida=0x47b5e4
 // packet-audit:verify packet=cash/clientbound/CashRebateFailed version=gms_v84 ida=0x47e782
 // packet-audit:verify packet=cash/clientbound/CashRebateFailed version=gms_v87 ida=0x486dc2
@@ -581,6 +611,10 @@ func TestRebateFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashCoupleFailed version=gms_v48 ida=0x45586e
+// packet-audit:verify packet=cash/clientbound/CashCoupleFailed version=gms_v61 ida=0x4635e1
+// packet-audit:verify packet=cash/clientbound/CashCoupleFailed version=gms_v72 ida=0x4732f1
+// packet-audit:verify packet=cash/clientbound/CashCoupleFailed version=gms_v79 ida=0x4747bd
 // packet-audit:verify packet=cash/clientbound/CashCoupleFailed version=gms_v83 ida=0x47b8c2
 // packet-audit:verify packet=cash/clientbound/CashCoupleFailed version=gms_v84 ida=0x47ea60
 // packet-audit:verify packet=cash/clientbound/CashCoupleFailed version=gms_v87 ida=0x4870a3
@@ -610,6 +644,10 @@ func TestCoupleFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageFailed version=gms_v48 ida=0x4540da
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageFailed version=gms_v61 ida=0x461d5a
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageFailed version=gms_v72 ida=0x471830
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageFailed version=gms_v79 ida=0x472b2e
 // packet-audit:verify packet=cash/clientbound/CashBuyPackageFailed version=gms_v83 ida=0x479ba0
 // packet-audit:verify packet=cash/clientbound/CashBuyPackageFailed version=gms_v84 ida=0x47cd3e
 // packet-audit:verify packet=cash/clientbound/CashBuyPackageFailed version=gms_v87 ida=0x485379
@@ -639,6 +677,10 @@ func TestBuyPackageFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashGiftPackageFailed version=gms_v48 ida=0x45424e
+// packet-audit:verify packet=cash/clientbound/CashGiftPackageFailed version=gms_v61 ida=0x461ec5
+// packet-audit:verify packet=cash/clientbound/CashGiftPackageFailed version=gms_v72 ida=0x4719a0
+// packet-audit:verify packet=cash/clientbound/CashGiftPackageFailed version=gms_v79 ida=0x472c9e
 // packet-audit:verify packet=cash/clientbound/CashGiftPackageFailed version=gms_v83 ida=0x479d10
 // packet-audit:verify packet=cash/clientbound/CashGiftPackageFailed version=gms_v84 ida=0x47ceae
 // packet-audit:verify packet=cash/clientbound/CashGiftPackageFailed version=gms_v87 ida=0x4854e9
@@ -668,6 +710,10 @@ func TestGiftPackageFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashBuyNormalFailed version=gms_v48 ida=0x4556d3
+// packet-audit:verify packet=cash/clientbound/CashBuyNormalFailed version=gms_v61 ida=0x463443
+// packet-audit:verify packet=cash/clientbound/CashBuyNormalFailed version=gms_v72 ida=0x47314b
+// packet-audit:verify packet=cash/clientbound/CashBuyNormalFailed version=gms_v79 ida=0x474617
 // packet-audit:verify packet=cash/clientbound/CashBuyNormalFailed version=gms_v83 ida=0x47b71c
 // packet-audit:verify packet=cash/clientbound/CashBuyNormalFailed version=gms_v84 ida=0x47e8ba
 // packet-audit:verify packet=cash/clientbound/CashBuyNormalFailed version=gms_v87 ida=0x486efd
@@ -697,6 +743,10 @@ func TestBuyNormalFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashFriendshipFailed version=gms_v48 ida=0x455a0e
+// packet-audit:verify packet=cash/clientbound/CashFriendshipFailed version=gms_v61 ida=0x463787
+// packet-audit:verify packet=cash/clientbound/CashFriendshipFailed version=gms_v72 ida=0x47349f
+// packet-audit:verify packet=cash/clientbound/CashFriendshipFailed version=gms_v79 ida=0x47496b
 // packet-audit:verify packet=cash/clientbound/CashFriendshipFailed version=gms_v83 ida=0x47ba70
 // packet-audit:verify packet=cash/clientbound/CashFriendshipFailed version=gms_v84 ida=0x47ec0e
 // packet-audit:verify packet=cash/clientbound/CashFriendshipFailed version=gms_v87 ida=0x487251
@@ -726,6 +776,8 @@ func TestFriendshipFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashPurchaseRecordFailed version=gms_v72 ida=0x473b2b
+// packet-audit:verify packet=cash/clientbound/CashPurchaseRecordFailed version=gms_v79 ida=0x474ff7
 // packet-audit:verify packet=cash/clientbound/CashPurchaseRecordFailed version=gms_v83 ida=0x47c0fc
 // packet-audit:verify packet=cash/clientbound/CashPurchaseRecordFailed version=gms_v84 ida=0x47f29a
 // packet-audit:verify packet=cash/clientbound/CashPurchaseRecordFailed version=gms_v87 ida=0x4878dd
@@ -755,6 +807,10 @@ func TestPurchaseRecordFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashTransferWorldFailed version=gms_v48 ida=0x455fe0
+// packet-audit:verify packet=cash/clientbound/CashTransferWorldFailed version=gms_v61 ida=0x463e61
+// packet-audit:verify packet=cash/clientbound/CashTransferWorldFailed version=gms_v72 ida=0x473aa1
+// packet-audit:verify packet=cash/clientbound/CashTransferWorldFailed version=gms_v79 ida=0x474f6d
 // packet-audit:verify packet=cash/clientbound/CashTransferWorldFailed version=gms_v83 ida=0x47c072
 // packet-audit:verify packet=cash/clientbound/CashTransferWorldFailed version=gms_v84 ida=0x47f210
 // packet-audit:verify packet=cash/clientbound/CashTransferWorldFailed version=gms_v87 ida=0x487853

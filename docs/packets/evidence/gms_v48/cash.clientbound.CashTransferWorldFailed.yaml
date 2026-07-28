@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashTransferWorldFailed
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#TRANSFER_WORLD_FAILED
+    address: "0x455fe0"
+    decompile_sha256: 235b2eaf1da92cb4375ff1a6a63468709e57864d22213eb9c59420051eabd7fe
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_failed_test.go#TestTransferWorldFailedByteFixture

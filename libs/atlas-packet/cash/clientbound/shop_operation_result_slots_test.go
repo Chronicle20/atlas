@@ -2,7 +2,11 @@ package clientbound
 
 import (
 	"testing"
+	"time"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
@@ -25,6 +29,7 @@ import (
 // packet-audit:verify packet=cash/clientbound/CashIncCharacterSlotCountSuccess version=jms_v185 ida=0x48d75e
 // packet-audit:verify packet=cash/clientbound/CashIncBuyCharacterCountSuccess version=gms_v95 ida=0x495000
 // packet-audit:verify packet=cash/clientbound/CashIncBuyCharacterCountSuccess version=jms_v185 ida=0x48d82f
+// packet-audit:verify packet=cash/clientbound/CashIncBuyCharacterCountSuccess version=gms_v72 ida=0x472967
 // packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtSuccess version=gms_v79 ida=0x473c2c
 // packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtSuccess version=gms_v83 ida=0x47acdb
 // packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtSuccess version=gms_v84 ida=0x47de79
@@ -49,17 +54,24 @@ var incCharacterSlotCountSuccessModes = map[string]byte{
 }
 
 // incBuyCharacterCountSuccessModes: n-a in GMS/v48/v61/v79/v83/v84/v87 (only
-// present starting v95, per catalog, among MODERN + the versions verified
-// here). GMS/v72 IS present (mode 0x52) but is DELIBERATELY OMITTED from this
-// map — task-183 Wave 3 §3 confirms v72's arm is a MATERIALLY DIFFERENT wire
-// shape (slotIndex:Decode2 + GW_ItemSlotBase::Decode, a locker-item-consuming
-// operation) than this struct's bare mode+uint16 counter. See
-// .superpowers/sdd/task-3.4-legacy-misc-report.md for the decompiled v72 read
-// order — reported, not verified; the controller will gate the codec (a
-// separate v72-shaped type) before this cell can be verified.
+// present starting v95, per catalog, among MODERN versions). GMS/v72 IS
+// present (mode 0x52) and is now gated + verified via
+// TestIncBuyCharacterCountSuccessV72ByteFixture below (task-183 Wave 3.5) —
+// its wire shape (slotIndex:Decode2 + GW_ItemSlotBase::Decode, a
+// locker-item-consuming operation) is MATERIALLY DIFFERENT from this
+// struct's bare mode+uint16 counter, so it is intentionally kept out of this
+// map (which drives the MODERN bare-counter fixture below) and exercised by
+// its own dedicated test + mode constant instead. See
+// .superpowers/sdd/task-3.4-legacy-misc-report.md for the original decompile
+// report and .superpowers/sdd/task-3.5-incbuychar-v72-report.md for the gate.
 var incBuyCharacterCountSuccessModes = map[string]byte{
 	"GMS/v95": 0x73, "JMS/v185": 0x67,
 }
+
+// incBuyCharacterCountSuccessV72Mode is the GMS/v72 dispatcher mode byte for
+// the v72-shaped arm (slotIndex + asset), per arm-catalog.md /
+// task-3.4-legacy-misc-report.md.
+const incBuyCharacterCountSuccessV72Mode = byte(0x52)
 
 // enableEquipSlotExtSuccessModes: n-a in GMS/v48/v61/v72 (feature does not
 // exist in those builds — arm-catalog.md).
@@ -137,6 +149,41 @@ func TestIncBuyCharacterCountSuccessByteFixture(t *testing.T) {
 				t.Errorf("round-trip mismatch: mode %v buyCharacterCount %v", output.Mode(), output.BuyCharacterCount())
 			}
 		})
+	}
+}
+
+// TestIncBuyCharacterCountSuccessV72ByteFixture verifies the GMS/v72 LEGACY
+// shape of INC_BUY_CHARACTER_COUNT_SUCCESS: mode + slotIndex:Decode2
+// (uint16) + item:GW_ItemSlotBase::Decode (packetmodel.Asset), gated by
+// incBuyCharacterCountSuccessIsV72Shape. This is a MATERIALLY DIFFERENT wire
+// shape than the MODERN bare mode+uint16 counter exercised above — see the
+// gate's doc comment in shop_operation_result_slots.go and
+// .superpowers/sdd/task-3.4-legacy-misc-report.md for the decompile that
+// established this shape.
+func TestIncBuyCharacterCountSuccessV72ByteFixture(t *testing.T) {
+	const slotIndex = uint16(0x0005)
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 72, 1)
+	asset := model.NewAsset(true, 0, 2000000, time.Time{}).SetStackableInfo(5, 0, 0)
+	assetBytes := asset.Encode(l, ctx)(nil)
+
+	input := NewIncBuyCharacterCountSuccessV72(incBuyCharacterCountSuccessV72Mode, slotIndex, asset)
+	got := pt.Encode(t, ctx, input.Encode, nil)
+	want := append([]byte{incBuyCharacterCountSuccessV72Mode, byte(slotIndex), byte(slotIndex >> 8)}, assetBytes...)
+	if !bytesEqual(got, want) {
+		t.Errorf("INC_BUY_CHARACTER_COUNT_SUCCESS (v72) bytes: got %v, want %v", got, want)
+	}
+
+	output := IncBuyCharacterCountSuccess{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if output.Mode() != incBuyCharacterCountSuccessV72Mode {
+		t.Errorf("round-trip mode: got %v, want %v", output.Mode(), incBuyCharacterCountSuccessV72Mode)
+	}
+	if output.SlotIndex() != slotIndex {
+		t.Errorf("round-trip slotIndex: got %v, want %v", output.SlotIndex(), slotIndex)
+	}
+	if output.Asset().TemplateId() != asset.TemplateId() {
+		t.Errorf("round-trip asset templateId: got %v, want %v", output.Asset().TemplateId(), asset.TemplateId())
 	}
 }
 

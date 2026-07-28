@@ -6,8 +6,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Counter-arm family (task-183 Wave 1.2). RE-proven shape: mode + uint16
@@ -97,43 +99,87 @@ func (m *IncCharacterSlotCountSuccess) Decode(_ logrus.FieldLogger, _ context.Co
 
 // IncBuyCharacterCountSuccess - INC_BUY_CHARACTER_COUNT_SUCCESS arm
 // (CCashShop::OnCashItemResIncBuyCharacterCountDone): mode +
-// buyCharacterCount:Decode2 (uint16, new absolute m_nBuyCharacterCount).
-// Discrete per-mode struct: fixes the INC_BUY_CHARACTER_COUNT_SUCCESS
-// operation key; never accepts the mode from the caller. Present only in
-// v72 (legacy, materially different shape there — see arm-catalog.md
-// "Per-version wire divergences") and v95/jms among MODERN versions; n-a in
-// v83/v84/v87 per the catalog.
+// buyCharacterCount:Decode2 (uint16, new absolute m_nBuyCharacterCount) on
+// every MODERN version (v95/jms verified). Discrete per-mode struct: fixes
+// the INC_BUY_CHARACTER_COUNT_SUCCESS operation key; never accepts the mode
+// from the caller. n-a in v83/v84/v87 per the catalog.
+//
+// v72 (legacy, GMS only) is a MATERIALLY DIFFERENT wire shape, decompiled at
+// CCashShop::OnCashItemResIncBuyCharacterCountDone@0x472967 (task-183 Wave 3
+// batch MISC-L, see .superpowers/sdd/task-3.4-legacy-misc-report.md
+// "SPECIAL" section): mode + slotIndex:Decode2 (uint16) +
+// item:GW_ItemSlotBase::Decode (full polymorphic item-slot struct — a
+// "buy a character slot by consuming one specific locker item" operation,
+// not a bare absolute-counter update). This is region+version-gated
+// (incBuyCharacterCountSuccessIsV72Shape), code-only — it CANNOT be
+// registered as a gates.yaml row because this struct has no matrix row of
+// its own (it's a dispatcher-family arm; the nxCashSpent precedent in
+// shop_operation_result_gift.go established that dispatcher-family arms
+// don't get gates.yaml entries). The gate mirrors CashItemMovedToInventory's
+// slot+asset shape exactly (shop_item_moved.go).
 // packet-audit:fname CCashShop::OnCashItemResult#INC_BUY_CHARACTER_COUNT_SUCCESS
 type IncBuyCharacterCountSuccess struct {
 	mode              byte
 	buyCharacterCount uint16
+	slotIndex         uint16
+	asset             packetmodel.Asset
 }
 
+// NewIncBuyCharacterCountSuccess constructs the MODERN (v95/jms) shape:
+// mode + bare uint16 absolute counter. Do not use this for v72.
 func NewIncBuyCharacterCountSuccess(mode byte, buyCharacterCount uint16) IncBuyCharacterCountSuccess {
 	return IncBuyCharacterCountSuccess{mode: mode, buyCharacterCount: buyCharacterCount}
 }
 
+// NewIncBuyCharacterCountSuccessV72 constructs the v72 LEGACY shape: mode +
+// slotIndex + a full item-slot asset (the locker item being consumed).
+func NewIncBuyCharacterCountSuccessV72(mode byte, slotIndex uint16, asset packetmodel.Asset) IncBuyCharacterCountSuccess {
+	return IncBuyCharacterCountSuccess{mode: mode, slotIndex: slotIndex, asset: asset}
+}
+
 func (m IncBuyCharacterCountSuccess) Mode() byte                { return m.mode }
 func (m IncBuyCharacterCountSuccess) BuyCharacterCount() uint16 { return m.buyCharacterCount }
+func (m IncBuyCharacterCountSuccess) SlotIndex() uint16         { return m.slotIndex }
+func (m IncBuyCharacterCountSuccess) Asset() packetmodel.Asset  { return m.asset }
 func (m IncBuyCharacterCountSuccess) Operation() string         { return CashShopOperationWriter }
 
 func (m IncBuyCharacterCountSuccess) String() string {
-	return fmt.Sprintf("cash inc-buy-character-count success mode [%d] buyCharacterCount [%d]", m.mode, m.buyCharacterCount)
+	return fmt.Sprintf("cash inc-buy-character-count success mode [%d] buyCharacterCount [%d] slotIndex [%d]", m.mode, m.buyCharacterCount, m.slotIndex)
 }
 
-func (m IncBuyCharacterCountSuccess) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+// incBuyCharacterCountSuccessIsV72Shape reports whether the v72 legacy shape
+// (slotIndex + item-slot asset) applies, versus the MODERN bare-counter
+// shape used by every other present version (v95/jms). GMS/v72 exact-match,
+// not MajorAtLeast — this is a one-version divergence, not a floor.
+func incBuyCharacterCountSuccessIsV72Shape(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() == 72
+}
+
+func (m IncBuyCharacterCountSuccess) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
-		w.WriteShort(m.buyCharacterCount)
+		if incBuyCharacterCountSuccessIsV72Shape(t) {
+			w.WriteShort(m.slotIndex)
+			w.WriteByteArray(m.asset.Encode(l, ctx)(options))
+		} else {
+			w.WriteShort(m.buyCharacterCount)
+		}
 		return w.Bytes()
 	}
 }
 
-func (m *IncBuyCharacterCountSuccess) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *IncBuyCharacterCountSuccess) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
-		m.buyCharacterCount = r.ReadUint16()
+		if incBuyCharacterCountSuccessIsV72Shape(t) {
+			m.slotIndex = r.ReadUint16()
+			m.asset.Decode(l, ctx)(r, options)
+		} else {
+			m.buyCharacterCount = r.ReadUint16()
+		}
 	}
 }
 

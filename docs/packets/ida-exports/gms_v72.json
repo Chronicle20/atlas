@@ -19805,6 +19805,24 @@
         }
       ]
     },
+    "CCashShop::OnCashItemResult#INC_BUY_CHARACTER_COUNT_SUCCESS": {
+      "address": "0x472967",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x52 INC_BUY_CHARACTER_COUNT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResIncBuyCharacterCountDone)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slotIndex; Decode2 (v72 LEGACY shape, materially different from MODERN bare-counter arm — task-183 Wave 3 task-3.4-legacy-misc-report.md)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_ItemSlotBase::Decode(&pItem) = item slot payload (model.Asset) — consumed to find-and-remove the matching locker entry"
+        }
+      ]
+    },
     "CCashShop::OnCashItemResult#DESTROY_SUCCESS": {
       "address": "0x472e4f",
       "direction": "clientbound",

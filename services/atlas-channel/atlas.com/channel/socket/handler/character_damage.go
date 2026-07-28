@@ -159,9 +159,11 @@ func processDamageTaken(
 	// hit (Guardian, Fake/Shadow Shifter, GUARD, v95 Mechanic Perfect
 	// Armor) and applies zero HP loss. The old handler applied +1 HP.
 	if p.Damage() == -1 {
+		// DarkKnightId (132) is intentionally excluded here: it has no
+		// block skill (Achilles only, no Guardian/Shifter-style block).
 		plausible := p.Guard() ||
 			c.JobId() == job.HeroId || c.JobId() == job.PaladinId ||
-			c.JobId() == job.Id(412) || c.JobId() == job.Id(422)
+			c.JobId() == job.NightLordId || c.JobId() == job.ShadowerId
 		if !plausible {
 			if buffs, err := deps.getBuffs(characterId); err == nil {
 				plausible = extractBuffAmounts(buffs).guard

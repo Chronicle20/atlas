@@ -27,10 +27,11 @@ import (
 )
 
 type emissions struct {
-	hp       []int16
-	mp       []int16
-	meso     []int32
-	reflects []uint32
+	hp                 []int16
+	mp                 []int16
+	meso               []int32
+	reflects           []uint32
+	reflectAttackTypes []byte
 }
 
 func fakeDeps(em *emissions, buffs []buff.Model, skills []skill2.Model, eff effect.Model, mob monster.Model, tmpl monsterdata.Model) damageMitigationDeps {
@@ -52,8 +53,11 @@ func fakeDeps(em *emissions, buffs []buff.Model, skills []skill2.Model, eff effe
 			em.meso = append(em.meso, amount)
 			return nil
 		},
-		damageMonster: func(_ field.Model, _ uint32, _ uint32, damages []uint32, _ byte) error {
+		damageMonster: func(_ field.Model, _ uint32, _ uint32, damages []uint32, attackType byte) error {
 			em.reflects = append(em.reflects, damages...)
+			for range damages {
+				em.reflectAttackTypes = append(em.reflectAttackTypes, attackType)
+			}
 			return nil
 		},
 	}
@@ -138,6 +142,49 @@ func decodeDamagePacket(t *testing.T, tm tenant.Model, attackIdx packetmodel.Dam
 	} else {
 		w.WriteInt16(0) // obstacleData
 	}
+	w.WriteByte(0) // stanceFlags
+
+	req := request.Request(w.Bytes())
+	reader := request.NewRequestReader(&req, 0)
+	m := packetmodel.NewDamageTakenInfo(42)
+	m.Decode(l, ctx)(&reader, nil)
+	if reader.Available() != 0 {
+		t.Fatalf("test packet under-consumed: %d bytes left", reader.Available())
+	}
+	return m
+}
+
+// decodeMRDamagePacket produces a DamageTakenInfo carrying a Mana
+// Reflection-shaped reflect extension: a non-zero reflect echo with
+// isPowerGuard=false. decodeDamagePacket's withPGExt path cannot express
+// this — it hardcodes isPowerGuard=true — so this sibling helper mirrors
+// the same byte layout (GMS v83, no bGuard byte) with isPowerGuard forced
+// false.
+func decodeMRDamagePacket(t *testing.T, tm tenant.Model, attackIdx packetmodel.DamageType, damage int32, reflectEcho byte) packetmodel.DamageTakenInfo {
+	t.Helper()
+	ctx := tenant.WithContext(context.Background(), tm)
+	l, _ := test.NewNullLogger()
+
+	w := response.NewWriter(l)
+	w.WriteInt(uint32(12345))
+	w.WriteInt8(int8(attackIdx))
+	w.WriteInt8(0)
+	w.WriteInt32(damage)
+	w.WriteInt(uint32(200100)) // mobTemplateId
+	w.WriteInt(uint32(42))     // mobId
+	w.WriteBool(true)          // left
+	w.WriteByte(reflectEcho)   // reflect echo (non-zero => MR signal)
+	if tm.Region() == "GMS" && tm.MajorVersion() >= 95 {
+		w.WriteBool(false)
+	}
+	w.WriteByte(0)        // blockByte
+	w.WriteBool(false)    // isPowerGuard = false (Mana Reflection, not Power Guard)
+	w.WriteInt(uint32(0)) // reflectTargetMobId (not consulted by the MR gate)
+	w.WriteByte(3)        // hitAction
+	w.WriteInt16(100)
+	w.WriteInt16(200)
+	w.WriteInt16(110)
+	w.WriteInt16(210)
 	w.WriteByte(0) // stanceFlags
 
 	req := request.Request(w.Bytes())
@@ -298,5 +345,62 @@ func TestProcessDamageTakenAchillesPassive(t *testing.T) {
 
 	if len(em.hp) != 1 || em.hp[0] != -850 {
 		t.Fatalf("hp=%v, want [-850] (Achilles x=850)", em.hp)
+	}
+}
+
+// Forged Mana Reflection claim: the wire carries an MR-shaped reflect echo
+// (isPowerGuard=false, reflect echo > 0, mob magic attack) but the
+// character has no active MANA_REFLECTION buff — the claim is ignored,
+// full damage applies, nothing reflects.
+func TestProcessDamageTakenForgedManaReflectionIgnored(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tm := testTenantModel(t, "GMS", 83)
+	em := &emissions{}
+	deps := fakeDeps(em, nil, nil, effect.Model{}, monster.Model{}, monsterdata.Model{})
+
+	p := decodeMRDamagePacket(t, tm, packetmodel.DamageTypeMagic, 1000, 30)
+	c := testCharacter(t, job.Id(200), 100, 0, nil)
+	processDamageTaken(l, tm, damageTestField(), p, c, deps)
+
+	if len(em.reflects) != 0 {
+		t.Fatalf("reflects=%v, want none", em.reflects)
+	}
+	if len(em.hp) != 1 || em.hp[0] != -1000 {
+		t.Fatalf("hp=%v, want [-1000]", em.hp)
+	}
+}
+
+// Valid Mana Reflection: an active MANA_REFLECTION buff plus a mob magic
+// attack reflects the server-recomputed amount (raw * effect X / 100,
+// capped at maxHp/20) at the MAGIC attack type, without reducing the
+// caster's own damage (FR-10.3 — MR does not self-mitigate).
+func TestProcessDamageTakenManaReflectionEmitsReflect(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tm := testTenantModel(t, "GMS", 83)
+	em := &emissions{}
+	buffs := []buff.Model{activeBuff(charconst.TemporaryStatTypeManaReflection, 100)}
+	mob, err := monster.NewModelBuilder(42, damageTestField(), 200100).SetHp(50000).SetMaxHp(100000).Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	eff, err := effect.Extract(effect.RestModel{X: 30})
+	if err != nil {
+		t.Fatal(err)
+	}
+	deps := fakeDeps(em, buffs, nil, eff, mob, monsterdata.Model{})
+
+	p := decodeMRDamagePacket(t, tm, packetmodel.DamageTypeMagic, 1000, 30)
+	c := testCharacter(t, job.Id(200), 100, 0, nil)
+	processDamageTaken(l, tm, damageTestField(), p, c, deps)
+
+	// raw 1000 * X 30 / 100 = 300, well under the maxHp/20 = 5000 cap.
+	if len(em.reflects) != 1 || em.reflects[0] != 300 {
+		t.Fatalf("reflects=%v, want [300]", em.reflects)
+	}
+	if len(em.reflectAttackTypes) != 1 || em.reflectAttackTypes[0] != byte(packetmodel.AttackTypeMagic) {
+		t.Fatalf("reflectAttackTypes=%v, want [AttackTypeMagic]", em.reflectAttackTypes)
+	}
+	if len(em.hp) != 1 || em.hp[0] != -1000 {
+		t.Fatalf("hp=%v, want [-1000] (Mana Reflection does not self-mitigate)", em.hp)
 	}
 }

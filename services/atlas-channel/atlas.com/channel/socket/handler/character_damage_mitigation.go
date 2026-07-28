@@ -59,7 +59,15 @@ type mitigationInput struct {
 	// clamp / PG invincibility-zero / MR MaxHP/20 cap client-side; the
 	// server applies all three universally since they only bound a reflect
 	// downward — safe, so no v48-specific gate is added.)
-	magicShieldOnReducedDamage bool  // MajorVersion >= 87: base is damage minus the Magic Guard portion
+	// magicShieldOnReducedDamage: MajorVersion >= 87 — base is damage
+	// minus the Magic Guard portion (else base is raw damage, the v83
+	// form). The gate is region-agnostic, so it also resolves true for
+	// JMS 185; that >=87 form is a RETAINED design-phase finding (design
+	// §3 / plan §7 finding 6), not one re-corroborated against the
+	// legacy/JMS IDBs — the form is stat-cookie-driven and the legacy
+	// immediate-search pass could not re-confirm it there. Treat this as
+	// an unverified gate for JMS, not a verified one.
+	magicShieldOnReducedDamage bool
 	pgCapDivisor               int32 // 2 on GMS >= 95, else 10 (IDA-verified across all 10 columns)
 	pgFixedDamageOverride      bool  // GMS >= 95 or JMS: template fixedDamage replaces the reflect instead of min()
 }

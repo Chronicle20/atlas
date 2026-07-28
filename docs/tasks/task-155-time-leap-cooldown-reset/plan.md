@@ -1,6 +1,6 @@
 # Time Leap Cooldown Reset (Buccaneer 5121010) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Casting Time Leap clears every active skill cooldown — except Time Leap's own — for the caster and in-range party members, with each cleared cooldown reflected on the affected client.
 
@@ -48,7 +48,7 @@
 - Consumes: existing `TenantRegistry.GetAllEntries(ctx, t) (map[string]time.Time, error)` (`libs/atlas-redis/tenant_registry.go:175`); existing test harness `setupCooldownRegistryTest(t)` / `setupCooldownTestTenant(t)` / `cooldownTestCtx(ten)` already in `cooldown_registry_test.go`.
 - Produces: `func (r *Registry) GetAllForCharacter(ctx context.Context, characterId uint32) (map[uint32]time.Time, error)` — skillId → expiresAt for the current tenant. Task 2 calls this.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `services/atlas-skills/atlas.com/skills/skill/cooldown_registry_test.go` (internal test package `skill` — it can reach the private `reg` field for the malformed-suffix fixture):
 
@@ -117,12 +117,12 @@ func TestGetAllForCharacter_SkipsMalformedSuffixes(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run (from `services/atlas-skills/atlas.com/skills`): `go test ./skill/ -run TestGetAllForCharacter -v`
 Expected: FAIL to compile with `r.GetAllForCharacter undefined`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Add to `services/atlas-skills/atlas.com/skills/skill/cooldown_registry.go` (after `ClearAll`; `strconv`, `strings`, `time` are already imported):
 
@@ -154,17 +154,17 @@ func (r *Registry) GetAllForCharacter(ctx context.Context, characterId uint32) (
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `go test ./skill/ -run TestGetAllForCharacter -v`
 Expected: all four tests PASS.
 
-- [ ] **Step 5: Run the full package to catch regressions**
+- [x] **Step 5: Run the full package to catch regressions**
 
 Run: `go test -race ./skill/...`
 Expected: PASS (existing `ClearAll`/`GetAll` tests unchanged).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-skills/atlas.com/skills/skill/cooldown_registry.go services/atlas-skills/atlas.com/skills/skill/cooldown_registry_test.go
@@ -187,7 +187,7 @@ git commit -m "feat(skills): add per-character cooldown enumeration to registry"
   - `CommandTypeResetCooldowns = "RESET_COOLDOWNS"` and `ResetCooldownsBody{ExceptSkillIds []uint32; SourceSkillId uint32}` in `kafka/message/skill` — Task 3 consumes.
   - `Processor.ResetCooldowns(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, exceptSkillIds []uint32) ([]uint32, error)` and `Processor.ResetCooldownsAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, exceptSkillIds []uint32) ([]uint32, error)` — Task 3 consumes `ResetCooldownsAndEmit`.
 
-- [ ] **Step 1: Add the message types**
+- [x] **Step 1: Add the message types**
 
 In `services/atlas-skills/atlas.com/skills/kafka/message/skill/kafka.go`, extend the command const block:
 
@@ -215,7 +215,7 @@ type ResetCooldownsBody struct {
 }
 ```
 
-- [ ] **Step 2: Write the failing processor tests**
+- [x] **Step 2: Write the failing processor tests**
 
 Append to `services/atlas-skills/atlas.com/skills/skill/processor_test.go` (external package `skill_test`; `message`, `skill`, `test`, `world`, `uuid`, `logtest` already imported). Add `encoding/json` and `skillmsg "atlas-skills/kafka/message/skill"` to the imports.
 
@@ -378,12 +378,12 @@ func TestResetCooldowns_MultipleExceptions(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run (from `services/atlas-skills/atlas.com/skills`): `go test ./skill/ -run TestResetCooldowns -v`
 Expected: FAIL to compile with `processor.ResetCooldowns undefined`.
 
-- [ ] **Step 4: Implement the processor methods**
+- [x] **Step 4: Implement the processor methods**
 
 In `services/atlas-skills/atlas.com/skills/skill/processor.go`, add to the `Processor` interface after `SetCooldownAndEmit`:
 
@@ -453,7 +453,7 @@ func (p *ProcessorImpl) ResetCooldownsAndEmit(transactionId uuid.UUID, worldId w
 }
 ```
 
-- [ ] **Step 5: Update the mock**
+- [x] **Step 5: Update the mock**
 
 In `services/atlas-skills/atlas.com/skills/skill/mock/processor.go`, add (extend the import block with `"github.com/Chronicle20/atlas/libs/atlas-constants/world"` and `"github.com/google/uuid"`):
 
@@ -473,17 +473,17 @@ func (m *ProcessorMock) ResetCooldownsAndEmit(transactionId uuid.UUID, worldId w
 
 Note: `ProcessorMock` is already **not** a complete `Processor` implementation on merged `main` — its `SetCooldownAndEmit`/`CreateAndEmit`/etc. predate the `transactionId`/`worldId` interface signatures, and `main` has since added `TransferSp`/`DeleteForSagaCompensation` to the interface that the mock also does not implement. There is no compile-time `var _ Processor = (*ProcessorMock)(nil)` assertion, so this does not break the build and the tests in this plan use the **real** `skill.NewProcessor`, not the mock. Do NOT rewrite the existing mock methods — only add the two new methods, matching the real interface exactly (adding them keeps the mock forward-usable; it does not make the mock interface-complete).
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `go test ./skill/... -run TestResetCooldowns -v`
 Expected: all four tests PASS.
 
-- [ ] **Step 7: Run the whole module**
+- [x] **Step 7: Run the whole module**
 
 Run: `go test -race ./... && go vet ./...`
 Expected: PASS/clean (existing `ClearAll` consumer tests must be untouched).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add services/atlas-skills/atlas.com/skills/kafka/message/skill/kafka.go services/atlas-skills/atlas.com/skills/skill/processor.go services/atlas-skills/atlas.com/skills/skill/mock/processor.go services/atlas-skills/atlas.com/skills/skill/processor_test.go
@@ -502,7 +502,7 @@ git commit -m "feat(skills): add RESET_COOLDOWNS processor methods and message t
 - Consumes: `skill.NewProcessor(l, ctx, db).ResetCooldownsAndEmit(transactionId, worldId, characterId, exceptSkillIds) ([]uint32, error)` (Task 2); `skill2.CommandTypeResetCooldowns` / `skill2.ResetCooldownsBody` (Task 2).
 - Produces: `handleCommandResetCooldowns(db *gorm.DB) message.Handler[skill2.Command[skill2.ResetCooldownsBody]]`, registered on the `EnvCommandTopic` handler chain in `InitHandlers`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `services/atlas-skills/atlas.com/skills/kafka/consumer/skill/consumer_internal_test.go`. Internal package (`package skill`) because the handler funcs are unexported; the existing `consumer_test.go` stays external (`skill_test`) and untouched.
 
@@ -598,12 +598,12 @@ func TestHandleCommandResetCooldowns_ClearsRegistry(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run (from `services/atlas-skills/atlas.com/skills`): `go test ./kafka/consumer/skill/ -run TestHandleCommandResetCooldowns -v`
 Expected: FAIL to compile with `undefined: handleCommandResetCooldowns`.
 
-- [ ] **Step 3: Implement the handler and register it**
+- [x] **Step 3: Implement the handler and register it**
 
 In `services/atlas-skills/atlas.com/skills/kafka/consumer/skill/consumer.go`, add after `handleCommandSetCooldown`:
 
@@ -635,17 +635,17 @@ Register it in `InitHandlers` after the `handleCommandSetCooldown` registration:
 			}
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `go test ./kafka/consumer/skill/ -v`
 Expected: both new tests PASS and every pre-existing consumer test still PASSES (regression gate for the logout/death `ClearAll` path).
 
-- [ ] **Step 5: Run the whole module**
+- [x] **Step 5: Run the whole module**
 
 Run: `go test -race ./... && go vet ./... && go build ./...`
 Expected: clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-skills/atlas.com/skills/kafka/consumer/skill/consumer.go services/atlas-skills/atlas.com/skills/kafka/consumer/skill/consumer_internal_test.go
@@ -670,7 +670,7 @@ git commit -m "feat(skills): consume RESET_COOLDOWNS commands"
   - `ResetCooldownsCommandProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, exceptSkillIds []uint32, sourceSkillId uint32) model.Provider[[]kafka.Message]` in `atlas-channel/data/skill`.
   - `Processor.ResetCooldowns(transactionId uuid.UUID, f field.Model, exceptSkillIds []uint32, sourceSkillId uint32) model.Operator[uint32]` on `atlas-channel/character/skill` — Task 5 consumes this.
 
-- [ ] **Step 1: Write the failing producer test**
+- [x] **Step 1: Write the failing producer test**
 
 Create `services/atlas-channel/atlas.com/channel/data/skill/producer_test.go` (internal package `skill`; the unaliased `"atlas-channel/kafka/message/skill"` import shadows the package name, same as `producer.go`):
 
@@ -730,12 +730,12 @@ func TestResetCooldownsCommandProvider_EncodesEnvelopeAndBody(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test ./data/skill/ -v`
 Expected: FAIL to compile with `undefined: ResetCooldownsCommandProvider`.
 
-- [ ] **Step 3: Upgrade the message mirror**
+- [x] **Step 3: Upgrade the message mirror**
 
 Replace the command section of `services/atlas-channel/atlas.com/channel/kafka/message/skill/kafka.go`:
 
@@ -783,7 +783,7 @@ type ResetCooldownsBody struct {
 
 Leave the status-event section of the file exactly as it is.
 
-- [ ] **Step 4: Add the command provider**
+- [x] **Step 4: Add the command provider**
 
 Append to `services/atlas-channel/atlas.com/channel/data/skill/producer.go` (extend imports with `"github.com/Chronicle20/atlas/libs/atlas-constants/world"` and `"github.com/google/uuid"`):
 
@@ -804,7 +804,7 @@ func ResetCooldownsCommandProvider(transactionId uuid.UUID, worldId world.Id, ch
 }
 ```
 
-- [ ] **Step 5: Add the processor method**
+- [x] **Step 5: Add the processor method**
 
 In `services/atlas-channel/atlas.com/channel/character/skill/processor.go`, add to the `Processor` interface (extend imports with `"github.com/google/uuid"`):
 
@@ -825,17 +825,17 @@ func (p *ProcessorImpl) ResetCooldowns(transactionId uuid.UUID, f field.Model, e
 }
 ```
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `go test ./data/skill/ ./character/skill/ ./kafka/message/skill/ -v`
 Expected: `TestResetCooldownsCommandProvider_EncodesEnvelopeAndBody` PASS, no other failures.
 
-- [ ] **Step 7: Build the whole module (envelope-change ripple check)**
+- [x] **Step 7: Build the whole module (envelope-change ripple check)**
 
 Run: `go build ./... && go vet ./...`
 Expected: clean. If any other file constructs `skill.Command[...]` positionally it will fail here — fix by switching that construction to named fields (all known call sites already use named fields).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/message/skill/kafka.go services/atlas-channel/atlas.com/channel/data/skill/producer.go services/atlas-channel/atlas.com/channel/data/skill/producer_test.go services/atlas-channel/atlas.com/channel/character/skill/processor.go
@@ -855,7 +855,7 @@ git commit -m "feat(channel): RESET_COOLDOWNS command plumbing with transaction-
 - Consumes: `channelhandler.Register(id skill2.Id, h Handler)` / `channelhandler.Lookup` (`skill/handler/registry.go`); `channelhandler.SelectInRangePartyMembers(l, ctx, f, casterId, casterX, casterY, e, memberBitmap) []channelhandler.PartyRecipient` (`recipients.go:94` — returns nil on missing rect); `channelhandler.PartyRecipient.Id() uint32`; `skillproc.NewProcessor(l, ctx).ResetCooldowns(transactionId, f, exceptSkillIds, sourceSkillId) model.Operator[uint32]` (Task 4); `character.NewProcessor(l, ctx).GetById()(characterId)`.
 - Produces: registered handler for `skill2.BuccaneerTimeLeapId`, dispatched from `UseSkill` (`skill/handler/common.go:117`) after MP charge and Time Leap's own `SET_COOLDOWN` — the handler adds ONLY the reset emission (PRD FR-4; the socket handler already broadcasts the cast effect).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `services/atlas-channel/atlas.com/channel/skill/handler/timeleap/timeleap_test.go` (internal package `timeleap`, seam-swap with `t.Cleanup` restore — pattern: `mysticdoor_test.go`):
 
@@ -1050,12 +1050,12 @@ func TestTimeLeapRegistered(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test ./skill/handler/timeleap/ -v`
 Expected: FAIL to compile — package `timeleap` does not exist yet.
 
-- [ ] **Step 3: Write the handler**
+- [x] **Step 3: Write the handler**
 
 Create `services/atlas-channel/atlas.com/channel/skill/handler/timeleap/timeleap.go`:
 
@@ -1198,7 +1198,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 }
 ```
 
-- [ ] **Step 4: Register the package**
+- [x] **Step 4: Register the package**
 
 In `services/atlas-channel/atlas.com/channel/skill/handler/registrations/registrations.go`, **insert** the `timeleap` blank import in alphabetical position among the existing imports (main has grown this list to six entries — heal, healdispel, hide, mprecovery, mysticdoor, resurrection — so this is an insertion, not a replacement; keep the existing entries and their comments untouched). The resulting block:
 
@@ -1214,17 +1214,17 @@ import (
 )
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `go test ./skill/handler/... -v`
 Expected: all 7 new timeleap tests PASS; existing handler/heal/mysticdoor tests unchanged and PASSING.
 
-- [ ] **Step 6: Run the whole module**
+- [x] **Step 6: Run the whole module**
 
 Run: `go test -race ./... && go vet ./... && go build ./...`
 Expected: clean.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/skill/handler/timeleap/ services/atlas-channel/atlas.com/channel/skill/handler/registrations/registrations.go
@@ -1241,7 +1241,7 @@ git commit -m "feat(channel): Time Leap handler resets cooldowns for caster and 
 - Consumes: everything above.
 - Produces: the evidence required before this branch may be called done (CLAUDE.md Build & Verification + PRD acceptance criteria).
 
-- [ ] **Step 1: atlas-skills module gate**
+- [x] **Step 1: atlas-skills module gate**
 
 Run (from `services/atlas-skills/atlas.com/skills`):
 
@@ -1251,7 +1251,7 @@ go test -race ./... && go vet ./... && go build ./...
 
 Expected: all clean. Existing logout/death `ClearAll` consumer tests pass unchanged (PRD acceptance).
 
-- [ ] **Step 2: atlas-channel module gate**
+- [x] **Step 2: atlas-channel module gate**
 
 Run (from `services/atlas-channel/atlas.com/channel`):
 
@@ -1261,7 +1261,7 @@ go test -race ./... && go vet ./... && go build ./...
 
 Expected: all clean.
 
-- [ ] **Step 3: Docker bake both services**
+- [x] **Step 3: Docker bake both services**
 
 Run from the worktree root (`.worktrees/task-155-time-leap-cooldown-reset`):
 
@@ -1271,7 +1271,7 @@ docker buildx bake atlas-skills atlas-channel
 
 Expected: both images build. This is mandatory — `go build` against `go.work` cannot catch Dockerfile `COPY libs/...` gaps. (No new libs were added, but the gate is non-optional.)
 
-- [ ] **Step 4: Repo-root guards (all clean)**
+- [x] **Step 4: Repo-root guards (all clean)**
 
 Run from the repo root (NOT prefixed with `GOWORK=off`):
 
@@ -1284,7 +1284,7 @@ tools/lint.sh --check           # gofumpt + goimports; run `tools/lint.sh` (fix)
 
 Expected: all clean. `redis-key-guard`, `goroutine-guard`, and `outbox-guard` should pass without code changes (the design introduces no raw keyed Redis access, no bare goroutines, and no in-transaction producer calls). `lint.sh --check` is the most likely to flag the new `timeleap` package or the channel producer's `skill`/`skill2`/`skill3` import aliasing — if it does, run `tools/lint.sh` (fix mode) to rewrite in place, then re-stage and amend the offending commit before proceeding.
 
-- [ ] **Step 5: Confirm worktree/branch integrity**
+- [x] **Step 5: Confirm worktree/branch integrity**
 
 ```bash
 git rev-parse --show-toplevel   # must end with .worktrees/task-155-time-leap-cooldown-reset
@@ -1292,7 +1292,7 @@ git branch --show-current       # must be task-155-time-leap-cooldown-reset
 git status --short              # must be clean (all work committed)
 ```
 
-- [ ] **Step 6: Check off the PRD acceptance criteria that are code-verifiable**
+- [x] **Step 6: Check off the PRD acceptance criteria that are code-verifiable**
 
 Unit-verifiable now: processor reset-with-exclusions incl. no-op (Task 2), registry prefix safety 100 vs 1000 (Task 1), channel recipient selection + command emission (Task 5), `ClearAll` regression (Task 3 Step 4). The live-client criteria (cooldown UI clearing without relog, cross-map isolation) are exercised at deploy time, after PR review.
 

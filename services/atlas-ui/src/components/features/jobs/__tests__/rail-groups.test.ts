@@ -1,9 +1,39 @@
 import { describe, it, expect } from "vitest";
+import { JOB_GRAPH } from "@/lib/jobs/job-advancement-tree";
 import {
   RAIL_GROUPS,
   branchEntryOf,
   visibleRailGroups,
 } from "@/components/features/jobs/rail-groups";
+
+/** Every id in the graph — the "modern tenant has everything" case. */
+const ALL_IDS: ReadonlySet<number> = new Set(
+  Object.values(JOB_GRAPH).map((e) => e.id),
+);
+
+/** Everything except the Evan branch — a tenant whose ingest predates Evan. */
+const NO_EVAN: ReadonlySet<number> = new Set(
+  [...ALL_IDS].filter((id) => id !== 2001 && !(id >= 2200 && id <= 2218)),
+);
+
+/** A legacy tenant: the four launch-era explorer branches + the GM line only. */
+const LAUNCH_ERA: ReadonlySet<number> = new Set([
+  0, 100, 110, 111, 112, 120, 121, 122, 130, 131, 132, 200, 210, 211, 212, 220,
+  221, 222, 230, 231, 232, 300, 310, 311, 312, 320, 321, 322, 400, 410, 411,
+  412, 420, 421, 422, 900, 910,
+]);
+
+/** LAUNCH_ERA plus the Pirate branch. */
+const WITH_PIRATE: ReadonlySet<number> = new Set([
+  ...LAUNCH_ERA,
+  500,
+  510,
+  511,
+  512,
+  520,
+  521,
+  522,
+]);
 
 describe("RAIL_GROUPS", () => {
   it("defines the four labeled groups with the PRD's entries in order", () => {
@@ -48,35 +78,37 @@ describe("branchEntryOf", () => {
 });
 
 describe("visibleRailGroups", () => {
-  it("gates entries by version floor and drops empty groups (GMS v12)", () => {
-    const groups = visibleRailGroups(12);
+  it("gates entries by the tenant job set and drops empty groups (legacy tenant)", () => {
+    const groups = visibleRailGroups(LAUNCH_ERA);
     expect(groups.map((g) => g.label)).toEqual(["Explorers", "Special"]);
     expect(groups[0]!.entries.map((e) => e.id)).toEqual([100, 200, 300, 400]); // no Pirate
-    expect(groups[1]!.entries.map((e) => e.id)).toEqual([900]); // no Brigadier (v83)
+    expect(groups[1]!.entries.map((e) => e.id)).toEqual([900]); // no Brigadier
   });
 
-  it("adds Pirate at v62, Cygnus/Aran/Brigadier at v83, Evan at v84", () => {
-    expect(visibleRailGroups(62)[0]!.entries.map((e) => e.id)).toContain(500);
-    const v83 = visibleRailGroups(83);
-    expect(v83.map((g) => g.label)).toEqual([
+  it("adds Pirate, Cygnus/Aran/Brigadier, and Evan as the tenant's job set grows", () => {
+    expect(
+      visibleRailGroups(WITH_PIRATE)[0]!.entries.map((e) => e.id),
+    ).toContain(500);
+    const noEvan = visibleRailGroups(NO_EVAN);
+    expect(noEvan.map((g) => g.label)).toEqual([
       "Explorers",
       "Cygnus Knights",
       "Legends",
       "Special",
     ]);
-    expect(v83[2]!.entries.map((e) => e.id)).toEqual([2000]); // Evan hidden
-    expect(v83[3]!.entries.map((e) => e.id)).toEqual([800, 900]);
-    expect(visibleRailGroups(84)[2]!.entries.map((e) => e.id)).toEqual([
+    expect(noEvan[2]!.entries.map((e) => e.id)).toEqual([2000]); // Evan absent
+    expect(noEvan[3]!.entries.map((e) => e.id)).toEqual([800, 900]);
+    expect(visibleRailGroups(ALL_IDS)[2]!.entries.map((e) => e.id)).toEqual([
       2000, 2001,
     ]);
   });
 
   it("decorates entries with display name and visible subtree count", () => {
-    const v83 = visibleRailGroups(83);
-    const warrior = v83[0]!.entries[0]!;
+    const noEvan = visibleRailGroups(NO_EVAN);
+    const warrior = noEvan[0]!.entries[0]!;
     expect(warrior.name).toBe("Warrior");
     expect(warrior.count).toBe(10);
-    const gm = v83[3]!.entries.find((e) => e.id === 900);
+    const gm = noEvan[3]!.entries.find((e) => e.id === 900);
     expect(gm?.name).toBe("GM");
     expect(gm?.count).toBe(2);
   });

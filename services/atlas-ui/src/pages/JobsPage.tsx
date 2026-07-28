@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Briefcase } from "lucide-react";
 import { useTenant } from "@/context/tenant-context";
+import { useJobs } from "@/lib/hooks/api/useJobs";
 import { useJobSkills } from "@/lib/hooks/api/useJobSkills";
 import { useJobSkillDefinitions } from "@/lib/hooks/api/useJobSkillDefinitions";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -12,7 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { JOB_GRAPH, floorOf } from "@/lib/jobs/job-advancement-tree";
+import { JOB_GRAPH } from "@/lib/jobs/job-advancement-tree";
 import {
   branchEntryOf,
   visibleRailGroups,
@@ -33,8 +34,20 @@ export function JobsPage() {
   const { activeTenant } = useTenant();
   const isWide = useMediaQuery("(min-width: 1150px)");
 
-  const major = activeTenant?.attributes.majorVersion ?? 0;
-  const groups = useMemo(() => visibleRailGroups(major), [major]);
+  const jobsQuery = useJobs(activeTenant);
+  // The tenant's actual job set, from GET /api/data/jobs. Empty while the query
+  // is pending — which is why every consumer below is gated on isSuccess rather
+  // than on the set being non-empty. TenantProvider calls queryClient.clear()
+  // on every tenant switch, so "pending with an empty set" is the state right
+  // after a switch, not an error.
+  const available = useMemo<ReadonlySet<number>>(
+    () => new Set((jobsQuery.data?.jobs ?? []).map((j) => Number(j.id))),
+    [jobsQuery.data],
+  );
+  const groups = useMemo(
+    () => (jobsQuery.isSuccess ? visibleRailGroups(available) : []),
+    [jobsQuery.isSuccess, available],
+  );
   const defaultJobId = groups[0]?.entries[0]?.id ?? 100;
 
   const parsedJobId = jobIdParam !== undefined ? Number(jobIdParam) : null;
@@ -42,16 +55,30 @@ export function JobsPage() {
     parsedJobId !== null &&
     Number.isInteger(parsedJobId) &&
     JOB_GRAPH[parsedJobId] !== undefined &&
-    floorOf(parsedJobId) <= major;
-  const jobId = jobIdValid ? parsedJobId : defaultJobId;
+    jobsQuery.isSuccess &&
+    available.has(parsedJobId);
+  // While the job set is pending the current jobId is retained: redirecting on
+  // an unknown set would bounce a valid /jobs/112 to /jobs on every tenant
+  // switch (design D10).
+  const jobId = jobIdValid
+    ? parsedJobId
+    : jobsQuery.isSuccess
+      ? defaultJobId
+      : (parsedJobId ?? defaultJobId);
 
-  // FR-1.2 / FR-7.3: unknown or version-hidden jobId (incl. after a tenant
-  // switch) normalizes to /jobs with replace, so Back doesn't bounce.
+  // FR-1.2 / FR-7.3: an unknown or tenant-absent jobId normalizes to /jobs with
+  // replace, so Back doesn't bounce. Gated on isSuccess so a pending or failed
+  // job-set query never triggers it.
   useEffect(() => {
-    if (activeTenant && parsedJobId !== null && !jobIdValid) {
+    if (
+      activeTenant &&
+      jobsQuery.isSuccess &&
+      parsedJobId !== null &&
+      !jobIdValid
+    ) {
       navigate("/jobs", { replace: true });
     }
-  }, [activeTenant, parsedJobId, jobIdValid, navigate]);
+  }, [activeTenant, jobsQuery.isSuccess, parsedJobId, jobIdValid, navigate]);
 
   const entry = branchEntryOf(jobId);
   const jobName = JOB_GRAPH[jobId]?.name ?? `Job ${jobId}`;
@@ -64,7 +91,10 @@ export function JobsPage() {
     isError: defsError,
   } = useJobSkillDefinitions(activeTenant, skillIds);
 
-  const loading = skillsQuery.isLoading || (skillIds.length > 0 && defsLoading);
+  const loading =
+    jobsQuery.isPending ||
+    skillsQuery.isLoading ||
+    (skillIds.length > 0 && defsLoading);
 
   const skillParam = searchParams.get("skill");
   const selectedSkillId = skillParam !== null ? Number(skillParam) : null;
@@ -109,6 +139,16 @@ export function JobsPage() {
             Select a tenant to browse its jobs and skills.
           </CardContent>
         </Card>
+      ) : jobsQuery.isError ? (
+        <Card>
+          <CardContent
+            data-testid="jobs-load-error"
+            className="py-10 text-center text-muted-foreground"
+          >
+            Could not load this tenant&apos;s job list. Check that atlas-data is
+            reachable and that this version has been ingested.
+          </CardContent>
+        </Card>
       ) : (
         <div
           className={cn(
@@ -122,6 +162,7 @@ export function JobsPage() {
             groups={groups}
             selectedEntryId={entry.id}
             onSelect={selectJob}
+            isPending={jobsQuery.isPending}
           />
 
           <Card className="flex min-h-0 flex-col">
@@ -131,7 +172,7 @@ export function JobsPage() {
             <div className="flex-none border-b px-4 pb-3.5">
               <AdvancementFlow
                 entryId={entry.id}
-                major={major}
+                available={available}
                 selectedJobId={jobId}
                 accent={entry.accent}
                 onSelect={selectJob}

@@ -3268,3 +3268,21 @@ func TestSkillReaderNonMountEmitsNoMonsterRiding(t *testing.T) {
 		t.Fatalf("non-mount skill should emit no MONSTER_RIDING statup, got %+v", got)
 	}
 }
+
+func TestParseJobId(t *testing.T) {
+	id, err := ParseJobId("112.img")
+	if err != nil {
+		t.Fatalf("ParseJobId(\"112.img\") returned error: %v", err)
+	}
+	if id != 112 {
+		t.Fatalf("ParseJobId(\"112.img\") = %d, want 112", id)
+	}
+
+	if _, err := ParseJobId("MobSkill.img"); err == nil {
+		t.Fatal("ParseJobId(\"MobSkill.img\") expected error, got nil")
+	}
+
+	if _, err := ParseJobId("112"); err == nil {
+		t.Fatal("ParseJobId(\"112\") expected error (missing .img suffix), got nil")
+	}
+}

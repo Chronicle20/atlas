@@ -1,17 +1,25 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
+import { JOB_GRAPH } from "@/lib/jobs/job-advancement-tree";
 import { AdvancementFlow } from "@/components/features/jobs/advancement-flow";
 
 function cell(id: number): HTMLElement {
   return screen.getByTestId(`flow-cell-${id}`);
 }
 
+/** Everything except the Evan branch — irrelevant to these fixtures. */
+const NO_EVAN: ReadonlySet<number> = new Set(
+  Object.values(JOB_GRAPH)
+    .map((e) => e.id)
+    .filter((id) => id !== 2001 && !(id >= 2200 && id <= 2218)),
+);
+
 describe("AdvancementFlow", () => {
   it("tier-aligns the Magician branch: same-tier jobs share a grid column", () => {
     render(
       <AdvancementFlow
         entryId={200}
-        major={83}
+        available={NO_EVAN}
         selectedJobId={200}
         accent="--c-magician"
         onSelect={() => {}}
@@ -37,7 +45,7 @@ describe("AdvancementFlow", () => {
     render(
       <AdvancementFlow
         entryId={900}
-        major={83}
+        available={NO_EVAN}
         selectedJobId={900}
         accent="--c-special"
         onSelect={() => {}}
@@ -57,7 +65,7 @@ describe("AdvancementFlow", () => {
     render(
       <AdvancementFlow
         entryId={100}
-        major={83}
+        available={NO_EVAN}
         selectedJobId={110}
         accent="--c-warrior"
         onSelect={onSelect}
@@ -71,11 +79,11 @@ describe("AdvancementFlow", () => {
     expect(onSelect).toHaveBeenCalledWith(120);
   });
 
-  it("omits version-hidden paths (no Pirate content below floor)", () => {
+  it("renders the Pirate branch when the tenant's job set includes it", () => {
     render(
       <AdvancementFlow
         entryId={500}
-        major={83}
+        available={NO_EVAN}
         selectedJobId={500}
         accent="--c-pirate"
         onSelect={() => {}}

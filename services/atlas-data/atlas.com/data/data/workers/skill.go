@@ -1,6 +1,7 @@
 package workers
 
 import (
+	"atlas-data/job"
 	"atlas-data/mobskill"
 	"atlas-data/skill"
 	"context"
@@ -53,6 +54,18 @@ func (Skill) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *min
 		l.WithError(err).Warnf("mobskill RegisterMobSkill failed")
 	}
 
+	// FR-2.1: the JOB pass folds into the SKILL worker rather than adding a
+	// data.Workers entry, exactly as mobskill does. It re-reads the same
+	// serialized Skill.wz tree, so monolithic-archive tenants (GMS v12's
+	// all-in-one Data.wz) are handled by the runtime's sub-view with no
+	// monolith-specific code (FR-2.5).
+	jobDocs := 0
+	jobRegister := countingRegister(&jobDocs, job.NewProcessor(l, ctx, db).RegisterJob)
+	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Skill.wz"), jobRegister); err != nil {
+		return err
+	}
+	logJobDocCount(l, jobDocs)
+
 	// Emit per-skill icons. Skill IDs live as SubProperty children of the
 	// "skill" SubProperty in each per-job .img.
 	prefix := minioAssetPrefix(p)
@@ -95,4 +108,30 @@ func (Skill) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *min
 	}
 	l.Infof("skill icons: scanned=%d extracted=%d uploaded=%d", scanned, extracted, uploaded)
 	return nil
+}
+
+// countingRegister adapts job.Processor.RegisterJob — which returns the number
+// of documents it wrote — to the RegisterFunc shape registerAllInDirectory
+// expects, accumulating the total into *total. A failing register contributes
+// nothing to the count.
+func countingRegister(total *int, rf func(path string) (int, error)) RegisterFunc {
+	return func(path string) error {
+		n, err := rf(path)
+		if err != nil {
+			return err
+		}
+		*total += n
+		return nil
+	}
+}
+
+// logJobDocCount emits the JOB-document ingest summary. A Skill.wz pass that
+// produced no JOB documents leaves /data/jobs empty for the tenant, so it
+// escalates to warn: silent success here is exactly the failure mode the
+// rejected transitional fallback would have hidden (PRD §8 Observability).
+func logJobDocCount(l logrus.FieldLogger, written int) {
+	l.Infof("job documents: written=%d", written)
+	if written == 0 {
+		l.Warnf("Skill.wz ingest produced no JOB documents; /data/jobs will be empty for this tenant")
+	}
 }

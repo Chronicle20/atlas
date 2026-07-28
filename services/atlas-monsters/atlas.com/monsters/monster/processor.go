@@ -64,7 +64,7 @@ type Processor interface {
 	CancelAllStatusEffects(uniqueId uint32) error
 	RepickAndEmit(uniqueId uint32, reason RepickReason) error
 	DrainMp(f field.Model, uniqueId uint32, characterId uint32, skillId uint32, requestedAmount uint32) error
-	Kill(uniqueId uint32, characterId uint32, skillId uint32)
+	Kill(uniqueId uint32, characterId uint32)
 }
 
 // emitter publishes a kafka message provider to a topic. ProcessorImpl uses
@@ -1720,14 +1720,14 @@ func (p *ProcessorImpl) DrainMp(f field.Model, uniqueId uint32, characterId uint
 //
 // The boss check uses testInformationLookup when non-nil so unit tests can
 // stub the lookup without an HTTP round-trip to atlas-data.
-func (p *ProcessorImpl) Kill(uniqueId uint32, characterId uint32, skillId uint32) {
+func (p *ProcessorImpl) Kill(uniqueId uint32, characterId uint32) {
 	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
 	if err != nil {
-		p.l.Debugf("KILL: monster [%d] not found; the triggering attack likely already killed it. Skill [%d].", uniqueId, skillId)
+		p.l.Debugf("KILL: monster [%d] not found; the triggering attack likely already killed it.", uniqueId)
 		return
 	}
 	if !m.Alive() {
-		p.l.Debugf("KILL: monster [%d] already dead. Skill [%d].", uniqueId, skillId)
+		p.l.Debugf("KILL: monster [%d] already dead.", uniqueId)
 		return
 	}
 
@@ -1743,11 +1743,11 @@ func (p *ProcessorImpl) Kill(uniqueId uint32, characterId uint32, skillId uint32
 		return
 	}
 	if info.Boss() {
-		p.l.Debugf("KILL: monster [%d] is a boss; dropping kill from character [%d] skill [%d].", uniqueId, characterId, skillId)
+		p.l.Debugf("KILL: monster [%d] is a boss; dropping kill from character [%d].", uniqueId, characterId)
 		return
 	}
 
-	p.l.Debugf("Mortal Blow kill: monster [%d] by character [%d] via skill [%d].", uniqueId, characterId, skillId)
+	p.l.Debugf("Mortal Blow kill: monster [%d] by character [%d].", uniqueId, characterId)
 	p.damageCore(m, characterId, []uint32{math.MaxUint32})
 }
 

@@ -89,11 +89,17 @@ type DrainMpCommandBody struct {
 // (hp ≤ maxHp·x/100) and kill-chance (roll ≤ y) decisions; atlas-monsters
 // re-checks alive + boss (fail-closed) and delivers the kill through the
 // standard damage path so EXP and drops credit the attacker like a normal
-// kill. SkillId is carried for traceability/logging only — atlas-monsters
-// does not resolve it.
+// kill.
+//
+// No skillId is carried: atlas-monsters never resolves it, the channel
+// already logs it locally at proc time, and the trace id correlates the
+// two services. Critically, the monster command topic fans every message
+// to every registered handler, each json-unmarshalling the body into its
+// own type; a large job-skill id (e.g. 3110001) would overflow the
+// byte-typed skillId in sibling bodies (useSkillCommandBody) and log a
+// spurious unmarshal error per proc. Keep this body minimal.
 type KillCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
-	SkillId     uint32 `json:"skillId"`
 }
 
 const (

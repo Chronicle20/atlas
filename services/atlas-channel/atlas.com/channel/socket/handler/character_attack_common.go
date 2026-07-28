@@ -413,7 +413,7 @@ func isMortalBlowAttack(at packetmodel.AttackType, skillId uint32) bool {
 // rand.Intn(100)+1.
 type mortalBlowDeps struct {
 	getMonster func(monsterId uint32) (monster.Model, error)
-	emitKill   func(f field.Model, monsterId uint32, characterId uint32, skillId uint32) error
+	emitKill   func(f field.Model, monsterId uint32, characterId uint32) error
 	// roll returns a uniform integer in [1,100].
 	roll func() int
 }
@@ -467,7 +467,7 @@ func mortalBlowTryProc(
 	}
 
 	l.Debugf("Mortal Blow proc: caster=[%d] skill=[%d] monster=[%d] roll=[%d].", characterId, skillId, monsterId, roll)
-	if err := deps.emitKill(f, monsterId, characterId, skillId); err != nil {
+	if err := deps.emitKill(f, monsterId, characterId); err != nil {
 		l.WithError(err).Errorf("Mortal Blow: KILL emit failed for monster [%d] caster [%d].", monsterId, characterId)
 	}
 }

@@ -37,7 +37,7 @@ func TestKill_NonBoss_KilledAndRemoved(t *testing.T) {
 	uniqueId := m.UniqueId()
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
-	p.Kill(uniqueId, 42, 3110001)
+	p.Kill(uniqueId, 42)
 
 	if len(*events) != 2 {
 		t.Fatalf("expected 2 events (DAMAGED, KILLED), got %d: %v", len(*events), *events)
@@ -90,7 +90,7 @@ func TestKill_Boss_Dropped(t *testing.T) {
 	uniqueId := m.UniqueId()
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
-	p.Kill(uniqueId, 42, 3110001)
+	p.Kill(uniqueId, 42)
 
 	if len(*events) != 0 {
 		t.Fatalf("expected 0 events for boss kill attempt, got %d: %v", len(*events), *events)
@@ -125,7 +125,7 @@ func TestKill_InfoLookupError_DroppedFailClosed(t *testing.T) {
 	uniqueId := m.UniqueId()
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
-	p.Kill(uniqueId, 42, 3110001)
+	p.Kill(uniqueId, 42)
 
 	if len(*events) != 0 {
 		t.Fatalf("expected 0 events on info-lookup error (fail-closed), got %d: %v", len(*events), *events)
@@ -149,7 +149,7 @@ func TestKill_MissingMonster_NoOp(t *testing.T) {
 	r.Clear(ctx)
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
-	p.Kill(99999999, 42, 3110001)
+	p.Kill(99999999, 42)
 
 	if len(*events) != 0 {
 		t.Fatalf("expected 0 events for missing monster, got %d: %v", len(*events), *events)
@@ -179,7 +179,7 @@ func TestKill_DeadMonster_NoOp(t *testing.T) {
 	}
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
-	p.Kill(uniqueId, 42, 3110001)
+	p.Kill(uniqueId, 42)
 
 	if len(*events) != 0 {
 		t.Fatalf("expected 0 events for dead monster, got %d: %v", len(*events), *events)

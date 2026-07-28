@@ -106,10 +106,14 @@ type drainMpCommandBody struct {
 // killCommandBody asks the processor to kill a monster outright as the
 // result of a player passive (Mortal Blow). The channel already rolled
 // the threshold and kill chance; the processor re-checks alive + boss
-// (fail-closed). SkillId is carried for traceability/logging only.
+// (fail-closed).
+//
+// No skillId field: it is never resolved here, and because every handler
+// on this shared command topic json-unmarshals every message, a large
+// job-skill id would overflow the byte-typed skillId in sibling bodies
+// (useSkillCommandBody) and log a spurious unmarshal error per proc.
 type killCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
-	SkillId     uint32 `json:"skillId"`
 }
 
 // addPuppetCommand registers a player's puppet in a field so the monster

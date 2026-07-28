@@ -180,7 +180,7 @@ func handleKillCommand(l logrus.FieldLogger, ctx context.Context, c command[kill
 	}
 
 	p := monster.NewProcessor(l, ctx)
-	p.Kill(c.MonsterId, c.Body.CharacterId, c.Body.SkillId)
+	p.Kill(c.MonsterId, c.Body.CharacterId)
 }
 
 func handleAddPuppetCommand(l logrus.FieldLogger, ctx context.Context, c addPuppetCommand) {

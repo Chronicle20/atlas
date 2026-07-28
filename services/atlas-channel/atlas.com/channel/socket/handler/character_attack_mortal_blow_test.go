@@ -132,7 +132,7 @@ func TestMortalBlowTryProc_InertEffectSkipsSnapshotFetch(t *testing.T) {
 				fetched = true
 				return monster.Model{}, nil
 			},
-			emitKill: func(field.Model, uint32, uint32, uint32) error {
+			emitKill: func(field.Model, uint32, uint32) error {
 				t.Fatal("emitKill must not be called for inert effect")
 				return nil
 			},
@@ -152,7 +152,7 @@ func TestMortalBlowTryProc_SnapshotErrorSwallowed(t *testing.T) {
 		getMonster: func(uint32) (monster.Model, error) {
 			return monster.Model{}, errors.New("monster gone")
 		},
-		emitKill: func(field.Model, uint32, uint32, uint32) error {
+		emitKill: func(field.Model, uint32, uint32) error {
 			t.Fatal("emitKill must not be called on snapshot error")
 			return nil
 		},
@@ -166,7 +166,7 @@ func TestMortalBlowTryProc_SnapshotErrorSwallowed(t *testing.T) {
 func TestMortalBlowTryProc_AboveThresholdNoRoll(t *testing.T) {
 	deps := mortalBlowDeps{
 		getMonster: func(uint32) (monster.Model, error) { return mbMonster(t, 42, 201, 1000), nil },
-		emitKill: func(field.Model, uint32, uint32, uint32) error {
+		emitKill: func(field.Model, uint32, uint32) error {
 			t.Fatal("emitKill must not be called above threshold")
 			return nil
 		},
@@ -179,7 +179,7 @@ func TestMortalBlowTryProc_AboveThresholdNoRoll(t *testing.T) {
 func TestMortalBlowTryProc_RollFailNoEmit(t *testing.T) {
 	deps := mortalBlowDeps{
 		getMonster: func(uint32) (monster.Model, error) { return mbMonster(t, 42, 200, 1000), nil },
-		emitKill: func(field.Model, uint32, uint32, uint32) error {
+		emitKill: func(field.Model, uint32, uint32) error {
 			t.Fatal("emitKill must not be called on failed roll")
 			return nil
 		},
@@ -189,15 +189,17 @@ func TestMortalBlowTryProc_RollFailNoEmit(t *testing.T) {
 }
 
 // TestMortalBlowTryProc_ProcEmitsKill — at threshold with roll == y the
-// kill is emitted with the caster, monster, and skill id.
+// kill is emitted with the caster and monster. The skill id is not sent
+// over the KILL wire (traceability-only; see KillCommandBody), so the
+// emit seam no longer carries it.
 func TestMortalBlowTryProc_ProcEmitsKill(t *testing.T) {
-	var gotMonster, gotCharacter, gotSkill uint32
+	var gotMonster, gotCharacter uint32
 	emitted := false
 	deps := mortalBlowDeps{
 		getMonster: func(uint32) (monster.Model, error) { return mbMonster(t, 42, 200, 1000), nil },
-		emitKill: func(_ field.Model, monsterId uint32, characterId uint32, skillId uint32) error {
+		emitKill: func(_ field.Model, monsterId uint32, characterId uint32) error {
 			emitted = true
-			gotMonster, gotCharacter, gotSkill = monsterId, characterId, skillId
+			gotMonster, gotCharacter = monsterId, characterId
 			return nil
 		},
 		roll: func() int { return 5 }, // y=5 -> 5 procs
@@ -206,8 +208,8 @@ func TestMortalBlowTryProc_ProcEmitsKill(t *testing.T) {
 	if !emitted {
 		t.Fatal("expected KILL emit")
 	}
-	if gotMonster != 42 || gotCharacter != 7 || gotSkill != uint32(skill3.SniperMortalBlowId) {
-		t.Fatalf("emitKill(monster=%d, character=%d, skill=%d), want (42, 7, %d)", gotMonster, gotCharacter, gotSkill, uint32(skill3.SniperMortalBlowId))
+	if gotMonster != 42 || gotCharacter != 7 {
+		t.Fatalf("emitKill(monster=%d, character=%d), want (42, 7)", gotMonster, gotCharacter)
 	}
 }
 
@@ -216,7 +218,7 @@ func TestMortalBlowTryProc_ProcEmitsKill(t *testing.T) {
 func TestMortalBlowTryProc_EmitErrorSwallowed(t *testing.T) {
 	deps := mortalBlowDeps{
 		getMonster: func(uint32) (monster.Model, error) { return mbMonster(t, 42, 200, 1000), nil },
-		emitKill: func(field.Model, uint32, uint32, uint32) error {
+		emitKill: func(field.Model, uint32, uint32) error {
 			return errors.New("kafka down")
 		},
 		roll: func() int { return 1 },

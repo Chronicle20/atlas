@@ -77,7 +77,7 @@ func TestUseBasicAttackCommandProvider(t *testing.T) {
 // and a body carrying the caster and the Mortal Blow skill id.
 func TestKillCommandProvider(t *testing.T) {
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
-	prov := KillCommandProvider(f, 12345, 67, 3110001)
+	prov := KillCommandProvider(f, 12345, 67)
 
 	msgs, err := prov()
 	if err != nil {
@@ -99,8 +99,5 @@ func TestKillCommandProvider(t *testing.T) {
 	}
 	if cmd.Body.CharacterId != 67 {
 		t.Fatalf("Body.CharacterId = %d, want 67", cmd.Body.CharacterId)
-	}
-	if cmd.Body.SkillId != 3110001 {
-		t.Fatalf("Body.SkillId = %d, want 3110001", cmd.Body.SkillId)
 	}
 }

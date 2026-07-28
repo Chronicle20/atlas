@@ -63,20 +63,48 @@ tenant: no statup set, no MP cost, no cooldown value, so the mount cannot
 apply. Do the config backfill anyway, then record v95 live verification as
 BLOCKED — do not report it as verified.
 
-## Known blocker: GMS v92 SPECIAL_MOVE packet body shape is unconfirmed
+## RESOLVED: GMS v92 SPECIAL_MOVE packet body shape
 
-v92's `SPECIAL_MOVE` body appears to be `Encode4(time), Encode4(skillId),
-Encode1(SLV), Encode2(?), Encode2(?)` — a 5-byte trailer — where v95's is
-`Encode4(time), Encode4(skillId), Encode1(SLV), Encode1(FindParty),
-Encode2(0)`, a 4-byte trailer. Wiring the opcode (done in this task's
-template work, Step 3 above) gets the packet **routed**; it does not prove
-`SkillUsageInfo` **decodes** it correctly on v92. A decoder reading the
-wrong trailer length can silently succeed against garbage rather than
-failing loudly. Do the config backfill anyway, but **confirm
-`SkillUsageInfo` decoding actually matches v92's shape before reporting the
-v92 cast path working** — and if it does not, flag it rather than papering
-over it. Do not report v92 as verified on live evidence until that decode is
-confirmed.
+This was carried as an open blocker while the branch was in review. It has
+since been checked against the client and is **not** a defect — v92's cast
+path decodes correctly. Recorded here so the question is not re-opened.
+
+The original concern was that v92's `SPECIAL_MOVE` body looked like
+`Encode4(time), Encode4(skillId), Encode1(SLV), Encode2(?), Encode2(?)` —
+a 5-byte trailer — where v95's looked like `... Encode1(FindParty),
+Encode2(0)`, a 4-byte trailer, implying `SkillUsageInfo` might silently
+decode garbage on v92.
+
+**That comparison was between two different senders, not two versions.**
+`SPECIAL_MOVE` (v92 opcode `0x66`) has no single per-version body: the
+trailer is chosen **per skill category**. Read out of `GMS_v92_1_DEVM.exe`,
+v92 alone carries at least three distinct shapes:
+
+| v92 sender | body after the opcode | bytes |
+|---|---|---|
+| `sub_91B8C0` (ctor `0x91B9B6`) | `Encode4`(time) `Encode4`(skillId) `Encode1`(SLV) | 9 |
+| `sub_91B630` (ctor `0x91B7C2`) | + `Encode2`(castX) `Encode2`(castY) | 13 |
+| `sub_91B130` | + `Encode2`(x) `Encode2`(y) `Encode1` `Encode1` | 15+ |
+
+Every v92 sender shares the same 9-byte prefix — `Encode4(update_time),
+Encode4(skillId), Encode1(SLV)` — and so does v95's real
+`CUserLocal::DoActiveSkill_Heal` (`0x93A830`). The decoder is gated on skill
+id, not on version, and Battleship (5221006) is in none of
+`isAntiRepeatBuffSkill` / `isPartyBuff` / `isMobAffectingBuff`, so it
+consumes exactly that 9-byte prefix and stops. The skill-use handler reads
+nothing after `SkillUsageInfo`, so any longer trailer is inert.
+
+Pinned by `TestDecodeCorsairBattleshipV92Prefix` in
+`libs/atlas-packet/model/skill_usage_info_test.go`, which asserts both the
+bare 9-byte body and the 13-byte castX/castY body decode to the same
+skill id and level.
+
+**Trap for anyone re-treading this:** v92's `sub_91B630` was labelled
+`DoActiveSkill_Heal` by propagation from v95. It is not — it contains no
+`FindParty` call and writes castX/castY where v95's real Heal writes
+`Encode1(FindParty)` + `Encode2(0)`. Comparing those two functions is what
+produced the incorrect belief that v92's body diverged. Do not trust a v92
+symbol name propagated from v95 without checking the body.
 
 ## Ship HP is version-dependent
 

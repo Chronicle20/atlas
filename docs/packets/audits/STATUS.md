@@ -400,9 +400,9 @@ Tool: `bb7ef5945ed2f38de09e0f193a867582e04c4cb1771d7deafddb02802e9b8591`
 | CASHSHOP_NOTICE_FREE_CASH_ITEM | CCashShop::OnNoticeFreeCashItem |  |  | ⬜ | 0x0FD | ❌ | 0x121 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | CASHSHOP_ONE_A_DAY | CCashShop::OnOneADay |  |  | ⬜ | 0x0FE | ❌ | 0x122 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | IDA_0X0FE | CCashShop::OnNoticeFreeCashItem |  | 0x0FE | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
-| CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashBuyFailed (T1) |  | ⬜ | 0x0FF | 🧩 | 0x123 | 🧩 | 0x12F | 🧩 | 0x145 | 🧩 | 0x14C | 🧩 | 0x156 | 🧩 | 0x180 | 🧩 | 0x164 | 🧩 |
+| CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashBuyFailed (T1) |  | ⬜ | 0x0FF | ✅ | 0x123 | ✅ | 0x12F | ✅ | 0x145 | ✅ | 0x14C | ✅ | 0x156 | ✅ | 0x180 | ✅ | 0x164 | ✅ |
 | IDA_0X0FF | CCashShop::OnOneADay |  | 0x0FF | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
-| CASHSHOP_CASH_ITEM_RESULT | CCashShop::OnCashItemResult | cash/clientbound/CashBuyFailed (T1) | 0x100 | 🧩 |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
+| CASHSHOP_CASH_ITEM_RESULT | CCashShop::OnCashItemResult | cash/clientbound/CashBuyFailed (T1) | 0x100 | ✅ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | CASHSHOP_CASH_ITEM_GACHAPON_RESULT | CCashShop::OnCashItemGachaponResult |  | 0x101 | ❌ | 0x100 | ❌ | 0x124 | ❌ |  | ⬜ | 0x14D | ❌ | 0x154 | ❌ | 0x15E | ❌ | 0x188 | ❌ | 0x16D | ❌ |
 | CASHSHOP_CHECK_NAME_CHANGE | CCashShop::OnCheckDuplicatedIDResult; CCashShop::OnCheckNameChangePossibleResult; sub_455A7F; sub_463900; sub_473519 |  | 0x102 | ❌ | 0x101 | ❌ | 0x125 | ❌ | 0x131 | ❌ | 0x148 | ❌ | 0x14F | ❌ | 0x159 | ❌ | 0x183 | ❌ |  | ⬜ |
 | CASHSHOP_GACHAPON_STAMP_RESULT | CCashShop::OnCashShopGachaponStampResult |  | 0x103 | ❌ | 0x102 | ❌ | 0x126 | ❌ | 0x135 | ❌ | 0x14C | ❌ | 0x153 | ❌ | 0x15D | ❌ | 0x187 | ❌ | 0x16B | ❌ |
@@ -998,15 +998,15 @@ Tool: `bb7ef5945ed2f38de09e0f193a867582e04c4cb1771d7deafddb02802e9b8591`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 176 | 1 | 2 | 158 | 626 | 0 | 52.2% |
-| v61 | 252 | 1 | 60 | 191 | 459 | 0 | 50.0% |
-| v72 | 262 | 1 | 73 | 210 | 417 | 0 | 48.0% |
-| v79 | 306 | 1 | 72 | 206 | 378 | 0 | 52.3% |
-| v83 | 426 | 1 | 0 | 313 | 223 | 0 | 57.6% |
-| v84 | 399 | 1 | 0 | 320 | 243 | 0 | 55.4% |
-| v87 | 434 | 1 | 0 | 342 | 186 | 0 | 55.9% |
-| v95 | 459 | 1 | 0 | 401 | 102 | 0 | 53.3% |
-| JMS185 | 411 | 1 | 0 | 358 | 193 | 0 | 53.4% |
+| v48 | 177 | 0 | 2 | 158 | 626 | 0 | 52.5% |
+| v61 | 253 | 0 | 60 | 191 | 459 | 0 | 50.2% |
+| v72 | 263 | 0 | 73 | 210 | 417 | 0 | 48.2% |
+| v79 | 307 | 0 | 72 | 206 | 378 | 0 | 52.5% |
+| v83 | 427 | 0 | 0 | 313 | 223 | 0 | 57.7% |
+| v84 | 400 | 0 | 0 | 320 | 243 | 0 | 55.6% |
+| v87 | 435 | 0 | 0 | 342 | 186 | 0 | 56.0% |
+| v95 | 460 | 0 | 0 | 401 | 102 | 0 | 53.4% |
+| JMS185 | 412 | 0 | 0 | 358 | 193 | 0 | 53.5% |
 
 ## Conflicts
 

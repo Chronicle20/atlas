@@ -173,6 +173,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x35",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDamageHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x37",
         "validator": "LoggedInValidator",
         "handler": "CharacterChatGeneralHandle",

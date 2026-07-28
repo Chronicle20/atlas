@@ -4,6 +4,7 @@ import (
 	skill2 "atlas-skills/kafka/message/skill"
 	"atlas-skills/skill"
 	"atlas-skills/test"
+	"os"
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
@@ -12,7 +13,13 @@ import (
 	logtest "github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 )
+
+func TestMain(m *testing.M) {
+	producertest.InstallNoop()
+	os.Exit(m.Run())
+}
 
 func setupResetConsumerTest(t *testing.T) {
 	t.Helper()
@@ -48,10 +55,9 @@ func TestHandleCommandResetCooldowns_TypeGuard(t *testing.T) {
 	}
 }
 
-// Happy path: cooldowns cleared except the exclusion list. The Kafka emit
-// step fails in the test environment (no broker/env topic) AFTER the
-// registry mutation, which is the documented partial-success behavior —
-// assert on registry state only.
+// Happy path: cooldowns cleared except the exclusion list. TestMain installs
+// a noop Kafka producer, so the emit step succeeds; this test asserts on
+// registry state only, which is all the handler's return value reflects.
 func TestHandleCommandResetCooldowns_ClearsRegistry(t *testing.T) {
 	setupResetConsumerTest(t)
 	db := test.SetupTestDB(t)

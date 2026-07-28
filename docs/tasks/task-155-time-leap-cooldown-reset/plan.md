@@ -20,8 +20,21 @@
 - **Module roots** (run `go test`/`go vet`/`go build` from these):
   - `services/atlas-skills/atlas.com/skills`
   - `services/atlas-channel/atlas.com/channel`
-- **Final verification gate** (CLAUDE.md, mandatory before claiming done): `go test -race ./...`, `go vet ./...`, `go build ./...` clean in both modules; `docker buildx bake atlas-skills atlas-channel` from the worktree root; `tools/redis-key-guard.sh` clean from the repo root.
+- **Final verification gate** (CLAUDE.md, mandatory before claiming done): `go test -race ./...`, `go vet ./...`, `go build ./...` clean in both modules; `docker buildx bake atlas-skills atlas-channel` from the worktree root; `tools/redis-key-guard.sh`, `tools/goroutine-guard.sh`, `tools/outbox-guard.sh`, and `tools/lint.sh --check` all clean from the repo root. **Run `tools/lint.sh` (fix mode) before every commit** — main (post-task-171) enforces gofumpt + goimports tree-wide, and the new `timeleap` package + the `skill`/`skill2`/`skill3` import aliasing in the channel producer are format-sensitive; an unformatted commit fails CI.
 - **Worktree:** all work happens in `.worktrees/task-155-time-leap-cooldown-reset` on branch `task-155-time-leap-cooldown-reset`. Verify `git branch --show-current` after each commit.
+
+---
+
+## Reconciliation with `main` (post-merge, 2026-07-28)
+
+`main` was merged into this branch after the plan was written (185 commits, incl. the legacy-version bring-ups v48/v61/v72/v79 and the task-171 lint guard). The merge was conflict-free. Verified against the merged tree, **all file paths, function signatures, and code patterns this plan hard-codes still hold** — `SelectInRangePartyMembers`, the `handler.Handler` type + `common.go` `Lookup` dispatch, `PartyRecipient`/`NewPartyRecipientBuilder().SetId()`, `character.Model.X()/Y()` + `GetById()`, the mysticdoor package-level seam pattern, the channel `ApplyCooldown` producer idiom, and atlas-skills' `statusEventCooldownExpiredProvider(transactionId, worldId, characterId, id)` / `Registry.GetAllEntries` / `SetCooldownAndEmit(transactionId, worldId, …)` interface / `InitHandlers` registration idiom. The channel-side `Command[E]` still lacks `TransactionId`/`WorldId` (Task 4's envelope upgrade is still required and correct), and `SetCooldownCommandProvider` is the only channel-side `Command` constructor and uses named fields (envelope-change ripple is safe).
+
+**Legacy versions require no feature change — the task is version-safe by construction:**
+
+- **Decode is skill-id-gated, not client-version-gated.** `SkillUsageInfo.Decode` (`libs/atlas-packet/model/skill_usage_info.go`) reads the affected-party bitmap under `isPartyBuff(skillId)`; `BuccaneerTimeLeapId` is a member of all three relevant membership lists (`isPartyBuff`, `isAntiRepeatBuffSkill`, `isMobAffectingBuff`), with no `MajorVersion`/`MajorAtLeast` gate. The bitmap therefore decodes on every version that routes `USE_SKILL` through this shared decoder — the legacy bring-ups did not touch this path.
+- **Time Leap (5121010) is a Buccaneer (pirate 4th-job) skill.** Pre-pirate legacy versions **v48/v61/v72 have no Buccaneer**, so the skill can never be cast there → the registered handler is simply never invoked → no seed-template routing, no version gate, and no code change is needed for those columns. **v79** (post-pirate) supports the skill and runs the handler identically to v83+.
+- **Graceful degradation, never a break.** If any version routes `USE_SKILL` through a separate decoder that does not populate the party bitmap, `AffectedPartyMemberBitmap()` returns 0 → the party selector yields no members → Time Leap resets the caster only (FR-5). This is the intended fallback, not a failure.
+- **Zero seed-template changes.** Time Leap is a server-side effect on the already-routed `USE_SKILL` opcode, not a new opcode. None of `main`'s new legacy template files need a Time Leap entry, and `tools/template-opcode-order-guard.sh` is **not** triggered (no template under `services/atlas-configurations/seed-data/templates/` is touched). Likewise `tools/service-registration-guard.sh` is not triggered (no `services.json`/k8s/`go.work` change).
 
 ---
 
@@ -458,7 +471,7 @@ func (m *ProcessorMock) ResetCooldownsAndEmit(transactionId uuid.UUID, worldId w
 }
 ```
 
-Note: the existing mock methods (`CreateAndEmit` etc.) use an older curried shape that predates the `transactionId`/`worldId` interface signatures. Do NOT rewrite them — only add the two new methods, matching the real interface exactly.
+Note: `ProcessorMock` is already **not** a complete `Processor` implementation on merged `main` — its `SetCooldownAndEmit`/`CreateAndEmit`/etc. predate the `transactionId`/`worldId` interface signatures, and `main` has since added `TransferSp`/`DeleteForSagaCompensation` to the interface that the mock also does not implement. There is no compile-time `var _ Processor = (*ProcessorMock)(nil)` assertion, so this does not break the build and the tests in this plan use the **real** `skill.NewProcessor`, not the mock. Do NOT rewrite the existing mock methods — only add the two new methods, matching the real interface exactly (adding them keeps the mock forward-usable; it does not make the mock interface-complete).
 
 - [ ] **Step 6: Run tests to verify they pass**
 
@@ -1187,13 +1200,17 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 
 - [ ] **Step 4: Register the package**
 
-In `services/atlas-channel/atlas.com/channel/skill/handler/registrations/registrations.go`, add the blank import:
+In `services/atlas-channel/atlas.com/channel/skill/handler/registrations/registrations.go`, **insert** the `timeleap` blank import in alphabetical position among the existing imports (main has grown this list to six entries — heal, healdispel, hide, mprecovery, mysticdoor, resurrection — so this is an insertion, not a replacement; keep the existing entries and their comments untouched). The resulting block:
 
 ```go
 import (
-	_ "atlas-channel/skill/handler/heal"       // Cleric Heal — task 045
-	_ "atlas-channel/skill/handler/mysticdoor" // Priest Mystic Door — task-093
-	_ "atlas-channel/skill/handler/timeleap"   // Buccaneer Time Leap — task-155
+	_ "atlas-channel/skill/handler/heal"         // Cleric Heal — task 045
+	_ "atlas-channel/skill/handler/healdispel"   // SuperGM Heal + Dispel — task-156
+	_ "atlas-channel/skill/handler/hide"         // SuperGM Hide — task-156
+	_ "atlas-channel/skill/handler/mprecovery"   // Brawler MP Recovery — task-151
+	_ "atlas-channel/skill/handler/mysticdoor"   // Priest Mystic Door — task-093
+	_ "atlas-channel/skill/handler/resurrection" // Bishop/GM/SuperGM Resurrection — task-111
+	_ "atlas-channel/skill/handler/timeleap"     // Buccaneer Time Leap — task-155
 )
 ```
 
@@ -1254,15 +1271,18 @@ docker buildx bake atlas-skills atlas-channel
 
 Expected: both images build. This is mandatory — `go build` against `go.work` cannot catch Dockerfile `COPY libs/...` gaps. (No new libs were added, but the gate is non-optional.)
 
-- [ ] **Step 4: Redis key guard**
+- [ ] **Step 4: Repo-root guards (all clean)**
 
 Run from the repo root (NOT prefixed with `GOWORK=off`):
 
 ```bash
-tools/redis-key-guard.sh
+tools/redis-key-guard.sh        # all new Redis access stays inside the Registry wrapper
+tools/goroutine-guard.sh        # handler + processors are synchronous — no bare `go`
+tools/outbox-guard.sh           # producer emits are outside any DB transaction (mirrors ApplyCooldown)
+tools/lint.sh --check           # gofumpt + goimports; run `tools/lint.sh` (fix) first if this flags anything
 ```
 
-Expected: clean — all new Redis access went through the existing `Registry` wrapper.
+Expected: all clean. `redis-key-guard`, `goroutine-guard`, and `outbox-guard` should pass without code changes (the design introduces no raw keyed Redis access, no bare goroutines, and no in-transaction producer calls). `lint.sh --check` is the most likely to flag the new `timeleap` package or the channel producer's `skill`/`skill2`/`skill3` import aliasing — if it does, run `tools/lint.sh` (fix mode) to rewrite in place, then re-stage and amend the offending commit before proceeding.
 
 - [ ] **Step 5: Confirm worktree/branch integrity**
 

@@ -188,6 +188,7 @@ func main() {
 
 	rc := atlas.Connect(l)
 	controllernpc.InitRegistry(rc)
+	battleship.InitRegistry(rc)
 
 	validatorMap := produceValidators()
 	handlerMap := produceHandlers()

@@ -1805,7 +1805,12 @@
       {
         "opCode": "0x20",
         "writer": "CharacterBuffGive",
-        "services": ["channel"]
+        "services": ["channel"],
+        "options": {
+          "vehicles": {
+            "CORSAIR_BATTLESHIP": 1932000
+          }
+        }
       },
       {
         "opCode": "0x21",
@@ -2842,7 +2847,12 @@
       {
         "opCode": "0xF0",
         "writer": "CharacterSkillCooldown",
-        "services": ["channel"]
+        "services": ["channel"],
+        "options": {
+          "skills": {
+            "BATTLESHIP_HP_GAUGE": 5221999
+          }
+        }
       },
       {
         "opCode": "0xF2",

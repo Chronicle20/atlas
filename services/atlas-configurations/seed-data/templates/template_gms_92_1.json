@@ -173,6 +173,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x35",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDamageHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x37",
         "validator": "LoggedInValidator",
         "handler": "CharacterChatGeneralHandle",
@@ -222,6 +228,12 @@
         "opCode": "0x5B",
         "validator": "LoggedInValidator",
         "handler": "TeleportRockUseHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x66",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterUseSkillHandle",
         "services": ["channel"]
       },
       {
@@ -517,6 +529,21 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x21",
+        "writer": "CharacterBuffGive",
+        "services": ["channel"],
+        "options": {
+          "vehicles": {
+            "CORSAIR_BATTLESHIP": 1932000
+          }
+        }
+      },
+      {
+        "opCode": "0x22",
+        "writer": "CharacterBuffCancel",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x2B",
         "writer": "MapTransferResult",
         "services": ["channel"],
@@ -696,6 +723,26 @@
         "opCode": "0xE1",
         "writer": "CharacterAppearanceUpdate",
         "services": ["channel"]
+      },
+      {
+        "opCode": "0xE3",
+        "writer": "CharacterBuffGiveForeign",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xE4",
+        "writer": "CharacterBuffCancelForeign",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x112",
+        "writer": "CharacterSkillCooldown",
+        "services": ["channel"],
+        "options": {
+          "skills": {
+            "BATTLESHIP_HP_GAUGE": 5221999
+          }
+        }
       },
       {
         "opCode": "0x114",

@@ -292,6 +292,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x27",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDamageHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x29",
         "validator": "LoggedInValidator",
         "handler": "CharacterChatGeneralHandle",
@@ -430,6 +436,12 @@
         "opCode": "0x55",
         "validator": "LoggedInValidator",
         "handler": "CharacterDistributeSpHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x56",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterUseSkillHandle",
         "services": ["channel"]
       },
       {
@@ -1631,7 +1643,12 @@
       {
         "opCode": "0x1E",
         "writer": "CharacterBuffGive",
-        "services": ["channel"]
+        "services": ["channel"],
+        "options": {
+          "vehicles": {
+            "CORSAIR_BATTLESHIP": 1932000
+          }
+        }
       },
       {
         "opCode": "0x1F",
@@ -2569,7 +2586,12 @@
       {
         "opCode": "0xFB",
         "writer": "CharacterSkillCooldown",
-        "services": ["channel"]
+        "services": ["channel"],
+        "options": {
+          "skills": {
+            "BATTLESHIP_HP_GAUGE": 5221999
+          }
+        }
       },
       {
         "opCode": "0xFD",

@@ -10,8 +10,8 @@
 
 ## Global Constraints
 
-- Skill ids: Battleship = 5221006, Cannon = 5221007, Torpedo = 5221008 (constants `skill.CorsairBattleshipId` etc. already exist in `libs/atlas-constants/skill/constants.go:3231-3233`).
-- Ship HP formula: `400 × skillLevel + max(charLevel − 120, 0) × 200` (Cosmic parity; PRD FR-2.2).
+- Skill ids: Battleship = 5221006, Cannon = 5221007, Torpedo = 5221008 (constants `skill.CorsairBattleshipId` etc. already exist in `libs/atlas-constants/skill/constants.go:3236-3238`).
+- Ship HP formula is **version-dependent** — see [§ Post-merge reconciliation](#post-merge-reconciliation-2026-07-28). `major < 87`: `200 × (charLevel + 2×SLV − 120)`, floored at 0. `major >= 87`: `300 × charLevel + 500 × (SLV − 72)`, floored at 0. Both mirror the client's own `get_max_durability_of_vehicle`, so the gauge denominator matches.
 - Wire values 5221999 (gauge pseudo-skill id) and 1932000 (vehicle item id) MUST be config-resolved per tenant (DOM-25 / PRD FR-7.2). No literal 5221999/1932000 anywhere under `services/` or `libs/atlas-constants`.
 - Cooldown applies ONLY on break — never on cast, manual dismount, expiry, or logout (FR-2.3/FR-4.3). Cooldown duration comes from effect data (`e.Cooldown()`), not a hardcoded 90.
 - Ship HP state resets every ride: exists only while riding; "riding but no state" = lazily re-init to full (FR-3.3/FR-5.3).
@@ -21,6 +21,181 @@
 - Test setup uses the project Builder/seam patterns — no `*_testhelpers.go` files.
 - Immutable models, `NewProcessor(l, ctx)` processor pattern, `tenant.MustFromContext(ctx)`.
 - Commit after every task; all work on branch `task-153-corsair-battleship` in its worktree.
+
+---
+
+## Post-merge reconciliation (2026-07-28)
+
+`main` was merged into this branch after the plan was written (185 commits). The
+merge itself was conflict-free, but it invalidated several of the plan's premises.
+Everything below was **verified this session** — against the opcode registry, the
+seed templates, the live `atlas-main` tenants' ingested WZ data, and the per-version
+IDBs. Do not re-derive these from memory; re-verify from the cited source if in doubt.
+
+### R-1. Version set grew from 6 to 11
+
+`deploy/k8s/base/versions.json` now lists 11 versions and
+`services/atlas-configurations/seed-data/templates/` holds 11 templates
+(`gms_12/48/61/72/79/83/84/87/92/95`, `jms_185`). The live `atlas-main` environment
+has **10 tenants** — every version except `gms_12`.
+
+The PRD's "provisioned versions (GMS v83, v84, v87, v92, v95, JMS v185)" (FR-7.1) is
+stale in both directions: it omits the four legacy versions, and it assumed the newer
+four were usable when they are not.
+
+### R-2. Per-version feasibility matrix
+
+| version | skill 5221006 in WZ | `CharacterUseSkillHandle` (cast) | `CharacterDamageHandle` (drain) | buff/cooldown writers | client gauge sentinel `5221999` | client ship max-HP formula |
+|---|---|---|---|---|---|---|
+| gms_12 | no live tenant | – | – | none | no IDB | – |
+| gms_48 | **absent (HTTP 404)** | – | 0x27 | BuffGive/Cancel only | **absent** | **absent** |
+| gms_61 | ✓ 10 levels | 0x53 | 0x2D | all 5 | ✓ | `200×(charLvl + 2×SLV − 120)` |
+| gms_72 | ✓ 10 levels | 0x5A | 0x2F | all 5 | ✓ | same |
+| gms_79 | ✓ 10 levels | 0x59 | 0x2E | all 5 | ✓ | same |
+| gms_83 | ✓ 10 levels | 0x5B | 0x30 | all 5 | ✓ | same |
+| gms_84 | ✓ 10 levels | 0x5B | 0x30 | all 5 | ✓ | same |
+| gms_87 | ✓ 10 levels | **missing** | **missing** | all 5 | ✓ | **`300×charLvl + 500×(SLV − 72)`** |
+| gms_92 | ✓ 10 levels | **missing** | **missing** | **none** | ✓ | **new formula** |
+| gms_95 | name only — **`effects: []`** | **missing** | **missing** | all 5 | ✓ | **new formula** |
+| jms_185 | ✓ 10 levels | **missing** | **missing** | all 5 | ✓ | **new formula** |
+
+Sources: WZ column = `GET /api/data/skills/5221006` against each live tenant
+(tenant headers) on `atlas-data`; handler/writer columns = the seed templates;
+sentinel and formula columns = the IDBs (below).
+
+### R-3. Battleship does not exist before v61
+
+`gms_v48` returns **404** for skill 5221006, and the v48 binary contains **zero**
+references to either `5221006` (`0x4FAA8E`) or the gauge sentinel `5221999`
+(`0x4FAE6F`) — against 15 and 3 respectively in v61. The Corsair Battleship is
+**n/a for gms_12 and gms_48**; those two templates get no battleship config and no
+verification cell. This is a content-absence finding, not a wiring gap.
+
+### R-4. The client ship max-HP formula changed at v87 — the design missed this
+
+The client renders the gauge as *remaining ÷ its own computed max*. That max comes
+from `get_max_durability_of_vehicle(nSkillID, nSLV, nCharLevel)` — PDB-named in the
+v95 IDB, which pins the argument order. Decompiled in every IDB:
+
+| version | address | body |
+|---|---|---|
+| gms_v61 | `sub_652742` | `200 * (a3 + 2*a2 - 120)` |
+| gms_v72 | `sub_6B654D` | `200 * (a3 + 2*a2 - 120)` |
+| gms_v79 | `sub_6E5883` | `200 * (a3 + 2*a2 - 120)` |
+| gms_v83 | `sub_7665F1` | `200 * (a3 + 2*a2 - 120)` |
+| gms_v84 | `sub_788A31` | `200 * (a3 + 2*a2 - 120)` |
+| gms_v87 | `0x7B331D` (`get_max_durability_of_vehicle`) | **`300 * a3 + 500 * (a2 - 72)`** |
+| gms_v92 | `sub_6E2030` | **`300 * a3 + 500 * (a2 - 72)`** |
+| gms_v95 | `0x6ED704` (`get_max_durability_of_vehicle`) | **`300 * a3 + 500 * (a2 - 72)`** |
+| jms_v185 | `sub_7DC77D` | **`300 * a3 + 500 * (a2 - 72)`** |
+
+Cosmic's `400×SLV + max(charLvl−120,0)×200` — the PRD's FR-2.2 formula — expands to
+`200×charLvl + 400×SLV − 24000`, i.e. it equals the **old** client formula for
+charLvl ≥ 120 and is simply wrong for v87 and later. Shipping one formula would make
+the gauge misrender on four versions (lvl 200 / SLV 10: server 20 000 vs. client max
+29 000 — the bar sits at ~69 % on a full ship and the ship "breaks" with the bar
+still showing fuel).
+
+**Decision (owner, 2026-07-28): version-gate both formulas.** Task 6 implements both
+arms; see R-8.
+
+### R-5. `maxLevel` is 10 on every version — the 28 000 clamp constant is wrong
+
+Battleship is `maxLevel: 10` on all nine tenants that have it (not 30). Recompute the
+gauge clamp bound accordingly: the true ceiling is the **new** formula at SLV 10 /
+charLvl 200 = **29 000**, not the 28 000 the plan's Task 9 test asserts. It still fits
+`uint16` (65 535), so the defensive clamp itself stands — only the comment and the
+"formula max fits" case value change.
+
+### R-6. v61 has per-level cooldowns
+
+`gms_v61` skill data carries **ten distinct `cooldown` values — 90, 120, 150, 180,
+210, 240, 270, 300, 330, 360** — where v72 and later are a flat 90 at every level.
+The plan already reads the cooldown from effect data (`e.Cooldown()`), so no code
+change is needed; but the PRD §4.1 claim "`cooltime=90` at **every** level" is a
+v72+ fact, not a universal one, and no test may hardcode 90 as the expected cooldown
+for v61.
+
+### R-7. v95 has no ingested skill effects at all
+
+`gms_v95` returns `maxLevel: 0, effects: []` for 5221006 — and for every other skill
+probed (5221004, 5221007, 5221008, 5121000, 1001003). This is a **tenant-wide v95 WZ
+ingestion gap**, not battleship-specific, and it predates this task. Consequence: even
+after the v95 handlers are wired (Task 11), the feature cannot be exercised on the v95
+tenant until v95 skill data is ingested — `GetEffect` yields nothing, so there is no
+statup set, no MP cost, and no cooldown value. Record this in the backfill runbook as
+a blocked verification, and do not report v95 as verified on live evidence.
+
+### R-8. Owner decisions taken on the reconciliation
+
+1. **Version scope** — wire the missing `CharacterUseSkillHandle` /
+   `CharacterDamageHandle` for gms_87, gms_92, gms_95 and jms_185 as part of this task
+   (Task 11), rather than scoping the feature to v61–v84. These are core inbound
+   opcodes whose absence blocks far more than battleship.
+2. **HP formula** — version-gate both formulas (R-4) so the gauge is correct on every
+   version, rather than shipping Cosmic parity everywhere.
+
+### R-9. Stale code anchors — every line reference in this plan was re-pinned
+
+`main` moved essentially all of them (`character_attack_common.go` alone grew by 543
+lines). Corrected anchors, verified post-merge:
+
+| plan said | actual (post-merge) |
+|---|---|
+| `constants.go:3231-3233` | `constants.go:3236-3238` |
+| `registry_test.go:16` (`setupTestRedis`) | `registry_test.go:17` |
+| `opcodes.WriterConfig` @ `config.go:12` | `config.go:24` (`:12` is `HandlerConfig.OpCode`) |
+| `<ch>/go.mod:82` replace; "+ atlas-redis require" | require already at `go.mod:11`, replace at `go.mod:97` — **the go.mod step is now a no-op** |
+| `character/buff/processor.go:20` (`Cancel`) | interface `:22`, impl `:63` |
+| `character/skill/processor.go:45` (`ApplyCooldown`) | `:53` |
+| `data/skill/processor.go:34` (`GetEffect`) | interface `:15`, impl `:37` |
+| `data/skill/effect/rest.go:45` (`Cooldown`) | unchanged — still `:45` |
+| `mount.go:22` (`MountBuffDuration`) / `:61` (`tamedMountStatups`) | `:23` / `:62` |
+| `mount_test.go:72` (`mountInfo`) / `:76-82` (`mountEffect`) | `:73` / `:77` |
+| `session/processor.go:330` (`Destroy`) | `:405` |
+| `kafka/consumer/buff/consumer.go:63` (inline `MustFromContext`) | `handleStatusEventApplied` at `:114`, the `IsWorld(tenant.MustFromContext(ctx), …)` line at `:120` |
+| `skill/handler/common.go:99` (`skillId :=`) | `:143` |
+| `character_skill_use.go:70` (skill-level validation) | block **starts** at `:70` |
+| `character_damage.go:31` (the TODO) / `:43` (`ChangeHP`) | `:32` / `:44` |
+| `character_attack_common.go:283` (`skill3` alias) / `:290` (ownership rejection) | import `:27` / `Destroy(s)` at `:660` |
+| `services/atlas-mounts/atlas.com/mounts/main.go:51-52` | unchanged |
+| `<ch>/main.go` evictor `~287` / `buildListener` `~404` | `RegisterEvictor` `:281`, `buildListener` `:351`, `Socket.Writers` use `:390` |
+
+Re-confirm each anchor immediately before editing — treat the table as a starting
+point, not as gospel, since the branch will move as tasks land.
+
+### R-10. Task 3's test fixture asserts a wrong hex constant
+
+The plan's Task 3 fixture uses `"CORSAIR_BATTLESHIP": "0x1D7B60", // 1932000`.
+**`0x1D7B60` is 1 932 128.** 1 932 000 is **`0x1D7AE0`**. As written the test fails.
+Fixed in Task 3 below. (For the record: `5221006` = `0x4FAA8E`, `5221999` =
+`0x4FAE6F`, `1932000` = `0x1D7AE0`.)
+
+### R-11. New repo guards the plan predates
+
+`main` added four guards that this task must satisfy and that the plan's Task 12
+verification list omits:
+
+- `tools/template-opcode-order-guard.sh` — handler and writer arrays must be in
+  **strictly ascending `opCode` order**. Task 11 originally said to *append* the v92
+  writers; new entries must instead be **inserted at their sorted position**.
+- `tools/lint.sh --check` — golangci-lint v2 formatters + `standard` linters across
+  every Go module (run `tools/lint.sh` with no flags to fix in place before committing).
+- `tools/goroutine-guard.sh` — bare `go` statements banned outside `libs/atlas-routine`.
+- `tools/service-registration-guard.sh` — only if service registration lists change
+  (this task does not touch them, but run it if that changes).
+
+Also note every template handler entry needs a `validator`; an entry without one is
+silently dropped at listener build.
+
+### R-12. v92 now has an IDB — the design's "unverified" caveat is resolved
+
+Design §1.1 recorded v92's gauge as unverifiable for want of an IDB. One exists now
+(`GMS_v92_1_DEVM.exe`). `CUserLocal::OnSkillCooltimeSet` @ `0x8EF260` carries
+`if (v2 == &byte_4FAE6F) v5 = v9;` — the same 5221999 special case as every other
+version. v92's gauge is **verified**, not bracketed.
+
+---
 
 ## File Structure
 
@@ -40,7 +215,7 @@
 | `services/atlas-channel/.../socket/handler/character_damage.go` (modify) | drain + gauge announce (replaces the `// TODO decrease battleship hp`) |
 | `services/atlas-channel/.../socket/handler/character_attack_common.go` (modify) | Cannon/Torpedo riding gate |
 | `services/atlas-channel/.../main.go` (modify) | Redis connect, mirror/options eviction, options registration |
-| `services/atlas-configurations/seed-data/templates/*.json` (modify) | options tables ×6; v92 writer wiring |
+| `services/atlas-configurations/seed-data/templates/*.json` (modify) | options tables ×9 (gms_61…jms_185); v92's 5 missing writers; the 8 missing cast/damage handlers on gms_87/92/95/jms_185 — see R-2 |
 | `docs/tasks/task-153-corsair-battleship/backfill.md` (create) | live-tenant config backfill runbook |
 
 Service paths below abbreviate `services/atlas-channel/atlas.com/channel/` as `<ch>/`.
@@ -136,7 +311,7 @@ git commit -m "feat(constants): classify Corsair Battleship as a mount skill"
 - Test: `libs/atlas-redis/counter_test.go`
 
 **Interfaces:**
-- Consumes: existing `tenantEntityKey(namespace, t, entityKey)` from `libs/atlas-redis/keys.go`, `setupTestRedis(t)` from `libs/atlas-redis/registry_test.go:16` (miniredis).
+- Consumes: existing `tenantEntityKey(namespace, t, entityKey)` from `libs/atlas-redis/keys.go`, `setupTestRedis(t)` from `libs/atlas-redis/registry_test.go:17` (miniredis).
 - Produces:
   - `func NewTenantCounter(client *goredis.Client, namespace string) *TenantCounter`
   - `func (c *TenantCounter) Set(ctx context.Context, t tenant.Model, key string, value int64, ttl time.Duration) error`
@@ -415,7 +590,7 @@ func TestResolveValueValid(t *testing.T) {
 			"BATTLESHIP_HP_GAUGE": float64(5221999),
 		},
 		"vehicles": map[string]interface{}{
-			"CORSAIR_BATTLESHIP": "0x1D7B60", // 1932000
+			"CORSAIR_BATTLESHIP": "0x1D7AE0", // 1932000 — see R-10; 0x1D7B60 is 1932128, NOT 1932000
 		},
 	}
 	v, ok := ResolveValue(l, options, "skills", "BATTLESHIP_HP_GAUGE")
@@ -519,10 +694,10 @@ git commit -m "feat(atlas-packet): ResolveValue uint32 config resolver"
 **Files:**
 - Create: `<ch>/socket/writer/options_registry.go`
 - Test: `<ch>/socket/writer/options_registry_test.go`
-- Modify: `<ch>/main.go` (registration in `buildListener` ~line 404; eviction in the `listener.RegisterEvictor` block ~line 287)
+- Modify: `<ch>/main.go` (registration in `buildListener` — declared at `:351`, `tenantCfg.Socket.Writers` in scope at `:390`; eviction in the `listener.RegisterEvictor` block at `:281`)
 
 **Interfaces:**
-- Consumes: `opcodes.WriterConfig` (`libs/atlas-opcodes/config.go:12` — fields `OpCode`, `Writer`, `Options map[string]interface{}`); `tenantCfg.Socket.Writers` already in scope in `buildListener` (used at `main.go:404`).
+- Consumes: `opcodes.WriterConfig` (`libs/atlas-opcodes/config.go:24` — fields `OpCode`, `Writer`, `Options map[string]interface{}`, `Services []string`; note `:12` is `HandlerConfig.OpCode`, not the writer type); `tenantCfg.Socket.Writers` already in scope in `buildListener` (used at `main.go:390`).
 - Produces (package `writer`, so handlers reach it via their existing `atlas-channel/socket/writer` import):
   - `func RegisterTenantWriterOptions(tenantId uuid.UUID, writers []opcodes.WriterConfig)`
   - `func TenantWriterOptions(tenantId uuid.UUID, writerName string) (map[string]interface{}, bool)`
@@ -843,7 +1018,7 @@ func (m *RideMirror) EvictTenant(tid uuid.UUID) {
 
 - [ ] **Step 4: Wire eviction in main.go**
 
-In `<ch>/main.go`'s `listener.RegisterEvictor` callback (~line 287), add:
+In `<ch>/main.go`'s `listener.RegisterEvictor` callback (`:281`), add:
 
 ```go
 		battleship.GetRideMirror().EvictTenant(tid)
@@ -870,12 +1045,13 @@ git commit -m "feat(channel): battleship ride mirror"
 **Files:**
 - Create: `<ch>/battleship/processor.go`
 - Test: `<ch>/battleship/processor_test.go`
-- Modify: `<ch>/go.mod` (+ atlas-redis require; the `replace` already exists at `go.mod:82`), `<ch>/main.go` (Redis connect + InitRegistry)
+- Modify: `<ch>/main.go` (Redis connect + InitRegistry). **`<ch>/go.mod` needs no edit** — `main` already added both the require (`go.mod:11`) and the replace (`go.mod:97`); see R-9.
 
 **Interfaces:**
-- Consumes: Task 2 `redis.TenantCounter`; Task 5 mirror; `buff.NewProcessor(l, ctx).Cancel(f, characterId, sourceId)` (`<ch>/character/buff/processor.go:20`); `charskill.NewProcessor(l, ctx).ApplyCooldown(f, skillId, cooldown)(characterId)` (`<ch>/character/skill/processor.go:45` — emits the existing `SET_COOLDOWN` Kafka command; the existing consumer announces the client packet); `dataskill.NewProcessor(l, ctx).GetEffect(uniqueId, level)` (`<ch>/data/skill/processor.go:34`); `character.NewProcessor(l, ctx).GetById()(characterId)` → `.Level() byte`.
+- Consumes: Task 2 `redis.TenantCounter`; Task 5 mirror; `buff.NewProcessor(l, ctx).Cancel(f, characterId, sourceId)` (`<ch>/character/buff/processor.go:63`, interface `:22`); `charskill.NewProcessor(l, ctx).ApplyCooldown(f, skillId, cooldown)(characterId)` (`<ch>/character/skill/processor.go:53` — emits the existing `SET_COOLDOWN` Kafka command; the existing consumer announces the client packet); `dataskill.NewProcessor(l, ctx).GetEffect(uniqueId, level)` (`<ch>/data/skill/processor.go:37`, interface `:15`); `character.NewProcessor(l, ctx).GetById()(characterId)` → `.Level() byte`. Also `tenant.Model.IsRegion` / `.MajorAtLeast` (`libs/atlas-tenant/tenant.go:88,93`) for the formula gate.
 - Produces (package `battleship`):
-  - `func ShipHP(skillLevel byte, charLevel byte) int32` — the formula
+  - `func ShipHP(t tenant.Model, skillLevel byte, charLevel byte) int32` — the **version-gated** formula (R-4)
+  - `func isPostBigBangDurability(t tenant.Model) bool` — the v87+ predicate
   - `func InitRegistry(client *goredis.Client)` — wires the production `TenantCounter` (namespace `battleship-hp`)
   - `type DrainStatus int` with `DrainNotRiding, DrainSkipped, DrainDrained, DrainBroke`
   - `type DrainResult struct { Status DrainStatus; RemainingHP int32 }`
@@ -1005,23 +1181,47 @@ func setupProcessor(t *testing.T) (Processor, *fakeStore, *breakRecorder, tenant
 	return NewProcessor(l, ctx), fs, rec, tm, l
 }
 
+// ShipHP is version-gated (R-4): the client computes the gauge's denominator
+// itself via get_max_durability_of_vehicle, and that function changed at v87.
+// Both arms below mirror the corresponding client exactly over the reachable
+// input range (Battleship is 4th-job, so charLevel >= 120 always).
 func TestShipHPFormula(t *testing.T) {
 	tests := []struct {
 		name       string
+		region     string
+		major      uint16
 		skillLevel byte
 		charLevel  byte
 		expected   int32
 	}{
-		{"level 1 skill, sub-120 clamp", 1, 100, 400},
-		{"exactly 120", 10, 120, 4000},
-		{"121 adds one step", 10, 121, 4200},
-		{"max: skill 30, level 200", 30, 200, 28000},
-		{"mid: skill 7, level 150", 7, 150, 8800},
+		// Pre-v87 arm: 400*SLV + max(charLevel-120,0)*200. Identical to the
+		// client's 200*(charLevel + 2*SLV - 120) for charLevel >= 120; the
+		// clamp keeps sub-120 (unreachable) input from going negative.
+		{"v83 sub-120 clamp", "GMS", 83, 1, 100, 400},
+		{"v83 exactly 120", "GMS", 83, 10, 120, 4000},
+		{"v83 121 adds one step", "GMS", 83, 10, 121, 4200},
+		{"v83 max: SLV 10, level 200", "GMS", 83, 10, 200, 20000},
+		{"v83 mid: SLV 7, level 150", "GMS", 83, 7, 150, 8800},
+		{"v61 same arm as v83", "GMS", 61, 7, 150, 8800},
+		{"v84 still the old arm", "GMS", 84, 10, 200, 20000},
+
+		// v87+ arm: max(300*charLevel + 500*(SLV-72), 0).
+		{"v87 crosses to the new arm", "GMS", 87, 10, 200, 29000},
+		{"v92 new arm", "GMS", 92, 10, 120, 5000},
+		{"v95 new arm mid", "GMS", 95, 7, 150, 12500},
+		{"v95 SLV 1 at 120", "GMS", 95, 1, 120, 500},
+		{"jms185 uses the new arm", "JMS", 185, 10, 200, 29000},
+		{"new arm floors at zero", "GMS", 95, 1, 100, 0},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := ShipHP(tc.skillLevel, tc.charLevel); got != tc.expected {
-				t.Errorf("ShipHP(%d, %d) = %d, want %d", tc.skillLevel, tc.charLevel, got, tc.expected)
+			tm, err := tenant.Create(uuid.New(), tc.region, tc.major, 1)
+			if err != nil {
+				t.Fatalf("tenant.Create: %v", err)
+			}
+			if got := ShipHP(tm, tc.skillLevel, tc.charLevel); got != tc.expected {
+				t.Errorf("ShipHP(%s v%d, SLV %d, charLevel %d) = %d, want %d",
+					tc.region, tc.major, tc.skillLevel, tc.charLevel, got, tc.expected)
 			}
 		})
 	}
@@ -1174,7 +1374,7 @@ func TestIsRiding(t *testing.T) {
 }
 ```
 
-Add `"github.com/google/uuid"` to the test file's imports. `effect.Extract(effect.RestModel{Cooldown: 90})` is the established way tests build an `effect.Model` (`RestModel.Cooldown` field verified at `<ch>/data/skill/effect/rest.go:45`; same pattern as `mountEffect` in `<ch>/skill/handler/mount_test.go:76-82`) — it returns `(Model, error)`, matching the seam signature directly.
+Add `"github.com/google/uuid"` to the test file's imports. `effect.Extract(effect.RestModel{Cooldown: 90})` is the established way tests build an `effect.Model` (`RestModel.Cooldown` field verified at `<ch>/data/skill/effect/rest.go:45`; same pattern as `mountEffect` in `<ch>/skill/handler/mount_test.go:77`) — it returns `(Model, error)`, matching the seam signature directly.
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -1230,14 +1430,38 @@ func InitRegistry(client *goredis.Client) {
 	store = redis.NewTenantCounter(client, registryNamespace)
 }
 
-// ShipHP is the Cosmic-parity ship HP formula (PRD FR-2.2):
-// 400 × skillLevel + max(charLevel − 120, 0) × 200.
-func ShipHP(skillLevel byte, charLevel byte) int32 {
+// ShipHP is the ship's full HP pool. It is VERSION-GATED (R-4): the client
+// renders the gauge as remaining ÷ its own max, computed by
+// get_max_durability_of_vehicle, and that function changed at v87. Using one
+// formula everywhere would desync the bar on gms_87/92/95 and jms_185.
+//
+//	major <  87 (gms_61…gms_84):  200 × (charLevel + 2×SLV − 120)
+//	major >= 87 (gms_87…jms_185): 300 × charLevel + 500 × (SLV − 72)
+//
+// The pre-87 arm is expressed as 400×SLV + max(charLevel−120,0)×200, which is
+// algebraically identical to the client's form for charLevel >= 120 — the only
+// reachable range, since Battleship is a 4th-job skill — and clamps instead of
+// going negative below it. The v87+ arm is floored at 0 for the same reason.
+func ShipHP(t tenant.Model, skillLevel byte, charLevel byte) int32 {
+	if isPostBigBangDurability(t) {
+		hp := 300*int32(charLevel) + 500*(int32(skillLevel)-72)
+		if hp < 0 {
+			return 0
+		}
+		return hp
+	}
 	hp := 400 * int32(skillLevel)
 	if charLevel > 120 {
 		hp += (int32(charLevel) - 120) * 200
 	}
 	return hp
+}
+
+// isPostBigBangDurability reports whether the tenant's client uses the newer
+// get_max_durability_of_vehicle formula. Follows the established version-gate
+// idiom (libs/atlas-packet/field/clientbound/set_field.go:48).
+func isPostBigBangDurability(t tenant.Model) bool {
+	return (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.IsRegion("JMS")
 }
 
 // Collaborator seams (function vars per the skill/handler/common.go
@@ -1318,7 +1542,7 @@ func (p *ProcessorImpl) InitShipHP(characterId uint32, skillLevel byte, charLeve
 	if ttl <= 0 {
 		ttl = fallbackStateTTL
 	}
-	return store.Set(p.ctx, p.t, shipKey(characterId), int64(ShipHP(skillLevel, charLevel)), ttl)
+	return store.Set(p.ctx, p.t, shipKey(characterId), int64(ShipHP(p.t, skillLevel, charLevel)), ttl)
 }
 
 func (p *ProcessorImpl) IsRiding(characterId uint32) (byte, bool) {
@@ -1357,7 +1581,7 @@ func (p *ProcessorImpl) Drain(f field.Model, characterId uint32, damage int32) D
 			p.l.WithError(lerr).Warnf("Battleship lazy re-init failed for character [%d]; drain skipped.", characterId)
 			return DrainResult{Status: DrainSkipped}
 		}
-		full := int64(ShipHP(rs.SkillLevel, charLevel))
+		full := int64(ShipHP(p.t, rs.SkillLevel, charLevel))
 		newHp = full - int64(damage)
 		if newHp > 0 {
 			if serr := store.Set(p.ctx, p.t, shipKey(characterId), newHp, ttl); serr != nil {
@@ -1425,7 +1649,7 @@ In `<ch>/go.mod`, add to the first `require` block:
 	github.com/Chronicle20/atlas/libs/atlas-redis v0.0.0-00010101000000-000000000000
 ```
 
-(The `replace` directive already exists at `go.mod:82`.) Then, AFTER the import exists in code (this task's processor.go), run `go mod tidy` from `<ch>/` — never before (workspace footgun).
+(Both the require and the `replace` already exist — `go.mod:11` and `go.mod:97`; `main` added them. No go.mod edit is needed.) Then, AFTER the import exists in code (this task's processor.go), run `go mod tidy` from `<ch>/` — never before (workspace footgun).
 
 In `<ch>/main.go` `func main()`, after the logger is created (mirror `services/atlas-mounts/atlas.com/mounts/main.go:51-52`):
 
@@ -1542,7 +1766,7 @@ var battleshipStateTTLFunc = func(l logrus.FieldLogger, ctx context.Context, lev
 }
 ```
 
-In `handleStatusEventApplied`, at the top of the `IfPresentByCharacterId` callback (before the announce), add — note `t := tenant.MustFromContext(ctx)` must be hoisted to a variable where it is currently called inline at line 63 (`if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId)` → `t := tenant.MustFromContext(ctx); if !sc.IsWorld(t, e.WorldId)`):
+In `handleStatusEventApplied`, at the top of the `IfPresentByCharacterId` callback (before the announce), add — note `t := tenant.MustFromContext(ctx)` must be hoisted to a variable where it is currently called inline at `:120`, inside `handleStatusEventApplied` (declared at `:114`) (`if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId)` → `t := tenant.MustFromContext(ctx); if !sc.IsWorld(t, e.WorldId)`):
 
 ```go
 			// Battleship ride begins: record the pod-local riding truth the
@@ -1567,7 +1791,7 @@ In `handleStatusEventExpired`, same position inside its callback (hoist `t` iden
 
 - [ ] **Step 4: Implement the session-destroy cleanup**
 
-In `<ch>/session/processor.go` `func (p *Processor) Destroy` (line 330), after `getRegistry().Remove(p.t.Id(), s.SessionId())`, add:
+In `<ch>/session/processor.go` `func (p *ProcessorImpl) Destroy` (`:405`), after `getRegistry().Remove(p.t.Id(), s.SessionId())`, add:
 
 ```go
 	// Battleship ride state cannot outlive the session: logout, disconnect,
@@ -1603,7 +1827,7 @@ git commit -m "feat(channel): battleship ride lifecycle hooks on buff events and
 - Test: `<ch>/skill/handler/mount_test.go` (extend), `<ch>/skill/handler/common_cooldown_test.go` (create), `<ch>/socket/handler/character_skill_use_test.go` (create)
 
 **Interfaces:**
-- Consumes: Task 1 `skill2.IsBattleshipMountSkill`; Task 3 `atlaspacket.ResolveValue`; Task 4 `writer.TenantWriterOptions`; Task 6 `battleship.NewProcessor(...).InitShipHP`; existing `tamedMountStatups(e, vehicleId)` (mount.go:61 — reused for the vehicle override), `MountBuffDuration` (mount.go:22), `charpkt.CharacterBuffGiveWriter` const.
+- Consumes: Task 1 `skill2.IsBattleshipMountSkill`; Task 3 `atlaspacket.ResolveValue`; Task 4 `writer.TenantWriterOptions`; Task 6 `battleship.NewProcessor(...).InitShipHP`; existing `tamedMountStatups(e, vehicleId)` (mount.go:62 — reused for the vehicle override), `MountBuffDuration` (mount.go:23), `charpkt.CharacterBuffGiveWriter` const.
 - Produces:
   - `shouldApplyCastCooldown(e effect.Model, skillId skill2.Id) bool` (common.go helper)
   - `var applyCooldownFunc` seam in common.go (test-swappable, same pattern as `loadCasterFunc`)
@@ -1710,12 +1934,12 @@ Extend `<ch>/skill/handler/mount_test.go`: add the three new fields to `recordin
 
 const battleshipSkillId = uint32(skill2.CorsairBattleshipId)
 
-// battleshipInfo mirrors mountInfo (mount_test.go:72) but with a settable level.
+// battleshipInfo mirrors mountInfo (mount_test.go:73) but with a settable level.
 func battleshipInfo(level byte) packetmodel.SkillUsageInfo {
 	return packetmodel.NewSkillUsageInfoBuilder().SetSkillId(battleshipSkillId).SetSkillLevel(level).Build()
 }
 
-// battleshipEffect mirrors mountEffect (mount_test.go:76): Duration 2100000 ms
+// battleshipEffect mirrors mountEffect (mount_test.go:77): Duration 2100000 ms
 // (the WZ buff time) and a MONSTER_RIDING statup carrying atlas-data's
 // skill-id placeholder amount, which the arm must override.
 func battleshipEffect() effect.Model {
@@ -1816,7 +2040,7 @@ Replace lines 93-105 (`if e.Cooldown() > 0 {...}` through the mount gate) with:
 			}
 ```
 
-(The original `skillId :=` declaration at line 99 is subsumed — do not redeclare.)
+(The original `skillId :=` declaration — now at `common.go:143` — is subsumed; do not redeclare.)
 
 - [ ] **Step 4: Implement mount.go changes**
 
@@ -1897,7 +2121,7 @@ Also update the `HandleMount` doc comment's case list to mention the battleship 
 
 - [ ] **Step 5: Implement the cast rejection**
 
-In `<ch>/socket/handler/character_skill_use.go`, after the skill-level validation block (ends line 70, `}` of the `if sm.Id() == 0 ...` block), add:
+In `<ch>/socket/handler/character_skill_use.go`, after the skill-level validation block (the `if sm.Id() == 0 || sm.Level() == 0 || sm.Level() != sui.SkillLevel()` block, which now **starts** at `:70`), add:
 
 ```go
 		// Battleship post-break cooldown is enforced server-side: the client
@@ -1970,7 +2194,7 @@ func TestGaugeCooldownValue(t *testing.T) {
 		expected  uint16
 	}{
 		{"normal", 8500, 8500},
-		{"formula max fits", 28000, 28000},
+		{"formula max fits (v87+ arm, SLV 10 @ 200)", 29000, 29000},
 		{"defensive clamp above uint16", math.MaxUint16 + 1, math.MaxUint16},
 		{"defensive floor below zero", -5, 0},
 		{"one", 1, 1},
@@ -1996,7 +2220,7 @@ In `<ch>/socket/handler/character_damage.go`:
 
 Add imports: `"atlas-channel/battleship"`, `"math"`, `atlaspacket "github.com/Chronicle20/atlas/libs/atlas-packet"`, `tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"`.
 
-Delete the line `// TODO decrease battleship hp` (line 31). After the foreign-damage announce block and immediately before the `ChangeHP` call (line 43), add:
+Delete the line `// TODO decrease battleship hp` (now `:32` — it is the last of a run of TODO comments, `:23`-`:32`). After the foreign-damage announce block and immediately before the `ChangeHP` call (`:44`), add:
 
 ```go
 		// Battleship: damage taken while riding drains the ship's parallel
@@ -2037,8 +2261,9 @@ func announceShipHpGauge(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 }
 
 // gaugeCooldownValue clamps remaining ship HP into the packet's uint16
-// field. The formula maxes at 28 000 (skill 30, level 200), so the clamp is
-// purely defensive.
+// field. Battleship is maxLevel 10 on every version (R-5), so the ceiling is
+// the v87+ arm at SLV 10 / charLevel 200 = 29 000 — well inside uint16. The
+// clamp is purely defensive.
 func gaugeCooldownValue(remaining int32) uint16 {
 	if remaining < 0 {
 		return 0
@@ -2071,7 +2296,7 @@ git commit -m "feat(channel): battleship HP drain and gauge on damage taken"
 - Test: `<ch>/socket/handler/character_attack_battleship_gate_test.go` (create)
 
 **Interfaces:**
-- Consumes: Task 5 mirror (`battleship.GetRideMirror().Get`); constants `skill3.CorsairBattleshipCannonId` / `skill3.CorsairBattleshipTorpedoId` (in this file, `skill3` is already the alias for `libs/atlas-constants/skill` — see its use at line 283).
+- Consumes: Task 5 mirror (`battleship.GetRideMirror().Get`); constants `skill3.CorsairBattleshipCannonId` / `skill3.CorsairBattleshipTorpedoId` (in this file, `skill3` is already the alias for `libs/atlas-constants/skill` — imported at `:27`).
 - Produces: `battleshipAttackPermitted(t tenant.Model, characterId uint32, skillId skill3.Id) bool`.
 
 - [ ] **Step 1: Write the failing test**
@@ -2145,7 +2370,7 @@ In `<ch>/socket/handler/character_attack_common.go`:
 
 Add import `"atlas-channel/battleship"`.
 
-Inside `processAttack`, immediately after the skill-ownership rejection block (ends line 290 with `return session.NewProcessor(l, ctx).Destroy(s)` and its closing `}`), add:
+Inside `processAttack` (declared at `:636`), immediately after the skill-ownership rejection block — which ends at `:660` with `return session.NewProcessor(l, ctx).Destroy(s)` and its closing `}` — add:
 
 ```go
 						// Battleship Cannon/Torpedo are usable only while
@@ -2196,9 +2421,12 @@ git commit -m "feat(channel): gate Cannon/Torpedo on active battleship ride"
 
 ---
 
-### Task 11: seed templates — config tables + v92 writer wiring
+### Task 11: seed templates — config tables, v92 writers, and the 4 missing cast/damage handler pairs
 
 **Files:**
+- Modify: `services/atlas-configurations/seed-data/templates/template_gms_61_1.json`
+- Modify: `services/atlas-configurations/seed-data/templates/template_gms_72_1.json`
+- Modify: `services/atlas-configurations/seed-data/templates/template_gms_79_1.json`
 - Modify: `services/atlas-configurations/seed-data/templates/template_gms_83_1.json`
 - Modify: `services/atlas-configurations/seed-data/templates/template_gms_84_1.json`
 - Modify: `services/atlas-configurations/seed-data/templates/template_gms_87_1.json`
@@ -2206,25 +2434,38 @@ git commit -m "feat(channel): gate Cannon/Torpedo on active battleship ride"
 - Modify: `services/atlas-configurations/seed-data/templates/template_gms_95_1.json`
 - Modify: `services/atlas-configurations/seed-data/templates/template_jms_185_1.json`
 
+**NOT modified:** `template_gms_12_1.json` and `template_gms_48_1.json`. Skill 5221006
+does not exist in either client (R-3) — `gms_v48` returns HTTP 404 from atlas-data and
+its binary has zero references to `0x4FAA8E`/`0x4FAE6F`; `gms_12` predates it and has no
+live tenant. Battleship is **n/a** on both. Do not add battleship config there, and do
+not treat their absence as an unfinished gap.
+
 **Interfaces:**
 - Produces: per-tenant writer options consumed by Tasks 8/9 —
   - `CharacterSkillCooldown` writer entry gains `"options": {"skills": {"BATTLESHIP_HP_GAUGE": 5221999}}`
   - `CharacterBuffGive` writer entry gains `"options": {"vehicles": {"CORSAIR_BATTLESHIP": 1932000}}`
-- Ground truth: 5221999 verified in every available IDB (design §1.1: v83 `OnSkillCooltimeSet` @ 0x95BEBB, v84 @ 0x99A14F, v87 @ 0x9DE5A0, v95 @ 0x908C0F, jms185 @ 0xA274D4); 1932000 = BATTLESHIP vehicle item (design §1.1, Cosmic `ItemId.java:376`, client max-HP fn sub_7665F1).
+- Produces: the two inbound opcodes the feature's cast and drain paths need on the four
+  versions currently missing them (R-2).
+- Ground truth for `5221999`: verified in **every** IDB including v92 (R-12) —
+  `CUserLocal::OnSkillCooltimeSet` compares the decoded skill id against `0x4FAE6F`
+  (v61 `0x7ADDA5`, v72 `0x86851A`, v79 `0x8B3EC5`, v83 `0x95BEBB`, v84 `0x99A14F`,
+  v87 `0x9DE5A0`, v92 `0x8EF260`, v95 `0x908C0F`, jms185 `0xA274D4`).
+- Ground truth for `1932000` = `0x1D7AE0` (R-10) — the BATTLESHIP vehicle item id.
 
-**Audit finding this task fixes:** `template_gms_92_1.json` routes NONE of the five buff/cooldown writers (`CharacterBuffGive`, `CharacterBuffCancel`, `CharacterBuffGiveForeign`, `CharacterBuffCancelForeign`, `CharacterSkillCooldown`) — verified 2026-07-10. The v92 opcodes below come from `docs/packets/MapleStory Ops - ClientBound.csv` (the only v92 source; no v92 IDB or registry exists) and were cross-validated: the same CSV rows' v83/v87/v95/jms185 values match those versions' already-verified template entries exactly.
+**Guard:** `tools/template-opcode-order-guard.sh` requires both the `handlers` and
+`writers` arrays to be in **strictly ascending `opCode` order** (R-11). Every entry
+added below goes at its **sorted position** — never appended to the end, never parked
+next to a semantically-related neighbour.
 
-| Writer | CSV row (FName) | v92 opcode |
-|---|---|---|
-| CharacterBuffGive | GIVE_BUFF (CWvsContext::OnTemporaryStatSet) | `0x21` |
-| CharacterBuffCancel | CANCEL_BUFF (CWvsContext::OnTemporaryStatReset) | `0x22` |
-| CharacterBuffGiveForeign | GIVE_FOREIGN_BUFF (CUserRemote::OnSetTemporaryStat) | `0xE3` |
-| CharacterBuffCancelForeign | CANCEL_FOREIGN_BUFF (CUserRemote::OnResetTemporaryStat) | `0xE4` |
-| CharacterSkillCooldown | COOLDOWN (CUserLocal::OnSkillCooltimeSet) | `0x112` |
+**Validator:** every handler entry needs a `"validator"`; one without it is silently
+dropped at listener build. All five already-wired versions use `"LoggedInValidator"`
+for both handlers, and `"services": ["channel"]`.
 
-- [ ] **Step 1: Add options to the five already-wired templates**
+- [ ] **Step 1: Add the writer options to the eight templates that already route the writers**
 
-In each of `template_gms_83_1.json`, `template_gms_84_1.json`, `template_gms_87_1.json`, `template_gms_95_1.json`, `template_jms_185_1.json`, locate the two writer entries in `socket.writers` and add the options key (opCodes differ per version — do NOT change them; shown here for v83):
+In `template_gms_61_1.json`, `_gms_72_`, `_gms_79_`, `_gms_83_`, `_gms_84_`, `_gms_87_`,
+`_gms_95_` and `_jms_185_`, locate the two writer entries in `socket.writers` and add the
+options key. Do **not** change any opCode. Shown for v83:
 
 ```json
 {"opCode": "0x20", "writer": "CharacterBuffGive", "options": {"vehicles": {"CORSAIR_BATTLESHIP": 1932000}}}
@@ -2234,11 +2475,28 @@ In each of `template_gms_83_1.json`, `template_gms_84_1.json`, `template_gms_87_
 {"opCode": "0xEA", "writer": "CharacterSkillCooldown", "options": {"skills": {"BATTLESHIP_HP_GAUGE": 5221999}}}
 ```
 
-Existing opCodes per file (verify while editing, do not trust from memory): BuffGive 84=`0x20`, 87=`0x20`, 95=`0x1F`, jms=`0x1E`; SkillCooldown 84=`0xF0`, 87=`0xFA`, 95=`0x114`, jms=`0xFB`. Preserve each file's existing JSON entry formatting.
+Existing opCodes per file (verified post-merge 2026-07-28 — re-read while editing, do not
+trust from memory):
+
+| template | `CharacterBuffGive` | `CharacterSkillCooldown` |
+|---|---|---|
+| gms_61 | `0x1D` | `0xAD` |
+| gms_72 | `0x1D` | `0xCE` |
+| gms_79 | `0x1D` | `0xD4` |
+| gms_83 | `0x20` | `0xEA` |
+| gms_84 | `0x20` | `0xF0` |
+| gms_87 | `0x20` | `0xFA` |
+| gms_95 | `0x1F` | `0x114` |
+| jms_185 | `0x1E` | `0xFB` |
+
+Preserve each file's existing JSON entry formatting.
 
 - [ ] **Step 2: Wire the five missing v92 writers**
 
-In `template_gms_92_1.json` `socket.writers`, append (matching the file's entry style):
+`template_gms_92_1.json` routes **none** of `CharacterBuffGive`, `CharacterBuffCancel`,
+`CharacterBuffGiveForeign`, `CharacterBuffCancelForeign`, `CharacterSkillCooldown`
+(re-verified post-merge; 60 writers, 45 handlers). Insert all five **at their sorted
+positions** in `socket.writers`:
 
 ```json
 {"opCode": "0x21", "writer": "CharacterBuffGive", "options": {"vehicles": {"CORSAIR_BATTLESHIP": 1932000}}},
@@ -2248,46 +2506,156 @@ In `template_gms_92_1.json` `socket.writers`, append (matching the file's entry 
 {"opCode": "0x112", "writer": "CharacterSkillCooldown", "options": {"skills": {"BATTLESHIP_HP_GAUGE": 5221999}}}
 ```
 
-Note: v92 remains a skeleton template overall (47 writers, 37 handlers; no gameplay handlers like CharacterUseSkillHandle at all — a pre-existing, tenant-wide gap far beyond this task). These five entries complete the config THIS feature's clientbound flows need; they are CSV-sourced and IDA-unverified (no v92 IDB exists — accepted in design §6).
+These five opcodes come from `docs/packets/MapleStory Ops - ClientBound.csv` — the only
+v92 clientbound source, since v92 is not a coverage-matrix column and has no
+`docs/packets/registry/gms_v92.yaml`. They were cross-validated by checking that the same
+CSV rows' v83/v87/v95/jms185 values match those versions' already-verified template
+entries exactly. **A v92 IDB now exists** (R-12); if you want IDA confirmation rather than
+CSV provenance, take it — but the CSV cross-validation is what this task relies on.
 
-- [ ] **Step 3: Validate JSON**
+- [ ] **Step 3: Derive v92's `SPECIAL_MOVE` and `TAKE_DAMAGE` serverbound opcodes**
+
+This step produces the two numbers Step 4 needs for v92. It cannot be skipped or guessed.
+
+**Why derivation is required:** v92 has no registry column, and its serverbound table
+cannot be interpolated from its neighbours. Measured v92-minus-v95 deltas across the
+already-wired handlers are `+1` in the `0x40`–`0x59` band (CashItemUse, InventoryMove,
+SkillBookUse, MountFood, OwlAction, OwlWarp), `0` at `0x5B` (TeleportRockUse), and `-1`
+to `-7` higher up (CharacterInfoRequest, MonsterMovement, NPCAction). The `+1`→`0` step
+is explained by v95 inserting `USE_SHOP_SCANNER_ITEM` at `0x5A`, which v92 lacks — the
+offsets are op-insertion artifacts, not a shift. Interpolation would be a guess.
+
+**Method** (validated end-to-end on v95 this session): the client *sends* these ops, so
+the opcode is the immediate passed to the `COutPacket` constructor in the sending
+function. Find the sender, read the `push <imm>` that precedes the ctor call.
+
+Worked example, v95 `TAKE_DAMAGE`:
+- `?SetDamaged@CUserLocal@@UAEXJJJKPAVCMob@@JJJHH@Z` @ `0x9343C0`
+- `COutPacket::COutPacket` call site @ `0x936250`, preceded at `0x93624A` by
+  `6A 34  push 34h ; nType`
+- `0x34` = 52 = exactly what `docs/packets/registry/gms_v95.yaml` records for
+  `TAKE_DAMAGE`. Method confirmed.
+
+For v92, the two senders are `CUserLocal::SetDamaged` (TAKE_DAMAGE) and
+`CUserLocal::DoActiveSkill_Heal` (SPECIAL_MOVE). **Neither is named in the v92 IDB** —
+it carries roughly 950 symbols propagated from v95, mostly clientbound `On*` handlers.
+Locate them structurally: `SetDamaged` is a very large function (v95: `0x218F` bytes) in
+the `CUserLocal` band whose send block encodes
+`Encode4, Encode1, Encode1, Encode4, Encode2, Encode1, Encode1, Encode4, Encode4, …`.
+
+**Trap:** do not trust a propagated v92 symbol name to mean what it says without checking
+the opcode. `sub_91BCD0` in v92 is named `SendSkillEffectRequest` and pushes `0x48` — that
+is **not** `SKILL_EFFECT` (`DoActiveSkill_Prepare`); v95's own `SendSkillEffectRequest`
+pushes `71` (`0x47`), a different op entirely. The name is fine; the inference "this is
+the skill-prepare op" is not.
+
+Name both functions in the IDB once identified (`rename`), and record the two opcodes plus
+their evidence addresses in this task's notes before moving on.
+
+- [ ] **Step 4: Wire the missing `CharacterUseSkillHandle` / `CharacterDamageHandle` pairs**
+
+`gms_87`, `gms_92`, `gms_95` and `jms_185` route **neither** handler (R-2), so on those
+versions the cast never arrives and damage is never processed — battleship is unreachable
+there regardless of any config this task adds. This is a pre-existing tenant-wide gap that
+blocks far more than battleship; the owner scoped it into this task (R-8.1).
+
+Insert into `socket.handlers` at each file's **sorted position**:
+
+| template | `CharacterUseSkillHandle` (`SPECIAL_MOVE`) | `CharacterDamageHandle` (`TAKE_DAMAGE`) | source |
+|---|---|---|---|
+| gms_87 | `0x5E` (94) | `0x32` (50) | `docs/packets/registry/gms_v87.yaml` |
+| gms_95 | `0x67` (103) | `0x34` (52) | `docs/packets/registry/gms_v95.yaml` |
+| jms_185 | `0x56` (86) | `0x27` (39) | `docs/packets/registry/jms_v185.yaml` |
+| gms_92 | *from Step 3* | *from Step 3* | v92 IDB (no registry column) |
+
+Entry shape (matching the five already-wired versions exactly):
+
+```json
+{"opCode": "0x5E", "validator": "LoggedInValidator", "handler": "CharacterUseSkillHandle", "services": ["channel"]},
+{"opCode": "0x32", "validator": "LoggedInValidator", "handler": "CharacterDamageHandle", "services": ["channel"]}
+```
+
+The three registry-sourced rows are not taken on faith — each was cross-validated against
+already-verified entries in the same file:
+
+- Registry `SPECIAL_MOVE` for v83 is 91 = `0x5B`, which is exactly what
+  `template_gms_83_1.json` already routes for `CharacterUseSkillHandle`. Registry
+  `TAKE_DAMAGE` for v83 is 48 = `0x30`, matching that file's `CharacterDamageHandle`.
+  Same agreement holds for gms_61 (`0x53`/`0x2D`), gms_72 (`0x5A`/`0x2F`) and gms_79
+  (`0x59`/`0x2E`). The op→handler mapping is therefore established, not assumed.
+- In every version `SKILL_EFFECT` sits exactly two opcodes above `SPECIAL_MOVE`, and each
+  target file already routes `CharacterSkillPrepareHandle` at that value: v87 `0x60`
+  (= `0x5E`+2 ✓), v95 `0x69` (= `0x67`+2 ✓), jms185 `0x58` (= `0x56`+2 ✓).
+- v95's `TAKE_DAMAGE` is `0x34`, **not** `0x33` — `0x33` is `MOVING_SHOOT_ATTACK_PREPARE`,
+  a v95-only op. This is precisely the kind of off-by-one that reading the registry
+  prevents and that pattern-matching against v83 would have introduced.
+
+- [ ] **Step 5: Validate JSON and run the order guard**
 
 Run from the worktree root:
 
 ```bash
-for f in services/atlas-configurations/seed-data/templates/template_gms_83_1.json services/atlas-configurations/seed-data/templates/template_gms_84_1.json services/atlas-configurations/seed-data/templates/template_gms_87_1.json services/atlas-configurations/seed-data/templates/template_gms_92_1.json services/atlas-configurations/seed-data/templates/template_gms_95_1.json services/atlas-configurations/seed-data/templates/template_jms_185_1.json; do python3 -m json.tool "$f" > /dev/null && echo "OK $f" || echo "INVALID $f"; done
+for f in services/atlas-configurations/seed-data/templates/template_gms_61_1.json \
+         services/atlas-configurations/seed-data/templates/template_gms_72_1.json \
+         services/atlas-configurations/seed-data/templates/template_gms_79_1.json \
+         services/atlas-configurations/seed-data/templates/template_gms_83_1.json \
+         services/atlas-configurations/seed-data/templates/template_gms_84_1.json \
+         services/atlas-configurations/seed-data/templates/template_gms_87_1.json \
+         services/atlas-configurations/seed-data/templates/template_gms_92_1.json \
+         services/atlas-configurations/seed-data/templates/template_gms_95_1.json \
+         services/atlas-configurations/seed-data/templates/template_jms_185_1.json; do
+  python3 -m json.tool "$f" > /dev/null && echo "OK $f" || echo "INVALID $f"
+done
+tools/template-opcode-order-guard.sh
 ```
 
-Expected: `OK` ×6. Then verify presence:
+Expected: `OK` ×9, and the order guard exits 0.
+
+Then verify presence (9 templates carry the options; 4 gained the handler pair; the two
+n-a templates carry neither):
 
 ```bash
 python3 - <<'EOF'
 import json
-files = ["template_gms_83_1.json","template_gms_84_1.json","template_gms_87_1.json","template_gms_92_1.json","template_gms_95_1.json","template_jms_185_1.json"]
-for f in files:
-    d = json.load(open(f"services/atlas-configurations/seed-data/templates/{f}"))
+BASE = "services/atlas-configurations/seed-data/templates/"
+opts = ["gms_61","gms_72","gms_79","gms_83","gms_84","gms_87","gms_92","gms_95","jms_185"]
+for v in opts:
+    d = json.load(open(f"{BASE}template_{v}_1.json"))
     ws = {w["writer"]: w for w in d["socket"]["writers"]}
-    assert ws["CharacterBuffGive"]["options"]["vehicles"]["CORSAIR_BATTLESHIP"] == 1932000, f
-    assert ws["CharacterSkillCooldown"]["options"]["skills"]["BATTLESHIP_HP_GAUGE"] == 5221999, f
-    print("verified", f)
+    assert ws["CharacterBuffGive"]["options"]["vehicles"]["CORSAIR_BATTLESHIP"] == 1932000, v
+    assert ws["CharacterSkillCooldown"]["options"]["skills"]["BATTLESHIP_HP_GAUGE"] == 5221999, v
+    print("options verified", v)
+for v in opts:
+    d = json.load(open(f"{BASE}template_{v}_1.json"))
+    hs = {h["handler"]: h for h in d["socket"]["handlers"]}
+    for h in ("CharacterUseSkillHandle", "CharacterDamageHandle"):
+        assert h in hs, f"{v} missing {h}"
+        assert hs[h].get("validator"), f"{v} {h} has no validator"
+    print("handlers verified", v)
+for v in ("gms_12", "gms_48"):
+    d = json.load(open(f"{BASE}template_{v}_1.json"))
+    blob = json.dumps(d)
+    assert "BATTLESHIP" not in blob, f"{v} must stay battleship-free (n-a, R-3)"
+    print("n-a confirmed", v)
 EOF
 ```
 
-Expected: `verified` ×6.
+Expected: `options verified` ×9, `handlers verified` ×9, `n-a confirmed` ×2.
 
-- [ ] **Step 4: Run atlas-configurations tests (template loading)**
+- [ ] **Step 6: Run atlas-configurations tests (template loading)**
 
 Run: `cd services/atlas-configurations/atlas.com/configurations && go test ./... && go vet ./...`
 Expected: PASS (seed-loading tests, if any, consume the templates)
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add services/atlas-configurations/seed-data/templates/
-git commit -m "feat(config): battleship wire-value tables in seed templates; wire v92 buff/cooldown writers"
+git commit -m "feat(config): battleship wire-value tables; wire v92 buff/cooldown writers and the missing cast/damage handlers on v87/v92/v95/jms185"
 ```
 
 ---
+
 
 ### Task 12: verification suite + live-tenant backfill runbook
 
@@ -2308,25 +2676,44 @@ From the worktree root, run each and confirm clean:
 
 Expected: all PASS / no vet findings. Report actual output; do not summarize failures away.
 
-- [ ] **Step 2: redis-key-guard**
+- [ ] **Step 2: Repo guards**
 
-Run from the worktree root (no GOWORK=off prefix):
+All five run from the worktree root, no `GOWORK=off` prefix. The last three are new
+since this plan was written (R-11) and are CI jobs — a miss here is a wasted CI cycle.
 
 ```bash
 tools/redis-key-guard.sh
+tools/goroutine-guard.sh
+tools/template-opcode-order-guard.sh
+tools/lint.sh --check
 ```
 
-Expected: clean (the only keyed calls added live in `libs/atlas-redis/counter.go`).
+Expected: all exit 0.
+
+- `redis-key-guard` — clean; the only keyed Redis calls added live in
+  `libs/atlas-redis/counter.go`.
+- `goroutine-guard` — this task spawns no goroutines; it must stay clean.
+- `template-opcode-order-guard` — Task 11 touched nine templates; every inserted
+  handler/writer must sit at its sorted `opCode` position.
+- `lint.sh --check` — run `tools/lint.sh` (no flags) first to fix formatting in place,
+  then re-run with `--check`.
+
+`tools/service-registration-guard.sh` is **not** required: this task changes no entry in
+services.json, deploy/k8s, docker-bake.hcl, go.work, or tools/db-bootstrap.sh. Run it
+anyway if that stops being true.
 
 - [ ] **Step 3: docker buildx bake**
 
-Only atlas-channel's `go.mod` changed. From the worktree root:
+`<ch>/go.mod` is **not** modified by this task any more (R-9: `main` already added the
+atlas-redis require and replace), so strictly no bake is mandated. Run it regardless —
+it is cheap relative to a CI round-trip:
 
 ```bash
 docker buildx bake atlas-channel
 ```
 
-Expected: successful build. (`libs/atlas-redis` already has its two COPY lines in the shared Dockerfile — atlas-mounts et al. build against it — but the bake is mandatory verification regardless.)
+Expected: successful build. (`libs/atlas-redis` already has its two COPY lines in the
+shared Dockerfile — atlas-mounts et al. build against it.)
 
 - [ ] **Step 4: Write the backfill runbook**
 
@@ -2338,8 +2725,18 @@ Create `docs/tasks/task-153-corsair-battleship/backfill.md` (repo-relative paths
 Seed templates apply only at tenant creation — existing tenants do NOT pick
 up the new writer options (known gotcha: new opcodes/options never reach
 live tenant configs automatically), and atlas-channel does not hot-reload
-socket configuration. After deploying this feature, for EVERY provisioned
-tenant (GMS v83, v84, v87, v92, v95, JMS v185):
+socket configuration.
+
+## Scope
+
+Nine of the ten live tenants need the backfill: GMS v61, v72, v79, v83, v84,
+v87, v92, v95 and JMS v185.
+
+GMS v48 is **excluded**: skill 5221006 does not exist in that client (its WZ
+data returns 404 and the binary contains no reference to the skill or to the
+5221999 gauge sentinel). GMS v12 has no live tenant. Neither is a gap.
+
+## Per-tenant steps
 
 1. Fetch the tenant's channel socket configuration from atlas-tenants
    (`GET /tenants/{tenantId}/configurations/{resourceName}` for the channel
@@ -2347,23 +2744,58 @@ tenant (GMS v83, v84, v87, v92, v95, JMS v185):
 2. In `socket.writers`, add to the existing entries (do not change opCodes):
    - `CharacterBuffGive` → `"options": {"vehicles": {"CORSAIR_BATTLESHIP": 1932000}}`
    - `CharacterSkillCooldown` → `"options": {"skills": {"BATTLESHIP_HP_GAUGE": 5221999}}`
-3. v92 ONLY: the live config may also be missing the five buff/cooldown
+3. GMS v87, v92, v95, JMS v185 ONLY: these live configs are also missing
+   `CharacterUseSkillHandle` and `CharacterDamageHandle` entirely (their seed
+   templates were). Without both, the cast never reaches the server and damage
+   is never processed — the feature is inert. Add to `socket.handlers`, at the
+   sorted opCode position, with `"validator": "LoggedInValidator"` and
+   `"services": ["channel"]`:
+   - v87: `CharacterUseSkillHandle 0x5E`, `CharacterDamageHandle 0x32`
+   - v95: `CharacterUseSkillHandle 0x67`, `CharacterDamageHandle 0x34`
+   - JMS v185: `CharacterUseSkillHandle 0x56`, `CharacterDamageHandle 0x27`
+   - v92: use the two opcodes derived in Task 11 Step 3
+   (v87/v95/jms185 values come from docs/packets/registry/<version>.yaml and
+   were cross-validated against the already-verified entries in the same
+   files; v92 has no registry column and was derived from its IDB.)
+4. GMS v92 ONLY: the live config may also be missing the five buff/cooldown
    writers entirely (its seed template was). If absent, add:
    `CharacterBuffGive 0x21` (with the vehicles options),
    `CharacterBuffCancel 0x22`, `CharacterBuffGiveForeign 0xE3`,
    `CharacterBuffCancelForeign 0xE4`,
    `CharacterSkillCooldown 0x112` (with the skills options).
    These opcodes are CSV-derived (docs/packets/MapleStory Ops -
-   ClientBound.csv); no v92 IDB exists to verify them.
-4. PATCH the configuration back, then restart atlas-channel (handlers and
+   ClientBound.csv), cross-validated against the other versions' verified
+   template entries.
+5. PATCH the configuration back, then restart atlas-channel (handlers and
    writers are read at listener build; the config projection does not
    hot-reload them).
-5. Verify per tenant on a live client: mount/dismount visuals (self +
+6. Verify per tenant on a live client: mount/dismount visuals (self +
    foreign), gauge movement under damage, break → dismount + cooldown +
    greyed icon, remount-while-cooling rejected, Cannon/Torpedo on foot
    rejected (debug log `battleship_attack_rejected_not_riding`).
 
-Full sweep required — do not spot-check one tenant and declare all six done.
+## Known blocker: GMS v95 has no ingested skill data
+
+The v95 tenant returns `maxLevel: 0, effects: []` for skill 5221006 — and for
+every other skill probed (5221004, 5221007, 5221008, 5121000, 1001003). This
+is a tenant-wide WZ ingestion gap that predates this task, not a battleship
+defect. Until v95 skill data is ingested, `GetEffect` yields nothing on that
+tenant: no statup set, no MP cost, no cooldown value, so the mount cannot
+apply. Do the config backfill anyway, then record v95 live verification as
+BLOCKED — do not report it as verified.
+
+## Ship HP is version-dependent
+
+When eyeballing the gauge, expect different full-pool values either side of
+v87. The server mirrors each client's own `get_max_durability_of_vehicle`:
+
+- GMS v61–v84: `200 × (charLevel + 2×SLV − 120)`
+- GMS v87+ and JMS: `300 × charLevel + 500 × (SLV − 72)`
+
+A level-200 character with SLV 10 starts at 20 000 on v83 and 29 000 on v95.
+Battleship is maxLevel 10 on every version.
+
+Full sweep required — do not spot-check one tenant and declare all nine done.
 ```
 
 - [ ] **Step 5: Commit**
@@ -2379,17 +2811,19 @@ Run `superpowers:requesting-code-review` (dispatches plan-adherence-reviewer + b
 
 ---
 
+
 ## Acceptance criteria traceability
 
 | PRD acceptance criterion | Covered by |
 |---|---|
 | Cast mounts vehicle 1932000 via MONSTER_RIDING, self + foreign | Tasks 1, 8, 11 (existing buff consumers do the announcing) |
 | No cooldown on cast; cast-while-cooling rejected | Task 8 (carve-out + `battleshipCastBlocked`) |
-| HP init `400×lvl + max(charLvl−120,0)×200`, fresh each ride | Tasks 6 (`ShipHP`, `InitShipHP`), 8 (mount arm) |
+| HP init, fresh each ride — **version-gated** (R-4): `200×(charLvl+2×SLV−120)` below v87, `300×charLvl+500×(SLV−72)` from v87 | Tasks 6 (`ShipHP`, `isPostBigBangDurability`, `InitShipHP`), 8 (mount arm) |
 | Drain + parallel character HP + 5221999 gauge per drain | Tasks 6 (Drain), 9 (gauge announce; `ChangeHP` untouched) |
 | Break exactly-once → dismount + effect-cooltime cooldown + state cleared | Tasks 2 (atomic counter), 6 (crossing predicate + breakShip) |
 | Manual dismount / expiry / logout: no cooldown, state cleared | Task 7 (buff EXPIRED hook + session destroy hook) |
 | Cannon/Torpedo rejected on foot, normal while riding | Task 10 |
 | Wire values config-resolved, live tenants backfilled | Tasks 3, 4, 11, 12 (runbook) |
+| Feature reachable on every version that has the skill (R-2/R-8.1) | Task 11 Steps 3–4 (cast + damage handlers for gms_87/92/95/jms_185); gms_12/gms_48 are n-a (R-3) |
 | mount_test.go flips + new unit tests | Tasks 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 |
-| test/vet/build/bake/redis-key-guard clean | Task 12 |
+| test/vet/build/bake clean; redis-key-guard, goroutine-guard, template-opcode-order-guard, lint.sh --check all clean (R-11) | Task 12 Steps 1–3 |

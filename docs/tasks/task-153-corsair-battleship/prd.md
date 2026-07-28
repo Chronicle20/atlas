@@ -1,7 +1,7 @@
 # Corsair Battleship (5221006) — Product Requirements Document
 
-Version: v1
-Status: Draft
+Version: v2
+Status: Draft (amended 2026-07-28 after merging `main` — see §4.1.1)
 Created: 2026-07-10
 ---
 
@@ -58,13 +58,13 @@ v83-era WZ data. Cosmic file paths are relative to the Cosmic repo `src/main/jav
 
 | Fact | Source |
 |------|--------|
-| Ship HP formula: `400 × skillLevel + max(characterLevel − 120, 0) × 200` | Cosmic `client/Character.java` `resetBattleshipHp()` |
+| Ship HP formula (**pre-v87 clients only** — superseded, see §4.1.1): `400 × skillLevel + max(characterLevel − 120, 0) × 200` | Cosmic `client/Character.java` `resetBattleshipHp()` |
 | Rider takes the damage **and** the ship drains by the same amount (parallel pool, not an absorber) | Cosmic `net/server/channel/handlers/TakeDamageHandler.java:275-278` |
 | On HP ≤ 0: send cooldown packet for 5221006, register server cooldown (duration = effect `cooltime`), cancel MONSTER_RIDING (dismount) | Cosmic `client/Character.java` `decreaseBattleshipHp()` |
 | On drain without break: report remaining ship HP to the client via the skill-cooldown packet with pseudo-skill id **5221999** (client renders it as the ship HP gauge) | Cosmic `client/Character.java` `announceBattleshipHp()` |
 | Cast-time cooldown application explicitly skips BATTLE_SHIP (the carve-out) | Cosmic `net/server/channel/handlers/SpecialMoveHandler.java:86` |
 | Vehicle id is item **1932000** (BATTLESHIP); buff is MONSTER_RIDING | Cosmic `server/StatEffect.java:1294`, `constants/id/ItemId.java:376` |
-| WZ 5221006: 10 levels; `cooltime=90` at **every** level; buff duration `time=2100000` ms (35 min); per-level `mpCon`/`pdd`/`mdd`; **no ship-HP field** | Cosmic `wz/Skill.wz/522.img.xml` |
+| WZ 5221006: 10 levels; `cooltime=90` at every level **on v72 and later — v61 has per-level cooltime 90…360** (§4.1.1); per-level `mpCon`/`pdd`/`mdd`; **no ship-HP field** | Cosmic `wz/Skill.wz/522.img.xml`; per-version values re-verified against live atlas-data 2026-07-28 |
 | Riding check = active MONSTER_RIDING buff sourced from 5221006 | Cosmic `client/Character.java` `isRidingBattleship()` |
 
 Known divergence (accepted, interview Q3): Cosmic persists damaged ship HP across
@@ -73,6 +73,38 @@ remounts and even relogs (it smuggles the value through the cooldown table under
 ride and every fresh mount starts at full formula HP. Consequence: a rider can manually
 dismount/remount to "repair" the ship. Accepted as a simplification; the break cooldown
 still prevents remounting a broken ship for 90s.
+
+### 4.1.1 Per-version corrections (verified 2026-07-28, post-merge)
+
+Merging `main` brought four legacy client versions into the project and exposed
+version-dependent facts §4.1 did not capture. The plan's "Post-merge reconciliation"
+section (plan.md R-1…R-12) carries the full evidence; the requirements-level
+consequences are:
+
+- **The ship HP formula is version-dependent.** The client computes the gauge's
+  denominator itself, via `get_max_durability_of_vehicle(nSkillID, nSLV, nCharLevel)`
+  (PDB-named in the v95 IDB). That function is
+  `200 × (charLevel + 2×SLV − 120)` on gms_61/72/79/83/84 and
+  `300 × charLevel + 500 × (SLV − 72)` on gms_87/92/95 and jms_185.
+  Cosmic's formula equals the former for charLevel ≥ 120 and is wrong for the latter.
+  FR-2.2 is amended: the server implements **both** arms, gated at v87, so the gauge
+  matches every client. Decision taken by the owner on 2026-07-28.
+- **Battleship does not exist before v61.** gms_v48 returns HTTP 404 for skill 5221006
+  and its binary references neither the skill id nor the 5221999 gauge sentinel;
+  gms_12 predates it and has no live tenant. The feature is **n/a** on both — not a gap.
+- **Battleship is `maxLevel` 10 on every version**, so the ship-HP ceiling is 29 000
+  (v87+ arm at SLV 10 / charLevel 200), comfortably inside the gauge's `uint16` field.
+- **v61 has per-level cooldowns** (90, 120, 150, 180, 210, 240, 270, 300, 330, 360)
+  where v72+ are a flat 90. FR-4.1 already requires reading `cooltime` from effect data,
+  so no requirement changes — but no test or runbook may assume 90 universally.
+- **gms_87, gms_92, gms_95 and jms_185 route neither the cast handler
+  (`CharacterUseSkillHandle`) nor the damage handler (`CharacterDamageHandle`).**
+  Without both, battleship is unreachable on those versions regardless of any other
+  work. Wiring them is in scope (owner decision, 2026-07-28) — see FR-7.1.
+- **gms_v95 has no ingested skill effects at all** (`maxLevel: 0, effects: []` for every
+  skill probed). This is a pre-existing tenant-wide WZ ingestion gap. Live verification
+  on the v95 tenant is BLOCKED until it is resolved; it is not a battleship defect and
+  is not in this task's scope to fix.
 
 ### 4.2 Mounting (cast path)
 
@@ -149,9 +181,13 @@ still prevents remounting a broken ship for 90s.
 
 ### 4.7 Version scope
 
-- FR-7.1: The feature ships for **all currently provisioned tenant versions** (GMS v83,
-  v84, v87, v92, v95, JMS v185). The server logic is version-independent; per-version
-  work is limited to verifying the client-interpreted values (§8 / §9).
+- FR-7.1: The feature ships for **every provisioned tenant version whose client has the
+  skill** — GMS v61, v72, v79, v83, v84, v87, v92, v95 and JMS v185 (nine of the ten live
+  tenants). GMS v48 and GMS v12 are **n/a**: skill 5221006 does not exist in those clients
+  (§4.1.1). The server logic is version-independent **except** the ship HP formula, which
+  is gated at v87 (§4.1.1). Per-version work covers the client-interpreted values (§8 / §9)
+  and, for GMS v87/v92/v95 and JMS v185, wiring the missing `CharacterUseSkillHandle` and
+  `CharacterDamageHandle` opcodes without which the feature cannot run at all.
 - FR-7.2: The pseudo-skill id 5221999 and vehicle item id 1932000 are client-interpreted
   wire values. Per DOM-25, they must be config-resolved from tenant configuration, not
   hardcoded in service code — "version-stable" does not exempt them. Design determines
@@ -219,29 +255,36 @@ applies). No cross-tenant reads.
 
 ## 9. Open Questions
 
-1. **Per-version client verification of the 5221999 gauge.** Cosmic targets v83; before
-   trusting the gauge on v84/v87/v92/v95/jms, verify in each IDA database that the
-   client's skill-cooldown handler treats 5221999 as the battleship gauge. If a version
-   does not, the gauge is cosmetic there (break logic is unaffected) — but this must be
-   verified, not assumed, at design time.
+1. ~~**Per-version client verification of the 5221999 gauge.**~~ **RESOLVED
+   2026-07-28.** Verified in every IDB that has the skill: `CUserLocal::OnSkillCooltimeSet`
+   compares the decoded skill id against `0x4FAE6F` on v61 (`0x7ADDA5`), v72 (`0x86851A`),
+   v79 (`0x8B3EC5`), v83 (`0x95BEBB`), v84 (`0x99A14F`), v87 (`0x9DE5A0`), v92
+   (`0x8EF260` — a v92 IDB exists now, closing the design's caveat), v95 (`0x908C0F`) and
+   jms185 (`0xA274D4`). v48 has no such comparison because it has no battleship at all.
+   What the per-version sweep *did* surface is that the gauge's denominator formula
+   changes at v87 — see §4.1.1.
 2. **Server-initiated cooldown transport.** Confirm the existing atlas-skills surface
    atlas-channel should call for FR-4.2 (Kafka command vs. REST) and whether a command
    topic already exists.
 3. **Riding-state source for gating/drain.** Session temp-stat tracking vs. buff
    registry lookup — decide the cheapest reliable source at design time (FR-6.2).
-4. **atlas-data vehicle emission.** Confirm what `reader.go:469` actually injects into
-   the MONSTER_RIDING statup for 5221006 (the comment suggests the skill id band emits
-   something other than a fixed item id).
+4. ~~**atlas-data vehicle emission.**~~ **RESOLVED 2026-07-28.** Live atlas-data emits
+   `{"type": "MONSTER_RIDING", "amount": 5221006}` — the **skill id**, not the vehicle
+   item id — and does so identically on every version checked (v61 and v83 byte-for-byte
+   the same statup set). The mount arm must therefore override the MONSTER_RIDING amount
+   with the config-resolved vehicle id (1932000), exactly as `tamedMountStatups` already
+   does for tamed mounts. No atlas-data change is needed.
 
 ## 10. Acceptance Criteria
 
-- [ ] Casting 5221006 mounts the character on vehicle 1932000 (MONSTER_RIDING), visible to self and foreign observers, on every provisioned tenant version.
+- [ ] Casting 5221006 mounts the character on vehicle 1932000 (MONSTER_RIDING), visible to self and foreign observers, on every provisioned tenant version that has the skill (GMS v61–v95, JMS v185; v12/v48 n-a per §4.1.1).
 - [ ] No cooldown is applied on cast; casting while the post-break cooldown is active is rejected server-side.
-- [ ] Ship HP initializes to `400 × skillLevel + max(charLevel − 120, 0) × 200` on every mount (fresh full pool each ride).
+- [ ] Ship HP initializes to the **version-appropriate** formula on every mount (fresh full pool each ride): `200 × (charLevel + 2×SLV − 120)` below v87, `300 × charLevel + 500 × (SLV − 72)` from v87 — matching each client's own `get_max_durability_of_vehicle` (§4.1.1).
 - [ ] Damage taken while riding drains ship HP by the damage amount AND still applies to character HP; the client receives the 5221999 gauge update on each non-breaking drain.
 - [ ] Depleting ship HP dismounts the character (foreign broadcast included), applies the 5221006 cooldown with duration read from effect `cooltime`, and clears ship state — exactly once, even under concurrent damage.
 - [ ] Manual dismount, buff expiry, logout: no cooldown, ship state cleared; next mount starts at full HP.
 - [ ] Cannon (5221007) and Torpedo (5221008) attacks are rejected when the caster is not riding the battleship; work normally when riding.
-- [ ] 5221999 / 1932000 wire values are config-resolved per tenant (no hardcoded literals in service code); live tenant configs backfilled.
+- [ ] 5221999 / 1932000 wire values are config-resolved per tenant (no hardcoded literals in service code); live tenant configs backfilled across all nine applicable tenants.
+- [ ] GMS v87, v92, v95 and JMS v185 route `CharacterUseSkillHandle` and `CharacterDamageHandle` (seed templates and live tenant configs), each with a validator.
 - [ ] `mount_test.go` battleship expectations updated; new unit tests cover formula, drain, break-once, reset, and gating.
-- [ ] `go test -race ./...`, `go vet ./...`, `go build ./...` clean in every changed module; `docker buildx bake` clean for every touched service; `tools/redis-key-guard.sh` clean.
+- [ ] `go test -race ./...`, `go vet ./...`, `go build ./...` clean in every changed module; `docker buildx bake` clean for every touched service; `tools/redis-key-guard.sh`, `tools/goroutine-guard.sh`, `tools/template-opcode-order-guard.sh` and `tools/lint.sh --check` all clean.

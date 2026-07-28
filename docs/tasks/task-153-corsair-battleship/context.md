@@ -15,17 +15,17 @@ an implementer (or reviewer) needs without re-deriving them.
 | Processor | `<ch>/battleship/processor.go` (new) | sole owner of mirror + Redis pool; `Drain` holds the crossing predicate and break flow |
 | Cast path | `<ch>/skill/handler/common.go:93-105`, `<ch>/skill/handler/mount.go`, `<ch>/socket/handler/character_skill_use.go:60-70` | carve-out, mount gate, battleship arm, cast rejection |
 | Drain | `<ch>/socket/handler/character_damage.go:31` | replaces `// TODO decrease battleship hp`; `ChangeHP` (parallel pool) untouched |
-| Gate | `<ch>/socket/handler/character_attack_common.go:287-290` | after ownership check; all attack types funnel through `processAttack` (melee/ranged/magic/touch each call it at their line 20) |
-| Lifecycle | `<ch>/kafka/consumer/buff/consumer.go`, `<ch>/session/processor.go:330` | mirror put on APPLIED, Clear on EXPIRED and session Destroy |
-| Cooldown transport | `<ch>/character/skill/processor.go:45` `ApplyCooldown` | already emits `SET_COOLDOWN`; atlas-skills applies + emits `COOLDOWN_APPLIED`; `<ch>/kafka/consumer/skill/consumer.go:111` already announces the client packet. Zero new Kafka surface. |
-| Templates | `services/atlas-configurations/seed-data/templates/template_*_1.json` | options tables ×6; v92 gets five new writer entries |
+| Gate | `<ch>/socket/handler/character_attack_common.go:660` | after ownership check (`processAttack` declared at `:636`); all attack types funnel through `processAttack` |
+| Lifecycle | `<ch>/kafka/consumer/buff/consumer.go:114`, `<ch>/session/processor.go:405` | mirror put on APPLIED, Clear on EXPIRED and session Destroy |
+| Cooldown transport | `<ch>/character/skill/processor.go:53` `ApplyCooldown` | already emits `SET_COOLDOWN`; atlas-skills applies + emits `COOLDOWN_APPLIED`; `<ch>/kafka/consumer/skill/consumer.go:111` already announces the client packet. Zero new Kafka surface. |
+| Templates | `services/atlas-configurations/seed-data/templates/template_*_1.json` | options tables ×9 (gms_61…jms_185; gms_12/gms_48 n-a); v92 gets five new writer entries; gms_87/92/95/jms_185 each gain `CharacterUseSkillHandle` + `CharacterDamageHandle` — see plan.md R-2 |
 
 `<ch>/` = `services/atlas-channel/atlas.com/channel/`.
 
 ## Verified facts the plan builds on
 
 - `skill.CorsairBattleshipId/CannonId/TorpedoId` = 5221006/07/08 already exist
-  (`libs/atlas-constants/skill/constants.go:3231-3233`).
+  (`libs/atlas-constants/skill/constants.go:3236-3238` — re-pinned after the `main` merge).
 - `character/skill.Model` already carries `CooldownExpiresAt()` and `OnCooldown()`
   (`model.go:40-46`), decorated live via `SkillModelDecorator` — the cast
   rejection costs zero extra round-trips.
@@ -143,3 +143,10 @@ hot-reload. Full six-tenant sweep, no spot-checking.
 tools/redis-key-guard.sh          # repo root, NO GOWORK=off prefix
 docker buildx bake atlas-channel  # worktree root; mandatory
 ```
+
+
+## Post-merge note (2026-07-28)
+
+`main` was merged into this branch after context.md was written. Line anchors above were
+re-pinned; the authoritative, fully re-verified list is the **Post-merge reconciliation**
+section (R-1…R-12) at the top of `plan.md`. Read that before starting any task.

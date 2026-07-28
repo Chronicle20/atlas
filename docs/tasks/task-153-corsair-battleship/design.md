@@ -2,7 +2,7 @@
 
 Task: task-153-corsair-battleship
 Status: Approved PRD → this document covers architecture, alternatives, and tradeoffs.
-Inputs: `docs/tasks/task-153-corsair-battleship/prd.md` (v1), code research against this worktree, IDA verification against v83/v84/v87/v95/JMS185 IDBs (2026-07-10).
+Inputs: `docs/tasks/task-153-corsair-battleship/prd.md` (v2), code research against this worktree, IDA verification against v83/v84/v87/v95/JMS185 IDBs (2026-07-10), extended 2026-07-28 to v48/v61/v72/v79/v92 after merging `main` (see §1.1, §1.1.1 and plan.md "Post-merge reconciliation").
 
 ---
 
@@ -17,14 +17,24 @@ version carries the identical special case — when the decoded skill id equals 
 raw uint16 value is stored directly (ship HP) instead of being converted to a
 `timeGetTime()`-relative expiry:
 
-| Version | IDB | Evidence |
-|---|---|---|
-| GMS v83 | port 13342 | `OnSkillCooltimeSet` @ 0x95BEBB: `if (v2 == 5221999) v4 = v3;` |
-| GMS v84 | port 13345 | equivalent fn @ 0x99A14F: `if (v1 == &loc_4FAE6F)` (0x4FAE6F = 5221999) |
-| GMS v87 | port 13343 | `OnSkillCooltimeSet` @ 0x9DE5A0: same pattern |
-| GMS v95 | port 13341 | `OnSkillCooltimeSet` @ 0x908C0F: same pattern |
-| JMS v185 | port 13344 | `OnSkillCooltimeSet` @ 0xA274D4: same pattern |
-| GMS v92 | — | **No IDB exists. Unverified**, but bracketed by verified v87 and v95; worst case the gauge is cosmetic there (break logic unaffected). |
+| Version | Evidence |
+|---|---|
+| GMS v61 | `OnSkillCooltimeSet` @ 0x7ADDA5: `if (v2 == (char *)&loc_4FAE6A + 5)` (= 0x4FAE6F) |
+| GMS v72 | `OnSkillCooltimeSet` @ 0x86851A: `if (v2 == (char *)&loc_4FAE6B + 4)` |
+| GMS v79 | `OnSkillCooltimeSet` @ 0x8B3EC5: same pattern |
+| GMS v83 | `OnSkillCooltimeSet` @ 0x95BEBB: `if (v2 == 5221999) v4 = v3;` |
+| GMS v84 | equivalent fn @ 0x99A14F: `if (v1 == &loc_4FAE6F)` (0x4FAE6F = 5221999) |
+| GMS v87 | `OnSkillCooltimeSet` @ 0x9DE5A0: same pattern |
+| GMS v92 | `OnSkillCooltimeSet` @ 0x8EF260: `if (v2 == &byte_4FAE6F) v5 = v9;` |
+| GMS v95 | `OnSkillCooltimeSet` @ 0x908C0F: same pattern |
+| JMS v185 | `OnSkillCooltimeSet` @ 0xA274D4: same pattern |
+| GMS v48 | **No such comparison — 0 references to 0x4FAE6F or to skill id 0x4FAA8E anywhere in the binary.** The Corsair Battleship does not exist in this client (atlas-data also returns 404 for skill 5221006). n-a, not a gap. |
+| GMS v12 | No IDB and no live tenant; predates v48, which already lacks the skill. n-a. |
+
+> **Amended 2026-07-28 (post-merge).** The original table covered only the five versions
+> that had IDBs at design time and recorded v92 as "no IDB exists — unverified, bracketed
+> by v87 and v95". A v92 IDB now exists and v92 is **verified directly**. The four legacy
+> versions that `main` added are verified here for the first time. See plan.md R-12/R-3.
 
 Additional v83 findings that shape the design:
 
@@ -33,13 +43,45 @@ Additional v83 findings that shape the design:
   (remaining = packet value, max = client-computed). So the gauge only renders while the
   client believes it is riding — the server must apply the mount buff before gauge updates
   mean anything.
-- The client's max-HP function (sub_7665F1, v83) is `200 * (charLevel + 2*skillLevel − 120)`
+- The client's max-HP function (`sub_7665F1`, v83) is `200 * (charLevel + 2*skillLevel − 120)`
   for skill 5221006 — algebraically identical to Cosmic's
   `400*skillLevel + (charLevel−120)*200` whenever charLevel ≥ 120 (always true for a 4th-job
-  Corsair; Cosmic's `max(...,0)` clamp only diverges below 120, which is unreachable). The
-  server-side formula in FR-2.2 is therefore consistent with what the client will draw.
+  Corsair; Cosmic's `max(...,0)` clamp only diverges below 120, which is unreachable).
+  **This holds only up to v84 — see §1.1.1.**
 - v95 `CWvsContext::RemoveSkillCooltimeOver` @ 0x9CCF80 resets the gauge temp view when
   5221999 is removed — no server action needed; dismount already clears it via riding state.
+
+### 1.1.1 The client's max-durability formula changes at v87 (added 2026-07-28)
+
+The original design generalised one v83 observation into a cross-version claim. Sweeping
+the same function in every IDB shows it is **two** functions. The v95 IDB is PDB-backed and
+names it `get_max_durability_of_vehicle(nSkillID, nSLV, nCharLevel)`, which pins the
+argument order for all the unnamed variants:
+
+| Version | Address | Body |
+|---|---|---|
+| GMS v61 | `sub_652742` | `200 * (a3 + 2*a2 - 120)` |
+| GMS v72 | `sub_6B654D` | `200 * (a3 + 2*a2 - 120)` |
+| GMS v79 | `sub_6E5883` | `200 * (a3 + 2*a2 - 120)` |
+| GMS v83 | `sub_7665F1` | `200 * (a3 + 2*a2 - 120)` |
+| GMS v84 | `sub_788A31` | `200 * (a3 + 2*a2 - 120)` |
+| GMS v87 | `0x7B331D` (`get_max_durability_of_vehicle`) | `300 * a3 + 500 * (a2 - 72)` |
+| GMS v92 | `sub_6E2030` | `300 * a3 + 500 * (a2 - 72)` |
+| GMS v95 | `0x6ED704` (`get_max_durability_of_vehicle`) | `300 * a3 + 500 * (a2 - 72)` |
+| JMS v185 | `sub_7DC77D` | `300 * a3 + 500 * (a2 - 72)` |
+
+Consequence: because §1.1 established that the client renders the gauge as
+*(remaining from the packet, max from this function)*, a single server-side formula
+desyncs the bar on four versions. At charLevel 200 / SLV 10 the server would send a full
+pool of 20 000 against a client max of 29 000 — the bar reads ~69 % on a fresh ship and the
+ship breaks with the gauge still showing fuel. Break and cooldown logic are unaffected
+either way; this is purely the gauge.
+
+**Decision (owner, 2026-07-28): version-gate the server formula.** `ShipHP` takes the
+tenant and selects the arm via `(t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.IsRegion("JMS")`,
+the idiom already used at `libs/atlas-packet/field/clientbound/set_field.go:48`. The pre-87
+arm keeps Cosmic's clamped form (identical over the reachable range, graceful below 120);
+the v87+ arm is floored at 0. See plan.md R-4 and Task 6.
 
 ### 1.2 Cooldown transport: the existing `SET_COOLDOWN` command — no new surface
 
@@ -391,15 +433,18 @@ ranged / magic / energy) since they all funnel through `processAttack`.
 
 ### 4.7 Config resolution and backfill (FR-7.2)
 
-Template changes, all six versions (`template_gms_83_1.json`, `_gms_84_`, `_gms_87_`,
-`_gms_92_`, `_gms_95_`, `_jms_185_`):
+Template changes — **nine** versions after the `main` merge (`template_gms_61_1.json`,
+`_gms_72_`, `_gms_79_`, `_gms_83_`, `_gms_84_`, `_gms_87_`, `_gms_92_`, `_gms_95_`,
+`_jms_185_`; `_gms_12_` and `_gms_48_` are n-a per §1.1):
 
 - `CharacterSkillCooldown` writer entry gains
   `"options": {"skills": {"BATTLESHIP_HP_GAUGE": 5221999}}`.
 - `CharacterBuffGive` writer entry gains
   `"options": {"vehicles": {"CORSAIR_BATTLESHIP": 1932000}}`.
-- Both values are version-stable across the five verified clients (§1.1: same literal in
-  every IDB), so the tables are identical per version — but they remain config, per DOM-25.
+- Both values are version-stable across all nine clients that have the skill (§1.1: same
+  literal in every IDB, v61 through jms185), so the tables are identical per version — but
+  they remain config, per DOM-25. Note this is *not* true of the ship HP formula, which
+  does change at v87 (§1.1.1).
 
 Verification item folded into the plan: confirm the `CharacterSkillCooldown` and
 `CharacterBuffGive` writers are actually routed (opcode present) in all six templates —
@@ -468,7 +513,10 @@ remount rejection while cooling, Cannon/Torpedo on foot rejected.
 | Item | Position |
 |---|---|
 | Ship HP resets on remount (vs Cosmic's persistence) | PRD interview Q3 decision; unchanged. |
-| v92 gauge unverified | No IDB exists; bracketed by verified v87/v95. Worst case: cosmetic no-gauge on v92; break/cooldown logic is version-independent. Documented, not blocking. |
+| ~~v92 gauge unverified~~ | **Closed 2026-07-28** — a v92 IDB now exists; the 5221999 special case is verified directly at `0x8EF260` (§1.1). |
+| Client max-durability formula differs from v87 | Resolved by version-gating `ShipHP` (§1.1.1, owner decision 2026-07-28). Without the gate the gauge would misrender on gms_87/92/95 and jms_185. |
+| gms_87/92/95/jms_185 route no cast or damage handler | The feature is unreachable there until wired. Scoped into this task (plan.md Task 11 Steps 3–4); opcodes from the registry for v87/v95/jms185, derived from the IDB for v92. |
+| gms_v95 has no ingested skill effects | Pre-existing tenant-wide WZ ingestion gap (every skill returns `maxLevel: 0`). Live v95 verification is BLOCKED; not a battleship defect and not in scope to fix. Documented in the backfill runbook. |
 | FR-5.2 TTL basis | PRD assumed the buff expires at 35 min; the mount buff is actually `MaxInt32`. TTL becomes idle-expiry refreshed per drain (§4.3) — preserves the safety-net intent; a >35-min-idle ship re-initializes full, which the reset semantics already permit. |
 | PRD §7 atlas-data row ("confirm it emits 1932000") | Factually wrong — it emits the skill-id placeholder *by design*; resolved with no atlas-data change (§1.4). |
 | Cast→BUFF_APPLIED mirror window | Few-ms desync window: no drain / one rejected attack; self-heals. Accepted (§3.1). |

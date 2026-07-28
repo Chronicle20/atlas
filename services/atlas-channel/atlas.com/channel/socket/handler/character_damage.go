@@ -52,12 +52,26 @@ func CharacterDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		// Drain; the resulting client packets flow through the existing buff
 		// and skill consumers.
 		res := battleship.NewProcessor(l, ctx).Drain(s.Field(), s.CharacterId(), p.Damage())
-		if res.Status == battleship.DrainDrained {
+		if shouldAnnounceGauge(res.Status) {
 			announceShipHpGauge(l, ctx, wp, s, res.RemainingHP)
 		}
 
 		_ = character.NewProcessor(l, ctx).ChangeHP(s.Field(), s.CharacterId(), -int16(p.Damage()))
 	}
+}
+
+// shouldAnnounceGauge is the call-site gate isolated as a pure predicate so
+// it is directly unit-testable: the full handler can't be driven end-to-end
+// in this package's tests (the earlier, pre-existing, unseamed
+// character.NewProcessor(...).GetById() call returns early without a live
+// character service), so the gate itself — the only thing standing between
+// a correct and an incorrect announce — is verified here against every
+// battleship.DrainStatus value instead. Only DrainDrained carries a valid
+// RemainingHP to report; DrainBroke's dismount+cooldown already flows
+// through the existing buff/skill consumers, and DrainSkipped/DrainNotRiding
+// have no HP change to report at all.
+func shouldAnnounceGauge(status battleship.DrainStatus) bool {
+	return status == battleship.DrainDrained
 }
 
 // announceShipHpGauge sends the client's ship HP gauge: the skill-cooldown

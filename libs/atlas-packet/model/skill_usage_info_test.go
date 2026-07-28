@@ -46,6 +46,37 @@ func TestDecodeBishopResurrectionReadsPartyBitmap(t *testing.T) {
 	}
 }
 
+// TestDecodeBuccaneerTimeLeapReadsPartyBitmap pins the v83 wire layout of a
+// Buccaneer Time Leap (5121010) skill-use request. IDA-verified against the
+// v83 client: CUserLocal::DoActiveSkill dispatches 5121010 (loc_969275) with
+// dwTargetFlag=2 (party bit only, no mob bit), 5121010 is NOT in the client's
+// is_antirepeat_buff_skill (@0x96d6ca — no castX/castY), and FindParty always
+// sets the caster's own bit so the bitmap byte is always sent. Layout:
+// updateTime(4) skillId(4) slv(1) bitmap(1) delay(2). Regression guard for
+// task-155: when 5121010 was wrongly in isAntiRepeatBuffSkill the decoder
+// consumed 4 phantom castX/castY bytes and read the bitmap from the wrong
+// offset, so Time Leap resolved no party recipients and reset only the caster.
+func TestDecodeBuccaneerTimeLeapReadsPartyBitmap(t *testing.T) {
+	buf := make([]byte, 0, 12)
+	buf = binary.LittleEndian.AppendUint32(buf, 12345)                             // updateTime
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(skill.BuccaneerTimeLeapId)) // skillId
+	buf = append(buf, 30)                                                          // skill level
+	buf = append(buf, 0b010000)                                                    // bitmap: slot-1 member (bit 5-1=4)
+	buf = binary.LittleEndian.AppendUint16(buf, 0)                                 // trailing delay (unread)
+
+	req := request.Request(buf)
+	reader := request.NewRequestReader(&req, 0)
+	m := &SkillUsageInfo{}
+	m.Decode(nil, context.Background())(&reader, nil)
+
+	if m.SkillId() != uint32(skill.BuccaneerTimeLeapId) {
+		t.Fatalf("skillId = %d, want %d", m.SkillId(), skill.BuccaneerTimeLeapId)
+	}
+	if m.AffectedPartyMemberBitmap() != 0b010000 {
+		t.Fatalf("AffectedPartyMemberBitmap = %#b, want 0b010000 — 5121010 wrongly in isAntiRepeatBuffSkill/isMobAffectingBuff misaligns the bitmap read", m.AffectedPartyMemberBitmap())
+	}
+}
+
 func TestSkillUsageInfoDecodeSpiritJavelinItemId(t *testing.T) {
 	const (
 		skillId = uint32(4121006) // NightLordShadowStars

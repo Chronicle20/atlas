@@ -57,6 +57,11 @@ type mountDeps struct {
 	characterLevel func(characterId uint32) (byte, error)
 	// initShipHP seeds the fresh full ship HP pool (battleship processor).
 	initShipHP func(characterId uint32, skillLevel byte, charLevel byte, ttl time.Duration) error
+	// clearShipHP best-effort clears any ship HP state (mirror + Redis) for
+	// characterId. Used when initShipHP fails: a stale pool from a prior ride
+	// must not be left live for the next Drain to see (see the initShipHP
+	// error branch below).
+	clearShipHP func(characterId uint32)
 }
 
 // isSkillOnlyMount reports whether the skill is a skill-only mount (SpaceShip,
@@ -149,9 +154,15 @@ func HandleMount(l logrus.FieldLogger, f field.Model, characterId uint32, info p
 			return err
 		}
 		if err := deps.initShipHP(characterId, info.SkillLevel(), charLevel, time.Duration(e.Duration())*time.Millisecond); err != nil {
-			// Non-fatal: the pool lazily re-initializes to full on first
-			// drain (FR-3.3), which matches the reset semantics.
-			l.WithError(err).Warnf("Character [%d] battleship ship HP init failed; will lazily re-initialize.", characterId)
+			// Non-fatal (Redis trouble must never block a mount).
+			// But a failed seed must not leave a PRIOR ride's pool
+			// live: dismount clears state asynchronously via the
+			// BUFF_EXPIRED hook, so a fast remount can still find
+			// the old key. Best-effort clear so the next drain
+			// takes the lazy full re-init path instead of
+			// decrementing a stale pool.
+			l.WithError(err).Warnf("Character [%d] battleship ship HP init failed; clearing any stale pool.", characterId)
+			deps.clearShipHP(characterId)
 		}
 		return nil
 	}
@@ -259,6 +270,9 @@ func newMountDeps(l logrus.FieldLogger, ctx context.Context) mountDeps {
 		},
 		initShipHP: func(characterId uint32, skillLevel byte, charLevel byte, ttl time.Duration) error {
 			return battleship.NewProcessor(l, ctx).InitShipHP(characterId, skillLevel, charLevel, ttl)
+		},
+		clearShipHP: func(characterId uint32) {
+			battleship.NewProcessor(l, ctx).Clear(characterId)
 		},
 	}
 }

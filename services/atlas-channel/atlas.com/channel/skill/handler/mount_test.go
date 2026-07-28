@@ -43,6 +43,9 @@ type recordingDeps struct {
 	initSkillLevel byte
 	initCharLevel  byte
 	initTTL        time.Duration
+	initErr        error
+	clearCalled    bool
+	clearCount     int
 }
 
 func (d *recordingDeps) mountDeps() mountDeps {
@@ -87,7 +90,11 @@ func (d *recordingDeps) mountDeps() mountDeps {
 			d.initSkillLevel = skillLevel
 			d.initCharLevel = charLevel
 			d.initTTL = ttl
-			return nil
+			return d.initErr
+		},
+		clearShipHP: func(characterId uint32) {
+			d.clearCalled = true
+			d.clearCount++
 		},
 	}
 }
@@ -368,7 +375,44 @@ func TestHandleMountBattleshipToggleDismounts(t *testing.T) {
 	}
 }
 
+// TestHandleMountBattleshipAbortsOnCharacterLevelError verifies that a
+// characterLevel failure aborts the mount entirely: the error propagates,
+// and neither the buff nor the ship HP pool is touched.
+func TestHandleMountBattleshipAbortsOnCharacterLevelError(t *testing.T) {
+	d := &recordingDeps{vehicleId: 1932000, vehicleOk: true, charLevelErr: errCharacterLevelStub}
+	err := HandleMount(logrus.New(), field.Model{}, 999, battleshipInfo(7), battleshipEffect(), d.mountDeps())
+	if err == nil {
+		t.Fatal("expected characterLevel error to propagate")
+	}
+	if d.applyCalled || d.initCalled {
+		t.Fatal("characterLevel failure must abort before Apply/initShipHP")
+	}
+}
+
+// TestHandleMountBattleshipInitFailureClearsStalePool verifies the Finding-1
+// fix: an initShipHP failure must not abort the mount (Redis trouble never
+// blocks a mount) but MUST best-effort clear any stale pool from a prior
+// ride, so the next Drain takes the lazy full re-init path instead of
+// decrementing leftover HP from before this mount.
+func TestHandleMountBattleshipInitFailureClearsStalePool(t *testing.T) {
+	d := &recordingDeps{vehicleId: 1932000, vehicleOk: true, charLevel: 150, initErr: errInitShipHPStub}
+	err := HandleMount(logrus.New(), field.Model{}, 999, battleshipInfo(7), battleshipEffect(), d.mountDeps())
+	if err != nil {
+		t.Fatalf("HandleMount: %v (initShipHP failure must not abort the mount)", err)
+	}
+	if !d.applyCalled {
+		t.Fatal("expected applyBuff to still be called despite initShipHP failure")
+	}
+	if !d.clearCalled || d.clearCount != 1 {
+		t.Fatalf("expected clearShipHP called exactly once, got called=%v count=%d", d.clearCalled, d.clearCount)
+	}
+}
+
 var errStub = stubErr("slot read must not be called for skill-only mounts")
+
+var errCharacterLevelStub = stubErr("character level load failed")
+
+var errInitShipHPStub = stubErr("ship HP init failed (e.g. transient Redis error)")
 
 type stubErr string
 

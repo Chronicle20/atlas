@@ -373,6 +373,105 @@ func mpEaterAbsorbAmount(maxMp uint32, x int16) uint32 {
 	return uint32(uint64(maxMp) * uint64(x) / 100)
 }
 
+// mortalBlowEligible reports whether a monster's (pre-attack snapshot) HP
+// is at or below the Mortal Blow threshold: hp ≤ maxHp × x / 100, with
+// integer truncating division (Cosmic parity). Widens through uint64 so
+// maxHp near MaxUint32 cannot overflow. Defensive: false when x ≤ 0 or
+// maxHp == 0 (malformed/absent tenant data means the passive is inert).
+func mortalBlowEligible(hp uint32, maxHp uint32, x int16) bool {
+	if x <= 0 || maxHp == 0 {
+		return false
+	}
+	return uint64(hp) <= uint64(maxHp)*uint64(x)/100
+}
+
+// mortalBlowKillRoll reports whether the instant kill procs for a uniform
+// roll in [1,100]: roll ≤ y. Defensive: false when y ≤ 0.
+func mortalBlowKillRoll(roll int, y int16) bool {
+	if y <= 0 {
+		return false
+	}
+	return roll <= int(y)
+}
+
+// isMortalBlowAttack reports whether an attack is a client-side Mortal Blow
+// proc: a ranged attack tagged with the Ranger (3110001) or Sniper
+// (3210001) passive's skill id. The v83 client only tags an attack with
+// these ids on a successful point-blank normal-attack conversion, and the
+// upstream ownership guard in processAttack destroys the session for
+// unowned skill ids, so this gate is sufficient (no job-range check —
+// PRD FR-1).
+func isMortalBlowAttack(at packetmodel.AttackType, skillId uint32) bool {
+	return at == packetmodel.AttackTypeRanged &&
+		(skill3.Id(skillId) == skill3.RangerMortalBlowId || skill3.Id(skillId) == skill3.SniperMortalBlowId)
+}
+
+// mortalBlowDeps groups the seams mortalBlowTryProc needs so tests can
+// drive every branch (snapshot miss, threshold, roll, emit failure)
+// without a real monster.Processor or Kafka — same pattern as
+// damageInfoEntryDeps. Production wiring: mp.GetById, mp.Kill, and
+// rand.Intn(100)+1.
+type mortalBlowDeps struct {
+	getMonster func(monsterId uint32) (monster.Model, error)
+	emitKill   func(f field.Model, monsterId uint32, characterId uint32) error
+	// roll returns a uniform integer in [1,100].
+	roll func() int
+}
+
+// mortalBlowTryProc evaluates and (on success) emits the Mortal Blow
+// instant kill for one damaged monster. Called once per damaged monster
+// after damage and status apply, only for ranged attacks tagged with the
+// Mortal Blow skill ids (the attack's skill IS the passive, so se is
+// already resolved at the character's owned level — no extra effect
+// lookup). The threshold reads the channel's monster snapshot, which
+// reflects pre-attack HP (damage propagates to atlas-monsters
+// asynchronously); that is the specified Cosmic-parity timing (FR-2).
+// Boss exclusion is enforced authoritatively by atlas-monsters — the
+// snapshot carries no boss flag. Errors are logged at Debugf/Errorf and
+// swallowed — never abort the surrounding attack pipeline (FR-5).
+//
+// Mortal Blow is version-agnostic: it applies to any tenant whose client
+// sends skill id 3110001/3210001, including the pre-BB legacy versions
+// v48/v61/v72/v79; it is inert on v95/JMS (post-BB redesign) and on any
+// version whose client never sends the id. No per-version code exists or
+// is needed.
+func mortalBlowTryProc(
+	l logrus.FieldLogger,
+	deps mortalBlowDeps,
+	se effect.Model,
+	monsterId uint32,
+	f field.Model,
+	characterId uint32,
+	skillId uint32,
+) {
+	x, y := se.X(), se.Y()
+	if x <= 0 || y <= 0 {
+		return
+	}
+
+	mon, err := deps.getMonster(monsterId)
+	if err != nil {
+		l.WithError(err).Debugf("Mortal Blow: monster [%d] snapshot fetch failed.", monsterId)
+		return
+	}
+
+	if !mortalBlowEligible(mon.Hp(), mon.MaxHp(), x) {
+		return
+	}
+
+	roll := deps.roll()
+	l.Debugf("Mortal Blow threshold pass: caster=[%d] skill=[%d] monster=[%d] (hp=%d maxHp=%d x=%d) roll=[%d] y=[%d].",
+		characterId, skillId, monsterId, mon.Hp(), mon.MaxHp(), x, roll, y)
+	if !mortalBlowKillRoll(roll, y) {
+		return
+	}
+
+	l.Debugf("Mortal Blow proc: caster=[%d] skill=[%d] monster=[%d] roll=[%d].", characterId, skillId, monsterId, roll)
+	if err := deps.emitKill(f, monsterId, characterId); err != nil {
+		l.WithError(err).Errorf("Mortal Blow: KILL emit failed for monster [%d] caster [%d].", monsterId, characterId)
+	}
+}
+
 // sacrificeHpCost computes the self-HP cost of Dragon Knight Sacrifice:
 // firstLine × x / 100 (truncating integer division, Cosmic parity),
 // clamped so the caster is left with at least 1 HP. Returns 0 when the
@@ -666,6 +765,16 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 							if ppState.enabled {
 								pickPocketTryProc(l, mp.GetById, dp.SpawnMeso, ppState, di, s.Field(), s.CharacterId())
 							}
+							// Mortal Blow proc: per-monster, ranged attacks tagged with the
+							// Ranger/Sniper Mortal Blow skill id only. Ownership was enforced
+							// upstream (unowned skill ids destroy the session). Failures swallowed (FR-5).
+							if isMortalBlowAttack(ai.AttackType(), ai.SkillId()) {
+								mortalBlowTryProc(l, mortalBlowDeps{
+									getMonster: mp.GetById,
+									emitKill:   mp.Kill,
+									roll:       func() int { return rand.Intn(100) + 1 },
+								}, se, di.MonsterId(), s.Field(), s.CharacterId(), ai.SkillId())
+							}
 						},
 					}
 					for _, di := range ai.DamageInfo() {
@@ -769,7 +878,6 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// TODO Blind
 					// TODO Paladin / White Knight charges
 					// TODO Combo Drain
-					// TODO Mortal Blow
 					// TODO Three Snails consumption
 					// TODO Heavens Hammer
 					// TODO ComboTempest

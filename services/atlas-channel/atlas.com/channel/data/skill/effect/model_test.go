@@ -42,3 +42,19 @@ func TestModelY(t *testing.T) {
 		t.Fatalf("Y() = %d, want 55", got)
 	}
 }
+
+// TestExtractThreadsXAndY verifies the generic x/y skill attributes survive
+// the REST → domain transform. Mortal Blow reads X (HP threshold %) and Y
+// (instant-kill chance %) from the effect resolved at the owned level.
+func TestExtractThreadsXAndY(t *testing.T) {
+	m, err := Extract(RestModel{X: 20, Y: 5})
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+	if m.X() != 20 {
+		t.Fatalf("X() = %d, want 20", m.X())
+	}
+	if m.Y() != 5 {
+		t.Fatalf("Y() = %d, want 5", m.Y())
+	}
+}

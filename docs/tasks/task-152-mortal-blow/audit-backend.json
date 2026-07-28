@@ -1,0 +1,83 @@
+{
+  "service": "atlas-channel, atlas-monsters",
+  "path": "services/atlas-channel/atlas.com/channel; services/atlas-monsters/atlas.com/monsters",
+  "date": "2026-07-27",
+  "scope": "changed Go packages only, range c09233e3f..HEAD (task-152-mortal-blow)",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": null,
+  "testsFailed": 0,
+  "testsNote": "all `go test ./...` package results reported ok for every changed package in both modules",
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "atlas-channel/monster",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/monster/processor.go:40"},
+        {"id": "FILE-01", "name": "Processor logic in processor.go", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/monster/processor.go:145"},
+        {"id": "FILE-05", "name": "Kafka message creation in producer.go", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/monster/producer.go:175"},
+        {"id": "MOCK-SYNC", "name": "Mock updated for new interface method", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/monster/mock/processor.go:25,128"},
+        {"id": "FILE-CONTRACT", "name": "KillCommandBody/CommandTypeKill in message-contract file", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/kafka/message/monster/kafka.go:20,94"}
+      ]
+    },
+    {
+      "name": "atlas-channel/socket/handler",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-21", "name": "No duplication of atlas-constants skill ids", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:406-407 uses skill3.RangerMortalBlowId / skill3.SniperMortalBlowId"},
+        {"id": "DOM-12", "name": "No os.Getenv in handler", "status": "pass", "evidence": "zero matches in diff"},
+        {"id": "ERR-SWALLOW", "name": "Errors logged and swallowed, pipeline not aborted (FR-5)", "status": "pass", "evidence": "character_attack_common.go:472-476"},
+        {"id": "GATING", "name": "Proc gated behind onDamageApplied (post damage/status, non-reflected)", "status": "pass", "evidence": "character_attack_mortal_blow_test.go:274-289,294-324"},
+        {"id": "LOGGER-WIRING", "name": "Uses caller-scoped l, not logrus.StandardLogger()", "status": "pass", "evidence": "character_attack_common.go:773"},
+        {"id": "DOM-20", "name": "Table-driven tests (n/a - no model.go in this package)", "status": "pass", "evidence": "character_attack_mortal_blow_test.go:25-100 table-driven for pure predicates; package has no model.go so DOM-20 domain row does not formally apply"},
+        {"id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "character_attack_common.go is the established multi-passive attack-pipeline helper file for this non-DDD socket handler package, not a Processor+RestModel+requests collapse"}
+      ]
+    },
+    {
+      "name": "atlas-monsters/monster",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/processor.go:102"},
+        {"id": "FILE-01", "name": "Processor methods in processor.go", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/processor.go:1723,573"},
+        {"id": "DOM-21", "name": "No duplication of atlas-constants/domain types", "status": "pass", "evidence": "reuses information.Model.Boss() at services/atlas-monsters/atlas.com/monsters/monster/information/model.go:46"},
+        {"id": "FAIL-CLOSED-GUARD", "name": "Fail-closed boss guard (FR-4)", "status": "pass", "evidence": "processor.go:1735-1738; verified by kill_test.go:111-140"},
+        {"id": "ALIVE-GUARD", "name": "Alive/presence guard precedes boss check", "status": "pass", "evidence": "processor.go:1724-1732; kill_test.go:145-187"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/kill_test.go:23,76,111,145,161 - five discrete TestKill_* functions, no tests := []struct{...} + t.Run pattern"}
+      ]
+    },
+    {
+      "name": "atlas-monsters/kafka/consumer/monster",
+      "type": "sub-domain-analog",
+      "checks": [
+        {"id": "SUB-01", "name": "Business logic not in handler", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/kafka/consumer/monster/consumer.go:177-183"},
+        {"id": "SUB-04", "name": "No manual JSON parsing", "status": "pass", "evidence": "generic command[killCommandBody] envelope via message.AdaptHandler, consumer.go:54-56"},
+        {"id": "WIRING", "name": "New command registered in InitHandlers", "status": "pass", "evidence": "consumer.go:54-56"},
+        {"id": "FILE-CONTRACT", "name": "killCommandBody/CommandTypeKill in kafka.go", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/kafka/consumer/monster/kafka.go:27,110"}
+      ]
+    },
+    {
+      "name": "atlas-channel/data/skill/effect",
+      "type": "domain",
+      "checks": [
+        {"id": "TEST-CONSTRUCTION", "name": "Test uses documented Extract() transform, not ad-hoc struct", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/data/skill/effect/model_test.go:45-60"}
+      ]
+    },
+    {
+      "name": "DOM-24 (Kafka producer test stubbing)",
+      "type": "cross-cutting",
+      "checks": [
+        {"id": "DOM-24", "name": "producer_test.go TestKillCommandProvider does not touch real Kafka", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/monster/producer_test.go:74-106"},
+        {"id": "DOM-24", "name": "mortalBlowTryProc tests use func-literal emitKill dep, not real producer", "status": "pass", "evidence": "character_attack_mortal_blow_test.go:135-138,155-158,169-172"},
+        {"id": "DOM-24", "name": "kill_test.go uses injected fake emit field, not real producer", "status": "pass", "evidence": "kill_test.go:39-40 via processor_test.go:236-260 newRecordingProcessorWithBodies"}
+      ]
+    }
+  ],
+  "blocking": [
+    "DOM-20: services/atlas-monsters/atlas.com/monsters/monster/kill_test.go:23,76,111,145,161 - five TestKill_* functions are not table-driven, failing the literal DOM-20 pass criteria for a domain package with model.go"
+  ],
+  "nonBlocking": [
+    "DOM-20 finding mirrors the pre-existing, service-wide convention in this package (drain_mp_test.go and most of processor_test.go use the same discrete-function style); testing-guide.md uses 'Prefer table-driven tests' (soft language). Recorded per audit policy (prevalence is not compliance) but is the only FAIL found across the diff.",
+    "Pre-existing un-gated information.NewProcessor(...).GetById call inside damageCore (processor.go:576-579) causes real HTTP retry noise in the new TestKill_NonBoss_KilledAndRemoved test; moved verbatim from the prior Damage() method (not a new regression), not covered by any DOM-* item, worth a follow-up to route through testInformationLookup like the other three call sites in this file."
+  ]
+}

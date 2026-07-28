@@ -4,10 +4,11 @@ import (
 	"atlas-storage/asset"
 	"atlas-storage/storage"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // BuildProjection creates a new projection from storage data.

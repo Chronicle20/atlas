@@ -41,7 +41,6 @@ func TestMonsterDropBuilderFluentAPI(t *testing.T) {
 		SetQuestId(1001).
 		SetChance(50000).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() returned unexpected error: %v", err)
 	}

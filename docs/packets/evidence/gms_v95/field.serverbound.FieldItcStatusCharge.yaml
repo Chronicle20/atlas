@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcStatusCharge
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnStatusCharge
+    address: "0x572a50"
+    decompile_sha256: a9c24bcc7604650f67c26bce219763a53d57ab3f59f999a00263bee1cef59913
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_status_charge_test.go#TestItcStatusChargeByteOutput_v95

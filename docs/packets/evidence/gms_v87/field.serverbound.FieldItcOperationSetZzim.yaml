@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationSetZzim
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnSetZzim
+    address: "0x5cf600"
+    decompile_sha256: bc28eb5fa7639663194e8863129d445baae2597448788d1df81c7f32cc6a58d6
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationSetZzimByteOutput_v87

@@ -8,11 +8,12 @@ import (
 	"testing"
 	"time"
 
-	channelConstant "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
+
+	channelConstant "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 func setupTestRegistry(t *testing.T) {
@@ -140,7 +141,6 @@ func TestChannelServer_Found(t *testing.T) {
 	registry.Register(ctx, ch)
 
 	result, err := registry.ChannelServer(ctx, channelConstant.NewModel(1, 2))
-
 	if err != nil {
 		t.Fatalf("ChannelServer() unexpected error: %v", err)
 	}
@@ -191,7 +191,6 @@ func TestRemoveByWorldAndChannel_Success(t *testing.T) {
 	registry.Register(ctx, ch)
 
 	err := registry.RemoveByWorldAndChannel(ctx, channelConstant.NewModel(1, 0))
-
 	if err != nil {
 		t.Fatalf("RemoveByWorldAndChannel() unexpected error: %v", err)
 	}

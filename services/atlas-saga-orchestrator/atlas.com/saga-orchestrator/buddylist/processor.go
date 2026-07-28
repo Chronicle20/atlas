@@ -1,17 +1,19 @@
 package buddylist
 
 import (
+	"atlas-saga-orchestrator/kafka/message"
 	"context"
 
-	"atlas-saga-orchestrator/kafka/message"
 	buddylist2 "atlas-saga-orchestrator/kafka/message/buddylist"
-	"atlas-saga-orchestrator/kafka/producer"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
@@ -34,6 +36,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		p:   producer.ProviderImpl(l)(ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) IncreaseCapacityAndEmit(transactionId uuid.UUID, characterId uint32, worldId world.Id, newCapacity byte) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {

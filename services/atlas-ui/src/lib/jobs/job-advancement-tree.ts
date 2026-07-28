@@ -5,9 +5,12 @@ export interface JobEntry {
 }
 
 // Structural source of truth for the job advancement graph.
-// Ported verbatim from the former lib/utils/job-tree.ts JOB_TREE, whose ids/names
-// derive from libs/atlas-constants/job/constants.go::Jobs (v83 conventions).
-// Order per branch: branch leader (parent: null) -> 1st -> 2nd -> 3rd -> 4th.
+// Ported from the former lib/utils/job-tree.ts JOB_TREE, whose ids/names derive
+// from libs/atlas-constants/job/constants.go::Jobs (v83 conventions). One
+// intentional divergence: constants.go has GM (900) and Super GM (910) as
+// roots, but in-game they present as an advancement line from Beginner, so
+// this display graph parents 900 under 0 and 910 under 900 (task-182).
+// Order per branch: branch leader -> 1st -> 2nd -> 3rd -> 4th.
 export const JOB_GRAPH: Record<number, JobEntry> = {
   // Beginner branch
   0: { id: 0, name: "Beginner", parent: null },
@@ -57,10 +60,13 @@ export const JOB_GRAPH: Record<number, JobEntry> = {
   520: { id: 520, name: "Gunslinger", parent: 500 },
   521: { id: 521, name: "Outlaw", parent: 520 },
   522: { id: 522, name: "Corsair", parent: 521 },
-  // Special / Admin (standalone roots)
+  // Special / Admin. Maple Leaf Brigadier stays a standalone root. In-game, GM
+  // and Super GM present as an advancement line from Beginner, so the DISPLAY
+  // graph adopts Beginner > GM > Super GM — an intentional divergence from
+  // libs/atlas-constants/job/constants.go, where 900/910 are roots (task-182).
   800: { id: 800, name: "Maple Leaf Brigadier", parent: null },
-  900: { id: 900, name: "GM", parent: null },
-  910: { id: 910, name: "Super GM", parent: null },
+  900: { id: 900, name: "GM", parent: 0 },
+  910: { id: 910, name: "Super GM", parent: 900 },
   // Noblesse / Cygnus Knights
   1000: { id: 1000, name: "Noblesse", parent: null },
   1100: { id: 1100, name: "Dawn Warrior 1", parent: 1000 },
@@ -103,22 +109,6 @@ export const JOB_GRAPH: Record<number, JobEntry> = {
   2218: { id: 2218, name: "Evan 10", parent: 2217 },
 };
 
-// Version-introduction floor per branch ROOT id. A node inherits its root's floor
-// (gating is per-branch, never per-node). This is a DISPLAY-curation choice — the
-// atlas-data /jobs/{id}/skills endpoint is NOT version-gated (live probe 2026-06-14)
-// — so floors hide classes that did not exist in the live game at the tenant's
-// version; they are not a data-availability gate.
-//   0    Adventurers          — v83 baseline
-//   800  Maple Leaf Brigadier  — v83 baseline (special)
-//   900  GM                    — admin, always present
-//   910  Super GM              — admin, always present
-//   1000 Cygnus (Noblesse)     — reference_maplestory_version_timeline: KoC exist in v83
-//   2000 Legend (Aran)         — product owner (PRD FR-8.1): Aran introduced v80
-//   2001 Evan                  — reference_maplestory_version_timeline: Evan introduced v84
-export const BRANCH_FLOORS: Record<number, number> = {
-  0: 83, 800: 83, 900: 83, 910: 83, 1000: 83, 2000: 80, 2001: 84,
-};
-
 /** Branch root ids (parent === null), ascending. */
 export const JOB_ROOTS: number[] = Object.values(JOB_GRAPH)
   .filter((e) => e.parent === null)
@@ -145,14 +135,29 @@ export function rootOf(id: number): number {
   return cur.id;
 }
 
-/** Version floor for a node = its root's BRANCH_FLOORS entry (0 = fail-open if unfloored). */
-export function floorOf(id: number): number {
-  return BRANCH_FLOORS[rootOf(id)] ?? 0;
+/**
+ * Branch root ids the tenant actually has, ascending.
+ *
+ * `available` is the set of job ids returned by GET /api/data/jobs — the
+ * tenant's ingested job set. It replaces the retired hand-maintained
+ * version-floor tables that used to map a job id to the minimum majorVersion
+ * that shipped it: existence is data, not a hand-maintained table. Callers
+ * must not pass an empty set to mean "unknown"; see JobsPage's isSuccess gate.
+ */
+export function visibleRoots(available: ReadonlySet<number>): number[] {
+  return JOB_ROOTS.filter((r) => available.has(r));
 }
 
-/** Root ids visible at the given tenant major version, ascending. */
-export function visibleRoots(major: number): number[] {
-  return JOB_ROOTS.filter((r) => floorOf(r) <= major);
+/**
+ * Direct children of a node that the tenant has. Lets the tree hide a subtree
+ * the tenant's version never shipped (e.g. Pirate on a v48 tenant) while
+ * showing its siblings.
+ */
+export function visibleChildrenOf(
+  id: number,
+  available: ReadonlySet<number>,
+): number[] {
+  return childrenOf(id).filter((c) => available.has(c));
 }
 
 /** Root -> node advancement path (inclusive), for breadcrumbs. */
@@ -164,4 +169,62 @@ export function jobTreePath(jobId: number): JobEntry[] {
     cur = cur.parent != null ? JOB_GRAPH[cur.parent] : undefined;
   }
   return path;
+}
+
+/**
+ * Every advancement chain below entryId: one array per root-to-leaf path of
+ * the subtree, EXCLUDING entryId itself, DFS in ascending child order. A chain
+ * containing any job the tenant does not have is dropped entirely (matches
+ * visibleChildrenOf semantics). A leaf entry yields [].
+ */
+export function advancementChains(
+  entryId: number,
+  available: ReadonlySet<number>,
+): number[][] {
+  const walk = (id: number): number[][] => {
+    const kids = childrenOf(id);
+    if (kids.length === 0) return [[]];
+    const out: number[][] = [];
+    for (const k of kids) {
+      for (const rest of walk(k)) out.push([k, ...rest]);
+    }
+    return out;
+  };
+  return walk(entryId)
+    .filter((chain) => chain.length > 0)
+    .filter((chain) => chain.every((id) => available.has(id)));
+}
+
+function ordinal(n: number): string {
+  if (n === 1) return "1st";
+  if (n === 2) return "2nd";
+  if (n === 3) return "3rd";
+  return `${n}th`;
+}
+
+/**
+ * Tier tag for a flow chip: "Base" for a tree root with children, "" for a
+ * childless root or unknown id, else the ordinal advancement depth
+ * ("1st" … "10th") measured from the tree root.
+ */
+export function tierLabel(jobId: number): string {
+  const depth = jobTreePath(jobId).length - 1;
+  if (depth < 0) return "";
+  if (depth === 0) return childrenOf(jobId).length > 0 ? "Base" : "";
+  return ordinal(depth);
+}
+
+/** Count of tenant-available nodes in entryId's subtree, entry included (0 if the entry itself is absent). */
+export function subtreeCount(
+  entryId: number,
+  available: ReadonlySet<number>,
+): number {
+  if (JOB_GRAPH[entryId] === undefined || !available.has(entryId)) return 0;
+  return (
+    1 +
+    visibleChildrenOf(entryId, available).reduce(
+      (n, k) => n + subtreeCount(k, available),
+      0,
+    )
+  );
 }

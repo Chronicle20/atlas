@@ -1,0 +1,10 @@
+packet: pet/serverbound/PetMovementRequest
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_6E5BD6
+    address: "0x6e5bd6"
+    decompile_sha256: abe13301ea31bc3cc9b6a276c6febe09313383dd8c7ea3f9cb02b7409d20c398
+verifies:
+  - libs/atlas-packet/pet/serverbound/movement_test.go#TestPetMovementBytesV48

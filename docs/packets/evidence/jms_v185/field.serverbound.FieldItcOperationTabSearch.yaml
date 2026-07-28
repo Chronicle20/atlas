@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationTabSearch
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CITCWnd_Tab::OnButtonClicked
+    address: "0x61e3cf"
+    decompile_sha256: f31ebd60066e034e7414b8cb88820f3183ca71d0d432f41cad40c88b79655553
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationTabSearchByteOutput_jms

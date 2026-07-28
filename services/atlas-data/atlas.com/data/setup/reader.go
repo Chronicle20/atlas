@@ -4,8 +4,9 @@ import (
 	"atlas-data/xml"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func parseSetupId(name string) (uint32, error) {
@@ -42,6 +43,7 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			m.Price = uint32(i.GetIntegerWithDefault("price", 0))
 			m.SlotMax = uint32(i.GetIntegerWithDefault("slotMax", 100))
 			m.RecoveryHP = uint32(i.GetIntegerWithDefault("recoveryHP", 0))
+			m.RecoveryMP = uint32(i.GetIntegerWithDefault("recoveryMP", 0))
 			m.TradeBlock = i.GetBool("tradeBlock", false)
 			m.NotSale = i.GetBool("notSale", false)
 			m.ReqLevel = uint32(i.GetIntegerWithDefault("reqLevel", 0))

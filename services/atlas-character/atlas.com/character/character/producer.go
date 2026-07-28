@@ -3,6 +3,9 @@ package character
 import (
 	character2 "atlas-character/kafka/message/character"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
@@ -11,8 +14,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func awardLevelCommandProvider(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount byte) model.Provider[[]kafka.Message] {
@@ -210,6 +211,21 @@ func notEnoughMesoErrorStatusEventProvider(transactionId uuid.UUID, characterId 
 		Body: character2.StatusEventMesoErrorBody{
 			Error:  character2.StatusEventErrorTypeNotEnoughMeso,
 			Amount: amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func apTransferErrorStatusEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, errorType string, detail string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatusEventApTransferErrorBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		Type:          character2.StatusEventTypeError,
+		Body: character2.StatusEventApTransferErrorBody{
+			Error:  errorType,
+			Detail: detail,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

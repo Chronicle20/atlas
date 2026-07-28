@@ -1,32 +1,33 @@
 package main
 
 import (
+	"atlas-world/broadcast"
 	"atlas-world/channel"
 	"atlas-world/configuration"
 	"atlas-world/configuration/projection"
+	broadcast2 "atlas-world/kafka/consumer/broadcast"
 	channel2 "atlas-world/kafka/consumer/channel"
-	"atlas-world/logger"
 	"atlas-world/rate"
 	"atlas-world/tasks"
 	"atlas-world/world"
 	"context"
-	"fmt"
 	"os"
-	"strconv"
-	"sync/atomic"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+
+	"go.opentelemetry.io/otel"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	lock "github.com/Chronicle20/atlas/libs/atlas-lock"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 const serviceName = "atlas-world"
@@ -54,76 +55,51 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
+	state := projection.NewState()
+	caughtUp := projection.NewCaughtUp()
 
-	tdm := service.GetTeardownManager()
+	rt := service.Bootstrap(serviceName,
+		service.WithConfigProjection(consumerGroupId, func(t service.ProjectionTopics) service.Projection {
+			sub := &projection.Subscriber{State: state, CaughtUp: caughtUp, TenantTopic: t.TenantStatus}
+			return service.ProjectionFuncs{StartFunc: sub.Start, WaitCaughtUpFunc: caughtUp.WaitCaughtUp}
+		}),
+		service.WithReadinessGate(configuration.SnapshotReady),
+	)
+	l := rt.Logger()
 
 	rc := atlas.Connect(l)
 	channel.InitRegistry(rc)
 	rate.InitRegistry(rc)
+	broadcast.InitRegistry(rc)
 
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
-
-	// Configuration projection: consume the tenant config-status topic and
-	// gate readiness on catch-up. Created BEFORE the REST server so
-	// /readyz can close over caughtUp. Replaces the legacy one-shot REST
-	// load that crash-looped the pod when a tenant was provisioned after
-	// start.
-	state := projection.NewState()
-	caughtUp := projection.NewCaughtUp()
-	tenantTopic := os.Getenv("EVENT_TOPIC_CONFIGURATION_TENANT_STATUS")
-	if tenantTopic == "" {
-		l.Warn("projection: EVENT_TOPIC_CONFIGURATION_TENANT_STATUS is not set; tenant config updates will not propagate live")
-	}
-	sub := &projection.Subscriber{State: state, CaughtUp: caughtUp, TenantTopic: tenantTopic}
-	projectionGroupId := fmt.Sprintf("%s - projection - %s", consumerGroupId, uuid.New().String())
-	if err := sub.Start(tdm.Context(), l, tdm.WaitGroup(), projectionGroupId); err != nil {
-		l.WithError(err).Fatal("Unable to start configuration projection subscriber.")
-	}
-
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	channel2.InitConsumers(l)(cmf)(consumerGroupId)
+	broadcast2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := channel2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
+	if err := broadcast2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register broadcast command handlers.")
+	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
-
-	// Process-level shutting-down flag; flipped on SIGTERM teardown so
-	// /readyz reports not-ready before the rest of shutdown.
-	var shuttingDown atomic.Bool
-	ready := func() bool { return configuration.SnapshotReady() && !shuttingDown.Load() }
-	tdm.TeardownFunc(func() {
-		shuttingDown.Store(true)
-		l.Info("Flipped /readyz to not-ready for graceful shutdown.")
-	})
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(channel.InitResource(GetServer())).
 		AddRouteInitializer(world.InitResource(GetServer())).
 		AddRouteInitializer(rate.InitResource(GetServer())).
+		AddRouteInitializer(broadcast.InitResource(GetServer())).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
-		AddRouteInitializer(server.MountReadiness("/readyz", ready)).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
 	l.Infof("Service started.")
 
-	// Gate on catch-up. A startup catch-up timeout fails loudly (k8s
-	// restarts) — distinct from the request-time crash this task removes.
-	ctxCaught, cancelCaught := context.WithTimeout(tdm.Context(), parseProjectionCatchupTimeout())
-	if err := caughtUp.WaitCaughtUp(ctxCaught); err != nil {
-		cancelCaught()
-		l.WithError(err).Fatal("Configuration projection failed to catch up.")
-	}
-	cancelCaught()
+	rt.AwaitProjectionCatchUp()
 	l.Info("Configuration projection caught up.")
 
 	// Republish projection snapshots into the configuration package vars
@@ -131,7 +107,9 @@ func main() {
 	// runs synchronously inside RunBridge before its ticker, so
 	// GetTenantConfigs below (which blocks on readyCh) sees a populated
 	// snapshot.
-	go configuration.RunBridge(tdm.Context(), l, state.Snapshot, time.Second, configuration.ReinitChangedRates(l))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		configuration.RunBridge(rt.Context(), l, state.Snapshot, time.Second, configuration.ReinitChangedRates(l))
+	})
 
 	// Boot channel-status sweep. GetTenantConfigs blocks until the bridge's
 	// first publish closes readyCh; on error (not ready) log and skip
@@ -144,28 +122,42 @@ func main() {
 	}
 	span.End()
 
-	go tasks.Register(l, tdm.Context())(channel.NewExpiration(l, tdm.Context(), time.Second*10))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(channel.NewExpiration(l, rt.Context(), time.Second*10))
+	})
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
-}
-
-// parseProjectionCatchupTimeout reads PROJECTION_CATCHUP_TIMEOUT_S from
-// env (positive integer seconds) and returns the catch-up window for the
-// configuration projection at startup. Default is 5 minutes, covering the
-// fresh-PR-env case where atlas-pr-bootstrap is still writing the initial
-// tenant configs when this pod boots.
-func parseProjectionCatchupTimeout() time.Duration {
-	const def = 5 * time.Minute
-	v := os.Getenv("PROJECTION_CATCHUP_TIMEOUT_S")
-	if v == "" {
-		return def
+	// registerBroadcastSweep runs only on the leader-elected pod. atlas-world
+	// runs replicas:2 with no leader election otherwise; without this gate
+	// both pods would sweep every second and STARTED/ENDED status events
+	// would double-fire continuously.
+	registerBroadcastSweep := func(l logrus.FieldLogger, ctx context.Context) {
+		tasks.Register(l, ctx)(broadcast.NewSweep(l, ctx, time.Second))
 	}
-	n, err := strconv.Atoi(v)
-	if err != nil || n <= 0 {
-		return def
+
+	if leaderEnabled(l) {
+		ttl := leaderTTL(l)
+		le, err := lock.New(rc, "world-broadcast-sweep",
+			lock.WithTTL(ttl),
+			lock.WithRefreshInterval(leaderRefresh(l, ttl)),
+			lock.WithBackoff(leaderBackoff(l)),
+			lock.WithLogger(l),
+		)
+		if err != nil {
+			l.WithError(err).Fatal("Unable to construct LeaderElection.")
+		}
+		routine.Go(l, rt.Context(), func(_ context.Context) {
+			err := le.Run(rt.Context(), func(leaderCtx context.Context) {
+				registerBroadcastSweep(l, leaderCtx)
+				<-leaderCtx.Done()
+			})
+			if err != nil {
+				l.WithError(err).Errorf("LeaderElection.Run exited with error.")
+			}
+		})
+	} else {
+		l.Warnf("WORLD_BROADCAST_LEADER_ELECTION_ENABLED=false — broadcast sweep runs unconditionally on this pod.")
+		registerBroadcastSweep(l, rt.Context())
 	}
-	return time.Duration(n) * time.Second
+
+	rt.Wait()
 }

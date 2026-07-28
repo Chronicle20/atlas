@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterDestroy
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CMobPool::OnMobLeaveField
+    address: "0x646ff6"
+    decompile_sha256: a2c88236ff1ceef1db60c226fbd42f0db8d4f9eb21823e8635b217400a60ce2c
+verifies:
+  - libs/atlas-packet/monster/clientbound/destroy_test.go#TestMonsterDestroyBytesV79

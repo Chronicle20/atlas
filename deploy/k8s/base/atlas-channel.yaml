@@ -19,6 +19,10 @@ spec:
         ports:
         # BEGIN generated:container-ports (tools/gen-lb-ports.sh — edit deploy/k8s/base/versions.json)
         - containerPort: 1201
+        - containerPort: 4801
+        - containerPort: 6101
+        - containerPort: 7201
+        - containerPort: 7901
         - containerPort: 8301
         - containerPort: 8401
         - containerPort: 8701
@@ -56,6 +60,22 @@ spec:
     targetPort: 1201
     protocol: TCP
     name: atlas-channel-gms-12
+  - port: 4801
+    targetPort: 4801
+    protocol: TCP
+    name: atlas-channel-gms-48
+  - port: 6101
+    targetPort: 6101
+    protocol: TCP
+    name: atlas-channel-gms-61
+  - port: 7201
+    targetPort: 7201
+    protocol: TCP
+    name: atlas-channel-gms-72
+  - port: 7901
+    targetPort: 7901
+    protocol: TCP
+    name: atlas-channel-gms-79
   - port: 8301
     targetPort: 8301
     protocol: TCP

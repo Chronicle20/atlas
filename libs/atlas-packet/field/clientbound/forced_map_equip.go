@@ -3,9 +3,10 @@ package clientbound
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const ForcedMapEquipWriter = "ForcedMapEquip"
@@ -14,8 +15,7 @@ const ForcedMapEquipWriter = "ForcedMapEquip"
 // The v83 handler decodes no fields (the client vtable-forwards to field-specific
 // data handling), so the wire payload is empty.
 // packet-audit:fname CField::OnFieldSpecificData
-type ForcedMapEquip struct {
-}
+type ForcedMapEquip struct{}
 
 func NewForcedMapEquip() ForcedMapEquip {
 	return ForcedMapEquip{}

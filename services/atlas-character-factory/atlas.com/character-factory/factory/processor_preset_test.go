@@ -14,9 +14,10 @@ import (
 	"testing"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // mkCtx creates a context with a valid tenant.
@@ -51,7 +52,7 @@ func minimalPreset(id uuid.UUID) preset.RestModel {
 }
 
 func TestCreateFromPreset_InvalidPresetId(t *testing.T) {
-	p := NewProcessorWithClients(logrus.StandardLogger(), &confmock.FakePresetClient{}, &cmock.FakeNameValidityClient{}, &dmock.FakeClient{})
+	p := NewProcessorWithClients(logrus.StandardLogger(), &confmock.FakePresetClient{}, &cmock.FakeNameValidityClient{}, &dmock.ProcessorMock{})
 	_, err := p.CreateFromPreset(mkCtx(t), PresetCreateRestModel{PresetId: "not-a-uuid"})
 	if !errors.Is(err, ErrInvalidPresetId) {
 		t.Fatalf("expected ErrInvalidPresetId, got %v", err)
@@ -60,7 +61,7 @@ func TestCreateFromPreset_InvalidPresetId(t *testing.T) {
 
 func TestCreateFromPreset_PresetNotFound(t *testing.T) {
 	pc := &confmock.FakePresetClient{Err: configuration.ErrPresetNotFound}
-	p := NewProcessorWithClients(logrus.StandardLogger(), pc, &cmock.FakeNameValidityClient{}, &dmock.FakeClient{})
+	p := NewProcessorWithClients(logrus.StandardLogger(), pc, &cmock.FakeNameValidityClient{}, &dmock.ProcessorMock{})
 	_, err := p.CreateFromPreset(mkCtx(t), PresetCreateRestModel{PresetId: uuid.New().String()})
 	if !errors.Is(err, ErrPresetNotFound) {
 		t.Fatalf("expected ErrPresetNotFound, got %v", err)
@@ -75,7 +76,7 @@ func TestCreateFromPreset_NameInvalidLength(t *testing.T) {
 	nc := &cmock.FakeNameValidityClient{
 		Result: character.NameValidityResult{Valid: false, Reason: "length"},
 	}
-	p := NewProcessorWithClients(logrus.StandardLogger(), pc, nc, &dmock.FakeClient{})
+	p := NewProcessorWithClients(logrus.StandardLogger(), pc, nc, &dmock.ProcessorMock{})
 	_, err := p.CreateFromPreset(mkCtx(t), PresetCreateRestModel{PresetId: presetId.String(), Name: "x"})
 	var nameErr *NameInvalidError
 	if !errors.As(err, &nameErr) {
@@ -94,7 +95,7 @@ func TestCreateFromPreset_NameDuplicate(t *testing.T) {
 	nc := &cmock.FakeNameValidityClient{
 		Result: character.NameValidityResult{Valid: false, Reason: "duplicate"},
 	}
-	p := NewProcessorWithClients(logrus.StandardLogger(), pc, nc, &dmock.FakeClient{})
+	p := NewProcessorWithClients(logrus.StandardLogger(), pc, nc, &dmock.ProcessorMock{})
 	_, err := p.CreateFromPreset(mkCtx(t), PresetCreateRestModel{PresetId: presetId.String(), Name: "Dupe"})
 	if !errors.Is(err, ErrNameDuplicate) {
 		t.Fatalf("expected ErrNameDuplicate, got %v", err)
@@ -109,8 +110,8 @@ func TestCreateFromPreset_EquipmentValidationFail(t *testing.T) {
 	nc := &cmock.FakeNameValidityClient{
 		Result: character.NameValidityResult{Valid: true},
 	}
-	// FakeClient with no items — GetItemById returns ErrNotFound for all ids
-	dc := &dmock.FakeClient{}
+	// ProcessorMock with no items — GetItemById returns ErrNotFound for all ids
+	dc := &dmock.ProcessorMock{}
 	p := NewProcessorWithClients(logrus.StandardLogger(), pc, nc, dc)
 	_, err := p.CreateFromPreset(mkCtx(t), PresetCreateRestModel{PresetId: presetId.String(), Name: "Hero"})
 	if !errors.Is(err, ErrPresetValidation) {
@@ -124,7 +125,7 @@ func TestCreateFromPreset_SkillBatchFail(t *testing.T) {
 		Presets: map[uuid.UUID]preset.RestModel{presetId: minimalPreset(presetId)},
 	}
 	nc := &cmock.FakeNameValidityClient{Result: character.NameValidityResult{Valid: true}}
-	dc := &dmock.FakeClient{
+	dc := &dmock.ProcessorMock{
 		Items: map[uint32]data.ItemInfo{
 			// All equipment and inventory items resolve, but skills fail
 			1002357: {Id: 1002357, Equipable: true},
@@ -146,7 +147,7 @@ func TestCreateFromPreset_SkillNotFoundInResponse(t *testing.T) {
 		Presets: map[uuid.UUID]preset.RestModel{presetId: minimalPreset(presetId)},
 	}
 	nc := &cmock.FakeNameValidityClient{Result: character.NameValidityResult{Valid: true}}
-	dc := &dmock.FakeClient{
+	dc := &dmock.ProcessorMock{
 		Items: map[uint32]data.ItemInfo{
 			1002357: {Id: 1002357, Equipable: true},
 			1402046: {Id: 1402046, Equipable: true},

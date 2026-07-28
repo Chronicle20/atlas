@@ -3,9 +3,10 @@ package marriage
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor defines the interface for marriage gift processing
@@ -28,6 +29,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // GetMarriageGifts returns the marriage gift data for a character
 func (p *ProcessorImpl) GetMarriageGifts(characterId uint32) model.Provider[Model] {

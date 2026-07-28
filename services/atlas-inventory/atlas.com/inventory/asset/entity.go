@@ -30,6 +30,7 @@ type Entity struct {
 	// stackable fields
 	Quantity     uint32
 	OwnerId      uint32
+	Owner        string `gorm:"not null;default:''"`
 	Flag         uint16
 	Rechargeable uint64
 	// equipment fields
@@ -48,8 +49,8 @@ type Entity struct {
 	Hands          uint16
 	Speed          uint16
 	Jump           uint16
-	Slots     uint16
-	LevelType byte
+	Slots          uint16
+	LevelType      byte
 	Level          byte
 	Experience     uint32
 	HammersApplied uint32
@@ -76,6 +77,7 @@ func Make(e Entity) (Model, error) {
 		createdAt:      e.CreatedAt,
 		quantity:       e.Quantity,
 		ownerId:        e.OwnerId,
+		owner:          e.Owner,
 		flag:           e.Flag,
 		rechargeable:   e.Rechargeable,
 		strength:       e.Strength,
@@ -93,8 +95,8 @@ func Make(e Entity) (Model, error) {
 		hands:          e.Hands,
 		speed:          e.Speed,
 		jump:           e.Jump,
-		slots:     e.Slots,
-		levelType: e.LevelType,
+		slots:          e.Slots,
+		levelType:      e.LevelType,
 		level:          e.Level,
 		experience:     e.Experience,
 		hammersApplied: e.HammersApplied,

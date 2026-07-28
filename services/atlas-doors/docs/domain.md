@@ -63,7 +63,7 @@ The resolver's verdict for a single spawn (internal).
 - `ResolveTownPortal` encodes the wire portal id as `0x80 + slot`. When the town map exposes more door portals than the slot index, the slot's portal position is used; otherwise the supplied fallback position (default 0,0) is used. It always succeeds.
 - `ResolveTownMap` picks `forcedReturnMapId` when it is a real map (not the `EmptyMapId` sentinel `999999999` and not 0); otherwise `returnMapId`.
 - `HasValidReturn` is false only when the resolved town map equals the `EmptyMapId` sentinel.
-- A door's `expiresAt` is zero when the skill effect duration is `<= 0`; otherwise it is `deployTime + durationMs`.
+- A door's `expiresAt` is set to `deployTime` when the resolved skill effect duration is `<= 0`; otherwise it is `deployTime + durationMs`.
 - The expiry sweep removes a door only when `expiresAt` is non-zero, has passed, and `now - deployTime` is at least the deploy grace window (3 seconds).
 - `ReslotParty` reslots the town side only; it never re-sends the area door. Current members reslot to their computed party slot; leavers reslot to solo (slot 0).
 - `Reslot` is a no-op when the new slot equals the current slot.

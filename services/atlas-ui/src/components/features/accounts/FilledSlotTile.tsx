@@ -17,7 +17,11 @@ interface FilledSlotTileProps {
   worlds: TenantConfigAttributes["worlds"];
 }
 
-export function FilledSlotTile({ character, tenant, worlds }: FilledSlotTileProps) {
+export function FilledSlotTile({
+  character,
+  tenant,
+  worlds,
+}: FilledSlotTileProps) {
   const inventoryQuery = useInventory(tenant, character.id);
   const [iconLoadFailed, setIconLoadFailed] = useState(false);
 
@@ -25,7 +29,9 @@ export function FilledSlotTile({ character, tenant, worlds }: FilledSlotTileProp
     return (
       inventoryQuery.data?.included?.filter(
         (item): item is Asset =>
-          item.type === "assets" && "slot" in item.attributes && item.attributes.slot < 0,
+          item.type === "assets" &&
+          "slot" in item.attributes &&
+          item.attributes.slot < 0,
       ) ?? []
     );
   }, [inventoryQuery.data]);
@@ -63,7 +69,9 @@ export function FilledSlotTile({ character, tenant, worlds }: FilledSlotTileProp
           size="medium"
           lazy
           frameMode="platform"
-          {...(tenant.attributes.region && { region: tenant.attributes.region })}
+          {...(tenant.attributes.region && {
+            region: tenant.attributes.region,
+          })}
           {...(tenant.attributes.majorVersion && {
             majorVersion: tenant.attributes.majorVersion,
           })}

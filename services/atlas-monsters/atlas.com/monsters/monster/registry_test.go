@@ -1,6 +1,7 @@
 package monster
 
 import (
+	"atlas-monsters/character/hidden"
 	"context"
 	"os"
 	"strconv"
@@ -8,15 +9,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/alicebob/miniredis/v2"
-	"github.com/google/uuid"
-	goredis "github.com/redis/go-redis/v9"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 var testMiniRedis *miniredis.Miniredis
@@ -37,6 +39,7 @@ func TestMain(m *testing.M) {
 	InitMonsterRegistry(rc)
 	InitDropTimerRegistry(rc)
 	InitPuppetRegistry(rc)
+	hidden.InitRegistry(rc)
 
 	os.Exit(m.Run())
 }

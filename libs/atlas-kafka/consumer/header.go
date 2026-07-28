@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/binary"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type HeaderParser func(ctx context.Context, headers []kafka.Header) context.Context

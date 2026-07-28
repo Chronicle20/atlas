@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashShopOperationSetWishlist
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnSetWish
+    address: "0x45a345"
+    decompile_sha256: 74a2aa229746e8cc00dab7d2659e232a0fec7c4848db445dc5d97f90aa119d58
+verifies:
+    - libs/atlas-packet/cash/serverbound/v61_test.go#TestShopOperationSetWishlistBytesV61

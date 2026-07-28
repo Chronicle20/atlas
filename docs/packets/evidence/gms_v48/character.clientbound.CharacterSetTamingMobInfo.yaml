@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterSetTamingMobInfo
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_72032B
+    address: "0x72032b"
+    decompile_sha256: 5edf38ad6f967ca96a04d3cc70159257208bcb85e7863d065c80c543d49c08b8
+verifies:
+    - libs/atlas-packet/character/clientbound/set_taming_mob_info_test.go#TestSetTamingMobInfoV48ByteOutput

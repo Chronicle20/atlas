@@ -20,6 +20,10 @@ func requestStorage(accountId uint32, worldId world.Id) requests.Request[RestMod
 	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, accountId, worldId))
 }
 
-func requestAssets(accountId uint32, worldId world.Id) requests.Request[[]AssetRestModel] {
-	return requests.GetRequest[[]AssetRestModel](fmt.Sprintf(getBaseRequest()+Assets, accountId, worldId))
+// storageAssetsUrl returns the list URL for an account's storage assets. It
+// is a bare URL (not a requests.Request) because the list is now paginated
+// server-side (task-117) and consumed via requests.DrainProvider, which
+// appends its own page[number]/page[size] query params per request.
+func storageAssetsUrl(accountId uint32, worldId world.Id) string {
+	return fmt.Sprintf(getBaseRequest()+Assets, accountId, worldId)
 }

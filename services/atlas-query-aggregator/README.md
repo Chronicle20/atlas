@@ -12,12 +12,13 @@ A RESTful service that provides composite character state validation in the Atla
 - **Pet Service** (`PETS` environment variable): Pet count data
 - **Skill Service** (`SKILLS` environment variable): Skill levels
 - **Buff Service** (`BUFFS` environment variable): Active buff data
-- **Map Service** (`MAPS` environment variable): Map player counts
+- **Map Service** (`MAPS` environment variable): Map player counts and character location
 - **Transport Service** (`TRANSPORTS` environment variable): Transport route availability
 - **Guild Service** (`GUILDS` environment variable): Guild membership data
 - **Data Service** (`DATA` environment variable): Item slot information
 - **Party Service** (`PARTIES` environment variable): Party membership data
 - **Party Quest Service** (`PARTY_QUESTS` environment variable): Party quest instance data
+- **Monster Book Service** (`MONSTER_BOOK` environment variable): Monster card collection data
 - **OpenTelemetry Collector** (`TRACE_ENDPOINT` environment variable): Distributed tracing (via OTLP/gRPC)
 
 ## Runtime Configuration

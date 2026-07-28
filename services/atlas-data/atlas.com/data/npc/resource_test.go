@@ -11,8 +11,6 @@ import (
 	"testing"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -21,6 +19,9 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type testSearchIndexEntity struct {
@@ -224,43 +225,43 @@ func testGetNpcQuests(t *testing.T, testServer *httptest.Server, db *gorm.DB, te
 	// Seed quest documents for the tenant.
 	quests := []quest.RestModel{
 		{
-			Id:   2000,
-			Name: "Initiator Only Quest",
-			Area: 1,
+			Id:                2000,
+			Name:              "Initiator Only Quest",
+			Area:              1,
 			StartRequirements: quest.RequirementsRestModel{NpcId: 1012100, LevelMin: 50},
 			EndActions:        quest.ActionsRestModel{Exp: 5000},
 		},
 		{
-			Id:   2001,
-			Name: "Completer Only Quest",
-			Area: 1,
+			Id:                2001,
+			Name:              "Completer Only Quest",
+			Area:              1,
 			StartRequirements: quest.RequirementsRestModel{LevelMin: 10},
 			EndActions:        quest.ActionsRestModel{NpcId: 1012100, Exp: 7500},
 		},
 		{
-			Id:   2002,
-			Name: "Both Quest",
-			Area: 1,
+			Id:                2002,
+			Name:              "Both Quest",
+			Area:              1,
 			StartRequirements: quest.RequirementsRestModel{NpcId: 1012100},
 			EndActions:        quest.ActionsRestModel{NpcId: 1012100},
 		},
 		{
-			Id:   2003,
-			Name: "Unrelated Quest",
-			Area: 1,
+			Id:                2003,
+			Name:              "Unrelated Quest",
+			Area:              1,
 			StartRequirements: quest.RequirementsRestModel{NpcId: 9999999},
 			EndActions:        quest.ActionsRestModel{NpcId: 9999999},
 		},
 		{
-			Id:   2004,
-			Name: "EndRequirements Only",
-			Area: 1,
+			Id:              2004,
+			Name:            "EndRequirements Only",
+			Area:            1,
 			EndRequirements: quest.RequirementsRestModel{NpcId: 1012100},
 		},
 		{
-			Id:   2005,
-			Name: "StartActions Only",
-			Area: 1,
+			Id:           2005,
+			Name:         "StartActions Only",
+			Area:         1,
 			StartActions: quest.ActionsRestModel{NpcId: 1012100},
 		},
 	}

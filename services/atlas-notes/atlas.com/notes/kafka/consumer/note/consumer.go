@@ -6,14 +6,16 @@ import (
 	"atlas-notes/note"
 	"context"
 
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -46,8 +48,14 @@ func handleNoteCreate(db *gorm.DB) message.Handler[note2.Command[note2.CommandCr
 			return
 		}
 
-		// Call the processor to create the note
-		_, _ = note.NewProcessor(l, ctx, db).CreateAndEmit(c.CharacterId, c.Body.SenderId, c.Body.Message, c.Body.Flag)
+		_, err := note.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, c.CharacterId, c.Body.SenderId, c.Body.Message, c.Body.Flag)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to create note for character [%d] from sender [%d].", c.CharacterId, c.Body.SenderId)
+			emitErr := producer.ProviderImpl(l)(ctx)(note2.EnvEventTopicNoteStatus)(note.CreateFailedStatusEventProvider(c.TransactionId, c.CharacterId, c.Body.SenderId, err.Error()))
+			if emitErr != nil {
+				l.WithError(emitErr).Errorf("Unable to emit CREATE_FAILED for transaction [%s].", c.TransactionId)
+			}
+		}
 	}
 }
 

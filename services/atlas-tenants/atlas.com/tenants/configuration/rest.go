@@ -2,6 +2,8 @@ package configuration
 
 import (
 	"encoding/json"
+
+	"github.com/google/uuid"
 )
 
 // RouteRestModel is the JSON:API resource for routes
@@ -224,17 +226,149 @@ func CreateSingleVesselJsonData(vessel map[string]interface{}) (json.RawMessage,
 	return CreateVesselJsonData([]map[string]interface{}{vessel})
 }
 
+// MtsConfigRestModel is the JSON:API resource for the per-tenant MTS economic
+// configuration. The attribute JSON keys must match what atlas-mts decodes in
+// services/atlas-mts/atlas.com/mts/configuration/model.go (RestModel).
+type MtsConfigRestModel struct {
+	Id                string  `json:"-"`
+	ListingFee        uint32  `json:"listingFee"`
+	CommissionRate    float64 `json:"commissionRate"`
+	MaxActiveListings int     `json:"maxActiveListings"`
+	MinLevel          int     `json:"minLevel"`
+	AuctionMinHours   int     `json:"auctionMinHours"`
+	AuctionMaxHours   int     `json:"auctionMaxHours"`
+	PriceFloor        uint32  `json:"priceFloor"`
+	PageSize          int     `json:"pageSize"`
+	MinBidIncrement   uint32  `json:"minBidIncrement"`
+}
+
+// GetID returns the resource ID
+func (m MtsConfigRestModel) GetID() string {
+	return m.Id
+}
+
+// SetID sets the resource ID
+func (m *MtsConfigRestModel) SetID(id string) error {
+	m.Id = id
+	return nil
+}
+
+// GetName returns the resource name
+func (m MtsConfigRestModel) GetName() string {
+	return "mts-configs"
+}
+
+// TransformMtsConfig converts a map[string]interface{} to an MtsConfigRestModel
+func TransformMtsConfig(data map[string]interface{}) (MtsConfigRestModel, error) {
+	id, _ := data["id"].(string)
+
+	attributes, ok := data["attributes"].(map[string]interface{})
+	if !ok {
+		attributes = make(map[string]interface{})
+	}
+
+	listingFee := uint32(0)
+	if val, ok := attributes["listingFee"].(float64); ok {
+		listingFee = uint32(val)
+	}
+
+	commissionRate := float64(0)
+	if val, ok := attributes["commissionRate"].(float64); ok {
+		commissionRate = val
+	}
+
+	maxActiveListings := 0
+	if val, ok := attributes["maxActiveListings"].(float64); ok {
+		maxActiveListings = int(val)
+	}
+
+	minLevel := 0
+	if val, ok := attributes["minLevel"].(float64); ok {
+		minLevel = int(val)
+	}
+
+	auctionMinHours := 0
+	if val, ok := attributes["auctionMinHours"].(float64); ok {
+		auctionMinHours = int(val)
+	}
+
+	auctionMaxHours := 0
+	if val, ok := attributes["auctionMaxHours"].(float64); ok {
+		auctionMaxHours = int(val)
+	}
+
+	priceFloor := uint32(0)
+	if val, ok := attributes["priceFloor"].(float64); ok {
+		priceFloor = uint32(val)
+	}
+
+	pageSize := 0
+	if val, ok := attributes["pageSize"].(float64); ok {
+		pageSize = int(val)
+	}
+
+	minBidIncrement := uint32(0)
+	if val, ok := attributes["minBidIncrement"].(float64); ok {
+		minBidIncrement = uint32(val)
+	}
+
+	return MtsConfigRestModel{
+		Id:                id,
+		ListingFee:        listingFee,
+		CommissionRate:    commissionRate,
+		MaxActiveListings: maxActiveListings,
+		MinLevel:          minLevel,
+		AuctionMinHours:   auctionMinHours,
+		AuctionMaxHours:   auctionMaxHours,
+		PriceFloor:        priceFloor,
+		PageSize:          pageSize,
+		MinBidIncrement:   minBidIncrement,
+	}, nil
+}
+
+// ExtractMtsConfig converts an MtsConfigRestModel to a map[string]interface{}
+func ExtractMtsConfig(m MtsConfigRestModel) (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"type": "mts-configs",
+		"id":   m.Id,
+		"attributes": map[string]interface{}{
+			"listingFee":        m.ListingFee,
+			"commissionRate":    m.CommissionRate,
+			"maxActiveListings": m.MaxActiveListings,
+			"minLevel":          m.MinLevel,
+			"auctionMinHours":   m.AuctionMinHours,
+			"auctionMaxHours":   m.AuctionMaxHours,
+			"priceFloor":        m.PriceFloor,
+			"pageSize":          m.PageSize,
+			"minBidIncrement":   m.MinBidIncrement,
+		},
+	}, nil
+}
+
+// CreateMtsConfigJsonData creates a JSON:API compliant data structure for mts configs
+func CreateMtsConfigJsonData(configs []map[string]interface{}) (json.RawMessage, error) {
+	data := map[string]interface{}{
+		"data": configs,
+	}
+	return json.Marshal(data)
+}
+
+// CreateSingleMtsConfigJsonData creates a JSON:API compliant data structure for a single mts config
+func CreateSingleMtsConfigJsonData(config map[string]interface{}) (json.RawMessage, error) {
+	return CreateMtsConfigJsonData([]map[string]interface{}{config})
+}
+
 // InstanceRouteRestModel is the JSON:API resource for instance routes
 type InstanceRouteRestModel struct {
-	Id                    string `json:"-"`
-	Name                  string `json:"name"`
-	StartMapId            uint32 `json:"startMapId"`
+	Id                    string   `json:"-"`
+	Name                  string   `json:"name"`
+	StartMapId            uint32   `json:"startMapId"`
 	TransitMapIds         []uint32 `json:"transitMapIds"`
-	DestinationMapId      uint32 `json:"destinationMapId"`
-	Capacity              uint32 `json:"capacity"`
-	BoardingWindowSeconds uint32 `json:"boardingWindowSeconds"`
-	TravelDurationSeconds uint32 `json:"travelDurationSeconds"`
-	TransitMessage        string `json:"transitMessage,omitempty"`
+	DestinationMapId      uint32   `json:"destinationMapId"`
+	Capacity              uint32   `json:"capacity"`
+	BoardingWindowSeconds uint32   `json:"boardingWindowSeconds"`
+	TravelDurationSeconds uint32   `json:"travelDurationSeconds"`
+	TransitMessage        string   `json:"transitMessage,omitempty"`
 }
 
 // GetID returns the resource ID
@@ -342,4 +476,193 @@ func CreateInstanceRouteJsonData(routes []map[string]interface{}) (json.RawMessa
 // CreateSingleInstanceRouteJsonData creates a JSON:API compliant data structure for a single instance route
 func CreateSingleInstanceRouteJsonData(route map[string]interface{}) (json.RawMessage, error) {
 	return CreateInstanceRouteJsonData([]map[string]interface{}{route})
+}
+
+// RankingsRestModel is the JSON:API resource for the per-tenant rankings
+// configuration. It is a single-object resource (no id-scoped sub-routes);
+// the attribute name/type must match what atlas-rankings decodes in
+// services/atlas-rankings/atlas.com/rankings/configuration/rest.go (RestModel).
+type RankingsRestModel struct {
+	Id                       string `json:"-"`
+	RecomputeIntervalMinutes uint32 `json:"recomputeIntervalMinutes"`
+}
+
+// GetID returns the resource ID
+func (r RankingsRestModel) GetID() string {
+	return r.Id
+}
+
+// SetID sets the resource ID
+func (r *RankingsRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
+// GetName returns the resource name
+func (r RankingsRestModel) GetName() string {
+	return "rankings"
+}
+
+// TransformRankings converts a map[string]interface{} to a RankingsRestModel
+func TransformRankings(data map[string]interface{}) (RankingsRestModel, error) {
+	id, _ := data["id"].(string)
+
+	attributes, ok := data["attributes"].(map[string]interface{})
+	if !ok {
+		attributes = make(map[string]interface{})
+	}
+
+	interval := uint32(0)
+	if val, ok := attributes["recomputeIntervalMinutes"].(float64); ok {
+		interval = uint32(val)
+	}
+
+	return RankingsRestModel{Id: id, RecomputeIntervalMinutes: interval}, nil
+}
+
+// ExtractRankings converts a RankingsRestModel to a map[string]interface{}
+func ExtractRankings(r RankingsRestModel) (map[string]interface{}, error) {
+	id := r.Id
+	if id == "" {
+		id = uuid.New().String()
+	}
+	return map[string]interface{}{
+		"type": "rankings",
+		"id":   id,
+		"attributes": map[string]interface{}{
+			"recomputeIntervalMinutes": r.RecomputeIntervalMinutes,
+		},
+	}, nil
+}
+
+// CreateSingleRankingsJsonData creates a JSON:API compliant data structure
+// for the single-object rankings configuration
+func CreateSingleRankingsJsonData(rankings map[string]interface{}) (json.RawMessage, error) {
+	return json.Marshal(map[string]interface{}{"data": rankings})
+}
+
+// RpsRewardRungRestModel is the nested JSON attribute shape of a single rung
+// embedded in the rps-rewards `ladder` array.
+type RpsRewardRungRestModel struct {
+	Rung     int    `json:"rung"`
+	ItemId   uint32 `json:"itemId"`
+	Quantity uint32 `json:"quantity"`
+	Meso     uint32 `json:"meso"`
+}
+
+// RpsRewardRestModel is the JSON:API resource for the rps-rewards configuration
+type RpsRewardRestModel struct {
+	Id string `json:"-"`
+	// EntryCostMeso is the participation fee charged to enter (and to Retry).
+	EntryCostMeso uint32 `json:"entryCostMeso"`
+	// ConsolationMeso is the meso awarded on a loss (the client's "consolation
+	// prize" message). 0 disables the consolation award.
+	ConsolationMeso uint32                   `json:"consolationMeso"`
+	Ladder          []RpsRewardRungRestModel `json:"ladder"`
+}
+
+// GetID returns the resource ID
+func (r RpsRewardRestModel) GetID() string {
+	return r.Id
+}
+
+// SetID sets the resource ID
+func (r *RpsRewardRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
+// GetName returns the resource name
+func (r RpsRewardRestModel) GetName() string {
+	return "rps-rewards"
+}
+
+// TransformRpsReward converts a map[string]interface{} to a RpsRewardRestModel
+func TransformRpsReward(data map[string]interface{}) (RpsRewardRestModel, error) {
+	id, _ := data["id"].(string)
+
+	attributes, ok := data["attributes"].(map[string]interface{})
+	if !ok {
+		attributes = make(map[string]interface{})
+	}
+
+	entryCostMeso := uint32(0)
+	if val, ok := attributes["entryCostMeso"].(float64); ok {
+		entryCostMeso = uint32(val)
+	}
+
+	consolationMeso := uint32(0)
+	if val, ok := attributes["consolationMeso"].(float64); ok {
+		consolationMeso = uint32(val)
+	}
+
+	ladder := make([]RpsRewardRungRestModel, 0)
+	if vals, ok := attributes["ladder"].([]interface{}); ok {
+		for _, v := range vals {
+			rungMap, ok := v.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			rung := 0
+			if val, ok := rungMap["rung"].(float64); ok {
+				rung = int(val)
+			}
+
+			itemId := uint32(0)
+			if val, ok := rungMap["itemId"].(float64); ok {
+				itemId = uint32(val)
+			}
+
+			quantity := uint32(0)
+			if val, ok := rungMap["quantity"].(float64); ok {
+				quantity = uint32(val)
+			}
+
+			meso := uint32(0)
+			if val, ok := rungMap["meso"].(float64); ok {
+				meso = uint32(val)
+			}
+
+			ladder = append(ladder, RpsRewardRungRestModel{
+				Rung:     rung,
+				ItemId:   itemId,
+				Quantity: quantity,
+				Meso:     meso,
+			})
+		}
+	}
+
+	return RpsRewardRestModel{
+		Id:              id,
+		EntryCostMeso:   entryCostMeso,
+		ConsolationMeso: consolationMeso,
+		Ladder:          ladder,
+	}, nil
+}
+
+// ExtractRpsReward converts a RpsRewardRestModel to a map[string]interface{}
+func ExtractRpsReward(r RpsRewardRestModel) (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"type": "rps-rewards",
+		"id":   r.Id,
+		"attributes": map[string]interface{}{
+			"entryCostMeso":   r.EntryCostMeso,
+			"consolationMeso": r.ConsolationMeso,
+			"ladder":          r.Ladder,
+		},
+	}, nil
+}
+
+// CreateRpsRewardJsonData creates a JSON:API compliant data structure for rps-rewards
+func CreateRpsRewardJsonData(rewards []map[string]interface{}) (json.RawMessage, error) {
+	data := map[string]interface{}{
+		"data": rewards,
+	}
+	return json.Marshal(data)
+}
+
+// CreateSingleRpsRewardJsonData creates a JSON:API compliant data structure for a single rps-reward
+func CreateSingleRpsRewardJsonData(reward map[string]interface{}) (json.RawMessage, error) {
+	return CreateRpsRewardJsonData([]map[string]interface{}{reward})
 }

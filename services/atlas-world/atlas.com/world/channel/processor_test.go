@@ -6,10 +6,11 @@ import (
 	"context"
 	"testing"
 
-	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+
+	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
 func setupProcessor(t *testing.T) (channel.Processor, context.Context, func()) {

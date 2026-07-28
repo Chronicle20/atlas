@@ -8,11 +8,12 @@ import (
 	"context"
 	"sort"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	loginCB "github.com/Chronicle20/atlas/libs/atlas-packet/login/clientbound"
 	loginSB "github.com/Chronicle20/atlas/libs/atlas-packet/login/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 func ServerListRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -49,7 +50,7 @@ func announceRecommendedWorlds(l logrus.FieldLogger) func(ctx context.Context) f
 		return func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
 			return func(ws []world.Model) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					var rs = make([]model2.Recommendation, 0)
+					rs := make([]model2.Recommendation, 0)
 					for _, x := range ws {
 						if x.Recommended() {
 							rs = append(rs, model2.NewWorldRecommendation(x.Id(), x.RecommendedMessage()))

@@ -18,7 +18,10 @@ describe("buildLevelTable", () => {
   });
 
   it("omits a column that is zero/absent across every level", () => {
-    const effects: SkillEffect[] = [{ MPConsume: 10, weaponAttack: 0 }, { MPConsume: 12 }];
+    const effects: SkillEffect[] = [
+      { MPConsume: 10, weaponAttack: 0 },
+      { MPConsume: 12 },
+    ];
     const t = buildLevelTable(effects);
     const keys = t.columns.map((c) => c.key);
     expect(keys).toContain("MPConsume");
@@ -37,7 +40,12 @@ describe("buildLevelTable", () => {
   it("derives one column per distinct statup type, labelled and valued per level", () => {
     const effects: SkillEffect[] = [
       { statups: [{ type: "WeaponAttack", amount: 10 }] },
-      { statups: [{ type: "WeaponAttack", amount: 12 }, { type: "Accuracy", amount: 3 }] },
+      {
+        statups: [
+          { type: "WeaponAttack", amount: 12 },
+          { type: "Accuracy", amount: 3 },
+        ],
+      },
     ];
     const t = buildLevelTable(effects);
     const watk = t.columns.find((c) => c.key === "statup:WeaponAttack");
@@ -54,7 +62,11 @@ describe("buildLevelTable", () => {
     const t = buildLevelTable(effects);
     const col = t.columns.find((c) => c.key === "morphId");
     expect(col?.label).toBe("Morph ID");
-    const unknownStatup = buildLevelTable([{ statups: [{ type: "Zzz", amount: 1 }] }]);
-    expect(unknownStatup.columns.find((c) => c.key === "statup:Zzz")?.label).toBe("Zzz");
+    const unknownStatup = buildLevelTable([
+      { statups: [{ type: "Zzz", amount: 1 }] },
+    ]);
+    expect(
+      unknownStatup.columns.find((c) => c.key === "statup:Zzz")?.label,
+    ).toBe("Zzz");
   });
 });

@@ -3,10 +3,11 @@ package session
 import (
 	"atlas-login/kafka/message/account/session"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func CreateCommandProvider(sessionId uuid.UUID, accountId uint32, accountName string, password string, ipAddress string, hwid string) model.Provider[[]kafka.Message] {

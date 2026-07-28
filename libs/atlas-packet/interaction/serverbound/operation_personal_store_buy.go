@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // packet-audit:fname CPersonalShopDlg::BuyItem
@@ -28,20 +30,26 @@ func (m OperationPersonalStoreBuy) String() string {
 	return fmt.Sprintf("index [%d], quantity [%d], itemCRC [%d]", m.index, m.quantity, m.itemCRC)
 }
 
-func (m OperationPersonalStoreBuy) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m OperationPersonalStoreBuy) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.index)
 		w.WriteShort(m.quantity)
-		w.WriteInt(m.itemCRC)
+		if tradeCrcPresent(t) {
+			w.WriteInt(m.itemCRC)
+		}
 		return w.Bytes()
 	}
 }
 
-func (m *OperationPersonalStoreBuy) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *OperationPersonalStoreBuy) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.index = r.ReadByte()
 		m.quantity = r.ReadUint16()
-		m.itemCRC = r.ReadUint32()
+		if tradeCrcPresent(t) {
+			m.itemCRC = r.ReadUint32()
+		}
 	}
 }

@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldTournamentCharacters
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField_Tournament::OnPacket
+    address: "0x558549"
+    decompile_sha256: d544175c9c6e7c493a3c0dd9518c2e9b82b9e61992d53305efb63c98b8f77057
+verifies:
+    - libs/atlas-packet/field/clientbound/tournament_characters_test.go#TestTournamentCharactersByteOutputV79

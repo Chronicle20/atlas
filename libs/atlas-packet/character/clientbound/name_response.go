@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const CharacterNameResponseWriter = "CharacterNameResponse"
@@ -20,8 +21,8 @@ func NewCharacterNameResponse(name string, code byte) CharacterNameResponse {
 	return CharacterNameResponse{name: name, code: code}
 }
 
-func (m CharacterNameResponse) Name() string     { return m.name }
-func (m CharacterNameResponse) Code() byte       { return m.code }
+func (m CharacterNameResponse) Name() string      { return m.name }
+func (m CharacterNameResponse) Code() byte        { return m.code }
 func (m CharacterNameResponse) Operation() string { return CharacterNameResponseWriter }
 func (m CharacterNameResponse) String() string {
 	return fmt.Sprintf("name [%s], code [%d]", m.name, m.code)

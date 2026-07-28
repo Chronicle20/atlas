@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcShopOperationGenericError
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#GenericError
+    address: "0x6a912b"
+    decompile_sha256: b23d4e3e866dede9f0f0d751f2c04180eaa6ee77a7742dc34b3be681c5b136b4
+verifies:
+  - libs/atlas-packet/npc/clientbound/shop_operation_v72_test.go#TestShopOperationArmsV72

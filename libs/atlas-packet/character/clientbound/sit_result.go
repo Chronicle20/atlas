@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const CharacterSitResultWriter = "CharacterSitResult"
@@ -24,8 +25,8 @@ func NewCharacterCancelSit() CharacterSitResult {
 	return CharacterSitResult{sitting: false}
 }
 
-func (m CharacterSitResult) Sitting() bool    { return m.sitting }
-func (m CharacterSitResult) ChairId() uint16  { return m.chairId }
+func (m CharacterSitResult) Sitting() bool     { return m.sitting }
+func (m CharacterSitResult) ChairId() uint16   { return m.chairId }
 func (m CharacterSitResult) Operation() string { return CharacterSitResultWriter }
 func (m CharacterSitResult) String() string {
 	if m.sitting {

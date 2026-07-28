@@ -6,13 +6,14 @@ import (
 	"atlas-parties/party"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -48,6 +49,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventJobChanged))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventGmChanged))); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -81,7 +85,6 @@ func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, e StatusE
 		WithField("worldId", e.WorldId).
 		WithField("transactionId", e.TransactionId).
 		Debugf("Successfully processed login for character [%d].", e.CharacterId)
-
 }
 
 func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e StatusEvent[StatusEventLogoutBody]) {
@@ -112,7 +115,6 @@ func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e Status
 		WithField("worldId", e.WorldId).
 		WithField("transactionId", e.TransactionId).
 		Debugf("Successfully processed logout for character [%d].", e.CharacterId)
-
 }
 
 func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, e StatusEvent[ChangeChannelEventLoginBody]) {
@@ -269,6 +271,32 @@ func handleStatusEventLevelChanged(l logrus.FieldLogger, ctx context.Context, e 
 		WithField("transactionId", e.TransactionId).
 		WithField("currentLevel", e.Body.Current).
 		Debugf("Successfully processed level change for character [%d].", e.CharacterId)
+}
+
+func handleStatusEventGmChanged(l logrus.FieldLogger, ctx context.Context, e StatusEvent[GmChangedStatusEventBody]) {
+	if e.Type != StatusEventTypeGmChanged {
+		return
+	}
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("oldGm", e.Body.OldGm).
+		WithField("newGm", e.Body.NewGm).
+		Debugf("Processing GM change event for character [%d].", e.CharacterId)
+
+	err := character.NewProcessor(l, ctx).GmChange(e.CharacterId)
+	if err != nil {
+		l.WithError(err).
+			WithField("characterId", e.CharacterId).
+			WithField("transactionId", e.TransactionId).
+			Errorf("Unable to process GM change for character [%d].", e.CharacterId)
+		return
+	}
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("transactionId", e.TransactionId).
+		Debugf("Successfully processed GM change for character [%d].", e.CharacterId)
 }
 
 func handleStatusEventJobChanged(l logrus.FieldLogger, ctx context.Context, e StatusEvent[JobChangedStatusEventBody]) {

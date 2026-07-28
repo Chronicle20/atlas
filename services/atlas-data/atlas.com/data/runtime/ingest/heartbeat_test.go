@@ -6,9 +6,10 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
-	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
+
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
 func newTestRedis(t *testing.T) (*goredis.Client, *miniredis.Miniredis, *redis.Registry[string, string]) {

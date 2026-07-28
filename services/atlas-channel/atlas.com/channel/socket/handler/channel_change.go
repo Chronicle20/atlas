@@ -5,18 +5,20 @@ import (
 	"atlas-channel/channel"
 	"atlas-channel/character"
 	characterMsg "atlas-channel/kafka/message/character"
-	producer2 "atlas-channel/kafka/producer"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 
+	producer2 "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	channel3 "github.com/Chronicle20/atlas/libs/atlas-packet/channel/serverbound"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 func ChannelChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {

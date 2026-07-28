@@ -1,6 +1,13 @@
 package tasks
 
-import "time"
+import (
+	"context"
+	"time"
+
+	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+)
 
 type Task interface {
 	Run()
@@ -8,11 +15,13 @@ type Task interface {
 	SleepTime() time.Duration
 }
 
-func Register(t Task) {
-	go func(t Task) {
-		for {
-			t.Run()
-			time.Sleep(t.SleepTime())
-		}
-	}(t)
+func Register(l logrus.FieldLogger, ctx context.Context) func(t Task) {
+	return func(t Task) {
+		routine.Go(l, ctx, func(_ context.Context) {
+			for {
+				t.Run()
+				time.Sleep(t.SleepTime())
+			}
+		})
+	}
 }

@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldEnterMts
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendMigrateToITCRequest
+    address: "0x90c9bd"
+    decompile_sha256: 3431a5d3bee72666eaa11faf1cc19be7a8c40bb11e8a18c155fd3a4876a4cc6f

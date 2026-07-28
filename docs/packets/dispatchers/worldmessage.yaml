@@ -1,0 +1,72 @@
+# WorldMessage — CWvsContext::OnBroadcastMsg per-version mode table.
+# Derived from each version's OnBroadcastMsg switch (IDA), task-123 Task 18.
+#
+# IDA evidence (bound check immediately before the mode-byte jump table; see
+# task-18-report.md for full decompile quotes):
+#   gms_v83  (0xa22785): cmp esi,0Dh; ja default            -> valid 0-13  (14 cases)
+#   gms_v84  (0xa6dc97): cmp esi,0Fh; ja default             -> valid 0-15  (16 cases)
+#   gms_v87  (0xab9fd5): cmp edi,11h; ja default, case 16 explicitly
+#                         aliased to default by IDA           -> valid 0-15,17
+#   gms_v95  (0xa04160): cmp edi,14h; ja default, cases 17,19
+#                         explicitly aliased to default by IDA -> valid 0-16,18,20
+#   jms_v185 (0xb0985b): cmp edi,10h; ja default             -> valid 0-16  (17 cases)
+#
+# MEGAPHONE family (MEGAPHONE/SUPER_MEGAPHONE/ITEM_MEGAPHONE/YELLOW_MEGAPHONE/
+# MULTI_MEGAPHONE) is byte-identical across all five versions (case group
+# 3/8/9/10 shares one code block in every GMS decompile; jms_v185 preserves
+# the same four case numbers with matching pre-decode shapes) — HIGH
+# confidence, wire-shape verified against libs/atlas-packet/chat clientbound
+# encoders.
+#
+# WEATHER first appears at gms_v95 case 11 — the ONLY version whose case 11
+# body calls CField::BlowWeather(...) (0xa04160 decompile); v83/84/87 use
+# case 11 for the gachapon/cash-shop "congrats" messages instead (confirmed
+# via literal decompiled string names SP_4990_..._CASH_SHOP..._CONGRATS /
+# SP_4989_..._GACHAPON..._CONGRATS in the v83 decompile). This pushed
+# GACHAPON/UNKNOWN_3/UNKNOWN_4/CLIPBOARD_NOTICE_1/CLIPBOARD_NOTICE_2 each up
+# by one slot in v95 relative to v87 — HIGH confidence.
+#
+# CLIPBOARD_NOTICE_1/2 (grouped case sharing a NOTICE-format + a trailing
+# CWvsApp::SetClipboardText call) is present in every GMS version but ABSENT
+# from jms_v185 (no SetClipboardText reference in that decompile) — HIGH
+# confidence.
+#
+# UNKNOWN_3/UNKNOWN_4/UNKNOWN_7 rows are MEDIUM confidence: structurally
+# distinct new cases (single/dual-argument StringPool-formatted notices, item
+# name substitution) not present in the prior version and not matching any
+# other established key's wire shape, assigned by position/pattern rather
+# than a definitively named client feature. UNKNOWN_8 (gms_v95 case 20) is a
+# literal duplicate of the SUPER_MEGAPHONE code path (same pre-decode, same
+# body) reachable through a second case label — also MEDIUM confidence on
+# purpose, HIGH confidence on wire shape.
+#
+# jms_v185 case 11 and case 12 are two NEW simple megaphone-family variants
+# (bare channel+whisper decode, same group as SUPER_MEGAPHONE, distinct
+# ChatLogAdd color/type only) with NO corresponding key in
+# libs/atlas-packet/chat/world_message_body.go's fixed key set — left
+# unmapped/unenrolled here (not in scope for task-123; see task-18-report.md
+# §jms deviations).
+writer: WorldMessage
+fname: CWvsContext::OnBroadcastMsg
+op: SERVERMESSAGE
+direction: clientbound
+operations:
+  - { key: NOTICE,              modes: { gms_v83: 0,  gms_v84: 0,  gms_v87: 0,  gms_v95: 0,  jms_v185: 0 } }
+  - { key: POP_UP,               modes: { gms_v83: 1,  gms_v84: 1,  gms_v87: 1,  gms_v95: 1,  jms_v185: 1 } }
+  - { key: MEGAPHONE,            modes: { gms_v83: 2,  gms_v84: 2,  gms_v87: 2,  gms_v95: 2,  jms_v185: 2 } }
+  - { key: SUPER_MEGAPHONE,      modes: { gms_v83: 3,  gms_v84: 3,  gms_v87: 3,  gms_v95: 3,  jms_v185: 3 } }
+  - { key: TOP_SCROLL,           modes: { gms_v83: 4,  gms_v84: 4,  gms_v87: 4,  gms_v95: 4,  jms_v185: 4 } }
+  - { key: PINK_TEXT,            modes: { gms_v83: 5,  gms_v84: 5,  gms_v87: 5,  gms_v95: 5,  jms_v185: 5 } }
+  - { key: BLUE_TEXT,            modes: { gms_v83: 6,  gms_v84: 6,  gms_v87: 6,  gms_v95: 6,  jms_v185: 6 } }
+  - { key: NPC,                  modes: { gms_v83: 7,  gms_v84: 7,  gms_v87: 7,  gms_v95: 7,  jms_v185: 7 } }
+  - { key: ITEM_MEGAPHONE,       modes: { gms_v83: 8,  gms_v84: 8,  gms_v87: 8,  gms_v95: 8,  jms_v185: 8 } }
+  - { key: YELLOW_MEGAPHONE,     modes: { gms_v83: 9,  gms_v84: 9,  gms_v87: 9,  gms_v95: 9,  jms_v185: 9 } }
+  - { key: MULTI_MEGAPHONE,      modes: { gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 10 } }
+  - { key: WEATHER,              modes: { gms_v95: 11 } }
+  - { key: GACHAPON,             modes: { gms_v83: 11, gms_v84: 11, gms_v87: 11, gms_v95: 12, jms_v185: 13 } }
+  - { key: UNKNOWN_3,            modes: { gms_v84: 12, gms_v87: 12, gms_v95: 13, jms_v185: 14 } }
+  - { key: UNKNOWN_4,            modes: { gms_v84: 13, gms_v87: 13, gms_v95: 14, jms_v185: 15 } }
+  - { key: CLIPBOARD_NOTICE_1,   modes: { gms_v83: 12, gms_v84: 14, gms_v87: 14, gms_v95: 15 } }
+  - { key: CLIPBOARD_NOTICE_2,   modes: { gms_v83: 13, gms_v84: 15, gms_v87: 15, gms_v95: 16 } }
+  - { key: UNKNOWN_7,            modes: { gms_v87: 17, gms_v95: 18, jms_v185: 16 } }
+  - { key: UNKNOWN_8,            modes: { gms_v95: 20 } }

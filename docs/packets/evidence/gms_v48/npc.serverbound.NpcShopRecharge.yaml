@@ -1,0 +1,10 @@
+packet: npc/serverbound/NpcShopRecharge
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5B78C0
+    address: "0x5b78c0"
+    decompile_sha256: aa62c89d8a7987c6a755908be7144cdb043cafd4ca071c9c948ce2fe564197fd
+verifies:
+  - libs/atlas-packet/npc/serverbound/shop_v48_test.go#TestShopRechargeByteV48

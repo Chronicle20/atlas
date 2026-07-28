@@ -40,6 +40,18 @@ func AllEncryptionTypes() []EncryptionType {
 	return []EncryptionType{EncryptionGMS, EncryptionKMS, EncryptionNone}
 }
 
+// String names the encryption variant for logs and detection errors.
+func (e EncryptionType) String() string {
+	switch e {
+	case EncryptionGMS:
+		return "GMS"
+	case EncryptionKMS:
+		return "KMS"
+	default:
+		return "None"
+	}
+}
+
 // CalculateVersionHash computes the version hash from a game version number.
 // Used to verify and decrypt WZ file offsets.
 func CalculateVersionHash(version int) (encryptedVersion uint16, hash uint32) {

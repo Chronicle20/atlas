@@ -10,7 +10,6 @@ import (
 	cashshopmock "atlas-saga-orchestrator/cashshop/mock"
 	compartmentmock "atlas-saga-orchestrator/compartment/mock"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
@@ -19,6 +18,8 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // TestLateEvent_TimeoutRacesCompletion reproduces the task-102 production

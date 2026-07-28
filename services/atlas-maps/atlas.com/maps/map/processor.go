@@ -5,7 +5,6 @@ import (
 	"atlas-maps/kafka/message"
 	mapKafka "atlas-maps/kafka/message/map"
 	"atlas-maps/kafka/message/mapactions"
-	"atlas-maps/kafka/producer"
 	"atlas-maps/map/character"
 	monster2 "atlas-maps/map/monster"
 	"atlas-maps/reactor"
@@ -13,13 +12,17 @@ import (
 	"context"
 	"errors"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 type Processor interface {
@@ -53,6 +56,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, p producer.Provider
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Enter(mb *message.Buffer) func(transactionId uuid.UUID, f field.Model, characterId uint32) error {
 	return func(transactionId uuid.UUID, f field.Model, characterId uint32) error {
 		p.cp.Enter(transactionId, f, characterId)
@@ -81,12 +86,12 @@ func (p *ProcessorImpl) Enter(mb *message.Buffer) func(transactionId uuid.UUID, 
 			}
 		}
 
-		go func() {
+		routine.Go(p.l, p.ctx, func(_ context.Context) {
 			_ = monster2.NewProcessor(p.l, p.ctx).SpawnMonsters(transactionId, f)
-		}()
-		go func() {
+		})
+		routine.Go(p.l, p.ctx, func(_ context.Context) {
 			_ = reactor.NewProcessor(p.l, p.ctx, p.p).SpawnAndEmit(transactionId, f)
-		}()
+		})
 		return mb.Put(mapKafka.EnvEventTopicMapStatus, enterMapProvider(transactionId, f, characterId))
 	}
 }

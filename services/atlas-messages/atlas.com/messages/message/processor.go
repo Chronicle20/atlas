@@ -4,12 +4,14 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	message2 "atlas-messages/kafka/message/message"
-	"atlas-messages/kafka/producer"
 	"context"
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 type Processor interface {

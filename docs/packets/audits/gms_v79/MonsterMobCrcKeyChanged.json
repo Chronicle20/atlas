@@ -1,0 +1,21 @@
+{
+  "WriterName": "MonsterMobCrcKeyChanged",
+  "IDAName": "CMobPool::OnMobCrcKeyChanged",
+  "Address": "0x647197",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/monster/clientbound/mob_crc_key_changed.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

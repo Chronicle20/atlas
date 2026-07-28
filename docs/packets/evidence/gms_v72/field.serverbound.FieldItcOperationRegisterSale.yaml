@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationRegisterSale
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnRegisterSaleEntry
+    address: "0x5615e1"
+    decompile_sha256: bb9dccfb070c7d6c8b0b15dccca46f1afb6cf0a1386b99813433feedb70df5de

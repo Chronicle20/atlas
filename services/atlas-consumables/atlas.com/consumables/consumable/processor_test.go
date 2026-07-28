@@ -2,14 +2,21 @@ package consumable
 
 import (
 	"atlas-consumables/asset"
+	"atlas-consumables/character"
+	"atlas-consumables/character/buff/stat"
 	"atlas-consumables/equipable"
+	"io"
 	"testing"
 
 	consumable3 "atlas-consumables/data/consumable"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+
+	ts "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 )
 
 func TestIsNotSlotConsumingScroll_SpikeScroll(t *testing.T) {
@@ -335,6 +342,9 @@ func TestUsesStandardConsumer(t *testing.T) {
 		{"equip scroll (204)", item.Id(2040727), false},
 		{"antidote — cure pot (205)", item.Id(2050001), true},
 		{"all cure potion (205)", item.Id(2050004), true},
+		{"morph potion (221)", item.Id(2210000), true},
+		{"cliff's special potion — morphRandom (221)", item.Id(2211000), true},
+		{"maplemas party potion (221; client intercepts 2212xxx before use-item, but classification routing is uniform)", item.Id(2212000), true},
 		{"arrow (206)", item.Id(2060000), false},
 		{"throwing star (207)", item.Id(2070000), false},
 		{"summoning sack (210)", item.Id(2100000), false},
@@ -347,4 +357,234 @@ func TestUsesStandardConsumer(t *testing.T) {
 			assert.Equal(t, tc.want, got, "itemId %d (classification %d)", tc.itemId, item.GetClassification(tc.itemId))
 		})
 	}
+}
+
+func makeScrollModel(t *testing.T, success uint32, cursed uint32, incSTR uint32) consumable3.Model {
+	t.Helper()
+	rm := consumable3.RestModel{Success: success, Cursed: cursed, IncreaseSTR: incSTR}
+	m, err := consumable3.Extract(rm)
+	if err != nil {
+		t.Fatalf("extract failed: %v", err)
+	}
+	return m
+}
+
+func TestBuildScrollChanges_RegularSuccess(t *testing.T) {
+	ci := makeScrollModel(t, 60, 0, 5)
+	equip := createTestEquipableAsset(1302000, 7, 0)
+	changes, err := buildScrollChanges(ci, equip, item.Id(2043001), true, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// 15 stat adds + AddSlots(-1) + AddLevel(1) = 17 changes.
+	if len(changes) != 17 {
+		t.Errorf("expected 17 changes for regular success, got %d", len(changes))
+	}
+}
+
+func TestBuildScrollChanges_RegularFailureConsumesSlot(t *testing.T) {
+	ci := makeScrollModel(t, 60, 0, 5)
+	equip := createTestEquipableAsset(1302000, 7, 0)
+	changes, err := buildScrollChanges(ci, equip, item.Id(2043001), false, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(changes) != 1 {
+		t.Errorf("expected 1 change (slot decrement) on plain failure, got %d", len(changes))
+	}
+}
+
+func TestBuildScrollChanges_FailureWithWhiteScrollPreservesSlot(t *testing.T) {
+	ci := makeScrollModel(t, 60, 0, 5)
+	equip := createTestEquipableAsset(1302000, 7, 0)
+	changes, err := buildScrollChanges(ci, equip, item.Id(2043001), false, true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(changes) != 0 {
+		t.Errorf("expected 0 changes on white-scroll failure, got %d", len(changes))
+	}
+}
+
+func TestBuildScrollChanges_SpikeSuccess(t *testing.T) {
+	ci := makeScrollModel(t, 10, 0, 0)
+	equip := createTestEquipableAsset(1072000, 5, 0)
+	changes, err := buildScrollChanges(ci, equip, item.ScrollForSpikesOnShoesTenPercent, true, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(changes) != 1 {
+		t.Errorf("expected 1 change (SetSpike) for spike success, got %d", len(changes))
+	}
+}
+
+func TestBuildScrollChanges_SpikeFailureNoSlotLoss(t *testing.T) {
+	ci := makeScrollModel(t, 10, 0, 0)
+	equip := createTestEquipableAsset(1072000, 5, 0)
+	changes, err := buildScrollChanges(ci, equip, item.ScrollForSpikesOnShoesTenPercent, false, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(changes) != 0 {
+		t.Errorf("expected 0 changes for spike failure, got %d", len(changes))
+	}
+}
+
+func TestBuildScrollChanges_CleanSlateSuccessAddsSlot(t *testing.T) {
+	ci := makeScrollModel(t, 1, 0, 0)
+	equip := createTestEquipableAsset(1302000, 0, 2)
+	changes, err := buildScrollChanges(ci, equip, item.CleanSlateOnePercent, true, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(changes) != 1 {
+		t.Errorf("expected 1 change (AddSlots) for clean slate success, got %d", len(changes))
+	}
+}
+
+func TestBuildScrollChanges_ChaosSuccess(t *testing.T) {
+	ci := makeScrollModel(t, 60, 0, 0)
+	equip := asset.NewBuilder(uuid.New(), 1302000).
+		SetId(1).
+		SetSlots(7).
+		SetStrength(10).
+		SetDexterity(10).
+		Build()
+	changes, err := buildScrollChanges(ci, equip, item.ChaosScrollSixtyPercent, true, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// 2 chaos stat changes + AddSlots(-1) + AddLevel(1) = 4.
+	if len(changes) != 4 {
+		t.Errorf("expected 4 changes for chaos success on 2 non-zero stats, got %d", len(changes))
+	}
+}
+
+// discardLogger returns a logger for computeEffectPlan tests; the function
+// only logs on the morphRandom roll-failure path.
+func discardLogger() logrus.FieldLogger {
+	l := logrus.New()
+	l.SetOutput(io.Discard)
+	return l
+}
+
+// extractConsumable builds a consumable model the same way production data
+// arrives: a RestModel literal run through the public Extract (design §4.4).
+func extractConsumable(t *testing.T, rm consumable3.RestModel) consumable3.Model {
+	t.Helper()
+	m, err := consumable3.Extract(rm)
+	if err != nil {
+		t.Fatalf("extract failed: %v", err)
+	}
+	return m
+}
+
+// T8: refactor regression — representative pre-existing items produce the same
+// decisions ApplyItemEffects made before the extraction.
+func TestComputeEffectPlan_CurePotWithHp(t *testing.T) {
+	c := character.NewModelBuilder().SetMaxHp(500).SetMaxMp(500).Build()
+	ci := extractConsumable(t, consumable3.RestModel{
+		Spec: map[consumable3.SpecType]int32{
+			consumable3.SpecTypePoison: 1,
+			consumable3.SpecTypeHP:     300,
+		},
+	})
+	plan := computeEffectPlan(discardLogger(), c, ci)
+	assert.Equal(t, []string{"POISON"}, plan.cureTypes)
+	assert.Equal(t, []int16{300}, plan.hpChanges)
+	assert.Empty(t, plan.mpChanges)
+	assert.Empty(t, plan.statups)
+	assert.Equal(t, int32(0), plan.duration)
+}
+
+func TestComputeEffectPlan_StatPotWithTime(t *testing.T) {
+	c := character.NewModelBuilder().SetMaxHp(500).SetMaxMp(500).Build()
+	ci := extractConsumable(t, consumable3.RestModel{
+		Spec: map[consumable3.SpecType]int32{
+			consumable3.SpecTypeWeaponAttack: 12,
+			consumable3.SpecTypeTime:         300000,
+		},
+	})
+	plan := computeEffectPlan(discardLogger(), c, ci)
+	assert.Empty(t, plan.cureTypes)
+	assert.Empty(t, plan.hpChanges)
+	assert.Empty(t, plan.mpChanges)
+	assert.Equal(t, []stat.Model{{Type: ts.TemporaryStatTypeWeaponAttack, Amount: 12}}, plan.statups)
+	// duration is the WZ `time` spec in milliseconds, passed to atlas-buffs
+	// as-is (atlas-buffs schedules expiry as now + duration*time.Millisecond).
+	assert.Equal(t, int32(300000), plan.duration)
+}
+
+func TestComputeEffectPlan_HpRecoveryPercent(t *testing.T) {
+	// Pins the MaxHp * pct floor math: floor(1547 * 0.60) = 928.
+	c := character.NewModelBuilder().SetMaxHp(1547).Build()
+	ci := extractConsumable(t, consumable3.RestModel{
+		Spec: map[consumable3.SpecType]int32{
+			consumable3.SpecTypeHPRecovery: 60,
+		},
+	})
+	plan := computeEffectPlan(discardLogger(), c, ci)
+	assert.Equal(t, []int16{928}, plan.hpChanges)
+}
+
+// T5 (FR-3 + hp-alongside): fixed-morph 221 item applies MORPH statup with the
+// morph id, duration = the WZ time spec (ms), and the coexisting hp spec still heals.
+func TestComputeEffectPlan_FixedMorphWithHp(t *testing.T) {
+	c := character.NewModelBuilder().SetMaxHp(100).Build()
+	ci := extractConsumable(t, consumable3.RestModel{
+		Spec: map[consumable3.SpecType]int32{
+			consumable3.SpecTypeMorph: 2,
+			consumable3.SpecTypeTime:  600000,
+			consumable3.SpecTypeHP:    50,
+		},
+	})
+	plan := computeEffectPlan(discardLogger(), c, ci)
+	assert.Equal(t, []stat.Model{{Type: ts.TemporaryStatTypeMorph, Amount: 2}}, plan.statups)
+	assert.Equal(t, int32(600000), plan.duration)
+	assert.Equal(t, []int16{50}, plan.hpChanges)
+}
+
+// T6: 2211000-shaped item — no fixed morph spec, non-empty morphRandom table.
+// Exactly one MORPH statup whose amount is a table key; hp still applies.
+func TestComputeEffectPlan_RandomMorphOnly(t *testing.T) {
+	c := character.NewModelBuilder().SetMaxHp(100).Build()
+	morphs := map[uint32]uint32{20: 50, 21: 30, 22: 20}
+	ci := extractConsumable(t, consumable3.RestModel{
+		Spec: map[consumable3.SpecType]int32{
+			consumable3.SpecTypeTime: 600000,
+			consumable3.SpecTypeHP:   50,
+		},
+		Morphs: morphs,
+	})
+	plan := computeEffectPlan(discardLogger(), c, ci)
+	if assert.Len(t, plan.statups, 1) {
+		s := plan.statups[0]
+		assert.Equal(t, ts.TemporaryStatTypeMorph, s.Type)
+		_, present := morphs[uint32(s.Amount)]
+		assert.True(t, present, "morph amount %d is not a table key", s.Amount)
+	}
+	assert.Equal(t, []int16{50}, plan.hpChanges)
+	assert.Equal(t, int32(600000), plan.duration)
+}
+
+// T7 (FR-7): fixed morph wins over a table that deliberately does not contain it.
+func TestComputeEffectPlan_FixedMorphPrecedence(t *testing.T) {
+	ci := extractConsumable(t, consumable3.RestModel{
+		Spec:   map[consumable3.SpecType]int32{consumable3.SpecTypeMorph: 2},
+		Morphs: map[uint32]uint32{20: 100},
+	})
+	plan := computeEffectPlan(discardLogger(), character.NewModelBuilder().Build(), ci)
+	assert.Equal(t, []stat.Model{{Type: ts.TemporaryStatTypeMorph, Amount: 2}}, plan.statups)
+}
+
+// Design §6: an unusable (zero-total) table skips only the morph statup;
+// other specs still apply.
+func TestComputeEffectPlan_ZeroWeightMorphTableSkipsMorphOnly(t *testing.T) {
+	ci := extractConsumable(t, consumable3.RestModel{
+		Spec:   map[consumable3.SpecType]int32{consumable3.SpecTypeHP: 50},
+		Morphs: map[uint32]uint32{20: 0},
+	})
+	plan := computeEffectPlan(discardLogger(), character.NewModelBuilder().Build(), ci)
+	assert.Empty(t, plan.statups)
+	assert.Equal(t, []int16{50}, plan.hpChanges)
 }

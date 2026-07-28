@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Mushroom Town - Tutorial portal showing ladder/rope climbing instructions",
+      "mapId": 10000,
+      "portalId": "advice03",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "show_climbing_hint",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "params": {
+                  "height": "5",
+                  "hint": "Press #e#b[Up]#k on the arrow key#n to climb up the ladder or rope.",
+                  "width": "350"
+                },
+                "type": "show_hint"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "advice03",
+    "type": "portal-action"
+  }
+}

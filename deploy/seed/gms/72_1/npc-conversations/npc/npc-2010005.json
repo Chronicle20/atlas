@@ -1,0 +1,288 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2010005,
+      "startState": "askDestination",
+      "states": [
+        {
+          "id": "askDestination",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "paymentMethod": "meso"
+                },
+                "nextState": "confirmMeso",
+                "text": "I'll pay 2000 mesos."
+              },
+              {
+                "context": {
+                  "paymentMethod": "ticket"
+                },
+                "nextState": "confirmTicket",
+                "text": "I have #t4031134#"
+              },
+              {
+                "nextState": "explainTicket1",
+                "text": "What is #t4031134#?"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Have you heard of the beach with a spectacular view of the ocean called #b#m110000000##k, located a little far from #m200000000#? I can take you there right now for either #b2000 mesos#k, or if you have #b#t4031134##k with you, in which case you'll be in for free."
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkMeso",
+                "text": "Yes"
+              },
+              {
+                "nextState": "declineTravel",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You want to pay #b2000 mesos#k and leave for #m110000000#? Okay!! Please beware that you may be running into some monsters around there though, so make sure not to get caught off-guard. Okay, would you like to head over to #m110000000# right now?"
+          },
+          "id": "confirmMeso",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkTicket",
+                "text": "Yes"
+              },
+              {
+                "nextState": "declineTravel",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "So you have #b#t4031134##k? You can always head over to #m110000000# with that. Okay!! Please beware that you may be running into some monsters around there though, so make sure not to get caught off-guard. Okay, would you like to head over to #m110000000# right now?"
+          },
+          "id": "confirmTicket",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "You must have some business to take care of here. You must be tired from all that travelling and hunting. Go take some rest, and if you feel like changing your mind, then come talk to me."
+          },
+          "id": "declineTravel",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "meso",
+                    "value": "2000"
+                  }
+                ],
+                "nextState": "insufficientMeso"
+              },
+              {
+                "conditions": [],
+                "nextState": "performMesoWarp"
+              }
+            ]
+          },
+          "id": "checkMeso",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "I think you're lacking mesos. There are many ways to gather up some money, you know, like ... selling your armor ... defeating the monsters ... doing quests ... you know what I'm talking about."
+          },
+          "id": "insufficientMeso",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "amount": "-2000"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "locationType": "FLORINA"
+                },
+                "type": "save_location"
+              },
+              {
+                "params": {
+                  "mapId": "110000000",
+                  "portalName": "st00"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performMesoWarp",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "referenceId": "4031134",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "missingTicket"
+              },
+              {
+                "conditions": [],
+                "nextState": "performTicketWarp"
+              }
+            ]
+          },
+          "id": "checkTicket",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Hmmm, so where exactly is #b#t4031134##k?? Are you sure you have them? Please double-check."
+          },
+          "id": "missingTicket",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "locationType": "FLORINA"
+                },
+                "type": "save_location"
+              },
+              {
+                "params": {
+                  "mapId": "110000000",
+                  "portalName": "st00"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performTicketWarp",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "explainTicket2",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "You must be curious about #b#t4031134##k. Yeah, I can see that. #t4031134# is an item where as long as you have in possession, you may make your way to #m110000000# for free. It's such a rare item that even we had to buy those, but unfortunately I lost mine a few weeks ago during a long weekend."
+          },
+          "id": "explainTicket1",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "explainTicket1",
+                "text": "Previous"
+              },
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendPrev",
+            "text": "I came back without it, and it just feels awful not having it. Hopefully someone picked it up and put it somewhere safe. Anyway this is my story and who knows, you may be able to pick it up and put it to good use. If you have any questions, feel free to ask"
+          },
+          "id": "explainTicket2",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2010005",
+    "type": "npc-conversation"
+  }
+}

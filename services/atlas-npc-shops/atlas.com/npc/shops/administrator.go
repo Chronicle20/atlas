@@ -1,12 +1,14 @@
 package shops
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // createShop returns a provider that creates a shop entity

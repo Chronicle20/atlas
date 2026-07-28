@@ -1,0 +1,31 @@
+# Root golangci-lint v2 config — the single config source for every Go module
+# in the repo (task-171). tools/lint.sh runs golangci-lint from each module's
+# own directory with this file passed via -c; do not add per-module configs.
+#
+# Escape-hatch exclusions (design.md §5.4) must carry a comment naming the
+# burn-down follow-up (docs/TODO.md "Lint burn-down").
+version: "2"
+
+linters:
+  # The v2 `standard` default group: errcheck, govet, ineffassign,
+  # staticcheck, unused. Membership is fixed by the version pin in
+  # tools/lint.versions.
+  default: standard
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      # Group intra-repo imports separately (FR-2.2). gofumpt's module-path
+      # stays UNSET — one shared config serves 80 modules; golangci-lint
+      # derives it per module from each go.mod.
+      local-prefixes:
+        - github.com/Chronicle20/atlas
+      # NOTE (task-171): libs/atlas-tenant declares `package tenant` but its
+      # import path ends in `atlas-tenant`. goimports cannot reconcile that for
+      # an UNaliased import and injects a duplicate `tenant "…/atlas-tenant"`
+      # (→ "tenant redeclared", build break). Import it ALIASED — always write
+      # `tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"`. Do not
+      # "simplify" that alias away. CI's lint-go --check fails loudly if you do.

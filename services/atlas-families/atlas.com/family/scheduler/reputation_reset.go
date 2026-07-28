@@ -1,14 +1,16 @@
 package scheduler
 
 import (
-	"atlas-family/kafka/producer"
+	"atlas-family/family"
+	"atlas-family/kafka/message"
 	"context"
 	"os"
 	"strconv"
 	"time"
 
-	"atlas-family/family"
-	"atlas-family/kafka/message"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -69,7 +71,9 @@ func (j *ReputationResetJob) Start(ctx context.Context) error {
 	}).Info("Starting reputation reset job scheduler")
 
 	// Start the scheduling goroutine
-	go j.scheduleResetJob(ctx)
+	routine.Go(j.log, ctx, func(_ context.Context) {
+		j.scheduleResetJob(ctx)
+	})
 
 	return nil
 }

@@ -11,6 +11,8 @@ import (
 	"context"
 	"math/rand"
 
+	"github.com/sirupsen/logrus"
+
 	charcon "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	inventoryconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -21,7 +23,6 @@ import (
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // loadCasterFunc is the caster-load seam tests can replace. Production
@@ -32,10 +33,23 @@ var loadCasterFunc = func(cp character.Processor, characterId uint32) (character
 	return cp.GetById()(characterId)
 }
 
+// loadCasterWithInventoryFunc is the inventory-decorated caster-load seam the
+// generic itemCon consume path uses (it needs an arbitrary compartment, not
+// just the USE compartment loadCasterInventoryFunc returns). Tests replace it.
+var loadCasterWithInventoryFunc = func(cp character.Processor, characterId uint32) (character.Model, error) {
+	return cp.GetById(cp.InventoryDecorator)(characterId)
+}
+
+// requestItemConsumeFunc is the consumable-request seam tests can replace.
+// Production delegates to consumable.Processor.RequestItemConsume.
+var requestItemConsumeFunc = func(p consumable.Processor, f field.Model, characterId charcon.Id, itemId itemconst.Id, source slot.Position, quantity int16, updateTime uint32) error {
+	return p.RequestItemConsume(f, characterId, itemId, source, quantity, updateTime)
+}
+
 // rectQueryFunc is the mob-selection seam tests can replace. Production
 // calls atlas-monsters via monster.Processor.GetInMapRect; tests inject a
 // stub returning a fixed slice.
-var rectQueryFunc = func(p *monster.Processor, f field.Model, x1, y1, x2, y2 int16, limit uint32) ([]monster.Model, error) {
+var rectQueryFunc = func(p monster.Processor, f field.Model, x1, y1, x2, y2 int16, limit uint32) ([]monster.Model, error) {
 	return p.GetInMapRect(f, x1, y1, x2, y2, limit)
 }
 
@@ -58,18 +72,43 @@ var reflectLookupFunc = func(t tenant.Model, monsterId uint32, kind string) (mon
 }
 
 // applyStatusFunc is the status-apply emit seam tests can replace.
-var applyStatusFunc = func(p *monster.Processor, f field.Model, monsterId, characterId, skillId, skillLevel uint32, statuses map[string]int32, duration uint32) error {
+var applyStatusFunc = func(p monster.Processor, f field.Model, monsterId, characterId, skillId, skillLevel uint32, statuses map[string]int32, duration uint32) error {
 	return p.ApplyStatus(f, monsterId, characterId, skillId, skillLevel, statuses, duration)
 }
 
 // cancelStatusFunc is the status-cancel emit seam tests can replace.
-var cancelStatusFunc = func(p *monster.Processor, f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId, sourceSkillId uint32, sourceSkillClass string) error {
+var cancelStatusFunc = func(p monster.Processor, f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId, sourceSkillId uint32, sourceSkillClass string) error {
 	return p.CancelStatus(f, monsterId, statusTypes, sourceCharacterId, sourceSkillId, sourceSkillClass)
 }
 
 func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
 	return func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
 		return func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
+			// Shadow Stars pre-flight (FR-5): validate the client-chosen star
+			// and resolve the cast cost BEFORE any HP/MP/cooldown spend. A bogus
+			// or unowned star aborts the whole cast — no MP, no cooldown, no buff,
+			// no consume — so a crafted client cannot inject an id into the buff
+			// or trigger consumption of an unintended item.
+			statupsToApply := e.StatUps()
+			var shadowStarDraws []StarDraw
+			if skill2.Id(info.SkillId()) == skill2.NightLordShadowStarsId {
+				assets, invErr := loadCasterInventoryFunc(character.NewProcessor(l, ctx), characterId)
+				if invErr != nil {
+					l.WithError(invErr).Warnf("Character [%d] cast Shadow Stars [%d] but inventory load failed; aborting cast.", characterId, info.SkillId())
+					return nil
+				}
+				rewritten, draws, shortfall, ok := resolveShadowStarsCast(assets, e.StatUps(), info.SpiritJavelinItemId(), int(e.BulletConsume()))
+				if !ok {
+					l.Warnf("Character [%d] cast Shadow Stars [%d] with invalid star [%d] (not a throwing star or not owned); aborting cast.", characterId, info.SkillId(), info.SpiritJavelinItemId())
+					return nil
+				}
+				if shortfall {
+					l.Warnf("Character [%d] cast Shadow Stars [%d]: insufficient star [%d] for cast cost [%d]; consuming what's available.", characterId, info.SkillId(), info.SpiritJavelinItemId(), e.BulletConsume())
+				}
+				statupsToApply = rewritten
+				shadowStarDraws = draws
+			}
+
 			if e.HPConsume() > 0 {
 				_ = character.NewProcessor(l, ctx).ChangeHP(f, characterId, -int16(e.HPConsume()))
 			}
@@ -78,12 +117,17 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 			}
 			if itemId := e.ItemConsume(); itemId > 0 {
 				cp := character.NewProcessor(l, ctx)
-				if c, cErr := cp.GetById(cp.InventoryDecorator)(characterId); cErr == nil {
+				if c, cErr := loadCasterWithInventoryFunc(cp, characterId); cErr == nil {
 					if invType, typeOk := inventoryconst.TypeFromItemId(itemconst.Id(itemId)); typeOk {
-						if a, found := c.Inventory().CompartmentByType(invType).FindFirstByItemId(itemId); found {
-							_ = consumable.NewProcessor(l, ctx).RequestItemConsume(f, charcon.Id(characterId), itemconst.Id(itemId), slot.Position(a.Slot()), 0)
+						amount := int16(e.ItemConsumeAmount())
+						if amount < 1 {
+							// Absent itemConNo (reader default 0) means one item (FR-1).
+							amount = 1
+						}
+						if a, found := c.Inventory().CompartmentByType(invType).FindFirstByItemIdWithQuantity(itemId, amount); found {
+							_ = requestItemConsumeFunc(consumable.NewProcessor(l, ctx), f, charcon.Id(characterId), itemconst.Id(itemId), slot.Position(a.Slot()), amount, 0)
 						} else {
-							l.Warnf("Character [%d] cast skill [%d] requiring item [%d] but no such item found in inventory; cast permitted (defense-in-depth gate only).", characterId, info.SkillId(), itemId)
+							l.Warnf("Character [%d] cast skill [%d] requiring [%d]x item [%d] but no single slot holds enough; cast permitted (defense-in-depth gate only).", characterId, info.SkillId(), amount, itemId)
 						}
 					}
 				} else {
@@ -104,10 +148,19 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 				return nil
 			}
 
-			if e.Duration() > 0 && len(e.StatUps()) > 0 {
-				applyBuffFunc := buff.NewProcessor(l, ctx).Apply(f, characterId, int32(info.SkillId()), info.SkillLevel(), e.Duration(), e.StatUps())
+			if e.Duration() > 0 && len(statupsToApply) > 0 {
+				applyBuffFunc := buff.NewProcessor(l, ctx).Apply(f, characterId, int32(info.SkillId()), info.SkillLevel(), e.Duration(), statupsToApply)
 				_ = applyBuffFunc(characterId)
 				_ = applyToParty(l)(ctx)(f, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
+			}
+
+			// Shadow Stars cast cost (FR-4): charge bulletConsume (200 in WZ) of the
+			// chosen star after the buff is applied. shadowStarDraws is empty for every
+			// other skill.
+			if len(shadowStarDraws) > 0 {
+				if err := emitStarConsume(l, ctx, characterId, shadowStarDraws); err != nil {
+					l.WithError(err).Errorf("Character [%d] Shadow Stars cast-cost consume failed.", characterId)
+				}
 			}
 
 			// Handle mob-affecting buffs (crash, dispel, etc.)

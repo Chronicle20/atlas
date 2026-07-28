@@ -4,11 +4,12 @@ import (
 	"context"
 	"sync"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {
@@ -27,6 +28,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // cacheKey scopes the per-map cache by tenant. atlas-data's reader pulls
 // tenant-scoped string registries (place/street name) and the libs/atlas-rest
@@ -78,8 +81,8 @@ func (p *ProcessorImpl) GetById(mapId _map.Id) (Model, error) {
 //
 // The v83 client validates positions in spawn packets against the foothold
 // surface and treats at-or-below positions as embedded-in-terrain, dropping
-// the mob through the floor. Mirrors Cosmic's MapleMap.addMonsterSpawn
-// `newpos.y -= 1` invariant — every mob's y stays 1 px above its foothold.
+// the mob through the floor. Invariant: every mob's y stays 1 px above its
+// foothold (spawn positions are adjusted `y -= 1` off the surface).
 //
 // Pass-through (no clamp) cases:
 //   - fh == 0 (mid-air, fall sequence): leaving y untouched is correct because
@@ -100,11 +103,16 @@ func SnapMobPosition(l logrus.FieldLogger, ctx context.Context, mapId _map.Id, x
 	}
 	surfaceY, ok := m.SurfaceYOnFoothold(uint32(fh), x)
 	if !ok {
+		// foothold missing / wall / x outside its span: the client can't validate
+		// against an unknown surface either, so leave y untouched.
 		return x, y
 	}
 	target := surfaceY - 1
 	if y > target {
+		// mob reported at-or-below the surface: bump it 1px above so spawn-packet
+		// validation doesn't treat it as embedded-in-terrain and drop it.
 		return x, target
 	}
+	// y <= target: mob is already above the surface; leave it for client gravity.
 	return x, y
 }

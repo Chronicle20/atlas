@@ -3,16 +3,16 @@ package clientbound
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const AriantArenaShowResultWriter = "AriantArenaShowResult"
 
 // packet-audit:fname CField_AriantArena::OnShowResult
-type AriantArenaShowResult struct {
-}
+type AriantArenaShowResult struct{}
 
 func NewAriantArenaShowResult() AriantArenaShowResult {
 	return AriantArenaShowResult{}

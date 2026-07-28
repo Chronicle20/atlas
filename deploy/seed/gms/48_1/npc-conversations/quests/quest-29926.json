@@ -1,0 +1,212 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "checkRequirements",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "type": "level",
+                      "value": "70"
+                    }
+                  ],
+                  "nextState": null
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "2100"
+                    }
+                  ],
+                  "nextState": null
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "2200"
+                    }
+                  ],
+                  "nextState": null
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "1142131",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": null
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "1142131",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "awardReward"
+                },
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "checkRequirements",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "1142131",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "awardReward",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 29926,
+      "questName": "Aran Lv70 Item Reward",
+      "startStateMachine": {
+        "startState": "checkRequirements",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "type": "level",
+                      "value": "70"
+                    }
+                  ],
+                  "nextState": null
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "2100"
+                    }
+                  ],
+                  "nextState": null
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "2200"
+                    }
+                  ],
+                  "nextState": null
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "1142131",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": null
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "1142131",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "awardReward"
+                },
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "checkRequirements",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "1142131",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "awardReward",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "29926",
+    "type": "quest-conversation"
+  }
+}

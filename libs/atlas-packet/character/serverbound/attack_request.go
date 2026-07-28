@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // The four serverbound attack requests the client sends from CUserLocal:
@@ -45,11 +46,12 @@ func NewAttackMeleeRequest() AttackMeleeRequest {
 	return AttackMeleeRequest{attackInfo: *model.NewAttackInfo(model.AttackTypeMelee)}
 }
 func (m AttackMeleeRequest) AttackInfo() model.AttackInfo { return m.attackInfo }
-func (m AttackMeleeRequest) Operation() string           { return AttackMeleeRequestHandle }
-func (m AttackMeleeRequest) String() string              { return attackString(m.attackInfo) }
+func (m AttackMeleeRequest) Operation() string            { return AttackMeleeRequestHandle }
+func (m AttackMeleeRequest) String() string               { return attackString(m.attackInfo) }
 func (m AttackMeleeRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	return m.attackInfo.Encode(l, ctx)
 }
+
 func (m *AttackMeleeRequest) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return m.attackInfo.Decode(l, ctx)
 }
@@ -64,11 +66,12 @@ func NewAttackRangedRequest() AttackRangedRequest {
 	return AttackRangedRequest{attackInfo: *model.NewAttackInfo(model.AttackTypeRanged)}
 }
 func (m AttackRangedRequest) AttackInfo() model.AttackInfo { return m.attackInfo }
-func (m AttackRangedRequest) Operation() string           { return AttackRangedRequestHandle }
-func (m AttackRangedRequest) String() string              { return attackString(m.attackInfo) }
+func (m AttackRangedRequest) Operation() string            { return AttackRangedRequestHandle }
+func (m AttackRangedRequest) String() string               { return attackString(m.attackInfo) }
 func (m AttackRangedRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	return m.attackInfo.Encode(l, ctx)
 }
+
 func (m *AttackRangedRequest) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return m.attackInfo.Decode(l, ctx)
 }
@@ -83,11 +86,12 @@ func NewAttackMagicRequest() AttackMagicRequest {
 	return AttackMagicRequest{attackInfo: *model.NewAttackInfo(model.AttackTypeMagic)}
 }
 func (m AttackMagicRequest) AttackInfo() model.AttackInfo { return m.attackInfo }
-func (m AttackMagicRequest) Operation() string           { return AttackMagicRequestHandle }
-func (m AttackMagicRequest) String() string              { return attackString(m.attackInfo) }
+func (m AttackMagicRequest) Operation() string            { return AttackMagicRequestHandle }
+func (m AttackMagicRequest) String() string               { return attackString(m.attackInfo) }
 func (m AttackMagicRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	return m.attackInfo.Encode(l, ctx)
 }
+
 func (m *AttackMagicRequest) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return m.attackInfo.Decode(l, ctx)
 }
@@ -102,11 +106,12 @@ func NewAttackTouchRequest() AttackTouchRequest {
 	return AttackTouchRequest{attackInfo: *model.NewAttackInfo(model.AttackTypeEnergy)}
 }
 func (m AttackTouchRequest) AttackInfo() model.AttackInfo { return m.attackInfo }
-func (m AttackTouchRequest) Operation() string           { return AttackTouchRequestHandle }
-func (m AttackTouchRequest) String() string              { return attackString(m.attackInfo) }
+func (m AttackTouchRequest) Operation() string            { return AttackTouchRequestHandle }
+func (m AttackTouchRequest) String() string               { return attackString(m.attackInfo) }
 func (m AttackTouchRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	return m.attackInfo.Encode(l, ctx)
 }
+
 func (m *AttackTouchRequest) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return m.attackInfo.Decode(l, ctx)
 }

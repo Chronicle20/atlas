@@ -48,8 +48,8 @@ Coordinates note operations with database persistence and Kafka event emission.
 | Discard | Deletes multiple notes for a character by ID, buffers DELETED status events, and awards fame to each note sender via saga |
 | DiscardAndEmit | Deletes multiple notes for a character by ID, emits DELETED status events, and awards fame to each note sender via saga |
 | ByIdProvider | Retrieves a note by ID |
-| ByCharacterProvider | Retrieves all notes for a character |
-| InTenantProvider | Retrieves all notes in a tenant |
+| ByCharacterProvider | Retrieves one page of notes for a character |
+| AllProvider | Retrieves one page of notes in a tenant |
 
 Discard skips fame awards for system notes (senderId is 0) and self-notes (senderId equals characterId).
 

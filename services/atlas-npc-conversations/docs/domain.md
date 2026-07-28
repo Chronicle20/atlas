@@ -92,8 +92,8 @@ NPC conversation definitions. Each definition associates an NPC ID with a conver
 
 ### Processors
 
-- **Processor** (npc) — Interface: `Create`, `Update`, `Delete`, `ByIdProvider`, `ByNpcIdProvider`, `AllByNpcIdProvider`, `AllProvider`, `DeleteAllForTenant`, `Seed`.
-- **ProcessorImpl** (npc) — Implements Processor. Tenant-scoped CRUD operations. `Seed` clears all conversations for the tenant and loads from JSON files on the filesystem.
+- **Processor** (npc) — Interface: `Create`, `Update`, `Delete`, `ByIdProvider`, `ByNpcIdProvider`, `AllByNpcIdProvider`, `AllProvider`, `DeleteAllForTenant`, `ReindexAllRecipes`, `Count`.
+- **ProcessorImpl** (npc) — Implements Processor. Tenant-scoped CRUD operations. `Create`, `Update`, `Delete`, and `DeleteAllForTenant` rebuild the conversation's derived Recipe rows inside the same transaction as the write. `ReindexAllRecipes` clears and re-derives Recipe rows for every NPC conversation belonging to the tenant. `Count` returns the row count and max `updated_at` timestamp for the tenant.
 
 ## Quest Conversation
 
@@ -114,8 +114,28 @@ Quest conversation definitions. Each definition associates a quest ID with dual 
 
 ### Processors
 
-- **Processor** (quest) — Interface: `Create`, `Update`, `Delete`, `ByIdProvider`, `ByQuestIdProvider`, `AllProvider`, `DeleteAllForTenant`, `Seed`, `GetStateMachineForCharacter`.
-- **ProcessorImpl** (quest) — Implements Processor. Tenant-scoped CRUD operations. `GetStateMachineForCharacter` routes to startStateMachine (quest NOT_STARTED) or endStateMachine (quest STARTED) based on quest status queried from atlas-query-aggregator. `Seed` clears all quest conversations for the tenant and loads from JSON files.
+- **Processor** (quest) — Interface: `Create`, `Update`, `Delete`, `ByIdProvider`, `ByQuestIdProvider`, `AllProvider`, `DeleteAllForTenant`, `GetStateMachineForCharacter`, `Count`.
+- **ProcessorImpl** (quest) — Implements Processor. Tenant-scoped CRUD operations. `GetStateMachineForCharacter` routes to startStateMachine (quest NOT_STARTED) or endStateMachine (quest STARTED) based on quest status queried from atlas-query-aggregator. `Count` returns the row count and max `updated_at` timestamp for the tenant.
+
+## Recipe
+
+### Responsibility
+
+Derived index over `craftAction` states inside NPC conversations. One row per `(tenant, conversation, state)` triple.
+
+### Core Models
+
+- **Model** — A recipe row. Has `id` (uuid), `tenantId`, `conversationId`, `npcId`, `stateId`, `itemId`, `materials` (`[]Material`), `mesoCost`, `stimulatorId`, `stimulatorFailChance`.
+- **Material** — One material entry. Has `itemId` and `quantity`.
+
+### Invariants
+
+- `id` is deterministically derived (UUID v5) from `(tenantId, conversationId, stateId)` when not explicitly set, so it is stable across rebuilds.
+
+### Processors
+
+- **Processor** (recipe) — Interface: `ByItemIdProvider`, `ByNpcIdProvider`, `RebuildForConversation`, `ClearForTenant`.
+- **ProcessorImpl** (recipe) — `RebuildForConversation` deletes existing rows for a conversation and re-derives one row per `craftAction` state, skipping and recording states with an unparseable `itemId` or a materials/quantities length mismatch. `ClearForTenant` hard-deletes every recipe row for the active tenant.
 
 ## Saga
 
@@ -161,11 +181,25 @@ Pet data retrieval for pet-related conversation operations.
 
 ### Core Models
 
-- **Model** — A pet. Has `id` (uint32) and `slot` (int8). `IsSpawned()` returns true if slot >= 0.
+- **Model** — A pet. Has `id` (uint32), `templateId` (uint32), `name` (string), `level` (byte), and `slot` (int8). `IsSpawned()` returns true if slot >= 0.
 
 ### Processors
 
-- **Processor** (pet) — Interface: `GetPets`, `GetPetIdBySlot`. Retrieves pet data via REST and locates pets by slot position.
+- **Processor** (pet) — Interface: `GetPets`, `GetPetIdBySlot`. Retrieves pet data via REST (draining all pages) and locates pets by slot position.
+
+## Pet Data
+
+### Responsibility
+
+Pet evolution data retrieval, sourced from atlas-data, for pet-evolution conversation operations.
+
+### Core Models
+
+- **Model** — Pet evolution data. Has `id` (uint32, template id), `name` (string), `reqPetLevel` (uint32), `reqItemId` (uint32), `evolutions` (int). `IsEvolvable()` returns true when `evolutions > 0` and `reqItemId != 0`.
+
+### Processors
+
+- **Processor** (petdata) — Interface: `GetById`. Retrieves pet evolution data for a pet template via REST.
 
 ## Saved Location
 

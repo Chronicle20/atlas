@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultSuccessBidInfo
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#SuccessBidInfo
+    address: "0x58043b"
+    decompile_sha256: 4cafe6c78742da9b69f6fd1520e25b34ddd7e5ed94607c399dd6391a0abbf10f
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_operation_test.go#TestMtsResultSuccessBidInfoGolden

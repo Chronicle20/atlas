@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashShopOperationBuyPackage
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnBuyPackage
+    address: "0x4586ce"
+    decompile_sha256: 5b2425ba5de40bbc5b5e8c8c8ea21b03652bbc75cb3210a8cfa38a4410c82dfe
+verifies:
+    - libs/atlas-packet/cash/serverbound/v61_test.go#TestShopOperationBuyPackageBytesV61

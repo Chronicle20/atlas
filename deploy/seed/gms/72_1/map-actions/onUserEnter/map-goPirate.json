@@ -1,0 +1,48 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Nautilus Training Room (1020500) - Explorer job advancement intro for Pirate path",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "gender",
+              "value": "0"
+            }
+          ],
+          "id": "intro_male",
+          "operations": [
+            {
+              "params": {
+                "path": "Effect/Direction3.img/pirate/Scene0"
+              },
+              "type": "show_intro"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "gender",
+              "value": "1"
+            }
+          ],
+          "id": "intro_female",
+          "operations": [
+            {
+              "params": {
+                "path": "Effect/Direction3.img/pirate/Scene1"
+              },
+              "type": "show_intro"
+            }
+          ]
+        }
+      ],
+      "scriptName": "goPirate"
+    },
+    "id": "goPirate",
+    "type": "map-action"
+  }
+}

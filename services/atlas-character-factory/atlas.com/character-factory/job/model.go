@@ -10,7 +10,7 @@ func JobFromIndex(jobIndex uint32, subJobIndex uint32) job.Id {
 		if subJobIndex == 0 {
 			jobId = job.BeginnerId
 		} else if subJobIndex == 1 {
-			//jobId = job.BladeRecruit TODO
+			// jobId = job.BladeRecruit TODO
 		}
 	} else if jobIndex == 2 {
 		jobId = job.LegendId

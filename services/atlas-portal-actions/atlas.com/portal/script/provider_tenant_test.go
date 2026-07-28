@@ -4,11 +4,12 @@ import (
 	"testing"
 	"time"
 
-	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 // newScriptTenantDB seeds two portal-script rows in two tenants that share the
@@ -22,12 +23,12 @@ func newScriptTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID, uuid.UUID,
 	now := time.Now()
 	require.NoError(t, db.Create(&Entity{
 		ID: idA, TenantID: tidA, PortalID: "portal-1", MapID: 100,
-		Data: `{"portalId":"portal-1","mapId":100,"rules":[]}`,
+		Data:      `{"portalId":"portal-1","mapId":100,"rules":[]}`,
 		CreatedAt: now, UpdatedAt: now,
 	}).Error)
 	require.NoError(t, db.Create(&Entity{
 		ID: idB, TenantID: tidB, PortalID: "portal-1", MapID: 100,
-		Data: `{"portalId":"portal-1","mapId":100,"rules":[]}`,
+		Data:      `{"portalId":"portal-1","mapId":100,"rules":[]}`,
 		CreatedAt: now, UpdatedAt: now,
 	}).Error)
 	return db, tidA, tidB, idA, idB

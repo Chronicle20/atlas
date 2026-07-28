@@ -1,0 +1,10 @@
+packet: pet/serverbound/PetCommand
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_58DF8A
+    address: "0x58df8a"
+    decompile_sha256: 4a46b74cbe821b59bf4b03ab8559de129d827eafb8a694286ff825972e6e476c
+verifies:
+  - libs/atlas-packet/pet/serverbound/command_test.go#TestCommandBytesV48

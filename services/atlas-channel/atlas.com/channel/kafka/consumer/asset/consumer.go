@@ -4,18 +4,21 @@ import (
 	"atlas-channel/asset"
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
-	"atlas-channel/listener"
-	model2 "atlas-channel/socket/model"
 	asset2 "atlas-channel/kafka/message/asset"
+	"atlas-channel/listener"
 	_map "atlas-channel/map"
 	"atlas-channel/messenger"
 	"atlas-channel/pet"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
 	"sync"
+
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
@@ -24,9 +27,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 	cashpkt "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
@@ -34,6 +34,8 @@ import (
 	invcb "github.com/Chronicle20/atlas/libs/atlas-packet/inventory/clientbound"
 	messengerpkt "github.com/Chronicle20/atlas/libs/atlas-packet/messenger"
 	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -123,6 +125,7 @@ func buildAssetFromCreatedBody(e asset2.StatusEvent[asset2.CreatedStatusEventBod
 		SetCreatedAt(e.Body.CreatedAt).
 		SetQuantity(e.Body.Quantity).
 		SetOwnerId(e.Body.OwnerId).
+		SetOwner(e.Body.Owner).
 		SetFlag(e.Body.Flag).
 		SetRechargeable(e.Body.Rechargeable).
 		SetStrength(e.Body.Strength).
@@ -161,6 +164,7 @@ func buildAssetFromUpdatedBody(e asset2.StatusEvent[asset2.UpdatedStatusEventBod
 		SetCreatedAt(e.Body.CreatedAt).
 		SetQuantity(e.Body.Quantity).
 		SetOwnerId(e.Body.OwnerId).
+		SetOwner(e.Body.Owner).
 		SetFlag(e.Body.Flag).
 		SetRechargeable(e.Body.Rechargeable).
 		SetStrength(e.Body.Strength).
@@ -199,6 +203,7 @@ func buildAssetFromAcceptedBody(e asset2.StatusEvent[asset2.AcceptedStatusEventB
 		SetCreatedAt(e.Body.CreatedAt).
 		SetQuantity(e.Body.Quantity).
 		SetOwnerId(e.Body.OwnerId).
+		SetOwner(e.Body.Owner).
 		SetFlag(e.Body.Flag).
 		SetRechargeable(e.Body.Rechargeable).
 		SetStrength(e.Body.Strength).
@@ -343,7 +348,7 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 
 					var wg sync.WaitGroup
 					wg.Add(2)
-					go func() {
+					routine.Go(l, ctx, func(_ context.Context) {
 						defer wg.Done()
 						inventoryType, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
 						if !ok {
@@ -353,17 +358,17 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 						if aerr := session.Announce(l)(ctx)(wp)(invcb.InventoryChangeWriter)(invcb.NewChangeBatch(false, invpkt.NewMoveEntry(byte(inventoryType), e.Body.OldSlot, e.Slot)).Encode)(s); aerr != nil {
 							l.WithError(aerr).Errorf("Unable to move [%d] in slot [%d] to [%d] for character [%d].", e.TemplateId, e.Body.OldSlot, e.Slot, s.CharacterId())
 						}
-					}()
-					go func() {
+					})
+					routine.Go(l, ctx, func(_ context.Context) {
 						defer wg.Done()
 						if aerr := _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), updateAppearance(l)(ctx)(wp)(c)); aerr != nil {
 							l.WithError(aerr).Errorf("Unable to update appearance for character [%d] in map.", s.CharacterId())
 						}
-					}()
+					})
 
 					if it, ok := inventory.TypeFromItemId(item.Id(e.TemplateId)); ok && it == inventory.TypeValueEquip && (e.Slot <= 0 || e.Body.OldSlot <= 0) {
 						wg.Add(1)
-						go func() {
+						routine.Go(l, ctx, func(_ context.Context) {
 							defer wg.Done()
 							m, merr := messenger.NewProcessor(l, ctx).GetByMemberId(e.CharacterId)
 							if merr != nil {
@@ -379,7 +384,7 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 									return session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationUpdateBody(um.Slot(), ava))(os)
 								})
 							}
-						}()
+						})
 					}
 
 					wg.Wait()

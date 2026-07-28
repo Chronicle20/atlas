@@ -1,14 +1,14 @@
 package pet
 
 type Model struct {
-	id           uint32
-	hunger       uint32
-	cash         bool
-	life         uint32
-	skills       []SkillModel
-	reqPetLevel  uint32
-	reqItemId    uint32
-	evolutions   []EvolutionModel
+	id          uint32
+	hunger      uint32
+	cash        bool
+	life        uint32
+	skills      []SkillModel
+	reqPetLevel uint32
+	reqItemId   uint32
+	evolutions  []EvolutionModel
 }
 
 func (m Model) Id() uint32 {

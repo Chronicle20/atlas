@@ -4,8 +4,9 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // StateContainer is an interface for state machine containers
@@ -33,28 +34,30 @@ type NpcConversationProvider interface {
 type StateType string
 
 const (
-	DialogueStateType      StateType = "dialogue"
-	GenericActionType      StateType = "genericAction"
-	CraftActionType        StateType = "craftAction"
-	TransportActionType    StateType = "transportAction"
-	GachaponActionType     StateType = "gachaponAction"
+	DialogueStateType         StateType = "dialogue"
+	GenericActionType         StateType = "genericAction"
+	CraftActionType           StateType = "craftAction"
+	TransportActionType       StateType = "transportAction"
+	GachaponActionType        StateType = "gachaponAction"
+	RPSActionType             StateType = "rpsAction"
 	PartyQuestActionType      StateType = "partyQuestAction"
 	PartyQuestBonusActionType StateType = "partyQuestBonusAction"
-	ListSelectionType StateType = "listSelection"
-	AskNumberType     StateType = "askNumber"
-	AskStyleType                     StateType = "askStyle"
-	AskSlideMenuType                 StateType = "askSlideMenu"
+	ListSelectionType         StateType = "listSelection"
+	AskNumberType             StateType = "askNumber"
+	AskStyleType              StateType = "askStyle"
+	AskSlideMenuType          StateType = "askSlideMenu"
 )
 
 // StateModel represents a state in a conversation
 type StateModel struct {
-	id               string
-	stateType        StateType
-	dialogue         *DialogueModel
-	genericAction    *GenericActionModel
-	craftAction      *CraftActionModel
-	transportAction  *TransportActionModel
-	gachaponAction   *GachaponActionModel
+	id                    string
+	stateType             StateType
+	dialogue              *DialogueModel
+	genericAction         *GenericActionModel
+	craftAction           *CraftActionModel
+	transportAction       *TransportActionModel
+	gachaponAction        *GachaponActionModel
+	rpsAction             *RPSActionModel
 	partyQuestAction      *PartyQuestActionModel
 	partyQuestBonusAction *PartyQuestBonusActionModel
 	listSelection         *ListSelectionModel
@@ -98,6 +101,11 @@ func (s StateModel) GachaponAction() *GachaponActionModel {
 	return s.gachaponAction
 }
 
+// RPSAction returns the RPS action model (if type is rpsAction)
+func (s StateModel) RPSAction() *RPSActionModel {
+	return s.rpsAction
+}
+
 // PartyQuestAction returns the party quest action model (if type is partyQuestAction)
 func (s StateModel) PartyQuestAction() *PartyQuestActionModel {
 	return s.partyQuestAction
@@ -137,6 +145,7 @@ type StateBuilder struct {
 	craftAction           *CraftActionModel
 	transportAction       *TransportActionModel
 	gachaponAction        *GachaponActionModel
+	rpsAction             *RPSActionModel
 	partyQuestAction      *PartyQuestActionModel
 	partyQuestBonusAction *PartyQuestBonusActionModel
 	listSelection         *ListSelectionModel
@@ -164,6 +173,7 @@ func (b *StateBuilder) SetDialogue(dialogue *DialogueModel) *StateBuilder {
 	b.craftAction = nil
 	b.transportAction = nil
 	b.gachaponAction = nil
+	b.rpsAction = nil
 	b.partyQuestAction = nil
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
@@ -181,6 +191,7 @@ func (b *StateBuilder) SetGenericAction(genericAction *GenericActionModel) *Stat
 	b.craftAction = nil
 	b.transportAction = nil
 	b.gachaponAction = nil
+	b.rpsAction = nil
 	b.partyQuestAction = nil
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
@@ -198,6 +209,7 @@ func (b *StateBuilder) SetCraftAction(craftAction *CraftActionModel) *StateBuild
 	b.craftAction = craftAction
 	b.transportAction = nil
 	b.gachaponAction = nil
+	b.rpsAction = nil
 	b.partyQuestAction = nil
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
@@ -215,6 +227,7 @@ func (b *StateBuilder) SetTransportAction(transportAction *TransportActionModel)
 	b.craftAction = nil
 	b.transportAction = transportAction
 	b.gachaponAction = nil
+	b.rpsAction = nil
 	b.partyQuestAction = nil
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
@@ -232,6 +245,25 @@ func (b *StateBuilder) SetGachaponAction(gachaponAction *GachaponActionModel) *S
 	b.craftAction = nil
 	b.transportAction = nil
 	b.gachaponAction = gachaponAction
+	b.rpsAction = nil
+	b.partyQuestAction = nil
+	b.partyQuestBonusAction = nil
+	b.listSelection = nil
+	b.askNumber = nil
+	b.askStyle = nil
+	b.askSlideMenu = nil
+	return b
+}
+
+// SetRPSAction sets the RPS action model
+func (b *StateBuilder) SetRPSAction(rpsAction *RPSActionModel) *StateBuilder {
+	b.stateType = RPSActionType
+	b.dialogue = nil
+	b.genericAction = nil
+	b.craftAction = nil
+	b.transportAction = nil
+	b.gachaponAction = nil
+	b.rpsAction = rpsAction
 	b.partyQuestAction = nil
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
@@ -249,6 +281,7 @@ func (b *StateBuilder) SetPartyQuestAction(partyQuestAction *PartyQuestActionMod
 	b.craftAction = nil
 	b.transportAction = nil
 	b.gachaponAction = nil
+	b.rpsAction = nil
 	b.partyQuestAction = partyQuestAction
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
@@ -266,6 +299,7 @@ func (b *StateBuilder) SetPartyQuestBonusAction(partyQuestBonusAction *PartyQues
 	b.craftAction = nil
 	b.transportAction = nil
 	b.gachaponAction = nil
+	b.rpsAction = nil
 	b.partyQuestAction = nil
 	b.partyQuestBonusAction = partyQuestBonusAction
 	b.listSelection = nil
@@ -283,6 +317,7 @@ func (b *StateBuilder) SetListSelection(listSelection *ListSelectionModel) *Stat
 	b.craftAction = nil
 	b.transportAction = nil
 	b.gachaponAction = nil
+	b.rpsAction = nil
 	b.partyQuestAction = nil
 	b.listSelection = listSelection
 	b.askNumber = nil
@@ -299,6 +334,7 @@ func (b *StateBuilder) SetAskNumber(askNumber *AskNumberModel) *StateBuilder {
 	b.craftAction = nil
 	b.transportAction = nil
 	b.gachaponAction = nil
+	b.rpsAction = nil
 	b.partyQuestAction = nil
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
@@ -316,6 +352,7 @@ func (b *StateBuilder) SetAskStyle(askStyle *AskStyleModel) *StateBuilder {
 	b.craftAction = nil
 	b.transportAction = nil
 	b.gachaponAction = nil
+	b.rpsAction = nil
 	b.partyQuestAction = nil
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
@@ -333,6 +370,7 @@ func (b *StateBuilder) SetAskSlideMenu(askSlideMenu *AskSlideMenuModel) *StateBu
 	b.craftAction = nil
 	b.transportAction = nil
 	b.gachaponAction = nil
+	b.rpsAction = nil
 	b.partyQuestAction = nil
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
@@ -369,6 +407,10 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		if b.gachaponAction == nil {
 			return StateModel{}, errors.New("gachaponAction is required for gachaponAction state")
 		}
+	case RPSActionType:
+		if b.rpsAction == nil {
+			return StateModel{}, errors.New("rpsAction is required for rpsAction state")
+		}
 	case PartyQuestActionType:
 		if b.partyQuestAction == nil {
 			return StateModel{}, errors.New("partyQuestAction is required for partyQuestAction state")
@@ -398,19 +440,20 @@ func (b *StateBuilder) Build() (StateModel, error) {
 	}
 
 	return StateModel{
-		id:               b.id,
-		stateType:        b.stateType,
-		dialogue:         b.dialogue,
-		genericAction:    b.genericAction,
-		craftAction:      b.craftAction,
-		transportAction:  b.transportAction,
-		gachaponAction:   b.gachaponAction,
+		id:                    b.id,
+		stateType:             b.stateType,
+		dialogue:              b.dialogue,
+		genericAction:         b.genericAction,
+		craftAction:           b.craftAction,
+		transportAction:       b.transportAction,
+		gachaponAction:        b.gachaponAction,
+		rpsAction:             b.rpsAction,
 		partyQuestAction:      b.partyQuestAction,
 		partyQuestBonusAction: b.partyQuestBonusAction,
 		listSelection:         b.listSelection,
-		askNumber:        b.askNumber,
-		askStyle:         b.askStyle,
-		askSlideMenu:     b.askSlideMenu,
+		askNumber:             b.askNumber,
+		askStyle:              b.askStyle,
+		askSlideMenu:          b.askSlideMenu,
 	}, nil
 }
 
@@ -1415,6 +1458,69 @@ func (b *GachaponActionBuilder) Build() (*GachaponActionModel, error) {
 		gachaponId:   b.gachaponId,
 		ticketItemId: b.ticketItemId,
 		failureState: b.failureState,
+	}, nil
+}
+
+// RPSActionModel represents an RPS (Rock Paper Scissors) entry action state
+type RPSActionModel struct {
+	npcId         uint32 // Entry NPC template ID (e.g., 9000019)
+	entryCostMeso uint32 // Meso cost deducted to enter the game
+	failureState  string // General failure state (e.g., not enough meso)
+}
+
+func (r RPSActionModel) NpcId() uint32 {
+	return r.npcId
+}
+
+func (r RPSActionModel) EntryCostMeso() uint32 {
+	return r.entryCostMeso
+}
+
+func (r RPSActionModel) FailureState() string {
+	return r.failureState
+}
+
+// RPSActionBuilder builds RPSActionModel
+type RPSActionBuilder struct {
+	npcId         uint32
+	entryCostMeso uint32
+	failureState  string
+}
+
+func NewRPSActionBuilder() *RPSActionBuilder {
+	return &RPSActionBuilder{}
+}
+
+func (b *RPSActionBuilder) SetNpcId(npcId uint32) *RPSActionBuilder {
+	b.npcId = npcId
+	return b
+}
+
+func (b *RPSActionBuilder) SetEntryCostMeso(entryCostMeso uint32) *RPSActionBuilder {
+	b.entryCostMeso = entryCostMeso
+	return b
+}
+
+func (b *RPSActionBuilder) SetFailureState(failureState string) *RPSActionBuilder {
+	b.failureState = failureState
+	return b
+}
+
+func (b *RPSActionBuilder) Build() (*RPSActionModel, error) {
+	if b.npcId == 0 {
+		return nil, errors.New("npcId is required")
+	}
+	if b.entryCostMeso == 0 {
+		return nil, errors.New("entryCostMeso is required")
+	}
+	if b.failureState == "" {
+		return nil, errors.New("failureState is required")
+	}
+
+	return &RPSActionModel{
+		npcId:         b.npcId,
+		entryCostMeso: b.entryCostMeso,
+		failureState:  b.failureState,
 	}, nil
 }
 

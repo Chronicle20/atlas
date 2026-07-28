@@ -7,8 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 // InventoryChecker is an interface for checking item inventory
@@ -27,11 +28,11 @@ type Processor interface {
 }
 
 type ProcessorImpl struct {
-	l                   logrus.FieldLogger
-	ctx                 context.Context
-	generator           Generator
-	validator           Validator
-	appearanceProvider  AppearanceProvider
+	l                  logrus.FieldLogger
+	ctx                context.Context
+	generator          Generator
+	validator          Validator
+	appearanceProvider AppearanceProvider
 }
 
 // AppearanceProvider is an interface for retrieving character appearance data
@@ -50,6 +51,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, appearanceProvider 
 		appearanceProvider: appearanceProvider,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // GenerateHairStyles generates filtered hair style list based on character appearance and parameters
 func (p *ProcessorImpl) GenerateHairStyles(

@@ -4,11 +4,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type EntityUpdateFunction func() ([]string, func(e *entity))
@@ -259,7 +260,6 @@ func SetHpMpUsed(value int) EntityUpdateFunction {
 		}
 	}
 }
-
 
 func SetExperience(experience uint32) EntityUpdateFunction {
 	return func() ([]string, func(e *entity)) {

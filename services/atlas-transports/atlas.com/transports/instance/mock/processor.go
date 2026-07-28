@@ -4,40 +4,41 @@ import (
 	"atlas-transports/instance"
 	"atlas-transports/kafka/message"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 var _ instance.Processor = (*ProcessorMock)(nil)
 
 type ProcessorMock struct {
-	AddTenantFunc                    func(routes []instance.RouteModel)
-	ClearTenantFunc                  func() int
-	GetRoutesFunc                    func() []instance.RouteModel
-	GetRouteFunc                     func(id uuid.UUID) (instance.RouteModel, bool)
-	IsTransitMapFunc                 func(mapId _map.Id) bool
-	GetRouteByTransitMapFunc         func(mapId _map.Id) (instance.RouteModel, error)
-	StartTransportFunc               func(mb *message.Buffer) func(characterId uint32, routeId uuid.UUID, f field.Model) error
-	StartTransportAndEmitFunc        func(characterId uint32, routeId uuid.UUID, f field.Model) error
-	HandleMapEnterFunc               func(mb *message.Buffer) func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
-	HandleMapEnterAndEmitFunc        func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
-	HandleMapExitFunc                func(mb *message.Buffer) func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
-	HandleMapExitAndEmitFunc         func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
-	HandleLogoutFunc                 func(mb *message.Buffer) func(characterId uint32, worldId world.Id, channelId channel.Id) error
-	HandleLogoutAndEmitFunc          func(characterId uint32, worldId world.Id, channelId channel.Id) error
-	HandleLoginFunc                  func(mb *message.Buffer) func(characterId uint32, mapId _map.Id, worldId world.Id, channelId channel.Id) error
-	HandleLoginAndEmitFunc           func(characterId uint32, mapId _map.Id, worldId world.Id, channelId channel.Id) error
-	TickBoardingExpirationFunc       func(mb *message.Buffer) error
+	AddTenantFunc                     func(routes []instance.RouteModel)
+	ClearTenantFunc                   func() int
+	GetRoutesFunc                     func() []instance.RouteModel
+	GetRouteFunc                      func(id uuid.UUID) (instance.RouteModel, bool)
+	IsTransitMapFunc                  func(mapId _map.Id) bool
+	GetRouteByTransitMapFunc          func(mapId _map.Id) (instance.RouteModel, error)
+	StartTransportFunc                func(mb *message.Buffer) func(characterId uint32, routeId uuid.UUID, f field.Model) error
+	StartTransportAndEmitFunc         func(characterId uint32, routeId uuid.UUID, f field.Model) error
+	HandleMapEnterFunc                func(mb *message.Buffer) func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
+	HandleMapEnterAndEmitFunc         func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
+	HandleMapExitFunc                 func(mb *message.Buffer) func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
+	HandleMapExitAndEmitFunc          func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
+	HandleLogoutFunc                  func(mb *message.Buffer) func(characterId uint32, worldId world.Id, channelId channel.Id) error
+	HandleLogoutAndEmitFunc           func(characterId uint32, worldId world.Id, channelId channel.Id) error
+	HandleLoginFunc                   func(mb *message.Buffer) func(characterId uint32, mapId _map.Id, worldId world.Id, channelId channel.Id) error
+	HandleLoginAndEmitFunc            func(characterId uint32, mapId _map.Id, worldId world.Id, channelId channel.Id) error
+	TickBoardingExpirationFunc        func(mb *message.Buffer) error
 	TickBoardingExpirationAndEmitFunc func() error
-	TickArrivalFunc                  func(mb *message.Buffer) error
-	TickArrivalAndEmitFunc           func() error
-	TickStuckTimeoutFunc             func(mb *message.Buffer) error
-	TickStuckTimeoutAndEmitFunc      func() error
-	GracefulShutdownFunc             func(mb *message.Buffer) error
-	GracefulShutdownAndEmitFunc      func() error
+	TickArrivalFunc                   func(mb *message.Buffer) error
+	TickArrivalAndEmitFunc            func() error
+	TickStuckTimeoutFunc              func(mb *message.Buffer) error
+	TickStuckTimeoutAndEmitFunc       func() error
+	GracefulShutdownFunc              func(mb *message.Buffer) error
+	GracefulShutdownAndEmitFunc       func() error
 }
 
 func (m *ProcessorMock) AddTenant(routes []instance.RouteModel) {

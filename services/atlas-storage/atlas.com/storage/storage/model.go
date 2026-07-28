@@ -4,8 +4,9 @@ import (
 	"atlas-storage/asset"
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 type Model struct {

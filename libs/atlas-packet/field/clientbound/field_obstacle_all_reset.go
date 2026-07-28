@@ -3,9 +3,10 @@ package clientbound
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const FieldObstacleAllResetWriter = "FieldObstacleAllReset"
@@ -14,8 +15,7 @@ const FieldObstacleAllResetWriter = "FieldObstacleAllReset"
 // It carries no payload; the client resets all field obstacles to their default
 // state on receipt.
 // packet-audit:fname CField::OnFieldObstacleAllReset
-type FieldObstacleAllReset struct {
-}
+type FieldObstacleAllReset struct{}
 
 func NewFieldObstacleAllReset() FieldObstacleAllReset {
 	return FieldObstacleAllReset{}

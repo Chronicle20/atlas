@@ -35,3 +35,46 @@ func TestMonsterBomb(t *testing.T) {
 		})
 	}
 }
+
+// TestMonsterBombBytesV79 pins the exact wire bytes against the v79 client send
+// order. CMob::TryFirstSelfDestruction is the unnamed sub_63D5D6 @0x63d5d6
+// (GMS_v79_1_DEVM.exe, port 13340), opcode 185:
+//
+//	COutPacket(185) @0x63d6ff
+//	Encode4 @0x63d720 — fused mob id (sub_4DC1C0(this+95, m_dwMobID)) -> mobId
+//
+// Exactly one wire field. Byte-identical to v83; no codec change.
+//
+// packet-audit:verify packet=monster/serverbound/MonsterMonsterBomb version=gms_v79 ida=0x63d5d6
+func TestMonsterBombBytesV79(t *testing.T) {
+	input := MonsterBomb{mobId: 0xAABBCCDD}
+	ctx := pt.CreateContext("GMS", 79, 1)
+	want := []byte{
+		0xDD, 0xCC, 0xBB, 0xAA, // mobId uint32 LE (Encode4 @0x63d720)
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v79 monsterBomb bytes:\n got % x\nwant % x", got, want)
+	}
+}
+
+// TestMonsterBombBytesV72 pins the v72 wire. MONSTER_BOMB is sub_61D837
+// @0x61d837 (GMS_v72.1_U_DEVM.exe, port 13339), opcode 183:
+//
+//	COutPacket(183) @0x61d95d
+//	Encode4 @0x61d97e — fused mob id -> mobId
+//
+// Exactly one wire field. Byte-identical to v79.
+//
+// packet-audit:verify packet=monster/serverbound/MonsterMonsterBomb version=gms_v72 ida=0x61d837
+func TestMonsterBombBytesV72(t *testing.T) {
+	input := MonsterBomb{mobId: 0xAABBCCDD}
+	ctx := pt.CreateContext("GMS", 72, 1)
+	want := []byte{
+		0xDD, 0xCC, 0xBB, 0xAA, // mobId uint32 LE (Encode4 @0x61d97e)
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 monsterBomb bytes:\n got % x\nwant % x", got, want)
+	}
+}

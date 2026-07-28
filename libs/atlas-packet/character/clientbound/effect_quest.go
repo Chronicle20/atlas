@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // QuestReward represents an item reward from a quest effect.
@@ -27,7 +28,7 @@ func NewEffectQuest(mode byte, message string, nEffect uint32, rewards []QuestRe
 	return EffectQuest{mode: mode, message: message, nEffect: nEffect, rewards: rewards}
 }
 
-func (m EffectQuest) Mode() byte            { return m.mode }
+func (m EffectQuest) Mode() byte             { return m.mode }
 func (m EffectQuest) Rewards() []QuestReward { return m.rewards }
 func (m EffectQuest) Message() string        { return m.message }
 func (m EffectQuest) NEffect() uint32        { return m.nEffect }
@@ -85,8 +86,8 @@ func NewEffectQuestForeign(characterId uint32, mode byte, message string, nEffec
 	return EffectQuestForeign{characterId: characterId, mode: mode, message: message, nEffect: nEffect, rewards: rewards}
 }
 
-func (m EffectQuestForeign) CharacterId() uint32  { return m.characterId }
-func (m EffectQuestForeign) Mode() byte            { return m.mode }
+func (m EffectQuestForeign) CharacterId() uint32    { return m.characterId }
+func (m EffectQuestForeign) Mode() byte             { return m.mode }
 func (m EffectQuestForeign) Rewards() []QuestReward { return m.rewards }
 func (m EffectQuestForeign) Message() string        { return m.message }
 func (m EffectQuestForeign) NEffect() uint32        { return m.nEffect }

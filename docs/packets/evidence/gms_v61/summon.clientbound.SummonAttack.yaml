@@ -1,0 +1,10 @@
+packet: summon/clientbound/SummonAttack
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CSummonedPool::OnAttack
+    address: "0x67c39f"
+    decompile_sha256: c57d30661fe3fc8642dab3a83068af6af6873f7227e7175157b8346d25a0242e
+verifies:
+    - libs/atlas-packet/summon/clientbound/v61_test.go#TestSummonAttackBytesV61

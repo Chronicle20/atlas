@@ -22,9 +22,12 @@ func getBaseRequest() string {
 	return requests.RootUrl("ROUTES")
 }
 
-// requestInTenant creates a request to get all routes in a tenant
-func requestInTenant() requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](getBaseRequest() + Resource)
+// inTenantUrl is a bare URL (not a requests.Request) because the list is
+// now paginated server-side (task-117) and consumed via
+// requests.DrainProvider, which appends its own page[number]/page[size]
+// query params per request.
+func inTenantUrl() string {
+	return getBaseRequest() + Resource
 }
 
 // requestById creates a request to get a route by ID

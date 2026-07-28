@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionEnterResultError
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase
+    address: "0x62cd21"
+    decompile_sha256: 79b615e844b7168305548d377eae08cb04f002b4819da0e3a3e23e6e47813107
+verifies:
+  - libs/atlas-packet/interaction/clientbound/v79_test.go#TestInteractionArmsV79

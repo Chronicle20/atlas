@@ -12,12 +12,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func testSetup() (*logrus.Logger, func()) {
@@ -62,7 +63,6 @@ func TestMockProcessor_GetById_Success(t *testing.T) {
 	mockProc.AddCharacter(testChar)
 
 	result, err := mockProc.GetById()(123)
-
 	if err != nil {
 		t.Fatalf("GetById() unexpected error: %v", err)
 	}
@@ -108,7 +108,6 @@ func TestMockProcessor_GetByName_Success(t *testing.T) {
 	mockProc.AddCharacter(testChar)
 
 	result, err := mockProc.GetByName("UniqueChar")
-
 	if err != nil {
 		t.Fatalf("GetByName() unexpected error: %v", err)
 	}
@@ -136,7 +135,6 @@ func TestMockProcessor_ByNameProvider_Success(t *testing.T) {
 	mockProc.AddCharacter(testChar)
 
 	results, err := mockProc.ByNameProvider("ProviderChar")()
-
 	if err != nil {
 		t.Fatalf("ByNameProvider() unexpected error: %v", err)
 	}
@@ -152,7 +150,6 @@ func TestMockProcessor_ByNameProvider_NotFound(t *testing.T) {
 	mockProc := mock.NewMockProcessor()
 
 	results, err := mockProc.ByNameProvider("NonExistent")()
-
 	if err != nil {
 		t.Fatalf("ByNameProvider() unexpected error: %v", err)
 	}
@@ -173,7 +170,6 @@ func TestMockProcessor_GetById_WithDecorator(t *testing.T) {
 	}
 
 	result, err := mockProc.GetById(levelDecorator)(100)
-
 	if err != nil {
 		t.Fatalf("GetById() with decorator unexpected error: %v", err)
 	}

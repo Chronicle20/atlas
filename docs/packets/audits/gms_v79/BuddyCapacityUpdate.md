@@ -1,0 +1,15 @@
+# BuddyCapacityUpdate (← `CWvsContext::OnFriendResult#CapacityUpdate`)
+
+- **IDA:** 
+- **Atlas file:** `libs/atlas-packet/buddy/clientbound/capacity_update.go`
+- **Variant:** GMS/v79
+- **Branch depth:** 0
+- **Verdict:** ⚠️
+
+## Wire-level diff
+
+| # | Atlas writes | v? reads | Verdict | Note |
+|---|---|---|---|---|
+| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 1 | byte | byte `` | ⚠️ | atlas: trailing padding byte — client stops reading (harmless over-write) |
+

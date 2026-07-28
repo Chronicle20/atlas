@@ -5,19 +5,24 @@ import (
 	"atlas-inventory/data/equipment/statistics"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-type Processor struct {
-	l             logrus.FieldLogger
-	ctx           context.Context
-	slotProcessor *slot.Processor
-	statProcessor *statistics.Processor
+type Processor interface {
+	DestinationSlotProvider(suggested int16) DestinationProvider
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+type ProcessorImpl struct {
+	l             logrus.FieldLogger
+	ctx           context.Context
+	slotProcessor slot.Processor
+	statProcessor statistics.Processor
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:             l,
 		ctx:           ctx,
 		slotProcessor: slot.NewProcessor(l, ctx),
@@ -26,9 +31,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 type DestinationProvider func(itemId uint32) model.Provider[int16]
 
-func (p *Processor) DestinationSlotProvider(suggested int16) DestinationProvider {
+func (p *ProcessorImpl) DestinationSlotProvider(suggested int16) DestinationProvider {
 	return func(itemId uint32) model.Provider[int16] {
 		slots, err := p.slotProcessor.GetById(itemId)
 		if err != nil {

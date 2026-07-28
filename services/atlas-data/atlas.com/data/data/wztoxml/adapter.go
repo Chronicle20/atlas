@@ -17,9 +17,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
-	"github.com/sirupsen/logrus"
 )
 
 // SerializeToDirectory serializes a parsed WZ file to HaRepacker-compatible XML

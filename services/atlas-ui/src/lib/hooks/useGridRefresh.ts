@@ -23,12 +23,15 @@ export interface UseGridRefreshResult {
  */
 export function useGridRefresh(
   queries: RefreshableQuery[],
-  options?: { successMessage?: string },
+  options?: { successMessage?: string; alsoRefresh?: () => Promise<unknown> },
 ): UseGridRefreshResult {
   const isRefreshing = queries.some((q) => q.isFetching);
 
   const onRefresh = async (): Promise<void> => {
-    const results = await Promise.all(queries.map((q) => q.refetch()));
+    const [results] = await Promise.all([
+      Promise.all(queries.map((q) => q.refetch())),
+      options?.alsoRefresh?.(),
+    ]);
     const failed = results.find((r) => r.isError);
     if (failed) {
       toast.error(failed.error, { context: { action: "refresh" } });

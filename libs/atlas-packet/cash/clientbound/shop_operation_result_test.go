@@ -127,6 +127,7 @@ func wishListBody(mode byte, sns []uint32) []byte {
 var wishLoadModes = map[string]byte{
 	"GMS/v83": 0x4F, "GMS/v84": 0x52, "GMS/v87": 0x54, "GMS/v95": 0x5C, "JMS/v185": 0x52,
 }
+
 var wishUpdateModes = map[string]byte{
 	"GMS/v83": 0x55, "GMS/v84": 0x58, "GMS/v87": 0x5A, "GMS/v95": 0x62, "JMS/v185": 0x56,
 }

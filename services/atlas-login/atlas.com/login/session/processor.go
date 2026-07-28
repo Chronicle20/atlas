@@ -3,12 +3,17 @@ package session
 import (
 	"atlas-login/account/session"
 	session2 "atlas-login/kafka/message/session"
-	"atlas-login/kafka/producer"
 	session3 "atlas-login/kafka/producer/session"
 	"atlas-login/socket/writer"
 	"context"
 	"errors"
 	"net"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -16,10 +21,7 @@ import (
 	socketpkt "github.com/Chronicle20/atlas/libs/atlas-packet/socket/clientbound"
 	socket "github.com/Chronicle20/atlas/libs/atlas-socket"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {
@@ -58,6 +60,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) WithContext(ctx context.Context) Processor {
 	return NewProcessor(p.l, ctx)

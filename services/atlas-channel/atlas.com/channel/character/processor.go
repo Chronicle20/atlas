@@ -6,7 +6,6 @@ import (
 	"atlas-channel/compartment"
 	"atlas-channel/inventory"
 	character2 "atlas-channel/kafka/message/character"
-	"atlas-channel/kafka/producer"
 	"atlas-channel/monsterbook"
 	"atlas-channel/party"
 	"atlas-channel/pet"
@@ -15,12 +14,15 @@ import (
 	"errors"
 	"sort"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor interface defines the operations for character processing
@@ -39,6 +41,7 @@ type Processor interface {
 	RequestDistributeAp(f field.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error
 	RequestDropMeso(f field.Model, characterId uint32, amount uint32) error
 	ChangeHP(f field.Model, characterId uint32, amount int16) error
+	SetHP(f field.Model, characterId uint32, amount uint16) error
 	ChangeMP(f field.Model, characterId uint32, amount int16) error
 	RequestDistributeSp(f field.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error
 	AwardExperience(f field.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error
@@ -61,6 +64,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
@@ -230,7 +235,7 @@ type DistributePacket struct {
 }
 
 func (p *ProcessorImpl) RequestDistributeAp(f field.Model, characterId uint32, _ uint32, distributes []DistributePacket) error {
-	var distributions = make([]character2.DistributePair, 0)
+	distributions := make([]character2.DistributePair, 0)
 	for _, d := range distributes {
 		a, err := abilityFromFlag(d.Flag)
 		if err != nil {
@@ -270,6 +275,10 @@ func (p *ProcessorImpl) RequestDropMeso(f field.Model, characterId uint32, amoun
 
 func (p *ProcessorImpl) ChangeHP(f field.Model, characterId uint32, amount int16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(ChangeHPCommandProvider(f, characterId, amount))
+}
+
+func (p *ProcessorImpl) SetHP(f field.Model, characterId uint32, amount uint16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(SetHPCommandProvider(f, characterId, amount))
 }
 
 func (p *ProcessorImpl) ChangeMP(f field.Model, characterId uint32, amount int16) error {

@@ -5,11 +5,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-const keyPrefixBase = "atlas"
-const keySeparator = ":"
+const (
+	keyPrefixBase = "atlas"
+	keySeparator  = ":"
+)
 
 var keyPrefix = computeKeyPrefix(os.Getenv("ATLAS_ENV"))
 

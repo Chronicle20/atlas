@@ -7,15 +7,16 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type MockSpan struct {
@@ -108,7 +109,7 @@ func TestNullSpanPropagation(t *testing.T) {
 
 	requests.SpanHeaderDecorator(context.Background())(req.Header)
 
-	var called = false
+	called := false
 
 	server.RetrieveSpan(l, "test-handler", context.Background(), func(l logrus.FieldLogger, ctx context.Context) http.HandlerFunc {
 		called = true
@@ -163,7 +164,7 @@ func TestTenantPropagation(t *testing.T) {
 
 	requests.TenantHeaderDecorator(ictx)(req.Header)
 
-	var called = false
+	called := false
 
 	server.ParseTenant(l, context.Background(), func(l logrus.FieldLogger, tctx context.Context) http.HandlerFunc {
 		called = true

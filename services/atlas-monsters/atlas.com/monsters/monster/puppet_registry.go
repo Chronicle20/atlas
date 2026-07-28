@@ -6,14 +6,15 @@ import (
 	"strconv"
 	"sync"
 
+	goredis "github.com/redis/go-redis/v9"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	goredis "github.com/redis/go-redis/v9"
 )
 
-// PuppetVicinityDistanceSq is the squared-distance threshold (Cosmic
-// Monster.java isPuppetInVicinity, distanceSq < 177777) within which a player's
+// PuppetVicinityDistanceSq is the squared-distance threshold
+// (distanceSq < 177777) within which a player's
 // puppet is considered to be covering a monster, biasing controller selection
 // toward that puppet's owner.
 const PuppetVicinityDistanceSq = 177777
@@ -42,8 +43,10 @@ type PuppetRegistry struct {
 	fieldIdx *atlasredis.KeyedSet[string]
 }
 
-var puppetRegistry *PuppetRegistry
-var puppetOnce sync.Once
+var (
+	puppetRegistry *PuppetRegistry
+	puppetOnce     sync.Once
+)
 
 func InitPuppetRegistry(rc *goredis.Client) {
 	puppetOnce.Do(func() {
@@ -112,7 +115,7 @@ func (r *PuppetRegistry) GetInField(ctx context.Context, t tenant.Model, f field
 func (r *PuppetRegistry) VicinityOwner(ctx context.Context, t tenant.Model, f field.Model, x int16, y int16) (uint32, bool) {
 	puppets := r.GetInField(ctx, t, f)
 	var best uint32
-	var bestDistSq = int64(PuppetVicinityDistanceSq)
+	bestDistSq := int64(PuppetVicinityDistanceSq)
 	found := false
 	for _, sp := range puppets {
 		dx := int64(sp.X) - int64(x)

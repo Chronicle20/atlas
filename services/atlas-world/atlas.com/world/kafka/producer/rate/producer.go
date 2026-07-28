@@ -3,11 +3,12 @@ package rate
 import (
 	rate2 "atlas-world/kafka/message/rate"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func WorldRateChangedEventProvider(tenant tenant.Model, worldId world.Id, rateType rate2.RateType, multiplier float64) model.Provider[[]kafka.Message] {

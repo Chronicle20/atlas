@@ -24,7 +24,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetRecommendedMessage("Recommended").
 		SetCapacityStatus(world.StatusNormal).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -66,7 +65,6 @@ func TestCloneModel(t *testing.T) {
 	cloned, err := world.CloneModel(original).
 		SetState(world.StateEvent).
 		Build()
-
 	if err != nil {
 		t.Fatalf("CloneModel().Build() unexpected error: %v", err)
 	}

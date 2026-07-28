@@ -1,0 +1,47 @@
+# ViciousHammer - CField::OnItemUpgrade per-version mode table.
+# The forwarder delegates to CUIItemUpgrade::OnPacket (v83 sub_82B2C3 via
+# sub_82B2AD; v87 sub_88F348 via sub_88F332 (a2==375), reached via
+# CField::OnItemUpgrade 0x55fa12 -> this[135] vtable slot 15 (0xbe109c+0x3C);
+# v95 CUIItemUpgrade::OnItemUpgradeResult 0x7c0fd0, reached via
+# CUIItemUpgrade::OnPacket 0x7c2e10 when nType==425). Terminal modes are
+# hard-coded in the client and VERSION-DEPENDENT (IDA-verified: v83
+# SUCCESS=61/FAILURE=62 @sub_82B2C3 0x82b2c3; v87 SUCCESS=63/FAILURE=64
+# @sub_88F348 0x88f348 (mode==63 branch / mode==64 switch); v95
+# SUCCESS=65/FAILURE=66 @CUIItemUpgrade::OnItemUpgradeResult 0x7c0fd0). OPEN
+# is SERVER-CHOSEN: the client accepts any byte not in the terminal set for
+# that version, stores it as m_nReturnResult, and echoes it back in
+# ITEM_UPGRADE_UPDATE. Atlas fixes OPEN = 0 for all versions (task-129,
+# design OQ-1).
+# jms_v185 has no VICIOUS_HAMMER op (registry-absent) - omitted.
+# gms_v92 has no registry/IDB/template routing - omitted.
+# gms_v48 / gms_v61 / gms_v72 have NO CUIItemUpgrade class in the client
+# (live-IDB verified: ports 13337/13338/13339 - only the older
+# CUser::ShowItemUpgradeEffect scroll system exists). Vicious Hammer is
+# version-absent on these; not routed.
+# gms_v79 SUCCESS=60/FAILURE=61 IDA-VERIFIED (task-129 extension): decoder
+# CUIItemUpgrade::OnItemUpgradeResult 0x799d61 (mode==60 success shows
+# "2-hammerCount" remaining / mode==61 failure errorCode switch
+# 1=not-upgradable,2=cap,3=special), reached via CUIItemUpgrade::OnPacket
+# 0x799d4b gate (a2==330) from the forwarder sub_523171 (field[118], the hammer
+# dialog created in CWvsContext::SendConsumeCashItemUseRequest 0x9572da;
+# field[117]/sub_523157 is a different dialog). Serverbound sender
+# CUIItemUpgrade::Update 0x7998da COutPacket(250/0xFA). Clientbound
+# header = 0x14A (330) and serverbound = 0xFA (250); routed in
+# template_gms_79_1.
+# gms_v84 SUCCESS=61/FAILURE=62 IDA-VERIFIED (task-129): decoder
+# CUIItemUpgrade::OnItemUpgradeResult sub_85676C 0x85676c (mode==61 branch /
+# mode==62 switch, 2-count success str 5059 / horntail switch 5057/5058/5060),
+# reached via CUIItemUpgrade::OnPacket sub_856756 (header==364/0x16C) from the
+# forwarder 0x5443af (this[135]; IDB symbol CField::OnCharacterSale but
+# functionally the hammer's CField::OnItemUpgrade in v84). Serverbound sender
+# CUIItemUpgrade::Update sub_8562D1 0x8562d1 COutPacket(267/0x10B). Clientbound
+# header = 0x16C and serverbound = 0x10B (both corrected in template_gms_84_1;
+# the prior 0x169/0x104 were mis-derived/dead).
+writer: ViciousHammer
+fname: CField::OnItemUpgrade
+op: VICIOUS_HAMMER
+direction: clientbound
+operations:
+  - { key: OPEN,    modes: { gms_v79: 0,  gms_v83: 0,  gms_v84: 0,  gms_v87: 0,  gms_v95: 0 } }
+  - { key: SUCCESS, modes: { gms_v79: 60, gms_v83: 61, gms_v84: 61, gms_v87: 63, gms_v95: 65 } }
+  - { key: FAILURE, modes: { gms_v79: 61, gms_v83: 62, gms_v84: 62, gms_v87: 64, gms_v95: 66 } }

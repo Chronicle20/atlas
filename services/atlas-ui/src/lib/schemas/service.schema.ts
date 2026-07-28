@@ -4,30 +4,30 @@
  * Zod schemas for validating service creation and configuration.
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Valid service types
  */
 export const serviceTypeSchema = z.enum([
-  'login-service',
-  'channel-service',
-  'drops-service',
+  "login-service",
+  "channel-service",
+  "drops-service",
 ]);
 
 /**
  * Task configuration schema
  */
 export const taskConfigSchema = z.object({
-  type: z.string().min(1, 'Task type is required'),
+  type: z.string().min(1, "Task type is required"),
   interval: z
     .number()
-    .int('Interval must be an integer')
-    .nonnegative('Interval must be non-negative'),
+    .int("Interval must be an integer")
+    .nonnegative("Interval must be non-negative"),
   duration: z
     .number()
-    .int('Duration must be an integer')
-    .nonnegative('Duration must be non-negative'),
+    .int("Duration must be an integer")
+    .nonnegative("Duration must be non-negative"),
 });
 
 /**
@@ -35,24 +35,24 @@ export const taskConfigSchema = z.object({
  */
 export const portSchema = z
   .number()
-  .int('Port must be an integer')
-  .min(1, 'Port must be at least 1')
-  .max(65535, 'Port must be at most 65535');
+  .int("Port must be an integer")
+  .min(1, "Port must be at least 1")
+  .max(65535, "Port must be at most 65535");
 
 /**
  * Byte ID validation (0-255) for world/channel IDs
  */
 export const byteIdSchema = z
   .number()
-  .int('ID must be an integer')
-  .min(0, 'ID must be at least 0')
-  .max(255, 'ID must be at most 255');
+  .int("ID must be an integer")
+  .min(0, "ID must be at least 0")
+  .max(255, "ID must be at most 255");
 
 /**
  * Login tenant configuration schema
  */
 export const loginTenantSchema = z.object({
-  id: z.string().uuid('Invalid tenant ID format'),
+  id: z.string().uuid("Invalid tenant ID format"),
   port: portSchema,
 });
 
@@ -76,8 +76,8 @@ export const channelWorldSchema = z.object({
  * Channel tenant configuration schema
  */
 export const channelTenantSchema = z.object({
-  id: z.string().uuid('Invalid tenant ID format'),
-  ipAddress: z.string().min(1, 'IP address is required'),
+  id: z.string().uuid("Invalid tenant ID format"),
+  ipAddress: z.string().min(1, "IP address is required"),
   worlds: z.array(channelWorldSchema),
 });
 
@@ -86,7 +86,7 @@ export const channelTenantSchema = z.object({
  */
 export const loginServiceSchema = z.object({
   id: z.string().uuid().optional(),
-  type: z.literal('login-service'),
+  type: z.literal("login-service"),
   tasks: z.array(taskConfigSchema),
   tenants: z.array(loginTenantSchema),
 });
@@ -96,7 +96,7 @@ export const loginServiceSchema = z.object({
  */
 export const channelServiceSchema = z.object({
   id: z.string().uuid().optional(),
-  type: z.literal('channel-service'),
+  type: z.literal("channel-service"),
   tasks: z.array(taskConfigSchema),
   tenants: z.array(channelTenantSchema),
 });
@@ -106,14 +106,14 @@ export const channelServiceSchema = z.object({
  */
 export const dropsServiceSchema = z.object({
   id: z.string().uuid().optional(),
-  type: z.literal('drops-service'),
+  type: z.literal("drops-service"),
   tasks: z.array(taskConfigSchema),
 });
 
 /**
  * Combined service schema using discriminated union
  */
-export const serviceSchema = z.discriminatedUnion('type', [
+export const serviceSchema = z.discriminatedUnion("type", [
   loginServiceSchema,
   channelServiceSchema,
   dropsServiceSchema,
@@ -123,7 +123,7 @@ export const serviceSchema = z.discriminatedUnion('type', [
  * Create service input schema
  */
 export const createServiceInputSchema = z.object({
-  id: z.string().uuid('Invalid service ID format').optional(),
+  id: z.string().uuid("Invalid service ID format").optional(),
   type: serviceTypeSchema,
   tasks: z.array(taskConfigSchema),
   tenants: z

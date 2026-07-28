@@ -4,11 +4,12 @@ import (
 	"atlas-channel/character/buff"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func CharacterBuffCancelBody(buffs []buff.Model) packet.Encode {

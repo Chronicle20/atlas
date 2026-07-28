@@ -1,0 +1,30 @@
+{
+  "WriterName": "BuddyOperationAdd",
+  "IDAName": "CField::SendSetFriendMsg",
+  "Address": "0x4c6452",
+  "Variant": "GMS/v48",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/buddy/serverbound/operation_add.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "BUDDYLIST_MODIFY mode = 1 (add) @0x4c6546",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "buddy character name @0x4c655f (v48 sends NO group name)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

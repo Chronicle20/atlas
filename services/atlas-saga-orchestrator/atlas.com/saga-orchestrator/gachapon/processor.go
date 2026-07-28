@@ -20,6 +20,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) SelectReward(gachaponId string) (RewardRestModel, error) {
 	return SelectReward(p.l, p.ctx)(gachaponId)
 }

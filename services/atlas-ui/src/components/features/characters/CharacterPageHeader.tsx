@@ -11,7 +11,11 @@ interface Props {
   onChangeMap: () => void;
 }
 
-export function CharacterPageHeader({ character, onChangeGm, onChangeMap }: Props) {
+export function CharacterPageHeader({
+  character,
+  onChangeGm,
+  onChangeMap,
+}: Props) {
   const gm = character.attributes.gm ?? 0;
   return (
     <CopyableIdHeader

@@ -28,10 +28,7 @@ func DefaultConfig() Config {
 		seedPath = "/seed-data"
 	}
 
-	enabled := true
-	if os.Getenv("SEED_ENABLED") == "false" {
-		enabled = false
-	}
+	enabled := os.Getenv("SEED_ENABLED") != "false"
 
 	return Config{
 		SeedPath: seedPath,

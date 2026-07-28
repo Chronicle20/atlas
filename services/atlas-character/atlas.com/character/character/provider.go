@@ -3,9 +3,10 @@ package character
 import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"gorm.io/gorm"
 )
 
 func getById(characterId uint32) database.EntityProvider[entity] {
@@ -37,14 +38,21 @@ func getForName(name string) database.EntityProvider[[]entity] {
 	}
 }
 
-func getAll() database.EntityProvider[[]entity] {
-	return func(db *gorm.DB) model.Provider[[]entity] {
-		var results []entity
-		err := db.Find(&results).Error
-		if err != nil {
-			return model.ErrorProvider[[]entity](err)
-		}
-		return model.FixedProvider(results)
+func getAll(page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db, page)
+	}
+}
+
+func getForAccountInWorldPaged(accountId uint32, worldId world.Id, page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db.Where("account_id = ? AND world = ?", accountId, worldId), page)
+	}
+}
+
+func getForNamePaged(name string, page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db.Where("LOWER(name) = LOWER(?)", name), page)
 	}
 }
 

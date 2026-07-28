@@ -1,0 +1,10 @@
+packet: tv/clientbound/TvTvSetMessage
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CMapleTVMan::OnSetMessage
+    address: "0x64c7eb"
+    decompile_sha256: 6eefbd77a5162e9908bb2b29d2bf3a09b9fcecd10cf8cd4702ac73562e8cf9ec
+verifies:
+    - libs/atlas-packet/tv/clientbound/set_message_test.go#TestTvSetMessageRoundTripV84

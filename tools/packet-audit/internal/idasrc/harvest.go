@@ -29,8 +29,10 @@ func Harvest(ctx context.Context, c MCPClient, roster []string, opts HarvestOpts
 	if opts.DescentDepth == 0 {
 		opts.DescentDepth = 6
 	}
-	out := exportFile{Binary: opts.Binary, MD5: opts.MD5,
-		GeneratedAt: opts.GeneratedAt, Functions: map[string]exportFn{}}
+	out := exportFile{
+		Binary: opts.Binary, MD5: opts.MD5,
+		GeneratedAt: opts.GeneratedAt, Functions: map[string]exportFn{},
+	}
 	// dirFor resolves a roster ROOT's direction (DirClientbound default when no
 	// DirOf is supplied). Descendants do not consult DirOf — they inherit the
 	// parent's direction via the queue item below.
@@ -62,15 +64,19 @@ func Harvest(ctx context.Context, c MCPClient, roster []string, opts HarvestOpts
 			return out, fmt.Errorf("harvest %s: %w", it.name, err)
 		}
 		if !ok {
-			out.Functions[it.name] = exportFn{Unresolved: true,
-				Calls: []rawCall{{Op: "Unresolved", Comment: "function not found in IDB"}}}
+			out.Functions[it.name] = exportFn{
+				Unresolved: true,
+				Calls:      []rawCall{{Op: "Unresolved", Comment: "function not found in IDB"}},
+			}
 			continue
 		}
 		text, err := c.DecompileFunction(ctx, addr)
 		if err != nil {
 			if IsDecompilationFailed(err) {
-				out.Functions[it.name] = exportFn{Unresolved: true,
-					Calls: []rawCall{{Op: "Unresolved", Comment: "decompilation failed; hand-trace"}}}
+				out.Functions[it.name] = exportFn{
+					Unresolved: true,
+					Calls:      []rawCall{{Op: "Unresolved", Comment: "decompilation failed; hand-trace"}},
+				}
 				continue
 			}
 			return out, fmt.Errorf("harvest %s decompile: %w", it.name, err)
@@ -88,8 +94,10 @@ func Harvest(ctx context.Context, c MCPClient, roster []string, opts HarvestOpts
 					// Delegate ref to an Unresolved op so the export stays
 					// self-consistent (resolver emits a known gap instead of
 					// hard-erroring on a ref that was never harvested).
-					fn.Calls[i] = rawCall{Op: "Unresolved",
-						Comment: "descent depth exceeded; hand-trace", Guard: cl.Guard}
+					fn.Calls[i] = rawCall{
+						Op:      "Unresolved",
+						Comment: "descent depth exceeded; hand-trace", Guard: cl.Guard,
+					}
 					fn.Unresolved = true
 					continue
 				}

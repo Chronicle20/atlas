@@ -2,18 +2,20 @@ package character
 
 import (
 	"atlas-buffs/buff/stat"
+	character2 "atlas-buffs/kafka/message/character"
 	"context"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func setupTestRegistry(t *testing.T) {
@@ -548,4 +550,163 @@ func TestRegistry_TenantSetIsPrefixed(t *testing.T) {
 	if len(tenants) != 1 {
 		t.Fatalf("GetTenants() = %d want 1", len(tenants))
 	}
+}
+
+func setupComboBuff(t *testing.T, ctx context.Context, characterId uint32, sourceId int32) {
+	t.Helper()
+	changes := []stat.Model{stat.NewStat("COMBO", 1)}
+	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(20), int32(150000), changes, false)
+	if err != nil {
+		t.Fatalf("Apply: %v", err)
+	}
+}
+
+func comboAmount(t *testing.T, ctx context.Context, characterId uint32, sourceId int32) int32 {
+	t.Helper()
+	m, err := GetRegistry().Get(ctx, characterId)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	b, ok := m.Buffs()[srcKey(sourceId)]
+	if !ok {
+		t.Fatalf("no buff under srcKey(%d)", sourceId)
+	}
+	for _, c := range b.Changes() {
+		if c.Type() == "COMBO" {
+			return c.Amount()
+		}
+	}
+	t.Fatal("no COMBO stat on buff")
+	return 0
+}
+
+func TestRegistry_UpdateStatValue_Increment(t *testing.T) {
+	setupTestRegistry(t)
+	ctx := setupTestContext(t, setupTestTenant(t))
+	setupComboBuff(t, ctx, 1000, 1111002)
+
+	updated, changed, err := GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationIncrement, 1, 6)
+	assert.NoError(t, err)
+	assert.True(t, changed)
+	assert.Equal(t, int32(2), comboAmount(t, ctx, 1000, 1111002))
+
+	var got int32
+	for _, c := range updated.Changes() {
+		if c.Type() == "COMBO" {
+			got = c.Amount()
+		}
+	}
+	assert.Equal(t, int32(2), got)
+}
+
+func TestRegistry_UpdateStatValue_IncrementClampsAtCap(t *testing.T) {
+	setupTestRegistry(t)
+	ctx := setupTestContext(t, setupTestTenant(t))
+	setupComboBuff(t, ctx, 1000, 1111002)
+
+	// 1 -> +2 (double orb) with cap 2 must land exactly on the cap, not past it.
+	_, changed, err := GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationIncrement, 2, 2)
+	assert.NoError(t, err)
+	assert.True(t, changed)
+	assert.Equal(t, int32(2), comboAmount(t, ctx, 1000, 1111002))
+}
+
+func TestRegistry_UpdateStatValue_NoChangeAtCap(t *testing.T) {
+	setupTestRegistry(t)
+	ctx := setupTestContext(t, setupTestTenant(t))
+	setupComboBuff(t, ctx, 1000, 1111002)
+
+	_, changed, err := GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationIncrement, 1, 6)
+	assert.NoError(t, err)
+	assert.True(t, changed) // 1 -> 2
+
+	// drive to cap 2, then verify at-cap increment is a no-op
+	_, changed, err = GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationIncrement, 5, 2)
+	assert.NoError(t, err)
+	assert.False(t, changed, "already at/above cap must be a no-op")
+	assert.Equal(t, int32(2), comboAmount(t, ctx, 1000, 1111002))
+}
+
+func TestRegistry_UpdateStatValue_SetResets(t *testing.T) {
+	setupTestRegistry(t)
+	ctx := setupTestContext(t, setupTestTenant(t))
+	setupComboBuff(t, ctx, 1000, 1111002)
+
+	_, _, _ = GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationIncrement, 4, 6)
+	assert.Equal(t, int32(5), comboAmount(t, ctx, 1000, 1111002))
+
+	_, changed, err := GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationSet, 1, 0)
+	assert.NoError(t, err)
+	assert.True(t, changed)
+	assert.Equal(t, int32(1), comboAmount(t, ctx, 1000, 1111002))
+}
+
+func TestRegistry_UpdateStatValue_SetSameValueNoOp(t *testing.T) {
+	setupTestRegistry(t)
+	ctx := setupTestContext(t, setupTestTenant(t))
+	setupComboBuff(t, ctx, 1000, 1111002)
+
+	_, changed, err := GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationSet, 1, 0)
+	assert.NoError(t, err)
+	assert.False(t, changed, "SET to the current value must be a no-op")
+}
+
+func TestRegistry_UpdateStatValue_NoOps(t *testing.T) {
+	setupTestRegistry(t)
+	ctx := setupTestContext(t, setupTestTenant(t))
+	setupComboBuff(t, ctx, 1000, 1111002)
+
+	cases := []struct {
+		name        string
+		characterId uint32
+		sourceId    int32
+		statType    string
+		operation   string
+		amount      int32
+	}{
+		{"unknown character", 9999, 1111002, "COMBO", character2.StatOperationIncrement, 1},
+		{"wrong sourceId", 1000, 11111001, "COMBO", character2.StatOperationIncrement, 1},
+		{"wrong stat type", 1000, 1111002, "MORPH", character2.StatOperationIncrement, 1},
+		{"unknown operation", 1000, 1111002, "COMBO", "MULTIPLY", 1},
+		{"non-positive increment", 1000, 1111002, "COMBO", character2.StatOperationIncrement, 0},
+		{"set below 1", 1000, 1111002, "COMBO", character2.StatOperationSet, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, changed, err := GetRegistry().UpdateStatValue(ctx, tc.characterId, tc.sourceId, tc.statType, tc.operation, tc.amount, 6)
+			assert.NoError(t, err)
+			assert.False(t, changed)
+		})
+	}
+	assert.Equal(t, int32(1), comboAmount(t, ctx, 1000, 1111002), "no-op paths must not mutate the value")
+}
+
+func TestRegistry_UpdateStatValue_ExpiredBuffNoOp(t *testing.T) {
+	setupTestRegistry(t)
+	ctx := setupTestContext(t, setupTestTenant(t))
+
+	changes := []stat.Model{stat.NewStat("COMBO", 1)}
+	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), 1000, 1111002, byte(20), int32(1), changes, false)
+	assert.NoError(t, err)
+	time.Sleep(5 * time.Millisecond) // duration is 1ms; let it lapse
+
+	_, changed, err := GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationIncrement, 1, 6)
+	assert.NoError(t, err)
+	assert.False(t, changed, "expired buff must be a no-op")
+}
+
+func TestRegistry_UpdateStatValue_PreservesTimestamps(t *testing.T) {
+	setupTestRegistry(t)
+	ctx := setupTestContext(t, setupTestTenant(t))
+	setupComboBuff(t, ctx, 1000, 1111002)
+
+	before, err := GetRegistry().Get(ctx, 1000)
+	assert.NoError(t, err)
+	orig := before.Buffs()[srcKey(1111002)]
+
+	updated, changed, err := GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationIncrement, 1, 6)
+	assert.NoError(t, err)
+	assert.True(t, changed)
+	assert.True(t, updated.CreatedAt().Equal(orig.CreatedAt()), "createdAt must be unchanged")
+	assert.True(t, updated.ExpiresAt().Equal(orig.ExpiresAt()), "expiresAt must be unchanged (buff must not extend)")
 }

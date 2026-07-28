@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -28,6 +29,14 @@ type exportOpts struct {
 	IDATimeout   time.Duration
 	DescentDepth int
 	GeneratedAt  string // FIXED provenance timestamp (NO time.Now in the core)
+	// Force restores the pre-task-169 behaviour: overwrite an existing,
+	// differing --output. Default (false) is non-destructive (FR-3.2): refuse,
+	// write <output>.new + a change summary, and exit non-zero.
+	Force bool
+	// Splice names a single FName to merge into an existing --output (the
+	// VERIFYING_A_PACKET.md §10 surgical path). Only that one entry is taken
+	// from the fresh harvest; every other entry is preserved byte-for-byte.
+	Splice string
 }
 
 // fnameToken matches an FName-looking Class::Method token (used to scrape
@@ -103,15 +112,50 @@ func exportRun(opts exportOpts, client idasrc.MCPClient, stdout, stderr io.Write
 	}
 	b = append(b, '\n')
 
-	if dir := filepath.Dir(opts.Output); dir != "" && dir != "." {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			fmt.Fprintln(stderr, "export: mkdir:", err)
+	// Non-destructive overwrite guard (task-169 FR-3.2 / VERIFYING §10). The
+	// export is NON-idempotent: a re-harvest against a drifted IDB silently
+	// clobbering the committed baseline is the documented footgun. Default:
+	// refuse to overwrite an existing, DIFFERING file. --force overwrites;
+	// --splice merges a single entry.
+	existing, readErr := os.ReadFile(opts.Output)
+	fileExists := readErr == nil
+
+	switch {
+	case opts.Splice != "":
+		merged, err := idasrc.SpliceExport(opts.Output, ef, opts.Splice)
+		if err != nil {
+			fmt.Fprintln(stderr, "export:", err)
 			return 3
 		}
-	}
-	if err := os.WriteFile(opts.Output, b, 0o644); err != nil {
-		fmt.Fprintln(stderr, "export: write:", err)
-		return 3
+		if code := writeExportFile(opts.Output, merged, stderr); code != 0 {
+			return code
+		}
+		fmt.Fprintf(stderr, "export: spliced %q into %s (one entry merged, others preserved)\n",
+			opts.Splice, opts.Output)
+
+	case fileExists && !opts.Force && !bytes.Equal(existing, b):
+		// Differs and no --force: refuse. Write the proposed output beside the
+		// committed file and summarise the delta so the operator can review.
+		added, removed, changed, derr := summarizeExportDelta(existing, b)
+		newPath := opts.Output + ".new"
+		if code := writeExportFile(newPath, b, stderr); code != 0 {
+			return code
+		}
+		if derr != nil {
+			fmt.Fprintf(stderr, "export: %s exists and the fresh harvest differs; refusing to overwrite (delta unavailable: %v).\n",
+				opts.Output, derr)
+		} else {
+			fmt.Fprintf(stderr, "export: %s exists and the fresh harvest differs (added %d, removed %d, changed %d function keys); refusing to overwrite.\n",
+				opts.Output, added, removed, changed)
+		}
+		fmt.Fprintf(stderr, "export: wrote the proposed output to %s. Re-run with --force to overwrite, or --splice <FName> to merge one entry.\n", newPath)
+		return 4
+
+	default:
+		// New file, identical content, or explicit --force: write in place.
+		if code := writeExportFile(opts.Output, b, stderr); code != 0 {
+			return code
+		}
 	}
 
 	// Unresolved summary to stderr. resolved = a roster function with calls and
@@ -147,6 +191,57 @@ func exportRun(opts exportOpts, client idasrc.MCPClient, stdout, stderr io.Write
 		fmt.Fprintln(stderr, "  unresolved:", n)
 	}
 	return 0
+}
+
+// writeExportFile creates the parent dir (if any) and writes b to path,
+// reporting the process exit code (0 on success). Shared by the export write
+// paths (in-place, .new sidecar, splice merge).
+func writeExportFile(path string, b []byte, stderr io.Writer) int {
+	if dir := filepath.Dir(path); dir != "" && dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			fmt.Fprintln(stderr, "export: mkdir:", err)
+			return 3
+		}
+	}
+	if err := os.WriteFile(path, b, 0o644); err != nil {
+		fmt.Fprintln(stderr, "export: write:", err)
+		return 3
+	}
+	return 0
+}
+
+// summarizeExportDelta compares two marshaled export files by function key and
+// returns the number of keys added (in fresh, not existing), removed (in
+// existing, not fresh), and changed (in both, but the entry bytes differ). Both
+// inputs come from the same deterministic marshal, so a given function's entry
+// bytes are directly comparable.
+func summarizeExportDelta(existing, fresh []byte) (added, removed, changed int, err error) {
+	type doc struct {
+		Functions map[string]json.RawMessage `json:"functions"`
+	}
+	var e, f doc
+	if err = json.Unmarshal(existing, &e); err != nil {
+		return 0, 0, 0, fmt.Errorf("parse existing export: %w", err)
+	}
+	if err = json.Unmarshal(fresh, &f); err != nil {
+		return 0, 0, 0, fmt.Errorf("parse fresh export: %w", err)
+	}
+	for name, fb := range f.Functions {
+		eb, ok := e.Functions[name]
+		if !ok {
+			added++
+			continue
+		}
+		if !bytes.Equal(eb, fb) {
+			changed++
+		}
+	}
+	for name := range e.Functions {
+		if _, ok := f.Functions[name]; !ok {
+			removed++
+		}
+	}
+	return added, removed, changed, nil
 }
 
 // buildRoster computes the sorted, de-duplicated union of:

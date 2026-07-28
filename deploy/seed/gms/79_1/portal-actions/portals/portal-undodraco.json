@@ -1,0 +1,38 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Leafre Flight - Exit transit back to Leafre station",
+      "mapId": 200090500,
+      "portalId": "undodraco",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "exit_transit",
+          "onMatch": {
+            "allow": false,
+            "operations": [
+              {
+                "params": {
+                  "itemId": "2210016"
+                },
+                "type": "cancel_consumable_effect"
+              },
+              {
+                "params": {},
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "mapId": "240000110"
+                },
+                "type": "warp"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "undodraco",
+    "type": "portal-action"
+  }
+}

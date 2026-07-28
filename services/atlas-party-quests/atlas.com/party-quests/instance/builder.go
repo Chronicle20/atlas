@@ -4,9 +4,10 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 type Builder struct {
@@ -39,16 +40,16 @@ func NewBuilder() *Builder {
 	}
 }
 
-func (b *Builder) SetId(id uuid.UUID) *Builder           { b.id = id; return b }
-func (b *Builder) SetTenantId(id uuid.UUID) *Builder      { b.tenantId = id; return b }
-func (b *Builder) SetDefinitionId(id uuid.UUID) *Builder   { b.definitionId = id; return b }
-func (b *Builder) SetQuestId(qid string) *Builder          { b.questId = qid; return b }
-func (b *Builder) SetState(s State) *Builder               { b.state = s; return b }
-func (b *Builder) SetWorldId(wid world.Id) *Builder        { b.worldId = wid; return b }
-func (b *Builder) SetChannelId(cid channel.Id) *Builder    { b.channelId = cid; return b }
-func (b *Builder) SetPartyId(pid uint32) *Builder          { b.partyId = pid; return b }
+func (b *Builder) SetId(id uuid.UUID) *Builder               { b.id = id; return b }
+func (b *Builder) SetTenantId(id uuid.UUID) *Builder         { b.tenantId = id; return b }
+func (b *Builder) SetDefinitionId(id uuid.UUID) *Builder     { b.definitionId = id; return b }
+func (b *Builder) SetQuestId(qid string) *Builder            { b.questId = qid; return b }
+func (b *Builder) SetState(s State) *Builder                 { b.state = s; return b }
+func (b *Builder) SetWorldId(wid world.Id) *Builder          { b.worldId = wid; return b }
+func (b *Builder) SetChannelId(cid channel.Id) *Builder      { b.channelId = cid; return b }
+func (b *Builder) SetPartyId(pid uint32) *Builder            { b.partyId = pid; return b }
 func (b *Builder) SetCharacters(c []CharacterEntry) *Builder { b.characters = c; return b }
-func (b *Builder) SetAffinityId(id uint32) *Builder           { b.affinityId = id; return b }
+func (b *Builder) SetAffinityId(id uint32) *Builder          { b.affinityId = id; return b }
 
 func (b *Builder) Build() (Model, error) {
 	if b.questId == "" {

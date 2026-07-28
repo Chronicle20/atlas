@@ -53,8 +53,8 @@ type RestModel struct {
 	Damage            uint32  `json:"damage"`
 	AttackCount       uint32  `json:"attackCount"`
 	FixDamage         int32   `json:"fixDamage"`
-	//LT Point
-	//RB Point
+	// LT Point
+	// RB Point
 	BulletCount          uint16             `json:"bulletCount"`
 	BulletConsume        uint16             `json:"bulletConsume"`
 	MapProtection        byte               `json:"mapProtection"`

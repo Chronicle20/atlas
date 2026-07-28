@@ -61,6 +61,8 @@ Represents a validation condition.
 | partyLeader | Party leader status |
 | partySize | Party member count |
 | pqCustomData | Party quest custom data value by key |
+| monsterBookCount | Total unique monster cards collected |
+| petTameness | Highest closeness among spawned pets matching a set of template IDs |
 
 ### Operator
 
@@ -110,6 +112,7 @@ Aggregated data context for validation. Supports lazy loading of external data v
 | marriage | marriage.Model | Marriage gift data |
 | buddyList | buddy.Model | Buddy list data |
 | petCount | int | Spawned pet count |
+| spawnedPets | []SpawnedPet | Template ID and closeness for each spawned pet, used for petTameness conditions |
 | mapP | map.Processor | Lazy-loaded map player count queries |
 | itemP | item.Processor | Lazy-loaded item slot max queries |
 | transportP | transport.Processor | Lazy-loaded transport route queries |
@@ -118,6 +121,16 @@ Aggregated data context for validation. Supports lazy loading of external data v
 | party | party.Model | Party data |
 | partyP | party.Processor | Lazy-loaded party queries |
 | partyQuestP | party_quest.Processor | Lazy-loaded party quest instance queries |
+| mbP | monsterbook.Processor | Lazy-loaded monster book unique-card-count queries |
+
+### SpawnedPet
+
+Per-pet detail retained on the ValidationContext for pet-based conditions.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| TemplateId | uint32 | Pet template ID |
+| Closeness | uint16 | Pet closeness/tameness value |
 
 ## Invariants
 
@@ -133,7 +146,8 @@ Aggregated data context for validation. Supports lazy loading of external data v
 - Inventory space conditions require a referenceId (item ID)
 - ExcessSP conditions require a referenceId (base level for job tier)
 - PQ custom data conditions require a step (custom data key)
-- Context-dependent conditions (questStatus, questProgress, marriageGifts, buddyCapacity, petCount, mapCapacity, transportAvailable, skillLevel, buff, inventorySpace, partyId, partyLeader, partySize, pqCustomData) return failure when evaluated without a ValidationContext
+- PetTameness conditions require values (pet template IDs)
+- Context-dependent conditions (questStatus, questProgress, marriageGifts, buddyCapacity, petCount, petTameness, mapCapacity, transportAvailable, skillLevel, buff, inventorySpace, partyId, partyLeader, partySize, pqCustomData, monsterBookCount) return failure when evaluated without a ValidationContext
 - A single failing condition causes the entire ValidationResult to fail
 
 ## State Transitions
@@ -194,7 +208,6 @@ Represents character data retrieved from the Character service. The character mo
 | experience | uint32 | Experience points |
 | fame | int16 | Fame |
 | gachaponExperience | uint32 | Gachapon experience |
-| mapId | map.Id | Current map ID |
 | spawnPoint | uint32 | Spawn point |
 | gm | int | GM level |
 | reborns | uint32 | Rebirth count |
@@ -590,6 +603,10 @@ Represents pet data retrieved from the Pet service.
 |-------|------|-------------|
 | id | uint32 | Pet ID |
 | slot | int8 | Spawn slot (-1 if not spawned, >= 0 if spawned) |
+| templateId | uint32 | Pet template ID |
+| closeness | uint16 | Pet closeness/tameness value |
+
+The model provides an `IsSpawned()` method that returns true if slot >= 0.
 
 ## Processors
 
@@ -597,8 +614,39 @@ Represents pet data retrieved from the Pet service.
 
 | Method | Description |
 |--------|-------------|
-| GetPets | Returns all pets for a character |
+| GetPets | Returns all pets for a character. Drains all pages from the paginated upstream list. |
 | GetSpawnedPetCount | Returns count of spawned pets (slot >= 0) for a character |
+
+---
+
+# Monster Book Domain
+
+## Responsibility
+
+Represents a character's monster card collection summary retrieved from the Monster Book service. Used to validate monsterBookCount conditions.
+
+## Core Models
+
+### Collection
+
+| Field | Type | Description |
+|-------|------|-------------|
+| bookLevel | uint16 | Monster book level |
+| normalCount | uint16 | Unique normal cards collected |
+| specialCount | uint16 | Unique special cards collected |
+| totalUniqueCards | uint16 | Total unique cards collected |
+| coverCardId | uint32 | Active cover card ID |
+| expBonusPercent | uint16 | Experience bonus percentage earned from book level |
+
+## Processors
+
+### Processor
+
+| Method | Description |
+|--------|-------------|
+| ByCharacterIdProvider | Returns a provider for a character's monster book collection |
+| GetByCharacterId | Retrieves the monster book collection for a character |
+| GetTotalUniqueCards | Returns the totalUniqueCards count for a character |
 
 ---
 
@@ -705,6 +753,18 @@ Represents map data retrieved from the Map service. Used to query player counts 
 | Method | Description |
 |--------|-------------|
 | GetPlayerCountInMap | Returns player count for a map (world/channel/map/instance). Returns 0 on error (graceful degradation). |
+
+---
+
+# Location Domain
+
+## Responsibility
+
+Retrieves a character's current field (world, channel, map, instance) from the Map service. Used to evaluate mapId conditions.
+
+## Processors
+
+`GetField(l, ctx, characterId)` returns the character's `field.Model`. Returns `ErrNotFound` when the Map service reports HTTP 404 (no stored location yet); returns the underlying error for any other failure (5xx, network, decode).
 
 ---
 

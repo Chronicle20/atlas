@@ -59,7 +59,7 @@ func (e EquipableReferenceData) GetLevel() byte            { return e.level }
 func (e EquipableReferenceData) GetExperience() uint32     { return e.experience }
 func (e EquipableReferenceData) GetHammersApplied() uint32 { return e.hammersApplied }
 func (e EquipableReferenceData) GetExpiration() time.Time  { return e.expiration }
-func (e EquipableReferenceData) Flags() uint16 { return e.flag }
+func (e EquipableReferenceData) Flags() uint16             { return e.flag }
 
 type EquipableReferenceDataBuilder struct {
 	strength       uint16
@@ -350,29 +350,31 @@ type CashEquipableReferenceData struct {
 	expiration     time.Time
 }
 
-func (e CashEquipableReferenceData) GetCashId() uint64         { return e.cashId }
-func (e CashEquipableReferenceData) GetStrength() uint16       { return e.strength }
-func (e CashEquipableReferenceData) GetDexterity() uint16      { return e.dexterity }
-func (e CashEquipableReferenceData) GetIntelligence() uint16   { return e.intelligence }
-func (e CashEquipableReferenceData) GetLuck() uint16           { return e.luck }
-func (e CashEquipableReferenceData) GetHP() uint16             { return e.hp }
-func (e CashEquipableReferenceData) GetMP() uint16             { return e.mp }
-func (e CashEquipableReferenceData) GetWeaponAttack() uint16   { return e.weaponAttack }
-func (e CashEquipableReferenceData) GetMagicAttack() uint16    { return e.magicAttack }
-func (e CashEquipableReferenceData) GetWeaponDefense() uint16  { return e.weaponDefense }
-func (e CashEquipableReferenceData) GetMagicDefense() uint16   { return e.magicDefense }
-func (e CashEquipableReferenceData) GetAccuracy() uint16       { return e.accuracy }
-func (e CashEquipableReferenceData) GetAvoidability() uint16   { return e.avoidability }
-func (e CashEquipableReferenceData) GetHands() uint16          { return e.hands }
-func (e CashEquipableReferenceData) GetSpeed() uint16          { return e.speed }
-func (e CashEquipableReferenceData) GetJump() uint16           { return e.jump }
-func (e CashEquipableReferenceData) GetSlots() uint16          { return e.slots }
-func (e CashEquipableReferenceData) GetOwnerId() uint32        { return e.ownerId }
-func (e CashEquipableReferenceData) IsLocked() bool            { return af.HasFlag(e.flag, af.FlagLock) }
-func (e CashEquipableReferenceData) HasSpikes() bool           { return af.HasFlag(e.flag, af.FlagSpikes) }
-func (e CashEquipableReferenceData) IsKarmaUsed() bool         { return af.HasFlag(e.flag, af.FlagKarmaUse) }
-func (e CashEquipableReferenceData) IsCold() bool              { return af.HasFlag(e.flag, af.FlagCold) }
-func (e CashEquipableReferenceData) CanBeTraded() bool         { return !af.HasFlag(e.flag, af.FlagUntradeable) }
+func (e CashEquipableReferenceData) GetCashId() uint64        { return e.cashId }
+func (e CashEquipableReferenceData) GetStrength() uint16      { return e.strength }
+func (e CashEquipableReferenceData) GetDexterity() uint16     { return e.dexterity }
+func (e CashEquipableReferenceData) GetIntelligence() uint16  { return e.intelligence }
+func (e CashEquipableReferenceData) GetLuck() uint16          { return e.luck }
+func (e CashEquipableReferenceData) GetHP() uint16            { return e.hp }
+func (e CashEquipableReferenceData) GetMP() uint16            { return e.mp }
+func (e CashEquipableReferenceData) GetWeaponAttack() uint16  { return e.weaponAttack }
+func (e CashEquipableReferenceData) GetMagicAttack() uint16   { return e.magicAttack }
+func (e CashEquipableReferenceData) GetWeaponDefense() uint16 { return e.weaponDefense }
+func (e CashEquipableReferenceData) GetMagicDefense() uint16  { return e.magicDefense }
+func (e CashEquipableReferenceData) GetAccuracy() uint16      { return e.accuracy }
+func (e CashEquipableReferenceData) GetAvoidability() uint16  { return e.avoidability }
+func (e CashEquipableReferenceData) GetHands() uint16         { return e.hands }
+func (e CashEquipableReferenceData) GetSpeed() uint16         { return e.speed }
+func (e CashEquipableReferenceData) GetJump() uint16          { return e.jump }
+func (e CashEquipableReferenceData) GetSlots() uint16         { return e.slots }
+func (e CashEquipableReferenceData) GetOwnerId() uint32       { return e.ownerId }
+func (e CashEquipableReferenceData) IsLocked() bool           { return af.HasFlag(e.flag, af.FlagLock) }
+func (e CashEquipableReferenceData) HasSpikes() bool          { return af.HasFlag(e.flag, af.FlagSpikes) }
+func (e CashEquipableReferenceData) IsKarmaUsed() bool        { return af.HasFlag(e.flag, af.FlagKarmaUse) }
+func (e CashEquipableReferenceData) IsCold() bool             { return af.HasFlag(e.flag, af.FlagCold) }
+func (e CashEquipableReferenceData) CanBeTraded() bool {
+	return !af.HasFlag(e.flag, af.FlagUntradeable)
+}
 func (e CashEquipableReferenceData) Flags() uint16             { return e.flag }
 func (e CashEquipableReferenceData) GetLevelType() byte        { return e.levelType }
 func (e CashEquipableReferenceData) GetLevel() byte            { return e.level }

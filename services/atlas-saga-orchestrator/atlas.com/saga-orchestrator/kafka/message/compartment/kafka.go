@@ -4,10 +4,11 @@ import (
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -27,6 +28,8 @@ const (
 	CommandSort               = "SORT"
 	CommandAccept             = "ACCEPT"
 	CommandRelease            = "RELEASE"
+	CommandSetOwner           = "SET_OWNER"
+	CommandApplyLock          = "APPLY_LOCK"
 	CommandTypeCreate         = "CREATE"
 	CommandTypeDelete         = "DELETE"
 	CommandTypeEquip          = "EQUIP"
@@ -131,11 +134,9 @@ type RechargeCommandBody struct {
 	Quantity uint32 `json:"quantity"`
 }
 
-type MergeCommandBody struct {
-}
+type MergeCommandBody struct{}
 
-type SortCommandBody struct {
-}
+type SortCommandBody struct{}
 
 type AcceptCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
@@ -147,6 +148,16 @@ type ReleaseCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	AssetId       uint32    `json:"assetId"`
 	Quantity      uint32    `json:"quantity"` // Quantity to release (0 = all)
+}
+
+type SetOwnerCommandBody struct {
+	Slot  int16  `json:"slot"`
+	Owner string `json:"owner"`
+}
+
+type ApplyLockCommandBody struct {
+	Slot       int16     `json:"slot"`
+	Expiration time.Time `json:"expiration"`
 }
 
 const (
@@ -190,8 +201,7 @@ type CreationFailedStatusEventBody struct {
 	Message   string `json:"message"`
 }
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}
 
 type CapacityChangedEventBody struct {
 	Type     byte   `json:"type"`

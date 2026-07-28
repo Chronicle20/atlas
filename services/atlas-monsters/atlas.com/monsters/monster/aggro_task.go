@@ -1,16 +1,18 @@
 package monster
 
 import (
-	"atlas-monsters/kafka/producer"
 	"atlas-monsters/monster/information"
 	"context"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // taskEmitter publishes a kafka message provider on behalf of a tenant.
@@ -41,7 +43,7 @@ func NewMonsterAggroDecayTask(l logrus.FieldLogger, ctx context.Context, interva
 	}
 	tk.bossLookupFn = func(t tenant.Model, monsterTemplateId uint32) bool {
 		tctx := tenant.WithContext(tk.ctx, t)
-		ma, err := information.GetById(tk.l)(tctx)(monsterTemplateId)
+		ma, err := information.NewProcessor(tk.l, tctx).GetById(monsterTemplateId)
 		if err != nil {
 			// Best-effort: treat as non-boss so decay proceeds.
 			return false

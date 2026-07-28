@@ -6,14 +6,15 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	channelconst "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	doorcb "github.com/Chronicle20/atlas/libs/atlas-packet/door/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -84,7 +85,7 @@ func newTestTenant(t *testing.T) tenant.Model {
 func newTestServer(t *testing.T, tm tenant.Model) server.Model {
 	t.Helper()
 	ch := channelconst.NewModel(0, 1)
-	return server.Register(tm, ch, "127.0.0.1", 8484)
+	return server.NewProcessor(logrus.New(), context.Background()).Register(tm, ch, "127.0.0.1", 8484)
 }
 
 func countWriter(calls []broadcastCall, mapId _map.Id, writerName string) int {

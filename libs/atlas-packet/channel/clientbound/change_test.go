@@ -3,8 +3,9 @@ package clientbound
 import (
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // packet-audit:verify packet=channel/clientbound/ChannelChannelChange version=gms_v83 ida=0x496701

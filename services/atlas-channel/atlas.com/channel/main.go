@@ -287,6 +287,7 @@ func main() {
 		if inbox := monsterDomain.GetNextSkillInbox(); inbox != nil {
 			inbox.EvictTenant(tid)
 		}
+		writer.EvictTenantWriterOptions(tid)
 		tenant.Unregister(tid)
 	})
 
@@ -388,6 +389,7 @@ func buildListener(
 			WithField("channel.id", sc.ChannelId())
 
 		wp := produceWriterProducer(fl)(tenantCfg.Socket.Writers, writerList, rw)
+		writer.RegisterTenantWriterOptions(t.Id(), tenantCfg.Socket.Writers)
 
 		rh := consumer.GetManager().RegisterHandler
 		var handles []listener.HandlerHandle

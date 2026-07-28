@@ -9,6 +9,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -20,6 +22,7 @@ type Processor interface {
 	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
 	GetByCharacterId(characterId uint32) ([]Model, error)
 	ApplyCooldown(f field.Model, skillId skill.Id, cooldown uint32) model.Operator[uint32]
+	ResetCooldowns(transactionId uuid.UUID, f field.Model, exceptSkillIds []uint32, sourceSkillId uint32) model.Operator[uint32]
 }
 
 // ProcessorImpl implements the Processor interface
@@ -53,6 +56,15 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 func (p *ProcessorImpl) ApplyCooldown(_ field.Model, skillId skill.Id, cooldown uint32) model.Operator[uint32] {
 	return func(characterId uint32) error {
 		return producer.ProviderImpl(p.l)(p.ctx)(skill2.EnvCommandTopic)(skill3.SetCooldownCommandProvider(characterId, uint32(skillId), cooldown))
+	}
+}
+
+// ResetCooldowns emits a RESET_COOLDOWNS command for the operated-on
+// character, clearing every cooldown except exceptSkillIds. Mirrors
+// ApplyCooldown's operator shape so callers can fan out over recipients.
+func (p *ProcessorImpl) ResetCooldowns(transactionId uuid.UUID, f field.Model, exceptSkillIds []uint32, sourceSkillId uint32) model.Operator[uint32] {
+	return func(characterId uint32) error {
+		return producer.ProviderImpl(p.l)(p.ctx)(skill2.EnvCommandTopic)(skill3.ResetCooldownsCommandProvider(transactionId, f.WorldId(), characterId, exceptSkillIds, sourceSkillId))
 	}
 }
 

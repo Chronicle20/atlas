@@ -125,6 +125,10 @@ type DrainResult struct {
 type Processor interface {
 	// InitShipHP seeds a fresh full pool (always full — never carried over).
 	InitShipHP(characterId uint32, skillLevel byte, charLevel byte, ttl time.Duration) error
+	// StartRide begins a ride: records the mirror entry that IsRiding and the
+	// attack/damage hot paths read (mirror write, no I/O). Called by the buff
+	// consumer's APPLIED hook when a MONSTER_RIDING change is observed.
+	StartRide(characterId uint32, s RideState)
 	// IsRiding reports the active ride and its skill level (mirror read, no I/O).
 	IsRiding(characterId uint32) (byte, bool)
 	// Drain applies damage to the ship pool (FR-3/FR-4). Exactly one caller
@@ -157,6 +161,10 @@ func (p *ProcessorImpl) InitShipHP(characterId uint32, skillLevel byte, charLeve
 		ttl = fallbackStateTTL
 	}
 	return store.Set(p.ctx, p.t, shipKey(characterId), int64(ShipHP(p.t, skillLevel, charLevel)), ttl)
+}
+
+func (p *ProcessorImpl) StartRide(characterId uint32, s RideState) {
+	GetRideMirror().Put(p.t, characterId, s)
 }
 
 func (p *ProcessorImpl) IsRiding(characterId uint32) (byte, bool) {

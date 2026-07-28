@@ -126,14 +126,18 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 		}
 
 		// Battleship ride begins: record the pod-local riding truth the
-		// damage/attack hot paths read (mirror; FR-3.1/FR-6.2). Gated on
-		// session presence in this channel's local registry — like the
-		// announce below, this is how a world-broadcast buff event is
-		// scoped to the one channel pod that actually owns the socket
-		// (RideMirror is per-channel-process; see battleship/mirror.go).
+		// damage/attack hot paths read via battleship.Processor.IsRiding
+		// (mirror; FR-3.1/FR-6.2). Gated on session presence in this
+		// channel's local registry — like the announce below, this is how
+		// a world-broadcast buff event is scoped to the one channel pod
+		// that actually owns the socket (RideMirror is per-channel-process;
+		// see battleship/mirror.go). Routed through the same
+		// newBattleshipProcessor seam as the EXPIRED hook's Clear below, so
+		// both ends of the ride lifecycle stay behind the Processor
+		// boundary and remain independently testable.
 		if isBattleshipRide(e.Body.SourceId, e.Body.Changes) {
 			_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
-				battleship.GetRideMirror().Put(t, e.CharacterId, battleship.RideState{
+				newBattleshipProcessor(l, ctx).StartRide(e.CharacterId, battleship.RideState{
 					SkillLevel: e.Body.Level,
 					StateTTL:   battleshipStateTTLFunc(l, ctx, e.Body.Level),
 				})

@@ -49,9 +49,10 @@ func TestIsBattleshipRide(t *testing.T) {
 // --- lifecycle-hook wiring tests (battleship ride begin/end) ---
 //
 // These cover the three real call sites the pure isBattleshipRide predicate
-// above does not: the mirror Put in handleStatusEventApplied, and the Clear
-// in handleStatusEventExpired. (The third call site, session.Destroy, is
-// covered in session/battleship_hook_test.go — a different package.)
+// above does not: the battleship.Processor.StartRide call in
+// handleStatusEventApplied, and the Clear call in handleStatusEventExpired.
+// (The third call site, session.Destroy, is covered in
+// session/battleship_hook_test.go — a different package.)
 
 // newTestTenant returns a fresh, isolated tenant per test so the process-wide
 // battleship.RideMirror singleton and session registry can never bleed
@@ -107,16 +108,24 @@ func noOpWriterProducer(_ string) (writer.BodyFunc, error) {
 	return nil, errors.New("no writer configured (test stub)")
 }
 
+// startRideCall pins one StartRide(characterId, state) invocation observed
+// by battleshipSpy.
+type startRideCall struct {
+	characterId uint32
+	state       battleship.RideState
+}
+
 // battleshipSpy records battleship.Processor invocations via a
 // battleshipmock.ProcessorMock, so a test can assert exactly which methods a
 // hook called — most importantly, that Drain (the only path that can reach
 // breakShip's cooldown emit) was never touched by a lifecycle hook that is
-// only supposed to Clear.
+// only supposed to Clear or StartRide.
 type battleshipSpy struct {
 	clearCalls      []uint32
 	drainCalls      int
 	initShipHPCalls int
 	isRidingCalls   int
+	startRideCalls  []startRideCall
 }
 
 func newBattleshipSpy() (*battleshipmock.ProcessorMock, *battleshipSpy) {
@@ -135,24 +144,40 @@ func newBattleshipSpy() (*battleshipmock.ProcessorMock, *battleshipSpy) {
 			spy.isRidingCalls++
 			return 0, false
 		},
+		StartRideFunc: func(characterId uint32, s battleship.RideState) {
+			spy.startRideCalls = append(spy.startRideCalls, startRideCall{characterId: characterId, state: s})
+		},
 	}
 	return m, spy
 }
 
 func (s *battleshipSpy) assertOnlyClear(t *testing.T) {
 	t.Helper()
-	if s.drainCalls != 0 || s.initShipHPCalls != 0 || s.isRidingCalls != 0 {
-		t.Errorf("hook touched the Processor beyond Clear (cooldown-reachable surface): drain=%d initShipHP=%d isRiding=%d",
-			s.drainCalls, s.initShipHPCalls, s.isRidingCalls)
+	if s.drainCalls != 0 || s.initShipHPCalls != 0 || s.isRidingCalls != 0 || len(s.startRideCalls) != 0 {
+		t.Errorf("hook touched the Processor beyond Clear (cooldown-reachable surface): drain=%d initShipHP=%d isRiding=%d startRide=%d",
+			s.drainCalls, s.initShipHPCalls, s.isRidingCalls, len(s.startRideCalls))
 	}
 }
 
-// TestHandleStatusEventApplied_BattleshipRide_PutsRideState pins Task 7's
-// ride-begin edge: an APPLIED event carrying the battleship's MONSTER_RIDING
-// change must Put the event's Level and the TTL-seam's derived duration into
-// the mirror, and must never touch the battleship.Processor / cooldown
-// surface (Put is a pure mirror write).
-func TestHandleStatusEventApplied_BattleshipRide_PutsRideState(t *testing.T) {
+// assertOnlyStartRide is assertOnlyClear's counterpart for the ride-begin
+// hook: it must touch StartRide and nothing else on the cooldown-reachable
+// surface (Clear/Drain/InitShipHP/IsRiding).
+func (s *battleshipSpy) assertOnlyStartRide(t *testing.T) {
+	t.Helper()
+	if s.drainCalls != 0 || s.initShipHPCalls != 0 || s.isRidingCalls != 0 || len(s.clearCalls) != 0 {
+		t.Errorf("hook touched the Processor beyond StartRide (cooldown-reachable surface): drain=%d initShipHP=%d isRiding=%d clear=%v",
+			s.drainCalls, s.initShipHPCalls, s.isRidingCalls, s.clearCalls)
+	}
+}
+
+// TestHandleStatusEventApplied_BattleshipRide_CallsStartRide pins Task 7's
+// ride-begin edge (as fixed by the task-153 final-review Finding 1 pass): an
+// APPLIED event carrying the battleship's MONSTER_RIDING change must call
+// battleship.Processor.StartRide exactly once with the event's Level and the
+// TTL-seam's derived duration, routed through the same newBattleshipProcessor
+// seam as the EXPIRED hook's Clear — and must never touch Clear/Drain/
+// InitShipHP/IsRiding.
+func TestHandleStatusEventApplied_BattleshipRide_CallsStartRide(t *testing.T) {
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
 	sc := newTestServer(t, tm)
@@ -160,7 +185,6 @@ func TestHandleStatusEventApplied_BattleshipRide_PutsRideState(t *testing.T) {
 
 	cleanupSession := registerTestSession(t, tm, characterId)
 	defer cleanupSession()
-	defer battleship.GetRideMirror().Remove(tm, characterId)
 
 	origTTLFunc := battleshipStateTTLFunc
 	wantTTL := 42 * time.Minute
@@ -184,29 +208,31 @@ func TestHandleStatusEventApplied_BattleshipRide_PutsRideState(t *testing.T) {
 		},
 	})
 
-	rs, ok := battleship.GetRideMirror().Get(tm, characterId)
-	if !ok {
-		t.Fatal("expected a ride state to be Put into the mirror, found none")
+	if len(spy.startRideCalls) != 1 {
+		t.Fatalf("StartRide calls = %d, want exactly 1", len(spy.startRideCalls))
 	}
-	if rs.SkillLevel != 7 {
-		t.Errorf("SkillLevel = %d, want 7", rs.SkillLevel)
+	call := spy.startRideCalls[0]
+	if call.characterId != characterId {
+		t.Errorf("StartRide characterId = %d, want %d", call.characterId, characterId)
 	}
-	if rs.StateTTL != wantTTL {
-		t.Errorf("StateTTL = %v, want %v", rs.StateTTL, wantTTL)
+	if call.state.SkillLevel != 7 {
+		t.Errorf("StartRide SkillLevel = %d, want 7", call.state.SkillLevel)
+	}
+	if call.state.StateTTL != wantTTL {
+		t.Errorf("StartRide StateTTL = %v, want %v", call.state.StateTTL, wantTTL)
 	}
 
-	// Structural pin: the ride-begin hook only ever calls
-	// battleship.GetRideMirror().Put directly — it must never construct a
-	// battleship.Processor at all, let alone reach Drain/cooldown.
-	if len(spy.clearCalls) != 0 {
-		t.Errorf("Clear calls = %v, want none from the ride-begin hook", spy.clearCalls)
-	}
-	spy.assertOnlyClear(t)
+	// Structural pin: the ride-begin hook must call StartRide and nothing
+	// else on the Processor's cooldown-reachable surface.
+	spy.assertOnlyStartRide(t)
 }
 
-// TestHandleStatusEventApplied_NonBattleshipBuff_NoPut pins the negative
-// case: an APPLIED event for an unrelated buff must not touch the mirror.
-func TestHandleStatusEventApplied_NonBattleshipBuff_NoPut(t *testing.T) {
+// TestHandleStatusEventApplied_NonBattleshipBuff_NoStartRide pins the
+// negative case: an APPLIED event for an unrelated buff must not touch the
+// mirror (isBattleshipRide gates the StartRide call before any Processor is
+// constructed, so this test does not need to install the newBattleshipProcessor
+// seam).
+func TestHandleStatusEventApplied_NonBattleshipBuff_NoStartRide(t *testing.T) {
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
 	sc := newTestServer(t, tm)

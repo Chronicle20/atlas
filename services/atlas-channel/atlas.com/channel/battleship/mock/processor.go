@@ -12,6 +12,7 @@ import (
 // (the established pattern in this repo — see server/mock, session/mock).
 type ProcessorMock struct {
 	InitShipHPFunc func(characterId uint32, skillLevel byte, charLevel byte, ttl time.Duration) error
+	StartRideFunc  func(characterId uint32, s battleship.RideState)
 	IsRidingFunc   func(characterId uint32) (byte, bool)
 	DrainFunc      func(f field.Model, characterId uint32, damage int32) battleship.DrainResult
 	ClearFunc      func(characterId uint32)
@@ -24,6 +25,12 @@ func (m *ProcessorMock) InitShipHP(characterId uint32, skillLevel byte, charLeve
 		return m.InitShipHPFunc(characterId, skillLevel, charLevel, ttl)
 	}
 	return nil
+}
+
+func (m *ProcessorMock) StartRide(characterId uint32, s battleship.RideState) {
+	if m.StartRideFunc != nil {
+		m.StartRideFunc(characterId, s)
+	}
 }
 
 func (m *ProcessorMock) IsRiding(characterId uint32) (byte, bool) {

@@ -395,6 +395,18 @@ func TestClearIdempotent(t *testing.T) {
 	}
 }
 
+func TestStartRide(t *testing.T) {
+	p, _, _, tm, _ := setupProcessor(t)
+	if _, riding := GetRideMirror().Get(tm, 100); riding {
+		t.Fatal("mirror has an entry before StartRide")
+	}
+	p.StartRide(100, RideState{SkillLevel: 9, StateTTL: time.Minute})
+	rs, riding := GetRideMirror().Get(tm, 100)
+	if !riding || rs.SkillLevel != 9 || rs.StateTTL != time.Minute {
+		t.Fatalf("mirror state = (%+v, %v), want (SkillLevel=9 StateTTL=1m, true)", rs, riding)
+	}
+}
+
 func TestIsRiding(t *testing.T) {
 	p, _, _, tm, _ := setupProcessor(t)
 	if _, riding := p.IsRiding(100); riding {

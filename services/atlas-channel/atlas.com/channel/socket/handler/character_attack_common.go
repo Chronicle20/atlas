@@ -665,9 +665,11 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						// riding the battleship (FR-6.1). Soft rejection (no
 						// costs, no damage, no broadcast): a briefly desynced
 						// legitimate client — e.g. the cast→BUFF_APPLIED
-						// mirror window — must not be disconnected. Pure map
-						// read: zero I/O in the attack hot path (FR-6.2).
-						if !battleshipAttackPermitted(tenant.MustFromContext(ctx), s.CharacterId(), skill3.Id(ai.SkillId())) {
+						// mirror window — must not be disconnected. Routed
+						// through battleship.Processor.IsRiding, which is
+						// itself a pure mirror read: zero I/O in the attack
+						// hot path (FR-6.2).
+						if !battleshipAttackPermitted(l, ctx, s.CharacterId(), skill3.Id(ai.SkillId())) {
 							l.WithFields(logrus.Fields{
 								"character_id": s.CharacterId(),
 								"skill_id":     ai.SkillId(),
@@ -909,11 +911,15 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 // (Cannon 5221007, Torpedo 5221008) on an active battleship ride. Every
 // attack entry point (melee/ranged/magic/energy/touch) funnels through
 // processAttack, so this single gate covers them all. Skills outside the
-// pair always pass.
-func battleshipAttackPermitted(t tenant.Model, characterId uint32, skillId skill3.Id) bool {
+// pair always pass. Goes through battleship.Processor.IsRiding (a mirror
+// read, no I/O) rather than the mirror directly — battleship.NewProcessor
+// is a trivial struct init, so constructing one per attack costs nothing
+// beyond the read itself. The rejection stays soft: it returns false (never
+// destroys the session), matching the caller's nil-return handling.
+func battleshipAttackPermitted(l logrus.FieldLogger, ctx context.Context, characterId uint32, skillId skill3.Id) bool {
 	if !skill3.Is(skillId, skill3.CorsairBattleshipCannonId, skill3.CorsairBattleshipTorpedoId) {
 		return true
 	}
-	_, riding := battleship.GetRideMirror().Get(t, characterId)
+	_, riding := battleship.NewProcessor(l, ctx).IsRiding(characterId)
 	return riding
 }

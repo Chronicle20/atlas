@@ -2,9 +2,11 @@ package handler
 
 import (
 	"atlas-channel/battleship"
+	"context"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	skill3 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -28,6 +30,8 @@ func TestBattleshipAttackPermitted(t *testing.T) {
 	})
 	battleship.GetRideMirror().Put(tm, 100, battleship.RideState{SkillLevel: 7})
 
+	l := logrus.New()
+
 	tests := []struct {
 		name        string
 		t           tenant.Model
@@ -45,7 +49,8 @@ func TestBattleshipAttackPermitted(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := battleshipAttackPermitted(tc.t, tc.characterId, tc.skillId); got != tc.expected {
+			ctx := tenant.WithContext(context.Background(), tc.t)
+			if got := battleshipAttackPermitted(l, ctx, tc.characterId, tc.skillId); got != tc.expected {
 				t.Errorf("battleshipAttackPermitted(%d, %d) = %v, want %v", tc.characterId, tc.skillId, got, tc.expected)
 			}
 		})

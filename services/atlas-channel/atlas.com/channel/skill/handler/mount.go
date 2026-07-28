@@ -161,6 +161,13 @@ func HandleMount(l logrus.FieldLogger, f field.Model, characterId uint32, info p
 			// the old key. Best-effort clear so the next drain
 			// takes the lazy full re-init path instead of
 			// decrementing a stale pool.
+			//
+			// Assumption: this clear targets the PRIOR ride, because the
+			// new ride's own mirror entry is only set later, asynchronously,
+			// by the buff consumer's APPLIED hook (applyBuff above emits the
+			// buff event; StartRide runs after a Kafka produce/consume round
+			// trip). A same-process synchronous clear beating that round
+			// trip is considered implausible and is not guarded against.
 			l.WithError(err).Warnf("Character [%d] battleship ship HP init failed; clearing any stale pool.", characterId)
 			deps.clearShipHP(characterId)
 		}

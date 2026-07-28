@@ -78,7 +78,7 @@ All skill IDs above except Divine Shield already exist in `libs/atlas-constants/
 
 - FR-3.1: For each roster skill × supported version family, the design phase decompiles the client's damage-taken path (via ida-pro MCP, `func_query` with `name_regex`, correct `select_instance` per version) and records: (a) whether the client pre-applies the mitigation to the `damage` field before sending, (b) the exact formula and rounding, (c) which `nAttackIdx` values the mitigation applies to, (d) any client-side proc roll (and whether the server must re-roll or trust the packet).
 - FR-3.2: Findings are committed as a verification matrix in the task folder (design phase artifact). A skill may not be implemented ahead of its verification row.
-- FR-3.3: Available IDBs are v83, v87, v95, jms (no v92 IDB exists — known limitation). v92 behavior inherits the nearest verified version (v87/v95 boundary decided per-skill by the BB cutoff) and the inheritance is documented per skill.
+- FR-3.3: **[Revised post-`main`-merge — see design §2a/§3, plan finding §7.]** The original scope assumed IDBs for v83/v87/v95/jms only, with v92 inheriting the nearest verified version. After merging `main`'s legacy bring-up (which wired `CharacterDamageHandle` for gms_48/61/72/79/84), the verified column set is **v48, v61, v72, v79, v83, v84, v87, v92, v95, jms_185** — live per-version IDB sessions exist for all of them, including **v92, which is verified independently and does NOT inherit v87**. Each column's `CUserLocal::SetDamaged` is decompiled and cited in design §3.
 - FR-3.4: Where Cosmic's server-side re-application disagrees with the client binary, the client binary wins; the discrepancy is recorded.
 
 ### 4.4 Magic Guard
@@ -177,7 +177,8 @@ All are design-phase items answered by IDA verification (§4.3), not blockers to
 
 ## 10. Acceptance Criteria
 
-- [ ] Verification matrix committed covering every roster skill × {v83, v87, v95, jms} (v92 inheritance documented per FR-3.3), each row citing decompiled client evidence.
+- [ ] Verification matrix committed covering every roster skill × {v48, v61, v72, v79, v83, v84, v87, v92, v95, jms} (post-merge scope, FR-3.3 as revised), each row citing decompiled client evidence; the v48 divergent wire layout and the v92-independent verification are documented in design §2a/§3.
+- [ ] `CharacterDamageHandle` wired in all ten templates (gms_48/61/72/79/83/84/87/92/95/jms); `tools/template-opcode-order-guard.sh` clean.
 - [ ] All nine mitigation TODOs removed from `character_damage.go`; battleship TODO left for task-153.
 - [ ] Unit tests for every mitigation function: no-buff passthrough, standard case, boundary cases (MP shortfall, meso shortfall, reflect cap, dead/missing mob, clamp triggers), using the project Builder pattern.
 - [ ] Anti-cheat: forged oversized damage and forged Power Guard reflect claims are demonstrably clamped/ignored in tests; int16 truncation fixed.

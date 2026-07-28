@@ -2,7 +2,7 @@
 
 Task: task-157-damage-taken-mitigation
 Status: Approved design (Phase 2 artifact)
-Inputs: `prd.md` (approved), IDA verification of CUserLocal::SetDamaged across gms_v83 / gms_v87 / gms_v95 / jms_v185
+Inputs: `prd.md` (approved), IDA verification of CUserLocal::SetDamaged across gms_v83 / gms_v87 / gms_v95 / jms_v185, extended (post-`main`-merge) to the legacy columns gms_v48 / v61 / v72 / v79 / v84 and to gms_v92 independently — see §3 "Legacy & v92 verification (post-merge extension)".
 
 ---
 
@@ -53,7 +53,29 @@ Evidence: v83 `CUserLocal::SetDamaged` 0x9581a9 (encode block `if (v171 || *v185
 - Keep the v95-GMS-only `bGuard` byte gate as-is (`Region()=="GMS" && MajorVersion()>=95`) — verified correct: present in GMS v95, absent in v83/v87/jms185.
 - Rename/document fields to their verified meanings (reflect, blockByte, isPowerGuard, reflectTargetMobId, hitAction, stanceFlags) — straightforward move per project convention, no aliases. Byte-fixture tests per version (both branches, with/without extension) are mandatory.
 
-Damage sentinel semantics (FR-10.1): `damage == -1` is a legitimate "blocked/missed" value produced by Guardian (1120005/1220006 + shield), Fake/Shadow Shifter (jobs 412/422), post-BB block procs, and the smoke-screen/field checks. The client applies 0 HP loss for it. Today's handler would apply `ChangeHP(-int16(-1))` = **+1 HP** — the sentinel must short-circuit to zero damage.
+Damage sentinel semantics (FR-10.1): `damage == -1` is a legitimate "blocked/missed" value produced by Guardian (1120005/1220006 + shield), Fake/Shadow Shifter (jobs 412/422), post-BB block procs, and the smoke-screen/field checks. The client applies 0 HP loss for it. Today's handler would apply `ChangeHP(-int16(-1))` = **+1 HP** — the sentinel must short-circuit to zero damage. (The `1120005/1220006` shield-block proc is a *separate* skill from Achilles `1120004/1220005/1320005`; the legacy re-verification confirmed the two are distinct and that the block proc produces the `-1` sentinel — i.e. no server obligation beyond the sentinel handling above. Do not conflate them.)
+
+### 2a. Legacy versions (v48/61/72/79/84) and v92 — wire layout (post-merge extension)
+
+`main`'s legacy bring-up wired `CharacterDamageHandle` into the gms_48/61/72/79/84 templates (it was only in gms_83/84 when this design was first written), so the decoder now runs on those columns too. Per-version serverbound `TAKE_DAMAGE` opcodes and mob-hit layout, all IDA-verified against the live legacy IDBs:
+
+| Version | Op | Mob-hit layout vs the v83 table above | Send function |
+|---|---|---|---|
+| gms_v48 | 0x27 | **DISTINCT** — see below | `CUserLocal::SetDamaged` @0x6A598B (standalone) |
+| gms_v61 | 0x2D | **= v83, byte-identical** (14-byte extension, same `reflect!=0 \|\| block!=0` gate, no bGuard) | `CUserLocal::SetDamaged` @0x7AA748 |
+| gms_v72 | 0x2F | **= v83, byte-identical** | `CUserLocal::SetDamaged` @0x864B92 (virtual, via `CMob::ProcessAttack`) |
+| gms_v79 | 0x2E | **= v83, byte-identical** | `CUserLocal::SetDamaged` @0x8B0277 |
+| gms_v84 | 0x30 | **= v83, byte-identical** | `CUserLocal::SetDamaged` @0x99634D |
+| gms_v92 | 0x35 | **= v83, byte-identical — NO trailing `bGuard` byte** (verified independently, NOT inherited from v87) | `CUserLocal::SetDamaged` @0x913BB0 |
+
+**v48 is the only divergent layout.** Three verified differences from the v83 encode order (evidence @0x6A66AB–0x6A6799):
+- **No `nMagicElemAttr` byte** — v48 never encodes the second `Encode1` after `attackIdx`; the `damage` i32 follows `attackIdx` directly.
+- **Reflect extension is 10 bytes, not 14** — `isPowerGuard(u8) + reflectTargetMobId(u32) + hitAction(u8) + hitX(i16) + hitY(i16)`; the trailing `charX`/`charY` i16 pair is absent.
+- **`stanceFlags` is encoded inside the mob branch only** (v83 encodes it once after the mob/non-mob merge).
+
+Legacy **non-mob/obstacle** branch (v48/61/72/79 — verified): the obstacle path (`0xFE` sentinel + zero byte + `damage` i32 + `obstacleData` u16) has **no trailing `stanceFlags` byte** — one byte shorter than v83's, which emits `stanceFlags` unconditionally after the merge. The decoder must not over-read a stance byte on legacy non-mob events. This path carries no mob, so no roster mitigation applies to it regardless.
+
+Decoder consequence (Task 1): one legacy branch gated on `Region()=="GMS" && MajorVersion() < 61` produces the v48 layout (skip `nMagicElemAttr`, 10-byte extension, mob-branch-only stance); v61 through v92 already decode as v83; the v95-GMS `bGuard` byte stays gated at `>= 95`; jms takes the no-`bGuard` branch. Byte-fixture tests add a v48 mob-hit + v48 obstacle case and one representative legacy (v79) = v83 case.
 
 ## 3. Verification matrix (FR-3.1/3.2)
 
@@ -75,7 +97,30 @@ Legend: "sent value" = the i32 damage on the wire. All formulas integer math as 
 | Chakra (4211001) cast-state | **Yes** (multiplier applied before send) | damage×x/100 while charging Chakra — pre-applied; server does nothing | — | — | ✓ | ✓ | ✓ 0x9353c3 | ✓ |
 | Mechanic Perfect Armor (35101007) | v95 GMS: block → damage 0, `bGuard=1` on wire | pre-BB tenants unaffected; v95 server treats `bGuard=1` as informational (damage already 0) | — | client rolls prop | n/a | n/a | ✓ 0x935397+ | no wire byte |
 
-v92 inheritance (FR-3.3, no IDB): pre-BB cutoff — v92 inherits **v87** semantics for every roster skill (v92 is pre-BB; all deltas found between v87 and v95 are BB-era stat additions). Wire layout: v92 GMS takes the no-`bGuard` branch, consistent with the existing decoder gate.
+### Legacy & v92 verification (post-merge extension)
+
+The four-column matrix above was extended to gms_v48/v61/v72/v79/v84 and gms_v92 by decompiling each version's `CUserLocal::SetDamaged` against the v83 reference (session-per-version IDBs; see §2a for send-function addresses). **v92 was verified independently and does NOT inherit v87** (overriding the original FR-3.3 no-IDB assumption — the v92 IDB exists). The governing result holds on every legacy column: `SetDamaged` writes the raw damage to the wire and subtracts every roster mitigation only into the local `TryConsumePetHP` HP-delta, so the server re-derives everything — identical to §1.
+
+Per-skill result relative to the v83 row (verified, not assumed):
+
+| Skill | v48 | v61 | v72 | v79 | v84 | v92 |
+|---|---|---|---|---|---|---|
+| Magic Guard | absent¹ | absent¹ | = v83² | = v83 (cached-slot MP/HP split, offsets +113/+117) | = v83² | = v83² |
+| Power Guard | = v83 **minus** fixedDamage clamp and immune-zero³ | = v83 | = v83 | = v83 | = v83 | = v83 (cap **/10** @0x914464, fixedDamage **min** @0x9144e0 — pre-BB, not v95's /2 + replace) |
+| Meso Guard | = v83 (partial-scale not re-derived) | = v83 (100×mesos/x confirmed) | = v83 | = v83 (100×mesos/x confirmed) | = v83 | = v83 |
+| Mana Reflection | = v83 **minus** MaxHP/20 cap and immune-gate³ | = v83 | = v83 | = v83 | = v83 | = v83 (cap /20) |
+| Achilles / High Defense | dead-code⁴ | dead-code⁴ | = v83² | = v83 (functional, `dmg×(1000−x)/1000`) | = v83 | = v83² |
+| Combo Barrier (Aran) | n/a (no Aran) | n/a | n/a | present (Aran ≈v76) | present | present² |
+| Magic Shield (Evan) | n/a (no Evan) | n/a | n/a | n/a | present (Evan v84)⁵ | present² |
+| GUARD-suppress-PG / Mechanic Perfect Armor | absent | absent | absent | absent | absent | **absent** (v95-only — confirmed 0 hits in v92) |
+
+¹ v48/v61: no MP/HP-split logic located in `SetDamaged` and no `2001002` reference. **Immaterial to the server** — the pipeline is data-driven, so a version whose data never grants the Magic Guard buff simply no-ops; no server gate is needed.
+² Stat-cookie-driven skills (Magic Guard, Magic Shield, Combo Barrier, and Achilles' passive read) are resolved by temporary-stat offset, not a skill-id immediate, so a per-function immediate search cannot prove presence/absence; "= v83" here means the same stat-read structure was found or the same non-presence pattern holds in both v83 and the target. The server applies these from buff/skill data regardless of the client's local read.
+³ v48 omits the fixedDamage clamp, the Power-Guard invincibility zero, and the Mana-Reflection MaxHP/20 cap that later versions have. The server applies all three universally: they only ever bound a reflect **downward**, so applying them on v48 is safe and anti-exploit-consistent — no v48-specific formula gate is warranted.
+⁴ v48/v61 are **DEVM (developer) builds** in which `GetAchillesReduce` computes the reduction then unconditionally returns 0. This is a client-local artifact and does not affect a server-authoritative, data-driven implementation: the server applies Achilles from the character's skill level, and its authoritative `CHANGE_HP` is what the client renders. (The v83/v87/v95 IDBs the original design used are also DEVM builds; the wire format — what the decoder actually gates on — is structural and reliable.)
+⁵ Magic Shield's v83-full-damage vs v87-reduced-damage form (§6) is **stat-cookie-driven** and could not be re-corroborated by the legacy immediate-search pass. The original design-phase cookie-offset finding is retained: the `MajorVersion() >= 87` gate stands, so v84 uses the v83 (full-damage) form. This is the single roster gate the legacy re-verification could not independently confirm; it affects one Evan-only skill on a narrow version band.
+
+**Net effect on the implementation:** the only structural code change the legacy columns force is the v48 decoder branch (§2a). Every mitigation *formula* gate already in the plan (`pgCapDivisor`, `pgFixedDamageOverride`, `magicShieldOnReducedDamage`, the v95 GUARD rule) is verified correct across all ten columns — the pre-BB legacy versions fall into the pre-BB branch of each gate, exactly as the version-number conditions already express. Per-version skill *availability* needs no explicit gates because the design is data-driven and server-authoritative.
 
 Attack-type applicability (FR-2.1): obstacle (−3) and stat (−4) events skip CalcDamage (no mob), so Meso Guard, Power Guard, and Mana Reflection cannot apply; Achilles/High Defense, Combo Barrier, Magic Guard, and Magic Shield are computed in the shared tail and DO apply to them (verified v83 control flow: non-mob path jumps to LABEL_215 but the reduction block at LABEL_241 runs for both).
 
@@ -170,14 +215,15 @@ Power Guard applicability nuance (recorded honestly): `SetDamaged` mitigates PG 
 
 ## 9. Version gating (FR-11)
 
-- Packet layout: only two gates exist — the v95-GMS-only `bGuard` byte (already present, verified correct) and the new conditional reflect extension (identical condition on all versions, no gate needed).
-- Skill availability: by data — a character on a version without the skill never has the buff/skill, so no explicit per-skill gates except: Magic Shield formula variant (`>=87`, §6) and the GUARD-suppresses-PG rule (harmless everywhere, only reachable on tenants whose buff system grants GUARD — effectively v95+).
+- Packet layout: three gates — the v95-GMS-only `bGuard` byte (already present, verified correct), the new conditional reflect extension (identical condition on all versions, no gate needed), and the **v48-era layout** gate `Region()=="GMS" && MajorVersion() < 61` (no `nMagicElemAttr`, 10-byte extension, mob-branch-only stance; §2a). v61 through v92 decode as v83.
+- Skill availability: by data — a character on a version without the skill never has the buff/skill, so no explicit per-skill gates except: Magic Shield formula variant (`>=87`, §6) and the GUARD-suppresses-PG rule (harmless everywhere, only reachable on tenants whose buff system grants GUARD — effectively v95+). The legacy verification (§3) confirms this holds for the pre-BB columns: absent skills (Magic Guard pre-v72, Aran pre-≈v76, Evan pre-v84) and client-dead-code (Achilles on the v48/v61 DEVM builds) all resolve to server no-ops via the data-driven, server-authoritative path — no per-version formula gates required.
 - Divine Shield (FR-9.3): pre-BB tenants cannot reach the code path because GUARD is never granted. The skill-id constant is added to `libs/atlas-constants` only after v95 WZ verification in the plan phase (never from memory).
-- v92: inherits v87 behavior wholesale (§3).
+- v92: **verified independently against its own IDB — NOT inherited from v87** (§3). It is byte-identical to v83 (no `bGuard`, Power-Guard cap `/10`, fixedDamage `min`, no GUARD/Mechanic rule), i.e. it falls into the pre-BB branch of every existing gate.
+- Handler wiring: `main` wired `CharacterDamageHandle` into gms_48/61/72/79/84 (was gms_83/84 only). gms_87/92/95/jms still lack the handler entirely (pre-existing gap — the packet is never routed there), so this task also wires those four templates (serverbound opcodes v87=0x32, v92=0x35, v95=0x34, jms=0x27; all free of handler collision) so the verified v87/v92/v95/jms behavior is actually reachable. See plan Task 7.
 
 ## 10. Testing
 
-- **Packet fixtures** (libs/atlas-packet): per version × {plain hit, hit with PG reflect, hit with block, obstacle, stat, v95 bGuard set}, byte-exact decode/encode round-trips. These encode the §2 matrix.
+- **Packet fixtures** (libs/atlas-packet): per version × {plain hit, hit with PG reflect, hit with block, obstacle, stat, v95 bGuard set}, byte-exact decode/encode round-trips. These encode the §2 matrix. Add the **v48-era layout** cases (mob-hit with the 10-byte extension and no `nMagicElemAttr`; obstacle with no trailing stance byte — §2a) and a representative legacy `= v83` case (v79); the tenant-driven decode gate is exercised by both branches.
 - **Mitigation unit tests** (pure functions, Builder pattern per project convention, no `*_testhelpers.go`): no-buff passthrough (FR-2.4, byte-identical deltas), Magic Guard standard + MP shortfall + Infinity, Meso Guard standard + partial-afford + zero-meso, Power Guard cap/boss/fixedDamage/dead-mob/GUARD-suppression, Achilles + High Defense job selection, Combo Barrier stacking order (post-Achilles), Magic Shield v83 vs ≥87 form, sentinel −1, forged oversized damage clamp, forged reflect claim ignored, int16 boundary.
 - **Handler tests**: deps-struct fakes verifying emission set per scenario (HP only; HP+MP; HP+meso; HP+mob damage) and that announce always fires.
 - Verification commands per CLAUDE.md: `go test -race`, `go vet`, `go build` in atlas-channel + libs/atlas-packet + (if touched) libs/atlas-constants; `docker buildx bake atlas-channel`; `tools/redis-key-guard.sh`.

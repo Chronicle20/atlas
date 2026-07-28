@@ -13,11 +13,16 @@
 - `go test -race ./...`, `go vet ./...`, `go build ./...` clean in every changed module (libs/atlas-packet, services/atlas-data, services/atlas-channel).
 - `docker buildx bake atlas-channel` and `docker buildx bake atlas-data` from the worktree root (both services' `go.mod` trees are touched).
 - `tools/redis-key-guard.sh` clean from the repo root (no `GOWORK=off` prefix).
+- `tools/goroutine-guard.sh` clean from the repo root (merged from `main`; bans bare `go` outside `libs/atlas-routine` — this task adds no goroutines, so it should pass untouched).
+- **`tools/template-opcode-order-guard.sh` clean from the repo root — MANDATORY, this task edits socket-config templates** (Task 7 wires `CharacterDamageHandle` into gms_87/92/95/jms). New handler entries go at their sorted `opCode` position, never appended.
+- `tools/lint.sh --check` clean from the repo root (merged from `main`; shared gofumpt/goimports + golangci-lint v2 guard across every Go module + atlas-ui). Run `tools/lint.sh` (fix mode) before committing.
 - Builder pattern for test setup; NO `*_testhelpers.go` files (inline `t.Helper()` helpers in `_test.go` files are the established alternative — see `buildSkillModel` in `character_skill_prepare_test.go`).
 - No `// TODO` markers in landed code. The battleship TODO (`// TODO decrease battleship hp`) is the ONLY TODO that survives in `character_damage.go` (owned by task-153).
 - Never hard-code client wire values that the design derives from config/effect data; all mitigation amounts come from buff statups, skill effect data, or IDA-verified formulas below.
 - All code comments/documents use repo-relative paths.
 - Commit after each task with the message given in the task's final step.
+
+**Version scope (post-`main`-merge).** `main`'s legacy bring-up wired `CharacterDamageHandle` into the gms_48/61/72/79/84 templates (it was gms_83/84-only when this plan was first written), so the decoder + pipeline now run on all pre-BB legacy columns. The full column set is **v48, v61, v72, v79, v83, v84, v87, v92, v95, jms_185** — all IDA-verified (design §2a, §3; v92 verified independently, not inherited from v87). The verification bottom line, load-bearing for this plan: (1) the mob-hit wire layout is v83-identical on **every** version except **v48**, which needs one decoder branch (Task 1); (2) every mitigation-formula version gate already in Task 6 (`pgCapDivisor`, `pgFixedDamageOverride`, `magicShieldOnReducedDamage`, the v95 GUARD rule) is verified correct across all ten columns — **no formula code change**; (3) per-version skill *availability* deltas need no gates because the pipeline is data-driven and server-authoritative; (4) gms_87/92/95/jms never routed this handler at all (pre-existing gap) — Task 7 wires them.
 
 ## Plan-phase verification findings (corrections & blockers)
 
@@ -29,6 +34,14 @@ These were verified during planning against the v83 (port 13342), v87 (13343), v
 4. **Divine Shield skill-id constant is blocked on data availability — implement the GUARD rule without it.** The v95 client does not hard-code the skill id (design §1); the only per-hit obligation is GUARD-suppresses-PG-reflect, keyed off the GUARD temporary stat. Verification of the id from v95 WZ was attempted and is impossible in this environment: local WZ dumps are v83-era (Cosmic, ms_1172), the live atlas-data v95 tenant has **zero** skill documents (even 2001002 404s), and the MinIO `atlas-wz` bucket contains only `shared/regions/GMS/versions/83.1/Skill.wz` and `84.1`. Per design §5 the constant may only be added after WZ verification, so **no `libs/atlas-constants` change ships in this task**; the GUARD-based behavior is fully implemented (it needs no id). Record stays in `context.md`.
 5. **`services/atlas-channel/atlas.com/channel/socket/model/damage_taken_info.go` is dead code** (only `packetmodel.NewDamageTakenInfo` is used; verified by grep). Delete it in Task 7 so a stale copy of the buggy decoder cannot linger.
 6. **`fixedDamage` is not ingested by atlas-data and monster templates are not exposed to atlas-channel at all.** atlas-data's reader has no `fixedDamage` parse (WZ node confirmed as `<int name="fixedDamage" .../>` under `info` in real Mob.wz); atlas-channel has no `data/monster` client package. Tasks 2–3 create both. Note: tenants ingested before Task 2 deploys serve `fixed_damage: 0` until re-ingested — the cap then simply doesn't bind, which is graceful; re-ingestion activates it.
+
+7. **Legacy columns (v48/61/72/79/84) + v92 verified post-merge; only v48 forces a decoder change.** After merging `main`, `CharacterDamageHandle` is wired for gms_48/61/72/79/84, so the decoder now runs pre-BB. Each column's `CUserLocal::SetDamaged` was decompiled against the v83 reference via the live per-version IDB sessions (v48 `0bb5f11a`, v61 `965202bf`, v72 `90e36cb0`, v79 `9a7d3642`, v84 `79511a2a`, v92 `c377e02e`; v83 ref `ce4ff298` — the packet-audit IDA MCP is session-based now, the old `13342`-style ports are dead). Results (design §2a/§3):
+   - **Mob-hit wire layout = v83 byte-identical on v61/v72/v79/v84/v92** (14-byte reflect extension, same `reflect!=0 || block!=0` gate; v92 has **no** trailing `bGuard` byte — verified independently, **NOT** inherited from v87). **Only v48 diverges** (op 0x27): no `nMagicElemAttr` byte, 10-byte extension (no `charX`/`charY`), `stanceFlags` in the mob branch only. Legacy non-mob/obstacle branch (v48/61/72/79) has no trailing stance byte. → Task 1 adds one `GMS && MajorVersion() < 61` decode branch + v48 fixtures; nothing else in the codec changes.
+   - **All mitigation-formula version gates already in Task 6 are verified correct across all ten columns** — Power-Guard cap `/10` (pre-BB) vs `/2` (GMS v95), fixedDamage `min` (pre-BB) vs replace (v95/jms), Magic-Shield `>=87` form, v95-only GUARD-suppress-PG + Mechanic Perfect Armor (confirmed absent on v92). **No Task 6 formula code changes.** v48 additionally *omits* the fixedDamage clamp, the Power-Guard invincibility-zero, and the Mana-Reflection MaxHP/20 cap; the server applies all three universally (they only bound reflect downward — safe) so no v48 formula gate is added.
+   - **Per-version skill availability is auto-handled** by the data-driven, server-authoritative pipeline: absent skills (Magic Guard pre-≈v72, Aran pre-≈v76, Evan pre-v84) yield no buff/level → no-op; Achilles is client-dead-code on the v48/v61 **DEVM builds** but the server applies it from skill data and its authoritative `CHANGE_HP` is what renders. No per-version gates.
+   - Verification limitation recorded honestly: the legacy IDBs are DEVM builds (as are the v83/v87/v95 IDBs the original design used — wire format is structural and reliable); and the Magic-Shield v83-vs-v87 form is stat-cookie-driven and could not be re-corroborated by the legacy immediate-search pass, so the design-phase `>=87` finding is retained (one Evan-only gate, narrow band).
+
+8. **gms_87/92/95/jms never routed `CharacterDamageHandle`** (pre-existing gap — absent at branch base too), so the verified v87/v92/v95/jms behavior is currently unreachable. Task 7 wires all four at their serverbound `TAKE_DAMAGE` opcodes — v87=0x32, v92=0x35 (from the v92 IDB; v92 is not in the packet registry), v95=0x34, jms=0x27 — each verified **free of handler-opcode collision**, with `LoggedInValidator` (a handler entry with no validator is silently dropped) at its sorted `opCode` position (template-opcode-order-guard).
 
 Verified formula/value grounding for tests (v83 Skill.wz, Cosmic dump): Achilles 1120004 `x` per-mille 995 (lvl 1) → 850 (lvl 30); High Defense 21120004 identical scale; Magic Guard 2001002 `x` percent 11 → 80; Meso Guard 4211005 `x` (cost rate) 90 → 81; Mana Reflection 2121002 `x` 55 → 140 with `prop` 31+; Combo Barrier 21120007 `x` per-mille 916 → 864.
 
@@ -60,6 +73,10 @@ services/atlas-channel/atlas.com/channel/socket/handler/character_damage_test.go
                                                       Task 7  deps-fake emission tests
 services/atlas-channel/atlas.com/channel/socket/model/damage_taken_info.go
                                                       Task 7  DELETE (dead code)
+services/atlas-configurations/seed-data/templates/template_gms_87_1.json   Task 7  + CharacterDamageHandle @0x32
+services/atlas-configurations/seed-data/templates/template_gms_92_1.json   Task 7  + CharacterDamageHandle @0x35
+services/atlas-configurations/seed-data/templates/template_gms_95_1.json   Task 7  + CharacterDamageHandle @0x34
+services/atlas-configurations/seed-data/templates/template_jms_185_1.json  Task 7  + CharacterDamageHandle @0x27
 ```
 
 ---
@@ -345,6 +362,67 @@ func TestDamageTakenInfoV83ByteFixtures(t *testing.T) {
 		t.Fatalf("ext fixture decoded wrong: %s", m2.String())
 	}
 }
+
+// Raw byte fixtures pin the DIVERGENT v48 wire layout (design §2a): no
+// nMagicElemAttr byte, a 10-byte reflect extension (no charX/charY), and a
+// non-mob branch with no trailing stanceFlags byte. These are the fixtures
+// that would silently pass on a v83-only decoder and fail on the real wire.
+func TestDamageTakenInfoV48ByteFixtures(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	l, _ := test.NewNullLogger()
+
+	// Mob-hit with reflect extension: 31 bytes (v83's equivalent is 34 —
+	// v48 drops the 1-byte magicElemAttr and the 4-byte charX/charY pair).
+	ext := []byte{
+		0x39, 0x30, 0x00, 0x00, // updateTime 12345
+		0xFF,                   // nAttackIdx -1 (touch)
+		// (no nMagicElemAttr byte on v48)
+		0xF4, 0x01, 0x00, 0x00, // damage 500
+		0x04, 0x0D, 0x03, 0x00, // mobTemplateId 200004
+		0x2A, 0x00, 0x00, 0x00, // mobId 42
+		0x01,                   // left
+		0x1E,                   // reflect 30
+		0x00,                   // blockByte 0
+		0x01,                   // isPowerGuard
+		0x2A, 0x00, 0x00, 0x00, // reflectTargetMobId 42
+		0x03,                   // hitAction
+		0x64, 0x00,             // hitX 100
+		0xC8, 0x00,             // hitY 200
+		// (no charX/charY on v48)
+		0x05,                   // stanceFlags (mob branch)
+	}
+	req := request.Request(ext)
+	reader := request.NewRequestReader(&req, 0)
+	m := DamageTakenInfo{}
+	m.Decode(l, ctx)(&reader, nil)
+	if reader.Available() != 0 {
+		t.Fatalf("v48 ext fixture: %d unconsumed bytes", reader.Available())
+	}
+	if m.Damage() != 500 || m.MonsterTemplateId() != 200004 || !m.HasReflectExtension() ||
+		!m.IsPowerGuard() || m.HitY() != 200 || m.CharacterX() != 0 || m.StanceFlags() != 5 {
+		t.Fatalf("v48 ext fixture decoded wrong: %s", m.String())
+	}
+
+	// Obstacle/non-mob: 11 bytes, no trailing stance (design §2a).
+	obstacle := []byte{
+		0x39, 0x30, 0x00, 0x00, // updateTime
+		0xFE,                   // nAttackIdx -2 (non-mob sentinel)
+		// (no nMagicElemAttr byte on v48)
+		0xF4, 0x01, 0x00, 0x00, // damage 500
+		0x07, 0x00,             // obstacleData 7
+		// (no trailing stanceFlags on pre-v83 non-mob)
+	}
+	req2 := request.Request(obstacle)
+	reader2 := request.NewRequestReader(&req2, 0)
+	m2 := DamageTakenInfo{}
+	m2.Decode(l, ctx)(&reader2, nil)
+	if reader2.Available() != 0 {
+		t.Fatalf("v48 obstacle fixture: %d unconsumed bytes", reader2.Available())
+	}
+	if m2.Damage() != 500 || m2.ObstacleData() != 7 || m2.HasReflectExtension() {
+		t.Fatalf("v48 obstacle fixture decoded wrong: %s", m2.String())
+	}
+}
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -412,12 +490,28 @@ func (m DamageTakenInfo) String() string {
 		m.characterId, m.updateTime, m.nAttackIdx, m.nMagicElemAttr, m.damage, m.obstacleData, m.monsterTemplateId, m.monsterId, m.left, m.reflect, m.guard, m.blockByte, m.hasReflectExtension, m.isPowerGuard, m.reflectTargetMobId, m.hitAction, m.hitX, m.hitY, m.characterX, m.characterY, m.stanceFlags)
 }
 
+// Legacy layout gates (design §2a, verified per-version IDBs):
+//   preV61Layout  — gms_v48 only: NO nMagicElemAttr byte; the reflect
+//                   extension is 10 bytes (no charX/charY).
+//   preV83NonMob  — gms_v48/v61/v72/v79: the non-mob (obstacle/stat)
+//                   branch has NO trailing stanceFlags byte.
+// v61 through v92 decode as v83 (mob-hit byte-identical). The mob branch's
+// trailing stanceFlags is present on every version. v95-GMS adds the bGuard
+// byte (gated >=95); jms takes the no-bGuard branch.
+func gmsBelow(t tenant.Model, major uint16) bool {
+	return t.Region() == "GMS" && t.MajorVersion() < major
+}
+
 func (m *DamageTakenInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
+	preV61Layout := gmsBelow(t, 61)
+	preV83NonMob := gmsBelow(t, 83)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.updateTime = r.ReadUint32()
 		m.nAttackIdx = DamageType(r.ReadInt8())
-		m.nMagicElemAttr = DamageElementType(r.ReadInt8())
+		if !preV61Layout {
+			m.nMagicElemAttr = DamageElementType(r.ReadInt8())
+		}
 		m.damage = r.ReadInt32()
 
 		if m.nAttackIdx >= DamageTypePhysical {
@@ -430,13 +524,13 @@ func (m *DamageTakenInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func
 				m.guard = r.ReadBool()
 			}
 			m.blockByte = r.ReadByte()
-			// The client writes the 14-byte reflect extension iff it set
-			// bKnockback or a reflect echo. Neither flag is fully
-			// recoverable from earlier bytes (a blocked mob-skill attack
-			// has blockByte==1 with no extension; a vehicle-riding block
-			// has blockByte==0 with one), so presence is derived from the
-			// remaining length: the tail is exactly the 1-byte stance
-			// without the extension, 15 bytes with it.
+			// The client writes the reflect extension iff it set bKnockback
+			// or a reflect echo. Neither flag is fully recoverable from
+			// earlier bytes, so presence is derived from the remaining
+			// length: without the extension exactly the 1-byte stance
+			// remains; with it, 11 bytes (v48, 10-byte ext) or 15 bytes
+			// (v61+, 14-byte ext) remain — so Available() > 1 detects it on
+			// every version.
 			if r.Available() > 1 {
 				m.hasReflectExtension = true
 				m.isPowerGuard = r.ReadBool()
@@ -444,23 +538,32 @@ func (m *DamageTakenInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func
 				m.hitAction = r.ReadByte()
 				m.hitX = r.ReadInt16()
 				m.hitY = r.ReadInt16()
-				m.characterX = r.ReadInt16()
-				m.characterY = r.ReadInt16()
+				if !preV61Layout {
+					m.characterX = r.ReadInt16()
+					m.characterY = r.ReadInt16()
+				}
 			}
+			m.stanceFlags = r.ReadByte()
 		} else {
 			m.obstacleData = r.ReadInt16()
+			if !preV83NonMob {
+				m.stanceFlags = r.ReadByte()
+			}
 		}
-		m.stanceFlags = r.ReadByte()
 	}
 }
 
 func (m DamageTakenInfo) Encode(_ logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(logrus.WithFields(logrus.Fields{}))
 	t := tenant.MustFromContext(ctx)
+	preV61Layout := gmsBelow(t, 61)
+	preV83NonMob := gmsBelow(t, 83)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.updateTime)
 		w.WriteInt8(int8(m.nAttackIdx))
-		w.WriteInt8(int8(m.nMagicElemAttr))
+		if !preV61Layout {
+			w.WriteInt8(int8(m.nMagicElemAttr))
+		}
 		w.WriteInt32(m.damage)
 
 		if m.nAttackIdx >= DamageTypePhysical {
@@ -479,17 +582,24 @@ func (m DamageTakenInfo) Encode(_ logrus.FieldLogger, ctx context.Context) func(
 				w.WriteByte(m.hitAction)
 				w.WriteInt16(m.hitX)
 				w.WriteInt16(m.hitY)
-				w.WriteInt16(m.characterX)
-				w.WriteInt16(m.characterY)
+				if !preV61Layout {
+					w.WriteInt16(m.characterX)
+					w.WriteInt16(m.characterY)
+				}
 			}
+			w.WriteByte(m.stanceFlags)
 		} else {
 			w.WriteInt16(m.obstacleData)
+			if !preV83NonMob {
+				w.WriteByte(m.stanceFlags)
+			}
 		}
-		w.WriteByte(m.stanceFlags)
 		return w.Bytes()
 	}
 }
 ```
+
+**Legacy round-trip note (affects Step 1 test).** `pt.Variants` includes v28/v48/v61/v72/v79, and any subtest that loops the variant set now iterates them. Under the gates above the GMS `< 61` variants (v28, v48) take the 10-byte-extension / no-`nMagicElemAttr` path, so the shared `mobHit(...)` fixture's `nMagicElemAttr`, `characterX`, and `characterY` fields are dropped on encode and stay zero on decode. The round-trip is internally self-consistent (encode→decode under the same gate) and `pt.RoundTrip`'s `Available()==0` guard still holds, but the field-equality helpers do not: `assertCommon` compares `MagicElemAttr()` (line ~150) and `assertMob`'s extension block compares `CharacterX()/CharacterY()` (line ~195). Add a `legacyLayout(v TenantVariant) bool { return v.Region=="GMS" && v.MajorVersion < 61 }` predicate and, for legacy variants, either (a) build the `mobHit` input with `nMagicElemAttr`/`characterX`/`characterY` zeroed so the equality holds, or (b) pass a flag into `assertCommon`/`assertMob` that skips exactly those three comparisons. Do NOT weaken the assertions for non-legacy variants. Also add `{Name:"GMS v92", Region:"GMS", MajorVersion:92, MinorVersion:1}` to `pt.Variants` so every wired column is exercised (v92 = v83 layout — the round-trip covers it, no separate raw fixture needed).
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -1165,8 +1275,17 @@ type mitigationInput struct {
 	manaReflectPct   int32
 
 	// Version gates, resolved from the tenant by the orchestrator.
+	// Post-merge legacy verification (design §3) confirmed all three gates
+	// hold across every column v48..jms with NO code change: the pre-BB
+	// legacy versions (v48/61/72/79/84/92) all use pgCapDivisor 10,
+	// fixedDamage min, and fall below the >=95 GUARD/Mechanic rule; v92 was
+	// verified against its own IDB (NOT inherited from v87) and is
+	// byte-identical to v83 here. (v48 additionally OMITS the fixedDamage
+	// clamp / PG invincibility-zero / MR MaxHP/20 cap client-side; the
+	// server applies all three universally since they only bound a reflect
+	// downward — safe, so no v48-specific gate is added.)
 	magicShieldOnReducedDamage bool  // MajorVersion >= 87: base is damage minus the Magic Guard portion
-	pgCapDivisor               int32 // 2 on GMS >= 95, else 10 (IDA-verified)
+	pgCapDivisor               int32 // 2 on GMS >= 95, else 10 (IDA-verified across all 10 columns)
 	pgFixedDamageOverride      bool  // GMS >= 95 or JMS: template fixedDamage replaces the reflect instead of min()
 }
 
@@ -2265,16 +2384,42 @@ Expected: PASS (8 tests).
 Run: `cd services/atlas-channel/atlas.com/channel && go test -race ./... && go vet ./... && go build ./...`
 Expected: clean. Verify TODO removal: `grep -n "TODO" services/atlas-channel/atlas.com/channel/socket/handler/character_damage.go` must print exactly one line — `// TODO decrease battleship hp`.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Wire `CharacterDamageHandle` into the gms_87/92/95/jms templates**
+
+`main` wired this handler into gms_48/61/72/79/84, but gms_87/92/95/jms never routed it (pre-existing gap — verified absent at branch base too; the packet is decoded correctly by Task 1 but no template dispatches it there). The design verified v87/v95/jms behavior and Task 1 verified v92, so the codec is ready — these four just need the handler entry. Add to each template's `handlers` array, at the **sorted `opCode` position** (never appended — `tools/template-opcode-order-guard.sh` enforces strictly-ascending order), exactly this shape (matching the existing gms_83 entry):
+
+```json
+{
+  "opCode": "<op>",
+  "validator": "LoggedInValidator",
+  "handler": "CharacterDamageHandle",
+  "services": ["channel"]
+}
+```
+
+Serverbound `TAKE_DAMAGE` opcodes (verified free of handler-opcode collision — they exist only as clientbound *writers*, a separate namespace):
+
+| Template | opCode |
+|---|---|
+| `template_gms_87_1.json` | `0x32` |
+| `template_gms_92_1.json` | `0x35` (from the v92 IDB — v92 is not in the packet registry) |
+| `template_gms_95_1.json` | `0x34` |
+| `template_jms_185_1.json` | `0x27` |
+
+A missing `validator` key would cause the handler entry to be silently dropped, so `LoggedInValidator` is mandatory. Then run `tools/template-opcode-order-guard.sh` from the repo root — expected clean. (Live-tenant socket-config reconciliation for already-provisioned tenants is a deploy-time step, out of scope for this branch; the seed templates are the source of truth this task changes.)
+
+- [ ] **Step 6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_damage.go services/atlas-channel/atlas.com/channel/socket/handler/character_damage_test.go
+git add services/atlas-configurations/seed-data/templates/template_gms_87_1.json services/atlas-configurations/seed-data/templates/template_gms_92_1.json services/atlas-configurations/seed-data/templates/template_gms_95_1.json services/atlas-configurations/seed-data/templates/template_jms_185_1.json
 git rm services/atlas-channel/atlas.com/channel/socket/model/damage_taken_info.go
 git commit -m "feat(atlas-channel): server-authoritative damage-taken mitigation pipeline
 
 Magic Guard, Power Guard, Meso Guard, Mana Reflection, Achilles, High
 Defense, Combo Barrier, Magic Shield, block sentinel, anti-cheat clamps.
-Removes 9 of the 10 TODOs (battleship = task-153)."
+Removes 9 of the 10 TODOs (battleship = task-153). Wires CharacterDamageHandle
+into the gms_87/92/95/jms templates (v48-v84 already wired on main)."
 ```
 
 ---
@@ -2304,19 +2449,23 @@ docker buildx bake atlas-data
 
 Expected: both succeed. No new shared lib was added, so no Dockerfile edits should be needed; if a bake fails on a missing `COPY libs/...`, fix the root `Dockerfile` and re-bake.
 
-- [ ] **Step 3: Redis key guard**
+- [ ] **Step 3: Repo-root guards (merged from `main`)**
 
-Run from the worktree root: `tools/redis-key-guard.sh`
-Expected: clean (no raw keyed go-redis calls were added).
+Run each from the worktree root:
+- `tools/redis-key-guard.sh` — clean (no raw keyed go-redis calls added).
+- `tools/goroutine-guard.sh` — clean (no bare `go` statements added).
+- `tools/template-opcode-order-guard.sh` — clean (**required** — Task 7 edited gms_87/92/95/jms templates; verifies the new `CharacterDamageHandle` entries sit at their strictly-ascending `opCode` position).
+- `tools/lint.sh --check` — clean (shared gofumpt/goimports + golangci-lint v2 across every Go module + atlas-ui). If it flags formatting, run `tools/lint.sh` (fix mode) and re-commit the affected task's files.
 
 - [ ] **Step 4: Acceptance checklist against the PRD**
 
 Confirm each and record in the commit message if all pass:
-- Verification matrix: design.md §3 + this plan's findings section (committed).
+- Verification matrix: design.md §3 (incl. the post-merge legacy/v92 extension) + this plan's findings §7–8 (committed).
 - 9 mitigation TODOs removed; battleship TODO intact (`grep -c TODO .../character_damage.go` == 1).
 - Anti-cheat tests: `TestProcessDamageTakenForgedPowerGuardIgnored`, `TestProcessDamageTakenForgedDamageClamped`, `TestClampDamage`, `TestClampInt16` green.
 - Version gating tests: `TestComputeMitigationPowerGuard/v95 divisor 2`, `fixedDamage override post-BB`, `TestComputeMitigationPassivesAndBarriers/Magic Shield >=87 form` green; Divine Shield has no code path to gate (GUARD is data-driven and never granted pre-BB).
-- Packet fixtures: all `TestDamageTakenInfo*` subtests green across `pt.Variants`.
+- Packet fixtures: all `TestDamageTakenInfo*` subtests green across `pt.Variants` (incl. the legacy v28/v48/v61/v72/v79 columns and the added v92), plus `TestDamageTakenInfoV48ByteFixtures` (the divergent v48 layout — no `nMagicElemAttr`, 10-byte extension, no non-mob stance byte).
+- Handler wiring: `CharacterDamageHandle` present in all of gms_48/61/72/79/83/84/87/92/95/jms templates (grep each); template-opcode-order-guard clean.
 
 - [ ] **Step 5: Commit (only if anything changed during verification) and hand off**
 
@@ -2329,3 +2478,4 @@ Implementation complete. Per CLAUDE.md, run `superpowers:requesting-code-review`
 - Spec coverage: FR-2.x (pipeline/classification/announce) → Tasks 6–7; FR-3.x (verification matrix) → design §3 + plan findings; FR-4/5/6/7/8/9 (per-skill) → Tasks 6–7 with per-skill tests; FR-10 (anti-cheat) → `clampDamage`/`clampInt16`/forged-claim tests; FR-11 (version gates) → resolved gates in `mitigationInput` + codec gate tests; §5 API (REQUEST_CHANGE_MESO) → Task 5; §7 service impact (atlas-data fixedDamage, data clients) → Tasks 2–4. Body Pressure ships no damage-handler code by design (§1 correction 1 — TODO removed with the others in Task 7's rewrite). Divine Shield constant intentionally not shipped (plan findings §4).
 - Type consistency: `computeMitigation(mitigationInput, mobInfo) mitigationResult` used identically in Tasks 6/7; `RequestChangeMeso(f, characterId, actorId, actorType, amount)` identical in Tasks 5/7; packet getters listed in Task 1 match every Task 7 call site.
 - No placeholders: every step has complete code or an exact command with expected output.
+- Post-merge version-scope reconciliation (findings §7–8, design §2a/§3): full column set v48…jms verified against live per-version IDBs. Net code impact is bounded — one v48 decoder branch (Task 1) + four template handler entries (Task 7 Step 5); the mitigation-formula gates (Task 6) are verified unchanged, and per-version skill availability is auto-handled by the data-driven, server-authoritative pipeline. v92 verified independently (not inherited from v87). New merged guards (template-opcode-order, goroutine, lint.sh) folded into Global Constraints + Task 8 Step 3.

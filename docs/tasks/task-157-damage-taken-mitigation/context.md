@@ -44,6 +44,6 @@ Task 1 (packet) is independent. Task 2 (atlas-data) → Task 3 (channel template
 
 ## Verification environment notes
 
-- IDA instances (ida-pro MCP): v83 = port 13342 (`MapleStory_dump.exe`), v87 = 13343, v95 = 13341, jms185 = 13344. `CUserLocal::SetDamaged`: v83 0x9581a9, v87 0x9da6f2, v95 0x9343c0, jms 0xa228f8.
+- IDA instances (ida-pro MCP): the MCP is **session-based now** — the old `13342`-style ports are dead; enumerate with `idb_list` and pass the session id as the `database` param. `CUserLocal::SetDamaged` addresses per version: v83 0x9581a9 (session `ce4ff298`), v87 0x9da6f2 (`81f32170`), v95 0x9343c0 (`e4abcb98`), jms 0xa228f8 (`3c4bb8b1`). Post-merge legacy columns (verified against these same session ids as of the reconciliation): v48 0x6A598B (`0bb5f11a`), v61 0x7AA748 (`965202bf`), v72 0x864B92 (`90e36cb0`), v79 0x8B0277 (`9a7d3642`), v84 0x99634D (`79511a2a`), v92 0x913BB0 (`c377e02e`). Full per-version deltas: design §2a/§3. (Session ids are point-in-time; re-run `idb_list` — the adopted set rotates.)
 - Test-value grounding (v83 Skill.wz, Cosmic dump): Achilles/High Defense x per-mille 995→850; Magic Guard x percent 11→80; Meso Guard x (cost rate) 90→81; Mana Reflection x 55→140, prop 31+; Combo Barrier x per-mille 916→864.
 - Changed modules for CI/bake: `libs/atlas-packet`, `services/atlas-data`, `services/atlas-channel` → `docker buildx bake atlas-channel atlas-data` both required.

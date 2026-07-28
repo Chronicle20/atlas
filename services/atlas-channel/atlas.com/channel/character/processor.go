@@ -40,6 +40,7 @@ type Processor interface {
 	GetByName(name string) (Model, error)
 	RequestDistributeAp(f field.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error
 	RequestDropMeso(f field.Model, characterId uint32, amount uint32) error
+	RequestChangeMeso(f field.Model, characterId uint32, actorId uint32, actorType string, amount int32) error
 	ChangeHP(f field.Model, characterId uint32, amount int16) error
 	SetHP(f field.Model, characterId uint32, amount uint16) error
 	ChangeMP(f field.Model, characterId uint32, amount int16) error
@@ -271,6 +272,10 @@ func abilityFromFlag(flag uint32) (string, error) {
 
 func (p *ProcessorImpl) RequestDropMeso(f field.Model, characterId uint32, amount uint32) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(RequestDropMesoCommandProvider(f, characterId, amount))
+}
+
+func (p *ProcessorImpl) RequestChangeMeso(f field.Model, characterId uint32, actorId uint32, actorType string, amount int32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(RequestChangeMesoCommandProvider(f, characterId, actorId, actorType, amount))
 }
 
 func (p *ProcessorImpl) ChangeHP(f field.Model, characterId uint32, amount int16) error {

@@ -1,9 +1,11 @@
 package buff
 
 import (
+	"atlas-channel/battleship"
 	"atlas-channel/character/buff"
 	"atlas-channel/character/buff/stat"
 	npc2 "atlas-channel/data/npc"
+	dataskill "atlas-channel/data/skill"
 	consumer2 "atlas-channel/kafka/consumer"
 	buff2 "atlas-channel/kafka/message/buff"
 	"atlas-channel/listener"
@@ -19,6 +21,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
+	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -117,8 +120,25 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
+		t := tenant.MustFromContext(ctx)
+		if !sc.IsWorld(t, e.WorldId) {
 			return
+		}
+
+		// Battleship ride begins: record the pod-local riding truth the
+		// damage/attack hot paths read (mirror; FR-3.1/FR-6.2). Gated on
+		// session presence in this channel's local registry — like the
+		// announce below, this is how a world-broadcast buff event is
+		// scoped to the one channel pod that actually owns the socket
+		// (RideMirror is per-channel-process; see battleship/mirror.go).
+		if isBattleshipRide(e.Body.SourceId, e.Body.Changes) {
+			_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+				battleship.GetRideMirror().Put(t, e.CharacterId, battleship.RideState{
+					SkillLevel: e.Body.Level,
+					StateTTL:   battleshipStateTTLFunc(l, ctx, e.Body.Level),
+				})
+				return nil
+			})
 		}
 
 		announceBuffGive(l, ctx, sc, wp, e.CharacterId, e.Body.SourceId, e.Body.Level, e.Body.Duration, e.Body.Changes, e.Body.CreatedAt, e.Body.ExpiresAt)
@@ -145,11 +165,21 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
+		t := tenant.MustFromContext(ctx)
+		if !sc.IsWorld(t, e.WorldId) {
 			return
 		}
 
 		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+			// Battleship ride ends (manual dismount toggle, server cancel on
+			// break, or natural expiry): clear mirror + ship HP state
+			// (FR-5.1). NO cooldown here — breakShip in the battleship
+			// package is the only cooldown trigger (FR-4.3); this hook only
+			// clears state.
+			if isBattleshipRide(e.Body.SourceId, e.Body.Changes) {
+				battleship.NewProcessor(l, ctx).Clear(e.CharacterId)
+			}
+
 			ebs := make([]buff.Model, 0)
 			changes := make([]stat.Model, 0)
 			for _, cm := range e.Body.Changes {
@@ -309,4 +339,32 @@ func handleStatusEventBerserk(sc server.Model, wp writer.Producer) message.Handl
 			return nil
 		})
 	}
+}
+
+// isBattleshipRide reports whether a buff status event is the battleship
+// mount buff (MONSTER_RIDING sourced from 5221006).
+func isBattleshipRide(sourceId int32, changes []buff2.StatChange) bool {
+	if sourceId != int32(skill2.CorsairBattleshipId) {
+		return false
+	}
+	for _, c := range changes {
+		if c.Type == string(charconst.TemporaryStatTypeMonsterRiding) {
+			return true
+		}
+	}
+	return false
+}
+
+// battleshipStateTTLFunc derives the ship-state TTL from the effect's buff
+// duration (FR-5.2). Returns 0 on failure — the battleship package falls
+// back to its own default. Seam for tests.
+var battleshipStateTTLFunc = func(l logrus.FieldLogger, ctx context.Context, level byte) time.Duration {
+	e, err := dataskill.NewProcessor(l, ctx).GetEffect(uint32(skill2.CorsairBattleshipId), level)
+	if err != nil || e.Duration() <= 0 {
+		if err != nil {
+			l.WithError(err).Warnf("Unable to derive battleship state TTL from effect level [%d]; using fallback.", level)
+		}
+		return 0
+	}
+	return time.Duration(e.Duration()) * time.Millisecond
 }

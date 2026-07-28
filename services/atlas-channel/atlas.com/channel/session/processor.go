@@ -2,6 +2,7 @@ package session
 
 import (
 	"atlas-channel/account/session"
+	"atlas-channel/battleship"
 	session2 "atlas-channel/kafka/message/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -405,6 +406,13 @@ func (p *ProcessorImpl) DestroyById(sessionId uuid.UUID) {
 func (p *ProcessorImpl) Destroy(s Model) error {
 	p.l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
 	getRegistry().Remove(p.t.Id(), s.SessionId())
+
+	// Battleship ride state cannot outlive the session: logout, disconnect,
+	// timeout, and channel change all funnel here (FR-5.1). No cooldown is
+	// applied — break is the only cooldown trigger (FR-4.3).
+	if s.CharacterId() != 0 {
+		battleship.NewProcessor(p.l, p.ctx).Clear(s.CharacterId())
+	}
 
 	// Emit logout and destroyed events BEFORE closing the socket so a
 	// crash-safe ordering exists: a downstream consumer that sees the

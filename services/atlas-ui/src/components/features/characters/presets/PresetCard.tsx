@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import type { MapleStoryCharacterData } from "@/types/models/maplestory";
 import { useCharacterImage } from "@/lib/hooks/useCharacterImage";
 import { useTenant } from "@/context/tenant-context";
-import { jobLabel } from "./presetJobs";
+import { jobName } from "@/lib/jobs/job-advancement-tree";
 import { buildPresetLoadout } from "./presetLoadout";
 import type { WorkingPreset } from "./presetEditorState";
 
@@ -106,7 +106,7 @@ export function PresetCard({
         <span className="flex flex-1 flex-col gap-1.5 p-3">
           <span className="text-[13.5px] font-bold">{attrs.name}</span>
           <span className="flex flex-wrap items-center gap-1.5">
-            <Badge variant="secondary">{jobLabel(attrs.jobId)}</Badge>
+            <Badge variant="secondary">{jobName(attrs.jobId)}</Badge>
             <span className="text-[11.5px] font-semibold text-muted-foreground">
               Lv {attrs.level}
               {attrs.gm > 0 ? ` · GM ${attrs.gm}` : ""}

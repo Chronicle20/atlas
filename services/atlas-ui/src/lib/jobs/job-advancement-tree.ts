@@ -115,6 +115,22 @@ export const JOB_ROOTS: number[] = Object.values(JOB_GRAPH)
   .map((e) => e.id)
   .sort((a, b) => a - b);
 
+/** Every graph entry, ascending by id — the full selectable job set before tenant gating. */
+export const JOB_LIST: JobEntry[] = Object.values(JOB_GRAPH).sort(
+  (a, b) => a.id - b.id,
+);
+
+/**
+ * Display name for a job id, sourced from the advancement graph so Aran, Evan
+ * and Cygnus render by name everywhere (preset badges, class picker, rankings)
+ * — not just the explorer classes the old curated list covered. Falls back to
+ * `Job <id>` for an id the graph does not cover; the backend stays the
+ * validator of record, so an unmapped id remains usable.
+ */
+export function jobName(id: number): string {
+  return JOB_GRAPH[id]?.name ?? `Job ${id}`;
+}
+
 /** Direct children of a node, ascending by id. */
 export function childrenOf(id: number): number[] {
   return Object.values(JOB_GRAPH)

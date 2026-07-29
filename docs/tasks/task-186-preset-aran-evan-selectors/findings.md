@@ -84,11 +84,53 @@ gives up quickly and does not hammer the backend. Non-404 errors keep the
 original three-attempt budget. The row's graceful "Unknown skill" + Sparkles
 fallback (no crash/error card) is unchanged.
 
-### Issue 2b — atlas-data publish gap (investigation)
+### Issue 2b — atlas-data 404 window (investigation result)
 
-Separate backend investigation into why "publish baseline" leaves a 404 window
-(delete-then-insert vs atomic swap vs cache-invalidation gap) and the minimal
-fix. Findings appended below / tracked as follow-up.
+Traced all three stages of the operator workflow. The destructive step is
+**restore (apply-baseline), not publish or ingest**:
+
+| Stage | File | DB behavior | 404 window? |
+|---|---|---|---|
+| Ingest (re-process WZ) | `document/db_storage.go:144` | UPSERT (ON CONFLICT DO UPDATE) | No |
+| Publish baseline | `baseline/publish.go:39-116` | read-only COPY-OUT → MinIO | No |
+| **Restore baseline** | `baseline/restore.go:87-102` | **DELETE-then-COPY** | **Yes** |
+
+**Root cause — a non-atomic DELETE+COPY.** `restoreOneTable`
+(`baseline/restore.go:87-102`) wraps `DELETE FROM documents WHERE tenant_id = ?`
+plus the repopulating COPY in a `db.Transaction(...)` — *intending* an atomic
+swap. But `copyInBinary` (`restore.go:337-359`) calls `tx.DB()` →
+`sqlDB.Conn(ctx)`, which checks out a **different pooled connection** than the
+transaction. GORM's `DB.DB()` (`gorm.io/gorm/gorm.go:426-433`) reflects the pool
+`*sql.DB` back out of the `*sql.Tx` — it does **not** hand back the tx's own
+connection. So the `DELETE` runs in transaction *T* on one connection while the
+COPY runs on an independent autocommit connection. The two are not one MVCC unit,
+so a reader can observe the target tenant's rows **deleted-but-not-yet-
+repopulated** → `GET /api/data/skills/{id}` 404s (`skill/resource.go:105-108`).
+This also makes each table's restore self-conflict on the unique key
+(`idx_documents_tenant_type_docid`), consistent with the observed multi-minute
+window rather than a sub-second flip.
+
+- **Origin:** `DELETE` at `restore.go:93`, visible independently of the
+  out-of-transaction COPY at `restore.go:359`.
+- **Scope:** per-tenant, per-table (`runRestoreTables` loops table-by-table,
+  each in its own transaction, `restore.go:64-85`). The whole restore is also
+  not one transaction, and `cleanupAfterFailure` (`restore.go:116-124`) can
+  DELETE all tenant rows on failure — a second, longer 404 path.
+
+**Recommended minimal fix (backend, atlas-data):** run the per-table DELETE and
+COPY on the **same** connection so MVCC hides the swap — check out one
+`*sql.Conn` and run `BEGIN; DELETE …; COPY … FROM STDIN; COMMIT` on it, instead
+of `tx.DB()` + `sqlDB.Conn(ctx)`. Equivalent: COPY into a staging table on the
+tx connection then `DELETE`+`INSERT … SELECT` within one transaction.
+
+**Caveat:** the atomicity defect is proven from source (restore.go + gorm.go),
+but the exact live interleaving that produced the specific ~9-min duration was
+inferred from code, not reproduced against live Postgres. Verify against a live
+restore before/while landing the backend fix.
+
+**Status:** this is a separate atlas-data (Go) concern on a destructive restore
+path — recommended as its own follow-up task, not folded into this atlas-ui PR.
+The 2a UI change already makes the transient window invisible to users.
 
 ## Verification
 

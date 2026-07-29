@@ -11,7 +11,7 @@ import {
 import { useTenant } from "@/context/tenant-context";
 import { jobsService } from "@/services/api/jobs.service";
 import { jobSkillsKeys } from "@/lib/hooks/api/useJobSkills";
-import { PRESET_JOBS } from "./presetJobs";
+import { usePresetJobOptions } from "@/lib/hooks/usePresetJobOptions";
 
 interface JobSkillsAddButtonProps {
   onAddMany: (skillIds: number[]) => void;
@@ -30,14 +30,15 @@ export function JobSkillsAddButton({ onAddMany }: JobSkillsAddButtonProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [pending, setPending] = useState<number | null>(null);
+  const jobs = usePresetJobOptions();
 
   const term = search.trim().toLowerCase();
   const rows = term
-    ? PRESET_JOBS.filter(
+    ? jobs.filter(
         (j) =>
           j.name.toLowerCase().includes(term) || String(j.id).startsWith(term),
       )
-    : PRESET_JOBS;
+    : jobs;
 
   const manualId = /^\d+$/.test(search.trim())
     ? Number(search.trim())
@@ -103,29 +104,28 @@ export function JobSkillsAddButton({ onAddMany }: JobSkillsAddButtonProps) {
               )}
             </li>
           ))}
-          {manualId !== undefined &&
-            !PRESET_JOBS.some((j) => j.id === manualId) && (
-              <li
-                role="option"
-                aria-selected={false}
-                tabIndex={0}
-                onClick={() => void pick(manualId)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    void pick(manualId);
-                  }
-                }}
-                className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-accent focus-visible:bg-accent"
-              >
-                <span className="flex-1 text-sm">
-                  Add all skills for job {manualId}
-                </span>
-                {pending === manualId && (
-                  <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
-                )}
-              </li>
-            )}
+          {manualId !== undefined && !jobs.some((j) => j.id === manualId) && (
+            <li
+              role="option"
+              aria-selected={false}
+              tabIndex={0}
+              onClick={() => void pick(manualId)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  void pick(manualId);
+                }
+              }}
+              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-accent focus-visible:bg-accent"
+            >
+              <span className="flex-1 text-sm">
+                Add all skills for job {manualId}
+              </span>
+              {pending === manualId && (
+                <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+              )}
+            </li>
+          )}
           {rows.length === 0 && manualId === undefined && (
             <li className="px-2 py-1 text-sm text-muted-foreground">
               No matches.

@@ -89,16 +89,8 @@ func restoreOneTable(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, tab
 	if tenantIdx < 0 {
 		return fmt.Errorf("column list has no tenant_id")
 	}
-	return db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("DELETE FROM "+table+" WHERE tenant_id = ?", target.String()).Error; err != nil {
-			return err
-		}
-		rw := Rewriter{TenantColIndex: tenantIdx, Target: target}
-		// Pipe rw.Stream() into COPY <table> (cols) FROM STDIN BINARY through
-		// the raw connection. The explicit column list maps stream fields to
-		// columns by NAME, so the target's physical column order is irrelevant.
-		return copyInBinary(ctx, l, tx, table, cols, r, rw)
-	})
+	rw := Rewriter{TenantColIndex: tenantIdx, Target: target}
+	return replaceTableBinary(ctx, l, db, table, cols, r, rw, target)
 }
 
 // cleanupAfterFailure DELETEs every DumpTables row for target in its own
@@ -329,13 +321,26 @@ func readMinioObject(ctx context.Context, mc *minio.Client, bucket, key string) 
 	return io.ReadAll(rc)
 }
 
-// copyInBinary pipes rw.Stream(in,…) into
-// `COPY <table> (cols) FROM STDIN (FORMAT binary)` through the underlying pgx
-// connection borrowed from the gorm transaction. The explicit column list
-// mirrors the publish-time projection so Postgres maps stream fields to columns
-// by name, not by the target table's physical order.
-func copyInBinary(ctx context.Context, l logrus.FieldLogger, tx *gorm.DB, table string, cols []string, in io.Reader, rw Rewriter) error {
-	sqlDB, err := tx.DB()
+// replaceTableBinary atomically replaces `table`'s rows for `target`: a SINGLE
+// pooled connection runs BEGIN; DELETE …; COPY … FROM STDIN (FORMAT binary);
+// COMMIT, so a concurrent reader observes either the whole old row set or the
+// whole new one — never the deleted-but-not-yet-repopulated gap.
+//
+// That gap was the source of the transient 404 window during a baseline
+// re-apply (task-186): the old code ran the DELETE inside a gorm db.Transaction
+// but then had copyInBinary check out a SECOND pooled connection via
+// tx.DB().Conn(ctx), so the COPY committed on its own connection OUTSIDE the
+// DELETE's transaction. sql.DB.Conn never hands back a transaction's own
+// connection, so DELETE and COPY were never one MVCC unit and readers could see
+// the rows gone but not yet restored → GET /api/data/skills/{id} 404. Running
+// both on one connection inside one transaction closes the window and also
+// removes the self-conflict on idx_documents_tenant_type_docid a re-apply hit
+// (the COPY now sees the DELETE, same transaction).
+//
+// The explicit column list maps stream fields to columns by NAME, so the
+// target's physical column order is irrelevant.
+func replaceTableBinary(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, table string, cols []string, in io.Reader, rw Rewriter, target uuid.UUID) error {
+	sqlDB, err := db.DB()
 	if err != nil {
 		return err
 	}
@@ -349,19 +354,35 @@ func copyInBinary(ctx context.Context, l logrus.FieldLogger, tx *gorm.DB, table 
 		if !ok {
 			return fmt.Errorf("expected *stdlib.Conn, got %T", driverConn)
 		}
+		c := pgxConn.Conn()
+		tx, err := c.Begin(ctx)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, "DELETE FROM "+table+" WHERE tenant_id = $1", target.String()); err != nil {
+			_ = tx.Rollback(ctx)
+			return err
+		}
 		pr, pw := io.Pipe()
 		errc := make(chan error, 1)
 		routine.Go(l, ctx, func(_ context.Context) {
 			defer pw.Close()
 			errc <- rw.Stream(in, pw)
 		})
+		// CopyFrom runs on c's underlying connection — the same one Begin issued
+		// BEGIN on — so it participates in tx and is committed atomically below.
 		sql := fmt.Sprintf(`COPY %s (%s) FROM STDIN (FORMAT binary)`, table, quoteCols(cols))
-		if _, err := pgxConn.Conn().PgConn().CopyFrom(ctx, pr, sql); err != nil {
+		if _, err := c.PgConn().CopyFrom(ctx, pr, sql); err != nil {
 			// Drain the rewriter goroutine so it doesn't deadlock writing to pw.
 			_ = pr.CloseWithError(err)
 			<-errc
+			_ = tx.Rollback(ctx)
 			return err
 		}
-		return <-errc
+		if err := <-errc; err != nil {
+			_ = tx.Rollback(ctx)
+			return err
+		}
+		return tx.Commit(ctx)
 	})
 }

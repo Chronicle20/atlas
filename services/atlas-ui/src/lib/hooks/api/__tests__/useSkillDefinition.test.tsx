@@ -3,7 +3,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import type { Tenant } from "@/services/api/tenants.service";
-import { useSkillDefinition } from "../useSkillDefinition";
+import {
+  useSkillDefinition,
+  skillDefinitionRetry,
+  SKILL_DEFINITION_404_MAX_RETRIES,
+} from "../useSkillDefinition";
 
 const fakeTenant = {
   id: "t1",
@@ -50,5 +54,34 @@ describe("useSkillDefinition", () => {
     });
     expect(result.current.fetchStatus).toBe("idle");
     expect(getSkillByIdMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("skillDefinitionRetry", () => {
+  it("retries a 404 a bounded number of times so a re-ingest blip self-heals", () => {
+    const notFound = new Error("Request failed with status 404");
+    // Retries while under the bound, then gives up — so a permanently-invalid
+    // id does not hammer the backend.
+    expect(skillDefinitionRetry(0, notFound)).toBe(true);
+    expect(
+      skillDefinitionRetry(SKILL_DEFINITION_404_MAX_RETRIES - 1, notFound),
+    ).toBe(true);
+    expect(
+      skillDefinitionRetry(SKILL_DEFINITION_404_MAX_RETRIES, notFound),
+    ).toBe(false);
+  });
+
+  it("treats a 'not found' message the same as a 404", () => {
+    const notFound = new Error("skill not found");
+    expect(skillDefinitionRetry(0, notFound)).toBe(true);
+    expect(
+      skillDefinitionRetry(SKILL_DEFINITION_404_MAX_RETRIES, notFound),
+    ).toBe(false);
+  });
+
+  it("keeps the three-attempt budget for non-404 errors", () => {
+    const boom = new Error("500 internal error");
+    expect(skillDefinitionRetry(2, boom)).toBe(true);
+    expect(skillDefinitionRetry(3, boom)).toBe(false);
   });
 });

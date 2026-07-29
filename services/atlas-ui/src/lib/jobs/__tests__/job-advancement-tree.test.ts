@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   JOB_GRAPH,
   JOB_ROOTS,
+  JOB_LIST,
+  jobName,
   childrenOf,
   rootOf,
   visibleRoots,
@@ -131,5 +133,37 @@ describe("job-advancement-tree", () => {
     expect(tierLabel(1000)).toBe("Base");
     expect(childrenOf(800)).toEqual([]); // Maple Leaf Brigadier has none
     expect(tierLabel(800)).toBe("");
+  });
+});
+
+describe("jobName", () => {
+  it("names explorer classes", () => {
+    expect(jobName(0)).toBe("Beginner");
+    expect(jobName(100)).toBe("Warrior");
+    expect(jobName(900)).toBe("GM");
+  });
+
+  it("names Aran and Evan (the ids the old curated list omitted)", () => {
+    expect(jobName(2000)).toBe("Legend");
+    expect(jobName(2100)).toBe("Aran 1");
+    expect(jobName(2110)).toBe("Aran 2");
+    expect(jobName(2001)).toBe("Evan");
+    expect(jobName(2200)).toBe("Evan 1");
+  });
+
+  it("falls back to Job <id> for an id the graph does not cover", () => {
+    expect(jobName(4321)).toBe("Job 4321");
+    expect(jobName(123456)).toBe("Job 123456");
+  });
+});
+
+describe("JOB_LIST", () => {
+  it("is every graph entry, ascending by id, including Aran/Evan/Cygnus", () => {
+    expect(JOB_LIST).toHaveLength(Object.keys(JOB_GRAPH).length);
+    const ids = JOB_LIST.map((j) => j.id);
+    expect([...ids]).toEqual([...ids].sort((a, b) => a - b));
+    expect(ids).toContain(2100); // Aran 1
+    expect(ids).toContain(2001); // Evan
+    expect(ids).toContain(1000); // Noblesse (Cygnus)
   });
 });

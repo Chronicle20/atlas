@@ -4,7 +4,7 @@ import { useTenant } from "@/context/tenant-context";
 import { useCharacter } from "@/lib/hooks/api/useCharacters";
 import { useInventory } from "@/lib/hooks/api/useInventory";
 import { OptimizedCharacterRenderer } from "@/components/features/characters/OptimizedCharacterRenderer";
-import { jobLabel } from "@/components/features/characters/presets/presetJobs";
+import { jobName } from "@/lib/jobs/job-advancement-tree";
 import { Badge } from "@/components/ui/badge";
 import type { Asset } from "@/services/api/inventory.service";
 import type { RankingEntry } from "@/services/api/rankings.service";
@@ -77,7 +77,7 @@ export function LeaderboardRow({ entry, view }: LeaderboardRowProps) {
       <td className="px-3 py-2 font-medium">{a.name}</td>
       <td className="px-3 py-2">{a.level}</td>
       <td className="px-3 py-2">
-        <Badge variant="secondary">{jobLabel(a.jobId)}</Badge>
+        <Badge variant="secondary">{jobName(a.jobId)}</Badge>
       </td>
       <td className="px-3 py-2">
         <MoveArrow move={move} />

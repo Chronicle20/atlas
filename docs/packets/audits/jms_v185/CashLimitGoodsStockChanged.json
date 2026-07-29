@@ -1,0 +1,39 @@
+{
+  "WriterName": "CashLimitGoodsStockChanged",
+  "IDAName": "CCashShop::OnCashItemResult#LIMIT_GOODS_STOCK_CHANGED",
+  "Address": "0x48d4d4",
+  "Variant": "JMS/v185",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_operation_result_jms.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0x60=96 LIMIT_GOODS_STOCK_CHANGED; op-byte consumed by dispatcher before CCashShop__OnCashItemResLimitGoodsStockChanged)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "result byte (v4; NoticeFailReason code; 205/206 gate the itemId read; 177/178/179 trigger SendTransferFieldPacket)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "CONDITIONAL if result==205 or result==206: itemId (uint32, passed to UpdateStock/ChangeLimitGoodsState)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -1,11 +1,7 @@
 package heal
 
 import (
-	"atlas-channel/data/skill/effect"
 	"atlas-channel/skill/handler"
-	"sync"
-
-	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
 // selectRecipients prepends the caster to the in-range party members
@@ -25,26 +21,4 @@ func selectRecipients(caster recipient, party []handler.PartyRecipient) []recipi
 		})
 	}
 	return out
-}
-
-// warnedRectangles dedupes the missing-LT/RB warning per (skillId,
-// skillLevel) tuple per-process. Reset between tests via
-// resetWarnedRectangles.
-var warnedRectangles sync.Map // key: uint64 (skillId<<8 | level)
-
-func warnIfMissingRectangle(skillId skill2.Id, skillLevel byte, e effect.Model, logf func()) {
-	lt, rb := e.LT(), e.RB()
-	if lt.X() != 0 || lt.Y() != 0 || rb.X() != 0 || rb.Y() != 0 {
-		return
-	}
-	key := uint64(skillId)<<8 | uint64(skillLevel)
-	if _, loaded := warnedRectangles.LoadOrStore(key, struct{}{}); loaded {
-		return
-	}
-	logf()
-}
-
-// resetWarnedRectangles is exposed for tests.
-func resetWarnedRectangles() {
-	warnedRectangles = sync.Map{}
 }

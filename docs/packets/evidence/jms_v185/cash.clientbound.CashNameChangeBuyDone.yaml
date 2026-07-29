@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashNameChangeBuyDone
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#NAME_CHANGE_BUY_DONE
+    address: "0x48c1af"
+    decompile_sha256: 63a9f2916322bf22107c0674c7a8d068c6a044bc6d79d953f7c82e2cb3241784
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_transfer_test.go#TestNameChangeBuyDoneByteFixture

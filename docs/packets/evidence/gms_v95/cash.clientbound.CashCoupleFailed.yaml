@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashCoupleFailed
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#COUPLE_FAILED
+    address: "0x497d20"
+    decompile_sha256: eb39d58faa4c1c82b77e15ff4f059ab008bd30af133691bcba24b90b1eaa2b96
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_failed_test.go#TestCoupleFailedByteFixture

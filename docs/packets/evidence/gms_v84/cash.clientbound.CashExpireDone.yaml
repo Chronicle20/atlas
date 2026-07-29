@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashExpireDone
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#EXPIRE_DONE
+    address: "0x47e349"
+    decompile_sha256: 08359975025505de8869e8ed0314e8b313c83ac3f4e66b77f7a33070779a7da2
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_misc_test.go#TestExpireDoneByteFixture

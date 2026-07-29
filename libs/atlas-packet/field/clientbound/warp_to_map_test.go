@@ -152,6 +152,9 @@ func TestWarpToMapWireLength(t *testing.T) {
 		"GMS v61": 24,
 		"GMS v72": 24,
 		"GMS v79": 24,
+		// v92 is >=87 (DecodeOpt present) and <95 (no oldDriverID, hp
+		// stays 2) — same shape as GMS v87.
+		"GMS v92": 27,
 	}
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

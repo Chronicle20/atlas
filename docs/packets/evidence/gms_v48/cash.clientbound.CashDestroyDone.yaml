@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashDestroyDone
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#DESTROY_SUCCESS
+    address: "0x4553e0"
+    decompile_sha256: d4aff15382bfc068d61e0006787879368c644c0003f1eb02d4369520c0cc4341
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_misc_test.go#TestDestroyDoneByteFixture

@@ -1,0 +1,39 @@
+{
+  "WriterName": "CashChangeMaplePointDone",
+  "IDAName": "CCashShop::OnCashItemResult#CHANGE_MAPLE_POINT_SUCCESS",
+  "Address": "0x48830a",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_operation_result_transfer.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0xaf CHANGE_MAPLE_POINT_SUCCESS; op-byte consumed by dispatcher before CCashShop::OnCashItemResChangeMaplePointDone)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "sn: 8 bytes LARGE_INTEGER (int64), matched against m_aCashItemInfo[i].liSN to decrement/remove the entry's nNumber",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "count (int32, formatted directly into the notice string)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

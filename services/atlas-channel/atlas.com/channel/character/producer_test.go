@@ -38,3 +38,27 @@ func TestSetHPCommandProvider(t *testing.T) {
 		t.Fatalf("Body.Amount = %d, want 65535", cmd.Body.Amount)
 	}
 }
+
+func TestRequestChangeMesoCommandProvider(t *testing.T) {
+	f := field.NewBuilder(2, 1, 100000000).Build()
+	msgs, err := RequestChangeMesoCommandProvider(f, 42, 42, "SKILL", -1500)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(msgs) != 1 {
+		t.Fatalf("messages=%d, want 1", len(msgs))
+	}
+	var cmd messagechar.Command[messagechar.RequestChangeMesoBody]
+	if err := json.Unmarshal(msgs[0].Value, &cmd); err != nil {
+		t.Fatal(err)
+	}
+	if cmd.Type != messagechar.CommandRequestChangeMeso {
+		t.Errorf("type=%s, want %s", cmd.Type, messagechar.CommandRequestChangeMeso)
+	}
+	if cmd.CharacterId != 42 || cmd.WorldId != 2 {
+		t.Errorf("envelope=%+v", cmd)
+	}
+	if cmd.Body.Amount != -1500 || cmd.Body.ActorId != 42 || cmd.Body.ActorType != "SKILL" || cmd.Body.ShowEffect {
+		t.Errorf("body=%+v", cmd.Body)
+	}
+}

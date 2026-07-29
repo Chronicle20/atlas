@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashFriendshipDone
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#FRIENDSHIP_SUCCESS
+    address: "0x47b93c"
+    decompile_sha256: 739f4267c0544c4c0c58b684b67ed7dd802f84b246d6a41fe07540f7963c5274
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_gift_test.go#TestFriendshipDoneByteFixture

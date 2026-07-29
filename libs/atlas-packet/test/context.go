@@ -35,6 +35,9 @@ var Variants = []TenantVariant{
 	{Name: "GMS v61", Region: "GMS", MajorVersion: 61, MinorVersion: 1}, // [8]
 	{Name: "GMS v72", Region: "GMS", MajorVersion: 72, MinorVersion: 1}, // [9]
 	{Name: "GMS v79", Region: "GMS", MajorVersion: 79, MinorVersion: 1}, // [10]
+	// v92 = v83 layout for damage-taken (task-157); appended so existing
+	// positional Variants[N] references stay valid.
+	{Name: "GMS v92", Region: "GMS", MajorVersion: 92, MinorVersion: 1}, // [11]
 }
 
 func CreateContext(region string, majorVersion uint16, minorVersion uint16) context.Context {

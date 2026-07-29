@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashPurchaseRecordFailed
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#PURCHASE_RECORD_FAILED
+    address: "0x48e79a"
+    decompile_sha256: 6fdd04e0ee0591ed8a97dbe7e3a8185f5affc707a9b315113325ee223c24bf1a
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_failed_test.go#TestPurchaseRecordFailedByteFixture

@@ -14,6 +14,7 @@ const (
 	CommandRequestDistributeAp = "REQUEST_DISTRIBUTE_AP"
 	CommandRequestDistributeSp = "REQUEST_DISTRIBUTE_SP"
 	CommandRequestDropMeso     = "REQUEST_DROP_MESO"
+	CommandRequestChangeMeso   = "REQUEST_CHANGE_MESO"
 	CommandChangeHP            = "CHANGE_HP"
 	CommandChangeMP            = "CHANGE_MP"
 	CommandSetHP               = "SET_HP"
@@ -52,6 +53,13 @@ type RequestDropMesoCommandBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	MapId     _map.Id    `json:"mapId"`
 	Amount    uint32     `json:"amount"`
+}
+
+type RequestChangeMesoBody struct {
+	ActorId    uint32 `json:"actorId"`
+	ActorType  string `json:"actorType"`
+	Amount     int32  `json:"amount"`
+	ShowEffect bool   `json:"showEffect"`
 }
 
 type ChangeHPCommandBody struct {

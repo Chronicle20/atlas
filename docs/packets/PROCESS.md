@@ -111,7 +111,7 @@ version_keys:
   - gms_v95
   - jms_v185
 dispatcher_lint_baseline_families: []   # docs/packets/dispatcher-lint-baseline.yaml
-family_cap_dispatchers: []              # docs/packets/evidence/families.yaml (all commented/graduated)
+family_cap_dispatchers: []               # docs/packets/evidence/families.yaml (CCashShop re-graduated task-183: all 57 arms verified)
 ci_gates:
   - packet-audit-tests          # cd tools/packet-audit && go test ./...
   - fname-doc-check             # packet-audit fname-doc --check

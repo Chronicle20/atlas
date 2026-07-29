@@ -1,0 +1,21 @@
+{
+  "WriterName": "CashShowNotice1089",
+  "IDAName": "CCashShop::OnCashItemResult#SHOW_NOTICE_1089",
+  "Address": "0x48e6c9",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_operation_result_jms.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0x92=146 SHOW_NOTICE_1089; op-byte consumed by dispatcher; bodyless - handler reads nothing, shows StringPool notice 0x1089)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

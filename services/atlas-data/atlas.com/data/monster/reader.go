@@ -65,6 +65,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 			m.ExplosiveReward = node.GetIntegerWithDefault("explosiveReward", 0) > 0
 			m.FFALoot = node.GetIntegerWithDefault("publicReward", 0) > 0
 			m.Undead = node.GetIntegerWithDefault("undead", 0) > 0
+			m.FixedDamage = uint32(node.GetIntegerWithDefault("fixedDamage", 0))
 			ms, err := GetMonsterStringRegistry().Get(t, strconv.Itoa(int(monsterId)))
 			if err != nil {
 				return model.ErrorProvider[RestModel](err)

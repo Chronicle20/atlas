@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashGachaponOpenDone
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#GACHAPON_OPEN_SUCCESS
+    address: "0x494ac0"
+    decompile_sha256: 94633beef26acce8abeb9cdef74770fc7452053454b0a5f79922cf90a3f063c1
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_gachapon_test.go#TestGachaponOpenDoneByteFixture

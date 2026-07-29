@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashIncTrunkCountFailed
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#INC_TRUNK_COUNT_FAILED
+    address: "0x486393"
+    decompile_sha256: d2536f03d3877ffc5f7933c207fb76c6db32180451e04b8caeed1a038a7802ba
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_failed_test.go#TestIncTrunkCountFailedByteFixture

@@ -69,6 +69,32 @@ func (r *Registry) Clear(ctx context.Context, characterId uint32, skillId uint32
 	return r.reg.Remove(ctx, t, compositeKey(characterId, skillId))
 }
 
+// GetAllForCharacter returns the character's active cooldowns under the
+// current tenant, keyed by skill id. The prefix "<charId>:" (with trailing
+// colon) keeps the same safe-prefix invariant as ClearAll, so charId 100
+// never matches 1000 or 1001. Malformed suffixes are skipped (same
+// tolerance as GetAll).
+func (r *Registry) GetAllForCharacter(ctx context.Context, characterId uint32) (map[uint32]time.Time, error) {
+	t := tenant.MustFromContext(ctx)
+	entries, err := r.reg.GetAllEntries(ctx, t)
+	if err != nil {
+		return nil, err
+	}
+	charPrefix := strconv.FormatUint(uint64(characterId), 10) + ":"
+	result := make(map[uint32]time.Time)
+	for suffix, expiresAt := range entries {
+		if !strings.HasPrefix(suffix, charPrefix) {
+			continue
+		}
+		sId, pErr := strconv.ParseUint(strings.TrimPrefix(suffix, charPrefix), 10, 32)
+		if pErr != nil {
+			continue
+		}
+		result[uint32(sId)] = expiresAt
+	}
+	return result, nil
+}
+
 type CooldownHolder struct {
 	tenant            tenant.Model
 	characterId       uint32

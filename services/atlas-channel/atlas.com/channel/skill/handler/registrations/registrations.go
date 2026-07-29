@@ -10,4 +10,5 @@ import (
 	_ "atlas-channel/skill/handler/mprecovery"   // Brawler MP Recovery — task-151
 	_ "atlas-channel/skill/handler/mysticdoor"   // Priest Mystic Door — task-093
 	_ "atlas-channel/skill/handler/resurrection" // Bishop/GM/SuperGM Resurrection — task-111
+	_ "atlas-channel/skill/handler/timeleap"     // Buccaneer Time Leap — task-155
 )

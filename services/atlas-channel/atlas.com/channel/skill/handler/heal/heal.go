@@ -93,7 +93,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				stats = effective_stats.RestModel{Intelligence: uint32(c.Intelligence())}
 			}
 
-			warnIfMissingRectangle(skill2.Id(info.SkillId()), info.SkillLevel(), e, func() {
+			channelhandler.WarnIfMissingRectangle(skill2.Id(info.SkillId()), info.SkillLevel(), e, func() {
 				l.Warnf("Heal: skill effect [%d] level [%d] has no LT/RB rectangle — falling back to caster-only.", info.SkillId(), info.SkillLevel())
 			})
 

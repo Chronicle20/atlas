@@ -128,9 +128,25 @@ but the exact live interleaving that produced the specific ~9-min duration was
 inferred from code, not reproduced against live Postgres. Verify against a live
 restore before/while landing the backend fix.
 
-**Status:** this is a separate atlas-data (Go) concern on a destructive restore
-path — recommended as its own follow-up task, not folded into this atlas-ui PR.
-The 2a UI change already makes the transient window invisible to users.
+**Status: FIXED on this branch.** `baseline/restore.go` — `restoreOneTable` no
+longer wraps the DELETE in a gorm `db.Transaction` that lets the COPY escape onto
+a second pooled connection. New `replaceTableBinary` checks out **one** pooled
+connection and runs `BEGIN; DELETE …; COPY … FROM STDIN (FORMAT binary); COMMIT`
+on it via the pgx conn, so the row replacement is a single MVCC unit — readers
+never see the gap, and the re-apply self-conflict on
+`idx_documents_tenant_type_docid` is gone (the COPY now sees the DELETE). Added
+`TestRestoreTableSwapIsAtomic` (a source-structure guard, matching the file's
+existing test style, since the pgx binary-COPY path only runs against real
+Postgres, not the sqlite unit-test DB).
+
+Verified: `go build`/`go vet`/`gofmt` clean; `go test -race ./...` — 33 packages
+pass; `go.mod` untouched (pgx already a dep, no docker-bake needed);
+goroutine-guard + `tools/lint.sh --check` clean.
+
+**Runtime caveat still stands:** the atomicity defect and fix are reasoned from
+source; the pgx COPY-in-transaction path is not exercised by unit tests (sqlite),
+so confirm against a live baseline re-apply that the 404 window is gone before
+relying on it in production.
 
 ## Verification
 

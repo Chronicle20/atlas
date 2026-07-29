@@ -1457,3 +1457,41 @@ func TestReaderMobilityFlags(t *testing.T) {
 		})
 	}
 }
+
+func TestReaderFixedDamage(t *testing.T) {
+	tt := testTenant()
+	l, _ := test.NewNullLogger()
+	ctx := tenant.WithContext(context.Background(), tt)
+
+	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(9300314), name: "FakeFixed"})
+
+	body := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="9300314.img">
+  <imgdir name="info">
+    <int name="maxHP" value="100"/>
+    <int name="fixedDamage" value="5"/>
+  </imgdir>
+</imgdir>`
+
+	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(body)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rm.FixedDamage != 5 {
+		t.Fatalf("FixedDamage=%d, want 5", rm.FixedDamage)
+	}
+
+	// Absent node defaults to zero.
+	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(9300315), name: "FakeNoFixed"})
+	body2 := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="9300315.img">
+  <imgdir name="info"><int name="maxHP" value="100"/></imgdir>
+</imgdir>`
+	rm2, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(body2)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rm2.FixedDamage != 0 {
+		t.Fatalf("FixedDamage=%d, want 0", rm2.FixedDamage)
+	}
+}

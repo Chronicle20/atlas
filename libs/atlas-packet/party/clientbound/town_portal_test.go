@@ -26,6 +26,9 @@ func TestTownPortalWire(t *testing.T) {
 		// version branch in Encode/Decode, so every pre-95 GMS version --
 		// legacy or not -- emits the same 14-byte mode1+slot1+town4+target4+x2+y2 body.
 		"GMS v48": 14, "GMS v61": 14, "GMS v72": 14, "GMS v79": 14,
+		// v92 predates the GMS>=95 skillId gate (townPortalHasSkillId), so
+		// it takes the same 14-byte body as the other pre-95 versions above.
+		"GMS v92": 14,
 	}
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

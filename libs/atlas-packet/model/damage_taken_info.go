@@ -44,17 +44,22 @@ type DamageTakenInfo struct {
 	monsterTemplateId uint32
 	monsterId         uint32
 	left              bool
-	nX                byte
-	bGuard            bool
-	relativeDir       byte
-	bPowerGuard       bool
-	monsterId2        uint32
-	powerGuard        bool
-	hitX              int16
-	hitY              int16
-	characterX        int16
-	characterY        int16
-	expression        byte
+	reflect           byte
+	guard             bool
+	blockByte         byte
+	// hasReflectExtension mirrors the client's variable-length tail: the
+	// 14-byte reflect extension is written iff the client set bKnockback
+	// or a non-zero reflect echo (CUserLocal::SetDamaged, verified v83/
+	// v87/v95/jms185).
+	hasReflectExtension bool
+	isPowerGuard        bool
+	reflectTargetMobId  uint32
+	hitAction           byte
+	hitX                int16
+	hitY                int16
+	characterX          int16
+	characterY          int16
+	stanceFlags         byte
 }
 
 func (m DamageTakenInfo) CharacterId() uint32              { return m.characterId }
@@ -66,89 +71,134 @@ func (m DamageTakenInfo) ObstacleData() int16              { return m.obstacleDa
 func (m DamageTakenInfo) MonsterTemplateId() uint32        { return m.monsterTemplateId }
 func (m DamageTakenInfo) MonsterId() uint32                { return m.monsterId }
 func (m DamageTakenInfo) Left() bool                       { return m.left }
-func (m DamageTakenInfo) NX() byte                         { return m.nX }
-func (m DamageTakenInfo) Guard() bool                      { return m.bGuard }
-func (m DamageTakenInfo) RelativeDir() byte                { return m.relativeDir }
-func (m DamageTakenInfo) PowerGuard() bool                 { return m.bPowerGuard }
-func (m DamageTakenInfo) MonsterId2() uint32               { return m.monsterId2 }
-func (m DamageTakenInfo) PowerGuard2() bool                { return m.powerGuard }
+func (m DamageTakenInfo) Reflect() byte                    { return m.reflect }
+func (m DamageTakenInfo) Guard() bool                      { return m.guard }
+func (m DamageTakenInfo) BlockByte() byte                  { return m.blockByte }
+func (m DamageTakenInfo) HasReflectExtension() bool        { return m.hasReflectExtension }
+func (m DamageTakenInfo) IsPowerGuard() bool               { return m.isPowerGuard }
+func (m DamageTakenInfo) ReflectTargetMobId() uint32       { return m.reflectTargetMobId }
+func (m DamageTakenInfo) HitAction() byte                  { return m.hitAction }
 func (m DamageTakenInfo) HitX() int16                      { return m.hitX }
 func (m DamageTakenInfo) HitY() int16                      { return m.hitY }
 func (m DamageTakenInfo) CharacterX() int16                { return m.characterX }
 func (m DamageTakenInfo) CharacterY() int16                { return m.characterY }
-func (m DamageTakenInfo) Expression() byte                 { return m.expression }
+func (m DamageTakenInfo) StanceFlags() byte                { return m.stanceFlags }
 
 func (m DamageTakenInfo) Operation() string {
 	return CharacterDamageHandle
 }
 
 func (m DamageTakenInfo) String() string {
-	return fmt.Sprintf("characterId [%d], updateTime [%d], nAttackIdx [%d], nMagicElemAttr [%d], damage [%d], obstacleData [%d], monsterTemplate [%d], monsterId [%d], left [%t], nX [%d], bGuard [%t], relativeDir [%d], bPowerGuard [%t], monsterId2 [%d], powerGuard [%t], hit [%d,%d], character [%d,%d], expression [%d]",
-		m.characterId, m.updateTime, m.nAttackIdx, m.nMagicElemAttr, m.damage, m.obstacleData, m.monsterTemplateId, m.monsterId, m.left, m.nX, m.bGuard, m.relativeDir, m.bPowerGuard, m.monsterId2, m.powerGuard, m.hitX, m.hitY, m.characterX, m.characterY, m.expression)
+	return fmt.Sprintf("characterId [%d], updateTime [%d], nAttackIdx [%d], nMagicElemAttr [%d], damage [%d], obstacleData [%d], monsterTemplate [%d], monsterId [%d], left [%t], reflect [%d], guard [%t], blockByte [%d], hasReflectExtension [%t], isPowerGuard [%t], reflectTargetMobId [%d], hitAction [%d], hit [%d,%d], character [%d,%d], stanceFlags [%d]",
+		m.characterId, m.updateTime, m.nAttackIdx, m.nMagicElemAttr, m.damage, m.obstacleData, m.monsterTemplateId, m.monsterId, m.left, m.reflect, m.guard, m.blockByte, m.hasReflectExtension, m.isPowerGuard, m.reflectTargetMobId, m.hitAction, m.hitX, m.hitY, m.characterX, m.characterY, m.stanceFlags)
+}
+
+// Legacy layout gates (design §2a, verified per-version IDBs):
+//
+//	preV61Layout  — gms_v48 only: NO nMagicElemAttr byte; the reflect
+//	                extension is 10 bytes (no charX/charY).
+//	preV83NonMob  — gms_v48/v61/v72/v79: the non-mob (obstacle/stat)
+//	                branch has NO trailing stanceFlags byte.
+//
+// v61 through v92 decode as v83 (mob-hit byte-identical). The mob branch's
+// trailing stanceFlags is present on every version. v95-GMS adds the bGuard
+// byte (gated >=95); jms takes the no-bGuard branch.
+func gmsBelow(t tenant.Model, major uint16) bool {
+	return t.Region() == "GMS" && t.MajorVersion() < major
 }
 
 func (m *DamageTakenInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
+	preV61Layout := gmsBelow(t, 61)
+	preV83NonMob := gmsBelow(t, 83)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.updateTime = r.ReadUint32()
 		m.nAttackIdx = DamageType(r.ReadInt8())
-		m.nMagicElemAttr = DamageElementType(r.ReadInt8())
+		if !preV61Layout {
+			m.nMagicElemAttr = DamageElementType(r.ReadInt8())
+		}
 		m.damage = r.ReadInt32()
 
-		if m.nAttackIdx == DamageTypePhysical || m.nAttackIdx == DamageTypeMagic {
+		if m.nAttackIdx >= DamageTypePhysical {
 			m.monsterTemplateId = r.ReadUint32()
 			m.monsterId = r.ReadUint32()
 			m.left = r.ReadBool()
 
-			m.nX = r.ReadByte()
+			m.reflect = r.ReadByte()
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-				m.bGuard = r.ReadBool()
+				m.guard = r.ReadBool()
 			}
-			m.relativeDir = r.ReadByte()
-			m.bPowerGuard = r.ReadBool()
-			m.monsterId2 = r.ReadUint32()
-			m.powerGuard = r.ReadBool()
-			m.hitX = r.ReadInt16()
-			m.hitY = r.ReadInt16()
-			m.characterX = r.ReadInt16()
-			m.characterY = r.ReadInt16()
+			m.blockByte = r.ReadByte()
+			// The client writes the reflect extension iff it set bKnockback
+			// or a reflect echo. Neither flag is fully recoverable from
+			// earlier bytes, so presence is derived from the remaining
+			// length: without the extension exactly the 1-byte stance
+			// remains; with it, 11 bytes (v48, 10-byte ext) or 15 bytes
+			// (v61+, 14-byte ext) remain — so Available() > 1 detects it on
+			// every version.
+			if r.Available() > 1 {
+				m.hasReflectExtension = true
+				m.isPowerGuard = r.ReadBool()
+				m.reflectTargetMobId = r.ReadUint32()
+				m.hitAction = r.ReadByte()
+				m.hitX = r.ReadInt16()
+				m.hitY = r.ReadInt16()
+				if !preV61Layout {
+					m.characterX = r.ReadInt16()
+					m.characterY = r.ReadInt16()
+				}
+			}
+			m.stanceFlags = r.ReadByte()
 		} else {
 			m.obstacleData = r.ReadInt16()
+			if !preV83NonMob {
+				m.stanceFlags = r.ReadByte()
+			}
 		}
-		m.expression = r.ReadByte()
 	}
 }
 
 func (m DamageTakenInfo) Encode(_ logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(logrus.WithFields(logrus.Fields{}))
 	t := tenant.MustFromContext(ctx)
+	preV61Layout := gmsBelow(t, 61)
+	preV83NonMob := gmsBelow(t, 83)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.updateTime)
 		w.WriteInt8(int8(m.nAttackIdx))
-		w.WriteInt8(int8(m.nMagicElemAttr))
+		if !preV61Layout {
+			w.WriteInt8(int8(m.nMagicElemAttr))
+		}
 		w.WriteInt32(m.damage)
 
-		if m.nAttackIdx == DamageTypePhysical || m.nAttackIdx == DamageTypeMagic {
+		if m.nAttackIdx >= DamageTypePhysical {
 			w.WriteInt(m.monsterTemplateId)
 			w.WriteInt(m.monsterId)
 			w.WriteBool(m.left)
 
-			w.WriteByte(m.nX)
+			w.WriteByte(m.reflect)
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-				w.WriteBool(m.bGuard)
+				w.WriteBool(m.guard)
 			}
-			w.WriteByte(m.relativeDir)
-			w.WriteBool(m.bPowerGuard)
-			w.WriteInt(m.monsterId2)
-			w.WriteBool(m.powerGuard)
-			w.WriteInt16(m.hitX)
-			w.WriteInt16(m.hitY)
-			w.WriteInt16(m.characterX)
-			w.WriteInt16(m.characterY)
+			w.WriteByte(m.blockByte)
+			if m.hasReflectExtension {
+				w.WriteBool(m.isPowerGuard)
+				w.WriteInt(m.reflectTargetMobId)
+				w.WriteByte(m.hitAction)
+				w.WriteInt16(m.hitX)
+				w.WriteInt16(m.hitY)
+				if !preV61Layout {
+					w.WriteInt16(m.characterX)
+					w.WriteInt16(m.characterY)
+				}
+			}
+			w.WriteByte(m.stanceFlags)
 		} else {
 			w.WriteInt16(m.obstacleData)
+			if !preV83NonMob {
+				w.WriteByte(m.stanceFlags)
+			}
 		}
-		w.WriteByte(m.expression)
 		return w.Bytes()
 	}
 }

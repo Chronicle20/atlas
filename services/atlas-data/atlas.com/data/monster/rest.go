@@ -18,6 +18,7 @@ type RestModel struct {
 	HpRecovery         uint32            `json:"hp_recovery"`
 	MpRecovery         uint32            `json:"mp_recovery"`
 	Boss               bool              `json:"boss"`
+	FixedDamage        uint32            `json:"fixed_damage"`
 	ExplosiveReward    bool              `json:"explosive_reward"`
 	FFALoot            bool              `json:"ffa_loot"`
 	Undead             bool              `json:"undead"`

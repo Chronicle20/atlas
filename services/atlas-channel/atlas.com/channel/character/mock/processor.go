@@ -116,6 +116,10 @@ func (m *MockProcessor) RequestDropMeso(_ field.Model, _ uint32, _ uint32) error
 	return nil
 }
 
+func (m *MockProcessor) RequestChangeMeso(_ field.Model, _ uint32, _ uint32, _ string, _ int32) error {
+	return nil
+}
+
 func (m *MockProcessor) ChangeHP(_ field.Model, _ uint32, _ int16) error {
 	return nil
 }

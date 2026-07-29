@@ -320,6 +320,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x32",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterDamageHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x34",
         "validator": "LoggedInValidator",
         "handler": "CharacterChatGeneralHandle",

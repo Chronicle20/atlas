@@ -653,6 +653,8 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// SuperGM Hide cast (wire 5101004) from a v0.62+ Brawler
 					// Corkscrew Blow cast (same wire).
 					t := tenant.MustFromContext(ctx)
+					set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+					attackId, attackIdOk := set.Skill.Resolve(skill3.Id(ai.SkillId()))
 
 					var sk skill.Model
 					var se effect.Model
@@ -679,8 +681,9 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						// against the field's drops BEFORE any side effect (FR-6 —
 						// rejection must skip cost, damage, broadcast, and destruction).
 						// One field-scoped fetch; the map keys structurally enforce the
-						// same-field/instance check.
-						if skill3.Is(skill3.Id(ai.SkillId()), skill3.ChiefBanditMesoExplosionId) {
+						// same-field/instance check. Routed through the resolved
+						// Identity (task-187) rather than a raw wire compare.
+						if attackIdOk && skill3.IsIdentity(attackId, skill3.ChiefBanditMesoExplosion) {
 							ds, dErr := drop.NewProcessor(l, ctx).InMapModelProvider(s.Field())()
 							if dErr != nil {
 								return dErr
@@ -702,10 +705,9 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						// CharacterUseSkill packet. Without this gate,
 						// dual-packet skills like Heal would
 						// double-deduct MP.
-						set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
 						registered := false
-						if id, rok := set.Skill.Resolve(skill3.Id(ai.SkillId())); rok {
-							_, registered = handler.Lookup(id)
+						if attackIdOk {
+							_, registered = handler.Lookup(attackId)
 						}
 						if !registered {
 							if se.HPConsume() > 0 {

@@ -20,6 +20,17 @@ const (
 	tamingMobItemId       = int32(1902000)                         // arbitrary equipped taming-mob id
 )
 
+// tamedMountIdentity / skillOnlyMountIdentity are the Identity-typed
+// counterparts HandleMount now takes directly (task-187): production
+// resolves the caster's wire skill id through the tenant's version set
+// before calling in, but these mount roots are version-stable, so the
+// canonical wire id and Identity token coincide numerically and tests can
+// pass the identity constant directly without a tenant context.
+const (
+	tamedMountIdentity     = skill2.BeginnerMonsterRiding
+	skillOnlyMountIdentity = skill2.BeginnerBroomstick
+)
+
 // recordingDeps captures collaborator invocations so each of the five mount
 // cases can be asserted offline without Kafka, REST, or a session.
 type recordingDeps struct {
@@ -102,7 +113,7 @@ func TestMountToggleCancelsWhenAlreadyMounted(t *testing.T) {
 		mounted: true,
 		equip:   map[int16]int32{-18: tamingMobItemId, -19: 1902020},
 	}
-	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(tamedMountSkillId), mountEffect(nil), d.mountDeps())
+	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(tamedMountSkillId), mountEffect(nil), tamedMountIdentity, d.mountDeps())
 	if err != nil {
 		t.Fatalf("HandleMount returned error: %v", err)
 	}
@@ -122,7 +133,7 @@ func TestMountTamedRequiresBothSlots(t *testing.T) {
 		mounted: false,
 		equip:   map[int16]int32{-18: tamingMobItemId}, // -19 empty
 	}
-	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(tamedMountSkillId), mountEffect(nil), d.mountDeps())
+	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(tamedMountSkillId), mountEffect(nil), tamedMountIdentity, d.mountDeps())
 	if err != nil {
 		t.Fatalf("HandleMount returned error: %v", err)
 	}
@@ -139,7 +150,7 @@ func TestMountTamedAppliesVehicleFromSlot18(t *testing.T) {
 		mounted: false,
 		equip:   map[int16]int32{-18: tamingMobItemId, -19: 1902020},
 	}
-	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(tamedMountSkillId), mountEffect(nil), d.mountDeps())
+	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(tamedMountSkillId), mountEffect(nil), tamedMountIdentity, d.mountDeps())
 	if err != nil {
 		t.Fatalf("HandleMount returned error: %v", err)
 	}
@@ -165,7 +176,7 @@ func TestMountTamedSlot18EmptyNoOp(t *testing.T) {
 		mounted: false,
 		equip:   map[int16]int32{-19: 1902020}, // -18 empty
 	}
-	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(tamedMountSkillId), mountEffect(nil), d.mountDeps())
+	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(tamedMountSkillId), mountEffect(nil), tamedMountIdentity, d.mountDeps())
 	if err != nil {
 		t.Fatalf("HandleMount returned error: %v", err)
 	}
@@ -184,7 +195,7 @@ func TestMountSkillOnlyNoSlotCheck(t *testing.T) {
 		// No equip entries at all: skill-only mounts must not read slots.
 		equipErr: map[int16]error{-18: errStub, -19: errStub},
 	}
-	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(skillOnlyMountSkillId), mountEffect(vehicleStatup(vehicleId)), d.mountDeps())
+	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(skillOnlyMountSkillId), mountEffect(vehicleStatup(vehicleId)), skillOnlyMountIdentity, d.mountDeps())
 	if err != nil {
 		t.Fatalf("HandleMount returned error: %v", err)
 	}
@@ -217,7 +228,7 @@ func TestMountSkillOnlyAppliesAllStatups(t *testing.T) {
 		mounted:  false,
 		equipErr: map[int16]error{-18: errStub, -19: errStub},
 	}
-	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(skillOnlyMountSkillId), mountEffect(statups), d.mountDeps())
+	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(skillOnlyMountSkillId), mountEffect(statups), skillOnlyMountIdentity, d.mountDeps())
 	if err != nil {
 		t.Fatalf("HandleMount returned error: %v", err)
 	}
@@ -247,7 +258,7 @@ func TestMountTamedPreservesStatupsAndOverridesVehicle(t *testing.T) {
 		mounted: false,
 		equip:   map[int16]int32{-18: tamingMobItemId, -19: 1902020},
 	}
-	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(tamedMountSkillId), mountEffect(statups), d.mountDeps())
+	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(tamedMountSkillId), mountEffect(statups), tamedMountIdentity, d.mountDeps())
 	if err != nil {
 		t.Fatalf("HandleMount returned error: %v", err)
 	}
@@ -273,7 +284,7 @@ func TestMountTamedAppendsRidingWhenEffectLacksIt(t *testing.T) {
 		mounted: false,
 		equip:   map[int16]int32{-18: tamingMobItemId, -19: 1902020},
 	}
-	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(tamedMountSkillId), mountEffect(statups), d.mountDeps())
+	err := HandleMount(logrus.New(), field.Model{}, 100, mountInfo(tamedMountSkillId), mountEffect(statups), tamedMountIdentity, d.mountDeps())
 	if err != nil {
 		t.Fatalf("HandleMount returned error: %v", err)
 	}

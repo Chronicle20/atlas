@@ -30,6 +30,10 @@ type comboLine struct {
 
 // comboSkillIds resolves the character's combo line from owned skills.
 // ok == false when neither Combo Attack variant is owned at level > 0.
+//
+// version-stable per task-187 audit: Crusader (Warrior 1xx branch) and Dawn
+// Warrior (Cygnus 1xxx branch) Combo Attack ids do not remap across the
+// provisioned GMS versions.
 func comboSkillIds(skills []skill.Model) (comboLine, bool) {
 	find := func(id skill3.Id) byte {
 		for _, s := range skills {
@@ -59,6 +63,9 @@ func comboSkillIds(skills []skill.Model) (comboLine, bool) {
 }
 
 // isComboFinisher reports whether the skill consumes combo orbs.
+//
+// version-stable per task-187 audit: Crusader/Dawn Warrior finisher ids do
+// not remap across the provisioned GMS versions.
 func isComboFinisher(id skill3.Id) bool {
 	switch id {
 	case skill3.CrusaderPanicSwordId, skill3.CrusaderPanicAxeId,
@@ -170,6 +177,8 @@ func comboOrbTryUpdate(l logrus.FieldLogger, c character.Model, ai packetmodel.A
 		return
 	}
 
+	// version-stable per task-187 audit: Crusader Shout (Warrior 1xx branch)
+	// does not remap across the provisioned GMS versions.
 	if sid == skill3.CrusaderShoutId || len(ai.DamageInfo()) == 0 {
 		return
 	}

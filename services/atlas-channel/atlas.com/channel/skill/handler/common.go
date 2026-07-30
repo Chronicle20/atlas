@@ -14,6 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	charcon "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	inventoryconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
@@ -167,9 +168,18 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 			applyToMobs(l, ctx, f, characterId, info, e)
 
 			// Per-skill dispatcher (Heal, Dispel, Cure, MPEater, Drain, ...).
-			if h, ok := Lookup(skill2.Id(info.SkillId())); ok {
-				if err := h(l)(ctx)(wp, f, characterId, info, e); err != nil {
-					l.WithError(err).Errorf("Skill handler for [%d] failed for character [%d].", info.SkillId(), characterId)
+			// Resolve the incoming wire id to a version-blind Identity via the
+			// caster's tenant version set BEFORE looking up a handler: a raw
+			// wire-keyed registry cannot tell a v0.48 SuperGM Hide cast
+			// (wire 5101004) apart from a v0.62+ Brawler Corkscrew Blow cast
+			// (same wire) (task-187).
+			t := tenant.MustFromContext(ctx)
+			set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+			if id, rok := set.Skill.Resolve(skill2.Id(info.SkillId())); rok {
+				if h, ok := Lookup(id); ok {
+					if err := h(l)(ctx)(wp, f, characterId, info, e); err != nil {
+						l.WithError(err).Errorf("Skill handler for [%d] failed for character [%d].", info.SkillId(), characterId)
+					}
 				}
 			}
 

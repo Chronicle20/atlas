@@ -100,6 +100,42 @@ except GM/SuperGM, which — per the earliest meymink GM mention, v0.05 Jul
 because it is not independently WZ-confirmed; a future task with tenant
 access to a gms_12 baseline should add it.
 
+**Update (coordinator follow-up):** gms_12 now mirrors gms_48's full
+job/skill divergent-override set (11 rows each: `job` 500/510, `skill`
+5001000-5001002/5101000-5101005), including the two job rows (500=Gm,
+510=SuperGm) and the `skill,5101004,SuperGmHide` row that were initially
+missed. Grounding for the job rows: the Pirate/Brawler class released
+meymink v0.62 (Nov 2008), after gms_12 (v0.12, Nov 2005) — so job 500/510
+mean Gm/SuperGm at gms_12 exactly as they do at gms_48, corroborated by
+`gms_12_1.json`'s job/skill id-sets being byte-identical to `gms_48_1.json`
+(independently confirmed, not inferred).
+
+**Update (task-187 Task 1 normalization pass) — DualBlade job identity gap:**
+rows 20-21 of `divergences.csv` (gms_87/gms_92, `job`, wireId `430`) record
+`DualBlade` as the identityName, but **no `DualBlade` identity exists
+anywhere in `libs/atlas-constants/gen/identities.yaml` or the generated
+`job/identities_gen.go`/`job/constants.go`** — job token 430 was never
+captured in the identity namespace at all (confirmed by enumerating every
+`domain: job` `canonicalToken` in `identities.yaml`: the full ascending set
+jumps `...,420,421,422,500,510,...` with no 430-434 entries). These two
+rows are left **unchanged** rather than normalized, because normalizing
+them to a bare `DualBlade` would silently imply a resolvable identity that
+does not exist. This is a genuine, reported gap requiring a design/generator
+decision (add the missing job-430 identity to `identities.yaml`, which is
+generator-code territory out of scope for this data-normalization pass) —
+not a fabricated binding.
+
+**Update (task-187 Task 1 normalization pass):** the GM/SuperGM
+5001xxx/5101xxx skill-override rows added to `divergences.csv` for gms_48
+(see `v048-gm-supergm-skill-ranges.md`) were duplicated for gms_12, because
+`gen/wzsnapshot/gms_12_1.json`'s skill id-set for that range is byte-for-byte
+identical to `gms_48_1.json`'s (independently confirmed, not inferred), and
+the WZ *names* at those ids were drained from the live gms_48 tenant (no
+live gms_12 tenant exists, per the gap above). This is evidence from the
+checked-in wzsnapshot JSON, not a live gms_12 drain — the gms_12
+job-domain rows (500/510/900/910, mirroring rows 2-11) are still not added,
+since no snapshot-level job-roster evidence was gathered for them.
+
 ## Step 1: meymink release anchors (see `cygnus-anchor.md` for the OQ-3 pin)
 
 Fetched via `curl -s
@@ -175,6 +211,14 @@ evidence (not IDA) carries the actual identity claims in
 - `v048-v062.md` — the GM/SuperGM ↔ Pirate/Brawler boundary (Step 3).
 - `bigbang-v092-v095.md` — the Big Bang v0.92→v0.95 reorg (Step 4).
 - `cygnus-anchor.md` — the Cygnus original-GMS-release pin (Step 1, OQ-3).
-- `divergences.csv` — 46 rows, machine-readable wireId→identity bindings.
+- `divergences.csv` — 65 rows, machine-readable wireId→identity bindings.
+  (46 original Task-1 rows, normalized in a later pass to strip display
+  annotations and correct two identityNames against
+  `job/identities_gen.go` — see the "Update" note above and
+  `v048-gm-supergm-skill-ranges.md` — plus 16 rows added to complete the
+  v48/gms_12 GM/SuperGM 5001xxx/5101xxx skill-override coverage.)
 - `availability.csv` — 90 rows, machine-readable release/unreleased flags.
+- `v048-gm-supergm-skill-ranges.md` — the v48 GM/SuperGM
+  5001xxx/5101xxx skill-range coverage table and misfire assessment
+  (task-187 normalization pass).
 - `validate.go` (+ `go.mod`) — the Step 6 structural validator.

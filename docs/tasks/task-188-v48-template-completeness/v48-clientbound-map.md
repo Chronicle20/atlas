@@ -169,3 +169,46 @@ which are `verified` on gms_v83; that column cannot be used as an applicability 
 179 `OnNpcChangeController`, 180–182 → `OnNpcPacket` @ `0x56d48a`, 183–185 → `sub_56D510`.
 
 `CDropPool::OnPacket` @ `0x4aaccf`: 193 `OnDropEnterField`, 194 `OnDropLeaveField`.
+
+---
+
+## Root cause (established with the repo's own tooling, not by hand)
+
+`RE_AUDITING_A_COLUMN.md` documents the maintenance path for this exact
+situation. Running it:
+
+```
+packet-audit validate -version gms_v48 \
+  -ida-url http://192.168.20.3:8745/mcp -ida-database <session> \
+  -report docs/tasks/task-188-v48-template-completeness/validate-gms_v48.md
+```
+
+→ `verified 287 / divergent 58 / missing-mode 0 / extra-mode 3 / unverifiable 701`
+
+The dominant `unverifiable` reason is
+`base resolve failed: ... Failed to parse address (missing 0x prefix):` — the
+committed baseline export carries an **empty `address`** for those entries.
+`CStage::OnSetField` is one of them.
+
+Address coverage in `docs/packets/ida-exports/`:
+
+| Version | Entries with NO address |
+|---|---|
+| `gms_v48` | **667 / 1046 (63%)** — 441 distinct base functions |
+| `gms_v61` | **384 / 1003 (38%)** |
+| `gms_v83` | 0 / 718 |
+| `gms_v95` | 0 / 756 |
+
+So v48 and v61 are half-harvested columns, while v83/v95 are complete. An entry
+with no address can never be verified, which is how the v48 matrix column
+accumulated 628 `n-a` cells — absence of a resolved address was recorded as
+absence of the feature. The template is thin as a downstream consequence.
+
+The hand-derived dispatch map above remains valid as an independent cross-check
+of whatever the re-harvest produces (`CStage::OnSetField` @ `0x5c4616`, opcode
+`0x49`), but the primary fix is to re-resolve the export's addresses rather than
+to hand-populate the template.
+
+**Note:** the documented toolchain could not target the current IDA-MCP server
+until this task added `-ida-database` to the maintenance subcommands
+(commit `d7f233f5e`); only `export` had it.

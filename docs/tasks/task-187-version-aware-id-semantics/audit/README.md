@@ -125,6 +125,16 @@ decision (add the missing job-430 identity to `identities.yaml`, which is
 generator-code territory out of scope for this data-normalization pass) —
 not a fabricated binding.
 
+**Update (task-187 Task 5 reconciliation):** `availability.csv` now carries
+9 `gms_12` rows (previously absent, per the gap reported above), mirroring
+`gms_48`'s 9-class row set exactly: `GM`=true, `SuperGM`=true, and all seven
+other classes (`Pirate`, `Cygnus`, `Aran`, `Evan`, `DualBlade`, `Resistance`,
+`Mechanic`) =false, each citing the same meymink anchor as its gms_48
+counterpart plus an appended note that gms_12 mirrors gms_48
+(release-anchor-grounded: every gated class releases well after v0.12, and
+`gms_12_1.json`'s job/skill id-sets are byte-identical to `gms_48_1.json`
+per the "coordinator follow-up" update above). Row count: 90 -> 99.
+
 **Update (task-187 Task 1 normalization pass):** the GM/SuperGM
 5001xxx/5101xxx skill-override rows added to `divergences.csv` for gms_48
 (see `v048-gm-supergm-skill-ranges.md`) were duplicated for gms_12, because
@@ -217,7 +227,11 @@ evidence (not IDA) carries the actual identity claims in
   `job/identities_gen.go` — see the "Update" note above and
   `v048-gm-supergm-skill-ranges.md` — plus 16 rows added to complete the
   v48/gms_12 GM/SuperGM 5001xxx/5101xxx skill-override coverage.)
-- `availability.csv` — 90 rows, machine-readable release/unreleased flags.
+- `availability.csv` — 99 rows, machine-readable release/unreleased flags
+  (90 original + 9 `gms_12` rows added in task-187 Task 5, mirroring
+  `gms_48`'s full 9-class row set: `GM`/`SuperGM`=true, all seven other
+  classes=false, same meymink citations plus a note that gms_12 mirrors
+  gms_48 per the "Blocked: gms 12 has no live tenant" section above).
 - `v048-gm-supergm-skill-ranges.md` — the v48 GM/SuperGM
   5001xxx/5101xxx skill-range coverage table and misfire assessment
   (task-187 normalization pass).

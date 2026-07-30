@@ -53,3 +53,69 @@ func TestSet_Resolve_UnknownWireId(t *testing.T) {
 		t.Fatal("zero-value Set.Wire should report ok=false")
 	}
 }
+
+// TestSet_Available_v61PirateStubPresentNotAvailable is the compiled-Set
+// counterpart of the generator's golden test: v61's Pirate job stub
+// resolves (Task 4 presence) but must not be Available (task-187 Task 5
+// release gating -- Pirate did not release until v0.62).
+func TestSet_Available_v61PirateStubPresentNotAvailable(t *testing.T) {
+	v61 := newSet_gms_61_1()
+
+	if _, ok := v61.Resolve(500); !ok {
+		t.Fatal("v61 wire 500 should resolve (Pirate stub present in WZ semantics)")
+	}
+	if v61.Available(Pirate) {
+		t.Fatal("v61 Pirate must be present-but-unavailable (released v0.62, after v61)")
+	}
+}
+
+// TestSet_Available_v72PirateAvailable is the positive counterpart: the
+// earliest provisioned post-Pirate column must report Pirate available.
+func TestSet_Available_v72PirateAvailable(t *testing.T) {
+	v72 := newSet_gms_72_1()
+	if !v72.Available(Pirate) {
+		t.Fatal("v72 Pirate should be available (released v0.62)")
+	}
+	if !v72.Available(Gm) {
+		t.Fatal("v72 Gm should be available (always-released, stable class)")
+	}
+}
+
+// TestSet_Name_v48 pins Name() returning the version-independent display
+// name for a bound identity, and "" for one absent from the version.
+func TestSet_Name_v48(t *testing.T) {
+	v48 := newSet_gms_48_1()
+	if got := v48.Name(Gm); got != "Gm" {
+		t.Fatalf("v48 Name(Gm) = %q, want %q", got, "Gm")
+	}
+	if got := v48.Name(Pirate); got != "" {
+		t.Fatalf("v48 Name(Pirate) = %q, want \"\" (Pirate absent from v48 semantics)", got)
+	}
+}
+
+// TestSet_AvailableIdentities_SortedByWireId checks the accessor returns a
+// non-empty, ascending-by-wire-id slice, and that it excludes an identity
+// known to be present-but-unavailable at that version (v61 Pirate).
+func TestSet_AvailableIdentities_SortedByWireId(t *testing.T) {
+	v61 := newSet_gms_61_1()
+	ids := v61.AvailableIdentities()
+	if len(ids) == 0 {
+		t.Fatal("v61 AvailableIdentities() should be non-empty (Explorer classes are always available)")
+	}
+	for _, id := range ids {
+		if id == Pirate {
+			t.Fatal("v61 AvailableIdentities() must not include Pirate (present but unreleased)")
+		}
+	}
+	var prev Id
+	for i, id := range ids {
+		w, ok := v61.Wire(id)
+		if !ok {
+			t.Fatalf("AvailableIdentities()[%d] = %v has no Wire() binding", i, id)
+		}
+		if i > 0 && w < prev {
+			t.Fatalf("AvailableIdentities() not sorted ascending by wire id: %v (%d) before wire %d", id, w, prev)
+		}
+		prev = w
+	}
+}

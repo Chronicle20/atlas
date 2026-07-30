@@ -349,9 +349,17 @@ func loadSemanticsFile(region string, major, minor uint16) (semanticsFile, error
 // bindings, both domains. Keys are the domain's native wire-id width
 // (skill.Id is uint32, job.Id is uint16); values are identity names (Go
 // identifiers valid in skill/job's identities_gen.go const block).
+//
+// JobByName/SkillByName are the inverse (name->wireId) view -- a thin index
+// over the same data, added for task-187 Task 5 so callers (the
+// availability generator, its tests) can ask "is identity X present in this
+// version's semantics" by name without re-inverting Job/Skill themselves.
 type SemanticsMap struct {
 	Skill map[uint32]string
 	Job   map[uint16]string
+
+	SkillByName map[string]uint32
+	JobByName   map[string]uint16
 }
 
 // BuildSemantics joins one version's pinned wzsnapshot with its checked-in
@@ -404,7 +412,16 @@ func BuildSemantics(region string, major, minor uint16) (SemanticsMap, error) {
 		return SemanticsMap{}, err
 	}
 
-	return SemanticsMap{Skill: skillMap, Job: jobMap}, nil
+	skillByName := make(map[string]uint32, len(skillMap))
+	for w, n := range skillMap {
+		skillByName[n] = w
+	}
+	jobByName := make(map[string]uint16, len(jobMap))
+	for w, n := range jobMap {
+		jobByName[n] = w
+	}
+
+	return SemanticsMap{Skill: skillMap, Job: jobMap, SkillByName: skillByName, JobByName: jobByName}, nil
 }
 
 // applyDivergent overlays a version's divergent list onto skillMap/jobMap.
@@ -471,12 +488,18 @@ func applyDivergent(region string, major, minor uint16, divergent []semanticsEnt
 }
 
 // versionGenPackage renders one domain's generated Go source for a version:
-// the wireId->Identity and Identity->wireId maps plus the newSet_<key>
-// constructor. m is the wireId->identityName join for that domain only
-// (widened to uint64 so one function serves both skill.Id (uint32) and
-// job.Id (uint16) -- the emitted Go source narrows back via the domain's
-// real Id type). key is the version key (e.g. "gms_48_1").
-func versionGenPackage(domain, key string, m map[uint64]string) (string, error) {
+// the wireId->Identity and Identity->wireId maps, the task-187 Task 5
+// available/names maps, and the newSet_<key> constructor. m is the
+// wireId->identityName join for that domain only (widened to uint64 so one
+// function serves both skill.Id (uint32) and job.Id (uint16) -- the emitted
+// Go source narrows back via the domain's real Id type). key is the version
+// key (e.g. "gms_48_1"). availableNames is the set of identity names
+// (within m) that are release-available at this version (task-187 Task 5,
+// computeAvailable); displayNames is the domain's name->displayName index
+// from identities.yaml, used to populate the names_<key> map for every
+// identity present at this version (available or not -- Name() must work
+// regardless of Available()).
+func versionGenPackage(domain, key string, m map[uint64]string, availableNames map[string]bool, displayNames map[string]string) (string, error) {
 	type kv struct {
 		wireId uint64
 		name   string
@@ -508,8 +531,22 @@ func versionGenPackage(domain, key string, m map[uint64]string) (string, error) 
 	}
 	b.WriteString("}\n\n")
 
+	fmt.Fprintf(&b, "var available_%s = map[Identity]struct{}{\n", key)
+	for _, e := range entries {
+		if availableNames[e.name] {
+			fmt.Fprintf(&b, "\t%s: {},\n", e.name)
+		}
+	}
+	b.WriteString("}\n\n")
+
+	fmt.Fprintf(&b, "var names_%s = map[Identity]string{\n", key)
+	for _, e := range entries {
+		fmt.Fprintf(&b, "\t%s: %q,\n", e.name, displayNames[e.name])
+	}
+	b.WriteString("}\n\n")
+
 	fmt.Fprintf(&b, "func newSet_%s() Set {\n", key)
-	fmt.Fprintf(&b, "\treturn Set{byWire: wireToIdentity_%s, byIdentity: identityToWire_%s}\n", key, key)
+	fmt.Fprintf(&b, "\treturn Set{byWire: wireToIdentity_%s, byIdentity: identityToWire_%s, available: available_%s, names: names_%s}\n", key, key, key, key)
 	b.WriteString("}\n")
 
 	return b.String(), nil
@@ -526,6 +563,26 @@ func EmitSemantics(region string, major, minor uint16) (skillGo, jobGo string, e
 	v := versionKey{Region: region, Major: major, Minor: minor}
 	key := v.key()
 
+	ids, err := LoadIdentities(identitiesYAMLPath)
+	if err != nil {
+		return "", "", err
+	}
+	matrix, err := loadReleaseMatrix(region, major, minor)
+	if err != nil {
+		return "", "", err
+	}
+	availJob, availSkill := computeAvailable(m, ids, matrix)
+	skillDisplay := make(map[string]string)
+	jobDisplay := make(map[string]string)
+	for _, id := range ids {
+		switch id.Domain {
+		case "skill":
+			skillDisplay[id.Name] = id.DisplayName
+		case "job":
+			jobDisplay[id.Name] = id.DisplayName
+		}
+	}
+
 	skillWide := make(map[uint64]string, len(m.Skill))
 	for w, n := range m.Skill {
 		skillWide[uint64(w)] = n
@@ -535,11 +592,11 @@ func EmitSemantics(region string, major, minor uint16) (skillGo, jobGo string, e
 		jobWide[uint64(w)] = n
 	}
 
-	skillGo, err = versionGenPackage("skill", key, skillWide)
+	skillGo, err = versionGenPackage("skill", key, skillWide, availSkill, skillDisplay)
 	if err != nil {
 		return "", "", err
 	}
-	jobGo, err = versionGenPackage("job", key, jobWide)
+	jobGo, err = versionGenPackage("job", key, jobWide, availJob, jobDisplay)
 	if err != nil {
 		return "", "", err
 	}

@@ -19,3 +19,28 @@ type Identity uint32
 func IdentityName(id Identity) string {
 	return identityNames[id]
 }
+
+// Set is one version's immutable wireId<->Identity binding table, built by
+// the generator (see version_<r>_<maj>_<min>_gen.go) from
+// docs/tasks/task-187-version-aware-id-semantics's per-version semantics +
+// availability manifests. Zero value is a valid, empty Set.
+type Set struct {
+	byWire     map[Id]Identity
+	byIdentity map[Identity]Id
+	available  map[Identity]struct{} // filled in Task 5
+	names      map[Identity]string   // filled in Task 5
+}
+
+// Resolve returns the Identity this version's wireId is bound to, or
+// (0, false) if wireId is not present in this version's semantics.
+func (s Set) Resolve(wireId Id) (Identity, bool) {
+	id, ok := s.byWire[wireId]
+	return id, ok
+}
+
+// Wire returns the wireId this version binds id to, or (0, false) if id has
+// no binding in this version's semantics.
+func (s Set) Wire(id Identity) (Id, bool) {
+	w, ok := s.byIdentity[id]
+	return w, ok
+}

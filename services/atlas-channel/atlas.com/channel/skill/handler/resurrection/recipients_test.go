@@ -48,7 +48,7 @@ func installSelectorSpies(t *testing.T) (partyCalled, mapCalled *bool) {
 
 func TestSelectByVariant_BishopUsesPartySelector(t *testing.T) {
 	pc, mc := installSelectorSpies(t)
-	selectByVariant(testLogger(), context.Background(), testField(), 1, 0, 0, effect.Model{}, 0x7E, skill2.BishopResurrectionId)
+	selectByVariant(testLogger(), context.Background(), testField(), 1, 0, 0, effect.Model{}, 0x7E, skill2.BishopResurrection)
 	if !*pc || *mc {
 		t.Fatalf("Bishop: partyCalled=%v mapCalled=%v, want party only", *pc, *mc)
 	}
@@ -56,7 +56,7 @@ func TestSelectByVariant_BishopUsesPartySelector(t *testing.T) {
 
 func TestSelectByVariant_GmUsesMapSelector(t *testing.T) {
 	pc, mc := installSelectorSpies(t)
-	selectByVariant(testLogger(), context.Background(), testField(), 1, 0, 0, effect.Model{}, 0x7E, skill2.GmResurrectionId)
+	selectByVariant(testLogger(), context.Background(), testField(), 1, 0, 0, effect.Model{}, 0x7E, skill2.GmResurrection)
 	if *pc || !*mc {
 		t.Fatalf("GM: partyCalled=%v mapCalled=%v, want map only", *pc, *mc)
 	}
@@ -64,7 +64,7 @@ func TestSelectByVariant_GmUsesMapSelector(t *testing.T) {
 
 func TestSelectByVariant_SuperGmUsesMapSelector(t *testing.T) {
 	pc, mc := installSelectorSpies(t)
-	selectByVariant(testLogger(), context.Background(), testField(), 1, 0, 0, effect.Model{}, 0x7E, skill2.SuperGmResurrectionId)
+	selectByVariant(testLogger(), context.Background(), testField(), 1, 0, 0, effect.Model{}, 0x7E, skill2.SuperGmResurrection)
 	if *pc || !*mc {
 		t.Fatalf("SuperGM: partyCalled=%v mapCalled=%v, want map only", *pc, *mc)
 	}

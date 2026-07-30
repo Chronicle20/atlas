@@ -9,8 +9,8 @@ import (
 )
 
 func TestHeal_RegistersForClericHealId(t *testing.T) {
-	h, ok := channelhandler.Lookup(skill2.ClericHealId)
+	h, ok := channelhandler.Lookup(skill2.ClericHeal)
 	if !ok || h == nil {
-		t.Fatalf("Lookup(ClericHealId) = (%v, %v), want non-nil handler", h, ok)
+		t.Fatalf("Lookup(ClericHeal) = (%v, %v), want non-nil handler", h, ok)
 	}
 }

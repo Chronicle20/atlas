@@ -183,7 +183,7 @@ func TestTimeLeapEmissionFailure_ContinuesWithRemaining(t *testing.T) {
 
 // Registration: the blank-importable init() must install the handler.
 func TestTimeLeapRegistered(t *testing.T) {
-	if _, ok := channelhandler.Lookup(skill2.BuccaneerTimeLeapId); !ok {
-		t.Fatal("Lookup(BuccaneerTimeLeapId) returned ok=false; init() registration missing")
+	if _, ok := channelhandler.Lookup(skill2.BuccaneerTimeLeap); !ok {
+		t.Fatal("Lookup(BuccaneerTimeLeap) returned ok=false; init() registration missing")
 	}
 }

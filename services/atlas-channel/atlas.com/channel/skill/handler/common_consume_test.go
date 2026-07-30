@@ -7,7 +7,6 @@ import (
 	"atlas-channel/consumable"
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/inventory"
-	"context"
 	"errors"
 	"testing"
 
@@ -115,7 +114,8 @@ func useSkillInfo() packetmodel.SkillUsageInfo {
 
 func runUseSkill(t *testing.T, e effect.Model) {
 	t.Helper()
-	if err := UseSkill(logrus.New())(context.Background())(nil, testField(), 1, useSkillInfo(), e); err != nil {
+	ctx, _ := newCtx(t)
+	if err := UseSkill(logrus.New())(ctx)(nil, testField(), 1, useSkillInfo(), e); err != nil {
 		t.Fatalf("UseSkill: %v", err)
 	}
 }

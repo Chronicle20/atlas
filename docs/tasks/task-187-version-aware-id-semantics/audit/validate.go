@@ -53,6 +53,15 @@ var (
 	validDomains = map[string]bool{"skill": true, "job": true}
 )
 
+// expectedFields is the exact column count for both divergences.csv and
+// availability.csv (region,major,minor,domain,+2 more = 7). Setting
+// csv.Reader.FieldsPerRecord to this value (rather than the -1 "no
+// enforcement" sentinel) makes a short or long row a clean CSV parse error
+// surfaced through readCSV's err return -- not a silent len(record)
+// index-out-of-range panic downstream in checkKeyCols/validateDivergences/
+// validateAvailability.
+const expectedFields = 7
+
 func readCSV(path string) (header []string, rows [][]string, err error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -61,7 +70,7 @@ func readCSV(path string) (header []string, rows [][]string, err error) {
 	defer f.Close()
 
 	r := csv.NewReader(f)
-	r.FieldsPerRecord = -1
+	r.FieldsPerRecord = expectedFields
 	all, err := r.ReadAll()
 	if err != nil {
 		return nil, nil, err

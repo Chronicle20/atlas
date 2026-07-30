@@ -171,19 +171,26 @@ name — a **1→N split** — which I report explicitly rather than force into
 
 ## A systematic anomaly across every v95 replacement skill checked
 
-**Every** v95-side replacement skill queried above ("HP Boost", "MP
-Boost", "Enhanced Basics", "Ground Smash", "Shadow Resistance", "Critical
-Punch", "Combat Mastery") returns `maxLevel: 0` and `effects: []` from
-`GET /api/data/skills/{id}` against the gms_95 tenant — i.e. the WZ record
-resolves a name and description but **no per-level effect data** is
-present in this baseline, in contrast to every v92-side skill checked,
-which has full leveled `effects` arrays (e.g. `1120005` "Guardian" has 30
-populated effect levels).
+**Every** v95-side replacement skill queried above — 11 distinct wireIds
+across the 10 classified jobs (`1000006`="HP Boost", `2000006`="MP Boost",
+`1100009`="Enhanced Basics", `1101008`="Ground Smash",
+`4100006`="Shadow Resistance", `4200006`="Shadow Resistance",
+`5100008`="Critical Punch", `5100009`="HP Boost", `11000005`="HP Boost",
+`12000005`="MP Boost", `1120012`="Combat Mastery" — 7 distinct names, of
+which "HP Boost" recurs at 3 wireIds and "MP Boost" / "Shadow Resistance"
+each recur at 2 — all 11 named here) — returns `maxLevel: 0` and
+`effects: []` from `GET /api/data/skills/{id}` against the gms_95 tenant —
+i.e. the WZ record resolves a name and description but **no per-level
+effect data** is present in this baseline, in contrast to every v92-side
+skill checked, which has full leveled `effects` arrays (e.g. `1120005`
+"Guardian" has 30 populated effect levels).
 
-This is consistent across 9 independently-checked replacement skills, so it
-reads as a systematic characteristic of how this particular v95 baseline's
-Skill.wz was ingested for Big-Bang-introduced skills, not as noise on any
-one row. Two explanations are plausible and **neither is confirmed** here:
+This is consistent across all 11 independently-checked replacement
+skills (`divergences.csv` carries the corresponding 11 `maxLevel=0`-annotated
+rows), so it reads as a systematic characteristic of how this particular
+v95 baseline's Skill.wz was ingested for Big-Bang-introduced skills, not
+as noise on any one row. Two explanations are plausible and **neither is
+confirmed** here:
 (a) an atlas-data WZ-ingestion gap specific to this baseline/version, or
 (b) these skills' effect data is genuinely defined via formula/reference
 elsewhere in the client rather than per-level WZ nodes at this point in
@@ -196,8 +203,9 @@ re-ingestion of the gms_95 WZ files), not resolved by this audit.
 Of the 56 affected jobs, **10** have individually pulled name/effect
 evidence and a stated classification above (100, 110, 200, 300, 112, 410,
 420, 510, 1100, 1200 — 10 distinct jobs covering 6 classification
-outcomes: 2× merge-to-1, 1× merge-to-2, 3× rename, 1× split, 1×
-no-counterpart, 1× unverified). The remaining jobs in the full diff table
+outcomes: 2× merge-to-1, 1× merge-to-2, 4× rename (410, 420, 1100, 1200 —
+see the RENAME section above), 1× split, 1× no-counterpart, 1×
+unverified). The remaining jobs in the full diff table
 (111, 120-122, 130-132, 210-232 excl. 200, 310-322, 411-422 excl. 410/420,
 431, 511-522 excl. 510, 1210, 1510, and the entire `3xxx` family) are
 recorded as **raw wireId-diff evidence only** — I did not individually pull

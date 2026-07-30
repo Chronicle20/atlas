@@ -227,7 +227,7 @@ func buildSemanticsFiles(rows []divergenceRow, names map[string]map[string]bool)
 }
 
 func sortEntries(entries []semanticsEntry) {
-	sort.Slice(entries, func(i, j int) bool {
+	sort.SliceStable(entries, func(i, j int) bool {
 		if entries[i].Domain != entries[j].Domain {
 			return entries[i].Domain < entries[j].Domain
 		}
@@ -400,35 +400,74 @@ func BuildSemantics(region string, major, minor uint16) (SemanticsMap, error) {
 		}
 	}
 
-	// Overlay the divergent list -- these are already filtered to
-	// resolving semantic overrides by -author-semantics, but re-validate
-	// here (never trust a checked-in file blindly): an override must name
-	// a known identity, must target a wire id actually present in this
-	// version's snapshot, and must carry evidence.
-	for _, e := range sf.Divergent {
+	if err := applyDivergent(region, major, minor, sf.Divergent, skillSet, jobSet, validNames, skillMap, jobMap); err != nil {
+		return SemanticsMap{}, err
+	}
+
+	return SemanticsMap{Skill: skillMap, Job: jobMap}, nil
+}
+
+// applyDivergent overlays a version's divergent list onto skillMap/jobMap.
+// These entries are already filtered to resolving semantic overrides by
+// -author-semantics, but this re-validates every one (never trust a
+// checked-in file blindly): an override must carry evidence, must name a
+// known identity, must target a wire id actually present in this version's
+// snapshot, and must not repeat a wire id already bound earlier in the SAME
+// domain's divergent list for this version (the brief's Step 4 "no
+// duplicate wireId" rule).
+//
+// Validation accumulates into local overlay maps first and is only merged
+// into skillMap/jobMap after every entry in divergent has passed -- so a
+// failing entry (including the duplicate-wireId case) can never leave a
+// partial write behind, not even the earlier, individually-valid entries
+// from the same failing batch. No silent overwrite, no silent partial
+// apply. Split out from BuildSemantics so the duplicate-wireId path is
+// directly unit-testable without needing a real
+// wzsnapshot/identities.yaml/CSV fixture.
+func applyDivergent(region string, major, minor uint16, divergent []semanticsEntry, skillSet, jobSet map[uint64]bool, validNames map[string]map[string]bool, skillMap map[uint32]string, jobMap map[uint16]string) error {
+	seenSkill := make(map[uint64]string, len(divergent))
+	seenJob := make(map[uint64]string, len(divergent))
+	skillOverlay := make(map[uint32]string, len(divergent))
+	jobOverlay := make(map[uint16]string, len(divergent))
+
+	for _, e := range divergent {
 		if e.Evidence == "" {
-			return SemanticsMap{}, fmt.Errorf("semantics %s %d.%d: divergent %s wireId %d (%s): missing evidence citation", region, major, minor, e.Domain, e.WireId, e.IdentityName)
+			return fmt.Errorf("semantics %s %d.%d: divergent %s wireId %d (%s): missing evidence citation", region, major, minor, e.Domain, e.WireId, e.IdentityName)
 		}
 		if !bareIdentifierRe.MatchString(e.IdentityName) || !validNames[e.Domain][e.IdentityName] {
-			return SemanticsMap{}, fmt.Errorf("semantics %s %d.%d: divergent %s wireId %d binds to unknown identity %q", region, major, minor, e.Domain, e.WireId, e.IdentityName)
+			return fmt.Errorf("semantics %s %d.%d: divergent %s wireId %d binds to unknown identity %q", region, major, minor, e.Domain, e.WireId, e.IdentityName)
 		}
 		switch e.Domain {
 		case "skill":
 			if !skillSet[e.WireId] {
-				return SemanticsMap{}, fmt.Errorf("semantics %s %d.%d: divergent skill wireId %d (%s) absent from wzsnapshot", region, major, minor, e.WireId, e.IdentityName)
+				return fmt.Errorf("semantics %s %d.%d: divergent skill wireId %d (%s) absent from wzsnapshot", region, major, minor, e.WireId, e.IdentityName)
 			}
-			skillMap[uint32(e.WireId)] = e.IdentityName
+			if prev, dup := seenSkill[e.WireId]; dup {
+				return fmt.Errorf("semantics %s %d.%d: duplicate divergent skill wireId %d: bound to both %q and %q", region, major, minor, e.WireId, prev, e.IdentityName)
+			}
+			seenSkill[e.WireId] = e.IdentityName
+			skillOverlay[uint32(e.WireId)] = e.IdentityName
 		case "job":
 			if !jobSet[e.WireId] {
-				return SemanticsMap{}, fmt.Errorf("semantics %s %d.%d: divergent job wireId %d (%s) absent from wzsnapshot", region, major, minor, e.WireId, e.IdentityName)
+				return fmt.Errorf("semantics %s %d.%d: divergent job wireId %d (%s) absent from wzsnapshot", region, major, minor, e.WireId, e.IdentityName)
 			}
-			jobMap[uint16(e.WireId)] = e.IdentityName
+			if prev, dup := seenJob[e.WireId]; dup {
+				return fmt.Errorf("semantics %s %d.%d: duplicate divergent job wireId %d: bound to both %q and %q", region, major, minor, e.WireId, prev, e.IdentityName)
+			}
+			seenJob[e.WireId] = e.IdentityName
+			jobOverlay[uint16(e.WireId)] = e.IdentityName
 		default:
-			return SemanticsMap{}, fmt.Errorf("semantics %s %d.%d: divergent entry has unknown domain %q", region, major, minor, e.Domain)
+			return fmt.Errorf("semantics %s %d.%d: divergent entry has unknown domain %q", region, major, minor, e.Domain)
 		}
 	}
 
-	return SemanticsMap{Skill: skillMap, Job: jobMap}, nil
+	for w, n := range skillOverlay {
+		skillMap[w] = n
+	}
+	for w, n := range jobOverlay {
+		jobMap[w] = n
+	}
+	return nil
 }
 
 // versionGenPackage renders one domain's generated Go source for a version:

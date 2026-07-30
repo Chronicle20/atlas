@@ -136,3 +136,72 @@ func TestLoadDivergences_ExcludesDocumentationRows(t *testing.T) {
 		t.Fatal("v48 divergent list missing skill wireId 5101004 -> SuperGmHide override")
 	}
 }
+
+// TestApplyDivergent_DuplicateWireIdErrors is the review-mandated proof that
+// the "no duplicate wireId" rule (task-4-brief.md Step 4) actually fires: a
+// synthetic version with two divergent skill rows for the SAME wireId but
+// two DIFFERENT identityNames must error, and must do so before either
+// binding survives into skillMap. divergences.csv has no such duplicate
+// today, so this must be exercised directly against applyDivergent rather
+// than through the real CSV/YAML fixtures.
+func TestApplyDivergent_DuplicateWireIdErrors(t *testing.T) {
+	skillSet := map[uint64]bool{5101004: true}
+	jobSet := map[uint64]bool{}
+	validNames := map[string]map[string]bool{
+		"skill": {"SuperGmHide": true, "BrawlerCorkscrewBlow": true},
+	}
+	divergent := []semanticsEntry{
+		{Domain: "skill", WireId: 5101004, IdentityName: "SuperGmHide", Evidence: "fixture evidence A"},
+		{Domain: "skill", WireId: 5101004, IdentityName: "BrawlerCorkscrewBlow", Evidence: "fixture evidence B"},
+	}
+
+	skillMap := make(map[uint32]string)
+	jobMap := make(map[uint16]string)
+	err := applyDivergent("gms", 48, 1, divergent, skillSet, jobSet, validNames, skillMap, jobMap)
+	if err == nil {
+		t.Fatal("expected an error for duplicate divergent wireId 5101004, got nil")
+	}
+	if !strings.Contains(err.Error(), "5101004") {
+		t.Fatalf("error should name the colliding wireId 5101004, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "duplicate") {
+		t.Fatalf("error should say \"duplicate\", got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "SuperGmHide") || !strings.Contains(err.Error(), "BrawlerCorkscrewBlow") {
+		t.Fatalf("error should name both colliding identityNames (SuperGmHide, BrawlerCorkscrewBlow), got: %v", err)
+	}
+
+	// The colliding wireId must never have been written to skillMap -- no
+	// silent overwrite, no silent "last one wins".
+	if _, ok := skillMap[5101004]; ok {
+		t.Fatalf("skillMap must not contain the duplicate wireId 5101004 after an error, got %q", skillMap[5101004])
+	}
+}
+
+// TestApplyDivergent_NoDuplicate_ValidCase pins that applyDivergent's
+// refactor didn't change behavior for the ordinary (non-duplicate) case: a
+// single valid entry still binds cleanly.
+func TestApplyDivergent_NoDuplicate_ValidCase(t *testing.T) {
+	skillSet := map[uint64]bool{5101004: true}
+	jobSet := map[uint64]bool{500: true}
+	validNames := map[string]map[string]bool{
+		"skill": {"SuperGmHide": true},
+		"job":   {"Gm": true},
+	}
+	divergent := []semanticsEntry{
+		{Domain: "skill", WireId: 5101004, IdentityName: "SuperGmHide", Evidence: "fixture evidence"},
+		{Domain: "job", WireId: 500, IdentityName: "Gm", Evidence: "fixture evidence"},
+	}
+
+	skillMap := make(map[uint32]string)
+	jobMap := make(map[uint16]string)
+	if err := applyDivergent("gms", 48, 1, divergent, skillSet, jobSet, validNames, skillMap, jobMap); err != nil {
+		t.Fatalf("unexpected error for a valid, non-duplicate divergent list: %v", err)
+	}
+	if skillMap[5101004] != "SuperGmHide" {
+		t.Fatalf("skillMap[5101004] = %q, want SuperGmHide", skillMap[5101004])
+	}
+	if jobMap[500] != "Gm" {
+		t.Fatalf("jobMap[500] = %q, want Gm", jobMap[500])
+	}
+}

@@ -487,19 +487,30 @@ func applyDivergent(region string, major, minor uint16, divergent []semanticsEnt
 	return nil
 }
 
+// pascalVersionName returns the exported-constructor-friendly PascalCase
+// name for v (task-187 Task 6), e.g. {"gms",48,1} -> "GMS481",
+// {"jms",185,1} -> "JMS1851". Deterministic and collision-free across
+// provisionedVersions -- region+major already disambiguates every entry.
+func pascalVersionName(v versionKey) string {
+	return strings.ToUpper(v.Region) + strconv.Itoa(int(v.Major)) + strconv.Itoa(int(v.Minor))
+}
+
 // versionGenPackage renders one domain's generated Go source for a version:
 // the wireId->Identity and Identity->wireId maps, the task-187 Task 5
-// available/names maps, and the newSet_<key> constructor. m is the
-// wireId->identityName join for that domain only (widened to uint64 so one
-// function serves both skill.Id (uint32) and job.Id (uint16) -- the emitted
-// Go source narrows back via the domain's real Id type). key is the version
-// key (e.g. "gms_48_1"). availableNames is the set of identity names
-// (within m) that are release-available at this version (task-187 Task 5,
-// computeAvailable); displayNames is the domain's name->displayName index
-// from identities.yaml, used to populate the names_<key> map for every
-// identity present at this version (available or not -- Name() must work
-// regardless of Available()).
-func versionGenPackage(domain, key string, m map[uint64]string, availableNames map[string]bool, displayNames map[string]string) (string, error) {
+// available/names maps, the newSet_<key> constructor, and (task-187 Task 6)
+// the exported NewSet<PascalVersion> wrapper constants.For's generated
+// registry calls. m is the wireId->identityName join for that domain only
+// (widened to uint64 so one function serves both skill.Id (uint32) and
+// job.Id (uint16) -- the emitted Go source narrows back via the domain's
+// real Id type). v is the version key (e.g. {"gms",48,1}).
+// availableNames is the set of identity names (within m) that are
+// release-available at this version (task-187 Task 5, computeAvailable);
+// displayNames is the domain's name->displayName index from
+// identities.yaml, used to populate the names_<key> map for every identity
+// present at this version (available or not -- Name() must work regardless
+// of Available()).
+func versionGenPackage(domain string, v versionKey, m map[uint64]string, availableNames map[string]bool, displayNames map[string]string) (string, error) {
+	key := v.key()
 	type kv struct {
 		wireId uint64
 		name   string
@@ -547,6 +558,15 @@ func versionGenPackage(domain, key string, m map[uint64]string, availableNames m
 
 	fmt.Fprintf(&b, "func newSet_%s() Set {\n", key)
 	fmt.Fprintf(&b, "\treturn Set{byWire: wireToIdentity_%s, byIdentity: identityToWire_%s, available: available_%s, names: names_%s}\n", key, key, key, key)
+	b.WriteString("}\n\n")
+
+	// task-187 Task 6: exported wrapper so constants/registry_gen.go (a
+	// different package) can reference this version's Set without the
+	// unexported newSet_<key> constructor leaking package-private access.
+	exported := pascalVersionName(v)
+	fmt.Fprintf(&b, "// NewSet%s returns this version's identity Set (generated; task-187 Task 6).\n", exported)
+	fmt.Fprintf(&b, "func NewSet%s() Set {\n", exported)
+	fmt.Fprintf(&b, "\treturn newSet_%s()\n", key)
 	b.WriteString("}\n")
 
 	return b.String(), nil
@@ -561,7 +581,6 @@ func EmitSemantics(region string, major, minor uint16) (skillGo, jobGo string, e
 		return "", "", err
 	}
 	v := versionKey{Region: region, Major: major, Minor: minor}
-	key := v.key()
 
 	ids, err := LoadIdentities(identitiesYAMLPath)
 	if err != nil {
@@ -592,11 +611,11 @@ func EmitSemantics(region string, major, minor uint16) (skillGo, jobGo string, e
 		jobWide[uint64(w)] = n
 	}
 
-	skillGo, err = versionGenPackage("skill", key, skillWide, availSkill, skillDisplay)
+	skillGo, err = versionGenPackage("skill", v, skillWide, availSkill, skillDisplay)
 	if err != nil {
 		return "", "", err
 	}
-	jobGo, err = versionGenPackage("job", key, jobWide, availJob, jobDisplay)
+	jobGo, err = versionGenPackage("job", v, jobWide, availJob, jobDisplay)
 	if err != nil {
 		return "", "", err
 	}

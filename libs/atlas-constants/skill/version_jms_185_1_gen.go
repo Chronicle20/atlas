@@ -2053,3 +2053,8 @@ var names_jms_185_1 = map[Identity]string{
 func newSet_jms_185_1() Set {
 	return Set{byWire: wireToIdentity_jms_185_1, byIdentity: identityToWire_jms_185_1, available: available_jms_185_1, names: names_jms_185_1}
 }
+
+// NewSetJMS1851 returns this version's identity Set (generated; task-187 Task 6).
+func NewSetJMS1851() Set {
+	return newSet_jms_185_1()
+}

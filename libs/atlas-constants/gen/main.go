@@ -96,7 +96,13 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		fmt.Printf("OK: skill/identities_gen.go, job/identities_gen.go, and %d per-version version_*_gen.go files are up to date\n", nVersionFiles)
+
+		if err := checkRegistryAndBaseline(gofmtOrRaw, checkDrift, nil); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("OK: skill/identities_gen.go, job/identities_gen.go, %d per-version version_*_gen.go files, constants/registry_gen.go, and skill+job/baseline_gen.go are up to date\n", nVersionFiles)
 		return
 	}
 
@@ -118,6 +124,57 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Printf("wrote %d per-version version_*_gen.go files (skill+job x %d versions)\n", nVersionFiles, len(provisionedVersions))
+
+	if err := checkRegistryAndBaseline(gofmtOrRaw, nil, writeGeneratedFile); err != nil {
+		fmt.Fprintln(os.Stderr, "emitting registry/baseline files failed:", err)
+		os.Exit(1)
+	}
+	fmt.Printf("wrote %s, %s, and %s\n", registryGenPath, skillBaselineGenPath, jobBaselineGenPath)
+}
+
+// checkRegistryAndBaseline renders constants/registry_gen.go and
+// skill+job/baseline_gen.go (task-187 Task 6) and either drift-checks
+// (checkDrift != nil, writeFile == nil) or writes them (writeFile != nil,
+// checkDrift == nil) -- mirroring emitAllVersionFiles' check/write
+// dual-mode contract.
+func checkRegistryAndBaseline(gofmtOrRaw func(string) ([]byte, error), checkDrift func(string, []byte) error, writeFile func(string, []byte) error) error {
+	registryFmt, err := gofmtOrRaw(EmitRegistry())
+	if err != nil {
+		return fmt.Errorf("formatting %s: %w", registryGenPath, err)
+	}
+	skillGo, jobGo := EmitBaseline()
+	skillBaselineFmt, err := gofmtOrRaw(skillGo)
+	if err != nil {
+		return fmt.Errorf("formatting %s: %w", skillBaselineGenPath, err)
+	}
+	jobBaselineFmt, err := gofmtOrRaw(jobGo)
+	if err != nil {
+		return fmt.Errorf("formatting %s: %w", jobBaselineGenPath, err)
+	}
+
+	if checkDrift != nil {
+		if err := checkDrift(registryGenPath, registryFmt); err != nil {
+			return err
+		}
+		if err := checkDrift(skillBaselineGenPath, skillBaselineFmt); err != nil {
+			return err
+		}
+		if err := checkDrift(jobBaselineGenPath, jobBaselineFmt); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if err := writeFile(registryGenPath, registryFmt); err != nil {
+		return fmt.Errorf("writing %s: %w", registryGenPath, err)
+	}
+	if err := writeFile(skillBaselineGenPath, skillBaselineFmt); err != nil {
+		return fmt.Errorf("writing %s: %w", skillBaselineGenPath, err)
+	}
+	if err := writeFile(jobBaselineGenPath, jobBaselineFmt); err != nil {
+		return fmt.Errorf("writing %s: %w", jobBaselineGenPath, err)
+	}
+	return nil
 }
 
 func writeGeneratedFile(path string, data []byte) error {

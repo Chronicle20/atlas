@@ -301,3 +301,8 @@ var names_gms_83_1 = map[Identity]string{
 func newSet_gms_83_1() Set {
 	return Set{byWire: wireToIdentity_gms_83_1, byIdentity: identityToWire_gms_83_1, available: available_gms_83_1, names: names_gms_83_1}
 }
+
+// NewSetGMS831 returns this version's identity Set (generated; task-187 Task 6).
+func NewSetGMS831() Set {
+	return newSet_gms_83_1()
+}

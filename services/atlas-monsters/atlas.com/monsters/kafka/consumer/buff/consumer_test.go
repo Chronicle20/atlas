@@ -63,6 +63,69 @@ func TestAppliedIgnoresNonSuperGmHideSources(t *testing.T) {
 	}
 }
 
+// TestIsSuperGmHideSource_VersionAware pins the task-187 correctness
+// property directly on the resolver helper: at v0.48 SuperGmHide's wire id
+// is 5101004 (NOT the v83-canonical 9101004), so a raw `==
+// int32(skill.SuperGmHideId)` compare would silently never match a v0.48
+// hide buff. Both v48 (wire 5101004) and v83 (wire 9101004) must resolve to
+// the SuperGmHide identity, and an unrelated skill (Rogue Dark Sight) must
+// not, under either tenant.
+func TestIsSuperGmHideSource_VersionAware(t *testing.T) {
+	ten83, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create: %v", err)
+	}
+	ten48, err := tenant.Create(uuid.New(), "GMS", 48, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create: %v", err)
+	}
+
+	if !isSuperGmHideSource(ten83, int32(skill.SuperGmHideId)) {
+		t.Errorf("isSuperGmHideSource(v83, %d) = false, want true", skill.SuperGmHideId)
+	}
+	if !isSuperGmHideSource(ten48, 5101004) {
+		t.Errorf("isSuperGmHideSource(v48, 5101004) = false, want true")
+	}
+	// The v83-canonical wire value means something else at v48 (or is
+	// absent) and must not be misread as hide.
+	if isSuperGmHideSource(ten48, int32(skill.SuperGmHideId)) {
+		t.Errorf("isSuperGmHideSource(v48, %d) = true, want false", skill.SuperGmHideId)
+	}
+	if isSuperGmHideSource(ten83, int32(skill.RogueDarkSightId)) {
+		t.Errorf("isSuperGmHideSource(v83, RogueDarkSightId) = true, want false")
+	}
+}
+
+// TestAppliedV48WireMarksHidden proves the end-to-end bug this task fixes:
+// under a v0.48 tenant, an APPLIED event sourced from wire 5101004 (v48's
+// SuperGmHide wire id, NOT the v83-canonical 9101004) must still mark the
+// character hidden. Before task-187, the handler's raw
+// `== int32(skill.SuperGmHideId)` compare would silently never match this
+// wire value at v48, leaving the hiding character's monsters uncontrolled.
+func TestAppliedV48WireMarksHidden(t *testing.T) {
+	t.Cleanup(func() { hidden.GetRegistry().Clear(context.Background()) })
+
+	ten, err := tenant.Create(uuid.New(), "GMS", 48, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create: %v", err)
+	}
+	ctx := tenant.WithContext(context.Background(), ten)
+	l, _ := test.NewNullLogger()
+
+	handleStatusEventApplied(l, ctx, buff2.StatusEvent[buff2.AppliedStatusEventBody]{
+		WorldId: 0, CharacterId: 7, Type: buff2.EventStatusTypeBuffApplied,
+		Body: buff2.AppliedStatusEventBody{SourceId: 5101004},
+	})
+
+	ms, err := hidden.GetRegistry().MemberSet(context.Background(), ten)
+	if err != nil {
+		t.Fatalf("MemberSet: %v", err)
+	}
+	if _, ok := ms[7]; !ok {
+		t.Fatalf("v48 wire 5101004 APPLIED event must mark character 7 hidden, got %v", ms)
+	}
+}
+
 // TestAppliedNonAppliedTypeIsIgnored verifies the Type guard: an event
 // carrying the SuperGmHide SourceId but the wrong Type (defensive; APPLIED
 // handler should only be invoked for APPLIED-type messages by the topic's

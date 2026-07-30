@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 )
 
 // InitResource registers GET /data/job-availability -- the tenant version's
@@ -25,9 +26,17 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 
 func handleGetJobAvailability(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ms := NewProcessor(d.Logger(), d.Context()).GetAvailable()
 		query := r.URL.Query()
+		page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+		if err != nil {
+			server.WriteBadRequest(d.Logger(), w, err.Error())
+			return
+		}
+
+		ms := NewProcessor(d.Logger(), d.Context()).GetAvailable()
+		paged := paginate.Slice(ms, page)
+
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(ms)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 	}
 }

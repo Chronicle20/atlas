@@ -35,6 +35,11 @@ func setTenantHeaders(req *http.Request, region string, major, minor uint16) {
 	req.Header.Set("MINOR_VERSION", strconv.Itoa(int(minor)))
 }
 
+// jobAvailabilityResponse mirrors the JSON:API paginated envelope
+// (paginate.Envelope.Meta / .BuildLinks): meta.page + top-level links, on
+// top of the existing data/attributes shape. Links are plain strings here
+// because jsonapi.Link.MarshalJSON emits a bare string whenever Meta is
+// empty (data_structs.go), which every link this handler builds is.
 type jobAvailabilityResponse struct {
 	Data []struct {
 		Type       string `json:"type"`
@@ -43,11 +48,35 @@ type jobAvailabilityResponse struct {
 			Name string `json:"name"`
 		} `json:"attributes"`
 	} `json:"data"`
+	Meta struct {
+		Total int `json:"total"`
+		Page  struct {
+			Number int `json:"number"`
+			Size   int `json:"size"`
+			Last   int `json:"last"`
+		} `json:"page"`
+	} `json:"meta"`
+	Links struct {
+		Self  string `json:"self"`
+		First string `json:"first"`
+		Prev  string `json:"prev"`
+		Next  string `json:"next"`
+		Last  string `json:"last"`
+	} `json:"links"`
 }
 
 func getJobAvailability(t *testing.T, region string, major, minor uint16) (*httptest.ResponseRecorder, jobAvailabilityResponse) {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodGet, "/data/job-availability", nil)
+	return getJobAvailabilityQuery(t, region, major, minor, "")
+}
+
+func getJobAvailabilityQuery(t *testing.T, region string, major, minor uint16, rawQuery string) (*httptest.ResponseRecorder, jobAvailabilityResponse) {
+	t.Helper()
+	path := "/data/job-availability"
+	if rawQuery != "" {
+		path += "?" + rawQuery
+	}
+	req := httptest.NewRequest(http.MethodGet, path, nil)
 	setTenantHeaders(req, region, major, minor)
 	rr := httptest.NewRecorder()
 	setupTestRouter().ServeHTTP(rr, req)
@@ -91,4 +120,30 @@ func TestGetJobAvailability_V72HasPirate(t *testing.T) {
 		}
 	}
 	require.True(t, found, "expected wire id 500 (Pirate) in v72 availability list")
+}
+
+// TestGetJobAvailability_Paginates pins the pagination envelope (task-187
+// backend review finding 1): the endpoint MUST paginate per
+// docs/rest-pagination.md, not dump the whole in-memory list unbounded.
+// It derives the true total from the default (page[size]=50) request --
+// large enough to cover every job for a single GMS version -- rather than
+// hardcoding a job count, then asserts a small page[size] slices the same
+// list and reports a links.next recovery pointer.
+func TestGetJobAvailability_Paginates(t *testing.T) {
+	full, fullBody := getJobAvailability(t, "GMS", 72, 1)
+	require.Equal(t, http.StatusOK, full.Code, "body: %s", full.Body.String())
+	total := fullBody.Meta.Total
+	require.Greater(t, total, 10, "expected v72 job availability to exceed one small page for this pagination check")
+	require.Len(t, fullBody.Data, total, "default page[size]=50 must cover the whole v72 list")
+	require.Equal(t, 1, fullBody.Meta.Page.Number)
+	require.Equal(t, 50, fullBody.Meta.Page.Size)
+	require.Empty(t, fullBody.Links.Next, "the only page must not advertise a next link")
+
+	rr, body := getJobAvailabilityQuery(t, "GMS", 72, 1, "page[size]=10")
+	require.Equal(t, http.StatusOK, rr.Code, "body: %s", rr.Body.String())
+	require.Len(t, body.Data, 10)
+	require.Equal(t, total, body.Meta.Total)
+	require.Equal(t, 1, body.Meta.Page.Number)
+	require.Equal(t, 10, body.Meta.Page.Size)
+	require.NotEmpty(t, body.Links.Next, "expected links.next since more than one page remains")
 }

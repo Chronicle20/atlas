@@ -81,14 +81,18 @@ func HashIds(skillIds []uint32, jobIds []uint16) string {
 	jobs := append([]uint16(nil), jobIds...)
 	sort.Slice(jobs, func(i, j int) bool { return jobs[i] < jobs[j] })
 
+	// h is a hash.Hash -- its Write (which Fprintf calls under the hood)
+	// never returns a non-nil error per the hash.Hash/io.Writer contract, so
+	// discarding it is the correct, established convention (not a missed
+	// error path); errcheck otherwise flags the unchecked return.
 	h := sha256.New()
-	fmt.Fprintf(h, "skills:%d\n", len(skills))
+	_, _ = fmt.Fprintf(h, "skills:%d\n", len(skills))
 	for _, s := range skills {
-		fmt.Fprintf(h, "%d\n", s)
+		_, _ = fmt.Fprintf(h, "%d\n", s)
 	}
-	fmt.Fprintf(h, "jobs:%d\n", len(jobs))
+	_, _ = fmt.Fprintf(h, "jobs:%d\n", len(jobs))
 	for _, j := range jobs {
-		fmt.Fprintf(h, "%d\n", j)
+		_, _ = fmt.Fprintf(h, "%d\n", j)
 	}
 	return hex.EncodeToString(h.Sum(nil))
 }

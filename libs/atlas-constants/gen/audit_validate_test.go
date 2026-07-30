@@ -1,26 +1,20 @@
-// Command validate is the task-187 Task-1 structural validator (Step 6).
+// audit_validate_test.go is the task-187 Task-1 structural validator
+// (originally docs/tasks/task-187-version-aware-id-semantics/audit/validate.go,
+// a standalone `go run` script), ported into the gen module as a real Go
+// test per that script's own header comment: "Task 2 is expected to port
+// this logic into a real Go test in the generator module once it exists."
 //
-// It is a standalone `go run` script rather than a _test.go file because
-// the generator module referenced by the task-1 brief ("gen/audit_validate_test.go
-// once the generator module exists") does not exist yet -- Task 1 runs
-// first. Task 2 is expected to port this logic into a real Go test in the
-// generator module once it exists.
-//
-// It checks the two machine-readable audit deliverables:
+// It checks the two machine-readable audit deliverables Task 1 produced:
 //
 //   - divergences.csv (region,major,minor,domain,wireId,identityName,evidence):
-//     every row must have a non-empty evidence citation.
+//     every row must have a non-empty evidence citation and non-empty wireId.
 //   - availability.csv (region,major,minor,domain,identityName,released,meymink):
-//     every row must have a non-empty meymink citation, and released must
-//     be exactly "true" or "false".
+//     every row must have a non-empty meymink citation, a non-empty
+//     identityName, and released must be exactly "true" or "false".
 //
 // Both files: region must be gms or jms, (major,minor) must be a member of
 // the provisioned set from deploy/k8s/base/versions.json, and domain must
 // be skill or job.
-//
-// Usage (from the repo root):
-//
-//	go run ./docs/tasks/task-187-version-aware-id-semantics/audit/validate.go
 package main
 
 import (
@@ -28,12 +22,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"testing"
 )
+
+// auditDir is the audit folder's path relative to this test's package
+// directory (libs/atlas-constants/gen).
+const auditDir = "../../../docs/tasks/task-187-version-aware-id-semantics/audit"
 
 // provisioned is the exact (region,major,minor) set from
 // deploy/k8s/base/versions.json. Kept as a literal here (not read from the
-// JSON file) so this validator has zero dependencies and can run as a bare
-// `go run` script; if versions.json changes, update this list too.
+// JSON file) so this validator has no dependency beyond the standard
+// library; if versions.json changes, update this list too.
 var provisioned = map[[3]string]bool{
 	{"gms", "12", "1"}:  true,
 	{"gms", "48", "1"}:  true,
@@ -55,11 +54,10 @@ var (
 
 // expectedFields is the exact column count for both divergences.csv and
 // availability.csv (region,major,minor,domain,+2 more = 7). Setting
-// csv.Reader.FieldsPerRecord to this value (rather than the -1 "no
-// enforcement" sentinel) makes a short or long row a clean CSV parse error
-// surfaced through readCSV's err return -- not a silent len(record)
-// index-out-of-range panic downstream in checkKeyCols/validateDivergences/
-// validateAvailability.
+// csv.Reader.FieldsPerRecord to this value (rather than the -1
+// "no enforcement" sentinel) makes a short or long row a clean CSV parse
+// error surfaced through readCSV's err return -- not a silent len(record)
+// index-out-of-range panic downstream.
 const expectedFields = 7
 
 func readCSV(path string) (header []string, rows [][]string, err error) {
@@ -67,7 +65,7 @@ func readCSV(path string) (header []string, rows [][]string, err error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	r := csv.NewReader(f)
 	r.FieldsPerRecord = expectedFields
@@ -90,9 +88,9 @@ func col(header []string, name string) int {
 	return -1
 }
 
-func checkKeyCols(file string, header []string, row [4]int, rowNum int, r []string) []string {
+func checkKeyCols(file string, cols [4]int, rowNum int, r []string) []string {
 	var errs []string
-	regionIdx, majorIdx, minorIdx, domainIdx := row[0], row[1], row[2], row[3]
+	regionIdx, majorIdx, minorIdx, domainIdx := cols[0], cols[1], cols[2], cols[3]
 
 	region := r[regionIdx]
 	if !validRegions[region] {
@@ -125,7 +123,7 @@ func validateDivergences(path string) (int, []string) {
 	var errs []string
 	for i, r := range rows {
 		rowNum := i + 2 // 1-indexed + header line
-		errs = append(errs, checkKeyCols(path, header, [4]int{regionI, majorI, minorI, domainI}, rowNum, r)...)
+		errs = append(errs, checkKeyCols(path, [4]int{regionI, majorI, minorI, domainI}, rowNum, r)...)
 		if r[evidenceI] == "" {
 			errs = append(errs, fmt.Sprintf("%s row %d: empty evidence", path, rowNum))
 		}
@@ -152,7 +150,7 @@ func validateAvailability(path string) (int, []string) {
 	var errs []string
 	for i, r := range rows {
 		rowNum := i + 2
-		errs = append(errs, checkKeyCols(path, header, [4]int{regionI, majorI, minorI, domainI}, rowNum, r)...)
+		errs = append(errs, checkKeyCols(path, [4]int{regionI, majorI, minorI, domainI}, rowNum, r)...)
 		if r[meyminkI] == "" {
 			errs = append(errs, fmt.Sprintf("%s row %d: empty meymink citation", path, rowNum))
 		}
@@ -166,41 +164,22 @@ func validateAvailability(path string) (int, []string) {
 	return len(rows), errs
 }
 
-// repoRootRelDir is the audit folder's path relative to the repo root, for
-// the case where this script is invoked as
-// `go run ./docs/.../audit/validate.go` from the repo root (cwd = repo
-// root, so the bare "divergences.csv" won't resolve there).
-const repoRootRelDir = "docs/tasks/task-187-version-aware-id-semantics/audit"
-
-func resolveDir() string {
-	candidates := []string{".", repoRootRelDir}
-	if len(os.Args) > 1 {
-		candidates = append([]string{os.Args[1]}, candidates...)
-	}
-	for _, dir := range candidates {
-		if _, err := os.Stat(filepath.Join(dir, "divergences.csv")); err == nil {
-			return dir
-		}
-	}
-	return "." // let the CSV-open error below report the real problem
-}
-
-func main() {
-	dir := resolveDir()
-	divPath := filepath.Join(dir, "divergences.csv")
-	availPath := filepath.Join(dir, "availability.csv")
+func TestAuditCSVs_Valid(t *testing.T) {
+	divPath := filepath.Join(auditDir, "divergences.csv")
+	availPath := filepath.Join(auditDir, "availability.csv")
 
 	nDiv, divErrs := validateDivergences(divPath)
 	nAvail, availErrs := validateAvailability(availPath)
 
-	allErrs := append(divErrs, availErrs...)
-	if len(allErrs) > 0 {
-		for _, e := range allErrs {
-			fmt.Fprintln(os.Stderr, "FAIL:", e)
-		}
-		fmt.Fprintf(os.Stderr, "FAIL: %d error(s) across %d divergence rows, %d availability rows\n", len(allErrs), nDiv, nAvail)
-		os.Exit(1)
+	for _, e := range divErrs {
+		t.Error(e)
+	}
+	for _, e := range availErrs {
+		t.Error(e)
+	}
+	if t.Failed() {
+		t.Fatalf("%d error(s) across %d divergence rows, %d availability rows", len(divErrs)+len(availErrs), nDiv, nAvail)
 	}
 
-	fmt.Printf("OK: %d divergence rows, %d availability rows, all cited\n", nDiv, nAvail)
+	t.Logf("OK: %d divergence rows, %d availability rows, all cited", nDiv, nAvail)
 }

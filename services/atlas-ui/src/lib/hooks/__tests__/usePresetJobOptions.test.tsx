@@ -44,7 +44,10 @@ describe("usePresetJobOptions", () => {
   });
 
   it("returns the graceful fallback (full graph) while availability is unknown (pending), never empty", () => {
-    useJobAvailabilityMock.mockReturnValue({ isSuccess: false, data: undefined });
+    useJobAvailabilityMock.mockReturnValue({
+      isSuccess: false,
+      data: undefined,
+    });
     const { result } = renderHook(() => usePresetJobOptions());
     expect(result.current.length).toBeGreaterThan(0);
     // Permissive fallback: the backend validates the chosen id, and a picker

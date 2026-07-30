@@ -40,6 +40,33 @@ describe("JobCombobox", () => {
     );
   });
 
+  it("uses the availability-provided name for a selected id present in the options", () => {
+    // Regression coverage for the selectedName fallback (~JobCombobox.tsx
+    // L31-34): when the id is in the version-gated options, the trigger must
+    // show THAT name, not the static advancement-graph name — they can
+    // diverge (e.g. wire id 500 is "Gm" pre-v0.61 but "Pirate" at v0.61+).
+    optionsMock.mockReturnValue([
+      { id: 500, name: "Gm", parent: null },
+      ...JOB_LIST,
+    ]);
+    render(<JobCombobox value={500} onChange={vi.fn()} />);
+    expect(screen.getByRole("combobox", { name: /class/i })).toHaveTextContent(
+      "Gm",
+    );
+  });
+
+  it("falls back to the static jobName for a selected id NOT in the options", () => {
+    // The id isn't in the availability-gated set (still loading, or a
+    // manually-entered id the tenant hasn't released): fall back to the
+    // pre-existing static jobName lookup, which renders "Job <id>" for ids
+    // outside the advancement graph too.
+    optionsMock.mockReturnValue(JOB_LIST.filter((j) => j.id !== 100));
+    render(<JobCombobox value={100} onChange={vi.fn()} />);
+    expect(screen.getByRole("combobox", { name: /class/i })).toHaveTextContent(
+      "Warrior",
+    );
+  });
+
   it("filters by name and picks a job as a number", async () => {
     const onChange = vi.fn();
     render(<JobCombobox value={0} onChange={onChange} />);

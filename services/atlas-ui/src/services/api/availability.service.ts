@@ -29,11 +29,10 @@ export interface AvailabilityEntry {
 const JOB_BASE_PATH = "/api/data/job-availability?page[size]=250";
 const SKILL_BASE_PATH = "/api/data/skill-availability?page[size]=250";
 
-// The backend returns the tenant version's full RELEASED set in one
-// unpaginated response (jobavailability/skillavailability resource.go calls
-// GetAvailable() once and marshals the whole slice -- no links.next). The
-// page[size] param is sent for parity with other list endpoints but is not
-// load-bearing here.
+// Defensive ceiling on links.next pagination, mirroring jobsService.getJobs.
+// A backstop against a malformed or self-referential `next` link from the
+// backend, not a real expected page count.
+const MAX_PAGES = 50;
 
 function toEntries(
   resources: Array<{ id: string; attributes: { name: string } }>,
@@ -41,18 +40,44 @@ function toEntries(
   return resources.map((r) => ({ id: Number(r.id), name: r.attributes.name }));
 }
 
+/**
+ * Follows links.next until exhausted, collecting every resource across all
+ * pages. Job/skill availability is a version's RELEASED set, which for
+ * skills can exceed a single page[size]=250 response, so links.next MUST be
+ * followed rather than trusting the first page alone.
+ */
+async function fetchAllPages<
+  T extends { id: string; attributes: { name: string } },
+>(startUrl: string): Promise<AvailabilityEntry[]> {
+  let url: string | undefined = startUrl;
+  const resources: T[] = [];
+  const visited = new Set<string>();
+
+  while (url) {
+    if (visited.has(url) || visited.size >= MAX_PAGES) {
+      throw new Error(
+        `availabilityService: aborting pagination after ${visited.size} page(s) — ` +
+          `links.next did not advance (url: ${url}). The backend is misbehaving.`,
+      );
+    }
+    visited.add(url);
+
+    const doc: ApiPagedResponse<T> = await api.getListDocument<T>(url);
+    resources.push(...(doc.data ?? []));
+    url = doc.links?.next;
+  }
+
+  return toEntries(resources);
+}
+
 export const availabilityService = {
   /** The tenant version's RELEASED job identities: wire id + version-correct name. */
   async getJobAvailability(): Promise<AvailabilityEntry[]> {
-    const doc: ApiPagedResponse<JobAvailabilityResource> =
-      await api.getListDocument<JobAvailabilityResource>(JOB_BASE_PATH);
-    return toEntries(doc.data ?? []);
+    return fetchAllPages<JobAvailabilityResource>(JOB_BASE_PATH);
   },
 
   /** The tenant version's RELEASED skill identities: wire id + version-correct name. */
   async getSkillAvailability(): Promise<AvailabilityEntry[]> {
-    const doc: ApiPagedResponse<SkillAvailabilityResource> =
-      await api.getListDocument<SkillAvailabilityResource>(SKILL_BASE_PATH);
-    return toEntries(doc.data ?? []);
+    return fetchAllPages<SkillAvailabilityResource>(SKILL_BASE_PATH);
   },
 };

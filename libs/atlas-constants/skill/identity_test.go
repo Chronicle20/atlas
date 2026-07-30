@@ -110,3 +110,81 @@ func TestSet_AvailableIdentities_SortedByWireId(t *testing.T) {
 		prev = w
 	}
 }
+
+// ---- Identity-keyed semantic predicate tests (task-187 Task 7) ----
+//
+// Each of these mirrors an existing Id-typed test in model_test.go/
+// mount_test.go/point_reset_test.go, asserting the Identity-typed port
+// agrees with the Id-typed original on the same identity/id pair.
+
+func TestIsKeyDownSkillIdentity(t *testing.T) {
+	if !IsKeyDownSkillIdentity(BrawlerCorkscrewBlow) {
+		t.Fatal("BrawlerCorkscrewBlow is a keydown identity")
+	}
+	if !IsKeyDownSkillIdentity(GunslingerGrenade) {
+		t.Fatal("GunslingerGrenade is a keydown identity")
+	}
+	if IsKeyDownSkillIdentity(SuperGmHide) {
+		t.Fatal("SuperGmHide is not a keydown identity")
+	}
+	if IsKeyDownSkillIdentity(PirateFlashFist) {
+		t.Fatal("PirateFlashFist is not a keydown identity")
+	}
+}
+
+func TestIsShootSkillNotUsingShootingWeaponIdentity(t *testing.T) {
+	if !IsShootSkillNotUsingShootingWeaponIdentity(BuccaneerEnergyOrb) {
+		t.Fatal("BuccaneerEnergyOrb does not use a shooting weapon")
+	}
+	if IsShootSkillNotUsingShootingWeaponIdentity(BrawlerCorkscrewBlow) {
+		t.Fatal("BrawlerCorkscrewBlow is not in the not-using-shooting-weapon list")
+	}
+}
+
+func TestIsShootSkillNotConsumingBulletIdentity(t *testing.T) {
+	// Every not-using-shooting-weapon identity is also not-consuming-bullet.
+	if !IsShootSkillNotConsumingBulletIdentity(BuccaneerEnergyOrb) {
+		t.Fatal("BuccaneerEnergyOrb (shoot-weapon-exempt) must also be bullet-exempt")
+	}
+	if !IsShootSkillNotConsumingBulletIdentity(HermitShadowMeso) {
+		t.Fatal("HermitShadowMeso does not consume a bullet")
+	}
+	if IsShootSkillNotConsumingBulletIdentity(CorsairRapidFire) {
+		t.Fatal("CorsairRapidFire is not in either not-consuming-bullet list")
+	}
+}
+
+func TestIsTamedMountSkillIdentity(t *testing.T) {
+	if !IsTamedMountSkillIdentity(EvanMonsterRiding) {
+		t.Fatal("EvanMonsterRiding is a tamed-mount identity")
+	}
+	if IsTamedMountSkillIdentity(BeginnerSpaceShip) {
+		t.Fatal("BeginnerSpaceShip is a skill-only mount, not a tamed mount")
+	}
+}
+
+func TestSkillOnlyMountVehicleIdentity(t *testing.T) {
+	got, ok := SkillOnlyMountVehicleIdentity(BeginnerSpaceShip, 3)
+	if !ok || got != 1932003 {
+		t.Fatalf("SkillOnlyMountVehicleIdentity(BeginnerSpaceShip, 3) = (%v, %v), want (1932003, true)", got, ok)
+	}
+	got2, ok2 := SkillOnlyMountVehicleIdentity(LegendBalrogMount, 0)
+	if !ok2 || got2 != 1932010 {
+		t.Fatalf("SkillOnlyMountVehicleIdentity(LegendBalrogMount, 0) = (%v, %v), want (1932010, true)", got2, ok2)
+	}
+	if _, ok3 := SkillOnlyMountVehicleIdentity(EvanMonsterRiding, 0); ok3 {
+		t.Fatal("EvanMonsterRiding is a tamed mount, not a skill-only mount")
+	}
+}
+
+func TestIsPointResetExcludedIdentity(t *testing.T) {
+	if !IsPointResetExcludedIdentity(Identity(21110007)) {
+		t.Fatal("Aran hidden combo 21110007 must be point-reset excluded")
+	}
+	if !IsPointResetExcludedIdentity(Identity(9101004)) { // GM-range skill
+		t.Fatal("GM-range skill 9101004 must be point-reset excluded")
+	}
+	if IsPointResetExcludedIdentity(BrawlerCorkscrewBlow) {
+		t.Fatal("BrawlerCorkscrewBlow must not be point-reset excluded")
+	}
+}

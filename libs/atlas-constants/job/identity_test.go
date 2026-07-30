@@ -1,6 +1,10 @@
 package job
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+)
 
 // TestSet_ResolveWire_v48GmNotPirate pins the PRD-motivating bug fix at the
 // Set level: at GMS v48 (pre-Pirate), job wire id 500 must resolve to Gm,
@@ -117,5 +121,99 @@ func TestSet_AvailableIdentities_SortedByWireId(t *testing.T) {
 			t.Fatalf("AvailableIdentities() not sorted ascending by wire id: %v (%d) before wire %d", id, w, prev)
 		}
 		prev = w
+	}
+}
+
+// ---- Identity-keyed semantic predicate tests (task-187 Task 7) ----
+//
+// Each of these mirrors an existing Id-typed test in model_test.go/
+// advancement_test.go, asserting the Identity-typed port agrees with the
+// Id-typed original on the same identity/id pair.
+
+func TestIsAIdentity_GmFamily(t *testing.T) {
+	if !IsAIdentity(SuperGm, Gm) {
+		t.Fatal("SuperGm is-a Gm family")
+	}
+	if IsAIdentity(Pirate, Gm) {
+		t.Fatal("Pirate is not-a Gm family")
+	}
+}
+
+func TestIsBeginnerIdentity(t *testing.T) {
+	if !IsBeginnerIdentity(Evan) {
+		t.Fatal("Evan is a beginner-band identity")
+	}
+	if IsBeginnerIdentity(Pirate) {
+		t.Fatal("Pirate is not a beginner-band identity")
+	}
+}
+
+func TestGetTypeIdentity_And_IsCygnusIdentity(t *testing.T) {
+	if !IsCygnusIdentity(DawnWarriorStage1) {
+		t.Fatal("DawnWarriorStage1 is a Cygnus identity")
+	}
+	if GetTypeIdentity(DawnWarriorStage1) != TypeCygnus {
+		t.Fatalf("GetTypeIdentity(DawnWarriorStage1) = %v, want TypeCygnus", GetTypeIdentity(DawnWarriorStage1))
+	}
+	if IsCygnusIdentity(Pirate) {
+		t.Fatal("Pirate is an Explorer identity, not Cygnus")
+	}
+	if GetTypeIdentity(Pirate) != TypeExplorer {
+		t.Fatalf("GetTypeIdentity(Pirate) = %v, want TypeExplorer", GetTypeIdentity(Pirate))
+	}
+}
+
+func TestGetSkillBookIdentity(t *testing.T) {
+	if got := GetSkillBookIdentity(EvanStage2); got != 1 {
+		t.Fatalf("GetSkillBookIdentity(EvanStage2) = %d, want 1", got)
+	}
+	if got := GetSkillBookIdentity(EvanStage10); got != 9 {
+		t.Fatalf("GetSkillBookIdentity(EvanStage10) = %d, want 9", got)
+	}
+	if got := GetSkillBookIdentity(Pirate); got != 0 {
+		t.Fatalf("GetSkillBookIdentity(Pirate) = %d, want 0 (not an Evan stage)", got)
+	}
+}
+
+func TestAdvancementIdentity(t *testing.T) {
+	if got := AdvancementIdentity(Beginner); got != 0 {
+		t.Fatalf("AdvancementIdentity(Beginner) = %d, want 0", got)
+	}
+	if got := AdvancementIdentity(Pirate); got != 1 {
+		t.Fatalf("AdvancementIdentity(Pirate) = %d, want 1 (branch root)", got)
+	}
+	if got := AdvancementIdentity(Buccaneer); got != 4 {
+		t.Fatalf("AdvancementIdentity(Buccaneer) = %d, want 4 (Buccaneer=512, 2+512%%10=4)", got)
+	}
+	if got := AdvancementIdentity(EvanStage5); got != -1 {
+		t.Fatalf("AdvancementIdentity(EvanStage5) = %d, want -1 (Evan stages don't map onto the 4-tier scheme)", got)
+	}
+}
+
+func TestIsFourthJobIdentity(t *testing.T) {
+	if !IsFourthJobIdentity(Buccaneer) {
+		t.Fatal("Buccaneer is a 4th-job identity")
+	}
+	if IsFourthJobIdentity(Marauder) {
+		t.Fatal("Marauder (3rd job) is not a 4th-job identity")
+	}
+	// Evan's 4th-job band is curated (EvanStage6..10), not derivable from
+	// jobId%10==2 the way the branch jobs are -- this is the case that
+	// proves IsFourthJobIdentity is really consulting the same curated
+	// Jobs table as IsFourthJob, not a re-derived formula.
+	if !IsFourthJobIdentity(EvanStage6) {
+		t.Fatal("EvanStage6 is a 4th-job identity (curated Jobs table)")
+	}
+	if IsFourthJobIdentity(EvanStage5) {
+		t.Fatal("EvanStage5 is not a 4th-job identity")
+	}
+}
+
+func TestFromSkillIdentity(t *testing.T) {
+	// BrawlerCorkscrewBlow = 5101004; 5101004/10000 = 510 = Brawler (the
+	// job identity, not the Pirate branch root) -- matches
+	// IdFromSkillId's floor(skillId/10000) convention exactly.
+	if got := FromSkillIdentity(skill.BrawlerCorkscrewBlow); got != Brawler {
+		t.Fatalf("FromSkillIdentity(BrawlerCorkscrewBlow=5101004) = %v, want Brawler (510)", got)
 	}
 }

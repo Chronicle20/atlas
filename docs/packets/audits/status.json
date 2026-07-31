@@ -1,7 +1,7 @@
 {
   "toolSha": "cb6fb266490afc69f41d2f4ea0756f1dec60b04f42bc0f4e6d558ea1698925d2",
   "exportHashes": {
-    "gms_v48": "dc531ef9bd48d684bfe00632adba90b6716f2652ebb4870dfc6db19bc38caf51",
+    "gms_v48": "19fb339da4f58d51e4804e2d4542819614059a61d65bb5eb1c4acfecd04fd2db",
     "gms_v61": "88399107c52bad29136777addb2fd7a6f60e4cddb343dd854de14a7a2f421fa2",
     "gms_v72": "a33a8a94a368e48718724ea24f689743203064a2c787526dfbe0ae49aeefd439",
     "gms_v79": "1e9d2d49e506f03fa1d2270c468fcd90ba782dc05a06e8601ebdad5e16d825e6",
@@ -11910,7 +11910,8 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "verified",
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
           "opcode": 85
         },
         "gms_v61": {
@@ -16294,7 +16295,8 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "evidence stale (decompile hash drift)",
           "opcode": 110
         },
         "gms_v61": {

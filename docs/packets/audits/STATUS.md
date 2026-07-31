@@ -6,7 +6,7 @@
 
 Tool: `cb6fb266490afc69f41d2f4ea0756f1dec60b04f42bc0f4e6d558ea1698925d2`
 
-- export gms_v48: `dc531ef9bd48d684bfe00632adba90b6716f2652ebb4870dfc6db19bc38caf51`
+- export gms_v48: `19fb339da4f58d51e4804e2d4542819614059a61d65bb5eb1c4acfecd04fd2db`
 - export gms_v61: `88399107c52bad29136777addb2fd7a6f60e4cddb343dd854de14a7a2f421fa2`
 - export gms_v72: `a33a8a94a368e48718724ea24f689743203064a2c787526dfbe0ae49aeefd439`
 - export gms_v79: `1e9d2d49e506f03fa1d2270c468fcd90ba782dc05a06e8601ebdad5e16d825e6`
@@ -149,7 +149,7 @@ Tool: `cb6fb266490afc69f41d2f4ea0756f1dec60b04f42bc0f4e6d558ea1698925d2`
 | FIELD_EFFECT | CField::OnFieldEffect; sub_4C7B59; sub_4EB523 | field/clientbound/FieldEffectBossHp (T1) | 0x054 | ✅ | 0x068 | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x08A | ✅ | 0x08D | ✅ | 0x092 | ✅ | 0x09A | ✅ | 0x087 | ✅ |
 | FIELD_SET_VARIABLE | CWvsContext::OnFieldSetVariable |  |  | ⬜ |  | ⬜ | 0x054 | ❌ | 0x055 | ❌ | 0x05C | ❌ | 0x05E | ❌ | 0x05E | ❌ | 0x05F | ❌ | 0x063 | ❌ |
 | IDA_0X054 | sub_AEC922 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x054 | ❌ |
-| BLOW_WEATHER | CField::OnBlowWeather; sub_4C930A; sub_4ED39C; sub_5723E6 | field/clientbound/FieldEffectWeather (T1) | 0x055 | ✅ | 0x06A | ❌ | 0x082 | 🟡ᶠ | 0x086 | 🟡ᶠ | 0x08E | ✅ | 0x091 | ✅ | 0x096 | ✅ | 0x09E | ✅ | 0x08B | ✅ |
+| BLOW_WEATHER | CField::OnBlowWeather; sub_4C930A; sub_4ED39C; sub_5723E6 | field/clientbound/FieldEffectWeather (T1) | 0x055 | 🟡ᶠ | 0x06A | ❌ | 0x082 | 🟡ᶠ | 0x086 | 🟡ᶠ | 0x08E | ✅ | 0x091 | ✅ | 0x096 | ✅ | 0x09E | ✅ | 0x08B | ✅ |
 | BONUS_EXP_CHANGED | CWvsContext::OnBonusExpRateChanged |  |  | ⬜ |  | ⬜ | 0x055 | ❌ | 0x056 | ❌ | 0x05D | ❌ | 0x05F | ❌ | 0x05F | ❌ | 0x060 | ❌ | 0x064 | ❌ |
 | CLEAR_AVATAR_MEGAPHONE | CWvsContext::OnClearAvatarMegaphone | chat/clientbound/ChatClearAvatarMegaphone |  | ⬜ | 0x055 | ❌ | 0x068 | ❌ | 0x06A | ❌ | 0x070 | ✅ | 0x073 | ✅ | 0x073 | ✅ | 0x074 | ✅ | 0x05B | ✅ |
 | CANCEL_NAME_CHANGE_RESULT | CWvsContext::OnCancelNameChangeResult |  |  | ⬜ | 0x056 | ❌ | 0x069 | ❌ | 0x06B | ❌ | 0x071 | ❌ | 0x074 | ❌ | 0x074 | ❌ | 0x075 | ❌ |  | ⬜ |
@@ -643,7 +643,7 @@ Tool: `cb6fb266490afc69f41d2f4ea0756f1dec60b04f42bc0f4e6d558ea1698925d2`
 | WEDDING_TALK | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x06C | ✅ | 0x080 | ✅ | 0x08A | ✅ | 0x089 | ✅ | 0x08C | ✅ | 0x090 | ✅ | 0x094 | ✅ | 0x0A4 | ✅ |  | ⬜ |
 | GRENADE_EFFECT | CUserLocal::ThrowGrenade |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06D | ❌ | 0x06D | ❌ | 0x070 | ❌ | 0x079 | ❌ | 0x068 | ❌ |
 | SKILL_MACRO | CMacroSysMan::FlushToSvr; sub_6022DB |  |  | ⬜ |  | ⬜ | 0x06D | ❌ | 0x06C | ❌ | 0x06E | ❌ | 0x06E | ❌ | 0x071 | ❌ | 0x07A | ❌ | 0x069 | ❌ |
-| CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap | character/serverbound/KeyMapChange (T1) | 0x06E | ✅ | 0x07B | ✅ | 0x085 | ✅ | 0x084 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x09F | ✅ | 0x08A | ✅ |
+| CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap | character/serverbound/KeyMapChange (T1) | 0x06E | ❌ | 0x07B | ✅ | 0x085 | ✅ | 0x084 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x09F | ✅ | 0x08A | ✅ |
 | LOTTERY_ITEM_USE_REQUEST | CWvsContext::SendLotteryItemUseRequest | inventory/serverbound/InventoryLotteryItemUse (T1) |  | ⬜ |  | ⬜ | 0x06F | ✅ | 0x06E | ✅ | 0x070 | ✅ | 0x070 | ✅ | 0x073 | ✅ | 0x07C | ✅ | 0x06B | ✅ |
 | NPC_ITEM_USE_REQUEST | CWvsContext::SendSelectNpcItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06F | ❌ | 0x06F | ❌ | 0x072 | ❌ | 0x07B | ❌ | 0x06A | ❌ |
 | RPS_ACTION | CRPSGameDlg::OnBtContinue; CRPSGameDlg::OnBtExit; CRPSGameDlg::OnBtRetry; CRPSGameDlg::OnBtStart; CRPSGameDlg::SendSelection; CRPSGameDlg::Update | rps/serverbound/RpsOperation | 0x06F | ✅ | 0x07C | ✅ | 0x086 | ✅ | 0x085 | ✅ | 0x088 | ✅ | 0x08C | ✅ | 0x090 | ✅ | 0x0A0 | ✅ | 0x08B | ✅ |
@@ -997,7 +997,7 @@ Tool: `cb6fb266490afc69f41d2f4ea0756f1dec60b04f42bc0f4e6d558ea1698925d2`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 178 | 0 | 2 | 157 | 625 | 0 | 52.8% |
+| v48 | 176 | 0 | 3 | 158 | 625 | 0 | 52.2% |
 | v61 | 255 | 0 | 60 | 189 | 458 | 0 | 50.6% |
 | v72 | 265 | 0 | 73 | 208 | 416 | 0 | 48.5% |
 | v79 | 309 | 0 | 72 | 204 | 377 | 0 | 52.8% |

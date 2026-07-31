@@ -148,3 +148,64 @@ returns `?OnEntrustedShopCheckResult@CWvsContext@@` (size `0x2df`), and `OnIncub
 is a distinct function at `0x71fa31` (size `0x2d5`). Trust `lookup_funcs`/`func_query` over
 the decompiler's printed header; taking the header at face value here would have reverted
 the correct registry fix in 5270b70fe.
+
+---
+
+## Final classification of the writers still absent from the v48 template
+
+The v48 template ended this task at **113 writers** (from 62). The rest are not
+oversights — they were checked against the binary and fall into three groups.
+
+### 1. Verified ABSENT from the v48 client
+
+Batched `func_query` over the v48 IDB returned NO match for any of these methods.
+The query technique is sound: run in the same batches, `OnMove@CPet`,
+`OnNameChanged@CPet`, `OnSkill@CSummonedPool`, `OnAttack@CSummonedPool`,
+`OnEffect@CUser` and `OnPetPacket@CUser` all resolved, so a zero result is a real
+absence, not a lookup failure.
+
+`OnActionCommand` · `OnBalloonMsg` · `OnCatchEffect` · `OnEffectByItem` ·
+`OnHPIndicator` · `OnIncMobChargeCount` · `OnMobAttackedByMob` · `OnMobSpeaking` ·
+`OnMobCrcKeyChanged` · `OnLoadExceptionList` · `OnSitResult` · `OnSkillCooltimeSet` ·
+`OnTutorMsg` · `OnOpenUI` · `OnSetStandAloneMode` · `OnSetDirectionMode` ·
+`OnSetActivePortableChair` · `OnSkillCancel` · `OnCreated` · `OnRemoved` ·
+`OnBridleMobCatchFail` · `OnCharacterSale` · `OnChargeParamResult` ·
+`OnCheckSPWResult` · `OnContiMove` · `OnContiState` · `OnFieldObstacle*` ·
+`OnFriendResult` · `OnGatherItemResult` · `OnHontailTimer` · `OnItemUpgrade` ·
+`OnLatestConnectedWorld` · `OnMacroSysDataInit` · `OnMonsterBookSetCard/Cover` ·
+`OnNormalItemResult` · `OnQueryCashResult` · `OnRecommendWorldMessage` ·
+`OnScriptProgressMessage` · `OnShopLinkResult` · `OnSortItemResult` ·
+`OnStalkResult` · `OnZakumTimer` · `OnChaosZakumTimer` · `OnSetMessage` ·
+`OnClearMessage` · `OnSendMessageResult` · `OnVegaResult` · `OnGuildBBSPacket`
+
+Whole event-field classes are absent too (`CField_MonsterCarnival`,
+`CField_Coconut`, `CField_AriantArena`, `CField_Battlefield`, `CField_Tournament`,
+`CField_Witchtower`, `CField_Massacre`, `CField_ContiMove`), which accounts for the
+Monster Carnival, Coconut, Ariant, Sheep Ranch, Tournament, Witch Tower and Pyramid
+writers in one stroke. So: PIC, monster book, guild BBS, buddy list, MTS,
+compartment merge/sort, and the event minigames are all post-v48 and correctly
+have no template entry.
+
+`CharacterAttackEnergy` is absent for the same reason — `CUserRemote::OnAttack`
+@ `0x6bca49` has only cases 127/128/129 and 130 is already `OnSkillPrepare`.
+
+### 2. Opcode known, mode table NOT derivable by analogy — deliberately unwired
+
+| Writer | v48 opcode | v48 dispatcher | why it is not wired |
+|---|---|---|---|
+| `HiredMerchantOperation` | `0x2A` | `OnEntrustedShopCheckResult` @ `0x71f72a` | arms at modes 6,7,8,9,10,12,13,14,15 vs v83's 7,8,9,10,11,13,14,15,16,17,18 — not a uniform shift (v48 mode 6 is `SendOpenShopRequest`; v48 mode 7 builds a channel-name message resembling v83's `REMOTE_SHOP_WARP` 16) |
+| `StorageOperation` | `0xF7` | `CTrunkDlg::OnPacket` @ `0x58332c` | arms at modes 8,18,23,24,25,26,27 vs v83's 9..23 — again a genuinely different set |
+| `AvatarMegaphoneResult` | `0x41` | `OnAvatarMegaphoneRes` @ `0x7211cd` | switches on `Decode1()-48`, special-casing exactly codes 48 and 49; v83 names its two `WAITING_LINE`/`LEVEL_GATE` at 83/84. Codes certain, name assignment is not, and no legacy template carries this writer |
+| `CharacterEffect` / `CharacterEffectForeign` | `0x92` / `0x89` | `CUser::OnEffect` via local/remote dispatch | opcodes verified (see the ambiguity section above), but both carry an `operations` table that has not been derived for v48 |
+
+Each of these has a correct, known opcode. They are omitted because an
+options-less dispatcher-family writer resolves its mode to the loud `99` default
+at runtime, which is worse than being absent — and because assigning names by
+positional analogy is precisely what produced the `BLOW_WEATHER` defect this task
+corrected.
+
+### 3. Not yet walked
+
+`CStoreBankDlg` (228-231), `CCashShop` (254-261), `z_MISLABELED_notRPS_channelFindDlg`
+(233-236) and the `CUserLocal` `sub_6A*` leaves (145-154). No writer in group 1 depends
+on these; they would only add entries beyond the verified-absent set.

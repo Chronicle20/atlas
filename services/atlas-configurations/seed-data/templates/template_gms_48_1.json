@@ -1871,6 +1871,21 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x7F",
+        "writer": "CharacterAttackMelee",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x80",
+        "writer": "CharacterAttackRanged",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x81",
+        "writer": "CharacterAttackMagic",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x82",
         "writer": "CharacterSkillPrepareForeign",
         "services": ["channel"]

@@ -7847,6 +7847,58 @@
     },
     {
       "kind": "op",
+      "op": "PET_FOOD",
+      "packet": "pet/serverbound/PetFood",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CWvsContext::SendPetFoodItemUseRequest"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 60
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ❌",
+          "opcode": 71
+        },
+        "gms_v72": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 75
+        },
+        "gms_v79": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 74
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 76
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 76
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 79
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 82
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 68
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "IDA_0X03D",
       "direction": "clientbound",
       "tier1": false,
@@ -8768,6 +8820,56 @@
     },
     {
       "kind": "op",
+      "op": "USE_UPGRADE_SCROLL",
+      "packet": "inventory/serverbound/InventoryScrollUse",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CWvsContext::SendUpgradeItemUseRequest",
+        "sub_954F9B"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 66
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 79
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 85
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 84
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 86
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 86
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 89
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 93
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 78
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "DISTRIBUTE_AP",
       "packet": "character/serverbound/DistributeAp",
       "direction": "serverbound",
@@ -9375,57 +9477,6 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 87
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "PET_FOOD",
-      "packet": "pet/serverbound/PetFood",
-      "direction": "serverbound",
-      "tier1": true,
-      "fnames": [
-        "CWvsContext::SendPetFoodItemUseRequest"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": 71
-        },
-        "gms_v72": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 75
-        },
-        "gms_v79": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 74
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 76
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 76
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 79
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 82
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 68
         }
       }
     },
@@ -10362,6 +10413,57 @@
     },
     {
       "kind": "op",
+      "op": "SPAWN_PET",
+      "packet": "pet/serverbound/PetSpawn",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CWvsContext::SendActivatePetRequest"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ⚠️",
+          "opcode": 77
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 97
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 96
+        },
+        "gms_v83": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 98
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 98
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 101
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 110
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 93
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "USE_TELEPORT_ROCK",
       "packet": "teleportrock/serverbound/Use",
       "direction": "serverbound",
@@ -10880,55 +10982,6 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 87
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "USE_UPGRADE_SCROLL",
-      "packet": "inventory/serverbound/InventoryScrollUse",
-      "direction": "serverbound",
-      "tier1": true,
-      "fnames": [
-        "CWvsContext::SendUpgradeItemUseRequest",
-        "sub_954F9B"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "verified",
-          "opcode": 79
-        },
-        "gms_v72": {
-          "state": "verified",
-          "opcode": 85
-        },
-        "gms_v79": {
-          "state": "verified",
-          "opcode": 84
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 86
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 86
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 89
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 93
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 78
         }
       }
     },
@@ -15051,56 +15104,6 @@
     },
     {
       "kind": "op",
-      "op": "SPAWN_PET",
-      "packet": "pet/serverbound/PetSpawn",
-      "direction": "serverbound",
-      "tier1": true,
-      "fnames": [
-        "CWvsContext::SendActivatePetRequest"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "verified",
-          "opcode": 97
-        },
-        "gms_v79": {
-          "state": "verified",
-          "opcode": 96
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 98
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 98
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 101
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 110
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 93
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "NOTIFY_LEVELUP",
       "direction": "clientbound",
       "tier1": false,
@@ -16278,6 +16281,63 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 105
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "SPAWN_PET",
+      "direction": "clientbound",
+      "tier1": false,
+      "fnames": [
+        "CUser::OnPetPacket",
+        "CUser::OnPetPacket_Spawn"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 109
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 127
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 153
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 157
+        },
+        "gms_v83": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 168
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 171
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 180
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 198
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 173
         }
       }
     },
@@ -18549,62 +18609,6 @@
     },
     {
       "kind": "op",
-      "op": "SPAWN_PET",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "CUser::OnPetPacket",
-        "CUser::OnPetPacket_Spawn"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 127
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 153
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 157
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 168
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 171
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 180
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 198
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 173
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "EVOLVE_PET",
       "direction": "clientbound",
       "tier1": false,
@@ -19097,6 +19101,55 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "MOB_DROP_PICKUP_REQUEST",
+      "packet": "monster/serverbound/MonsterMobDropPickupRequest",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CMob::SendDropPickUpRequest"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 131
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 157
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 180
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 182
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 190
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 195
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 202
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 229
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 196
         }
       }
     },
@@ -22746,54 +22799,6 @@
     },
     {
       "kind": "op",
-      "op": "MOB_DROP_PICKUP_REQUEST",
-      "packet": "monster/serverbound/MonsterMobDropPickupRequest",
-      "direction": "serverbound",
-      "tier1": true,
-      "fnames": [
-        "CMob::SendDropPickUpRequest"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "verified",
-          "opcode": 157
-        },
-        "gms_v72": {
-          "state": "verified",
-          "opcode": 180
-        },
-        "gms_v79": {
-          "state": "verified",
-          "opcode": 182
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 190
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 195
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 202
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 229
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 196
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "PYRAMID_GAUGE",
       "packet": "field/clientbound/FieldPyramidGauge",
       "direction": "clientbound",
@@ -24570,6 +24575,58 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 168
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "MOB_AFFECTED",
+      "packet": "monster/clientbound/MonsterMobAffected",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CMob::OnAffected"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 168
+        },
+        "gms_v61": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 184
+        },
+        "gms_v72": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 217
+        },
+        "gms_v79": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 223
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 245
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 251
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 261
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 293
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 262
         }
       }
     },
@@ -26443,57 +26500,6 @@
     },
     {
       "kind": "op",
-      "op": "MOB_AFFECTED",
-      "packet": "monster/clientbound/MonsterMobAffected",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CMob::OnAffected"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 184
-        },
-        "gms_v72": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 217
-        },
-        "gms_v79": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 223
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 245
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 251
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 261
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 293
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 262
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "DAMAGE_MONSTER",
       "packet": "monster/clientbound/MonsterDamage",
       "direction": "clientbound",
@@ -27568,6 +27574,58 @@
     },
     {
       "kind": "op",
+      "op": "CANNOT_SPAWN_KITE",
+      "packet": "field/clientbound/FieldKiteError",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CMessageBoxPool::OnCreateFailed"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ❌",
+          "opcode": 197
+        },
+        "gms_v61": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 207
+        },
+        "gms_v72": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 240
+        },
+        "gms_v79": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 248
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 270
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 270
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 287
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 325
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 291
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "DRAGON_BALL_SUMMON_REQUEST",
       "direction": "serverbound",
       "tier1": false,
@@ -27769,6 +27827,58 @@
     },
     {
       "kind": "op",
+      "op": "SPAWN_KITE",
+      "packet": "field/clientbound/FieldKiteSpawn",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CMessageBoxPool::OnMessageBoxEnterField"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 198
+        },
+        "gms_v61": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 208
+        },
+        "gms_v72": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 241
+        },
+        "gms_v79": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 249
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 271
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 271
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 288
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 326
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 292
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "UPDATE_LIMITED_INFO",
       "direction": "clientbound",
       "tier1": false,
@@ -27926,6 +28036,58 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "REMOVE_KITE",
+      "packet": "field/clientbound/FieldKiteDestroy",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CMessageBoxPool::OnMessageBoxLeaveField"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 199
+        },
+        "gms_v61": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 209
+        },
+        "gms_v72": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 242
+        },
+        "gms_v79": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 250
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 272
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 279
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 289
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 327
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 293
         }
       }
     },
@@ -28684,6 +28846,55 @@
     },
     {
       "kind": "op",
+      "op": "SPAWN_DOOR",
+      "packet": "door/clientbound/SpawnDoor",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CTownPortalPool::OnTownPortalCreated"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict 🔍",
+          "opcode": 206
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 212
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 245
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 253
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 275
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 282
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 292
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 330
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 296
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "TOUCHING_REACTOR",
       "direction": "serverbound",
       "tier1": false,
@@ -28731,57 +28942,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 217
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "CANNOT_SPAWN_KITE",
-      "packet": "field/clientbound/FieldKiteError",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CMessageBoxPool::OnCreateFailed"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 207
-        },
-        "gms_v72": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 240
-        },
-        "gms_v79": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 248
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 270
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 270
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 287
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 325
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 291
         }
       }
     },
@@ -28839,52 +28999,53 @@
     },
     {
       "kind": "op",
-      "op": "SPAWN_KITE",
-      "packet": "field/clientbound/FieldKiteSpawn",
+      "op": "REMOVE_DOOR",
+      "packet": "door/clientbound/RemoveDoor",
       "direction": "clientbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
-        "CMessageBoxPool::OnMessageBoxEnterField"
+        "CTownPortalPool::OnTownPortalRemoved"
       ],
       "cells": {
         "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
+          "opcode": 207
         },
         "gms_v61": {
           "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 208
+          "note": "tool ✅ without byte-test",
+          "opcode": 213
         },
         "gms_v72": {
           "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 241
+          "note": "tool ✅ without byte-test",
+          "opcode": 246
         },
         "gms_v79": {
           "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 249
+          "note": "tool ✅ without byte-test",
+          "opcode": 254
         },
         "gms_v83": {
           "state": "verified",
-          "opcode": 271
+          "opcode": 276
         },
         "gms_v84": {
           "state": "verified",
-          "opcode": 271
+          "opcode": 283
         },
         "gms_v87": {
           "state": "verified",
-          "opcode": 288
+          "opcode": 293
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 326
+          "opcode": 331
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": 292
+          "opcode": 297
         }
       }
     },
@@ -28933,57 +29094,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 219
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "REMOVE_KITE",
-      "packet": "field/clientbound/FieldKiteDestroy",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CMessageBoxPool::OnMessageBoxLeaveField"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 209
-        },
-        "gms_v72": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 242
-        },
-        "gms_v79": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 250
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 272
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 279
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 289
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 327
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 293
         }
       }
     },
@@ -29131,6 +29241,58 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "REACTOR_HIT",
+      "packet": "reactor/clientbound/ReactorHit",
+      "direction": "clientbound",
+      "tier1": false,
+      "fnames": [
+        "CReactorPool::OnReactorChangeState"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
+          "opcode": 210
+        },
+        "gms_v61": {
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
+          "opcode": 214
+        },
+        "gms_v72": {
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
+          "opcode": 247
+        },
+        "gms_v79": {
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
+          "opcode": 255
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 277
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 284
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 294
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 334
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 301
         }
       }
     },
@@ -29439,49 +29601,53 @@
     },
     {
       "kind": "op",
-      "op": "SPAWN_DOOR",
-      "packet": "door/clientbound/SpawnDoor",
+      "op": "REACTOR_SPAWN",
+      "packet": "reactor/clientbound/ReactorSpawn",
       "direction": "clientbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
-        "CTownPortalPool::OnTownPortalCreated"
+        "CReactorPool::OnReactorEnterField"
       ],
       "cells": {
         "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "verdict ❌",
           "opcode": 212
         },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "verdict ❌",
+          "opcode": 216
+        },
         "gms_v72": {
-          "state": "verified",
-          "opcode": 245
+          "state": "incomplete",
+          "note": "verdict ❌",
+          "opcode": 249
         },
         "gms_v79": {
-          "state": "verified",
-          "opcode": 253
+          "state": "incomplete",
+          "note": "verdict ❌",
+          "opcode": 257
         },
         "gms_v83": {
           "state": "verified",
-          "opcode": 275
+          "opcode": 279
         },
         "gms_v84": {
           "state": "verified",
-          "opcode": 282
+          "opcode": 286
         },
         "gms_v87": {
           "state": "verified",
-          "opcode": 292
+          "opcode": 296
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 330
+          "opcode": 336
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": 296
+          "opcode": 303
         }
       }
     },
@@ -29535,52 +29701,53 @@
     },
     {
       "kind": "op",
-      "op": "REMOVE_DOOR",
-      "packet": "door/clientbound/RemoveDoor",
+      "op": "REACTOR_DESTROY",
+      "packet": "reactor/clientbound/ReactorDestroy",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
-        "CTownPortalPool::OnTownPortalRemoved"
+        "CReactorPool::OnReactorLeaveField"
       ],
       "cells": {
         "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
           "state": "partial",
           "note": "tool ✅ without byte-test",
           "opcode": 213
         },
+        "gms_v61": {
+          "state": "partial",
+          "note": "tool ✅ without byte-test",
+          "opcode": 217
+        },
         "gms_v72": {
           "state": "partial",
           "note": "tool ✅ without byte-test",
-          "opcode": 246
+          "opcode": 250
         },
         "gms_v79": {
           "state": "partial",
           "note": "tool ✅ without byte-test",
-          "opcode": 254
+          "opcode": 258
         },
         "gms_v83": {
           "state": "verified",
-          "opcode": 276
+          "opcode": 280
         },
         "gms_v84": {
           "state": "verified",
-          "opcode": 283
+          "opcode": 287
         },
         "gms_v87": {
           "state": "verified",
-          "opcode": 293
+          "opcode": 297
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 331
+          "opcode": 337
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": 297
+          "opcode": 304
         }
       }
     },
@@ -29629,57 +29796,6 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 267
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "REACTOR_HIT",
-      "packet": "reactor/clientbound/ReactorHit",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "CReactorPool::OnReactorChangeState"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
-          "opcode": 214
-        },
-        "gms_v72": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
-          "opcode": 247
-        },
-        "gms_v79": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
-          "opcode": 255
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 277
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 284
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 294
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 334
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 301
         }
       }
     },
@@ -29798,57 +29914,6 @@
     },
     {
       "kind": "op",
-      "op": "REACTOR_SPAWN",
-      "packet": "reactor/clientbound/ReactorSpawn",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "CReactorPool::OnReactorEnterField"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "verdict ❌",
-          "opcode": 216
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "verdict ❌",
-          "opcode": 249
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "verdict ❌",
-          "opcode": 257
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 279
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 286
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 296
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 336
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 303
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "UNNAMED_R363",
       "direction": "serverbound",
       "tier1": false,
@@ -29893,57 +29958,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 227
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "REACTOR_DESTROY",
-      "packet": "reactor/clientbound/ReactorDestroy",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "CReactorPool::OnReactorLeaveField"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
-          "opcode": 217
-        },
-        "gms_v72": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
-          "opcode": 250
-        },
-        "gms_v79": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
-          "opcode": 258
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 280
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 287
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 297
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 337
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 304
         }
       }
     },

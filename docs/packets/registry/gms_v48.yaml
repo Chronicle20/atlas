@@ -1628,3 +1628,119 @@
   provenance: ida-discovered
   ida:
     address: 4897018
+
+# ------------- clientbound: reactor / town-portal / message-box pools (task-188) -------------
+# Same deferred-pool-leaf gap as the mob/npc/drop block above. Opcodes read off each
+# pool's own numeric dispatcher in the v48 client; all differ from v61's:
+#   CTownPortalPool::OnPacket  @0x5e318d - 206 created / 207 removed   (v61: 212/213)
+#   CMessageBoxPool::OnPacket  @0x54329b - 197 fail / 198 enter / 199 leave (v61: 207/208/209)
+#   CReactorPool::OnPacket     @0x5a5390 - 210 change-state / 212 enter / 213 leave (v61: 214/216/217)
+- op: SPAWN_DOOR
+  direction: clientbound
+  opcode: 206
+  fname: CTownPortalPool::OnTownPortalCreated
+  provenance: ida-discovered
+  ida:
+    address: 6173106
+- op: REMOVE_DOOR
+  direction: clientbound
+  opcode: 207
+  fname: CTownPortalPool::OnTownPortalRemoved
+  provenance: ida-discovered
+  ida:
+    address: 6175552
+- op: CANNOT_SPAWN_KITE
+  direction: clientbound
+  opcode: 197
+  fname: CMessageBoxPool::OnCreateFailed
+  provenance: ida-discovered
+  ida:
+    address: 5518030
+- op: SPAWN_KITE
+  direction: clientbound
+  opcode: 198
+  fname: CMessageBoxPool::OnMessageBoxEnterField
+  provenance: ida-discovered
+  ida:
+    address: 5518071
+- op: REMOVE_KITE
+  direction: clientbound
+  opcode: 199
+  fname: CMessageBoxPool::OnMessageBoxLeaveField
+  provenance: ida-discovered
+  ida:
+    address: 5519582
+- op: REACTOR_HIT
+  direction: clientbound
+  opcode: 210
+  fname: CReactorPool::OnReactorChangeState
+  provenance: ida-discovered
+  ida:
+    address: 5919684
+- op: REACTOR_SPAWN
+  direction: clientbound
+  opcode: 212
+  fname: CReactorPool::OnReactorEnterField
+  provenance: ida-discovered
+  ida:
+    address: 5919924
+- op: REACTOR_DESTROY
+  direction: clientbound
+  opcode: 213
+  fname: CReactorPool::OnReactorLeaveField
+  provenance: ida-discovered
+  ida:
+    address: 5920907
+
+# ------------- serverbound: item-use / mob pickup (task-188) -------------
+# Opcodes are the COutPacket ctor argument at each send-site:
+#   CWvsContext::SendPetFoodItemUseRequest @0x70df2f - COutPacket(60)
+#   CWvsContext::SendUpgradeItemUseRequest @0x70da60 - COutPacket(66)
+#   CMob::SendDropPickUpRequest            @0x55220a - COutPacket(131)
+- op: PET_FOOD
+  direction: serverbound
+  opcode: 60
+  fname: CWvsContext::SendPetFoodItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 7397167
+- op: USE_UPGRADE_SCROLL
+  direction: serverbound
+  opcode: 66
+  fname: CWvsContext::SendUpgradeItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 7395936
+- op: MOB_DROP_PICKUP_REQUEST
+  direction: serverbound
+  opcode: 131
+  fname: CMob::SendDropPickUpRequest
+  provenance: ida-discovered
+  ida:
+    address: 5579274
+
+- op: SPAWN_PET
+  direction: clientbound
+  opcode: 109
+  fname: CUser::OnPetPacket
+  provenance: ida-discovered
+  ida:
+    address: 6890011
+  note: 'CUser::OnPetPacket @0x69221b is reached from CUserPool::OnUserCommonPacket @0x6b2a51 for opcodes 108-115; inside it, 109 is the spawn arm and 110 the destroy arm (111 CPet::OnMove, 112 OnAction, 113 OnNameChanged). v61 uses 127.'
+- op: MOB_AFFECTED
+  direction: clientbound
+  opcode: 168
+  fname: CMob::OnAffected
+  provenance: ida-discovered
+  ida:
+    address: 5574988
+  note: 'CMobPool::OnMobPacket @0x559390 switches 162 OnMove / 163 OnCtrlAck / 165 OnStatSet / 166 OnStatReset / 167 OnSuspendReset / 168 OnAffected / 169 OnDamaged / 170 OnSpecialEffectBySkill. v61 uses 184.'
+- op: SPAWN_PET
+  direction: serverbound
+  opcode: 77
+  fname: CWvsContext::SendActivatePetRequest
+  provenance: ida-discovered
+  ida:
+    address: 7459096
+  note: 'Serverbound twin of the clientbound SPAWN_PET above. CWvsContext::SendActivatePetRequest @0x71d118 builds COutPacket(77) and encodes Encode4(tick) + Encode2(slot).'
+

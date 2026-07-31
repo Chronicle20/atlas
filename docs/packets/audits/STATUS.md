@@ -105,7 +105,7 @@ Tool: `790129c3b10f8c0a0fa07a12475d1b10fd324431b3e043b1bd828e3e96fe8bde`
 | IDA_0X03F | sub_720293 |  | 0x03F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | EXPEDITION_RESULT | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ |  | ⬜ |
 | MAPLE_TV_USE_RES | CWvsContext::OnMapleTVUseRes |  | 0x040 | ❌ | 0x052 | ❌ | 0x065 | ❌ | 0x067 | ❌ | 0x06D | ❌ | 0x070 | ❌ | 0x070 | ❌ | 0x071 | ❌ |  | ⬜ |
-| AVATAR_MEGAPHONE_RESULT | CWvsContext::OnAvatarMegaphoneRes | chat/clientbound/ChatAvatarMegaphoneResult | 0x041 | ❌ | 0x053 | ❌ | 0x066 | ❌ | 0x068 | ❌ | 0x06E | ✅ | 0x071 | ✅ | 0x071 | ✅ | 0x072 | ✅ |  | ⬜ |
+| AVATAR_MEGAPHONE_RESULT | CWvsContext::OnAvatarMegaphoneRes | chat/clientbound/ChatAvatarMegaphoneResult | 0x041 | 🟡ᵈ | 0x053 | ❌ | 0x066 | ❌ | 0x068 | ❌ | 0x06E | ✅ | 0x071 | ✅ | 0x071 | ✅ | 0x072 | ✅ |  | ⬜ |
 | SET_AVATAR_MEGAPHONE | CWvsContext::OnSetAvatarMegaphone | chat/clientbound/ChatSetAvatarMegaphone (T1) | 0x042 | ✅ | 0x054 | ✅ | 0x067 | ✅ | 0x069 | ✅ | 0x06F | ✅ | 0x072 | ✅ | 0x072 | ✅ | 0x073 | ✅ | 0x05A | ✅ |
 | IDA_0X043 | sub_721465 |  | 0x043 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | IDA_0X044 | sub_721481 |  | 0x044 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
@@ -153,7 +153,7 @@ Tool: `790129c3b10f8c0a0fa07a12475d1b10fd324431b3e043b1bd828e3e96fe8bde`
 | BONUS_EXP_CHANGED | CWvsContext::OnBonusExpRateChanged |  |  | ⬜ |  | ⬜ | 0x055 | ❌ | 0x056 | ❌ | 0x05D | ❌ | 0x05F | ❌ | 0x05F | ❌ | 0x060 | ❌ | 0x064 | ❌ |
 | CLEAR_AVATAR_MEGAPHONE | CWvsContext::OnClearAvatarMegaphone | chat/clientbound/ChatClearAvatarMegaphone |  | ⬜ | 0x055 | ❌ | 0x068 | ❌ | 0x06A | ❌ | 0x070 | ✅ | 0x073 | ✅ | 0x073 | ✅ | 0x074 | ✅ | 0x05B | ✅ |
 | CANCEL_NAME_CHANGE_RESULT | CWvsContext::OnCancelNameChangeResult |  |  | ⬜ | 0x056 | ❌ | 0x069 | ❌ | 0x06B | ❌ | 0x071 | ❌ | 0x074 | ❌ | 0x074 | ❌ | 0x075 | ❌ |  | ⬜ |
-| PLAY_JUKEBOX | CField::OnPlayJukeBox; sub_4C95F2 | field/clientbound/FieldPlayJukebox (T1) | 0x056 | ❌ |  | ⬜ | 0x083 | 🟡ᶠ | 0x087 | 🟡ᶠ | 0x08F | ✅ | 0x092 | ✅ | 0x097 | ✅ | 0x09F | ✅ | 0x08C | ✅ |
+| PLAY_JUKEBOX | CField::OnPlayJukeBox; sub_4C95F2 | field/clientbound/FieldPlayJukebox (T1) | 0x056 | 🟡ᶠ |  | ⬜ | 0x083 | 🟡ᶠ | 0x087 | 🟡ᶠ | 0x08F | ✅ | 0x092 | ✅ | 0x097 | ✅ | 0x09F | ✅ | 0x08C | ✅ |
 | POTION_DISCOUNT_RATE_CHANGED | CWvsContext::OnPotionDiscountRateChanged |  |  | ⬜ |  | ⬜ | 0x056 | ❌ | 0x057 | ❌ |  | ⬜ | 0x060 | ❌ | 0x060 | ❌ | 0x061 | ❌ |  | ⬜ |
 | ADMIN_RESULT | CField::OnAdminResult; sub_57255F | field/clientbound/FieldAdminResult (T1) | 0x057 | ✅ | 0x06B | 🟡ᶠ | 0x084 | 🟡ᶠ | 0x088 | ✅ | 0x090 | ✅ | 0x093 | ✅ | 0x098 | ✅ | 0x0A0 | ✅ | 0x08D | ✅ |
 | CANCEL_TRANSFER_WORLD_RESULT | CWvsContext::OnCancelTransferWorldResult |  |  | ⬜ | 0x057 | ❌ | 0x06A | ❌ | 0x06C | ❌ | 0x072 | ❌ | 0x075 | ❌ | 0x075 | ❌ | 0x076 | ❌ |  | ⬜ |
@@ -318,7 +318,7 @@ Tool: `790129c3b10f8c0a0fa07a12475d1b10fd324431b3e043b1bd828e3e96fe8bde`
 | HIT_BY_USER | CUser::OnHitByUser |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BF | ❌ |  | ⬜ |
 | MOB_ATTACKED_BY_MOB | CMob::OnMobAttackedByMob | monster/clientbound/MonsterMobAttackedByMob (T1) |  | ⬜ | 0x0C0 | 🟡ᶠ | 0x0E1 | 🟡ᶠ | 0x0E9 | 🟡ᶠ | 0x0FF | ✅ | 0x106 | ✅ | 0x110 | ✅ | 0x135 | ✅ |  | ⬜ |
 | TESLA_TRIANGLE | CUser::OnTeslaTriangle |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C0 | ❌ |  | ⬜ |
-| DROP_ITEM_FROM_MAPOBJECT | CDropPool::OnDropEnterField | drop/clientbound/DropSpawn (T1) | 0x0C1 | ❌ | 0x0CD | 🟡ᵈ | 0x0EE | 🟡ᵈ | 0x0F6 | 🟡ᵈ | 0x10C | ✅ | 0x113 | ✅ | 0x11D | ✅ | 0x142 | ✅ | 0x121 | ✅ |
+| DROP_ITEM_FROM_MAPOBJECT | CDropPool::OnDropEnterField | drop/clientbound/DropSpawn | 0x0C1 | 🟡ᵈ | 0x0CD | 🟡ᵈ | 0x0EE | 🟡ᵈ | 0x0F6 | 🟡ᵈ | 0x10C | ✅ | 0x113 | ✅ | 0x11D | ✅ | 0x142 | ✅ | 0x121 | ✅ |
 | FOLLOW_CHARACTER | CUser::OnFollowCharacter |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C1 | ❌ |  | ⬜ |
 | REMOVE_ITEM_FROM_MAP | CDropPool::OnDropLeaveField | drop/clientbound/DropDestroy (T1) | 0x0C2 | ❌ | 0x0CE | ✅ | 0x0EF | ✅ | 0x0F7 | ✅ | 0x10D | ✅ | 0x114 | ✅ | 0x11E | ✅ | 0x144 | ✅ | 0x122 | ✅ |
 | SHOW_PQ_REWARD | CUser::OnShowPQReward |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C2 | ❌ |  | ⬜ |
@@ -859,7 +859,7 @@ Tool: `790129c3b10f8c0a0fa07a12475d1b10fd324431b3e043b1bd828e3e96fe8bde`
 | character/serverbound/ChalkboardClose (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ExpressionRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | character/serverbound/Move (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| fame/serverbound/Change |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| fame/serverbound/Change |  |  | 🟡ᵈ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | field/clientbound/FieldEffectWeather (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | field/serverbound/FieldChange (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | field/serverbound/FieldItcOperationBuy (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -922,18 +922,18 @@ Tool: `790129c3b10f8c0a0fa07a12475d1b10fd324431b3e043b1bd828e3e96fe8bde`
 | login/clientbound/AuthPermanentBan |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/AuthSuccess (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/AuthTemporaryBan |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| login/clientbound/PinOperation |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| login/clientbound/PinUpdate |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| login/clientbound/PinOperation |  |  | 🟡ᵖ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| login/clientbound/PinUpdate |  |  | 🟡ᵖ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/ServerIP (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| login/clientbound/ServerListEnd |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| login/clientbound/ServerListEnd |  |  | 🟡ᵖ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/ServerListEntry |  |  | 🟡ᵖ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| login/clientbound/ServerStatus |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| login/clientbound/SetAccountResult |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| login/clientbound/ServerStatus |  |  | 🟡ᵖ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| login/clientbound/SetAccountResult |  |  | 🟡ᵈ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/serverbound/AfterLogin (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/serverbound/AllCharacterListPong |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/serverbound/ServerListRequest |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | login/serverbound/ServerStatusRequest |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| login/serverbound/WorldCharacterListRequest |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| login/serverbound/WorldCharacterListRequest |  |  | 🟡ᵈ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | messenger/clientbound/MessengerAdd (T1) |  |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | messenger/clientbound/MessengerChat (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | messenger/clientbound/MessengerInviteDeclined (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -990,6 +990,7 @@ Tool: `790129c3b10f8c0a0fa07a12475d1b10fd324431b3e043b1bd828e3e96fe8bde`
 | storage/serverbound/StorageOperationStoreAsset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | summon/serverbound/SummonAttackHandle (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | summon/serverbound/SummonMoveHandle |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| tv/clientbound/TvTvSendMessageResult |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | ui/clientbound/Disable |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | ui/clientbound/Lock |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |
 
@@ -997,15 +998,15 @@ Tool: `790129c3b10f8c0a0fa07a12475d1b10fd324431b3e043b1bd828e3e96fe8bde`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 181 | 0 | 3 | 161 | 617 | 0 | 52.5% |
-| v61 | 255 | 0 | 60 | 189 | 458 | 0 | 50.6% |
-| v72 | 265 | 0 | 73 | 208 | 416 | 0 | 48.5% |
-| v79 | 309 | 0 | 72 | 204 | 377 | 0 | 52.8% |
-| v83 | 428 | 0 | 0 | 312 | 222 | 0 | 57.8% |
-| v84 | 402 | 0 | 0 | 318 | 242 | 0 | 55.8% |
-| v87 | 436 | 0 | 0 | 341 | 185 | 0 | 56.1% |
-| v95 | 461 | 0 | 0 | 400 | 101 | 0 | 53.5% |
-| JMS185 | 415 | 0 | 0 | 355 | 192 | 0 | 53.9% |
+| v48 | 181 | 0 | 13 | 152 | 617 | 0 | 52.3% |
+| v61 | 255 | 0 | 60 | 190 | 458 | 0 | 50.5% |
+| v72 | 265 | 0 | 73 | 209 | 416 | 0 | 48.4% |
+| v79 | 309 | 0 | 72 | 205 | 377 | 0 | 52.7% |
+| v83 | 428 | 0 | 0 | 313 | 222 | 0 | 57.8% |
+| v84 | 402 | 0 | 0 | 319 | 242 | 0 | 55.8% |
+| v87 | 436 | 0 | 0 | 342 | 185 | 0 | 56.0% |
+| v95 | 461 | 0 | 0 | 401 | 101 | 0 | 53.5% |
+| JMS185 | 415 | 0 | 0 | 356 | 192 | 0 | 53.8% |
 
 ## Conflicts
 

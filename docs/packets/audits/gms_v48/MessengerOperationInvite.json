@@ -1,21 +1,30 @@
 {
   "WriterName": "MessengerOperationInvite",
   "IDAName": "CUIMessenger::SendInviteMsg",
-  "Address": "",
+  "Address": "0x61d8b8",
   "Variant": "GMS/v48",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/messenger/serverbound/operation_invite.go",
   "Rows": [
     {
       "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "sub-op = 3 (INVITE)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 4,
+      "IDAComment": "target character name",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

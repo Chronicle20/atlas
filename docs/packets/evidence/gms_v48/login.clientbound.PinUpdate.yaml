@@ -1,0 +1,10 @@
+packet: login/clientbound/PinUpdate
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnUpdatePinCodeResult
+    address: "0x503c92"
+    decompile_sha256: 01efb21d3bc454bd31f328c618ccdbd8a678e040d1a400bad8a83d766fab6f52
+verifies:
+    - libs/atlas-packet/login/clientbound/login_v48_test.go#TestPinUpdateBytesV48

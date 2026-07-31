@@ -1539,12 +1539,12 @@
       },
       {
         "opCode": "0x55",
-        "writer": "FieldObstacleOnOffList",
+        "writer": "FieldEffectWeather",
         "services": ["channel"]
       },
       {
         "opCode": "0x56",
-        "writer": "FieldEffectWeather",
+        "writer": "PlayJukebox",
         "services": ["channel"]
       },
       {

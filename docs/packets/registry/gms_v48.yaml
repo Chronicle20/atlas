@@ -1563,3 +1563,68 @@
   ida:
     address: 7397387   # 0x70e00b
   note: 'v48 SendTamingMobFoodItemUseRequest COutPacket(61) @0x70e00b; Encode4(update_time)·Encode2(slot)·Encode4(itemId); guard nItemID/10000==226 (taming-mob food). Corrects prior false n-a (op was absent from registry). task-138.'
+
+# ---------------- clientbound: object pools (task-188) ----------------
+# The Stage-B registry deliberately deferred the mob/npc/drop pool leaves. Their
+# opcodes are read directly off each pool's own numeric dispatcher in the v48
+# client, not shifted from v61:
+#   CMobPool::OnPacket  @0x559340 - 158 enter / 159 leave / 160 change-controller
+#   CNpcPool::OnPacket  @0x56d413 - 177 enter / 178 leave / 179 change-controller
+#   CDropPool::OnPacket @0x4aaccf - 193 enter / 194 leave
+# Op names match the gms_v61 dictionary; only the codes differ.
+- op: SPAWN_MONSTER
+  direction: clientbound
+  opcode: 158
+  fname: CMobPool::OnMobEnterField
+  provenance: ida-discovered
+  ida:
+    address: 5608517
+- op: KILL_MONSTER
+  direction: clientbound
+  opcode: 159
+  fname: CMobPool::OnMobLeaveField
+  provenance: ida-discovered
+  ida:
+    address: 5608827
+- op: SPAWN_MONSTER_CONTROL
+  direction: clientbound
+  opcode: 160
+  fname: CMobPool::OnMobChangeController
+  provenance: ida-discovered
+  ida:
+    address: 5609232
+- op: SPAWN_NPC
+  direction: clientbound
+  opcode: 177
+  fname: CNpcPool::OnNpcEnterField
+  provenance: ida-discovered
+  ida:
+    address: 5690663
+- op: REMOVE_NPC
+  direction: clientbound
+  opcode: 178
+  fname: CNpcPool::OnNpcLeaveField
+  provenance: ida-discovered
+  ida:
+    address: 5690809
+- op: SPAWN_NPC_REQUEST_CONTROLLER
+  direction: clientbound
+  opcode: 179
+  fname: CNpcPool::OnNpcChangeController
+  provenance: ida-discovered
+  ida:
+    address: 5690903
+- op: DROP_ITEM_FROM_MAPOBJECT
+  direction: clientbound
+  opcode: 193
+  fname: CDropPool::OnDropEnterField
+  provenance: ida-discovered
+  ida:
+    address: 4893940
+- op: REMOVE_ITEM_FROM_MAP
+  direction: clientbound
+  opcode: 194
+  fname: CDropPool::OnDropLeaveField
+  provenance: ida-discovered
+  ida:
+    address: 4897018

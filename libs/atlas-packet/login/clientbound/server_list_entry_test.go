@@ -134,8 +134,12 @@ func TestServerListEntryRoundTrip(t *testing.T) {
 
 func TestServerListEntryRoundTripWithBalloons(t *testing.T) {
 	for _, v := range pt.Variants {
-		// Balloon block is only emitted for (GMS && >12) || JMS.
-		if !((v.Region == "GMS" && v.MajorVersion > 12) || v.Region == "JMS") {
+		// Balloon block is only emitted for (GMS && >=61) || JMS. The old bound
+		// here was >12, which asserted balloons on v48 — but v48
+		// CLogin::OnWorldInformation @0x50120a returns at 0x5013dc straight after
+		// the channel loop and never reads them (v61 @0x56663f does, @0x5667ea).
+		// This test was pinning Atlas's own output, not the client's read order.
+		if (v.Region != "GMS" || v.MajorVersion < 61) && v.Region != "JMS" {
 			continue
 		}
 		t.Run(v.Name, func(t *testing.T) {

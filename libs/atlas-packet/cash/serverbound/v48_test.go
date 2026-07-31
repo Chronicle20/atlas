@@ -94,3 +94,48 @@ func TestBuyNameChangeBytesV48(t *testing.T) {
 		t.Errorf("v48 buy name change:\n got % x\nwant % x", got, want)
 	}
 }
+
+// TestBuyNormalBytesV48 — CCashShop::OnBuyNormal @0x44cbb2 builds COutPacket(160)
+// and encodes Encode1(0x1F) @0x44cdbd (mode), Encode4(spw) @0x44cdc8 - the
+// ask_SPW() result - Encode4(serialNumber) @0x44cdd3, EncodeStr(name) @0x44cdec
+// and EncodeStr(message) @0x44ce05. That is exactly the buyOmitsCurrency branch
+// the codec already takes for GMS below 61; no change needed.
+//
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuyNormal version=gms_v48 ida=0x44cbb2
+func TestBuyNormalBytesV48(t *testing.T) {
+	in := ShopOperationBuyNormal{spw: 0x01020304, serialNumber: 0x0A0B0C0D, name: "ab", message: "cd"}
+	got := in.Encode(nil, pt.CreateContext("GMS", 48, 1))(nil)
+	want := []byte{
+		0x04, 0x03, 0x02, 0x01, // spw          — Encode4 @0x44cdc8
+		0x0D, 0x0C, 0x0B, 0x0A, // serialNumber — Encode4 @0x44cdd3
+		0x02, 0x00, 'a', 'b', // name         — EncodeStr @0x44cdec
+		0x02, 0x00, 'c', 'd', // message      — EncodeStr @0x44ce05
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v48 buy normal:\n got % x\nwant % x", got, want)
+	}
+}
+
+// TestSetWishlistBytesV48 — CCashShop::OnSetWish @0x44ce9b builds COutPacket(160),
+// encodes Encode1(4) @0x44cf86 (mode) and then loops Encode4 @0x44cfb3 exactly ten
+// times (`while (v17 < 10)` @0x44cfc3). The codec's decoder reads a fixed ten, so
+// the shapes agree; no change needed.
+//
+// packet-audit:verify packet=cash/serverbound/CashShopOperationSetWishlist version=gms_v48 ida=0x44ce9b
+func TestSetWishlistBytesV48(t *testing.T) {
+	sns := make([]uint32, 10)
+	for i := range sns {
+		sns[i] = uint32(i + 1)
+	}
+	got := ShopOperationSetWishlist{serialNumbers: sns}.Encode(nil, pt.CreateContext("GMS", 48, 1))(nil)
+	if len(got) != 40 {
+		t.Fatalf("v48 set wishlist length = %d, want 40 (ten Encode4)", len(got))
+	}
+	want := make([]byte, 0, 40)
+	for i := 1; i <= 10; i++ {
+		want = append(want, byte(i), 0x00, 0x00, 0x00)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v48 set wishlist:\n got % x\nwant % x", got, want)
+	}
+}

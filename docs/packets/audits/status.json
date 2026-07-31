@@ -24589,8 +24589,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 168
         },
         "gms_v61": {
@@ -27583,8 +27582,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
+          "state": "verified",
           "opcode": 197
         },
         "gms_v61": {
@@ -27836,8 +27834,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 198
         },
         "gms_v61": {
@@ -28050,8 +28047,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 199
         },
         "gms_v61": {
@@ -28855,8 +28851,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 206
         },
         "gms_v61": {
@@ -29008,8 +29003,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": 207
         },
         "gms_v61": {

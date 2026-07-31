@@ -283,7 +283,7 @@ Tool: `790129c3b10f8c0a0fa07a12475d1b10fd324431b3e043b1bd828e3e96fe8bde`
 | IDA_0X0A7 | sub_9F186A |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A7 | ❌ |
 | NOTIFY_HP_DEC_BY_FIELD | CUserLocal::OnNotifyHPDecByField |  |  | ⬜ | 0x0A7 | ❌ | 0x0C2 | ❌ | 0x0C6 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | IDA_0X0A8 | sub_5604F9; sub_9F199E |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A8 | ❌ |  | ⬜ | 0x0A8 | ❌ |
-| MOB_AFFECTED | CMob::OnAffected | monster/clientbound/MonsterMobAffected (T1) | 0x0A8 | 🟡ᶠ | 0x0B8 | 🟡ᶠ | 0x0D9 | 🟡ᶠ | 0x0DF | 🟡ᶠ | 0x0F5 | ✅ | 0x0FB | ✅ | 0x105 | ✅ | 0x125 | ✅ | 0x106 | ✅ |
+| MOB_AFFECTED | CMob::OnAffected | monster/clientbound/MonsterMobAffected (T1) | 0x0A8 | ✅ | 0x0B8 | 🟡ᶠ | 0x0D9 | 🟡ᶠ | 0x0DF | 🟡ᶠ | 0x0F5 | ✅ | 0x0FB | ✅ | 0x105 | ✅ | 0x125 | ✅ | 0x106 | ✅ |
 | IDA_0X0A9 | CUser::OnHitByUser; sub_5605FF |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A9 | ❌ |  | ⬜ | 0x0A9 | ❌ |
 | PLAYER_HINT | CUserLocal::OnBalloonMsg | character/clientbound/CharacterHint (T1) |  | ⬜ | 0x0A9 | 🟡ᶠ | 0x0C4 | 🟡ᶠ | 0x0C8 | 🟡ᶠ | 0x0D6 | ✅ | 0x0DA | ✅ | 0x0E3 | ✅ | 0x0F5 | ✅ | 0x0DF | ✅ |
 | FOOTHOLD_INFO | CField::OnFootHoldInfo | field/clientbound/FieldFootholdInfo (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AA | ✅ | 0x0B0 | ✅ | 0x09C | ✅ |
@@ -323,14 +323,14 @@ Tool: `790129c3b10f8c0a0fa07a12475d1b10fd324431b3e043b1bd828e3e96fe8bde`
 | REMOVE_ITEM_FROM_MAP | CDropPool::OnDropLeaveField | drop/clientbound/DropDestroy (T1) | 0x0C2 | ❌ | 0x0CE | ✅ | 0x0EF | ✅ | 0x0F7 | ✅ | 0x10D | ✅ | 0x114 | ✅ | 0x11E | ✅ | 0x144 | ✅ | 0x122 | ✅ |
 | SHOW_PQ_REWARD | CUser::OnShowPQReward |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C2 | ❌ |  | ⬜ |
 | SET_PHASE | CUser::OnSetPhase |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C3 | ❌ |  | ⬜ |
-| CANNOT_SPAWN_KITE | CMessageBoxPool::OnCreateFailed | field/clientbound/FieldKiteError (T1) | 0x0C5 | ❌ | 0x0CF | 🟡ᶠ | 0x0F0 | 🟡ᶠ | 0x0F8 | 🟡ᶠ | 0x10E | ✅ | 0x10E | ✅ | 0x11F | ✅ | 0x145 | ✅ | 0x123 | ✅ |
+| CANNOT_SPAWN_KITE | CMessageBoxPool::OnCreateFailed | field/clientbound/FieldKiteError (T1) | 0x0C5 | ✅ | 0x0CF | 🟡ᶠ | 0x0F0 | 🟡ᶠ | 0x0F8 | 🟡ᶠ | 0x10E | ✅ | 0x10E | ✅ | 0x11F | ✅ | 0x145 | ✅ | 0x123 | ✅ |
 | NPC_ACTION | CNpc::OnMove | npc/clientbound/NpcAction (T1) |  | ⬜ | 0x0C5 | ✅ | 0x0E6 | ✅ | 0x0EE | ✅ | 0x104 | ❌ | 0x10B | ❌ | 0x115 | ❌ | 0x13A | ❌ | 0x119 | ❌ |
 | SHOW_RECOVERY_UPGRADE_COUNT_EFFECT | CUser::ShowRecoverUpgradeCountEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C5 | ❌ |  | ⬜ |
-| SPAWN_KITE | CMessageBoxPool::OnMessageBoxEnterField | field/clientbound/FieldKiteSpawn (T1) | 0x0C6 | 🟡ᶠ | 0x0D0 | 🟡ᶠ | 0x0F1 | 🟡ᶠ | 0x0F9 | 🟡ᶠ | 0x10F | ✅ | 0x10F | ✅ | 0x120 | ✅ | 0x146 | ✅ | 0x124 | ✅ |
+| SPAWN_KITE | CMessageBoxPool::OnMessageBoxEnterField | field/clientbound/FieldKiteSpawn (T1) | 0x0C6 | ✅ | 0x0D0 | 🟡ᶠ | 0x0F1 | 🟡ᶠ | 0x0F9 | 🟡ᶠ | 0x10F | ✅ | 0x10F | ✅ | 0x120 | ✅ | 0x146 | ✅ | 0x124 | ✅ |
 | UPDATE_LIMITED_INFO | CNpc::OnUpdateLimitedInfo |  |  | ⬜ | 0x0C6 | ❌ | 0x0E7 | ❌ | 0x0EF | ❌ | 0x105 | ❌ | 0x10C | ❌ | 0x116 | ❌ | 0x13B | ❌ |  | ⬜ |
 | MAKER_RESULT | CUserLocal::OnMakerResult |  |  | ⬜ |  | ⬜ | 0x0C7 | ❌ | 0x0CB | ❌ | 0x0D9 | ❌ | 0x0DD | ❌ | 0x0E6 | ❌ | 0x0F8 | ❌ | 0x0E2 | ❌ |
 | NPC_SPECIAL_ACTION | CNpc::OnSetSpecialAction |  |  | ⬜ | 0x0C7 | ❌ | 0x0E8 | ❌ | 0x0F0 | ❌ | 0x106 | ❌ | 0x10D | ❌ | 0x117 | ❌ | 0x13C | ❌ |  | ⬜ |
-| REMOVE_KITE | CMessageBoxPool::OnMessageBoxLeaveField | field/clientbound/FieldKiteDestroy (T1) | 0x0C7 | 🟡ᶠ | 0x0D1 | 🟡ᶠ | 0x0F2 | 🟡ᶠ | 0x0FA | 🟡ᶠ | 0x110 | ✅ | 0x117 | ✅ | 0x121 | ✅ | 0x147 | ✅ | 0x125 | ✅ |
+| REMOVE_KITE | CMessageBoxPool::OnMessageBoxLeaveField | field/clientbound/FieldKiteDestroy (T1) | 0x0C7 | ✅ | 0x0D1 | 🟡ᶠ | 0x0F2 | 🟡ᶠ | 0x0FA | 🟡ᶠ | 0x110 | ✅ | 0x117 | ✅ | 0x121 | ✅ | 0x147 | ✅ | 0x125 | ✅ |
 | SET_NPC_SCRIPTABLE | CNpcPool::OnSetNpcScript; CNpcTemplate::OnSetNpcScript; sub_5EFDA2; sub_645E9C; sub_668A2D |  |  | ⬜ | 0x0C8 | ❌ | 0x0E9 | ❌ | 0x0F1 | ❌ | 0x107 | ❌ | 0x107 | ❌ | 0x118 | ❌ | 0x13D | ❌ | 0x11C | ❌ |
 | KOREAN_EVENT | CUserLocal::OnOpenClassCompetitionPage |  |  | ⬜ |  | ⬜ | 0x0C9 | ❌ | 0x0CD | ❌ | 0x0DB | ❌ | 0x0DF | ❌ | 0x0E8 | ❌ | 0x0FA | ❌ | 0x0E3 | ❌ |
 | LOCK_UI | CUserLocal::OnSetDirectionMode; CUserLocal::SetDirectionMode; sub_A2CD83 | ui/clientbound/Lock |  | ⬜ |  | ⬜ | 0x0CA | ❌ | 0x0CE | ❌ | 0x0DD | ❌ | 0x0E2 | ❌ | 0x0EB | ❌ | 0x0FD | ✅ | 0x0E7 | ❌ |
@@ -339,8 +339,8 @@ Tool: `790129c3b10f8c0a0fa07a12475d1b10fd324431b3e043b1bd828e3e96fe8bde`
 | DISABLE_UI | CUserLocal::OnSetStandAloneMode; sub_86C50E | ui/clientbound/Disable |  | ⬜ |  | ⬜ | 0x0CB | ❌ | 0x0CF | 🟡ᵈ | 0x0DE | ✅ | 0x0E3 | ✅ | 0x0EC | ✅ | 0x0FE | ✅ | 0x0E8 | ✅ |
 | SPAWN_GUIDE | CUserLocal::OnHireTutor; sub_86C65C |  |  | ⬜ |  | ⬜ | 0x0CC | ❌ | 0x0D0 | ❌ | 0x0DF | ❌ | 0x0E4 | ❌ | 0x0ED | ❌ | 0x0FF | ❌ | 0x0E9 | ❌ |
 | UPDATE_HIRED_MERCHANT | CEmployeePool::OnEmployeeMiniRoomBalloon |  |  | ⬜ | 0x0CC | ✅ | 0x0ED | ✅ | 0x0F5 | ✅ | 0x10B | ✅ | 0x112 | ✅ | 0x11C | ✅ | 0x141 | ✅ | 0x120 | ✅ |
-| SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor (T1) | 0x0CE | ❌ | 0x0D4 | ✅ | 0x0F5 | ✅ | 0x0FD | ✅ | 0x113 | ✅ | 0x11A | ✅ | 0x124 | ✅ | 0x14A | ✅ | 0x128 | ✅ |
-| REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved | door/clientbound/RemoveDoor | 0x0CF | 🟡ᵈ | 0x0D5 | 🟡ᵈ | 0x0F6 | 🟡ᵈ | 0x0FE | 🟡ᵈ | 0x114 | ✅ | 0x11B | ✅ | 0x125 | ✅ | 0x14B | ✅ | 0x129 | ✅ |
+| SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor (T1) | 0x0CE | ✅ | 0x0D4 | ✅ | 0x0F5 | ✅ | 0x0FD | ✅ | 0x113 | ✅ | 0x11A | ✅ | 0x124 | ✅ | 0x14A | ✅ | 0x128 | ✅ |
+| REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved | door/clientbound/RemoveDoor | 0x0CF | ✅ | 0x0D5 | 🟡ᵈ | 0x0F6 | 🟡ᵈ | 0x0FE | 🟡ᵈ | 0x114 | ✅ | 0x11B | ✅ | 0x125 | ✅ | 0x14B | ✅ | 0x129 | ✅ |
 | TALK_GUIDE | CUserLocal::OnTutorMsg | npc/clientbound/NpcGuideTalkIdx (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D1 | ✅ | 0x0E0 | ✅ | 0x0E5 | ✅ | 0x0EE | ✅ | 0x100 | ✅ | 0x0EA | ✅ |
 | MESO_BAG_MESSAGE | CUserLocal::OnRandomMesobag_Succeeded |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D2 | ❌ |  | ⬜ | 0x0DD | ❌ | 0x0EE | ❌ |  | ⬜ |
 | REACTOR_HIT | CReactorPool::OnReactorChangeState | reactor/clientbound/ReactorHit | 0x0D2 | ✅ | 0x0D6 | 🟡ᵈ | 0x0F7 | 🟡ᵈ | 0x0FF | 🟡ᵈ | 0x115 | ✅ | 0x11C | ✅ | 0x126 | ✅ | 0x14E | ✅ | 0x12D | ✅ |
@@ -998,7 +998,7 @@ Tool: `790129c3b10f8c0a0fa07a12475d1b10fd324431b3e043b1bd828e3e96fe8bde`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 183 | 0 | 21 | 156 | 603 | 0 | 50.8% |
+| v48 | 189 | 0 | 17 | 154 | 603 | 0 | 52.5% |
 | v61 | 255 | 0 | 60 | 190 | 458 | 0 | 50.5% |
 | v72 | 265 | 0 | 73 | 209 | 416 | 0 | 48.4% |
 | v79 | 309 | 0 | 72 | 205 | 377 | 0 | 52.7% |

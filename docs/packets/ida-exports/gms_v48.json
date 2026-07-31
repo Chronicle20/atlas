@@ -21254,6 +21254,37 @@
       "address": "0x6d8943",
       "direction": "",
       "calls": null
+    },
+    "CWvsContext::SendChangeSlotPositionRequest": {
+      "address": "0x70d8de",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result"
+        }
+      ]
     }
   }
 }

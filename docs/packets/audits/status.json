@@ -7856,8 +7856,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 60
         },
         "gms_v61": {
@@ -8830,8 +8829,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 66
         },
         "gms_v61": {
@@ -10422,8 +10420,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
+          "state": "verified",
           "opcode": 77
         },
         "gms_v61": {
@@ -19115,8 +19112,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 131
         },
         "gms_v61": {

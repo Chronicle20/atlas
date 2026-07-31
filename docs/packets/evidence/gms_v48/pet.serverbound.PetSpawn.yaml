@@ -1,0 +1,11 @@
+packet: pet/serverbound/PetSpawn
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendActivatePetRequest
+    address: "0x71d118"
+    decompile_sha256: ac8b3478d374ba89b62fa8c67de14a9abc7b13febc69a5885924e02c8599ae70
+verifies:
+    - libs/atlas-packet/pet/serverbound/v48_test.go#TestPetSpawnBytesV48
+    - libs/atlas-packet/pet/serverbound/v48_test.go#TestPetSpawnLeadBoundary

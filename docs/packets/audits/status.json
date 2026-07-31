@@ -1,7 +1,7 @@
 {
-  "toolSha": "97c871824cb9cfccdb7e682df23a12c435b560651d4ba7183ea0f9ae39861017",
+  "toolSha": "cb6fb266490afc69f41d2f4ea0756f1dec60b04f42bc0f4e6d558ea1698925d2",
   "exportHashes": {
-    "gms_v48": "297e85206e0590f69b760df0bd276d4162ebbd562a8ab3fc9788778f14becf10",
+    "gms_v48": "dc531ef9bd48d684bfe00632adba90b6716f2652ebb4870dfc6db19bc38caf51",
     "gms_v61": "88399107c52bad29136777addb2fd7a6f60e4cddb343dd854de14a7a2f421fa2",
     "gms_v72": "a33a8a94a368e48718724ea24f689743203064a2c787526dfbe0ae49aeefd439",
     "gms_v79": "1e9d2d49e506f03fa1d2270c468fcd90ba782dc05a06e8601ebdad5e16d825e6",
@@ -5683,6 +5683,60 @@
     },
     {
       "kind": "op",
+      "op": "ENTRUSTED_SHOP_CHECK_RESULT",
+      "packet": "merchant/clientbound/ConfirmManage",
+      "direction": "clientbound",
+      "tier1": false,
+      "fnames": [
+        "CWvsContext::OnEntrustedShopCheckResult"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "verdict ❌",
+          "opcode": 42
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "verdict ❌",
+          "opcode": 47
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "verdict ❌",
+          "opcode": 47
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "verdict ❌",
+          "opcode": 47
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 50
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "verdict 🚫",
+          "opcode": 50
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 50
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 49
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "verdict ❌",
+          "opcode": 47
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "FACE_EXPRESSION",
       "packet": "character/serverbound/ExpressionRequest",
       "direction": "serverbound",
@@ -5733,55 +5787,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 43
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "INCUBATOR_RESULT",
-      "packet": "incubator/clientbound/IncubatorResult",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "CWvsContext::OnIncubatorResult"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 42
-        },
-        "gms_v61": {
-          "state": "verified",
-          "opcode": 66
-        },
-        "gms_v72": {
-          "state": "verified",
-          "opcode": 66
-        },
-        "gms_v79": {
-          "state": "verified",
-          "opcode": 66
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 69
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 71
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 71
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 72
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 63
         }
       }
     },
@@ -6089,59 +6094,6 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 42
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "ENTRUSTED_SHOP_CHECK_RESULT",
-      "packet": "merchant/clientbound/ConfirmManage",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "CWvsContext::OnEntrustedShopCheckResult"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "verdict ❌",
-          "opcode": 47
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "verdict ❌",
-          "opcode": 47
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "verdict ❌",
-          "opcode": 47
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 50
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "verdict 🚫",
-          "opcode": 50
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 50
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 49
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "verdict ❌",
-          "opcode": 47
         }
       }
     },
@@ -7452,12 +7404,12 @@
     },
     {
       "kind": "op",
-      "op": "SHOP_SCANNER_RESULT",
-      "packet": "merchant/clientbound/ShopScannerHotList",
+      "op": "INCUBATOR_RESULT",
+      "packet": "incubator/clientbound/IncubatorResult",
       "direction": "clientbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
-        "CWvsContext::OnShopScannerResult"
+        "CWvsContext::OnIncubatorResult"
       ],
       "cells": {
         "gms_v48": {
@@ -7467,38 +7419,35 @@
         },
         "gms_v61": {
           "state": "verified",
-          "opcode": 67
+          "opcode": 66
         },
         "gms_v72": {
           "state": "verified",
-          "opcode": 67
+          "opcode": 66
         },
         "gms_v79": {
           "state": "verified",
-          "opcode": 67
+          "opcode": 66
         },
         "gms_v83": {
           "state": "verified",
-          "opcode": 70
+          "opcode": 69
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 72
+          "state": "verified",
+          "opcode": 71
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 72
+          "state": "verified",
+          "opcode": 71
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 73
+          "opcode": 72
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 64
+          "state": "verified",
+          "opcode": 63
         }
       }
     },
@@ -7553,10 +7502,12 @@
     },
     {
       "kind": "op",
-      "op": "IDA_0X039",
+      "op": "SHOP_SCANNER_RESULT",
+      "packet": "merchant/clientbound/ShopScannerHotList",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
+        "CWvsContext::OnShopScannerResult",
         "sub_71FF8E"
       ],
       "cells": {
@@ -7566,36 +7517,39 @@
           "opcode": 57
         },
         "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 67
         },
         "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 67
         },
         "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 67
         },
         "gms_v83": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 70
         },
         "gms_v84": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 72
         },
         "gms_v87": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 72
         },
         "gms_v95": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 73
         },
         "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 64
         }
       }
     },
@@ -11944,6 +11898,60 @@
     },
     {
       "kind": "op",
+      "op": "BLOW_WEATHER",
+      "packet": "field/clientbound/FieldEffectWeather",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField::OnBlowWeather",
+        "sub_4C930A",
+        "sub_4ED39C",
+        "sub_5723E6"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 85
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 106
+        },
+        "gms_v72": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 130
+        },
+        "gms_v79": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 134
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 142
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 145
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 150
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 158
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 139
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "BONUS_EXP_CHANGED",
       "direction": "clientbound",
       "tier1": false,
@@ -12049,58 +12057,6 @@
     },
     {
       "kind": "op",
-      "op": "FIELD_OBSTACLE_ONOFF_LIST",
-      "packet": "field/clientbound/FieldFieldObstacleOnOffList",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField::OnFieldObstacleOnOffStatus",
-        "sub_4C930A"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "verified",
-          "opcode": 85
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
-          "opcode": 105
-        },
-        "gms_v72": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 128
-        },
-        "gms_v79": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 132
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 140
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 143
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 148
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 156
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 137
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "QUEST_ACTION",
       "packet": "quest/serverbound/ActionScriptEnd",
       "direction": "serverbound",
@@ -12152,60 +12108,6 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 102
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "BLOW_WEATHER",
-      "packet": "field/clientbound/FieldEffectWeather",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField::OnBlowWeather",
-        "sub_4C95F2",
-        "sub_4ED39C",
-        "sub_5723E6"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "verified",
-          "opcode": 86
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 106
-        },
-        "gms_v72": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 130
-        },
-        "gms_v79": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 134
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 142
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 145
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 150
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 158
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 139
         }
       }
     },
@@ -12309,6 +12211,58 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 89
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "PLAY_JUKEBOX",
+      "packet": "field/clientbound/FieldPlayJukebox",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField::OnPlayJukeBox",
+        "sub_4C95F2"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict 🔍",
+          "opcode": 86
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 131
+        },
+        "gms_v79": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 135
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 143
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 146
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 151
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 159
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 140
         }
       }
     },
@@ -15972,6 +15926,57 @@
     },
     {
       "kind": "op",
+      "op": "FIELD_OBSTACLE_ONOFF_LIST",
+      "packet": "field/clientbound/FieldFieldObstacleOnOffList",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField::OnFieldObstacleOnOffStatus"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict 🔍",
+          "opcode": 105
+        },
+        "gms_v72": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 128
+        },
+        "gms_v79": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 132
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 140
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 143
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 148
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 156
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 137
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "CLAIM_REQUEST",
       "direction": "serverbound",
       "tier1": false,
@@ -19198,56 +19203,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 178
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "PLAY_JUKEBOX",
-      "packet": "field/clientbound/FieldPlayJukebox",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField::OnPlayJukeBox"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 131
-        },
-        "gms_v79": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 135
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 143
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 146
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 151
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 159
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 140
         }
       }
     },

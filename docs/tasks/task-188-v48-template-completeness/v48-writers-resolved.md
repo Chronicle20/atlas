@@ -209,3 +209,43 @@ corrected.
 `CStoreBankDlg` (228-231), `CCashShop` (254-261), `z_MISLABELED_notRPS_channelFindDlg`
 (233-236) and the `CUserLocal` `sub_6A*` leaves (145-154). No writer in group 1 depends
 on these; they would only add entries beyond the verified-absent set.
+
+---
+
+## Serverbound handler harvest (task-188)
+
+Serverbound has no dispatch switch to walk — each handler is a separate client-side
+send-site — so the method is: take the handler's v83 sender FName, look it up in the v48
+IDB, and read the `COutPacket(N)` constructor argument. `COutPacket::COutPacket` is
+`??0COutPacket@@QAE@J@Z` @ `0x57b77e`; the opcode is its second argument.
+
+The committed registry's serverbound set was already exhausted against this template —
+80 of its 81 entries sit on opcodes the template already used — so these are new.
+
+| v48 opCode | Handler | Sender | evidence |
+|---|---|---|---|
+| `0x32` | `HiredMerchantOperationHandle` | `CWvsContext::SendEntrustedShopCheckRequest` @ `0x71f56a` | `COutPacket(50)`, then `Encode1(0)` + `EncodeBuffer(8)` |
+| `0x3B` | `CharacterItemUseSummonBagHandle` | `CWvsContext::SendMobSummonItemUseRequest` @ `0x70ddaa` | `COutPacket(59)`, `Encode4`/`Encode2(slot)`/`Encode4(itemId)` |
+| `0x3C` | `PetFoodHandle` | `CWvsContext::SendPetFoodItemUseRequest` @ `0x70df2f` | `COutPacket(60)`, `Encode4`/`Encode2(slot)`/`Encode4(itemId)` |
+| `0x42` | `CharacterItemUseScrollHandle` | `CWvsContext::SendUpgradeItemUseRequest` @ `0x70da60` | `COutPacket(66)`, `Encode4`/`Encode2`×3/`Encode1` |
+| `0x4D` | `PetSpawnHandle` | `CWvsContext::SendActivatePetRequest` @ `0x71d118` | `COutPacket(77)`, `Encode4`/`Encode2(slot)` |
+
+`PetFoodHandle` landing at `0x3C`, directly before the existing `MountFoodHandle`
+`0x3D`, matches the pet/mount adjacency v61 shows (`0x47`/`0x48`) — an independent
+consistency check on the harvest.
+
+### Not added
+
+`CharacterItemUseTownScrollHandle` — `CWvsContext::SendPortalScrollUseRequest` @
+`0x719dd9` emits `COutPacket(65)` = `0x41`, but `0x41` is already
+`CharacterItemUseHandle` in this template. v48 therefore routes the town-scroll through
+the generic item-use opcode rather than a dedicated one; binding a second handler to
+`0x41` would double-map it at listener-build time. Left alone deliberately.
+
+### Remaining
+
+The other ~46 handlers' senders were not found by name in the v48 IDB in the batches run
+so far (`DoActiveSkill_*`, `TryDoing*`, the MTS/auction `On*` family, the cash-shop
+`On*` family). Several are plainly post-v48 features; the rest need either the unnamed
+`sub_*` senders identified or a full xref sweep of `COutPacket::COutPacket` @ `0x57b77e`,
+which is the exhaustive form of this harvest and has not been run.

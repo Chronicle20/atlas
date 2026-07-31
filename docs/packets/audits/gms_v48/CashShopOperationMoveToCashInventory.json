@@ -1,14 +1,14 @@
 {
-  "WriterName": "CashItemUseMegaphone",
-  "IDAName": "CWvsContext::SendConsumeCashItemUseRequest",
-  "Address": "0x70e495",
+  "WriterName": "CashShopOperationMoveToCashInventory",
+  "IDAName": "CCashShop::OnMoveCashItemStoL",
+  "Address": "0x44ee3a",
   "Variant": "GMS/v48",
-  "BranchDepth": 1,
-  "AtlasFile": "libs/atlas-packet/cash/serverbound/item_use_megaphone.go",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/shop_operation_move_to_cash_inventory.go",
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 4,
+      "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -17,7 +17,7 @@
     },
     {
       "Index": 1,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
@@ -25,6 +25,6 @@
       "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 3,
-  "FlatInvalid": true
+  "Verdict": 2,
+  "FlatInvalid": false
 }

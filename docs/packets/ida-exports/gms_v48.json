@@ -21285,6 +21285,71 @@
           "guard": "result"
         }
       ]
+    },
+    "CCashShop::OnIncTrunkCount": {
+      "address": "0x44aad1",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CCashShop::OnMoveCashItemLtoS": {
+      "address": "0x44ec2c",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CCashShop::OnMoveCashItemStoL": {
+      "address": "0x44ee3a",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CCashShop::SendBuyNameChangeItemPacket": {
+      "address": "0x44f9a5",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_41803C"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_41803C"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::SendBuyTransferWorldItemPacket": {
+      "address": "0x44fbfc",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
     }
   }
 }

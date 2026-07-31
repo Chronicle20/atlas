@@ -29255,8 +29255,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": 210
         },
         "gms_v61": {
@@ -29610,8 +29609,8 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "verdict ❌",
+          "state": "partial",
+          "note": "evidence-pinned deferral",
           "opcode": 212
         },
         "gms_v61": {
@@ -29710,8 +29709,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tool ✅ without byte-test",
+          "state": "verified",
           "opcode": 213
         },
         "gms_v61": {

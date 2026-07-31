@@ -1,0 +1,10 @@
+packet: reactor/clientbound/ReactorDestroy
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CReactorPool::OnReactorLeaveField
+    address: "0x5a588b"
+    decompile_sha256: eac815e331bcfc543734798fec064d0c0419ca299e65425702f50d01bc0ced7a
+verifies:
+    - libs/atlas-packet/reactor/clientbound/v48_test.go#TestReactorDestroyBytesV48

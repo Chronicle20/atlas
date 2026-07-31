@@ -343,13 +343,13 @@ Tool: `790129c3b10f8c0a0fa07a12475d1b10fd324431b3e043b1bd828e3e96fe8bde`
 | REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved | door/clientbound/RemoveDoor | 0x0CF | 🟡ᵈ | 0x0D5 | 🟡ᵈ | 0x0F6 | 🟡ᵈ | 0x0FE | 🟡ᵈ | 0x114 | ✅ | 0x11B | ✅ | 0x125 | ✅ | 0x14B | ✅ | 0x129 | ✅ |
 | TALK_GUIDE | CUserLocal::OnTutorMsg | npc/clientbound/NpcGuideTalkIdx (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D1 | ✅ | 0x0E0 | ✅ | 0x0E5 | ✅ | 0x0EE | ✅ | 0x100 | ✅ | 0x0EA | ✅ |
 | MESO_BAG_MESSAGE | CUserLocal::OnRandomMesobag_Succeeded |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D2 | ❌ |  | ⬜ | 0x0DD | ❌ | 0x0EE | ❌ |  | ⬜ |
-| REACTOR_HIT | CReactorPool::OnReactorChangeState | reactor/clientbound/ReactorHit | 0x0D2 | 🟡ᵈ | 0x0D6 | 🟡ᵈ | 0x0F7 | 🟡ᵈ | 0x0FF | 🟡ᵈ | 0x115 | ✅ | 0x11C | ✅ | 0x126 | ✅ | 0x14E | ✅ | 0x12D | ✅ |
+| REACTOR_HIT | CReactorPool::OnReactorChangeState | reactor/clientbound/ReactorHit | 0x0D2 | ✅ | 0x0D6 | 🟡ᵈ | 0x0F7 | 🟡ᵈ | 0x0FF | 🟡ᵈ | 0x115 | ✅ | 0x11C | ✅ | 0x126 | ✅ | 0x14E | ✅ | 0x12D | ✅ |
 | SHOW_COMBO | CUserLocal::OnIncComboResponse |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D2 | ❌ | 0x0E1 | ❌ | 0x0E6 | ❌ | 0x0EF | ❌ | 0x101 | ❌ | 0x0EB | ❌ |
 | SPAWN_MIST | CAffectedAreaPool::OnAffectedAreaCreated | field/clientbound/FieldAffectedAreaCreated (T1) |  | ⬜ | 0x0D2 | ✅ | 0x0F3 | ✅ | 0x0FB | ✅ | 0x111 | ❌ | 0x118 | ❌ | 0x122 | ❌ | 0x148 | ❌ | 0x126 | ❌ |
 | REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) |  | ⬜ | 0x0D3 | 🟡ᶠ | 0x0F4 | 🟡ᶠ | 0x0FC | 🟡ᶠ | 0x112 | ✅ | 0x119 | ✅ | 0x123 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
 | IDA_0X0D4 | CUser::OnEmotion | character/clientbound/CharacterExpression (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D4 | ✅ |
-| REACTOR_SPAWN | CReactorPool::OnReactorEnterField | reactor/clientbound/ReactorSpawn | 0x0D4 | ❌ | 0x0D8 | ❌ | 0x0F9 | ❌ | 0x101 | ❌ | 0x117 | ✅ | 0x11E | ✅ | 0x128 | ✅ | 0x150 | ✅ | 0x12F | ✅ |
-| REACTOR_DESTROY | CReactorPool::OnReactorLeaveField | reactor/clientbound/ReactorDestroy | 0x0D5 | 🟡ᵈ | 0x0D9 | 🟡ᵈ | 0x0FA | 🟡ᵈ | 0x102 | 🟡ᵈ | 0x118 | ✅ | 0x11F | ✅ | 0x129 | ✅ | 0x151 | ✅ | 0x130 | ✅ |
+| REACTOR_SPAWN | CReactorPool::OnReactorEnterField | reactor/clientbound/ReactorSpawn | 0x0D4 | 🟡ᵖ | 0x0D8 | ❌ | 0x0F9 | ❌ | 0x101 | ❌ | 0x117 | ✅ | 0x11E | ✅ | 0x128 | ✅ | 0x150 | ✅ | 0x12F | ✅ |
+| REACTOR_DESTROY | CReactorPool::OnReactorLeaveField | reactor/clientbound/ReactorDestroy | 0x0D5 | ✅ | 0x0D9 | 🟡ᵈ | 0x0FA | 🟡ᵈ | 0x102 | 🟡ᵈ | 0x118 | ✅ | 0x11F | ✅ | 0x129 | ✅ | 0x151 | ✅ | 0x130 | ✅ |
 | MOVING_SHOOT_ATTACK_PREPARE | CUserRemote::OnMovingShootAttackPrepare |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D8 | ❌ |  | ⬜ |
 | IDA_0X0DA | CUserLocal::OnRandomMesobag_Succeeded |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DA | ❌ |
 | IDA_0X0DB | CUserLocal::OnRandomMesobag_Failed |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0DB | ❌ |
@@ -998,7 +998,7 @@ Tool: `790129c3b10f8c0a0fa07a12475d1b10fd324431b3e043b1bd828e3e96fe8bde`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 181 | 0 | 22 | 157 | 603 | 0 | 50.3% |
+| v48 | 183 | 0 | 21 | 156 | 603 | 0 | 50.8% |
 | v61 | 255 | 0 | 60 | 190 | 458 | 0 | 50.5% |
 | v72 | 265 | 0 | 73 | 209 | 416 | 0 | 48.4% |
 | v79 | 309 | 0 | 72 | 205 | 377 | 0 | 52.7% |

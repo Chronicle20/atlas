@@ -192,6 +192,79 @@ func TestSetFieldByteOutputV61(t *testing.T) {
 	}
 }
 
+// TestSetFieldByteOutputV48 pins the gms_v48 SET_FIELD (op 0x49) header. The v48
+// client has NO nNotifierCheck short: CStage::OnSetField = sub_5C4616 @0x5c4616
+// (GMS_v48_1_DEVM.exe) reads Decode4(channelId) @0x5c4632, Decode1 @0x5c463c,
+// Decode1(bCharacterData) @0x5c4646 and then goes straight to the three seed
+// Decode4s @0x5c4667/0x5c4671/0x5c467b, which it feeds to sub_5CD911 and
+// sub_5A49F8 (SetActionRndSeed's v48 equivalent) before decoding CharacterData
+// via sub_49D320.
+//
+// v61 @0x659fd3 is the version that adds the short: same first three reads, then
+// Decode2 @0x65a046 gating a DecodeStr list, then its three seeds
+// @0x65a0ea/0x65a0f4/0x65a109. So nNotifierCheck arrives BETWEEN v48 and v61 and
+// is independent of the 3-vs-4 seed count, which is why the two are gated
+// separately. Before task-188 the short was gated on GMS > 28 and so was written
+// to v48, desyncing every byte after it - including the whole CharacterData span.
+func TestSetFieldByteOutputV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	cd := charpkt.CharacterData{
+		Stats: charpkt.CharacterStats{
+			Id: 1000, Name: "TestChar", Gender: 0, SkinColor: 1,
+			Face: 20000, Hair: 30000,
+			Level: 50, JobId: 312, Str: 100, Dex: 50, Int: 30, Luk: 20,
+			Hp: 5000, MaxHp: 5000, Mp: 3000, MaxMp: 3000,
+			Ap: 5, Sp: 3, Exp: 50000, Fame: 10,
+			MapId: 100000000, SpawnPoint: 0,
+		},
+		BuddyCapacity: 20,
+		Meso:          100000,
+		Inventory: charpkt.InventoryData{
+			EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
+			EtcCapacity: 24, CashCapacity: 24,
+			Timestamp: 94354848000000000,
+		},
+	}
+	input := SetField{
+		channelId:     channel.Id(1),
+		characterData: cd,
+		damageSeeds:   []uint32{0x11111111, 0x22222222, 0x33333333, 0x44444444},
+		timestamp:     0x0011223344556677,
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+
+	// No 0x00,0x00 between bCharacterData and seed[0] - that is the whole point.
+	header := []byte{
+		0x01, 0x00, 0x00, 0x00, // channelId=1
+		0x01,                   // sNotifierMessage
+		0x01,                   // bCharacterData
+		0x11, 0x11, 0x11, 0x11, // seed[0]
+		0x22, 0x22, 0x22, 0x22, // seed[1]
+		0x33, 0x33, 0x33, 0x33, // seed[2]
+	}
+	trailer := []byte{0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00}
+	cdBytes := pt.Encode(t, ctx, cd.Encode, nil)
+	expected := append(append(append([]byte{}, header...), cdBytes...), trailer...)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v48 set_field golden mismatch:\n got %v\nwant %v", actual, expected)
+	}
+
+	// Regression guard on the gate itself, compared at the HEADER only: the whole
+	// packets are not comparable because CharacterData is itself version-gated.
+	// At offset 6 (just past channelId+2 flag bytes) v48 must already be in the
+	// seeds, while v61 must have the 2-byte nNotifierCheck there first.
+	if got := actual[6:10]; !bytes.Equal(got, []byte{0x11, 0x11, 0x11, 0x11}) {
+		t.Errorf("v48 offset 6 should be seed[0], got %v (a stray nNotifierCheck?)", got)
+	}
+	v61 := pt.Encode(t, pt.CreateContext("GMS", 61, 1), input.Encode, nil)
+	if got := v61[6:8]; !bytes.Equal(got, []byte{0x00, 0x00}) {
+		t.Errorf("v61 offset 6 should be nNotifierCheck, got %v", got)
+	}
+	if got := v61[8:12]; !bytes.Equal(got, []byte{0x11, 0x11, 0x11, 0x11}) {
+		t.Errorf("v61 seed[0] should follow nNotifierCheck, got %v", got)
+	}
+}
+
 func TestSetFieldRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

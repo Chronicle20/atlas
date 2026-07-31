@@ -1477,6 +1477,17 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x39",
+        "writer": "ShopScannerResult",
+        "options": {
+          "operations": {
+            "RESULT": 6,
+            "HOT_LIST": 7
+          }
+        },
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x3F",
         "writer": "PetCashFoodResult",
         "services": ["channel"]
@@ -2058,6 +2069,17 @@
       {
         "opCode": "0xB1",
         "writer": "SpawnNPC",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xB3",
+        "writer": "SpawnNPCRequestController",
+        "options": {
+          "operations": {
+            "GRANT": 1,
+            "REVOKE": 0
+          }
+        },
         "services": ["channel"]
       },
       {

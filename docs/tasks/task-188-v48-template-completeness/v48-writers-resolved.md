@@ -103,3 +103,48 @@ of absence:
 `options` mode tables are derived for none of the resolved entries yet. Those values are
 client-specific per version and must each come from the corresponding v48 mode switch —
 v83's numbers must never be copied across (task-139 established this for `usPetSkill`).
+
+---
+
+## Mode tables — what verified and what did not (task-188)
+
+`ShopScannerResult` `0x39` and `SpawnNPCRequestController` `0xB3` are wired with tables
+derived from the v48 binary:
+
+- `CNpcPool::OnNpcChangeController` @ `0x56d617` reads `Decode1` then `Decode4(npcId)`
+  and branches `SetLocalNpc` / `SetRemoteNpc` on that flag → `{GRANT: 1, REVOKE: 0}`,
+  matching v61/v72/v79/v83.
+- `CWvsContext::OnShopScannerResult` @ `0x71ff8e` switches on `Decode1() - 6`: arm 0
+  (mode 6) is the commodity/search-result branch, arm 1 (mode 7) is the id-list branch
+  → `{RESULT: 6, HOT_LIST: 7}`, identical to v61/v72/v79/v83.
+
+Three remain unwired, deliberately:
+
+**`HiredMerchantOperation` `0x2A`** — `CWvsContext::OnEntrustedShopCheckResult` @ `0x71f72a`
+switches on `Decode1() - 6` with arms at modes 6, 7, 8, 9, 10, 12, 13, 14, 15. v83 uses
+7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18. The sets are NOT a uniform shift: v48 mode 6 is
+`SendOpenShopRequest` (v83's `OPEN_SHOP` is 7), but v48 mode 7 builds a channel-name
+message, which resembles v83's `REMOTE_SHOP_WARP` (16) rather than its `ERROR_UNKNOWN` (8).
+Mapping names onto these arms needs the per-arm string resources resolved; a positional
+shift would be a guess of exactly the kind that produced the `BLOW_WEATHER` error this
+task corrected.
+
+**`StorageOperation` `0xF7`** — `CTrunkDlg::OnPacket` @ `0x58332c` not yet decompiled.
+Note v61/v72/v79/v83 all carry an identical table, so it is plausibly stable, but v48 has
+repeatedly proved to be the outlier version and has not been checked.
+
+**`AvatarMegaphoneResult` `0x41`** — `CWvsContext::OnAvatarMegaphoneRes` @ `0x7211cd`
+switches on `Decode1() - 48`, special-casing exactly two codes: 48 (notice string 3621)
+and 49 (notice string 3445); anything else carries a `DecodeStr` message. v83 names its
+two `{WAITING_LINE: 83, LEVEL_GATE: 84}`. The v48 CODES are certain (48/49); which name
+belongs to which is not, the string-pool ids are unresolved, and no legacy template
+carries this writer to corroborate against. Left out rather than assigned positionally.
+
+## Tooling note
+
+`mcp__ida-pro__decompile` printed `CWvsContext::OnIncubatorResult` as the header for the
+function at `0x71f72a`. That is a stale display name — `lookup_funcs` on the same address
+returns `?OnEntrustedShopCheckResult@CWvsContext@@` (size `0x2df`), and `OnIncubatorResult`
+is a distinct function at `0x71fa31` (size `0x2d5`). Trust `lookup_funcs`/`func_query` over
+the decompiler's printed header; taking the header at face value here would have reverted
+the correct registry fix in 5270b70fe.

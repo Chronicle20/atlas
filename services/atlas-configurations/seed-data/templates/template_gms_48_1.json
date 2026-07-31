@@ -419,6 +419,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x46",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterUseSkillHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x47",
         "validator": "LoggedInValidator",
         "handler": "CharacterBuffCancel",
@@ -878,6 +884,12 @@
             }
           ]
         }
+      },
+      {
+        "opCode": "0x87",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBomb",
+        "services": ["channel"]
       },
       {
         "opCode": "0x8A",

@@ -249,3 +249,49 @@ so far (`DoActiveSkill_*`, `TryDoing*`, the MTS/auction `On*` family, the cash-s
 `On*` family). Several are plainly post-v48 features; the rest need either the unnamed
 `sub_*` senders identified or a full xref sweep of `COutPacket::COutPacket` @ `0x57b77e`,
 which is the exhaustive form of this harvest and has not been run.
+
+## Exhaustive serverbound sweep — `COutPacket` xrefs
+
+`xrefs_to ??0COutPacket@@QAE@J@Z` @ `0x57b77e` returns **317 call sites, untruncated**
+(`more: false`). That is the complete set of packet-construction sites in the v48
+client, so any serverbound opcode the client can emit is reachable from it.
+
+Note `packet-audit discover-ops` does NOT cover this: its worklist is explicitly
+"clientbound only — serverbound FName verification is deferred". It walks dispatcher
+switches, not send-sites. (It also needed `-ida-database` added to reach the session
+server; done in this task alongside the other subcommands.)
+
+Handlers added from the sweep:
+
+| v48 opCode | Handler | Sender | evidence |
+|---|---|---|---|
+| `0x46` | `CharacterUseSkillHandle` | `CUserLocal::SendSkillUseRequest` @ `0x6afa91` | `COutPacket(70)`, `Encode4`/`Encode4(skillId)`/`Encode1` + skill-specific tails |
+| `0x87` | `MonsterBomb` | `CMob::TryFirstSelfDestruction` @ `0x551f38` | `COutPacket(135)`, `Encode4(mobId)` |
+
+### Negative results — handlers that are NOT separate opcodes in v48
+
+These matter as much as the additions: each looked like a gap and is not one.
+
+- **`EnterDoorHandle`** — `CField::TryEnterTownPortal` @ `0x4cb90a` emits
+  `COutPacket(103)` = `0x67`, which this template already binds to `UseDoor`. Same
+  packet, different Atlas name; adding it would double-bind `0x67`.
+- **`CharacterItemUseTownScrollHandle`** — `CWvsContext::SendPortalScrollUseRequest`
+  @ `0x719dd9` emits `COutPacket(65)` = `0x41`, already `CharacterItemUseHandle`. v48
+  routes the town scroll through the generic item-use opcode.
+- **`CharacterAutoDistributeApHandle`** — `CWvsContext::SendAbilityUpRequest`
+  @ `0x71cd00` emits `COutPacket(67)` = `0x43`, already `CharacterDistributeApHandle`.
+  v48 has no separate auto-distribute packet.
+- **`CashShopCheckWalletHandle`** — `CCashShop::TrySendQueryCashRequest` @ `0x44f756`
+  emits `COutPacket(160)` = `0xA0` with `Encode1(0x1D)`. `0xA0` is
+  `CashShopOperationHandle` and `0x1D` = 29 is its `APPLY_WISHLIST` mode — a mode of an
+  existing packet, not a packet of its own.
+
+### Still unresolved
+
+Handlers whose only sender is a multi-opcode function cannot be resolved by this
+join — `CField::SendChatMsgSlash` @ `0x4c3e96` alone is `0x102a` bytes and backs
+`AdminChat`, `AdminCommand`, `AdminLog`, `MatchTable` and `SueCharacter`, each with its
+own `COutPacket` inside the one function. Splitting those needs per-arm reads of that
+function rather than a sender-level lookup. The `DoActiveSkill_*` family all funnel
+into `SendSkillUseRequest` (`0x46`), so they are covered by that entry rather than
+being separate opcodes.

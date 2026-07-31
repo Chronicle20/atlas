@@ -329,11 +329,10 @@
   direction: clientbound
   opcode: 42
   fname: CWvsContext::OnEntrustedShopCheckResult
-  provenance: ida-verified
+  provenance: ida-discovered
   ida:
     address: 7468842
-  note: 'task-188: CWvsContext::OnPacket @0x70d215 dispatches case 42 to OnEntrustedShopCheckResult @0x71f72a. Previously registered as INCUBATOR_RESULT; the v61-anchored FName->Op join slipped one slot because v48 has an EntrustedShopCheckResult arm at 42 that the anchor lacks, which shifted INCUBATOR_RESULT (real 56) and SHOP_SCANNER_RESULT (real 57) down with it.'
-  note: 'v48 groups incubator early (v61 op 66); reordered. delta doc a.'
+  note: 'task-188: CWvsContext::OnPacket @0x70d215 dispatches case 42 to OnEntrustedShopCheckResult @0x71f72a. Previously registered as INCUBATOR_RESULT (with the note "v48 groups incubator early (v61 op 66); reordered. delta doc a."); the v61-anchored FName->Op join slipped one slot because v48 has an EntrustedShopCheckResult arm at 42 that the anchor lacks, which shifted INCUBATOR_RESULT (real 56) and SHOP_SCANNER_RESULT (real 57) down with it.'
 - op: SKILL_LEARN_ITEM_RESULT
   direction: clientbound
   opcode: 43
@@ -413,7 +412,7 @@
   direction: clientbound
   opcode: 56
   fname: CWvsContext::OnIncubatorResult
-  provenance: ida-verified
+  provenance: ida-discovered
   ida:
     address: 7469617
   note: 'task-188: CWvsContext::OnPacket @0x70d215 case 56 -> OnIncubatorResult @0x71fa31. Was registered at 42; see the ENTRUSTED_SHOP_CHECK_RESULT note.'
@@ -423,7 +422,7 @@
   fname: CWvsContext::OnShopScannerResult
   fname_alts:
   - sub_71FF8E
-  provenance: ida-verified
+  provenance: ida-discovered
   ida:
     address: 7470990
   note: 'task-188: no longer an unnamed placeholder - CWvsContext::OnPacket @0x70d215 case 57 dispatches to ?OnShopScannerResult@CWvsContext@@ @0x71ff8e (the IDB names it; sub_71FF8E was the same address). Was registered at 56; see the ENTRUSTED_SHOP_CHECK_RESULT note.'
@@ -613,7 +612,7 @@
   fname: CField::OnBlowWeather
   fname_alts:
   - sub_4C930A
-  provenance: ida-verified
+  provenance: ida-discovered
   ida:
     address: 5018378
   note: "task-188: base case 'U'(85). The IDB names 0x4c930a ?OnBlowWeather@CField@@, and its body reads Decode1 @0x4c9328 + Decode4(itemId) @0x4c932e + get_consume_cash_item_type @0x47742e + DecodeStr(message) @0x4c9558. Previously this slot was labelled FIELD_OBSTACLE_ONOFF_LIST and BLOW_WEATHER sat at 86; the labels were shifted one slot against the addresses, which were already correct. FIELD_OBSTACLE_ONOFF_LIST is not registered for v48 - CField::OnFieldObstacleOnOff/Status do not resolve in this IDB."
@@ -623,7 +622,7 @@
   fname: CField::OnPlayJukeBox
   fname_alts:
   - sub_4C95F2
-  provenance: ida-verified
+  provenance: ida-discovered
   ida:
     address: 5019122
   note: "task-188: base case 'V'(86). The IDB names 0x4c95f2 ?OnPlayJukeBox@CField@@. This slot previously carried BLOW_WEATHER, which is really 85."

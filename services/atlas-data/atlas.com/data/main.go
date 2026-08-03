@@ -14,6 +14,7 @@ import (
 	"atlas-data/etc"
 	"atlas-data/item"
 	"atlas-data/job"
+	"atlas-data/jobavailability"
 	data2 "atlas-data/kafka/consumer/data"
 	_map "atlas-data/map"
 	"atlas-data/minioreconcile"
@@ -27,6 +28,7 @@ import (
 	restruntime "atlas-data/runtime/rest"
 	"atlas-data/setup"
 	"atlas-data/skill"
+	"atlas-data/skillavailability"
 	minio "atlas-data/storage/minio"
 	"atlas-data/tenantpurge"
 	"atlas-data/wzinput"
@@ -181,7 +183,9 @@ func main() {
 		AddRouteInitializer(equipment.InitResource(db)(GetServer())).
 		AddRouteInitializer(reactor.InitResource(db)(GetServer())).
 		AddRouteInitializer(skill.InitResource(db)(GetServer())).
+		AddRouteInitializer(skillavailability.InitResource(GetServer())).
 		AddRouteInitializer(job.InitResource(db)(GetServer())).
+		AddRouteInitializer(jobavailability.InitResource(GetServer())).
 		AddRouteInitializer(pet.InitResource(db)(GetServer())).
 		AddRouteInitializer(consumable.InitResource(db)(GetServer())).
 		AddRouteInitializer(cash.InitResource(db)(GetServer())).

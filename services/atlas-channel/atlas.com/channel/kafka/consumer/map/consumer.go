@@ -472,7 +472,7 @@ func spawnCharacterForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 					// spawn (race-safe: the check is in the same path that emits
 					// it). c is never the viewer's own character (both callers
 					// skip k == s.CharacterId()), so self-view is never suppressed.
-					if buff.IsGmHidden(bs) {
+					if buff.IsGmHidden(ctx, bs) {
 						return nil
 					}
 

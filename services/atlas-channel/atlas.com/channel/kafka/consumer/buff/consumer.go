@@ -19,6 +19,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -175,19 +176,31 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 	}
 }
 
+// isSuperGmHideSource reports whether sourceId -- a buff's version-specific
+// WIRE skill id (5101004 at v0.48, 9101004 at v0.62+) -- resolves to the
+// SuperGmHide identity under t's version set (task-187). A raw compare
+// against the canonical wire constant would silently never match a v0.48
+// hide buff.
+func isSuperGmHideSource(t tenant.Model, sourceId int32) bool {
+	set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+	id, ok := set.Skill.Resolve(skill2.Id(sourceId))
+	return ok && id == skill2.SuperGmHide
+}
+
 // handleStatusEventGmHideApplied relinquishes the hiding GM's NPCs
 // (task-176, FR-6.1): revoke their client-side grants, then reassign to a
-// visible session. Fires ONLY for SuperGmHide (9101004); Dark Sight and
-// all other buffs are untouched.
+// visible session. Fires ONLY for SuperGmHide; Dark Sight and all other
+// buffs are untouched.
 func handleStatusEventGmHideApplied(sc server.Model, wp writer.Producer) message.Handler[buff2.StatusEvent[buff2.AppliedStatusEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e buff2.StatusEvent[buff2.AppliedStatusEventBody]) {
 		if e.Type != buff2.EventStatusTypeBuffApplied {
 			return
 		}
-		if e.Body.SourceId != int32(skill2.SuperGmHideId) {
+		t := tenant.MustFromContext(ctx)
+		if !isSuperGmHideSource(t, e.Body.SourceId) {
 			return
 		}
-		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
+		if !sc.IsWorld(t, e.WorldId) {
 			return
 		}
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
@@ -233,10 +246,11 @@ func handleStatusEventGmHideExpired(sc server.Model, wp writer.Producer) message
 		if e.Type != buff2.EventStatusTypeBuffExpired {
 			return
 		}
-		if e.Body.SourceId != int32(skill2.SuperGmHideId) {
+		t := tenant.MustFromContext(ctx)
+		if !isSuperGmHideSource(t, e.Body.SourceId) {
 			return
 		}
-		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
+		if !sc.IsWorld(t, e.WorldId) {
 			return
 		}
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {

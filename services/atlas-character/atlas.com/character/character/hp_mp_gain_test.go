@@ -6,8 +6,11 @@ import (
 	cskill "atlas-character/skill"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type mockSkillDataProcessor struct {
@@ -29,6 +32,21 @@ func (m *mockSkillDataProcessor) GetEffect(uniqueId uint32, level byte) (effect.
 
 func newTestProcessor(sdp skill3.Processor) *ProcessorImpl {
 	return &ProcessorImpl{
+		sdp: sdp,
+	}
+}
+
+// newTestProcessorForVersion builds a ProcessorImpl pinned to a specific
+// tenant version (task-187), for tests that need version-aware job identity
+// resolution (p.set()) rather than the zero-value-tenant baseline fallback
+// newTestProcessor implicitly exercises.
+func newTestProcessorForVersion(t *testing.T, sdp skill3.Processor, region string, major, minor uint16) *ProcessorImpl {
+	tm, err := tenant.Create(uuid.New(), region, major, minor)
+	if err != nil {
+		t.Fatalf("failed to create test tenant: %v", err)
+	}
+	return &ProcessorImpl{
+		t:   tm,
 		sdp: sdp,
 	}
 }
@@ -151,6 +169,56 @@ func TestResolveHPMPGainParams_GM(t *testing.T) {
 	}
 	if params.mpLower != 30000 || params.mpUpper != 30000 {
 		t.Fatalf("GM MP range should be 30000-30000, got %d-%d", params.mpLower, params.mpUpper)
+	}
+}
+
+// TestResolveHPMPGain_v48Gm is the proof for the bug task-187/task-11
+// fixes: at v0.48, wire job 500 is GM (job 900/910 don't exist until
+// v0.61), not Pirate. Before the fix, resolveHPMPGainParams compared
+// c.JobId() against raw job.Id constants -- job.IsA(c.JobId(), job.GmId,
+// job.SuperGmId) (900/910) never matched a v0.48 character carrying wire
+// job 500, so it fell through to the Pirate branch (job.PirateId==500) and
+// got 22/28 HP instead of the correct 30000/30000 GM range. This test pins
+// a v0.48 tenant and asserts the GM branch wins.
+func TestResolveHPMPGain_v48Gm(t *testing.T) {
+	mock := &mockSkillDataProcessor{}
+	p := newTestProcessorForVersion(t, mock, "GMS", 48, 1)
+	c := buildCharacter(job.Id(500), nil)
+
+	params := p.resolveHPMPGainParams(c)
+
+	if params.hpLower != 30000 || params.hpUpper != 30000 {
+		t.Fatalf("v0.48 job 500 is GM -> HP range should be 30000-30000, got %d-%d", params.hpLower, params.hpUpper)
+	}
+	if params.mpLower != 30000 || params.mpUpper != 30000 {
+		t.Fatalf("v0.48 job 500 is GM -> MP range should be 30000-30000, got %d-%d", params.mpLower, params.mpUpper)
+	}
+}
+
+// TestResolveHPMPGain_v72PirateStillPirate is the companion case: at v0.72
+// (Pirate/Brawler released v0.62+), wire job 500 really is Pirate, and must
+// still hit the 22/28 Pirate HP branch, not GM. Guards against an
+// over-correction that stops resolving Pirate correctly post-v0.61.
+func TestResolveHPMPGain_v72PirateStillPirate(t *testing.T) {
+	bonus := int16(8)
+	mock := &mockSkillDataProcessor{
+		getEffectFunc: func(uniqueId uint32, level byte) (effect.Model, error) {
+			rm := effect.RestModel{X: bonus}
+			return effect.Extract(rm)
+		},
+	}
+	p := newTestProcessorForVersion(t, mock, "GMS", 72, 1)
+	c := buildCharacter(job.Id(500), []cskill.Model{
+		buildSkill(uint32(skill.BrawlerImproveMaxHpId), 5),
+	})
+
+	params := p.resolveHPMPGainParams(c)
+
+	if params.hpLower != 22 || params.hpUpper != 28 {
+		t.Fatalf("v0.72 job 500 is Pirate -> HP range should be 22-28, got %d-%d", params.hpLower, params.hpUpper)
+	}
+	if params.mpLower != 18 || params.mpUpper != 23 {
+		t.Fatalf("v0.72 job 500 is Pirate -> MP range should be 18-23, got %d-%d", params.mpLower, params.mpUpper)
 	}
 }
 

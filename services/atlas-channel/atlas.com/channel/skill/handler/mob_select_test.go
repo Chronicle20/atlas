@@ -126,10 +126,10 @@ func TestIntersectMobIds_EmptyClient(t *testing.T) {
 }
 
 func TestMobBuffApplyKind(t *testing.T) {
-	if got := mobBuffApplyKind(skill2.PriestDoomId); got != "MAGICAL" {
-		t.Errorf("mobBuffApplyKind(PriestDoomId) = %q, want MAGICAL", got)
+	if got := mobBuffApplyKind(skill2.PriestDoom); got != "MAGICAL" {
+		t.Errorf("mobBuffApplyKind(PriestDoom) = %q, want MAGICAL", got)
 	}
-	if got := mobBuffApplyKind(skill2.Id(999999999)); got != "" {
+	if got := mobBuffApplyKind(skill2.Identity(999999999)); got != "" {
 		t.Errorf("mobBuffApplyKind(unknown) = %q, want empty", got)
 	}
 }

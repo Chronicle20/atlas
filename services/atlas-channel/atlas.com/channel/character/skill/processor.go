@@ -76,3 +76,17 @@ func GetLevel(skills []Model, id skill.Id) byte {
 	}
 	return 0
 }
+
+// GetLevelIdentity is the Identity form of GetLevel (task-187): it resolves
+// each trained skill's wire id through set before comparing against
+// identity, rather than comparing raw wire ids directly. Callers that
+// already hold a version-blind Identity constant (rather than a raw wire
+// id) use this instead of GetLevel.
+func GetLevelIdentity(skills []Model, set skill.Set, identity skill.Identity) byte {
+	for _, s := range skills {
+		if resolved, ok := set.Resolve(s.Id()); ok && resolved == identity {
+			return s.Level()
+		}
+	}
+	return 0
+}

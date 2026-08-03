@@ -72,9 +72,13 @@ func intersectMobIds(client, server []uint32) (applied, anomaly []uint32) {
 //
 // Crash/Dispel kinds continue to come from dispelSkillClass (common.go) and
 // are not handled here.
-func mobBuffApplyKind(skillId skill2.Id) string {
+//
+// Identity-keyed (task-187): resolved once by the caller (applyToMobs) via
+// the caster's tenant version set before this classification runs, rather
+// than a raw wire-id compare.
+func mobBuffApplyKind(id skill2.Identity) string {
 	switch {
-	case skill2.Is(skillId, skill2.PriestDoomId):
+	case skill2.IsIdentity(id, skill2.PriestDoom):
 		return monster2.ReflectKindMagical
 	default:
 		return ""

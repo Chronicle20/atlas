@@ -21,6 +21,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
@@ -644,6 +645,17 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						return err
 					}
 
+					// Resolved once and reused for every version-sensitive
+					// wire-id comparison below (task-187): the registered-check
+					// gate that skips the generic HP/MP cost block MUST key on
+					// the caster's version-blind skill Identity, not the raw
+					// wire id -- a raw compare cannot distinguish a v0.48
+					// SuperGM Hide cast (wire 5101004) from a v0.62+ Brawler
+					// Corkscrew Blow cast (same wire).
+					t := tenant.MustFromContext(ctx)
+					set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+					attackId, attackIdOk := set.Skill.Resolve(skill3.Id(ai.SkillId()))
+
 					var sk skill.Model
 					var se effect.Model
 					var explodedMesoDropIds []uint32
@@ -669,8 +681,9 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						// against the field's drops BEFORE any side effect (FR-6 —
 						// rejection must skip cost, damage, broadcast, and destruction).
 						// One field-scoped fetch; the map keys structurally enforce the
-						// same-field/instance check.
-						if skill3.Is(skill3.Id(ai.SkillId()), skill3.ChiefBanditMesoExplosionId) {
+						// same-field/instance check. Routed through the resolved
+						// Identity (task-187) rather than a raw wire compare.
+						if attackIdOk && skill3.IsIdentity(attackId, skill3.ChiefBanditMesoExplosion) {
 							ds, dErr := drop.NewProcessor(l, ctx).InMapModelProvider(s.Field())()
 							if dErr != nil {
 								return dErr
@@ -692,7 +705,11 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						// CharacterUseSkill packet. Without this gate,
 						// dual-packet skills like Heal would
 						// double-deduct MP.
-						if _, registered := handler.Lookup(skill3.Id(ai.SkillId())); !registered {
+						registered := false
+						if attackIdOk {
+							_, registered = handler.Lookup(attackId)
+						}
+						if !registered {
 							if se.HPConsume() > 0 {
 								_ = cp.ChangeHP(s.Field(), s.CharacterId(), -int16(se.HPConsume()))
 							}
@@ -709,7 +726,6 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 
 					mp := monster.NewProcessor(l, ctx)
 					mirror := monster.GetStatusMirror()
-					t := tenant.MustFromContext(ctx)
 					attackKind := attackKindFromAttackType(ai.AttackType())
 
 					// Lazy effective-stats fetch: needed when a damage entry

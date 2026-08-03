@@ -49,6 +49,15 @@ For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the b
    arrays — new entries go at their sorted position, never appended next to a
    semantically-related entry. See
    [`docs/packets/TEMPLATE_CONVENTIONS.md`](docs/packets/TEMPLATE_CONVENTIONS.md).
+10. **`tools/skill-job-id-guard.sh` clean from the repo root.** Bans raw
+    `==`/`!=`/`case`/`Is(`/`IsA(` comparisons against the job/skill `…Id` wire
+    constants that task-187's multi-boundary audit identified as
+    version-divergent (e.g. `job.GmId` (500) means Gm at v0.48 but Pirate at
+    v0.61+) outside the version-aware resolver
+    (`constants.For(region,major,minor).Job.Resolve`/`.Skill.Resolve`). The
+    banned const list is derived from
+    `docs/tasks/task-187-version-aware-id-semantics/audit/divergences.csv`,
+    so it grows automatically as future audit passes add divergent ids.
 
 ## Code Patterns
 

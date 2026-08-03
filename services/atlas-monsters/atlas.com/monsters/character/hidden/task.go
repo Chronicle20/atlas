@@ -43,13 +43,14 @@ func (t *ReconciliationTask) Run() {
 	}
 	all := t.registry.GetAll(t.ctx)
 	for ten, ids := range all {
+		tctx := tenant.WithContext(t.ctx, ten)
 		for _, id := range ids {
 			bs, err := t.buffsFn(ten, id)
 			if err != nil {
 				t.l.WithError(err).Debugf("Hidden-set reconciliation: unable to fetch buffs for character [%d]; keeping entry.", id)
 				continue
 			}
-			if !buff.HasActiveGmHide(bs) {
+			if !buff.HasActiveGmHide(tctx, bs) {
 				// Warn: reaching here means an EXPIRED event was lost.
 				t.l.Warnf("Hidden-set reconciliation: character [%d] has no active SuperGmHide buff; removing stale entry.", id)
 				if err := t.registry.Remove(t.ctx, ten, id); err != nil {

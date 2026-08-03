@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	channelhandler.Register(skill2.BrawlerMPRecoveryId, Apply)
+	channelhandler.Register(skill2.BrawlerMPRecovery, Apply)
 }
 
 // loadCaster returns the caster's max HP from the character service.

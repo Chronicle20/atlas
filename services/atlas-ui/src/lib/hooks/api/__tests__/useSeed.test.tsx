@@ -21,6 +21,9 @@ import {
   useSeedPortalScripts,
   useSeedReactorScripts,
   useSeedMapActionScripts,
+  useSeedTransportRoutes,
+  useSeedTransportVessels,
+  useSeedInstanceRoutes,
 } from "../useSeed";
 import { seedService } from "@/services/api/seed.service";
 import * as tenantContext from "@/context/tenant-context";
@@ -45,6 +48,9 @@ vi.mock("@/services/api/seed.service", () => ({
     seedPortalScripts: vi.fn(),
     seedReactorScripts: vi.fn(),
     seedMapActionScripts: vi.fn(),
+    seedRoutes: vi.fn(),
+    seedVessels: vi.fn(),
+    seedInstanceRoutes: vi.fn(),
   },
 }));
 
@@ -257,5 +263,40 @@ describe.each([
     expect(invalidate).toHaveBeenCalledWith({
       queryKey: [statusKeyRoot, fakeTenant.id],
     });
+  });
+});
+
+describe("transport seed mutations", () => {
+  it("useSeedTransportRoutes posts to the routes seed endpoint", async () => {
+    const spy = vi
+      .spyOn(seedService, "seedRoutes")
+      .mockResolvedValue(undefined);
+    const { result } = renderHook(() => useSeedTransportRoutes(), {
+      wrapper: makeWrapper().wrapper,
+    });
+    result.current.mutate();
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
+  });
+
+  it("useSeedTransportVessels posts to the vessels seed endpoint", async () => {
+    const spy = vi
+      .spyOn(seedService, "seedVessels")
+      .mockResolvedValue(undefined);
+    const { result } = renderHook(() => useSeedTransportVessels(), {
+      wrapper: makeWrapper().wrapper,
+    });
+    result.current.mutate();
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
+  });
+
+  it("useSeedInstanceRoutes posts to the instance-routes seed endpoint", async () => {
+    const spy = vi
+      .spyOn(seedService, "seedInstanceRoutes")
+      .mockResolvedValue(undefined);
+    const { result } = renderHook(() => useSeedInstanceRoutes(), {
+      wrapper: makeWrapper().wrapper,
+    });
+    result.current.mutate();
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
   });
 });

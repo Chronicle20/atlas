@@ -1195,14 +1195,14 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			// Route endpoints
 			//
 			// The path-scoped seed endpoint is gone (see configuration/seed);
-			// without an explicit stand-in, "/routes/seed" would fall through
-			// to the "/routes/{routeId}" pattern below (routeId="seed") and a
-			// POST there would 405 instead of 404, since that pattern's GET/
-			// PATCH/DELETE handlers still match the path. Registering it
-			// unconditionally against http.NotFound restores the expected
-			// 404 for every method without touching the router's global
-			// method-mismatch behavior.
-			r.HandleFunc("/tenants/{tenantId}/configurations/routes/seed", http.NotFound)
+			// without an explicit stand-in, POST "/routes/seed" would fall
+			// through to the "/routes/{routeId}" pattern below (routeId=
+			// "seed") and 405 instead of 404, since that pattern's GET/
+			// PATCH/DELETE handlers still match the path. This stand-in is
+			// scoped to POST only — like the removed route it replaces —
+			// so GET/PATCH/DELETE on a route whose real id happens to be
+			// "seed" still reach the CRUD {routeId} handlers below.
+			r.HandleFunc("/tenants/{tenantId}/configurations/routes/seed", http.NotFound).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes", registerHandler("get_all_routes", GetAllRoutesHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes/{routeId}", registerHandler("get_route_by_id", GetRouteByIdHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes", registerRouteInputHandler("create_route", CreateRouteHandler(db))).Methods(http.MethodPost)
@@ -1210,7 +1210,10 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes/{routeId}", registerHandler("delete_route", DeleteRouteHandler(db))).Methods(http.MethodDelete)
 
 			// Vessel endpoints
-			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/seed", http.NotFound)
+			// POST-only stand-in for the removed "/vessels/seed" endpoint —
+			// see the routes-endpoints comment above for why this must not
+			// shadow GET/PATCH/DELETE on a vessel whose id is "seed".
+			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/seed", http.NotFound).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels", registerHandler("get_all_vessels", GetAllVesselsHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/{vesselId}", registerHandler("get_vessel_by_id", GetVesselByIdHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels", registerVesselInputHandler("create_vessel", CreateVesselHandler(db))).Methods(http.MethodPost)
@@ -1218,7 +1221,11 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/{vesselId}", registerHandler("delete_vessel", DeleteVesselHandler(db))).Methods(http.MethodDelete)
 
 			// Instance route endpoints
-			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/seed", http.NotFound)
+			// POST-only stand-in for the removed "/instance-routes/seed"
+			// endpoint — see the routes-endpoints comment above for why this
+			// must not shadow GET/PATCH/DELETE on an instance route whose id
+			// is "seed".
+			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/seed", http.NotFound).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes", registerHandler("get_all_instance_routes", GetAllInstanceRoutesHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}", registerHandler("get_instance_route_by_id", GetInstanceRouteByIdHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes", registerInstanceRouteInputHandler("create_instance_route", CreateInstanceRouteHandler(db))).Methods(http.MethodPost)

@@ -25,9 +25,11 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 	// against an otherwise-migrated schema. Capping the pool to a single
 	// connection keeps every query on the one connection that actually has
 	// the migrated schema.
-	if sqlDB, err := db.DB(); err == nil {
-		sqlDB.SetMaxOpenConns(1)
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("Failed to get underlying sql.DB: %v", err)
 	}
+	sqlDB.SetMaxOpenConns(1)
 
 	// Run migrations
 	if err := db.AutoMigrate(&tenant.Entity{}, &configuration.Entity{}); err != nil {

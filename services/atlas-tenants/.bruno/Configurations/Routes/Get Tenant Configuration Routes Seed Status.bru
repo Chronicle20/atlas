@@ -1,0 +1,11 @@
+meta {
+  name: Get Tenant Configuration Routes Seed Status
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/tenants/configurations/routes/seed/status
+  body: none
+  auth: inherit
+}

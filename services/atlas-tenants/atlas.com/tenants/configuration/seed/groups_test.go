@@ -113,3 +113,38 @@ func TestRemovedAndRetainedSeedEndpoints(t *testing.T) {
 		}
 	}
 }
+
+// The POST-only "<res>/seed" stand-in that answers 404 for the removed
+// path-scoped seed endpoints (see configuration/resource.go) must not
+// shadow OTHER verbs on a route/vessel/instance-route whose real id happens
+// to be "seed". Without the .Methods(http.MethodPost) restriction on the
+// stand-in, a GET here would still match the stand-in's path-only
+// registration and short-circuit before ever reaching the CRUD
+// "{routeId}"/"{vesselId}"/"{instanceRouteId}" handler below it — this is
+// exactly the regression this test guards against.
+//
+// Both the stand-in and the CRUD "get by id" handlers answer a missing
+// "seed" id with a bare 404, so the status code alone can't distinguish
+// them (this is genuinely tested elsewhere by TestCrudRoutesStillDispatch,
+// which uses a route that isn't shadowed at all). What DOES distinguish
+// them is the body: net/http's http.NotFound (the stand-in) always writes
+// the literal "404 page not found\n"; Get{Route,Vessel,InstanceRoute}
+// ByIdHandler's not-found path writes no body at all (bare
+// w.WriteHeader(http.StatusNotFound), no w.Write call) — see
+// configuration/resource.go's GetRouteByIdHandler et al. A response with
+// an empty body therefore proves the CRUD handler answered.
+func TestSeedStandInDoesNotShadowOtherVerbs(t *testing.T) {
+	r := newRouter(t)
+	tid := uuid.New().String()
+	for _, res := range []string{"routes", "vessels", "instance-routes"} {
+		rr := httptest.NewRecorder()
+		r.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/tenants/"+tid+"/configurations/"+res+"/seed", nil))
+		if rr.Code != http.StatusNotFound {
+			t.Errorf("GET %s/seed = %d, want 404 from the CRUD get-by-id handler (missing id \"seed\")", res, rr.Code)
+			continue
+		}
+		if body := rr.Body.String(); body == "404 page not found\n" {
+			t.Errorf("GET %s/seed returned the stand-in's bare 404 body — the POST-only stand-in shadowed GET", res)
+		}
+	}
+}

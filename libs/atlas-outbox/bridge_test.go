@@ -2,12 +2,14 @@ package outbox_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -122,4 +124,46 @@ func TestEnqueueBuffer_RowFailureReturnsError(t *testing.T) {
 	var count int64
 	require.NoError(t, db.Model(&outbox.Entity{}).Count(&count).Error)
 	require.Zero(t, count)
+}
+
+func TestEnqueueBuffer_WarnsWhenContextHasNoTenant(t *testing.T) {
+	l, hook := logtest.NewNullLogger()
+	l.SetLevel(logrus.WarnLevel)
+
+	db := bridgeDb(t)
+	t.Setenv("EVENT_TOPIC_TEST", "real-topic-name")
+	contents := map[string][]kafka.Message{
+		"EVENT_TOPIC_TEST": {{Key: []byte("k"), Value: []byte("v")}},
+	}
+
+	require.NoError(t, outbox.EnqueueBuffer(l, context.Background(), db, contents))
+
+	var warned bool
+	for _, e := range hook.AllEntries() {
+		if e.Level == logrus.WarnLevel && strings.Contains(e.Message, "without tenant headers") {
+			warned = true
+		}
+	}
+	if !warned {
+		t.Fatalf("expected a WARN naming the tenant-less enqueue; got %v", hook.AllEntries())
+	}
+}
+
+func TestEnqueueBuffer_SilentWhenContextHasTenant(t *testing.T) {
+	l, hook := logtest.NewNullLogger()
+	l.SetLevel(logrus.WarnLevel)
+
+	db := bridgeDb(t)
+	t.Setenv("EVENT_TOPIC_TEST", "real-topic-name")
+	contents := map[string][]kafka.Message{
+		"EVENT_TOPIC_TEST": {{Key: []byte("k"), Value: []byte("v")}},
+	}
+
+	require.NoError(t, outbox.EnqueueBuffer(l, tenantCtx(t), db, contents))
+
+	for _, e := range hook.AllEntries() {
+		if e.Level == logrus.WarnLevel {
+			t.Fatalf("unexpected WARN with a tenant in context: %s", e.Message)
+		}
+	}
 }

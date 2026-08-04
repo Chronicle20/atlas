@@ -413,28 +413,59 @@ Deletes a route.
 
 ---
 
-### POST /tenants/{tenantId}/configurations/routes/seed
+### POST /tenants/configurations/routes/seed
 
-Deletes all existing routes for a tenant and loads them from seed files.
+Triggers asynchronous seed data loading for the tenant's routes from the shared seed catalog (`deploy/seed/shared/all/routes`, merged with any version-specific override root). Deletes all existing routes for the tenant and reloads them from catalog files. Unlike the CRUD endpoints above, the tenant is identified by request headers, not a `{tenantId}` path segment — this endpoint is mounted at `/tenants/configurations/routes/seed` (`configurations` is the *second* path segment here, not the third), which does not collide with the `{tenantId}`-scoped CRUD routes.
 
-**Parameters**:
-- `tenantId` (path, uuid): Tenant identifier
+**Headers**:
+- `TENANT_ID` (uuid, required): Tenant identifier
+- `REGION` (string, required): Tenant region
+- `MAJOR_VERSION` (uint16, required): Tenant major version
+- `MINOR_VERSION` (uint16, required): Tenant minor version
+
+**Parameters**: None
+
+**Request Model**: None
+
+**Response Model**: None. Seeding runs asynchronously in the background; poll `GET /tenants/configurations/routes/seed/status` for progress.
+
+**Error Conditions**:
+- 202: Seed operation started
+- 400: Missing or invalid tenant headers
+
+---
+
+### GET /tenants/configurations/routes/seed/status
+
+Retrieves seed catalog status for the routes seed group. Response is a plain JSON document, not a JSON:API resource.
+
+**Headers**: Same as `POST /tenants/configurations/routes/seed`.
+
+**Parameters**: None
 
 **Request Model**: None
 
 **Response Model**:
 ```json
 {
-  "deletedCount": 0,
-  "createdCount": 0,
-  "failedCount": 0,
-  "errors": ["string"]
+  "groupName": "routes",
+  "subdomains": {
+    "routes": {
+      "count": 0,
+      "updatedAt": null
+    }
+  },
+  "updatedAt": null,
+  "catalogRevision": "string",
+  "tenantSeededRevision": null,
+  "tenantSeededAt": null
 }
 ```
 
 **Error Conditions**:
-- 400: Invalid tenant ID format
-- 500: Internal server error
+- 200: Status retrieved
+- 400: Missing or invalid tenant headers
+- 500: Internal server error (failure reading seed status)
 
 ---
 
@@ -628,28 +659,59 @@ Deletes a vessel.
 
 ---
 
-### POST /tenants/{tenantId}/configurations/vessels/seed
+### POST /tenants/configurations/vessels/seed
 
-Deletes all existing vessels for a tenant and loads them from seed files.
+Triggers asynchronous seed data loading for the tenant's vessels from the shared seed catalog (`deploy/seed/shared/all/vessels`, merged with any version-specific override root). Deletes all existing vessels for the tenant and reloads them from catalog files. Unlike the CRUD endpoints above, the tenant is identified by request headers, not a `{tenantId}` path segment — this endpoint is mounted at `/tenants/configurations/vessels/seed` (`configurations` is the *second* path segment here, not the third), which does not collide with the `{tenantId}`-scoped CRUD routes.
 
-**Parameters**:
-- `tenantId` (path, uuid): Tenant identifier
+**Headers**:
+- `TENANT_ID` (uuid, required): Tenant identifier
+- `REGION` (string, required): Tenant region
+- `MAJOR_VERSION` (uint16, required): Tenant major version
+- `MINOR_VERSION` (uint16, required): Tenant minor version
+
+**Parameters**: None
+
+**Request Model**: None
+
+**Response Model**: None. Seeding runs asynchronously in the background; poll `GET /tenants/configurations/vessels/seed/status` for progress.
+
+**Error Conditions**:
+- 202: Seed operation started
+- 400: Missing or invalid tenant headers
+
+---
+
+### GET /tenants/configurations/vessels/seed/status
+
+Retrieves seed catalog status for the vessels seed group. Response is a plain JSON document, not a JSON:API resource.
+
+**Headers**: Same as `POST /tenants/configurations/vessels/seed`.
+
+**Parameters**: None
 
 **Request Model**: None
 
 **Response Model**:
 ```json
 {
-  "deletedCount": 0,
-  "createdCount": 0,
-  "failedCount": 0,
-  "errors": ["string"]
+  "groupName": "vessels",
+  "subdomains": {
+    "vessels": {
+      "count": 0,
+      "updatedAt": null
+    }
+  },
+  "updatedAt": null,
+  "catalogRevision": "string",
+  "tenantSeededRevision": null,
+  "tenantSeededAt": null
 }
 ```
 
 **Error Conditions**:
-- 400: Invalid tenant ID format
-- 500: Internal server error
+- 200: Status retrieved
+- 400: Missing or invalid tenant headers
+- 500: Internal server error (failure reading seed status)
 
 ---
 
@@ -867,28 +929,59 @@ Deletes an instance route.
 
 ---
 
-### POST /tenants/{tenantId}/configurations/instance-routes/seed
+### POST /tenants/configurations/instance-routes/seed
 
-Deletes all existing instance routes for a tenant and loads them from seed files.
+Triggers asynchronous seed data loading for the tenant's instance routes from the shared seed catalog (`deploy/seed/shared/all/instance-routes`, merged with any version-specific override root). Deletes all existing instance routes for the tenant and reloads them from catalog files. Unlike the CRUD endpoints above, the tenant is identified by request headers, not a `{tenantId}` path segment — this endpoint is mounted at `/tenants/configurations/instance-routes/seed` (`configurations` is the *second* path segment here, not the third), which does not collide with the `{tenantId}`-scoped CRUD routes.
 
-**Parameters**:
-- `tenantId` (path, uuid): Tenant identifier
+**Headers**:
+- `TENANT_ID` (uuid, required): Tenant identifier
+- `REGION` (string, required): Tenant region
+- `MAJOR_VERSION` (uint16, required): Tenant major version
+- `MINOR_VERSION` (uint16, required): Tenant minor version
+
+**Parameters**: None
+
+**Request Model**: None
+
+**Response Model**: None. Seeding runs asynchronously in the background; poll `GET /tenants/configurations/instance-routes/seed/status` for progress.
+
+**Error Conditions**:
+- 202: Seed operation started
+- 400: Missing or invalid tenant headers
+
+---
+
+### GET /tenants/configurations/instance-routes/seed/status
+
+Retrieves seed catalog status for the instance-routes seed group. Response is a plain JSON document, not a JSON:API resource.
+
+**Headers**: Same as `POST /tenants/configurations/instance-routes/seed`.
+
+**Parameters**: None
 
 **Request Model**: None
 
 **Response Model**:
 ```json
 {
-  "deletedCount": 0,
-  "createdCount": 0,
-  "failedCount": 0,
-  "errors": ["string"]
+  "groupName": "instance-routes",
+  "subdomains": {
+    "instance-routes": {
+      "count": 0,
+      "updatedAt": null
+    }
+  },
+  "updatedAt": null,
+  "catalogRevision": "string",
+  "tenantSeededRevision": null,
+  "tenantSeededAt": null
 }
 ```
 
 **Error Conditions**:
-- 400: Invalid tenant ID format
-- 500: Internal server error
+- 200: Status retrieved
+- 400: Missing or invalid tenant headers
+- 500: Internal server error (failure reading seed status)
 
 ---
 

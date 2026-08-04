@@ -23,6 +23,14 @@ var rules = []subdomainRule{
 	{path: "npc-conversations/quests", typ: "quest-conversation", pattern: regexp.MustCompile(`^quest-(\d+)\.json$`)},
 	{path: "npc-shops/shops", typ: "npc-shop", pattern: regexp.MustCompile(`^shop-(\d+)\.json$`)},
 	{path: "party-quests/definitions", typ: "party-quest-definition", pattern: regexp.MustCompile(`^party-quest-(.+)\.json$`)},
+	// Version-agnostic transport configuration, seeded from
+	// deploy/seed/shared/all by atlas-tenants (task-189). pattern is nil
+	// because the filename does not encode the entity id — the id lives
+	// in data.id (e.g. flight-temple-of-time-leafre.json holds
+	// "temple-of-time-return-flight").
+	{path: "routes", typ: "routes", pattern: nil},
+	{path: "vessels", typ: "vessels", pattern: nil},
+	{path: "instance-routes", typ: "instance-routes", pattern: nil},
 	// widgets fixture used in tests
 	{path: "widgets", typ: "widget", pattern: regexp.MustCompile(`^widget-(\d+)\.json$`)},
 }

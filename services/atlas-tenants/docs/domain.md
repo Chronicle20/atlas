@@ -39,7 +39,7 @@ Represents a game server tenant with identification, region, and version informa
 
 ### Responsibility
 
-Manages tenant-specific configuration resources including routes, vessels, and instance routes. Supports seeding configuration data from JSON files on the filesystem.
+Manages tenant-specific configuration resources including routes, vessels, and instance routes. RPS rewards and MTS configs support seeding from JSON files on the filesystem via the Processor's seed operations below; routes, vessels, and instance routes are seeded from the shared `deploy/seed/shared/all` catalog via `libs/atlas-seeder` (see `configuration/seed`) instead — see the REST API docs for the header-scoped `POST|GET /api/tenants/configurations/<routes|vessels|instance-routes>/seed[/status]` endpoints.
 
 ### Core Models
 
@@ -111,7 +111,13 @@ Manages tenant-specific configuration resources including routes, vessels, and i
 - `AllMtsConfigsProvider`: Returns a provider for all MTS configs for a tenant
 
 **Processor (Seed Operations)**
-- `SeedRoutes`: Deletes all existing routes for a tenant and loads them from seed files
-- `SeedInstanceRoutes`: Deletes all existing instance routes for a tenant and loads them from seed files
-- `SeedVessels`: Deletes all existing vessels for a tenant and loads them from seed files
+- `SeedRpsRewards`: Deletes all existing RPS rewards for a tenant and loads them from seed files
 - `SeedMtsConfigs`: Deletes all existing MTS configs for a tenant and loads them from seed files
+
+Routes, vessels, and instance routes are no longer seeded through the
+`Processor` (the former `SeedRoutes` / `SeedInstanceRoutes` / `SeedVessels`
+methods and their path-scoped `POST /tenants/{tenantId}/configurations/<res>/seed`
+endpoints are gone). They are seeded via `libs/atlas-seeder`'s
+`Subdomain`/`Group` abstractions in `configuration/seed` instead, reading
+`deploy/seed/shared/all/<res>/*.json`. See the REST API docs for the
+replacement endpoints.

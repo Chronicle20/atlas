@@ -22,12 +22,30 @@ type CatalogSource interface {
 type filesystemSource struct {
 	envVar       string
 	fallbackRoot string
+	// sharedRel, when non-empty, is a base-relative root that is
+	// neither region- nor version-qualified. It is returned FIRST from
+	// Roots so version-specific entries override it (FR-1.4).
+	sharedRel string
 }
 
 // NewFilesystemCatalogSource returns a CatalogSource that resolves its base
 // directory from envVar when set, otherwise from fallbackRoot.
 func NewFilesystemCatalogSource(envVar, fallbackRoot string) CatalogSource {
 	return &filesystemSource{envVar: envVar, fallbackRoot: fallbackRoot}
+}
+
+// NewFilesystemCatalogSourceWithShared behaves like
+// NewFilesystemCatalogSource but additionally resolves a shared,
+// version-agnostic root at <base>/<sharedRel>. Seed and ReadStatus merge
+// entries across every returned root, with later (more specific) roots
+// winning on a relative-path collision.
+//
+// Only construct this when the service genuinely has version-agnostic
+// catalog data. Folding a shared root into every consumer would change
+// their composite CATALOG_REVISION and trigger a one-time spurious
+// "seed catalog drift detected" warning fleet-wide.
+func NewFilesystemCatalogSourceWithShared(envVar, fallbackRoot, sharedRel string) CatalogSource {
+	return &filesystemSource{envVar: envVar, fallbackRoot: fallbackRoot, sharedRel: sharedRel}
 }
 
 func (s *filesystemSource) base() string {
@@ -55,7 +73,10 @@ func (s *filesystemSource) Roots(t tenant.Model) ([]string, error) {
 		return nil, fmt.Errorf("catalog: tenant has zero major/minor version (region=%q)", t.Region())
 	}
 	root := filepath.Join(s.base(), strings.ToLower(t.Region()), fmt.Sprintf("%d_%d", t.MajorVersion(), t.MinorVersion()))
-	return []string{root}, nil
+	if s.sharedRel == "" {
+		return []string{root}, nil
+	}
+	return []string{filepath.Join(s.base(), s.sharedRel), root}, nil
 }
 
 // Revision reads the CATALOG_REVISION file from root. Returns ("", nil) when

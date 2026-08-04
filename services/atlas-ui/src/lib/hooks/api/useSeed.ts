@@ -198,11 +198,7 @@ export function useSeedMapActionScripts(): UseMutationResult<
   });
 }
 
-export function useSeedTransportRoutes(): UseMutationResult<
-  void,
-  Error,
-  void
-> {
+export function useSeedTransportRoutes(): UseMutationResult<void, Error, void> {
   const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
   return useMutation({
@@ -234,11 +230,7 @@ export function useSeedTransportVessels(): UseMutationResult<
   });
 }
 
-export function useSeedInstanceRoutes(): UseMutationResult<
-  void,
-  Error,
-  void
-> {
+export function useSeedInstanceRoutes(): UseMutationResult<void, Error, void> {
   const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
   return useMutation({

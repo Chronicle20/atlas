@@ -47,6 +47,24 @@ automatic reconcile does not converge.
 
    Expected: a `git-sync` container is present, and the listing shows
    `CATALOG_REVISION`, `instance-routes`, `routes`, `vessels`.
+
+   Verify this BEFORE seeding any tenant from the Setup page. `libs/atlas-seeder`
+   deletes a resource's existing rows before walking the catalog, so seeding
+   against a not-yet-mounted or unhealthy catalog would otherwise clear a
+   tenant's rows and create nothing. `services/atlas-tenants/.../configuration/seed/groups.go`'s
+   `afterSeed` hook guards this: when a seed run created 0 rows but deleted
+   more than 0, it logs an ERROR (`"seed run deleted existing rows but
+   created none; suspected missing/unhealthy catalog mount — skipping
+   AfterSeed emit to protect the live atlas-transports registry; re-seed once
+   the catalog mount is confirmed healthy"`) naming the group and the
+   created/deleted counts, and returns an error instead of emitting the
+   configuration-status event. That keeps atlas-transports' live Redis
+   registry (routes/vessels/instance-routes) untouched, so the failure is
+   recoverable by re-seeding once the mount is healthy rather than an outage
+   — but the tenant's `configurations` rows for that resource are still
+   deleted and the Setup page will show 0 until the re-seed. Grep
+   atlas-tenants logs for that ERROR line if a seed leaves a resource
+   unexpectedly empty.
 3. Let atlas-transports roll. Its bootstrap reconcile runs per tenant. If
    atlas-tenants has not finished rolling, atlas-transports derives the
    same ids locally and logs a WARN per route — that is expected during

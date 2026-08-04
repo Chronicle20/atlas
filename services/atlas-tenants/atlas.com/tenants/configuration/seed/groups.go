@@ -4,6 +4,7 @@ import (
 	"atlas-tenants/configuration"
 	"atlas-tenants/kafka/message"
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -79,15 +80,42 @@ func newGroup(
 // context, so outbox.EnqueueBuffer snapshots the four tenant headers by
 // construction. That is the whole point of routing the emit through
 // AfterSeed rather than through BulkCreate.
+//
+// libs/atlas-seeder's runSubdomain deletes the tenant's entire resource row
+// set BEFORE walking the catalog, and Walk returns (nil, nil) for a missing
+// directory — so a seed run against an absent/unmounted catalog mount scores
+// Created=0, Deleted=N and classifyOutcome still calls that "success"
+// (nothing failed). Emitting from that state would tell atlas-transports'
+// ClearTenant + full-reload consumer to reload a NOW-EMPTY resource,
+// deleting the live Redis registry (boats/planes stop) while the seed_state
+// row and status endpoint claim the run succeeded. Guard on the result
+// counts: Created==0 && Deleted>0 is that dangerous case and must not emit.
+// Created==0 && Deleted==0 is a legitimately-empty first seed of a
+// never-seeded tenant (nothing lost, nothing to protect) and must still
+// emit normally.
 func afterSeed(
 	l logrus.FieldLogger,
 	eventType string,
 	provider func(tenantId uuid.UUID, eventType string, resourceId string) model.Provider[[]kafka.Message],
 ) func(context.Context, *gorm.DB, seeder.Result) error {
-	return func(ctx context.Context, db *gorm.DB, _ seeder.Result) error {
+	return func(ctx context.Context, db *gorm.DB, res seeder.Result) error {
 		t, err := tenant.FromContext(ctx)()
 		if err != nil {
 			return err
+		}
+		var created, deleted int64
+		for _, c := range res.Subdomains {
+			created += c.Created
+			deleted += c.Deleted
+		}
+		if created == 0 && deleted > 0 {
+			l.WithFields(logrus.Fields{
+				"tenant_id":  t.Id(),
+				"group_name": res.GroupName,
+				"created":    created,
+				"deleted":    deleted,
+			}).Error("seed run deleted existing rows but created none; suspected missing/unhealthy catalog mount — skipping AfterSeed emit to protect the live atlas-transports registry; re-seed once the catalog mount is confirmed healthy")
+			return fmt.Errorf("afterSeed: group %q deleted %d row(s) but created 0; refusing to emit configuration-status (suspected catalog mount failure)", res.GroupName, deleted)
 		}
 		return database.ExecuteTransaction(db.WithContext(ctx), func(tx *gorm.DB) error {
 			return message.Emit(outbox.EmitProvider(l, ctx, tx))(func(mb *message.Buffer) error {

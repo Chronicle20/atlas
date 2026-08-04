@@ -245,3 +245,120 @@ func TestSeed_TenantIsolation(t *testing.T) {
 		t.Errorf("tenant B count = %d, want 0 — seeding tenant A must not leak into tenant B", countB)
 	}
 }
+
+// sumSubdomainCounts totals Created/Deleted across every subdomain in a
+// seeder.Result. Groups.go's newGroup wires exactly one subdomain per group,
+// but summing rather than indexing keeps these tests correct even if that
+// changes.
+func sumSubdomainCounts(subs map[string]seeder.SubdomainCounts) (created, deleted int64) {
+	for _, c := range subs {
+		created += c.Created
+		deleted += c.Deleted
+	}
+	return created, deleted
+}
+
+// TestSeed_AfterSeedGuardSkipsEmitOnDeleteWithoutCreate is the regression
+// test for the final-review finding: libs/atlas-seeder's runSubdomain
+// deletes the tenant's entire resource row set BEFORE walking the catalog,
+// and Walk returns (nil, nil) for a missing directory, so a seed run
+// against an absent/unmounted catalog mount scores Created=0, Deleted=N and
+// classifyOutcome still reports "success". Without a guard, afterSeed would
+// emit a configuration-status event telling atlas-transports' ClearTenant +
+// full-reload consumer to reload a now-empty resource, wiping the live
+// Redis route registry. This test seeds real data first, then re-seeds
+// against an empty stand-in catalog root and asserts no second outbox row
+// is enqueued.
+func TestSeed_AfterSeedGuardSkipsEmitOnDeleteWithoutCreate(t *testing.T) {
+	db := newSubstanceTestDB(t)
+	l := newSubstanceTestLogger()
+	g := instanceRoutesGroup(t, l)
+	te := newSubstanceTenant(t)
+
+	// First seed against the real catalog creates rows and enqueues the
+	// one outbox row a normal successful seed must still produce.
+	seedSynchronously(t, db, l, g, te)
+
+	var afterFirst []outbox.Entity
+	if err := db.Find(&afterFirst).Error; err != nil {
+		t.Fatalf("query outbox after first (real-catalog) seed: %v", err)
+	}
+	if len(afterFirst) != 1 {
+		t.Fatalf("outbox rows after first seed = %d, want 1", len(afterFirst))
+	}
+
+	// Second seed points at an empty temp directory standing in for a
+	// missing/unmounted catalog mount. DeleteAllForTenant still runs
+	// unconditionally and removes every row the first seed created;
+	// Walk returns (nil, nil) for the missing subdirectory so nothing is
+	// created. Run seeder.Seed directly (not via seedSynchronously) since
+	// AfterSeed returning an error here is exactly what's under test.
+	emptyRoot := t.TempDir()
+	const emptyRootEnvVar = "SEED_CATALOG_ROOT_SUBSTANCE_TEST_EMPTY"
+	t.Setenv(emptyRootEnvVar, emptyRoot)
+	src := seeder.NewFilesystemCatalogSourceWithShared(emptyRootEnvVar, "unused-fallback", "shared/all")
+
+	ctx := tenant.WithContext(context.Background(), te)
+	res, err := seeder.Seed(ctx, db, src, g)
+	if err != nil {
+		t.Fatalf("seeder.Seed (empty catalog): %v", err)
+	}
+	created, deleted := sumSubdomainCounts(res.Subdomains)
+	if created != 0 || deleted == 0 {
+		t.Fatalf("second seed created=%d deleted=%d, want created=0 deleted>0 (fixture assumption broke)", created, deleted)
+	}
+
+	if g.AfterSeed == nil {
+		t.Fatal("group AfterSeed is nil")
+	}
+	if err := g.AfterSeed(ctx, db, res); err == nil {
+		t.Error("AfterSeed(created=0, deleted>0) returned nil, want a non-nil error (guard must refuse the emit)")
+	}
+
+	var afterSecond []outbox.Entity
+	if err := db.Find(&afterSecond).Error; err != nil {
+		t.Fatalf("query outbox after second (empty-catalog) seed: %v", err)
+	}
+	if len(afterSecond) != 1 {
+		t.Errorf("outbox rows after empty-catalog seed = %d, want still 1 — the guard must not enqueue a second row", len(afterSecond))
+	}
+}
+
+// TestSeed_AfterSeedGuardAllowsEmitOnLegitimatelyEmptyFirstSeed verifies the
+// guard's boundary condition: Created==0 && Deleted==0 (an unseeded
+// tenant's first run against an empty catalog) is NOT the dangerous case —
+// nothing existed to lose — and must still emit exactly like any other
+// successful seed.
+func TestSeed_AfterSeedGuardAllowsEmitOnLegitimatelyEmptyFirstSeed(t *testing.T) {
+	db := newSubstanceTestDB(t)
+	l := newSubstanceTestLogger()
+	g := instanceRoutesGroup(t, l)
+	te := newSubstanceTenant(t)
+
+	emptyRoot := t.TempDir()
+	const emptyRootEnvVar = "SEED_CATALOG_ROOT_SUBSTANCE_TEST_EMPTY_FIRST"
+	t.Setenv(emptyRootEnvVar, emptyRoot)
+	src := seeder.NewFilesystemCatalogSourceWithShared(emptyRootEnvVar, "unused-fallback", "shared/all")
+
+	ctx := tenant.WithContext(context.Background(), te)
+	res, err := seeder.Seed(ctx, db, src, g)
+	if err != nil {
+		t.Fatalf("seeder.Seed (empty catalog, unseeded tenant): %v", err)
+	}
+	created, deleted := sumSubdomainCounts(res.Subdomains)
+	if created != 0 || deleted != 0 {
+		t.Fatalf("first seed created=%d deleted=%d, want created=0 deleted=0 (fixture assumption broke)", created, deleted)
+	}
+
+	if err := g.AfterSeed(ctx, db, res); err != nil {
+		t.Errorf("AfterSeed(created=0, deleted=0) returned error %v, want nil — a legitimately-empty first seed must not be treated as an error", err)
+	}
+
+	var rows []outbox.Entity
+	if err := db.Find(&rows).Error; err != nil {
+		t.Fatalf("query outbox: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Errorf("outbox rows after legitimately-empty first seed = %d, want 1 — the guard must still emit", len(rows))
+	}
+}

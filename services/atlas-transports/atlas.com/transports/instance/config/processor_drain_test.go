@@ -18,9 +18,8 @@ import (
 
 // instanceRouteDoc renders a JSON:API document for instance routes [from,
 // to]. Each route's name is unique ("InstanceRoute-<n>") so the test can
-// assert presence of a page-2-only item - ExtractRoute mints a fresh
-// uuid.New() id per route (ignores the wire "id"), so identity has to be
-// asserted by name instead of id.
+// assert presence of a page-2-only item by name, independent of how
+// ExtractRouteFor derives the route's id.
 func instanceRouteDoc(from, to int, total, number, size, last int) string {
 	var b strings.Builder
 	for id := from; id <= to; id++ {
@@ -66,7 +65,7 @@ func TestGetInstanceRoutesDrainsBeyondOnePage(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), ten)
 	l, _ := test.NewNullLogger()
 
-	routes, err := config.NewProcessor(l, ctx).GetInstanceRoutes(ten.Id().String())
+	routes, err := config.NewProcessor(l, ctx).GetInstanceRoutes(ten)
 	if err != nil {
 		t.Fatal(err)
 	}

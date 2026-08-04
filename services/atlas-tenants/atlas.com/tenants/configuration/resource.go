@@ -45,7 +45,7 @@ func GetAllRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 
 				restModels := make([]RouteRestModel, 0, len(routes))
 				for _, route := range routes {
-					rm, err := TransformRoute(route)
+					rm, err := TransformRoute(tenantId, route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform route")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -85,7 +85,7 @@ func GetRouteByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 						return
 					}
 
-					rm, err := TransformRoute(route)
+					rm, err := TransformRoute(tenantId, route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform route")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -135,7 +135,7 @@ func CreateRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 					return
 				}
 
-				rm, err := TransformRoute(createdRoute)
+				rm, err := TransformRoute(tenantId, createdRoute)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform route")
 					server.WriteErrorResponse(d.Logger())(w)(err)
@@ -180,7 +180,7 @@ func UpdateRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 						return
 					}
 
-					rm, err := TransformRoute(updatedRoute)
+					rm, err := TransformRoute(tenantId, updatedRoute)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform route")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -245,7 +245,7 @@ func GetAllVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 
 				restModels := make([]VesselRestModel, 0, len(vessels))
 				for _, vessel := range vessels {
-					rm, err := TransformVessel(vessel)
+					rm, err := TransformVessel(tenantId, vessel)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform vessel")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -285,7 +285,7 @@ func GetVesselByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 						return
 					}
 
-					rm, err := TransformVessel(vessel)
+					rm, err := TransformVessel(tenantId, vessel)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform vessel")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -335,7 +335,7 @@ func CreateVesselHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 					return
 				}
 
-				rm, err := TransformVessel(createdVessel)
+				rm, err := TransformVessel(tenantId, createdVessel)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform vessel")
 					server.WriteErrorResponse(d.Logger())(w)(err)
@@ -380,7 +380,7 @@ func UpdateVesselHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 						return
 					}
 
-					rm, err := TransformVessel(updatedVessel)
+					rm, err := TransformVessel(tenantId, updatedVessel)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform vessel")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -444,7 +444,7 @@ func GetAllInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c 
 
 				restModels := make([]InstanceRouteRestModel, 0, len(routes))
 				for _, route := range routes {
-					rm, err := TransformInstanceRoute(route)
+					rm, err := TransformInstanceRoute(tenantId, route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform instance route")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -485,7 +485,7 @@ func GetInstanceRouteByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c 
 						return
 					}
 
-					rm, err := TransformInstanceRoute(route)
+					rm, err := TransformInstanceRoute(tenantId, route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform instance route")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -533,7 +533,7 @@ func CreateInstanceRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *
 					return
 				}
 
-				rm, err := TransformInstanceRoute(createdRoute)
+				rm, err := TransformInstanceRoute(tenantId, createdRoute)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform instance route")
 					server.WriteErrorResponse(d.Logger())(w)(err)
@@ -577,7 +577,7 @@ func UpdateInstanceRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *
 						return
 					}
 
-					rm, err := TransformInstanceRoute(updatedRoute)
+					rm, err := TransformInstanceRoute(tenantId, updatedRoute)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform instance route")
 						server.WriteErrorResponse(d.Logger())(w)(err)

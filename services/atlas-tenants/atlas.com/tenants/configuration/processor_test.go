@@ -433,7 +433,7 @@ func TestMake(t *testing.T) {
 func TestTransformRoute(t *testing.T) {
 	route := createTestRoute("route-1", "Test Route")
 
-	restModel, err := configuration.TransformRoute(route)
+	restModel, err := configuration.TransformRoute(uuid.New(), route)
 	if err != nil {
 		t.Fatalf("TransformRoute() unexpected error: %v", err)
 	}
@@ -451,7 +451,7 @@ func TestTransformRoute(t *testing.T) {
 func TestTransformVessel(t *testing.T) {
 	vessel := createTestVessel("vessel-1", "Test Vessel", "route-a", "route-b")
 
-	restModel, err := configuration.TransformVessel(vessel)
+	restModel, err := configuration.TransformVessel(uuid.New(), vessel)
 	if err != nil {
 		t.Fatalf("TransformVessel() unexpected error: %v", err)
 	}

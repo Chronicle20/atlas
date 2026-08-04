@@ -2,13 +2,17 @@ package main
 
 import (
 	"atlas-tenants/configuration"
+	"atlas-tenants/configuration/seed"
 	"atlas-tenants/tenant"
 	"context"
 	"os"
 
+	"gorm.io/gorm"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -45,7 +49,12 @@ func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(tenant.MigrateEntities, configuration.MigrateEntities, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(
+		tenant.MigrateEntities,
+		configuration.MigrateEntities,
+		outboxlib.Migration,
+		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
+	))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
@@ -77,6 +86,7 @@ func main() {
 		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		AddRouteInitializer(tenant.RegisterRoutes(db)(GetServer())).
+		AddRouteInitializer(seed.InitResource(db)).
 		AddRouteInitializer(configuration.RegisterRoutes(db)(GetServer())).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).

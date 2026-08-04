@@ -147,12 +147,6 @@ type Processor interface {
 	RankingsProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}]
 
 	// Seed operations
-	// SeedRoutes clears existing routes for a tenant and loads them from seed files
-	SeedRoutes(tenantId uuid.UUID) (SeedResult, error)
-	// SeedInstanceRoutes clears existing instance routes for a tenant and loads them from seed files
-	SeedInstanceRoutes(tenantId uuid.UUID) (SeedResult, error)
-	// SeedVessels clears existing vessels for a tenant and loads them from seed files
-	SeedVessels(tenantId uuid.UUID) (SeedResult, error)
 	// SeedRpsRewards clears existing rps-rewards for a tenant and loads them from seed files
 	SeedRpsRewards(tenantId uuid.UUID) (SeedResult, error)
 	// SeedMtsConfigs clears existing mts configs for a tenant and loads them from seed files
@@ -1145,120 +1139,6 @@ func (p *ProcessorImpl) InstanceRouteByIdProvider(tenantId uuid.UUID, routeID st
 // AllInstanceRoutesProvider returns a provider for all instance routes for a tenant
 func (p *ProcessorImpl) AllInstanceRoutesProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}] {
 	return GetAllInstanceRoutesProvider(tenantId)(p.db)
-}
-
-// SeedRoutes clears existing routes for a tenant and loads them from seed files
-func (p *ProcessorImpl) SeedRoutes(tenantId uuid.UUID) (SeedResult, error) {
-	p.l.Infof("Seeding routes for tenant [%s]", tenantId)
-
-	result := SeedResult{}
-
-	// Delete all existing routes for this tenant
-	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantId, "routes")
-	if err != nil {
-		return result, fmt.Errorf("failed to clear existing routes: %w", err)
-	}
-	result.DeletedCount = int(deletedCount)
-
-	// Load route files from the filesystem
-	routes, loadErrors := LoadRouteFiles()
-	for _, err := range loadErrors {
-		result.Errors = append(result.Errors, err.Error())
-		result.FailedCount++
-	}
-
-	// Create each route
-	for _, route := range routes {
-		id, _ := route["id"].(string)
-		_, err := p.CreateRouteAndEmit(tenantId, route)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", id, err))
-			result.FailedCount++
-			continue
-		}
-		result.CreatedCount++
-	}
-
-	p.l.Infof("Route seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
-		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
-
-	return result, nil
-}
-
-// SeedInstanceRoutes clears existing instance routes for a tenant and loads them from seed files
-func (p *ProcessorImpl) SeedInstanceRoutes(tenantId uuid.UUID) (SeedResult, error) {
-	p.l.Infof("Seeding instance routes for tenant [%s]", tenantId)
-
-	result := SeedResult{}
-
-	// Delete all existing instance routes for this tenant
-	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantId, "instance-routes")
-	if err != nil {
-		return result, fmt.Errorf("failed to clear existing instance routes: %w", err)
-	}
-	result.DeletedCount = int(deletedCount)
-
-	// Load instance route files from the filesystem
-	routes, loadErrors := LoadInstanceRouteFiles()
-	for _, err := range loadErrors {
-		result.Errors = append(result.Errors, err.Error())
-		result.FailedCount++
-	}
-
-	// Create each instance route
-	for _, route := range routes {
-		id, _ := route["id"].(string)
-		_, err := p.CreateInstanceRouteAndEmit(tenantId, route)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", id, err))
-			result.FailedCount++
-			continue
-		}
-		result.CreatedCount++
-	}
-
-	p.l.Infof("Instance route seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
-		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
-
-	return result, nil
-}
-
-// SeedVessels clears existing vessels for a tenant and loads them from seed files
-func (p *ProcessorImpl) SeedVessels(tenantId uuid.UUID) (SeedResult, error) {
-	p.l.Infof("Seeding vessels for tenant [%s]", tenantId)
-
-	result := SeedResult{}
-
-	// Delete all existing vessels for this tenant
-	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantId, "vessels")
-	if err != nil {
-		return result, fmt.Errorf("failed to clear existing vessels: %w", err)
-	}
-	result.DeletedCount = int(deletedCount)
-
-	// Load vessel files from the filesystem
-	vessels, loadErrors := LoadVesselFiles()
-	for _, err := range loadErrors {
-		result.Errors = append(result.Errors, err.Error())
-		result.FailedCount++
-	}
-
-	// Create each vessel
-	for _, vessel := range vessels {
-		id, _ := vessel["id"].(string)
-		_, err := p.CreateVesselAndEmit(tenantId, vessel)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", id, err))
-			result.FailedCount++
-			continue
-		}
-		result.CreatedCount++
-	}
-
-	p.l.Infof("Vessel seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
-		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
-
-	return result, nil
 }
 
 // CreateRpsReward creates a new rps-reward configuration

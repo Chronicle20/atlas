@@ -814,69 +814,6 @@ func DeleteRpsRewardHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 	}
 }
 
-// SeedRoutesHandler handles POST /tenants/{tenantId}/configurations/routes/seed
-func SeedRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
-			return func(w http.ResponseWriter, r *http.Request) {
-				processor := NewProcessor(d.Logger(), d.Context(), db)
-				result, err := processor.SeedRoutes(tenantId)
-				if err != nil {
-					d.Logger().WithError(err).Error("Failed to seed routes")
-					server.WriteErrorResponse(d.Logger())(w)(err)
-					return
-				}
-
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(result)
-			}
-		})
-	}
-}
-
-// SeedInstanceRoutesHandler handles POST /tenants/{tenantId}/configurations/instance-routes/seed
-func SeedInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
-			return func(w http.ResponseWriter, r *http.Request) {
-				processor := NewProcessor(d.Logger(), d.Context(), db)
-				result, err := processor.SeedInstanceRoutes(tenantId)
-				if err != nil {
-					d.Logger().WithError(err).Error("Failed to seed instance routes")
-					server.WriteErrorResponse(d.Logger())(w)(err)
-					return
-				}
-
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(result)
-			}
-		})
-	}
-}
-
-// SeedVesselsHandler handles POST /tenants/{tenantId}/configurations/vessels/seed
-func SeedVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
-			return func(w http.ResponseWriter, r *http.Request) {
-				processor := NewProcessor(d.Logger(), d.Context(), db)
-				result, err := processor.SeedVessels(tenantId)
-				if err != nil {
-					d.Logger().WithError(err).Error("Failed to seed vessels")
-					server.WriteErrorResponse(d.Logger())(w)(err)
-					return
-				}
-
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(result)
-			}
-		})
-	}
-}
-
 // GetMtsConfigHandler handles GET /tenants/{tenantId}/configurations/mts-configs
 // and returns the single per-tenant MTS configuration. atlas-mts decodes this
 // as a single JSON:API object (requests.GetRequest[RestModel]).
@@ -1256,7 +1193,16 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			registerRankingsInputHandler := rest.RegisterInputHandler[RankingsRestModel](l)(si)
 
 			// Route endpoints
-			r.HandleFunc("/tenants/{tenantId}/configurations/routes/seed", registerHandler("seed_routes", SeedRoutesHandler(db))).Methods(http.MethodPost)
+			//
+			// The path-scoped seed endpoint is gone (see configuration/seed);
+			// without an explicit stand-in, "/routes/seed" would fall through
+			// to the "/routes/{routeId}" pattern below (routeId="seed") and a
+			// POST there would 405 instead of 404, since that pattern's GET/
+			// PATCH/DELETE handlers still match the path. Registering it
+			// unconditionally against http.NotFound restores the expected
+			// 404 for every method without touching the router's global
+			// method-mismatch behavior.
+			r.HandleFunc("/tenants/{tenantId}/configurations/routes/seed", http.NotFound)
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes", registerHandler("get_all_routes", GetAllRoutesHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes/{routeId}", registerHandler("get_route_by_id", GetRouteByIdHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes", registerRouteInputHandler("create_route", CreateRouteHandler(db))).Methods(http.MethodPost)
@@ -1264,7 +1210,7 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes/{routeId}", registerHandler("delete_route", DeleteRouteHandler(db))).Methods(http.MethodDelete)
 
 			// Vessel endpoints
-			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/seed", registerHandler("seed_vessels", SeedVesselsHandler(db))).Methods(http.MethodPost)
+			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/seed", http.NotFound)
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels", registerHandler("get_all_vessels", GetAllVesselsHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/{vesselId}", registerHandler("get_vessel_by_id", GetVesselByIdHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels", registerVesselInputHandler("create_vessel", CreateVesselHandler(db))).Methods(http.MethodPost)
@@ -1272,7 +1218,7 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/{vesselId}", registerHandler("delete_vessel", DeleteVesselHandler(db))).Methods(http.MethodDelete)
 
 			// Instance route endpoints
-			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/seed", registerHandler("seed_instance_routes", SeedInstanceRoutesHandler(db))).Methods(http.MethodPost)
+			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/seed", http.NotFound)
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes", registerHandler("get_all_instance_routes", GetAllInstanceRoutesHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}", registerHandler("get_instance_route_by_id", GetInstanceRouteByIdHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes", registerInstanceRouteInputHandler("create_instance_route", CreateInstanceRouteHandler(db))).Methods(http.MethodPost)

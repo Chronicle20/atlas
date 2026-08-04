@@ -61,11 +61,8 @@ type ProcessorMock struct {
 	RankingsProviderFunc      func(tenantID uuid.UUID) model.Provider[map[string]interface{}]
 
 	// Seed operations
-	SeedRoutesFunc         func(tenantID uuid.UUID) (configuration.SeedResult, error)
-	SeedInstanceRoutesFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
-	SeedVesselsFunc        func(tenantID uuid.UUID) (configuration.SeedResult, error)
-	SeedRpsRewardsFunc     func(tenantID uuid.UUID) (configuration.SeedResult, error)
-	SeedMtsConfigsFunc     func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedRpsRewardsFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedMtsConfigsFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
 
 	// Vessel operations
 	CreateVesselFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(vessel map[string]interface{}) (configuration.Model, error)
@@ -482,30 +479,6 @@ func (m *ProcessorMock) AllMtsConfigsProvider(tenantID uuid.UUID) model.Provider
 	return func() ([]map[string]interface{}, error) {
 		return []map[string]interface{}{}, nil
 	}
-}
-
-// SeedRoutes is a mock implementation
-func (m *ProcessorMock) SeedRoutes(tenantID uuid.UUID) (configuration.SeedResult, error) {
-	if m.SeedRoutesFunc != nil {
-		return m.SeedRoutesFunc(tenantID)
-	}
-	return configuration.SeedResult{}, nil
-}
-
-// SeedInstanceRoutes is a mock implementation
-func (m *ProcessorMock) SeedInstanceRoutes(tenantID uuid.UUID) (configuration.SeedResult, error) {
-	if m.SeedInstanceRoutesFunc != nil {
-		return m.SeedInstanceRoutesFunc(tenantID)
-	}
-	return configuration.SeedResult{}, nil
-}
-
-// SeedVessels is a mock implementation
-func (m *ProcessorMock) SeedVessels(tenantID uuid.UUID) (configuration.SeedResult, error) {
-	if m.SeedVesselsFunc != nil {
-		return m.SeedVesselsFunc(tenantID)
-	}
-	return configuration.SeedResult{}, nil
 }
 
 // SeedRpsRewards is a mock implementation

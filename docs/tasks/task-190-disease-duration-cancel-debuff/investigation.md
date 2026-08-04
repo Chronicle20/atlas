@@ -129,9 +129,98 @@ atlas-channel buff.Processor.CancelByTypes(f, characterId, types)   // character
         → Registry.CancelByStatTypes                                 // character/registry.go:233
 ```
 
-## 7. Adjacent, out of scope
+## 7. Adjacent
 
-`USER_CALC_DAMAGE_STAT_SET_REQUEST` (v83 `0x6C` / 108,
-`CWvsContext::OnTemporaryStatReset`) is also unhandled. It appeared in the same capture at
-22:52:27.559 and 22:52:30.322 — immediately after each mount apply and expire. Possibly
-part of the same temporary-stat handshake. PRD §9.3.
+`USER_CALC_DAMAGE_STAT_SET_REQUEST` (v83 `0x6C` / 108) is also unhandled. It appeared in the
+same capture at 22:52:27.559 and 22:52:30.322 — immediately after each mount apply and
+expire. §8.3 resolves what it is.
+
+## 8. IDB findings (2026-08-04)
+
+Read across eight open IDBs: gms v72, v79, v83, v84, v87, v92, v95, jms v185. No v48 or v61
+IDB was available in the instance set.
+
+### 8.1 CANCEL_DEBUFF has an empty body
+
+v83 `CWvsContext::CheckTemporaryStatDuration` @ `0xa20935`:
+
+```c
+void __thiscall CWvsContext::CheckTemporaryStatDuration(int *this)
+{
+  v2 = dword_BF060C();                                   // tick
+  v3 = SecondaryStat::CheckByTime(this + 2125, v4, v2);  // locally-expired mask
+  if ( UINT128::operator bool(v3) && v2 - this[3404] > 200 )
+  {
+    COutPacket::COutPacket(v5, 0x63);
+    CClientSocket::SendPacket(TSingleton<CClientSocket>::ms_pInstance, v5);
+    ZArray<unsigned char>::RemoveAll(v6);
+  }
+}
+```
+
+Nothing is encoded between construction and send. The client computes the expired mask and
+discards it. Identical shape on every version examined.
+
+### 8.2 Per-version opcodes and the throttle divergence
+
+| Version | Opcode | Assigns throttle anchor? | Symbol |
+|---|---|---|---|
+| gms_v72 | `0x62` (98) | **no** | `sub_91914F` → renamed `CWvsContext::CheckTemporaryStatDuration` |
+| gms_v79 | `0x61` (97) | **no** | `sub_96AD48` → renamed |
+| gms_v83 | `0x63` (99) | **no** | `0xa20935` (already named) |
+| gms_v84 | `0x63` (99) | **no** | `sub_A6BD3A` → renamed |
+| gms_v87 | `0x66` (102) | **no** | `0xab7fd7` (already named) |
+| gms_v92 | `0x6E` (110) | **yes** (`this[3796] = v2`) | `sub_9C7A70` → renamed |
+| gms_v95 | `0x6F` (111) | **yes** (`m_tLastStatResetRequest`) | `0x9f2d30`, PDB-backed |
+| jms_v185 | `0x5E` (94) | **yes** | `0xb0783e` |
+
+Registry values for v83/84/87/95/jms185 (`provenance: csv-import`) are all confirmed
+correct. v72, v79, v92 are new.
+
+**The throttle divergence explains the observed spam rate.** Every version gates on
+`tick - anchor > 200`, but v72–v87 never write the anchor in this function. It is written
+elsewhere — on temporary-stat change. So once 200 ms elapse after the last stat change, the
+guard latches open and the client sends once per frame forever, because the server never
+sends a reset to advance it. That is the measured ~30 ms spacing. v92/v95/jms185 assign the
+anchor before sending and therefore self-limit to 5/sec.
+
+### 8.3 `0x6C` is the tail of the same handshake
+
+v83 `CWvsContext::OnTemporaryStatReset` @ `0xa2071f` (clientbound, registry opcode 33) ends:
+
+```c
+UINT128::UINT128(&v24, v22, v31, 0x80u);
+if ( IsCalcDamageStat(v24) )
+{
+  COutPacket::COutPacket(v29, 0x6C);
+  CClientSocket::SendPacket(TSingleton<CClientSocket>::ms_pInstance, v29);
+}
+```
+
+So `0x6C` is emitted *in reaction to* a stat reset touching a calc-damage stat — also
+empty-bodied. The live `0x6C` right after each mount apply/expire fits: the mount buff
+carries WEAPON_DEFENSE / MAGIC_DEFENSE. Unlike `0x63` it is one-shot per reset, not a loop,
+so leaving it unhandled cannot wedge a client. PRD §9.3.
+
+### 8.4 The clientbound half already exists
+
+The same function opens with `CInPacket::DecodeBuffer(a2, v31, 16)` — a 16-byte UINT128
+mask — then `SecondaryStat::Reset`, `CTemporaryStatView::ResetTemporary`, and
+`CWvsContext::ValidateStat`. atlas already encodes exactly this via
+`libs/atlas-packet/character/clientbound/buff_cancel.go` (`cts.EncodeMask`). No new
+clientbound packet is needed; the server's answer to `0x63` is a writer that already ships.
+
+**Consequence for the design:** the PRD's original FR-2.6 (map wire stat names →
+`CancelByTypes`) is impossible. The server must instead re-evaluate the character's buffs
+and emit the existing `EXPIRED` path, which already reaches this writer. `atlas-buffs` has
+only a fleet-wide `ExpireBuffs()` (`character/processor.go:190`), so a per-character variant
+is the one genuinely new piece of plumbing.
+
+**Consequence for security:** with no client-supplied parameters there is no buff-theft
+vector. The real exposure is request amplification from the unthrottled v72–v87 clients.
+
+### 8.5 Symbols named during this pass
+
+`CWvsContext::CheckTemporaryStatDuration` renamed in the v72, v79, v84 and v92 IDBs
+(previously `sub_91914F`, `sub_96AD48`, `sub_A6BD3A`, `sub_9C7A70`). v83, v87, v95 and
+jms185 already carried the symbol.

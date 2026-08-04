@@ -124,61 +124,96 @@ indicative; the implementation must locate them by content.
 
 ### FR-2 — CANCEL_DEBUFF codec, handler, and routing
 
+> **IDB-resolved 2026-08-04.** The open questions this section originally deferred to the
+> design phase have been answered by reading eight client binaries. See
+> `investigation.md` §8 for the decompilation evidence.
+
 **FR-2.1** A serverbound `CANCEL_DEBUFF` codec MUST be added under `libs/atlas-packet`,
 with both `Encode` and `Decode`, following `docs/packets/IMPLEMENTING_A_PACKET.md`.
 
-**FR-2.2** The wire body MUST be derived from the client binary
-(`CWvsContext::CheckTemporaryStatDuration`), not inferred from the opcode table or from
-sibling packets. The field layout is **unknown at spec time** and is an explicit
-design-phase deliverable. Do not guess a mask width or field order.
+**FR-2.2 — RESOLVED: the packet has an empty body.** `CWvsContext::CheckTemporaryStatDuration`
+constructs `COutPacket(opcode)` and calls `SendPacket` with **no intervening encode calls**
+on every version examined (v72, v79, v83, v84, v87, v92, v95, jms185). The client computes
+its locally-expired stat mask via `SecondaryStat::CheckByTime` and then does **not** transmit
+it. `CANCEL_DEBUFF` is a bare "re-evaluate my temporary stats" nudge carrying zero payload.
 
-**FR-2.3** Version coverage is **ten** client versions. Opcodes already in the registry:
+The codec is therefore opcode-only. It MUST NOT invent a stat mask, skill id, or any other
+field. The design phase MUST NOT "improve" on this.
 
-| Version | Opcode | Source |
-|---|---|---|
-| gms_v83 | `0x63` (99) | `docs/packets/registry/gms_v83.yaml:2326` |
-| gms_v84 | `0x63` (99) | registry |
-| gms_v87 | `0x66` (102) | registry |
-| gms_v95 | `0x6F` (111) | registry |
-| jms_v185 | `0x5E` (94) | registry |
+**FR-2.3 — Version coverage is ten clients. Opcodes below are IDB-derived, not inferred:**
 
-Opcodes NOT yet known and requiring IDB discovery: **gms_v48, gms_v61, gms_v72, gms_v79**
-(matrix shows `⬜` — never discovered) and **gms_v92** (no `docs/packets/registry/gms_v92.yaml`
-exists at all; per project convention v92 is a template/wire target rather than a coverage-matrix
-column, so it needs the opcode but not a matrix cell).
+| Version | Opcode | Self-throttles? | Evidence |
+|---|---|---|---|
+| gms_v48 | **unknown** | — | no IDB available (see FR-2.4) |
+| gms_v61 | **unknown** | — | no IDB available (see FR-2.4) |
+| gms_v72 | `0x62` (98) | no | `sub_91914F` (renamed `CWvsContext::CheckTemporaryStatDuration`) |
+| gms_v79 | `0x61` (97) | no | `sub_96AD48` (renamed) |
+| gms_v83 | `0x63` (99) | no | `0xa20935` — matches registry |
+| gms_v84 | `0x63` (99) | no | `sub_A6BD3A` (renamed) — matches registry |
+| gms_v87 | `0x66` (102) | no | `0xab7fd7` — matches registry |
+| gms_v92 | `0x6E` (110) | **yes** | `sub_9C7A70` (renamed) |
+| gms_v95 | `0x6F` (111) | **yes** | `0x9f2d30`, PDB-named `m_tLastStatResetRequest` |
+| jms_v185 | `0x5E` (94) | **yes** | `0xb0783e` |
 
-**FR-2.4** If a version genuinely lacks the opcode after IDB discovery, it MUST be recorded
-as `n-a` with evidence per the matrix's n-a consistency gate — never silently skipped and
-never given a guessed opcode.
+The five registry values (v83/84/87/95/jms185, all `provenance: csv-import`) are confirmed
+correct. v72, v79 and v92 are newly discovered and MUST be added to the registry.
 
-**FR-2.5** A handler MUST be added to `atlas-channel` under
-`socket/handler/`, modelled on the existing `character_buff_cancel.go`. It decodes the
-request, maps the wire stat representation to `TemporaryStatType` names, and dispatches.
+**FR-2.3.1 — Send-rate divergence is load-bearing.** All versions gate on
+`tick - m_tLastStatResetRequest > 200`. **v92, v95 and jms185 assign the anchor before
+sending; v72, v79, v83, v84 and v87 never assign it anywhere in this function.** On those
+five the guard latches open 200 ms after the last temporary-stat *change* and the client
+then sends once per frame, indefinitely — exactly the ~30 ms spacing and ~1,500 packets
+observed live. Any rate-limit design (NFR-2) MUST assume the unthrottled case.
 
-**FR-2.6** The handler MUST honor the request by cancelling the named stat(s), via the
-existing end-to-end path — no new plumbing is required:
+**FR-2.4** v48 and v61 have no IDB in the current instance set, so their opcodes remain
+unresolved. They MUST be resolved by opening those binaries, or recorded as `n-a` with
+evidence per the matrix's n-a consistency gate — never silently skipped and never given a
+guessed opcode. A version whose opcode cannot be established is NOT routed.
+
+**FR-2.5** A handler MUST be added to `atlas-channel` under `socket/handler/`. Because the
+body is empty it performs no decode beyond the opcode; its entire job is to trigger FR-2.6.
+
+**FR-2.6 — RESOLVED: the server reconciles, it does not cancel-by-name.** The original
+design (map wire stat names → `CancelByTypes`) is **impossible** — there are no names on the
+wire. The correct response is to re-evaluate the character's buffs and tell the client which
+ones are actually gone:
 
 ```
-atlas-channel buff.Processor.CancelByTypes(f, characterId, types)   // processor.go:73
-  → COMMAND_TOPIC_CHARACTER_BUFF
-    → atlas-buffs kafka/consumer/character/consumer.go:90
-      → character.Processor.CancelByStatTypes                        // processor.go:131
-        → Registry.CancelByStatTypes                                 // registry.go:233
+CANCEL_DEBUFF (empty)
+  → atlas-channel handler
+    → COMMAND_TOPIC_CHARACTER_BUFF: per-character reconcile command   [NEW]
+      → atlas-buffs: per-character expiry sweep                        [NEW, see FR-2.6.1]
+        → existing EXPIRED event for each lapsed buff
+          → existing atlas-channel buff consumer
+            → existing clientbound CharacterBuffCancel writer
+               (libs/atlas-packet/character/clientbound/buff_cancel.go —
+                encodes cts.EncodeMask, the 16-byte UINT128 the client's
+                OnTemporaryStatReset decodes via DecodeBuffer(…, 16))
 ```
 
-**FR-2.7** The handler MUST be routed in **all ten** templates under
-`services/atlas-configurations/seed-data/templates/` at each version's opcode, with a
-validator (a handler entry without a validator is silently dropped), inserted at its
-sorted `opCode` position per `docs/packets/TEMPLATE_CONVENTIONS.md`.
+No new clientbound packet is required: `CWvsContext::OnTemporaryStatReset` (v83 clientbound
+opcode 33) is already implemented and already encodes the mask the client expects.
+
+**FR-2.6.1** `atlas-buffs` currently exposes only a fleet-wide sweep
+(`character/processor.go:190 ExpireBuffs()`, driven by `tasks/expiration.go` on a poll
+interval). A **per-character** variant MUST be added so a single client's nudge does not
+force a fleet-wide sweep. The new Kafka command type is the only new message contract in
+this task.
+
+**FR-2.7** The handler MUST be routed in every template whose opcode is established, under
+`services/atlas-configurations/seed-data/templates/`, with a validator (a handler entry
+without a validator is silently dropped), inserted at its sorted `opCode` position per
+`docs/packets/TEMPLATE_CONVENTIONS.md`.
 
 **FR-2.8** Routing the seed templates does NOT reach already-provisioned tenants. A
 live-tenant backfill procedure MUST be documented in the task folder, following the
 precedent of `docs/tasks/task-153-corsair-battleship/backfill.md`.
 
-**FR-2.9** The handler MUST be resilient to a hostile or buggy client: a cancel naming a
-stat the character does not have is a no-op, not an error; an unparseable body is logged
-and dropped without terminating the session; and the handler MUST NOT be a vector for
-cancelling *beneficial* buffs. See NFR-2.
+**FR-2.9** The handler MUST be resilient: a reconcile for a character with nothing expired
+is a no-op that emits nothing, and MUST NOT produce a clientbound packet (an empty-mask
+`CharacterBuffCancel` would be pointless traffic on an already-hot path).
+
+**FR-2.10 — Rate limiting is mandatory, not optional.** See NFR-2.
 
 ### FR-3 — Contract guard (anti-regression)
 
@@ -200,13 +235,16 @@ those are the two that diverged.
 
 No REST endpoints are added, modified, or removed.
 
-**Kafka — no new topics or message types.** `CANCEL_DEBUFF` reuses the existing
-`COMMAND_TOPIC_CHARACTER_BUFF` cancel-by-stat-types command already consumed at
-`services/atlas-buffs/atlas.com/buffs/kafka/consumer/character/consumer.go:90`.
+**Kafka — one new command type, no new topics.** A per-character reconcile/expire command
+on the existing `COMMAND_TOPIC_CHARACTER_BUFF` (FR-2.6.1). The originally-planned reuse of
+the cancel-by-stat-types command is **not** viable — FR-2.2 established there are no stat
+types on the wire to forward.
 
-**Socket — one new serverbound packet** per §FR-2, opcodes per FR-2.3. No clientbound
-packet is added: the resulting `CANCEL_TEMPORARY_STAT` broadcast already flows through the
-existing buff consumer on the `EXPIRED`/`CANCELLED` event.
+**Socket — one new serverbound packet**, opcode-only body, per §FR-2. No clientbound packet
+is added: `CWvsContext::OnTemporaryStatReset` is already implemented as the
+`CharacterBuffCancel` writer and already encodes the 16-byte mask the client decodes, and
+the resulting broadcast already flows through the existing buff consumer on the
+`EXPIRED`/`CANCELLED` event.
 
 **Behavioral change to existing REST/Kafka surfaces:** `GET /mobskills/...` (atlas-data)
 begins returning `duration` in milliseconds rather than seconds. This is a breaking change
@@ -238,29 +276,35 @@ authored `time` across the ingested WZ set does not overflow after conversion.
 | **atlas-data** | FR-1.1 ×1000 in `mobskill/reader.go:66`. Requires re-ingest (§6). |
 | **atlas-monsters** | FR-1.2 remove `*1000` at `processor.go:1068`, flip `:1105` to `time.Millisecond`. FR-1.3 leave `:1242` alone. FR-1.6 tests. |
 | **atlas-maps** | FR-1.2 flip `mist_tick.go:86` to `/ time.Millisecond`. FR-1.4 replace the stale comment. FR-1.6 tests. |
-| **atlas-channel** | FR-2.5 new `CANCEL_DEBUFF` handler; registration in the socket handler map. |
-| **libs/atlas-packet** | FR-2.1/2.2 new serverbound codec with version gates. |
-| **atlas-configurations** | FR-2.7 handler + validator entries in all ten templates. |
-| **atlas-buffs** | No code change expected — `CancelByStatTypes` already exists. Re-verify the ms interpretation is unchanged. |
+| **atlas-channel** | FR-2.5 new `CANCEL_DEBUFF` handler (empty-body) + FR-2.10 per-character rate limit; registration in the socket handler map. |
+| **libs/atlas-packet** | FR-2.1 new opcode-only serverbound codec. No clientbound change — `buff_cancel.go` already carries the mask. |
+| **atlas-configurations** | FR-2.7 handler + validator entries in every template whose opcode is established (8 confirmed; v48/v61 pending FR-2.4). |
+| **atlas-buffs** | FR-2.6.1 per-character expiry sweep + its consumer arm. Re-verify the ms interpretation is unchanged. |
+| **docs/packets/registry** | Add `CANCEL_DEBUFF` to `gms_v72.yaml` (`0x62`) and `gms_v79.yaml` (`0x61`); record v92 `0x6E` (§9.4). |
 | **atlas-consumables, atlas-summons, atlas-messages, atlas-saga-orchestrator** | FR-1.5 audit only; changes only if the audit finds a defect. |
 
 ## 8. Non-Functional Requirements
 
-**NFR-1 — Hot path cost.** `CANCEL_DEBUFF` arrives at up to ~30/sec per wedged client
-today. Once diseases have correct durations that rate collapses, but the handler MUST
-still be cheap: no synchronous cross-service REST call per packet. The Kafka emit path in
-FR-2.6 satisfies this.
+**NFR-1 — Hot path cost.** Measured live at ~30/sec sustained per wedged client on v83.
+Once diseases have correct durations that rate collapses, but the handler MUST still be
+cheap: no synchronous cross-service REST call per packet. The Kafka emit path in FR-2.6
+satisfies this, subject to NFR-2.
 
-**NFR-2 — Security: no beneficial-buff cancellation.** `CANCEL_DEBUFF` is client-initiated
-and therefore untrusted. The handler MUST restrict cancellation to disease/debuff
-temporary stats — the design phase defines the allow-list, anchored on the `Disease()`
-predicate already present in `libs/atlas-packet/model/character_temporary_stat.go`
-(`newAndIncDiseased`, lines ≈97-250). A client MUST NOT be able to use this opcode to
-strip a debuff the server still considers active *if* the server's remaining duration is
-materially in the future — the design phase decides whether to gate on server expiry or
-honor unconditionally, and MUST record the reasoning. Honoring unconditionally is the
-default per the scoping decision; the gate is the fallback if the design finds an abuse
-vector.
+**NFR-2 — Security: request amplification, NOT buff theft.** The original concern
+(a client naming a beneficial buff to strip it) is **void** — FR-2.2 establishes the packet
+carries no parameters, so a client cannot name anything. Honoring it unconditionally is
+provably safe: the worst a client can assert is "please re-check me," and the server
+answers only with buffs that have genuinely lapsed against server-side `expiresAt`.
+
+The real risk is **amplification**. Per FR-2.3.1, v72–v87 clients do not self-throttle and
+will emit at frame rate. Unbounded, each packet becomes a Kafka command and a registry
+sweep, so one wedged or hostile client can generate thousands of messages per minute.
+The handler MUST rate-limit per character. The client's own 200 ms interval is the natural
+floor and MUST be treated as a lower bound the server enforces independently — never as
+something the server can rely on the client to honor.
+
+**NFR-2.1** A reconcile that finds nothing expired MUST NOT emit a clientbound packet
+(FR-2.9), so a steady-state nudge costs at most one suppressed sweep.
 
 **NFR-3 — Multi-tenancy.** All new code paths resolve tenant from context
 (`tenant.MustFromContext`). Wire values (opcodes, any stat-mask constants) come from tenant
@@ -281,20 +325,39 @@ to `n-a` MUST be unaffected. Tenants whose live socket config has not been backf
 guard is brittle (the defect is a *missing* multiplication, which has no signature); a test
 is more reliable but only covers paths it exercises. Resolve in design.
 
-**9.2 — Server-expiry gate (NFR-2).** Honor `CANCEL_DEBUFF` unconditionally (scoping
-decision, chosen for self-healing) versus validate against server-side remaining duration.
-Needs the IDB read from FR-2.2 to know whether the client sends enough information to
-correlate. Resolve in design.
+**9.2 — RESOLVED (IDB, 2026-08-04).** The server-expiry gate question is moot: the packet
+carries no parameters, so there is nothing to validate and nothing a client can assert.
+Honor unconditionally, subject to the rate limit in NFR-2.
 
-**9.3 — `USER_CALC_DAMAGE_STAT_SET_REQUEST` (v83 `0x6C`,
-`CWvsContext::OnTemporaryStatReset`)** is also unhandled and was observed in the same live
-capture, firing immediately after each mount apply/expire. Explicitly out of scope here, but
-it is adjacent enough that the design phase should confirm it is not part of the same
-recovery handshake before this task closes.
+**9.3 — RESOLVED (IDB, 2026-08-04): `0x6C` IS part of the same handshake — and is
+deliberately still out of scope.** `CWvsContext::OnTemporaryStatReset` ends with:
 
-**9.4 — v92 matrix representation.** v92 has a seed template but no registry file and no
-coverage-matrix column. Confirm during design whether this task should create
-`docs/packets/registry/gms_v92.yaml`, or record the opcode by another means.
+```c
+if ( IsCalcDamageStat(mask) ) { COutPacket::COutPacket(v29, 0x6C); SendPacket(...); }
+```
+
+So `USER_CALC_DAMAGE_STAT_SET_REQUEST` is sent by the client *in reaction to* a
+temporary-stat reset that touched a calc-damage stat — it is the tail of the handshake
+this task implements, also empty-bodied. It explains the live `0x6C` observed right after
+each mount apply/expire (the mount buff carries WEAPON_DEFENSE / MAGIC_DEFENSE).
+
+It stays out of scope on evidence rather than assumption: unlike `CANCEL_DEBUFF`, it is
+**one-shot per reset, not a loop**, so leaving it unhandled cannot wedge a client. The cost
+is a possibly-stale client-side damage-range display. Implementing FR-2 will make `0x6C`
+fire *more often* than today, so this should be filed as a follow-up task rather than
+forgotten.
+
+**9.4 — PARTIALLY RESOLVED.** The v92 opcode is now known (`0x6E`, FR-2.3). What remains is
+purely a bookkeeping decision: create `docs/packets/registry/gms_v92.yaml`, or record the
+opcode by another means. v72 and v79 append to existing registry files with no such
+question.
+
+**9.6 — Observation, unverified, out of scope.** The clientbound `CharacterBuffCancel`
+encoder writes `tSwallowBuffTime` unconditionally
+(`libs/atlas-packet/character/clientbound/buff_cancel.go`), but v83
+`OnTemporaryStatReset` reads that trailing byte only when `sub_77DC78(mask)` is true. If
+that predicate is not universally true this is a latent trailing-byte desync on an existing
+verified packet. Noticed while reading for FR-2.6; not investigated. Worth a separate look.
 
 **9.5 — Cross-repo consumers of atlas-data `mobskill.duration`.** §5 flags the field's
 meaning change. Unverified whether anything outside this repository reads it.
@@ -318,12 +381,18 @@ meaning change. Unverified whether anything outside this repository reads it.
 
 **CANCEL_DEBUFF**
 
-- [ ] Codec exists in `libs/atlas-packet` with `Encode` and `Decode`, layout derived from
-      the IDB with the evidence recorded.
-- [ ] Handler registered in atlas-channel; cancels only disease-class stats (NFR-2).
-- [ ] Routed with a validator, at the sorted `opCode` position, in all ten templates;
-      `tools/template-opcode-order-guard.sh` clean.
-- [ ] Every version resolved: opcode wired, or `n-a` with evidence. No guessed opcodes.
+- [ ] Codec exists in `libs/atlas-packet`, **opcode-only body** — no invented fields.
+- [ ] Handler registered in atlas-channel; triggers a per-character reconcile, does not
+      attempt cancel-by-name.
+- [ ] Per-character rate limit enforced server-side, independent of the client's 200 ms
+      interval (NFR-2). Demonstrated against an unthrottled v72–v87-style send rate.
+- [ ] A reconcile finding nothing expired emits no clientbound packet (FR-2.9).
+- [ ] `atlas-buffs` per-character expiry sweep added; fleet-wide sweep unchanged.
+- [ ] Routed with a validator, at the sorted `opCode` position, in every template with an
+      established opcode; `tools/template-opcode-order-guard.sh` clean.
+- [ ] v48 and v61 resolved: opcode wired, or `n-a` with evidence. No guessed opcodes.
+- [ ] `CANCEL_DEBUFF` added to the v72 (`0x62`) and v79 (`0x61`) registry files; v92
+      (`0x6E`) recorded per the §9.4 decision.
 - [ ] Live-tenant backfill procedure documented in the task folder.
 
 **Guard**

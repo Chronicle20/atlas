@@ -22,7 +22,7 @@ description: |
   user: "Re-verify buddy/clientbound/Invite on v87 — the evidence went stale."
   assistant: "Dispatching packet-verifier to re-derive the read order and re-pin."
   </example>
-model: inherit
+model: sonnet
 ---
 
 You verify exactly one (packet, version) cell. You are working in the task

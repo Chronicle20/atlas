@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -15,7 +14,6 @@ import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -25,23 +23,6 @@ import (
 // on ResourceType and uses ResourceId only for logging, so a synthetic
 // value is correct and reads clearly in a log line.
 const seededResourceId = "*"
-
-// InitResource registers POST /<prefix>/seed and GET /<prefix>/seed/status
-// for each transport configuration resource. Register this BEFORE
-// configuration.RegisterRoutes so the literal seed paths are matched ahead
-// of the /tenants/{tenantId}/... patterns.
-func InitResource(db *gorm.DB) server.RouteInitializer {
-	return func(router *mux.Router, l logrus.FieldLogger) {
-		// The three transport resources are version-agnostic: one shared
-		// set of files applies to every tenant regardless of region or
-		// client version, so the source resolves deploy/seed/shared/all
-		// in addition to the tenant's version root.
-		src := seeder.NewFilesystemCatalogSourceWithShared("SEED_CATALOG_ROOT", "./deploy/seed", "shared/all")
-		for _, g := range Groups(l) {
-			seeder.RegisterRoutes(router, db, l, src, g)
-		}
-	}
-}
 
 // Groups returns one seeder.Group per transport configuration resource.
 // Separate groups (rather than one group with three subdomains) keep each

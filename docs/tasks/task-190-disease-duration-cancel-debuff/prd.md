@@ -144,8 +144,8 @@ field. The design phase MUST NOT "improve" on this.
 
 | Version | Opcode | Self-throttles? | Evidence |
 |---|---|---|---|
-| gms_v48 | **unknown** | — | no IDB available (see FR-2.4) |
-| gms_v61 | **unknown** | — | no IDB available (see FR-2.4) |
+| gms_v48 | `0x4E` (78) | no | `0x71b126` |
+| gms_v61 | `0x5B` (91) | no | `0x84374e` |
 | gms_v72 | `0x62` (98) | no | `sub_91914F` (renamed `CWvsContext::CheckTemporaryStatDuration`) |
 | gms_v79 | `0x61` (97) | no | `sub_96AD48` (renamed) |
 | gms_v83 | `0x63` (99) | no | `0xa20935` — matches registry |
@@ -156,7 +156,13 @@ field. The design phase MUST NOT "improve" on this.
 | jms_v185 | `0x5E` (94) | **yes** | `0xb0783e` |
 
 The five registry values (v83/84/87/95/jms185, all `provenance: csv-import`) are confirmed
-correct. v72, v79 and v92 are newly discovered and MUST be added to the registry.
+correct. **v48, v61, v72, v79 and v92 are newly discovered** and MUST be added to the
+registry. All ten versions are resolved; none is `n-a`.
+
+**FR-2.3.2 — `0x63` is not stable across versions.** It means `CANCEL_DEBUFF` at v83/v84,
+but at v61 the same byte is the calc-damage-stat request emitted by `OnTemporaryStatReset`.
+Opcodes MUST come from tenant config per version (DOM-25); a hard-coded `0x63` would
+mis-route on v61.
 
 **FR-2.3.1 — Send-rate divergence is load-bearing.** All versions gate on
 `tick - m_tLastStatResetRequest > 200`. **v92, v95 and jms185 assign the anchor before
@@ -165,10 +171,15 @@ five the guard latches open 200 ms after the last temporary-stat *change* and th
 then sends once per frame, indefinitely — exactly the ~30 ms spacing and ~1,500 packets
 observed live. Any rate-limit design (NFR-2) MUST assume the unthrottled case.
 
-**FR-2.4** v48 and v61 have no IDB in the current instance set, so their opcodes remain
-unresolved. They MUST be resolved by opening those binaries, or recorded as `n-a` with
-evidence per the matrix's n-a consistency gate — never silently skipped and never given a
-guessed opcode. A version whose opcode cannot be established is NOT routed.
+**FR-2.4 — RESOLVED.** All ten opcodes are established from IDBs; no version is `n-a` and
+no opcode is guessed. Nothing is deferred here.
+
+**FR-2.4.1 — The clientbound reply mask is 8 bytes at v48 and 16 bytes everywhere else.**
+v48 `OnTemporaryStatReset` does `CInPacket::DecodeBuffer(a2, &v8, 8u)`; v61 and every later
+version do `DecodeBuffer(…, 16)` (UINT128). This is exactly the split the existing
+`legacyGmsMask(t)` gate already implements in
+`libs/atlas-packet/model/character_temporary_stat.go`, so the clientbound writer needs **no
+change** for either arm. Confirm during design rather than re-deriving.
 
 **FR-2.5** A handler MUST be added to `atlas-channel` under `socket/handler/`. Because the
 body is empty it performs no decode beyond the opcode; its entire job is to trigger FR-2.6.
@@ -200,7 +211,7 @@ interval). A **per-character** variant MUST be added so a single client's nudge 
 force a fleet-wide sweep. The new Kafka command type is the only new message contract in
 this task.
 
-**FR-2.7** The handler MUST be routed in every template whose opcode is established, under
+**FR-2.7** The handler MUST be routed in **all ten** templates under
 `services/atlas-configurations/seed-data/templates/`, with a validator (a handler entry
 without a validator is silently dropped), inserted at its sorted `opCode` position per
 `docs/packets/TEMPLATE_CONVENTIONS.md`.
@@ -352,12 +363,19 @@ purely a bookkeeping decision: create `docs/packets/registry/gms_v92.yaml`, or r
 opcode by another means. v72 and v79 append to existing registry files with no such
 question.
 
-**9.6 — Observation, unverified, out of scope.** The clientbound `CharacterBuffCancel`
+**9.6 — Benign over-send, not a desync. Out of scope.** The clientbound `CharacterBuffCancel`
 encoder writes `tSwallowBuffTime` unconditionally
-(`libs/atlas-packet/character/clientbound/buff_cancel.go`), but v83
-`OnTemporaryStatReset` reads that trailing byte only when `sub_77DC78(mask)` is true. If
-that predicate is not universally true this is a latent trailing-byte desync on an existing
-verified packet. Noticed while reading for FR-2.6; not investigated. Worth a separate look.
+(`libs/atlas-packet/character/clientbound/buff_cancel.go`), but the client reads that
+trailing byte only when the mask contains a movement-affecting stat — the v83 predicate
+`sub_77DC78` is named `SecondaryStat::IsMovementAffectingStat` in the v61 IDB. Since packets
+are length-framed, a mask with no movement-affecting stat simply leaves the extra byte
+unread. So this is an over-send worth tidying for correctness, **not** the latent desync it
+first looked like. Recorded so a future reader doesn't re-raise it as a bug.
+
+**9.7 — Follow-up scope for the `0x6C` task (§9.3).** The calc-damage-stat request opcode is
+version-specific and only three are known so far: v48 `0x56` (86), v61 `0x63` (99), v83
+`0x6C` (108). The remaining seven need the same per-version IDB pass. Note the v61 collision
+called out in FR-2.3.2.
 
 **9.5 — Cross-repo consumers of atlas-data `mobskill.duration`.** §5 flags the field's
 meaning change. Unverified whether anything outside this repository reads it.
@@ -388,11 +406,12 @@ meaning change. Unverified whether anything outside this repository reads it.
       interval (NFR-2). Demonstrated against an unthrottled v72–v87-style send rate.
 - [ ] A reconcile finding nothing expired emits no clientbound packet (FR-2.9).
 - [ ] `atlas-buffs` per-character expiry sweep added; fleet-wide sweep unchanged.
-- [ ] Routed with a validator, at the sorted `opCode` position, in every template with an
-      established opcode; `tools/template-opcode-order-guard.sh` clean.
-- [ ] v48 and v61 resolved: opcode wired, or `n-a` with evidence. No guessed opcodes.
-- [ ] `CANCEL_DEBUFF` added to the v72 (`0x62`) and v79 (`0x61`) registry files; v92
-      (`0x6E`) recorded per the §9.4 decision.
+- [ ] Routed with a validator, at the sorted `opCode` position, in all ten templates;
+      `tools/template-opcode-order-guard.sh` clean.
+- [ ] Opcodes resolved from tenant config per version, never hard-coded — a `0x63` literal
+      would mis-route on v61 (FR-2.3.2).
+- [ ] `CANCEL_DEBUFF` added to the v48 (`0x4E`), v61 (`0x5B`), v72 (`0x62`) and v79 (`0x61`)
+      registry files; v92 (`0x6E`) recorded per the §9.4 decision.
 - [ ] Live-tenant backfill procedure documented in the task folder.
 
 **Guard**

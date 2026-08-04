@@ -137,8 +137,8 @@ expire. §8.3 resolves what it is.
 
 ## 8. IDB findings (2026-08-04)
 
-Read across eight open IDBs: gms v72, v79, v83, v84, v87, v92, v95, jms v185. No v48 or v61
-IDB was available in the instance set.
+Read across all ten client IDBs: gms v48, v61, v72, v79, v83, v84, v87, v92, v95, and
+jms v185. (v48 and v61 were loaded in a second pass.)
 
 ### 8.1 CANCEL_DEBUFF has an empty body
 
@@ -165,6 +165,8 @@ discards it. Identical shape on every version examined.
 
 | Version | Opcode | Assigns throttle anchor? | Symbol |
 |---|---|---|---|
+| gms_v48 | `0x4E` (78) | **no** | `0x71b126` (already named) |
+| gms_v61 | `0x5B` (91) | **no** | `0x84374e` (already named) |
 | gms_v72 | `0x62` (98) | **no** | `sub_91914F` → renamed `CWvsContext::CheckTemporaryStatDuration` |
 | gms_v79 | `0x61` (97) | **no** | `sub_96AD48` → renamed |
 | gms_v83 | `0x63` (99) | **no** | `0xa20935` (already named) |
@@ -175,7 +177,14 @@ discards it. Identical shape on every version examined.
 | jms_v185 | `0x5E` (94) | **yes** | `0xb0783e` |
 
 Registry values for v83/84/87/95/jms185 (`provenance: csv-import`) are all confirmed
-correct. v72, v79, v92 are new.
+correct. v48, v61, v72, v79 and v92 are new. All ten resolved; none is `n-a`.
+
+**`0x63` is version-unstable.** It is `CANCEL_DEBUFF` at v83/v84, but at v61 the same byte is
+the calc-damage-stat request that `OnTemporaryStatReset` emits (§8.3). Resolve the opcode
+from tenant config per version; a hard-coded `0x63` mis-routes on v61.
+
+v48 uses a three-argument `COutPacket::COutPacket(v5, 78, 0)` constructor where later
+versions use two. Body is still empty — no encode calls before `SendPacket`.
 
 **The throttle divergence explains the observed spam rate.** Every version gates on
 `tick - anchor > 200`, but v72–v87 never write the anchor in this function. It is written
@@ -201,6 +210,31 @@ So `0x6C` is emitted *in reaction to* a stat reset touching a calc-damage stat �
 empty-bodied. The live `0x6C` right after each mount apply/expire fits: the mount buff
 carries WEAPON_DEFENSE / MAGIC_DEFENSE. Unlike `0x63` it is one-shot per reset, not a loop,
 so leaving it unhandled cannot wedge a client. PRD §9.3.
+
+Its opcode is version-specific: **v48 `0x56` (86)**, **v61 `0x63` (99)**, **v83 `0x6C` (108)**.
+The other seven are not yet read (PRD §9.7).
+
+### 8.6 Clientbound reset mask width: v48 is 8 bytes, v61+ is 16
+
+- v48 `OnTemporaryStatReset` @ `0x71b054`: `CInPacket::DecodeBuffer(a2, &v8, 8u)` — an
+  8-byte mask, no `UINT128`, and a much smaller body (`0xd2` vs `0x1e0`).
+- v61 `OnTemporaryStatReset` @ `0x84353a`: `CInPacket::DecodeBuffer(v28, 16)` — full
+  `UINT128`, structurally identical to v83.
+
+This is precisely the split `legacyGmsMask(t)` already implements in
+`libs/atlas-packet/model/character_temporary_stat.go` (its comment cites "Pre-v61 GMS local
+value block"). The existing clientbound writer therefore covers both arms unchanged.
+
+### 8.7 `sub_77DC78` identified — and §9.6 downgraded
+
+The v83 predicate gating the trailing `Decode1` in `OnTemporaryStatReset` is unnamed
+(`sub_77DC78`), but the v61 IDB names the same call `SecondaryStat::IsMovementAffectingStat`.
+
+That resolves the §9.6 observation: atlas writes `tSwallowBuffTime` unconditionally while the
+client reads it only when the mask contains a movement-affecting stat. Because packets are
+length-framed, the unread byte is simply ignored — this is a **benign over-send, not a
+desync**. Worth tidying, not a live bug. (Correcting the initial characterization, which
+called it a latent desync before the predicate was identified.)
 
 ### 8.4 The clientbound half already exists
 

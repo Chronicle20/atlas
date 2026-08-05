@@ -381,7 +381,6 @@ func (p *ProcessorImpl) TickBoardingExpirationAndEmit() error {
 
 func (p *ProcessorImpl) TickArrival(mb *message.Buffer) error {
 	ir := getInstanceRegistry()
-	cr := getCharacterRegistry()
 	now := time.Now()
 
 	for _, inst := range ir.GetExpiredTransit(now) {
@@ -396,25 +395,53 @@ func (p *ProcessorImpl) TickArrival(mb *message.Buffer) error {
 			continue
 		}
 
-		p.l.Infof("Instance [%s] for route [%s] has arrived. Warping %d characters to [%d].",
-			inst.InstanceId(), route.Name(), inst.CharacterCount(), route.DestinationMapId())
-
-		characters := inst.Characters()
-		for _, entry := range characters {
-			err := mb.Put(character2EnvCommandTopic, warpToDestinationProvider(
-				entry.WorldId, entry.ChannelId, entry.CharacterId, route.DestinationMapId()))
-			if err != nil {
-				p.l.WithError(err).Errorf("Error warping character [%d] to destination.", entry.CharacterId)
-			}
-
-			// Emit COMPLETED event
-			_ = mb.Put(it.EnvEventTopic, completedEventProvider(entry.WorldId, entry.CharacterId, route.Id(), inst.InstanceId()))
-
-			cr.Remove(entry.CharacterId)
-		}
+		p.completeInstance(mb, inst, route)
 		ir.ReleaseInstance(inst.InstanceId())
 	}
 	return nil
+}
+
+// completeInstance runs the travel-timer arrival for one instance: cancel each
+// character's route effects, warp them out, and emit the terminal event.
+//
+// A route that declares a forced-return map is one whose transit maps carry a
+// client-side timeLimit — running out of flight time is a failure mode there,
+// not the delivery mechanism, so the character goes back to the forced-return
+// map and the event is CANCELLED/TIMEOUT. Emitting COMPLETED would tell a
+// future consumer the character arrived somewhere they never reached. Routes
+// without the field (ferries, whose transit maps have no timeLimit at all)
+// keep delivering to destinationMapId with COMPLETED, unchanged.
+//
+// Extracted from TickArrival so the emission is directly testable — the tick's
+// clock is time.Now() and cannot be advanced from a test.
+func (p *ProcessorImpl) completeInstance(mb *message.Buffer, inst TransportInstance, route RouteModel) {
+	cr := getCharacterRegistry()
+
+	forcedReturn := route.ForcedReturnMapId() != 0
+	target := route.DestinationMapId()
+	if forcedReturn {
+		target = route.ForcedReturnMapId()
+	}
+
+	p.l.Infof("Instance [%s] for route [%s] has arrived. Warping %d characters to [%d] (forced return: %t).",
+		inst.InstanceId(), route.Name(), inst.CharacterCount(), target, forcedReturn)
+
+	for _, entry := range inst.Characters() {
+		p.cancelRouteEffects(mb, route, entry.WorldId, entry.ChannelId, entry.CharacterId)
+
+		if err := mb.Put(character2EnvCommandTopic, warpToDestinationProvider(
+			entry.WorldId, entry.ChannelId, entry.CharacterId, target)); err != nil {
+			p.l.WithError(err).Errorf("Error warping character [%d] to [%d].", entry.CharacterId, target)
+		}
+
+		if forcedReturn {
+			_ = mb.Put(it.EnvEventTopic, cancelledEventProvider(entry.WorldId, entry.CharacterId, route.Id(), inst.InstanceId(), it.CancelReasonTimeout))
+		} else {
+			_ = mb.Put(it.EnvEventTopic, completedEventProvider(entry.WorldId, entry.CharacterId, route.Id(), inst.InstanceId()))
+		}
+
+		cr.Remove(entry.CharacterId)
+	}
 }
 
 func (p *ProcessorImpl) TickArrivalAndEmit() error {

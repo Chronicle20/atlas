@@ -416,3 +416,93 @@ func TestForceCancelInstance_NoEffectsEmitsNoConsumableCommands(t *testing.T) {
 
 	assert.False(t, getCharacterRegistry().IsInTransport(42))
 }
+
+// A route with a forced return: the timer expiring means the player ran out of
+// flight time, so they go back to the forced-return map (the client's own
+// Map.wz forcedReturn), not to the destination — and the event says CANCELLED
+// with reason TIMEOUT, because they did not complete the trip.
+func TestCompleteInstance_ForcedReturnWarpsBackAndCancels(t *testing.T) {
+	p, ctx := setupProcessorTest(t)
+	route := newEffectRoute(t, 1)
+	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
+	instanceId := board(t, p, route, 42, world.Id(0), channel.Id(1))
+
+	inst, ok := getInstanceRegistry().GetInstance(instanceId)
+	assert.True(t, ok)
+
+	mb := message.NewBuffer()
+	p.completeInstance(mb, inst, route)
+
+	cs := decodeConsumables(t, mb)
+	assert.Len(t, cs, 1)
+	assert.Equal(t, consumable.CommandCancelConsumableEffect, cs[0].Type)
+	assert.Equal(t, item.Id(2210016), cs[0].Body.ItemId)
+
+	warps := decodeChangeMaps(t, mb)
+	assert.Len(t, warps, 1)
+	assert.Equal(t, _map.Id(240000110), warps[0].Body.MapId, "forced return, not the destination")
+
+	evs := decodeInstanceTransportEvents(t, mb)
+	assert.Len(t, evs, 1)
+	assert.Equal(t, it.EventTypeCancelled, evs[0].Type)
+	assert.Equal(t, it.CancelReasonTimeout, evs[0].Body.Reason)
+
+	assert.False(t, getCharacterRegistry().IsInTransport(42))
+}
+
+// The ferry regression bar: no forced return, no declared effects — deliver to
+// destinationMapId and emit COMPLETED, byte-identically to today.
+func TestCompleteInstance_NoForcedReturnDeliversAndCompletes(t *testing.T) {
+	p, ctx := setupProcessorTest(t)
+	route := newPlainRoute(t)
+	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
+	instanceId := board(t, p, route, 42, world.Id(0), channel.Id(1))
+
+	inst, ok := getInstanceRegistry().GetInstance(instanceId)
+	assert.True(t, ok)
+
+	mb := message.NewBuffer()
+	p.completeInstance(mb, inst, route)
+
+	assert.Empty(t, mb.GetAll()[consumable.EnvCommandTopic])
+
+	warps := decodeChangeMaps(t, mb)
+	assert.Len(t, warps, 1)
+	assert.Equal(t, route.DestinationMapId(), warps[0].Body.MapId)
+
+	evs := decodeInstanceTransportEvents(t, mb)
+	assert.Len(t, evs, 1)
+	assert.Equal(t, it.EventTypeCompleted, evs[0].Type)
+}
+
+// A route that declares effects but no forced return still delivers to the
+// destination while cancelling — the two fields are independent.
+func TestCompleteInstance_EffectsWithoutForcedReturnStillDelivers(t *testing.T) {
+	p, ctx := setupProcessorTest(t)
+	route, err := NewRouteBuilder("effects-no-forced-return").
+		SetStartMapId(_map.Id(100000000)).
+		SetTransitMapIds([]_map.Id{100000100}).
+		SetDestinationMapId(_map.Id(100000200)).
+		SetCapacity(1).
+		SetBoardingWindow(1 * time.Second).
+		SetTravelDuration(60 * time.Second).
+		SetEffectItemIds([]item.Id{2210016}).
+		Build()
+	assert.NoError(t, err)
+	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
+	instanceId := board(t, p, route, 42, world.Id(0), channel.Id(1))
+
+	inst, ok := getInstanceRegistry().GetInstance(instanceId)
+	assert.True(t, ok)
+
+	mb := message.NewBuffer()
+	p.completeInstance(mb, inst, route)
+
+	assert.Len(t, decodeConsumables(t, mb), 1)
+	warps := decodeChangeMaps(t, mb)
+	assert.Len(t, warps, 1)
+	assert.Equal(t, _map.Id(100000200), warps[0].Body.MapId)
+	evs := decodeInstanceTransportEvents(t, mb)
+	assert.Len(t, evs, 1)
+	assert.Equal(t, it.EventTypeCompleted, evs[0].Type)
+}

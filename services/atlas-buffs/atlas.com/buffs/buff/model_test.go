@@ -279,3 +279,34 @@ func TestModel_WithStatAmount_MissingStatType(t *testing.T) {
 		t.Fatal("expected ok=false for absent stat type")
 	}
 }
+
+// TestModel_WithStatAmount_PreservesNoExpiry is the regression test for
+// task-167 FR-2.4: WithStatAmount must preserve the noExpiry flag on
+// no-expiry buffs (e.g. HOMING_BEACON locks) so they are never reaped by
+// the expiration ticker.
+func TestModel_WithStatAmount_PreservesNoExpiry(t *testing.T) {
+	m, err := NewNoExpiryBuff(5211006, 1, []stat.Model{stat.NewStat("LOCK", 1)})
+	if err != nil {
+		t.Fatalf("NewNoExpiryBuff: %v", err)
+	}
+
+	updated, ok := m.WithStatAmount("LOCK", 2)
+	if !ok {
+		t.Fatal("expected ok=true for present stat type")
+	}
+
+	// Stat amount must have changed.
+	if updated.Changes()[0].Amount() != 2 {
+		t.Fatalf("LOCK amount = %d, want 2", updated.Changes()[0].Amount())
+	}
+
+	// Critical: noExpiry flag must be preserved.
+	if !updated.NoExpiry() {
+		t.Fatal("noExpiry flag lost after WithStatAmount — buff will be reaped")
+	}
+
+	// Expired() must short-circuit and return false.
+	if updated.Expired() {
+		t.Fatal("no-expiry buff must never report expired")
+	}
+}

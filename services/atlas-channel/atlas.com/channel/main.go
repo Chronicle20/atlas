@@ -130,6 +130,7 @@ import (
 	questsb "github.com/Chronicle20/atlas/libs/atlas-packet/quest/serverbound"
 	reactorcb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
 	reactorsb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/serverbound"
+	reportcb "github.com/Chronicle20/atlas/libs/atlas-packet/report/clientbound"
 	reportsb "github.com/Chronicle20/atlas/libs/atlas-packet/report/serverbound"
 	rpscb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/clientbound"
 	rpssb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/serverbound"
@@ -808,6 +809,10 @@ func produceWriters() []string {
 		tvCB.TvSetMessageWriter,
 		tvCB.TvClearMessageWriter,
 		tvCB.TvSendMessageResultWriter,
+		reportcb.SueCharacterResultWriter,
+		reportcb.ClaimResultWriter,
+		reportcb.ClaimAvailableTimeWriter,
+		reportcb.ClaimSvrStatusChangedWriter,
 	}
 }
 

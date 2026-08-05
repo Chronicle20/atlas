@@ -8,8 +8,8 @@ Tool: `1437bf100576925dfe09704783678e4466c5c69d25e7de24e034532a547fa389`
 
 - export gms_v48: `297e85206e0590f69b760df0bd276d4162ebbd562a8ab3fc9788778f14becf10`
 - export gms_v61: `88399107c52bad29136777addb2fd7a6f60e4cddb343dd854de14a7a2f421fa2`
-- export gms_v72: `a33a8a94a368e48718724ea24f689743203064a2c787526dfbe0ae49aeefd439`
-- export gms_v79: `1e9d2d49e506f03fa1d2270c468fcd90ba782dc05a06e8601ebdad5e16d825e6`
+- export gms_v72: `192c16ddfecc8db9faa73bb234744c29ab0abd4f47071578571cc1cf9c81b11f`
+- export gms_v79: `68d28642b5ad3f1ac786dde8bb4c02e0c8a38bc3c01aeca8721e5ba695fb70d8`
 - export gms_v83: `c764baa1e6b4dc5ca8ccd868a3f907195ca019bf96b430433ab7e4d740371a16`
 - export gms_v84: `f8e90c78a64c7abcae8de12267f275d6c3233ce1adbbf1fb1419d4e9ccdca23d`
 - export gms_v87: `4fbc70fa0d0b84adf603839d62b89c6d572f40eadcdd1dc2d7ea0f3ef0cb41d7`
@@ -644,7 +644,7 @@ Tool: `1437bf100576925dfe09704783678e4466c5c69d25e7de24e034532a547fa389`
 | USE_DOOR | CField::TryEnterTownPortal; CTownPortalPool::TryEnterTownPortal; sub_4CB90A; sub_5E3082 | field/serverbound/FieldUseDoor (T1) | 0x067 | ✅ | 0x079 | ✅ | 0x083 | ✅ | 0x082 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x08D | ✅ | 0x099 | ❌ | 0x09C | ✅ | 0x088 | ✅ |
 | ANTI_MACRO_TARGET | CUserLocal::DoAntiMacroSkill |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x068 | ❌ | 0x068 | ❌ | 0x06B | ❌ | 0x073 | ❌ | 0x074 | ❌ | 0x063 | ❌ |
 | SUE_CHARACTER | CField::SendChatMsgSlash; sub_849F27 | field/serverbound/FieldAdminCommand (T1) |  | ⬜ | 0x068 | ✅ | 0x071 | ✅ | 0x070 | ✅ | 0x072 | ✅ | 0x072 | ✅ | 0x075 | ✅ | 0x07D | ❌ | 0x07E | ✅ |  | ⬜ |
-| CLAIM_REQUEST | CWvsContext::SendClaimRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06A | ❌ | 0x06A | ❌ | 0x06D | ❌ | 0x075 | ❌ | 0x076 | ❌ | 0x065 | ❌ |
+| CLAIM_REQUEST | CWvsContext::SendClaimRequest |  |  | ⬜ |  | ⬜ | 0x069 | ❌ | 0x068 | ❌ | 0x06A | ❌ | 0x06A | ❌ | 0x06D | ❌ | 0x075 | ❌ | 0x076 | ❌ | 0x065 | ❌ |
 | WEDDING_ACTION | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x06B | ✅ | 0x07F | ✅ | 0x089 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x093 | ✅ | 0x0A0 | ❌ | 0x0A3 | ✅ |  | ⬜ |
 | USER_CALC_DAMAGE_STAT_SET_REQUEST | CWvsContext::CheckDarkForce; CWvsContext::CheckDragonFury; CWvsContext::OnTemporaryStatReset; CWvsContext::OnTemporaryStatSet | character/clientbound/BuffCancel (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06C | ✅ | 0x06C | ✅ | 0x06F | ✅ | 0x077 | ❌ | 0x078 | ✅ | 0x067 | ✅ |
 | WEDDING_TALK | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x06C | ✅ | 0x080 | ✅ | 0x08A | ✅ | 0x089 | ✅ | 0x08C | ✅ | 0x090 | ✅ | 0x094 | ✅ | 0x0A1 | ❌ | 0x0A4 | ✅ |  | ⬜ |
@@ -1053,8 +1053,8 @@ Tool: `1437bf100576925dfe09704783678e4466c5c69d25e7de24e034532a547fa389`
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 179 | 0 | 2 | 203 | 631 | 0 | 46.6% |
 | v61 | 255 | 0 | 60 | 236 | 464 | 0 | 46.3% |
-| v72 | 265 | 0 | 73 | 255 | 422 | 0 | 44.7% |
-| v79 | 309 | 0 | 72 | 251 | 383 | 0 | 48.9% |
+| v72 | 265 | 0 | 73 | 256 | 421 | 0 | 44.6% |
+| v79 | 309 | 0 | 72 | 252 | 382 | 0 | 48.8% |
 | v83 | 428 | 0 | 0 | 359 | 228 | 0 | 54.4% |
 | v84 | 402 | 0 | 0 | 365 | 248 | 0 | 52.4% |
 | v87 | 436 | 0 | 0 | 388 | 191 | 0 | 52.9% |

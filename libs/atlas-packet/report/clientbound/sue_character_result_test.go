@@ -186,6 +186,42 @@ func TestSueCharacterResultByteOutputV84(t *testing.T) {
 	}
 }
 
+// TestSueCharacterResultByteOutputV87 verifies the wire-exact byte output of
+// SueCharacterResult for GMS v87.
+// IDA evidence (session d51ecbd3, GMSv87_4GB.exe.i64):
+//
+//	CWvsContext::OnSueCharacterResult@0xac13af, resolved via the opcode
+//	dispatch table CWvsContext::OnPacket@0xa9d011 case 0x37 @0xa9d165
+//	(registry gms_v87.yaml op SUE_CHARACTER_RESULT, opcode 55/0x37 --
+//	STATUS.md's pre-filled v87 column value of 0x038 is stale/wrong;
+//	independently re-derived here from the live dispatch switch, which
+//	agrees with the registry). CInPacket::Decode1(a1) @0xac13c0 reads a
+//	single result byte (v1); a1 is zeroed immediately after (@0xac13ca), so
+//	no further packet reads occur. v1 then drives a five-way branch
+//	(0/1/2/3/else) purely to pick a StringPool notice id
+//	(3013/3014/3015/3016/3017 @0xac14ac/0xac147e/0xac1450/0xac141f/0xac13ee)
+//	for a local CHATLOG_ADD render (@0xac14da) -- no branch performs any
+//	further CInPacket read. Body is exactly one byte, unconditionally, for
+//	every branch -- byte-identical to the v61/v72/v79/v83/v84 shape already
+//	verified above.
+//
+// packet-audit:verify packet=report/clientbound/SueCharacterResult version=gms_v87 ida=0xac13af
+func TestSueCharacterResultByteOutputV87(t *testing.T) {
+	v := pt.Variants[2] // GMS v87
+	if v.Name != "GMS v87" {
+		t.Fatalf("pt.Variants[2] = %q, want %q (index drifted)", v.Name, "GMS v87")
+	}
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	// result=2 -> StringPool 3015 branch (decompile @0xac1450); the wire body
+	// is the raw byte regardless of value.
+	input := NewSueCharacterResult(0x02)
+	expected := []byte{0x02} // 1 byte, per Decode1 @0xac13c0
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("byte output mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestSueCharacterResultRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

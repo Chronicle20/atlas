@@ -122,6 +122,35 @@ func TestClaimSvrStatusChangedByteOutputV84(t *testing.T) {
 	}
 }
 
+// TestClaimSvrStatusChangedByteOutputV87 verifies the wire-exact byte output
+// of ClaimSvrStatusChanged for GMS v87.
+// IDA evidence (session d51ecbd3, GMSv87_4GB.exe.i64):
+//
+//	CWvsContext::OnClaimSvrStatusChanged@0xabf7ce, resolved via the opcode
+//	dispatch table CWvsContext::OnPacket@0xa9d011 case 0x2F @0xa9d18c
+//	(registry gms_v87.yaml op CLAIM_STATUS_CHANGED, opcode 47/0x2F --
+//	STATUS.md's pre-filled v87 column value of 0x030 is stale/wrong;
+//	independently re-derived here from the live dispatch switch, which
+//	agrees with the registry). CInPacket::Decode1(a2) @0xabf7e0 reads a
+//	single byte, compared != 0 to produce a bool, stored this[3163]
+//	(m_bClaimSvrConnected). No further reads. 1 byte total. Byte-identical
+//	to the v72/v79/v83/v84 twins.
+//
+// packet-audit:verify packet=report/clientbound/ClaimSvrStatusChanged version=gms_v87 ida=0xabf7ce
+func TestClaimSvrStatusChangedByteOutputV87(t *testing.T) {
+	v := pt.Variants[2] // GMS v87
+	if v.Name != "GMS v87" {
+		t.Fatalf("pt.Variants[2] = %q, want %q (index drifted)", v.Name, "GMS v87")
+	}
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	input := NewClaimSvrStatusChanged(true)
+	expected := []byte{0x01} // Decode1 connected @0xabf7e0
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("byte output mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestClaimSvrStatusChangedRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

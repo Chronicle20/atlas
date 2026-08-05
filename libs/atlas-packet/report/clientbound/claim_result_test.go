@@ -310,6 +310,81 @@ func TestClaimResultNoticeByteOutputV84(t *testing.T) {
 	}
 }
 
+// TestClaimResultSuccessByteOutputV87 verifies the wire-exact byte output of
+// ClaimResultSuccess (mode 2) for GMS v87.
+// IDA evidence (session d51ecbd3, GMSv87_4GB.exe.i64):
+//
+//	CWvsContext::OnClaimResult@0xabf4fe, resolved via the opcode dispatch
+//	table CWvsContext::OnPacket@0xa9d011 case 0x2D @0xa9d172 (registry
+//	gms_v87.yaml op CLAIM_RESULT, opcode 45/0x2D -- STATUS.md's pre-filled
+//	v87 column value of 0x02E is stale/wrong; independently re-derived here
+//	from the live dispatch switch, which agrees with the registry).
+//	CInPacket::Decode1(a2) @0xabf513 reads the mode byte (v3). mode==2 is
+//	the ONLY value that reads further: CInPacket::Decode1(a2) @0xabf592
+//	reads hasRemaining (v8), CInPacket::Decode4(a2) @0xabf59c reads
+//	remaining (a2, reused as an int32). Every other reachable mode (3,
+//	0x41-0x45, 0x47, 0x48) is a bare mode byte with no further packet reads
+//	-- ClaimResultNotice, verified below. 6 bytes total for mode 2: mode,
+//	hasRemaining, remaining(4). Byte-identical to the v72/v79/v83/v84 shape
+//	already verified above.
+//
+// packet-audit:verify packet=report/clientbound/ClaimResultSuccess version=gms_v87 ida=0xabf4fe
+func TestClaimResultSuccessByteOutputV87(t *testing.T) {
+	v := pt.Variants[2] // GMS v87
+	if v.Name != "GMS v87" {
+		t.Fatalf("pt.Variants[2] = %q, want %q (index drifted)", v.Name, "GMS v87")
+	}
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	input := NewClaimResultSuccess(0x02, true, 100)
+	expected := []byte{
+		0x02,                   // Decode1 mode @0xabf513
+		0x01,                   // Decode1 hasRemaining @0xabf592
+		0x64, 0x00, 0x00, 0x00, // Decode4 remaining = 100 LE @0xabf59c
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("byte output mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestClaimResultNoticeByteOutputV87 verifies the wire-exact byte output of
+// ClaimResultNotice (bare mode byte, no payload) for GMS v87, covering every
+// reachable non-success mode.
+// IDA evidence (session d51ecbd3, GMSv87_4GB.exe.i64), all within
+// CWvsContext::OnClaimResult@0xabf4fe after the single Decode1(mode)
+// @0xabf513 -- none of these branches perform any further CInPacket read:
+//
+//	mode 3    -> StringPool 3394 @0xabf575
+//	mode 0x41 -> StringPool 5875 @0xabf55f
+//	mode 0x42 -> StringPool 3396 @0xabf549
+//	mode 0x43 -> StringPool 3397 @0xabf6a7
+//	mode 0x44 -> StringPool 3398 @0xabf77a
+//	mode 0x45 -> StringPool 3399 @0xabf767
+//	mode 0x47 -> own CUtilDlg::Notice arm (formats StringPool 3404 with
+//	             this[12649]/this[12648], the openHour/closeHour fields
+//	             stored by OnSetClaimSvrAvailableTime -- reads character
+//	             state, not the wire) @0xabf6f7-0xabf745
+//	mode 0x48 -> StringPool 3406 @0xabf6d8
+//
+// (modes 0, 1, 0x46, and every other unlisted byte value fall through to an
+// early return with no display -- still just the 1-byte mode already
+// consumed.) Not registry-linked (the CLAIM_RESULT op row's single `packet:`
+// field points at ClaimResultSuccess above) so this test carries no
+// verify-marker comment, but the decompile citations are load-bearing for
+// the registry note on CLAIM_RESULT.
+func TestClaimResultNoticeByteOutputV87(t *testing.T) {
+	v := pt.Variants[2] // GMS v87
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	for _, mode := range []byte{0x03, 0x41, 0x42, 0x43, 0x44, 0x45, 0x47, 0x48} {
+		input := NewClaimResultNotice(mode)
+		expected := []byte{mode}
+		actual := pt.Encode(t, ctx, input.Encode, nil)
+		if !bytes.Equal(actual, expected) {
+			t.Errorf("mode 0x%02X: byte output mismatch: got %v want %v", mode, actual, expected)
+		}
+	}
+}
+
 func TestClaimResultSuccessRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

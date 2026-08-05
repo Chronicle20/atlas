@@ -13,6 +13,7 @@ import (
 
 	account2 "atlas-ban/kafka/consumer/account"
 	ban2 "atlas-ban/kafka/consumer/ban"
+	report4 "atlas-ban/kafka/consumer/report"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
@@ -68,6 +69,10 @@ func main() {
 	}
 	account2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := account2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	report4.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := report4.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 

@@ -321,9 +321,9 @@ images:
   - name: ghcr.io/chronicle20/atlas-summons/atlas-summons
     newTag: main-0412e7f
   - name: ghcr.io/chronicle20/atlas-tenants/atlas-tenants
-    newTag: main-0412e7f
+    newTag: main-70ab0af
   - name: ghcr.io/chronicle20/atlas-transports/atlas-transports
-    newTag: main-0412e7f
+    newTag: main-70ab0af
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
     newTag: main-0412e7f
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui

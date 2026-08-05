@@ -2,6 +2,7 @@ package instance
 
 import (
 	"atlas-transports/kafka/message"
+	"atlas-transports/kafka/message/consumable"
 	it "atlas-transports/kafka/message/instance_transport"
 	"context"
 	"errors"
@@ -99,6 +100,19 @@ func (p *ProcessorImpl) GetRouteByTransitMap(mapId _map.Id) (RouteModel, error) 
 	return getRouteRegistry().GetRouteByTransitMap(p.ctx, mapId)
 }
 
+// applyRouteEffects buffers one APPLY_CONSUMABLE_EFFECT per item the route
+// declares. It deliberately returns nothing: a missing morph is cosmetic, a
+// rejected boarding is not, so a buffer failure is logged and boarding
+// continues. A route declaring no effects is a zero-command no-op.
+func (p *ProcessorImpl) applyRouteEffects(mb *message.Buffer, route RouteModel, worldId world.Id, channelId channel.Id, characterId uint32) {
+	for _, itemId := range route.EffectItemIds() {
+		p.l.Infof("Applying route [%s] effect item [%d] to character [%d].", route.Name(), itemId, characterId)
+		if err := mb.Put(consumable.EnvCommandTopic, applyConsumableEffectProvider(worldId, channelId, characterId, itemId)); err != nil {
+			p.l.WithError(err).Errorf("Unable to buffer apply of effect item [%d] for character [%d] on route [%s].", itemId, characterId, route.Name())
+		}
+	}
+}
+
 func (p *ProcessorImpl) StartTransport(mb *message.Buffer) func(characterId uint32, routeId uuid.UUID, f field.Model) error {
 	return func(characterId uint32, routeId uuid.UUID, f field.Model) error {
 		// Double-transport prevention
@@ -130,6 +144,16 @@ func (p *ProcessorImpl) StartTransport(mb *message.Buffer) func(characterId uint
 
 		p.l.Infof("Character [%d] boarding instance [%s] for route [%s] (%s). Characters: %d/%d.",
 			characterId, inst.InstanceId(), route.Name(), route.Id(), count, route.Capacity())
+
+		// Effect applies are buffered before the CHANGE_MAP command, mirroring
+		// the ordering the NPC saga used to guarantee. That ordering is a
+		// readability convention, not a guarantee: message.Buffer emits
+		// per-topic in Go map iteration order, which is randomised. Correctness
+		// does not need one — ApplyConsumableEffect resolves the character's
+		// live map at handling time, and an APPLY cannot overtake a later
+		// CANCEL because both are keyed by characterId onto a single partition
+		// that atlas-consumables consumes serially (maxInFlight defaults to 1).
+		p.applyRouteEffects(mb, route, f.WorldId(), f.ChannelId(), characterId)
 
 		// Emit CHANGE_MAP command to transit map with instance
 		err := mb.Put(character2EnvCommandTopic, warpToTransitMapProvider(f, characterId, route.TransitMapIds()[0], inst.InstanceId()))

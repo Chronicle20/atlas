@@ -451,15 +451,18 @@ claim shape.
 `switch (nType)` spanning cases `0x1B`–`0x7A` (~74 explicit cases; everything else, including
 gaps, falls to `default: return`). The case list runs `... case 0x28: OnAntiMacroResult; case
 0x2A: OnClaimResult; ...` — **case `0x37` does not exist**, jumping directly from
-`case 0x36: OnPartyResult` to `case 0x38: OnExpedtionResult`. `0x37` (55) is exactly the
-opcode GMS v83/v84/v87/v95 use for `SUE_CHARACTER_RESULT` (§1). This is independently
-corroborated by the registry: `docs/packets/registry/jms_v185.yaml` has `PARTY_OPERATION` at
-opcode 54 (`0x36`) and the next clientbound row, `IDA_0X038`/`OnExpedtionResult`, at opcode 56
-(`0x38`) — opcode 55 (`0x37`) is absent from the registry too, built independently of this
-dispatcher read. Two independent sources (a fresh full-dispatcher decompile, and the
-CSV+IDA-discovered registry) agree the slot is simply empty, not merely unresolved. No function
-named `OnSueCharacterResult` (or matching regex `(?i)suecharacter`) exists anywhere in the
-JMS IDB (`func_query`, 0 hits).
+`case 0x36: OnPartyResult` to `case 0x38: OnExpedtionResult`. The conclusion rests on the
+fully-enumerated switch itself (every case from `0x1B`–`0x7A` was read, not sampled) plus the
+zero-hit name search (`func_query name_regex "(?i)suecharacter"` returns nothing anywhere in
+the JMS IDB) — that pair is sufficient on its own. Worth noting only as a coincidental footnote,
+not corroborating evidence: `0x37` (55) happens to be the same opcode GMS v83/v84/v87/v95 use
+for `SUE_CHARACTER_RESULT` (§1), and `docs/packets/registry/jms_v185.yaml` independently has a
+matching gap at opcode 55 between `PARTY_OPERATION` (54) and `IDA_0X038`/`OnExpedtionResult`
+(56). But JMS's opcode numbering is demonstrably unrelated to GMS's in general — the §7.4
+near-miss `sub_575186` sits at `0x10F` (271) versus GMS's 114–126 for the same
+`SUE_CHARACTER`/`CLAIM_REQUEST` family — and this switch has several other unremarkable gaps
+(`0x29`, `0x33`, `0x34`, `0x3A`, `0x4A`) that don't line up with anything, so the `0x37` match is
+not evidence of shared numbering and should not be read as such.
 
 **Step 5 — string-table sweep, covering both sue and claim (closes §7.3's stated residual
 gap in the same pass).** `find_regex` over the JMS binary's string table:

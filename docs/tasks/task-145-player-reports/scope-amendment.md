@@ -87,6 +87,39 @@ Delete the gms-92 and jms deferral entries (now in scope). `gms_12` remains
 deferred, with the **corrected** rationale: no registry yaml and no matrix column —
 not "unverifiable". Do not restate the false IDB claim.
 
+## Amendment 2 — chat-history endpoint IS routed through the ingress
+
+**Decided:** 2026-08-05, by the user, during Task 12 review.
+**Supersedes:** `plan.md` / `context.md`'s "the messages chat-history endpoint gets NO
+ingress entry (server-to-server only)".
+
+### Why the plan's design did not work
+
+`RootUrl(domain)` (`libs/atlas-rest/requests/url.go:14-19`) returns `<DOMAIN>_SERVICE_URL`
+when set and otherwise falls back to `BASE_SERVICE_URL`. There are **zero** `*_SERVICE_URL`
+overrides in `deploy/k8s/base` — the entire fleet relies on the fallback, and
+`BASE_SERVICE_URL` points at `atlas-ingress`. With no ingress route for `/api/chat/`,
+atlas-ban's transcript fetch would 404, and Task 7's best-effort degradation would swallow
+it and write a **null transcript on every report** — silently, with no error, no failing
+test, and no CI signal.
+
+### Decision
+
+Add `/api/chat/history` to `deploy/shared/routes.conf` (and `deploy/compose/routes.conf`),
+proxying to `atlas-messages:8080`, alongside the `/api/reports` route. Task 19 owns both.
+
+### Accepted risk (explicit)
+
+`routes.conf` is a flat nginx proxy map with no auth, allow/deny, or internal-only
+markers, and `atlas-ingress` is exposed via traefik at `dev.atlas.home`. Routing this
+endpoint therefore makes captured chat — **including whispers** — reachable by anything
+that can reach that host. This was raised at decision time and accepted on the basis that
+authentication is being added to the API surface generally in the near term; this endpoint
+is not a special case and should be covered by that work.
+
+Task 25's documentation must state this exposure plainly rather than describing the
+endpoint as server-to-server only.
+
 ## Execution order
 
 Tasks 1–17 → 26 → 27 → 28 → 29 → 30 → 18 → 19 → 20–23c → 24 → 25.

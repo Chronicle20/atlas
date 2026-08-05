@@ -46,6 +46,9 @@ type ApplyCommandBody struct {
 	// one-at-a-time (original-GMS behavior). Default false preserves the standard
 	// replace-by-sourceId semantics for every other producer.
 	Accumulate bool `json:"accumulate,omitempty"`
+	// NoExpiry marks an explicitly non-expiring buff (task-167 FR-2). When set,
+	// Duration MUST be 0; the consumer rejects the command otherwise.
+	NoExpiry bool `json:"noExpiry,omitempty"`
 }
 
 type StatChange struct {
@@ -96,6 +99,7 @@ type AppliedStatusEventBody struct {
 	Changes   []StatChange `json:"changes"`
 	CreatedAt time.Time    `json:"createdAt"`
 	ExpiresAt time.Time    `json:"expiresAt"`
+	NoExpiry  bool         `json:"noExpiry,omitempty"`
 }
 
 type ExpiredStatusEventBody struct {
@@ -105,6 +109,7 @@ type ExpiredStatusEventBody struct {
 	Changes   []StatChange `json:"changes"`
 	CreatedAt time.Time    `json:"createdAt"`
 	ExpiresAt time.Time    `json:"expiresAt"`
+	NoExpiry  bool         `json:"noExpiry,omitempty"`
 }
 
 // StatUpdatedStatusEventBody is emitted when a stat value on an existing buff

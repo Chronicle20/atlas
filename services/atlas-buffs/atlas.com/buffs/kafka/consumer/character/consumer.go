@@ -52,12 +52,17 @@ func handleApply(l logrus.FieldLogger, ctx context.Context, c character2.Command
 		return
 	}
 
+	if c.Body.NoExpiry && c.Body.Duration != 0 {
+		l.Warnf("Rejecting malformed APPLY for character [%d] source [%d]: noExpiry with nonzero duration [%d].", c.CharacterId, c.Body.SourceId, c.Body.Duration)
+		return
+	}
+
 	statChanges := make([]stat.Model, 0)
 	for _, cs := range c.Body.Changes {
 		statChanges = append(statChanges, stat.NewStat(cs.Type, cs.Amount))
 	}
 
-	if err := character.NewProcessor(l, ctx).Apply(c.WorldId, c.ChannelId, c.CharacterId, c.Body.FromId, c.Body.SourceId, c.Body.Level, c.Body.Duration, statChanges, c.Body.Accumulate); err != nil {
+	if err := character.NewProcessor(l, ctx).Apply(c.WorldId, c.ChannelId, c.CharacterId, c.Body.FromId, c.Body.SourceId, c.Body.Level, c.Body.Duration, statChanges, c.Body.Accumulate, c.Body.NoExpiry); err != nil {
 		l.WithError(err).Errorf("Unable to apply buff [%d] to character [%d].", c.Body.SourceId, c.CharacterId)
 	}
 }

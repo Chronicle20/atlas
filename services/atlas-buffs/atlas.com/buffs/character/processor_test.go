@@ -58,7 +58,7 @@ func TestProcessor_GetById_AfterApply(t *testing.T) {
 	sourceId := int32(2001001)
 	duration := int32(60)
 
-	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false, false)
 
 	m, err := processor.GetById(characterId)
 	assert.NoError(t, err)
@@ -78,7 +78,7 @@ func TestProcessor_Apply(t *testing.T) {
 	sourceId := int32(2001001)
 	duration := int32(60)
 
-	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false, false)
 
 	m, err := GetRegistry().Get(ctx, characterId)
 	assert.NoError(t, err)
@@ -98,9 +98,9 @@ func TestProcessor_Apply_MultipleBuffs(t *testing.T) {
 	characterId := uint32(1000)
 	fromId := uint32(2000)
 
-	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001001), byte(5), int32(60), changes, false)
-	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001002), byte(5), int32(120), changes, false)
-	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001003), byte(5), int32(180), changes, false)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001001), byte(5), int32(60), changes, false, false)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001002), byte(5), int32(120), changes, false, false)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001003), byte(5), int32(180), changes, false, false)
 
 	m, err := GetRegistry().Get(ctx, characterId)
 	assert.NoError(t, err)
@@ -118,7 +118,7 @@ func TestProcessor_Cancel(t *testing.T) {
 	sourceId := int32(2001001)
 	duration := int32(60)
 
-	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false, false)
 
 	m, _ := GetRegistry().Get(ctx, characterId)
 	assert.Len(t, m.Buffs(), 1)
@@ -147,7 +147,7 @@ func TestProcessor_Cancel_WrongSourceId(t *testing.T) {
 	sourceId := int32(2001001)
 	duration := int32(60)
 
-	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false, false)
 
 	err := processor.Cancel(worldId, characterId, int32(9999))
 	assert.NoError(t, err)
@@ -176,7 +176,7 @@ func TestProcessor_CancelByStatTypes_NoMatch(t *testing.T) {
 	worldId := world.Id(0)
 	characterId := uint32(1000)
 	holy := []stat.Model{stat.NewStat("HOLY_SYMBOL", 30)}
-	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(2311003), byte(1), int32(60), holy, false)
+	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(2311003), byte(1), int32(60), holy, false, false)
 
 	err := processor.CancelByStatTypes(worldId, characterId, []string{"POISON"})
 	assert.NoError(t, err)
@@ -191,9 +191,9 @@ func TestProcessor_CancelByStatTypes_MultiMatch(t *testing.T) {
 	worldId := world.Id(0)
 	characterId := uint32(1000)
 
-	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(124), byte(1), int32(60), []stat.Model{stat.NewStat("POISON", -10)}, false)
-	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(125), byte(1), int32(60), []stat.Model{stat.NewStat("CURSE", -50)}, false)
-	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(126), byte(1), int32(60), []stat.Model{stat.NewStat("WEAKEN", -20)}, false)
+	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(124), byte(1), int32(60), []stat.Model{stat.NewStat("POISON", -10)}, false, false)
+	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(125), byte(1), int32(60), []stat.Model{stat.NewStat("CURSE", -50)}, false, false)
+	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(126), byte(1), int32(60), []stat.Model{stat.NewStat("WEAKEN", -20)}, false, false)
 
 	err := processor.CancelByStatTypes(worldId, characterId, []string{"POISON", "CURSE", "WEAKEN", "DARKNESS", "SEAL"})
 	assert.NoError(t, err)
@@ -212,8 +212,8 @@ func TestProcessor_CancelByStatTypes_HolyShieldDoesNotBlockRemoval(t *testing.T)
 
 	// Insert a POISON buff via the registry directly so the immunity check on
 	// Apply can't refuse it once HOLY_SHIELD is present.
-	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(124), byte(1), int32(60), []stat.Model{stat.NewStat("POISON", -10)}, false)
-	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(2311005), byte(1), int32(60), []stat.Model{stat.NewStat("HOLY_SHIELD", 1)}, false)
+	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(124), byte(1), int32(60), []stat.Model{stat.NewStat("POISON", -10)}, false, false)
+	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(2311005), byte(1), int32(60), []stat.Model{stat.NewStat("HOLY_SHIELD", 1)}, false, false)
 
 	err := processor.CancelByStatTypes(worldId, characterId, []string{"POISON"})
 	assert.NoError(t, err)
@@ -241,7 +241,7 @@ func TestProcessor_TenantContext(t *testing.T) {
 
 	changes := setupProcessorTestChanges()
 
-	_ = processor1.Apply(world.Id(0), channel.Id(0), uint32(1000), uint32(2000), int32(2001001), byte(5), int32(60), changes, false)
+	_ = processor1.Apply(world.Id(0), channel.Id(0), uint32(1000), uint32(2000), int32(2001001), byte(5), int32(60), changes, false, false)
 
 	m, err := processor1.GetById(uint32(1000))
 	assert.NoError(t, err)
@@ -255,7 +255,7 @@ func TestProcessor_UpdateStatValue_Increment(t *testing.T) {
 	processor, _, ctx := setupProcessorTest(t)
 
 	changes := []stat.Model{stat.NewStat("COMBO", 1)}
-	_ = processor.Apply(world.Id(0), channel.Id(0), 1000, 1000, 1111002, byte(20), int32(150000), changes, false)
+	_ = processor.Apply(world.Id(0), channel.Id(0), 1000, 1000, 1111002, byte(20), int32(150000), changes, false, false)
 
 	_ = processor.UpdateStatValue(world.Id(0), 1000, 1111002, "COMBO", character2.StatOperationIncrement, 2, 6)
 
@@ -269,7 +269,7 @@ func TestProcessor_UpdateStatValue_UnknownOperationIsNoOp(t *testing.T) {
 	processor, _, ctx := setupProcessorTest(t)
 
 	changes := []stat.Model{stat.NewStat("COMBO", 1)}
-	_ = processor.Apply(world.Id(0), channel.Id(0), 1000, 1000, 1111002, byte(20), int32(150000), changes, false)
+	_ = processor.Apply(world.Id(0), channel.Id(0), 1000, 1000, 1111002, byte(20), int32(150000), changes, false, false)
 
 	err := processor.UpdateStatValue(world.Id(0), 1000, 1111002, "COMBO", "MULTIPLY", 2, 6)
 	assert.NoError(t, err, "unknown operation is a logged no-op, not an error")

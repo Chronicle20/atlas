@@ -31,6 +31,29 @@ const serviceName = "atlas-messages"
 
 var consumerGroupId = consumergroup.Resolve("Messages Service")
 
+// Server carries the JSON:API base URL/prefix used to marshal resource
+// links. This REST server is server-to-server only (chat history for
+// atlas-ban report corroboration); it has no nginx/ingress entry.
+type Server struct {
+	baseUrl string
+	prefix  string
+}
+
+func (s Server) GetBaseURL() string {
+	return s.baseUrl
+}
+
+func (s Server) GetPrefix() string {
+	return s.prefix
+}
+
+func GetServer() Server {
+	return Server{
+		baseUrl: "",
+		prefix:  "/api/",
+	}
+}
+
 func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
@@ -77,6 +100,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
+		AddRouteInitializer(chat.InitResource(GetServer())).
 		Run()
 
 	rt.Wait()

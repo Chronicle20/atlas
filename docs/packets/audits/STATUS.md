@@ -14,7 +14,7 @@ Tool: `eebc0b06a61616cef2aa7a1ea0e860a8036276cba93fe722902dfc76896fc489`
 - export gms_v84: `773eda298607a2969622a2afb5d797d7f68d73d8d5367b74ed6f49cc31075aee`
 - export gms_v87: `cd5fbff83b9d55cddf313f4c017c1342fef7f19c2b88797d2d78ee9c6c62da64`
 - export gms_v92: `99406f920df40b6f51305e7043172295941d77f9b728927079cdae6891396f02`
-- export gms_v95: `aeb6f0a7f4c9dea6e42a283273fad29fda3fdafc0301188cb898b0dd1def732d`
+- export gms_v95: `0a9f2194e2226bb1ac7683f2f3dbb9e4ce856a9aac64168336e5db2df190c7b2`
 - export jms_v185: `bc92f2b2bffdb33eed5969dd0b06359027fff7d25a76e78fd06d5886ae2b9805`
 
 ## Clientbound
@@ -72,15 +72,15 @@ Tool: `eebc0b06a61616cef2aa7a1ea0e860a8036276cba93fe722902dfc76896fc489`
 | MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x022 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x029 | ✅ | 0x029 | ✅ | 0x029 | ✅ | 0x02A | ❌ | 0x028 | ✅ | 0x026 | ✅ |
 | MAP_TRANSFER_RESULT | CWvsContext::OnMapTransferResult | teleportrock/clientbound/MapTransferError (T1) | 0x023 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02B | ❌ | 0x029 | ✅ | 0x027 | ✅ |
 | WEDDING_PHOTO | CWvsContext::OnAntiMacroResult |  | 0x024 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02C | ❌ | 0x02A | ❌ | 0x028 | ❌ |
-| CLAIM_RESULT | CWvsContext::OnClaimResult |  | 0x025 | ❌ | 0x02A | ❌ | 0x02A | ✅ | 0x02A | ✅ | 0x02D | ✅ | 0x02D | ✅ | 0x02D | ✅ | 0x02E | ✅ | 0x02C | ❌ | 0x02A | ❌ |
+| CLAIM_RESULT | CWvsContext::OnClaimResult |  | 0x025 | ❌ | 0x02A | ❌ | 0x02A | ✅ | 0x02A | ✅ | 0x02D | ✅ | 0x02D | ✅ | 0x02D | ✅ | 0x02E | ✅ | 0x02C | ✅ | 0x02A | ❌ |
 | OPEN_FULL_CLIENT_DOWNLOAD_LINK | CWvsContext::OnOpenFullClientDownloadLink |  |  | ⬜ | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x029 | ❌ | 0x027 | ❌ |  | ⬜ |
-| CLAIM_AVAILABLE_TIME | CWvsContext::OnSetClaimSvrAvailableTime; sub_71F525 |  | 0x026 | ❌ | 0x02B | ❌ | 0x02B | ✅ | 0x02B | ✅ | 0x02E | ✅ | 0x02E | ✅ | 0x02E | ✅ | 0x02F | ✅ | 0x02D | ❌ | 0x02B | ❌ |
-| CLAIM_STATUS_CHANGED | CWvsContext::OnClaimSvrStatusChanged; sub_71F54E |  | 0x027 | ❌ | 0x02C | ❌ | 0x02C | ✅ | 0x02C | ✅ | 0x02F | ✅ | 0x02F | ✅ | 0x02F | ✅ | 0x030 | ✅ | 0x02E | ❌ | 0x02C | ❌ |
+| CLAIM_AVAILABLE_TIME | CWvsContext::OnSetClaimSvrAvailableTime; sub_71F525 |  | 0x026 | ❌ | 0x02B | ❌ | 0x02B | ✅ | 0x02B | ✅ | 0x02E | ✅ | 0x02E | ✅ | 0x02E | ✅ | 0x02F | ✅ | 0x02D | ✅ | 0x02B | ❌ |
+| CLAIM_STATUS_CHANGED | CWvsContext::OnClaimSvrStatusChanged; sub_71F54E |  | 0x027 | ❌ | 0x02C | ❌ | 0x02C | ✅ | 0x02C | ✅ | 0x02F | ✅ | 0x02F | ✅ | 0x02F | ✅ | 0x030 | ✅ | 0x02E | ✅ | 0x02C | ❌ |
 | SET_TAMING_MOB_INFO | CWvsContext::OnSetTamingMobInfo; sub_72032B | character/clientbound/CharacterSetTamingMobInfo (T1) | 0x028 | ✅ | 0x02D | 🟡ᶠ | 0x02D | 🟡ᶠ | 0x02D | 🟡ᶠ | 0x030 | ✅ | 0x030 | ✅ | 0x030 | ✅ | 0x031 | 🟡ᶠ | 0x02F | ✅ | 0x02D | ✅ |
 | QUEST_CLEAR | CWvsContext::OnQuestClear |  | 0x029 | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x031 | ❌ | 0x031 | ❌ | 0x031 | ❌ | 0x032 | ❌ | 0x030 | ❌ | 0x02E | ❌ |
 | INCUBATOR_RESULT | CWvsContext::OnIncubatorResult | incubator/clientbound/IncubatorResult | 0x02A | ❌ | 0x042 | ✅ | 0x042 | ✅ | 0x042 | ✅ | 0x045 | ✅ | 0x047 | ✅ | 0x047 | ✅ | 0x049 | ❌ | 0x048 | ✅ | 0x03F | ✅ |
 | SKILL_LEARN_ITEM_RESULT | CWvsContext::OnSkillLearnItemResult; sub_9175E6; sub_969022 | character/clientbound/CharacterSkillLearnItemResult (T1) | 0x02B | ✅ | 0x030 | ✅ | 0x030 | ✅ | 0x030 | ✅ | 0x033 | ✅ | 0x033 | ✅ | 0x033 | ✅ | 0x034 | 🟡ᶠ | 0x032 | ✅ | 0x030 | ✅ |
-| SUE_CHARACTER_RESULT | CWvsContext::OnSueCharacterResult |  | 0x02C | ❌ | 0x034 | ✅ | 0x034 | ✅ | 0x034 | ✅ | 0x037 | ✅ | 0x037 | ✅ | 0x037 | ✅ | 0x038 | ✅ | 0x037 | ❌ |  | ⬜ |
+| SUE_CHARACTER_RESULT | CWvsContext::OnSueCharacterResult |  | 0x02C | ❌ | 0x034 | ✅ | 0x034 | ✅ | 0x034 | ✅ | 0x037 | ✅ | 0x037 | ✅ | 0x037 | ✅ | 0x038 | ✅ | 0x037 | ✅ |  | ⬜ |
 | IDA_0X02E | sub_71CE62 |  | 0x02E | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | ENTRUSTED_SHOP_CHECK_RESULT | CWvsContext::OnEntrustedShopCheckResult | merchant/clientbound/ConfirmManage |  | ⬜ | 0x02F | ❌ | 0x02F | ❌ | 0x02F | ❌ | 0x032 | ✅ | 0x032 | ❌ | 0x032 | ✅ | 0x033 | ❌ | 0x031 | ✅ | 0x02F | ❌ |
 | IDA_0X02F | sub_71CE49 |  | 0x02F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
@@ -644,7 +644,7 @@ Tool: `eebc0b06a61616cef2aa7a1ea0e860a8036276cba93fe722902dfc76896fc489`
 | USE_DOOR | CField::TryEnterTownPortal; CTownPortalPool::TryEnterTownPortal; sub_4CB90A; sub_5E3082 | field/serverbound/FieldUseDoor (T1) | 0x067 | ✅ | 0x079 | ✅ | 0x083 | ✅ | 0x082 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x08D | ✅ | 0x099 | ❌ | 0x09C | ✅ | 0x088 | ✅ |
 | ANTI_MACRO_TARGET | CUserLocal::DoAntiMacroSkill |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x068 | ❌ | 0x068 | ❌ | 0x06B | ❌ | 0x073 | ❌ | 0x074 | ❌ | 0x063 | ❌ |
 | SUE_CHARACTER | CField::SendChatMsgSlash; sub_849F27 | field/serverbound/FieldAdminCommand (T1) |  | ⬜ | 0x068 | ✅ | 0x071 | ✅ | 0x070 | ✅ | 0x072 | ✅ | 0x072 | ✅ | 0x075 | ✅ | 0x07D | ❌ | 0x07E | ✅ |  | ⬜ |
-| CLAIM_REQUEST | CWvsContext::SendClaimRequest | report/serverbound/ClaimRequest |  | ⬜ |  | ⬜ | 0x069 | ✅ | 0x068 | ✅ | 0x06A | ✅ | 0x06A | ✅ | 0x06D | ✅ | 0x075 | ✅ | 0x076 | ❌ |  | ⬜ |
+| CLAIM_REQUEST | CWvsContext::SendClaimRequest | report/serverbound/ClaimRequest |  | ⬜ |  | ⬜ | 0x069 | ✅ | 0x068 | ✅ | 0x06A | ✅ | 0x06A | ✅ | 0x06D | ✅ | 0x075 | ✅ | 0x076 | ✅ |  | ⬜ |
 | WEDDING_ACTION | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x06B | ✅ | 0x07F | ✅ | 0x089 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x093 | ✅ | 0x0A0 | ❌ | 0x0A3 | ✅ |  | ⬜ |
 | USER_CALC_DAMAGE_STAT_SET_REQUEST | CWvsContext::CheckDarkForce; CWvsContext::CheckDragonFury; CWvsContext::OnTemporaryStatReset; CWvsContext::OnTemporaryStatSet | character/clientbound/BuffCancel (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06C | ✅ | 0x06C | ✅ | 0x06F | ✅ | 0x077 | ❌ | 0x078 | ✅ | 0x067 | ✅ |
 | WEDDING_TALK | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x06C | ✅ | 0x080 | ✅ | 0x08A | ✅ | 0x089 | ✅ | 0x08C | ✅ | 0x090 | ✅ | 0x094 | ✅ | 0x0A1 | ❌ | 0x0A4 | ✅ |  | ⬜ |
@@ -1059,7 +1059,7 @@ Tool: `eebc0b06a61616cef2aa7a1ea0e860a8036276cba93fe722902dfc76896fc489`
 | v84 | 407 | 0 | 0 | 360 | 248 | 0 | 53.1% |
 | v87 | 441 | 0 | 0 | 383 | 191 | 0 | 53.5% |
 | v92 | 5 | 0 | 154 | 714 | 142 | 0 | 0.6% |
-| v95 | 461 | 0 | 0 | 447 | 107 | 0 | 50.8% |
+| v95 | 466 | 0 | 0 | 442 | 107 | 0 | 51.3% |
 | JMS185 | 415 | 0 | 0 | 401 | 199 | 0 | 50.9% |
 
 ## Conflicts

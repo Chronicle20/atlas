@@ -257,6 +257,41 @@ func TestSueCharacterResultByteOutputV92(t *testing.T) {
 	}
 }
 
+// TestSueCharacterResultByteOutputV95 verifies the wire-exact byte output of
+// SueCharacterResult for GMS v95.
+// IDA evidence (session 79906a1e, GMS_v95.0_U_DEVM.exe.i64):
+//
+//	CWvsContext::OnSueCharacterResult@0x9fae10, resolved via the opcode
+//	dispatch table CWvsContext::OnPacket@0x9e5830 case 55, call-site
+//	@0x9e5991 (registry gms_v95.yaml op SUE_CHARACTER_RESULT, opcode
+//	55/0x37 -- matches STATUS.md's pre-filled v95 column value of 0x037).
+//	CInPacket::Decode1(iPacket) @0x9fae39 reads a single result byte (v2);
+//	iPacket is zeroed immediately after (@0x9fae43), so no further packet
+//	reads occur. v2 then drives a five-way branch (0/1/2/3/else) purely to
+//	pick a StringPool notice id (0xBE6/0xBE7/0xBE8/0xBE9/0xBEA @0x9fae73/
+//	0x9faea4/0x9faed5/0x9faf03/0x9faf31) for a CUIStatusBar::ChatLogAdd
+//	render (@0x9faf80) -- no branch performs any further CInPacket read.
+//	Body is exactly one byte, unconditionally, for every branch --
+//	byte-identical to the v61/v72/v79/v83/v84/v87/v92 shape already
+//	verified above.
+//
+// packet-audit:verify packet=report/clientbound/SueCharacterResult version=gms_v95 ida=0x9fae10
+func TestSueCharacterResultByteOutputV95(t *testing.T) {
+	v := pt.Variants[3] // GMS v95
+	if v.Name != "GMS v95" {
+		t.Fatalf("pt.Variants[3] = %q, want %q (index drifted)", v.Name, "GMS v95")
+	}
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	// result=2 -> StringPool 0xBE8 branch (decompile @0x9faed5); the wire body
+	// is the raw byte regardless of value.
+	input := NewSueCharacterResult(0x02)
+	expected := []byte{0x02} // 1 byte, per Decode1 @0x9fae39
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("byte output mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestSueCharacterResultRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

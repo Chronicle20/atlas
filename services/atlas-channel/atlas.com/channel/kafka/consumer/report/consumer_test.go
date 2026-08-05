@@ -6,7 +6,9 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
+	"net"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -124,6 +126,20 @@ func newTestTenant(t *testing.T) tenant.Model {
 func newTestServer(t *testing.T, tm tenant.Model) server.Model {
 	t.Helper()
 	ch := channelconst.NewModel(0, 1)
+	return server.NewProcessor(logrus.New(), context.Background()).Register(tm, ch, "127.0.0.1", 8484)
+}
+
+// newZeroFieldTestServer registers a server whose world/channel (0, 0) match
+// session.NewSession's un-set default field. session.Processor exposes no
+// public setter for a session's worldId/channelId (only the production
+// Create(ch, locale) path sets them, and it also writes a hello packet to a
+// live net.Conn - unusable in a unit test); the real-session tests below use
+// this server instead of newTestServer so IfPresentByCharacterId's
+// world/channel filters (session/processor.go ByCharacterIdModelProvider)
+// actually match the directly-registered test session.
+func newZeroFieldTestServer(t *testing.T, tm tenant.Model) server.Model {
+	t.Helper()
+	ch := channelconst.NewModel(0, 0)
 	return server.NewProcessor(logrus.New(), context.Background()).Register(tm, ch, "127.0.0.1", 8484)
 }
 
@@ -390,7 +406,7 @@ func TestHandleStatusEvent_UnmappedCombo_DoesNothing(t *testing.T) {
 func TestHandleStatusEvent_WriterNotFound_SkipsWithoutError(t *testing.T) {
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
-	sc := newTestServer(t, tm)
+	sc := newZeroFieldTestServer(t, tm)
 
 	sessionId := uuid.New()
 	characterId := uint32(5001)
@@ -435,42 +451,69 @@ func TestHandleStatusEvent_WriterNotFound_SkipsWithoutError(t *testing.T) {
 	}
 }
 
-// TestHandleStatusEvent_WriterFound_DeliversThroughRealSession is the
-// control case for the skip-path test above: with a writer.Producer that
-// DOES resolve the writer, the real reportAnnouncer proceeds through
-// session.Announce and writes to the registered session's connection
-// (announceEncrypted needs a live net.Conn, so a nil con here would panic if
-// reached - proving the writer-not-found branch above really did stop short
-// of it would require a live conn; this test instead uses a resolvable
-// writer.Producer for a session with no characterId indexed, so
-// IfPresentByCharacterId no-ops and delivery is skipped for a different,
-// unrelated reason (no error either way) - the important contrast is that
-// the skip test above proves NO Warn/Error was logged for the writer-not-
-// found condition specifically.
-func TestHandleStatusEvent_WriterFound_NoSessionIndexed_NoOpsSilently(t *testing.T) {
+// TestHandleStatusEvent_WriterFound_DeliversToRealConnection is the control
+// case for the skip-path test above: with a writer.Producer that DOES
+// resolve the writer and a session backed by a real net.Conn (net.Pipe), the
+// real reportAnnouncer proceeds through session.Announce and actually writes
+// bytes to the connection - proving the writer-not-found test above is
+// exercising a genuine short-circuit, not a session lookup that always
+// fails/no-ops regardless of the writer check.
+func TestHandleStatusEvent_WriterFound_DeliversToRealConnection(t *testing.T) {
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
-	sc := newTestServer(t, tm)
+	sc := newZeroFieldTestServer(t, tm)
+
+	serverConn, clientConn := net.Pipe()
+	defer serverConn.Close()
+	defer clientConn.Close()
+
+	sessionId := uuid.New()
+	characterId := uint32(5003)
+	s := session.NewSession(sessionId, tm, 0, serverConn)
+	session.AddSessionToRegistry(tm.Id(), s)
+	defer session.ClearRegistryForTenant(tm.Id())
+	_ = session.NewProcessor(logrus.New(), ctx).SetCharacterId(sessionId, characterId)
 
 	logger, hook := testlog.NewNullLogger()
 
-	wp := writer.Producer(func(name string) (socketwriter.BodyFunc, error) {
+	wp := writer.Producer(func(_ string) (socketwriter.BodyFunc, error) {
 		return socketwriter.BodyFunc(func(_ logrus.FieldLogger, _ context.Context) func(packet.Encode) []byte {
-			return func(_ packet.Encode) []byte { return nil }
+			return func(_ packet.Encode) []byte { return []byte{0x01, 0x02, 0x03} }
 		}), nil
 	})
+
+	readErr := make(chan error, 1)
+	readN := make(chan int, 1)
+	go func() {
+		buf := make([]byte, 64)
+		n, err := clientConn.Read(buf)
+		readN <- n
+		readErr <- err
+	}()
 
 	h := handleStatusEvent(sc, wp)
 	h(logger, ctx, report2.StatusEvent{
 		Kind:       report2.KindClaim,
 		WorldId:    sc.WorldId(),
-		ReporterId: 5002, // never registered/indexed
+		ReporterId: characterId,
 		Status:     report2.EventStatusCreated,
 	})
 
+	select {
+	case n := <-readN:
+		if err := <-readErr; err != nil {
+			t.Fatalf("read from session connection: %v", err)
+		}
+		if n == 0 {
+			t.Fatal("want bytes written to the real session connection, got none")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for a write to the session connection - delivery did not reach announceEncrypted")
+	}
+
 	for _, e := range hook.AllEntries() {
 		if e.Level <= logrus.WarnLevel {
-			t.Fatalf("no-session-indexed must not error/warn; got %s-level entry: %q", e.Level, e.Message)
+			t.Fatalf("writer-found delivery must not error/warn; got %s-level entry: %q", e.Level, e.Message)
 		}
 	}
 }

@@ -81,15 +81,20 @@ func exportRun(opts exportOpts, client idasrc.MCPClient, stdout, stderr io.Write
 	// these blank, matching pre-task-27 behaviour). A client that claims
 	// support but fails the call surfaces the error loudly, same as any other
 	// transport/tool failure on this path — a silent empty provenance field
-	// is exactly the defect this closes.
+	// is exactly the defect this closes. A client that does NOT implement the
+	// capability at all is logged too (not silently skipped) — that is the
+	// same failure class (silent empty provenance) for any future MCPClient
+	// that simply forgot to implement it.
 	var binary, md5 string
 	if bip, ok := client.(idasrc.BinaryInfoProvider); ok {
 		b, m, err := bip.GetBinaryInfo(context.Background())
 		if err != nil {
-			fmt.Fprintln(stderr, "export: binary info:", err)
+			_, _ = fmt.Fprintln(stderr, "export: binary info:", err)
 			return 3
 		}
 		binary, md5 = b, m
+	} else {
+		_, _ = fmt.Fprintln(stderr, "export: client does not implement idasrc.BinaryInfoProvider; binary/md5 provenance will be empty")
 	}
 
 	ef, err := idasrc.Harvest(context.Background(), client, roster, idasrc.HarvestOpts{

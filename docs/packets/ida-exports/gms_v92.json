@@ -2036,7 +2036,14 @@
     "CField::OnRequestFootHoldInfo": {
       "address": "0x5282e0",
       "direction": "serverbound",
-      "calls": null
+      "notes": "resolved but calls:null; gms_v95.json has real, non-empty content for this FName. Not individually diagnosed — grouped here on the strength of the sibling-content mismatch alone, not a confirmed mechanism. Plausible causes (unverified for this specific entry): the same compiler-inlining or pure-delegate pattern found in the diagnosed peers above, decompile truncation on a very large function body, or (one specific case, CLogin::SendLoginPacket) a decompile whose control flow does not resemble a packet-send at all and may be obfuscated/unfaithful in this IDB.",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "resolved address/decompile but zero recognized Decode/Encode calls found; see notes"
+        }
+      ]
     },
     "CField::OnSetObjectState": {
       "address": "0x533d10",
@@ -3553,7 +3560,14 @@
     "CField_Tournament::OnTournamentMatchTable": {
       "address": "0x55bcf0",
       "direction": "clientbound",
-      "calls": null
+      "notes": "resolved but calls:null; gms_v95.json has real, non-empty content for this FName. Not individually diagnosed — grouped here on the strength of the sibling-content mismatch alone, not a confirmed mechanism. Plausible causes (unverified for this specific entry): the same compiler-inlining or pure-delegate pattern found in the diagnosed peers above, decompile truncation on a very large function body, or (one specific case, CLogin::SendLoginPacket) a decompile whose control flow does not resemble a packet-send at all and may be obfuscated/unfaithful in this IDB.",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "resolved address/decompile but zero recognized Decode/Encode calls found; see notes"
+        }
+      ]
     },
     "CField_Tournament::OnTournamentSetPrize": {
       "address": "0x55bfc0",
@@ -5060,7 +5074,14 @@
     "CLogin::SendLoginPacket": {
       "address": "0x5d26b0",
       "direction": "serverbound",
-      "calls": null
+      "notes": "resolved but calls:null; gms_v95.json has real, non-empty content for this FName. Directly re-decompiled (0x5d26b0, session acdfccff): the body is a small function with a suspicious unconditional `while(1)` loop with no visible exit and no COutPacket/SendPacket activity at all — it does not resemble a packet-send function. lookup_funcs confirms the address genuinely carries the mangled symbol ?SendLoginPacket@CLogin@@QAEHJJ@Z (not a coincidental wrong-function match), so this looks like a decompile-fidelity problem (possible obfuscation/anti-tamper wrapping in this DEVM build) rather than a parser gap — not confirmed further; out of this task's scope.",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "resolved address/decompile but zero recognized Decode/Encode calls found; see notes"
+        }
+      ]
     },
     "CLogin::SendNewCharPacket": {
       "address": "0x5ce1e0",
@@ -5797,7 +5818,14 @@
     "CMob::GenerateMovePath": {
       "address": "0x6447a0",
       "direction": "serverbound",
-      "calls": null
+      "notes": "resolved but calls:null; gms_v95.json has real, non-empty content for this FName. Diagnosed by direct re-decompile of the peer entry CMob::GenerateMovePath (0x6447a0, session acdfccff): the v92 compiler inlined the COutPacket::EncodeN() calls into raw buffer pointer writes (e.g. *(_DWORD *)(v70 + v171) = a4) for this hot movement-generation path, so no literal COutPacket::EncodeN( token remains in the decompile for ParseDecompile's regex-based matcher to find. This specific entry was not independently re-decompiled to confirm the identical mechanism applies, but it is the same function family / likely the same compiler behavior.",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "resolved address/decompile but zero recognized Decode/Encode calls found; see notes"
+        }
+      ]
     },
     "CMob::OnAffected": {
       "address": "0x637d10",
@@ -6366,7 +6394,14 @@
     "CNpc::GenerateMovePath": {
       "address": "0x664dc0",
       "direction": "serverbound",
-      "calls": null
+      "notes": "resolved but calls:null; gms_v95.json has real, non-empty content for this FName. Not individually diagnosed — grouped here on the strength of the sibling-content mismatch alone, not a confirmed mechanism. Plausible causes (unverified for this specific entry): the same compiler-inlining or pure-delegate pattern found in the diagnosed peers above, decompile truncation on a very large function body, or (one specific case, CLogin::SendLoginPacket) a decompile whose control flow does not resemble a packet-send at all and may be obfuscated/unfaithful in this IDB.",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "resolved address/decompile but zero recognized Decode/Encode calls found; see notes"
+        }
+      ]
     },
     "CNpc::OnMove": {
       "address": "0x668480",
@@ -6635,7 +6670,14 @@
     "CPet::OnMove": {
       "address": "0x695180",
       "direction": "clientbound",
-      "calls": null
+      "notes": "resolved but calls:null; gms_v95.json has real, non-empty content for this FName. Diagnosed by direct re-decompile: this is a pure delegate/wrapper with ZERO direct CInPacket::Decode*/COutPacket::Encode* calls of its own — it forwards its packet argument straight to a helper (e.g. CMovePath::OnMovePacket(ptr, a2, 0)). tools/packet-audit/internal/idasrc/parse.go's seedPacketParams (line ~152) seeds the packet-alias set ONLY from identifiers that appear as the first-arg of a direct Decode/Encode call somewhere in the function's OWN body — never from the function's formal parameter list. A pure-delegate function with no direct primitive call of its own therefore never seeds its packet parameter into the alias set, so the Delegate-detection logic (which requires the alias to already be live) never recognizes the helper call, and BFS descent into the real handler never happens. This is a genuine, previously-undocumented packet-audit tool limitation, not specific to this FName or to v92.",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "resolved address/decompile but zero recognized Decode/Encode calls found; see notes"
+        }
+      ]
     },
     "CPet::ParseCommand": {
       "address": "0x699230",
@@ -8252,7 +8294,14 @@
     "CUIMessenger::SendInviteMsg": {
       "address": "0x7d49f0",
       "direction": "serverbound",
-      "calls": null
+      "notes": "resolved but calls:null; gms_v95.json has real, non-empty content for this FName. Not individually diagnosed — grouped here on the strength of the sibling-content mismatch alone, not a confirmed mechanism. Plausible causes (unverified for this specific entry): the same compiler-inlining or pure-delegate pattern found in the diagnosed peers above, decompile truncation on a very large function body, or (one specific case, CLogin::SendLoginPacket) a decompile whose control flow does not resemble a packet-send at all and may be obfuscated/unfaithful in this IDB.",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "resolved address/decompile but zero recognized Decode/Encode calls found; see notes"
+        }
+      ]
     },
     "CUIMonsterCarnival::RequestSend": {
       "address": "",
@@ -9317,7 +9366,14 @@
     "CUserRemote::OnMove": {
       "address": "0x925430",
       "direction": "clientbound",
-      "calls": null
+      "notes": "resolved but calls:null; gms_v95.json has real, non-empty content for this FName. Diagnosed by direct re-decompile: this is a pure delegate/wrapper with ZERO direct CInPacket::Decode*/COutPacket::Encode* calls of its own — it forwards its packet argument straight to a helper (e.g. CMovePath::OnMovePacket(ptr, a2, 0)). tools/packet-audit/internal/idasrc/parse.go's seedPacketParams (line ~152) seeds the packet-alias set ONLY from identifiers that appear as the first-arg of a direct Decode/Encode call somewhere in the function's OWN body — never from the function's formal parameter list. A pure-delegate function with no direct primitive call of its own therefore never seeds its packet parameter into the alias set, so the Delegate-detection logic (which requires the alias to already be live) never recognizes the helper call, and BFS descent into the real handler never happens. This is a genuine, previously-undocumented packet-audit tool limitation, not specific to this FName or to v92.",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "resolved address/decompile but zero recognized Decode/Encode calls found; see notes"
+        }
+      ]
     },
     "CUserRemote::OnPetActivated": {
       "address": "0x930ee0",
@@ -10166,7 +10222,14 @@
     "CWvsContext::OnGuildBBSPacket": {
       "address": "0x9a21e0",
       "direction": "",
-      "calls": null
+      "notes": "resolved but calls:null; gms_v95.json has real, non-empty content for this FName. Not individually diagnosed — grouped here on the strength of the sibling-content mismatch alone, not a confirmed mechanism. Plausible causes (unverified for this specific entry): the same compiler-inlining or pure-delegate pattern found in the diagnosed peers above, decompile truncation on a very large function body, or (one specific case, CLogin::SendLoginPacket) a decompile whose control flow does not resemble a packet-send at all and may be obfuscated/unfaithful in this IDB.",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "resolved address/decompile but zero recognized Decode/Encode calls found; see notes"
+        }
+      ]
     },
     "CWvsContext::OnGuildResult": {
       "address": "0x9e12a0",
@@ -11873,7 +11936,14 @@
     "CWvsContext::OnShopLinkResult": {
       "address": "0x9c5360",
       "direction": "clientbound",
-      "calls": null
+      "notes": "resolved but calls:null; gms_v95.json has real, non-empty content for this FName. Not individually diagnosed — grouped here on the strength of the sibling-content mismatch alone, not a confirmed mechanism. Plausible causes (unverified for this specific entry): the same compiler-inlining or pure-delegate pattern found in the diagnosed peers above, decompile truncation on a very large function body, or (one specific case, CLogin::SendLoginPacket) a decompile whose control flow does not resemble a packet-send at all and may be obfuscated/unfaithful in this IDB.",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "resolved address/decompile but zero recognized Decode/Encode calls found; see notes"
+        }
+      ]
     },
     "CWvsContext::OnShopScannerResult#HotList": {
       "address": "",
@@ -12175,12 +12245,42 @@
     "CWvsContext::SendClaimRequest": {
       "address": "0x9d9c30",
       "direction": "serverbound",
-      "calls": null
+      "notes": "calls hand-authored from a direct decompile of 0x9d9c30 (session acdfccff, task-27 review round 3) after the harvested entry was found to be a false calls:null. Root cause: direction inference (tools/packet-audit/cmd/export.go's directionFor) had no source for this brand-new FName (absent from the v95-derived roster file used to seed this export, and absent from candidatesFromFName), so it fell back to the default DirClientbound; ParseDecompile then searched for CInPacket::Decode* calls, of which this pure COutPacket-send function has none, and silently returned zero calls instead of erroring. Confirmed by re-running ParseDecompile directly against the captured decompile text with DirServerbound (finds all 5 calls) vs DirClientbound (finds 0). This coincidentally did not affect the other four task-145 ops because DirClientbound happens to be both the correct direction for them AND the tool's inference-failure default.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "bChatClaim (flag; also gates the trailing chatLog string below) @0x9da26e"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sTargetCharacterName @0x9da28d"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nType @0x9da29b"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sContext @0x9da2ba"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "chatLog (only when bChatClaim) @0x9da375",
+          "guard": "v26"
+        }
+      ]
     },
     "CWvsContext::SendConsumeCashItemUseRequest": {
       "address": "0x9bfe10",
       "direction": "serverbound",
-      "calls": null
+      "notes": "resolved but calls:null; gms_v95.json has real, non-empty content for this FName. Not individually diagnosed — grouped here on the strength of the sibling-content mismatch alone, not a confirmed mechanism. Plausible causes (unverified for this specific entry): the same compiler-inlining or pure-delegate pattern found in the diagnosed peers above, decompile truncation on a very large function body, or (one specific case, CLogin::SendLoginPacket) a decompile whose control flow does not resemble a packet-send at all and may be obfuscated/unfaithful in this IDB.",
+      "unresolved": true,
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "resolved address/decompile but zero recognized Decode/Encode calls found; see notes"
+        }
+      ]
     },
     "CWvsContext::SendDropMoneyRequest": {
       "address": "0x9cb210",

@@ -353,13 +353,16 @@ ops and would otherwise have no committed home.
 
 ## Export run record (task-27, hand-written)
 
-Produces `docs/packets/ida-exports/gms_v92.json` (789 functions, 497,013
-bytes) via `go run ./tools/packet-audit export --version gms_v92
---ida-database <session from idb_list, matched by binary NAME
-GMS_v92_1_DEVM.exe.i64> --ida-url http://192.168.20.3:8745/mcp`. This section
-is the committed home for the roster-seeding and disposition decisions —
-`.superpowers/` (where the task's own report lives) is git-ignored, so a
-future maintainer regenerating this export needs everything below.
+Produces `docs/packets/ida-exports/gms_v92.json` (789 functions, 508,073
+bytes as of review round 3 — the byte count moved twice after the initial
+harvest: once to add the 361 dispatcher-arm placeholders, once to fix the 12
+false calls:null entries described below) via `go run ./tools/packet-audit
+export --version gms_v92 --ida-database <session from idb_list, matched by
+binary NAME GMS_v92_1_DEVM.exe.i64> --ida-url http://192.168.20.3:8745/mcp`.
+This section is the committed home for the roster-seeding and disposition
+decisions — `.superpowers/` (where the task's own report lives) is
+git-ignored, so a future maintainer regenerating this export needs
+everything below.
 
 ### Roster seeding
 
@@ -393,22 +396,36 @@ repo.
 
 **These 361 keys are NOT simply absent from `gms_v92.json` — they are present
 as explicit `unresolved: true` placeholders**, each with a `notes` field
-repeating this paragraph's reasoning. This was a correction made after
-reviewing how the static-audit pipeline consumes the export
-(`tools/packet-audit/cmd/run.go`'s `process` closure,
-`tools/packet-audit/internal/idasrc/export.go`'s `Resolve`): a roster FName
-**absent from the export map** makes `ExportSource.Resolve` return a plain
-`fmt.Errorf("function %q not in export", fname)` (export.go:198,219) — NOT
-the `idasrc.ErrFunctionNotFound` sentinel `MCPSource.Resolve` uses — so
-`run.go`'s error switch (run.go:55-65) falls through to a `stderr`-only log
-line and silently drops the candidate from the SUMMARY: **the row vanishes**.
-A roster FName **present but marked `unresolved: true`** resolves
-successfully (`parsePrim("Unresolved")` succeeds) and flows into the report
-as an honestly-flagged known gap instead. So omitting the 361 keys would have
-made a future Task 28 static-audit run silently under-report v92's
-dispatcher-family coverage rather than correctly showing it as unharvested;
-keeping them as placeholders is the accurate-degradation choice. No IDA work
-was done for these 361 — only the presence/absence decision changed.
+repeating this paragraph's reasoning. This matters materially: 354 of the 361
+arm keys are real wired candidates in `candidatesFromFName` (confirmed by
+cross-referencing `docs/packets/dispatchers/*.yaml`/`run.go`'s candidate
+table), so presence-vs-absence genuinely determines whether a row appears at
+all for a future Task 28 static-audit run.
+
+The precise mechanism (corrected after an earlier, imprecise version of this
+paragraph sent a reviewer to a code path that doesn't fire): the row does
+**not** vanish via `ExportSource.Resolve` erroring into a generic catch-all.
+`runPipeline` builds its whole candidate list from
+`selectCandidates(idaExportFunctions(opts.IDASource))` (`run.go:163`), and
+`idaExportFunctions` (`run.go:3420`) returns exactly the export JSON's own
+map keys — nothing else. `selectCandidates` (`run.go:262-276`) then calls
+`candidatesFromFName(fname)` **only for fnames in that list**. A key that is
+simply absent from the export map is therefore never iterated, never passed
+to `candidatesFromFName`, and so no candidate is ever formed for it — `process`
+(`run.go:52`) is never invoked, `Resolve` is never called, and the row is
+silently missing from the SUMMARY with no trace at all. (`Resolve`'s
+`fmt.Errorf("function %q not in export", fname)`, export.go:198,219, is real
+code but is not on this path — it only fires if some other caller resolves an
+FName that ISN'T a roster/candidate key, e.g. a dangling `Delegate` ref.) A
+roster FName **present but marked `unresolved: true`**, by contrast, DOES get
+a candidate formed (its key is in `idaExportFunctions`'s list), resolves
+successfully (`parsePrim("Unresolved")` succeeds), and flows into the report
+as an honestly-flagged known gap. So omitting the 361 keys would have made a
+future Task 28 static-audit run silently under-report v92's dispatcher-family
+coverage — rows disappearing, not reading n/a or unverified — rather than
+correctly showing it as unharvested; keeping them as placeholders is the
+accurate-degradation choice. No IDA work was done for these 361 — only the
+presence/absence decision changed.
 
 ### The 116 remaining plain-name unresolved entries
 
@@ -493,30 +510,134 @@ aborts loudly rather than silently leaving the fields empty). Tests:
 positive — a `BinaryInfoProvider`-implementing fake — and negative — a plain
 `fakeMCP` — cases).
 
-### CWvsContext::SendClaimRequest — `calls: null`
+### CWvsContext::SendClaimRequest — `calls: null` was a genuine defect, now fixed
 
-The brief requires the five task-145 ops to show "real read orders, not
-Unresolved". Four do. `SendClaimRequest` resolves (address `0x9d9c30`,
-direction `serverbound`) but has `calls: null` — this is normal, not a
-gap: it is a bodiless `COutPacket` opcode-only send (confirmed by direct
-decompile, see the serverbound `CLAIM_REQUEST` citation above:
-`COutPacket::COutPacket((COutPacket *)&v66, 0x75u)` with nothing following
-before the send). The `ParseDecompile`/`resolveWithVisited` path
-(`idasrc/export.go`) explicitly skips the `COutPacket` op as "the opcode-
-header constructor, not a field primitive" so an opcode-only send resolves
-to an empty `Calls` list. `gms_v95.json`'s own `CWvsContext::SendClaimRequest`
-entry is `calls: null` too, for the same reason — not a v92-specific
-failure.
+**Correction (review round 3): the earlier version of this section was
+wrong, and so was the code.** `calls: null` was NOT a normal bodiless-send
+pattern — `0x9d9c30` has a real 4–5-field body
+(`COutPacket::COutPacket((COutPacket*)&v66, 0x75u)` at `0x9da25c`, then
+`Encode1(bChatClaim)`, `EncodeStr(sTargetCharacterName)`, `Encode1(nType)`,
+`EncodeStr(sContext)`, and a guarded `EncodeStr(chatLog)` only when
+`bChatClaim` — this maps one-to-one onto the `CLAIM_REQUEST` layout the task
+brief documents). The claim that `gms_v95.json`'s own `SendClaimRequest`
+entry was also `calls: null` "for the same reason" was **false** — it was
+produced by piping `d95['functions'].get('CWvsContext::SendClaimRequest')`
+(which returns `None` for a *missing key*) through `json.dumps`, which prints
+`null` — indistinguishable from a present key holding a null `calls` value.
+The key does not exist in `gms_v95.json`, or in any of
+`gms_v48/v61/v72/v79/v83/v84/v87/jms_185` either. `gms_v92.json` is the
+**only** export that has ever contained this FName — there is no sibling
+precedent for it, false or otherwise.
+
+**Root cause of the empty harvest** (confirmed by reproducing the harvest's
+own parser against the captured decompile text, not by inspection alone):
+`SendClaimRequest` is a brand-new FName — absent from the v95-derived roster
+file used to seed this export's roster, and absent from
+`candidatesFromFName` (it's a new task-145 op with no atlas candidate wired
+yet). `cmd/export.go`'s `directionFor` therefore had no signal for it and
+fell back to the hard-coded default, `DirClientbound`
+(`export.go`'s `dirOf` closure). `idasrc.ParseDecompile` was consequently
+invoked with `DirClientbound`, which scopes its primitive matcher to
+`CInPacket::Decode*` only (`parse.go`'s `dirRegexes`) — and this function,
+being a pure send, contains zero `CInPacket::Decode*` calls, so the parser
+correctly-by-its-own-logic found nothing and returned an empty `Calls` list.
+Verified directly: running `ParseDecompile` on the exact captured text with
+`DirServerbound` finds all 5 calls in order; with `DirClientbound` it finds
+0. This did NOT affect the other four task-145 ops only because
+`DirClientbound` happens to be simultaneously (a) their correct direction and
+(b) the tool's silent default when inference fails — a coincidence, not a
+guarantee. **Any future brand-new serverbound-only FName added to a roster
+with no prior-export/candidate-registry direction source will hit this same
+silent mis-parse** (a real Encode-side body parsed as if it were Decode-side,
+finding nothing, producing a false empty/`null` result instead of an honest
+error or `unresolved: true`) — this is a general `tools/packet-audit`
+limitation, not specific to this one FName. Not fixed in the tool itself for
+this task (higher blast radius, out of proportion here); the entry was
+hand-corrected instead (see its `notes` field in `gms_v92.json`), and this
+section is the flag for a future tool fix (e.g. treating a zero-call parse
+result for a NEWLY-introduced FName with no direction source as `unresolved`
+rather than confidently empty).
+
+### Additional false calls:null entries found while investigating the above
+
+Fixing `SendClaimRequest` required diffing every `calls: null`/empty
+resolved entry in `gms_v92.json` against `gms_v95.json`'s content for the
+same FName. That surfaced **11 more** resolved-but-empty entries where the
+sibling has real, non-empty content for the identical FName — meaning the
+emptiness is very unlikely to be a genuine v92 version difference. All 11
+were re-classified `unresolved: true` (matching the project convention that
+`unresolved` is "a known gap, never a false verdict") with a `notes` field;
+none had their content fabricated or copied from v95 (that would be the
+"coincidental cross-IDB content" trap this export is supposed to avoid).
+
+Three distinct, confirmed mechanisms were found by direct re-decompile of
+representative entries (**not** the `SendClaimRequest` direction-inference
+bug — none of these 11 are new/unrostered FNames):
+
+- **Compiler-inlined `COutPacket::EncodeN` calls.** `CMob::GenerateMovePath`
+  (`0x6447a0`) is a real, correctly-directioned (serverbound), real-address
+  entry whose body the v92 compiler optimized so the actual wire writes are
+  raw buffer-pointer stores (`*(_DWORD *)(v70 + v171) = a4`, repeated ~15
+  times for this hot movement-generation path) rather than literal
+  `COutPacket::EncodeN(...)` call syntax. `ParseDecompile`'s primitive
+  matcher is a literal-call-token regex (`reDecodeSB` in `parse.go`) — it has
+  no way to recognize an inlined write. `CNpc::GenerateMovePath` (same
+  function family) very likely shares this cause but was not independently
+  re-decompiled to confirm.
+- **Pure-delegate/wrapper functions with no direct primitive call of their
+  own.** `CPet::OnMove` (`0x695180`) and `CUserRemote::OnMove` (`0x925430`)
+  each have a two-line body that forwards straight to
+  `CMovePath::OnMovePacket(ptr, a2, 0)` — zero `CInPacket::Decode*` calls in
+  their own text. `seedPacketParams` (`parse.go:152-160`) seeds the
+  packet-alias set ONLY from identifiers appearing as the first-arg of a
+  direct Decode/Encode call **somewhere in the function's own body** — never
+  from the function's formal parameter list. A pure-delegate function that
+  never itself calls a Decode/Encode primitive therefore never seeds its own
+  packet parameter into the alias set, so the Delegate-detection logic (which
+  requires the alias already live to recognize a helper call as
+  delegate-worthy) never fires, and BFS descent into `CMovePath::OnMovePacket`
+  never happens. This is a genuine, previously-undocumented
+  `packet-audit` tool limitation — general, not v92- or FName-specific.
+- **Possible decompile-fidelity failure.** `CLogin::SendLoginPacket`
+  (`0x5d26b0`) — `lookup_funcs` confirms the address genuinely carries the
+  mangled symbol `?SendLoginPacket@CLogin@@QAEHJJ@Z` (not a coincidental
+  wrong-function match), but the decompiled body is a short function with an
+  unconditional `while(1)` loop with no visible exit and no
+  `COutPacket`/`SendPacket` activity whatsoever — it does not resemble a
+  packet-send. Not confirmed further (possible obfuscation/anti-tamper
+  wrapping in this DEVM build); out of this task's scope to resolve.
+
+The remaining entries in the 11
+(`CField::OnRequestFootHoldInfo`, `CField_Tournament::OnTournamentMatchTable`,
+`CUIMessenger::SendInviteMsg`, `CWvsContext::OnShopLinkResult`,
+`CWvsContext::OnGuildBBSPacket`, `CWvsContext::SendConsumeCashItemUseRequest`)
+were **not** individually re-decompiled — grouped into the `unresolved`
+bucket on the strength of the sibling-content mismatch alone. (One data
+point for `CWvsContext::SendConsumeCashItemUseRequest`: its `refs` list from
+a direct `decompile` call DOES include `Encode4@COutPacket`/`Encode2@COutPacket`,
+confirming the function has real Encode calls somewhere in a very large body
+— but the full decompiled text was too large to inspect end-to-end in this
+pass, so the exact reason `ParseDecompile` missed them — truncation,
+line-based state-machine desync, or something else — is unconfirmed.) Their
+`notes` fields say exactly this: not confirmed absent, not confirmed by
+which of the three mechanisms above, deliberately left as an honest unknown
+rather than a guessed diagnosis.
 
 ### Spot-checks against live decompile (session acdfccff)
 
-Ten entries were cross-checked against a fresh `decompile` call and found to
-match the export's recorded read order exactly:
+Eleven entries were cross-checked against a fresh `decompile` call and found
+to match the export's recorded read order exactly (ten from the original
+pass; `SendClaimRequest` was RE-checked in review round 3 after its original
+`calls: null` was found to be wrong — see above):
 
-- The five task-145 ops (`OnClaimResult` 0x9cf310, `OnSetClaimSvrAvailableTime`
-  0x9c5d30, `OnClaimSvrStatusChanged` 0x9c5d60, `OnSueCharacterResult`
-  0x9cf950, `SendClaimRequest` 0x9d9c30) — addresses and read orders match
-  the brief's table and the harvested export exactly.
+- Four of the five task-145 ops (`OnClaimResult` 0x9cf310,
+  `OnSetClaimSvrAvailableTime` 0x9c5d30, `OnClaimSvrStatusChanged` 0x9c5d60,
+  `OnSueCharacterResult` 0x9cf950) — addresses and read orders match the
+  brief's table and the harvested export exactly. The fifth,
+  `SendClaimRequest` (0x9d9c30), was ALSO address-checked at this point but
+  its `calls: null` was wrongly accepted as a normal bodiless-send pattern —
+  see the corrected section above for the real 5-field body and the
+  direction-inference root cause found in review round 3.
 - `CWvsContext::OnSkillLearnItemResult` (0x9cc640) — export records
   `Decode1, Decode4, [Decode1, Decode4, Decode4, Decode1, Decode1]guard=v7`;
   live decompile shows the same: an unconditional `Decode1` (the `if` guard
@@ -531,4 +652,10 @@ match the export's recorded read order exactly:
   no further packet reads.
 - `CMob::OnSpecialEffectBySkill` (`sub_647790`) and `CMob::OnCatchEffect`
   (`sub_630C30`) — see above; both hand-decompiled directly for this export.
+- `CWvsContext::SendClaimRequest` (0x9d9c30, review round 3) — the export now
+  records `Encode1(guard-var), EncodeStr, Encode1, EncodeStr,
+  EncodeStr(guard=v26)`; a fresh, independent re-decompile (not copied from
+  the reviewer's citation) reproduced the identical call sequence and byte
+  offsets (`0x9da26e`, `0x9da28d`, `0x9da29b`, `0x9da2ba`, `0x9da375`) —
+  match.
 

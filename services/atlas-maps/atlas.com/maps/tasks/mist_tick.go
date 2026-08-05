@@ -77,13 +77,18 @@ func applyDiseaseCommandProvider(m mist.Mist, characterId uint32) model.Provider
 			FromId:   m.OwnerId(),
 			SourceId: int32(m.SourceSkillId()),
 			Level:    byte(m.SourceSkillLevel()),
-			// atlas-buffs treats Duration as SECONDS (buff.NewBuff multiplies
-			// by time.Second). Sending milliseconds here turned a 15s mist
-			// poison into a 15000-second buff (~4h10m), so the DoT never
-			// stopped ticking. Match atlas-monsters' convention (executeDebuff
-			// passes int32(sd.Duration()) — i.e. raw seconds from mob skill
-			// data).
-			Duration: int32(m.DiseaseDuration() / time.Second),
+			// MILLISECONDS. Contract owner:
+			// services/atlas-buffs/atlas.com/buffs/kafka/message/character/kafka.go
+			// (ApplyCommandBody.Duration). atlas-buffs has computed
+			// expiresAt = now + duration*time.Millisecond since task-054
+			// (197324e40, 2026-05-03).
+			//
+			// This REVERSES commit 11e07dfa7 ("mist tick publishes disease
+			// duration in seconds"), which was correct against the pre-task-054
+			// contract and was silently inverted by task-054 one day later. Do
+			// not flip it back: tools/buff-duration-guard.sh fails CI on a
+			// seconds-valued emitter. (task-190 FR-1.2 / FR-1.4)
+			Duration: int32(m.DiseaseDuration().Milliseconds()),
 			Changes:  []statChange{{Type: m.Disease(), Amount: m.DiseaseValue()}},
 		},
 	}

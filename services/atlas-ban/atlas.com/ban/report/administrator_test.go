@@ -127,3 +127,77 @@ func TestEntitiesByStatusFilters(t *testing.T) {
 		t.Errorf("expected 2 rows, got %d", len(all))
 	}
 }
+
+func TestEntityByIdFiltersByTenant(t *testing.T) {
+	db := setupTestDatabase(t)
+	tmA := sampleTenant()
+	tmB := sampleTenant()
+
+	m, err := create(db.WithContext(testContext(tmA)))(tmA.Id(), KindSue, 1, "R", 2, "A", 0, "tenant A's report", nil, nil)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+
+	// Tenant A can fetch its own report by id.
+	gotA, err := entityById(m.Id())(db.WithContext(testContext(tmA)))()
+	if err != nil {
+		t.Fatalf("entityById (tenant A): %v", err)
+	}
+	if gotA.TenantId != tmA.Id() {
+		t.Errorf("expected tenant A's row, got tenant %s", gotA.TenantId)
+	}
+
+	// Tenant B must not see tenant A's row by id.
+	_, err = entityById(m.Id())(db.WithContext(testContext(tmB)))()
+	if err == nil {
+		t.Error("expected error: tenant B must not see tenant A's row by id")
+	}
+}
+
+func TestEntitiesByTenantIsolatedPerTenant(t *testing.T) {
+	db := setupTestDatabase(t)
+	tmA := sampleTenant()
+	tmB := sampleTenant()
+	tdbA := db.WithContext(testContext(tmA))
+	tdbB := db.WithContext(testContext(tmB))
+
+	m1, _ := create(tdbA)(tmA.Id(), KindSue, 1, "R", 2, "A1", 0, "a-one", nil, nil)
+	_, _ = create(tdbA)(tmA.Id(), KindSue, 1, "R", 3, "A2", 0, "a-two", nil, nil)
+	_, _ = create(tdbB)(tmB.Id(), KindSue, 1, "R", 4, "B1", 0, "b-one", nil, nil)
+
+	allA, err := entitiesByTenant()(tdbA)()
+	if err != nil {
+		t.Fatalf("entitiesByTenant (tenant A): %v", err)
+	}
+	if len(allA) != 2 {
+		t.Errorf("tenant isolation failed: expected 2 reports for tenant A, got %d", len(allA))
+	}
+
+	allB, err := entitiesByTenant()(tdbB)()
+	if err != nil {
+		t.Fatalf("entitiesByTenant (tenant B): %v", err)
+	}
+	if len(allB) != 1 {
+		t.Errorf("tenant isolation failed: expected 1 report for tenant B, got %d", len(allB))
+	}
+
+	// entitiesByStatus must also be tenant-scoped: mark one of tenant A's
+	// reports actioned and confirm tenant B's open-status view is unaffected.
+	_ = updateStatus(tdbA)(m1.Id(), StatusActioned)
+
+	openA, err := entitiesByStatus(StatusOpen)(tdbA)()
+	if err != nil {
+		t.Fatalf("entitiesByStatus (tenant A): %v", err)
+	}
+	if len(openA) != 1 || openA[0].AccusedName != "A2" {
+		t.Errorf("tenant A open filter mismatch: %+v", openA)
+	}
+
+	openB, err := entitiesByStatus(StatusOpen)(tdbB)()
+	if err != nil {
+		t.Fatalf("entitiesByStatus (tenant B): %v", err)
+	}
+	if len(openB) != 1 || openB[0].AccusedName != "B1" {
+		t.Errorf("tenant B open filter mismatch: %+v", openB)
+	}
+}

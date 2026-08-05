@@ -59,6 +59,42 @@ func TestClaimRequestRegularGolden(t *testing.T) {
 	}
 }
 
+// TestClaimRequestByteOutputV72 verifies the wire-exact byte output of
+// ClaimRequest for GMS v72.
+// IDA evidence (session c8acae95, GMS_v72.1_U_DEVM.exe.i64):
+//
+//	CWvsContext::SendClaimRequest@0x91f2b4 (independently re-decompiled this
+//	pass, not just re-cited from the registry's task-23b note):
+//	COutPacket::COutPacket(&pkt, 105) @0x91f749 -- opcode 105/0x69, matches
+//	registry gms_v72.yaml op CLAIM_REQUEST. Encode1(v66=bChatClaim) @0x91f758
+//	(v66 set to 1 in the mode==1000 branch, 0 in the mode==1001 branch of the
+//	preceding dialog-result switch). EncodeStr(targetName) @0x91f771.
+//	Encode1(v58=reasonType) @0x91f77c. EncodeStr(description) @0x91f795.
+//	Guarded EncodeStr(chatLog) @0x91f80d, gated on the same v66 that fed the
+//	first Encode1. CClientSocket::SendPacket @0x91f828. Byte-identical to the
+//	v83/v95 shape already coded in the (version-ungated) Encode below.
+//
+// packet-audit:verify packet=report/serverbound/ClaimRequest version=gms_v72 ida=0x91f2b4
+func TestClaimRequestByteOutputV72(t *testing.T) {
+	v := pt.Variants[9] // GMS v72
+	if v.Name != "GMS v72" {
+		t.Fatalf("pt.Variants[9] = %q, want %q (index drifted)", v.Name, "GMS v72")
+	}
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	input := NewClaimRequest(1, "bob", 0x02, "hi", "yo")
+	expected := []byte{
+		0x01,                         // Encode1 bChatClaim @0x91f758
+		0x03, 0x00, 0x62, 0x6F, 0x62, // EncodeStr "bob" @0x91f771
+		0x02,                   // Encode1 reasonType @0x91f77c
+		0x02, 0x00, 0x68, 0x69, // EncodeStr "hi" @0x91f795
+		0x02, 0x00, 0x79, 0x6F, // EncodeStr "yo" (guarded on bChatClaim) @0x91f80d
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("byte output mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestClaimRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

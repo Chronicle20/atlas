@@ -623,6 +623,8 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ErrorResponse", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::SendGivePopularityRequest":
 		return []candidate{{name: "Change", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendClaimRequest":
+		return []candidate{{name: "ClaimRequest", dir: csvpkg.DirServerbound}}
 
 	// --- merchant bucket (task-069, sub-phase 2f) ---
 	case "CWvsContext::OnEntrustedShopCheckResult#OpenShop":

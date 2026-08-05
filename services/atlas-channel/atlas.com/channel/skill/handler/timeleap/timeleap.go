@@ -30,7 +30,7 @@ import (
 )
 
 func init() {
-	channelhandler.Register(skill2.BuccaneerTimeLeapId, Apply)
+	channelhandler.Register(skill2.BuccaneerTimeLeap, Apply)
 }
 
 // loadCaster returns the caster's (X, Y) — only the position is needed for
@@ -98,8 +98,13 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 			party := selectParty(l, ctx, f, characterId, x, y, e, info.AffectedPartyMemberBitmap())
 
 			transactionId := uuid.New()
-			except := []uint32{uint32(skill2.BuccaneerTimeLeapId)}
-			source := uint32(skill2.BuccaneerTimeLeapId)
+			// except/source use the RAW wire id from this cast (info.SkillId()),
+			// not the hardcoded canonical BuccaneerTimeLeapId (task-187): the
+			// cooldown atlas-skill is resetting was itself SET_COOLDOWN'd using
+			// this same wire id, so the exclusion must match it exactly for
+			// whatever tenant version is running.
+			except := []uint32{uint32(info.SkillId())}
+			source := uint32(info.SkillId())
 
 			if eErr := emitReset(l, ctx, transactionId, f, except, source, characterId); eErr != nil {
 				l.WithError(eErr).Errorf("Time Leap: reset emission failed for caster [%d].", characterId)

@@ -10,18 +10,22 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
 
-func NPCShopBody(templateId uint32, cs []commodities.Model, skills []skill.Model) packet.Encode {
+// NPCShopBody encodes the NPC shop packet. addSlotMax's Throwing-Star/Bullet
+// masteries are resolved through set (task-187): the caller resolves the
+// tenant's version once (constants.For(...).Skill) and passes it in, since
+// this pure packet-encode function has no ctx of its own to resolve from.
+func NPCShopBody(templateId uint32, cs []commodities.Model, skills []skill.Model, set skill2.Set) packet.Encode {
 	sc := make([]npcpkt.ShopCommodity, len(cs))
 	for i, c := range cs {
 		isAmmo := item.IsBullet(item.Id(c.TemplateId())) || item.IsThrowingStar(item.Id(c.TemplateId()))
 
 		addSlotMax := uint16(0)
 		if item.IsThrowingStar(item.Id(c.TemplateId())) {
-			addSlotMax += uint16(skill.GetLevel(skills, skill2.NightWalkerStage2ClawMasteryId)) * 10
-			addSlotMax += uint16(skill.GetLevel(skills, skill2.AssassinClawMasteryId)) * 10
+			addSlotMax += uint16(skill.GetLevelIdentity(skills, set, skill2.NightWalkerStage2ClawMastery)) * 10
+			addSlotMax += uint16(skill.GetLevelIdentity(skills, set, skill2.AssassinClawMastery)) * 10
 		}
 		if item.IsBullet(item.Id(c.TemplateId())) {
-			addSlotMax += uint16(skill.GetLevel(skills, skill2.GunslingerGunMasteryId)) * 10
+			addSlotMax += uint16(skill.GetLevelIdentity(skills, set, skill2.GunslingerGunMastery)) * 10
 		}
 
 		sc[i] = npcpkt.ShopCommodity{

@@ -100,7 +100,7 @@ describe("LeaderboardRow", () => {
         </tbody>
       </table>,
     );
-    // jobId 110 -> "Fighter" via jobLabel; the raw id must not be shown.
+    // jobId 110 -> "Fighter" via jobName; the raw id must not be shown.
     expect(screen.getByText("Fighter")).toBeInTheDocument();
     expect(screen.queryByText("110")).not.toBeInTheDocument();
   });

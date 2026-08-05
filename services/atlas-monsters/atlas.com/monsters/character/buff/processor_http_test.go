@@ -61,7 +61,7 @@ func TestGetByCharacterId_HTTPRoundTrip_ActiveGmHide(t *testing.T) {
 	if bs[0].SourceId() != superGmHideId {
 		t.Fatalf("SourceId() = %d, want %d (decode of \"sourceId\" attribute failed)", bs[0].SourceId(), superGmHideId)
 	}
-	if !buff.HasActiveGmHide(bs) {
+	if !buff.HasActiveGmHide(ctx, bs) {
 		t.Fatal("HasActiveGmHide(bs) = false, want true for an unexpired SuperGmHide buff (expiresAt decode failed)")
 	}
 }
@@ -94,7 +94,7 @@ func TestGetByCharacterId_HTTPRoundTrip_ExpiredBuffNotActive(t *testing.T) {
 	if len(bs) != 1 {
 		t.Fatalf("expected 1 decoded buff, got %d", len(bs))
 	}
-	if buff.HasActiveGmHide(bs) {
+	if buff.HasActiveGmHide(ctx, bs) {
 		t.Fatal("HasActiveGmHide(bs) = true, want false for an expired buff (expiresAt decode returned wrong/zero time)")
 	}
 }

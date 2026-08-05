@@ -12,9 +12,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	character2 "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func CharacterBuffCancelHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -24,30 +26,41 @@ func CharacterBuffCancelHandleFunc(l logrus.FieldLogger, ctx context.Context, wp
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		_ = buff.NewProcessor(l, ctx).Cancel(s.Field(), s.CharacterId(), p.SkillId())
 
-		// Cancelling the Mystic Door buff dismisses the door early.
-		if p.SkillId() == int32(skill.PriestMysticDoorId) {
-			_ = door.NewProcessor(l, ctx).Remove(s.Field(), s.CharacterId(), "CANCELLED")
-		}
-
-		// Cancelling the SuperGM Hide buff reveals the GM to the map again. The
-		// hide-ON path despawned the caster from everyone in the map with a real
-		// CharacterDespawn (skill/handler/hide), and GM Hide toggles OFF via this
-		// CANCEL_BUFF opcode — not a skill re-cast — so this is the only place the
-		// reveal spawn can be re-broadcast to observers already standing in the map.
-		// Symmetric to despawnFromOthers on the ON side.
-		if p.SkillId() == int32(skill.SuperGmHideId) {
-			_ = _mapconsumer.SpawnCharacterInMap(l, ctx, wp)(s.Field(), s.CharacterId())
-		}
-
-		// Keydown-skill keyup shares this (CANCEL_BUFF) opcode: relay the cancel
-		// so observers stop the looping cast aura (task-099).
 		skillId := uint32(p.SkillId())
-		if skill.IsKeyDownSkill(skill.Id(skillId)) {
-			cp := character.NewProcessor(l, ctx)
-			c, err := cp.GetById(cp.SkillModelDecorator)(s.CharacterId())
-			if err == nil && shouldBroadcastKeydown(c.Skills(), skillId) {
-				_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(),
-					AnnounceForeignSkillCancel(l)(ctx)(wp)(s.CharacterId(), skillId))
+
+		// Resolve the cancelled wire skill id to its version-blind Identity
+		// once (task-187): PriestMysticDoor / SuperGmHide / keydown
+		// membership all key on the caster's version-specific wire id, and a
+		// raw compare against the canonical wire constants would silently
+		// never match at a version where the wire differs (e.g. SuperGmHide
+		// is wire 5101004 at v0.48, not the canonical 9101004).
+		t := tenant.MustFromContext(ctx)
+		set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+		if id, ok := set.Skill.Resolve(skill.Id(skillId)); ok {
+			// Cancelling the Mystic Door buff dismisses the door early.
+			if id == skill.PriestMysticDoor {
+				_ = door.NewProcessor(l, ctx).Remove(s.Field(), s.CharacterId(), "CANCELLED")
+			}
+
+			// Cancelling the SuperGM Hide buff reveals the GM to the map again. The
+			// hide-ON path despawned the caster from everyone in the map with a real
+			// CharacterDespawn (skill/handler/hide), and GM Hide toggles OFF via this
+			// CANCEL_BUFF opcode — not a skill re-cast — so this is the only place the
+			// reveal spawn can be re-broadcast to observers already standing in the map.
+			// Symmetric to despawnFromOthers on the ON side.
+			if id == skill.SuperGmHide {
+				_ = _mapconsumer.SpawnCharacterInMap(l, ctx, wp)(s.Field(), s.CharacterId())
+			}
+
+			// Keydown-skill keyup shares this (CANCEL_BUFF) opcode: relay the cancel
+			// so observers stop the looping cast aura (task-099).
+			if skill.IsKeyDownSkillIdentity(id) {
+				cp := character.NewProcessor(l, ctx)
+				c, err := cp.GetById(cp.SkillModelDecorator)(s.CharacterId())
+				if err == nil && shouldBroadcastKeydown(ctx, c.Skills(), skillId) {
+					_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(),
+						AnnounceForeignSkillCancel(l)(ctx)(wp)(s.CharacterId(), skillId))
+				}
 			}
 		}
 	}

@@ -1,16 +1,20 @@
 package seeder
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -152,5 +156,91 @@ func TestRegisterRoutes_GetStatusMissingTenantReturns400(t *testing.T) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400", resp.StatusCode)
+	}
+}
+
+func TestRegisterRoutes_AfterSeedRunsOnceWithTenantContext(t *testing.T) {
+	t.Cleanup(ResetMetricsForTest)
+	t.Cleanup(backgroundSeeds.Wait)
+
+	db := openTestDB(t)
+	src := NewFilesystemCatalogSource("X_NO_ENV", goodFixtureRoot(t))
+
+	var mu sync.Mutex
+	calls := 0
+	var sawTenant uuid.UUID
+	var sawGroup string
+
+	g := Group{
+		Name:       "widgets-group",
+		URLPrefix:  "/widgets",
+		Subdomains: []SubdomainAny{AdaptSubdomain[widgetAttrs, widgetRow](&widgetSubdomain{})},
+		AfterSeed: func(ctx context.Context, _ *gorm.DB, res Result) error {
+			mu.Lock()
+			defer mu.Unlock()
+			calls++
+			tm := tenant.MustFromContext(ctx)
+			sawTenant = tm.Id()
+			sawGroup = res.GroupName
+			return nil
+		},
+	}
+	r := mux.NewRouter()
+	logger := logrus.New()
+	logger.SetOutput(io.Discard)
+	RegisterRoutes(r, db, logger, src, g)
+	srv := httptest.NewServer(r)
+	defer srv.Close()
+
+	req := requestWithTenant(t, "POST", srv.URL+"/widgets/seed", nil)
+	wantTenant := req.Header.Get(tenant.ID)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("POST: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	backgroundSeeds.Wait()
+
+	mu.Lock()
+	defer mu.Unlock()
+	if calls != 1 {
+		t.Fatalf("AfterSeed called %d times, want exactly 1", calls)
+	}
+	if sawTenant.String() != wantTenant {
+		t.Fatalf("AfterSeed tenant = %s, want %s", sawTenant, wantTenant)
+	}
+	if sawGroup != "widgets-group" {
+		t.Fatalf("AfterSeed result.GroupName = %q, want %q", sawGroup, "widgets-group")
+	}
+}
+
+func TestRegisterRoutes_NilAfterSeedIsANoOp(t *testing.T) {
+	t.Cleanup(ResetMetricsForTest)
+	t.Cleanup(backgroundSeeds.Wait)
+
+	db := openTestDB(t)
+	src := NewFilesystemCatalogSource("X_NO_ENV", goodFixtureRoot(t))
+	g := Group{
+		Name:       "widgets-group",
+		URLPrefix:  "/widgets",
+		Subdomains: []SubdomainAny{AdaptSubdomain[widgetAttrs, widgetRow](&widgetSubdomain{})},
+	}
+	r := mux.NewRouter()
+	logger := logrus.New()
+	logger.SetOutput(io.Discard)
+	RegisterRoutes(r, db, logger, src, g)
+	srv := httptest.NewServer(r)
+	defer srv.Close()
+
+	resp, err := http.DefaultClient.Do(requestWithTenant(t, "POST", srv.URL+"/widgets/seed", nil))
+	if err != nil {
+		t.Fatalf("POST: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	backgroundSeeds.Wait()
+
+	if resp.StatusCode != http.StatusAccepted {
+		t.Fatalf("status = %d, want 202", resp.StatusCode)
 	}
 }

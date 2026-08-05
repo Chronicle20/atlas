@@ -42,7 +42,13 @@ func newDeps(caster character.Model, casterErr error, hidden bool, recips []chan
 	c.mp = map[uint32]int16{}
 	c.dispelled = map[uint32][]string{}
 	return healDispelDeps{
-		loadCaster:  func(uint32) (character.Model, error) { return caster, casterErr },
+		loadCaster: func(uint32) (character.Model, error) { return caster, casterErr },
+		// isSuperGm mirrors the pre-task-187 version-blind comparison: these
+		// unit tests exercise the core loop with canonical (v83-era) job ids
+		// directly, not tenant-version resolution -- that property is pinned
+		// separately (skill/handler/registry_test.go's v48/v72 correctness
+		// test, and the hide package's TestApply_v48SuperGmGate).
+		isSuperGm:   func(jid job.Id) bool { return job.IsA(jid, job.SuperGmId) },
 		isGmHidden:  func(uint32) (bool, error) { return hidden, nil },
 		selectInMap: func(field.Model) []channelhandler.PartyRecipient { return recips },
 		// Effective max mirrors base for the test (no gear bonus).

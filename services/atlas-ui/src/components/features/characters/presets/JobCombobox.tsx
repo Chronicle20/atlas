@@ -8,7 +8,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { PRESET_JOBS, jobLabel } from "./presetJobs";
+import { jobName } from "@/lib/jobs/job-advancement-tree";
+import { usePresetJobOptions } from "@/lib/hooks/usePresetJobOptions";
 
 interface JobComboboxProps {
   value: number;
@@ -16,21 +17,29 @@ interface JobComboboxProps {
 }
 
 /**
- * Single job picker: filter the curated job list by name, or type a numeric
- * id to use one the list doesn't cover (the backend is the validator of
- * record). Replaces the old Select + standalone "Advanced job id" pair.
+ * Single job picker: filter the tenant's job set by name, or type a numeric
+ * id to use one the set doesn't cover (the backend is the validator of
+ * record). The set is version-aware (see usePresetJobOptions), so Aran, Evan
+ * and Cygnus appear by name on versions that ship them. Replaces the old
+ * Select + standalone "Advanced job id" pair.
  */
 export function JobCombobox({ value, onChange }: JobComboboxProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const jobs = usePresetJobOptions();
+
+  // Prefer the version-correct name from the availability-gated options; an
+  // id outside that set (still loading, or a manually-entered id the tenant
+  // hasn't released) falls back to the static advancement-graph name.
+  const selectedName = jobs.find((j) => j.id === value)?.name ?? jobName(value);
 
   const term = search.trim().toLowerCase();
   const rows = term
-    ? PRESET_JOBS.filter(
+    ? jobs.filter(
         (j) =>
           j.name.toLowerCase().includes(term) || String(j.id).startsWith(term),
       )
-    : PRESET_JOBS;
+    : jobs;
 
   const manualId = /^\d+$/.test(search.trim())
     ? Number(search.trim())
@@ -53,7 +62,7 @@ export function JobCombobox({ value, onChange }: JobComboboxProps) {
           aria-label="Class"
           className="w-full justify-between font-normal"
         >
-          {jobLabel(value)}
+          {selectedName}
           <ChevronsUpDown className="size-4 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -92,24 +101,23 @@ export function JobCombobox({ value, onChange }: JobComboboxProps) {
               </span>
             </li>
           ))}
-          {manualId !== undefined &&
-            !PRESET_JOBS.some((j) => j.id === manualId) && (
-              <li
-                role="option"
-                aria-selected={false}
-                tabIndex={0}
-                onClick={() => pick(manualId)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    pick(manualId);
-                  }
-                }}
-                className="cursor-pointer rounded px-2 py-1 text-sm hover:bg-accent focus-visible:bg-accent"
-              >
-                Use id {manualId}
-              </li>
-            )}
+          {manualId !== undefined && !jobs.some((j) => j.id === manualId) && (
+            <li
+              role="option"
+              aria-selected={false}
+              tabIndex={0}
+              onClick={() => pick(manualId)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  pick(manualId);
+                }
+              }}
+              className="cursor-pointer rounded px-2 py-1 text-sm hover:bg-accent focus-visible:bg-accent"
+            >
+              Use id {manualId}
+            </li>
+          )}
           {rows.length === 0 && manualId === undefined && (
             <li className="px-2 py-1 text-sm text-muted-foreground">
               No matches.

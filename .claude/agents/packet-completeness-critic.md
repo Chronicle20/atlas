@@ -25,7 +25,7 @@ description: |
   user: "Did the v92 bring-up change any codec it didn't declare?"
   assistant: "Dispatching packet-completeness-critic to flag CHANGED-BUT-UNCLAIMED codecs/gates against the task's coverage-manifest.yaml."
   </example>
-model: inherit
+model: sonnet
 ---
 
 You produce a READ-ONLY completeness audit of exactly ONE packet task's branch

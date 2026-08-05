@@ -92,6 +92,39 @@ func TestRestoreContextDetached(t *testing.T) {
 	}
 }
 
+// TestRestoreTableSwapIsAtomic pins task-186: a table's DELETE and its
+// repopulating COPY must run in ONE transaction on ONE connection, so a reader
+// never observes the deleted-but-not-yet-repopulated gap — the transient
+// GET /api/data/skills/{id} 404 seen during a baseline re-apply. The pre-fix bug
+// ran the DELETE inside a gorm db.Transaction but had the COPY check out a
+// SECOND pooled connection via tx.DB().Conn(ctx), so the COPY committed outside
+// the DELETE's transaction (sql.DB.Conn never returns a transaction's own
+// connection). This is a source-structure guard because the pgx binary-COPY path
+// executes only against real Postgres, not the sqlite unit-test DB.
+func TestRestoreTableSwapIsAtomic(t *testing.T) {
+	body := readRestoreSource(t)
+	const marker = "func replaceTableBinary("
+	i := strings.Index(body, marker)
+	if i < 0 {
+		t.Fatal("restore.go missing replaceTableBinary (the atomic single-connection DELETE+COPY swap)")
+	}
+	fn := body[i:]
+	if end := strings.Index(fn[len(marker):], "\nfunc "); end >= 0 {
+		fn = fn[:len(marker)+end]
+	}
+	// DELETE + COPY bracketed by an explicit BEGIN/COMMIT on one connection.
+	for _, need := range []string{"c.Begin(ctx)", "DELETE FROM ", "CopyFrom(", "tx.Commit(ctx)"} {
+		if !strings.Contains(fn, need) {
+			t.Fatalf("replaceTableBinary must contain %q so the DELETE and COPY form one committed transaction", need)
+		}
+	}
+	// Guard against the pre-fix defect returning: the swap must NOT wrap the
+	// DELETE in a gorm db.Transaction (whose COPY escaped onto a 2nd connection).
+	if strings.Contains(fn, "db.Transaction(") {
+		t.Fatal("replaceTableBinary must run DELETE+COPY on one raw connection, not a gorm db.Transaction")
+	}
+}
+
 func readRestoreSource(t *testing.T) string {
 	t.Helper()
 	src, err := os.ReadFile("restore.go")

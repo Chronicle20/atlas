@@ -16,15 +16,17 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func init() {
-	channelhandler.Register(skill2.BishopResurrectionId, Apply)
-	channelhandler.Register(skill2.GmResurrectionId, Apply)
-	channelhandler.Register(skill2.SuperGmResurrectionId, Apply)
+	channelhandler.Register(skill2.BishopResurrection, Apply)
+	channelhandler.Register(skill2.GmResurrection, Apply)
+	channelhandler.Register(skill2.SuperGmResurrection, Apply)
 }
 
 // loadCaster fetches the caster's position (range-check origin for selectByVariant) and level
@@ -89,7 +91,19 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				return nil
 			}
 
-			recipients := selectByVariant(l, ctx, f, characterId, casterX, casterY, e, info.AffectedPartyMemberBitmap(), skill2.Id(info.SkillId()))
+			// Resolve the cast's wire skill id to its version-blind Identity
+			// (task-187) so selectByVariant can distinguish Bishop
+			// Resurrection (party-scoped) from GM/SuperGM Resurrection
+			// (map-scoped) without depending on a raw wire compare. A resolve
+			// miss falls through to the map-scoped default -- unreachable in
+			// practice since Apply only runs after the dispatcher already
+			// resolved this same wire id to one of the three registered
+			// identities (see skill/handler/common.go UseSkill).
+			t := tenant.MustFromContext(ctx)
+			set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+			skillIdentity, _ := set.Skill.Resolve(skill2.Id(info.SkillId()))
+
+			recipients := selectByVariant(l, ctx, f, characterId, casterX, casterY, e, info.AffectedPartyMemberBitmap(), skillIdentity)
 
 			for _, r := range recipients {
 				if hpErr := setHP(l, ctx, f, r.Id(), math.MaxUint16); hpErr != nil {

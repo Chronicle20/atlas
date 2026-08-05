@@ -16,6 +16,8 @@ func CharacterAttackRangedBody(c character.Model, ai packetmodel.AttackInfo) pac
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
 			skillLevel, mastery, bulletItemId := preComputeAttackValues(l, ctx, c, ai)
+			// version-stable per task-187 audit: Strafe (Bowman 3xx branch)
+			// does not remap across the provisioned GMS versions.
 			isStrafe := skill2.Is(skill2.Id(ai.SkillId()), skill2.SniperStrafeId)
 			hasKeydown := isKeydownSkill(ai.SkillId())
 			return charpkt.NewAttackRanged(c.Id(), c.Level(), skillLevel, mastery, bulletItemId, isStrafe, hasKeydown, ai).Encode(l, ctx)(options)

@@ -64,11 +64,17 @@ type mountDeps struct {
 	clearShipHP func(characterId uint32)
 }
 
-// isSkillOnlyMount reports whether the skill is a skill-only mount (SpaceShip,
-// Yeti, Broomstick, Balrog) — one whose vehicle id is fixed by the skill rather
-// than read from an equipped taming-mob item.
-func isSkillOnlyMount(id skill2.Id, level byte) bool {
-	_, ok := skill2.SkillOnlyMountVehicleId(id, int(level))
+// isSkillOnlyMountIdentity reports whether id is a skill-only mount
+// (SpaceShip, Yeti, Broomstick, Balrog) — one whose vehicle id is fixed by
+// the skill rather than read from an equipped taming-mob item.
+//
+// Identity-keyed (task-187): the caller resolves the caster's wire skill id
+// to its version-blind Identity before calling in, per the defensive-
+// consistency scope for mount sites (these mount identities are not
+// themselves part of the divergent set, but route through resolution for
+// consistency with the guard that bans raw wire compares outside it).
+func isSkillOnlyMountIdentity(id skill2.Identity, level byte) bool {
+	_, ok := skill2.SkillOnlyMountVehicleIdentity(id, int(level))
 	return ok
 }
 
@@ -115,8 +121,11 @@ func tamedMountStatups(e effect.Model, vehicleId int32) []statup.Model {
 //
 // All no-op paths return nil; the caller (character_skill_use.go) unconditionally
 // re-enables actions after UseSkill returns, so HandleMount never needs to.
-func HandleMount(l logrus.FieldLogger, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model, deps mountDeps) error {
-	skillId := skill2.Id(info.SkillId())
+//
+// id is the caster's cast resolved to its version-blind Identity (task-187),
+// computed once by the caller (UseSkill) alongside the routing gate that
+// decides to call HandleMount at all.
+func HandleMount(l logrus.FieldLogger, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model, id skill2.Identity, deps mountDeps) error {
 	sourceId := int32(info.SkillId())
 
 	mounted, err := deps.isMounted(characterId, sourceId)
@@ -139,7 +148,7 @@ func HandleMount(l logrus.FieldLogger, f field.Model, characterId uint32, info p
 	// amount (atlas-data emits a skill-id placeholder by design). A fresh
 	// full ship HP pool is seeded on every mount (FR-2.2); no cooldown is
 	// applied here — break is the only cooldown trigger (FR-2.3).
-	if skill2.IsBattleshipMountSkill(skillId) {
+	if skill2.IsBattleshipMountSkillIdentity(id) {
 		vehicleId, ok := deps.resolveVehicleId()
 		if !ok {
 			l.Errorf("Character [%d] battleship mount aborted: vehicle id unresolved from tenant config.", characterId)
@@ -178,7 +187,7 @@ func HandleMount(l logrus.FieldLogger, f field.Model, characterId uint32, info p
 	// already injected the vehicle id into the MONSTER_RIDING statup, so the
 	// effect carries the vehicle plus any stats the skill grants (e.g. the Yeti
 	// Rider's +10 weapon/magic defense). No equip-slot lookup.
-	if isSkillOnlyMount(skillId, info.SkillLevel()) {
+	if isSkillOnlyMountIdentity(id, info.SkillLevel()) {
 		if len(monsterRidingStatups(e)) == 0 {
 			l.Warnf("Character [%d] cast skill-only mount [%d] but effect carries no MONSTER_RIDING statup; no-op.", characterId, info.SkillId())
 			return nil

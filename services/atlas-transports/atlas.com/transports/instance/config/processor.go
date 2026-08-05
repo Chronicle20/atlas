@@ -12,7 +12,7 @@ import (
 )
 
 type Processor interface {
-	GetInstanceRoutes(tenantId string) ([]instance.RouteModel, error)
+	GetInstanceRoutes(t tenant.Model) ([]instance.RouteModel, error)
 	LoadConfigurationsForTenant(tenant tenant.Model) ([]instance.RouteModel, error)
 }
 
@@ -35,20 +35,19 @@ var _ Processor = (*ProcessorImpl)(nil)
 // now paginated (task-117); LoadConfigurationsForTenant (a startup
 // per-tenant bootstrap) needs the complete set, so this drains every page
 // rather than fetching just the first.
-func (p *ProcessorImpl) GetInstanceRoutes(tenantId string) ([]instance.RouteModel, error) {
-	p.l.Debugf("Fetching instance routes for tenant [%s]", tenantId)
-	return requests.DrainProvider[InstanceRouteRestModel, instance.RouteModel](p.l, p.ctx)(instanceRoutesUrl(tenantId), 250, ExtractRoute, model.Filters[instance.RouteModel]())()
+func (p *ProcessorImpl) GetInstanceRoutes(t tenant.Model) ([]instance.RouteModel, error) {
+	p.l.Debugf("Fetching instance routes for tenant [%s]", t.Id())
+	return requests.DrainProvider[InstanceRouteRestModel, instance.RouteModel](p.l, p.ctx)(instanceRoutesUrl(t.Id().String()), 250, ExtractRouteFor(p.l, t), model.Filters[instance.RouteModel]())()
 }
 
-func (p *ProcessorImpl) LoadConfigurationsForTenant(tenant tenant.Model) ([]instance.RouteModel, error) {
-	tenantId := tenant.Id().String()
-	p.l.Infof("Loading instance route configurations for tenant [%s]", tenantId)
+func (p *ProcessorImpl) LoadConfigurationsForTenant(t tenant.Model) ([]instance.RouteModel, error) {
+	p.l.Infof("Loading instance route configurations for tenant [%s]", t.Id())
 
-	routes, err := p.GetInstanceRoutes(tenantId)
+	routes, err := p.GetInstanceRoutes(t)
 	if err != nil {
 		return nil, err
 	}
 
-	p.l.Infof("Loaded [%d] instance routes for tenant [%s]", len(routes), tenantId)
+	p.l.Infof("Loaded [%d] instance routes for tenant [%s]", len(routes), t.Id())
 	return routes, nil
 }

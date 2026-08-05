@@ -9,6 +9,7 @@ import (
 	"atlas-transports/transport/config"
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -39,32 +40,42 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 }
 
 func handleConfigurationStatus(l logrus.FieldLogger, ctx context.Context, e configuration2.StatusEvent) {
+	t := tenant.MustFromContext(ctx)
+	if t.Id() == uuid.Nil {
+		// consumer.TenantHeaderParser installs the ZERO tenant when the
+		// message carries no tenant headers, so without this guard a
+		// header-less event would ClearTenant() and reload nothing —
+		// silently emptying a healthy registry. Refusing to act makes
+		// the nil-tenant signature a loud regression instead of a quiet
+		// data-loss event.
+		l.Errorf("Configuration-status event [%s] for resource [%s] arrived without tenant headers; skipping reload.", e.Type, e.ResourceId)
+		return
+	}
+
 	switch e.ResourceType {
 	case "route", "vessel":
-		l.Infof("Configuration [%s] event [%s] for resource [%s], reloading scheduled routes for tenant [%s].", e.ResourceType, e.Type, e.ResourceId, e.TenantId)
-		t := tenant.MustFromContext(ctx)
+		l.Infof("Configuration [%s] event [%s] for resource [%s], reloading scheduled routes for tenant [%s].", e.ResourceType, e.Type, e.ResourceId, t.Id())
 
-		tp := transport.NewProcessor(l, ctx)
-		tp.ClearTenant()
-
+		// Load BEFORE clearing: the reload is a full replace, so a load
+		// failure after a clear would leave the tenant with no routes.
 		routes, sharedVessels, err := config.NewProcessor(l, ctx).LoadConfigurationsForTenant(t)
 		if err != nil {
-			l.WithError(err).Errorf("Failed to reload configurations for tenant [%s].", e.TenantId)
+			l.WithError(err).Errorf("Failed to reload configurations for tenant [%s]; leaving the scheduled route registry untouched.", t.Id())
 			return
 		}
+		tp := transport.NewProcessor(l, ctx)
+		tp.ClearTenant()
 		_ = tp.AddTenant(routes, sharedVessels)
 	case "instance-route":
-		l.Infof("Configuration [%s] event [%s] for resource [%s], reloading instance routes for tenant [%s].", e.ResourceType, e.Type, e.ResourceId, e.TenantId)
-		t := tenant.MustFromContext(ctx)
-
-		ip := instance.NewProcessor(l, ctx)
-		ip.ClearTenant()
+		l.Infof("Configuration [%s] event [%s] for resource [%s], reloading instance routes for tenant [%s].", e.ResourceType, e.Type, e.ResourceId, t.Id())
 
 		instanceRoutes, err := instanceConfig.NewProcessor(l, ctx).LoadConfigurationsForTenant(t)
 		if err != nil {
-			l.WithError(err).Errorf("Failed to reload instance route configurations for tenant [%s].", e.TenantId)
+			l.WithError(err).Errorf("Failed to reload instance route configurations for tenant [%s]; leaving the instance route registry untouched.", t.Id())
 			return
 		}
+		ip := instance.NewProcessor(l, ctx)
+		ip.ClearTenant()
 		ip.AddTenant(instanceRoutes)
 	default:
 		l.Warnf("Unhandled configuration resource type [%s].", e.ResourceType)

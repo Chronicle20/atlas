@@ -9,6 +9,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
@@ -62,13 +63,27 @@ func preComputeAttackValues(l logrus.FieldLogger, ctx context.Context, c charact
 	return
 }
 
+// version-stable per task-187 audit: the Big Bang keydown skills (Magician
+// v0.92→v0.95 reorg aside) and the Evan keydown skills do not remap across
+// the provisioned GMS versions at these specific wire ids.
 func isKeydownSkill(skillId uint32) bool {
 	return skill2.Is(skill2.Id(skillId), skill2.FirePoisonArchMagicianBigBangId, skill2.IceLightningArchMagicianBigBangId, skill2.BishopBigBangId, skill2.EvanStage4IceBreathId, skill2.EvanStage7FireBreathId)
 }
 
+// computeMasteryForWeapon routes on jobId/attackSkillId to find the weapon
+// mastery skill governing the caster's current weapon. Every branch below is
+// version-stable per the task-187 audit (Warrior/Page/Fighter/Magician/
+// Bowman/Thief/Spearman/Aran roots do not remap across the provisioned GMS
+// range) EXCEPT the Knuckle branch: job.BrawlerId/MarauderId/BuccaneerId
+// (wire 510/511/512) collide with GM/SuperGM (wire 500/510) at v0.48 — job
+// 510 means SuperGM there, not Brawler (divergent set, task-187 audit). That
+// branch alone is routed through job identity resolution below; every other
+// branch stays Id-keyed with a one-line citation, per the task-187 Task 10
+// scope (do not force-migrate version-stable roots).
 func computeMasteryForWeapon(l logrus.FieldLogger) func(ctx context.Context) func(weaponId uint32, jobId job.Id, attackSkillId skill2.Id, skills []skill.Model) byte {
 	return func(ctx context.Context) func(weaponId uint32, jobId job.Id, attackSkillId skill2.Id, skills []skill.Model) byte {
 		t := tenant.MustFromContext(ctx)
+		set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
 		return func(weaponId uint32, jobId job.Id, attackSkillId skill2.Id, skills []skill.Model) byte {
 			masteryPercent := int8(10)
 			wt := item.GetWeaponType(item.Id(weaponId))
@@ -167,12 +182,27 @@ func computeMasteryForWeapon(l logrus.FieldLogger) func(ctx context.Context) fun
 					masteryPercent = getMasteryFromSkill(l)(ctx)(10, skill2.NightWalkerStage2ClawMasteryId, skills)
 				}
 			} else if wt == item.WeaponTypeKnuckle {
-				if job.IsA(jobId, job.BrawlerId, job.MarauderId, job.BuccaneerId) {
+				// DIVERGENT (task-187 audit, found beyond the Task 10 brief's
+				// listed sites): job.BrawlerId/MarauderId/BuccaneerId are wire
+				// 510/511/512 -- wire 510 collides with SuperGM at v0.48
+				// (job 500/510 GM/SuperGM vs Pirate/Brawler is the audit's
+				// divergent job set). A raw job.IsA(jobId, job.BrawlerId, ...)
+				// compare would misclassify a v0.48 SuperGM (wire job 510)
+				// wielding a Knuckle as a Brawler. Resolve jobId to its
+				// version-blind Identity first.
+				if jid, jok := set.Job.Resolve(jobId); jok && job.IsAIdentity(jid, job.Brawler, job.Marauder, job.Buccaneer) {
 					masteryPercent = getMasteryFromSkill(l)(ctx)(10, skill2.BrawlerKnucklerMasteryId, skills)
 				} else if job.IsA(jobId, job.ThunderBreakerStage2Id, job.ThunderBreakerStage3Id, job.ThunderBreakerStage4Id) {
+					// version-stable per task-187 audit: ThunderBreaker (Cygnus
+					// 1xxx branch) does not remap across the provisioned GMS
+					// versions.
 					masteryPercent = getMasteryFromSkill(l)(ctx)(10, skill2.ThunderBreakerStage2KnuckleMasteryId, skills)
 				}
 			} else if wt == item.WeaponTypeGun {
+				// version-stable per task-187 audit: Gunslinger/Outlaw/Corsair
+				// (wire 520/521/522) are absent -- not aliased -- at v0.48
+				// (GM/SuperGM's job tree stops at 500/510), so this is not in
+				// the audit's divergent set.
 				if job.IsA(jobId, job.GunslingerId, job.OutlawId, job.CorsairId) {
 					masteryPercent = getMasteryFromSkill(l)(ctx)(10, skill2.GunslingerGunMasteryId, skills)
 				}
@@ -196,6 +226,10 @@ func getMasteryFromSkill(l logrus.FieldLogger) func(ctx context.Context) func(st
 	return func(ctx context.Context) func(startingMastery int8, skillId skill2.Id, skills []skill.Model) int8 {
 		return func(startingMastery int8, skillId skill2.Id, skills []skill.Model) int8 {
 			start := int8(15)
+			// version-stable per task-187 audit: Evan (22xx), Aran (20xx), and
+			// Bowmaster (Bowman 3xx branch) high-mastery ids do not remap
+			// across the provisioned GMS versions. skillId here is always fed
+			// by a caller-supplied canonical constant, never the raw wire id.
 			if skill2.Is(skillId, skill2.EvanStage9MagicMasteryId, skill2.AranStage4HighMasteryId, skill2.BowmasterBowExpertId) {
 				start = int8(65)
 			}

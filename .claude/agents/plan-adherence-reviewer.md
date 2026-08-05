@@ -12,7 +12,7 @@ description: |
   <example>
   Context: After running superpowers:requesting-code-review, this agent is invoked in parallel with the guideline reviewers.
   </example>
-model: inherit
+model: sonnet
 ---
 
 You are an implementation plan auditor for the Atlas project. Your job is to verify that the implementation described in a plan was faithfully executed, nothing was silently skipped or deferred, and the resulting code adheres to the project's developer guidelines.

@@ -429,3 +429,92 @@ describe("canonical (shared-scope) functions", () => {
     expect(status.documentCount).toBe(42);
   });
 });
+
+describe("transport configuration seed status", () => {
+  const tenant = {
+    id: "ec876921-c363-4cc6-9c51-5bb8d57f9553",
+    attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
+  } as never;
+
+  it("projects the routes subdomain count", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        groupName: "routes",
+        subdomains: { routes: { count: 12, updatedAt: null } },
+        updatedAt: null,
+        catalogRevision: "abc+def",
+        tenantSeededRevision: "abc+def",
+        tenantSeededAt: "2026-08-03T00:00:00Z",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const status = await seedService.getTransportRoutesSeedStatus(tenant);
+
+    expect(status.routeCount).toBe(12);
+    expect(status.updatedAt).toBe("2026-08-03T00:00:00Z");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/tenants/configurations/routes/seed/status",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it("projects the vessels subdomain count", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          groupName: "vessels",
+          subdomains: { vessels: { count: 6, updatedAt: null } },
+          updatedAt: null,
+          catalogRevision: "",
+          tenantSeededRevision: null,
+          tenantSeededAt: null,
+        }),
+      }),
+    );
+    const status = await seedService.getTransportVesselsSeedStatus(tenant);
+    expect(status.vesselCount).toBe(6);
+  });
+
+  it("projects the instance-routes subdomain count", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          groupName: "instance-routes",
+          subdomains: { "instance-routes": { count: 12, updatedAt: null } },
+          updatedAt: null,
+          catalogRevision: "",
+          tenantSeededRevision: null,
+          tenantSeededAt: null,
+        }),
+      }),
+    );
+    const status = await seedService.getInstanceRoutesSeedStatus(tenant);
+    expect(status.routeCount).toBe(12);
+  });
+
+  it("reports zero when the tenant has never been seeded", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          groupName: "routes",
+          subdomains: {},
+          updatedAt: null,
+          catalogRevision: "",
+          tenantSeededRevision: null,
+          tenantSeededAt: null,
+        }),
+      }),
+    );
+    const status = await seedService.getTransportRoutesSeedStatus(tenant);
+    expect(status.routeCount).toBe(0);
+    expect(status.updatedAt).toBeNull();
+  });
+});

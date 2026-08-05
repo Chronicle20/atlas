@@ -260,6 +260,65 @@ func TestSeed_SerializesConcurrentCallsPerTenantGroup(t *testing.T) {
 	}
 }
 
+func TestSeed_MergesRootsWithVersionSpecificWinning(t *testing.T) {
+	t.Cleanup(ResetMetricsForTest)
+	db := openTestDB(t)
+	src := NewFilesystemCatalogSourceWithShared("X_NO_ENV", goodFixtureRoot(t), "shared/all")
+	sub := &widgetSubdomain{}
+	g := Group{
+		Name:       "merge-group",
+		URLPrefix:  "/merge",
+		Subdomains: []SubdomainAny{AdaptSubdomain[widgetAttrs, widgetRow](sub)},
+	}
+	ctx := tenant.WithContext(context.Background(), tenantGMS83(t))
+	res, err := Seed(ctx, db, src, g)
+	if err != nil {
+		t.Fatalf("Seed: %v", err)
+	}
+	// gms/83_1 has widget-1 + widget-2; shared/all has widget-2 + widget-3.
+	// Union = 3 files, and widget-2 resolves to the VERSION-SPECIFIC copy.
+	if res.Subdomains["widgets"].Created != 3 {
+		t.Fatalf("created = %d, want 3 (union of both roots)", res.Subdomains["widgets"].Created)
+	}
+	rows := sub.Rows()
+	sort.Slice(rows, func(i, j int) bool { return rows[i].ID < rows[j].ID })
+	want := []widgetRow{{ID: 1, Name: "one"}, {ID: 2, Name: "two"}, {ID: 3, Name: "three"}}
+	if len(rows) != len(want) {
+		t.Fatalf("rows = %+v, want %+v", rows, want)
+	}
+	for i := range rows {
+		if rows[i] != want[i] {
+			t.Fatalf("rows[%d] = %+v, want %+v (version-specific must win)", i, rows[i], want[i])
+		}
+	}
+	if res.CatalogRevision != "shared-rev-xyz789+test-rev-abc123" {
+		t.Fatalf("revision = %q, want composite", res.CatalogRevision)
+	}
+}
+
+func TestSeed_MissingSharedRootIsANoOp(t *testing.T) {
+	t.Cleanup(ResetMetricsForTest)
+	db := openTestDB(t)
+	src := NewFilesystemCatalogSourceWithShared("X_NO_ENV", goodFixtureRoot(t), "shared/does-not-exist")
+	sub := &widgetSubdomain{}
+	g := Group{
+		Name:       "missing-shared",
+		URLPrefix:  "/missing",
+		Subdomains: []SubdomainAny{AdaptSubdomain[widgetAttrs, widgetRow](sub)},
+	}
+	ctx := tenant.WithContext(context.Background(), tenantGMS83(t))
+	res, err := Seed(ctx, db, src, g)
+	if err != nil {
+		t.Fatalf("Seed: %v", err)
+	}
+	if res.Subdomains["widgets"].Created != 2 {
+		t.Fatalf("created = %d, want 2 (version root only)", res.Subdomains["widgets"].Created)
+	}
+	if len(res.Subdomains["widgets"].Errors) != 0 {
+		t.Fatalf("errors = %v, want none (absent root is not an error)", res.Subdomains["widgets"].Errors)
+	}
+}
+
 func TestSeed_PartialFailurePersistsAndContinues(t *testing.T) {
 	t.Cleanup(ResetMetricsForTest)
 	db := openTestDB(t)

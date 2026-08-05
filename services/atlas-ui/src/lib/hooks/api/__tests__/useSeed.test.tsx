@@ -11,6 +11,9 @@ import {
   usePortalScriptsSeedStatus,
   useReactorScriptsSeedStatus,
   useMapActionScriptsSeedStatus,
+  useTransportRoutesSeedStatus,
+  useTransportVesselsSeedStatus,
+  useInstanceRoutesSeedStatus,
   useWzInputStatus,
   useDataStatus,
   useSeedDrops,
@@ -21,6 +24,9 @@ import {
   useSeedPortalScripts,
   useSeedReactorScripts,
   useSeedMapActionScripts,
+  useSeedTransportRoutes,
+  useSeedTransportVessels,
+  useSeedInstanceRoutes,
 } from "../useSeed";
 import { seedService } from "@/services/api/seed.service";
 import * as tenantContext from "@/context/tenant-context";
@@ -35,6 +41,9 @@ vi.mock("@/services/api/seed.service", () => ({
     getPortalScriptsSeedStatus: vi.fn(),
     getReactorScriptsSeedStatus: vi.fn(),
     getMapActionScriptsSeedStatus: vi.fn(),
+    getTransportRoutesSeedStatus: vi.fn(),
+    getTransportVesselsSeedStatus: vi.fn(),
+    getInstanceRoutesSeedStatus: vi.fn(),
     getWzInputStatus: vi.fn(),
     getDataStatus: vi.fn(),
     seedDrops: vi.fn(),
@@ -45,6 +54,9 @@ vi.mock("@/services/api/seed.service", () => ({
     seedPortalScripts: vi.fn(),
     seedReactorScripts: vi.fn(),
     seedMapActionScripts: vi.fn(),
+    seedRoutes: vi.fn(),
+    seedVessels: vi.fn(),
+    seedInstanceRoutes: vi.fn(),
   },
 }));
 
@@ -123,6 +135,24 @@ describe.each([
     useMapActionScriptsSeedStatus,
     "getMapActionScriptsSeedStatus",
     "mapActionScriptsSeedStatus",
+  ],
+  [
+    "useTransportRoutesSeedStatus",
+    useTransportRoutesSeedStatus,
+    "getTransportRoutesSeedStatus",
+    "transportRoutesSeedStatus",
+  ],
+  [
+    "useTransportVesselsSeedStatus",
+    useTransportVesselsSeedStatus,
+    "getTransportVesselsSeedStatus",
+    "transportVesselsSeedStatus",
+  ],
+  [
+    "useInstanceRoutesSeedStatus",
+    useInstanceRoutesSeedStatus,
+    "getInstanceRoutesSeedStatus",
+    "instanceRoutesSeedStatus",
   ],
 ] as const)("%s", (_, hook, method, key) => {
   it("enables polling and keys by tenant id when a tenant is active", async () => {
@@ -257,5 +287,40 @@ describe.each([
     expect(invalidate).toHaveBeenCalledWith({
       queryKey: [statusKeyRoot, fakeTenant.id],
     });
+  });
+});
+
+describe("transport seed mutations", () => {
+  it("useSeedTransportRoutes posts to the routes seed endpoint", async () => {
+    const spy = vi
+      .spyOn(seedService, "seedRoutes")
+      .mockResolvedValue(undefined);
+    const { result } = renderHook(() => useSeedTransportRoutes(), {
+      wrapper: makeWrapper().wrapper,
+    });
+    result.current.mutate();
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
+  });
+
+  it("useSeedTransportVessels posts to the vessels seed endpoint", async () => {
+    const spy = vi
+      .spyOn(seedService, "seedVessels")
+      .mockResolvedValue(undefined);
+    const { result } = renderHook(() => useSeedTransportVessels(), {
+      wrapper: makeWrapper().wrapper,
+    });
+    result.current.mutate();
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
+  });
+
+  it("useSeedInstanceRoutes posts to the instance-routes seed endpoint", async () => {
+    const spy = vi
+      .spyOn(seedService, "seedInstanceRoutes")
+      .mockResolvedValue(undefined);
+    const { result } = renderHook(() => useSeedInstanceRoutes(), {
+      wrapper: makeWrapper().wrapper,
+    });
+    result.current.mutate();
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
   });
 });

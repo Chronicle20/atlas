@@ -18,10 +18,12 @@ import (
 	"github.com/sirupsen/logrus"
 
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // HideBuffDuration is the effectively-permanent duration for the GM-hide buff.
@@ -33,7 +35,7 @@ import (
 const HideBuffDuration = int32(math.MaxInt32)
 
 func init() {
-	channelhandler.Register(skill2.SuperGmHideId, Apply)
+	channelhandler.Register(skill2.SuperGmHide, Apply)
 }
 
 // hideDeps holds the Hide toggle's collaborators as function seams so the
@@ -44,6 +46,7 @@ func init() {
 // toggle directions — see task-156 plan Global Constraints).
 type hideDeps struct {
 	loadCaster        func(characterId uint32) (character.Model, error)
+	isSuperGm         func(jobId job.Id) bool
 	isHidden          func(characterId uint32) (bool, error)
 	applyHide         func(f field.Model, characterId uint32, level byte) error
 	cancelHide        func(f field.Model, characterId uint32) error
@@ -62,7 +65,7 @@ func applyHide(l logrus.FieldLogger, f field.Model, characterId uint32, info pac
 		l.WithError(err).Errorf("Hide: failed to load caster [%d].", characterId)
 		return nil
 	}
-	if !job.IsA(c.JobId(), job.SuperGmId) {
+	if !d.isSuperGm(c.JobId()) {
 		l.Warnf("Character [%d] cast SuperGM Hide without SuperGM job; rejecting.", characterId)
 		return nil
 	}
@@ -97,6 +100,21 @@ func applyHide(l logrus.FieldLogger, f field.Model, characterId uint32, info pac
 	return nil
 }
 
+// resolveHideSourceId returns the version-appropriate wire id for
+// SuperGmHide under set (task-187): 5101004 at v0.48, 9101004 at v0.62+.
+// This is the value stored as the buff's SourceId, which downstream
+// consumers (character/buff.IsGmHidden, kafka/consumer/buff's GM-hide
+// handlers) resolve back to the SuperGmHide identity through the SAME
+// tenant's version set -- so the outbound id and the inbound resolve must
+// agree for every provisioned version. Falls back to the canonical (v83-era)
+// wire id if the version set has no binding.
+func resolveHideSourceId(set constants.SkillJobSet) int32 {
+	if w, ok := set.Skill.Wire(skill2.SuperGmHide); ok {
+		return int32(w)
+	}
+	return int32(skill2.SuperGmHideId)
+}
+
 // Apply is the registered Hide handler. It builds production deps and delegates
 // to applyHide.
 func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
@@ -115,23 +133,28 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 			bp := buff.NewProcessor(l, ctx)
 			sp := session.NewProcessor(l, ctx)
 
+			t := tenant.MustFromContext(ctx)
+			set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+			hideSourceId := resolveHideSourceId(set)
+
 			d := hideDeps{
 				loadCaster: func(id uint32) (character.Model, error) { return cp.GetById()(id) },
+				isSuperGm:  func(jobId job.Id) bool { return channelhandler.IsSuperGm(set, jobId) },
 				isHidden: func(id uint32) (bool, error) {
 					bs, err := bp.GetByCharacterId(id)
 					if err != nil {
 						return false, err
 					}
-					return buff.IsGmHidden(bs), nil
+					return buff.IsGmHidden(ctx, bs), nil
 				},
 				applyHide: func(f field.Model, id uint32, level byte) error {
 					// DARK_SIGHT amount must be non-zero: the v83 client's
 					// CUser::IsDarkSight tests the stat != 0.
 					statups := []statup.Model{statup.NewModel(string(charconst.TemporaryStatTypeDarkSight), 1)}
-					return bp.Apply(f, id, int32(skill2.SuperGmHideId), level, HideBuffDuration, statups)(id)
+					return bp.Apply(f, id, hideSourceId, level, HideBuffDuration, statups)(id)
 				},
 				cancelHide: func(f field.Model, id uint32) error {
-					return bp.Cancel(f, id, int32(skill2.SuperGmHideId))
+					return bp.Cancel(f, id, hideSourceId)
 				},
 				despawnFromOthers: func(f field.Model, id uint32) error {
 					return _mapconsumer.DespawnCharacterInMap(l, ctx, wp)(f, id)

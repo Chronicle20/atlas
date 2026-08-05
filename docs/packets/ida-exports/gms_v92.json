@@ -9867,30 +9867,32 @@
     "CWvsContext::OnClaimResult": {
       "address": "0x9cf310",
       "direction": "clientbound",
+      "notes": "byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table (0x9ba740), case 46 call-site @0x9ba8ae. Decode1(mode) @0x9cf346 is the only unconditional read; mode==2 is the sole value that reads further (hasRemaining, remaining). Every other reachable mode (3, 0x41-0x45, 0x47, 0x48) renders a StringPool notice from the mode byte alone; unlisted modes (0, 1, 0x46, ...) fall through to an early return. Opcode 0x2E matches STATUS.md's pre-filled v92 column value. Byte-identical to the v72/v79/v83/v84/v87 twins.",
       "calls": [
         {
           "op": "Decode1",
-          "comment": ""
+          "comment": "mode byte @0x9cf346"
         },
         {
           "op": "Decode1",
-          "comment": "",
-          "guard": "switch == 0"
+          "comment": "hasRemaining @0x9cf379, mode==2 only",
+          "guard": "mode == 2"
         },
         {
           "op": "Decode4",
-          "comment": "",
-          "guard": "switch == 0"
+          "comment": "remaining int32 @0x9cf383, mode==2 only",
+          "guard": "mode == 2"
         }
       ]
     },
     "CWvsContext::OnClaimSvrStatusChanged": {
       "address": "0x9c5d60",
       "direction": "clientbound",
+      "notes": "byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table (0x9ba740), case 48 call-site @0x9ba8c8. Single Decode1 != 0 read, no branches. Opcode 0x30 matches STATUS.md's pre-filled v92 column value. Byte-identical to the v72/v79/v83/v84/v87 twins.",
       "calls": [
         {
           "op": "Decode1",
-          "comment": ""
+          "comment": "connected != 0 @0x9c5d67"
         }
       ]
     },
@@ -11892,14 +11894,15 @@
     "CWvsContext::OnSetClaimSvrAvailableTime": {
       "address": "0x9c5d30",
       "direction": "clientbound",
+      "notes": "byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table (0x9ba740), case 47 call-site @0x9ba8bb. Two unconditional Decode1 reads, no branches. Opcode 0x2F matches STATUS.md's pre-filled v92 column value. Byte-identical to the v72/v79/v83/v84/v87 twins.",
       "calls": [
         {
           "op": "Decode1",
-          "comment": ""
+          "comment": "openHour @0x9c5d42"
         },
         {
           "op": "Decode1",
-          "comment": ""
+          "comment": "closeHour @0x9c5d44"
         }
       ]
     },
@@ -12044,10 +12047,11 @@
     "CWvsContext::OnSueCharacterResult": {
       "address": "0x9cf950",
       "direction": "clientbound",
+      "notes": "byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table (0x9ba740), case 56 call-site @0x9ba8a1. Decode1(result) @0x9cf979 is the only read; a five-way branch (0/1/2/3/else) purely picks a StringPool notice id for a CHATLOG_ADD render, no further packet reads. Opcode 0x38 matches STATUS.md's pre-filled v92 column value. Byte-identical to the v61/v72/v79/v83/v84/v87 twins.",
       "calls": [
         {
           "op": "Decode1",
-          "comment": ""
+          "comment": "result byte @0x9cf979"
         }
       ]
     },

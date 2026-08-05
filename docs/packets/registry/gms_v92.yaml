@@ -233,17 +233,51 @@
   direction: clientbound
   opcode: 46
   fname: CWvsContext::OnClaimResult
-  provenance: csv-import
+  packet: report/clientbound/ClaimResultSuccess
+  provenance: ida-discovered
+  ida:
+    address: 0x9cf310
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnClaimResult
+    @0x9cf310 (GMS_v92_1_DEVM.exe.i64, session acdfccff), resolved via the opcode
+    dispatch table CWvsContext::OnPacket @0x9ba740 case 46, call-site
+    @0x9ba8ae. Opcode 0x2E (46) matches STATUS.md''s pre-filled v92 column
+    value. Decode1(mode) @0x9cf346 reads the raw mode byte (the function
+    subtracts 2 and switches on that). mode==2 is the only value that reads
+    further: Decode1(hasRemaining) @0x9cf379, Decode4(remaining) @0x9cf383.
+    Every other reachable mode (3, 0x41-0x45, 0x47, 0x48) is a bare mode
+    byte with no further reads -- identical branch structure to the
+    v72/v79/v83/v84/v87 twins already verified. Byte-identical, no version
+    branch needed.'
 - op: CLAIM_AVAILABLE_TIME
   direction: clientbound
   opcode: 47
   fname: CWvsContext::OnSetClaimSvrAvailableTime
-  provenance: csv-import
+  packet: report/clientbound/ClaimAvailableTime
+  provenance: ida-discovered
+  ida:
+    address: 0x9c5d30
+  note: 'task-145 Task 24 (2026-08-05): live decompile of
+    CWvsContext::OnSetClaimSvrAvailableTime @0x9c5d30 (GMS_v92_1_DEVM.exe.i64,
+    session acdfccff), resolved via the opcode dispatch table
+    CWvsContext::OnPacket @0x9ba740 case 47, call-site @0x9ba8bb. Opcode
+    0x2F (47) matches STATUS.md''s pre-filled v92 column value. Decode1
+    (openHour) @0x9c5d42, Decode1(closeHour) @0x9c5d44 -- no branches,
+    2 bytes total. Byte-identical to the v72/v79/v83/v84/v87 twins.'
 - op: CLAIM_STATUS_CHANGED
   direction: clientbound
   opcode: 48
   fname: CWvsContext::OnClaimSvrStatusChanged
-  provenance: csv-import
+  packet: report/clientbound/ClaimSvrStatusChanged
+  provenance: ida-discovered
+  ida:
+    address: 0x9c5d60
+  note: 'task-145 Task 24 (2026-08-05): live decompile of
+    CWvsContext::OnClaimSvrStatusChanged @0x9c5d60 (GMS_v92_1_DEVM.exe.i64,
+    session acdfccff), resolved via the opcode dispatch table
+    CWvsContext::OnPacket @0x9ba740 case 48, call-site @0x9ba8c8. Opcode
+    0x30 (48) matches STATUS.md''s pre-filled v92 column value. Single
+    Decode1(connected) != 0 @0x9c5d67 -- 1 byte total. Byte-identical to
+    the v72/v79/v83/v84/v87 twins.'
 - op: SET_TAMING_MOB_INFO
   direction: clientbound
   opcode: 49
@@ -278,7 +312,19 @@
   direction: clientbound
   opcode: 56
   fname: CWvsContext::OnSueCharacterResult
-  provenance: csv-import
+  packet: report/clientbound/SueCharacterResult
+  provenance: ida-discovered
+  ida:
+    address: 0x9cf950
+  note: 'task-145 Task 24 (2026-08-05): live decompile of
+    CWvsContext::OnSueCharacterResult @0x9cf950 (GMS_v92_1_DEVM.exe.i64,
+    session acdfccff), resolved via the opcode dispatch table
+    CWvsContext::OnPacket @0x9ba740 case 56, call-site @0x9ba8a1. Opcode
+    0x38 (56) matches STATUS.md''s pre-filled v92 column value. Decode1
+    (result) @0x9cf979 is the only read; a five-way branch (0/1/2/3/else)
+    purely picks a StringPool notice id for a CHATLOG_ADD render, no
+    further packet reads. Byte-identical to the v61/v72/v79/v83/v84/v87
+    twins.'
 - op: TRADE_MONEY_LIMIT
   direction: clientbound
   opcode: 58
@@ -2723,7 +2769,20 @@
   direction: serverbound
   opcode: 117
   fname: CWvsContext::SendClaimRequest
-  provenance: csv-import
+  packet: report/serverbound/ClaimRequest
+  provenance: ida-discovered
+  ida:
+    address: 0x9d9c30
+  note: 'task-145 Task 24 (2026-08-05): live decompile of
+    CWvsContext::SendClaimRequest @0x9d9c30 (GMS_v92_1_DEVM.exe.i64, session
+    acdfccff). COutPacket::COutPacket(&v66, 0x75u) @0x9da25c confirms
+    opcode 117/0x75 -- matches this row (and matches STATUS.md''s
+    pre-filled v92 column value of 0x075). Encode order: Encode1
+    (bChatClaim=v26) @0x9da26e, EncodeStr(targetName) @0x9da28d, Encode1
+    (reasonType=v61) @0x9da29b, EncodeStr(description) @0x9da2ba, guarded
+    EncodeStr(chatLog) @0x9da375 gated on the same v26. Identical encode
+    order to the v72/v79/v83/v84/v87 twins already verified -- no version
+    branch needed.'
 - op: QUEST_ACTION
   direction: serverbound
   opcode: 118

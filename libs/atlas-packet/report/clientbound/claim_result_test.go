@@ -385,6 +385,83 @@ func TestClaimResultNoticeByteOutputV87(t *testing.T) {
 	}
 }
 
+// TestClaimResultSuccessByteOutputV92 verifies the wire-exact byte output of
+// ClaimResultSuccess (mode 2) for GMS v92.
+// IDA evidence (session acdfccff, GMS_v92_1_DEVM.exe.i64):
+//
+//	CWvsContext::OnClaimResult@0x9cf310, resolved via the opcode dispatch
+//	table CWvsContext::OnPacket@0x9ba740 case 46 @0x9ba8ae (registry
+//	gms_v92.yaml op CLAIM_RESULT, opcode 46/0x2E -- matches STATUS.md's
+//	pre-filled v92 column value of 0x02E, and matches the live dispatch
+//	switch, independently re-derived here). CInPacket::Decode1(a2)
+//	@0x9cf346 reads the raw mode byte; the function immediately subtracts
+//	2 and switches on that. mode==2 (switch key 0) is the ONLY value that
+//	reads further: CInPacket::Decode1(a2) @0x9cf379 reads hasRemaining
+//	(v6), CInPacket::Decode4(a2) @0x9cf383 reads remaining (v7). Every
+//	other reachable mode (3, 0x41-0x45, 0x47, 0x48) is a bare mode byte
+//	with no further packet reads -- ClaimResultNotice, verified below.
+//	6 bytes total for mode 2: mode, hasRemaining, remaining(4).
+//	Byte-identical to the v72/v79/v83/v84/v87 shape already verified above.
+//
+// packet-audit:verify packet=report/clientbound/ClaimResultSuccess version=gms_v92 ida=0x9cf310
+func TestClaimResultSuccessByteOutputV92(t *testing.T) {
+	v := pt.Variants[11] // GMS v92
+	if v.Name != "GMS v92" {
+		t.Fatalf("pt.Variants[11] = %q, want %q (index drifted)", v.Name, "GMS v92")
+	}
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	input := NewClaimResultSuccess(0x02, true, 100)
+	expected := []byte{
+		0x02,                   // Decode1 mode @0x9cf346
+		0x01,                   // Decode1 hasRemaining @0x9cf379
+		0x64, 0x00, 0x00, 0x00, // Decode4 remaining = 100 LE @0x9cf383
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("byte output mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestClaimResultNoticeByteOutputV92 verifies the wire-exact byte output of
+// ClaimResultNotice (bare mode byte, no payload) for GMS v92, covering every
+// reachable non-success mode.
+// IDA evidence (session acdfccff, GMS_v92_1_DEVM.exe.i64), all within
+// CWvsContext::OnClaimResult@0x9cf310 after the single Decode1(mode)
+// @0x9cf346 (raw byte, switch key = raw-2) -- none of these branches
+// perform any further CInPacket read:
+//
+//	mode 3    -> switch key 1,    StringPool 3449 @0x9cf499
+//	mode 0x41 -> switch key 0x3F, StringPool 6309 @0x9cf4d7
+//	mode 0x42 -> switch key 0x40, StringPool 3451 @0x9cf515
+//	mode 0x43 -> switch key 0x41, StringPool 3452 @0x9cf552
+//	mode 0x44 -> switch key 0x42, StringPool 3453 @0x9cf56c
+//	mode 0x45 -> switch key 0x43, StringPool 3454 @0x9cf586
+//	mode 0x47 -> switch key 0x45, StringPool 3459 @0x9cf5bf -- own arm
+//	             reading this+13892/this+13893 (the openHour/closeHour
+//	             fields stored by OnSetClaimSvrAvailableTime) -- reads
+//	             character state, not the wire, so still zero further
+//	             CInPacket reads
+//	mode 0x48 -> switch key 0x46, StringPool 3461 @0x9cf59f
+//
+// (modes 0, 1, 0x46, and every other unlisted byte value map to a switch
+// key with no case -- default: silent return, still just the 1-byte mode
+// already consumed.) Not registry-linked (the CLAIM_RESULT op row's single
+// `packet:` field points at ClaimResultSuccess above) so this test carries
+// no verify-marker comment, but the decompile citations are load-bearing
+// for the registry note on CLAIM_RESULT.
+func TestClaimResultNoticeByteOutputV92(t *testing.T) {
+	v := pt.Variants[11] // GMS v92
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	for _, mode := range []byte{0x03, 0x41, 0x42, 0x43, 0x44, 0x45, 0x47, 0x48} {
+		input := NewClaimResultNotice(mode)
+		expected := []byte{mode}
+		actual := pt.Encode(t, ctx, input.Encode, nil)
+		if !bytes.Equal(actual, expected) {
+			t.Errorf("mode 0x%02X: byte output mismatch: got %v want %v", mode, actual, expected)
+		}
+	}
+}
+
 func TestClaimResultSuccessRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

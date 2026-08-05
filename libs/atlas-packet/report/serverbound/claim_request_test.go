@@ -251,6 +251,46 @@ func TestClaimRequestByteOutputV87(t *testing.T) {
 	}
 }
 
+// TestClaimRequestByteOutputV92 verifies the wire-exact byte output of
+// ClaimRequest for GMS v92.
+// IDA evidence (session acdfccff, GMS_v92_1_DEVM.exe.i64):
+//
+//	CWvsContext::SendClaimRequest@0x9d9c30 (independently decompiled this
+//	pass): COutPacket::COutPacket(&v66, 0x75u) @0x9da25c -- opcode 117/0x75,
+//	matches registry gms_v92.yaml op CLAIM_REQUEST (also matches
+//	STATUS.md's pre-filled v92 column value of 0x075). COutPacket::Encode1
+//	(&v66, v26=bChatClaim) @0x9da26e (v26 = v57, set to 1 on the DoModal==
+//	1000/"chat claim" path @0x9da0b6, 0 on the DoModal==1001/"regular
+//	claim" path @0x9d9df8). COutPacket::EncodeStr(&v66, v48=targetName)
+//	@0x9da28d. COutPacket::Encode1(&v66, v61=reasonType) @0x9da29b.
+//	COutPacket::EncodeStr(&v66, v48=description) @0x9da2ba. Guarded
+//	COutPacket::EncodeStr(&v66, v48=chatLog) @0x9da375, gated on the same
+//	v26 (bChatClaim, checked via `if (v26)` @0x9da2c1) that fed the first
+//	Encode1. CClientSocket::SendPacket @0x9da3a4. Byte-identical to the
+//	v72/v79/v83/v84/v87 shape already coded in the (version-ungated) Encode
+//	below.
+//
+// packet-audit:verify packet=report/serverbound/ClaimRequest version=gms_v92 ida=0x9d9c30
+func TestClaimRequestByteOutputV92(t *testing.T) {
+	v := pt.Variants[11] // GMS v92
+	if v.Name != "GMS v92" {
+		t.Fatalf("pt.Variants[11] = %q, want %q (index drifted)", v.Name, "GMS v92")
+	}
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	input := NewClaimRequest(1, "bob", 0x02, "hi", "yo")
+	expected := []byte{
+		0x01,                         // Encode1 bChatClaim @0x9da26e
+		0x03, 0x00, 0x62, 0x6F, 0x62, // EncodeStr "bob" @0x9da28d
+		0x02,                   // Encode1 reasonType @0x9da29b
+		0x02, 0x00, 0x68, 0x69, // EncodeStr "hi" @0x9da2ba
+		0x02, 0x00, 0x79, 0x6F, // EncodeStr "yo" (guarded on bChatClaim) @0x9da375
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("byte output mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestClaimRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

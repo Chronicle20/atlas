@@ -35,9 +35,18 @@ type Command[E any] struct {
 }
 
 type ApplyCommandBody struct {
-	FromId   uint32       `json:"fromId"`
-	SourceId int32        `json:"sourceId"`
-	Level    byte         `json:"level"`
+	FromId   uint32 `json:"fromId"`
+	SourceId int32  `json:"sourceId"`
+	Level    byte   `json:"level"`
+	// Duration is MILLISECONDS. This is the single authoritative statement of
+	// the COMMAND_TOPIC_CHARACTER_BUFF duration unit: atlas-buffs is the
+	// consumer that defines it (buff.NewBuff computes
+	// expiresAt = now + duration*time.Millisecond), so the unit is its property
+	// to declare. Every producer's local copy of this struct carries a one-line
+	// pointer back here rather than restating the rule — three separate
+	// commits (11e07dfa7, 197324e40, 88d270bf1) flipped it in prose alone.
+	// tools/buff-duration-guard.sh fails CI on a seconds-valued emitter.
+	// (task-190 FR-3.1)
 	Duration int32        `json:"duration"`
 	Changes  []StatChange `json:"changes"`
 	// Accumulate, when true, stores each change as its own independently-timed

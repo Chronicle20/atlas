@@ -5,6 +5,7 @@ import (
 	session2 "atlas-channel/kafka/message/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"encoding/hex"
 	"errors"
 	"net"
 
@@ -263,7 +264,14 @@ func Announce(l logrus.FieldLogger) func(ctx context.Context) func(writerProduce
 							span.SetStatus(codes.Error, err.Error())
 							return err
 						}
-						if err := s.announceEncrypted(w(l, spanCtx)(encoder)); err != nil {
+						b := w(l, spanCtx)(encoder)
+						if packetWriteLogEnabled(writerName) {
+							l.WithFields(logrus.Fields{
+								"writer.name":  writerName,
+								"character.id": s.CharacterId(),
+							}).Debugf("Announcing [%s] to character [%d]: [%s]", writerName, s.CharacterId(), hex.EncodeToString(b))
+						}
+						if err := s.announceEncrypted(b); err != nil {
 							span.RecordError(err)
 							span.SetStatus(codes.Error, err.Error())
 							return err

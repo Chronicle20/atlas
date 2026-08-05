@@ -16,3 +16,28 @@ entries:
       sub_70C29F (panel 0), not by a regular-rock item-use. Teleport-rock use on
       v48 rides the cash-item op (USE_CASH_ITEM); list-management (TROCK_ADD_MAP
       0x51) and result (MAP_TRANSFER_RESULT 0x23) are present. (task-124)
+  - op: CLAIM_REQUEST
+    version: jms_v185
+    evidence: >
+      jms_v185 has no CLAIM_REQUEST send-site anywhere in the binary, checked five
+      independent ways and confirmed genuinely exhaustive over every code path that
+      constructs/sends an outgoing packet: (1) name/UI search for SendClaimRequest,
+      CUIClaim, SendClaim — no hit (CUIMessenger/CUIStatusBar are both substantially
+      named with no SendClaim member); (2) exhaustive scan of all 35 `push 101`
+      (0x65) instructions in .text — none precedes the long-opcode COutPacket ctor;
+      (3) exhaustive scan of all 577 COutPacket::COutPacket(long) call sites
+      (the entire jms serverbound opcode space, not just opcode 101) — the 81 inside
+      CField::SendChatMsgSlash use only opcodes 0x83/0x78/0x89/0xdd/0x84/0xe1/0x29,
+      none matching claim's 2xEncode1+2-3xEncodeStr bChatClaim-gated shape;
+      (4) exhaustive scan of all 504 CClientSocket::SendPacket call sites (0 tail
+      calls) with all 35 unnamed (sub_XXXXXX) callers individually decompiled —
+      none matches; (5) mandatory sibling cross-check: the clientbound
+      OnClaimResult/OnSetClaimSvrAvailableTime/OnClaimSvrStatusChanged trio IS
+      live-routed from CWvsContext::OnPacket's compiled switch (cases 0x2A/0x2B/0x2C
+      @ 0xaebfe7) — confirming the receive side exists and is reachable — yet no
+      corresponding send-site was found anywhere. jms_185 ships the shared
+      receive-side network code for claim results but the client-side trigger
+      (the report/claim UI) was removed or never wired for this build; the send
+      op does not exist to verify. Method validated against gms_v92's known-good
+      SendClaimRequest (0x9d9c30) before being applied to jms. (task-145 §7.3,
+      task-24 disposition)

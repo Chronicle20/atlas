@@ -406,14 +406,35 @@ whose client-side trigger (the report/claim UI) was removed or never wired up fo
 — the same pattern established for v48 sue (§7.1), just on the send side of the *other* wire
 pair.
 
-**Registry disposition:** `docs/packets/registry/jms_v185.yaml`'s `CLAIM_REQUEST` row is left
-unchanged — still `provenance: csv-import`, opcode 101 / `0x065`, **unverified**. It is not
-promoted (no verified send-site exists to cite) and not deleted (it is not a proven-absent
-op the way §7.1/§7.2 are for GMS v48/v61 — a JMS-specific 6th independent search, e.g. a
-string-table sweep for the JMS-localized claim/report UI text, could still in principle
-surface something this address/opcode-based sweep would miss). The matrix's jms185 cell for
-`CLAIM_REQUEST` stays `⬜` and should not be "corrected" to an opcode on the strength of the
-CSV alone.
+**Registry disposition — corrected by Task 24 (2026-08-05).** The paragraph originally here
+asserted the row was "left unchanged" and that "the matrix's jms185 cell for `CLAIM_REQUEST`
+stays `⬜`". Both halves of that sentence were wrong on inspection: the row *did* carry
+`provenance: csv-import` with a live opcode (101 / `0x065`), and a registry row with an opcode
+renders `❌` ("incomplete"), not `⬜` ("n-a") — `STATUS.md` line 647 confirmed the cell was
+`0x065 | ❌` both before and after this section was written. The author appears to have
+assumed a `csv-import` row renders as n-a; it does not. Left as written, the matrix advertised
+a live opcode for a serverbound op this section had just proven, five independent ways
+(name/UI search, exhaustive opcode-101-immediate scan, exhaustive whole-opcode-space
+`COutPacket`-construction-site scan, exhaustive `SendPacket`-caller scan with all 35 unnamed
+functions individually decompiled, and the clientbound-dispatcher reachability/sibling
+cross-check in Search 5), has **no send-site anywhere in the jms binary** — a false positive
+mirroring the false negative Task 23b fixed on gms v72/v79's `CLAIM_REQUEST` rows the other
+direction.
+
+Task 24 (packet verification campaign) revisited this call. The five searches above meet
+`VERIFYING_A_PACKET.md`'s "Is this cell n-a?" evidentiary bar for a positive absence claim
+(anchored on the opcode-construction-site invariant, not on IDB names or an address range;
+the mandatory sibling cross-check was performed in Search 5 and, unusually, still came back
+negative even though the clientbound trio is live-routed — the flagged "receives but can
+never send" case). Task 24 therefore **removed** the `CLAIM_REQUEST` row from
+`docs/packets/registry/jms_v185.yaml` so the matrix cell genuinely renders `⬜`, matching the
+treatment already given to gms v48/v61 sue (§7.2a) rather than leaving a documented absence
+contradicted by a live matrix cell. Because Task 24 promotes jms `CLAIM_RESULT`,
+`CLAIM_AVAILABLE_TIME`, and `CLAIM_STATUS_CHANGED` (same family) to verified on jms_v185 in
+the same pass, this is a family-inconsistent n-a; Task 24 declared the `claim` family in
+`docs/packets/feature-families.yaml` and recorded the positive absence proof (this section's
+five searches) in `docs/packets/feature-na-evidence.yaml` so `matrix --check`'s n-a
+consistency gate has the citation it requires rather than silently exempting the cell.
 
 ### 7.4 `SUE_CHARACTER` / `SUE_CHARACTER_RESULT` are genuinely absent on jms_185 — and `sub_575186` is not sue
 

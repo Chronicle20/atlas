@@ -17579,9 +17579,8 @@
           "opcode": 118
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 101
+          "state": "n-a",
+          "opcode": -1
         }
       }
     },

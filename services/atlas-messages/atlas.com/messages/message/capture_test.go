@@ -11,12 +11,10 @@ import (
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
-	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -101,29 +99,6 @@ func (s *stubCharacterProcessor) SkillModelDecorator(m character.Model) characte
 	return m
 }
 
-// stubWriter is a producer.Writer that discards every message instead of
-// dialing a real Kafka broker, so Handle* tests exercise the real emit call
-// without needing a live broker or eating the producer's retry/backoff.
-type stubWriter struct{ topic string }
-
-func (w *stubWriter) Topic() string { return w.topic }
-
-func (w *stubWriter) WriteMessages(_ context.Context, _ ...kafka.Message) error { return nil }
-
-func (w *stubWriter) Close() error { return nil }
-
-// setupStubProducer points the process-wide producer manager at stubWriter
-// for the duration of the test, restoring the singleton afterward so other
-// tests in this binary aren't affected.
-func setupStubProducer(t *testing.T) {
-	t.Helper()
-	producer.ResetInstance()
-	producer.GetManager(producer.ConfigWriterFactory(func(topicName string) producer.Writer {
-		return &stubWriter{topic: topicName}
-	}))
-	t.Cleanup(producer.ResetInstance)
-}
-
 // setupChatBuffer wires a fresh miniredis-backed chat registry for the
 // duration of the test.
 func setupChatBuffer(t *testing.T) {
@@ -152,7 +127,6 @@ func testTenantContext(t *testing.T) context.Context {
 // pass trivially if capture were broken outright.
 func TestHandleGeneralCapturesLine(t *testing.T) {
 	setupChatBuffer(t)
-	setupStubProducer(t)
 
 	l, _ := test.NewNullLogger()
 	ctx := testTenantContext(t)
@@ -182,7 +156,6 @@ func TestHandleGeneralCapturesLine(t *testing.T) {
 // capture buffer.
 func TestHandlePetDoesNotCaptureLine(t *testing.T) {
 	setupChatBuffer(t)
-	setupStubProducer(t)
 
 	l, _ := test.NewNullLogger()
 	ctx := testTenantContext(t)
@@ -208,7 +181,6 @@ func TestHandlePetDoesNotCaptureLine(t *testing.T) {
 // pink text is never written to the chat capture buffer.
 func TestIssuePinkTextDoesNotCaptureLine(t *testing.T) {
 	setupChatBuffer(t)
-	setupStubProducer(t)
 
 	l, _ := test.NewNullLogger()
 	ctx := testTenantContext(t)
@@ -259,7 +231,6 @@ func TestSlashCommandShortCircuitsBeforeCapture(t *testing.T) {
 	command.Registry().Add(slashCommandTestProducer)
 
 	setupChatBuffer(t)
-	setupStubProducer(t)
 
 	l, _ := test.NewNullLogger()
 	ctx := testTenantContext(t)

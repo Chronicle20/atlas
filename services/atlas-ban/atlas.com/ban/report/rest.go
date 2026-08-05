@@ -11,7 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
@@ -47,14 +46,14 @@ func handleGetReports(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 		}
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to locate reports.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
-		res, err := model.SliceMap(Transform)(model.FixedProvider(reports))(model.ParallelMap())()
+		res, err := TransformSlice(reports)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -70,14 +69,18 @@ func handleGetReportById(d *rest.HandlerDependency, c *rest.HandlerContext) http
 			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(reportId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve report [%s].", reportId)
-				w.WriteHeader(http.StatusNotFound)
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := Transform(m)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -108,14 +111,14 @@ func handleUpdateReportStatus(d *rest.HandlerDependency, c *rest.HandlerContext,
 					return
 				}
 				d.Logger().WithError(err).Errorf("Unable to update report [%s].", reportId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := Transform(m)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

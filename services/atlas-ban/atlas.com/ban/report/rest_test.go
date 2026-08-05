@@ -304,3 +304,35 @@ func TestGetReportByIdHandler(t *testing.T) {
 		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 }
+
+// TestGetReportByIdHandler_TransientErrorIsNotConflatedWithNotFound is the
+// DOM-17/DOM-27 regression: a genuine not-found (unknown id, real
+// gorm.ErrRecordNotFound) and a database/transport failure must map to
+// different status codes. Prior to the fix, handleGetReportById collapsed
+// every non-nil GetById error into 404 — a momentary DB outage would tell a
+// GM "no such report" instead of "the backend is broken". This closes the
+// backing *sql.DB out from under an already-migrated, seeded database (so
+// the query fails with a driver/transport error, never
+// gorm.ErrRecordNotFound) and asserts the response is NOT 404.
+func TestGetReportByIdHandler_TransientErrorIsNotConflatedWithNotFound(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
+	tenantId := uuid.New()
+	e := seedReport(t, db, tenantId, StatusOpen)
+
+	srv := httptest.NewServer(setupReportRouter(db))
+	defer srv.Close()
+
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	require.NoError(t, sqlDB.Close()) // simulate a DB outage for all subsequent queries
+
+	url := fmt.Sprintf("%s/reports/%s", srv.URL, e.Id.String())
+	req := requestWithTenant(http.MethodGet, url, nil, tenantId)
+
+	resp, err := (&http.Client{}).Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.NotEqual(t, http.StatusNotFound, resp.StatusCode, "a DB outage must not be reported as 404 Not Found")
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+}

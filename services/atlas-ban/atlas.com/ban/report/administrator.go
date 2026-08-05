@@ -9,35 +9,29 @@ import (
 
 func create(db *gorm.DB) func(tenantId uuid.UUID, kind Kind, reporterId uint32, reporterName string, accusedId uint32, accusedName string, reasonType byte, description string, chatLog *string, transcript []TranscriptLine) (Model, error) {
 	return func(tenantId uuid.UUID, kind Kind, reporterId uint32, reporterName string, accusedId uint32, accusedName string, reasonType byte, description string, chatLog *string, transcript []TranscriptLine) (Model, error) {
-		var transcriptJSON []byte
-		if transcript != nil {
-			var err error
-			transcriptJSON, err = json.Marshal(transcript)
-			if err != nil {
-				return Model{}, err
-			}
-		}
-
-		e := &Entity{
-			Id:               uuid.New(),
-			TenantId:         tenantId,
-			Kind:             string(kind),
-			ReporterId:       reporterId,
-			ReporterName:     reporterName,
-			AccusedId:        accusedId,
-			AccusedName:      accusedName,
-			ReasonType:       reasonType,
-			Description:      description,
-			ChatLog:          chatLog,
-			ServerTranscript: transcriptJSON,
-			Status:           string(StatusOpen),
-		}
-
-		err := db.Create(e).Error
+		m, err := NewBuilder(tenantId, kind, reporterId).
+			SetId(uuid.New()).
+			SetReporterName(reporterName).
+			SetAccusedId(accusedId).
+			SetAccusedName(accusedName).
+			SetReasonType(reasonType).
+			SetDescription(description).
+			SetChatLog(chatLog).
+			SetServerTranscript(transcript).
+			Build()
 		if err != nil {
 			return Model{}, err
 		}
-		return Make(*e)
+
+		e, err := m.ToEntity()
+		if err != nil {
+			return Model{}, err
+		}
+
+		if err := db.Create(&e).Error; err != nil {
+			return Model{}, err
+		}
+		return Make(e)
 	}
 }
 

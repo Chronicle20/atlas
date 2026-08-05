@@ -1,6 +1,7 @@
 package report
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -34,4 +35,33 @@ type Entity struct {
 
 func (e Entity) TableName() string {
 	return "reports"
+}
+
+// ToEntity is the inverse of Make: it projects the immutable Model into the
+// GORM entity used for persistence. ServerTranscript is marshaled back to
+// its stored JSON form; a nil transcript stays nil (never an empty array),
+// matching Make's unmarshal-if-present behavior.
+func (m Model) ToEntity() (Entity, error) {
+	var transcriptJSON []byte
+	if m.serverTranscript != nil {
+		var err error
+		transcriptJSON, err = json.Marshal(m.serverTranscript)
+		if err != nil {
+			return Entity{}, err
+		}
+	}
+	return Entity{
+		Id:               m.id,
+		TenantId:         m.tenantId,
+		Kind:             string(m.kind),
+		ReporterId:       m.reporterId,
+		ReporterName:     m.reporterName,
+		AccusedId:        m.accusedId,
+		AccusedName:      m.accusedName,
+		ReasonType:       m.reasonType,
+		Description:      m.description,
+		ChatLog:          m.chatLog,
+		ServerTranscript: transcriptJSON,
+		Status:           string(m.status),
+	}, nil
 }

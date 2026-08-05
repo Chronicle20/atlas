@@ -351,3 +351,184 @@ Task 5.4's operator-gated live run per design); this citation is recorded
 here because it is the verification trail for one of the five task-145
 ops and would otherwise have no committed home.
 
+## Export run record (task-27, hand-written)
+
+Produces `docs/packets/ida-exports/gms_v92.json` (789 functions, 497,013
+bytes) via `go run ./tools/packet-audit export --version gms_v92
+--ida-database <session from idb_list, matched by binary NAME
+GMS_v92_1_DEVM.exe.i64> --ida-url http://192.168.20.3:8745/mcp`. This section
+is the committed home for the roster-seeding and disposition decisions —
+`.superpowers/` (where the task's own report lives) is git-ignored, so a
+future maintainer regenerating this export needs everything below.
+
+### Roster seeding
+
+Per `STARTING_A_NEW_VERSION_PASS.md` §1.3, seeded from the nearest version's
+export, `gms_v95.json` (v92 IDB was named from v95 — project memory). The
+export tool's `--prior-export` flag reads only the FName **keys** of the file
+it's pointed at (`buildRoster` in `tools/packet-audit/cmd/export.go`), so
+using v95.json this way was never a byte-content copy — every entry's
+address/read-order in `gms_v92.json` was freshly harvested against the v92
+IDB (session `acdfccff` for this run; re-resolve via `idb_list` matched by
+binary NAME on any future run — sessions rotate).
+
+**Excluded from the roster: all 361 `Parent::Method#ARM` keys** (dispatcher-
+family per-mode entries). These are a **synthetic** naming convention the
+static-audit/validate/decompose tooling uses to model one wire-mode arm of a
+multi-arm dispatcher function — the `#ARM` suffix is not an IDA symbol and
+**never resolves via name lookup, in any version's IDB**. Confirmed by
+inspection: `tools/packet-audit/cmd/export.go`'s `buildRoster`/`Harvest` path
+has no `#`-splitting logic (that logic exists only in `validate.go`,
+`verify_serverbound.go`, `fnamedoc.go`, `decompose.go` — the static-audit
+side, not the harvest side). Every sibling export (v48/v61/v72/v79/v83/v84/
+v87/v95/jms185) carries ~300–360 populated arm entries, but none of them got
+there through a generic `export --prior-export=…` roster harvest either —
+they were populated by a dedicated per-arm decompile pass (dispatcher-family
+work), added via `--splice` one FName at a time. Producing v92's equivalent
+340-ish arm entries is that same dedicated pass, run against the v92 IDB —
+out of scope for this export task. `docs/packets/dispatchers/*.yaml` (the
+per-version per-arm data files) has only 2 incidental `gms_v92` mentions
+today; the v92 dispatcher-arm dimension does not exist yet anywhere in the
+repo.
+
+**These 361 keys are NOT simply absent from `gms_v92.json` — they are present
+as explicit `unresolved: true` placeholders**, each with a `notes` field
+repeating this paragraph's reasoning. This was a correction made after
+reviewing how the static-audit pipeline consumes the export
+(`tools/packet-audit/cmd/run.go`'s `process` closure,
+`tools/packet-audit/internal/idasrc/export.go`'s `Resolve`): a roster FName
+**absent from the export map** makes `ExportSource.Resolve` return a plain
+`fmt.Errorf("function %q not in export", fname)` (export.go:198,219) — NOT
+the `idasrc.ErrFunctionNotFound` sentinel `MCPSource.Resolve` uses — so
+`run.go`'s error switch (run.go:55-65) falls through to a `stderr`-only log
+line and silently drops the candidate from the SUMMARY: **the row vanishes**.
+A roster FName **present but marked `unresolved: true`** resolves
+successfully (`parsePrim("Unresolved")` succeeds) and flows into the report
+as an honestly-flagged known gap instead. So omitting the 361 keys would have
+made a future Task 28 static-audit run silently under-report v92's
+dispatcher-family coverage rather than correctly showing it as unharvested;
+keeping them as placeholders is the accurate-degradation choice. No IDA work
+was done for these 361 — only the presence/absence decision changed.
+
+### The 116 remaining plain-name unresolved entries
+
+After excluding the 361 arm keys, 118 of the ~395 plain (non-`#`) roster
+FNames did not resolve by name in the v92 IDB (`GetFunctionByName` miss, both
+the exact and demangled-fallback lookup paths). Two were individually
+resolved (below); **116 remain `unresolved: true`**. Siblings (v87: 2 total
+unresolved, v95: 1, v83: 2) do not carry a comparable bucket — that reflects
+those IDBs having gone through a more thorough naming pass than v92's, not
+v92 genuinely having a thinner client. **These are not confirmed absent.**
+Per the "unnamed ≠ absent" rule, `"function not found in IDB"` records a
+name-lookup miss, not a feature-absence claim. Spot-checking the
+`CCashShop`-scoped names specifically (`func_query name_regex="@CCashShop@@"`
+against session acdfccff returned 76 named methods, all `On*` clientbound
+response handlers or `Send*`/`Decode*` helpers — **zero** `OnBuy`/
+`OnBuyCouple`/`OnBuyPackage`/... serverbound "user clicked Buy" senders)
+found the corresponding clientbound response handlers ARE present and named
+(e.g. `OnCashItemResBuyNormalDone`, `OnCashItemResBuyFailed`), which means
+the feature exists in v92 and the client must have *some* code path that
+sends the request — it's just not named `CCashShop::OnBuy` etc. in this IDB.
+The v92 IDB has 17,980 total functions and only 1,212 named (`survey_binary`,
+session acdfccff) — 16,191 unnamed — so "exists, unnamed" is the more likely
+disposition for most of this bucket, but it was not individually confirmed
+per-entry (that is per-function RE work, out of this export task's scope).
+The registry's `fname_alts` for the `CASHSHOP_OPERATION` (opcode 268,
+serverbound) row lists many of these same names, but that row's
+`provenance: csv-import` (not `manual`) means those alts came from the CSV
+ground truth, not v92-IDB verification — they cannot be used to auto-resolve
+these entries.
+
+**Two entries were individually resolved** using task-26's own `manual`-
+provenance registry citations (`docs/packets/registry/gms_v92.yaml`), which
+had already found the unnamed address via the `CMobPool::OnMobPacket` case
+dispatch and recorded it as `fname_alts`:
+
+- `CMob::OnSpecialEffectBySkill` (op `MONSTER_SPECIAL_EFFECT_BY_SKILL`,
+  opcode 287) → `sub_647790` (0x647790). Decompiled directly for this export:
+  a single `CInPacket::Decode4` read, then internal bookkeeping.
+- `CMob::OnCatchEffect` (op `CATCH_MONSTER`, opcode 291) → `sub_630C30`
+  (0x630C30). Decompiled directly: a single `CInPacket::Decode1` read.
+
+**Six entries (`CSummonedPool::OnAttack/OnCreated/OnHit/OnMove/OnRemoved/
+OnSkill`) are a different disposition again** — not "unnamed", but
+confirmed structurally absent **as that class**: `func_query
+name_regex="@CSummonedPool@@"` against session acdfccff returns zero
+symbols. Only per-instance `CSummoned` methods are named
+(`CSummoned::OnMove`, `SetDamaged`, `SendRemove`, `AttackToTargetMob`,
+`TryDoingHeal`). This looks like a real architectural difference — v92
+appears to dispatch summon packets to the per-instance `CSummoned` object
+directly rather than through a `CSummonedPool` pool class the way v95 does —
+not merely an unnamed symbol. The actual v92 dispatch site was not traced
+end-to-end (which `CField::OnPacket` if/else arm routes SPAWN_SPECIAL_
+MAPOBJECT/MOVE_SUMMON/etc, and to which `CSummoned` method) — that is
+dispatcher-family/registry scope. Each of the 6 entries carries a `notes`
+field with this finding so it is not flattened into the generic "not found"
+bucket.
+
+All disposition-relevant entries (the 361 arm placeholders, the 2 resolved
+CMob entries, the 6 CSummonedPool entries) carry a per-entry `notes` field in
+`gms_v92.json` with the citation above; this section is the narrative home
+for the reasoning behind them.
+
+### Provenance fields (binary/md5) — a latent tool-wide gap, now closed
+
+The first harvest attempt produced `binary=""`/`md5=""`. Root cause: **no
+code path in `tools/packet-audit` ever populated `HarvestOpts.Binary`/`.MD5`**
+— not a `-ida-database`-vs-`-ida-port` behavioral difference. Every sibling
+export's non-empty `binary`/`md5` was hand-seeded once (e.g. `gms_v95.json`'s
+first commit, `32c5731b9`, hand-wrote the whole file including these two
+fields) and preserved across every later content change via `--splice`
+(which round-trips top-level fields untouched) — a full `--force` re-harvest
+of *any* version would have blanked them identically; this was never
+v92-specific. Fixed in `tools/packet-audit/internal/idasrc/mcp.go`
+(`BinaryInfoProvider`, an optional capability interface — not added to
+`MCPClient` itself, so existing unit-test fakes are unaffected),
+`mcphttp.go` (`MCPHTTPClient.GetBinaryInfo` via the `survey_binary` tool,
+`detail_level: "minimal"`), and `cmd/export.go`'s `exportRun` (type-asserts
+the client, calls it once, wires the result into `HarvestOpts`; a call error
+aborts loudly rather than silently leaving the fields empty). Tests:
+`TestMCPHTTPGetBinaryInfo` (mcphttp_test.go),
+`TestExportRunPopulatesBinaryProvenance` (export_test.go, both the
+positive — a `BinaryInfoProvider`-implementing fake — and negative — a plain
+`fakeMCP` — cases).
+
+### CWvsContext::SendClaimRequest — `calls: null`
+
+The brief requires the five task-145 ops to show "real read orders, not
+Unresolved". Four do. `SendClaimRequest` resolves (address `0x9d9c30`,
+direction `serverbound`) but has `calls: null` — this is normal, not a
+gap: it is a bodiless `COutPacket` opcode-only send (confirmed by direct
+decompile, see the serverbound `CLAIM_REQUEST` citation above:
+`COutPacket::COutPacket((COutPacket *)&v66, 0x75u)` with nothing following
+before the send). The `ParseDecompile`/`resolveWithVisited` path
+(`idasrc/export.go`) explicitly skips the `COutPacket` op as "the opcode-
+header constructor, not a field primitive" so an opcode-only send resolves
+to an empty `Calls` list. `gms_v95.json`'s own `CWvsContext::SendClaimRequest`
+entry is `calls: null` too, for the same reason — not a v92-specific
+failure.
+
+### Spot-checks against live decompile (session acdfccff)
+
+Ten entries were cross-checked against a fresh `decompile` call and found to
+match the export's recorded read order exactly:
+
+- The five task-145 ops (`OnClaimResult` 0x9cf310, `OnSetClaimSvrAvailableTime`
+  0x9c5d30, `OnClaimSvrStatusChanged` 0x9c5d60, `OnSueCharacterResult`
+  0x9cf950, `SendClaimRequest` 0x9d9c30) — addresses and read orders match
+  the brief's table and the harvested export exactly.
+- `CWvsContext::OnSkillLearnItemResult` (0x9cc640) — export records
+  `Decode1, Decode4, [Decode1, Decode4, Decode4, Decode1, Decode1]guard=v7`;
+  live decompile shows the same: an unconditional `Decode1` (the `if` guard
+  read) then `Decode4`, then — inside the `if(v7)` block — `Decode1(→v31)`,
+  `Decode4`, `Decode4`, `Decode1(→v33)`, `Decode1(→v8/v30)` in that exact
+  order.
+- `CMob::OnHPIndicator` (0x636290) — export records a single `Decode1`; live
+  decompile shows exactly one `CInPacket::Decode1` call at the top and no
+  further packet reads.
+- `CField::OnSummonItemInavailable` (0x529c70) — export records a single
+  `Decode1`; live decompile shows exactly one `CInPacket::Decode1` call and
+  no further packet reads.
+- `CMob::OnSpecialEffectBySkill` (`sub_647790`) and `CMob::OnCatchEffect`
+  (`sub_630C30`) — see above; both hand-decompiled directly for this export.
+

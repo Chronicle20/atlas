@@ -75,7 +75,26 @@ func exportRun(opts exportOpts, client idasrc.MCPClient, stdout, stderr io.Write
 		return idasrc.DirClientbound
 	}
 
+	// Binary provenance (task-27): fetched once via the OPTIONAL
+	// BinaryInfoProvider capability, when the client supports it (the real
+	// MCPHTTPClient does; unit-test fakes generally don't and simply leave
+	// these blank, matching pre-task-27 behaviour). A client that claims
+	// support but fails the call surfaces the error loudly, same as any other
+	// transport/tool failure on this path — a silent empty provenance field
+	// is exactly the defect this closes.
+	var binary, md5 string
+	if bip, ok := client.(idasrc.BinaryInfoProvider); ok {
+		b, m, err := bip.GetBinaryInfo(context.Background())
+		if err != nil {
+			fmt.Fprintln(stderr, "export: binary info:", err)
+			return 3
+		}
+		binary, md5 = b, m
+	}
+
 	ef, err := idasrc.Harvest(context.Background(), client, roster, idasrc.HarvestOpts{
+		Binary:       binary,
+		MD5:          md5,
 		DescentDepth: opts.DescentDepth,
 		GeneratedAt:  opts.GeneratedAt,
 		DirOf:        dirOf,

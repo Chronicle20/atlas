@@ -2,6 +2,7 @@ package model
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 	"time"
 
@@ -242,5 +243,116 @@ func TestCTSMonsterRidingV83MaskAndNoDoubleEncode(t *testing.T) {
 	want := []byte{0xb0, 0x05, 0x1d, 0x00, 0xec, 0x03, 0x00, 0x00}
 	if !bytes.Contains(got, want) {
 		t.Fatalf("RideVehicle base stat (1902000,1004) missing; got % x", got)
+	}
+}
+
+// TestCTSHomingBeaconPre95PopulatedBlock pins the populated GuidedBullet block
+// for the classic 7-member two-state group. The block is
+// nOption=mobId | rOption=skillId | 5-byte time | dwMobId=mobId — 17 bytes,
+// same size as the empty block, so total packet length is unchanged and the
+// two-state mask bits (always set pre-95) are unchanged.
+//
+// Every in-scope version below GMS 95 is listed (PRD §2.1). gms_12/gms_48 are
+// deliberately absent: they take the legacyGmsMask path and have no base-stat
+// trailer at all — covered by the negative test below instead.
+func TestCTSHomingBeaconPre95PopulatedBlock(t *testing.T) {
+	pre95 := []struct {
+		name   string
+		region string
+		major  uint16
+	}{
+		{"GMS v61", "GMS", 61},
+		{"GMS v72", "GMS", 72},
+		{"GMS v79", "GMS", 79},
+		{"GMS v83", "GMS", 83},
+		{"GMS v84", "GMS", 84},
+		{"GMS v87", "GMS", 87},
+		{"GMS v92", "GMS", 92},
+		{"JMS v185", "JMS", 185},
+	}
+	for _, v := range pre95 {
+		t.Run(v.name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.region, v.major, 1)
+			tn, _ := tenant.Create([16]byte{}, v.region, v.major, 1)
+			input := NewCharacterTemporaryStat()
+			// mobId 1000001 (0x000F4241), skill 5211006 (0x004F837E).
+			input.AddStat(nil)(tn)(string(character.TemporaryStatTypeHomingBeacon), 5211006, 1000001, 1, time.Time{})
+
+			got := input.Encode(nil, ctx)(nil)
+
+			// nOption=1000001 then rOption=5211006 as consecutive LE int32s.
+			head := []byte{0x41, 0x42, 0x0F, 0x00, 0x7E, 0x83, 0x4F, 0x00}
+			idx := bytes.Index(got, head)
+			if idx < 0 {
+				t.Fatalf("populated GuidedBullet head (nOption=1000001,rOption=5211006) missing; got % x", got)
+			}
+			// dwMobId sits after the 5-byte DecodeTime: head(8) + time(5) = offset 13.
+			mob := got[idx+13 : idx+17]
+			if !bytes.Equal(mob, []byte{0x41, 0x42, 0x0F, 0x00}) {
+				t.Fatalf("dwMobId: got % x want 41 42 0f 00", mob)
+			}
+		})
+	}
+}
+
+// Without an active beacon the encode must stay byte-compatible with today:
+// the GuidedBullet slot still emits an empty 17-byte block (nOption=0).
+//
+// The length assertion runs per version and is the cheap falsifier for group
+// membership (PRD gap 6): 110 trailer bytes == the 7-member group holds for
+// that version. If one of these fails, do NOT adjust the constant to make it
+// pass — that version's group differs and Task 7 must establish its real shape.
+func TestCTSHomingBeaconPre95AbsentStaysEmpty(t *testing.T) {
+	for _, v := range []struct {
+		name   string
+		region string
+		major  uint16
+	}{
+		{"GMS v61", "GMS", 61},
+		{"GMS v72", "GMS", 72},
+		{"GMS v79", "GMS", 79},
+		{"GMS v83", "GMS", 83},
+		{"GMS v84", "GMS", 84},
+		{"GMS v87", "GMS", 87},
+		{"GMS v92", "GMS", 92},
+		{"JMS v185", "JMS", 185},
+	} {
+		t.Run(v.name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.region, v.major, 1)
+			input := NewCharacterTemporaryStat()
+
+			got := input.Encode(nil, ctx)(nil)
+
+			// Empty pre-95 CTS: 16 mask + 2 leading + 7 base blocks
+			// (15+15+15+13+20+17+15 = 110).
+			if len(got) != 16+2+110 {
+				t.Fatalf("empty %s CTS length: got %d want %d", v.name, len(got), 16+2+110)
+			}
+		})
+	}
+}
+
+// gms_12 / gms_48 take the legacyGmsMask path (Region GMS && major < 61):
+// 8-byte mask, no nDefenseAtt/nDefenseState, no base-stat trailer. The client
+// never reads the two-state bits (IDA: v48 OnTemporaryStatReset @0x71b054 reads
+// DecodeBuffer(&v8, 8) @0x71b06e). A HOMING_BEACON stat must therefore produce
+// no trailer at all — the beacon is n/a on these versions (PRD §2.1), and this
+// test proves that in code rather than asserting it in prose.
+func TestCTSHomingBeaconLegacyVersionsHaveNoTrailer(t *testing.T) {
+	for _, major := range []uint16{12, 48} {
+		t.Run(fmt.Sprintf("GMS v%d", major), func(t *testing.T) {
+			ctx := pt.CreateContext("GMS", major, 1)
+			tn, _ := tenant.Create([16]byte{}, "GMS", major, 1)
+			input := NewCharacterTemporaryStat()
+			input.AddStat(nil)(tn)(string(character.TemporaryStatTypeHomingBeacon), 5211006, 1000001, 1, time.Time{})
+
+			got := input.Encode(nil, ctx)(nil)
+
+			// 8-byte mask only: the beacon is a base-stat-only member, and the
+			// legacy path emits no base-stat blocks.
+			if len(got) != 8 {
+				t.Fatalf("legacy GMS v%d CTS with beacon: got %d bytes want 8 (mask only); trailer must not be emitted", major, len(got))
+			}
+		})
 	}
 }

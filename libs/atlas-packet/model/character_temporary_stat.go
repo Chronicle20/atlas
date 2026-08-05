@@ -505,6 +505,22 @@ func NewGuidedBulletTemporaryStat() GuidedBulletTemporaryStat {
 	}
 }
 
+// NewGuidedBulletTemporaryStatWithOptions builds a populated GuidedBullet
+// block for an active HOMING_BEACON lock. nOption must be nonzero — the
+// client's set path gates on IsActivated (nValue != 0) before calling
+// CMob::SetGuided (IDA v83 @0xA202BE, v95 @0xA02FC0; design.md §2.3/§2.4).
+func NewGuidedBulletTemporaryStatWithOptions(nOption int32, rOption int32, dwMobId uint32) GuidedBulletTemporaryStat {
+	return GuidedBulletTemporaryStat{
+		CharacterTemporaryStatBase: CharacterTemporaryStatBase{
+			bDynamicTermSet: false,
+			nOption:         nOption,
+			rOption:         rOption,
+			tLastUpdated:    time.Now().Unix(),
+		},
+		dwMobId: dwMobId,
+	}
+}
+
 type CharacterTemporaryStat struct {
 	stats map[character.TemporaryStatType]CharacterTemporaryStatValue
 }
@@ -935,7 +951,16 @@ func (m *CharacterTemporaryStat) getBaseTemporaryStats(t tenant.Model) []packet.
 		case twoStateSpeedInfusion:
 			list = append(list, NewSpeedInfusionTemporaryStat()) // 20
 		case twoStateGuidedBullet:
-			list = append(list, NewGuidedBulletTemporaryStat()) // 17
+			// GuidedBullet / HOMING_BEACON: nOption = locked monster object id
+			// (allocator range guarantees nonzero — IsActivated gate), rOption =
+			// source skill id (SetGuided reason + icon), dwMobId = monster object
+			// id. Absent stat -> empty block, byte-identical to the pre-task
+			// encode. design.md §5.5.1.
+			if s, ok := m.stats[bs.name]; ok {
+				list = append(list, NewGuidedBulletTemporaryStatWithOptions(s.Value(), s.SourceId(), uint32(s.Value())))
+			} else {
+				list = append(list, NewGuidedBulletTemporaryStat()) // 17
+			}
 		default: // twoStateDynamic
 			list = append(list, NewCharacterTemporaryStatBase(true)) // dynamic, 15
 		}

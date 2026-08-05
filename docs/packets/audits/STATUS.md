@@ -74,8 +74,8 @@ Tool: `1437bf100576925dfe09704783678e4466c5c69d25e7de24e034532a547fa389`
 | WEDDING_PHOTO | CWvsContext::OnAntiMacroResult |  | 0x024 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02C | ❌ | 0x02A | ❌ | 0x028 | ❌ |
 | CLAIM_RESULT | CWvsContext::OnClaimResult |  | 0x025 | ❌ | 0x02A | ❌ | 0x02A | ✅ | 0x02A | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02E | ❌ | 0x02C | ❌ | 0x02A | ❌ |
 | OPEN_FULL_CLIENT_DOWNLOAD_LINK | CWvsContext::OnOpenFullClientDownloadLink |  |  | ⬜ | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x029 | ❌ | 0x027 | ❌ |  | ⬜ |
-| CLAIM_AVAILABLE_TIME | CWvsContext::OnSetClaimSvrAvailableTime; sub_71F525 |  | 0x026 | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x02F | ❌ | 0x02D | ❌ | 0x02B | ❌ |
-| CLAIM_STATUS_CHANGED | CWvsContext::OnClaimSvrStatusChanged; sub_71F54E |  | 0x027 | ❌ | 0x02C | ❌ | 0x02C | ❌ | 0x02C | ❌ | 0x02F | ❌ | 0x02F | ❌ | 0x02F | ❌ | 0x030 | ❌ | 0x02E | ❌ | 0x02C | ❌ |
+| CLAIM_AVAILABLE_TIME | CWvsContext::OnSetClaimSvrAvailableTime; sub_71F525 |  | 0x026 | ❌ | 0x02B | ❌ | 0x02B | ✅ | 0x02B | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x02F | ❌ | 0x02D | ❌ | 0x02B | ❌ |
+| CLAIM_STATUS_CHANGED | CWvsContext::OnClaimSvrStatusChanged; sub_71F54E |  | 0x027 | ❌ | 0x02C | ❌ | 0x02C | ✅ | 0x02C | ❌ | 0x02F | ❌ | 0x02F | ❌ | 0x02F | ❌ | 0x030 | ❌ | 0x02E | ❌ | 0x02C | ❌ |
 | SET_TAMING_MOB_INFO | CWvsContext::OnSetTamingMobInfo; sub_72032B | character/clientbound/CharacterSetTamingMobInfo (T1) | 0x028 | ✅ | 0x02D | 🟡ᶠ | 0x02D | 🟡ᶠ | 0x02D | 🟡ᶠ | 0x030 | ✅ | 0x030 | ✅ | 0x030 | ✅ | 0x031 | 🟡ᶠ | 0x02F | ✅ | 0x02D | ✅ |
 | QUEST_CLEAR | CWvsContext::OnQuestClear |  | 0x029 | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x031 | ❌ | 0x031 | ❌ | 0x031 | ❌ | 0x032 | ❌ | 0x030 | ❌ | 0x02E | ❌ |
 | INCUBATOR_RESULT | CWvsContext::OnIncubatorResult | incubator/clientbound/IncubatorResult | 0x02A | ❌ | 0x042 | ✅ | 0x042 | ✅ | 0x042 | ✅ | 0x045 | ✅ | 0x047 | ✅ | 0x047 | ✅ | 0x049 | ❌ | 0x048 | ✅ | 0x03F | ✅ |
@@ -1053,7 +1053,7 @@ Tool: `1437bf100576925dfe09704783678e4466c5c69d25e7de24e034532a547fa389`
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 179 | 0 | 2 | 203 | 631 | 0 | 46.6% |
 | v61 | 256 | 0 | 60 | 235 | 464 | 0 | 46.5% |
-| v72 | 267 | 0 | 73 | 254 | 421 | 0 | 44.9% |
+| v72 | 269 | 0 | 73 | 252 | 421 | 0 | 45.3% |
 | v79 | 309 | 0 | 72 | 252 | 382 | 0 | 48.8% |
 | v83 | 428 | 0 | 0 | 359 | 228 | 0 | 54.4% |
 | v84 | 402 | 0 | 0 | 365 | 248 | 0 | 52.4% |

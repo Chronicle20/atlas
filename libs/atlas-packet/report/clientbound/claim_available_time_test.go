@@ -28,6 +28,33 @@ func TestClaimAvailableTimeAlwaysOpenGolden(t *testing.T) {
 	}
 }
 
+// TestClaimAvailableTimeByteOutputV72 verifies the wire-exact byte output of
+// ClaimAvailableTime for GMS v72.
+// IDA evidence (session c8acae95, GMS_v72.1_U_DEVM.exe.i64):
+//
+//	CWvsContext::OnSetClaimSvrAvailableTime@0x91fc50, resolved via the opcode
+//	dispatch table CWvsContext::OnPacket case 43 @0x902729 (registry
+//	gms_v72.yaml op CLAIM_AVAILABLE_TIME, opcode 43/0x2B). CInPacket::Decode1(a2)
+//	@0x91fc61 -> openHour (v3, stored at this+11888). CInPacket::Decode1(a2)
+//	@0x91fc63 -> closeHour (result, stored at this+11889). Function body is
+//	exactly these two Decode1 calls plus the two field stores and a return —
+//	no branches. 2 bytes total.
+//
+// packet-audit:verify packet=report/clientbound/ClaimAvailableTime version=gms_v72 ida=0x91fc50
+func TestClaimAvailableTimeByteOutputV72(t *testing.T) {
+	v := pt.Variants[9] // GMS v72
+	if v.Name != "GMS v72" {
+		t.Fatalf("pt.Variants[9] = %q, want %q (index drifted)", v.Name, "GMS v72")
+	}
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	input := NewClaimAvailableTime(8, 22)
+	expected := []byte{0x08, 0x16} // Decode1 openHour @0x91fc61, Decode1 closeHour @0x91fc63
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("byte output mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestClaimAvailableTimeRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

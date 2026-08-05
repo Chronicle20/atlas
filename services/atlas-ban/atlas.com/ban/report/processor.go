@@ -7,6 +7,7 @@ import (
 	report2 "atlas-ban/kafka/message/report"
 	"context"
 	"errors"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -110,17 +111,24 @@ func (p *ProcessorImpl) CreateFromCommand(buf *message.Buffer) func(c report2.Cr
 			return fail(report2.ErrorCodeInternal)
 		}
 
+		// Description's cap is in RUNES (characters), not bytes: byte-slicing
+		// would keep fewer than MaxDescriptionLength characters for any
+		// non-ASCII input and can split a multi-byte rune, producing invalid
+		// UTF-8 that Postgres rejects on INSERT — turning a truncate-and-log
+		// into a create failure, the opposite of this cap's purpose.
 		description := c.Description
-		if len(description) > MaxDescriptionLength {
-			p.l.Warnf("Truncating report description from [%d] to [%d] chars for reporter [%d].", len(description), MaxDescriptionLength, c.ReporterId)
-			description = description[:MaxDescriptionLength]
+		if runeCount := utf8.RuneCountInString(description); runeCount > MaxDescriptionLength {
+			p.l.Warnf("Truncating report description from [%d] to [%d] chars for reporter [%d].", runeCount, MaxDescriptionLength, c.ReporterId)
+			description = truncateRunes(description, MaxDescriptionLength)
 		}
 		var chatLog *string
 		if c.ChatClaim {
 			cl := c.ChatLog
 			if len(cl) > MaxChatLogBytes {
 				p.l.Warnf("Truncating report chat log from [%d] to [%d] bytes for reporter [%d].", len(cl), MaxChatLogBytes, c.ReporterId)
-				cl = cl[:MaxChatLogBytes]
+				// Cap stays byte-based (16384), but the cut must land on a
+				// rune boundary for the same UTF-8-validity reason as above.
+				cl = truncateBytesAtRuneBoundary(cl, MaxChatLogBytes)
 			}
 			chatLog = &cl
 		}
@@ -184,4 +192,34 @@ func (p *ProcessorImpl) GetByTenant() ([]Model, error) {
 
 func (p *ProcessorImpl) GetByStatus(status Status) ([]Model, error) {
 	return model.SliceMap(Make)(entitiesByStatus(status)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+}
+
+// truncateRunes caps s at maxRunes RUNES (not bytes), so the result is
+// always valid UTF-8 and never fewer than intended characters for
+// non-ASCII input. A no-op when s already has maxRunes runes or fewer.
+func truncateRunes(s string, maxRunes int) string {
+	if utf8.RuneCountInString(s) <= maxRunes {
+		return s
+	}
+	r := []rune(s)
+	return string(r[:maxRunes])
+}
+
+// truncateBytesAtRuneBoundary caps s at maxBytes BYTES, walking rune-by-rune
+// so the cut always lands on a full rune — never splitting a multi-byte
+// sequence into an invalid one. A no-op when s already fits within maxBytes.
+func truncateBytesAtRuneBoundary(s string, maxBytes int) string {
+	if len(s) <= maxBytes {
+		return s
+	}
+	end := 0
+	for i := 0; i < len(s); {
+		_, size := utf8.DecodeRuneInString(s[i:])
+		if i+size > maxBytes {
+			break
+		}
+		i += size
+		end = i
+	}
+	return s[:end]
 }

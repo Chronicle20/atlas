@@ -8,6 +8,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	report2 "atlas-ban/kafka/message/report"
 
@@ -259,6 +260,155 @@ func TestCreateFromCommandTruncatesOversizedInputs(t *testing.T) {
 	}
 	if reports[0].ChatLog() == nil || len(*reports[0].ChatLog()) != MaxChatLogBytes {
 		t.Error("chat log not capped")
+	}
+}
+
+// newTruncationTestProcessor builds a processor against a fresh in-memory DB
+// with a resolvable reporter/accused pair, for the truncation-boundary tests
+// below.
+func newTruncationTestProcessor(t *testing.T) Processor {
+	t.Helper()
+	db := setupTestDatabase(t)
+	tm := sampleTenant()
+	l, _ := test.NewNullLogger()
+	charP := &fakeCharacterProcessor{
+		byId: map[uint32]character.Model{
+			1: makeCharacter(t, 1, "Reporter"),
+			2: makeCharacter(t, 2, "Accused"),
+		},
+	}
+	return NewProcessorWithClients(l, testContext(tm), db, charP, &fakeChatProcessor{})
+}
+
+// TestCreateFromCommandDescriptionTruncationIsRuneSafe uses a 3-byte CJK
+// rune so a naive byte-slice at MaxDescriptionLength (a byte count in that
+// case) would both keep far fewer than 2000 characters and could split a
+// rune in half, producing invalid UTF-8 that Postgres rejects on INSERT.
+// The description cap is specified in RUNES, so the stored value must be
+// exactly MaxDescriptionLength runes and valid UTF-8.
+func TestCreateFromCommandDescriptionTruncationIsRuneSafe(t *testing.T) {
+	p := newTruncationTestProcessor(t)
+	longDescription := strings.Repeat("가", MaxDescriptionLength+500)
+
+	buf := message.NewBuffer()
+	if err := p.CreateFromCommand(buf)(report2.CreateCommandBody{
+		Kind: report2.KindClaim, ReporterId: 1, AccusedId: 2, Description: longDescription,
+	}); err != nil {
+		t.Fatalf("CreateFromCommand: %v", err)
+	}
+	reports, _ := p.GetByTenant()
+	if len(reports) != 1 {
+		t.Fatal("expected persisted report")
+	}
+	stored := reports[0].Description()
+	if !utf8.ValidString(stored) {
+		t.Fatalf("truncated description is not valid UTF-8: %q", stored)
+	}
+	if got := utf8.RuneCountInString(stored); got != MaxDescriptionLength {
+		t.Errorf("description not capped by rune count: got %d runes, want %d", got, MaxDescriptionLength)
+	}
+}
+
+// TestCreateFromCommandChatLogTruncationIsByteCapRuneSafe uses a 3-byte CJK
+// rune sized so the MaxChatLogBytes byte boundary lands mid-rune
+// (16384 is not a multiple of 3), forcing the truncation to back off to the
+// nearest complete rune rather than emit an invalid byte sequence.
+func TestCreateFromCommandChatLogTruncationIsByteCapRuneSafe(t *testing.T) {
+	p := newTruncationTestProcessor(t)
+	// (MaxChatLogBytes/3)+2 copies of a 3-byte rune: comfortably over the
+	// byte cap, and 16384 % 3 == 1, so a byte-index cut at exactly
+	// MaxChatLogBytes would land one byte into a rune.
+	runeCount := MaxChatLogBytes/3 + 2
+	longLog := strings.Repeat("가", runeCount)
+
+	buf := message.NewBuffer()
+	if err := p.CreateFromCommand(buf)(report2.CreateCommandBody{
+		Kind: report2.KindSue, ReporterId: 1, AccusedId: 2, Description: "x",
+		ChatClaim: true, ChatLog: longLog,
+	}); err != nil {
+		t.Fatalf("CreateFromCommand: %v", err)
+	}
+	reports, _ := p.GetByTenant()
+	if len(reports) != 1 {
+		t.Fatal("expected persisted report")
+	}
+	stored := reports[0].ChatLog()
+	if stored == nil {
+		t.Fatal("expected chat log to be stored")
+	}
+	if len(*stored) > MaxChatLogBytes {
+		t.Fatalf("chat log exceeds byte cap: %d > %d", len(*stored), MaxChatLogBytes)
+	}
+	if !utf8.ValidString(*stored) {
+		t.Fatalf("truncated chat log is not valid UTF-8: %q", *stored)
+	}
+	if !strings.HasPrefix(longLog, *stored) {
+		t.Fatal("truncated chat log is not a prefix of the input (boundary was split)")
+	}
+}
+
+// TestCreateFromCommandDescriptionCapBoundary pins the exact-boundary
+// behavior: a description of exactly MaxDescriptionLength runes must pass
+// through untouched, and MaxDescriptionLength+1 must truncate by exactly
+// one rune.
+func TestCreateFromCommandDescriptionCapBoundary(t *testing.T) {
+	atCap := strings.Repeat("d", MaxDescriptionLength)
+	p := newTruncationTestProcessor(t)
+	buf := message.NewBuffer()
+	if err := p.CreateFromCommand(buf)(report2.CreateCommandBody{
+		Kind: report2.KindClaim, ReporterId: 1, AccusedId: 2, Description: atCap,
+	}); err != nil {
+		t.Fatalf("CreateFromCommand: %v", err)
+	}
+	reports, _ := p.GetByTenant()
+	if reports[0].Description() != atCap {
+		t.Errorf("description at exactly the cap must not be truncated: got %d chars, want %d", utf8.RuneCountInString(reports[0].Description()), MaxDescriptionLength)
+	}
+
+	overCap := strings.Repeat("d", MaxDescriptionLength+1)
+	p2 := newTruncationTestProcessor(t)
+	buf2 := message.NewBuffer()
+	if err := p2.CreateFromCommand(buf2)(report2.CreateCommandBody{
+		Kind: report2.KindClaim, ReporterId: 1, AccusedId: 2, Description: overCap,
+	}); err != nil {
+		t.Fatalf("CreateFromCommand: %v", err)
+	}
+	reports2, _ := p2.GetByTenant()
+	if got := utf8.RuneCountInString(reports2[0].Description()); got != MaxDescriptionLength {
+		t.Errorf("description one over the cap must truncate to exactly the cap: got %d, want %d", got, MaxDescriptionLength)
+	}
+}
+
+// TestCreateFromCommandChatLogCapBoundary is the chat-log analogue of
+// TestCreateFromCommandDescriptionCapBoundary: exactly MaxChatLogBytes bytes
+// must pass through untouched, and MaxChatLogBytes+1 must truncate.
+func TestCreateFromCommandChatLogCapBoundary(t *testing.T) {
+	atCap := strings.Repeat("c", MaxChatLogBytes)
+	p := newTruncationTestProcessor(t)
+	buf := message.NewBuffer()
+	if err := p.CreateFromCommand(buf)(report2.CreateCommandBody{
+		Kind: report2.KindSue, ReporterId: 1, AccusedId: 2, Description: "x",
+		ChatClaim: true, ChatLog: atCap,
+	}); err != nil {
+		t.Fatalf("CreateFromCommand: %v", err)
+	}
+	reports, _ := p.GetByTenant()
+	if reports[0].ChatLog() == nil || *reports[0].ChatLog() != atCap {
+		t.Error("chat log at exactly the cap must not be truncated")
+	}
+
+	overCap := strings.Repeat("c", MaxChatLogBytes+1)
+	p2 := newTruncationTestProcessor(t)
+	buf2 := message.NewBuffer()
+	if err := p2.CreateFromCommand(buf2)(report2.CreateCommandBody{
+		Kind: report2.KindSue, ReporterId: 1, AccusedId: 2, Description: "x",
+		ChatClaim: true, ChatLog: overCap,
+	}); err != nil {
+		t.Fatalf("CreateFromCommand: %v", err)
+	}
+	reports2, _ := p2.GetByTenant()
+	if reports2[0].ChatLog() == nil || len(*reports2[0].ChatLog()) != MaxChatLogBytes {
+		t.Error("chat log one over the cap must truncate to exactly the cap")
 	}
 }
 

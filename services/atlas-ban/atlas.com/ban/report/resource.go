@@ -1,72 +1,130 @@
 package report
 
 import (
-	"time"
+	"atlas-ban/rest"
+	"errors"
+	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
-type RestModel struct {
-	Id               uuid.UUID        `json:"-"`
-	Kind             string           `json:"kind"`
-	ReporterId       uint32           `json:"reporterId"`
-	ReporterName     string           `json:"reporterName"`
-	AccusedId        uint32           `json:"accusedId"`
-	AccusedName      string           `json:"accusedName"`
-	ReasonType       byte             `json:"reasonType"`
-	Description      string           `json:"description"`
-	ChatLog          *string          `json:"chatLog"`
-	ServerTranscript []TranscriptLine `json:"serverTranscript"`
-	Status           string           `json:"status"`
-	CreatedAt        time.Time        `json:"createdAt"`
-	UpdatedAt        time.Time        `json:"updatedAt"`
-}
+func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
+	return func(db *gorm.DB) server.RouteInitializer {
+		return func(router *mux.Router, l logrus.FieldLogger) {
+			register := rest.RegisterHandler(l)(db)(si)
+			registerInput := rest.RegisterInputHandler[RestModel](l)(db)(si)
 
-func (r RestModel) GetName() string {
-	return "reports"
-}
-
-func (r RestModel) GetID() string {
-	return r.Id.String()
-}
-
-func (r *RestModel) SetID(idStr string) error {
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return err
-	}
-	r.Id = id
-	return nil
-}
-
-func Transform(m Model) (RestModel, error) {
-	return RestModel{
-		Id:               m.Id(),
-		Kind:             string(m.Kind()),
-		ReporterId:       m.ReporterId(),
-		ReporterName:     m.ReporterName(),
-		AccusedId:        m.AccusedId(),
-		AccusedName:      m.AccusedName(),
-		ReasonType:       m.ReasonType(),
-		Description:      m.Description(),
-		ChatLog:          m.ChatLog(),
-		ServerTranscript: m.ServerTranscript(),
-		Status:           string(m.Status()),
-		CreatedAt:        m.CreatedAt(),
-		UpdatedAt:        m.UpdatedAt(),
-	}, nil
-}
-
-// TransformSlice maps a slice of domain Models to their REST projections.
-// Returns the first transform error encountered, if any.
-func TransformSlice(ms []Model) ([]RestModel, error) {
-	out := make([]RestModel, 0, len(ms))
-	for _, m := range ms {
-		rm, err := Transform(m)
-		if err != nil {
-			return nil, err
+			r := router.PathPrefix("/reports").Subrouter()
+			r.HandleFunc("/", register("get_reports", handleGetReports)).Methods(http.MethodGet)
+			r.HandleFunc("/{reportId}", register("get_report", handleGetReportById)).Methods(http.MethodGet)
+			r.HandleFunc("/{reportId}", registerInput("update_report_status", handleUpdateReportStatus)).Methods(http.MethodPatch)
 		}
-		out = append(out, rm)
 	}
-	return out, nil
+}
+
+func handleGetReports(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		statusStr := r.URL.Query().Get("status")
+
+		var reports []Model
+		var err error
+		if statusStr != "" {
+			s := Status(statusStr)
+			if !s.Valid() {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			reports, err = NewProcessor(d.Logger(), d.Context(), d.DB()).GetByStatus(s)
+		} else {
+			reports, err = NewProcessor(d.Logger(), d.Context(), d.DB()).GetByTenant()
+		}
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Unable to locate reports.")
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
+		}
+
+		res, err := TransformSlice(reports)
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Creating REST model.")
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
+		}
+
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+	}
+}
+
+func handleGetReportById(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseReportId(d.Logger(), func(reportId uuid.UUID) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(reportId)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to retrieve report [%s].", reportId)
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			res, err := Transform(m)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		}
+	})
+}
+
+func handleUpdateReportStatus(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
+	return rest.ParseReportId(d.Logger(), func(reportId uuid.UUID) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if input.Id != uuid.Nil && input.Id != reportId {
+				d.Logger().Errorln("Report ID does not match URL")
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).UpdateStatus(reportId, Status(input.Status))
+			if err != nil {
+				if errors.Is(err, ErrInvalidStatus) {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				d.Logger().WithError(err).Errorf("Unable to update report [%s].", reportId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			res, err := Transform(m)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		}
+	})
 }

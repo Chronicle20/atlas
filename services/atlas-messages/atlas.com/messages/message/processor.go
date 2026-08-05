@@ -31,12 +31,19 @@ type ProcessorImpl struct {
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
-	p := &ProcessorImpl{
+	return NewProcessorWithClients(l, ctx, character.NewProcessor(l, ctx))
+}
+
+// NewProcessorWithClients constructs a Processor with an explicit
+// character.Processor implementation. Production callers use NewProcessor;
+// callers that already hold a character.Processor (or a substitute, e.g.
+// tests) inject it here.
+func NewProcessorWithClients(l logrus.FieldLogger, ctx context.Context, cp character.Processor) Processor {
+	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
-		cp:  character.NewProcessor(l, ctx),
+		cp:  cp,
 	}
-	return p
 }
 
 func (p *ProcessorImpl) HandleGeneral(f field.Model, actorId uint32, message string, balloonOnly bool) error {

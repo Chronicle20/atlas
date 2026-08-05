@@ -33,7 +33,7 @@ func (m BuffCancel) Encode(l logrus.FieldLogger, ctx context.Context) func(optio
 		// that one asserts the TwoState/base bits unconditionally, which on a
 		// reset would tell the client to tear down RideVehicle and GuidedBullet
 		// on every buff expiry (task-190).
-		m.cts.EncodeResetMask(l, t, options)(w)
+		m.cts.EncodeMask(l, t, options)(w)
 		// Trailing byte: nSecondaryStatChangedPoint, NOT tSwallowBuffTime. The
 		// client reads it only when the mask contains a movement-affecting stat
 		// (SecondaryStat::IsMovementAffectingStat — Speed/Jump/Stun/Weakness/
@@ -82,7 +82,7 @@ func (m BuffCancelForeign) Encode(l logrus.FieldLogger, ctx context.Context) fun
 		// reset feeds CUserRemote::OnResetTemporaryStat, which drives the other
 		// players' view of this character's mount; an unconditional RideVehicle
 		// bit desyncs their render of it just as it desyncs the owner's.
-		m.cts.EncodeResetMask(l, t, options)(w)
+		m.cts.EncodeMask(l, t, options)(w)
 		w.WriteByte(0) // nSecondaryStatChangedPoint — see BuffCancel.Encode
 		return w.Bytes()
 	}

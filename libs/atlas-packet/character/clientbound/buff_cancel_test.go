@@ -195,14 +195,42 @@ func TestBuffCancelKeepsRideVehicleForMountCancel(t *testing.T) {
 	}
 }
 
-// TestBuffGiveStillAssertsBaseStatBits guards the other direction. A SET must
-// keep the unconditional two-state base bits: the client reads one base-stat
-// block per set bit, sequentially, so dropping one desyncs the entire tail.
-// Splitting the mask into set/reset variants must not disturb that.
-func TestBuffGiveStillAssertsBaseStatBits(t *testing.T) {
-	ctx := pt.CreateContext("GMS", 79, 1)
-	got := NewBuffGive(*model.NewCharacterTemporaryStat()).Encode(nil, ctx)(nil)
-	if !bytes.Equal(got[:16], v79EmptyMask) {
-		t.Errorf("v79 BuffGive mask changed: got %x want %x", got[:16], v79EmptyMask)
+// TestBuffGiveOmitsRideVehicleForUnrelatedStat is the give-side half of the
+// task-190 regression, and the one that matters for the reported symptom:
+// CWvsContext::OnTemporaryStatSet runs ShowRideVehicleEffect (or, on a
+// ladder/rope, SendSkillCancelRequest for 5221006) whenever the SET mask carries
+// CTS_RideVehicle. A mob disease landing on a mounted player must not do that.
+func TestBuffGiveOmitsRideVehicleForUnrelatedStat(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	cts := model.NewCharacterTemporaryStat()
+	cts.AddStat(logrus.New())(tenant.MustFromContext(ctx))("SLOW", 126, 80, 2, time.Now().Add(time.Minute))
+
+	got := NewBuffGive(*cts).Encode(nil, ctx)(nil)
+
+	if got[rideVehicleMaskByte]&rideVehicleMaskValue != 0 {
+		t.Errorf("SLOW give asserts the RideVehicle bit: mask byte %d = %02x, want bit %02x clear",
+			rideVehicleMaskByte, got[rideVehicleMaskByte], rideVehicleMaskValue)
+	}
+}
+
+// TestBuffGiveKeepsRideVehicleForMount is the over-correction guard: a real
+// mount give must still carry the bit AND its base-stat block, or the client
+// never renders the ride. Bits and blocks are gated on the same presence test,
+// so this also proves they did not drift apart.
+func TestBuffGiveKeepsRideVehicleForMount(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	cts := model.NewCharacterTemporaryStat()
+	cts.AddStat(logrus.New())(tenant.MustFromContext(ctx))("MONSTER_RIDING", 5221006, 1932000, 10, time.Now().Add(time.Minute))
+
+	got := NewBuffGive(*cts).Encode(nil, ctx)(nil)
+
+	if got[rideVehicleMaskByte]&rideVehicleMaskValue == 0 {
+		t.Errorf("mount give dropped the RideVehicle bit: mask byte %d = %02x, want bit %02x set",
+			rideVehicleMaskByte, got[rideVehicleMaskByte], rideVehicleMaskValue)
+	}
+	// 16 mask + 2 defense bytes + one 13-byte MonsterRiding base block + the
+	// 3-byte give trailer. A dropped block would land at 21.
+	if len(got) != 34 {
+		t.Errorf("mount give length: got %d want 34 (mask+defense+MonsterRiding block+trailer)", len(got))
 	}
 }

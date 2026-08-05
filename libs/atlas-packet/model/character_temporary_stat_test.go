@@ -70,16 +70,17 @@ func TestCTSEncodeSlowDiseasePerStatLayout(t *testing.T) {
 	}
 	mask, stat := got[:16], got[16:26]
 
-	// Mask: SLOW plus the always-present TwoState base stat bits
-	// (EnergyCharge..Undead). The registry assigns the TwoState group shifts 82-88 on
-	// v83 -> all land in the high 64 bits, so uint32(H&0xFFFFFFFF)=0x01FC0000 is written
-	// to mask dword[1] (wire bytes 4-7), with RideVehicle at 0x00200000. This matches the
+	// Mask: SLOW only. The TwoState base group (EnergyCharge..Undead, v83 shifts
+	// 82-88 -> dword[1] 0x01FC0000) is NOT asserted, because this CTS holds none of
+	// those stats — claiming RideVehicle here made the client run
+	// ShowRideVehicleEffect on a mounted player for an unrelated disease (task-190).
+	// Bits map to the wire the same way regardless; this matches the
 	// v83 client's flag 1<<(i+82) read from wire bytes 4-7 (IDA SecondaryStat::
 	// DecodeForLocal @0x781D0E; UINT128 dword array is big-endian, AND'd in wire order).
 	// SLOW (shift 32) lands in dword[2] (wire bytes 8-11) at 0x00000001 -> LE 01 00 00 00.
 	wantMask := []byte{
 		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0xFC, 0x01,
+		0x00, 0x00, 0x00, 0x00, // no two-state base bits: this CTS holds none
 		0x01, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00,
 	}
@@ -174,9 +175,11 @@ func TestCTSMonsterRidingV95MaskAndLayout(t *testing.T) {
 
 	got := input.Encode(nil, ctx)(nil)
 
-	// Mask dword[0] (bytes 0-3) = 0x3C000000 -> LE 00 00 00 3C (RideVehicle bit 0x20000000 set).
-	if !bytes.Equal(got[0:4], []byte{0x00, 0x00, 0x00, 0x3C}) {
-		t.Fatalf("v95 mask dword[0] should be 0x3C000000 (RideVehicle@125 set); got % x", got[0:4])
+	// Mask dword[0] (bytes 0-3) = 0x20000000 -> LE 00 00 00 20: RideVehicle@125
+	// alone. The other two-state members are absent from this CTS, so their bits
+	// (and blocks) are not emitted.
+	if !bytes.Equal(got[0:4], []byte{0x00, 0x00, 0x00, 0x20}) {
+		t.Fatalf("v95 mask dword[0] should be 0x20000000 (RideVehicle@125 alone); got % x", got[0:4])
 	}
 	// dwords [1],[2],[3] (bytes 4-15) empty.
 	if !bytes.Equal(got[4:16], make([]byte, 12)) {
@@ -191,9 +194,12 @@ func TestCTSMonsterRidingV95MaskAndLayout(t *testing.T) {
 	if !bytes.Contains(got, want) {
 		t.Fatalf("v95 RideVehicle base stat (1902000,1004) missing; got % x", got)
 	}
-	// 16 mask + 2 leading + base blocks (EnergyCharge15+DashSpeed15+DashJump15+MonsterRiding13 = 58).
-	if len(got) != 16+2+58 {
-		t.Fatalf("v95 mount packet length: got %d want %d", len(got), 16+2+58)
+	// 16 mask + 2 leading + the ONE base block this CTS holds (MonsterRiding, 13).
+	// It used to be 58: EnergyCharge15 + DashSpeed15 + DashJump15 + MonsterRiding13,
+	// with the first three emitted as empty placeholders beside mask bits the CTS
+	// never held. Blocks are presence-gated now, in lockstep with the mask.
+	if len(got) != 16+2+13 {
+		t.Fatalf("v95 mount packet length: got %d want %d", len(got), 16+2+13)
 	}
 }
 
@@ -225,9 +231,10 @@ func TestCTSMonsterRidingV83MaskAndNoDoubleEncode(t *testing.T) {
 
 	got := input.Encode(nil, ctx)(nil)
 
-	// Mask dword[1] (bytes 4-7) = 0x01FC0000 -> LE 00 00 FC 01, includes RideVehicle 0x00200000.
-	if !bytes.Equal(got[4:8], []byte{0x00, 0x00, 0xFC, 0x01}) {
-		t.Fatalf("mask dword[1] should carry TwoState 0x01FC0000 (RideVehicle bit set); got % x", got[4:8])
+	// Mask dword[1] (bytes 4-7) = 0x00200000 -> LE 00 00 20 00: RideVehicle alone,
+	// not the whole two-state group.
+	if !bytes.Equal(got[4:8], []byte{0x00, 0x00, 0x20, 0x00}) {
+		t.Fatalf("mask dword[1] should carry RideVehicle 0x00200000 alone; got % x", got[4:8])
 	}
 	// Mask dword[2] (bytes 8-11) must be empty for a lone MonsterRiding stat.
 	if !bytes.Equal(got[8:12], []byte{0, 0, 0, 0}) {

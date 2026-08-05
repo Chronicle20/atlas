@@ -236,9 +236,11 @@ Rather than trust the CSV's opcode, enumerated **every** call site to
 `??0COutPacket@@QAE@J@Z` (`0x74b68d`) — i.e. every place JMS constructs an outgoing packet
 with an explicit opcode — via `insn_query`, paged to completion across the full `.text`
 range: **577 call sites total**, matching `xrefs_to`'s count exactly. `CField::SendChatMsgSlash`
-(`0x564ad3`, the slash-command dispatcher, ~29 KB) alone accounts for 79 of them — the most
+(`0x564ad3`, the slash-command dispatcher, ~29 KB) alone accounts for **81** of them (scoping
+`insn_query` to `func: 0x564ad3` and confirming `truncated:false` is the reproducible way to
+get this number — a first pass here undercounted at 79 and was corrected on review) — the most
 plausible place for a hidden report/claim branch, since it is exactly the kind of function
-that embeds many features behind string dispatch. Read the pushed-opcode byte for **all 79**
+that embeds many features behind string dispatch. Read the pushed-opcode byte for **all 81**
 directly via `get_bytes` (the `lea ecx, [ebp+disp32]` — `8D 8D` + 4-byte displacement, 6
 bytes — sits immediately before the `call`, so the preceding push is at a fixed, checkable
 offset): the opcodes used are `0x83`, `0x78`, `0x89`, `0xdd`, `0x84`, `0xe1`, `0x29` — seven
@@ -258,6 +260,8 @@ functions; **all 35 were individually decompiled** (not filtered by size — a s
 review round flagged that v92's own `SendClaimRequest` is well inside a "small function" band,
 so size is not a valid triage filter here). None matches the claim shape:
 
+- `sub_7AD52B` — opcode `0x8B`, a minigame countdown-timer `Update()` routine
+  (Rock-Paper-Scissors-adjacent), single `Encode1(2)` body, no strings.
 - `sub_47F824`/`sub_48182A`/`sub_481F71` — cash-shop / admin-shop item-trade sends (opcodes
   `0xF7`/`0xF8`), unconditional multi-`EncodeStr` bodies, no `bChatClaim`-style gate.
 - `sub_485179`, `sub_4B1BB3`, `sub_56BC92` — trivial/near-trivial sends (ping-like,
@@ -285,9 +289,13 @@ claim shape found in this sweep — `Encode1`×4, `Encode4`(character id), `Enco
 then conditionally `EncodeStr`(a second string) gated on parameter `a5`. Structurally this
 looks like a **sue/report** send-site (accused id + reason string + optional detail), not
 claim (which is 2×`Encode1` + 2–3×`EncodeStr`, no numeric id field, gate on the *encoded*
-byte rather than a raw parameter). This is flagged for whoever resolves jms `SUE_CHARACTER`
-(a separate op from this section) — it was not chased further here since it is not this
-section's target and does not match the claim shape either way.
+byte rather than a raw parameter). `xrefs_to` on `sub_575186` shows all **7** of its callers
+originate inside `CField::SendChatMsgSlash` — i.e. it is reached only from the slash-command
+dispatcher, which is exactly where `SUE_CHARACTER` lives on other GMS versions (§1, §6) —
+materially strengthening the sue/report read beyond body shape alone. This is flagged for
+whoever resolves jms `SUE_CHARACTER` (a separate op from this section) — it was not chased
+further here since it is not this section's target and does not match the claim shape either
+way.
 
 **Search 5 — is the clientbound trio actually reachable, or dead code?** `xrefs_to` on all
 three clientbound handlers (`OnClaimResult` `0xb0e9c3`, `OnSetClaimSvrAvailableTime`
@@ -311,14 +319,20 @@ any name, not under any opcode, not as a `SendPacket` caller and not as a raw
 `COutPacket`-then-something-else builder. This was checked five independent ways (name/UI,
 the CSV's specific opcode, the *entire* opcode space via every `COutPacket` construction site,
 every `SendPacket` call site with the method validated against the known-good v92 case, and
-the clientbound dispatcher's reachability) and is genuinely exhaustive, not a spot-check. At
-the same time, the three clientbound claim-result handlers are named, correctly bodied (per
-§3–§5), and **live-routed** from the real packet dispatcher. This is the odd case flagged
-before searching: a client that can receive and render claim results but has no way to
-generate the request that would produce one. The most coherent read is that JMS ships the
-shared network/receive code for a feature whose client-side trigger (the report/claim UI) was
-removed or never wired up for this build — the same pattern established for v48 sue (§7.1),
-just on the send side of the *other* wire pair.
+the clientbound dispatcher's reachability) and is genuinely exhaustive **over executable code
+paths that construct or send an outgoing packet** — every way the client could build and
+transmit a `CLAIM_REQUEST` was enumerated and read, not merely spot-checked. It is *not*
+exhaustive over every conceivable form of evidence: a JMS-localized string-table sweep for
+report/claim UI text was never run (see the registry disposition below), so a reader should
+not take "exhaustive" to mean "no residual doubt whatsoever," only "no gap in the code-path
+coverage that would explain a missed send-site." At the same time, the three clientbound
+claim-result handlers are named, correctly bodied (per §3–§5), and **live-routed** from the
+real packet dispatcher. This is the odd case flagged before searching: a client that can
+receive and render claim results but has no way to generate the request that would produce
+one. The most coherent read is that JMS ships the shared network/receive code for a feature
+whose client-side trigger (the report/claim UI) was removed or never wired up for this build
+— the same pattern established for v48 sue (§7.1), just on the send side of the *other* wire
+pair.
 
 **Registry disposition:** `docs/packets/registry/jms_v185.yaml`'s `CLAIM_REQUEST` row is left
 unchanged — still `provenance: csv-import`, opcode 101 / `0x065`, **unverified**. It is not

@@ -280,9 +280,26 @@
   direction: clientbound
   opcode: 42
   fname: CWvsContext::OnClaimResult
+  packet: report/clientbound/ClaimResultSuccess
   provenance: ida-discovered
   ida:
     address: 9446856
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnClaimResult
+    @0x91f9a9 (GMS_v72.1_U_DEVM.exe.i64, session c8acae95), resolved via the
+    opcode dispatch table CWvsContext::OnPacket case 42 @0x90271c. Decode1(mode)
+    @0x91f9be. mode==2 (Decode1 hasRemaining @0x91fa3d, Decode4 remaining
+    @0x91fa47) is the only mode that reads beyond the mode byte --
+    ClaimResultSuccess. Every other reachable mode is a bare mode byte with no
+    further CInPacket reads -- ClaimResultNotice: 3->StringPool 3359 @0x91fa25,
+    0x41->3361 @0x91fa0f, 0x42->3362 @0x91f9f9, 0x43->3363 @0x91fb57,
+    0x44->3364 @0x91fc2b, 0x45->3365 @0x91fc17, 0x47->3370 @0x91fba2 (its own
+    CHATLOG_ADD+Notice arm), 0x48->3372 @0x91fb88. Mode 0x46 and every other
+    unlisted byte value fall through to an early return with no display (still
+    only the 1-byte mode already consumed by Decode1) -- matches the Atlas
+    modeset (3, 0x41-0x45, 0x47, 0x48) exactly. packet: links to
+    ClaimResultSuccess; ClaimResultNotice is covered by the same decompile pass
+    (see claim_result_test.go) but is not independently registry-linked since
+    the op row carries a single packet field.'
 - op: CLAIM_AVAILABLE_TIME
   direction: clientbound
   opcode: 43

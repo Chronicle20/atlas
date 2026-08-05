@@ -252,16 +252,19 @@ func TestCTSMonsterRidingV83MaskAndNoDoubleEncode(t *testing.T) {
 // same size as the empty block, so total packet length is unchanged and the
 // two-state mask bits (always set pre-95) are unchanged.
 //
-// Every in-scope version below GMS 95 is listed (PRD §2.1). gms_12/gms_48 are
-// deliberately absent: they take the legacyGmsMask path and have no base-stat
-// trailer at all — covered by the negative test below instead.
+// Every in-scope version below GMS 95 with the classic 7-member/17-byte
+// GuidedBullet block is listed (PRD §2.1). GMS v61 is deliberately absent —
+// its IDA-verified 6-member group uses a narrower 16-byte block (no 5-byte
+// bool-prefixed time field) and is covered separately by
+// TestCTSHomingBeaconV61PopulatedBlock (task-167). gms_12/gms_48 are also
+// absent: they take the legacyGmsMask path and have no base-stat trailer at
+// all — covered by the negative test below instead.
 func TestCTSHomingBeaconPre95PopulatedBlock(t *testing.T) {
 	pre95 := []struct {
 		name   string
 		region string
 		major  uint16
 	}{
-		{"GMS v61", "GMS", 61},
 		{"GMS v72", "GMS", 72},
 		{"GMS v79", "GMS", 79},
 		{"GMS v83", "GMS", 83},
@@ -296,26 +299,35 @@ func TestCTSHomingBeaconPre95PopulatedBlock(t *testing.T) {
 }
 
 // Without an active beacon the encode must stay byte-compatible with today:
-// the GuidedBullet slot still emits an empty 17-byte block (nOption=0).
+// the GuidedBullet slot still emits an empty block (16 bytes on GMS v61, 17
+// on every other pre-95 version).
 //
 // The length assertion runs per version and is the cheap falsifier for group
-// membership (PRD gap 6): 110 trailer bytes == the 7-member group holds for
-// that version. If one of these fails, do NOT adjust the constant to make it
-// pass — that version's group differs and Task 7 must establish its real shape.
+// membership (PRD gap 6): the expected trailer size encodes which two-state
+// group shape that version uses. If one of these fails, do NOT adjust the
+// constant to make it pass — that version's group differs and must be
+// established from IDA evidence first.
+//
+// GMS v61 is IDA-verified (task-167) as a 6-member group (no Undead) with a
+// 12-byte base block (narrowTimeField, no leading bool-prefixed time byte):
+// 14+14+14+12+18+16 = 88, so its empty-CTS total is 16+2+88 = 106, not the
+// 128 every other pre-95 version below uses (16+2+110, the classic 7-member
+// group at 15+15+15+13+20+17+15 = 110).
 func TestCTSHomingBeaconPre95AbsentStaysEmpty(t *testing.T) {
 	for _, v := range []struct {
-		name   string
-		region string
-		major  uint16
+		name       string
+		region     string
+		major      uint16
+		trailerLen int
 	}{
-		{"GMS v61", "GMS", 61},
-		{"GMS v72", "GMS", 72},
-		{"GMS v79", "GMS", 79},
-		{"GMS v83", "GMS", 83},
-		{"GMS v84", "GMS", 84},
-		{"GMS v87", "GMS", 87},
-		{"GMS v92", "GMS", 92},
-		{"JMS v185", "JMS", 185},
+		{"GMS v61", "GMS", 61, 88},
+		{"GMS v72", "GMS", 72, 110},
+		{"GMS v79", "GMS", 79, 110},
+		{"GMS v83", "GMS", 83, 110},
+		{"GMS v84", "GMS", 84, 110},
+		{"GMS v87", "GMS", 87, 110},
+		{"GMS v92", "GMS", 92, 110},
+		{"JMS v185", "JMS", 185, 110},
 	} {
 		t.Run(v.name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.region, v.major, 1)
@@ -323,13 +335,62 @@ func TestCTSHomingBeaconPre95AbsentStaysEmpty(t *testing.T) {
 
 			got := input.Encode(nil, ctx)(nil)
 
-			// Empty pre-95 CTS: 16 mask + 2 leading + 7 base blocks
-			// (15+15+15+13+20+17+15 = 110).
-			if len(got) != 16+2+110 {
-				t.Fatalf("empty %s CTS length: got %d want %d", v.name, len(got), 16+2+110)
+			// Empty CTS: 16 mask + 2 leading + the version's two-state trailer.
+			want := 16 + 2 + v.trailerLen
+			if len(got) != want {
+				t.Fatalf("empty %s CTS length: got %d want %d", v.name, len(got), want)
 			}
 		})
 	}
+}
+
+// TestCTSHomingBeaconV61PopulatedBlock pins the populated GuidedBullet block
+// for GMS v61's IDA-verified 6-member two-state group (task-167). The block
+// is nOption=mobId | rOption=skillId | plain 4-byte field (narrowTimeField,
+// no bool prefix) | dwMobId=mobId — 16 bytes total (vs 17 on every other
+// pre-95 version, whose base uses the 5-byte bool-prefixed time field
+// instead). Total packet length is the 106-byte empty trailer unchanged
+// (GuidedBullet's populated and empty blocks are the same size).
+func TestCTSHomingBeaconV61PopulatedBlock(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 61, 1)
+	input := NewCharacterTemporaryStat()
+	// mobId 1000001 (0x000F4241), skill 5211006 (0x004F837E).
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypeHomingBeacon), 5211006, 1000001, 1, time.Time{})
+
+	got := input.Encode(nil, ctx)(nil)
+
+	// Total length: 16 mask + 2 leading + 88-byte trailer (14+14+14+12+18+16),
+	// unchanged from the empty case since GuidedBullet's block size (16) is
+	// the same whether populated or not.
+	if len(got) != 16+2+88 {
+		t.Fatalf("v61 beacon packet length: got %d want %d", len(got), 16+2+88)
+	}
+
+	// nOption=1000001 then rOption=5211006 as consecutive LE int32s.
+	head := []byte{0x41, 0x42, 0x0F, 0x00, 0x7E, 0x83, 0x4F, 0x00}
+	idx := bytes.Index(got, head)
+	if idx < 0 {
+		t.Fatalf("v61 populated GuidedBullet head (nOption=1000001,rOption=5211006) missing; got % x", got)
+	}
+	// dwMobId sits after the base's plain 4-byte third field (no 5-byte
+	// bool-prefixed time): head(8) + plain field(4) = offset 12.
+	mob := got[idx+12 : idx+16]
+	if !bytes.Equal(mob, []byte{0x41, 0x42, 0x0F, 0x00}) {
+		t.Fatalf("v61 dwMobId: got % x want 41 42 0f 00", mob)
+	}
+}
+
+// TestCTSHomingBeaconV61RoundTrip guards encode/decode symmetry for v61's
+// narrower base/block shapes: whatever the encoder writes, the decoder must
+// consume, without desyncing the reader for the remainder of the payload.
+func TestCTSHomingBeaconV61RoundTrip(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 61, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypeHomingBeacon), 5211006, 1000001, 1, time.Time{})
+	output := NewCharacterTemporaryStat()
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 }
 
 // gms_12 / gms_48 take the legacyGmsMask path (Region GMS && major < 61):

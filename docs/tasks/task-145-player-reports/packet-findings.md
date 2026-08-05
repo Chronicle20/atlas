@@ -183,6 +183,78 @@ Three independent checks, all negative on both versions:
 v48 and v61 ship the clientbound receivers ahead of the submit path, exactly as v48 does
 for sue in §7.1.
 
+### 7.2a Task 23c reconfirmation pass — and where this evidence stands relative to §7.3/§7.4
+
+Sessions resolved via `idb_list` matching binary NAME (task-138 discipline, never
+`select_instance`/`-ida-port`): v48 = session `93cc947e` (`GMS_v48_1_DEVM.exe.i64`), v61 =
+session `415bf585` (`GMS_v61.1_U_DEVM.exe.i64`).
+
+**Re-ran the checks recorded in §7.1 and §7.2 against the current IDBs; all still hold.**
+
+1. `decompile` on `CField::SendChatMsgSlash` @ `0x4c3e96` (v48) reproduces exactly the same
+   two `COutPacket` construction sites recorded in §7.1: `0x4c4c34` (opcode 152, `Encode1`
+   only) and `0x4c4e52` (opcode 40, `EncodeStr` only). Read the full pseudocode line by
+   line — no third `COutPacket::COutPacket` call exists in the function, and neither site
+   matches the sue shape.
+2. `func_query name_regex "(?i)claim"` on v48 (`93cc947e`) and v61 (`415bf585`) returns the
+   identical five hits recorded in §7.2 check 1 on both versions
+   (`SendClaimGiveUp@CMemoryGameDlg`, `SendClaimGiveUp@COmokDlg`, `OnClaimResult`,
+   `OnSetClaimSvrAvailableTime`, `OnClaimSvrStatusChanged`) — still no `CUIClaim`, no
+   `SendClaimRequest`.
+3. `search_text "push    60h"` over v61 `0x800000`–`0x8a0000` (§7.2 check 2): **0 hits**
+   (`"n":0,"cursor":{"done":true}`), reproducing the recorded negative.
+4. Neighbour-slot check (§7.2 check 3): `sub_71F29B` (v48, still `0x2d` bytes) ends at
+   exactly `0x71f2c8`, `OnClaimResult`'s address; `sub_848732` (v61, still `0x2d` bytes)
+   ends at exactly `0x84875f`, v61's `OnClaimResult` address. Both candidate slots are
+   unchanged — no new function has appeared between them.
+
+**Judgment on the evidentiary standard.** These are exactly the checks the task brief
+scoped as "cheap," and they are cheap — three of the four are single-call lookups keyed on
+a name or a specific instruction pattern. This is meaningfully weaker than the bar §7.3/§7.4
+established for the jms_185 absences, which additionally (a) exhaustively enumerated
+**every** call site to the `COutPacket` long-opcode constructor across the whole binary —
+not just a named function or a guessed opcode region — and (b) individually decompiled
+**every** unnamed function among the `CClientSocket::SendPacket` callers, closing the
+"unnamed ≠ absent" gap directly rather than relying on `func_query` name misses.
+
+Neither §7.1 nor most of §7.2 does that. §7.1 rests on a full decompile of the *one*
+function where sue lives on every other GMS version — strong for that function, but it does
+not by itself rule out a sue send-site living somewhere else in the v48 binary under a
+different name. §7.2 checks 1 and 2 are name/pattern-keyed, not exhaustive over call sites;
+only check 3 (neighbour-slot occupancy) is structural, and it depends on the two candidate
+slots being the only place a `SendClaimRequest`-sized function could hide.
+
+**What a full §7.3/§7.4-grade closure would require, and the scale involved.** To bound
+this rather than leave it unquantified, this pass additionally pulled the
+`COutPacket`-constructor and `CClientSocket::SendPacket` call-site inventories for both
+versions via `xrefs_to` (limit 1000, scoped to the resolved constructor/`SendPacket`
+addresses, all pages returned `"more":false`):
+
+| version | `COutPacket::COutPacket(long)` @ | call sites | `CClientSocket::SendPacket` @ | call sites |
+|---|---|---|---|---|
+| v48 | `0x57b77e` | 317 | `0x464cd1` | 317 |
+| v61 | `0x5ffc4f` | 391 | `0x474125` | 315 |
+
+Every named caller in both lists is unambiguously unrelated to claim/sue (cash shop, login,
+trunk, guild BBS, party/guild message senders, minigame dialogs, skill/attack requests,
+etc.) — none is a `CUIClaim`, `SendClaimRequest`, or slash-command-adjacent name. The
+residual risk sits entirely in the **unnamed** (`sub_XXXXXX`) callers, which were not
+individually decompiled in this pass: roughly 45–50 per version by rough count of the lists
+above, a scale comparable to jms_185's 35 (§7.4 Search 4) and 81 (§7.3 Search 3). Closing
+that gap to §7.3/§7.4's standard would mean decompiling all of them, per version, for both
+the claim and sue questions — deliberately not undertaken here, since the brief scoped this
+pass as a cheap re-check of already-recorded evidence, not a new discovery campaign.
+
+This is flagged explicitly rather than silently treated as equivalent: **the v48/v61
+absences are reconfirmed at the standard already recorded in §7.1/§7.2, not upgraded to the
+jms_185 standard.** If a future pass wants to close this gap, the table above gives the
+exact starting point (constructor/`SendPacket` addresses and total call-site counts) so it
+does not have to be re-derived.
+
+**Conclusion: no hit.** Every check re-run in this pass came back negative, exactly
+reproducing §7.1/§7.2. No claim or sue send-site was found on v48 or v61. The Task 18
+template split (`91e9f4124`) stands unchallenged.
+
 ### 7.3 `CLAIM_REQUEST` is genuinely absent on jms_185 — but the clientbound trio is live-routed
 
 Session `b6864e54` (`MapleStory_dump_SCY.exe.i64`, resolved via `idb_list`, matched by binary

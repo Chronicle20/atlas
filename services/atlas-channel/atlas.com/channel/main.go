@@ -2,6 +2,7 @@ package main
 
 import (
 	"atlas-channel/account"
+	"atlas-channel/battleship"
 	channel3 "atlas-channel/channel"
 	"atlas-channel/configuration/projection"
 	account2 "atlas-channel/kafka/consumer/account"
@@ -187,6 +188,7 @@ func main() {
 
 	rc := atlas.Connect(l)
 	controllernpc.InitRegistry(rc)
+	battleship.InitRegistry(rc)
 
 	validatorMap := produceValidators()
 	handlerMap := produceHandlers()
@@ -287,6 +289,8 @@ func main() {
 		if inbox := monsterDomain.GetNextSkillInbox(); inbox != nil {
 			inbox.EvictTenant(tid)
 		}
+		writer.EvictTenantWriterOptions(tid)
+		battleship.GetRideMirror().EvictTenant(tid)
 		tenant.Unregister(tid)
 	})
 
@@ -388,6 +392,7 @@ func buildListener(
 			WithField("channel.id", sc.ChannelId())
 
 		wp := produceWriterProducer(fl)(tenantCfg.Socket.Writers, writerList, rw)
+		writer.RegisterTenantWriterOptions(t.Id(), tenantCfg.Socket.Writers)
 
 		rh := consumer.GetManager().RegisterHandler
 		var handles []listener.HandlerHandle

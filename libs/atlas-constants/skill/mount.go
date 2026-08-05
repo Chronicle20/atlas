@@ -26,3 +26,12 @@ func SkillOnlyMountVehicleId(id Id, level int) (int32, bool) {
 		return 0, false
 	}
 }
+
+// IsBattleshipMountSkill reports whether id is the Corsair Battleship
+// (5221006) skill-mount. Battleship is deliberately NOT in
+// SkillOnlyMountVehicleId: its vehicle id is a client wire value resolved
+// from tenant configuration at buff-apply time in atlas-channel (DOM-25),
+// not baked into ingested skill data.
+func IsBattleshipMountSkill(id Id) bool {
+	return id == CorsairBattleshipId
+}

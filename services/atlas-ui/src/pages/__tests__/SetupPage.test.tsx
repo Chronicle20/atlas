@@ -45,6 +45,9 @@ vi.mock("@/lib/hooks/api/useSeed", () => ({
   useSeedPortalScripts: () => idleMutation,
   useSeedReactorScripts: () => idleMutation,
   useSeedMapActionScripts: () => idleMutation,
+  useSeedTransportRoutes: () => idleMutation,
+  useSeedTransportVessels: () => idleMutation,
+  useSeedInstanceRoutes: () => idleMutation,
   useUploadWzFiles: () => idleMutation,
   useRunDataProcessing: () => idleMutation,
   useWzInputStatus: () => ({
@@ -59,6 +62,9 @@ vi.mock("@/lib/hooks/api/useSeed", () => ({
   usePortalScriptsSeedStatus: () => emptyStatus,
   useReactorScriptsSeedStatus: () => emptyStatus,
   useMapActionScriptsSeedStatus: () => emptyStatus,
+  useTransportRoutesSeedStatus: () => emptyStatus,
+  useTransportVesselsSeedStatus: () => emptyStatus,
+  useInstanceRoutesSeedStatus: () => emptyStatus,
   showWzUploadErrorToast: vi.fn(),
 }));
 
@@ -96,7 +102,7 @@ describe("SetupPage (tenant-only)", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders all eight seed rows", () => {
+  it("renders all eleven seed rows", () => {
     render(<SetupPage />);
     for (const label of [
       "Monster & Reactor Drops",
@@ -107,6 +113,9 @@ describe("SetupPage (tenant-only)", () => {
       "Portal Scripts",
       "Reactor Scripts",
       "Map Action Scripts",
+      "Transport Routes",
+      "Transport Vessels",
+      "Instance Transport Routes",
     ]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }

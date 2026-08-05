@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"atlas-channel/battleship"
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	skill2 "atlas-channel/character/skill"
@@ -12,6 +13,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"math"
 
 	"github.com/sirupsen/logrus"
 
@@ -19,6 +21,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	atlaspacket "github.com/Chronicle20/atlas/libs/atlas-packet"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
@@ -46,8 +49,6 @@ func CharacterDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		// TODO decrease battleship hp
-
 		c, err := character.NewProcessor(l, ctx).GetById()(s.CharacterId())
 		if err != nil {
 			return
@@ -58,6 +59,25 @@ func CharacterDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(charpkt.CharacterDamageWriter)(charpkt.NewCharacterDamage(c.Id(), p.AttackIdx(), p.Damage(), p.MonsterTemplateId(), p.Left()).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce character [%d] has been damaged to foreign characters in map [%d].", s.CharacterId(), s.MapId())
+		}
+
+		// Battleship: damage taken while riding drains the ship's parallel
+		// HP pool (FR-3.1); the character HP change below is unaffected. A
+		// non-breaking drain reports remaining ship HP via the skill-cooldown
+		// packet carrying the config-resolved gauge pseudo-skill id
+		// (FR-3.4 / DOM-25). Break (dismount + cooldown) is handled inside
+		// Drain; the resulting client packets flow through the existing buff
+		// and skill consumers.
+		//
+		// Drains by the client-reported damage, deliberately NOT by the
+		// post-mitigation amount that processDamageTaken applies to character
+		// HP: the ship pool is a parallel pool, and this is the behavior
+		// task-153 specified and verified. Whether Achilles/MagicGuard/etc.
+		// should also reduce ship damage is a separate design question — see
+		// docs/tasks/task-153-corsair-battleship/backfill.md.
+		res := battleship.NewProcessor(l, ctx).Drain(s.Field(), s.CharacterId(), p.Damage())
+		if shouldAnnounceGauge(res.Status) {
+			announceShipHpGauge(l, ctx, wp, s, res.RemainingHP)
 		}
 
 		t := tenant.MustFromContext(ctx)
@@ -302,4 +322,53 @@ func processDamageTaken(
 	if result.reflect.amount > 0 {
 		_ = deps.damageMonster(f, p.MonsterId(), characterId, []uint32{result.reflect.amount}, result.reflect.attackType)
 	}
+}
+
+// shouldAnnounceGauge is the call-site gate isolated as a pure predicate so
+// it is directly unit-testable: the full handler can't be driven end-to-end
+// in this package's tests (the earlier, pre-existing, unseamed
+// character.NewProcessor(...).GetById() call returns early without a live
+// character service), so the gate itself — the only thing standing between
+// a correct and an incorrect announce — is verified here against every
+// battleship.DrainStatus value instead. Only DrainDrained carries a valid
+// RemainingHP to report; DrainBroke's dismount+cooldown already flows
+// through the existing buff/skill consumers, and DrainSkipped/DrainNotRiding
+// have no HP change to report at all.
+func shouldAnnounceGauge(status battleship.DrainStatus) bool {
+	return status == battleship.DrainDrained
+}
+
+// announceShipHpGauge sends the client's ship HP gauge: the skill-cooldown
+// packet with the config-resolved battleship gauge pseudo-skill id and the
+// remaining ship HP as the cooldown value (verified client behavior on
+// v83/v84/v87/v95/jms185 — design §1.1). On any resolve miss the packet is
+// skipped entirely (fail-loud, never send a guessed wire value).
+func announceShipHpGauge(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, remaining int32) {
+	t := tenant.MustFromContext(ctx)
+	opts, ok := writer.TenantWriterOptions(t.Id(), charpkt.CharacterSkillCooldownWriter)
+	if !ok {
+		l.Errorf("Writer options for [%s] missing; battleship HP gauge not sent.", charpkt.CharacterSkillCooldownWriter)
+		return
+	}
+	gaugeId, ok := atlaspacket.ResolveValue(l, opts, "skills", "BATTLESHIP_HP_GAUGE")
+	if !ok {
+		return
+	}
+	if err := session.Announce(l)(ctx)(wp)(charpkt.CharacterSkillCooldownWriter)(charpkt.NewCharacterSkillCooldown(gaugeId, gaugeCooldownValue(remaining)).Encode)(s); err != nil {
+		l.WithError(err).Errorf("Unable to announce battleship HP gauge to character [%d].", s.CharacterId())
+	}
+}
+
+// gaugeCooldownValue clamps remaining ship HP into the packet's uint16
+// field. Battleship is maxLevel 10 on every version (R-5), so the ceiling is
+// the v87+ arm at SLV 10 / charLevel 200 = 29 000 — well inside uint16. The
+// clamp is purely defensive.
+func gaugeCooldownValue(remaining int32) uint16 {
+	if remaining < 0 {
+		return 0
+	}
+	if remaining > math.MaxUint16 {
+		return math.MaxUint16
+	}
+	return uint16(remaining)
 }

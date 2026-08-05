@@ -9,6 +9,7 @@ import (
 
 	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // EnqueueBuffer persists a message.Buffer-shaped payload (env-var token →
@@ -21,6 +22,16 @@ func EnqueueBuffer(l logrus.FieldLogger, ctx context.Context, tx *gorm.DB, conte
 	headers, err := headerMap(ctx)
 	if err != nil {
 		return err
+	}
+	if _, ok := headers[tenant.ID]; !ok {
+		// producer.TenantHeaderDecorator returns empty headers with a
+		// nil error when the context has no tenant, and the consumer
+		// side then installs the ZERO tenant rather than none — so a
+		// tenant-scoped event silently reloads the wrong (nil) tenant.
+		// Surface it here, on the one path every outbox emit travels.
+		for token := range contents {
+			l.WithField("topic_token", token).Warn("Enqueuing message without tenant headers; downstream consumers will resolve the nil tenant.")
+		}
 	}
 	for token, msgs := range contents {
 		t, err := topic.EnvProvider(l)(token)()

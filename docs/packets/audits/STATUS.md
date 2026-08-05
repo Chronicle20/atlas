@@ -543,7 +543,7 @@ Tool: `f6a37e5f0741b73e8f633e075e08a84dd758ea4c411e5d25aed661d3235d1c1b`
 | VIEW_ALL_PIC_REGISTER | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01F | ✅ | 0x01F | ✅ | 0x01F | ✅ | 0x01E | ✅ |  | ⬜ |
 | ENTER_CASHSHOP | CWvsContext::SendMigrateToShopRequest; sub_70BD0D |  | 0x020 | ❌ | 0x025 | ❌ | 0x027 | ❌ | 0x026 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x02A | ❌ | 0x02B | ❌ | 0x01F | ❌ |
 | VIEW_ALL_WITH_PIC | CLogin::SendSelectCharPacketByVAC | login/serverbound/AllCharacterListSelect |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x020 | ✅ | 0x020 | ✅ | 0x020 | ✅ | 0x01F | ✅ |  | ⬜ |
-| MOVE_PLAYER | CMovePath::Flush; CUserLocal::OnKey; CVecCtrlUser::EndUpdateActive; sub_6E9923; sub_91B6E6 | character/serverbound/Move (T1) | 0x021 | ✅ | 0x026 | ✅ | 0x028 | ✅ | 0x027 | ✅ | 0x029 | ❌ | 0x029 | ❌ | 0x02B | ❌ | 0x02C | ❌ | 0x020 | ❌ |
+| MOVE_PLAYER | CMovePath::Flush; CUserLocal::OnKey; CVecCtrlUser::EndUpdateActive; sub_6E9923; sub_91B6E6 | character/serverbound/Move (T1) | 0x021 | ✅ | 0x026 | ✅ | 0x028 | ✅ | 0x027 | ✅ | 0x029 | ❌ | 0x029 | ❌ | 0x02B | ❌ | 0x02C | ✅ | 0x020 | ❌ |
 | UNNAMED_R38 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x021 | ❌ | 0x021 | ❌ | 0x021 | ❌ | 0x020 | ❌ | 0x016 | ❌ |
 | CANCEL_CHAIR | CUserLocal::HandleXKeyDown; CWvsContext::SendGetUpFromChairRequest; sub_69DF44 | character/serverbound/ChairFixed (T1) | 0x022 | ✅ | 0x027 | ✅ | 0x029 | ✅ | 0x028 | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02C | ✅ | 0x02D | ✅ | 0x021 | ✅ |
 | UNNAMED_R39 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x022 | ❌ | 0x022 | ❌ | 0x022 | ❌ | 0x021 | ❌ | 0x017 | ❌ |
@@ -859,7 +859,7 @@ Tool: `f6a37e5f0741b73e8f633e075e08a84dd758ea4c411e5d25aed661d3235d1c1b`
 | character/serverbound/ChairPortable (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChalkboardClose (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ExpressionRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| character/serverbound/Move (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| character/serverbound/Move (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |
 | fame/serverbound/Change |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | field/clientbound/FieldEffectWeather (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | field/serverbound/FieldChange (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |

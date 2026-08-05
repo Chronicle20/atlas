@@ -2,6 +2,7 @@ package configuration_test
 
 import (
 	"atlas-tenants/configuration"
+	tenants "atlas-tenants/tenant"
 	"atlas-tenants/test"
 	"bytes"
 	"encoding/json"
@@ -14,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+	"gorm.io/gorm"
 
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
@@ -24,8 +26,11 @@ import (
 // their write in database.ExecuteTransaction and enqueue the status event
 // via outbox.EmitProvider, which persists a row to that table inside the
 // same transaction (see services/atlas-guilds/.../thread/processor_outbox_test.go
-// for the identical pattern in another service).
-func rankingsHandlerTestDB(t *testing.T) *httptest.Server {
+// for the identical pattern in another service). It returns the *gorm.DB
+// too, since tests must seed a tenants row for tenantCtx's
+// tenant.Processor.GetById to resolve — the …AndEmit methods now abort
+// (rather than emit tenant-free) for an unknown tenant.
+func rankingsHandlerTestDB(t *testing.T) (*httptest.Server, *gorm.DB) {
 	t.Helper()
 	db := test.SetupTestDB(t)
 	if err := outbox.Migration(db); err != nil {
@@ -38,7 +43,7 @@ func rankingsHandlerTestDB(t *testing.T) *httptest.Server {
 	srv := httptest.NewServer(router)
 	t.Cleanup(srv.Close)
 	t.Cleanup(func() { test.CleanupTestDB(db) })
-	return srv
+	return srv, db
 }
 
 func doRankingsRequest(t *testing.T, method, url string, body []byte) *http.Response {
@@ -77,8 +82,17 @@ func doRankingsRequest(t *testing.T, method, url string, body []byte) *http.Resp
 // against — shows up as a decode-miss (zero value) or a missing literal
 // substring, not a silent pass.
 func TestRankingsHandlerWireRoundTrip(t *testing.T) {
-	srv := rankingsHandlerTestDB(t)
+	srv, db := rankingsHandlerTestDB(t)
 	tenantId := uuid.New()
+	if err := db.Create(&tenants.Entity{
+		ID:           tenantId,
+		Name:         "rankings-round-trip",
+		Region:       "GMS",
+		MajorVersion: 83,
+		MinorVersion: 1,
+	}).Error; err != nil {
+		t.Fatalf("seed tenant: %v", err)
+	}
 	rankingsURL := fmt.Sprintf("%s/tenants/%s/configurations/rankings", srv.URL, tenantId)
 
 	// 1. POST a rankings config with recomputeIntervalMinutes=17 through

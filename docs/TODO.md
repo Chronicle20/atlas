@@ -424,3 +424,39 @@ left silent (see `docs/tasks/task-081-ida-export-reharvest/four-version-validati
 - [ ] Optional: a `validate` mode that also handles if/else-chain dispatch handlers
   (e.g. `CLogin::OnCheckPasswordResult`) — currently honest `unverifiable` (a genuine
   static-extraction wall; may not be worth the complexity).
+
+## task-190 follow-up: USER_CALC_DAMAGE_STAT_SET_REQUEST handler (reserved as task-192)
+
+Deferred from task-190 (disease-duration + CANCEL_DEBUFF). `USER_CALC_DAMAGE_STAT_SET_REQUEST`
+is the tail of the same client handshake task-190 implements handlers for:
+`CWvsContext::OnTemporaryStatReset` ends with `if (IsCalcDamageStat(mask)) { COutPacket(0x6C);
+SendPacket(...); }` — so it fires more often once task-190's FR-2 (temporary-stat reset routing)
+ships. It was kept out of scope on evidence, not overlooked: unlike `CANCEL_DEBUFF`, this send is
+one-shot per stat reset, not a per-frame loop, so it cannot wedge a client the way an unhandled
+`CANCEL_DEBUFF` did — the cost of leaving it unhandled is a possibly-stale client-side
+damage-range display, not a hang. See `docs/tasks/task-190-disease-duration-cancel-debuff/investigation.md`
+§8.3 for the IDA evidence.
+
+- [ ] **Implement `USER_CALC_DAMAGE_STAT_SET_REQUEST` as task-192** — use 192 for this
+  follow-up rather than calling `tools/task-numbers.sh next` fresh (it will now return a
+  higher number, since 192 is already reserved).
+  **Do not use task-184.** 184 was previously assigned to a gms_61 opcode-corruption incident
+  (7 template edits wrong, caught by `matrix --check`) whose branch and PR were reverted and
+  deleted. The deletion is what let `tools/task-numbers.sh next` report 184 as free when this
+  entry was first written — its folder/branch/commit-subject scan is blind to anything whose
+  artifacts were deleted after a revert. The commit that recorded this very note has since
+  registered 184 in the tool's git-history scan, so `next` no longer offers it — but that
+  registration is incidental, not the reason to avoid it: a number can look free to
+  `tools/task-numbers.sh` and still be historically used, so treat the tool's output as a
+  hint, not proof, and skip 184 on the historical grounds above regardless of what `next`
+  reports at any given moment.
+  Opcode is IDA-confirmed for only three of the ten live-tenant versions so far:
+  GMS v48 `0x56` (86), GMS v61 `0x63` (99), GMS v83 `0x6C` (108)
+  (`investigation.md:214`). The remaining seven (v72, v79, v84, v87, v92, v95, JMS v185) need
+  the same per-version IDB pass task-190 ran for `CANCEL_DEBUFF` before a handler can be wired
+  and routed in the seed templates.
+  **Opcode collision to respect:** at GMS v61 the byte `0x63` is this packet
+  (`USER_CALC_DAMAGE_STAT_SET_REQUEST`), while at GMS v83/v84 the same byte `0x63` is
+  `CANCEL_DEBUFF` (`investigation.md:172-184`) — the two must never be routed by a hard-coded
+  `0x63` constant; always resolve per-tenant from the version-specific template/registry
+  entry, the same way task-190's `CancelDebuffHandle` routing does.

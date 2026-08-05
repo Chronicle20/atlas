@@ -891,7 +891,7 @@ func TestExecuteStatBuff_ReflectStatus_PopulatesReflectMetadata(t *testing.T) {
 	sd := mobskill.NewModelBuilder().
 		SetSkillId(uint16(skillId)).
 		SetLevel(uint16(skillLevel)).
-		SetDuration(60).
+		SetDuration(60_000). // 60s in ms
 		SetX(30).
 		SetBoundingBox(-50, -30, 50, 30).
 		Build()
@@ -1011,7 +1011,7 @@ func TestExecuteStatBuff_PhysicalImmune_CancelsActiveMagicImmune(t *testing.T) {
 	sd := mobskill.NewModelBuilder().
 		SetSkillId(uint16(skillId)).
 		SetLevel(uint16(skillLevel)).
-		SetDuration(60).
+		SetDuration(60_000). // 60s in ms
 		SetX(1).
 		Build()
 
@@ -1067,7 +1067,7 @@ func TestExecuteStatBuff_MagicImmune_CancelsActivePhysicalImmune(t *testing.T) {
 	sd := mobskill.NewModelBuilder().
 		SetSkillId(uint16(skillId)).
 		SetLevel(uint16(skillLevel)).
-		SetDuration(60).
+		SetDuration(60_000). // 60s in ms
 		SetX(1).
 		Build()
 
@@ -1113,7 +1113,7 @@ func TestExecuteStatBuff_PhysicalImmune_NoMagicImmune_DoesNotCancel(t *testing.T
 	sd := mobskill.NewModelBuilder().
 		SetSkillId(uint16(skillId)).
 		SetLevel(uint16(skillLevel)).
-		SetDuration(60).
+		SetDuration(60_000). // 60s in ms
 		SetX(1).
 		Build()
 
@@ -1161,7 +1161,9 @@ func TestDamageRepickGuard_FiresOnFirstHitMiss(t *testing.T) {
 // TestBuildMistCreateBody verifies the pure mapping from a casting monster +
 // AREA_POISON skill data to the wire MIST_CREATE body. Field identity, owner
 // identity, origin coordinates, bounding box, disease/duration, and skill
-// references must all flow through unchanged (modulo seconds→ms).
+// references must all flow through unchanged. mobskill.Duration() is
+// MILLISECONDS (task-190 FR-1.1) and this body forwards it verbatim — there is
+// no scaling here.
 func TestBuildMistCreateBody(t *testing.T) {
 	r := GetMonsterRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
@@ -1176,7 +1178,7 @@ func TestBuildMistCreateBody(t *testing.T) {
 		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
 		SetLevel(5).
 		SetX(80).
-		SetDuration(10). // seconds
+		SetDuration(10_000). // milliseconds — mobskill.Duration() is ms since task-190
 		SetBoundingBox(-50, -30, 50, 30).
 		Build()
 
@@ -1219,7 +1221,10 @@ func TestBuildMistCreateBody(t *testing.T) {
 
 // TestBuildMistCreateBody_DurationCap verifies that absurdly long durations
 // (e.g. atlas-data reporting 30 minutes) are clamped to MistDurationCapMs so
-// the per-mist tick load is bounded.
+// per-mist tick load stays bounded. Before task-190 this clamp fired on a
+// 1000×-inflated value and silently pinned EVERY mob mist to exactly 60s; it
+// now applies to real milliseconds, so only mists authored longer than 60s
+// clamp.
 func TestBuildMistCreateBody_DurationCap(t *testing.T) {
 	r := GetMonsterRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
@@ -1233,7 +1238,7 @@ func TestBuildMistCreateBody_DurationCap(t *testing.T) {
 		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
 		SetLevel(1).
 		SetX(80).
-		SetDuration(1800). // 30 minutes — must clamp
+		SetDuration(1_800_000). // 30 minutes in ms — must clamp to MistDurationCapMs
 		SetBoundingBox(-50, -30, 50, 30).
 		Build()
 
@@ -1241,6 +1246,37 @@ func TestBuildMistCreateBody_DurationCap(t *testing.T) {
 	if body.Duration != MistDurationCapMs || body.DiseaseDuration != MistDurationCapMs {
 		t.Errorf("expected clamp to %d, got Duration=%d DiseaseDuration=%d",
 			MistDurationCapMs, body.Duration, body.DiseaseDuration)
+	}
+}
+
+// TestBuildMistCreateBody_UnderCapIsNotClamped is the regression guard for the
+// defect the cap used to mask: before task-190 a 30s authored mist arrived here
+// as 30_000_000 and was pinned to exactly 60_000. It must now pass through.
+func TestBuildMistCreateBody_UnderCapIsNotClamped(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100020000)).SetInstance(uuid.New()).Build()
+	m := r.CreateMonster(ctx, ten, f, uint32(8800002), 300, 400, 0, 5, 0, 1000, 200)
+
+	sd := mobskill.NewModelBuilder().
+		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
+		SetLevel(5).
+		SetX(80).
+		SetDuration(30_000). // 30s authored in WZ, delivered as ms
+		SetBoundingBox(-50, -30, 50, 30).
+		Build()
+
+	body := buildMistCreateBody(m, sd, byte(monster2.SkillTypeAreaPoison), 5)
+
+	if body.Duration != 30_000 || body.DiseaseDuration != 30_000 {
+		t.Errorf("duration: got %d/%d want 30000/30000 (must not clamp below the 60s cap)",
+			body.Duration, body.DiseaseDuration)
+	}
+	if body.Duration == MistDurationCapMs {
+		t.Errorf("duration was pinned to the cap (%d) — the pre-task-190 defect has returned", MistDurationCapMs)
 	}
 }
 
@@ -1260,7 +1296,7 @@ func TestExecuteMist_ProducesMistCreateCommand(t *testing.T) {
 		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
 		SetLevel(5).
 		SetX(80).
-		SetDuration(10).
+		SetDuration(10_000).
 		SetBoundingBox(-50, -30, 50, 30).
 		Build()
 

@@ -777,6 +777,11 @@ func candidatesFromFName(fname string) []candidate {
 		// Struct is ItemCancel; handler constant = "CharacterItemCancelHandle".
 		// Client sends opcode 0x4F (79) with Encode4(nItemID).
 		return []candidate{{name: "ItemCancel", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::CheckTemporaryStatDuration":
+		// CANCEL_DEBUFF. Struct is CancelDebuff; handler constant =
+		// "CancelDebuffHandle". Empty body: COutPacket(opcode) then SendPacket
+		// with no intervening encode calls, on every version (task-190).
+		return []candidate{{name: "CancelDebuff", dir: csvpkg.DirServerbound}}
 	// --- Character serverbound chairs/expression bucket (Task 13) ---
 	case "CUserLocal::HandleXKeyDown":
 		// Struct is ChairFixed; handler constant = "CharacterChairInteractionHandle".

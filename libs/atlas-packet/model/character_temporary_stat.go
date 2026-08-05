@@ -577,22 +577,41 @@ func legacyGmsMask(t tenant.Model) bool {
 	return t.Region() == "GMS" && t.MajorVersion() < 61
 }
 
+// EncodeMask writes the 128-bit SecondaryStat mask: one bit per stat this CTS
+// actually holds, and nothing else. It is shared by the SET (GIVE_BUFF) and
+// RESET (CANCEL_BUFF) paths, which differ only in whether value/base blocks
+// follow — never in which bits are claimed.
+//
+// This used to OR in the entire TwoState/base group (EnergyCharge, DashSpeed,
+// DashJump, MonsterRiding, SpeedInfusion, HomingBeacon, Undead) unconditionally,
+// on the theory that the client reads a fixed base-stat group. It does not: it
+// reads one base block per SET base bit, so claiming a base stat the CTS does
+// not hold is both a lie and a wire cost.
+//
+// It was also a live bug (task-190). Both CWvsContext::OnTemporaryStatSet and
+// ::OnTemporaryStatReset branch on the received mask:
+//
+//	if (mask & CTS_RideVehicle)  CUser::ShowRideVehicleEffect(...)   // or SendSkillCancelRequest
+//	if (mask & CTS_GuidedBullet) CMobPool::ResetGuidedMob(...)       // CMob::SetGuided on set
+//
+// so every buff give and every buff cancel — a mob's Slow expiring, say — drove
+// the ride-vehicle and guided-bullet paths for a player who was simply standing
+// there, desyncing client and server about whether they were mounted. Verified
+// on GMS v61 (@0x84353a), v72 (@0x918f3c), v83 (@0xa2071f / @0xa202be) and v95
+// (@0x9f2ab0, whose PDB-backed symbols name CTS_RideVehicle_2 and
+// CTS_GuidedBullet_0 outright), plus the foreign path
+// CUserRemote::OnResetTemporaryStat (v83 @0x983921).
+//
+// The per-version shift already places each bit where the client reads it: on
+// v83 RideVehicle is shift 85 -> wire bytes 4-7, matching
+// SecondaryStat::DecodeForLocal's flag 1<<(i+82). No version-specific mask
+// placement is needed.
+//
+// getBaseTemporaryStats is gated on the same presence test, so bits and blocks
+// cannot drift apart.
 func (m *CharacterTemporaryStat) EncodeMask(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
-		reg := buildCharacterTemporaryStatRegistry(t)
 		mask := tool.Uint128{}
-		// The TwoState/base stats are always present and always encoded as base-stat
-		// blocks (see getBaseTemporaryStats), so their mask bits are set
-		// unconditionally. The registry's per-version shift already places them where
-		// the client reads them: on v83 RideVehicle is shift 85 -> wire bytes 4-7,
-		// matching SecondaryStat::DecodeForLocal's flag 1<<(i+82) (IDA @0x781D0E). No
-		// version-specific mask placement is needed.
-		for _, bs := range twoStateBaseStats(t) {
-			if st, ok := reg.byName[bs.name]; ok {
-				mask = mask.Or(st.mask)
-			}
-		}
-
 		for _, v := range m.stats {
 			mask = mask.Or(v.statType.mask)
 		}
@@ -863,7 +882,7 @@ func (m *CharacterTemporaryStat) Decode(l logrus.FieldLogger, ctx context.Contex
 		_ = r.ReadByte() // nDefenseAtt
 		_ = r.ReadByte() // nDefenseState
 
-		m.decodeBaseTemporaryStats(l, ctx)(r, options)
+		m.decodeBaseTemporaryStats(l, ctx, mask)(r, options)
 	}
 }
 
@@ -892,16 +911,23 @@ func (m *CharacterTemporaryStat) DecodeForeign(l logrus.FieldLogger, ctx context
 		_ = r.ReadByte() // nDefenseAtt
 		_ = r.ReadByte() // nDefenseState
 
-		m.decodeBaseTemporaryStats(l, ctx)(r, options)
+		m.decodeBaseTemporaryStats(l, ctx, mask)(r, options)
 	}
 }
 
-func (m *CharacterTemporaryStat) decodeBaseTemporaryStats(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *CharacterTemporaryStat) decodeBaseTemporaryStats(l logrus.FieldLogger, ctx context.Context, mask tool.Uint128) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		// Mirror getBaseTemporaryStats exactly (same version-specific group + order)
-		// so the bytes consumed match the bytes emitted, boundary-for-boundary.
+		// Mirror getBaseTemporaryStats exactly (same version-specific group, same
+		// order, same presence gate) so the bytes consumed match the bytes
+		// emitted, boundary-for-boundary. The gate is the mask: a base block is
+		// on the wire only when its bit is set.
+		reg := buildCharacterTemporaryStatRegistry(t)
 		for _, bs := range twoStateBaseStats(t) {
+			st, known := reg.byName[bs.name]
+			if !known || mask.And(st.mask).IsZero() {
+				continue
+			}
 			switch bs.kind {
 			case twoStateSpeedInfusion:
 				si := SpeedInfusionTemporaryStat{CharacterTemporaryStatBase: CharacterTemporaryStatBase{bDynamicTermSet: false}}
@@ -920,18 +946,27 @@ func (m *CharacterTemporaryStat) decodeBaseTemporaryStats(l logrus.FieldLogger, 
 	}
 }
 
+// getBaseTemporaryStats returns one base-stat block per two-state stat this CTS
+// actually holds, in the client's read order. Presence-gated to match
+// EncodeMask: the client reads one block per SET base bit, so emitting a block
+// whose bit is clear would leave unread bytes and desync the tail, and setting a
+// bit with no block would run it off the end.
+//
+// Absent base stats are simply skipped. They used to be emitted as empty
+// placeholder blocks alongside an unconditional mask bit — self-consistent, but
+// it made every buff packet claim a mount and a guided bullet. See EncodeMask.
 func (m *CharacterTemporaryStat) getBaseTemporaryStats(t tenant.Model) []packet.Encoder {
 	list := make([]packet.Encoder, 0)
 	for _, bs := range twoStateBaseStats(t) {
+		s, ok := m.stats[bs.name]
+		if !ok {
+			continue
+		}
 		switch bs.kind {
 		case twoStateMonsterRiding:
 			// Monster Riding: nOption = vehicle/taming-mob item id, rOption = source
 			// skill id. Wire contract IDA-confirmed — context.md §2, design.md §1.1.
-			if s, ok := m.stats[bs.name]; ok {
-				list = append(list, NewCharacterTemporaryStatBaseWithOptions(false, s.Value(), s.SourceId()))
-			} else {
-				list = append(list, NewCharacterTemporaryStatBase(false)) // 13
-			}
+			list = append(list, NewCharacterTemporaryStatBaseWithOptions(false, s.Value(), s.SourceId()))
 		case twoStateSpeedInfusion:
 			list = append(list, NewSpeedInfusionTemporaryStat()) // 20
 		case twoStateGuidedBullet:

@@ -15342,6 +15342,11 @@
           "comment": "CONDITIONAL if flag1 != 0 AND flag2 != 0: item, 55 bytes GW_CashItemInfo blob, appended to m_aCashItemInfo"
         }
       ]
+    },
+    "CWvsContext::CheckTemporaryStatDuration": {
+      "address": "0xab7fd7",
+      "direction": "serverbound",
+      "calls": []
     }
   }
 }

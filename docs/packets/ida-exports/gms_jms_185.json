@@ -14735,6 +14735,11 @@
           "comment": "mode (0xa8=168 SHOW_NOTICE_1464; op-byte consumed by dispatcher; bodyless - handler reads nothing, shows StringPool notice 0x1464)"
         }
       ]
+    },
+    "CWvsContext::CheckTemporaryStatDuration": {
+      "address": "0xb0783e",
+      "direction": "serverbound",
+      "calls": []
     }
   }
 }

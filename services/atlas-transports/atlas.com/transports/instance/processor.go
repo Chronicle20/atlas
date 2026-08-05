@@ -113,6 +113,23 @@ func (p *ProcessorImpl) applyRouteEffects(mb *message.Buffer, route RouteModel, 
 	}
 }
 
+// cancelRouteEffects buffers one CANCEL_CONSUMABLE_EFFECT per item the route
+// declares, for one character. Like applyRouteEffects it returns nothing: a
+// terminal path must always finish releasing its instance even if a command
+// cannot be buffered. Leaking a buff is bad; leaking an instance is worse.
+//
+// A double cancel is harmless — atlas-buffs' Cancel maps a missing buff to
+// nil, with no event and no user-visible error — so racing terminal paths
+// (portal exit at the same moment the timer fires) need no coordination.
+func (p *ProcessorImpl) cancelRouteEffects(mb *message.Buffer, route RouteModel, worldId world.Id, channelId channel.Id, characterId uint32) {
+	for _, itemId := range route.EffectItemIds() {
+		p.l.Infof("Cancelling route [%s] effect item [%d] for character [%d].", route.Name(), itemId, characterId)
+		if err := mb.Put(consumable.EnvCommandTopic, cancelConsumableEffectProvider(worldId, channelId, characterId, itemId)); err != nil {
+			p.l.WithError(err).Errorf("Unable to buffer cancel of effect item [%d] for character [%d] on route [%s].", itemId, characterId, route.Name())
+		}
+	}
+}
+
 func (p *ProcessorImpl) StartTransport(mb *message.Buffer) func(characterId uint32, routeId uuid.UUID, f field.Model) error {
 	return func(characterId uint32, routeId uuid.UUID, f field.Model) error {
 		// Double-transport prevention
@@ -193,12 +210,21 @@ func (p *ProcessorImpl) HandleMapEnter(mb *message.Buffer) func(characterId uint
 
 			p.l.Infof("Character [%d] entered non-transit map [%d] while in transport, cancelling.", characterId, mapId)
 
+			// The route is looked up only for its declared effects; a missing
+			// route must not stop the instance from being torn down.
+			if route, hasRoute := getRouteRegistry().GetRoute(p.ctx, inst.RouteId()); hasRoute {
+				p.cancelRouteEffects(mb, route, worldId, channelId, characterId)
+			} else {
+				p.l.Warnf("Route [%s] not found while cancelling instance [%s]; character [%d] may retain transit effects.", inst.RouteId(), charInstanceId, characterId)
+			}
+
 			cr.Remove(characterId)
 			empty := ir.RemoveCharacter(charInstanceId, characterId)
 
-			err := mb.Put(it.EnvEventTopic, cancelledEventProvider(worldId, characterId, inst.RouteId(), charInstanceId, it.CancelReasonMapExit))
-			if err != nil {
-				return err
+			// A failed event put is logged, not returned: ReleaseInstance below
+			// must run regardless (PRD §8 failure isolation).
+			if err := mb.Put(it.EnvEventTopic, cancelledEventProvider(worldId, characterId, inst.RouteId(), charInstanceId, it.CancelReasonMapExit)); err != nil {
+				p.l.WithError(err).Errorf("Unable to buffer CANCELLED event for character [%d]; continuing to instance release.", characterId)
 			}
 
 			if empty {
@@ -285,13 +311,22 @@ func (p *ProcessorImpl) HandleLogout(mb *message.Buffer) func(characterId uint32
 
 		p.l.Infof("Character [%d] logged out during instance transport [%s], removing from instance.", characterId, charInstanceId)
 
+		// Best effort (FR-1.6): atlas-buffs does not drop buffs on logout —
+		// they carry an expiresAt and are restored with their remaining
+		// duration — so without this the player logs back in still morphed.
+		// It is not an error if the session is already gone; the command
+		// never blocks and never fails the teardown.
+		if route, hasRoute := getRouteRegistry().GetRoute(p.ctx, inst.RouteId()); hasRoute {
+			p.cancelRouteEffects(mb, route, worldId, channelId, characterId)
+		} else {
+			p.l.Warnf("Route [%s] not found while cancelling instance [%s] on logout; character [%d] may retain transit effects.", inst.RouteId(), charInstanceId, characterId)
+		}
+
 		cr.Remove(characterId)
 		empty := ir.RemoveCharacter(charInstanceId, characterId)
 
-		// Emit CANCELLED event
-		err := mb.Put(it.EnvEventTopic, cancelledEventProvider(worldId, characterId, inst.RouteId(), charInstanceId, it.CancelReasonLogout))
-		if err != nil {
-			return err
+		if err := mb.Put(it.EnvEventTopic, cancelledEventProvider(worldId, characterId, inst.RouteId(), charInstanceId, it.CancelReasonLogout)); err != nil {
+			p.l.WithError(err).Errorf("Unable to buffer CANCELLED event for character [%d] on logout; continuing to instance release.", characterId)
 		}
 
 		if empty {
@@ -390,7 +425,6 @@ func (p *ProcessorImpl) TickArrivalAndEmit() error {
 
 func (p *ProcessorImpl) TickStuckTimeout(mb *message.Buffer) error {
 	ir := getInstanceRegistry()
-	cr := getCharacterRegistry()
 	now := time.Now()
 
 	routes := getRouteRegistry().GetRoutes(p.ctx)
@@ -401,17 +435,25 @@ func (p *ProcessorImpl) TickStuckTimeout(mb *message.Buffer) error {
 				continue
 			}
 			p.l.Warnf("Instance [%s] for route [%s] exceeded max lifetime, force-cancelling.", inst.InstanceId(), route.Name())
-
-			characters := inst.Characters()
-			for _, entry := range characters {
-				_ = mb.Put(character2EnvCommandTopic, warpToStartMapProvider(entry.WorldId, entry.ChannelId, entry.CharacterId, route.StartMapId()))
-				_ = mb.Put(it.EnvEventTopic, cancelledEventProvider(entry.WorldId, entry.CharacterId, route.Id(), inst.InstanceId(), it.CancelReasonStuck))
-				cr.Remove(entry.CharacterId)
-			}
+			p.forceCancelInstance(mb, inst, route)
 			ir.ReleaseInstance(inst.InstanceId())
 		}
 	}
 	return nil
+}
+
+// forceCancelInstance cancels every character's route effects, warps them back
+// to the route's start map and emits CANCELLED/STUCK. Extracted from
+// TickStuckTimeout so the emission is directly testable — the tick's clock is
+// time.Now() and cannot be advanced from a test.
+func (p *ProcessorImpl) forceCancelInstance(mb *message.Buffer, inst TransportInstance, route RouteModel) {
+	cr := getCharacterRegistry()
+	for _, entry := range inst.Characters() {
+		p.cancelRouteEffects(mb, route, entry.WorldId, entry.ChannelId, entry.CharacterId)
+		_ = mb.Put(character2EnvCommandTopic, warpToStartMapProvider(entry.WorldId, entry.ChannelId, entry.CharacterId, route.StartMapId()))
+		_ = mb.Put(it.EnvEventTopic, cancelledEventProvider(entry.WorldId, entry.CharacterId, route.Id(), inst.InstanceId(), it.CancelReasonStuck))
+		cr.Remove(entry.CharacterId)
+	}
 }
 
 func (p *ProcessorImpl) TickStuckTimeoutAndEmit() error {
@@ -440,6 +482,7 @@ func (p *ProcessorImpl) GracefulShutdown(mb *message.Buffer) error {
 
 		characters := inst.Characters()
 		for _, entry := range characters {
+			p.cancelRouteEffects(mb, route, entry.WorldId, entry.ChannelId, entry.CharacterId)
 			_ = mb.Put(character2EnvCommandTopic, warpToStartMapProvider(entry.WorldId, entry.ChannelId, entry.CharacterId, route.StartMapId()))
 			cr.Remove(entry.CharacterId)
 		}

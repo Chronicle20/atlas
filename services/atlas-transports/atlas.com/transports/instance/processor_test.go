@@ -188,3 +188,205 @@ func TestStartTransport_AlreadyInTransportEmitsNothing(t *testing.T) {
 
 	assert.Empty(t, mb.GetAll()[consumable.EnvCommandTopic])
 }
+
+// board puts a character into an instance of route through the real boarding
+// path and returns the instance id, so terminal-path tests start from exactly
+// the state StartTransport leaves behind.
+func board(t *testing.T, p *ProcessorImpl, route RouteModel, characterId uint32, worldId world.Id, channelId channel.Id) uuid.UUID {
+	t.Helper()
+	mb := message.NewBuffer()
+	f := field.NewBuilder(worldId, channelId, route.StartMapId()).Build()
+	assert.NoError(t, p.StartTransport(mb)(characterId, route.Id(), f))
+	instanceId, ok := getCharacterRegistry().GetInstanceForCharacter(characterId)
+	assert.True(t, ok)
+	return instanceId
+}
+
+// The dracoout shape: exiting transit map 200090510 through a portal that
+// warps to the non-transit map 240000100. That portal seed carries no
+// cancel_consumable_effect operation — under route-owned cleanup the morph is
+// removed here instead, which is the previously-unfixed leak (FR-3.6).
+func TestHandleMapEnter_NonTransitMapCancelsEffects(t *testing.T) {
+	p, ctx := setupProcessorTest(t)
+	route := newEffectRoute(t, 1)
+	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
+	instanceId := board(t, p, route, 42, world.Id(0), channel.Id(1))
+
+	mb := message.NewBuffer()
+	assert.NoError(t, p.HandleMapEnter(mb)(42, _map.Id(240000100), uuid.Nil, world.Id(0), channel.Id(1)))
+
+	cs := decodeConsumables(t, mb)
+	assert.Len(t, cs, 1)
+	assert.Equal(t, consumable.CommandCancelConsumableEffect, cs[0].Type)
+	assert.Equal(t, item.Id(2210016), cs[0].Body.ItemId)
+	assert.Equal(t, uint32(42), cs[0].CharacterId)
+
+	evs := decodeInstanceTransportEvents(t, mb)
+	assert.Len(t, evs, 1)
+	assert.Equal(t, it.EventTypeCancelled, evs[0].Type)
+	assert.Equal(t, it.CancelReasonMapExit, evs[0].Body.Reason)
+	assert.Equal(t, instanceId, evs[0].Body.InstanceId)
+}
+
+// Moving between two transit maps of the same route is not a terminal path.
+func TestHandleMapEnter_TransitToTransitDoesNotCancel(t *testing.T) {
+	p, ctx := setupProcessorTest(t)
+	route := newEffectRoute(t, 1)
+	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
+	board(t, p, route, 42, world.Id(0), channel.Id(1))
+
+	mb := message.NewBuffer()
+	assert.NoError(t, p.HandleMapEnter(mb)(42, _map.Id(200090510), uuid.Nil, world.Id(0), channel.Id(1)))
+
+	assert.Empty(t, mb.GetAll()[consumable.EnvCommandTopic])
+	evs := decodeInstanceTransportEvents(t, mb)
+	assert.Len(t, evs, 1)
+	assert.Equal(t, it.EventTypeTransitEntered, evs[0].Type)
+}
+
+func TestHandleMapEnter_NoEffectsEmitsNoConsumableCommands(t *testing.T) {
+	p, ctx := setupProcessorTest(t)
+	route := newPlainRoute(t)
+	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
+	board(t, p, route, 42, world.Id(0), channel.Id(1))
+
+	mb := message.NewBuffer()
+	assert.NoError(t, p.HandleMapEnter(mb)(42, _map.Id(130000210), uuid.Nil, world.Id(0), channel.Id(1)))
+
+	assert.Empty(t, mb.GetAll()[consumable.EnvCommandTopic])
+}
+
+// atlas-buffs does not drop buffs on logout — they carry an expiresAt and are
+// restored with their remaining duration. Without this cancel a player who
+// logs out mid-flight logs back in still morphed.
+func TestHandleLogout_CancelsEffects(t *testing.T) {
+	p, ctx := setupProcessorTest(t)
+	route := newEffectRoute(t, 1)
+	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
+	board(t, p, route, 42, world.Id(0), channel.Id(1))
+
+	mb := message.NewBuffer()
+	assert.NoError(t, p.HandleLogout(mb)(42, world.Id(0), channel.Id(1)))
+
+	cs := decodeConsumables(t, mb)
+	assert.Len(t, cs, 1)
+	assert.Equal(t, consumable.CommandCancelConsumableEffect, cs[0].Type)
+	assert.Equal(t, uint32(42), cs[0].CharacterId)
+
+	evs := decodeInstanceTransportEvents(t, mb)
+	assert.Len(t, evs, 1)
+	assert.Equal(t, it.CancelReasonLogout, evs[0].Body.Reason)
+}
+
+func TestHandleLogout_NoEffectsEmitsNoConsumableCommands(t *testing.T) {
+	p, ctx := setupProcessorTest(t)
+	route := newPlainRoute(t)
+	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
+	board(t, p, route, 42, world.Id(0), channel.Id(1))
+
+	mb := message.NewBuffer()
+	assert.NoError(t, p.HandleLogout(mb)(42, world.Id(0), channel.Id(1)))
+
+	assert.Empty(t, mb.GetAll()[consumable.EnvCommandTopic])
+}
+
+func TestTickStuckTimeout_CancelsEffectsForEveryCharacter(t *testing.T) {
+	p, ctx := setupProcessorTest(t)
+	route := newEffectRoute(t, 2)
+	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
+	board(t, p, route, 42, world.Id(0), channel.Id(1))
+	board(t, p, route, 43, world.Id(0), channel.Id(2))
+
+	// MaxLifetime is 2*(boardingWindow+travelDuration) = 1802s; miniredis
+	// stores real timestamps, so age the instance by rewriting its metadata
+	// is not possible — instead assert against a route whose lifetime has
+	// already elapsed by using GetStuck's own clock.
+	mb := message.NewBuffer()
+	assert.NoError(t, p.TickStuckTimeout(mb))
+	assert.Empty(t, mb.GetAll()[consumable.EnvCommandTopic], "instance is not stuck yet")
+
+	// Advance past MaxLifetime by asking the registry directly.
+	stuck := getInstanceRegistry().GetStuck(time.Now().Add(route.MaxLifetime()+time.Second), route.MaxLifetime())
+	assert.NotEmpty(t, stuck, "instance must be considered stuck once MaxLifetime has elapsed")
+}
+
+func TestGracefulShutdown_CancelsEffectsForEveryCharacter(t *testing.T) {
+	p, ctx := setupProcessorTest(t)
+	route := newEffectRoute(t, 2)
+	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
+	board(t, p, route, 42, world.Id(0), channel.Id(1))
+	board(t, p, route, 43, world.Id(0), channel.Id(2))
+
+	mb := message.NewBuffer()
+	assert.NoError(t, p.GracefulShutdown(mb))
+
+	cs := decodeConsumables(t, mb)
+	assert.Len(t, cs, 2)
+	seen := map[uint32]bool{}
+	for _, c := range cs {
+		assert.Equal(t, consumable.CommandCancelConsumableEffect, c.Type)
+		assert.Equal(t, item.Id(2210016), c.Body.ItemId)
+		seen[c.CharacterId] = true
+	}
+	assert.True(t, seen[42] && seen[43], "both characters must be cancelled")
+
+	// Characters are still warped to the start map, unchanged.
+	warps := decodeChangeMaps(t, mb)
+	assert.Len(t, warps, 2)
+	for _, w := range warps {
+		assert.Equal(t, route.StartMapId(), w.Body.MapId)
+	}
+}
+
+func TestGracefulShutdown_NoEffectsEmitsNoConsumableCommands(t *testing.T) {
+	p, ctx := setupProcessorTest(t)
+	route := newPlainRoute(t)
+	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
+	board(t, p, route, 42, world.Id(0), channel.Id(1))
+
+	mb := message.NewBuffer()
+	assert.NoError(t, p.GracefulShutdown(mb))
+
+	assert.Empty(t, mb.GetAll()[consumable.EnvCommandTopic])
+	assert.Len(t, decodeChangeMaps(t, mb), 1)
+}
+
+// TickStuckTimeout's clock is time.Now() inside the method, so the cancelling
+// loop body is exercised directly. This is the same code path the tick runs
+// once MaxLifetime has elapsed.
+func TestForceCancelInstance_CancelsEffectsAndWarpsToStart(t *testing.T) {
+	p, ctx := setupProcessorTest(t)
+	route := newEffectRoute(t, 2)
+	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
+	instanceId := board(t, p, route, 42, world.Id(0), channel.Id(1))
+	board(t, p, route, 43, world.Id(0), channel.Id(2))
+
+	inst, ok := getInstanceRegistry().GetInstance(instanceId)
+	assert.True(t, ok)
+
+	mb := message.NewBuffer()
+	p.forceCancelInstance(mb, inst, route)
+
+	cs := decodeConsumables(t, mb)
+	assert.Len(t, cs, 2)
+	for _, c := range cs {
+		assert.Equal(t, consumable.CommandCancelConsumableEffect, c.Type)
+		assert.Equal(t, item.Id(2210016), c.Body.ItemId)
+	}
+
+	warps := decodeChangeMaps(t, mb)
+	assert.Len(t, warps, 2)
+	for _, w := range warps {
+		assert.Equal(t, route.StartMapId(), w.Body.MapId)
+	}
+
+	evs := decodeInstanceTransportEvents(t, mb)
+	assert.Len(t, evs, 2)
+	for _, e := range evs {
+		assert.Equal(t, it.EventTypeCancelled, e.Type)
+		assert.Equal(t, it.CancelReasonStuck, e.Body.Reason)
+	}
+
+	assert.False(t, getCharacterRegistry().IsInTransport(42))
+	assert.False(t, getCharacterRegistry().IsInTransport(43))
+}

@@ -683,181 +683,217 @@
   opcode: 140
   fname: CStage::OnSetField
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SET_ITC
   direction: clientbound
   opcode: 141
   fname: CStage::OnSetITC
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SET_CASH_SHOP
   direction: clientbound
   opcode: 142
   fname: CStage::OnSetCashShop
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SET_BACK_EFFECT
   direction: clientbound
   opcode: 143
   fname: CMapLoadable::OnSetBackEffect
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SET_MAP_OBJECT_VISIBLE
   direction: clientbound
   opcode: 144
   fname: CMapLoadable::OnSetMapObjectVisible
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: CLEAR_BACK_EFFECT
   direction: clientbound
   opcode: 145
   fname: CMapLoadable::OnClearBackEffect
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: BLOCKED_MAP
   direction: clientbound
   opcode: 146
   fname: CField::OnTransferFieldReqIgnored
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: BLOCKED_SERVER
   direction: clientbound
   opcode: 147
   fname: CField::OnTransferChannelReqIgnored
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: FORCED_MAP_EQUIP
   direction: clientbound
   opcode: 148
   fname: CField::OnFieldSpecificData
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: MULTICHAT
   direction: clientbound
   opcode: 149
   fname: CField::OnGroupMessage
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: WHISPER
   direction: clientbound
   opcode: 150
   fname: CField::OnWhisper
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SPOUSE_CHAT
   direction: clientbound
   opcode: 151
   fname: CField::OnCoupleMessage
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SUMMON_ITEM_INAVAILABLE
   direction: clientbound
   opcode: 152
   fname: CField::OnSummonItemInavailable
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: FIELD_EFFECT
   direction: clientbound
   opcode: 153
   fname: CField::OnFieldEffect
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: FIELD_OBSTACLE_ONOFF
   direction: clientbound
   opcode: 154
   fname: CField::OnFieldObstacleOnOff
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: FIELD_OBSTACLE_ONOFF_LIST
   direction: clientbound
   opcode: 155
   fname: CField::OnFieldObstacleOnOffStatus
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: FIELD_OBSTACLE_ALL_RESET
   direction: clientbound
   opcode: 156
   fname: CField::OnFieldObstacleAllRese
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: BLOW_WEATHER
   direction: clientbound
   opcode: 157
   fname: CField::OnBlowWeather
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: PLAY_JUKEBOX
   direction: clientbound
   opcode: 158
   fname: CField::OnPlayJukeBox
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: ADMIN_RESULT
   direction: clientbound
   opcode: 159
   fname: CField::OnAdminResult
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: OX_QUIZ
   direction: clientbound
   opcode: 160
   fname: CField::OnQuiz
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: GMEVENT_INSTRUCTIONS
   direction: clientbound
   opcode: 161
   fname: CField::OnDesc
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: CLOCK
   direction: clientbound
   opcode: 162
   fname: CField::OnClock
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: CONTI_MOVE
   direction: clientbound
   opcode: 163
   fname: CField_ContiMove::OnContiMove
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): live only via a CField_* subclass override''s own switch, not the base CField::OnPacket dispatcher covered this pass. See Adjudications in discover_gms_v92.md.'
 - op: CONTI_STATE
   direction: clientbound
   opcode: 164
   fname: CField_ContiMove::OnContiState
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): live only via a CField_* subclass override''s own switch, not the base CField::OnPacket dispatcher covered this pass. See Adjudications in discover_gms_v92.md.'
 - op: SET_QUEST_CLEAR
   direction: clientbound
   opcode: 165
   fname: CField::OnSetQuestClear
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SET_QUEST_TIME
   direction: clientbound
   opcode: 166
   fname: CField::OnSetQuestTime
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: ARIANT_RESULT
   direction: clientbound
   opcode: 167
   fname: CField::OnWarnMessage
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SET_OBJECT_STATE
   direction: clientbound
   opcode: 168
   fname: CField::OnSetObjectState
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: STOP_CLOCK
   direction: clientbound
   opcode: 169
   fname: CField::OnDestroyClock
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: ARIANT_ARENA_SHOW_RESULT
   direction: clientbound
   opcode: 170
   fname: CField_AriantArena::OnShowResult
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): live only via a CField_* subclass override''s own switch, not the base CField::OnPacket dispatcher covered this pass. See Adjudications in discover_gms_v92.md.'
 - op: PYRAMID_GAUGE
   direction: clientbound
   opcode: 172
   fname: CField_Massacre::OnMassacreIncGauge
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): live only via a CField_* subclass override''s own switch, not the base CField::OnPacket dispatcher covered this pass. See Adjudications in discover_gms_v92.md.'
 - op: PYRAMID_SCORE
   direction: clientbound
   opcode: 173
   fname: CField_MassacreResult::OnMassacreResult
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): live only via a CField_* subclass override''s own switch, not the base CField::OnPacket dispatcher covered this pass. See Adjudications in discover_gms_v92.md.'
 - op: QUICKSLOT_INIT
   direction: clientbound
   opcode: 174
   fname: CQuickslotKeyMappedMan::OnInit
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SPAWN_PLAYER
   direction: clientbound
   opcode: 177
   fname: CUserPool::OnUserEnterField
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: REMOVE_PLAYER_FROM_MAP
   direction: clientbound
   opcode: 178
   fname: CUserPool::OnUserLeaveField
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: CHATTEXT
   direction: clientbound
   opcode: 179
@@ -938,11 +974,13 @@
   opcode: 195
   fname: CUser::OnPetPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: EVOLVE_PET
   direction: clientbound
   opcode: 196
   fname: CUser::OnPetPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: MOVE_PET
   direction: clientbound
   opcode: 198
@@ -973,51 +1011,61 @@
   opcode: 203
   fname: CSummonedPool::OnPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: REMOVE_SPECIAL_MAPOBJECT
   direction: clientbound
   opcode: 204
   fname: CSummonedPool::OnPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: MOVE_SUMMON
   direction: clientbound
   opcode: 205
   fname: CSummonedPool::OnMove
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SUMMON_ATTACK
   direction: clientbound
   opcode: 206
   fname: CSummonedPool::OnAttack
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: DAMAGE_SUMMON
   direction: clientbound
   opcode: 207
   fname: CSummonedPool::OnHit
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SUMMON_SKILL
   direction: clientbound
   opcode: 208
   fname: CSummonedPool::OnSkill
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SPAWN_DRAGON
   direction: clientbound
   opcode: 209
   fname: CDragon::OnCreated
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: MOVE_DRAGON
   direction: clientbound
   opcode: 210
   fname: CDragon::OnMove
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: REMOVE_DRAGON
   direction: clientbound
   opcode: 211
   fname: CUser::OnDragonPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: MOVE_PLAYER
   direction: clientbound
   opcode: 213
   fname: CUserRemote::OnMove
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: CLOSE_RANGE_ATTACK
   direction: clientbound
   opcode: 214
@@ -1073,11 +1121,13 @@
   opcode: 224
   fname: CUserRemote::OnSetActivePortableChair
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: UPDATE_CHAR_LOOK
   direction: clientbound
   opcode: 225
   fname: CUserRemote::OnAvatarModified
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SHOW_FOREIGN_EFFECT
   direction: clientbound
   opcode: 226
@@ -1088,26 +1138,31 @@
   opcode: 227
   fname: CUserRemote::OnSetTemporaryStat
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: CANCEL_FOREIGN_BUFF
   direction: clientbound
   opcode: 228
   fname: CUserRemote::OnResetTemporaryStat
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: UPDATE_PARTYMEMBER_HP
   direction: clientbound
   opcode: 229
   fname: CUserRemote::OnReceiveHP
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: GUILD_NAME_CHANGED
   direction: clientbound
   opcode: 230
   fname: CUserRemote::OnGuildNameChanged
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: GUILD_MARK_CHANGED
   direction: clientbound
   opcode: 231
   fname: CUserRemote::OnGuildMarkChanged
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: THROW_GRENADE
   direction: clientbound
   opcode: 232
@@ -1336,16 +1391,19 @@
   opcode: 276
   fname: CMobPool::OnMobEnterField
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: KILL_MONSTER
   direction: clientbound
   opcode: 277
   fname: CMobPool::OnMobLeaveField
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SPAWN_MONSTER_CONTROL
   direction: clientbound
   opcode: 278
   fname: CMobPool::OnMobChangeController
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: MOVE_MONSTER
   direction: clientbound
   opcode: 279
@@ -1394,6 +1452,7 @@
   opcode: 289
   fname: CMobPool::OnMobCrcKeyChanged
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SHOW_MONSTER_HP
   direction: clientbound
   opcode: 290
@@ -1438,6 +1497,7 @@
   opcode: 297
   fname: CMob::OnEscortStopEndPermmision
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: MOB_ESCORT_STOP_SAY
   direction: clientbound
   opcode: 298
@@ -1463,16 +1523,19 @@
   opcode: 303
   fname: CNpcPool::OnNpcEnterField
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: REMOVE_NPC
   direction: clientbound
   opcode: 304
   fname: CNpcPool::OnNpcLeaveField
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SPAWN_NPC_REQUEST_CONTROLLER
   direction: clientbound
   opcode: 305
   fname: CNpcPool::OnNpcChangeController
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: NPC_ACTION
   direction: clientbound
   opcode: 306
@@ -1493,96 +1556,115 @@
   opcode: 309
   fname: CNpcTemplate::OnSetNpcScript
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SPAWN_HIRED_MERCHANT
   direction: clientbound
   opcode: 311
   fname: CEmployeePool::OnEmployeeEnterField
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: DESTROY_HIRED_MERCHANT
   direction: clientbound
   opcode: 312
   fname: CEmployeePool::OnEmployeeLeaveField
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: UPDATE_HIRED_MERCHANT
   direction: clientbound
   opcode: 313
   fname: CEmployeePool::OnEmployeeMiniRoomBalloon
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: DROP_ITEM_FROM_MAPOBJECT
   direction: clientbound
   opcode: 314
   fname: CDropPool::OnDropEnterField
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: REMOVE_ITEM_FROM_MAP
   direction: clientbound
   opcode: 316
   fname: CDropPool::OnDropLeaveField
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: CANNOT_SPAWN_KITE
   direction: clientbound
   opcode: 317
   fname: CMessageBoxPool::OnCreateFailed
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SPAWN_KITE
   direction: clientbound
   opcode: 318
   fname: CMessageBoxPool::OnMessageBoxEnterField
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: REMOVE_KITE
   direction: clientbound
   opcode: 319
   fname: CMessageBoxPool::OnMessageBoxLeaveField
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SPAWN_MIST
   direction: clientbound
   opcode: 320
   fname: CAffectedAreaPool::OnAffectedAreaCreated
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: REMOVE_MIST
   direction: clientbound
   opcode: 321
   fname: CAffectedAreaPool::OnAffectedAreaRemoved
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SPAWN_DOOR
   direction: clientbound
   opcode: 322
   fname: CTownPortalPool::OnTownPortalCreated
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: REMOVE_DOOR
   direction: clientbound
   opcode: 323
   fname: CTownPortalPool::OnTownPortalRemoved
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: OPEN_GATE_CREATED
   direction: clientbound
   opcode: 324
   fname: COpenGatePool::OnOpenGateCreated
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: OPEN_GATE_REMOVED
   direction: clientbound
   opcode: 325
   fname: COpenGatePool::OnOpenGateRemoved
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: REACTOR_HIT
   direction: clientbound
   opcode: 326
   fname: CReactorPool::OnReactorChangeState
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: REACTOR_MOVE
   direction: clientbound
   opcode: 327
   fname: CReactorPool::OnReactorMove
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: REACTOR_SPAWN
   direction: clientbound
   opcode: 328
   fname: CReactorPool::OnReactorEnterField
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: REACTOR_DESTROY
   direction: clientbound
   opcode: 329
   fname: CReactorPool::OnReactorLeaveField
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SNOWBALL_STATE
   direction: clientbound
   opcode: 330
@@ -1608,21 +1690,25 @@
   opcode: 334
   fname: CField_Coconut::OnCoconutHit
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): live only via a CField_* subclass override''s own switch, not the base CField::OnPacket dispatcher covered this pass. See Adjudications in discover_gms_v92.md.'
 - op: COCONUT_SCORE
   direction: clientbound
   opcode: 335
   fname: CField_Coconut::OnCoconutScore
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): live only via a CField_* subclass override''s own switch, not the base CField::OnPacket dispatcher covered this pass. See Adjudications in discover_gms_v92.md.'
 - op: GUILD_BOSS_HEALER_MOVE
   direction: clientbound
   opcode: 336
   fname: CField_GuildBoss::OnHealerMove
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): live only via a CField_* subclass override''s own switch, not the base CField::OnPacket dispatcher covered this pass. See Adjudications in discover_gms_v92.md.'
 - op: GUILD_BOSS_PULLEY_STATE_CHANGE
   direction: clientbound
   opcode: 337
   fname: CField_GuildBoss::OnPulleyStateChange
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): live only via a CField_* subclass override''s own switch, not the base CField::OnPacket dispatcher covered this pass. See Adjudications in discover_gms_v92.md.'
 - op: MONSTER_CARNIVAL_START
   direction: clientbound
   opcode: 338
@@ -1668,86 +1754,103 @@
   opcode: 346
   fname: CField_AriantArena::OnUserScore
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): live only via a CField_* subclass override''s own switch, not the base CField::OnPacket dispatcher covered this pass. See Adjudications in discover_gms_v92.md.'
 - op: SHEEP_RANCH_INFO
   direction: clientbound
   opcode: 347
   fname: CField_Battlefield::OnScoreUpdate
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): live only via a CField_* subclass override''s own switch, not the base CField::OnPacket dispatcher covered this pass. See Adjudications in discover_gms_v92.md.'
 - op: SHEEP_RANCH_CLOTHES
   direction: clientbound
   opcode: 348
   fname: CField_Battlefield::OnTeamChanged
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): live only via a CField_* subclass override''s own switch, not the base CField::OnPacket dispatcher covered this pass. See Adjudications in discover_gms_v92.md.'
 - op: ARIANT_SCORE
   direction: clientbound
   opcode: 349
   fname: CField_Witchtower::OnPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): live only via a CField_* subclass override''s own switch, not the base CField::OnPacket dispatcher covered this pass. See Adjudications in discover_gms_v92.md.'
 - op: HORNTAIL_CAVE
   direction: clientbound
   opcode: 350
   fname: CField::OnHontailTimer
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: ZAKUM_SHRINE
   direction: clientbound
   opcode: 351
   fname: CField::OnZakumTimer
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: NPC_TALK
   direction: clientbound
   opcode: 355
   fname: CScriptMan::OnPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): handler is a body-mode demuxer, curated OUT of the dispatcher set (its internal switch is a sub-mode byte, not the top-level opcode). See Adjudications in discover_gms_v92.md.'
 - op: OPEN_NPC_SHOP
   direction: clientbound
   opcode: 356
   fname: CShopDlg::OnPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): handler is a body-mode demuxer, curated OUT of the dispatcher set (its internal switch is a sub-mode byte, not the top-level opcode). See Adjudications in discover_gms_v92.md.'
 - op: CONFIRM_SHOP_TRANSACTION
   direction: clientbound
   opcode: 357
   fname: CShopDlg::OnPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): handler is a body-mode demuxer, curated OUT of the dispatcher set (its internal switch is a sub-mode byte, not the top-level opcode). See Adjudications in discover_gms_v92.md.'
 - op: ADMIN_SHOP_MESSAGE
   direction: clientbound
   opcode: 358
   fname: CAdminShopDlg::OnPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): handler is a body-mode demuxer, curated OUT of the dispatcher set (its internal switch is a sub-mode byte, not the top-level opcode). See Adjudications in discover_gms_v92.md.'
 - op: ADMIN_SHOP
   direction: clientbound
   opcode: 359
   fname: CAdminShopDlg::OnPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): handler is a body-mode demuxer, curated OUT of the dispatcher set (its internal switch is a sub-mode byte, not the top-level opcode). See Adjudications in discover_gms_v92.md.'
 - op: STORAGE
   direction: clientbound
   opcode: 360
   fname: CTrunkDlg::OnPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): handler is a body-mode demuxer, curated OUT of the dispatcher set (its internal switch is a sub-mode byte, not the top-level opcode). See Adjudications in discover_gms_v92.md.'
 - op: FREDRICK_MESSAGE
   direction: clientbound
   opcode: 361
   fname: CStoreBankDlg::OnPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): handler is a body-mode demuxer, curated OUT of the dispatcher set (its internal switch is a sub-mode byte, not the top-level opcode). See Adjudications in discover_gms_v92.md.'
 - op: FREDRICK
   direction: clientbound
   opcode: 362
   fname: CStoreBankDlg::OnPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): handler is a body-mode demuxer, curated OUT of the dispatcher set (its internal switch is a sub-mode byte, not the top-level opcode). See Adjudications in discover_gms_v92.md.'
 - op: RPS_GAME
   direction: clientbound
   opcode: 363
   fname: CRPSGameDlg::OnPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): handler is a body-mode demuxer, curated OUT of the dispatcher set (its internal switch is a sub-mode byte, not the top-level opcode). See Adjudications in discover_gms_v92.md.'
 - op: MESSENGER
   direction: clientbound
   opcode: 364
   fname: CUIMessenger::OnPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): handler is a body-mode demuxer, curated OUT of the dispatcher set (its internal switch is a sub-mode byte, not the top-level opcode). See Adjudications in discover_gms_v92.md.'
 - op: PLAYER_INTERACTION
   direction: clientbound
   opcode: 365
   fname: CMiniRoomBaseDlg::OnPacketBase
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): handler is a body-mode demuxer, curated OUT of the dispatcher set (its internal switch is a sub-mode byte, not the top-level opcode). See Adjudications in discover_gms_v92.md.'
 - op: TOURNAMENT
   direction: clientbound
   opcode: 366
@@ -1773,21 +1876,25 @@
   opcode: 370
   fname: CField_Tournament::OnPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): live only via a CField_* subclass override''s own switch, not the base CField::OnPacket dispatcher covered this pass. See Adjudications in discover_gms_v92.md.'
 - op: WEDDING_PROGRESS
   direction: clientbound
   opcode: 371
   fname: CField_Wedding::OnWeddingProgress
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): live only via a CField_* subclass override''s own switch, not the base CField::OnPacket dispatcher covered this pass. See Adjudications in discover_gms_v92.md.'
 - op: WEDDING_CEREMONY_END
   direction: clientbound
   opcode: 372
   fname: CField_Wedding::OnWeddingCeremonyEnd
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): live only via a CField_* subclass override''s own switch, not the base CField::OnPacket dispatcher covered this pass. See Adjudications in discover_gms_v92.md.'
 - op: PARCEL
   direction: clientbound
   opcode: 373
   fname: CParcelDlg::OnPacket
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): handler is a body-mode demuxer, curated OUT of the dispatcher set (its internal switch is a sub-mode byte, not the top-level opcode). See Adjudications in discover_gms_v92.md.'
 - op: CHARGE_PARAM_RESULT
   direction: clientbound
   opcode: 374
@@ -1828,6 +1935,7 @@
   opcode: 381
   fname: ""
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT
   direction: clientbound
   opcode: 382
@@ -1858,61 +1966,73 @@
   opcode: 389
   fname: CFuncKeyMappedMan::OnInit
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: AUTO_HP_POT
   direction: clientbound
   opcode: 390
   fname: CFuncKeyMappedMan::OnPetConsumeItemInit
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: AUTO_MP_POT
   direction: clientbound
   opcode: 391
   fname: CFuncKeyMappedMan::OnPetConsumeMPItemInit
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SEND_TV
   direction: clientbound
   opcode: 396
   fname: CMapleTVMan::OnSetMessage
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: REMOVE_TV
   direction: clientbound
   opcode: 397
   fname: CMapleTVMan::OnClearMessage
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: ENABLE_TV
   direction: clientbound
   opcode: 398
   fname: CMapleTVMan::OnSendMessageResult
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: MTS_OPERATION2
   direction: clientbound
   opcode: 402
   fname: CField::OnCharacterSale
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: MTS_OPERATION
   direction: clientbound
   opcode: 403
   fname: CField::OnCharacterSale
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: MAPLELIFE_RESULT
   direction: clientbound
   opcode: 404
   fname: CUICharacterSaleDlg::OnCheckDuplicatedIDResult
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: MAPLELIFE_ERROR
   direction: clientbound
   opcode: 405
   fname: CUICharacterSaleDlg::OnCreateNewCharacterResult
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: VICIOUS_HAMMER
   direction: clientbound
   opcode: 409
   fname: CField::OnItemUpgrade
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: VEGA_SCROLL
   direction: clientbound
   opcode: 416
   fname: CUIVega::OnVegaResult
   provenance: csv-import
+  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: LOGIN_PASSWORD
   direction: serverbound
   opcode: 1

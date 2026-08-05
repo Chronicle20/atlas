@@ -181,3 +181,173 @@ Registry entries whose opcode IDA did not discover. They are NOT auto-deleted.
 | `VICIOUS_HAMMER` | `0x199` | `CField::OnItemUpgrade` |
 | `VEGA_SCROLL` | `0x1A0` | `CUIVega::OnVegaResult` |
 
+---
+
+## Run record (hand-written; everything above is the regenerated post-apply worklist)
+
+Run against the **GMS_v92_1_DEVM.exe** IDB (IDA-MCP session `acdfccff`, resolved
+via `idb_list` and matched by binary NAME per task-26's instruction — never by
+port/position). `--ida-database acdfccff` required the `:8745` session-server
+endpoint (`--ida-url http://192.168.20.3:8745/mcp`); the default `:13337`
+endpoint used by every other subcommand's flag default rejects the `database`
+tools/call argument outright.
+
+### Dispatcher set (24, all decompile-checked as top-level-opcode dispatchers)
+
+| Address | Function | Notes |
+|---|---|---|
+| `0x4AC5B0` | `CClientSocket::ProcessPacket` | Shim; own cases 16-20,25; routes 30-139 to CWvsContext::OnPacket, else the current-stage vtable (`(**(v3+8))(...)`) |
+| `0x9BA740` | `CWvsContext::OnPacket` | **Dispatches all 5 task-145 ops** (CLAIM_RESULT/CLAIM_AVAILABLE_TIME/CLAIM_STATUS_CHANGED/SUE_CHARACTER_RESULT clientbound; CLAIM_REQUEST is serverbound, verified separately via `SendClaimRequest`) |
+| `0x5D6070` | `CLogin::OnPacket` | Top-level switch (cases 0-15,22,23,26-29 = 22 live cases) plus a nested if-guarded mini-switch (140-145, CStage/CMapLoadable) that `ParseDispatch` does not see — see hybrid-dispatch note below |
+| `0x5406B0` | `CField::OnPacket` | **Hybrid** — see hybrid-dispatch note below |
+| `0x495770` | `CCashShop::OnPacket` | Flat switch |
+| `0x570C40` | `CITC::OnPacket` | Pure if/else (3 arms), 0 cases — expected, not an error |
+| `0x66BD10` | `CNpcPool::OnNpcPacket` | Flat switch |
+| `0x64A6C0` | `CMobPool::OnMobPacket` | Flat switch |
+| `0x929750` | `CUserPool::OnUserCommonPacket` | Flat switch |
+| `0x927D30` | `CUserPool::OnUserRemotePacket` | Flat switch |
+| `0x8CE880` | `CUser::OnDragonPacket` (unnamed `sub_8CE880` in this IDB) | Pure if/else (2 arms), 0 cases — expected |
+| `0x8C8EE0` | `CUser::OnPetPacket` | Flat switch |
+| `0x5430C0`–`0x55D7C0` (11 addrs) | `CField_*` subclass overrides | AriantArena, Battlefield, Coconut, ContiMove, GuildBoss, MonsterCarnival, MonsterCarnivalRevive, SnowBall, Tournament, Wedding, Witchtower — each a virtual override of `OnPacket(int,CInPacket*)`; 2 (AriantArena 0x5430C0, MonsterCarnival 0x5547B0) directly decompile-checked as `switch(a3){...default: CField::OnPacket(...)}`; the remaining 9 trusted on the shared virtual contract, not individually decompiled |
+
+**Excluded (body-mode demuxers — internal switch is a sub-mode byte, not the
+top-level opcode; same exclusion list as v83/v87):** `CScriptMan` (no
+`OnPacket` symbol exists in this IDB at all — its members are leaf handlers,
+confirming it is not a dispatcher here either), `CShopDlg::OnPacket`,
+`CAdminShopDlg::OnPacket`, `CStoreBankDlg::OnPacket`,
+`CSecurityClient::OnPacket`, `CMiniRoomBaseDlg::OnPacketBase`,
+`CTrunkDlg::OnPacket`, `CRPSGameDlg::OnPacket`, `CUIMessenger::OnPacket`,
+`CParcelDlg::OnPacket`.
+
+**`CNpcPool::OnPacket` (0x66C220) — included in the first pass, excluded from
+the final `--apply` run.** Its switch has 3 live cases (303-305, NPC
+enter/leave/change-controller — already registry-matched via CSV, no
+information lost by excluding it) plus 2 **dead** cases (85/86) that
+duplicate `CWvsContext::OnPacket`'s real cases for the same opcodes with
+different handler names: `ProcessPacket` routes opcodes 30-139 exclusively to
+`CWvsContext::OnPacket`, and `CField::OnPacket` only ever calls
+`CNpcPool::OnPacket` for the 0x12F-0x135 range, so `CNpcPool::OnPacket`'s
+85/86 cases can never execute. This produced 2 "discovery-internal
+collisions" in the first run — resolved by hand-correcting the registry (see
+Adjudications) and excluding this dispatcher from the second `--apply` run,
+mirroring the v87 precedent exactly (`discover_gms_v87.md` adjudication 3).
+
+### Hybrid switch+if/else dispatch — a structural `ParseDispatch` limitation (new for v92, not seen in v83/v87)
+
+In v87, `CField::OnPacket` was one flat `switch`. In v92 the compiler
+restructured it (and `CLogin::OnPacket`'s tail) into an **outer**
+`switch(a3){case 146..373}` with `default: goto LABEL_40`, where `LABEL_40`
+is a large if/else cascade (opcode-range guards) containing several
+**nested** mini-switches (mob/reactor/employee/etc — each still switching on
+the literal top-level `a3`) plus several **pure if/else, no-switch** pairs
+(user enter/leave-field 0xB1/0xB2, drop-pool 0x13A/0x13C, affected-area
+0x140/0x141, town-portal 0x142/0x143, open-gate 0x144/0x145, and
+`CLogin::OnPacket`'s own 140-145 CStage/CMapLoadable tail).
+
+`packet-audit`'s `discover.ParseDispatch` binds case labels only at (or as a
+brace-depth sibling of) the *first* switch statement it encounters in the
+decompiled text. For `CField::OnPacket` that first switch is deep inside the
+if-cascade (the `CUserLocal` cluster at 233-274); the real outer 146-373
+switch sits at a different brace depth entirely, so `ParseDispatch` correctly
+reported exactly the 39 outer-switch cases for `0x5406B0` and **structurally
+cannot see** the if/else-only pairs or the nested nested-inside-if-cascade
+mini-switches. This is **not a registry defect** — the affected ops are real,
+live, top-level-opcode dispatches; the tool's single-switch-per-dispatcher
+parsing model just cannot enumerate them. Extending `ParseDispatch` to walk
+multiple sibling if/else-guarded switches (and pure if/else pairs) is a
+tooling improvement out of scope for this task (task-26 registry-only scope;
+`ParseDispatch` is shared across every version's registry).
+
+### Totals
+
+- 654 total entries: **632 `csv-import`** (unchanged from the CSV seed), **9
+  `manual`** (hand-corrected against direct IDB evidence), **13
+  `ida-discovered`** (appended by `--apply`).
+- 24 dispatchers, 103 cases from `CWvsContext::OnPacket` alone (covering all
+  5 task-145 ops) + ~140 more across the remaining 23.
+- **13 appends applied** (`IDA_0X*`, provenance `ida-discovered`): 0x013
+  `OnAuthenMessage`, 0x01C `OnExtraCharInfoResult`, 0x07F
+  `OnSetPassenserRequest` (the other half of the SET_EXTRA_PENDANT_SLOT
+  opcode swap — see Adjudications), 0x0EA `OnEmotion`, 0x0F1-0x0F3/0x0F5
+  `CUserLocal` field-state handlers, 0x10C/0x10D `OnGoToCommoditySN`/
+  `OnDamageMeter`, 0x10E `OnTimeBombAttack`, 0x10F `OnPassiveMove`, 0x111
+  `OnAskAPSPEvent`. Each cross-checked against the registry for a
+  same-opcode clientbound entry before being accepted as genuinely new (none
+  found — confirmed via targeted `awk` scans of the seeded YAML).
+- **8 registry-vs-IDA discrepancies adjudicated** before `--apply` would
+  proceed (2 discovery-internal collisions + 6 registry collisions on the
+  first run; all cleared on the second run — see Adjudications).
+- **120 "missing at discovery"** rows (~19% of 632 seeded clientbound
+  entries carried forward unresolved). All 120 now carry a `note:` in
+  `gms_v92.yaml` (provenance left as `csv-import` — not individually
+  re-verified, so not promoted to `manual`) categorized as:
+  - **12** excluded body-mode demuxers (`NPC_TALK` through `PARCEL`) — dead
+    weight by design, not a gap.
+  - **16** `CField_*` subclass-only cases — live only via the subclass
+    override's own switch, not the base `CField::OnPacket` dispatcher this
+    pass covered.
+  - **92** if/else or nested-switch arms inside `CField::OnPacket` /
+    `CLogin::OnPacket` that `ParseDispatch` cannot enumerate (the hybrid-
+    dispatch limitation above).
+
+### Adjudications (registry edits, provenance manual, in `gms_v92.yaml`)
+
+1. `CHECK_CRC_RESULT` — opcode `0` → `25` (0x19). CSV v92 column left this at
+   the index-only placeholder `0x000`. IDA `CClientSocket::ProcessPacket`
+   (0x4AC5B0) case 0x19 → `CClientSocket::OnCheckCrcResult` (0x4AA690),
+   matching the v83/v87 value exactly.
+2. `RELOG_RESPONSE` — opcode `0` → `22` (0x16), `fname_alts: [sub_5CBD40]`.
+   Same CSV-placeholder pattern. IDA `CLogin::OnPacket` (0x5D6070) case 0x16
+   dispatches to unnamed `sub_5CBD40` (0x5CBD40); matches v83/v87/v95's
+   value (22) exactly (v83-mirroring, same style as the v87 report's
+   adjudication 1).
+3. `IMITATED_NPC_DATA` / `LIMITED_NPC_DISABLE_INFO` — opcodes **swapped**:
+   `IMITATED_NPC_DATA` 85→86, `LIMITED_NPC_DISABLE_INFO` 86→85. CSV had both
+   at the opcodes matching the *dead* `CNpcPool::OnPacket` case names
+   (internally consistent with each other, but wrong against the live
+   dispatcher). IDA `CWvsContext::OnPacket` case 85 →
+   `OnLimitedNPCDisableInfo` (0x9A2110), case 86 → `OnImitatedNPCData`
+   (0x9A2130) — re-read directly from the raw decompile line-by-line to
+   confirm after my first attempt at this fix swapped the *fnames* without
+   swapping the *opcodes*, which the tool's own second `--apply` run caught
+   as a fresh 0x055/0x056 collision (registry vs. IDA fnames reversed). Both
+   `CNpcPool::OnPacket`'s 85/86 cases are dead code (see dispatcher-set note
+   above), kept as `fname_alts`.
+4. `SET_EXTRA_PENDANT_SLOT` — opcode `127` → `126`. The CSV had this op's
+   opcode and a separate blank-`Op` CSV row (`ClientBound.csv` line 155,
+   fname `CWvsContext::OnSetPassenserRequest`) transposed relative to ground
+   truth. IDA `CWvsContext::OnPacket` case 126 → `OnSetBuyEquipExt`
+   (0x9A4F20), case 127 → `OnSetPassenserRequest` (0x9CFBD0). Opcode 127 is
+   now correctly occupied by the auto-appended `IDA_0X07F` entry (the CSV's
+   blank `Op` name meant `seedcsv.Load` silently dropped that row rather
+   than synthesizing a placeholder — a `seedcsv` tooling gap, out of scope
+   for this task; `discover-ops`'s own `IDA_0X07F` naming recovered it
+   cleanly).
+5. `LOCK_UI` — fname `CUserLocal::SetDirectionMode` →
+   `CUserLocal::OnSetDirectionMode` (CSV dropped the `On` prefix). Old name
+   kept as `fname_alts`.
+6. `MONSTER_SPECIAL_EFFECT_BY_SKILL` — `fname_alts: [sub_647790]` added; the
+   CSV fname (`CMob::OnSpecialEffectBySkill`) is unnamed in this IDB, kept
+   as the best-effort label per precedent.
+7. `CATCH_MONSTER` — `fname_alts: [sub_630C30]` added, same pattern as 6.
+8. `SHOW_MAGNET` — fname `""` → `CMob::OnEffectByItem` (filled from the IDB;
+   was blank in the CSV). IDA `CMobPool::OnMobPacket` (0x64A6C0) case 292 →
+   `CMob::OnEffectByItem` (0x630C50).
+
+`LOGIN_AUTH` (opcode 0, blank fname) was investigated and **left untouched**
+— it's the same CSV quirk already documented in `discover_gms_v87.md`
+(`OnEnableSPWResult` misfiled under `HACKSHIELD_REQUEST` at opcode 23
+instead of `LOGIN_AUTH`), left untouched there too "as in v83." Consistency
+with precedent, not an oversight.
+
+`CASHSHOP_REGISTER_NEW_CHARACTER_RESULT` (0x17D, blank fname) was left as
+pre-existing state — not touched or independently resolved this pass.
+
+Serverbound `CLAIM_REQUEST` (opcode 117 / 0x75) is confirmed by direct
+decompile of `CWvsContext::SendClaimRequest` (0x9D9C30):
+`COutPacket::COutPacket((COutPacket *)&v66, 0x75u);` at instruction address
+`0x9DA25C`. `discover-ops` itself does not cover serverbound (deferred to
+Task 5.4's operator-gated live run per design); this citation is recorded
+here because it is the verification trail for one of the five task-145
+ops and would otherwise have no committed home.
+

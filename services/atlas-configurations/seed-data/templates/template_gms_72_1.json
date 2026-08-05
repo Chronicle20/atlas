@@ -529,6 +529,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x62",
+        "validator": "LoggedInValidator",
+        "handler": "CancelDebuffHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x63",
         "validator": "LoggedInValidator",
         "handler": "PortalScriptHandle",

@@ -405,6 +405,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x6F",
+        "validator": "LoggedInValidator",
+        "handler": "CancelDebuffHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x72",
         "validator": "LoggedInValidator",
         "handler": "TeleportRockAddMapHandle",

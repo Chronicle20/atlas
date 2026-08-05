@@ -425,7 +425,7 @@ left silent (see `docs/tasks/task-081-ida-export-reharvest/four-version-validati
   (e.g. `CLogin::OnCheckPasswordResult`) — currently honest `unverifiable` (a genuine
   static-extraction wall; may not be worth the complexity).
 
-## task-190 follow-up: USER_CALC_DAMAGE_STAT_SET_REQUEST handler (reserved as task-184)
+## task-190 follow-up: USER_CALC_DAMAGE_STAT_SET_REQUEST handler (reserved as task-192)
 
 Deferred from task-190 (disease-duration + CANCEL_DEBUFF). `USER_CALC_DAMAGE_STAT_SET_REQUEST`
 is the tail of the same client handshake task-190 implements handlers for:
@@ -437,8 +437,14 @@ one-shot per stat reset, not a per-frame loop, so it cannot wedge a client the w
 damage-range display, not a hang. See `docs/tasks/task-190-disease-duration-cancel-debuff/investigation.md`
 §8.3 for the IDA evidence.
 
-- [ ] **Implement `USER_CALC_DAMAGE_STAT_SET_REQUEST`** (opcode number **task-184** is
+- [ ] **Implement `USER_CALC_DAMAGE_STAT_SET_REQUEST`** (task number **task-192** is
   pre-reserved via `tools/task-numbers.sh next` — reuse it rather than drawing a new one).
+  **Do not use task-184**, even though `tools/task-numbers.sh next` currently reports it as
+  free: 184 was previously assigned to a gms_61 opcode-corruption incident (7 template edits
+  wrong, caught by `matrix --check`) whose branch and PR were reverted and deleted — deletion
+  is exactly what makes the tool's folder/branch/commit-subject scan blind to it. Reusing 184
+  would make any future search or memory recall of "task-184" ambiguous between that reverted
+  incident and this handler work, so it's skipped deliberately rather than reclaimed.
   Opcode is IDA-confirmed for only three of the ten live-tenant versions so far:
   GMS v48 `0x56` (86), GMS v61 `0x63` (99), GMS v83 `0x6C` (108)
   (`investigation.md:214`). The remaining seven (v72, v79, v84, v87, v92, v95, JMS v185) need

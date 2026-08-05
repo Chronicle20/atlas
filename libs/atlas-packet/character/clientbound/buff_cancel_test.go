@@ -3,9 +3,13 @@ package clientbound
 import (
 	"bytes"
 	"testing"
+	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // packet-audit:verify packet=character/clientbound/BuffCancelForeign version=gms_v83 ida=0x983921
@@ -47,26 +51,45 @@ func TestBuffCancelForeignRoundTrip(t *testing.T) {
 	}
 }
 
-// TestBuffCancelV79ByteFixture pins the v79 empty-CTS wire: the 16-byte
-// SecondaryStat reset mask followed by the trailing tSwallowBuffTime byte. The v79
-// client (CWvsContext::OnTemporaryStatReset @0x96ab32) reads the mask via
-// DecodeBuffer(16) and reads the trailing Decode1 only when the mask carries a
-// movement-affecting stat (none here) — Atlas writes it unconditionally
-// (harmless over-write). The v79 CTS registry path is byte-identical to v83, so the
-// empty mask is 00000000 0001FC00 (bits 82-88, two-state base group) — see
-// v79EmptyMask in buff_give_test.go (§5 opaque caveat).
-// TestBuffCancelV72ByteFixture pins the legacy GMS v72 empty-CTS reset wire. v72 < 87
-// so the CTS model's version gates (87 / 95) do not fire — the 16-byte reset mask is
-// byte-identical to v79 (v79EmptyMask, bits 82-88). IDA-verified: CWvsContext::
-// OnTemporaryStatReset @0x918f3c (GMS_v72.1_U_DEVM.exe, port 13339) reads the mask via
-// DecodeBuffer(16) into a UINT128, then reads the trailing Decode1 only when the mask
-// carries a movement-affecting stat (none here) — Atlas writes it unconditionally
-// (harmless over-write). 17 bytes total, same structure as v79 (§5 opaque caveat).
+// emptyResetMask is the 16-byte SecondaryStat mask for a reset that cancels
+// nothing. It is ALL ZERO — deliberately NOT v79EmptyMask (bits 82-88, the
+// two-state base group), which these fixtures previously reused from
+// buff_give_test.go.
+//
+// A SET must assert those base bits: the client reads one base-stat block per
+// set bit, so dropping one desyncs the tail. A RESET carries no blocks at all,
+// so each set bit is a bare instruction to tear that stat down. Reusing the give
+// constant here meant every buff cancel — a mob's Slow expiring, say — told the
+// client to reset RideVehicle and GuidedBullet as well.
+//
+// That is not theoretical: CWvsContext::OnTemporaryStatReset branches on the
+// received mask and calls CUser::ShowRideVehicleEffect / CMobPool::ResetGuidedMob,
+// then SecondaryStat::Reset(mask). A player mounted on a Battleship had the ride
+// torn down client-side on every unrelated debuff expiry while the server still
+// believed them mounted (task-190). Verified structurally identical on GMS v61
+// (@0x84353a), v72 (@0x918f3c), v83 (@0xa2071f) and v95 (@0x9f2ab0, whose
+// PDB-backed symbols name the branch constants CTS_RideVehicle_2 /
+// CTS_GuidedBullet_0 outright), and on the foreign path
+// CUserRemote::OnResetTemporaryStat (v83 @0x983921).
+//
+// The previous expectation was a round-trip fixture pinned against Atlas's own
+// encoder, never against observed client bytes — so it locked the bug in rather
+// than catching it.
+var emptyResetMask = make([]byte, 16)
+
+// The three legacy fixtures below pin the empty-CTS reset wire: 16-byte mask,
+// then the trailing nSecondaryStatChangedPoint byte. Each client reads the mask
+// via DecodeBuffer(16) and reads the trailing Decode1 only when the mask carries
+// a movement-affecting stat (none here) — Atlas writes it unconditionally, which
+// is harmless slack when unread and mandatory when read. v61/v72/v79 are all < 87,
+// so the CTS model's 87/95 version gates do not fire and all three masks are
+// byte-identical. 17 bytes total (§5 opaque caveat).
+
 func TestBuffCancelV72ByteFixture(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 72, 1)
 	got := NewBuffCancel(*model.NewCharacterTemporaryStat()).Encode(nil, ctx)(nil)
-	if !bytes.Equal(got[:16], v79EmptyMask) {
-		t.Errorf("v72 BuffCancel flag word: got %x want %x", got[:16], v79EmptyMask)
+	if !bytes.Equal(got[:16], emptyResetMask) {
+		t.Errorf("v72 BuffCancel flag word: got %x want %x", got[:16], emptyResetMask)
 	}
 	if len(got) != 17 {
 		t.Fatalf("v72 BuffCancel length: got %d want 17 (16 mask + 1 trailer)", len(got))
@@ -79,10 +102,9 @@ func TestBuffCancelV72ByteFixture(t *testing.T) {
 func TestBuffCancelV79ByteFixture(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 79, 1)
 	got := NewBuffCancel(*model.NewCharacterTemporaryStat()).Encode(nil, ctx)(nil)
-	if !bytes.Equal(got[:16], v79EmptyMask) {
-		t.Errorf("v79 BuffCancel flag word: got %x want %x", got[:16], v79EmptyMask)
+	if !bytes.Equal(got[:16], emptyResetMask) {
+		t.Errorf("v79 BuffCancel flag word: got %x want %x", got[:16], emptyResetMask)
 	}
-	// EncodeMask(16) + WriteByte(0) tSwallowBuffTime → 17 bytes total.
 	if len(got) != 17 {
 		t.Fatalf("v79 BuffCancel length: got %d want 17 (16 mask + 1 trailer)", len(got))
 	}
@@ -91,20 +113,12 @@ func TestBuffCancelV79ByteFixture(t *testing.T) {
 	}
 }
 
-// TestBuffCancelV61ByteFixture pins the very-legacy GMS v61 empty-CTS reset wire. v61
-// < 87 so the CTS model's version gates (87 / 95) do not fire — the 16-byte reset mask
-// is byte-identical to v72/v79 (v79EmptyMask, bits 82-88). IDA-verified: the real
-// per-op handler CWvsContext::OnTemporaryStatReset @0x84353a (GMS_v61.1_U_DEVM.exe, port
-// 13338) reads the mask via DecodeBuffer(16) @0x843560 into a UINT128, then reads a
-// trailing Decode1 @0x84365f only when the mask carries a movement-affecting stat (none
-// here) — Atlas writes it unconditionally (harmless over-write). 17 bytes total, same
-// structure as v72 (§5 opaque caveat).
 // packet-audit:verify packet=character/clientbound/BuffCancel version=gms_v61 ida=0x84353a
 func TestBuffCancelV61ByteFixture(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 61, 1)
 	got := NewBuffCancel(*model.NewCharacterTemporaryStat()).Encode(nil, ctx)(nil)
-	if !bytes.Equal(got[:16], v79EmptyMask) {
-		t.Errorf("v61 BuffCancel flag word: got %x want %x", got[:16], v79EmptyMask)
+	if !bytes.Equal(got[:16], emptyResetMask) {
+		t.Errorf("v61 BuffCancel flag word: got %x want %x", got[:16], emptyResetMask)
 	}
 	if len(got) != 17 {
 		t.Fatalf("v61 BuffCancel length: got %d want 17 (16 mask + 1 trailer)", len(got))
@@ -129,5 +143,66 @@ func TestBuffCancelV48ByteFixture(t *testing.T) {
 	want := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0} // 8-byte mask + 1 trailer
 	if !bytes.Equal(got, want) {
 		t.Errorf("v48 BuffCancel wire: got %x want %x", got, want)
+	}
+}
+
+// rideVehicleBit is the v83 CTS_RideVehicle mask bit as it lands on the wire:
+// byte 6, value 0x20. Read straight out of the client — the 16 bytes at
+// GMS v83 dword_BF5548 are all zero except byte 6 == 0x20, and
+// CWvsContext::OnTemporaryStatReset (@0xa2071f) calls
+// CUser::ShowRideVehicleEffect exactly when (receivedMask & that constant) is
+// non-zero. Asserting the wire byte rather than a registry lookup keeps the
+// test honest: if the shift moves, this fails instead of following it.
+const (
+	rideVehicleMaskByte  = 6
+	rideVehicleMaskValue = 0x20
+)
+
+// TestBuffCancelOmitsRideVehicleForUnrelatedStat is the task-190 regression.
+// Cancelling a mob disease must not tell the client to dismount. Before the
+// fix the mask carried the whole two-state base group unconditionally, so this
+// byte was 0xfc and (0xfc & 0x20) tripped the ShowRideVehicleEffect branch on
+// every debuff expiry.
+func TestBuffCancelOmitsRideVehicleForUnrelatedStat(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	cts := model.NewCharacterTemporaryStat()
+	cts.AddStat(logrus.New())(tenant.MustFromContext(ctx))("SLOW", 126, 80, 2, time.Now().Add(time.Minute))
+
+	got := NewBuffCancel(*cts).Encode(nil, ctx)(nil)
+
+	if got[rideVehicleMaskByte]&rideVehicleMaskValue != 0 {
+		t.Errorf("SLOW cancel asserts the RideVehicle bit: mask byte %d = %02x, want bit %02x clear (client would run ShowRideVehicleEffect)",
+			rideVehicleMaskByte, got[rideVehicleMaskByte], rideVehicleMaskValue)
+	}
+	if bytes.Equal(got[:16], emptyResetMask) {
+		t.Error("SLOW cancel encoded an all-zero mask; the SLOW bit itself must still be set")
+	}
+}
+
+// TestBuffCancelKeepsRideVehicleForMountCancel is the other half: a genuine
+// dismount must still carry the bit, or the client never tears the ride down.
+// Without this, "omit the base bits" could be satisfied by omitting them always.
+func TestBuffCancelKeepsRideVehicleForMountCancel(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	cts := model.NewCharacterTemporaryStat()
+	cts.AddStat(logrus.New())(tenant.MustFromContext(ctx))("MONSTER_RIDING", 5221006, 1932000, 10, time.Now().Add(time.Minute))
+
+	got := NewBuffCancel(*cts).Encode(nil, ctx)(nil)
+
+	if got[rideVehicleMaskByte]&rideVehicleMaskValue == 0 {
+		t.Errorf("mount cancel dropped the RideVehicle bit: mask byte %d = %02x, want bit %02x set",
+			rideVehicleMaskByte, got[rideVehicleMaskByte], rideVehicleMaskValue)
+	}
+}
+
+// TestBuffGiveStillAssertsBaseStatBits guards the other direction. A SET must
+// keep the unconditional two-state base bits: the client reads one base-stat
+// block per set bit, sequentially, so dropping one desyncs the entire tail.
+// Splitting the mask into set/reset variants must not disturb that.
+func TestBuffGiveStillAssertsBaseStatBits(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	got := NewBuffGive(*model.NewCharacterTemporaryStat()).Encode(nil, ctx)(nil)
+	if !bytes.Equal(got[:16], v79EmptyMask) {
+		t.Errorf("v79 BuffGive mask changed: got %x want %x", got[:16], v79EmptyMask)
 	}
 }

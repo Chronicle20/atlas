@@ -577,19 +577,51 @@ func legacyGmsMask(t tenant.Model) bool {
 	return t.Region() == "GMS" && t.MajorVersion() < 61
 }
 
-func (m *CharacterTemporaryStat) EncodeMask(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+// EncodeSetMask writes the mask for a temporary-stat SET (GIVE_BUFF). The
+// TwoState/base stats are always present and always encoded as base-stat blocks
+// (see getBaseTemporaryStats), so their mask bits are set unconditionally: the
+// client walks the set base bits and reads one block per bit, sequentially, so
+// omitting a bit here would desync the whole tail. The registry's per-version
+// shift already places them where the client reads them: on v83 RideVehicle is
+// shift 85 -> wire bytes 4-7, matching SecondaryStat::DecodeForLocal's flag
+// 1<<(i+82) (IDA @0x781D0E). No version-specific mask placement is needed.
+//
+// This is the SET path ONLY. A RESET carries no blocks, so there the same bits
+// are a pure instruction to tear those stats down — see EncodeResetMask.
+func (m *CharacterTemporaryStat) EncodeSetMask(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+	return m.encodeMask(l, t, options, true)
+}
+
+// EncodeResetMask writes the mask for a temporary-stat RESET (CANCEL_BUFF).
+// Unlike a SET, a reset packet carries no value blocks at all — the mask is the
+// entire payload, and every set bit tells the client to tear that stat down.
+// Including the unconditional TwoState/base bits here therefore cancels stats
+// the server never intended to touch, on every cancel.
+//
+// That was a live bug (task-190): CWvsContext::OnTemporaryStatReset branches on
+// the reset mask, and the base group contains MonsterRiding/RideVehicle. Any
+// buff expiring — a mob's Slow, say — carried the RideVehicle bit, so the client
+// ran ShowRideVehicleEffect and SecondaryStat::Reset against a mount the player
+// was still on, desyncing client and server about whether it was mounted. The
+// GuidedBullet branch (CMobPool::ResetGuidedMob) fired the same way. Verified
+// against v83 (mask & CTS_RideVehicle @0xBF5548 non-zero) and v95, whose
+// PDB-backed symbols name these branches outright.
+//
+// So a reset mask names only the stats actually being reset. A genuine mount
+// cancel still works: MonsterRiding is in m.stats on that path.
+func (m *CharacterTemporaryStat) EncodeResetMask(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+	return m.encodeMask(l, t, options, false)
+}
+
+func (m *CharacterTemporaryStat) encodeMask(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}, includeTwoStateBase bool) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		reg := buildCharacterTemporaryStatRegistry(t)
 		mask := tool.Uint128{}
-		// The TwoState/base stats are always present and always encoded as base-stat
-		// blocks (see getBaseTemporaryStats), so their mask bits are set
-		// unconditionally. The registry's per-version shift already places them where
-		// the client reads them: on v83 RideVehicle is shift 85 -> wire bytes 4-7,
-		// matching SecondaryStat::DecodeForLocal's flag 1<<(i+82) (IDA @0x781D0E). No
-		// version-specific mask placement is needed.
-		for _, bs := range twoStateBaseStats(t) {
-			if st, ok := reg.byName[bs.name]; ok {
-				mask = mask.Or(st.mask)
+		if includeTwoStateBase {
+			for _, bs := range twoStateBaseStats(t) {
+				if st, ok := reg.byName[bs.name]; ok {
+					mask = mask.Or(st.mask)
+				}
 			}
 		}
 
@@ -617,7 +649,7 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Contex
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		m.EncodeMask(l, t, options)(w)
+		m.EncodeSetMask(l, t, options)(w)
 
 		keys := make([]CharacterTemporaryStatType, 0)
 		for _, v := range m.stats {
@@ -697,7 +729,7 @@ func (m *CharacterTemporaryStat) EncodeForeign(l logrus.FieldLogger, ctx context
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		m.EncodeMask(l, t, options)(w)
+		m.EncodeSetMask(l, t, options)(w)
 
 		keys := make([]CharacterTemporaryStatType, 0)
 		for _, v := range m.stats {

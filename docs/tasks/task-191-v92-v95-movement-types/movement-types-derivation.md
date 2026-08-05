@@ -119,39 +119,58 @@ PDB-backed, so the arms name their struct fields directly.
 
 Highest case in both halves is `0x24` → **length 37**.
 
-Naming policy applied (design §2.4 — the table was renumbered relative to v83 and the client exposes
-no name strings, so only structurally-justified names are assigned; everything else is `UNKNOWN`
-rather than invented):
+### 3.1 v95 per-index table (indices 0–36)
 
-| index | client evidence | `Name` | `Type` |
-|---|---|---|---|
-| 0 | first NORMAL-group member | `NORMAL` | `NORMAL` |
-| 1 | JUMP arm | `UNKNOWN` | `JUMP` |
-| 2 | JUMP arm | `UNKNOWN` | `JUMP` |
-| 3 | TELEPORT arm | `UNKNOWN` | `TELEPORT` |
-| 4 | TELEPORT arm | `UNKNOWN` | `TELEPORT` |
-| 5 | NORMAL arm | `UNKNOWN` | `NORMAL` |
-| 6 | TELEPORT arm | `UNKNOWN` | `TELEPORT` |
-| 7 | TELEPORT arm | `UNKNOWN` | `TELEPORT` |
-| 8 | TELEPORT arm | `UNKNOWN` | `TELEPORT` |
-| 9 | sole `bStat`-only arm | `STAT_CHANGE` | `STAT_CHANGE` |
-| 10 | TELEPORT arm | `UNKNOWN` | `TELEPORT` |
-| 11 | sole `vx,vy,fhFallStart` arm | `START_FALL_DOWN` | `START_FALL_DOWN` |
-| 12 | NORMAL arm carrying the inner `nAttr == 12` → `fhFallStart` branch (**load-bearing**) | `FALL_DOWN` | `NORMAL` |
-| 13 | JUMP arm | `UNKNOWN` | `JUMP` |
-| 14 | NORMAL arm | `UNKNOWN` | `NORMAL` |
-| 15 | `default` | `UNKNOWN` | `DEFAULT` |
-| 16 | JUMP arm | `UNKNOWN` | `JUMP` |
-| 17 | sole `x,y,vx,vy` arm | `FLYING_BLOCK` | `FLYING_BLOCK` |
-| 18 | JUMP arm | `UNKNOWN` | `JUMP` |
-| 19 | `default` | `UNKNOWN` | `DEFAULT` |
-| 20–30 | explicit no-read arm | `UNKNOWN` | `DEFAULT` |
-| 31 | JUMP arm | `UNKNOWN` | `JUMP` |
-| 32 | JUMP arm | `UNKNOWN` | `JUMP` |
-| 33 | JUMP arm | `UNKNOWN` | `JUMP` |
-| 34 | JUMP arm | `UNKNOWN` | `JUMP` |
-| 35 | NORMAL arm | `UNKNOWN` | `NORMAL` |
-| 36 | NORMAL arm | `UNKNOWN` | `NORMAL` |
+Naming policy (design §2.4): the table was renumbered relative to v83 and the client exposes no name
+strings, so only structurally-justified names are assigned; everything else is `UNKNOWN` rather than
+invented.
+
+In the address column, **Enc** = `CMovePath::Encode` `0x666e20` and **Dec** = `CMovePath::Decode`
+`0x667920`; the address given is the arm's first wire-touching instruction. Grouped cases share one
+code path, so the shared arm address is repeated on every index that dispatches to it rather than
+being omitted. The field sequence is what follows the one-byte element type; **every index except 9
+also carries the shared trailer `bMoveAction` (int8) + `tElapse` (int16)** (Enc `0x6670bf`/`0x667110`,
+Dec `0x667a3a`/`0x667a4b`).
+
+| # | client function + address | observed field sequence (all `int16` unless noted) | `Name` | `Type` |
+|---|---|---|---|---|
+| 0 | Enc @`0x666f53` · Dec @`0x6679de` | x, y, vx, vy, fh, xOffset, yOffset | `NORMAL` | `NORMAL` |
+| 1 | Enc @`0x666fff` · Dec @`0x667ae8` | vx, vy | `UNKNOWN` | `JUMP` |
+| 2 | Enc @`0x666fff` · Dec @`0x667ae8` | vx, vy | `UNKNOWN` | `JUMP` |
+| 3 | Enc @`0x667012` · Dec @`0x667b2b` | x, y, fh | `UNKNOWN` | `TELEPORT` |
+| 4 | Enc @`0x667012` · Dec @`0x667b2b` | x, y, fh | `UNKNOWN` | `TELEPORT` |
+| 5 | Enc @`0x666f53` · Dec @`0x6679de` | x, y, vx, vy, fh, xOffset, yOffset | `UNKNOWN` | `NORMAL` |
+| 6 | Enc @`0x667012` · Dec @`0x667b2b` | x, y, fh | `UNKNOWN` | `TELEPORT` |
+| 7 | Enc @`0x667012` · Dec @`0x667b2b` | x, y, fh | `UNKNOWN` | `TELEPORT` |
+| 8 | Enc @`0x667012` · Dec @`0x667b2b` | x, y, fh | `UNKNOWN` | `TELEPORT` |
+| 9 | Enc @`0x667080` · Dec @`0x667bb4` | bStat (**int8**) — **and no `bMoveAction`/`tElapse` trailer** (Enc `goto LABEL_59` @`0x667085`, Dec `goto LABEL_10` @`0x667bde`) | `STAT_CHANGE` | `STAT_CHANGE` |
+| 10 | Enc @`0x667012` · Dec @`0x667b2b` | x, y, fh | `UNKNOWN` | `TELEPORT` |
+| 11 | Enc @`0x667031` · Dec @`0x667b73` | vx, vy, fhFallStart | `START_FALL_DOWN` | `START_FALL_DOWN` |
+| 12 | Enc @`0x666f53`, branch `if (nAttr == 12)` @`0x666f8b` → @`0x666f94` · Dec @`0x6679de`, branch @`0x667a17` → @`0x667a20` | x, y, vx, vy, fh, **fhFallStart**, xOffset, yOffset | `FALL_DOWN` | `NORMAL` |
+| 13 | Enc @`0x666fff` · Dec @`0x667ae8` | vx, vy | `UNKNOWN` | `JUMP` |
+| 14 | Enc @`0x666f53` · Dec @`0x6679de` | x, y, vx, vy, fh, xOffset, yOffset | `UNKNOWN` | `NORMAL` |
+| 15 | Enc switch @`0x666f45` → `default` · Dec switch @`0x6679ce` → `default` | (none) | `UNKNOWN` | `DEFAULT` |
+| 16 | Enc @`0x666fff` · Dec @`0x667ae8` | vx, vy | `UNKNOWN` | `JUMP` |
+| 17 | Enc @`0x667053` · Dec @`0x667b99` | x, y, vx, vy | `FLYING_BLOCK` | `FLYING_BLOCK` |
+| 18 | Enc @`0x666fff` · Dec @`0x667ae8` | vx, vy | `UNKNOWN` | `JUMP` |
+| 19 | Enc switch @`0x666f45` → `default` · Dec switch @`0x6679ce` → `default` | (none) | `UNKNOWN` | `DEFAULT` |
+| 20 | Enc switch @`0x666f45` → `default` · Dec explicit no-read arm @`0x667b0d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 21 | Enc switch @`0x666f45` → `default` · Dec explicit no-read arm @`0x667b0d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 22 | Enc switch @`0x666f45` → `default` · Dec explicit no-read arm @`0x667b0d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 23 | Enc switch @`0x666f45` → `default` · Dec explicit no-read arm @`0x667b0d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 24 | Enc switch @`0x666f45` → `default` · Dec explicit no-read arm @`0x667b0d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 25 | Enc switch @`0x666f45` → `default` · Dec explicit no-read arm @`0x667b0d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 26 | Enc switch @`0x666f45` → `default` · Dec explicit no-read arm @`0x667b0d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 27 | Enc switch @`0x666f45` → `default` · Dec explicit no-read arm @`0x667b0d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 28 | Enc switch @`0x666f45` → `default` · Dec explicit no-read arm @`0x667b0d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 29 | Enc switch @`0x666f45` → `default` · Dec explicit no-read arm @`0x667b0d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 30 | Enc switch @`0x666f45` → `default` · Dec explicit no-read arm @`0x667b0d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 31 | Enc @`0x666fff` · Dec @`0x667ae8` | vx, vy | `UNKNOWN` | `JUMP` |
+| 32 | Enc @`0x666fff` · Dec @`0x667ae8` | vx, vy | `UNKNOWN` | `JUMP` |
+| 33 | Enc @`0x666fff` · Dec @`0x667ae8` | vx, vy | `UNKNOWN` | `JUMP` |
+| 34 | Enc @`0x666fff` · Dec @`0x667ae8` | vx, vy | `UNKNOWN` | `JUMP` |
+| 35 | Enc @`0x666f53` · Dec @`0x6679de` | x, y, vx, vy, fh, xOffset, yOffset | `UNKNOWN` | `NORMAL` |
+| 36 | Enc @`0x666f53` · Dec @`0x6679de` | x, y, vx, vy, fh, xOffset, yOffset | `UNKNOWN` | `NORMAL` |
 
 Group totals: NORMAL 6 · JUMP 9 · TELEPORT 6 · STAT_CHANGE 1 · START_FALL_DOWN 1 · FLYING_BLOCK 1 ·
 DEFAULT 13 = **37**.
@@ -182,9 +201,62 @@ by struct offset. Offsets resolve as `+2` x, `+4` y, `+6` vx, `+8` vy, `+10` bMo
 
 Highest case `0x24` → **length 37**. Both halves agree case-for-case.
 
-**v92 == v95, index-for-index.** Every group's case list, every field order, the `nAttr == 12`
-inner-branch index, and the `bStat`-only arm's skip of the trailing `bMoveAction`/`tElapse` are
-identical. The §3 table applies unchanged to v92.
+### 4.1 v92 per-index table (indices 0–36)
+
+Derived from the v92 client only; it stands on its own and was **not** copied from §3.1. In the
+address column, **Enc** = `CMovePath::Encode` `0x65a260` and **Dec** = `CMovePath::Decode`
+`0x65ad60`; the address given is the arm's first wire-touching instruction, repeated on every index
+that dispatches to that shared arm. Field names are the v92 struct offsets resolved above. **Every
+index except 9 also carries the shared trailer `bMoveAction` (int8) + `tElapse` (int16)**
+(Dec `0x65ae7a`/`0x65ae8b`, Enc trailer ending `0x65a550`).
+
+| # | client function + address | observed field sequence (all `int16` unless noted) | `Name` | `Type` |
+|---|---|---|---|---|
+| 0 | Enc @`0x65a393` · Dec @`0x65ae1e` | x, y, vx, vy, fh, xOffset, yOffset | `NORMAL` | `NORMAL` |
+| 1 | Enc @`0x65a43f` · Dec @`0x65af28` | vx, vy | `UNKNOWN` | `JUMP` |
+| 2 | Enc @`0x65a43f` · Dec @`0x65af28` | vx, vy | `UNKNOWN` | `JUMP` |
+| 3 | Enc @`0x65a452` · Dec @`0x65af6b` | x, y, fh | `UNKNOWN` | `TELEPORT` |
+| 4 | Enc @`0x65a452` · Dec @`0x65af6b` | x, y, fh | `UNKNOWN` | `TELEPORT` |
+| 5 | Enc @`0x65a393` · Dec @`0x65ae1e` | x, y, vx, vy, fh, xOffset, yOffset | `UNKNOWN` | `NORMAL` |
+| 6 | Enc @`0x65a452` · Dec @`0x65af6b` | x, y, fh | `UNKNOWN` | `TELEPORT` |
+| 7 | Enc @`0x65a452` · Dec @`0x65af6b` | x, y, fh | `UNKNOWN` | `TELEPORT` |
+| 8 | Enc @`0x65a452` · Dec @`0x65af6b` | x, y, fh | `UNKNOWN` | `TELEPORT` |
+| 9 | Enc @`0x65a4c0` · Dec @`0x65aff4` | bStat (**int8**, `+18`) — **and no `bMoveAction`/`tElapse` trailer** (Enc `goto LABEL_59` @`0x65a4c5`, Dec `goto LABEL_10` @`0x65b01e`) | `STAT_CHANGE` | `STAT_CHANGE` |
+| 10 | Enc @`0x65a452` · Dec @`0x65af6b` | x, y, fh | `UNKNOWN` | `TELEPORT` |
+| 11 | Enc @`0x65a471` · Dec @`0x65afb3` | vx, vy, fhFallStart | `START_FALL_DOWN` | `START_FALL_DOWN` |
+| 12 | Enc @`0x65a393`, branch `if (*(_BYTE *)v12 == 12)` @`0x65a3cb` → @`0x65a3d4` · Dec @`0x65ae1e`, branch @`0x65ae57` → @`0x65ae60` | x, y, vx, vy, fh, **fhFallStart**, xOffset, yOffset | `FALL_DOWN` | `NORMAL` |
+| 13 | Enc @`0x65a43f` · Dec @`0x65af28` | vx, vy | `UNKNOWN` | `JUMP` |
+| 14 | Enc @`0x65a393` · Dec @`0x65ae1e` | x, y, vx, vy, fh, xOffset, yOffset | `UNKNOWN` | `NORMAL` |
+| 15 | Enc switch @`0x65a385` → `default` · Dec switch @`0x65ae0e` → `default` | (none) | `UNKNOWN` | `DEFAULT` |
+| 16 | Enc @`0x65a43f` · Dec @`0x65af28` | vx, vy | `UNKNOWN` | `JUMP` |
+| 17 | Enc @`0x65a493` · Dec @`0x65afd9` | x, y, vx, vy | `FLYING_BLOCK` | `FLYING_BLOCK` |
+| 18 | Enc @`0x65a43f` · Dec @`0x65af28` | vx, vy | `UNKNOWN` | `JUMP` |
+| 19 | Enc switch @`0x65a385` → `default` · Dec switch @`0x65ae0e` → `default` | (none) | `UNKNOWN` | `DEFAULT` |
+| 20 | Enc switch @`0x65a385` → `default` · Dec explicit no-read arm @`0x65af4d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 21 | Enc switch @`0x65a385` → `default` · Dec explicit no-read arm @`0x65af4d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 22 | Enc switch @`0x65a385` → `default` · Dec explicit no-read arm @`0x65af4d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 23 | Enc switch @`0x65a385` → `default` · Dec explicit no-read arm @`0x65af4d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 24 | Enc switch @`0x65a385` → `default` · Dec explicit no-read arm @`0x65af4d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 25 | Enc switch @`0x65a385` → `default` · Dec explicit no-read arm @`0x65af4d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 26 | Enc switch @`0x65a385` → `default` · Dec explicit no-read arm @`0x65af4d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 27 | Enc switch @`0x65a385` → `default` · Dec explicit no-read arm @`0x65af4d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 28 | Enc switch @`0x65a385` → `default` · Dec explicit no-read arm @`0x65af4d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 29 | Enc switch @`0x65a385` → `default` · Dec explicit no-read arm @`0x65af4d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 30 | Enc switch @`0x65a385` → `default` · Dec explicit no-read arm @`0x65af4d` | (none) | `UNKNOWN` | `DEFAULT` |
+| 31 | Enc @`0x65a43f` · Dec @`0x65af28` | vx, vy | `UNKNOWN` | `JUMP` |
+| 32 | Enc @`0x65a43f` · Dec @`0x65af28` | vx, vy | `UNKNOWN` | `JUMP` |
+| 33 | Enc @`0x65a43f` · Dec @`0x65af28` | vx, vy | `UNKNOWN` | `JUMP` |
+| 34 | Enc @`0x65a43f` · Dec @`0x65af28` | vx, vy | `UNKNOWN` | `JUMP` |
+| 35 | Enc @`0x65a393` · Dec @`0x65ae1e` | x, y, vx, vy, fh, xOffset, yOffset | `UNKNOWN` | `NORMAL` |
+| 36 | Enc @`0x65a393` · Dec @`0x65ae1e` | x, y, vx, vy, fh, xOffset, yOffset | `UNKNOWN` | `NORMAL` |
+
+Group totals: NORMAL 6 · JUMP 9 · TELEPORT 6 · STAT_CHANGE 1 · START_FALL_DOWN 1 · FLYING_BLOCK 1 ·
+DEFAULT 13 = **37** — the same totals §3.1 reports for v95.
+
+**v92 == v95, index-for-index.** Comparing §4.1 against §3.1 row by row: every `Name`, every `Type`,
+every field sequence, the `nAttr == 12` inner-branch index, and the `bStat`-only arm's skip of the
+trailing `bMoveAction`/`tElapse` match. Only the code addresses differ, as they must. The two
+templates therefore take the same 37-entry array.
 
 ---
 
@@ -223,27 +295,60 @@ is why v88+ needs the velocity pair in the header at all.
 (`more: false`, `xref_count: 6`); v92 `Flush` `0x65b5a0` → 6 xrefs (`more: false`). Each sender's
 opcode is the immediate passed to the `COutPacket::COutPacket(long)` constructor.
 
-For the v92 summon block (§6.4) a complete sweep was needed, so the entire
-`COutPacket::COutPacket(long)` call-site set was enumerated per IDB (v92 ctor `0x67eb20`, 571 call
-sites; v95 ctor `0x68d090`, 597 call sites) and the pushed immediate recovered by reading the 20
-bytes preceding each call and decoding the last `push imm8`/`push imm32`. **The recovered map was
-validated against 14 independently-decompiled sites (6 v92 + 8 v95) — 14/14 exact.** Ten sites
-(5 per IDB) whose immediate the byte scan could not recover were decompiled individually; all ten
-resolve to `0x0F` or `0x8D` and none is in the range of interest.
+Answering "what, if anything, does the v92 client send on `0xCA`?" requires a *negative* result over
+the whole binary, which no per-function read can give. A complete sweep was therefore run in
+addition to the per-function decompiles.
+
+**Sweep method.** `xref_query {addr: <ctor>, direction: "to", xref_type: "code"}`, paged with
+`count: 200` + `next_offset` (a larger `count` silently returns only 10 rows), enumerates every
+`COutPacket::COutPacket(long)` call site — v92 ctor `0x67eb20`, **571** sites; v95 ctor `0x68d090`,
+**597** sites. For each site the 20 bytes ending at the `call` were read with `get_bytes`, and the
+last `push imm8` (`6A xx`) or `push imm32` (`68 xx xx xx xx`) before it decoded as the opcode.
+
+**Sweep validation — the 14 sites, named.** The recovered map was checked against 14 sites that had
+been decompiled independently before the sweep was written. All 14 agree exactly:
+
+| # | IDB | ctor site | function | sweep imm | decompile |
+|---|---|---|---|---|---|
+| 1 | v92 | `0x644fa9` | `CMob::GenerateMovePath` | `0xDC` | `0xDCu` ✓ |
+| 2 | v92 | `0x664e8b` | `CNpc::GenerateMovePath` | `0xEA` | `0xEAu` ✓ |
+| 3 | v92 | `0x96f1d2` | `CVecCtrlDragon::EndUpdateActive` | `0xD3` | `0xD3u` ✓ |
+| 4 | v92 | `0x9781e5` | `CVecCtrlPet::EndUpdateActive` | `0xC4` | `0xC4u` ✓ |
+| 5 | v92 | `0x97932d` | `CVecCtrlSummoned::EndUpdateActive` | `0xCC` | `0xCCu` ✓ |
+| 6 | v92 | `0x979ab3` | `CVecCtrlUser::EndUpdateActive` | `0x2E` | `0x2Eu` ✓ |
+| 7 | v95 | `0x651909` | `CMob::GenerateMovePath` | `0xE3` | `227` ✓ |
+| 8 | v95 | `0x67165b` | `CNpc::GenerateMovePath` | `0xF1` | `241` ✓ |
+| 9 | v95 | `0x9965b2` | `CVecCtrlDragon::EndUpdateActive` | `0xD6` | `214` ✓ |
+| 10 | v95 | `0x99f5e5` | `CVecCtrlPet::EndUpdateActive` | `0xC7` | `199` ✓ |
+| 11 | v95 | `0x9a075d` | `CVecCtrlSummoned::EndUpdateActive` | `0xCF` | `207` ✓ |
+| 12 | v95 | `0x9a0ee3` | `CVecCtrlUser::EndUpdateActive` | `0x2C` | `44` ✓ |
+| 13 | v95 | `0x750db2` | `CSummoned::AttackToTargetMob` | `0xD0` | `208` ✓ |
+| 14 | v95 | `0x74bb6a` | `CSummoned::SetDamaged` | `0xD1` | `209` ✓ |
+
+Ten further sites (5 per IDB) whose immediate the byte scan could not recover were decompiled
+individually rather than left blank: v92 `0x5ca37c`, `0x61c374`, `0x62b7c5`, `0x62b929`, `0x6727f4`
+and v95 `0x5d44ec`, `0x628304`, `0x637755`, `0x680b84`, `0x913605`. All ten resolve to `0x0F` or
+`0x8D`; none is in the pet/summon range. **The sweep therefore covers 571/571 v92 and 597/597 v95
+call sites with no unresolved entry** — which is what licenses the negative result for `0xCA` in
+§6.4.
+
+Every opcode this document reports is *additionally* cited to its own decompiled ctor call site in
+§6.2–§6.5. The sweep is relied on for exactly one thing no per-function read can do: proving absence.
 
 ### 6.2 v95 senders (named symbols)
 
 | Role | v95 function | `COutPacket` site | Opcode | vs `template_gms_95_1.json` |
 |---|---|---|---|---|
 | Mob | `CMob::GenerateMovePath` `0x651100` | `0x651909` | 227 = `0xE3` | matches |
-| Npc | `CNpc::GenerateMovePath` `0x671590` | `0x67165b` | 241 = `0xF1` | not routed by Atlas |
-| Dragon | `CVecCtrlDragon::EndUpdateActive` `0x996570` | `0x9965b2` | 214 = `0xD6` | not routed by Atlas |
+| Npc | `CNpc::GenerateMovePath` `0x671590` | `0x67165b` | 241 = `0xF1` | matches — routed as `NPCActionHandle` (see §6.5) |
+| Dragon | `CVecCtrlDragon::EndUpdateActive` `0x996570` | `0x9965b2` | 214 = `0xD6` | not routed by Atlas (no handler of any name in any template) |
 | Pet | `CVecCtrlPet::EndUpdateActive` `0x99f5a0` | `0x99f5e5` | 199 = `0xC7` | matches |
 | Summoned | `CVecCtrlSummoned::EndUpdateActive` `0x9a0700` | `0x9a075d` | 207 = `0xCF` | matches |
 | **User** | `CVecCtrlUser::EndUpdateActive` `0x9a0d20` | **`0x9a0ee3`** | **44 = `0x2C`** | **the FR-3.1 answer** |
 
-Three of the four Atlas-routed values already match the committed v95 template, which cross-validates
-the walk before it is used for the new one. `CVecCtrlUser::EndUpdateActive` writes the eight-field
+Five of the six senders are routed by Atlas (all but Dragon — see §6.5 for the `NPCActionHandle`
+routing). **Four of those five already match the committed v95 template** (Mob, Npc, Pet, Summoned),
+which cross-validates the walk before it is used to derive the fifth. `CVecCtrlUser::EndUpdateActive` writes the eight-field
 anti-cheat header before `Flush`: `Encode4(~drInfo[0])`@`0x9a0ef8`, `Encode4(~drInfo[1])`@`0x9a0f06`,
 `Encode1(FieldKey)`@`0x9a0f1e`, `Encode4(~drInfo[2])`@`0x9a0f2c`, `Encode4(~drInfo[3])`@`0x9a0f3a`,
 `Encode4(Crc)`@`0x9a0f4f`, `Encode4(dwKey)`@`0x9a0f6c`, `Encode4(Crc32)`@`0x9a0f8d`, then
@@ -261,43 +366,55 @@ the same address order, so the correspondence is not merely positional:
 | Role | v92 function | size | v95 counterpart size | `COutPacket` site | Opcode | Structural confirmation |
 |---|---|---|---|---|---|---|
 | Mob | `sub_6447A0` | `0x10a1` | `0x10a1` | `0x644fa9` | `0xDC` | matches template |
-| Npc | `sub_664DC0` | `0x217` | `0x217` | `0x664e8b` | `0xEA` | not routed by Atlas |
-| Dragon | `sub_96F190` | `0x95` | `0x95` | `0x96f1d2` | `0xD3` | neither version encodes a prefix |
+| Npc | `sub_664DC0` | `0x217` | `0x217` | `0x664e8b` | `0xEA` | size-exact; matches template — routed as `NPCActionHandle` (see §6.5) |
+| Dragon | `sub_96F190` | `0x95` | `0x95` | `0x96f1d2` | `0xD3` | not routed by Atlas; neither version encodes a prefix |
 | **Pet** | `sub_9781A0` | `0xb8` | `0xb8` | `0x9781e5` | **`0xC4`** | `EncodeBuffer(petLockerSN, 8)`@`0x97820c`, mirroring v95 @`0x99f60c` |
 | **Summoned** | `sub_9792D0` | `0xc1` | `0xc1` | `0x97932d` | **`0xCC`** | `Encode4(dwSummonedID)`@`0x979345`, mirroring v95 @`0x9a0775` |
 | User | `sub_9798F0` | `0x2c8` | `0x2c8` | `0x979ab3` | `0x2E` | same 8-field anti-cheat header, `0x979ac8`–`0x979b5d`, then `Flush`@`0x979b73` |
 
-`template_gms_92_1.json` currently registers `PetMovementHandle` at… nothing — the v92 template has
-no pet move handler at all. The value `0xC4` above is the one Task 6 must add.
+`template_gms_92_1.json` has **no `PetMovementHandle` entry at all** (verified: no handler whose name
+contains `Pet` exists in that template's 46 handlers). The value `0xC4` above is the one Task 6 must
+add as a new entry, at its sorted position for
+`tools/template-opcode-order-guard.sh`. The v92 `Npc` value `0xEA` is already correct in that
+template as `NPCActionHandle` — see §6.5.
 
 ### 6.4 The rest of the v92 summon block, and who owns `0xC8`
 
-Both clients' summon senders, listed by enclosing-function address, from the complete ctor-immediate
-sweep:
+Both clients' summon senders, listed by enclosing-function address. **Every row below carries its own
+`COutPacket::COutPacket(long)` constructor call-site address and was individually decompiled** — no
+row rests on the aggregate sweep alone.
 
-| # | v95 function | opcode | v92 function | opcode |
-|---|---|---|---|---|
-| 1 | `CSummoned::TryDoingHeal` `0x74ad90` | `0xD2` | `sub_72D430` | `0xCF` |
-| 2 | `CSummoned::TryDoingGiveBuff` `0x74af50` | `0xD2` | `sub_72D670` | `0xCF` |
-| 3 | `CSummoned::TryDoingHealingRobot` `0x74b3e0` | `0xD2` | `sub_72DAB0` | `0xCF` |
-| 4 | `CSummoned::TryDoingSummon` `0x74b640` | `0xD2` | `sub_72DD10` | `0xCF` |
-| 5 | **`CSummoned::SetDamaged` `0x74b730`** | **`0xD1`** | **`0x72DE00`** (renamed) | **`0xCE`** |
-| 6 | `CSummoned::SendRemove` `0x74c170` (size `0x7e`) | `0xD3` | `0x72E690` (size `0x7e`, renamed) | `0xD0` |
-| 7 | **`CSummoned::AttackToTargetMob` `0x7501d0`** | **`0xD0`** | **`0x732640`** (renamed) | **`0xCD`** |
-| 8 | `CSummoned::TryDoingAttackManual` `0x751240` | `0xD0` | `sub_7332B0` | `0xCD` |
-| 9 | `CSummoned::TryDoingTaslaCoilAttack` `0x752780` | `0xD0` | `sub_736DB0` | `0xCD` |
-| 10 | — | — | `sub_738490` | `0xCD` |
+| # | v95 function | v95 ctor site | opcode | v92 function | v92 ctor site | opcode |
+|---|---|---|---|---|---|---|
+| 1 | `CSummoned::TryDoingHeal` `0x74ad90` | `0x74ae78` | `0xD2` (210) | `sub_72D430` | `0x72d597` | `0xCF` |
+| 2 | `CSummoned::TryDoingGiveBuff` `0x74af50` | `0x74b2fd` | `0xD2` (210) | `sub_72D670` | `0x72d9d8` | `0xCF` |
+| 3 | `CSummoned::TryDoingHealingRobot` `0x74b3e0` | `0x74b589` | `0xD2` (210) | `sub_72DAB0` | `0x72dc55` | `0xCF` |
+| 4 | `CSummoned::TryDoingSummon` `0x74b640` | `0x74b67c` | `0xD2` (210) | `sub_72DD10` | `0x72dd4c` | `0xCF` |
+| 5 | **`CSummoned::SetDamaged` `0x74b730`** | **`0x74bb6a`** | **`0xD1` (209)** | **`0x72DE00`** (renamed) | **`0x72e0ce`** | **`0xCE`** |
+| 6 | `CSummoned::SendRemove` `0x74c170` (size `0x7e`) | `0x74c19f` | `0xD3` (211) | `0x72E690` (size `0x7e`, renamed) | `0x72e6bf` | `0xD0` |
+| 7 | **`CSummoned::AttackToTargetMob` `0x7501d0`** | **`0x750db2`** | **`0xD0` (208)** | **`0x732640`** (renamed) | **`0x732e15`** | **`0xCD`** |
+| 8 | `CSummoned::TryDoingAttackManual` `0x751240` | `0x75226b` | `0xD0` (208) | `sub_7332B0` | `0x733725` | `0xCD` |
+| 9 | `CSummoned::TryDoingTaslaCoilAttack` `0x752780` | `0x752c27` | `0xD0` (208) | `sub_736DB0` | `0x737d26` | `0xCD` |
+| 10 | — | — | — | `sub_738490` | `0x7397a8` | `0xCD` |
+
+Two of those addresses need a word. The ctor call site is quoted from `xrefs_to` (the address of the
+`call` instruction). For `sub_72D670` and `CSummoned::TryDoingGiveBuff` the Hex-Rays statement marker
+reads `0x72d9cc` and `0x74b2f1` respectively — the first instruction of the same statement rather
+than the `call`. Both functions contain **exactly one** `COutPacket::COutPacket(long)` call, so the
+two addresses denote the same invocation; the `call` address is cited for consistency with every
+other row.
 
 The v92 block is isomorphic to v95's under a uniform **−3** shift. That shift is independently
-anchored by four pairs where the symbol or the size is identical on both sides:
+anchored by five pairs where the symbol or the size is identical on both sides (the first three are
+named in *both* IDBs, so the pairing is by symbol, not by position):
 
-| v95 | opcode | v92 | opcode |
-|---|---|---|---|
-| `CPet::SendDropPickUpRequest` (size `0x216`) | `0xCA` | `CPet::SendDropPickUpRequest` (size `0x216`, already named in the v92 IDB) | `0xC7` |
-| `CWvsContext::SendStatChangeItemUseRequestByPetQ` (`0x17c`) | `0xCB` | `CWvsContext::SendStatChangeItemUseRequestByPetQ` (`0x17d`, already named) | `0xC8` |
-| `CPet::SendUpdateExceptionListRequest` (`0x109`) | `0xCC` | `CPet::SendUpdateExceptionListRequest` (`0x109`, already named) | `0xC9` |
-| `CPet::ParseCommand` (`0x353`) | `0xC9` | `sub_699230` (`0x353`) | `0xC6` |
-| `CSummoned::SendRemove` (`0x7e`) | `0xD3` | `sub_72E690` (`0x7e`) | `0xD0` |
+| v95 | ctor site | opcode | v92 | ctor site | opcode |
+|---|---|---|---|---|---|
+| `CPet::SendDropPickUpRequest` `0x6a0820` (size `0x216`) | `0x6a0881` | `0xCA` (202) | `CPet::SendDropPickUpRequest` `0x695df0` (size `0x216`, already named in the v92 IDB) | `0x695e51` | `0xC7` |
+| `CWvsContext::SendStatChangeItemUseRequestByPetQ` `0x9de400` (`0x17c`) | `0x9de4bd` | `0xCB` (203) | `CWvsContext::SendStatChangeItemUseRequestByPetQ` `0x9b3a00` (`0x17d`, already named) | `0x9b3abe` | `0xC8` |
+| `CPet::SendUpdateExceptionListRequest` `0x6a0dd0` (`0x109`) | `0x6a0e01` | `0xCC` (204) | `CPet::SendUpdateExceptionListRequest` `0x6963a0` (`0x109`, already named) | `0x6963d1` | `0xC9` |
+| `CPet::ParseCommand` `0x6a3cc0` (`0x353`) | `0x6a3f64` | `0xC9` | `sub_699230` (`0x353`) | `0x6994d4` | `0xC6` |
+| `CSummoned::SendRemove` `0x74c170` (`0x7e`) | `0x74c19f` | `0xD3` (211) | `sub_72E690` (`0x7e`) | `0x72e6bf` | `0xD0` |
 
 Positional order alone is not evidence, so the two values Task 6 consumes were additionally confirmed
 by body comparison:
@@ -316,18 +433,19 @@ by body comparison:
   `Encode4`@`0x733004`, then the per-mob loop. v95 `CSummoned::AttackToTargetMob` @`0x750db2` emits
   the same sequence at `0x750dce`–`0x751077`.
 
-`sub_7332B0`, `sub_736DB0` and `sub_738490` are three further confirmed `0xCD` senders in the same
-class. They are **not** renamed: v95 has three 2-argument attack senders while v92 has one 2-argument
-and two 3-argument ones, so no 1:1 v95 identity is established for them. Their opcode (`0xCD`) is
-established by the byte-level sweep and is unaffected.
+`sub_7332B0`, `sub_736DB0` and `sub_738490` are three further `0xCD` senders in the same class, each
+decompile-confirmed at its own ctor site (`COutPacket::COutPacket(…, 0xCDu)` at `0x733725`,
+`0x737d26` and `0x7397a8` respectively). They are **not** renamed: v95 has three 2-argument attack
+senders while v92 has one 2-argument and two 3-argument ones, so no 1:1 v95 identity is established
+for them. That does not affect the opcode.
 
 **Who owns `0xC8` / `0xC9` / `0xCA` in the v92 client (the Step-7 question):**
 
-| Opcode | v92 sender | v95 equivalent |
-|---|---|---|
-| `0xC8` | `CWvsContext::SendStatChangeItemUseRequestByPetQ` `0x9b3a00`, ctor @`0x9b3abe` — **already named in the v92 IDB** | `0xCB` `PetItemUseHandle` |
-| `0xC9` | `CPet::SendUpdateExceptionListRequest` `0x6963a0`, ctor @`0x6963d1` — **already named in the v92 IDB** | `0xCC` `PetItemExcludeHandle` |
-| `0xCA` | **nothing.** Zero of the 571 `COutPacket::COutPacket(long)` call sites in the v92 `.text` passes the immediate `0xCA`. `0xCB` is likewise unused. | `0xCD` — also unused in v95 (the same two-slot gap before the summon block) |
+| Opcode | v92 sender | evidence | v95 equivalent |
+|---|---|---|---|
+| `0xC8` | `CWvsContext::SendStatChangeItemUseRequestByPetQ` `0x9b3a00` — **already named in the v92 IDB** | decompiled: `COutPacket::COutPacket((COutPacket *)&v16, 0xC8u); /*0x9b3abe*/` | `0xCB` `PetItemUseHandle` |
+| `0xC9` | `CPet::SendUpdateExceptionListRequest` `0x6963a0` — **already named in the v92 IDB** | decompiled: `COutPacket::COutPacket((COutPacket *)&v10, 0xC9u); /*0x6963d1*/` | `0xCC` `PetItemExcludeHandle` |
+| `0xCA` | **nothing** | sweep (§6.1): zero of the 571 fully-resolved `COutPacket::COutPacket(long)` call sites in the v92 `.text` passes the immediate `0xCA`. `0xCB` is likewise unused. | `0xCD` — also unused in v95 (the same two-slot gap before the summon block) |
 
 So the design's "v95−3 correspondence" hypothesis is **confirmed against the client**, and by named
 symbols on both sides rather than by position: `template_gms_92_1.json`'s
@@ -346,6 +464,70 @@ legitimately colliding at `0xC8`/`0xC9`/`0xCA`". `template_gms_92_1.json` has 46
 registers **no** `Pet*` handler at any opcode, so nothing Atlas routes contends for those three
 slots — they are simply wrong and free to vacate. The destination slots `0xCC`, `0xCD`, `0xCE` are
 likewise unoccupied in that template. Task 6 can relocate cleanly.
+
+### 6.5 `NPCActionHandle` is the fifth movement-carrying handler
+
+**Correction.** Earlier drafts of this document annotated the Npc sender rows in §6.2/§6.3 as "not
+routed by Atlas". That was carried over from the task brief without independent re-derivation, and it
+is **wrong**. `CNpc::GenerateMovePath`'s packet *is* routed, as `NPCActionHandle`:
+
+- `libs/atlas-packet/npc/serverbound/action.go:22` — `ActionRequest` embeds `movement model.Movement`
+  (the struct also carries `// packet-audit:fname CNpc::GenerateMovePath` at `:16`, naming the very
+  sender §6.2/§6.3 read).
+- `libs/atlas-packet/npc/serverbound/action.go:62` — `m.movement.Decode(l, ctx)(r, options)`, i.e. it
+  decodes through the **same `model.Movement` codec and the same `options` map** as every other move
+  handler, so it consumes `options.types` identically. (The review brief cited `:58`; the verified
+  line is `:62`. The `Encode` half mirrors it at `:49`.)
+- `services/atlas-channel/atlas.com/channel/main.go:812` —
+  `handlerMap[npcsb.NPCActionHandle] = handler.NPCActionHandleFunc`.
+
+**Opcodes: already correct, no change needed.** The template values match the derivation exactly:
+
+| Version | derived from client | `template_gms_*_1.json` `NPCActionHandle` opCode | |
+|---|---|---|---|
+| GMS v92 | `0xEA` — `sub_664DC0`/`CNpc::GenerateMovePath` `0x664DC0`, ctor @`0x664e8b` | `0xEA` | ✓ no change |
+| GMS v95 | `0xF1` — `CNpc::GenerateMovePath` `0x671590`, ctor @`0x67165b` | `0xF1` | ✓ no change |
+
+**But its `types` table is missing on exactly the two versions this task fixes.** Survey of all 11
+seed templates (`len(options.types)` per handler; `—` = the handler is absent from that template):
+
+| template | `CharacterMoveHandle` | `MonsterMovementHandle` | **`NPCActionHandle`** | `PetMovementHandle` | `SummonMoveHandle` |
+|---|---|---|---|---|---|
+| `gms_12_1` | 9 | 9 | **9** | — | 9 |
+| `gms_48_1` | 23 | 23 | **23** | 23 | — |
+| `gms_61_1` | 23 | 23 | **23** | 23 | 23 |
+| `gms_72_1` | 23 | 23 | **23** | 23 | 23 |
+| `gms_79_1` | 23 | 23 | **23** | 23 | 23 |
+| `gms_83_1` | 23 | 23 | **23** | 23 | 23 |
+| `gms_84_1` | 24 | 24 | **24** | 24 | 24 |
+| `gms_87_1` | 25 | 25 | **25** | 25 | 25 |
+| `gms_92_1` | **none** (`0x2E`) | **none** (`0xDC`) | **none** (`0xEA`) | — (handler absent) | **none** (`0xC8`) |
+| `gms_95_1` | — (handler absent) | **none** (`0xE3`) | **none** (`0xF1`) | **none** (`0xC7`) | **none** (`0xCF`) |
+| `jms_185_1` | 33 | 33 | **33** | 33 | 33 |
+
+In every template that has the table at all, `NPCActionHandle` carries **the same array length as
+that template's other move handlers**, because it decodes the same `model.Movement`. It is `None` in
+exactly `gms_92_1` and `gms_95_1` — the two templates this task repairs.
+
+**Therefore `NPCActionHandle` needs the same 37-entry table on v92 and v95** as
+`CharacterMoveHandle`, `MonsterMovementHandle`, `PetMovementHandle` and `SummonMoveHandle`. It is a
+`types`-only addition: the opcode stays put.
+
+**The set of `options.types` carriers is closed.** Sweeping all 11 templates for handlers that carry
+an `options.types` key at all, the complete set is exactly:
+
+```
+CharacterMoveHandle
+MonsterMovementHandle
+NPCActionHandle
+PetMovementHandle
+SummonMoveHandle
+```
+
+Five handlers, no others — so downstream tasks and the permanent guard have an exhaustive list, and
+the guard should assert on all five rather than the four the plan's prose names.
+(`CharacterInventoryMoveHandle` is *not* in the set despite its name: it is inventory item movement
+and correctly carries no `types`.)
 
 ---
 
@@ -376,9 +558,13 @@ established 1:1 v95 identity — see §6.4). Naming them after a v95 function wo
 ## 8. Unresolved indices
 
 **None.** All 37 indices (0–36) for both v92 and v95 resolve from both codec halves, and the two
-halves agree. Both `Encode` switches dispatch through `default` for the unlisted cases, which is a
-positive reading (no extra bytes) rather than an absence of evidence — corroborated by v95/v92
-`Decode` carrying an *explicit* no-read arm for `0x14`–`0x1E`.
+halves agree. Every row of §3.1 and §4.1 carries a client address; none is blank. Both `Encode`
+switches dispatch through `default` for the unlisted cases, which is a positive reading (no extra
+bytes) rather than an absence of evidence — corroborated by v95/v92 `Decode` carrying an *explicit*
+no-read arm for `0x14`–`0x1E`.
+
+No unresolved opcode either: all 571 v92 and 597 v95 `COutPacket` ctor call sites resolved (§6.1),
+and every opcode reported is decompile-confirmed at its own site.
 
 ---
 
@@ -403,6 +589,22 @@ Appendix A's literal JSON block may be used verbatim by Tasks 5 and 6 without ed
 values in the plan's Task 1 tables (v92 pet `0xC4`, summon move `0xCC`, v95 user `0x2C`) also
 reproduce; the plan did not pre-state v92 summon attack/damage, which this task derives as `0xCD`
 and `0xCE`.
+
+### 9.1 Divergence from the plan's *prose* (not from Appendix A)
+
+Two corrections to the plan/brief text, both established from the repo and the clients rather than
+carried over:
+
+1. **There are five movement-carrying handlers, not four.** The brief annotated the Npc sender as
+   "not routed by Atlas"; it is routed, as `NPCActionHandle`, and its `types` table is missing on
+   exactly v92 and v95. See §6.5 for the routing citations, the 11-template survey, and the closed
+   five-handler set. Tasks 5, 6 and the permanent guard must cover all five.
+2. **`libs/atlas-packet/npc/serverbound/action.go:58`** (cited in review) is not the decode call; the
+   verified line is **`:62`**, with the mirroring `Encode` at `:49`.
+
+Neither changes the 37-entry table — `NPCActionHandle` decodes the identical `model.Movement` with
+the identical `options` map, so it takes the identical array. It changes *how many places* that array
+must be written.
 
 ---
 

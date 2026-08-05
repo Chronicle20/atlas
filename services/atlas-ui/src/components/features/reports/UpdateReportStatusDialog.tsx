@@ -34,6 +34,16 @@ export function UpdateReportStatusDialog({
   onOpenChange,
 }: UpdateReportStatusDialogProps) {
   const [status, setStatus] = useState<ReportStatus>(report.attributes.status);
+  // Reset the selected status whenever the dialog transitions from closed to
+  // open (adjust state during render per https://react.dev/learn/you-might-not-need-an-effect
+  // instead of a useEffect) — the dialog never unmounts, so without this a
+  // status picked and then cancelled on a prior open would stick around and
+  // silently arm the Save button on the next open. Mirrors PoolFormDialog.tsx.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setStatus(report.attributes.status);
+  }
   const updateStatus = useUpdateReportStatus();
 
   const handleSubmit = () => {

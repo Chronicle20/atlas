@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTenant } from "@/context/tenant-context";
 import { useNavigate, useParams } from "react-router-dom";
 import { useReport } from "@/lib/hooks/api/useReports";
 import { ReportKindLabels } from "@/types/models/report";
 import { ReportStatusBadge } from "@/components/features/reports/ReportStatusBadge";
 import { UpdateReportStatusDialog } from "@/components/features/reports/UpdateReportStatusDialog";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
+import { createErrorFromUnknown } from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -61,11 +62,44 @@ export function ReportDetailPage() {
   const loading = reportQuery.isLoading;
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
 
+  // Surface a genuine fetch failure (network error, 500, etc.) as a toast —
+  // distinct from a report id that legitimately doesn't exist. The GM
+  // navigated here via a URL, so we don't auto-bounce them away like
+  // BanDetailPage does; we just make sure they can tell "backend is down"
+  // apart from "this report doesn't exist" (see the two render branches
+  // below).
+  useEffect(() => {
+    if (reportQuery.error) {
+      const errorInfo = createErrorFromUnknown(
+        reportQuery.error,
+        "Failed to load report",
+      );
+      toast.error(errorInfo.message);
+    }
+  }, [reportQuery.error]);
+
   if (loading) {
     return <ReportDetailSkeleton />;
   }
 
-  if (reportQuery.error || !report) {
+  if (reportQuery.error) {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center p-10">
+        <p className="text-muted-foreground">Failed to load report</p>
+        <Button
+          variant="outline"
+          className="mt-4"
+          onClick={() => navigate("/reports")}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Reports
+        </Button>
+        <Toaster richColors />
+      </div>
+    );
+  }
+
+  if (!report) {
     return (
       <div className="flex flex-col flex-1 items-center justify-center p-10">
         <p className="text-muted-foreground">Report not found</p>
@@ -174,7 +208,7 @@ export function ReportDetailPage() {
                   {attributes.serverTranscript.map((line, i) => (
                     <TableRow key={i}>
                       <TableCell className="whitespace-nowrap text-xs">
-                        {new Date(line.timestamp).toLocaleTimeString()}
+                        {new Date(line.timestamp).toLocaleString()}
                       </TableCell>
                       <TableCell className="text-xs">
                         {line.senderName}

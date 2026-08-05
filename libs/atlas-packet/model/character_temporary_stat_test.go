@@ -356,3 +356,109 @@ func TestCTSHomingBeaconLegacyVersionsHaveNoTrailer(t *testing.T) {
 		})
 	}
 }
+
+// TestCTSHomingBeaconV95MaskAndBlock pins the v95 beacon give: bit 127
+// (0x80000000 in wire dword[0]) joins the 4 always-set two-state bits
+// (0x3C000000), and the trailer is the status-quo 58 bytes plus one populated
+// 17-byte GuidedBullet block. IDA: v95 group @SecondaryStat::SecondaryStat
+// 0x72F190, GuidedBullet DecodeForClient 0x727180, mask-gated tail read
+// 0x73DBA0 (design.md §2.4).
+func TestCTSHomingBeaconV95MaskAndBlock(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 95, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypeHomingBeacon), 5220011, 1000001, 10, time.Time{})
+
+	got := input.Encode(nil, ctx)(nil)
+
+	// dword[0] = 0x3C000000 | 0x80000000 = 0xBC000000 -> LE bytes 00 00 00 BC.
+	if !bytes.Equal(got[0:4], []byte{0x00, 0x00, 0x00, 0xBC}) {
+		t.Fatalf("v95 mask dword[0]: got % x want 00 00 00 bc", got[0:4])
+	}
+	if !bytes.Equal(got[4:16], make([]byte, 12)) {
+		t.Fatalf("v95 mask dwords[1..3] should be empty; got % x", got[4:16])
+	}
+	// 16 mask + 2 leading + 58 status-quo blocks + 17 GuidedBullet.
+	if len(got) != 16+2+58+17 {
+		t.Fatalf("v95 beacon packet length: got %d want %d", len(got), 16+2+58+17)
+	}
+	// Populated block: nOption=1000001, rOption=5220011 (0x004FA6AB).
+	head := []byte{0x41, 0x42, 0x0F, 0x00, 0xAB, 0xA6, 0x4F, 0x00}
+	idx := bytes.Index(got, head)
+	if idx < 0 {
+		t.Fatalf("v95 populated GuidedBullet head missing; got % x", got)
+	}
+	if !bytes.Equal(got[idx+13:idx+17], []byte{0x41, 0x42, 0x0F, 0x00}) {
+		t.Fatalf("v95 dwMobId: got % x want 41 42 0f 00", got[idx+13:idx+17])
+	}
+}
+
+// Non-beacon v95 traffic must stay byte-identical to the current truncated
+// encode (regression safety for every existing v95 buff packet).
+// TestCTSMonsterRidingV95MaskAndLayout (above) already pins the mount case;
+// this pins the empty case.
+func TestCTSEmptyV95StaysStatusQuo(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewCharacterTemporaryStat()
+	got := input.Encode(nil, ctx)(nil)
+	if len(got) != 16+2+58 {
+		t.Fatalf("empty v95 CTS length: got %d want %d", len(got), 16+2+58)
+	}
+	if !bytes.Equal(got[0:4], []byte{0x00, 0x00, 0x00, 0x3C}) {
+		t.Fatalf("empty v95 mask dword[0]: got % x want 00 00 00 3c", got[0:4])
+	}
+}
+
+// TestCTSPartyBoosterV95Block pins the conditional PartyBooster member:
+// bit 126 (0x40000000) and a 20-byte block (base 13 + tCurrentTime 5 +
+// usExpireTerm 2 — IDA DecodeForClient 0x72C600). PartyBooster has no
+// producer in atlas yet; this exercises the verified wire slot only.
+func TestCTSPartyBoosterV95Block(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 95, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypePartyBooster), 1005017, 20, 20, time.Now().Add(time.Minute))
+
+	got := input.Encode(nil, ctx)(nil)
+
+	if !bytes.Equal(got[0:4], []byte{0x00, 0x00, 0x00, 0x7C}) {
+		t.Fatalf("v95 mask dword[0] with PartyBooster: got % x want 00 00 00 7c", got[0:4])
+	}
+	if len(got) != 16+2+58+20 {
+		t.Fatalf("v95 PartyBooster packet length: got %d want %d", len(got), 16+2+58+20)
+	}
+}
+
+// Decode must mirror the conditional read: beacon- and PartyBooster-bearing
+// v95 payloads round-trip without desyncing the reader.
+func TestCTSHomingBeaconV95RoundTrip(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 95, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypeHomingBeacon), 5220011, 1000001, 10, time.Time{})
+	output := NewCharacterTemporaryStat()
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+}
+
+func TestCTSPartyBoosterV95RoundTrip(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 95, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypePartyBooster), 1005017, 20, 20, time.Now().Add(time.Minute))
+	output := NewCharacterTemporaryStat()
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+}
+
+// Foreign v95 encode must never carry the GuidedBullet block even if a beacon
+// stat is (incorrectly) present upstream: HOMING_BEACON is caster-only and the
+// remote-reader path is unverified (FR-4.5). The lib guarantees this by CTS
+// construction (channel never AddStats it on foreign bodies); this test pins
+// that an EMPTY foreign v95 CTS stays at the status-quo length.
+func TestCTSForeignEmptyV95StaysStatusQuo(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewCharacterTemporaryStat()
+	got := input.EncodeForeign(nil, ctx)(nil)
+	if len(got) != 16+2+58 {
+		t.Fatalf("empty foreign v95 CTS length: got %d want %d", len(got), 16+2+58)
+	}
+}

@@ -49,6 +49,7 @@ import (
 	"atlas-channel/kafka/consumer/pet"
 	"atlas-channel/kafka/consumer/quest"
 	"atlas-channel/kafka/consumer/reactor"
+	reportstatus "atlas-channel/kafka/consumer/report"
 	"atlas-channel/kafka/consumer/route"
 	rpsConsumer "atlas-channel/kafka/consumer/rps"
 	"atlas-channel/kafka/consumer/saga"
@@ -244,6 +245,7 @@ func main() {
 	mtsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	walletConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
+	reportstatus.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
 	rpsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
@@ -413,6 +415,9 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(buddylist.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(reportstatus.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(channel.InitHandlers(fl)(sc)(cfg.IPAddress, cfg.Port)(rh)); err != nil {

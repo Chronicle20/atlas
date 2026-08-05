@@ -13,7 +13,11 @@
       "capacity": 1,
       "boardingWindowSeconds": 1,
       "travelDurationSeconds": 900,
-      "transitMessage": "You are flying towards the Temple of Time. Navigate right to reach the entrance."
+      "transitMessage": "You are flying towards the Temple of Time. Navigate right to reach the entrance.",
+      "effectItemIds": [
+        2210016
+      ],
+      "forcedReturnMapId": 240000110
     }
   }
 }

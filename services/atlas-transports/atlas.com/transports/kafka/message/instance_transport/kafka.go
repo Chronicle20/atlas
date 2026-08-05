@@ -35,6 +35,11 @@ const (
 	CancelReasonMapExit = "MAP_EXIT"
 	CancelReasonLogout  = "LOGOUT"
 	CancelReasonStuck   = "STUCK"
+	// CancelReasonTimeout is emitted when the travel timer expires on a route
+	// that declares a forced return. The character did not complete the trip —
+	// the client's own map data (timeLimit + forcedReturn) treats running out
+	// of flight time as a failure that sends them back where they started.
+	CancelReasonTimeout = "TIMEOUT"
 )
 
 type Event[E any] struct {

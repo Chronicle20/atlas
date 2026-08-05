@@ -265,34 +265,107 @@ version's under-resolved report would hit the same problem); `gms_v92` was
 also moved to the end of `fnamedocOrder` (lower priority) since its export
 is disproportionately unresolved-heavy relative to the other versions.
 
+### A second pre-existing bug, same pattern: `DeleteCharacterHandle` at the wrong opcode (found AND fixed)
+
+Cross-referencing the template against the registry to locate the pet/summon
+collision also surfaced `template_gms_92_1.json` handler `0x17`
+(`DeleteCharacterHandle`, login service) as suspicious: registry says `0x17`
+is `CREATE_CHAR_IN_CS`, and `DELETE_CHAR`'s registered v92 opcode is `0x18`.
+Initially recorded as a flagged-but-unverified suspicion; **settled with
+direct v92 IDA evidence, the same way as the Class B conflicts**, rather than
+left as a follow-up:
+
+- `CLogin::SendDeleteCharPacket` (0x5cb860) — the real client send site —
+  constructs `COutPacket(0x18u)`. Unambiguous: **`DELETE_CHAR`'s real v92
+  opcode is 24 (`0x18`)**, matching the registry and matching v95's own
+  opcode (v92 already made the same +1 shift v95 made relative to
+  v83/v84/v87, the same pattern as `SUE_CHARACTER_RESULT` and `STORAGE`'s
+  `ERROR_MESSAGE`).
+- `CLogin::SendNewCharPacket` (0x5ce1e0) — the `CREATE_CHAR_IN_CS` /
+  `CREATE_CHARACTER` send site — branches on job type: the primary path
+  constructs `COutPacket(0x17u)` (`CREATE_CHAR_IN_CS`, matching the
+  registry's opcode 23 exactly), the alternate path constructs
+  `COutPacket(0x16u)` (already correctly routed as `CreateCharacterHandle`).
+  No version's template (v83/v84/v87/v95 all checked) has EVER routed
+  `CREATE_CHAR_IN_CS` — Atlas has no handler implementation for that op in
+  any version, so `0x17` is correctly left unrouted for v92 too (not
+  invented).
+
+Fixed: `template_gms_92_1.json` handler `0x17`/`DeleteCharacterHandle`
+removed, `DeleteCharacterHandle` added at `0x18` (`LoggedInValidator`,
+`services: ["login"]`, matching v95's entry exactly).
+
+**Honesty check on how this was found vs. how `matrix` graded it**: unlike
+the 59 Class A conflicts, this one was never a `matrix --check` conflict —
+before and after the fix, `gms_v92`'s `DELETE_CHAR` cell both grade `partial`
+/ `🟡ᶠ` ("tier-1: needs byte-fixture test to verify"), confirmed by diffing
+`status.json` at the pre-fix commit (`de0e4b2f5`) against post-fix. Tier-1
+ops with a linked `packet:` path apparently don't route through the same
+`!routed && routedElsewhere → Conflict` check the 59 Class A ops did (an
+existing tool gap, out of scope to chase down here — not something this fix
+needed to touch). So `matrix --check` staying green before AND after is
+expected, not evidence the fix was unnecessary: it's the same class of
+"present but wrong" bug the pet/summon handlers had, just one the automated
+conflict scan doesn't structurally catch for tier-1/linked-packet ops. The
+correctness claim rests entirely on the direct v92 decompile evidence above,
+not on a tool-reported diff — which is exactly why the coordinator asked for
+decompile evidence rather than accepting the matrix's silence as clearance.
+`matrix --check` / `operations --check` / `fname-doc --check` /
+`doc-freshness --check` / `template-opcode-order-guard.sh` all exit clean
+after this change (as they did before it).
+
+**Live-tenant implication**: this is `atlas-login`, a different service
+from the pet/summon bug (`atlas-channel`), but same class of impact — the
+live v92 tenant (see below) is decoding real character-deletion requests
+(opcode `0x18`) as whatever `0x18` meant before this fix (nothing was routed
+there — the packet would have been silently dropped/unhandled) while
+routing a should-be-unrouted `CREATE_CHAR_IN_CS` opcode (`0x17`) to the
+delete-character handler instead. **Character deletion is very likely
+non-functional on the live v92 tenant today**, and the live send path for
+`CREATE_CHAR_IN_CS` (job-type-dependent) hits a handler that decodes the
+wrong wire shape.
+
 ### Live tenant
 
 A `GMS v92` tenant **does exist** in the `atlas-main` environment
 (`atlas-tenants` id `db1dbfb3-4345-4731-9223-c40b0c7f6457`, confirmed via
 `GET /api/tenants` against the live pod) — this is not a hypothetical. Seed
 templates apply only at tenant creation, so **none of this task's template
-fixes reach that tenant automatically.** A live-config PATCH + channel
-restart is needed to pick them up, covering: all 59 Class A entries, the 5
-Class B entries, and — highest priority, since it's an active
-misdecode — the `0xC8`/`0xC9`/`0xCA` (handlers) and `0xC2`–`0xC7` (writers)
-pet/summon correction. The patch itself was not attempted here (out of this
-task's scope, per instruction); this paragraph is the "precisely what it
-needs to cover" record.
+fixes reach that tenant automatically.** A live-config PATCH + channel/login
+restart is needed to pick them up. Precisely what it needs to cover, in
+priority order:
 
-### Found but NOT fixed — flagged for separate follow-up
+1. **Pet/summon misdecode (`atlas-channel`, highest urgency)** —
+   `0xC8`/`0xC9` (handlers) and `0xC3`/`0xC6`/`0xC7` (writers) corrected from
+   `Summon*` to `Pet*`; real summon opcodes moved to `0xCB`–`0xD0`.
+   **User-visible effect today, un-patched**: a v92 player using pet
+   auto-HP/MP-potion or the pet item-exclude-list feature has their request
+   server-side misdecoded as a `SummonMoveHandle`/`SummonAttackHandle`
+   packet — wrong struct layout read from the same bytes, so the server
+   either processes garbage as a summon-move/attack command (silently wrong
+   behavior, possibly moving/attacking with a summon the player doesn't have
+   active) or errors out decoding malformed fields. Separately, if the
+   server ever emits a genuine summon-family clientbound packet on v92
+   today, it goes out on `SummonSpawn`/`SummonMove`/etc.'s pre-fix opcodes
+   (`0xC2`/`0xC4`/`0xC5`), which the real v92 client reads as
+   `SHOW_RECOVERY_UPGRADE_COUNT_EFFECT`/`EVOLVE_PET`/nothing — the client
+   renders the wrong effect or ignores the packet outright, and the player
+   never sees their summon appear/move/attack correctly.
+2. **Character deletion (`atlas-login`)** — `0x17`→`0x18` fix above.
+   **User-visible effect today, un-patched**: a v92 player's delete-character
+   request (real client opcode `0x18`) has no handler at all (dropped —
+   deletion silently does nothing), while whatever currently exists at the
+   live tenant's `0x17` slot (`DeleteCharacterHandle`, pre-fix) fires
+   instead if the client ever sends `CREATE_CHAR_IN_CS`'s opcode — a
+   character-creation request read as a character-deletion request.
+3. **The 59 Class A + 5 Class B newly-wired ops** — mostly previously-silent
+   drops (unrouted opcodes are simply ignored, not misdecoded), lower
+   urgency than 1–2 but still real functional gaps (chat, skills, reactors,
+   monster carnival, storage, messenger, etc. — see the Class A table above
+   for the full op list — currently do nothing on v92).
 
-While cross-referencing the template against the registry to locate the
-pet/summon collision, the same method surfaced `template_gms_92_1.json`
-handler `0x17` (`DeleteCharacterHandle`, login service): registry says
-`0x17` is `CREATE_CHAR_IN_CS`, and `DELETE_CHAR`'s real v92 opcode is `0x18`
-(both v87 and v95 independently use the identifier `DeleteCharacterHandle`
-for `DELETE_CHAR`, just at their own different opcodes — a consistent,
-higher-confidence signal than the pet/summon case even had). This is
-**atlas-login**, not atlas-channel, and unrelated to the sue/claim/pet/summon
-work above — left untouched as genuine out-of-scope-for-Task-28 territory,
-but recorded here rather than silently dropped. If real, it means character
-creation and deletion are cross-wired on v92 today. Needs its own
-verification pass before touching.
+The patch itself was not attempted here — it is a live-system change and
+the coordinator is surfacing it to the user directly, per instruction.
 
 ### Task 18 overlap
 

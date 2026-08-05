@@ -146,7 +146,51 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 			})
 		}
 
-		announceBuffGive(l, ctx, sc, wp, e.CharacterId, e.Body.SourceId, e.Body.Level, e.Body.Duration, e.Body.Changes, e.Body.CreatedAt, e.Body.ExpiresAt, e.Body.NoExpiry)
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+			t := tenant.MustFromContext(ctx)
+			// Track the active beacon from its own APPLIED event.
+			if bc, ok := beaconChange(e.Body.Changes); ok {
+				buff.GetBeaconMirror().Set(t, e.CharacterId, buff.BeaconEntry{SourceId: e.Body.SourceId, Level: e.Body.Level, MobId: bc.Amount})
+			}
+
+			bs := make([]buff.Model, 0)
+			changes := make([]stat.Model, 0)
+			for _, cm := range e.Body.Changes {
+				changes = append(changes, stat.NewStat(cm.Type, cm.Amount))
+			}
+			bs = append(bs, buff.NewBuff(e.Body.SourceId, e.Body.Level, e.Body.Duration, changes, e.Body.CreatedAt, e.Body.ExpiresAt, e.Body.NoExpiry))
+
+			// F2: while locked, every LOCAL give must re-carry the populated
+			// beacon block (pre-95 clients overwrite the stored beacon from
+			// every local give trailer). Skip when this event is itself the
+			// beacon — bs already carries it.
+			localBs := bs
+			if _, isBeacon := beaconChange(e.Body.Changes); !isBeacon {
+				if entry, ok := buff.GetBeaconMirror().Get(t, e.CharacterId); ok {
+					localBs = mergeBeacon(bs, entry)
+				}
+			}
+
+			err := session.Announce(l)(ctx)(wp)(charpkt.CharacterBuffGiveWriter)(writer.CharacterBuffGiveBody(localBs))(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
+			}
+
+			// Beacon-only events are never announced to other players: the
+			// stat is caster-only and the remote GuidedBullet read path is
+			// unverified (FR-4.5). The foreign body uses the UNMERGED bs.
+			if !isBeaconOnly(e.Body.Changes) {
+				_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), func(os session.Model) error {
+					err = session.Announce(l)(ctx)(wp)(charpkt.CharacterBuffGiveForeignWriter)(writer.CharacterBuffGiveForeignBody(e.CharacterId, bs))(os)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
+						return err
+					}
+					return nil
+				})
+			}
+			return nil
+		})
 	}
 }
 
@@ -190,6 +234,10 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 				newBattleshipProcessor(l, ctx).Clear(e.CharacterId)
 			}
 
+			if _, ok := beaconChange(e.Body.Changes); ok {
+				buff.GetBeaconMirror().Clear(t, e.CharacterId)
+			}
+
 			ebs := make([]buff.Model, 0)
 			changes := make([]stat.Model, 0)
 			for _, cm := range e.Body.Changes {
@@ -202,14 +250,19 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 				l.WithError(err).Errorf("Unable to write character [%d] cancelled buffs.", e.CharacterId)
 			}
 
-			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), func(os session.Model) error {
-				err = session.Announce(l)(ctx)(wp)(charpkt.CharacterBuffCancelForeignWriter)(writer.CharacterBuffCancelForeignBody(e.CharacterId, ebs))(os)
-				if err != nil {
-					l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
-					return err
-				}
-				return nil
-			})
+			// Beacon-only events are never announced to other players: the
+			// stat is caster-only and the remote GuidedBullet read path is
+			// unverified (FR-4.5).
+			if !isBeaconOnly(e.Body.Changes) {
+				_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), func(os session.Model) error {
+					err = session.Announce(l)(ctx)(wp)(charpkt.CharacterBuffCancelForeignWriter)(writer.CharacterBuffCancelForeignBody(e.CharacterId, ebs))(os)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
+						return err
+					}
+					return nil
+				})
+			}
 			return nil
 		})
 	}
@@ -362,6 +415,43 @@ func handleStatusEventBerserk(sc server.Model, wp writer.Producer) message.Handl
 			return nil
 		})
 	}
+}
+
+// beaconChange returns the first HOMING_BEACON stat change carried by an
+// event, if any.
+func beaconChange(changes []buff2.StatChange) (buff2.StatChange, bool) {
+	for _, c := range changes {
+		if c.Type == string(charconst.TemporaryStatTypeHomingBeacon) {
+			return c, true
+		}
+	}
+	return buff2.StatChange{}, false
+}
+
+// isBeaconOnly reports whether an event's changes carry nothing but the
+// beacon stat. Such events are never announced to other players: the stat is
+// caster-only and the foreign GuidedBullet read path is unverified (FR-4.5).
+func isBeaconOnly(changes []buff2.StatChange) bool {
+	if len(changes) == 0 {
+		return false
+	}
+	for _, c := range changes {
+		if c.Type != string(charconst.TemporaryStatTypeHomingBeacon) {
+			return false
+		}
+	}
+	return true
+}
+
+// mergeBeacon appends the character's active beacon as a synthetic no-expiry
+// buff so an unrelated local give re-carries the populated GuidedBullet block
+// (pre-95 clients overwrite the stored beacon from every local give trailer —
+// design.md §3 F2). Idempotent client-side: SetGuided on the same mob is a
+// re-apply.
+func mergeBeacon(bs []buff.Model, e buff.BeaconEntry) []buff.Model {
+	return append(bs, buff.NewBuff(e.SourceId, e.Level, 0,
+		[]stat.Model{stat.NewStat(string(charconst.TemporaryStatTypeHomingBeacon), e.MobId)},
+		time.Now(), time.Time{}, true))
 }
 
 // isBattleshipRide reports whether a buff status event is the battleship

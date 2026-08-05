@@ -2,6 +2,7 @@ package buff
 
 import (
 	"atlas-channel/battleship"
+	"atlas-channel/character/buff"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -18,6 +19,7 @@ import (
 	logtest "github.com/sirupsen/logrus/hooks/test"
 
 	channelconst "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -328,5 +330,54 @@ func TestHandleStatusEventExpired_NonBattleshipBuff_NoClear(t *testing.T) {
 
 	if len(spy.clearCalls) != 0 {
 		t.Errorf("Clear calls = %v, want none for a non-battleship buff", spy.clearCalls)
+	}
+}
+
+// --- beacon merge / foreign-suppression pure-helper tests (task-167 F2/FR-4.5) ---
+
+func TestBeaconChange(t *testing.T) {
+	_, ok := beaconChange([]buff2.StatChange{{Type: "SPEED", Amount: 20}})
+	if ok {
+		t.Fatal("no beacon change expected")
+	}
+	c, ok := beaconChange([]buff2.StatChange{
+		{Type: "SPEED", Amount: 20},
+		{Type: string(charconst.TemporaryStatTypeHomingBeacon), Amount: 1000001},
+	})
+	if !ok || c.Amount != 1000001 {
+		t.Fatalf("beacon change: got %+v ok=%v", c, ok)
+	}
+}
+
+func TestIsBeaconOnly(t *testing.T) {
+	if isBeaconOnly(nil) {
+		t.Fatal("empty changes are not beacon-only")
+	}
+	if isBeaconOnly([]buff2.StatChange{{Type: "SPEED", Amount: 20}}) {
+		t.Fatal("SPEED is not beacon-only")
+	}
+	if !isBeaconOnly([]buff2.StatChange{{Type: string(charconst.TemporaryStatTypeHomingBeacon), Amount: 1000001}}) {
+		t.Fatal("single HOMING_BEACON change is beacon-only")
+	}
+	if isBeaconOnly([]buff2.StatChange{
+		{Type: string(charconst.TemporaryStatTypeHomingBeacon), Amount: 1000001},
+		{Type: "SPEED", Amount: 20},
+	}) {
+		t.Fatal("mixed changes are not beacon-only")
+	}
+}
+
+func TestMergeBeacon(t *testing.T) {
+	bs := []buff.Model{}
+	out := mergeBeacon(bs, buff.BeaconEntry{SourceId: 5211006, Level: 1, MobId: 1000001})
+	if len(out) != 1 {
+		t.Fatalf("merge: got %d buffs want 1", len(out))
+	}
+	b := out[0]
+	if b.SourceId() != 5211006 || !b.NoExpiry() {
+		t.Fatalf("merged beacon buff wrong: sourceId=%d noExpiry=%v", b.SourceId(), b.NoExpiry())
+	}
+	if len(b.Changes()) != 1 || b.Changes()[0].Type() != string(charconst.TemporaryStatTypeHomingBeacon) || b.Changes()[0].Amount() != 1000001 {
+		t.Fatalf("merged beacon statup wrong: %+v", b.Changes())
 	}
 }

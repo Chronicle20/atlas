@@ -17,6 +17,7 @@ type Model struct {
 	changes   []stat.Model
 	createdAt time.Time
 	expiresAt time.Time
+	noExpiry  bool
 }
 
 func (m Model) SourceId() int32 {
@@ -27,7 +28,17 @@ func (m Model) Level() byte {
 	return m.level
 }
 
+// NoExpiry reports whether this buff never expires on its own (e.g. the
+// HOMING_BEACON lock). The expiration ticker must never reap it; it is
+// removed only by explicit cancel flows.
+func (m Model) NoExpiry() bool {
+	return m.noExpiry
+}
+
 func (m Model) Expired() bool {
+	if m.noExpiry {
+		return false
+	}
 	return m.expiresAt.Before(time.Now())
 }
 
@@ -86,6 +97,7 @@ func (m Model) MarshalJSON() ([]byte, error) {
 		Changes   []stat.Model `json:"changes"`
 		CreatedAt time.Time    `json:"createdAt"`
 		ExpiresAt time.Time    `json:"expiresAt"`
+		NoExpiry  bool         `json:"noExpiry,omitempty"`
 	}{
 		Id:        m.id,
 		SourceId:  m.sourceId,
@@ -94,6 +106,7 @@ func (m Model) MarshalJSON() ([]byte, error) {
 		Changes:   m.changes,
 		CreatedAt: m.createdAt,
 		ExpiresAt: m.expiresAt,
+		NoExpiry:  m.noExpiry,
 	})
 }
 
@@ -106,6 +119,7 @@ func (m *Model) UnmarshalJSON(data []byte) error {
 		Changes   []stat.Model `json:"changes"`
 		CreatedAt time.Time    `json:"createdAt"`
 		ExpiresAt time.Time    `json:"expiresAt"`
+		NoExpiry  bool         `json:"noExpiry,omitempty"`
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
@@ -117,6 +131,7 @@ func (m *Model) UnmarshalJSON(data []byte) error {
 	m.changes = aux.Changes
 	m.createdAt = aux.CreatedAt
 	m.expiresAt = aux.ExpiresAt
+	m.noExpiry = aux.NoExpiry
 	return nil
 }
 
@@ -140,5 +155,24 @@ func NewBuff(sourceId int32, level byte, duration int32, changes []stat.Model) (
 		changes:   changes,
 		createdAt: time.Now(),
 		expiresAt: time.Now().Add(time.Duration(duration) * time.Millisecond),
+	}, nil
+}
+
+// NewNoExpiryBuff builds a buff that never expires on its own. duration is 0
+// and expiresAt is the zero time; Expired() short-circuits on the flag so the
+// zero expiresAt is never consulted (FR-2.4).
+func NewNoExpiryBuff(sourceId int32, level byte, changes []stat.Model) (Model, error) {
+	if len(changes) == 0 {
+		return Model{}, ErrEmptyChanges
+	}
+	return Model{
+		id:        uuid.New(),
+		sourceId:  sourceId,
+		level:     level,
+		duration:  0,
+		changes:   changes,
+		createdAt: time.Now(),
+		expiresAt: time.Time{},
+		noExpiry:  true,
 	}, nil
 }

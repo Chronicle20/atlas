@@ -2,11 +2,63 @@ package buff
 
 import (
 	"atlas-buffs/buff/stat"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestNewNoExpiryBuff(t *testing.T) {
+	b, err := NewNoExpiryBuff(int32(5211006), byte(1), setupTestChanges())
+
+	assert.NoError(t, err)
+	assert.True(t, b.NoExpiry())
+	assert.Equal(t, int32(0), b.Duration())
+	assert.True(t, b.ExpiresAt().IsZero())
+	assert.False(t, b.Expired(), "no-expiry buff must never report expired despite zero expiresAt")
+	assert.Len(t, b.Changes(), 2)
+}
+
+func TestNewNoExpiryBuff_EmptyChanges(t *testing.T) {
+	_, err := NewNoExpiryBuff(int32(5211006), byte(1), []stat.Model{})
+	assert.ErrorIs(t, err, ErrEmptyChanges)
+}
+
+func TestNewBuff_StillRejectsNonPositiveDuration(t *testing.T) {
+	_, err := NewBuff(int32(2001001), byte(5), 0, setupTestChanges())
+	assert.ErrorIs(t, err, ErrInvalidDuration)
+	_, err = NewBuff(int32(2001001), byte(5), -1, setupTestChanges())
+	assert.ErrorIs(t, err, ErrInvalidDuration)
+}
+
+func TestNoExpiryBuff_JSONRoundTrip(t *testing.T) {
+	b, err := NewNoExpiryBuff(int32(5220011), byte(10), setupTestChanges())
+	assert.NoError(t, err)
+
+	data, err := json.Marshal(b)
+	assert.NoError(t, err)
+
+	var out Model
+	assert.NoError(t, json.Unmarshal(data, &out))
+	assert.True(t, out.NoExpiry())
+	assert.False(t, out.Expired())
+}
+
+// A finite buff marshalled before this change has no noExpiry field; it must
+// unmarshal to noExpiry=false so previously Redis-persisted buffs are unaffected.
+func TestFiniteBuff_JSONAbsentNoExpiryDefaultsFalse(t *testing.T) {
+	b, err := NewBuff(int32(2001001), byte(5), 60000, setupTestChanges())
+	assert.NoError(t, err)
+
+	data, err := json.Marshal(b)
+	assert.NoError(t, err)
+	assert.NotContains(t, string(data), "noExpiry", "omitempty must keep finite-buff JSON unchanged")
+
+	var out Model
+	assert.NoError(t, json.Unmarshal(data, &out))
+	assert.False(t, out.NoExpiry())
+}
 
 func setupTestChanges() []stat.Model {
 	return []stat.Model{

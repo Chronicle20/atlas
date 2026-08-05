@@ -150,7 +150,7 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 			t := tenant.MustFromContext(ctx)
 			// Track the active beacon from its own APPLIED event.
 			if bc, ok := beaconChange(e.Body.Changes); ok {
-				buff.GetBeaconMirror().Set(t, e.CharacterId, buff.BeaconEntry{SourceId: e.Body.SourceId, Level: e.Body.Level, MobId: bc.Amount})
+				buff.GetBeaconMirror().Set(t, e.CharacterId, buff.NewBeaconEntry(e.Body.SourceId, e.Body.Level, bc.Amount))
 			}
 
 			bs := make([]buff.Model, 0)
@@ -449,8 +449,8 @@ func isBeaconOnly(changes []buff2.StatChange) bool {
 // design.md §3 F2). Idempotent client-side: SetGuided on the same mob is a
 // re-apply.
 func mergeBeacon(bs []buff.Model, e buff.BeaconEntry) []buff.Model {
-	return append(bs, buff.NewBuff(e.SourceId, e.Level, 0,
-		[]stat.Model{stat.NewStat(string(charconst.TemporaryStatTypeHomingBeacon), e.MobId)},
+	return append(bs, buff.NewBuff(e.SourceId(), e.Level(), 0,
+		[]stat.Model{stat.NewStat(string(charconst.TemporaryStatTypeHomingBeacon), e.MobId())},
 		time.Now(), time.Time{}, true))
 }
 

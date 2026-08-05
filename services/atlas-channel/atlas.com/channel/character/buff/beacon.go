@@ -11,9 +11,30 @@ import (
 // BeaconEntry is the channel-local projection of a character's active
 // HOMING_BEACON lock (statup amount = locked monster object id).
 type BeaconEntry struct {
-	SourceId int32
-	Level    byte
-	MobId    int32
+	sourceId int32
+	level    byte
+	mobId    int32
+}
+
+// NewBeaconEntry constructs a BeaconEntry from its constituent fields.
+func NewBeaconEntry(sourceId int32, level byte, mobId int32) BeaconEntry {
+	return BeaconEntry{
+		sourceId: sourceId,
+		level:    level,
+		mobId:    mobId,
+	}
+}
+
+func (e BeaconEntry) SourceId() int32 {
+	return e.sourceId
+}
+
+func (e BeaconEntry) Level() byte {
+	return e.level
+}
+
+func (e BeaconEntry) MobId() int32 {
+	return e.mobId
 }
 
 // BeaconMirror tracks each character's active beacon from buff APPLIED /

@@ -28,16 +28,16 @@ func TestBeaconMirrorSetGetClear(t *testing.T) {
 		t.Fatal("empty mirror must miss")
 	}
 
-	m.Set(tn, 100, BeaconEntry{SourceId: 5211006, Level: 1, MobId: 1000001})
+	m.Set(tn, 100, NewBeaconEntry(5211006, 1, 1000001))
 	e, ok := m.Get(tn, 100)
-	if !ok || e.MobId != 1000001 || e.SourceId != 5211006 {
+	if !ok || e.MobId() != 1000001 || e.SourceId() != 5211006 {
 		t.Fatalf("get after set: got %+v ok=%v", e, ok)
 	}
 
 	// Re-set replaces (re-cast on another monster).
-	m.Set(tn, 100, BeaconEntry{SourceId: 5220011, Level: 10, MobId: 1000002})
+	m.Set(tn, 100, NewBeaconEntry(5220011, 10, 1000002))
 	e, _ = m.Get(tn, 100)
-	if e.MobId != 1000002 || e.SourceId != 5220011 {
+	if e.MobId() != 1000002 || e.SourceId() != 5220011 {
 		t.Fatalf("re-set must replace: got %+v", e)
 	}
 
@@ -54,7 +54,7 @@ func TestBeaconMirrorTenantIsolation(t *testing.T) {
 	t1 := newTestTenant(t)
 	t2 := newTestTenant(t)
 
-	m.Set(t1, 100, BeaconEntry{SourceId: 5211006, Level: 1, MobId: 1000001})
+	m.Set(t1, 100, NewBeaconEntry(5211006, 1, 1000001))
 	if _, ok := m.Get(t2, 100); ok {
 		t.Fatal("tenant 2 must not see tenant 1's beacon")
 	}

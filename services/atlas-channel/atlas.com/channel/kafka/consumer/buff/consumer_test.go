@@ -369,7 +369,7 @@ func TestIsBeaconOnly(t *testing.T) {
 
 func TestMergeBeacon(t *testing.T) {
 	bs := []buff.Model{}
-	out := mergeBeacon(bs, buff.BeaconEntry{SourceId: 5211006, Level: 1, MobId: 1000001})
+	out := mergeBeacon(bs, buff.NewBeaconEntry(5211006, 1, 1000001))
 	if len(out) != 1 {
 		t.Fatalf("merge: got %d buffs want 1", len(out))
 	}

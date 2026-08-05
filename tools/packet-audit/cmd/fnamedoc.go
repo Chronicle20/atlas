@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/diff"
 )
 
 // fname-doc maintains a `// packet-audit:fname <IDAName>` comment on every
@@ -277,14 +279,10 @@ func loadReportFNames(auditsDir string) (map[string]string, error) {
 	return out, nil
 }
 
-// reportHasUnresolvedRow reports whether any row carries diff.VerdictUnresolved
-// (numeric 4 — see internal/diff.Verdict). fnamedoc intentionally avoids
-// importing internal/diff for one constant; keep this literal in sync if the
-// Verdict iota ever changes.
+// reportHasUnresolvedRow reports whether any row carries diff.VerdictUnresolved.
 func reportHasUnresolvedRow(rows []struct{ Verdict int }) bool {
-	const verdictUnresolved = 4
 	for _, row := range rows {
-		if row.Verdict == verdictUnresolved {
+		if diff.Verdict(row.Verdict) == diff.VerdictUnresolved {
 			return true
 		}
 	}

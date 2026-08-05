@@ -728,12 +728,12 @@ func (m *CharacterTemporaryStat) EncodeCancelMask(l logrus.FieldLogger, t tenant
 //
 // v92's own filter is confirmed to DIFFER (13 constants at different raw
 // shifts, and notably does NOT include shift 7/Speed — evidence: gms_v92.md)
-// but not one of its 13 bits is name-resolved in that IDB, so per the
-// "do not invent a mapping" rule no v92-specific list can be constructed
-// here. v92 falls through to the base 12-name list below (the pre-existing
-// assumption) pending a dedicated v92 audit; all 13 raw bits are reported
-// unmapped in task-8-report.md. Same fallthrough applies to any GMS version
-// with no dedicated evidence (v28, v48, v86).
+// but not one of its 13 bits is name-resolved in that IDB. Per the same
+// one-directional-failure inference already applied to v84 (see the switch
+// case below), v92 gets a dedicated branch: the base 12 plus Flying/Frozen,
+// inferred from v87's identically-positioned raw shift 82/83. The base
+// 12-name fallthrough below still applies to any other GMS version with no
+// dedicated evidence (v28, v48, v86).
 func movementAffectingStatNames(t tenant.Model) []character.TemporaryStatType {
 	if t.Region() == "JMS" {
 		// JMS v185 (sub_7f76d1) tests a wholly different 13-constant set —
@@ -801,6 +801,27 @@ func movementAffectingStatNames(t tenant.Model) []character.TemporaryStatType {
 		// v87 (sub_7cc3e2) independently resolves Flying(82)/Frozen(83)
 		// inside its own IDB, cross-checked bit-for-bit against the atlas
 		// registry's MajorAtLeast(87) block (evidence: gms_v87.md).
+		names = append(names,
+			character.TemporaryStatTypeFlying,
+			character.TemporaryStatTypeFrozen,
+		)
+	case t.Region() == "GMS" && t.MajorVersion() == 92:
+		// v92 (sub_705080) tests 13 constants, not 12: the 12 above plus two
+		// raw shift-82/83 constants that are NOT independently name-resolved
+		// in v92's own IDB — none of its 13 bits resolve to a symbol name
+		// (evidence: gms_v92.md). v87 independently resolves the
+		// identically-positioned raw 82/83 constants as Flying/Frozen, and
+		// cross-version corroboration places v92's two unnamed bits at that
+		// same slot. Included here anyway even though v92's own evidence
+		// never names them: the failure mode is one-directional — if v92's
+		// client really does gate the trailing byte on Flying/Frozen and
+		// this list omitted them, a cancel of either stat would silently
+		// drop the movement byte the client expects and the packet would
+		// desync; including them when the client doesn't check costs
+		// nothing, since this is a length-delimited packet and an inert
+		// extra byte is simply ignored. v92 also does not test raw shift 7
+		// (Speed), but Speed stays in the base list above regardless —
+		// over-inclusion is the safe direction.
 		names = append(names,
 			character.TemporaryStatTypeFlying,
 			character.TemporaryStatTypeFrozen,

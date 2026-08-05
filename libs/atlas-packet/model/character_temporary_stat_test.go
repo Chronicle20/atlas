@@ -627,6 +627,12 @@ func TestMovementAffectingMaskMembership(t *testing.T) {
 						character.TemporaryStatTypeYellowAura,
 					)
 				}
+				if tn.Region() == "GMS" && tn.MajorVersion() == 92 {
+					in = append(in,
+						character.TemporaryStatTypeFlying,
+						character.TemporaryStatTypeFrozen,
+					)
+				}
 			}
 
 			for _, n := range in {

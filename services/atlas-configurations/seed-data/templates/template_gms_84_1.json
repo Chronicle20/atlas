@@ -600,6 +600,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x6A",
+        "validator": "LoggedInValidator",
+        "handler": "ClaimRequest",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x6B",
         "validator": "LoggedInValidator",
         "handler": "QuestActionHandle",
@@ -1900,6 +1906,34 @@
         }
       },
       {
+        "opCode": "0x2D",
+        "writer": "ClaimResult",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "SUCCESS": "0x02",
+            "REPORTED_NOTICE": "0x03",
+            "TRY_AGAIN": "0x41",
+            "RECHECK_NAME": "0x42",
+            "NOT_ENOUGH_MESOS": "0x43",
+            "CANNOT_CONNECT": "0x44",
+            "EXCEEDED": "0x45",
+            "TIME_WINDOW": "0x47",
+            "FALSE_REPORT_CITED": "0x48"
+          }
+        }
+      },
+      {
+        "opCode": "0x2E",
+        "writer": "ClaimAvailableTime",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x2F",
+        "writer": "ClaimSvrStatusChanged",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x30",
         "writer": "SetTamingMobInfo",
         "services": ["channel"]
@@ -1937,6 +1971,20 @@
         "opCode": "0x35",
         "writer": "CompartmentSort",
         "services": ["channel"]
+      },
+      {
+        "opCode": "0x37",
+        "writer": "SueCharacterResult",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "SUCCESS": "0x00",
+            "UNABLE_TO_LOCATE": "0x01",
+            "DAILY_LIMIT": "0x02",
+            "REPORTED_NOTICE": "0x03",
+            "GENERIC_FAILURE": "0x04"
+          }
+        }
       },
       {
         "opCode": "0x3B",

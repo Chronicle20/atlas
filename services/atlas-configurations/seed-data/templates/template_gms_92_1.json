@@ -285,9 +285,21 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x75",
+        "validator": "LoggedInValidator",
+        "handler": "ClaimRequest",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x76",
         "validator": "LoggedInValidator",
         "handler": "QuestActionHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x7D",
+        "validator": "LoggedInValidator",
+        "handler": "SueCharacter",
         "services": ["channel"]
       },
       {
@@ -650,6 +662,34 @@
         }
       },
       {
+        "opCode": "0x2E",
+        "writer": "ClaimResult",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "SUCCESS": "0x02",
+            "REPORTED_NOTICE": "0x03",
+            "TRY_AGAIN": "0x41",
+            "RECHECK_NAME": "0x42",
+            "NOT_ENOUGH_MESOS": "0x43",
+            "CANNOT_CONNECT": "0x44",
+            "EXCEEDED": "0x45",
+            "TIME_WINDOW": "0x47",
+            "FALSE_REPORT_CITED": "0x48"
+          }
+        }
+      },
+      {
+        "opCode": "0x2F",
+        "writer": "ClaimAvailableTime",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x30",
+        "writer": "ClaimSvrStatusChanged",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x31",
         "writer": "SetTamingMobInfo",
         "services": ["channel"]
@@ -657,6 +697,20 @@
       {
         "opCode": "0x34",
         "writer": "CharacterSkillLearnItemResult"
+      },
+      {
+        "opCode": "0x38",
+        "writer": "SueCharacterResult",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "SUCCESS": "0x00",
+            "UNABLE_TO_LOCATE": "0x01",
+            "DAILY_LIMIT": "0x02",
+            "REPORTED_NOTICE": "0x03",
+            "GENERIC_FAILURE": "0x04"
+          }
+        }
       },
       {
         "opCode": "0x3E",

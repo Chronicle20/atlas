@@ -1761,6 +1761,20 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x34",
+        "writer": "SueCharacterResult",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "SUCCESS": "0x00",
+            "UNABLE_TO_LOCATE": "0x01",
+            "DAILY_LIMIT": "0x02",
+            "REPORTED_NOTICE": "0x03",
+            "GENERIC_FAILURE": "0x04"
+          }
+        }
+      },
+      {
         "opCode": "0x38",
         "writer": "GuildBBS",
         "services": ["channel"],

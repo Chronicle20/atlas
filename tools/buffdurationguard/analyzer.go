@@ -9,6 +9,24 @@
 //
 // The body struct is duplicated under seven different local names, so the
 // analyzer fingerprints json tag sets rather than type names.
+//
+// # Scope limit: same-package, one-hop only
+//
+// The analyzer inspects one Go package per analysis pass. For a guarded
+// composite literal it checks the assigned expression directly, and — if
+// that expression is a bare identifier — follows it exactly one hop into the
+// local variable assignments that produced it (collectAssignments walks
+// pass.Files, which is scoped to the single package under analysis). It does
+// NOT follow data flow across a function-call boundary into another package:
+// if the scaling happens in package A (e.g. a local var multiplied by 1000)
+// and that already-scaled value is merely passed as a function parameter
+// into package B, where B's composite literal reads `Duration: duration` off
+// that parameter, the analyzer sees no local assignment for `duration` in
+// B's pass and reports nothing — even though the underlying value is wrong.
+// A `//buffdurationguard:allow` marker on such a cross-package site is
+// therefore documentation only, not a suppression of an active diagnostic;
+// see services/atlas-messages/atlas.com/messages/buff/processor.go for a
+// concrete (and legitimate, not defective) example of this exact shape.
 package buffdurationguard
 
 import (

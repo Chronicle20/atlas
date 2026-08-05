@@ -102,39 +102,64 @@ func TestExtractRouteFor_FallbackMatchesTheSharedFormula(t *testing.T) {
 	}
 }
 
-// sampleInstanceRoute deliberately omits the effect attributes, so this test
-// builds its own fixture: ExtractRouteFor must carry both through to the
-// domain model or the processor sees zero values with no error anywhere.
-func TestExtractRouteFor_ThreadsEffectAttributes(t *testing.T) {
-	tm := testTenant(t, uuid.New())
-	r := sampleInstanceRoute("temple-of-time-flight", uuid.New().String())
-	r.EffectItemIds = []item.Id{2210016}
-	r.ForcedReturnMapId = _map.Id(240000110)
+// TestExtractRouteFor_EffectAttributes tables the two effect-attribute
+// projection cases: both call ExtractRouteFor against a fixture and assert
+// EffectItemIds/ForcedReturnMapId, differing only in the fixture's declared
+// attributes and the expected result.
+func TestExtractRouteFor_EffectAttributes(t *testing.T) {
+	tests := []struct {
+		name                  string
+		route                 func() config.InstanceRouteRestModel
+		wantEffectItemIds     []item.Id
+		wantForcedReturnMapId _map.Id
+	}{
+		{
+			// sampleInstanceRoute deliberately omits the effect attributes, so
+			// this case sets its own fixture: ExtractRouteFor must carry both
+			// through to the domain model or the processor sees zero values
+			// with no error anywhere.
+			name: "ThreadsEffectAttributes",
+			route: func() config.InstanceRouteRestModel {
+				r := sampleInstanceRoute("temple-of-time-flight", uuid.New().String())
+				r.EffectItemIds = []item.Id{2210016}
+				r.ForcedReturnMapId = _map.Id(240000110)
+				return r
+			},
+			wantEffectItemIds:     []item.Id{2210016},
+			wantForcedReturnMapId: _map.Id(240000110),
+		},
+		{
+			// A route declaring neither attribute must still build — the ten
+			// unaffected routes take this path.
+			name: "EffectAttributesAreOptional",
+			route: func() config.InstanceRouteRestModel {
+				return sampleInstanceRoute("ellinia-ereve-ferry", uuid.New().String())
+			},
+			wantEffectItemIds:     nil,
+			wantForcedReturnMapId: _map.Id(0),
+		},
+	}
 
-	m, err := config.ExtractRouteFor(quietLogger(), tm)(r)
-	if err != nil {
-		t.Fatalf("ExtractRouteFor: %v", err)
-	}
-	if got := m.EffectItemIds(); len(got) != 1 || got[0] != item.Id(2210016) {
-		t.Fatalf("EffectItemIds = %v, want [2210016]", got)
-	}
-	if m.ForcedReturnMapId() != _map.Id(240000110) {
-		t.Fatalf("ForcedReturnMapId = %d, want 240000110", m.ForcedReturnMapId())
-	}
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tm := testTenant(t, uuid.New())
+			m, err := config.ExtractRouteFor(quietLogger(), tm)(tt.route())
+			if err != nil {
+				t.Fatalf("ExtractRouteFor: %v", err)
+			}
 
-// A route declaring neither attribute must still build — the ten unaffected
-// routes take this path.
-func TestExtractRouteFor_EffectAttributesAreOptional(t *testing.T) {
-	tm := testTenant(t, uuid.New())
-	m, err := config.ExtractRouteFor(quietLogger(), tm)(sampleInstanceRoute("ellinia-ereve-ferry", uuid.New().String()))
-	if err != nil {
-		t.Fatalf("ExtractRouteFor: %v", err)
-	}
-	if len(m.EffectItemIds()) != 0 {
-		t.Fatalf("EffectItemIds = %v, want empty", m.EffectItemIds())
-	}
-	if m.ForcedReturnMapId() != _map.Id(0) {
-		t.Fatalf("ForcedReturnMapId = %d, want 0", m.ForcedReturnMapId())
+			got := m.EffectItemIds()
+			if len(got) != len(tt.wantEffectItemIds) {
+				t.Fatalf("EffectItemIds = %v, want %v", got, tt.wantEffectItemIds)
+			}
+			for i := range got {
+				if got[i] != tt.wantEffectItemIds[i] {
+					t.Fatalf("EffectItemIds = %v, want %v", got, tt.wantEffectItemIds)
+				}
+			}
+			if m.ForcedReturnMapId() != tt.wantForcedReturnMapId {
+				t.Fatalf("ForcedReturnMapId = %d, want %d", m.ForcedReturnMapId(), tt.wantForcedReturnMapId)
+			}
+		})
 	}
 }

@@ -1,8 +1,13 @@
 # Homing Beacon / Bullseye (Outlaw 5211006, Corsair 5220011) — Product Requirements Document
 
-Version: v1
+Version: v2
 Status: Draft
 Created: 2026-07-10
+Updated: 2026-08-04 — v2 widens the version scope from {v83, v84, v87, JMS, v95} to every
+supported tenant version whose client has the skills: **adds v61, v72, v79, v92**, and
+records gms_12/gms_48 as not-applicable with evidence (§2.1). Also adds gap 6 / FR-4.6:
+the pre-95 two-state group is a shared default byte-verified only at v83, so each
+in-scope version needs its own IDA verification rather than inheriting it.
 ---
 
 ## 1. Overview
@@ -46,8 +51,11 @@ Primary goals:
 - The buff is canceled on map change via the existing `MAP_CHANGED` character status
   event, and replaced when the skill is re-cast on another monster.
 - The `HOMING_BEACON` stat reaches the client correctly (GuidedBullet block carrying
-  `dwMobId`) on **all supported tenant versions** — v83, v84, v87, JMS, and v95. v95
-  requires new IDA verification work (§4 gap 4).
+  `dwMobId`) on **every supported tenant version whose client has the skills** — v61,
+  v72, v79, v83, v84, v87, v92, JMS, and v95 (see §2.1 for the version scope and the
+  evidence excluding v12/v48). v95 requires new IDA verification work (§4 gap 4); v61,
+  v72, v79, v92, v84, v87 and JMS ride an unverified shared codec default today and each
+  require their own verification (§4 gap 6).
 - All client-interpreted values (skill effect data, costs, wire bytes) are verified
   from WZ data / atlas-data / IDA during design — nothing assumed from general
   MapleStory knowledge (owner decision).
@@ -62,6 +70,54 @@ Non-goals:
 - Server-side homing/aim logic. Homing is client behavior driven by the stat.
 - Any of the other TODOs at the same handler site (Flame Thrower, Snow Charge,
   Hamstring, etc.).
+
+### 2.1 Version scope (canonical — design.md and plan.md defer to this table)
+
+The environment exposes 11 tenant versions (`deploy/k8s/base/versions.json`). Two of them
+cannot host this feature at all. Evidence is the per-version WZ skill-id snapshot
+(`libs/atlas-constants/gen/wzsnapshot/gms_<major>_1.json`, the same artifact task-187's
+audit cites) plus the CTS wire gating in `libs/atlas-packet/model/character_temporary_stat.go`:
+
+| Version | 5211006 / 5220011 in WZ | Outlaw 521xxxx / Corsair 522xxxx | CTS base-stat blocks | In scope |
+|---|---|---|---|---|
+| gms_12 | **absent / absent** | 0 / 0 | **no** — `legacyGmsMask` (8-byte mask, no trailer) | **No — n/a** |
+| gms_48 | **absent / absent** | 0 / 0 | **no** — `legacyGmsMask` (8-byte mask, no trailer) | **No — n/a** |
+| gms_61 | present / present | 6 / 11 | yes (16-byte mask + 7-member group) | Yes (new) |
+| gms_72 | present / present | 6 / 11 | yes | Yes (new) |
+| gms_79 | present / present | 6 / 11 | yes | Yes (new) |
+| gms_83 | present / present | 6 / 11 | yes | Yes (baseline, IDA-verified) |
+| gms_84 | present / present | 6 / 11 | yes | Yes |
+| gms_87 | present / present | 6 / 11 | yes | Yes |
+| gms_92 | present / present | 6 / 11 | yes | Yes (new) |
+| gms_95 | present / present | 7 / 12 | yes (truncated group — §4 gap 4) | Yes |
+| jms_185 | present / present | 6 / 11 | yes | Yes |
+
+**gms_12 and gms_48 are out of scope as not-applicable, not as deferred work.** Two
+independent disqualifiers, either of which is sufficient:
+
+1. **The skills do not exist.** Both snapshots contain zero `521xxxx` and zero `522xxxx`
+   ids — no Outlaw or Corsair skill set at all. Their nine `5xxxxxx` ids are the
+   GM/SuperGM block, not Pirate: task-187's audit records `gms,48,1,job,510,SuperGm` with
+   `5101004='Hide'`, where v61+ has `job,510,Brawler` with `5101004='Corkscrew Blow'`
+   (`docs/tasks/task-187-version-aware-id-semantics/audit/divergences.csv`). The Pirate
+   branch arrives at v61 (`gms,61,1,job,500,Pirate`).
+2. **The wire has nowhere to put the stat.** `legacyGmsMask(t)` is
+   `Region()=="GMS" && MajorVersion() < 61` (`character_temporary_stat.go:576-578`); on
+   that path both `Encode`/`Decode` return after the per-bit value blocks — no
+   `nDefenseAtt`/`nDefenseState`, no trailing base-stat blocks. `HOMING_BEACON` is a
+   base-stat-only member (`baseStatNames`), so it has no representation on a pre-v61
+   client even if a skill id were somehow granted.
+
+Consequence for the matrix: gms_12 and gms_48 are `n-a` cells for this feature, recorded
+with the evidence above — not `❌` and not a follow-up task.
+
+**Caveat on gms_61 (flagged, not blocking).** v61's Pirate data is present but appears
+pre-release: task-187 recorded its 1st-job skill names as untranslated Korean placeholders
+(`5001001='스트레이트/Straight'`, annotated "meymink v0.61 'Pre Pirate Quests'"). The
+skill ids and the CTS trailer exist, so the server-side feature is implementable and
+byte-verifiable; whether a live v61 player can obtain Outlaw/Corsair is a separate
+content question this task does not answer. Implement and byte-verify; do not claim live
+in-game acceptance on v61 without a live test.
 
 ## 3. User Stories
 
@@ -87,7 +143,7 @@ Non-goals:
 | Skill ids `OutlawHomingBeaconId = 5211006`, `CorsairBullseyeId = 5220011` | `libs/atlas-constants/skill/constants.go:3225,3236` |
 | `TemporaryStatTypeHomingBeacon = "HOMING_BEACON"` | `libs/atlas-constants/character/temporary_stat.go:121` |
 | `GuidedBulletTemporaryStat` 17-byte wire block ending in `dwMobId uint32` | `libs/atlas-packet/model/character_temporary_stat.go:473-506` |
-| Two-state base-stat group includes the HomingBeacon/GuidedBullet slot for v83/v84/v87/JMS | `libs/atlas-packet/model/character_temporary_stat.go:717-731` (`twoStateBaseStats`) |
+| Two-state base-stat group includes the HomingBeacon/GuidedBullet slot for every non-`GMS>=95` tenant — i.e. v61/v72/v79/v83/v84/v87/v92/JMS all take the same 7-member branch | `libs/atlas-packet/model/character_temporary_stat.go:781-797` (`twoStateBaseStats`) — note this is a *default*, byte-verified only at v83 (§4 gap 6) |
 | atlas-buffs command consumers: APPLY, CANCEL, CANCEL_ALL, CANCEL_BY_TYPES | `services/atlas-buffs/atlas.com/buffs/kafka/consumer/character/consumer.go:30-39` |
 | `MAP_CHANGED` character status event (emitted by atlas-maps, consumed by many services) | `services/atlas-maps/atlas.com/maps/kafka/message/character/kafka.go:16,50` |
 | Channel-side buff apply/cancel processor: `Apply(f, fromId, sourceId, level, duration, statups)`, `Cancel(f, characterId, sourceId)` | `services/atlas-channel/atlas.com/channel/character/buff/processor.go:45,52` |
@@ -112,6 +168,42 @@ Non-goals:
    in scope (owner decision), so this verification and encoder extension is part of
    this task.
 5. **No buff-cancel-on-map-change hook exists anywhere.**
+6. **The pre-95 two-state group's *trailer blocks* are verified at v83 only.**
+   `twoStateBaseStats` returns the same 7-member group (EnergyCharge, DashSpeed,
+   DashJump, MonsterRiding, SpeedInfusion, HomingBeacon, Undead) for *every* tenant that
+   is not `GMS >= 95` — v61, v72, v79, v84, v87, v92 and JMS all take that one branch.
+   The verification state is uneven and worth stating precisely, because the two halves
+   of the encoding have different evidence:
+
+   - **Mask half — already pinned for v61/v72/v79.** `v79EmptyMask`
+     (`libs/atlas-packet/character/clientbound/buff_give_test.go:167-172`) is
+     `int1 = 0x01FC0000`, i.e. exactly seven two-state bits (82–88), and the BuffCancel
+     fixtures assert it for v61, v72 and v79 against IDA-verified reset handlers
+     (`buff_cancel_test.go`: v61 `0x84353a`, v72 `0x918f3c`, v79 `0x96ab32`, each
+     confirmed reading a 16-byte mask). So a 7-member group is *mask*-consistent on
+     those three.
+   - **Trailer half — unverified everywhere except v83.** BuffCancel carries no
+     base-stat blocks, so those fixtures say nothing about block *sizes* or member
+     order. Only the give/`SetField` path emits the trailer, and the CTS fixtures in
+     `libs/atlas-packet/model/character_temporary_stat_test.go` instantiate only
+     `CreateContext("GMS", 83, 1)` and `("GMS", 95, 1)`. **No version other than v83 has
+     ever had its 110-byte trailer checked against its own client.**
+
+   The beacon lives in the trailer, so the unverified half is precisely the half this
+   feature depends on. A wrong member count or block size shifts every subsequent
+   trailer byte. Each in-scope version needs its own IDA read + byte fixture, the
+   treatment v95 received (gap 4). A round-trip test against our own encoder is not
+   verification — it passes symmetrically on a wrong layout.
+
+7. **gms_92 is a supported tenant version but not a packet-matrix column.** The matrix
+   and registry cover nine versions (`gms_v48/61/72/79/83/84/87/95`, `jms_v185`);
+   `docs/packets/registry/gms_v92.yaml` does not exist and `gms_v92` appears nowhere in
+   `docs/packets/audits/STATUS.md`. v92 is nonetheless a live tenant version in
+   `versions.json` and has its own IDB. Consequence: v92 work is implemented and
+   byte-fixtured like any other version, but its evidence is recorded in this task's
+   `evidence/` directory — there is no matrix cell to promote and no registry row to
+   consult. Do not treat the missing column as "v92 unsupported", and do not invent a
+   registry entry for it as part of this task.
 
 ## 5. Functional Requirements
 
@@ -205,6 +297,21 @@ Non-goals:
 - FR-4.5: Foreign CTS encode continues to skip `HOMING_BEACON` (already the case —
   `baseStatNames` skip in `DecodeForeign`/foreign encode). No foreign beacon packet is
   introduced.
+- FR-4.6: **Per-version two-state group verification (closes gap 6).** For each in-scope
+  version that currently rides the shared pre-95 default — v61, v72, v79, v84, v87, v92,
+  JMS — the implementation MUST establish from that version's own client binary:
+  (a) the two-state group's members and their order, (b) each member's block size,
+  (c) the GuidedBullet mask bit position, and (d) whether the trailer is read
+  unconditionally or mask-gated per member (v95 is mask-gated; v83 is not). Each version
+  then gets a byte fixture pinning an active-beacon encode and a no-beacon encode. Where
+  a version's group genuinely differs from v83's, the verified truth wins and
+  `twoStateBaseStats` gains a gate for it — the goal is a correct per-version layout, not
+  a uniform one. Any version whose group cannot be established from its IDB is reported
+  as unverified with the specific blocker; it is not silently shipped on the default.
+- FR-4.7: **No wire change to an already-correct version.** For every in-scope version, a
+  no-beacon encode MUST remain byte-identical to the pre-task output. Adding versions to
+  scope must not perturb v83/v95 bytes, and correcting one version's group must not
+  regress another's.
 
 ### FR-5: Multi-skill correctness
 
@@ -245,7 +352,7 @@ No new REST endpoints. Changes are to existing contracts:
 |---|---|
 | `services/atlas-channel` | Attack-handler hook at the `character_attack_common.go` TODO site: detect skill ids 5211006/5220011, resolve struck monster object id, apply no-expiry HOMING_BEACON buff via existing buff processor. Channel-side buff mirror model updated for no-expiry. |
 | `services/atlas-buffs` | Explicit no-expiry support (model, validation, expiration task, REST). New `MAP_CHANGED` consumer issuing CancelByTypes(HOMING_BEACON). Mock updates if the processor interface changes. |
-| `libs/atlas-packet` | `getBaseTemporaryStats` emits populated GuidedBullet block from an active HOMING_BEACON stat; v95 two-state group extension after IDA verification; byte-fixture tests per version. |
+| `libs/atlas-packet` | `getBaseTemporaryStats` emits populated GuidedBullet block from an active HOMING_BEACON stat; v95 two-state group extension after IDA verification; per-version two-state group verification and any resulting gates for v61/v72/v79/v84/v87/v92/JMS (FR-4.6); byte-fixture tests for all nine in-scope versions; no emit path on gms_12/gms_48 (§2.1). |
 | `libs/atlas-constants` | No changes expected (both skill ids and the stat type exist). |
 
 Dockerfile / go.work: no new libs, so no COPY-line or go.work changes expected. The
@@ -277,6 +384,13 @@ standard verification matrix still applies (see §10).
    — WZ `mobCount` + Cosmic loop semantics.
 5. Whether the buff clears the client's UI icon state correctly given the beacon has no
    duration bar (client rendering detail, verified live on v83).
+6. Two-state group membership, block sizes and mask-gating on v61, v72, v79, v84, v87,
+   v92 and JMS (FR-4.6) — IDA verification per version. Open specifically: whether
+   SpeedInfusion and the Undead slot are group members in the older clients, and whether
+   any of them use v95-style per-member mask gating rather than v83's unconditional
+   trailer.
+7. Whether a live v61 tenant can actually grant Outlaw/Corsair (the "Pre Pirate Quests"
+   caveat in §2.1) — affects whether v61 gets live acceptance or byte verification only.
 
 ## 11. Acceptance Criteria
 
@@ -296,8 +410,15 @@ standard verification matrix still applies (see §10).
 - [ ] Death/respawn and logout clear the beacon via existing cancel-all flows (test
       evidence, not assumption).
 - [ ] Byte-fixture tests cover the BuffGive encode with an active beacon (populated
-      GuidedBullet block) for v83, v84, v87, JMS; v95 covered after its IDA
-      verification lands, with decompilation evidence recorded.
+      GuidedBullet block) for **every in-scope version — v61, v72, v79, v83, v84, v87,
+      v92, JMS, v95** — each backed by a decompilation evidence record for that
+      version's own client (FR-4.6). A version covered only by the shared default with
+      no fixture of its own does not count as covered.
+- [ ] A no-beacon encode is byte-identical to the pre-task output on every in-scope
+      version (FR-4.7), demonstrated by a length/bytes assertion per version.
+- [ ] gms_12 and gms_48 are recorded as `n-a` for this feature with the §2.1 evidence
+      (no `521xxxx`/`522xxxx` skills; `legacyGmsMask` leaves no base-stat trailer) — and
+      no code path attempts to emit a beacon block on them.
 - [ ] All effect values used (mob count, costs, any duration/x reads) cite WZ /
       atlas-data sources in design.md — zero values taken from memory.
 - [ ] `go test -race ./...`, `go vet ./...`, `go build ./...` clean in every changed

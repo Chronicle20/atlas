@@ -24,7 +24,7 @@ Outlaw 5211006 / Corsair 5220011 lock-on: ranged attack strike → attacker gets
 - GuidedBullet block (17B): nOption int32 | rOption int32 | time (bool+int32, 5B) | dwMobId uint32.
 - Client set path requires `nOption != 0` (IsActivated) → we send nOption = mobId (allocator floor 1,000,000 guarantees nonzero, max 0x7FFFFFFF fits int32 — `libs/atlas-object-id/allocator.go:30-42`); rOption = skill id (SetGuided reason + icon); dwMobId = mobId.
 - v83 GuidedBullet mask bit: registry shift 87 → wire dword[1] `0x00800000`. v95: shift 127 → wire dword[0] `0x80000000`.
-- Movement filter (trailing-byte gate): v83 `sub_77DC78` = Speed, Jump, Stun, Weakness→`Weaken`, Slow, Morph, Ghost→`GhostMorph`, BasicStatUp→`MapleWarrior`, Attract→`Seduce`, RideVehicle→`MonsterRiding`, DashSpeed, DashJump. v95 (`0x7208C0`) adds Flying, Frozen, YellowAura. GuidedBullet is NOT movement-affecting. v84/v87/JMS lists must be IDA-extracted (plan Task 7), expected identical to v83 — verify, don't assume.
+- Movement filter (trailing-byte gate): v83 `sub_77DC78` = Speed, Jump, Stun, Weakness→`Weaken`, Slow, Morph, Ghost→`GhostMorph`, BasicStatUp→`MapleWarrior`, Attract→`Seduce`, RideVehicle→`MonsterRiding`, DashSpeed, DashJump. v95 (`0x7208C0`) adds Flying, Frozen, YellowAura. GuidedBullet is NOT movement-affecting. v61/v72/v79/v84/v87/v92/JMS lists must be IDA-extracted (plan Task 7), expected identical to v83 — verify, don't assume.
 
 ## WZ facts (Cosmic v83 Skill.wz, design §2.1)
 
@@ -59,8 +59,15 @@ Outlaw 5211006 / Corsair 5220011 lock-on: ranged attack strike → attacker gets
 
 ## Dependencies / environment
 
-- IDA-MCP instances: v83 `MapleStory_dump.exe` port 13342, v95 `GMS_v95.0_U_DEVM.exe` port 13341, JMS port 13340 (`*_U_DEVM` build, not SMC); v84/v87 via `list_instances`. Confirm binary identity before reading. Use `func_query` with `name_regex`.
-- Known reset-handler addresses (from `buff_cancel_test.go` packet-audit markers): v84 `0xa6bb24`, v87 `0xab7dc1`, JMS `0xb07628` — entry points for the movement-filter extraction.
+- IDA-MCP instances: v48 `GMS_v48_1_DEVM.exe` port 13337, v61 `GMS_v61.1_U_DEVM.exe` port 13338, v72 `GMS_v72.1_U_DEVM.exe` port 13339, JMS port 13340 (`*_U_DEVM` build, not SMC), v95 `GMS_v95.0_U_DEVM.exe` port 13341, v83 `MapleStory_dump.exe` port 13342; v79/v84/v87/v92 via `idb_list`, selected by binary NAME (the instance set rotates — never trust a remembered port). Confirm binary identity before reading. Use `func_query` with `name_regex`.
+- Known reset-handler addresses (from `buff_cancel_test.go` packet-audit markers): v48 `0x71b054`, v61 `0x84353a`, v72 `0x918f3c`, v79 `0x96ab32`, v83 `0xa2071f`, v84 `0xa6bb24`, v87 `0xab7dc1`, v95 `0x9f2ab0`, JMS `0xb07628` — entry points for both the movement-filter and two-state-group extraction. v92 has no marker (not a matrix column) — locate by signature against its IDB.
+
+## Version scope (canonical: PRD §2.1)
+
+- **In scope (9):** v61, v72, v79, v83, v84, v87, v92, JMS v185, v95.
+- **n/a (2):** gms_12, gms_48 — no `521xxxx`/`522xxxx` skills in their WZ snapshots, and `legacyGmsMask` (`GMS && major < 61`) leaves no base-stat trailer to carry the stat. Not deferred work.
+- **Verification state going in:** the *mask* half is pinned for v61/v72/v79 (`v79EmptyMask` = `int1 0x01FC0000`, 7 two-state bits 82–88). The *trailer* half — member order and block sizes, where the beacon actually lives — is verified on v83 only; the CTS fixtures instantiate just GMS 83 and GMS 95 today. Plan Task 7 closes that per version.
+- **Two traps:** gms_92 is a live tenant version but has no packet-matrix column or registry file (evidence goes in the task folder, no cell to promote); and `pt.Variants` holds 12 variants including out-of-scope v28/v48/v86 — never range over it for beacon assertions.
 - Tests: atlas-buffs uses miniredis + `producertest.InstallNoop()`; packet lib uses `pt.Variants` / `pt.RoundTrip` (`libs/atlas-packet/test/context.go`).
 - Gates: `go test -race`, `go vet`, `go build` per module; `docker buildx bake atlas-buffs atlas-channel`; `tools/redis-key-guard.sh` (no global `GOWORK=off`).
 

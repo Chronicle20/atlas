@@ -16,6 +16,8 @@
 - Existing finite-duration buff behavior must be unchanged (FR-2.6); existing byte fixtures must stay green except where a task explicitly extends them.
 - Monster object ids come from `libs/atlas-object-id` (MinId 1,000,000; MaxId 0x7FFFFFFF) — always nonzero, always fits `int32` (design §2.5).
 - Skill ids: `skill.OutlawHomingBeaconId = Id(5211006)`, `skill.CorsairBullseyeId = Id(5220011)` (`libs/atlas-constants/skill/constants.go:3225,3236`). Stat type: `character.TemporaryStatTypeHomingBeacon` = `"HOMING_BEACON"`.
+- **Version scope is PRD §2.1 — that table is canonical; do not re-derive it.** In scope: **v61, v72, v79, v83, v84, v87, v92, JMS v185, v95** (nine). Explicitly **n/a: gms_12 and gms_48** — the Outlaw/Corsair skill sets do not exist there (zero `521xxxx`/`522xxxx` ids in their WZ snapshots) and `legacyGmsMask` leaves no base-stat trailer to carry the stat. Do not add beacon handling for those two, and do not file them as follow-up work.
+- Two version caveats that will otherwise surprise you mid-task: **gms_92 is not a packet-matrix column** (no `docs/packets/registry/gms_v92.yaml`, absent from `STATUS.md`) — it gets fixtures and an evidence record but has no matrix cell to promote; and **gms_61's Pirate data looks pre-release** (task-187 recorded untranslated Korean skill names, "Pre Pirate Quests"), so v61 gets byte verification but no live-acceptance claim without a live test.
 - No new topics, no DB migrations, no new libs → no Dockerfile / go.work changes.
 - Test style: project Builder pattern / existing test idioms; no `*_testhelpers.go` files.
 - Final gates: `go test -race ./...`, `go vet ./...`, `go build ./...` per changed module; `docker buildx bake atlas-channel atlas-buffs`; `tools/redis-key-guard.sh` from repo root.
@@ -681,19 +683,27 @@ git commit -m "feat(buffs): cancel HOMING_BEACON on MAP_CHANGED (task-167 FR-3.1
 
 ```go
 // TestCTSHomingBeaconPre95PopulatedBlock pins the populated GuidedBullet block
-// for the classic 7-member two-state group (v83/v84/v87/JMS). The block is
+// for the classic 7-member two-state group. The block is
 // nOption=mobId | rOption=skillId | 5-byte time | dwMobId=mobId — 17 bytes,
 // same size as the empty block, so total packet length is unchanged and the
 // two-state mask bits (always set pre-95) are unchanged.
+//
+// Every in-scope version below GMS 95 is listed (PRD §2.1). gms_12/gms_48 are
+// deliberately absent: they take the legacyGmsMask path and have no base-stat
+// trailer at all — covered by the negative test below instead.
 func TestCTSHomingBeaconPre95PopulatedBlock(t *testing.T) {
 	pre95 := []struct {
 		name    string
 		region  string
 		major   uint16
 	}{
+		{"GMS v61", "GMS", 61},
+		{"GMS v72", "GMS", 72},
+		{"GMS v79", "GMS", 79},
 		{"GMS v83", "GMS", 83},
 		{"GMS v84", "GMS", 84},
 		{"GMS v87", "GMS", 87},
+		{"GMS v92", "GMS", 92},
 		{"JMS v185", "JMS", 185},
 	}
 	for _, v := range pre95 {
@@ -723,26 +733,79 @@ func TestCTSHomingBeaconPre95PopulatedBlock(t *testing.T) {
 
 // Without an active beacon the encode must stay byte-compatible with today:
 // the GuidedBullet slot still emits an empty 17-byte block (nOption=0).
+//
+// The length assertion runs per version and is the cheap falsifier for group
+// membership (PRD gap 6): 110 trailer bytes == the 7-member group holds for
+// that version. If one of these fails, do NOT adjust the constant to make it
+// pass — that version's group differs and Task 7 must establish its real shape.
 func TestCTSHomingBeaconPre95AbsentStaysEmpty(t *testing.T) {
-	ctx := pt.CreateContext("GMS", 83, 1)
-	input := NewCharacterTemporaryStat()
+	for _, v := range []struct {
+		name   string
+		region string
+		major  uint16
+	}{
+		{"GMS v61", "GMS", 61}, {"GMS v72", "GMS", 72}, {"GMS v79", "GMS", 79},
+		{"GMS v83", "GMS", 83}, {"GMS v84", "GMS", 84}, {"GMS v87", "GMS", 87},
+		{"GMS v92", "GMS", 92}, {"JMS v185", "JMS", 185},
+	} {
+		t.Run(v.name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.region, v.major, 1)
+			input := NewCharacterTemporaryStat()
 
-	got := input.Encode(nil, ctx)(nil)
+			got := input.Encode(nil, ctx)(nil)
 
-	// Empty CTS on v83: 16 mask + 2 leading + 7 base blocks
-	// (15+15+15+13+20+17+15 = 110).
-	if len(got) != 16+2+110 {
-		t.Fatalf("empty v83 CTS length: got %d want %d", len(got), 16+2+110)
+			// Empty pre-95 CTS: 16 mask + 2 leading + 7 base blocks
+			// (15+15+15+13+20+17+15 = 110).
+			if len(got) != 16+2+110 {
+				t.Fatalf("empty %s CTS length: got %d want %d", v.name, len(got), 16+2+110)
+			}
+		})
+	}
+}
+
+// gms_12 / gms_48 take the legacyGmsMask path (Region GMS && major < 61):
+// 8-byte mask, no nDefenseAtt/nDefenseState, no base-stat trailer. The client
+// never reads the two-state bits (IDA: v48 OnTemporaryStatReset @0x71b054 reads
+// DecodeBuffer(&v8, 8) @0x71b06e). A HOMING_BEACON stat must therefore produce
+// no trailer at all — the beacon is n/a on these versions (PRD §2.1), and this
+// test proves that in code rather than asserting it in prose.
+func TestCTSHomingBeaconLegacyVersionsHaveNoTrailer(t *testing.T) {
+	for _, major := range []uint16{12, 48} {
+		t.Run(fmt.Sprintf("GMS v%d", major), func(t *testing.T) {
+			ctx := pt.CreateContext("GMS", major, 1)
+			tn, _ := tenant.Create([16]byte{}, "GMS", major, 1)
+			input := NewCharacterTemporaryStat()
+			input.AddStat(nil)(tn)(string(character.TemporaryStatTypeHomingBeacon), 5211006, 1000001, 1, time.Time{})
+
+			got := input.Encode(nil, ctx)(nil)
+
+			// 8-byte mask only: the beacon is a base-stat-only member, and the
+			// legacy path emits no base-stat blocks.
+			if len(got) != 8 {
+				t.Fatalf("legacy GMS v%d CTS with beacon: got %d bytes want 8 (mask only); trailer must not be emitted", major, len(got))
+			}
+		})
 	}
 }
 ```
 
 Note: `AddStat` with a zero `expiresAt` is fine — the GuidedBullet block never encodes expiry (NoExpire client type, design §2.3).
 
+Two mechanical notes for these snippets:
+
+- **Imports.** `character_temporary_stat_test.go` currently imports `bytes`, `testing`, `time`, `character`, `pt`, `tenant`. The legacy negative test above adds `fmt` — add it, or drop the `fmt.Sprintf` in favour of a literal subtest name.
+- **Do NOT drive these tables off `pt.Variants`.** That list (`libs/atlas-packet/test/context.go:18-41`) holds **12** variants — it includes GMS v28, v48 and v86, none of which are in this feature's scope (v28/v86 are not even deployed tenant versions; v48 is explicitly n/a per PRD §2.1). Ranging over `pt.Variants` would assert beacon behaviour on versions that must not have it. The in-scope subset is enumerated explicitly on purpose. Note also that entries in `pt.Variants` are **appended, never inserted**, because positional `Variants[N]` references exist elsewhere — if you touch that file at all, respect that invariant.
+
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `cd libs/atlas-packet && go test ./model/ -run TestCTSHomingBeacon -v`
-Expected: `TestCTSHomingBeaconPre95PopulatedBlock` FAILs (block is always empty today); `AbsentStaysEmpty` PASSes (pins status quo).
+
+Expected:
+- `TestCTSHomingBeaconPre95PopulatedBlock` FAILs on every subtest (the block is always empty today).
+- `TestCTSHomingBeaconPre95AbsentStaysEmpty` PASSes on every subtest (pins status quo).
+- `TestCTSHomingBeaconLegacyVersionsHaveNoTrailer` PASSes (the legacy path already emits no trailer).
+
+**If `AbsentStaysEmpty` fails for a specific version, that is a real finding, not a broken test.** It means that version's two-state group is not the assumed 7 members (PRD gap 6). Record the actual length, STOP this task for that version, and resolve it in Task 7 against that version's own IDB before continuing — do not edit the expected constant to match. Versions whose length assertion passes may proceed.
 
 - [ ] **Step 3: Implement**
 
@@ -1074,30 +1137,48 @@ git commit -m "feat(packet): verified v95 two-state group with conditional Party
 
 ---
 
-### Task 7: IDA — movement-affecting filter for v84/v87/JMS + evidence records
+### Task 7: IDA — movement-affecting filter + two-state group verification, all in-scope versions
 
 **Files:**
 - Create: `docs/tasks/task-167-homing-beacon-bullseye/evidence/movement-filter.md`
 - Create: `docs/tasks/task-167-homing-beacon-bullseye/evidence/v95-two-state-group.md`
+- Create: `docs/tasks/task-167-homing-beacon-bullseye/evidence/two-state-group-per-version.md`
+
+**Scope note:** this task covers **both** IDA questions for **all nine in-scope versions**
+(PRD §2.1) — the movement filter (feeds Task 8) and the two-state group trailer (PRD gap 6
+/ FR-4.6, feeds Task 5). They are one task because both are answered from the same
+handlers in the same IDB, so each instance is opened once.
 
 **Interfaces:**
-- Consumes: IDA-MCP (`mcp__ida-pro__*`). Instances: v83 = `MapleStory_dump.exe` port 13342, v95 = `GMS_v95.0_U_DEVM.exe` port 13341, JMS = port 13340 (use the `*_U_DEVM` build, NOT the SMC retail dump); v84/v87 — run `mcp__ida-pro__list_instances` and select by binary name; confirm the loaded binary matches the target version BEFORE reading (CLAUDE.md IDA rule). Use `func_query` with `name_regex` for lookups.
-- Produces: the per-version movement-affecting stat lists Task 8 encodes into `movementAffectingStatNames`. Known from design §2.3/§2.4:
+- Consumes: IDA-MCP (`mcp__ida-pro__*`). Known instance ports, from the verified markers in `libs/atlas-packet/character/clientbound/buff_cancel_test.go`: v48 = `GMS_v48_1_DEVM.exe` port 13337, v61 = `GMS_v61.1_U_DEVM.exe` port 13338, v72 = `GMS_v72.1_U_DEVM.exe` port 13339, JMS = port 13340 (the `*_U_DEVM` build, NOT the SMC retail dump), v95 = `GMS_v95.0_U_DEVM.exe` port 13341, v83 = `MapleStory_dump.exe` port 13342. v79/v84/v87/v92 — run `mcp__ida-pro__idb_list` and select by binary NAME, never by remembered port (the instance set rotates). Confirm the loaded binary matches the target version BEFORE reading (CLAUDE.md IDA rule). Use `func_query` with `name_regex` for lookups.
+- **Known reset-handler addresses** (already IDA-verified and marker-pinned in `buff_cancel_test.go` — start here, do not re-derive): v48 `0x71b054`, v61 `0x84353a`, v72 `0x918f3c`, v79 `0x96ab32`, v83 `0xa2071f`, v84 `0xa6bb24`, v87 `0xab7dc1`, v95 `0x9f2ab0`, JMS `0xb07628`. v92 has no marker and no registry column (PRD gap 7) — locate its handler by signature against the v92 IDB, which memory records as named from v95.
+- Produces: (a) the per-version movement-affecting stat lists Task 8 encodes into `movementAffectingStatNames`; (b) the per-version two-state group tables Task 5's fixtures pin. Known from design §2.3/§2.4:
   - v83 (filter fn `sub_77DC78`): Speed, Jump, Stun, Weakness, Slow, Morph, Ghost, BasicStatUp, Attract, RideVehicle, and the two Dash bits.
   - v95 (`SecondaryStat::IsMovementAffectingStat` @`0x7208C0`): the v83 list + Flying, Frozen, YellowAura.
-  - v84/v87/JMS: EXPECTED identical to v83's list, but must be verified, not assumed.
+  - v61/v72/v79/v84/v87/v92/JMS: EXPECTED identical to v83's list, but must be verified, not assumed.
 
-- [ ] **Step 1: Extract the v84 filter.** Select the v84 instance. Locate `CWvsContext::OnTemporaryStatReset` (known v84 reset address from the existing packet-audit marker: `0xa6bb24`, see `libs/atlas-packet/character/clientbound/buff_cancel_test.go`). Decompile it; the trailing-byte read is gated by a helper called with the decoded 16-byte mask (v83's equivalent is `sub_77DC78`). Decompile that helper and record every CTS mask constant it tests, resolving each constant's bit position to the client stat name via the CTS dynamic-initializer globals (same method the design used, §2.3).
-- [ ] **Step 2: Extract the v87 filter.** Same procedure; v87 reset marker address `0xab7dc1`.
-- [ ] **Step 3: Extract the JMS v185 filter.** Same procedure; JMS reset marker address `0xb07628`.
-- [ ] **Step 4: Cross-check the atlas name mapping.** For each filter member, confirm the atlas `TemporaryStatType` whose registry shift equals the client constant's bit position on that version (`buildCharacterTemporaryStatRegistry`): expected Weakness→`Weaken`, Ghost→`GhostMorph`, BasicStatUp→`MapleWarrior`, Attract→`Seduce`, RideVehicle→`MonsterRiding`. If any shift does not line up, STOP and report — do not guess a mapping.
-- [ ] **Step 5: Write `evidence/movement-filter.md`.** One section per version (v83, v84, v87, JMS, v95): filter function address, decompiled constant list, resolved stat names, and the atlas mapping table. v83/v95 sections come from design §2.3/§2.4 (already verified); v84/v87/JMS from Steps 1–3. State plainly for each version whether it matched v83's list; if one differs, the verified truth wins and Task 8's table must gate it.
-- [ ] **Step 6: Write `evidence/v95-two-state-group.md`.** Record the §2.4 v95 facts (group membership table with addresses `0x72F190`, per-slot DecodeForClient addresses, block sizes 15/15/15/13/20/17, bits 122–127, mask-gated tail read `0x73DBA0-0x73DBF2`, set path `0xA02FC0`, reset path `0x9F2AB0`/`0x6572E0`) so the "Task 41b" closure has a standalone evidence record.
-- [ ] **Step 7: Commit**
+**Head start on the group question — read before opening an IDB.** The *mask* half is
+already settled for v61/v72/v79: `v79EmptyMask` (`buff_give_test.go:167-172`) is
+`int1 = 0x01FC0000`, exactly seven two-state bits (82–88), asserted by the BuffCancel
+fixtures against the verified reset handlers above. So "7 members" is the leading
+hypothesis, not an open question. What is unverified on every version except v83 is the
+**trailer**: member order and per-member block sizes. BuffCancel emits no trailer, which
+is why its fixtures could never have caught a wrong one. Confirm the trailer; do not
+re-derive the mask.
+
+- [ ] **Step 1: Extract the movement filter per version.** For each of v61, v72, v79, v84, v87, v92, JMS: select the instance by binary name, open `CWvsContext::OnTemporaryStatReset` at the address listed above, and decompile it. The trailing-byte read is gated by a helper called with the decoded 16-byte mask (v83's equivalent is `sub_77DC78`). Decompile that helper and record every CTS mask constant it tests, resolving each constant's bit position to the client stat name via the CTS dynamic-initializer globals (same method the design used, §2.3). Work one IDB at a time and finish both Step 1 and Step 2 for that version before moving on — opening each instance once is the point of merging these tasks.
+- [ ] **Step 2: Extract the two-state group per version (PRD gap 6).** In the same IDB, establish the trailer the give/`SetField` path reads: locate the `SecondaryStat` constructor (v95's is `0x72F190`) and record the base-stat member list **in order**; for each member follow its `DecodeForClient` and record the **block size**; record the GuidedBullet member's CTS mask-bit shift; and determine whether the trailer loop is **unconditional** (v83 shape — every member's block always read) or **per-member mask-gated** (v95 shape — `UINT128(1) << shift` tested against the decoded flag before each virtual call, v95 tail loop `0x73DBA0-0x73DBF2`). The expected answer for these seven is v83's: 7 members, sizes 15/15/15/13/20/17/15 = 110, unconditional. **Sum the sizes and compare against 110 before writing anything down** — that single number is the same falsifier Task 5's length assertion uses, so the two must agree.
+- [ ] **Step 3: Cross-check the atlas name mapping.** For each filter member, confirm the atlas `TemporaryStatType` whose registry shift equals the client constant's bit position on that version (`buildCharacterTemporaryStatRegistry`): expected Weakness→`Weaken`, Ghost→`GhostMorph`, BasicStatUp→`MapleWarrior`, Attract→`Seduce`, RideVehicle→`MonsterRiding`. If any shift does not line up, STOP and report — do not guess a mapping.
+- [ ] **Step 4: Write `evidence/movement-filter.md`.** One section per in-scope version (v61, v72, v79, v83, v84, v87, v92, JMS, v95): filter function address, decompiled constant list, resolved stat names, and the atlas mapping table. v83/v95 sections come from design §2.3/§2.4 (already verified); the rest from Step 1. State plainly for each version whether it matched v83's list; if one differs, the verified truth wins and Task 8's table must gate it.
+- [ ] **Step 5: Write `evidence/two-state-group-per-version.md`.** One section per in-scope version: `SecondaryStat` constructor address, ordered member list, per-member `DecodeForClient` address and block size, the summed trailer length, the GuidedBullet mask-bit shift, and unconditional-vs-mask-gated. Close each section with an explicit verdict line — `MATCHES v83 (7 members / 110 bytes)` or `DIFFERS: <what>`. For any version where the IDB cannot settle it, write `UNVERIFIED: <specific blocker>` and surface it in the task report; per CLAUDE.md that is a stop-and-ask, **not** a licence to ship on the shared default. A version marked UNVERIFIED must not get a passing beacon fixture in Task 5.
+- [ ] **Step 6: Reconcile with Task 5.** Any version whose verdict is `DIFFERS` needs a `twoStateBaseStats` gate (expressed with the `MajorAtLeast` idiom, matching the existing `GMS >= 95` branch) and a corrected length constant in its Task 5 subtest. Note in the evidence file which Task 5 subtests each finding changes, so the two tasks cannot silently drift apart.
+- [ ] **Step 7: Write `evidence/v95-two-state-group.md`.** Record the §2.4 v95 facts (group membership table with addresses `0x72F190`, per-slot DecodeForClient addresses, block sizes 15/15/15/13/20/17, bits 122–127, mask-gated tail read `0x73DBA0-0x73DBF2`, set path `0xA02FC0`, reset path `0x9F2AB0`/`0x6572E0`) so the "Task 41b" closure has a standalone evidence record.
+- [ ] **Step 8: Record the gms_12 / gms_48 n/a disposition.** In `evidence/two-state-group-per-version.md`, add a closing section stating why these two are not-applicable, citing: zero `521xxxx`/`522xxxx` ids in `libs/atlas-constants/gen/wzsnapshot/gms_12_1.json` and `gms_48_1.json`; `legacyGmsMask` = `Region()=="GMS" && MajorVersion() < 61` (`character_temporary_stat.go:576-578`); and the v48 client reading an 8-byte mask via `DecodeBuffer(&v8, 8)` @`0x71b06e` under handler `0x71b054`. This is the durable record behind PRD §2.1 — write it once here rather than re-deriving it in review.
+- [ ] **Step 9: Commit**
 
 ```bash
 git add docs/tasks/task-167-homing-beacon-bullseye/evidence/
-git commit -m "docs(task-167): IDA evidence — movement filters (all versions) + v95 two-state group"
+git commit -m "docs(task-167): IDA evidence — movement filters + two-state groups, all in-scope versions"
 ```
 
 ---
@@ -2270,6 +2351,20 @@ docker buildx bake atlas-channel
 Expected: both images build. No Dockerfile/go.work edits were needed (no new libs).
 
 - [ ] **Step 4: Fixture sweep** — `go test ./... 2>&1 | tail -5` in `libs/atlas-packet` once more after everything is merged into the branch; any fixture that changed byte expectations without an explicit task step above is a defect, not a fixture update.
+
+- [ ] **Step 4a: Version-coverage audit (PRD §2.1 / FR-4.6 / FR-4.7).** The failure mode this step exists to catch is a version that silently rode the shared default and was reported as covered. Check each item as a fact, not an impression:
+
+```bash
+# Every in-scope version must appear in the CTS beacon fixtures.
+cd libs/atlas-packet && grep -oE 'CreateContext\("[A-Z]+", [0-9]+' model/character_temporary_stat_test.go | sort -u
+```
+
+  - [ ] All nine in-scope versions appear: GMS 61, 72, 79, 83, 84, 87, 92, 95 and JMS 185. Before this task the file contained only GMS 83 and GMS 95 — if that is still true, the per-version work did not happen.
+  - [ ] `evidence/two-state-group-per-version.md` has a verdict line for all nine, and every verdict is `MATCHES` or `DIFFERS` (with a corresponding `twoStateBaseStats` gate). **Any `UNVERIFIED` verdict blocks completion** — report it as a blocker rather than shipping that version on the default.
+  - [ ] `evidence/movement-filter.md` has a section for all nine.
+  - [ ] The gms_12/gms_48 negative test (`TestCTSHomingBeaconLegacyVersionsHaveNoTrailer`) passes, and no beacon code path is reachable on those versions.
+  - [ ] No-beacon encodes are byte-identical to pre-task output on every in-scope version (FR-4.7) — the per-version length subtests in `TestCTSHomingBeaconPre95AbsentStaysEmpty` all pass with the constants they started with, or a `DIFFERS` verdict explains any change.
+  - [ ] Report coverage honestly in the task summary: name the versions byte-verified, and state plainly that gms_92 has no matrix cell to promote (PRD gap 7) and that gms_61 is byte-verified only, with no live-acceptance claim (PRD §2.1 caveat).
 
 - [ ] **Step 5: Code review** — run `superpowers:requesting-code-review` (plan-adherence + backend-guidelines reviewers; Go-only change set) BEFORE any PR. Findings go to `docs/tasks/task-167-homing-beacon-bullseye/audit.md`.
 

@@ -1,8 +1,13 @@
 # Homing Beacon / Bullseye (task-167) — Design
 
-Version: v1
+Version: v2
 Status: Ready for planning
 PRD: `docs/tasks/task-167-homing-beacon-bullseye/prd.md`
+Updated: 2026-08-04 — v2 tracks PRD v2's widened version scope (adds v61, v72, v79, v92;
+gms_12/gms_48 recorded n/a). **Version scope is defined once, in PRD §2.1 — this document
+defers to that table rather than restating the list.** The design consequence is §5.5.6:
+the pre-95 two-state group is a shared default byte-verified only at v83, so each
+in-scope version needs its own IDA read + fixture (PRD gap 6 / FR-4.6).
 
 ---
 
@@ -19,7 +24,7 @@ Four subsystems change:
 |---|---|
 | `services/atlas-channel` | Attack-handler hook (cancel-then-apply), beacon mirror registry, local-give merge, foreign-announcement suppression for beacon-only events, no-expiry mirror support |
 | `services/atlas-buffs` | First-class no-expiry buffs; new `MAP_CHANGED` consumer issuing CancelByTypes(HOMING_BEACON) |
-| `libs/atlas-packet` | Populated GuidedBullet block from the active stat; accurate cancel masks (new); conditional movement byte on cancel (new); v95 two-state group extension (Task 41b closed) |
+| `libs/atlas-packet` | Populated GuidedBullet block from the active stat; accurate cancel masks (new); conditional movement byte on cancel (new); v95 two-state group extension (Task 41b closed); per-version two-state group verification + any resulting gates for the seven versions currently on the shared default (§5.5.6) |
 | Contracts | `noExpiry` field on buff APPLY command, buff status events, buff REST model |
 
 Two of those items — accurate cancel masks and the local-give merge — were not in the PRD.
@@ -31,6 +36,16 @@ current encoder, any unrelated buff give or cancel silently destroys the client'
 Per the PRD's honesty requirement, every client-facing claim below carries its source.
 IDA instances: v83 = `MapleStory_dump.exe` (v83_Me IDB, port 13342), v95 =
 `GMS_v95.0_U_DEVM.exe` (port 13341).
+
+**Verification coverage of this section — read before trusting it for a given version.**
+§2.3 is v83 evidence and §2.4 is v95 evidence. Those are the only two versions whose
+two-state group, GuidedBullet block and set/reset paths were read from their own binary
+during design. The other seven in-scope versions (v61, v72, v79, v84, v87, v92, JMS) are
+served by the same code path but have **no design-phase evidence of their own**; the
+existing CTS fixtures instantiate only `("GMS", 83, 1)` and `("GMS", 95, 1)`. Where this
+document says "pre-95" it is describing *our encoder's* branch, not a verified property
+of those seven clients. Closing that gap is execution work (§5.5.6, PRD FR-4.6), and
+until a version has its own evidence record, statements here about it are hypotheses.
 
 ### 2.1 WZ effect data (source: Cosmic v83 `wz/Skill.wz/521.img.xml`, `522.img.xml`)
 
@@ -426,6 +441,50 @@ in this task.
    `HOMING_BEACON` (nothing to show other players; avoids exercising unverified remote
    read paths).
 
+6. **Per-version two-state group verification (PRD gap 6 / FR-4.6).** `twoStateBaseStats`
+   currently branches once — `GMS >= 95` gets the truncated group, *everything else* gets
+   the classic 7-member group. That single `else` covers v61, v72, v79, v83, v84, v87,
+   v92 and JMS, and only v83 has ever been byte-checked against its client. The beacon
+   lives in that group, so shipping it to eight versions on one v83-derived assumption is
+   the same class of error the v95 truncation comment already warns about.
+
+   Execution therefore reads each in-scope version's own binary and records, per version:
+   the `SecondaryStat` constructor's member list and order, each member's
+   `DecodeForClient` block size, the GuidedBullet CTS mask-bit shift, and whether the
+   trailer loop is unconditional (v83 shape) or per-member mask-gated (v95 shape). Order
+   of work is cheapest-signal-first: the total trailer length is a fast falsifier — if a
+   version's client reads 110 trailer bytes, the 7-member group is confirmed in
+   aggregate; if it reads anything else, the membership differs and the per-member read
+   tells us how.
+
+   Outcome shape depends on what is found, and the design accommodates either:
+   - **Group matches v83** → no code change for that version; it gains an evidence record
+     and a byte fixture, converting an assumption into a verified fact.
+   - **Group differs** → `twoStateBaseStats` gains a gate for it, expressed with the
+     `MajorAtLeast` idiom rather than a raw `>` comparison, in the same style as the
+     existing `GMS >= 95` branch. The verified truth wins; uniformity is not a goal.
+
+   Two members deserve specific attention because they are the plausible divergences:
+   **SpeedInfusion** (a Buccaneer skill — its presence as a *base-stat group member* in
+   the v61/v72 clients is unverified) and the **Undead** slot (which v95 showed can exist
+   in the constructor while having no reachable CTS mask constant). A wrong member count
+   shifts every following trailer byte, so this is not a cosmetic detail — it is the
+   difference between the beacon working and the whole CTS trailer desynchronising.
+
+   **Start from what is already pinned, not from zero.** The mask half is settled for
+   v61/v72/v79: `v79EmptyMask` is `int1 = 0x01FC0000` — seven two-state bits (82–88) —
+   and the BuffCancel fixtures assert it against IDA-verified reset handlers (v61
+   `0x84353a`, v72 `0x918f3c`, v79 `0x96ab32`). A seven-member group is therefore already
+   mask-consistent on those three, which makes "the group has 7 members" the leading
+   hypothesis rather than an open question. What those fixtures cannot tell us is block
+   *sizes* or member *order*, because BuffCancel emits no trailer at all — that is the
+   half this feature rides on, and the half still to verify. Framing it this way keeps
+   the IDA work bounded: confirm the trailer, don't re-derive the mask.
+
+   If a version's IDB cannot settle the question, that version is reported as unverified
+   with the specific blocker named (per CLAUDE.md: escalate rather than ship a silent
+   assumption). It is not shipped on the default with a passing round-trip test as cover.
+
 ### 5.6 Contract summary
 
 | Contract | Change | Compat |
@@ -476,10 +535,22 @@ merge adds the beacon statup; foreign suppression for beacon-only events; mirror
 `Expired()` with flag.
 
 **libs/atlas-packet (byte fixtures, per version)** — following the existing
-`TestCTSMonsterRiding*` shape (`character_temporary_stat_test.go:169-246`):
-- v83/v84/v87/JMS: BuffGive with active beacon — mask bit present, populated 17-byte
-  GuidedBullet block (nOption=mobId, rOption=skillId, dwMobId), all other trailer bytes
-  unchanged from the current fixtures; give with NO beacon — byte-identical to today.
+`TestCTSMonsterRiding*` shape (`character_temporary_stat_test.go:169-246`). Every
+in-scope version gets its own table entry; the table is driven from PRD §2.1, and a
+version present in that table with no fixture is a test-coverage failure, not an
+omission. Note the existing suite only ever constructs `("GMS", 83, 1)` and
+`("GMS", 95, 1)`, so v84/v87/JMS gain first-time coverage here alongside the four new
+versions:
+- v61/v72/v79/v83/v84/v87/v92/JMS: BuffGive with active beacon — mask bit present,
+  populated 17-byte GuidedBullet block (nOption=mobId, rOption=skillId, dwMobId), all
+  other trailer bytes unchanged from that version's current fixtures; give with NO
+  beacon — byte-identical to today (FR-4.7).
+- Each of those versions also pins its **total trailer length** (110 bytes if the
+  7-member group holds). This is the assertion that would have caught a wrong group
+  membership, and it is why it is stated per version rather than once for "pre-95".
+- gms_12/gms_48: a negative test — a character carrying a HOMING_BEACON stat encodes
+  with no base-stat trailer at all on those versions (`legacyGmsMask` path), proving the
+  n/a claim in PRD §2.1 is enforced by code rather than merely asserted in prose.
 - v95: give with active beacon — bit 127 set, trailer = 58 status-quo bytes + 17-byte
   populated GuidedBullet block; give without — byte-identical to today (16+2+58);
   PartyBooster-active round-trip (20-byte block, bit 126).
@@ -490,7 +561,7 @@ merge adds the beacon statup; foreign suppression for beacon-only events; mirror
 - Evidence records per the packet-audit norms for the newly pinned v95 facts (§2.4) and
   the v84/v87/JMS movement filters once extracted.
 
-**Live verification (acceptance, v83 tenant)** — cast → shots home; re-cast other
+**Live verification (acceptance, v83 tenant — the reference version)** — cast → shots home; re-cast other
 monster → lock moves; whiff → unchanged; unrelated buff gained/expired mid-lock → lock
 survives (F1/F2 proof); map change → lock and icon clear; locked target killed → no
 server cancel; icon rendering with no duration bar (PRD Open Question 5 — only
@@ -513,6 +584,14 @@ observable live).
 
 ## 8. Out of scope
 
+- **gms_12 and gms_48 — not-applicable, not deferred.** The Outlaw/Corsair skill sets do
+  not exist in those clients and `legacyGmsMask` leaves no base-stat trailer to carry the
+  stat. Evidence and the `n-a` matrix disposition are in PRD §2.1. Nothing about this
+  feature is "pending" for those two versions.
+- Whether a live gms_61 player can obtain Outlaw/Corsair (the "Pre Pirate Quests" content
+  caveat, PRD §2.1). v61 is in scope for implementation and byte verification; its
+  in-game reachability is a content question, and v61 gets no live-acceptance claim
+  without a live test.
 - The other TODOs at the attack-handler site (Flame Thrower, Snow Charge, Hamstring, …).
 - Server-side cancel on target death (owner decision; revisit only on observed bugs).
 - PartyBooster gameplay semantics (only its verified wire slot is added).

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-messages/chat"
 	"atlas-messages/command"
 	"atlas-messages/command/buff"
 	"atlas-messages/command/character"
@@ -18,6 +19,8 @@ import (
 
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
@@ -31,6 +34,9 @@ var consumerGroupId = consumergroup.Resolve("Messages Service")
 func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
+
+	rc := atlasredis.Connect(l)
+	chat.InitRegistry(rc)
 
 	command.Registry().Add(help.HelpCommandProducer)
 	command.Registry().Add(_map.WarpCommandProducer)

@@ -182,3 +182,149 @@ Three independent checks, all negative on both versions:
 **Conclusion:** the claim mechanism enters the GMS client somewhere between v61 and v72.
 v48 and v61 ship the clientbound receivers ahead of the submit path, exactly as v48 does
 for sue in §7.1.
+
+### 7.3 `CLAIM_REQUEST` is genuinely absent on jms_185 — but the clientbound trio is live-routed
+
+Session `b6864e54` (`MapleStory_dump_SCY.exe.i64`, resolved via `idb_list`, matched by binary
+NAME — the session set rotates and `-ida-port`/`select_instance` are dead, task-138). The
+registry's `CLAIM_REQUEST` row (opcode 101 / `0x065`, `provenance: csv-import`) rests on the
+CSV alone; every search below came back negative for a send-site matching that shape.
+
+**The known-good shape, re-derived from GMS v92 first.** `disasm` on `CWvsContext::SendClaimRequest`
+@ `0x9d9c30` (v92 session `acdfccff`) shows the exact instruction sequence:
+
+```
+push 75h                                         ; opcode 117 (0x75)
+lea ecx, [esp+88h+var_2C]
+call ??0COutPacket@@QAE@J@Z                      ; COutPacket::COutPacket(long)
+...
+call ?Encode1@COutPacket@@QAEXE@Z                ; bChatClaim
+...
+call ?EncodeStr@COutPacket@@QAEXV?$ZXString@D@@@Z ; sTargetCharacterName
+...
+call ?Encode1@COutPacket@@QAEXE@Z                ; nType
+...
+call ?EncodeStr@COutPacket@@QAEXV?$ZXString@D@@@Z ; sContext
+...
+call ?EncodeStr@COutPacket@@QAEXV?$ZXString@D@@@Z ; chatLog, guarded by bChatClaim
+...
+call ?SendPacket@CClientSocket@@QAEXABVCOutPacket@@@Z
+```
+
+The structural tell: `bChatClaim` is both the first `Encode1` argument and the guard on the
+trailing `EncodeStr`. This — not any specific opcode value — is what the JMS searches below
+were written to detect.
+
+**Search 1 — direct name/UI search (negative, expected).** `func_query` for
+`SendClaimRequest`, `CUIClaim`, and `SendClaim` on JMS all return nothing (or, for
+`SendClaim`, only the unrelated minigame `SendClaimGiveUp` methods on
+`CMemoryGameDlg`/`COmokDlg`). `CUIMessenger` and `CUIStatusBar` are both substantially named
+in JMS (20+ methods each) but neither has a `SendClaim` member — consistent with v92, where
+the send-site is also not a standalone `CUIClaim` class but a member reached from those two
+UI classes plus a generic context-menu handler.
+
+**Search 2 — opcode-immediate scan (exhaustive, negative).** Enumerated every `push 101`
+(`0x65`) instruction in the entire `.text` segment via `insn_query`, paging the full address
+range `0x401000`–`0xbe3034` to completion (`truncated:false`): **35 instructions total in
+the whole binary.** Read 20 bytes of raw machine code at each via `get_bytes`; none is
+followed by `lea ecx, ...; call ??0COutPacket@@QAE@J@Z` (JMS's long-opcode constructor,
+`0x74b68d`) — all 35 are unrelated uses of the literal 101 (vtable calls, arithmetic,
+`IWzCanvas::DrawTextA` pixel coordinates, loop constants).
+
+**Search 3 — the entire JMS serverbound opcode space, not just 101 (exhaustive, negative).**
+Rather than trust the CSV's opcode, enumerated **every** call site to
+`??0COutPacket@@QAE@J@Z` (`0x74b68d`) — i.e. every place JMS constructs an outgoing packet
+with an explicit opcode — via `insn_query`, paged to completion across the full `.text`
+range: **577 call sites total**, matching `xrefs_to`'s count exactly. `CField::SendChatMsgSlash`
+(`0x564ad3`, the slash-command dispatcher, ~29 KB) alone accounts for 79 of them — the most
+plausible place for a hidden report/claim branch, since it is exactly the kind of function
+that embeds many features behind string dispatch. Read the pushed-opcode byte for **all 79**
+directly via `get_bytes` (the `lea ecx, [ebp+disp32]` — `8D 8D` + 4-byte displacement, 6
+bytes — sits immediately before the `call`, so the preceding push is at a fixed, checkable
+offset): the opcodes used are `0x83`, `0x78`, `0x89`, `0xdd`, `0x84`, `0xe1`, `0x29` — seven
+distinct values, **none is `0x65`**, and none of the surrounding `Encode1`/`EncodeStr` calls
+(read from the full decompile of `SendChatMsgSlash`) matches the claim shape — this dispatcher
+reuses the same handful of opcodes for many different slash commands by varying an embedded
+chat-type/target parameter, not by minting a new opcode per command.
+
+**Search 4 — every `CClientSocket::SendPacket` call site in the binary (exhaustive, negative,
+method validated against v92 first).** `SendClaimRequest` unconditionally ends by calling
+`SendPacket` (confirmed above), and `func_query` confirms JMS has exactly one `SendPacket`
+overload (`0x4b14f7`, non-virtual). Enumerated every `call` **and** every tail-call `jmp` to
+it via `insn_query`, paged to completion: **504 calls, 0 tail-jumps.** Validated the method
+first against v92 (`insn_query` scoped to `func: 0x9d9c30` correctly finds the call at
+`0x9da3a4`, matching the manual disasm). Of the 504 JMS callers, 35 are unnamed (`sub_XXXXXX`)
+functions; **all 35 were individually decompiled** (not filtered by size — a same-branch
+review round flagged that v92's own `SendClaimRequest` is well inside a "small function" band,
+so size is not a valid triage filter here). None matches the claim shape:
+
+- `sub_47F824`/`sub_48182A`/`sub_481F71` — cash-shop / admin-shop item-trade sends (opcodes
+  `0xF7`/`0xF8`), unconditional multi-`EncodeStr` bodies, no `bChatClaim`-style gate.
+- `sub_485179`, `sub_4B1BB3`, `sub_56BC92` — trivial/near-trivial sends (ping-like,
+  security-challenge response, and a shared "send this already-built packet" tail helper
+  called only from `SendChatMsgSlash`, already covered by Search 3).
+- `sub_56E0B9` (opcode `0x81`, 2×`Encode4`, no string), `sub_575186` (opcode `0x10F`, 4×
+  `Encode1` + `Encode4` + 1–2 `EncodeStr` gated on a raw parameter, not the encoded byte) —
+  see note below.
+- `sub_739F96`/`sub_73B409`/`sub_73C802`/`sub_740124`/`sub_74092C`/`sub_741292`/
+  `sub_743515`/`sub_7435C8`/`sub_743641`/`sub_7437B9` — all opcode `0xEE`/`0xEF`, a
+  mode-prefixed minigame-carnival family (`Encode1(mode)` 0–11), no `EncodeStr` at all.
+- `sub_74387A` — opcode `0x29`, single unconditional `EncodeStr`, wrong field order
+  (`Encode4`, `EncodeStr`, `Encode1`) and no second string.
+- `sub_74763A`, `sub_7CAB93`, `sub_8B5323`, `sub_8B5F75`, `sub_8B7CF1`, `sub_8FA27F`,
+  `sub_94A492`, `sub_9923A4`, `sub_9C2F45`, `sub_A3ED44`, `sub_AEDCA9`, `sub_AEDD3A`,
+  `sub_AF8B98`, `sub_AF8F90`, `sub_B0BBA8` — all pure `Encode1`/`Encode2`/`Encode4` numeric
+  bodies (item-upgrade confirmations, skill/combat requests, friend/wishlist actions), no
+  `EncodeStr` calls, several reusing opcode bytes that are claim-adjacent in other versions
+  purely by coincidence (e.g. `sub_B0BBA8` uses `0x75` — the same numeral as v92's
+  `CLAIM_REQUEST` opcode — for what is structurally a periodic heartbeat/ping, 1×`Encode1(0)`,
+  no strings; opcode numbering is clearly not preserved 1:1 GMS→JMS).
+
+Note on `sub_575186` (`0x575186`, opcode `0x10F` = 271): this is the closest near-miss to the
+claim shape found in this sweep — `Encode1`×4, `Encode4`(character id), `EncodeStr`(reason),
+then conditionally `EncodeStr`(a second string) gated on parameter `a5`. Structurally this
+looks like a **sue/report** send-site (accused id + reason string + optional detail), not
+claim (which is 2×`Encode1` + 2–3×`EncodeStr`, no numeric id field, gate on the *encoded*
+byte rather than a raw parameter). This is flagged for whoever resolves jms `SUE_CHARACTER`
+(a separate op from this section) — it was not chased further here since it is not this
+section's target and does not match the claim shape either way.
+
+**Search 5 — is the clientbound trio actually reachable, or dead code?** `xrefs_to` on all
+three clientbound handlers (`OnClaimResult` `0xb0e9c3`, `OnSetClaimSvrAvailableTime`
+`0xb0ec69`, `OnClaimSvrStatusChanged` `0xb0ec92`) shows exactly one caller each:
+`CWvsContext::OnPacket` @ `0xaebfe7`. Decompiling that dispatcher shows a genuine compiled
+`switch (nType)` (not dead/unreachable code — it is the same live dispatcher that also
+routes dozens of unambiguously-used ops: inventory, stat changes, guild, family, party,
+etc.) with:
+
+```
+case 0x2A: CWvsContext::OnClaimResult(this, iPacket); break;
+case 0x2B: CWvsContext::OnSetClaimSvrAvailableTime(this, iPacket); break;
+case 0x2C: CWvsContext::OnClaimSvrStatusChanged(this, iPacket); break;
+```
+
+`0x2A`/`0x2B`/`0x2C` = 42/43/44, exactly matching §3–§5's recorded opcodes. **This routing is
+live, not dead code carried over from a shared source tree.**
+
+**Conclusion.** JMS v185 has no `CLAIM_REQUEST` send-site anywhere in the binary — not under
+any name, not under any opcode, not as a `SendPacket` caller and not as a raw
+`COutPacket`-then-something-else builder. This was checked five independent ways (name/UI,
+the CSV's specific opcode, the *entire* opcode space via every `COutPacket` construction site,
+every `SendPacket` call site with the method validated against the known-good v92 case, and
+the clientbound dispatcher's reachability) and is genuinely exhaustive, not a spot-check. At
+the same time, the three clientbound claim-result handlers are named, correctly bodied (per
+§3–§5), and **live-routed** from the real packet dispatcher. This is the odd case flagged
+before searching: a client that can receive and render claim results but has no way to
+generate the request that would produce one. The most coherent read is that JMS ships the
+shared network/receive code for a feature whose client-side trigger (the report/claim UI) was
+removed or never wired up for this build — the same pattern established for v48 sue (§7.1),
+just on the send side of the *other* wire pair.
+
+**Registry disposition:** `docs/packets/registry/jms_v185.yaml`'s `CLAIM_REQUEST` row is left
+unchanged — still `provenance: csv-import`, opcode 101 / `0x065`, **unverified**. It is not
+promoted (no verified send-site exists to cite) and not deleted (it is not a proven-absent
+op the way §7.1/§7.2 are for GMS v48/v61 — a JMS-specific 6th independent search, e.g. a
+string-table sweep for the JMS-localized claim/report UI text, could still in principle
+surface something this address/opcode-based sweep would miss). The matrix's jms185 cell for
+`CLAIM_REQUEST` stays `⬜` and should not be "corrected" to an opcode on the strength of the
+CSV alone.

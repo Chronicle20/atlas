@@ -6461,8 +6461,7 @@
           "opcode": 44
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 52
         },
         "gms_v72": {

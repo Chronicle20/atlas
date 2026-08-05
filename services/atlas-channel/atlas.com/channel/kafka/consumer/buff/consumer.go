@@ -146,7 +146,7 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 			})
 		}
 
-		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
 			t := tenant.MustFromContext(ctx)
 			// Track the active beacon from its own APPLIED event.
 			if bc, ok := beaconChange(e.Body.Changes); ok {

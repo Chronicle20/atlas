@@ -2366,7 +2366,10 @@
   direction: serverbound
   opcode: 106
   fname: CWvsContext::SendClaimRequest
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 0xa2719c
+  note: 'task-145 Task 23 (2026-08-05): send-site was unnamed in the shipped v83_Me IDB (csv-import row). Named via structural match on its two callers CUIStatusBar::SendClaim (0x8d4a22) and CUserLocal::HandleRButtonClk case 7 (0x950470), both of which call 0xa2719c; size 0x6bf, identical to the already-named v72@0x91f2b4 / v79@0x9711ff twins. COutPacket::COutPacket(&pkt, 0x6A) at 0xa27631 confirms opcode 106/0x06A; encode order (byte, string, byte, string, conditional string) matches v95 exactly, so the codec needs no version branch.'
 - op: QUEST_ACTION
   direction: serverbound
   opcode: 107

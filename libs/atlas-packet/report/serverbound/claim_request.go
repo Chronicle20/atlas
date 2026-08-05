@@ -13,11 +13,10 @@ import (
 const ClaimRequestHandle = "ClaimRequest"
 
 // ClaimRequest - CWvsContext::SendClaimRequest. Sent by the CUIClaim report
-// window. Body verified on v95, and on v72 @0x91f2b4 / v79 @0x9711ff
-// (2026-08-04). The v83 send-site is UNNAMED in the v83_Me IDB — naming and
-// byte-verifying it is outstanding (PRD FR-6.2); the body is expected to
-// match because v83's OnClaimResult mode set matches v95 exactly.
-// See packet-findings.md §2.
+// window. Body verified on v95, on v72 @0x91f2b4 / v79 @0x9711ff
+// (2026-08-04), and on v83 @0xa2719c (named + byte-verified 2026-08-05,
+// task-145 Task 23 — COutPacket::COutPacket(&pkt, 0x6A) at 0xa27631, size
+// 0x6bf, identical encode order to v95). See packet-findings.md §2.
 //
 //	byte   bChatClaim   1 = chat/harassment claim, 0 = regular claim
 //	string sTargetCharacterName

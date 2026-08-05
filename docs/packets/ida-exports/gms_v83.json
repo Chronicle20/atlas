@@ -9466,6 +9466,34 @@
         }
       ]
     },
+    "CWvsContext::SendClaimRequest": {
+      "address": "0xa2719c",
+      "direction": "serverbound",
+      "notes": "unnamed in the shipped v83_Me IDB (registry fname was csv-import provenance); named + byte-verified 2026-08-05 (task-145 Task 23) via a direct decompile of 0xa2719c, structurally matched by its two known callers CUIStatusBar::SendClaim (0x8d4a22) and CUserLocal::HandleRButtonClk case 7 (0x950470) which both call this address, plus size (0x6bf, identical to the already-named v72@0x91f2b4 / v79@0x9711ff twins). COutPacket::COutPacket(&pkt, 0x6A) at 0xa27631 matches the registry opcode (106/0x06A). Encode order identical to gms_v95.json's SendClaimRequest.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "bChatClaim (flag; also gates the trailing chatLog string below) @0xa27640"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sTargetCharacterName @0xa27659"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nType @0xa27664"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sContext (description) @0xa2767d"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "chatLog (only when bChatClaim) @0xa276f5",
+          "guard": "*a2"
+        }
+      ]
+    },
     "CWvsContext::SendDropMoneyRequest": {
       "address": "0xa23de5",
       "direction": "serverbound",

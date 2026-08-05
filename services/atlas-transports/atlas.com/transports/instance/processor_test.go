@@ -390,3 +390,29 @@ func TestForceCancelInstance_CancelsEffectsAndWarpsToStart(t *testing.T) {
 	assert.False(t, getCharacterRegistry().IsInTransport(42))
 	assert.False(t, getCharacterRegistry().IsInTransport(43))
 }
+
+func TestForceCancelInstance_NoEffectsEmitsNoConsumableCommands(t *testing.T) {
+	p, ctx := setupProcessorTest(t)
+	route := newPlainRoute(t)
+	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
+	instanceId := board(t, p, route, 42, world.Id(0), channel.Id(1))
+
+	inst, ok := getInstanceRegistry().GetInstance(instanceId)
+	assert.True(t, ok)
+
+	mb := message.NewBuffer()
+	p.forceCancelInstance(mb, inst, route)
+
+	assert.Empty(t, mb.GetAll()[consumable.EnvCommandTopic])
+
+	warps := decodeChangeMaps(t, mb)
+	assert.Len(t, warps, 1)
+	assert.Equal(t, route.StartMapId(), warps[0].Body.MapId)
+
+	evs := decodeInstanceTransportEvents(t, mb)
+	assert.Len(t, evs, 1)
+	assert.Equal(t, it.EventTypeCancelled, evs[0].Type)
+	assert.Equal(t, it.CancelReasonStuck, evs[0].Body.Reason)
+
+	assert.False(t, getCharacterRegistry().IsInTransport(42))
+}

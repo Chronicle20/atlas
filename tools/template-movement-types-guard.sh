@@ -48,6 +48,7 @@ VALID_TYPES = {
 
 bad = 0
 checked = 0
+contributions = {}  # template name -> move handlers it contributed, for the summary breakdown
 
 paths = sorted(glob.glob(os.path.join(tmpl_dir, "template_*.json")))
 
@@ -71,6 +72,7 @@ for path in paths:
         continue
 
     arrays = {}  # handler -> serialized types, for the intra-template equality check
+    contrib = 0  # move handlers THIS template contributed, for the per-template floor below
     for e in d.get("socket", {}).get("handlers", []) or []:
         if not isinstance(e, dict):
             continue
@@ -78,6 +80,7 @@ for path in paths:
         if h not in MOVE_HANDLERS:
             continue
         checked += 1
+        contrib += 1
         types = (e.get("options") or {}).get("types")
 
         # (1) present and non-empty
@@ -123,6 +126,32 @@ for path in paths:
                                  for h, v in sorted(arrays.items()))))
         bad += 1
 
+    # (5) per-template contribution floor. The directory-level floor above only
+    # catches "the glob found nothing/almost nothing" — it is blind to a
+    # PRESENT template whose contribution silently drops to 0 through a
+    # different corruption path: a deleted "socket" key, a null
+    # socket.handlers, or all five move handlers renamed all make the loop
+    # above simply never match an entry, so no per-handler check above ever
+    # fires and the file is never named in any diagnostic. That is the exact
+    # failure mode this guard exists to prevent (movement config silently
+    # absent), reached around the per-handler checks instead of through them.
+    #
+    # Every template contributes at least 4 move handlers today
+    # (template_gms_12_1.json legitimately has no PetMovementHandle, so it
+    # contributes 4; every other template contributes 4 today (gms_92_1,
+    # gms_95_1, pre-fix) or 5). A floor of 3 leaves one handler of headroom
+    # over today's minimum without being brittle, while still catching a
+    # PARTIAL rename (1-2 contributed) that a bare zero-check would miss.
+    contributions[name] = contrib
+    if contrib == 0:
+        print("NO MOVE HANDLERS: %s contributed 0 move handlers — socket.handlers is missing, null,"
+              " or contains none of the five move handlers" % name)
+        bad += 1
+    elif contrib < 3:
+        print("TOO FEW MOVE HANDLERS: %s contributed only %d move handler(s) (want >= 3) —"
+              " socket.handlers may be missing most of the five move handlers" % (name, contrib))
+        bad += 1
+
 if bad:
     print("")
     print("FAIL: %d movement-types violation(s). Every move handler needs a well-formed,"
@@ -130,4 +159,6 @@ if bad:
     sys.exit(1)
 print("OK: %d move handlers across %d templates carry a valid movement types table."
       % (checked, len(paths)))
+for name in sorted(contributions):
+    print("  %s: %d move handler(s)" % (name, contributions[name]))
 PY

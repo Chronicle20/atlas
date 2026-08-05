@@ -344,6 +344,87 @@ constructor). DIFFERS in trailer read style (per-member mask-gated, all 7
 members uniformly). GuidedBullet is at slot 5, raw shift 120 — no atlas
 registry mapping exists yet for v92's own basis.**
 
+## JMS v185
+
+**Provenance caveat**: this section's findings come from
+`MapleStory_dump_SCY.exe.i64` (session `b6864e54`), the only JMS IDB present
+in this environment (`idb_list` returned exactly one JMS entry among 10
+adopted sessions; the other 9 are all GMS builds). The task plan requires a
+JMS `*_U_DEVM` build, explicitly excluding the SMC/retail (`SCY`) dump; no
+JMS `*_U_DEVM` IDB is discoverable in this environment. Per instructions,
+analysis proceeded on the `SCY` dump rather than blocking; the owner has
+**accepted** this substitution with the caveat recorded here — it has not
+been independently proven behaviorally equivalent to a `*_U_DEVM` build.
+Mitigating evidence (see `movement-filter.md`'s companion caveat for the
+identical wording): the SCY binary is **not stripped** — it carries full
+mangled C++ symbol names (`CWvsContext::OnTemporaryStatReset`,
+`SecondaryStat::DecodeForLocal`, `TemporaryStat_GuidedBullet::DecodeForClient`,
+template-instantiated `TwoStateTemporaryStat<...>::DecodeForClient`), i.e.
+PDB-quality naming, not a symbol-free retail strip; the pinned `0xb07628`
+anchor resolved cleanly to `CWvsContext::OnTemporaryStatReset` by the
+decompiler's own demangled signature; its shift math (`1 << (index+110)`)
+matches a pre-existing IDA-sourced repo comment in
+`libs/atlas-packet/model/character_temporary_stat.go` ("JMS adds 28
+(two-state at 110)") that predates this session; and its 110-byte trailer
+result matches v72/v83/v87/v92 exactly (below).
+
+- **Member count**: **7 (MEASURED)** — `SecondaryStat::SecondaryStat`
+  @`0x7f571c` constructs an array of 7 elements at `this+4180`
+  (`` `eh vector constructor iterator'(this+4180, 8u, 7, sub_812474,
+  sub_81245E) ``, stride 8 bytes, count 7).
+- **Ordered members with block sizes (all MEASURED — each ctor helper's
+  final vtable fixup and `DecodeForClient` override were matched against
+  `SecondaryStat::DecodeForLocal`/`DecodeForRemote`'s vtable dispatch)**:
+
+  | idx | name | `DecodeForClient` | block size |
+  |---|---|---|---|
+  | 0 | EnergyCharge | `sub_812552` @`0x81228d`+`Decode2` | **15** |
+  | 1 | DashSpeed | `TwoStateTemporaryStat<...>::DecodeForClient` @`0x8126cd` | **15** |
+  | 2 | DashJump | same fn @`0x8126cd` | **15** |
+  | 3 | MonsterRiding (RideVehicle) | `TwoStateTemporaryStat<...,NoExpire,...>::DecodeForClient` @`0x812418` | **13** |
+  | 4 | SpeedInfusion | `TwoStateTemporaryStat<...>::DecodeForClient` @`0x8121c3` | **20** |
+  | 5 | HomingBeacon (GuidedBullet) | `TemporaryStat_GuidedBullet::DecodeForClient` @`0x7f591d` | **17** |
+  | 6 | Undead | same fn as idx 1/2 @`0x8126cd` | **15** |
+
+  Shared base `TemporaryStatBase<long>::DecodeForClient` @`0x81228d` = 4+4+5
+  (`DecodeBuffer`+`DecodeBuffer`+`DecodeTime`) = **13 bytes**, matching the
+  pre-95 reference base exactly. This order — EnergyCharge, DashSpeed,
+  DashJump, MonsterRiding, SpeedInfusion, HomingBeacon, Undead — matches
+  `twoStateBaseStats()`'s pre-v95 branch in
+  `libs/atlas-packet/model/character_temporary_stat.go` exactly.
+- **Summed trailer length**: **110 bytes (15+15+15+13+20+17+15), MEASURED
+  — MATCHES the pre-95/v83 reference exactly.**
+- **GuidedBullet slot index and mask-bit shift**: slot **5, MEASURED**
+  (`sub_806BE3(a1, a2)` computes `1 << (a2 + 110)`, IDA-verified in both
+  `DecodeForLocal`'s loop (@`0x802d8d`-`0x802e90`) and `DecodeForRemote`'s
+  loop (@`0x805760`-`0x805797`)). Raw shift **115 (`110+5`), MEASURED**.
+  Registry basis: **115** — `character_temporary_stat.go` line ~239 states
+  "JMS=113" for MonsterRiding (index 3 of the group, `110+3=113`), so
+  HomingBeacon (index 5) is registry shift **115**, confirmed directly in
+  source immediately after the SpeedInfusion/PartyBooster slot. **Offset
+  between bases: 0** — raw client bit 115 == atlas registry shift 115 for
+  JMS.
+- **Trailer read style**: **per-member mask-gated (MEASURED)** — confirmed
+  independently in *both* decode paths. `SecondaryStat::DecodeForLocal`'s
+  loop (disassembly, @`0x802d96`-`0x802e90`) computes `1<<(i+110)`, ANDs it
+  against the decoded mask, and `jz`-skips the virtual `DecodeForClient`
+  call when the bit is clear. `SecondaryStat::DecodeForRemote`'s tail loop
+  (decompiled, @`0x804dbf`) shows the identical gate. This is **not** the
+  "pre-95 clients read all 7 blocks unconditionally" pattern documented
+  elsewhere in the repo for v83 — that comment is sourced from v83 IDA
+  verification specifically and does not hold for this JMS binary, whose
+  block *sizes and order* match the v83/pre-95 shape exactly but whose
+  *read mechanism* is conditional per member (all 7, not just the 2
+  conditional members of GMS v95's shape).
+
+**VERDICT: JMS v185 MATCHES GMS pre-95/v83's 7-member/110-byte shape and
+member order exactly (same 15/15/15/13/20/17/15 sizes). DIFFERS in trailer
+read style (per-member mask-gated in both `DecodeForLocal` and
+`DecodeForRemote`, not unconditional). GuidedBullet is at slot 5, raw shift
+115 = registry shift 115 (offset 0). Findings are from the `SCY` dump, not
+the plan's sanctioned `*_U_DEVM` build — see the provenance caveat above,
+accepted by the owner.**
+
 ## v83 (transcribed from design.md §2.3 — design-phase verified)
 
 - **Member count**: 7 (`GuidedBulletTemporaryStat` is member index 5 of the
@@ -378,6 +459,14 @@ registry mapping exists yet for v92's own basis.**
   *read*-side gating and cannot contradict or confirm it directly. See the
   closing note below for why the client being mask-gated (as this campaign
   found on every other version) is benign regardless.
+
+**VERDICT: v83 is the reference version for the pre-95 7-member/110-byte
+shape (GuidedBullet at member index 5, registry shift 87) — transcribed
+directly from design.md §2.3, not independently re-derived by this
+campaign. Trailer read style was not re-measured on v83's client side;
+design.md's "unconditional" language describes the server encoder's
+write-side behavior, not a client read-order finding — see the
+generalisation correction above.**
 
 ## v95 (transcribed from design.md §2.4 — design-phase verified)
 

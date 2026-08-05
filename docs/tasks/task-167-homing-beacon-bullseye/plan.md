@@ -34,7 +34,7 @@
 - Consumes: existing `stat.Model`, `NewBuff` (unchanged).
 - Produces: `NewNoExpiryBuff(sourceId int32, level byte, changes []stat.Model) (Model, error)`; `(Model).NoExpiry() bool`; `(Model).Expired()` returns false when noExpiry; JSON round-trips `noExpiry` (omitempty). Tasks 2, 3 rely on these exact names.
 
-- [ ] **Step 1: Write the failing tests** — append to `model_test.go` (existing `setupTestChanges()` is in this file):
+- [x] **Step 1: Write the failing tests** — append to `model_test.go` (existing `setupTestChanges()` is in this file):
 
 ```go
 func TestNewNoExpiryBuff(t *testing.T) {
@@ -91,12 +91,12 @@ func TestFiniteBuff_JSONAbsentNoExpiryDefaultsFalse(t *testing.T) {
 
 Add `"encoding/json"` to the test file's imports.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run (from the worktree): `cd services/atlas-buffs/atlas.com/buffs && go test ./buff/ -run 'NoExpiry|StillRejects' -v`
 Expected: FAIL — `undefined: NewNoExpiryBuff`, `b.NoExpiry undefined`.
 
-- [ ] **Step 3: Implement** — in `buff/model.go`:
+- [x] **Step 3: Implement** — in `buff/model.go`:
 
 Add field to `Model`:
 
@@ -162,12 +162,12 @@ Extend both JSON structs (Marshal and Unmarshal aux) with:
 
 and wire `NoExpiry: m.noExpiry` in `MarshalJSON` / `m.noExpiry = aux.NoExpiry` in `UnmarshalJSON`.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `go test ./buff/ -v` (whole package — existing tests must stay green).
 Expected: PASS, no failures in pre-existing tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-buffs/atlas.com/buffs/buff/model.go services/atlas-buffs/atlas.com/buffs/buff/model_test.go
@@ -195,7 +195,7 @@ git commit -m "feat(buffs): explicit no-expiry buff model (task-167 FR-2)"
   - Event providers gain a trailing `noExpiry bool` param.
 - There is no mock of `character.Processor` in this repo (verified: `services/atlas-buffs/atlas.com/buffs/character/` has no mock dir); the only callers of `Apply` are the consumer handler and tests.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `character/registry_test.go` (uses this file's existing `setupTestRegistry` / `setupTestTenant` / `setupTestContext` / `setupTestChanges` helpers):
 
@@ -276,7 +276,7 @@ func TestRegistry_CancelAllRemovesNoExpiry(t *testing.T) {
 
 If `Model` (in `character/model.go`) has no exported `Buffs()` accessor, check the existing tests for how buff counts are asserted (registry_test.go asserts on `applied`/`Get` today) and use the same accessor; add nothing new unless the file already exports one.
 
-- [ ] **Step 2: Update ALL existing `Registry.Apply(...)` / `Processor.Apply(...)` call sites in tests**
+- [x] **Step 2: Update ALL existing `Registry.Apply(...)` / `Processor.Apply(...)` call sites in tests**
 
 Every existing call in `registry_test.go` / `processor_test.go` gets a trailing `, false` argument. Do this mechanically:
 
@@ -286,12 +286,12 @@ grep -n "Apply(ctx\|\.Apply(" services/atlas-buffs/atlas.com/buffs/character/*_t
 
 and append `, false` to each call's argument list.
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `cd services/atlas-buffs/atlas.com/buffs && go test ./character/ -run 'NoExpiry|CancelAllRemoves' -v`
 Expected: FAIL — wrong number of arguments to `Apply` (compile error) until Step 4.
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `character/registry.go` — extend `Apply` signature and use the flag:
 
@@ -361,12 +361,12 @@ Update ALL 5 call sites in `character/processor.go` (`Apply`, `Cancel`, `CancelA
 
 and passes `c.Body.NoExpiry` as the trailing argument to `Apply`.
 
-- [ ] **Step 5: Run the full package tests**
+- [x] **Step 5: Run the full package tests**
 
 Run: `go test -race ./...` from `services/atlas-buffs/atlas.com/buffs`.
 Expected: PASS (new tests + all pre-existing tests).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-buffs/atlas.com/buffs
@@ -385,7 +385,7 @@ git commit -m "feat(buffs): thread noExpiry through registry, processor, and Kaf
 - Consumes: `Model.NoExpiry()` (Task 1).
 - Produces: `RestModel.NoExpiry bool` (`json:"noExpiry"`) — a REST reader can tell the buff does not expire (FR-2.5). Task 9 adds the matching field to atlas-channel's mirror RestModel.
 
-- [ ] **Step 1: Write the failing test** — append to `rest_test.go` (follow the file's existing Transform test style; read it first):
+- [x] **Step 1: Write the failing test** — append to `rest_test.go` (follow the file's existing Transform test style; read it first):
 
 ```go
 func TestTransform_NoExpiry(t *testing.T) {
@@ -399,12 +399,12 @@ func TestTransform_NoExpiry(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./buff/ -run TestTransform_NoExpiry -v`
 Expected: FAIL — `rm.NoExpiry undefined`.
 
-- [ ] **Step 3: Implement** — in `buff/rest.go` add to `RestModel`:
+- [x] **Step 3: Implement** — in `buff/rest.go` add to `RestModel`:
 
 ```go
 	NoExpiry  bool             `json:"noExpiry"`
@@ -412,11 +412,11 @@ Expected: FAIL — `rm.NoExpiry undefined`.
 
 and in `Transform` set `NoExpiry: m.noExpiry`.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `go test ./buff/ -v` — Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-buffs/atlas.com/buffs/buff/rest.go services/atlas-buffs/atlas.com/buffs/buff/rest_test.go
@@ -439,7 +439,7 @@ git commit -m "feat(buffs): expose noExpiry on buff REST model (task-167 FR-2.5)
 - Produces: `charstatus.InitConsumers(l)(cmf)(consumerGroupId)` and `charstatus.InitHandlers(l)(rf)` registered from `main.go`.
 - Deployment: **no k8s change needed.** atlas-buffs consumes the shared `atlas-env` ConfigMap via `envFrom` (`deploy/k8s/base/atlas-buffs.yaml`), and `EVENT_TOPIC_CHARACTER_STATUS` is already defined there (`deploy/k8s/base/env-configmap.yaml:94`). The design's §5.4 assumption that the deployment needs a new env var is corrected here — verified against the manifests.
 
-- [ ] **Step 1: Create `kafka.go`** — local re-declaration mirroring `services/atlas-summons/atlas.com/summons/kafka/consumer/character/kafka.go` (envelope has `TransactionId`, unlike the buff-status envelope):
+- [x] **Step 1: Create `kafka.go`** — local re-declaration mirroring `services/atlas-summons/atlas.com/summons/kafka/consumer/character/kafka.go` (envelope has `TransactionId`, unlike the buff-status envelope): _(superseded — the drafted standalone `charstatus` package was later removed; folded into the existing `kafka/consumer/characterstatus` package per user ruling, see commit 48ffcdfc9.)_
 
 ```go
 package charstatus
@@ -478,7 +478,7 @@ type MapChangedBody struct {
 }
 ```
 
-- [ ] **Step 2: Write the failing handler test** — `consumer_test.go`. The handler is exercised directly with a miniredis-backed registry and noop producer, mirroring `character/registry_test.go` setup:
+- [x] **Step 2: Write the failing handler test** — `consumer_test.go`. The handler is exercised directly with a miniredis-backed registry and noop producer, mirroring `character/registry_test.go` setup: _(superseded — these three tests were ported into `kafka/consumer/characterstatus/consumer_test.go` as `TestHandleMapChangedCancelsHomingBeacon` et al., commit 48ffcdfc9.)_
 
 ```go
 package charstatus
@@ -587,12 +587,12 @@ func TestMain(m *testing.M) {
 }
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `go test ./kafka/consumer/charstatus/ -v`
 Expected: FAIL — `undefined: handleMapChanged`.
 
-- [ ] **Step 4: Implement `consumer.go`** — mirrors `atlas-summons/.../kafka/consumer/character/consumer.go` registration idiom, but registers only the MAP_CHANGED handler (design §5.4: no other stat gains map-change semantics):
+- [x] **Step 4: Implement `consumer.go`** — mirrors `atlas-summons/.../kafka/consumer/character/consumer.go` registration idiom, but registers only the MAP_CHANGED handler (design §5.4: no other stat gains map-change semantics): _(superseded — beacon cancel folded into the existing `handleStatusEventMapChanged` in `kafka/consumer/characterstatus/consumer.go` rather than a new `charstatus` package, commit 48ffcdfc9.)_
 
 ```go
 package charstatus
@@ -644,7 +644,7 @@ func handleMapChanged(l logrus.FieldLogger, ctx context.Context, e StatusEvent[M
 }
 ```
 
-- [ ] **Step 5: Wire into `main.go`** — after the existing `character2.InitHandlers` block:
+- [x] **Step 5: Wire into `main.go`** — after the existing `character2.InitHandlers` block: _(superseded — no `charstatus.InitConsumers`/`InitHandlers` remains in `main.go`; the beacon cancel runs inside the existing `characterstatus` consumer, already wired, commit 48ffcdfc9.)_
 
 ```go
 	charstatus.InitConsumers(l)(cmf)(consumerGroupId)
@@ -655,12 +655,12 @@ func handleMapChanged(l logrus.FieldLogger, ctx context.Context, e StatusEvent[M
 
 with import `"atlas-buffs/kafka/consumer/charstatus"`.
 
-- [ ] **Step 6: Run tests + build**
+- [x] **Step 6: Run tests + build**
 
 Run: `go test -race ./... && go build ./...` from `services/atlas-buffs/atlas.com/buffs`.
 Expected: PASS / clean.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-buffs/atlas.com/buffs
@@ -679,7 +679,7 @@ git commit -m "feat(buffs): cancel HOMING_BEACON on MAP_CHANGED (task-167 FR-3.1
 - Consumes: existing `GuidedBulletTemporaryStat` (17-byte block: base 13 + dwMobId 4), `twoStateGuidedBullet` kind, `m.stats` map.
 - Produces: `NewGuidedBulletTemporaryStatWithOptions(nOption int32, rOption int32, dwMobId uint32) GuidedBulletTemporaryStat`; `getBaseTemporaryStats` emits it when `HOMING_BEACON` is active. Field mapping (IDA, design §2.3/§2.4): nOption = monster object id (nonzero satisfies `IsActivated`), rOption = skill id (passed to `CMob::SetGuided` as reason), dwMobId = monster object id.
 
-- [ ] **Step 1: Write the failing tests** — append to `character_temporary_stat_test.go`:
+- [x] **Step 1: Write the failing tests** — append to `character_temporary_stat_test.go`:
 
 ```go
 // TestCTSHomingBeaconPre95PopulatedBlock pins the populated GuidedBullet block
@@ -796,7 +796,7 @@ Two mechanical notes for these snippets:
 - **Imports.** `character_temporary_stat_test.go` currently imports `bytes`, `testing`, `time`, `character`, `pt`, `tenant`. The legacy negative test above adds `fmt` — add it, or drop the `fmt.Sprintf` in favour of a literal subtest name.
 - **Do NOT drive these tables off `pt.Variants`.** That list (`libs/atlas-packet/test/context.go:18-41`) holds **12** variants — it includes GMS v28, v48 and v86, none of which are in this feature's scope (v28/v86 are not even deployed tenant versions; v48 is explicitly n/a per PRD §2.1). Ranging over `pt.Variants` would assert beacon behaviour on versions that must not have it. The in-scope subset is enumerated explicitly on purpose. Note also that entries in `pt.Variants` are **appended, never inserted**, because positional `Variants[N]` references exist elsewhere — if you touch that file at all, respect that invariant.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd libs/atlas-packet && go test ./model/ -run TestCTSHomingBeacon -v`
 
@@ -807,7 +807,7 @@ Expected:
 
 **If `AbsentStaysEmpty` fails for a specific version, that is a real finding, not a broken test.** It means that version's two-state group is not the assumed 7 members (PRD gap 6). Record the actual length, STOP this task for that version, and resolve it in Task 7 against that version's own IDB before continuing — do not edit the expected constant to match. Versions whose length assertion passes may proceed.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add the constructor next to `NewGuidedBulletTemporaryStat`:
 
@@ -845,12 +845,12 @@ In `getBaseTemporaryStats`, replace the `twoStateGuidedBullet` case:
 			}
 ```
 
-- [ ] **Step 4: Run the full lib tests**
+- [x] **Step 4: Run the full lib tests**
 
 Run: `go test -race ./...` from `libs/atlas-packet`.
 Expected: PASS — all existing fixtures (mount, disease, v95 truncation) stay green.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add libs/atlas-packet/model/character_temporary_stat.go libs/atlas-packet/model/character_temporary_stat_test.go
@@ -870,7 +870,7 @@ git commit -m "feat(packet): populate GuidedBullet block from active HOMING_BEAC
 - Produces: v95 `twoStateBaseStats` = 4 unconditional members (status quo) + `PartyBooster` (kind `twoStatePartyBooster`, conditional) + `HomingBeacon` (kind `twoStateGuidedBullet`, conditional). Conditional = block written and mask bit set ONLY when the stat is active (the v95 trailer read is mask-gated per member, IDA @`0x73DBA0`, design §2.4). `decodeBaseTemporaryStats` gains the decoded mask as a parameter.
 - Registry facts (already true, pinned by fixtures here): v95 shifts EnergyCharge=122, DashSpeed=123, DashJump=124, RideVehicle=125, PartyBooster=126, HomingBeacon=127 (`buildCharacterTemporaryStatRegistry`, two-state block at the end of the builder).
 
-- [ ] **Step 1: Write the failing tests** — append to `character_temporary_stat_test.go`:
+- [x] **Step 1: Write the failing tests** — append to `character_temporary_stat_test.go`:
 
 ```go
 // TestCTSHomingBeaconV95MaskAndBlock pins the v95 beacon give: bit 127
@@ -966,12 +966,12 @@ func TestCTSPartyBoosterV95RoundTrip(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `go test ./model/ -run 'V95' -v` from `libs/atlas-packet`.
 Expected: new tests FAIL (beacon/PartyBooster emit nothing on v95 today); `TestCTSMonsterRidingV95MaskAndLayout` and `TestCTSEmptyV95StaysStatusQuo` PASS.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 1. Add the kind and the conditional flag:
 
@@ -1123,12 +1123,12 @@ func TestCTSForeignEmptyV95StaysStatusQuo(t *testing.T) {
 }
 ```
 
-- [ ] **Step 4: Run the full lib tests**
+- [x] **Step 4: Run the full lib tests**
 
 Run: `go test -race ./...` from `libs/atlas-packet`.
 Expected: PASS — including all pre-existing v95 fixtures (mount, truncation length 16+2+58).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add libs/atlas-packet/model/character_temporary_stat.go libs/atlas-packet/model/character_temporary_stat_test.go
@@ -1166,15 +1166,15 @@ hypothesis, not an open question. What is unverified on every version except v83
 is why its fixtures could never have caught a wrong one. Confirm the trailer; do not
 re-derive the mask.
 
-- [ ] **Step 1: Extract the movement filter per version.** For each of v61, v72, v79, v84, v87, v92, JMS: select the instance by binary name, open `CWvsContext::OnTemporaryStatReset` at the address listed above, and decompile it. The trailing-byte read is gated by a helper called with the decoded 16-byte mask (v83's equivalent is `sub_77DC78`). Decompile that helper and record every CTS mask constant it tests, resolving each constant's bit position to the client stat name via the CTS dynamic-initializer globals (same method the design used, §2.3). Work one IDB at a time and finish both Step 1 and Step 2 for that version before moving on — opening each instance once is the point of merging these tasks.
-- [ ] **Step 2: Extract the two-state group per version (PRD gap 6).** In the same IDB, establish the trailer the give/`SetField` path reads: locate the `SecondaryStat` constructor (v95's is `0x72F190`) and record the base-stat member list **in order**; for each member follow its `DecodeForClient` and record the **block size**; record the GuidedBullet member's CTS mask-bit shift; and determine whether the trailer loop is **unconditional** (v83 shape — every member's block always read) or **per-member mask-gated** (v95 shape — `UINT128(1) << shift` tested against the decoded flag before each virtual call, v95 tail loop `0x73DBA0-0x73DBF2`). The expected answer for these seven is v83's: 7 members, sizes 15/15/15/13/20/17/15 = 110, unconditional. **Sum the sizes and compare against 110 before writing anything down** — that single number is the same falsifier Task 5's length assertion uses, so the two must agree.
-- [ ] **Step 3: Cross-check the atlas name mapping.** For each filter member, confirm the atlas `TemporaryStatType` whose registry shift equals the client constant's bit position on that version (`buildCharacterTemporaryStatRegistry`): expected Weakness→`Weaken`, Ghost→`GhostMorph`, BasicStatUp→`MapleWarrior`, Attract→`Seduce`, RideVehicle→`MonsterRiding`. If any shift does not line up, STOP and report — do not guess a mapping.
-- [ ] **Step 4: Write `evidence/movement-filter.md`.** One section per in-scope version (v61, v72, v79, v83, v84, v87, v92, JMS, v95): filter function address, decompiled constant list, resolved stat names, and the atlas mapping table. v83/v95 sections come from design §2.3/§2.4 (already verified); the rest from Step 1. State plainly for each version whether it matched v83's list; if one differs, the verified truth wins and Task 8's table must gate it.
-- [ ] **Step 5: Write `evidence/two-state-group-per-version.md`.** One section per in-scope version: `SecondaryStat` constructor address, ordered member list, per-member `DecodeForClient` address and block size, the summed trailer length, the GuidedBullet mask-bit shift, and unconditional-vs-mask-gated. Close each section with an explicit verdict line — `MATCHES v83 (7 members / 110 bytes)` or `DIFFERS: <what>`. For any version where the IDB cannot settle it, write `UNVERIFIED: <specific blocker>` and surface it in the task report; per CLAUDE.md that is a stop-and-ask, **not** a licence to ship on the shared default. A version marked UNVERIFIED must not get a passing beacon fixture in Task 5.
-- [ ] **Step 6: Reconcile with Task 5.** Any version whose verdict is `DIFFERS` needs a `twoStateBaseStats` gate (expressed with the `MajorAtLeast` idiom, matching the existing `GMS >= 95` branch) and a corrected length constant in its Task 5 subtest. Note in the evidence file which Task 5 subtests each finding changes, so the two tasks cannot silently drift apart.
-- [ ] **Step 7: Write `evidence/v95-two-state-group.md`.** Record the §2.4 v95 facts (group membership table with addresses `0x72F190`, per-slot DecodeForClient addresses, block sizes 15/15/15/13/20/17, bits 122–127, mask-gated tail read `0x73DBA0-0x73DBF2`, set path `0xA02FC0`, reset path `0x9F2AB0`/`0x6572E0`) so the "Task 41b" closure has a standalone evidence record.
-- [ ] **Step 8: Record the gms_12 / gms_48 n/a disposition.** In `evidence/two-state-group-per-version.md`, add a closing section stating why these two are not-applicable, citing: zero `521xxxx`/`522xxxx` ids in `libs/atlas-constants/gen/wzsnapshot/gms_12_1.json` and `gms_48_1.json`; `legacyGmsMask` = `Region()=="GMS" && MajorVersion() < 61` (`character_temporary_stat.go:576-578`); and the v48 client reading an 8-byte mask via `DecodeBuffer(&v8, 8)` @`0x71b06e` under handler `0x71b054`. This is the durable record behind PRD §2.1 — write it once here rather than re-deriving it in review.
-- [ ] **Step 9: Commit**
+- [x] **Step 1: Extract the movement filter per version.** For each of v61, v72, v79, v84, v87, v92, JMS: select the instance by binary name, open `CWvsContext::OnTemporaryStatReset` at the address listed above, and decompile it. The trailing-byte read is gated by a helper called with the decoded 16-byte mask (v83's equivalent is `sub_77DC78`). Decompile that helper and record every CTS mask constant it tests, resolving each constant's bit position to the client stat name via the CTS dynamic-initializer globals (same method the design used, §2.3). Work one IDB at a time and finish both Step 1 and Step 2 for that version before moving on — opening each instance once is the point of merging these tasks.
+- [x] **Step 2: Extract the two-state group per version (PRD gap 6).** In the same IDB, establish the trailer the give/`SetField` path reads: locate the `SecondaryStat` constructor (v95's is `0x72F190`) and record the base-stat member list **in order**; for each member follow its `DecodeForClient` and record the **block size**; record the GuidedBullet member's CTS mask-bit shift; and determine whether the trailer loop is **unconditional** (v83 shape — every member's block always read) or **per-member mask-gated** (v95 shape — `UINT128(1) << shift` tested against the decoded flag before each virtual call, v95 tail loop `0x73DBA0-0x73DBF2`). The expected answer for these seven is v83's: 7 members, sizes 15/15/15/13/20/17/15 = 110, unconditional. **Sum the sizes and compare against 110 before writing anything down** — that single number is the same falsifier Task 5's length assertion uses, so the two must agree.
+- [x] **Step 3: Cross-check the atlas name mapping.** For each filter member, confirm the atlas `TemporaryStatType` whose registry shift equals the client constant's bit position on that version (`buildCharacterTemporaryStatRegistry`): expected Weakness→`Weaken`, Ghost→`GhostMorph`, BasicStatUp→`MapleWarrior`, Attract→`Seduce`, RideVehicle→`MonsterRiding`. If any shift does not line up, STOP and report — do not guess a mapping.
+- [x] **Step 4: Write `evidence/movement-filter.md`.** One section per in-scope version (v61, v72, v79, v83, v84, v87, v92, JMS, v95): filter function address, decompiled constant list, resolved stat names, and the atlas mapping table. v83/v95 sections come from design §2.3/§2.4 (already verified); the rest from Step 1. State plainly for each version whether it matched v83's list; if one differs, the verified truth wins and Task 8's table must gate it.
+- [x] **Step 5: Write `evidence/two-state-group-per-version.md`.** One section per in-scope version: `SecondaryStat` constructor address, ordered member list, per-member `DecodeForClient` address and block size, the summed trailer length, the GuidedBullet mask-bit shift, and unconditional-vs-mask-gated. Close each section with an explicit verdict line — `MATCHES v83 (7 members / 110 bytes)` or `DIFFERS: <what>`. For any version where the IDB cannot settle it, write `UNVERIFIED: <specific blocker>` and surface it in the task report; per CLAUDE.md that is a stop-and-ask, **not** a licence to ship on the shared default. A version marked UNVERIFIED must not get a passing beacon fixture in Task 5. _(v79 and v84 correctly recorded as `UNVERIFIED: <blocker>` per this step's own allowance — IDBs lack ctor/RTTI/vtable symbols; 110 is INFERRED by bracketing measured v72/v87/v92, not measured. Owner-adjudicated as a known documented state; see verification-results.md.)_
+- [x] **Step 6: Reconcile with Task 5.** Any version whose verdict is `DIFFERS` needs a `twoStateBaseStats` gate (expressed with the `MajorAtLeast` idiom, matching the existing `GMS >= 95` branch) and a corrected length constant in its Task 5 subtest. Note in the evidence file which Task 5 subtests each finding changes, so the two tasks cannot silently drift apart.
+- [x] **Step 7: Write `evidence/v95-two-state-group.md`.** Record the §2.4 v95 facts (group membership table with addresses `0x72F190`, per-slot DecodeForClient addresses, block sizes 15/15/15/13/20/17, bits 122–127, mask-gated tail read `0x73DBA0-0x73DBF2`, set path `0xA02FC0`, reset path `0x9F2AB0`/`0x6572E0`) so the "Task 41b" closure has a standalone evidence record.
+- [x] **Step 8: Record the gms_12 / gms_48 n/a disposition.** In `evidence/two-state-group-per-version.md`, add a closing section stating why these two are not-applicable, citing: zero `521xxxx`/`522xxxx` ids in `libs/atlas-constants/gen/wzsnapshot/gms_12_1.json` and `gms_48_1.json`; `legacyGmsMask` = `Region()=="GMS" && MajorVersion() < 61` (`character_temporary_stat.go:576-578`); and the v48 client reading an 8-byte mask via `DecodeBuffer(&v8, 8)` @`0x71b06e` under handler `0x71b054`. This is the durable record behind PRD §2.1 — write it once here rather than re-deriving it in review.
+- [x] **Step 9: Commit**
 
 ```bash
 git add docs/tasks/task-167-homing-beacon-bullseye/evidence/
@@ -1199,7 +1199,7 @@ git commit -m "docs(task-167): IDA evidence — movement filters + two-state gro
   - `BuffCancel`/`BuffCancelForeign` use them; the trailing byte is written/read iff `cancelMask AND MovementAffectingMask != 0`.
 - The give path (`EncodeMask`, BuffGive trailer) is untouched: give masks always contain the RideVehicle/Dash group bits (pre-95 unconditional; v95 4 always-set members), which are movement-affecting, so the client always reads the give trailer byte — status quo holds (design §5.5.3).
 
-- [ ] **Step 1: Write the failing model tests** — append to `character_temporary_stat_test.go`:
+- [x] **Step 1: Write the failing model tests** — append to `character_temporary_stat_test.go`:
 
 ```go
 // F1 regression: a cancel mask must contain ONLY the canceled stats — never
@@ -1293,7 +1293,7 @@ func TestMovementAffectingMaskMembership(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Write the failing writer tests** — append to `libs/atlas-packet/character/clientbound/buff_cancel_test.go`:
+- [x] **Step 2: Write the failing writer tests** — append to `libs/atlas-packet/character/clientbound/buff_cancel_test.go`:
 
 ```go
 // Beacon-only cancel: mask carries exactly the GuidedBullet bit (v83 shift 87
@@ -1377,12 +1377,12 @@ func TestBuffCancelBeaconOnlyV95(t *testing.T) {
 
 Add imports `"bytes"`, `"time"`, and `"github.com/Chronicle20/atlas/libs/atlas-constants/character"`, `tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"` to the test file as needed.
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `go test ./model/ ./character/clientbound/ -run 'CancelMask|MovementAffecting|BuffCancel' -v` from `libs/atlas-packet`.
 Expected: FAIL — `CancelMask`/`MovementAffectingMask` undefined; BuffCancel fixtures see 17 bytes with full two-state mask.
 
-- [ ] **Step 4: Implement in `model/character_temporary_stat.go`**
+- [x] **Step 4: Implement in `model/character_temporary_stat.go`** _(implemented as a 5-branch per-version movement filter driven by `evidence/movement-filter.md` — v61/v72/v79/v83 base-12, v84 +2 unnamed@raw82/83, v87/v92 +Flying+Frozen, v95 +Flying+Frozen+YellowAura, JMS its own 13-bit list — not the simpler 2-branch v83/v95-only draft shown below. Commits 6b72feda4, dfbf51d34, 28a046b00.)_
 
 ```go
 // CancelMask returns the mask of ONLY the stats present on this CTS. Cancel
@@ -1466,7 +1466,7 @@ func MovementAffectingMask(t tenant.Model) tool.Uint128 {
 
 If Task 7 found any version whose filter differs from v83's, add the corresponding gate here (same style as the v95 branch) — the evidence file is authoritative.
 
-- [ ] **Step 5: Implement in `character/clientbound/buff_cancel.go`**
+- [x] **Step 5: Implement in `character/clientbound/buff_cancel.go`**
 
 `BuffCancel.Encode`:
 
@@ -1505,12 +1505,12 @@ func (m *BuffCancel) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *r
 
 Apply the identical mask/byte change to `BuffCancelForeign.Encode`/`Decode` (keeping the leading `characterId` int).
 
-- [ ] **Step 6: Run the full lib tests**
+- [x] **Step 6: Run the full lib tests**
 
 Run: `go test -race ./...` from `libs/atlas-packet`.
 Expected: PASS. The pre-existing `TestBuffCancelRoundTrip`/`TestBuffCancelForeignRoundTrip` (empty CTS) stay green: empty mask → no byte on encode, none consumed on decode. The `packet-audit:verify` marker comments on those tests remain valid — the pinned client reset handlers are exactly the mask-gated readers this change conforms to; do NOT touch the markers.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add libs/atlas-packet/model/character_temporary_stat.go libs/atlas-packet/model/character_temporary_stat_test.go libs/atlas-packet/character/clientbound/buff_cancel.go libs/atlas-packet/character/clientbound/buff_cancel_test.go
@@ -1535,7 +1535,7 @@ git commit -m "fix(packet): accurate cancel masks + conditional movement byte (t
   - channel kafka message types: `ApplyCommandBody.NoExpiry`, `AppliedStatusEventBody.NoExpiry`, `ExpiredStatusEventBody.NoExpiry` (all `json:"noExpiry,omitempty"`), plus `CommandTypeCancelByTypes = "CANCEL_BY_TYPES"` and `CancelByTypesCommandBody{Types []string}` (consumed by Task 10).
   - `RestModel.NoExpiry bool` (`json:"noExpiry"`) mapped in `Extract`.
 
-- [ ] **Step 1: Write the failing test** — create `character/buff/model_test.go`:
+- [x] **Step 1: Write the failing test** — create `character/buff/model_test.go`:
 
 ```go
 package buff
@@ -1565,12 +1565,12 @@ func TestFiniteMirrorStillExpires(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./character/buff/ -v`
 Expected: FAIL — wrong number of arguments to `NewBuff` / `NoExpiry` undefined.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `kafka/message/buff/kafka.go` — add to the const block:
 
@@ -1608,12 +1608,12 @@ func NewBuff(sourceId int32, level byte, duration int32, changes []stat.Model, c
 
 `kafka/consumer/buff/consumer.go` — the two `buff.NewBuff(...)` call sites (`handleStatusEventApplied` line ~73, `handleStatusEventExpired` line ~109) each gain the trailing argument `e.Body.NoExpiry`.
 
-- [ ] **Step 4: Run tests + build**
+- [x] **Step 4: Run tests + build**
 
 Run: `go test -race ./... && go build ./...` from `services/atlas-channel/atlas.com/channel`.
 Expected: PASS / clean (the compiler surfaces any missed `NewBuff` caller — grep confirmed only the two consumer sites plus `rest.go`'s struct literal).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel
@@ -1635,7 +1635,7 @@ git commit -m "feat(channel): mirror noExpiry through buff contract and mirror m
   - `Processor.CancelByTypes(f field.Model, characterId uint32, types []string) error`
 - Deliberate deviation from atlas-buffs' "one code path" rule: the channel-side `Apply` has many existing callers (skill common path, mounts, mystic door), so a separate `ApplyNoExpiry` method avoids a signature ripple; atlas-buffs' internal single path (Task 2) is where the semantics live. There is no mock of this channel processor (verified: no mock dir under `character/buff/`).
 
-- [ ] **Step 1: Implement the producers** — append to `producer.go` (shape copied from atlas-consumables' `cancelByTypesCommandProvider`, `services/atlas-consumables/atlas.com/consumables/character/buff/producer.go:57-72`):
+- [x] **Step 1: Implement the producers** — append to `producer.go` (shape copied from atlas-consumables' `cancelByTypesCommandProvider`, `services/atlas-consumables/atlas.com/consumables/character/buff/producer.go:57-72`):
 
 ```go
 // ApplyNoExpiryCommandProvider emits an APPLY carrying the explicit noExpiry
@@ -1686,7 +1686,7 @@ func CancelByTypesCommandProvider(f field.Model, characterId uint32, types []str
 }
 ```
 
-- [ ] **Step 2: Extend the processor** — in `processor.go`, add to the `Processor` interface:
+- [x] **Step 2: Extend the processor** — in `processor.go`, add to the `Processor` interface:
 
 ```go
 	ApplyNoExpiry(f field.Model, fromId uint32, sourceId int32, level byte, statups []statup.Model) model.Operator[uint32]
@@ -1709,12 +1709,12 @@ func (p *ProcessorImpl) CancelByTypes(f field.Model, characterId uint32, types [
 }
 ```
 
-- [ ] **Step 3: Build + vet**
+- [x] **Step 3: Build + vet**
 
 Run: `go build ./... && go vet ./...` from `services/atlas-channel/atlas.com/channel`.
 Expected: clean.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/character/buff
@@ -1739,7 +1739,7 @@ git commit -m "feat(channel): CancelByTypes + no-expiry apply buff commands (tas
   - `(*BeaconMirror).Get(t tenant.Model, characterId uint32) (BeaconEntry, bool)`
 - Known limitation (accepted, design §5.7): process-local; after a channel restart it repopulates only from subsequent events, so an unrelated give to a still-locked character can drop the lock visual pre-95 until re-cast. Note this in the type's doc comment.
 
-- [ ] **Step 1: Write the failing test** — `beacon_test.go`:
+- [x] **Step 1: Write the failing test** — `beacon_test.go`:
 
 ```go
 package buff
@@ -1804,12 +1804,12 @@ func TestBeaconMirrorTenantIsolation(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./character/buff/ -run TestBeaconMirror -v`
 Expected: FAIL — `undefined: beaconMirrorOnce`, `GetBeaconMirror`.
 
-- [ ] **Step 3: Implement `beacon.go`** (singleton idiom copied from `monster/status_mirror.go:70-80`):
+- [x] **Step 3: Implement `beacon.go`** (singleton idiom copied from `monster/status_mirror.go:70-80`):
 
 ```go
 package buff
@@ -1889,11 +1889,11 @@ func (m *BeaconMirror) Get(t tenant.Model, characterId uint32) (BeaconEntry, boo
 
 If `tenant.Model` has no `Id() uuid.UUID` accessor, check how `monster/status_mirror.go` keys its `perTenant` map and use the identical expression.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `go test -race ./character/buff/ -v` — Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/character/buff/beacon.go services/atlas-channel/atlas.com/channel/character/buff/beacon_test.go
@@ -1915,7 +1915,7 @@ git commit -m "feat(channel): beacon mirror registry (task-167 F2 groundwork)"
   - `isBeaconOnly(changes []buff2.StatChange) bool` — non-empty and every change is HOMING_BEACON.
   - `mergeBeacon(bs []buff.Model, e buff.BeaconEntry) []buff.Model` — appends the synthetic no-expiry beacon buff.
 
-- [ ] **Step 1: Write the failing tests** — `consumer_test.go`:
+- [x] **Step 1: Write the failing tests** — `consumer_test.go`:
 
 ```go
 package buff
@@ -1977,12 +1977,12 @@ func TestMergeBeacon(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `go test ./kafka/consumer/buff/ -v`
 Expected: FAIL — `undefined: beaconChange`, `isBeaconOnly`, `mergeBeacon`.
 
-- [ ] **Step 3: Implement the helpers** — in `consumer.go`:
+- [x] **Step 3: Implement the helpers** — in `consumer.go`:
 
 ```go
 // beaconChange returns the first HOMING_BEACON stat change carried by an
@@ -2025,7 +2025,7 @@ func mergeBeacon(bs []buff.Model, e buff.BeaconEntry) []buff.Model {
 
 Add imports: `charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"`, `"time"`.
 
-- [ ] **Step 4: Wire the handlers**
+- [x] **Step 4: Wire the handlers**
 
 `handleStatusEventApplied` — the complete replacement for the `IfPresentByCharacterId` callback body (type/world guards above it are unchanged; note `bs` stays the UNMERGED slice for the foreign announce, and `localBs` carries the merge):
 
@@ -2090,12 +2090,12 @@ Add imports: `charconst "github.com/Chronicle20/atlas/libs/atlas-constants/chara
 
 and (b) wrap the existing `ForOtherSessionsInMap` foreign-cancel block in `if !isBeaconOnly(e.Body.Changes) { ... }` (block contents unchanged). The LOCAL cancel path is unchanged — with Task 8's accurate masks a beacon-only EXPIRED sends exactly the beacon bit, which the client's reset path uses to clear the lock and icon (design §2.3/§2.4; answers FR-3.2 — no value-0 give needed).
 
-- [ ] **Step 5: Run tests + build**
+- [x] **Step 5: Run tests + build**
 
 Run: `go test -race ./... && go build ./...` from `services/atlas-channel/atlas.com/channel`.
 Expected: PASS / clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/consumer/buff
@@ -2114,7 +2114,7 @@ git commit -m "feat(channel): beacon merge on local gives, suppress beacon-only 
 - Consumes: `buff.Processor.CancelByTypes` / `ApplyNoExpiry` (Task 10); `statup.NewModel` (`data/skill/effect/statup`); `skill3.OutlawHomingBeaconId` / `skill3.CorsairBullseyeId`; `mp.GetById`; `ai.DamageInfo()` / `di.MonsterId()`; `sk.Level()`.
 - Produces: `beaconTargetMonsterId(monsterIds []uint32, exists func(uint32) bool) (uint32, bool)` and `beaconTryApply(l logrus.FieldLogger, ai packetmodel.AttackInfo, skillLevel byte, f field.Model, characterId uint32, deps beaconApplyDeps)` — deps-struct style mirrors `damageInfoEntryDeps` so tests drive both emit paths without Kafka.
 
-- [ ] **Step 1: Write the failing tests** — following the handler package's existing unit-test style (pure funcs + fakes):
+- [x] **Step 1: Write the failing tests** — following the handler package's existing unit-test style (pure funcs + fakes):
 
 ```go
 func TestBeaconTargetMonsterId(t *testing.T) {
@@ -2214,12 +2214,12 @@ func TestBeaconTryApply(t *testing.T) {
 
 Adjust the `mkAttack` construction to `packetmodel.AttackInfo`'s actual builder API — read `libs/atlas-packet/model/attack_info.go` first and use its real constructor/setters (`NewAttackInfo`, `SetSkillId`, `AddDamageInfo` are to be confirmed there; `DamageInfo` setters `NewDamageInfo(hits)`, `SetMonsterId` are confirmed at `damage_info.go:12,94`). The test imports `"errors"`, `"io"`, `"github.com/sirupsen/logrus"`, `"atlas-channel/socket/handler"`-local types, `packetmodel`, `field`, and `skill3` per the neighboring test files.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `go test ./socket/handler/ -run 'Beacon' -v`
 Expected: FAIL — `undefined: beaconTargetMonsterId`, `beaconApplyDeps`, `beaconTryApply`.
 
-- [ ] **Step 3: Implement** — in `character_attack_common.go` (near the MP Eater helpers, which are the pattern: errors logged and swallowed, pipeline unaffected):
+- [x] **Step 3: Implement** — in `character_attack_common.go` (near the MP Eater helpers, which are the pattern: errors logged and swallowed, pipeline unaffected):
 
 ```go
 // beaconApplyDeps groups the emit closures beaconTryApply needs so tests can
@@ -2306,12 +2306,12 @@ Wire the production call in `processAttack`, replacing the `// TODO Homing Beaco
 
 with imports `"atlas-channel/character/buff"` and `"atlas-channel/data/skill/effect/statup"` added. `fromId` = the caster (`s.CharacterId()` — self-applied, matching Cosmic's `applyBeaconBuff(applyfrom=applyto)`). Delete the TODO line; leave every other TODO in the block untouched.
 
-- [ ] **Step 4: Run tests + build**
+- [x] **Step 4: Run tests + build**
 
 Run: `go test -race ./... && go build ./... && go vet ./...` from `services/atlas-channel/atlas.com/channel`.
 Expected: PASS / clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler
@@ -2325,7 +2325,7 @@ git commit -m "feat(channel): Homing Beacon / Bullseye lock-on via attack handle
 **Files:**
 - Modify: `docs/tasks/task-167-homing-beacon-bullseye/plan.md` (check off), no code.
 
-- [ ] **Step 1: Module gates** — from the worktree root, for each changed module (`services/atlas-buffs/atlas.com/buffs`, `services/atlas-channel/atlas.com/channel`, `libs/atlas-packet`):
+- [x] **Step 1: Module gates** — from the worktree root, for each changed module (`services/atlas-buffs/atlas.com/buffs`, `services/atlas-channel/atlas.com/channel`, `libs/atlas-packet`):
 
 ```bash
 (cd <module> && go test -race ./... && go vet ./... && go build ./...)
@@ -2333,7 +2333,7 @@ git commit -m "feat(channel): Homing Beacon / Bullseye lock-on via attack handle
 
 Expected: all clean. (Do NOT prefix with a global `GOWORK=off`.)
 
-- [ ] **Step 2: Redis key guard** — from the worktree root:
+- [x] **Step 2: Redis key guard** — from the worktree root:
 
 ```bash
 tools/redis-key-guard.sh
@@ -2341,7 +2341,7 @@ tools/redis-key-guard.sh
 
 Expected: clean (the beacon mirror is a plain in-memory map, no Redis involvement).
 
-- [ ] **Step 3: Docker bakes** — from the worktree root (mandatory, CLAUDE.md):
+- [x] **Step 3: Docker bakes** — from the worktree root (mandatory, CLAUDE.md):
 
 ```bash
 docker buildx bake atlas-buffs
@@ -2350,25 +2350,25 @@ docker buildx bake atlas-channel
 
 Expected: both images build. No Dockerfile/go.work edits were needed (no new libs).
 
-- [ ] **Step 4: Fixture sweep** — `go test ./... 2>&1 | tail -5` in `libs/atlas-packet` once more after everything is merged into the branch; any fixture that changed byte expectations without an explicit task step above is a defect, not a fixture update.
+- [x] **Step 4: Fixture sweep** — `go test ./... 2>&1 | tail -5` in `libs/atlas-packet` once more after everything is merged into the branch; any fixture that changed byte expectations without an explicit task step above is a defect, not a fixture update.
 
-- [ ] **Step 4a: Version-coverage audit (PRD §2.1 / FR-4.6 / FR-4.7).** The failure mode this step exists to catch is a version that silently rode the shared default and was reported as covered. Check each item as a fact, not an impression:
+- [x] **Step 4a: Version-coverage audit (PRD §2.1 / FR-4.6 / FR-4.7).** The failure mode this step exists to catch is a version that silently rode the shared default and was reported as covered. Check each item as a fact, not an impression: _(performed; one sub-item below is annotated rather than ticked because it is now factually false — see verification-results.md for the full divergence list.)_
 
 ```bash
 # Every in-scope version must appear in the CTS beacon fixtures.
 cd libs/atlas-packet && grep -oE 'CreateContext\("[A-Z]+", [0-9]+' model/character_temporary_stat_test.go | sort -u
 ```
 
-  - [ ] All nine in-scope versions appear: GMS 61, 72, 79, 83, 84, 87, 92, 95 and JMS 185. Before this task the file contained only GMS 83 and GMS 95 — if that is still true, the per-version work did not happen.
-  - [ ] `evidence/two-state-group-per-version.md` has a verdict line for all nine, and every verdict is `MATCHES` or `DIFFERS` (with a corresponding `twoStateBaseStats` gate). **Any `UNVERIFIED` verdict blocks completion** — report it as a blocker rather than shipping that version on the default.
-  - [ ] `evidence/movement-filter.md` has a section for all nine.
-  - [ ] The gms_12/gms_48 negative test (`TestCTSHomingBeaconLegacyVersionsHaveNoTrailer`) passes, and no beacon code path is reachable on those versions.
-  - [ ] No-beacon encodes are byte-identical to pre-task output on every in-scope version (FR-4.7) — the per-version length subtests in `TestCTSHomingBeaconPre95AbsentStaysEmpty` all pass with the constants they started with, or a `DIFFERS` verdict explains any change.
-  - [ ] Report coverage honestly in the task summary: name the versions byte-verified, and state plainly that gms_92 has no matrix cell to promote (PRD gap 7) and that gms_61 is byte-verified only, with no live-acceptance claim (PRD §2.1 caveat).
+  - [x] All nine in-scope versions appear: GMS 61, 72, 79, 83, 84, 87, 92, 95 and JMS 185. Before this task the file contained only GMS 83 and GMS 95 — if that is still true, the per-version work did not happen. _(true via the 9 subtest names GMS v61..JMS v185 in `character_temporary_stat_test.go`; the grep command shown above under-counts to 3 literals because the fixtures are table-driven — see verification-results.md divergence #3.)_
+  - [ ] `evidence/two-state-group-per-version.md` has a verdict line for all nine, and every verdict is `MATCHES` or `DIFFERS` (with a corresponding `twoStateBaseStats` gate). **Any `UNVERIFIED` verdict blocks completion** — report it as a blocker rather than shipping that version on the default. — **NOT ticked: this is now factually false.** v79 and v84's two-state block sizes are UNVERIFIED (IDBs lack ctor/RTTI/vtable symbols; 110 is INFERRED by bracketing measured v72/v87/v92). This did NOT block completion — the owner adjudicated it as a known, documented state rather than reverting the v61 fix. See verification-results.md divergence #2.
+  - [x] `evidence/movement-filter.md` has a section for all nine.
+  - [x] The gms_12/gms_48 negative test (`TestCTSHomingBeaconLegacyVersionsHaveNoTrailer`) passes, and no beacon code path is reachable on those versions.
+  - [x] No-beacon encodes are byte-identical to pre-task output on every in-scope version (FR-4.7) — the per-version length subtests in `TestCTSHomingBeaconPre95AbsentStaysEmpty` all pass with the constants they started with, or a `DIFFERS` verdict explains any change.
+  - [x] Report coverage honestly in the task summary: name the versions byte-verified, and state plainly that gms_92 has no matrix cell to promote (PRD gap 7) and that gms_61 is byte-verified only, with no live-acceptance claim (PRD §2.1 caveat). _(see docs/tasks/task-167-homing-beacon-bullseye/verification-results.md for the full honest coverage report.)_
 
-- [ ] **Step 5: Code review** — run `superpowers:requesting-code-review` (plan-adherence + backend-guidelines reviewers; Go-only change set) BEFORE any PR. Findings go to `docs/tasks/task-167-homing-beacon-bullseye/audit.md`.
+- [x] **Step 5: Code review** — run `superpowers:requesting-code-review` (plan-adherence + backend-guidelines reviewers; Go-only change set) BEFORE any PR. Findings go to `docs/tasks/task-167-homing-beacon-bullseye/audit.md`.
 
-- [ ] **Step 6: Live acceptance (v83 tenant, manual — record results in the task folder)** — from design §6:
+- [ ] **Step 6: Live acceptance (v83 tenant, manual — record results in the task folder)** — from design §6: — **NOT performed.** No live v83 tenant with an Outlaw/Corsair character was available in this environment; all 9 scenarios remain outstanding. See docs/tasks/task-167-homing-beacon-bullseye/verification-results.md.
   1. Outlaw casts Homing Beacon at a monster → subsequent shots visibly home.
   2. Corsair Bullseye behaves identically.
   3. Re-cast on another monster moves the lock; old target unflagged.
@@ -2379,7 +2379,7 @@ cd libs/atlas-packet && grep -oE 'CreateContext\("[A-Z]+", [0-9]+' model/charact
   8. Death/respawn and logout clear the beacon (existing CANCEL_ALL flows).
   9. Icon renders with no duration bar (PRD Open Question 5 — only observable live).
 
-- [ ] **Step 7: Commit any checklist/doc updates**
+- [x] **Step 7: Commit any checklist/doc updates** _(this commit also covers the plan checklist closeout, not only verification results — commit message: `docs(task-167): verification results and plan checklist closeout`.)_
 
 ```bash
 git add docs/tasks/task-167-homing-beacon-bullseye/

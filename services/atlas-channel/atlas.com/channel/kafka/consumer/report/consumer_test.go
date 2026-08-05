@@ -464,8 +464,8 @@ func TestHandleStatusEvent_WriterFound_DeliversToRealConnection(t *testing.T) {
 	sc := newZeroFieldTestServer(t, tm)
 
 	serverConn, clientConn := net.Pipe()
-	defer serverConn.Close()
-	defer clientConn.Close()
+	defer func() { _ = serverConn.Close() }()
+	defer func() { _ = clientConn.Close() }()
 
 	sessionId := uuid.New()
 	characterId := uint32(5003)

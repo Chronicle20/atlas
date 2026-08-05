@@ -80,7 +80,7 @@ Tool: `1437bf100576925dfe09704783678e4466c5c69d25e7de24e034532a547fa389`
 | QUEST_CLEAR | CWvsContext::OnQuestClear |  | 0x029 | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x031 | ❌ | 0x031 | ❌ | 0x031 | ❌ | 0x032 | ❌ | 0x030 | ❌ | 0x02E | ❌ |
 | INCUBATOR_RESULT | CWvsContext::OnIncubatorResult | incubator/clientbound/IncubatorResult | 0x02A | ❌ | 0x042 | ✅ | 0x042 | ✅ | 0x042 | ✅ | 0x045 | ✅ | 0x047 | ✅ | 0x047 | ✅ | 0x049 | ❌ | 0x048 | ✅ | 0x03F | ✅ |
 | SKILL_LEARN_ITEM_RESULT | CWvsContext::OnSkillLearnItemResult; sub_9175E6; sub_969022 | character/clientbound/CharacterSkillLearnItemResult (T1) | 0x02B | ✅ | 0x030 | ✅ | 0x030 | ✅ | 0x030 | ✅ | 0x033 | ✅ | 0x033 | ✅ | 0x033 | ✅ | 0x034 | 🟡ᶠ | 0x032 | ✅ | 0x030 | ✅ |
-| SUE_CHARACTER_RESULT | CWvsContext::OnSueCharacterResult |  | 0x02C | ❌ | 0x034 | ✅ | 0x034 | ❌ | 0x034 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x038 | ❌ | 0x037 | ❌ |  | ⬜ |
+| SUE_CHARACTER_RESULT | CWvsContext::OnSueCharacterResult |  | 0x02C | ❌ | 0x034 | ✅ | 0x034 | ✅ | 0x034 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x038 | ❌ | 0x037 | ❌ |  | ⬜ |
 | IDA_0X02E | sub_71CE62 |  | 0x02E | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | ENTRUSTED_SHOP_CHECK_RESULT | CWvsContext::OnEntrustedShopCheckResult | merchant/clientbound/ConfirmManage |  | ⬜ | 0x02F | ❌ | 0x02F | ❌ | 0x02F | ❌ | 0x032 | ✅ | 0x032 | ❌ | 0x032 | ✅ | 0x033 | ❌ | 0x031 | ✅ | 0x02F | ❌ |
 | IDA_0X02F | sub_71CE49 |  | 0x02F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
@@ -1053,7 +1053,7 @@ Tool: `1437bf100576925dfe09704783678e4466c5c69d25e7de24e034532a547fa389`
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 179 | 0 | 2 | 203 | 631 | 0 | 46.6% |
 | v61 | 256 | 0 | 60 | 235 | 464 | 0 | 46.5% |
-| v72 | 265 | 0 | 73 | 256 | 421 | 0 | 44.6% |
+| v72 | 266 | 0 | 73 | 255 | 421 | 0 | 44.8% |
 | v79 | 309 | 0 | 72 | 252 | 382 | 0 | 48.8% |
 | v83 | 428 | 0 | 0 | 359 | 228 | 0 | 54.4% |
 | v84 | 402 | 0 | 0 | 365 | 248 | 0 | 52.4% |

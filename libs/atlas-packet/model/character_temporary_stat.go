@@ -672,11 +672,168 @@ func (m *CharacterTemporaryStat) EncodeMask(l logrus.FieldLogger, t tenant.Model
 			return
 		}
 
-		w.WriteInt(uint32(mask.H >> 32))
-		w.WriteInt(uint32(mask.H & 0xFFFFFFFF))
-		w.WriteInt(uint32(mask.L >> 32))
-		w.WriteInt(uint32(mask.L & 0xFFFFFFFF))
+		writeMask(w, mask)
 	}
+}
+
+func writeMask(w *response.Writer, mask tool.Uint128) {
+	w.WriteInt(uint32(mask.H >> 32))
+	w.WriteInt(uint32(mask.H & 0xFFFFFFFF))
+	w.WriteInt(uint32(mask.L >> 32))
+	w.WriteInt(uint32(mask.L & 0xFFFFFFFF))
+}
+
+// CancelMask returns the mask of ONLY the stats present on this CTS — never
+// the unconditional two-state group bits EncodeMask always sets for the give
+// shape. Cancel packets must use this instead: the client's
+// TemporaryStatReset clears EVERY masked stat (v83 @0xA2071F, v95 @0x9F2AB0),
+// so a cancel carrying the unconditional two-state bits (RideVehicle,
+// DashSpeed/DashJump, SpeedInfusion/PartyBooster, HomingBeacon, Undead)
+// destroys any active mount/dash/energy-charge/beacon even when the caller
+// only meant to cancel one unrelated buff (design.md §3 F1).
+func (m *CharacterTemporaryStat) CancelMask(t tenant.Model) tool.Uint128 {
+	mask := tool.Uint128{}
+	for _, v := range m.stats {
+		mask = mask.Or(v.statType.mask)
+	}
+	return mask
+}
+
+// EncodeCancelMask writes CancelMask in the same wire layout EncodeMask uses
+// for its mask (8-byte legacy pre-v61 GMS / 16-byte UINT128 everywhere else)
+// — only the bits differ, never the width, so DecodeMask (shared by both
+// paths) stays a single implementation.
+func (m *CharacterTemporaryStat) EncodeCancelMask(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+	return func(w *response.Writer) {
+		mask := m.CancelMask(t)
+		if legacyGmsMask(t) {
+			w.WriteLong(mask.L)
+			return
+		}
+		writeMask(w, mask)
+	}
+}
+
+// movementAffectingStatNames is the version-gated mirror of the client's
+// movement filter: the reset/give trailing byte is read ONLY when the
+// packet's mask intersects this set. Evidence:
+// docs/tasks/task-167-homing-beacon-bullseye/evidence/movement-filter.md
+// (v83 sub_77DC78; v61 0x660B44; v72 0x6c87b6; v79 0x6f852f; v84 sub_7a07e7;
+// v87 sub_7cc3e2; v92 sub_705080; v95 SecondaryStat::IsMovementAffectingStat
+// @0x7208C0; JMS sub_7f76d1).
+//
+// v61/v72/v79/v83 all test the identical 12-constant shape (v61 fully
+// name-resolved; v72/v79 confirmed by count+structure with some individual
+// names positional-only — see the evidence file's per-version caveats).
+//
+// v92's own filter is confirmed to DIFFER (13 constants at different raw
+// shifts, and notably does NOT include shift 7/Speed — evidence: gms_v92.md)
+// but not one of its 13 bits is name-resolved in that IDB, so per the
+// "do not invent a mapping" rule no v92-specific list can be constructed
+// here. v92 falls through to the base 12-name list below (the pre-existing
+// assumption) pending a dedicated v92 audit; all 13 raw bits are reported
+// unmapped in task-8-report.md. Same fallthrough applies to any GMS version
+// with no dedicated evidence (v28, v48, v86).
+func movementAffectingStatNames(t tenant.Model) []character.TemporaryStatType {
+	if t.Region() == "JMS" {
+		// JMS v185 (sub_7f76d1) tests a wholly different 13-constant set —
+		// NOT "the v83 list plus/minus extras". Only Stun, GhostMorph, and
+		// MonsterRiding(RideVehicle) overlap v83's 12-stat meaning; the
+		// other 9 v83 stats (Speed, Jump, Weaken, Slow, Morph, MapleWarrior,
+		// Seduce, DashSpeed, DashJump) are absent, and JMS's remaining bits
+		// map to unrelated stats (Invincible, SoulArrow, MesoUpByItem,
+		// WindBreakerFinal, ElementalReset, EventRate, BodyPressure,
+		// SoulStone, SwallowDefense). Raw shift 126 has no atlas registry
+		// entry (the JMS registry branch only defines shifts 0-116) and is
+		// therefore omitted — reported unmapped in task-8-report.md.
+		return []character.TemporaryStatType{
+			character.TemporaryStatTypeInvincible,
+			character.TemporaryStatTypeSoulArrow,
+			character.TemporaryStatTypeStun,
+			character.TemporaryStatTypeMesoUpByItem,
+			character.TemporaryStatTypeGhostMorph,
+			character.TemporaryStatTypeWindBreakerFinal,
+			character.TemporaryStatTypeElementalReset,
+			character.TemporaryStatTypeEventRate,
+			character.TemporaryStatTypeBodyPressure,
+			character.TemporaryStatTypeSoulStone,
+			character.TemporaryStatTypeSwallowDefense,
+			character.TemporaryStatTypeMonsterRiding,
+		}
+	}
+
+	names := []character.TemporaryStatType{
+		character.TemporaryStatTypeSpeed,
+		character.TemporaryStatTypeJump,
+		character.TemporaryStatTypeStun,
+		character.TemporaryStatTypeWeaken,
+		character.TemporaryStatTypeSlow,
+		character.TemporaryStatTypeMorph,
+		character.TemporaryStatTypeGhostMorph,
+		character.TemporaryStatTypeMapleWarrior,
+		character.TemporaryStatTypeSeduce,
+		character.TemporaryStatTypeMonsterRiding,
+		character.TemporaryStatTypeDashSpeed,
+		character.TemporaryStatTypeDashJump,
+	}
+
+	switch {
+	case t.Region() == "GMS" && t.MajorVersion() == 84:
+		// v84 (sub_7a07e7) tests 14 constants, not 12: the 12 above plus two
+		// raw shift-82/83 constants that are NOT independently name-resolved
+		// in v84's own IDB — no dedicated OnTemporaryStatReset side-effect
+		// block references either one individually (evidence: gms_v84.md).
+		// v87 independently resolves the identically-positioned raw 82/83
+		// constants as Flying/Frozen, and cross-version corroboration
+		// (two-state-group-per-version.md) places v84's two new constants
+		// at that same slot. Included here anyway even though v84's own
+		// evidence never names them: the failure mode is one-directional —
+		// if v84's client really does gate the trailing byte on
+		// Flying/Frozen and this list omitted them, a cancel of either stat
+		// would silently drop the movement byte the client expects and the
+		// packet would desync; including them when the client doesn't check
+		// costs nothing.
+		names = append(names,
+			character.TemporaryStatTypeFlying,
+			character.TemporaryStatTypeFrozen,
+		)
+	case t.Region() == "GMS" && t.MajorVersion() == 87:
+		// v87 (sub_7cc3e2) independently resolves Flying(82)/Frozen(83)
+		// inside its own IDB, cross-checked bit-for-bit against the atlas
+		// registry's MajorAtLeast(87) block (evidence: gms_v87.md).
+		names = append(names,
+			character.TemporaryStatTypeFlying,
+			character.TemporaryStatTypeFrozen,
+		)
+	case t.Region() == "GMS" && t.MajorVersion() >= 95:
+		// v95 (SecondaryStat::IsMovementAffectingStat @0x7208C0) resolves
+		// all 15 constants by symbol name: the base 12 plus Flying, Frozen,
+		// and YellowAura (design.md §2.4).
+		names = append(names,
+			character.TemporaryStatTypeFlying,
+			character.TemporaryStatTypeFrozen,
+			character.TemporaryStatTypeYellowAura,
+		)
+	}
+
+	return names
+}
+
+// MovementAffectingMask returns the movement filter as a mask for this
+// tenant's registry layout. Writers AND their packet mask against it to
+// decide whether the client will read the trailing movement byte. A name
+// with no entry in this tenant's registry (e.g. Flying/Frozen on a version
+// whose registry doesn't allocate them) is silently skipped — see
+// movementAffectingStatNames.
+func MovementAffectingMask(t tenant.Model) tool.Uint128 {
+	reg := buildCharacterTemporaryStatRegistry(t)
+	mask := tool.Uint128{}
+	for _, n := range movementAffectingStatNames(t) {
+		if st, ok := reg.byName[n]; ok {
+			mask = mask.Or(st.mask)
+		}
+	}
+	return mask
 }
 
 func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

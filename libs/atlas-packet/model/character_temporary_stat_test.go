@@ -523,3 +523,130 @@ func TestCTSForeignEmptyV95StaysStatusQuo(t *testing.T) {
 		t.Fatalf("empty foreign v95 CTS length: got %d want %d", len(got), 16+2+58)
 	}
 }
+
+// F1 regression: a cancel mask must contain ONLY the canceled stats — never
+// the unconditional two-state group bits. Under the old EncodeMask-reused
+// cancel, ANY cancel cleared every two-state stat client-side (v83 reset
+// @0xA2071F, v95 @0x9F2AB0 clear every masked stat).
+func TestCancelMaskContainsOnlyActiveStats(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			cts := NewCharacterTemporaryStat()
+			cts.AddStat(nil)(tn)(string(character.TemporaryStatTypeInvincible), 2301003, 30, 20, time.Now().Add(time.Minute))
+
+			mask := cts.CancelMask(tn)
+			reg := buildCharacterTemporaryStatRegistry(tn)
+			inv := reg.byName[character.TemporaryStatTypeInvincible]
+			if mask.And(inv.mask).IsZero() {
+				t.Fatal("cancel mask missing the canceled stat's bit")
+			}
+			riding := reg.byName[character.TemporaryStatTypeMonsterRiding]
+			if !mask.And(riding.mask).IsZero() {
+				t.Fatal("cancel mask must not contain inactive two-state bits (F1)")
+			}
+		})
+	}
+}
+
+func TestCancelMaskEmptyForEmptyCTS(t *testing.T) {
+	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
+	cts := NewCharacterTemporaryStat()
+	if !cts.CancelMask(tn).IsZero() {
+		t.Fatal("empty CTS must produce an empty cancel mask")
+	}
+}
+
+// Movement filter membership per version (IDA: v83 sub_77DC78, v95
+// SecondaryStat::IsMovementAffectingStat @0x7208C0, v61/v72/v79/v84/v87/v92/
+// JMS per docs/tasks/task-167-homing-beacon-bullseye/evidence/movement-filter.md).
+//
+// JMS's filter is a wholly different set from every GMS version (evidence:
+// movement-filter.md JMS section) — only Stun, GhostMorph, and MonsterRiding
+// overlap the GMS v83 list, and JMS's own filter DOES include Invincible
+// (unlike every GMS version, where Invincible is never movement-affecting).
+// So JMS gets its own in/out lists rather than the shared GMS ones.
+func TestMovementAffectingMaskMembership(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			reg := buildCharacterTemporaryStatRegistry(tn)
+			mv := MovementAffectingMask(tn)
+
+			var in, out []character.TemporaryStatType
+			if tn.Region() == "JMS" {
+				in = []character.TemporaryStatType{
+					character.TemporaryStatTypeInvincible,
+					character.TemporaryStatTypeSoulArrow,
+					character.TemporaryStatTypeStun,
+					character.TemporaryStatTypeMesoUpByItem,
+					character.TemporaryStatTypeGhostMorph,
+					character.TemporaryStatTypeWindBreakerFinal,
+					character.TemporaryStatTypeElementalReset,
+					character.TemporaryStatTypeEventRate,
+					character.TemporaryStatTypeBodyPressure,
+					character.TemporaryStatTypeSoulStone,
+					character.TemporaryStatTypeSwallowDefense,
+					character.TemporaryStatTypeMonsterRiding,
+				}
+				out = []character.TemporaryStatType{
+					character.TemporaryStatTypeHomingBeacon,
+					character.TemporaryStatTypeSpeed,
+					character.TemporaryStatTypeJump,
+					character.TemporaryStatTypeWeaken,
+					character.TemporaryStatTypeSlow,
+					character.TemporaryStatTypeMorph,
+					character.TemporaryStatTypeMapleWarrior,
+					character.TemporaryStatTypeSeduce,
+					character.TemporaryStatTypeDashSpeed,
+					character.TemporaryStatTypeDashJump,
+				}
+			} else {
+				in = []character.TemporaryStatType{
+					character.TemporaryStatTypeSpeed,
+					character.TemporaryStatTypeJump,
+					character.TemporaryStatTypeStun,
+					character.TemporaryStatTypeWeaken,
+					character.TemporaryStatTypeSlow,
+					character.TemporaryStatTypeMorph,
+					character.TemporaryStatTypeGhostMorph,
+					character.TemporaryStatTypeMapleWarrior,
+					character.TemporaryStatTypeSeduce,
+					character.TemporaryStatTypeMonsterRiding,
+					character.TemporaryStatTypeDashSpeed,
+					character.TemporaryStatTypeDashJump,
+				}
+				out = []character.TemporaryStatType{
+					character.TemporaryStatTypeHomingBeacon,
+					character.TemporaryStatTypeInvincible,
+				}
+				if tn.Region() == "GMS" && tn.MajorVersion() >= 95 {
+					in = append(in,
+						character.TemporaryStatTypeFlying,
+						character.TemporaryStatTypeFrozen,
+						character.TemporaryStatTypeYellowAura,
+					)
+				}
+			}
+
+			for _, n := range in {
+				st, ok := reg.byName[n]
+				if !ok {
+					continue // stat not enumerated on this version
+				}
+				if mv.And(st.mask).IsZero() {
+					t.Errorf("%s should be movement-affecting on %s", n, v.Name)
+				}
+			}
+			for _, n := range out {
+				st, ok := reg.byName[n]
+				if !ok {
+					continue
+				}
+				if !mv.And(st.mask).IsZero() {
+					t.Errorf("%s should NOT be movement-affecting on %s", n, v.Name)
+				}
+			}
+		})
+	}
+}

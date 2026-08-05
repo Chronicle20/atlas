@@ -41,7 +41,11 @@ function setup() {
   const onOpenChange = vi.fn();
   const utils = render(
     <QueryClientProvider client={qc}>
-      <UpdateReportStatusDialog report={report} open onOpenChange={onOpenChange} />
+      <UpdateReportStatusDialog
+        report={report}
+        open
+        onOpenChange={onOpenChange}
+      />
     </QueryClientProvider>,
   );
   const rerenderWithOpen = (open: boolean) =>

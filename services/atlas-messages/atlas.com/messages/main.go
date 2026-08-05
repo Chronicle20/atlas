@@ -32,8 +32,13 @@ const serviceName = "atlas-messages"
 var consumerGroupId = consumergroup.Resolve("Messages Service")
 
 // Server carries the JSON:API base URL/prefix used to marshal resource
-// links. This REST server is server-to-server only (chat history for
-// atlas-ban report corroboration); it has no nginx/ingress entry.
+// links. /api/chat/history (chat history for atlas-ban report corroboration)
+// is routed through nginx/ingress (deploy/shared/routes.conf) and is
+// reachable at the ingress host WITHOUT AUTHENTICATION today — it exposes
+// captured player chat, including whispers, to anything that can reach that
+// host. Accepted on the basis that API authentication is coming; see
+// docs/tasks/task-145-player-reports/scope-amendment.md Amendment 2. Do not
+// describe this endpoint as server-to-server only.
 type Server struct {
 	baseUrl string
 	prefix  string

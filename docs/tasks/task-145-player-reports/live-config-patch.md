@@ -5,6 +5,63 @@ Design: `docs/tasks/task-145-player-reports/design.md`
 Findings: `docs/tasks/task-145-player-reports/packet-findings.md`
 Scope amendment: `docs/tasks/task-145-player-reports/scope-amendment.md`
 
+## 0. HIGHEST PRIORITY — pre-existing gms_v92 template bugs this branch also fixed
+
+Tasks 26–28 (the gms_v92 column bring-up, done as part of this branch's scope
+amendment) found and fixed two **pre-existing, unrelated-to-sue/claim** wiring
+bugs in `template_gms_92_1.json`. Both are already broken in production today
+on the live `GMS v92` tenant (`atlas-tenants` id
+`db1dbfb3-4345-4731-9223-c40b0c7f6457`, confirmed via `GET /api/tenants`
+against the live pod — see `scope-amendment.md` "Live tenant" for the full
+citation) and stay broken until this tenant is PATCHed, exactly like the
+sue/claim delta below. They are listed here, ahead of §1, because they are
+**higher urgency** than the new report feature: they are silent
+misdecodes of existing, already-shipped player-facing functionality, not a
+missing new feature.
+
+1. **Pet/summon misdecode (`atlas-channel`) — fix first.** Pre-fix,
+   `template_gms_92_1.json` routed handlers `0xC8`/`0xC9` and writers
+   `0xC3`/`0xC6`/`0xC7` as `Summon*`; the real v92 client uses those opcodes
+   for `Pet*` (item-use / item-exclude / activated / movement / chat), with
+   the genuine summon family living at `0xCB`–`0xD0`. **Unpatched, today**: a
+   v92 player using pet auto-HP/MP-potion or the pet item-exclude-list
+   feature has their request server-side misdecoded as a
+   `SummonMoveHandle`/`SummonAttackHandle` packet (wrong struct layout read
+   from the same bytes) — the server either processes garbage as a
+   summon-move/attack command or errors out decoding malformed fields.
+   Separately, any genuine summon-family clientbound packet the server emits
+   goes out on the pre-fix opcodes, which the real client reads as
+   `SHOW_RECOVERY_UPGRADE_COUNT_EFFECT`/`EVOLVE_PET`/nothing — summons never
+   render correctly for v92 players today.
+2. **Character deletion (`atlas-login`).** Pre-fix, `DeleteCharacterHandle`
+   was routed at `0x17`; the real v92 client sends `DELETE_CHAR` at `0x18`
+   (confirmed by decompile, `CLogin::SendDeleteCharPacket` @ `0x5cb860`) and
+   `0x17` is `CREATE_CHAR_IN_CS` (genuinely unrouted in every version — no
+   Atlas handler exists for it). **Unpatched, today**: a v92 player's real
+   delete-character request (opcode `0x18`) has no handler at all (silently
+   dropped — deletion does nothing), while `0x17` still fires
+   `DeleteCharacterHandle` if the client ever sends `CREATE_CHAR_IN_CS`'s
+   opcode — a character-creation request misread as a character-deletion
+   request. This PATCH is against `atlas-login`'s tenant socket config, not
+   `atlas-channel`'s — apply it to the same tenant via that service's
+   equivalent configuration resource.
+3. **The 59 Class A + 8 Class B newly-wired v92 opcodes** (Task 26–28) —
+   chat, skills, reactors, monster carnival, storage, messenger, etc. These
+   were previously silent drops (unrouted opcodes are ignored, not
+   misdecoded) rather than active misdecodes, so they are lower urgency than
+   1–2 but are still real, currently-inert functionality on the live v92
+   tenant. Diff `template_gms_92_1.json` between the commit range noted in
+   `scope-amendment.md`'s Class A table for the exhaustive opcode list; this
+   PATCH does not attempt to enumerate all 67 individually.
+
+These three items are **independent of, and precede, the sue/claim delta in
+§2.4 below** — apply them in the same PATCH+restart cycle as §2.4 since they
+touch the same tenant, but do not conflate them with the report feature: the
+pet/summon and delete-character bugs would need fixing on this tenant even if
+task-145 had never existed. This PATCH was not attempted by any agent on this
+branch — it is a live-system change, surfaced here for the user's decision,
+per `scope-amendment.md`.
+
 ## 1. Why existing tenants need this
 
 Seed templates under `services/atlas-configurations/seed-data/templates/`

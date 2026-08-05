@@ -429,12 +429,20 @@ negative even though the clientbound trio is live-routed — the flagged "receiv
 never send" case). Task 24 therefore **removed** the `CLAIM_REQUEST` row from
 `docs/packets/registry/jms_v185.yaml` so the matrix cell genuinely renders `⬜`, matching the
 treatment already given to gms v48/v61 sue (§7.2a) rather than leaving a documented absence
-contradicted by a live matrix cell. Because Task 24 promotes jms `CLAIM_RESULT`,
+contradicted by a live matrix cell. Task 24 attempted to promote jms `CLAIM_RESULT`,
 `CLAIM_AVAILABLE_TIME`, and `CLAIM_STATUS_CHANGED` (same family) to verified on jms_v185 in
-the same pass, this is a family-inconsistent n-a; Task 24 declared the `claim` family in
-`docs/packets/feature-families.yaml` and recorded the positive absence proof (this section's
-five searches) in `docs/packets/feature-na-evidence.yaml` so `matrix --check`'s n-a
-consistency gate has the citation it requires rather than silently exempting the cell.
+the same pass, but **that verification did not happen**: the jms IDA session (`b6864e54`) was
+wedged for the entire campaign — `idb_list` reported `is_active:true` with a recent
+`last_accessed`, but a direct `lookup_funcs` call against it timed out while other sessions
+responded normally in the same window. The outcome is **0 of 3 promoted**, blocked on that
+infrastructure outage, not a scope or design decision; the starting addresses are recorded
+(handlers `0xb0e9c3`/`0xb0ec69`/`0xb0ec92`, dispatcher `0xaebfe7` cases `0x2A`/`0x2B`/`0x2C`)
+for a retry pass once the instance is healthy. Because those three cells remain unverified,
+this `CLAIM_REQUEST` n-a is a family-inconsistent n-a regardless of that outcome; Task 24
+declared the `claim` family in `docs/packets/feature-families.yaml` and recorded the positive
+absence proof (this section's five searches) in `docs/packets/feature-na-evidence.yaml` so
+`matrix --check`'s n-a consistency gate has the citation it requires rather than silently
+exempting the cell.
 
 ### 7.4 `SUE_CHARACTER` / `SUE_CHARACTER_RESULT` are genuinely absent on jms_185 — and `sub_575186` is not sue
 

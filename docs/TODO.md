@@ -399,6 +399,102 @@ Logged from `docs/tasks/task-037-character-presets/` design §7.
 - [ ] **`<ItemPicker>` / `<SkillPicker>` components** — replace free-text uint32 inputs in `services/atlas-ui/src/pages/{templates,tenants}-character-presets-form.tsx` with searchable pickers backed by atlas-data.
 - [ ] **Non-explorer 4th-job presets** — extend `services/atlas-configurations/seed-data/templates/template_gms_83_1.json` with Cygnus / Aran / Resistance / Legend 4th-job presets.
 
+## task-145-player-reports follow-ups
+
+Deferred from task-145 (player sue/claim reports). Design/plan/findings live under
+`docs/tasks/task-145-player-reports/`.
+
+### Feature scope deferred (result-code plumbing already expressive; wiring deferred)
+
+- [ ] **Report quota / mesos-cost enforcement.** `sue` result code 2 (`DAILY_LIMIT`) and
+  claim modes `0x43`/`0x45`/`0x47`/`0x48` are wired in the writer's operations table and can
+  be selected today, but nothing currently counts a reporter's daily report volume or their
+  meso balance to actually trigger those codes — the server always resolves the success/
+  generic-failure path. Wire real counting (a bounded per-reporter-per-day counter, likely
+  `libs/atlas-redis`'s `TenantKeyedSortedSet`/`AddBounded`, same pattern as chat capture) plus
+  a mesos-cost check against `atlas-character`, when prioritized.
+- [ ] **Accused-notification codes.** `sue` result code 3 and claim mode `0x03`
+  (`REPORTED_NOTICE`) are accepted by the writers' operations tables, but nothing sends a
+  notice to the *accused* character today — only the reporter's own result/claim packet is
+  ever announced (`services/atlas-channel/atlas.com/channel/kafka/consumer/report/consumer.go`
+  `handleStatusEvent`/`reportAnnouncer` target only `ReporterId`). Wiring this needs a second
+  announce target (the accused's session) keyed off `AccusedId`, when prioritized.
+
+### Blocked (need re-verification once unblocked, not scope decisions)
+
+- [ ] **gms-12 report enablement.** Blocked on registry files + IDA export for gms_v12 —
+  there is no `docs/packets/registry/gms_v12.yaml` and no gms_v12 column in the coverage
+  matrix at all, so sue/claim opcodes for gms-12 are genuinely unverifiable today (unlike
+  gms_v92, which this branch fully brought up — registry `docs/packets/registry/gms_v92.yaml`,
+  IDA export, matrix column, all six sue/claim ops wired into
+  `template_gms_92_1.json`, all 5 gms_92 report cells verified ✅). Config-entry work only
+  when a gms_v12 IDB/registry becomes available — no code changes anticipated.
+- [ ] **3 jms_185 clientbound claim cells blocked on a wedged IDA session.**
+  `CLAIM_RESULT`/`CLAIM_AVAILABLE_TIME`/`CLAIM_STATUS_CHANGED` are live-routed on jms
+  (`CWvsContext::OnPacket` @ `0xaebfe7`, cases `0x2A`/`0x2B`/`0x2C`, handlers named at
+  `0xb0e9c3`/`0xb0ec69`/`0xb0ec92` — see `packet-findings.md` §7.3) and are ready to verify,
+  but the jms IDA session (`b6864e54`) was wedged for this entire campaign: `idb_list`
+  reported `is_active:true` with a recent `last_accessed`, but a direct `lookup_funcs` call
+  against it timed out while sibling sessions responded normally in the same window. This is
+  an infrastructure outage, not unscoped work — retry the verification pass
+  (`/verify-packet` × those 3 cells) once the instance is healthy. Note: jms has **no**
+  `CLAIM_REQUEST` send-site at all (5 independent exhaustive searches, §7.3) and **no** `sue`
+  at all (§7.4) — those are genuine, already-recorded absences, not blocked work; do not
+  re-open them.
+
+### Test-coverage gaps (design/behavior judged correct; coverage deferred during review)
+
+- [ ] `[]TranscriptLine` nil-vs-empty-slice asymmetry is untested
+  (`services/atlas-ban/atlas.com/ban/report/model.go`). The frontend already handles both
+  cases explicitly (`ReportDetailPage.tsx`'s `serverTranscript && serverTranscript.length > 0`
+  guard treats a missing and an empty transcript identically), but the Go side has no test
+  pinning that a zero-length captured transcript round-trips as `[]TranscriptLine{}` rather
+  than `nil` (or vice versa) through the `jsonb` column.
+- [ ] `chat/processor.go`'s `RecentInvolving` doc comment
+  (`services/atlas-messages/atlas.com/messages/chat/processor.go:19-20`) asserts a
+  "merged and sorted ascending by timestamp" contract with no `httptest` coverage of the
+  404/empty/refused response paths for `/api/chat/history`.
+- [ ] Report consumer wiring (topic resolution, header-parser registration, tenant
+  round-trip on the happy path) in
+  `services/atlas-ban/atlas.com/ban/kafka/consumer/report/` is verified only by
+  code-comparison against the contract file, not by an in-package test. Live acceptance
+  (task-145 plan Step 6, human-executed against real tenants) is the actual gate for this
+  path; add an in-package consumer test if that live pass is not run promptly.
+- [ ] `libs/atlas-redis/keyed_sorted_set.go`'s `AddBounded` (line 60) tests omit the
+  exact-score-boundary case and the `maxCount<=0`/`ttl<=0` no-op branches.
+- [ ] `services/atlas-messages/atlas.com/messages/chat/resource.go`'s
+  `handleGetChatHistory` (line 82) has no end-to-end `httptest` coverage of the
+  400/500/200 response shapes.
+- [ ] Handler→processor argument-order wiring for the sue/claim handlers
+  (`services/atlas-channel/atlas.com/channel/socket/handler/`) is verified only by code
+  inspection; the handler tests re-pin codec decode (matching this codebase's pre-existing
+  convention for other handlers) rather than asserting the processor call shape directly.
+
+### Tooling defects found in `tools/packet-audit` (all confirmed live during this branch)
+
+- [ ] **Direction inference produces silently-confident false-empty records.** A brand-new
+  serverbound FName absent from both the prior-export roster and `candidatesFromFName` falls
+  back to `DirClientbound` (`export.go`'s `directionFor`/`dirOf`); `ParseDecompile`
+  (`parse.go`) then searches only for `CInPacket::Decode*`, finds none in a pure
+  `COutPacket` send-site, and returns **zero calls without erroring** — counted as
+  "1 resolved, 0 unresolved" rather than flagged as a gap. Reproduced live twice on this
+  branch (gms_v92's `SendClaimRequest`, and again against the correct IDA endpoint during
+  Task 23). Narrow mitigation already identified: treat a zero-call parse for a
+  newly-introduced FName with no direction source as `unresolved` rather than confidently
+  empty — does not touch the well-exercised inference paths for known FNames.
+- [ ] **The CLI's default `--ida-url` points at a stale server.** Hardcoded default is
+  `http://192.168.20.3:13337/mcp`; the working endpoint in this environment is
+  `http://192.168.20.3:8745/mcp`. Port 13337 runs an older MCP schema whose `survey_binary`
+  rejects the `database` parameter, so any export run against the CLI's own default dies
+  with `Invalid params: unexpected parameters: ['database']`. This is a wrong default value
+  in the tool, not an environment quirk — fix the default flag.
+- [ ] **`md5: "unavailable"` is written as a value, silently.** A full (non-`--splice`)
+  `export --version gms_v83` against the correct IDA endpoint writes `"md5": "unavailable"`
+  with exit 0, because `survey_binary` reports no hash for that IDB — this value would then
+  serve as a freshness anchor that can never match a real hash. Currently latent only because
+  every affected export on this branch used `--splice`. Fix: treat `"unavailable"` (and any
+  other non-hex string) as an error, not a value, before any full re-export.
+
 ## task-081 packet-audit validation follow-ups
 
 Deferred from task-081 (validation-pivot). The exporter + validation toolchain + the

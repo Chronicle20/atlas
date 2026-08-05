@@ -14,8 +14,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
-// RestModel is the "chat-messages" resource consumed server-to-server by
-// atlas-ban's report pipeline. Not exposed through nginx/ingress.
+// RestModel is the "chat-messages" resource, consumed by atlas-ban's report
+// pipeline. Served at /api/chat/history, which IS routed through
+// nginx/ingress (deploy/shared/routes.conf) and reachable at the ingress
+// host WITHOUT AUTHENTICATION — this exposes captured player chat, including
+// whispers, to anything that can reach that host. Accepted on the basis that
+// API authentication is coming; see
+// docs/tasks/task-145-player-reports/scope-amendment.md Amendment 2. Do not
+// describe this endpoint as server-to-server only.
 type RestModel struct {
 	Id         string `json:"-"`
 	Timestamp  int64  `json:"timestamp"`

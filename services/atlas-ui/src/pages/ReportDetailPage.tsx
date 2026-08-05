@@ -8,12 +8,7 @@ import { UpdateReportStatusDialog } from "@/components/features/reports/UpdateRe
 import { Toaster, toast } from "sonner";
 import { createErrorFromUnknown } from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -137,9 +132,7 @@ export function ReportDetailPage() {
             <ReportStatusBadge status={attributes.status} />
           </div>
         </div>
-        <Button onClick={() => setStatusDialogOpen(true)}>
-          Update Status
-        </Button>
+        <Button onClick={() => setStatusDialogOpen(true)}>Update Status</Button>
       </div>
 
       <div className="text-sm text-muted-foreground space-y-1">
@@ -213,9 +206,7 @@ export function ReportDetailPage() {
                       <TableCell className="text-xs">
                         {line.senderName}
                       </TableCell>
-                      <TableCell className="text-xs">
-                        {line.chatType}
-                      </TableCell>
+                      <TableCell className="text-xs">{line.chatType}</TableCell>
                       <TableCell className="whitespace-pre-wrap text-xs">
                         {line.text}
                       </TableCell>

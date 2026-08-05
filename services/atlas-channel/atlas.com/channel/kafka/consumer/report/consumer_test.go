@@ -114,6 +114,16 @@ func withRecordingAnnouncer(t *testing.T) (restore func(), calls *[]announceCall
 	return func() { reportAnnouncer = orig }, &recorded
 }
 
+// nullLogger returns a discarding logrus.Logger backed by testlog's null
+// hook, for call sites that need a *logrus.Logger but don't assert on log
+// output. Using it instead of bare logrus.New() avoids stray warn-level
+// stderr noise during `go test` (e.g. TestHandleStatusEvent_UnmappedCombo_
+// DoesNothing's unmapped-combo path logs at Warn).
+func nullLogger() *logrus.Logger {
+	l, _ := testlog.NewNullLogger()
+	return l
+}
+
 func newTestTenant(t *testing.T) tenant.Model {
 	t.Helper()
 	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
@@ -126,7 +136,7 @@ func newTestTenant(t *testing.T) tenant.Model {
 func newTestServer(t *testing.T, tm tenant.Model) server.Model {
 	t.Helper()
 	ch := channelconst.NewModel(0, 1)
-	return server.NewProcessor(logrus.New(), context.Background()).Register(tm, ch, "127.0.0.1", 8484)
+	return server.NewProcessor(nullLogger(), context.Background()).Register(tm, ch, "127.0.0.1", 8484)
 }
 
 // newZeroFieldTestServer registers a server whose world/channel (0, 0) match
@@ -140,7 +150,7 @@ func newTestServer(t *testing.T, tm tenant.Model) server.Model {
 func newZeroFieldTestServer(t *testing.T, tm tenant.Model) server.Model {
 	t.Helper()
 	ch := channelconst.NewModel(0, 0)
-	return server.NewProcessor(logrus.New(), context.Background()).Register(tm, ch, "127.0.0.1", 8484)
+	return server.NewProcessor(nullLogger(), context.Background()).Register(tm, ch, "127.0.0.1", 8484)
 }
 
 func decodeSueResult(t *testing.T, b []byte) reportcb.SueCharacterResult {
@@ -185,7 +195,7 @@ func TestHandleStatusEvent_SueCreated_AnnouncesSuccess(t *testing.T) {
 	defer restore()
 
 	h := handleStatusEvent(sc, nil)
-	h(logrus.New(), ctx, report2.StatusEvent{
+	h(nullLogger(), ctx, report2.StatusEvent{
 		Kind:       report2.KindSue,
 		WorldId:    sc.WorldId(),
 		ReporterId: 4001,
@@ -220,7 +230,7 @@ func TestHandleStatusEvent_SueErrorNotFound_AnnouncesUnableToLocate(t *testing.T
 	defer restore()
 
 	h := handleStatusEvent(sc, nil)
-	h(logrus.New(), ctx, report2.StatusEvent{
+	h(nullLogger(), ctx, report2.StatusEvent{
 		Kind:       report2.KindSue,
 		WorldId:    sc.WorldId(),
 		ReporterId: 4002,
@@ -246,7 +256,7 @@ func TestHandleStatusEvent_SueErrorInternal_AnnouncesGenericFailure(t *testing.T
 	defer restore()
 
 	h := handleStatusEvent(sc, nil)
-	h(logrus.New(), ctx, report2.StatusEvent{
+	h(nullLogger(), ctx, report2.StatusEvent{
 		Kind:       report2.KindSue,
 		WorldId:    sc.WorldId(),
 		ReporterId: 4003,
@@ -275,7 +285,7 @@ func TestHandleStatusEvent_ClaimCreated_AnnouncesSuccessWithRemaining(t *testing
 	defer restore()
 
 	h := handleStatusEvent(sc, nil)
-	h(logrus.New(), ctx, report2.StatusEvent{
+	h(nullLogger(), ctx, report2.StatusEvent{
 		Kind:       report2.KindClaim,
 		WorldId:    sc.WorldId(),
 		ReporterId: 4004,
@@ -308,7 +318,7 @@ func TestHandleStatusEvent_ClaimErrorNotFound_AnnouncesRecheckName(t *testing.T)
 	defer restore()
 
 	h := handleStatusEvent(sc, nil)
-	h(logrus.New(), ctx, report2.StatusEvent{
+	h(nullLogger(), ctx, report2.StatusEvent{
 		Kind:       report2.KindClaim,
 		WorldId:    sc.WorldId(),
 		ReporterId: 4005,
@@ -334,7 +344,7 @@ func TestHandleStatusEvent_ClaimErrorInternal_AnnouncesTryAgain(t *testing.T) {
 	defer restore()
 
 	h := handleStatusEvent(sc, nil)
-	h(logrus.New(), ctx, report2.StatusEvent{
+	h(nullLogger(), ctx, report2.StatusEvent{
 		Kind:       report2.KindClaim,
 		WorldId:    sc.WorldId(),
 		ReporterId: 4006,
@@ -362,7 +372,7 @@ func TestHandleStatusEvent_WrongWorld_DoesNothing(t *testing.T) {
 	defer restore()
 
 	h := handleStatusEvent(sc, nil)
-	h(logrus.New(), ctx, report2.StatusEvent{
+	h(nullLogger(), ctx, report2.StatusEvent{
 		Kind:       report2.KindSue,
 		WorldId:    sc.WorldId() + 1,
 		ReporterId: 4007,
@@ -385,7 +395,7 @@ func TestHandleStatusEvent_UnmappedCombo_DoesNothing(t *testing.T) {
 	defer restore()
 
 	h := handleStatusEvent(sc, nil)
-	h(logrus.New(), ctx, report2.StatusEvent{
+	h(nullLogger(), ctx, report2.StatusEvent{
 		Kind:       "bogus",
 		WorldId:    sc.WorldId(),
 		ReporterId: 4008,
@@ -413,7 +423,7 @@ func TestHandleStatusEvent_WriterNotFound_SkipsWithoutError(t *testing.T) {
 	s := session.NewSession(sessionId, tm, 0, nil)
 	session.AddSessionToRegistry(tm.Id(), s)
 	defer session.ClearRegistryForTenant(tm.Id())
-	_ = session.NewProcessor(logrus.New(), ctx).SetCharacterId(sessionId, characterId)
+	_ = session.NewProcessor(nullLogger(), ctx).SetCharacterId(sessionId, characterId)
 
 	logger, hook := testlog.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
@@ -472,7 +482,7 @@ func TestHandleStatusEvent_WriterFound_DeliversToRealConnection(t *testing.T) {
 	s := session.NewSession(sessionId, tm, 0, serverConn)
 	session.AddSessionToRegistry(tm.Id(), s)
 	defer session.ClearRegistryForTenant(tm.Id())
-	_ = session.NewProcessor(logrus.New(), ctx).SetCharacterId(sessionId, characterId)
+	_ = session.NewProcessor(nullLogger(), ctx).SetCharacterId(sessionId, characterId)
 
 	logger, hook := testlog.NewNullLogger()
 

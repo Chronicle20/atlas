@@ -27,7 +27,10 @@ vi.mock("@/context/tenant-context", () => ({
   }),
 }));
 
-function makeReport(id: string, overrides?: Partial<Report["attributes"]>): Report {
+function makeReport(
+  id: string,
+  overrides?: Partial<Report["attributes"]>,
+): Report {
   return {
     id,
     type: "reports",
@@ -68,7 +71,9 @@ describe("ReportsPage", () => {
   });
 
   it("requests all reports with no status filter on mount", async () => {
-    vi.mocked(reportsService.getAllReports).mockResolvedValue([makeReport("1")]);
+    vi.mocked(reportsService.getAllReports).mockResolvedValue([
+      makeReport("1"),
+    ]);
 
     renderAt("/reports");
 
@@ -89,7 +94,9 @@ describe("ReportsPage", () => {
   });
 
   it("re-requests with the selected status filter", async () => {
-    vi.mocked(reportsService.getAllReports).mockResolvedValue([makeReport("1")]);
+    vi.mocked(reportsService.getAllReports).mockResolvedValue([
+      makeReport("1"),
+    ]);
 
     renderAt("/reports");
 
@@ -102,7 +109,9 @@ describe("ReportsPage", () => {
     await user.click(await screen.findByRole("option", { name: "Open" }));
 
     await waitFor(() => {
-      const lastCall = vi.mocked(reportsService.getAllReports).mock.calls.at(-1)!;
+      const lastCall = vi
+        .mocked(reportsService.getAllReports)
+        .mock.calls.at(-1)!;
       expect(lastCall[0]).toEqual({ status: ReportStatus.Open });
     });
   });

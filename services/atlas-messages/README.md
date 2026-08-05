@@ -5,10 +5,12 @@ Atlas Messages is a service that handles character messages and commands in the 
 It also captures recently sent, player-authored chat lines (general, buddy,
 party, guild, alliance, whisper, messenger) into a short-retention,
 tenant-scoped Redis buffer — pet-echoed chat and system-issued pink text are
-never captured. `GET /api/chat/history` (server-to-server only, no
-ingress) lets atlas-ban read that buffer to snapshot a transcript when a
-player report is created. See [Storage](docs/storage.md) for the buffer's
-retention semantics and [REST](docs/rest.md) for the endpoint contract.
+never captured. `GET /api/chat/history` lets atlas-ban read that buffer to
+snapshot a transcript when a player report is created. This endpoint **is**
+routed through nginx/ingress and reachable at the ingress host without
+authentication, exposing captured chat including whispers — see
+[REST](docs/rest.md) for the accepted-risk citation. See
+[Storage](docs/storage.md) for the buffer's retention semantics.
 
 ## External Dependencies
 

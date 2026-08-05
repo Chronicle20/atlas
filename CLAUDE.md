@@ -154,7 +154,7 @@ Every task type's leaf step — promoting one packet × version matrix cell to `
 ## Reverse Engineering / IDA
 
 - For IDA Pro lookups, use the `func_query` tool with `name_regex` (the documented method); do not improvise alternate lookup approaches. See the IDA-MCP notes in project memory for the current API.
-- Confirm the IDA instance/version under investigation matches the version you're targeting before reading (use `select_instance(port)` for v83/v87/v95/jms).
+- Confirm the IDA instance/version under investigation matches the version you're targeting before reading. `select_instance(port)` and port-based selection are dead (since task-138); resolve the session from `idb_list` by binary **name** and pass it as the `database` parameter to subsequent calls.
 
 ## Task Workflow
 

@@ -1,8 +1,14 @@
 # REST
 
-This service exposes one endpoint, server-to-server only — it has no
-nginx/ingress entry and is not reachable from the client-facing edge. It
-also consumes REST APIs from other services (see below).
+This service exposes one endpoint, `GET /api/chat/history`. It **is** routed
+through nginx/ingress (`deploy/shared/routes.conf`) and is reachable at the
+ingress host **without authentication** — it exposes captured player chat,
+including whispers, to anything that can reach that host. This was an
+explicit, accepted risk (see
+`docs/tasks/task-145-player-reports/scope-amendment.md` Amendment 2) taken on
+the basis that API authentication is coming to the fleet generally; do not
+describe this endpoint as server-to-server only. It also consumes REST APIs
+from other services (see below).
 
 ## Endpoints
 

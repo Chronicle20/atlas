@@ -130,6 +130,7 @@ import (
 	questsb "github.com/Chronicle20/atlas/libs/atlas-packet/quest/serverbound"
 	reactorcb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
 	reactorsb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/serverbound"
+	reportsb "github.com/Chronicle20/atlas/libs/atlas-packet/report/serverbound"
 	rpscb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/clientbound"
 	rpssb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/serverbound"
 	socketcb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/clientbound"
@@ -852,6 +853,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[fieldsb.MatchTableHandle] = handler.MatchTableHandleFunc
 	handlerMap[fieldsb.SlideRequestHandle] = handler.SlideRequestHandleFunc
 	handlerMap[fieldsb.SueCharacterHandle] = handler.SueCharacterHandleFunc
+	handlerMap[reportsb.ClaimRequestHandle] = handler.ClaimRequestHandleFunc
 	handlerMap[charsb.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[invsb.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
 	handlerMap[partysb.PartyOperationHandle] = handler.PartyOperationHandleFunc

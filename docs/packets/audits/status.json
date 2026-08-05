@@ -17540,8 +17540,7 @@
           "opcode": 104
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 106
         },
         "gms_v84": {

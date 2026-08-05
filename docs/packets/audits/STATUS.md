@@ -644,7 +644,7 @@ Tool: `eebc0b06a61616cef2aa7a1ea0e860a8036276cba93fe722902dfc76896fc489`
 | USE_DOOR | CField::TryEnterTownPortal; CTownPortalPool::TryEnterTownPortal; sub_4CB90A; sub_5E3082 | field/serverbound/FieldUseDoor (T1) | 0x067 | ✅ | 0x079 | ✅ | 0x083 | ✅ | 0x082 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x08D | ✅ | 0x099 | ❌ | 0x09C | ✅ | 0x088 | ✅ |
 | ANTI_MACRO_TARGET | CUserLocal::DoAntiMacroSkill |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x068 | ❌ | 0x068 | ❌ | 0x06B | ❌ | 0x073 | ❌ | 0x074 | ❌ | 0x063 | ❌ |
 | SUE_CHARACTER | CField::SendChatMsgSlash; sub_849F27 | field/serverbound/FieldAdminCommand (T1) |  | ⬜ | 0x068 | ✅ | 0x071 | ✅ | 0x070 | ✅ | 0x072 | ✅ | 0x072 | ✅ | 0x075 | ✅ | 0x07D | ❌ | 0x07E | ✅ |  | ⬜ |
-| CLAIM_REQUEST | CWvsContext::SendClaimRequest | report/serverbound/ClaimRequest |  | ⬜ |  | ⬜ | 0x069 | ✅ | 0x068 | ✅ | 0x06A | ❌ | 0x06A | ❌ | 0x06D | ❌ | 0x075 | ❌ | 0x076 | ❌ |  | ⬜ |
+| CLAIM_REQUEST | CWvsContext::SendClaimRequest | report/serverbound/ClaimRequest |  | ⬜ |  | ⬜ | 0x069 | ✅ | 0x068 | ✅ | 0x06A | ✅ | 0x06A | ❌ | 0x06D | ❌ | 0x075 | ❌ | 0x076 | ❌ |  | ⬜ |
 | WEDDING_ACTION | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x06B | ✅ | 0x07F | ✅ | 0x089 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x093 | ✅ | 0x0A0 | ❌ | 0x0A3 | ✅ |  | ⬜ |
 | USER_CALC_DAMAGE_STAT_SET_REQUEST | CWvsContext::CheckDarkForce; CWvsContext::CheckDragonFury; CWvsContext::OnTemporaryStatReset; CWvsContext::OnTemporaryStatSet | character/clientbound/BuffCancel (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06C | ✅ | 0x06C | ✅ | 0x06F | ✅ | 0x077 | ❌ | 0x078 | ✅ | 0x067 | ✅ |
 | WEDDING_TALK | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x06C | ✅ | 0x080 | ✅ | 0x08A | ✅ | 0x089 | ✅ | 0x08C | ✅ | 0x090 | ✅ | 0x094 | ✅ | 0x0A1 | ❌ | 0x0A4 | ✅ |  | ⬜ |
@@ -1055,7 +1055,7 @@ Tool: `eebc0b06a61616cef2aa7a1ea0e860a8036276cba93fe722902dfc76896fc489`
 | v61 | 256 | 0 | 60 | 235 | 464 | 0 | 46.5% |
 | v72 | 270 | 0 | 73 | 251 | 421 | 0 | 45.5% |
 | v79 | 314 | 0 | 72 | 247 | 382 | 0 | 49.6% |
-| v83 | 432 | 0 | 0 | 355 | 228 | 0 | 54.9% |
+| v83 | 433 | 0 | 0 | 354 | 228 | 0 | 55.0% |
 | v84 | 402 | 0 | 0 | 365 | 248 | 0 | 52.4% |
 | v87 | 436 | 0 | 0 | 388 | 191 | 0 | 52.9% |
 | v92 | 0 | 0 | 154 | 719 | 142 | 0 | 0.0% |

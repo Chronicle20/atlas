@@ -131,6 +131,44 @@ func TestClaimRequestByteOutputV79(t *testing.T) {
 	}
 }
 
+// TestClaimRequestByteOutputV83 verifies the wire-exact byte output of
+// ClaimRequest for GMS v83.
+// IDA evidence (session 41f13e0d, v83_Me MapleStory_dump.exe.i64):
+//
+//	CWvsContext::SendClaimRequest@0xa2719c (independently re-decompiled this
+//	pass, not just re-cited from the registry's task-23/task-23c notes):
+//	COutPacket::COutPacket(&v45, 0x6A) @0xa27631 -- opcode 106/0x6A, matches
+//	registry gms_v83.yaml op CLAIM_REQUEST. COutPacket::Encode1(bChatClaim)
+//	@0xa27640 (bChatClaim set to 1 in the DoModal==1000 branch @0xa274d2, 0 in
+//	the DoModal==1001 branch @0xa272bd of the preceding dialog-result switch).
+//	COutPacket::EncodeStr(targetName) @0xa27659. COutPacket::Encode1(reasonType)
+//	@0xa27664. COutPacket::EncodeStr(description) @0xa2767d. Guarded
+//	COutPacket::EncodeStr(chatLog) @0xa276f5, gated on the same bChatClaim byte
+//	(*a2) that fed the first Encode1. CClientSocket::SendPacket @0xa27710.
+//	Byte-identical to the v72/v79/v95 shape already coded in the
+//	(version-ungated) Encode below.
+//
+// packet-audit:verify packet=report/serverbound/ClaimRequest version=gms_v83 ida=0xa2719c
+func TestClaimRequestByteOutputV83(t *testing.T) {
+	v := pt.Variants[1] // GMS v83
+	if v.Name != "GMS v83" {
+		t.Fatalf("pt.Variants[1] = %q, want %q (index drifted)", v.Name, "GMS v83")
+	}
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	input := NewClaimRequest(1, "bob", 0x02, "hi", "yo")
+	expected := []byte{
+		0x01,                         // Encode1 bChatClaim @0xa27640
+		0x03, 0x00, 0x62, 0x6F, 0x62, // EncodeStr "bob" @0xa27659
+		0x02,                   // Encode1 reasonType @0xa27664
+		0x02, 0x00, 0x68, 0x69, // EncodeStr "hi" @0xa2767d
+		0x02, 0x00, 0x79, 0x6F, // EncodeStr "yo" (guarded on bChatClaim) @0xa276f5
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("byte output mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestClaimRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -347,9 +347,19 @@
   direction: clientbound
   opcode: 52
   fname: CWvsContext::OnSueCharacterResult
+  packet: report/clientbound/SueCharacterResult
   provenance: ida-discovered
   ida:
     address: 9779200
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnSueCharacterResult
+    @0x9735a5 (GMS_v79_1_DEVM.exe.i64, session 1438cecd), resolved via the opcode
+    dispatch table CWvsContext::OnPacket case 52 @0x953947. Decode1(a2) @0x9735b6
+    reads a single result byte (v2); v2 then drives a five-way branch (0/1/2/3/else)
+    purely to pick a StringPool notice id (2982/2983/2984/2985/2986) for a local
+    CHATLOG_ADD render, with no further CInPacket reads on any branch. Body is
+    exactly one byte, unconditionally -- byte-identical to the v61/v72 shape
+    already verified (only the opcode moves per-version: 0x34 on v61/v72/v79 vs
+    0x37 on v83+).'
 - op: TRADE_MONEY_LIMIT
   direction: clientbound
   opcode: 54

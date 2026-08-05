@@ -46,11 +46,15 @@ existing atlas-messages chat path into a bounded per-character Redis sorted set
 
 ## Wire facts (IDA-verified — do not re-derive)
 
-- SUE_CHARACTER_RESULT: opcode 0x37 all four GMS versions; 1 byte; 0 success, 1 not-found, 2 daily-limit, 3 accused-notice, other = generic failure; chat-log line, not modal.
-- CLAIM_RESULT: 0x2D/0x2D/0x2D/0x2C; mode byte; ONLY mode 2 has payload (`byte hasRemaining, int32 remaining`); notices: 3, 0x41-0x45, 0x47, 0x48; modal; unknown modes silently ignored.
-- CLAIM_AVAILABLE_TIME: 0x2E/0x2E/0x2E/0x2D; `byte open, byte close`; 0/0 = always available (explicit client branch).
-- CLAIM_STATUS_CHANGED: 0x2F/0x2F/0x2F/0x2E; `byte connected`; required for the claim UI to open at all.
-- CLAIM_REQUEST (serverbound): 0x6A/0x6A/0x6D/0x76; `byte bChatClaim, string target, byte nType, string description, [string chatLog if bChatClaim==1]`; v95-verified; **v83 send-site is unnamed in the v83_Me IDB — naming + byte-verifying it is Task 23, in scope**.
+Opcode columns below are `v61/v72/v79 | v83/v84/v87/v95` (PRD §2.1). Bodies and
+mode values are version-stable across each packet's span; only opcodes move.
+
+- SUE_CHARACTER_RESULT: opcode 0x34 (v61/v72/v79) / 0x37 (v83/v84/v87/v95); 1 byte; 0 success, 1 not-found, 2 daily-limit, 3 accused-notice, other = generic failure; chat-log line, not modal. Present-but-unreachable on v48 (0x2C — no sue send-site there); n-a on jms.
+- CLAIM_RESULT: 0x2A (v72/v79) / 0x2D/0x2D/0x2D/0x2C (v83/v84/v87/v95); mode byte; ONLY mode 2 has payload (`byte hasRemaining, int32 remaining`); notices: 3, 0x41-0x45, 0x47, 0x48; modal; unknown modes silently ignored.
+- CLAIM_AVAILABLE_TIME: 0x2B (v72/v79) / 0x2E/0x2E/0x2E/0x2D; `byte open, byte close`; 0/0 = always available (explicit client branch).
+- CLAIM_STATUS_CHANGED: 0x2C (v72/v79) / 0x2F/0x2F/0x2F/0x2E; `byte connected`; required for the claim UI to open at all.
+- CLAIM_REQUEST (serverbound): 0x69 (v72) / 0x68 (v79) / 0x6A/0x6A/0x6D/0x76; `byte bChatClaim, string target, byte nType, string description, [string chatLog if bChatClaim==1]`; v95-verified, and v72 (`0x91f2b4`) / v79 (`0x9711ff`) verified 2026-08-04. **v83 send-site is unnamed in the v83_Me IDB — naming + byte-verifying it is Task 23, in scope. v72/v79 are already named but have no registry row — adding it is Task 23b, in scope.**
+- **Version-absent, verified (Task 23c):** sue on v48; claim on v48 and v61. The claim mechanism enters the GMS client between v61 and v72.
 - Client pre-gates claims: needs `m_bClaimSvrConnected`, an open window, and (chat claims) the target present in the local chat log.
 
 ## Pattern files to mirror (read before implementing)

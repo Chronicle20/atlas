@@ -144,10 +144,12 @@ mirrors, inline `t.MajorVersion()` guards written for the packet-audit analyzer
   chatLog     string      only when bChatClaim == 1
   ```
 
-  Body identical across v83–v95 per findings (v95 verified; v83 confirmed
-  during implementation per FR-6.2 — see §9.2). No version branch expected; if
-  the v83 byte-verification disagrees, the codec gains an inline
-  `MajorVersion()` guard at that point.
+  Body identical across v72–v95 per findings (v95 verified; v72 @ `0x91f2b4`
+  and v79 @ `0x9711ff` verified 2026-08-04 per PRD FR-6.4; v83 confirmed during
+  implementation per FR-6.2 — see §9.2). No version branch expected; if the v83
+  byte-verification disagrees, the codec gains an inline `MajorVersion()` guard
+  at that point. `CLAIM_REQUEST` does not exist on v48/v61 (PRD §2.1), so the
+  codec's version span starts at v72.
 
 All five packets carry `packet-audit:fname` comments with the CWvsContext names
 above, and golden/round-trip tests per `field/serverbound/sue_character_test.go`
@@ -159,8 +161,10 @@ fixtures with `packet-audit:verify` markers).
 Both result-carrying writers resolve their client-interpreted bytes from the
 tenant writer `options.operations` table via `ResolveCode`/`WithResolvedCode`
 (`libs/atlas-packet/resolve.go`) — never literals in domain logic, even though
-the values are verified identical across v83–v95 (config-drive-all-modes rule,
-task-103 precedent). Tables (values from `packet-findings.md` §1/§3):
+the values are verified identical across the supported span (config-drive-all-modes
+rule, task-103 precedent). The *opcodes* differ per version (PRD §2.1) while the
+*mode values* do not; config resolution absorbs both. Tables (values from
+`packet-findings.md` §1/§3):
 
 ```
 SueCharacterResult operations:
@@ -222,8 +226,11 @@ verified client behavior for `open == close == 0`).
 **Gating is config-presence, not code:** attempt the writer lookup via the
 writer producer; if the tenant config has no `ClaimSvrStatusChanged` writer
 entry the producer returns "writer not found" — log at debug and skip both
-sends. jms and gms-92 tenants (§9.3) are thereby disabled purely by omitting
-template entries; no region/version conditionals in Go.
+sends. jms, gms-12, gms-48, gms-61 and gms-92 tenants (§9.2) are thereby
+claim-disabled purely by omitting template entries; no region/version
+conditionals in Go. This is what lets gms-61 run sue-only for free: it gets the
+sue entries and no claim entries, and the same config-presence gate keeps its
+claim UI dark.
 
 ### 4.5 Status consumer
 
@@ -499,33 +506,48 @@ location ~ ^/api/reports(/.*)?$ {
 
 ### 9.2 Seed templates
 
-In `services/atlas-configurations/seed-data/templates/`, for
-**gms_83, gms_84, gms_87, gms_95** templates only:
+In `services/atlas-configurations/seed-data/templates/`, per PRD §2.1. Two
+tiers: **gms_72, gms_79, gms_83, gms_84, gms_87, gms_95** get the full set;
+**gms_61** gets the sue pair only.
 
-Handlers (opcodes from `docs/packets/audits/STATUS.md:600`):
+Handlers (opcodes from `docs/packets/audits/STATUS.md`) — the sue handler is
+already routed in every template; only `ClaimRequest` is new:
 
-```json
-{ "opCode": "0x6A|0x6A|0x6D|0x76", "validator": "LoggedInValidator", "handler": "ClaimRequest" }
-```
+| template | new handler entry |
+|---|---|
+| gms_72 | `{ "opCode": "0x69", "validator": "LoggedInValidator", "handler": "ClaimRequest", "services": ["channel"] }` |
+| gms_79 | `{ "opCode": "0x68", "validator": "LoggedInValidator", "handler": "ClaimRequest", "services": ["channel"] }` |
+| gms_83 | `{ "opCode": "0x6A", "validator": "LoggedInValidator", "handler": "ClaimRequest", "services": ["channel"] }` |
+| gms_84 | `{ "opCode": "0x6A", "validator": "LoggedInValidator", "handler": "ClaimRequest", "services": ["channel"] }` |
+| gms_87 | `{ "opCode": "0x6D", "validator": "LoggedInValidator", "handler": "ClaimRequest", "services": ["channel"] }` |
+| gms_95 | `{ "opCode": "0x76", "validator": "LoggedInValidator", "handler": "ClaimRequest", "services": ["channel"] }` |
 
-(every entry carries a validator — the silent-drop gotcha).
+(every entry carries a validator — the silent-drop gotcha. gms_61 gets **no**
+`ClaimRequest` entry: the packet does not exist on that client.)
 
-Writers (opcodes from `STATUS.md:66-76`), each with its §3.2 operations table
-where applicable:
+Writers, each with its §3.2 operations table where applicable:
 
-| writer | v83 | v84 | v87 | v95 | options |
-|---|---|---|---|---|---|
-| SueCharacterResult | 0x37 | 0x37 | 0x37 | 0x37 | operations (sue table) |
-| ClaimResult | 0x2D | 0x2D | 0x2D | 0x2C | operations (claim table) |
-| ClaimAvailableTime | 0x2E | 0x2E | 0x2E | 0x2D | — |
-| ClaimSvrStatusChanged | 0x2F | 0x2F | 0x2F | 0x2E | — |
+| writer | v61 | v72 | v79 | v83 | v84 | v87 | v95 | options |
+|---|---|---|---|---|---|---|---|---|
+| SueCharacterResult | 0x34 | 0x34 | 0x34 | 0x37 | 0x37 | 0x37 | 0x37 | operations (sue table) |
+| ClaimResult | — | 0x2A | 0x2A | 0x2D | 0x2D | 0x2D | 0x2C | operations (claim table) |
+| ClaimAvailableTime | — | 0x2B | 0x2B | 0x2E | 0x2E | 0x2E | 0x2D | — |
+| ClaimSvrStatusChanged | — | 0x2C | 0x2C | 0x2F | 0x2F | 0x2F | 0x2E | — |
 
-**gms_92 and jms_185 templates get no entries**: jms is out of scope per PRD
-(claim UI stays disabled via the §4.4 config gate; `SUE_CHARACTER` is
-version-absent there); gms_92 has **no registry file and no v92 IDB** to verify
-opcodes against — inventing them is forbidden, so v92 tenants keep the feature
-disabled the same config-driven way. Recorded as a follow-up alongside the
-existing parked v92 work (unblocks when a v92 IDB exists).
+Note the v61/v72/v79 clientbound opcodes sit a full region lower than the
+v83+ ones (0x34 vs 0x37, 0x2A–0x2C vs 0x2D–0x2F) — do not port v83 values
+across. Entries are inserted at their **sorted `opCode` position** in both
+arrays; `tools/template-opcode-order-guard.sh` (CI-gated) rejects appending
+them next to semantically-related entries.
+
+**gms_12, gms_48, gms_92 and jms_185 templates get no entries.** jms is out of
+scope per PRD (`SUE_CHARACTER` version-absent; claim UI stays dark via the §4.4
+config gate). gms_48 is newly in this bucket for a *different* reason — it has
+both clientbound receivers but neither send-site (PRD §2.1, verified), so
+writers there would answer requests the client cannot make. gms_12 and gms_92
+have **no registry file and no IDB** to verify opcodes against — inventing them
+is forbidden, so they keep the feature disabled the same config-driven way.
+Recorded as follow-ups (unblock when those IDBs exist).
 
 A dispatcher-doc-style reference for the two operations tables is added under
 `docs/packets/dispatchers/` only if `packet-audit operations --check` requires
@@ -536,7 +558,7 @@ implementation, not assumed).
 
 Seed templates apply only at tenant creation. The task folder gets
 `live-config-patch.md` documenting the PATCH of the handler + writer entries
-into each existing gms-83/84/87/95 tenant's socket config and the
+into each existing gms-61 (sue pair only) and gms-72/79/83/84/87/95 tenant's socket config and the
 atlas-channel restart (projection does not hot-reload handlers/writers).
 New env vars for existing deployments: the two service-URLs on atlas-ban
 (§5.3, fallback-safe) and the two capture tunables on atlas-messages (§7.2,
@@ -549,8 +571,21 @@ Per packet × version via the packet-verifier flow (decompile-derived read/write
 order, byte-fixture test with `packet-audit:verify` marker + IDA address,
 evidence record, matrix regeneration; artifacts committed together):
 
-- 5 packets × 4 GMS versions = 20 cells targeted ✅ (registry rows currently
-  all `csv-import` ❌). jms cells stay ❌/⬜ (out of scope).
+- **31 cells** targeted ✅ (registry rows currently all `csv-import` ❌), not a
+  flat packets × versions product — the two mechanisms have different version
+  spans (PRD §2.1):
+  - `SueCharacterResult` × 7 (v61, v72, v79, v83, v84, v87, v95) = 7
+  - `ClaimRequest`, `ClaimResult`, `ClaimAvailableTime`, `ClaimSvrStatusChanged`
+    × 6 each (v72, v79, v83, v84, v87, v95) = 24
+  jms cells stay ❌/⬜ (out of scope). v48 cells stay ⬜ and are *documented* as
+  verified absences (PRD FR-6.5), not promoted.
+- **v72/v79 `CLAIM_REQUEST` registry rows must be created before their cells can
+  be verified** (PRD FR-6.4). The matrix currently renders both `⬜` because the
+  registry has no row at all — a false negative, not a real absence. Both
+  send-sites are already named in their IDBs (`CWvsContext::SendClaimRequest`
+  @ `0x91f2b4` v72, @ `0x9711ff` v79), so this is registry-row + export-splice
+  work only, with no IDB naming step. Opcodes read from the decompile:
+  `COutPacket(105)` on v72, `COutPacket(104)` on v79.
 - **v83 `CLAIM_REQUEST` send-site naming is in-scope implementation work**
   (FR-6.2): locate the function in the v83_Me IDB (port 13342; anchor via
   `CUIClaim::OnCreate` @ 0x7db17d xrefs and the `COutPacket::COutPacket(&p, 106)`
@@ -560,6 +595,12 @@ evidence record, matrix regeneration; artifacts committed together):
   substituted hash.
 - v84/v87 derive from their IDBs per the standard flow; the v84 clientbound
   opcode-shift gotcha is already reflected in the STATUS.md rows used above.
+- v61/v72/v79 cells derive from their own IDBs (ports per `idb_list`); their
+  clientbound opcodes are a region lower than v83's (§9.2) so nothing may be
+  ported across that boundary.
+- `packet-audit gate-check --check` must stay clean: adding v72/v79 claim
+  columns creates new adjacent-version pairs around the v79↔v83 opcode shift,
+  and every gated divergence needs a verified fixture on **both** sides.
 
 ## 11. Error Handling Summary
 
@@ -595,12 +636,19 @@ evidence record, matrix regeneration; artifacts committed together):
   `go build ./...` per changed module; `docker buildx bake` for atlas-channel,
   atlas-ban, atlas-messages; `tools/redis-key-guard.sh` from repo root;
   `GOWORK=off` only inside guard scripts per the workspace-footgun rules.
-- **Live acceptance** per PRD §10 against a v83 tenant.
+- **Live acceptance** per PRD §10 against a v83 tenant, plus a v72 tenant (the
+  lowest full-feature column, and the one whose opcodes share no values with
+  v83) and a v61 tenant (sue-only: sue round-trips, claim UI stays disabled).
 
 ## 13. Explicit Deferrals (→ docs/TODO.md, no code TODOs)
 
 - Quota / mesos-cost enforcement (sue code 2; claim modes 0x43/0x45/0x47/0x48 +
   real `remaining` counts) — plumbing already expressive.
 - Accused-notification codes (sue 3 / claim mode 3).
-- gms-92 enablement (blocked on a v92 IDB) and jms claim support.
+- gms-12 / gms-92 enablement (blocked on registry files + IDBs) and jms claim
+  support.
+- gms-48 stays disabled permanently, not pending: neither request packet exists
+  in that client (PRD §2.1/FR-6.5). Nothing to unblock.
+- gms-61 claim support is likewise a permanent absence, not a deferral; v61
+  ships sue only.
 - Scheduled claim availability windows (writer already carries the hours).

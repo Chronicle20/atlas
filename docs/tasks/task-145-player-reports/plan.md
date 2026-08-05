@@ -13,18 +13,30 @@
 ## Global Constraints
 
 - **DOM-25 / config-drive-all-modes:** every client-interpreted result/mode byte resolves from the tenant writer `options.operations` table via `atlas_packet.WithResolvedCode`/`ResolveCode` — never a literal in domain logic, even for version-stable values.
-- **Sue operations table (all 4 GMS versions):** `SUCCESS: 0x00, UNABLE_TO_LOCATE: 0x01, DAILY_LIMIT: 0x02, REPORTED_NOTICE: 0x03, GENERIC_FAILURE: 0x04`.
-- **Claim operations table (all 4 GMS versions):** `SUCCESS: 0x02, REPORTED_NOTICE: 0x03, TRY_AGAIN: 0x41, RECHECK_NAME: 0x42, NOT_ENOUGH_MESOS: 0x43, CANNOT_CONNECT: 0x44, EXCEEDED: 0x45, TIME_WINDOW: 0x47, FALSE_REPORT_CITED: 0x48`.
-- **Opcodes (from `docs/packets/audits/STATUS.md`):** SUE_CHARACTER_RESULT 0x37 (v83/v84/v87/v95); CLAIM_RESULT 0x2D/0x2D/0x2D/0x2C; CLAIM_AVAILABLE_TIME 0x2E/0x2E/0x2E/0x2D; CLAIM_STATUS_CHANGED 0x2F/0x2F/0x2F/0x2E; CLAIM_REQUEST serverbound 0x6A/0x6A/0x6D/0x76.
+- **Version scope (PRD §2.1) — the two mechanisms have different spans:** sue is supported on **v61, v72, v79, v83, v84, v87, v95**; claim on **v72, v79, v83, v84, v87, v95**. v48 supports neither (both send-sites verified absent), v61 has no claim send-site. Mode values are version-stable across the whole span; **opcodes are not**.
+- **Sue operations table (version-stable across the span):** `SUCCESS: 0x00, UNABLE_TO_LOCATE: 0x01, DAILY_LIMIT: 0x02, REPORTED_NOTICE: 0x03, GENERIC_FAILURE: 0x04`.
+- **Claim operations table (version-stable across the span):** `SUCCESS: 0x02, REPORTED_NOTICE: 0x03, TRY_AGAIN: 0x41, RECHECK_NAME: 0x42, NOT_ENOUGH_MESOS: 0x43, CANNOT_CONNECT: 0x44, EXCEEDED: 0x45, TIME_WINDOW: 0x47, FALSE_REPORT_CITED: 0x48`.
+- **Opcodes** (from `docs/packets/audits/STATUS.md`, except the two v72/v79 claim-request values which this task adds to the registry — Task 23b):
+
+  | packet | v61 | v72 | v79 | v83 | v84 | v87 | v95 |
+  |---|---|---|---|---|---|---|---|
+  | SUE_CHARACTER_RESULT | 0x34 | 0x34 | 0x34 | 0x37 | 0x37 | 0x37 | 0x37 |
+  | CLAIM_RESULT | — | 0x2A | 0x2A | 0x2D | 0x2D | 0x2D | 0x2C |
+  | CLAIM_AVAILABLE_TIME | — | 0x2B | 0x2B | 0x2E | 0x2E | 0x2E | 0x2D |
+  | CLAIM_STATUS_CHANGED | — | 0x2C | 0x2C | 0x2F | 0x2F | 0x2F | 0x2E |
+  | CLAIM_REQUEST (sb) | — | **0x69** | **0x68** | 0x6A | 0x6A | 0x6D | 0x76 |
+
+  **Never port a v83 opcode down to v61/v72/v79** — the clientbound trio sits a full region lower there.
 - **v1 result policy:** sue → SUCCESS / UNABLE_TO_LOCATE / GENERIC_FAILURE; claim → SUCCESS (hasRemaining=1, remaining=100, named constant) / RECHECK_NAME / TRY_AGAIN. All other table keys exist but are unemitted.
 - **Size caps (server-side, truncate-and-log, never reject):** description 2000 chars, chat log 16384 bytes.
 - **Chat capture defaults:** `CHAT_CAPTURE_RETENTION_SECONDS=900`, `CHAT_CAPTURE_MAX_LINES=200`. Captured types: GENERAL, BUDDY, PARTY, GUILD, ALLIANCE, WHISPER, MESSENGER. Not captured: PET, PINK_TEXT, slash commands.
-- **Scope exclusions:** jms and gms_92 get NO seed-template entries (feature stays config-disabled there). No quota/mesos enforcement, no accused-notification codes (deferred to docs/TODO.md, never code TODOs).
+- **Scope exclusions:** jms, gms_12, gms_48 and gms_92 get NO seed-template entries; gms_61 gets sue entries only (feature stays config-disabled otherwise). No quota/mesos enforcement, no accused-notification codes (deferred to docs/TODO.md, never code TODOs).
+- **Template entries are inserted at their sorted `opCode` position** in both the `handlers` and `writers` arrays — `tools/template-opcode-order-guard.sh` (CI-gated) rejects appending them beside semantically-related entries.
 - **Multi-tenancy:** GORM tenant scoping is automatic via `database.RegisterTenantCallbacks` + `db.WithContext(ctx)` — providers do NOT add explicit `tenant_id` WHERE clauses (mirror the `ban` domain). Kafka via standard header parsers/decorators.
 - **Redis:** all keyed commands live inside `libs/atlas-redis` (redis-key-guard). Extend the existing lib, never a new one.
 - **Every new `socket.handlers` seed entry carries a validator** (`LoggedInValidator`) — validator-less entries are silently dropped.
 - **No test-only constructors / `*_testhelpers.go`.** Dependency injection via exported `NewProcessorWithClients` constructors living in production files.
-- **Verification gates before "done":** `go test -race ./...`, `go vet ./...`, `go build ./...` per changed module; `docker buildx bake atlas-channel atlas-ban atlas-messages`; `tools/redis-key-guard.sh` from repo root; `go run ./tools/packet-audit operations --check`.
+- **Verification gates before "done":** `go test -race ./...`, `go vet ./...`, `go build ./...` per changed module; `docker buildx bake atlas-channel atlas-ban atlas-messages`; `tools/redis-key-guard.sh`, `tools/goroutine-guard.sh`, `tools/lint.sh --check` and `tools/template-opcode-order-guard.sh` from repo root; `go run ./tools/packet-audit operations --check`, `matrix --check`, `gate-check --check`.
 - **Commit style:** `type(scope): summary`, committed from the worktree root; every commit lists exact files.
 
 ## Module Roots (all paths repo-relative from the worktree root)
@@ -206,7 +218,8 @@ const SueCharacterResultWriter = "SueCharacterResult"
 // SueCharacterResult - CWvsContext::OnSueCharacterResult. Single result byte
 // rendered as a chat-log line (CHATLOG_ADD, not a modal): 0 success,
 // 1 unable to locate, 2 daily limit, 3 reported-notice to the accused,
-// any other value = generic failure. Byte-identical v83..v95.
+// any other value = generic failure. Byte-identical v61..v95 (only the
+// opcode moves: 0x34 on v61/v72/v79, 0x37 on v83+). Version-absent on v48.
 // packet-audit:fname CWvsContext::OnSueCharacterResult
 type SueCharacterResult struct {
 	result byte
@@ -258,7 +271,7 @@ const ClaimAvailableTimeWriter = "ClaimAvailableTime"
 // ClaimAvailableTime - CWvsContext::OnSetClaimSvrAvailableTime. Two bytes:
 // open hour -> m_nClaimSvrOpenTime, close hour -> m_nClaimSvrCloseTime.
 // open == close == 0 is treated by the client as always-available.
-// Byte-identical v83..v95.
+// Byte-identical v72..v95 (opcode 0x2B on v72/v79, 0x2E on v83-v87, 0x2D on v95).
 // packet-audit:fname CWvsContext::OnSetClaimSvrAvailableTime
 type ClaimAvailableTime struct {
 	openHour  byte
@@ -313,7 +326,7 @@ const ClaimSvrStatusChangedWriter = "ClaimSvrStatusChanged"
 
 // ClaimSvrStatusChanged - CWvsContext::OnClaimSvrStatusChanged. One byte
 // connected flag -> m_bClaimSvrConnected. Without connected = 1 the client
-// refuses to open the claim dialog. Byte-identical v83..v95.
+// refuses to open the claim dialog. Byte-identical v72..v95.
 // packet-audit:fname CWvsContext::OnClaimSvrStatusChanged
 type ClaimSvrStatusChanged struct {
 	connected bool
@@ -461,7 +474,7 @@ const ClaimResultWriter = "ClaimResult"
 // ClaimResult (CWvsContext::OnClaimResult) is a mode byte followed by a
 // mode-dependent payload where ONLY mode 2 (success) carries data; every
 // other verified mode (3, 0x41-0x45, 0x47, 0x48) is the bare mode byte
-// rendered as a CUtilDlg::Notice modal. Mode sets identical v83..v95.
+// rendered as a CUtilDlg::Notice modal. Mode sets identical v72..v95.
 // This is the SetSkillResponse-style "mode + conditional payload" shape,
 // not a dispatcher family (design.md §3.1).
 
@@ -650,8 +663,9 @@ import (
 const ClaimRequestHandle = "ClaimRequest"
 
 // ClaimRequest - CWvsContext::SendClaimRequest. Sent by the CUIClaim report
-// window. Body (v95-verified; v83 send-site named and byte-verified as part
-// of this task's IDA work — packet-findings.md §2):
+// window. Body (v95-verified; v72 @0x91f2b4 and v79 @0x9711ff verified
+// 2026-08-04; v83 send-site named and byte-verified as part of this task's
+// IDA work — packet-findings.md §2):
 //
 //	byte   bChatClaim   1 = chat/harassment claim, 0 = regular claim
 //	string sTargetCharacterName
@@ -659,9 +673,10 @@ const ClaimRequestHandle = "ClaimRequest"
 //	string sContext     free-text description
 //	if bChatClaim == 1: string chatLog (client-supplied two-character log)
 //
-// No version branch: body identical across v83..v95 per findings. If the
-// v83 byte-verification ever disagrees, add an inline t.MajorVersion()
-// guard here at that point.
+// No version branch: body identical across v72..v95 per findings. The packet
+// does not exist below v72 (verified absent on v48/v61). If the v83
+// byte-verification ever disagrees, add an inline t.MajorVersion() guard
+// here at that point.
 // packet-audit:fname CWvsContext::SendClaimRequest
 type ClaimRequest struct {
 	chatClaim   byte
@@ -4328,6 +4343,9 @@ git commit -m "feat(channel): send claim-enable packets on session bootstrap (co
 ### Task 18: Seed templates, dispatcher-doc operations tables, topic env vars, live-config patch doc
 
 **Files:**
+- Modify: `services/atlas-configurations/seed-data/templates/template_gms_61_1.json` (sue pair only)
+- Modify: `services/atlas-configurations/seed-data/templates/template_gms_72_1.json`
+- Modify: `services/atlas-configurations/seed-data/templates/template_gms_79_1.json`
 - Modify: `services/atlas-configurations/seed-data/templates/template_gms_83_1.json`
 - Modify: `services/atlas-configurations/seed-data/templates/template_gms_84_1.json`
 - Modify: `services/atlas-configurations/seed-data/templates/template_gms_87_1.json`
@@ -4338,92 +4356,131 @@ git commit -m "feat(channel): send claim-enable packets on session bootstrap (co
 - Regenerate: `deploy/k8s/overlays/pr/kustomization.yaml` + `deploy/k8s/overlays/main/kustomization.yaml` via `deploy/k8s/overlays/pr/scripts/gen-topic-config.sh`
 - Create: `docs/tasks/task-145-player-reports/live-config-patch.md`
 
-**gms_92 and jms_185 templates get NO entries** (PRD non-goal; gms_92 has no IDB to verify opcodes against — inventing them is forbidden; both stay feature-disabled via the Task 17 config gate).
+**gms_12, gms_48, gms_92 and jms_185 templates get NO entries** (PRD §2.1 / non-goal). jms and gms_12/gms_92 as before — no IDB or registry to verify opcodes against, and inventing them is forbidden. **gms_48 is excluded for a different reason**: its client has both clientbound receivers but neither send-site (verified — PRD FR-6.5), so writers there would answer requests that can never arrive. All stay feature-disabled via the Task 17 config gate.
+
+**gms_61 is sue-only**: it gets the `SueCharacterResult` writer and nothing else. It has no `CLAIM_REQUEST` send-site, so adding claim writers would enable a UI that cannot submit.
 
 - [ ] **Step 1: Add handler entries**
 
-In each template's `socket.handlers` array add one entry (opcode per version; every entry carries a validator — the silent-drop gotcha):
+In the `socket.handlers` array of the six claim-capable templates add one entry (every entry carries a validator — the silent-drop gotcha). **gms_61 gets no handler entry.** The sue handler is already routed in every template — do not re-add it.
 
 | template | entry |
 |---|---|
-| gms_83 | `{ "opCode": "0x6A", "validator": "LoggedInValidator", "handler": "ClaimRequest" }` |
-| gms_84 | `{ "opCode": "0x6A", "validator": "LoggedInValidator", "handler": "ClaimRequest" }` |
-| gms_87 | `{ "opCode": "0x6D", "validator": "LoggedInValidator", "handler": "ClaimRequest" }` |
-| gms_95 | `{ "opCode": "0x76", "validator": "LoggedInValidator", "handler": "ClaimRequest" }` |
+| gms_72 | `{ "opCode": "0x69", "validator": "LoggedInValidator", "handler": "ClaimRequest", "services": ["channel"] }` |
+| gms_79 | `{ "opCode": "0x68", "validator": "LoggedInValidator", "handler": "ClaimRequest", "services": ["channel"] }` |
+| gms_83 | `{ "opCode": "0x6A", "validator": "LoggedInValidator", "handler": "ClaimRequest", "services": ["channel"] }` |
+| gms_84 | `{ "opCode": "0x6A", "validator": "LoggedInValidator", "handler": "ClaimRequest", "services": ["channel"] }` |
+| gms_87 | `{ "opCode": "0x6D", "validator": "LoggedInValidator", "handler": "ClaimRequest", "services": ["channel"] }` |
+| gms_95 | `{ "opCode": "0x76", "validator": "LoggedInValidator", "handler": "ClaimRequest", "services": ["channel"] }` |
+
+`"services": ["channel"]` matches the existing `SueCharacter` entries — omitting it is not the house style. Insert each at its **sorted position** in the array; `tools/template-opcode-order-guard.sh` enforces strictly ascending `opCode`.
+
+The existing `SueCharacter` handler entries are already present and correct in every in-scope template — verified: gms_61 `0x68`, gms_72 `0x71`, gms_79 `0x70`, gms_83 `0x72`, gms_95 `0x7E`. Do not re-add or renumber them.
 
 - [ ] **Step 2: Add writer entries**
 
-In each template's `socket.writers` array add four entries. gms_83/gms_84/gms_87 use these opcodes; gms_95 uses the bracketed alternates:
+Per-template opcodes (the operations tables are identical everywhere; only the `opCode` values move):
+
+| template | SueCharacterResult | ClaimResult | ClaimAvailableTime | ClaimSvrStatusChanged |
+|---|---|---|---|---|
+| gms_61 | 0x34 | — | — | — |
+| gms_72 | 0x34 | 0x2A | 0x2B | 0x2C |
+| gms_79 | 0x34 | 0x2A | 0x2B | 0x2C |
+| gms_83 | 0x37 | 0x2D | 0x2E | 0x2F |
+| gms_84 | 0x37 | 0x2D | 0x2E | 0x2F |
+| gms_87 | 0x37 | 0x2D | 0x2E | 0x2F |
+| gms_95 | 0x37 | 0x2C | 0x2D | 0x2E |
+
+Entry bodies (substitute the `opCode` from the table above; sorted insertion applies here too):
 
 ```json
-{ "opCode": "0x37", "writer": "SueCharacterResult", "options": { "operations": {
+{ "opCode": "<SueCharacterResult>", "writer": "SueCharacterResult", "services": ["channel"], "options": { "operations": {
   "SUCCESS": "0x00", "UNABLE_TO_LOCATE": "0x01", "DAILY_LIMIT": "0x02",
   "REPORTED_NOTICE": "0x03", "GENERIC_FAILURE": "0x04" } } },
-{ "opCode": "0x2D [gms_95: 0x2C]", "writer": "ClaimResult", "options": { "operations": {
+{ "opCode": "<ClaimResult>", "writer": "ClaimResult", "services": ["channel"], "options": { "operations": {
   "SUCCESS": "0x02", "REPORTED_NOTICE": "0x03", "TRY_AGAIN": "0x41",
   "RECHECK_NAME": "0x42", "NOT_ENOUGH_MESOS": "0x43", "CANNOT_CONNECT": "0x44",
   "EXCEEDED": "0x45", "TIME_WINDOW": "0x47", "FALSE_REPORT_CITED": "0x48" } } },
-{ "opCode": "0x2E [gms_95: 0x2D]", "writer": "ClaimAvailableTime" },
-{ "opCode": "0x2F [gms_95: 0x2E]", "writer": "ClaimSvrStatusChanged" }
+{ "opCode": "<ClaimAvailableTime>", "writer": "ClaimAvailableTime", "services": ["channel"] },
+{ "opCode": "<ClaimSvrStatusChanged>", "writer": "ClaimSvrStatusChanged", "services": ["channel"] }
 ```
 
-(Replace the `[gms_95: ...]` notation with the actual per-template hex — SueCharacterResult is 0x37 in all four.)
+(`services` placement matches the existing entries: after `writer`, before `options`.)
+
+**Do not port v83 opcodes down to v61/v72/v79** — the clientbound trio sits a full region lower there, and a wrong opcode is a silent mis-send, not an error.
 
 - [ ] **Step 3: Author the dispatcher-doc operations YAMLs**
 
 Model: `docs/packets/dispatchers/note_operation.yaml`. These make `packet-audit operations --check` the permanent guard that template tables match the enumerations.
 
+> **The mode values on the newly-supported columns are NOT yet verified.** The
+> `v83 ≡ v95` equivalence in `packet-findings.md` was established for those two
+> versions only. Before filling the `gms_v61`/`gms_v72`/`gms_v79` mode columns
+> below, **read each table out of its own IDB** — do not copy v83's row across.
+> There is positive reason for caution: `CWvsContext::OnClaimResult` is `0x2a7`
+> bytes on v72/v79/v83 but `0x25d` on v48/v61, so the handler demonstrably
+> changed shape somewhere in that range. Fill each cell from a decompile, and if
+> a version's mode set genuinely differs, that is a real divergence to encode,
+> not a mistake to smooth over. The `<verify>` placeholders below must not
+> survive into the committed file.
+
 `docs/packets/dispatchers/sue_character_result.yaml`:
 
 ```yaml
 # SueCharacterResult — CWvsContext::OnSueCharacterResult result-code table.
-# Version-STABLE: codes 0-3 byte-identical in v83 (0xa29739) and v95
-# (0x9fae10), IDA-verified (task-145 packet-findings.md §1). Any code
-# outside 0-3 renders the generic-failure line; 4 is the deliberate
-# "other" bucket key.
+# Codes 0-3 byte-identical in v83 (0xa29739) and v95 (0x9fae10), IDA-verified
+# (task-145 packet-findings.md §1). v61/v72/v79 columns read from their own
+# IDBs during this task. Any code outside 0-3 renders the generic-failure
+# line; 4 is the deliberate "other" bucket key.
 writer: SueCharacterResult
 fname: CWvsContext::OnSueCharacterResult
 op: SUE_CHARACTER_RESULT
 direction: clientbound
 opcodes:
+  gms_v61: "0x34"
+  gms_v72: "0x34"
+  gms_v79: "0x34"
   gms_v83: "0x37"
   gms_v84: "0x37"
   gms_v87: "0x37"
   gms_v95: "0x37"
 operations:
-  - { key: SUCCESS,          modes: { gms_v83: 0, gms_v84: 0, gms_v87: 0, gms_v95: 0 } }
-  - { key: UNABLE_TO_LOCATE, modes: { gms_v83: 1, gms_v84: 1, gms_v87: 1, gms_v95: 1 } }
-  - { key: DAILY_LIMIT,      modes: { gms_v83: 2, gms_v84: 2, gms_v87: 2, gms_v95: 2 } }
-  - { key: REPORTED_NOTICE,  modes: { gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v95: 3 } }
-  - { key: GENERIC_FAILURE,  modes: { gms_v83: 4, gms_v84: 4, gms_v87: 4, gms_v95: 4 } }
+  - { key: SUCCESS,          modes: { gms_v61: <verify>, gms_v72: <verify>, gms_v79: <verify>, gms_v83: 0, gms_v84: 0, gms_v87: 0, gms_v95: 0 } }
+  - { key: UNABLE_TO_LOCATE, modes: { gms_v61: <verify>, gms_v72: <verify>, gms_v79: <verify>, gms_v83: 1, gms_v84: 1, gms_v87: 1, gms_v95: 1 } }
+  - { key: DAILY_LIMIT,      modes: { gms_v61: <verify>, gms_v72: <verify>, gms_v79: <verify>, gms_v83: 2, gms_v84: 2, gms_v87: 2, gms_v95: 2 } }
+  - { key: REPORTED_NOTICE,  modes: { gms_v61: <verify>, gms_v72: <verify>, gms_v79: <verify>, gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v95: 3 } }
+  - { key: GENERIC_FAILURE,  modes: { gms_v61: <verify>, gms_v72: <verify>, gms_v79: <verify>, gms_v83: 4, gms_v84: 4, gms_v87: 4, gms_v95: 4 } }
 ```
 
-`docs/packets/dispatchers/claim_result.yaml`:
+`docs/packets/dispatchers/claim_result.yaml` (no `gms_v61` column — claim is version-absent there):
 
 ```yaml
-# ClaimResult — CWvsContext::OnClaimResult mode table. Version-STABLE:
-# mode sets identical in v83 (0xa27891) and v95 (0x9fa7d0), IDA-verified
-# (task-145 packet-findings.md §3). Only SUCCESS (2) carries payload
+# ClaimResult — CWvsContext::OnClaimResult mode table. Mode sets identical in
+# v83 (0xa27891) and v95 (0x9fa7d0), IDA-verified (task-145
+# packet-findings.md §3). v72 (0x91f9a9) / v79 (0x9718f4) columns read from
+# their own IDBs during this task. Only SUCCESS (2) carries payload
 # (byte hasRemaining, int32 remaining); all other modes are bare notices.
 writer: ClaimResult
 fname: CWvsContext::OnClaimResult
 op: CLAIM_RESULT
 direction: clientbound
 opcodes:
+  gms_v72: "0x2A"
+  gms_v79: "0x2A"
   gms_v83: "0x2D"
   gms_v84: "0x2D"
   gms_v87: "0x2D"
   gms_v95: "0x2C"
 operations:
-  - { key: SUCCESS,            modes: { gms_v83: 2, gms_v84: 2, gms_v87: 2, gms_v95: 2 } }
-  - { key: REPORTED_NOTICE,    modes: { gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v95: 3 } }
-  - { key: TRY_AGAIN,          modes: { gms_v83: 65, gms_v84: 65, gms_v87: 65, gms_v95: 65 } }
-  - { key: RECHECK_NAME,       modes: { gms_v83: 66, gms_v84: 66, gms_v87: 66, gms_v95: 66 } }
-  - { key: NOT_ENOUGH_MESOS,   modes: { gms_v83: 67, gms_v84: 67, gms_v87: 67, gms_v95: 67 } }
-  - { key: CANNOT_CONNECT,     modes: { gms_v83: 68, gms_v84: 68, gms_v87: 68, gms_v95: 68 } }
-  - { key: EXCEEDED,           modes: { gms_v83: 69, gms_v84: 69, gms_v87: 69, gms_v95: 69 } }
-  - { key: TIME_WINDOW,        modes: { gms_v83: 71, gms_v84: 71, gms_v87: 71, gms_v95: 71 } }
-  - { key: FALSE_REPORT_CITED, modes: { gms_v83: 72, gms_v84: 72, gms_v87: 72, gms_v95: 72 } }
+  - { key: SUCCESS,            modes: { gms_v72: <verify>, gms_v79: <verify>, gms_v83: 2, gms_v84: 2, gms_v87: 2, gms_v95: 2 } }
+  - { key: REPORTED_NOTICE,    modes: { gms_v72: <verify>, gms_v79: <verify>, gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v95: 3 } }
+  - { key: TRY_AGAIN,          modes: { gms_v72: <verify>, gms_v79: <verify>, gms_v83: 65, gms_v84: 65, gms_v87: 65, gms_v95: 65 } }
+  - { key: RECHECK_NAME,       modes: { gms_v72: <verify>, gms_v79: <verify>, gms_v83: 66, gms_v84: 66, gms_v87: 66, gms_v95: 66 } }
+  - { key: NOT_ENOUGH_MESOS,   modes: { gms_v72: <verify>, gms_v79: <verify>, gms_v83: 67, gms_v84: 67, gms_v87: 67, gms_v95: 67 } }
+  - { key: CANNOT_CONNECT,     modes: { gms_v72: <verify>, gms_v79: <verify>, gms_v83: 68, gms_v84: 68, gms_v87: 68, gms_v95: 68 } }
+  - { key: EXCEEDED,           modes: { gms_v72: <verify>, gms_v79: <verify>, gms_v83: 69, gms_v84: 69, gms_v87: 69, gms_v95: 69 } }
+  - { key: TIME_WINDOW,        modes: { gms_v72: <verify>, gms_v79: <verify>, gms_v83: 71, gms_v84: 71, gms_v87: 71, gms_v95: 71 } }
+  - { key: FALSE_REPORT_CITED, modes: { gms_v72: <verify>, gms_v79: <verify>, gms_v83: 72, gms_v84: 72, gms_v87: 72, gms_v95: 72 } }
 ```
 
 Before finalizing, open `docs/packets/dispatchers/note_operation.yaml` and match its exact field set (if the schema has extra required keys, mirror them; if `op:` values must match registry op names, confirm `SUE_CHARACTER_RESULT`/`CLAIM_RESULT` against `docs/packets/registry/gms_v83.yaml`).
@@ -4433,8 +4490,11 @@ Before finalizing, open `docs/packets/dispatchers/note_operation.yaml` and match
 Run: `go run ./tools/packet-audit operations --check`
 Expected: `operations check OK` (exit 0). If it reports drift, fix the template tables (the YAML docs are source of truth). Also sanity-check JSON:
 
-Run: `for f in services/atlas-configurations/seed-data/templates/template_gms_8*.json services/atlas-configurations/seed-data/templates/template_gms_95_1.json; do python3 -c "import json;json.load(open('$f'))" && echo "$f OK"; done`
+Run: `for v in 61 72 79 83 84 87 95; do f=services/atlas-configurations/seed-data/templates/template_gms_${v}_1.json; python3 -c "import json;json.load(open('$f'))" && echo "$f OK"; done`
 Expected: all OK.
+
+Then run: `tools/template-opcode-order-guard.sh`
+Expected: exit 0. A failure means an entry was appended rather than inserted at its sorted `opCode` position.
 
 - [ ] **Step 5: Add topic env vars**
 
@@ -4962,36 +5022,124 @@ git commit -m "chore(packets): name v83 CWvsContext::SendClaimRequest and splice
 
 ---
 
-### Task 24: Packet verification campaign — 20 matrix cells
+### Task 23b: Registry correction — CLAIM_REQUEST exists on v72 and v79 (PRD FR-6.4)
+
+**Files:**
+- Modify: `docs/packets/registry/gms_v72.yaml` (add the `CLAIM_REQUEST` serverbound row)
+- Modify: `docs/packets/registry/gms_v79.yaml` (same)
+- Modify: `docs/packets/ida-exports/gms_v72.json`, `docs/packets/ida-exports/gms_v79.json` (surgical splice — NON-idempotent, never regenerate)
+- Modify: `docs/packets/audits/STATUS.md` + `status.json` (regenerated, never hand-edited)
+
+`STATUS.md` currently renders v72 and v79 `CLAIM_REQUEST` as `⬜` (n-a). **That is a false negative, not a real absence** — the registry simply has no row. Unlike Task 23's v83 case, the send-sites are **already named** in both IDBs, so there is no naming step here.
+
+- [ ] **Step 1: Confirm the send-sites (already named — just re-read them)**
+
+`idb_open` the v72 (`GMS_v72.1_U_DEVM.exe.i64`) and v79 (`GMS_v79_1_DEVM.exe.i64`) IDBs, then `func_query` `name_regex: "(?i)SendClaimRequest"`.
+
+Expected: `?SendClaimRequest@CWvsContext@@QAEXAAV?$ZArray@V?$ZXString@D@@@@V?$ZXString@D@@@Z` at `0x91f2b4` (v72) and `0x9711ff` (v79), size `0x6bf` each.
+
+- [ ] **Step 2: Re-read the opcode and body from the decompile**
+
+Decompile each and quote the packet-build block. Expected (verified 2026-08-04):
+
+```
+v72 @0x91f749: COutPacket(105)   // 0x69
+v79           : COutPacket(104)   // 0x68
+then, both:  Encode1(bChatClaim)
+             EncodeStr(targetName)
+             Encode1(reasonType)
+             EncodeStr(description)
+             if (bChatClaim) EncodeStr(chatLog)
+             CClientSocket::SendPacket
+```
+
+This is byte-for-byte the v95 shape, so the Task 3 codec needs no version branch. If a re-read disagrees with the above, the decompile wins — update the codec and STOP to re-scope.
+
+- [ ] **Step 3: Add the registry rows**
+
+Add a `CLAIM_REQUEST` entry to each registry mirroring the v83 row's field set (`op`, `opcode`, `fname: CWvsContext::SendClaimRequest`, `direction: serverbound`), with a `note:` recording that the row was added by task-145 from a live IDB read (address + opcode + date) and that it corrects a prior n-a false negative. Provenance is an IDA read, **not** `csv-import`.
+
+- [ ] **Step 4: Splice the exports**
+
+Splice ONLY the new function records into the two export JSONs per `docs/packets/audits/VERIFYING_A_PACKET.md` §9-10. Confirm with `git diff --stat` that only the intended records changed.
+
+- [ ] **Step 5: Regenerate and check the matrix**
+
+Run: `go run ./tools/packet-audit matrix` then `go run ./tools/packet-audit matrix --check`
+Expected: exit 0, and the v72/v79 `CLAIM_REQUEST` cells now render `❌` (present, unimplemented) instead of `⬜`. They become `✅` in Task 24.
+
+Also run `go run ./tools/packet-audit doc-freshness --check` — the version-set facts block is unchanged, but the run must stay clean.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add docs/packets/registry/gms_v72.yaml docs/packets/registry/gms_v79.yaml \
+        docs/packets/ida-exports/gms_v72.json docs/packets/ida-exports/gms_v79.json \
+        docs/packets/audits/STATUS.md docs/packets/audits/status.json
+git commit -m "fix(packets): register CLAIM_REQUEST on gms v72/v79 (corrects n-a false negative)"
+```
+
+---
+
+### Task 23c: Verified absences (PRD FR-6.5) — evidence already recorded
+
+**Files:** none to author — `packet-findings.md` §7 was written during the spec update and is already on the branch.
+
+§7 records, with addresses and decompile evidence, the three `⬜` cells this task's scoping *depends on*: v48 sue (§7.1) and v48/v61 claim (§7.2). They exist so a future reader neither re-litigates them nor "corrects" them the way Task 23b corrects v72/v79.
+
+This task is therefore a **confirmation step, not authoring work**:
+
+- [ ] **Step 1: Re-read §7 before relying on it**
+
+Confirm the three checks in §7.2 still hold against the current IDBs (they are cheap: one `func_query`, one `search_text`, one neighbour lookup per version). If any check now returns a hit, **stop** — a claim send-site on v48/v61 would move those versions into scope and invalidate the Task 18 template split.
+
+- [ ] **Step 2: Confirm nothing was filed as a deferral**
+
+`grep -n "gms-48\|gms_48\|v61 claim" docs/TODO.md` must return nothing. These are permanent absences, not blocked work; listing them would send someone hunting for packets that do not exist (see Task 25 Step 1).
+
+---
+
+### Task 24: Packet verification campaign — 31 matrix cells
 
 **Files (per cell, produced by the packet-verifier flow):**
 - Modify: the five codec test files (add `packet-audit:verify` markers with per-version IDA addresses)
-- Create/modify: evidence records under `docs/packets/evidence/gms_v{83,84,87,95}/`
+- Create/modify: evidence records under `docs/packets/evidence/gms_v{61,72,79,83,84,87,95}/`
 - Regenerate: `docs/packets/audits/STATUS.md` + `status.json`
 
-**Scope:** 5 packets × 4 GMS versions = 20 cells promoted to ✅:
-`SUE_CHARACTER_RESULT`, `CLAIM_RESULT`, `CLAIM_AVAILABLE_TIME`, `CLAIM_STATUS_CHANGED` (clientbound), `CLAIM_REQUEST` (serverbound). jms cells stay ❌/⬜ (out of scope). Static claims are NOT verification (FR-6.1) — every cell needs the decompile-derived read/write order, a byte-fixture with marker + IDA address, the pinned evidence record, and matrix regeneration, committed together.
+**Scope: 31 cells promoted to ✅** — not a flat product, because the two mechanisms have different version spans (PRD §2.1):
+
+| packet | versions | cells |
+|---|---|---|
+| `SUE_CHARACTER_RESULT` (cb) | v61, v72, v79, v83, v84, v87, v95 | 7 |
+| `CLAIM_RESULT` (cb) | v72, v79, v83, v84, v87, v95 | 6 |
+| `CLAIM_AVAILABLE_TIME` (cb) | v72, v79, v83, v84, v87, v95 | 6 |
+| `CLAIM_STATUS_CHANGED` (cb) | v72, v79, v83, v84, v87, v95 | 6 |
+| `CLAIM_REQUEST` (sb) | v72, v79, v83, v84, v87, v95 | 6 |
+
+jms cells stay ❌/⬜ (out of scope). **v48 cells stay ⬜ and are documented, not promoted** (Task 23c) — there is nothing to implement there. Static claims are NOT verification (FR-6.1) — every cell needs the decompile-derived read/write order, a byte-fixture with marker + IDA address, the pinned evidence record, and matrix regeneration, committed together.
 
 - [ ] **Step 1: Dispatch packet-verifier agents, batched per IDB**
 
-Follow `docs/packets/audits/VERIFYING_A_PACKET.md` exactly. Dispatch the `packet-verifier` agent once per packet × version, batched by IDB instance (all v83 cells together on port 13342, v95 on 13341, then v84/v87 per their IDBs) — never two agents against the same IDA instance concurrently. Task 23 must be complete first (v83 CLAIM_REQUEST fname must resolve).
+Follow `docs/packets/audits/VERIFYING_A_PACKET.md` exactly. Dispatch the `packet-verifier` agent once per packet × version, batched by IDB instance (all v83 cells together, then v95, v84, v87, v61, v72, v79 per their IDBs — resolve current ports via `idb_list`, do not assume) — never two agents against the same IDA instance concurrently. Tasks 23 and 23b must both be complete first: v83's `CLAIM_REQUEST` fname must resolve, and v72/v79 must have registry rows to promote.
 
 - [ ] **Step 2: Handle known gotchas**
 
 - v84 clientbound opcodes sit in the post-0x3D shifted region for the claim trio — the STATUS.md rows used in Task 18 already reflect the shift, but each v84 cell must still be verified from the v84 IDB, not ported from v83.
+- **v61/v72/v79 clientbound opcodes sit a full region BELOW v83's** (0x34 vs 0x37; 0x2A–0x2C vs 0x2D–0x2F). Verify each from its own IDB. A ported v83 opcode here is a silent mis-send, not a build error.
+- The v61↔v72 boundary is where the claim mechanism appears and the v79↔v83 boundary is where the opcodes shift, so `packet-audit gate-check --check` will want fixtures on **both** sides of each gated divergence. Budget for that rather than discovering it at CI.
 - Serverbound CLAIM_REQUEST cells need marker + evidence + REPORT (report generated via the root `-ida-source` flag per the serverbound-verification memory).
 - An op whose fname doesn't resolve in an IDA export is a stop-and-ask; never auto-re-export or substitute.
 
 - [ ] **Step 3: Verify the matrix**
 
-Run: `go run ./tools/packet-audit matrix --check && go run ./tools/packet-audit fname-doc --check && go run ./tools/packet-audit operations --check`
-Expected: exit 0 for all three; `grep -E 'SUE_CHARACTER_RESULT|CLAIM_' docs/packets/audits/STATUS.md` shows ✅ in all four GMS columns for the five rows.
+Run: `go run ./tools/packet-audit matrix --check && go run ./tools/packet-audit fname-doc --check && go run ./tools/packet-audit operations --check && go run ./tools/packet-audit gate-check --check`
+Expected: exit 0 for all four; `grep -E 'SUE_CHARACTER_RESULT|CLAIM_' docs/packets/audits/STATUS.md` shows ✅ in the v61 column for `SUE_CHARACTER_RESULT` and in the v72–v95 columns for all five rows, with v48 still ⬜ and jms unchanged.
 
 - [ ] **Step 4: Commit** (the verifier flow commits per-cell artifacts together; finish with the regenerated matrix)
 
 ```bash
 git add docs/packets/ libs/atlas-packet/
-git commit -m "test(packets): verify sue/claim packet cells across gms v83-v95"
+git commit -m "test(packets): verify sue/claim packet cells across gms v61-v95"
 ```
 
 ---
@@ -5008,8 +5156,10 @@ Add entries (not code TODOs) under the appropriate section:
 
 - Report quota / mesos-cost enforcement (sue result code 2 `DAILY_LIMIT`; claim modes 0x43/0x45/0x47/0x48 + real `remaining` counts) — result-code plumbing already expressive; wire counting + config when prioritized.
 - Accused-notification codes (sue 3 / claim mode 3 `REPORTED_NOTICE`) — writers accept the keys already.
-- gms-92 report enablement — blocked on a v92 IDB (opcodes unverifiable); config entries only, no code.
+- gms-12 / gms-92 report enablement — blocked on registry files + IDBs (opcodes unverifiable); config entries only, no code.
 - jms claim support — claim opcodes exist in the jms matrix; template entries + verification when jms is in scope.
+
+Do **not** file gms-48 or gms-61-claim as deferrals: those are verified permanent absences (Task 23c), not blocked work. Recording them as "TODO" would invite someone to go looking for packets that do not exist.
 
 - [ ] **Step 2: Full Go gates on every changed module**
 
@@ -5051,13 +5201,19 @@ cd services/atlas-ui && npx tsc --noEmit && npm run lint && npm run build
 
 Expected: clean.
 
-- [ ] **Step 6: Live acceptance (PRD §10) against a v83 tenant**
+- [ ] **Step 6: Live acceptance (PRD §10) — three tenants**
 
-After deploy (per `live-config-patch.md`):
+After deploy (per `live-config-patch.md`). Run 1–4 against a **v83** tenant and again against a **v72** tenant (the lowest full-feature column, and the one sharing no opcode values with v83 — the case a ported-opcode bug would surface in):
+
 1. `/sue <name> <reason>` from a live client → `sue` report row in atlas-ban; reporter sees the success chat line. Sue against a nonexistent id → result 1, nothing persisted.
 2. Claim UI opens (status/availability packets); chat-claim submission persists a `claim` report with verbatim client log + server transcript; success notice shows remaining-count text.
 3. Claim against an unresolvable name → mode 0x42 notice, nothing persisted.
 4. atlas-ui `/reports`: list, filter by status, open detail, PATCH status.
+
+Then against a **v61** tenant (sue-only), confirm the split scope holds:
+
+5. Sue round-trips exactly as in (1) — including the 0x34 result opcode, not 0x37.
+6. The claim UI stays disabled (no status packet sent), and the channel logs the writer-not-found skip at debug rather than erroring.
 
 Record observed results in the task folder before invoking `superpowers:finishing-a-development-branch`.
 

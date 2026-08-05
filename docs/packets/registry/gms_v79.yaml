@@ -297,16 +297,30 @@
   direction: clientbound
   opcode: 43
   fname: CWvsContext::OnSetClaimSvrAvailableTime
+  packet: report/clientbound/ClaimAvailableTime
   provenance: ida-discovered
   ida:
     address: 9779200
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnSetClaimSvrAvailableTime
+    @0x971b9b (GMS_v79_1_DEVM.exe.i64, session 1438cecd), resolved via the
+    opcode dispatch table CWvsContext::OnPacket case 43 @0x953961. Decode1(a2)
+    @0x971bac -> openHour (v3, stored at this+12116), Decode1(a2) @0x971bae ->
+    closeHour (result, stored at this+12117). Byte-identical to the Atlas
+    ClaimAvailableTime codec (2 bytes, no version branch).'
 - op: CLAIM_STATUS_CHANGED
   direction: clientbound
   opcode: 44
   fname: CWvsContext::OnClaimSvrStatusChanged
+  packet: report/clientbound/ClaimSvrStatusChanged
   provenance: ida-discovered
   ida:
     address: 9779200
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnClaimSvrStatusChanged
+    @0x971bc4 (GMS_v79_1_DEVM.exe.i64, session 1438cecd), resolved via the
+    opcode dispatch table CWvsContext::OnPacket case 44 @0x95396e. Decode1(a2)
+    @0x971bd4, cast nonzero->bool, stored at this+12120 (m_bClaimSvrConnected).
+    Byte-identical to the Atlas ClaimSvrStatusChanged codec (1 byte, no version
+    branch).'
 - op: SET_TAMING_MOB_INFO
   direction: clientbound
   opcode: 45

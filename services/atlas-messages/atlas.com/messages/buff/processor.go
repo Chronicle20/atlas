@@ -41,6 +41,13 @@ func (p *ProcessorImpl) Apply(f field.Model, characterId uint32, fromId uint32, 
 
 	duration := effect.Duration()
 	if durationOverride > 0 {
+		// durationOverride is authored in SECONDS by the GM chat command
+		// "@buff <target> <skill> [duration]" (command/buff/commands.go,
+		// strconv.Atoi on the regex-captured duration group). This is the
+		// one legitimate seconds-to-ms conversion for the
+		// COMMAND_TOPIC_CHARACTER_BUFF duration contract (task-190 FR-3.2
+		// producer audit) — do not remove.
+		//buffdurationguard:allow durationOverride is human-authored seconds from the "@buff" GM chat command; converting to ms here is correct, not the defect.
 		duration = durationOverride * 1000
 	}
 

@@ -58,6 +58,15 @@ For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the b
     banned const list is derived from
     `docs/tasks/task-187-version-aware-id-semantics/audit/divergences.csv`,
     so it grows automatically as future audit passes add divergent ids.
+11. **`tools/buff-duration-guard.sh` clean from the repo root.** Bans
+    seconds→milliseconds scaling in the `duration` fields of
+    `COMMAND_TOPIC_CHARACTER_BUFF` command bodies (task-190 FR-3.2). The unit
+    contract is owned by
+    `services/atlas-buffs/atlas.com/buffs/kafka/message/character/kafka.go`
+    (`ApplyCommandBody.Duration` — milliseconds); it has been flipped three
+    times in prose alone. Fingerprints json tag sets, not type names, because
+    the body struct is duplicated under seven local names. Escape hatch:
+    `//buffdurationguard:allow <justification>`. Runs alongside `go vet ./...`.
 
 ## Code Patterns
 

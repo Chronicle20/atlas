@@ -26,3 +26,88 @@ The binding constraint is `int32` (`executeDebuff` narrows `uint32` →
 `int32`), so overflow after the ×1000 needs `time > 2_147_483` seconds ≈
 24.8 days. The observed maximum of 6000 seconds is ≈358× below that bound
 (2,147,483 / 6000 ≈ 357.9).
+
+## FR-3.2 Step 9 — real-tree guard run and triage
+
+`./tools/buff-duration-guard.sh` run from the repo root against the full
+tree: **exit 0, zero diagnostics**, across all 79 `services/` and `libs/`
+Go modules. This matches Step 9's expectation ("Tasks 2 and 3 already
+removed both historical defects").
+
+### Investigated: `atlas-messages` `buff/processor.go:42-44`
+
+The controller flagged this site ahead of time as one the analyzer might
+report. It was re-verified independently in this task (not taken on the
+controller's word):
+
+- `services/atlas-messages/atlas.com/messages/command/buff/commands.go:29`
+  — the GM chat command regex `^@buff\s+(\w+)\s+"?([^"]+)"?(?:\s+(\d+))?$`
+  for `@buff <target> <skill> [duration]`.
+- `commands.go:45-51` — `durationOverride` is parsed via
+  `strconv.Atoi(match[3])` directly from that regex-captured group, i.e. a
+  human-typed value.
+- `commands.go:180` — `bp.Apply(f, id, c.Id(), foundSkill.Id(), maxLevel, durationOverride)`
+  is the only caller.
+- `buff/processor.go:33-45` — `Apply`: `duration := effect.Duration()`
+  (already ms); `if durationOverride > 0 { duration = durationOverride * 1000 }`
+  converts the human-typed seconds value to ms.
+- `kafka/message/buff/kafka.go:44-61` — `ApplyCommandProvider` builds the
+  `ApplyCommandBody{... Duration: duration ...}` composite literal from the
+  `duration` **function parameter**.
+
+Verdict: **confirmed correct**, not a defect — this is the one legitimate
+seconds-authored input surface for `ApplyCommandBody.Duration` (a human
+types seconds at the GM console; the wire field is ms).
+
+**Why the guard did not flag it (verified empirically, not assumed):** the
+composite literal that trips BD-1 lives in
+`kafka/message/buff/kafka.go`, a different Go package from
+`buff/processor.go` where `duration = durationOverride * 1000` executes.
+`buffdurationguard`'s `collectAssignments` walks `pass.Files`, which is
+scoped to a single package per analysis pass; the "one hop into the local
+assignment" rule cannot cross a function-call boundary into another
+package. Confirmed by building the analyzer and running it directly against
+`services/atlas-messages/atlas.com/messages` both before and after adding
+the annotation below — 0 diagnostics either way. This is a real scope
+limit of the analyzer (same-package, one-hop local-variable tracing only,
+per the brief's design), not a bug in this implementation.
+
+**Action taken:** added a `//buffdurationguard:allow` annotation directly
+above the `duration = durationOverride * 1000` line in
+`services/atlas-messages/atlas.com/messages/buff/processor.go`, plus an
+explanatory comment naming the GM chat command as the seconds-authored
+source. This is documentation for human readers (and for any future
+strengthening of the analyzer to cross-package tracing) — it does not
+suppress an active diagnostic, since none fires there today.
+
+No other diagnostics were produced anywhere in the tree; there was nothing
+else to triage.
+
+## FR-3.2 guard demonstration
+
+Reintroduced the exact pre-task-190 form in atlas-maps:
+
+```
+$ git rev-parse --abbrev-ref HEAD
+task-190-disease-duration-cancel-debuff
+$ sed -i 's|Duration: int32(m.DiseaseDuration().Milliseconds()),|Duration: int32(m.DiseaseDuration() / time.Second),|' \
+  services/atlas-maps/atlas.com/maps/tasks/mist_tick.go
+$ ./tools/buff-duration-guard.sh; echo "exit=$?"
+...
+buffdurationguard: <repo-root>/services/atlas-maps/atlas.com/maps
+<repo-root>/services/atlas-maps/atlas.com/maps/tasks/mist_tick.go:92:42: buffdurationguard: duration fields on the character-buff command are MILLISECONDS; drop the seconds-to-ms scaling. Contract owner: atlas-buffs kafka/message/character/kafka.go (or annotate with //buffdurationguard:allow <justification>)
+...
+buffdurationguard: FAIL — seconds-valued buff duration emitter found
+  The COMMAND_TOPIC_CHARACTER_BUFF duration field is MILLISECONDS.
+  Contract owner: services/atlas-buffs/atlas.com/buffs/kafka/message/character/kafka.go
+exit=1
+```
+
+Restored:
+
+```
+$ git checkout -- services/atlas-maps/atlas.com/maps/tasks/mist_tick.go
+$ ./tools/buff-duration-guard.sh; echo "exit=$?"
+...
+exit=0
+```

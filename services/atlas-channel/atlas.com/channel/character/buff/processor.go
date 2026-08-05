@@ -19,6 +19,7 @@ type Processor interface {
 	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
 	GetByCharacterId(characterId uint32) ([]Model, error)
 	Apply(f field.Model, fromId uint32, sourceId int32, level byte, duration int32, statups []statup.Model) model.Operator[uint32]
+	ApplyNoExpiry(f field.Model, fromId uint32, sourceId int32, level byte, statups []statup.Model) model.Operator[uint32]
 	Cancel(f field.Model, characterId uint32, sourceId int32) error
 	UpdateStatValue(f field.Model, characterId uint32, sourceId int32, statType string, operation string, amount int32, capValue int32) error
 	CancelByTypes(f field.Model, characterId uint32, types []string) error
@@ -57,6 +58,13 @@ func (p *ProcessorImpl) Apply(f field.Model, fromId uint32, sourceId int32, leve
 	return func(characterId uint32) error {
 		p.l.Debugf("Character [%d] applying effect from source [%d].", characterId, sourceId)
 		return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(ApplyCommandProvider(f, characterId, fromId, sourceId, level, duration, statups))
+	}
+}
+
+func (p *ProcessorImpl) ApplyNoExpiry(f field.Model, fromId uint32, sourceId int32, level byte, statups []statup.Model) model.Operator[uint32] {
+	return func(characterId uint32) error {
+		p.l.Debugf("Character [%d] applying no-expiry effect from source [%d].", characterId, sourceId)
+		return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(ApplyNoExpiryCommandProvider(f, characterId, fromId, sourceId, level, statups))
 	}
 }
 

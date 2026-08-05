@@ -5,7 +5,6 @@ import (
 	"atlas-buffs/character"
 	character2 "atlas-buffs/kafka/consumer/character"
 	characterstatus2 "atlas-buffs/kafka/consumer/characterstatus"
-	"atlas-buffs/kafka/consumer/charstatus"
 	skillstatus2 "atlas-buffs/kafka/consumer/skillstatus"
 	"atlas-buffs/tasks"
 	"context"
@@ -60,10 +59,6 @@ func main() {
 	}
 	characterstatus2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := characterstatus2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
-		l.WithError(err).Fatal("Unable to register kafka handlers.")
-	}
-	charstatus.InitConsumers(l)(cmf)(consumerGroupId)
-	if err := charstatus.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 	skillstatus2.InitConsumers(l)(cmf)(consumerGroupId)

@@ -89,14 +89,14 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 // APPLIED and STAT_UPDATED handlers — the packet layer derives the client
 // duration from expiresAt, so callers passing a buff's original timestamps
 // broadcast the remaining duration.
-func announceBuffGive(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32, sourceId int32, level byte, duration int32, statChanges []buff2.StatChange, createdAt time.Time, expiresAt time.Time) {
+func announceBuffGive(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32, sourceId int32, level byte, duration int32, statChanges []buff2.StatChange, createdAt time.Time, expiresAt time.Time, noExpiry bool) {
 	_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(characterId, func(s session.Model) error {
 		bs := make([]buff.Model, 0)
 		changes := make([]stat.Model, 0)
 		for _, cm := range statChanges {
 			changes = append(changes, stat.NewStat(cm.Type, cm.Amount))
 		}
-		bs = append(bs, buff.NewBuff(sourceId, level, duration, changes, createdAt, expiresAt))
+		bs = append(bs, buff.NewBuff(sourceId, level, duration, changes, createdAt, expiresAt, noExpiry))
 
 		err := session.Announce(l)(ctx)(wp)(charpkt.CharacterBuffGiveWriter)(writer.CharacterBuffGiveBody(bs))(s)
 		if err != nil {
@@ -146,7 +146,7 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 			})
 		}
 
-		announceBuffGive(l, ctx, sc, wp, e.CharacterId, e.Body.SourceId, e.Body.Level, e.Body.Duration, e.Body.Changes, e.Body.CreatedAt, e.Body.ExpiresAt)
+		announceBuffGive(l, ctx, sc, wp, e.CharacterId, e.Body.SourceId, e.Body.Level, e.Body.Duration, e.Body.Changes, e.Body.CreatedAt, e.Body.ExpiresAt, e.Body.NoExpiry)
 	}
 }
 
@@ -160,7 +160,12 @@ func handleStatusEventStatUpdated(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		announceBuffGive(l, ctx, sc, wp, e.CharacterId, e.Body.SourceId, e.Body.Level, e.Body.Duration, e.Body.Changes, e.Body.CreatedAt, e.Body.ExpiresAt)
+		// StatUpdatedStatusEventBody carries no NoExpiry field (task-167 FR-2
+		// scoped the flag to APPLY/APPLIED/EXPIRED only) — this transient
+		// re-broadcast buff is display-only (see CharacterBuffGiveBody, which
+		// reads ExpiresAt() directly and never calls Expired()), so false is
+		// a safe default.
+		announceBuffGive(l, ctx, sc, wp, e.CharacterId, e.Body.SourceId, e.Body.Level, e.Body.Duration, e.Body.Changes, e.Body.CreatedAt, e.Body.ExpiresAt, false)
 	}
 }
 
@@ -190,7 +195,7 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 			for _, cm := range e.Body.Changes {
 				changes = append(changes, stat.NewStat(cm.Type, cm.Amount))
 			}
-			ebs = append(ebs, buff.NewBuff(e.Body.SourceId, e.Body.Level, e.Body.Duration, changes, e.Body.CreatedAt, e.Body.ExpiresAt))
+			ebs = append(ebs, buff.NewBuff(e.Body.SourceId, e.Body.Level, e.Body.Duration, changes, e.Body.CreatedAt, e.Body.ExpiresAt, e.Body.NoExpiry))
 
 			err := session.Announce(l)(ctx)(wp)(charpkt.CharacterBuffCancelWriter)(writer.CharacterBuffCancelBody(ebs))(s)
 			if err != nil {

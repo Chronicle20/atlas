@@ -85,6 +85,7 @@ func ppTestBuff(level byte, amount int32, expired bool) buff.Model {
 		[]stat.Model{stat.NewStat(string(charconst.TemporaryStatTypePickPocket), amount)},
 		time.Now().Add(-time.Second),
 		expiresAt,
+		false,
 	)
 }
 
@@ -137,7 +138,7 @@ func TestPickPocketResolveState_BuffLookupErrorDisables(t *testing.T) {
 func TestPickPocketResolveState_NoPickPocketBuffDisables(t *testing.T) {
 	other := buff.NewBuff(2311003, 10, 60000,
 		[]stat.Model{stat.NewStat("HOLY_SYMBOL", 150)},
-		time.Now(), time.Now().Add(time.Minute))
+		time.Now(), time.Now().Add(time.Minute), false)
 	getBuffs := func(characterId uint32) ([]buff.Model, error) {
 		return []buff.Model{other}, nil
 	}

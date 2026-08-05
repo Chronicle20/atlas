@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-ban/ban"
 	"atlas-ban/history"
+	"atlas-ban/report"
 	"atlas-ban/tasks"
 	"context"
 	"os"
@@ -50,7 +51,7 @@ func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(ban.Migration, history.Migration))
+	db := database.Connect(l, database.SetMigrations(ban.Migration, history.Migration, report.Migration))
 
 	server.RegisterTransientErrorClassifier(func(err error) bool {
 		if database.IsTransientConnectionError(err) {

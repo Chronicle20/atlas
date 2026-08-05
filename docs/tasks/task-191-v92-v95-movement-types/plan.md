@@ -113,7 +113,7 @@ Handshake: POST `initialize` (capture the `Mcp-Session-Id` **response header**),
 `notifications/initialized` as a notification (no `id`; expect 202 with an empty body — do not
 JSON-parse it), then `tools/call` with `{"name": ..., "arguments": {..., "database": <session_id>}}`.
 
-- [ ] **Step 1: Enumerate the IDBs and match by filename**
+- [x] **Step 1: Enumerate the IDBs and match by filename**
 
 Session ids rotate; **never** hardcode one. Call `idb_list` and match on `filename`/`input_path`:
 
@@ -135,7 +135,7 @@ address. `name`/`name_contains`/`name_substr` keys are silently ignored by `func
 **Trap:** server responses truncate silently. A short page from `func_query`/`func_profile` is *not*
 end-of-data. `xrefs_to`/`xref_query` cap around 10 results with rich output — page them.
 
-- [ ] **Step 2: Run the v83 control to validate the method**
+- [x] **Step 2: Run the v83 control to validate the method**
 
 Decompile `CMovePath::Encode` in the v83 IDB (design cites `0x68a563`; confirm the address you get
 from `func_query` matches before trusting the read). Read the `switch (nAttr)` and group each `case`
@@ -158,7 +158,7 @@ Compare index-for-index against `template_gms_83_1.json`'s 23-entry
 **Gate:** if the control does **not** reproduce v83's committed array index-for-index, STOP. The
 method is not validated and no v92/v95 derivation may proceed. Report the mismatch.
 
-- [ ] **Step 3: Derive the v95 element table from both codec halves**
+- [x] **Step 3: Derive the v95 element table from both codec halves**
 
 Decompile `CMovePath::Encode` (design: `0x666e20`) **and** `CMovePath::Decode` (design: `0x667920`)
 in the v95 IDB. `Encode` is the serverbound authority (what Atlas decodes); `Decode` is the
@@ -191,14 +191,14 @@ across by index and the client exposes no name strings; inventing one would be f
 | the sole `x,y,vx,vy` arm | `FLYING_BLOCK` | that arm |
 | everything else | `UNKNOWN` | — |
 
-- [ ] **Step 4: Derive the v92 element table independently**
+- [x] **Step 4: Derive the v92 element table independently**
 
 Same procedure against the v92 IDB (design: `Encode` `0x65a260`, `Decode` `0x65ad60`). Do **not**
 assume it equals v95 — derive it, then state whether it matched. Design found both `Encode` bodies
 `0x552` bytes and both `Decode` bodies `0x31e` bytes with case-for-case identical groups; if your
 read disagrees, your read wins and the divergence is recorded.
 
-- [ ] **Step 5: Confirm the v88+ header delta**
+- [x] **Step 5: Confirm the v88+ header delta**
 
 For each of v83, v87, JMS v185, v92, v95, record the header write sequence at the top of
 `CMovePath::Encode` and the matching read sequence at the top of `CMovePath::Decode`:
@@ -215,7 +215,7 @@ The **JMS read is not optional** — Task 2's gate excludes JMS, and that exclus
 evidence. If JMS turns out to write the four-field header, Task 2's predicate changes to
 `MajorAtLeast(88)` without the region clause; report it and adjust.
 
-- [ ] **Step 6: Derive every opcode by walking xrefs into `CMovePath::Flush`**
+- [x] **Step 6: Derive every opcode by walking xrefs into `CMovePath::Flush`**
 
 v95 `Flush` is at `0x668160`, v92 at `0x65b5a0` (per design; confirm). Six senders per client (mob,
 npc, dragon, pet, summoned, user). For each, read the `COutPacket(<imm>)` constructor immediate at
@@ -245,7 +245,7 @@ v92 (senders are `sub_*`; resolve by positional correspondence against the v95 n
 | **Summoned** | `sub_9792D0` @`0x97932d` | **`0xCC`** | both `Encode4(dwSummonedID)` before `Flush` |
 | User | `sub_9798F0` | `0x2E` (matches template) | both write the 8-field anti-cheat header |
 
-- [ ] **Step 7: Derive the rest of the v92 summon block and settle what owns `0xC8`**
+- [x] **Step 7: Derive the rest of the v92 summon block and settle what owns `0xC8`**
 
 `template_gms_92_1.json` currently registers `SummonMoveHandle 0xC8`, `SummonAttackHandle 0xC9`,
 `SummonDamageHandle 0xCA`. If the summon *move* opcode is really `0xCC`, the neighbouring two are
@@ -266,13 +266,13 @@ Derive from the v92 client:
 Record all three findings with addresses. If a real, Atlas-routed v92 handler legitimately collides
 at `0xC8`/`0xC9`/`0xCA`, **STOP and escalate** (design §5.3) rather than silently overwriting.
 
-- [ ] **Step 8: Name the v92 `sub_*` functions in the IDB**
+- [x] **Step 8: Name the v92 `sub_*` functions in the IDB**
 
 Per CLAUDE.md's RE discipline, rename each v92 `sub_*` resolved in Steps 6–7 to its v95 mangled
 symbol (`rename` tool with the session's `database`; `dir:"vibe"` in the output means it took), so
 the addresses cited in the evidence document resolve to names on re-read. List every rename applied.
 
-- [ ] **Step 9: Write `movement-types-derivation.md`**
+- [x] **Step 9: Write `movement-types-derivation.md`**
 
 Required sections:
 
@@ -303,7 +303,7 @@ Required sections:
     Atlas ever sends a non-empty client-option list including type 2, `movement.go` must gain those
     two reads.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add docs/tasks/task-191-v92-v95-movement-types/movement-types-derivation.md
@@ -329,7 +329,7 @@ git commit -m "docs(task-191): derive v92/v95 movement types, header delta, and 
 **Gate:** do not start until `movement-types-derivation.md` §5 confirms the delta *and* the JMS
 exclusion. If JMS writes the four-field header, use `MajorAtLeast(88)` alone and say so in the commit.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `libs/atlas-packet/model/movement_test.go`. Note this file currently imports
 `"github.com/Chronicle20/atlas/libs/atlas-packet/test"` unaliased plus `logrus` and
@@ -412,7 +412,7 @@ func TestMovementHeaderRoundTrip(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the tests and verify they fail**
+- [x] **Step 2: Run the tests and verify they fail**
 
 ```bash
 go test ./model/ -run 'TestMovementHeader' -v
@@ -420,7 +420,7 @@ go test ./model/ -run 'TestMovementHeader' -v
 Working directory: `libs/atlas-packet`.
 Expected: **compile failure** — `unknown field StartVx in struct literal of type Movement`.
 
-- [ ] **Step 3: Add the struct fields**
+- [x] **Step 3: Add the struct fields**
 
 In `libs/atlas-packet/model/movement.go`, replace the `Movement` struct (currently `:27-31`):
 
@@ -435,7 +435,7 @@ type Movement struct {
 }
 ```
 
-- [ ] **Step 4: Gate the reads in `Decode`**
+- [x] **Step 4: Gate the reads in `Decode`**
 
 In `Movement.Decode`, immediately after `m.StartY = r.ReadInt16()` and before `numElems := r.ReadByte()`:
 
@@ -474,7 +474,7 @@ func (m *Movement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *req
 	return func(r *request.Reader, options map[string]interface{}) {
 ```
 
-- [ ] **Step 5: Gate the writes in `Encode`**
+- [x] **Step 5: Gate the writes in `Encode`**
 
 In `Movement.Encode`, immediately after `w.WriteInt16(m.StartY)` and before
 `w.WriteByte(byte(len(m.Elements)))`:
@@ -499,7 +499,7 @@ func (m *Movement) Encode(l logrus.FieldLogger, ctx context.Context) func(option
 	return func(options map[string]interface{}) []byte {
 ```
 
-- [ ] **Step 6: Run the new tests and verify they pass**
+- [x] **Step 6: Run the new tests and verify they pass**
 
 ```bash
 go test ./model/ -run 'TestMovementHeader' -v
@@ -507,7 +507,7 @@ go test ./model/ -run 'TestMovementHeader' -v
 Expected: PASS for all cases, including the four `GMS v87 drops vx/vy` / `JMS v185 drops vx/vy`
 sub-tests.
 
-- [ ] **Step 7: Run the full library suite — the regression net**
+- [x] **Step 7: Run the full library suite — the regression net**
 
 ```bash
 go test -race ./... && go vet ./...
@@ -529,7 +529,7 @@ The one literal-byte movement fixture (`TestMonsterMovementBytesV79`) is at v79,
 Expected: all PASS, `go vet` silent. If a v92/v95 sub-test fails, the gate is one-sided — recheck
 Steps 4 and 5 are textually identical.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add libs/atlas-packet/model/movement.go libs/atlas-packet/model/movement_test.go
@@ -551,7 +551,7 @@ templates are green — so this commit does not break the branch's CI.
 - Produces: `tools/template-movement-types-guard.sh` — run from the repo root, exits 0 on success,
   non-zero with per-violation diagnostics otherwise. Tasks 4, 5, 6, 7, 9 run it.
 
-- [ ] **Step 1: Write the guard**
+- [x] **Step 1: Write the guard**
 
 Create `tools/template-movement-types-guard.sh`. Modelled on `tools/template-opcode-order-guard.sh`
 (bash preamble + inlined `python3` heredoc, no Go toolchain, run from the repo root, non-empty
@@ -692,7 +692,7 @@ PY
 chmod +x tools/template-movement-types-guard.sh
 ```
 
-- [ ] **Step 2: Run it and verify it FAILS, naming exactly the known-bad cells**
+- [x] **Step 2: Run it and verify it FAILS, naming exactly the known-bad cells**
 
 ```bash
 tools/template-movement-types-guard.sh; echo "exit=$?"
@@ -723,7 +723,7 @@ not appear because those entries do not exist yet — they are added in Tasks 5 
 **Gate:** if the guard reports anything *other* than these seven lines, stop and investigate — either
 the guard is wrong or `current-state.md`'s baseline survey was.
 
-- [ ] **Step 2b: Prove the floor check works (no vacuous pass)**
+- [x] **Step 2b: Prove the floor check works (no vacuous pass)**
 
 ```bash
 mkdir -p /tmp/claude-1000/task-191-empty
@@ -738,14 +738,14 @@ PY
 Expected: `FAIL: found only 0 template_*.json under …` and `rc=1`. Without the floor check this would
 print `OK: 0 move handlers …` and exit 0 — a guard that passes because it looked nowhere.
 
-- [ ] **Step 3: Verify it does not flag `CharacterInventoryMoveHandle`**
+- [x] **Step 3: Verify it does not flag `CharacterInventoryMoveHandle`**
 
 ```bash
 tools/template-movement-types-guard.sh 2>&1 | grep -c CharacterInventoryMoveHandle
 ```
 Expected: `0`. That handler appears in every template with no `types` and is correctly excluded.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tools/template-movement-types-guard.sh
@@ -764,7 +764,7 @@ The smallest template fix and the only one needing no derivation: v48 has a vali
 **Interfaces:**
 - Consumes: `tools/template-movement-types-guard.sh` from Task 3.
 
-- [ ] **Step 1: Read the source array**
+- [x] **Step 1: Read the source array**
 
 ```bash
 sed -n '140,241p' services/atlas-configurations/seed-data/templates/template_gms_48_1.json
@@ -774,7 +774,7 @@ That is the complete `CharacterMoveHandle` entry (opCode `0x21`). Lines 145–24
 `"options": { "types": [ … ] }` block — 23 entries, indentation: `"options"` at 8 spaces, `"types"`
 at 10, each entry object at 12, entry keys at 14.
 
-- [ ] **Step 2: Read the target entry**
+- [x] **Step 2: Read the target entry**
 
 ```bash
 sed -n '732,738p' services/atlas-configurations/seed-data/templates/template_gms_48_1.json
@@ -790,7 +790,7 @@ Expected:
       },
 ```
 
-- [ ] **Step 3: Splice the array in**
+- [x] **Step 3: Splice the array in**
 
 Use Edit. Change `"services": ["channel"]` → `"services": ["channel"],` on the `SummonMoveHandle`
 entry and append the `"options": { … }` block copied **verbatim** from lines 145–240, at the same
@@ -799,7 +799,7 @@ unique.
 
 Do not retype the 23 entries by hand — copy the exact text read in Step 1.
 
-- [ ] **Step 4: Verify the two arrays are byte-identical**
+- [x] **Step 4: Verify the two arrays are byte-identical**
 
 ```bash
 python3 -c "
@@ -814,14 +814,14 @@ print('all identical:', all(h[k]==ref for k in ('CharacterMoveHandle','PetMoveme
 Expected: `CharacterMoveHandle 23`, `PetMovementHandle 23`, `SummonMoveHandle 23`,
 `MonsterMovementHandle 23`, `CharacterInventoryMoveHandle None`, and `all identical: True`.
 
-- [ ] **Step 5: Confirm the guard no longer flags v48**
+- [x] **Step 5: Confirm the guard no longer flags v48**
 
 ```bash
 tools/template-movement-types-guard.sh 2>&1 | grep gms_48 || echo "v48 clean"
 ```
 Expected: `v48 clean`. (The guard still exits 1 overall — v92/v95 are fixed in Tasks 5 and 6.)
 
-- [ ] **Step 6: Confirm the diff is confined to that one entry**
+- [x] **Step 6: Confirm the diff is confined to that one entry**
 
 ```bash
 git diff --stat services/atlas-configurations/seed-data/templates/
@@ -829,7 +829,7 @@ git diff --stat services/atlas-configurations/seed-data/templates/
 Expected: only `template_gms_48_1.json`, ~96 insertions, 1 deletion (the `"services"` line gaining
 its comma).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-configurations/seed-data/templates/template_gms_48_1.json
@@ -860,7 +860,7 @@ Target end state:
 | `SummonDamageHandle` | `0xCA` → **derived** (design-phase hypothesis: `0xCE`) | correct opCode |
 | `MonsterMovementHandle` | `0xDC` (confirmed) | add `types` |
 
-- [ ] **Step 1: Re-read the current handler block**
+- [x] **Step 1: Re-read the current handler block**
 
 ```bash
 python3 -c "
@@ -874,7 +874,7 @@ Expected around indices 40–45: `0x8D CharacterInteractionHandle`, `0xC8 Summon
 `0xC9 SummonAttackHandle`, `0xCA SummonDamageHandle`, `0xDC MonsterMovementHandle`,
 `0xEA NPCActionHandle`.
 
-- [ ] **Step 2: Correct the three summon opcodes**
+- [x] **Step 2: Correct the three summon opcodes**
 
 Edit the three `opCode` values in place — `0xC8` → `0xCC`, `0xC9` → `0xCD`, `0xCA` → `0xCE` (using
 the derived values, not these if they differ). Ascending order is preserved: `0x8D` < `0xCC` <
@@ -883,7 +883,7 @@ the derived values, not these if they differ). Ascending order is preserved: `0x
 Add a note to the commit body recording that `0xC8` was v92's *stale* summon-move opcode and what
 the derivation found actually owns it.
 
-- [ ] **Step 3: Add the `PetMovementHandle` entry at its sorted position**
+- [x] **Step 3: Add the `PetMovementHandle` entry at its sorted position**
 
 `0xC4` sorts after `0x8D CharacterInteractionHandle` and before `0xCC SummonMoveHandle`. Insert with
 Edit, anchoring on the `CharacterInteractionHandle` entry's closing `},`:
@@ -904,7 +904,7 @@ Edit, anchoring on the `CharacterInteractionHandle` entry's closing `},`:
       },
 ```
 
-- [ ] **Step 4: Add `types` to the other three move handlers**
+- [x] **Step 4: Add `types` to the other three move handlers**
 
 For each of `CharacterMoveHandle` (`0x2E`), `SummonMoveHandle` (now `0xCC`), and
 `MonsterMovementHandle` (`0xDC`): change that entry's `"services": ["channel"]` →
@@ -913,7 +913,7 @@ verbatim** at the same indentation used in Task 4 (`"options"` at 8 spaces, `"ty
 objects at 12, entry keys at 14). Anchor each `old_string` on its `"handler": "…"` line for
 uniqueness.
 
-- [ ] **Step 5: Verify structurally**
+- [x] **Step 5: Verify structurally**
 
 ```bash
 python3 -c "
@@ -938,7 +938,7 @@ Expected: all four move handlers report the derived length (37 per Appendix A), 
 `validators ok: True`, `ascending: True`, the summon block at the derived opcodes, and
 `inventory untouched: [('0x4E', None)]`.
 
-- [ ] **Step 6: Confirm no trailing newline was introduced**
+- [x] **Step 6: Confirm no trailing newline was introduced**
 
 ```bash
 python3 -c "
@@ -949,7 +949,7 @@ print('CRLF present:', b'\r\n' in b, '(must be False)')
 ```
 Expected: `trailing newline: False`, `CRLF present: False`.
 
-- [ ] **Step 7: Run both template guards**
+- [x] **Step 7: Run both template guards**
 
 ```bash
 tools/template-opcode-order-guard.sh; echo "order exit=$?"
@@ -957,7 +957,7 @@ tools/template-movement-types-guard.sh 2>&1 | grep gms_92 || echo "v92 clean"
 ```
 Expected: `order exit=0`, `v92 clean`. (The movement guard still exits 1 — v95 remains.)
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add services/atlas-configurations/seed-data/templates/template_gms_92_1.json
@@ -984,7 +984,7 @@ Target end state:
 | `SummonMoveHandle` | `0xCF` (confirmed) | add `types` |
 | `MonsterMovementHandle` | `0xE3` (confirmed) | add `types` |
 
-- [ ] **Step 1: Confirm `0x2C` is free and find the insertion point**
+- [x] **Step 1: Confirm `0x2C` is free and find the insertion point**
 
 ```bash
 python3 -c "
@@ -1001,7 +1001,7 @@ Expected: `0x2A ChannelChangeHandle`, `0x2D CharacterChairInteractionHandle`,
 
 If `0x2C` is **not** free, stop — that contradicts Task 1's derivation and needs escalation.
 
-- [ ] **Step 2: Add the `CharacterMoveHandle` entry at its sorted position**
+- [x] **Step 2: Add the `CharacterMoveHandle` entry at its sorted position**
 
 Insert with Edit, anchoring on the `ChannelChangeHandle` entry's closing `},`:
 
@@ -1021,7 +1021,7 @@ Insert with Edit, anchoring on the `ChannelChangeHandle` entry's closing `},`:
       },
 ```
 
-- [ ] **Step 3: Add `types` to the three existing move handlers**
+- [x] **Step 3: Add `types` to the three existing move handlers**
 
 For `PetMovementHandle` (`0xC7`), `SummonMoveHandle` (`0xCF`), and `MonsterMovementHandle` (`0xE3`):
 change `"services": ["channel"]` → `"services": ["channel"],` and append the
@@ -1033,7 +1033,7 @@ Anchor each `old_string` on its `"handler": "…"` line.
 `PetItemExcludeHandle` (`0xCC`) — several near-identical five-line entries. Include the
 `"handler": "PetMovementHandle",` line in the match so the Edit cannot land on a neighbour.
 
-- [ ] **Step 4: Verify structurally**
+- [x] **Step 4: Verify structurally**
 
 ```bash
 python3 -c "
@@ -1059,7 +1059,7 @@ Expected: four move handlers at the derived length (37), `identical: True`, `val
 (`0xC7 PetMovementHandle`, `0xC8 PetChatHandle`, `0xC9 PetCommandHandle`, `0xCA PetDropPickUpHandle`,
 `0xCB PetItemUseHandle`, `0xCC PetItemExcludeHandle`, plus `PetFoodHandle 0x52`, `PetSpawnHandle 0x6E`).
 
-- [ ] **Step 5: Cross-template check — v92 and v95 tables agree (or the divergence is recorded)**
+- [x] **Step 5: Cross-template check — v92 and v95 tables agree (or the divergence is recorded)**
 
 ```bash
 python3 -c "
@@ -1074,7 +1074,7 @@ Expected: `True`, if and only if `movement-types-derivation.md` §4 says the two
 identical. If the evidence recorded a divergence, this prints `False` and that is correct — do not
 "fix" it to match.
 
-- [ ] **Step 6: Run both template guards — both must now be GREEN**
+- [x] **Step 6: Run both template guards — both must now be GREEN**
 
 ```bash
 tools/template-opcode-order-guard.sh; echo "order exit=$?"
@@ -1092,7 +1092,7 @@ Tasks 5 and 6. A different total means a handler was added or missed.
 
 This is the RED→GREEN transition for the guard written in Task 3.
 
-- [ ] **Step 7: Confirm no other template changed**
+- [x] **Step 7: Confirm no other template changed**
 
 ```bash
 git diff --stat main -- services/atlas-configurations/seed-data/templates/
@@ -1100,7 +1100,7 @@ git diff --stat main -- services/atlas-configurations/seed-data/templates/
 Expected: exactly three files — `template_gms_48_1.json`, `template_gms_92_1.json`,
 `template_gms_95_1.json`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add services/atlas-configurations/seed-data/templates/template_gms_95_1.json
@@ -1119,7 +1119,7 @@ Now that the guard is green, register it so the defect class cannot recur.
 **Interfaces:**
 - Consumes: `tools/template-movement-types-guard.sh` (Task 3), green as of Task 6.
 
-- [ ] **Step 1: Add the CI job**
+- [x] **Step 1: Add the CI job**
 
 In `.github/workflows/pr-validation.yml`, insert a new job immediately after the
 `template-opcode-order-guard` job (which ends at the `run: ./tools/template-opcode-order-guard.sh`
@@ -1148,7 +1148,7 @@ line, ~:322), matching its exact shape:
         run: ./tools/template-movement-types-guard.sh
 ```
 
-- [ ] **Step 2: Add it to the summary job's `needs:` list**
+- [x] **Step 2: Add it to the summary job's `needs:` list**
 
 At `.github/workflows/pr-validation.yml:713`, add `template-movement-types-guard` immediately after
 `template-opcode-order-guard`:
@@ -1157,7 +1157,7 @@ At `.github/workflows/pr-validation.yml:713`, add `template-movement-types-guard
     needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard, outbox-guard, goroutine-guard, gen-lb-ports, service-registration-guard, template-opcode-order-guard, template-movement-types-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
 ```
 
-- [ ] **Step 3: Add it to the result rollup**
+- [x] **Step 3: Add it to the result rollup**
 
 In the same job's `Check results` step, after the `TMPL_ORDER_GUARD_RESULT` line (~:734):
 
@@ -1171,7 +1171,7 @@ and after the `| Template Opcode Order Guard |` summary row:
           echo "| Template Movement Types Guard | $TMPL_MOVE_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
 ```
 
-- [ ] **Step 3b: Add it to the pass/fail assertion**
+- [x] **Step 3b: Add it to the pass/fail assertion**
 
 At the end of the same step (~:761) there is one long `if` chaining every `*_RESULT` variable. Add the
 new variable immediately after `$TMPL_ORDER_GUARD_RESULT`:
@@ -1187,7 +1187,7 @@ new variable immediately after `$TMPL_ORDER_GUARD_RESULT`:
 **Missing this step is the silent failure mode**: without it the job would appear in the summary table
 but never fail the check run.
 
-- [ ] **Step 4: Add CLAUDE.md Build & Verification item 11**
+- [x] **Step 4: Add CLAUDE.md Build & Verification item 11**
 
 After item 10 (`tools/skill-job-id-guard.sh`):
 
@@ -1207,7 +1207,7 @@ After item 10 (`tools/skill-job-id-guard.sh`):
 
 **Also update the worktree's `CLAUDE.md`, not the main checkout's.**
 
-- [ ] **Step 5: Document the rule in `docs/packets/TEMPLATE_CONVENTIONS.md`**
+- [x] **Step 5: Document the rule in `docs/packets/TEMPLATE_CONVENTIONS.md`**
 
 Add a new section after "Rule: ascending opcode order (enforced)" and before the existing "Guard"
 section — then extend that "Guard" section to name both scripts:
@@ -1246,7 +1246,7 @@ Failure modes, both of which have shipped:
 inventory item movement and correctly carries no `types`.
 ```
 
-- [ ] **Step 6: Validate the workflow YAML parses**
+- [x] **Step 6: Validate the workflow YAML parses**
 
 ```bash
 python3 -c "
@@ -1264,14 +1264,14 @@ print('in needs:', 'template-movement-types-guard' in jobs['pr-validation-comple
 Expected: `job present: True`, `in needs: True`. If PyYAML is unavailable, use the printed fallback
 or `gh workflow view` — do not skip the check.
 
-- [ ] **Step 7: Run the guard once more from a clean shell**
+- [x] **Step 7: Run the guard once more from a clean shell**
 
 ```bash
 tools/template-movement-types-guard.sh; echo "exit=$?"
 ```
 Expected: `exit=0`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add .github/workflows/pr-validation.yml CLAUDE.md docs/packets/TEMPLATE_CONVENTIONS.md
@@ -1296,7 +1296,7 @@ that row's `fname_alts`.
 **Gate:** apply only if Task 1 confirmed opcode 44. If the derivation found a different opcode, the
 change is an opcode correction instead and must be recorded as such.
 
-- [ ] **Step 1: Read the current row**
+- [x] **Step 1: Read the current row**
 
 ```bash
 sed -n '2290,2295p' docs/packets/registry/gms_v95.yaml
@@ -1312,7 +1312,7 @@ Expected:
   provenance: csv-import
 ```
 
-- [ ] **Step 2: Swap fname and fname_alts**
+- [x] **Step 2: Swap fname and fname_alts**
 
 ```yaml
 - op: MOVE_PLAYER
@@ -1328,7 +1328,7 @@ Opcode unchanged at 44. `CVecCtrlUser::EndUpdateActive` @`0x9a0d20` is the funct
 `COutPacket(44)` @`0x9a0ee3` and calls `CMovePath::Flush`; `CUserLocal::OnKey` is an input handler,
 not the sender.
 
-- [ ] **Step 3: Verify the YAML still parses and no other row moved**
+- [x] **Step 3: Verify the YAML still parses and no other row moved**
 
 ```bash
 python3 -c "
@@ -1344,7 +1344,7 @@ diffstat shows exactly 2 insertions / 2 deletions in that one file. If the top-l
 differs from the guess above, adapt the one-liner — the point is that the file parses and the row
 reads correctly.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docs/packets/registry/gms_v95.yaml
@@ -1359,7 +1359,7 @@ Every claim in the acceptance criteria gets a command and quoted output. No "sho
 
 **Files:** none modified (unless a check fails).
 
-- [ ] **Step 1: Go tests and vet in the one changed module**
+- [x] **Step 1: Go tests and vet in the one changed module**
 
 ```bash
 cd libs/atlas-packet && go test -race ./... && go vet ./...
@@ -1368,7 +1368,7 @@ Expected: all packages `ok` or `no test files`; `go vet` silent. `libs/atlas-pac
 module touched, so no other module needs this and no `docker buildx bake` is required (no `go.mod`
 changed — confirm with `git diff --name-only main | grep go.mod || echo "no go.mod touched"`).
 
-- [ ] **Step 2: Both template guards**
+- [x] **Step 2: Both template guards**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -1377,7 +1377,7 @@ tools/template-movement-types-guard.sh; echo "movement exit=$?"
 ```
 Expected: both `exit=0`.
 
-- [ ] **Step 3: Lint and format**
+- [x] **Step 3: Lint and format**
 
 ```bash
 tools/lint.sh --check; echo "exit=$?"
@@ -1388,7 +1388,7 @@ unaliased `atlas-tenant` import: the package is `tenant` but the directory is `a
 goimports can duplicate the import. `movement.go` already imports it as
 `tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"` — leave that alias in place.
 
-- [ ] **Step 4: Re-run the FR-5 invariants across all 11 templates, output shown**
+- [x] **Step 4: Re-run the FR-5 invariants across all 11 templates, output shown**
 
 ```bash
 python3 -c "
@@ -1409,7 +1409,7 @@ for p in sorted(glob.glob('services/atlas-configurations/seed-data/templates/tem
 Expected, for every one of the 11 templates: no `None` lengths, `identical=True`,
 `bad_types=none`, `max_fall_down` ≤ 1.
 
-- [ ] **Step 5: Scope containment against `main`**
+- [x] **Step 5: Scope containment against `main`**
 
 ```bash
 git diff --stat main
@@ -1435,7 +1435,7 @@ git diff --name-only main | grep -E '^services/atlas-channel/' && echo "VIOLATIO
 ```
 Expected: `atlas-channel untouched (ok)`.
 
-- [ ] **Step 6: Confirm the worktree and branch are still correct**
+- [x] **Step 6: Confirm the worktree and branch are still correct**
 
 ```bash
 git rev-parse --show-toplevel   # must end with /.worktrees/task-191-v92-v95-movement-types
@@ -1443,7 +1443,7 @@ git branch --show-current       # must be task-191-v92-v95-movement-types
 git status --short              # must be clean
 ```
 
-- [ ] **Step 7: Commit (only if Step 3 required formatting fixes)**
+- [x] **Step 7: Commit (only if Step 3 required formatting fixes)**
 
 ```bash
 git add -A && git commit -m "chore(task-191): lint fixes"
@@ -1463,7 +1463,7 @@ socket configuration and will not pick the fix up without a data operation.
 **Interfaces:**
 - Consumes: the final state of `template_gms_92_1.json` and `template_gms_95_1.json` (Tasks 5, 6).
 
-- [ ] **Step 1: Enumerate the configuration tenants**
+- [x] **Step 1: Enumerate the configuration tenants**
 
 atlas-configurations is reachable externally through the ingress; no tenant headers are needed for
 this bootstrap resource:
@@ -1482,7 +1482,7 @@ Select the tenants whose region/major version is GMS 92 or GMS 95. Project memor
 2026-07-30 (**verify, do not trust**): v92 `db1dbfb3…` (parked), v95 `c794c706…`, in namespace
 `atlas-main`. Record the full ids you actually observe.
 
-- [ ] **Step 2: Snapshot each tenant's current configuration**
+- [x] **Step 2: Snapshot each tenant's current configuration**
 
 ```bash
 mkdir -p /tmp/claude-1000/task-191
@@ -1505,7 +1505,7 @@ for e in d['data']['attributes']['socket']['handlers']:
 " /tmp/claude-1000/task-191/<tenant-id>.before.json
 ```
 
-- [ ] **Step 3: Build the reconciled configuration — surgical, not a template push**
+- [x] **Step 3: Build the reconciled configuration — surgical, not a template push**
 
 **A wholesale `socket` swap is forbidden.** PATCH is a **full replace** of the tenant configuration
 JSON, so the body must carry complete attributes — but the *content* must be the live config with
@@ -1554,7 +1554,7 @@ print('writers unchanged:', a['socket'].get('writers')==b['socket'].get('writers
 Expected: no keys added/removed, nothing changed outside `socket`, `writers unchanged: True`, exactly
 one handler added, zero removed, and only the intended handlers changed.
 
-- [ ] **Step 4: PATCH**
+- [x] **Step 4: PATCH**
 
 ```bash
 curl -s -X PATCH --resolve dev.atlas.home:80:192.168.23.230 \
@@ -1566,7 +1566,7 @@ curl -s -X PATCH --resolve dev.atlas.home:80:192.168.23.230 \
 The body is the JSON:API envelope `{"data":{"type":"tenants","id":"…","attributes":{…}}}`.
 Expected: HTTP 200.
 
-- [ ] **Step 5: Read back and verify — the PATCH response is NOT evidence**
+- [x] **Step 5: Read back and verify — the PATCH response is NOT evidence**
 
 A handler entry missing its `validator` is accepted at the transport layer and then silently dropped
 at load time, so verification must be a fresh `GET`:
@@ -1600,7 +1600,7 @@ Expected per tenant: all four handlers present at the derived opcodes, each with
 **Quote the actual output in `reconcile.md`.** A `False` on any line means the PATCH did not take —
 do not proceed.
 
-- [ ] **Step 6: Restart atlas-channel**
+- [x] **Step 6: Restart atlas-channel**
 
 Handler/writer maps are built at listener-creation time and the configuration projection's
 `ListenerConfig` diff **excludes** handlers/writers, so a handlers-only change does **not** hot-reload.
@@ -1617,7 +1617,7 @@ covering the new/moved move opcodes, and `listener.added`:
 kubectl -n atlas-main logs deployment/atlas-channel --tail=400 | grep -iE 'Configuring opcode|listener.added' | head -40
 ```
 
-- [ ] **Step 7: Confirm the negative signal — the error line is gone**
+- [x] **Step 7: Confirm the negative signal — the error line is gone**
 
 The primary post-reconcile signal is negative. `movementPathAttrFromOptions` logs
 `"Code [%d] not configured for use in movement…"` at error level per fragment (`movement.go:289`).
@@ -1628,7 +1628,7 @@ kubectl -n atlas-main logs deployment/atlas-channel --since=10m | grep -c "not c
 ```
 Expected: `0`. Continued presence means the reconcile did not take.
 
-- [ ] **Step 8: Write `reconcile.md`**
+- [x] **Step 8: Write `reconcile.md`**
 
 Required content (FR-6.3 — the operation must be repeatable for any environment not covered here):
 
@@ -1642,7 +1642,7 @@ Required content (FR-6.3 — the operation must be repeatable for any environmen
 8. Any environment deliberately **not** reconciled, and why.
 9. The explicit warning that PATCH is a full replace and that a wholesale `socket` swap is forbidden.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add docs/tasks/task-191-v92-v95-movement-types/reconcile.md
@@ -1656,7 +1656,7 @@ git commit -m "docs(task-191): record live v92/v95 tenant socket-config reconcil
 CLAUDE.md: *"Always run the code-review step before opening a PR. Do not skip even when the task plan
 looks complete."*
 
-- [ ] **Step 1: Invoke the review skill**
+- [x] **Step 1: Invoke the review skill**
 
 Use `superpowers:requesting-code-review`. Go files changed (`libs/atlas-packet/model/movement.go`),
 so it dispatches `backend-guidelines-reviewer` and `plan-adherence-reviewer`; no atlas-ui TypeScript
@@ -1668,7 +1668,7 @@ expensive model for review workflows.
 Every reviewer prompt must `cd` into `.worktrees/task-191-v92-v95-movement-types` and verify
 `git branch --show-current` before doing anything, and write artifacts only inside that worktree.
 
-- [ ] **Step 2: Verify the tree is clean after the subagent runs**
+- [x] **Step 2: Verify the tree is clean after the subagent runs**
 
 ```bash
 git status --short
@@ -1677,16 +1677,16 @@ git rev-parse --show-toplevel
 Expected: clean, and the toplevel ends with `/.worktrees/task-191-v92-v95-movement-types`. If a
 reviewer wrote into the main checkout, move the file and clean up.
 
-- [ ] **Step 3: Address findings**
+- [x] **Step 3: Address findings**
 
 Use `superpowers:receiving-code-review` — verify each finding technically before implementing it;
 do not implement blindly, and do not agree performatively with a finding that is wrong.
 
-- [ ] **Step 4: Re-run the verification sweep**
+- [x] **Step 4: Re-run the verification sweep**
 
 Repeat Task 9 Steps 1–5 after any review fix. Commit the fixes.
 
-- [ ] **Step 5: Commit the audit artifacts**
+- [x] **Step 5: Commit the audit artifacts**
 
 ```bash
 git add docs/tasks/task-191-v92-v95-movement-types/

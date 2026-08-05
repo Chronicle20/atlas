@@ -72,7 +72,7 @@ Tool: `eebc0b06a61616cef2aa7a1ea0e860a8036276cba93fe722902dfc76896fc489`
 | MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x022 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x029 | ✅ | 0x029 | ✅ | 0x029 | ✅ | 0x02A | ❌ | 0x028 | ✅ | 0x026 | ✅ |
 | MAP_TRANSFER_RESULT | CWvsContext::OnMapTransferResult | teleportrock/clientbound/MapTransferError (T1) | 0x023 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02B | ❌ | 0x029 | ✅ | 0x027 | ✅ |
 | WEDDING_PHOTO | CWvsContext::OnAntiMacroResult |  | 0x024 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02C | ❌ | 0x02A | ❌ | 0x028 | ❌ |
-| CLAIM_RESULT | CWvsContext::OnClaimResult |  | 0x025 | ❌ | 0x02A | ❌ | 0x02A | ✅ | 0x02A | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02E | ❌ | 0x02C | ❌ | 0x02A | ❌ |
+| CLAIM_RESULT | CWvsContext::OnClaimResult |  | 0x025 | ❌ | 0x02A | ❌ | 0x02A | ✅ | 0x02A | ✅ | 0x02D | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02E | ❌ | 0x02C | ❌ | 0x02A | ❌ |
 | OPEN_FULL_CLIENT_DOWNLOAD_LINK | CWvsContext::OnOpenFullClientDownloadLink |  |  | ⬜ | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x029 | ❌ | 0x027 | ❌ |  | ⬜ |
 | CLAIM_AVAILABLE_TIME | CWvsContext::OnSetClaimSvrAvailableTime; sub_71F525 |  | 0x026 | ❌ | 0x02B | ❌ | 0x02B | ✅ | 0x02B | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x02F | ❌ | 0x02D | ❌ | 0x02B | ❌ |
 | CLAIM_STATUS_CHANGED | CWvsContext::OnClaimSvrStatusChanged; sub_71F54E |  | 0x027 | ❌ | 0x02C | ❌ | 0x02C | ✅ | 0x02C | ❌ | 0x02F | ❌ | 0x02F | ❌ | 0x02F | ❌ | 0x030 | ❌ | 0x02E | ❌ | 0x02C | ❌ |
@@ -1054,7 +1054,7 @@ Tool: `eebc0b06a61616cef2aa7a1ea0e860a8036276cba93fe722902dfc76896fc489`
 | v48 | 179 | 0 | 2 | 203 | 631 | 0 | 46.6% |
 | v61 | 256 | 0 | 60 | 235 | 464 | 0 | 46.5% |
 | v72 | 270 | 0 | 73 | 251 | 421 | 0 | 45.5% |
-| v79 | 310 | 0 | 72 | 251 | 382 | 0 | 49.0% |
+| v79 | 311 | 0 | 72 | 250 | 382 | 0 | 49.1% |
 | v83 | 428 | 0 | 0 | 359 | 228 | 0 | 54.4% |
 | v84 | 402 | 0 | 0 | 365 | 248 | 0 | 52.4% |
 | v87 | 436 | 0 | 0 | 388 | 191 | 0 | 52.9% |

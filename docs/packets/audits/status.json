@@ -5450,8 +5450,7 @@
           "opcode": 42
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 42
         },
         "gms_v83": {

@@ -17,6 +17,12 @@ const (
 	CommandTypeCancelAll       = "CANCEL_ALL"
 	CommandTypeCancelByTypes   = "CANCEL_BY_TYPES"
 	CommandTypeUpdateStatValue = "UPDATE_STAT_VALUE"
+	// CommandTypeExpire asks for ONE character's buffs to be re-evaluated and
+	// whatever has genuinely lapsed announced. Emitted by atlas-channel's
+	// CANCEL_DEBUFF handler (task-190 FR-2.6.1). Named EXPIRE rather than
+	// RECONCILE because there is no two-way diff — the client's packet carries
+	// no payload; this prunes against server-side expiresAt.
+	CommandTypeExpire = "EXPIRE"
 
 	// Operations for UPDATE_STAT_VALUE. INCREMENT adds Amount clamped to Cap;
 	// SET replaces the stat amount outright (finisher consume = SET 1).
@@ -71,6 +77,13 @@ type CancelAllCommandBody struct{}
 type CancelByTypesCommandBody struct {
 	Types []string `json:"types"`
 }
+
+// ExpireCommandBody is deliberately empty: CANCEL_DEBUFF carries no payload, so
+// a client cannot name anything. Honoring it unconditionally is provably safe —
+// the worst assertion is "please re-check me", and only genuinely lapsed buffs
+// are announced. Amplification is bounded upstream by atlas-channel's
+// per-character throttle. (task-190 FR-2.2 / NFR-2)
+type ExpireCommandBody struct{}
 
 // UpdateStatValueCommandBody changes the amount of one stat on a character's
 // existing buff (identified by SourceId). The body is stat-generic; task-142

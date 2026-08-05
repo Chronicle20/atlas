@@ -58,11 +58,9 @@ export function ReportsPage() {
   const loading = reportsQuery.isLoading;
   const error = reportsQuery.error?.message ?? null;
 
-  // Note: the /reports/:reportId route is registered in Task 22 alongside
-  // ReportDetailPage; until then this 404s harmlessly under the SPA router.
-  const handleRowClick = (report: Report) => navigate(`/reports/${report.id}`);
+  const handleView = (report: Report) => navigate(`/reports/${report.id}`);
 
-  const columns = getColumns({ onRowClick: handleRowClick });
+  const columns = getColumns({ onView: handleView });
 
   if (loading && reports.length === 0) {
     return <ReportsPageSkeleton />;

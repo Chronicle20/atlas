@@ -342,3 +342,148 @@ string-table sweep for the JMS-localized claim/report UI text, could still in pr
 surface something this address/opcode-based sweep would miss). The matrix's jms185 cell for
 `CLAIM_REQUEST` stays `⬜` and should not be "corrected" to an opcode on the strength of the
 CSV alone.
+
+### 7.4 `SUE_CHARACTER` / `SUE_CHARACTER_RESULT` are genuinely absent on jms_185 — and `sub_575186` is not sue
+
+Session `b6864e54` (`MapleStory_dump_SCY.exe.i64`). §7.3 flagged `sub_575186` @ `0x575186`
+(opcode `0x10F` / 271, all 7 callers inside `CField::SendChatMsgSlash` @ `0x564ad3`) as a
+sue-shaped near-miss — accused-id-plus-reason-plus-optional-string, reached from exactly the
+right dispatcher. Two reviewers agreed on the characterization but did not chase it. This
+section chases it, using a GMS sue reference shape **derived fresh from IDA** (per the task-30
+brief's instruction not to trust any quoted opcode/field values) rather than assumed from the
+Go codec's comments.
+
+**Step 1 — derive the GMS reference shape from three independent versions, not one.**
+`libs/atlas-packet/field/serverbound/sue_character.go` documents a version boundary between
+v87 (legacy `Encode4(charId)` lead) and v95 (`EncodeStr(subCommand)` lead) but doesn't fully
+pin down v92, which sits between them. All three were decompiled/disassembled directly:
+
+| version | session | address | opcode (verified via `push` immediate) | shape |
+|---|---|---|---|---|
+| v87 | `d51ecbd3` | `0x553526` | `push 75h` → 117 (`0x75`) | `Encode4([edi+1444h])` → `Encode1(esi)` → `EncodeStr(reason)` |
+| v92 | `acdfccff` | `0x53b7d0` | `push 7Dh` → 125 (`0x7D`) | `EncodeStr(target)` → `Encode1(edi, range 0–5)` → `EncodeStr(reason)` |
+| v95 | `79906a1e` | `0x5413e5` | `push 7Eh` → 126 (`0x7E`) | `EncodeStr(sSubCmd)` → `Encode1(edi)` → `EncodeStr(reason)` |
+
+The opcode climbs monotonically (117→125→126) and the v92 site's leading-string field sits at
+the identical stack offset (`ebp+68h+0x9c`) as v95's confirmed `sSubCmd`, with the same `0x23`
+(`'#'`) destructor-tracking marker immediately preceding the `ZXString` construction — strong
+independent confirmation that v92 already uses the string-leading form, one version earlier
+than the Go codec's comment (which only commits to "the boundary is between 87 and 95")
+pins it. `libs/atlas-packet/registry/gms_v83.yaml`/`v87.yaml`/`v95.yaml`'s serverbound
+`SUE_CHARACTER` rows (opcodes 114/117/126) corroborate the same monotonic climb across the
+CSV-sourced versions. **The invariant across all three real, verified sue send-sites: exactly
+one `Encode1` (a flag/category byte, range 0–5 in the v92/v95 form), exactly one
+leading id-or-name field, exactly one trailing reason string — three fields total, always
+unconditional. No version ever encodes a fourth field or a conditionally-included second
+string.** v92's site was annotated `task-30: SueCharacter (v92 GMS reference)...` and the IDB
+saved.
+
+**Step 2 — compare `sub_575186` against that shape, field by field.** Full decompile of
+`0x575186` (JMS):
+
+```
+sub_575186(a1: byte, n: byte, a3: byte, a4: int, a5: int, s: ZXString*, nType: const ZXString*)
+  guard: skip send unless (nType non-empty) or (!a5)
+  v8 = *(TSingleton<CWvsContext>::ms_pInstance + 0x2080)   /*0x5751b3*/
+  COutPacket(0x10F)                                        /*0x5751c1*/
+  nTypea = (a5 ? 2 : 0) | (!a4 ? 1 : 0)
+  Encode1(nTypea)   Encode1(n)   Encode1(a3)   Encode1(a1)  /* four Encode1 calls */
+  Encode4(v8)                                                /* SELF character id */
+  EncodeStr(s)
+  if (a5) EncodeStr(nType)                                   /* conditional 7th field */
+  SendPacket(...)
+```
+
+Two things settle it, independent of each other:
+
+1. **`v8` is the sender's own character id, not an accused player's.** It is read directly
+   from `TSingleton<CWvsContext>::ms_pInstance` — the singleton representing the *local*
+   player's context — at offset `0x2080`, confirmed via disasm (`mov eax, ms_pInstance...;
+   mov esi, [eax+2080h]`). Sue's entire purpose is identifying an *accused* character; every
+   confirmed GMS sue send-site encodes either the target's id (legacy) or a target/subcommand
+   string (v92/v95) — never the sender's own id, since the server already knows the sender
+   from the socket session. A "report a player" packet that embeds only the reporter's own id
+   and never the target's is not sue.
+2. **The field count and conditionality don't match.** Sue is invariantly 3 fields, always
+   sent. `sub_575186` is 6–7 fields (four `Encode1`s, an id, a string, and a conditionally-gated
+   second string) — a strictly larger, differently-shaped packet. The trailing-conditional-string
+   pattern is structurally closer to *claim*'s `bChatClaim`-gated trailing string (§7.3), except
+   claim has no `Encode4` field at all and only two `Encode1`s, so it doesn't match either.
+
+Checked all 7 call sites (`0x567836`, `0x567979`, `0x567b35`, `0x567d1a`, `0x567ea0`,
+`0x568019`, `0x5681db`) for whether any passes a *different* character's id as an argument
+(which would contradict the self-id reading above): none does — every site either passes
+literal `0`/`1` constants or locally-derived flags for `a1`/`n`/`a3`/`a4`/`a5`, and `s`/`nType`
+are populated from parsed command-argument strings or `StringPool` lookups (e.g. index `0x109`
+feeding a `CUtilDlg::Notice` confirmation dialog at the `0x567979` site), never from a
+target-character lookup. `sub_575186` was annotated `task-30: NOT SueCharacter...` in the IDB
+(not renamed — its actual purpose, most likely a JMS-specific self-report/petition/feedback
+slash command, was not identified and should not be guessed) and the IDB saved.
+
+**Conclusion: `sub_575186` is not `SUE_CHARACTER`.** It is a different, currently-unidentified
+JMS slash-command feature that happens to share sue's superficial "id + reason string" body
+shape while diverging on every field that matters (whose id, how many fields, whether the
+trailing string is ever conditional).
+
+**Step 3 — the remaining 81 direct `SendChatMsgSlash` send-sites don't match sue's shape
+either.** §7.3's Search 3 already enumerated all 81 `COutPacket` constructions made directly
+inside `SendChatMsgSlash` (not via a callee) and found 7 distinct opcodes: `0x83`, `0x78`,
+`0x89`, `0xdd`, `0x84`, `0xe1`, `0x29`. One representative site per opcode was decompiled here:
+
+| opcode | representative site | shape |
+|---|---|---|
+| `0x83` (131) | `0x567681` | `Encode1(0x26)` → `EncodeStr(s)` — 2 fields, no id at all |
+| `0x78` (120) | `0x5685b0` | `Encode1(esi)` → `Encode1(4)` → `EncodeStr(s)` — 2 `Encode1`s, matches claim's family better than sue's single-`Encode1` shape |
+| `0x89` (137) | `0x5687f8` | `Encode1(esi)` only, then falls through to a *different* opcode-`0x78` construction — an early-exit variant, not a self-contained sue-shaped packet |
+| `0xdd` (221) | `0x56968c` | shares the `sub_56BC92` trailer helper with several other branches; no standalone id+flag+reason shape |
+| `0x84` (132) | `0x56a838` | `EncodeStr` only (via `sub_42A9E9`) then `sub_56BC92` — no `Encode1` at all |
+| `0xe1` (225) | `0x56b971` | single `Encode1` derived from a boolean, then `sub_56BC92` — no id field |
+| `0x29` (41) | `0x56bbef` | `Encode4(get_update_time())` → `EncodeStr(s)` — the `Encode4` here is a **timestamp**, not a character id |
+
+None reproduces the invariant 3-field `id/name + flag + reason` shape. Combined with §7.3's
+Search 4 (every `SendPacket` call site in the binary, 504 total, all 35 unnamed ones
+individually decompiled), every code path capable of constructing and sending an outgoing
+packet from the JMS binary has now been examined for the sue shape specifically, not just the
+claim shape.
+
+**Step 4 — the clientbound dispatcher has no slot for `SUE_CHARACTER_RESULT` either.**
+`CWvsContext::OnPacket` @ `0xaebfe7` was decompiled in full: a genuine compiled
+`switch (nType)` spanning cases `0x1B`–`0x7A` (~74 explicit cases; everything else, including
+gaps, falls to `default: return`). The case list runs `... case 0x28: OnAntiMacroResult; case
+0x2A: OnClaimResult; ...` — **case `0x37` does not exist**, jumping directly from
+`case 0x36: OnPartyResult` to `case 0x38: OnExpedtionResult`. `0x37` (55) is exactly the
+opcode GMS v83/v84/v87/v95 use for `SUE_CHARACTER_RESULT` (§1). This is independently
+corroborated by the registry: `docs/packets/registry/jms_v185.yaml` has `PARTY_OPERATION` at
+opcode 54 (`0x36`) and the next clientbound row, `IDA_0X038`/`OnExpedtionResult`, at opcode 56
+(`0x38`) — opcode 55 (`0x37`) is absent from the registry too, built independently of this
+dispatcher read. Two independent sources (a fresh full-dispatcher decompile, and the
+CSV+IDA-discovered registry) agree the slot is simply empty, not merely unresolved. No function
+named `OnSueCharacterResult` (or matching regex `(?i)suecharacter`) exists anywhere in the
+JMS IDB (`func_query`, 0 hits).
+
+**Step 5 — string-table sweep, covering both sue and claim (closes §7.3's stated residual
+gap in the same pass).** `find_regex` over the JMS binary's string table:
+
+| pattern | hits | notes |
+|---|---|---|
+| `sue` | 0 | matches GMS v92's own 0-hit baseline for the same pattern — both clients keep this text in an external `StringPool`/`.nx` resource, not the binary, so a 0-hit result here is uninformative about presence/absence rather than confirmatory either way |
+| `claim` | 0 | closes §7.3's explicitly-stated residual gap: no claim/report UI text embedded in the binary either |
+| `abuse\|harass\|petition` | 0 | |
+| `report` | 1 (`report25.mod`, an unrelated filename literal) | not report/claim UI text |
+
+**Conclusion.** Both `SUE_CHARACTER` (serverbound) and `SUE_CHARACTER_RESULT` (clientbound)
+are genuinely absent from jms_185: the clientbound dispatcher has no case at the opcode GMS
+uses for the result (corroborated by an independent registry gap at the same opcode), no
+function matching the result handler's name exists anywhere in the IDB, no serverbound send
+site anywhere in the binary (81 direct `SendChatMsgSlash` sites, 504 total `SendPacket` call
+sites, and the specific near-miss `sub_575186`) reproduces the fixed 3-field shape verified
+fresh across three independent GMS versions, and the string table has no sue-related text
+(uninformative on its own, but consistent with everything else). `sub_575186` — the lead this
+task started from — is a different, unidentified JMS-specific slash-command feature; it embeds
+the *sender's own* character id rather than an accused target's, and its 6–7-field conditional
+shape does not match sue (or claim) in any confirmed GMS version.
+
+**Registry/matrix disposition:** no `SUE_CHARACTER` or `SUE_CHARACTER_RESULT` rows are added to
+`docs/packets/registry/jms_v185.yaml`. The JMS185 matrix cells for both ops (`STATUS.md` lines
+81 and 640) stay `⬜` and must not be "corrected" to an opcode — this is a verified absence in
+the same sense as §7.1's v48 sue finding, not an unresolved gap.

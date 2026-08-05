@@ -149,6 +149,43 @@ func TestSueCharacterResultByteOutputV83(t *testing.T) {
 	}
 }
 
+// TestSueCharacterResultByteOutputV84 verifies the wire-exact byte output of
+// SueCharacterResult for GMS v84.
+// IDA evidence (session 5881cf84, GMS_v84.1_U_DEVM.i64):
+//
+//	CWvsContext::OnSueCharacterResult@0xa74efc (named this pass; was
+//	sub_A74EFC), resolved via the opcode dispatch table
+//	CWvsContext::OnPacket@0xa51cd0 case 0x37, call-site @0xa51e24 (registry
+//	gms_v84.yaml op SUE_CHARACTER_RESULT, opcode 55/0x37 -- confirmed
+//	identical to v83, not shifted despite this op's opcode sitting past the
+//	documented post-0x3D shift boundary; the v84 dispatch table itself is
+//	NOT shifted for this range, only specific ops in other families are).
+//	CInPacket::Decode1(a1) @0xa74f0d reads a single result byte (v1). v1
+//	then drives a five-way branch (0/1/2/3/else) purely to pick a StringPool
+//	notice id (3006/3007/3008/3009/3010 @0xa75005/0xa74fd7/0xa74fa9/
+//	0xa74f78/0xa74f47) for a local render -- no branch performs any further
+//	CInPacket read. Body is exactly one byte, unconditionally, for every
+//	branch -- byte-identical to the v61/v72/v79/v83 shape already verified
+//	above (only the opcode moves per-version: 0x37 on v83+ vs 0x34 on
+//	v61/v72/v79).
+//
+// packet-audit:verify packet=report/clientbound/SueCharacterResult version=gms_v84 ida=0xa74efc
+func TestSueCharacterResultByteOutputV84(t *testing.T) {
+	v := pt.Variants[5] // GMS v84
+	if v.Name != "GMS v84" {
+		t.Fatalf("pt.Variants[5] = %q, want %q (index drifted)", v.Name, "GMS v84")
+	}
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	// result=2 -> StringPool 3008 branch (decompile @0xa74fa9); the wire body
+	// is the raw byte regardless of value.
+	input := NewSueCharacterResult(0x02)
+	expected := []byte{0x02} // 1 byte, per Decode1 @0xa74f0d
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("byte output mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestSueCharacterResultRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

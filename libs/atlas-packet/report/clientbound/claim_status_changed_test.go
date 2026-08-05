@@ -94,6 +94,34 @@ func TestClaimSvrStatusChangedByteOutputV83(t *testing.T) {
 	}
 }
 
+// TestClaimSvrStatusChangedByteOutputV84 verifies the wire-exact byte output
+// of ClaimSvrStatusChanged for GMS v84.
+// IDA evidence (session 5881cf84, GMS_v84.1_U_DEVM.i64):
+//
+//	CWvsContext::OnClaimSvrStatusChanged@0xa7331c (named this pass; was
+//	sub_A7331C), resolved via the opcode dispatch table
+//	CWvsContext::OnPacket@0xa51cd0 case 0x2F, call-site @0xa51e4b (registry
+//	gms_v84.yaml op CLAIM_STATUS_CHANGED, opcode 47/0x2F -- confirmed
+//	identical to v83, not shifted). CInPacket::Decode1(a2) @0xa7332c reads a
+//	single byte, compared != 0 to produce a bool, stored this[3140]
+//	(m_bClaimSvrConnected). No further reads. 1 byte total. Byte-identical
+//	to the v72/v79/v83 twins.
+//
+// packet-audit:verify packet=report/clientbound/ClaimSvrStatusChanged version=gms_v84 ida=0xa7331c
+func TestClaimSvrStatusChangedByteOutputV84(t *testing.T) {
+	v := pt.Variants[5] // GMS v84
+	if v.Name != "GMS v84" {
+		t.Fatalf("pt.Variants[5] = %q, want %q (index drifted)", v.Name, "GMS v84")
+	}
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	input := NewClaimSvrStatusChanged(true)
+	expected := []byte{0x01} // Decode1 connected @0xa7332c
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("byte output mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestClaimSvrStatusChangedRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

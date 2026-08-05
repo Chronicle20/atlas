@@ -254,20 +254,50 @@
   direction: clientbound
   opcode: 45
   fname: CWvsContext::OnClaimResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  packet: report/clientbound/ClaimResultSuccess
+  provenance: ida-discovered
+  ida:
+    address: 0xa7304c
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnClaimResult
+    @0xa7304c (GMS_v84.1_U_DEVM.i64, session 5881cf84; named this pass, was
+    sub_A7304C), resolved via the opcode dispatch table CWvsContext::OnPacket
+    @0xa51cd0 case 0x2D, call-site @0xa51e31. Opcode 0x2D confirmed identical to
+    v83 -- NOT shifted, despite the documented v84 post-0x3D opcode-shift class
+    (this op''s dispatch entry sits below 0x3D). CInPacket::Decode1(mode)
+    @0xa73061. mode==2 is the only value that reads further: Decode1(hasRemaining)
+    @0xa730e0, Decode4(remaining) @0xa730ea (ClaimResultSuccess). Every other
+    reachable mode (3, 0x41-0x45, 0x47, 0x48) is a bare mode byte (ClaimResultNotice);
+    unlisted modes fall through to an early return with no display -- identical
+    branch structure to the v72/v79/v83 twins already verified. Byte-identical,
+    no version branch needed.'
 - op: CLAIM_AVAILABLE_TIME
   direction: clientbound
   opcode: 46
   fname: CWvsContext::OnSetClaimSvrAvailableTime
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  packet: report/clientbound/ClaimAvailableTime
+  provenance: ida-discovered
+  ida:
+    address: 0xa732f3
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnSetClaimSvrAvailableTime
+    @0xa732f3 (GMS_v84.1_U_DEVM.i64, session 5881cf84; named this pass, was
+    sub_A732F3), resolved via the opcode dispatch table CWvsContext::OnPacket
+    @0xa51cd0 case 0x2E, call-site @0xa51e3e. Opcode 0x2E confirmed identical to
+    v83 -- not shifted. Decode1(openHour) @0xa73304, Decode1(closeHour) @0xa73306
+    -- no branches, 2 bytes total. Byte-identical to the v72/v79/v83 twins.'
 - op: CLAIM_STATUS_CHANGED
   direction: clientbound
   opcode: 47
   fname: CWvsContext::OnClaimSvrStatusChanged
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  packet: report/clientbound/ClaimSvrStatusChanged
+  provenance: ida-discovered
+  ida:
+    address: 0xa7331c
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnClaimSvrStatusChanged
+    @0xa7331c (GMS_v84.1_U_DEVM.i64, session 5881cf84; named this pass, was
+    sub_A7331C), resolved via the opcode dispatch table CWvsContext::OnPacket
+    @0xa51cd0 case 0x2F, call-site @0xa51e4b. Opcode 0x2F confirmed identical to
+    v83 -- not shifted. Single Decode1(connected) != 0 @0xa7332c -- 1 byte total.
+    Byte-identical to the v72/v79/v83 twins.'
 - op: SET_TAMING_MOB_INFO
   direction: clientbound
   opcode: 48
@@ -308,8 +338,18 @@
   direction: clientbound
   opcode: 55
   fname: CWvsContext::OnSueCharacterResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  packet: report/clientbound/SueCharacterResult
+  provenance: ida-discovered
+  ida:
+    address: 0xa74efc
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnSueCharacterResult
+    @0xa74efc (GMS_v84.1_U_DEVM.i64, session 5881cf84; named this pass, was
+    sub_A74EFC), resolved via the opcode dispatch table CWvsContext::OnPacket
+    @0xa51cd0 case 0x37, call-site @0xa51e24. Opcode 0x37 confirmed identical to
+    v83 -- not shifted. Decode1(result) @0xa74f0d reads a single result byte; a
+    five-way branch (0/1/2/3/else) purely picks a StringPool notice id for a
+    CHATLOG_ADD render -- no further reads. 1 byte total, byte-identical to the
+    v61/v72/v79/v83 twins.'
 - op: TRADE_MONEY_LIMIT
   direction: clientbound
   opcode: 57

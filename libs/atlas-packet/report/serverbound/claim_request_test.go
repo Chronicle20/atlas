@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
 
 func TestClaimRequestChatClaimGolden(t *testing.T) {
@@ -37,6 +40,22 @@ func TestClaimRequestRegularGolden(t *testing.T) {
 	actual := pt.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("golden mismatch: got %v want %v", actual, expected)
+	}
+
+	// Verify decode direction: bChatClaim=0 branch must NOT read a trailing chatLog.
+	l, _ := testlog.NewNullLogger()
+	output := ClaimRequest{}
+	req := request.Request(expected)
+	reader := request.NewRequestReader(&req, 0)
+	output.Decode(l, ctx)(&reader, nil)
+
+	if reader.Available() > 0 {
+		t.Errorf("reader has %d unconsumed bytes after decode", reader.Available())
+	}
+	if output.IsChatClaim() != input.IsChatClaim() || output.TargetName() != input.TargetName() ||
+		output.ReasonType() != input.ReasonType() || output.Description() != input.Description() ||
+		output.ChatLog() != input.ChatLog() {
+		t.Errorf("decode mismatch: got %+v want %+v", output, input)
 	}
 }
 

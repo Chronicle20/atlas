@@ -424,3 +424,28 @@ left silent (see `docs/tasks/task-081-ida-export-reharvest/four-version-validati
 - [ ] Optional: a `validate` mode that also handles if/else-chain dispatch handlers
   (e.g. `CLogin::OnCheckPasswordResult`) — currently honest `unverifiable` (a genuine
   static-extraction wall; may not be worth the complexity).
+
+## task-190 follow-up: USER_CALC_DAMAGE_STAT_SET_REQUEST handler (reserved as task-184)
+
+Deferred from task-190 (disease-duration + CANCEL_DEBUFF). `USER_CALC_DAMAGE_STAT_SET_REQUEST`
+is the tail of the same client handshake task-190 implements handlers for:
+`CWvsContext::OnTemporaryStatReset` ends with `if (IsCalcDamageStat(mask)) { COutPacket(0x6C);
+SendPacket(...); }` — so it fires more often once task-190's FR-2 (temporary-stat reset routing)
+ships. It was kept out of scope on evidence, not overlooked: unlike `CANCEL_DEBUFF`, this send is
+one-shot per stat reset, not a per-frame loop, so it cannot wedge a client the way an unhandled
+`CANCEL_DEBUFF` did — the cost of leaving it unhandled is a possibly-stale client-side
+damage-range display, not a hang. See `docs/tasks/task-190-disease-duration-cancel-debuff/investigation.md`
+§8.3 for the IDA evidence.
+
+- [ ] **Implement `USER_CALC_DAMAGE_STAT_SET_REQUEST`** (opcode number **task-184** is
+  pre-reserved via `tools/task-numbers.sh next` — reuse it rather than drawing a new one).
+  Opcode is IDA-confirmed for only three of the ten live-tenant versions so far:
+  GMS v48 `0x56` (86), GMS v61 `0x63` (99), GMS v83 `0x6C` (108)
+  (`investigation.md:214`). The remaining seven (v72, v79, v84, v87, v92, v95, JMS v185) need
+  the same per-version IDB pass task-190 ran for `CANCEL_DEBUFF` before a handler can be wired
+  and routed in the seed templates.
+  **Opcode collision to respect:** at GMS v61 the byte `0x63` is this packet
+  (`USER_CALC_DAMAGE_STAT_SET_REQUEST`), while at GMS v83/v84 the same byte `0x63` is
+  `CANCEL_DEBUFF` (`investigation.md:172-184`) — the two must never be routed by a hard-coded
+  `0x63` constant; always resolve per-tenant from the version-specific template/registry
+  entry, the same way task-190's `CancelDebuffHandle` routing does.

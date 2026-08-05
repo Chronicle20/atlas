@@ -3100,8 +3100,21 @@
   direction: serverbound
   opcode: 106
   fname: CWvsContext::SendClaimRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  packet: report/serverbound/ClaimRequest
+  provenance: ida-discovered
+  ida:
+    address: 0xa72957
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::SendClaimRequest
+    @0xa72957 (GMS_v84.1_U_DEVM.i64, session 5881cf84; named this pass, was
+    sub_A72957, size 0x6bf -- unnamed in the shipped v84 IDB, located by
+    byte-scanning for the push-0x6A opcode pattern near the
+    OnClaimResult/OnSetClaimSvrAvailableTime cluster and confirming the
+    COutPacket ctor call). COutPacket::COutPacket(&pkt, 106) @0xa72dec -- opcode
+    106/0x6A, matches registry (confirmed identical to v83, not shifted).
+    Encode1(bChatClaim) @0xa72dfb, EncodeStr(targetName) @0xa72e14,
+    Encode1(reasonType) @0xa72e1f, EncodeStr(description) @0xa72e38, guarded
+    EncodeStr(chatLog) @0xa72eb0 (gated on the same bChatClaim byte). Byte-identical
+    to the v72/v79/v83/v95 shape already coded in the (version-ungated) Encode.'
 - op: QUEST_ACTION
   direction: serverbound
   opcode: 107

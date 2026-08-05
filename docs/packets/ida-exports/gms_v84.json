@@ -28617,6 +28617,40 @@
           "comment": "result byte @0xa74f0d"
         }
       ]
+    },
+    "sub_552230": {
+      "address": "0x552230",
+      "direction": "clientbound",
+      "notes": "local StringPool/format helper reached via CUser::OnChat's Delegate guard sub_4386B9() && v13==2; performs zero CInPacket/COutPacket calls (pure local buffer formatting -- returns a ZXString built from a fixed offset table, no packet-op calls). Added 2026-08-05 (task-145 Task 24) to unblock the full report-gen pipeline for gms_v84 (pre-existing export citation gap on an unrelated fname, blocking `packet-audit` root-command report generation for every op in this version, not just CLAIM_REQUEST).",
+      "calls": []
+    },
+    "CWvsContext::SendClaimRequest": {
+      "address": "0xa72957",
+      "direction": "serverbound",
+      "notes": "unnamed in the shipped v84 IDB (was sub_A72957, size 0x6bf); named + byte-verified 2026-08-05 (task-145 Task 24) via a direct decompile of 0xa72957, located by byte-scanning for the push-0x6A opcode pattern near the OnClaimResult/OnSetClaimSvrAvailableTime cluster and confirming the COutPacket ctor call. COutPacket::COutPacket(&pkt, 106) at 0xa72dec matches the registry opcode (106/0x6A). Encode order identical to the v72/v79/v83/v95 twins.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "bChatClaim (v60; also gates the trailing chatLog string below) @0xa72dfb"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "targetName @0xa72e14"
+        },
+        {
+          "op": "Encode1",
+          "comment": "reasonType (v52) @0xa72e1f"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "description @0xa72e38"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "chatLog (only when bChatClaim) @0xa72eb0",
+          "guard": "v60"
+        }
+      ]
     }
   }
 }

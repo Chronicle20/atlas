@@ -159,6 +159,16 @@ func IsTamedMountSkillIdentity(id Identity) bool {
 	return IsIdentity(id, BeginnerMonsterRiding, NoblesseMonsterRiding, LegendMonsterRiding, EvanMonsterRiding)
 }
 
+// IsBattleshipMountSkillIdentity is the Identity form of
+// IsBattleshipMountSkill (mount.go): reports whether id is the Corsair
+// Battleship skill-mount. Battleship is deliberately NOT in
+// SkillOnlyMountVehicleIdentity: its vehicle id is a client wire value
+// resolved from tenant configuration at buff-apply time in atlas-channel
+// (DOM-25), not baked into ingested skill data.
+func IsBattleshipMountSkillIdentity(id Identity) bool {
+	return id == CorsairBattleship
+}
+
 // SkillOnlyMountVehicleIdentity is the Identity form of
 // SkillOnlyMountVehicleId (mount.go): maps a skill-only mount identity (any
 // band) to its fixed vehicle item id. SpaceShip is per-level

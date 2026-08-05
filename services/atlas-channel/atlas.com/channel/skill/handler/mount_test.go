@@ -5,6 +5,7 @@ import (
 	"atlas-channel/data/skill/effect/statup"
 	"math"
 	"testing"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -29,22 +30,34 @@ const (
 const (
 	tamedMountIdentity     = skill2.BeginnerMonsterRiding
 	skillOnlyMountIdentity = skill2.BeginnerBroomstick
+	battleshipIdentity     = skill2.CorsairBattleship
 )
 
 // recordingDeps captures collaborator invocations so each of the five mount
 // cases can be asserted offline without Kafka, REST, or a session.
 type recordingDeps struct {
-	mounted      bool
-	mountedErr   error
-	equip        map[int16]int32 // slot position -> taming-mob/saddle item id
-	equipErr     map[int16]error
-	applyCalled  bool
-	applyAmount  int32
-	applyStatups []statup.Model
-	applySource  int32
-	applyDur     int32
-	cancelCount  int
-	cancelSrc    int32
+	mounted        bool
+	mountedErr     error
+	equip          map[int16]int32 // slot position -> taming-mob/saddle item id
+	equipErr       map[int16]error
+	applyCalled    bool
+	applyAmount    int32
+	applyStatups   []statup.Model
+	applySource    int32
+	applyDur       int32
+	cancelCount    int
+	cancelSrc      int32
+	vehicleId      int32
+	vehicleOk      bool
+	charLevel      byte
+	charLevelErr   error
+	initCalled     bool
+	initSkillLevel byte
+	initCharLevel  byte
+	initTTL        time.Duration
+	initErr        error
+	clearCalled    bool
+	clearCount     int
 }
 
 func (d *recordingDeps) mountDeps() mountDeps {
@@ -77,6 +90,23 @@ func (d *recordingDeps) mountDeps() mountDeps {
 			d.cancelCount++
 			d.cancelSrc = sourceId
 			return nil
+		},
+		resolveVehicleId: func() (int32, bool) {
+			return d.vehicleId, d.vehicleOk
+		},
+		characterLevel: func(characterId uint32) (byte, error) {
+			return d.charLevel, d.charLevelErr
+		},
+		initShipHP: func(characterId uint32, skillLevel byte, charLevel byte, ttl time.Duration) error {
+			d.initCalled = true
+			d.initSkillLevel = skillLevel
+			d.initCharLevel = charLevel
+			d.initTTL = ttl
+			return d.initErr
+		},
+		clearShipHP: func(characterId uint32) {
+			d.clearCalled = true
+			d.clearCount++
 		},
 	}
 }
@@ -296,7 +326,105 @@ func TestMountTamedAppendsRidingWhenEffectLacksIt(t *testing.T) {
 	}
 }
 
+const battleshipSkillId = uint32(skill2.CorsairBattleshipId)
+
+// battleshipInfo mirrors mountInfo (mount_test.go:73) but with a settable level.
+func battleshipInfo(level byte) packetmodel.SkillUsageInfo {
+	return packetmodel.NewSkillUsageInfoBuilder().SetSkillId(battleshipSkillId).SetSkillLevel(level).Build()
+}
+
+// battleshipEffect mirrors mountEffect (mount_test.go:77): Duration 2100000 ms
+// (the WZ buff time) and a MONSTER_RIDING statup carrying atlas-data's
+// skill-id placeholder amount, which the arm must override.
+func battleshipEffect() effect.Model {
+	e, err := effect.Extract(effect.RestModel{Statups: vehicleStatup(int32(battleshipSkillId)), Duration: 2100000})
+	if err != nil {
+		panic(err)
+	}
+	return e
+}
+
+func TestHandleMountBattleshipApplies(t *testing.T) {
+	d := &recordingDeps{vehicleId: 1932000, vehicleOk: true, charLevel: 150}
+
+	if err := HandleMount(logrus.New(), field.Model{}, 999, battleshipInfo(7), battleshipEffect(), battleshipIdentity, d.mountDeps()); err != nil {
+		t.Fatalf("HandleMount: %v", err)
+	}
+	if !d.applyCalled {
+		t.Fatal("expected applyBuff to be called")
+	}
+	if d.applyAmount != 1932000 {
+		t.Fatalf("MONSTER_RIDING amount = %d, want config-resolved 1932000", d.applyAmount)
+	}
+	if d.applyDur != MountBuffDuration {
+		t.Fatalf("duration = %d, want MountBuffDuration", d.applyDur)
+	}
+	if !d.initCalled || d.initSkillLevel != 7 || d.initCharLevel != 150 {
+		t.Fatalf("initShipHP = (called %v, skill %d, char %d), want (true, 7, 150)", d.initCalled, d.initSkillLevel, d.initCharLevel)
+	}
+	if d.initTTL != 2100000*time.Millisecond {
+		t.Fatalf("init TTL = %v, want 35m from effect duration", d.initTTL)
+	}
+}
+
+func TestHandleMountBattleshipAbortsOnVehicleMiss(t *testing.T) {
+	d := &recordingDeps{vehicleOk: false, charLevel: 150}
+	if err := HandleMount(logrus.New(), field.Model{}, 999, battleshipInfo(7), battleshipEffect(), battleshipIdentity, d.mountDeps()); err != nil {
+		t.Fatalf("HandleMount: %v", err)
+	}
+	if d.applyCalled || d.initCalled {
+		t.Fatal("resolve miss must abort: no buff, no HP state")
+	}
+}
+
+func TestHandleMountBattleshipToggleDismounts(t *testing.T) {
+	d := &recordingDeps{mounted: true, vehicleId: 1932000, vehicleOk: true, charLevel: 150}
+	if err := HandleMount(logrus.New(), field.Model{}, 999, battleshipInfo(7), battleshipEffect(), battleshipIdentity, d.mountDeps()); err != nil {
+		t.Fatalf("HandleMount: %v", err)
+	}
+	if d.cancelCount != 1 || d.applyCalled || d.initCalled {
+		t.Fatalf("toggle must only cancel: cancels %d, applied %v, init %v", d.cancelCount, d.applyCalled, d.initCalled)
+	}
+}
+
+// TestHandleMountBattleshipAbortsOnCharacterLevelError verifies that a
+// characterLevel failure aborts the mount entirely: the error propagates,
+// and neither the buff nor the ship HP pool is touched.
+func TestHandleMountBattleshipAbortsOnCharacterLevelError(t *testing.T) {
+	d := &recordingDeps{vehicleId: 1932000, vehicleOk: true, charLevelErr: errCharacterLevelStub}
+	err := HandleMount(logrus.New(), field.Model{}, 999, battleshipInfo(7), battleshipEffect(), battleshipIdentity, d.mountDeps())
+	if err == nil {
+		t.Fatal("expected characterLevel error to propagate")
+	}
+	if d.applyCalled || d.initCalled {
+		t.Fatal("characterLevel failure must abort before Apply/initShipHP")
+	}
+}
+
+// TestHandleMountBattleshipInitFailureClearsStalePool verifies the Finding-1
+// fix: an initShipHP failure must not abort the mount (Redis trouble never
+// blocks a mount) but MUST best-effort clear any stale pool from a prior
+// ride, so the next Drain takes the lazy full re-init path instead of
+// decrementing leftover HP from before this mount.
+func TestHandleMountBattleshipInitFailureClearsStalePool(t *testing.T) {
+	d := &recordingDeps{vehicleId: 1932000, vehicleOk: true, charLevel: 150, initErr: errInitShipHPStub}
+	err := HandleMount(logrus.New(), field.Model{}, 999, battleshipInfo(7), battleshipEffect(), battleshipIdentity, d.mountDeps())
+	if err != nil {
+		t.Fatalf("HandleMount: %v (initShipHP failure must not abort the mount)", err)
+	}
+	if !d.applyCalled {
+		t.Fatal("expected applyBuff to still be called despite initShipHP failure")
+	}
+	if !d.clearCalled || d.clearCount != 1 {
+		t.Fatalf("expected clearShipHP called exactly once, got called=%v count=%d", d.clearCalled, d.clearCount)
+	}
+}
+
 var errStub = stubErr("slot read must not be called for skill-only mounts")
+
+var errCharacterLevelStub = stubErr("character level load failed")
+
+var errInitShipHPStub = stubErr("ship HP init failed (e.g. transient Redis error)")
 
 type stubErr string
 

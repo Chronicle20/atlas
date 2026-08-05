@@ -369,6 +369,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x67",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterUseSkillHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x68",
         "validator": "LoggedInValidator",
         "handler": "CharacterBuffCancel",
@@ -1083,7 +1089,12 @@
       {
         "opCode": "0x1F",
         "writer": "CharacterBuffGive",
-        "services": ["channel"]
+        "services": ["channel"],
+        "options": {
+          "vehicles": {
+            "CORSAIR_BATTLESHIP": 1932000
+          }
+        }
       },
       {
         "opCode": "0x20",
@@ -1898,7 +1909,12 @@
       {
         "opCode": "0x114",
         "writer": "CharacterSkillCooldown",
-        "services": ["channel"]
+        "services": ["channel"],
+        "options": {
+          "skills": {
+            "BATTLESHIP_HP_GAUGE": 5221999
+          }
+        }
       },
       {
         "opCode": "0x116",

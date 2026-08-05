@@ -68,6 +68,32 @@ func TestClaimSvrStatusChangedByteOutputV79(t *testing.T) {
 	}
 }
 
+// TestClaimSvrStatusChangedByteOutputV83 verifies the wire-exact byte output
+// of ClaimSvrStatusChanged for GMS v83.
+// IDA evidence (session 41f13e0d, v83_Me MapleStory_dump.exe.i64):
+//
+//	CWvsContext::OnClaimSvrStatusChanged@0xa27b61, resolved via the opcode
+//	dispatch table CWvsContext::OnPacket case 0x2F @0xa07b76 (registry
+//	gms_v83.yaml op CLAIM_STATUS_CHANGED, opcode 47/0x2F). CInPacket::Decode1(a2)
+//	@0xa27b73 reads a single byte, compared != 0 to produce a bool, stored at
+//	this[3120] (m_bClaimSvrConnected). No further reads. 1 byte total.
+//	Byte-identical to the v72/v79 twins.
+//
+// packet-audit:verify packet=report/clientbound/ClaimSvrStatusChanged version=gms_v83 ida=0xa27b61
+func TestClaimSvrStatusChangedByteOutputV83(t *testing.T) {
+	v := pt.Variants[1] // GMS v83
+	if v.Name != "GMS v83" {
+		t.Fatalf("pt.Variants[1] = %q, want %q (index drifted)", v.Name, "GMS v83")
+	}
+	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+	input := NewClaimSvrStatusChanged(true)
+	expected := []byte{0x01} // Decode1 connected @0xa27b73
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("byte output mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestClaimSvrStatusChangedRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

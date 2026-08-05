@@ -10,7 +10,7 @@ Tool: `eebc0b06a61616cef2aa7a1ea0e860a8036276cba93fe722902dfc76896fc489`
 - export gms_v61: `88399107c52bad29136777addb2fd7a6f60e4cddb343dd854de14a7a2f421fa2`
 - export gms_v72: `192c16ddfecc8db9faa73bb234744c29ab0abd4f47071578571cc1cf9c81b11f`
 - export gms_v79: `68d28642b5ad3f1ac786dde8bb4c02e0c8a38bc3c01aeca8721e5ba695fb70d8`
-- export gms_v83: `c764baa1e6b4dc5ca8ccd868a3f907195ca019bf96b430433ab7e4d740371a16`
+- export gms_v83: `d78d16b49e3006ad7bfa54b2ac5dfdf4ec43db7c814dec6bbc5eb6a21d4de7cb`
 - export gms_v84: `f8e90c78a64c7abcae8de12267f275d6c3233ce1adbbf1fb1419d4e9ccdca23d`
 - export gms_v87: `4fbc70fa0d0b84adf603839d62b89c6d572f40eadcdd1dc2d7ea0f3ef0cb41d7`
 - export gms_v92: `d49c5ef2d0ab975ae28f87af0403dec7cd671cba91d916586a8af8e9164d89ba`
@@ -72,15 +72,15 @@ Tool: `eebc0b06a61616cef2aa7a1ea0e860a8036276cba93fe722902dfc76896fc489`
 | MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x022 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x029 | ✅ | 0x029 | ✅ | 0x029 | ✅ | 0x02A | ❌ | 0x028 | ✅ | 0x026 | ✅ |
 | MAP_TRANSFER_RESULT | CWvsContext::OnMapTransferResult | teleportrock/clientbound/MapTransferError (T1) | 0x023 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02B | ❌ | 0x029 | ✅ | 0x027 | ✅ |
 | WEDDING_PHOTO | CWvsContext::OnAntiMacroResult |  | 0x024 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02C | ❌ | 0x02A | ❌ | 0x028 | ❌ |
-| CLAIM_RESULT | CWvsContext::OnClaimResult |  | 0x025 | ❌ | 0x02A | ❌ | 0x02A | ✅ | 0x02A | ✅ | 0x02D | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02E | ❌ | 0x02C | ❌ | 0x02A | ❌ |
+| CLAIM_RESULT | CWvsContext::OnClaimResult |  | 0x025 | ❌ | 0x02A | ❌ | 0x02A | ✅ | 0x02A | ✅ | 0x02D | ✅ | 0x02D | ❌ | 0x02D | ❌ | 0x02E | ❌ | 0x02C | ❌ | 0x02A | ❌ |
 | OPEN_FULL_CLIENT_DOWNLOAD_LINK | CWvsContext::OnOpenFullClientDownloadLink |  |  | ⬜ | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x029 | ❌ | 0x027 | ❌ |  | ⬜ |
-| CLAIM_AVAILABLE_TIME | CWvsContext::OnSetClaimSvrAvailableTime; sub_71F525 |  | 0x026 | ❌ | 0x02B | ❌ | 0x02B | ✅ | 0x02B | ✅ | 0x02E | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x02F | ❌ | 0x02D | ❌ | 0x02B | ❌ |
-| CLAIM_STATUS_CHANGED | CWvsContext::OnClaimSvrStatusChanged; sub_71F54E |  | 0x027 | ❌ | 0x02C | ❌ | 0x02C | ✅ | 0x02C | ✅ | 0x02F | ❌ | 0x02F | ❌ | 0x02F | ❌ | 0x030 | ❌ | 0x02E | ❌ | 0x02C | ❌ |
+| CLAIM_AVAILABLE_TIME | CWvsContext::OnSetClaimSvrAvailableTime; sub_71F525 |  | 0x026 | ❌ | 0x02B | ❌ | 0x02B | ✅ | 0x02B | ✅ | 0x02E | ✅ | 0x02E | ❌ | 0x02E | ❌ | 0x02F | ❌ | 0x02D | ❌ | 0x02B | ❌ |
+| CLAIM_STATUS_CHANGED | CWvsContext::OnClaimSvrStatusChanged; sub_71F54E |  | 0x027 | ❌ | 0x02C | ❌ | 0x02C | ✅ | 0x02C | ✅ | 0x02F | ✅ | 0x02F | ❌ | 0x02F | ❌ | 0x030 | ❌ | 0x02E | ❌ | 0x02C | ❌ |
 | SET_TAMING_MOB_INFO | CWvsContext::OnSetTamingMobInfo; sub_72032B | character/clientbound/CharacterSetTamingMobInfo (T1) | 0x028 | ✅ | 0x02D | 🟡ᶠ | 0x02D | 🟡ᶠ | 0x02D | 🟡ᶠ | 0x030 | ✅ | 0x030 | ✅ | 0x030 | ✅ | 0x031 | 🟡ᶠ | 0x02F | ✅ | 0x02D | ✅ |
 | QUEST_CLEAR | CWvsContext::OnQuestClear |  | 0x029 | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x031 | ❌ | 0x031 | ❌ | 0x031 | ❌ | 0x032 | ❌ | 0x030 | ❌ | 0x02E | ❌ |
 | INCUBATOR_RESULT | CWvsContext::OnIncubatorResult | incubator/clientbound/IncubatorResult | 0x02A | ❌ | 0x042 | ✅ | 0x042 | ✅ | 0x042 | ✅ | 0x045 | ✅ | 0x047 | ✅ | 0x047 | ✅ | 0x049 | ❌ | 0x048 | ✅ | 0x03F | ✅ |
 | SKILL_LEARN_ITEM_RESULT | CWvsContext::OnSkillLearnItemResult; sub_9175E6; sub_969022 | character/clientbound/CharacterSkillLearnItemResult (T1) | 0x02B | ✅ | 0x030 | ✅ | 0x030 | ✅ | 0x030 | ✅ | 0x033 | ✅ | 0x033 | ✅ | 0x033 | ✅ | 0x034 | 🟡ᶠ | 0x032 | ✅ | 0x030 | ✅ |
-| SUE_CHARACTER_RESULT | CWvsContext::OnSueCharacterResult |  | 0x02C | ❌ | 0x034 | ✅ | 0x034 | ✅ | 0x034 | ✅ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x038 | ❌ | 0x037 | ❌ |  | ⬜ |
+| SUE_CHARACTER_RESULT | CWvsContext::OnSueCharacterResult |  | 0x02C | ❌ | 0x034 | ✅ | 0x034 | ✅ | 0x034 | ✅ | 0x037 | ✅ | 0x037 | ❌ | 0x037 | ❌ | 0x038 | ❌ | 0x037 | ❌ |  | ⬜ |
 | IDA_0X02E | sub_71CE62 |  | 0x02E | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | ENTRUSTED_SHOP_CHECK_RESULT | CWvsContext::OnEntrustedShopCheckResult | merchant/clientbound/ConfirmManage |  | ⬜ | 0x02F | ❌ | 0x02F | ❌ | 0x02F | ❌ | 0x032 | ✅ | 0x032 | ❌ | 0x032 | ✅ | 0x033 | ❌ | 0x031 | ✅ | 0x02F | ❌ |
 | IDA_0X02F | sub_71CE49 |  | 0x02F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
@@ -1055,7 +1055,7 @@ Tool: `eebc0b06a61616cef2aa7a1ea0e860a8036276cba93fe722902dfc76896fc489`
 | v61 | 256 | 0 | 60 | 235 | 464 | 0 | 46.5% |
 | v72 | 270 | 0 | 73 | 251 | 421 | 0 | 45.5% |
 | v79 | 314 | 0 | 72 | 247 | 382 | 0 | 49.6% |
-| v83 | 428 | 0 | 0 | 359 | 228 | 0 | 54.4% |
+| v83 | 432 | 0 | 0 | 355 | 228 | 0 | 54.9% |
 | v84 | 402 | 0 | 0 | 365 | 248 | 0 | 52.4% |
 | v87 | 436 | 0 | 0 | 388 | 191 | 0 | 52.9% |
 | v92 | 0 | 0 | 154 | 719 | 142 | 0 | 0.0% |

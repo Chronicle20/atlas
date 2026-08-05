@@ -7931,6 +7931,64 @@
         }
       ]
     },
+    "CWvsContext::OnClaimResult": {
+      "address": "0xa27891",
+      "direction": "clientbound",
+      "notes": "unnamed in the shipped v83_Me IDB; named + byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table, case 0x2D @0xa07b5c. Decode1(mode) @0xa278a6 is the only unconditional read; mode==2 is the sole value that reads further (hasRemaining, remaining). Every other reachable mode (3, 0x41-0x45, 0x47, 0x48) renders a StringPool/CUtilDlg::Notice from the mode byte alone; unlisted modes (0, 1, 0x46, ...) fall through to an early return. Byte-identical to the already-named v72@0x91f9a9 / v79@0x9718f4 twins.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte @0xa278a6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasRemaining (v8) @0xa27925, mode==2 only",
+          "guard": "mode == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "remaining int32 @0xa2792f, mode==2 only",
+          "guard": "mode == 2"
+        }
+      ]
+    },
+    "CWvsContext::OnSetClaimSvrAvailableTime": {
+      "address": "0xa27b38",
+      "direction": "clientbound",
+      "notes": "unnamed in the shipped v83_Me IDB; named + byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table, case 0x2E @0xa07b69. Two unconditional Decode1 calls plus field stores, no branches. Byte-identical to the already-named v72@0x91fc50 / v79@0x971b9b twins.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "openHour @0xa27b49"
+        },
+        {
+          "op": "Decode1",
+          "comment": "closeHour @0xa27b4b"
+        }
+      ]
+    },
+    "CWvsContext::OnClaimSvrStatusChanged": {
+      "address": "0xa27b61",
+      "direction": "clientbound",
+      "notes": "unnamed in the shipped v83_Me IDB; named + byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table, case 0x2F @0xa07b76. Single Decode1 compared != 0, stored as m_bClaimSvrConnected. Byte-identical to the already-named v72@0x91fc79 / v79@0x971bc4 twins.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "connected flag @0xa27b73, compared != 0"
+        }
+      ]
+    },
+    "CWvsContext::OnSueCharacterResult": {
+      "address": "0xa29739",
+      "direction": "clientbound",
+      "notes": "unnamed in the shipped v83_Me IDB; named + byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table, case 0x37 @0xa07b4f. Single Decode1(result) reads the result byte; a five-way branch (0/1/2/3/else) purely picks a StringPool notice id for a CHATLOG_ADD render, no further reads. Byte-identical to the already-named v61@0x84a04e / v72@0x9216f0 / v79@0x9735a5 twins.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "result byte @0xa2974a"
+        }
+      ]
+    },
     "CWvsContext::OnEntrustedShopCheckResult#ConfirmManage": {
       "address": "0xa27d75",
       "direction": "clientbound",

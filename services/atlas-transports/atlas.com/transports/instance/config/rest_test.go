@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -98,5 +99,42 @@ func TestExtractRouteFor_FallbackMatchesTheSharedFormula(t *testing.T) {
 		if m.Id() != want {
 			t.Fatalf("raw=%q: id = %s, want the derived %s", raw, m.Id(), want)
 		}
+	}
+}
+
+// sampleInstanceRoute deliberately omits the effect attributes, so this test
+// builds its own fixture: ExtractRouteFor must carry both through to the
+// domain model or the processor sees zero values with no error anywhere.
+func TestExtractRouteFor_ThreadsEffectAttributes(t *testing.T) {
+	tm := testTenant(t, uuid.New())
+	r := sampleInstanceRoute("temple-of-time-flight", uuid.New().String())
+	r.EffectItemIds = []item.Id{2210016}
+	r.ForcedReturnMapId = _map.Id(240000110)
+
+	m, err := config.ExtractRouteFor(quietLogger(), tm)(r)
+	if err != nil {
+		t.Fatalf("ExtractRouteFor: %v", err)
+	}
+	if got := m.EffectItemIds(); len(got) != 1 || got[0] != item.Id(2210016) {
+		t.Fatalf("EffectItemIds = %v, want [2210016]", got)
+	}
+	if m.ForcedReturnMapId() != _map.Id(240000110) {
+		t.Fatalf("ForcedReturnMapId = %d, want 240000110", m.ForcedReturnMapId())
+	}
+}
+
+// A route declaring neither attribute must still build — the ten unaffected
+// routes take this path.
+func TestExtractRouteFor_EffectAttributesAreOptional(t *testing.T) {
+	tm := testTenant(t, uuid.New())
+	m, err := config.ExtractRouteFor(quietLogger(), tm)(sampleInstanceRoute("ellinia-ereve-ferry", uuid.New().String()))
+	if err != nil {
+		t.Fatalf("ExtractRouteFor: %v", err)
+	}
+	if len(m.EffectItemIds()) != 0 {
+		t.Fatalf("EffectItemIds = %v, want empty", m.EffectItemIds())
+	}
+	if m.ForcedReturnMapId() != _map.Id(0) {
+		t.Fatalf("ForcedReturnMapId = %d, want 0", m.ForcedReturnMapId())
 	}
 }

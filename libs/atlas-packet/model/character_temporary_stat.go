@@ -737,8 +737,9 @@ func (m *CharacterTemporaryStat) EncodeCancelMask(l logrus.FieldLogger, t tenant
 func movementAffectingStatNames(t tenant.Model) []character.TemporaryStatType {
 	if t.Region() == "JMS" {
 		// JMS v185 (sub_7f76d1) tests a wholly different 13-constant set —
-		// NOT "the v83 list plus/minus extras". Only Stun, GhostMorph, and
-		// MonsterRiding(RideVehicle) overlap v83's 12-stat meaning; the
+		// NOT "the v83 list plus/minus extras". Only Stun and
+		// MonsterRiding(RideVehicle) overlap v83's 12-stat meaning; GhostMorph
+		// is present but occupies a different semantic slot. The
 		// other 9 v83 stats (Speed, Jump, Weaken, Slow, Morph, MapleWarrior,
 		// Seduce, DashSpeed, DashJump) are absent, and JMS's remaining bits
 		// map to unrelated stats (Invincible, SoulArrow, MesoUpByItem,
@@ -798,9 +799,10 @@ func movementAffectingStatNames(t tenant.Model) []character.TemporaryStatType {
 			character.TemporaryStatTypeFrozen,
 		)
 	case t.Region() == "GMS" && t.MajorVersion() == 87:
-		// v87 (sub_7cc3e2) independently resolves Flying(82)/Frozen(83)
-		// inside its own IDB, cross-checked bit-for-bit against the atlas
-		// registry's MajorAtLeast(87) block (evidence: gms_v87.md).
+		// v87 (sub_7cc3e2) resolves Flying(82)/Frozen(83) via the atlas
+		// registry's MajorAtLeast(87)-gated block (raw shift == registry shift,
+		// no IDB string table), cross-checked bit-for-bit against the registry's
+		// declaration order (evidence: gms_v87.md).
 		names = append(names,
 			character.TemporaryStatTypeFlying,
 			character.TemporaryStatTypeFrozen,

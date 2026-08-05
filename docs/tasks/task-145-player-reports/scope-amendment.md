@@ -133,3 +133,170 @@ A version bring-up on a feature branch is broader than this task's original
 charter; it touches `packet-audit` internals and STATUS.md wholesale, so the
 branch diff will be large and the final review correspondingly broad. This was
 raised at decision time and accepted.
+
+## Amendment 3 — Task 28 turned out to require wiring `template_gms_92_1.json`, not just registering the column
+
+**Decided:** 2026-08-05, by the coordinator, mid-execution of Task 28.
+**Supersedes:** Task 28's brief, which scoped only `matrix.VersionKeys` +
+`shortLabels` + the doclint facts + a static-audit-pass regen, and assumed
+`matrix --check` would come up clean from that alone.
+
+### Why the brief's assumption was wrong
+
+`template_gms_92_1.json` predates this task's registry/export work (history
+back to `b8f97493e`) and was a **stub**: 47 handlers / 65 writers, versus
+115–129 / 160–215 for every neighboring version (v61 115/153, v72 124/160,
+v87 122/207, v95 129/215). It routed only login/char-select/movement/chat/
+cash-shop-entry — nothing else. Flipping on the `gms_v92` matrix column
+(Task 28 as briefed) exposed this as **67 hard-gate conflicts** in
+`matrix --check` (a CI-blocking gate per `PROCESS.md`'s
+`matrix_check_hard_gate: true`), none of them the five task-145 sue/claim
+ops. Per `docs/packets/audits/STARTING_A_NEW_VERSION_PASS.md` §1.2, this is
+exactly what a real version bring-up's template must satisfy
+("ops the registry marks present should be routed") — the brief just didn't
+anticipate the template needed that level of work.
+
+The coordinator directed completing the wiring rather than reverting or
+descoping, citing CLAUDE.md's "No Deferring Producible Work" (an unrouted
+template is exactly the "produce it yourself" case) and that `matrix --check`
+being a CI gate makes this non-optional for the branch to merge at all.
+
+### What got wired (Class A — 59 template-wiring-gap conflicts)
+
+Each: opcode from `docs/packets/registry/gms_v92.yaml` (Task 26, the source
+of truth — never copied from a neighbor's own opcode), identifier/validator/
+services cross-checked for agreement between `template_gms_87_1.json` and
+`template_gms_95_1.json`. Six needed extra care because the two references
+disagreed or were incomplete, each resolved with independent evidence, not a
+coin-flip:
+
+- `MOVE_SUMMON` (serverbound `SummonMoveHandle`): v87's entry carries an
+  `options.types` movement-table, v95's doesn't. Read
+  `libs/atlas-packet/summon/serverbound/move.go` — `Decode` treats the move
+  blob as an opaque byte-faithful rebroadcast and never touches `options` at
+  all. The table is dead configuration; wired without it (matches v95).
+- `SUMMON_SKILL` / `DAMAGE_SUMMON` (clientbound `SummonSkill`/`SummonDamage`):
+  v87's own template has these two writer names **swapped** relative to
+  v87's own registry opcodes (self-inconsistent — a pre-existing v87 bug,
+  out of scope here, not touched). v95 is self-consistent, and its fname↔name
+  pairing matches v92's own registry fnames (`OnSkill`→SummonSkill,
+  `OnHit`→SummonDamage) exactly. Wired per v95.
+- `CHATTEXT1` (`ChatGeneralChat`) / `LOCK_UI` (`UiLock`): v87 has no entry at
+  all for either op; v95 is the only reference. Wired per v95 (no
+  disagreement to adjudicate, just one source).
+- `STORAGE` (`StorageOperation`'s `options.operations.ERROR_MESSAGE`): v87/v84/v83=23,
+  v95=24 — a genuine, IDA-documented per-version shift (see
+  `docs/packets/dispatchers/storage_operation.yaml`'s existing v83/v95
+  correction note). Decompiled v92's `CTrunkDlg::OnPacket` directly
+  (0x74b620): case 24 is the only arm calling `Decode1`+`DecodeStr` (the
+  dynamic-string error read); case 23 is a fixed-string notice. v92 already
+  made the v95-side shift: **24**, added to `storage_operation.yaml`'s
+  `gms_v92` column with the citation. `MESSENGER`'s table (stable 0–7 across
+  every other version) was independently re-confirmed via v92's
+  `CUIMessenger::OnPacket` decompile (0x7d5600) before adding its `gms_v92`
+  column to `messenger_operation.yaml` — both dispatcher-family YAMLs now
+  drive their v92 template entries through `packet-audit operations`'s
+  source of truth rather than a hand-copied table.
+
+### Pre-existing bug found and fixed (unrelated to task-145, discovered because it collided with the wiring)
+
+The template's **existing** (pre-Task-28) handler entries at opcodes
+`0xC8`/`0xC9`/`0xCA` were named `SummonMoveHandle`/`SummonAttackHandle`/
+`SummonDamageHandle` — but `docs/packets/registry/gms_v92.yaml` says those
+three opcodes are `PET_AUTO_POT`/`PET_EXCLUDE_ITEMS`/`UNNAMED_R288`, not
+summon ops at all (confirmed: v87 and v95 both route `PetItemUseHandle`/
+`PetItemExcludeHandle` at their own `PET_AUTO_POT`/`PET_EXCLUDE_ITEMS`
+opcodes). The **real** `MOVE_SUMMON`/`SUMMON_ATTACK`/`DAMAGE_SUMMON` opcodes
+are `0xCC`/`0xCD`/`0xCE`. Same pattern on the writer side at `0xC2`–`0xC7`
+(`SummonSpawn`/`SummonRemove`/`SummonMove`/`SummonAttack`/`SummonDamage`/
+`SummonSkill` sitting on what registry says are
+`SHOW_RECOVERY_UPGRADE_COUNT_EFFECT`/`SPAWN_PET`/`EVOLVE_PET`/(unconfirmed)/
+`MOVE_PET`/`PET_CHAT`). **This means the live v92 tenant, as configured today,
+misdecodes a v92 client's pet auto-pot and pet-exclude-items requests as
+summon-move/summon-attack commands** (and the writer side would emit
+summon-family payloads under opcodes the client reads as pet/recovery
+features) — a real, active bug, not a hypothetical. Fixed in the template:
+`0xC8`→`PetItemUseHandle`, `0xC9`→`PetItemExcludeHandle`, the unconfirmed
+`0xCA` (`UNNAMED_R288`) left unrouted rather than invented; writers `0xC3`→
+`PetActivated` (+ its stable operations table), `0xC6`→`PetMovement`, `0xC7`→
+`PetChat`, `0xC2`/`0xC4`/`0xC5` removed (no Atlas writer exists for
+`SHOW_RECOVERY_UPGRADE_COUNT_EFFECT`/`EVOLVE_PET`, and the registry has no op
+at all for `0xC5` — nothing to route there); the real summon opcodes
+(`0xCB`–`0xD0`) added correctly.
+
+### Class B — 8 registry-vs-audit-report conflicts, all resolved with direct v92 IDA evidence
+
+Every one of these turned out to be a genuine v92-registry gap (not a false
+audit report), confirmed by decompiling the actual v92 IDB
+(`GMS_v92_1_DEVM.exe.i64`, session `acdfccff` at investigation time — always
+re-resolve via `idb_list`, never assume) rather than trusting either the
+registry's silence or the ops CSV, which is itself stale/incomplete for
+several of these (verified column-by-column against a known-good row,
+`CLAIM_RESULT`, to rule out a transcription error before trusting any CSV
+"0x000"):
+
+| op | direction | real v92 opcode | evidence |
+|---|---|---|---|
+| `FOOTHOLD_INFO` | clientbound | 175 (`0xAF`) | `CField::OnPacket` (0x5406B0) case 175 → `CField::OnFootHoldInfo`; CSV confirms 0x0AF once read correctly. Follows the v87/v95 task-096 "shared op label, different opcode per version" precedent — added as a second (clientbound) entry under the existing `FOOTHOLD_INFO` op name, template writer `FootholdInfo`. |
+| (unnamed, `CField::OnStalkResult`) | clientbound | 171 (`0xAB`) | Same dispatcher, case 171. This fname was never given a canonical op name in the CSV (blank Op column in every version) — v79/v83/v87/v95 each carry their own opcode-derived `IDA_0X<hex>` placeholder; added v92's own, `IDA_0X0AB`, following that established convention. Template writer `StalkResult` (matches v87/v95's identifier). |
+| `USE_SHOP_SCANNER_ITEM` | serverbound | 90 (`0x5A`) | `CWvsContext::SendShopScannerItemUseRequest` (0x9B6050) constructs `COutPacket(0x5Au)`. Matches gms_v95's own opcode for the same fname exactly. Template handler `ShopScannerItemUseHandle` (from v95). |
+| `ITC_QUERY_CASH_REQUEST` | serverbound | 297 (`0x129`) | `CITC::TrySendQueryCashRequest` (0x56C2A0) constructs `COutPacket(0x129u)`; renamed from `sub_56C2A0` in the IDB and saved. Distinct from `CHECK_CASH`/`CCashShop::TrySendQueryCashRequest` (different class, different op). Template handler `ItcQueryCashRequestHandle` (from v95). |
+| `WITCH_TOWER_SCORE_UPDATE` | clientbound | 350 (`0x15E`) | `CField_Witchtower::OnPacket` (0x55D7C0, a `CField::OnPacket` virtual override) does `if (a3==350) OnScoreUpdate(...) else CField::OnPacket(...)`. Fits cleanly between v87's IDA-verified 318 and v95's 360. v95's own registry entry for this op is flagged pending-follow-up there (fname ambiguity) — v92's entry is independently verified and does not inherit that. Template writer `AriantScore` (`libs/atlas-packet/field/clientbound/ariant_score.go` — not routed in ANY version's template before this; wiring it for v92 doesn't retroactively cover v83/v87/v95). |
+
+All five added to `docs/packets/registry/gms_v92.yaml` as `provenance: manual`
+with an `ida:` address citation, per the un-named-fname / no-invented-value
+discipline.
+
+### fname-doc side effect (tool fix, not data)
+
+`packet-audit fname-doc --check` broke after the static audit pass: v92 is
+the **only** version to ever produce an audit report for
+`CashItemUseVegaScroll` (a `packet-audit:fname
+CWvsContext::SendConsumeCashItemUseRequest#VegaScroll` dispatcher arm,
+task-130, IDA-verified per-version), and that report's row 0 carries
+`diff.VerdictUnresolved` (🚫 — the export's own `unresolved: true,
+calls:[{op:Unresolved}]` marker for this fname, expected per the Task 27
+brief). `fnamedoc.go`'s `loadReportFNames` had no concept of "this specific
+report never actually resolved the IDA side" and would have overwritten the
+correct arm-suffixed comment with the weaker, unsuffixed one. Fixed in
+`tools/packet-audit/cmd/fnamedoc.go`: `loadReportFNames` now skips any report
+carrying a `VerdictUnresolved` row (general fix, not scoped to v92 — any
+version's under-resolved report would hit the same problem); `gms_v92` was
+also moved to the end of `fnamedocOrder` (lower priority) since its export
+is disproportionately unresolved-heavy relative to the other versions.
+
+### Live tenant
+
+A `GMS v92` tenant **does exist** in the `atlas-main` environment
+(`atlas-tenants` id `db1dbfb3-4345-4731-9223-c40b0c7f6457`, confirmed via
+`GET /api/tenants` against the live pod) — this is not a hypothetical. Seed
+templates apply only at tenant creation, so **none of this task's template
+fixes reach that tenant automatically.** A live-config PATCH + channel
+restart is needed to pick them up, covering: all 59 Class A entries, the 5
+Class B entries, and — highest priority, since it's an active
+misdecode — the `0xC8`/`0xC9`/`0xCA` (handlers) and `0xC2`–`0xC7` (writers)
+pet/summon correction. The patch itself was not attempted here (out of this
+task's scope, per instruction); this paragraph is the "precisely what it
+needs to cover" record.
+
+### Found but NOT fixed — flagged for separate follow-up
+
+While cross-referencing the template against the registry to locate the
+pet/summon collision, the same method surfaced `template_gms_92_1.json`
+handler `0x17` (`DeleteCharacterHandle`, login service): registry says
+`0x17` is `CREATE_CHAR_IN_CS`, and `DELETE_CHAR`'s real v92 opcode is `0x18`
+(both v87 and v95 independently use the identifier `DeleteCharacterHandle`
+for `DELETE_CHAR`, just at their own different opcodes — a consistent,
+higher-confidence signal than the pet/summon case even had). This is
+**atlas-login**, not atlas-channel, and unrelated to the sue/claim/pet/summon
+work above — left untouched as genuine out-of-scope-for-Task-28 territory,
+but recorded here rather than silently dropped. If real, it means character
+creation and deletion are cross-wired on v92 today. Needs its own
+verification pass before touching.
+
+### Task 18 overlap
+
+None of the five sue/claim ops were touched by this amendment's wiring —
+all five still grade `❌`/`⬜` with **no audit report** in v92 (not a
+conflict; see Task 28's brief for why), so Task 18 lands its five entries
+into an already-populated template with no risk of a duplicate opcode.

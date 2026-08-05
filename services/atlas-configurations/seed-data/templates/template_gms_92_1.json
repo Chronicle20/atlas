@@ -173,6 +173,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x30",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChairPortableHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x35",
         "validator": "LoggedInValidator",
         "handler": "CharacterDamageHandle",
@@ -202,6 +208,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x4D",
+        "validator": "LoggedInValidator",
+        "handler": "CompartmentSortHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x4E",
         "validator": "LoggedInValidator",
         "handler": "CharacterInventoryMoveHandle",
@@ -225,6 +237,12 @@
         "handler": "CharacterSkillBookUseHandle"
       },
       {
+        "opCode": "0x5A",
+        "validator": "LoggedInValidator",
+        "handler": "ShopScannerItemUseHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x5B",
         "validator": "LoggedInValidator",
         "handler": "TeleportRockUseHandle",
@@ -237,9 +255,21 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x6A",
+        "validator": "LoggedInValidator",
+        "handler": "FameChangeHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x6C",
         "validator": "LoggedInValidator",
         "handler": "CharacterInfoRequestHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x6D",
+        "validator": "LoggedInValidator",
+        "handler": "PetSpawnHandle",
         "services": ["channel"]
       },
       {
@@ -252,6 +282,18 @@
         "opCode": "0x71",
         "validator": "LoggedInValidator",
         "handler": "TeleportRockAddMapHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x76",
+        "validator": "LoggedInValidator",
+        "handler": "QuestActionHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x8C",
+        "validator": "LoggedInValidator",
+        "handler": "MessengerOperationHandle",
         "services": ["channel"]
       },
       {
@@ -283,19 +325,37 @@
         }
       },
       {
+        "opCode": "0xB0",
+        "validator": "LoggedInValidator",
+        "handler": "GuildBBSHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0xC8",
         "validator": "LoggedInValidator",
-        "handler": "SummonMoveHandle",
+        "handler": "PetItemUseHandle",
         "services": ["channel"]
       },
       {
         "opCode": "0xC9",
         "validator": "LoggedInValidator",
+        "handler": "PetItemExcludeHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xCC",
+        "validator": "LoggedInValidator",
+        "handler": "SummonMoveHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xCD",
+        "validator": "LoggedInValidator",
         "handler": "SummonAttackHandle",
         "services": ["channel"]
       },
       {
-        "opCode": "0xCA",
+        "opCode": "0xCE",
         "validator": "LoggedInValidator",
         "handler": "SummonDamageHandle",
         "services": ["channel"]
@@ -310,6 +370,24 @@
         "opCode": "0xEA",
         "validator": "LoggedInValidator",
         "handler": "NPCActionHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xFF",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterCarnival",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x10C",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopOperationHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x129",
+        "validator": "LoggedInValidator",
+        "handler": "ItcQueryCashRequestHandle",
         "services": ["channel"]
       }
     ],
@@ -504,6 +582,11 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x11",
+        "writer": "Ping",
+        "services": ["login", "channel"]
+      },
+      {
         "opCode": "0x1A",
         "writer": "SelectWorld",
         "services": ["login"]
@@ -544,6 +627,11 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x25",
+        "writer": "CharacterSkillChange",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x2B",
         "writer": "MapTransferResult",
         "services": ["channel"],
@@ -576,6 +664,11 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x46",
+        "writer": "RemoveTownDoor",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x48",
         "writer": "WorldMessage",
         "services": ["channel"],
@@ -602,6 +695,11 @@
             "UNKNOWN_8": 20
           }
         }
+      },
+      {
+        "opCode": "0x49",
+        "writer": "IncubatorResult",
+        "services": ["channel"]
       },
       {
         "opCode": "0x4A",
@@ -633,6 +731,11 @@
         }
       },
       {
+        "opCode": "0x50",
+        "writer": "PetCashFoodResult",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x73",
         "writer": "AvatarMegaphoneResult",
         "services": ["channel"],
@@ -654,6 +757,11 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x80",
+        "writer": "ScriptProgress",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x8C",
         "writer": "SetField",
         "services": ["channel"]
@@ -661,6 +769,21 @@
       {
         "opCode": "0x8E",
         "writer": "CashShopOpen",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x9D",
+        "writer": "FieldEffectWeather",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xAB",
+        "writer": "StalkResult",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xAF",
+        "writer": "FootholdInfo",
         "services": ["channel"]
       },
       {
@@ -679,44 +802,108 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0xB4",
+        "writer": "ChatGeneralChat",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xB5",
+        "writer": "ChalkboardUse",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0xB6",
         "writer": "MiniRoom",
         "services": ["channel"],
         "options": {}
       },
       {
-        "opCode": "0xC2",
-        "writer": "SummonSpawn",
-        "services": ["channel"]
-      },
-      {
         "opCode": "0xC3",
-        "writer": "SummonRemove",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xC4",
-        "writer": "SummonMove",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xC5",
-        "writer": "SummonAttack",
-        "services": ["channel"]
+        "writer": "PetActivated",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "NORMAL": 0,
+            "HUNGER": 1,
+            "EXPIRED": 2,
+            "UNKNOWN_1": 3,
+            "UNKNOWN_2": 4
+          }
+        }
       },
       {
         "opCode": "0xC6",
-        "writer": "SummonDamage",
+        "writer": "PetMovement",
         "services": ["channel"]
       },
       {
         "opCode": "0xC7",
+        "writer": "PetChat",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xC9",
+        "writer": "PetExcludeResponse",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xCA",
+        "writer": "PetCommandResponse",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xCB",
+        "writer": "SummonSpawn",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xCC",
+        "writer": "SummonRemove",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xCD",
+        "writer": "SummonMove",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xCE",
+        "writer": "SummonAttack",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xCF",
+        "writer": "SummonDamage",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xD0",
         "writer": "SummonSkill",
         "services": ["channel"]
       },
       {
         "opCode": "0xD5",
         "writer": "CharacterMovement",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xDA",
+        "writer": "CharacterSkillPrepareForeign",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xDB",
+        "writer": "CharacterSkillCancelForeign",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xDC",
+        "writer": "CharacterDamage",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xDD",
+        "writer": "CharacterExpression",
         "services": ["channel"]
       },
       {
@@ -732,6 +919,31 @@
       {
         "opCode": "0xE4",
         "writer": "CharacterBuffCancelForeign",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xE5",
+        "writer": "PartyMemberHP",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xE9",
+        "writer": "CharacterSitResult",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xF7",
+        "writer": "CharacterHint",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xFF",
+        "writer": "UiLock",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x100",
+        "writer": "UiDisable",
         "services": ["channel"]
       },
       {
@@ -770,6 +982,26 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x11A",
+        "writer": "MonsterStatSet",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x11B",
+        "writer": "MonsterStatReset",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x11E",
+        "writer": "MonsterDamage",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x122",
+        "writer": "MonsterHealth",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x12F",
         "writer": "SpawnNPC",
         "services": ["channel"]
@@ -789,6 +1021,122 @@
         "opCode": "0x132",
         "writer": "NPCAction",
         "services": ["channel"]
+      },
+      {
+        "opCode": "0x13A",
+        "writer": "DropSpawn",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x13C",
+        "writer": "DropDestroy",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x142",
+        "writer": "SpawnDoor",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x143",
+        "writer": "RemoveDoor",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x146",
+        "writer": "ReactorHit",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x148",
+        "writer": "ReactorSpawn",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x149",
+        "writer": "ReactorDestroy",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x152",
+        "writer": "MonsterCarnivalStart",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x153",
+        "writer": "MonsterCarnivalObtainedCP",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x154",
+        "writer": "MonsterCarnivalPartyCP",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x155",
+        "writer": "MonsterCarnivalSummon",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x156",
+        "writer": "MonsterCarnivalMessage",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x157",
+        "writer": "MonsterCarnivalDied",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x158",
+        "writer": "MonsterCarnivalLeave",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x159",
+        "writer": "MonsterCarnivalResult",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x15E",
+        "writer": "AriantScore",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x168",
+        "writer": "StorageOperation",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "RETRIEVE_ASSETS": 9,
+            "INVENTORY_FULL": 10,
+            "NOT_ENOUGH_MESOS": 11,
+            "ONE_OF_A_KIND": 12,
+            "STORE_ASSETS": 13,
+            "NOT_ENOUGH_MESOS_2": 16,
+            "UNKNOWN": 17,
+            "UPDATE_MESO": 19,
+            "SHOW": 22,
+            "ERROR_MESSAGE": 24
+          }
+        }
+      },
+      {
+        "opCode": "0x16C",
+        "writer": "MessengerOperation",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "ADD": 0,
+            "JOIN": 1,
+            "REMOVE": 2,
+            "REQUEST_INVITE": 3,
+            "INVITE_SENT": 4,
+            "INVITE_DECLINED": 5,
+            "CHAT": 6,
+            "UPDATE": 7
+          }
+        }
       },
       {
         "opCode": "0x16D",
@@ -886,6 +1234,21 @@
             "CHANGE_MAPLE_POINT_FAILED": 185
           }
         }
+      },
+      {
+        "opCode": "0x185",
+        "writer": "CharacterKeyMap",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x186",
+        "writer": "CharacterKeyMapAutoHp",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x187",
+        "writer": "CharacterKeyMapAutoMp",
+        "services": ["channel"]
       },
       {
         "opCode": "0x18C",

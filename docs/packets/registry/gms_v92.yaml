@@ -3801,3 +3801,43 @@
   opcode: 300
   fname: CUIItemUpgrade::Update
   provenance: csv-import
+- op: FOOTHOLD_INFO
+  direction: clientbound
+  opcode: 175
+  fname: CField::OnFootHoldInfo
+  provenance: manual
+  note: 'task-28: CSV GMS v92 column (blank-Op FName row) already carries 0x0AF (175); confirmed by direct decompile — IDA v92 CField::OnPacket (0x5406B0) case 175 -> CField::OnFootHoldInfo (0x534C90). Shared op label with v87/v95/jms FOOTHOLD_INFO clientbound (different opcode per version, task-096 precedent).'
+  ida:
+    address: 5459088
+- op: IDA_0X0AB
+  direction: clientbound
+  opcode: 171
+  fname: CField::OnStalkResult
+  provenance: manual
+  note: 'task-28: CSV GMS v92 column (blank-Op FName row) carries 0x0AB (171); confirmed by direct decompile — IDA v92 CField::OnPacket (0x5406B0) case 171 -> CField::OnStalkResult (0x533D90). Same unnamed-op family as v79 IDA_0X098 / v83 IDA_0X09C / v87 IDA_0X0A4 / v95 IDA_0X0AC (each version keeps its own opcode-derived placeholder name; no canonical op name was ever assigned for this fname).'
+  ida:
+    address: 5455248
+- op: USE_SHOP_SCANNER_ITEM
+  direction: serverbound
+  opcode: 90
+  fname: CWvsContext::SendShopScannerItemUseRequest
+  provenance: manual
+  note: 'task-28: CSV GMS v92 column reads 0x000 (stale/incomplete) but the send site is real and unambiguous — IDA v92 CWvsContext::SendShopScannerItemUseRequest (0x9B6050) constructs COutPacket(0x5Au). Matches gms_v95''s own opcode (90) for the same fname exactly.'
+  ida:
+    address: 10182736
+- op: ITC_QUERY_CASH_REQUEST
+  direction: serverbound
+  opcode: 297
+  fname: CITC::TrySendQueryCashRequest
+  provenance: manual
+  note: 'task-28: CSV GMS v92 column reads 0x000 (stale/incomplete) but the send site is real and unambiguous — IDA v92 CITC::TrySendQueryCashRequest (0x56C2A0) constructs COutPacket(0x129u). Distinct from CCashShop::TrySendQueryCashRequest (op CHECK_CASH, a different class/op). IDB function renamed from sub_56C2A0 to CITC::TrySendQueryCashRequest and saved (task-28).'
+  ida:
+    address: 5685920
+- op: WITCH_TOWER_SCORE_UPDATE
+  direction: clientbound
+  opcode: 350
+  fname: CField_Witchtower::OnScoreUpdate
+  provenance: manual
+  note: 'task-28: CSV GMS v92 column reads 0x000 (stale/incomplete) but the dispatch is real and unambiguous — IDA v92 CField_Witchtower::OnPacket (0x55D7C0), a CField virtual-OnPacket override, does `if (a3 == 350) OnScoreUpdate(...) else CField::OnPacket(...)`. 350 fits cleanly between v87''s 318 (0x13E, task-096 IDA-verified) and v95''s 360 (0x168) in the per-version progression. Not to be confused with gms_v95''s own WITCH_TOWER_SCORE_UPDATE entry, which is flagged pending-follow-up there (fname currently CField::OnChaosZakumTimer with CField_Witchtower::OnScoreUpdate only as an alt) — this v92 entry is independently IDA-verified and does not inherit that ambiguity.'
+  ida:
+    address: 5625584

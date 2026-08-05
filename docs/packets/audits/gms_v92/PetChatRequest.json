@@ -1,0 +1,57 @@
+{
+  "WriterName": "PetChatRequest",
+  "IDAName": "CPet::DoAction",
+  "Address": "0x697910",
+  "Variant": "GMS/v92",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/pet/serverbound/chat.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "packet var passed to unresolved/indirect call; hand-trace",
+      "Verdict": 4,
+      "Note": "IDA read-order unresolved: packet var passed to unresolved/indirect call; hand-trace"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 4,
+  "FlatInvalid": false
+}

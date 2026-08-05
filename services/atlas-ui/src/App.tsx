@@ -39,6 +39,11 @@ const BanDetailPage = lazyWithReload(() =>
 const ReportsPage = lazyWithReload(() =>
   import("@/pages/ReportsPage").then((m) => ({ default: m.ReportsPage })),
 );
+const ReportDetailPage = lazyWithReload(() =>
+  import("@/pages/ReportDetailPage").then((m) => ({
+    default: m.ReportDetailPage,
+  })),
+);
 const BaselinesPage = lazyWithReload(() =>
   import("@/pages/BaselinesPage").then((m) => ({ default: m.BaselinesPage })),
 );
@@ -259,6 +264,10 @@ export function App() {
                     <Route path="/bans" element={<BansPage />} />
                     <Route path="/bans/:banId" element={<BanDetailPage />} />
                     <Route path="/reports" element={<ReportsPage />} />
+                    <Route
+                      path="/reports/:reportId"
+                      element={<ReportDetailPage />}
+                    />
                     <Route path="/baselines" element={<BaselinesPage />} />
                     <Route path="/characters" element={<CharactersPage />} />
                     <Route

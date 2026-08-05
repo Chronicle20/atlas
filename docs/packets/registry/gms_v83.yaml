@@ -2369,7 +2369,7 @@
   provenance: ida-discovered
   ida:
     address: 0xa2719c
-  note: 'task-145 Task 23 (2026-08-05): send-site was unnamed in the shipped v83_Me IDB (csv-import row). Named via structural match on its two callers CUIStatusBar::SendClaim (0x8d4a22) and CUserLocal::HandleRButtonClk case 7 (0x950470), both of which call 0xa2719c; size 0x6bf, identical to the already-named v72@0x91f2b4 / v79@0x9711ff twins. COutPacket::COutPacket(&pkt, 0x6A) at 0xa27631 confirms opcode 106/0x06A; encode order (byte, string, byte, string, conditional string) matches v95 exactly, so the codec needs no version branch.'
+  note: 'task-145 Task 23 (2026-08-05): send-site was unnamed in the shipped v83_Me IDB (csv-import row). Named via structural match: xrefs_to(0xa2719c) resolves to exactly three direct callers -- CUIStatusBar::SendClaim (fn 0x8d4a22, call site 0x8d4a50), CUserLocal::HandleRButtonClk case 7 (fn 0x95009a, call site 0x950477 -- the preceding 0x950470 is a distinct call to TSingleton<CWvsContext>::GetInstance, not to SendClaimRequest), and unnamed sub_84EF23 (fn 0x84ef23, call site 0x84effc, itself called from unnamed sub_84E607 at call site 0x84e61f). size 0x6bf, identical to the already-named v72@0x91f2b4 / v79@0x9711ff twins. COutPacket::COutPacket(&pkt, 0x6A) at 0xa27631 confirms opcode 106/0x06A; encode order (byte, string, byte, string, conditional string) matches v95 exactly, so the codec needs no version branch.'
 - op: QUEST_ACTION
   direction: serverbound
   opcode: 107

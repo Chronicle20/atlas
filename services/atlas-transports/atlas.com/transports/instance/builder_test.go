@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
@@ -101,4 +102,45 @@ func TestRouteBuilder_GeneratesId(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotEqual(t, uuid.Nil, route.Id())
+}
+
+func TestRouteBuilder_RejectsZeroEffectItemId(t *testing.T) {
+	_, err := NewRouteBuilder("test").
+		SetTransitMapIds([]_map.Id{100}).
+		SetCapacity(6).
+		SetBoardingWindow(10 * time.Second).
+		SetTravelDuration(30 * time.Second).
+		SetEffectItemIds([]item.Id{2210016, 0}).
+		Build()
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "effect item ids")
+}
+
+// Zero forced-return means "not set", never an error (FR-4.3).
+func TestRouteBuilder_ZeroForcedReturnMapIdIsNotAnError(t *testing.T) {
+	route, err := NewRouteBuilder("test").
+		SetTransitMapIds([]_map.Id{100}).
+		SetCapacity(6).
+		SetBoardingWindow(10 * time.Second).
+		SetTravelDuration(30 * time.Second).
+		SetForcedReturnMapId(_map.Id(0)).
+		Build()
+
+	assert.NoError(t, err)
+	assert.Equal(t, _map.Id(0), route.ForcedReturnMapId())
+}
+
+// Neither field is required.
+func TestRouteBuilder_EffectFieldsAreOptional(t *testing.T) {
+	route, err := NewRouteBuilder("test").
+		SetTransitMapIds([]_map.Id{100}).
+		SetCapacity(6).
+		SetBoardingWindow(10 * time.Second).
+		SetTravelDuration(30 * time.Second).
+		Build()
+
+	assert.NoError(t, err)
+	assert.Empty(t, route.EffectItemIds())
+	assert.Equal(t, _map.Id(0), route.ForcedReturnMapId())
 }

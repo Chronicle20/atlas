@@ -6,21 +6,24 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // RouteModel is the domain model for an instance transport route
 type RouteModel struct {
-	id               uuid.UUID
-	name             string
-	startMapId       _map.Id
-	transitMapIds    []_map.Id
-	destinationMapId _map.Id
-	capacity         uint32
-	boardingWindow   time.Duration
-	travelDuration   time.Duration
-	transitMessage   string
+	id                uuid.UUID
+	name              string
+	startMapId        _map.Id
+	transitMapIds     []_map.Id
+	destinationMapId  _map.Id
+	capacity          uint32
+	boardingWindow    time.Duration
+	travelDuration    time.Duration
+	transitMessage    string
+	effectItemIds     []item.Id
+	forcedReturnMapId _map.Id
 }
 
 func (m RouteModel) Id() uuid.UUID {
@@ -68,6 +71,24 @@ func (m RouteModel) TravelDuration() time.Duration {
 
 func (m RouteModel) TransitMessage() string {
 	return m.transitMessage
+}
+
+// EffectItemIds are the consumable item ids whose effects this route applies
+// on boarding and cancels on every terminal path. Empty means the route
+// applies no effects. The copy matches TransitMapIds: reads never hand out
+// the backing array, which is what makes the model immutable in practice.
+func (m RouteModel) EffectItemIds() []item.Id {
+	result := make([]item.Id, len(m.effectItemIds))
+	copy(result, m.effectItemIds)
+	return result
+}
+
+// ForcedReturnMapId is the map TickArrival warps to when the travel timer
+// expires. Zero means "not set" — deliver to destinationMapId instead. It
+// mirrors the client's own Map.wz info/forcedReturn node, which is only
+// meaningful on maps that also carry a timeLimit.
+func (m RouteModel) ForcedReturnMapId() _map.Id {
+	return m.forcedReturnMapId
 }
 
 func (m RouteModel) MaxLifetime() time.Duration {

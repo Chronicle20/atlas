@@ -6,32 +6,37 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 type routeModelJSON struct {
-	Id               uuid.UUID     `json:"id"`
-	Name             string        `json:"name"`
-	StartMapId       _map.Id       `json:"startMapId"`
-	TransitMapIds    []_map.Id     `json:"transitMapIds"`
-	DestinationMapId _map.Id       `json:"destinationMapId"`
-	Capacity         uint32        `json:"capacity"`
-	BoardingWindow   time.Duration `json:"boardingWindow"`
-	TravelDuration   time.Duration `json:"travelDuration"`
-	TransitMessage   string        `json:"transitMessage"`
+	Id                uuid.UUID     `json:"id"`
+	Name              string        `json:"name"`
+	StartMapId        _map.Id       `json:"startMapId"`
+	TransitMapIds     []_map.Id     `json:"transitMapIds"`
+	DestinationMapId  _map.Id       `json:"destinationMapId"`
+	Capacity          uint32        `json:"capacity"`
+	BoardingWindow    time.Duration `json:"boardingWindow"`
+	TravelDuration    time.Duration `json:"travelDuration"`
+	TransitMessage    string        `json:"transitMessage"`
+	EffectItemIds     []item.Id     `json:"effectItemIds"`
+	ForcedReturnMapId _map.Id       `json:"forcedReturnMapId"`
 }
 
 func (m RouteModel) MarshalJSON() ([]byte, error) {
 	return json.Marshal(routeModelJSON{
-		Id:               m.id,
-		Name:             m.name,
-		StartMapId:       m.startMapId,
-		TransitMapIds:    m.transitMapIds,
-		DestinationMapId: m.destinationMapId,
-		Capacity:         m.capacity,
-		BoardingWindow:   m.boardingWindow,
-		TravelDuration:   m.travelDuration,
-		TransitMessage:   m.transitMessage,
+		Id:                m.id,
+		Name:              m.name,
+		StartMapId:        m.startMapId,
+		TransitMapIds:     m.transitMapIds,
+		DestinationMapId:  m.destinationMapId,
+		Capacity:          m.capacity,
+		BoardingWindow:    m.boardingWindow,
+		TravelDuration:    m.travelDuration,
+		TransitMessage:    m.transitMessage,
+		EffectItemIds:     m.effectItemIds,
+		ForcedReturnMapId: m.forcedReturnMapId,
 	})
 }
 
@@ -49,5 +54,7 @@ func (m *RouteModel) UnmarshalJSON(data []byte) error {
 	m.boardingWindow = j.BoardingWindow
 	m.travelDuration = j.TravelDuration
 	m.transitMessage = j.TransitMessage
+	m.effectItemIds = j.EffectItemIds
+	m.forcedReturnMapId = j.ForcedReturnMapId
 	return nil
 }

@@ -58,6 +58,17 @@ For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the b
     banned const list is derived from
     `docs/tasks/task-187-version-aware-id-semantics/audit/divergences.csv`,
     so it grows automatically as future audit passes add divergent ids.
+11. **`tools/template-movement-types-guard.sh` clean from the repo root** whenever
+    a tenant socket-config template under
+    `services/atlas-configurations/seed-data/templates/` changed. Every move
+    handler (`CharacterMoveHandle`, `MonsterMovementHandle`, `PetMovementHandle`,
+    `SummonMoveHandle`, `NPCActionHandle`) must carry a non-empty
+    `options.types`; all such arrays within one template must be byte-identical;
+    every `Type` must be one of the seven the decoder recognizes; at most one
+    entry may be named `FALL_DOWN`. A missing table makes every movement
+    fragment decode as a 3-byte stub (loud: "Code [N] not configured for use
+    in movement"); a typo'd `Type` does the same for one index, silently. See
+    [`docs/packets/TEMPLATE_CONVENTIONS.md`](docs/packets/TEMPLATE_CONVENTIONS.md).
 
 ## Code Patterns
 

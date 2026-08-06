@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -98,5 +99,67 @@ func TestExtractRouteFor_FallbackMatchesTheSharedFormula(t *testing.T) {
 		if m.Id() != want {
 			t.Fatalf("raw=%q: id = %s, want the derived %s", raw, m.Id(), want)
 		}
+	}
+}
+
+// TestExtractRouteFor_EffectAttributes tables the two effect-attribute
+// projection cases: both call ExtractRouteFor against a fixture and assert
+// EffectItemIds/ForcedReturnMapId, differing only in the fixture's declared
+// attributes and the expected result.
+func TestExtractRouteFor_EffectAttributes(t *testing.T) {
+	tests := []struct {
+		name                  string
+		route                 func() config.InstanceRouteRestModel
+		wantEffectItemIds     []item.Id
+		wantForcedReturnMapId _map.Id
+	}{
+		{
+			// sampleInstanceRoute deliberately omits the effect attributes, so
+			// this case sets its own fixture: ExtractRouteFor must carry both
+			// through to the domain model or the processor sees zero values
+			// with no error anywhere.
+			name: "ThreadsEffectAttributes",
+			route: func() config.InstanceRouteRestModel {
+				r := sampleInstanceRoute("temple-of-time-flight", uuid.New().String())
+				r.EffectItemIds = []item.Id{2210016}
+				r.ForcedReturnMapId = _map.Id(240000110)
+				return r
+			},
+			wantEffectItemIds:     []item.Id{2210016},
+			wantForcedReturnMapId: _map.Id(240000110),
+		},
+		{
+			// A route declaring neither attribute must still build — the ten
+			// unaffected routes take this path.
+			name: "EffectAttributesAreOptional",
+			route: func() config.InstanceRouteRestModel {
+				return sampleInstanceRoute("ellinia-ereve-ferry", uuid.New().String())
+			},
+			wantEffectItemIds:     nil,
+			wantForcedReturnMapId: _map.Id(0),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tm := testTenant(t, uuid.New())
+			m, err := config.ExtractRouteFor(quietLogger(), tm)(tt.route())
+			if err != nil {
+				t.Fatalf("ExtractRouteFor: %v", err)
+			}
+
+			got := m.EffectItemIds()
+			if len(got) != len(tt.wantEffectItemIds) {
+				t.Fatalf("EffectItemIds = %v, want %v", got, tt.wantEffectItemIds)
+			}
+			for i := range got {
+				if got[i] != tt.wantEffectItemIds[i] {
+					t.Fatalf("EffectItemIds = %v, want %v", got, tt.wantEffectItemIds)
+				}
+			}
+			if m.ForcedReturnMapId() != tt.wantForcedReturnMapId {
+				t.Fatalf("ForcedReturnMapId = %d, want %d", m.ForcedReturnMapId(), tt.wantForcedReturnMapId)
+			}
+		})
 	}
 }

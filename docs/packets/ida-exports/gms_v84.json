@@ -28651,6 +28651,11 @@
           "guard": "v60"
         }
       ]
+    },
+    "CWvsContext::CheckTemporaryStatDuration": {
+      "address": "0xa6bd3a",
+      "direction": "serverbound",
+      "calls": []
     }
   }
 }

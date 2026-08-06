@@ -2501,6 +2501,14 @@
   ida:
     address: 9552449
   note: 'v72 COutPacket(97) verified via global COutPacket-ctor harvest @0x91c241; Δ+1 vs v79 op 96 (mid/field/social Δ+1).'
+- op: CANCEL_DEBUFF
+  direction: serverbound
+  opcode: 98
+  fname: CWvsContext::CheckTemporaryStatDuration
+  provenance: ida-discovered
+  ida:
+    address: 9539919
+  note: 'Empty body. v72 IDB left the function unnamed (sub_91914F); renamed during the task-190 pass. Client never assigns m_tLastStatResetRequest here, so its 200ms self-throttle latches open and it sends once per frame. Corrects a prior n-a assertion (task-190).'
 - op: CHANGE_MAP_SPECIAL
   direction: serverbound
   opcode: 99

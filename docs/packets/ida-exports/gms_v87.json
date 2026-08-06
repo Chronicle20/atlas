@@ -15428,6 +15428,11 @@
           "guard": "a2[0]"
         }
       ]
+    },
+    "CWvsContext::CheckTemporaryStatDuration": {
+      "address": "0xab7fd7",
+      "direction": "serverbound",
+      "calls": []
     }
   }
 }

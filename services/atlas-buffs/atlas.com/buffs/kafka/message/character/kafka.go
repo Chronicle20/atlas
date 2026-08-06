@@ -17,6 +17,12 @@ const (
 	CommandTypeCancelAll       = "CANCEL_ALL"
 	CommandTypeCancelByTypes   = "CANCEL_BY_TYPES"
 	CommandTypeUpdateStatValue = "UPDATE_STAT_VALUE"
+	// CommandTypeExpire asks for ONE character's buffs to be re-evaluated and
+	// whatever has genuinely lapsed announced. Emitted by atlas-channel's
+	// CANCEL_DEBUFF handler (task-190 FR-2.6.1). Named EXPIRE rather than
+	// RECONCILE because there is no two-way diff — the client's packet carries
+	// no payload; this prunes against server-side expiresAt.
+	CommandTypeExpire = "EXPIRE"
 
 	// Operations for UPDATE_STAT_VALUE. INCREMENT adds Amount clamped to Cap;
 	// SET replaces the stat amount outright (finisher consume = SET 1).
@@ -35,9 +41,18 @@ type Command[E any] struct {
 }
 
 type ApplyCommandBody struct {
-	FromId   uint32       `json:"fromId"`
-	SourceId int32        `json:"sourceId"`
-	Level    byte         `json:"level"`
+	FromId   uint32 `json:"fromId"`
+	SourceId int32  `json:"sourceId"`
+	Level    byte   `json:"level"`
+	// Duration is MILLISECONDS. This is the single authoritative statement of
+	// the COMMAND_TOPIC_CHARACTER_BUFF duration unit: atlas-buffs is the
+	// consumer that defines it (buff.NewBuff computes
+	// expiresAt = now + duration*time.Millisecond), so the unit is its property
+	// to declare. Every producer's local copy of this struct carries a one-line
+	// pointer back here rather than restating the rule — three separate
+	// commits (11e07dfa7, 197324e40, 88d270bf1) flipped it in prose alone.
+	// tools/buff-duration-guard.sh fails CI on a seconds-valued emitter.
+	// (task-190 FR-3.1)
 	Duration int32        `json:"duration"`
 	Changes  []StatChange `json:"changes"`
 	// Accumulate, when true, stores each change as its own independently-timed
@@ -46,6 +61,9 @@ type ApplyCommandBody struct {
 	// one-at-a-time (original-GMS behavior). Default false preserves the standard
 	// replace-by-sourceId semantics for every other producer.
 	Accumulate bool `json:"accumulate,omitempty"`
+	// NoExpiry marks an explicitly non-expiring buff (task-167 FR-2). When set,
+	// Duration MUST be 0; the consumer rejects the command otherwise.
+	NoExpiry bool `json:"noExpiry,omitempty"`
 }
 
 type StatChange struct {
@@ -62,6 +80,13 @@ type CancelAllCommandBody struct{}
 type CancelByTypesCommandBody struct {
 	Types []string `json:"types"`
 }
+
+// ExpireCommandBody is deliberately empty: CANCEL_DEBUFF carries no payload, so
+// a client cannot name anything. Honoring it unconditionally is provably safe —
+// the worst assertion is "please re-check me", and only genuinely lapsed buffs
+// are announced. Amplification is bounded upstream by atlas-channel's
+// per-character throttle. (task-190 FR-2.2 / NFR-2)
+type ExpireCommandBody struct{}
 
 // UpdateStatValueCommandBody changes the amount of one stat on a character's
 // existing buff (identified by SourceId). The body is stat-generic; task-142
@@ -96,6 +121,7 @@ type AppliedStatusEventBody struct {
 	Changes   []StatChange `json:"changes"`
 	CreatedAt time.Time    `json:"createdAt"`
 	ExpiresAt time.Time    `json:"expiresAt"`
+	NoExpiry  bool         `json:"noExpiry,omitempty"`
 }
 
 type ExpiredStatusEventBody struct {
@@ -105,6 +131,7 @@ type ExpiredStatusEventBody struct {
 	Changes   []StatChange `json:"changes"`
 	CreatedAt time.Time    `json:"createdAt"`
 	ExpiresAt time.Time    `json:"expiresAt"`
+	NoExpiry  bool         `json:"noExpiry,omitempty"`
 }
 
 // StatUpdatedStatusEventBody is emitted when a stat value on an existing buff

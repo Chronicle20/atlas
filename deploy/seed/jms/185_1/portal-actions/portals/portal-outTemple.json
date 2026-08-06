@@ -13,12 +13,6 @@
             "operations": [
               {
                 "params": {
-                  "itemId": "2210016"
-                },
-                "type": "apply_consumable_effect"
-              },
-              {
-                "params": {
                   "failureMessage": "The flight service is currently unavailable. Please try again later.",
                   "routeName": "temple-of-time-return-flight"
                 },

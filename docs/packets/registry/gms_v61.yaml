@@ -2044,6 +2044,14 @@
   ida:
     address: 6291023
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_845C36. COutPacket(90), CWvsContext skill region; Δ0 vs v72.'
+- op: CANCEL_DEBUFF
+  direction: serverbound
+  opcode: 91
+  fname: CWvsContext::CheckTemporaryStatDuration
+  provenance: ida-discovered
+  ida:
+    address: 8664910
+  note: 'Empty body. Note 0x63 is NOT this packet at v61 — there it is the calc-damage-stat request emitted by OnTemporaryStatReset, so opcodes must come from tenant config per version. Corrects a prior n-a assertion (task-190).'
 - op: CANCEL_BUFF
   direction: serverbound
   opcode: 84

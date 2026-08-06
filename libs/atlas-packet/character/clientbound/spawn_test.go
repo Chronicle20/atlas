@@ -46,7 +46,8 @@ func TestCharacterSpawnEncode(t *testing.T) {
 //
 // The jms client has NO admin byte after the foothold and NO trailing team byte —
 // both are GMS-only. Those two bytes were the jms wire delta fixed in this commit's
-// codec change; here the body is 238 bytes (was 240 with the spurious bytes).
+// codec change; here the body is 128 bytes: 238 minus the ~110 bytes of placeholder
+// two-state base-stat blocks an empty CTS no longer emits (task-190).
 //
 // The cts base-stat blocks carry a tLastUpdated time interval, so the middle of the
 // body is time-dependent; this golden pins the fully-deterministic header (through
@@ -60,14 +61,14 @@ func TestCharacterSpawnJMSGolden(t *testing.T) {
 
 	got := in.Encode(nil, ctx)(nil)
 
-	if len(got) != 238 {
-		t.Fatalf("jms CharacterSpawn length: got %d want 238 (admin+team bytes must be absent)", len(got))
+	if len(got) != 128 {
+		t.Fatalf("jms CharacterSpawn length: got %d want 128 (admin+team bytes absent; no placeholder base-stat blocks)", len(got))
 	}
 	// Header through the 16-byte SecondaryStat flag word: charId, level,
 	// name("TestChar"), guildName("TestGuild"), logo (2/1/2/1), empty-cts mask
 	// (bits 110-116 = 0x001FC000 in the jms two-state group).
 	wantPrefix, _ := hex.DecodeString(
-		"3930000032080054657374436861720900546573744775696c6401000203000400c01f00000000000000000000000000")
+		"3930000032080054657374436861720900546573744775696c6401000203000400000000000000000000000000000000")
 	if !bytes.Equal(got[:48], wantPrefix) {
 		t.Errorf("jms CharacterSpawn header+mask: got %x want %x", got[:48], wantPrefix)
 	}
@@ -77,8 +78,8 @@ func TestCharacterSpawnJMSGolden(t *testing.T) {
 	// berserk/dragon(0)+jms final-effect(0). NO admin byte, NO team byte.
 	wantTail, _ := hex.DecodeString(
 		"0000000100000000ffff0000000000000000000000000000000000000000000000000000000000000000000000006400c8000300000001000000000000000000000000000000000000")
-	if !bytes.Equal(got[165:], wantTail) {
-		t.Errorf("jms CharacterSpawn tail:\n got %x\nwant %x", got[165:], wantTail)
+	if !bytes.Equal(got[55:], wantTail) {
+		t.Errorf("jms CharacterSpawn tail:\n got %x\nwant %x", got[55:], wantTail)
 	}
 }
 

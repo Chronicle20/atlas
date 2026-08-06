@@ -895,6 +895,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterUseSkillHandle] = handler.CharacterUseSkillHandleFunc
 	handlerMap[handler.CharacterSkillPrepareHandle] = handler.CharacterSkillPrepareHandleFunc
 	handlerMap[charsb.CharacterBuffCancelHandle] = handler.CharacterBuffCancelHandleFunc
+	handlerMap[charsb.CancelDebuffHandle] = handler.CancelDebuffHandleFunc
 	handlerMap[cashsb.CharacterCashItemUseHandle] = handler.CharacterCashItemUseHandleFunc
 	handlerMap[fieldsb.ItemUpgradeUpdateHandle] = handler.ItemUpgradeUpdateHandleFunc
 	handlerMap[charsb.ChalkboardCloseHandle] = handler.ChalkboardCloseHandleHandleFunc

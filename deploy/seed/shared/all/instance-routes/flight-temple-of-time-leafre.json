@@ -13,7 +13,11 @@
       "capacity": 1,
       "boardingWindowSeconds": 1,
       "travelDurationSeconds": 900,
-      "transitMessage": "You are flying back to Leafre. Navigate left to reach the exit."
+      "transitMessage": "You are flying back to Leafre. Navigate left to reach the exit.",
+      "effectItemIds": [
+        2210016
+      ],
+      "forcedReturnMapId": 240000110
     }
   }
 }

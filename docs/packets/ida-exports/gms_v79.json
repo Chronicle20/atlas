@@ -21315,6 +21315,11 @@
           "comment": "GW_CashItemInfo blob (55B, single)"
         }
       ]
+    },
+    "CWvsContext::CheckTemporaryStatDuration": {
+      "address": "0x96ad48",
+      "direction": "serverbound",
+      "calls": []
     }
   }
 }

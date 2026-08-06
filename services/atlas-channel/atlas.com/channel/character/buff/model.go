@@ -26,6 +26,7 @@ type Model struct {
 	changes   []stat.Model
 	createdAt time.Time
 	expiresAt time.Time
+	noExpiry  bool
 }
 
 func (m Model) SourceId() int32 {
@@ -45,6 +46,9 @@ func (m Model) CreatedAt() time.Time {
 }
 
 func (m Model) Expired() bool {
+	if m.noExpiry {
+		return false
+	}
 	return m.expiresAt.Before(time.Now())
 }
 
@@ -52,7 +56,11 @@ func (m Model) ExpiresAt() time.Time {
 	return m.expiresAt
 }
 
-func NewBuff(sourceId int32, level byte, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time) Model {
+func (m Model) NoExpiry() bool {
+	return m.noExpiry
+}
+
+func NewBuff(sourceId int32, level byte, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time, noExpiry bool) Model {
 	return Model{
 		sourceId:  sourceId,
 		level:     level,
@@ -60,5 +68,6 @@ func NewBuff(sourceId int32, level byte, duration int32, changes []stat.Model, c
 		changes:   changes,
 		createdAt: createdAt,
 		expiresAt: expiresAt,
+		noExpiry:  noExpiry,
 	}
 }

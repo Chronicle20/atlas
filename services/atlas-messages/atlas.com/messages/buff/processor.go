@@ -41,6 +41,24 @@ func (p *ProcessorImpl) Apply(f field.Model, characterId uint32, fromId uint32, 
 
 	duration := effect.Duration()
 	if durationOverride > 0 {
+		// durationOverride is authored in SECONDS by the GM chat command
+		// "@buff <target> <skill> [duration]" (command/buff/commands.go,
+		// strconv.Atoi on the regex-captured duration group). This is the
+		// one legitimate seconds-to-ms conversion for the
+		// COMMAND_TOPIC_CHARACTER_BUFF duration contract (task-190 FR-3.2
+		// producer audit) — do not remove.
+		//
+		// The marker below is documentation-only / defense-in-depth, not an
+		// active suppression: buffdurationguard never reaches this line today.
+		// It fingerprints the ApplyCommandBody composite literal in
+		// kafka/message/buff/kafka.go and follows an identifier one hop
+		// through SAME-PACKAGE local assignments; the literal there reads
+		// `Duration: duration` off a function parameter, and this scaling
+		// lives in a different Go package (buff, not kafka/message/buff), so
+		// no diagnostic is ever produced here. The marker stays so the site
+		// remains flagged for a human, and stays honored automatically if the
+		// analyzer ever grows cross-package follow.
+		//buffdurationguard:allow durationOverride is human-authored seconds from the "@buff" GM chat command; converting to ms here is correct, not the defect. (Inert today — see comment above; the analyzer cannot reach this line.)
 		duration = durationOverride * 1000
 	}
 

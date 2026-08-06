@@ -104,12 +104,14 @@ func TestBuffGiveForeignEmptyRoundTrip(t *testing.T) {
 // 4× CInPacket::Decode4 for the UINT128 flag word, then per-set-bit blocks.
 // This word is jms-distinct from v83 (0x0000FC01 in the L words) and is the
 // load-bearing version delta these packets carry.
-var jmsEmptyMask = []byte{
-	0x00, 0xc0, 0x1f, 0x00, // int0 = 0x001FC000 (bits 110-116)
-	0x00, 0x00, 0x00, 0x00, // int1
-	0x00, 0x00, 0x00, 0x00, // int2
-	0x00, 0x00, 0x00, 0x00, // int3
-}
+// Now all zero. The two-state/base group used to be asserted here
+// unconditionally (jms shifts 110-116 -> 0x001FC000), with seven placeholder
+// blocks emitted to match. The client reads one base block per SET base bit, so
+// claiming stats the CTS does not hold was both a lie and ~110 bytes of wire per
+// packet — and it drove the client's CTS_RideVehicle / CTS_GuidedBullet branches
+// on every buff (task-190). Bits and blocks are now both presence-gated, so an
+// empty CTS is an empty mask on every version.
+var jmsEmptyMask = make([]byte, 16)
 
 // TestBuffGiveJMSMask pins the jms_v185 empty-CTS SecondaryStat flag word and
 // the giveBuff trailer for the local (own-player) BuffGive. The first 16 bytes
@@ -164,12 +166,9 @@ func TestBuffGiveForeignJMSMask(t *testing.T) {
 // 16-byte mask as an opaque UINT128 via SecondaryStat::DecodeForLocal /
 // DecodeBuffer(16) (CWvsContext::OnTemporaryStatSet @0x96a6d1), then a trailing
 // Decode2 tDelay (§5 opaque caveat — blob absorbed by the trailing opaque buffer).
-var v79EmptyMask = []byte{
-	0x00, 0x00, 0x00, 0x00, // int0 = H>>32 = 0
-	0x00, 0x00, 0xFC, 0x01, // int1 = H&L = 0x01FC0000 (bits 82-88)
-	0x00, 0x00, 0x00, 0x00, // int2 = L>>32 = 0
-	0x00, 0x00, 0x00, 0x00, // int3 = L&L = 0
-}
+// Now all zero, for the same reason as jmsEmptyMask above: the GMS two-state
+// group (shifts 82-88 -> 0x01FC0000) is no longer asserted unconditionally.
+var v79EmptyMask = make([]byte, 16)
 
 // TestBuffGiveV79Mask pins the v79 empty-CTS SecondaryStat flag word and the
 // giveBuff trailer for the local (own-player) BuffGive. The first 16 bytes are the

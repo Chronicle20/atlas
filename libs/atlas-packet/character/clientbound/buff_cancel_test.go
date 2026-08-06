@@ -7,6 +7,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -131,16 +132,15 @@ func TestBuffCancelV61ByteFixture(t *testing.T) {
 // TestBuffCancelV48ByteFixture pins the very-legacy GMS v48 empty-CTS reset wire.
 // Pre-v61 the SecondaryStat mask is a plain 8-byte little-endian value (NOT the
 // 128-bit UINT128), read by CWvsContext::OnTemporaryStatReset @0x71b054 via
-// CInPacket::DecodeBuffer(&v8, 8) @0x71b06e (GMS_v48_1_DEVM.exe, port 13337). The
-// two-state base bits (shifts 81-87) live in the mask's high word, which the pre-v61
-// client never reads, so an empty CTS is 8 zero bytes. The trailing tSwallowBuffTime
-// Decode1 is read only when the mask carries a movement stat (none here) — Atlas
-// emits it unconditionally (harmless last-field over-write). 9 bytes total.
+// CInPacket::DecodeBuffer(&v8, 8) @0x71b06e (GMS_v48_1_DEVM.exe, port 13337). An
+// empty CTS's reset mask is all-zero, and the trailing Decode1 is read only when
+// the mask carries a movement stat (none here) — Atlas writes it unconditionally,
+// harmless slack when unread and mandatory when read.
 // packet-audit:verify packet=character/clientbound/BuffCancel version=gms_v48 ida=0x71b054
 func TestBuffCancelV48ByteFixture(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 48, 1)
 	got := NewBuffCancel(*model.NewCharacterTemporaryStat()).Encode(nil, ctx)(nil)
-	want := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0} // 8-byte mask + 1 trailer
+	want := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0} // 8-byte zero mask + trailer
 	if !bytes.Equal(got, want) {
 		t.Errorf("v48 BuffCancel wire: got %x want %x", got, want)
 	}
@@ -232,5 +232,71 @@ func TestBuffGiveKeepsRideVehicleForMount(t *testing.T) {
 	// 3-byte give trailer. A dropped block would land at 21.
 	if len(got) != 34 {
 		t.Errorf("mount give length: got %d want 34 (mask+defense+MonsterRiding block+trailer)", len(got))
+	}
+}
+
+// The three fixtures below are task-167's beacon/movement cancel shapes, kept
+// through the task-190 merge with one change: the trailing
+// nSecondaryStatChangedPoint byte is now written unconditionally, so a
+// non-movement cancel is 17 bytes rather than 16. The mask contents — the part
+// task-167 derived — are unchanged.
+
+// Beacon-only cancel: the mask carries exactly the GuidedBullet bit (v83 shift
+// 87 -> wire dword[1] 0x00800000) and nothing else.
+func TestBuffCancelBeaconOnlyV83(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
+	cts := model.NewCharacterTemporaryStat()
+	cts.AddStat(nil)(tn)(string(character.TemporaryStatTypeHomingBeacon), 5211006, 1000001, 1, time.Time{})
+
+	got := NewBuffCancel(*cts).Encode(nil, ctx)(nil)
+
+	want := []byte{
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x80, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, // nSecondaryStatChangedPoint
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("beacon-only cancel: got % x want % x", got, want)
+	}
+}
+
+// A movement-affecting cancel (Speed) — the case that makes the trailing byte
+// mandatory rather than optional.
+func TestBuffCancelSpeedCarriesMovementByteV83(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
+	cts := model.NewCharacterTemporaryStat()
+	cts.AddStat(nil)(tn)(string(character.TemporaryStatTypeSpeed), 2001002, 20, 10, time.Now().Add(time.Minute))
+
+	got := NewBuffCancel(*cts).Encode(nil, ctx)(nil)
+
+	if len(got) != 17 {
+		t.Fatalf("speed cancel length: got %d want 17 (mask + trailer)", len(got))
+	}
+	// Speed is registry shift 7 -> mask.L low dword -> wire dword[3]
+	// (bytes 12-15) = 80 00 00 00; dwords [0..2] empty.
+	if !bytes.Equal(got[0:12], make([]byte, 12)) {
+		t.Fatalf("speed cancel mask dwords[0..2] should be empty: got % x", got[0:12])
+	}
+	if !bytes.Equal(got[12:16], []byte{0x80, 0x00, 0x00, 0x00}) {
+		t.Fatalf("speed cancel mask dword[3]: got % x", got[12:16])
+	}
+}
+
+// v95 beacon-only cancel: exactly bit 127 (dword[0] 0x80000000).
+func TestBuffCancelBeaconOnlyV95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 95, 1)
+	cts := model.NewCharacterTemporaryStat()
+	cts.AddStat(nil)(tn)(string(character.TemporaryStatTypeHomingBeacon), 5220011, 1000001, 10, time.Time{})
+
+	got := NewBuffCancel(*cts).Encode(nil, ctx)(nil)
+
+	want := append([]byte{0x00, 0x00, 0x00, 0x80}, make([]byte, 13)...)
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v95 beacon-only cancel: got % x want % x", got, want)
 	}
 }

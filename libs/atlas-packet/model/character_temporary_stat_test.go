@@ -2,6 +2,9 @@ package model
 
 import (
 	"bytes"
+	"encoding/binary"
+	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -249,5 +252,484 @@ func TestCTSMonsterRidingV83MaskAndNoDoubleEncode(t *testing.T) {
 	want := []byte{0xb0, 0x05, 0x1d, 0x00, 0xec, 0x03, 0x00, 0x00}
 	if !bytes.Contains(got, want) {
 		t.Fatalf("RideVehicle base stat (1902000,1004) missing; got % x", got)
+	}
+}
+
+// TestCTSHomingBeaconPre95PopulatedBlock pins the populated GuidedBullet block
+// for the classic 7-member two-state group. The block is
+// nOption=mobId | rOption=skillId | 5-byte time | dwMobId=mobId — 17 bytes,
+// same size as the empty block, so total packet length is unchanged and the
+// two-state mask bits (always set pre-95) are unchanged.
+//
+// Every in-scope version below GMS 95 with the classic 7-member/17-byte
+// GuidedBullet block is listed (PRD §2.1). GMS v61 is deliberately absent —
+// its IDA-verified 6-member group uses a narrower 16-byte block (no 5-byte
+// bool-prefixed time field) and is covered separately by
+// TestCTSHomingBeaconV61PopulatedBlock (task-167). gms_12/gms_48 are also
+// absent: they take the legacyGmsMask path and have no base-stat trailer at
+// all — covered by the negative test below instead.
+func TestCTSHomingBeaconPre95PopulatedBlock(t *testing.T) {
+	pre95 := []struct {
+		name   string
+		region string
+		major  uint16
+	}{
+		{"GMS v72", "GMS", 72},
+		{"GMS v79", "GMS", 79},
+		{"GMS v83", "GMS", 83},
+		{"GMS v84", "GMS", 84},
+		{"GMS v87", "GMS", 87},
+		{"GMS v92", "GMS", 92},
+		{"JMS v185", "JMS", 185},
+	}
+	for _, v := range pre95 {
+		t.Run(v.name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.region, v.major, 1)
+			tn, _ := tenant.Create([16]byte{}, v.region, v.major, 1)
+			input := NewCharacterTemporaryStat()
+			// mobId 1000001 (0x000F4241), skill 5211006 (0x004F837E).
+			input.AddStat(nil)(tn)(string(character.TemporaryStatTypeHomingBeacon), 5211006, 1000001, 1, time.Time{})
+
+			got := input.Encode(nil, ctx)(nil)
+
+			// nOption=1000001 then rOption=5211006 as consecutive LE int32s.
+			head := []byte{0x41, 0x42, 0x0F, 0x00, 0x7E, 0x83, 0x4F, 0x00}
+			idx := bytes.Index(got, head)
+			if idx < 0 {
+				t.Fatalf("populated GuidedBullet head (nOption=1000001,rOption=5211006) missing; got % x", got)
+			}
+			// dwMobId sits after the 5-byte DecodeTime: head(8) + time(5) = offset 13.
+			mob := got[idx+13 : idx+17]
+			if !bytes.Equal(mob, []byte{0x41, 0x42, 0x0F, 0x00}) {
+				t.Fatalf("dwMobId: got % x want 41 42 0f 00", mob)
+			}
+		})
+	}
+}
+
+// An empty CTS emits no two-state trailer at all. Base bits and base blocks are
+// both presence-gated (task-190), so a CTS holding nothing claims nothing: 16
+// mask + the 2 leading defense bytes, on every version that takes the
+// non-legacy path.
+//
+// This test used to assert a fixed per-version trailer — 88 bytes on GMS v61's
+// 6-member group, 110 on the classic 7-member group — because absent members
+// were emitted as empty placeholder blocks. Those constants now live on
+// TestCTSTwoStateGroupShape below, which exercises them by populating the group
+// rather than by padding it.
+func TestCTSAbsentTwoStateStatsEmitNoTrailer(t *testing.T) {
+	for _, v := range []struct {
+		name   string
+		region string
+		major  uint16
+	}{
+		{"GMS v61", "GMS", 61},
+		{"GMS v72", "GMS", 72},
+		{"GMS v79", "GMS", 79},
+		{"GMS v83", "GMS", 83},
+		{"GMS v84", "GMS", 84},
+		{"GMS v87", "GMS", 87},
+		{"GMS v92", "GMS", 92},
+		{"JMS v185", "JMS", 185},
+	} {
+		t.Run(v.name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.region, v.major, 1)
+			input := NewCharacterTemporaryStat()
+
+			got := input.Encode(nil, ctx)(nil)
+
+			if len(got) != 16+2 {
+				t.Fatalf("empty %s CTS length: got %d want %d (mask + defense bytes, no trailer)", v.name, len(got), 16+2)
+			}
+			if !bytes.Equal(got[0:16], make([]byte, 16)) {
+				t.Fatalf("empty %s CTS mask: got % x want all zero", v.name, got[0:16])
+			}
+		})
+	}
+}
+
+// TestCTSTwoStateGroupShape is the falsifier for two-state group membership and
+// block sizes (PRD gap 6), and the home of the constants the old empty-trailer
+// assertion carried. Populating every member of a version's group makes the
+// whole trailer appear, so its total length still encodes the group shape.
+//
+// GMS v61 is IDA-verified (task-167) as a 6-member group (no Undead) with a
+// 12-byte base block (narrowTimeField, no leading bool-prefixed time byte):
+// 14+14+14+12+18+16 = 88. Every other pre-95 version uses the classic 7-member
+// group at 15+15+15+13+20+17+15 = 110.
+//
+// If one of these fails, do NOT adjust the constant to make it pass — that
+// version's group differs and must be established from IDA evidence first.
+func TestCTSTwoStateGroupShape(t *testing.T) {
+	for _, v := range []struct {
+		name       string
+		region     string
+		major      uint16
+		trailerLen int
+	}{
+		{"GMS v61", "GMS", 61, 88},
+		{"GMS v72", "GMS", 72, 110},
+		{"GMS v79", "GMS", 79, 110},
+		{"GMS v83", "GMS", 83, 110},
+		{"GMS v84", "GMS", 84, 110},
+		{"GMS v87", "GMS", 87, 110},
+		{"GMS v92", "GMS", 92, 110},
+		{"JMS v185", "JMS", 185, 110},
+	} {
+		t.Run(v.name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.region, v.major, 1)
+			tn, _ := tenant.Create([16]byte{}, v.region, v.major, 1)
+			input := NewCharacterTemporaryStat()
+			for _, bs := range twoStateBaseStats(tn) {
+				input.AddStat(nil)(tn)(string(bs.name), 1, 1, 1, time.Now().Add(time.Minute))
+			}
+
+			got := input.Encode(nil, ctx)(nil)
+
+			want := 16 + 2 + v.trailerLen
+			if len(got) != want {
+				t.Fatalf("fully-populated %s two-state trailer: got %d want %d", v.name, len(got), want)
+			}
+		})
+	}
+}
+
+// TestCTSHomingBeaconV61PopulatedBlock pins the populated GuidedBullet block
+// for GMS v61's IDA-verified 6-member two-state group (task-167). The block
+// is nOption=mobId | rOption=skillId | plain 4-byte field (narrowTimeField,
+// no bool prefix) | dwMobId=mobId — 16 bytes total (vs 17 on every other
+// pre-95 version, whose base uses the 5-byte bool-prefixed time field
+// instead). The beacon is the only stat held, so it is the only block on the
+// wire: 16 mask + 2 defense + 16.
+func TestCTSHomingBeaconV61PopulatedBlock(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 61, 1)
+	input := NewCharacterTemporaryStat()
+	// mobId 1000001 (0x000F4241), skill 5211006 (0x004F837E).
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypeHomingBeacon), 5211006, 1000001, 1, time.Time{})
+
+	got := input.Encode(nil, ctx)(nil)
+
+	// 16 mask + 2 leading + the one 16-byte GuidedBullet block.
+	if len(got) != 16+2+16 {
+		t.Fatalf("v61 beacon packet length: got %d want %d", len(got), 16+2+16)
+	}
+
+	// nOption=1000001 then rOption=5211006 as consecutive LE int32s.
+	head := []byte{0x41, 0x42, 0x0F, 0x00, 0x7E, 0x83, 0x4F, 0x00}
+	idx := bytes.Index(got, head)
+	if idx < 0 {
+		t.Fatalf("v61 populated GuidedBullet head (nOption=1000001,rOption=5211006) missing; got % x", got)
+	}
+	// dwMobId sits after the base's plain 4-byte third field (no 5-byte
+	// bool-prefixed time): head(8) + plain field(4) = offset 12.
+	mob := got[idx+12 : idx+16]
+	if !bytes.Equal(mob, []byte{0x41, 0x42, 0x0F, 0x00}) {
+		t.Fatalf("v61 dwMobId: got % x want 41 42 0f 00", mob)
+	}
+}
+
+// TestCTSHomingBeaconV61RoundTrip guards encode/decode symmetry for v61's
+// narrower base/block shapes: whatever the encoder writes, the decoder must
+// consume, without desyncing the reader for the remainder of the payload.
+func TestCTSHomingBeaconV61RoundTrip(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 61, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypeHomingBeacon), 5211006, 1000001, 1, time.Time{})
+	output := NewCharacterTemporaryStat()
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+}
+
+// gms_12 / gms_48 take the legacyGmsMask path (Region GMS && major < 61):
+// 8-byte mask, no nDefenseAtt/nDefenseState, no base-stat trailer. The client
+// never reads the two-state bits (IDA: v48 OnTemporaryStatReset @0x71b054 reads
+// DecodeBuffer(&v8, 8) @0x71b06e). A HOMING_BEACON stat must therefore produce
+// no trailer at all — the beacon is n/a on these versions (PRD §2.1), and this
+// test proves that in code rather than asserting it in prose.
+func TestCTSHomingBeaconLegacyVersionsHaveNoTrailer(t *testing.T) {
+	for _, major := range []uint16{12, 48} {
+		t.Run(fmt.Sprintf("GMS v%d", major), func(t *testing.T) {
+			ctx := pt.CreateContext("GMS", major, 1)
+			tn, _ := tenant.Create([16]byte{}, "GMS", major, 1)
+			input := NewCharacterTemporaryStat()
+			input.AddStat(nil)(tn)(string(character.TemporaryStatTypeHomingBeacon), 5211006, 1000001, 1, time.Time{})
+
+			got := input.Encode(nil, ctx)(nil)
+
+			// 8-byte mask only: the beacon is a base-stat-only member, and the
+			// legacy path emits no base-stat blocks.
+			if len(got) != 8 {
+				t.Fatalf("legacy GMS v%d CTS with beacon: got %d bytes want 8 (mask only); trailer must not be emitted", major, len(got))
+			}
+		})
+	}
+}
+
+// TestCTSHomingBeaconV95MaskAndBlock pins the v95 beacon give: bit 127
+// (0x80000000 in wire dword[0]) and one populated 17-byte GuidedBullet block,
+// with no other two-state bit or block, since the CTS holds nothing else. IDA:
+// v95 group @SecondaryStat::SecondaryStat 0x72F190, GuidedBullet
+// DecodeForClient 0x727180, mask-gated tail read 0x73DBA0 (design.md §2.4).
+func TestCTSHomingBeaconV95MaskAndBlock(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 95, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypeHomingBeacon), 5220011, 1000001, 10, time.Time{})
+
+	got := input.Encode(nil, ctx)(nil)
+
+	// dword[0] = 0x80000000 -> LE bytes 00 00 00 80.
+	if !bytes.Equal(got[0:4], []byte{0x00, 0x00, 0x00, 0x80}) {
+		t.Fatalf("v95 mask dword[0]: got % x want 00 00 00 80", got[0:4])
+	}
+	if !bytes.Equal(got[4:16], make([]byte, 12)) {
+		t.Fatalf("v95 mask dwords[1..3] should be empty; got % x", got[4:16])
+	}
+	// 16 mask + 2 leading + 17 GuidedBullet.
+	if len(got) != 16+2+17 {
+		t.Fatalf("v95 beacon packet length: got %d want %d", len(got), 16+2+17)
+	}
+	// Populated block: nOption=1000001, rOption=5220011 (0x004FA6AB).
+	head := []byte{0x41, 0x42, 0x0F, 0x00, 0xAB, 0xA6, 0x4F, 0x00}
+	idx := bytes.Index(got, head)
+	if idx < 0 {
+		t.Fatalf("v95 populated GuidedBullet head missing; got % x", got)
+	}
+	if !bytes.Equal(got[idx+13:idx+17], []byte{0x41, 0x42, 0x0F, 0x00}) {
+		t.Fatalf("v95 dwMobId: got % x want 41 42 0f 00", got[idx+13:idx+17])
+	}
+}
+
+// An empty v95 CTS claims nothing and carries no trailer.
+func TestCTSEmptyV95ClaimsNothing(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewCharacterTemporaryStat()
+	got := input.Encode(nil, ctx)(nil)
+	if len(got) != 16+2 {
+		t.Fatalf("empty v95 CTS length: got %d want %d", len(got), 16+2)
+	}
+	if !bytes.Equal(got[0:16], make([]byte, 16)) {
+		t.Fatalf("empty v95 mask: got % x want all zero", got[0:16])
+	}
+}
+
+// TestCTSPartyBoosterV95Block pins the PartyBooster member: bit 126
+// (0x40000000) and a 20-byte block (base 13 + tCurrentTime 5 + usExpireTerm 2 —
+// IDA DecodeForClient 0x72C600). PartyBooster has no producer in atlas yet;
+// this exercises the verified wire slot only.
+func TestCTSPartyBoosterV95Block(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 95, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypePartyBooster), 1005017, 20, 20, time.Now().Add(time.Minute))
+
+	got := input.Encode(nil, ctx)(nil)
+
+	if !bytes.Equal(got[0:4], []byte{0x00, 0x00, 0x00, 0x40}) {
+		t.Fatalf("v95 mask dword[0] with PartyBooster: got % x want 00 00 00 40", got[0:4])
+	}
+	if len(got) != 16+2+20 {
+		t.Fatalf("v95 PartyBooster packet length: got %d want %d", len(got), 16+2+20)
+	}
+}
+
+// Decode must mirror the conditional read: beacon- and PartyBooster-bearing
+// v95 payloads round-trip without desyncing the reader.
+func TestCTSHomingBeaconV95RoundTrip(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 95, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypeHomingBeacon), 5220011, 1000001, 10, time.Time{})
+	output := NewCharacterTemporaryStat()
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+}
+
+func TestCTSPartyBoosterV95RoundTrip(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 95, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypePartyBooster), 1005017, 20, 20, time.Now().Add(time.Minute))
+	output := NewCharacterTemporaryStat()
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+}
+
+// Foreign v95 encode must never carry the GuidedBullet block even if a beacon
+// stat is (incorrectly) present upstream: HOMING_BEACON is caster-only and the
+// remote-reader path is unverified (FR-4.5). The lib guarantees this by CTS
+// construction (channel never AddStats it on foreign bodies); this test pins
+// that an EMPTY foreign v95 CTS carries no trailer at all.
+func TestCTSForeignEmptyV95ClaimsNothing(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewCharacterTemporaryStat()
+	got := input.EncodeForeign(nil, ctx)(nil)
+	if len(got) != 16+2 {
+		t.Fatalf("empty foreign v95 CTS length: got %d want %d", len(got), 16+2)
+	}
+}
+
+// The mask must contain ONLY the stats the CTS holds — never the two-state
+// group bits, which EncodeMask used to assert unconditionally. On the reset
+// path that made ANY cancel clear every two-state stat client-side (v83 reset
+// @0xA2071F, v95 @0x9F2AB0 clear every masked stat); on the set path it made
+// every buff give claim a mount.
+func TestMaskContainsOnlyActiveStats(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			cts := NewCharacterTemporaryStat()
+			cts.AddStat(nil)(tn)(string(character.TemporaryStatTypeInvincible), 2301003, 30, 20, time.Now().Add(time.Minute))
+
+			mask := cts.activeMask()
+			reg := buildCharacterTemporaryStatRegistry(tn)
+			inv := reg.byName[character.TemporaryStatTypeInvincible]
+			if mask.And(inv.mask).IsZero() {
+				t.Fatal("mask missing the active stat's bit")
+			}
+			riding := reg.byName[character.TemporaryStatTypeMonsterRiding]
+			if !mask.And(riding.mask).IsZero() {
+				t.Fatal("mask must not contain inactive two-state bits")
+			}
+		})
+	}
+}
+
+func TestMaskEmptyForEmptyCTS(t *testing.T) {
+	cts := NewCharacterTemporaryStat()
+	if !cts.activeMask().IsZero() {
+		t.Fatal("empty CTS must produce an empty mask")
+	}
+}
+
+// Movement filter membership per version (IDA: v83 sub_77DC78, v95
+// SecondaryStat::IsMovementAffectingStat @0x7208C0, v61/v72/v79/v84/v87/v92/
+// JMS per docs/tasks/task-167-homing-beacon-bullseye/evidence/movement-filter.md).
+//
+// JMS's filter is a wholly different set from every GMS version (evidence:
+// movement-filter.md JMS section) — only Stun, GhostMorph, and MonsterRiding
+// overlap the GMS v83 list, and JMS's own filter DOES include Invincible
+// (unlike every GMS version, where Invincible is never movement-affecting).
+// So JMS gets its own in/out lists rather than the shared GMS ones.
+func TestMovementAffectingMaskMembership(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			reg := buildCharacterTemporaryStatRegistry(tn)
+			mv := MovementAffectingMask(tn)
+
+			var in, out []character.TemporaryStatType
+			if tn.Region() == "JMS" {
+				in = []character.TemporaryStatType{
+					character.TemporaryStatTypeInvincible,
+					character.TemporaryStatTypeSoulArrow,
+					character.TemporaryStatTypeStun,
+					character.TemporaryStatTypeMesoUpByItem,
+					character.TemporaryStatTypeGhostMorph,
+					character.TemporaryStatTypeWindBreakerFinal,
+					character.TemporaryStatTypeElementalReset,
+					character.TemporaryStatTypeEventRate,
+					character.TemporaryStatTypeBodyPressure,
+					character.TemporaryStatTypeSoulStone,
+					character.TemporaryStatTypeSwallowDefense,
+					character.TemporaryStatTypeMonsterRiding,
+				}
+				out = []character.TemporaryStatType{
+					character.TemporaryStatTypeHomingBeacon,
+					character.TemporaryStatTypeSpeed,
+					character.TemporaryStatTypeJump,
+					character.TemporaryStatTypeWeaken,
+					character.TemporaryStatTypeSlow,
+					character.TemporaryStatTypeMorph,
+					character.TemporaryStatTypeMapleWarrior,
+					character.TemporaryStatTypeSeduce,
+					character.TemporaryStatTypeDashSpeed,
+					character.TemporaryStatTypeDashJump,
+				}
+			} else {
+				in = []character.TemporaryStatType{
+					character.TemporaryStatTypeSpeed,
+					character.TemporaryStatTypeJump,
+					character.TemporaryStatTypeStun,
+					character.TemporaryStatTypeWeaken,
+					character.TemporaryStatTypeSlow,
+					character.TemporaryStatTypeMorph,
+					character.TemporaryStatTypeGhostMorph,
+					character.TemporaryStatTypeMapleWarrior,
+					character.TemporaryStatTypeSeduce,
+					character.TemporaryStatTypeMonsterRiding,
+					character.TemporaryStatTypeDashSpeed,
+					character.TemporaryStatTypeDashJump,
+				}
+				out = []character.TemporaryStatType{
+					character.TemporaryStatTypeHomingBeacon,
+					character.TemporaryStatTypeInvincible,
+				}
+				if tn.Region() == "GMS" && tn.MajorVersion() >= 95 {
+					in = append(in,
+						character.TemporaryStatTypeFlying,
+						character.TemporaryStatTypeFrozen,
+						character.TemporaryStatTypeYellowAura,
+					)
+				}
+				if tn.Region() == "GMS" && tn.MajorVersion() == 92 {
+					in = append(in,
+						character.TemporaryStatTypeFlying,
+						character.TemporaryStatTypeFrozen,
+					)
+				}
+			}
+
+			for _, n := range in {
+				st, ok := reg.byName[n]
+				if !ok {
+					continue // stat not enumerated on this version
+				}
+				if mv.And(st.mask).IsZero() {
+					t.Errorf("%s should be movement-affecting on %s", n, v.Name)
+				}
+			}
+			for _, n := range out {
+				st, ok := reg.byName[n]
+				if !ok {
+					continue
+				}
+				if !mv.And(st.mask).IsZero() {
+					t.Errorf("%s should NOT be movement-affecting on %s", n, v.Name)
+				}
+			}
+		})
+	}
+}
+
+// A no-expiry buff carries the zero time (buff.NewNoExpiryBuff). No client has a
+// no-expiry concept, so the encoder must turn that into a saturated duration.
+// Encoding it arithmetically instead underflows: year 1 to now overruns an int64
+// nanosecond Duration, and the int32 truncation lands on a negative the client
+// treats as already-expired — GM hide would flicker off the instant it landed.
+func TestNoExpiryStatEncodesSaturatedDuration(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
+	cts := NewCharacterTemporaryStat()
+	// DARK_SIGHT (GM hide) is a value stat, so it carries a per-stat expiry —
+	// unlike MONSTER_RIDING and HOMING_BEACON, which are base stats and never
+	// reach this field.
+	cts.AddStat(nil)(tn)(string(character.TemporaryStatTypeDarkSight), 9101004, 1, 1, time.Time{})
+
+	got := cts.Encode(nil, ctx)(nil)
+
+	// mask(16) + value int16 + sourceId int32 + expiry int32 -> expiry is the
+	// last 4 bytes before the 2 trailing defense bytes.
+	expiry := int32(binary.LittleEndian.Uint32(got[len(got)-6 : len(got)-2]))
+	if expiry != math.MaxInt32 {
+		t.Fatalf("no-expiry DARK_SIGHT wire duration: got %d want MaxInt32 %d", expiry, int32(math.MaxInt32))
+	}
+}
+
+func TestLegacyDurationUnitsNoExpirySaturates(t *testing.T) {
+	if got := legacyDurationUnits(time.Time{}); got != math.MaxInt16 {
+		t.Fatalf("no-expiry legacy duration: got %d want MaxInt16 %d", got, int16(math.MaxInt16))
+	}
+	if got := legacyDurationUnits(time.Now().Add(-time.Minute)); got != 0 {
+		t.Fatalf("already-expired legacy duration: got %d want 0", got)
 	}
 }

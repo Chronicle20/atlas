@@ -2,6 +2,7 @@ package characterstatus
 
 import (
 	"atlas-buffs/berserk"
+	"atlas-buffs/character"
 	consumer2 "atlas-buffs/kafka/consumer"
 	characterstatus2 "atlas-buffs/kafka/message/characterstatus"
 	"context"
@@ -9,6 +10,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
+	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -74,12 +76,23 @@ func handleStatusEventStatChanged(l logrus.FieldLogger, ctx context.Context, e c
 	}
 }
 
+// handleStatusEventMapChanged handles two independent concerns on a map
+// transition, each of which logs-and-continues on its own error so a
+// failure in one never skips the other:
+//
+//  1. berserk transfer tracking (pre-existing).
+//  2. Canceling any active HOMING_BEACON lock (Cosmic PlayerMapTransitionHandler
+//     parity, design.md §2.2). The next map change or a logout/death
+//     cancel-all is the safety net (design §5.7) if this cancel fails.
 func handleStatusEventMapChanged(l logrus.FieldLogger, ctx context.Context, e characterstatus2.StatusEvent[characterstatus2.StatusEventMapChangedBody]) {
 	if e.Type != characterstatus2.StatusEventTypeMapChanged {
 		return
 	}
 	if err := berserk.NewProcessor(l, ctx).HandleTransfer(e.WorldId, e.Body.ChannelId, e.CharacterId); err != nil {
 		l.WithError(err).Errorf("Unable to process map change for berserk tracking of character [%d].", e.CharacterId)
+	}
+	if err := character.NewProcessor(l, ctx).CancelByStatTypes(e.WorldId, e.CharacterId, []string{string(charconst.TemporaryStatTypeHomingBeacon)}); err != nil {
+		l.WithError(err).Errorf("Unable to cancel HOMING_BEACON for character [%d] on map change.", e.CharacterId)
 	}
 }
 

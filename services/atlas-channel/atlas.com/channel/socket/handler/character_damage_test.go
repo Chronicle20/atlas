@@ -77,7 +77,7 @@ func fakeDeps(em *emissions, buffs []buff.Model, skills []skill2.Model, eff effe
 
 func activeBuff(statType charconst.TemporaryStatType, amount int32) buff.Model {
 	future := time.Now().Add(time.Hour)
-	return buff.NewBuff(2001002, 20, 3600, []stat.Model{stat.NewStat(string(statType), amount)}, time.Now(), future)
+	return buff.NewBuff(2001002, 20, 3600, []stat.Model{stat.NewStat(string(statType), amount)}, time.Now(), future, false)
 }
 
 func testTenantModel(t *testing.T, region string, major uint16) tenant.Model {

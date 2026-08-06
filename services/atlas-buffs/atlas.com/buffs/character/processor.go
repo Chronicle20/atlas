@@ -18,7 +18,7 @@ import (
 
 type Processor interface {
 	GetById(characterId uint32) (Model, error)
-	Apply(worldId world.Id, channelId channel.Id, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool) error
+	Apply(worldId world.Id, channelId channel.Id, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool, noExpiry bool) error
 	Cancel(worldId world.Id, characterId uint32, sourceId int32) error
 	CancelAll(worldId world.Id, characterId uint32) error
 	CancelByStatTypes(worldId world.Id, characterId uint32, types []string) error
@@ -46,14 +46,14 @@ func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
 	return GetRegistry().Get(p.ctx, characterId)
 }
 
-func (p *ProcessorImpl) Apply(worldId world.Id, channelId channel.Id, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool) error {
+func (p *ProcessorImpl) Apply(worldId world.Id, channelId channel.Id, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool, noExpiry bool) error {
 	if isDiseaseChange(changes) && GetRegistry().HasImmunity(p.ctx, characterId) {
 		p.l.Debugf("Character [%d] is immune to disease, skipping apply.", characterId)
 		return nil
 	}
 
 	err := message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
-		applied, err := GetRegistry().Apply(p.ctx, worldId, channelId, characterId, sourceId, level, duration, changes, accumulate)
+		applied, err := GetRegistry().Apply(p.ctx, worldId, channelId, characterId, sourceId, level, duration, changes, accumulate, noExpiry)
 		if err != nil {
 			return err
 		}
@@ -62,7 +62,7 @@ func (p *ProcessorImpl) Apply(worldId world.Id, channelId channel.Id, characterI
 		// changes/expiry so the channel sets (and later cancels) each stat icon
 		// independently.
 		for _, b := range applied {
-			if err := buf.Put(character2.EnvEventStatusTopic, appliedStatusEventProvider(worldId, characterId, fromId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt())); err != nil {
+			if err := buf.Put(character2.EnvEventStatusTopic, appliedStatusEventProvider(worldId, characterId, fromId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt(), b.NoExpiry())); err != nil {
 				return err
 			}
 		}
@@ -88,7 +88,7 @@ func (p *ProcessorImpl) Cancel(worldId world.Id, characterId uint32, sourceId in
 	// client clears every icon rather than leaving the others stuck.
 	err = message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
 		for _, b := range cancelled {
-			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt())); err != nil {
+			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt(), b.NoExpiry())); err != nil {
 				return err
 			}
 		}
@@ -112,7 +112,7 @@ func (p *ProcessorImpl) CancelAll(worldId world.Id, characterId uint32) error {
 	}
 	err := message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
 		for _, b := range buffs {
-			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt())); err != nil {
+			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt(), b.NoExpiry())); err != nil {
 				return err
 			}
 		}
@@ -148,7 +148,7 @@ func (p *ProcessorImpl) CancelByStatTypes(worldId world.Id, characterId uint32, 
 
 	err = message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
 		for _, b := range cancelled {
-			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt())); err != nil {
+			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt(), b.NoExpiry())); err != nil {
 				return err
 			}
 		}
@@ -219,7 +219,7 @@ func (p *ProcessorImpl) expireInto(buf *message.Buffer, worldId world.Id, charac
 	ebs := GetRegistry().GetExpired(p.ctx, characterId)
 	for _, eb := range ebs {
 		p.l.Debugf("Expired buff for character [%d] from [%d].", characterId, eb.SourceId())
-		if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, eb.SourceId(), eb.Level(), eb.Duration(), eb.Changes(), eb.CreatedAt(), eb.ExpiresAt())); err != nil {
+		if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, eb.SourceId(), eb.Level(), eb.Duration(), eb.Changes(), eb.CreatedAt(), eb.ExpiresAt(), eb.NoExpiry())); err != nil {
 			return err
 		}
 	}

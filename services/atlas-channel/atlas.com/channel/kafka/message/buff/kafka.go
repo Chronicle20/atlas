@@ -47,6 +47,9 @@ type ApplyCommandBody struct {
 	// milliseconds — contract owner: atlas-buffs kafka/message/character/kafka.go (task-190)
 	Duration int32        `json:"duration"`
 	Changes  []StatChange `json:"changes"`
+	// NoExpiry marks an explicitly non-expiring buff (task-167 FR-2). When set,
+	// Duration MUST be 0; the consumer rejects the command otherwise.
+	NoExpiry bool `json:"noExpiry,omitempty"`
 }
 
 type StatChange struct {
@@ -101,6 +104,7 @@ type AppliedStatusEventBody struct {
 	Changes   []StatChange `json:"changes"`
 	CreatedAt time.Time    `json:"createdAt"`
 	ExpiresAt time.Time    `json:"expiresAt"`
+	NoExpiry  bool         `json:"noExpiry,omitempty"`
 }
 
 type ExpiredStatusEventBody struct {
@@ -110,6 +114,7 @@ type ExpiredStatusEventBody struct {
 	Changes   []StatChange `json:"changes"`
 	CreatedAt time.Time    `json:"createdAt"`
 	ExpiresAt time.Time    `json:"expiresAt"`
+	NoExpiry  bool         `json:"noExpiry,omitempty"`
 }
 
 // StatUpdatedStatusEventBody signals a stat value change on an EXISTING buff.

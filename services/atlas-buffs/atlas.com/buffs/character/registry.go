@@ -67,7 +67,7 @@ func statKey(sourceId int32, statType string) string {
 // (sourceId, statType), each with its own expiry; other stats of the same source
 // are left intact, so the source's buffs accumulate one-at-a-time. Returns one
 // buff per change.
-func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channel.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool) ([]buff.Model, error) {
+func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channel.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool, noExpiry bool) ([]buff.Model, error) {
 	t := tenant.MustFromContext(ctx)
 
 	m, err := r.characters.Get(ctx, t, characterId)
@@ -84,10 +84,17 @@ func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channe
 		m.channelId = channelId
 	}
 
+	newBuff := func(cs []stat.Model) (buff.Model, error) {
+		if noExpiry {
+			return buff.NewNoExpiryBuff(sourceId, level, cs)
+		}
+		return buff.NewBuff(sourceId, level, duration, cs)
+	}
+
 	var applied []buff.Model
 	if accumulate {
 		for _, c := range changes {
-			b, err := buff.NewBuff(sourceId, level, duration, []stat.Model{c})
+			b, err := newBuff([]stat.Model{c})
 			if err != nil {
 				return nil, err
 			}
@@ -95,7 +102,7 @@ func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channe
 			applied = append(applied, b)
 		}
 	} else {
-		b, err := buff.NewBuff(sourceId, level, duration, changes)
+		b, err := newBuff(changes)
 		if err != nil {
 			return nil, err
 		}

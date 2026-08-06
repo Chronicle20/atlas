@@ -42,6 +42,11 @@ func (m BuffCancel) Encode(l logrus.FieldLogger, ctx context.Context) func(optio
 		// when the client does not read it, it is trailing slack the client
 		// ignores; it must never be omitted, or a movement-affecting reset
 		// (any mob disease) would read one byte past the end.
+		//
+		// task-167 derived that filter per version as model.MovementAffectingMask
+		// and gated this write on it. The gate is held back until every version's
+		// filter bits are name-resolved — v72/v79/v92/JMS are positional or
+		// inferred today — because a wrong bit there omits a byte the client reads.
 		w.WriteByte(0)
 		return w.Bytes()
 	}

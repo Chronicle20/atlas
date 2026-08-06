@@ -51,13 +51,25 @@ func copyRealTemplatesToTemp(t *testing.T) (tplDir string, stems []string) {
 // assertSemanticFidelity parses origPath and newPath as generic JSON and
 // asserts they are deeply equal once any "fname" key is stripped from both
 // sides. "fname" is stripped symmetrically - not just from newPath - because
-// origPath is read live from the real, committed seed templates: once task-194
-// backfills fname into those files, orig legitimately carries fname too, and a
-// re-run (e.g. a future registry update) regenerating an already-populated
-// entry must not be flagged as drift. What this test actually proves is
-// unchanged: no addition, removal, or value change is permitted anywhere
-// else - any top-level section (characters, worlds, cashShop, ...), any entry
-// field, any options map - only fails the test with the exact key path.
+// origPath is read live from the real, committed seed templates, which (as of
+// task-194) already carry fname for 2845 of 2859 entries; a re-run
+// regenerating an already-populated entry must not be flagged as drift.
+//
+// IMPORTANT SCOPE NOTE: because origPath now already carries fname for most
+// entries, this helper - via its only caller,
+// TestSeedFName_RealTemplatesSemanticFidelity - predominantly exercises the
+// "re-resolve and overwrite an already-present fname" path, not the "insert a
+// brand-new fname into a virgin entry" path, for those 2845 entries. Only the
+// 14 still-unresolved entries still exercise fresh insertion through this
+// helper. It does NOT prove that inserting fname into a virgin (fname-less)
+// entry is safe across the full corpus - that is
+// TestSeedFName_RealTemplatesInsertionCoverage's job, which synthesizes a
+// virgin corpus in memory by recursively stripping fname from the real
+// templates and asserts fidelity plus reproducibility against all 2859
+// entries. What this helper alone still proves, unconditionally: no
+// addition, removal, or value change beyond fname is permitted anywhere else
+// - any top-level section (characters, worlds, cashShop, ...), any entry
+// field, any options map - it fails with the exact key path if one occurs.
 func assertSemanticFidelity(t *testing.T, label, origPath, newPath string) {
 	t.Helper()
 	origB, err := os.ReadFile(origPath)
@@ -738,15 +750,22 @@ func TestSeedFName_UpdatesExistingFNameInPlace(t *testing.T) {
 	}
 }
 
-// TestSeedFName_RealTemplatesSemanticFidelity is the important fidelity proof
-// now that byte-for-byte reproduction is not the goal: it runs --write against
-// a temp copy of all 11 REAL seed templates, joined against the REAL
-// registries, and asserts every parsed template is deeply equal to its
-// original except for added "fname" keys - nothing in characters, worlds,
-// cashShop, options maps, opcode spellings, or service lists may appear,
-// disappear, or change value. The real seed templates themselves are only
-// ever read, never written (the --template-dir passed to runSeedFName is
-// always the temp copy).
+// TestSeedFName_RealTemplatesSemanticFidelity runs --write against a temp
+// copy of all 11 REAL seed templates, joined against the REAL registries, and
+// asserts every parsed template is deeply equal to its original except for
+// "fname" keys - nothing in characters, worlds, cashShop, options maps,
+// opcode spellings, or service lists may appear, disappear, or change value.
+// The real seed templates themselves are only ever read, never written (the
+// --template-dir passed to runSeedFName is always the temp copy).
+//
+// Since task-194 backfilled fname into the real committed templates, the
+// "original" side read here (realTemplateDir()) already carries fname for
+// 2845 of 2859 entries. This test therefore mostly proves fidelity of the
+// "re-resolve and overwrite an already-present fname" path, and is
+// materially redundant with TestSeedFName_RealTemplatesIdempotentSecondRun
+// for those entries. It does NOT give full-corpus coverage of the "insert
+// fname into a virgin entry" path - see
+// TestSeedFName_RealTemplatesInsertionCoverage for that guarantee.
 func TestSeedFName_RealTemplatesSemanticFidelity(t *testing.T) {
 	tplDir, stems := copyRealTemplatesToTemp(t)
 
@@ -759,6 +778,164 @@ func TestSeedFName_RealTemplatesSemanticFidelity(t *testing.T) {
 		origPath := filepath.Join(realTemplateDir(), "template_"+stem+".json")
 		newPath := filepath.Join(tplDir, "template_"+stem+".json")
 		assertSemanticFidelity(t, stem, origPath, newPath)
+	}
+}
+
+// stripFnameRecursive returns a deep copy of v with every map key named
+// "fname" removed, at any nesting depth. v must be the result of
+// json.Unmarshal into `any` (so only map[string]any, []any, and JSON scalars
+// are expected).
+func stripFnameRecursive(v any) any {
+	switch t := v.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(t))
+		for k, vv := range t {
+			if k == "fname" {
+				continue
+			}
+			out[k] = stripFnameRecursive(vv)
+		}
+		return out
+	case []any:
+		out := make([]any, len(t))
+		for i, vv := range t {
+			out[i] = stripFnameRecursive(vv)
+		}
+		return out
+	default:
+		return v
+	}
+}
+
+// copyRealTemplatesVirginToTemp reconstructs the pre-task-194 "virgin"
+// corpus - the fname-less input that the real templates derive from - by
+// reading every real seed template and recursively stripping every "fname"
+// key, then writing the result into a fresh temp dir. It never touches the
+// real files. It returns the temp dir, the stems found, and a map of
+// stem -> parsed-and-stripped struct so callers can assert fidelity without
+// re-parsing.
+func copyRealTemplatesVirginToTemp(t *testing.T) (tplDir string, stems []string, virgin map[string]map[string]any) {
+	t.Helper()
+	tplDir = t.TempDir()
+	virgin = make(map[string]map[string]any)
+	for _, v := range seedFNameVersions {
+		src := filepath.Join(realTemplateDir(), "template_"+v.Template+".json")
+		b, err := os.ReadFile(src)
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			t.Fatalf("read real template %s: %v", src, err)
+		}
+		var parsed map[string]any
+		if err := json.Unmarshal(b, &parsed); err != nil {
+			t.Fatalf("parse real template %s: %v", src, err)
+		}
+		stripped, ok := stripFnameRecursive(parsed).(map[string]any)
+		if !ok {
+			t.Fatalf("strip fname from real template %s: unexpected top-level type", src)
+		}
+		out, err := json.MarshalIndent(stripped, "", "  ")
+		if err != nil {
+			t.Fatalf("marshal virgin template %s: %v", src, err)
+		}
+		writeSeedFile(t, filepath.Join(tplDir, "template_"+v.Template+".json"), string(out))
+		stems = append(stems, v.Template)
+		virgin[v.Template] = stripped
+	}
+	if len(stems) == 0 {
+		t.Fatal("no real seed templates found - realTemplateDir() path may be wrong")
+	}
+	return tplDir, stems, virgin
+}
+
+// assertFnamesMatch compares only the fname value of every socket
+// handlers/writers entry, index for index, between real (parsed from the
+// committed on-disk template) and generated (parsed from a fresh --write run
+// over a synthesized virgin copy of that same template). Entries where
+// neither side resolved a fname (nil == nil, the 14 still-unresolved
+// entries) compare equal.
+func assertFnamesMatch(t *testing.T, label string, real, generated map[string]any) {
+	t.Helper()
+	realSock, _ := real["socket"].(map[string]any)
+	genSock, _ := generated["socket"].(map[string]any)
+	for _, group := range []string{"handlers", "writers"} {
+		realEntries, _ := realSock[group].([]any)
+		genEntries, _ := genSock[group].([]any)
+		if len(realEntries) != len(genEntries) {
+			t.Fatalf("%s: socket.%s length mismatch between committed and regenerated-from-virgin: %d vs %d",
+				label, group, len(realEntries), len(genEntries))
+		}
+		for i := range realEntries {
+			re, _ := realEntries[i].(map[string]any)
+			ge, _ := genEntries[i].(map[string]any)
+			rf := re["fname"]
+			gf := ge["fname"]
+			if !reflect.DeepEqual(rf, gf) {
+				t.Errorf("%s: socket.%s[%d] fname mismatch: committed=%#v regenerated-from-virgin=%#v",
+					label, group, i, rf, gf)
+			}
+		}
+	}
+}
+
+// TestSeedFName_RealTemplatesInsertionCoverage restores full-corpus coverage
+// of the "insert fname into a virgin entry" path that
+// TestSeedFName_RealTemplatesSemanticFidelity lost once task-194 backfilled
+// fname into the real committed templates (see that test's doc comment). It
+// synthesizes a virgin (fname-less) copy of all 11 real templates in memory -
+// via copyRealTemplatesVirginToTemp, which recursively strips every "fname"
+// key from the real files without ever writing to them - runs --write
+// against that virgin copy joined with the REAL registries, and asserts two
+// things for every one of the 2859 entries:
+//
+//  1. Semantic fidelity: the generated output, with fname stripped back out,
+//     is deeply equal to the virgin input. Nothing but fname may appear,
+//     disappear, or change.
+//  2. Insertion completeness (the stronger claim): the fname value the
+//     generator inserts into each virgin entry is identical, entry for
+//     entry, to the fname value already committed in the real template (or
+//     absent from both, for the 14 still-unresolved entries). This proves
+//     the committed corpus is reproducible from a virgin corpus plus the
+//     current registries - not a one-off, hand-editable artifact that could
+//     silently drift from what --write would actually produce.
+func TestSeedFName_RealTemplatesInsertionCoverage(t *testing.T) {
+	tplDir, stems, virgin := copyRealTemplatesVirginToTemp(t)
+
+	var stderr bytes.Buffer
+	if code := runSeedFName([]string{"--write", "--registry-dir", realRegistryDir(), "--template-dir", tplDir}, &stderr); code != 0 {
+		t.Fatalf("exit = %d, want 0. stderr:\n%s", code, stderr.String())
+	}
+
+	for _, stem := range stems {
+		newPath := filepath.Join(tplDir, "template_"+stem+".json")
+		newB, err := os.ReadFile(newPath)
+		if err != nil {
+			t.Fatalf("%s: read generated: %v", stem, err)
+		}
+		var generated map[string]any
+		if err := json.Unmarshal(newB, &generated); err != nil {
+			t.Fatalf("%s: parse generated: %v", stem, err)
+		}
+
+		genStripped, ok := stripFnameRecursive(generated).(map[string]any)
+		if !ok {
+			t.Fatalf("%s: strip fname from generated: unexpected top-level type", stem)
+		}
+		if !reflect.DeepEqual(virgin[stem], genStripped) {
+			t.Errorf("%s: generated output (fname stripped) differs from the virgin input - the write touched something beyond fname", stem)
+		}
+
+		realPath := filepath.Join(realTemplateDir(), "template_"+stem+".json")
+		realB, err := os.ReadFile(realPath)
+		if err != nil {
+			t.Fatalf("%s: read real committed template: %v", stem, err)
+		}
+		var real map[string]any
+		if err := json.Unmarshal(realB, &real); err != nil {
+			t.Fatalf("%s: parse real committed template: %v", stem, err)
+		}
+		assertFnamesMatch(t, stem, real, generated)
 	}
 }
 

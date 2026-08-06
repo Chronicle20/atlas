@@ -2,6 +2,12 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
+// Radix Select (used by the column picker's Region/Version filters) relies
+// on DOM APIs jsdom does not implement - same polyfill already used by
+// IdentitySection.test.tsx wherever a Radix Select is exercised.
+Element.prototype.hasPointerCapture ||= () => false;
+Element.prototype.scrollIntoView ||= () => {};
+
 import { GridToolbar } from "@/components/features/socket/GridToolbar";
 import { emptyFilters } from "@/lib/socket/matrix";
 import type { GridFilters } from "@/lib/socket/matrix";
@@ -109,6 +115,21 @@ describe("GridToolbar", () => {
     await userEvent.click(screen.getByRole("button", { name: /columns/i }));
     await userEvent.click(screen.getByRole("checkbox", { name: /gms v95\.1/i }));
     expect(onSelectedKeysChange).toHaveBeenCalledWith(["a"]);
+  });
+
+  it("narrows the column picker's object list by version (FR-2.12)", async () => {
+    renderToolbar({ onSelectedKeysChange: vi.fn() });
+    await userEvent.click(screen.getByRole("button", { name: /columns/i }));
+    expect(screen.getAllByRole("checkbox", { name: /^gms v/i })).toHaveLength(2);
+
+    await userEvent.click(
+      screen.getByRole("combobox", { name: /filter columns by version/i }),
+    );
+    await userEvent.click(screen.getByRole("option", { name: "83.1" }));
+
+    const remaining = screen.getAllByRole("checkbox", { name: /^gms v/i });
+    expect(remaining).toHaveLength(1);
+    expect(screen.getByRole("checkbox", { name: "GMS v83.1" })).toBeInTheDocument();
   });
 
   it("changes the baseline when a selector is supplied", async () => {

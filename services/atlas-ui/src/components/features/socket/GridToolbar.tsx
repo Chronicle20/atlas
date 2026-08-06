@@ -6,6 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import type { AncestryClass } from "@/lib/socket/ancestry";
 import type { GridFilters, SortDirection, SortKey } from "@/lib/socket/matrix";
@@ -140,6 +147,9 @@ function OptionListPopover<T extends string>({
   );
 }
 
+const ALL_REGIONS = "__all-regions__";
+const ALL_VERSIONS = "__all-versions__";
+
 /** FR-2.12: filtered by Region and Version, one checkbox per object. */
 function ColumnPicker({
   objects,
@@ -191,32 +201,47 @@ function ColumnPicker({
       </PopoverTrigger>
       <PopoverContent className="w-72 space-y-2" align="start">
         <div className="flex gap-2">
-          <select
-            aria-label="Filter columns by region"
-            className="border-input h-8 flex-1 rounded-md border bg-transparent px-2 text-sm"
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
+          {/* Radix Select reserves value="" for "no selection" internally,
+              so "all" is modelled as its own sentinel item rather than an
+              empty-string option. */}
+          <Select
+            value={region === "" ? ALL_REGIONS : region}
+            onValueChange={(v) => setRegion(v === ALL_REGIONS ? "" : v)}
           >
-            <option value="">All regions</option>
-            {regions.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label="Filter columns by version"
-            className="border-input h-8 flex-1 rounded-md border bg-transparent px-2 text-sm"
-            value={version}
-            onChange={(e) => setVersion(e.target.value)}
+            <SelectTrigger
+              aria-label="Filter columns by region"
+              className="h-8 flex-1 text-sm"
+            >
+              <SelectValue placeholder="All regions" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_REGIONS}>All regions</SelectItem>
+              {regions.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {r}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={version === "" ? ALL_VERSIONS : version}
+            onValueChange={(v) => setVersion(v === ALL_VERSIONS ? "" : v)}
           >
-            <option value="">All versions</option>
-            {versions.map((v) => (
-              <option key={v} value={v}>
-                {v}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger
+              aria-label="Filter columns by version"
+              className="h-8 flex-1 text-sm"
+            >
+              <SelectValue placeholder="All versions" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_VERSIONS}>All versions</SelectItem>
+              {versions.map((v) => (
+                <SelectItem key={v} value={v}>
+                  {v}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <ul className="max-h-64 space-y-1 overflow-auto">
           {filtered.map((o) => {

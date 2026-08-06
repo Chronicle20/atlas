@@ -7,6 +7,7 @@ import (
 	report2 "atlas-ban/kafka/message/report"
 	"context"
 	"errors"
+	"time"
 	"unicode/utf8"
 
 	"github.com/google/uuid"
@@ -77,6 +78,24 @@ func (p *ProcessorImpl) CreateFromCommand(buf *message.Buffer) func(c report2.Cr
 	return func(c report2.CreateCommandBody) error {
 		fail := func(code string) error {
 			return buf.Put(report2.EnvEventTopicStatus, statusEventProvider(uuid.Nil, Kind(c.Kind), c.WorldId, c.ReporterId, report2.EventStatusError, code))
+		}
+
+		// Quota is checked before anything else the create path does: it needs
+		// only the reporter id, it is the cheapest rejection available, and
+		// rejecting here means the channel never charges the claim fee for a
+		// report that was never going to be stored.
+		var remaining int32
+		if Kind(c.Kind) == KindClaim {
+			used, cerr := countClaimsByReporterSince(p.db.WithContext(p.ctx))(c.ReporterId, time.Now().Add(-ClaimQuotaWindow))
+			if cerr != nil {
+				p.l.WithError(cerr).Errorf("Unable to count recent claims for reporter [%d].", c.ReporterId)
+				return fail(report2.ErrorCodeInternal)
+			}
+			if used >= MaxClaimsPerWindow {
+				p.l.Infof("Rejecting claim from [%d]: [%d] claims in the last [%s] meets the cap of [%d].", c.ReporterId, used, ClaimQuotaWindow, MaxClaimsPerWindow)
+				return fail(report2.ErrorCodeQuotaExceeded)
+			}
+			remaining = int32(MaxClaimsPerWindow - used - 1)
 		}
 
 		reporter, err := p.charP.GetById(c.ReporterId)
@@ -158,7 +177,7 @@ func (p *ProcessorImpl) CreateFromCommand(buf *message.Buffer) func(c report2.Cr
 			return fail(report2.ErrorCodeInternal)
 		}
 		p.l.Infof("Created [%s] report [%s]: reporter [%d/%s] accused [%d/%s] reason [%d].", m.Kind(), m.Id(), m.ReporterId(), m.ReporterName(), m.AccusedId(), m.AccusedName(), m.ReasonType())
-		return buf.Put(report2.EnvEventTopicStatus, statusEventProvider(m.Id(), m.Kind(), c.WorldId, c.ReporterId, report2.EventStatusCreated, ""))
+		return buf.Put(report2.EnvEventTopicStatus, createdStatusEventProvider(m.Id(), m.Kind(), c.WorldId, c.ReporterId, m.Kind() == KindClaim, remaining))
 	}
 }
 

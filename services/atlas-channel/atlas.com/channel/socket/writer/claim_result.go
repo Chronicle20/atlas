@@ -7,22 +7,18 @@ import (
 )
 
 // ClaimResultCode keys the ClaimResult writer's tenant operations table
-// (DOM-25). The full verified mode set lives in the table; v1 emits only
-// SUCCESS / TRY_AGAIN / RECHECK_NAME.
+// (DOM-25). The full verified mode set lives in the table; REPORTED_NOTICE,
+// CANNOT_CONNECT, TIME_WINDOW and FALSE_REPORT_CITED are expressible but
+// unused — nothing in Atlas produces those conditions.
 type ClaimResultCode string
 
 const (
-	ClaimResultSuccessCode ClaimResultCode = "SUCCESS"
-	ClaimResultTryAgain    ClaimResultCode = "TRY_AGAIN"
-	ClaimResultRecheckName ClaimResultCode = "RECHECK_NAME"
+	ClaimResultSuccessCode    ClaimResultCode = "SUCCESS"
+	ClaimResultTryAgain       ClaimResultCode = "TRY_AGAIN"
+	ClaimResultRecheckName    ClaimResultCode = "RECHECK_NAME"
+	ClaimResultNotEnoughMesos ClaimResultCode = "NOT_ENOUGH_MESOS"
+	ClaimResultExceeded       ClaimResultCode = "EXCEEDED"
 )
-
-// ClaimResultSuccessRemaining is the v1 display-only weekly-report count
-// passed as `remaining` to ClaimResultSuccessBody on a successful claim. It
-// is not enforced server-side in v1 (quota enforcement deferred); the
-// client only renders it. Exported for the status consumer (Task 16) and
-// session bootstrap (Task 17) callers to reference rather than inlining 100.
-const ClaimResultSuccessRemaining int32 = 100
 
 func ClaimResultSuccessBody(hasRemaining bool, remaining int32) packet.Encode {
 	return atlas_packet.WithResolvedCode("operations", string(ClaimResultSuccessCode), func(code byte) packet.Encoder {

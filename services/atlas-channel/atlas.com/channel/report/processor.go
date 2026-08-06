@@ -11,6 +11,19 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 )
 
+// ClaimCostMesos is the fee a successful claim costs the reporter. The client
+// has a dedicated CLAIM_RESULT mode for the affordability failure
+// (NOT_ENOUGH_MESOS, "You do not have enough mesos to report"), so the cost is
+// a first-class part of the claim flow rather than a silent debit.
+//
+// The charge is applied only after atlas-ban confirms the report was created:
+// a claim rejected for an unknown target or an exhausted quota is free.
+const ClaimCostMesos int32 = 300
+
+// ClaimFeeActorType labels the meso adjustment in atlas-character's
+// meso-changed status event, the same way skill costs label theirs "SKILL".
+const ClaimFeeActorType = "REPORT"
+
 // Processor defines report submission operations available to the channel.
 type Processor interface {
 	// Sue submits a /-command report. Legacy versions supply accusedId;

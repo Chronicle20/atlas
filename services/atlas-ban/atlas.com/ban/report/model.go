@@ -20,6 +20,21 @@ const (
 	MaxChatLogBytes      = 16384
 )
 
+// Claim quota. A reporter may create at most MaxClaimsPerWindow claims whose
+// created_at falls inside a rolling ClaimQuotaWindow ending now — there is no
+// reset boundary, so the oldest claim ages out of the count as time passes.
+// The client's own copy calls this a weekly allowance (StringPool SP_3381
+// "you have %d reports left this week"), which the rolling window approximates
+// without giving players a burst at a fixed reset.
+//
+// Sue reports are deliberately outside this cap: the client's sue result has
+// its own daily-limit code (SP_3005, "you may only report users 10 times a
+// day") that Atlas does not enforce.
+const (
+	MaxClaimsPerWindow = 100
+	ClaimQuotaWindow   = 7 * 24 * time.Hour
+)
+
 type Kind string
 
 const (

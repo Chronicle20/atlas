@@ -1,7 +1,12 @@
 package handler
 
 import (
+	"atlas-channel/character"
+	"atlas-channel/report"
+	"atlas-channel/socket/writer"
 	"context"
+	"errors"
+	"io"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -86,4 +91,90 @@ func TestClaimRequestHandleFuncSymbol(t *testing.T) {
 	if got == nil {
 		t.Fatal("ClaimRequestHandleFunc returned nil closure")
 	}
+}
+
+// recordingClaimDeps captures what submitClaim did without a REST client,
+// a Kafka producer or a session registry.
+type recordingClaimDeps struct {
+	meso      uint32
+	lookupErr error
+	submitted int
+	notices   []writer.ClaimResultCode
+}
+
+func (d *recordingClaimDeps) deps() claimSubmitDeps {
+	return claimSubmitDeps{
+		getCharacter: func(characterId uint32) (character.Model, error) {
+			if d.lookupErr != nil {
+				return character.Model{}, d.lookupErr
+			}
+			return character.NewModelBuilder().SetId(characterId).SetMeso(d.meso).Build()
+		},
+		submitClaim: func(_ reportsb.ClaimRequest) error { d.submitted++; return nil },
+		notice:      func(code writer.ClaimResultCode) { d.notices = append(d.notices, code) },
+	}
+}
+
+func TestSubmitClaimChargesOnlyWhenAffordable(t *testing.T) {
+	tests := []struct {
+		name          string
+		meso          uint32
+		wantSubmitted int
+		wantNotices   []writer.ClaimResultCode
+	}{
+		{
+			name:          "exactly the fee submits",
+			meso:          uint32(report.ClaimCostMesos),
+			wantSubmitted: 1,
+		},
+		{
+			name:        "one meso short is refused with the client's meso notice",
+			meso:        uint32(report.ClaimCostMesos) - 1,
+			wantNotices: []writer.ClaimResultCode{writer.ClaimResultNotEnoughMesos},
+		},
+		{
+			name:        "broke is refused",
+			meso:        0,
+			wantNotices: []writer.ClaimResultCode{writer.ClaimResultNotEnoughMesos},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := &recordingClaimDeps{meso: tt.meso}
+			submitClaim(nullHandlerLogger(), 77, reportsb.ClaimRequest{}, rec.deps())
+
+			if rec.submitted != tt.wantSubmitted {
+				t.Errorf("submitted: got %d, want %d", rec.submitted, tt.wantSubmitted)
+			}
+			if len(rec.notices) != len(tt.wantNotices) {
+				t.Fatalf("notices: got %v, want %v", rec.notices, tt.wantNotices)
+			}
+			for i, want := range tt.wantNotices {
+				if rec.notices[i] != want {
+					t.Errorf("notice %d: got %s, want %s", i, rec.notices[i], want)
+				}
+			}
+		})
+	}
+}
+
+// An unresolvable reporter must not silently drop the claim: the reporter
+// gets TRY_AGAIN, and no command is emitted for a character we could not read.
+func TestSubmitClaimUnresolvableReporterNoticesTryAgain(t *testing.T) {
+	rec := &recordingClaimDeps{meso: 100000, lookupErr: errors.New("character service down")}
+	submitClaim(nullHandlerLogger(), 77, reportsb.ClaimRequest{}, rec.deps())
+
+	if rec.submitted != 0 {
+		t.Errorf("submitted: got %d, want 0", rec.submitted)
+	}
+	if len(rec.notices) != 1 || rec.notices[0] != writer.ClaimResultTryAgain {
+		t.Errorf("notices: got %v, want [%s]", rec.notices, writer.ClaimResultTryAgain)
+	}
+}
+
+func nullHandlerLogger() *logrus.Logger {
+	l := logrus.New()
+	l.SetOutput(io.Discard)
+	return l
 }

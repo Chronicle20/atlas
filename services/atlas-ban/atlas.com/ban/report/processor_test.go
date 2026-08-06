@@ -8,6 +8,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 	"unicode/utf8"
 
 	report2 "atlas-ban/kafka/message/report"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type fakeCharacterProcessor struct {
@@ -228,6 +230,163 @@ func decodeStatusEventErrorCode(t *testing.T, buf *message.Buffer) string {
 		t.Fatalf("expected ERROR status, got %q", se.Status)
 	}
 	return se.ErrorCode
+}
+
+// decodeCreatedStatusEvent returns the single buffered CREATED status event,
+// failing if the buffer holds an ERROR instead.
+func decodeCreatedStatusEvent(t *testing.T, buf *message.Buffer) report2.StatusEvent {
+	t.Helper()
+	evs := buf.GetAll()[report2.EnvEventTopicStatus]
+	if len(evs) != 1 {
+		t.Fatalf("expected 1 status event, got %d", len(evs))
+	}
+	var se report2.StatusEvent
+	if err := json.Unmarshal(evs[0].Value, &se); err != nil {
+		t.Fatalf("decode status event: %v", err)
+	}
+	if se.Status != report2.EventStatusCreated {
+		t.Fatalf("expected CREATED status, got %q (errorCode %q)", se.Status, se.ErrorCode)
+	}
+	return se
+}
+
+// seedClaims inserts n already-persisted claims for the reporter, aged by
+// `age`. CreatedAt is set explicitly because GORM only fills the field when
+// it is zero — which is what lets these tests place rows on either side of
+// the rolling window boundary.
+func seedClaims(t *testing.T, db *gorm.DB, tenantId uuid.UUID, reporterId uint32, n int, age time.Duration) {
+	t.Helper()
+	at := time.Now().Add(-age)
+	for i := 0; i < n; i++ {
+		e := Entity{
+			Id:          uuid.New(),
+			TenantId:    tenantId,
+			Kind:        string(KindClaim),
+			ReporterId:  reporterId,
+			AccusedId:   2,
+			AccusedName: "Accused",
+			ReasonType:  3,
+			Description: "seed",
+			Status:      string(StatusOpen),
+			CreatedAt:   at,
+			UpdatedAt:   at,
+		}
+		if err := db.Create(&e).Error; err != nil {
+			t.Fatalf("seed claim %d: %v", i, err)
+		}
+	}
+}
+
+func quotaTestProcessor(t *testing.T, db *gorm.DB, tm tenant.Model) Processor {
+	t.Helper()
+	l, _ := test.NewNullLogger()
+	charP := &fakeCharacterProcessor{
+		// Id 2 is present as well as by-name: sue resolves the accused by id.
+		byId: map[uint32]character.Model{
+			1: makeCharacter(t, 1, "Reporter"),
+			2: makeCharacter(t, 2, "Accused"),
+		},
+		byName: map[string]character.Model{"Accused": makeCharacter(t, 2, "Accused")},
+	}
+	return NewProcessorWithClients(l, testContext(tm), db, charP, &fakeChatProcessor{})
+}
+
+func claimCommand() report2.CreateCommandBody {
+	return report2.CreateCommandBody{
+		Kind: report2.KindClaim, ReporterId: 1, AccusedName: "Accused",
+		ReasonType: 3, Description: "harassment",
+	}
+}
+
+// TestCreateFromCommandClaimReportsTrueRemaining pins the count the client
+// renders as "you have %d reports left this week". Before quota enforcement
+// this was a hard-coded 100 on every claim, which is what play-testing saw.
+func TestCreateFromCommandClaimReportsTrueRemaining(t *testing.T) {
+	db := setupTestDatabase(t)
+	tm := sampleTenant()
+	seedClaims(t, db, tm.Id(), 1, 3, time.Hour)
+
+	buf := message.NewBuffer()
+	if err := quotaTestProcessor(t, db, tm).CreateFromCommand(buf)(claimCommand()); err != nil {
+		t.Fatalf("CreateFromCommand: %v", err)
+	}
+
+	se := decodeCreatedStatusEvent(t, buf)
+	if !se.HasRemaining {
+		t.Fatal("want hasRemaining=true on a claim")
+	}
+	want := int32(MaxClaimsPerWindow - 4)
+	if se.Remaining != want {
+		t.Fatalf("want remaining=%d after 3 prior claims plus this one, got %d", want, se.Remaining)
+	}
+}
+
+// TestCreateFromCommandClaimAtQuotaIsRejected asserts the cap is enforced,
+// not merely displayed: the report is not persisted and the reporter gets the
+// QUOTA_EXCEEDED code that maps to the client's "exceeded the number of
+// reports available" notice.
+func TestCreateFromCommandClaimAtQuotaIsRejected(t *testing.T) {
+	db := setupTestDatabase(t)
+	tm := sampleTenant()
+	seedClaims(t, db, tm.Id(), 1, MaxClaimsPerWindow, time.Hour)
+
+	p := quotaTestProcessor(t, db, tm)
+	buf := message.NewBuffer()
+	if err := p.CreateFromCommand(buf)(claimCommand()); err != nil {
+		t.Fatalf("CreateFromCommand: %v", err)
+	}
+
+	if code := decodeStatusEventErrorCode(t, buf); code != report2.ErrorCodeQuotaExceeded {
+		t.Fatalf("want %s, got %s", report2.ErrorCodeQuotaExceeded, code)
+	}
+	reports, err := p.GetByTenant()
+	if err != nil {
+		t.Fatalf("GetByTenant: %v", err)
+	}
+	if len(reports) != MaxClaimsPerWindow {
+		t.Fatalf("over-quota claim must not persist: want %d rows, got %d", MaxClaimsPerWindow, len(reports))
+	}
+}
+
+// TestCreateFromCommandClaimQuotaWindowRolls asserts the window is rolling:
+// a full cap's worth of claims older than ClaimQuotaWindow does not block a
+// new one.
+func TestCreateFromCommandClaimQuotaWindowRolls(t *testing.T) {
+	db := setupTestDatabase(t)
+	tm := sampleTenant()
+	seedClaims(t, db, tm.Id(), 1, MaxClaimsPerWindow, ClaimQuotaWindow+time.Hour)
+
+	buf := message.NewBuffer()
+	if err := quotaTestProcessor(t, db, tm).CreateFromCommand(buf)(claimCommand()); err != nil {
+		t.Fatalf("CreateFromCommand: %v", err)
+	}
+
+	se := decodeCreatedStatusEvent(t, buf)
+	if se.Remaining != int32(MaxClaimsPerWindow-1) {
+		t.Fatalf("aged-out claims must not count: want remaining=%d, got %d", MaxClaimsPerWindow-1, se.Remaining)
+	}
+}
+
+// TestCreateFromCommandSueIgnoresClaimQuota asserts sue is outside the cap and
+// carries no quota fields — its result packet has nowhere to put them.
+func TestCreateFromCommandSueIgnoresClaimQuota(t *testing.T) {
+	db := setupTestDatabase(t)
+	tm := sampleTenant()
+	seedClaims(t, db, tm.Id(), 1, MaxClaimsPerWindow, time.Hour)
+
+	buf := message.NewBuffer()
+	err := quotaTestProcessor(t, db, tm).CreateFromCommand(buf)(report2.CreateCommandBody{
+		Kind: report2.KindSue, ReporterId: 1, AccusedId: 2,
+		ReasonType: 1, Description: "cheating",
+	})
+	if err != nil {
+		t.Fatalf("CreateFromCommand: %v", err)
+	}
+
+	se := decodeCreatedStatusEvent(t, buf)
+	if se.HasRemaining || se.Remaining != 0 {
+		t.Fatalf("sue must carry no quota standing, got hasRemaining=%t remaining=%d", se.HasRemaining, se.Remaining)
+	}
 }
 
 func TestCreateFromCommandTruncatesOversizedInputs(t *testing.T) {

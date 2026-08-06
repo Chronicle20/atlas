@@ -8,9 +8,11 @@
 package report
 
 import (
+	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
 	report2 "atlas-channel/kafka/message/report"
 	"atlas-channel/listener"
+	report3 "atlas-channel/report"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -80,6 +82,24 @@ var reportAnnouncer = func(l logrus.FieldLogger, ctx context.Context, wp writer.
 	}
 }
 
+// claimFeeCharger debits the claim fee from the reporter. Package-level var
+// for the same reason as reportAnnouncer: tests swap in a recording stub.
+//
+// The reporter's session supplies the field the meso command is scoped to; if
+// they logged out between submitting the claim and atlas-ban confirming it,
+// IfPresentByCharacterId is a no-op and the claim is free. That is the
+// deliberate trade — the alternative is charging a character whose location
+// we can no longer name, for a result packet they will never see.
+var claimFeeCharger = func(l logrus.FieldLogger, ctx context.Context, sc server.Model, characterId uint32) {
+	cp := character.NewProcessor(l, ctx)
+	err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(characterId, func(s session.Model) error {
+		return cp.RequestChangeMeso(s.Field(), characterId, characterId, report3.ClaimFeeActorType, -report3.ClaimCostMesos)
+	})
+	if err != nil {
+		l.WithError(err).Errorf("Unable to charge the [%d] meso claim fee to character [%d].", report3.ClaimCostMesos, characterId)
+	}
+}
+
 func handleStatusEvent(sc server.Model, wp writer.Producer) message.Handler[report2.StatusEvent] {
 	return func(l logrus.FieldLogger, ctx context.Context, e report2.StatusEvent) {
 		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
@@ -92,19 +112,32 @@ func handleStatusEvent(sc server.Model, wp writer.Producer) message.Handler[repo
 			return
 		}
 
+		// The claim fee is charged here, on CREATED, so that a claim rejected
+		// by atlas-ban (unknown target, exhausted quota) costs nothing. Sue is
+		// free — the client has no meso mode for it.
+		if e.Kind == report2.KindClaim && e.Status == report2.EventStatusCreated {
+			claimFeeCharger(l, ctx, sc, e.ReporterId)
+		}
+
 		reportAnnouncer(l, ctx, wp, sc, e.ReporterId, writerName, body)
 	}
 }
 
 // resultPacket maps a report status event to the result packet the reporter
-// sees (design.md §4.5, v1 result policy):
+// sees (design.md §4.5):
 //
 //	sue,   CREATED                    -> SueCharacterResult   SUCCESS
 //	sue,   ERROR, NOT_FOUND           -> SueCharacterResult   UNABLE_TO_LOCATE
 //	sue,   ERROR, anything else       -> SueCharacterResult   GENERIC_FAILURE
-//	claim, CREATED                    -> ClaimResultSuccess   hasRemaining=1, remaining=ClaimResultSuccessRemaining
+//	claim, CREATED                    -> ClaimResultSuccess   hasRemaining/remaining from the event
 //	claim, ERROR, NOT_FOUND           -> ClaimResultNotice    RECHECK_NAME
+//	claim, ERROR, QUOTA_EXCEEDED      -> ClaimResultNotice    EXCEEDED
 //	claim, ERROR, anything else       -> ClaimResultNotice    TRY_AGAIN
+//
+// The success payload is atlas-ban's computed quota standing, not a constant:
+// the client renders "you have %d reports left this week" when remaining > 0
+// and "no reports left this week" at 0 (CWvsContext::OnClaimResult, v83
+// @0xa27891).
 //
 // Unknown kind/status combinations are dropped by the caller, never sent as
 // a guessed mode.
@@ -122,9 +155,11 @@ func resultPacket(e report2.StatusEvent) (string, packet.Encode, bool) {
 	case report2.KindClaim:
 		switch {
 		case e.Status == report2.EventStatusCreated:
-			return reportcb.ClaimResultWriter, writer.ClaimResultSuccessBody(true, writer.ClaimResultSuccessRemaining), true
+			return reportcb.ClaimResultWriter, writer.ClaimResultSuccessBody(e.HasRemaining, e.Remaining), true
 		case e.Status == report2.EventStatusError && e.ErrorCode == report2.ErrorCodeNotFound:
 			return reportcb.ClaimResultWriter, writer.ClaimResultNoticeBody(writer.ClaimResultRecheckName), true
+		case e.Status == report2.EventStatusError && e.ErrorCode == report2.ErrorCodeQuotaExceeded:
+			return reportcb.ClaimResultWriter, writer.ClaimResultNoticeBody(writer.ClaimResultExceeded), true
 		case e.Status == report2.EventStatusError:
 			return reportcb.ClaimResultWriter, writer.ClaimResultNoticeBody(writer.ClaimResultTryAgain), true
 		}

@@ -29,6 +29,59 @@ export const ReportKindLabels: Record<ReportKind, string> = {
   [ReportKind.Claim]: "Claim",
 };
 
+/**
+ * Claim reason codes. These are the `nType` byte the client puts on the wire,
+ * taken from the item data of the reason dropdown built in `CUIClaim::OnCreate`
+ * (v83 @0x7db17d, IDA-verified — see
+ * docs/tasks/task-145-player-reports/packet-findings.md §2). Codes 3–8 are the
+ * chat-claim list; 9 is the only entry offered for a non-chat claim.
+ *
+ * There is no equivalent enum for `sue` reports: `CField::SendChatMsgSlash`
+ * (v87 @0x55350b) derives the sue flag from `atoi()` on a slash-command
+ * argument, so it is a player-typed number with no client-side meaning.
+ */
+export const ClaimReasonType = {
+  CurseOrInappropriateContent: 3,
+  Advertising: 4,
+  Fraud: 5,
+  CashTrade: 6,
+  ImpersonatingGm: 7,
+  ExposingPersonalInfo: 8,
+  IllegalPrograms: 9,
+} as const;
+export type ClaimReasonType =
+  (typeof ClaimReasonType)[keyof typeof ClaimReasonType];
+
+export const ClaimReasonLabels: Record<ClaimReasonType, string> = {
+  [ClaimReasonType.CurseOrInappropriateContent]:
+    "Cursing / inappropriate content",
+  [ClaimReasonType.Advertising]: "Advertising",
+  [ClaimReasonType.Fraud]: "Fraud",
+  [ClaimReasonType.CashTrade]: "Cash trade",
+  [ClaimReasonType.ImpersonatingGm]: "Impersonating a GM",
+  [ClaimReasonType.ExposingPersonalInfo]: "Exposing personal information",
+  [ClaimReasonType.IllegalPrograms]: "Illegal programs",
+};
+
+/**
+ * Renders the stored `reasonType` byte for display. The column holds a
+ * different thing per kind, so the label is kind-aware: a named claim reason,
+ * or the raw sue category the reporter typed. An unrecognised claim code keeps
+ * the number visible rather than hiding it behind a guess.
+ */
+export function formatReportReason(
+  kind: ReportKind,
+  reasonType: number,
+): string {
+  if (kind !== ReportKind.Claim) {
+    return `Category ${reasonType}`;
+  }
+  return (
+    ClaimReasonLabels[reasonType as ClaimReasonType] ??
+    `Unknown (${reasonType})`
+  );
+}
+
 export interface TranscriptLine {
   timestamp: number;
   senderId: number;

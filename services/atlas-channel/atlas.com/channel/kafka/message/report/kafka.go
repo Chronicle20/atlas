@@ -15,8 +15,9 @@ const (
 	EventStatusCreated  = "CREATED"
 	EventStatusError    = "ERROR"
 
-	ErrorCodeNotFound = "NOT_FOUND"
-	ErrorCodeInternal = "INTERNAL"
+	ErrorCodeNotFound      = "NOT_FOUND"
+	ErrorCodeInternal      = "INTERNAL"
+	ErrorCodeQuotaExceeded = "QUOTA_EXCEEDED"
 
 	KindSue   = "sue"
 	KindClaim = "claim"
@@ -45,11 +46,18 @@ type CreateCommandBody struct {
 	ChatLog     string     `json:"chatLog"`
 }
 
+// StatusEvent reports the outcome of a create command back to the channel
+// that submitted it. HasRemaining/Remaining carry the reporter's claim quota
+// standing as atlas-ban computed it, and are meaningful only on a claim
+// CREATED — they go straight into CLAIM_RESULT's success body. Sue leaves both
+// zero-valued.
 type StatusEvent struct {
-	ReportId   uuid.UUID `json:"reportId"` // uuid.Nil on ERROR
-	Kind       string    `json:"kind"`
-	WorldId    world.Id  `json:"worldId"`
-	ReporterId uint32    `json:"reporterId"`
-	Status     string    `json:"status"`    // CREATED | ERROR
-	ErrorCode  string    `json:"errorCode"` // NOT_FOUND | INTERNAL; empty on CREATED
+	ReportId     uuid.UUID `json:"reportId"` // uuid.Nil on ERROR
+	Kind         string    `json:"kind"`
+	WorldId      world.Id  `json:"worldId"`
+	ReporterId   uint32    `json:"reporterId"`
+	Status       string    `json:"status"`    // CREATED | ERROR
+	ErrorCode    string    `json:"errorCode"` // NOT_FOUND | INTERNAL | QUOTA_EXCEEDED; empty on CREATED
+	HasRemaining bool      `json:"hasRemaining"`
+	Remaining    int32     `json:"remaining"`
 }

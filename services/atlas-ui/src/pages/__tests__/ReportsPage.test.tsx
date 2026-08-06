@@ -93,6 +93,40 @@ describe("ReportsPage", () => {
     expect(screen.getByText("Bob")).toBeInTheDocument();
   });
 
+  it("renders a claim's reason code as its client label, not the raw byte", async () => {
+    vi.mocked(reportsService.getAllReports).mockResolvedValue([
+      makeReport("1", { kind: ReportKind.Claim, reasonType: 6 }),
+    ]);
+
+    renderAt("/reports");
+
+    expect(await screen.findByText("Cash trade")).toBeInTheDocument();
+    expect(screen.queryByText("6")).not.toBeInTheDocument();
+  });
+
+  it("renders an unrecognised claim reason with the code still visible", async () => {
+    vi.mocked(reportsService.getAllReports).mockResolvedValue([
+      makeReport("1", { kind: ReportKind.Claim, reasonType: 42 }),
+    ]);
+
+    renderAt("/reports");
+
+    expect(await screen.findByText("Unknown (42)")).toBeInTheDocument();
+  });
+
+  // Sue stores a player-typed slash-command number in the same column, so it
+  // must NOT be read through the claim reason table.
+  it("renders a sue's reason as a bare category, not a claim label", async () => {
+    vi.mocked(reportsService.getAllReports).mockResolvedValue([
+      makeReport("1", { kind: ReportKind.Sue, reasonType: 6 }),
+    ]);
+
+    renderAt("/reports");
+
+    expect(await screen.findByText("Category 6")).toBeInTheDocument();
+    expect(screen.queryByText("Cash trade")).not.toBeInTheDocument();
+  });
+
   it("re-requests with the selected status filter", async () => {
     vi.mocked(reportsService.getAllReports).mockResolvedValue([
       makeReport("1"),

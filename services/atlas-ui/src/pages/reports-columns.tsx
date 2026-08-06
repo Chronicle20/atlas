@@ -8,7 +8,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Eye } from "lucide-react";
 import { ReportStatusBadge } from "@/components/features/reports/ReportStatusBadge";
-import { type Report, ReportKindLabels } from "@/types/models/report";
+import {
+  type Report,
+  ReportKindLabels,
+  formatReportReason,
+} from "@/types/models/report";
 
 interface ColumnProps {
   onView?: (report: Report) => void;
@@ -45,7 +49,10 @@ export const getColumns = ({ onView }: ColumnProps): ColumnDef<Report>[] => {
     {
       accessorKey: "attributes.reasonType",
       header: "Reason",
-      cell: ({ row }) => String(row.original.attributes.reasonType),
+      cell: ({ row }) => {
+        const { kind, reasonType } = row.original.attributes;
+        return formatReportReason(kind, reasonType);
+      },
     },
     {
       id: "status",

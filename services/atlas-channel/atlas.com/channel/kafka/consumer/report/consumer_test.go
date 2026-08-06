@@ -88,9 +88,11 @@ var sueOperations = map[string]interface{}{
 }
 
 var claimOperations = map[string]interface{}{
-	string(writer.ClaimResultSuccessCode): float64(2),
-	string(writer.ClaimResultTryAgain):    float64(0x47),
-	string(writer.ClaimResultRecheckName): float64(0x48),
+	string(writer.ClaimResultSuccessCode):    float64(2),
+	string(writer.ClaimResultTryAgain):       float64(0x47),
+	string(writer.ClaimResultRecheckName):    float64(0x48),
+	string(writer.ClaimResultExceeded):       float64(0x49),
+	string(writer.ClaimResultNotEnoughMesos): float64(0x4A),
 }
 
 // withRecordingAnnouncer swaps the package-level reportAnnouncer seam for a
@@ -112,6 +114,19 @@ func withRecordingAnnouncer(t *testing.T) (restore func(), calls *[]announceCall
 		recorded = append(recorded, announceCall{characterId: characterId, writerName: writerName, bytes: b})
 	}
 	return func() { reportAnnouncer = orig }, &recorded
+}
+
+// withRecordingFeeCharger swaps the claim-fee seam for a recorder, so tests
+// assert which character was charged without a live session registry or a
+// Kafka producer.
+func withRecordingFeeCharger(t *testing.T) (restore func(), charged *[]uint32) {
+	t.Helper()
+	var recorded []uint32
+	orig := claimFeeCharger
+	claimFeeCharger = func(_ logrus.FieldLogger, _ context.Context, _ server.Model, characterId uint32) {
+		recorded = append(recorded, characterId)
+	}
+	return func() { claimFeeCharger = orig }, &recorded
 }
 
 // nullLogger returns a discarding logrus.Logger backed by testlog's null
@@ -274,8 +289,9 @@ func TestHandleStatusEvent_SueErrorInternal_AnnouncesGenericFailure(t *testing.T
 }
 
 // TestHandleStatusEvent_ClaimCreated_AnnouncesSuccessWithRemaining asserts a
-// claim CREATED event selects ClaimResultSuccess with hasRemaining=true and
-// remaining=writer.ClaimResultSuccessRemaining.
+// claim CREATED event selects ClaimResultSuccess carrying the quota standing
+// the event supplied — not a constant. A wrong value here is exactly the bug
+// play-testing surfaced: every claim reported "100 left".
 func TestHandleStatusEvent_ClaimCreated_AnnouncesSuccessWithRemaining(t *testing.T) {
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
@@ -283,13 +299,17 @@ func TestHandleStatusEvent_ClaimCreated_AnnouncesSuccessWithRemaining(t *testing
 
 	restore, calls := withRecordingAnnouncer(t)
 	defer restore()
+	restoreFee, _ := withRecordingFeeCharger(t)
+	defer restoreFee()
 
 	h := handleStatusEvent(sc, nil)
 	h(nullLogger(), ctx, report2.StatusEvent{
-		Kind:       report2.KindClaim,
-		WorldId:    sc.WorldId(),
-		ReporterId: 4004,
-		Status:     report2.EventStatusCreated,
+		Kind:         report2.KindClaim,
+		WorldId:      sc.WorldId(),
+		ReporterId:   4004,
+		Status:       report2.EventStatusCreated,
+		HasRemaining: true,
+		Remaining:    97,
 	})
 
 	if (*calls)[0].writerName != reportcb.ClaimResultWriter {
@@ -302,8 +322,73 @@ func TestHandleStatusEvent_ClaimCreated_AnnouncesSuccessWithRemaining(t *testing
 	if !res.HasRemaining() {
 		t.Fatalf("want hasRemaining=true")
 	}
-	if res.Remaining() != writer.ClaimResultSuccessRemaining {
-		t.Fatalf("want remaining=%d, got %d", writer.ClaimResultSuccessRemaining, res.Remaining())
+	if res.Remaining() != 97 {
+		t.Fatalf("want remaining=97 from the event, got %d", res.Remaining())
+	}
+}
+
+// TestHandleStatusEvent_ClaimQuotaExceeded_AnnouncesExceeded asserts the
+// quota rejection maps to the client's dedicated EXCEEDED notice rather than
+// collapsing into the generic TRY_AGAIN.
+func TestHandleStatusEvent_ClaimQuotaExceeded_AnnouncesExceeded(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	restore, calls := withRecordingAnnouncer(t)
+	defer restore()
+	restoreFee, charged := withRecordingFeeCharger(t)
+	defer restoreFee()
+
+	h := handleStatusEvent(sc, nil)
+	h(nullLogger(), ctx, report2.StatusEvent{
+		Kind:       report2.KindClaim,
+		WorldId:    sc.WorldId(),
+		ReporterId: 4009,
+		Status:     report2.EventStatusError,
+		ErrorCode:  report2.ErrorCodeQuotaExceeded,
+	})
+
+	res := decodeClaimNotice(t, (*calls)[0].bytes)
+	if res.Mode() != 0x49 {
+		t.Fatalf("want resolved EXCEEDED mode 0x49 (fixture value), got %#x", res.Mode())
+	}
+	if len(*charged) != 0 {
+		t.Fatalf("a rejected claim must not be charged, got %v", *charged)
+	}
+}
+
+// TestHandleStatusEvent_ClaimCreated_ChargesFee asserts the fee is charged on
+// the created path, and only there.
+func TestHandleStatusEvent_ClaimCreated_ChargesFee(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	restore, _ := withRecordingAnnouncer(t)
+	defer restore()
+	restoreFee, charged := withRecordingFeeCharger(t)
+	defer restoreFee()
+
+	h := handleStatusEvent(sc, nil)
+	h(nullLogger(), ctx, report2.StatusEvent{
+		Kind:         report2.KindClaim,
+		WorldId:      sc.WorldId(),
+		ReporterId:   4010,
+		Status:       report2.EventStatusCreated,
+		HasRemaining: true,
+		Remaining:    12,
+	})
+	// A sue is free — no meso mode exists on SUE_CHARACTER_RESULT.
+	h(nullLogger(), ctx, report2.StatusEvent{
+		Kind:       report2.KindSue,
+		WorldId:    sc.WorldId(),
+		ReporterId: 4011,
+		Status:     report2.EventStatusCreated,
+	})
+
+	if len(*charged) != 1 || (*charged)[0] != 4010 {
+		t.Fatalf("want exactly character 4010 charged, got %v", *charged)
 	}
 }
 
@@ -425,6 +510,12 @@ func TestHandleStatusEvent_WriterNotFound_SkipsWithoutError(t *testing.T) {
 	defer session.ClearRegistryForTenant(tm.Id())
 	_ = session.NewProcessor(nullLogger(), ctx).SetCharacterId(sessionId, characterId)
 
+	// These two tests exercise the real reportAnnouncer, but the fee charger
+	// is still stubbed: it is a separate concern, and its real form reaches
+	// for a Kafka producer this test has no broker for.
+	restoreFee, _ := withRecordingFeeCharger(t)
+	defer restoreFee()
+
 	logger, hook := testlog.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
 
@@ -483,6 +574,9 @@ func TestHandleStatusEvent_WriterFound_DeliversToRealConnection(t *testing.T) {
 	session.AddSessionToRegistry(tm.Id(), s)
 	defer session.ClearRegistryForTenant(tm.Id())
 	_ = session.NewProcessor(nullLogger(), ctx).SetCharacterId(sessionId, characterId)
+
+	restoreFee, _ := withRecordingFeeCharger(t)
+	defer restoreFee()
 
 	logger, hook := testlog.NewNullLogger()
 

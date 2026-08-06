@@ -406,13 +406,17 @@ Deferred from task-145 (player sue/claim reports). Design/plan/findings live und
 
 ### Feature scope deferred (result-code plumbing already expressive; wiring deferred)
 
-- [ ] **Report quota / mesos-cost enforcement.** `sue` result code 2 (`DAILY_LIMIT`) and
-  claim modes `0x43`/`0x45`/`0x47`/`0x48` are wired in the writer's operations table and can
-  be selected today, but nothing currently counts a reporter's daily report volume or their
-  meso balance to actually trigger those codes — the server always resolves the success/
-  generic-failure path. Wire real counting (a bounded per-reporter-per-day counter, likely
-  `libs/atlas-redis`'s `TenantKeyedSortedSet`/`AddBounded`, same pattern as chat capture) plus
-  a mesos-cost check against `atlas-character`, when prioritized.
+- [x] **Claim quota / mesos-cost enforcement.** Done. A claim now costs
+  `report.ClaimCostMesos` (300), charged only after atlas-ban confirms creation, with an
+  affordability pre-check that emits claim mode `0x43` (`NOT_ENOUGH_MESOS`). atlas-ban
+  counts the reporter's claims in a rolling `ClaimQuotaWindow` (7 days), rejects at
+  `MaxClaimsPerWindow` (100) with mode `0x45` (`EXCEEDED`), and reports the true remaining
+  count in the success payload instead of the former hard-coded 100.
+- [ ] **Sue daily limit.** `sue` result code 2 (`DAILY_LIMIT`, "you may only report users 10
+  times a day") is still never emitted — the claim quota above deliberately excludes sue,
+  and nothing counts sue volume. Claim modes `0x47` (`TIME_WINDOW`) and `0x48`
+  (`FALSE_REPORT_CITED`) likewise remain expressible but unused: Atlas advertises an
+  always-open claim window (`open=0, close=0`) and tracks no false-report citations.
 - [ ] **Accused-notification codes.** `sue` result code 3 and claim mode `0x03`
   (`REPORTED_NOTICE`) are accepted by the writers' operations tables, but nothing sends a
   notice to the *accused* character today — only the reporter's own result/claim packet is

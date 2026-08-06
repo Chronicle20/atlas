@@ -1,6 +1,8 @@
 // Template domain model types
 // Re-exported from lib/templates.tsx to centralize type definitions
 
+import type { SocketConfig } from "@/types/models/socket";
+
 export interface CharacterTemplate {
   jobIndex: number;
   subJobIndex: number;
@@ -81,21 +83,7 @@ export interface TemplateAttributes {
     npcId: number;
     impl: string;
   }[];
-  socket: {
-    handlers: {
-      opCode: string;
-      validator: string;
-      handler: string;
-      options: unknown;
-      services?: string[];
-    }[];
-    writers: {
-      opCode: string;
-      writer: string;
-      options: unknown;
-      services?: string[];
-    }[];
-  };
+  socket: SocketConfig;
   worlds: {
     name: string;
     flag: string;

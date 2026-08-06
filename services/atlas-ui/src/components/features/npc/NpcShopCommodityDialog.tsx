@@ -102,44 +102,33 @@ export function NpcShopCommodityDialog({
         <div className="grid gap-4 py-4">
           {FIELDS.map(({ key, label, kind }) => {
             const controlId = `commodity-${key}`;
-            // The ItemPicker's trigger is a labelable <button>: a <label for>
-            // pointing at it would override its own text content ("Select an
-            // item…" / the resolved item name) as its accessible name per
-            // HTML-AAM. Only associate the Label with plain form controls
-            // (number inputs, and the read-only span in edit mode) where
-            // that override is the desired behavior.
+            const labelId = `${controlId}-label`;
+            // The ItemPicker's trigger is a labelable <button>: a <label
+            // for={controlId}> pointing at it would override the trigger's
+            // own text content ("Select an item…" / the resolved item name)
+            // as its ACCESSIBLE NAME per HTML-AAM, which is exactly what
+            // getByRole(..., { name }) matches against below — so `htmlFor`
+            // must never target the picker trigger. The field name is
+            // instead conveyed by wrapping the Label + picker in a
+            // `role="group"`/`aria-labelledby` pair: the group (not the
+            // button) carries "Template ID"/"Token Template ID", while the
+            // trigger's own text remains its accessible name. `id={controlId}`
+            // is still passed to ItemPicker for a stable, addressable DOM id
+            // on the trigger — it's just no longer what a <label for> targets.
             const isPickerTrigger =
               kind === "item" && !(mode === "edit" && key === "templateId");
             return (
               <div key={key} className="grid grid-cols-4 items-center gap-4">
-                <Label
-                  className="text-right"
-                  {...(isPickerTrigger ? {} : { htmlFor: controlId })}
-                >
-                  {label}
-                </Label>
-                {kind === "number" ? (
-                  <Input
-                    id={controlId}
-                    name={key}
-                    type="number"
-                    value={form[key]}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        [key]: Number(e.target.value),
-                      }))
-                    }
-                    className="col-span-3"
-                  />
-                ) : (
-                  <div className="col-span-3">
-                    {mode === "edit" && key === "templateId" ? (
-                      <ResolvedItemName
-                        value={form.templateId}
-                        id={controlId}
-                      />
-                    ) : (
+                {isPickerTrigger ? (
+                  <div
+                    role="group"
+                    aria-labelledby={labelId}
+                    className="contents"
+                  >
+                    <Label id={labelId} className="text-right">
+                      {label}
+                    </Label>
+                    <div className="col-span-3">
                       <ItemPicker
                         id={controlId}
                         value={form[key]}
@@ -150,8 +139,36 @@ export function NpcShopCommodityDialog({
                           ? { allowClear: true, placeholder: "None" }
                           : {})}
                       />
-                    )}
+                    </div>
                   </div>
+                ) : (
+                  <>
+                    <Label htmlFor={controlId} className="text-right">
+                      {label}
+                    </Label>
+                    {kind === "number" ? (
+                      <Input
+                        id={controlId}
+                        name={key}
+                        type="number"
+                        value={form[key]}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            [key]: Number(e.target.value),
+                          }))
+                        }
+                        className="col-span-3"
+                      />
+                    ) : (
+                      <div className="col-span-3">
+                        <ResolvedItemName
+                          value={form.templateId}
+                          id={controlId}
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             );

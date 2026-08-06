@@ -230,7 +230,6 @@ const (
 	StatusEventTypeMesoChanged       = "MESO_CHANGED"
 	StatusEventTypeFameChanged       = "FAME_CHANGED"
 	StatusEventTypeStatChanged       = "STAT_CHANGED"
-	StatusEventTypeUpdated           = "UPDATED"
 	StatusEventTypeDeleted           = "DELETED"
 	StatusEventTypeCreationFailed    = "CREATION_FAILED"
 	StatusEventTypeNameChanged       = "NAME_CHANGED"
@@ -350,10 +349,6 @@ type StatusEventStatChangedBody struct {
 	ExclRequestSent bool                   `json:"exclRequestSent"`
 	Updates         []stat.Type            `json:"updates"`
 	Values          map[string]interface{} `json:"values,omitempty"`
-}
-
-type StatusEventUpdatedBody struct {
-	UpdatedFields map[string]interface{} `json:"updatedFields"`
 }
 
 type StatusEventNameChangedBody struct {

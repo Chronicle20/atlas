@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -48,65 +47,64 @@ var knownEntryKeys = map[string]bool{
 	"fname": true, "options": true, "services": true,
 }
 
-// seedEntryMeta is the ONLY thing the generator models about a socket entry:
-// enough to resolve an fname (opcode, implementation name, direction) plus
-// its EXACT original raw bytes. Nothing else about the entry - key order,
-// the "services" array's compact-vs-expanded style, whitespace - is ever
-// re-derived from a struct: writeSeedTemplate patches Raw directly, so any
-// field the generator does not touch is physically incapable of changing.
+// seedDoc is the write model. Everything the generator does not touch is held
+// as a verbatim json.RawMessage, so re-marshalling cannot alter its semantic
+// content. Field order here is the output key order.
 //
-// This design exists because the naive approach (decode into a struct,
-// json.MarshalIndent the whole document back out) does NOT round-trip these
-// files byte-for-byte: encoding/json's Indent pass uniformly reformats the
-// ENTIRE byte stream it is given, including the parts held as json.RawMessage
-// for "verbatim" carry-through. Measured against the real seed templates
-// (services/atlas-configurations/seed-data/templates/), that breaks in three
-// independent ways: (1) every "services" array is hand-formatted on one
-// compact line ("services": ["login"] or ["login","channel"]) but Indent
-// always expands one element per line; (2) entries that carry both "services"
-// and "options" always order "services" first in the source, but Indent
-// applies whatever fixed struct-field order the Go type declares; (3) two of
-// the eleven files (gms_12_1, gms_92_1) format the FIRST element of several
-// arrays - including socket.handlers/writers themselves - with the opening
-// brace inlined onto the array's own line ("handlers": [{ ... rather than
-// "handlers": [\n  { ...), which Indent also cannot reproduce, and which
-// recurs inside sections (worlds, characters, options.types) the generator
-// never intends to touch at all. Patching each of those with a targeted
-// regex is unbounded whack-a-mole; splicing bytes in place sidesteps all
-// three (and any future one) by construction.
-type seedEntryMeta struct {
-	OpCode        string
-	Name          string // the handler or writer implementation name, whichever is present
-	IsHandler     bool   // true => anchor key is "handler"; false => "writer"
-	ExistingFName string // "" if this entry has no fname key yet
-	Raw           []byte // exact original bytes of this entry's JSON object
-	NewFName      string // set by resolution; "" means nothing resolved this run
+// NOTE (task-6 fix-up): this writes via json.MarshalIndent, which normalizes
+// formatting across the WHOLE document - including RawMessage content - to a
+// uniform 2-space-indent, one-array-element-per-line style. It does not
+// reproduce the real seed templates' existing formatting quirks (every
+// "services" array hand-compacted onto one line; entries with both "services"
+// and "options" ordering services first; two files inlining an array's first
+// "{" onto the opening "[" line). That was measured and is a deliberate,
+// accepted tradeoff: the simpler, more robust generator over a minimal diff.
+// The first --write run against the real templates (Task 7) will therefore
+// produce a large, mostly-cosmetic diff; every run after that is a no-op
+// (MarshalIndent's output is deterministic and idempotent - see
+// TestSeedFName_ReRunIsIdempotent).
+type seedDoc struct {
+	Region       json.RawMessage `json:"region"`
+	MajorVersion json.RawMessage `json:"majorVersion"`
+	MinorVersion json.RawMessage `json:"minorVersion"`
+	UsesPin      json.RawMessage `json:"usesPin"`
+	Socket       seedSocket      `json:"socket"`
+	Characters   json.RawMessage `json:"characters,omitempty"`
+	NPCs         json.RawMessage `json:"npcs,omitempty"`
+	Worlds       json.RawMessage `json:"worlds,omitempty"`
+	CashShop     json.RawMessage `json:"cashShop,omitempty"`
 }
 
-// effective is the fname this entry will carry after this run: the freshly
-// resolved value if one was found, else whatever was already on disk.
-func (e *seedEntryMeta) effective() string {
-	if e.NewFName != "" {
-		return e.NewFName
+type seedSocket struct {
+	Handlers []seedEntry `json:"handlers"`
+	Writers  []seedEntry `json:"writers"`
+}
+
+// seedEntry is the ONLY fully-modelled structure. loadSeedTemplate's
+// unknown-key check is what makes that safe: a socket entry carrying a key
+// outside knownEntryKeys stops the run rather than silently losing the key.
+type seedEntry struct {
+	OpCode    string          `json:"opCode"`
+	Validator string          `json:"validator,omitempty"`
+	Handler   string          `json:"handler,omitempty"`
+	Writer    string          `json:"writer,omitempty"`
+	FName     string          `json:"fname,omitempty"`
+	Options   json.RawMessage `json:"options,omitempty"`
+	Services  json.RawMessage `json:"services,omitempty"`
+}
+
+// Name returns the implementation name, whichever collection this entry is in.
+func (e seedEntry) Name() string {
+	if e.Handler != "" {
+		return e.Handler
 	}
-	return e.ExistingFName
-}
-
-// seedGroup is one of socket.handlers / socket.writers: its own exact
-// original raw bytes (the array literal, "[" through "]"), plus the ordered
-// per-entry metadata used to relocate and patch each entry within those bytes.
-type seedGroup struct {
-	Raw     []byte
-	Entries []*seedEntryMeta
+	return e.Writer
 }
 
 type seedTemplate struct {
-	Stem      string
-	Path      string
-	Raw       []byte // exact original full-file bytes, including trailing newline (or lack of one)
-	SocketRaw []byte // exact original bytes of the "socket": {...} value
-	Handlers  seedGroup
-	Writers   seedGroup
+	Stem string
+	Path string
+	Doc  seedDoc
 }
 
 func runSeedFName(args []string, stderr io.Writer) int {
@@ -168,7 +166,7 @@ func runSeedFName(args []string, stderr io.Writer) int {
 	totalEntries, totalResolved := 0, 0
 	for _, stem := range order {
 		st := templates[stem]
-		entries := len(st.Handlers.Entries) + len(st.Writers.Entries)
+		entries := len(st.Doc.Socket.Handlers) + len(st.Doc.Socket.Writers)
 		got := countResolved(st)
 		totalEntries += entries
 		totalResolved += got
@@ -190,17 +188,18 @@ func runSeedFName(args []string, stderr io.Writer) int {
 }
 
 // loadSeedTemplate decodes a template and refuses it if it carries any JSON key
-// the tool does not model. Guard 1 of the two fidelity guards. It also captures
-// the exact original raw bytes at every level (file, socket, each group, each
-// entry) that writeSeedTemplate later splices into - Guard 2.
+// the write model does not represent. Guard 1 of the two fidelity guards - the
+// primary protection now that writeSeedTemplate normalizes formatting across
+// the whole file: under a full reformat you cannot eyeball what got dropped,
+// so a surprise key must still be a loud, non-zero-exit stop.
 func loadSeedTemplate(stem, path string) (*seedTemplate, error) {
-	raw, err := os.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
 	var top map[string]json.RawMessage
-	if err := json.Unmarshal(raw, &top); err != nil {
+	if err := json.Unmarshal(b, &top); err != nil {
 		return nil, err
 	}
 	for k := range top {
@@ -210,83 +209,35 @@ func loadSeedTemplate(stem, path string) (*seedTemplate, error) {
 		}
 	}
 
-	socketRaw, ok := top["socket"]
-	if !ok {
-		return nil, fmt.Errorf("%s: missing required top-level key \"socket\"", path)
-	}
-	var sock map[string]json.RawMessage
-	if err := json.Unmarshal(socketRaw, &sock); err != nil {
-		return nil, fmt.Errorf("parse socket: %w", err)
-	}
-
-	handlers, err := loadSeedGroup(sock, "handlers")
-	if err != nil {
-		return nil, err
-	}
-	writers, err := loadSeedGroup(sock, "writers")
-	if err != nil {
-		return nil, err
-	}
-
-	return &seedTemplate{
-		Stem:      stem,
-		Path:      path,
-		Raw:       raw,
-		SocketRaw: []byte(socketRaw),
-		Handlers:  handlers,
-		Writers:   writers,
-	}, nil
-}
-
-// loadSeedGroup decodes one of socket.handlers / socket.writers: validates
-// every entry's key set (Guard 1) and captures each entry's exact original
-// raw bytes for later splicing (Guard 2). A group absent from socket entirely
-// (as in a minimal test fixture) is returned zero-valued, not an error.
-func loadSeedGroup(sock map[string]json.RawMessage, name string) (seedGroup, error) {
-	raw, ok := sock[name]
-	if !ok {
-		return seedGroup{}, nil
-	}
-	var entryRaws []json.RawMessage
-	if err := json.Unmarshal(raw, &entryRaws); err != nil {
-		return seedGroup{}, fmt.Errorf("parse socket.%s: %w", name, err)
-	}
-
-	g := seedGroup{Raw: []byte(raw)}
-	for i, er := range entryRaws {
-		var keys map[string]json.RawMessage
-		if err := json.Unmarshal(er, &keys); err != nil {
-			return seedGroup{}, fmt.Errorf("parse socket.%s[%d]: %w", name, i, err)
+	if raw, ok := top["socket"]; ok {
+		var sock map[string]json.RawMessage
+		if err := json.Unmarshal(raw, &sock); err != nil {
+			return nil, fmt.Errorf("parse socket: %w", err)
 		}
-		for k := range keys {
-			if !knownEntryKeys[k] {
-				return seedGroup{}, fmt.Errorf("unmodelled socket-entry key %q at socket.%s[%d] - refusing to rewrite", k, name, i)
+		for _, group := range []string{"handlers", "writers"} {
+			gr, ok := sock[group]
+			if !ok {
+				continue
+			}
+			var entries []map[string]json.RawMessage
+			if err := json.Unmarshal(gr, &entries); err != nil {
+				return nil, fmt.Errorf("parse socket.%s: %w", group, err)
+			}
+			for i, e := range entries {
+				for k := range e {
+					if !knownEntryKeys[k] {
+						return nil, fmt.Errorf("unmodelled socket-entry key %q at socket.%s[%d] - refusing to rewrite", k, group, i)
+					}
+				}
 			}
 		}
-
-		var typed struct {
-			OpCode  string `json:"opCode"`
-			Handler string `json:"handler"`
-			Writer  string `json:"writer"`
-			FName   string `json:"fname"`
-		}
-		if err := json.Unmarshal(er, &typed); err != nil {
-			return seedGroup{}, fmt.Errorf("parse socket.%s[%d]: %w", name, i, err)
-		}
-		isHandler := typed.Handler != ""
-		implName := typed.Writer
-		if isHandler {
-			implName = typed.Handler
-		}
-		g.Entries = append(g.Entries, &seedEntryMeta{
-			OpCode:        typed.OpCode,
-			Name:          implName,
-			IsHandler:     isHandler,
-			ExistingFName: typed.FName,
-			Raw:           []byte(er),
-		})
 	}
-	return g, nil
+
+	var doc seedDoc
+	if err := json.Unmarshal(b, &doc); err != nil {
+		return nil, err
+	}
+	return &seedTemplate{Stem: stem, Path: path, Doc: doc}, nil
 }
 
 // indexRegistryByOpcode builds "direction|opcode" -> fname, applying the
@@ -333,9 +284,9 @@ func indexRegistryByOpcode(vf *opregistry.VersionFile, regStem string, stderr io
 
 func applyDirect(st *seedTemplate, byOp map[string]string) map[string]string {
 	got := make(map[string]string)
-	apply := func(entries []*seedEntryMeta, dir opregistry.Direction, kind string) {
-		for _, e := range entries {
-			code, ok := parseSeedOpCode(e.OpCode)
+	apply := func(entries []seedEntry, dir opregistry.Direction, kind string) {
+		for i := range entries {
+			code, ok := parseSeedOpCode(entries[i].OpCode)
 			if !ok {
 				continue
 			}
@@ -343,46 +294,48 @@ func applyDirect(st *seedTemplate, byOp map[string]string) map[string]string {
 			if fn == "" {
 				continue
 			}
-			e.NewFName = fn
-			if e.Name != "" {
-				got[kind+"|"+e.Name] = fn
+			entries[i].FName = fn
+			if n := entries[i].Name(); n != "" {
+				got[kind+"|"+n] = fn
 			}
 		}
 	}
-	apply(st.Handlers.Entries, opregistry.DirServerbound, "handler")
-	apply(st.Writers.Entries, opregistry.DirClientbound, "writer")
+	apply(st.Doc.Socket.Handlers, opregistry.DirServerbound, "handler")
+	apply(st.Doc.Socket.Writers, opregistry.DirClientbound, "writer")
 	return got
 }
 
 func applyFallback(st *seedTemplate, fallback []string, resolved map[string]map[string]string) {
-	apply := func(entries []*seedEntryMeta, kind string) {
-		for _, e := range entries {
-			if e.Name == "" {
+	apply := func(entries []seedEntry, kind string) {
+		for i := range entries {
+			n := entries[i].Name()
+			if n == "" {
 				continue
 			}
 			for _, src := range fallback {
-				if fn := resolved[src][kind+"|"+e.Name]; fn != "" {
-					e.NewFName = fn
+				if fn := resolved[src][kind+"|"+n]; fn != "" {
+					entries[i].FName = fn
 					break
 				}
 			}
 		}
 	}
-	apply(st.Handlers.Entries, "handler")
-	apply(st.Writers.Entries, "writer")
+	apply(st.Doc.Socket.Handlers, "handler")
+	apply(st.Doc.Socket.Writers, "writer")
 }
 
 func countResolved(st *seedTemplate) int {
 	n := 0
-	count := func(entries []*seedEntryMeta) {
-		for _, e := range entries {
-			if e.effective() != "" {
-				n++
-			}
+	for _, e := range st.Doc.Socket.Handlers {
+		if e.FName != "" {
+			n++
 		}
 	}
-	count(st.Handlers.Entries)
-	count(st.Writers.Entries)
+	for _, e := range st.Doc.Socket.Writers {
+		if e.FName != "" {
+			n++
+		}
+	}
 	return n
 }
 
@@ -398,137 +351,15 @@ func parseSeedOpCode(s string) (int, bool) {
 	return int(n), true
 }
 
-// writeSeedTemplate patches the resolved fname values into the ORIGINAL file
-// bytes by byte-level splicing, bottom-up: entry -> group array -> socket ->
-// file. Every byte the generator did not need to change - including a whole
-// file where nothing resolved - is copied verbatim from st.Raw, never passed
-// through json.Marshal. This is what makes Guard 2 (verbatim carry-through)
-// actually hold against these files' real, non-uniform formatting instead of
-// only holding for inputs that happen to already match encoding/json's output
-// style.
+// writeSeedTemplate re-encodes the document with two-space indentation and a
+// trailing newline. Guard 2: every value the generator does not touch is a
+// json.RawMessage, so its semantic content round-trips unchanged even though
+// MarshalIndent normalizes the surrounding formatting (see the seedDoc
+// doc-comment).
 func writeSeedTemplate(st *seedTemplate) error {
-	handlersRaw, handlersChanged, err := spliceGroup(st.Handlers)
+	b, err := json.MarshalIndent(st.Doc, "", "  ")
 	if err != nil {
-		return fmt.Errorf("%s: splice handlers: %w", st.Stem, err)
+		return err
 	}
-	writersRaw, writersChanged, err := spliceGroup(st.Writers)
-	if err != nil {
-		return fmt.Errorf("%s: splice writers: %w", st.Stem, err)
-	}
-	if !handlersChanged && !writersChanged {
-		// Every entry already carries its resolved fname (or nothing resolved
-		// at all) - the file on disk already matches the desired state.
-		return nil
-	}
-
-	socketRaw := st.SocketRaw
-	if handlersChanged {
-		socketRaw, err = spliceOnce(socketRaw, st.Handlers.Raw, handlersRaw)
-		if err != nil {
-			return fmt.Errorf("%s: relocate handlers within socket: %w", st.Stem, err)
-		}
-	}
-	if writersChanged {
-		socketRaw, err = spliceOnce(socketRaw, st.Writers.Raw, writersRaw)
-		if err != nil {
-			return fmt.Errorf("%s: relocate writers within socket: %w", st.Stem, err)
-		}
-	}
-
-	fileRaw, err := spliceOnce(st.Raw, st.SocketRaw, socketRaw)
-	if err != nil {
-		return fmt.Errorf("%s: relocate socket within file: %w", st.Stem, err)
-	}
-	return os.WriteFile(st.Path, fileRaw, 0o644)
-}
-
-// spliceGroup rebuilds one group's array-literal bytes by walking its entries
-// in order, copying the untouched bytes between them (whitespace, commas, the
-// enclosing brackets) verbatim, and substituting each entry's own bytes with
-// spliceEntry's result. Because every copied span comes straight from g.Raw,
-// a group where no entry changed reproduces g.Raw byte-for-byte by
-// construction - there is no formatting step left that could disturb it.
-func spliceGroup(g seedGroup) ([]byte, bool, error) {
-	out := make([]byte, 0, len(g.Raw))
-	pos := 0
-	changed := false
-	for _, e := range g.Entries {
-		idx := bytes.Index(g.Raw[pos:], e.Raw)
-		if idx < 0 {
-			return nil, false, fmt.Errorf("could not relocate entry %q in its array - internal offset bug", e.Name)
-		}
-		idx += pos
-		out = append(out, g.Raw[pos:idx]...)
-		entryRaw, entryChanged, err := spliceEntry(e)
-		if err != nil {
-			return nil, false, err
-		}
-		out = append(out, entryRaw...)
-		changed = changed || entryChanged
-		pos = idx + len(e.Raw)
-	}
-	out = append(out, g.Raw[pos:]...)
-	return out, changed, nil
-}
-
-// spliceEntry returns this entry's raw bytes with its resolved fname applied:
-// unchanged if nothing resolved or the resolved value already matches what is
-// on disk; a targeted in-place value replacement if the entry already carries
-// a DIFFERENT fname (a re-run after the registry moved); otherwise a new
-// "fname" field spliced in immediately after the entry's "handler"/"writer"
-// key, matching that key's own indentation, so a fresh insertion reads as a
-// natural continuation of the existing entry rather than a reformat of it.
-func spliceEntry(e *seedEntryMeta) ([]byte, bool, error) {
-	if e.NewFName == "" || e.NewFName == e.ExistingFName {
-		return e.Raw, false, nil
-	}
-	if e.ExistingFName != "" {
-		oldField := []byte(`"fname": "` + e.ExistingFName + `"`)
-		newField := []byte(`"fname": "` + e.NewFName + `"`)
-		if bytes.Count(e.Raw, oldField) != 1 {
-			return nil, false, fmt.Errorf("entry %q: could not uniquely locate existing fname %q to update", e.Name, e.ExistingFName)
-		}
-		return bytes.Replace(e.Raw, oldField, newField, 1), true, nil
-	}
-
-	anchorKey := "writer"
-	if e.IsHandler {
-		anchorKey = "handler"
-	}
-	anchor := []byte(`"` + anchorKey + `": "` + e.Name + `"`)
-	if bytes.Count(e.Raw, anchor) != 1 {
-		return nil, false, fmt.Errorf("entry %q: could not uniquely locate %q key to anchor fname insertion", e.Name, anchorKey)
-	}
-	loc := bytes.Index(e.Raw, anchor)
-	anchorEnd := loc + len(anchor)
-
-	lineStart := bytes.LastIndexByte(e.Raw[:loc], '\n') + 1
-	indent := e.Raw[lineStart:loc]
-
-	var insertion bytes.Buffer
-	insertion.WriteString(",\n")
-	insertion.Write(indent)
-	insertion.WriteString(`"fname": "` + e.NewFName + `"`)
-
-	out := make([]byte, 0, len(e.Raw)+insertion.Len())
-	out = append(out, e.Raw[:anchorEnd]...)
-	out = append(out, insertion.Bytes()...)
-	out = append(out, e.Raw[anchorEnd:]...)
-	return out, true, nil
-}
-
-// spliceOnce replaces the single occurrence of old within parent with new,
-// failing loudly (rather than guessing) if old is not found in parent exactly
-// once - the same "surprise is a hard stop" discipline as the unknown-key
-// guards, applied to the byte-splicing machinery itself.
-func spliceOnce(parent, old, new []byte) ([]byte, error) {
-	if bytes.Count(parent, old) != 1 {
-		return nil, fmt.Errorf("expected byte span is not uniquely present in its parent")
-	}
-	idx := bytes.Index(parent, old)
-	out := make([]byte, 0, len(parent)-len(old)+len(new))
-	out = append(out, parent[:idx]...)
-	out = append(out, new...)
-	out = append(out, parent[idx+len(old):]...)
-	return out, nil
+	return os.WriteFile(st.Path, append(b, '\n'), 0o644)
 }

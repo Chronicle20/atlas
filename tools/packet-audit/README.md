@@ -111,3 +111,17 @@ lexicographically-first `op` name wins and the choice is logged to stderr.
 Re-run it after a version bring-up adds a registry. It refuses to rewrite any
 template carrying a JSON key it does not model, so a schema change is a hard
 stop rather than silent data loss.
+
+**`--write` normalizes formatting across the whole file, not just the lines it
+changes.** It writes via `json.MarshalIndent(doc, "", "  ")`, which reformats
+every array and object in the document to a uniform 2-space-indent,
+one-element-per-line style. The real seed templates predate this tool and
+carry several ad hoc conventions `MarshalIndent` does not reproduce — e.g.
+every `"services"` array hand-compacted onto one line, and two of the eleven
+files inlining an array's first `{` onto its opening `[` line. Semantic
+content (every key, value, and array element) is unaffected — only
+inter-token whitespace is — but this means **the first `--write` run against
+the real templates produces a large, mostly-cosmetic diff.** That tradeoff was
+deliberate: a simpler, more robust generator over a minimal diff. Every run
+after the first is a no-op, because `MarshalIndent`'s output is a
+deterministic function of the (by-then-already-normalized) document.

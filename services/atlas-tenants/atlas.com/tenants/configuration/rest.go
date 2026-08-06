@@ -394,6 +394,13 @@ type InstanceRouteRestModel struct {
 	BoardingWindowSeconds uint32   `json:"boardingWindowSeconds"`
 	TravelDurationSeconds uint32   `json:"travelDurationSeconds"`
 	TransitMessage        string   `json:"transitMessage,omitempty"`
+	// EffectItemIds are the consumable item ids atlas-transports applies on
+	// boarding and cancels on every terminal path of this route. Optional.
+	EffectItemIds []uint32 `json:"effectItemIds,omitempty"`
+	// ForcedReturnMapId is where atlas-transports warps a character whose
+	// travel timer expired, instead of destinationMapId. Zero means "not
+	// set". It mirrors the client's Map.wz info/forcedReturn node. Optional.
+	ForcedReturnMapId uint32 `json:"forcedReturnMapId,omitempty"`
 }
 
 // GetID returns the resource ID
@@ -459,6 +466,20 @@ func TransformInstanceRoute(tenantId uuid.UUID, data map[string]interface{}) (In
 
 	transitMessage, _ := attributes["transitMessage"].(string)
 
+	var effectItemIds []uint32
+	if val, ok := attributes["effectItemIds"].([]interface{}); ok {
+		for _, v := range val {
+			if f, ok := v.(float64); ok {
+				effectItemIds = append(effectItemIds, uint32(f))
+			}
+		}
+	}
+
+	forcedReturnMapId := uint32(0)
+	if val, ok := attributes["forcedReturnMapId"].(float64); ok {
+		forcedReturnMapId = uint32(val)
+	}
+
 	return InstanceRouteRestModel{
 		Id:                    id,
 		Uuid:                  tenant.DerivedId(tenantId, "instance-routes", id).String(),
@@ -470,6 +491,8 @@ func TransformInstanceRoute(tenantId uuid.UUID, data map[string]interface{}) (In
 		BoardingWindowSeconds: boardingWindowSeconds,
 		TravelDurationSeconds: travelDurationSeconds,
 		TransitMessage:        transitMessage,
+		EffectItemIds:         effectItemIds,
+		ForcedReturnMapId:     forcedReturnMapId,
 	}, nil
 }
 
@@ -487,6 +510,8 @@ func ExtractInstanceRoute(r InstanceRouteRestModel) (map[string]interface{}, err
 			"boardingWindowSeconds": r.BoardingWindowSeconds,
 			"travelDurationSeconds": r.TravelDurationSeconds,
 			"transitMessage":        r.TransitMessage,
+			"effectItemIds":         r.EffectItemIds,
+			"forcedReturnMapId":     r.ForcedReturnMapId,
 		},
 	}, nil
 }

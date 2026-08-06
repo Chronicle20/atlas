@@ -5,6 +5,7 @@ import (
 	character2 "atlas-buffs/kafka/message/character"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -284,4 +285,54 @@ func TestProcessor_UpdateStatValue_MissingBuffIsNoOp(t *testing.T) {
 	processor, _, _ := setupProcessorTest(t)
 	err := processor.UpdateStatValue(world.Id(0), 1000, 1111002, "COMBO", character2.StatOperationIncrement, 1, 6)
 	assert.NoError(t, err, "missing buff is a logged no-op, not an error")
+}
+
+// TestProcessor_ExpireForCharacter_PrunesLapsedBuff — the CANCEL_DEBUFF
+// reconcile path. Duration is MILLISECONDS, so a 1ms buff has lapsed by the
+// time the sweep runs and must be pruned. (task-190 FR-2.6.1)
+func TestProcessor_ExpireForCharacter_PrunesLapsedBuff(t *testing.T) {
+	processor, _, ctx := setupProcessorTest(t)
+
+	const characterId = uint32(5001)
+	assert.NoError(t, processor.Apply(world.Id(0), channel.Id(0), characterId, 0, 1002, 1, 1, setupProcessorTestChanges(), false, false))
+	time.Sleep(5 * time.Millisecond)
+
+	assert.NoError(t, processor.ExpireForCharacter(world.Id(0), characterId))
+
+	// The sweep pruned it: a second GetExpired finds nothing left to expire.
+	assert.Empty(t, GetRegistry().GetExpired(ctx, characterId))
+}
+
+// TestProcessor_ExpireForCharacter_NothingExpired — FR-2.9 / NFR-2.1: a nudge
+// for a character with nothing lapsed is a no-op. The live buff must survive.
+func TestProcessor_ExpireForCharacter_NothingExpired(t *testing.T) {
+	processor, _, ctx := setupProcessorTest(t)
+
+	const characterId = uint32(5000)
+	const sourceId = int32(1001)
+	assert.NoError(t, processor.Apply(world.Id(0), channel.Id(0), characterId, 0, sourceId, 1, 60_000, setupProcessorTestChanges(), false, false))
+
+	assert.NoError(t, processor.ExpireForCharacter(world.Id(0), characterId))
+
+	// Still resident: cancelling it now succeeds and returns the buff.
+	cancelled, err := GetRegistry().Cancel(ctx, characterId, sourceId)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, cancelled)
+}
+
+// TestProcessor_ExpireBuffs_StillSweepsFleetWide — the shared helper must not
+// change the fleet sweep's behaviour.
+func TestProcessor_ExpireBuffs_StillSweepsFleetWide(t *testing.T) {
+	processor, _, ctx := setupProcessorTest(t)
+
+	const charA = uint32(5002)
+	const charB = uint32(5003)
+	assert.NoError(t, processor.Apply(world.Id(0), channel.Id(0), charA, 0, 1003, 1, 1, setupProcessorTestChanges(), false, false))
+	assert.NoError(t, processor.Apply(world.Id(0), channel.Id(0), charB, 0, 1004, 1, 1, setupProcessorTestChanges(), false, false))
+	time.Sleep(5 * time.Millisecond)
+
+	assert.NoError(t, processor.ExpireBuffs())
+
+	assert.Empty(t, GetRegistry().GetExpired(ctx, charA))
+	assert.Empty(t, GetRegistry().GetExpired(ctx, charB))
 }

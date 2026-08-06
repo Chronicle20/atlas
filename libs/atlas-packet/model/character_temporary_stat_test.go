@@ -71,16 +71,17 @@ func TestCTSEncodeSlowDiseasePerStatLayout(t *testing.T) {
 	}
 	mask, stat := got[:16], got[16:26]
 
-	// Mask: SLOW plus the always-present TwoState base stat bits
-	// (EnergyCharge..Undead). The registry assigns the TwoState group shifts 82-88 on
-	// v83 -> all land in the high 64 bits, so uint32(H&0xFFFFFFFF)=0x01FC0000 is written
-	// to mask dword[1] (wire bytes 4-7), with RideVehicle at 0x00200000. This matches the
+	// Mask: SLOW only. The TwoState base group (EnergyCharge..Undead, v83 shifts
+	// 82-88 -> dword[1] 0x01FC0000) is NOT asserted, because this CTS holds none of
+	// those stats — claiming RideVehicle here made the client run
+	// ShowRideVehicleEffect on a mounted player for an unrelated disease (task-190).
+	// Bits map to the wire the same way regardless; this matches the
 	// v83 client's flag 1<<(i+82) read from wire bytes 4-7 (IDA SecondaryStat::
 	// DecodeForLocal @0x781D0E; UINT128 dword array is big-endian, AND'd in wire order).
 	// SLOW (shift 32) lands in dword[2] (wire bytes 8-11) at 0x00000001 -> LE 01 00 00 00.
 	wantMask := []byte{
 		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0xFC, 0x01,
+		0x00, 0x00, 0x00, 0x00, // no two-state base bits: this CTS holds none
 		0x01, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00,
 	}
@@ -175,9 +176,11 @@ func TestCTSMonsterRidingV95MaskAndLayout(t *testing.T) {
 
 	got := input.Encode(nil, ctx)(nil)
 
-	// Mask dword[0] (bytes 0-3) = 0x3C000000 -> LE 00 00 00 3C (RideVehicle bit 0x20000000 set).
-	if !bytes.Equal(got[0:4], []byte{0x00, 0x00, 0x00, 0x3C}) {
-		t.Fatalf("v95 mask dword[0] should be 0x3C000000 (RideVehicle@125 set); got % x", got[0:4])
+	// Mask dword[0] (bytes 0-3) = 0x20000000 -> LE 00 00 00 20: RideVehicle@125
+	// alone. The other two-state members are absent from this CTS, so their bits
+	// (and blocks) are not emitted.
+	if !bytes.Equal(got[0:4], []byte{0x00, 0x00, 0x00, 0x20}) {
+		t.Fatalf("v95 mask dword[0] should be 0x20000000 (RideVehicle@125 alone); got % x", got[0:4])
 	}
 	// dwords [1],[2],[3] (bytes 4-15) empty.
 	if !bytes.Equal(got[4:16], make([]byte, 12)) {
@@ -192,9 +195,12 @@ func TestCTSMonsterRidingV95MaskAndLayout(t *testing.T) {
 	if !bytes.Contains(got, want) {
 		t.Fatalf("v95 RideVehicle base stat (1902000,1004) missing; got % x", got)
 	}
-	// 16 mask + 2 leading + base blocks (EnergyCharge15+DashSpeed15+DashJump15+MonsterRiding13 = 58).
-	if len(got) != 16+2+58 {
-		t.Fatalf("v95 mount packet length: got %d want %d", len(got), 16+2+58)
+	// 16 mask + 2 leading + the ONE base block this CTS holds (MonsterRiding, 13).
+	// It used to be 58: EnergyCharge15 + DashSpeed15 + DashJump15 + MonsterRiding13,
+	// with the first three emitted as empty placeholders beside mask bits the CTS
+	// never held. Blocks are presence-gated now, in lockstep with the mask.
+	if len(got) != 16+2+13 {
+		t.Fatalf("v95 mount packet length: got %d want %d", len(got), 16+2+13)
 	}
 }
 
@@ -226,9 +232,10 @@ func TestCTSMonsterRidingV83MaskAndNoDoubleEncode(t *testing.T) {
 
 	got := input.Encode(nil, ctx)(nil)
 
-	// Mask dword[1] (bytes 4-7) = 0x01FC0000 -> LE 00 00 FC 01, includes RideVehicle 0x00200000.
-	if !bytes.Equal(got[4:8], []byte{0x00, 0x00, 0xFC, 0x01}) {
-		t.Fatalf("mask dword[1] should carry TwoState 0x01FC0000 (RideVehicle bit set); got % x", got[4:8])
+	// Mask dword[1] (bytes 4-7) = 0x00200000 -> LE 00 00 20 00: RideVehicle alone,
+	// not the whole two-state group.
+	if !bytes.Equal(got[4:8], []byte{0x00, 0x00, 0x20, 0x00}) {
+		t.Fatalf("mask dword[1] should carry RideVehicle 0x00200000 alone; got % x", got[4:8])
 	}
 	// Mask dword[2] (bytes 8-11) must be empty for a lone MonsterRiding stat.
 	if !bytes.Equal(got[8:12], []byte{0, 0, 0, 0}) {
@@ -298,22 +305,60 @@ func TestCTSHomingBeaconPre95PopulatedBlock(t *testing.T) {
 	}
 }
 
-// Without an active beacon the encode must stay byte-compatible with today:
-// the GuidedBullet slot still emits an empty block (16 bytes on GMS v61, 17
-// on every other pre-95 version).
+// An empty CTS emits no two-state trailer at all. Base bits and base blocks are
+// both presence-gated (task-190), so a CTS holding nothing claims nothing: 16
+// mask + the 2 leading defense bytes, on every version that takes the
+// non-legacy path.
 //
-// The length assertion runs per version and is the cheap falsifier for group
-// membership (PRD gap 6): the expected trailer size encodes which two-state
-// group shape that version uses. If one of these fails, do NOT adjust the
-// constant to make it pass — that version's group differs and must be
-// established from IDA evidence first.
+// This test used to assert a fixed per-version trailer — 88 bytes on GMS v61's
+// 6-member group, 110 on the classic 7-member group — because absent members
+// were emitted as empty placeholder blocks. Those constants now live on
+// TestCTSTwoStateGroupShape below, which exercises them by populating the group
+// rather than by padding it.
+func TestCTSAbsentTwoStateStatsEmitNoTrailer(t *testing.T) {
+	for _, v := range []struct {
+		name   string
+		region string
+		major  uint16
+	}{
+		{"GMS v61", "GMS", 61},
+		{"GMS v72", "GMS", 72},
+		{"GMS v79", "GMS", 79},
+		{"GMS v83", "GMS", 83},
+		{"GMS v84", "GMS", 84},
+		{"GMS v87", "GMS", 87},
+		{"GMS v92", "GMS", 92},
+		{"JMS v185", "JMS", 185},
+	} {
+		t.Run(v.name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.region, v.major, 1)
+			input := NewCharacterTemporaryStat()
+
+			got := input.Encode(nil, ctx)(nil)
+
+			if len(got) != 16+2 {
+				t.Fatalf("empty %s CTS length: got %d want %d (mask + defense bytes, no trailer)", v.name, len(got), 16+2)
+			}
+			if !bytes.Equal(got[0:16], make([]byte, 16)) {
+				t.Fatalf("empty %s CTS mask: got % x want all zero", v.name, got[0:16])
+			}
+		})
+	}
+}
+
+// TestCTSTwoStateGroupShape is the falsifier for two-state group membership and
+// block sizes (PRD gap 6), and the home of the constants the old empty-trailer
+// assertion carried. Populating every member of a version's group makes the
+// whole trailer appear, so its total length still encodes the group shape.
 //
 // GMS v61 is IDA-verified (task-167) as a 6-member group (no Undead) with a
 // 12-byte base block (narrowTimeField, no leading bool-prefixed time byte):
-// 14+14+14+12+18+16 = 88, so its empty-CTS total is 16+2+88 = 106, not the
-// 128 every other pre-95 version below uses (16+2+110, the classic 7-member
-// group at 15+15+15+13+20+17+15 = 110).
-func TestCTSHomingBeaconPre95AbsentStaysEmpty(t *testing.T) {
+// 14+14+14+12+18+16 = 88. Every other pre-95 version uses the classic 7-member
+// group at 15+15+15+13+20+17+15 = 110.
+//
+// If one of these fails, do NOT adjust the constant to make it pass — that
+// version's group differs and must be established from IDA evidence first.
+func TestCTSTwoStateGroupShape(t *testing.T) {
 	for _, v := range []struct {
 		name       string
 		region     string
@@ -331,14 +376,17 @@ func TestCTSHomingBeaconPre95AbsentStaysEmpty(t *testing.T) {
 	} {
 		t.Run(v.name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.region, v.major, 1)
+			tn, _ := tenant.Create([16]byte{}, v.region, v.major, 1)
 			input := NewCharacterTemporaryStat()
+			for _, bs := range twoStateBaseStats(tn) {
+				input.AddStat(nil)(tn)(string(bs.name), 1, 1, 1, time.Now().Add(time.Minute))
+			}
 
 			got := input.Encode(nil, ctx)(nil)
 
-			// Empty CTS: 16 mask + 2 leading + the version's two-state trailer.
 			want := 16 + 2 + v.trailerLen
 			if len(got) != want {
-				t.Fatalf("empty %s CTS length: got %d want %d", v.name, len(got), want)
+				t.Fatalf("fully-populated %s two-state trailer: got %d want %d", v.name, len(got), want)
 			}
 		})
 	}
@@ -349,8 +397,8 @@ func TestCTSHomingBeaconPre95AbsentStaysEmpty(t *testing.T) {
 // is nOption=mobId | rOption=skillId | plain 4-byte field (narrowTimeField,
 // no bool prefix) | dwMobId=mobId — 16 bytes total (vs 17 on every other
 // pre-95 version, whose base uses the 5-byte bool-prefixed time field
-// instead). Total packet length is the 106-byte empty trailer unchanged
-// (GuidedBullet's populated and empty blocks are the same size).
+// instead). The beacon is the only stat held, so it is the only block on the
+// wire: 16 mask + 2 defense + 16.
 func TestCTSHomingBeaconV61PopulatedBlock(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 61, 1)
 	tn, _ := tenant.Create([16]byte{}, "GMS", 61, 1)
@@ -360,11 +408,9 @@ func TestCTSHomingBeaconV61PopulatedBlock(t *testing.T) {
 
 	got := input.Encode(nil, ctx)(nil)
 
-	// Total length: 16 mask + 2 leading + 88-byte trailer (14+14+14+12+18+16),
-	// unchanged from the empty case since GuidedBullet's block size (16) is
-	// the same whether populated or not.
-	if len(got) != 16+2+88 {
-		t.Fatalf("v61 beacon packet length: got %d want %d", len(got), 16+2+88)
+	// 16 mask + 2 leading + the one 16-byte GuidedBullet block.
+	if len(got) != 16+2+16 {
+		t.Fatalf("v61 beacon packet length: got %d want %d", len(got), 16+2+16)
 	}
 
 	// nOption=1000001 then rOption=5211006 as consecutive LE int32s.
@@ -419,11 +465,10 @@ func TestCTSHomingBeaconLegacyVersionsHaveNoTrailer(t *testing.T) {
 }
 
 // TestCTSHomingBeaconV95MaskAndBlock pins the v95 beacon give: bit 127
-// (0x80000000 in wire dword[0]) joins the 4 always-set two-state bits
-// (0x3C000000), and the trailer is the status-quo 58 bytes plus one populated
-// 17-byte GuidedBullet block. IDA: v95 group @SecondaryStat::SecondaryStat
-// 0x72F190, GuidedBullet DecodeForClient 0x727180, mask-gated tail read
-// 0x73DBA0 (design.md §2.4).
+// (0x80000000 in wire dword[0]) and one populated 17-byte GuidedBullet block,
+// with no other two-state bit or block, since the CTS holds nothing else. IDA:
+// v95 group @SecondaryStat::SecondaryStat 0x72F190, GuidedBullet
+// DecodeForClient 0x727180, mask-gated tail read 0x73DBA0 (design.md §2.4).
 func TestCTSHomingBeaconV95MaskAndBlock(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 95, 1)
 	tn, _ := tenant.Create([16]byte{}, "GMS", 95, 1)
@@ -432,16 +477,16 @@ func TestCTSHomingBeaconV95MaskAndBlock(t *testing.T) {
 
 	got := input.Encode(nil, ctx)(nil)
 
-	// dword[0] = 0x3C000000 | 0x80000000 = 0xBC000000 -> LE bytes 00 00 00 BC.
-	if !bytes.Equal(got[0:4], []byte{0x00, 0x00, 0x00, 0xBC}) {
-		t.Fatalf("v95 mask dword[0]: got % x want 00 00 00 bc", got[0:4])
+	// dword[0] = 0x80000000 -> LE bytes 00 00 00 80.
+	if !bytes.Equal(got[0:4], []byte{0x00, 0x00, 0x00, 0x80}) {
+		t.Fatalf("v95 mask dword[0]: got % x want 00 00 00 80", got[0:4])
 	}
 	if !bytes.Equal(got[4:16], make([]byte, 12)) {
 		t.Fatalf("v95 mask dwords[1..3] should be empty; got % x", got[4:16])
 	}
-	// 16 mask + 2 leading + 58 status-quo blocks + 17 GuidedBullet.
-	if len(got) != 16+2+58+17 {
-		t.Fatalf("v95 beacon packet length: got %d want %d", len(got), 16+2+58+17)
+	// 16 mask + 2 leading + 17 GuidedBullet.
+	if len(got) != 16+2+17 {
+		t.Fatalf("v95 beacon packet length: got %d want %d", len(got), 16+2+17)
 	}
 	// Populated block: nOption=1000001, rOption=5220011 (0x004FA6AB).
 	head := []byte{0x41, 0x42, 0x0F, 0x00, 0xAB, 0xA6, 0x4F, 0x00}
@@ -454,26 +499,23 @@ func TestCTSHomingBeaconV95MaskAndBlock(t *testing.T) {
 	}
 }
 
-// Non-beacon v95 traffic must stay byte-identical to the current truncated
-// encode (regression safety for every existing v95 buff packet).
-// TestCTSMonsterRidingV95MaskAndLayout (above) already pins the mount case;
-// this pins the empty case.
-func TestCTSEmptyV95StaysStatusQuo(t *testing.T) {
+// An empty v95 CTS claims nothing and carries no trailer.
+func TestCTSEmptyV95ClaimsNothing(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 95, 1)
 	input := NewCharacterTemporaryStat()
 	got := input.Encode(nil, ctx)(nil)
-	if len(got) != 16+2+58 {
-		t.Fatalf("empty v95 CTS length: got %d want %d", len(got), 16+2+58)
+	if len(got) != 16+2 {
+		t.Fatalf("empty v95 CTS length: got %d want %d", len(got), 16+2)
 	}
-	if !bytes.Equal(got[0:4], []byte{0x00, 0x00, 0x00, 0x3C}) {
-		t.Fatalf("empty v95 mask dword[0]: got % x want 00 00 00 3c", got[0:4])
+	if !bytes.Equal(got[0:16], make([]byte, 16)) {
+		t.Fatalf("empty v95 mask: got % x want all zero", got[0:16])
 	}
 }
 
-// TestCTSPartyBoosterV95Block pins the conditional PartyBooster member:
-// bit 126 (0x40000000) and a 20-byte block (base 13 + tCurrentTime 5 +
-// usExpireTerm 2 — IDA DecodeForClient 0x72C600). PartyBooster has no
-// producer in atlas yet; this exercises the verified wire slot only.
+// TestCTSPartyBoosterV95Block pins the PartyBooster member: bit 126
+// (0x40000000) and a 20-byte block (base 13 + tCurrentTime 5 + usExpireTerm 2 —
+// IDA DecodeForClient 0x72C600). PartyBooster has no producer in atlas yet;
+// this exercises the verified wire slot only.
 func TestCTSPartyBoosterV95Block(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 95, 1)
 	tn, _ := tenant.Create([16]byte{}, "GMS", 95, 1)
@@ -482,11 +524,11 @@ func TestCTSPartyBoosterV95Block(t *testing.T) {
 
 	got := input.Encode(nil, ctx)(nil)
 
-	if !bytes.Equal(got[0:4], []byte{0x00, 0x00, 0x00, 0x7C}) {
-		t.Fatalf("v95 mask dword[0] with PartyBooster: got % x want 00 00 00 7c", got[0:4])
+	if !bytes.Equal(got[0:4], []byte{0x00, 0x00, 0x00, 0x40}) {
+		t.Fatalf("v95 mask dword[0] with PartyBooster: got % x want 00 00 00 40", got[0:4])
 	}
-	if len(got) != 16+2+58+20 {
-		t.Fatalf("v95 PartyBooster packet length: got %d want %d", len(got), 16+2+58+20)
+	if len(got) != 16+2+20 {
+		t.Fatalf("v95 PartyBooster packet length: got %d want %d", len(got), 16+2+20)
 	}
 }
 
@@ -514,46 +556,46 @@ func TestCTSPartyBoosterV95RoundTrip(t *testing.T) {
 // stat is (incorrectly) present upstream: HOMING_BEACON is caster-only and the
 // remote-reader path is unverified (FR-4.5). The lib guarantees this by CTS
 // construction (channel never AddStats it on foreign bodies); this test pins
-// that an EMPTY foreign v95 CTS stays at the status-quo length.
-func TestCTSForeignEmptyV95StaysStatusQuo(t *testing.T) {
+// that an EMPTY foreign v95 CTS carries no trailer at all.
+func TestCTSForeignEmptyV95ClaimsNothing(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 95, 1)
 	input := NewCharacterTemporaryStat()
 	got := input.EncodeForeign(nil, ctx)(nil)
-	if len(got) != 16+2+58 {
-		t.Fatalf("empty foreign v95 CTS length: got %d want %d", len(got), 16+2+58)
+	if len(got) != 16+2 {
+		t.Fatalf("empty foreign v95 CTS length: got %d want %d", len(got), 16+2)
 	}
 }
 
-// F1 regression: a cancel mask must contain ONLY the canceled stats — never
-// the unconditional two-state group bits. Under the old EncodeMask-reused
-// cancel, ANY cancel cleared every two-state stat client-side (v83 reset
-// @0xA2071F, v95 @0x9F2AB0 clear every masked stat).
-func TestCancelMaskContainsOnlyActiveStats(t *testing.T) {
+// The mask must contain ONLY the stats the CTS holds — never the two-state
+// group bits, which EncodeMask used to assert unconditionally. On the reset
+// path that made ANY cancel clear every two-state stat client-side (v83 reset
+// @0xA2071F, v95 @0x9F2AB0 clear every masked stat); on the set path it made
+// every buff give claim a mount.
+func TestMaskContainsOnlyActiveStats(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
 			cts := NewCharacterTemporaryStat()
 			cts.AddStat(nil)(tn)(string(character.TemporaryStatTypeInvincible), 2301003, 30, 20, time.Now().Add(time.Minute))
 
-			mask := cts.CancelMask(tn)
+			mask := cts.activeMask()
 			reg := buildCharacterTemporaryStatRegistry(tn)
 			inv := reg.byName[character.TemporaryStatTypeInvincible]
 			if mask.And(inv.mask).IsZero() {
-				t.Fatal("cancel mask missing the canceled stat's bit")
+				t.Fatal("mask missing the active stat's bit")
 			}
 			riding := reg.byName[character.TemporaryStatTypeMonsterRiding]
 			if !mask.And(riding.mask).IsZero() {
-				t.Fatal("cancel mask must not contain inactive two-state bits (F1)")
+				t.Fatal("mask must not contain inactive two-state bits")
 			}
 		})
 	}
 }
 
-func TestCancelMaskEmptyForEmptyCTS(t *testing.T) {
-	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
+func TestMaskEmptyForEmptyCTS(t *testing.T) {
 	cts := NewCharacterTemporaryStat()
-	if !cts.CancelMask(tn).IsZero() {
-		t.Fatal("empty CTS must produce an empty cancel mask")
+	if !cts.activeMask().IsZero() {
+		t.Fatal("empty CTS must produce an empty mask")
 	}
 }
 

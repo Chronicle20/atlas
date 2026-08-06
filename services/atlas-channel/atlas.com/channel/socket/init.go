@@ -2,6 +2,7 @@ package socket
 
 import (
 	"atlas-channel/channel"
+	"atlas-channel/character/statreset"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/shopscanner"
@@ -50,6 +51,9 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 					socket.SetDestroyer(func(sessionId uuid.UUID) {
 						sp.IfPresentById(sessionId, func(s session.Model) error {
 							shopscanner.GetRegistry().ClearCharacter(t, s.CharacterId())
+							// Without this the throttle map leaks one entry per
+							// character ever seen by this pod (task-190).
+							statreset.GetRegistry().ClearCharacter(t, s.CharacterId())
 							return nil
 						})
 						sp.DestroyByIdWithSpan(sessionId)

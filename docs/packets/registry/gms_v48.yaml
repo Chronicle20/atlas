@@ -1018,6 +1018,14 @@
   ida:
     address: 7458905
   note: 'BODY-VERIFIED send-site 0x71d059: CUserPool::GetRemoteUser(a2) then COutPacket(76)+Encode4(remoteCharOid)+Encode4(a2=charId) + SetExclRequestSent, sets this[2079]=1. Called from the field cursor-click handler sub_69FA53 when clicking a remote player. No trailing Enc1(petInfo) (added post-v48). = CHAR_INFO_REQUEST. v61 CHAR_INFO_REQUEST=89 (Delta-13; non-uniform — GIVE_FAME below is Delta0).'
+- op: CANCEL_DEBUFF
+  direction: serverbound
+  opcode: 78
+  fname: CWvsContext::CheckTemporaryStatDuration
+  provenance: ida-discovered
+  ida:
+    address: 7450918
+  note: 'Empty body: COutPacket(78) then SendPacket with no intervening encode calls. The v48 client uses the three-argument COutPacket::COutPacket(v5, 78, 0) constructor — a client-side construction detail with no wire consequence. Corrects a prior n-a assertion (task-190).'
 - op: GIVE_FAME
   direction: serverbound
   opcode: 74

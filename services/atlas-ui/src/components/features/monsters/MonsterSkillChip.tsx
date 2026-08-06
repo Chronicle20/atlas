@@ -111,7 +111,13 @@ function summarizeEffect(
   const rows: { label: string; value: string }[] = [];
   if (a.mp_con > 0)
     rows.push({ label: "MP cost", value: a.mp_con.toLocaleString() });
-  if (a.duration > 0) rows.push({ label: "Duration", value: `${a.duration}s` });
+  // `duration` is MILLISECONDS from atlas-data (task-190 FR-1.1 — mobskill
+  // reader.go is the single seconds→ms conversion point). Render as seconds.
+  if (a.duration > 0)
+    rows.push({
+      label: "Duration",
+      value: `${(a.duration / 1000).toLocaleString()}s`,
+    });
   if (a.prop > 0 && a.prop !== 100)
     rows.push({ label: "Proc", value: `${a.prop}%` });
   if (a.hp > 0 && a.hp < 100)

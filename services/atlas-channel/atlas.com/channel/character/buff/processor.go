@@ -23,6 +23,7 @@ type Processor interface {
 	Cancel(f field.Model, characterId uint32, sourceId int32) error
 	UpdateStatValue(f field.Model, characterId uint32, sourceId int32, statType string, operation string, amount int32, capValue int32) error
 	CancelByTypes(f field.Model, characterId uint32, types []string) error
+	Expire(f field.Model, characterId uint32) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -81,4 +82,13 @@ func (p *ProcessorImpl) UpdateStatValue(f field.Model, characterId uint32, sourc
 func (p *ProcessorImpl) CancelByTypes(f field.Model, characterId uint32, types []string) error {
 	p.l.Debugf("Character [%d] cancelling buffs by types %v.", characterId, types)
 	return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(CancelByTypesCommandProvider(f, characterId, types))
+}
+
+// Expire asks atlas-buffs to re-evaluate this character's buffs and announce
+// whatever has lapsed. Triggered by the client's CANCEL_DEBUFF nudge, which
+// carries no payload — so this cannot and must not cancel by name. A sweep
+// that finds nothing lapsed emits nothing (FR-2.9 / NFR-2.1). (task-190)
+func (p *ProcessorImpl) Expire(f field.Model, characterId uint32) error {
+	p.l.Debugf("Character [%d] requesting buff expiry sweep.", characterId)
+	return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(ExpireCommandProvider(f, characterId))
 }

@@ -1,0 +1,11 @@
+{
+  "WriterName": "CancelDebuff",
+  "IDAName": "CWvsContext::CheckTemporaryStatDuration",
+  "Address": "0x84374e",
+  "Variant": "GMS/v61",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/cancel_debuff.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -102,6 +102,24 @@ func CancelByTypesCommandProvider(f field.Model, characterId uint32, types []str
 	return producer.SingleMessageProvider(key, value)
 }
 
+// ExpireCommandProvider asks atlas-buffs to sweep ONE character's buffs. The
+// world rides in the envelope: the channel knows the live session's world, and
+// that is authoritative for an in-session character (the fleet sweep instead
+// reads world from the registry model). (task-190 FR-2.6)
+func ExpireCommandProvider(f field.Model, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &buff.Command[buff.ExpireCommandBody]{
+		WorldId:     f.WorldId(),
+		ChannelId:   f.ChannelId(),
+		MapId:       f.MapId(),
+		Instance:    f.Instance(),
+		CharacterId: characterId,
+		Type:        buff.CommandTypeExpire,
+		Body:        buff.ExpireCommandBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func UpdateStatValueCommandProvider(f field.Model, characterId uint32, sourceId int32, statType string, operation string, amount int32, capValue int32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &buff.Command[buff.UpdateStatValueCommandBody]{

@@ -624,44 +624,41 @@ func legacyGmsMask(t tenant.Model) bool {
 	return t.Region() == "GMS" && t.MajorVersion() < 61
 }
 
+// EncodeMask writes the 128-bit SecondaryStat mask: one bit per stat this CTS
+// actually holds, and nothing else. It is shared by the SET (GIVE_BUFF) and
+// RESET (CANCEL_BUFF) paths, which differ only in whether value/base blocks
+// follow — never in which bits are claimed.
+//
+// This used to OR in the entire TwoState/base group (EnergyCharge, DashSpeed,
+// DashJump, MonsterRiding, SpeedInfusion, HomingBeacon, Undead) unconditionally,
+// on the theory that the client reads a fixed base-stat group. It does not: it
+// reads one base block per SET base bit, so claiming a base stat the CTS does
+// not hold is both a lie and a wire cost.
+//
+// It was also a live bug (task-190). Both CWvsContext::OnTemporaryStatSet and
+// ::OnTemporaryStatReset branch on the received mask:
+//
+//	if (mask & CTS_RideVehicle)  CUser::ShowRideVehicleEffect(...)   // or SendSkillCancelRequest
+//	if (mask & CTS_GuidedBullet) CMobPool::ResetGuidedMob(...)       // CMob::SetGuided on set
+//
+// so every buff give and every buff cancel — a mob's Slow expiring, say — drove
+// the ride-vehicle and guided-bullet paths for a player who was simply standing
+// there, desyncing client and server about whether they were mounted. Verified
+// on GMS v61 (@0x84353a), v72 (@0x918f3c), v83 (@0xa2071f / @0xa202be) and v95
+// (@0x9f2ab0, whose PDB-backed symbols name CTS_RideVehicle_2 and
+// CTS_GuidedBullet_0 outright), plus the foreign path
+// CUserRemote::OnResetTemporaryStat (v83 @0x983921).
+//
+// The per-version shift already places each bit where the client reads it: on
+// v83 RideVehicle is shift 85 -> wire bytes 4-7, matching
+// SecondaryStat::DecodeForLocal's flag 1<<(i+82). No version-specific mask
+// placement is needed.
+//
+// getBaseTemporaryStats is gated on the same presence test, so bits and blocks
+// cannot drift apart.
 func (m *CharacterTemporaryStat) EncodeMask(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
-		reg := buildCharacterTemporaryStatRegistry(t)
-		mask := tool.Uint128{}
-		// The TwoState/base stats are always present and always encoded as base-stat
-		// blocks (see getBaseTemporaryStats), so their mask bits are set
-		// unconditionally. The registry's per-version shift already places them where
-		// the client reads them: on v83 RideVehicle is shift 85 -> wire bytes 4-7,
-		// matching SecondaryStat::DecodeForLocal's flag 1<<(i+82) (IDA @0x781D0E). No
-		// version-specific mask placement is needed.
-		for _, bs := range twoStateBaseStats(t) {
-			if bs.conditional {
-				// Conditional members' bits are set by the active-stats loop
-				// below only when the stat is present (v95 mask-gated read).
-				continue
-			}
-			if st, ok := reg.byName[bs.name]; ok {
-				mask = mask.Or(st.mask)
-			}
-		}
-
-		if isGmsV61(t) {
-			// GMS v61 has no Undead two-state slot (task-167) - twoStateBaseStats
-			// omits it from the 6-member block list above so no base-stat block is
-			// written for it. The registry still assigns Undead a mask bit for
-			// wire-numbering continuity with the pre-95 scheme, and existing
-			// BuffGive/BuffCancel fixtures pin that bit as always set on v61; this
-			// is harmless (the v61 client's two-state loop bound is hard-coded to 6
-			// and never tests a bit outside that range), so it is preserved here
-			// rather than treated as a block-membership signal.
-			if st, ok := reg.byName[character.TemporaryStatTypeUndead]; ok {
-				mask = mask.Or(st.mask)
-			}
-		}
-
-		for _, v := range m.stats {
-			mask = mask.Or(v.statType.mask)
-		}
+		mask := m.activeMask()
 
 		if legacyGmsMask(t) {
 			// Pre-v61 GMS: 8-byte little-endian mask (DecodeBuffer 8). Bits 0-46
@@ -676,22 +673,10 @@ func (m *CharacterTemporaryStat) EncodeMask(l logrus.FieldLogger, t tenant.Model
 	}
 }
 
-func writeMask(w *response.Writer, mask tool.Uint128) {
-	w.WriteInt(uint32(mask.H >> 32))
-	w.WriteInt(uint32(mask.H & 0xFFFFFFFF))
-	w.WriteInt(uint32(mask.L >> 32))
-	w.WriteInt(uint32(mask.L & 0xFFFFFFFF))
-}
-
-// CancelMask returns the mask of ONLY the stats present on this CTS — never
-// the unconditional two-state group bits EncodeMask always sets for the give
-// shape. Cancel packets must use this instead: the client's
-// TemporaryStatReset clears EVERY masked stat (v83 @0xA2071F, v95 @0x9F2AB0),
-// so a cancel carrying the unconditional two-state bits (RideVehicle,
-// DashSpeed/DashJump, SpeedInfusion/PartyBooster, HomingBeacon, Undead)
-// destroys any active mount/dash/energy-charge/beacon even when the caller
-// only meant to cancel one unrelated buff (design.md §3 F1).
-func (m *CharacterTemporaryStat) CancelMask(t tenant.Model) tool.Uint128 {
+// activeMask is the bit set EncodeMask claims: one bit per stat this CTS holds,
+// and nothing else. Split out so tests can assert the invariant directly rather
+// than by reading it back off the wire.
+func (m *CharacterTemporaryStat) activeMask() tool.Uint128 {
 	mask := tool.Uint128{}
 	for _, v := range m.stats {
 		mask = mask.Or(v.statType.mask)
@@ -699,20 +684,19 @@ func (m *CharacterTemporaryStat) CancelMask(t tenant.Model) tool.Uint128 {
 	return mask
 }
 
-// EncodeCancelMask writes CancelMask in the same wire layout EncodeMask uses
-// for its mask (8-byte legacy pre-v61 GMS / 16-byte UINT128 everywhere else)
-// — only the bits differ, never the width, so DecodeMask (shared by both
-// paths) stays a single implementation.
-func (m *CharacterTemporaryStat) EncodeCancelMask(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
-		mask := m.CancelMask(t)
-		if legacyGmsMask(t) {
-			w.WriteLong(mask.L)
-			return
-		}
-		writeMask(w, mask)
-	}
+func writeMask(w *response.Writer, mask tool.Uint128) {
+	w.WriteInt(uint32(mask.H >> 32))
+	w.WriteInt(uint32(mask.H & 0xFFFFFFFF))
+	w.WriteInt(uint32(mask.L >> 32))
+	w.WriteInt(uint32(mask.L & 0xFFFFFFFF))
 }
+
+// task-167 carried a separate CancelMask/EncodeCancelMask pair here, whose whole
+// job was to give the RESET path a present-stats-only mask while EncodeMask kept
+// asserting the two-state group for the SET path. EncodeMask now claims only the
+// stats the CTS holds on both paths (task-190), so the cancel-specific pair was
+// exactly EncodeMask and has been dropped rather than kept as a second spelling
+// of it.
 
 // movementAffectingStatNames is the version-gated mirror of the client's
 // movement filter: the reset/give trailing byte is read ONLY when the
@@ -843,11 +827,19 @@ func movementAffectingStatNames(t tenant.Model) []character.TemporaryStatType {
 }
 
 // MovementAffectingMask returns the movement filter as a mask for this
-// tenant's registry layout. Writers AND their packet mask against it to
-// decide whether the client will read the trailing movement byte. A name
-// with no entry in this tenant's registry (e.g. Flying/Frozen on a version
-// whose registry doesn't allocate them) is silently skipped — see
-// movementAffectingStatNames.
+// tenant's registry layout. A name with no entry in this tenant's registry
+// (e.g. Flying/Frozen on a version whose registry doesn't allocate them) is
+// silently skipped — see movementAffectingStatNames.
+//
+// NOT currently wired into any writer. BuffCancel/BuffCancelForeign write the
+// trailing nSecondaryStatChangedPoint byte unconditionally, which is the
+// fail-safe direction: an unread trailing byte is slack the client ignores,
+// while omitting one the client does read runs it off the end of the packet.
+// Gating the write on this mask is only safe once every version's filter is
+// name-resolved, and it is not — v72/v79/v92/JMS bits are positional or
+// inferred (see the per-version caveats in movement-filter.md). This stays
+// here, with its membership test, so that re-verification flips a switch
+// instead of redoing the derivation.
 func MovementAffectingMask(t tenant.Model) tool.Uint128 {
 	reg := buildCharacterTemporaryStatRegistry(t)
 	mask := tool.Uint128{}
@@ -1013,12 +1005,6 @@ const (
 type twoStateStat struct {
 	name character.TemporaryStatType
 	kind twoStateKind
-	// conditional members (v95 PartyBooster/GuidedBullet) set their mask bit and
-	// write their block ONLY when the stat is active. The v95 client's two-state
-	// trailer read is mask-gated per member (IDA @0x73DBA0), so absent members are
-	// simply skipped; pre-95 clients read all 7 blocks unconditionally, so pre-95
-	// members are never conditional. design.md §2.4/§4.4.
-	conditional bool
 }
 
 // isGmsV61 gates GMS v61's structurally distinct two-state group: 6 members
@@ -1033,58 +1019,52 @@ func isGmsV61(t tenant.Model) bool {
 	return t.Region() == "GMS" && t.MajorVersion() == 61
 }
 
-// twoStateBaseStats returns the two-state/base stat group for this tenant, in the
-// exact order the client reads their trailing base-stat blocks. These stats are
-// always encoded as base-stat blocks (never per-stat value blocks). v72/v79/v83/
-// v84/v87/v92/JMS use the classic 7-member group, whose 7 members are all
-// unconditional (mask bit always set, block always written) because pre-95
-// clients read all 7 blocks unconditionally.
+// twoStateBaseStats returns the two-state/base stat group this tenant's client
+// knows, in the exact order it reads their trailing base-stat blocks. Membership
+// and order are what this list fixes; whether a given member appears on the wire
+// is decided per packet by presence (EncodeMask / getBaseTemporaryStats), not
+// here. These stats are always encoded as base-stat blocks, never as per-stat
+// value blocks.
 //
-// GMS v95's two-state group is IDA-verified as 6 members (design.md §2.4):
-// EnergyCharge(122)/DashSpeed(123)/DashJump(124)/RideVehicle(125) stay
-// unconditional (status quo, fixture-locked), and PartyBooster(126,
-// twoStatePartyBooster, 20B)/GuidedBullet(127, twoStateGuidedBullet, 17B) are
-// conditional — the v95 client's trailer read is mask-gated per member (IDA
-// @0x73DBA0), so these two only appear when active. Undead has no v95 wire slot
-// (bit 128 would overflow the 128-bit mask). Block sizes 15/15/15/13/20/17.
+// v72/v79/v83/v84/v87/v92/JMS use the classic 7-member group.
+//
+// GMS v95's group is IDA-verified as 6 members (design.md §2.4): EnergyCharge(122),
+// DashSpeed(123), DashJump(124), RideVehicle(125), PartyBooster(126,
+// twoStatePartyBooster, 20B), GuidedBullet(127, twoStateGuidedBullet, 17B). Its
+// trailer read is mask-gated per member (IDA @0x73DBA0). Undead has no v95 wire
+// slot (bit 128 would overflow the 128-bit mask). Block sizes 15/15/15/13/20/17.
 //
 // GMS v61 is a second, independently-verified 6-member group (isGmsV61,
-// task-167): same 4 leading members plus SpeedInfusion and GuidedBullet
-// (both unconditional, unlike v95's conditional pair), no Undead slot. Block
-// sizes are 14/14/14/12/18/16 — narrower than pre-95 because the base block
-// (and SpeedInfusion's own extra field) drop the leading bool-prefixed time
-// byte; see narrowTimeField.
+// task-167): the same 4 leading members plus SpeedInfusion and GuidedBullet, no
+// Undead slot. Block sizes are 14/14/14/12/18/16 — narrower than pre-95 because
+// the base block (and SpeedInfusion's own extra field) drop the leading
+// bool-prefixed time byte; see narrowTimeField.
 func twoStateBaseStats(t tenant.Model) []twoStateStat {
 	stats := []twoStateStat{
-		{character.TemporaryStatTypeEnergyCharge, twoStateDynamic, false},
-		{character.TemporaryStatTypeDashSpeed, twoStateDynamic, false},
-		{character.TemporaryStatTypeDashJump, twoStateDynamic, false},
-		{character.TemporaryStatTypeMonsterRiding, twoStateMonsterRiding, false},
+		{character.TemporaryStatTypeEnergyCharge, twoStateDynamic},
+		{character.TemporaryStatTypeDashSpeed, twoStateDynamic},
+		{character.TemporaryStatTypeDashJump, twoStateDynamic},
+		{character.TemporaryStatTypeMonsterRiding, twoStateMonsterRiding},
 	}
 	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-		// v95 verified 6-member group (design.md §2.4): the 4 unconditional
-		// members above stay always-written (status quo, fixture-locked);
-		// PartyBooster(126) and GuidedBullet(127) are conditional. Undead has
-		// no v95 wire slot (bit 128 overflows the mask).
 		return append(stats,
-			twoStateStat{character.TemporaryStatTypePartyBooster, twoStatePartyBooster, true},
-			twoStateStat{character.TemporaryStatTypeHomingBeacon, twoStateGuidedBullet, true},
+			twoStateStat{character.TemporaryStatTypePartyBooster, twoStatePartyBooster},
+			twoStateStat{character.TemporaryStatTypeHomingBeacon, twoStateGuidedBullet},
 		)
 	}
 	if isGmsV61(t) {
-		// GMS v61 verified 6-member group (task-167): no Undead slot. Member
-		// order/kinds otherwise match the pre-95 shape; block sizes differ via
-		// the narrowTimeField base threaded in by getBaseTemporaryStats /
+		// Member order/kinds otherwise match the pre-95 shape; block sizes differ
+		// via the narrowTimeField base threaded in by getBaseTemporaryStats /
 		// decodeBaseTemporaryStats.
 		return append(stats,
-			twoStateStat{character.TemporaryStatTypeSpeedInfusion, twoStateSpeedInfusion, false},
-			twoStateStat{character.TemporaryStatTypeHomingBeacon, twoStateGuidedBullet, false},
+			twoStateStat{character.TemporaryStatTypeSpeedInfusion, twoStateSpeedInfusion},
+			twoStateStat{character.TemporaryStatTypeHomingBeacon, twoStateGuidedBullet},
 		)
 	}
 	return append(stats,
-		twoStateStat{character.TemporaryStatTypeSpeedInfusion, twoStateSpeedInfusion, false},
-		twoStateStat{character.TemporaryStatTypeHomingBeacon, twoStateGuidedBullet, false},
-		twoStateStat{character.TemporaryStatTypeUndead, twoStateDynamic, false},
+		twoStateStat{character.TemporaryStatTypeSpeedInfusion, twoStateSpeedInfusion},
+		twoStateStat{character.TemporaryStatTypeHomingBeacon, twoStateGuidedBullet},
+		twoStateStat{character.TemporaryStatTypeUndead, twoStateDynamic},
 	)
 }
 
@@ -1155,7 +1135,7 @@ func (m *CharacterTemporaryStat) Decode(l logrus.FieldLogger, ctx context.Contex
 		_ = r.ReadByte() // nDefenseAtt
 		_ = r.ReadByte() // nDefenseState
 
-		m.decodeBaseTemporaryStats(l, ctx)(r, options, mask)
+		m.decodeBaseTemporaryStats(l, ctx, mask)(r, options)
 	}
 }
 
@@ -1184,23 +1164,23 @@ func (m *CharacterTemporaryStat) DecodeForeign(l logrus.FieldLogger, ctx context
 		_ = r.ReadByte() // nDefenseAtt
 		_ = r.ReadByte() // nDefenseState
 
-		m.decodeBaseTemporaryStats(l, ctx)(r, options, mask)
+		m.decodeBaseTemporaryStats(l, ctx, mask)(r, options)
 	}
 }
 
-func (m *CharacterTemporaryStat) decodeBaseTemporaryStats(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}, mask tool.Uint128) {
+func (m *CharacterTemporaryStat) decodeBaseTemporaryStats(l logrus.FieldLogger, ctx context.Context, mask tool.Uint128) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
-	return func(r *request.Reader, options map[string]interface{}, mask tool.Uint128) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		// Mirror getBaseTemporaryStats exactly (same version-specific group, same
+		// order, same presence gate) so the bytes consumed match the bytes
+		// emitted, boundary-for-boundary. The gate is the mask: a base block is
+		// on the wire only when its bit is set.
 		reg := buildCharacterTemporaryStatRegistry(t)
 		narrow := isGmsV61(t)
-		// Mirror getBaseTemporaryStats exactly (same version-specific group + order)
-		// so the bytes consumed match the bytes emitted, boundary-for-boundary.
 		for _, bs := range twoStateBaseStats(t) {
-			if bs.conditional {
-				st, ok := reg.byName[bs.name]
-				if !ok || mask.And(st.mask).IsZero() {
-					continue
-				}
+			st, known := reg.byName[bs.name]
+			if !known || mask.And(st.mask).IsZero() {
+				continue
 			}
 			switch bs.kind {
 			case twoStateSpeedInfusion, twoStatePartyBooster:
@@ -1220,49 +1200,47 @@ func (m *CharacterTemporaryStat) decodeBaseTemporaryStats(l logrus.FieldLogger, 
 	}
 }
 
+// getBaseTemporaryStats returns one base-stat block per two-state stat this CTS
+// actually holds, in the client's read order. Presence-gated to match
+// EncodeMask: the client reads one block per SET base bit, so emitting a block
+// whose bit is clear would leave unread bytes and desync the tail, and setting a
+// bit with no block would run it off the end.
+//
+// Absent base stats are simply skipped. They used to be emitted as empty
+// placeholder blocks alongside an unconditional mask bit — self-consistent, but
+// it made every buff packet claim a mount and a guided bullet. See EncodeMask.
 func (m *CharacterTemporaryStat) getBaseTemporaryStats(t tenant.Model) []packet.Encoder {
 	list := make([]packet.Encoder, 0)
 	narrow := isGmsV61(t)
 	for _, bs := range twoStateBaseStats(t) {
-		if bs.conditional {
-			if _, ok := m.stats[bs.name]; !ok {
-				continue
-			}
+		s, ok := m.stats[bs.name]
+		if !ok {
+			continue
 		}
 		switch bs.kind {
 		case twoStateMonsterRiding:
 			// Monster Riding: nOption = vehicle/taming-mob item id, rOption = source
 			// skill id. Wire contract IDA-confirmed — context.md §2, design.md §1.1.
-			if s, ok := m.stats[bs.name]; ok {
-				list = append(list, NewCharacterTemporaryStatBaseWithOptions(false, s.Value(), s.SourceId(), narrow))
-			} else {
-				list = append(list, NewCharacterTemporaryStatBase(false, narrow)) // 13 (12 on GMS v61)
-			}
+			list = append(list, NewCharacterTemporaryStatBaseWithOptions(false, s.Value(), s.SourceId(), narrow))
 		case twoStateSpeedInfusion:
 			list = append(list, NewSpeedInfusionTemporaryStat(narrow)) // 20 (18 on GMS v61)
 		case twoStateGuidedBullet:
 			// GuidedBullet / HOMING_BEACON: nOption = locked monster object id
 			// (allocator range guarantees nonzero — IsActivated gate), rOption =
 			// source skill id (SetGuided reason + icon), dwMobId = monster object
-			// id. Absent stat -> empty block, byte-identical to the pre-task
-			// encode. design.md §5.5.1.
-			if s, ok := m.stats[bs.name]; ok {
-				list = append(list, NewGuidedBulletTemporaryStatWithOptions(s.Value(), s.SourceId(), uint32(s.Value()), narrow))
-			} else {
-				list = append(list, NewGuidedBulletTemporaryStat(narrow)) // 17 (16 on GMS v61)
-			}
+			// id. design.md §5.5.1.
+			list = append(list, NewGuidedBulletTemporaryStatWithOptions(s.Value(), s.SourceId(), uint32(s.Value()), narrow)) // 17 (16 on GMS v61)
 		case twoStatePartyBooster:
 			// v95 PartyBooster (bit 126): 20-byte block, same wire shape as the
 			// pre-95 SpeedInfusion block (base + tCurrentTime + usExpireTerm),
-			// IDA DecodeForClient @0x72C600. Reached only when active
-			// (conditional member).
-			s := m.stats[bs.name]
+			// IDA DecodeForClient @0x72C600.
 			list = append(list, SpeedInfusionTemporaryStat{
 				CharacterTemporaryStatBase: CharacterTemporaryStatBase{
 					bDynamicTermSet: false,
 					nOption:         s.Value(),
 					rOption:         s.SourceId(),
 					tLastUpdated:    time.Now().Unix(),
+					narrowTimeField: narrow,
 				},
 			})
 		default: // twoStateDynamic

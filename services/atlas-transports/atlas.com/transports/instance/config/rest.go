@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -27,6 +28,11 @@ type InstanceRouteRestModel struct {
 	BoardingWindowSeconds uint32    `json:"boardingWindowSeconds"`
 	TravelDurationSeconds uint32    `json:"travelDurationSeconds"`
 	TransitMessage        string    `json:"transitMessage"`
+	// EffectItemIds and ForcedReturnMapId are optional. atlas-tenants omits
+	// them for routes that declare neither, which decodes to nil/0 — the
+	// "no effects, deliver to destination" default.
+	EffectItemIds     []item.Id `json:"effectItemIds"`
+	ForcedReturnMapId _map.Id   `json:"forcedReturnMapId"`
 }
 
 func (r InstanceRouteRestModel) GetID() string {
@@ -58,6 +64,8 @@ func ExtractRouteFor(l logrus.FieldLogger, t tenant.Model) func(InstanceRouteRes
 			SetBoardingWindow(time.Duration(r.BoardingWindowSeconds) * time.Second).
 			SetTravelDuration(time.Duration(r.TravelDurationSeconds) * time.Second).
 			SetTransitMessage(r.TransitMessage).
+			SetEffectItemIds(r.EffectItemIds).
+			SetForcedReturnMapId(r.ForcedReturnMapId).
 			Build()
 	}
 }

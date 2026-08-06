@@ -25,15 +25,43 @@ type MovementCodec interface {
 	EncodeType(w *response.Writer)
 }
 type Movement struct {
-	StartX   int16
-	StartY   int16
+	StartX int16
+	StartY int16
+	// StartVx/StartVy are GMS v88+ only — see the gate in Decode/Encode.
+	StartVx  int16
+	StartVy  int16
 	Elements []MovementCodec
 }
 
 func (m *Movement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.StartX = r.ReadInt16()
 		m.StartY = r.ReadInt16()
+
+		// StartVx/StartVy are GMS v88+ — the same client movement rework that
+		// added XOffset/YOffset to NormalElement (see the gate at NormalElement
+		// .Decode). v83/v84/v87 and JMS write x,y,count only:
+		//   v83 CMovePath::Encode@0x68a563, v87 @0x6c70fe, jms @0x70b6c4 — 2 Encode2 + Encode1.
+		//   v92 @0x65a260, v95 @0x666e20 — 4 Encode2 + Encode1.
+		// NOTE the predicate shape: this is IsRegion("GMS") && MajorAtLeast(88),
+		// NOT the !IsRegion("GMS") || MajorAtLeast(88) shape used for
+		// XOffset/YOffset. JMS v185 was checked directly (@0x70b6c4) and writes
+		// the TWO-field header, so JMS is EXCLUDED here even though it is
+		// INCLUDED by the XOffset gate. Reusing that predicate by reflex breaks
+		// JMS movement.
+		//
+		// Boundary 88 vs 92: observed v87 no, v92 yes; v88..v91 have no IDB.
+		// 88 is chosen for consistency with the adjacent XOffset/YOffset gate,
+		// which pins the same rework — and deploy/k8s/base/versions.json ships
+		// no GMS version between 87 and 92, so the two are behaviourally
+		// indistinguishable for every tenant Atlas can serve.
+		//
+		// MUST stay textually identical to Encode.
+		if t.IsRegion("GMS") && t.MajorAtLeast(88) {
+			m.StartVx = r.ReadInt16()
+			m.StartVy = r.ReadInt16()
+		}
 
 		numElems := r.ReadByte()
 		elems := make([]MovementCodec, numElems)
@@ -185,9 +213,18 @@ func (m *StatChangeElement) Decode(_ logrus.FieldLogger, _ context.Context) func
 
 func (m *Movement) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt16(m.StartX)
 		w.WriteInt16(m.StartY)
+		// StartVx/StartVy are GMS v88+. Paired with the Decode boundary; the two
+		// MUST stay textually identical. JMS is EXCLUDED (jms CMovePath::Encode
+		// @0x70b6c4 writes the two-field header) — do not reuse the
+		// XOffset/YOffset predicate shape here.
+		if t.IsRegion("GMS") && t.MajorAtLeast(88) {
+			w.WriteInt16(m.StartVx)
+			w.WriteInt16(m.StartVy)
+		}
 		w.WriteByte(byte(len(m.Elements)))
 		for _, element := range m.Elements {
 			element.EncodeType(w)

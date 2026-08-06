@@ -70,9 +70,10 @@ func planTokenSpend(as []asset.Model, tokenTemplateId uint32, cost uint32) ([]to
 // COutPacket::Encode4(&v66, v8[6]) where v8[6] is ITEM+24 = mesoPrice), which
 // is 0 for a token item. The commodity row is the only pricing authority.
 //
-// The token item is resolved from the row, never hardcoded — the v83 client
-// hardcodes 4310000 for its own local pre-check (0x41C3F0), but the server
-// stays version- and vendor-agnostic.
+// The token item is resolved from the row, never hardcoded — the v83
+// client hardcodes the Perfect Pitch item id for its own local
+// pre-check (0x41C3F0), but the server stays version- and
+// vendor-agnostic.
 //
 // Guard order matters: the free-slot probe precedes any consumption so tokens
 // are never destroyed for an item that cannot be received, mirroring the meso

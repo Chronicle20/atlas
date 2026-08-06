@@ -79,23 +79,6 @@ func logoutEventProvider(transactionId uuid.UUID, characterId uint32, field fiel
 	return producer.SingleMessageProvider(key, value)
 }
 
-func changeChannelEventProvider(transactionId uuid.UUID, characterId uint32, oldField field.Model, newField field.Model) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &character2.StatusEvent[character2.ChangeChannelEventLoginBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		WorldId:       newField.WorldId(),
-		Type:          character2.StatusEventTypeChannelChanged,
-		Body: character2.ChangeChannelEventLoginBody{
-			ChannelId:    newField.ChannelId(),
-			OldChannelId: oldField.ChannelId(),
-			MapId:        newField.MapId(),
-			Instance:     newField.Instance(),
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
 func jobChangedEventProvider(transactionId uuid.UUID, characterId uint32, channel channel.Model, jobId job.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character2.StatusEvent[character2.JobChangedStatusEventBody]{

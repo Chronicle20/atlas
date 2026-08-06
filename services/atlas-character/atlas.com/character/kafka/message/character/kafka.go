@@ -224,7 +224,6 @@ const (
 	StatusEventTypeCreated           = "CREATED"
 	StatusEventTypeLogin             = "LOGIN"
 	StatusEventTypeLogout            = "LOGOUT"
-	StatusEventTypeChannelChanged    = "CHANNEL_CHANGED"
 	StatusEventTypeJobChanged        = "JOB_CHANGED"
 	StatusEventTypeExperienceChanged = "EXPERIENCE_CHANGED"
 	StatusEventTypeLevelChanged      = "LEVEL_CHANGED"
@@ -288,13 +287,6 @@ type StatusEventLogoutBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	MapId     _map.Id    `json:"mapId"`
 	Instance  uuid.UUID  `json:"instance"`
-}
-
-type ChangeChannelEventLoginBody struct {
-	ChannelId    channel.Id `json:"channelId"`
-	OldChannelId channel.Id `json:"oldChannelId"`
-	MapId        _map.Id    `json:"mapId"`
-	Instance     uuid.UUID  `json:"instance"`
 }
 
 type JobChangedStatusEventBody struct {

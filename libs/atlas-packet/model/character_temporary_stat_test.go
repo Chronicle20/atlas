@@ -2,7 +2,9 @@ package model
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -696,5 +698,38 @@ func TestMovementAffectingMaskMembership(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// A no-expiry buff carries the zero time (buff.NewNoExpiryBuff). No client has a
+// no-expiry concept, so the encoder must turn that into a saturated duration.
+// Encoding it arithmetically instead underflows: year 1 to now overruns an int64
+// nanosecond Duration, and the int32 truncation lands on a negative the client
+// treats as already-expired — GM hide would flicker off the instant it landed.
+func TestNoExpiryStatEncodesSaturatedDuration(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
+	cts := NewCharacterTemporaryStat()
+	// DARK_SIGHT (GM hide) is a value stat, so it carries a per-stat expiry —
+	// unlike MONSTER_RIDING and HOMING_BEACON, which are base stats and never
+	// reach this field.
+	cts.AddStat(nil)(tn)(string(character.TemporaryStatTypeDarkSight), 9101004, 1, 1, time.Time{})
+
+	got := cts.Encode(nil, ctx)(nil)
+
+	// mask(16) + value int16 + sourceId int32 + expiry int32 -> expiry is the
+	// last 4 bytes before the 2 trailing defense bytes.
+	expiry := int32(binary.LittleEndian.Uint32(got[len(got)-6 : len(got)-2]))
+	if expiry != math.MaxInt32 {
+		t.Fatalf("no-expiry DARK_SIGHT wire duration: got %d want MaxInt32 %d", expiry, int32(math.MaxInt32))
+	}
+}
+
+func TestLegacyDurationUnitsNoExpirySaturates(t *testing.T) {
+	if got := legacyDurationUnits(time.Time{}); got != math.MaxInt16 {
+		t.Fatalf("no-expiry legacy duration: got %d want MaxInt16 %d", got, int16(math.MaxInt16))
+	}
+	if got := legacyDurationUnits(time.Now().Add(-time.Minute)); got != 0 {
+		t.Fatalf("already-expired legacy duration: got %d want 0", got)
 	}
 }

@@ -8,7 +8,6 @@ import (
 	"atlas-channel/data/skill/effect/statup"
 	"atlas-channel/socket/writer"
 	"context"
-	"math"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -21,12 +20,6 @@ import (
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
-
-// MountBuffDuration is the duration applied to the MONSTER_RIDING buff. Mounts
-// persist until the player toggles dismount, changes job, or logs out — there
-// is no "never expires" path through atlas-buffs (it rejects duration <= 0), so
-// we use the largest representable positive int32. See context.md §4.
-const MountBuffDuration = int32(math.MaxInt32)
 
 // Tamed-mount equip slots (libs/atlas-constants/inventory/slot).
 const (
@@ -45,8 +38,10 @@ type mountDeps struct {
 	// equipInSlot returns the item id equipped at pos (a negative equip slot),
 	// found=false when the slot is empty.
 	equipInSlot func(characterId uint32, pos int16) (int32, bool, error)
-	// applyBuff applies a buff (MONSTER_RIDING) carrying statups for characterId.
-	applyBuff func(f field.Model, characterId uint32, sourceId int32, level byte, duration int32, statups []statup.Model) error
+	// applyBuff applies the MONSTER_RIDING buff carrying statups for characterId.
+	// Mounts persist until the player toggles dismount, changes job, or logs
+	// out, so this is the no-expiry path — see context.md §4.
+	applyBuff func(f field.Model, characterId uint32, sourceId int32, level byte, statups []statup.Model) error
 	// cancelBuff cancels the buff sourced from sourceId for characterId.
 	cancelBuff func(f field.Model, characterId uint32, sourceId int32) error
 	// resolveVehicleId resolves the battleship vehicle item id from the
@@ -159,7 +154,7 @@ func HandleMount(l logrus.FieldLogger, f field.Model, characterId uint32, info p
 			l.WithError(err).Errorf("Character [%d] battleship mount aborted: unable to load character level.", characterId)
 			return err
 		}
-		if err := deps.applyBuff(f, characterId, sourceId, info.SkillLevel(), MountBuffDuration, tamedMountStatups(e, vehicleId)); err != nil {
+		if err := deps.applyBuff(f, characterId, sourceId, info.SkillLevel(), tamedMountStatups(e, vehicleId)); err != nil {
 			return err
 		}
 		if err := deps.initShipHP(characterId, info.SkillLevel(), charLevel, time.Duration(e.Duration())*time.Millisecond); err != nil {
@@ -192,7 +187,7 @@ func HandleMount(l logrus.FieldLogger, f field.Model, characterId uint32, info p
 			l.Warnf("Character [%d] cast skill-only mount [%d] but effect carries no MONSTER_RIDING statup; no-op.", characterId, info.SkillId())
 			return nil
 		}
-		return deps.applyBuff(f, characterId, sourceId, info.SkillLevel(), MountBuffDuration, e.StatUps())
+		return deps.applyBuff(f, characterId, sourceId, info.SkillLevel(), e.StatUps())
 	}
 
 	// Cases 3-5: tamed mount. Require BOTH the taming-mob (-18) and saddle (-19).
@@ -219,7 +214,7 @@ func HandleMount(l logrus.FieldLogger, f field.Model, characterId uint32, info p
 	// Case 3: both slots present -> mount. The vehicle id is the taming-mob item
 	// id (overriding atlas-data's skill-id placeholder); other granted stats are
 	// preserved.
-	return deps.applyBuff(f, characterId, sourceId, info.SkillLevel(), MountBuffDuration, tamedMountStatups(e, tamingMobId))
+	return deps.applyBuff(f, characterId, sourceId, info.SkillLevel(), tamedMountStatups(e, tamingMobId))
 }
 
 // monsterRidingStatups filters the effect's statups down to MONSTER_RIDING.
@@ -261,8 +256,8 @@ func newMountDeps(l logrus.FieldLogger, ctx context.Context) mountDeps {
 			}
 			return int32(a.TemplateId()), true, nil
 		},
-		applyBuff: func(f field.Model, characterId uint32, sourceId int32, level byte, duration int32, statups []statup.Model) error {
-			return bp.Apply(f, characterId, sourceId, level, duration, statups)(characterId)
+		applyBuff: func(f field.Model, characterId uint32, sourceId int32, level byte, statups []statup.Model) error {
+			return bp.ApplyNoExpiry(f, characterId, sourceId, level, statups)(characterId)
 		},
 		cancelBuff: func(f field.Model, characterId uint32, sourceId int32) error {
 			return bp.Cancel(f, characterId, sourceId)

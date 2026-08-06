@@ -101,3 +101,53 @@ from.
 `libs/atlas-packet`, `services/atlas-buffs/atlas.com/buffs` and
 `services/atlas-channel/atlas.com/channel` each build clean and pass their full
 test suites; `gofmt -l` is empty across the changed trees.
+
+---
+
+# Follow-up: mount and GM-hide migrated off the MaxInt32 sentinel
+
+PRD FR-2.1 rejects `duration = MaxInt32` as the representation of a
+non-expiring buff and requires an explicit one. task-167 added that
+(`buff.NewNoExpiryBuff`, `noExpiry` through the model/Kafka/REST contract) but
+wired only the beacon to it, leaving the two existing sentinel users in place.
+Both are now migrated, and the sentinel constants are gone:
+
+- `skill/handler/mount.go` — `MountBuffDuration` deleted; the `applyBuff` seam
+  drops its `duration` parameter and the production wiring calls
+  `bp.ApplyNoExpiry`. Three call sites (tamed mount, skill-only mount,
+  battleship).
+- `skill/handler/hide/hide.go` — `HideBuffDuration` deleted; `applyHide` calls
+  `bp.ApplyNoExpiry`.
+
+The stale comments both files carried ("there is no 'never expires' path
+through atlas-buffs") are gone with them.
+
+`mount_test.go` loses its `applyDur` spy field and the three assertions that
+pinned the duration to `MaxInt32`. The property they guarded is now structural:
+the seam has no duration to get wrong.
+
+## The wire-boundary bug this exposed
+
+A no-expiry buff carries `expiresAt = time.Time{}`. `CharacterTemporaryStat`
+encoded the per-stat expiry as `int32(v.ExpiresAt().Sub(time.Now()).Milliseconds())`,
+and on the zero time that does not merely go negative — year 1 to now exceeds
+what an int64 nanosecond `Duration` can represent, so the subtraction saturates
+and the int32 truncation lands on an arbitrary negative (**-2077252342**). The
+client reads that as long expired.
+
+The beacon never hit it: `HOMING_BEACON` is in `baseStatNames`, so it encodes as
+a base-stat block and skips the per-stat expiry field entirely. `MONSTER_RIDING`
+is a base stat too, so mounts are also unaffected. But `DARK_SIGHT` is an
+ordinary value stat (registry shift 90), so **GM hide would have gone out with a
+garbage negative duration** — visible as hide dropping the instant it was cast.
+
+Fixed at the wire boundary, in `remainingMillis` and `legacyDurationUnits`: the
+zero time encodes as `MaxInt32` (`MaxInt16` units on the pre-v61 short). No
+client has a no-expiry concept — each one reads a concrete duration — so the
+sentinel has to reappear somewhere. Putting it in the encoder is what keeps it
+out of the domain model and off the Kafka and REST contracts, which is what
+FR-2.1 actually asked for. `legacyDurationUnits` also gained the clamp it was
+missing, so a long finite buff saturates its short instead of wrapping.
+
+Covered by `TestNoExpiryStatEncodesSaturatedDuration` (DARK_SIGHT, the stat that
+actually reaches the field) and `TestLegacyDurationUnitsNoExpirySaturates`.

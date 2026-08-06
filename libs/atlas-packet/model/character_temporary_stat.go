@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"errors"
+	"math"
 	"sort"
 	"time"
 
@@ -706,20 +707,14 @@ func writeMask(w *response.Writer, mask tool.Uint128) {
 // v87 sub_7cc3e2; v92 sub_705080; v95 SecondaryStat::IsMovementAffectingStat
 // @0x7208C0; JMS sub_7f76d1).
 //
-// v61/v72/v79/v83 all test the identical 12-constant shape (v61 fully
-// name-resolved; v72/v79 confirmed by count+structure with some individual
-// names positional-only — see the evidence file's per-version caveats).
-//
-// v92's own filter is confirmed to DIFFER (13 constants at different raw
-// shifts, and notably does NOT include shift 7/Speed — evidence: gms_v92.md)
-// but not one of its 13 bits is name-resolved in that IDB. Per the same
-// one-directional-failure inference already applied to v84 (see the switch
-// case below), v92 gets a dedicated branch: the base 12 plus Flying/Frozen,
-// inferred from v87's identically-positioned raw shift 82/83. The base
-// 12-name fallthrough below still applies to any other GMS version with no
-// dedicated evidence (v28, v48, v86).
+// Over-inclusion is the safe direction, which is why the gates below are
+// cumulative >= bounds rather than a per-version switch: the failure mode is
+// one-directional. If a client gates the trailing byte on a stat this list
+// omits, cancelling that stat drops a byte the client expects and the packet
+// desyncs; naming a stat the client never tests costs nothing, and
+// MovementAffectingMask drops any name the tenant's registry does not allocate.
 func movementAffectingStatNames(t tenant.Model) []character.TemporaryStatType {
-	if t.Region() == "JMS" {
+	if t.IsRegion("JMS") {
 		// JMS v185 (sub_7f76d1) tests a wholly different 13-constant set —
 		// NOT "the v83 list plus/minus extras". Only Stun and
 		// MonsterRiding(RideVehicle) overlap v83's 12-stat meaning; GhostMorph
@@ -747,6 +742,11 @@ func movementAffectingStatNames(t tenant.Model) []character.TemporaryStatType {
 		}
 	}
 
+	// The base 12, tested identically by v61/v72/v79/v83 (v61 fully
+	// name-resolved; v72/v79 confirmed by count+structure with some individual
+	// names positional-only — see the evidence file's per-version caveats).
+	// v92 is the one known subtraction: it does not test Speed (gms_v92.md).
+	// Speed stays here anyway, per the over-inclusion rule above.
 	names := []character.TemporaryStatType{
 		character.TemporaryStatTypeSpeed,
 		character.TemporaryStatTypeJump,
@@ -762,65 +762,28 @@ func movementAffectingStatNames(t tenant.Model) []character.TemporaryStatType {
 		character.TemporaryStatTypeDashJump,
 	}
 
-	switch {
-	case t.Region() == "GMS" && t.MajorVersion() == 84:
-		// v84 (sub_7a07e7) tests 14 constants, not 12: the 12 above plus two
-		// raw shift-82/83 constants that are NOT independently name-resolved
-		// in v84's own IDB — no dedicated OnTemporaryStatReset side-effect
-		// block references either one individually (evidence: gms_v84.md).
-		// v87 independently resolves the identically-positioned raw 82/83
-		// constants as Flying/Frozen, and cross-version corroboration
-		// (two-state-group-per-version.md) places v84's two new constants
-		// at that same slot. Included here anyway even though v84's own
-		// evidence never names them: the failure mode is one-directional —
-		// if v84's client really does gate the trailing byte on
-		// Flying/Frozen and this list omitted them, a cancel of either stat
-		// would silently drop the movement byte the client expects and the
-		// packet would desync; including them when the client doesn't check
-		// costs nothing.
+	// Flying(82)/Frozen(83) join the filter from v84 on. Only v87 resolves them
+	// by name (sub_7cc3e2, raw shift == registry shift, cross-checked against
+	// the registry's declaration order — gms_v87.md). v84 (sub_7a07e7, 14
+	// constants) and v92 (sub_705080, 13 constants) test the
+	// identically-positioned raw 82/83 constants without naming either in their
+	// own IDBs; two-state-group-per-version.md places them at that same slot.
+	//
+	// The registry allocates the pair only from v87 (the post87 block), so on
+	// v84 these two names resolve to no bit at all — carried here for intent and
+	// dropped by MovementAffectingMask.
+	if t.IsRegion("GMS") && t.MajorAtLeast(84) {
 		names = append(names,
 			character.TemporaryStatTypeFlying,
 			character.TemporaryStatTypeFrozen,
 		)
-	case t.Region() == "GMS" && t.MajorVersion() == 87:
-		// v87 (sub_7cc3e2) resolves Flying(82)/Frozen(83) via the atlas
-		// registry's MajorAtLeast(87)-gated block (raw shift == registry shift,
-		// no IDB string table), cross-checked bit-for-bit against the registry's
-		// declaration order (evidence: gms_v87.md).
-		names = append(names,
-			character.TemporaryStatTypeFlying,
-			character.TemporaryStatTypeFrozen,
-		)
-	case t.Region() == "GMS" && t.MajorVersion() == 92:
-		// v92 (sub_705080) tests 13 constants, not 12: the 12 above plus two
-		// raw shift-82/83 constants that are NOT independently name-resolved
-		// in v92's own IDB — none of its 13 bits resolve to a symbol name
-		// (evidence: gms_v92.md). v87 independently resolves the
-		// identically-positioned raw 82/83 constants as Flying/Frozen, and
-		// cross-version corroboration places v92's two unnamed bits at that
-		// same slot. Included here anyway even though v92's own evidence
-		// never names them: the failure mode is one-directional — if v92's
-		// client really does gate the trailing byte on Flying/Frozen and
-		// this list omitted them, a cancel of either stat would silently
-		// drop the movement byte the client expects and the packet would
-		// desync; including them when the client doesn't check costs
-		// nothing, since this is a length-delimited packet and an inert
-		// extra byte is simply ignored. v92 also does not test raw shift 7
-		// (Speed), but Speed stays in the base list above regardless —
-		// over-inclusion is the safe direction.
-		names = append(names,
-			character.TemporaryStatTypeFlying,
-			character.TemporaryStatTypeFrozen,
-		)
-	case t.Region() == "GMS" && t.MajorVersion() >= 95:
-		// v95 (SecondaryStat::IsMovementAffectingStat @0x7208C0) resolves
-		// all 15 constants by symbol name: the base 12 plus Flying, Frozen,
-		// and YellowAura (design.md §2.4).
-		names = append(names,
-			character.TemporaryStatTypeFlying,
-			character.TemporaryStatTypeFrozen,
-			character.TemporaryStatTypeYellowAura,
-		)
+	}
+
+	// v95 (SecondaryStat::IsMovementAffectingStat @0x7208C0) is the only version
+	// that resolves its whole filter by symbol name: the 14 above plus
+	// YellowAura (design.md §2.4).
+	if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+		names = append(names, character.TemporaryStatTypeYellowAura)
 	}
 
 	return names
@@ -901,8 +864,7 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Contex
 			} else {
 				w.WriteInt32(v.SourceId())
 			}
-			et := int32(v.ExpiresAt().Sub(time.Now()).Milliseconds())
-			w.WriteInt32(et)
+			w.WriteInt32(remainingMillis(v.ExpiresAt()))
 		}
 
 		if legacyGmsMask(t) {
@@ -920,13 +882,43 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Contex
 	}
 }
 
+// remainingMillis converts an absolute expiry into the client-facing remaining
+// duration.
+//
+// The zero time is atlas-buffs' marker for a buff that never expires on its own
+// (buff.NewNoExpiryBuff — GM hide, mounts, the beacon lock). No client has a
+// no-expiry concept: every one of them reads a concrete duration here, so the
+// sentinel has to be reintroduced at the wire boundary. Doing it here rather
+// than at the caller is what keeps it out of the domain model and off the Kafka
+// and REST contracts.
+//
+// Without this the zero time underflows spectacularly rather than harmlessly:
+// year 1 to now exceeds what an int64 nanosecond Duration can hold, so
+// Sub().Milliseconds() saturates and the int32 truncation lands on an arbitrary
+// negative (-2077252342 as of this writing) — a stat the client tears down
+// immediately.
+func remainingMillis(expiresAt time.Time) int32 {
+	if expiresAt.IsZero() {
+		return math.MaxInt32
+	}
+	return int32(expiresAt.Sub(time.Now()).Milliseconds())
+}
+
 // legacyDurationUnits converts an absolute expiry into the pre-v61 wire duration
 // short: the v48 client reads Decode2 and multiplies by 500 (sub_5CA524 @0x5ca58d
-// `500 * Decode2`), so the wire carries remaining-ms / 500.
+// `500 * Decode2`), so the wire carries remaining-ms / 500. A no-expiry buff
+// (zero expiry — see remainingMillis) saturates the short rather than reading as
+// already-expired.
 func legacyDurationUnits(expiresAt time.Time) int16 {
+	if expiresAt.IsZero() {
+		return math.MaxInt16
+	}
 	ms := expiresAt.Sub(time.Now()).Milliseconds()
 	if ms <= 0 {
 		return 0
+	}
+	if ms/500 > math.MaxInt16 {
+		return math.MaxInt16
 	}
 	return int16(ms / 500)
 }
@@ -1016,7 +1008,7 @@ type twoStateStat struct {
 // version uses. task-167,
 // docs/tasks/task-167-homing-beacon-bullseye/evidence/per-version/gms_v61_composition.md.
 func isGmsV61(t tenant.Model) bool {
-	return t.Region() == "GMS" && t.MajorVersion() == 61
+	return t.IsRegion("GMS") && t.MajorVersion() == 61
 }
 
 // twoStateBaseStats returns the two-state/base stat group this tenant's client
@@ -1026,46 +1018,45 @@ func isGmsV61(t tenant.Model) bool {
 // here. These stats are always encoded as base-stat blocks, never as per-stat
 // value blocks.
 //
-// v72/v79/v83/v84/v87/v92/JMS use the classic 7-member group.
+// Three shapes, all IDA-verified, differing only in slots 5 and 7:
 //
-// GMS v95's group is IDA-verified as 6 members (design.md §2.4): EnergyCharge(122),
-// DashSpeed(123), DashJump(124), RideVehicle(125), PartyBooster(126,
-// twoStatePartyBooster, 20B), GuidedBullet(127, twoStateGuidedBullet, 17B). Its
-// trailer read is mask-gated per member (IDA @0x73DBA0). Undead has no v95 wire
-// slot (bit 128 would overflow the 128-bit mask). Block sizes 15/15/15/13/20/17.
+//	v72/v79/v83/v84/v87/v92/JMS  7 members, block sizes 15/15/15/13/20/17/15
+//	GMS v95 (design.md §2.4)     6 members, block sizes 15/15/15/13/20/17
+//	GMS v61 (isGmsV61, task-167) 6 members, block sizes 14/14/14/12/18/16
 //
-// GMS v61 is a second, independently-verified 6-member group (isGmsV61,
-// task-167): the same 4 leading members plus SpeedInfusion and GuidedBullet, no
-// Undead slot. Block sizes are 14/14/14/12/18/16 — narrower than pre-95 because
-// the base block (and SpeedInfusion's own extra field) drop the leading
-// bool-prefixed time byte; see narrowTimeField.
+// v61's blocks are narrower because its base block — and SpeedInfusion's own
+// extra field — drop the leading bool-prefixed time byte; see narrowTimeField.
+// v95's trailer read is mask-gated per member (IDA @0x73DBA0).
 func twoStateBaseStats(t tenant.Model) []twoStateStat {
+	gmsV95Plus := t.IsRegion("GMS") && t.MajorAtLeast(95)
+
+	// Slots 1-4 are the same stat, in the same order, on every version.
 	stats := []twoStateStat{
 		{character.TemporaryStatTypeEnergyCharge, twoStateDynamic},
 		{character.TemporaryStatTypeDashSpeed, twoStateDynamic},
 		{character.TemporaryStatTypeDashJump, twoStateDynamic},
 		{character.TemporaryStatTypeMonsterRiding, twoStateMonsterRiding},
 	}
-	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-		return append(stats,
-			twoStateStat{character.TemporaryStatTypePartyBooster, twoStatePartyBooster},
-			twoStateStat{character.TemporaryStatTypeHomingBeacon, twoStateGuidedBullet},
-		)
+
+	// Slot 5 is the one substitution in the group: v95 replaced SpeedInfusion
+	// with PartyBooster. Both are 20-byte blocks of the same shape.
+	if gmsV95Plus {
+		stats = append(stats, twoStateStat{character.TemporaryStatTypePartyBooster, twoStatePartyBooster})
+	} else {
+		stats = append(stats, twoStateStat{character.TemporaryStatTypeSpeedInfusion, twoStateSpeedInfusion})
 	}
-	if isGmsV61(t) {
-		// Member order/kinds otherwise match the pre-95 shape; block sizes differ
-		// via the narrowTimeField base threaded in by getBaseTemporaryStats /
-		// decodeBaseTemporaryStats.
-		return append(stats,
-			twoStateStat{character.TemporaryStatTypeSpeedInfusion, twoStateSpeedInfusion},
-			twoStateStat{character.TemporaryStatTypeHomingBeacon, twoStateGuidedBullet},
-		)
+
+	// Slot 6 is GuidedBullet everywhere.
+	stats = append(stats, twoStateStat{character.TemporaryStatTypeHomingBeacon, twoStateGuidedBullet})
+
+	// Slot 7, Undead, closes the classic group. Both 6-member versions drop it,
+	// for unrelated reasons: v61's client loop bound is hard-coded to 6, and on
+	// v95 its bit (128) would overflow the 128-bit mask.
+	if !isGmsV61(t) && !gmsV95Plus {
+		stats = append(stats, twoStateStat{character.TemporaryStatTypeUndead, twoStateDynamic})
 	}
-	return append(stats,
-		twoStateStat{character.TemporaryStatTypeSpeedInfusion, twoStateSpeedInfusion},
-		twoStateStat{character.TemporaryStatTypeHomingBeacon, twoStateGuidedBullet},
-		twoStateStat{character.TemporaryStatTypeUndead, twoStateDynamic},
-	)
+
+	return stats
 }
 
 func (m *CharacterTemporaryStat) DecodeMask(r *request.Reader, t tenant.Model) tool.Uint128 {

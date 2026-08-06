@@ -369,6 +369,32 @@ describe("sortRows", () => {
     ]);
   });
 
+  describe("opcode tie-break for rows with no parseable opcode", () => {
+    // Two baseline-defined rows whose bindings carry an unparseable opcode
+    // string, so `baselineOpCodeValue` is null for both. Per the doc comment
+    // on `sortRows`, a tie on the primary key (here: "both null") always
+    // breaks by ascending name, regardless of `dir` - the direction toggle
+    // must not be applied a second time to the tie-break comparison. Both
+    // rows come from a single baseline object so `inBaseline` is true for
+    // both and the tie-break inside "opcode" is what's under test.
+    const both = obj("nullopc-both", 83, {
+      Alpha: [binding("not-an-opcode")],
+      Zeta: [binding("not-an-opcode")],
+    });
+    const rows3 = buildRows({
+      objects: [both],
+      kind: "writer",
+      baselineKey: "nullopc-both",
+    });
+
+    it("keeps identical name order in both directions", () => {
+      const asc = sortRows(rows3, "opcode", "asc").map((r) => r.name);
+      const desc = sortRows(rows3, "opcode", "desc").map((r) => r.name);
+      expect(asc).toEqual(["Alpha", "Zeta"]);
+      expect(desc).toEqual(["Alpha", "Zeta"]);
+    });
+  });
+
   describe("by state", () => {
     // Regression fixture: the BASELINE ("baseline2") is deliberately passed
     // SECOND in `objects`, and its per-definition states are scrambled

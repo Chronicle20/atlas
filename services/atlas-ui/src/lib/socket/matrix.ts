@@ -210,7 +210,10 @@ export function sortRows(rows: Row[], key: SortKey, dir: SortDirection): Row[] {
     if (key === "opcode") {
       const av = a.baselineOpCodeValue;
       const bv = b.baselineOpCodeValue;
-      if (av === null && bv === null) cmp = a.name.localeCompare(b.name);
+      // Both null is a tie on the primary key: leave cmp at 0 so the shared
+      // tie-break below runs unsigned (name compare must not be multiplied
+      // by `sign` a second time).
+      if (av === null && bv === null) cmp = 0;
       else if (av === null) cmp = 1;
       else if (bv === null) cmp = -1;
       else cmp = av - bv;

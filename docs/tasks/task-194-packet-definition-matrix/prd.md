@@ -487,7 +487,10 @@ Seed data:
 - [ ] All eleven seed templates carry `fname` on the count reported by
       `packet-audit seed-fname`, and that report is committed to this task
       folder as `fname-coverage.txt`.
-- [ ] All eleven seed templates carry an empty `unsupported` object.
+- [ ] All eleven seed templates omit the `unsupported` key entirely (no
+      audits have landed yet, so there is nothing to record); `Normalize()`
+      supplies the empty `{handlers: [], writers: []}` shape on read, per
+      §5.2/§6.3.
 - [ ] `tools/template-opcode-order-guard.sh` still passes.
 
 Matrix:

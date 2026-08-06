@@ -417,7 +417,7 @@ No codec, opcode table, or decode path changes.
 presets and equipment lists the matrix never reads. The matrix MUST request
 sparse fieldsets (§5.3).
 
-**Rendering.** The writers matrix is up to 219 rows × 11 columns ≈ 2,849 cells
+**Rendering.** The writers matrix is up to 219 rows × 11 columns ≈ 2,409 cells
 with a sticky header and a frozen first column. It must remain responsive while
 scrolling and filtering.
 

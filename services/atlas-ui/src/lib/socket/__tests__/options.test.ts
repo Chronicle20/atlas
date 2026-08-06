@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildOptionsMatrix, classifyOptions } from "@/lib/socket/options";
+import {
+  buildOptionsMatrix,
+  classifyOptions,
+  deepEqual,
+} from "@/lib/socket/options";
 import type { Binding, SocketObject } from "@/lib/socket/model";
 
 function obj(
@@ -583,5 +587,58 @@ describe("buildOptionsMatrix - degenerate inputs", () => {
         baselineKey: "a",
       }),
     ).not.toThrow();
+  });
+});
+
+describe("deepEqual", () => {
+  it("is key-order-independent for a whole multi-key options object", () => {
+    // Real corpus fact: CharacterInteraction's five option groups are
+    // `operations, enterError, resultType, putStoneError, leaveReason` in
+    // seed-template order. Go's encoding/json marshals object/map keys
+    // SORTED, so a tenant round-tripped through the REST model comes back
+    // alphabetized. The two objects below carry identical values in each of
+    // those two orders - this must compare equal.
+    const seedOrder = {
+      operations: { OPEN: 1 },
+      enterError: { A: 1 },
+      resultType: { B: 1 },
+      putStoneError: { C: 1 },
+      leaveReason: { D: 1 },
+    };
+    const alphabetized = {
+      enterError: { A: 1 },
+      leaveReason: { D: 1 },
+      operations: { OPEN: 1 },
+      putStoneError: { C: 1 },
+      resultType: { B: 1 },
+    };
+    expect(deepEqual(seedOrder, alphabetized)).toBe(true);
+  });
+
+  it("is key-order-independent for a 2-key options object (NoteOperation shape)", () => {
+    const seedOrder = { operations: { A: 1 }, errors: { B: 2 } };
+    const alphabetized = { errors: { B: 2 }, operations: { A: 1 } };
+    expect(deepEqual(seedOrder, alphabetized)).toBe(true);
+  });
+
+  it("is key-order-independent at a NESTED level too, not just the top level", () => {
+    const a = { operations: { A: 1, B: 2 } };
+    const b = { operations: { B: 2, A: 1 } };
+    expect(deepEqual(a, b)).toBe(true);
+  });
+
+  it("keeps ARRAYS strictly positional - same elements, different order, not equal", () => {
+    // Guards against a fix that over-normalizes by sorting arrays too:
+    // FR-3.5's list semantics depend on the array INDEX being the wire
+    // value, so reordering a `types` list is a real, meaningful change.
+    expect(deepEqual({ types: ["WALK", "STAND"] }, { types: ["STAND", "WALK"] })).toBe(
+      false,
+    );
+  });
+
+  it("still reports a genuine value difference under any key order", () => {
+    const a = { operations: { A: 1 }, errors: { B: 2 } };
+    const b = { errors: { B: 3 }, operations: { A: 1 } };
+    expect(deepEqual(a, b)).toBe(false);
   });
 });

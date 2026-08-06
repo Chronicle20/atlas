@@ -157,6 +157,83 @@ describe("classifyAgainstAncestor", () => {
     expect(classifyAgainstAncestor(tenant, anc, "handler", "MiniRoom")).toBe("same");
   });
 
+  it("is NOT fooled by options key order - CharacterInteraction, seed order vs alphabetized", () => {
+    // Real corpus fact: CharacterInteraction's five option groups are
+    // `operations, enterError, resultType, putStoneError, leaveReason` in
+    // seed-template order (verified directly against the seed templates).
+    // Go's encoding/json marshals map keys SORTED, so a tenant configuration
+    // written back through the REST model comes out alphabetized - a tenant
+    // byte-identical in meaning to its ancestor must still classify `same`.
+    const seedOrder = {
+      operations: { OPEN: 1 },
+      enterError: { A: 1 },
+      resultType: { B: 1 },
+      putStoneError: { C: 1 },
+      leaveReason: { D: 1 },
+    };
+    const alphabetized = {
+      enterError: { A: 1 },
+      leaveReason: { D: 1 },
+      operations: { OPEN: 1 },
+      putStoneError: { C: 1 },
+      resultType: { B: 1 },
+    };
+    const anc2 = makeObject("t83", "template", 83, 1, {
+      CharacterInteraction: [binding("0x01", { options: seedOrder })],
+    });
+    const tenant2 = makeObject("tnt", "tenant", 83, 1, {
+      CharacterInteraction: [binding("0x01", { options: alphabetized })],
+    });
+    expect(
+      classifyAgainstAncestor(tenant2, anc2, "handler", "CharacterInteraction"),
+    ).toBe("same");
+  });
+
+  it("is NOT fooled by options key order - NoteOperation, 2-key shape", () => {
+    const anc = makeObject("t83", "template", 83, 1, {
+      NoteOperation: [
+        binding("0x02", { options: { operations: { A: 1 }, errors: { B: 2 } } }),
+      ],
+    });
+    const tenant = makeObject("tnt", "tenant", 83, 1, {
+      NoteOperation: [
+        binding("0x02", { options: { errors: { B: 2 }, operations: { A: 1 } } }),
+      ],
+    });
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "NoteOperation")).toBe(
+      "same",
+    );
+  });
+
+  it("keeps a list's ARRAY order significant - same elements reordered is still modified", () => {
+    // Guards against a fix that over-normalizes by sorting arrays too:
+    // FR-3.5's list semantics depend on the array INDEX being the wire
+    // value, so this must NOT collapse to "same" the way the key-order fix
+    // does for maps.
+    const tenant = makeObject("tnt", "tenant", 83, 1, {
+      Move: [binding("0x01", { options: { types: ["STAND", "WALK"] } })],
+    });
+    const anc = makeObject("t83", "template", 83, 1, {
+      Move: [binding("0x01", { options: { types: ["WALK", "STAND"] } })],
+    });
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "Move")).toBe("modified");
+  });
+
+  it("is key-order-independent at a NESTED level, not just the top-level options object", () => {
+    const anc = makeObject("t83", "template", 83, 1, {
+      ServerIP: [
+        binding("0x03", { options: { codes: { A: 1, B: 2 }, modes: { X: 9 } } }),
+      ],
+    });
+    const tenant = makeObject("tnt", "tenant", 83, 1, {
+      // Top-level order matches; the NESTED `codes` group's key order does not.
+      ServerIP: [
+        binding("0x03", { options: { codes: { B: 2, A: 1 }, modes: { X: 9 } } }),
+      ],
+    });
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "ServerIP")).toBe("same");
+  });
+
   it("returns modified when the binding COUNT differs for one name", () => {
     const tenant = makeObject("tnt", "tenant", 83, 1, {
       NoOpHandler: [binding("0x17"), binding("0x19")],

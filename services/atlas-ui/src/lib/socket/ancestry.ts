@@ -72,6 +72,10 @@ export function classifyAgainstAncestor(
   const tenantBindings = entriesOf(tenant, kind).get(name) ?? [];
   const ancestorBindings = entriesOf(ancestor, kind).get(name) ?? [];
 
+  // `name` absent from BOTH sides falls into this branch too and is labeled
+  // "missing" - unreachable under the expected caller pattern (Task 19 only
+  // ever classifies a name drawn from the union of tenant/ancestor names, so
+  // at least one side always has bindings), not a real class of its own.
   if (tenantBindings.length === 0) return "missing";
   if (ancestorBindings.length === 0) return "tenant-only";
 

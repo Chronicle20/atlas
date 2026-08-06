@@ -325,26 +325,72 @@ function cellState(
 }
 
 /**
- * Structural equality over JSON-shaped values. `JSON.stringify` is used
- * rather than a hand-rolled walk because option values are themselves
- * JSON-derived (arrays, flat objects, primitives) - never functions, Dates,
- * or Maps. The try/catch exists purely as a defensive backstop: `options` is
- * `unknown` at the type level, so a pathological input (e.g. a
- * self-referential object) must not throw. No corpus value has been observed
- * to need it; on that path this falls back to "not equal", which is the
- * conservative answer.
+ * Structural equality over JSON-shaped values - object KEY ORDER never
+ * matters, array ELEMENT order always does.
+ *
+ * This used to be a `JSON.stringify(a) === JSON.stringify(b)` comparison,
+ * which is key-order-sensitive. That was safe as long as `deepEqual` only
+ * ever compared one flattened leaf value at a time (`cellState` above, via
+ * `mapEntriesOf`/`listOf`), but `ancestry.ts` (Task 11) applies it to a WHOLE
+ * raw multi-key options object, and that exposed a real false-positive:
+ * `encoding/json` on the Go side marshals map keys in SORTED order, so a
+ * tenant configuration written back through the REST model comes out
+ * alphabetized, while an ancestor Template seeded from file keeps its
+ * original, non-alphabetical key order (e.g. `CharacterInteraction`'s five
+ * groups are `operations, enterError, resultType, putStoneError,
+ * leaveReason` in the seed templates - measured directly against them, not
+ * alphabetical). A tenant byte-identical in meaning to its ancestor would
+ * have compared `modified` the moment it was saved once.
+ *
+ * A recursive structural walk (rather than a canonicalizing/key-sorting
+ * stringify) is used to fix this: it needs no intermediate string
+ * allocation, and arrays vs. objects already need different key-order
+ * handling either way, so a direct walk is the simpler of the two options.
+ * `options` is `unknown` at the type level, so a pathological input (e.g. a
+ * self-referential object) must not throw - the try/catch backstop is kept:
+ * a circular structure now recurses until the engine raises a
+ * `RangeError: Maximum call stack size exceeded` instead of `JSON.stringify`
+ * throwing directly, but that error still propagates up through the call
+ * stack into the same top-level catch, so the "must not throw" contract and
+ * the conservative "falls back to not equal" answer are both unchanged. No
+ * corpus value has been observed to need this backstop.
  *
  * Exported so `ancestry.ts` (Task 11) reuses this exact comparison for the
  * options half of FR-8.4 instead of writing a second implementation.
  */
 export function deepEqual(a: unknown, b: unknown): boolean {
+  try {
+    return structuralEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
+function structuralEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (typeof a !== typeof b) return false;
   if (a === null || b === null) return false;
   if (typeof a !== "object") return false;
-  try {
-    return JSON.stringify(a) === JSON.stringify(b);
-  } catch {
-    return false;
+
+  const aIsArray = Array.isArray(a);
+  const bIsArray = Array.isArray(b);
+  if (aIsArray !== bIsArray) return false;
+
+  if (aIsArray && bIsArray) {
+    if (a.length !== b.length) return false;
+    return a.every((v, i) => structuralEqual(v, b[i]));
   }
+
+  // Plain objects: compare by KEY SET + per-key value, never by insertion
+  // order - this is the fix. Arrays above stay strictly positional.
+  const ao = a as Record<string, unknown>;
+  const bo = b as Record<string, unknown>;
+  const aKeys = Object.keys(ao);
+  const bKeys = Object.keys(bo);
+  if (aKeys.length !== bKeys.length) return false;
+  return aKeys.every(
+    (k) =>
+      Object.prototype.hasOwnProperty.call(bo, k) &&
+      structuralEqual(ao[k], bo[k]),
+  );
 }

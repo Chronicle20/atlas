@@ -333,8 +333,11 @@ function cellState(
  * self-referential object) must not throw. No corpus value has been observed
  * to need it; on that path this falls back to "not equal", which is the
  * conservative answer.
+ *
+ * Exported so `ancestry.ts` (Task 11) reuses this exact comparison for the
+ * options half of FR-8.4 instead of writing a second implementation.
  */
-function deepEqual(a: unknown, b: unknown): boolean {
+export function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (typeof a !== typeof b) return false;
   if (a === null || b === null) return false;

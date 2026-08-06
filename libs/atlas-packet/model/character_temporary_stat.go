@@ -894,14 +894,13 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Contex
 //
 // Without this the zero time underflows spectacularly rather than harmlessly:
 // year 1 to now exceeds what an int64 nanosecond Duration can hold, so
-// Sub().Milliseconds() saturates and the int32 truncation lands on an arbitrary
-// negative (-2077252342 as of this writing) — a stat the client tears down
-// immediately.
+// time.Until saturates and the int32 truncation lands on an arbitrary negative
+// (-2077252342 as of this writing) — a stat the client tears down immediately.
 func remainingMillis(expiresAt time.Time) int32 {
 	if expiresAt.IsZero() {
 		return math.MaxInt32
 	}
-	return int32(expiresAt.Sub(time.Now()).Milliseconds())
+	return int32(time.Until(expiresAt).Milliseconds())
 }
 
 // legacyDurationUnits converts an absolute expiry into the pre-v61 wire duration
@@ -913,7 +912,7 @@ func legacyDurationUnits(expiresAt time.Time) int16 {
 	if expiresAt.IsZero() {
 		return math.MaxInt16
 	}
-	ms := expiresAt.Sub(time.Now()).Milliseconds()
+	ms := time.Until(expiresAt).Milliseconds()
 	if ms <= 0 {
 		return 0
 	}

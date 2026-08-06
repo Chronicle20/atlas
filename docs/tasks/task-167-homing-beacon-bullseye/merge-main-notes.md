@@ -129,7 +129,7 @@ the seam has no duration to get wrong.
 ## The wire-boundary bug this exposed
 
 A no-expiry buff carries `expiresAt = time.Time{}`. `CharacterTemporaryStat`
-encoded the per-stat expiry as `int32(v.ExpiresAt().Sub(time.Now()).Milliseconds())`,
+encoded the per-stat expiry as `int32(time.Until(v.ExpiresAt()).Milliseconds())`,
 and on the zero time that does not merely go negative — year 1 to now exceeds
 what an int64 nanosecond `Duration` can represent, so the subtraction saturates
 and the int32 truncation lands on an arbitrary negative (**-2077252342**). The

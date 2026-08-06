@@ -279,6 +279,11 @@ export function DefinitionGridPage({ kind, scope }: DefinitionGridPageProps) {
           onClose={handleDrawerClose}
           onAction={handleDrawerAction}
           {...(ancestor ? { ancestor } : {})}
+          {...(ancestor && selection.scopeKey === ancestor.key
+            ? {
+                readOnlyReason: `${ancestor.label} is the ancestor template and is read-only here.`,
+              }
+            : {})}
         />
       )}
 

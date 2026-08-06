@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import type { Binding, SocketObject } from "@/lib/socket/model";
@@ -59,6 +59,18 @@ vi.mock("@/lib/hooks/api/useSocketObjects", () => ({
 
 import { PacketMatrixPage } from "@/pages/PacketMatrixPage";
 
+/**
+ * `MemoryRouter` keeps its history internally and never touches
+ * `window.location`, so the only way to actually observe a `setSearchParams`
+ * write-back is to read the router's own location from inside the router
+ * tree - a sibling that calls `useLocation()` and renders the current
+ * search string.
+ */
+function LocationSpy() {
+  const location = useLocation();
+  return <div data-testid="location-search">{location.search}</div>;
+}
+
 function renderPage(initialPath = "/packet-matrix") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }: { children: ReactNode }) => (
@@ -66,7 +78,13 @@ function renderPage(initialPath = "/packet-matrix") {
       <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
     </QueryClientProvider>
   );
-  return render(<PacketMatrixPage />, { wrapper });
+  return render(
+    <>
+      <PacketMatrixPage />
+      <LocationSpy />
+    </>,
+    { wrapper },
+  );
 }
 
 describe("PacketMatrixPage", () => {
@@ -104,14 +122,12 @@ describe("PacketMatrixPage", () => {
 
   it("writes the mode back to the URL so the view is shareable", async () => {
     renderPage();
+    expect(screen.getByTestId("location-search")).toHaveTextContent("");
     await userEvent.click(screen.getByRole("radio", { name: /writers/i }));
-    await waitFor(() =>
-      expect(window.location.search === "" || true).toBe(true),
+    // The router's own location - not window.location, which MemoryRouter
+    // never touches - actually carries the write-back this test is named for.
+    expect(screen.getByTestId("location-search")).toHaveTextContent(
+      "?mode=writers",
     );
-    // MemoryRouter keeps history internally; assert via the rendered state that
-    // the mode switch took effect and the row set changed.
-    expect(
-      screen.getByRole("row", { name: /PetActivated/ }),
-    ).toBeInTheDocument();
   });
 });

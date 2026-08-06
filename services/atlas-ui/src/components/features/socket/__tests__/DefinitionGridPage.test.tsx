@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -221,6 +222,141 @@ describe("DefinitionGridPage - Tenant ancestry (FR-7.2/FR-8.2)", () => {
     expect(
       screen.getByRole("button", { name: /vs template/i }),
     ).toBeInTheDocument();
+  });
+
+  it("disables the ancestor column's mutating drawer actions but leaves the tenant's own column editable", async () => {
+    useTenantConfigurationMock.mockReturnValue({
+      data: objectDoc({
+        id: "tenant-1",
+        region: "GMS",
+        majorVersion: 83,
+        minorVersion: 1,
+      }),
+      isLoading: false,
+      error: null,
+    });
+    useSocketMatrixTemplatesMock.mockReturnValue({
+      data: [
+        {
+          key: "template-1",
+          label: "GMS v83.1",
+          source: "template",
+          region: "GMS",
+          majorVersion: 83,
+          minorVersion: 1,
+          handlers: new Map([
+            [
+              "LoginHandle",
+              [
+                {
+                  opCode: "0x01",
+                  opCodeValue: 1,
+                  validator: "LoggedInValidator",
+                  services: ["channel"],
+                  index: 0,
+                },
+              ],
+            ],
+          ]),
+          writers: new Map(),
+          unsupportedHandlers: new Set(),
+          unsupportedWriters: new Set(),
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderTenantHandlers();
+    await waitFor(() => expect(screen.getByRole("grid")).toBeInTheDocument());
+
+    // objects = [tenantObject, ancestor] - the cell buttons appear in that
+    // column order, and both columns share the same label since the
+    // ancestor is inferred by an EXACT (region, majorVersion, minorVersion)
+    // match, so index (not name) is what distinguishes them here.
+    const cells = screen.getAllByRole("button", {
+      name: /LoginHandle in GMS v83\.1/,
+    });
+    expect(cells).toHaveLength(2);
+
+    // Scope the drawer to the read-only ancestor column (index 1).
+    await userEvent.click(cells[1]!);
+    const addOnAncestor = screen.getByRole("button", {
+      name: /^Add to GMS v83\.1…$/,
+    });
+    expect(addOnAncestor).toBeDisabled();
+    expect(addOnAncestor).toHaveAttribute(
+      "title",
+      expect.stringMatching(/ancestor template/i),
+    );
+    expect(
+      screen.getByRole("button", { name: /^Copy into GMS v83\.1…$/ }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /^Mark unsupported in GMS v83\.1…$/ }),
+    ).toBeDisabled();
+  });
+
+  it("leaves the tenant's own column fully editable in the drawer", async () => {
+    useTenantConfigurationMock.mockReturnValue({
+      data: objectDoc({
+        id: "tenant-1",
+        region: "GMS",
+        majorVersion: 83,
+        minorVersion: 1,
+      }),
+      isLoading: false,
+      error: null,
+    });
+    useSocketMatrixTemplatesMock.mockReturnValue({
+      data: [
+        {
+          key: "template-1",
+          label: "GMS v83.1",
+          source: "template",
+          region: "GMS",
+          majorVersion: 83,
+          minorVersion: 1,
+          handlers: new Map([
+            [
+              "LoginHandle",
+              [
+                {
+                  opCode: "0x01",
+                  opCodeValue: 1,
+                  validator: "LoggedInValidator",
+                  services: ["channel"],
+                  index: 0,
+                },
+              ],
+            ],
+          ]),
+          writers: new Map(),
+          unsupportedHandlers: new Set(),
+          unsupportedWriters: new Set(),
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderTenantHandlers();
+    await waitFor(() => expect(screen.getByRole("grid")).toBeInTheDocument());
+
+    const cells = screen.getAllByRole("button", {
+      name: /LoginHandle in GMS v83\.1/,
+    });
+    // Scope the drawer to the tenant's own column (index 0) instead.
+    await userEvent.click(cells[0]!);
+    expect(
+      screen.getByRole("button", { name: /^Add to GMS v83\.1…$/ }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: /^Copy into GMS v83\.1…$/ }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: /^Mark unsupported in GMS v83\.1…$/ }),
+    ).toBeEnabled();
   });
 
   it("renders a single column with ancestry affordances absent when no Template matches", async () => {

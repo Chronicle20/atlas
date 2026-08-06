@@ -45,6 +45,18 @@ export interface DefinitionDrawerProps {
   onAction: (action: DrawerAction) => void;
   /** Tenant pages only: enables Reset to Ancestor. */
   ancestor?: SocketObject;
+  /**
+   * When set, every MUTATING action on the current scope (Add/Edit/Delete/
+   * Copy/Mark-Unsupported/Clear-Unsupported, including each per-binding row)
+   * is disabled and this string is shown as the button's `title` - e.g. the
+   * FR-7.2 ancestor column on a Tenant page, which DefinitionGridPage passes
+   * whenever `selection.scopeKey` is the inferred ancestor's key. Open (a
+   * navigation, not a mutation) is unaffected, and Reset to Ancestor is
+   * unaffected too - it never renders for the ancestor scope itself, since
+   * it is already gated on `scope.source === "tenant"`. Absent means fully
+   * editable, matching every other scope's default.
+   */
+  readOnlyReason?: string;
 }
 
 /**
@@ -77,7 +89,9 @@ function buildAction(
     type,
     scopeKey,
     name,
-    ...(opCodeValue !== null && opCodeValue !== undefined ? { opCodeValue } : {}),
+    ...(opCodeValue !== null && opCodeValue !== undefined
+      ? { opCodeValue }
+      : {}),
   };
 }
 
@@ -123,17 +137,24 @@ function FieldsTable({ row, objects, kind, baselineKey }: FieldsTableProps) {
           const bindings = cell?.bindings ?? [];
           const state = cell?.state ?? "undefined";
           const opcodes = bindings
-            .map((b) => (b.opCodeValue !== null ? formatOpcode(b.opCodeValue) : b.opCode))
+            .map((b) =>
+              b.opCodeValue !== null ? formatOpcode(b.opCodeValue) : b.opCode,
+            )
             .join(", ");
           const validators = Array.from(
-            new Set(bindings.map((b) => b.validator).filter((v): v is string => !!v)),
+            new Set(
+              bindings.map((b) => b.validator).filter((v): v is string => !!v),
+            ),
           ).join(", ");
           const services = Array.from(
             new Set(bindings.flatMap((b) => b.services)),
           ).join(", ");
           const shape = classifyOptions(bindings[0]?.options);
           return (
-            <tr key={o.key} className={cn(o.key === baselineKey && "bg-muted/40")}>
+            <tr
+              key={o.key}
+              className={cn(o.key === baselineKey && "bg-muted/40")}
+            >
               <td className="border-b px-2 py-1">{o.label}</td>
               <td className="border-b px-2 py-1">{state}</td>
               <td className="border-b px-2 py-1 font-mono">{opcodes}</td>
@@ -177,7 +198,10 @@ function ServicesTable({ row, objects, baselineKey }: ServicesTableProps) {
             new Set(bindings.flatMap((b) => b.services)),
           ).sort();
           return (
-            <tr key={o.key} className={cn(o.key === baselineKey && "bg-muted/40")}>
+            <tr
+              key={o.key}
+              className={cn(o.key === baselineKey && "bg-muted/40")}
+            >
               <td className="border-b px-2 py-1">{o.label}</td>
               <td className="border-b px-2 py-1">
                 {services.length > 0 ? (
@@ -210,6 +234,7 @@ export function DefinitionDrawer({
   onClose,
   onAction,
   ancestor,
+  readOnlyReason,
 }: DefinitionDrawerProps) {
   const scope = objects.find((o) => o.key === selection.scopeKey);
   if (!scope) return null;
@@ -236,14 +261,25 @@ export function DefinitionDrawer({
   // parse) they are disabled and the per-binding rows below - already
   // unambiguous by construction (Design §5.1) - are the only way to act.
   const singleResolvableBinding: Binding | null =
-    bindings.length === 1 && bindings[0]!.opCodeValue !== null ? bindings[0]! : null;
-  const canTargetSingleBinding = canTargetDefinition && singleResolvableBinding !== null;
+    bindings.length === 1 && bindings[0]!.opCodeValue !== null
+      ? bindings[0]!
+      : null;
+  const canTargetSingleBinding =
+    canTargetDefinition && singleResolvableBinding !== null;
   const singleBindingDisabledReason: string | undefined =
     canTargetDefinition && !canTargetSingleBinding
       ? bindings.length > 1
         ? "This definition has more than one binding in this scope - edit or delete the specific binding below."
         : "This binding's opcode does not parse - edit or delete it directly below."
       : undefined;
+
+  // FR-7.2: a read-only scope (the Tenant page's ancestor column) disables
+  // every MUTATING action, taking priority over the single-binding-ambiguity
+  // reason above when both would otherwise apply - "this column is read-only"
+  // is the more specific, more actionable explanation.
+  const isReadOnly = !!readOnlyReason;
+  const editDeleteDisabled = !canTargetSingleBinding || isReadOnly;
+  const editDeleteReason = readOnlyReason ?? singleBindingDisabledReason;
 
   const label = (verb: string, preposition: string, ellipsis = true) =>
     actionLabel(verb, preposition, scope.label, { ellipsis });
@@ -254,7 +290,9 @@ export function DefinitionDrawer({
   const targetLabel = (verb: string, preposition: string, ellipsis = true) =>
     actionLabel(verb, preposition, scope.label, {
       ellipsis,
-      opcode: canTargetSingleBinding ? singleResolvableBinding!.opCodeValue : null,
+      opcode: canTargetSingleBinding
+        ? singleResolvableBinding!.opCodeValue
+        : null,
     });
 
   const fire = (type: DrawerActionType, opCodeValue?: number | null) =>
@@ -262,7 +300,14 @@ export function DefinitionDrawer({
 
   const fireTarget = (type: "open-in" | "edit" | "delete") => {
     if (!canTargetSingleBinding) return;
-    onAction(buildAction(type, scope.key, row.name, singleResolvableBinding!.opCodeValue));
+    onAction(
+      buildAction(
+        type,
+        scope.key,
+        row.name,
+        singleResolvableBinding!.opCodeValue,
+      ),
+    );
   };
 
   const fireBinding = (type: "edit" | "delete", binding: Binding) =>
@@ -279,7 +324,8 @@ export function DefinitionDrawer({
         <SheetHeader>
           <SheetTitle>{row.name}</SheetTitle>
           <SheetDescription>
-            Scoped to <span className="text-foreground font-medium">{scope.label}</span>
+            Scoped to{" "}
+            <span className="text-foreground font-medium">{scope.label}</span>
             {scope.key === baselineKey && (
               <span className="bg-primary/10 text-primary ml-2 rounded px-1 text-[10px] uppercase">
                 baseline
@@ -302,8 +348,8 @@ export function DefinitionDrawer({
           <Button
             type="button"
             size="sm"
-            disabled={!canTargetSingleBinding}
-            title={singleBindingDisabledReason}
+            disabled={editDeleteDisabled}
+            title={editDeleteReason}
             onClick={() => fireTarget("edit")}
           >
             {targetLabel("Edit", "in")}
@@ -312,16 +358,30 @@ export function DefinitionDrawer({
             type="button"
             size="sm"
             variant="destructive"
-            disabled={!canTargetSingleBinding}
-            title={singleBindingDisabledReason}
+            disabled={editDeleteDisabled}
+            title={editDeleteReason}
             onClick={() => fireTarget("delete")}
           >
             {targetLabel("Delete", "in")}
           </Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => fire("add")}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={isReadOnly}
+            title={readOnlyReason}
+            onClick={() => fire("add")}
+          >
             {label("Add", "to")}
           </Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => fire("copy")}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={isReadOnly}
+            title={readOnlyReason}
+            onClick={() => fire("copy")}
+          >
             {label("Copy", "into")}
           </Button>
           {scopeState === "unsupported" ? (
@@ -329,6 +389,8 @@ export function DefinitionDrawer({
               type="button"
               size="sm"
               variant="outline"
+              disabled={isReadOnly}
+              title={readOnlyReason}
               onClick={() => fire("clear-unsupported")}
             >
               {label("Clear unsupported", "in", false)}
@@ -338,6 +400,8 @@ export function DefinitionDrawer({
               type="button"
               size="sm"
               variant="outline"
+              disabled={isReadOnly}
+              title={readOnlyReason}
               onClick={() => fire("mark-unsupported")}
             >
               {label("Mark unsupported", "in")}
@@ -362,7 +426,10 @@ export function DefinitionDrawer({
               No bindings in {scope.label}.
             </p>
           ) : (
-            <ul aria-label={`Bindings in ${scope.label}`} className="mt-2 space-y-1">
+            <ul
+              aria-label={`Bindings in ${scope.label}`}
+              className="mt-2 space-y-1"
+            >
               {bindings.map((binding, i) => (
                 <li
                   key={`${binding.opCode}-${i}`}
@@ -374,6 +441,8 @@ export function DefinitionDrawer({
                       type="button"
                       size="sm"
                       variant="ghost"
+                      disabled={isReadOnly}
+                      title={readOnlyReason}
                       onClick={() => fireBinding("edit", binding)}
                     >
                       Edit
@@ -382,6 +451,8 @@ export function DefinitionDrawer({
                       type="button"
                       size="sm"
                       variant="ghost"
+                      disabled={isReadOnly}
+                      title={readOnlyReason}
                       onClick={() => fireBinding("delete", binding)}
                     >
                       Delete
@@ -400,7 +471,12 @@ export function DefinitionDrawer({
             <TabsTrigger value="services">Services</TabsTrigger>
           </TabsList>
           <TabsContent value="fields">
-            <FieldsTable row={row} objects={objects} kind={kind} baselineKey={baselineKey} />
+            <FieldsTable
+              row={row}
+              objects={objects}
+              kind={kind}
+              baselineKey={baselineKey}
+            />
           </TabsContent>
           <TabsContent value="options">
             <OptionsMatrixTable
@@ -411,7 +487,11 @@ export function DefinitionDrawer({
             />
           </TabsContent>
           <TabsContent value="services">
-            <ServicesTable row={row} objects={objects} baselineKey={baselineKey} />
+            <ServicesTable
+              row={row}
+              objects={objects}
+              baselineKey={baselineKey}
+            />
           </TabsContent>
         </Tabs>
       </SheetContent>

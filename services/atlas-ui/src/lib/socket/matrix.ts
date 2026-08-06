@@ -22,6 +22,13 @@ export interface Cell {
   optionsMissing: boolean;
   /** Two bindings whose parsed opcodes are equal - "0xB8" and "0x0B8". */
   hasDuplicateOpcode: boolean;
+  /**
+   * The lowest parsed opcode among this cell's bindings, irrespective of
+   * their stored order - null when the cell has no binding with a parseable
+   * opcode. FR-2.6: a multi-binding Definition displays its lowest opcode,
+   * not whichever binding happens to be first in the array.
+   */
+  lowestOpCodeValue: number | null;
 }
 
 export interface Row {
@@ -151,6 +158,7 @@ export function buildRows(input: {
         optionsMissing:
           state === "defined" && someoneSupplies && !supplying.has(o.key),
         hasDuplicateOpcode: new Set(values).size !== values.length,
+        lowestOpCodeValue: values.length > 0 ? Math.min(...values) : null,
       });
     }
 

@@ -30,10 +30,10 @@ export const PacketGridCell = memo(function PacketGridCell({
   colIndex,
   onSelect,
 }: PacketGridCellProps) {
-  const values = cell.bindings
-    .map((b) => b.opCodeValue)
-    .filter((v): v is number => v !== null);
-  const lowest = values.length > 0 ? Math.min(...values) : null;
+  // FR-2.6's "lowest opcode" comparison is model semantics, not display
+  // logic - it lives in buildRows (matrix.ts) as Cell.lowestOpCodeValue so
+  // this component only renders what the model already decided.
+  const lowest = cell.lowestOpCodeValue;
   const extra = cell.bindings.length - 1;
 
   return (

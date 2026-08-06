@@ -81,6 +81,29 @@ describe("buildRows", () => {
     expect(rows[0]!.cells.get("a")!.hasDuplicateOpcode).toBe(false);
   });
 
+  // Regression guard for FR-2.6: the fixture's bindings are deliberately
+  // supplied OUT of numeric order (0xE9 before 0xE0). A cell that reported
+  // bindings[0] instead of the true minimum would pass every other fixture
+  // in this suite - the CharacterEffect test above happens to store its
+  // bindings already in ascending order, so it can't tell "lowest" apart
+  // from "first" - but would report 0xE9 here, where the numerically lowest
+  // binding is second in storage order.
+  it("reports the numeric minimum as lowestOpCodeValue, not the first binding in storage order", () => {
+    const a = obj("a", 95, {
+      CharacterEffect: [binding("0xE9"), binding("0xE0")],
+    });
+    const rows = buildRows({ objects: [a], kind: "writer", baselineKey: "a" });
+    const cell = rows[0]!.cells.get("a")!;
+    expect(cell.bindings.map((x) => x.opCodeValue)).toEqual([0xe9, 0xe0]);
+    expect(cell.lowestOpCodeValue).toBe(0xe0);
+  });
+
+  it("reports lowestOpCodeValue as null when a cell has no binding at all", () => {
+    const a = obj("a", 83, {}, ["MonsterCarnival"]);
+    const rows = buildRows({ objects: [a], kind: "writer", baselineKey: "a" });
+    expect(rows[0]!.cells.get("a")!.lowestOpCodeValue).toBeNull();
+  });
+
   // NoOpHandler is bound to four distinct HANDLER opcodes in gms_95_1 (0x17,
   // 0x19, 0x22, 0x24) - a real corpus fact, not a hypothetical - so this
   // exercises kind "handler", not "writer". One Definition, one row, one

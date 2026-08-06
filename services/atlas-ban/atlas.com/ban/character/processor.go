@@ -9,14 +9,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
-type Model struct {
-	id   uint32
-	name string
-}
-
-func (m Model) Id() uint32   { return m.id }
-func (m Model) Name() string { return m.name }
-
 type Processor interface {
 	GetById(characterId uint32) (Model, error)
 	GetByName(name string) (Model, error)

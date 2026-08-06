@@ -9,20 +9,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
-type Model struct {
-	timestamp  int64
-	senderId   uint32
-	senderName string
-	chatType   string
-	text       string
-}
-
-func (m Model) Timestamp() int64   { return m.timestamp }
-func (m Model) SenderId() uint32   { return m.senderId }
-func (m Model) SenderName() string { return m.senderName }
-func (m Model) ChatType() string   { return m.chatType }
-func (m Model) Text() string       { return m.text }
-
 type Processor interface {
 	// RecentInvolving returns the buffered chat lines authored by any of the
 	// listed characters, merged and sorted ascending by timestamp.

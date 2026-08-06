@@ -24,10 +24,9 @@ type UnsupportedRestModel struct {
 // always carries real arrays rather than nulls. Entries themselves are left
 // untouched. Callers must funnel every read path (Make) and every write path
 // (Create/UpdateById) through Normalize; that is what guarantees the
-// invariant. As of this change that wiring has not happened yet - Make,
-// Create and UpdateById still do plain json.Unmarshal/json.Marshal with no
-// call to Normalize, so a nil Handlers/Writers/Unsupported.* still marshals
-// as null today. Wiring the processors is a separate, later change.
+// invariant. Make, Create and UpdateById in this tree's processor.go all call
+// Normalize, so a nil Handlers/Writers/Unsupported.* is never observed past
+// those boundaries.
 func Normalize(rm RestModel) RestModel {
 	if rm.Handlers == nil {
 		rm.Handlers = []handler.RestModel{}

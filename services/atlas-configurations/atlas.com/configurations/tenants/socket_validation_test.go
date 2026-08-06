@@ -1,11 +1,16 @@
 package tenants
 
 import (
+	"atlas-configurations/data"
+	datamock "atlas-configurations/data/mock"
+	"atlas-configurations/tenants/characters"
+	"atlas-configurations/tenants/characters/preset"
 	"atlas-configurations/tenants/socket"
 	"atlas-configurations/tenants/socket/handler"
 	"atlas-configurations/tenants/socket/writer"
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	configsocket "atlas-configurations/socket"
@@ -130,4 +135,66 @@ func TestToValidationInput_FlattensBothCollections(t *testing.T) {
 	}
 	// Compile-time proof the adapter returns the shared package's type.
 	var _ configsocket.Input = in
+}
+
+// TestUpdateById_MergesSocketAndPresetIssues proves socket and preset
+// validation failures no longer mask each other: a document invalid in BOTH
+// dimensions must come back as a single validationFailureError carrying BOTH
+// families, and AsJSONAPIErrors() must render both.
+func TestUpdateById_MergesSocketAndPresetIssues(t *testing.T) {
+	db := testDB(t)
+	l := logrus.New()
+	ctx := context.Background()
+
+	base := validTenant()
+	id, err := NewProcessor(l, ctx, db).Create(base)
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	fake := &datamock.ProcessorMock{Items: map[uint32]data.ItemInfo{}, Skills: map[uint32]data.SkillInfo{}}
+	p := NewProcessor(l, ctx, db).WithValidator(preset.NewValidator(fake))
+
+	bad := validTenant()
+	// Socket-invalid: handler carries no validator.
+	bad.Socket.Handlers[0].Validator = ""
+	// Preset-invalid: R-1 (empty name) and R-3 (unknown jobId).
+	bad.Characters = characters.RestModel{
+		Presets: []preset.RestModel{{
+			Attributes: preset.Attributes{
+				Name:  "",
+				JobId: 99999,
+				Level: 1,
+			},
+		}},
+	}
+
+	err = p.UpdateById(id, bad)
+	var ve *validationFailureError
+	if !errors.As(err, &ve) {
+		t.Fatalf("UpdateById err = %v, want *validationFailureError", err)
+	}
+
+	apiErrs := ve.AsJSONAPIErrors()
+
+	var sawSocketPath, sawPresetName, sawPresetJobId bool
+	for _, e := range apiErrs {
+		if e.Status != "400" {
+			t.Errorf("status = %q, want 400 for %+v", e.Status, e)
+		}
+		path, _ := e.Meta["path"].(string)
+		switch {
+		case path == "socket.handlers[0].validator":
+			sawSocketPath = true
+		case strings.HasPrefix(path, "presets[") && strings.HasSuffix(path, "].name"):
+			sawPresetName = true
+		case strings.HasPrefix(path, "presets[") && strings.HasSuffix(path, "].jobId"):
+			sawPresetJobId = true
+		}
+	}
+
+	if !sawSocketPath || !sawPresetName || !sawPresetJobId {
+		t.Fatalf("socket and preset issues did not both reach the merged 400 body: socket=%v presetName=%v presetJobId=%v, errs=%+v",
+			sawSocketPath, sawPresetName, sawPresetJobId, apiErrs)
+	}
 }

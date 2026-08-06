@@ -123,16 +123,25 @@ func (p *ProcessorImpl) Create(input RestModel) (uuid.UUID, error) {
 
 func (p *ProcessorImpl) UpdateById(templateId uuid.UUID, input RestModel) error {
 	input.Socket = socket.Normalize(input.Socket)
-	if issues := socketValidate(input.Socket); len(issues) > 0 {
-		return &validationFailureError{socketIssues: issues}
-	}
+	issues := socketValidate(input.Socket)
 
+	// The preset validator always runs, even when socket issues already
+	// exist, so a single 400 can report every problem the request has -
+	// socket and preset failures must never mask each other. This means an
+	// atlas-data round trip (p.validator.Validate) now happens on every
+	// invalid-socket request too, not just clean ones; that I/O was already
+	// paid on every valid-socket request and is not gated behind
+	// WithValidator being unset, so the added cost is one otherwise-skippable
+	// call on the socket-invalid path.
+	var presetErrs []preset.ValidationError
 	if p.validator != nil {
 		assigned, errs := p.validator.Validate(p.ctx, input.Characters.Presets)
 		input.Characters.Presets = assigned
-		if len(errs) > 0 {
-			return &validationFailureError{errors: errs}
-		}
+		presetErrs = errs
+	}
+
+	if len(issues) > 0 || len(presetErrs) > 0 {
+		return &validationFailureError{errors: presetErrs, socketIssues: issues}
 	}
 
 	res, err := json.Marshal(input)

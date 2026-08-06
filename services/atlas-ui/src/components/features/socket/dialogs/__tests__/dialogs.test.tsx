@@ -229,6 +229,12 @@ describe("EditDefinitionDialog", () => {
 });
 
 describe("DeleteDefinitionDialog", () => {
+  // Matches config()'s NoOpHandler bindings (0x17, 0x19), so tests that
+  // assert against `apply(config())` stay consistent with the derived count.
+  const twoBindingScope = socketObject("scope", "GMS v83.1", {
+    NoOpHandler: [binding("0x17"), binding("0x19")],
+  });
+
   // FR-6.3: two distinct outcomes, chosen explicitly.
   it("offers remove and remove-and-mark-unsupported as separate choices", () => {
     render(
@@ -240,6 +246,7 @@ describe("DeleteDefinitionDialog", () => {
         kind="handler"
         name="NoOpHandler"
         opCodeValue={0x19}
+        scope={twoBindingScope}
       />,
       { wrapper },
     );
@@ -259,6 +266,7 @@ describe("DeleteDefinitionDialog", () => {
         kind="handler"
         name="NoOpHandler"
         opCodeValue={0x19}
+        scope={twoBindingScope}
       />,
       { wrapper },
     );
@@ -275,6 +283,7 @@ describe("DeleteDefinitionDialog", () => {
         kind="handler"
         name="NoOpHandler"
         opCodeValue={0x19}
+        scope={twoBindingScope}
       />,
       { wrapper },
     );
@@ -285,7 +294,7 @@ describe("DeleteDefinitionDialog", () => {
     expect(apply(config())).toEqual(deleteBinding(config(), "handler", "NoOpHandler", 0x19));
   });
 
-  it("warns that marking unsupported removes every binding of the name", async () => {
+  it("warns that marking unsupported removes every binding of the name - count derived from scope, not caller-supplied", async () => {
     render(
       <DeleteDefinitionDialog
         open
@@ -295,12 +304,38 @@ describe("DeleteDefinitionDialog", () => {
         kind="handler"
         name="NoOpHandler"
         opCodeValue={0x19}
-        bindingCount={2}
+        scope={twoBindingScope}
       />,
       { wrapper },
     );
     await userEvent.click(screen.getByRole("radio", { name: /remove and mark unsupported/i }));
     expect(screen.getByText(/all 2 bindings/i)).toBeInTheDocument();
+  });
+
+  // Regression coverage for the hazard a caller-supplied `bindingCount` prop
+  // would reintroduce: a four-binding definition must never be understated
+  // as "this binding" (singular) just because a caller forgot to pass a
+  // count. This would fail against a version of the dialog whose count
+  // defaults to 1 when not derived from `scope`.
+  it("names all four bindings when 'remove and mark unsupported' is chosen for a four-binding definition", async () => {
+    const fourBindingScope = socketObject("scope", "GMS v83.1", {
+      NoOpHandler: [binding("0x11"), binding("0x17"), binding("0x19"), binding("0x22")],
+    });
+    render(
+      <DeleteDefinitionDialog
+        open
+        onOpenChange={vi.fn()}
+        target={target}
+        targetLabel="GMS v83.1"
+        kind="handler"
+        name="NoOpHandler"
+        opCodeValue={0x19}
+        scope={fourBindingScope}
+      />,
+      { wrapper },
+    );
+    await userEvent.click(screen.getByRole("radio", { name: /remove and mark unsupported/i }));
+    expect(screen.getByText(/all 4 bindings/i)).toBeInTheDocument();
   });
 
   it("switches to markUnsupported when 'remove and mark unsupported' is chosen", async () => {
@@ -313,7 +348,7 @@ describe("DeleteDefinitionDialog", () => {
         kind="handler"
         name="NoOpHandler"
         opCodeValue={0x19}
-        bindingCount={2}
+        scope={twoBindingScope}
       />,
       { wrapper },
     );
@@ -509,6 +544,7 @@ describe("MutationError surfacing", () => {
         kind="handler"
         name="NoOpHandler"
         opCodeValue={0x19}
+        scope={socketObject("scope", "GMS v83.1", { NoOpHandler: [binding("0x19")] })}
       />,
       { wrapper },
     );

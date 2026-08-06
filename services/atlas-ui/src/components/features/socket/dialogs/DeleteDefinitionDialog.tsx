@@ -14,6 +14,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { DialogBaseProps } from "@/components/features/socket/dialogs/dialog-base";
 import { useSocketMutation } from "@/lib/hooks/api/useSocketObjects";
 import { deleteBinding, markUnsupported } from "@/lib/socket/mutate";
+import { entriesOf, type SocketObject } from "@/lib/socket/model";
 import { formatOpcode } from "@/lib/socket/opcode";
 import { createErrorFromUnknown } from "@/types/api/errors";
 
@@ -21,11 +22,15 @@ export interface DeleteDefinitionDialogProps extends DialogBaseProps {
   name: string;
   opCodeValue: number;
   /**
-   * Total bindings `name` holds in this scope. Needed for the
-   * "remove and mark unsupported" warning - that choice removes ALL of them,
-   * not just the addressed one, because `markUnsupported` is name-scoped.
+   * The current scope object (the same `SocketObject` the drawer already
+   * has in hand), so the "remove and mark unsupported" warning's binding
+   * count is DERIVED rather than caller-supplied - a caller cannot
+   * understate a four-binding removal as one by omitting or miscounting a
+   * separate `bindingCount` prop. That choice removes ALL of `name`'s
+   * bindings, not just the one addressed by `opCodeValue`, because
+   * `markUnsupported` is name-scoped while bindings are opcode-scoped.
    */
-  bindingCount?: number;
+  scope: SocketObject;
 }
 
 type DeleteChoice = "remove" | "remove-unsupported";
@@ -46,12 +51,16 @@ export function DeleteDefinitionDialog({
   kind,
   name,
   opCodeValue,
-  bindingCount,
+  scope,
 }: DeleteDefinitionDialogProps) {
   const mutation = useSocketMutation();
   const [choice, setChoice] = useState<DeleteChoice>("remove");
   const opcodeLabel = formatOpcode(opCodeValue);
-  const count = bindingCount ?? 1;
+  // Derived from `scope`, never a caller-supplied number: it cannot drift
+  // from what's actually there. Falls back to 1 only if `scope` somehow
+  // doesn't carry the binding being deleted (should not happen - opCodeValue
+  // addresses a real binding - but "singular" is the safe default wording).
+  const count = entriesOf(scope, kind).get(name)?.length ?? 1;
 
   // Reset the choice back to "remove" whenever the dialog transitions from
   // closed to open (adjust state during render per

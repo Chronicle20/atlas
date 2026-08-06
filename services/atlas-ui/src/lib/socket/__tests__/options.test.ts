@@ -31,6 +31,8 @@ describe("classifyOptions", () => {
   });
 
   it("classifies an explicit empty object", () => {
+    // Measured: 9 of 543 options objects across the eleven templates are the
+    // literal `{}`.
     expect(classifyOptions({})).toBe("empty");
   });
 
@@ -232,6 +234,125 @@ describe("buildOptionsMatrix - maps compare by key", () => {
   });
 });
 
+describe("buildOptionsMatrix - multi-group maps flatten to group.entry rows", () => {
+  // Measured: 39 of 543 options objects across the eleven templates carry
+  // more than one top-level key, and every one of them is entirely
+  // map-shaped groups (no group is ever a list). ServerIP (gms_12_1,
+  // gms_48_1, gms_61_1, ...) is a real two-group example: `codes` + `modes`.
+  it("compares a ServerIP-style codes+modes object by group.entry, not by opaque group", () => {
+    const a = obj("a", {
+      codes: { OK: 0, INCORRECT_PASSWORD: 4 },
+      modes: { OK: 0, INCORRECT_LOGIN_ID: 1 },
+    });
+    const b = obj("b", {
+      codes: { OK: 0, INCORRECT_PASSWORD: 99 },
+      modes: { OK: 0, INCORRECT_LOGIN_ID: 1 },
+    });
+
+    const m = buildOptionsMatrix({
+      objects: [a, b],
+      kind: "writer",
+      name: "CharacterMovement",
+      baselineKey: "a",
+    });
+
+    expect(m.shape).toBe("map");
+    expect(m.rows.map((r) => r.key).sort()).toEqual([
+      "codes.INCORRECT_PASSWORD",
+      "codes.OK",
+      "modes.INCORRECT_LOGIN_ID",
+      "modes.OK",
+    ]);
+
+    const diverged = m.rows.find((r) => r.key === "codes.INCORRECT_PASSWORD")!;
+    expect(diverged.cells.get("b")!.state).toBe("differs");
+
+    // Everything else - including the OTHER group entirely - is unaffected.
+    for (const row of m.rows) {
+      if (row.key === "codes.INCORRECT_PASSWORD") continue;
+      expect(row.cells.get("b")!.state).toBe("same");
+    }
+  });
+
+  it("produces one row per entry across all groups, not one row per group (CharacterInteraction-style)", () => {
+    // Measured: CharacterInteraction in gms_48_1 carries five groups -
+    // operations, enterError, leaveReason, putStoneError, resultType. This
+    // uses a smaller synthetic stand-in with the same five-group shape and
+    // deliberately uneven entry counts per group, to prove the row count is
+    // the SUM of entry counts, not the group count (5).
+    const c = obj("c", {
+      operations: { INVITE: 2, ENTER: 4, LEAVE: 10 },
+      enterError: { FULL: 2, UNABLE: 6 },
+      leaveReason: { KICKED: 1 },
+      putStoneError: { WRONG_STONE: 1, NOT_ENOUGH: 2 },
+      resultType: { SUCCESS: 0 },
+    });
+
+    const m = buildOptionsMatrix({
+      objects: [c],
+      kind: "writer",
+      name: "CharacterMovement",
+      baselineKey: "c",
+    });
+
+    expect(m.shape).toBe("map");
+    // 3 + 2 + 1 + 2 + 1 = 9 entries, not 5 groups.
+    expect(m.rows).toHaveLength(9);
+    expect(m.rows.map((r) => r.key).sort()).toEqual(
+      [
+        "operations.INVITE",
+        "operations.ENTER",
+        "operations.LEAVE",
+        "enterError.FULL",
+        "enterError.UNABLE",
+        "leaveReason.KICKED",
+        "putStoneError.WRONG_STONE",
+        "putStoneError.NOT_ENOUGH",
+        "resultType.SUCCESS",
+      ].sort(),
+    );
+  });
+
+  it("classifies a whole missing group as per-entry missing/extra rows, not one coarse group-level row", () => {
+    const a = obj("a", {
+      codes: { OK: 0, ERROR: 1 },
+      modes: { OK: 0, INCORRECT_LOGIN_ID: 1 },
+    });
+    // b never supplies the "modes" group at all.
+    const b = obj("b", { codes: { OK: 0, ERROR: 1 } });
+
+    const m = buildOptionsMatrix({
+      objects: [a, b],
+      kind: "writer",
+      name: "CharacterMovement",
+      baselineKey: "a",
+    });
+
+    const modeRows = m.rows.filter((r) => r.key.startsWith("modes."));
+    expect(modeRows).toHaveLength(2);
+    for (const row of modeRows) {
+      expect(row.cells.get("b")!.state).toBe("missing");
+      expect(row.cells.get("a")!.state).toBe("same");
+    }
+    // There is no single coarse "modes" row standing in for the group.
+    expect(m.rows.some((r) => r.key === "modes")).toBe(false);
+
+    // And the reverse direction: b as baseline, a supplies the extra group.
+    const m2 = buildOptionsMatrix({
+      objects: [a, b],
+      kind: "writer",
+      name: "CharacterMovement",
+      baselineKey: "b",
+    });
+    const modeRows2 = m2.rows.filter((r) => r.key.startsWith("modes."));
+    expect(modeRows2).toHaveLength(2);
+    for (const row of modeRows2) {
+      expect(row.cells.get("a")!.state).toBe("extra");
+      expect(row.cells.get("b")!.state).toBe("missing");
+    }
+  });
+});
+
 describe("buildOptionsMatrix - degenerate inputs", () => {
   it("returns no rows when nobody supplies options", () => {
     const m = buildOptionsMatrix({
@@ -240,6 +361,17 @@ describe("buildOptionsMatrix - degenerate inputs", () => {
       name: "CharacterMovement",
       baselineKey: "a",
     });
+    expect(m.rows).toHaveLength(0);
+  });
+
+  it("renders nothing surprising when both sides are the literal empty object", () => {
+    const m = buildOptionsMatrix({
+      objects: [obj("a", {}), obj("b", {})],
+      kind: "writer",
+      name: "CharacterMovement",
+      baselineKey: "a",
+    });
+    expect(m.shape).toBe("empty");
     expect(m.rows).toHaveLength(0);
   });
 

@@ -8,11 +8,20 @@ import { entriesOf } from "@/lib/socket/model";
 /**
  * `options` is free-form, but two structural families occur in practice:
  *
- *   list - a single key whose value is a JSON array ("types"). The ARRAY INDEX
- *          is the wire value and the name is NOT unique: gms_95_1
- *          CharacterMovement carries UNKNOWN at six separate indices.
- *   map  - a flat object of name -> wire number ("operations",
- *          "failedReasonCodes", "codes").
+ *   list - a single key whose value is a JSON array ("types", "statistics").
+ *          The ARRAY INDEX is the wire value and the name is NOT unique:
+ *          gms_95_1 CharacterMovement carries UNKNOWN at six separate
+ *          indices.
+ *   map  - one or more top-level keys, each wrapping a name -> wire-value
+ *          object ("operations", "failedReasonCodes", "codes", and others).
+ *          Measured across all eleven templates: of 543 options objects, 495
+ *          carry exactly one such key, 39 carry two to five (e.g. ServerIP's
+ *          `codes` + `modes`, CharacterInteraction's five groups), and 9 are
+ *          the literal empty object (classified "empty", not "map"). No
+ *          options object anywhere in the corpus mixes a list-shaped group
+ *          with a map-shaped one. `mapOf` below flattens multi-group objects
+ *          to one row per group.entry pair so a divergence inside a single
+ *          group doesn't collapse into one opaque group-level "differs".
  *
  * Anything else falls back to map over its top-level keys and renders read-only.
  */
@@ -61,28 +70,56 @@ function listOf(value: unknown): unknown[] | null {
   return (value as Record<string, unknown>)[k] as unknown[];
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 /**
- * Pulls a map's entries out of its single wrapping key when there is one -
- * the real corpus shape is `{ operations: { OPEN: 5 } }`, `{ codes: {
+ * Pulls a map's entries out of its options object, unwrapping its
+ * single-key or multi-key group wrapper.
+ *
+ * Single-group shape (495/543 measured): one top-level key wrapping a
+ * name -> value object, e.g. `{ operations: { OPEN: 5 } }`, `{ codes: {
  * NORMAL: 0, ... } }`, `{ failedReasonCodes: { BANNED: 2, ... } }` (verified
- * directly against template_gms_95_1.json), the same single-key-wrapper
- * convention `listOf` unwraps for "types". An object with more than one
- * top-level key, or a single key whose value is not itself an object, has no
- * such wrapper to peel and is used as-is - this only matters for the "falls
- * back to map for anything else" case, which is defensive, not a corpus
- * shape.
+ * directly against template_gms_95_1.json). Unwrapped one level so rows are
+ * keyed by entry name ("OPEN"), not the group name ("operations").
+ *
+ * Multi-group shape (39/543 measured, e.g. ServerIP's `{ codes: {...},
+ * modes: {...} }` in gms_12_1/48_1/61_1/..., or CharacterInteraction's five
+ * groups `operations`/`enterError`/`leaveReason`/`putStoneError`/
+ * `resultType` in gms_48_1 - all verified directly against the seed
+ * templates): every measured multi-group object is entirely map-shaped
+ * groups, never mixed with a list. Flattened to "group.entry" rows, one per
+ * entry across every group, so a divergence inside a single group (e.g. one
+ * `operations` code) surfaces on its own row instead of the whole group
+ * comparing as one opaque blob.
+ *
+ * A group whose value is not itself a plain object - not observed anywhere
+ * in the corpus - is kept as a single raw row under its own top-level key;
+ * defensive fallback only, never a corpus shape.
  */
 function mapOf(value: unknown): Record<string, unknown> | null {
   if (classifyOptions(value) !== "map") return null;
   const obj = value as Record<string, unknown>;
   const keys = Object.keys(obj);
+
   if (keys.length === 1) {
     const inner = obj[keys[0]!];
-    if (inner !== null && typeof inner === "object" && !Array.isArray(inner)) {
-      return inner as Record<string, unknown>;
+    return isPlainObject(inner) ? inner : obj;
+  }
+
+  const flattened: Record<string, unknown> = {};
+  for (const k of keys) {
+    const group = obj[k];
+    if (isPlainObject(group)) {
+      for (const [entry, entryValue] of Object.entries(group)) {
+        flattened[`${k}.${entry}`] = entryValue;
+      }
+    } else {
+      flattened[k] = group;
     }
   }
-  return obj;
+  return flattened;
 }
 
 /**

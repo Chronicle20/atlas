@@ -292,6 +292,13 @@ that is not available on the wire:
 - [ ] Translated name for FairytaleLandBeanstalkClimb2 (`map/constants.go:1641`)
 - [ ] Define HiddenStreet Nett's Pyramid battle room maps (926010100-926023500) (`map/model.go:434`)
 
+### atlas-packet
+- [ ] **Foreign-CTS shapes that still disagree with the client (non-disease).** Found while sweeping `SecondaryStat::DecodeForRemote` across all ten clients for task-195 / #1196; left alone there because none is a disease and none is reachable today. Evidence in `docs/tasks/task-195-foreign-disease-mobskill/investigation.md` §6.
+  - `ShadowPartner` (v87+) foreign-writes `Short(level) + Short(sourceId)` via `LevelSourceForeignValueWriter`, truncating a 7-digit player skill id into 16 bits. The client reads one `Decode4` reason (`rShadowPartner` in the v95 PDB).
+  - `BanMap` foreign-writes 4 bytes unconditionally, but gms_v48's remote decoder (`sub_5CBA1F`) reads none for that bit.
+  - v95's remote decoder reads a `Decode4` reason for `Mechanic`, `DarkAura`, `BlueAura`, `YellowAura`; the registry has them `NoOp`. Latent only — atlas never originates these stats, so the bits are never set.
+  - gms_v61's remote decoder has no `ReverseInput` branch at all, so a v61 tenant setting `Confuse` would desync. Atlas has no v61 Confuse source today.
+
 ### atlas-object-id
 - [ ] **Silent ID-collision on Redis failure.** `IdAllocator.Allocate` in each consumer (`services/atlas-monsters/atlas.com/monsters/monster/id_allocator.go:38-41`, and the inline equivalents in atlas-reactors and atlas-drops registries) swallows the error from `objectid.Allocator.Allocate` and returns `objectid.MinId` (1,000,000) as a fallback. Effect: during a Redis outage every monster, reactor, or drop spawned across the deployment is assigned the same id (1,000,000) and they collide in the per-tenant `<entity>:{tenantId}:{id}` storage key — only one entity survives in storage even though many were created. The v83 client also crashes on duplicate oids in the same field. Fix: propagate the allocation error all the way up to the spawn caller (Create/CreateAndEmit/etc.) and fail the spawn loudly. Discovered while documenting the shared allocator in task-019.
 

@@ -33,6 +33,14 @@ export interface Row {
   inBaseline: boolean;
   /** The baseline's lowest opcode for this row; null when not in the baseline. */
   baselineOpCodeValue: number | null;
+  /**
+   * The baseline object's state for this row - "undefined" when the baseline
+   * has no cell at all (e.g. `baselineKey` doesn't match any selected
+   * object). Drives the "state" SortKey so sorting always follows the same
+   * object the row is ORDERED by, regardless of the order objects were
+   * selected in.
+   */
+  baselineState: DefinitionState;
 }
 
 export type SortKey = "opcode" | "name" | "state";
@@ -63,12 +71,21 @@ export function emptyFilters(): GridFilters {
 /**
  * True when a bindings list supplies a non-empty options object.
  *
- * An explicit `{}` (real corpus fact: gms_95_1 MiniRoom) counts as supplying
- * NO options. A key whose value is an empty array - e.g. `{ types: [] }`, the
- * gms_92_1/gms_95_1 CharacterMovement and gms_87_1/gms_95_1/jms_185_1
- * PetMovement shape - DOES count as supplying options: the key itself is
- * present, the list it names just happens to have zero entries. Those are two
- * different facts and only the first is "no options".
+ * An explicit `{}` (real corpus fact: gms_95_1 MiniRoom writer, opCode 0xB8)
+ * counts as supplying NO options - same as an absent `options` key entirely,
+ * which is what gms_87_1 PetMovement, gms_92_1 CharacterMovement, gms_95_1
+ * CharacterMovement + PetMovement, and jms_185_1 PetMovement actually do
+ * (verified directly against the seed templates - no version omits `types`
+ * via an EMPTY ARRAY; the key is simply not there). Those five cells
+ * therefore classify as "supplies no options" and correctly trip the FR-3.2
+ * absence marker against any sibling that does supply (e.g. gms_79_1
+ * PetMovement, a populated 23-entry `types` table).
+ *
+ * Hypothetically, if a version DID store `{ types: [] }` - the key present
+ * but the array empty - this function would treat that as SUPPLYING options
+ * (the key exists; `Object.keys` sees it), not omitting them. No such shape
+ * has been observed in the corpus; this is documented behavior for the case,
+ * not a claim that the case occurs.
  */
 function suppliesOptions(bindings: Binding[]): boolean {
   return bindings.some((b) => {
@@ -150,6 +167,7 @@ export function buildRows(input: {
       inBaseline: baselineCell?.state === "defined",
       baselineOpCodeValue:
         baselineValues.length > 0 ? Math.min(...baselineValues) : null,
+      baselineState: baselineCell?.state ?? "undefined",
     });
   }
   return rows;
@@ -166,10 +184,14 @@ const STATE_ORDER: Record<DefinitionState, number> = {
  * baseline-defined rows, in both directions - the direction toggle orders
  * within each group, it does not promote non-baseline rows to the top.
  *
- * The "state" key has no single Row-level state to compare (a Row carries one
- * Cell per selected object) - it uses each row's FIRST selected object's cell,
- * i.e. the same object across every row, so the ordering is consistent and
- * deterministic across the whole result.
+ * The "state" key compares each row's `baselineState` - the SAME object
+ * `buildRows` was given as `baselineKey`, regardless of where that object
+ * falls in the `objects` array the caller selected. This mirrors
+ * `filterRows`'s `states` filter, which is also baseline-anchored.
+ *
+ * A tie (equal opcode, or equal state) always breaks by ascending name,
+ * unaffected by `dir` - the direction toggle reorders the primary key only,
+ * it does not reverse the tie-break.
  */
 export function sortRows(
   rows: Row[],
@@ -191,25 +213,19 @@ export function sortRows(
     } else if (key === "name") {
       cmp = a.name.localeCompare(b.name);
     } else {
-      const aFirstKey = [...a.cells.keys()][0];
-      const bFirstKey = [...b.cells.keys()][0];
-      const as =
-        (aFirstKey !== undefined ? a.cells.get(aFirstKey)?.state : undefined) ??
-        "undefined";
-      const bs =
-        (bFirstKey !== undefined ? b.cells.get(bFirstKey)?.state : undefined) ??
-        "undefined";
-      cmp = STATE_ORDER[as] - STATE_ORDER[bs];
-      if (cmp === 0) cmp = a.name.localeCompare(b.name);
+      cmp = STATE_ORDER[a.baselineState] - STATE_ORDER[b.baselineState];
     }
     return cmp === 0 ? a.name.localeCompare(b.name) : cmp * sign;
   });
 }
 
 /**
- * FR-4.3/4.4. State, hasOptions and service filters are evaluated against the
- * BASELINE object's cell, which is the object the row is ordered by and the
- * one the drawer defaults its scope to.
+ * FR-4.3/4.4. State and hasOptions are evaluated against the BASELINE
+ * object's cell - the object the row is ordered by and the one the drawer
+ * defaults its scope to. The service filter is NOT baseline-scoped: like the
+ * free-text search, it matches if ANY selected object's binding for this row
+ * lists that service, so a row stays visible while comparing which versions
+ * carry a given service even when the baseline itself doesn't.
  */
 export function filterRows(
   rows: Row[],

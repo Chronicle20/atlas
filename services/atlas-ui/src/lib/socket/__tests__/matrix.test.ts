@@ -81,19 +81,29 @@ describe("buildRows", () => {
     expect(rows[0]!.cells.get("a")!.hasDuplicateOpcode).toBe(false);
   });
 
-  // NoOpHandler is bound to four distinct opcodes in gms_95_1 (0x17, 0x19,
-  // 0x22, 0x24) - a real corpus fact, not a hypothetical. One Definition, one
-  // row, one Cell holding all four bindings.
+  // NoOpHandler is bound to four distinct HANDLER opcodes in gms_95_1 (0x17,
+  // 0x19, 0x22, 0x24) - a real corpus fact, not a hypothetical - so this
+  // exercises kind "handler", not "writer". One Definition, one row, one
+  // Cell holding all four bindings.
   it("carries all four bindings of a NoOpHandler-style definition into one cell, with no duplicate flag", () => {
-    const a = obj("a", 95, {
-      NoOpHandler: [
-        binding("0x17"),
-        binding("0x19"),
-        binding("0x22"),
-        binding("0x24"),
-      ],
-    });
-    const rows = buildRows({ objects: [a], kind: "writer", baselineKey: "a" });
+    const a: SocketObject = {
+      key: "a",
+      label: "GMS v95.1",
+      source: "template",
+      region: "GMS",
+      majorVersion: 95,
+      minorVersion: 1,
+      handlers: new Map([
+        [
+          "NoOpHandler",
+          [binding("0x17"), binding("0x19"), binding("0x22"), binding("0x24")],
+        ],
+      ]),
+      writers: new Map(),
+      unsupportedHandlers: new Set(),
+      unsupportedWriters: new Set(),
+    };
+    const rows = buildRows({ objects: [a], kind: "handler", baselineKey: "a" });
     expect(rows).toHaveLength(1);
     const cell = rows[0]!.cells.get("a")!;
     expect(cell.bindings.map((x) => x.opCodeValue)).toEqual([
@@ -110,7 +120,7 @@ describe("buildRows", () => {
 
   it("does not flag distinct opcodes as duplicates", () => {
     const a = obj("a", 95, {
-      NoOpHandler: [binding("0x17"), binding("0x19")],
+      CharacterEffect: [binding("0x17"), binding("0x19")],
     });
     const rows = buildRows({ objects: [a], kind: "writer", baselineKey: "a" });
     expect(rows[0]!.cells.get("a")!.hasDuplicateOpcode).toBe(false);
@@ -191,12 +201,15 @@ describe("buildRows", () => {
     expect(rows[0]!.cells.get("b")!.optionsMissing).toBe(false);
   });
 
-  // The empty gms_92_1/gms_95_1 CharacterMovement and gms_87_1/gms_95_1/
-  // jms_185_1 PetMovement tables: the "types" key is present, its array just
-  // happens to have zero entries. That counts as SUPPLYING options, not
-  // omitting them - it must not trip the FR-3.2 marker on the sibling that
-  // has a populated table, nor be flagged missing itself.
-  it("treats an empty types array as supplying options, not omitting them", () => {
+  // HYPOTHETICAL, not a corpus fact: no template in the seed-data corpus
+  // stores `{ types: [] }` for CharacterMovement/PetMovement - verified
+  // directly against all eleven templates (see the "real corpus" test
+  // below, which covers the ACTUAL shape those cells have: the `options`
+  // key absent entirely). This test only pins the documented behavior of
+  // `suppliesOptions` for the key-present-but-array-empty case, in case that
+  // shape ever appears: the key itself existing is what counts, not what its
+  // array contains.
+  it("treats an empty types array as supplying options, not omitting them (hypothetical shape)", () => {
     const a = obj("a", 83, {
       CharacterMovement: [
         binding("0xB9", { options: { types: ["WALK", "JUMP"] } }),
@@ -209,6 +222,34 @@ describe("buildRows", () => {
     const row = rows[0]!;
     expect(row.cells.get("a")!.optionsMissing).toBe(false);
     expect(row.cells.get("b")!.optionsMissing).toBe(false);
+  });
+
+  // Real corpus fact (verified directly against the seed templates): gms_87_1
+  // PetMovement, gms_92_1 CharacterMovement, gms_95_1 CharacterMovement +
+  // PetMovement, and jms_185_1 PetMovement all OMIT the `options` key
+  // entirely - there is no empty-array shape anywhere in the corpus. This is
+  // exactly the "supplies no options" case, so it trips the FR-3.2 marker
+  // against a sibling that has a real table - e.g. gms_79_1 PetMovement,
+  // which carries a populated 23-entry `types` array.
+  it("marks the object that omits options entirely against the sibling that supplies real options", () => {
+    const gms79 = obj("gms79", 79, {
+      PetMovement: [
+        binding("0xC5", {
+          options: {
+            types: Array.from({ length: 23 }, (_, i) => `TYPE_${i}`),
+          },
+        }),
+      ],
+    });
+    const gms87 = obj("gms87", 87, { PetMovement: [binding("0xCB")] });
+    const rows = buildRows({
+      objects: [gms79, gms87],
+      kind: "writer",
+      baselineKey: "gms79",
+    });
+    const row = rows[0]!;
+    expect(row.cells.get("gms79")!.optionsMissing).toBe(false);
+    expect(row.cells.get("gms87")!.optionsMissing).toBe(true);
   });
 
   it("records baseline membership and the baseline opcode", () => {
@@ -268,33 +309,43 @@ describe("sortRows", () => {
   });
 
   describe("by state", () => {
-    // State-sort compares each row's cell for the FIRST selected object ("c"
-    // here). Using a baselineKey that matches none of the selected objects
-    // keeps every row out of the baseline group uniformly, so the ordering
-    // below is driven purely by the state comparator, not by FR-2.11
-    // baseline-first grouping (which the opcode-sort tests above already
-    // cover).
-    const c = obj("c", 92, { Def1: [binding("0x01")] }, ["Def2"]);
-    const d = obj("d", 95, { Def3: [binding("0x03")] });
-    const rowsNoBaseline = buildRows({
-      objects: [c, d],
+    // Regression fixture: the BASELINE ("baseline2") is deliberately passed
+    // SECOND in `objects`, and its per-definition states are scrambled
+    // relative to the first object ("first") so the two would produce
+    // DIFFERENT orderings if "state" sort ever again read the first selected
+    // object's cell instead of Row.baselineState:
+    //
+    //           first ("c")        baseline2 ("b2")
+    //   DefA    unsupported        defined
+    //   DefB    undefined (absent) unsupported
+    //   DefC    defined            undefined (absent)
+    //
+    // Correct (baseline-anchored) ascending order: DefA (baseline-defined,
+    // always first per FR-2.11), then DefB (unsupported in the baseline)
+    // before DefC (undefined in the baseline).
+    //
+    // The old first-object-anchored behavior would have put DefC (defined in
+    // "first") before DefB (undefined in "first") within the non-baseline
+    // group, i.e. [DefA, DefC, DefB] - the opposite of what's asserted below.
+    const first = obj("first", 92, { DefC: [binding("0x01")] }, ["DefA"]);
+    const baseline2 = obj("baseline2", 95, { DefA: [binding("0x05")] }, [
+      "DefB",
+    ]);
+    const rows2 = buildRows({
+      objects: [first, baseline2],
       kind: "writer",
-      baselineKey: "no-such-object",
+      baselineKey: "baseline2",
     });
 
-    it("orders defined before unsupported before undefined, ascending", () => {
-      expect(rowsNoBaseline.every((r) => !r.inBaseline)).toBe(true);
-      const sorted = sortRows(rowsNoBaseline, "state", "asc").map(
-        (r) => r.name,
-      );
-      expect(sorted).toEqual(["Def1", "Def2", "Def3"]);
+    it("orders by the baseline object's state, not the first selected object's", () => {
+      expect(rows2.map((r) => r.name).sort()).toEqual(["DefA", "DefB", "DefC"]);
+      const sorted = sortRows(rows2, "state", "asc").map((r) => r.name);
+      expect(sorted).toEqual(["DefA", "DefB", "DefC"]);
     });
 
-    it("reverses to undefined before unsupported before defined, descending", () => {
-      const sorted = sortRows(rowsNoBaseline, "state", "desc").map(
-        (r) => r.name,
-      );
-      expect(sorted).toEqual(["Def3", "Def2", "Def1"]);
+    it("reverses the within-group state ordering, descending, while DefA (baseline-defined) still leads", () => {
+      const sorted = sortRows(rows2, "state", "desc").map((r) => r.name);
+      expect(sorted).toEqual(["DefA", "DefC", "DefB"]);
     });
   });
 });

@@ -37,10 +37,27 @@ function cellAriaLabel(
 
 /**
  * A non-baseline cell whose value is "same" renders an equality glyph
- * instead of repeating the value verbatim. Reprinting the identical value in
- * every column would bury the one divergent cell in noise - the whole point
- * of a diff matrix is to make the exception visible, not to restate the rule
- * in each column. The baseline column always shows its own value; a
+ * instead of repeating the value verbatim.
+ *
+ * Justification, from FR-3.3-3.5 forward (not retrofitted from a test): the
+ * matrix exists so a reviewer can scan potentially the full selected column
+ * set (up to the ~12 objects PacketGrid itself supports) for where a Definition's
+ * options DIVERGE. A "same" cell is, by definition, not informative - the
+ * value is already visible one column over, in the baseline, which is
+ * pinned in place with its own highlight/badge (the same convention
+ * PacketGrid's header row already uses for the baseline column). Printing
+ * the identical string in every agreeing column adds nothing while
+ * increasing the scanning cost across every row exactly where FR-3.1
+ * already establishes the precedent that expected/structural agreement is
+ * not itself a signal worth marking, and FR-2.6 already compresses a
+ * multi-binding cell in the outer grid to "lowest opcode + count" rather
+ * than enumerating every binding. The equality glyph applies the same
+ * economy at the per-entry level: state is still fully recoverable (the
+ * cell keeps its `aria-label`, e.g. "same as baseline in GMS v87.1", so nothing
+ * is hidden from assistive tech or from a test scoped to that cell), only
+ * the redundant repetition of the value is removed.
+ *
+ * The baseline column always shows its own value (it IS the reference); a
  * "missing" cell (absent at this index/key) renders an em dash.
  */
 function cellText(

@@ -51,15 +51,20 @@ export interface DefinitionDrawerProps {
  * Every action button's accessible name ends with the scoped object's label
  * (FR-5.2/5.3), built through this one helper so the wording cannot drift
  * between buttons. `ellipsis` marks the actions that open a follow-up
- * dialog/form rather than firing immediately.
+ * dialog/form rather than firing immediately. `opcode`, when given, is
+ * appended AFTER the scope label (never spliced between the verb and the
+ * preposition) so a caller matching `/edit in GMS v87\.1/i` still matches
+ * once a binding-scoped action starts naming its target opcode too.
  */
 function actionLabel(
   verb: string,
   preposition: string,
   scopeLabel: string,
-  ellipsis = true,
+  options: { ellipsis?: boolean; opcode?: number | null } = {},
 ): string {
-  return `${verb} ${preposition} ${scopeLabel}${ellipsis ? "…" : ""}`;
+  const { ellipsis = true, opcode = null } = options;
+  const opcodeSuffix = opcode !== null ? ` (${formatOpcode(opcode)})` : "";
+  return `${verb} ${preposition} ${scopeLabel}${opcodeSuffix}${ellipsis ? "…" : ""}`;
 }
 
 function buildAction(
@@ -218,11 +223,47 @@ export function DefinitionDrawer({
   // on this basis.
   const canTargetDefinition = scopeState === "defined";
 
+  // The top-level Edit/Delete/Open buttons act on ONE binding, but a
+  // Definition can carry several (NoOpHandler: four opcodes in gms_95_1).
+  // `lowestOpCodeValue` used to be the implicit target here, which meant
+  // "Delete NoOpHandler in GMS v83.1" silently deleted exactly one of four
+  // live routes while reading as if it removed the whole definition - a
+  // data-loss hazard, not an ambiguity a throw could catch, because
+  // resolving (name, opcode) to one binding always succeeds. The fix: these
+  // buttons are only ever wired to a SPECIFIC, UNAMBIGUOUS binding - the
+  // scope's only one, and only when its opcode actually parses. Anywhere
+  // else (more than one binding, or a single binding whose opcode does not
+  // parse) they are disabled and the per-binding rows below - already
+  // unambiguous by construction (Design §5.1) - are the only way to act.
+  const singleResolvableBinding: Binding | null =
+    bindings.length === 1 && bindings[0]!.opCodeValue !== null ? bindings[0]! : null;
+  const canTargetSingleBinding = canTargetDefinition && singleResolvableBinding !== null;
+  const singleBindingDisabledReason: string | undefined =
+    canTargetDefinition && !canTargetSingleBinding
+      ? bindings.length > 1
+        ? "This definition has more than one binding in this scope - edit or delete the specific binding below."
+        : "This binding's opcode does not parse - edit or delete it directly below."
+      : undefined;
+
   const label = (verb: string, preposition: string, ellipsis = true) =>
-    actionLabel(verb, preposition, scope.label, ellipsis);
+    actionLabel(verb, preposition, scope.label, { ellipsis });
+
+  // Only Open/Edit/Delete carry an opcode in the label - naming an already-
+  // unambiguous single target (FR-5.2 extended to the binding level), never
+  // spliced in a way that would break a caller matching `verb in <label>`.
+  const targetLabel = (verb: string, preposition: string, ellipsis = true) =>
+    actionLabel(verb, preposition, scope.label, {
+      ellipsis,
+      opcode: canTargetSingleBinding ? singleResolvableBinding!.opCodeValue : null,
+    });
 
   const fire = (type: DrawerActionType, opCodeValue?: number | null) =>
     onAction(buildAction(type, scope.key, row.name, opCodeValue));
+
+  const fireTarget = (type: "open-in" | "edit" | "delete") => {
+    if (!canTargetSingleBinding) return;
+    onAction(buildAction(type, scope.key, row.name, singleResolvableBinding!.opCodeValue));
+  };
 
   const fireBinding = (type: "edit" | "delete", binding: Binding) =>
     onAction(buildAction(type, scope.key, row.name, binding.opCodeValue));
@@ -252,27 +293,30 @@ export function DefinitionDrawer({
             type="button"
             size="sm"
             variant="outline"
-            disabled={!canTargetDefinition}
-            onClick={() => fire("open-in", scopeCell?.lowestOpCodeValue)}
+            disabled={!canTargetSingleBinding}
+            title={singleBindingDisabledReason}
+            onClick={() => fireTarget("open-in")}
           >
-            {label("Open", "in", false)}
+            {targetLabel("Open", "in", false)}
           </Button>
           <Button
             type="button"
             size="sm"
-            disabled={!canTargetDefinition}
-            onClick={() => fire("edit", scopeCell?.lowestOpCodeValue)}
+            disabled={!canTargetSingleBinding}
+            title={singleBindingDisabledReason}
+            onClick={() => fireTarget("edit")}
           >
-            {label("Edit", "in")}
+            {targetLabel("Edit", "in")}
           </Button>
           <Button
             type="button"
             size="sm"
             variant="destructive"
-            disabled={!canTargetDefinition}
-            onClick={() => fire("delete", scopeCell?.lowestOpCodeValue)}
+            disabled={!canTargetSingleBinding}
+            title={singleBindingDisabledReason}
+            onClick={() => fireTarget("delete")}
           >
-            {label("Delete", "in")}
+            {targetLabel("Delete", "in")}
           </Button>
           <Button type="button" size="sm" variant="outline" onClick={() => fire("add")}>
             {label("Add", "to")}

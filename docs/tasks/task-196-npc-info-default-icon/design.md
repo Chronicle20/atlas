@@ -187,4 +187,8 @@ the mandatory-bake rule. If a `go.mod` does end up touched,
   compared. If any regress noticeably in the UI header, the fallback is to
   narrow the rule rather than reintroduce a pixel threshold.
 - Only GMS 83.1 was censused. Other version columns are assumed to share the
-  structure but were not measured.
+  structure but were not measured. **Accepted by decision (2026-08-06)** — the
+  design proceeds on this assumption rather than blocking on a second version's
+  WZ. The rule is purely structural, so a version that lacks `info/default`
+  simply falls through to the existing `stand`/`move` behavior; the risk is a
+  missed fix on another version, not a regression.

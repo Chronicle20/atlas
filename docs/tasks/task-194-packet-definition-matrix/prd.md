@@ -16,7 +16,7 @@ object per entry that supplies wire tables the codecs read at runtime
 
 Today these are edited through a stacked-card `useFieldArray` form, one card per
 definition, with no search, no sort, no filter and no cross-object comparison.
-The GMS v95.1 template renders **215 writer cards** on a single scrolling page.
+The GMS v95.1 template renders **215 writer cards** on a single scrolling page — the largest of eleven templates carrying 2,863 socket entries in total.
 There is no way to answer "does v87 route this yet?" inside the product at all;
 that question is answered by an external spreadsheet that is maintained by hand
 and drifts from the live configuration.
@@ -34,7 +34,7 @@ Primary goals:
 
 - Replace the external protocol spreadsheet with a first-class Packet Matrix
   page comparing socket definitions across Templates.
-- Make the four per-object definition pages usable at 141 handler / 259 writer
+- Make the four per-object definition pages usable at 141 handler / 219 writer
   scale: dense rows, search, sort, filter, dialog-based mutation.
 - Introduce an explicit `Unsupported` state, stored separately from the
   definition arrays, so absence and audited-absence are distinguishable.
@@ -59,7 +59,7 @@ Non-goals:
 - As a protocol maintainer, I want to see one definition's opcode across every
   Template at once, so I can tell which versions still need it without opening
   eleven pages.
-- As a protocol maintainer, I want to search 259 writers by name or opcode, so I
+- As a protocol maintainer, I want to search 219 distinct writers by name or opcode, so I
   stop scrolling a 215-card form.
 - As a protocol maintainer, I want to mark a definition Unsupported for a
   version I have audited, so the next person does not re-investigate it.
@@ -391,19 +391,16 @@ definition's opcode against `docs/packets/registry/<version>.yaml` on
 `(direction, opcode)` — handlers against `serverbound`, writers against
 `clientbound`.
 
-Measured coverage against current seed data:
-
 | Source | Resolved |
 |---|---|
-| Direct opcode join, 9 versions with a registry | 1,993 / 2,001 |
-| GMS v92.1 via adjacent-version impl-name match (all from v87.1) | 112 / 112 |
-| GMS v12.1 via adjacent-version impl-name match | 64 / 66 |
-| **Total** | **2,169 / 2,179** |
+| Direct opcode join, 9 versions with a registry | 2,674 / 2,685 |
+| GMS v92.1 via adjacent-version impl-name match (v87.1 then v95.1) | 112 / 112 |
+| GMS v12.1 via adjacent-version impl-name match (v48.1 then v61.1) | 63 / 66 |
+| **Total** | **2,849 / 2,863** |
 
-GMS v12.1 and v92.1 have no registry file. For those, `fname` is copied from the
-nearest version that does, matched on **implementation name** — valid because
-the implementation name is the Definition identity. The 10 unresolved entries
-ship without `fname`.
+The three GMS v12.1 misses are `WorldSelectHandle` (`0x03`), `ServerLoad` (`0x02`)
+and `CashShopCashQueryResult` (`0xBD`). The 14 unresolved entries ship without
+`fname`.
 
 This generator runs once to produce the seed data. It is not a build step and
 not a runtime dependency; `fname` is thereafter maintained as ordinary
@@ -420,7 +417,7 @@ No codec, opcode table, or decode path changes.
 presets and equipment lists the matrix never reads. The matrix MUST request
 sparse fieldsets (§5.3).
 
-**Rendering.** The writers matrix is up to 259 rows × 11 columns ≈ 2,849 cells
+**Rendering.** The writers matrix is up to 219 rows × 11 columns ≈ 2,849 cells
 with a sticky header and a frozen first column. It must remain responsive while
 scrolling and filtering.
 
@@ -455,6 +452,21 @@ since it type-checks tests.
   per op × version) rather than hand-maintained. Out of scope for v1; the field
   ships empty and hand-populated.
 
+## 9a. Decisions of record (2026-08-05)
+
+Resolved with the user after design.md measured the corpus:
+
+1. **Validation is strict.** The server enforces all of FR-11.1–11.5 at 400.
+   FR-11.1 is enforced as duplicate `(name, normalized opcode)` — the literal
+   "duplicate definition name" reading would reject the legitimate multi-binding
+   that exists in every template.
+2. **The padded-opcode duplicates are fixed here**, overriding §2's non-goal.
+   Four writer entries (`MiniRoom` at `0x0A5`/`0x0B0`/`0x0B8`/`0x0A3`) are
+   removed. This is what makes decision 1 safe for the seed corpus.
+3. **§4.1's "identity is its implementation name" is superseded** by
+   design.md §5.1: the row is `(kind, name)`, a cell holds a set of bindings,
+   and every mutation is keyed by `(name, normalized opcode)`.
+
 ## 10. Acceptance Criteria
 
 Backend:
@@ -472,7 +484,9 @@ Backend:
 
 Seed data:
 
-- [ ] All eleven seed templates carry `fname` on ≥ 2,169 of 2,179 definitions.
+- [ ] All eleven seed templates carry `fname` on the count reported by
+      `packet-audit seed-fname`, and that report is committed to this task
+      folder as `fname-coverage.txt`.
 - [ ] All eleven seed templates carry an empty `unsupported` object.
 - [ ] `tools/template-opcode-order-guard.sh` still passes.
 
@@ -480,7 +494,7 @@ Matrix:
 
 - [ ] `/packet-matrix` renders from the Deployment sidebar between Tenants and
       Services, and the sidebar sync test passes.
-- [ ] Handlers mode shows 141 rows and Writers mode 259 rows across the eleven
+- [ ] Handlers mode shows 141 rows and Writers mode 219 rows across the eleven
       seed templates.
 - [ ] The definition name is the only frozen column; the baseline Template is
       marked in place and has no duplicate column.

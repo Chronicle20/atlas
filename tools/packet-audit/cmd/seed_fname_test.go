@@ -300,6 +300,30 @@ func TestSeedFName_FailsLoudlyOnUnknownEntryKey(t *testing.T) {
 	}
 }
 
+// TestSeedFName_FailsLoudlyOnUnknownSocketKey covers the guard's third level:
+// a key on the "socket" object itself, sibling to "handlers"/"writers"
+// (e.g. a future "somethingNew" section), rather than at the top level of the
+// document or inside one handler/writer entry. seedSocket only models
+// "handlers" and "writers", so without this check such a key would be
+// silently dropped by writeSeedTemplate's re-marshal - exactly the failure
+// mode the two other guards exist to prevent.
+func TestSeedFName_FailsLoudlyOnUnknownSocketKey(t *testing.T) {
+	surprising := strings.Replace(testTemplate83, `"socket": {`,
+		"\"socket\": {\n    \"surpriseSocketKey\": {\"a\": 1},", 1)
+	regDir, tplDir := setupSeedFName(t,
+		map[string]string{"gms_v83": testRegistryV83},
+		map[string]string{"gms_83_1": surprising})
+
+	var stderr bytes.Buffer
+	code := runSeedFName([]string{"--write", "--registry-dir", regDir, "--template-dir", tplDir}, &stderr)
+	if code == 0 {
+		t.Fatal("exit = 0, want non-zero on an unmodelled socket key")
+	}
+	if !strings.Contains(stderr.String(), "surpriseSocketKey") {
+		t.Errorf("stderr did not name the offending key:\n%s", stderr.String())
+	}
+}
+
 func TestSeedFName_WithoutWriteLeavesFilesUntouched(t *testing.T) {
 	regDir, tplDir := setupSeedFName(t,
 		map[string]string{"gms_v83": testRegistryV83},

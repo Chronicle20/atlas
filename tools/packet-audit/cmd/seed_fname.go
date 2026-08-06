@@ -42,6 +42,10 @@ var knownTopLevelKeys = map[string]bool{
 	"socket": true, "characters": true, "npcs": true, "worlds": true, "cashShop": true,
 }
 
+var knownSocketKeys = map[string]bool{
+	"handlers": true, "writers": true,
+}
+
 var knownEntryKeys = map[string]bool{
 	"opCode": true, "validator": true, "handler": true, "writer": true,
 	"fname": true, "options": true, "services": true,
@@ -102,7 +106,6 @@ func (e seedEntry) Name() string {
 }
 
 type seedTemplate struct {
-	Stem string
 	Path string
 	Doc  seedDoc
 }
@@ -128,7 +131,7 @@ func runSeedFName(args []string, stderr io.Writer) int {
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			continue
 		}
-		st, err := loadSeedTemplate(v.Template, path)
+		st, err := loadSeedTemplate(path)
 		if err != nil {
 			fmt.Fprintf(stderr, "FAIL %s: %v\n", filepath.Base(path), err)
 			return 1
@@ -192,7 +195,7 @@ func runSeedFName(args []string, stderr io.Writer) int {
 // primary protection now that writeSeedTemplate normalizes formatting across
 // the whole file: under a full reformat you cannot eyeball what got dropped,
 // so a surprise key must still be a loud, non-zero-exit stop.
-func loadSeedTemplate(stem, path string) (*seedTemplate, error) {
+func loadSeedTemplate(path string) (*seedTemplate, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -213,6 +216,12 @@ func loadSeedTemplate(stem, path string) (*seedTemplate, error) {
 		var sock map[string]json.RawMessage
 		if err := json.Unmarshal(raw, &sock); err != nil {
 			return nil, fmt.Errorf("parse socket: %w", err)
+		}
+		for k := range sock {
+			if !knownSocketKeys[k] {
+				return nil, fmt.Errorf("unmodelled socket key %q - refusing to rewrite, "+
+					"because marshalling through the known-key model would silently drop it", k)
+			}
 		}
 		for _, group := range []string{"handlers", "writers"} {
 			gr, ok := sock[group]
@@ -237,7 +246,7 @@ func loadSeedTemplate(stem, path string) (*seedTemplate, error) {
 	if err := json.Unmarshal(b, &doc); err != nil {
 		return nil, err
 	}
-	return &seedTemplate{Stem: stem, Path: path, Doc: doc}, nil
+	return &seedTemplate{Path: path, Doc: doc}, nil
 }
 
 // indexRegistryByOpcode builds "direction|opcode" -> fname, applying the

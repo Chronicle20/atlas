@@ -481,8 +481,7 @@ func (p *ProcessorImpl) Buy(mb *message.Buffer) func(characterId uint32) func(sl
 				return nil
 			}
 
-			// TODO: implement TokenItem purchasing.
-			return mb.Put(shops.EnvStatusEventTopic, reasonErrorEventProvider(characterId, shops.ErrorGenericErrorWithReason, "not implemented"))
+			return p.buyWithTokens(mb)(c, cm, itemTemplateId, quantity)
 		}
 	}
 }

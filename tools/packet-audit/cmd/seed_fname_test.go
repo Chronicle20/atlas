@@ -49,11 +49,15 @@ func copyRealTemplatesToTemp(t *testing.T) (tplDir string, stems []string) {
 }
 
 // assertSemanticFidelity parses origPath and newPath as generic JSON and
-// asserts they are deeply equal except that a socket.handlers/writers entry
-// in newPath may carry an additional "fname" key absent from the same entry
-// in origPath. Any other addition, removal, or value change - in any
-// top-level section (characters, worlds, cashShop, ...), any entry field, any
-// options map - fails the test with the exact key path.
+// asserts they are deeply equal once any "fname" key is stripped from both
+// sides. "fname" is stripped symmetrically - not just from newPath - because
+// origPath is read live from the real, committed seed templates: once task-194
+// backfills fname into those files, orig legitimately carries fname too, and a
+// re-run (e.g. a future registry update) regenerating an already-populated
+// entry must not be flagged as drift. What this test actually proves is
+// unchanged: no addition, removal, or value change is permitted anywhere
+// else - any top-level section (characters, worlds, cashShop, ...), any entry
+// field, any options map - only fails the test with the exact key path.
 func assertSemanticFidelity(t *testing.T, label, origPath, newPath string) {
 	t.Helper()
 	origB, err := os.ReadFile(origPath)
@@ -89,14 +93,19 @@ func assertSemanticFidelity(t *testing.T, label, origPath, newPath string) {
 		for i := range origEntries {
 			oe, _ := origEntries[i].(map[string]any)
 			ge, _ := genEntries[i].(map[string]any)
+			oeCopy := make(map[string]any, len(oe))
+			for k, v := range oe {
+				oeCopy[k] = v
+			}
+			delete(oeCopy, "fname")
 			geCopy := make(map[string]any, len(ge))
 			for k, v := range ge {
 				geCopy[k] = v
 			}
-			delete(geCopy, "fname") // the one key this generator is allowed to add
-			if !reflect.DeepEqual(oe, geCopy) {
-				t.Errorf("%s: socket.%s[%d] changed beyond adding fname:\n before: %#v\n after : %#v (fname stripped)",
-					label, group, i, oe, geCopy)
+			delete(geCopy, "fname") // the one key this generator is allowed to add or change
+			if !reflect.DeepEqual(oeCopy, geCopy) {
+				t.Errorf("%s: socket.%s[%d] changed beyond fname:\n before: %#v\n after : %#v (fname stripped from both)",
+					label, group, i, oeCopy, geCopy)
 			}
 		}
 	}

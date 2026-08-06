@@ -1,10 +1,10 @@
 import { TenantDetailLayout } from "@/components/features/tenants/TenantDetailLayout";
-import { WritersForm } from "@/pages/tenants-writers-form";
+import { DefinitionGridPage } from "@/components/features/socket/DefinitionGridPage";
 
 export function TenantsWritersPage() {
   return (
     <TenantDetailLayout>
-      <WritersForm />
+      <DefinitionGridPage kind="writer" scope="tenant" />
     </TenantDetailLayout>
   );
 }

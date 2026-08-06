@@ -149,6 +149,11 @@ const ServiceDetailPage = lazyWithReload(() =>
 const SetupPage = lazyWithReload(() =>
   import("@/pages/SetupPage").then((m) => ({ default: m.SetupPage })),
 );
+const PacketMatrixPage = lazyWithReload(() =>
+  import("@/pages/PacketMatrixPage").then((m) => ({
+    default: m.PacketMatrixPage,
+  })),
+);
 const TemplatesPage = lazyWithReload(() =>
   import("@/pages/TemplatesPage").then((m) => ({ default: m.TemplatesPage })),
 );
@@ -347,6 +352,10 @@ export function App() {
                       element={<TemplatesCharacterPresetsPage />}
                     />
                     <Route path="/tenants" element={<TenantsPage />} />
+                    <Route
+                      path="/packet-matrix"
+                      element={<PacketMatrixPage />}
+                    />
                     <Route path="/tenants/:id" element={<TenantDetailPage />} />
                     <Route
                       path="/tenants/:id/handlers"

@@ -1,0 +1,319 @@
+import { describe, expect, it } from "vitest";
+import { buildOptionsMatrix, classifyOptions } from "@/lib/socket/options";
+import type { Binding, SocketObject } from "@/lib/socket/model";
+
+function obj(key: string, options: unknown): SocketObject {
+  const binding: Binding = {
+    opCode: "0xB9",
+    opCodeValue: 0xb9,
+    services: ["channel"],
+    options,
+    index: 0,
+  };
+  return {
+    key,
+    label: key,
+    source: "template",
+    region: "GMS",
+    majorVersion: 95,
+    minorVersion: 1,
+    handlers: new Map(),
+    writers: new Map([["CharacterMovement", [binding]]]),
+    unsupportedHandlers: new Set(),
+    unsupportedWriters: new Set(),
+  };
+}
+
+describe("classifyOptions", () => {
+  it("classifies absence", () => {
+    expect(classifyOptions(undefined)).toBe("absent");
+    expect(classifyOptions(null)).toBe("absent");
+  });
+
+  it("classifies an explicit empty object", () => {
+    expect(classifyOptions({})).toBe("empty");
+  });
+
+  it("classifies a single-key array value as a list", () => {
+    expect(classifyOptions({ types: ["WALK", "STAND", "UNKNOWN"] })).toBe(
+      "list",
+    );
+  });
+
+  it("classifies a flat name to number object as a map", () => {
+    expect(classifyOptions({ operations: 1, failedReasonCodes: 2 })).toBe(
+      "map",
+    );
+    expect(classifyOptions({ codes: 7 })).toBe("map");
+  });
+
+  it("falls back to map for anything else", () => {
+    expect(classifyOptions({ a: { nested: true }, b: 1 })).toBe("map");
+    expect(classifyOptions("not an object")).toBe("map");
+  });
+
+  it("classifies an empty list as a list, not as empty", () => {
+    // Hypothetical case, not observed in the corpus: per the measured table,
+    // gms_87_1 PetMovement, gms_92_1 CharacterMovement, gms_95_1
+    // CharacterMovement + PetMovement, and jms_185_1 PetMovement all have the
+    // `types` key ABSENT entirely, not present-but-empty. If a version DID
+    // store `{ types: [] }`, it must still classify as a list with zero
+    // entries - visibly different from supplying no options at all - so this
+    // exercises that defensive case without claiming it occurs.
+    expect(classifyOptions({ types: [] })).toBe("list");
+  });
+
+  it("does not throw on primitives, arrays, or malformed shapes", () => {
+    expect(() => classifyOptions(42)).not.toThrow();
+    expect(() => classifyOptions(true)).not.toThrow();
+    expect(() => classifyOptions(["bare", "array"])).not.toThrow();
+    expect(() => classifyOptions(() => undefined)).not.toThrow();
+    expect(classifyOptions(42)).toBe("map");
+    expect(classifyOptions(true)).toBe("map");
+  });
+
+  it("does not throw on a circular-ish structure", () => {
+    const circular: Record<string, unknown> = { types: [] };
+    circular.self = circular;
+    expect(() => classifyOptions(circular)).not.toThrow();
+  });
+});
+
+describe("buildOptionsMatrix - lists compare positionally", () => {
+  const a = obj("a", { types: ["WALK", "STAND", "JUMP"] });
+  const b = obj("b", { types: ["WALK", "JUMP", "STAND"] });
+  const c = obj("c", { types: ["WALK"] });
+
+  const m = buildOptionsMatrix({
+    objects: [a, b, c],
+    kind: "writer",
+    name: "CharacterMovement",
+    baselineKey: "a",
+  });
+
+  it("keys rows by array index, because the index IS the wire value", () => {
+    expect(m.shape).toBe("list");
+    expect(m.rows.map((r) => r.key)).toEqual(["0", "1", "2"]);
+    expect(m.rows[0]!.label).toBe("0");
+  });
+
+  it("treats a name that shifted index as a difference, not a match", () => {
+    // A name-keyed comparison would look up "STAND" in both objects, find it
+    // present in both, and report "same" - hiding the fact that it moved from
+    // wire slot 1 to wire slot 2. The correct, positional answer is that slot
+    // 1 differs (a says STAND, b says JUMP).
+    const idx1 = m.rows[1]!;
+    expect(idx1.cells.get("a")!.value).toBe("STAND");
+    expect(idx1.cells.get("b")!.value).toBe("JUMP");
+    expect(idx1.cells.get("b")!.state).toBe("differs");
+  });
+
+  it("marks positions the baseline has and an object does not as missing", () => {
+    expect(m.rows[1]!.cells.get("c")!.state).toBe("missing");
+    expect(m.rows[2]!.cells.get("c")!.state).toBe("missing");
+  });
+
+  it("marks matching positions as same", () => {
+    expect(m.rows[0]!.cells.get("b")!.state).toBe("same");
+    expect(m.rows[0]!.cells.get("c")!.state).toBe("same");
+  });
+
+  it("marks positions past the baseline's extent as extra", () => {
+    const long = obj("d", { types: ["WALK", "STAND", "JUMP", "FLY"] });
+    const m2 = buildOptionsMatrix({
+      objects: [a, long],
+      kind: "writer",
+      name: "CharacterMovement",
+      baselineKey: "a",
+    });
+    expect(m2.rows).toHaveLength(4);
+    expect(m2.rows[3]!.cells.get("d")!.state).toBe("extra");
+    expect(m2.rows[3]!.cells.get("a")!.state).toBe("missing");
+  });
+
+  it("keeps a repeated name at several indices as separate rows (the duplicate-name trap)", () => {
+    // Per the measured corpus, gms_95_1 CharacterMovement carries UNKNOWN at
+    // six separate indices. A name-keyed implementation would collapse all
+    // occurrences of "UNKNOWN" into a single row (or merge them against each
+    // other across objects), losing five of the six wire slots. The correct,
+    // positional answer keeps every occurrence as its own row.
+    const dup = obj("e", { types: ["UNKNOWN", "UNKNOWN", "UNKNOWN"] });
+    const m3 = buildOptionsMatrix({
+      objects: [dup],
+      kind: "writer",
+      name: "CharacterMovement",
+      baselineKey: "e",
+    });
+    expect(m3.rows).toHaveLength(3);
+    expect(m3.rows.map((r) => r.cells.get("e")!.value)).toEqual([
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+    ]);
+  });
+
+  it("proves positional comparison catches what name-keyed comparison would miss", () => {
+    // Two objects that both carry UNKNOWN at six indices, but with ONE index
+    // (3) swapped for a real name in object f. A name-keyed comparison
+    // grouping by label would see "UNKNOWN" present in both objects (multiple
+    // times) and "REAL_NAME" present only in f, but it could not say WHICH
+    // index differs - it has no positional identity to anchor the diff to.
+    // The positional comparison correctly isolates index 3 as the only
+    // difference and leaves every other index "same".
+    const six = () => ["UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN"];
+    const base = six();
+    const shifted = six();
+    shifted[3] = "REAL_NAME";
+
+    const e1 = obj("e1", { types: base });
+    const e2 = obj("e2", { types: shifted });
+    const m4 = buildOptionsMatrix({
+      objects: [e1, e2],
+      kind: "writer",
+      name: "CharacterMovement",
+      baselineKey: "e1",
+    });
+
+    expect(m4.rows).toHaveLength(6);
+    m4.rows.forEach((row, i) => {
+      if (i === 3) {
+        expect(row.cells.get("e2")!.state).toBe("differs");
+      } else {
+        expect(row.cells.get("e2")!.state).toBe("same");
+      }
+    });
+  });
+});
+
+describe("buildOptionsMatrix - maps compare by key", () => {
+  const a = obj("a", { operations: { INVITE: 1, JOIN: 2 } });
+  const b = obj("b", { operations: { INVITE: 1, JOIN: 5, LEAVE: 9 } });
+
+  const m = buildOptionsMatrix({
+    objects: [a, b],
+    kind: "writer",
+    name: "CharacterMovement",
+    baselineKey: "a",
+  });
+
+  it("keys rows by option name", () => {
+    expect(m.shape).toBe("map");
+    expect(m.rows.map((r) => r.key).sort()).toEqual([
+      "INVITE",
+      "JOIN",
+      "LEAVE",
+    ]);
+  });
+
+  it("classifies equal, differing and extra values", () => {
+    const invite = m.rows.find((r) => r.key === "INVITE")!;
+    const join = m.rows.find((r) => r.key === "JOIN")!;
+    const leave = m.rows.find((r) => r.key === "LEAVE")!;
+    expect(invite.cells.get("b")!.state).toBe("same");
+    expect(join.cells.get("b")!.state).toBe("differs");
+    expect(leave.cells.get("b")!.state).toBe("extra");
+    expect(leave.cells.get("a")!.state).toBe("missing");
+  });
+
+  it("classifies a key present in one object and absent in another regardless of which side is the baseline", () => {
+    const c = obj("c", { failedReasonCodes: { NOT_ENOUGH_MONEY: 1 } });
+    const d = obj("d", {
+      failedReasonCodes: { NOT_ENOUGH_MONEY: 1, ALREADY_OWNED: 2 },
+    });
+    const cd = buildOptionsMatrix({
+      objects: [c, d],
+      kind: "writer",
+      name: "CharacterMovement",
+      baselineKey: "d",
+    });
+    const alreadyOwned = cd.rows.find((r) => r.key === "ALREADY_OWNED")!;
+    expect(alreadyOwned.cells.get("d")!.state).toBe("same");
+    expect(alreadyOwned.cells.get("c")!.state).toBe("missing");
+  });
+});
+
+describe("buildOptionsMatrix - degenerate inputs", () => {
+  it("returns no rows when nobody supplies options", () => {
+    const m = buildOptionsMatrix({
+      objects: [obj("a", undefined), obj("b", {})],
+      kind: "writer",
+      name: "CharacterMovement",
+      baselineKey: "a",
+    });
+    expect(m.rows).toHaveLength(0);
+  });
+
+  it("uses a supplying object's shape when the baseline supplies none", () => {
+    const m = buildOptionsMatrix({
+      objects: [obj("a", undefined), obj("b", { types: ["WALK"] })],
+      kind: "writer",
+      name: "CharacterMovement",
+      baselineKey: "a",
+    });
+    expect(m.shape).toBe("list");
+    expect(m.rows).toHaveLength(1);
+    expect(m.rows[0]!.cells.get("a")!.state).toBe("missing");
+    expect(m.rows[0]!.cells.get("b")!.state).toBe("extra");
+  });
+
+  it("a Definition where one object omits options entirely and another supplies it", () => {
+    const m = buildOptionsMatrix({
+      objects: [obj("a", { operations: { INVITE: 1 } }), obj("b", undefined)],
+      kind: "writer",
+      name: "CharacterMovement",
+      baselineKey: "a",
+    });
+    expect(m.shape).toBe("map");
+    expect(m.rows).toHaveLength(1);
+    expect(m.rows[0]!.cells.get("a")!.state).toBe("same");
+    expect(m.rows[0]!.cells.get("b")!.state).toBe("missing");
+  });
+
+  it("classifies the baseline's own column as same against itself, never spuriously differs", () => {
+    const a = obj("a", {
+      types: ["WALK", "STAND", "JUMP"],
+    });
+    const b = obj("b", { types: ["FLY"] });
+    const m = buildOptionsMatrix({
+      objects: [a, b],
+      kind: "writer",
+      name: "CharacterMovement",
+      baselineKey: "a",
+    });
+    for (const row of m.rows) {
+      const baselineCell = row.cells.get("a")!;
+      expect(baselineCell.state).not.toBe("differs");
+      expect(baselineCell.state).not.toBe("missing");
+    }
+
+    const mapA = obj("mapA", { operations: { INVITE: 1, JOIN: 2 } });
+    const mapB = obj("mapB", { operations: { INVITE: 9 } });
+    const mapM = buildOptionsMatrix({
+      objects: [mapA, mapB],
+      kind: "writer",
+      name: "CharacterMovement",
+      baselineKey: "mapA",
+    });
+    for (const row of mapM.rows) {
+      const baselineCell = row.cells.get("mapA")!;
+      expect(baselineCell.state).not.toBe("differs");
+      expect(baselineCell.state).not.toBe("missing");
+    }
+  });
+
+  it("does not throw when options values are circular-ish", () => {
+    const circA: Record<string, unknown> = { operations: { INVITE: 1 } };
+    const circB: Record<string, unknown> = { operations: { INVITE: 1 } };
+    (circA.operations as Record<string, unknown>).self = circA;
+    (circB.operations as Record<string, unknown>).self = circB;
+
+    expect(() =>
+      buildOptionsMatrix({
+        objects: [obj("a", circA), obj("b", circB)],
+        kind: "writer",
+        name: "CharacterMovement",
+        baselineKey: "a",
+      }),
+    ).not.toThrow();
+  });
+});

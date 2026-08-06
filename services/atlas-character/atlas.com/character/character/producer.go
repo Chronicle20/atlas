@@ -96,25 +96,6 @@ func changeChannelEventProvider(transactionId uuid.UUID, characterId uint32, old
 	return producer.SingleMessageProvider(key, value)
 }
 
-func mapChangedEventProvider(transactionId uuid.UUID, characterId uint32, oldField field.Model, newField field.Model, targetPortalId uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &character2.StatusEvent[character2.StatusEventMapChangedBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		WorldId:       newField.WorldId(),
-		Type:          character2.StatusEventTypeMapChanged,
-		Body: character2.StatusEventMapChangedBody{
-			ChannelId:      newField.ChannelId(),
-			OldMapId:       oldField.MapId(),
-			OldInstance:    oldField.Instance(),
-			TargetMapId:    newField.MapId(),
-			TargetInstance: newField.Instance(),
-			TargetPortalId: targetPortalId,
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
 func jobChangedEventProvider(transactionId uuid.UUID, characterId uint32, channel channel.Model, jobId job.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character2.StatusEvent[character2.JobChangedStatusEventBody]{

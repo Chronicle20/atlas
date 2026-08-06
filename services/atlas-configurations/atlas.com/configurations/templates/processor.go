@@ -1,7 +1,9 @@
 package templates
 
 import (
+	configsocket "atlas-configurations/socket"
 	"atlas-configurations/templates/characters/preset"
+	"atlas-configurations/templates/socket"
 	"context"
 	"encoding/json"
 
@@ -68,6 +70,7 @@ func Make(e Entity) (RestModel, error) {
 	if err != nil {
 		return RestModel{}, err
 	}
+	rm.Socket = socket.Normalize(rm.Socket)
 	rm.Id = e.Id.String()
 	return rm, nil
 }
@@ -81,6 +84,11 @@ func (p *ProcessorImpl) GetById(templateId uuid.UUID) (RestModel, error) {
 }
 
 func (p *ProcessorImpl) Create(input RestModel) (uuid.UUID, error) {
+	input.Socket = socket.Normalize(input.Socket)
+	if issues := socketValidate(input.Socket); len(issues) > 0 {
+		return uuid.Nil, &validationFailureError{socketIssues: issues}
+	}
+
 	res, err := json.Marshal(input)
 	if err != nil {
 		return uuid.Nil, err
@@ -114,6 +122,11 @@ func (p *ProcessorImpl) Create(input RestModel) (uuid.UUID, error) {
 }
 
 func (p *ProcessorImpl) UpdateById(templateId uuid.UUID, input RestModel) error {
+	input.Socket = socket.Normalize(input.Socket)
+	if issues := socketValidate(input.Socket); len(issues) > 0 {
+		return &validationFailureError{socketIssues: issues}
+	}
+
 	if p.validator != nil {
 		assigned, errs := p.validator.Validate(p.ctx, input.Characters.Presets)
 		input.Characters.Presets = assigned
@@ -137,4 +150,11 @@ func (p *ProcessorImpl) UpdateById(templateId uuid.UUID, input RestModel) error 
 
 func (p *ProcessorImpl) DeleteById(templateId uuid.UUID) error {
 	return database.ExecuteTransaction(p.db, delete(p.ctx, templateId))
+}
+
+// socketValidate runs the shared, dependency-free socket rules. Unlike preset
+// validation it is not routed through WithValidator, because it needs no
+// atlas-data client and must therefore never be skippable.
+func socketValidate(rm socket.RestModel) []configsocket.Issue {
+	return configsocket.Validate(socket.ToValidationInput(rm))
 }

@@ -37,6 +37,13 @@ func handleCreateConfigurationTemplate(db *gorm.DB) rest.InputHandler[RestModel]
 		return func(w http.ResponseWriter, r *http.Request) {
 			templateId, err := NewProcessor(d.Logger(), d.Context(), db).Create(input)
 			if err != nil {
+				var ve *validationFailureError
+				if errors.As(err, &ve) {
+					w.Header().Set("Content-Type", "application/vnd.api+json")
+					w.WriteHeader(http.StatusBadRequest)
+					_ = json.NewEncoder(w).Encode(map[string]any{"errors": ve.AsJSONAPIErrors()})
+					return
+				}
 				d.Logger().WithError(err).Errorf("Unable to create configuration template.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return

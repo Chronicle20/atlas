@@ -3,6 +3,7 @@ package tenants
 import (
 	"atlas-configurations/data"
 	datamock "atlas-configurations/data/mock"
+	configsocket "atlas-configurations/socket"
 	"atlas-configurations/tenants/characters"
 	"atlas-configurations/tenants/characters/preset"
 	"atlas-configurations/tenants/socket"
@@ -17,6 +18,16 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
+
+// assertSharedInput is a compile-time proof that ToValidationInput returns
+// the shared validator package's configsocket.Input, not a tree-local
+// look-alike. staticcheck's QF1011 flags `var _ configsocket.Input = in` as
+// a redundant type on the variable declaration — true today, but that
+// redundancy IS the assertion: it stops compiling the moment the adapter's
+// return type drifts from configsocket.Input. A function-parameter check
+// carries the same guarantee without tripping QF1011, since QF1011 only
+// applies to variable declarations, not call expressions.
+func assertSharedInput(configsocket.Input) {}
 
 // testDB reuses setupTestDB (processor_test.go), which migrates testEntity
 // rather than the real Entity: Entity's
@@ -132,7 +143,7 @@ func TestToValidationInput_FlattensBothCollections(t *testing.T) {
 		t.Errorf("unsupported not carried: %+v", in.UnsupportedHandlers)
 	}
 	// Compile-time proof the adapter returns the shared package's type.
-	_ = in
+	assertSharedInput(in)
 }
 
 // TestUpdateById_MergesSocketAndPresetIssues proves socket and preset

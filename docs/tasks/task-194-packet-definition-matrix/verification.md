@@ -202,6 +202,58 @@ EXIT=1
    before use). Fixed by hand: `let cmp = 0;` → `let cmp: number;`
    (`services/atlas-ui/src/lib/socket/matrix.ts:209`).
 
+**Correction (post-review):** golangci-lint's staticcheck `--fix` for QF1011
+did more damage than intended. `var _ configsocket.Input = in` was a genuine
+compile-time assertion that `ToValidationInput` returns the SHARED
+`configsocket.Input` type, not a tree-local look-alike — exactly the drift
+Task 5's shared-adapter design exists to prevent. The auto-fix reduced it to
+`_ = in`, which type-checks against any type whatsoever and asserts nothing,
+while leaving the comment above it (`// Compile-time proof the adapter
+returns the shared package's type.`) claiming a guarantee that no longer
+existed.
+
+Fixed in both `templates/socket_validation_test.go` and
+`tenants/socket_validation_test.go`: restored the `configsocket` import, and
+replaced `_ = in` with a call to a new unexported helper,
+`func assertSharedInput(configsocket.Input) {}`, invoked as
+`assertSharedInput(in)`. A function-parameter check carries the same
+compile-time guarantee as the original `var` form, but QF1011 only fires on
+variable declarations, not call expressions, so it will not be re-flagged.
+
+**Proof the restored assertion is live** (performed once for each tree,
+then fully reverted — confirmed via `git diff` showing empty on
+`adapter.go`/`processor.go` afterward):
+
+1. In `templates/socket/adapter.go`, temporarily added
+   `type driftProofLocalInput configsocket.Input` and changed
+   `ToValidationInput`'s return type to it (converting the return value).
+   `go build ./...` failed — but at the *production* callsite
+   (`templates/processor.go:168`, `configsocket.Validate(...)`), not yet at
+   the test:
+   ```
+   templates/processor.go:168:31: cannot use socket.ToValidationInput(rm) (value of struct type "atlas-configurations/templates/socket".driftProofLocalInput) as "atlas-configurations/socket".Input value in argument to configsocket.Validate
+   ```
+2. To isolate the test assertion specifically, temporarily wrapped the
+   production callsite in an explicit conversion
+   (`configsocket.Validate(configsocket.Input(socket.ToValidationInput(rm)))`)
+   so production tolerated the drift. With that in place, `go build ./...`
+   passed (exit 0), but `go vet ./templates/...` (which type-checks test
+   files) failed exactly at the restored assertion:
+   ```
+   templates/socket_validation_test.go:157:20: cannot use in (variable of struct type "atlas-configurations/templates/socket".driftProofLocalInput) as "atlas-configurations/socket".Input value in argument to assertSharedInput
+   ```
+3. Repeated both steps for the `tenants` tree with identical results
+   (`tenants/processor.go:218`, then
+   `tenants/socket_validation_test.go:146:20: cannot use in ... in argument to assertSharedInput`).
+4. Reverted all four temporary edits (`templates/socket/adapter.go`,
+   `templates/processor.go`, `tenants/socket/adapter.go`,
+   `tenants/processor.go`) — `git diff` on all four is empty against the
+   committed lint-fix state.
+
+This confirms `assertSharedInput` independently fails the build the moment
+either adapter's return type stops being `configsocket.Input`, regardless
+of whether the production callsite happens to still compile.
+
 **Second `--check` run — GREEN:**
 
 ```
@@ -220,15 +272,44 @@ The 6 remaining warnings are pre-existing `react-hooks/incompatible-library`
 `AccountsPage.tsx`, `QuestsPage.tsx`) — warnings, not errors, and `lint.sh`
 reports `OK` with them present. They predate this branch.
 
-**Files changed by the lint fix + the one hand-fix:** 31 total —
+**Third `--check` run (after the `assertSharedInput` correction) — GREEN,**
+after one transient false failure caused by unrelated concurrent activity:
+
+A first re-run reported `lint:libs/atlas-routine` and
+`lint:services/atlas-character/atlas.com/character` as failing — both
+paths this branch never touches. Inspecting the raw log showed the actual
+cause was `Error: parallel golangci-lint is running` /
+`The command is terminated due to an error: parallel golangci-lint is
+running` for both, i.e. lock contention against golangci-lint invocations
+running concurrently in *other* worktrees on the same machine (confirmed via
+`ps aux` + `/proc/<pid>/cwd`: the concurrent `golangci-lint fmt --diff`
+processes were rooted in `.worktrees/task-195-foreign-disease-mobskill` and
+`.worktrees/task-196-npc-info-default-icon`, not this worktree). Re-running
+`tools/lint.sh --check` alone, with no other lint.sh process active per
+`ps aux`, produced:
+
+```
+$ source ~/.nvm/nvm.sh && nvm use 22
+$ tools/lint.sh --check
+...
+✖ 6 problems (0 errors, 6 warnings)
+
+lint.sh: OK
+EXIT=0
+```
+
+Same 6 pre-existing warnings as before, 0 errors, `lint.sh: OK`.
+
+**Files changed by the lint fix + the one hand-fix + the correction:**
+still 31 unique file paths total (the correction is additional edits to
+the same 2 Go test files already listed, not new paths) —
 2 Go test files (`templates/socket_validation_test.go`,
 `tenants/socket_validation_test.go`) and 29 atlas-ui files (all under
 `src/components/features/socket/`, `src/lib/hooks/api/`, `src/lib/socket/`,
-`src/services/api/__tests__/`). Full list: `git status --porcelain` at the
-time showed exactly these 31 paths, all `M` (modified), zero additions or
-deletions.
+`src/services/api/__tests__/`).
 
-Result: **PASS** (green after the fix described above).
+Result: **PASS** (green; the correction is documented above and does not
+change the file-count or the atlas-ui portion of the diff).
 
 ## 7. Post-lint-fix re-verification
 
@@ -241,6 +322,12 @@ go build ./... && go vet ./... && go test -race ./...
 Go test: 185 passed in 35 packages
 ```
 Same as §1's pre-fix run: **185 passed / 35 packages, unchanged.**
+
+Re-confirmed once more after the `assertSharedInput` correction (§6):
+same command, same result — `Go test: 185 passed in 35 packages`, `go
+build`/`go vet` clean. The restored assertion adds one unexported no-op
+helper function and one call per tree; it does not change any test's
+behavior or count.
 
 **Go — packet-audit:**
 ```
@@ -408,7 +495,7 @@ No remaining import of any of the four deleted files.
 | 6 | `redis-key-guard.sh` | PASS |
 | 7 | `goroutine-guard.sh` | PASS |
 | 8 | `service-registration-guard.sh` | SKIPPED (verified: no matching files changed) |
-| 9 | `tools/lint.sh --check` | PASS (failed first, fixed, green on re-run) |
+| 9 | `tools/lint.sh --check` | PASS (failed first, fixed, green; one auto-fix was later corrected — see §6 — and re-confirmed green) |
 | 10 | `npm test` (atlas-ui) | PASS (208/1659, before and after) |
 | 11 | `npm run build` (atlas-ui) | PASS (exit 0) |
 | 12 | Home-path leak check | PASS (none found) |
@@ -416,6 +503,8 @@ No remaining import of any of the four deleted files.
 | 14 | New frontend dependency check | PASS (empty diff) |
 | 15 | Deleted form files + no importers | PASS |
 
-All gates required by this task are green. The only fix applied was the
-lint drift (31 files: 2 Go, 29 TS/TSX) plus the associated re-verification
-above, all committed alongside this record.
+All gates required by this task are green. The fixes applied were the lint
+drift (31 files: 2 Go, 29 TS/TSX) plus the associated re-verification above,
+and a post-review correction (§6) restoring a real compile-time assertion
+that one of the lint auto-fixes had reduced to a no-op — both committed
+alongside this record.

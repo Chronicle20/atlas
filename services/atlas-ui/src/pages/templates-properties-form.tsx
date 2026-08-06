@@ -70,6 +70,7 @@ export function PropertiesForm() {
       {
         id: template.id,
         updates: {
+          ...template.attributes,
           region: data.region,
           majorVersion: data.major,
           minorVersion: data.minor,

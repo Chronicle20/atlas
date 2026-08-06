@@ -63,7 +63,9 @@ export function WritersForm() {
       {
         id: template.id,
         updates: {
+          ...template.attributes,
           socket: {
+            ...template.attributes.socket,
             handlers: template.attributes.socket.handlers || [],
             writers: data.writers,
           },

@@ -263,6 +263,18 @@ export const tenantsService = {
     return sortTenantConfig(config);
   },
 
+  /**
+   * Sparse read of every tenant configuration, for the Packet Matrix's tenant
+   * columns. READ-ONLY - see templatesService.getSocketMatrix. Not routed
+   * through sortTenantConfig: that reorders handlers/writers for display,
+   * which the matrix does on its own, and skipping it here means the sparse
+   * response passes through untouched (including socket.unsupported).
+   */
+  async getSocketMatrix(options?: ServiceOptions): Promise<TenantConfig[]> {
+    const url = `${CONFIG_PATH}?fields[tenants]=region,majorVersion,minorVersion,socket`;
+    return api.getList<TenantConfig>(url, options);
+  },
+
   async createTenantConfiguration(
     tenantId: string,
     attributes: TenantConfigAttributes,

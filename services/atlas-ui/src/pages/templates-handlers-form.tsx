@@ -58,7 +58,9 @@ export function HandlersForm() {
       {
         id: template.id,
         updates: {
+          ...template.attributes,
           socket: {
+            ...template.attributes.socket,
             handlers: data.handlers,
             writers: template.attributes.socket.writers || [],
           },

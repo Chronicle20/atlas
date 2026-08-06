@@ -244,6 +244,20 @@ export const templatesService = {
     });
   },
 
+  /**
+   * Sparse read for the Packet Matrix: eleven templates at full attributes
+   * carry character templates, presets and equipment lists the matrix never
+   * reads.
+   *
+   * The result is READ-ONLY. It must never reach templatesService.update - a
+   * sparse document in the write path erases characters/worlds/cashShop. It
+   * lives under its own query key (socketKeys.matrix) for exactly that reason.
+   */
+  async getSocketMatrix(): Promise<Template[]> {
+    const url = `${BASE_PATH}?fields[templates]=region,majorVersion,minorVersion,socket`;
+    return fetchAll<Template>(url);
+  },
+
   async exists(id: string, options?: ServiceOptions): Promise<boolean> {
     try {
       await templatesService.getById(id, options);
@@ -273,15 +287,27 @@ export const templatesService = {
     return sortTemplate(response.data);
   },
 
+  /**
+   * Updates a template.
+   *
+   * `data` MUST be the WHOLE attribute document, not a partial: the request
+   * body replaces the stored configuration wholesale. Passing a sparsely
+   * fetched or partial object erases characters/worlds/cashShop, which is why
+   * throwIfInvalid runs first and rejects anything missing a required field.
+   *
+   * Transport is PATCH. atlas-configurations binds /configurations/templates/{id}
+   * to http.MethodPatch only (templates/resource.go) - there is no PUT route, so
+   * the previous api.put call could only ever have 405'd.
+   */
   async update(
     id: string,
-    data: Partial<TemplateAttributes>,
+    data: TemplateAttributes,
     options?: ServiceOptions,
   ): Promise<Template> {
     throwIfInvalid(data, options?.validate !== false);
-    const response = await api.put<TemplateResponse>(
+    const response = await api.patch<TemplateResponse>(
       `${BASE_PATH}/${id}`,
-      wrapTemplate(data as TemplateAttributes, id),
+      wrapTemplate(data, id),
       options,
     );
     return sortTemplate(response.data);
@@ -327,7 +353,7 @@ export const templatesService = {
   },
 
   async updateBatch(
-    updates: Array<{ id: string; data: Partial<TemplateAttributes> }>,
+    updates: Array<{ id: string; data: TemplateAttributes }>,
     options?: ServiceOptions,
     batchOptions?: BatchOptions,
   ): Promise<BatchResult<Template>> {

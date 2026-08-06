@@ -2179,11 +2179,6 @@
         "options": {}
       },
       {
-        "opCode": "0x0A3",
-        "writer": "MiniRoom",
-        "services": ["channel"]
-      },
-      {
         "opCode": "0xA5",
         "writer": "CharacterItemUpgrade",
         "services": ["channel"]

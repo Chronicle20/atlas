@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import { buildOptionsMatrix, classifyOptions } from "@/lib/socket/options";
 import type { Binding, SocketObject } from "@/lib/socket/model";
 
-function obj(key: string, options: unknown): SocketObject {
+function obj(
+  key: string,
+  options: unknown,
+  writerName = "CharacterMovement",
+): SocketObject {
   const binding: Binding = {
     opCode: "0xB9",
     opCodeValue: 0xb9,
@@ -18,7 +22,7 @@ function obj(key: string, options: unknown): SocketObject {
     majorVersion: 95,
     minorVersion: 1,
     handlers: new Map(),
-    writers: new Map([["CharacterMovement", [binding]]]),
+    writers: new Map([[writerName, [binding]]]),
     unsupportedHandlers: new Set(),
     unsupportedWriters: new Set(),
   };
@@ -188,6 +192,10 @@ describe("buildOptionsMatrix - lists compare positionally", () => {
 });
 
 describe("buildOptionsMatrix - maps compare by key", () => {
+  // Both objects here carry a single group ("operations"), so per the
+  // always-qualify rule `key` is still the fully-qualified "operations.X"
+  // form, but `label` collapses to the bare entry name since the whole
+  // compared set agrees on one group.
   const a = obj("a", { operations: { INVITE: 1, JOIN: 2 } });
   const b = obj("b", { operations: { INVITE: 1, JOIN: 5, LEAVE: 9 } });
 
@@ -198,9 +206,14 @@ describe("buildOptionsMatrix - maps compare by key", () => {
     baselineKey: "a",
   });
 
-  it("keys rows by option name", () => {
+  it("keys rows by fully-qualified group.entry, but labels the bare entry name for a single-group Definition", () => {
     expect(m.shape).toBe("map");
     expect(m.rows.map((r) => r.key).sort()).toEqual([
+      "operations.INVITE",
+      "operations.JOIN",
+      "operations.LEAVE",
+    ]);
+    expect(m.rows.map((r) => r.label).sort()).toEqual([
       "INVITE",
       "JOIN",
       "LEAVE",
@@ -208,9 +221,9 @@ describe("buildOptionsMatrix - maps compare by key", () => {
   });
 
   it("classifies equal, differing and extra values", () => {
-    const invite = m.rows.find((r) => r.key === "INVITE")!;
-    const join = m.rows.find((r) => r.key === "JOIN")!;
-    const leave = m.rows.find((r) => r.key === "LEAVE")!;
+    const invite = m.rows.find((r) => r.key === "operations.INVITE")!;
+    const join = m.rows.find((r) => r.key === "operations.JOIN")!;
+    const leave = m.rows.find((r) => r.key === "operations.LEAVE")!;
     expect(invite.cells.get("b")!.state).toBe("same");
     expect(join.cells.get("b")!.state).toBe("differs");
     expect(leave.cells.get("b")!.state).toBe("extra");
@@ -228,9 +241,24 @@ describe("buildOptionsMatrix - maps compare by key", () => {
       name: "CharacterMovement",
       baselineKey: "d",
     });
-    const alreadyOwned = cd.rows.find((r) => r.key === "ALREADY_OWNED")!;
+    const alreadyOwned = cd.rows.find(
+      (r) => r.key === "failedReasonCodes.ALREADY_OWNED",
+    )!;
     expect(alreadyOwned.cells.get("d")!.state).toBe("same");
     expect(alreadyOwned.cells.get("c")!.state).toBe("missing");
+  });
+
+  it("a single-group map: key is qualified, label is bare", () => {
+    const single = obj("single", { operations: { OPEN: 5 } });
+    const m2 = buildOptionsMatrix({
+      objects: [single],
+      kind: "writer",
+      name: "CharacterMovement",
+      baselineKey: "single",
+    });
+    expect(m2.rows).toHaveLength(1);
+    expect(m2.rows[0]!.key).toBe("operations.OPEN");
+    expect(m2.rows[0]!.label).toBe("OPEN");
   });
 });
 
@@ -266,6 +294,8 @@ describe("buildOptionsMatrix - multi-group maps flatten to group.entry rows", ()
 
     const diverged = m.rows.find((r) => r.key === "codes.INCORRECT_PASSWORD")!;
     expect(diverged.cells.get("b")!.state).toBe("differs");
+    // Multi-group Definition: label is qualified too, not just key.
+    expect(diverged.label).toBe("codes.INCORRECT_PASSWORD");
 
     // Everything else - including the OTHER group entirely - is unaffected.
     for (const row of m.rows) {
@@ -350,6 +380,112 @@ describe("buildOptionsMatrix - multi-group maps flatten to group.entry rows", ()
       expect(row.cells.get("a")!.state).toBe("extra");
       expect(row.cells.get("b")!.state).toBe("missing");
     }
+  });
+
+  it("compares the SAME entry as 'same' even when the two objects carry different GROUP COUNTS for the Definition (real CharacterInteraction cross-cardinality)", () => {
+    // Measured directly against the seed templates: CharacterInteraction
+    // carries 1 group (operations) in gms_92_1, but 5 groups (operations,
+    // enterError, leaveReason, putStoneError, resultType) in gms_48_1,
+    // gms_61_1, gms_72_1, gms_79_1, gms_83_1, gms_84_1, gms_87_1, gms_95_1.
+    // A per-object flatten decision (flatten only when THAT object has >1
+    // key) would key operations.INVITE as "INVITE" in the 1-group object
+    // and "operations.INVITE" in the 5-group object - two different row
+    // keys for the identical wire value, which could never compare "same".
+    const oneGroup = obj(
+      "gms_92_1",
+      { operations: { INVITE: 2 } },
+      "CharacterInteraction",
+    );
+    const fiveGroup = obj(
+      "gms_83_1",
+      {
+        operations: { INVITE: 2, ENTER: 4 },
+        enterError: { FULL: 2 },
+        leaveReason: { KICKED: 1 },
+        putStoneError: { WRONG_STONE: 1 },
+        resultType: { SUCCESS: 0 },
+      },
+      "CharacterInteraction",
+    );
+
+    const m = buildOptionsMatrix({
+      objects: [oneGroup, fiveGroup],
+      kind: "writer",
+      name: "CharacterInteraction",
+      baselineKey: "gms_92_1",
+    });
+
+    const invite = m.rows.find((r) => r.key === "operations.INVITE");
+    expect(invite).toBeDefined();
+    expect(invite!.cells.get("gms_92_1")!.state).toBe("same");
+    expect(invite!.cells.get("gms_83_1")!.state).toBe("same");
+    // There is no separate, uncorrelated "INVITE"-only row left over from a
+    // per-object flatten decision.
+    expect(m.rows.some((r) => r.key === "INVITE")).toBe(false);
+  });
+
+  it("a group missing from one object's cardinality (jms_185_1-style) still classifies per-entry, not per-group", () => {
+    // Measured: jms_185_1 CharacterInteraction has 4 groups (missing
+    // `enterError`) against the 5-group shape gms_48_1/61_1/.../95_1 all
+    // carry.
+    const jms185 = obj(
+      "jms_185_1",
+      {
+        operations: { INVITE: 2 },
+        leaveReason: { KICKED: 1 },
+        putStoneError: { WRONG_STONE: 1 },
+        resultType: { SUCCESS: 0 },
+      },
+      "CharacterInteraction",
+    );
+    const gms83 = obj(
+      "gms_83_1",
+      {
+        operations: { INVITE: 2 },
+        enterError: { FULL: 2, UNABLE: 6 },
+        leaveReason: { KICKED: 1 },
+        putStoneError: { WRONG_STONE: 1 },
+        resultType: { SUCCESS: 0 },
+      },
+      "CharacterInteraction",
+    );
+
+    const m = buildOptionsMatrix({
+      objects: [jms185, gms83],
+      kind: "writer",
+      name: "CharacterInteraction",
+      baselineKey: "gms_83_1",
+    });
+
+    const enterErrorRows = m.rows.filter((r) => r.key.startsWith("enterError."));
+    expect(enterErrorRows).toHaveLength(2);
+    for (const row of enterErrorRows) {
+      expect(row.cells.get("jms_185_1")!.state).toBe("missing");
+      expect(row.cells.get("gms_83_1")!.state).toBe("same");
+    }
+    // No coarse group-level row stands in for the missing group.
+    expect(m.rows.some((r) => r.key === "enterError")).toBe(false);
+
+    // Every other group's entries are unaffected.
+    const operationsInvite = m.rows.find((r) => r.key === "operations.INVITE")!;
+    expect(operationsInvite.cells.get("jms_185_1")!.state).toBe("same");
+  });
+
+  it("throws on an ambiguous flattened key instead of silently dropping a row", () => {
+    // Defensive only - not a corpus shape. Group "a.b" entry "c" and group
+    // "a" entry "b.c" both flatten to the string "a.b.c".
+    const ambiguous = obj("x", {
+      "a.b": { c: 1 },
+      a: { "b.c": 2 },
+    });
+    expect(() =>
+      buildOptionsMatrix({
+        objects: [ambiguous],
+        kind: "writer",
+        name: "CharacterMovement",
+        baselineKey: "x",
+      }),
+    ).toThrow(/ambiguous flattened options row key/);
   });
 });
 

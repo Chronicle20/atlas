@@ -19,9 +19,23 @@ import { entriesOf } from "@/lib/socket/model";
  *          `codes` + `modes`, CharacterInteraction's five groups), and 9 are
  *          the literal empty object (classified "empty", not "map"). No
  *          options object anywhere in the corpus mixes a list-shaped group
- *          with a map-shaped one. `mapOf` below flattens multi-group objects
- *          to one row per group.entry pair so a divergence inside a single
- *          group doesn't collapse into one opaque group-level "differs".
+ *          with a map-shaped one.
+ *
+ *          Group COUNT is not fixed per Definition either: CharacterInteraction
+ *          carries 5 groups in gms_48_1/61_1/72_1/79_1/83_1/84_1/87_1/95_1, 4
+ *          groups in jms_185_1 (missing `enterError`), and just 1 group
+ *          (`operations`) in gms_92_1 - all measured directly against the
+ *          seed templates. Because the group count varies PER OBJECT for the
+ *          same Definition, `buildOptionsMatrix` cannot decide whether to
+ *          qualify a row key by looking at one object in isolation: doing so
+ *          would key the same wire value ("operations.INVITE") differently
+ *          depending on which template happened to supply it, and two
+ *          otherwise-identical values would never compare `same`. See
+ *          `mapEntriesOf` / `buildOptionsMatrix` for the fix: `key` is always
+ *          the fully-qualified `group.entry` form, independent of which
+ *          columns are selected; only `label` (display only) collapses to
+ *          the bare entry name when the whole compared set agrees on a
+ *          single group.
  *
  * Anything else falls back to map over its top-level keys and renders read-only.
  */
@@ -42,9 +56,23 @@ export function classifyOptions(value: unknown): OptionsShape {
 export type OptionsEntryCellState = "same" | "differs" | "missing" | "extra";
 
 export interface OptionsMatrixRow {
-  /** Array index (as a string) for lists; the option name for maps. */
+  /**
+   * Array index (as a string) for lists. For maps, the fully-qualified
+   * "group.entry" string (or the bare top-level key when it has no nested
+   * group to qualify with) - ALWAYS qualified this way regardless of how
+   * many groups any single compared object happens to carry, so the same
+   * wire value lands on the same row no matter which objects are selected.
+   * See the `classifyOptions` doc comment for why a per-object decision
+   * would break this.
+   */
   key: string;
-  /** What the header cell shows. Same as key; separate so lists can be relabelled. */
+  /**
+   * What the header cell shows. For lists, same as key. For maps: the bare
+   * entry name ("INVITE") when every compared object's Definition carries a
+   * single option group, or the qualified "group.entry" form ("operations.
+   * INVITE") once any compared object supplies a second group - `key` stays
+   * qualified either way; only display collapses.
+   */
   label: string;
   cells: Map<string, { value: unknown; state: OptionsEntryCellState }>;
 }
@@ -74,52 +102,84 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+/** One flattened map row's source: which group it came from (empty string
+ * when the top-level key had no nested group to unwrap) and its entry name
+ * within that group. */
+interface MapEntry {
+  group: string;
+  entry: string;
+  value: unknown;
+}
+
 /**
- * Pulls a map's entries out of its options object, unwrapping its
- * single-key or multi-key group wrapper.
- *
- * Single-group shape (495/543 measured): one top-level key wrapping a
- * name -> value object, e.g. `{ operations: { OPEN: 5 } }`, `{ codes: {
- * NORMAL: 0, ... } }`, `{ failedReasonCodes: { BANNED: 2, ... } }` (verified
- * directly against template_gms_95_1.json). Unwrapped one level so rows are
- * keyed by entry name ("OPEN"), not the group name ("operations").
- *
- * Multi-group shape (39/543 measured, e.g. ServerIP's `{ codes: {...},
- * modes: {...} }` in gms_12_1/48_1/61_1/..., or CharacterInteraction's five
- * groups `operations`/`enterError`/`leaveReason`/`putStoneError`/
- * `resultType` in gms_48_1 - all verified directly against the seed
- * templates): every measured multi-group object is entirely map-shaped
- * groups, never mixed with a list. Flattened to "group.entry" rows, one per
- * entry across every group, so a divergence inside a single group (e.g. one
- * `operations` code) surfaces on its own row instead of the whole group
- * comparing as one opaque blob.
- *
- * A group whose value is not itself a plain object - not observed anywhere
- * in the corpus - is kept as a single raw row under its own top-level key;
- * defensive fallback only, never a corpus shape.
+ * Row key for one flattened map entry. ALWAYS `group.entry` when there's a
+ * real group; the bare entry name when there is none (the top-level key
+ * itself is the entry - never observed with a real group alongside it in
+ * the corpus, but a possible mix under the defensive "falls back to map for
+ * anything else" path).
  */
-function mapOf(value: unknown): Record<string, unknown> | null {
+function mapRowKey(entry: MapEntry): string {
+  return entry.group === "" ? entry.entry : `${entry.group}.${entry.entry}`;
+}
+
+/**
+ * Pulls a map's entries out of its options object, unwrapping every
+ * top-level key that itself holds a name -> value object ("group"), e.g.
+ * `{ operations: { OPEN: 5 } }`, `{ codes: {...}, modes: {...} }`
+ * (ServerIP), or CharacterInteraction's five groups - `operations`,
+ * `enterError`, `leaveReason`, `putStoneError`, `resultType` - all verified
+ * directly against the seed templates. A top-level key whose value is not
+ * itself a plain object (never observed in the corpus) has no group to
+ * unwrap and becomes its own entry with an empty group - defensive
+ * fallback only.
+ */
+function mapEntriesOf(value: unknown): MapEntry[] | null {
   if (classifyOptions(value) !== "map") return null;
   const obj = value as Record<string, unknown>;
-  const keys = Object.keys(obj);
 
-  if (keys.length === 1) {
-    const inner = obj[keys[0]!];
-    return isPlainObject(inner) ? inner : obj;
-  }
-
-  const flattened: Record<string, unknown> = {};
-  for (const k of keys) {
-    const group = obj[k];
-    if (isPlainObject(group)) {
-      for (const [entry, entryValue] of Object.entries(group)) {
-        flattened[`${k}.${entry}`] = entryValue;
+  const entries: MapEntry[] = [];
+  for (const group of Object.keys(obj)) {
+    const groupValue = obj[group];
+    if (isPlainObject(groupValue)) {
+      for (const entry of Object.keys(groupValue)) {
+        entries.push({ group, entry, value: groupValue[entry] });
       }
     } else {
-      flattened[k] = group;
+      entries.push({ group: "", entry: group, value: groupValue });
     }
   }
-  return flattened;
+  return entries;
+}
+
+/**
+ * Flattens one object's map entries into a row-key -> entry lookup, and
+ * guards against key collisions: two DIFFERENT (group, entry) pairs that
+ * happen to produce the same "group.entry" string because a group or entry
+ * name itself contains the "." separator. Not observed anywhere in the
+ * corpus - every group/entry name measured is UPPER_SNAKE_CASE without
+ * dots - but silently letting the second entry overwrite the first via
+ * plain object-literal assignment would drop a row with no error, which is
+ * the wrong failure mode for a comparison tool. Throwing surfaces the
+ * ambiguity immediately instead.
+ */
+function flattenMapEntries(
+  entries: MapEntry[],
+  context: string,
+): Map<string, MapEntry> {
+  const rows = new Map<string, MapEntry>();
+  for (const entry of entries) {
+    const key = mapRowKey(entry);
+    const prior = rows.get(key);
+    if (prior && (prior.group !== entry.group || prior.entry !== entry.entry)) {
+      throw new Error(
+        `options.ts: ambiguous flattened options row key "${key}" in ${context} - ` +
+          `("${prior.group}", "${prior.entry}") and ("${entry.group}", "${entry.entry}") ` +
+          `both resolve to it. A group or entry name contains the "." separator.`,
+      );
+    }
+    rows.set(key, entry);
+  }
+  return rows;
 }
 
 /**
@@ -154,8 +214,6 @@ export function buildOptionsMatrix(input: {
 
   if (shape !== "list" && shape !== "map") return { shape, rows: [] };
 
-  const baselineValue = values.get(baselineKey);
-
   if (shape === "list") {
     const lists = new Map<string, unknown[]>();
     for (const o of objects) lists.set(o.key, listOf(values.get(o.key)) ?? []);
@@ -182,12 +240,50 @@ export function buildOptionsMatrix(input: {
     return { shape, rows };
   }
 
-  const maps = new Map<string, Record<string, unknown>>();
-  for (const o of objects) maps.set(o.key, mapOf(values.get(o.key)) ?? {});
-  const baseline = mapOf(baselineValue) ?? {};
+  // Per-object row maps. `key` is unconditionally the fully-qualified
+  // "group.entry" form - computed independently per object, but from a rule
+  // (mapRowKey) that depends only on that object's OWN group/entry names,
+  // never on how many groups a DIFFERENT compared object happens to carry.
+  // That is what makes the same wire value land on the same row regardless
+  // of which columns are selected (FR-3.5) - see the classifyOptions doc
+  // comment for the CharacterInteraction cross-cardinality case this fixes.
+  const perObjectRows = new Map<string, Map<string, MapEntry>>();
+  for (const o of objects) {
+    const entries = mapEntriesOf(values.get(o.key)) ?? [];
+    perObjectRows.set(
+      o.key,
+      flattenMapEntries(entries, `${kind} "${name}" in "${o.key}"`),
+    );
+  }
+  const baselineRows = perObjectRows.get(baselineKey) ?? new Map();
+
+  // `label` display rule: bare entry name when every compared object agrees
+  // there is at most one real group for this Definition; the qualified form
+  // once ANY compared object supplies a second group. This is evaluated
+  // across the whole selected set, not per object, precisely so it can't
+  // introduce the same per-object inconsistency `key` had to be fixed for -
+  // it only affects what is DISPLAYED, never row identity.
+  const groupNames = new Set<string>();
+  for (const rowMap of perObjectRows.values()) {
+    for (const entry of rowMap.values()) {
+      if (entry.group !== "") groupNames.add(entry.group);
+    }
+  }
+  const qualifyLabels = groupNames.size > 1;
+
+  // Canonical (group, entry) per row key, for label formatting only - taken
+  // from the first object (in selection order) that supplies the key. This
+  // never affects cell values or classification, only what the row header
+  // displays.
+  const canonical = new Map<string, MapEntry>();
+  for (const o of objects) {
+    for (const [key, entry] of perObjectRows.get(o.key)!) {
+      if (!canonical.has(key)) canonical.set(key, entry);
+    }
+  }
 
   const keys = new Set<string>();
-  for (const m of maps.values()) for (const k of Object.keys(m)) keys.add(k);
+  for (const rowMap of perObjectRows.values()) for (const k of rowMap.keys()) keys.add(k);
 
   const rows: OptionsMatrixRow[] = [];
   for (const k of [...keys].sort()) {
@@ -196,15 +292,23 @@ export function buildOptionsMatrix(input: {
       { value: unknown; state: OptionsEntryCellState }
     >();
     for (const o of objects) {
-      const m = maps.get(o.key)!;
-      const has = Object.prototype.hasOwnProperty.call(m, k);
-      const baseHas = Object.prototype.hasOwnProperty.call(baseline, k);
+      const rowMap = perObjectRows.get(o.key)!;
+      const entry = rowMap.get(k);
+      const baseHas = baselineRows.has(k);
       cells.set(o.key, {
-        value: has ? m[k] : undefined,
-        state: cellState(baseHas, has, baseline[k], m[k]),
+        value: entry !== undefined ? entry.value : undefined,
+        state: cellState(
+          baseHas,
+          entry !== undefined,
+          baselineRows.get(k)?.value,
+          entry?.value,
+        ),
       });
     }
-    rows.push({ key: k, label: k, cells });
+    const meta = canonical.get(k)!;
+    const label =
+      meta.group === "" || !qualifyLabels ? meta.entry : `${meta.group}.${meta.entry}`;
+    rows.push({ key: k, label, cells });
   }
   return { shape, rows };
 }

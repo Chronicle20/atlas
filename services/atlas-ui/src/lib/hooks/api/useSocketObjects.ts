@@ -47,7 +47,8 @@ export function useSocketMatrixTemplates(): UseQueryResult<
 > {
   return useQuery({
     queryKey: socketKeys.matrix(),
-    queryFn: async () => (await templatesService.getSocketMatrix()).map(fromTemplate),
+    queryFn: async () =>
+      (await templatesService.getSocketMatrix()).map(fromTemplate),
     staleTime: 30_000,
   });
 }
@@ -59,7 +60,8 @@ export function useSocketMatrixTenants(): UseQueryResult<
 > {
   return useQuery({
     queryKey: socketKeys.tenantMatrix(),
-    queryFn: async () => (await tenantsService.getSocketMatrix()).map(fromTenantConfig),
+    queryFn: async () =>
+      (await tenantsService.getSocketMatrix()).map(fromTenantConfig),
     staleTime: 30_000,
   });
 }

@@ -4,7 +4,10 @@
  * react-refresh/only-export-components rule stays satisfied) and out of
  * mutate.ts (pure data layer, no UI/form concerns).
  */
-import { KNOWN_SERVICES, type KnownService } from "@/lib/schemas/socket-definition";
+import {
+  KNOWN_SERVICES,
+  type KnownService,
+} from "@/lib/schemas/socket-definition";
 import type { SocketTarget } from "@/lib/hooks/api/useSocketObjects";
 import type { DefinitionKind } from "@/lib/socket/model";
 

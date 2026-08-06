@@ -4,7 +4,11 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
@@ -16,7 +20,11 @@ import {
 import { Switch } from "@/components/ui/switch";
 import type { AncestryClass } from "@/lib/socket/ancestry";
 import type { GridFilters, SortDirection, SortKey } from "@/lib/socket/matrix";
-import type { DefinitionKind, DefinitionState, SocketObject } from "@/lib/socket/model";
+import type {
+  DefinitionKind,
+  DefinitionState,
+  SocketObject,
+} from "@/lib/socket/model";
 import { cn } from "@/lib/utils";
 
 export interface GridToolbarProps {
@@ -452,7 +460,10 @@ export function GridToolbar({
           id="toolbar-options-missing"
           checked={filters.optionsMissingOnly}
           onChange={(e) =>
-            onFiltersChange({ ...filters, optionsMissingOnly: e.target.checked })
+            onFiltersChange({
+              ...filters,
+              optionsMissingOnly: e.target.checked,
+            })
           }
           className="h-4 w-4"
         />

@@ -73,10 +73,24 @@ function push(
 
 export function fromTemplate(t: Template): SocketObject {
   const a = t.attributes;
-  return build(t.id, "template", a.region, a.majorVersion, a.minorVersion, a.socket);
+  return build(
+    t.id,
+    "template",
+    a.region,
+    a.majorVersion,
+    a.minorVersion,
+    a.socket,
+  );
 }
 
 export function fromTenantConfig(t: TenantConfig): SocketObject {
   const a = t.attributes;
-  return build(t.id, "tenant", a.region, a.majorVersion, a.minorVersion, a.socket);
+  return build(
+    t.id,
+    "tenant",
+    a.region,
+    a.majorVersion,
+    a.minorVersion,
+    a.socket,
+  );
 }

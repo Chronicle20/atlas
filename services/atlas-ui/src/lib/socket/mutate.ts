@@ -71,30 +71,50 @@ function requireOpcodeValue(opCode: string): number {
   return value;
 }
 
-function buildHandlerEntry(name: string, input: BindingInput): SocketHandlerEntry {
+function buildHandlerEntry(
+  name: string,
+  input: BindingInput,
+): SocketHandlerEntry {
   return {
     opCode: input.opCode,
     validator: input.validator ?? "",
     handler: name,
     ...(input.services.length > 0 ? { services: [...input.services] } : {}),
-    ...(input.fname !== undefined && input.fname !== "" ? { fname: input.fname } : {}),
-    ...(input.options !== undefined ? { options: cloneJson(input.options) } : {}),
+    ...(input.fname !== undefined && input.fname !== ""
+      ? { fname: input.fname }
+      : {}),
+    ...(input.options !== undefined
+      ? { options: cloneJson(input.options) }
+      : {}),
   };
 }
 
-function buildWriterEntry(name: string, input: BindingInput): SocketWriterEntry {
+function buildWriterEntry(
+  name: string,
+  input: BindingInput,
+): SocketWriterEntry {
   return {
     opCode: input.opCode,
     writer: name,
     ...(input.services.length > 0 ? { services: [...input.services] } : {}),
-    ...(input.fname !== undefined && input.fname !== "" ? { fname: input.fname } : {}),
-    ...(input.options !== undefined ? { options: cloneJson(input.options) } : {}),
+    ...(input.fname !== undefined && input.fname !== ""
+      ? { fname: input.fname }
+      : {}),
+    ...(input.options !== undefined
+      ? { options: cloneJson(input.options) }
+      : {}),
   };
 }
 
 /** Builds a fresh, standalone entry - `input.options` is deep-cloned so the result never aliases the caller's object (FR-6.5). */
-function buildEntry(kind: DefinitionKind, name: string, input: BindingInput): AnyEntry {
-  return kind === "handler" ? buildHandlerEntry(name, input) : buildWriterEntry(name, input);
+function buildEntry(
+  kind: DefinitionKind,
+  name: string,
+  input: BindingInput,
+): AnyEntry {
+  return kind === "handler"
+    ? buildHandlerEntry(name, input)
+    : buildWriterEntry(name, input);
 }
 
 function collectionOf(cfg: SocketConfig, kind: DefinitionKind): AnyEntry[] {
@@ -109,8 +129,14 @@ function withCollection(
   unsupported: SocketUnsupported,
 ): SocketConfig {
   return {
-    handlers: kind === "handler" ? (entries as SocketHandlerEntry[]) : cloneJson(cfg.handlers),
-    writers: kind === "writer" ? (entries as SocketWriterEntry[]) : cloneJson(cfg.writers),
+    handlers:
+      kind === "handler"
+        ? (entries as SocketHandlerEntry[])
+        : cloneJson(cfg.handlers),
+    writers:
+      kind === "writer"
+        ? (entries as SocketWriterEntry[])
+        : cloneJson(cfg.writers),
     unsupported,
   };
 }
@@ -132,7 +158,8 @@ function resolveOne(
 ): number {
   const hits: number[] = [];
   entries.forEach((e, i) => {
-    if (nameOf(e, kind) === name && parseOpcode(e.opCode) === opCodeValue) hits.push(i);
+    if (nameOf(e, kind) === name && parseOpcode(e.opCode) === opCodeValue)
+      hits.push(i);
   });
   if (hits.length === 0) {
     throw new MutationError(
@@ -174,7 +201,8 @@ export function addBinding(
   entries.push(buildEntry(kind, name, input));
 
   const unsupported = normalizedUnsupported(cfg);
-  if (kind === "handler") unsupported.handlers = dropName(unsupported.handlers, name);
+  if (kind === "handler")
+    unsupported.handlers = dropName(unsupported.handlers, name);
   else unsupported.writers = dropName(unsupported.writers, name);
 
   return withCollection(cfg, kind, entries, unsupported);
@@ -199,10 +227,15 @@ export function editBinding(
 
   if (newValue !== opCodeValue) {
     const collision = entries.some(
-      (e, i) => i !== at && nameOf(e, kind) === name && parseOpcode(e.opCode) === newValue,
+      (e, i) =>
+        i !== at &&
+        nameOf(e, kind) === name &&
+        parseOpcode(e.opCode) === newValue,
     );
     if (collision) {
-      throw new MutationError(`"${name}" is already bound to opcode ${formatOpcode(newValue)}.`);
+      throw new MutationError(
+        `"${name}" is already bound to opcode ${formatOpcode(newValue)}.`,
+      );
     }
   }
 
@@ -241,7 +274,9 @@ export function markUnsupported(
   kind: DefinitionKind,
   name: string,
 ): SocketConfig {
-  const entries = collectionOf(cfg, kind).filter((e) => nameOf(e, kind) !== name);
+  const entries = collectionOf(cfg, kind).filter(
+    (e) => nameOf(e, kind) !== name,
+  );
   const unsupported = normalizedUnsupported(cfg);
   if (kind === "handler") {
     if (!unsupported.handlers.includes(name)) unsupported.handlers.push(name);
@@ -258,7 +293,8 @@ export function clearUnsupported(
   name: string,
 ): SocketConfig {
   const unsupported = normalizedUnsupported(cfg);
-  if (kind === "handler") unsupported.handlers = dropName(unsupported.handlers, name);
+  if (kind === "handler")
+    unsupported.handlers = dropName(unsupported.handlers, name);
   else unsupported.writers = dropName(unsupported.writers, name);
   return withCollection(cfg, kind, collectionOf(cfg, kind), unsupported);
 }

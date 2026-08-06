@@ -15,14 +15,32 @@ import type { SocketConfig } from "@/types/models/socket";
 function config(): SocketConfig {
   return {
     handlers: [
-      { opCode: "0x01", validator: "NoOpValidator", handler: "LoginHandle", services: ["login"] },
-      { opCode: "0x17", validator: "LoggedInValidator", handler: "NoOpHandler", services: ["channel"] },
-      { opCode: "0x19", validator: "LoggedInValidator", handler: "NoOpHandler", services: ["channel"] },
-      { opCode: "0x22", validator: "LoggedInValidator", handler: "NoOpHandler", services: ["channel"] },
+      {
+        opCode: "0x01",
+        validator: "NoOpValidator",
+        handler: "LoginHandle",
+        services: ["login"],
+      },
+      {
+        opCode: "0x17",
+        validator: "LoggedInValidator",
+        handler: "NoOpHandler",
+        services: ["channel"],
+      },
+      {
+        opCode: "0x19",
+        validator: "LoggedInValidator",
+        handler: "NoOpHandler",
+        services: ["channel"],
+      },
+      {
+        opCode: "0x22",
+        validator: "LoggedInValidator",
+        handler: "NoOpHandler",
+        services: ["channel"],
+      },
     ],
-    writers: [
-      { opCode: "0x00", writer: "AuthSuccess", services: ["login"] },
-    ],
+    writers: [{ opCode: "0x00", writer: "AuthSuccess", services: ["login"] }],
     unsupported: { handlers: ["GuestLoginHandle"], writers: [] },
   };
 }
@@ -45,7 +63,10 @@ describe("addBinding", () => {
       services: ["channel"],
     });
     expect(out.writers).toHaveLength(2);
-    expect(out.writers[1]).toMatchObject({ opCode: "0x9A", writer: "PetActivated" });
+    expect(out.writers[1]).toMatchObject({
+      opCode: "0x9A",
+      writer: "PetActivated",
+    });
   });
 
   // FR-1.2
@@ -64,12 +85,17 @@ describe("addBinding", () => {
       validator: "LoggedInValidator",
       services: ["channel"],
     });
-    expect(out.handlers.filter((h) => h.handler === "NoOpHandler")).toHaveLength(4);
+    expect(
+      out.handlers.filter((h) => h.handler === "NoOpHandler"),
+    ).toHaveLength(4);
   });
 
   it("does not mutate the input", () => {
     const input = config();
-    addBinding(input, "writer", "PetActivated", { opCode: "0x9A", services: ["channel"] });
+    addBinding(input, "writer", "PetActivated", {
+      opCode: "0x9A",
+      services: ["channel"],
+    });
     expect(input.writers).toHaveLength(1);
   });
 
@@ -102,10 +128,15 @@ describe("addBinding", () => {
   it("formats a single-hex-digit opcode zero-padded in the collision error", () => {
     const single: SocketConfig = {
       handlers: [],
-      writers: [{ opCode: "0x9", writer: "PetActivated", services: ["channel"] }],
+      writers: [
+        { opCode: "0x9", writer: "PetActivated", services: ["channel"] },
+      ],
     };
     expect(() =>
-      addBinding(single, "writer", "PetActivated", { opCode: "0x09", services: ["channel"] }),
+      addBinding(single, "writer", "PetActivated", {
+        opCode: "0x09",
+        services: ["channel"],
+      }),
     ).toThrow(/0x09/);
   });
 });
@@ -142,7 +173,10 @@ describe("editBinding", () => {
       ],
     };
     expect(() =>
-      editBinding(dup, "writer", "MiniRoom", 0xb8, { opCode: "0xB8", services: [] }),
+      editBinding(dup, "writer", "MiniRoom", 0xb8, {
+        opCode: "0xB8",
+        services: [],
+      }),
     ).toThrow(MutationError);
   });
 
@@ -175,10 +209,11 @@ describe("editBinding", () => {
 describe("deleteBinding", () => {
   it("removes exactly one binding of a multi-binding name", () => {
     const out = deleteBinding(config(), "handler", "NoOpHandler", 0x19);
-    expect(out.handlers.filter((h) => h.handler === "NoOpHandler").map((h) => h.opCode)).toEqual([
-      "0x17",
-      "0x22",
-    ]);
+    expect(
+      out.handlers
+        .filter((h) => h.handler === "NoOpHandler")
+        .map((h) => h.opCode),
+    ).toEqual(["0x17", "0x22"]);
   });
 
   // Resolution is by NORMALIZED opcode value, never the stored string form.
@@ -200,7 +235,9 @@ describe("deleteBinding", () => {
   });
 
   it("throws when the binding does not resolve", () => {
-    expect(() => deleteBinding(config(), "writer", "AuthSuccess", 0x99)).toThrow(MutationError);
+    expect(() =>
+      deleteBinding(config(), "writer", "AuthSuccess", 0x99),
+    ).toThrow(MutationError);
   });
 
   it("throws when the binding resolves more than once, leaving both intact", () => {
@@ -211,7 +248,9 @@ describe("deleteBinding", () => {
         { opCode: "0x0B8", writer: "MiniRoom", services: ["channel"] },
       ],
     };
-    expect(() => deleteBinding(dup, "writer", "MiniRoom", 0xb8)).toThrow(MutationError);
+    expect(() => deleteBinding(dup, "writer", "MiniRoom", 0xb8)).toThrow(
+      MutationError,
+    );
   });
 });
 
@@ -221,14 +260,18 @@ describe("markUnsupported", () => {
   // routes. The dialog states this before confirming.
   it("removes EVERY binding of the name", () => {
     const out = markUnsupported(config(), "handler", "NoOpHandler");
-    expect(out.handlers.filter((h) => h.handler === "NoOpHandler")).toHaveLength(0);
+    expect(
+      out.handlers.filter((h) => h.handler === "NoOpHandler"),
+    ).toHaveLength(0);
     expect(out.unsupported!.handlers).toContain("NoOpHandler");
   });
 
   it("is idempotent", () => {
     const once = markUnsupported(config(), "handler", "NoOpHandler");
     const twice = markUnsupported(once, "handler", "NoOpHandler");
-    expect(twice.unsupported!.handlers.filter((n) => n === "NoOpHandler")).toHaveLength(1);
+    expect(
+      twice.unsupported!.handlers.filter((n) => n === "NoOpHandler"),
+    ).toHaveLength(1);
   });
 
   it("works on a name that was never defined", () => {
@@ -242,7 +285,9 @@ describe("clearUnsupported", () => {
   it("returns the definition to Undefined", () => {
     const out = clearUnsupported(config(), "handler", "GuestLoginHandle");
     expect(out.unsupported!.handlers).toEqual([]);
-    expect(out.handlers.some((h) => h.handler === "GuestLoginHandle")).toBe(false);
+    expect(out.handlers.some((h) => h.handler === "GuestLoginHandle")).toBe(
+      false,
+    );
   });
 
   it("is a no-op for a name that is not marked", () => {
@@ -257,7 +302,9 @@ describe("copyBindings", () => {
       { opCode: "0x02", validator: "NoOpValidator", services: ["login"] },
       { opCode: "0x03", validator: "NoOpValidator", services: ["login"] },
     ]);
-    expect(out.handlers.filter((h) => h.handler === "GuestLoginHandle")).toHaveLength(2);
+    expect(
+      out.handlers.filter((h) => h.handler === "GuestLoginHandle"),
+    ).toHaveLength(2);
     expect(out.unsupported!.handlers).toEqual([]);
   });
 
@@ -274,8 +321,18 @@ describe("copyBindings", () => {
 
 describe("copyMissingFromAncestor", () => {
   const additions = [
-    { name: "PongHandle", bindings: [{ opCode: "0x18", validator: "NoOpValidator", services: ["channel"] }] },
-    { name: "LoginHandle", bindings: [{ opCode: "0xFF", validator: "NoOpValidator", services: ["login"] }] },
+    {
+      name: "PongHandle",
+      bindings: [
+        { opCode: "0x18", validator: "NoOpValidator", services: ["channel"] },
+      ],
+    },
+    {
+      name: "LoginHandle",
+      bindings: [
+        { opCode: "0xFF", validator: "NoOpValidator", services: ["login"] },
+      ],
+    },
   ];
 
   // FR-9.4
@@ -288,22 +345,44 @@ describe("copyMissingFromAncestor", () => {
 
   it("adds the definitions that were undefined", () => {
     const out = copyMissingFromAncestor(config(), "handler", additions);
-    expect(out.handlers.filter((h) => h.handler === "PongHandle")).toHaveLength(1);
+    expect(out.handlers.filter((h) => h.handler === "PongHandle")).toHaveLength(
+      1,
+    );
   });
 
   // FR-9.6
   it("applies the whole selection as one document", () => {
     const out = copyMissingFromAncestor(config(), "handler", [
-      { name: "A", bindings: [{ opCode: "0x30", validator: "NoOpValidator", services: ["channel"] }] },
-      { name: "B", bindings: [{ opCode: "0x31", validator: "NoOpValidator", services: ["channel"] }] },
-      { name: "C", bindings: [{ opCode: "0x32", validator: "NoOpValidator", services: ["channel"] }] },
+      {
+        name: "A",
+        bindings: [
+          { opCode: "0x30", validator: "NoOpValidator", services: ["channel"] },
+        ],
+      },
+      {
+        name: "B",
+        bindings: [
+          { opCode: "0x31", validator: "NoOpValidator", services: ["channel"] },
+        ],
+      },
+      {
+        name: "C",
+        bindings: [
+          { opCode: "0x32", validator: "NoOpValidator", services: ["channel"] },
+        ],
+      },
     ]);
     expect(out.handlers).toHaveLength(config().handlers.length + 3);
   });
 
   it("clears the unsupported marker for any name it adds", () => {
     const out = copyMissingFromAncestor(config(), "handler", [
-      { name: "GuestLoginHandle", bindings: [{ opCode: "0x02", validator: "NoOpValidator", services: ["login"] }] },
+      {
+        name: "GuestLoginHandle",
+        bindings: [
+          { opCode: "0x02", validator: "NoOpValidator", services: ["login"] },
+        ],
+      },
     ]);
     expect(out.unsupported!.handlers).toEqual([]);
   });
@@ -317,8 +396,18 @@ describe("fillMissingValidators", () => {
     const broken: SocketConfig = {
       handlers: [
         { opCode: "0x01", validator: "", handler: "A", services: ["channel"] },
-        { opCode: "0x02", validator: "   ", handler: "B", services: ["channel"] },
-        { opCode: "0x03", validator: "LoggedInValidator", handler: "C", services: ["channel"] },
+        {
+          opCode: "0x02",
+          validator: "   ",
+          handler: "B",
+          services: ["channel"],
+        },
+        {
+          opCode: "0x03",
+          validator: "LoggedInValidator",
+          handler: "C",
+          services: ["channel"],
+        },
       ],
       writers: [],
     };
@@ -348,8 +437,18 @@ describe("fillMissingValidators", () => {
     const broken = {
       handlers: [
         { opCode: "0x01", handler: "A", services: ["channel"] },
-        { opCode: "0x02", handler: "B", services: ["channel"], validator: null },
-        { opCode: "0x03", handler: "C", services: ["channel"], validator: "LoggedInValidator" },
+        {
+          opCode: "0x02",
+          handler: "B",
+          services: ["channel"],
+          validator: null,
+        },
+        {
+          opCode: "0x03",
+          handler: "C",
+          services: ["channel"],
+          validator: "LoggedInValidator",
+        },
       ],
       writers: [],
     } as unknown as SocketConfig;
@@ -374,7 +473,10 @@ describe("purity (deep-frozen input)", () => {
     const frozen = deepFreeze(config());
     const before = JSON.stringify(frozen);
     expect(() =>
-      addBinding(frozen, "writer", "PetActivated", { opCode: "0x9A", services: ["channel"] }),
+      addBinding(frozen, "writer", "PetActivated", {
+        opCode: "0x9A",
+        services: ["channel"],
+      }),
     ).not.toThrow();
     expect(JSON.stringify(frozen)).toBe(before);
   });
@@ -395,15 +497,21 @@ describe("purity (deep-frozen input)", () => {
   it("deleteBinding does not throw against a frozen config and leaves it unchanged", () => {
     const frozen = deepFreeze(config());
     const before = JSON.stringify(frozen);
-    expect(() => deleteBinding(frozen, "handler", "NoOpHandler", 0x19)).not.toThrow();
+    expect(() =>
+      deleteBinding(frozen, "handler", "NoOpHandler", 0x19),
+    ).not.toThrow();
     expect(JSON.stringify(frozen)).toBe(before);
   });
 
   it("markUnsupported / clearUnsupported do not throw against a frozen config and leave it unchanged", () => {
     const frozen = deepFreeze(config());
     const before = JSON.stringify(frozen);
-    expect(() => markUnsupported(frozen, "handler", "NoOpHandler")).not.toThrow();
-    expect(() => clearUnsupported(frozen, "handler", "GuestLoginHandle")).not.toThrow();
+    expect(() =>
+      markUnsupported(frozen, "handler", "NoOpHandler"),
+    ).not.toThrow();
+    expect(() =>
+      clearUnsupported(frozen, "handler", "GuestLoginHandle"),
+    ).not.toThrow();
     expect(JSON.stringify(frozen)).toBe(before);
   });
 
@@ -417,7 +525,16 @@ describe("purity (deep-frozen input)", () => {
     ).not.toThrow();
     expect(() =>
       copyMissingFromAncestor(frozen, "handler", [
-        { name: "PongHandle", bindings: [{ opCode: "0x18", validator: "NoOpValidator", services: ["channel"] }] },
+        {
+          name: "PongHandle",
+          bindings: [
+            {
+              opCode: "0x18",
+              validator: "NoOpValidator",
+              services: ["channel"],
+            },
+          ],
+        },
       ]),
     ).not.toThrow();
     expect(JSON.stringify(frozen)).toBe(before);
@@ -425,7 +542,9 @@ describe("purity (deep-frozen input)", () => {
 
   it("fillMissingValidators does not throw against a frozen config and leaves it unchanged", () => {
     const frozen = deepFreeze<SocketConfig>({
-      handlers: [{ opCode: "0x01", validator: "", handler: "A", services: ["channel"] }],
+      handlers: [
+        { opCode: "0x01", validator: "", handler: "A", services: ["channel"] },
+      ],
       writers: [],
     });
     const before = JSON.stringify(frozen);

@@ -148,7 +148,8 @@ export function OptionsMatrixTable({
                       isBaseline && "bg-muted/40",
                       cell.state === "differs" &&
                         "text-amber-600 dark:text-amber-400",
-                      cell.state === "extra" && "text-sky-600 dark:text-sky-400",
+                      cell.state === "extra" &&
+                        "text-sky-600 dark:text-sky-400",
                       cell.state === "missing" && "text-muted-foreground",
                     )}
                   >

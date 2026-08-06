@@ -53,7 +53,9 @@ function obj(
   };
 }
 
-const tenant = obj("tnt", "tenant", { LoginHandle: [binding("0x01")] }, ["GuestLoginHandle"]);
+const tenant = obj("tnt", "tenant", { LoginHandle: [binding("0x01")] }, [
+  "GuestLoginHandle",
+]);
 const ancestor = obj("t83", "template", {
   LoginHandle: [binding("0x01")],
   PongHandle: [binding("0x18")],
@@ -87,10 +89,16 @@ describe("CopyFromAncestorFlow", () => {
   it("lists only definitions defined in the ancestor and undefined in the tenant", () => {
     renderFlow();
     const list = screen.getByRole("group", { name: /candidates/i });
-    expect(within(list).getByRole("checkbox", { name: /PongHandle/ })).toBeInTheDocument();
-    expect(within(list).getByRole("checkbox", { name: /MoveHandle/ })).toBeInTheDocument();
+    expect(
+      within(list).getByRole("checkbox", { name: /PongHandle/ }),
+    ).toBeInTheDocument();
+    expect(
+      within(list).getByRole("checkbox", { name: /MoveHandle/ }),
+    ).toBeInTheDocument();
     // Already defined in the tenant.
-    expect(within(list).queryByRole("checkbox", { name: /LoginHandle/ })).not.toBeInTheDocument();
+    expect(
+      within(list).queryByRole("checkbox", { name: /LoginHandle/ }),
+    ).not.toBeInTheDocument();
     // Explicitly marked Unsupported in the tenant.
     expect(
       within(list).queryByRole("checkbox", { name: /GuestLoginHandle/ }),
@@ -106,7 +114,9 @@ describe("CopyFromAncestorFlow", () => {
     const review = screen.getByRole("region", { name: /review/i });
     expect(within(review).getByText("MoveHandle")).toBeInTheDocument();
     expect(within(review).getByText(/source opcode/i)).toBeInTheDocument();
-    expect(within(review).getByLabelText(/target opcode for MoveHandle/i)).toHaveValue("0x29");
+    expect(
+      within(review).getByLabelText(/target opcode for MoveHandle/i),
+    ).toHaveValue("0x29");
     expect(within(review).getByText("LoggedInValidator")).toBeInTheDocument();
     expect(within(review).getByText("channel")).toBeInTheDocument();
     expect(within(review).getByText(/types/)).toBeInTheDocument();
@@ -125,8 +135,14 @@ describe("CopyFromAncestorFlow", () => {
     const { apply } = mutateAsync.mock.calls[0]![0] as {
       apply: (c: SocketConfig) => SocketConfig;
     };
-    const out = apply({ handlers: [], writers: [], unsupported: { handlers: [], writers: [] } });
-    expect(out.handlers.find((h) => h.handler === "PongHandle")!.opCode).toBe("0x1A");
+    const out = apply({
+      handlers: [],
+      writers: [],
+      unsupported: { handlers: [], writers: [] },
+    });
+    expect(out.handlers.find((h) => h.handler === "PongHandle")!.opCode).toBe(
+      "0x1A",
+    );
   });
 
   // FR-9.6
@@ -141,8 +157,15 @@ describe("CopyFromAncestorFlow", () => {
     const { apply } = mutateAsync.mock.calls[0]![0] as {
       apply: (c: SocketConfig) => SocketConfig;
     };
-    const out = apply({ handlers: [], writers: [], unsupported: { handlers: [], writers: [] } });
-    expect(out.handlers.map((h) => h.handler).sort()).toEqual(["MoveHandle", "PongHandle"]);
+    const out = apply({
+      handlers: [],
+      writers: [],
+      unsupported: { handlers: [], writers: [] },
+    });
+    expect(out.handlers.map((h) => h.handler).sort()).toEqual([
+      "MoveHandle",
+      "PongHandle",
+    ]);
   });
 
   // FR-9.4
@@ -157,7 +180,12 @@ describe("CopyFromAncestorFlow", () => {
     };
     const raced: SocketConfig = {
       handlers: [
-        { opCode: "0xFF", validator: "NoOpValidator", handler: "PongHandle", services: ["channel"] },
+        {
+          opCode: "0xFF",
+          validator: "NoOpValidator",
+          handler: "PongHandle",
+          services: ["channel"],
+        },
       ],
       writers: [],
       unsupported: { handlers: [], writers: [] },
@@ -179,7 +207,9 @@ describe("CopyFromAncestorFlow", () => {
     await userEvent.click(screen.getByRole("button", { name: /review/i }));
     await userEvent.click(screen.getByRole("button", { name: /apply/i }));
     expect(mutateAsync).toHaveBeenCalledTimes(1);
-    expect(mutateAsync.mock.calls[0]![0]).toMatchObject({ target: { source: "tenant", id: "tnt" } });
+    expect(mutateAsync.mock.calls[0]![0]).toMatchObject({
+      target: { source: "tenant", id: "tnt" },
+    });
   });
 });
 
@@ -210,7 +240,9 @@ describe("FillMissingValidatorsDialog", () => {
       />,
       { wrapper },
     );
-    await userEvent.click(screen.getByRole("button", { name: /fill validators/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /fill validators/i }),
+    );
 
     expect(mutateAsync).toHaveBeenCalledTimes(1);
     const { apply } = mutateAsync.mock.calls[0]![0] as {
@@ -223,7 +255,9 @@ describe("FillMissingValidatorsDialog", () => {
       ],
       writers: [],
     };
-    expect(apply(broken)).toEqual(fillMissingValidators(broken, "NoOpValidator"));
+    expect(apply(broken)).toEqual(
+      fillMissingValidators(broken, "NoOpValidator"),
+    );
   });
 
   // The banner (and this dialog) must never surface itself for a document
@@ -239,8 +273,12 @@ describe("FillMissingValidatorsDialog", () => {
       />,
       { wrapper },
     );
-    expect(screen.queryByText(/handler entries with no validator/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /fill validators/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/handler entries with no validator/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /fill validators/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("goes through useSocketMutation only - never a service", async () => {
@@ -254,7 +292,9 @@ describe("FillMissingValidatorsDialog", () => {
       />,
       { wrapper },
     );
-    await userEvent.click(screen.getByRole("button", { name: /fill validators/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /fill validators/i }),
+    );
     expect(mutateAsync).toHaveBeenCalledTimes(1);
     expect(mutateAsync.mock.calls[0]![0]).toMatchObject({
       target: { source: "template", id: "t95" },
@@ -277,7 +317,9 @@ describe("FillMissingValidatorsDialog", () => {
       />,
       { wrapper },
     );
-    await userEvent.click(screen.getByRole("button", { name: /fill validators/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /fill validators/i }),
+    );
 
     const { apply } = mutateAsync.mock.calls[0]![0] as {
       apply: (c: SocketConfig) => SocketConfig;
@@ -287,11 +329,21 @@ describe("FillMissingValidatorsDialog", () => {
         // validator key absent entirely
         { opCode: "0x01", handler: "A", services: ["channel"] },
         // validator explicitly null
-        { opCode: "0x02", handler: "B", services: ["channel"], validator: null },
+        {
+          opCode: "0x02",
+          handler: "B",
+          services: ["channel"],
+          validator: null,
+        },
         // validator the empty string
         { opCode: "0x03", handler: "C", services: ["channel"], validator: "" },
         // untouched: already has a real validator
-        { opCode: "0x04", handler: "D", services: ["channel"], validator: "LoggedInValidator" },
+        {
+          opCode: "0x04",
+          handler: "D",
+          services: ["channel"],
+          validator: "LoggedInValidator",
+        },
       ],
       writers: [],
     } as unknown as SocketConfig;

@@ -39,10 +39,17 @@ function obj(
 }
 
 const a = obj("a", 83, {
-  NoOpHandler: [binding("0x17"), binding("0x19"), binding("0x22"), binding("0x24")],
+  NoOpHandler: [
+    binding("0x17"),
+    binding("0x19"),
+    binding("0x22"),
+    binding("0x24"),
+  ],
   Move: [binding("0x29", { options: { types: ["WALK", "STAND"] } })],
 });
-const b = obj("b", 87, { Move: [binding("0x2A", { options: { types: ["WALK"] } })] });
+const b = obj("b", 87, {
+  Move: [binding("0x2A", { options: { types: ["WALK"] } })],
+});
 const objects = [a, b];
 
 function renderDrawer(
@@ -71,8 +78,12 @@ function renderDrawer(
 describe("DefinitionDrawer", () => {
   it("names the scoped object in every action label", () => {
     renderDrawer("NoOpHandler", "a");
-    expect(screen.getByRole("button", { name: /edit in GMS v83\.1/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /delete in GMS v83\.1/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /edit in GMS v83\.1/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /delete in GMS v83\.1/i }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /mark unsupported in GMS v83\.1/i }),
     ).toBeInTheDocument();
@@ -80,7 +91,9 @@ describe("DefinitionDrawer", () => {
 
   it("relabels the actions when the scope moves to another object", () => {
     renderDrawer("Move", "b");
-    expect(screen.getByRole("button", { name: /edit in GMS v87\.1/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /edit in GMS v87\.1/i }),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /edit in GMS v83\.1/i }),
     ).not.toBeInTheDocument();
@@ -89,15 +102,25 @@ describe("DefinitionDrawer", () => {
   // FR-5.4
   it("disables Edit, Delete and Open where the definition is undefined for the scope", () => {
     renderDrawer("NoOpHandler", "b");
-    expect(screen.getByRole("button", { name: /edit in GMS v87\.1/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /delete in GMS v87\.1/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /open in GMS v87\.1/i })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /edit in GMS v87\.1/i }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /delete in GMS v87\.1/i }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /open in GMS v87\.1/i }),
+    ).toBeDisabled();
   });
 
   it("keeps Add, Copy and Mark Unsupported enabled where the definition is undefined", () => {
     renderDrawer("NoOpHandler", "b");
-    expect(screen.getByRole("button", { name: /add to GMS v87\.1/i })).toBeEnabled();
-    expect(screen.getByRole("button", { name: /copy into GMS v87\.1/i })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: /add to GMS v87\.1/i }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: /copy into GMS v87\.1/i }),
+    ).toBeEnabled();
     expect(
       screen.getByRole("button", { name: /mark unsupported in GMS v87\.1/i }),
     ).toBeEnabled();
@@ -130,7 +153,9 @@ describe("DefinitionDrawer", () => {
     const fields = screen.getByRole("tabpanel", { name: /fields/i });
     expect(within(fields).getByText("GMS v83.1")).toBeInTheDocument();
     expect(within(fields).getByText("0x29")).toBeInTheDocument();
-    expect(within(fields).getAllByText("LoggedInValidator").length).toBeGreaterThan(0);
+    expect(
+      within(fields).getAllByText("LoggedInValidator").length,
+    ).toBeGreaterThan(0);
     expect(within(fields).getAllByText("channel").length).toBeGreaterThan(0);
   });
 
@@ -139,8 +164,12 @@ describe("DefinitionDrawer", () => {
     await userEvent.click(screen.getByRole("tab", { name: /options/i }));
     const panel = screen.getByRole("tabpanel", { name: /options/i });
     // Positional list: rows keyed by array index, index 1 missing for GMS v87.1.
-    expect(within(panel).getByRole("rowheader", { name: "0" })).toBeInTheDocument();
-    expect(within(panel).getByRole("rowheader", { name: "1" })).toBeInTheDocument();
+    expect(
+      within(panel).getByRole("rowheader", { name: "0" }),
+    ).toBeInTheDocument();
+    expect(
+      within(panel).getByRole("rowheader", { name: "1" }),
+    ).toBeInTheDocument();
     expect(within(panel).getByText("WALK")).toBeInTheDocument();
     expect(within(panel).getByText("STAND")).toBeInTheDocument();
   });
@@ -149,7 +178,9 @@ describe("DefinitionDrawer", () => {
     renderDrawer("Move", "a");
     await userEvent.click(screen.getByRole("tab", { name: /options/i }));
     const panel = screen.getByRole("tabpanel", { name: /options/i });
-    expect(within(panel).getByLabelText(/missing in GMS v87\.1/i)).toBeInTheDocument();
+    expect(
+      within(panel).getByLabelText(/missing in GMS v87\.1/i),
+    ).toBeInTheDocument();
   });
 
   // FR-5.1: validator is a handlers-only field.
@@ -195,7 +226,9 @@ describe("DefinitionDrawer", () => {
       />,
     );
     const writerFields = screen.getByRole("tabpanel", { name: /fields/i });
-    expect(within(writerFields).queryByText("Validator")).not.toBeInTheDocument();
+    expect(
+      within(writerFields).queryByText("Validator"),
+    ).not.toBeInTheDocument();
   });
 
   // Task 10 round-2 fix: `key` is always fully-qualified ("group.entry") and
@@ -203,15 +236,17 @@ describe("DefinitionDrawer", () => {
   // compared object agrees on a single option group.
   it("renders OptionsMatrixTable rows keyed by the qualified key but labelled bare when there is one group", async () => {
     const single = obj("single", 92, {
-      CharacterInteraction: [binding("0x30", { options: { operations: { INVITE: 0 } } })],
+      CharacterInteraction: [
+        binding("0x30", { options: { operations: { INVITE: 0 } } }),
+      ],
     });
     render(
       <DefinitionDrawer
-        row={
-          buildRows({ objects: [single], kind: "handler", baselineKey: "single" }).find(
-            (r) => r.name === "CharacterInteraction",
-          )!
-        }
+        row={buildRows({
+          objects: [single],
+          kind: "handler",
+          baselineKey: "single",
+        }).find((r) => r.name === "CharacterInteraction")!}
         objects={[single]}
         kind="handler"
         baselineKey="single"
@@ -238,11 +273,11 @@ describe("DefinitionDrawer", () => {
     });
     render(
       <DefinitionDrawer
-        row={
-          buildRows({ objects: [multi], kind: "handler", baselineKey: "multi" }).find(
-            (r) => r.name === "CharacterInteraction",
-          )!
-        }
+        row={buildRows({
+          objects: [multi],
+          kind: "handler",
+          baselineKey: "multi",
+        }).find((r) => r.name === "CharacterInteraction")!}
         objects={[multi]}
         kind="handler"
         baselineKey="multi"
@@ -278,11 +313,11 @@ describe("DefinitionDrawer", () => {
     const compareObjects = [base, differing];
     render(
       <DefinitionDrawer
-        row={
-          buildRows({ objects: compareObjects, kind: "handler", baselineKey: "base" }).find(
-            (r) => r.name === "Move",
-          )!
-        }
+        row={buildRows({
+          objects: compareObjects,
+          kind: "handler",
+          baselineKey: "base",
+        }).find((r) => r.name === "Move")!}
         objects={compareObjects}
         kind="handler"
         baselineKey="base"
@@ -295,14 +330,18 @@ describe("DefinitionDrawer", () => {
     const panel = screen.getByRole("tabpanel", { name: /options/i });
 
     // index 0: base "WALK" vs diff "RUN" -> differs
-    expect(within(panel).getByLabelText(/differs in GMS v87\.1/i)).toHaveTextContent("RUN");
+    expect(
+      within(panel).getByLabelText(/differs in GMS v87\.1/i),
+    ).toHaveTextContent("RUN");
     // index 1: base "STAND" vs diff "STAND" -> same (non-baseline shows "=",
     // not the repeated value - see OptionsMatrix.tsx's cellText doc comment).
-    expect(within(panel).getByLabelText(/same as baseline in GMS v87\.1/i)).toHaveTextContent(
-      "=",
-    );
+    expect(
+      within(panel).getByLabelText(/same as baseline in GMS v87\.1/i),
+    ).toHaveTextContent("=");
     // index 2: base has no entry, diff has "JUMP" -> extra
-    expect(within(panel).getByLabelText(/only in GMS v87\.1/i)).toHaveTextContent("JUMP");
+    expect(
+      within(panel).getByLabelText(/only in GMS v87\.1/i),
+    ).toHaveTextContent("JUMP");
   });
 
   // FINDING 1 fix: a definition with more than one binding has no single
@@ -310,14 +349,22 @@ describe("DefinitionDrawer", () => {
   // per-binding rows (already exercised above) can act without guessing.
   it("disables top-level Edit, Delete and Open when the scope has more than one binding, and explains why", () => {
     renderDrawer("NoOpHandler", "a");
-    const editButton = screen.getByRole("button", { name: /edit in GMS v83\.1/i });
-    const deleteButton = screen.getByRole("button", { name: /delete in GMS v83\.1/i });
-    const openButton = screen.getByRole("button", { name: /open in GMS v83\.1/i });
+    const editButton = screen.getByRole("button", {
+      name: /edit in GMS v83\.1/i,
+    });
+    const deleteButton = screen.getByRole("button", {
+      name: /delete in GMS v83\.1/i,
+    });
+    const openButton = screen.getByRole("button", {
+      name: /open in GMS v83\.1/i,
+    });
     expect(editButton).toBeDisabled();
     expect(deleteButton).toBeDisabled();
     expect(openButton).toBeDisabled();
     expect(editButton.getAttribute("title")).toMatch(/more than one binding/i);
-    expect(deleteButton.getAttribute("title")).toMatch(/more than one binding/i);
+    expect(deleteButton.getAttribute("title")).toMatch(
+      /more than one binding/i,
+    );
   });
 
   // FINDING 1 fix: exactly one binding is unambiguous, so the top-level
@@ -338,7 +385,9 @@ describe("DefinitionDrawer", () => {
 
   it("dispatches the top-level Edit action carrying the single binding's own opcode", async () => {
     const { onAction } = renderDrawer("Move", "a");
-    await userEvent.click(screen.getByRole("button", { name: /edit in GMS v83\.1/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /edit in GMS v83\.1/i }),
+    );
     expect(onAction).toHaveBeenCalledWith({
       type: "edit",
       scopeKey: "a",
@@ -351,15 +400,17 @@ describe("DefinitionDrawer", () => {
   // scope whose only binding's opcode fails to parse has no resolvable
   // target either, so it must be treated the same as multi-binding.
   it("disables top-level Edit, Delete and Open when the scope's only binding has no resolvable opcode", () => {
-    const malformed = obj("malformed", 61, { Move: [binding("not-a-hex-opcode")] });
+    const malformed = obj("malformed", 61, {
+      Move: [binding("not-a-hex-opcode")],
+    });
     const malformedObjects = [malformed];
     render(
       <DefinitionDrawer
-        row={
-          buildRows({ objects: malformedObjects, kind: "handler", baselineKey: "malformed" }).find(
-            (r) => r.name === "Move",
-          )!
-        }
+        row={buildRows({
+          objects: malformedObjects,
+          kind: "handler",
+          baselineKey: "malformed",
+        }).find((r) => r.name === "Move")!}
         objects={malformedObjects}
         kind="handler"
         baselineKey="malformed"
@@ -368,9 +419,15 @@ describe("DefinitionDrawer", () => {
         onAction={vi.fn()}
       />,
     );
-    expect(screen.getByRole("button", { name: /edit in GMS v61\.1/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /delete in GMS v61\.1/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /open in GMS v61\.1/i })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /edit in GMS v61\.1/i }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /delete in GMS v61\.1/i }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /open in GMS v61\.1/i }),
+    ).toBeDisabled();
   });
 
   // FINDING 2 fix: the unsupported <-> Clear Unsupported branch had no
@@ -382,11 +439,11 @@ describe("DefinitionDrawer", () => {
     const legacyObjects = [legacy];
     render(
       <DefinitionDrawer
-        row={
-          buildRows({ objects: legacyObjects, kind: "handler", baselineKey: "legacy" }).find(
-            (r) => r.name === "LegacyHandler",
-          )!
-        }
+        row={buildRows({
+          objects: legacyObjects,
+          kind: "handler",
+          baselineKey: "legacy",
+        }).find((r) => r.name === "LegacyHandler")!}
         objects={legacyObjects}
         kind="handler"
         baselineKey="legacy"
@@ -409,11 +466,11 @@ describe("DefinitionDrawer", () => {
     const onAction = vi.fn();
     render(
       <DefinitionDrawer
-        row={
-          buildRows({ objects: legacyObjects, kind: "handler", baselineKey: "legacy" }).find(
-            (r) => r.name === "LegacyHandler",
-          )!
-        }
+        row={buildRows({
+          objects: legacyObjects,
+          kind: "handler",
+          baselineKey: "legacy",
+        }).find((r) => r.name === "LegacyHandler")!}
         objects={legacyObjects}
         kind="handler"
         baselineKey="legacy"

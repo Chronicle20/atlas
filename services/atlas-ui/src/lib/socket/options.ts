@@ -283,7 +283,8 @@ export function buildOptionsMatrix(input: {
   }
 
   const keys = new Set<string>();
-  for (const rowMap of perObjectRows.values()) for (const k of rowMap.keys()) keys.add(k);
+  for (const rowMap of perObjectRows.values())
+    for (const k of rowMap.keys()) keys.add(k);
 
   const rows: OptionsMatrixRow[] = [];
   for (const k of [...keys].sort()) {
@@ -307,7 +308,9 @@ export function buildOptionsMatrix(input: {
     }
     const meta = canonical.get(k)!;
     const label =
-      meta.group === "" || !qualifyLabels ? meta.entry : `${meta.group}.${meta.entry}`;
+      meta.group === "" || !qualifyLabels
+        ? meta.entry
+        : `${meta.group}.${meta.entry}`;
     rows.push({ key: k, label, cells });
   }
   return { shape, rows };

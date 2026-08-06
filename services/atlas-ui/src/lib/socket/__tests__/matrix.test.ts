@@ -44,7 +44,11 @@ describe("buildRows", () => {
       "MonsterCarnival",
     ]);
     const b = obj("b", 95, { PetActivated: [binding("0x9A")] });
-    const rows = buildRows({ objects: [a, b], kind: "writer", baselineKey: "b" });
+    const rows = buildRows({
+      objects: [a, b],
+      kind: "writer",
+      baselineKey: "b",
+    });
     expect(rows.map((r) => r.name).sort()).toEqual([
       "AuthSuccess",
       "MonsterCarnival",
@@ -57,7 +61,11 @@ describe("buildRows", () => {
       "MonsterCarnival",
     ]);
     const b = obj("b", 95, {});
-    const rows = buildRows({ objects: [a, b], kind: "writer", baselineKey: "b" });
+    const rows = buildRows({
+      objects: [a, b],
+      kind: "writer",
+      baselineKey: "b",
+    });
 
     const auth = rows.find((r) => r.name === "AuthSuccess")!;
     expect(auth.cells.get("a")!.state).toBe("defined");
@@ -75,9 +83,9 @@ describe("buildRows", () => {
       CharacterEffect: [binding("0xE0"), binding("0xE9")],
     });
     const rows = buildRows({ objects: [a], kind: "writer", baselineKey: "a" });
-    expect(rows[0]!.cells.get("a")!.bindings.map((x) => x.opCodeValue)).toEqual([
-      0xe0, 0xe9,
-    ]);
+    expect(rows[0]!.cells.get("a")!.bindings.map((x) => x.opCodeValue)).toEqual(
+      [0xe0, 0xe9],
+    );
     expect(rows[0]!.cells.get("a")!.hasDuplicateOpcode).toBe(false);
   });
 
@@ -152,9 +160,15 @@ describe("buildRows", () => {
   it("takes the row fname from the first object that supplies one", () => {
     const a = obj("a", 83, { AuthSuccess: [binding("0x00")] });
     const b = obj("b", 95, {
-      AuthSuccess: [binding("0x00", { fname: "CLogin::OnCheckPasswordResult" })],
+      AuthSuccess: [
+        binding("0x00", { fname: "CLogin::OnCheckPasswordResult" }),
+      ],
     });
-    const rows = buildRows({ objects: [a, b], kind: "writer", baselineKey: "a" });
+    const rows = buildRows({
+      objects: [a, b],
+      kind: "writer",
+      baselineKey: "a",
+    });
     expect(rows[0]!.fname).toBe("CLogin::OnCheckPasswordResult");
   });
 
@@ -176,7 +190,11 @@ describe("buildRows", () => {
     const c = obj("c", 87, {
       CharacterMovement: [binding("0xBC", { options: {} })],
     });
-    const rows = buildRows({ objects: [a, b, c], kind: "writer", baselineKey: "a" });
+    const rows = buildRows({
+      objects: [a, b, c],
+      kind: "writer",
+      baselineKey: "a",
+    });
     const row = rows[0]!;
     expect(row.cells.get("a")!.optionsMissing).toBe(false);
     expect(row.cells.get("b")!.optionsMissing).toBe(true); // absent
@@ -186,7 +204,11 @@ describe("buildRows", () => {
   it("marks nothing when no object supplies options for that definition", () => {
     const a = obj("a", 83, { AuthSuccess: [binding("0x00")] });
     const b = obj("b", 95, { AuthSuccess: [binding("0x00")] });
-    const rows = buildRows({ objects: [a, b], kind: "writer", baselineKey: "a" });
+    const rows = buildRows({
+      objects: [a, b],
+      kind: "writer",
+      baselineKey: "a",
+    });
     expect(rows[0]!.cells.get("a")!.optionsMissing).toBe(false);
     expect(rows[0]!.cells.get("b")!.optionsMissing).toBe(false);
   });
@@ -196,7 +218,11 @@ describe("buildRows", () => {
       CharacterMovement: [binding("0xB9", { options: { types: ["A"] } })],
     });
     const b = obj("b", 95, {});
-    const rows = buildRows({ objects: [a, b], kind: "writer", baselineKey: "a" });
+    const rows = buildRows({
+      objects: [a, b],
+      kind: "writer",
+      baselineKey: "a",
+    });
     expect(rows[0]!.cells.get("b")!.optionsMissing).toBe(false);
   });
 
@@ -219,7 +245,11 @@ describe("buildRows", () => {
         }),
       ],
     });
-    const rows = buildRows({ objects: [a, b], kind: "writer", baselineKey: "a" });
+    const rows = buildRows({
+      objects: [a, b],
+      kind: "writer",
+      baselineKey: "a",
+    });
     expect(rows[0]!.cells.get("a")!.optionsMissing).toBe(false);
     expect(rows[0]!.cells.get("b")!.optionsMissing).toBe(false);
   });
@@ -241,7 +271,11 @@ describe("buildRows", () => {
     const b = obj("b", 95, {
       CharacterMovement: [binding("0xC0", { options: { types: [] } })],
     });
-    const rows = buildRows({ objects: [a, b], kind: "writer", baselineKey: "a" });
+    const rows = buildRows({
+      objects: [a, b],
+      kind: "writer",
+      baselineKey: "a",
+    });
     const row = rows[0]!;
     expect(row.cells.get("a")!.optionsMissing).toBe(false);
     expect(row.cells.get("b")!.optionsMissing).toBe(false);
@@ -278,7 +312,11 @@ describe("buildRows", () => {
   it("records baseline membership and the baseline opcode", () => {
     const a = obj("a", 83, { AuthSuccess: [binding("0x00")] });
     const b = obj("b", 95, { PetActivated: [binding("0x9A")] });
-    const rows = buildRows({ objects: [a, b], kind: "writer", baselineKey: "b" });
+    const rows = buildRows({
+      objects: [a, b],
+      kind: "writer",
+      baselineKey: "b",
+    });
     const pet = rows.find((r) => r.name === "PetActivated")!;
     const auth = rows.find((r) => r.name === "AuthSuccess")!;
     expect(pet.inBaseline).toBe(true);
@@ -378,7 +416,9 @@ describe("filterRows", () => {
     "a",
     83,
     {
-      AuthSuccess: [binding("0x00", { fname: "CLogin::OnCheckPasswordResult" })],
+      AuthSuccess: [
+        binding("0x00", { fname: "CLogin::OnCheckPasswordResult" }),
+      ],
       CharacterMovement: [binding("0x2A", { options: { types: ["A"] } })],
     },
     ["MonsterCarnival"],
@@ -396,7 +436,11 @@ describe("filterRows", () => {
   });
 
   it("searches fname", () => {
-    const got = filterRows(rows, { ...emptyFilters(), query: "CheckPassword" }, "a");
+    const got = filterRows(
+      rows,
+      { ...emptyFilters(), query: "CheckPassword" },
+      "a",
+    );
     expect(got.map((r) => r.name)).toEqual(["AuthSuccess"]);
   });
 
@@ -404,17 +448,28 @@ describe("filterRows", () => {
   it("matches 0x2A, 2A and 42 against the same row", () => {
     for (const q of ["0x2A", "2A", "42"]) {
       const got = filterRows(rows, { ...emptyFilters(), query: q }, "a");
-      expect(got.map((r) => r.name), `query ${q}`).toContain("CharacterMovement");
+      expect(
+        got.map((r) => r.name),
+        `query ${q}`,
+      ).toContain("CharacterMovement");
     }
   });
 
   it("filters by state within the baseline object", () => {
-    const got = filterRows(rows, { ...emptyFilters(), states: ["unsupported"] }, "a");
+    const got = filterRows(
+      rows,
+      { ...emptyFilters(), states: ["unsupported"] },
+      "a",
+    );
     expect(got.map((r) => r.name)).toEqual(["MonsterCarnival"]);
   });
 
   it("filters to rows carrying the options-omission marker", () => {
-    const got = filterRows(rows, { ...emptyFilters(), optionsMissingOnly: true }, "a");
+    const got = filterRows(
+      rows,
+      { ...emptyFilters(), optionsMissingOnly: true },
+      "a",
+    );
     expect(got.map((r) => r.name)).toEqual(["CharacterMovement"]);
   });
 
@@ -432,7 +487,11 @@ describe("filterRows", () => {
   });
 
   it("filters by service", () => {
-    const got = filterRows(rows, { ...emptyFilters(), services: ["login"] }, "a");
+    const got = filterRows(
+      rows,
+      { ...emptyFilters(), services: ["login"] },
+      "a",
+    );
     expect(got).toHaveLength(0);
   });
 

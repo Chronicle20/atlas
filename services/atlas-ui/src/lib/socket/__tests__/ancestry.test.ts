@@ -81,45 +81,77 @@ describe("inferAncestor", () => {
 
 describe("classifyAgainstAncestor", () => {
   it("returns same for an identical binding set", () => {
-    const tenant = makeObject("tnt", "tenant", 83, 1, { LoginHandle: [binding("0x01")] });
-    const anc = makeObject("t83", "template", 83, 1, { LoginHandle: [binding("0x01")] });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "LoginHandle")).toBe("same");
+    const tenant = makeObject("tnt", "tenant", 83, 1, {
+      LoginHandle: [binding("0x01")],
+    });
+    const anc = makeObject("t83", "template", 83, 1, {
+      LoginHandle: [binding("0x01")],
+    });
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "LoginHandle")).toBe(
+      "same",
+    );
   });
 
   it("normalises opcodes numerically before comparing", () => {
-    const tenant = makeObject("tnt", "tenant", 83, 1, { MiniRoom: [binding("0x0B8")] });
-    const anc = makeObject("t83", "template", 83, 1, { MiniRoom: [binding("0xB8")] });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "MiniRoom")).toBe("same");
+    const tenant = makeObject("tnt", "tenant", 83, 1, {
+      MiniRoom: [binding("0x0B8")],
+    });
+    const anc = makeObject("t83", "template", 83, 1, {
+      MiniRoom: [binding("0xB8")],
+    });
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "MiniRoom")).toBe(
+      "same",
+    );
   });
 
   it("ignores fname entirely", () => {
     const tenant = makeObject("tnt", "tenant", 83, 1, {
-      LoginHandle: [binding("0x01", { fname: "CLogin::SendCheckPasswordPacket" })],
+      LoginHandle: [
+        binding("0x01", { fname: "CLogin::SendCheckPasswordPacket" }),
+      ],
     });
-    const anc = makeObject("t83", "template", 83, 1, { LoginHandle: [binding("0x01")] });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "LoginHandle")).toBe("same");
+    const anc = makeObject("t83", "template", 83, 1, {
+      LoginHandle: [binding("0x01")],
+    });
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "LoginHandle")).toBe(
+      "same",
+    );
   });
 
   it("returns modified when the opcode differs", () => {
-    const tenant = makeObject("tnt", "tenant", 83, 1, { LoginHandle: [binding("0x02")] });
-    const anc = makeObject("t83", "template", 83, 1, { LoginHandle: [binding("0x01")] });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "LoginHandle")).toBe("modified");
+    const tenant = makeObject("tnt", "tenant", 83, 1, {
+      LoginHandle: [binding("0x02")],
+    });
+    const anc = makeObject("t83", "template", 83, 1, {
+      LoginHandle: [binding("0x01")],
+    });
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "LoginHandle")).toBe(
+      "modified",
+    );
   });
 
   it("returns modified when the validator differs", () => {
     const tenant = makeObject("tnt", "tenant", 83, 1, {
       LoginHandle: [binding("0x01", { validator: "NoOpValidator" })],
     });
-    const anc = makeObject("t83", "template", 83, 1, { LoginHandle: [binding("0x01")] });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "LoginHandle")).toBe("modified");
+    const anc = makeObject("t83", "template", 83, 1, {
+      LoginHandle: [binding("0x01")],
+    });
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "LoginHandle")).toBe(
+      "modified",
+    );
   });
 
   it("returns modified when the services differ", () => {
     const tenant = makeObject("tnt", "tenant", 83, 1, {
       LoginHandle: [binding("0x01", { services: ["login", "channel"] })],
     });
-    const anc = makeObject("t83", "template", 83, 1, { LoginHandle: [binding("0x01")] });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "LoginHandle")).toBe("modified");
+    const anc = makeObject("t83", "template", 83, 1, {
+      LoginHandle: [binding("0x01")],
+    });
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "LoginHandle")).toBe(
+      "modified",
+    );
   });
 
   it("treats the services list as a SET - order does not matter", () => {
@@ -129,7 +161,9 @@ describe("classifyAgainstAncestor", () => {
     const anc = makeObject("t83", "template", 83, 1, {
       LoginHandle: [binding("0x01", { services: ["login", "channel"] })],
     });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "LoginHandle")).toBe("same");
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "LoginHandle")).toBe(
+      "same",
+    );
   });
 
   it("returns modified when the options differ structurally", () => {
@@ -139,7 +173,9 @@ describe("classifyAgainstAncestor", () => {
     const anc = makeObject("t83", "template", 83, 1, {
       Move: [binding("0x01", { options: { types: ["WALK", "STAND"] } })],
     });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "Move")).toBe("modified");
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "Move")).toBe(
+      "modified",
+    );
   });
 
   it("treats an absent options key and an explicit {} as equal (no content)", () => {
@@ -154,7 +190,9 @@ describe("classifyAgainstAncestor", () => {
     const anc = makeObject("t83", "template", 83, 1, {
       MiniRoom: [binding("0xB8")],
     });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "MiniRoom")).toBe("same");
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "MiniRoom")).toBe(
+      "same",
+    );
   });
 
   it("is NOT fooled by options key order - CharacterInteraction, seed order vs alphabetized", () => {
@@ -192,17 +230,21 @@ describe("classifyAgainstAncestor", () => {
   it("is NOT fooled by options key order - NoteOperation, 2-key shape", () => {
     const anc = makeObject("t83", "template", 83, 1, {
       NoteOperation: [
-        binding("0x02", { options: { operations: { A: 1 }, errors: { B: 2 } } }),
+        binding("0x02", {
+          options: { operations: { A: 1 }, errors: { B: 2 } },
+        }),
       ],
     });
     const tenant = makeObject("tnt", "tenant", 83, 1, {
       NoteOperation: [
-        binding("0x02", { options: { errors: { B: 2 }, operations: { A: 1 } } }),
+        binding("0x02", {
+          options: { errors: { B: 2 }, operations: { A: 1 } },
+        }),
       ],
     });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "NoteOperation")).toBe(
-      "same",
-    );
+    expect(
+      classifyAgainstAncestor(tenant, anc, "handler", "NoteOperation"),
+    ).toBe("same");
   });
 
   it("keeps a list's ARRAY order significant - same elements reordered is still modified", () => {
@@ -216,22 +258,30 @@ describe("classifyAgainstAncestor", () => {
     const anc = makeObject("t83", "template", 83, 1, {
       Move: [binding("0x01", { options: { types: ["WALK", "STAND"] } })],
     });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "Move")).toBe("modified");
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "Move")).toBe(
+      "modified",
+    );
   });
 
   it("is key-order-independent at a NESTED level, not just the top-level options object", () => {
     const anc = makeObject("t83", "template", 83, 1, {
       ServerIP: [
-        binding("0x03", { options: { codes: { A: 1, B: 2 }, modes: { X: 9 } } }),
+        binding("0x03", {
+          options: { codes: { A: 1, B: 2 }, modes: { X: 9 } },
+        }),
       ],
     });
     const tenant = makeObject("tnt", "tenant", 83, 1, {
       // Top-level order matches; the NESTED `codes` group's key order does not.
       ServerIP: [
-        binding("0x03", { options: { codes: { B: 2, A: 1 }, modes: { X: 9 } } }),
+        binding("0x03", {
+          options: { codes: { B: 2, A: 1 }, modes: { X: 9 } },
+        }),
       ],
     });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "ServerIP")).toBe("same");
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "ServerIP")).toBe(
+      "same",
+    );
   });
 
   it("returns modified when the binding COUNT differs for one name", () => {
@@ -241,7 +291,9 @@ describe("classifyAgainstAncestor", () => {
     const anc = makeObject("t83", "template", 83, 1, {
       NoOpHandler: [binding("0x17"), binding("0x19"), binding("0x22")],
     });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "NoOpHandler")).toBe("modified");
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "NoOpHandler")).toBe(
+      "modified",
+    );
   });
 
   it("compares multi-binding sets irrespective of stored order", () => {
@@ -251,7 +303,9 @@ describe("classifyAgainstAncestor", () => {
     const anc = makeObject("t83", "template", 83, 1, {
       NoOpHandler: [binding("0x17"), binding("0x19")],
     });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "NoOpHandler")).toBe("same");
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "NoOpHandler")).toBe(
+      "same",
+    );
   });
 
   it("returns modified for a multi-binding set that agrees on some but not all bindings", () => {
@@ -264,19 +318,29 @@ describe("classifyAgainstAncestor", () => {
     const anc = makeObject("t83", "template", 83, 1, {
       NoOpHandler: [binding("0x17"), binding("0x19"), binding("0x22")],
     });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "NoOpHandler")).toBe("modified");
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "NoOpHandler")).toBe(
+      "modified",
+    );
   });
 
   it("returns tenant-only when the ancestor has no such definition", () => {
-    const tenant = makeObject("tnt", "tenant", 83, 1, { Custom: [binding("0x7F")] });
+    const tenant = makeObject("tnt", "tenant", 83, 1, {
+      Custom: [binding("0x7F")],
+    });
     const anc = makeObject("t83", "template", 83, 1, {});
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "Custom")).toBe("tenant-only");
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "Custom")).toBe(
+      "tenant-only",
+    );
   });
 
   it("returns missing when the ancestor defines it and the tenant does not", () => {
     const tenant = makeObject("tnt", "tenant", 83, 1, {});
-    const anc = makeObject("t83", "template", 83, 1, { LoginHandle: [binding("0x01")] });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "LoginHandle")).toBe("missing");
+    const anc = makeObject("t83", "template", 83, 1, {
+      LoginHandle: [binding("0x01")],
+    });
+    expect(classifyAgainstAncestor(tenant, anc, "handler", "LoginHandle")).toBe(
+      "missing",
+    );
   });
 
   it("returns unsupported when the tenant marked it so, whatever the ancestor says", () => {
@@ -284,9 +348,9 @@ describe("classifyAgainstAncestor", () => {
     const anc = makeObject("t83", "template", 83, 1, {
       GuestLoginHandle: [binding("0x02")],
     });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "GuestLoginHandle")).toBe(
-      "unsupported",
-    );
+    expect(
+      classifyAgainstAncestor(tenant, anc, "handler", "GuestLoginHandle"),
+    ).toBe("unsupported");
   });
 
   it("lets a live binding win over a stale Unsupported marking (stateOf's defined-wins rule)", () => {
@@ -306,7 +370,9 @@ describe("classifyAgainstAncestor", () => {
     const anc = makeObject("t83", "template", 83, 1, {
       GuestLoginHandle: [binding("0x02")],
     });
-    expect(classifyAgainstAncestor(tenant, anc, "handler", "GuestLoginHandle")).toBe("same");
+    expect(
+      classifyAgainstAncestor(tenant, anc, "handler", "GuestLoginHandle"),
+    ).toBe("same");
   });
 });
 

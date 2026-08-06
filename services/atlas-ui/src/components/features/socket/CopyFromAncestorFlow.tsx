@@ -71,7 +71,11 @@ function stateLabel(state: DefinitionState): string {
  * name what's being compared.
  */
 function optionKeyList(options: unknown): string | null {
-  if (options === null || options === undefined || typeof options !== "object") {
+  if (
+    options === null ||
+    options === undefined ||
+    typeof options !== "object"
+  ) {
     return null;
   }
   const keys = Object.keys(options as Record<string, unknown>);
@@ -104,7 +108,9 @@ export function CopyFromAncestorFlow({
   const mutation = useSocketMutation();
   const [step, setStep] = useState<Step>("candidates");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [targetOpcodes, setTargetOpcodes] = useState<Record<string, string>>({});
+  const [targetOpcodes, setTargetOpcodes] = useState<Record<string, string>>(
+    {},
+  );
 
   const candidates = missingFromTenant(tenant, ancestor, kind);
   const selectedNames = candidates.filter((name) => selected.has(name));
@@ -129,7 +135,8 @@ export function CopyFromAncestorFlow({
     setSelected(checked ? new Set(candidates) : new Set());
   };
 
-  const allSelected = candidates.length > 0 && selected.size === candidates.length;
+  const allSelected =
+    candidates.length > 0 && selected.size === candidates.length;
 
   const onApply = async () => {
     const additions: AncestorAddition[] = selectedNames.map((name) => {
@@ -177,7 +184,11 @@ export function CopyFromAncestorFlow({
 
         {step === "candidates" ? (
           <>
-            <fieldset role="group" aria-label="Candidates" className="space-y-2">
+            <fieldset
+              role="group"
+              aria-label="Candidates"
+              className="space-y-2"
+            >
               <label className="flex items-center gap-2 text-sm font-medium">
                 <input
                   type="checkbox"
@@ -197,7 +208,10 @@ export function CopyFromAncestorFlow({
                   const bindings = entriesOf(ancestor, kind).get(name) ?? [];
                   const opcodes = bindings.map((b) => b.opCode).join(", ");
                   return (
-                    <label key={name} className="flex items-center gap-2 text-sm">
+                    <label
+                      key={name}
+                      className="flex items-center gap-2 text-sm"
+                    >
                       <input
                         type="checkbox"
                         checked={selected.has(name)}
@@ -246,10 +260,18 @@ export function CopyFromAncestorFlow({
               })}
             </section>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setStep("candidates")}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep("candidates")}
+              >
                 Back
               </Button>
-              <Button type="button" disabled={mutation.isPending} onClick={onApply}>
+              <Button
+                type="button"
+                disabled={mutation.isPending}
+                onClick={onApply}
+              >
                 Apply
               </Button>
             </DialogFooter>

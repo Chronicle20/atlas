@@ -170,7 +170,14 @@ describe("buildOptionsMatrix - lists compare positionally", () => {
     // index differs - it has no positional identity to anchor the diff to.
     // The positional comparison correctly isolates index 3 as the only
     // difference and leaves every other index "same".
-    const six = () => ["UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN"];
+    const six = () => [
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+    ];
     const base = six();
     const shifted = six();
     shifted[3] = "REAL_NAME";
@@ -461,7 +468,9 @@ describe("buildOptionsMatrix - multi-group maps flatten to group.entry rows", ()
       baselineKey: "gms_83_1",
     });
 
-    const enterErrorRows = m.rows.filter((r) => r.key.startsWith("enterError."));
+    const enterErrorRows = m.rows.filter((r) =>
+      r.key.startsWith("enterError."),
+    );
     expect(enterErrorRows).toHaveLength(2);
     for (const row of enterErrorRows) {
       expect(row.cells.get("jms_185_1")!.state).toBe("missing");
@@ -631,9 +640,9 @@ describe("deepEqual", () => {
     // Guards against a fix that over-normalizes by sorting arrays too:
     // FR-3.5's list semantics depend on the array INDEX being the wire
     // value, so reordering a `types` list is a real, meaningful change.
-    expect(deepEqual({ types: ["WALK", "STAND"] }, { types: ["STAND", "WALK"] })).toBe(
-      false,
-    );
+    expect(
+      deepEqual({ types: ["WALK", "STAND"] }, { types: ["STAND", "WALK"] }),
+    ).toBe(false);
   });
 
   it("still reports a genuine value difference under any key order", () => {

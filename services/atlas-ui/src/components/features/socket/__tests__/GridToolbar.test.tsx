@@ -30,7 +30,9 @@ function obj(key: string, major: number): SocketObject {
 
 const objects = [obj("a", 83), obj("b", 95)];
 
-function renderToolbar(overrides: Partial<Parameters<typeof GridToolbar>[0]> = {}) {
+function renderToolbar(
+  overrides: Partial<Parameters<typeof GridToolbar>[0]> = {},
+) {
   const onFiltersChange = vi.fn();
   const props = {
     kind: "writer" as const,
@@ -57,26 +59,38 @@ function renderToolbar(overrides: Partial<Parameters<typeof GridToolbar>[0]> = {
 describe("GridToolbar", () => {
   it("renders the mode switch only when a handler is supplied", () => {
     renderToolbar({ onKindChange: vi.fn() });
-    expect(screen.getByRole("radio", { name: /handlers/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("radio", { name: /handlers/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /writers/i })).toBeInTheDocument();
   });
 
   it("renders the column picker only when a handler is supplied", () => {
     renderToolbar({ onSelectedKeysChange: vi.fn() });
-    expect(screen.getByRole("button", { name: /columns/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /columns/i }),
+    ).toBeInTheDocument();
   });
 
   it("renders the baseline selector only when a handler is supplied", () => {
     renderToolbar({ onBaselineChange: vi.fn() });
-    expect(screen.getByRole("button", { name: /baseline/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /baseline/i }),
+    ).toBeInTheDocument();
   });
 
   // FR-7.3: on the four per-object pages these controls are ABSENT, not disabled.
   it("omits the mode switch, column picker and baseline selector on a locked page", () => {
     renderToolbar();
-    expect(screen.queryByRole("radio", { name: /handlers/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /columns/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /baseline/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("radio", { name: /handlers/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /columns/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /baseline/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("reports a search query", () => {
@@ -113,14 +127,18 @@ describe("GridToolbar", () => {
     const onSelectedKeysChange = vi.fn();
     renderToolbar({ onSelectedKeysChange });
     await userEvent.click(screen.getByRole("button", { name: /columns/i }));
-    await userEvent.click(screen.getByRole("checkbox", { name: /gms v95\.1/i }));
+    await userEvent.click(
+      screen.getByRole("checkbox", { name: /gms v95\.1/i }),
+    );
     expect(onSelectedKeysChange).toHaveBeenCalledWith(["a"]);
   });
 
   it("narrows the column picker's object list by version (FR-2.12)", async () => {
     renderToolbar({ onSelectedKeysChange: vi.fn() });
     await userEvent.click(screen.getByRole("button", { name: /columns/i }));
-    expect(screen.getAllByRole("checkbox", { name: /^gms v/i })).toHaveLength(2);
+    expect(screen.getAllByRole("checkbox", { name: /^gms v/i })).toHaveLength(
+      2,
+    );
 
     await userEvent.click(
       screen.getByRole("combobox", { name: /filter columns by version/i }),
@@ -129,7 +147,9 @@ describe("GridToolbar", () => {
 
     const remaining = screen.getAllByRole("checkbox", { name: /^gms v/i });
     expect(remaining).toHaveLength(1);
-    expect(screen.getByRole("checkbox", { name: "GMS v83.1" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: "GMS v83.1" }),
+    ).toBeInTheDocument();
   });
 
   it("changes the baseline when a selector is supplied", async () => {
@@ -150,7 +170,9 @@ describe("GridToolbar", () => {
 
   it("reports the options-omission filter", async () => {
     const props = renderToolbar();
-    await userEvent.click(screen.getByRole("checkbox", { name: /supplies no options/i }));
+    await userEvent.click(
+      screen.getByRole("checkbox", { name: /supplies no options/i }),
+    );
     const last = props.onFiltersChange.mock.calls.at(-1)![0] as GridFilters;
     expect(last.optionsMissingOnly).toBe(true);
   });
@@ -181,29 +203,43 @@ describe("GridToolbar", () => {
   it("changes the sort key", async () => {
     const props = renderToolbar();
     await userEvent.click(screen.getByRole("radio", { name: /^name$/i }));
-    expect(props.onSortChange).toHaveBeenCalledWith({ key: "name", direction: "asc" });
+    expect(props.onSortChange).toHaveBeenCalledWith({
+      key: "name",
+      direction: "asc",
+    });
   });
 
   it("toggles the sort direction", async () => {
     const props = renderToolbar();
-    await userEvent.click(screen.getByRole("button", { name: /toggle sort direction/i }));
-    expect(props.onSortChange).toHaveBeenCalledWith({ key: "opcode", direction: "desc" });
+    await userEvent.click(
+      screen.getByRole("button", { name: /toggle sort direction/i }),
+    );
+    expect(props.onSortChange).toHaveBeenCalledWith({
+      key: "opcode",
+      direction: "desc",
+    });
   });
 
   it("renders the ancestry filter only when its options are supplied", async () => {
     renderToolbar();
-    expect(screen.queryByRole("button", { name: /vs template/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /vs template/i }),
+    ).not.toBeInTheDocument();
 
     const onAncestryChange = vi.fn();
     renderToolbar({
       ancestryFilterOptions: { value: [], onChange: onAncestryChange },
     });
-    expect(screen.getByRole("button", { name: /vs template/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /vs template/i }),
+    ).toBeInTheDocument();
   });
 
   it("reports an ancestry filter change", async () => {
     const onAncestryChange = vi.fn();
-    renderToolbar({ ancestryFilterOptions: { value: [], onChange: onAncestryChange } });
+    renderToolbar({
+      ancestryFilterOptions: { value: [], onChange: onAncestryChange },
+    });
     await userEvent.click(screen.getByRole("button", { name: /vs template/i }));
     await userEvent.click(screen.getByRole("option", { name: /^modified$/i }));
     expect(onAncestryChange).toHaveBeenCalledWith(["modified"]);

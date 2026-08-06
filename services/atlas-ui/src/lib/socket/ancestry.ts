@@ -12,11 +12,7 @@ import { classifyOptions, deepEqual } from "@/lib/socket/options";
  * Template (FR-8.3).
  */
 export type AncestryClass =
-  | "same"
-  | "modified"
-  | "tenant-only"
-  | "missing"
-  | "unsupported";
+  "same" | "modified" | "tenant-only" | "missing" | "unsupported";
 
 /**
  * FR-8.1. The ancestor is inferred by exact match on Region, Major Version

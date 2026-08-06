@@ -47,7 +47,11 @@ describe("fromTemplate", () => {
               validator: "LoggedInValidator",
               handler: "NoOpHandler",
             },
-            { opCode: "0x01", validator: "NoOpValidator", handler: "LoginHandle" },
+            {
+              opCode: "0x01",
+              validator: "NoOpValidator",
+              handler: "LoginHandle",
+            },
           ],
           writers: [],
         },
@@ -93,7 +97,11 @@ describe("fromTemplate", () => {
       template({
         socket: {
           handlers: [
-            { opCode: "0x01", validator: "NoOpValidator", handler: "LoginHandle" },
+            {
+              opCode: "0x01",
+              validator: "NoOpValidator",
+              handler: "LoginHandle",
+            },
             {
               opCode: "0x02",
               validator: "NoOpValidator",
@@ -114,7 +122,9 @@ describe("fromTemplate", () => {
     // A name that is BOTH bound and listed unsupported: "defined" wins,
     // because an actual binding is a stronger fact than an audit-time
     // assertion the packet is absent. See the DefinitionState doc comment.
-    expect(stateOf(obj, "handler", "BothDefinedAndUnsupported")).toBe("defined");
+    expect(stateOf(obj, "handler", "BothDefinedAndUnsupported")).toBe(
+      "defined",
+    );
   });
 
   it("records a malformed opcode as a null value rather than throwing", () => {
@@ -182,7 +192,11 @@ describe("fromTenantConfig", () => {
       tenantConfig({
         socket: {
           handlers: [
-            { opCode: "0x01", validator: "NoOpValidator", handler: "LoginHandle" },
+            {
+              opCode: "0x01",
+              validator: "NoOpValidator",
+              handler: "LoginHandle",
+            },
           ],
           writers: [],
           unsupported: { handlers: [], writers: ["MonsterCarnival"] },
@@ -202,7 +216,11 @@ describe("fromTenantConfig", () => {
       tenantConfig({
         socket: {
           handlers: [
-            { opCode: "0x01", validator: "NoOpValidator", handler: "LoginHandle" },
+            {
+              opCode: "0x01",
+              validator: "NoOpValidator",
+              handler: "LoginHandle",
+            },
           ],
           writers: [{ opCode: "0x00", writer: "AuthLoginFailed" }],
         },

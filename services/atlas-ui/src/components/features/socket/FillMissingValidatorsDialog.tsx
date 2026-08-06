@@ -88,14 +88,18 @@ export function FillMissingValidatorsDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Fill missing validators in {targetLabel}</AlertDialogTitle>
+          <AlertDialogTitle>
+            Fill missing validators in {targetLabel}
+          </AlertDialogTitle>
           <AlertDialogDescription>
             {`This configuration has ${emptyValidatorCount} handler entries with no validator. The server rejects any save of a configuration containing one, and saves replace the whole document — so editing them one at a time is not possible. This repairs every one of them in a single configuration write.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
         <div className="space-y-2">
-          <Label htmlFor="fill-missing-validators-choice">Validator to apply</Label>
+          <Label htmlFor="fill-missing-validators-choice">
+            Validator to apply
+          </Label>
           <Select value={validator} onValueChange={setValidator}>
             <SelectTrigger id="fill-missing-validators-choice">
               <SelectValue />
@@ -111,10 +115,18 @@ export function FillMissingValidatorsDialog({
         </div>
 
         <AlertDialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
-          <Button type="button" disabled={mutation.isPending} onClick={onConfirm}>
+          <Button
+            type="button"
+            disabled={mutation.isPending}
+            onClick={onConfirm}
+          >
             Fill validators
           </Button>
         </AlertDialogFooter>

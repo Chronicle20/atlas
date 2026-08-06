@@ -62,8 +62,18 @@ const target = { source: "template" as const, id: "t1" };
 function config(): SocketConfig {
   return {
     handlers: [
-      { opCode: "0x17", validator: "LoggedInValidator", handler: "NoOpHandler", services: ["channel"] },
-      { opCode: "0x19", validator: "LoggedInValidator", handler: "NoOpHandler", services: ["channel"] },
+      {
+        opCode: "0x17",
+        validator: "LoggedInValidator",
+        handler: "NoOpHandler",
+        services: ["channel"],
+      },
+      {
+        opCode: "0x19",
+        validator: "LoggedInValidator",
+        handler: "NoOpHandler",
+        services: ["channel"],
+      },
     ],
     writers: [],
     unsupported: { handlers: [], writers: [] },
@@ -118,10 +128,17 @@ describe("AddDefinitionDialog", () => {
       />,
       { wrapper },
     );
-    await userEvent.type(screen.getByLabelText(/definition name/i), "PongHandle");
+    await userEvent.type(
+      screen.getByLabelText(/definition name/i),
+      "PongHandle",
+    );
     await userEvent.type(screen.getByLabelText(/operation code/i), "B8");
-    await userEvent.click(screen.getByRole("button", { name: /^add definition$/i }));
-    expect(await screen.findByText(/0x followed by 1-4 hex digits/i)).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: /^add definition$/i }),
+    );
+    expect(
+      await screen.findByText(/0x followed by 1-4 hex digits/i),
+    ).toBeInTheDocument();
     expect(mutateAsync).not.toHaveBeenCalled();
   });
 
@@ -136,10 +153,17 @@ describe("AddDefinitionDialog", () => {
       />,
       { wrapper },
     );
-    await userEvent.type(screen.getByLabelText(/definition name/i), "PongHandle");
+    await userEvent.type(
+      screen.getByLabelText(/definition name/i),
+      "PongHandle",
+    );
     await userEvent.type(screen.getByLabelText(/operation code/i), "0x18");
-    await userEvent.click(screen.getByRole("button", { name: /^add definition$/i }));
-    expect(await screen.findByText(/validator is required/i)).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: /^add definition$/i }),
+    );
+    expect(
+      await screen.findByText(/validator is required/i),
+    ).toBeInTheDocument();
     expect(mutateAsync).not.toHaveBeenCalled();
   });
 
@@ -154,16 +178,24 @@ describe("AddDefinitionDialog", () => {
       />,
       { wrapper },
     );
-    await userEvent.type(screen.getByLabelText(/definition name/i), "PongHandle");
+    await userEvent.type(
+      screen.getByLabelText(/definition name/i),
+      "PongHandle",
+    );
     await userEvent.type(screen.getByLabelText(/operation code/i), "0x18");
     await userEvent.type(screen.getByLabelText(/validator/i), "NoOpValidator");
-    await userEvent.click(screen.getByRole("button", { name: /^add definition$/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /^add definition$/i }),
+    );
 
     expect(mutateAsync).toHaveBeenCalledTimes(1);
     const { apply } = mutateAsync.mock.calls[0]![0] as {
       apply: (c: SocketConfig) => SocketConfig;
     };
-    const before: SocketConfig = { ...config(), unsupported: { handlers: ["PongHandle"], writers: [] } };
+    const before: SocketConfig = {
+      ...config(),
+      unsupported: { handlers: ["PongHandle"], writers: [] },
+    };
     const after = apply(before);
     expect(after.handlers.some((h) => h.handler === "PongHandle")).toBe(true);
     expect(after.unsupported!.handlers).toEqual([]);
@@ -203,12 +235,18 @@ describe("EditDefinitionDialog", () => {
         kind="handler"
         name="NoOpHandler"
         opCodeValue={0x19}
-        initial={{ opCode: "0x19", validator: "LoggedInValidator", services: ["channel"] }}
+        initial={{
+          opCode: "0x19",
+          validator: "LoggedInValidator",
+          services: ["channel"],
+        }}
       />,
       { wrapper },
     );
 
-    const nameInput = screen.getByLabelText(/definition name/i) as HTMLInputElement;
+    const nameInput = screen.getByLabelText(
+      /definition name/i,
+    ) as HTMLInputElement;
     expect(nameInput).toBeDisabled();
     expect(nameInput.value).toBe("NoOpHandler");
 
@@ -250,7 +288,9 @@ describe("DeleteDefinitionDialog", () => {
       />,
       { wrapper },
     );
-    expect(screen.getByRole("radio", { name: /remove definition/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("radio", { name: /remove definition/i }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("radio", { name: /remove and mark unsupported/i }),
     ).toBeInTheDocument();
@@ -291,7 +331,9 @@ describe("DeleteDefinitionDialog", () => {
     const { apply } = mutateAsync.mock.calls[0]![0] as {
       apply: (c: SocketConfig) => SocketConfig;
     };
-    expect(apply(config())).toEqual(deleteBinding(config(), "handler", "NoOpHandler", 0x19));
+    expect(apply(config())).toEqual(
+      deleteBinding(config(), "handler", "NoOpHandler", 0x19),
+    );
   });
 
   it("warns that marking unsupported removes every binding of the name - count derived from scope, not caller-supplied", async () => {
@@ -308,7 +350,9 @@ describe("DeleteDefinitionDialog", () => {
       />,
       { wrapper },
     );
-    await userEvent.click(screen.getByRole("radio", { name: /remove and mark unsupported/i }));
+    await userEvent.click(
+      screen.getByRole("radio", { name: /remove and mark unsupported/i }),
+    );
     expect(screen.getByText(/all 2 bindings/i)).toBeInTheDocument();
   });
 
@@ -319,7 +363,12 @@ describe("DeleteDefinitionDialog", () => {
   // defaults to 1 when not derived from `scope`.
   it("names all four bindings when 'remove and mark unsupported' is chosen for a four-binding definition", async () => {
     const fourBindingScope = socketObject("scope", "GMS v83.1", {
-      NoOpHandler: [binding("0x11"), binding("0x17"), binding("0x19"), binding("0x22")],
+      NoOpHandler: [
+        binding("0x11"),
+        binding("0x17"),
+        binding("0x19"),
+        binding("0x22"),
+      ],
     });
     render(
       <DeleteDefinitionDialog
@@ -334,7 +383,9 @@ describe("DeleteDefinitionDialog", () => {
       />,
       { wrapper },
     );
-    await userEvent.click(screen.getByRole("radio", { name: /remove and mark unsupported/i }));
+    await userEvent.click(
+      screen.getByRole("radio", { name: /remove and mark unsupported/i }),
+    );
     expect(screen.getByText(/all 4 bindings/i)).toBeInTheDocument();
   });
 
@@ -352,14 +403,18 @@ describe("DeleteDefinitionDialog", () => {
       />,
       { wrapper },
     );
-    await userEvent.click(screen.getByRole("radio", { name: /remove and mark unsupported/i }));
+    await userEvent.click(
+      screen.getByRole("radio", { name: /remove and mark unsupported/i }),
+    );
     await userEvent.click(
       screen.getByRole("button", { name: /remove and mark unsupported/i }),
     );
     const { apply } = mutateAsync.mock.calls[0]![0] as {
       apply: (c: SocketConfig) => SocketConfig;
     };
-    expect(apply(config())).toEqual(markUnsupported(config(), "handler", "NoOpHandler"));
+    expect(apply(config())).toEqual(
+      markUnsupported(config(), "handler", "NoOpHandler"),
+    );
   });
 });
 
@@ -379,7 +434,9 @@ describe("MarkUnsupportedDialog", () => {
       { wrapper },
     );
     expect(screen.getByText(/GMS v83\.1/)).toBeInTheDocument();
-    expect(screen.getByText(/all 4 bindings.*will be removed/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/all 4 bindings.*will be removed/i),
+    ).toBeInTheDocument();
   });
 
   it("applies markUnsupported on confirm", async () => {
@@ -395,18 +452,24 @@ describe("MarkUnsupportedDialog", () => {
       />,
       { wrapper },
     );
-    await userEvent.click(screen.getByRole("button", { name: /mark unsupported/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /mark unsupported/i }),
+    );
     const { apply } = mutateAsync.mock.calls[0]![0] as {
       apply: (c: SocketConfig) => SocketConfig;
     };
-    expect(apply(config())).toEqual(markUnsupported(config(), "handler", "NoOpHandler"));
+    expect(apply(config())).toEqual(
+      markUnsupported(config(), "handler", "NoOpHandler"),
+    );
   });
 });
 
 describe("CopyDefinitionDialog", () => {
   it("loads the source binding and submits a copyBindings splice, never calling a service", async () => {
     const source = socketObject("src", "GMS v79.1", {
-      PongHandle: [binding("0x30", { validator: "SourceValidator", services: [] })],
+      PongHandle: [
+        binding("0x30", { validator: "SourceValidator", services: [] }),
+      ],
     });
     render(
       <CopyDefinitionDialog
@@ -443,7 +506,9 @@ describe("ResetToAncestorDialog", () => {
       NoOpHandler: [binding("0x19")],
     });
     const ancestor = socketObject("anc", "GMS v83.1", {
-      NoOpHandler: [binding("0x30", { validator: "AncestorValidator", services: [] })],
+      NoOpHandler: [
+        binding("0x30", { validator: "AncestorValidator", services: [] }),
+      ],
     });
     render(
       <ResetToAncestorDialog
@@ -459,7 +524,9 @@ describe("ResetToAncestorDialog", () => {
       { wrapper },
     );
 
-    await userEvent.click(screen.getByRole("button", { name: /reset to ancestor/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /reset to ancestor/i }),
+    );
 
     expect(mutateAsync).toHaveBeenCalledTimes(1);
     const { apply } = mutateAsync.mock.calls[0]![0] as {
@@ -469,7 +536,11 @@ describe("ResetToAncestorDialog", () => {
     // replaced by the ancestor's single 0x30 binding.
     const after = apply(config());
     expect(after.handlers.filter((h) => h.handler === "NoOpHandler")).toEqual([
-      { opCode: "0x30", validator: "AncestorValidator", handler: "NoOpHandler" },
+      {
+        opCode: "0x30",
+        validator: "AncestorValidator",
+        handler: "NoOpHandler",
+      },
     ]);
   });
 });
@@ -482,21 +553,30 @@ describe("definitionFormSchema", () => {
   };
 
   it("accepts 0x9 and 0x0A5 - both present in the corpus", () => {
-    expect(definitionFormSchema.safeParse({ ...base, opCode: "0x9" }).success).toBe(true);
-    expect(definitionFormSchema.safeParse({ ...base, opCode: "0x0A5" }).success).toBe(true);
+    expect(
+      definitionFormSchema.safeParse({ ...base, opCode: "0x9" }).success,
+    ).toBe(true);
+    expect(
+      definitionFormSchema.safeParse({ ...base, opCode: "0x0A5" }).success,
+    ).toBe(true);
   });
 
   it("rejects a 5-digit opcode", () => {
-    expect(definitionFormSchema.safeParse({ ...base, opCode: "0x12345" }).success).toBe(false);
+    expect(
+      definitionFormSchema.safeParse({ ...base, opCode: "0x12345" }).success,
+    ).toBe(false);
   });
 
   it("rejects a non-hex opcode", () => {
-    expect(definitionFormSchema.safeParse({ ...base, opCode: "banana" }).success).toBe(false);
+    expect(
+      definitionFormSchema.safeParse({ ...base, opCode: "banana" }).success,
+    ).toBe(false);
   });
 
   it("accepts an empty services list - legal, and occurs 25 times in the corpus", () => {
     expect(
-      definitionFormSchema.safeParse({ ...base, opCode: "0x18", services: [] }).success,
+      definitionFormSchema.safeParse({ ...base, opCode: "0x18", services: [] })
+        .success,
     ).toBe(true);
   });
 
@@ -544,14 +624,18 @@ describe("MutationError surfacing", () => {
         kind="handler"
         name="NoOpHandler"
         opCodeValue={0x19}
-        scope={socketObject("scope", "GMS v83.1", { NoOpHandler: [binding("0x19")] })}
+        scope={socketObject("scope", "GMS v83.1", {
+          NoOpHandler: [binding("0x19")],
+        })}
       />,
       { wrapper },
     );
     await userEvent.click(screen.getByRole("button", { name: /^remove$/i }));
     await waitFor(() =>
       expect(toastError).toHaveBeenCalledWith(
-        expect.stringMatching(/may have been changed or removed by another session/i),
+        expect.stringMatching(
+          /may have been changed or removed by another session/i,
+        ),
       ),
     );
   });

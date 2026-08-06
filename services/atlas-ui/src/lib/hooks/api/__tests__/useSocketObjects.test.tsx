@@ -42,7 +42,10 @@ function makeWrapper(client?: QueryClient) {
   const qc =
     client ??
     new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
   function wrapper({ children }: { children: ReactNode }) {
     return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
@@ -61,7 +64,11 @@ const fullTemplate = {
     npcs: [{ npcId: 1, impl: "x" }],
     worlds: [{ name: "Scania" }],
     cashShop: { commodities: {} },
-    socket: { handlers: [], writers: [], unsupported: { handlers: [], writers: [] } },
+    socket: {
+      handlers: [],
+      writers: [],
+      unsupported: { handlers: [], writers: [] },
+    },
   },
 };
 
@@ -137,7 +144,9 @@ describe("useSocketMutation", () => {
       target: { source: "template", id: "t1" },
       apply: (cfg: SocketConfig) => ({
         ...cfg,
-        writers: [{ opCode: "0x00", writer: "AuthSuccess", services: ["login"] }],
+        writers: [
+          { opCode: "0x00", writer: "AuthSuccess", services: ["login"] },
+        ],
       }),
     });
     const sent = update.mock.calls[0]![1] as typeof fullTemplate.attributes;

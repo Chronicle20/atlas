@@ -110,14 +110,20 @@ describe("PacketGrid", () => {
   it("renders an options-omission glyph with an accessible label", () => {
     renderGrid();
     const row = screen.getByRole("row", { name: /CharacterMovement/ });
-    expect(within(row).getByLabelText(/supplies no options/i)).toBeInTheDocument();
+    expect(
+      within(row).getByLabelText(/supplies no options/i),
+    ).toBeInTheDocument();
   });
 
   it("hides the fname column until it is toggled on", () => {
     renderGrid();
-    expect(screen.queryByRole("columnheader", { name: /fname/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("columnheader", { name: /fname/i }),
+    ).not.toBeInTheDocument();
     renderGrid({ showFName: true });
-    expect(screen.getAllByRole("columnheader", { name: /fname/i }).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("columnheader", { name: /fname/i }).length,
+    ).toBeGreaterThan(0);
   });
 
   // FR-5.2/5.3: clicking a CELL scopes to that object; clicking the NAME leaves
@@ -125,14 +131,24 @@ describe("PacketGrid", () => {
   it("scopes the selection to the clicked cell's object", async () => {
     const { onSelect } = renderGrid();
     const row = screen.getByRole("row", { name: /CharacterMovement/ });
-    await userEvent.click(within(row).getByRole("button", { name: /GMS v95\.1/ }));
-    expect(onSelect).toHaveBeenCalledWith({ name: "CharacterMovement", scopeKey: "b" });
+    await userEvent.click(
+      within(row).getByRole("button", { name: /GMS v95\.1/ }),
+    );
+    expect(onSelect).toHaveBeenCalledWith({
+      name: "CharacterMovement",
+      scopeKey: "b",
+    });
   });
 
   it("leaves the scope on the baseline when the definition name is clicked", async () => {
     const { onSelect } = renderGrid();
-    await userEvent.click(screen.getByRole("button", { name: "CharacterMovement" }));
-    expect(onSelect).toHaveBeenCalledWith({ name: "CharacterMovement", scopeKey: "a" });
+    await userEvent.click(
+      screen.getByRole("button", { name: "CharacterMovement" }),
+    );
+    expect(onSelect).toHaveBeenCalledWith({
+      name: "CharacterMovement",
+      scopeKey: "a",
+    });
   });
 
   it("exposes the grid and its selection to assistive technology", () => {

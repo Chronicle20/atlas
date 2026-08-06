@@ -36,7 +36,10 @@ export interface EditDefinitionDialogProps extends DialogBaseProps {
   initial: BindingInput;
 }
 
-function defaultsFrom(name: string, initial: BindingInput): DefinitionFormValues {
+function defaultsFrom(
+  name: string,
+  initial: BindingInput,
+): DefinitionFormValues {
   return {
     name,
     opCode: initial.opCode,
@@ -85,7 +88,9 @@ export function EditDefinitionDialog({
             validator: values.validator,
             services: values.services,
             ...(values.fname ? { fname: values.fname } : {}),
-            ...(values.options !== undefined ? { options: values.options } : {}),
+            ...(values.options !== undefined
+              ? { options: values.options }
+              : {}),
           }),
       });
       toast.success(`Updated ${name} in ${targetLabel}`);
@@ -115,8 +120,8 @@ export function EditDefinitionDialog({
                 className="bg-muted"
               />
               <p className="text-muted-foreground text-xs">
-                Renaming is not supported - remove this binding and add it
-                again under a new name instead.
+                Renaming is not supported - remove this binding and add it again
+                under a new name instead.
               </p>
             </div>
             <FormField

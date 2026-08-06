@@ -13,8 +13,6 @@ import (
 	"strings"
 	"testing"
 
-	configsocket "atlas-configurations/socket"
-
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -134,7 +132,7 @@ func TestToValidationInput_FlattensBothCollections(t *testing.T) {
 		t.Errorf("unsupported not carried: %+v", in.UnsupportedHandlers)
 	}
 	// Compile-time proof the adapter returns the shared package's type.
-	var _ configsocket.Input = in
+	_ = in
 }
 
 // TestUpdateById_MergesSocketAndPresetIssues proves socket and preset

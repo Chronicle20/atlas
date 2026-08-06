@@ -71,7 +71,9 @@ export function AddDefinitionDialog({
             validator: values.validator,
             services: values.services,
             ...(values.fname ? { fname: values.fname } : {}),
-            ...(values.options !== undefined ? { options: values.options } : {}),
+            ...(values.options !== undefined
+              ? { options: values.options }
+              : {}),
           }),
       });
       toast.success(`Added ${values.name} to ${targetLabel}`);

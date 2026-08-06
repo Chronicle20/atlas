@@ -29,13 +29,19 @@ function fullAttributes(): TemplateAttributes {
     characters: { templates: [], presets: [] },
     npcs: [],
     worlds: [],
-    socket: { handlers: [], writers: [], unsupported: { handlers: [], writers: [] } },
+    socket: {
+      handlers: [],
+      writers: [],
+      unsupported: { handlers: [], writers: [] },
+    },
   } as TemplateAttributes;
 }
 
 describe("templatesService.update", () => {
   beforeEach(() => {
-    patch.mockReset().mockResolvedValue({ data: { id: "t1", attributes: fullAttributes() } });
+    patch
+      .mockReset()
+      .mockResolvedValue({ data: { id: "t1", attributes: fullAttributes() } });
     put.mockReset();
     getOne.mockReset();
   });
@@ -69,10 +75,9 @@ describe("templatesService.update", () => {
   // transport call, so a partial payload never reaches api.patch either.
   it("refuses a partial attribute document", async () => {
     await expect(
-      templatesService.update(
-        "t1",
-        { socket: { handlers: [], writers: [] } } as unknown as TemplateAttributes,
-      ),
+      templatesService.update("t1", {
+        socket: { handlers: [], writers: [] },
+      } as unknown as TemplateAttributes),
     ).rejects.toThrow(/validation failed/i);
     expect(patch).not.toHaveBeenCalled();
     expect(put).not.toHaveBeenCalled();

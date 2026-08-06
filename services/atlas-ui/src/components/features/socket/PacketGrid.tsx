@@ -81,7 +81,11 @@ export function PacketGrid({
               Definition
             </th>
             {showFName && (
-              <th scope="col" aria-colindex={2} className="border-b px-2 py-2 text-sm">
+              <th
+                scope="col"
+                aria-colindex={2}
+                className="border-b px-2 py-2 text-sm"
+              >
                 fname
               </th>
             )}
@@ -92,7 +96,8 @@ export function PacketGrid({
                 aria-colindex={(showFName ? 2 : 1) + i + 1}
                 className={cn(
                   "border-b px-2 py-2 text-sm whitespace-nowrap",
-                  o.key === baselineKey && "bg-muted/40 border-x border-primary/40",
+                  o.key === baselineKey &&
+                    "bg-muted/40 border-x border-primary/40",
                 )}
               >
                 <span>{o.label}</span>
@@ -113,7 +118,9 @@ export function PacketGrid({
               objects={objects}
               baselineKey={baselineKey}
               showFName={showFName}
-              scopeKey={selection?.name === row.name ? selection.scopeKey : null}
+              scopeKey={
+                selection?.name === row.name ? selection.scopeKey : null
+              }
               isSelected={selection?.name === row.name}
               rowIndex={i + 2}
               onSelect={handleSelect}

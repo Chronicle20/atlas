@@ -201,16 +201,12 @@ const STATE_ORDER: Record<DefinitionState, number> = {
  * unaffected by `dir` - the direction toggle reorders the primary key only,
  * it does not reverse the tie-break.
  */
-export function sortRows(
-  rows: Row[],
-  key: SortKey,
-  dir: SortDirection,
-): Row[] {
+export function sortRows(rows: Row[], key: SortKey, dir: SortDirection): Row[] {
   const sign = dir === "asc" ? 1 : -1;
   return [...rows].sort((a, b) => {
     if (a.inBaseline !== b.inBaseline) return a.inBaseline ? -1 : 1;
 
-    let cmp = 0;
+    let cmp: number;
     if (key === "opcode") {
       const av = a.baselineOpCodeValue;
       const bv = b.baselineOpCodeValue;

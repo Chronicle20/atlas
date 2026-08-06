@@ -68,7 +68,10 @@ export const PacketGridCell = memo(function PacketGridCell({
           </>
         )}
         {cell.hasDuplicateOpcode && (
-          <span aria-label="duplicate opcode" title="Two entries share this opcode">
+          <span
+            aria-label="duplicate opcode"
+            title="Two entries share this opcode"
+          >
             ⚠
           </span>
         )}

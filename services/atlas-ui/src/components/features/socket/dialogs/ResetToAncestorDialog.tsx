@@ -10,7 +10,11 @@ import {
 } from "@/components/ui/dialog";
 import type { DialogBaseProps } from "@/components/features/socket/dialogs/dialog-base";
 import { useSocketMutation } from "@/lib/hooks/api/useSocketObjects";
-import { copyBindings, deleteBinding, type BindingInput } from "@/lib/socket/mutate";
+import {
+  copyBindings,
+  deleteBinding,
+  type BindingInput,
+} from "@/lib/socket/mutate";
 import {
   entriesOf,
   nameOfEntry,
@@ -34,9 +38,11 @@ export interface ResetToAncestorDialogProps extends DialogBaseProps {
 }
 
 function bindingSummary(b: Binding, kind: DialogBaseProps["kind"]): string {
-  const opcode = b.opCodeValue !== null ? formatOpcode(b.opCodeValue) : b.opCode;
+  const opcode =
+    b.opCodeValue !== null ? formatOpcode(b.opCodeValue) : b.opCode;
   const parts = [opcode];
-  if (kind === "handler" && b.validator) parts.push(`validator: ${b.validator}`);
+  if (kind === "handler" && b.validator)
+    parts.push(`validator: ${b.validator}`);
   if (b.services.length > 0) parts.push(`services: ${b.services.join(", ")}`);
   return parts.join(" • ");
 }
@@ -93,7 +99,9 @@ export function ResetToAncestorDialog({
         target,
         apply: (cfg) => {
           const list = kind === "handler" ? cfg.handlers : cfg.writers;
-          const currentInFreshDoc = list.filter((e) => nameOfEntry(e, kind) === name);
+          const currentInFreshDoc = list.filter(
+            (e) => nameOfEntry(e, kind) === name,
+          );
 
           let out = cfg;
           for (const entry of currentInFreshDoc) {
@@ -141,7 +149,9 @@ export function ResetToAncestorDialog({
             />
           </div>
           <div className="space-y-1">
-            <h4 className="text-sm font-semibold">Ancestor ({ancestor.label})</h4>
+            <h4 className="text-sm font-semibold">
+              Ancestor ({ancestor.label})
+            </h4>
             <BindingsList
               bindings={ancestorBindings}
               kind={kind}

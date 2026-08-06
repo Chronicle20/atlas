@@ -58,7 +58,10 @@ function firstOpCodeFor(
   return obj ? (entriesOf(obj, kind).get(name)?.[0]?.opCode ?? "") : "";
 }
 
-function bindingToDefaults(name: string, binding: Binding): DefinitionFormValues {
+function bindingToDefaults(
+  name: string,
+  binding: Binding,
+): DefinitionFormValues {
   return {
     name,
     opCode: binding.opCode,
@@ -89,7 +92,9 @@ export function CopyDefinitionDialog({
 
   const candidates = useMemo(
     () =>
-      sourceObjects.filter((o) => (entriesOf(o, kind).get(name)?.length ?? 0) > 0),
+      sourceObjects.filter(
+        (o) => (entriesOf(o, kind).get(name)?.length ?? 0) > 0,
+      ),
     [sourceObjects, kind, name],
   );
 
@@ -113,14 +118,22 @@ export function CopyDefinitionDialog({
   }
 
   const sourceObject = candidates.find((o) => o.key === sourceKey);
-  const sourceBindings = sourceObject ? (entriesOf(sourceObject, kind).get(name) ?? []) : [];
+  const sourceBindings = sourceObject
+    ? (entriesOf(sourceObject, kind).get(name) ?? [])
+    : [];
   const selectedBinding =
     sourceBindings.find((b) => b.opCode === sourceOpCode) ?? sourceBindings[0];
 
   /** Selecting a different source object also picks its first binding, in one user action. */
   const handleSourceChange = (key: string) => {
     setSourceKey(key);
-    setSourceOpCode(firstOpCodeFor(candidates.find((o) => o.key === key), kind, name));
+    setSourceOpCode(
+      firstOpCodeFor(
+        candidates.find((o) => o.key === key),
+        kind,
+        name,
+      ),
+    );
   };
 
   const schema = useMemo(() => definitionFormSchemaFor(kind), [kind]);
@@ -128,7 +141,14 @@ export function CopyDefinitionDialog({
     resolver: zodResolver(schema),
     defaultValues: selectedBinding
       ? bindingToDefaults(name, selectedBinding)
-      : { name, opCode: "", validator: "", services: [], fname: "", options: undefined },
+      : {
+          name,
+          opCode: "",
+          validator: "",
+          services: [],
+          fname: "",
+          options: undefined,
+        },
   });
 
   // Reload the form whenever the dialog reopens or the chosen source
@@ -151,7 +171,9 @@ export function CopyDefinitionDialog({
               validator: values.validator,
               services: values.services,
               ...(values.fname ? { fname: values.fname } : {}),
-              ...(values.options !== undefined ? { options: values.options } : {}),
+              ...(values.options !== undefined
+                ? { options: values.options }
+                : {}),
             },
           ]),
       });
@@ -166,7 +188,9 @@ export function CopyDefinitionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Copy {name} into {targetLabel}</DialogTitle>
+          <DialogTitle>
+            Copy {name} into {targetLabel}
+          </DialogTitle>
         </DialogHeader>
 
         {candidates.length === 0 ? (
@@ -201,7 +225,9 @@ export function CopyDefinitionDialog({
                   <SelectContent>
                     {sourceBindings.map((b) => (
                       <SelectItem key={b.opCode} value={b.opCode}>
-                        {b.opCodeValue !== null ? formatOpcode(b.opCodeValue) : b.opCode}
+                        {b.opCodeValue !== null
+                          ? formatOpcode(b.opCodeValue)
+                          : b.opCode}
                       </SelectItem>
                     ))}
                   </SelectContent>

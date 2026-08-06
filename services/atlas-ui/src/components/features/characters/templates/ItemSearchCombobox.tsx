@@ -12,7 +12,10 @@ import { itemsService } from "@/services/api/items.service";
 import type { ItemSearchFilters } from "@/services/api/items.service";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { useTenant } from "@/context/tenant-context";
-import { POOL_SEARCH_CONFIGS, type SearchPoolKey } from "./poolSearchConfig";
+import {
+  POOL_SEARCH_CONFIGS,
+  type SearchPoolKey,
+} from "@/lib/items/poolSearchConfig";
 
 interface ItemSearchComboboxProps {
   poolKey: SearchPoolKey;

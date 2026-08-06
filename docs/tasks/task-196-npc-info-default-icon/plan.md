@@ -36,7 +36,7 @@ Builds the shared fixture helpers every later test uses. Nothing is asserted abo
   - `pixelAt(t *testing.T, img image.Image) color.NRGBA` — decodes pixel (0,0) as NRGBA.
   - Marker constants `markDefault`, `markStand`, `markLink`, `markTopLevel` (type `color.NRGBA`) and their matching payload triples.
 
-- [ ] **Step 1: Create the fixture helper file**
+- [x] **Step 1: Create the fixture helper file**
 
 Create `libs/atlas-wz/icons/fixture_test.go`:
 
@@ -128,12 +128,12 @@ func pixelAt(t *testing.T, img image.Image) color.NRGBA {
 }
 ```
 
-- [ ] **Step 2: Verify the scaffolding compiles and existing tests still pass**
+- [x] **Step 2: Verify the scaffolding compiles and existing tests still pass**
 
 Run: `cd libs/atlas-wz && go test ./icons/ -v`
 Expected: PASS. `TestPublicSurfaceExists` and `TestNormalizeId` run; the new file contributes no tests yet. Go does not flag unused package-level vars or funcs, so this compiles cleanly.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add libs/atlas-wz/icons/fixture_test.go
@@ -154,7 +154,7 @@ The behavior change. Adds the failing test, then the four-line finder that fixes
 - Consumes from Task 1: `newArchive`, `openFixture`, `payloadFor`, `pixelAt`, `markDefault`, `markStand`.
 - Produces: `findNpcCanvas(props []property.Property) *property.CanvasProperty`, unexported, used only by `ExtractNpcIcon`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `libs/atlas-wz/icons/npc_default_test.go`:
 
@@ -206,12 +206,12 @@ func TestNpcFallsBackToStand(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify the first one fails**
+- [x] **Step 2: Run the tests to verify the first one fails**
 
 Run: `cd libs/atlas-wz && go test ./icons/ -run 'TestNpcPrefersInfoDefault|TestNpcFallsBackToStand' -v`
 Expected: `TestNpcPrefersInfoDefault` FAILS with `got {R:102 G:85 B:68 A:255}, want info/default marker {R:51 G:34 B:17 A:255}` — the stand marker, because `findStandCanvas` reaches `stand` first. `TestNpcFallsBackToStand` PASSES already.
 
-- [ ] **Step 3: Add the NPC finder**
+- [x] **Step 3: Add the NPC finder**
 
 In `libs/atlas-wz/icons/extract.go`, immediately above `findStandCanvas`, add:
 
@@ -231,7 +231,7 @@ func findNpcCanvas(props []property.Property) *property.CanvasProperty {
 }
 ```
 
-- [ ] **Step 4: Point `ExtractNpcIcon` at the new finder**
+- [x] **Step 4: Point `ExtractNpcIcon` at the new finder**
 
 In `libs/atlas-wz/icons/extract.go`, replace the body and doc comment of `ExtractNpcIcon`:
 
@@ -245,12 +245,12 @@ func ExtractNpcIcon(f *wz.File, id uint32) (image.Image, error) {
 
 Leave `ExtractMobIcon` and `ExtractReactorIcon` exactly as they are.
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cd libs/atlas-wz && go test ./icons/ -run 'TestNpcPrefersInfoDefault|TestNpcFallsBackToStand' -v`
 Expected: both PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add libs/atlas-wz/icons/extract.go libs/atlas-wz/icons/npc_default_test.go
@@ -276,7 +276,7 @@ Three tests that pin the boundaries the fix must not cross. No production code c
 - Consumes from Task 2: the `findNpcCanvas` behavior, exercised through `icons.ExtractNpcIcon`.
 - Produces: nothing consumed downstream.
 
-- [ ] **Step 1: Write the edge-case tests**
+- [x] **Step 1: Write the edge-case tests**
 
 Create `libs/atlas-wz/icons/npc_default_edge_test.go`:
 
@@ -374,14 +374,14 @@ func TestNpcFollowsLinkToInfoDefault(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the edge tests**
+- [x] **Step 2: Run the edge tests**
 
 Run: `cd libs/atlas-wz && go test ./icons/ -v`
 Expected: all PASS, including the pre-existing `TestPublicSurfaceExists` and `TestNormalizeId`.
 
 If `TestMobIgnoresInfoDefault` fails, `ExtractMobIcon` was changed — revert it to `findStandCanvas`. If `TestNpcIgnoresTopLevelDefaultDir` fails, `findNpcCanvas` is matching a sub-property instead of a canvas — confirm it uses `findSubCanvas`, not `findSub`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add libs/atlas-wz/icons/npc_default_edge_test.go
@@ -404,7 +404,7 @@ Runs the `CLAUDE.md` gates across both affected modules and records the result.
 - Consumes: the completed implementation from Tasks 1–3.
 - Produces: nothing.
 
-- [ ] **Step 1: Test and vet `libs/atlas-wz` with the race detector**
+- [x] **Step 1: Test and vet `libs/atlas-wz` with the race detector**
 
 Run:
 ```bash
@@ -412,7 +412,7 @@ cd libs/atlas-wz && go test -race ./... && go vet ./... && go build ./...
 ```
 Expected: all clean, exit 0.
 
-- [ ] **Step 2: Test and vet `services/atlas-data`**
+- [x] **Step 2: Test and vet `services/atlas-data`**
 
 It consumes `libs/atlas-wz` through `go.work`, so it must be re-verified even though no file in it changed.
 
@@ -422,7 +422,7 @@ cd services/atlas-data/atlas.com/data && go test -race ./... && go vet ./... && 
 ```
 Expected: all clean, exit 0.
 
-- [ ] **Step 3: Run the repo-root guards**
+- [x] **Step 3: Run the repo-root guards**
 
 Run from the worktree root:
 ```bash
@@ -430,7 +430,7 @@ tools/redis-key-guard.sh && tools/goroutine-guard.sh
 ```
 Expected: both exit 0. Neither is plausibly affected by this change, but `CLAUDE.md` requires them alongside `go vet`.
 
-- [ ] **Step 4: Run the lint and format guard**
+- [x] **Step 4: Run the lint and format guard**
 
 Run from the worktree root:
 ```bash
@@ -440,17 +440,17 @@ Expected: exit 0. If it fails on formatting, run `tools/lint.sh` (no flags) to f
 
 Note: `tools/lint.sh --check` false-fails when nvm is not loaded, because the atlas-ui half cannot find node. If it fails on the frontend leg rather than on Go, load nvm 22 and re-run before treating it as a real failure.
 
-- [ ] **Step 5: Confirm no `go.mod` was touched**
+- [x] **Step 5: Confirm no `go.mod` was touched**
 
 Run: `git diff --name-only main...HEAD -- '*go.mod' '*go.sum'`
 Expected: empty output. If anything prints, `docker buildx bake atlas-data` becomes mandatory before the branch can be called done — run it and confirm it succeeds.
 
-- [ ] **Step 6: Confirm the change surface is exactly what was planned**
+- [x] **Step 6: Confirm the change surface is exactly what was planned**
 
 Run: `git diff --stat main...HEAD`
 Expected: `docs/tasks/task-196-npc-info-default-icon/` docs plus exactly four files under `libs/atlas-wz/icons/` — `extract.go`, `fixture_test.go`, `npc_default_test.go`, `npc_default_edge_test.go`. Nothing under `services/`.
 
-- [ ] **Step 7: Commit any lint fixes**
+- [x] **Step 7: Commit any lint fixes**
 
 Only if Step 4 rewrote files:
 

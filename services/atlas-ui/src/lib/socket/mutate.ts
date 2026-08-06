@@ -5,7 +5,7 @@ import type {
   SocketWriterEntry,
 } from "@/types/models/socket";
 import type { DefinitionKind } from "@/lib/socket/model";
-import { parseOpcode } from "@/lib/socket/opcode";
+import { formatOpcode, parseOpcode } from "@/lib/socket/opcode";
 
 /**
  * Thrown whenever a mutation cannot address exactly one binding: either the
@@ -71,16 +71,12 @@ function requireOpcodeValue(opCode: string): number {
   return value;
 }
 
-function hexOf(value: number): string {
-  return `0x${value.toString(16).toUpperCase()}`;
-}
-
 function buildHandlerEntry(name: string, input: BindingInput): SocketHandlerEntry {
   return {
     opCode: input.opCode,
     validator: input.validator ?? "",
     handler: name,
-    services: [...input.services],
+    ...(input.services.length > 0 ? { services: [...input.services] } : {}),
     ...(input.fname !== undefined && input.fname !== "" ? { fname: input.fname } : {}),
     ...(input.options !== undefined ? { options: cloneJson(input.options) } : {}),
   };
@@ -90,7 +86,7 @@ function buildWriterEntry(name: string, input: BindingInput): SocketWriterEntry 
   return {
     opCode: input.opCode,
     writer: name,
-    services: [...input.services],
+    ...(input.services.length > 0 ? { services: [...input.services] } : {}),
     ...(input.fname !== undefined && input.fname !== "" ? { fname: input.fname } : {}),
     ...(input.options !== undefined ? { options: cloneJson(input.options) } : {}),
   };
@@ -140,12 +136,12 @@ function resolveOne(
   });
   if (hits.length === 0) {
     throw new MutationError(
-      `No ${kind} named "${name}" at opcode ${hexOf(opCodeValue)} was found. It may have been changed or removed by another session - reload and try again.`,
+      `No ${kind} named "${name}" at opcode ${formatOpcode(opCodeValue)} was found. It may have been changed or removed by another session - reload and try again.`,
     );
   }
   if (hits.length > 1) {
     throw new MutationError(
-      `"${name}" resolves to ${hits.length} bindings at opcode ${hexOf(opCodeValue)}. Resolve the duplicate opcode before editing it here.`,
+      `"${name}" resolves to ${hits.length} bindings at opcode ${formatOpcode(opCodeValue)}. Resolve the duplicate opcode before editing it here.`,
     );
   }
   return hits[0]!;
@@ -171,7 +167,7 @@ export function addBinding(
   );
   if (collision) {
     throw new MutationError(
-      `"${name}" is already bound to opcode ${hexOf(value)}.`,
+      `"${name}" is already bound to opcode ${formatOpcode(value)}.`,
     );
   }
 
@@ -206,7 +202,7 @@ export function editBinding(
       (e, i) => i !== at && nameOf(e, kind) === name && parseOpcode(e.opCode) === newValue,
     );
     if (collision) {
-      throw new MutationError(`"${name}" is already bound to opcode ${hexOf(newValue)}.`);
+      throw new MutationError(`"${name}" is already bound to opcode ${formatOpcode(newValue)}.`);
     }
   }
 
@@ -326,7 +322,7 @@ export function fillMissingValidators(
   validator: string,
 ): SocketConfig {
   const handlers = cloneJson(cfg.handlers).map((h) =>
-    h.validator.trim() === "" ? { ...h, validator } : h,
+    (h.validator ?? "").trim() === "" ? { ...h, validator } : h,
   );
   return {
     handlers,

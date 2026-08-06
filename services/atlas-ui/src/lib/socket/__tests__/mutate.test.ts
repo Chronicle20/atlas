@@ -82,6 +82,32 @@ describe("addBinding", () => {
       }),
     ).toThrow(MutationError);
   });
+
+  // Corpus fact: the 25 entries with no services omit the `services` key
+  // entirely (measured: services present+non-empty 2834, absent 25, present
+  // as `[]` 0). An empty BindingInput.services must round-trip the same way
+  // rather than writing a shape ("services": []) that never occurs.
+  it("omits the services key entirely when the input has none", () => {
+    const out = addBinding(config(), "writer", "PetActivated", {
+      opCode: "0x9A",
+      services: [],
+    });
+    const added = out.writers[1]!;
+    expect("services" in added).toBe(false);
+  });
+
+  // formatOpcode zero-pads to at least 2 digits; reusing it (rather than a
+  // re-derived hex formatter) keeps error-message opcodes consistent with
+  // every other display path in the domain layer.
+  it("formats a single-hex-digit opcode zero-padded in the collision error", () => {
+    const single: SocketConfig = {
+      handlers: [],
+      writers: [{ opCode: "0x9", writer: "PetActivated", services: ["channel"] }],
+    };
+    expect(() =>
+      addBinding(single, "writer", "PetActivated", { opCode: "0x09", services: ["channel"] }),
+    ).toThrow(/0x09/);
+  });
 });
 
 describe("editBinding", () => {
@@ -308,6 +334,33 @@ describe("fillMissingValidators", () => {
     const cfg = config();
     const out = fillMissingValidators(cfg, "NoOpValidator");
     expect(out.writers).toEqual(cfg.writers);
+  });
+
+  // The seed corpus has zero handler entries with an absent or null
+  // `validator`, so no fixture built from real seed data can exercise this.
+  // The 32 malformed validators this function exists to repair live in a
+  // live gms_95 tenant, not the seed templates - the SocketHandlerEntry type
+  // declares `validator: string` (required), but runtime data is not
+  // guaranteed to honor that, which is exactly why the escape hatch exists.
+  // Built by hand, not derived from any fixture: one entry with the key
+  // absent entirely, one with an explicit `null`.
+  it("fills a handler validator that is absent or null at runtime, not merely empty", () => {
+    const broken = {
+      handlers: [
+        { opCode: "0x01", handler: "A", services: ["channel"] },
+        { opCode: "0x02", handler: "B", services: ["channel"], validator: null },
+        { opCode: "0x03", handler: "C", services: ["channel"], validator: "LoggedInValidator" },
+      ],
+      writers: [],
+    } as unknown as SocketConfig;
+
+    expect(() => fillMissingValidators(broken, "NoOpValidator")).not.toThrow();
+    const out = fillMissingValidators(broken, "NoOpValidator");
+    expect(out.handlers.map((h) => h.validator)).toEqual([
+      "NoOpValidator",
+      "NoOpValidator",
+      "LoggedInValidator",
+    ]);
   });
 });
 

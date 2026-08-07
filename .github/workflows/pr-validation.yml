@@ -83,6 +83,11 @@ jobs:
   # ============================================
   redis-key-guard:
     name: Redis Key Guard
+    # Input surface is services/**/*.go + libs/**/*.go only — a change set
+    # confined to deploy/ (the automated main-overlay bump PR) cannot alter
+    # this verdict. See detect-changes' deploy-only output.
+    needs: detect-changes
+    if: needs.detect-changes.outputs.deploy-only != 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -112,6 +117,11 @@ jobs:
   # ============================================
   outbox-guard:
     name: Outbox Guard
+    # Input surface is services/**/*.go + libs/**/*.go only — a change set
+    # confined to deploy/ (the automated main-overlay bump PR) cannot alter
+    # this verdict. See detect-changes' deploy-only output.
+    needs: detect-changes
+    if: needs.detect-changes.outputs.deploy-only != 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -137,6 +147,11 @@ jobs:
   # ============================================
   goroutine-guard:
     name: Goroutine Guard
+    # Input surface is services/**/*.go + libs/**/*.go only — a change set
+    # confined to deploy/ (the automated main-overlay bump PR) cannot alter
+    # this verdict. See detect-changes' deploy-only output.
+    needs: detect-changes
+    if: needs.detect-changes.outputs.deploy-only != 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -162,6 +177,11 @@ jobs:
   # ============================================
   buff-duration-guard:
     name: Buff Duration Guard
+    # Input surface is services/**/*.go + libs/**/*.go only — a change set
+    # confined to deploy/ (the automated main-overlay bump PR) cannot alter
+    # this verdict. See detect-changes' deploy-only output.
+    needs: detect-changes
+    if: needs.detect-changes.outputs.deploy-only != 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -182,6 +202,11 @@ jobs:
   # socket port manifests from versions.json and
   # fails if the checked-in manifests have drifted
   # (task-084). Pure shell + jq, no Go setup.
+  #
+  # Deliberately NOT gated on deploy-only: its inputs
+  # (deploy/k8s/base/versions.json, atlas-{login,channel}.yaml)
+  # live under deploy/, so a deploy-only change set is exactly
+  # when it can catch drift.
   # ============================================
   gen-lb-ports:
     name: LB Port Drift Guard
@@ -214,6 +239,11 @@ jobs:
   # ============================================
   atlas-constants-drift-guard:
     name: atlas-constants Generator Drift Guard
+    # Input surface is services/**/*.go + libs/**/*.go only — a change set
+    # confined to deploy/ (the automated main-overlay bump PR) cannot alter
+    # this verdict. See detect-changes' deploy-only output.
+    needs: detect-changes
+    if: needs.detect-changes.outputs.deploy-only != 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -316,6 +346,12 @@ jobs:
   # configmap key parity, patch container names).
   # See docs/adding-a-new-service.md. Pure
   # shell + python3, no Go setup.
+  #
+  # Deliberately NOT gated on deploy-only: it reads
+  # deploy/k8s/overlays/main/kustomization.yaml, which is the
+  # file the automated main-overlay bump PR rewrites. This is
+  # the one guard that can catch a bump dropping or mangling an
+  # image entry.
   # ============================================
   service-registration-guard:
     name: Service Registration Guard
@@ -337,6 +373,11 @@ jobs:
   # ============================================
   template-opcode-order-guard:
     name: Template Opcode Order Guard
+    # Input surface is services/atlas-configurations/seed-data/templates/
+    # only — a change set confined to deploy/ cannot alter this verdict.
+    # See detect-changes' deploy-only output.
+    needs: detect-changes
+    if: needs.detect-changes.outputs.deploy-only != 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -358,6 +399,11 @@ jobs:
   # ============================================
   template-movement-types-guard:
     name: Template Movement Types Guard
+    # Input surface is services/atlas-configurations/seed-data/templates/
+    # only — a change set confined to deploy/ cannot alter this verdict.
+    # See detect-changes' deploy-only output.
+    needs: detect-changes
+    if: needs.detect-changes.outputs.deploy-only != 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -382,6 +428,11 @@ jobs:
   # ============================================
   skill-job-id-guard:
     name: Skill/Job Id Guard
+    # Input surface is services/**/*.go + libs/**/*.go only — a change set
+    # confined to deploy/ (the automated main-overlay bump PR) cannot alter
+    # this verdict. See detect-changes' deploy-only output.
+    needs: detect-changes
+    if: needs.detect-changes.outputs.deploy-only != 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -805,10 +856,12 @@ jobs:
           echo "| Lint & Format Guard (Go) | $LINT_GO_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Lint & Format Guard (UI) | $LINT_UI_RESULT |" >> $GITHUB_STEP_SUMMARY
 
-          # Fail if any required job failed. update-pr-overlay is allowed
-          # to be skipped (e.g., when the deploy-env label is absent) but
-          # not to fail outright.
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$OUTBOX_GUARD_RESULT" == "failure" ] || [ "$GOROUTINE_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
+          # Fail if any required job failed. Jobs are allowed to be
+          # skipped — update-pr-overlay when the deploy-env label is
+          # absent, the source-only guards on a deploy-only change set —
+          # but never to fail outright. Comparing against "failure" (not
+          # against "success") is what makes a skip pass.
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$OUTBOX_GUARD_RESULT" == "failure" ] || [ "$GOROUTINE_GUARD_RESULT" == "failure" ] || [ "$BUFF_DURATION_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

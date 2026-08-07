@@ -3038,6 +3038,16 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0xFB",
+        "writer": "AffectedAreaCreated",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xFC",
+        "writer": "AffectedAreaRemoved",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0xFD",
         "writer": "SpawnDoor",
         "services": ["channel"]

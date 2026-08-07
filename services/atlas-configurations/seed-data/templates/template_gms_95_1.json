@@ -2885,6 +2885,16 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x148",
+        "writer": "AffectedAreaCreated",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x149",
+        "writer": "AffectedAreaRemoved",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x14A",
         "writer": "SpawnDoor",
         "services": ["channel"]

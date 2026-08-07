@@ -3202,6 +3202,16 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x118",
+        "writer": "AffectedAreaCreated",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x119",
+        "writer": "AffectedAreaRemoved",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x11A",
         "writer": "SpawnDoor",
         "services": ["channel"]

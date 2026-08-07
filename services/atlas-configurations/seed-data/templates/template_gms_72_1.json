@@ -2982,6 +2982,16 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0xF3",
+        "writer": "AffectedAreaCreated",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xF4",
+        "writer": "AffectedAreaRemoved",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0xF5",
         "writer": "SpawnDoor",
         "services": ["channel"]

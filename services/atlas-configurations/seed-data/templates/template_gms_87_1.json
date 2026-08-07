@@ -2873,6 +2873,16 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x122",
+        "writer": "AffectedAreaCreated",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x123",
+        "writer": "AffectedAreaRemoved",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x124",
         "writer": "SpawnDoor",
         "services": ["channel"]

@@ -32,9 +32,9 @@ func (m *SkillUsageInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(
 		// have NO is_antirepeat_buff_skill gate at all in SendSkillUseRequest — the
 		// function goes straight from Encode1(nSLV) to the 4121006/bitmap/mob-count
 		// blocks. The gate first appears at gms_72 (@0x8774D9, is_antirepeat_buff_skill
-		// @0x877789) and is present on every version from there through gms_95 and on
-		// jms (unverified there — kept reading castX/castY to preserve current
-		// behavior). Unconditionally reading castX/castY for isAntiRepeatBuffSkill
+		// @0x877789) and is present on every version from there through gms_95, and on
+		// jms_185 (@0xA3DE65, is_antirepeat_buff_skill @0xA3E223 — verified, 2311001 is
+		// a member). Unconditionally reading castX/castY for isAntiRepeatBuffSkill
 		// members on gms_48/gms_61 over-reads 4 bytes and misaligns every field after
 		// it (task-163 DIV-1, docs/tasks/task-163-priest-dispel-party/version-findings.md).
 		if isAntiRepeatBuffSkill(skill.Id(m.skillId)) &&

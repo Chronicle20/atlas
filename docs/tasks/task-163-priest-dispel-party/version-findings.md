@@ -89,7 +89,7 @@ readable version, is:
 | gms_87 | yes | yes | yes — `dwTargetFlag = 6` | **yes** | IDB `GMSv87_4GB.exe.i64`, `CUserLocal::SendSkillUseRequest` @0x9F1D61 (mangled name pre-existing). Has the antirepeat block. `is_antirepeat_buff_skill` @0x9F20FC (was `sub_9F20FC`; **named by this audit**) — contains `a1 == 2311001 → return 1`. Opcode `COutPacket(…, 0x5E)`. 2311001 site @0x9F2075. Dispatch chain in `CUserLocal::DoActiveSkill` @0x9EA7B9: `sub eax, 231C4Bh` @0x9EB7A2, `dec`, `dec`, `sub eax, 270Ch` @0x9EB7BB (2301003 + 2 + 9996 = 2311001) → `push 6` @0x9EB7C6. |
 | gms_92 | yes | yes | yes — `dwTargetFlag = 6` | **yes** | IDB `GMS_v92_1_DEVM.exe.i64`, `CUserLocal::SendSkillUseRequest` @0x91D310 (was `sub_91D310`; **named by this audit**). Has the antirepeat block. `is_antirepeat_buff_skill` @0x919150 (was `sub_919150`; **named by this audit**) — contains `a1 == 2311001 → return 1`. Opcode `COutPacket(…, 0x66)`. 2311001 site @0x91D6EC. Dispatch: `cmp esi, 234359h` @0x92330F → `jz short loc_923345` → `push 6` @0x92334D. **No matrix column and no export exists for gms_92** — this row is IDB-only by design (see brief Step 2). |
 | gms_95 | yes | yes | yes — `dwTargetFlag = 6` | **yes on the wire** — but see the effect-data finding below | IDB `GMS_v95.0_U_DEVM.exe.i64`, `CUserLocal::SendSkillUseRequest` @0x93E930 (mangled name pre-existing; PDB-backed, fully typed). Has the antirepeat block. `is_antirepeat_buff_skill` @0x939DC0 (pre-named) — `sub eax, 234359h; jz` @0x939E87. Opcode `COutPacket(…, 103)` = 0x67. 2311001 site @0x93ED3E. Dispatch: `cmp esi, 234359h` @0x9462D8 → `jz loc_94639B` → `push 6 ; dwTargetFlag` @0x94639B → `call CUserLocal::DoActiveSkill_StatChange` (IDA labels the operand `dwTargetFlag` from the PDB signature). |
-| jms_185 | **unverified** | **unverified** | **unverified** | **unverified** | **Unverified — IDA session unavailable.** The session for `MapleStory_dump_SCY.exe.i64` (session `b6864e54`) is listed as active and non-analyzing by `idb_list`, but every query against it (`find_bytes`, `func_query`, `server_health`, and a re-`idb_open`) returned "The operation timed out", across four separate attempts spanning the audit. No export exists either. **This version is NOT folded into the v83 assumption and is NOT reported as passing.** |
+| jms_185 | yes | yes | yes — `dwTargetFlag = 6` | **yes** | IDB `MapleStory_dump_SCY.exe.i64`, `CUserLocal::SendSkillUseRequest` @0xA3DE65 (mangled name pre-existing). Has the antirepeat block (`Encode2(x); Encode2(y)`). `is_antirepeat_buff_skill` @0xA3E223 (pre-named) — decompile contains `nSkillID == 2311001 \|\| nSkillID == 2311003 \|\| nSkillID == 2321000 → return 1`. Opcode `COutPacket(…, 0x56)` = 86, agreeing with both `status.json` (86) and `template_jms_185_1.json`. 2311001 delay site inside the bitmap arm confirmed. Dispatch arm in `CUserLocal::DoActiveSkill` @0xA35C3F: `mov eax, 234359h; cmp ebx, eax` @0xA36E14 → `jz short loc_A36E9B` → `push 6` @0xA36E9B → falls into the shared `loc_A376D4` call site → `CUserLocal::DoActiveSkill_StatChange` @0xA3934E (was `sub_A3934E`; **named by this audit**), which gates `dwAffectedMemberBitmap` on `dwTargetFlag & 2` and the mob list on `dwTargetFlag & 4` before calling `SendSkillUseRequest` — structurally identical to v83 @0x969E21. |
 
 ### Divergences found
 
@@ -210,12 +210,15 @@ investigated further — this task is read-only.
 
 | Item | Status | Reason |
 |---|---|---|
-| jms_185 client (all three columns) | **unverified** | IDA session `b6864e54` (`MapleStory_dump_SCY.exe.i64`) timed out on every query across four attempts (`find_bytes` ×3, `func_query`, `server_health`, `idb_open`). No export exists for `SPECIAL_MOVE` on jms_v185 either. Not folded into the v83 assumption. **Task-4 retry (2026-08-07):** `idb_list` confirmed session `b6864e54` still maps to `MapleStory_dump_SCY.exe.i64` and reports `is_analyzing:false`, but both `server_health(database="b6864e54")` and `func_query(database="b6864e54", filter="*SendSkillUseRequest*")` returned "The operation timed out" again. Fifth and sixth failed attempts. Still unverified; the decoder's JMS branch is retained as a no-wire-change default per the task-4 ruling, not because JMS was confirmed to need it. |
+| jms_185 client (all three columns) | **RESOLVED — now verified** | Originally unverified: the IDA session `b6864e54` (`MapleStory_dump_SCY.exe.i64`) timed out on every query across four attempts during the Step-2 pass, and again on two attempts during the task-4 retry. **On a seventh attempt the session responded** (`server_health` returned `auto_analysis_ready:true, hexrays_ready:true`) and the full read was completed — see the jms_185 row in the Step-2 findings table. jms_185 **matches the current decoder** on all three columns. No export exists for `SPECIAL_MOVE` on jms_v185, so this row is IDB-derived like every other. The decoder's JMS branch is now evidence-backed rather than retained as a no-wire-change default. |
 | gms_48 `dwTargetFlag` for 2311001 (mob-list presence) | **unverified** | The `DoActiveSkill` dispatch arm was not located: a whole-binary scan for the 0x234359 immediate returned only 2 sites, neither of which is the flag-push arm, so the arm must reach 2311001 through a jump table or a relative-subtract chain that was not traced. The castX/castY divergence (DIV-1) is independently conclusive from the `SendSkillUseRequest` decompile, and gms_48 is unreachable anyway, so this gap does not change the row's verdict. |
 | Checked-in export evidence for **any** version | **unavailable** | `SPECIAL_MOVE` has no evidence file in any `docs/packets/audits/<version>/` directory; all matrix cells are `incomplete` ("no audit report") or `n-a`. Every verified row above is IDB-derived, with the IDB, function name and address cited. |
 
-**Scoreboard:** 9 of 10 audited versions verified from a client; 1 (jms_185)
-unverified. gms_12 recorded as unreachable rather than audited (Step 3).
+**Scoreboard:** **10 of 10 audited versions verified from a client; 0 unverified.**
+gms_12 recorded as unreachable rather than audited (Step 3). One sub-item remains
+open — the gms_48 `dwTargetFlag` arm (row above) — which does not change that
+version's verdict, since DIV-1 is independently conclusive from its
+`SendSkillUseRequest` decompile and gms_48 routes no skill-use handler at all.
 
 ---
 
@@ -228,8 +231,16 @@ unverified. gms_12 recorded as unreachable rather than audited (Step 3).
    Whether the boundary is expressed via the version-aware resolver
    (`constants.For(region,major,minor)`) or a `MajorAtLeast` gate on the codec is
    a design decision for the owning task.
-2. **Resolve jms_185.** Re-run this audit's Step 2 against the jms IDB once the
-   IDA session is responsive. Until then jms_185's Dispel decode is unverified.
+2. ~~**Resolve jms_185.**~~ **DONE** — completed on a later retry once the IDA
+   session became responsive. jms_185 matches the current decoder; the gate's JMS
+   branch is evidence-backed. See the Step-2 row and the Step-5 entry.
+2a. **JMS-only decoder gap (new, out of scope for task-163).** The jms_185
+   `SendSkillUseRequest` writes two conditional fields the decoder does not model:
+   `if (skillId == 33101005) Encode1(1)` and `if (skillId == 33101004) Encode1(0)`,
+   both sitting between the spirit-javelin field and the party bitmap. Neither is
+   2311001, so Dispel is unaffected — but a cast of either skill on a JMS tenant
+   would misalign every field after it, the same failure class as DIV-1. Recorded
+   for whoever owns those skills.
 3. **Investigate DIV-2.** The gms_95 tenant has no per-level effect data for
    2311001 in the live main baseline; likely a WZ-ingest gap. Dispel is a no-op
    on v95 regardless of codec correctness.

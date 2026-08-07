@@ -18,12 +18,16 @@ import {
   reactorsService,
   itemStringsService,
   questsService,
+  merchantsService,
+  bansService,
 } from "@/services/api";
+import { BanTypeLabels } from "@/types/models/ban";
 import {
   servicesService,
   getServiceTypeDisplayName,
 } from "@/services/api/services.service";
 import { transportsService } from "@/services/api/transports.service";
+import { rewardPoolsService } from "@/services/api/reward-pools.service";
 
 // Types for resolver functions
 export type EntityResolver<T = string> = (
@@ -69,6 +73,9 @@ export const EntityType = {
   ITEM: "item",
   QUEST: "quest",
   TRANSPORT_ROUTE: "transport-route",
+  REWARD_POOL: "reward-pool",
+  MERCHANT: "merchant",
+  BAN: "ban",
 } as const;
 export type EntityType = (typeof EntityType)[keyof typeof EntityType];
 
@@ -99,6 +106,11 @@ const CACHE_CONFIG = {
     // Seeded tenant configuration; the route's live state churns, its name
     // does not.
     [EntityType.TRANSPORT_ROUTE]: 30 * 60 * 1000, // 30 minutes
+    [EntityType.REWARD_POOL]: 30 * 60 * 1000, // 30 minutes (name rarely changes)
+    // Player shops are transient — they open, get renamed and close — so the
+    // title is the least stable label of the set.
+    [EntityType.MERCHANT]: 5 * 60 * 1000, // 5 minutes
+    [EntityType.BAN]: 30 * 60 * 1000, // 30 minutes (immutable once issued)
   },
   // Maximum cache size per entity type
   MAX_SIZE: 1000,
@@ -265,10 +277,12 @@ const resolvers: Record<EntityType, EntityResolver> = {
     }
   },
 
-  [EntityType.NPC]: async (_tenant, entityId, options = {}) => {
+  [EntityType.NPC]: async (_tenant, entityId, _options = {}) => {
     try {
-      const npc = await npcsService.getNPCById(parseInt(entityId), options);
-      return npc?.name || `NPC ${entityId}`;
+      // getNPCById only indexes shop/conversation ownership — it carries no
+      // name. The name lives on the WZ-backed /api/data/npcs/{id} record.
+      const name = await npcsService.getNpcName(parseInt(entityId));
+      return name || `NPC ${entityId}`;
     } catch (error) {
       console.warn(`Failed to resolve NPC name for ID ${entityId}:`, error);
       throw new ResolverError(`Failed to resolve NPC: ${error}`, true);
@@ -383,6 +397,52 @@ const resolvers: Record<EntityType, EntityResolver> = {
         `Failed to resolve transport route: ${error}`,
         true,
       );
+    }
+  },
+
+  [EntityType.REWARD_POOL]: async (_tenant, entityId, _options = {}) => {
+    try {
+      const pool = await rewardPoolsService.getPoolById(entityId);
+      return pool.attributes?.name || `Pool ${entityId}`;
+    } catch (error) {
+      console.warn(
+        `Failed to resolve reward pool name for ID ${entityId}:`,
+        error,
+      );
+      throw new ResolverError(`Failed to resolve reward pool: ${error}`, true);
+    }
+  },
+
+  [EntityType.MERCHANT]: async (_tenant, entityId, _options = {}) => {
+    try {
+      const shop = await merchantsService.getShopById(entityId);
+      // Mirrors MerchantDetailPage's own heading, which falls back to
+      // "Untitled Shop" — a player shop may legitimately have a blank title.
+      return shop.attributes?.title || "Untitled Shop";
+    } catch (error) {
+      console.warn(
+        `Failed to resolve merchant shop title for ID ${entityId}:`,
+        error,
+      );
+      throw new ResolverError(
+        `Failed to resolve merchant shop: ${error}`,
+        true,
+      );
+    }
+  },
+
+  [EntityType.BAN]: async (_tenant, entityId, options = {}) => {
+    try {
+      const ban = await bansService.getBanById(entityId, options);
+      // A ban has no name of its own; `value` is what was banned (account
+      // name, IP or MAC), qualified by the ban type so "127.0.0.1" and an
+      // account of the same string can't be confused.
+      const { banType, value } = ban.attributes;
+      if (!value) return `Ban ${entityId}`;
+      return `${BanTypeLabels[banType]}: ${value}`;
+    } catch (error) {
+      console.warn(`Failed to resolve ban for ID ${entityId}:`, error);
+      throw new ResolverError(`Failed to resolve ban: ${error}`, true);
     }
   },
 };
@@ -577,6 +637,9 @@ export function getEntityTypeFromRoute(pathname: string): EntityType | null {
   if (pathname.includes("/items/")) return EntityType.ITEM;
   if (pathname.includes("/quests/")) return EntityType.QUEST;
   if (pathname.includes("/transports/")) return EntityType.TRANSPORT_ROUTE;
+  if (pathname.includes("/reward-pools/")) return EntityType.REWARD_POOL;
+  if (pathname.includes("/merchants/")) return EntityType.MERCHANT;
+  if (pathname.includes("/bans/")) return EntityType.BAN;
 
   return null;
 }

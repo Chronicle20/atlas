@@ -109,8 +109,14 @@ func TestMistCreated_BroadcastsAffectedAreaCreated(t *testing.T) {
 	if lastCreated.LtX() != -50 || lastCreated.LtY() != -60 || lastCreated.RbX() != 50 || lastCreated.RbY() != 60 {
 		t.Fatalf("AffectedAreaCreated bounds wrong: lt (%d,%d) rb (%d,%d)", lastCreated.LtX(), lastCreated.LtY(), lastCreated.RbX(), lastCreated.RbY())
 	}
-	if lastCreated.TEnd() != 8000 {
-		t.Fatalf("AffectedAreaCreated.TEnd: want 8000 (duration ms), got %d", lastCreated.TEnd())
+	// The duration is NOT carried on this packet. nElemAttr is not a time
+	// field, and skillDelay is a delay-before-drawing — putting the duration in
+	// either one hides or mis-renders the mist client-side.
+	if lastCreated.ElemAttr() != 0 {
+		t.Fatalf("AffectedAreaCreated.ElemAttr: want 0 (not a duration), got %d", lastCreated.ElemAttr())
+	}
+	if lastCreated.SkillDelay() != 0 {
+		t.Fatalf("AffectedAreaCreated.SkillDelay: want 0 (draw immediately), got %d", lastCreated.SkillDelay())
 	}
 	if lastCreated.SkillId() != 2121006 {
 		t.Fatalf("AffectedAreaCreated.SkillId: want 2121006, got %d", lastCreated.SkillId())
@@ -144,6 +150,44 @@ func TestMistCreated_WrongType_DoesNotBroadcast(t *testing.T) {
 
 	if *createdCalls != 0 {
 		t.Fatalf("wrong-type event: want 0 broadcasts, got %d", *createdCalls)
+	}
+}
+
+// TestMistCreated_SkillDelayIsNeverDerivedFromDuration is the regression guard
+// for the defect this branch shipped and then fixed: skillDelay was briefly set
+// to Duration/100 on the belief that it was the mist's client-side lifetime.
+// It is not — the client computes tStart = get_update_time() + 100*skillDelay
+// and refuses to DRAW the mist until then (v83 CAffectedAreaPool::Update
+// @0x431214), so a duration-derived skillDelay hides the mist for its entire
+// duration and it is removed at almost the same instant it first appears.
+// skillDelay must stay 0 no matter how long the mist lives.
+func TestMistCreated_SkillDelayIsNeverDerivedFromDuration(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	restore, _, lastCreated, _, _ := withRecordingBroadcasters(t)
+	defer restore()
+
+	h := handleMistCreated(sc, nil)
+	h(logrus.New(), ctx, mist2.Event[mist2.CreatedBody]{
+		Tenant:    tm.Id(),
+		WorldId:   sc.WorldId(),
+		ChannelId: sc.ChannelId(),
+		MapId:     100000000,
+		Instance:  uuid.Nil,
+		MistId:    uuid.New(),
+		Type:      mist2.EventTypeCreated,
+		Body: mist2.CreatedBody{
+			Duration: 1_000_000_000, // far beyond int16*100
+		},
+	})
+
+	if lastCreated.SkillDelay() != 0 {
+		t.Fatalf("AffectedAreaCreated.SkillDelay: want 0 for any duration (it is a draw delay, not a lifetime), got %d", lastCreated.SkillDelay())
+	}
+	if lastCreated.ElemAttr() != 0 {
+		t.Fatalf("AffectedAreaCreated.ElemAttr: want 0 for any duration, got %d", lastCreated.ElemAttr())
 	}
 }
 

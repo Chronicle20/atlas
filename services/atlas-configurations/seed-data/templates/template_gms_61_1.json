@@ -3650,6 +3650,18 @@
         ]
       },
       {
+        "opCode": "0xD2",
+        "writer": "AffectedAreaCreated",
+        "fname": "CAffectedAreaPool::OnAffectedAreaCreated",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xD3",
+        "writer": "AffectedAreaRemoved",
+        "fname": "CAffectedAreaPool::OnAffectedAreaRemoved",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0xD4",
         "writer": "SpawnDoor",
         "fname": "CTownPortalPool::OnTownPortalCreated",

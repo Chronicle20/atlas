@@ -2,6 +2,7 @@ package script
 
 import (
 	"atlas-portal-actions/character"
+	"atlas-portal-actions/dedupe"
 	"context"
 
 	consumer2 "atlas-portal-actions/kafka/consumer"
@@ -68,6 +69,16 @@ func handleEnterCommandFunc(l logrus.FieldLogger, db *gorm.DB) func(logrus.Field
 	}
 }
 
+// Package seams. Production wiring is unchanged; tests substitute these to
+// observe handleEnterCommand's unlock decision without Kafka or a database.
+var (
+	newScriptProcessorFn = func(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+		return NewProcessor(l, ctx, db)
+	}
+	enableActionsFn = character.EnableActions
+	gateFn          = dedupe.GetGate
+)
+
 // handleEnterCommand handles a portal enter command
 func handleEnterCommand(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, c commandEvent[enterBody]) {
 	l.Debugf("Received portal enter command for character [%d] on portal [%s] (id=%d) in map [%d]",
@@ -77,8 +88,25 @@ func handleEnterCommand(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, 
 	ch := channel.NewModel(c.WorldId, c.ChannelId)
 	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
 
+	// Duplicate-command gate (task-184 FR-3.1). Evaluated before any script
+	// load, condition evaluation, or operation dispatch, so a duplicate has no
+	// side effect at all. Fails open on a Redis error — FR-2's conditional
+	// unlock is the primary fix and stands on its own; this must never become a
+	// single point of failure for portal traversal.
+	//
+	// A non-zero drop rate here means some outcome path is still unlocking a
+	// character whose warp is in flight.
+	if !gateFn().Allow(l, ctx, dedupe.Key{
+		CharacterId: c.Body.CharacterId,
+		MapId:       c.MapId,
+		Instance:    c.Instance,
+		PortalId:    c.PortalId,
+	}) {
+		return
+	}
+
 	// Create processor with tenant context from Kafka message
-	processor := NewProcessor(l, ctx, db)
+	processor := newScriptProcessorFn(l, ctx, db)
 
 	// Process the portal script (pass numeric portalId for use in operations like block_portal)
 	result := processor.Process(f, c.Body.CharacterId, c.Body.PortalName, c.PortalId)
@@ -86,21 +114,28 @@ func handleEnterCommand(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, 
 	if result.Error != nil {
 		l.WithError(result.Error).Errorf("Failed to process portal script [%s] for character [%d]",
 			c.Body.PortalName, c.Body.CharacterId)
-		// On error, enable character actions so they're not stuck
-		character.EnableActions(l)(ctx)(ch, c.Body.CharacterId)
-		return
+	} else {
+		l.Debugf("Portal script [%s] result: allow=%t, matchedRule=%s, characterMoved=%t",
+			c.Body.PortalName, result.Allow, result.MatchedRule, result.CharacterMoved)
 	}
 
-	l.Debugf("Portal script [%s] result: allow=%t, matchedRule=%s",
-		c.Body.PortalName, result.Allow, result.MatchedRule)
-
-	// If not allowed, just enable character actions (they stay where they are)
-	if !result.Allow {
-		character.EnableActions(l)(ctx)(ch, c.Body.CharacterId)
+	// An outcome that dispatched a warp is unlocked by the SET_FIELD that warp
+	// produces — CWvsContext::OnGameStageChanged clears m_bExclRequestSent on
+	// every set_stage. Clearing it HERE, while the warp is still in flight and
+	// the player still overlaps the portal's collision rect, is what makes the
+	// GMS v83 client legitimately re-fire the ENTER request and execute the
+	// whole rule a second time. See
+	// docs/tasks/task-184-portal-enter-double-execute/prd.md §1.1.
+	//
+	// If the warp never lands, the saga's 5s timeout fails it and
+	// kafka/consumer/saga/consumer.go handleStatusEventFailed unlocks the
+	// player from the PendingAction registered in executor.go.
+	//
+	// CharacterMoved means "successfully dispatched", not "declared": a warp
+	// that failed before creating its saga leaves this false, so the player is
+	// unlocked here rather than waiting on a saga that does not exist.
+	if result.CharacterMoved {
 		return
 	}
-
-	// If allowed with no explicit warp operation, enable actions
-	// (the portal itself may handle the warp in atlas-portals)
-	character.EnableActions(l)(ctx)(ch, c.Body.CharacterId)
+	enableActionsFn(l)(ctx)(ch, c.Body.CharacterId)
 }

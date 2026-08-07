@@ -2038,12 +2038,12 @@
   note: 'v61 send-site sub_8458EB @0x8458eb: COutPacket(82)+Encode4(updateTime)+Encode4(skillId); no GetRemoteUser = v72 DISTRIBUTE_SP (SendSkillUpRequest sub_91BEAD) twin. Caller sub_7201E6 = skill-window "+" validator (reads the selected SKILLENTRY *(v4+1007)/(+1011), computes skillId/10000 job class, validates SP caps with notices 3434/3435/3436, then sub_8458EB(ctx, skillId)). task-113 scramble fix: real v61 DISTRIBUTE_SP is op 82, NOT 89 (op89 = CHAR_INFO_REQUEST). op82 was mislabeled MESO_DROP.'
 - op: SPECIAL_MOVE
   direction: serverbound
-  opcode: 90
-  fname: sub_845C36
+  opcode: 83
+  fname: CUserLocal::SendSkillUseRequest
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_845C36. COutPacket(90), CWvsContext skill region; Δ0 vs v72.'
+    address: 8102419
+  note: 'v61 CUserLocal::SendSkillUseRequest @0x7BA213 builds COutPacket(83)=0x53, matching template_gms_61_1.json''s CharacterUseSkillHandle opCode 0x53. CORRECTED by task-163: the prior entry recorded opcode 90 / fname sub_845C36 / address 0x5FFE4F. That harvest was wrong on all three counts — sub_845C36 is CWvsContext::SendSkillResetItemUseRequest (a skill-reset ITEM use: COutPacket(90) then Encode4(updateTime) Encode2(slot) Encode1(flag)), not the skill-cast send site, and 0x5FFE4F is the COutPacket ctor rather than the function. See docs/tasks/task-163-priest-dispel-party/version-findings.md.'
 - op: CANCEL_DEBUFF
   direction: serverbound
   opcode: 91

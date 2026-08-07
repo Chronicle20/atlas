@@ -658,6 +658,7 @@
         "opCode": "0x53",
         "validator": "LoggedInValidator",
         "handler": "CharacterUseSkillHandle",
+        "fname": "CUserLocal::SendSkillUseRequest",
         "services": [
           "channel"
         ]

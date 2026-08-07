@@ -329,6 +329,6 @@ images:
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
     newTag: main-298ee6d
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-298ee6d
+    newTag: main-ef8d8a3
 commonLabels:
   atlas.env: main

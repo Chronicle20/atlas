@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"atlas-channel/report"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -16,5 +17,9 @@ func SueCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.
 		p := fieldsb.SueCharacter{}
 		p.Decode(l, ctx)(r, ro)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		err := report.NewProcessor(l, ctx).Sue(s.CharacterId(), s.WorldId(), s.ChannelId(), p.CharacterId(), p.SubCommand(), p.Flag(), p.Reason())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to submit sue report from character [%d].", s.CharacterId())
+		}
 	}
 }

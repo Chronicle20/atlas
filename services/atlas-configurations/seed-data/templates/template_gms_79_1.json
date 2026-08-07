@@ -762,6 +762,15 @@
         ]
       },
       {
+        "opCode": "0x68",
+        "validator": "LoggedInValidator",
+        "handler": "ClaimRequest",
+        "fname": "CWvsContext::SendClaimRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x69",
         "validator": "LoggedInValidator",
         "handler": "QuestActionHandle",
@@ -2265,6 +2274,43 @@
         ]
       },
       {
+        "opCode": "0x2A",
+        "writer": "ClaimResult",
+        "fname": "CWvsContext::OnClaimResult",
+        "options": {
+          "operations": {
+            "SUCCESS": "0x02",
+            "REPORTED_NOTICE": "0x03",
+            "TRY_AGAIN": "0x41",
+            "RECHECK_NAME": "0x42",
+            "NOT_ENOUGH_MESOS": "0x43",
+            "CANNOT_CONNECT": "0x44",
+            "EXCEEDED": "0x45",
+            "TIME_WINDOW": "0x47",
+            "FALSE_REPORT_CITED": "0x48"
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x2B",
+        "writer": "ClaimAvailableTime",
+        "fname": "CWvsContext::OnSetClaimSvrAvailableTime",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x2C",
+        "writer": "ClaimSvrStatusChanged",
+        "fname": "CWvsContext::OnClaimSvrStatusChanged",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x2D",
         "writer": "SetTamingMobInfo",
         "fname": "CWvsContext::OnSetTamingMobInfo",
@@ -2312,6 +2358,23 @@
         "opCode": "0x32",
         "writer": "CompartmentSort",
         "fname": "CWvsContext::OnSortItemResult",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x34",
+        "writer": "SueCharacterResult",
+        "fname": "CWvsContext::OnSueCharacterResult",
+        "options": {
+          "operations": {
+            "SUCCESS": "0x00",
+            "UNABLE_TO_LOCATE": "0x01",
+            "DAILY_LIMIT": "0x02",
+            "REPORTED_NOTICE": "0x03",
+            "GENERIC_FAILURE": "0x04"
+          }
+        },
         "services": [
           "channel"
         ]

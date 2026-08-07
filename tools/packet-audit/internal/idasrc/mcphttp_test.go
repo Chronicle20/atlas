@@ -370,6 +370,51 @@ func TestMCPHTTPGetCalleesArgs(t *testing.T) {
 	}
 }
 
+// TestMCPHTTPGetBinaryInfo asserts GetBinaryInfo calls survey_binary with
+// detail_level "minimal" and parses metadata.module/metadata.md5 out of the
+// structuredContent (task-27: these feed the export's top-level
+// "binary"/"md5" provenance fields).
+func TestMCPHTTPGetBinaryInfo(t *testing.T) {
+	var gotTool string
+	var gotDetail string
+	rt := rtFunc(func(r *http.Request) (*http.Response, error) {
+		method, name, args := readMethodAndArgs(r)
+		if resp, ok := handshakeOK(method); ok {
+			return resp, nil
+		}
+		gotTool = name
+		var a struct {
+			DetailLevel string `json:"detail_level"`
+		}
+		_ = json.Unmarshal(args, &a)
+		gotDetail = a.DetailLevel
+		return structuredResp(map[string]any{
+			"metadata": map[string]any{
+				"path":   `E:\Programs\Nexon\IDBs_v9\GMS\V92_1\GMS_v92_1_DEVM.exe.i64`,
+				"module": "GMS_v92_1_DEVM.exe",
+				"md5":    "bdef16653b92eefca2361fd5668cc509",
+			},
+		}), nil
+	})
+	c := NewMCPHTTPClient("http://test/mcp", &http.Client{Transport: rt})
+	name, md5, err := c.GetBinaryInfo(context.Background())
+	if err != nil {
+		t.Fatalf("GetBinaryInfo: %v", err)
+	}
+	if gotTool != "survey_binary" {
+		t.Errorf("tool = %q, want survey_binary", gotTool)
+	}
+	if gotDetail != "minimal" {
+		t.Errorf("detail_level = %q, want minimal", gotDetail)
+	}
+	if name != "GMS_v92_1_DEVM.exe" {
+		t.Errorf("name = %q, want GMS_v92_1_DEVM.exe", name)
+	}
+	if md5 != "bdef16653b92eefca2361fd5668cc509" {
+		t.Errorf("md5 = %q, want bdef16653b92eefca2361fd5668cc509", md5)
+	}
+}
+
 // TestMCPHTTPDatabaseInjectedInArgs asserts the session-based Database
 // targeting (the successor to select_instance/port): a configured Database is
 // injected as the "database" tools/call argument on a session-scoped call

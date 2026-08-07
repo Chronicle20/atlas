@@ -334,6 +334,16 @@ location ~ ^/api/bans(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+location ~ ^/api/chat/history(/.*)?$ {
+  set $u "atlas-messages.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/reports(/.*)?$ {
+  set $u "atlas-ban.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/characters/seed(/.*)?$ {
   set $u "atlas-character-factory.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;

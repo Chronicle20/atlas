@@ -11,7 +11,7 @@ import (
 )
 
 // VersionKeys is the canonical baseline column order (design §3).
-var VersionKeys = []string{"gms_v48", "gms_v61", "gms_v72", "gms_v79", "gms_v83", "gms_v84", "gms_v87", "gms_v95", "jms_v185"}
+var VersionKeys = []string{"gms_v48", "gms_v61", "gms_v72", "gms_v79", "gms_v83", "gms_v84", "gms_v87", "gms_v92", "gms_v95", "jms_v185"}
 
 // ExportPath maps a version key to its IDA export JSON. jms_v185's export
 // kept its historical gms_jms_185 name (see memory: jms audit-dir mismatch).
@@ -34,6 +34,7 @@ var templateFiles = map[string]string{
 	"gms_v83":  "template_gms_83_1.json",
 	"gms_v84":  "template_gms_84_1.json",
 	"gms_v87":  "template_gms_87_1.json",
+	"gms_v92":  "template_gms_92_1.json",
 	"gms_v95":  "template_gms_95_1.json",
 	"jms_v185": "template_jms_185_1.json",
 }

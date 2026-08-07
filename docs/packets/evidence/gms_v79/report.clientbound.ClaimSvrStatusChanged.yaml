@@ -1,0 +1,10 @@
+packet: report/clientbound/ClaimSvrStatusChanged
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnClaimSvrStatusChanged
+    address: "0x971bc4"
+    decompile_sha256: 5c957e8504a77f96ae0bc0c705c788d80ab046e9722c4182f46003fa64fb1595
+verifies:
+    - report/clientbound/claim_status_changed_test.go#TestClaimSvrStatusChangedByteOutputV79

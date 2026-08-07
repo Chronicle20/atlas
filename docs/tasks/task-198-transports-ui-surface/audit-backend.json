@@ -1,0 +1,103 @@
+{
+  "service": "atlas-transports",
+  "path": "services/atlas-transports/atlas.com/transports",
+  "diffRange": "354fb1257..1c1b7798f",
+  "date": "2026-08-07",
+  "build": "pass",
+  "testsPassed": null,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "note": "Build/test verification reported clean by task owner prior to this audit and was not re-run per explicit instruction; testsPassed left null since this audit did not independently execute the suite.",
+  "domains": [
+    {
+      "name": "transport",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists", "status": "pass", "evidence": "transport/builder.go (untouched, pre-existing NewBuilder/Build)"},
+        {"id": "DOM-02", "name": "ToEntity() method", "status": "n/a", "evidence": "no entity.go / GORM layer in service"},
+        {"id": "DOM-03", "name": "Make(Entity) function", "status": "n/a", "evidence": "no entity.go / GORM layer in service"},
+        {"id": "DOM-04", "name": "Transform function", "status": "pass", "evidence": "transport/rest.go:158 func Transform(m Model) (RestModel, error)"},
+        {"id": "DOM-05", "name": "TransformSlice function", "status": "warn", "evidence": "transport/resource.go:116 uses model.SliceMap(transformer) inline; no TransformSlice defined; matches ai-guidance.md composition example, pre-existing pattern"},
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "transport/processor.go:50 NewProcessor(l logrus.FieldLogger, ctx context.Context)"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "transport/resource.go:34,95,116"},
+        {"id": "DOM-08", "name": "POST/PATCH use RegisterInputHandler", "status": "pass", "evidence": "no POST/PATCH routes touched in this diff"},
+        {"id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "transport/resource.go:100-105 checks transformErr"},
+        {"id": "DOM-10", "name": "Test DB has tenant callbacks", "status": "n/a", "evidence": "no SQL test DB; registries seeded via Builders"},
+        {"id": "DOM-11", "name": "Providers use lazy evaluation", "status": "n/a", "evidence": "no provider.go"},
+        {"id": "DOM-12", "name": "No os.Getenv() in handlers", "status": "pass", "evidence": "grep os.Getenv transport/resource.go: zero matches"},
+        {"id": "DOM-13", "name": "No cross-domain logic in handlers", "status": "pass", "evidence": "wantsSchedule is pure query-param parsing, transport/resource.go:49-60"},
+        {"id": "DOM-14", "name": "Handlers don't call providers directly", "status": "pass", "evidence": "transport/resource.go:34,95,116 all via NewProcessor(...)"},
+        {"id": "DOM-15", "name": "No direct entity creation in handlers", "status": "pass", "evidence": "no db.Create/Save/Delete; no DB in package"},
+        {"id": "DOM-16", "name": "administrator.go exists for write ops", "status": "n/a", "evidence": "no DB layer"},
+        {"id": "DOM-17", "name": "Domain error to HTTP status mapping", "status": "pass", "evidence": "transport/resource.go unchanged mapping, no new branches"},
+        {"id": "DOM-18", "name": "JSON:API interface on REST models", "status": "pass", "evidence": "transport/rest.go:43-119 GetID/SetID/GetName/SetToOneReferenceID/SetToManyReferenceIDs"},
+        {"id": "DOM-19", "name": "Request models use flat structure", "status": "n/a", "evidence": "no new request models, read-only diff"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "transport/evaluate_test.go:68-158 tests := []struct + t.Run"},
+        {"id": "DOM-21", "name": "No duplication of atlas-constants types", "status": "pass", "evidence": "new Transition type is domain-specific; no map/world/channel id redeclaration"},
+        {"id": "DOM-22", "name": "Dockerfile mentions per direct lib require", "status": "n/a", "evidence": "no go.mod change in this diff"},
+        {"id": "DOM-23", "name": "Kafka topic naming convention", "status": "n/a", "evidence": "no topic changes"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in tests that emit", "status": "n/a", "evidence": "no AndEmit/message.Emit in new/touched test files"},
+        {"id": "DOM-25", "name": "Client-interpreted byte values config-resolved", "status": "n/a", "evidence": "no wire-code literals in this diff"},
+        {"id": "DOM-26", "name": "Goroutines spawned via routine.Go", "status": "pass", "evidence": "no new bare go statements in diff"},
+        {"id": "DOM-27", "name": "Transient DB errors map to 503", "status": "n/a", "evidence": "no DB in service"},
+        {"id": "DOM-28", "name": "No silent degradation in decorators/enrichment", "status": "n/a", "evidence": "no decorators touched"}
+      ]
+    },
+    {
+      "name": "instance",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists", "status": "pass", "evidence": "instance/builder.go (untouched, pre-existing NewRouteBuilder)"},
+        {"id": "DOM-02", "name": "ToEntity() method", "status": "n/a", "evidence": "no entity.go / GORM layer"},
+        {"id": "DOM-03", "name": "Make(Entity) function", "status": "n/a", "evidence": "no entity.go / GORM layer"},
+        {"id": "DOM-04", "name": "Transform function", "status": "pass", "evidence": "instance/rest.go TransformRoute, TransformInstanceStatus"},
+        {"id": "DOM-05", "name": "TransformSlice function", "status": "warn", "evidence": "instance/resource.go:39 uses model.SliceMap(TransformRoute) inline; pre-existing pattern"},
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "instance/processor.go:65 NewProcessor(l logrus.FieldLogger, ctx context.Context)"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "instance/resource.go:38,62,87"},
+        {"id": "DOM-08", "name": "POST/PATCH use RegisterInputHandler", "status": "pass", "evidence": "instance/resource.go:26 rest.RegisterInputHandler[StartTransportRestModel] (unchanged by diff)"},
+        {"id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "instance/resource.go:66-70 checks err"},
+        {"id": "DOM-10", "name": "Test DB has tenant callbacks", "status": "n/a", "evidence": "no SQL test DB"},
+        {"id": "DOM-11", "name": "Providers use lazy evaluation", "status": "n/a", "evidence": "no provider.go"},
+        {"id": "DOM-12", "name": "No os.Getenv() in handlers", "status": "pass", "evidence": "grep os.Getenv instance/resource.go: zero matches"},
+        {"id": "DOM-13", "name": "No cross-domain logic in handlers", "status": "pass", "evidence": "handlers call only instance processor/registry"},
+        {"id": "DOM-14", "name": "Handlers don't call providers directly", "status": "fail", "evidence": "instance/resource.go:115-119 GetInstanceRouteStatusHandler calls getInstanceRegistry() directly, bypassing Processor; only such bypass in the codebase (grep confirms every other getInstanceRegistry()/getRouteRegistry() call site is inside a processor.go file)"},
+        {"id": "DOM-15", "name": "No direct entity creation in handlers", "status": "pass", "evidence": "no db.Create/Save/Delete; no DB"},
+        {"id": "DOM-16", "name": "administrator.go exists for write ops", "status": "n/a", "evidence": "no DB layer"},
+        {"id": "DOM-17", "name": "Domain error to HTTP status mapping", "status": "pass", "evidence": "instance/resource.go mapping unchanged by diff"},
+        {"id": "DOM-18", "name": "JSON:API interface on REST models", "status": "pass", "evidence": "instance/rest.go RouteRestModel/InstanceStatusRestModel GetID/SetID/GetName untouched by field additions"},
+        {"id": "DOM-19", "name": "Request models use flat structure", "status": "n/a", "evidence": "no new request models"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "instance/resource_tenant_test.go:71-89 t.Run subtests"},
+        {"id": "DOM-21", "name": "No duplication of atlas-constants types", "status": "pass", "evidence": "no new id-type declarations"},
+        {"id": "DOM-22", "name": "Dockerfile mentions per direct lib require", "status": "n/a", "evidence": "no go.mod change"},
+        {"id": "DOM-23", "name": "Kafka topic naming convention", "status": "n/a", "evidence": "no topic changes"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in tests that emit", "status": "n/a", "evidence": "no AndEmit/message.Emit in new/touched test files; StartTransportAndEmit not exercised by new tests"},
+        {"id": "DOM-25", "name": "Client-interpreted byte values config-resolved", "status": "n/a", "evidence": "no wire-code literals in this diff"},
+        {"id": "DOM-26", "name": "Goroutines spawned via routine.Go", "status": "pass", "evidence": "no new bare go statements in diff"},
+        {"id": "DOM-27", "name": "Transient DB errors map to 503", "status": "n/a", "evidence": "no DB in service"},
+        {"id": "DOM-28", "name": "No silent degradation in decorators/enrichment", "status": "n/a", "evidence": "no decorators touched"}
+      ]
+    }
+  ],
+  "fileResponsibilities": [
+    {"id": "FILE-01", "status": "pass", "evidence": "no ProcessorImpl methods added outside processor.go in either package"},
+    {"id": "FILE-02", "status": "pass", "evidence": "all new RestModel fields, TransformSummary, JSON:API methods live in rest.go"},
+    {"id": "FILE-03", "status": "n/a", "evidence": "no requests.go; no external HTTP client calls added"},
+    {"id": "FILE-04", "status": "n/a", "evidence": "no entity.go in service"},
+    {"id": "FILE-05", "status": "pass", "evidence": "Transition/Evaluate/timeOfDay/materializeBoundary correctly placed in transport/model.go"},
+    {"id": "FILE-06", "status": "pass", "evidence": "no package-named catch-all file introduced"}
+  ],
+  "projectSpecificRules": [
+    {"rule": "FR-6.5 duration suffix + legacy fields untouched", "status": "pass", "evidence": "transport/rest.go:27-31, instance/rest.go:20-21"},
+    {"rule": "One clock seam (timeNow in scheduler.go:7)", "status": "pass", "evidence": "transport/rest.go:129 reuses timeNow; no second seam introduced"},
+    {"rule": "Read-only surface", "status": "pass", "evidence": "no new mutation routes, no new auth/secrets"},
+    {"rule": "Immutable domain models, no new setters", "status": "pass", "evidence": "transport/builder.go and instance/builder.go diffs are empty"},
+    {"rule": "nextTransitionAt strictly future", "status": "pass", "evidence": "materializeBoundary's 24h rollover + TestEvaluate_NextAtIsAlwaysInTheFuture"},
+    {"rule": "Unreachable tail branches pruned without behavior change", "status": "pass", "evidence": "independently traced reachability + state_test.go passes unedited + TestEvaluate_StateMatchesProcessStateChange"}
+  ],
+  "blocking": [
+    "DOM-14: instance/resource.go:115-119 — GetInstanceRouteStatusHandler calls getInstanceRegistry() directly instead of through a Processor method; the only handler-level provider/registry bypass in the codebase, and it sits directly inside this branch's FR-6.1 tenant-scoping fix."
+  ],
+  "nonBlocking": [
+    "DOM-05: transport/resource.go:116 and instance/resource.go:39 use inline model.SliceMap(Transform) instead of a named TransformSlice function; pre-existing pattern sanctioned by ai-guidance.md's own composition example, not a regression introduced by this diff."
+  ]
+}

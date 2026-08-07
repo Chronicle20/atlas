@@ -26,6 +26,25 @@ Represents a scheduled transport route with scheduling configuration.
 | travelDuration | time.Duration | Duration of transit |
 | cycleInterval | time.Duration | Interval between trips |
 
+**Transition (transport/model.go)**
+
+`Model.Evaluate(now)` returns a `Transition` — the state the route is in, the
+state it moves to next, and `NextAt`, the absolute instant of that move.
+`processStateChange` is a thin wrapper over `Evaluate(now).State`, so the state
+machine has exactly one implementation.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| State | RouteState | The state at `now` |
+| NextState | RouteState | The state at `NextAt`; empty when `State` is `out_of_service` |
+| NextAt | time.Time | Zero when `State` is `out_of_service` |
+
+Schedule comparisons are time-of-day only (the schedule is computed once per
+reconcile and carries that day's date). `NextAt` is the governing time-of-day
+boundary projected onto the first instant strictly after `now`, in `now`'s own
+date and location, which is what makes it safe to serialise as an absolute
+timestamp.
+
 ### SharedVesselModel (transport/model.go)
 
 Represents a shared vessel operating on two routes alternately.

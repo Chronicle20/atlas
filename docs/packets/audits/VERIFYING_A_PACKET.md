@@ -9,8 +9,8 @@ Cell states: `✅` verified · `🧩` family (mode-prefix dispatcher; sub-arms
 unverified) · `🟡` partial · `❌` incomplete · `⬜` n-a · `🟥` conflict.
 
 ## 0. Prerequisites
-- The nine registry files in `docs/packets/registry/` (one per version key:
-  gms_v48/v61/v72/v79/v83/v84/v87/v95, jms_v185).
+- The ten registry files in `docs/packets/registry/` (one per version key:
+  gms_v48/v61/v72/v79/v83/v84/v87/v92/v95, jms_v185).
 - The version's IDA export in `docs/packets/ida-exports/` (jms_v185 uses
   `gms_jms_185.json`).
 - For fresh decompiles: a live ida-pro-mcp instance with the version's IDB.

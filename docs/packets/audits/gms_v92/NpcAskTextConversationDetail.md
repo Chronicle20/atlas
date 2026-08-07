@@ -1,0 +1,17 @@
+# NpcAskTextConversationDetail (← `CScriptMan::OnAskText#AskText`)
+
+- **IDA:** 
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/conversation.go`
+- **Variant:** GMS/v92
+- **Branch depth:** 0
+- **Verdict:** ❌
+
+## Wire-level diff
+
+| # | Atlas writes | v? reads | Verdict | Note |
+|---|---|---|---|---|
+| 0 | string | unresolved `dispatcher-family arm not harvested for gms_v92 (see notes)` | 🚫 | IDA read-order unresolved: dispatcher-family arm not harvested for gms_v92 (see notes) |
+| 1 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 2 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 3 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+

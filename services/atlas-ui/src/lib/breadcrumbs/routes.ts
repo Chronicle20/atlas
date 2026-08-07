@@ -324,6 +324,18 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     label: "Presets",
     parent: "/tenants/[id]/character",
   },
+
+  // Report routes
+  {
+    pattern: "/reports",
+    label: "Reports",
+    parent: "/",
+  },
+  {
+    pattern: "/reports/[reportId]",
+    label: "Report Detail",
+    parent: "/reports",
+  },
 ];
 
 // Helper function to find route config by pathname

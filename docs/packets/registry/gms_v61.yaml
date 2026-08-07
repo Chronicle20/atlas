@@ -363,6 +363,7 @@
   direction: clientbound
   opcode: 52
   fname: CWvsContext::OnSueCharacterResult
+  packet: report/clientbound/SueCharacterResult
   provenance: ida-discovered
   ida:
     address: 8586219

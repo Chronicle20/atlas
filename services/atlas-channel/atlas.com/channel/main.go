@@ -49,6 +49,7 @@ import (
 	"atlas-channel/kafka/consumer/pet"
 	"atlas-channel/kafka/consumer/quest"
 	"atlas-channel/kafka/consumer/reactor"
+	reportstatus "atlas-channel/kafka/consumer/report"
 	"atlas-channel/kafka/consumer/route"
 	rpsConsumer "atlas-channel/kafka/consumer/rps"
 	"atlas-channel/kafka/consumer/saga"
@@ -130,6 +131,8 @@ import (
 	questsb "github.com/Chronicle20/atlas/libs/atlas-packet/quest/serverbound"
 	reactorcb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
 	reactorsb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/serverbound"
+	reportcb "github.com/Chronicle20/atlas/libs/atlas-packet/report/clientbound"
+	reportsb "github.com/Chronicle20/atlas/libs/atlas-packet/report/serverbound"
 	rpscb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/clientbound"
 	rpssb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/serverbound"
 	socketcb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/clientbound"
@@ -242,6 +245,7 @@ func main() {
 	mtsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	walletConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
+	reportstatus.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
 	rpsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
@@ -411,6 +415,9 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(buddylist.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(reportstatus.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(channel.InitHandlers(fl)(sc)(cfg.IPAddress, cfg.Port)(rh)); err != nil {
@@ -807,6 +814,10 @@ func produceWriters() []string {
 		tvCB.TvSetMessageWriter,
 		tvCB.TvClearMessageWriter,
 		tvCB.TvSendMessageResultWriter,
+		reportcb.SueCharacterResultWriter,
+		reportcb.ClaimResultWriter,
+		reportcb.ClaimAvailableTimeWriter,
+		reportcb.ClaimSvrStatusChangedWriter,
 	}
 }
 
@@ -852,6 +863,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[fieldsb.MatchTableHandle] = handler.MatchTableHandleFunc
 	handlerMap[fieldsb.SlideRequestHandle] = handler.SlideRequestHandleFunc
 	handlerMap[fieldsb.SueCharacterHandle] = handler.SueCharacterHandleFunc
+	handlerMap[reportsb.ClaimRequestHandle] = handler.ClaimRequestHandleFunc
 	handlerMap[charsb.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[invsb.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
 	handlerMap[partysb.PartyOperationHandle] = handler.PartyOperationHandleFunc

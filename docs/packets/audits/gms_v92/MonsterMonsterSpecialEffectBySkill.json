@@ -1,0 +1,48 @@
+{
+  "WriterName": "MonsterMonsterSpecialEffectBySkill",
+  "IDAName": "CMob::OnSpecialEffectBySkill",
+  "Address": "0x647790",
+  "Variant": "GMS/v92",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/monster/clientbound/monster_special_effect_by_skill.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "single field read (mob-effect id/target); see notes for the unnamed-symbol citation",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

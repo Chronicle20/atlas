@@ -2,7 +2,15 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Classify `PUPPET`/`SUMMON` as server-only temporary stats in `libs/atlas-packet` so they skip silently (DEBUG) in `AddStat` instead of logging ERROR, with byte fixtures proving every other stat's wire encoding is unchanged.
+**Goal:** Classify `PUPPET`/`SUMMON` as server-only temporary stats in `libs/atlas-packet` so they skip silently (DEBUG) in `AddStat` instead of logging ERROR, with byte fixtures — across **every supported tenant version** — proving every other stat's wire encoding is unchanged.
+
+> **Plan v2 (2026-08-07).** Rebased onto main at `e0f5bd01d`. Changes from v1:
+> line references re-verified (`AddStat` moved 531 → 580, registry builder 61 → 63,
+> `character_buff_cancel.go` 21,36 → 22,37); every new test now loops `pt.Variants`
+> (all 12 supported versions) instead of two anchors; the byte-offset-skipping
+> comparison is replaced by zero-expiry saturated durations so full byte slices can
+> be compared on every version (design §5.1); `tools/goroutine-guard.sh` and
+> `tools/lint.sh --check` added to the verification gate.
 
 **Architecture:** A package-level `serverOnlyStatNames` set (mirroring the existing `baseStatNames` idiom) consulted at the top of `CharacterTemporaryStat.AddStat`, before the registry lookup. `AddStat` is the single chokepoint for all four atlas-channel CTS encode paths (local give, foreign give, cancel, character-spawn), so the entire production change is one file in the lib — no service, registry, or config changes.
 
@@ -15,7 +23,10 @@
 - **The unknown-name ERROR path in `AddStat` stays byte-for-byte intact**: `l.WithError(err).Errorf("Attempting to add buff [%s], but cannot find it.", name)` (FR-3, acceptance (d)).
 - **Server-only skip logs at DEBUG on every occurrence** (design §2, open question resolved: plain `Debugf`, no first-add-only state).
 - **`AddStat`'s signature is unchanged** — no caller churn (design §4).
-- Verification bar: `go test -race ./...`, `go vet ./...`, `go build ./...` clean in `libs/atlas-packet`; `tools/redis-key-guard.sh` clean from the worktree root. No `docker buildx bake` needed for a lib-only change (no service `go.mod` touched).
+- **The skip goes on `CharacterTemporaryStat` only.** `MonsterTemporaryStat` has its own `AddStat` (4 call sites: `monster_spawn.go:20`, `kafka/consumer/monster/consumer.go:475,509,543`) and is explicitly out of scope (PRD §2 non-goals). Do not touch it.
+- **Every new test loops `pt.Variants`** — all 12 supported versions (FR-7/FR-7.1), matching the existing suite idiom. Two-anchor coverage is insufficient: it misses the legacy pre-v61 8-byte-mask class.
+- **No hard-coded byte offsets in the new tests.** The mask is 8 bytes on GMS `< 61` and 16 bytes elsewhere, so any offset arithmetic breaks on the legacy class. Use zero expiry (`time.Time{}`) for determinism and compare complete byte slices (design §5.1).
+- Verification bar: `go test -race ./...`, `go vet ./...`, `go build ./...` clean in `libs/atlas-packet`; `tools/redis-key-guard.sh`, `tools/goroutine-guard.sh`, and `tools/lint.sh --check` clean from the worktree root. No `docker buildx bake` needed for a lib-only change (no service `go.mod` touched).
 - Committed files use repo-relative paths only — never literal home/absolute paths.
 - All commands below run from the task worktree root (the repo checkout on branch `task-164-summon-temp-stats`) unless a `cd` is shown.
 
@@ -24,7 +35,7 @@
 ### Task 1: Server-only name set + silent skip in `AddStat`
 
 **Files:**
-- Modify: `libs/atlas-packet/model/character_temporary_stat.go` (add `serverOnlyStatNames` var immediately above `AddStat`, currently line ~531; add skip inside `AddStat`)
+- Modify: `libs/atlas-packet/model/character_temporary_stat.go` (add `serverOnlyStatNames` var immediately above `AddStat`, currently line ~580; add skip inside `AddStat`)
 - Test: `libs/atlas-packet/model/character_temporary_stat_test.go` (append new tests)
 
 **Interfaces:**
@@ -41,15 +52,16 @@ Note on loggers: existing tests pass `nil` to `AddStat` because the happy path n
 // TestCTSServerOnlyStatsSkippedSilently proves PUPPET/SUMMON never reach the
 // wire and never log at ERROR (task-164 FR-1/FR-3, acceptance (a)). Both the
 // self and foreign encodes of a CTS holding only server-only stats must be
-// byte-identical to a freshly-constructed empty CTS, on v83 and v95. The two
-// AddStat calls must each log exactly one DEBUG entry (skip trace) and nothing
-// at ERROR.
+// byte-identical to a freshly-constructed empty CTS, on EVERY supported tenant
+// version (FR-7/FR-7.1 — all seven registry classes, including the legacy
+// pre-v61 8-byte-mask class). The two AddStat calls must each log exactly one
+// DEBUG entry (skip trace) and nothing at ERROR.
+//
+// Zero expiry (time.Time{}) is used throughout: it saturates to a constant
+// duration on both the modern and legacy writers, so byte comparisons are
+// deterministic and need no offset arithmetic (design §5.1).
 func TestCTSServerOnlyStatsSkippedSilently(t *testing.T) {
-	variants := []pt.TenantVariant{
-		{Name: "GMS v83", Region: "GMS", MajorVersion: 83, MinorVersion: 1},
-		{Name: "GMS v95", Region: "GMS", MajorVersion: 95, MinorVersion: 1},
-	}
-	for _, v := range variants {
+	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
@@ -58,8 +70,8 @@ func TestCTSServerOnlyStatsSkippedSilently(t *testing.T) {
 
 			// sourceId/amount/level are arbitrary; only wire disposition matters.
 			input := NewCharacterTemporaryStat()
-			input.AddStat(l)(tn)(string(character.TemporaryStatTypePuppet), 1, 1, 1, time.Now().Add(time.Minute))
-			input.AddStat(l)(tn)(string(character.TemporaryStatTypeSummon), 2, 1, 1, time.Now().Add(time.Minute))
+			input.AddStat(l)(tn)(string(character.TemporaryStatTypePuppet), 1, 1, 1, time.Time{})
+			input.AddStat(l)(tn)(string(character.TemporaryStatTypeSummon), 2, 1, 1, time.Time{})
 
 			for _, e := range hook.AllEntries() {
 				if e.Level <= logrus.ErrorLevel {
@@ -89,31 +101,36 @@ func TestCTSServerOnlyStatsSkippedSilently(t *testing.T) {
 // TestCTSAddStatUnknownNameStillErrors pins the existing behavior for
 // genuinely unregistered stat names (task-164 acceptance (d)): the stat is
 // dropped AND the ERROR log fires. Guards against the server-only skip
-// accidentally widening into a general silent-drop.
+// accidentally widening into a general silent-drop. Looped over every
+// supported version because the error path must NOT become version-dependent.
 func TestCTSAddStatUnknownNameStillErrors(t *testing.T) {
-	ctx := pt.CreateContext("GMS", 83, 1)
-	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
-	l, hook := testlog.NewNullLogger()
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			l, hook := testlog.NewNullLogger()
 
-	input := NewCharacterTemporaryStat()
-	input.AddStat(l)(tn)("BOGUS", 1, 1, 1, time.Now().Add(time.Minute))
+			input := NewCharacterTemporaryStat()
+			input.AddStat(l)(tn)("BOGUS", 1, 1, 1, time.Time{})
 
-	errorEntries := 0
-	for _, e := range hook.AllEntries() {
-		if e.Level == logrus.ErrorLevel {
-			errorEntries++
-			if e.Message != "Attempting to add buff [BOGUS], but cannot find it." {
-				t.Errorf("unexpected error message: %q", e.Message)
+			errorEntries := 0
+			for _, e := range hook.AllEntries() {
+				if e.Level == logrus.ErrorLevel {
+					errorEntries++
+					if e.Message != "Attempting to add buff [BOGUS], but cannot find it." {
+						t.Errorf("unexpected error message: %q", e.Message)
+					}
+				}
 			}
-		}
-	}
-	if errorEntries != 1 {
-		t.Errorf("expected exactly 1 ERROR entry for unknown stat, got %d", errorEntries)
-	}
+			if errorEntries != 1 {
+				t.Errorf("expected exactly 1 ERROR entry for unknown stat, got %d", errorEntries)
+			}
 
-	empty := NewCharacterTemporaryStat()
-	if got, want := input.Encode(nil, ctx)(nil), empty.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
-		t.Errorf("unknown stat leaked into encode:\ngot  % x\nwant % x", got, want)
+			empty := NewCharacterTemporaryStat()
+			if got, want := input.Encode(nil, ctx)(nil), empty.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("unknown stat leaked into encode:\ngot  % x\nwant % x", got, want)
+			}
+		})
 	}
 }
 ```
@@ -124,17 +141,18 @@ func TestCTSAddStatUnknownNameStillErrors(t *testing.T) {
 cd libs/atlas-packet && go test ./model/ -run 'TestCTSServerOnlyStatsSkippedSilently|TestCTSAddStatUnknownNameStillErrors' -v
 ```
 
-Expected: `TestCTSServerOnlyStatsSkippedSilently` FAILs on the log assertions — current code logs `Attempting to add buff [PUPPET], but cannot find it.` at ERROR (entries are ErrorLevel, not DebugLevel). The byte-equality assertions pass even today (lookup failure already drops the stat); the log assertions are the failing signal. `TestCTSAddStatUnknownNameStillErrors` PASSes (characterization of existing behavior).
+Expected: `TestCTSServerOnlyStatsSkippedSilently` FAILs on the log assertions, on **every** version subtest — current code logs `Attempting to add buff [PUPPET], but cannot find it.` at ERROR (entries are ErrorLevel, not DebugLevel). The byte-equality assertions pass even today (lookup failure already drops the stat); the log assertions are the failing signal. `TestCTSAddStatUnknownNameStillErrors` PASSes on every version subtest (characterization of existing behavior).
 
 - [ ] **Step 3: Implement the server-only set and the skip**
 
-In `libs/atlas-packet/model/character_temporary_stat.go`, insert immediately above `func (m *CharacterTemporaryStat) AddStat` (after `HasDisease`, currently line ~530):
+In `libs/atlas-packet/model/character_temporary_stat.go`, insert immediately above `func (m *CharacterTemporaryStat) AddStat` (currently line 580):
 
 ```go
 // serverOnlyStatNames are temporary stats that exist only for server-side
-// lifecycle bookkeeping (Odin lineage). No supported client (GMS v83–v95,
-// JMS v185) has a SecondaryStat bit for them — IDA-verified, see
-// docs/tasks/task-164-summon-temp-stats/prd.md §1 — so they are never
+// lifecycle bookkeeping (Odin lineage). No supported client has a
+// SecondaryStat bit for them — IDA-verified across every version Atlas holds
+// a binary for (GMS v48/v61/v72/v79/v83/v84/v87/v92/v95, JMS v185), see
+// docs/tasks/task-164-summon-temp-stats/prd.md §1.1 — so they are never
 // encoded into any CTS mask or payload, on any tenant version. Summon
 // visibility for observers is carried by the summon object packets
 // (task-088/106), not by a buff. Adding a name here requires the same
@@ -177,13 +195,22 @@ Change it to (only the two lines between `name := ...` and `st, err := ...` are 
 cd libs/atlas-packet && go test ./model/ -run 'TestCTSServerOnlyStatsSkippedSilently|TestCTSAddStatUnknownNameStillErrors' -v
 ```
 
-Expected: both PASS.
+Expected: both PASS, on all 12 version subtests each.
 
 ```bash
 cd libs/atlas-packet && go test -race ./...
 ```
 
-Expected: PASS with zero failures — in particular the pre-existing byte fixtures (`TestCTSEncodeSlowDiseasePerStatLayout`, `TestCTSEncodeBuffPerStatLayout`, `TestCTSMonsterRidingV83MaskAndNoDoubleEncode`, `TestCTSMonsterRidingV95MaskAndLayout`, round-trip tests) pass unmodified, proving no mask bit or per-stat shape moved (FR-8). Any fixture diff is a hard failure: revert and re-check the change touched only `AddStat` + the new var.
+Expected: PASS with zero failures — in particular the pre-existing byte fixtures pass unmodified, proving no mask bit or per-stat shape moved (FR-8) in any registry class:
+
+| Class | Fixtures that must stay green |
+|---|---|
+| Legacy / v61 | `TestCTSHomingBeaconV61PopulatedBlock`, `TestCTSHomingBeaconV61RoundTrip`, `TestCTSHomingBeaconLegacyVersionsHaveNoTrailer`, `TestLegacyDurationUnitsNoExpirySaturates` |
+| Mid GMS (v72–v83) | `TestCTSEncodeSlowDiseasePerStatLayout`, `TestCTSEncodeBuffPerStatLayout`, `TestCTSMonsterRidingV83MaskAndNoDoubleEncode`, `TestCTSHomingBeaconPre95PopulatedBlock`, `TestNoExpiryStatEncodesSaturatedDuration` |
+| v95 | `TestCTSMonsterRidingV95MaskAndLayout`, `TestCTSHomingBeaconV95MaskAndBlock`, `TestCTSPartyBoosterV95Block`, `TestCTSEmptyV95ClaimsNothing`, `TestCTSForeignEmptyV95ClaimsNothing`, `TestCTSHomingBeaconV95RoundTrip`, `TestCTSPartyBoosterV95RoundTrip` |
+| All variants | `TestCTSForeignEmptyRoundTrip`, `TestCTSForeignSingleStatRoundTrip`, `TestCTSForeignMultiStatRoundTrip`, `TestCTSAbsentTwoStateStatsEmitNoTrailer`, `TestCTSTwoStateGroupShape`, `TestMaskContainsOnlyActiveStats`, `TestMaskEmptyForEmptyCTS`, `TestMovementAffectingMaskMembership` |
+
+Any fixture diff is a hard failure: revert and re-check the change touched only `AddStat` + the new var.
 
 - [ ] **Step 5: Commit**
 
@@ -212,52 +239,42 @@ Append to `libs/atlas-packet/model/character_temporary_stat_test.go`:
 ```go
 // TestCTSMixedBuffServerOnlyByteInvariance proves a buff carrying both a wire
 // stat and server-only stats encodes byte-identically to the same buff without
-// the server-only stats (task-164 acceptance (b)), on v83 and v95.
+// the server-only stats (task-164 acceptance (b)), on EVERY supported tenant
+// version.
 //
-// Timing note: the self Encode path writes each per-stat duration as
-// int32(expiresAt - time.Now()) at encode time, so the two CTS share ONE
-// expiresAt value and the comparison skips the 4 duration bytes (offsets
-// 22..25: 16B mask + 2B value + 4B sourceId precede it) to stay deterministic
-// across the microseconds between the two Encode calls. EncodeForeign writes
-// no duration (Booster's foreign writer is NoOp), so it compares in full.
+// Determinism: the self Encode path writes each per-stat duration as a function
+// of expiresAt evaluated at encode time, which is not stable across two Encode
+// calls. Passing the zero time saturates that field to a constant on both the
+// modern and legacy writers (pinned by TestNoExpiryStatEncodesSaturatedDuration
+// and TestLegacyDurationUnitsNoExpirySaturates), so the FULL byte slices compare
+// equal with no offset arithmetic — which also keeps this test correct on the
+// legacy pre-v61 class, whose mask is 8 bytes rather than 16 (design §5.1).
+//
+// Booster is the wire-stat probe because it is registered unconditionally
+// (shift 11, before any version gate), so it exists in every registry class and
+// sits inside the legacy mask's bits 0-46.
 func TestCTSMixedBuffServerOnlyByteInvariance(t *testing.T) {
-	variants := []pt.TenantVariant{
-		{Name: "GMS v83", Region: "GMS", MajorVersion: 83, MinorVersion: 1},
-		{Name: "GMS v95", Region: "GMS", MajorVersion: 95, MinorVersion: 1},
-	}
-	for _, v := range variants {
+	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
 			l, _ := testlog.NewNullLogger()
-			exp := time.Now().Add(time.Minute)
 
 			// Booster + the two server-only stats. sourceId/amount arbitrary;
 			// only wire disposition is under test.
 			mixed := NewCharacterTemporaryStat()
-			mixed.AddStat(l)(tn)(string(character.TemporaryStatTypeBooster), 1001, -2, 1, exp)
-			mixed.AddStat(l)(tn)(string(character.TemporaryStatTypePuppet), 1002, 1, 1, exp)
-			mixed.AddStat(l)(tn)(string(character.TemporaryStatTypeSummon), 1003, 1, 1, exp)
+			mixed.AddStat(l)(tn)(string(character.TemporaryStatTypeBooster), 1001, -2, 1, time.Time{})
+			mixed.AddStat(l)(tn)(string(character.TemporaryStatTypePuppet), 1002, 1, 1, time.Time{})
+			mixed.AddStat(l)(tn)(string(character.TemporaryStatTypeSummon), 1003, 1, 1, time.Time{})
 
 			plain := NewCharacterTemporaryStat()
-			plain.AddStat(l)(tn)(string(character.TemporaryStatTypeBooster), 1001, -2, 1, exp)
+			plain.AddStat(l)(tn)(string(character.TemporaryStatTypeBooster), 1001, -2, 1, time.Time{})
 
-			got := mixed.Encode(nil, ctx)(nil)
-			want := plain.Encode(nil, ctx)(nil)
-			if len(got) != len(want) {
-				t.Fatalf("Encode length: got %d want %d", len(got), len(want))
+			if got, want := mixed.Encode(nil, ctx)(nil), plain.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("Encode differs:\ngot  % x\nwant % x", got, want)
 			}
-			if !bytes.Equal(got[:22], want[:22]) {
-				t.Errorf("Encode mask+stat head differs:\ngot  % x\nwant % x", got[:22], want[:22])
-			}
-			if !bytes.Equal(got[26:], want[26:]) {
-				t.Errorf("Encode tail differs:\ngot  % x\nwant % x", got[26:], want[26:])
-			}
-
-			gotF := mixed.EncodeForeign(nil, ctx)(nil)
-			wantF := plain.EncodeForeign(nil, ctx)(nil)
-			if !bytes.Equal(gotF, wantF) {
-				t.Errorf("EncodeForeign differs:\ngot  % x\nwant % x", gotF, wantF)
+			if got, want := mixed.EncodeForeign(nil, ctx)(nil), plain.EncodeForeign(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("EncodeForeign differs:\ngot  % x\nwant % x", got, want)
 			}
 		})
 	}
@@ -265,23 +282,19 @@ func TestCTSMixedBuffServerOnlyByteInvariance(t *testing.T) {
 
 // TestCTSPureServerOnlyBuffEncodesAsEmpty proves a buff whose changes are ALL
 // server-only yields exactly the empty-CTS body (task-164 acceptance (c),
-// FR-5/FR-6): mask has only the always-present two-state bits, no per-stat
-// blocks, standard trailer + base-stat blocks. The buff writers emit
-// unconditionally, so these bytes are what an emitted empty-mask GIVE_BUFF /
-// cancel-reset carries.
+// FR-5/FR-6): mask claims nothing, no per-stat blocks, standard trailer. The
+// buff writers emit unconditionally, so these bytes are what an emitted
+// empty-mask GIVE_BUFF / cancel-reset carries — on every supported version,
+// including the legacy class where that mask is 8 zero bytes.
 func TestCTSPureServerOnlyBuffEncodesAsEmpty(t *testing.T) {
-	variants := []pt.TenantVariant{
-		{Name: "GMS v83", Region: "GMS", MajorVersion: 83, MinorVersion: 1},
-		{Name: "GMS v95", Region: "GMS", MajorVersion: 95, MinorVersion: 1},
-	}
-	for _, v := range variants {
+	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
 			l, _ := testlog.NewNullLogger()
 
 			pure := NewCharacterTemporaryStat()
-			pure.AddStat(l)(tn)(string(character.TemporaryStatTypePuppet), 1, 1, 1, time.Now().Add(time.Minute))
+			pure.AddStat(l)(tn)(string(character.TemporaryStatTypePuppet), 1, 1, 1, time.Time{})
 
 			empty := NewCharacterTemporaryStat()
 			if got, want := pure.Encode(nil, ctx)(nil), empty.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
@@ -301,7 +314,7 @@ func TestCTSPureServerOnlyBuffEncodesAsEmpty(t *testing.T) {
 cd libs/atlas-packet && go test ./model/ -run 'TestCTSMixedBuffServerOnlyByteInvariance|TestCTSPureServerOnlyBuffEncodesAsEmpty' -v
 ```
 
-Expected: PASS (both, on both version subtests).
+Expected: PASS — both tests, on all 12 version subtests each.
 
 - [ ] **Step 3: Run the full package with the race detector**
 
@@ -337,13 +350,17 @@ cd libs/atlas-packet && go test -race ./... && go vet ./... && go build ./...
 
 Expected: all three clean (no output from vet/build, `ok` lines from test).
 
-- [ ] **Step 2: Redis key guard from the worktree root**
+- [ ] **Step 2: Repo-root guards**
 
 ```bash
-tools/redis-key-guard.sh
+tools/redis-key-guard.sh && tools/goroutine-guard.sh && tools/lint.sh --check
 ```
 
-Expected: clean exit 0 (this change adds no Redis usage; the guard is part of the standard bar). Per project memory: run from the repo/worktree root, without a `GOWORK=off` prefix.
+Expected: all clean, exit 0. This change adds no Redis usage and no goroutines; the guards are part of the standard bar. Run from the repo/worktree root, without a `GOWORK=off` prefix.
+
+Notes:
+- `tools/lint.sh --check` needs Node available for the atlas-ui half — source `nvm` (Node 22) first or it false-fails; it can also false-fail on golangci-lint lock contention if another worktree is linting concurrently. If it reports formatting diffs, run `tools/lint.sh` (no flags) to fix in place, then re-check and amend.
+- The template guards (`template-opcode-order-guard.sh`, `template-movement-types-guard.sh`), `service-registration-guard.sh`, `skill-job-id-guard.sh`, and `buff-duration-guard.sh` do **not** apply — this branch touches no template, no services.json/deploy file, no job/skill id comparison, and no Kafka buff-command `duration` field.
 
 - [ ] **Step 3: Scope audit — prove only libs/atlas-packet (+ task docs) changed**
 

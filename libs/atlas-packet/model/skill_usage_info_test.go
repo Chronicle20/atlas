@@ -1,19 +1,107 @@
 package model
 
 import (
-	"context"
 	"encoding/binary"
 	"testing"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
 
 func TestIsMobAffectingBuff_PriestDoom(t *testing.T) {
 	if !isMobAffectingBuff(skill.PriestDoomId) {
 		t.Fatalf("isMobAffectingBuff(PriestDoomId) = false, want true")
+	}
+}
+
+// TestDecodeDispelGms61NoCastXY pins the task-163 DIV-1 finding: gms_48 and
+// gms_61 have NO is_antirepeat_buff_skill gate in CUserLocal::SendSkillUseRequest
+// at all (gms_61 IDA-verified @0x7BA213 — the function goes straight from
+// Encode1(nSLV) to the bitmap/delay/mob-count blocks; gms_48 @0x6AFA91 is
+// identical in shape). Wire layout for a 2311001 (Dispel) cast on gms_61:
+//
+//	updateTime(4) skillId(4) slv(1) bitmap(1) delay(2) mobCount(1) mobIds(4xN) delay(2)
+//
+// Before the fix, the version-blind decoder unconditionally read 4 phantom
+// castX/castY bytes for 2311001 (a member of isAntiRepeatBuffSkill), consuming
+// the bitmap byte and the first delay byte as castX/castY and reading the real
+// bitmap byte from the low byte of the client's actual delay field — decoding
+// to 0 or garbage instead of the true non-zero party bitmap. See
+// docs/tasks/task-163-priest-dispel-party/version-findings.md DIV-1.
+func TestDecodeDispelGms61NoCastXY(t *testing.T) {
+	const wantBitmap = byte(0b100001) // caster (bit5) + one party slot (bit0)
+	const mobId = uint32(100100)      // Green Snail (arbitrary — not exercised structurally)
+
+	buf := make([]byte, 0, 19)
+	buf = binary.LittleEndian.AppendUint32(buf, 12345)                        // updateTime
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(skill.PriestDispelId)) // skillId (2311001)
+	buf = append(buf, 20)                                                     // skill level
+	buf = append(buf, wantBitmap)                                             // affectedPartyMemberBitmap
+	buf = binary.LittleEndian.AppendUint16(buf, 500)                          // delay (party arm — overwritten below)
+	buf = append(buf, 1)                                                      // nMobCount
+	buf = binary.LittleEndian.AppendUint32(buf, mobId)                        // affectedMobIds[0]
+	buf = binary.LittleEndian.AppendUint16(buf, 500)                          // delay (mob arm — the real trailing delay)
+
+	req := request.Request(buf)
+	reader := request.NewRequestReader(&req, 0)
+	ctx := pt.CreateContext("GMS", 61, 1)
+	m := &SkillUsageInfo{}
+	m.Decode(nil, ctx)(&reader, nil)
+
+	if m.SkillId() != uint32(skill.PriestDispelId) {
+		t.Fatalf("skillId = %d, want %d", m.SkillId(), skill.PriestDispelId)
+	}
+	if m.AffectedPartyMemberBitmap() != wantBitmap {
+		t.Fatalf("AffectedPartyMemberBitmap = %#b, want %#b — gms_61 has no castX/castY block; reading it unconditionally misaligns the bitmap", m.AffectedPartyMemberBitmap(), wantBitmap)
+	}
+	if len(m.AffectedMobIds()) != 1 || m.AffectedMobIds()[0] != mobId {
+		t.Fatalf("AffectedMobIds = %v, want [%d]", m.AffectedMobIds(), mobId)
+	}
+	if m.Delay() != 500 {
+		t.Fatalf("Delay = %d, want 500", m.Delay())
+	}
+	if reader.Available() > 0 {
+		t.Fatalf("reader has %d unconsumed bytes after decode", reader.Available())
+	}
+}
+
+// TestDecodeDispelGms83HasCastXY is the regression guard for the gms_61 fix
+// above: gms_83 (and every version >= gms_72, IDA-verified via
+// is_antirepeat_buff_skill @0x96d6ca on v83) DOES gate castX/castY, so the
+// wire layout carries the extra 4 bytes and must still decode correctly.
+func TestDecodeDispelGms83HasCastXY(t *testing.T) {
+	const wantBitmap = byte(0b100001)
+	const mobId = uint32(100100)
+
+	buf := make([]byte, 0, 23)
+	buf = binary.LittleEndian.AppendUint32(buf, 12345)
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(skill.PriestDispelId))
+	buf = append(buf, 20)
+	buf = binary.LittleEndian.AppendUint16(buf, 300) // castX
+	buf = binary.LittleEndian.AppendUint16(buf, 400) // castY
+	buf = append(buf, wantBitmap)
+	buf = binary.LittleEndian.AppendUint16(buf, 500)
+	buf = append(buf, 1)
+	buf = binary.LittleEndian.AppendUint32(buf, mobId)
+	buf = binary.LittleEndian.AppendUint16(buf, 500)
+
+	req := request.Request(buf)
+	reader := request.NewRequestReader(&req, 0)
+	ctx := pt.CreateContext("GMS", 83, 1)
+	m := &SkillUsageInfo{}
+	m.Decode(nil, ctx)(&reader, nil)
+
+	if m.AffectedPartyMemberBitmap() != wantBitmap {
+		t.Fatalf("AffectedPartyMemberBitmap = %#b, want %#b — gms_83 castX/castY gate should still be honored", m.AffectedPartyMemberBitmap(), wantBitmap)
+	}
+	if len(m.AffectedMobIds()) != 1 || m.AffectedMobIds()[0] != mobId {
+		t.Fatalf("AffectedMobIds = %v, want [%d]", m.AffectedMobIds(), mobId)
+	}
+	if reader.Available() > 0 {
+		t.Fatalf("reader has %d unconsumed bytes after decode", reader.Available())
 	}
 }
 
@@ -36,7 +124,7 @@ func TestDecodeBishopResurrectionReadsPartyBitmap(t *testing.T) {
 	req := request.Request(buf)
 	reader := request.NewRequestReader(&req, 0)
 	m := &SkillUsageInfo{}
-	m.Decode(nil, context.Background())(&reader, nil)
+	m.Decode(nil, pt.CreateContext("GMS", 83, 1))(&reader, nil)
 
 	if m.SkillId() != uint32(skill.BishopResurrectionId) {
 		t.Fatalf("skillId = %d, want %d", m.SkillId(), skill.BishopResurrectionId)
@@ -67,7 +155,7 @@ func TestDecodeBuccaneerTimeLeapReadsPartyBitmap(t *testing.T) {
 	req := request.Request(buf)
 	reader := request.NewRequestReader(&req, 0)
 	m := &SkillUsageInfo{}
-	m.Decode(nil, context.Background())(&reader, nil)
+	m.Decode(nil, pt.CreateContext("GMS", 83, 1))(&reader, nil)
 
 	if m.SkillId() != uint32(skill.BuccaneerTimeLeapId) {
 		t.Fatalf("skillId = %d, want %d", m.SkillId(), skill.BuccaneerTimeLeapId)
@@ -92,7 +180,7 @@ func TestSkillUsageInfoDecodeSpiritJavelinItemId(t *testing.T) {
 	reader := request.NewRequestReader(&req, 0)
 
 	var info SkillUsageInfo
-	info.Decode(logrus.New(), context.Background())(&reader, map[string]interface{}{})
+	info.Decode(logrus.New(), pt.CreateContext("GMS", 83, 1))(&reader, map[string]interface{}{})
 
 	if got := info.SpiritJavelinItemId(); got != starId {
 		t.Fatalf("SpiritJavelinItemId() = %d, want %d", got, starId)
@@ -151,7 +239,7 @@ func TestDecodeCorsairBattleshipV92Prefix(t *testing.T) {
 			req := request.Request(tc.buf)
 			reader := request.NewRequestReader(&req, 0)
 			m := &SkillUsageInfo{}
-			m.Decode(nil, context.Background())(&reader, nil)
+			m.Decode(nil, pt.CreateContext("GMS", 92, 1))(&reader, nil)
 
 			if m.SkillId() != uint32(skill.CorsairBattleshipId) {
 				t.Fatalf("skillId = %d, want %d", m.SkillId(), skill.CorsairBattleshipId)

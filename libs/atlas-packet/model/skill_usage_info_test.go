@@ -194,7 +194,7 @@ func TestDecodeMarksmanSharpEyesReadsPartyBitmap(t *testing.T) {
 	req := request.Request(buf)
 	reader := request.NewRequestReader(&req, 0)
 	m := &SkillUsageInfo{}
-	m.Decode(nil, context.Background())(&reader, nil)
+	m.Decode(nil, pt.CreateContext("GMS", 83, 1))(&reader, nil)
 
 	if m.SkillId() != uint32(skill.MarksmanSharpEyesId) {
 		t.Fatalf("skillId = %d, want %d", m.SkillId(), skill.MarksmanSharpEyesId)

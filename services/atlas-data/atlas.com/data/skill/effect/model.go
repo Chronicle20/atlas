@@ -57,6 +57,9 @@ type ModelBuilder struct {
 	damage               uint32
 	attackCount          uint32
 	fixDamage            int32
+	dot                  int32
+	dotInterval          int32
+	dotTime              int32
 	lt                   point.Model
 	rb                   point.Model
 	bulletCount          uint16
@@ -298,6 +301,39 @@ func (b *ModelBuilder) RB() point.Model {
 	return b.rb
 }
 
+// SetDot sets the raw per-tick DoT magnitude (WZ `dot`, unscaled).
+func (b *ModelBuilder) SetDot(v int32) *ModelBuilder {
+	b.dot = v
+	return b
+}
+
+// Dot returns the raw per-tick DoT magnitude.
+func (b *ModelBuilder) Dot() int32 {
+	return b.dot
+}
+
+// SetDotInterval sets the DoT tick interval in MILLISECONDS.
+func (b *ModelBuilder) SetDotInterval(v int32) *ModelBuilder {
+	b.dotInterval = v
+	return b
+}
+
+// DotInterval returns the DoT tick interval in milliseconds.
+func (b *ModelBuilder) DotInterval() int32 {
+	return b.dotInterval
+}
+
+// SetDotTime sets the DoT lifetime in MILLISECONDS.
+func (b *ModelBuilder) SetDotTime(v int32) *ModelBuilder {
+	b.dotTime = v
+	return b
+}
+
+// DotTime returns the DoT lifetime in milliseconds.
+func (b *ModelBuilder) DotTime() int32 {
+	return b.dotTime
+}
+
 func (b *ModelBuilder) SetDamage(damage uint32) *ModelBuilder {
 	b.damage = damage
 	return b
@@ -429,6 +465,9 @@ func (b *ModelBuilder) Build() RestModel {
 		Damage:               b.damage,
 		AttackCount:          b.attackCount,
 		FixDamage:            b.fixDamage,
+		Dot:                  b.dot,
+		DotInterval:          b.dotInterval,
+		DotTime:              b.dotTime,
 		BulletCount:          b.bulletCount,
 		BulletConsume:        b.bulletConsume,
 		MapProtection:        b.mapProtection,

@@ -234,6 +234,20 @@ func getEffect(t tenant.Model, skillId skill.Id, overTime bool, node xml.Node) e
 	e.SetLT(point.NewModel(point.X(int16(ltX)), point.Y(int16(ltY)))).
 		SetRB(point.NewModel(point.X(int16(rbX)), point.Y(int16(rbY))))
 
+	// DoT fields. `dot` is a raw damage-per-tick integer, forwarded unscaled.
+	// `dotInterval` and `dotTime` are WZ SECONDS -- converted to milliseconds
+	// HERE, the single conversion point, matching the `time` treatment above
+	// (task-054). No downstream service may re-scale.
+	//
+	// These nodes are absent from every provisioned WZ corpus (they first
+	// appear in v1.17-era Skill.wz, and there only as `common`-block formula
+	// strings that this reader does not walk). The parse is additive and
+	// forward-compatible: a later re-ingest that carries them needs no
+	// plumbing change. See task-200 design §2.1.
+	e.SetDot(node.GetIntegerWithDefault("dot", 0)).
+		SetDotInterval(node.GetIntegerWithDefault("dotInterval", 0) * 1000).
+		SetDotTime(node.GetIntegerWithDefault("dotTime", 0) * 1000)
+
 	e.SetX(int16(node.GetIntegerWithDefault("x", 0))).
 		SetY(int16(node.GetIntegerWithDefault("y", 0))).
 		SetDamage(uint32(node.GetIntegerWithDefault("damage", 100))).

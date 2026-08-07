@@ -3547,3 +3547,123 @@ func TestParseJobId(t *testing.T) {
 		t.Fatal("ParseJobId(\"112\") expected error (missing .img suffix), got nil")
 	}
 }
+
+// TestReader_Dot_Present pins the DoT field reads and their unit contract:
+// `dot` is a raw damage-per-tick integer; `dotInterval` and `dotTime` are WZ
+// SECONDS converted to MILLISECONDS at the reader, matching the `time`
+// treatment (task-054). These nodes do not exist in any provisioned WZ corpus
+// (design §2.1) -- the parse is additive and forward-compatible.
+func TestReader_Dot_Present(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="200.img">
+  <imgdir name="skill">
+    <imgdir name="2111003">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="mpCon" value="21"/>
+          <int name="dot" value="105"/>
+          <int name="dotInterval" value="1"/>
+          <int name="dotTime" value="4"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm, ok := rmm["2111003"]
+	if !ok {
+		t.Fatal("rmm[2111003] does not exist.")
+	}
+	ef := rm.Effects[0]
+	if ef.Dot != 105 {
+		t.Fatalf("ef.Dot = %d, want 105 (raw, unscaled)", ef.Dot)
+	}
+	if ef.DotInterval != 1000 {
+		t.Fatalf("ef.DotInterval = %d, want 1000 (1s -> ms)", ef.DotInterval)
+	}
+	if ef.DotTime != 4000 {
+		t.Fatalf("ef.DotTime = %d, want 4000 (4s -> ms)", ef.DotTime)
+	}
+}
+
+// TestReader_Dot_Absent asserts absent nodes default to 0 and do not change
+// the serialized shape for skills that carry no DoT (FR-1.3).
+func TestReader_Dot_Absent(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="200.img">
+  <imgdir name="skill">
+    <imgdir name="2111003">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="mpCon" value="21"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ef := rmm["2111003"].Effects[0]
+	if ef.Dot != 0 || ef.DotInterval != 0 || ef.DotTime != 0 {
+		t.Fatalf("ef dot fields = (%d,%d,%d), want (0,0,0)", ef.Dot, ef.DotInterval, ef.DotTime)
+	}
+}
+
+// TestReader_Dot_ExplicitZero asserts an explicit zero-valued node stays zero
+// rather than being scaled into a non-zero ms value.
+func TestReader_Dot_ExplicitZero(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="200.img">
+  <imgdir name="skill">
+    <imgdir name="2111003">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="dot" value="0"/>
+          <int name="dotInterval" value="0"/>
+          <int name="dotTime" value="0"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ef := rmm["2111003"].Effects[0]
+	if ef.Dot != 0 || ef.DotInterval != 0 || ef.DotTime != 0 {
+		t.Fatalf("ef dot fields = (%d,%d,%d), want (0,0,0)", ef.Dot, ef.DotInterval, ef.DotTime)
+	}
+}

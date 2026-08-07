@@ -352,7 +352,9 @@ Deferred items from task-004 (Vite + React Router migration). The migration itse
 
 ### Phase 5 (Jest → Vitest — mechanical migration shipped; follow-ups below)
 
-The mechanical migration landed: `jest.*` → `vi.*`, `next/navigation` + `next/link` mocks swapped for `react-router-dom` equivalents. Follow-up cleanup reports **471 passed / 0 skipped / 0 failed** across 26 test files (Vitest). Tests are excluded from `tsc -b` because test files carry pre-existing semantic type errors that are orthogonal to the migration.
+The mechanical migration landed: `jest.*` → `vi.*`, `next/navigation` + `next/link` mocks swapped for `react-router-dom` equivalents. `grep -rlE 'jest\.(fn|mock|spyOn)' src` now returns zero. The suite stands at **1890 passed / 0 skipped / 0 failed** across 234 test files (Vitest).
+
+Tests are **no longer excluded from `tsc -b`** — `tsconfig.app.json` includes all of `src` and excludes only `src/lib/api/examples/**`, so `npm run build` type-checks test files under the same strict flags as production code. (Corrected 2026-08-07: this paragraph previously claimed the opposite, which misled task-199 into shipping four commits that passed `npm run test` while failing `tsc -b`.)
 
 All previously-skipped tests have been resolved:
 
@@ -363,7 +365,7 @@ All previously-skipped tests have been resolved:
 - [x] ~~`src/components/features/characters/__tests__/CharacterRenderer.test.tsx`~~ — reintroduced `data-testid="character-image"` on the migrated `<img>` markup.
 - Deleted obsolete `accounts.service.test.ts`, `templates.service.test.ts`, `useTemplates.test.tsx`, and `conversations.service.test.ts` — they targeted class-based `BaseService` methods (`validate`, `transformResponse`, etc.) removed in the plain-object rewrite. Current surfaces are covered by the hook tests under `lib/hooks/api/__tests__/`.
 
-Strict `tsconfig.app.json` status — all 7 home-hub strict flags are now on for production code:
+Strict `tsconfig.app.json` status — all 7 home-hub strict flags are now on, for test files as well as production code (see the last item):
 
 - [x] ~~`noImplicitOverride`, `noUncheckedIndexedAccess`, `noUncheckedSideEffectImports`.~~ Done.
 - [x] ~~`verbatimModuleSyntax`.~~ Done — ~30 call sites converted to `import { type X, Y }`.

@@ -66,6 +66,34 @@ real send onto that same slot, this would be the first version where the compile
 already reserved room for it. That's a structural signal worth remembering if a v92
 correlate is ever checked, but it doesn't change what v95 itself sends today: nothing.
 
+### The v92 correlate — checked, and it resolves the question
+
+gms_v92 was outside this sweep's original eight versions (it was a declared exclusion
+until merging main routed a `PetItemUseHandle` into its template). It has since been
+checked directly, and it answers the paragraph above.
+
+**v92 patterns with v95 structurally, and with everyone behaviourally.** In
+`CWvsContext::SendConsumeCashItemUseRequest` @`0x9bfe10`, type 28 IS uniquely
+dispatched: it is absent from the compiler's default-case list
+(`35,36,38,39,41,43,45,54-59,62,67-69`), and resolving it through both tables —
+index `28-12=16` → `byte_9C4ECC[16]=0x0e` → `jpt_9BFF39[14]=0x9c4dfe` — lands on its own
+label. (Table arithmetic confirmed rather than assumed: `jpt_9BFF39[0x27]` = `0x9c00b5`,
+exactly the `def_9BFF39` label the disassembly names.) So v92 *also* has room reserved.
+
+But the arm emits nothing. Its full body is seven instructions: the `COutPacket`
+destructor (`sub_42B500`, 0x1f bytes) on the same stack slot the constructor used, the
+`ZXString` destructor (`sub_403900`, 0x11 bytes), then `jmp loc_9C00E7` — the function's
+own epilogue (`mov large fs:0, ecx`; register pops; `add esp, 220h`; `retn 10h`). No
+`Encode*` call, and neither `SendPacket` (`0x42a7a0`) nor `CClientSocket::SendPacket`
+(`0x4ac120`) is reachable from it. It is a behavioural clone of the default case at
+`0x9c00b5`, which runs the same destructor into the same epilogue.
+
+So the "reserved slot" signal spans **two** consecutive versions (v92 and v95) without
+either ever wiring a send. That weakens rather than strengthens the reading that the slot
+was being held for this feature: two builds allocated a case value for type 28 and both
+discard the packet. Recorded n-a in `docs/packets/audits/gms_v92/_unimplemented.json`;
+the matrix row is now n-a across all nine GMS versions with jms_v185 the sole `✅`.
+
 ## Mechanism note (diverges from the task's literal instruction)
 
 The task instruction pointed at `docs/packets/feature-na-evidence.yaml` (the

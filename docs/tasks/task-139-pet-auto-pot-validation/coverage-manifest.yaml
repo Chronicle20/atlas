@@ -90,12 +90,23 @@ versions:
   # secured CPet+356/+364 and +368/+376 worn-equip pairs, neither consulting
   # usPetSkill) plus the petSkill writer table.
   #
-  # Scope note, stated plainly: this branch WIRES v92 but does not VERIFY its
-  # matrix cells. PET_AUTO_POT x gms_v92 is `partial` and
-  # CashItemUsePetSkill x gms_v92 is `incomplete` — both were already in that
-  # state on main-tip, and this branch's v92 change is config-only (template
-  # options), not a codec change, so neither cell regressed. Promoting them
-  # needs a byte-fixture /verify-packet pass, which this branch does not do.
+  # Both v92 cells have since been taken through the leaf verify procedure and
+  # are now resolved (superseding this entry's earlier "wired but not verified"
+  # note):
+  #   - PET_AUTO_POT x gms_v92: partial -> verified. Byte fixture
+  #     TestItemUseBytesV92 in libs/atlas-packet/pet/serverbound/item_use_test.go,
+  #     marker ida=0x9b3a00, tier-1 evidence pinned at
+  #     docs/packets/evidence/gms_v92/pet.serverbound.PetItemUse.yaml. Opcode
+  #     ground-truthed from COutPacket::COutPacket(&pkt, 0xC8) = 200, matching
+  #     the registry. Wire order is byte-identical to the v61/v72/v79/v83
+  #     siblings, so no wire-divergence commit was needed.
+  #   - cash/serverbound/CashItemUsePetSkill x gms_v92: incomplete -> n-a,
+  #     recorded in docs/packets/audits/gms_v92/_unimplemented.json with the
+  #     full positive proof (case 28 IS uniquely dispatched at 0x9c4dfe but its
+  #     entire body is COutPacket dtor + ZXString dtor + jmp to the function
+  #     epilogue; no Encode*, no SendPacket reachable; the separate cash-slot
+  #     dispatcher at 0x9d1010 has no pet-skill arm either). This closes the
+  #     "v92 correlate" question the coverage doc left open.
   - gms_v92
   - gms_v95
   - jms_v185

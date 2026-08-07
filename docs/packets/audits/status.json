@@ -44727,8 +44727,8 @@
           "opcode": -1
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "n-a",
+          "note": "disposition: version-absent (n-a, see _unimplemented.json)",
           "opcode": -1
         },
         "gms_v95": {

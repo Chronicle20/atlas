@@ -24,21 +24,27 @@ func init() {
 	channelhandler.Register(skill2.FirePoisonMagicianPoisonMist, Apply)
 }
 
-// PlayerMistTickIntervalMs is the per-tick cadence of a player-cast mist.
+// PlayerMistTickIntervalMs is the re-apply cadence of a player-cast mist --
+// how often atlas-maps re-issues APPLY_STATUS(POISON) to every monster still
+// standing in the cloud. It is NOT the DoT damage cadence; that 1000ms tick
+// lives entirely inside atlas-monsters (services/atlas-monsters/atlas.com/monsters/monster/status.go:129-134,
+// StatusExpirationTask) and only fires once `since(lastTick) >= 1000ms`.
 //
-// It is a constant, not a WZ value: the `dotInterval` node does not exist in
-// any provisioned Skill.wz (task-200 design §2.1). 1 Hz is already the
-// de-facto DoT cadence on both ends of this contract -- the monster
-// AREA_POISON producer hard-codes TickIntervalMs: 1000, and atlas-monsters'
-// APPLY_STATUS consumer independently defaults a POISON/VENOM tick to 1000ms
-// when the command omits one. This makes it explicit rather than relying on
-// the consumer's fallback.
+// It must be an interval, not a WZ value: the `dotInterval` node does not
+// exist in any provisioned Skill.wz (task-200 design §2.1).
 //
-// Known tuning point: atlas-monsters replaces a same-type status on re-apply,
-// minting a fresh lastTick, so a 1000ms re-apply against a 1s DoT cadence can
-// under-count ticks. If observed damage is starved, raise this above the DoT
-// cadence -- a one-constant change (design §4.4).
-const PlayerMistTickIntervalMs int64 = 1000
+// This value MUST exceed atlas-monsters' 1000ms DoT cadence. atlas-monsters'
+// ModelBuilder.AddStatusEffect REPLACES a same-type POISON on every re-apply
+// with a fresh StatusEffect whose lastTick = now
+// (services/atlas-monsters/atlas.com/monsters/monster/builder.go:141-163,
+// services/atlas-monsters/atlas.com/monsters/monster/status.go:35-49). A
+// re-apply period at or near the DoT cadence keeps resetting lastTick before
+// StatusExpirationTask's `since(lastTick) >= 1000ms` gate can ever pass, so
+// the eligible tick window per cycle is only `PlayerMistTickIntervalMs -
+// 1000ms` wide -- at 1000ms that window is ~0ms and a 4-40s mist deals
+// roughly 0-1 damage ticks instead of ~4-40. 3000ms leaves the gate open for
+// roughly two full DoT ticks per re-apply cycle, so damage actually lands.
+const PlayerMistTickIntervalMs int64 = 3000
 
 // MaxPlayerMistDurationMs rejects (never truncates) an implausible mist
 // lifetime. The largest legitimate `time` for 2111003 across the provisioned

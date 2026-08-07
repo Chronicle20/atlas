@@ -80,7 +80,7 @@ Satisfies FR-1.4. This must land before the guard in Task 2, or the guard cannot
 
 **Working directory for all commands in this task:** `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `saga/character_extractor_test.go`:
 
@@ -115,12 +115,12 @@ func TestExtractCharacterId_UnknownPayloadIsZero(t *testing.T) {
 
 If `Step[any]{Payload: ...}` does not compile as a composite literal (the struct's fields may be unexported in this package), construct the step the same way the existing tests in `saga/accept_event_test.go` do and adapt — read `accept_event_test.go` lines 49–75 for the in-repo construction idiom before editing.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./saga/ -run TestExtractCharacterId -v`
 Expected: `TestExtractCharacterId_WarpToSavedLocationPayload` FAILS with `expected: 0x309 actual: 0x0` (the `default:` arm returns 0). The other two PASS.
 
-- [ ] **Step 3: Add the payload case**
+- [x] **Step 3: Add the payload case**
 
 In `saga/character_extractor.go`, immediately after the existing `WarpToPortalPayload` case:
 
@@ -131,12 +131,12 @@ In `saga/character_extractor.go`, immediately after the existing `WarpToPortalPa
 		return p.CharacterId
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `go test ./saga/ -run TestExtractCharacterId -v`
 Expected: all three PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add saga/character_extractor.go saga/character_extractor_test.go
@@ -167,7 +167,7 @@ This task is testable on its own using `WarpToRandomPortal`, which **already** a
 
 **Working directory:** `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `saga/accept_event_test.go`:
 
@@ -268,12 +268,12 @@ func TestAcceptEvent_NoOptionIsUnconstrained(t *testing.T) {
 
 Add `_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"` to the test file's imports. **Before writing this, read `saga/payloads.go` (or the `sharedsaga` re-export) for the actual field names on `WarpToRandomPortalPayload`** — if the field is not `FieldId`, use whatever the struct declares. The `CharacterId` field is confirmed present (it is the case `ExtractCharacterId` already handles).
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./saga/ -run 'TestAcceptEvent_(CharacterId|NoCharacterId|NoOption)' -v`
 Expected: compile failure — `undefined: ForCharacter`, `undefined: SkipReasonCharacterIdMismatch`.
 
-- [ ] **Step 3: Add the skip reason constant**
+- [x] **Step 3: Add the skip reason constant**
 
 In `saga/event_acceptance.go`, add to the `SkipReason*` const block:
 
@@ -287,7 +287,7 @@ In `saga/event_acceptance.go`, add to the `SkipReason*` const block:
 	SkipReasonCharacterIdMismatch = "character_id_mismatch"
 ```
 
-- [ ] **Step 4: Add the option type and the guard**
+- [x] **Step 4: Add the option type and the guard**
 
 In `saga/processor.go`, above the `Processor` interface (or next to `AcceptDecision`):
 
@@ -354,7 +354,7 @@ Then, in the same function, **replace the final `return AcceptDecision{Saga: s, 
 	return AcceptDecision{Saga: s, Step: step}, true
 ```
 
-- [ ] **Step 5: Update the mock**
+- [x] **Step 5: Update the mock**
 
 In `saga/mock/processor.go`, change the field (~line 42) and the method (~line 206):
 
@@ -374,17 +374,17 @@ func (m *ProcessorMock) AcceptEvent(transactionId uuid.UUID, kind saga.EventKind
 
 Keep the existing fallback return value exactly as it is in the file — read it before editing and preserve it.
 
-- [ ] **Step 6: Run test to verify it passes**
+- [x] **Step 6: Run test to verify it passes**
 
 Run: `go test ./saga/ -run 'TestAcceptEvent' -v`
 Expected: all `TestAcceptEvent_*` PASS, including the pre-existing ones.
 
-- [ ] **Step 7: Verify no call site broke**
+- [x] **Step 7: Verify no call site broke**
 
 Run: `go build ./... && go vet ./...`
 Expected: clean. The variadic parameter means every existing `AcceptEvent(tx, kind)` compiles unchanged.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add saga/processor.go saga/event_acceptance.go saga/mock/processor.go saga/accept_event_test.go
@@ -408,7 +408,7 @@ Satisfies FR-1.1, FR-1.2, FR-4.3, FR-4.5, and the FR-4.4 test on the newly-accep
 
 **Working directory:** `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `saga/accept_event_test.go`:
 
@@ -517,12 +517,12 @@ func TestAcceptEvent_WarpToPortalRejectsOtherCharacter(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `go test ./saga/ -run 'TestAcceptEvent_Warp' -v`
 Expected: `TestAcceptEvent_WarpToPortalCompletesOnMapChanged`, `..._WarpToSavedLocationCompletesOnMapChanged`, and `..._SameMapCompletes` FAIL — `AcceptEvent` returns false and the log carries `reason=action_mismatch`, because both actions are still `{}` in the acceptance table. `..._RejectsOtherCharacter` may pass for the wrong reason (action mismatch, not the guard) — that is why the log assertion is on `character_id_mismatch` specifically, and it will fail on that assertion.
 
-- [ ] **Step 3: Move the two actions into the acceptance block**
+- [x] **Step 3: Move the two actions into the acceptance block**
 
 In `saga/event_acceptance.go`, **delete** these two lines from the "Fire-and-forget / self-completing actions" block (currently lines 219–220):
 
@@ -531,7 +531,7 @@ In `saga/event_acceptance.go`, **delete** these two lines from the "Fire-and-for
 	sharedsaga.WarpToSavedLocation:        {},
 ```
 
-- [ ] **Step 4: Replace the comment block and add the entries**
+- [x] **Step 4: Replace the comment block and add the entries**
 
 Replace the entire comment block plus the `WarpToRandomPortal` entry (currently `saga/event_acceptance.go:202-216`, ending at `sharedsaga.WarpToRandomPortal: {EventKindCharacterMapChanged},`) with:
 
@@ -567,12 +567,12 @@ Replace the entire comment block plus the `WarpToRandomPortal` entry (currently 
 	sharedsaga.WarpToSavedLocation: {EventKindCharacterMapChanged},
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `go test ./saga/ -run 'TestAcceptEvent' -v`
 Expected: all PASS, including the four new ones and every pre-existing `TestAcceptEvent_*`.
 
-- [ ] **Step 6: Wire `ForCharacter` at the sole caller**
+- [x] **Step 6: Wire `ForCharacter` at the sole caller**
 
 In `kafka/consumer/character/consumer.go`, in `handleCharacterMapChangedEvent` (currently line 73), change:
 
@@ -593,12 +593,12 @@ to:
 
 `StatusEvent[E].CharacterId` is on the envelope (`kafka/message/character/kafka.go:244-250`), so `e.CharacterId` is in scope.
 
-- [ ] **Step 7: Run the full service test suite**
+- [x] **Step 7: Run the full service test suite**
 
 Run: `go test -race ./... && go vet ./...`
 Expected: both clean. Pay particular attention to `saga/integration_test.go`, `saga/step_event_matching_integration_test.go`, and `saga/handler_test.go` — if any pre-existing test asserted that a `WarpToPortal` step stays pending after a `map_changed`, that assertion encoded the bug and must be updated to expect completion. Do not weaken a test to make it pass; if one fails, read it and decide whether it asserted the old broken behaviour.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add saga/event_acceptance.go saga/accept_event_test.go kafka/consumer/character/consumer.go
@@ -625,7 +625,7 @@ Satisfies FR-2.1 and FR-2.2. Replaces the 45-line `switch` in `ExecuteOperation`
 
 **Working directory for all commands in Tasks 4–9:** `services/atlas-portal-actions/atlas.com/portal`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `script/optable_test.go`:
 
@@ -712,12 +712,12 @@ Add these imports to the test file:
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./script/ -run 'TestOpTable|TestValidateOpTable' -v`
 Expected: compile failure — `undefined: IsMovingOperation`, `undefined: opDef`, `undefined: opTable`, `undefined: validateOpTable`, `undefined: opClassStatic`.
 
-- [ ] **Step 3: Create the table**
+- [x] **Step 3: Create the table**
 
 Create `script/optable.go`:
 
@@ -828,7 +828,7 @@ func IsMovingOperation(opType string) bool {
 }
 ```
 
-- [ ] **Step 4: Replace the switch with a table lookup**
+- [x] **Step 4: Replace the switch with a table lookup**
 
 In `script/executor.go`, replace the whole body of `ExecuteOperation` (currently lines 37–86, the `switch op.Type() { ... }`) with:
 
@@ -851,17 +851,17 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 
 Leave the thirteen `execute*` methods and `ExecuteOperations` untouched in this task.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `go test ./script/ -run 'TestOpTable|TestValidateOpTable' -v`
 Expected: all PASS.
 
-- [ ] **Step 6: Run the package suite and build**
+- [x] **Step 6: Run the package suite and build**
 
 Run: `go test ./script/ && go build ./...`
 Expected: clean. The pre-existing `script/processor_test.go` still passes — dispatch behaviour for every known type is identical, and the unknown-type `Warn`-and-`return nil` path is preserved.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add script/optable.go script/optable_test.go script/executor.go
@@ -888,7 +888,7 @@ Design deviation being implemented (design §4.3, §10): FR-2.5 says `handleEnte
   - `const action.KindWarp = "warp"`, `const action.KindTransport = "transport"`
   - `func (r *Registry) AddWithTTL(ctx context.Context, sagaId uuid.UUID, a PendingAction, ttl time.Duration)`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `action/registry_test.go`:
 
@@ -935,12 +935,12 @@ func TestRegistry_LegacyEntryHasEmptyKind(t *testing.T) {
 
 Add `"time"` and `"github.com/stretchr/testify/require"` to the test file's imports if not already present.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./action/ -run 'TestRegistry_AddWithTTL|TestRegistry_Legacy' -v`
 Expected: compile failure — `undefined: KindWarp`, `pa.Kind undefined`, `GetRegistry().AddWithTTL undefined`.
 
-- [ ] **Step 3: Add `Kind` and `AddWithTTL`**
+- [x] **Step 3: Add `Kind` and `AddWithTTL`**
 
 In `action/registry.go`, add `"time"` to the imports, then:
 
@@ -977,12 +977,12 @@ func (r *Registry) AddWithTTL(ctx context.Context, sagaId uuid.UUID, a PendingAc
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `go test ./action/ -v`
 Expected: all PASS, including the pre-existing registry tests.
 
-- [ ] **Step 5: Register and time-bound the two warp sagas**
+- [x] **Step 5: Register and time-bound the two warp sagas**
 
 In `script/executor.go`, add near the top of the file (after the imports):
 
@@ -1073,7 +1073,7 @@ In `executeWarpToSavedLocation`, apply the same shape:
 	return e.sagaP.Create(s)
 ```
 
-- [ ] **Step 6: Tag the existing transport registration**
+- [x] **Step 6: Tag the existing transport registration**
 
 In `executeStartInstanceTransport` (~line 447), add the `Kind` field to the existing `action.GetRegistry().Add(...)` call — leave it on `Add` (no TTL); changing transport's expiry semantics is out of scope and is recorded as a follow-up in context.md:
 
@@ -1087,12 +1087,12 @@ In `executeStartInstanceTransport` (~line 447), add the `Kind` field to the exis
 	})
 ```
 
-- [ ] **Step 7: Build and run the package suite**
+- [x] **Step 7: Build and run the package suite**
 
 Run: `go build ./... && go test ./script/ ./action/`
 Expected: clean.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add action/registry.go action/registry_test.go script/executor.go
@@ -1113,7 +1113,7 @@ Satisfies FR-2.7. Today a failed portal warp would tell the player "Unable to bo
 - Consumes: `action.PendingAction.Kind`, `action.KindWarp`, `action.KindTransport` from Task 5.
 - Produces: no new exported symbol. `resolveFailureMessage` keeps its `(action.PendingAction, string) string` signature.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `kafka/consumer/saga/consumer_test.go`:
 
@@ -1171,12 +1171,12 @@ func TestResolveFailureMessage_ErrorCodesUnchanged(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./kafka/consumer/saga/ -v`
 Expected: `TestResolveFailureMessage_WarpDefault` FAILS — actual is `"Unable to board transport at this time."`. The others PASS.
 
-- [ ] **Step 3: Switch the default on `Kind`**
+- [x] **Step 3: Switch the default on `Kind`**
 
 In `kafka/consumer/saga/consumer.go`, replace `resolveFailureMessage`'s `default:` arm:
 
@@ -1215,7 +1215,7 @@ func resolveFailureMessage(pendingAction action.PendingAction, errorCode string)
 }
 ```
 
-- [ ] **Step 4: Correct the misleading log wording**
+- [x] **Step 4: Correct the misleading log wording**
 
 In the same file, the two handlers now serve warps as well as transports. Change:
 
@@ -1227,12 +1227,12 @@ Add `"kind": pendingAction.Kind,` to the `logrus.Fields` of the failure log at ~
 
 Also change `SetInitiatedBy("portal-action-transport-failure")` in `sendFailureMessage` to `SetInitiatedBy("portal-action-failure")` — it is no longer transport-specific.
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `go test ./kafka/consumer/saga/ -v`
 Expected: all PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add kafka/consumer/saga/consumer.go kafka/consumer/saga/consumer_test.go
@@ -1263,7 +1263,7 @@ Design deviation being implemented (design §4.2, §10): the PRD phrases the con
   - Package-level seams in `consumer.go`: `newScriptProcessorFn func(logrus.FieldLogger, context.Context, *gorm.DB) Processor` and `enableActionsFn func(logrus.FieldLogger) func(context.Context) func(channel.Model, uint32)`
   - Test-only executor constructor `newOperationExecutorWithSaga(l, ctx, sagaP)`.
 
-- [ ] **Step 1: Write the failing executor test**
+- [x] **Step 1: Write the failing executor test**
 
 Create `script/executor_test.go`:
 
@@ -1412,12 +1412,12 @@ func TestExecuteOperations_MovedStickyAcrossLaterError(t *testing.T) {
 
 Before running, read `executeStartQuest` to confirm it errors on a missing required param; if it does not, substitute an operation in that last test that does (e.g. `"warp_to_saved_location"` with no `locationType`, which is confirmed to error). Do not weaken the assertion.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./script/ -run TestExecuteOperations -v`
 Expected: compile failure — `newOperationExecutorWithSaga` undefined, and `ExecuteOperations` returns one value, not two.
 
-- [ ] **Step 3: Add the test-only constructor and change `ExecuteOperations`**
+- [x] **Step 3: Add the test-only constructor and change `ExecuteOperations`**
 
 In `script/executor.go`, add next to `NewOperationExecutor`:
 
@@ -1462,12 +1462,12 @@ func (e *OperationExecutor) ExecuteOperations(f field.Model, characterId uint32,
 
 The `movedCharacter` flag is set only *after* `ExecuteOperation` returned `nil`, which for the three moving operations means `sagaP.Create` returned `nil`. It is a plain local, so nothing races even though `OperationExecutor` is constructed per request.
 
-- [ ] **Step 4: Run the executor test to verify it passes**
+- [x] **Step 4: Run the executor test to verify it passes**
 
 Run: `go test ./script/ -run TestExecuteOperations -v`
 Expected: all PASS.
 
-- [ ] **Step 5: Thread `CharacterMoved` through `ProcessResult`**
+- [x] **Step 5: Thread `CharacterMoved` through `ProcessResult`**
 
 In `script/model.go`, add the field:
 
@@ -1517,7 +1517,7 @@ In `script/processor.go` `Process`, change the operation-execution block (curren
 
 The `no_script` and `no_match` returns are left untouched — they carry `CharacterMoved == false` by zero value, which is correct.
 
-- [ ] **Step 6: Write the failing consumer test**
+- [x] **Step 6: Write the failing consumer test**
 
 Create `script/consumer_test.go`:
 
@@ -1652,12 +1652,12 @@ func TestHandleEnterCommand_ErrorAfterMoveDoesNotUnlock(t *testing.T) {
 }
 ```
 
-- [ ] **Step 7: Run the consumer test to verify it fails**
+- [x] **Step 7: Run the consumer test to verify it fails**
 
 Run: `go test ./script/ -run TestHandleEnterCommand -v`
 Expected: compile failure — `newScriptProcessorFn` and `enableActionsFn` undefined.
 
-- [ ] **Step 8: Add the seams and the conditional unlock**
+- [x] **Step 8: Add the seams and the conditional unlock**
 
 In `script/consumer.go`, add above `handleEnterCommand`:
 
@@ -1713,17 +1713,17 @@ Replace the body of `handleEnterCommand` from the `processor :=` line to the end
 
 Remove the now-unused `character` import only if nothing else in the file references it — `enableActionsFn = character.EnableActions` does, so keep it.
 
-- [ ] **Step 9: Run tests to verify they pass**
+- [x] **Step 9: Run tests to verify they pass**
 
 Run: `go test ./script/ -v`
 Expected: all PASS, including `TestHandleEnterCommand_*`, `TestExecuteOperations_*`, `TestOpTable_*`, and every pre-existing test in the package.
 
-- [ ] **Step 10: Build and vet**
+- [x] **Step 10: Build and vet**
 
 Run: `go build ./... && go vet ./...`
 Expected: clean.
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add script/executor.go script/executor_test.go script/model.go script/processor.go script/consumer.go script/consumer_test.go
@@ -1748,7 +1748,7 @@ Satisfies FR-3.2, FR-3.3, FR-3.4, FR-3.6. Defence in depth: the client is *desig
   - `func InitGate(client *goredis.Client)`
   - `func GetGate() Gate`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `dedupe/gate_test.go`:
 
@@ -1901,12 +1901,12 @@ func TestGate_LogsDroppedDuplicateAtDebug(t *testing.T) {
 
 Add `"time"` to the test imports.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./dedupe/ -v`
 Expected: the package does not exist — `no Go files in .../dedupe` or undefined symbols.
 
-- [ ] **Step 3: Create the gate**
+- [x] **Step 3: Create the gate**
 
 Create `dedupe/gate.go`:
 
@@ -2036,19 +2036,19 @@ func (g *redisGate) Allow(l logrus.FieldLogger, ctx context.Context, k Key) bool
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `go test ./dedupe/ -v`
 Expected: all PASS.
 
 If `TestGate_FailsOpenOnRedisError` does not error after `mr.Close()`, `miniredis` may be returning a connection error asynchronously — in that case point the client at a closed port instead: `InitGate(goredis.NewClient(&goredis.Options{Addr: "127.0.0.1:1"}))`. Do not weaken the fail-open assertion.
 
-- [ ] **Step 5: Verify the Redis key guard stays clean**
+- [x] **Step 5: Verify the Redis key guard stays clean**
 
 Run from the worktree root: `tools/redis-key-guard.sh`
 Expected: exit 0. The gate uses `atlas.Lock`, never a raw keyed `go-redis` command.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add dedupe/gate.go dedupe/gate_test.go
@@ -2070,7 +2070,7 @@ Satisfies FR-3.1, FR-3.5, FR-4.2. The gate must be evaluated *before* any rule e
 - Consumes: `dedupe.Gate`, `dedupe.Key`, `dedupe.InitGate`, `dedupe.GetGate` from Task 8; the `newScriptProcessorFn` / `enableActionsFn` seams from Task 7.
 - Produces: a third package seam `gateFn func() dedupe.Gate` in `script/consumer.go`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `script/consumer_test.go`:
 
@@ -2129,12 +2129,12 @@ Add `"atlas-portal-actions/dedupe"` to the test file's imports.
 
 The pre-existing `TestHandleEnterCommand_*` tests from Task 7 do not install a `fakeGate`; they will run against the real `gateFn`, which returns `dedupe.GetGate()` → `nilGate{}` (allow) because `InitGate` is never called in the `script` package's tests. That is intentional and requires no change to them.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./script/ -run 'TestHandleEnterCommand_(Duplicate|AllowedByGate)' -v`
 Expected: compile failure — `gateFn` undefined.
 
-- [ ] **Step 3: Add the gate seam and the check**
+- [x] **Step 3: Add the gate seam and the check**
 
 In `script/consumer.go`, add `"atlas-portal-actions/dedupe"` to the imports and extend the seam block from Task 7:
 
@@ -2176,7 +2176,7 @@ In `handleEnterCommand`, insert the gate check immediately after the `field` / `
 	processor := newScriptProcessorFn(l, ctx, db)
 ```
 
-- [ ] **Step 4: Initialise the gate at startup**
+- [x] **Step 4: Initialise the gate at startup**
 
 In `main.go`, add `"atlas-portal-actions/dedupe"` to the imports and, immediately after `action.InitRegistry(rc)`:
 
@@ -2186,17 +2186,17 @@ In `main.go`, add `"atlas-portal-actions/dedupe"` to the imports and, immediatel
 	dedupe.InitGate(rc)
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `go test ./script/ -v`
 Expected: all PASS, including the six Task 7 consumer tests and the two new ones.
 
-- [ ] **Step 6: Build and vet**
+- [x] **Step 6: Build and vet**
 
 Run: `go build ./... && go vet ./...`
 Expected: clean.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add script/consumer.go script/consumer_test.go main.go
@@ -2212,7 +2212,7 @@ Satisfies the design §9 checklist and the PRD §10 acceptance criteria that are
 **Files:**
 - Modify: `docs/tasks/task-184-portal-enter-double-execute/plan.md` (check off remaining boxes) — no code.
 
-- [ ] **Step 1: Per-module tests with the race detector**
+- [x] **Step 1: Per-module tests with the race detector**
 
 Run from the worktree root:
 
@@ -2223,7 +2223,7 @@ Run from the worktree root:
 
 Expected: both modules clean. If a pre-existing test fails, do not weaken it — read it and determine whether it encoded the pre-task-184 behaviour (a `WarpToPortal` step expected to stay pending after `map_changed`, or an outcome expected to always unlock). Fix the test to assert the corrected behaviour, and record the change in the commit message.
 
-- [ ] **Step 2: Builds**
+- [x] **Step 2: Builds**
 
 ```bash
 (cd services/atlas-portal-actions/atlas.com/portal && go build ./...)
@@ -2232,7 +2232,7 @@ Expected: both modules clean. If a pre-existing test fails, do not weaken it —
 
 Expected: clean.
 
-- [ ] **Step 3: Repo guards**
+- [x] **Step 3: Repo guards**
 
 ```bash
 tools/redis-key-guard.sh
@@ -2244,7 +2244,7 @@ Expected: all exit 0. `tools/lint.sh --check` requires nvm — if it reports a N
 
 `tools/service-registration-guard.sh` and `tools/template-*-guard.sh` are **not** required: no service was added and no `services.json`, `deploy/k8s`, `docker-bake.hcl`, `go.work`, or tenant socket-config template was touched. Confirm that with `git diff --stat main...HEAD` before skipping them.
 
-- [ ] **Step 4: Decide whether a docker bake is required**
+- [x] **Step 4: Decide whether a docker bake is required**
 
 ```bash
 git diff --stat main...HEAD -- '*/go.mod' '*/go.sum'
@@ -2259,7 +2259,7 @@ docker buildx bake atlas-portal-actions
 docker buildx bake atlas-saga-orchestrator
 ```
 
-- [ ] **Step 5: Confirm the worktree and branch**
+- [x] **Step 5: Confirm the worktree and branch**
 
 ```bash
 git rev-parse --show-toplevel   # must end with /.worktrees/task-184-portal-enter-double-execute
@@ -2269,7 +2269,7 @@ git status --short              # must be clean
 
 If either of the first two is wrong, STOP and report BLOCKED — work landed in the wrong tree.
 
-- [ ] **Step 6: Code review before the PR**
+- [x] **Step 6: Code review before the PR**
 
 Invoke `superpowers:requesting-code-review`. It dispatches `plan-adherence-reviewer` and `backend-guidelines-reviewer` (Go files changed; no `atlas-ui` TypeScript changed, so the frontend reviewer is not needed). Findings land in `docs/tasks/task-184-portal-enter-double-execute/audit.md`.
 
@@ -2280,11 +2280,11 @@ The three intentional deviations from the PRD are listed in design.md §10 and r
 2. FR-2.5's `PendingAction` registration happens in the two executor methods, not in `handleEnterCommand`.
 3. FR-3.3's tenant scoping is composed from `redis.TenantKey` + `redis.CompositeKey` because `Lock` is not tenant-aware.
 
-- [ ] **Step 7: Address review findings and commit**
+- [x] **Step 7: Address review findings and commit**
 
 Fix anything the review surfaces, re-run Steps 1–3, and commit.
 
-- [ ] **Step 8: Live verification note for the PR body**
+- [x] **Step 8: Live verification note for the PR body**
 
 The two PRD acceptance criteria that cannot be machine-checked must be verified in a live environment on GMS 83.1 with the `undodraco` portal from issue #1193:
 

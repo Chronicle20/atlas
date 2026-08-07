@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useNpcData } from "@/lib/hooks/useNpcData";
 import { useNpcSpawnMaps } from "@/lib/hooks/api/useNpcSpawnMaps";
+import { useItemName } from "@/lib/hooks/api/useItemStrings";
 import type { ItemSellerCommodity } from "@/types/models/npc";
 
 interface ItemNpcShopWidgetProps {
@@ -27,8 +28,16 @@ export function ItemNpcShopWidget({ commodity }: ItemNpcShopWidgetProps) {
   } = commodity;
   const { name: npcName, iconUrl, isLoading: npcLoading } = useNpcData(npcId);
   const { data: spawnMaps } = useNpcSpawnMaps(npcId);
+  const tokenName = useItemName(
+    tokenTemplateId > 0 ? String(tokenTemplateId) : "",
+  );
 
-  const priceLine = formatPrice(mesoPrice, tokenPrice, tokenTemplateId);
+  const priceLine = formatPrice(
+    mesoPrice,
+    tokenPrice,
+    tokenTemplateId,
+    tokenName.data,
+  );
   const primarySpawnMap =
     spawnMaps && spawnMaps.length > 0 ? spawnMaps[0] : null;
   const extraMapCount =
@@ -106,11 +115,18 @@ function formatPrice(
   mesoPrice: number,
   tokenPrice: number,
   tokenTemplateId: number,
+  tokenName?: string,
 ): string {
   const parts: string[] = [];
   if (mesoPrice > 0) parts.push(`${mesoPrice.toLocaleString()} mesos`);
   if (tokenPrice > 0 && tokenTemplateId > 0) {
-    parts.push(`${tokenPrice.toLocaleString()} × item ${tokenTemplateId}`);
+    // Prefer the token item's name; the raw id is only a fallback for while
+    // the name query is in flight or when the item has no string entry.
+    parts.push(
+      tokenName
+        ? `${tokenPrice.toLocaleString()} ${tokenName}`
+        : `${tokenPrice.toLocaleString()} × item ${tokenTemplateId}`,
+    );
   }
   if (parts.length === 0) return "Free";
   return parts.join(" · ");

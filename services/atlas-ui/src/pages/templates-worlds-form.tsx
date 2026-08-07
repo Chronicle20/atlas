@@ -51,7 +51,10 @@ export function WorldsForm() {
   const onSubmit: SubmitHandler<FormValues> = (data) => {
     if (!template) return;
     updateTemplate.mutate(
-      { id: template.id, updates: { worlds: data.worlds } },
+      {
+        id: template.id,
+        updates: { ...template.attributes, worlds: data.worlds },
+      },
       { onSuccess: () => toast.success("Successfully saved template.") },
     );
   };

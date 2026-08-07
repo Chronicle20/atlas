@@ -98,7 +98,10 @@ describe("TemplatesCharacterTemplatesPage", () => {
     expect(mutateMock).toHaveBeenCalledWith(
       {
         id: "tmpl-1",
-        updates: { characters: { templates, presets } },
+        updates: {
+          ...template.attributes,
+          characters: { templates, presets },
+        },
       },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );

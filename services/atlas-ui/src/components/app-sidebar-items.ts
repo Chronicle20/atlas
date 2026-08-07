@@ -66,6 +66,7 @@ export const sidebarItems: SidebarGroupItem[] = [
     children: [
       { title: "Templates", url: "/templates" },
       { title: "Tenants", url: "/tenants" },
+      { title: "Packet Matrix", url: "/packet-matrix" },
       { title: "Services", url: "/services" },
       { title: "Baselines", url: "/baselines" },
     ],

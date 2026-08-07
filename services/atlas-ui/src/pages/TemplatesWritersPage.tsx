@@ -1,10 +1,10 @@
 import { TemplateDetailLayout } from "@/components/features/templates/TemplateDetailLayout";
-import { WritersForm } from "@/pages/templates-writers-form";
+import { DefinitionGridPage } from "@/components/features/socket/DefinitionGridPage";
 
 export function TemplatesWritersPage() {
   return (
     <TemplateDetailLayout>
-      <WritersForm />
+      <DefinitionGridPage kind="writer" scope="template" />
     </TemplateDetailLayout>
   );
 }

@@ -24,6 +24,7 @@ export function TemplatesCharacterPresetsPage() {
         {
           id: template.id,
           updates: {
+            ...template.attributes,
             characters: { ...template.attributes.characters, presets },
           },
         },

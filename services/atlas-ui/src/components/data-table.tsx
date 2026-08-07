@@ -1,10 +1,13 @@
 import {
-  type ColumnDef,
+  type ColumnVisibilityState,
   flexRender,
-  getCoreRowModel,
-  useReactTable,
-  type VisibilityState,
+  type RowData,
+  useTable,
 } from "@tanstack/react-table";
+import {
+  dataTableFeatures,
+  type DataTableColumnDef,
+} from "@/components/data-table-features";
 
 import {
   Table,
@@ -31,23 +34,23 @@ interface DataTableHeaderAction {
   onClick: () => void;
 }
 
-interface DataTableProps<TData, TValue> {
+interface DataTableProps<TData extends RowData> {
   initialVisibilityState?: string[];
-  columns: ColumnDef<TData, TValue>[];
+  columns: DataTableColumnDef<TData>[];
   data: TData[];
   onRefresh?: () => void;
   isRefreshing?: boolean;
   headerActions?: DataTableHeaderAction[];
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends RowData>({
   initialVisibilityState,
   columns,
   data,
   onRefresh,
   isRefreshing,
   headerActions,
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TData>) {
   const state = Object.fromEntries(
     (initialVisibilityState || []).map((col) => [
       col.replace(/\./g, "_"),
@@ -55,12 +58,12 @@ export function DataTable<TData, TValue>({
     ]),
   );
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>(state);
+    React.useState<ColumnVisibilityState>(state);
 
-  const table = useReactTable({
+  const table = useTable({
+    features: dataTableFeatures,
     data,
     columns,
-    getCoreRowModel: getCoreRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     state: {
       columnVisibility,

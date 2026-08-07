@@ -140,4 +140,45 @@ describe("InstanceRoutesTable", () => {
 
     expect(screen.getByText(/approaching stuck timeout/i)).toBeInTheDocument();
   });
+
+  it("shows a loading row while the instance routes fetch is in flight", async () => {
+    // A promise that never resolves keeps the query in its initial loading state.
+    vi.mocked(transportsService.getInstanceRoutes).mockImplementation(
+      () => new Promise(() => {}),
+    );
+
+    renderTable();
+
+    expect(
+      await screen.findByText(/loading instance routes/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Ereve Sky Ferry")).toBeNull();
+  });
+
+  it("shows an unambiguous error row when the instance routes fetch fails", async () => {
+    vi.mocked(transportsService.getInstanceRoutes).mockRejectedValue(
+      new Error("network down"),
+    );
+
+    renderTable();
+
+    expect(
+      await screen.findByText(/failed to load instance routes/i),
+    ).toBeInTheDocument();
+    // Must not read as "nothing configured" — that's a different state.
+    expect(screen.queryByText(/no instance routes configured/i)).toBeNull();
+  });
+
+  it("shows a plain empty row when zero instance routes are configured", async () => {
+    vi.mocked(transportsService.getInstanceRoutes).mockResolvedValue([]);
+    vi.mocked(transportsService.getInstanceStatuses).mockResolvedValue([]);
+
+    renderTable();
+
+    expect(
+      await screen.findByText(/no instance routes configured/i),
+    ).toBeInTheDocument();
+    // Must not read as a failure — that's a different state.
+    expect(screen.queryByText(/failed to load/i)).toBeNull();
+  });
 });

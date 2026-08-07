@@ -36,6 +36,9 @@ interface InstanceRoutesTableProps {
   onCountChange?: (count: number) => void;
 }
 
+/** Column count of the header row, for the loading/error/empty full-width cells. */
+const INSTANCE_TABLE_COLUMN_COUNT = 8;
+
 export function InstanceRoutesTable({
   tenant,
   onCountChange,
@@ -88,20 +91,52 @@ export function InstanceRoutesTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {routes.map((route) => {
-            const statuses = statusesByRouteId.get(route.id) ?? [];
-            const isExpanded = expanded.has(route.id);
-            return (
-              <InstanceRouteRows
-                key={route.id}
-                route={route}
-                statuses={statuses}
-                tenant={tenant}
-                isExpanded={isExpanded}
-                onToggle={() => toggle(route.id)}
-              />
-            );
-          })}
+          {routesQuery.isLoading ? (
+            <TableRow>
+              <TableCell
+                colSpan={INSTANCE_TABLE_COLUMN_COUNT}
+                className="text-center text-muted-foreground"
+              >
+                Loading instance routes…
+              </TableCell>
+            </TableRow>
+          ) : routesQuery.isError ? (
+            <TableRow>
+              <TableCell
+                colSpan={INSTANCE_TABLE_COLUMN_COUNT}
+                className="text-center text-destructive"
+              >
+                <span className="inline-flex items-center justify-center gap-1.5">
+                  <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+                  Failed to load instance routes.
+                </span>
+              </TableCell>
+            </TableRow>
+          ) : routes.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={INSTANCE_TABLE_COLUMN_COUNT}
+                className="text-center text-muted-foreground"
+              >
+                No instance routes configured.
+              </TableCell>
+            </TableRow>
+          ) : (
+            routes.map((route) => {
+              const statuses = statusesByRouteId.get(route.id) ?? [];
+              const isExpanded = expanded.has(route.id);
+              return (
+                <InstanceRouteRows
+                  key={route.id}
+                  route={route}
+                  statuses={statuses}
+                  tenant={tenant}
+                  isExpanded={isExpanded}
+                  onToggle={() => toggle(route.id)}
+                />
+              );
+            })
+          )}
         </TableBody>
       </Table>
     </div>

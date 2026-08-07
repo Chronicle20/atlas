@@ -343,8 +343,8 @@ Tool: `f6a37e5f0741b73e8f633e075e08a84dd758ea4c411e5d25aed661d3235d1c1b`
 | TALK_GUIDE | CUserLocal::OnTutorMsg | npc/clientbound/NpcGuideTalkIdx (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D1 | ✅ | 0x0E0 | ✅ | 0x0E5 | ✅ | 0x0EE | ✅ | 0x100 | ✅ | 0x0EA | ✅ |
 | MESO_BAG_MESSAGE | CUserLocal::OnRandomMesobag_Succeeded |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D2 | ❌ |  | ⬜ | 0x0DD | ❌ | 0x0EE | ❌ |  | ⬜ |
 | SHOW_COMBO | CUserLocal::OnIncComboResponse |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D2 | ❌ | 0x0E1 | ❌ | 0x0E6 | ❌ | 0x0EF | ❌ | 0x101 | ❌ | 0x0EB | ❌ |
-| SPAWN_MIST | CAffectedAreaPool::OnAffectedAreaCreated | field/clientbound/FieldAffectedAreaCreated (T1) |  | ⬜ | 0x0D2 | ✅ | 0x0F3 | ✅ | 0x0FB | ✅ | 0x111 | ❌ | 0x118 | ❌ | 0x122 | ❌ | 0x148 | ❌ | 0x126 | ❌ |
-| REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) |  | ⬜ | 0x0D3 | 🟡ᶠ | 0x0F4 | 🟡ᶠ | 0x0FC | 🟡ᶠ | 0x112 | ✅ | 0x119 | ✅ | 0x123 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
+| SPAWN_MIST | CAffectedAreaPool::OnAffectedAreaCreated | field/clientbound/FieldAffectedAreaCreated (T1) |  | ⬜ | 0x0D2 | ✅ | 0x0F3 | ✅ | 0x0FB | ✅ | 0x111 | ✅ | 0x118 | ✅ | 0x122 | ✅ | 0x148 | ✅ | 0x126 | ✅ |
+| REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) |  | ⬜ | 0x0D3 | ✅ | 0x0F4 | ✅ | 0x0FC | ✅ | 0x112 | ✅ | 0x119 | ✅ | 0x123 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
 | IDA_0X0D4 | CUser::OnEmotion | character/clientbound/CharacterExpression (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D4 | ✅ |
 | SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor (T1) |  | ⬜ | 0x0D4 | ✅ | 0x0F5 | ✅ | 0x0FD | ✅ | 0x113 | ✅ | 0x11A | ✅ | 0x124 | ✅ | 0x14A | ✅ | 0x128 | ✅ |
 | REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved | door/clientbound/RemoveDoor |  | ⬜ | 0x0D5 | 🟡ᵈ | 0x0F6 | 🟡ᵈ | 0x0FE | 🟡ᵈ | 0x114 | ✅ | 0x11B | ✅ | 0x125 | ✅ | 0x14B | ✅ | 0x129 | ✅ |
@@ -999,14 +999,14 @@ Tool: `f6a37e5f0741b73e8f633e075e08a84dd758ea4c411e5d25aed661d3235d1c1b`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 180 | 0 | 2 | 156 | 625 | 0 | 53.3% |
-| v61 | 256 | 0 | 60 | 189 | 458 | 0 | 50.7% |
-| v72 | 266 | 0 | 73 | 208 | 416 | 0 | 48.6% |
-| v79 | 310 | 0 | 72 | 204 | 377 | 0 | 52.9% |
-| v83 | 429 | 0 | 0 | 311 | 223 | 0 | 58.0% |
-| v84 | 403 | 0 | 0 | 317 | 243 | 0 | 56.0% |
-| v87 | 437 | 0 | 0 | 340 | 186 | 0 | 56.2% |
-| v95 | 462 | 0 | 0 | 399 | 102 | 0 | 53.7% |
-| JMS185 | 416 | 0 | 0 | 354 | 193 | 0 | 54.0% |
+| v61 | 257 | 0 | 59 | 189 | 458 | 0 | 50.9% |
+| v72 | 267 | 0 | 72 | 208 | 416 | 0 | 48.8% |
+| v79 | 311 | 0 | 71 | 204 | 377 | 0 | 53.1% |
+| v83 | 430 | 0 | 0 | 310 | 223 | 0 | 58.1% |
+| v84 | 404 | 0 | 0 | 316 | 243 | 0 | 56.1% |
+| v87 | 438 | 0 | 0 | 339 | 186 | 0 | 56.4% |
+| v95 | 463 | 0 | 0 | 398 | 102 | 0 | 53.8% |
+| JMS185 | 417 | 0 | 0 | 353 | 193 | 0 | 54.2% |
 
 ## Conflicts
 

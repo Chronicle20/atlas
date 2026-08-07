@@ -269,6 +269,10 @@ Resource type: `start-transport`
 
 ### trip-schedule
 
+**Time semantics.** These four timestamps carry the date of the day the schedule
+was computed; only their time-of-day component is meaningful (see the Time
+semantics note under `GET /transports/routes` above).
+
 | Field | Type | Description |
 |-------|------|-------------|
 | id | uuid.UUID | Trip identifier |

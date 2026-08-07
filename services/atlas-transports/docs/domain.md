@@ -59,7 +59,10 @@ Represents a shared vessel operating on two routes alternately.
 
 ### TripScheduleModel (transport/model.go)
 
-Represents a single scheduled trip.
+Represents a single scheduled trip. `boardingOpen`, `boardingClosed`,
+`departure`, and `arrival` carry the date of the day the schedule was
+computed; only their time-of-day component is meaningful (see the Transition
+note above).
 
 | Field | Type | Description |
 |-------|------|-------------|

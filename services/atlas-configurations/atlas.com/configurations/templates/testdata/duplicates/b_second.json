@@ -1,0 +1,10 @@
+{
+  "region": "DUP",
+  "majorVersion": 7,
+  "minorVersion": 3,
+  "usesPin": true,
+  "socket": { "handlers": [], "writers": [] },
+  "characters": { "templates": [] },
+  "npcs": [],
+  "worlds": []
+}

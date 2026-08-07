@@ -18,6 +18,21 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
 )
 
+const (
+	// warpSagaTimeout bounds a portal warp saga. The default is 30s
+	// (orchestrator DefaultSagaTimeout); against a ~300ms observed end-to-end
+	// warp that is 100x, and it is how long a player whose warp did not land
+	// would stay frozen now that the outcome no longer unlocks them
+	// eagerly (task-184 FR-2.6). start_instance_transport deliberately keeps
+	// the 30s default — it does strictly more work.
+	warpSagaTimeout = 5 * time.Second
+
+	// pendingActionTTL bounds the registry entry backing a suppressed unlock.
+	// It must exceed warpSagaTimeout by a wide margin so handleStatusEventFailed
+	// can still find the entry when the timeout fires.
+	pendingActionTTL = 60 * time.Second
+)
+
 // OperationExecutor executes portal script operations
 type OperationExecutor struct {
 	l     logrus.FieldLogger
@@ -108,9 +123,23 @@ func (e *OperationExecutor) executeWarp(f field.Model, characterId uint32, op op
 
 	e.l.Debugf("Warping character [%d] to map [%d] portal [%d/%s]", characterId, mapId, portalId, portalName)
 
+	// The transaction id is minted here so the pending action can be registered
+	// under it. If this warp is suppressed from unlocking the client
+	// (consumer.go, task-184 FR-2.3), this registration is what lets
+	// handleStatusEventFailed release the player when the warp does not land.
+	sagaId := uuid.New()
+	action.GetRegistry().AddWithTTL(e.ctx, sagaId, action.PendingAction{
+		CharacterId: characterId,
+		WorldId:     f.WorldId(),
+		ChannelId:   f.ChannelId(),
+		Kind:        action.KindWarp,
+	}, pendingActionTTL)
+
 	s := saga.NewBuilder().
+		SetTransactionId(sagaId).
 		SetSagaType(saga.InventoryTransaction).
 		SetInitiatedBy("portal-action-warp").
+		SetTimeout(warpSagaTimeout).
 		AddStep(
 			fmt.Sprintf("warp-%d", characterId),
 			saga.Pending,
@@ -417,6 +446,7 @@ func (e *OperationExecutor) executeStartInstanceTransport(f field.Model, charact
 		WorldId:        f.WorldId(),
 		ChannelId:      f.ChannelId(),
 		FailureMessage: failureMessage,
+		Kind:           action.KindTransport,
 	})
 
 	s := saga.NewBuilder().
@@ -534,9 +564,19 @@ func (e *OperationExecutor) executeWarpToSavedLocation(f field.Model, characterI
 
 	e.l.Debugf("Warping character [%d] to saved location [%s]", characterId, locationType)
 
+	sagaId := uuid.New()
+	action.GetRegistry().AddWithTTL(e.ctx, sagaId, action.PendingAction{
+		CharacterId: characterId,
+		WorldId:     f.WorldId(),
+		ChannelId:   f.ChannelId(),
+		Kind:        action.KindWarp,
+	}, pendingActionTTL)
+
 	s := saga.NewBuilder().
+		SetTransactionId(sagaId).
 		SetSagaType(saga.InventoryTransaction).
 		SetInitiatedBy("portal-action-warp-saved-location").
+		SetTimeout(warpSagaTimeout).
 		AddStep(
 			fmt.Sprintf("warp-saved-%d-%s", characterId, locationType),
 			saga.Pending,

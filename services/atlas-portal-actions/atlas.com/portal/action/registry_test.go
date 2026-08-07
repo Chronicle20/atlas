@@ -3,11 +3,13 @@ package action
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -165,4 +167,43 @@ func TestRegistry_EmptyFailureMessage(t *testing.T) {
 	result, found := GetRegistry().Get(ctx, sagaId)
 	assert.True(t, found)
 	assert.Equal(t, "", result.FailureMessage)
+}
+
+func TestRegistry_AddWithTTL_RoundTrip(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+
+	sagaId := uuid.New()
+	pa := PendingAction{
+		CharacterId: 1000,
+		WorldId:     1,
+		ChannelId:   2,
+		Kind:        KindWarp,
+	}
+	GetRegistry().AddWithTTL(ctx, sagaId, pa, 60*time.Second)
+
+	got, found := GetRegistry().Get(ctx, sagaId)
+	require.True(t, found)
+	assert.Equal(t, KindWarp, got.Kind)
+	assert.Equal(t, uint32(1000), got.CharacterId)
+}
+
+// An entry written by a pre-deploy replica decodes with Kind == "".
+func TestRegistry_LegacyEntryHasEmptyKind(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+
+	sagaId := uuid.New()
+	GetRegistry().Add(ctx, sagaId, PendingAction{
+		CharacterId:    1000,
+		WorldId:        1,
+		ChannelId:      2,
+		FailureMessage: "legacy",
+	})
+
+	got, found := GetRegistry().Get(ctx, sagaId)
+	require.True(t, found)
+	assert.Equal(t, "", got.Kind, "a legacy entry must decode with an empty Kind")
 }

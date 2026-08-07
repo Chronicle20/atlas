@@ -2,6 +2,7 @@ package action
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
@@ -12,12 +13,22 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
+// Kind* values identify which portal operation created a PendingAction, so the
+// failure path can pick a message appropriate to what actually failed.
+// The empty value means "written before Kind existed" and is treated as a
+// transport, preserving the pre-task-184 message (task-184 FR-2.7).
+const (
+	KindWarp      = "warp"
+	KindTransport = "transport"
+)
+
 // PendingAction represents a pending portal action awaiting saga completion
 type PendingAction struct {
 	CharacterId    uint32     `json:"characterId"`
 	WorldId        world.Id   `json:"worldId"`
 	ChannelId      channel.Id `json:"channelId"`
 	FailureMessage string     `json:"failureMessage"`
+	Kind           string     `json:"kind"`
 }
 
 // Registry tracks pending portal actions by saga ID
@@ -43,6 +54,15 @@ func GetRegistry() *Registry {
 func (r *Registry) Add(ctx context.Context, sagaId uuid.UUID, a PendingAction) {
 	t := tenant.MustFromContext(ctx)
 	_ = r.reg.Put(ctx, t, sagaId, a)
+}
+
+// AddWithTTL registers a pending action that self-expires. Add writes with no
+// expiry, so a dropped COMPLETED event leaks the key forever; warp
+// registrations use this instead. The TTL must comfortably exceed the saga's
+// own timeout so the failure path can still find the entry.
+func (r *Registry) AddWithTTL(ctx context.Context, sagaId uuid.UUID, a PendingAction, ttl time.Duration) {
+	t := tenant.MustFromContext(ctx)
+	_ = r.reg.PutWithTTL(ctx, t, sagaId, a, ttl)
 }
 
 // Get retrieves a pending action by saga ID

@@ -42,24 +42,24 @@ func ParseJobId(filePath string) (uint32, error) {
 	return uint32(id), nil
 }
 
-func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
-	return func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
+func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[Derivation] {
+	return func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[Derivation] {
 		t := tenant.MustFromContext(ctx)
-		return func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
+		return func(np model.Provider[xml.Node]) model.Provider[Derivation] {
 			exml, err := np()
 			if err != nil {
-				return model.ErrorProvider[[]RestModel](err)
+				return model.ErrorProvider[Derivation](err)
 			}
 
 			jobId, err := ParseJobId(exml.Name)
 			if err != nil {
-				return model.ErrorProvider[[]RestModel](err)
+				return model.ErrorProvider[Derivation](err)
 			}
 			l.Debugf("Processing skills for job [%d].", jobId)
 
 			ssxml, err := exml.ChildByName("skill")
 			if err != nil {
-				return model.ErrorProvider[[]RestModel](err)
+				return model.ErrorProvider[Derivation](err)
 			}
 
 			ms := make([]RestModel, 0)
@@ -67,19 +67,19 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 			for _, sxml := range ssxml.ChildNodes {
 				skillId, err := strconv.Atoi(sxml.Name)
 				if err != nil {
-					return model.ErrorProvider[[]RestModel](err)
+					return model.ErrorProvider[Derivation](err)
 				}
 				l.Debugf("Processing skill [%d] for job [%d].", skillId, jobId)
 
 				m, s, err := produceSkill(l, t, jobId, skill.Id(skillId), sxml)
 				if err != nil {
-					return model.ErrorProvider[[]RestModel](err)
+					return model.ErrorProvider[Derivation](err)
 				}
 				stats.Add(s)
 				ms = append(ms, m)
 			}
 			l.Debugf("Derived %d skills for job [%d].", stats.Processed, jobId)
-			return model.FixedProvider[[]RestModel](ms)
+			return model.FixedProvider(Derivation{Models: ms, Stats: stats})
 		}
 	}
 }

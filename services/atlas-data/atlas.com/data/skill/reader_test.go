@@ -2772,7 +2772,11 @@ func TestReader(t *testing.T) {
 	}
 	ctx := tenant.WithContext(context.Background(), tn)
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(testXML)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(testXML)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -2930,7 +2934,11 @@ func TestReader_LT_RB_Present(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -2978,7 +2986,11 @@ func TestReader_LT_RB_Absent(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3026,7 +3038,11 @@ func TestReader_PriestDoom_MapsDoomStatus(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3074,7 +3090,11 @@ func TestReader_TimeAttributeEmittedAsMilliseconds(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3116,7 +3136,11 @@ func TestReader_TimeMissing_DurationStaysSentinel(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3158,7 +3182,11 @@ func TestReader_FreezeDoublesDuration(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3202,7 +3230,11 @@ func TestReader_ShadowStars_EmitsNonzeroShadowClawPlaceholder(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3251,7 +3283,11 @@ func TestReader_SuperGmHolySymbol_V48Wire_ClassifiesAsHolySymbol(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3297,7 +3333,11 @@ func TestReader_SuperGmHolySymbol_V83Canonical_ClassifiesAsHolySymbol(t *testing
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3345,7 +3385,11 @@ func TestReader_PriestHolySymbol_StableSkill_Unchanged(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3406,7 +3450,11 @@ func TestReader_SuperGmHealDispel_V48Wire_ClassifiesAsCategory1(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tn)
 
 	xmlData := fmt.Sprintf(healDispelCategory1XML, "510", "5101000")
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3435,7 +3483,11 @@ func TestReader_SuperGmHealDispel_V83Canonical_ClassifiesAsCategory1(t *testing.
 	ctx := tenant.WithContext(context.Background(), tn)
 
 	xmlData := fmt.Sprintf(healDispelCategory1XML, "910", "9101000")
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3466,7 +3518,11 @@ func TestReader_ClericHeal_StableSkill_Unchanged(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tn)
 
 	xmlData := fmt.Sprintf(healDispelCategory1XML, "230", "2301002")
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3580,11 +3636,11 @@ func TestLevelPathPopulatesCommonKeys(t *testing.T) {
 	}
 	ctx := tenant.WithContext(context.Background(), tn)
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
-	models, err := rms()
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
 	if err != nil {
 		t.Fatal(err)
 	}
+	models := d.Models
 	if len(models) != 1 {
 		t.Fatalf("len(models) = %d, want 1", len(models))
 	}

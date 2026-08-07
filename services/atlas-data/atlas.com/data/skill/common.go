@@ -331,24 +331,3 @@ func expandCommon(l logrus.FieldLogger, t tenant.Model, jobId uint32, skillId sk
 	// bounded it to 1..255, and a failed parse yields 0 with zero effects.
 	return es, uint8(maxLevel), stats
 }
-
-// Stats counts one ingest pass's skill derivation outcomes. Task-192 FR-7.3
-// requires a run summary; the counters are an explicit return value rather
-// than a package-level registry so they stay per-run and order-independent.
-type Stats struct {
-	Processed          int
-	FromCommon         int
-	FromLevel          int
-	Neither            int
-	SkillsWithFailures int
-	Failures           int
-}
-
-func (s *Stats) Add(o Stats) {
-	s.Processed += o.Processed
-	s.FromCommon += o.FromCommon
-	s.FromLevel += o.FromLevel
-	s.Neither += o.Neither
-	s.SkillsWithFailures += o.SkillsWithFailures
-	s.Failures += o.Failures
-}

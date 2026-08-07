@@ -4,6 +4,7 @@ import (
 	"atlas-data/xml"
 	"context"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -25,11 +26,11 @@ func commonTestContext(t *testing.T) (logrus.FieldLogger, *test.Hook, context.Co
 
 func readSkills(t *testing.T, l logrus.FieldLogger, ctx context.Context, data string) []RestModel {
 	t.Helper()
-	models, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(data)))()
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(data)))()
 	if err != nil {
 		t.Fatal(err)
 	}
-	return models
+	return d.Models
 }
 
 // TestCommonExpansion covers FR-5.1/FR-5.2: a common node expands to exactly
@@ -339,5 +340,127 @@ func TestCommonExprAboveMaxInt32IsRangeViolation(t *testing.T) {
 	}
 	if entries[0].Data["key"] != "damage" {
 		t.Fatalf("logged key = %v, want \"damage\"", entries[0].Data["key"])
+	}
+}
+
+// TestCommonFailureIsScopedAndCounted covers FR-7.1/7.2/7.3: a malformed
+// expression logs exactly one ERROR with the required fields, does not abort
+// the job image, leaves the key at getEffect's default, and is counted.
+func TestCommonFailureIsScopedAndCounted(t *testing.T) {
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="100.img">
+  <imgdir name="skill">
+    <imgdir name="1001003">
+      <imgdir name="common">
+        <int name="maxLevel" value="2"/>
+        <string name="mpCon" value="6+2*u(x/5)"/>
+        <string name="damage" value="100+bogus(x)"/>
+      </imgdir>
+    </imgdir>
+    <imgdir name="1001004">
+      <imgdir name="common">
+        <string name="mpCon" value="x"/>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	l, hook, ctx := commonTestContext(t)
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatalf("Read error = %v, want nil (a formula failure must not abort the job image)", err)
+	}
+	if len(d.Models) != 2 {
+		t.Fatalf("len(Models) = %d, want 2", len(d.Models))
+	}
+
+	byId := map[uint32]RestModel{}
+	for _, m := range d.Models {
+		byId[m.Id] = m
+	}
+
+	// 1001003: the bad `damage` key is dropped; the good `mpCon` survives and
+	// `damage` falls to getEffect's default of 100 (FR-5.4).
+	good := byId[1001003]
+	if len(good.Effects) != 2 {
+		t.Fatalf("1001003 len(Effects) = %d, want 2", len(good.Effects))
+	}
+	if good.Effects[0].MPConsume != 8 {
+		t.Fatalf("1001003 Effects[0].MPConsume = %d, want 8", good.Effects[0].MPConsume)
+	}
+	if good.Effects[0].Damage != 100 {
+		t.Fatalf("1001003 Effects[0].Damage = %d, want the default 100", good.Effects[0].Damage)
+	}
+
+	// 1001004: no maxLevel — FR-7.4 scopes the failure to the whole skill.
+	bad := byId[1001004]
+	if bad.MaxLevel != 0 || len(bad.Effects) != 0 {
+		t.Fatalf("1001004 (MaxLevel,len(Effects)) = (%d,%d), want (0,0)", bad.MaxLevel, len(bad.Effects))
+	}
+
+	if d.Stats.Processed != 2 {
+		t.Fatalf("Stats.Processed = %d, want 2", d.Stats.Processed)
+	}
+	if d.Stats.FromCommon != 2 {
+		t.Fatalf("Stats.FromCommon = %d, want 2", d.Stats.FromCommon)
+	}
+	if d.Stats.SkillsWithFailures != 2 {
+		t.Fatalf("Stats.SkillsWithFailures = %d, want 2", d.Stats.SkillsWithFailures)
+	}
+	if d.Stats.Failures != 2 {
+		t.Fatalf("Stats.Failures = %d, want 2 (one bad key, one missing maxLevel)", d.Stats.Failures)
+	}
+
+	errs := 0
+	for _, entry := range hook.AllEntries() {
+		if entry.Level != logrus.ErrorLevel {
+			continue
+		}
+		errs++
+		for _, field := range []string{"tenant", "jobId", "skillId", "key", "expression"} {
+			if _, ok := entry.Data[field]; !ok {
+				t.Fatalf("ERROR entry is missing the %q field: %+v", field, entry.Data)
+			}
+		}
+	}
+	if errs != 2 {
+		t.Fatalf("ERROR log count = %d, want 2", errs)
+	}
+}
+
+// TestStatsAccumulatorSummary covers FR-7.3: the run summary escalates to
+// ERROR when any skill had a derivation failure.
+func TestStatsAccumulatorSummary(t *testing.T) {
+	l, hook := test.NewNullLogger()
+	var acc StatsAccumulator
+
+	clean := acc.Wrap(func(string) (Stats, error) {
+		return Stats{Processed: 3, FromLevel: 3}, nil
+	})
+	if err := clean("a.img.xml"); err != nil {
+		t.Fatalf("wrapped register error = %v", err)
+	}
+	dirty := acc.Wrap(func(string) (Stats, error) {
+		return Stats{Processed: 2, FromCommon: 2, SkillsWithFailures: 1, Failures: 4}, nil
+	})
+	if err := dirty("b.img.xml"); err != nil {
+		t.Fatalf("wrapped register error = %v", err)
+	}
+	acc.Log(l)
+
+	var summary, escalation bool
+	for _, entry := range hook.AllEntries() {
+		if entry.Level == logrus.InfoLevel && strings.Contains(entry.Message, "processed=5") {
+			summary = true
+		}
+		if entry.Level == logrus.ErrorLevel {
+			escalation = true
+		}
+	}
+	if !summary {
+		t.Fatalf("no INFO run summary with processed=5: %+v", hook.AllEntries())
+	}
+	if !escalation {
+		t.Fatal("failures > 0 did not escalate the summary to ERROR")
 	}
 }

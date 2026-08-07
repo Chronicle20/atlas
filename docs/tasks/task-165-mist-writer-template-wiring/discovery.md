@@ -50,8 +50,11 @@ which is exactly why the constants had to be read rather than derived.)
 Field-slot correlation with v61: the object stores at 0x4218f5–0x42191b land in
 the same slots as v61's (`[0] dwId, [1] nType, [2] dwOwnerId, [3] nSkillID,
 [4] nSLV, [8..11] rcArea, [12] trailing`). Reads #4 is confirmed to be
-`nSkillID` by the branch compare against the mist skill ids 130 / 131 / 2111003,
-identical to v61 @0x423edc.
+`nSkillID` by the branch compares against the mist skill ids 130, 131, 2111003
+and 4221006 (Smokescreen) — read at 0x421954 (`mov eax, 82h` / `sub ecx, eax`),
+0x421961 (`dec ecx`), 0x421968 (`sub ecx, 203598h`) and 0x421970
+(`sub ecx, 203233h`; the cumulative subtraction resolves to 4221006). v61
+@0x423edc branches on the same four.
 
 **Divergence vs the current codec:** two fields narrow to one byte — `nType`
 (Decode4 → Decode1) and the trailing `+0x30` slot (Decode4 → Decode1). Body is
@@ -133,8 +136,10 @@ Nothing further is decoded (verified by continuing the disassembly to 0x41681e).
 
 Class + payload fingerprint (never opcode number) confirms read #3 is
 `nSkillID`, not `dwOwnerId`: at 0x4167c9–0x4167e6 that value is compared against
-`0x82` (130), `0x83` (131) and `130 + 1 + 0x203598` (2 111 003) — the same three
-mist skill ids the v48 @0x421854 and v61 @0x423edc handlers branch on. The
+`0x82` (130), `0x83` (131) and `130 + 1 + 0x203598` (2 111 003) — the first
+three of the mist skill ids the v48 @0x421854 and v61 @0x423edc handlers branch
+on. v12's chain genuinely stops at three: it has no fourth compare, whereas v48
+adds 4 221 006 (Smokescreen) at 0x421970. The
 object stores confirm the slot map: `[0x00] dwId, [0x04] nType, [0x08] nSkillID,
 [0x0C] nSLV, [0x10] phase-derived, [0x14] rcArea` — there is no owner slot and
 no `+0x30`-equivalent trailing slot.
@@ -171,11 +176,41 @@ All gates are additive and expressed with the `MajorAtLeast` idiom. The Task 1
 and Task 2 byte-fixture tests were re-run: every already-verified version
 (v61/v72/v79/v83/v84/v87/v95/jms185) produces byte-identical output.
 
-## Known semantic gap
+## Semantics of the trailing `+0x30` slot — what the disassembly settles
 
 The `+0x30` trailing slot on gms_48 is one byte wide. The Atlas model carries
 only the 32-bit value the v61+ clients read into that same slot, so the writer
-emits its low byte to produce the frame length the v48 client consumes. The
-field's *semantic* on v48 was not determined from the IDB (the handler stores it
-and does not otherwise use it in the decoded path) and is deliberately not
-guessed here.
+emits its low byte to produce the frame length the v48 client consumes.
+
+**The disassembly does determine one thing positively: `+0x30` is *not* a time
+value on any of these versions.** The client-side expiry tick is computed from
+the **Decode2 `phase`** field, not from `+0x30`. The same three-instruction
+idiom appears in all three handlers:
+
+| version | instructions | source operand |
+|---|---|---|
+| gms_48 | `0x421933 mov eax, [ebp+var_38]` · `0x421939 imul eax, 64h` · `0x42193c add eax, [ebp+var_20]` · `0x42193f mov [ecx+14h], eax` | `var_38` = Decode2 @0x4218aa; `var_20` = the call return stored @0x421874 |
+| gms_61 | `0x423fbb mov eax, [ebp+var_3C]` · `0x423fc1 imul eax, 64h` · `0x423fc4 add eax, [ebp+var_20]` · `0x423fc7 mov [ecx+14h], eax` | `var_3C` = Decode2; `var_20` = same call return |
+| gms_92 | `0x43936d imul edi, 64h` · `0x439383 add edi, [esp+84h+var_58]` · `0x4393c4 mov [esi+14h], edi` | `edi` = Decode2 @0x439316 (`movzx edi, ax` @0x439324); `var_58` = `sub_936E80` return @0x4392cb |
+
+i.e. `record[+0x14] = phase * 100 + <current update time>` — an absolute expiry
+tick. Note the v61 IDB carries an inline correction on that call site: the
+symbol rendered as `CWvsContext::SetExclRequestSent` there is mislabeled and is
+really `get_update_time()`. (The value is also clamped: `cmp [eax+14h], edi` /
+`mov dword ptr [eax+14h], 1` at v48 0x421945–0x42194a, v61 0x423fcd–0x423fd2,
+v92 0x4393c7–0x4393cb — a zero result is forced to 1.)
+
+By contrast `+0x30` is stored **raw**, with no arithmetic of any kind, on all
+three versions: v48 `0x421928 mov [eax+30h], ecx`, v61 `0x423fb0 mov
+[eax+30h], ecx`, v92 `0x4393b9 mov [esi+30h], ecx`.
+
+**What remains open:** the field's ultimate purpose. Narrowing it to "not a
+time" does not say what it *is*. Settling that requires locating the consumer of
+`CAffectedArea+0x30` in the v48/v61 pool `Update`/`Draw` path and reading how
+the value is compared or branched on there — out of scope for this task and
+deliberately not guessed. The one-byte width on v48 is itself weak corroboration
+that it is a small enumerated/boolean value rather than a counter.
+
+This does not change the codec: the writer still emits `byte(m.tEnd)` for the
+v48 slot, which is no worse than the already-verified v61+ baseline that writes
+the same model field into the same slot.

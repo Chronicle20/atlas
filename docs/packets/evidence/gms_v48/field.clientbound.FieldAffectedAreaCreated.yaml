@@ -5,4 +5,4 @@ category: TIER1-FIXTURE
 ida:
     function: CAffectedAreaPool::OnAffectedAreaCreated
     address: "0x421854"
-    decompile_sha256: 3c2b200495691fb5a4b4b507a0a8ca682e66c5749c30d664d3930f96791ec326
+    decompile_sha256: 3697148e5cc62860b5e18279c3980576d5352cea7c88e56def0f740632194ff0

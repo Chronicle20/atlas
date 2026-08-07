@@ -520,7 +520,7 @@
         },
         {
           "op": "Decode4",
-          "comment": "nSkillID @0x421895 (compared against 130/131/2111003 in the skill branches)"
+          "comment": "nSkillID @0x421895 (compared against 130/131/2111003/4221006 in the skill branches @0x421954, 0x421961, 0x421968, 0x421970)"
         },
         {
           "op": "Decode1",

@@ -13,8 +13,13 @@ import (
 
 const AffectedAreaCreatedWriter = "AffectedAreaCreated"
 
-// trailing time-slot width for the +0x30 field of the client's affected-area
-// record. See the version gates in AffectedAreaCreated.Encode.
+// trailingWidth selects how the last time word of the body is written. Which
+// client slot that word feeds depends on the twoTimeWords gate: when
+// twoTimeWords is false it is the only time word and lands in the
+// affected-area record's +0x30 slot; when twoTimeWords is true the preceding
+// tStart write takes +0x30 (v92 @0x4393b9) and this trailing tEnd write lands
+// in +0x48 instead (v92 @0x4393be). See the version gates in
+// AffectedAreaCreated.Encode.
 type trailingWidth int
 
 const (
@@ -119,8 +124,10 @@ func (m AffectedAreaCreated) Encode(l logrus.FieldLogger, ctx context.Context) f
 	// dwId, nType(1), nSkillID(4), nSLV(1) — the 3rd read is compared against the
 	// mist skill ids 130/131/2111003 @0x4167cc, proving it is nSkillID, not an owner.
 	hasOwnerId := !t.IsRegion("GMS") || t.MajorAtLeast(48)
-	// The trailing time slot (+0x30) is absent on v12 and is a single byte on
-	// v48 (@0x4218c4 Decode1) before widening to Decode4 at v61.
+	// The trailing time word is absent on v12 and is a single byte on v48
+	// (@0x4218c4 Decode1) before widening to Decode4 at v61. On the single-word
+	// versions it feeds the record's +0x30 slot (v48 @0x421928, v61 @0x423fb0);
+	// on v92 it feeds +0x48 (@0x4393be) because tStart has taken +0x30.
 	trailing := trailingWidthWide
 	if t.IsRegion("GMS") && !t.MajorAtLeast(48) {
 		trailing = trailingWidthNone
@@ -152,9 +159,9 @@ func (m AffectedAreaCreated) Encode(l logrus.FieldLogger, ctx context.Context) f
 		case trailingWidthWide:
 			w.WriteInt32(m.tEnd)
 		case trailingWidthByte:
-			// v48 narrows the +0x30 slot to one byte; the model carries only the
-			// 32-bit value, so the low byte is emitted to keep the frame length
-			// the client expects.
+			// v48 narrows this word to one byte (it still feeds +0x30, stored raw
+			// @0x421928); the model carries only the 32-bit value, so the low byte
+			// is emitted to keep the frame length the client expects.
 			w.WriteByte(byte(m.tEnd))
 		case trailingWidthNone:
 		}

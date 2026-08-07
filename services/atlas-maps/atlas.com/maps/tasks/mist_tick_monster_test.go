@@ -20,12 +20,32 @@ import (
 
 // TestMistTick_MonsterTarget_SlowLookupDoesNotBlockSiblingMist proves the
 // per-tenant fan-out (processTenant / mistTenantConcurrency) actually
-// isolates latency, not just correctness: one mist's monstersInRect blocks
-// indefinitely (simulating a degraded atlas-monsters past
-// MistRectRequestTimeout), and the sibling mist in the SAME tenant must still
-// emit well before the blocked call is released. Under the old serial loop
-// this would deadlock the test (the good mist's tick body would never run
-// until the bad one returned).
+// isolates latency, not just correctness.
+//
+// This is a two-way handshake, not a one-sided block-and-poll: the "blocked"
+// mist signals `entered` the instant its lookup starts and only then waits on
+// `release`; the "fast" mist's lookup does not proceed until it observes
+// `entered`. That ordering constraint is deliberate -- mist.Registry.AllByTenant
+// iterates a Go map (mist/registry.go:132-135), so which of the two mists
+// processTenant reaches first is non-deterministic per run.
+//
+// Under a regressed SERIAL loop this deadlocks in EITHER iteration order:
+//   - blocked first: the loop parks on `<-release` inside blocked's body and
+//     never reaches fast's tick at all, so fast's own wait on `entered` is
+//     never even started -- runOnce simply never returns.
+//   - fast first: fast's body runs immediately and blocks on `<-entered`,
+//     which nothing can ever signal because blocked's body -- the only thing
+//     that closes `entered` -- has not run yet and, serially, cannot run
+//     until fast returns. Deadlock.
+//
+// A one-sided version (assert-fast-emits-under-require.Eventually, as this
+// test previously did) only fails serial about half the time -- whichever
+// order chance handed it. This version fails serial on every run, which the
+// before/after evidence in the task-200 fix report demonstrates.
+//
+// The bounded `select`s below turn a serial regression into a clean test
+// failure (via the assertion after the timeout) rather than hanging the
+// suite forever.
 func TestMistTick_MonsterTarget_SlowLookupDoesNotBlockSiblingMist(t *testing.T) {
 	tt := mkTickTenant()
 	reg := mist.NewTestRegistry()
@@ -37,11 +57,22 @@ func TestMistTick_MonsterTarget_SlowLookupDoesNotBlockSiblingMist(t *testing.T) 
 	require.NoError(t, reg.Add(tt, blocked))
 	require.NoError(t, reg.Add(tt, fast))
 
-	release := make(chan struct{})
+	entered := make(chan struct{}) // closed by blocked's lookup the instant it starts
+	release := make(chan struct{}) // closed by the test to let blocked's lookup return
+
 	mt.monstersInRect = func(_ context.Context, mm mist.Mist) ([]monster.RestModel, error) {
 		if mm.Id() == blocked.Id() {
+			close(entered)
 			<-release // never returns until the test says so
 			return nil, errors.New("atlas-monsters unavailable")
+		}
+		// fast's lookup must not proceed until blocked's has demonstrably
+		// started -- this is what makes serial execution deadlock instead of
+		// racing past on luck.
+		select {
+		case <-entered:
+		case <-time.After(2 * time.Second):
+			return nil, errors.New("timed out waiting for the blocked mist's lookup to start -- fan-out is not concurrent")
 		}
 		return []monster.RestModel{mkMonsterRest(9001, 500, 300)}, nil
 	}
@@ -52,21 +83,40 @@ func TestMistTick_MonsterTarget_SlowLookupDoesNotBlockSiblingMist(t *testing.T) 
 		close(done)
 	}()
 	t.Cleanup(func() {
-		close(release)
-		<-done
+		select {
+		case <-release:
+		default:
+			close(release)
+		}
+		select {
+		case <-done:
+		case <-time.After(2 * time.Second):
+		}
 	})
 
-	// The fast mist's APPLY_STATUS must land while the blocked mist's lookup
-	// is still hanging -- proof the two mists ran concurrently, not serially.
-	require.Eventually(t, func() bool {
-		return len(rec.Messages(EnvCommandTopicMonster)) == 1
-	}, 500*time.Millisecond, 5*time.Millisecond,
+	// runOnce must NOT complete yet: the blocked mist is still parked on
+	// release. If it does complete, either the handshake never engaged or
+	// the fan-out silently dropped a mist -- either way this is a failure,
+	// not a race to tolerate.
+	select {
+	case <-done:
+		t.Fatal("runOnce returned before the blocked mist's lookup was released -- fan-out did not isolate latency, or the handshake never engaged (serial regression)")
+	case <-time.After(300 * time.Millisecond):
+	}
+
+	// The fast mist's APPLY_STATUS must have landed by now -- proof the two
+	// mists' lookups actually ran concurrently, not serially: the fast one
+	// waited for `entered` and returned, all while the blocked one is still
+	// hanging on `release`.
+	require.Len(t, rec.Messages(EnvCommandTopicMonster), 1,
 		"sibling mist's tick did not emit while the other mist's rect lookup was still blocked")
+
+	close(release)
 
 	select {
 	case <-done:
-		t.Fatal("runOnce returned before the blocked mist's lookup was released")
-	default:
+	case <-time.After(2 * time.Second):
+		t.Fatal("runOnce did not complete after the blocked mist's lookup was released")
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
@@ -19,8 +20,8 @@ import (
 
 type Processor interface {
 	WithTransaction(tx *gorm.DB) Processor
-	Create(mb *message.Buffer) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error)
-	CreateAndEmit(characterId uint32, senderId uint32, msg string, flag byte) (Model, error)
+	Create(mb *message.Buffer) func(transactionId uuid.UUID) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error)
+	CreateAndEmit(transactionId uuid.UUID, characterId uint32, senderId uint32, msg string, flag byte) (Model, error)
 	Update(mb *message.Buffer) func(id uint32) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error)
 	UpdateAndEmit(id uint32, characterId uint32, senderId uint32, msg string, flag byte) (Model, error)
 	Delete(mb *message.Buffer) func(id uint32) error
@@ -74,44 +75,47 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 
 var _ Processor = (*ProcessorImpl)(nil)
 
-// Create creates a new note
-func (p *ProcessorImpl) Create(mb *message.Buffer) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error) {
-	return func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error) {
-		return func(senderId uint32) func(msg string) func(flag byte) (Model, error) {
-			return func(msg string) func(flag byte) (Model, error) {
-				return func(flag byte) (Model, error) {
-					m, err := NewBuilder().
-						SetCharacterId(characterId).
-						SetSenderId(senderId).
-						SetMessage(msg).
-						SetFlag(flag).
-						Build()
-					if err != nil {
-						return Model{}, err
-					}
+// Create creates a new note. transactionId is uuid.Nil for non-saga creations.
+func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error) {
+	return func(transactionId uuid.UUID) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error) {
+		return func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error) {
+			return func(senderId uint32) func(msg string) func(flag byte) (Model, error) {
+				return func(msg string) func(flag byte) (Model, error) {
+					return func(flag byte) (Model, error) {
+						m, err := NewBuilder().
+							SetCharacterId(characterId).
+							SetSenderId(senderId).
+							SetMessage(msg).
+							SetFlag(flag).
+							Build()
+						if err != nil {
+							return Model{}, err
+						}
 
-					m, err = createNote(p.db.WithContext(p.ctx), p.t.Id(), m)
-					if err != nil {
-						return Model{}, err
+						m, err = createNote(p.db.WithContext(p.ctx), p.t.Id(), m)
+						if err != nil {
+							return Model{}, err
+						}
+						err = mb.Put(note.EnvEventTopicNoteStatus, CreateNoteStatusEventProvider(transactionId, m.CharacterId(), m.Id(), m.SenderId(), m.Message(), m.Flag(), m.Timestamp()))
+						if err != nil {
+							return Model{}, err
+						}
+						return m, nil
 					}
-					err = mb.Put(note.EnvEventTopicNoteStatus, CreateNoteStatusEventProvider(m.CharacterId(), m.Id(), m.SenderId(), m.Message(), m.Flag(), m.Timestamp()))
-					if err != nil {
-						return Model{}, err
-					}
-					return m, nil
 				}
 			}
 		}
 	}
 }
 
-// CreateAndEmit creates a new note and emits a status event
-func (p *ProcessorImpl) CreateAndEmit(characterId uint32, senderId uint32, msg string, flag byte) (Model, error) {
+// CreateAndEmit creates a new note and emits a status event. transactionId is
+// uuid.Nil for non-saga creations (REST).
+func (p *ProcessorImpl) CreateAndEmit(transactionId uuid.UUID, characterId uint32, senderId uint32, msg string, flag byte) (Model, error) {
 	var result Model
 	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		var err error
 		tp := p.WithTransaction(tx)
-		result, err = message.EmitWithResult[Model, byte](outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(model.Flip(model.Flip(tp.Create)(characterId))(senderId))(msg))(flag)
+		result, err = message.EmitWithResult[Model, byte](outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(model.Flip(model.Flip(model.Flip(tp.Create)(transactionId))(characterId))(senderId))(msg))(flag)
 		return err
 	})
 	return result, txErr

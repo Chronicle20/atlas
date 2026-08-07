@@ -17,6 +17,7 @@ const (
 	CommandRequestItemConsume     = "REQUEST_ITEM_CONSUME"
 	CommandRequestScroll          = "REQUEST_SCROLL"
 	CommandRequestVegaScroll      = "REQUEST_VEGA_SCROLL"
+	CommandRequestSkillBookUse    = "REQUEST_SKILL_BOOK_USE"
 	CommandApplyConsumableEffect  = "APPLY_CONSUMABLE_EFFECT"
 	CommandCancelConsumableEffect = "CANCEL_CONSUMABLE_EFFECT"
 	CommandRequestItemReward      = "REQUEST_ITEM_REWARD"
@@ -53,6 +54,14 @@ type RequestScrollBody struct {
 	LegendarySpirit bool          `json:"legendarySpirit"`
 }
 
+// RequestSkillBookUseBody is the body for a Skill Book (228) / Mastery Book
+// (229) consume request (task-125). Slot is the USE-compartment slot holding
+// the book.
+type RequestSkillBookUseBody struct {
+	Slot   slot.Position `json:"slot"`
+	ItemId item.Id       `json:"itemId"`
+}
+
 // RequestVegaScrollBody asks the service to apply the scroll at ScrollSlot to
 // the equip at EquipSlot at the vega-boosted rate, consuming the vega cash
 // item at VegaSlot together with the scroll. EquipSlot sign convention:
@@ -85,14 +94,15 @@ type CancelConsumableEffectBody struct {
 }
 
 const (
-	EnvEventTopic          = "EVENT_TOPIC_CONSUMABLE_STATUS"
-	EventTypeError         = "ERROR"
-	EventTypeScroll        = "SCROLL"
-	EventTypeVegaScroll    = "VEGA_SCROLL"
-	EventTypeEffectApplied = "EFFECT_APPLIED"
-	EventTypeRewardEffect  = "REWARD_EFFECT"
-	EventTypeRewardWon     = "REWARD_WON"
-	EventTypeViciousHammer = "VICIOUS_HAMMER"
+	EnvEventTopic            = "EVENT_TOPIC_CONSUMABLE_STATUS"
+	EventTypeError           = "ERROR"
+	EventTypeScroll          = "SCROLL"
+	EventTypeVegaScroll      = "VEGA_SCROLL"
+	EventTypeEffectApplied   = "EFFECT_APPLIED"
+	EventTypeRewardEffect    = "REWARD_EFFECT"
+	EventTypeRewardWon       = "REWARD_WON"
+	EventTypeViciousHammer   = "VICIOUS_HAMMER"
+	EventTypeSkillBookResult = "SKILL_BOOK_RESULT"
 
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
 	ErrorTypePetCannotLearn   = "PET_CANNOT_LEARN"
@@ -115,6 +125,18 @@ type ScrollBody struct {
 	Cursed          bool `json:"cursed"`
 	LegendarySpirit bool `json:"legendarySpirit"`
 	WhiteScroll     bool `json:"whiteScroll"`
+}
+
+// SkillBookResultBody carries the outcome of a skill-book use — the writer's
+// inputs for SKILL_LEARN_ITEM_RESULT. CanUse=false is a validation rejection
+// or saga failure (requester-only); CanUse=true broadcasts to the map with
+// Success carrying the roll outcome.
+type SkillBookResultBody struct {
+	IsMasteryBook bool   `json:"isMasteryBook"`
+	SkillId       uint32 `json:"skillId"`
+	MasterLevel   uint32 `json:"masterLevel"`
+	CanUse        bool   `json:"canUse"`
+	Success       bool   `json:"success"`
 }
 
 // VegaScrollBody carries the resolved vega scroll outcome. Distinct from

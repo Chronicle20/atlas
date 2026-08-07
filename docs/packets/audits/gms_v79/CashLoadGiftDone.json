@@ -1,0 +1,39 @@
+{
+  "WriterName": "CashLoadGiftDone",
+  "IDAName": "CCashShop::OnCashItemResult#LOAD_GIFT_SUCCESS",
+  "Address": "0x47252c",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_operation_result_gift.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0x45 LOAD_GIFT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResLoadGiftDone)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "count (uint16, count-prefix for the gift list)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "GW_GiftList entry (98B: liSN i64@0, nItemID i32@8, sBuyCharacterName char[13]@12, sText char[73]@25)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

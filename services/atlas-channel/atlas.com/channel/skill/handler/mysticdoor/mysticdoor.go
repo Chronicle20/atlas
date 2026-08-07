@@ -23,7 +23,7 @@ import (
 )
 
 func init() {
-	channelhandler.Register(skill2.PriestMysticDoorId, Apply)
+	channelhandler.Register(skill2.PriestMysticDoor, Apply)
 }
 
 // loadMap retrieves the map's fieldLimit, town flag, and whether a valid

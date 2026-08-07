@@ -118,3 +118,25 @@ func RewardWonEventProvider(characterId character.Id, boxItemId uint32, itemId u
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// SkillBookResultEventProvider builds the SKILL_BOOK_RESULT event (task-125),
+// keyed by characterId. Emitted exactly once per skill-book request: on
+// validation rejection (canUse=false, immediately) or on the saga's terminal
+// status (canUse=completed, success=roll outcome).
+func SkillBookResultEventProvider(characterId character.Id) func(isMasteryBook bool, skillId uint32, masterLevel uint32, canUse bool, success bool) model.Provider[[]kafka.Message] {
+	return func(isMasteryBook bool, skillId uint32, masterLevel uint32, canUse bool, success bool) model.Provider[[]kafka.Message] {
+		key := producer.CreateKey(int(characterId))
+		value := &consumable.Event[consumable.SkillBookResultBody]{
+			CharacterId: characterId,
+			Type:        consumable.EventTypeSkillBookResult,
+			Body: consumable.SkillBookResultBody{
+				IsMasteryBook: isMasteryBook,
+				SkillId:       skillId,
+				MasterLevel:   masterLevel,
+				CanUse:        canUse,
+				Success:       success,
+			},
+		}
+		return producer.SingleMessageProvider(key, value)
+	}
+}

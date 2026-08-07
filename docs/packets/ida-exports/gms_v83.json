@@ -918,6 +918,164 @@
         }
       ]
     },
+    "CCashShop::OnCashItemResult#LOAD_GIFT_FAILED": {
+      "address": "0x4797c0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x4e LOAD_GIFT_FAILED; op-byte consumed by dispatcher before OnCashItemResLoadGiftFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#LOAD_WISH_FAILED": {
+      "address": "0x479822",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x50 LOAD_WISH_FAILED; op-byte consumed by dispatcher before OnCashItemResLoadWishFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#SET_WISH_FAILED": {
+      "address": "0x4798a7",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x56 SET_WISH_FAILED; op-byte consumed by dispatcher before OnCashItemResSetWishFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#BUY_FAILED": {
+      "address": "0x479985",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x58 BUY_FAILED; op-byte consumed by dispatcher before OnCashItemResBuyFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#USE_COUPON_FAILED": {
+      "address": "0x47a7db",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x5c USE_COUPON_FAILED; op-byte consumed by dispatcher before OnCashItemResUseCouponFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#GIFT_FAILED": {
+      "address": "0x47a9a0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x5f GIFT_FAILED; op-byte consumed by dispatcher before OnCashItemResGiftFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#INC_TRUNK_COUNT_FAILED": {
+      "address": "0x47abca",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x63 INC_TRUNK_COUNT_FAILED; op-byte consumed by dispatcher before OnCashItemResIncTrunkCountFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#INC_CHARACTER_SLOT_COUNT_FAILED": {
+      "address": "0x47ac9b",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x65 INC_CHARACTER_SLOT_COUNT_FAILED; op-byte consumed by dispatcher before OnCashItemResIncCharacterSlotCountFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#INC_TRUNK_COUNT_SUCCESS": {
+      "address": "0x47ab2e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x62 INC_TRUNK_COUNT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResIncTrunkCountDone)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "trunkCount (new absolute m_nTrunkCount); Decode2@0x47ab4d"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#INC_CHARACTER_SLOT_COUNT_SUCCESS": {
+      "address": "0x47ac0a",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x64 INC_CHARACTER_SLOT_COUNT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResIncCharacterSlotCountDone)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slotCount (new absolute m_nCharacterSlotCount); Decode2@0x47ac29"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#ENABLE_EQUIP_SLOT_EXT_SUCCESS": {
+      "address": "0x47acdb",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x66 ENABLE_EQUIP_SLOT_EXT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResEnableEquipSlotExtDone)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slotIndex; Decode2@0x47acf8"
+        },
+        {
+          "op": "Decode2",
+          "comment": "days; Decode2@0x47ad09"
+        }
+      ]
+    },
     "CCashShop::OnCashItemResult#LOAD_INVENTORY_FAILURE": {
       "address": "0x47957c",
       "direction": "clientbound",
@@ -7773,6 +7931,64 @@
         }
       ]
     },
+    "CWvsContext::OnClaimResult": {
+      "address": "0xa27891",
+      "direction": "clientbound",
+      "notes": "unnamed in the shipped v83_Me IDB; named + byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table, case 0x2D @0xa07b5c. Decode1(mode) @0xa278a6 is the only unconditional read; mode==2 is the sole value that reads further (hasRemaining, remaining). Every other reachable mode (3, 0x41-0x45, 0x47, 0x48) renders a StringPool/CUtilDlg::Notice from the mode byte alone; unlisted modes (0, 1, 0x46, ...) fall through to an early return. Byte-identical to the already-named v72@0x91f9a9 / v79@0x9718f4 twins.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte @0xa278a6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasRemaining (v8) @0xa27925, mode==2 only",
+          "guard": "mode == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "remaining int32 @0xa2792f, mode==2 only",
+          "guard": "mode == 2"
+        }
+      ]
+    },
+    "CWvsContext::OnSetClaimSvrAvailableTime": {
+      "address": "0xa27b38",
+      "direction": "clientbound",
+      "notes": "unnamed in the shipped v83_Me IDB; named + byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table, case 0x2E @0xa07b69. Two unconditional Decode1 calls plus field stores, no branches. Byte-identical to the already-named v72@0x91fc50 / v79@0x971b9b twins.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "openHour @0xa27b49"
+        },
+        {
+          "op": "Decode1",
+          "comment": "closeHour @0xa27b4b"
+        }
+      ]
+    },
+    "CWvsContext::OnClaimSvrStatusChanged": {
+      "address": "0xa27b61",
+      "direction": "clientbound",
+      "notes": "unnamed in the shipped v83_Me IDB; named + byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table, case 0x2F @0xa07b76. Single Decode1 compared != 0, stored as m_bClaimSvrConnected. Byte-identical to the already-named v72@0x91fc79 / v79@0x971bc4 twins.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "connected flag @0xa27b73, compared != 0"
+        }
+      ]
+    },
+    "CWvsContext::OnSueCharacterResult": {
+      "address": "0xa29739",
+      "direction": "clientbound",
+      "notes": "unnamed in the shipped v83_Me IDB; named + byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table, case 0x37 @0xa07b4f. Single Decode1(result) reads the result byte; a five-way branch (0/1/2/3/else) purely picks a StringPool notice id for a CHATLOG_ADD render, no further reads. Byte-identical to the already-named v61@0x84a04e / v72@0x9216f0 / v79@0x9735a5 twins.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "result byte @0xa2974a"
+        }
+      ]
+    },
     "CWvsContext::OnEntrustedShopCheckResult#ConfirmManage": {
       "address": "0xa27d75",
       "direction": "clientbound",
@@ -9305,6 +9521,34 @@
         {
           "op": "Encode1",
           "comment": "bPetInfo (1 = include pet info)"
+        }
+      ]
+    },
+    "CWvsContext::SendClaimRequest": {
+      "address": "0xa2719c",
+      "direction": "serverbound",
+      "notes": "unnamed in the shipped v83_Me IDB (registry fname was csv-import provenance); named + byte-verified 2026-08-05 (task-145 Task 23) via a direct decompile of 0xa2719c. xrefs_to(0xa2719c) confirms exactly three direct callers: CUIStatusBar::SendClaim (fn 0x8d4a22, call site 0x8d4a50), CUserLocal::HandleRButtonClk case 7 (fn 0x95009a, call site 0x950477 -- 0x950470 is the preceding, distinct call to TSingleton<CWvsContext>::GetInstance), and unnamed sub_84EF23 (fn 0x84ef23, call site 0x84effc, itself reached from unnamed sub_84E607 at call site 0x84e61f). Size 0x6bf matches the already-named v72@0x91f2b4 / v79@0x9711ff twins. COutPacket::COutPacket(&pkt, 0x6A) at 0xa27631 matches the registry opcode (106/0x06A). Encode order identical to gms_v95.json's SendClaimRequest.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "bChatClaim (flag; also gates the trailing chatLog string below) @0xa27640"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sTargetCharacterName @0xa27659"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nType @0xa27664"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sContext (description) @0xa2767d"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "chatLog (only when bChatClaim) @0xa276f5",
+          "guard": "*a2"
         }
       ]
     },
@@ -14645,6 +14889,63 @@
         }
       ]
     },
+    "CWvsContext::SendSkillLearnItemUseRequest": {
+      "address": "0xa0a1b2",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "updateTime (get_update_time()) — v83 IDA-verified @0xa0a1b2, task-125 (function already named CWvsContext::SendSkillLearnItemUseRequest in the IDB; select_instance() is dead on the live MCP server (\"Method 'select_instance' not found\") so this entry was spliced by hand from a live decompile via the session-based idb tool, database=ce4ff298, filename MapleStory_dump.exe.i64, path ...\\\\GMS\\\\v83_Me\\\\...)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "slot (a2)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (a3); gated a3/10000 in {228,229} (skill-book item prefix)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        }
+      ]
+    },
+    "CWvsContext::OnSkillLearnItemResult": {
+      "address": "0xa1e5af",
+      "direction": "clientbound",
+      "note": "SKILL_LEARN_ITEM_RESULT (task-125). v83 IDA-verified: CWvsContext::OnPacket case 0x33 (51) delegates directly. v83 body (no leading byte — MajorVersion()<84): Decode4 characterId (CUserPool::GetUser lookup), then under an if(user-found) guard (v36): Decode1 isMasteryBook (gates MASTERY_BOOK vs SKILL_BOOK message), Decode4 skillId (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse (gates avatar glow effect + \"cannot use\" message), Decode1 success (gates success/failure sound+message). select_instance() is dead on the live MCP server, so this entry was spliced by hand from a live decompile via the session-based idb tool, database=ce4ff298, filename MapleStory_dump.exe.i64, path ...\\\\GMS\\\\v83_Me\\\\...",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "isMasteryBook",
+          "guard": "v36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "skillId (decoded, discarded)",
+          "guard": "v36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "masterLevel (decoded, discarded)",
+          "guard": "v36"
+        },
+        {
+          "op": "Decode1",
+          "comment": "canUse",
+          "guard": "v36"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success",
+          "guard": "v36"
+        }
+      ]
+    },
     "CWvsContext::SendTamingMobFoodItemUseRequest": {
       "address": "0xa09a64",
       "direction": "serverbound",
@@ -14665,6 +14966,525 @@
           "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
         }
       ]
+    },
+    "CCashShop::OnCashItemResult#ENABLE_EQUIP_SLOT_EXT_FAILED": {
+      "address": "0x47aea2",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x67 ENABLE_EQUIP_SLOT_EXT_FAILED; op-byte consumed by dispatcher before OnCashItemResEnableEquipSlotExtFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#MOVE_L_TO_S_FAILED": {
+      "address": "0x47b18c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x69 MOVE_L_TO_S_FAILED; op-byte consumed by dispatcher before OnCashItemResMoveLtoSFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#MOVE_S_TO_L_FAILED": {
+      "address": "0x47b401",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x6b MOVE_S_TO_L_FAILED; op-byte consumed by dispatcher before OnCashItemResMoveStoLFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#DESTROY_FAILED": {
+      "address": "0x47b4c5",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x6d DESTROY_FAILED; op-byte consumed by dispatcher before OnCashItemResDestroyFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#REBATE_FAILED": {
+      "address": "0x47b5e4",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x86 REBATE_FAILED; op-byte consumed by dispatcher before OnCashItemResRebateFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#COUPLE_FAILED": {
+      "address": "0x47b8c2",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x88 COUPLE_FAILED; op-byte consumed by dispatcher before OnCashItemResCoupleFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#BUY_PACKAGE_FAILED": {
+      "address": "0x479ba0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x8a BUY_PACKAGE_FAILED; op-byte consumed by dispatcher before OnCashItemResBuyPackageFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#GIFT_PACKAGE_FAILED": {
+      "address": "0x479d10",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x8c GIFT_PACKAGE_FAILED; op-byte consumed by dispatcher before OnCashItemResGiftPackageFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#BUY_NORMAL_FAILED": {
+      "address": "0x47b71c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x8e BUY_NORMAL_FAILED; op-byte consumed by dispatcher before OnCashItemResBuyNormalFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#FRIENDSHIP_FAILED": {
+      "address": "0x47ba70",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x92 FRIENDSHIP_FAILED; op-byte consumed by dispatcher before OnCashItemResFriendShipFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#PURCHASE_RECORD_FAILED": {
+      "address": "0x47c0fc",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x9b PURCHASE_RECORD_FAILED; op-byte consumed by dispatcher before OnCashItemResPurchaseRecordFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#TRANSFER_WORLD_FAILED": {
+      "address": "0x47c072",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xa1 TRANSFER_WORLD_FAILED; op-byte consumed by dispatcher before OnCashItemResTransferWorldFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#GIFT_SUCCESS": {
+      "address": "0x47a856",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x5e GIFT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResGiftDone)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (name-lookup key only; item never inserted into m_aCashItemInfo)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nxCashSpent (GMS-only; JMS build omits this trailing field \u2014 confirmed absent live)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#LOAD_GIFT_SUCCESS": {
+      "address": "0x47959e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x4d LOAD_GIFT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResLoadGiftDone)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "count (uint16, count-prefix for the gift list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_GiftList entry (98B: liSN i64@0, nItemID i32@8, sBuyCharacterName char[13]@12, sText char[73]@25)",
+          "guard": "loop count"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#USE_COUPON_SUCCESS": {
+      "address": "0x479d8a",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x59 USE_COUPON_SUCCESS; op-byte consumed by dispatcher before OnCashItemResUseCouponDone)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "itemCount (byte, count-prefix for the item list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo entry (55B CashInventoryItem blob)",
+          "guard": "loop itemCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "maplePoint"
+        },
+        {
+          "op": "Decode4",
+          "comment": "uliCount (count-prefix for the packed-ref list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "packed _ULARGE_INTEGER-shaped record (8B: quantity u16@0, slotPos u16@2, itemId i32@4)",
+          "guard": "loop uliCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "meso"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#GIFT_COUPON_SUCCESS": {
+      "address": "0x47a362",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x5b GIFT_COUPON_SUCCESS; op-byte consumed by dispatcher before OnCashItemResGiftCouponDone)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode1",
+          "comment": "itemCount (byte, count-prefix for the item list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo entry (55B CashInventoryItem blob)",
+          "guard": "loop itemCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "maplePoint"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#BUY_PACKAGE_SUCCESS": {
+      "address": "0x479a1b",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x89 BUY_PACKAGE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResBuyPackageDone)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "itemCount (byte, count-prefix for the item list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo entry (55B CashInventoryItem blob)",
+          "guard": "loop itemCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "trailingCount (uint16; branches notice-text format client-side)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#GIFT_PACKAGE_SUCCESS": {
+      "address": "0x479c22",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x8b GIFT_PACKAGE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResGiftPackageDone)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode4",
+          "comment": "packageId (CItemInfo::GetSpecialName key)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "unused1 (read; discarded/used only for notice-format branch client-side)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "unused2 (read; discarded/used only for notice-format branch client-side)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nxCashSpent (GMS-only; JMS build omits this trailing field \u2014 confirmed absent live)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#BUY_NORMAL_SUCCESS": {
+      "address": "0x47b603",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x8d BUY_NORMAL_SUCCESS; op-byte consumed by dispatcher before OnCashItemResBuyNormalDone)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "count (int32, count-prefix for the packed-ref list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "packed _ULARGE_INTEGER-shaped record (8B: quantity u16@0, slotPos u16@2, itemId i32@4) \u2014 same shape as USE_COUPON_SUCCESS's second list",
+          "guard": "loop count"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#FRIENDSHIP_SUCCESS": {
+      "address": "0x47b93c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x91 FRIENDSHIP_SUCCESS; op-byte consumed by dispatcher before OnCashItemResFriendShipDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo blob (55B, single \u2014 appended to m_aCashItemInfo)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#REBATE_SUCCESS": {
+      "address": "0x47b4e4",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x85 REBATE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResRebateDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "sn (8B _LARGE_INTEGER SN; matched against existing m_aCashItemInfo[i].liSN, find-and-remove pattern)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "amount"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#COUPLE_SUCCESS": {
+      "address": "0x47b78e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x87 COUPLE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResCoupleDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo blob (55B, single \u2014 appended to m_aCashItemInfo)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (second/separate reference, used only for CItemInfo::GetItemName in notice text)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#LIMIT_GOODS_COUNT_CHANGED": {
+      "address": "0x47908a",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x47 LIMIT_GOODS_COUNT_CHANGED; op-byte consumed by dispatcher before CCashShop::OnCashItemResLimitGoodsCountChanged)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (int32)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "sn (int32)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "remainCount (int32, updates client-local CS_LIMITGOODS array remaining-count)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#DESTROY_SUCCESS": {
+      "address": "0x47b420",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x6c DESTROY_SUCCESS; op-byte consumed by dispatcher before CCashShop::OnCashItemResDestroyDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "sn: 8 bytes LARGE_INTEGER (int64), matched against m_aCashItemInfo[i].liSN to find-and-remove the locker entry"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#EXPIRE_DONE": {
+      "address": "0x47b1ab",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x6e EXPIRE_DONE; op-byte consumed by dispatcher before CCashShop::OnCashItemResExpireDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "sn: 8 bytes LARGE_INTEGER (int64), matched against m_aCashItemInfo[i].liSN before removal (same shape as DESTROY_SUCCESS)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#PURCHASE_RECORD": {
+      "address": "0x47c091",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x9a PURCHASE_RECORD; op-byte consumed by dispatcher before CCashShop::OnCashItemResPurchaseRecord)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "goodsSN (int32, used as a ZMap<long,...> key when nonzero)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "purchased (byte, compared != 0, recorded in m_mPurchaseRecord/m_nPurchaseRecord)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#NAME_CHANGE_BUY_DONE": {
+      "address": "0x47bccb",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x9e NAME_CHANGE_BUY_DONE; op-byte consumed by dispatcher before CCashShop::OnCashItemNameChangeResBuyDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "item: 55 bytes GW_CashItemInfo blob (CashInventoryItem.EncodeBytes), decoded into a freshly-inserted m_aCashItemInfo slot"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#TRANSFER_WORLD_SUCCESS": {
+      "address": "0x47bfa2",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xa0 TRANSFER_WORLD_SUCCESS; op-byte consumed by dispatcher before CCashShop::OnCashItemResTransferWorldDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "item: 55 bytes GW_CashItemInfo blob (CashInventoryItem.EncodeBytes); byte-identical body shape to NAME_CHANGE_BUY_DONE"
+        }
+      ]
+    },
+    "CWvsContext::CheckTemporaryStatDuration": {
+      "address": "0xa20935",
+      "direction": "serverbound",
+      "calls": []
     }
   }
 }

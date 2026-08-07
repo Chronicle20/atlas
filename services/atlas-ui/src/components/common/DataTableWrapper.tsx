@@ -1,14 +1,15 @@
 import * as React from "react";
-import { type ColumnDef } from "@tanstack/react-table";
+import { type RowData } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table";
+import { type DataTableColumnDef } from "@/components/data-table-features";
 import { PageLoader } from "./PageLoader";
 import { ErrorDisplay } from "./ErrorDisplay";
 import { EmptyState } from "./EmptyState";
 import { cn } from "@/lib/utils";
 import { Database } from "lucide-react";
 
-interface DataTableWrapperProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+interface DataTableWrapperProps<TData extends RowData> {
+  columns: DataTableColumnDef<TData>[];
   data: TData[];
   loading?: boolean;
   error?: Error | { message: string } | string | null;
@@ -32,7 +33,7 @@ interface DataTableWrapperProps<TData, TValue> {
   className?: string;
 }
 
-export function DataTableWrapper<TData, TValue>({
+export function DataTableWrapper<TData extends RowData>({
   columns,
   data,
   loading = false,
@@ -43,7 +44,7 @@ export function DataTableWrapper<TData, TValue>({
   headerActions,
   emptyState,
   className,
-}: DataTableWrapperProps<TData, TValue>) {
+}: DataTableWrapperProps<TData>) {
   // Show loading state
   if (loading) {
     return (

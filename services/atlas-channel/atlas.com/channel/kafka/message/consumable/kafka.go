@@ -19,6 +19,7 @@ const (
 	CommandRequestItemReward    = "REQUEST_ITEM_REWARD"
 	CommandRequestVegaScroll    = "REQUEST_VEGA_SCROLL"
 	CommandRequestViciousHammer = "REQUEST_VICIOUS_HAMMER"
+	CommandRequestSkillBookUse  = "REQUEST_SKILL_BOOK_USE"
 )
 
 type Command[E any] struct {
@@ -50,6 +51,11 @@ type RequestScrollBody struct {
 	LegendarySpirit bool          `json:"legendarySpirit"`
 }
 
+type RequestSkillBookUseBody struct {
+	Slot   slot.Position `json:"slot"`
+	ItemId item.Id       `json:"itemId"`
+}
+
 type RequestVegaScrollBody struct {
 	VegaSlot   slot.Position `json:"vegaSlot"`
 	VegaItemId item.Id       `json:"vegaItemId"`
@@ -63,11 +69,12 @@ type RequestViciousHammerBody struct {
 }
 
 const (
-	EnvEventTopic          = "EVENT_TOPIC_CONSUMABLE_STATUS"
-	EventTypeError         = "ERROR"
-	EventTypeScroll        = "SCROLL"
-	EventTypeVegaScroll    = "VEGA_SCROLL"
-	EventTypeViciousHammer = "VICIOUS_HAMMER"
+	EnvEventTopic            = "EVENT_TOPIC_CONSUMABLE_STATUS"
+	EventTypeError           = "ERROR"
+	EventTypeScroll          = "SCROLL"
+	EventTypeSkillBookResult = "SKILL_BOOK_RESULT"
+	EventTypeVegaScroll      = "VEGA_SCROLL"
+	EventTypeViciousHammer   = "VICIOUS_HAMMER"
 
 	EventTypeRewardEffect = "REWARD_EFFECT"
 	EventTypeRewardWon    = "REWARD_WON"
@@ -92,6 +99,14 @@ type ScrollBody struct {
 	Cursed          bool `json:"cursed"`
 	LegendarySpirit bool `json:"legendarySpirit"`
 	WhiteScroll     bool `json:"whiteScroll"`
+}
+
+type SkillBookResultBody struct {
+	IsMasteryBook bool   `json:"isMasteryBook"`
+	SkillId       uint32 `json:"skillId"`
+	MasterLevel   uint32 `json:"masterLevel"`
+	CanUse        bool   `json:"canUse"`
+	Success       bool   `json:"success"`
 }
 
 type RewardEffectBody struct {

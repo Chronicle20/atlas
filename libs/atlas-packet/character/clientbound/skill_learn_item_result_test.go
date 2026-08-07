@@ -1,0 +1,390 @@
+package clientbound
+
+import (
+	"bytes"
+	"testing"
+
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+)
+
+func TestSkillLearnItemResultRoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := NewSkillLearnItemResult(12345, true, 1121001, 20, true, false)
+			output := SkillLearnItemResult{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.CharacterId() != input.CharacterId() {
+				t.Errorf("characterId: got %v, want %v", output.CharacterId(), input.CharacterId())
+			}
+			if output.IsMasteryBook() != input.IsMasteryBook() {
+				t.Errorf("isMasteryBook: got %v, want %v", output.IsMasteryBook(), input.IsMasteryBook())
+			}
+			if output.SkillId() != input.SkillId() {
+				t.Errorf("skillId: got %v, want %v", output.SkillId(), input.SkillId())
+			}
+			if output.MasterLevel() != input.MasterLevel() {
+				t.Errorf("masterLevel: got %v, want %v", output.MasterLevel(), input.MasterLevel())
+			}
+			if output.CanUse() != input.CanUse() {
+				t.Errorf("canUse: got %v, want %v", output.CanUse(), input.CanUse())
+			}
+			if output.Success() != input.Success() {
+				t.Errorf("success: got %v, want %v", output.Success(), input.Success())
+			}
+		})
+	}
+}
+
+// Golden bytes, v83 — 15-byte body (NO leading bOnExclRequest byte):
+// characterId(4 LE) + isMasteryBook(1) + skillId(4 LE) + masterLevel(4 LE) + canUse(1) + success(1).
+// Trivially-readable values: characterId=1, mastery, skillId=2, masterLevel=3, canUse=1, success=0.
+//
+// Golden bytes, v48 — 15-byte body (NO leading bOnExclRequest byte, same as
+// v83; MajorVersion()=48 < 84):
+// characterId(4 LE) + isMasteryBook(1) + skillId(4 LE) + masterLevel(4 LE) + canUse(1) + success(1).
+//
+// IDA evidence (task-125): CWvsContext::OnSkillLearnItemResult @0x71a135 (v48
+// IDB GMS_v48_1_DEVM.exe.i64, session 0bb5f11a — already named in the IDB).
+// CWvsContext::OnPacket case 43 (0x2B, @0x70d3aa) delegates directly. Body:
+// Decode4 characterId (CUserPool::GetUser lookup), then under the
+// user-found guard (v29): Decode1 isMasteryBook, Decode4 skillId (decoded,
+// discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse,
+// Decode1 success — matches the existing 15-byte golden fixture shape
+// exactly. Opcode 0x2B == registry op 43.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v48 ida=0x71a135
+func TestSkillLearnItemResultGoldenBytesV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	l, _ := testlog.NewNullLogger()
+	got := NewSkillLearnItemResult(1, true, 2, 3, true, false).Encode(l, ctx)(nil)
+	want := []byte{
+		0x01, 0x00, 0x00, 0x00, // characterId
+		0x01,                   // isMasteryBook
+		0x02, 0x00, 0x00, 0x00, // skillId
+		0x03, 0x00, 0x00, 0x00, // masterLevel
+		0x01, // canUse
+		0x00, // success
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}
+
+// Golden bytes, v61 — 15-byte body (NO leading bOnExclRequest byte, same as
+// v48/v83; MajorVersion()=61 < 84):
+// characterId(4 LE) + isMasteryBook(1) + skillId(4 LE) + masterLevel(4 LE) + canUse(1) + success(1).
+//
+// IDA evidence (task-125): CWvsContext::OnSkillLearnItemResult @0x841e5f (v61
+// IDB GMS_v61.1_U_DEVM.exe.i64, session 965202bf). The IDB already carries the
+// mangled symbol ?OnSkillLearnItemResult@CWvsContext@@QAEXAAVCInPacket@@@Z at
+// this address (func_query confirms it — Hex-Rays merely displayed
+// sub_841E5F in the pseudocode; the prior registry note claiming it was
+// unnamed was stale, corrected in docs/packets/registry/gms_v61.yaml,
+// task-125). CWvsContext::OnPacket case 48 (0x30, @0x8305b4) delegates
+// directly. Body: Decode4 characterId (CUserPool::GetUser lookup), then under
+// the user-found guard (v28): Decode1 isMasteryBook, Decode4 skillId
+// (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1
+// canUse, Decode1 success — matches the existing 15-byte golden fixture shape
+// exactly. Opcode 0x30 == registry op 48.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v61 ida=0x841e5f
+func TestSkillLearnItemResultGoldenBytesV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	l, _ := testlog.NewNullLogger()
+	got := NewSkillLearnItemResult(1, true, 2, 3, true, false).Encode(l, ctx)(nil)
+	want := []byte{
+		0x01, 0x00, 0x00, 0x00, // characterId
+		0x01,                   // isMasteryBook
+		0x02, 0x00, 0x00, 0x00, // skillId
+		0x03, 0x00, 0x00, 0x00, // masterLevel
+		0x01, // canUse
+		0x00, // success
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}
+
+// Golden bytes, v72 — 15-byte body (NO leading bOnExclRequest byte, same as
+// v48/v61/v83; MajorVersion()=72 < 84):
+// characterId(4 LE) + isMasteryBook(1) + skillId(4 LE) + masterLevel(4 LE) + canUse(1) + success(1).
+//
+// IDA evidence (task-125): sub_9175E6 @0x9175e6 (v72 IDB
+// GMS_v72.1_U_DEVM.exe.i64, session 90e36cb0). Hex-Rays displays the
+// pseudocode under the sub_ label, but xrefs_to the dispatch call site
+// resolves this address to the mangled symbol
+// CWvsContext::OnSkillLearnItemResult — already named in the IDB (the prior
+// registry note claiming it was unnamed was stale, corrected in
+// docs/packets/registry/gms_v72.yaml, same class as the v61 correction).
+// CWvsContext::OnPacket case 48 (0x30, @0x902791) delegates directly. Body:
+// Decode4 characterId (CUserPool::GetUser lookup, @0x917602/0x91760e), then
+// under the user-found guard (v28): Decode1 isMasteryBook @0x91764a, Decode4
+// skillId (decoded, discarded) @0x91764d, Decode4 masterLevel (decoded,
+// discarded) @0x917654, Decode1 canUse @0x917665, Decode1 success @0x917668 —
+// matches the existing 15-byte golden fixture shape exactly. Opcode 0x30 ==
+// registry op 48.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v72 ida=0x9175e6
+func TestSkillLearnItemResultGoldenBytesV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	l, _ := testlog.NewNullLogger()
+	got := NewSkillLearnItemResult(1, true, 2, 3, true, false).Encode(l, ctx)(nil)
+	want := []byte{
+		0x01, 0x00, 0x00, 0x00, // characterId
+		0x01,                   // isMasteryBook
+		0x02, 0x00, 0x00, 0x00, // skillId
+		0x03, 0x00, 0x00, 0x00, // masterLevel
+		0x01, // canUse
+		0x00, // success
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}
+
+// Golden bytes, v79 — 15-byte body (NO leading bOnExclRequest byte, same as
+// v48/v61/v72/v83; MajorVersion()=79 < 84):
+// characterId(4 LE) + isMasteryBook(1) + skillId(4 LE) + masterLevel(4 LE) + canUse(1) + success(1).
+//
+// IDA evidence (task-125): sub_969022 @0x969022 (v79 IDB
+// GMS_v79_1_DEVM.exe.i64, session 9a7d3642). Hex-Rays displays the pseudocode
+// under the sub_ label, but xrefs_to the CWvsContext::OnPacket case 48 (0x30,
+// @0x9539c9) dispatch call resolves this address to the mangled symbol
+// CWvsContext::OnSkillLearnItemResult — already named in the IDB. Body:
+// Decode4 characterId (CUserPool::GetUser lookup) @0x96903e, then under the
+// user-found guard (v27): Decode1 isMasteryBook @0x969086, Decode4 skillId
+// (decoded, discarded) @0x969089, Decode4 masterLevel (decoded, discarded)
+// @0x969090, Decode1 canUse @0x9690a1, Decode1 success @0x9690a4 — matches
+// the existing 15-byte golden fixture shape exactly. Opcode 0x30 == registry
+// op 48.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v79 ida=0x969022
+func TestSkillLearnItemResultGoldenBytesV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	l, _ := testlog.NewNullLogger()
+	got := NewSkillLearnItemResult(1, true, 2, 3, true, false).Encode(l, ctx)(nil)
+	want := []byte{
+		0x01, 0x00, 0x00, 0x00, // characterId
+		0x01,                   // isMasteryBook
+		0x02, 0x00, 0x00, 0x00, // skillId
+		0x03, 0x00, 0x00, 0x00, // masterLevel
+		0x01, // canUse
+		0x00, // success
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}
+
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v83 ida=0xa1e5af
+func TestSkillLearnItemResultGoldenBytesV83(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	l, _ := testlog.NewNullLogger()
+	got := NewSkillLearnItemResult(1, true, 2, 3, true, false).Encode(l, ctx)(nil)
+	want := []byte{
+		0x01, 0x00, 0x00, 0x00, // characterId
+		0x01,                   // isMasteryBook
+		0x02, 0x00, 0x00, 0x00, // skillId
+		0x03, 0x00, 0x00, 0x00, // masterLevel
+		0x01, // canUse
+		0x00, // success
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}
+
+// Golden bytes, v84 — 16-byte body (LEADING bOnExclRequest byte = 0x01).
+// Proves the MajorVersion() >= 84 gate. Same field values as the v83 golden,
+// so the only difference is the extra leading 0x01. (v84 clientbound diverges
+// from v83 despite identical serverbound — the v84≠v83 exception.)
+//
+// IDA evidence (task-125): CWvsContext::OnSkillLearnItemResult @0xa6984e (v84
+// IDB GMS_v84.1_U_DEVM.i64, session 79511a2a — already named in the IDB,
+// func_query confirmed sub_A6984E == CWvsContext::OnSkillLearnItemResult).
+// xrefs_to confirms CWvsContext::OnPacket case 0x33 (51, @0xa51ea6) delegates
+// directly. Body, in decompile order:
+//
+//	if ( CInPacket::Decode1(a2) ) { ... }        -> bOnExclRequest, @0xa6986a
+//	  (this[2091]=0; this[2092]=sub_9C7771(...)  -- clears exclusive-request lock)
+//	v6 = CInPacket::Decode4(v2);                 -> characterId,   @0xa69889
+//
+// CONFIRMED: the leading Decode1 (bOnExclRequest, @0xa6986a) executes and is
+// evaluated BEFORE the Decode4 characterId read (@0xa69889) — this is the
+// v84 MajorVersion()>=84 gate the codec implements; v83 and earlier have no
+// such leading read (15-byte body). Then, under the user-found guard (v27
+// nonzero, from sub_9B1635(characterId)):
+//
+//	v31 = Decode1(v2)  -> isMasteryBook, @0xa698d1
+//	Decode4(v2)        -> skillId (decoded, discarded), @0xa698d4
+//	Decode4(v2)        -> masterLevel (decoded, discarded), @0xa698db
+//	v32 = Decode1(v2)  -> canUse, @0xa698ec
+//	v9  = Decode1(v2)  -> success, @0xa698ef
+//
+// matches the codec's read order exactly. Opcode 0x33 (51 decimal) ==
+// registry op SKILL_LEARN_ITEM_RESULT.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v84 ida=0xa6984e
+func TestSkillLearnItemResultGoldenBytesV84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	l, _ := testlog.NewNullLogger()
+	got := NewSkillLearnItemResult(1, true, 2, 3, true, false).Encode(l, ctx)(nil)
+	want := []byte{
+		0x01,                   // bOnExclRequest (v84+ leading byte)
+		0x01, 0x00, 0x00, 0x00, // characterId
+		0x01,                   // isMasteryBook
+		0x02, 0x00, 0x00, 0x00, // skillId
+		0x03, 0x00, 0x00, 0x00, // masterLevel
+		0x01, // canUse
+		0x00, // success
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}
+
+// Golden bytes, v87 — 16-byte body (LEADING bOnExclRequest byte = 0x01).
+// Same field values as the v83/v84 golden; only difference from v83 is the
+// extra leading 0x01 (MajorVersion()=87 >= 84 gate).
+//
+// IDA evidence (task-125): CWvsContext::OnSkillLearnItemResult @0xab58e8 (v87
+// IDB GMSv87_4GB.exe.i64, session 81f32170 — func_query name_regex confirms
+// 0xab58e8 == ?OnSkillLearnItemResult@CWvsContext@@QAEXAAVCInPacket@@@Z).
+// xrefs_to confirms CWvsContext::OnPacket case 0x33 (51, @0xa9d1e7) delegates
+// directly. Body, in decompile order:
+//
+//	if ( CInPacket::Decode1(a2) ) { ... }      -> bOnExclRequest, @0xab5904
+//	  (this[2093]=0; this[2094]=get_update_time()  -- clears exclusive-request lock)
+//	v4 = CInPacket::Decode4(v2);                -> characterId,   @0xab5923
+//
+// CONFIRMED: the leading Decode1 (bOnExclRequest, @0xab5904) executes and is
+// evaluated BEFORE the Decode4 characterId read (@0xab5923) — same v84+ gate
+// the codec implements; 16-byte body. Then, under the user-found guard (v23
+// nonzero, from CUserPool::GetUser(characterId)):
+//
+//	v27 = Decode1(v2)  -> isMasteryBook, @0xab596b
+//	Decode4(v2)        -> skillId (decoded, discarded), @0xab596e
+//	Decode4(v2)        -> masterLevel (decoded, discarded), @0xab5975
+//	v28 = Decode1(v2)  -> canUse, @0xab5986
+//	v7  = Decode1(v2)  -> success, @0xab5989
+//
+// matches the codec's read order exactly. Opcode 0x33 (51 decimal) ==
+// registry op SKILL_LEARN_ITEM_RESULT.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v87 ida=0xab58e8
+func TestSkillLearnItemResultGoldenBytesV87(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 87, 1)
+	l, _ := testlog.NewNullLogger()
+	got := NewSkillLearnItemResult(1, true, 2, 3, true, false).Encode(l, ctx)(nil)
+	want := []byte{
+		0x01,                   // bOnExclRequest (v84+ leading byte, present at v87)
+		0x01, 0x00, 0x00, 0x00, // characterId
+		0x01,                   // isMasteryBook
+		0x02, 0x00, 0x00, 0x00, // skillId
+		0x03, 0x00, 0x00, 0x00, // masterLevel
+		0x01, // canUse
+		0x00, // success
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}
+
+// Golden bytes, v95 — 16-byte body (LEADING bOnExclRequest byte = 0x01).
+// Same field values as the v83/v84/v87 golden; only difference from v83 is
+// the extra leading 0x01 (MajorVersion()=95 >= 84 gate).
+//
+// IDA evidence (task-125): CWvsContext::OnSkillLearnItemResult @0x9f7af0 (v95
+// IDB GMS_v95.0_U_DEVM.exe.i64, session e4abcb98 — PDB-backed, real symbol
+// name). xrefs_to confirms CWvsContext::OnPacket case 50 (0x32, @0x9e5a13,
+// fn @0x9e5830) delegates directly. Body, in decompile order:
+//
+//	bOnExclRequest = CInPacket::Decode1(iPacket);  -> bOnExclRequest, @0x9f7b31 (LEADING)
+//	v3 = CInPacket::Decode4(v2);                   -> characterId,    @0x9f7b35
+//	User = CUserPool::GetUser(..., v3);
+//
+// CONFIRMED: the leading Decode1 (bOnExclRequest, @0x9f7b31) executes and is
+// evaluated BEFORE the Decode4 characterId read (@0x9f7b35) — the v84+ gate
+// the codec implements; 16-byte body. Then, under the user-found guard (v6
+// nonzero):
+//
+//	bIsMaterbook = CInPacket::Decode1(v2);  -> isMasteryBook, @0x9f7b86
+//	CInPacket::Decode4(v2);                 -> skillId (decoded, discarded), @0x9f7b8a
+//	CInPacket::Decode4(v2);                 -> masterLevel (decoded, discarded), @0x9f7b91
+//	bUsed[0] = CInPacket::Decode1(v2);       -> canUse, @0x9f7ba2
+//	v7 = CInPacket::Decode1(v2); bSucceed = v7; -> success, @0x9f7ba6
+//
+// matches the codec's read order exactly. Opcode 0x32 (50 decimal) ==
+// registry op SKILL_LEARN_ITEM_RESULT.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v95 ida=0x9f7af0
+func TestSkillLearnItemResultGoldenBytesV95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	l, _ := testlog.NewNullLogger()
+	got := NewSkillLearnItemResult(1, true, 2, 3, true, false).Encode(l, ctx)(nil)
+	want := []byte{
+		0x01,                   // bOnExclRequest (v84+ leading byte, present at v95)
+		0x01, 0x00, 0x00, 0x00, // characterId
+		0x01,                   // isMasteryBook
+		0x02, 0x00, 0x00, 0x00, // skillId
+		0x03, 0x00, 0x00, 0x00, // masterLevel
+		0x01, // canUse
+		0x00, // success
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}
+
+// Golden bytes, jms_v185 — 16-byte body (LEADING bOnExclRequest byte = 0x01).
+// Same field values as the v83/v84/v87/v95 golden; only difference from v83 is
+// the extra leading 0x01 (MajorVersion()=185 >= 84 gate).
+//
+// IDA evidence (task-125): CWvsContext::OnSkillLearnItemResult @0xb05116 (JMS
+// v185 IDB MapleStory_dump_SCY.exe.i64, session 3c4bb8b1 — already named in
+// the IDB). xrefs_to confirms CWvsContext::OnPacket case 0x30 (48,
+// @0xaec1a3, dispatcher fn @0xaebfe7) delegates directly. Body, in decompile
+// order:
+//
+//	if ( CInPacket::Decode1(iPacket) )   -- bOnExclRequest, @0xb05132 (LEADING)
+//	{
+//	  this[...] = 0; this[...] = get_update_time();  -- clears exclusive-request lock
+//	}
+//	v4 = CInPacket::Decode4(v2);         -> characterId,   @0xb05151
+//	User = CUserPool::GetUser(..., v4);
+//
+// CONFIRMED: the leading Decode1 (bOnExclRequest, @0xb05132) executes and is
+// evaluated BEFORE the Decode4 characterId read (@0xb05151) — the v84+ gate
+// the codec implements; 16-byte body. Then, under the user-found guard (v31
+// nonzero, from CUserPool::GetUser):
+//
+//	v35 = Decode1(v2)  -> isMasteryBook, @0xb05199
+//	Decode4(v2)        -> skillId (decoded, discarded), @0xb0519c
+//	Decode4(v2)        -> masterLevel (decoded, discarded), @0xb051a3
+//	v36 = Decode1(v2)  -> canUse, @0xb051b4
+//	v7  = Decode1(v2)  -> success, @0xb051b7
+//
+// matches the codec's read order exactly. Opcode 0x30 (48 decimal) ==
+// registry op SKILL_LEARN_ITEM_RESULT.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=jms_v185 ida=0xb05116
+func TestSkillLearnItemResultGoldenBytesJMS185(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	l, _ := testlog.NewNullLogger()
+	got := NewSkillLearnItemResult(1, true, 2, 3, true, false).Encode(l, ctx)(nil)
+	want := []byte{
+		0x01,                   // bOnExclRequest (v84+ leading byte, present at jms_v185)
+		0x01, 0x00, 0x00, 0x00, // characterId
+		0x01,                   // isMasteryBook
+		0x02, 0x00, 0x00, 0x00, // skillId
+		0x03, 0x00, 0x00, 0x00, // masterLevel
+		0x01, // canUse
+		0x00, // success
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}

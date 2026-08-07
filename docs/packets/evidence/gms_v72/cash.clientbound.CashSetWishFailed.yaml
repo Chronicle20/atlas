@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashSetWishFailed
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#SET_WISH_FAILED
+    address: "0x471537"
+    decompile_sha256: b65d4e16c023b524b10955ff646d70e10ad5cd73bc5bb210e49d47e6e2136e41
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_failed_test.go#TestSetWishFailedByteFixture

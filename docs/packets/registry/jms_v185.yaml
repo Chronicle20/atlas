@@ -2498,11 +2498,6 @@
   fname_alts:
     - CUIAdminAntiMacro::SetRet
   provenance: csv-import
-- op: CLAIM_REQUEST
-  direction: serverbound
-  opcode: 101
-  fname: CWvsContext::SendClaimRequest
-  provenance: csv-import
 - op: QUEST_ACTION
   direction: serverbound
   opcode: 102

@@ -68,3 +68,7 @@ deploy/k8s/secrets.yaml
 # Stray Node/vitest artifacts (atlas-ui has its own; the repo root should never have node_modules)
 node_modules/
 /.cache/
+
+# `go build ./...` in libs/atlas-constants/gen names its binary after the
+# directory (gen) — trivially recreated, never a deliverable.
+/libs/atlas-constants/gen/gen

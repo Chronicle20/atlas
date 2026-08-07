@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-buffs/buff"
 	"atlas-buffs/buff/stat"
+	character2 "atlas-buffs/kafka/message/character"
 	"context"
 	"encoding/json"
 	"errors"
@@ -66,7 +67,7 @@ func statKey(sourceId int32, statType string) string {
 // (sourceId, statType), each with its own expiry; other stats of the same source
 // are left intact, so the source's buffs accumulate one-at-a-time. Returns one
 // buff per change.
-func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channel.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool) ([]buff.Model, error) {
+func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channel.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool, noExpiry bool) ([]buff.Model, error) {
 	t := tenant.MustFromContext(ctx)
 
 	m, err := r.characters.Get(ctx, t, characterId)
@@ -83,10 +84,17 @@ func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channe
 		m.channelId = channelId
 	}
 
+	newBuff := func(cs []stat.Model) (buff.Model, error) {
+		if noExpiry {
+			return buff.NewNoExpiryBuff(sourceId, level, cs)
+		}
+		return buff.NewBuff(sourceId, level, duration, cs)
+	}
+
 	var applied []buff.Model
 	if accumulate {
 		for _, c := range changes {
-			b, err := buff.NewBuff(sourceId, level, duration, []stat.Model{c})
+			b, err := newBuff([]stat.Model{c})
 			if err != nil {
 				return nil, err
 			}
@@ -94,7 +102,7 @@ func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channe
 			applied = append(applied, b)
 		}
 	} else {
-		b, err := buff.NewBuff(sourceId, level, duration, changes)
+		b, err := newBuff(changes)
 		if err != nil {
 			return nil, err
 		}
@@ -336,4 +344,77 @@ func (r *Registry) UpdatePoisonTick(ctx context.Context, characterId uint32, at 
 func (r *Registry) ClearPoisonTick(ctx context.Context, characterId uint32) {
 	t := tenant.MustFromContext(ctx)
 	_ = r.poisonTicks.Remove(ctx, t, characterId)
+}
+
+// UpdateStatValue changes the amount of one stat on the character's active
+// buff for sourceId. INCREMENT adds amount clamped to capValue (no-op when
+// already at/above cap); SET replaces the amount outright. Returns the
+// updated buff and true when a mutation was stored; (Model{}, false, nil)
+// when the buff is missing/expired, lacks the stat, the operation is
+// unknown, or the value would not change. Only whole-source
+// (non-accumulate) buffs are addressed via srcKey — accumulate-mode
+// per-stat buffs are out of scope for value updates. Defensive floors keep
+// the value from ever exceeding cap or dropping below 1. Same
+// get-modify-put shape as Cancel, serialized per character by the command
+// topic's characterId partition key.
+func (r *Registry) UpdateStatValue(ctx context.Context, characterId uint32, sourceId int32, statType string, operation string, amount int32, capValue int32) (buff.Model, bool, error) {
+	t := tenant.MustFromContext(ctx)
+
+	m, err := r.characters.Get(ctx, t, characterId)
+	if errors.Is(err, atlas.ErrNotFound) {
+		return buff.Model{}, false, nil
+	}
+	if err != nil {
+		return buff.Model{}, false, err
+	}
+
+	b, ok := m.buffs[srcKey(sourceId)]
+	if !ok || b.Expired() {
+		return buff.Model{}, false, nil
+	}
+
+	var current int32
+	found := false
+	for _, c := range b.Changes() {
+		if c.Type() == statType {
+			current = c.Amount()
+			found = true
+			break
+		}
+	}
+	if !found {
+		return buff.Model{}, false, nil
+	}
+
+	var next int32
+	switch operation {
+	case character2.StatOperationIncrement:
+		if amount <= 0 || current >= capValue {
+			return buff.Model{}, false, nil
+		}
+		next = current + amount
+		if next > capValue {
+			next = capValue
+		}
+	case character2.StatOperationSet:
+		if amount < 1 {
+			return buff.Model{}, false, nil
+		}
+		next = amount
+	default:
+		return buff.Model{}, false, nil
+	}
+	if next == current {
+		return buff.Model{}, false, nil
+	}
+
+	updated, ok := b.WithStatAmount(statType, next)
+	if !ok {
+		return buff.Model{}, false, nil
+	}
+	m.buffs[srcKey(sourceId)] = updated
+	if err := r.characters.Put(ctx, t, characterId, m); err != nil {
+		return buff.Model{}, false, err
+	}
+	return updated, true, nil
 }

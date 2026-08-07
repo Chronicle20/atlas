@@ -1,4 +1,4 @@
-import { type ColumnDef } from "@tanstack/react-table";
+import { type DataTableColumnDef } from "@/components/data-table-features";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Zap, CheckCircle } from "lucide-react";
 import {
@@ -12,7 +12,7 @@ import { Link } from "react-router-dom";
 
 export const hiddenColumns = ["attributes.area", "attributes.order"];
 
-export const getColumns = (): ColumnDef<QuestDefinition>[] => {
+export const getColumns = (): DataTableColumnDef<QuestDefinition>[] => {
   return [
     {
       accessorKey: "id",

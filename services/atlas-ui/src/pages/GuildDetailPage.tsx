@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { useGuild } from "@/lib/hooks/api/useGuilds";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import type { GuildMember, GuildTitle } from "@/types/models/guild";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { DataTableColumnDef } from "@/components/data-table-features";
 import { useTenant } from "@/context/tenant-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getJobNameById } from "@/lib/jobs";
@@ -127,7 +127,9 @@ export function GuildDetailPage() {
   );
 }
 
-function getMemberColumns(titles: GuildTitle[]): ColumnDef<GuildMember>[] {
+function getMemberColumns(
+  titles: GuildTitle[],
+): DataTableColumnDef<GuildMember>[] {
   return [
     {
       accessorKey: "name",

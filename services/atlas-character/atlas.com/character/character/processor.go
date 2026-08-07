@@ -25,6 +25,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -161,6 +162,16 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 }
 
 var _ Processor = (*ProcessorImpl)(nil)
+
+// set returns this processor's tenant's version-aware skill/job identity
+// binding table (task-187). Job/skill wire ids are version-specific: the
+// same wire id can mean a different job/skill at different client versions
+// (e.g. wire job 500 is GM at v0.48 but Pirate at v0.61+), so any branch
+// keyed off c.JobId()/a skill wire id must resolve through this Set rather
+// than compare raw job.Id/skill.Id constants directly.
+func (p *ProcessorImpl) set() constants.SkillJobSet {
+	return constants.For(p.t.Region(), p.t.MajorVersion(), p.t.MinorVersion())
+}
 
 func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	return &ProcessorImpl{
@@ -1046,7 +1057,21 @@ func (p *ProcessorImpl) RequestDistributeSp(transactionId uuid.UUID, characterId
 		if !ok {
 			return errors.New("unable to locate job from skill")
 		}
-		sb := getSkillBook(sjid.Id())
+		// NOT routed through p.set().Skill.Resolve(): the generated
+		// per-version skill Identity Sets (task-187) do not contain any of
+		// the Evan multi-book skill wire ids (e.g. EvanStage2FireCircleId
+		// 22101000) at ANY provisioned version -- forcing a Resolve() here
+		// would make Evan SP distribution fail outright ("unable to locate
+		// job from skill" for every Evan stage skill), a real regression.
+		// job.FromSkillId's floor(skillId/10000) only needs to land in the
+		// Evan job range (2210-2218) for getSkillBook to answer correctly;
+		// that range is disjoint from the audit's one divergent job set
+		// (wire 500/510/900/910 GM<->Pirate), so a direct numeric
+		// Id->Identity cast (the two types share the same canonical
+		// v83-era numbering, see job/identity.go) is exact for Evan and a
+		// behavior-preserving no-op for the disjoint GM/Pirate case
+		// (getSkillBook returns 0 either way).
+		sb := getSkillBook(job.Identity(sjid.Id()))
 		if c.SP(sb) < uint32(amount) {
 			return errors.New("not enough sp")
 		}
@@ -1075,42 +1100,50 @@ func (p *ProcessorImpl) getMaxHpGrowth(c Model) (uint16, error) {
 	}
 	var improvingHPSkillId skill.Id
 	resMax := c.MaxHp()
-	if job.IsA(c.JobId(),
-		job.WarriorId,
-		job.FighterId, job.CrusaderId, job.HeroId,
-		job.PageId, job.CrusaderId, job.WhiteKnightId,
-		job.SpearmanId, job.DragonKnightId, job.DarkKnightId,
-		job.DawnWarriorStage1Id, job.DawnWarriorStage2Id, job.DawnWarriorStage3Id, job.DawnWarriorStage4Id,
-		job.AranStage1Id, job.AranStage2Id, job.AranStage3Id, job.AranStage4Id) {
-		if job.IsCygnus(c.JobId()) {
+	// DIVERGENT (task-187 audit): c.JobId() is a version-specific wire id --
+	// wire 500/510 is Pirate/Brawler at v0.61+ but GM/SuperGM at v0.48 (job
+	// 900/910 doesn't exist at v0.48). A raw job.IsA(c.JobId(), job.PirateId,
+	// ...) compare would misclassify a v0.48 GM as a Pirate. Resolve once to
+	// this version's job Identity and branch on that; the other branches in
+	// this if/elif chain are converted too (rather than left half-raw) since
+	// they all test the same resolved jid.
+	jid, jok := p.set().Job.Resolve(c.JobId())
+	if jok && job.IsAIdentity(jid,
+		job.Warrior,
+		job.Fighter, job.Crusader, job.Hero,
+		job.Page, job.Crusader, job.WhiteKnight,
+		job.Spearman, job.DragonKnight, job.DarkKnight,
+		job.DawnWarriorStage1, job.DawnWarriorStage2, job.DawnWarriorStage3, job.DawnWarriorStage4,
+		job.AranStage1, job.AranStage2, job.AranStage3, job.AranStage4) {
+		if job.IsCygnusIdentity(jid) {
 			improvingHPSkillId = skill.DawnWarriorStage1ImprovedMaxHpIncreaseId
 		} else {
 			improvingHPSkillId = skill.WarriorImprovedMaxHpIncreaseId
 		}
 		resMax += 20
-	} else if job.IsA(c.JobId(),
-		job.MagicianId,
-		job.FirePoisonWizardId, job.FirePoisonMagicianId, job.FirePoisonArchMagicianId,
-		job.IceLightningWizardId, job.IceLightningMagicianId, job.IceLightningArchMagicianId,
-		job.ClericId, job.PriestId, job.BishopId,
-		job.BlazeWizardStage1Id, job.BlazeWizardStage2Id, job.BlazeWizardStage3Id, job.BlazeWizardStage4Id) {
+	} else if jok && job.IsAIdentity(jid,
+		job.Magician,
+		job.FirePoisonWizard, job.FirePoisonMagician, job.FirePoisonArchMagician,
+		job.IceLightningWizard, job.IceLightningMagician, job.IceLightningArchMagician,
+		job.Cleric, job.Priest, job.Bishop,
+		job.BlazeWizardStage1, job.BlazeWizardStage2, job.BlazeWizardStage3, job.BlazeWizardStage4) {
 		resMax += 6
-	} else if job.IsA(c.JobId(),
-		job.BowmanId,
-		job.HunterId, job.RangerId, job.BowmasterId,
-		job.CrossbowmanId, job.SniperId, job.MarksmanId,
-		job.WindArcherStage1Id, job.WindArcherStage2Id, job.WindArcherStage3Id, job.WindArcherStage4Id,
-		job.RogueId,
-		job.AssassinId, job.HermitId, job.NightLordId,
-		job.BanditId, job.ChiefBanditId, job.ShadowerId,
-		job.NightWalkerStage1Id, job.NightWalkerStage2Id, job.NightWalkerStage3Id, job.NightWalkerStage4Id) {
+	} else if jok && job.IsAIdentity(jid,
+		job.Bowman,
+		job.Hunter, job.Ranger, job.Bowmaster,
+		job.Crossbowman, job.Sniper, job.Marksman,
+		job.WindArcherStage1, job.WindArcherStage2, job.WindArcherStage3, job.WindArcherStage4,
+		job.Rogue,
+		job.Assassin, job.Hermit, job.NightLord,
+		job.Bandit, job.ChiefBandit, job.Shadower,
+		job.NightWalkerStage1, job.NightWalkerStage2, job.NightWalkerStage3, job.NightWalkerStage4) {
 		resMax += 16
-	} else if job.IsA(c.JobId(),
-		job.PirateId,
-		job.BrawlerId, job.MarauderId, job.BuccaneerId,
-		job.GunslingerId, job.OutlawId, job.CorsairId,
-		job.ThunderBreakerStage1Id, job.ThunderBreakerStage2Id, job.ThunderBreakerStage3Id, job.ThunderBreakerStage4Id) {
-		if job.IsCygnus(c.JobId()) {
+	} else if jok && job.IsAIdentity(jid,
+		job.Pirate,
+		job.Brawler, job.Marauder, job.Buccaneer,
+		job.Gunslinger, job.Outlaw, job.Corsair,
+		job.ThunderBreakerStage1, job.ThunderBreakerStage2, job.ThunderBreakerStage3, job.ThunderBreakerStage4) {
+		if job.IsCygnusIdentity(jid) {
 			improvingHPSkillId = skill.ThunderBreakerStage2ImprovedMaxHpIncreaseId
 		} else {
 			improvingHPSkillId = skill.BrawlerImproveMaxHpId
@@ -1136,46 +1169,50 @@ func (p *ProcessorImpl) getMaxMpGrowth(c Model) (uint16, error) {
 	}
 	var improvingMPSkillId skill.Id
 	resMax := c.MaxMp()
-	if job.IsA(c.JobId(),
-		job.WarriorId,
-		job.FighterId, job.CrusaderId, job.HeroId,
-		job.PageId, job.CrusaderId, job.WhiteKnightId,
-		job.SpearmanId, job.DragonKnightId, job.DarkKnightId,
-		job.DawnWarriorStage1Id, job.DawnWarriorStage2Id, job.DawnWarriorStage3Id, job.DawnWarriorStage4Id,
-		job.AranStage1Id, job.AranStage2Id, job.AranStage3Id, job.AranStage4Id) {
-		if job.IsA(c.JobId(), job.CrusaderId, job.WhiteKnightId) {
+	// DIVERGENT (task-187 audit): same wire 500/510 GM/SuperGM-vs-Pirate/
+	// Brawler collision as getMaxHpGrowth above -- resolve to Identity once
+	// and branch on it (all sibling branches converted for the same reason).
+	jid, jok := p.set().Job.Resolve(c.JobId())
+	if jok && job.IsAIdentity(jid,
+		job.Warrior,
+		job.Fighter, job.Crusader, job.Hero,
+		job.Page, job.Crusader, job.WhiteKnight,
+		job.Spearman, job.DragonKnight, job.DarkKnight,
+		job.DawnWarriorStage1, job.DawnWarriorStage2, job.DawnWarriorStage3, job.DawnWarriorStage4,
+		job.AranStage1, job.AranStage2, job.AranStage3, job.AranStage4) {
+		if job.IsAIdentity(jid, job.Crusader, job.WhiteKnight) {
 			improvingMPSkillId = skill.WhiteKnightImprovingMpRecoveryId
-		} else if job.IsA(c.JobId(), job.DawnWarriorStage3Id, job.DawnWarriorStage4Id) {
+		} else if job.IsAIdentity(jid, job.DawnWarriorStage3, job.DawnWarriorStage4) {
 			improvingMPSkillId = skill.DawnWarriorStage3ImprovedMpRecoveryId
 		}
 		resMax += 2
-	} else if job.IsA(c.JobId(),
-		job.MagicianId,
-		job.FirePoisonWizardId, job.FirePoisonMagicianId, job.FirePoisonArchMagicianId,
-		job.IceLightningWizardId, job.IceLightningMagicianId, job.IceLightningArchMagicianId,
-		job.ClericId, job.PriestId, job.BishopId,
-		job.BlazeWizardStage1Id, job.BlazeWizardStage2Id, job.BlazeWizardStage3Id, job.BlazeWizardStage4Id) {
-		if job.IsCygnus(c.JobId()) {
+	} else if jok && job.IsAIdentity(jid,
+		job.Magician,
+		job.FirePoisonWizard, job.FirePoisonMagician, job.FirePoisonArchMagician,
+		job.IceLightningWizard, job.IceLightningMagician, job.IceLightningArchMagician,
+		job.Cleric, job.Priest, job.Bishop,
+		job.BlazeWizardStage1, job.BlazeWizardStage2, job.BlazeWizardStage3, job.BlazeWizardStage4) {
+		if job.IsCygnusIdentity(jid) {
 			improvingMPSkillId = skill.BlazeWizardStage1ImprovedMaxMpIncreaseId
 		} else {
 			improvingMPSkillId = skill.MagicianImprovedMaxMpIncreaseId
 		}
 		resMax += 18
-	} else if job.IsA(c.JobId(),
-		job.BowmanId,
-		job.HunterId, job.RangerId, job.BowmasterId,
-		job.CrossbowmanId, job.SniperId, job.MarksmanId,
-		job.WindArcherStage1Id, job.WindArcherStage2Id, job.WindArcherStage3Id, job.WindArcherStage4Id,
-		job.RogueId,
-		job.AssassinId, job.HermitId, job.NightLordId,
-		job.BanditId, job.ChiefBanditId, job.ShadowerId,
-		job.NightWalkerStage1Id, job.NightWalkerStage2Id, job.NightWalkerStage3Id, job.NightWalkerStage4Id) {
+	} else if jok && job.IsAIdentity(jid,
+		job.Bowman,
+		job.Hunter, job.Ranger, job.Bowmaster,
+		job.Crossbowman, job.Sniper, job.Marksman,
+		job.Rogue,
+		job.Assassin, job.Hermit, job.NightLord,
+		job.Bandit, job.ChiefBandit, job.Shadower,
+		job.WindArcherStage1, job.WindArcherStage2, job.WindArcherStage3, job.WindArcherStage4,
+		job.NightWalkerStage1, job.NightWalkerStage2, job.NightWalkerStage3, job.NightWalkerStage4) {
 		resMax += 10
-	} else if job.IsA(c.JobId(),
-		job.PirateId,
-		job.BrawlerId, job.MarauderId, job.BuccaneerId,
-		job.GunslingerId, job.OutlawId, job.CorsairId,
-		job.ThunderBreakerStage1Id, job.ThunderBreakerStage2Id, job.ThunderBreakerStage3Id, job.ThunderBreakerStage4Id) {
+	} else if jok && job.IsAIdentity(jid,
+		job.Pirate,
+		job.Brawler, job.Marauder, job.Buccaneer,
+		job.Gunslinger, job.Outlaw, job.Corsair,
+		job.ThunderBreakerStage1, job.ThunderBreakerStage2, job.ThunderBreakerStage3, job.ThunderBreakerStage4) {
 		resMax += 14
 	} else {
 		resMax += 6
@@ -1504,7 +1541,12 @@ func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionI
 			}
 
 			p.l.Debugf("As a result of processing a level change of [%d]. Character [%d] will gain [%d] AP, [%d] SP, [%d] HP, and [%d] MP.", amount, characterId, addedAP, addedSP, addedHP, addedMP)
-			sb := getSkillBook(c.JobId())
+			// getSkillBook only branches on the Evan multi-book range
+			// (2210-2218), which never collides with the audit's divergent
+			// job set (500/510/900/910) -- an unresolved jid still yields
+			// the correct "book 0" answer via the zero Identity fallback.
+			jid, _ := p.set().Job.Resolve(c.JobId())
+			sb := getSkillBook(jid)
 
 			newMaxHP = c.MaxHp() + addedHP
 			newMaxMP = c.MaxMp() + addedMP
@@ -1553,6 +1595,10 @@ func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionI
 	}
 }
 
+// version-stable per task-187 audit (audit/README.md, divergences.csv):
+// Cygnus (job type 1xxx) is not part of the audit's divergent job set (only
+// wire 500/510/900/910 GM<->Pirate remap across the provisioned GMS
+// versions) -- job.IsCygnus(jobId) is safe to leave raw-Id-keyed here.
 func computeOnLevelAddedAP(jobId job.Id, level byte) uint16 {
 	toGain := uint16(5)
 	if job.IsCygnus(jobId) {
@@ -1567,6 +1613,9 @@ func computeOnLevelAddedAP(jobId job.Id, level byte) uint16 {
 	return toGain
 }
 
+// version-stable per task-187 audit (audit/README.md, divergences.csv):
+// Beginner/Noblesse/Legend/Evan roots are not part of the audit's divergent
+// job set -- job.IsBeginner(jobId) is safe to leave raw-Id-keyed here.
 func computeOnLevelAddedSP(jobId job.Id, effectiveLevel byte) uint32 {
 	if job.IsBeginner(jobId) {
 		if effectiveLevel >= 2 && effectiveLevel <= 7 {
@@ -1591,67 +1640,82 @@ func (p *ProcessorImpl) resolveHPMPGainParams(c Model) hpMPGainParams {
 	var improvingHPSkillId skill.Id
 	var improvingMPSkillId skill.Id
 
-	if job.IsBeginner(c.JobId()) {
+	// DIVERGENT (task-187 audit, the bug this function's v0.48 GM test
+	// guards against): c.JobId() is a version-specific wire id -- wire
+	// 500/510 is Pirate/Brawler at v0.61+ but GM/SuperGM at v0.48 (job
+	// 900/910 doesn't exist until v0.61). A raw job.IsA(c.JobId(),
+	// job.PirateId, ...) compare matches BOTH a v0.48 GM and a v0.61+
+	// Pirate on wire 500, and since the Pirate branch sits after the
+	// GM/SuperGM branch in the original chain, a v0.48 GM (which never
+	// matches the raw job.GmId/SuperGmId==900/910 check) fell through to
+	// the Pirate branch and got 22/28 HP instead of 30000/30000. Resolve
+	// c.JobId() to this version's job Identity once and branch on that
+	// (GM/SuperGM ordered before Pirate, as in the original); every sibling
+	// branch in this chain is converted too, since they all test the same
+	// resolved jid and a half-resolved/half-raw chain would be incoherent.
+	jid, jok := p.set().Job.Resolve(c.JobId())
+
+	if jok && job.IsBeginnerIdentity(jid) {
 		params.hpLower, params.hpUpper = 12, 16
 		params.mpLower, params.mpUpper = 10, 12
-	} else if job.IsA(c.JobId(),
-		job.WarriorId,
-		job.FighterId, job.CrusaderId, job.HeroId,
-		job.PageId, job.CrusaderId, job.WhiteKnightId,
-		job.SpearmanId, job.DragonKnightId, job.DarkKnightId,
-		job.DawnWarriorStage1Id, job.DawnWarriorStage2Id, job.DawnWarriorStage3Id, job.DawnWarriorStage4Id) {
-		if job.IsCygnus(c.JobId()) {
+	} else if jok && job.IsAIdentity(jid,
+		job.Warrior,
+		job.Fighter, job.Crusader, job.Hero,
+		job.Page, job.Crusader, job.WhiteKnight,
+		job.Spearman, job.DragonKnight, job.DarkKnight,
+		job.DawnWarriorStage1, job.DawnWarriorStage2, job.DawnWarriorStage3, job.DawnWarriorStage4) {
+		if job.IsCygnusIdentity(jid) {
 			improvingHPSkillId = skill.DawnWarriorStage1ImprovedMaxHpIncreaseId
 		} else {
 			improvingHPSkillId = skill.WarriorImprovedMaxHpIncreaseId
 		}
-		if job.IsA(c.JobId(), job.CrusaderId, job.WhiteKnightId) {
+		if job.IsAIdentity(jid, job.Crusader, job.WhiteKnight) {
 			improvingMPSkillId = skill.WhiteKnightImprovingMpRecoveryId
-		} else if job.IsA(c.JobId(), job.DawnWarriorStage3Id, job.DawnWarriorStage4Id) {
+		} else if job.IsAIdentity(jid, job.DawnWarriorStage3, job.DawnWarriorStage4) {
 			improvingMPSkillId = skill.DawnWarriorStage3ImprovedMpRecoveryId
 		}
 		params.hpLower, params.hpUpper = 24, 28
 		params.mpLower, params.mpUpper = 4, 6
-	} else if job.IsA(c.JobId(),
-		job.MagicianId,
-		job.FirePoisonWizardId, job.FirePoisonMagicianId, job.FirePoisonArchMagicianId,
-		job.IceLightningWizardId, job.IceLightningMagicianId, job.IceLightningArchMagicianId,
-		job.ClericId, job.PriestId, job.BishopId,
-		job.BlazeWizardStage1Id, job.BlazeWizardStage2Id, job.BlazeWizardStage3Id, job.BlazeWizardStage4Id) {
-		if job.IsCygnus(c.JobId()) {
+	} else if jok && job.IsAIdentity(jid,
+		job.Magician,
+		job.FirePoisonWizard, job.FirePoisonMagician, job.FirePoisonArchMagician,
+		job.IceLightningWizard, job.IceLightningMagician, job.IceLightningArchMagician,
+		job.Cleric, job.Priest, job.Bishop,
+		job.BlazeWizardStage1, job.BlazeWizardStage2, job.BlazeWizardStage3, job.BlazeWizardStage4) {
+		if job.IsCygnusIdentity(jid) {
 			improvingMPSkillId = skill.BlazeWizardStage1ImprovedMaxMpIncreaseId
 		} else {
 			improvingMPSkillId = skill.MagicianImprovedMaxMpIncreaseId
 		}
 		params.hpLower, params.hpUpper = 10, 14
 		params.mpLower, params.mpUpper = 22, 24
-	} else if job.IsA(c.JobId(),
-		job.BowmanId,
-		job.HunterId, job.RangerId, job.BowmasterId,
-		job.CrossbowmanId, job.SniperId, job.MarksmanId,
-		job.WindArcherStage1Id, job.WindArcherStage2Id, job.WindArcherStage3Id, job.WindArcherStage4Id,
-		job.RogueId,
-		job.AssassinId, job.HermitId, job.NightLordId,
-		job.BanditId, job.ChiefBanditId, job.ShadowerId,
-		job.NightWalkerStage1Id, job.NightWalkerStage2Id, job.NightWalkerStage3Id, job.NightWalkerStage4Id) {
+	} else if jok && job.IsAIdentity(jid,
+		job.Bowman,
+		job.Hunter, job.Ranger, job.Bowmaster,
+		job.Crossbowman, job.Sniper, job.Marksman,
+		job.Rogue,
+		job.Assassin, job.Hermit, job.NightLord,
+		job.Bandit, job.ChiefBandit, job.Shadower,
+		job.WindArcherStage1, job.WindArcherStage2, job.WindArcherStage3, job.WindArcherStage4,
+		job.NightWalkerStage1, job.NightWalkerStage2, job.NightWalkerStage3, job.NightWalkerStage4) {
 		params.hpLower, params.hpUpper = 20, 24
 		params.mpLower, params.mpUpper = 14, 16
-	} else if job.IsA(c.JobId(), job.GmId, job.SuperGmId) {
+	} else if jok && job.IsAIdentity(jid, job.Gm, job.SuperGm) {
 		params.hpLower, params.hpUpper = 30000, 30000
 		params.mpLower, params.mpUpper = 30000, 30000
-	} else if job.IsA(c.JobId(),
-		job.PirateId,
-		job.BrawlerId, job.MarauderId, job.BuccaneerId,
-		job.GunslingerId, job.OutlawId, job.CorsairId,
-		job.ThunderBreakerStage1Id, job.ThunderBreakerStage2Id, job.ThunderBreakerStage3Id, job.ThunderBreakerStage4Id) {
-		if job.IsCygnus(c.JobId()) {
+	} else if jok && job.IsAIdentity(jid,
+		job.Pirate,
+		job.Brawler, job.Marauder, job.Buccaneer,
+		job.Gunslinger, job.Outlaw, job.Corsair,
+		job.ThunderBreakerStage1, job.ThunderBreakerStage2, job.ThunderBreakerStage3, job.ThunderBreakerStage4) {
+		if job.IsCygnusIdentity(jid) {
 			improvingHPSkillId = skill.ThunderBreakerStage2ImprovedMaxHpIncreaseId
 		} else {
 			improvingHPSkillId = skill.BrawlerImproveMaxHpId
 		}
 		params.hpLower, params.hpUpper = 22, 28
 		params.mpLower, params.mpUpper = 18, 23
-	} else if job.IsA(c.JobId(), job.AranStage1Id, job.AranStage2Id, job.AranStage3Id, job.AranStage4Id) {
+	} else if jok && job.IsAIdentity(jid, job.AranStage1, job.AranStage2, job.AranStage3, job.AranStage4) {
 		params.hpLower, params.hpUpper = 44, 48
 		params.mpLower, params.mpUpper = 4, 8
 	}
@@ -1709,40 +1773,50 @@ func (p *ProcessorImpl) ProcessJobChange(mb *message.Buffer) func(transactionId 
 				return err
 			}
 
+			// DIVERGENT (task-187 audit): jobId here is the version-specific
+			// wire id of the job being changed TO -- wire 500 is Pirate at
+			// v0.61+ but GM at v0.48. A raw job.IsA(jobId, job.PirateId, ...)
+			// compare below would misclassify a v0.48 GM job-change as a
+			// Pirate job-change (100-150 HP/25-50 MP) instead of falling
+			// through to the generic non-beginner award. Resolve jobId to
+			// this version's job Identity once and branch on that for the
+			// whole chain (kept coherent rather than half-raw).
+			jid, jok := p.set().Job.Resolve(jobId)
+
 			// TODO award job change AP is this only Cygnus?
-			if job.IsCygnus(jobId) {
+			if jok && job.IsCygnusIdentity(jid) {
 				addedAP = 7
 			}
 
 			addedSP = 1
-			if job.IsA(jobId, job.EvanId, job.EvanStage1Id, job.EvanStage2Id, job.EvanStage3Id, job.EvanStage4Id, job.EvanStage5Id, job.EvanStage6Id, job.EvanStage7Id, job.EvanStage8Id, job.EvanStage9Id, job.EvanStage10Id) {
+			if jok && job.IsAIdentity(jid, job.Evan, job.EvanStage1, job.EvanStage2, job.EvanStage3, job.EvanStage4, job.EvanStage5, job.EvanStage6, job.EvanStage7, job.EvanStage8, job.EvanStage9, job.EvanStage10) {
 				addedAP += 2
-			} else if job.IsFourthJob(jobId) {
+			} else if jok && job.IsFourthJobIdentity(jid) {
 				addedSP += 2
 			}
 
-			if job.IsA(jobId, job.WarriorId, job.DawnWarriorStage1Id, job.AranStage1Id) {
+			if jok && job.IsAIdentity(jid, job.Warrior, job.DawnWarriorStage1, job.AranStage1) {
 				addedHP = randBoundFunc(200, 250)
-			} else if job.IsA(jobId, job.MagicianId, job.BlazeWizardStage1Id, job.EvanStage1Id) {
+			} else if jok && job.IsAIdentity(jid, job.Magician, job.BlazeWizardStage1, job.EvanStage1) {
 				addedMP = randBoundFunc(100, 150)
-			} else if job.IsA(jobId, job.BowmanId, job.RogueId, job.PirateId, job.WindArcherStage1Id, job.NightWalkerStage1Id, job.ThunderBreakerStage1Id) {
+			} else if jok && job.IsAIdentity(jid, job.Bowman, job.Rogue, job.Pirate, job.WindArcherStage1, job.NightWalkerStage1, job.ThunderBreakerStage1) {
 				addedHP = randBoundFunc(100, 150)
 				addedMP = randBoundFunc(25, 50)
-			} else if job.IsA(jobId,
-				job.FighterId, job.CrusaderId, job.HeroId,
-				job.PageId, job.CrusaderId, job.WhiteKnightId,
-				job.SpearmanId, job.DragonKnightId, job.DarkKnightId,
-				job.DawnWarriorStage2Id, job.DawnWarriorStage3Id, job.DawnWarriorStage4Id,
-				job.AranStage2Id, job.AranStage3Id, job.AranStage4Id) {
+			} else if jok && job.IsAIdentity(jid,
+				job.Fighter, job.Crusader, job.Hero,
+				job.Page, job.Crusader, job.WhiteKnight,
+				job.Spearman, job.DragonKnight, job.DarkKnight,
+				job.DawnWarriorStage2, job.DawnWarriorStage3, job.DawnWarriorStage4,
+				job.AranStage2, job.AranStage3, job.AranStage4) {
 				addedHP = randBoundFunc(300, 350)
-			} else if job.IsA(jobId,
-				job.FirePoisonWizardId, job.FirePoisonMagicianId, job.FirePoisonArchMagicianId,
-				job.IceLightningWizardId, job.IceLightningMagicianId, job.IceLightningArchMagicianId,
-				job.ClericId, job.PriestId, job.BishopId,
-				job.BlazeWizardStage2Id, job.BlazeWizardStage3Id, job.BlazeWizardStage4Id,
-				job.EvanStage2Id, job.EvanStage3Id, job.EvanStage4Id, job.EvanStage5Id, job.EvanStage6Id, job.EvanStage7Id, job.EvanStage8Id, job.EvanStage9Id, job.EvanStage10Id) {
+			} else if jok && job.IsAIdentity(jid,
+				job.FirePoisonWizard, job.FirePoisonMagician, job.FirePoisonArchMagician,
+				job.IceLightningWizard, job.IceLightningMagician, job.IceLightningArchMagician,
+				job.Cleric, job.Priest, job.Bishop,
+				job.BlazeWizardStage2, job.BlazeWizardStage3, job.BlazeWizardStage4,
+				job.EvanStage2, job.EvanStage3, job.EvanStage4, job.EvanStage5, job.EvanStage6, job.EvanStage7, job.EvanStage8, job.EvanStage9, job.EvanStage10) {
 				addedMP = randBoundFunc(450, 500)
-			} else if !job.IsBeginner(jobId) {
+			} else if jok && !job.IsBeginnerIdentity(jid) {
 				addedHP = randBoundFunc(300, 350)
 				addedMP = randBoundFunc(150, 200)
 			}
@@ -1752,7 +1826,11 @@ func (p *ProcessorImpl) ProcessJobChange(mb *message.Buffer) func(transactionId 
 			newInt = c.Intelligence()
 
 			p.l.Debugf("As a result of processing a job change to [%d]. Character [%d] will gain [%d] AP, [%d] SP, [%d] HP, and [%d] MP.", jobId, characterId, addedAP, addedSP, addedHP, addedMP)
-			sb := getSkillBook(c.JobId())
+			// getSkillBook only branches on the Evan multi-book range
+			// (2210-2218), disjoint from the divergent job set above -- an
+			// unresolved curJid still yields the correct "book 0" answer.
+			curJid, _ := p.set().Job.Resolve(c.JobId())
+			sb := getSkillBook(curJid)
 			return dynamicUpdate(tx)(SetAP(c.AP()+addedAP), SetSP(c.SP(sb)+addedSP, uint32(sb)), SetHealth(newMaxHP), SetMaxHp(newMaxHP), SetMana(newMaxMP), SetMaxMp(newMaxMP))(c)
 		})
 		if txErr != nil {
@@ -1770,11 +1848,15 @@ func (p *ProcessorImpl) ProcessJobChange(mb *message.Buffer) func(transactionId 
 	}
 }
 
-func getSkillBook(jobId job.Id) int {
-	if jobId >= job.EvanStage2Id && jobId <= job.EvanStage10Id {
-		return int(jobId - 2209)
-	}
-	return 0
+// getSkillBook takes a job Identity (task-187): callers resolve the
+// character's/target's version-specific wire job id to this version-blind
+// Identity before calling in. The Evan multi-book range (2210-2218) itself
+// is version-stable (not part of the audit's divergent set), but the
+// signature is Identity-typed for uniformity with its callers, some of
+// which already hold a resolved jid for other (divergent) branches in the
+// same function.
+func getSkillBook(jid job.Identity) int {
+	return job.GetSkillBookIdentity(jid)
 }
 
 func (p *ProcessorImpl) UpdateAndEmit(transactionId uuid.UUID, characterId uint32, input RestModel) error {
@@ -2103,7 +2185,13 @@ func (p *ProcessorImpl) TransferAP(mb *message.Buffer) func(transactionId uuid.U
 			if err != nil {
 				return err
 			}
-			policy := pointResetPolicyFor(c.JobId())
+			// DIVERGENT (task-187 audit): resolve c.JobId() once for every
+			// point-reset policy lookup below -- see point_reset.go's
+			// pointResetPolicyRows/pointResetMinHpRows/pointResetMinMpRows
+			// DIVERGENT notes (wire 500/510/520 Pirate/Brawler/Gunslinger at
+			// v0.61+ collide with wire 500/510 GM/SuperGM at v0.48).
+			jid, _ := p.set().Job.Resolve(c.JobId())
+			policy := pointResetPolicyFor(jid)
 
 			// Running values: source applied first, then target validated
 			// against the post-source state (handles From==To naturally).
@@ -2141,7 +2229,7 @@ func (p *ProcessorImpl) TransferAP(mb *message.Buffer) func(transactionId uuid.U
 					rejection = &transferApRejection{code: character2.StatusEventErrorTypeInsufficientHpMpApUsed, detail: from}
 					return nil
 				}
-				if int(newMaxHp)-int(policy.takeHp) < pointResetMinHp(c.JobId(), c.Level()) {
+				if int(newMaxHp)-int(policy.takeHp) < pointResetMinHp(jid, c.Level()) {
 					rejection = &transferApRejection{code: character2.StatusEventErrorTypePoolBelowJobMinimum, detail: from}
 					return nil
 				}
@@ -2163,7 +2251,7 @@ func (p *ProcessorImpl) TransferAP(mb *message.Buffer) func(transactionId uuid.U
 				// this branch (mirrors the effective-stats fetch in ChangeHP/
 				// ChangeMP, which likewise run inside the transaction).
 				takeMp := policy.takeMp
-				if isPointResetMagician(c.JobId()) {
+				if isPointResetMagician(jid) {
 					// Effective INT (base + equipment) drives the loss; on an
 					// effective-stats failure fall back to base INT, and log —
 					// a silent degradation would reintroduce the very desync
@@ -2181,7 +2269,7 @@ func (p *ProcessorImpl) TransferAP(mb *message.Buffer) func(transactionId uuid.U
 					}
 					takeMp = pointResetMagicianTakeMp(effectiveInt)
 				}
-				if int(newMaxMp)-int(takeMp) < pointResetMinMp(c.JobId(), c.Level()) {
+				if int(newMaxMp)-int(takeMp) < pointResetMinMp(jid, c.Level()) {
 					rejection = &transferApRejection{code: character2.StatusEventErrorTypePoolBelowJobMinimum, detail: from}
 					return nil
 				}

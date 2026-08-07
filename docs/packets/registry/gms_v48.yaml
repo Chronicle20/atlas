@@ -333,14 +333,14 @@
   ida:
     address: 7393813
   note: 'v48 groups incubator early (v61 op 66); reordered. delta doc a.'
-- op: IDA_0X02B
+- op: SKILL_LEARN_ITEM_RESULT
   direction: clientbound
   opcode: 43
-  fname: sub_71A135
+  fname: CWvsContext::OnSkillLearnItemResult
   provenance: ida-discovered
   ida:
     address: 7446837
-  note: 'unnamed CWvsContext sub; delta doc marks SKILL_LEARN_ITEM/entrusted-shop family (v61 47/48). v61 op-identity body-map DEFERRED (see discover_gms_v48.md remaining).'
+  note: 'task-125: named via CWvsContext::OnPacket case 0x2B (0x70d3aa) delegating directly to CWvsContext::OnSkillLearnItemResult (0x71a135), already named in the v48 IDB (session 0bb5f11a, GMS_v48_1_DEVM.exe.i64). Body (no leading bOnExclRequest byte — MajorVersion()<84): Decode4 characterId, then under the user-found guard (v29): Decode1 isMasteryBook, Decode4 skillId (discarded), Decode4 masterLevel (discarded), Decode1 canUse, Decode1 success. Supersedes the prior IDA_0X02B placeholder row (fname sub_71A135), which recorded the same address/call sequence before the function was identified.'
 - op: SUE_CHARACTER_RESULT
   direction: clientbound
   opcode: 44
@@ -730,6 +730,24 @@
     address: 7022966
   note: 'sub_6B2710 case a1==101 -> sub_6B2976. (common 102-124 -> sub_6B2A51; remote 125-143 -> sub_6B2AE4; local 144-155 -> sub_6B2C6D: leaf ops DEFERRED, see remaining.)'
 
+# ---------------- clientbound: CAffectedAreaPool::OnPacket @0x42182f ----------------
+- op: SPAWN_MIST
+  direction: clientbound
+  opcode: 202
+  fname: CAffectedAreaPool::OnAffectedAreaCreated
+  provenance: ida-discovered
+  ida:
+    address: 4331604
+  note: 'CAffectedAreaPool::OnPacket @0x42182f: sub eax, 0CAh / jz -> OnAffectedAreaCreated @0x421854. Case constant READ from disasm (0x421833), not derived from v61.'
+- op: REMOVE_MIST
+  direction: clientbound
+  opcode: 203
+  fname: CAffectedAreaPool::OnAffectedAreaRemoved
+  provenance: ida-discovered
+  ida:
+    address: 4333183
+  note: 'CAffectedAreaPool::OnPacket @0x42182f: dec eax / jnz ret -> OnAffectedAreaRemoved @0x421e7f for a1==0xCB. Case constant READ from disasm (0x42183a).'
+
 # ---------------- clientbound: CCashShop::OnPacket @0x4534d6 ----------------
 - op: IDA_0X0FE
   direction: clientbound
@@ -931,6 +949,14 @@
   ida:
     address: 5748606
   note: 'send-site 0x70e4fe: COutPacket(62). v61 USE_CASH_ITEM=73.'
+- op: USE_SKILL_BOOK
+  direction: serverbound
+  opcode: 64
+  fname: CWvsContext::SendSkillLearnItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 7398375
+  note: 'task-125: already named in the v48 IDB (session 0bb5f11a, GMS_v48_1_DEVM.exe.i64). send-site 0x70e3e7: item-class gate a3/10000 in {228,229} (skill-book prefix); guard sub_4A2518(this,200,0) (CanSendExclRequest twin); COutPacket::COutPacket(&pkt, 64); then Encode4(updateTime)+Encode2(slot=a2)+Encode4(itemId=a3); SetExclRequestSent. Byte-identical shape to v83 (0xa0a1b2, opcode 0x52).'
 - op: ITEM_MOVE
   direction: serverbound
   opcode: 55
@@ -1010,6 +1036,14 @@
   ida:
     address: 7458905
   note: 'BODY-VERIFIED send-site 0x71d059: CUserPool::GetRemoteUser(a2) then COutPacket(76)+Encode4(remoteCharOid)+Encode4(a2=charId) + SetExclRequestSent, sets this[2079]=1. Called from the field cursor-click handler sub_69FA53 when clicking a remote player. No trailing Enc1(petInfo) (added post-v48). = CHAR_INFO_REQUEST. v61 CHAR_INFO_REQUEST=89 (Delta-13; non-uniform — GIVE_FAME below is Delta0).'
+- op: CANCEL_DEBUFF
+  direction: serverbound
+  opcode: 78
+  fname: CWvsContext::CheckTemporaryStatDuration
+  provenance: ida-discovered
+  ida:
+    address: 7450918
+  note: 'Empty body: COutPacket(78) then SendPacket with no intervening encode calls. The v48 client uses the three-argument COutPacket::COutPacket(v5, 78, 0) constructor — a client-side construction detail with no wire consequence. Corrects a prior n-a assertion (task-190).'
 - op: GIVE_FAME
   direction: serverbound
   opcode: 74

@@ -12,12 +12,6 @@
             "allow": false,
             "operations": [
               {
-                "params": {
-                  "itemId": "2210016"
-                },
-                "type": "cancel_consumable_effect"
-              },
-              {
                 "params": {},
                 "type": "play_portal_sound"
               },

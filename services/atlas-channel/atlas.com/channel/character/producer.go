@@ -55,6 +55,21 @@ func RequestDropMesoCommandProvider(f field.Model, characterId uint32, amount ui
 	return producer.SingleMessageProvider(key, value)
 }
 
+func RequestChangeMesoCommandProvider(f field.Model, characterId uint32, actorId uint32, actorType string, amount int32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character.Command[character.RequestChangeMesoBody]{
+		CharacterId: characterId,
+		WorldId:     f.WorldId(),
+		Type:        character.CommandRequestChangeMeso,
+		Body: character.RequestChangeMesoBody{
+			ActorId:   actorId,
+			ActorType: actorType,
+			Amount:    amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func ChangeHPCommandProvider(f field.Model, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character.Command[character.ChangeHPCommandBody]{

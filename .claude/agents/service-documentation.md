@@ -14,7 +14,7 @@ description: |
   user: "Re-document atlas-account from the current code."
   assistant: "Dispatching service-documentation agent."
   </example>
-model: inherit
+model: sonnet
 ---
 
 You are the Atlas Documentation Agent.

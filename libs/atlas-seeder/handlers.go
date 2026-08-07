@@ -65,6 +65,15 @@ func postSeed(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, src Catalo
 				"catalog_revision": res.CatalogRevision,
 				"subdomains":       summarize(res.Subdomains),
 			}).Info("Seed complete")
+			if g.AfterSeed == nil {
+				return
+			}
+			if err := g.AfterSeed(bgCtx, db, res); err != nil {
+				l.WithError(err).WithFields(logrus.Fields{
+					"tenant_id":  t.Id(),
+					"group_name": g.Name,
+				}).Error("AfterSeed hook failed; seeded data is committed but downstream consumers were not notified")
+			}
 		})
 		w.WriteHeader(http.StatusAccepted)
 	}

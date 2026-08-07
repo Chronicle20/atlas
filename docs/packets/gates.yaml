@@ -164,3 +164,50 @@ gates:
     boundary: ">=95"
     lower_version_key: gms_v87
     upper_version_key: gms_v95
+
+
+# TODO(task-183 Wave 2, re-diagnosed): cash/clientbound/CashGiftDone and
+# cash/clientbound/CashGiftPackageDone are now fixture-verified on ALL 5
+# modern versions, including the region branch on both gms_v95 (has
+# nxCashSpent) and jms_v185 (omits it — confirmed live via decompile of
+# sub_48D3CE@0x48d3ce and OnCashItemResGiftPackageDone@0x48c79a in this
+# session). A gate row was ATTEMPTED for both packets
+# (boundary region==GMS, lower gms_v95, upper jms_v185, expect: full) but
+# `gate-check --check` rejects both with "no matrix row for packet ..." —
+# NOT a missing-fixture problem `expect: partial` can paper over (that only
+# relaxes which SIDE must be verified; here neither side ever resolves to a
+# row at all, so evalGate's configErr path fires regardless of expect).
+#
+# Root cause (tools/packet-audit/internal/matrix/build.go): CASHSHOP_OPERATION
+# is a single dispatcher registry op (one wire opcode, `CCashShop::
+# OnCashItemResult`). Build() consumes EVERY report whose IDAName base-fname
+# matches the dispatcher's FName (baseFName strips the "#ARM_KEY" suffix) as a
+# *candidate* of that ONE op row (`usedWriters[vk][wn] = true` in
+# worstCandidateCell) and folds all candidates' cells down to the worst state
+# under one row annotated with a single representative `packet` (see
+# rowPacketAndTier) — e.g. today that representative happens to be
+# `cash/clientbound/CashCashItemMovedToCashInventory`. A report is only
+# promoted to its own "sub-struct" row when its fname is NOT claimed by any op
+# row (build.go's `sub` map, populated from `!usedWriters[vk][wn]`) — which
+# never happens for a dispatcher arm. Confirmed this is not specific to
+# GiftDone/GiftPackageDone or to this batch: NONE of the 20 previously
+# verified arms (CashBuyFailed, CashGiftPackageFailed, etc., Wave 2 batches
+# 1-3) appear anywhere in status.json either — zero occurrences of
+# "CashBuyFailed" in docs/packets/audits/status.json even though it has
+# carried a `packet-audit:verify` marker + pinned evidence since the pilot
+# batch. So no per-arm dispatcher-arm packet can EVER satisfy gate-check's
+# `for _, row := range m.Rows { if row.Packet != g.Packet { continue } }`
+# row-lookup as it exists today, verified or not, full family graduation or
+# not (Wave 4 re-graduation only changes the op-row's own worst-cell state,
+# it does not create per-arm rows).
+#
+# This needs a real design decision, not a mechanical unblock: either (a)
+# teach gate-check to fall back to the evidence/marker ledger directly for
+# packets with no matrix row (duplicating a slice of cmd/matrix.go's loading
+# logic into gatecheck.go), or (b) gate on the dispatcher's own representative
+# packet id instead of the arm, or (c) accept that intra-dispatcher
+# region/version divergences are out of gate-check's model and rely solely on
+# the byte-fixture test's own per-region assertion (already present:
+# TestGiftDoneByteFixture / TestGiftPackageDoneByteFixture branch on
+# v.Region == "GMS"). Leaving unregistered pending that decision — see
+# docs/tasks/task-183-cashshop-result-family/ for the Wave 2 GIFT batch report.

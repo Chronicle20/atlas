@@ -2,6 +2,7 @@ package session
 
 import (
 	"atlas-channel/account/session"
+	"atlas-channel/battleship"
 	session2 "atlas-channel/kafka/message/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -406,6 +407,10 @@ func (p *ProcessorImpl) Destroy(s Model) error {
 	p.l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
 	getRegistry().Remove(p.t.Id(), s.SessionId())
 
+	// Battleship ride state cannot outlive the session: logout, disconnect,
+	// timeout, and channel change all funnel here (FR-5.1).
+	clearBattleshipOnDestroy(p.l, p.ctx, s.CharacterId())
+
 	// Emit logout and destroyed events BEFORE closing the socket so a
 	// crash-safe ordering exists: a downstream consumer that sees the
 	// destroyed event can no longer race with the socket-close path
@@ -420,6 +425,26 @@ func (p *ProcessorImpl) Destroy(s Model) error {
 
 	s.Disconnect()
 	return emitErr
+}
+
+// newBattleshipProcessor is a seam over battleship.NewProcessor (mirrors the
+// battleshipStateTTLFunc / newBattleshipProcessor pattern in
+// kafka/consumer/buff/consumer.go) so tests can substitute a spy implementing
+// battleship.Processor and assert exactly which methods
+// clearBattleshipOnDestroy invokes.
+var newBattleshipProcessor = battleship.NewProcessor
+
+// clearBattleshipOnDestroy clears any active battleship ride state for a
+// destroyed session's character (FR-5.1): logout, disconnect, timeout, and
+// channel change all funnel through Destroy. No cooldown is applied here —
+// breakShip in the battleship package is the only cooldown trigger (FR-4.3).
+// Extracted from Destroy so this invariant is unit-testable without
+// exercising Destroy's Kafka emit path (account-session logout command +
+// DESTROYED status event), which requires a live broker.
+func clearBattleshipOnDestroy(l logrus.FieldLogger, ctx context.Context, characterId uint32) {
+	if characterId != 0 {
+		newBattleshipProcessor(l, ctx).Clear(characterId)
+	}
 }
 
 func (p *ProcessorImpl) SetStorageNpcId(id uuid.UUID, npcId uint32) Model {

@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashFriendshipFailed
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#FRIENDSHIP_FAILED
+    address: "0x455a0e"
+    decompile_sha256: 3abe1ba16a17e8101141e4a76402cf0debc948da5855a9dd8f3e909064a689e4
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_failed_test.go#TestFriendshipFailedByteFixture

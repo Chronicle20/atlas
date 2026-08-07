@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashIncBuyCharacterCountFailed
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#INC_BUY_CHARACTER_COUNT_FAILED
+    address: "0x48d871"
+    decompile_sha256: 1b782295eb655668a815f90be6530c3783eea13dd0cb907eed230f5939bc4edf
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_failed_test.go#TestIncBuyCharacterCountFailedByteFixture

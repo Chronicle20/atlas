@@ -1,0 +1,84 @@
+{
+  "WriterName": "CashGachaponCopyDone",
+  "IDAName": "CCashShop::OnCashItemResult#GACHAPON_COPY_SUCCESS",
+  "Address": "0x488140",
+  "Variant": "GMS/v87",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_operation_result_gachapon.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0xad GACHAPON_COPY_SUCCESS; op-byte consumed by dispatcher before CCashShop::OnCashItemResCashGachaponCopyDone)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "flag1 (byte)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "flag2 (byte)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "unused1 (int32, CInPacket::Decode4 result discarded, no assignment)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "unused2 (int32, same, discarded)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "lostItemId (int32, nRandomItemLostItemID)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "lostNumber (int32, nRandomItemLostNumber)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "CONDITIONAL if flag1 != 0 AND flag2 != 0: item, 55 bytes GW_CashItemInfo blob, appended to m_aCashItemInfo",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

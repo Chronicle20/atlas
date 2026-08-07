@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ClassAppearanceSection } from "../ClassAppearanceSection";
 import { DEFAULT_PRESET_ATTRIBUTES } from "../presetEditorState";
+import { JOB_LIST } from "@/lib/jobs/job-advancement-tree";
 
 // Radix Select/Dialog rely on DOM APIs jsdom does not implement.
 Element.prototype.hasPointerCapture ||= () => false;
@@ -29,12 +30,21 @@ vi.mock("@/lib/hooks/api/useItemNames", () => ({
   useItemNames: (...a: unknown[]) => useItemNamesMock(...a),
 }));
 
+// The class picker's option list is version-gated by usePresetJobOptions; mock
+// it to an explorer-only subset so "warrior" resolves to exactly one option
+// here (the gating itself is covered in usePresetJobOptions.test.tsx).
+const jobOptionsMock = vi.fn();
+vi.mock("@/lib/hooks/usePresetJobOptions", () => ({
+  usePresetJobOptions: () => jobOptionsMock(),
+}));
+
 // Enumeration fixture: male bases 30000 (colors 0,2) and 30030 (colors 0,1);
 // female base 31000 (colors 0,1). 21xxx faces are female by id convention.
 const HAIR_IDS = [30000, 30002, 30030, 30031, 31000, 31001];
 const FACE_IDS = [20000, 20001, 20002, 21000, 21001];
 
 beforeEach(() => {
+  jobOptionsMock.mockReturnValue(JOB_LIST.filter((j) => j.id < 1000));
   useFaceIdsMock.mockReturnValue({
     data: FACE_IDS,
     isLoading: false,

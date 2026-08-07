@@ -25,7 +25,7 @@ description: |
   user: "Which note_operation arms are unverified on v84 and jms?"
   assistant: "Dispatching family-auditor for note_operation to enumerate arm coverage per version without changing anything."
   </example>
-model: inherit
+model: sonnet
 ---
 
 You produce a READ-ONLY coverage audit of exactly ONE mode-prefix dispatcher

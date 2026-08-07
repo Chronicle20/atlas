@@ -1,4 +1,4 @@
-import { type ColumnDef } from "@tanstack/react-table";
+import { type DataTableColumnDef } from "@/components/data-table-features";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +29,7 @@ export const getColumns = ({
   onView,
   onDelete,
   onExpire,
-}: ColumnProps): ColumnDef<Ban>[] => {
+}: ColumnProps): DataTableColumnDef<Ban>[] => {
   return [
     {
       accessorKey: "id",

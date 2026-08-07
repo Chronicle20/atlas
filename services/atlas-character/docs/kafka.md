@@ -114,7 +114,9 @@
 | ERROR | StatusEvent[StatusEventMesoErrorBody] | Not enough meso error |
 | ERROR | StatusEvent[StatusEventApTransferErrorBody] | AP transfer (point reset) rejected |
 
-`CHANNEL_CHANGED` (StatusEvent[ChangeChannelEventLoginBody]), `MAP_CHANGED` (StatusEvent[StatusEventMapChangedBody]), and `UPDATED` (StatusEvent[StatusEventUpdatedBody]) are defined on the wire but are never emitted by any processor path.
+Every status event declared by this service is emitted by some processor path; there are no declared-but-unemitted types.
+
+`CHANNEL_CHANGED` and `MAP_CHANGED` are not declared by this service. `atlas-maps` owns character location state and is the sole emitter of both events.
 
 ### Commands Produced
 

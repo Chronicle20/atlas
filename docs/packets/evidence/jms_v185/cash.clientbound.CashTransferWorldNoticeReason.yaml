@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashTransferWorldNoticeReason
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#TRANSFER_WORLD_NOTICE_REASON
+    address: "0x48e6f7"
+    decompile_sha256: ab4c7a407c8fb1e54799edeaa16b4a9e2412577689fe56d66df8d1a087a18784
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_jms_test.go#TestTransferWorldNoticeReasonByteFixture

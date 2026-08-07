@@ -121,3 +121,20 @@ func RequestViciousHammerCommandProvider(f field.Model, characterId character.Id
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func RequestSkillBookUseCommandProvider(f field.Model, characterId character.Id, slot slot.Position, itemId item.Id) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &consumable.Command[consumable.RequestSkillBookUseBody]{
+		WorldId:     f.WorldId(),
+		ChannelId:   f.ChannelId(),
+		MapId:       f.MapId(),
+		Instance:    f.Instance(),
+		CharacterId: characterId,
+		Type:        consumable.CommandRequestSkillBookUse,
+		Body: consumable.RequestSkillBookUseBody{
+			Slot:   slot,
+			ItemId: itemId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

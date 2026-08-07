@@ -71,6 +71,21 @@ export interface MapActionScriptsSeedStatus {
   updatedAt: string | null;
 }
 
+export interface TransportRoutesSeedStatus {
+  routeCount: number;
+  updatedAt: string | null;
+}
+
+export interface TransportVesselsSeedStatus {
+  vesselCount: number;
+  updatedAt: string | null;
+}
+
+export interface InstanceRoutesSeedStatus {
+  routeCount: number;
+  updatedAt: string | null;
+}
+
 // Shape returned by libs/atlas-seeder's GET /<prefix>/seed/status handler.
 // The handler emits a plain JSON object (not a JSON:API envelope), so we
 // read it directly. Per-service status objects (DropsSeedStatus, etc.)
@@ -200,6 +215,22 @@ class SeedService {
 
   async seedMapActionScripts(): Promise<SeedResult> {
     return api.post<SeedResult>("/api/maps/actions/seed", {});
+  }
+
+  // The three transport-configuration seeds return 202 with no body and
+  // seed in the background (libs/atlas-seeder's postSeed contract), so
+  // these resolve to void and the Setup page's 5s status poll is what
+  // surfaces the result.
+  async seedRoutes(): Promise<void> {
+    await api.post("/api/tenants/configurations/routes/seed", {});
+  }
+
+  async seedVessels(): Promise<void> {
+    await api.post("/api/tenants/configurations/vessels/seed", {});
+  }
+
+  async seedInstanceRoutes(): Promise<void> {
+    await api.post("/api/tenants/configurations/instance-routes/seed", {});
   }
 
   async uploadWzFiles(tenant: Tenant, file: File): Promise<void> {
@@ -345,6 +376,45 @@ class SeedService {
       scriptCount:
         subdomainCount(s, "onUserEnter") +
         subdomainCount(s, "onFirstUserEnter"),
+      updatedAt: s.tenantSeededAt ?? s.updatedAt,
+    };
+  }
+
+  async getTransportRoutesSeedStatus(
+    tenant: Tenant,
+  ): Promise<TransportRoutesSeedStatus> {
+    const s = await fetchSeedStatus(
+      "/api/tenants/configurations/routes/seed/status",
+      tenant,
+    );
+    return {
+      routeCount: subdomainCount(s, "routes"),
+      updatedAt: s.tenantSeededAt ?? s.updatedAt,
+    };
+  }
+
+  async getTransportVesselsSeedStatus(
+    tenant: Tenant,
+  ): Promise<TransportVesselsSeedStatus> {
+    const s = await fetchSeedStatus(
+      "/api/tenants/configurations/vessels/seed/status",
+      tenant,
+    );
+    return {
+      vesselCount: subdomainCount(s, "vessels"),
+      updatedAt: s.tenantSeededAt ?? s.updatedAt,
+    };
+  }
+
+  async getInstanceRoutesSeedStatus(
+    tenant: Tenant,
+  ): Promise<InstanceRoutesSeedStatus> {
+    const s = await fetchSeedStatus(
+      "/api/tenants/configurations/instance-routes/seed/status",
+      tenant,
+    );
+    return {
+      routeCount: subdomainCount(s, "instance-routes"),
       updatedAt: s.tenantSeededAt ?? s.updatedAt,
     };
   }

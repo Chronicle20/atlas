@@ -15,12 +15,13 @@ import (
 )
 
 type Processor interface {
-	RequestItemConsume(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, updateTime uint32) error
+	RequestItemConsume(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, quantity int16, updateTime uint32) error
 	RequestItemConsumeWithPet(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, updateTime uint32, petId uint64) error
 	RequestItemReward(f field.Model, characterId character.Id, itemId item.Id, source slot.Position) error
 	RequestScrollUse(f field.Model, characterId character.Id, scrollSlot slot.Position, equipSlot slot.Position, whiteScroll bool, legendarySpirit bool, updateTime uint32) error
 	RequestVegaScrollUse(f field.Model, characterId character.Id, vegaItemId item.Id, vegaSlot slot.Position, scrollSlot slot.Position, equipSlot slot.Position) error
 	RequestViciousHammerUse(f field.Model, characterId character.Id, hammerSlot slot.Position, equipSlot slot.Position) error
+	RequestSkillBookUse(f field.Model, characterId character.Id, slot slot.Position, itemId item.Id, updateTime uint32) error
 }
 
 type ProcessorImpl struct {
@@ -38,9 +39,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 var _ Processor = (*ProcessorImpl)(nil)
 
-func (p *ProcessorImpl) RequestItemConsume(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, updateTime uint32) error {
-	p.l.Debugf("Character [%d] using item [%d] from slot [%d]. updateTime [%d]", characterId, itemId, source, updateTime)
-	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestItemConsumeCommandProvider(f, characterId, source, itemId, 1))
+func (p *ProcessorImpl) RequestItemConsume(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, quantity int16, updateTime uint32) error {
+	// Defense in depth for an absent/"0"-string itemConNo (FR-1): an absent
+	// amount means one item, never zero.
+	if quantity < 1 {
+		quantity = 1
+	}
+	p.l.Debugf("Character [%d] using item [%d] from slot [%d]. quantity [%d], updateTime [%d]", characterId, itemId, source, quantity, updateTime)
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestItemConsumeCommandProvider(f, characterId, source, itemId, quantity))
 }
 
 // RequestItemConsumeWithPet is RequestItemConsume for consume paths that carry
@@ -70,4 +76,9 @@ func (p *ProcessorImpl) RequestVegaScrollUse(f field.Model, characterId characte
 func (p *ProcessorImpl) RequestViciousHammerUse(f field.Model, characterId character.Id, hammerSlot slot.Position, equipSlot slot.Position) error {
 	p.l.Debugf("Character [%d] attempting to use vicious hammer in slot [%d] on equip slot [%d].", characterId, hammerSlot, equipSlot)
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestViciousHammerCommandProvider(f, characterId, hammerSlot, equipSlot))
+}
+
+func (p *ProcessorImpl) RequestSkillBookUse(f field.Model, characterId character.Id, slot slot.Position, itemId item.Id, updateTime uint32) error {
+	p.l.Debugf("Character [%d] using skill book [%d] from slot [%d]. updateTime [%d]", characterId, itemId, slot, updateTime)
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestSkillBookUseCommandProvider(f, characterId, slot, itemId))
 }

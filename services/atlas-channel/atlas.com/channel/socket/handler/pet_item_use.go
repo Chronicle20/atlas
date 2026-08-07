@@ -157,7 +157,7 @@ func PetItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 			return
 		}
 
-		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character2.Id(s.CharacterId()), item.Id(p.ItemId()), slot.Position(p.Source()), p.UpdateTime())
+		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character2.Id(s.CharacterId()), item.Id(p.ItemId()), slot.Position(p.Source()), 1, p.UpdateTime())
 	}
 }
 

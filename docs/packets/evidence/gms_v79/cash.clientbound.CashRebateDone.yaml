@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashRebateDone
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#REBATE_SUCCESS
+    address: "0x4743df"
+    decompile_sha256: 482374f616cdb3e4d3f32259a71963ffd28fa7a5530e11f4e8d97d54e6da117d
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_gift_test.go#TestRebateDoneByteFixture

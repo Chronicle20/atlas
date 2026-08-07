@@ -24,6 +24,7 @@ const (
 	SagaTypeIncubatorUse     = "incubator_use"
 	SagaTypePointReset       = "point_reset"
 	SagaTypeMtsOperation     = "mts_operation"
+	SagaTypeNoteSend         = "note_send"
 )
 
 // MtsTakeHomeResultKind is the Results["kind"] marker the orchestrator sets on a

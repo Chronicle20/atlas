@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashBuyFailed
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#BUY_FAILED
+    address: "0x47cb23"
+    decompile_sha256: 0757e18c18c1cb88cfa3cfc8af95493360e55c7c89c2a2ab80bc56e44354ebe0
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_failed_test.go#TestBuyFailedByteFixture

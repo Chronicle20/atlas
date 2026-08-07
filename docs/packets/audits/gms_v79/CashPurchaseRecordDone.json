@@ -1,0 +1,39 @@
+{
+  "WriterName": "CashPurchaseRecordDone",
+  "IDAName": "CCashShop::OnCashItemResult#PURCHASE_RECORD",
+  "Address": "0x474f8c",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_operation_result_misc.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0x92 PURCHASE_RECORD; op-byte consumed by dispatcher before OnCashItemResPurchaseRecord)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "goodsSN (used as a ZMap\u003clong,...\u003e key when nonzero)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "purchased (byte, compared !=0 -\u003e bool, recorded in m_mPurchaseRecord)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

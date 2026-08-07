@@ -1,0 +1,10 @@
+packet: character/serverbound/CancelDebuff
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::CheckTemporaryStatDuration
+    address: "0xa6bd3a"
+    decompile_sha256: 8d7504ac77cb1c018af1bffe4d365a72e10a1233e9311cc6d852c6cc9ddd4183
+verifies:
+    - libs/atlas-packet/character/serverbound/cancel_debuff_test.go#TestCancelDebuffEmptyBodyAllVersions

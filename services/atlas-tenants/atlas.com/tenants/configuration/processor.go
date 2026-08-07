@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"atlas-tenants/kafka/message"
+	tenants "atlas-tenants/tenant"
 	"context"
 	"encoding/json"
 	"errors"
@@ -14,6 +15,7 @@ import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	atlastenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Processor defines the interface for configuration operations
@@ -147,12 +149,6 @@ type Processor interface {
 	RankingsProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}]
 
 	// Seed operations
-	// SeedRoutes clears existing routes for a tenant and loads them from seed files
-	SeedRoutes(tenantId uuid.UUID) (SeedResult, error)
-	// SeedInstanceRoutes clears existing instance routes for a tenant and loads them from seed files
-	SeedInstanceRoutes(tenantId uuid.UUID) (SeedResult, error)
-	// SeedVessels clears existing vessels for a tenant and loads them from seed files
-	SeedVessels(tenantId uuid.UUID) (SeedResult, error)
 	// SeedRpsRewards clears existing rps-rewards for a tenant and loads them from seed files
 	SeedRpsRewards(tenantId uuid.UUID) (SeedResult, error)
 	// SeedMtsConfigs clears existing mts configs for a tenant and loads them from seed files
@@ -176,6 +172,30 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 }
 
 var _ Processor = (*ProcessorImpl)(nil)
+
+// tenantCtx returns p.ctx enriched with a fully-populated tenant.Model
+// for tenantId.
+//
+// The configuration processor threads the tenant as a bare uuid.UUID
+// (the REST layer is path-scoped), so the server context it was built
+// with has no tenant at all. Without this, producer.TenantHeaderDecorator
+// silently drops all four tenant headers and the downstream reload runs
+// against the zero tenant. atlas-tenants owns the tenants table, so it
+// has the region and versions needed to build a real model.
+//
+// A resolution failure aborts the caller rather than emitting
+// tenant-free: the operation is meaningless for an unknown tenant.
+func (p *ProcessorImpl) tenantCtx(tenantId uuid.UUID) (context.Context, error) {
+	m, err := tenants.NewProcessor(p.l, p.ctx, p.db).GetById(tenantId)
+	if err != nil {
+		return nil, fmt.Errorf("resolve tenant %s for configuration emit: %w", tenantId, err)
+	}
+	t, err := atlastenant.Create(m.Id(), m.Region(), m.MajorVersion(), m.MinorVersion())
+	if err != nil {
+		return nil, fmt.Errorf("build tenant model %s: %w", tenantId, err)
+	}
+	return atlastenant.WithContext(p.ctx, t), nil
+}
 
 // Create creates a new route configuration
 func (p *ProcessorImpl) CreateRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(route map[string]interface{}) (Model, error) {
@@ -274,12 +294,16 @@ func (p *ProcessorImpl) CreateRoute(mb *message.Buffer) func(tenantId uuid.UUID)
 
 // CreateRouteAndEmit creates a new route configuration and emits events
 func (p *ProcessorImpl) CreateRouteAndEmit(tenantId uuid.UUID, route map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
 	var result Model
-	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
 		var err error
-		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
 			return func(tenantId uuid.UUID) (Model, error) {
-				return NewProcessor(p.l, p.ctx, tx).CreateRoute(mb)(tenantId)(route)
+				return NewProcessor(p.l, ctx, tx).CreateRoute(mb)(tenantId)(route)
 			}
 		})(tenantId)
 		return err
@@ -363,12 +387,16 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(tenantId uuid.UUID)
 
 // UpdateRouteAndEmit updates an existing route configuration and emits events
 func (p *ProcessorImpl) UpdateRouteAndEmit(tenantId uuid.UUID, routeID string, route map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
 	var result Model
-	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
 		var err error
-		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
 			return func(tenantId uuid.UUID) (Model, error) {
-				return NewProcessor(p.l, p.ctx, tx).UpdateRoute(mb)(tenantId)(routeID)(route)
+				return NewProcessor(p.l, ctx, tx).UpdateRoute(mb)(tenantId)(routeID)(route)
 			}
 		})(tenantId)
 		return err
@@ -396,9 +424,13 @@ func (p *ProcessorImpl) DeleteRoute(mb *message.Buffer) func(tenantId uuid.UUID)
 
 // DeleteRouteAndEmit deletes a route configuration and emits events
 func (p *ProcessorImpl) DeleteRouteAndEmit(tenantId uuid.UUID, routeID string) error {
-	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
-			return NewProcessor(p.l, p.ctx, tx).DeleteRoute(mb)(tenantId)(routeID)
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return err
+	}
+	return database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) error {
+			return NewProcessor(p.l, ctx, tx).DeleteRoute(mb)(tenantId)(routeID)
 		})
 	})
 }
@@ -520,12 +552,16 @@ func (p *ProcessorImpl) CreateVessel(mb *message.Buffer) func(tenantId uuid.UUID
 
 // CreateVesselAndEmit creates a new vessel configuration and emits events
 func (p *ProcessorImpl) CreateVesselAndEmit(tenantId uuid.UUID, vessel map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
 	var result Model
-	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
 		var err error
-		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
 			return func(tenantId uuid.UUID) (Model, error) {
-				return NewProcessor(p.l, p.ctx, tx).CreateVessel(mb)(tenantId)(vessel)
+				return NewProcessor(p.l, ctx, tx).CreateVessel(mb)(tenantId)(vessel)
 			}
 		})(tenantId)
 		return err
@@ -609,12 +645,16 @@ func (p *ProcessorImpl) UpdateVessel(mb *message.Buffer) func(tenantId uuid.UUID
 
 // UpdateVesselAndEmit updates an existing vessel configuration and emits events
 func (p *ProcessorImpl) UpdateVesselAndEmit(tenantId uuid.UUID, vesselID string, vessel map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
 	var result Model
-	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
 		var err error
-		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
 			return func(tenantId uuid.UUID) (Model, error) {
-				return NewProcessor(p.l, p.ctx, tx).UpdateVessel(mb)(tenantId)(vesselID)(vessel)
+				return NewProcessor(p.l, ctx, tx).UpdateVessel(mb)(tenantId)(vesselID)(vessel)
 			}
 		})(tenantId)
 		return err
@@ -642,9 +682,13 @@ func (p *ProcessorImpl) DeleteVessel(mb *message.Buffer) func(tenantId uuid.UUID
 
 // DeleteVesselAndEmit deletes a vessel configuration and emits events
 func (p *ProcessorImpl) DeleteVesselAndEmit(tenantId uuid.UUID, vesselID string) error {
-	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
-			return NewProcessor(p.l, p.ctx, tx).DeleteVessel(mb)(tenantId)(vesselID)
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return err
+	}
+	return database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) error {
+			return NewProcessor(p.l, ctx, tx).DeleteVessel(mb)(tenantId)(vesselID)
 		})
 	})
 }
@@ -766,12 +810,16 @@ func (p *ProcessorImpl) CreateMtsConfig(mb *message.Buffer) func(tenantId uuid.U
 
 // CreateMtsConfigAndEmit creates a new mts config configuration and emits events
 func (p *ProcessorImpl) CreateMtsConfigAndEmit(tenantId uuid.UUID, config map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
 	var result Model
-	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
 		var err error
-		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
 			return func(tenantId uuid.UUID) (Model, error) {
-				return NewProcessor(p.l, p.ctx, tx).CreateMtsConfig(mb)(tenantId)(config)
+				return NewProcessor(p.l, ctx, tx).CreateMtsConfig(mb)(tenantId)(config)
 			}
 		})(tenantId)
 		return err
@@ -855,12 +903,16 @@ func (p *ProcessorImpl) UpdateMtsConfig(mb *message.Buffer) func(tenantId uuid.U
 
 // UpdateMtsConfigAndEmit updates an existing mts config configuration and emits events
 func (p *ProcessorImpl) UpdateMtsConfigAndEmit(tenantId uuid.UUID, configID string, config map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
 	var result Model
-	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
 		var err error
-		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
 			return func(tenantId uuid.UUID) (Model, error) {
-				return NewProcessor(p.l, p.ctx, tx).UpdateMtsConfig(mb)(tenantId)(configID)(config)
+				return NewProcessor(p.l, ctx, tx).UpdateMtsConfig(mb)(tenantId)(configID)(config)
 			}
 		})(tenantId)
 		return err
@@ -888,9 +940,13 @@ func (p *ProcessorImpl) DeleteMtsConfig(mb *message.Buffer) func(tenantId uuid.U
 
 // DeleteMtsConfigAndEmit deletes an mts config configuration and emits events
 func (p *ProcessorImpl) DeleteMtsConfigAndEmit(tenantId uuid.UUID, configID string) error {
-	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
-			return NewProcessor(p.l, p.ctx, tx).DeleteMtsConfig(mb)(tenantId)(configID)
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return err
+	}
+	return database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) error {
+			return NewProcessor(p.l, ctx, tx).DeleteMtsConfig(mb)(tenantId)(configID)
 		})
 	})
 }
@@ -1003,12 +1059,16 @@ func (p *ProcessorImpl) CreateInstanceRoute(mb *message.Buffer) func(tenantId uu
 
 // CreateInstanceRouteAndEmit creates a new instance route configuration and emits events
 func (p *ProcessorImpl) CreateInstanceRouteAndEmit(tenantId uuid.UUID, route map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
 	var result Model
-	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
 		var err error
-		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
 			return func(tenantId uuid.UUID) (Model, error) {
-				return NewProcessor(p.l, p.ctx, tx).CreateInstanceRoute(mb)(tenantId)(route)
+				return NewProcessor(p.l, ctx, tx).CreateInstanceRoute(mb)(tenantId)(route)
 			}
 		})(tenantId)
 		return err
@@ -1088,12 +1148,16 @@ func (p *ProcessorImpl) UpdateInstanceRoute(mb *message.Buffer) func(tenantId uu
 
 // UpdateInstanceRouteAndEmit updates an existing instance route configuration and emits events
 func (p *ProcessorImpl) UpdateInstanceRouteAndEmit(tenantId uuid.UUID, routeID string, route map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
 	var result Model
-	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
 		var err error
-		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
 			return func(tenantId uuid.UUID) (Model, error) {
-				return NewProcessor(p.l, p.ctx, tx).UpdateInstanceRoute(mb)(tenantId)(routeID)(route)
+				return NewProcessor(p.l, ctx, tx).UpdateInstanceRoute(mb)(tenantId)(routeID)(route)
 			}
 		})(tenantId)
 		return err
@@ -1120,9 +1184,13 @@ func (p *ProcessorImpl) DeleteInstanceRoute(mb *message.Buffer) func(tenantId uu
 
 // DeleteInstanceRouteAndEmit deletes an instance route configuration and emits events
 func (p *ProcessorImpl) DeleteInstanceRouteAndEmit(tenantId uuid.UUID, routeID string) error {
-	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
-			return NewProcessor(p.l, p.ctx, tx).DeleteInstanceRoute(mb)(tenantId)(routeID)
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return err
+	}
+	return database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) error {
+			return NewProcessor(p.l, ctx, tx).DeleteInstanceRoute(mb)(tenantId)(routeID)
 		})
 	})
 }
@@ -1145,120 +1213,6 @@ func (p *ProcessorImpl) InstanceRouteByIdProvider(tenantId uuid.UUID, routeID st
 // AllInstanceRoutesProvider returns a provider for all instance routes for a tenant
 func (p *ProcessorImpl) AllInstanceRoutesProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}] {
 	return GetAllInstanceRoutesProvider(tenantId)(p.db)
-}
-
-// SeedRoutes clears existing routes for a tenant and loads them from seed files
-func (p *ProcessorImpl) SeedRoutes(tenantId uuid.UUID) (SeedResult, error) {
-	p.l.Infof("Seeding routes for tenant [%s]", tenantId)
-
-	result := SeedResult{}
-
-	// Delete all existing routes for this tenant
-	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantId, "routes")
-	if err != nil {
-		return result, fmt.Errorf("failed to clear existing routes: %w", err)
-	}
-	result.DeletedCount = int(deletedCount)
-
-	// Load route files from the filesystem
-	routes, loadErrors := LoadRouteFiles()
-	for _, err := range loadErrors {
-		result.Errors = append(result.Errors, err.Error())
-		result.FailedCount++
-	}
-
-	// Create each route
-	for _, route := range routes {
-		id, _ := route["id"].(string)
-		_, err := p.CreateRouteAndEmit(tenantId, route)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", id, err))
-			result.FailedCount++
-			continue
-		}
-		result.CreatedCount++
-	}
-
-	p.l.Infof("Route seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
-		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
-
-	return result, nil
-}
-
-// SeedInstanceRoutes clears existing instance routes for a tenant and loads them from seed files
-func (p *ProcessorImpl) SeedInstanceRoutes(tenantId uuid.UUID) (SeedResult, error) {
-	p.l.Infof("Seeding instance routes for tenant [%s]", tenantId)
-
-	result := SeedResult{}
-
-	// Delete all existing instance routes for this tenant
-	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantId, "instance-routes")
-	if err != nil {
-		return result, fmt.Errorf("failed to clear existing instance routes: %w", err)
-	}
-	result.DeletedCount = int(deletedCount)
-
-	// Load instance route files from the filesystem
-	routes, loadErrors := LoadInstanceRouteFiles()
-	for _, err := range loadErrors {
-		result.Errors = append(result.Errors, err.Error())
-		result.FailedCount++
-	}
-
-	// Create each instance route
-	for _, route := range routes {
-		id, _ := route["id"].(string)
-		_, err := p.CreateInstanceRouteAndEmit(tenantId, route)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", id, err))
-			result.FailedCount++
-			continue
-		}
-		result.CreatedCount++
-	}
-
-	p.l.Infof("Instance route seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
-		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
-
-	return result, nil
-}
-
-// SeedVessels clears existing vessels for a tenant and loads them from seed files
-func (p *ProcessorImpl) SeedVessels(tenantId uuid.UUID) (SeedResult, error) {
-	p.l.Infof("Seeding vessels for tenant [%s]", tenantId)
-
-	result := SeedResult{}
-
-	// Delete all existing vessels for this tenant
-	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantId, "vessels")
-	if err != nil {
-		return result, fmt.Errorf("failed to clear existing vessels: %w", err)
-	}
-	result.DeletedCount = int(deletedCount)
-
-	// Load vessel files from the filesystem
-	vessels, loadErrors := LoadVesselFiles()
-	for _, err := range loadErrors {
-		result.Errors = append(result.Errors, err.Error())
-		result.FailedCount++
-	}
-
-	// Create each vessel
-	for _, vessel := range vessels {
-		id, _ := vessel["id"].(string)
-		_, err := p.CreateVesselAndEmit(tenantId, vessel)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", id, err))
-			result.FailedCount++
-			continue
-		}
-		result.CreatedCount++
-	}
-
-	p.l.Infof("Vessel seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
-		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
-
-	return result, nil
 }
 
 // CreateRpsReward creates a new rps-reward configuration
@@ -1358,12 +1312,16 @@ func (p *ProcessorImpl) CreateRpsReward(mb *message.Buffer) func(tenantId uuid.U
 
 // CreateRpsRewardAndEmit creates a new rps-reward configuration and emits events
 func (p *ProcessorImpl) CreateRpsRewardAndEmit(tenantId uuid.UUID, rpsReward map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
 	var result Model
-	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
 		var err error
-		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
 			return func(tenantId uuid.UUID) (Model, error) {
-				return NewProcessor(p.l, p.ctx, tx).CreateRpsReward(mb)(tenantId)(rpsReward)
+				return NewProcessor(p.l, ctx, tx).CreateRpsReward(mb)(tenantId)(rpsReward)
 			}
 		})(tenantId)
 		return err
@@ -1447,12 +1405,16 @@ func (p *ProcessorImpl) UpdateRpsReward(mb *message.Buffer) func(tenantId uuid.U
 
 // UpdateRpsRewardAndEmit updates an existing rps-reward configuration and emits events
 func (p *ProcessorImpl) UpdateRpsRewardAndEmit(tenantId uuid.UUID, rpsRewardID string, rpsReward map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
 	var result Model
-	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
 		var err error
-		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
 			return func(tenantId uuid.UUID) (Model, error) {
-				return NewProcessor(p.l, p.ctx, tx).UpdateRpsReward(mb)(tenantId)(rpsRewardID)(rpsReward)
+				return NewProcessor(p.l, ctx, tx).UpdateRpsReward(mb)(tenantId)(rpsRewardID)(rpsReward)
 			}
 		})(tenantId)
 		return err
@@ -1480,9 +1442,13 @@ func (p *ProcessorImpl) DeleteRpsReward(mb *message.Buffer) func(tenantId uuid.U
 
 // DeleteRpsRewardAndEmit deletes a rps-reward configuration and emits events
 func (p *ProcessorImpl) DeleteRpsRewardAndEmit(tenantId uuid.UUID, rpsRewardID string) error {
-	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
-			return NewProcessor(p.l, p.ctx, tx).DeleteRpsReward(mb)(tenantId)(rpsRewardID)
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return err
+	}
+	return database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) error {
+			return NewProcessor(p.l, ctx, tx).DeleteRpsReward(mb)(tenantId)(rpsRewardID)
 		})
 	})
 }
@@ -1638,12 +1604,16 @@ func (p *ProcessorImpl) CreateRankings(mb *message.Buffer) func(tenantId uuid.UU
 
 // CreateRankingsAndEmit creates the rankings configuration and emits events
 func (p *ProcessorImpl) CreateRankingsAndEmit(tenantId uuid.UUID, rankings map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
 	var result Model
-	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
 		var err error
-		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
 			return func(tenantId uuid.UUID) (Model, error) {
-				return NewProcessor(p.l, p.ctx, tx).CreateRankings(mb)(tenantId)(rankings)
+				return NewProcessor(p.l, ctx, tx).CreateRankings(mb)(tenantId)(rankings)
 			}
 		})(tenantId)
 		return err
@@ -1688,12 +1658,16 @@ func (p *ProcessorImpl) UpdateRankings(mb *message.Buffer) func(tenantId uuid.UU
 
 // UpdateRankingsAndEmit updates the rankings configuration and emits events
 func (p *ProcessorImpl) UpdateRankingsAndEmit(tenantId uuid.UUID, rankings map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
 	var result Model
-	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
 		var err error
-		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
 			return func(tenantId uuid.UUID) (Model, error) {
-				return NewProcessor(p.l, p.ctx, tx).UpdateRankings(mb)(tenantId)(rankings)
+				return NewProcessor(p.l, ctx, tx).UpdateRankings(mb)(tenantId)(rankings)
 			}
 		})(tenantId)
 		return err
@@ -1713,9 +1687,13 @@ func (p *ProcessorImpl) DeleteRankings(mb *message.Buffer) func(tenantId uuid.UU
 
 // DeleteRankingsAndEmit deletes the rankings configuration and emits events
 func (p *ProcessorImpl) DeleteRankingsAndEmit(tenantId uuid.UUID) error {
-	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
-			return NewProcessor(p.l, p.ctx, tx).DeleteRankings(mb)(tenantId)
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return err
+	}
+	return database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) error {
+			return NewProcessor(p.l, ctx, tx).DeleteRankings(mb)(tenantId)
 		})
 	})
 }

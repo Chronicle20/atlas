@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashCoupleDone
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#COUPLE_SUCCESS
+    address: "0x47b78e"
+    decompile_sha256: 5f151cd7bcd2b9d8dd5233d35cd3f407500a63633be5fcd20ee54ee04082ea5b
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_gift_test.go#TestCoupleDoneByteFixture

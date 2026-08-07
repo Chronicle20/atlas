@@ -2,22 +2,28 @@ package handler
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/character/buff"
 	skill2 "atlas-channel/character/skill"
 	skill3 "atlas-channel/data/skill"
+	buff2 "atlas-channel/kafka/message/buff"
 	_map "atlas-channel/map"
 	"atlas-channel/session"
 	"atlas-channel/skill/handler"
 	"atlas-channel/socket/writer"
 	summoncmd "atlas-channel/summon"
 	"context"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
+	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/summon"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // CUserLocal::DoActiveSkill_TownPortal
@@ -70,6 +76,19 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			return
 		}
 
+		// Battleship post-break cooldown is enforced server-side: the client
+		// greys the icon, but a packet-editing client must not remount a
+		// broken ship (FR-2.4). Zero extra round-trips — CooldownExpiresAt is
+		// decorated onto the already-loaded skill model.
+		if battleshipCastBlocked(sui.SkillId(), sm.CooldownExpiresAt(), time.Now()) {
+			l.Debugf("Character [%d] attempting to cast battleship while on post-break cooldown (expires [%s]).", s.CharacterId(), sm.CooldownExpiresAt())
+			err = enableActions(l)(ctx)(wp)(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, s.CharacterId())
+			}
+			return
+		}
+
 		se, err := skill3.NewProcessor(l, ctx).GetEffect(sui.SkillId(), sui.SkillLevel())
 		if err != nil {
 			err = enableActions(l)(ctx)(wp)(s)
@@ -81,6 +100,45 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 
 		l.Debugf("Character [%d] using skill [%d] at level [%d].", s.CharacterId(), sui.SkillId(), sui.SkillLevel())
 
+		// Resolved once and reused below (task-187): HeroEnrage and
+		// DarkKnightBeholder are routed through the resolved Identity rather
+		// than a raw wire compare, for defensive consistency with the guard
+		// that bans raw wire compares outside the resolver.
+		t := tenant.MustFromContext(ctx)
+		set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+		castId, castIdOk := set.Skill.Resolve(skill.Id(sui.SkillId()))
+
+		// Enrage (Hero) requires and consumes the caster's combo orbs. Gate the
+		// cast here — before the buff applies — on the caster being at their orb
+		// cap ("max combo orbs"), reading the live count from atlas-buffs. A cast
+		// below the cap is rejected (no buff applied); an eligible cast has its
+		// orbs consumed after the buff applies below. Fails OPEN on a buff-read
+		// error so a transient atlas-buffs hiccup never blocks a legitimate cast.
+		consumeEnrageOrbs := false
+		var enrageComboSource int32
+		if castIdOk && skill.IsIdentity(castId, skill.HeroEnrage) {
+			line, hasCombo := comboSkillIds(c.Skills())
+			if !hasCombo {
+				l.Debugf("Character [%d] cast Enrage without a Combo Attack skill; rejecting.", s.CharacterId())
+				if aerr := enableActions(l)(ctx)(wp)(s); aerr != nil {
+					l.WithError(aerr).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, s.CharacterId())
+				}
+				return
+			}
+			buffs, berr := buff.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
+			if berr != nil {
+				l.WithError(berr).Warnf("Enrage: unable to read combo orbs for character [%d]; skipping orb-cap gate.", s.CharacterId())
+			} else if !comboAtOrbCap(line, buffs, skill3.NewProcessor(l, ctx).GetEffect) {
+				l.Debugf("Character [%d] cast Enrage below max combo orbs; rejecting.", s.CharacterId())
+				if aerr := enableActions(l)(ctx)(wp)(s); aerr != nil {
+					l.WithError(aerr).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, s.CharacterId())
+				}
+				return
+			}
+			consumeEnrageOrbs = true
+			enrageComboSource = int32(line.comboId)
+		}
+
 		// Summon skills additionally request atlas-summons to create the
 		// owner-bound summon. This runs alongside (not instead of) the normal
 		// skill-effect application below so the buff/cooldown still apply.
@@ -91,7 +149,7 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			// skill book (c.Skills() — decorated above). Non-Beholder summons
 			// send 0/0.
 			var auraLevel, hexLevel byte
-			if sui.SkillId() == uint32(skill.DarkKnightBeholderId) {
+			if castIdOk && skill.IsIdentity(castId, skill.DarkKnightBeholder) {
 				auraLevel = skillLevelOf(c.Skills(), skill.DarkKnightAuraOfTheBeholderId)
 				hexLevel = skillLevelOf(c.Skills(), skill.DarkKnightHexOfTheBeholderId)
 			}
@@ -104,6 +162,15 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if err != nil {
 			l.WithError(err).Errorf("Character [%d] failed to use skill [%d].", s.CharacterId(), sui.SkillId())
 			return
+		}
+
+		// Enrage passed its orb-cap gate above and its buff has now applied —
+		// consume the combo orbs (reset the COMBO stat to 1) via the delta
+		// command atlas-buffs owns.
+		if consumeEnrageOrbs {
+			if cerr := buff.NewProcessor(l, ctx).UpdateStatValue(s.Field(), s.CharacterId(), enrageComboSource, string(charconst.TemporaryStatTypeCombo), buff2.StatOperationSet, 1, 0); cerr != nil {
+				l.WithError(cerr).Errorf("Enrage: failed to consume combo orbs for character [%d].", s.CharacterId())
+			}
 		}
 
 		session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(s.CharacterId(), AnnounceSkillUse(l)(ctx)(wp)(sui.SkillId(), c.Level(), sui.SkillLevel()))
@@ -127,4 +194,11 @@ func skillLevelOf(skills []skill2.Model, id skill.Id) byte {
 		}
 	}
 	return 0
+}
+
+// battleshipCastBlocked reports whether a 5221006 cast must be rejected
+// because the post-break cooldown is still running (FR-2.4). Scoped to
+// battleship: a generic cast-time cooldown gate is out of scope here.
+func battleshipCastBlocked(skillId uint32, cooldownExpiresAt time.Time, now time.Time) bool {
+	return skill.Id(skillId) == skill.CorsairBattleshipId && now.Before(cooldownExpiresAt)
 }

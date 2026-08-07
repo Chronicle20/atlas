@@ -99,11 +99,6 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			return
 		}
 
-		//err = session.Announce(l)(wp)(cashcb.CashShopOperationWriter)(s, writer.CashShopCashGiftsBody(l)(s.Tenant()))
-		//if err != nil {
-		//	return
-		//}
-
 		wl, err := wishlist.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update wish list for character [%d].", s.CharacterId())

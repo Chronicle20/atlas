@@ -200,3 +200,42 @@ func TestResolveCode16(t *testing.T) {
 		t.Error("non-map property resolved ok=true, want false")
 	}
 }
+
+func TestResolveValueValid(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	options := map[string]interface{}{
+		"skills": map[string]interface{}{
+			"BATTLESHIP_HP_GAUGE": float64(5221999),
+		},
+		"vehicles": map[string]interface{}{
+			"CORSAIR_BATTLESHIP": "0x1D7AE0", // 1932000 — see R-10; 0x1D7B60 is 1932128, NOT 1932000
+		},
+	}
+	v, ok := ResolveValue(l, options, "skills", "BATTLESHIP_HP_GAUGE")
+	assert.True(t, ok)
+	assert.Equal(t, uint32(5221999), v)
+	v, ok = ResolveValue(l, options, "vehicles", "CORSAIR_BATTLESHIP")
+	assert.True(t, ok)
+	assert.Equal(t, uint32(1932000), v)
+}
+
+func TestResolveValueMisses(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	cases := []struct {
+		name    string
+		options map[string]interface{}
+	}{
+		{"missing property", map[string]interface{}{}},
+		{"property not a map", map[string]interface{}{"skills": "nope"}},
+		{"missing key", map[string]interface{}{"skills": map[string]interface{}{}}},
+		{"unparseable string", map[string]interface{}{"skills": map[string]interface{}{"BATTLESHIP_HP_GAUGE": "zz"}}},
+		{"unsupported type", map[string]interface{}{"skills": map[string]interface{}{"BATTLESHIP_HP_GAUGE": true}}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			v, ok := ResolveValue(l, tc.options, "skills", "BATTLESHIP_HP_GAUGE")
+			assert.False(t, ok)
+			assert.Equal(t, uint32(0), v)
+		})
+	}
+}

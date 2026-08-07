@@ -53,6 +53,8 @@ type Compensator interface {
 	compensateCashItemUse(s Saga, failedStep Step[any]) error
 	compensatePointReset(s Saga, failedStep Step[any]) error
 	compensateMtsOperation(s Saga, failedStep Step[any]) error
+	compensateNoteSend(s Saga, failedStep Step[any]) error
+	compensateSkillBookUse(s Saga, failedStep Step[any]) error
 
 	// DispatchMtsOperationRollbacks reverse-walks the completed steps of an MTS
 	// saga (TransferToMts / WithdrawFromMts / MtsSettlePurchase) and dispatches the
@@ -77,6 +79,13 @@ type Compensator interface {
 	// transitions, no Failed emission, no cache eviction — callers handle those.
 	DispatchPetEvolutionRollbacks(s Saga)
 
+	// DispatchNoteSendRollbacks reverse-walks the completed steps of a
+	// note_send saga, refunding the destroyed Note item (DestroyAsset →
+	// CreateItem). A failed consume_note_item (destroy) step has nothing
+	// completed to refund. No lifecycle transitions, no Failed emission, no
+	// cache eviction — callers handle those.
+	DispatchNoteSendRollbacks(s Saga)
+
 	// DispatchCashItemUseRollbacks reverse-walks the completed steps of a
 	// cash-item-use saga (ItemTagUse/SealingLockUse/IncubatorUse), re-creating
 	// every consumed item (DestroyAsset/DestroyAssetFromSlot → CreateItem) and
@@ -89,6 +98,11 @@ type Compensator interface {
 	// (DestroyAsset → CreateItem). No lifecycle transitions, no Failed emission,
 	// no cache eviction — callers handle those.
 	DispatchPointResetRollbacks(s Saga)
+
+	// DispatchSkillBookUseRollbacks reverse-walks the completed steps of a
+	// skill_book_use saga and re-awards the destroyed book (task-125). Pure
+	// dispatch half — no lifecycle transitions, no event emission.
+	DispatchSkillBookUseRollbacks(s Saga)
 
 	// CompensateLateStep dispatches the single-step inverse for a step whose
 	// success event arrived after the saga went terminal (PRD §4.3, design
@@ -242,6 +256,21 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	// failed step.
 	if s.SagaType() == MtsOperation {
 		return c.compensateMtsOperation(s, failedStep)
+	}
+
+	// Note-send reverse-walk: a failed create_note must refund the
+	// already-destroyed Note item; a failed consume_note_item has nothing to
+	// refund. Either way the saga terminates with one Failed emission so the
+	// channel can announce SEND_ERROR (unlocking the client).
+	if s.SagaType() == NoteSend {
+		return c.compensateNoteSend(s, failedStep)
+	}
+
+	// Skill-book reverse-walk (task-125). A failed create_skill/update_skill
+	// must re-award the already-destroyed book rather than only compensating
+	// the failed step; a failed destroy step has nothing to reverse.
+	if s.SagaType() == SkillBookUse {
+		return c.compensateSkillBookUse(s, failedStep)
 	}
 
 	c.l.WithFields(logrus.Fields{
@@ -1187,6 +1216,99 @@ func (c *CompensatorImpl) DispatchPetEvolutionRollbacks(s Saga) {
 	}
 }
 
+// compensateSkillBookUse is the skill_book_use reverse-walk compensator
+// (task-125). On a failed create_skill/update_skill it re-awards the book
+// destroyed by the completed destroy_asset_from_slot step (using the
+// payload's TemplateId), emits exactly one StatusEventTypeFailed, cancels
+// the Phase-4 timer, and evicts the saga. A failed destroy step (first
+// step) has no completed steps to reverse — the walk is a no-op and the
+// saga just terminates with the failed event.
+//
+// Double-emission is prevented by TryTransition(Compensating → Failed): if
+// the timer already emitted Failed, the transition is refused and this
+// function returns without re-emitting. Mirrors compensatePetEvolution.
+func (c *CompensatorImpl) compensateSkillBookUse(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("SkillBookUse saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchSkillBookUseRollbacks(s)
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; reverse-walk emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("Skill book use failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailed(c.l, c.ctx, s, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after skill-book compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Skill-book reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// DispatchSkillBookUseRollbacks reverse-walks the saga's completed steps and
+// re-awards each completed destroy_asset_from_slot via CreateItem using the
+// payload's TemplateId. Pure dispatch half — callers own lifecycle/emission.
+// Slot position is not preserved (the freed slot guarantees space). A destroy
+// payload without TemplateId (legacy producer) cannot be re-awarded and is
+// skipped with an error log. An error re-awarding one step does not abort the
+// chain.
+func (c *CompensatorImpl) DispatchSkillBookUseRollbacks(s Saga) {
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		if step.Action() != DestroyAssetFromSlot {
+			continue
+		}
+		payload, ok := step.Payload().(DestroyAssetFromSlotPayload)
+		if !ok {
+			continue
+		}
+		if payload.TemplateId == 0 {
+			c.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"step_id":        step.StepId(),
+				"tenant_id":      c.t.Id().String(),
+			}).Error("Reverse-walk: destroy step carries no TemplateId; cannot re-award the book.")
+			continue
+		}
+		qty := payload.Quantity
+		if qty == 0 {
+			qty = 1
+		}
+		if err := c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{}); err != nil {
+			c.l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"step_id":        step.StepId(),
+				"template_id":    payload.TemplateId,
+			}).Error("Reverse-walk: DestroyAssetFromSlot -> CreateItem dispatch failed; continuing chain.")
+		}
+	}
+}
+
 // compensateCashItemUse is the reverse-walk compensator for cash-item-use
 // sagas (ItemTagUse/SealingLockUse/IncubatorUse — Task 10). On a failed step
 // (e.g. the terminal incubator_result emit) it walks the saga's completed
@@ -1412,6 +1534,105 @@ func (c *CompensatorImpl) DispatchPointResetRollbacks(s Saga) {
 	}
 }
 
+// compensateNoteSend terminates a failing note_send saga: dispatches the
+// item refund, then emits exactly one StatusEventTypeFailed carrying the
+// SENDER's characterId (the channel's saga consumer announces MEMO_RESULT
+// SEND_ERROR to that session, which also releases the client's
+// exclusive-request lock). Double-emission is prevented by
+// TryTransition(Compensating → Failed), mirroring compensatePetEvolution.
+//
+// EmitSagaFailed is not used here: it extracts characterId via
+// ExtractCharacterCreationIds, which only recognizes a CreateCharacter step
+// and would yield 0 for a note_send saga. The sender id is instead read
+// directly off the CreateNote step's payload (falling back to the failed
+// DestroyAsset step's CharacterId when create_note itself never ran).
+func (c *CompensatorImpl) compensateNoteSend(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("NoteSend saga failing — dispatching compensation.")
+
+	c.DispatchNoteSendRollbacks(s)
+
+	// The sender's characterId rides in the Failed event so the channel can
+	// notify the right session.
+	var senderId uint32
+	for _, step := range s.Steps() {
+		if p, ok := step.Payload().(CreateNotePayload); ok {
+			senderId = p.SenderId
+			break
+		}
+	}
+	if senderId == 0 {
+		if payload, ok := failedStep.Payload().(DestroyAssetPayload); ok {
+			senderId = payload.CharacterId
+		}
+	}
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; note-send emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("Note send failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailedByIds(c.l, c.ctx, s.TransactionId(), string(s.SagaType()), 0, senderId, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after note-send compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Note-send compensation complete; saga terminated.")
+	return nil
+}
+
+// DispatchNoteSendRollbacks reverse-walks a note_send saga's completed steps
+// and refunds the destroyed Note item (DestroyAsset → RequestCreateItem).
+// This is the pure "dispatch" half — no lifecycle transitions, no event
+// emission, no cache eviction. Callers are responsible for those. Only
+// Completed destroy steps are inverted; a failed consume_note_item produced
+// no committed mutation and has no inverse. An error refunding does not
+// abort the walk.
+func (c *CompensatorImpl) DispatchNoteSendRollbacks(s Saga) {
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		if step.Action() != DestroyAsset {
+			continue
+		}
+		if payload, ok := step.Payload().(DestroyAssetPayload); ok {
+			qty := payload.Quantity
+			if qty == 0 {
+				qty = 1
+			}
+			if err := c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{}); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"template_id":    payload.TemplateId,
+				}).Error("Reverse-walk: DestroyAsset → CreateItem dispatch failed; continuing chain.")
+			}
+		}
+	}
+}
+
 // compensateMtsOperation is the MTS reverse-walk compensator (task-102 §4.1 —
 // the dupe-safety core). On a failed TransferToMts / WithdrawFromMts /
 // MtsSettlePurchase it walks the saga's completed steps in reverse, dispatches
@@ -1599,8 +1820,12 @@ func extractCharacterCreationWorldId(s Saga) world.Id {
 // lateCompensableActions is the v1 compensable set (design §3.4): the full
 // value-transfer class that broke the task-102 invariant. Everything else is
 // absorb-only and logged as late_effect_unrecoverable when hit.
-// DestroyAssetFromSlot is deliberately absent: its payload carries no
-// TemplateId, so the destroyed item cannot be recreated from the step alone.
+// DestroyAssetFromSlot is included: since task-128 its payload carries a
+// TemplateId, so a late-successful destroy can be recreated via CreateItem
+// (see the payload-level guard in CompensateLateStep and the
+// DestroyAssetFromSlot case in dispatchLateInverse). A payload with
+// TemplateId==0 (legacy producer) still has no recoverable quantity and is
+// routed into the same absorb-only path as DestroyAsset+RemoveAll.
 //
 // MTS custody actions (task-102) all have late inverses:
 //   - ReleaseFromMtsHolding (take-home): RestoreMtsHolding un-soft-deletes the
@@ -1622,6 +1847,7 @@ var lateCompensableActions = map[Action]struct{}{
 	CreateCharacter:         {},
 	AwaitCharacterCreated:   {},
 	DestroyAsset:            {},
+	DestroyAssetFromSlot:    {},
 	AwardMesos:              {},
 	AwardCurrency:           {},
 	AwardExperience:         {},
@@ -1659,6 +1885,17 @@ func (c *CompensatorImpl) CompensateLateStep(s Saga, step Step[any]) (bool, erro
 		if payload, ok := step.Payload().(DestroyAssetPayload); ok && payload.RemoveAll {
 			fields["reason"] = "late_effect_unrecoverable"
 			c.l.WithFields(fields).Warn("Late-successful DestroyAsset used RemoveAll; destroyed quantity is not recoverable from the step payload, its effect is orphaned.")
+			return false, nil
+		}
+	}
+
+	// DestroyAssetFromSlot with TemplateId==0 is a legacy-producer payload:
+	// there is nothing to recreate, so absorb-only (same shape as the
+	// DestroyAsset+RemoveAll guard above) rather than awarding item 0.
+	if step.Action() == DestroyAssetFromSlot {
+		if payload, ok := step.Payload().(DestroyAssetFromSlotPayload); ok && payload.TemplateId == 0 {
+			fields["reason"] = "late_effect_unrecoverable"
+			c.l.WithFields(fields).Warn("Late-successful DestroyAssetFromSlot carries no TemplateId; destroyed item is not recoverable from the step payload, its effect is orphaned.")
 			return false, nil
 		}
 	}
@@ -1762,6 +1999,19 @@ func (c *CompensatorImpl) dispatchLateInverse(s Saga, step Step[any]) error {
 			return fmt.Errorf("invalid payload for late DestroyAsset compensation")
 		}
 		return c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, payload.Quantity, time.Time{})
+	case DestroyAssetFromSlot:
+		// TemplateId==0 is excluded upstream in CompensateLateStep (legacy
+		// producer, no recoverable quantity), so only payloads carrying a
+		// TemplateId reach here — recreate the destroyed book/item.
+		payload, ok := step.Payload().(DestroyAssetFromSlotPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late DestroyAssetFromSlot compensation")
+		}
+		qty := payload.Quantity
+		if qty == 0 {
+			qty = 1
+		}
+		return c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{})
 	case AwardMesos:
 		payload, ok := step.Payload().(AwardMesosPayload)
 		if !ok {

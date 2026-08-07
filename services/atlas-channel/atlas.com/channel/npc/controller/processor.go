@@ -57,7 +57,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 			l.WithError(err).Warnf("Unable to winner-check hide state of [%d]; treating as visible.", characterId)
 			return false
 		}
-		return buff.IsGmHidden(bs)
+		return buff.IsGmHidden(ctx, bs)
 	}
 	return p
 }

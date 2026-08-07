@@ -1,0 +1,48 @@
+{
+  "WriterName": "WorldCharacterListRequest",
+  "IDAName": "CLogin::SendLoginPacket",
+  "Address": "0x5d26b0",
+  "Variant": "GMS/v92",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/login/serverbound/world_character_list_request.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "resolved address/decompile but zero recognized Decode/Encode calls found; see notes",
+      "Verdict": 4,
+      "Note": "IDA read-order unresolved: resolved address/decompile but zero recognized Decode/Encode calls found; see notes"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2,
+  "FlatInvalid": false
+}

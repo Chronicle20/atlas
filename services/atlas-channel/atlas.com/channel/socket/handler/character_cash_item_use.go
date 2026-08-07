@@ -44,7 +44,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		// CWvsContext::SendConsumeCashItemUseRequest: gms_v87 @0xa9fef9 and
 		// jms_v185 @0xaef2f5 both Encode4(update_time) in the header before the
 		// sub-body switch (task-126). Must match ItemUse's header gate.
-		updateTimeFirst := t.MajorVersion() >= 87
+		updateTimeFirst := cashsb.UpdateTimeFirst(t)
 		updateTime := p.UpdateTime()
 		source := slot.Position(p.Source())
 		itemId := item.Id(p.ItemId())
@@ -63,7 +63,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			if !updateTimeFirst {
 				updateTime = sp.UpdateTime()
 			}
-			_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), itemId, source, updateTime)
+			_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), itemId, source, 1, updateTime)
 			return
 		}
 		if it == CashSlotItemTypePetSkill {
@@ -128,6 +128,15 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 				InitiatedBy:   "CASH_ITEM_USE",
 				Steps:         steps,
 			})
+			return
+		}
+		if it == CashSlotItemTypeNote {
+			sp := cashsb.NewItemUseNote(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			// Slot/template validation above proves ownership of the claimed
+			// Note item; pre-flight receiver checks + the destroy-first saga
+			// live in handleNoteSendRequest (note_send.go).
+			handleNoteSendRequest(l, ctx, wp)(s, uint32(itemId), sp.ToName(), sp.Message())
 			return
 		}
 		if it == CashSlotItemTypeTeleportRock {
@@ -594,6 +603,7 @@ type CashSlotItemType uint32
 
 const (
 	CashSlotItemTypeFieldEffect   = CashSlotItemType(16)
+	CashSlotItemTypeNote          = CashSlotItemType(21)
 	CashSlotItemTypeStoreSearch   = CashSlotItemType(29)
 	CashSlotItemTypePetConsumable = CashSlotItemType(30)
 	CashSlotItemTypePetSkill      = CashSlotItemType(28)
@@ -788,7 +798,7 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 			return CashSlotItemType(18)
 		}
 		if category == item.ClassificationNote {
-			return CashSlotItemType(21)
+			return CashSlotItemTypeNote
 		}
 		if category == item.ClassificationSongPlayer {
 			return CashSlotItemType(20)

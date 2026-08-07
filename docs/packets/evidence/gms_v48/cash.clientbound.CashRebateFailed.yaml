@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashRebateFailed
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#REBATE_FAILED
+    address: "0x4555a0"
+    decompile_sha256: ce836cf8ef9cb954cdeb5b45be830c2196b0c5ddfb4270e03550d6621630c11e
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_failed_test.go#TestRebateFailedByteFixture

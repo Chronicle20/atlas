@@ -251,8 +251,8 @@ func TestTransferAP_Case5_HPtoSTR_Success(t *testing.T) {
 // POOL_BELOW_JOB_MINIMUM detail HP; nothing mutated.
 func TestTransferAP_Case6_PoolBelowJobMinimum_Rejected(t *testing.T) {
 	level := byte(30)
-	minHp := pointResetMinHp(warriorJobId, level) // 24*30+118 = 838
-	maxHp := uint16(minHp) + 54 - 1               // one below the floor after -54
+	minHp := pointResetMinHp(job.Warrior, level) // 24*30+118 = 838
+	maxHp := uint16(minHp) + 54 - 1              // one below the floor after -54
 
 	_, p, id := newTransferApFixture(t, entity{
 		AccountId: 1000, Name: "Case6", JobId: warriorJobId, Level: level,

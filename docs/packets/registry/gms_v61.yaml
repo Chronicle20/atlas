@@ -329,11 +329,22 @@
 - op: SKILL_LEARN_ITEM_RESULT
   direction: clientbound
   opcode: 48
-  fname: sub_841E5F
+  fname: CWvsContext::OnSkillLearnItemResult
   provenance: ida-discovered
   ida:
     address: 8658527
-  note: 'v61 IDB unnamed sub_841E5F = CWvsContext::OnSkillLearnItemResult (delta doc a).'
+  note: 'task-125 correction: prior note claimed sub_841E5F was unnamed; func_query
+    (session 965202bf, GMS_v61.1_U_DEVM.exe.i64) shows the IDB already carries the
+    mangled symbol ?OnSkillLearnItemResult@CWvsContext@@QAEXAAVCInPacket@@@Z at this
+    address — it was named, just displayed as sub_841E5F in Hex-Rays pseudocode.
+    Decompile confirms CWvsContext::OnPacket case 48 (0x30, @0x8305b4) delegates
+    directly; body (15-byte, no leading bOnExclRequest — MajorVersion 61<84):
+    Decode4 characterId (CUserPool::GetUser lookup), Decode1 isMasteryBook (v34,
+    gates mastery-specific StringPool ids 3765/3766/3769/3770), Decode4 skillId
+    (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse
+    (v4/v31, gates CAnimationDisplayer::Effect_Quest on-avatar glow), Decode1
+    success (v8/v10/v30, gates success/fail sound 1248/1249). Matches the codec
+    read order exactly.'
 - op: GATHER_ITEM_RESULT
   direction: clientbound
   opcode: 49
@@ -352,6 +363,7 @@
   direction: clientbound
   opcode: 52
   fname: CWvsContext::OnSueCharacterResult
+  packet: report/clientbound/SueCharacterResult
   provenance: ida-discovered
   ida:
     address: 8586219
@@ -2032,6 +2044,14 @@
   ida:
     address: 6291023
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_845C36. COutPacket(90), CWvsContext skill region; Δ0 vs v72.'
+- op: CANCEL_DEBUFF
+  direction: serverbound
+  opcode: 91
+  fname: CWvsContext::CheckTemporaryStatDuration
+  provenance: ida-discovered
+  ida:
+    address: 8664910
+  note: 'Empty body. Note 0x63 is NOT this packet at v61 — there it is the calc-damage-stat request emitted by OnTemporaryStatReset, so opcodes must come from tenant config per version. Corrects a prior n-a assertion (task-190).'
 - op: CANCEL_BUFF
   direction: serverbound
   opcode: 84
@@ -2258,12 +2278,31 @@
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_831C83 COutPacket(70), CWvsContext item region; Δ0 vs v72.'
 - op: USE_ITEM
   direction: serverbound
-  opcode: 71
-  fname: sub_831DE9
+  opcode: 67
+  fname: CWvsContext::SendStatChangeItemUseRequest
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_831DE9 COutPacket(71), CWvsContext item region; Δ0 vs v72.'
+    address: 8591488
+  note: 'task-125 correction: prior batch region-harvest placed a mislabeled
+    USE_ITEM entry at opcode 71 (that address is actually PET_FOOD — see below).
+    The real USE_ITEM sender is already named in the v61 IDB (session 965202bf,
+    GMS_v61.1_U_DEVM.exe.i64): CWvsContext::SendStatChangeItemUseRequest @0x831880,
+    COutPacket::COutPacket(&pkt,67), guard sub_4BDB9F(200,0); Encode4(updateTime)+
+    Encode2(slot=a2)+Encode4(itemId=a3); SetExclRequestSent.'
+- op: PET_FOOD
+  direction: serverbound
+  opcode: 71
+  fname: CWvsContext::SendPetFoodItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 8592873
+  note: 'task-125 correction: prior batch region-harvest mislabeled this entry
+    USE_ITEM (shared placeholder ctor-site address 0x5ffc4f = 6291023, not the
+    function''s own address). Decompile @0x831de9 (session 965202bf,
+    GMS_v61.1_U_DEVM.exe.i64) confirms CWvsContext::SendPetFoodItemUseRequest:
+    guard sub_4BDB9F(200,0); COutPacket::COutPacket(&pkt,71);
+    Encode4(updateTime)+Encode2(slot=a2)+Encode4(itemId=a3); SetExclRequestSent.
+    The real USE_ITEM sender was relocated to opcode 67 (see above).'
 - op: CANCEL_ITEM_EFFECT
   direction: serverbound
   opcode: 68
@@ -2280,14 +2319,22 @@
   ida:
     address: 6291023
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_832005 COutPacket(74), CWvsContext item region; Δ0 vs v72.'
-- op: PET_FOOD
+- op: USE_SKILL_BOOK
   direction: serverbound
   opcode: 75
-  fname: sub_8325D2
+  fname: CWvsContext::SendSkillLearnItemUseRequest
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_8325D2 COutPacket(75), CWvsContext item region; Δ0 vs v72.'
+    address: 8594898
+  note: 'task-125 correction: prior batch region-harvest mislabeled this entry
+    PET_FOOD (shared placeholder ctor-site address 0x5ffc4f = 6291023, not the
+    function''s own address). Decompile @0x8325d2 (session 965202bf,
+    GMS_v61.1_U_DEVM.exe.i64) confirms CWvsContext::SendSkillLearnItemUseRequest:
+    item-class gate a3/10000 in {228,229} (skill-book item prefix); guard
+    sub_4BDB9F(200,0) (CanSendExclRequest twin); COutPacket::COutPacket(&pkt,75);
+    Encode4(updateTime)+Encode2(slot=a2)+Encode4(itemId=a3); SetExclRequestSent.
+    Byte-identical shape to v48 (0x70e3e7, opcode 64) and v83 (0xa0a1b2,
+    opcode 82). The real PET_FOOD sender was relocated to opcode 71 (see above).'
 - op: USE_MOUNT_FOOD
   direction: serverbound
   opcode: 72

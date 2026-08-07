@@ -95,28 +95,15 @@ func main() {
 		l.WithError(err).Fatal("Unable to load tenants.")
 	}
 
-	// Load configurations from the configuration service
+	// Reconcile each tenant's registries against configuration. This is
+	// what converges the duplicate entries that pre-stable-id loads left
+	// in the shared Redis registry: one rolling restart per tenant.
 	configProcessor := config.NewProcessor(l, rt.Context())
 	instanceConfigProcessor := instanceConfig.NewProcessor(l, rt.Context())
 	for _, t := range tenants {
 		ctx := tenant.WithContext(rt.Context(), t)
-
-		// Load scheduled transport routes
-		routes, sharedVessels, err := configProcessor.LoadConfigurationsForTenant(t)
-		if err != nil {
-			l.WithError(err).Errorf("Failed to load configurations for tenant [%s], using empty configuration", t.Id())
-			routes = []transport.Model{}
-			sharedVessels = []transport.SharedVesselModel{}
-		}
-		_ = transport.NewProcessor(l, ctx).AddTenant(routes, sharedVessels)
-
-		// Load instance transport routes
-		instanceRoutes, err := instanceConfigProcessor.LoadConfigurationsForTenant(t)
-		if err != nil {
-			l.WithError(err).Errorf("Failed to load instance route configurations for tenant [%s], using empty configuration", t.Id())
-			instanceRoutes = []instance.RouteModel{}
-		}
-		instance.NewProcessor(l, ctx).AddTenant(instanceRoutes)
+		_ = reconcileScheduled(l, t, configProcessor, transport.NewProcessor(l, ctx))
+		_ = reconcileInstance(l, t, instanceConfigProcessor, instance.NewProcessor(l, ctx))
 	}
 
 	// Start a background goroutine to periodically update route states and instance transports

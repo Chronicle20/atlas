@@ -1,0 +1,48 @@
+{
+  "WriterName": "CashLimitGoodsCountChanged",
+  "IDAName": "CCashShop::OnCashItemResult#LIMIT_GOODS_COUNT_CHANGED",
+  "Address": "0x48471f",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_operation_result_misc.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0x4c LIMIT_GOODS_COUNT_CHANGED; op-byte consumed by dispatcher before CCashShop::OnCashItemResLimitGoodsCountChanged)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "itemId (int32)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "sn (int32)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "remainCount (int32, updates client-local CS_LIMITGOODS array remaining-count)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

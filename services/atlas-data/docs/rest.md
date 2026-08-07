@@ -57,6 +57,8 @@ A paginated response has the shape:
 
 `item-strings`, `maps`, `npcs`, `monsters`, and `reactors` (in `?search=` mode, and `item-strings` in filter mode) each resolve a single tenant partition per request: if the active tenant has any rows in the resource's search-index table, only that tenant's rows are visible; otherwise the global version-scoped canonical partition is used wholesale. There is no per-row merge.
 
+The two spawn-index-backed endpoints — `GET /api/data/npcs/{npcId}/maps` and `GET /api/data/monsters/{monsterId}/maps` — resolve their partition the same way, probing `npc_spawn_index` / `monster_spawn_index` respectively. The probe must be against the spawn-index table itself: those tables are derived from MAP documents at ingest and are absent from `baseline.DumpTables`, so a tenant restored from a baseline dump has its own `documents` and search-index rows while its spawn-index rows are empty and must resolve to canonical.
+
 ## Endpoints
 
 ### POST /api/data/process
@@ -1070,9 +1072,53 @@ Returns skill information.
 
 ---
 
+### GET /api/data/jobs
+
+Tenant-scoped list of jobs present in the tenant's ingested data. Sourced from
+`JOB` documents written by the `SKILL` ingest worker from the tenant's
+`Skill.wz`, so the set reflects the tenant's client version.
+
+#### Query Parameters
+
+- `page[number]`, `page[size]` — pagination, consistent with `GET /api/data/skills`
+  (default size 50, max 250).
+- `include=skills` — materialize the referenced skill resources into `included`.
+
+#### Response
+
+- 200: a JSON:API compound document. Each `jobs` resource carries
+  `attributes.skills` (the ordered skill id list) and a `skills` to-many
+  relationship. Relationship linkage is always present; `included` appears only
+  when `include=skills` is requested.
+- 400 Bad Request: malformed pagination parameters.
+
+```json
+{
+  "data": [
+    {
+      "type": "jobs",
+      "id": "112",
+      "attributes": { "skills": [1121000, 1121001] },
+      "relationships": {
+        "skills": {
+          "data": [
+            { "type": "skills", "id": "1121000" },
+            { "type": "skills", "id": "1121001" }
+          ]
+        }
+      }
+    }
+  ],
+  "meta": { "total": 82 }
+}
+```
+
+---
+
 ### GET /api/data/jobs/{jobId}/skills
 
-Returns the skill ids associated with a job class (from `libs/atlas-constants/job`).
+Returns the skill ids associated with a job (from the tenant's `JOB` document,
+which is sourced from the tenant's ingested `Skill.wz`).
 
 #### Parameters
 
@@ -1090,7 +1136,9 @@ Returns the skill ids associated with a job class (from `libs/atlas-constants/jo
 }
 ```
 
-- 404: Not found (unknown job id)
+- 404 Not Found: the job id is unknown **or** absent from this tenant's client
+  version. The two cases are deliberately indistinguishable — a tenant whose
+  `Skill.wz` has no image for the job has no `JOB` document for it.
 
 ---
 

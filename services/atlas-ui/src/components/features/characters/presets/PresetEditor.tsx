@@ -2,7 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { WorkingPreset, PresetFieldPath } from "./presetEditorState";
-import { jobLabel } from "./presetJobs";
+import { jobName } from "@/lib/jobs/job-advancement-tree";
 import { PresetActionsMenu } from "./PresetActionsMenu";
 import { IdentitySection } from "./IdentitySection";
 import { ClassAppearanceSection } from "./ClassAppearanceSection";
@@ -70,7 +70,7 @@ export function PresetEditor({
 
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-lg font-semibold">{attrs.name}</h2>
-        <Badge variant="secondary">{jobLabel(attrs.jobId)}</Badge>
+        <Badge variant="secondary">{jobName(attrs.jobId)}</Badge>
         <span className="text-sm text-muted-foreground">
           Lv {attrs.level}
           {attrs.gm > 0 ? ` · GM ${attrs.gm}` : ""}

@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashTransferWorldDone
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#TRANSFER_WORLD_SUCCESS
+    address: "0x48e991"
+    decompile_sha256: 709a79fbd5751cc565a99c8db3f820c26b7dc8be1977cc12cb719f1c08faa921
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_transfer_test.go#TestTransferWorldDoneByteFixture

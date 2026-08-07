@@ -6,19 +6,22 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 type RouteBuilder struct {
-	id               uuid.UUID
-	name             string
-	startMapId       _map.Id
-	transitMapIds    []_map.Id
-	destinationMapId _map.Id
-	capacity         uint32
-	boardingWindow   time.Duration
-	travelDuration   time.Duration
-	transitMessage   string
+	id                uuid.UUID
+	name              string
+	startMapId        _map.Id
+	transitMapIds     []_map.Id
+	destinationMapId  _map.Id
+	capacity          uint32
+	boardingWindow    time.Duration
+	travelDuration    time.Duration
+	transitMessage    string
+	effectItemIds     []item.Id
+	forcedReturnMapId _map.Id
 }
 
 func NewRouteBuilder(name string) *RouteBuilder {
@@ -68,6 +71,16 @@ func (b *RouteBuilder) SetTransitMessage(transitMessage string) *RouteBuilder {
 	return b
 }
 
+func (b *RouteBuilder) SetEffectItemIds(effectItemIds []item.Id) *RouteBuilder {
+	b.effectItemIds = effectItemIds
+	return b
+}
+
+func (b *RouteBuilder) SetForcedReturnMapId(forcedReturnMapId _map.Id) *RouteBuilder {
+	b.forcedReturnMapId = forcedReturnMapId
+	return b
+}
+
 func (b *RouteBuilder) Build() (RouteModel, error) {
 	if b.name == "" {
 		return RouteModel{}, errors.New("route name must not be empty")
@@ -84,16 +97,23 @@ func (b *RouteBuilder) Build() (RouteModel, error) {
 	if len(b.transitMapIds) == 0 {
 		return RouteModel{}, errors.New("transit map ids must not be empty")
 	}
+	for _, id := range b.effectItemIds {
+		if id == 0 {
+			return RouteModel{}, errors.New("effect item ids must not contain a zero id")
+		}
+	}
 
 	return RouteModel{
-		id:               b.id,
-		name:             b.name,
-		startMapId:       b.startMapId,
-		transitMapIds:    b.transitMapIds,
-		destinationMapId: b.destinationMapId,
-		capacity:         b.capacity,
-		boardingWindow:   b.boardingWindow,
-		travelDuration:   b.travelDuration,
-		transitMessage:   b.transitMessage,
+		id:                b.id,
+		name:              b.name,
+		startMapId:        b.startMapId,
+		transitMapIds:     b.transitMapIds,
+		destinationMapId:  b.destinationMapId,
+		capacity:          b.capacity,
+		boardingWindow:    b.boardingWindow,
+		travelDuration:    b.travelDuration,
+		transitMessage:    b.transitMessage,
+		effectItemIds:     b.effectItemIds,
+		forcedReturnMapId: b.forcedReturnMapId,
 	}, nil
 }

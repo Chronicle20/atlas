@@ -1,4 +1,4 @@
-import { type ColumnDef } from "@tanstack/react-table";
+import { type DataTableColumnDef } from "@/components/data-table-features";
 import type { TenantConfig } from "@/types/models/tenant";
 import { type Guild } from "@/types/models/guild";
 import { type Character } from "@/types/models/character";
@@ -21,7 +21,7 @@ export const hiddenColumns = ["id"];
 export function getColumns({
   tenant,
   characterMap,
-}: ColumnProps): ColumnDef<Guild>[] {
+}: ColumnProps): DataTableColumnDef<Guild>[] {
   return [
     {
       accessorKey: "id",

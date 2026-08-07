@@ -51,6 +51,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDrainMpCommand))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleKillCommand))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyStatusFieldCommand))); err != nil {
 			return err
 		}
@@ -169,6 +172,15 @@ func handleDrainMpCommand(l logrus.FieldLogger, ctx context.Context, c command[d
 	if err := p.DrainMp(f, c.MonsterId, c.Body.CharacterId, c.Body.SkillId, c.Body.Amount); err != nil {
 		l.WithError(err).Errorf("DRAIN_MP failed for monster [%d] character [%d].", c.MonsterId, c.Body.CharacterId)
 	}
+}
+
+func handleKillCommand(l logrus.FieldLogger, ctx context.Context, c command[killCommandBody]) {
+	if c.Type != CommandTypeKill {
+		return
+	}
+
+	p := monster.NewProcessor(l, ctx)
+	p.Kill(c.MonsterId, c.Body.CharacterId)
 }
 
 func handleAddPuppetCommand(l logrus.FieldLogger, ctx context.Context, c addPuppetCommand) {

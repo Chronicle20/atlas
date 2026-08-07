@@ -8,6 +8,7 @@ import (
 	"atlas-monsters/monster/mobskill"
 	"context"
 	"errors"
+	"math"
 	"math/rand"
 	"sort"
 	"time"
@@ -63,6 +64,7 @@ type Processor interface {
 	CancelAllStatusEffects(uniqueId uint32) error
 	RepickAndEmit(uniqueId uint32, reason RepickReason) error
 	DrainMp(f field.Model, uniqueId uint32, characterId uint32, skillId uint32, requestedAmount uint32) error
+	Kill(uniqueId uint32, characterId uint32)
 }
 
 // emitter publishes a kafka message provider to a topic. ProcessorImpl uses
@@ -556,6 +558,19 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 	// Reflect runs once per attack, not once per line.
 	p.checkReflect(m, characterId, attackType)
 
+	p.damageCore(m, characterId, damages)
+}
+
+// damageCore applies damage lines to an already-fetched, alive monster and
+// runs the full post-damage flow: damaged event, damage picker, kill
+// handling (cooldown/drop-timer clears, status-cancel emits, killed event,
+// registry removal, revives), controller switch, and aggro emission.
+// Callers own the guards that precede it: Damage does the alive check and
+// reflect; Kill (Mortal Blow) does the alive check and the fail-closed
+// boss guard, and deliberately never rolls reflect — the channel already
+// gated the triggering hit on reflect, and a kill "attack" has no attack
+// type.
+func (p *ProcessorImpl) damageCore(m Model, characterId uint32, damages []uint32) {
 	// Fetch monster info for boss flag and revives
 	var isBoss bool
 	var revives []uint32
@@ -609,9 +624,9 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 
 	if killed {
 		// Clear cooldowns and drop timer on death
-		GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, id)
-		GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, id)
-		GetDropTimerRegistry().Unregister(p.ctx, p.t, id)
+		GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
+		GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
+		GetDropTimerRegistry().Unregister(p.ctx, p.t, m.UniqueId())
 
 		// Emit cancellation events for any active status effects before death
 		for _, se := range last.Monster.StatusEffects() {
@@ -1050,7 +1065,9 @@ func (p *ProcessorImpl) executeMist(m Model, sd mobskill.Model, skillId byte, sk
 // AREA_POISON skill. Pure (no side effects) so it can be unit-tested directly
 // without a Kafka mock.
 func buildMistCreateBody(m Model, sd mobskill.Model, skillId byte, skillLevel byte) mistKafka.CreateCommandBody {
-	durMs := int64(sd.Duration()) * int64(time.Second/time.Millisecond)
+	// mobskill.Duration() is MILLISECONDS (atlas-data mobskill/reader.go —
+	// the single conversion point, task-190 FR-1.1). Forward it; do not scale.
+	durMs := int64(sd.Duration())
 	if durMs > MistDurationCapMs {
 		durMs = MistDurationCapMs
 	}
@@ -1087,7 +1104,9 @@ func (p *ProcessorImpl) executeStatBuff(m Model, sd mobskill.Model, skillId byte
 	}
 
 	statuses := map[string]int32{string(statusName): sd.X()}
-	duration := time.Duration(sd.Duration()) * time.Second
+	// mobskill.Duration() is MILLISECONDS (task-190 FR-1.1). Before that change
+	// this multiplied ms-scale seconds and made a 20s immunity last ~5.5h.
+	duration := time.Duration(sd.Duration()) * time.Millisecond
 	category := monster2.SkillCategory(uint16(skillId))
 
 	// FR-4.8: Immunity mutual exclusion. WEAPON_ATTACK_IMMUNE and
@@ -1681,6 +1700,59 @@ func (p *ProcessorImpl) DrainMp(f field.Model, uniqueId uint32, characterId uint
 	}
 
 	return p.emit(EnvEventTopicMonsterStatus, mpChangedStatusEventProvider(post, characterId, skillId, MpChangeReasonMpEater, requestedAmount))
+}
+
+// Kill delivers a Mortal Blow instant kill through the shared damage core.
+// The channel is the authority for the proc decision (threshold and kill
+// roll against the tenant's skill data); this method owns the guards only
+// it can enforce: the monster must still be present and alive, and the
+// boss flag is re-checked authoritatively. The boss lookup is FAIL-CLOSED
+// — if it errors, the kill is dropped. This deliberately diverges from
+// DrainMp's fail-open lookup: losing a legitimate proc during an
+// atlas-data hiccup is acceptable; killing a boss is not (FR-4).
+//
+// The kill line is math.MaxUint32 (Cosmic parity: Integer.MAX_VALUE).
+// Registry.ApplyDamage clamps the recorded damage entry to the HP actually
+// removed, so the damage summary that drives EXP and drop credit stays
+// honest. No reflect is rolled — the channel already gated the triggering
+// hit on reflect, and a kill "attack" has no attack type.
+//
+// Missing or dead monsters are silent drops: DAMAGE (the triggering
+// attack) and KILL are keyed by the monster's unique id, so they share a
+// partition and the attack's own kill may have removed the monster before
+// this command lands. SkillId is traceability only.
+//
+// The boss check uses testInformationLookup when non-nil so unit tests can
+// stub the lookup without an HTTP round-trip to atlas-data.
+func (p *ProcessorImpl) Kill(uniqueId uint32, characterId uint32) {
+	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
+	if err != nil {
+		p.l.Debugf("KILL: monster [%d] not found; the triggering attack likely already killed it.", uniqueId)
+		return
+	}
+	if !m.Alive() {
+		p.l.Debugf("KILL: monster [%d] already dead.", uniqueId)
+		return
+	}
+
+	var info information.Model
+	var infoErr error
+	if testInformationLookup != nil {
+		info, infoErr = testInformationLookup(m.MonsterId())
+	} else {
+		info, infoErr = information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
+	}
+	if infoErr != nil {
+		p.l.WithError(infoErr).Errorf("KILL: boss lookup failed for monster [%d]; dropping kill (fail-closed).", uniqueId)
+		return
+	}
+	if info.Boss() {
+		p.l.Debugf("KILL: monster [%d] is a boss; dropping kill from character [%d].", uniqueId, characterId)
+		return
+	}
+
+	p.l.Debugf("Mortal Blow kill: monster [%d] by character [%d].", uniqueId, characterId)
+	p.damageCore(m, characterId, []uint32{math.MaxUint32})
 }
 
 func DestroyAll(l logrus.FieldLogger, ctx context.Context) error {

@@ -3,6 +3,8 @@ package note
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
@@ -14,18 +16,20 @@ const (
 	CommandTypeCreate  = "CREATE"
 	CommandTypeDiscard = "DISCARD"
 
-	StatusEventTypeCreated = "CREATED"
-	StatusEventTypeUpdated = "UPDATED"
-	StatusEventTypeDeleted = "DELETED"
+	StatusEventTypeCreated      = "CREATED"
+	StatusEventTypeUpdated      = "UPDATED"
+	StatusEventTypeDeleted      = "DELETED"
+	StatusEventTypeCreateFailed = "CREATE_FAILED"
 )
 
 // Command represents a Kafka command for note operations
 type Command[E any] struct {
-	WorldId     world.Id   `json:"worldId"`
-	ChannelId   channel.Id `json:"channelId"`
-	CharacterId uint32     `json:"characterId"`
-	Type        string     `json:"type"`
-	Body        E          `json:"body"`
+	TransactionId uuid.UUID  `json:"transactionId,omitempty"` // Saga transaction id (uuid.Nil when not saga-driven)
+	WorldId       world.Id   `json:"worldId"`
+	ChannelId     channel.Id `json:"channelId"`
+	CharacterId   uint32     `json:"characterId"`
+	Type          string     `json:"type"`
+	Body          E          `json:"body"`
 }
 
 // CommandCreateBody contains data for creating a note
@@ -42,9 +46,10 @@ type CommandDiscardBody struct {
 
 // StatusEvent represents a Kafka status event for note operations
 type StatusEvent[E any] struct {
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId,omitempty"` // Saga transaction id (uuid.Nil when not saga-driven)
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 // StatusEventCreatedBody contains data for a note created event
@@ -68,4 +73,10 @@ type StatusEventUpdatedBody struct {
 // StatusEventDeletedBody contains data for a note deleted event
 type StatusEventDeletedBody struct {
 	NoteId uint32 `json:"noteId"`
+}
+
+// StatusEventCreateFailedBody contains data for a note create failure event
+type StatusEventCreateFailedBody struct {
+	SenderId uint32 `json:"senderId"`
+	Reason   string `json:"reason"`
 }

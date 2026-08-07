@@ -45,9 +45,10 @@ type Command[E any] struct {
 
 // ApplyCommandBody mirrors buffs/kafka/message/character/kafka.go:30-43.
 type ApplyCommandBody struct {
-	FromId   uint32       `json:"fromId"`
-	SourceId int32        `json:"sourceId"`
-	Level    byte         `json:"level"`
+	FromId   uint32 `json:"fromId"`
+	SourceId int32  `json:"sourceId"`
+	Level    byte   `json:"level"`
+	// milliseconds — contract owner: atlas-buffs kafka/message/character/kafka.go (task-190)
 	Duration int32        `json:"duration"`
 	Changes  []StatChange `json:"changes"`
 	// Accumulate, when true, asks atlas-buffs to store each change as its own

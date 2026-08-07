@@ -17,15 +17,20 @@ import (
 	compartment2 "atlas-consumables/kafka/message/compartment"
 	"atlas-consumables/kafka/message/consumable"
 	foodmsg "atlas-consumables/kafka/message/food"
+	sagamsg "atlas-consumables/kafka/message/saga"
 	assetOnce "atlas-consumables/kafka/once/asset"
 	once "atlas-consumables/kafka/once/compartment"
+	sagaonce "atlas-consumables/kafka/once/saga"
 	"atlas-consumables/location"
 	_map "atlas-consumables/map"
 	character2 "atlas-consumables/map/character"
 	"atlas-consumables/monster"
 	"atlas-consumables/monster/drop/position"
 	"atlas-consumables/pet"
+	saga2 "atlas-consumables/saga"
+	skill2 "atlas-consumables/skill"
 	"context"
+	"encoding/json"
 	"errors"
 	"math"
 	"math/rand"
@@ -72,6 +77,7 @@ type Processor interface {
 	FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error
 	RequestItemReward(characterId uint32, itemId item2.Id, source int16) error
 	RequestViciousHammer(characterId uint32, hammerSlot int16, equipSlot int16) error
+	RequestSkillBookUse(f field.Model, characterId uint32, slot int16, itemId item2.Id) error
 }
 
 type ProcessorImpl struct {
@@ -1401,4 +1407,110 @@ func ConsumeViciousHammer(transactionId uuid.UUID, characterId uint32, hammerIte
 			return nil
 		}
 	}
+}
+
+// rejectSkillBookUse warn-logs an FR-2 validation rejection and emits the
+// canUse=false result event so the client's exclusive-request lock clears
+// (the client only unlocks on receipt of SKILL_LEARN_ITEM_RESULT).
+func (p *ProcessorImpl) rejectSkillBookUse(characterId uint32, itemId item2.Id, isMasteryBook bool, skillId uint32, reason string) error {
+	p.l.Warnf("Character [%d] skill book [%d] use rejected: %s.", characterId, itemId, reason)
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(SkillBookResultEventProvider(ts.Id(characterId))(isMasteryBook, skillId, 0, false, false))
+}
+
+// RequestSkillBookUse handles a Skill Book (228) / Mastery Book (229) consume
+// request (task-125). All eligibility gates run server-side (FR-2); every
+// request produces exactly one SKILL_BOOK_RESULT event. Book destruction and
+// the master-level grant ride one skill_book_use saga (destroy-first, so a
+// duplicate request's destroy fails on the emptied slot rather than
+// double-granting); the book is consumed on failed rolls too.
+func (p *ProcessorImpl) RequestSkillBookUse(f field.Model, characterId uint32, slot int16, itemId item2.Id) error {
+	classification := item2.GetClassification(itemId)
+	isMasteryBook := classification == item2.ClassificationConsumableMasteryBook
+	if classification != item2.ClassificationConsumableSkillBook && !isMasteryBook {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, 0, "item is not a skill or mastery book")
+	}
+
+	cp := character.NewProcessor(p.l, p.ctx)
+	c, err := cp.GetById(cp.InventoryDecorator)(characterId)
+	if err != nil {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, 0, "unable to fetch character")
+	}
+	if c.Hp() == 0 {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, 0, "character is dead")
+	}
+
+	ci, err := p.cdp.GetById(uint32(itemId))
+	if err != nil {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, 0, "unable to fetch consumable data")
+	}
+	if len(ci.Skills()) == 0 {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, 0, "book declares no skills")
+	}
+
+	a, ok := c.Inventory().Consumable().FindBySlot(slot)
+	if !ok || a.TemplateId() != uint32(itemId) || a.Quantity() < 1 {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, 0, "slot does not hold the requested book")
+	}
+
+	targetSkillId, ok := SelectSkillBookTargetSkill(ci.Skills(), c.JobId())
+	if !ok {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, 0, "no skill in book matches job")
+	}
+
+	skills, err := skill2.NewProcessor(p.l, p.ctx).GetByCharacterId(characterId)
+	if err != nil {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, targetSkillId, "unable to fetch skills")
+	}
+	var hasRecord bool
+	var currentLevel, currentMasterLevel byte
+	var currentExpiration time.Time
+	for _, sm := range skills {
+		if sm.Id() == targetSkillId {
+			hasRecord = true
+			currentLevel = sm.Level()
+			currentMasterLevel = sm.MasterLevel()
+			currentExpiration = sm.Expiration()
+			break
+		}
+	}
+	if err := ValidateSkillBookSkillState(isMasteryBook, hasRecord, currentLevel, currentMasterLevel, ci.ReqSkillLevel(), ci.MasterLevel()); err != nil {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, targetSkillId, err.Error())
+	}
+
+	roll := rand.Int31n(100)
+	rollPassed := SkillBookRollPasses(roll, ci.SuccessRate())
+	p.l.Infof("Character [%d] skill book [%d] targeting skill [%d]: rolled [%d] against [%d], passed [%t].", characterId, itemId, targetSkillId, roll, ci.SuccessRate(), rollPassed)
+
+	transactionId := uuid.New()
+	s := BuildSkillBookSaga(transactionId, characterId, slot, itemId, rollPassed, hasRecord, currentLevel, currentExpiration, targetSkillId, byte(ci.MasterLevel()))
+
+	bookMasterLevel := ci.MasterLevel()
+	p.l.Debugf("Creating OneTime saga-status consumer to await skill book transaction [%s].", transactionId.String())
+	t, _ := topic.EnvProvider(p.l)(sagamsg.EnvStatusEventTopic)()
+	validator := sagaonce.TransactionValidator(transactionId)
+	handler := func(l logrus.FieldLogger, hctx context.Context, e sagamsg.StatusEvent[json.RawMessage]) {
+		completed := e.Type == sagamsg.StatusEventTypeCompleted
+		if completed {
+			l.Infof("Character [%d] skill book [%d] saga [%s] completed. Roll success [%t].", characterId, itemId, e.TransactionId, rollPassed)
+		} else {
+			var body sagamsg.StatusEventFailedBody
+			_ = json.Unmarshal(e.Body, &body)
+			l.Warnf("Character [%d] skill book [%d] saga [%s] failed at step [%s]: %s.", characterId, itemId, e.TransactionId, body.FailedStep, body.Reason)
+		}
+		if err := producer.ProviderImpl(l)(hctx)(consumable.EnvEventTopic)(SkillBookResultEventProvider(ts.Id(characterId))(isMasteryBook, targetSkillId, bookMasterLevel, completed, completed && rollPassed)); err != nil {
+			l.WithError(err).Errorf("Character [%d] skill book result emission failed; client stays locked until relog.", characterId)
+		}
+	}
+	handlerId, err := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
+	if err != nil {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, targetSkillId, "unable to register saga result handler")
+	}
+
+	if err := saga2.NewProcessor(p.l, p.ctx).Create(s); err != nil {
+		if rErr := consumer.GetManager().RemoveHandler(t, handlerId); rErr != nil {
+			p.l.WithError(rErr).Errorf("Character [%d] unable to deregister orphaned saga result handler [%s] after saga submit failure.", characterId, handlerId)
+		}
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, targetSkillId, "unable to submit saga")
+	}
+	return nil
 }

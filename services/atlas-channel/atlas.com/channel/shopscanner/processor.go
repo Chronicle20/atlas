@@ -76,7 +76,7 @@ func (p *Processor) Search(wp writer.Producer) func(s session.Model, searchItemI
 		}
 
 		if len(listings) > 0 {
-			if err := consumable.NewProcessor(p.l, p.ctx).RequestItemConsume(s.Field(), characterconst.Id(s.CharacterId()), owlItemId, source, updateTime); err != nil {
+			if err := consumable.NewProcessor(p.l, p.ctx).RequestItemConsume(s.Field(), characterconst.Id(s.CharacterId()), owlItemId, source, 1, updateTime); err != nil {
 				p.l.WithError(err).Errorf("Unable to consume owl [%d] for character [%d].", owlItemId, s.CharacterId())
 			}
 		}

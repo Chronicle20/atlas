@@ -116,10 +116,12 @@ func (p *ProjectileProcessorImpl) Plan(c character.Model, ai packetmodel.AttackI
 		return nil, false
 	}
 
-	// TODO(task-007): passive no-consume mechanics (Mortal Blow, Expert Marksmanship,
+	// TODO(task-007): passive no-consume mechanics (Expert Marksmanship,
 	// Claw Mastery roll-to-preserve, etc.) are out of scope for v1. These require
 	// reading passive skill levels and performing an RNG roll against a per-skill
 	// probability to skip the consume. When added, apply before the resolvePlan call.
+	// (Mortal Blow is NOT in this list: IDA-verified on GMS v83, the Mortal Blow
+	// shot consumes an arrow client-side like a normal shot — task-152 PRD §4.5.)
 
 	draws, available := resolvePlan(c.Inventory().Consumable().Assets(), classification, int16(ai.ProperBulletPosition()), count)
 	plan := &ProjectilePlan{

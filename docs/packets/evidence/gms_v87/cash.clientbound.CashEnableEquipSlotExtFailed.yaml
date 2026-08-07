@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashEnableEquipSlotExtFailed
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#ENABLE_EQUIP_SLOT_EXT_FAILED
+    address: "0x486674"
+    decompile_sha256: b8eec85f1b80b21fb9f85e7a72205293d72e3086ff6d14901c15f60a004157ab
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_failed_test.go#TestEnableEquipSlotExtFailedByteFixture

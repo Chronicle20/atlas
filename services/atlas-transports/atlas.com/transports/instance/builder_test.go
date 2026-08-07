@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
@@ -101,4 +102,78 @@ func TestRouteBuilder_GeneratesId(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotEqual(t, uuid.Nil, route.Id())
+}
+
+// TestRouteBuilder_EffectFields tables the three effect-field validation
+// scenarios: they share the same base route setup and differ only in which
+// optional effect field is set and what Build() is expected to do with it.
+func TestRouteBuilder_EffectFields(t *testing.T) {
+	tests := []struct {
+		name string
+		// build constructs the route on top of the shared base setup below.
+		build func() (RouteModel, error)
+		// wantErr, if non-empty, is a substring Build()'s error must contain.
+		// If empty, Build() must succeed and check runs against the result.
+		wantErr string
+		check   func(t *testing.T, route RouteModel)
+	}{
+		{
+			name: "RejectsZeroEffectItemId",
+			build: func() (RouteModel, error) {
+				return NewRouteBuilder("test").
+					SetTransitMapIds([]_map.Id{100}).
+					SetCapacity(6).
+					SetBoardingWindow(10 * time.Second).
+					SetTravelDuration(30 * time.Second).
+					SetEffectItemIds([]item.Id{2210016, 0}).
+					Build()
+			},
+			wantErr: "effect item ids",
+		},
+		{
+			// Zero forced-return means "not set", never an error (FR-4.3).
+			name: "ZeroForcedReturnMapIdIsNotAnError",
+			build: func() (RouteModel, error) {
+				return NewRouteBuilder("test").
+					SetTransitMapIds([]_map.Id{100}).
+					SetCapacity(6).
+					SetBoardingWindow(10 * time.Second).
+					SetTravelDuration(30 * time.Second).
+					SetForcedReturnMapId(_map.Id(0)).
+					Build()
+			},
+			check: func(t *testing.T, route RouteModel) {
+				assert.Equal(t, _map.Id(0), route.ForcedReturnMapId())
+			},
+		},
+		{
+			// Neither field is required.
+			name: "EffectFieldsAreOptional",
+			build: func() (RouteModel, error) {
+				return NewRouteBuilder("test").
+					SetTransitMapIds([]_map.Id{100}).
+					SetCapacity(6).
+					SetBoardingWindow(10 * time.Second).
+					SetTravelDuration(30 * time.Second).
+					Build()
+			},
+			check: func(t *testing.T, route RouteModel) {
+				assert.Empty(t, route.EffectItemIds())
+				assert.Equal(t, _map.Id(0), route.ForcedReturnMapId())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			route, err := tt.build()
+			if tt.wantErr != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+			assert.NoError(t, err)
+			tt.check(t, route)
+		})
+	}
 }

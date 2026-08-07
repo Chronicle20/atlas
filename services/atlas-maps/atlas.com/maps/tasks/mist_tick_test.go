@@ -160,11 +160,13 @@ func TestMistTick_LiveMist_AppliesDiseaseToContainedCharacters(t *testing.T) {
 	require.Equal(t, insideId, cmd.CharacterId)
 	require.Equal(t, int32(100020), cmd.Body.SourceId)
 	require.Equal(t, byte(5), cmd.Body.Level)
-	// Duration is in SECONDS (atlas-buffs' buff.NewBuff multiplies by
-	// time.Second). 30s mist disease -> 30, not 30000ms. The previous
-	// 30000 expectation pinned a bug where AREA_POISON DoTs persisted
-	// for hours instead of the configured mist disease duration.
-	require.Equal(t, int32(30), cmd.Body.Duration)
+	// Duration is MILLISECONDS. atlas-buffs' buff.NewBuff has computed
+	// expiresAt = now + duration*time.Millisecond since task-054 (197324e40);
+	// the contract owner is
+	// services/atlas-buffs/atlas.com/buffs/kafka/message/character/kafka.go on
+	// ApplyCommandBody.Duration. A 30s mist disease is 30000, not 30. This
+	// expectation reverses the one commit 11e07dfa7 introduced (task-190).
+	require.Equal(t, int32(30_000), cmd.Body.Duration)
 	require.Len(t, cmd.Body.Changes, 1)
 	require.Equal(t, "POISON", cmd.Body.Changes[0].Type)
 	require.Equal(t, int32(80), cmd.Body.Changes[0].Amount)

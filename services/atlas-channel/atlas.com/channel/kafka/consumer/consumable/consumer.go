@@ -54,6 +54,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSkillBookResultEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleRewardEffectConsumableEvent(sc, wp))))
 				if err != nil {
 					return nil, err
@@ -152,6 +157,36 @@ func handleScrollConsumableEvent(sc server.Model, wp writer.Producer) message.Ha
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process scroll event for character [%d].", e.CharacterId)
+		}
+	}
+}
+
+// handleSkillBookResultEvent announces SKILL_LEARN_ITEM_RESULT for a
+// skill-book outcome (task-125). canUse results broadcast to the whole map
+// (the client renders the glow on the user's avatar for every observer and
+// plays sound/message only locally); validation rejections and saga failures
+// (canUse=false) go to the requester only — just enough to clear the client's
+// exclusive-request lock.
+func handleSkillBookResultEvent(sc server.Model, wp writer.Producer) message.Handler[consumable2.Event[consumable2.SkillBookResultBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e consumable2.Event[consumable2.SkillBookResultBody]) {
+		if e.Type != consumable2.EventTypeSkillBookResult {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		announce := session.Announce(l)(ctx)(wp)(charcb.CharacterSkillLearnItemResultWriter)(charcb.NewSkillLearnItemResult(uint32(e.CharacterId), e.Body.IsMasteryBook, e.Body.SkillId, e.Body.MasterLevel, e.Body.CanUse, e.Body.Success).Encode)
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), func(s session.Model) error {
+			if e.Body.CanUse {
+				return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), announce)
+			}
+			return announce(s)
+		})
+		if err != nil {
+			l.WithError(err).Errorf("Unable to process skill book result event for character [%d].", e.CharacterId)
 		}
 	}
 }

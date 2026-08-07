@@ -85,7 +85,7 @@ func TestDiscardAndEmit_FameAwardNotFiredWhenDiscardFails(t *testing.T) {
 	senderId := uint32(2)
 
 	mb := message.NewBuffer()
-	n1, err := p.Create(mb)(characterId)(senderId)("Note 1")(0)
+	n1, err := p.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 1")(0)
 	if err != nil {
 		t.Fatalf("Failed to create note 1: %v", err)
 	}
@@ -122,11 +122,11 @@ func TestDiscardAndEmit_FameAwardFiresAfterSuccess(t *testing.T) {
 	senderId := uint32(2)
 
 	mb := message.NewBuffer()
-	n1, err := p.Create(mb)(characterId)(senderId)("Note 1")(0)
+	n1, err := p.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 1")(0)
 	if err != nil {
 		t.Fatalf("Failed to create note 1: %v", err)
 	}
-	n2, err := p.Create(mb)(characterId)(senderId)("Note 2")(0)
+	n2, err := p.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 2")(0)
 	if err != nil {
 		t.Fatalf("Failed to create note 2: %v", err)
 	}

@@ -45,7 +45,7 @@ func GetAllRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 
 				restModels := make([]RouteRestModel, 0, len(routes))
 				for _, route := range routes {
-					rm, err := TransformRoute(route)
+					rm, err := TransformRoute(tenantId, route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform route")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -85,7 +85,7 @@ func GetRouteByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 						return
 					}
 
-					rm, err := TransformRoute(route)
+					rm, err := TransformRoute(tenantId, route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform route")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -135,7 +135,7 @@ func CreateRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 					return
 				}
 
-				rm, err := TransformRoute(createdRoute)
+				rm, err := TransformRoute(tenantId, createdRoute)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform route")
 					server.WriteErrorResponse(d.Logger())(w)(err)
@@ -180,7 +180,7 @@ func UpdateRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 						return
 					}
 
-					rm, err := TransformRoute(updatedRoute)
+					rm, err := TransformRoute(tenantId, updatedRoute)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform route")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -245,7 +245,7 @@ func GetAllVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 
 				restModels := make([]VesselRestModel, 0, len(vessels))
 				for _, vessel := range vessels {
-					rm, err := TransformVessel(vessel)
+					rm, err := TransformVessel(tenantId, vessel)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform vessel")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -285,7 +285,7 @@ func GetVesselByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 						return
 					}
 
-					rm, err := TransformVessel(vessel)
+					rm, err := TransformVessel(tenantId, vessel)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform vessel")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -335,7 +335,7 @@ func CreateVesselHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 					return
 				}
 
-				rm, err := TransformVessel(createdVessel)
+				rm, err := TransformVessel(tenantId, createdVessel)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform vessel")
 					server.WriteErrorResponse(d.Logger())(w)(err)
@@ -380,7 +380,7 @@ func UpdateVesselHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 						return
 					}
 
-					rm, err := TransformVessel(updatedVessel)
+					rm, err := TransformVessel(tenantId, updatedVessel)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform vessel")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -444,7 +444,7 @@ func GetAllInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c 
 
 				restModels := make([]InstanceRouteRestModel, 0, len(routes))
 				for _, route := range routes {
-					rm, err := TransformInstanceRoute(route)
+					rm, err := TransformInstanceRoute(tenantId, route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform instance route")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -485,7 +485,7 @@ func GetInstanceRouteByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c 
 						return
 					}
 
-					rm, err := TransformInstanceRoute(route)
+					rm, err := TransformInstanceRoute(tenantId, route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform instance route")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -533,7 +533,7 @@ func CreateInstanceRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *
 					return
 				}
 
-				rm, err := TransformInstanceRoute(createdRoute)
+				rm, err := TransformInstanceRoute(tenantId, createdRoute)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform instance route")
 					server.WriteErrorResponse(d.Logger())(w)(err)
@@ -577,7 +577,7 @@ func UpdateInstanceRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *
 						return
 					}
 
-					rm, err := TransformInstanceRoute(updatedRoute)
+					rm, err := TransformInstanceRoute(tenantId, updatedRoute)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform instance route")
 						server.WriteErrorResponse(d.Logger())(w)(err)
@@ -810,69 +810,6 @@ func DeleteRpsRewardHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 					w.WriteHeader(http.StatusNoContent)
 				}
 			})
-		})
-	}
-}
-
-// SeedRoutesHandler handles POST /tenants/{tenantId}/configurations/routes/seed
-func SeedRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
-			return func(w http.ResponseWriter, r *http.Request) {
-				processor := NewProcessor(d.Logger(), d.Context(), db)
-				result, err := processor.SeedRoutes(tenantId)
-				if err != nil {
-					d.Logger().WithError(err).Error("Failed to seed routes")
-					server.WriteErrorResponse(d.Logger())(w)(err)
-					return
-				}
-
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(result)
-			}
-		})
-	}
-}
-
-// SeedInstanceRoutesHandler handles POST /tenants/{tenantId}/configurations/instance-routes/seed
-func SeedInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
-			return func(w http.ResponseWriter, r *http.Request) {
-				processor := NewProcessor(d.Logger(), d.Context(), db)
-				result, err := processor.SeedInstanceRoutes(tenantId)
-				if err != nil {
-					d.Logger().WithError(err).Error("Failed to seed instance routes")
-					server.WriteErrorResponse(d.Logger())(w)(err)
-					return
-				}
-
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(result)
-			}
-		})
-	}
-}
-
-// SeedVesselsHandler handles POST /tenants/{tenantId}/configurations/vessels/seed
-func SeedVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
-			return func(w http.ResponseWriter, r *http.Request) {
-				processor := NewProcessor(d.Logger(), d.Context(), db)
-				result, err := processor.SeedVessels(tenantId)
-				if err != nil {
-					d.Logger().WithError(err).Error("Failed to seed vessels")
-					server.WriteErrorResponse(d.Logger())(w)(err)
-					return
-				}
-
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(result)
-			}
 		})
 	}
 }
@@ -1256,7 +1193,16 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			registerRankingsInputHandler := rest.RegisterInputHandler[RankingsRestModel](l)(si)
 
 			// Route endpoints
-			r.HandleFunc("/tenants/{tenantId}/configurations/routes/seed", registerHandler("seed_routes", SeedRoutesHandler(db))).Methods(http.MethodPost)
+			//
+			// The path-scoped seed endpoint is gone (see configuration/seed);
+			// without an explicit stand-in, POST "/routes/seed" would fall
+			// through to the "/routes/{routeId}" pattern below (routeId=
+			// "seed") and 405 instead of 404, since that pattern's GET/
+			// PATCH/DELETE handlers still match the path. This stand-in is
+			// scoped to POST only — like the removed route it replaces —
+			// so GET/PATCH/DELETE on a route whose real id happens to be
+			// "seed" still reach the CRUD {routeId} handlers below.
+			r.HandleFunc("/tenants/{tenantId}/configurations/routes/seed", http.NotFound).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes", registerHandler("get_all_routes", GetAllRoutesHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes/{routeId}", registerHandler("get_route_by_id", GetRouteByIdHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes", registerRouteInputHandler("create_route", CreateRouteHandler(db))).Methods(http.MethodPost)
@@ -1264,7 +1210,10 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes/{routeId}", registerHandler("delete_route", DeleteRouteHandler(db))).Methods(http.MethodDelete)
 
 			// Vessel endpoints
-			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/seed", registerHandler("seed_vessels", SeedVesselsHandler(db))).Methods(http.MethodPost)
+			// POST-only stand-in for the removed "/vessels/seed" endpoint —
+			// see the routes-endpoints comment above for why this must not
+			// shadow GET/PATCH/DELETE on a vessel whose id is "seed".
+			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/seed", http.NotFound).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels", registerHandler("get_all_vessels", GetAllVesselsHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/{vesselId}", registerHandler("get_vessel_by_id", GetVesselByIdHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels", registerVesselInputHandler("create_vessel", CreateVesselHandler(db))).Methods(http.MethodPost)
@@ -1272,7 +1221,11 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			r.HandleFunc("/tenants/{tenantId}/configurations/vessels/{vesselId}", registerHandler("delete_vessel", DeleteVesselHandler(db))).Methods(http.MethodDelete)
 
 			// Instance route endpoints
-			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/seed", registerHandler("seed_instance_routes", SeedInstanceRoutesHandler(db))).Methods(http.MethodPost)
+			// POST-only stand-in for the removed "/instance-routes/seed"
+			// endpoint — see the routes-endpoints comment above for why this
+			// must not shadow GET/PATCH/DELETE on an instance route whose id
+			// is "seed".
+			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/seed", http.NotFound).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes", registerHandler("get_all_instance_routes", GetAllInstanceRoutesHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}", registerHandler("get_instance_route_by_id", GetInstanceRouteByIdHandler(db))).Methods(http.MethodGet)
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes", registerInstanceRouteInputHandler("create_instance_route", CreateInstanceRouteHandler(db))).Methods(http.MethodPost)

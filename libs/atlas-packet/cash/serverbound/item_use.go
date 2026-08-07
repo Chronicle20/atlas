@@ -13,6 +13,15 @@ import (
 
 const CharacterCashItemUseHandle = "CharacterCashItemUseHandle"
 
+// UpdateTimeFirst reports whether the USE_CASH_ITEM request carries its
+// updateTime immediately after the opcode (leading) rather than at the end
+// of the packet (trailing). IDA-verified per version in
+// CWvsContext::SendConsumeCashItemUseRequest: all GMS <= v84 (v48/v61/v72/
+// v79/v83/v84) trail; GMS v87+ and JMS lead.
+func UpdateTimeFirst(t tenant.Model) bool {
+	return (t.Region() == "GMS" && t.MajorVersion() >= 87) || t.Region() == "JMS"
+}
+
 // ItemUse - CUser::SendCashItemUseRequest (partial decode: common prefix only).
 //
 // The common prefix carries update_time as a leading int32 on all versions from
@@ -47,7 +56,7 @@ func (m ItemUse) Encode(l logrus.FieldLogger, ctx context.Context) func(options 
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if t.MajorVersion() >= 87 {
+		if UpdateTimeFirst(t) {
 			w.WriteInt(m.updateTime)
 		}
 		w.WriteInt16(m.source)
@@ -59,7 +68,7 @@ func (m ItemUse) Encode(l logrus.FieldLogger, ctx context.Context) func(options 
 func (m *ItemUse) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if t.MajorVersion() >= 87 {
+		if UpdateTimeFirst(t) {
 			m.updateTime = r.ReadUint32()
 		}
 		m.source = r.ReadInt16()

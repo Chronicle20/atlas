@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/compartment"
 	"atlas-channel/note"
 	"atlas-channel/session"
 	model2 "atlas-channel/socket/model"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	notepkt "github.com/Chronicle20/atlas/libs/atlas-packet/note"
 	notecb "github.com/Chronicle20/atlas/libs/atlas-packet/note/clientbound"
@@ -34,17 +37,27 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			sp := &notesb.OperationSend{}
 			sp.Decode(l, ctx)(r, readerOptions)
 
-			tc, err := character.NewProcessor(l, ctx).GetByName(sp.ToName())
+			// This arm's only legitimate client-side writer is the cash-shop
+			// gift flow (CCashShop::OnCashItemResLoadGiftDone), which is not
+			// implemented server-side; the player send path is USE_CASH_ITEM.
+			// Gate on Note-item ownership so a tampered client cannot mint free
+			// notes (FR-4). When gifting lands, gift sends must NOT route
+			// through this consume-gated path (the note is paid for by the gift
+			// purchase) — see design §2.2.
+			cp, err := compartment.NewProcessor(l, ctx).GetByType(s.CharacterId(), inventory.TypeValueCash)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to locate character by name [%s] to send note to.", sp.ToName())
-				_ = session.Announce(l)(ctx)(wp)(notecb.NoteOperationWriter)(notecb.NoteSendErrorBody(notecb.NoteSendErrorReceiverUnknown))(s)
+				l.WithError(err).Warnf("Character [%d] NOTE_ACTION SEND rejected: unable to load cash compartment.", s.CharacterId())
+				_ = session.Announce(l)(ctx)(wp)(notecb.NoteOperationWriter)(notecb.NoteSendErrorBody(notecb.NoteSendErrorNoNoteItem))(s)
+				return
+			}
+			a, found := cp.FindFirstByClassification(item.ClassificationNote)
+			if !found {
+				l.Warnf("Character [%d] attempted NOTE_ACTION SEND without owning a Note item (classification 509). Rejecting.", s.CharacterId())
+				_ = session.Announce(l)(ctx)(wp)(notecb.NoteOperationWriter)(notecb.NoteSendErrorBody(notecb.NoteSendErrorNoNoteItem))(s)
 				return
 			}
 
-			err = np.SendNote(s.Field().Channel(), s.CharacterId(), tc.Id(), sp.Message(), 1)
-			if err != nil {
-				l.WithError(err).Errorf("Character [%d] unable to send note.", s.CharacterId())
-			}
+			handleNoteSendRequest(l, ctx, wp)(s, a.TemplateId(), sp.ToName(), sp.Message())
 			return
 		}
 		if isNoteOperation(l)(readerOptions, op, NoteOperationDiscard) {
@@ -57,21 +70,28 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			for _, e := range sp.Entries() {
 				l.Debugf("Character [%d] discarding note [%d]. flags [%d].", s.CharacterId(), e.Id(), e.Flag())
 
-				// Verify the note exists and the flag matches
+				// Validate the note exists and the flag matches, but never tear
+				// down the session on a mismatch: a decode drift or a stale
+				// client list must not crash the player to login (the actual
+				// delete below is character-scoped, so a bogus id cannot remove
+				// another character's note). Skip the offending entry and
+				// discard whatever remains valid.
 				n, err := np.GetById(e.Id())
 				if err != nil {
-					l.WithError(err).Errorf("Character [%d] unable to retrieve note [%d].", s.CharacterId(), e.Id())
-					_ = session.NewProcessor(l, ctx).Destroy(s)
-					return
+					l.WithError(err).Warnf("Character [%d] cannot discard note [%d] (not found); skipping.", s.CharacterId(), e.Id())
+					continue
 				}
 
 				if n.Flag() != e.Flag() {
-					l.Errorf("Character [%d] attempting to discard note [%d] with incorrect flag. Expected [%d], got [%d].", s.CharacterId(), e.Id(), n.Flag(), e.Flag())
-					_ = session.NewProcessor(l, ctx).Destroy(s)
-					return
+					l.Warnf("Character [%d] discard of note [%d] has mismatched flag (expected [%d], got [%d]); skipping.", s.CharacterId(), e.Id(), n.Flag(), e.Flag())
+					continue
 				}
 
 				noteIds = append(noteIds, e.Id())
+			}
+
+			if len(noteIds) == 0 {
+				return
 			}
 
 			err := np.DiscardNotes(s.Field().Channel(), s.CharacterId(), noteIds)

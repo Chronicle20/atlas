@@ -623,6 +623,41 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ErrorResponse", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::SendGivePopularityRequest":
 		return []candidate{{name: "Change", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendClaimRequest":
+		return []candidate{{name: "ClaimRequest", dir: csvpkg.DirServerbound}}
+
+	// CWvsContext::OnClaimResult / CWvsContext::OnSueCharacterResult (task-145
+	// FAM-CAP follow-up). Both are the SetSkillResponse-style "mode + optional
+	// payload" shape (design.md §3.1) — the IDA decompile shows one switch
+	// where at most one arm reads a body, not N distinct-body sub-handlers —
+	// so per DISPATCHER_FAMILY.md's narrow criteria neither is a true
+	// mode-prefix client dispatcher. But docs/packets/dispatchers/claim_result
+	// .yaml and sue_character_result.yaml legitimately exist as the per-version
+	// `operations` mode-table source of truth consumed by `packet-audit
+	// operations` (cmd/operations.go), and dispatcher-lint's FAM-CAP guard
+	// (FR-5.1) requires every file in that directory to be either
+	// discrete-implemented here or capped via families.yaml/the baseline —
+	// it does not special-case non-family operations tables. A families.yaml
+	// cap is the wrong disposition here: capping is unconditional per-op
+	// (matrix grade.go: `family: in.Families[baseFName(ref.FName)]`) and would
+	// silently demote the byte-fixtures task-145 Task 24 already verified
+	// (packet-audit:verify markers in claim_result_test.go /
+	// sue_character_result_test.go) from ✅ back to 🧩; the baseline is
+	// legacy-only and reached empty deliberately (DISPATCHER_FAMILY.md: "new
+	// families must be authored discrete-per-mode from the start"). So:
+	// discrete-per-mode registration. ClaimResultSuccess/ClaimResultNotice
+	// already carry #Success/#Notice packet-audit:fname markers in
+	// report/clientbound/claim_result.go — only this run.go wiring was
+	// missing. SueCharacterResult never branches its body (one `result byte`,
+	// same shape for every value), so it gets a single catch-all #Result arm —
+	// a lone #-entry for tool bookkeeping, not a false family claim (see the
+	// CWvsContext::ResignQuest#Action precedent above).
+	case "CWvsContext::OnClaimResult#Success":
+		return []candidate{{name: "ClaimResultSuccess", pkg: "report", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnClaimResult#Notice":
+		return []candidate{{name: "ClaimResultNotice", pkg: "report", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnSueCharacterResult#Result":
+		return []candidate{{name: "SueCharacterResult", pkg: "report", dir: csvpkg.DirClientbound}}
 
 	// --- merchant bucket (task-069, sub-phase 2f) ---
 	case "CWvsContext::OnEntrustedShopCheckResult#OpenShop":
@@ -777,6 +812,11 @@ func candidatesFromFName(fname string) []candidate {
 		// Struct is ItemCancel; handler constant = "CharacterItemCancelHandle".
 		// Client sends opcode 0x4F (79) with Encode4(nItemID).
 		return []candidate{{name: "ItemCancel", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::CheckTemporaryStatDuration":
+		// CANCEL_DEBUFF. Struct is CancelDebuff; handler constant =
+		// "CancelDebuffHandle". Empty body: COutPacket(opcode) then SendPacket
+		// with no intervening encode calls, on every version (task-190).
+		return []candidate{{name: "CancelDebuff", dir: csvpkg.DirServerbound}}
 	// --- Character serverbound chairs/expression bucket (Task 13) ---
 	case "CUserLocal::HandleXKeyDown":
 		// Struct is ChairFixed; handler constant = "CharacterChairInteractionHandle".
@@ -1250,6 +1290,16 @@ func candidatesFromFName(fname string) []candidate {
 		// Atlas struct: note/serverbound/operation_send.go OperationSend.
 		// Note: CCashShop gift-accept path uses the same NOTE_ACTION opcode with op=0;
 		// the wire layout (EncodeStr toName + EncodeStr message) matches atlas OperationSend.
+		return []candidate{{name: "OperationSend", pkg: "note", dir: csvpkg.DirServerbound}}
+	case "CCashShop::OnCashItemResLoadLockerDone":
+		// gms_v48-only twin of OnCashItemResLoadGiftDone (task-137 notesend-verify2):
+		// the earliest client's combined locker-load+gift-forward handler emits the
+		// SAME NOTE_ACTION sub-op 0 SEND body (toName+message+giftFlag, no
+		// giftIndex/giftSN — v48 predates those trailing fields, see
+		// note/serverbound/operation_send.go sendHasGiftDetails). Registered as its
+		// own candidate so a v48-specific audit report/evidence citation can resolve
+		// against the real send-site function name rather than the modern-version
+		// fname (which does not exist in the v48 IDB).
 		return []candidate{{name: "OperationSend", pkg: "note", dir: csvpkg.DirServerbound}}
 
 	// --- Social: buddy ---
@@ -2096,6 +2146,21 @@ func candidatesFromFName(fname string) []candidate {
 	// exist from v72 up; v48/v61 lack the opcode (generic item-use path).
 	case "CWvsContext::SendLotteryItemUseRequest":
 		return []candidate{{name: "LotteryItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// USE_SKILL_BOOK (task-125): CWvsContext::SendSkillLearnItemUseRequest,
+	// v83 @0xa0a1b2 IDA-verified (already named in the IDB, opcode 0x52 via
+	// COutPacket::COutPacket(&pkt, 0x52)). Body: Encode4 updateTime +
+	// Encode2 slot + Encode4 itemId; item-class gate a3/10000 in {228,229}
+	// (skill-book item prefix). Struct is UseSkillBook (character/serverbound).
+	case "CWvsContext::SendSkillLearnItemUseRequest":
+		return []candidate{{name: "UseSkillBook", pkg: "character", dir: csvpkg.DirServerbound}}
+	// SKILL_LEARN_ITEM_RESULT (task-125): CWvsContext::OnSkillLearnItemResult,
+	// v83 @0xa1e5af IDA-verified. CWvsContext::OnPacket (case 0x33) delegates
+	// directly. Body (v83, no leading byte — MajorVersion()<84): Decode4
+	// characterId + Decode1 isMasteryBook + Decode4 skillId (discarded) +
+	// Decode4 masterLevel (discarded) + Decode1 canUse + Decode1 success.
+	// Struct is SkillLearnItemResult (character/clientbound).
+	case "CWvsContext::OnSkillLearnItemResult":
+		return []candidate{{name: "SkillLearnItemResult", pkg: "character", dir: csvpkg.DirClientbound}}
 	// Vega's Spell (category 561) USE_CASH_ITEM sub-body (task-130 §2.1) shares
 	// the cash-item-use sender fname with task-126's AP/SP point-reset arm and
 	// task-124's teleport-rock arm. All candidates are keyed to the same fname,
@@ -2359,6 +2424,141 @@ func candidatesFromFName(fname string) []candidate {
 	case "CCashShop::OnCashItemResult#CashItemMovedToInventory":
 		// case 0x77 MOVE_L_TO_S_DONE (OnCashItemResMoveLtoSDone): mode + Decode2(slot) + GW_ItemSlotBase (model.Asset).
 		return []candidate{{name: "CashItemMovedToInventory", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Failure-arm family (task-183 Wave 1.1): discrete mode+reason structs, one per arm.
+	// CHANGE_MAPLE_POINT_FAILED is bodyless (mode byte only, RE-confirmed zero further reads).
+	case "CCashShop::OnCashItemResult#LOAD_GIFT_FAILED":
+		return []candidate{{name: "LoadGiftFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#LOAD_WISH_FAILED":
+		return []candidate{{name: "LoadWishFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#SET_WISH_FAILED":
+		return []candidate{{name: "SetWishFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#BUY_FAILED":
+		return []candidate{{name: "BuyFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#USE_COUPON_FAILED":
+		return []candidate{{name: "UseCouponFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#GIFT_FAILED":
+		return []candidate{{name: "GiftFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#INC_TRUNK_COUNT_FAILED":
+		return []candidate{{name: "IncTrunkCountFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#INC_CHARACTER_SLOT_COUNT_FAILED":
+		return []candidate{{name: "IncCharacterSlotCountFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#INC_BUY_CHARACTER_COUNT_FAILED":
+		return []candidate{{name: "IncBuyCharacterCountFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#ENABLE_EQUIP_SLOT_EXT_FAILED":
+		return []candidate{{name: "EnableEquipSlotExtFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#MOVE_L_TO_S_FAILED":
+		return []candidate{{name: "MoveLToSFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#MOVE_S_TO_L_FAILED":
+		return []candidate{{name: "MoveSToLFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#DESTROY_FAILED":
+		return []candidate{{name: "DestroyFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#REBATE_FAILED":
+		return []candidate{{name: "RebateFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#COUPLE_FAILED":
+		return []candidate{{name: "CoupleFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#BUY_PACKAGE_FAILED":
+		return []candidate{{name: "BuyPackageFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#GIFT_PACKAGE_FAILED":
+		return []candidate{{name: "GiftPackageFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#BUY_NORMAL_FAILED":
+		return []candidate{{name: "BuyNormalFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#FRIENDSHIP_FAILED":
+		return []candidate{{name: "FriendshipFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#PURCHASE_RECORD_FAILED":
+		return []candidate{{name: "PurchaseRecordFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#TRANSFER_WORLD_FAILED":
+		return []candidate{{name: "TransferWorldFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#GACHAPON_OPEN_FAILED":
+		return []candidate{{name: "GachaponOpenFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#GACHAPON_COPY_FAILED":
+		return []candidate{{name: "GachaponCopyFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#CHANGE_MAPLE_POINT_FAILED":
+		return []candidate{{name: "ChangeMaplePointFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Counter-arm family (task-183 Wave 1.2): mode + uint16 absolute-counter
+	// update (NO inventory/slot-type byte). ENABLE_EQUIP_SLOT_EXT_SUCCESS is
+	// mode + TWO uint16 fields (slotIndex, days).
+	case "CCashShop::OnCashItemResult#INC_TRUNK_COUNT_SUCCESS":
+		return []candidate{{name: "IncTrunkCountSuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#INC_CHARACTER_SLOT_COUNT_SUCCESS":
+		return []candidate{{name: "IncCharacterSlotCountSuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#INC_BUY_CHARACTER_COUNT_SUCCESS":
+		return []candidate{{name: "IncBuyCharacterCountSuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#ENABLE_EQUIP_SLOT_EXT_SUCCESS":
+		return []candidate{{name: "EnableEquipSlotExtSuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Gift/coupon/package item-blob arm family (task-183 Wave 1.3). GIFT_SUCCESS
+	// resolves the legacy 0x4D gift TODO (real shape is scalar, not item-blob —
+	// see arm-catalog.md + task-0.3e report).
+	case "CCashShop::OnCashItemResult#GIFT_SUCCESS":
+		return []candidate{{name: "GiftDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#LOAD_GIFT_SUCCESS":
+		return []candidate{{name: "LoadGiftDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#USE_COUPON_SUCCESS":
+		return []candidate{{name: "UseCouponDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#GIFT_COUPON_SUCCESS":
+		return []candidate{{name: "GiftCouponDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#BUY_PACKAGE_SUCCESS":
+		return []candidate{{name: "BuyPackageDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#GIFT_PACKAGE_SUCCESS":
+		return []candidate{{name: "GiftPackageDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#BUY_NORMAL_SUCCESS":
+		return []candidate{{name: "BuyNormalDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#FRIENDSHIP_SUCCESS":
+		return []candidate{{name: "FriendshipDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#REBATE_SUCCESS":
+		return []candidate{{name: "RebateDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#COUPLE_SUCCESS":
+		return []candidate{{name: "CoupleDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Scalar/notice/transfer/gachapon/maple-point arm family (task-183 Wave 1.4).
+	// FREE_CASH_ITEM_DONE/NAME_CHANGE_BUY_DONE/TRANSFER_WORLD_SUCCESS are labeled
+	// `scalar` in the catalog's coarse shape column but carry a 55-byte
+	// GW_CashItemInfo item-blob (task-0.3d report). GACHAPON_OPEN_SUCCESS/
+	// GACHAPON_COPY_SUCCESS carry a CONDITIONAL single item-blob gated on a
+	// leading flag byte (task-0.3e report).
+	case "CCashShop::OnCashItemResult#LIMIT_GOODS_COUNT_CHANGED":
+		return []candidate{{name: "LimitGoodsCountChanged", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#DESTROY_SUCCESS":
+		return []candidate{{name: "DestroyDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#EXPIRE_DONE":
+		return []candidate{{name: "ExpireDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#PURCHASE_RECORD":
+		return []candidate{{name: "PurchaseRecordDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#FREE_CASH_ITEM_DONE":
+		return []candidate{{name: "FreeCashItemDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#NAME_CHANGE_BUY_DONE":
+		return []candidate{{name: "NameChangeBuyDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#TRANSFER_WORLD_SUCCESS":
+		return []candidate{{name: "TransferWorldDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#GACHAPON_OPEN_SUCCESS":
+		return []candidate{{name: "GachaponOpenDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#GACHAPON_COPY_SUCCESS":
+		return []candidate{{name: "GachaponCopyDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#CHANGE_MAPLE_POINT_SUCCESS":
+		return []candidate{{name: "ChangeMaplePointDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// JMS-only arm family (task-183 follow-up): 10 arms present only in the JMS
+	// v185 dispatcher switch (raw Decode1; @0x48b5a5). Behavior-derived IDB
+	// names + wire-truth in arm-catalog.md "JMS-only arms". Bodyless canned-notice
+	// arms (SHOW_NOTICE_1089/1465/1464) + the genuine no-op (CLIENT_NO_OP →
+	// nullsub_2) are still discrete structs per INV-1.
+	case "CCashShop::OnCashItemResult#GIFT_RESULT_NOTICE":
+		return []candidate{{name: "GiftResultNotice", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#LOAD_RECEIVED_GIFT_SUCCESS":
+		return []candidate{{name: "LoadReceivedGiftDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#LIMIT_GOODS_STOCK_CHANGED":
+		return []candidate{{name: "LimitGoodsStockChanged", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#SHOW_NOTICE_1089":
+		return []candidate{{name: "ShowNotice1089", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#TRANSFER_WORLD_NOTICE_REASON":
+		return []candidate{{name: "TransferWorldNoticeReason", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#REFRESH_LOCKER":
+		return []candidate{{name: "RefreshLocker", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#CLIENT_NO_OP":
+		return []candidate{{name: "ClientNoOp", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#SHOW_NOTICE_1465":
+		return []candidate{{name: "ShowNotice1465", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#REFRESH_LOCKER_OR_NOTICE":
+		return []candidate{{name: "RefreshLockerOrNotice", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#SHOW_NOTICE_1464":
+		return []candidate{{name: "ShowNotice1464", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	// Serverbound CCashShop senders (op-byte owned by the ShopOperation dispatcher; bodies below).
 	case "CCashShop::TrySendQueryCashRequest":
 		return []candidate{{name: "CheckWallet", dir: csvpkg.DirServerbound, pkg: "cash"}}

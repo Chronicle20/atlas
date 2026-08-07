@@ -60,7 +60,7 @@ func TestValidate_AcceptsEverySeedTemplate(t *testing.T) {
 			}
 		}
 	}
-	if total != 2859 {
-		t.Errorf("corpus size = %d entries, want 2859 (2863 less the 4 padded MiniRoom duplicates removed in task-194)", total)
+	if total != 2871 {
+		t.Errorf("corpus size = %d entries, want 2871 (2875 upstream less the 4 padded MiniRoom duplicates removed in task-194)", total)
 	}
 }

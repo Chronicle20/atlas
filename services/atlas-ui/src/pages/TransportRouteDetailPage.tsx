@@ -56,22 +56,27 @@ export function TransportRouteDetailPage() {
     [detail, vessels],
   );
 
+  // Computed once and shared by `partner` and `vesselUnresolved` below —
+  // `resolveVesselRoutes` walks the full route list by name, so it isn't
+  // free, and both derivations need the same routeA/routeB resolution.
+  const vesselResolution = useMemo(
+    () => (vessel ? resolveVesselRoutes(vessel, routes) : null),
+    [vessel, routes],
+  );
+
   const partner = useMemo(() => {
-    if (!detail || !vessel) return null;
-    const { routeA, routeB } = resolveVesselRoutes(vessel, routes);
+    if (!detail || !vesselResolution) return null;
+    const { routeA, routeB } = vesselResolution;
     if (routeA && routeA.id !== detail.route.id) return routeA;
     if (routeB && routeB.id !== detail.route.id) return routeB;
     return null;
-  }, [detail, vessel, routes]);
+  }, [detail, vesselResolution]);
 
   // Disabled (via useScheduledRoute's `!!routeId` gate) whenever there is no
   // partner, so a solo route triggers no extra fetch.
   const partnerDetailQuery = useScheduledRoute(partner?.id ?? "");
 
-  const vesselUnresolved = useMemo(() => {
-    if (!vessel) return false;
-    return resolveVesselRoutes(vessel, routes).unresolved;
-  }, [vessel, routes]);
+  const vesselUnresolved = vesselResolution?.unresolved ?? false;
 
   const lanes: TimelineLane[] = useMemo(() => {
     if (!detail) return [];

@@ -79,6 +79,42 @@ const trips: TripSchedule[] = [
   },
 ];
 
+/** The other side of a shared vessel — a distinct id/name from `scheduledRoute`. */
+function partnerRoute(state: RouteState): ScheduledRoute {
+  return {
+    id: "r2",
+    attributes: {
+      name: "Ellinia to Orbis",
+      startMapId: 101000300,
+      stagingMapId: 101000301,
+      enRouteMapIds: [200090010],
+      destinationMapId: 200000100,
+      observationMapId: 101000302,
+      state,
+      boardingWindowSeconds: 300,
+      preDepartureSeconds: 120,
+      travelDurationSeconds: 600,
+      cycleIntervalSeconds: 900,
+      nextTransitionAt: "",
+      nextState: "",
+    },
+  };
+}
+
+// Deliberately a different time-of-day than `trips` so a lane showing this
+// schedule can never be mistaken for a lane showing `trips`.
+const partnerTrips: TripSchedule[] = [
+  {
+    id: "pt1",
+    attributes: {
+      boardingOpen: "2023-01-01T03:00:00Z",
+      boardingClosed: "2023-01-01T03:05:00Z",
+      departure: "2023-01-01T03:07:00Z",
+      arrival: "2023-01-01T03:17:00Z",
+    },
+  },
+];
+
 function renderDetail() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -188,6 +224,143 @@ describe("TransportRouteDetailPage", () => {
     expect(
       await screen.findByText(/vessel .*does not resolve/i),
     ).toBeInTheDocument();
+  });
+
+  it("assembles two distinct lanes when the vessel's partner route resolves with a schedule", async () => {
+    const own = scheduledRoute("open_entry");
+    const partner = partnerRoute("open_entry");
+
+    vi.mocked(transportsService.getScheduledRoute).mockImplementation(
+      (routeId: string) =>
+        routeId === "r2"
+          ? Promise.resolve({ route: partner, schedule: partnerTrips })
+          : Promise.resolve({ route: own, schedule: trips }),
+    );
+    vi.mocked(transportsService.getScheduledRoutes).mockResolvedValue([
+      own,
+      partner,
+    ]);
+    vi.mocked(transportsService.getVessels).mockResolvedValue([
+      {
+        id: "vessel1",
+        attributes: {
+          uuid: "u",
+          name: "Ferry",
+          routeAID: own.attributes.name,
+          routeBID: partner.attributes.name,
+          turnaroundDelay: 60,
+        },
+      },
+    ]);
+
+    renderDetail();
+
+    await screen.findByRole("heading", { name: "Orbis to Ellinia" });
+    const figure = await screen.findByRole("img", { name: /trip timeline/i });
+
+    // VesselTimeline's SVG height is TOP_PAD + lanes.length * (LANE_HEIGHT +
+    // LANE_GAP) = 18 + n*44 — 106 is only reachable with exactly two lanes,
+    // so this is an objective count, not just a text-presence guess.
+    expect(figure).toHaveAttribute("viewBox", "0 0 720 106");
+
+    const ariaLabel = figure.getAttribute("aria-label") ?? "";
+    // Content, not just count: each lane's own trip time must be present,
+    // proving the partner's *distinct* schedule reached the second lane
+    // rather than the own route's schedule being duplicated into it.
+    expect(ariaLabel).toContain("Orbis to Ellinia: boards 11:45");
+    expect(ariaLabel).toContain("Ellinia to Orbis: boards 03:00");
+  });
+
+  it("renders only the own lane while the partner's schedule is still in flight", async () => {
+    const own = scheduledRoute("open_entry");
+    const partner = partnerRoute("open_entry");
+
+    vi.mocked(transportsService.getScheduledRoute).mockImplementation(
+      (routeId: string) =>
+        routeId === "r2"
+          ? new Promise(() => {
+              /* the partner's detail query never settles in this test */
+            })
+          : Promise.resolve({ route: own, schedule: trips }),
+    );
+    vi.mocked(transportsService.getScheduledRoutes).mockResolvedValue([
+      own,
+      partner,
+    ]);
+    vi.mocked(transportsService.getVessels).mockResolvedValue([
+      {
+        id: "vessel1",
+        attributes: {
+          uuid: "u",
+          name: "Ferry",
+          routeAID: own.attributes.name,
+          routeBID: partner.attributes.name,
+          turnaroundDelay: 60,
+        },
+      },
+    ]);
+
+    renderDetail();
+
+    await screen.findByRole("heading", { name: "Orbis to Ellinia" });
+    const figure = screen.getByRole("img", { name: /trip timeline/i });
+
+    // Single-lane height (18 + 1*44 = 62): the partner is resolved (it's in
+    // `routes`) but its schedule hasn't arrived, so the page must fall back
+    // to the solo-lane form rather than rendering a half-built second lane.
+    expect(figure).toHaveAttribute("viewBox", "0 0 720 62");
+    expect(figure.getAttribute("aria-label") ?? "").not.toContain(
+      "Ellinia to Orbis",
+    );
+  });
+
+  it("resolves the partner correctly even when the viewed route is routeB, not routeA", async () => {
+    const own = scheduledRoute("open_entry");
+    const partner = partnerRoute("open_entry");
+
+    vi.mocked(transportsService.getScheduledRoute).mockImplementation(
+      (routeId: string) =>
+        routeId === "r2"
+          ? Promise.resolve({ route: partner, schedule: partnerTrips })
+          : Promise.resolve({ route: own, schedule: trips }),
+    );
+    vi.mocked(transportsService.getScheduledRoutes).mockResolvedValue([
+      own,
+      partner,
+    ]);
+    vi.mocked(transportsService.getVessels).mockResolvedValue([
+      {
+        id: "vessel1",
+        attributes: {
+          uuid: "u",
+          name: "Ferry",
+          // Swapped vs. the two tests above: the viewed route ("r1") is
+          // routeB here, its partner is routeA. A self-comparison bug that
+          // only excludes whichever side happens to be routeA (instead of
+          // comparing both sides' ids against the viewed route) would put
+          // the viewed route into both lanes.
+          routeAID: partner.attributes.name,
+          routeBID: own.attributes.name,
+          turnaroundDelay: 60,
+        },
+      },
+    ]);
+
+    renderDetail();
+
+    await screen.findByRole("heading", { name: "Orbis to Ellinia" });
+    const figure = await screen.findByRole("img", { name: /trip timeline/i });
+
+    expect(figure).toHaveAttribute("viewBox", "0 0 720 106");
+    const ariaLabel = figure.getAttribute("aria-label") ?? "";
+    expect(ariaLabel).toContain("Orbis to Ellinia: boards 11:45");
+    expect(ariaLabel).toContain("Ellinia to Orbis: boards 03:00");
+
+    // The guard itself: the viewed route's own trip time must appear
+    // exactly once. Two occurrences would mean the "partner" resolved back
+    // to the viewed route, duplicating it into both lanes.
+    const ownOccurrences = ariaLabel.split("boards 11:45").length - 1;
+    expect(ownOccurrences).toBe(1);
   });
 
   it("shows a distinct loading state before the route resolves", () => {

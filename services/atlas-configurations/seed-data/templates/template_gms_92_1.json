@@ -831,7 +831,10 @@
         "fname": "CWvsContext::SendStatChangeItemUseRequestByPetQ",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "skillGate": "equipAbility"
+        }
       },
       {
         "opCode": "0xC9",

@@ -1,0 +1,53 @@
+{
+  "service": "atlas-data",
+  "path": "services/atlas-data/atlas.com/data",
+  "date": "2026-08-07",
+  "build": "pass",
+  "testsPassed": 34,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "skill",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "skill/processor.go:22,27"},
+        {"id": "FILE-01", "name": "Processor logic in processor.go", "status": "pass", "evidence": "skill/processor.go:16,21,27"},
+        {"id": "DOM-21", "name": "No duplication of atlas-constants types", "status": "pass", "evidence": "skill/common.go:13, skill/effect/model.go:6"}
+      ]
+    },
+    {
+      "name": "skill/formula",
+      "type": "support",
+      "checks": [
+        {"id": "MULTITENANCY", "name": "formula package is tenant-agnostic by design", "status": "pass", "evidence": "skill/formula/formula.go:30-35 imports only stdlib"}
+      ]
+    },
+    {
+      "name": "skill/effect",
+      "type": "support (value object, embedded in skill.RestModel)",
+      "checks": [
+        {"id": "FILE-05", "name": "Builder in builder.go; domain Model in model.go", "status": "fail", "evidence": "skill/effect/ has no builder.go; model.go:410,419 ModelBuilder.Build() returns RestModel directly, no immutable domain Model type exists in the package"}
+      ]
+    },
+    {
+      "name": "skill (stats/concurrency)",
+      "type": "support",
+      "checks": [
+        {"id": "CONCURRENCY", "name": "StatsAccumulator counters mutex-guarded", "status": "pass", "evidence": "skill/stats.go:41-44,49-60,63-67; no bypass found via grep of .total"},
+        {"id": "GOROUTINE-GUARD", "name": "No bare go statements introduced", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0; manual grep zero matches in changed non-test files"}
+      ]
+    },
+    {
+      "name": "skill (error handling)",
+      "type": "support",
+      "checks": [
+        {"id": "ERROR-SCOPING", "name": "Formula failure scoped, logged ERROR, counted, never aborts run", "status": "pass", "evidence": "skill/common.go:210-219,236-240,264-270,290-301; skill/common_test.go:349-429 TestCommonFailureIsScopedAndCounted"}
+      ]
+    }
+  ],
+  "blocking": [
+    "FILE-05: services/atlas-data/atlas.com/data/skill/effect/model.go (extended lines 60-101,525-563) — no builder.go, no immutable domain Model type; ModelBuilder builds RestModel directly. Pre-existing pattern substantially extended by this diff's 33 new fields/setters."
+  ],
+  "nonBlocking": []
+}

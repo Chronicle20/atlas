@@ -158,3 +158,67 @@ ok  	atlas-data/skill/formula	1.043s
   `Evaluate` failures, 0 A≠B disagreements between the client-accurate evaluator and a
   from-scratch naive standard-precedence reference. No IDA adjudication was required because
   no disagreement was found to adjudicate.
+
+---
+
+## Verification
+
+Recorded at branch head, after merging `origin/main` (merge commit `f82f8305f`) and after
+the FILE-05 refactor (`27ed73211`). Values below are observed command output, not
+expectations.
+
+### Go gates — `services/atlas-data/atlas.com/data`
+
+| Gate | Result |
+|---|---|
+| `go build ./...` | exit 0 |
+| `go vet ./...` | exit 0 |
+| `go test -race ./...` | exit 0 — all 65 packages `ok`, 0 failures |
+
+Run both before and after the `origin/main` merge; clean both times.
+
+`go.mod` unchanged (`git diff --stat -- services/atlas-data/atlas.com/data/go.mod` empty
+against the merge-base), so `docker buildx bake atlas-data` was **not** required and was
+not run.
+
+### Repo-root guards
+
+| Guard | Result |
+|---|---|
+| `tools/redis-key-guard.sh` | exit 0 |
+| `tools/goroutine-guard.sh` | exit 0 |
+| `tools/lint.sh --check` | exit 1 — see below |
+
+`tools/lint.sh --check` exits 1, but not for this branch's code. It was run twice, alone,
+with Node 22 on PATH. The failing-target set differs between runs — first run:
+`atlas-transports`; second run: `atlas-skills`, `atlas-storage`, `atlas-summons` — and every
+failure reads `Error: parallel golangci-lint is running`. That is the known cross-worktree
+golangci-lint lock-contention footgun, not a lint violation. `services/atlas-data` — the only
+Go module this branch touches — is absent from the FAIL list in both runs. `atlas-ui` reports
+0 errors and 5 pre-existing baseline warnings, none in files this branch changed.
+
+### atlas-ui
+
+`npm run build` (Node 22.22.2) succeeded; 1881/1881 tests passed across 229 files. The 33
+new `SkillEffect` members and 33 new `FIELD_LABELS` entries were cross-checked against the Go
+`json:"..."` tags in `skill/effect/rest.go` — identical 33/33, character for character.
+
+### Not performed: live deploy, re-ingest, and end-to-end checks
+
+**Plan Task 8 Steps 3 and 4 were deliberately not performed.** The image was not deployed,
+`POST /data/process` was not called, no re-ingest Job was created, the serving pods were not
+restarted, and the live assertions on skill 1001003 (`maxLevel == 20`, `MPConsume` 8 → 14,
+`duration` 110000 → 300000 ms) and the served-document census (expected 0 of 954 with
+`maxLevel == 0`, down from 635) were **not** run. This was an explicit decision to keep the
+live-cluster half out of this change.
+
+Consequently the end-to-end evidence the plan calls for is **outstanding**, and the plan
+treats Step 3's failure count as a blocking acceptance gate. The runbook in PRD §11 must be
+executed before this change can be considered verified against a real archive. Note also
+that the change serves nothing until a re-ingest rewrites the `content` blobs, and that the
+ingest Job pod is a different process from the serving pods — the serving pods need a restart
+afterwards.
+
+What *is* verified without the cluster: the evaluator against a 14,711-row corpus extracted
+from the real GMS v95.1 archive (0 parse failures, 0 A≠B disagreements), the full census of
+all 10 available archives, and the module's own test suite.

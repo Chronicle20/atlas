@@ -1,4 +1,4 @@
-import { Suspense, useMemo } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Ship } from "lucide-react";
 
@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTenant } from "@/context/tenant-context";
 import { useScheduledRoutes, useVessels } from "@/lib/hooks/api/useTransports";
 import { FreshnessIndicator } from "@/components/features/transports/FreshnessIndicator";
+import { InstanceRoutesTable } from "@/components/features/transports/InstanceRoutesTable";
 import { compareRoutesBySeverityThenName } from "@/components/features/transports/transport-format";
 import { createScheduledRouteColumns } from "@/pages/transports-columns";
 
@@ -49,6 +50,12 @@ function TransportsPageContent() {
     [activeTenant, vessels],
   );
 
+  const [instanceRouteCount, setInstanceRouteCount] = useState(0);
+  const handleInstanceCountChange = useCallback(
+    (count: number) => setInstanceRouteCount(count),
+    [],
+  );
+
   const handleTabChange = (value: string) => {
     const next = new URLSearchParams(searchParams);
     if (value === "scheduled") {
@@ -80,7 +87,9 @@ function TransportsPageContent() {
       >
         <TabsList>
           <TabsTrigger value="scheduled">Scheduled {routes.length}</TabsTrigger>
-          <TabsTrigger value="instance">Instance</TabsTrigger>
+          <TabsTrigger value="instance">
+            Instance {instanceRouteCount}
+          </TabsTrigger>
           <TabsTrigger value="vessels">Vessels {vessels.length}</TabsTrigger>
         </TabsList>
 
@@ -99,7 +108,12 @@ function TransportsPageContent() {
         <TabsContent
           value="instance"
           className="flex-1 min-h-0 overflow-x-auto"
-        />
+        >
+          <InstanceRoutesTable
+            tenant={activeTenant}
+            onCountChange={handleInstanceCountChange}
+          />
+        </TabsContent>
 
         <TabsContent
           value="vessels"

@@ -1012,3 +1012,73 @@ func TestCTSAddStatUnknownNameStillErrors(t *testing.T) {
 		})
 	}
 }
+
+// TestCTSMixedBuffServerOnlyByteInvariance proves a buff carrying both a wire
+// stat and server-only stats encodes byte-identically to the same buff without
+// the server-only stats (task-164 acceptance (b)), on EVERY supported tenant
+// version.
+//
+// Determinism: the self Encode path writes each per-stat duration as a function
+// of expiresAt evaluated at encode time, which is not stable across two Encode
+// calls. Passing the zero time saturates that field to a constant on both the
+// modern and legacy writers (pinned by TestNoExpiryStatEncodesSaturatedDuration
+// and TestLegacyDurationUnitsNoExpirySaturates), so the FULL byte slices compare
+// equal with no offset arithmetic — which also keeps this test correct on the
+// legacy pre-v61 class, whose mask is 8 bytes rather than 16 (design §5.1).
+//
+// Booster is the wire-stat probe because it is registered unconditionally
+// (shift 11, before any version gate), so it exists in every registry class and
+// sits inside the legacy mask's bits 0-46.
+func TestCTSMixedBuffServerOnlyByteInvariance(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			l, _ := testlog.NewNullLogger()
+
+			// Booster + the two server-only stats. sourceId/amount arbitrary;
+			// only wire disposition is under test.
+			mixed := NewCharacterTemporaryStat()
+			mixed.AddStat(l)(tn)(string(character.TemporaryStatTypeBooster), 1001, -2, 1, time.Time{})
+			mixed.AddStat(l)(tn)(string(character.TemporaryStatTypePuppet), 1002, 1, 1, time.Time{})
+			mixed.AddStat(l)(tn)(string(character.TemporaryStatTypeSummon), 1003, 1, 1, time.Time{})
+
+			plain := NewCharacterTemporaryStat()
+			plain.AddStat(l)(tn)(string(character.TemporaryStatTypeBooster), 1001, -2, 1, time.Time{})
+
+			if got, want := mixed.Encode(nil, ctx)(nil), plain.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("Encode differs:\ngot  % x\nwant % x", got, want)
+			}
+			if got, want := mixed.EncodeForeign(nil, ctx)(nil), plain.EncodeForeign(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("EncodeForeign differs:\ngot  % x\nwant % x", got, want)
+			}
+		})
+	}
+}
+
+// TestCTSPureServerOnlyBuffEncodesAsEmpty proves a buff whose changes are ALL
+// server-only yields exactly the empty-CTS body (task-164 acceptance (c),
+// FR-5/FR-6): mask claims nothing, no per-stat blocks, standard trailer. The
+// buff writers emit unconditionally, so these bytes are what an emitted
+// empty-mask GIVE_BUFF / cancel-reset carries — on every supported version,
+// including the legacy class where that mask is 8 zero bytes.
+func TestCTSPureServerOnlyBuffEncodesAsEmpty(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			l, _ := testlog.NewNullLogger()
+
+			pure := NewCharacterTemporaryStat()
+			pure.AddStat(l)(tn)(string(character.TemporaryStatTypePuppet), 1, 1, 1, time.Time{})
+
+			empty := NewCharacterTemporaryStat()
+			if got, want := pure.Encode(nil, ctx)(nil), empty.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("pure server-only Encode differs from empty CTS:\ngot  % x\nwant % x", got, want)
+			}
+			if got, want := pure.EncodeForeign(nil, ctx)(nil), empty.EncodeForeign(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("pure server-only EncodeForeign differs from empty CTS:\ngot  % x\nwant % x", got, want)
+			}
+		})
+	}
+}

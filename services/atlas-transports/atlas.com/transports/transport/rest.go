@@ -16,20 +16,27 @@ import (
 // nanosecond count. It is retained unchanged for existing consumers; new
 // consumers read the unit-explicit *Seconds fields below.
 type RestModel struct {
-	ID                    uuid.UUID               `json:"-"`
-	Name                  string                  `json:"name"`
-	StartMapID            _map.Id                 `json:"startMapId"`
-	StagingMapID          _map.Id                 `json:"stagingMapId"`
-	EnRouteMapIDs         []_map.Id               `json:"enRouteMapIds"`
-	DestinationMapID      _map.Id                 `json:"destinationMapId"`
-	ObservationMapID      _map.Id                 `json:"observationMapId"`
-	State                 string                  `json:"state"`
-	CycleInterval         time.Duration           `json:"cycleInterval"`
-	BoardingWindowSeconds uint32                  `json:"boardingWindowSeconds"`
-	PreDepartureSeconds   uint32                  `json:"preDepartureSeconds"`
-	TravelDurationSeconds uint32                  `json:"travelDurationSeconds"`
-	CycleIntervalSeconds  uint32                  `json:"cycleIntervalSeconds"`
-	Schedule              []TripScheduleRestModel `json:"-"`
+	ID                    uuid.UUID     `json:"-"`
+	Name                  string        `json:"name"`
+	StartMapID            _map.Id       `json:"startMapId"`
+	StagingMapID          _map.Id       `json:"stagingMapId"`
+	EnRouteMapIDs         []_map.Id     `json:"enRouteMapIds"`
+	DestinationMapID      _map.Id       `json:"destinationMapId"`
+	ObservationMapID      _map.Id       `json:"observationMapId"`
+	State                 string        `json:"state"`
+	CycleInterval         time.Duration `json:"cycleInterval"`
+	BoardingWindowSeconds uint32        `json:"boardingWindowSeconds"`
+	PreDepartureSeconds   uint32        `json:"preDepartureSeconds"`
+	TravelDurationSeconds uint32        `json:"travelDurationSeconds"`
+	CycleIntervalSeconds  uint32        `json:"cycleIntervalSeconds"`
+	// NextTransitionAt is the absolute instant of the next state change,
+	// projected from the schedule's time-of-day boundaries onto the first
+	// instant after the server's `now`. Empty when the route is out of
+	// service. Clients count down to this rather than reconstructing the
+	// scheduler.
+	NextTransitionAt string                  `json:"nextTransitionAt"`
+	NextState        string                  `json:"nextState"`
+	Schedule         []TripScheduleRestModel `json:"-"`
 }
 
 // GetID returns the resource ID
@@ -111,11 +118,21 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 	return nil
 }
 
-// Transform converts a Model to a RestModel
-func Transform(m Model) (RestModel, error) {
-	schedule, err := model.SliceMap(TransformSchedule)(model.FixedProvider(m.Schedule()))(model.ParallelMap())()
-	if err != nil {
-		return RestModel{}, err
+// TransformSummary converts a Model to a RestModel without its trip schedule.
+// The board renders entirely from these attributes; a full day's schedule is
+// ~96 rows per route and is fetched only where it is actually read.
+//
+// State and NextState/NextTransitionAt all come from one Evaluate call on one
+// `now`, so a response can never report a state that disagrees with its own
+// countdown.
+func TransformSummary(m Model) (RestModel, error) {
+	transition := m.Evaluate(timeNow().UTC())
+
+	nextAt := ""
+	nextState := ""
+	if transition.State != OutOfService && !transition.NextAt.IsZero() {
+		nextAt = transition.NextAt.Format(time.RFC3339)
+		nextState = string(transition.NextState)
 	}
 
 	return RestModel{
@@ -126,14 +143,31 @@ func Transform(m Model) (RestModel, error) {
 		EnRouteMapIDs:         m.EnRouteMapIds(),
 		DestinationMapID:      m.DestinationMapId(),
 		ObservationMapID:      m.ObservationMapId(),
-		State:                 string(m.State()),
+		State:                 string(transition.State),
 		CycleInterval:         m.CycleInterval(),
 		BoardingWindowSeconds: uint32(m.BoardingWindowDuration().Seconds()),
 		PreDepartureSeconds:   uint32(m.PreDepartureDuration().Seconds()),
 		TravelDurationSeconds: uint32(m.TravelDuration().Seconds()),
 		CycleIntervalSeconds:  uint32(m.CycleInterval().Seconds()),
-		Schedule:              schedule,
+		NextTransitionAt:      nextAt,
+		NextState:             nextState,
 	}, nil
+}
+
+// Transform converts a Model to a RestModel with its trip schedule attached.
+func Transform(m Model) (RestModel, error) {
+	rm, err := TransformSummary(m)
+	if err != nil {
+		return RestModel{}, err
+	}
+
+	schedule, err := model.SliceMap(TransformSchedule)(model.FixedProvider(m.Schedule()))(model.ParallelMap())()
+	if err != nil {
+		return RestModel{}, err
+	}
+	rm.Schedule = schedule
+
+	return rm, nil
 }
 
 func Extract(r RestModel) (Model, error) {

@@ -149,29 +149,29 @@ For each patched tenant, after the restart completes:
    activity — mob mist-drop skills, mist-producing reactors, etc.) and confirm
    no `writer not found` or `Unable to broadcast AffectedArea` log lines
    appear for that tenant afterward.
-3. Record the result in Section 4.
+3. Record the result in Section 5.
 
-## 4. Mist client-side expiry
+## 4. Mist client-side lifetime
 
-Client disassembly established that the client computes a mist's client-side
-expiry as `phase * 100 + <current time>` from the `AffectedAreaCreated`
-packet's `phase` field. This was previously a known defect: the consumer sent
-a hardcoded `phase = 0`, so every mist expired on the client almost
-immediately regardless of its real server-side duration.
+The `AffectedAreaCreated` packet carries **no duration**, on any version. The
+client holds a mob mist until the server sends `AffectedAreaRemoved`, which
+atlas-maps emits when the mist expires server-side. See `discovery.md`
+section "Semantics of the trailing `+0x30` slot" for the record layout this
+rests on.
 
-**This is now fixed (task-12).** `services/atlas-channel/atlas.com/channel/kafka/consumer/mist/consumer.go`
-derives `phase` from the mist's real duration (`Duration / 100`, i.e.
-milliseconds converted to the client's 100ms unit), clamped to the wire
-field's `int16` range and floored at 1 for sub-100ms/zero/negative durations.
-The trailing `tEnd` field is unchanged and still carries the raw duration in
-milliseconds (its ultimate client-side purpose remains open — see
-`discovery.md` — but it is not the field the client uses to compute expiry).
+An earlier revision of this branch mistook the packet's `Decode2` field for a
+lifetime and set it to `Duration / 100`. That field is a **delay before the
+client draws the mist** (`tStart = get_update_time() + 100 * skillDelay`, gated
+in `CAffectedAreaPool::Update`), so the mist stayed invisible for its whole
+duration and was then removed at roughly the instant it first appeared —
+observed in `atlas-pr-1226` as a sub-second flash. It is now sent as 0 (draw
+immediately), and the trailing word — really `nElemAttr`, not a time — is 0 too.
 
-When verifying this rollout (Section 3.5), expect mists to render **and**
-persist for their full configured duration before disappearing on the
-client. A mist that disappears substantially earlier or later than its
-configured duration should now be treated as a rollout/regression concern,
-not expected behavior.
+When verifying this rollout (Section 3.5), expect the mist to appear
+**immediately** on cast and to persist until its server-side duration elapses.
+A mist that takes visible time to appear, or that flashes and vanishes, means
+the draw-delay regression is back.
+
 
 ## 5. Environment record
 

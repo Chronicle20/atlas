@@ -5,7 +5,6 @@ import (
 	"atlas-channel/server"
 	"atlas-channel/socket/writer"
 	"context"
-	"math"
 	"testing"
 
 	"github.com/google/uuid"
@@ -110,11 +109,14 @@ func TestMistCreated_BroadcastsAffectedAreaCreated(t *testing.T) {
 	if lastCreated.LtX() != -50 || lastCreated.LtY() != -60 || lastCreated.RbX() != 50 || lastCreated.RbY() != 60 {
 		t.Fatalf("AffectedAreaCreated bounds wrong: lt (%d,%d) rb (%d,%d)", lastCreated.LtX(), lastCreated.LtY(), lastCreated.RbX(), lastCreated.RbY())
 	}
-	if lastCreated.TEnd() != 8000 {
-		t.Fatalf("AffectedAreaCreated.TEnd: want 8000 (duration ms), got %d", lastCreated.TEnd())
+	// The duration is NOT carried on this packet. nElemAttr is not a time
+	// field, and skillDelay is a delay-before-drawing — putting the duration in
+	// either one hides or mis-renders the mist client-side.
+	if lastCreated.ElemAttr() != 0 {
+		t.Fatalf("AffectedAreaCreated.ElemAttr: want 0 (not a duration), got %d", lastCreated.ElemAttr())
 	}
-	if lastCreated.Phase() != 80 {
-		t.Fatalf("AffectedAreaCreated.Phase: want 80 (8000ms / 100), got %d", lastCreated.Phase())
+	if lastCreated.SkillDelay() != 0 {
+		t.Fatalf("AffectedAreaCreated.SkillDelay: want 0 (draw immediately), got %d", lastCreated.SkillDelay())
 	}
 	if lastCreated.SkillId() != 2121006 {
 		t.Fatalf("AffectedAreaCreated.SkillId: want 2121006, got %d", lastCreated.SkillId())
@@ -151,41 +153,15 @@ func TestMistCreated_WrongType_DoesNotBroadcast(t *testing.T) {
 	}
 }
 
-// TestMistPhase covers the duration(ms) -> phase(100ms units) conversion
-// performed for the AffectedAreaCreated `phase` field, including the
-// int16-overflow clamp, the sub-100ms truncation floor, and the degenerate
-// zero/negative cases (task-12: phase must carry the real mist lifetime so
-// the client computes the correct expiry instead of `0*100 + now`).
-func TestMistPhase(t *testing.T) {
-	tests := []struct {
-		name       string
-		durationMs int64
-		want       int16
-	}{
-		{name: "normal duration", durationMs: 8000, want: 80},
-		{name: "exact 100ms boundary", durationMs: 100, want: 1},
-		{name: "sub-100ms truncation floors to 1", durationMs: 50, want: 1},
-		{name: "zero duration floors to 1", durationMs: 0, want: 1},
-		{name: "negative duration floors to 1", durationMs: -5000, want: 1},
-		{name: "int16-max duration is exact", durationMs: int64(math.MaxInt16) * 100, want: math.MaxInt16},
-		{name: "overflow clamps to int16 max", durationMs: int64(math.MaxInt16)*100 + 100, want: math.MaxInt16},
-		{name: "large overflow clamps to int16 max", durationMs: 1_000_000_000, want: math.MaxInt16},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := mistPhase(tt.durationMs); got != tt.want {
-				t.Fatalf("mistPhase(%d): want %d, got %d", tt.durationMs, tt.want, got)
-			}
-		})
-	}
-}
-
-// TestMistCreated_PhaseOverflow_ClampsToInt16Max asserts the consumer-level
-// wiring (not just the mistPhase helper in isolation) clamps a duration that
-// would overflow the wire int16 phase field, so a very long mist does not
-// wrap into a negative phase (which would compute a client-side expiry in
-// the past).
-func TestMistCreated_PhaseOverflow_ClampsToInt16Max(t *testing.T) {
+// TestMistCreated_SkillDelayIsNeverDerivedFromDuration is the regression guard
+// for the defect this branch shipped and then fixed: skillDelay was briefly set
+// to Duration/100 on the belief that it was the mist's client-side lifetime.
+// It is not — the client computes tStart = get_update_time() + 100*skillDelay
+// and refuses to DRAW the mist until then (v83 CAffectedAreaPool::Update
+// @0x431214), so a duration-derived skillDelay hides the mist for its entire
+// duration and it is removed at almost the same instant it first appears.
+// skillDelay must stay 0 no matter how long the mist lives.
+func TestMistCreated_SkillDelayIsNeverDerivedFromDuration(t *testing.T) {
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
 	sc := newTestServer(t, tm)
@@ -207,11 +183,11 @@ func TestMistCreated_PhaseOverflow_ClampsToInt16Max(t *testing.T) {
 		},
 	})
 
-	if lastCreated.Phase() != math.MaxInt16 {
-		t.Fatalf("AffectedAreaCreated.Phase: want %d (int16 max, clamped), got %d", int16(math.MaxInt16), lastCreated.Phase())
+	if lastCreated.SkillDelay() != 0 {
+		t.Fatalf("AffectedAreaCreated.SkillDelay: want 0 for any duration (it is a draw delay, not a lifetime), got %d", lastCreated.SkillDelay())
 	}
-	if lastCreated.Phase() < 0 {
-		t.Fatalf("AffectedAreaCreated.Phase must never be negative (would compute a past expiry), got %d", lastCreated.Phase())
+	if lastCreated.ElemAttr() != 0 {
+		t.Fatalf("AffectedAreaCreated.ElemAttr: want 0 for any duration, got %d", lastCreated.ElemAttr())
 	}
 }
 

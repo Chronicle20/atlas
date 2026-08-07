@@ -9,7 +9,6 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
-	"math"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -76,37 +75,31 @@ var affectedAreaRemovedBroadcaster = func(l logrus.FieldLogger, ctx context.Cont
 	}
 }
 
-// mistPhaseUnitMs is the client's unit for the AffectedAreaCreated `phase`
-// field: CAffectedAreaPool::OnAffectedAreaCreated computes the mist's
-// absolute client-side expiry tick as `phase * 100 + get_update_time()`
-// (gms_48 0x421933-0x42193f, gms_61 0x423fbb-0x423fc7, gms_92
-// 0x43936d/0x439383/0x4393c4 — see
-// docs/tasks/task-165-mist-writer-template-wiring/discovery.md). phase is
-// therefore the mist lifetime expressed in units of 100 ms.
-const mistPhaseUnitMs = 100
+// mistSkillDelay is the AffectedAreaCreated `skillDelay` wire value: a
+// delay-before-drawing in units of 100 ms, NOT a lifetime. The client computes
+// AFFECTEDAREA.tStart (+0x14) as `get_update_time() + 100*skillDelay` (v83
+// @0x431b50, v95 @0x437fa3) and CAffectedAreaPool::Update gates the mist's
+// first draw on it — `if (tStart && tCur - tStart >= 0) { FindAndDraw();
+// tStart = 0; }` (v83 @0x431214-0x431238) — so any non-zero value hides the
+// mist for that long before it is ever drawn. Atlas has no per-mist cast delay
+// to express, so it sends 0: draw immediately.
+//
+// The mist's visible lifetime is not carried on this packet at all. The client
+// derives it from its own WZ skill data, and on the mob-skill arms (130/131,
+// v83 @0x4321cb/0x43206d) it does not compute an end tick — removal is driven
+// entirely by the server's AffectedAreaRemoved, which atlas-maps emits when the
+// mist expires.
+const mistSkillDelay = int16(0)
 
-// mistPhase converts a mist duration in milliseconds to the wire `phase`
-// value (units of 100 ms). The field is a signed 16-bit wire value
-// (Decode2/WriteInt16 on every version), so a duration longer than
-// math.MaxInt16*100 (~54.6 minutes) is clamped to math.MaxInt16 rather than
-// overflowing into a negative phase, which would compute a client-side
-// expiry in the past. A positive duration under 100ms would truncate to 0 —
-// which the client itself clamps to 1 (gms_48 0x421945-0x42194a, gms_61
-// 0x423fcd-0x423fd2, gms_92 0x4393c7-0x4393cb) — so it is floored to 1 here
-// instead, to keep that intent explicit in server code rather than relying
-// on client-side clamping. A zero or negative duration is degenerate input;
-// it is likewise floored to 1 so the mist still gets a well-defined
-// (minimal) client-side lifetime instead of an immediate/negative expiry.
-func mistPhase(durationMs int64) int16 {
-	phase := durationMs / mistPhaseUnitMs
-	if phase > math.MaxInt16 {
-		return math.MaxInt16
-	}
-	if phase < 1 {
-		return 1
-	}
-	return int16(phase)
-}
+// mistElemAttr is the AffectedAreaCreated `nElemAttr` wire value (the trailing
+// Decode4, stored raw at AFFECTEDAREA+0x30 — v83 @0x431b3b). It is not a time
+// field. Atlas does not model a mist elemental attribute, so it sends 0.
+const mistElemAttr = int32(0)
+
+// mistPhase is the GMS v92+ `nPhase` wire value (AFFECTEDAREA+0x48, v95
+// @0x437fde). Atlas does not model it; 0 matches the legacy versions, which
+// omit the field entirely.
+const mistPhase = int32(0)
 
 func handleMistCreated(sc server.Model, wp writer.Producer) message.Handler[mist2.Event[mist2.CreatedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e mist2.Event[mist2.CreatedBody]) {
@@ -123,12 +116,12 @@ func handleMistCreated(sc server.Model, wp writer.Producer) message.Handler[mist
 			e.Body.Type,
 			int32(e.Body.SourceSkillId),
 			byte(e.Body.SourceSkillLevel),
-			mistPhase(e.Body.Duration), // phase <- duration (ms) / 100, clamped/floored
+			mistSkillDelay, // draw immediately — this field is not a duration
 			e.Body.OriginX, e.Body.OriginY,
 			e.Body.LtX, e.Body.LtY,
 			e.Body.RbX, e.Body.RbY,
-			0,                      // tStart (server leaves 0)
-			int32(e.Body.Duration), // tEnd <- duration (ms)
+			mistElemAttr,
+			mistPhase,
 		)
 		affectedAreaCreatedBroadcaster(l, ctx, wp, f, body)
 	}

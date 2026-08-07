@@ -176,41 +176,69 @@ All gates are additive and expressed with the `MajorAtLeast` idiom. The Task 1
 and Task 2 byte-fixture tests were re-run: every already-verified version
 (v61/v72/v79/v83/v84/v87/v95/jms185) produces byte-identical output.
 
-## Semantics of the trailing `+0x30` slot — what the disassembly settles
+## Semantics of the trailing `+0x30` slot — SETTLED (corrected 2026-08-07)
 
-The `+0x30` trailing slot on gms_48 is one byte wide. The Atlas model carries
-only the 32-bit value the v61+ clients read into that same slot, so the writer
-emits its low byte to produce the frame length the v48 client consumes.
+> **Correction.** The original version of this section, written from the
+> gms_48/gms_61/gms_92 handlers alone, called `record[+0x14]` an "absolute
+> expiry tick" and left `+0x30` open. Both readings were wrong, and acting on
+> the first one shipped a regression (mists rendered for a fraction of a second
+> and vanished). The record layout below is read from the **gms_v95 PDB-backed
+> IDB**, where `AFFECTEDAREA` is a named 76-byte struct, and re-confirmed
+> against the gms_v83 handler.
 
-**The disassembly does determine one thing positively: `+0x30` is *not* a time
-value on any of these versions.** The client-side expiry tick is computed from
-the **Decode2 `phase`** field, not from `+0x30`. The same three-instruction
-idiom appears in all three handlers:
+```
+AFFECTEDAREA (76 bytes)
+  0x00 dwID        0x04 nType     0x08 dwOwnerID   0x0C nSkillID
+  0x10 nSLV        0x14 tStart    0x18 tEnd        0x1C bEnd
+  0x20 rcArea(16)  0x30 nElemAttr 0x34 nDamage     0x38 bLeftToDraw
+  0x3C nFogState   0x40 apLayer   0x44 posList     0x48 nPhase
+```
+
+**`+0x14` is `tStart`, not an expiry.** The arithmetic in the table below is
+real — `record[+0x14] = Decode2 * 100 + get_update_time()` — but the field it
+writes is the tick at which the mist is first *drawn*, not the tick at which it
+dies. `CAffectedAreaPool::Update` gates the draw on it and then clears it:
+
+| version | instructions |
+|---|---|
+| gms_83 | `0x431214 mov ecx, [eax+14h]` · `0x431220 test/js` (skip while `tCur - tStart < 0`) · `0x431238 call FindAndDraw` · `0x431244 mov [edx+14h], 0` |
+| gms_95 | `0x4369b8 mov eax, [esi+14h]` · `0x4369c7` same gate · `0x4369e3 call FindAndDraw` · `0x4369e8 mov [esi+14h], 0` |
+
+So the Decode2 field is a **delay before drawing**, in units of 100 ms. Sending
+a mist's duration there hides the mist for its entire lifetime. Send 0.
+
+The store into `+0x14` (unchanged from the original reading, retained as
+evidence):
 
 | version | instructions | source operand |
 |---|---|---|
 | gms_48 | `0x421933 mov eax, [ebp+var_38]` · `0x421939 imul eax, 64h` · `0x42193c add eax, [ebp+var_20]` · `0x42193f mov [ecx+14h], eax` | `var_38` = Decode2 @0x4218aa; `var_20` = the call return stored @0x421874 |
 | gms_61 | `0x423fbb mov eax, [ebp+var_3C]` · `0x423fc1 imul eax, 64h` · `0x423fc4 add eax, [ebp+var_20]` · `0x423fc7 mov [ecx+14h], eax` | `var_3C` = Decode2; `var_20` = same call return |
-| gms_92 | `0x43936d imul edi, 64h` · `0x439383 add edi, [esp+84h+var_58]` · `0x4393c4 mov [esi+14h], edi` | `edi` = Decode2 @0x439316 (`movzx edi, ax` @0x439324); `var_58` = `sub_936E80` return @0x4392cb |
+| gms_83 | store @0x431b50 (`v101[5] = a2 + 100*v88`), clamp @0x431b56 | `v88` = Decode2 @0x431ac7; `a2` = `get_update_time()` @0x431a7e |
+| gms_92 | `0x43936d imul edi, 64h` · `0x439383 add edi, [esp+84h+var_58]` · `0x4393c4 mov [esi+14h], edi` | `edi` = Decode2 @0x439316; `var_58` = `sub_936E80` return @0x4392cb |
 
-i.e. `record[+0x14] = phase * 100 + <current update time>` — an absolute expiry
-tick. Note the v61 IDB carries an inline correction on that call site: the
-symbol rendered as `CWvsContext::SetExclRequestSent` there is mislabeled and is
-really `get_update_time()`. (The value is also clamped: `cmp [eax+14h], edi` /
-`mov dword ptr [eax+14h], 1` at v48 0x421945–0x42194a, v61 0x423fcd–0x423fd2,
-v92 0x4393c7–0x4393cb — a zero result is forced to 1.)
+Note the v61 IDB carries an inline correction on that call site: the symbol
+rendered as `CWvsContext::SetExclRequestSent` there is mislabeled and is really
+`get_update_time()`. The clamp (`mov dword ptr [eax+14h], 1` at v48
+0x421945–0x42194a, v61 0x423fcd–0x423fd2, v92 0x4393c7–0x4393cb) only guards
+`tStart == 0`, which is the "already drawn" sentinel — it is not a lifetime floor.
 
-By contrast `+0x30` is stored **raw**, with no arithmetic of any kind, on all
-three versions: v48 `0x421928 mov [eax+30h], ecx`, v61 `0x423fb0 mov
-[eax+30h], ecx`, v92 `0x4393b9 mov [esi+30h], ecx`.
+**`+0x30` is `nElemAttr`.** It is stored raw, with no arithmetic, on every
+version: v48 `0x421928 mov [eax+30h], ecx`, v61 `0x423fb0 mov [eax+30h], ecx`,
+v83 `0x431b3b`, v92 `0x4393b9 mov [esi+30h], ecx`, v95 `0x437fd9`. The original
+section was right that it is not a time value; the v95 struct names it. Atlas
+does not model a mist elemental attribute, so the writer emits 0 (and its low
+byte on v48, whose slot is one byte wide).
 
-**What remains open:** the field's ultimate purpose. Narrowing it to "not a
-time" does not say what it *is*. Settling that requires locating the consumer of
-`CAffectedArea+0x30` in the v48/v61 pool `Update`/`Draw` path and reading how
-the value is compared or branched on there — out of scope for this task and
-deliberately not guessed. The one-byte width on v48 is itself weak corroboration
-that it is a small enumerated/boolean value rather than a counter.
+**Where the mist's real lifetime comes from.** Not this packet. The client
+computes `tEnd` (+0x18) from its own WZ skill data —
+`tEnd = tStart + 1000 * SKILLENTRY::GetLevelData(...)` (v83 @0x43200f, v95
+@0x43822a for the area-buff-item arm) — and on the mob-skill arms (skill 130
+@0x4321cb, skill 131 @0x43206d, v83) it never sets `tEnd` at all. For mob mists
+the client holds the area until the server sends `AffectedAreaRemoved`, which is
+exactly what atlas-maps does when the mist expires. There is therefore no
+duration to carry on the wire, and no version of this packet has a field for one.
 
-This does not change the codec: the writer still emits `byte(m.tEnd)` for the
-v48 slot, which is no worse than the already-verified v61+ baseline that writes
-the same model field into the same slot.
+**The second trailing Decode4 (gms_v92+) is `nPhase`** (+0x48, v95 @0x437fde) —
+a separate field from the Decode2 draw delay, despite the similar name. Atlas
+does not model it; the writer emits 0.

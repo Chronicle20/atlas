@@ -22,7 +22,7 @@ services/atlas-ui/
 ├── index.html                      # Vite entry, loads /src/main.tsx
 ├── vite.config.ts                  # @/ alias, dev proxy, Vitest config
 ├── tsconfig.json                   # Project references to app + node
-├── tsconfig.app.json               # App compilation (src/, excludes __tests__)
+├── tsconfig.app.json               # App compilation (all of src/, incl. __tests__)
 ├── tsconfig.node.json              # vite.config.ts only
 ├── eslint.config.js                # Flat config (js + typescript-eslint + react-hooks + react-refresh)
 ├── Dockerfile                      # Two-stage: node:24-alpine builder → nginx:alpine runtime
@@ -51,7 +51,7 @@ services/atlas-ui/
     ├── services/
     │   ├── api/                    # *.service.ts modules (thin adapters over lib/api/client)
     │   └── errorLogger.ts
-    ├── test/setup.ts               # Vitest global setup (jest-dom matchers + matchMedia stub)
+    ├── test/setup.ts               # Vitest global setup (jest-dom matchers, matchMedia + ResizeObserver stubs)
     └── types/                      # models/, api/, components/
 ```
 
@@ -190,7 +190,9 @@ Deploy surface (four files):
 
 Vitest with `jsdom`, `@testing-library/react`, and global test APIs (`describe`/`it`/`expect`/`vi`). Setup lives in `src/test/setup.ts`. Tests colocated under `__tests__/` directories next to the code they cover.
 
-Most existing test files (61 files) are still Jest-era — they use `jest.fn` / `jest.mock` rather than `vi.*`. They're excluded from `tsc -b` for now; Phase 5 in `docs/TODO.md` → atlas-ui Frontend has the migration backlog.
+The Jest→Vitest migration is complete: `grep -rlE 'jest\.(fn|mock|spyOn)' src` returns zero. Use `vi.*` — never `jest.*`.
+
+Test files are **not** excluded from `tsc -b` (`tsconfig.app.json` includes all of `src` and excludes only `src/lib/api/examples/**`), so `npm run build` type-checks your tests under the same strict flags as production code.
 
 ## Conventions
 
@@ -198,4 +200,8 @@ Most existing test files (61 files) are still Jest-era — they use `jest.fn` / 
 - **No `"use client"`, no `next/*` imports** — both were purged during the migration. `grep -rn "use client" services/atlas-ui/src/` and `grep -rn "from ['\"]next/" services/atlas-ui/src/` both return zero.
 - **`@/` alias** — resolves to `./src` in both Vite and TypeScript. Use it consistently; don't mix with relative paths past one level.
 - **`import.meta.env.VITE_*`** — never `process.env.*`. The Vite build evaluates env at bundle time.
-- **Keep strict TS flags where they're on** — `strict` + `noFallthroughCasesInSwitch`. Several of the home-hub stricter flags (`verbatimModuleSyntax`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noUnusedLocals`, `noUnusedParameters`, `erasableSyntaxOnly`) are off pending a follow-up; don't reintroduce patterns that exploit that.
+- **Strict TS flags are all on.** `tsconfig.app.json` enables `strict`, `noFallthroughCasesInSwitch`, `noImplicitOverride`, `noUncheckedSideEffectImports`, and every one of the home-hub stricter flags: `verbatimModuleSyntax`, `noUncheckedIndexedAccess`, `noUnusedLocals`, `noUnusedParameters`, `erasableSyntaxOnly`, `exactOptionalPropertyTypes`. Two of these bite in ways worth knowing before you write code:
+  - `noUncheckedIndexedAccess` — `arr[0]` is `T | undefined`. Guard it (`arr[0]?.foo`, or assert after an explicit existence check); don't index blindly.
+  - `exactOptionalPropertyTypes` — an `x?: string` property **rejects** an explicitly-passed `x: undefined`. If callers legitimately pass `undefined`, declare `x?: string | undefined`.
+
+  **`npm run test` does not type-check.** Vitest transpiles without checking types, so a branch can pass its entire suite while being uncompilable. `npm run build` (`tsc -b && vite build`) is the type-check, and it covers test files too — run it before claiming a change is done.

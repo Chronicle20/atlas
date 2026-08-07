@@ -882,6 +882,18 @@
         ]
       },
       {
+        "opCode": "0x8F",
+        "writer": "AffectedAreaCreated",
+        "fname": "CAffectedAreaPool::OnAffectedAreaCreated",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x90",
+        "writer": "AffectedAreaRemoved",
+        "fname": "CAffectedAreaPool::OnAffectedAreaRemoved",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0xAF",
         "writer": "SummonSpawn",
         "fname": "CSummonedPool::OnCreated",

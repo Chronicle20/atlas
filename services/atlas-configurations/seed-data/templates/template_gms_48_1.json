@@ -2125,6 +2125,18 @@
         ]
       },
       {
+        "opCode": "0xCA",
+        "writer": "AffectedAreaCreated",
+        "fname": "CAffectedAreaPool::OnAffectedAreaCreated",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xCB",
+        "writer": "AffectedAreaRemoved",
+        "fname": "CAffectedAreaPool::OnAffectedAreaRemoved",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0xED",
         "writer": "RPSGame",
         "fname": "CRPSGameDlg::OnPacket",

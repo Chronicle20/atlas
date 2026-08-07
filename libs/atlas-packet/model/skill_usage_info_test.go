@@ -165,6 +165,67 @@ func TestDecodeBuccaneerTimeLeapReadsPartyBitmap(t *testing.T) {
 	}
 }
 
+// TestDecodeMarksmanSharpEyesReadsPartyBitmap pins the v83 wire layout of a
+// Marksman Sharp Eyes (3221002) skill-use request:
+// updateTime(4) skillId(4) slv(1) bitmap(1) delay(2) — 12 bytes.
+//
+// Client evidence: 3221002 is absent from is_antirepeat_buff_skill on every
+// supported client (gms_v72 @0x877789, gms_v79 @0x8c42bd, gms_v83 @0x96d6ca,
+// gms_v84 @0x9ad4e4, gms_v87 @0x9f20fc, gms_v92 @0x919150, gms_v95 @0x939dc0,
+// jms_v185 @0xa3e223 — each lists 3121000/3121002/3221000 and stops), so no
+// castX/castY is sent. gms_v83 CUserLocal::DoActiveSkill compares against
+// 3221002 at 0x967ff7 and dispatches to loc_969275 with dwTargetFlag = 2 —
+// party bit only — so DoActiveSkill_StatChange @0x969e21 passes nMobCount = -1
+// and CUserLocal::SendSkillUseRequest @0x96d399 emits no mob block either.
+//
+// Regression guard: while 3221002 was in isAntiRepeatBuffSkill the decoder ate
+// 4 phantom castX/castY bytes, the bitmap read ran off the end of the packet
+// and returned 0, and SelectPartyMembersInMap resolved caster-only — Sharp
+// Eyes buffed the Marksman and nobody else. Bowmaster Sharp Eyes (3121002) IS
+// anti-repeat client-side, which is why only Marksmen saw the bug.
+func TestDecodeMarksmanSharpEyesReadsPartyBitmap(t *testing.T) {
+	buf := make([]byte, 0, 12)
+	buf = binary.LittleEndian.AppendUint32(buf, 12345)                             // updateTime
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(skill.MarksmanSharpEyesId)) // skillId
+	buf = append(buf, 30)                                                          // skill level
+	buf = append(buf, 0b010001)                                                    // bitmap: caster + one member
+	buf = binary.LittleEndian.AppendUint16(buf, 600)                               // trailing delay (unread)
+
+	req := request.Request(buf)
+	reader := request.NewRequestReader(&req, 0)
+	m := &SkillUsageInfo{}
+	m.Decode(nil, context.Background())(&reader, nil)
+
+	if m.SkillId() != uint32(skill.MarksmanSharpEyesId) {
+		t.Fatalf("skillId = %d, want %d", m.SkillId(), skill.MarksmanSharpEyesId)
+	}
+	if m.AffectedPartyMemberBitmap() != 0b010001 {
+		t.Fatalf("AffectedPartyMemberBitmap = %#b, want 0b010001 — 3221002 back in isAntiRepeatBuffSkill misaligns the bitmap read", m.AffectedPartyMemberBitmap())
+	}
+	// The non-zero trailing delay is the mob-block canary: if 3221002 is put
+	// back into isMobAffectingBuff the decoder reads 600&0xFF = 88 as a mob
+	// count and manufactures 88 phantom target ids.
+	if len(m.AffectedMobIds()) != 0 {
+		t.Fatalf("AffectedMobIds = %d entries, want 0 — 3221002 wrongly in isMobAffectingBuff consumes the trailing delay as a mob count", len(m.AffectedMobIds()))
+	}
+}
+
+// TestIsAntiRepeatExcludesMarksmanSharpEyesOnly guards the asymmetry directly:
+// the client treats Bowmaster Sharp Eyes as anti-repeat and Marksman Sharp Eyes
+// as not, and a well-meaning "these two should match" edit would reintroduce
+// the bug.
+func TestIsAntiRepeatExcludesMarksmanSharpEyesOnly(t *testing.T) {
+	if !isAntiRepeatBuffSkill(skill.BowmasterSharpEyesId) {
+		t.Fatalf("isAntiRepeatBuffSkill(3121002) = false, want true")
+	}
+	if isAntiRepeatBuffSkill(skill.MarksmanSharpEyesId) {
+		t.Fatalf("isAntiRepeatBuffSkill(3221002) = true, want false — the client never lists 3221002")
+	}
+	if !isPartyBuff(skill.MarksmanSharpEyesId) {
+		t.Fatalf("isPartyBuff(3221002) = false, want true — the bitmap byte IS on the wire")
+	}
+}
+
 func TestSkillUsageInfoDecodeSpiritJavelinItemId(t *testing.T) {
 	const (
 		skillId = uint32(4121006) // NightLordShadowStars

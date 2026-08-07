@@ -288,6 +288,13 @@ that is not available on the wire:
 - [ ] Translated name for FairytaleLandBeanstalkClimb2 (`map/constants.go:1641`)
 - [ ] Define HiddenStreet Nett's Pyramid battle room maps (926010100-926023500) (`map/model.go:434`)
 
+### atlas-packet
+- [ ] **Foreign-CTS shapes that still disagree with the client (non-disease).** Found while sweeping `SecondaryStat::DecodeForRemote` across all ten clients for task-195 / #1196; left alone there because none is a disease and none is reachable today. Evidence in `docs/tasks/task-195-foreign-disease-mobskill/investigation.md` §6.
+  - `ShadowPartner` (v87+) foreign-writes `Short(level) + Short(sourceId)` via `LevelSourceForeignValueWriter`, truncating a 7-digit player skill id into 16 bits. The client reads one `Decode4` reason (`rShadowPartner` in the v95 PDB).
+  - `BanMap` foreign-writes 4 bytes unconditionally, but gms_v48's remote decoder (`sub_5CBA1F`) reads none for that bit.
+  - v95's remote decoder reads a `Decode4` reason for `Mechanic`, `DarkAura`, `BlueAura`, `YellowAura`; the registry has them `NoOp`. Latent only — atlas never originates these stats, so the bits are never set.
+  - gms_v61's remote decoder has no `ReverseInput` branch at all, so a v61 tenant setting `Confuse` would desync. Atlas has no v61 Confuse source today.
+
 ### atlas-object-id
 - [ ] **Silent ID-collision on Redis failure.** `IdAllocator.Allocate` in each consumer (`services/atlas-monsters/atlas.com/monsters/monster/id_allocator.go:38-41`, and the inline equivalents in atlas-reactors and atlas-drops registries) swallows the error from `objectid.Allocator.Allocate` and returns `objectid.MinId` (1,000,000) as a fallback. Effect: during a Redis outage every monster, reactor, or drop spawned across the deployment is assigned the same id (1,000,000) and they collide in the per-tenant `<entity>:{tenantId}:{id}` storage key — only one entity survives in storage even though many were created. The v83 client also crashes on duplicate oids in the same field. Fix: propagate the allocation error all the way up to the spawn caller (Create/CreateAndEmit/etc.) and fail the spawn loudly. Discovered while documenting the shared allocator in task-019.
 
@@ -352,7 +359,9 @@ Deferred items from task-004 (Vite + React Router migration). The migration itse
 
 ### Phase 5 (Jest → Vitest — mechanical migration shipped; follow-ups below)
 
-The mechanical migration landed: `jest.*` → `vi.*`, `next/navigation` + `next/link` mocks swapped for `react-router-dom` equivalents. Follow-up cleanup reports **471 passed / 0 skipped / 0 failed** across 26 test files (Vitest). Tests are excluded from `tsc -b` because test files carry pre-existing semantic type errors that are orthogonal to the migration.
+The mechanical migration landed: `jest.*` → `vi.*`, `next/navigation` + `next/link` mocks swapped for `react-router-dom` equivalents. `grep -rlE 'jest\.(fn|mock|spyOn)' src` now returns zero. The suite stands at **1890 passed / 0 skipped / 0 failed** across 234 test files (Vitest).
+
+Tests are **no longer excluded from `tsc -b`** — `tsconfig.app.json` includes all of `src` and excludes only `src/lib/api/examples/**`, so `npm run build` type-checks test files under the same strict flags as production code. (Corrected 2026-08-07: this paragraph previously claimed the opposite, which misled task-199 into shipping four commits that passed `npm run test` while failing `tsc -b`.)
 
 All previously-skipped tests have been resolved:
 
@@ -363,7 +372,7 @@ All previously-skipped tests have been resolved:
 - [x] ~~`src/components/features/characters/__tests__/CharacterRenderer.test.tsx`~~ — reintroduced `data-testid="character-image"` on the migrated `<img>` markup.
 - Deleted obsolete `accounts.service.test.ts`, `templates.service.test.ts`, `useTemplates.test.tsx`, and `conversations.service.test.ts` — they targeted class-based `BaseService` methods (`validate`, `transformResponse`, etc.) removed in the plain-object rewrite. Current surfaces are covered by the hook tests under `lib/hooks/api/__tests__/`.
 
-Strict `tsconfig.app.json` status — all 7 home-hub strict flags are now on for production code:
+Strict `tsconfig.app.json` status — all 7 home-hub strict flags are now on, for test files as well as production code (see the last item):
 
 - [x] ~~`noImplicitOverride`, `noUncheckedIndexedAccess`, `noUncheckedSideEffectImports`.~~ Done.
 - [x] ~~`verbatimModuleSyntax`.~~ Done — ~30 call sites converted to `import { type X, Y }`.

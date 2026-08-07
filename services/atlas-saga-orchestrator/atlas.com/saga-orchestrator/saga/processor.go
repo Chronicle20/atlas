@@ -31,6 +31,27 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
+// acceptOptions carries optional constraints applied by AcceptEvent after the
+// action/kind gate. Zero value means "no additional constraint".
+type acceptOptions struct {
+	characterId    uint32
+	hasCharacterId bool
+}
+
+// AcceptOption constrains AcceptEvent beyond the action/kind match.
+type AcceptOption func(*acceptOptions)
+
+// ForCharacter constrains acceptance to a step whose payload names this
+// character. A step whose payload carries no character id (ExtractCharacterId
+// returns 0) is left unconstrained, so actions this plan does not touch keep
+// their current behaviour exactly.
+func ForCharacter(id uint32) AcceptOption {
+	return func(o *acceptOptions) {
+		o.characterId = id
+		o.hasCharacterId = true
+	}
+}
+
 // Processor is the interface for saga processing
 type Processor interface {
 	WithCharacterProcessor(character.Processor) Processor
@@ -60,7 +81,7 @@ type Processor interface {
 	// matched against the saga's pending step. Returns the decision (saga +
 	// step) for handler-specific post-processing on success. On any skip
 	// path it debug-logs and returns ok=false.
-	AcceptEvent(transactionId uuid.UUID, kind EventKind) (AcceptDecision, bool)
+	AcceptEvent(transactionId uuid.UUID, kind EventKind, opts ...AcceptOption) (AcceptDecision, bool)
 }
 
 // AcceptDecision is returned by Processor.AcceptEvent on the match path so
@@ -394,7 +415,11 @@ func (p *ProcessorImpl) StepCompletedWithResult(transactionId uuid.UUID, success
 
 // AcceptEvent is the single gate at which a saga-tagged Kafka event is
 // matched against the saga's pending step. See PRD §4 and plan Task 3.
-func (p *ProcessorImpl) AcceptEvent(transactionId uuid.UUID, kind EventKind) (AcceptDecision, bool) {
+func (p *ProcessorImpl) AcceptEvent(transactionId uuid.UUID, kind EventKind, opts ...AcceptOption) (AcceptDecision, bool) {
+	var o acceptOptions
+	for _, opt := range opts {
+		opt(&o)
+	}
 	if transactionId == uuid.Nil {
 		LogSkip(p.l, logrus.Fields{
 			"event_kind": kind,
@@ -436,6 +461,24 @@ func (p *ProcessorImpl) AcceptEvent(transactionId uuid.UUID, kind EventKind) (Ac
 		}, SkipReasonActionMismatch)
 		p.maybeWarnUnmatchedEvent(s, kind)
 		return AcceptDecision{}, false
+	}
+	// Character-id guard (FR-1.3). Runs last, after the action/kind gate, so
+	// a mismatch is reported as its own reason rather than being masked by
+	// action_mismatch. maybeWarnUnmatchedEvent is deliberately NOT called
+	// here: a cross-character map_changed is expected traffic under the
+	// party-quest fan-out, not an anomaly.
+	if o.hasCharacterId {
+		if want := ExtractCharacterId(step); want != 0 && want != o.characterId {
+			LogSkip(p.l, logrus.Fields{
+				"transaction_id":     transactionId.String(),
+				"step_id":            step.StepId(),
+				"step_action":        step.Action(),
+				"event_kind":         kind,
+				"event_character_id": o.characterId,
+				"step_character_id":  want,
+			}, SkipReasonCharacterIdMismatch)
+			return AcceptDecision{}, false
+		}
 	}
 	return AcceptDecision{Saga: s, Step: step}, true
 }

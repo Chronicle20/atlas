@@ -225,7 +225,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
     newTag: main-ae33415
   - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
-    newTag: main-ae33415
+    newTag: main-8a9f703
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
     newTag: main-ae33415
   - name: ghcr.io/chronicle20/atlas-data/atlas-data

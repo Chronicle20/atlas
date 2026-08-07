@@ -496,7 +496,10 @@
         "opCode": "0x40",
         "validator": "LoggedInValidator",
         "handler": "CharacterSkillBookUseHandle",
-        "fname": "CWvsContext::SendSkillLearnItemUseRequest"
+        "fname": "CWvsContext::SendSkillLearnItemUseRequest",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x41",
@@ -1808,7 +1811,10 @@
       {
         "opCode": "0x2B",
         "writer": "CharacterSkillLearnItemResult",
-        "fname": "CWvsContext::OnSkillLearnItemResult"
+        "fname": "CWvsContext::OnSkillLearnItemResult",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x31",

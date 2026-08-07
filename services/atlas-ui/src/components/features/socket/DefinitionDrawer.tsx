@@ -1,6 +1,7 @@
 import type { GridSelection } from "@/components/features/socket/PacketGrid";
 import { OptionsMatrixTable } from "@/components/features/socket/OptionsMatrix";
 import {
+  SHORT_STATE_LABEL,
   STATE_CELL_CLASS,
   STATE_LABEL,
 } from "@/components/features/socket/cell-state";
@@ -117,8 +118,14 @@ interface FieldsGridProps {
  * the Options tab owns) - three columns of information available one click
  * away, crowding out the one thing only this view shows. State is now
  * carried by the card's tint, in the same colours as the grid cell it came
- * from, and the word is kept only as the card's accessible label so it is
- * never colour-only.
+ * from.
+ *
+ * Every card is the same three lines - object, opcode, footnote - whatever
+ * its state, so a row of them scans as a row rather than as cards of two
+ * different heights. A card with no definition leaves the opcode line EMPTY
+ * (there is no opcode to show) and spends its footnote on the state word,
+ * which keeps the state non-colour-only exactly where the defined cards put
+ * their validator.
  */
 function FieldsGrid({ row, objects, kind, baselineKey }: FieldsGridProps) {
   return (
@@ -150,20 +157,19 @@ function FieldsGrid({ row, objects, kind, baselineKey }: FieldsGridProps) {
             <span className="text-muted-foreground block text-[10px] tracking-wide uppercase">
               {o.label}
             </span>
-            <span className="block font-mono text-sm">
-              {state === "defined" ? (
-                opcodes
-              ) : state === "unsupported" ? (
-                <span className="italic">unsupported</span>
-              ) : (
-                <span className="opacity-50">undefined</span>
-              )}
+            {/* Line 2 is the opcode line, and stays reserved when there is no
+                opcode - that empty line is what keeps an Undefined card the
+                same shape as the defined ones beside it. */}
+            <span className="block min-h-5 font-mono text-sm">
+              {state === "defined" ? opcodes : " "}
             </span>
-            {kind === "handler" && validators !== "" && (
-              <span className="text-muted-foreground block truncate text-[11px]">
-                {validators}
-              </span>
-            )}
+            <span className="text-muted-foreground block min-h-4 truncate text-[11px]">
+              {state === "defined"
+                ? kind === "handler"
+                  ? validators
+                  : " "
+                : SHORT_STATE_LABEL[state]}
+            </span>
           </li>
         );
       })}
@@ -328,11 +334,17 @@ export function DefinitionDrawer({
         if (!open) onClose();
       }}
     >
+      {/* `flex flex-col` is load-bearing, not decoration: SheetContent's base
+          class carries a `gap-*` that does nothing on a block container, so
+          before this the header, the action row and the tabs sat flush
+          against each other with no vertical rhythm at all. The min-height
+          stops a short definition (one row of Fields cards) from collapsing
+          the sheet to a band too shallow for its own header. */}
       <SheetContent
         side="bottom"
-        className="max-h-[70vh] gap-3 overflow-y-auto p-4"
+        className="flex max-h-[85vh] min-h-[26rem] flex-col gap-4 overflow-y-auto p-5"
       >
-        <SheetHeader className="pr-8">
+        <SheetHeader className="shrink-0 pr-8">
           <div className="flex flex-wrap items-center gap-2">
             <SheetTitle className="font-mono">{row.name}</SheetTitle>
             <span className="text-muted-foreground rounded-full border px-2 py-0.5 text-xs">
@@ -353,7 +365,7 @@ export function DefinitionDrawer({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
           <Button
             type="button"
             size="sm"

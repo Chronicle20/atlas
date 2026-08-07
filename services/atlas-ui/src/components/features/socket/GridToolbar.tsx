@@ -484,7 +484,7 @@ export function GridToolbar({
         <Input
           type="search"
           aria-label="Search definitions"
-          placeholder="Search name, fname or opcode..."
+          placeholder="Search name, FName or opcode..."
           value={filters.query}
           onChange={(e) =>
             onFiltersChange({ ...filters, query: e.target.value })
@@ -515,7 +515,7 @@ export function GridToolbar({
             checked={showFName}
             onCheckedChange={onShowFNameChange}
           />
-          <Label htmlFor="toolbar-fname">fname</Label>
+          <Label htmlFor="toolbar-fname">FName</Label>
         </div>
 
         {/* Sort, visually fenced off from the filters below. */}

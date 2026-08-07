@@ -328,19 +328,28 @@ export function filterRows(
 
 /**
  * Interleaves a blank row for every opcode inside the baseline's range that
- * NO visualized object binds.
+ * the BASELINE does not bind.
  *
- * The range is the baseline's own [min, max] - the baseline is the version
- * whose opcode table you are reading down, so extending the scan past its
- * last opcode would invent slots that version does not have. The "is it
- * bound?" test, by contrast, is taken across EVERY visualized object: a hole
- * only counts when nothing in view defines it, which is exactly the "no
- * definition exists for this opcode yet" signal.
+ * Both the range and the "is it bound?" test are the baseline's own: the
+ * baseline is the version whose opcode table you are reading down, so a
+ * number it does not use is a hole in THAT table regardless of what any other
+ * column happens to put there. Testing across every visualized object instead
+ * (the earlier behavior) silently swallowed most of the holes the grid exists
+ * to show - with gms_95_1 as the baseline, 0x02 and 0x03 produced no gap row
+ * because gms_12_1 and gms_48_1 bind those numbers for entirely unrelated
+ * definitions, and 0x10/0x11 disappeared from the 0x0F..0x13 run for the same
+ * reason. It also made the matrix disagree with the single-object Tenant and
+ * Template pages, where the two tests coincide.
+ *
+ * A definition some OTHER column binds inside the hole is not lost: it is a
+ * row the baseline lacks, so `sortRows` parks it in the non-baseline tail.
+ * The gap marks the baseline's empty slot; the tail lists what fills it
+ * elsewhere.
  *
  * One opcode namespace, not one per service: a login handler at 0x1D and a
- * channel handler at 0x1D both suppress the 0x1D gap. This under-reports
- * (a login-range hole hidden by a channel handler at the same number stays
- * invisible) and is the deliberate trade for a quieter grid.
+ * channel handler at 0x1D in the same baseline both suppress the 0x1D gap.
+ * This under-reports (a login-range hole hidden by a channel handler at the
+ * same number stays invisible) and is the deliberate trade for a quieter grid.
  *
  * Only meaningful under `sortRows(rows, "opcode", …)`: a gap has no name and
  * no state, so it cannot be placed in a name- or state-ordered list. Callers
@@ -362,23 +371,15 @@ export function withOpcodeGaps(
   if (!baseline) return rows;
 
   const bound = new Set<number>();
-  for (const o of objects) {
-    for (const bindings of entriesOf(o, kind).values()) {
-      for (const b of bindings)
-        if (b.opCodeValue !== null) bound.add(b.opCodeValue);
-    }
-  }
-
-  const baselineValues: number[] = [];
   for (const bindings of entriesOf(baseline, kind).values()) {
     for (const b of bindings) {
-      if (b.opCodeValue !== null) baselineValues.push(b.opCodeValue);
+      if (b.opCodeValue !== null) bound.add(b.opCodeValue);
     }
   }
-  if (baselineValues.length < 2) return rows;
+  if (bound.size < 2) return rows;
 
-  const min = Math.min(...baselineValues);
-  const max = Math.max(...baselineValues);
+  const min = Math.min(...bound);
+  const max = Math.max(...bound);
   const gaps: number[] = [];
   for (let v = min; v <= max; v++) if (!bound.has(v)) gaps.push(v);
   if (gaps.length === 0) return rows;

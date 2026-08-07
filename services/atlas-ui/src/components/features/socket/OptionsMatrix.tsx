@@ -36,6 +36,34 @@ function cellAriaLabel(
 }
 
 /**
+ * A displayable string for one option entry's value.
+ *
+ * `String(value)` was not enough: an option entry is not always a scalar. A
+ * list-shaped `types` table stores an OBJECT per index (`{"Name": "NORMAL",
+ * "Type": "NORMAL"}` - measured directly against the seed templates, e.g.
+ * gms_87_1 CharacterMoveHandle), and every one of those rendered as the
+ * literal "[object Object]", which is the same string for every index and for
+ * every version, so the one thing the Options tab exists to show - WHICH
+ * entry diverges and HOW - was unreadable exactly on the rows that diverge.
+ *
+ * Nested values are rendered as `key: value` pairs (and arrays in brackets),
+ * recursively, rather than as raw JSON: the braces and quotes are pure noise
+ * across eleven narrow columns, and the key order is the object's own, which
+ * is the order the template author wrote.
+ */
+export function formatOptionValue(value: unknown): string {
+  if (value === undefined) return "";
+  if (value === null) return "null";
+  if (typeof value !== "object") return String(value);
+  if (Array.isArray(value)) {
+    return `[${value.map(formatOptionValue).join(", ")}]`;
+  }
+  return Object.entries(value as Record<string, unknown>)
+    .map(([k, v]) => `${k}: ${formatOptionValue(v)}`)
+    .join(", ");
+}
+
+/**
  * A non-baseline cell whose value is "same" renders an equality glyph
  * instead of repeating the value verbatim.
  *
@@ -66,7 +94,7 @@ function cellText(
 ): string {
   if (cell.state === "missing") return "—";
   if (!isBaseline && cell.state === "same") return "=";
-  return String(cell.value);
+  return formatOptionValue(cell.value);
 }
 
 /**
@@ -139,12 +167,16 @@ export function OptionsMatrixTable({
               {objects.map((o) => {
                 const cell = row.cells.get(o.key)!;
                 const isBaseline = o.key === baselineKey;
+                // The tooltip always carries the FULL value, including on a
+                // "=" cell, so the compression never costs you the value.
+                const full = formatOptionValue(cell.value);
                 return (
                   <td
                     key={o.key}
                     aria-label={cellAriaLabel(cell.state, o.label, isBaseline)}
+                    {...(cell.state === "missing" ? {} : { title: full })}
                     className={cn(
-                      "border-b px-2 py-1",
+                      "border-b px-2 py-1 align-top",
                       isBaseline && "bg-muted/40",
                       cell.state === "differs" &&
                         "text-amber-600 dark:text-amber-400",

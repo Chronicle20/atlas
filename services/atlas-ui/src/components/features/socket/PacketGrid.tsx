@@ -98,7 +98,7 @@ export function PacketGrid({
                 aria-colindex={2}
                 className="border-b px-2 py-2 text-sm"
               >
-                fname
+                FName
               </th>
             )}
             {objects.map((o, i) => (

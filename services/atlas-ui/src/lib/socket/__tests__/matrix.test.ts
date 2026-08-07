@@ -591,8 +591,10 @@ describe("hasActiveFilters", () => {
 
 describe("withOpcodeGaps", () => {
   // Baseline "base" binds 0x01, 0x03 and 0x06; "other" binds 0x04 (and 0x09,
-  // outside the baseline's range). So inside [0x01, 0x06] the unbound values
-  // are 0x02 and 0x05 - 0x04 is covered by a sibling and is NOT a gap.
+  // outside the baseline's range). Inside [0x01, 0x06] the values the
+  // BASELINE leaves unbound are 0x02, 0x04 and 0x05 - a sibling binding 0x04
+  // for its own definition (Delta) does not fill the baseline's hole there,
+  // and Delta itself is a non-baseline row that sorts into the tail.
   const base = obj("base", 95, {
     Alpha: [binding("0x01")],
     Gamma: [binding("0x03")],
@@ -611,17 +613,35 @@ describe("withOpcodeGaps", () => {
     direction: "asc" as const,
   };
 
-  it("inserts a blank row only where nothing in view binds the opcode", () => {
+  it("inserts a blank row for every opcode the baseline itself leaves unbound", () => {
     const out = withOpcodeGaps(sortRows(built, "opcode", "asc"), input);
     const gaps = out.filter(isGapRow).map((g) => g.opCodeValue);
-    expect(gaps).toEqual([0x02, 0x05]);
+    expect(gaps).toEqual([0x02, 0x04, 0x05]);
+  });
+
+  // The regression this rule exists for: with gms_95_1 as the baseline, 0x02
+  // and 0x03 were swallowed because gms_12_1/gms_48_1 bind those numbers for
+  // unrelated definitions. A sibling's binding must not fill the baseline's
+  // hole.
+  it("does not let a sibling's binding suppress a hole in the baseline", () => {
+    const out = withOpcodeGaps(sortRows(built, "opcode", "asc"), input);
+    expect(out.filter(isGapRow).map((g) => g.opCodeValue)).toContain(0x04);
   });
 
   it("places each gap at its opcode position, ascending", () => {
     const out = withOpcodeGaps(sortRows(built, "opcode", "asc"), input);
     expect(
       out.map((r) => (isGapRow(r) ? `gap:${r.opCodeValue}` : r.name)),
-    ).toEqual(["Alpha", "gap:2", "Gamma", "gap:5", "Zeta", "Delta", "Outside"]);
+    ).toEqual([
+      "Alpha",
+      "gap:2",
+      "Gamma",
+      "gap:4",
+      "gap:5",
+      "Zeta",
+      "Delta",
+      "Outside",
+    ]);
   });
 
   it("mirrors the placement when the sort direction is descending", () => {
@@ -631,7 +651,16 @@ describe("withOpcodeGaps", () => {
     });
     expect(
       out.map((r) => (isGapRow(r) ? `gap:${r.opCodeValue}` : r.name)),
-    ).toEqual(["Zeta", "gap:5", "Gamma", "gap:2", "Alpha", "Delta", "Outside"]);
+    ).toEqual([
+      "Zeta",
+      "gap:5",
+      "gap:4",
+      "Gamma",
+      "gap:2",
+      "Alpha",
+      "Delta",
+      "Outside",
+    ]);
   });
 
   it("returns the rows untouched when the baseline has fewer than two opcodes", () => {

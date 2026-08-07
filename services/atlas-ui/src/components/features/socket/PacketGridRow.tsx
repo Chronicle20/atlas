@@ -35,14 +35,24 @@ export const PacketGridRow = memo(function PacketGridRow({
       role="row"
       aria-rowindex={rowIndex}
       aria-selected={isSelected}
-      className={cn(isSelected && "bg-accent")}
+      // Hover tint (prototype: `tr.row:hover td`) - a row is ~12 cells wide
+      // and the frozen name column is far from the right-hand ones, so
+      // without it you lose your place tracking one definition across.
+      // Selection wins over hover; the cells' own state tints are
+      // translucent, so both read through them.
+      className={cn("group", isSelected ? "bg-accent" : "hover:bg-muted/50")}
     >
-      {/* The definition name is the ONLY frozen column (FR-2.8). */}
+      {/* The definition name is the ONLY frozen column (FR-2.8). It scrolls
+          over the other cells, so it carries an opaque background of its own
+          and has to repeat the row's tint rather than let it show through. */}
       <th
         scope="row"
         role="rowheader"
         aria-colindex={1}
-        className="bg-background sticky left-0 z-10 border-b border-r px-2 py-1 text-left text-sm font-medium"
+        className={cn(
+          "bg-background sticky left-0 z-10 border-b border-r px-2 py-1 text-left text-sm font-medium",
+          isSelected ? "bg-accent" : "group-hover:bg-muted/50",
+        )}
       >
         <button
           type="button"

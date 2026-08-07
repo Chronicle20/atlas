@@ -187,6 +187,70 @@ describe("DefinitionDrawer", () => {
     expect(within(panel).getByText("STAND")).toBeInTheDocument();
   });
 
+  // Every card is three lines whatever its state, so the row scans as a row:
+  // an object with no definition leaves the opcode line blank and spends the
+  // footnote line - the one a defined card gives its validator - on the state.
+  it("gives a card with no definition a blank opcode line and the state word", () => {
+    renderDrawer("NoOpHandler", "a");
+    const fields = screen.getByRole("tabpanel", { name: /fields/i });
+    const card = within(fields).getByRole("listitem", {
+      name: /GMS v87\.1: Undefined/i,
+    });
+    expect(within(card).getByText("Undefined")).toBeInTheDocument();
+    expect(card).not.toHaveTextContent(/0x/);
+  });
+
+  // Real corpus shape: a list-shaped `types` table stores an OBJECT per index
+  // (gms_87_1 CharacterMoveHandle), which used to render as the literal
+  // "[object Object]" - the same string at every index in every column, so
+  // the one thing this tab exists to show was unreadable on exactly the rows
+  // that diverge.
+  it("renders an object-valued options entry as its key/value pairs", async () => {
+    const structured = [
+      obj("a", 83, {
+        Move: [
+          binding("0x29", {
+            options: { types: [{ Name: "NORMAL", Type: "NORMAL" }] },
+          }),
+        ],
+      }),
+      obj("b", 87, {
+        Move: [
+          binding("0x2A", {
+            options: { types: [{ Name: "JUMP", Type: "JUMP" }] },
+          }),
+        ],
+      }),
+    ];
+    const rows = buildRows({
+      objects: structured,
+      kind: "handler",
+      baselineKey: "a",
+    });
+    render(
+      <DefinitionDrawer
+        row={rows.find((r) => r.name === "Move")!}
+        objects={structured}
+        kind="handler"
+        baselineKey="a"
+        selection={{ name: "Move", scopeKey: "a" }}
+        onClose={vi.fn()}
+        onAction={vi.fn()}
+      />,
+    );
+    await userEvent.click(screen.getByRole("tab", { name: /options/i }));
+    const panel = screen.getByRole("tabpanel", { name: /options/i });
+    expect(
+      within(panel).getByText("Name: NORMAL, Type: NORMAL"),
+    ).toBeInTheDocument();
+    expect(
+      within(panel).getByText("Name: JUMP, Type: JUMP"),
+    ).toBeInTheDocument();
+    expect(
+      within(panel).queryByText(/\[object Object\]/),
+    ).not.toBeInTheDocument();
+  });
+
   it("marks options entries that differ from or are missing against the baseline", async () => {
     renderDrawer("Move", "a");
     await userEvent.click(screen.getByRole("tab", { name: /options/i }));

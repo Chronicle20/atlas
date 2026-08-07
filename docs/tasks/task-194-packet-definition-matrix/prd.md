@@ -572,7 +572,7 @@ back-annotated inline.
 | 9 | Drawer buttons were verbose and ambiguous | **Amends FR-5.2**: visible label is the short verb, accessible name keeps the full `verb in <scope> (opcode)` phrase, and every button carries a behaviour tooltip. Add relabels to "Define here" on an Undefined scope |
 | 10 | "Delete" did not match the grid's vocabulary | Removing the ONLY binding is now "Undefine" (button, dialog title, radio, toast); removing one of several stays "Remove binding" and says what survives |
 | 11 | The Fields tab repeated state, services and options | **Amends FR-5.1**: a card per object carrying opcode + validator, tinted by state (state word kept as the card's accessible label); services and options are their own tabs |
-| 12 | Contiguous opcode ranges hid the slots where no definition exists | `withOpcodeGaps` interleaves a blank row for every opcode inside the BASELINE's [min, max] that NO visualized object binds. Always on when sorted by opcode and no filter is active |
+| 12 | Contiguous opcode ranges hid the slots where no definition exists | `withOpcodeGaps` interleaves a blank row for every opcode inside the BASELINE's [min, max] that the BASELINE does not bind — a sibling column binding that number for its own definition does not fill the baseline's hole (that definition is a non-baseline row and sorts into the tail). Always on when sorted by opcode and no filter is active |
 
 Two decisions of record from this round:
 

@@ -26,3 +26,14 @@ export const STATE_LABEL: Record<DefinitionState, string> = {
   unsupported: "Unsupported (audited)",
   undefined: "Undefined",
 };
+
+/**
+ * The bare state word, for places that state it in a slot too narrow for
+ * STATE_LABEL's parenthetical qualifier - the drawer's Fields cards, where it
+ * occupies the same line a defined card gives its validator.
+ */
+export const SHORT_STATE_LABEL: Record<DefinitionState, string> = {
+  defined: "Defined",
+  unsupported: "Unsupported",
+  undefined: "Undefined",
+};

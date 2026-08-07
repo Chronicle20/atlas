@@ -186,7 +186,7 @@ describe("PacketGrid", () => {
     });
   });
 
-  it("renders an interleaved opcode-gap row as a blank, unclickable row", () => {
+  function renderWithGap() {
     const objects = [a, b];
     const rows = buildRows({ objects, kind: "writer", baselineKey: "a" });
     render(
@@ -199,8 +199,27 @@ describe("PacketGrid", () => {
         onSelect={vi.fn()}
       />,
     );
-    const gap = screen.getByRole("row", { name: /0xE5 — no definition/ });
-    expect(within(gap).queryByRole("button")).not.toBeInTheDocument();
+    return screen.getByRole("row", { name: /0xE5 — no definition/ });
+  }
+
+  it("renders an interleaved opcode-gap row as an unclickable row", () => {
+    expect(
+      within(renderWithGap()).queryByRole("button"),
+    ).not.toBeInTheDocument();
+  });
+
+  // The opcode belongs in the baseline column, not spliced into the name -
+  // that is the column every other row shows its opcode in, so the baseline's
+  // table reads as one column of numbers with visible holes.
+  it("says No Definition in the name column and puts the opcode in the baseline cell", () => {
+    const gap = renderWithGap();
+    expect(
+      within(gap).getByRole("rowheader", { name: "No Definition" }),
+    ).toBeInTheDocument();
+    const cells = within(gap).getAllByRole("gridcell");
+    // objects = [a (baseline), b]; no fname column.
+    expect(cells[0]).toHaveTextContent("0xE5");
+    expect(cells[1]).toHaveTextContent("");
   });
 
   it("renders an empty-state message when there are no rows", () => {

@@ -136,8 +136,8 @@ describe("PacketMatrixPage", () => {
 
   // Both templates bind LoginHandle at 0x01 only, so the handlers view has
   // no range to scan. The writers view does: baseline v95 spans 0x9A-0x9D,
-  // and nothing in view binds 0x9B or 0x9C.
-  it("inserts blank rows for opcodes in the baseline's range that nothing defines", async () => {
+  // and the baseline binds neither 0x9B nor 0x9C.
+  it("inserts blank rows for opcodes the baseline's range leaves unbound", async () => {
     renderPage("/packet-matrix?mode=writers");
     await waitFor(() => expect(screen.getByRole("grid")).toBeInTheDocument());
     expect(screen.getAllByTestId("opcode-gap-row")).toHaveLength(2);

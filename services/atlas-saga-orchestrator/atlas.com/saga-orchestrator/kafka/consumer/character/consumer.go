@@ -70,7 +70,12 @@ func handleCharacterMapChangedEvent(l logrus.FieldLogger, ctx context.Context, e
 		return
 	}
 	p := saga.NewProcessor(l, ctx)
-	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterMapChanged); !ok {
+	// ForCharacter is passed only here. WarpPartyQuestMembersToMap fans N warps
+	// out under one transactionId, so a map_changed's characterId must match
+	// the character named by the current step's payload before it completes
+	// that step (task-184 FR-1.3).
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterMapChanged,
+		saga.ForCharacter(e.CharacterId)); !ok {
 		return
 	}
 	_ = p.StepCompleted(e.TransactionId, true)

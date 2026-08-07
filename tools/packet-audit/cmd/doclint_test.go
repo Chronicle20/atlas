@@ -46,9 +46,9 @@ func TestDocFreshnessDetectsVersionCountDrift(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	mutated := bytes.Replace(orig, []byte("version_count: 9"), []byte("version_count: 5"), 1)
+	mutated := bytes.Replace(orig, []byte("version_count: 10"), []byte("version_count: 5"), 1)
 	if bytes.Equal(mutated, orig) {
-		t.Fatal("fixture setup: 'version_count: 9' not found in PROCESS.md")
+		t.Fatal("fixture setup: 'version_count: 10' not found in PROCESS.md")
 	}
 	dir := t.TempDir()
 	procCopy := filepath.Join(dir, "PROCESS.md")

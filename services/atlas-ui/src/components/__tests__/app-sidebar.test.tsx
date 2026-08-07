@@ -49,6 +49,7 @@ describe("AppSidebar", () => {
     expect(deployment.children.map((c) => c.title)).toEqual([
       "Templates",
       "Tenants",
+      "Packet Matrix",
       "Services",
       "Baselines",
     ]);

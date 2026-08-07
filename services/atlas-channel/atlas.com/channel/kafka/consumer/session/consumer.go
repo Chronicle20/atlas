@@ -42,6 +42,7 @@ import (
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	notepkt "github.com/Chronicle20/atlas/libs/atlas-packet/note"
 	notecb "github.com/Chronicle20/atlas/libs/atlas-packet/note/clientbound"
+	reportcb "github.com/Chronicle20/atlas/libs/atlas-packet/report/clientbound"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -154,6 +155,38 @@ func handlePlayerLoggedIn(sc server.Model, wp writer.Producer) message.Handler[s
 	}
 }
 
+// claimEnableAnnouncer sends the two claim-enable bootstrap packets - the
+// client keeps its CUIClaim window disabled until m_bClaimSvrConnected is
+// set (ClaimSvrStatusChanged) and an availability window arrives
+// (ClaimAvailableTime; 0,0 = always open, a client-side special case, not an
+// operation code - see writer.ClaimAvailableTimeBody).
+//
+// Config presence IS the feature gate, mirroring the reportAnnouncer seam in
+// kafka/consumer/report/consumer.go: a v61 tenant supports sue but not
+// claim, and jms/gms-92 tenants support neither, so those tenants have no
+// ClaimSvrStatusChanged/ClaimAvailableTime writer in their socket-config
+// template. Pre-checking the status writer's lookup before sending anything
+// means those tenants skip both sends (debug log), never surfacing an error
+// on every single login. A tenant that maps the status writer but not the
+// availability writer (an inconsistent template, not the expected on/off
+// pairing) still logs the second failure at error level so it isn't lost
+// silently.
+func claimEnableAnnouncer(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, characterId uint32) {
+	if _, err := wp(reportcb.ClaimSvrStatusChangedWriter); err != nil {
+		l.Debugf("Tenant configuration has no writer [%s] mapped; claim UI stays disabled for character [%d].", reportcb.ClaimSvrStatusChangedWriter, characterId)
+		return
+	}
+	err := session.Announce(l)(ctx)(wp)(reportcb.ClaimSvrStatusChangedWriter)(writer.ClaimSvrStatusChangedBody(true))(s)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to write claim status for character [%d].", characterId)
+		return
+	}
+	err = session.Announce(l)(ctx)(wp)(reportcb.ClaimAvailableTimeWriter)(writer.ClaimAvailableTimeBody(0, 0))(s)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to write claim availability for character [%d].", characterId)
+	}
+}
+
 func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.SetField) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.SetField) model.Operator[session.Model] {
 		sp := session.NewProcessor(l, ctx)
@@ -212,6 +245,9 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}
+					})
+					routine.Go(l, ctx, func(_ context.Context) {
+						claimEnableAnnouncer(l, ctx, wp, s, c.Id())
 					})
 					routine.Go(l, ctx, func(_ context.Context) {
 						g, _ := guild.NewProcessor(l, ctx).GetByMemberId(c.Id())

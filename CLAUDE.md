@@ -49,6 +49,14 @@ For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the b
    arrays — new entries go at their sorted position, never appended next to a
    semantically-related entry. See
    [`docs/packets/TEMPLATE_CONVENTIONS.md`](docs/packets/TEMPLATE_CONVENTIONS.md).
+9a. **`tools/template-duplicate-binding-guard.sh` clean from the repo root**
+    whenever a tenant socket-config template under
+    `services/atlas-configurations/seed-data/templates/` changed. Bans binding
+    the same `(implementation name, numeric opCode)` pair twice — the
+    leading-zero-padding duplicate (`0xB8` and `0x0B8`) that made the dispatch
+    map's last-write-wins behaviour decide which entry's options survive
+    (task-194). A name bound to several *distinct* opcodes is legitimate and
+    untouched.
 10. **`tools/skill-job-id-guard.sh` clean from the repo root.** Bans raw
     `==`/`!=`/`case`/`Is(`/`IsA(` comparisons against the job/skill `…Id` wire
     constants that task-187's multi-boundary audit identified as
@@ -174,7 +182,7 @@ Every task type's leaf step — promoting one packet × version matrix cell to `
 ## Reverse Engineering / IDA
 
 - For IDA Pro lookups, use the `func_query` tool with `name_regex` (the documented method); do not improvise alternate lookup approaches. See the IDA-MCP notes in project memory for the current API.
-- Confirm the IDA instance/version under investigation matches the version you're targeting before reading (use `select_instance(port)` for v83/v87/v95/jms).
+- Confirm the IDA instance/version under investigation matches the version you're targeting before reading. `select_instance(port)` and port-based selection are dead (since task-138); resolve the session from `idb_list` by binary **name** and pass it as the `database` parameter to subsequent calls.
 
 ## Task Workflow
 

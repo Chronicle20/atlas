@@ -276,6 +276,122 @@ JSON:API `links` block: `self`, `first`, `last`, and `prev`/`next` where applica
 
 ---
 
+### GET /reports/
+
+Retrieves all reports for the current tenant. Optionally filtered by status.
+
+#### Parameters
+
+| Name | Location | Type | Required |
+|------|----------|------|----------|
+| status | query | string (`open`\|`reviewed`\|`actioned`) | no |
+
+#### Request Model
+
+None.
+
+#### Response Model
+
+Array of Report resources.
+
+| Field | Type | JSON Key |
+|-------|------|----------|
+| Id | uuid.UUID | (resource id) |
+| Kind | string (`sue`\|`claim`) | kind |
+| ReporterId | uint32 | reporterId |
+| ReporterName | string | reporterName |
+| AccusedId | uint32 | accusedId |
+| AccusedName | string | accusedName |
+| ReasonType | byte | reasonType |
+| Description | string | description |
+| ChatLog | *string | chatLog |
+| ServerTranscript | []TranscriptLine | serverTranscript |
+| Status | string (`open`\|`reviewed`\|`actioned`) | status |
+| CreatedAt | time.Time | createdAt |
+| UpdatedAt | time.Time | updatedAt |
+
+TranscriptLine:
+
+| Field | Type | JSON Key |
+|-------|------|----------|
+| Timestamp | int64 | timestamp |
+| SenderId | uint32 | senderId |
+| SenderName | string | senderName |
+| ChatType | string | chatType |
+| Text | string | text |
+
+Resource type: `reports`
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 200 OK | Reports retrieved |
+| 400 Bad Request | Invalid status parameter |
+| 500 Internal Server Error | Database or transformation error |
+
+---
+
+### GET /reports/{reportId}
+
+Retrieves a report by ID.
+
+#### Parameters
+
+| Name | Location | Type | Required |
+|------|----------|------|----------|
+| reportId | path | uuid.UUID | yes |
+
+#### Request Model
+
+None.
+
+#### Response Model
+
+Single Report resource (see GET /reports/).
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 200 OK | Report retrieved |
+| 400 Bad Request | Invalid report ID |
+| 404 Not Found | Report not found |
+
+---
+
+### PATCH /reports/{reportId}
+
+Updates a report's status (GM triage: open → reviewed → actioned).
+
+#### Parameters
+
+| Name | Location | Type | Required |
+|------|----------|------|----------|
+| reportId | path | uuid.UUID | yes |
+
+#### Request Model
+
+| Field | Type | JSON Key |
+|-------|------|----------|
+| Status | string (`open`\|`reviewed`\|`actioned`) | status |
+
+Resource type: `reports`. The body's `id` (if present) must match the URL's `reportId`.
+
+#### Response Model
+
+Single Report resource (see GET /reports/), reflecting the updated status.
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 200 OK | Status updated |
+| 400 Bad Request | Body `id` does not match URL `reportId`, or invalid status value |
+| 404 Not Found | Report not found |
+
+---
+
 ### GET /history/accounts/{accountId}
 
 Retrieves login history for a specific account.

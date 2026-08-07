@@ -22,8 +22,8 @@ import (
 //	COutPacket::Encode1(esi)          @0x51827e → flag byte.
 //	COutPacket::EncodeStr             (String)  → reason string.
 //
-// v79 is GMS<95 so it uses the legacy int32-charId leading field (the v95
-// sub-command-string form is gated MajorVersion>=95).
+// v79 is GMS<92 so it uses the legacy int32-charId leading field (the v92+
+// sub-command-string form is gated MajorVersion>=92).
 func TestSueCharacterByteOutputV79(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 79, 1)
 	input := NewSueCharacterLegacy(0x01020304, 0x05, "hi")
@@ -43,8 +43,8 @@ func TestSueCharacterByteOutputV79(t *testing.T) {
 //	COutPacket::Encode1         @0x50c2f1 → flag byte.
 //	COutPacket::EncodeStr       @0x50c30e → reason string.
 //
-// v72 is GMS<95 so it uses the legacy int32-charId leading field (the v95
-// sub-command-string form is gated MajorVersion>=95); body == v79 legacy wire.
+// v72 is GMS<92 so it uses the legacy int32-charId leading field (the v92+
+// sub-command-string form is gated MajorVersion>=92); body == v79 legacy wire.
 func TestSueCharacterByteOutputV72(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 72, 1)
 	input := NewSueCharacterLegacy(0x01020304, 0x05, "hi")
@@ -58,9 +58,9 @@ func TestSueCharacterByteOutputV72(t *testing.T) {
 // TestSueCharacterByteOutputV61 pins the gms_v61 SUE_CHARACTER (op 0x68 = 104)
 // serverbound wire. IDA: CField::SendChatMsgSlash#SueCharacter = sub_849F27
 // @0x849f27 (GMS_v61.1_U_DEVM.exe) builds COutPacket(104) + Encode4(accused
-// RemoteUser char id) + Encode1(type) + EncodeStr(reason). v61 is GMS<95 so it
-// uses the legacy int32-charId leading field (the v95 sub-command-string form is
-// gated MajorVersion>=95); body == v72 legacy wire.
+// RemoteUser char id) + Encode1(type) + EncodeStr(reason). v61 is GMS<92 so it
+// uses the legacy int32-charId leading field (the v92+ sub-command-string form is
+// gated MajorVersion>=92); body == v72 legacy wire.
 // packet-audit:verify packet=field/serverbound/FieldSueCharacter version=gms_v61 ida=0x849f27
 func TestSueCharacterByteOutputV61(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 61, 1)
@@ -94,14 +94,33 @@ func TestSueCharacterGoldenV95(t *testing.T) {
 	}
 }
 
+// TestSueCharacterGoldenV92 pins the gms_v92 SUE_CHARACTER wire to the
+// string-leading form (task-30, packet-findings.md §7.4): the send-site @
+// 0x53b7d0 (GMS_v92_1_DEVM.exe, `push 7Dh` = opcode 125) is
+// EncodeStr(target) → Encode1(flag) → EncodeStr(reason), the same shape as
+// v95, not the legacy Encode4(charId) shape v87 and below use. Under the
+// prior (incorrect) `MajorVersion() >= 95` gate this test would fail: v92
+// would fall into the legacy branch and encode `WriteInt(m.characterId)`
+// (four zero bytes, since NewSueCharacterV95 never sets characterId) instead
+// of the "hi" sub-command string pinned below.
+func TestSueCharacterGoldenV92(t *testing.T) {
+	input := NewSueCharacterV95("hi", 0x05, "ho")
+	ctx := pt.CreateContext("GMS", 92, 1)
+	expected := []byte{0x02, 0x00, 0x68, 0x69, 0x05, 0x02, 0x00, 0x68, 0x6f}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v92 golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestSueCharacterRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			var input SueCharacter
-			// Mirror the codec's version branch: string-lead from v95 onward
+			// Mirror the codec's version branch: string-lead from v92 onward
 			// (jms is SUE-absent in practice; its branch choice is moot here).
-			if v.MajorVersion >= 95 {
+			if v.MajorVersion >= 92 {
 				input = NewSueCharacterV95("alice", 0x05, "spamming")
 			} else {
 				input = NewSueCharacterLegacy(0x01020304, 0x05, "spamming")

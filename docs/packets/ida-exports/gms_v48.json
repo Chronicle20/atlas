@@ -503,24 +503,50 @@
       ]
     },
     "CAffectedAreaPool::OnAffectedAreaCreated": {
-      "address": "",
+      "address": "0x421854",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": "dwId @0x421877"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nType @0x421881 - ONE byte on v48 (v61 @0x423edc widens this to Decode4)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwOwnerId @0x42188b"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nSkillID @0x421895 (compared against 130/131/2111003/4221006 in the skill branches @0x421954, 0x421961, 0x421968, 0x421970)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nSLV @0x42189f"
+        },
+        {
+          "op": "Decode2",
+          "comment": "phase @0x4218aa"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "rcArea, 16 bytes @0x4218bd"
+        },
+        {
+          "op": "Decode1",
+          "comment": "trailing +0x30 slot @0x4218c4 - ONE byte on v48 (v61 reads Decode4 into the same slot)"
         }
       ]
     },
     "CAffectedAreaPool::OnAffectedAreaRemoved": {
-      "address": "",
+      "address": "0x421e7f",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": "dwId @0x421e9a"
         }
       ]
     },

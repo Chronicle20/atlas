@@ -1,10 +1,10 @@
 import { TemplateDetailLayout } from "@/components/features/templates/TemplateDetailLayout";
-import { HandlersForm } from "@/pages/templates-handlers-form";
+import { DefinitionGridPage } from "@/components/features/socket/DefinitionGridPage";
 
 export function TemplatesHandlersPage() {
   return (
     <TemplateDetailLayout>
-      <HandlersForm />
+      <DefinitionGridPage kind="handler" scope="template" />
     </TemplateDetailLayout>
   );
 }

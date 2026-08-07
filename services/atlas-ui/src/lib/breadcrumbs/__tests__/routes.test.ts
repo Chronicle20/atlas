@@ -143,6 +143,66 @@ describe("Route Configuration", () => {
       const character = breadcrumbs.find((b) => b.label === "Character");
       expect(character!.nonNavigable).toBe(true);
     });
+
+    // A job crumb must stay static: there is no "job" entity resolver, so
+    // flagging it dynamic made useBreadcrumbs overwrite the resolved job name
+    // with the "Unknown" fallback.
+    it("resolves the job name statically and never marks it dynamic", () => {
+      const breadcrumbs = getBreadcrumbsFromRoute("/jobs/100");
+      const job = breadcrumbs[breadcrumbs.length - 1];
+      expect(job!.label).toBe("Warrior");
+      expect(job!.dynamic).toBe(false);
+      expect(job!.entityType).toBeUndefined();
+    });
+
+    it("marks the reward pool detail crumb as a resolvable entity", () => {
+      const breadcrumbs = getBreadcrumbsFromRoute("/reward-pools/abc-123");
+      const pool = breadcrumbs[breadcrumbs.length - 1];
+      expect(pool!.entityType).toBe("reward-pool");
+      expect(pool!.entityId).toBe("abc-123");
+      expect(pool!.dynamic).toBe(true);
+    });
+
+    it.each([
+      ["/merchants/shop-1", "merchant", "shop-1"],
+      ["/bans/ban-1", "ban", "ban-1"],
+    ])(
+      "marks %s as a resolvable entity crumb",
+      (pathname, entityType, entityId) => {
+        const breadcrumbs = getBreadcrumbsFromRoute(pathname);
+        const detail = breadcrumbs[breadcrumbs.length - 1];
+        expect(detail!.entityType).toBe(entityType);
+        expect(detail!.entityId).toBe(entityId);
+        expect(detail!.dynamic).toBe(true);
+      },
+    );
+
+    it("hangs the reactor detail crumb off the reactor list, not Home", () => {
+      const breadcrumbs = getBreadcrumbsFromRoute("/reactors/42");
+      expect(breadcrumbs.map((b) => b.label)).toEqual([
+        "Home",
+        "Reactors",
+        "Reactor Details",
+      ]);
+    });
+
+    // These pages rendered no breadcrumbs at all because they had no route
+    // config — BreadcrumbBar bails out when findRouteConfig returns null.
+    it.each([
+      ["/merchants", "Merchants"],
+      ["/merchants/shop-1", "Merchant Details"],
+      ["/marketplace", "Marketplace"],
+      ["/rankings", "Rankings"],
+      ["/reactors", "Reactors"],
+      ["/bans", "Bans"],
+      ["/bans/ban-1", "Ban Details"],
+      ["/login-history", "Login History"],
+      ["/packet-matrix", "Packet Matrix"],
+    ])("generates breadcrumbs for %s", (pathname, label) => {
+      const breadcrumbs = getBreadcrumbsFromRoute(pathname);
+      expect(breadcrumbs[0]!.label).toBe("Home");
+      expect(breadcrumbs[breadcrumbs.length - 1]!.label).toBe(label);
+    });
   });
 
   describe("buildHrefFromPattern", () => {
@@ -298,6 +358,35 @@ describe("Route Configuration", () => {
       expect(detail).toBeTruthy();
       expect(detail?.parent).toBe("/jobs");
       expect(detail?.labelResolver?.({ id: "110" })).toBe("Fighter");
+    });
+  });
+
+  describe("Transports routes (task-198)", () => {
+    it("registers /transports and its route detail, so the shell renders a trail instead of nothing", () => {
+      // BreadcrumbBar renders null for a route with no config; an unregistered
+      // page is what forces a page-local back button.
+      expect(findRouteConfig("/transports")?.label).toBe("Transports");
+
+      const detail = findRouteConfig(
+        "/transports/routes/9f1a2b3c-0000-4000-8000-000000000000",
+      );
+      expect(detail).toBeTruthy();
+      expect(detail?.parent).toBe("/transports");
+      expect(detail?.entityType).toBe("transport-route");
+    });
+
+    it("builds a Home / Transports / <route> trail with the id carried for resolution", () => {
+      const crumbs = getBreadcrumbsFromRoute(
+        "/transports/routes/9f1a2b3c-0000-4000-8000-000000000000",
+      );
+
+      expect(crumbs.map((crumb) => crumb.href)).toEqual([
+        "/",
+        "/transports",
+        "/transports/routes/9f1a2b3c-0000-4000-8000-000000000000",
+      ]);
+      expect(crumbs[2]?.entityId).toBe("9f1a2b3c-0000-4000-8000-000000000000");
+      expect(crumbs[2]?.entityType).toBe("transport-route");
     });
   });
 });

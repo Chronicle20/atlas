@@ -1,0 +1,86 @@
+{
+  "service": "atlas-portal-actions + atlas-saga-orchestrator (diff-scoped)",
+  "path": "services/atlas-portal-actions/atlas.com/portal, services/atlas-saga-orchestrator/atlas.com/saga-orchestrator",
+  "date": "2026-08-07",
+  "build": "pass",
+  "testsPassed": null,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "scope": {
+    "type": "diff",
+    "base": "616f20675",
+    "head": "d70cb26b1",
+    "commits": 9
+  },
+  "domains": [
+    {
+      "name": "atlas-portal-actions/dedupe",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "no catch-all file", "status": "pass", "evidence": "dedupe/gate.go is single-purpose (Gate + redisGate + nilGate)"},
+        {"id": "redis-usage", "name": "uses libs/atlas-redis abstraction, not raw keyed go-redis", "status": "pass", "evidence": "dedupe/gate.go:29 atlas.NewLock(); dedupe/gate.go:103 g.lock.AcquireWithTTL(...)"},
+        {"id": "fail-open", "name": "Redis error fails open and is logged", "status": "pass", "evidence": "dedupe/gate.go:104-110 Warn log then return true"},
+        {"id": "multitenancy", "name": "tenant via context, not param", "status": "pass", "evidence": "dedupe/gate.go:98 tenant.MustFromContext(ctx); Key struct has no TenantId field (dedupe/gate.go:37-42)"}
+      ]
+    },
+    {
+      "name": "atlas-portal-actions/action",
+      "type": "support",
+      "checks": [
+        {"id": "multitenancy", "name": "tenant via context", "status": "pass", "evidence": "registry.go:55,64,70,80 tenant.MustFromContext(ctx)"},
+        {"id": "error-handling", "name": "Redis errors logged not swallowed", "status": "fail", "evidence": "registry.go:63-66 AddWithTTL and registry.go:69-76 Get discard errors with `_ =` / silent false-return, no log"}
+      ]
+    },
+    {
+      "name": "atlas-portal-actions/script",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "script/processor.go:50"},
+        {"id": "DOM-13", "name": "no cross-domain logic in handler", "status": "pass", "evidence": "script/consumer.go:99-140"},
+        {"id": "DOM-14", "name": "handlers call processor not provider", "status": "pass", "evidence": "script/consumer.go:109,112 newScriptProcessorFn/.Process"},
+        {"id": "DOM-20", "name": "table-driven tests", "status": "pass", "evidence": "script/consumer_test.go TestHandleEnterCommand_NonMovingOutcomesAllUnlock map+t.Run table"},
+        {"id": "DOM-21", "name": "atlas-constants reuse / no duplication", "status": "pass", "evidence": "script/optable.go:21-26 opClass is a local non-wire classification, no libs/atlas-constants equivalent"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in emit-adjacent tests", "status": "pass", "evidence": "script/executor_test.go newTestExecutor injects fakeSagaProcessor; script/consumer_test.go substitutes newScriptProcessorFn/enableActionsFn/gateFn; no direct AndEmit/message.Emit/producer.Produce in new tests"},
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "script/processor.go:20,40"},
+        {"id": "FILE-06", "name": "no catch-all file", "status": "pass", "evidence": "optable.go single-purpose dispatch/classification table"}
+      ]
+    },
+    {
+      "name": "atlas-saga-orchestrator/saga",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "saga/processor.go:128"},
+        {"id": "DOM-13", "name": "guard logic in processor not consumer", "status": "pass", "evidence": "saga/processor.go:762-779 AcceptEvent character-id guard; kafka/consumer/character/consumer.go:76-83 only supplies ForCharacter option"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in tests", "status": "pass", "evidence": "saga/testmain_test.go:1-13 producertest.InstallNoop() package-wide TestMain; grep for ResetInstance = no hits"},
+        {"id": "mock-sync", "name": "interface change reflected in mock", "status": "pass", "evidence": "saga/mock/processor.go AcceptEventFunc signature updated with opts ...saga.AcceptOption, forwarded"},
+        {"id": "no-panic", "name": "character-id guard degrades safely on unknown payload", "status": "pass", "evidence": "saga/character_extractor.go:81-83 default: return 0 -> unconstrained, not a panic"}
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "finding-1",
+      "severity": "blocking",
+      "category": "error-handling",
+      "file": "services/atlas-portal-actions/atlas.com/portal/action/registry.go",
+      "lines": "63-66, 69-76",
+      "summary": "AddWithTTL and Get silently swallow Redis errors with no logging; combined with this diff removing the eager EnableActions call, a transient Redis write failure at AddWithTTL now produces a silently, permanently stuck client (handleStatusEventFailed's not-found path never unlocks).",
+      "evidence": "kafka/consumer/saga/consumer.go:85-89 treats a legitimate registry-write failure identically to 'not a portal action saga' and returns without calling character.EnableActions"
+    },
+    {
+      "id": "finding-2",
+      "severity": "non-blocking",
+      "category": "error-handling",
+      "file": "services/atlas-portal-actions/atlas.com/portal/action/registry.go",
+      "lines": "54-57",
+      "summary": "Registry.Add has the same silent-swallow shape as Finding 1; pre-existing, unchanged risk profile, but should be fixed alongside Finding 1 for consistency.",
+      "evidence": "registry.go:56 `_ = r.reg.Put(...)`"
+    }
+  ],
+  "blocking": [
+    "Finding 1: action/registry.go AddWithTTL (63-66) and Get (69-76) silently swallow Redis errors — real stuck-player risk now that this diff removes the eager unlock path"
+  ],
+  "nonBlocking": [
+    "Finding 2: action/registry.go Add (54-57) has the same silent-swallow shape, pre-existing"
+  ]
+}

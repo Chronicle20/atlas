@@ -1,9 +1,9 @@
-import { type ColumnDef } from "@tanstack/react-table";
+import { type DataTableColumnDef } from "@/components/data-table-features";
 import type { MonsterData } from "@/types/models/monster";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 
-export const columns: ColumnDef<MonsterData>[] = [
+export const columns: DataTableColumnDef<MonsterData>[] = [
   {
     accessorKey: "id",
     header: "ID",

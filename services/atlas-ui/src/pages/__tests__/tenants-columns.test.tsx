@@ -1,6 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { CellContext, ColumnDef } from "@tanstack/react-table";
+import type { CellContext } from "@tanstack/react-table";
+import type {
+  DataTableColumnDef,
+  DataTableFeatures,
+} from "@/components/data-table-features";
 import { describe, it, expect, vi } from "vitest";
 import { getColumns } from "@/pages/tenants-columns";
 import type { Tenant } from "@/types/models/tenant";
@@ -24,7 +28,9 @@ type ActionsProps = {
 
 function renderActionsCell(props: ActionsProps) {
   const columns = getColumns(props);
-  const actions = columns.find((c: ColumnDef<Tenant>) => c.id === "actions");
+  const actions = columns.find(
+    (c: DataTableColumnDef<Tenant>) => c.id === "actions",
+  );
   if (!actions || typeof actions.cell !== "function") {
     throw new Error("actions column missing");
   }
@@ -37,7 +43,7 @@ function renderActionsCell(props: ActionsProps) {
         (tenant as unknown as Record<string, unknown>)[key],
     },
     column: { id: "actions" },
-  } as unknown as CellContext<Tenant, unknown>;
+  } as unknown as CellContext<DataTableFeatures, Tenant, string>;
 
   const CellComponent = actions.cell;
   const node = CellComponent(ctx) as React.ReactNode;

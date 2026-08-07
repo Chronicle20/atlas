@@ -1,10 +1,12 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { DataTableColumnDef } from "@/components/data-table-features";
 import { DataTable } from "@/components/data-table";
 
 type Row = { id: string; name: string };
-const columns: ColumnDef<Row>[] = [{ accessorKey: "name", header: "Name" }];
+const columns: DataTableColumnDef<Row>[] = [
+  { accessorKey: "name", header: "Name" },
+];
 const data: Row[] = [{ id: "1", name: "Alpha" }];
 
 describe("DataTable refresh button", () => {

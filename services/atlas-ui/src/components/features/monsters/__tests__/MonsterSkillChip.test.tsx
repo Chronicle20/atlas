@@ -73,6 +73,15 @@ async function openTooltip() {
   await user.hover(trigger);
 }
 
+// Radix renders tooltip content twice — the visible copy plus a
+// VisuallyHidden one carrying role="tooltip" for screen readers — so every
+// label matches two nodes. The visible copy is rendered first; the *All
+// queries are what keep these lookups from throwing "Found multiple elements".
+async function findTooltipRow(label: string) {
+  const [labelNode] = await screen.findAllByText(label);
+  return labelNode!.closest("div");
+}
+
 describe("MonsterSkillChip", () => {
   beforeEach(() => {
     getMobSkillDetailMock.mockReset();
@@ -83,16 +92,15 @@ describe("MonsterSkillChip", () => {
     renderChip();
     await openTooltip();
 
-    const durationRow = await screen.findByText("Duration");
-    const row = durationRow.closest("div");
+    const row = await findTooltipRow("Duration");
     await waitFor(() => {
       expect(row).toHaveTextContent("30s");
     });
 
     // Regression guard: the bug this task fixed was rendering the raw
     // unscaled millisecond value with the seconds suffix appended.
-    expect(screen.queryByText(/30,000s/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/30000s/)).not.toBeInTheDocument();
+    expect(screen.queryAllByText(/30,000s/)).toHaveLength(0);
+    expect(screen.queryAllByText(/30000s/)).toHaveLength(0);
   });
 
   it("does not render a Duration row when duration is 0", async () => {
@@ -100,8 +108,8 @@ describe("MonsterSkillChip", () => {
     renderChip();
     await openTooltip();
 
-    await screen.findByText("No derived effect data.");
-    expect(screen.queryByText("Duration")).not.toBeInTheDocument();
+    await screen.findAllByText("No derived effect data.");
+    expect(screen.queryAllByText("Duration")).toHaveLength(0);
   });
 
   it("leaves the Interval row unscaled — interval is a separate WZ field this task does not touch", async () => {
@@ -111,8 +119,7 @@ describe("MonsterSkillChip", () => {
     renderChip();
     await openTooltip();
 
-    const intervalRow = await screen.findByText("Interval");
-    const row = intervalRow.closest("div");
+    const row = await findTooltipRow("Interval");
     await waitFor(() => {
       expect(row).toHaveTextContent("7s");
     });

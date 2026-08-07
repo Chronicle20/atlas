@@ -60,7 +60,7 @@ func TestValidate_AcceptsEverySeedTemplate(t *testing.T) {
 			}
 		}
 	}
-	if total != 2871 {
-		t.Errorf("corpus size = %d entries, want 2871 (2875 upstream less the 4 padded MiniRoom duplicates removed in task-194)", total)
+	if total != 2971 {
+		t.Errorf("corpus size = %d entries, want 2971 (2871 after task-194, plus task-145's 69 gms_v92 bring-up entries and 31 player-report sue/claim bindings)", total)
 	}
 }

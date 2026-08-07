@@ -1,4 +1,4 @@
-import { type ColumnDef } from "@tanstack/react-table";
+import { type DataTableColumnDef } from "@/components/data-table-features";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +20,9 @@ interface ColumnProps {
 
 export const hiddenColumns: string[] = [];
 
-export const getColumns = ({ onView }: ColumnProps): ColumnDef<Report>[] => {
+export const getColumns = ({
+  onView,
+}: ColumnProps): DataTableColumnDef<Report>[] => {
   return [
     {
       accessorKey: "attributes.kind",

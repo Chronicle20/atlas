@@ -3,6 +3,7 @@ package monster
 import (
 	monster2 "atlas-maps/data/map/monster"
 	"atlas-maps/map/character"
+	"atlas-maps/monster"
 	"context"
 	"errors"
 	"math"
@@ -705,6 +706,10 @@ func (m *mockMonsterProcessor) CreateMonster(_ uuid.UUID, f field.Model, monster
 		Fh:        fh,
 		Team:      team,
 	})
+}
+
+func (m *mockMonsterProcessor) GetInMapRect(_ field.Model, _, _, _, _ int16, _ uint32) ([]monster.RestModel, error) {
+	return nil, nil
 }
 
 func (m *mockMonsterProcessor) GetCreatedMonsters() []MockCreatedMonster {

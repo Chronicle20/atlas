@@ -79,42 +79,6 @@ func logoutEventProvider(transactionId uuid.UUID, characterId uint32, field fiel
 	return producer.SingleMessageProvider(key, value)
 }
 
-func changeChannelEventProvider(transactionId uuid.UUID, characterId uint32, oldField field.Model, newField field.Model) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &character2.StatusEvent[character2.ChangeChannelEventLoginBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		WorldId:       newField.WorldId(),
-		Type:          character2.StatusEventTypeChannelChanged,
-		Body: character2.ChangeChannelEventLoginBody{
-			ChannelId:    newField.ChannelId(),
-			OldChannelId: oldField.ChannelId(),
-			MapId:        newField.MapId(),
-			Instance:     newField.Instance(),
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
-func mapChangedEventProvider(transactionId uuid.UUID, characterId uint32, oldField field.Model, newField field.Model, targetPortalId uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &character2.StatusEvent[character2.StatusEventMapChangedBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		WorldId:       newField.WorldId(),
-		Type:          character2.StatusEventTypeMapChanged,
-		Body: character2.StatusEventMapChangedBody{
-			ChannelId:      newField.ChannelId(),
-			OldMapId:       oldField.MapId(),
-			OldInstance:    oldField.Instance(),
-			TargetMapId:    newField.MapId(),
-			TargetInstance: newField.Instance(),
-			TargetPortalId: targetPortalId,
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
 func jobChangedEventProvider(transactionId uuid.UUID, characterId uint32, channel channel.Model, jobId job.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character2.StatusEvent[character2.JobChangedStatusEventBody]{
@@ -274,20 +238,6 @@ func statChangedProvider(transactionId uuid.UUID, channel channel.Model, charact
 			ExclRequestSent: true,
 			Updates:         updates,
 			Values:          values,
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
-func updatedEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, updatedFields map[string]interface{}) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &character2.StatusEvent[character2.StatusEventUpdatedBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		WorldId:       worldId,
-		Type:          character2.StatusEventTypeUpdated,
-		Body: character2.StatusEventUpdatedBody{
-			UpdatedFields: updatedFields,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

@@ -2945,6 +2945,14 @@
   ida:
     address: 9888337
   note: 'v79 sender named CWvsContext::SendActivatePetRequest @0x96e251 (was sub_96E251; named to match the report IDAName + candidatesFromFName, mirroring v83). COutPacket(96); Encode4(updateTime)+Encode2(slot)+Encode1(lead) @0x96e550. v83 SPAWN_PET=0x62=98 (d-2). delta doc serverbound (ida-read).'
+- op: CANCEL_DEBUFF
+  direction: serverbound
+  opcode: 97
+  fname: CWvsContext::CheckTemporaryStatDuration
+  provenance: ida-discovered
+  ida:
+    address: 9874760
+  note: 'Empty body. v79 IDB left the function unnamed (sub_96AD48); renamed during the task-190 pass. Client never assigns m_tLastStatResetRequest here. Corrects a prior n-a assertion (task-190).'
 - op: SKILL_MACRO
   direction: serverbound
   opcode: 108

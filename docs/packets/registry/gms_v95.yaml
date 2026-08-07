@@ -2290,9 +2290,9 @@
 - op: MOVE_PLAYER
   direction: serverbound
   opcode: 44
-  fname: CUserLocal::OnKey
+  fname: CVecCtrlUser::EndUpdateActive
   fname_alts:
-    - CVecCtrlUser::EndUpdateActive
+    - CUserLocal::OnKey
   provenance: csv-import
 - op: CANCEL_CHAIR
   direction: serverbound

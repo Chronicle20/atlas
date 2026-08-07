@@ -1,0 +1,75 @@
+{
+  "service": "atlas-npc-shops",
+  "path": "services/atlas-npc-shops/atlas.com/npc",
+  "date": "2026-08-06",
+  "build": "pass",
+  "testsPassed": 18,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "shops",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "DOM-06",
+          "name": "Processor accepts FieldLogger",
+          "status": "pass",
+          "evidence": "shops/processor.go:70 (l logrus.FieldLogger); shops/token.go:81 buyWithTokens is a method on the same *ProcessorImpl receiver"
+        },
+        {
+          "id": "DOM-20",
+          "name": "Table-driven tests",
+          "status": "pass",
+          "evidence": "shops/token_test.go:46-52 TestPlanTokenSpend tests table; shops/token_test.go:337-346 TestBuyWithTokensRefusals tests table"
+        },
+        {
+          "id": "DOM-21",
+          "name": "No duplication of atlas-constants types",
+          "status": "pass",
+          "evidence": "shops/token.go:12-13 imports atlas-constants/inventory and atlas-constants/item directly; token.go:94,99 call inventory.TypeFromItemId(item.Id(...)); tokenDraw (token.go:19-22) has no atlas-constants equivalent"
+        },
+        {
+          "id": "DOM-24",
+          "name": "Kafka producer stubbed in tests that emit",
+          "status": "pass",
+          "evidence": "shops/token_test.go never calls message.Emit or *AndEmit; mb.Put (kafka/message/message.go:24-33) is pure in-memory, no producer stub required"
+        },
+        {
+          "id": "DOM-26",
+          "name": "Goroutines via routine.Go",
+          "status": "pass",
+          "evidence": "zero bare `go` statements in shops/token.go and shops/token_test.go"
+        },
+        {
+          "id": "error-handling-coherence",
+          "name": "Returned error = infra failure; buffered status event = business refusal",
+          "status": "pass",
+          "evidence": "shops/token.go:87,91,97,102,111,118,123 return mb.Put(...) for refusals; token.go:127-129,131-133 propagate raw err only from p.compP.Request*Item calls, matching processor.go:447-479 pattern"
+        },
+        {
+          "id": "FILE-01",
+          "name": "Processor logic in processor.go or processor_<group>.go",
+          "status": "fail",
+          "evidence": "shops/token.go:81 defines func (p *ProcessorImpl) buyWithTokens(...) in a bare-topic-named file, not processor.go and not processor_<group>.go. Repo precedent for this exact split: services/atlas-mts/atlas.com/mts/listing/processor_custody.go, services/atlas-mts/atlas.com/mts/holding/processor_custody.go, services/atlas-mts/atlas.com/mts/wish/processor_register.go, services/atlas-inventory/atlas.com/inventory/compartment/processor_accommodation.go"
+        },
+        {
+          "id": "FILE-06",
+          "name": "No package-named catch-all file bundling >=2 responsibilities",
+          "status": "pass",
+          "evidence": "token.go bundles a ProcessorImpl method with pure helpers only (FILE-01 violation), not a second table-listed responsibility (no RestModel/requests/Entity/Builder/administrator/provider/state enum)"
+        },
+        {
+          "id": "documentation",
+          "name": "docs/domain.md reflects new token-purchase behaviour",
+          "status": "pass",
+          "evidence": "services/atlas-npc-shops/docs/domain.md:170,191 (diff 31c7a664f..52a878b13) rewritten; grep for 'not implemented'/'TokenItem' across services/atlas-npc-shops returns zero hits on HEAD"
+        }
+      ]
+    }
+  ],
+  "blocking": [
+    "FILE-01: services/atlas-npc-shops/atlas.com/npc/shops/token.go:81 — buyWithTokens is a ProcessorImpl method in a bare-topic-named file; must move to processor.go or be renamed to the processor_<group>.go split convention (e.g. processor_token.go)"
+  ],
+  "nonBlocking": []
+}

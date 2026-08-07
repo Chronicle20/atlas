@@ -63,7 +63,13 @@ func readLevel(l logrus.FieldLogger, skillId uint16, level uint16, name string, 
 		Name:    name,
 	}
 	m.MpCon = uint32(node.GetIntegerWithDefault("mpCon", 0))
-	m.Duration = uint32(node.GetIntegerWithDefault("time", 0))
+	// Why ms: the wz `time` attribute is in seconds; convert here — this is the
+	// ONLY seconds→ms conversion for mob-skill data. Downstream consumers
+	// (atlas-monsters executeDebuff/buildMistCreateBody/executeStatBuff,
+	// atlas-maps mist tick) forward Duration verbatim as milliseconds. Mirrors
+	// skill/reader.go's effect-duration convention (task-054). See
+	// docs/tasks/task-190-disease-duration-cancel-debuff/. (task-190)
+	m.Duration = uint32(node.GetIntegerWithDefault("time", 0)) * 1000
 	m.Hp = uint32(node.GetIntegerWithDefault("hp", 100))
 	m.X = node.GetIntegerWithDefault("x", 0)
 	m.Y = node.GetIntegerWithDefault("y", 0)

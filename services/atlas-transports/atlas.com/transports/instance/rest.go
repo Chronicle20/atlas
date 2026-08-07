@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
@@ -26,6 +27,8 @@ type RouteRestModel struct {
 	TravelDuration        time.Duration `json:"travelDuration"`
 	BoardingWindowSeconds uint32        `json:"boardingWindowSeconds"`
 	TravelDurationSeconds uint32        `json:"travelDurationSeconds"`
+	EffectItemIds         []item.Id     `json:"effectItemIds"`
+	ForcedReturnMapId     _map.Id       `json:"forcedReturnMapId"`
 }
 
 func (r RouteRestModel) GetID() string {
@@ -57,6 +60,8 @@ func TransformRoute(m RouteModel) (RouteRestModel, error) {
 		TravelDuration:        m.TravelDuration(),
 		BoardingWindowSeconds: uint32(m.BoardingWindow().Seconds()),
 		TravelDurationSeconds: uint32(m.TravelDuration().Seconds()),
+		EffectItemIds:         m.EffectItemIds(),
+		ForcedReturnMapId:     m.ForcedReturnMapId(),
 	}, nil
 }
 

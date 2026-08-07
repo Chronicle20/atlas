@@ -7,6 +7,7 @@ import (
 	"atlas-channel/character/skill"
 	skill2 "atlas-channel/data/skill"
 	"atlas-channel/data/skill/effect"
+	"atlas-channel/data/skill/effect/statup"
 	"atlas-channel/drop"
 	"atlas-channel/effective_stats"
 	_map "atlas-channel/map"
@@ -635,6 +636,68 @@ func drainTryHeal(
 	}
 }
 
+// beaconApplyDeps groups the emit closures beaconTryApply needs so tests can
+// record ordering without Kafka. Mirrors the damageInfoEntryDeps pattern.
+type beaconApplyDeps struct {
+	monsterExists func(monsterId uint32) bool
+	cancelByTypes func(types []string) error
+	applyNoExpiry func(sourceId int32, level byte, mobId int32) error
+}
+
+// beaconTargetMonsterId picks the beacon lock target: the LAST damage entry
+// whose monster id is nonzero and still exists in the field registry. WZ has
+// no mobCount for 5211006/5220011 (single-target), so multiple entries only
+// occur on malformed packets; last-valid-wins matches Cosmic's per-monster
+// loop order (design.md §5.2).
+func beaconTargetMonsterId(monsterIds []uint32, exists func(uint32) bool) (uint32, bool) {
+	var target uint32
+	found := false
+	for _, id := range monsterIds {
+		if id == 0 || !exists(id) {
+			continue
+		}
+		target = id
+		found = true
+	}
+	return target, found
+}
+
+// beaconTryApply handles Homing Beacon (5211006) / Bullseye (5220011): on a
+// valid strike it emits CANCEL_BY_TYPES(HOMING_BEACON) then a no-expiry APPLY
+// whose statup amount is the struck monster's object id. Both commands share
+// the character-keyed buff command topic, so ordering is guaranteed and the
+// old lock (either skill id) is always cleared first (FR-1.4). A whiff emits
+// nothing (FR-1.5). Failures are logged and swallowed — the attack pipeline
+// (damage, projectile, broadcast) is already complete and must not be
+// affected (FR-1.6). skill.OutlawHomingBeaconId (5211006) and
+// skill.CorsairBullseyeId (5220011) are NOT in the task-187
+// divergences.csv (checked: no job/skill row for wireId 5211006 or
+// 5220011), so a raw comparison here is not banned by
+// tools/skill-job-id-guard.sh.
+func beaconTryApply(l logrus.FieldLogger, ai packetmodel.AttackInfo, skillLevel byte, f field.Model, characterId uint32, deps beaconApplyDeps) {
+	sid := skill3.Id(ai.SkillId())
+	if sid != skill3.OutlawHomingBeaconId && sid != skill3.CorsairBullseyeId {
+		return
+	}
+
+	ids := make([]uint32, 0, len(ai.DamageInfo()))
+	for _, di := range ai.DamageInfo() {
+		ids = append(ids, di.MonsterId())
+	}
+	mobId, ok := beaconTargetMonsterId(ids, deps.monsterExists)
+	if !ok {
+		return
+	}
+
+	if err := deps.cancelByTypes([]string{string(charconst.TemporaryStatTypeHomingBeacon)}); err != nil {
+		l.WithError(err).Errorf("Beacon: unable to cancel prior HOMING_BEACON for character [%d]; skipping apply.", characterId)
+		return
+	}
+	if err := deps.applyNoExpiry(int32(ai.SkillId()), skillLevel, int32(mobId)); err != nil {
+		l.WithError(err).Errorf("Beacon: unable to apply HOMING_BEACON (mob [%d]) for character [%d].", mobId, characterId)
+	}
+}
+
 func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
@@ -903,7 +966,22 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// TODO apply Bandit Steal
 					// TODO Fire Demon ice weaken
 					// TODO Ice Demon fire weaken
-					// TODO Homing Beacon / Bullseye
+					if ai.AttackType() == packetmodel.AttackTypeRanged && ai.SkillId() > 0 {
+						bp := buff.NewProcessor(l, ctx)
+						beaconTryApply(l, ai, sk.Level(), s.Field(), s.CharacterId(), beaconApplyDeps{
+							monsterExists: func(monsterId uint32) bool {
+								_, gErr := mp.GetById(monsterId)
+								return gErr == nil
+							},
+							cancelByTypes: func(types []string) error {
+								return bp.CancelByTypes(s.Field(), s.CharacterId(), types)
+							},
+							applyNoExpiry: func(sourceId int32, level byte, mobId int32) error {
+								return bp.ApplyNoExpiry(s.Field(), s.CharacterId(), sourceId, level,
+									[]statup.Model{statup.NewModel(string(charconst.TemporaryStatTypeHomingBeacon), mobId)})(s.CharacterId())
+							},
+						})
+					}
 					// TODO Flame Thrower
 					// TODO Snow Charge
 					// TODO Hamstring

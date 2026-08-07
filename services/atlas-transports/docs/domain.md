@@ -100,6 +100,8 @@ Represents an instance-based transport route configuration.
 | boardingWindow | time.Duration | Duration boarding is open for each instance |
 | travelDuration | time.Duration | Duration of transit |
 | transitMessage | string | Message displayed during transit |
+| effectItemIds | []item.Id | Consumable item ids applied on boarding and cancelled on every terminal path. Empty = none |
+| forcedReturnMapId | map.Id | Map to warp to when the travel timer expires, instead of destinationMapId. Zero = not set |
 
 ### TransportInstance (instance/model.go)
 

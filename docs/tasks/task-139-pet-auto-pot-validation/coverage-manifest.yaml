@@ -79,12 +79,31 @@ versions:
   - gms_v83
   - gms_v84
   - gms_v87
+  # Added post-merge. gms_v92 was a declared exclusion for most of this
+  # branch's life (design §3.6: "partial bring-up template carrying no pet
+  # handlers at all"). Merging main invalidated that premise — main added a
+  # PetItemUseHandle entry at opCode 0xC8 — and because the socket handler
+  # fails closed on an unconfigured skillGate, the merged combination rejected
+  # every v92 auto-pot with `skill_gate_unconfigured`. gms_92 therefore now
+  # carries options.skillGate ("equipAbility", IDA-verified on the v92 IDB:
+  # CUserLocal::TryConsumePetHP 0x8f3700 / TryConsumePetMP 0x8f3a20 fuse the
+  # secured CPet+356/+364 and +368/+376 worn-equip pairs, neither consulting
+  # usPetSkill) plus the petSkill writer table.
+  #
+  # Scope note, stated plainly: this branch WIRES v92 but does not VERIFY its
+  # matrix cells. PET_AUTO_POT x gms_v92 is `partial` and
+  # CashItemUsePetSkill x gms_v92 is `incomplete` — both were already in that
+  # state on main-tip, and this branch's v92 change is config-only (template
+  # options), not a codec change, so neither cell regressed. Promoting them
+  # needs a byte-fixture /verify-packet pass, which this branch does not do.
+  - gms_v92
   - gms_v95
   - jms_v185
 
 fields:
   - "pet/serverbound/PetItemUse: leading petId u64 gated (GMS && MajorAtLeast(61)) || JMS==Region(); absent (decodes as 0) on gms_v48 only. Body order buffSkill(bool)+updateTime(u32)+source(i16)+itemId(u32) is unconditional and byte-identical on every version."
   - "model/asset Asset.encodePetCashItemInfo: remainLife (Encode4) gated GMS>=72||JMS; trailing attribute (Encode2) gated GMS>=79||JMS. gms_v48/v61 write neither trailer field; gms_v72 writes remainLife only; gms_v79+ and jms write both."
+  - "model/asset resolvePetSkillWireMask — usPetSkill wire-bit provenance, stated exactly so the evidence standard is not overstated. The field itself IS present on every version: GW_ItemSlotPet::RawDecode reads usPetSkill into the secured pair +81/+85 (immediately after petAttribute +73/+77) on v48 @0x49c77e and v92 @0x4f0820, both confirmed this pass, consistent with the already-cited v61/v72/v79/v83 addresses. The BIT VALUE is a different matter: autoSpeaking=0x100 is IDA-verified on gms_v83 ONLY (CPet::AutoSpeakingByEvent @0x70761f, design §3.5) and is applied family-wide to every GMS template — gms_48/61/72/79/84/87/92/95 all carry it on that single v83 verification, NOT on per-version evidence. Direct v48/v92 verification was attempted and FAILED to resolve: neither IDB has a named AutoSpeakingByEvent, and the CPet consumers inspected (CPet::Init, the closeness/fullness refresh, the petAttribute apply, and v48 CPet::ParseCommand) read +59/+63, +67/+69 and +73/+77 but never +81/+85. That is INCONCLUSIVE, not negative: a control test proved insn_query's op_any does not match displacements (it returned 0 against two known-positive sites), so the search for a consumer was invalid rather than empty. Blast radius if the extrapolation is wrong is confined to a mis-set auto-speaking flag — per design §1.1 GMS auto-pot gates on worn-equip ability bits and never reads usPetSkill, so no gating or security behaviour depends on this bit."
   - "cash/serverbound/CashItemUsePetSkill: single 8-byte pet locker SN, no update_time in this arm (already consumed once in the shared SendConsumeCashItemUseRequest header). jms_v185 only — sender does not exist pre-v87 (task-8 finding)."
   - "RESOLVED (this pass, full IDA sweep of all 8 GMS versions — see docs/tasks/task-139-pet-auto-pot-validation/cash-item-use-pet-skill-coverage.md for the complete per-version evidence table): the type-28 switch arm of CWvsContext::SendConsumeCashItemUseRequest is n-a on every GMS version, but for THREE distinct reasons, not one uniform 'no case' claim. (1) gms_v72/v79/v83/v84/v87: the compiler-generated default-case comment at the switch's range check explicitly lists 28 among the default values — no case-28 arm exists at all (v83 @0xa0a6e0 and v87 @0xa9ffa8 confirm the final-review's original partial finding at the same addresses; v72/v79/v84 are new sweep results). (2) gms_v48/v61: case 28 IS uniquely dispatched, but it is a DIFFERENT feature, not pet-skill: v48's arm (@0x7103aa) encodes Encode1+6xEncodeStr, a multi-line broadcast-message shape matching the already-verified cash/serverbound/CashItemUseMegaphone struct (evidently a different megaphone price tier reusing the same case-number band); v61's arm (@0x834a4e) is a 5-instruction event-map-range gate (sub_832700, checks field+252 against [910000000,910000022]) that writes zero packet bytes and jumps straight to the shared cleanup. Neither references a pet object; v48's separate cash-SLOT dispatcher (SendCashSlotItemUseRequest @0x719901, the structural analog for locker-SN items) also has no pet-skill-teach arm among its types 8/9/11. (3) gms_v95: case 28 IS uniquely dispatched ($LN2090_1 @0x9f06be) but its entire body is ZArray<unsigned char>::RemoveAll() (discarding the already-encoded common header) + a ZXString destructor + a jump straight into the function's own epilogue — no Encode call of any kind, no SendPacket reachable from it; selecting a type-28 item on v95 sends nothing on the wire at all. All 8 GMS cells were recorded n-a via docs/packets/audits/<version>/_unimplemented.json entries (packet: cash/serverbound/CashItemUsePetSkill) — NOT via feature-na-evidence.yaml, which only governs RowOp family-consistency and has no effect on RowSubStruct grading (verified directly from tools/packet-audit/internal/matrix/{build,grade}.go: gradeSubStructCell checks in.Unimplemented[vk][pkt], never feature-na-evidence). jms_v185 remains verified, unchanged. `packet-audit matrix --check`/`fname-doc --check`/`operations --check` all exit 0 after regeneration."
 

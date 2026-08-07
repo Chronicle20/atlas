@@ -2329,6 +2329,7 @@ git commit -m "feat(atlas-channel): validate pet auto-pot (ownership, spawn, ali
 - Modify: `services/atlas-configurations/seed-data/templates/template_gms_95_1.json`
 - Modify: `services/atlas-configurations/seed-data/templates/template_jms_185_1.json`
 - Not modified (documented exclusion, design §3.6): `template_gms_12_1.json` / `template_gms_92_1.json` (partial bring-up templates, no pet handlers at all).
+  - **Correction (post-merge):** `template_gms_92_1.json` IS now modified. Merging main added a `PetItemUseHandle` entry to it (opCode `0xC8`), invalidating the exclusion premise and leaving the fail-closed gate rejecting every v92 auto-pot. It now carries `options.skillGate: "equipAbility"` (IDA-verified on the v92 IDB) and the `petSkill` writer table on `CharacterInventoryChange` `0x1E` / `SetField` `0x8C`. See the correction note in design §3.6. `template_gms_12_1.json` remains genuinely unmodified.
 
 **Interfaces:**
 - Consumes: handler option key `skillGate` (Task 12), writer options property `petSkill` (Task 3).

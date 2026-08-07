@@ -303,6 +303,23 @@ Per-version seed template updates (`services/atlas-configurations/seed-data/temp
   A missing entry is not benign: §3.2 fails closed, so a template left unedited turns **every** auto-pot on that version into a rejection. The three legacy templates are the whole reason this section changed after the rebase.
 - ~~Fix gms_95_1 validators~~ — already fixed on main (§1.5).
 - Excluded, deliberately: `template_gms_12_1.json` / `template_gms_92_1.json` (partial bring-up templates carrying no pet handlers at all — 24 and 43 handler entries respectively, none of them `Pet*`). This is the DOM "config table → all version templates" rule satisfied by evidence, not by skipping.
+
+  > **Correction (post-merge, main → branch).** The gms_92 half of this
+  > exclusion is **no longer true**. Merging main brought a new
+  > `PetItemUseHandle` entry into `template_gms_92_1.json` (opCode `0xC8`,
+  > `fname: CWvsContext::SendStatChangeItemUseRequestByPetQ`), invalidating the
+  > "no pet handlers at all" premise the exclusion rested on. Because §3.2
+  > fails closed, the combination would have rejected **every** v92 auto-pot
+  > with `skill_gate_unconfigured`. gms_92 is therefore now **in scope** and
+  > carries `options.skillGate: "equipAbility"` plus the `petSkill` writer
+  > table (see the new §3.6 bullet below). gms_12 remains correctly excluded —
+  > it still routes no pet handler.
+  >
+  > The v92 gate value was IDA-verified rather than inferred from the family:
+  > `CUserLocal::TryConsumePetHP` (`0x8f3700`) fuses the secured `CPet+356/+364`
+  > pair and `TryConsumePetMP` (`0x8f3a20`) `+368/+376` — the same worn-equip
+  > `dwPetAbilityFlag` tears §1.1 records for v79/v83/v84/v87. Neither consults
+  > `usPetSkill`. Both functions were named in the v92 IDB during that pass.
 - Add the `petSkill` writer code table for the pet-item-encoding writers (sparse per §3.5) in every template that carries those writers.
 - Editing any template means `tools/template-opcode-order-guard.sh` must pass (new CLAUDE.md gate item 9) — options are added to existing entries here, so ordering is untouched, but the guard still runs.
 

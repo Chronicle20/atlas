@@ -1,7 +1,7 @@
 {
   "toolSha": "f6a37e5f0741b73e8f633e075e08a84dd758ea4c411e5d25aed661d3235d1c1b",
   "exportHashes": {
-    "gms_v48": "df753626f920bed9304e89b410862899f8ef128bd0e5d537fd38975f05c30939",
+    "gms_v48": "bcbf14a0688fe3e13fec8cc2ab70de167711a07da70a4dc26d050f8b5bd48f67",
     "gms_v61": "33ad6a973a263634662db6eadfa168fe0570b2e4e36efb14b16684094ef7743d",
     "gms_v72": "3da9a19ea63c26de47ec400d2bb5628afad08cf68813713c86e2cdd93a3ea6d3",
     "gms_v79": "1ebfcd5aaf9bb7e523a6bf72d81bdae6b96044f683f4a462f554e8858740d0d8",
@@ -28276,6 +28276,54 @@
     },
     {
       "kind": "op",
+      "op": "SPAWN_MIST",
+      "packet": "field/clientbound/FieldAffectedAreaCreated",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CAffectedAreaPool::OnAffectedAreaCreated"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 202
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 210
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 243
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 251
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 273
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 280
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 290
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 328
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 294
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "DESTROY_HIRED_MERCHANT",
       "direction": "clientbound",
       "tier1": false,
@@ -28369,6 +28417,54 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 232
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "REMOVE_MIST",
+      "packet": "field/clientbound/FieldAffectedAreaRemoved",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CAffectedAreaPool::OnAffectedAreaRemoved"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 203
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 211
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 244
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 252
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 274
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 281
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 291
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 329
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 295
         }
       }
     },
@@ -29224,54 +29320,6 @@
     },
     {
       "kind": "op",
-      "op": "SPAWN_MIST",
-      "packet": "field/clientbound/FieldAffectedAreaCreated",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CAffectedAreaPool::OnAffectedAreaCreated"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "verified",
-          "opcode": 210
-        },
-        "gms_v72": {
-          "state": "verified",
-          "opcode": 243
-        },
-        "gms_v79": {
-          "state": "verified",
-          "opcode": 251
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 273
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 280
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 290
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 328
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 294
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "UNNAMED_R357",
       "direction": "serverbound",
       "tier1": false,
@@ -29316,54 +29364,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 221
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "REMOVE_MIST",
-      "packet": "field/clientbound/FieldAffectedAreaRemoved",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CAffectedAreaPool::OnAffectedAreaRemoved"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "verified",
-          "opcode": 211
-        },
-        "gms_v72": {
-          "state": "verified",
-          "opcode": 244
-        },
-        "gms_v79": {
-          "state": "verified",
-          "opcode": 252
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 274
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 281
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 291
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 329
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 295
         }
       }
     },

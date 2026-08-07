@@ -13,13 +13,31 @@ import (
 
 const AffectedAreaCreatedWriter = "AffectedAreaCreated"
 
+// trailing time-slot width for the +0x30 field of the client's affected-area
+// record. See the version gates in AffectedAreaCreated.Encode.
+type trailingWidth int
+
+const (
+	trailingWidthWide trailingWidth = iota
+	trailingWidthByte
+	trailingWidthNone
+)
+
 // AffectedAreaCreated is the clientbound packet that announces a new
 // affected-area (mist) on the field. The wire body follows the client read-order
 // in CAffectedAreaPool::OnAffectedAreaCreated:
 //
 //	Decode4 dwId, Decode4 nType, Decode4 dwOwnerId, Decode4 nSkillID,
 //	Decode1 nSLV, Decode2 phase, DecodeBuf(16) rcArea (4×int32 absolute RECT),
-//	[Decode4 tStart — v95 GMS only], Decode4 tEnd.
+//	[Decode4 tStart — GMS v92+], Decode4 tEnd.
+//
+// Legacy GMS divergences (task-165 Tier B, read from disassembly):
+//
+//	gms_v12 @0x4166f5: dwId(4), nType(1), nSkillID(4), nSLV(1), phase(2),
+//	                   rcArea(16) — no dwOwnerId, no trailing time word.
+//	gms_v48 @0x421854: dwId(4), nType(1), dwOwnerId(4), nSkillID(4), nSLV(1),
+//	                   phase(2), rcArea(16), trailing(1).
+//	gms_v92 @0x4392a0: identical to gms_v95 (two trailing Decode4s).
 //
 // dwId is a uint32 derived from the mist UUID via uuid.UUID.ID() — Atlas uses
 // UUIDs internally for mist identity but the protocol carries a 32-bit object id
@@ -88,13 +106,37 @@ func (m AffectedAreaCreated) String() string {
 func (m AffectedAreaCreated) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
-	// tStart was inserted between rcArea and tEnd in v95 (GMS). v83/v87/JMS185
-	// do not carry it.
-	v95Plus := t.Region() == "GMS" && t.MajorVersion() >= 95
+	// The extra leading time word (written here as tStart) was inserted between
+	// rcArea and the legacy trailing time field between v87 and v92 (GMS).
+	// GMS v92 CAffectedAreaPool::OnAffectedAreaCreated @0x4392a0 reads two
+	// trailing Decode4s (stored at +0x30 and +0x48); v61 @0x423edc and v83 read
+	// exactly one (the +0x30 slot). v83/v84/v87/JMS185 do not carry it.
+	twoTimeWords := t.IsRegion("GMS") && t.MajorAtLeast(92)
+	// nType widened from Decode1 to Decode4 between v48 and v61 (GMS).
+	// v12 @0x4166f5 and v48 @0x421854 read Decode1; v61 @0x423edc reads Decode4.
+	wideNType := !t.IsRegion("GMS") || t.MajorAtLeast(61)
+	// dwOwnerId does not exist before v48 (GMS). v12 @0x4166f5 reads
+	// dwId, nType(1), nSkillID(4), nSLV(1) — the 3rd read is compared against the
+	// mist skill ids 130/131/2111003 @0x4167cc, proving it is nSkillID, not an owner.
+	hasOwnerId := !t.IsRegion("GMS") || t.MajorAtLeast(48)
+	// The trailing time slot (+0x30) is absent on v12 and is a single byte on
+	// v48 (@0x4218c4 Decode1) before widening to Decode4 at v61.
+	trailing := trailingWidthWide
+	if t.IsRegion("GMS") && !t.MajorAtLeast(48) {
+		trailing = trailingWidthNone
+	} else if t.IsRegion("GMS") && !t.MajorAtLeast(61) {
+		trailing = trailingWidthByte
+	}
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(mistKey(m.mistId)) // dwId
-		w.WriteInt32(m.nType)
-		w.WriteInt(m.ownerId) // dwOwnerId
+		if wideNType {
+			w.WriteInt32(m.nType)
+		} else {
+			w.WriteByte(byte(m.nType))
+		}
+		if hasOwnerId {
+			w.WriteInt(m.ownerId) // dwOwnerId
+		}
 		w.WriteInt32(m.skillId)
 		w.WriteByte(m.skillLevel)
 		w.WriteInt16(m.phase)
@@ -103,10 +145,19 @@ func (m AffectedAreaCreated) Encode(l logrus.FieldLogger, ctx context.Context) f
 		w.WriteInt32(int32(m.originY + m.ltY))
 		w.WriteInt32(int32(m.originX + m.rbX))
 		w.WriteInt32(int32(m.originY + m.rbY))
-		if v95Plus {
+		if twoTimeWords {
 			w.WriteInt32(m.tStart)
 		}
-		w.WriteInt32(m.tEnd)
+		switch trailing {
+		case trailingWidthWide:
+			w.WriteInt32(m.tEnd)
+		case trailingWidthByte:
+			// v48 narrows the +0x30 slot to one byte; the model carries only the
+			// 32-bit value, so the low byte is emitted to keep the frame length
+			// the client expects.
+			w.WriteByte(byte(m.tEnd))
+		case trailingWidthNone:
+		}
 		return w.Bytes()
 	}
 }

@@ -6,7 +6,7 @@
 
 Tool: `f6a37e5f0741b73e8f633e075e08a84dd758ea4c411e5d25aed661d3235d1c1b`
 
-- export gms_v48: `df753626f920bed9304e89b410862899f8ef128bd0e5d537fd38975f05c30939`
+- export gms_v48: `bcbf14a0688fe3e13fec8cc2ab70de167711a07da70a4dc26d050f8b5bd48f67`
 - export gms_v61: `33ad6a973a263634662db6eadfa168fe0570b2e4e36efb14b16684094ef7743d`
 - export gms_v72: `3da9a19ea63c26de47ec400d2bb5628afad08cf68813713c86e2cdd93a3ea6d3`
 - export gms_v79: `1ebfcd5aaf9bb7e523a6bf72d81bdae6b96044f683f4a462f554e8858740d0d8`
@@ -331,8 +331,10 @@ Tool: `f6a37e5f0741b73e8f633e075e08a84dd758ea4c411e5d25aed661d3235d1c1b`
 | KOREAN_EVENT | CUserLocal::OnOpenClassCompetitionPage |  |  | ⬜ |  | ⬜ | 0x0C9 | ❌ | 0x0CD | ❌ | 0x0DB | ❌ | 0x0DF | ❌ | 0x0E8 | ❌ | 0x0FA | ❌ | 0x0E3 | ❌ |
 | LOCK_UI | CUserLocal::OnSetDirectionMode; CUserLocal::SetDirectionMode; sub_A2CD83 | ui/clientbound/Lock |  | ⬜ |  | ⬜ | 0x0CA | ❌ | 0x0CE | ❌ | 0x0DD | ❌ | 0x0E2 | ❌ | 0x0EB | ❌ | 0x0FD | ✅ | 0x0E7 | ❌ |
 | SPAWN_HIRED_MERCHANT | CEmployeePool::OnEmployeeEnterField |  |  | ⬜ | 0x0CA | ✅ | 0x0EB | ✅ | 0x0F3 | ✅ | 0x109 | ✅ | 0x110 | ✅ | 0x11A | ✅ | 0x13F | ✅ | 0x11E | ✅ |
+| SPAWN_MIST | CAffectedAreaPool::OnAffectedAreaCreated | field/clientbound/FieldAffectedAreaCreated (T1) | 0x0CA | ✅ | 0x0D2 | ✅ | 0x0F3 | ✅ | 0x0FB | ✅ | 0x111 | ✅ | 0x118 | ✅ | 0x122 | ✅ | 0x148 | ✅ | 0x126 | ✅ |
 | DESTROY_HIRED_MERCHANT | CEmployeePool::OnEmployeeLeaveField |  |  | ⬜ | 0x0CB | ✅ | 0x0EC | ✅ | 0x0F4 | ✅ | 0x10A | ✅ | 0x111 | ✅ | 0x11B | ✅ | 0x140 | ✅ | 0x11F | ✅ |
 | DISABLE_UI | CUserLocal::OnSetStandAloneMode; sub_86C50E | ui/clientbound/Disable |  | ⬜ |  | ⬜ | 0x0CB | ❌ | 0x0CF | 🟡ᵈ | 0x0DE | ✅ | 0x0E3 | ✅ | 0x0EC | ✅ | 0x0FE | ✅ | 0x0E8 | ✅ |
+| REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x0CB | ✅ | 0x0D3 | ✅ | 0x0F4 | ✅ | 0x0FC | ✅ | 0x112 | ✅ | 0x119 | ✅ | 0x123 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
 | SPAWN_GUIDE | CUserLocal::OnHireTutor; sub_86C65C |  |  | ⬜ |  | ⬜ | 0x0CC | ❌ | 0x0D0 | ❌ | 0x0DF | ❌ | 0x0E4 | ❌ | 0x0ED | ❌ | 0x0FF | ❌ | 0x0E9 | ❌ |
 | UPDATE_HIRED_MERCHANT | CEmployeePool::OnEmployeeMiniRoomBalloon |  |  | ⬜ | 0x0CC | ✅ | 0x0ED | ✅ | 0x0F5 | ✅ | 0x10B | ✅ | 0x112 | ✅ | 0x11C | ✅ | 0x141 | ✅ | 0x120 | ✅ |
 | DROP_ITEM_FROM_MAPOBJECT | CDropPool::OnDropEnterField | drop/clientbound/DropSpawn |  | ⬜ | 0x0CD | 🟡ᵈ | 0x0EE | 🟡ᵈ | 0x0F6 | 🟡ᵈ | 0x10C | ✅ | 0x113 | ✅ | 0x11D | ✅ | 0x142 | ✅ | 0x121 | ✅ |
@@ -343,8 +345,6 @@ Tool: `f6a37e5f0741b73e8f633e075e08a84dd758ea4c411e5d25aed661d3235d1c1b`
 | TALK_GUIDE | CUserLocal::OnTutorMsg | npc/clientbound/NpcGuideTalkIdx (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D1 | ✅ | 0x0E0 | ✅ | 0x0E5 | ✅ | 0x0EE | ✅ | 0x100 | ✅ | 0x0EA | ✅ |
 | MESO_BAG_MESSAGE | CUserLocal::OnRandomMesobag_Succeeded |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D2 | ❌ |  | ⬜ | 0x0DD | ❌ | 0x0EE | ❌ |  | ⬜ |
 | SHOW_COMBO | CUserLocal::OnIncComboResponse |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D2 | ❌ | 0x0E1 | ❌ | 0x0E6 | ❌ | 0x0EF | ❌ | 0x101 | ❌ | 0x0EB | ❌ |
-| SPAWN_MIST | CAffectedAreaPool::OnAffectedAreaCreated | field/clientbound/FieldAffectedAreaCreated (T1) |  | ⬜ | 0x0D2 | ✅ | 0x0F3 | ✅ | 0x0FB | ✅ | 0x111 | ✅ | 0x118 | ✅ | 0x122 | ✅ | 0x148 | ✅ | 0x126 | ✅ |
-| REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) |  | ⬜ | 0x0D3 | ✅ | 0x0F4 | ✅ | 0x0FC | ✅ | 0x112 | ✅ | 0x119 | ✅ | 0x123 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
 | IDA_0X0D4 | CUser::OnEmotion | character/clientbound/CharacterExpression (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D4 | ✅ |
 | SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor (T1) |  | ⬜ | 0x0D4 | ✅ | 0x0F5 | ✅ | 0x0FD | ✅ | 0x113 | ✅ | 0x11A | ✅ | 0x124 | ✅ | 0x14A | ✅ | 0x128 | ✅ |
 | REMOVE_DOOR | CTownPortalPool::OnTownPortalRemoved | door/clientbound/RemoveDoor |  | ⬜ | 0x0D5 | 🟡ᵈ | 0x0F6 | 🟡ᵈ | 0x0FE | 🟡ᵈ | 0x114 | ✅ | 0x11B | ✅ | 0x125 | ✅ | 0x14B | ✅ | 0x129 | ✅ |
@@ -998,7 +998,7 @@ Tool: `f6a37e5f0741b73e8f633e075e08a84dd758ea4c411e5d25aed661d3235d1c1b`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 180 | 0 | 2 | 156 | 625 | 0 | 53.3% |
+| v48 | 182 | 0 | 2 | 156 | 623 | 0 | 53.5% |
 | v61 | 257 | 0 | 59 | 189 | 458 | 0 | 50.9% |
 | v72 | 267 | 0 | 72 | 208 | 416 | 0 | 48.8% |
 | v79 | 311 | 0 | 71 | 204 | 377 | 0 | 53.1% |

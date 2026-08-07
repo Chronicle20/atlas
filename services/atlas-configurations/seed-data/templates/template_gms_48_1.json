@@ -1705,6 +1705,16 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0xCA",
+        "writer": "AffectedAreaCreated",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xCB",
+        "writer": "AffectedAreaRemoved",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0xED",
         "writer": "RPSGame",
         "services": ["channel"],

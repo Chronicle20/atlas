@@ -701,6 +701,16 @@
         }
       },
       {
+        "opCode": "0x8F",
+        "writer": "AffectedAreaCreated",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x90",
+        "writer": "AffectedAreaRemoved",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0xAF",
         "writer": "SummonSpawn",
         "services": ["channel"]

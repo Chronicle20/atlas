@@ -1563,6 +1563,16 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x140",
+        "writer": "AffectedAreaCreated",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x141",
+        "writer": "AffectedAreaRemoved",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x16D",
         "writer": "CharacterInteraction",
         "services": ["channel"],

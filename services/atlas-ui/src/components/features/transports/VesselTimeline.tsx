@@ -16,7 +16,11 @@ import type { TripSchedule } from "@/types/models/transport";
 export interface TimelineLane {
   label: string;
   trips: TripSchedule[];
-  /** The route being viewed, drawn with more weight than its partner. */
+  /**
+   * The route being viewed. Its caption is weighted and its partner's bars are
+   * held back — the two lanes stay the same size either way, so bar height
+   * never competes with duration for meaning.
+   */
   emphasised?: boolean;
 }
 
@@ -28,6 +32,14 @@ interface VesselTimelineProps {
 
 const WIDTH = 720;
 const LANE_HEIGHT = 34;
+/**
+ * Inset of a trip's bars inside their rail. One value for every lane: bar
+ * height is read as duration on a strip whose whole point is comparing two
+ * routes' trips against each other, so it must not double as an emphasis
+ * channel — a shorter partner bar reads as a shorter trip. Emphasis is the
+ * lane caption's weight and the partner's segment opacity instead.
+ */
+const SEGMENT_INSET = 6;
 const LANE_GAP = 12;
 /** Room above each lane rail for its route-name caption. */
 const LANE_LABEL_HEIGHT = 15;
@@ -191,7 +203,9 @@ export function VesselTimeline({ lanes, nowEpochMs }: VesselTimelineProps) {
                       y={y}
                       nowMs={nowMs}
                       halfWindowMs={halfWindowMs}
-                      emphasised={lane.emphasised ?? false}
+                      // Only meaningful against a partner: a lone lane is
+                      // never dimmed, whether or not the caller marked it.
+                      dimmed={lanes.length > 1 && !lane.emphasised}
                     />
                   ))
                 )}
@@ -325,13 +339,14 @@ function TripSegments({
   y,
   nowMs,
   halfWindowMs,
-  emphasised,
+  dimmed,
 }: {
   trip: TripSchedule;
   y: number;
   nowMs: number;
   halfWindowMs: number;
-  emphasised: boolean;
+  /** Held back behind the emphasised lane; never changes the bar's geometry. */
+  dimmed: boolean;
 }) {
   const { boardingOpen, boardingClosed, departure, arrival } = trip.attributes;
 
@@ -353,8 +368,8 @@ function TripSegments({
     },
   ];
 
-  const laneY = emphasised ? y + 4 : y + 10;
-  const laneHeight = emphasised ? LANE_HEIGHT - 8 : LANE_HEIGHT - 20;
+  const laneY = y + SEGMENT_INSET;
+  const laneHeight = LANE_HEIGHT - SEGMENT_INSET * 2;
 
   return (
     <>
@@ -370,6 +385,10 @@ function TripSegments({
             width={(span.right - span.left) * WIDTH}
             height={laneHeight}
             rx={2}
+            // An SVG attribute rather than a utility class: the legend's
+            // swatches are matched against this element's class list, and a
+            // per-lane opacity class would desynchronise them.
+            opacity={dimmed ? 0.65 : undefined}
             className={SEGMENT_STYLE[part.kind].className}
           >
             <title>

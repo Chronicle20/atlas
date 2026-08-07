@@ -11,8 +11,12 @@ interface MapFlowRailProps {
 }
 
 interface Stop {
-  mapId: number;
-  /** Uppercase role caption under the stop — "start", "en route 2", … */
+  /**
+   * The maps this stop covers. More than one only for the en-route stop, whose
+   * maps are parallel variants of the same leg — never a sequence.
+   */
+  mapIds: number[];
+  /** Uppercase role caption under the stop — "start", "en route", … */
   role: string;
   enRoute: boolean;
 }
@@ -24,7 +28,18 @@ interface Leg {
 
 /**
  * The ordered chain of maps a character traverses:
- * start → staging → en-route… → destination.
+ * start → staging → en route → destination.
+ *
+ * The en-route stop is ONE stop even when `enRouteMapIds` holds several maps.
+ * Those maps are parallel variants of the same ride, not successive legs, and
+ * the service is unambiguous about it: departure warps everyone in staging into
+ * `enRouteMapIds[0]` and nothing ever moves them onward through the rest
+ * (`transport/processor.go` — `InTransit` branch), while arrival drains every
+ * en-route map straight to the destination (`AwaitingReturn` branch). Drawing
+ * them as a chain claimed a character rides map 1, then map 2, then arrives —
+ * a trip that does not happen. So the entry map sits on the rail and its
+ * siblings hang beneath it off a brace, which is what "same leg, other map"
+ * looks like.
  *
  * Drawn as a transit rail: each stop is a node (a dot, the map, and its role in
  * the chain) and each leg is a stretched connector captioned with the mechanism
@@ -34,15 +49,16 @@ interface Leg {
  *
  * A single hidden `role="img"` element carries the whole rail's accessible
  * name and sequence summary, so assistive tech gets one labelled figure
- * rather than one per connector. When the route is in transit, that same
- * name appends which stops are currently being traversed — "where the
- * vessel currently is" must survive without colour, and the per-leg
- * highlight is otherwise conveyed only by the connector's colour and weight.
- * The connectors themselves are decorative (`aria-hidden`) because each leg's
- * identity is already conveyed by its visible caption text, not by the
- * connector's colour or dash pattern alone; the stop badges stay ordinary HTML
- * so MapCell's link and copyable tooltip remain reachable — wrapping them in
- * role="img" would hide them from AT.
+ * rather than one per connector. That name spells out the parallel maps as
+ * parallel, names which one a departure lands in, and — when the route is in
+ * transit — which stops are currently being traversed: "where the vessel
+ * currently is" must survive without colour, and the per-leg highlight is
+ * otherwise conveyed only by the connector's colour and weight. The connectors
+ * themselves are decorative (`aria-hidden`) because each leg's identity is
+ * already conveyed by its visible caption text, not by the connector's colour
+ * or dash pattern alone; the stop badges stay ordinary HTML so MapCell's link
+ * and copyable tooltip remain reachable — wrapping them in role="img" would
+ * hide them from AT.
  */
 export function MapFlowRail({ route, tenant }: MapFlowRailProps) {
   const {
@@ -55,25 +71,22 @@ export function MapFlowRail({ route, tenant }: MapFlowRailProps) {
   } = route.attributes;
 
   const stops: Stop[] = [
-    { mapId: startMapId, role: "start", enRoute: false },
-    { mapId: stagingMapId, role: "staging", enRoute: false },
-    ...enRouteMapIds.map((mapId, index) => ({
-      mapId,
-      role: enRouteMapIds.length > 1 ? `en route ${index + 1}` : "en route",
-      enRoute: true,
-    })),
-    { mapId: destinationMapId, role: "destination", enRoute: false },
+    { mapIds: [startMapId], role: "start", enRoute: false },
+    { mapIds: [stagingMapId], role: "staging", enRoute: false },
+    ...(enRouteMapIds.length > 0
+      ? [{ mapIds: enRouteMapIds, role: "en route", enRoute: true }]
+      : []),
+    { mapIds: [destinationMapId], role: "destination", enRoute: false },
   ];
 
   // One leg between each adjacent pair of stops. The caption names the
   // mechanism that moves a character across it. Position in the chain, not
   // just the adjacent stops' en-route flags, decides the caption: the first
   // leg (start→staging) is always "walk in", the last leg (→destination) is
-  // always "warp on arrival" — even when there's no en-route stop between
-  // staging and the destination, i.e. `enRouteMapIds` is empty and the last
-  // leg's neighbours are both non-en-route. Every leg in between is a
-  // "warp on departure" that carries the character onto or through the
-  // en-route chain.
+  // always "warp on arrival". Between them there is at most one leg — the
+  // departure warp into the en-route stop — and it exists only when the route
+  // has en-route maps at all; a route with none collapses to walk-in and
+  // arrival, whose neighbours are both non-en-route.
   const legs: Leg[] = stops.slice(1).map((stop, index) => {
     const previous = stops[index]!;
     const isFirstLeg = index === 0;
@@ -93,12 +106,22 @@ export function MapFlowRail({ route, tenant }: MapFlowRailProps) {
   const inTransit = state === "in_transit";
 
   const sequenceSummary = stops
-    .map((stop, index) =>
-      index < legs.length
-        ? `${stop.mapId} (${legs[index]!.caption})`
-        : `${stop.mapId}`,
-    )
+    .map((stop, index) => {
+      const maps =
+        stop.mapIds.length > 1
+          ? `${stop.mapIds[0]} in parallel with ${stop.mapIds.slice(1).join(", ")}`
+          : `${stop.mapIds[0]}`;
+      return index < legs.length ? `${maps} (${legs[index]!.caption})` : maps;
+    })
     .join(" then ");
+
+  // The parallel maps are one leg with several rooms, and which room a
+  // departure lands in is carried visually by a single "entry" sub-caption on
+  // one badge. Spelling it out is the accessible channel for that.
+  const parallelClause =
+    enRouteMapIds.length > 1
+      ? ` En route runs across ${enRouteMapIds.length} parallel maps: a departure lands in ${enRouteMapIds[0]}, and on arrival every one of them is cleared to the destination.`
+      : "";
 
   // "Where the vessel currently is" must be discoverable without colour —
   // the only other signal for the active leg is the connector's colour and
@@ -113,13 +136,13 @@ export function MapFlowRail({ route, tenant }: MapFlowRailProps) {
     <div className="space-y-3">
       <span
         role="img"
-        aria-label={`Map flow for ${name}: ${sequenceSummary}${transitClause}`}
+        aria-label={`Map flow for ${name}: ${sequenceSummary}${transitClause}.${parallelClause}`}
         className="sr-only"
       />
       <div className="overflow-x-auto pb-1">
         <div className="flex w-full min-w-[640px] items-start">
           {stops.map((stop, index) => (
-            <Fragment key={`${stop.mapId}-${index}`}>
+            <Fragment key={`${stop.role}-${index}`}>
               <RailStop
                 stop={stop}
                 tenant={tenant}
@@ -148,6 +171,9 @@ function RailStop({
   tenant: Tenant | null;
   active: boolean;
 }) {
+  const [entryMapId, ...siblingMapIds] = stop.mapIds;
+  const parallel = siblingMapIds.length > 0;
+
   return (
     <div className="flex shrink-0 flex-col items-center gap-1.5 px-1.5 text-center">
       <span
@@ -160,10 +186,44 @@ function RailStop({
             : "border-muted-foreground bg-card",
         )}
       />
-      <MapCell mapId={String(stop.mapId)} tenant={tenant} />
+      {/*
+        The entry map stays on the rail line so the connectors either side of
+        this stop keep meeting a dot, exactly as the single-map stops do.
+      */}
+      <MapCell mapId={String(entryMapId)} tenant={tenant} />
       <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
-        {stop.role}
+        {parallel ? `${stop.role} · entry` : stop.role}
       </span>
+
+      {parallel ? (
+        <div data-parallel-maps="" className="flex flex-col items-center">
+          {/*
+            A stub of the same dashed rule the en-route connectors use, hanging
+            off the rail — the siblings branch from this stop rather than
+            following it.
+          */}
+          <span
+            aria-hidden="true"
+            className={cn(
+              "h-3 border-l-2 border-dashed",
+              active ? "border-primary" : "border-border",
+            )}
+          />
+          <div
+            className={cn(
+              "flex flex-col items-center gap-1.5 rounded-md border border-dashed px-2 py-1.5",
+              active ? "border-primary" : "border-border",
+            )}
+          >
+            {siblingMapIds.map((mapId) => (
+              <MapCell key={mapId} mapId={String(mapId)} tenant={tenant} />
+            ))}
+            <span className="max-w-[9rem] font-mono text-[10px] uppercase leading-tight tracking-[0.1em] text-muted-foreground">
+              also en route
+            </span>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

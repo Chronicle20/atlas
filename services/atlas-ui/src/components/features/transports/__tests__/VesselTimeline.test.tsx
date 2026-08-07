@@ -81,6 +81,59 @@ describe("VesselTimeline", () => {
     expect(container.querySelector("svg [data-lane-label]")).not.toBeNull();
   });
 
+  it("draws both lanes of a shared vessel at the same size", () => {
+    // Bar height is read as duration on a strip whose whole point is comparing
+    // the two sides of one vessel against each other. Using it as the emphasis
+    // channel made the partner's trips look like shorter trips.
+    const { container } = render(
+      <VesselTimeline
+        lanes={[
+          { label: "Orbis to Ellinia", trips: outbound, emphasised: true },
+          { label: "Ellinia to Orbis", trips: inbound },
+        ]}
+        nowEpochMs={nowEpochMs}
+      />,
+    );
+
+    const heights = Array.from(
+      container.querySelectorAll("[data-segment]"),
+    ).map((node) => node.getAttribute("height"));
+
+    expect(new Set(heights).size).toBe(1);
+  });
+
+  it("holds the partner lane back with opacity, never with geometry", () => {
+    const { container } = render(
+      <VesselTimeline
+        lanes={[
+          { label: "Orbis to Ellinia", trips: outbound, emphasised: true },
+          { label: "Ellinia to Orbis", trips: inbound },
+        ]}
+        nowEpochMs={nowEpochMs}
+      />,
+    );
+
+    const opacities = Array.from(
+      container.querySelectorAll("[data-segment]"),
+    ).map((node) => node.getAttribute("opacity"));
+
+    expect(opacities).toContain(null);
+    expect(opacities.some((value) => value !== null)).toBe(true);
+  });
+
+  it("never dims a lone lane, emphasised or not", () => {
+    const { container } = render(
+      <VesselTimeline
+        lanes={[{ label: "Orbis to Ellinia", trips: outbound }]}
+        nowEpochMs={nowEpochMs}
+      />,
+    );
+
+    for (const node of container.querySelectorAll("[data-segment]")) {
+      expect(node.getAttribute("opacity")).toBeNull();
+    }
+  });
+
   it("gives every legend key the colour it stands for", () => {
     // Phase is encoded in the strip *only* by colour, so a key that names the
     // phase without showing its swatch explains nothing.

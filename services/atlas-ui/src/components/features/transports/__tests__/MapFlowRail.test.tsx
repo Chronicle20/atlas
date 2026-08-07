@@ -58,9 +58,53 @@ describe("MapFlowRail", () => {
 
     expect(screen.getByText("start")).toBeInTheDocument();
     expect(screen.getByText("staging")).toBeInTheDocument();
-    expect(screen.getByText("en route 1")).toBeInTheDocument();
-    expect(screen.getByText("en route 2")).toBeInTheDocument();
+    expect(screen.getByText("en route · entry")).toBeInTheDocument();
     expect(screen.getByText("destination")).toBeInTheDocument();
+  });
+
+  it("draws several en-route maps as one parallel stop, not as successive legs", () => {
+    // The service warps staging into enRouteMapIds[0] and never onward through
+    // the rest, then drains every en-route map to the destination
+    // (transports/transport/processor.go). Chaining them would draw a ride
+    // through map 1 then map 2 that no character ever takes — and would put an
+    // extra "warp on departure" between them to explain the move.
+    const { container } = render(
+      <MapFlowRail route={route("open_entry")} tenant={null} />,
+    );
+
+    expect(container.querySelectorAll("[data-parallel-maps]")).toHaveLength(1);
+    // Exactly three legs: walk in, the single departure warp, and arrival.
+    expect(screen.getAllByText("warp on departure")).toHaveLength(1);
+    expect(screen.queryByText("en route 2")).toBeNull();
+    // The siblings hang off the entry map inside the parallel group.
+    const group = container.querySelector("[data-parallel-maps]")!;
+    expect(group.textContent).toContain("map:200090011");
+    expect(group.textContent).not.toContain("map:200090010");
+  });
+
+  it("keeps a single en-route map on the rail with no parallel group", () => {
+    const { container } = render(
+      <MapFlowRail
+        route={route("open_entry", { enRouteMapIds: [200090010] })}
+        tenant={null}
+      />,
+    );
+
+    expect(screen.getByText("en route")).toBeInTheDocument();
+    expect(container.querySelector("[data-parallel-maps]")).toBeNull();
+  });
+
+  it("names the parallel maps as parallel, and which one a departure lands in", () => {
+    // Which of the parallel maps a departure lands in is carried visually by a
+    // one-word sub-caption on a single badge; the accessible name is the only
+    // other channel for it.
+    render(<MapFlowRail route={route("open_entry")} tenant={null} />);
+
+    const figure = screen.getByRole("img", { name: /map flow/i });
+    expect(figure).toHaveAccessibleName(
+      /200090010 in parallel with 200090011/i,
+    );
+    expect(figure).toHaveAccessibleName(/departure lands in 200090010/i);
   });
 
   it("captions each leg with what moves a character across it", () => {

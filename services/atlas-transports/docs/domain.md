@@ -16,7 +16,7 @@ Represents a scheduled transport route with scheduling configuration.
 | name | string | Route name |
 | startMapId | map.Id | Starting map ID |
 | stagingMapId | map.Id | Staging map ID (boarding area) |
-| enRouteMapIds | []map.Id | Maps traversed during transit |
+| enRouteMapIds | []map.Id | Parallel maps that hold characters during transit — **not** a sequence. Departure warps the staging map into `enRouteMapIds[0]` only; on arrival every entry is drained to the destination. |
 | destinationMapId | map.Id | Destination map ID |
 | observationMapId | map.Id | Map for observing transport status |
 | state | RouteState | Current route state |

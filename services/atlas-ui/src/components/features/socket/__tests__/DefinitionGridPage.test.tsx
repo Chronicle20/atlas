@@ -282,7 +282,7 @@ describe("DefinitionGridPage - Tenant ancestry (FR-7.2/FR-8.2)", () => {
     // Scope the drawer to the read-only ancestor column (index 1).
     await userEvent.click(cells[1]!);
     const addOnAncestor = screen.getByRole("button", {
-      name: /^Add to GMS v83\.1…$/,
+      name: /^Add binding to GMS v83\.1…$/,
     });
     expect(addOnAncestor).toBeDisabled();
     expect(addOnAncestor).toHaveAttribute(
@@ -349,7 +349,7 @@ describe("DefinitionGridPage - Tenant ancestry (FR-7.2/FR-8.2)", () => {
     // Scope the drawer to the tenant's own column (index 0) instead.
     await userEvent.click(cells[0]!);
     expect(
-      screen.getByRole("button", { name: /^Add to GMS v83\.1…$/ }),
+      screen.getByRole("button", { name: /^Add binding to GMS v83\.1…$/ }),
     ).toBeEnabled();
     expect(
       screen.getByRole("button", { name: /^Copy into GMS v83\.1…$/ }),

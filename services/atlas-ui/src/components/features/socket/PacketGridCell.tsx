@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { cn } from "@/lib/utils";
+import { STATE_CELL_CLASS } from "@/components/features/socket/cell-state";
 import { formatOpcode } from "@/lib/socket/opcode";
 import type { Cell } from "@/lib/socket/matrix";
 import type { SocketObject } from "@/lib/socket/model";
@@ -17,9 +18,17 @@ export interface PacketGridCellProps {
 /**
  * One object's view of one Definition.
  *
- * State is never colour-only: Unsupported renders the literal "n/a" and an
- * options omission renders a labelled glyph, so the grid is readable in
- * monochrome and to a screen reader.
+ * State is never colour-only: Unsupported renders the literal "n/a",
+ * Undefined renders a "·" placeholder, and an options omission renders a
+ * labelled glyph - so the grid is readable in monochrome and to a screen
+ * reader.
+ *
+ * EVERY cell is clickable, including Undefined and Unsupported ones. That
+ * placeholder is not decoration: it gives the button a hit area, and an
+ * empty cell is precisely where you go to define the definition here or
+ * record it as audited-absent. A zero-height button (which is what an empty
+ * Undefined cell used to render) made those two actions unreachable from the
+ * grid.
  */
 export const PacketGridCell = memo(function PacketGridCell({
   cell,
@@ -41,9 +50,9 @@ export const PacketGridCell = memo(function PacketGridCell({
       role="gridcell"
       aria-colindex={colIndex}
       className={cn(
-        "border-b px-2 py-1 text-sm tabular-nums",
-        isBaselineColumn && "bg-muted/40 border-x border-primary/40",
-        cell.state === "defined" && "bg-primary/5",
+        "border-b p-0 text-sm tabular-nums",
+        isBaselineColumn && "border-x border-primary/40",
+        STATE_CELL_CLASS[cell.state],
         isScoped && "ring-2 ring-primary ring-inset",
       )}
     >
@@ -53,11 +62,14 @@ export const PacketGridCell = memo(function PacketGridCell({
         // distinguishable by object without a mouse, and so FR-5.2's
         // cell-scoping is reachable from the keyboard.
         aria-label={`${definitionName} in ${object.label}`}
-        className="flex w-full items-center gap-1 text-left"
+        className="flex h-7 w-full items-center gap-1 px-2 text-left"
         onClick={() => onSelect(object.key)}
       >
-        {cell.state === "unsupported" && (
-          <span className="text-muted-foreground italic">n/a</span>
+        {cell.state === "unsupported" && <span className="italic">n/a</span>}
+        {cell.state === "undefined" && (
+          <span className="text-muted-foreground/40" aria-hidden="true">
+            ·
+          </span>
         )}
         {cell.state === "defined" && lowest !== null && (
           <>

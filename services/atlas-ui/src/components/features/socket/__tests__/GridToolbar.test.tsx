@@ -152,6 +152,13 @@ describe("GridToolbar", () => {
     ).toBeInTheDocument();
   });
 
+  it("names the current baseline on the selector's trigger", () => {
+    renderToolbar({ onBaselineChange: vi.fn() });
+    expect(
+      screen.getByRole("button", { name: /baseline:\s*GMS v95\.1/i }),
+    ).toBeInTheDocument();
+  });
+
   it("changes the baseline when a selector is supplied", async () => {
     const onBaselineChange = vi.fn();
     renderToolbar({ onBaselineChange });
@@ -168,13 +175,41 @@ describe("GridToolbar", () => {
     expect(last.states).toContain("unsupported");
   });
 
+  // A boolean filter, so its chip is the toggle itself - no popover to open.
   it("reports the options-omission filter", async () => {
     const props = renderToolbar();
-    await userEvent.click(
-      screen.getByRole("checkbox", { name: /supplies no options/i }),
-    );
+    const chip = screen.getByRole("button", { name: /options not supplied/i });
+    expect(chip).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(chip);
     const last = props.onFiltersChange.mock.calls.at(-1)![0] as GridFilters;
     expect(last.optionsMissingOnly).toBe(true);
+  });
+
+  it("marks an active filter chip and offers a clear affordance", () => {
+    renderToolbar({
+      filters: { ...emptyFilters(), states: ["defined", "undefined"] },
+    });
+    expect(
+      screen.getByRole("button", { name: "State: Defined, Undefined" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /clear state filter/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("clears one filter without touching the others", async () => {
+    const filters: GridFilters = {
+      ...emptyFilters(),
+      states: ["defined"],
+      services: ["login"],
+    };
+    const props = renderToolbar({ filters });
+    await userEvent.click(
+      screen.getByRole("button", { name: /clear state filter/i }),
+    );
+    const last = props.onFiltersChange.mock.calls.at(-1)![0] as GridFilters;
+    expect(last.states).toEqual([]);
+    expect(last.services).toEqual(["login"]);
   });
 
   it("offers exactly the two real service options", async () => {
@@ -274,7 +309,10 @@ describe("GridToolbar", () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole("button", { name: /state/i }));
+    // `/^state/i` rather than `/state/i`: once the filter is active the chip
+    // grows a "Clear State filter" sibling, which an unanchored match would
+    // find too.
+    await userEvent.click(screen.getByRole("button", { name: /^state/i }));
     await userEvent.click(screen.getByRole("option", { name: /unsupported/i }));
     // Close the popover explicitly rather than relying on its open/closed
     // state across the rerender - the trigger button toggles, so a stray
@@ -296,7 +334,7 @@ describe("GridToolbar", () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole("button", { name: /state/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^state/i }));
     await userEvent.click(screen.getByRole("option", { name: /unsupported/i }));
 
     expect(filters).toEqual(emptyFilters());

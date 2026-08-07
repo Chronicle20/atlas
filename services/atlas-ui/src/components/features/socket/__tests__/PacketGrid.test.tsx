@@ -158,6 +158,51 @@ describe("PacketGrid", () => {
     expect(row).toHaveAttribute("aria-selected", "true");
   });
 
+  // An Undefined cell is where you go to define the definition here, so it
+  // has to be clickable - it used to render an empty, zero-height button.
+  it("opens the drawer from an Undefined cell", async () => {
+    const { onSelect } = renderGrid();
+    const row = screen.getByRole("row", { name: /AuthSuccess/ });
+    await userEvent.click(
+      within(row).getByRole("button", { name: /AuthSuccess in GMS v95\.1/ }),
+    );
+    expect(onSelect).toHaveBeenCalledWith({
+      name: "AuthSuccess",
+      scopeKey: "b",
+    });
+  });
+
+  it("opens the drawer from an Unsupported cell", async () => {
+    const { onSelect } = renderGrid();
+    const row = screen.getByRole("row", { name: /MonsterCarnival/ });
+    await userEvent.click(
+      within(row).getByRole("button", {
+        name: /MonsterCarnival in GMS v83\.1/,
+      }),
+    );
+    expect(onSelect).toHaveBeenCalledWith({
+      name: "MonsterCarnival",
+      scopeKey: "a",
+    });
+  });
+
+  it("renders an interleaved opcode-gap row as a blank, unclickable row", () => {
+    const objects = [a, b];
+    const rows = buildRows({ objects, kind: "writer", baselineKey: "a" });
+    render(
+      <PacketGrid
+        rows={[...rows, { gap: true, opCodeValue: 0xe5 }]}
+        objects={objects}
+        baselineKey="a"
+        showFName={false}
+        selection={null}
+        onSelect={vi.fn()}
+      />,
+    );
+    const gap = screen.getByRole("row", { name: /0xE5 — no definition/ });
+    expect(within(gap).queryByRole("button")).not.toBeInTheDocument();
+  });
+
   it("renders an empty-state message when there are no rows", () => {
     render(
       <PacketGrid

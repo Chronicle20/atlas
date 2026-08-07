@@ -1,7 +1,8 @@
 import { useCallback, useRef, type KeyboardEvent } from "react";
 import { cn } from "@/lib/utils";
+import { PacketGridGapRow } from "@/components/features/socket/PacketGridGapRow";
 import { PacketGridRow } from "@/components/features/socket/PacketGridRow";
-import type { Row } from "@/lib/socket/matrix";
+import { isGapRow, type GridRow } from "@/lib/socket/matrix";
 import type { SocketObject } from "@/lib/socket/model";
 
 export interface GridSelection {
@@ -11,7 +12,8 @@ export interface GridSelection {
 }
 
 export interface PacketGridProps {
-  rows: Row[];
+  /** Definition rows, optionally interleaved with `withOpcodeGaps` blanks. */
+  rows: GridRow[];
   objects: SocketObject[];
   baselineKey: string;
   showFName: boolean;
@@ -38,6 +40,12 @@ export function PacketGrid({
   onSelect,
 }: PacketGridProps) {
   const bodyRef = useRef<HTMLTableSectionElement>(null);
+
+  // Position of the baseline column among a gap row's spanned cells, or -1
+  // when the baseline isn't among the visualized objects (nothing to mark).
+  const baselineIndex = objects.findIndex((o) => o.key === baselineKey);
+  const gapBaselineIndex =
+    baselineIndex < 0 ? -1 : baselineIndex + (showFName ? 1 : 0);
 
   const handleSelect = useCallback(
     (name: string, scopeKey: string) => onSelect({ name, scopeKey }),
@@ -69,7 +77,11 @@ export function PacketGrid({
   }
 
   return (
-    <div className="relative max-h-[70vh] overflow-auto rounded-md border">
+    // Fills whatever height the page's frame gives it: the frame is the
+    // scroll boundary, not an arbitrary viewport fraction. A hard max-height
+    // here left the legend and the frame's bottom border floating away from
+    // a short grid.
+    <div className="relative min-h-0 flex-1 overflow-auto">
       <table role="grid" className="w-full border-collapse text-left">
         <thead className="bg-background sticky top-0 z-20">
           <tr role="row" aria-rowindex={1}>
@@ -111,21 +123,31 @@ export function PacketGrid({
           </tr>
         </thead>
         <tbody ref={bodyRef} onKeyDown={onKeyDown}>
-          {rows.map((row, i) => (
-            <PacketGridRow
-              key={row.name}
-              row={row}
-              objects={objects}
-              baselineKey={baselineKey}
-              showFName={showFName}
-              scopeKey={
-                selection?.name === row.name ? selection.scopeKey : null
-              }
-              isSelected={selection?.name === row.name}
-              rowIndex={i + 2}
-              onSelect={handleSelect}
-            />
-          ))}
+          {rows.map((row, i) =>
+            isGapRow(row) ? (
+              <PacketGridGapRow
+                key={`gap-${row.opCodeValue}`}
+                opCodeValue={row.opCodeValue}
+                columnCount={objects.length + (showFName ? 1 : 0)}
+                baselineColumnIndex={gapBaselineIndex}
+                rowIndex={i + 2}
+              />
+            ) : (
+              <PacketGridRow
+                key={row.name}
+                row={row}
+                objects={objects}
+                baselineKey={baselineKey}
+                showFName={showFName}
+                scopeKey={
+                  selection?.name === row.name ? selection.scopeKey : null
+                }
+                isSelected={selection?.name === row.name}
+                rowIndex={i + 2}
+                onSelect={handleSelect}
+              />
+            ),
+          )}
         </tbody>
       </table>
     </div>

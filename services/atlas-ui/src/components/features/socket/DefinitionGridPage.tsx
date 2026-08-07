@@ -9,6 +9,7 @@ import {
   type DrawerAction,
 } from "@/components/features/socket/DefinitionDrawer";
 import { FillMissingValidatorsDialog } from "@/components/features/socket/FillMissingValidatorsDialog";
+import { GridLegend } from "@/components/features/socket/GridLegend";
 import { GridToolbar } from "@/components/features/socket/GridToolbar";
 import {
   PacketGrid,
@@ -29,7 +30,9 @@ import {
   buildRows,
   emptyFilters,
   filterRows,
+  hasActiveFilters,
   sortRows,
+  withOpcodeGaps,
   type GridFilters,
   type SortDirection,
   type SortKey,
@@ -127,6 +130,26 @@ export function DefinitionGridPage({ kind, scope }: DefinitionGridPageProps) {
     ancestor,
     ancestryClasses,
   ]);
+
+  // Same gating as the matrix page: opcode order, and no filter narrowing the
+  // set - the ancestry filter counts, since a blank row belongs to no
+  // ancestry class.
+  const showsOpcodeGaps =
+    sort.key === "opcode" &&
+    !hasActiveFilters(filters) &&
+    ancestryClasses.length === 0;
+  const gridRows = useMemo(
+    () =>
+      showsOpcodeGaps
+        ? withOpcodeGaps(rows, {
+            objects,
+            kind,
+            baselineKey,
+            direction: sort.direction,
+          })
+        : rows,
+    [showsOpcodeGaps, rows, objects, kind, baselineKey, sort.direction],
+  );
 
   const defParam = searchParams.get("def");
   const [selection, setSelection] = useState<GridSelection | null>(null);
@@ -260,13 +283,14 @@ export function DefinitionGridPage({ kind, scope }: DefinitionGridPageProps) {
             : {})}
         />
         <PacketGrid
-          rows={rows}
+          rows={gridRows}
           objects={objects}
           baselineKey={baselineKey}
           showFName={showFName}
           selection={selection}
           onSelect={handleGridSelect}
         />
+        <GridLegend rowCount={rows.length} showsOpcodeGaps={showsOpcodeGaps} />
       </div>
 
       {drawerOpen && selection && selectedRow && (

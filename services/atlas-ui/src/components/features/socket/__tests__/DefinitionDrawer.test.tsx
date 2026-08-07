@@ -82,11 +82,18 @@ describe("DefinitionDrawer", () => {
       screen.getByRole("button", { name: /edit in GMS v83\.1/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /delete in GMS v83\.1/i }),
+      screen.getByRole("button", { name: /undefine in GMS v83\.1/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /mark unsupported in GMS v83\.1/i }),
     ).toBeInTheDocument();
+  });
+
+  // The matrix is a wide grid; its detail panel docks along the bottom edge
+  // so it reads across the same width rather than in a narrow side column.
+  it("opens along the bottom edge", () => {
+    renderDrawer("NoOpHandler", "a");
+    expect(screen.getByRole("dialog").className).toContain("bottom-0");
   });
 
   it("relabels the actions when the scope moves to another object", () => {
@@ -106,7 +113,7 @@ describe("DefinitionDrawer", () => {
       screen.getByRole("button", { name: /edit in GMS v87\.1/i }),
     ).toBeDisabled();
     expect(
-      screen.getByRole("button", { name: /delete in GMS v87\.1/i }),
+      screen.getByRole("button", { name: /undefine in GMS v87\.1/i }),
     ).toBeDisabled();
     expect(
       screen.getByRole("button", { name: /open in GMS v87\.1/i }),
@@ -116,7 +123,7 @@ describe("DefinitionDrawer", () => {
   it("keeps Add, Copy and Mark Unsupported enabled where the definition is undefined", () => {
     renderDrawer("NoOpHandler", "b");
     expect(
-      screen.getByRole("button", { name: /add to GMS v87\.1/i }),
+      screen.getByRole("button", { name: /^define in GMS v87\.1/i }),
     ).toBeEnabled();
     expect(
       screen.getByRole("button", { name: /copy into GMS v87\.1/i }),
@@ -148,7 +155,10 @@ describe("DefinitionDrawer", () => {
     });
   });
 
-  it("shows each object's state, opcode, validator and services in the Fields tab", () => {
+  // The Fields tab carries the object, its opcodes and (handlers only) its
+  // validator. State is the card's tint plus its accessible label; services
+  // and the options shape belong to their own tabs and are NOT repeated here.
+  it("shows each object's opcode, state and validator in the Fields tab", () => {
     renderDrawer("Move", "a");
     const fields = screen.getByRole("tabpanel", { name: /fields/i });
     expect(within(fields).getByText("GMS v83.1")).toBeInTheDocument();
@@ -156,7 +166,10 @@ describe("DefinitionDrawer", () => {
     expect(
       within(fields).getAllByText("LoggedInValidator").length,
     ).toBeGreaterThan(0);
-    expect(within(fields).getAllByText("channel").length).toBeGreaterThan(0);
+    expect(
+      within(fields).getByRole("listitem", { name: /GMS v83\.1: Defined/i }),
+    ).toBeInTheDocument();
+    expect(within(fields).queryByText("channel")).not.toBeInTheDocument();
   });
 
   it("renders the nested per-entry options matrix in the Options tab", async () => {
@@ -199,7 +212,9 @@ describe("DefinitionDrawer", () => {
       />,
     );
     const handlerFields = screen.getByRole("tabpanel", { name: /fields/i });
-    expect(within(handlerFields).getByText("Validator")).toBeInTheDocument();
+    expect(
+      within(handlerFields).getAllByText("LoggedInValidator").length,
+    ).toBeGreaterThan(0);
     handlerRender.unmount();
 
     const writerObj: SocketObject = {
@@ -227,8 +242,8 @@ describe("DefinitionDrawer", () => {
     );
     const writerFields = screen.getByRole("tabpanel", { name: /fields/i });
     expect(
-      within(writerFields).queryByText("Validator"),
-    ).not.toBeInTheDocument();
+      within(writerFields).queryAllByText("LoggedInValidator"),
+    ).toHaveLength(0);
   });
 
   // Task 10 round-2 fix: `key` is always fully-qualified ("group.entry") and
@@ -353,7 +368,7 @@ describe("DefinitionDrawer", () => {
       name: /edit in GMS v83\.1/i,
     });
     const deleteButton = screen.getByRole("button", {
-      name: /delete in GMS v83\.1/i,
+      name: /undefine in GMS v83\.1/i,
     });
     const openButton = screen.getByRole("button", {
       name: /open in GMS v83\.1/i,
@@ -376,7 +391,7 @@ describe("DefinitionDrawer", () => {
       screen.getByRole("button", { name: /edit in GMS v83\.1 \(0x29\)/i }),
     ).toBeEnabled();
     expect(
-      screen.getByRole("button", { name: /delete in GMS v83\.1 \(0x29\)/i }),
+      screen.getByRole("button", { name: /undefine in GMS v83\.1 \(0x29\)/i }),
     ).toBeEnabled();
     expect(
       screen.getByRole("button", { name: /open in GMS v83\.1 \(0x29\)/i }),
@@ -423,7 +438,7 @@ describe("DefinitionDrawer", () => {
       screen.getByRole("button", { name: /edit in GMS v61\.1/i }),
     ).toBeDisabled();
     expect(
-      screen.getByRole("button", { name: /delete in GMS v61\.1/i }),
+      screen.getByRole("button", { name: /undefine in GMS v61\.1/i }),
     ).toBeDisabled();
     expect(
       screen.getByRole("button", { name: /open in GMS v61\.1/i }),

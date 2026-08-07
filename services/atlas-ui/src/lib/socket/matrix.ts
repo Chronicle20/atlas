@@ -50,16 +50,39 @@ export interface Row {
   baselineState: DefinitionState;
 }
 
+/**
+ * A placeholder for an opcode inside the baseline's range that NO visualized
+ * object binds - so no Definition row can exist for it. Rendered as a blank
+ * row so a contiguous opcode range reads as contiguous, and the holes in it
+ * are the candidate slots for definitions that have not been written yet.
+ */
+export interface GapRow {
+  gap: true;
+  opCodeValue: number;
+}
+
+/** What the grid actually renders: Definition rows interleaved with gaps. */
+export type GridRow = Row | GapRow;
+
+export function isGapRow(row: GridRow): row is GapRow {
+  return "gap" in row;
+}
+
 export type SortKey = "opcode" | "name" | "state";
 export type SortDirection = "asc" | "desc";
 
 export interface GridFilters {
   query: string;
-  /** Empty means every state. Evaluated against the baseline object's cell. */
+  /**
+   * Empty means every state. Evaluated across the WHOLE row: a row survives
+   * when ANY visualized object's cell is in one of these states, so filtering
+   * on "Undefined" surfaces every Definition some template is missing rather
+   * than only the ones the baseline itself lacks.
+   */
   states: DefinitionState[];
   /** Only rows where some cell carries the FR-3.2 marker. */
   optionsMissingOnly: boolean;
-  /** null = don't care; true/false = the baseline cell supplies options or not. */
+  /** null = don't care; true/false, evaluated across the whole row - see `filterRows`. */
   hasOptions: boolean | null;
   /** Empty means every service. */
   services: string[];
@@ -73,6 +96,17 @@ export function emptyFilters(): GridFilters {
     hasOptions: null,
     services: [],
   };
+}
+
+/** True when `filters` would narrow the row set at all. */
+export function hasActiveFilters(filters: GridFilters): boolean {
+  return (
+    filters.query.trim() !== "" ||
+    filters.states.length > 0 ||
+    filters.optionsMissingOnly ||
+    filters.hasOptions !== null ||
+    filters.services.length > 0
+  );
 }
 
 /**
@@ -227,17 +261,22 @@ export function sortRows(rows: Row[], key: SortKey, dir: SortDirection): Row[] {
 }
 
 /**
- * FR-4.3/4.4. State and hasOptions are evaluated against the BASELINE
- * object's cell - the object the row is ordered by and the one the drawer
- * defaults its scope to. The service filter is NOT baseline-scoped: like the
- * free-text search, it matches if ANY selected object's binding for this row
- * lists that service, so a row stays visible while comparing which versions
- * carry a given service even when the baseline itself doesn't.
+ * FR-4.3/4.4. EVERY predicate aggregates across the row - a row survives when
+ * ANY visualized object satisfies it, never only the baseline. State used to
+ * be baseline-scoped, which made "Undefined" answer the much narrower question
+ * "which definitions is the baseline missing?" and hid the case the matrix
+ * exists for: one template out of eleven missing a definition the other ten
+ * carry. `hasOptions: false` is read as "some DEFINED cell supplies no
+ * options" (an undefined cell trivially supplies none, and counting those
+ * would match nearly every row).
+ *
+ * `baselineKey` is retained in the signature - callers pass it and the sort
+ * still anchors on it - but no predicate reads it any more.
  */
 export function filterRows(
   rows: Row[],
   filters: GridFilters,
-  baselineKey: string,
+  _baselineKey: string,
 ): Row[] {
   const q = filters.query.trim().toLowerCase();
 
@@ -255,23 +294,27 @@ export function filterRows(
       if (!nameHit && !fnameHit && !opcodeHit) return false;
     }
 
-    const baseline = row.cells.get(baselineKey);
+    const cells = [...row.cells.values()];
 
     if (filters.states.length > 0) {
-      if (!baseline || !filters.states.includes(baseline.state)) return false;
+      if (!cells.some((c) => filters.states.includes(c.state))) return false;
     }
 
     if (filters.optionsMissingOnly) {
-      if (![...row.cells.values()].some((c) => c.optionsMissing)) return false;
+      if (!cells.some((c) => c.optionsMissing)) return false;
     }
 
     if (filters.hasOptions !== null) {
-      const has = suppliesOptions(baseline?.bindings ?? []);
-      if (has !== filters.hasOptions) return false;
+      const hit = filters.hasOptions
+        ? cells.some((c) => suppliesOptions(c.bindings))
+        : cells.some(
+            (c) => c.state === "defined" && !suppliesOptions(c.bindings),
+          );
+      if (!hit) return false;
     }
 
     if (filters.services.length > 0) {
-      const hit = [...row.cells.values()].some((c) =>
+      const hit = cells.some((c) =>
         c.bindings.some((b) =>
           b.services.some((s) => filters.services.includes(s)),
         ),
@@ -281,4 +324,90 @@ export function filterRows(
 
     return true;
   });
+}
+
+/**
+ * Interleaves a blank row for every opcode inside the baseline's range that
+ * NO visualized object binds.
+ *
+ * The range is the baseline's own [min, max] - the baseline is the version
+ * whose opcode table you are reading down, so extending the scan past its
+ * last opcode would invent slots that version does not have. The "is it
+ * bound?" test, by contrast, is taken across EVERY visualized object: a hole
+ * only counts when nothing in view defines it, which is exactly the "no
+ * definition exists for this opcode yet" signal.
+ *
+ * One opcode namespace, not one per service: a login handler at 0x1D and a
+ * channel handler at 0x1D both suppress the 0x1D gap. This under-reports
+ * (a login-range hole hidden by a channel handler at the same number stays
+ * invisible) and is the deliberate trade for a quieter grid.
+ *
+ * Only meaningful under `sortRows(rows, "opcode", …)`: a gap has no name and
+ * no state, so it cannot be placed in a name- or state-ordered list. Callers
+ * gate on that, and on there being no active filter - a blank row cannot
+ * match a search or a service filter, so mixing the two would misreport a
+ * filtered view as a contiguous range.
+ */
+export function withOpcodeGaps(
+  rows: Row[],
+  input: {
+    objects: SocketObject[];
+    kind: DefinitionKind;
+    baselineKey: string;
+    direction: SortDirection;
+  },
+): GridRow[] {
+  const { objects, kind, baselineKey, direction } = input;
+  const baseline = objects.find((o) => o.key === baselineKey);
+  if (!baseline) return rows;
+
+  const bound = new Set<number>();
+  for (const o of objects) {
+    for (const bindings of entriesOf(o, kind).values()) {
+      for (const b of bindings)
+        if (b.opCodeValue !== null) bound.add(b.opCodeValue);
+    }
+  }
+
+  const baselineValues: number[] = [];
+  for (const bindings of entriesOf(baseline, kind).values()) {
+    for (const b of bindings) {
+      if (b.opCodeValue !== null) baselineValues.push(b.opCodeValue);
+    }
+  }
+  if (baselineValues.length < 2) return rows;
+
+  const min = Math.min(...baselineValues);
+  const max = Math.max(...baselineValues);
+  const gaps: number[] = [];
+  for (let v = min; v <= max; v++) if (!bound.has(v)) gaps.push(v);
+  if (gaps.length === 0) return rows;
+  if (direction === "desc") gaps.reverse();
+
+  const before = (gap: number, rowValue: number) =>
+    direction === "asc" ? gap < rowValue : gap > rowValue;
+
+  const out: GridRow[] = [];
+  let i = 0;
+  let flushed = false;
+  for (const row of rows) {
+    const rv = row.baselineOpCodeValue;
+    if (rv === null) {
+      // sortRows parks every row the baseline doesn't order (no opcode, or
+      // not in the baseline at all) at the tail. Gaps belong to the ordered
+      // prefix, so drain them before the tail begins.
+      if (!flushed) {
+        flushed = true;
+        while (i < gaps.length)
+          out.push({ gap: true, opCodeValue: gaps[i++]! });
+      }
+    } else if (!flushed) {
+      while (i < gaps.length && before(gaps[i]!, rv)) {
+        out.push({ gap: true, opCodeValue: gaps[i++]! });
+      }
+    }
+    out.push(row);
+  }
+  while (i < gaps.length) out.push({ gap: true, opCodeValue: gaps[i++]! });
+  return out;
 }

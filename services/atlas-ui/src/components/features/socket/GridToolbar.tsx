@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Check } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
+import { ArrowDown, ArrowUp, Check, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,14 +90,80 @@ const HAS_OPTIONS_CHOICES: { value: HasOptionsChoice; label: string }[] = [
   { value: "no", label: "No options" },
 ];
 
+const SORT_LABEL: Record<SortKey, string> = {
+  opcode: "Opcode",
+  name: "Name",
+  state: "State",
+};
+
+const chipClass = (active: boolean) =>
+  cn(
+    "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+    active
+      ? "border-primary bg-primary/10 text-primary"
+      : "text-muted-foreground border-dashed hover:text-foreground hover:border-solid",
+  );
+
 /**
- * A trigger button + popover listbox, shared by every filter that picks from
- * a small closed set of values. `onSelect` reports the clicked value; whether
- * that means "toggle into a multi-select set" or "replace a single choice" is
- * the caller's decision - this component only renders the list and reports
- * clicks, matching the presentational contract of the toolbar as a whole.
+ * One filter, rendered as a chip on the toolbar's second line.
+ *
+ * Inactive it reads as a suggestion (`+ Service`, dashed) so the available
+ * filters stay discoverable without a row of eight permanent buttons;
+ * active it states what it is filtering to (`Service: Login`) and grows a
+ * clear affordance. The clear control is a SIBLING button, not nested inside
+ * the trigger - a button inside a button is invalid HTML and Radix would
+ * swallow the inner click.
  */
-function OptionListPopover<T extends string>({
+function FilterChip({
+  label,
+  summary,
+  onClear,
+  children,
+}: {
+  label: string;
+  /** The active value, e.g. "Defined, Undefined". Absent = filter is off. */
+  summary?: string;
+  onClear?: () => void;
+  children: ReactNode;
+}) {
+  const active = summary !== undefined;
+  return (
+    <span className={chipClass(active)}>
+      <Popover>
+        <PopoverTrigger asChild>
+          {/* The "+" is decoration - hidden from the accessible name so the
+              chip is addressable as "Service", not "+ Service". */}
+          <button type="button" className="cursor-pointer">
+            {active ? (
+              `${label}: ${summary}`
+            ) : (
+              <>
+                <span aria-hidden="true">+ </span>
+                {label}
+              </>
+            )}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-56 p-1" align="start">
+          {children}
+        </PopoverContent>
+      </Popover>
+      {active && onClear && (
+        <button
+          type="button"
+          aria-label={`Clear ${label} filter`}
+          className="opacity-60 hover:opacity-100"
+          onClick={onClear}
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </span>
+  );
+}
+
+/** The listbox inside a filter chip's popover. */
+function OptionList<T extends string>({
   label,
   options,
   selectedValues,
@@ -111,47 +177,33 @@ function OptionListPopover<T extends string>({
   multi?: boolean;
 }) {
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button type="button" variant="outline" size="sm">
-          {label}
-          {multi && selectedValues.length > 0 && (
-            <span className="text-muted-foreground ml-1 text-xs">
-              ({selectedValues.length})
-            </span>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-56 p-1" align="start">
-        <ul role="listbox" aria-label={label} aria-multiselectable={multi}>
-          {options.map((opt) => {
-            const isSelected = selectedValues.includes(opt.value);
-            return (
-              <li
-                key={opt.value}
-                role="option"
-                aria-selected={isSelected}
-                tabIndex={0}
-                onClick={() => onSelect(opt.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    onSelect(opt.value);
-                  }
-                }}
-                className={cn(
-                  "hover:bg-accent flex cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 text-sm",
-                  isSelected && "bg-accent",
-                )}
-              >
-                {opt.label}
-                {isSelected && <Check className="h-4 w-4" />}
-              </li>
-            );
-          })}
-        </ul>
-      </PopoverContent>
-    </Popover>
+    <ul role="listbox" aria-label={label} aria-multiselectable={multi}>
+      {options.map((opt) => {
+        const isSelected = selectedValues.includes(opt.value);
+        return (
+          <li
+            key={opt.value}
+            role="option"
+            aria-selected={isSelected}
+            tabIndex={0}
+            onClick={() => onSelect(opt.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelect(opt.value);
+              }
+            }}
+            className={cn(
+              "hover:bg-accent flex cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 text-sm",
+              isSelected && "bg-accent",
+            )}
+          >
+            {opt.label}
+            {isSelected && <Check className="h-4 w-4" />}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -202,8 +254,8 @@ function ColumnPicker({
       <PopoverTrigger asChild>
         <Button type="button" variant="outline" size="sm">
           Columns
-          <span className="text-muted-foreground ml-1 text-xs">
-            ({selectedKeys.length})
+          <span className="text-muted-foreground ml-1 font-mono text-xs">
+            {selectedKeys.length}
           </span>
         </Button>
       </PopoverTrigger>
@@ -280,7 +332,13 @@ function ColumnPicker({
   );
 }
 
-/** The baseline selector lists only the currently-selected objects (FR-2.9/2.10). */
+/**
+ * The baseline selector lists only the currently-selected objects
+ * (FR-2.9/2.10) and NAMES the current one on its trigger - the column header
+ * marks it in place, but the trigger is where you look when deciding whether
+ * to change it, and "Baseline" alone made you hunt for the amber column to
+ * find out what was selected.
+ */
 function BaselineSelector({
   objects,
   selectedKeys,
@@ -293,12 +351,14 @@ function BaselineSelector({
   onChange: (key: string) => void;
 }) {
   const options = objects.filter((o) => selectedKeys.includes(o.key));
+  const current = options.find((o) => o.key === baselineKey);
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button type="button" variant="outline" size="sm">
-          Baseline
+          Baseline:
+          <span className="font-mono">{current?.label ?? "none"}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-56 p-1" align="start">
@@ -339,6 +399,13 @@ function BaselineSelector({
  * sort, search or column-selection state - every control renders the current
  * prop value and reports changes through a handler; `filterRows` / `sortRows`
  * in `lib/socket/matrix.ts` remain the only place that logic lives.
+ *
+ * Two lines, following the prototype: line one is what you are LOOKING at
+ * (mode, search, columns, baseline, fname, sort); line two is what you have
+ * NARROWED it to - one chip per active filter, plus dashed suggestion chips
+ * for the filters you have not applied. Sort sits in its own bordered group
+ * at the end of line one, because sorting is not filtering and mixing the
+ * two made the row read as eight interchangeable buttons.
  *
  * FR-7.3: a control whose handler prop is absent is not rendered at all - not
  * disabled. That's how the four per-object pages drop the mode switch, column
@@ -384,151 +451,219 @@ export function GridToolbar({
     });
   };
 
+  const labelsOf = <T extends string>(
+    options: { value: T; label: string }[],
+    values: T[],
+  ) =>
+    options
+      .filter((o) => values.includes(o.value))
+      .map((o) => o.label)
+      .join(", ");
+
   return (
-    <div className="flex flex-wrap items-center gap-3 border-b p-3">
-      <Input
-        type="search"
-        aria-label="Search definitions"
-        placeholder="Search definitions..."
-        value={filters.query}
-        onChange={(e) => onFiltersChange({ ...filters, query: e.target.value })}
-        className="w-56"
-      />
+    <div className="border-b">
+      <div className="flex flex-wrap items-center gap-3 px-3 pt-3 pb-2">
+        {onKindChange && (
+          <RadioGroup
+            value={kind}
+            onValueChange={(v) => onKindChange(v as DefinitionKind)}
+            className="flex flex-row items-center gap-3"
+            aria-label="Mode"
+          >
+            <div className="flex items-center gap-1.5">
+              <RadioGroupItem value="handler" id="toolbar-kind-handler" />
+              <Label htmlFor="toolbar-kind-handler">Handlers</Label>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <RadioGroupItem value="writer" id="toolbar-kind-writer" />
+              <Label htmlFor="toolbar-kind-writer">Writers</Label>
+            </div>
+          </RadioGroup>
+        )}
 
-      {onKindChange && (
-        <RadioGroup
-          value={kind}
-          onValueChange={(v) => onKindChange(v as DefinitionKind)}
-          className="flex flex-row items-center gap-3"
-          aria-label="Mode"
-        >
-          <div className="flex items-center gap-1.5">
-            <RadioGroupItem value="handler" id="toolbar-kind-handler" />
-            <Label htmlFor="toolbar-kind-handler">Handlers</Label>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <RadioGroupItem value="writer" id="toolbar-kind-writer" />
-            <Label htmlFor="toolbar-kind-writer">Writers</Label>
-          </div>
-        </RadioGroup>
-      )}
-
-      {onSelectedKeysChange && (
-        <ColumnPicker
-          objects={objects}
-          selectedKeys={selectedKeys}
-          onChange={onSelectedKeysChange}
+        <Input
+          type="search"
+          aria-label="Search definitions"
+          placeholder="Search name, fname or opcode..."
+          value={filters.query}
+          onChange={(e) =>
+            onFiltersChange({ ...filters, query: e.target.value })
+          }
+          className="w-56"
         />
-      )}
 
-      {onBaselineChange && (
-        <BaselineSelector
-          objects={objects}
-          selectedKeys={selectedKeys}
-          baselineKey={baselineKey}
-          onChange={onBaselineChange}
-        />
-      )}
+        {onSelectedKeysChange && (
+          <ColumnPicker
+            objects={objects}
+            selectedKeys={selectedKeys}
+            onChange={onSelectedKeysChange}
+          />
+        )}
 
-      <div className="flex items-center gap-1.5">
-        <Switch
-          id="toolbar-fname"
-          checked={showFName}
-          onCheckedChange={onShowFNameChange}
-        />
-        <Label htmlFor="toolbar-fname">fname</Label>
+        {onBaselineChange && (
+          <BaselineSelector
+            objects={objects}
+            selectedKeys={selectedKeys}
+            baselineKey={baselineKey}
+            onChange={onBaselineChange}
+          />
+        )}
+
+        <div className="flex items-center gap-1.5">
+          <Switch
+            id="toolbar-fname"
+            checked={showFName}
+            onCheckedChange={onShowFNameChange}
+          />
+          <Label htmlFor="toolbar-fname">fname</Label>
+        </div>
+
+        {/* Sort, visually fenced off from the filters below. */}
+        <div className="ml-auto flex items-center gap-2 rounded-md border px-2 py-1">
+          <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            Sort
+          </span>
+          <RadioGroup
+            value={sort.key}
+            onValueChange={(v) =>
+              onSortChange({ key: v as SortKey, direction: sort.direction })
+            }
+            className="flex flex-row items-center gap-3"
+            aria-label="Sort by"
+          >
+            {(Object.keys(SORT_LABEL) as SortKey[]).map((key) => (
+              <div key={key} className="flex items-center gap-1.5">
+                <RadioGroupItem value={key} id={`toolbar-sort-${key}`} />
+                <Label htmlFor={`toolbar-sort-${key}`}>{SORT_LABEL[key]}</Label>
+              </div>
+            ))}
+          </RadioGroup>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label="Toggle sort direction"
+            title={
+              sort.direction === "asc"
+                ? "Ascending - click for descending"
+                : "Descending - click for ascending"
+            }
+            onClick={() =>
+              onSortChange({
+                key: sort.key,
+                direction: sort.direction === "asc" ? "desc" : "asc",
+              })
+            }
+          >
+            {sort.direction === "asc" ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : (
+              <ArrowDown className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
       </div>
 
-      <OptionListPopover
-        label="State"
-        options={STATE_OPTIONS}
-        selectedValues={filters.states}
-        onSelect={toggleState}
-      />
+      <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2.5">
+        <span className="text-muted-foreground mr-1 text-xs">Filters</span>
 
-      <OptionListPopover
-        label="Has options"
-        options={HAS_OPTIONS_CHOICES}
-        selectedValues={[hasOptionsChoice]}
-        onSelect={selectHasOptions}
-        multi={false}
-      />
+        <FilterChip
+          label="State"
+          {...(filters.states.length > 0
+            ? {
+                summary: labelsOf(STATE_OPTIONS, filters.states),
+                onClear: () => onFiltersChange({ ...filters, states: [] }),
+              }
+            : {})}
+        >
+          <OptionList
+            label="State"
+            options={STATE_OPTIONS}
+            selectedValues={filters.states}
+            onSelect={toggleState}
+          />
+        </FilterChip>
 
-      <div className="flex items-center gap-1.5">
-        <input
-          type="checkbox"
-          id="toolbar-options-missing"
-          checked={filters.optionsMissingOnly}
-          onChange={(e) =>
+        <FilterChip
+          label="Has options"
+          {...(filters.hasOptions !== null
+            ? {
+                summary: filters.hasOptions ? "yes" : "no",
+                onClear: () =>
+                  onFiltersChange({ ...filters, hasOptions: null }),
+              }
+            : {})}
+        >
+          <OptionList
+            label="Has options"
+            options={HAS_OPTIONS_CHOICES}
+            selectedValues={[hasOptionsChoice]}
+            onSelect={selectHasOptions}
+            multi={false}
+          />
+        </FilterChip>
+
+        {/* A boolean filter: the chip IS the toggle, no popover to open. */}
+        <button
+          type="button"
+          aria-pressed={filters.optionsMissingOnly}
+          className={chipClass(filters.optionsMissingOnly)}
+          onClick={() =>
             onFiltersChange({
               ...filters,
-              optionsMissingOnly: e.target.checked,
+              optionsMissingOnly: !filters.optionsMissingOnly,
             })
           }
-          className="h-4 w-4"
-        />
-        <label htmlFor="toolbar-options-missing" className="text-sm">
-          Supplies no options
-        </label>
+        >
+          {!filters.optionsMissingOnly && <span aria-hidden="true">+ </span>}
+          Options not supplied
+          {filters.optionsMissingOnly && <X className="h-3 w-3 opacity-60" />}
+        </button>
+
+        <FilterChip
+          label="Service"
+          {...(filters.services.length > 0
+            ? {
+                summary: labelsOf(SERVICE_OPTIONS, filters.services),
+                onClear: () => onFiltersChange({ ...filters, services: [] }),
+              }
+            : {})}
+        >
+          <OptionList
+            label="Service"
+            options={SERVICE_OPTIONS}
+            selectedValues={filters.services}
+            onSelect={toggleService}
+          />
+        </FilterChip>
+
+        {ancestryFilterOptions && (
+          <FilterChip
+            label="vs Template"
+            {...(ancestryFilterOptions.value.length > 0
+              ? {
+                  summary: labelsOf(
+                    ANCESTRY_OPTIONS,
+                    ancestryFilterOptions.value,
+                  ),
+                  onClear: () => ancestryFilterOptions.onChange([]),
+                }
+              : {})}
+          >
+            <OptionList
+              label="vs Template"
+              options={ANCESTRY_OPTIONS}
+              selectedValues={ancestryFilterOptions.value}
+              onSelect={(value) => {
+                const next = ancestryFilterOptions.value.includes(value)
+                  ? ancestryFilterOptions.value.filter((v) => v !== value)
+                  : [...ancestryFilterOptions.value, value];
+                ancestryFilterOptions.onChange(next);
+              }}
+            />
+          </FilterChip>
+        )}
       </div>
-
-      <OptionListPopover
-        label="Service"
-        options={SERVICE_OPTIONS}
-        selectedValues={filters.services}
-        onSelect={toggleService}
-      />
-
-      {ancestryFilterOptions && (
-        <OptionListPopover
-          label="vs Template"
-          options={ANCESTRY_OPTIONS}
-          selectedValues={ancestryFilterOptions.value}
-          onSelect={(value) => {
-            const next = ancestryFilterOptions.value.includes(value)
-              ? ancestryFilterOptions.value.filter((v) => v !== value)
-              : [...ancestryFilterOptions.value, value];
-            ancestryFilterOptions.onChange(next);
-          }}
-        />
-      )}
-
-      <RadioGroup
-        value={sort.key}
-        onValueChange={(v) =>
-          onSortChange({ key: v as SortKey, direction: sort.direction })
-        }
-        className="flex flex-row items-center gap-3"
-        aria-label="Sort by"
-      >
-        <div className="flex items-center gap-1.5">
-          <RadioGroupItem value="opcode" id="toolbar-sort-opcode" />
-          <Label htmlFor="toolbar-sort-opcode">Opcode</Label>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <RadioGroupItem value="name" id="toolbar-sort-name" />
-          <Label htmlFor="toolbar-sort-name">Name</Label>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <RadioGroupItem value="state" id="toolbar-sort-state" />
-          <Label htmlFor="toolbar-sort-state">State</Label>
-        </div>
-      </RadioGroup>
-
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        aria-label="Toggle sort direction"
-        onClick={() =>
-          onSortChange({
-            key: sort.key,
-            direction: sort.direction === "asc" ? "desc" : "asc",
-          })
-        }
-      >
-        {sort.direction === "asc" ? "Ascending" : "Descending"}
-      </Button>
     </div>
   );
 }

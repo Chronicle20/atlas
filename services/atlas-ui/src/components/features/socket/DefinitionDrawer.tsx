@@ -1,5 +1,9 @@
 import type { GridSelection } from "@/components/features/socket/PacketGrid";
 import { OptionsMatrixTable } from "@/components/features/socket/OptionsMatrix";
+import {
+  STATE_CELL_CLASS,
+  STATE_LABEL,
+} from "@/components/features/socket/cell-state";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -13,7 +17,6 @@ import type { Row } from "@/lib/socket/matrix";
 import type { Binding, DefinitionKind, SocketObject } from "@/lib/socket/model";
 import { stateOf } from "@/lib/socket/model";
 import { formatOpcode } from "@/lib/socket/opcode";
-import { classifyOptions } from "@/lib/socket/options";
 import { cn } from "@/lib/utils";
 
 export type DrawerActionType =
@@ -46,7 +49,7 @@ export interface DefinitionDrawerProps {
   /** Tenant pages only: enables Reset to Ancestor. */
   ancestor?: SocketObject;
   /**
-   * When set, every MUTATING action on the current scope (Add/Edit/Delete/
+   * When set, every MUTATING action on the current scope (Add/Edit/Undefine/
    * Copy/Mark-Unsupported/Clear-Unsupported, including each per-binding row)
    * is disabled and this string is shown as the button's `title` - e.g. the
    * FR-7.2 ancestor column on a Tenant page, which DefinitionGridPage passes
@@ -60,13 +63,16 @@ export interface DefinitionDrawerProps {
 }
 
 /**
- * Every action button's accessible name ends with the scoped object's label
- * (FR-5.2/5.3), built through this one helper so the wording cannot drift
- * between buttons. `ellipsis` marks the actions that open a follow-up
- * dialog/form rather than firing immediately. `opcode`, when given, is
- * appended AFTER the scope label (never spliced between the verb and the
- * preposition) so a caller matching `/edit in GMS v87\.1/i` still matches
- * once a binding-scoped action starts naming its target opcode too.
+ * The accessible name of every action button ends with the scoped object's
+ * label (FR-5.2/5.3), built through this one helper so the wording cannot
+ * drift between buttons.
+ *
+ * The VISIBLE label is deliberately shorter than the accessible one. Six
+ * buttons all repeating "… in GMS v95.1" is a wall of near-identical text
+ * you have to read to the end to tell apart, while the header already states
+ * the scope once. So the button shows the verb, the accessible name and
+ * tooltip carry the full "verb + scope (+ opcode)" phrase, and a screen
+ * reader still hears which object it is about to change.
  */
 function actionLabel(
   verb: string,
@@ -95,79 +101,73 @@ function buildAction(
   };
 }
 
-interface FieldsTableProps {
+interface FieldsGridProps {
   row: Row;
   objects: SocketObject[];
   kind: DefinitionKind;
   baselineKey: string;
 }
 
-/** FR-5.1: one row per object - label, state, opcodes, validator (handlers
- * only), services, and the options shape from `classifyOptions`. */
-function FieldsTable({ row, objects, kind, baselineKey }: FieldsTableProps) {
+/**
+ * FR-5.1: one card per object - the object, its opcodes, and (for handlers)
+ * its validator.
+ *
+ * It used to be a six-column table that also repeated the state as a word,
+ * the services (which the Services tab owns) and the options shape (which
+ * the Options tab owns) - three columns of information available one click
+ * away, crowding out the one thing only this view shows. State is now
+ * carried by the card's tint, in the same colours as the grid cell it came
+ * from, and the word is kept only as the card's accessible label so it is
+ * never colour-only.
+ */
+function FieldsGrid({ row, objects, kind, baselineKey }: FieldsGridProps) {
   return (
-    <table className="w-full border-collapse text-left text-sm">
-      <thead>
-        <tr>
-          <th scope="col" className="border-b px-2 py-1">
-            Object
-          </th>
-          <th scope="col" className="border-b px-2 py-1">
-            State
-          </th>
-          <th scope="col" className="border-b px-2 py-1">
-            Opcode
-          </th>
-          {kind === "handler" && (
-            <th scope="col" className="border-b px-2 py-1">
-              Validator
-            </th>
-          )}
-          <th scope="col" className="border-b px-2 py-1">
-            Services
-          </th>
-          <th scope="col" className="border-b px-2 py-1">
-            Options
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {objects.map((o) => {
-          const cell = row.cells.get(o.key);
-          const bindings = cell?.bindings ?? [];
-          const state = cell?.state ?? "undefined";
-          const opcodes = bindings
-            .map((b) =>
-              b.opCodeValue !== null ? formatOpcode(b.opCodeValue) : b.opCode,
-            )
-            .join(", ");
-          const validators = Array.from(
-            new Set(
-              bindings.map((b) => b.validator).filter((v): v is string => !!v),
-            ),
-          ).join(", ");
-          const services = Array.from(
-            new Set(bindings.flatMap((b) => b.services)),
-          ).join(", ");
-          const shape = classifyOptions(bindings[0]?.options);
-          return (
-            <tr
-              key={o.key}
-              className={cn(o.key === baselineKey && "bg-muted/40")}
-            >
-              <td className="border-b px-2 py-1">{o.label}</td>
-              <td className="border-b px-2 py-1">{state}</td>
-              <td className="border-b px-2 py-1 font-mono">{opcodes}</td>
-              {kind === "handler" && (
-                <td className="border-b px-2 py-1">{validators}</td>
+    <ul className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-1.5">
+      {objects.map((o) => {
+        const cell = row.cells.get(o.key);
+        const bindings = cell?.bindings ?? [];
+        const state = cell?.state ?? "undefined";
+        const opcodes = bindings
+          .map((b) =>
+            b.opCodeValue !== null ? formatOpcode(b.opCodeValue) : b.opCode,
+          )
+          .join(", ");
+        const validators = Array.from(
+          new Set(
+            bindings.map((b) => b.validator).filter((v): v is string => !!v),
+          ),
+        ).join(", ");
+        return (
+          <li
+            key={o.key}
+            aria-label={`${o.label}: ${STATE_LABEL[state]}`}
+            className={cn(
+              "rounded-md border px-2.5 py-1.5",
+              STATE_CELL_CLASS[state],
+              o.key === baselineKey && "border-primary/60",
+            )}
+          >
+            <span className="text-muted-foreground block text-[10px] tracking-wide uppercase">
+              {o.label}
+            </span>
+            <span className="block font-mono text-sm">
+              {state === "defined" ? (
+                opcodes
+              ) : state === "unsupported" ? (
+                <span className="italic">unsupported</span>
+              ) : (
+                <span className="opacity-50">undefined</span>
               )}
-              <td className="border-b px-2 py-1">{services}</td>
-              <td className="border-b px-2 py-1">{shape}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+            </span>
+            {kind === "handler" && validators !== "" && (
+              <span className="text-muted-foreground block truncate text-[11px]">
+                {validators}
+              </span>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -219,11 +219,15 @@ function ServicesTable({ row, objects, baselineKey }: ServicesTableProps) {
 }
 
 /**
- * Opens on one Definition, scoped to one object (FR-5.2/5.3). Design §5.1:
- * lists EVERY binding of the scoped object with its own action row - the
- * only place a multi-binding Definition (NoOpHandler bound to four opcodes
- * in gms_95_1) is individually addressable; the grid cell can only show the
- * lowest opcode plus a count.
+ * Opens on one Definition, scoped to one object (FR-5.2/5.3), as a bottom
+ * sheet: the matrix is a wide grid, so the detail that explains one of its
+ * rows reads across the same width rather than in a narrow right-hand
+ * column.
+ *
+ * Design §5.1: lists EVERY binding of the scoped object with its own action
+ * row - the only place a multi-binding Definition (NoOpHandler bound to four
+ * opcodes in gms_95_1) is individually addressable; the grid cell can only
+ * show the lowest opcode plus a count.
  */
 export function DefinitionDrawer({
   row,
@@ -242,16 +246,17 @@ export function DefinitionDrawer({
   const scopeState = stateOf(scope, kind, row.name);
   const scopeCell = row.cells.get(scope.key);
   const bindings = scopeCell?.bindings ?? [];
-  // FR-5.4: Edit/Delete/Open have no meaning without a real Definition to
+  // FR-5.4: Edit/Undefine/Open have no meaning without a real Definition to
   // target; Add/Copy/Mark-unsupported still mean something on an Undefined
   // scope (that's precisely when you'd use them) so they are never disabled
-  // on this basis.
+  // on this basis - defining a definition that this template lacks is the
+  // whole point of being able to click an empty cell.
   const canTargetDefinition = scopeState === "defined";
 
-  // The top-level Edit/Delete/Open buttons act on ONE binding, but a
+  // The top-level Edit/Undefine/Open buttons act on ONE binding, but a
   // Definition can carry several (NoOpHandler: four opcodes in gms_95_1).
   // `lowestOpCodeValue` used to be the implicit target here, which meant
-  // "Delete NoOpHandler in GMS v83.1" silently deleted exactly one of four
+  // "Undefine NoOpHandler in GMS v83.1" silently removed exactly one of four
   // live routes while reading as if it removed the whole definition - a
   // data-loss hazard, not an ambiguity a throw could catch, because
   // resolving (name, opcode) to one binding always succeeds. The fix: these
@@ -269,8 +274,8 @@ export function DefinitionDrawer({
   const singleBindingDisabledReason: string | undefined =
     canTargetDefinition && !canTargetSingleBinding
       ? bindings.length > 1
-        ? "This definition has more than one binding in this scope - edit or delete the specific binding below."
-        : "This binding's opcode does not parse - edit or delete it directly below."
+        ? "This definition has more than one binding in this scope - edit or remove the specific binding on the right."
+        : "This binding's opcode does not parse - edit or remove it directly on the right."
       : undefined;
 
   // FR-7.2: a read-only scope (the Tenant page's ancestor column) disables
@@ -284,9 +289,10 @@ export function DefinitionDrawer({
   const label = (verb: string, preposition: string, ellipsis = true) =>
     actionLabel(verb, preposition, scope.label, { ellipsis });
 
-  // Only Open/Edit/Delete carry an opcode in the label - naming an already-
-  // unambiguous single target (FR-5.2 extended to the binding level), never
-  // spliced in a way that would break a caller matching `verb in <label>`.
+  // Only Open/Edit/Undefine carry an opcode in the accessible name - naming
+  // an already-unambiguous single target (FR-5.2 extended to the binding
+  // level), never spliced in a way that would break a caller matching
+  // `verb in <label>`.
   const targetLabel = (verb: string, preposition: string, ellipsis = true) =>
     actionLabel(verb, preposition, scope.label, {
       ellipsis,
@@ -313,6 +319,8 @@ export function DefinitionDrawer({
   const fireBinding = (type: "edit" | "delete", binding: Binding) =>
     onAction(buildAction(type, scope.key, row.name, binding.opCodeValue));
 
+  const kindLabel = kind === "handler" ? "Handler" : "Writer";
+
   return (
     <Sheet
       open
@@ -320,69 +328,92 @@ export function DefinitionDrawer({
         if (!open) onClose();
       }}
     >
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
-        <SheetHeader>
-          <SheetTitle>{row.name}</SheetTitle>
-          <SheetDescription>
-            Scoped to{" "}
-            <span className="text-foreground font-medium">{scope.label}</span>
-            {scope.key === baselineKey && (
-              <span className="bg-primary/10 text-primary ml-2 rounded px-1 text-[10px] uppercase">
-                baseline
+      <SheetContent
+        side="bottom"
+        className="max-h-[70vh] gap-3 overflow-y-auto p-4"
+      >
+        <SheetHeader className="pr-8">
+          <div className="flex flex-wrap items-center gap-2">
+            <SheetTitle className="font-mono">{row.name}</SheetTitle>
+            <span className="text-muted-foreground rounded-full border px-2 py-0.5 text-xs">
+              {kindLabel}
+            </span>
+            {row.fname && (
+              <span className="text-muted-foreground rounded-full border px-2 py-0.5 font-mono text-xs">
+                {row.fname}
               </span>
             )}
+            <span className="border-primary/60 text-primary bg-primary/10 rounded-full border px-2 py-0.5 text-xs">
+              {`scope: ${scope.label}`}
+              {scope.key === baselineKey && " · baseline"}
+            </span>
+          </div>
+          <SheetDescription>
+            {`Actions below apply to ${scope.label} only. Click another cell in this row to re-scope.`}
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
             size="sm"
             variant="outline"
             disabled={!canTargetSingleBinding}
-            title={singleBindingDisabledReason}
+            aria-label={targetLabel("Open", "in", false)}
+            title={
+              singleBindingDisabledReason ??
+              `Go to ${scope.label}'s ${kindLabel.toLowerCase()}s page with this definition selected.`
+            }
             onClick={() => fireTarget("open-in")}
           >
-            {targetLabel("Open", "in", false)}
+            Open ↗
           </Button>
           <Button
             type="button"
             size="sm"
             disabled={editDeleteDisabled}
-            title={editDeleteReason}
+            aria-label={targetLabel("Edit", "in")}
+            title={
+              editDeleteReason ??
+              `Change this binding's opcode, services${kind === "handler" ? ", validator" : ""} or options in ${scope.label}.`
+            }
             onClick={() => fireTarget("edit")}
           >
-            {targetLabel("Edit", "in")}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="destructive"
-            disabled={editDeleteDisabled}
-            title={editDeleteReason}
-            onClick={() => fireTarget("delete")}
-          >
-            {targetLabel("Delete", "in")}
+            Edit
           </Button>
           <Button
             type="button"
             size="sm"
             variant="outline"
             disabled={isReadOnly}
-            title={readOnlyReason}
+            aria-label={
+              canTargetDefinition
+                ? label("Add binding", "to")
+                : label("Define", "in")
+            }
+            title={
+              readOnlyReason ??
+              (canTargetDefinition
+                ? `Bind ${row.name} to a further opcode in ${scope.label}.`
+                : `${scope.label} has no ${row.name} yet - add it here.`)
+            }
             onClick={() => fire("add")}
           >
-            {label("Add", "to")}
+            {canTargetDefinition ? "Add binding" : "Define here"}
           </Button>
           <Button
             type="button"
             size="sm"
             variant="outline"
             disabled={isReadOnly}
-            title={readOnlyReason}
+            aria-label={label("Copy", "into")}
+            title={
+              readOnlyReason ??
+              `Copy ${row.name} from another object into ${scope.label}.`
+            }
             onClick={() => fire("copy")}
           >
-            {label("Copy", "into")}
+            Copy from…
           </Button>
           {scopeState === "unsupported" ? (
             <Button
@@ -390,10 +421,14 @@ export function DefinitionDrawer({
               size="sm"
               variant="outline"
               disabled={isReadOnly}
-              title={readOnlyReason}
+              aria-label={label("Clear unsupported", "in", false)}
+              title={
+                readOnlyReason ??
+                `Drop the audited-absent record, returning ${row.name} to Undefined in ${scope.label}.`
+              }
               onClick={() => fire("clear-unsupported")}
             >
-              {label("Clear unsupported", "in", false)}
+              Clear unsupported
             </Button>
           ) : (
             <Button
@@ -401,10 +436,14 @@ export function DefinitionDrawer({
               size="sm"
               variant="outline"
               disabled={isReadOnly}
-              title={readOnlyReason}
+              aria-label={label("Mark unsupported", "in")}
+              title={
+                readOnlyReason ??
+                `Record that this packet does not exist in ${scope.label}. The cell reads "n/a".`
+              }
               onClick={() => fire("mark-unsupported")}
             >
-              {label("Mark unsupported", "in")}
+              Mark unsupported
             </Button>
           )}
           {ancestor && scope.source === "tenant" && (
@@ -412,88 +451,114 @@ export function DefinitionDrawer({
               type="button"
               size="sm"
               variant="outline"
+              aria-label={label("Reset to Ancestor", "in")}
+              title={`Replace ${row.name} in ${scope.label} with ${ancestor.label}'s version.`}
               onClick={() => fire("reset-to-ancestor")}
             >
-              {label("Reset to Ancestor", "in")}
+              Reset to ancestor
             </Button>
           )}
+          <Button
+            type="button"
+            size="sm"
+            variant="destructive"
+            className="ml-auto"
+            disabled={editDeleteDisabled}
+            aria-label={targetLabel("Undefine", "in")}
+            title={
+              editDeleteReason ??
+              `Remove ${row.name} from ${scope.label}. The cell returns to Undefined.`
+            }
+            onClick={() => fireTarget("delete")}
+          >
+            Undefine
+          </Button>
         </div>
 
-        <section className="mt-4">
-          <h3 className="text-sm font-semibold">Bindings in {scope.label}</h3>
-          {bindings.length === 0 ? (
-            <p className="text-muted-foreground mt-1 text-sm">
-              No bindings in {scope.label}.
-            </p>
-          ) : (
-            <ul
-              aria-label={`Bindings in ${scope.label}`}
-              className="mt-2 space-y-1"
-            >
-              {bindings.map((binding, i) => (
-                <li
-                  key={`${binding.opCode}-${i}`}
-                  className="flex items-center justify-between gap-2 rounded border px-2 py-1 text-sm"
-                >
-                  <span className="font-mono">{binding.opCode}</span>
-                  <span className="flex gap-1">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      disabled={isReadOnly}
-                      title={readOnlyReason}
-                      onClick={() => fireBinding("edit", binding)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      disabled={isReadOnly}
-                      title={readOnlyReason}
-                      onClick={() => fireBinding("delete", binding)}
-                    >
-                      Delete
-                    </Button>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <div className="flex flex-col gap-4 md:flex-row">
+          <Tabs defaultValue="fields" className="min-w-0 flex-1">
+            <TabsList>
+              <TabsTrigger value="fields">Fields</TabsTrigger>
+              <TabsTrigger value="options">Options</TabsTrigger>
+              <TabsTrigger value="services">Services</TabsTrigger>
+            </TabsList>
+            <TabsContent value="fields">
+              <FieldsGrid
+                row={row}
+                objects={objects}
+                kind={kind}
+                baselineKey={baselineKey}
+              />
+            </TabsContent>
+            <TabsContent value="options">
+              <OptionsMatrixTable
+                objects={objects}
+                kind={kind}
+                name={row.name}
+                baselineKey={baselineKey}
+              />
+            </TabsContent>
+            <TabsContent value="services">
+              <ServicesTable
+                row={row}
+                objects={objects}
+                baselineKey={baselineKey}
+              />
+            </TabsContent>
+          </Tabs>
 
-        <Tabs defaultValue="fields" className="mt-4">
-          <TabsList>
-            <TabsTrigger value="fields">Fields</TabsTrigger>
-            <TabsTrigger value="options">Options</TabsTrigger>
-            <TabsTrigger value="services">Services</TabsTrigger>
-          </TabsList>
-          <TabsContent value="fields">
-            <FieldsTable
-              row={row}
-              objects={objects}
-              kind={kind}
-              baselineKey={baselineKey}
-            />
-          </TabsContent>
-          <TabsContent value="options">
-            <OptionsMatrixTable
-              objects={objects}
-              kind={kind}
-              name={row.name}
-              baselineKey={baselineKey}
-            />
-          </TabsContent>
-          <TabsContent value="services">
-            <ServicesTable
-              row={row}
-              objects={objects}
-              baselineKey={baselineKey}
-            />
-          </TabsContent>
-        </Tabs>
+          <section className="md:w-72 md:shrink-0">
+            <h3 className="text-sm font-semibold">Bindings in {scope.label}</h3>
+            {bindings.length === 0 ? (
+              <p className="text-muted-foreground mt-1 text-sm">
+                No bindings in {scope.label}.
+              </p>
+            ) : (
+              <ul
+                aria-label={`Bindings in ${scope.label}`}
+                className="mt-2 space-y-1"
+              >
+                {bindings.map((binding, i) => (
+                  <li
+                    key={`${binding.opCode}-${i}`}
+                    className="flex items-center justify-between gap-2 rounded border px-2 py-1 text-sm"
+                  >
+                    <span className="font-mono">{binding.opCode}</span>
+                    <span className="flex gap-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        disabled={isReadOnly}
+                        aria-label={`Edit ${binding.opCode} in ${scope.label}…`}
+                        title={readOnlyReason ?? `Change this binding only.`}
+                        onClick={() => fireBinding("edit", binding)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        disabled={isReadOnly}
+                        aria-label={`Remove ${binding.opCode} from ${scope.label}…`}
+                        title={
+                          readOnlyReason ??
+                          (bindings.length > 1
+                            ? `Remove this binding only - ${row.name} stays defined in ${scope.label} through its other ${bindings.length - 1} binding(s).`
+                            : `Remove this binding. ${row.name} becomes Undefined in ${scope.label}.`)
+                        }
+                        onClick={() => fireBinding("delete", binding)}
+                      >
+                        Remove
+                      </Button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
       </SheetContent>
     </Sheet>
   );

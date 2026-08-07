@@ -40,7 +40,12 @@ const templates: SocketObject[] = [
     majorVersion: 95,
     minorVersion: 1,
     handlers: new Map([["LoginHandle", [binding("0x01")]]]),
-    writers: new Map([["PetActivated", [binding("0x9A")]]]),
+    // Two writer opcodes, three apart, so the baseline has a real range for
+    // the opcode-gap scan to find holes in (0x9B and 0x9C).
+    writers: new Map([
+      ["PetActivated", [binding("0x9A")]],
+      ["PetMovement", [binding("0x9D")]],
+    ]),
     unsupportedHandlers: new Set(),
     unsupportedWriters: new Set(),
   },
@@ -118,6 +123,46 @@ describe("PacketMatrixPage", () => {
       "aria-selected",
       "true",
     );
+  });
+
+  it("explains the cell states in a legend below the grid", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("grid")).toBeInTheDocument());
+    expect(screen.getByText("Defined")).toBeInTheDocument();
+    expect(screen.getByText("Unsupported (audited)")).toBeInTheDocument();
+    expect(screen.getByText("Undefined")).toBeInTheDocument();
+    expect(screen.getByText(/1 definition ·/)).toBeInTheDocument();
+  });
+
+  // Both templates bind LoginHandle at 0x01 only, so the handlers view has
+  // no range to scan. The writers view does: baseline v95 spans 0x9A-0x9D,
+  // and nothing in view binds 0x9B or 0x9C.
+  it("inserts blank rows for opcodes in the baseline's range that nothing defines", async () => {
+    renderPage("/packet-matrix?mode=writers");
+    await waitFor(() => expect(screen.getByRole("grid")).toBeInTheDocument());
+    expect(screen.getAllByTestId("opcode-gap-row")).toHaveLength(2);
+    expect(
+      screen.getByRole("row", { name: /0x9B — no definition/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("row", { name: /0x9C — no definition/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("runs no gap scan where the baseline binds fewer than two opcodes", async () => {
+    renderPage("/packet-matrix?mode=writers&baseline=t83");
+    await waitFor(() => expect(screen.getByRole("grid")).toBeInTheDocument());
+    expect(screen.queryAllByTestId("opcode-gap-row")).toHaveLength(0);
+  });
+
+  it("drops the gap rows as soon as a filter narrows the view", async () => {
+    renderPage("/packet-matrix?mode=writers");
+    await waitFor(() => expect(screen.getByRole("grid")).toBeInTheDocument());
+    expect(screen.getAllByTestId("opcode-gap-row")).toHaveLength(2);
+    await userEvent.click(
+      screen.getByRole("button", { name: /options not supplied/i }),
+    );
+    expect(screen.queryAllByTestId("opcode-gap-row")).toHaveLength(0);
   });
 
   it("writes the mode back to the URL so the view is shareable", async () => {

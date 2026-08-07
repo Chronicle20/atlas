@@ -157,20 +157,28 @@ FR-4.2 Sorting is also supported by definition name, and by state.
 FR-4.3 Search matches definition name, `fname`, and opcode. Opcode matching MUST
 normalise numerically, so `0x2A`, `2A` and `42` all match the same cell.
 FR-4.4 Filters: state (Defined / Unsupported / Undefined), has options, options
-not supplied, and service.
+not supplied, and service. Every filter is evaluated **across the whole row** —
+a row survives when ANY visualized object satisfies it, never only the
+baseline (amended by §14 item 7).
 FR-4.5 On per-object Tenant pages, an additional filter for difference-from-
 ancestor state.
 
 ### 4.5 Row and cell selection
 
 FR-5.1 Selecting a row opens a detail drawer showing, per selected object:
-state, opcode, validator (handlers only), services, and options shape.
-FR-5.2 Clicking a **cell** rather than the definition name scopes the drawer's
-actions to that object. The scoped object is indicated visually and every action
-label names it (`Edit in v87.1…`).
+state, opcode and validator (handlers only). Services and options shape are
+NOT repeated here — each owns its own tab (amended by §14 item 11).
+FR-5.2 Clicking a **cell** — including an Undefined or Unsupported one, which
+is where a definition gets created or audited-absent (amended by §14 item 8) —
+rather than the definition name scopes the drawer's actions to that object. The
+scoped object is indicated visually and every action's ACCESSIBLE NAME names it
+(`Edit in v87.1…`); the visible label is the short verb, since the drawer header
+already states the scope once (amended by §14 item 9).
 FR-5.3 Clicking the definition name leaves the scope on the baseline.
 FR-5.4 Actions targeting an object where the Definition is Undefined MUST be
-disabled where they have no meaning (e.g. Open, Edit, Delete).
+disabled where they have no meaning (e.g. Open, Edit, Undefine). Define, Copy
+and Mark unsupported stay enabled — an Undefined scope is precisely when they
+apply.
 
 ### 4.6 Dialogs
 
@@ -541,3 +549,35 @@ Frontend gates:
 
 - [ ] `npm test` and `npm run build` clean in atlas-ui.
 - [ ] `tools/lint.sh --check` clean from the repo root.
+
+---
+
+## 14. Review feedback — round 1 (2026-08-07)
+
+Twelve items raised against the first implementation, after comparing it with
+`prototype.html`. Each is recorded here because several AMEND a requirement
+above rather than merely fixing a defect against it; the amendments are
+back-annotated inline.
+
+| # | Feedback | Resolution |
+|---|---|---|
+| 1 | The grid carried a `max-height: 70vh`, floating the frame's bottom border away from a short grid | The grid fills the frame (`min-h-0 flex-1`); the frame is the scroll boundary |
+| 2 | No legend below the matrix | `GridLegend` renders below the grid, inside the frame, from the same colour table the cells use |
+| 3 | The baseline dropdown did not show the selected value | Trigger reads `Baseline: GMS v95.1` |
+| 4 | Filters should be aggregating chips with suggestions on a second header line | Toolbar is two lines: line 1 = what you look at, line 2 = one chip per filter (dashed `+ Service` when inactive, `Service: Login ×` when active) |
+| 5 | Sort was visually indistinguishable from the filters | Sort moved into its own bordered group at the end of line 1 |
+| 6 | The detail drawer opened on the right, not the bottom | `Sheet side="bottom"`, max 70vh, with the tabs and the scope's binding list side by side |
+| 7 | The state filter only inspected the baseline | **Amends FR-4.4**: every filter aggregates across the row. `hasOptions: false` reads as "some DEFINED cell supplies none" |
+| 8 | Undefined/Unsupported cells were not clickable | **Amends FR-5.2**: every cell is a real hit area (Undefined renders a `·` placeholder); the drawer's Define / Mark unsupported are how you fill one in |
+| 9 | Drawer buttons were verbose and ambiguous | **Amends FR-5.2**: visible label is the short verb, accessible name keeps the full `verb in <scope> (opcode)` phrase, and every button carries a behaviour tooltip. Add relabels to "Define here" on an Undefined scope |
+| 10 | "Delete" did not match the grid's vocabulary | Removing the ONLY binding is now "Undefine" (button, dialog title, radio, toast); removing one of several stays "Remove binding" and says what survives |
+| 11 | The Fields tab repeated state, services and options | **Amends FR-5.1**: a card per object carrying opcode + validator, tinted by state (state word kept as the card's accessible label); services and options are their own tabs |
+| 12 | Contiguous opcode ranges hid the slots where no definition exists | `withOpcodeGaps` interleaves a blank row for every opcode inside the BASELINE's [min, max] that NO visualized object binds. Always on when sorted by opcode and no filter is active |
+
+Two decisions of record from this round:
+
+- **Item 6** is a bottom **Sheet** (still modal), not the prototype's docked
+  panel — the focus-trap and close semantics of the existing drawer are kept.
+- **Item 12** scans ONE opcode namespace, not one per service. A login handler
+  and a channel handler at the same number both suppress that gap, which
+  under-reports login-range holes. Accepted deliberately for a quieter grid.

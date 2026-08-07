@@ -3,7 +3,10 @@ import {
   buildRows,
   emptyFilters,
   filterRows,
+  hasActiveFilters,
+  isGapRow,
   sortRows,
+  withOpcodeGaps,
 } from "@/lib/socket/matrix";
 import type { Binding, SocketObject } from "@/lib/socket/model";
 import { parseOpcode } from "@/lib/socket/opcode";
@@ -481,13 +484,28 @@ describe("filterRows", () => {
     }
   });
 
-  it("filters by state within the baseline object", () => {
+  it("filters by state across the whole row, not just the baseline", () => {
     const got = filterRows(
       rows,
       { ...emptyFilters(), states: ["unsupported"] },
       "a",
     );
     expect(got.map((r) => r.name)).toEqual(["MonsterCarnival"]);
+  });
+
+  // The point of the matrix: "which definitions is SOME template missing?".
+  // Both surviving rows are Defined in the baseline ("a") and Undefined in
+  // "b" - a baseline-scoped state filter would return nothing at all here.
+  it("keeps a row when any object is in the filtered state", () => {
+    const got = filterRows(
+      rows,
+      { ...emptyFilters(), states: ["undefined"] },
+      "a",
+    );
+    expect(got.map((r) => r.name).sort()).toEqual([
+      "AuthSuccess",
+      "MonsterCarnival",
+    ]);
   });
 
   it("filters to rows carrying the options-omission marker", () => {
@@ -499,16 +517,21 @@ describe("filterRows", () => {
     expect(got.map((r) => r.name)).toEqual(["CharacterMovement"]);
   });
 
-  it("filters by hasOptions=true to rows whose baseline cell supplies options", () => {
+  it("filters by hasOptions=true to rows where any object supplies options", () => {
     const got = filterRows(rows, { ...emptyFilters(), hasOptions: true }, "a");
     expect(got.map((r) => r.name)).toEqual(["CharacterMovement"]);
   });
 
-  it("filters by hasOptions=false to rows whose baseline cell supplies none", () => {
+  // "no options" is asked of DEFINED cells only: CharacterMovement qualifies
+  // through "b" (defined, no options) even though the baseline "a" supplies
+  // them, while MonsterCarnival - unsupported in "a", undefined in "b", so
+  // defined nowhere - is not a definition that omits options, it is not a
+  // definition at all here.
+  it("filters by hasOptions=false to rows where any DEFINED object supplies none", () => {
     const got = filterRows(rows, { ...emptyFilters(), hasOptions: false }, "a");
     expect(got.map((r) => r.name).sort()).toEqual([
       "AuthSuccess",
-      "MonsterCarnival",
+      "CharacterMovement",
     ]);
   });
 
@@ -537,5 +560,121 @@ describe("filterRows", () => {
       "a",
     );
     expect(got).toHaveLength(0);
+  });
+});
+
+describe("hasActiveFilters", () => {
+  it("is false for the empty filter set", () => {
+    expect(hasActiveFilters(emptyFilters())).toBe(false);
+  });
+
+  it("is true for a whitespace-trimmed non-empty query", () => {
+    expect(hasActiveFilters({ ...emptyFilters(), query: "  " })).toBe(false);
+    expect(hasActiveFilters({ ...emptyFilters(), query: " a " })).toBe(true);
+  });
+
+  it("is true for every other filter", () => {
+    expect(hasActiveFilters({ ...emptyFilters(), states: ["defined"] })).toBe(
+      true,
+    );
+    expect(
+      hasActiveFilters({ ...emptyFilters(), optionsMissingOnly: true }),
+    ).toBe(true);
+    expect(hasActiveFilters({ ...emptyFilters(), hasOptions: false })).toBe(
+      true,
+    );
+    expect(hasActiveFilters({ ...emptyFilters(), services: ["login"] })).toBe(
+      true,
+    );
+  });
+});
+
+describe("withOpcodeGaps", () => {
+  // Baseline "base" binds 0x01, 0x03 and 0x06; "other" binds 0x04 (and 0x09,
+  // outside the baseline's range). So inside [0x01, 0x06] the unbound values
+  // are 0x02 and 0x05 - 0x04 is covered by a sibling and is NOT a gap.
+  const base = obj("base", 95, {
+    Alpha: [binding("0x01")],
+    Gamma: [binding("0x03")],
+    Zeta: [binding("0x06")],
+  });
+  const other = obj("other", 83, {
+    Delta: [binding("0x04")],
+    Outside: [binding("0x09")],
+  });
+  const objects = [base, other];
+  const built = buildRows({ objects, kind: "writer", baselineKey: "base" });
+  const input = {
+    objects,
+    kind: "writer" as const,
+    baselineKey: "base",
+    direction: "asc" as const,
+  };
+
+  it("inserts a blank row only where nothing in view binds the opcode", () => {
+    const out = withOpcodeGaps(sortRows(built, "opcode", "asc"), input);
+    const gaps = out.filter(isGapRow).map((g) => g.opCodeValue);
+    expect(gaps).toEqual([0x02, 0x05]);
+  });
+
+  it("places each gap at its opcode position, ascending", () => {
+    const out = withOpcodeGaps(sortRows(built, "opcode", "asc"), input);
+    expect(
+      out.map((r) => (isGapRow(r) ? `gap:${r.opCodeValue}` : r.name)),
+    ).toEqual(["Alpha", "gap:2", "Gamma", "gap:5", "Zeta", "Delta", "Outside"]);
+  });
+
+  it("mirrors the placement when the sort direction is descending", () => {
+    const out = withOpcodeGaps(sortRows(built, "opcode", "desc"), {
+      ...input,
+      direction: "desc",
+    });
+    expect(
+      out.map((r) => (isGapRow(r) ? `gap:${r.opCodeValue}` : r.name)),
+    ).toEqual(["Zeta", "gap:5", "Gamma", "gap:2", "Alpha", "Delta", "Outside"]);
+  });
+
+  it("returns the rows untouched when the baseline has fewer than two opcodes", () => {
+    const lone = obj("lone", 95, { Only: [binding("0x01")] });
+    const loneRows = buildRows({
+      objects: [lone],
+      kind: "writer",
+      baselineKey: "lone",
+    });
+    expect(
+      withOpcodeGaps(loneRows, {
+        objects: [lone],
+        kind: "writer",
+        baselineKey: "lone",
+        direction: "asc",
+      }),
+    ).toEqual(loneRows);
+  });
+
+  it("returns the rows untouched when the baseline is not among the objects", () => {
+    expect(withOpcodeGaps(built, { ...input, baselineKey: "nope" })).toEqual(
+      built,
+    );
+  });
+
+  it("returns the rows untouched when the baseline's range is fully bound", () => {
+    const dense = obj("dense", 95, {
+      A: [binding("0x01")],
+      B: [binding("0x02")],
+      C: [binding("0x03")],
+    });
+    const denseRows = buildRows({
+      objects: [dense],
+      kind: "writer",
+      baselineKey: "dense",
+    });
+    expect(
+      withOpcodeGaps(denseRows, {
+        objects: [dense],
+        kind: "writer",
+        baselineKey: "dense",
+        direction: "asc",
+      }),
+    ).toEqual(denseRows);
   });
 });

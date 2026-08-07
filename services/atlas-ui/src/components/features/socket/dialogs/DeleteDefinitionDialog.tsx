@@ -37,11 +37,18 @@ type DeleteChoice = "remove" | "remove-unsupported";
 
 /**
  * FR-6.3. Two explicit, separately-chosen outcomes:
- *   - "Remove definition" -> `deleteBinding`, exactly the one binding
- *     addressed by `(name, opCodeValue)`.
- *   - "Remove and mark unsupported" -> `markUnsupported`, which necessarily
- *     removes EVERY binding of `name` (unsupported is name-scoped, bindings
- *     are opcode-scoped) - the warning states the count before it's chosen.
+ *   - `deleteBinding`, exactly the one binding addressed by
+ *     `(name, opCodeValue)`.
+ *   - `markUnsupported`, which necessarily removes EVERY binding of `name`
+ *     (unsupported is name-scoped, bindings are opcode-scoped) - the warning
+ *     states the count before it's chosen.
+ *
+ * The wording tracks the grid's own vocabulary, and tracks the binding
+ * count. Removing the ONLY binding is what the grid calls Undefining -
+ * the cell goes from Defined back to Undefined - so that is what the
+ * dialog calls it. Removing one of several is NOT undefining anything: the
+ * definition stays Defined through its remaining bindings, so that case
+ * says "remove this binding" and says what survives.
  */
 export function DeleteDefinitionDialog({
   open,
@@ -61,6 +68,7 @@ export function DeleteDefinitionDialog({
   // doesn't carry the binding being deleted (should not happen - opCodeValue
   // addresses a real binding - but "singular" is the safe default wording).
   const count = entriesOf(scope, kind).get(name)?.length ?? 1;
+  const isLastBinding = count <= 1;
 
   // Reset the choice back to "remove" whenever the dialog transitions from
   // closed to open (adjust state during render per
@@ -83,7 +91,9 @@ export function DeleteDefinitionDialog({
       });
       toast.success(
         choice === "remove"
-          ? `Removed ${name} (${opcodeLabel}) from ${targetLabel}`
+          ? isLastBinding
+            ? `Undefined ${name} (${opcodeLabel}) in ${targetLabel}`
+            : `Removed the ${opcodeLabel} binding of ${name} from ${targetLabel}`
           : `Marked ${name} unsupported in ${targetLabel}`,
       );
       onOpenChange(false);
@@ -97,7 +107,9 @@ export function DeleteDefinitionDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            Remove {name} ({opcodeLabel}) from {targetLabel}
+            {isLastBinding
+              ? `Undefine ${name} in ${targetLabel}`
+              : `Remove the ${opcodeLabel} binding of ${name} from ${targetLabel}`}
           </DialogTitle>
         </DialogHeader>
 
@@ -114,10 +126,12 @@ export function DeleteDefinitionDialog({
             />
             <div>
               <Label htmlFor="delete-choice-remove" className="font-normal">
-                Remove definition
+                {isLastBinding ? "Undefine" : "Remove this binding"}
               </Label>
               <p className="text-muted-foreground text-xs">
-                {`Removes only the binding at ${opcodeLabel}. Other bindings of "${name}" in ${targetLabel}, if any, are untouched.`}
+                {isLastBinding
+                  ? `Removes the only binding (${opcodeLabel}). "${name}" becomes Undefined in ${targetLabel} - the cell empties, with no record of why.`
+                  : `Removes only the binding at ${opcodeLabel}. The other ${count - 1} binding(s) of "${name}" in ${targetLabel} are untouched, so it stays Defined there.`}
               </p>
             </div>
           </div>
@@ -132,12 +146,12 @@ export function DeleteDefinitionDialog({
                 htmlFor="delete-choice-unsupported"
                 className="font-normal"
               >
-                Remove and mark unsupported
+                Undefine and mark unsupported
               </Label>
               <p className="text-muted-foreground text-xs">
                 {count > 1
-                  ? `All ${count} bindings of "${name}" will be removed and the name recorded as audited-absent - unsupported is name-scoped, not opcode-scoped.`
-                  : `This binding of "${name}" will be removed and the name recorded as audited-absent.`}
+                  ? `All ${count} bindings of "${name}" will be removed and the name recorded as audited-absent - unsupported is name-scoped, not opcode-scoped. The cell reads "n/a".`
+                  : `This binding of "${name}" will be removed and the name recorded as audited-absent, so the cell reads "n/a" rather than sitting empty.`}
               </p>
             </div>
           </div>
@@ -157,7 +171,11 @@ export function DeleteDefinitionDialog({
             disabled={mutation.isPending}
             onClick={onConfirm}
           >
-            {choice === "remove" ? "Remove" : "Remove and mark unsupported"}
+            {choice === "remove"
+              ? isLastBinding
+                ? "Undefine"
+                : "Remove binding"
+              : "Undefine and mark unsupported"}
           </Button>
         </DialogFooter>
       </DialogContent>

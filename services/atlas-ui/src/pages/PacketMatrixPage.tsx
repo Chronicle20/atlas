@@ -6,6 +6,7 @@ import {
   DefinitionDrawer,
   type DrawerAction,
 } from "@/components/features/socket/DefinitionDrawer";
+import { GridLegend } from "@/components/features/socket/GridLegend";
 import { GridToolbar } from "@/components/features/socket/GridToolbar";
 import {
   PacketGrid,
@@ -18,7 +19,9 @@ import {
   buildRows,
   emptyFilters,
   filterRows,
+  hasActiveFilters,
   sortRows,
+  withOpcodeGaps,
   type GridFilters,
   type SortDirection,
   type SortKey,
@@ -133,6 +136,23 @@ export function PacketMatrixPage() {
     [objects, kind, baselineKey, filters, sort],
   );
 
+  // Blank rows for the opcodes nothing in view defines (FR-2 addendum). Only
+  // in an opcode-ordered, unfiltered view: a gap has no name and no state, so
+  // it can neither be placed in a name/state ordering nor survive a filter.
+  const showsOpcodeGaps = sort.key === "opcode" && !hasActiveFilters(filters);
+  const gridRows = useMemo(
+    () =>
+      showsOpcodeGaps
+        ? withOpcodeGaps(rows, {
+            objects,
+            kind,
+            baselineKey,
+            direction: sort.direction,
+          })
+        : rows,
+    [showsOpcodeGaps, rows, objects, kind, baselineKey, sort.direction],
+  );
+
   const defParam = searchParams.get("def");
   const [selection, setSelection] = useState<GridSelection | null>(null);
   // Seeds `selection` from the `def` deep link once the templates have
@@ -210,13 +230,14 @@ export function PacketMatrixPage() {
           onSortChange={setSort}
         />
         <PacketGrid
-          rows={rows}
+          rows={gridRows}
           objects={objects}
           baselineKey={baselineKey}
           showFName={showFName}
           selection={selection}
           onSelect={handleGridSelect}
         />
+        <GridLegend rowCount={rows.length} showsOpcodeGaps={showsOpcodeGaps} />
       </div>
 
       {drawerOpen && selection && selectedRow && (

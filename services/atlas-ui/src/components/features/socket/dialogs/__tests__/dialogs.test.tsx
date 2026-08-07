@@ -289,10 +289,10 @@ describe("DeleteDefinitionDialog", () => {
       { wrapper },
     );
     expect(
-      screen.getByRole("radio", { name: /remove definition/i }),
+      screen.getByRole("radio", { name: /remove this binding/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("radio", { name: /remove and mark unsupported/i }),
+      screen.getByRole("radio", { name: /undefine and mark unsupported/i }),
     ).toBeInTheDocument();
   });
 
@@ -327,7 +327,9 @@ describe("DeleteDefinitionDialog", () => {
       />,
       { wrapper },
     );
-    await userEvent.click(screen.getByRole("button", { name: /^remove$/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /^remove binding$/i }),
+    );
     const { apply } = mutateAsync.mock.calls[0]![0] as {
       apply: (c: SocketConfig) => SocketConfig;
     };
@@ -351,7 +353,7 @@ describe("DeleteDefinitionDialog", () => {
       { wrapper },
     );
     await userEvent.click(
-      screen.getByRole("radio", { name: /remove and mark unsupported/i }),
+      screen.getByRole("radio", { name: /undefine and mark unsupported/i }),
     );
     expect(screen.getByText(/all 2 bindings/i)).toBeInTheDocument();
   });
@@ -384,7 +386,7 @@ describe("DeleteDefinitionDialog", () => {
       { wrapper },
     );
     await userEvent.click(
-      screen.getByRole("radio", { name: /remove and mark unsupported/i }),
+      screen.getByRole("radio", { name: /undefine and mark unsupported/i }),
     );
     expect(screen.getByText(/all 4 bindings/i)).toBeInTheDocument();
   });
@@ -404,10 +406,10 @@ describe("DeleteDefinitionDialog", () => {
       { wrapper },
     );
     await userEvent.click(
-      screen.getByRole("radio", { name: /remove and mark unsupported/i }),
+      screen.getByRole("radio", { name: /undefine and mark unsupported/i }),
     );
     await userEvent.click(
-      screen.getByRole("button", { name: /remove and mark unsupported/i }),
+      screen.getByRole("button", { name: /undefine and mark unsupported/i }),
     );
     const { apply } = mutateAsync.mock.calls[0]![0] as {
       apply: (c: SocketConfig) => SocketConfig;
@@ -630,7 +632,7 @@ describe("MutationError surfacing", () => {
       />,
       { wrapper },
     );
-    await userEvent.click(screen.getByRole("button", { name: /^remove$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^undefine$/i }));
     await waitFor(() =>
       expect(toastError).toHaveBeenCalledWith(
         expect.stringMatching(

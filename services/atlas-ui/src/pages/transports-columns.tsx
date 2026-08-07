@@ -1,5 +1,6 @@
-import { type ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
+
+import { type DataTableColumnDef } from "@/components/data-table-features";
 
 import { MapCell } from "@/components/map-cell";
 import { Countdown } from "@/components/features/transports/Countdown";
@@ -20,7 +21,7 @@ interface ScheduledRouteColumnDeps {
 export function createScheduledRouteColumns({
   tenant,
   vessels,
-}: ScheduledRouteColumnDeps): ColumnDef<ScheduledRoute>[] {
+}: ScheduledRouteColumnDeps): DataTableColumnDef<ScheduledRoute>[] {
   return [
     {
       id: "name",

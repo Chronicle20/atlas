@@ -105,6 +105,7 @@ configMapGenerator:
       - COMMAND_TOPIC_QUEST_CONVERSATION=COMMAND_TOPIC_QUEST_CONVERSATION-main
       - COMMAND_TOPIC_REACTOR=COMMAND_TOPIC_REACTOR-main
       - COMMAND_TOPIC_REACTOR_ACTIONS=COMMAND_TOPIC_REACTOR_ACTIONS-main
+      - COMMAND_TOPIC_REPORT=COMMAND_TOPIC_REPORT-main
       - COMMAND_TOPIC_RPS=COMMAND_TOPIC_RPS-main
       - COMMAND_TOPIC_SAGA=COMMAND_TOPIC_SAGA-main
       - COMMAND_TOPIC_SKILL=COMMAND_TOPIC_SKILL-main
@@ -183,6 +184,7 @@ configMapGenerator:
       - EVENT_TOPIC_PET_STATUS=EVENT_TOPIC_PET_STATUS-main
       - EVENT_TOPIC_QUEST_STATUS=EVENT_TOPIC_QUEST_STATUS-main
       - EVENT_TOPIC_REACTOR_STATUS=EVENT_TOPIC_REACTOR_STATUS-main
+      - EVENT_TOPIC_REPORT_STATUS=EVENT_TOPIC_REPORT_STATUS-main
       - EVENT_TOPIC_RPS=EVENT_TOPIC_RPS-main
       - EVENT_TOPIC_SAGA_STATUS=EVENT_TOPIC_SAGA_STATUS-main
       - EVENT_TOPIC_SEED_STATUS=EVENT_TOPIC_SEED_STATUS-main
@@ -323,10 +325,10 @@ images:
   - name: ghcr.io/chronicle20/atlas-tenants/atlas-tenants
     newTag: main-d3b301b
   - name: ghcr.io/chronicle20/atlas-transports/atlas-transports
-    newTag: main-d3b301b
+    newTag: main-fb2a984
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
     newTag: main-d3b301b
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-b314e14
+    newTag: main-fb2a984
 commonLabels:
   atlas.env: main

@@ -39,6 +39,7 @@ export const sidebarItems: SidebarGroupItem[] = [
       { title: "Maps", url: "/maps" },
       { title: "Reactors", url: "/reactors" },
       { title: "Reward Pools", url: "/reward-pools" },
+      { title: "Transports", url: "/transports" },
     ],
   },
   {
@@ -47,6 +48,7 @@ export const sidebarItems: SidebarGroupItem[] = [
     icon: Shield,
     children: [
       { title: "Bans", url: "/bans" },
+      { title: "Reports", url: "/reports" },
       { title: "Login History", url: "/login-history" },
     ],
   },

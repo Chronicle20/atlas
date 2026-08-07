@@ -1,0 +1,32 @@
+# SueCharacterResult — CWvsContext::OnSueCharacterResult result-code table.
+# Codes 0-3 byte-identical in v83 (0xa29739) and v95 (0x9fae10), IDA-verified
+# (task-145 packet-findings.md §1). v61 (0x84a04e), v72 (0x9216f0), v79
+# (0x9735a5) independently decompiled during task-145 Task 18: identical
+# switch structure (v2==0/1/2/3/default) to v83/v95, only the internal
+# StringPool ids differ (version-build-local resource indices, not wire
+# values) — so the mode table is version-stable across all seven columns.
+# gms_v92 (0x9cf950) also decompiled during Task 18: compiler-emitted
+# `switch(v2)` with the same 0/1/2/3/default arms — same mode table, despite
+# the writer's own opCode (0x38) being a genuine anomaly relative to its
+# neighbours (v87/v95 both 0x37; confirmed correct, not a copy error — see
+# scope-amendment.md). Any code outside 0-3 renders the generic-failure
+# line; 4 is the deliberate "other" bucket key.
+writer: SueCharacterResult
+fname: CWvsContext::OnSueCharacterResult
+op: SUE_CHARACTER_RESULT
+direction: clientbound
+opcodes:
+  gms_v61: "0x34"
+  gms_v72: "0x34"
+  gms_v79: "0x34"
+  gms_v83: "0x37"
+  gms_v84: "0x37"
+  gms_v87: "0x37"
+  gms_v92: "0x38"
+  gms_v95: "0x37"
+operations:
+  - { key: SUCCESS,          modes: { gms_v61: 0, gms_v72: 0, gms_v79: 0, gms_v83: 0, gms_v84: 0, gms_v87: 0, gms_v92: 0, gms_v95: 0 } }
+  - { key: UNABLE_TO_LOCATE, modes: { gms_v61: 1, gms_v72: 1, gms_v79: 1, gms_v83: 1, gms_v84: 1, gms_v87: 1, gms_v92: 1, gms_v95: 1 } }
+  - { key: DAILY_LIMIT,      modes: { gms_v61: 2, gms_v72: 2, gms_v79: 2, gms_v83: 2, gms_v84: 2, gms_v87: 2, gms_v92: 2, gms_v95: 2 } }
+  - { key: REPORTED_NOTICE,  modes: { gms_v61: 3, gms_v72: 3, gms_v79: 3, gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v92: 3, gms_v95: 3 } }
+  - { key: GENERIC_FAILURE,  modes: { gms_v61: 4, gms_v72: 4, gms_v79: 4, gms_v83: 4, gms_v84: 4, gms_v87: 4, gms_v92: 4, gms_v95: 4 } }

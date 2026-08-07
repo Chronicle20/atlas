@@ -21,6 +21,7 @@ type ProcessorMock struct {
 	GetRouteFunc                      func(id uuid.UUID) (instance.RouteModel, bool)
 	IsTransitMapFunc                  func(mapId _map.Id) bool
 	GetRouteByTransitMapFunc          func(mapId _map.Id) (instance.RouteModel, error)
+	GetInstancesByRouteFunc           func(routeId uuid.UUID) []instance.TransportInstance
 	StartTransportFunc                func(mb *message.Buffer) func(characterId uint32, routeId uuid.UUID, f field.Model) error
 	StartTransportAndEmitFunc         func(characterId uint32, routeId uuid.UUID, f field.Model) error
 	HandleMapEnterFunc                func(mb *message.Buffer) func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error
@@ -80,6 +81,13 @@ func (m *ProcessorMock) GetRouteByTransitMap(mapId _map.Id) (instance.RouteModel
 		return m.GetRouteByTransitMapFunc(mapId)
 	}
 	return instance.RouteModel{}, nil
+}
+
+func (m *ProcessorMock) GetInstancesByRoute(routeId uuid.UUID) []instance.TransportInstance {
+	if m.GetInstancesByRouteFunc != nil {
+		return m.GetInstancesByRouteFunc(routeId)
+	}
+	return []instance.TransportInstance{}
 }
 
 func (m *ProcessorMock) StartTransport(mb *message.Buffer) func(characterId uint32, routeId uuid.UUID, f field.Model) error {

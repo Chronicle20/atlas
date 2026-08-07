@@ -105,53 +105,81 @@ func (m Model) UpdateState(now time.Time) (Model, bool, error) {
 	return updated, m.State() != newState, nil
 }
 
-func (m Model) processStateChange(now time.Time) RouteState {
-	// Find the next trip
+// Transition is the result of evaluating a route's schedule against a moment
+// in time: the state the route is in now, the state it moves to next, and the
+// absolute instant of that move.
+//
+// Trip-schedule timestamps carry the date of the day the schedule was computed
+// and only their time-of-day component is meaningful (the schedule is computed
+// once per reconcile; the 1-second ticker only re-derives state from it). NextAt
+// is that time-of-day boundary projected onto the first instant strictly after
+// `now`, so - unlike a raw trip row - it is safe to render as an absolute
+// timestamp. When State is OutOfService there is no boundary: NextState is ""
+// and NextAt is the zero time.
+type Transition struct {
+	State     RouteState
+	NextState RouteState
+	NextAt    time.Time
+}
+
+// timeOfDay strips the date from t, leaving only a comparable time of day.
+// Every schedule comparison in this file goes through it.
+func timeOfDay(t time.Time) time.Time {
+	return time.Date(0, 1, 1, t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), time.UTC)
+}
+
+// materializeBoundary projects a time-of-day boundary onto the first instant
+// strictly after now, in now's own date and location - the same frame the
+// time-of-day comparisons use, so the state and the boundary can never
+// disagree about which side of a transition we are on.
+func materializeBoundary(now time.Time, boundary time.Time) time.Time {
+	at := time.Date(now.Year(), now.Month(), now.Day(),
+		boundary.Hour(), boundary.Minute(), boundary.Second(), boundary.Nanosecond(),
+		now.Location())
+	if !at.After(now) {
+		at = at.Add(24 * time.Hour)
+	}
+	return at
+}
+
+// Evaluate derives the route's state at `now` together with the transition it
+// is counting down to. The trip-selection and branch structure is the state
+// machine this service has always run; each branch now also names the boundary
+// it is waiting on.
+func (m Model) Evaluate(now time.Time) Transition {
 	var nextTrip *TripScheduleModel
 	var inTransitTrip *TripScheduleModel
 	var futureTrip *TripScheduleModel
-	var arrivedTrip *TripScheduleModel
 
-	// Get the current time of day
-	nowTimeOfDay := time.Date(0, 1, 1, now.Hour(), now.Minute(), now.Second(), now.Nanosecond(), time.UTC)
+	nowTimeOfDay := timeOfDay(now)
 
 	for i := range m.Schedule() {
 		trip := m.schedule[i]
-		if trip.RouteId() == m.Id() {
-			// Extract time of day from trip times
-			tripDepartureTimeOfDay := time.Date(0, 1, 1, trip.Departure().Hour(), trip.Departure().Minute(), trip.Departure().Second(), trip.Departure().Nanosecond(), time.UTC)
-			tripArrivalTimeOfDay := time.Date(0, 1, 1, trip.Arrival().Hour(), trip.Arrival().Minute(), trip.Arrival().Second(), trip.Arrival().Nanosecond(), time.UTC)
+		if trip.RouteId() != m.Id() {
+			continue
+		}
 
-			// Handle cases where times cross midnight
-			if tripArrivalTimeOfDay.Before(tripDepartureTimeOfDay) {
-				// If arrival is before departure in time of day, it means arrival is on the next day
-				if nowTimeOfDay.After(tripDepartureTimeOfDay) || nowTimeOfDay.Before(tripArrivalTimeOfDay) {
-					// Current time is either after departure or before arrival (crossing midnight)
-					if inTransitTrip == nil || tripDepartureTimeOfDay.After(time.Date(0, 1, 1, inTransitTrip.Departure().Hour(), inTransitTrip.Departure().Minute(), inTransitTrip.Departure().Second(), inTransitTrip.Departure().Nanosecond(), time.UTC)) {
-						inTransitTrip = &trip
-					}
-				}
-			} else {
-				// Normal case (no midnight crossing)
-				if nowTimeOfDay.After(tripDepartureTimeOfDay) && nowTimeOfDay.Before(tripArrivalTimeOfDay) {
-					if inTransitTrip == nil || tripDepartureTimeOfDay.After(time.Date(0, 1, 1, inTransitTrip.Departure().Hour(), inTransitTrip.Departure().Minute(), inTransitTrip.Departure().Second(), inTransitTrip.Departure().Nanosecond(), time.UTC)) {
-						inTransitTrip = &trip
-					}
+		tripDepartureTimeOfDay := timeOfDay(trip.Departure())
+		tripArrivalTimeOfDay := timeOfDay(trip.Arrival())
+
+		if tripArrivalTimeOfDay.Before(tripDepartureTimeOfDay) {
+			// Arrival is before departure in time of day: the trip crosses midnight.
+			if nowTimeOfDay.After(tripDepartureTimeOfDay) || nowTimeOfDay.Before(tripArrivalTimeOfDay) {
+				if inTransitTrip == nil || tripDepartureTimeOfDay.After(timeOfDay(inTransitTrip.Departure())) {
+					inTransitTrip = &trip
 				}
 			}
-
-			// Handle future trips
-			if tripDepartureTimeOfDay.After(nowTimeOfDay) {
-				if futureTrip == nil || tripDepartureTimeOfDay.Before(time.Date(0, 1, 1, futureTrip.Departure().Hour(), futureTrip.Departure().Minute(), futureTrip.Departure().Second(), futureTrip.Departure().Nanosecond(), time.UTC)) {
-					futureTrip = &trip
+		} else {
+			if nowTimeOfDay.After(tripDepartureTimeOfDay) && nowTimeOfDay.Before(tripArrivalTimeOfDay) {
+				if inTransitTrip == nil || tripDepartureTimeOfDay.After(timeOfDay(inTransitTrip.Departure())) {
+					inTransitTrip = &trip
 				}
 			}
+		}
 
-			// Handle arrived trips
-			if tripArrivalTimeOfDay.Before(nowTimeOfDay) {
-				if arrivedTrip == nil || tripArrivalTimeOfDay.After(time.Date(0, 1, 1, arrivedTrip.Arrival().Hour(), arrivedTrip.Arrival().Minute(), arrivedTrip.Arrival().Second(), arrivedTrip.Arrival().Nanosecond(), time.UTC)) {
-					arrivedTrip = &trip
-				}
+		if tripDepartureTimeOfDay.After(nowTimeOfDay) {
+			if futureTrip == nil || tripDepartureTimeOfDay.Before(timeOfDay(futureTrip.Departure())) {
+				futureTrip = &trip
 			}
 		}
 	}
@@ -163,47 +191,45 @@ func (m Model) processStateChange(now time.Time) RouteState {
 		nextTrip = futureTrip
 	}
 
-	// If no next trip, set state to awaiting_return
 	if nextTrip == nil {
-		return OutOfService
+		return Transition{State: OutOfService}
 	}
 
-	// Extract time of day from next trip times for comparison
-	nextTripBoardingOpenTimeOfDay := time.Date(0, 1, 1, nextTrip.BoardingOpen().Hour(), nextTrip.BoardingOpen().Minute(), nextTrip.BoardingOpen().Second(), nextTrip.BoardingOpen().Nanosecond(), time.UTC)
-	nextTripBoardingClosedTimeOfDay := time.Date(0, 1, 1, nextTrip.BoardingClosed().Hour(), nextTrip.BoardingClosed().Minute(), nextTrip.BoardingClosed().Second(), nextTrip.BoardingClosed().Nanosecond(), time.UTC)
-	nextTripDepartureTimeOfDay := time.Date(0, 1, 1, nextTrip.Departure().Hour(), nextTrip.Departure().Minute(), nextTrip.Departure().Second(), nextTrip.Departure().Nanosecond(), time.UTC)
-	nextTripArrivalTimeOfDay := time.Date(0, 1, 1, nextTrip.Arrival().Hour(), nextTrip.Arrival().Minute(), nextTrip.Arrival().Second(), nextTrip.Arrival().Nanosecond(), time.UTC)
-
-	// Handle cases where times cross midnight
-	if nextTripArrivalTimeOfDay.Before(nextTripDepartureTimeOfDay) {
-		// If arrival is before departure in time of day, it means arrival is on the next day
-		if nowTimeOfDay.Before(nextTripBoardingOpenTimeOfDay) && nowTimeOfDay.After(nextTripArrivalTimeOfDay) {
-			return AwaitingReturn
-		} else if nowTimeOfDay.Before(nextTripBoardingClosedTimeOfDay) {
-			return OpenEntry
-		} else if nowTimeOfDay.Before(nextTripDepartureTimeOfDay) {
-			return LockedEntry
-		} else {
-			return InTransit
-		}
-	} else {
-		// Normal case (no midnight crossing)
-		if nowTimeOfDay.Before(nextTripBoardingOpenTimeOfDay) {
-			return AwaitingReturn
-		} else if nowTimeOfDay.Before(nextTripBoardingClosedTimeOfDay) {
-			return OpenEntry
-		} else if nowTimeOfDay.Before(nextTripDepartureTimeOfDay) {
-			return LockedEntry
-		} else if nowTimeOfDay.Before(nextTripArrivalTimeOfDay) {
-			return InTransit
-		} else if futureTrip != nil {
-			return AwaitingReturn
-		} else if arrivedTrip != nil {
-			return AwaitingReturn
-		} else {
-			return OutOfService
-		}
+	to := func(state RouteState, next RouteState, boundary time.Time) Transition {
+		return Transition{State: state, NextState: next, NextAt: materializeBoundary(now, boundary)}
 	}
+
+	boardingOpen := timeOfDay(nextTrip.BoardingOpen())
+	boardingClosed := timeOfDay(nextTrip.BoardingClosed())
+	departure := timeOfDay(nextTrip.Departure())
+	arrival := timeOfDay(nextTrip.Arrival())
+
+	if arrival.Before(departure) {
+		// Midnight-crossing trip.
+		if nowTimeOfDay.Before(boardingOpen) && nowTimeOfDay.After(arrival) {
+			return to(AwaitingReturn, OpenEntry, boardingOpen)
+		} else if nowTimeOfDay.Before(boardingClosed) {
+			return to(OpenEntry, LockedEntry, boardingClosed)
+		} else if nowTimeOfDay.Before(departure) {
+			return to(LockedEntry, InTransit, departure)
+		}
+		return to(InTransit, AwaitingReturn, arrival)
+	}
+
+	if nowTimeOfDay.Before(boardingOpen) {
+		return to(AwaitingReturn, OpenEntry, boardingOpen)
+	} else if nowTimeOfDay.Before(boardingClosed) {
+		return to(OpenEntry, LockedEntry, boardingClosed)
+	} else if nowTimeOfDay.Before(departure) {
+		return to(LockedEntry, InTransit, departure)
+	} else if nowTimeOfDay.Before(arrival) {
+		return to(InTransit, AwaitingReturn, arrival)
+	}
+	return Transition{State: OutOfService}
+}
+
+func (m Model) processStateChange(now time.Time) RouteState {
+	return m.Evaluate(now).State
 }
 
 func (m Model) State() RouteState {

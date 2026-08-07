@@ -13,6 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -196,16 +197,27 @@ func handleGetMonsterMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 					return
 				}
 
-				t, terr := tenant.FromContext(d.Context())()
-				if terr != nil {
+				// Guard before ResolvePartitionTenantId, which resolves the tenant
+				// with MustFromContext and would panic on a tenant-less request.
+				if _, terr := tenant.FromContext(d.Context())(); terr != nil {
 					d.Logger().WithError(terr).Errorf("Unable to resolve tenant for monster-maps request.")
 					server.WriteErrorResponse(d.Logger())(w)(terr)
 					return
 				}
 
+				// monster_spawn_index rows are derived from MAP documents at
+				// ingest, so shared content lands in the canonical partition
+				// rather than the requesting tenant's own (issue #1213).
+				partition, perr := searchindex.ResolvePartitionTenantId[SpawnIndexEntity](db, d.Context())
+				if perr != nil {
+					d.Logger().WithError(perr).Errorf("Unable to resolve spawn-index partition for monster %d.", monsterId)
+					server.WriteErrorResponse(d.Logger())(w)(perr)
+					return
+				}
+
 				var rows []SpawnIndexEntity
-				if err := db.WithContext(d.Context()).
-					Where("tenant_id = ? AND monster_id = ?", t.Id(), monsterId).
+				if err := db.WithContext(database.WithoutTenantFilter(d.Context())).
+					Where("tenant_id = ? AND monster_id = ?", partition, monsterId).
 					Order("spawn_count DESC, name ASC").
 					Find(&rows).Error; err != nil {
 					d.Logger().WithError(err).Errorf("Unable to query monster spawn index for monster %d.", monsterId)

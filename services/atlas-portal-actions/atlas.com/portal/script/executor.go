@@ -49,6 +49,12 @@ func NewOperationExecutor(l logrus.FieldLogger, ctx context.Context) *OperationE
 	}
 }
 
+// newOperationExecutorWithSaga builds an executor over an injected saga
+// processor. Used by tests to observe dispatched sagas without touching Kafka.
+func newOperationExecutorWithSaga(l logrus.FieldLogger, ctx context.Context, sagaP portalsaga.Processor) *OperationExecutor {
+	return &OperationExecutor{l: l, ctx: ctx, sagaP: sagaP}
+}
+
 // ExecuteOperation executes a single operation.
 // portalId is the numeric ID of the current portal (for operations like block_portal).
 // Dispatch goes through opTable, which is also the classification authority for
@@ -64,15 +70,31 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 	return def.run(e, f, characterId, portalId, op)
 }
 
-// ExecuteOperations executes multiple operations
-// portalId is the numeric ID of the current portal (for operations like block_portal)
-func (e *OperationExecutor) ExecuteOperations(f field.Model, characterId uint32, portalId uint32, ops []operation.Model) error {
+// ExecuteOperations executes multiple operations in order, stopping at the
+// first error.
+//
+// portalId is the numeric ID of the current portal (for operations like
+// block_portal).
+//
+// movedCharacter reports whether at least one MOVING operation was
+// SUCCESSFULLY dispatched (its saga was created). The caller uses this to
+// decide whether the client is already going to be unlocked by the resulting
+// SET_FIELD — see consumer.go and task-184 prd.md §1.1.
+//
+// The distinction between "declared" and "successfully dispatched" is
+// load-bearing: a warp that failed before creating its saga has no saga to
+// fail and release the player, so the caller MUST still unlock them.
+func (e *OperationExecutor) ExecuteOperations(f field.Model, characterId uint32, portalId uint32, ops []operation.Model) (bool, error) {
+	movedCharacter := false
 	for _, op := range ops {
 		if err := e.ExecuteOperation(f, characterId, portalId, op); err != nil {
-			return err
+			return movedCharacter, err
+		}
+		if IsMovingOperation(op.Type()) {
+			movedCharacter = true
 		}
 	}
-	return nil
+	return movedCharacter, nil
 }
 
 // executePlayPortalSound sends a saga to play portal sound effect

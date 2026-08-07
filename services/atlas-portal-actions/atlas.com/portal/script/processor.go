@@ -158,23 +158,28 @@ func (p *ProcessorImpl) Process(f field.Model, characterId uint32, portalName st
 
 			// Execute operations (pass portalId for operations like block_portal)
 			outcome := rule.OnMatch()
+			movedCharacter := false
 			if len(outcome.Operations()) > 0 {
-				if err := p.executor.ExecuteOperations(f, characterId, portalId, outcome.Operations()); err != nil {
+				var err error
+				movedCharacter, err = p.executor.ExecuteOperations(f, characterId, portalId, outcome.Operations())
+				if err != nil {
 					p.l.WithError(err).Errorf("Failed to execute operations for rule [%s]", rule.Id())
 					return ProcessResult{
-						Allow:       outcome.Allow(),
-						MatchedRule: rule.Id(),
-						Operations:  outcome.Operations(),
-						Error:       fmt.Errorf("operation execution failed: %w", err),
+						Allow:          outcome.Allow(),
+						MatchedRule:    rule.Id(),
+						Operations:     outcome.Operations(),
+						CharacterMoved: movedCharacter,
+						Error:          fmt.Errorf("operation execution failed: %w", err),
 					}
 				}
 			}
 
 			return ProcessResult{
-				Allow:       outcome.Allow(),
-				MatchedRule: rule.Id(),
-				Operations:  outcome.Operations(),
-				Error:       nil,
+				Allow:          outcome.Allow(),
+				MatchedRule:    rule.Id(),
+				Operations:     outcome.Operations(),
+				CharacterMoved: movedCharacter,
+				Error:          nil,
 			}
 		}
 	}

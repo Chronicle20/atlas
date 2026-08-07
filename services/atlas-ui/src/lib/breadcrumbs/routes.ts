@@ -215,6 +215,7 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     pattern: "/merchants/[id]",
     label: "Merchant Details",
     parent: "/merchants",
+    entityType: "merchant",
   },
 
   // Marketplace routes
@@ -243,6 +244,7 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     pattern: "/bans/[id]",
     label: "Ban Details",
     parent: "/bans",
+    entityType: "ban",
   },
 
   // Login history routes

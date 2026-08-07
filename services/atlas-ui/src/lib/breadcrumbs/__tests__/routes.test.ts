@@ -163,6 +163,20 @@ describe("Route Configuration", () => {
       expect(pool!.dynamic).toBe(true);
     });
 
+    it.each([
+      ["/merchants/shop-1", "merchant", "shop-1"],
+      ["/bans/ban-1", "ban", "ban-1"],
+    ])(
+      "marks %s as a resolvable entity crumb",
+      (pathname, entityType, entityId) => {
+        const breadcrumbs = getBreadcrumbsFromRoute(pathname);
+        const detail = breadcrumbs[breadcrumbs.length - 1];
+        expect(detail!.entityType).toBe(entityType);
+        expect(detail!.entityId).toBe(entityId);
+        expect(detail!.dynamic).toBe(true);
+      },
+    );
+
     it("hangs the reactor detail crumb off the reactor list, not Home", () => {
       const breadcrumbs = getBreadcrumbsFromRoute("/reactors/42");
       expect(breadcrumbs.map((b) => b.label)).toEqual([

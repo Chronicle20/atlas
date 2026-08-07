@@ -142,26 +142,6 @@ func materializeBoundary(now time.Time, boundary time.Time) time.Time {
 	return at
 }
 
-// earliestBoardingOpen returns the earliest boarding-open time of day across
-// this route's own trips. It is the wrap target when the governing trip yields
-// no boundary later in the day.
-func (m Model) earliestBoardingOpen() (time.Time, bool) {
-	var earliest time.Time
-	found := false
-	for i := range m.schedule {
-		trip := m.schedule[i]
-		if trip.RouteId() != m.Id() {
-			continue
-		}
-		tod := timeOfDay(trip.BoardingOpen())
-		if !found || tod.Before(earliest) {
-			earliest = tod
-			found = true
-		}
-	}
-	return earliest, found
-}
-
 // Evaluate derives the route's state at `now` together with the transition it
 // is counting down to. The trip-selection and branch structure is the state
 // machine this service has always run; each branch now also names the boundary
@@ -170,7 +150,6 @@ func (m Model) Evaluate(now time.Time) Transition {
 	var nextTrip *TripScheduleModel
 	var inTransitTrip *TripScheduleModel
 	var futureTrip *TripScheduleModel
-	var arrivedTrip *TripScheduleModel
 
 	nowTimeOfDay := timeOfDay(now)
 
@@ -201,12 +180,6 @@ func (m Model) Evaluate(now time.Time) Transition {
 		if tripDepartureTimeOfDay.After(nowTimeOfDay) {
 			if futureTrip == nil || tripDepartureTimeOfDay.Before(timeOfDay(futureTrip.Departure())) {
 				futureTrip = &trip
-			}
-		}
-
-		if tripArrivalTimeOfDay.Before(nowTimeOfDay) {
-			if arrivedTrip == nil || tripArrivalTimeOfDay.After(timeOfDay(arrivedTrip.Arrival())) {
-				arrivedTrip = &trip
 			}
 		}
 	}
@@ -253,11 +226,6 @@ func (m Model) Evaluate(now time.Time) Transition {
 		return to(InTransit, AwaitingReturn, arrival)
 	} else if futureTrip != nil {
 		return to(AwaitingReturn, OpenEntry, timeOfDay(futureTrip.BoardingOpen()))
-	} else if arrivedTrip != nil {
-		if earliest, ok := m.earliestBoardingOpen(); ok {
-			return to(AwaitingReturn, OpenEntry, earliest)
-		}
-		return Transition{State: AwaitingReturn}
 	}
 	return Transition{State: OutOfService}
 }

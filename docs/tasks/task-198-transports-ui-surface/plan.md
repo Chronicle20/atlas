@@ -30,7 +30,7 @@
 
 | File | Responsibility |
 |---|---|
-| `transport/model.go` | Add `Transition` type, `Model.Evaluate`, `timeOfDay`, `materializeBoundary`, `earliestBoardingOpen`; `processStateChange` becomes a wrapper |
+| `transport/model.go` | Add `Transition` type, `Model.Evaluate`, `timeOfDay`, `materializeBoundary`; `processStateChange` becomes a wrapper |
 | `transport/rest.go` | Four `…Seconds` fields, `nextTransitionAt`/`nextState`, `TransformSummary`, `Extract` round-trip fix |
 | `transport/resource.go` | `include=schedule` opt-in on the list handler |
 | `transport/evaluate_test.go` | **new** — table-driven `Evaluate` branch coverage |
@@ -201,12 +201,12 @@ func TestEvaluate_Branches(t *testing.T) {
 			expectedAt:    todayAt(12, 47),
 		},
 		{
-			name:          "Past the last arrival wraps to tomorrow's first boarding open",
+			name:          "Past the last arrival with no other trips is out of service",
 			now:           todayAt(13, 0),
 			trips:         trip(),
-			expectedState: AwaitingReturn,
-			expectedNext:  OpenEntry,
-			expectedAt:    todayAt(12, 30).Add(24 * time.Hour),
+			expectedState: OutOfService,
+			expectedNext:  "",
+			expectedAt:    time.Time{},
 		},
 		{
 			name: "Past an arrival with a later trip counts down to that trip's boarding open",

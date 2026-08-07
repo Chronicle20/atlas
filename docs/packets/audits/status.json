@@ -1,7 +1,7 @@
 {
-  "toolSha": "151512c858f10fbda3c4ae4041c0d26788a8f458a9d2f6ed0c6136dbe2430e69",
+  "toolSha": "fdc0c767fb39d377e985f0e4c7936c22bb113e2503b24cf49dc9146bdb6c6ae1",
   "exportHashes": {
-    "gms_v48": "1a9d088004f0c60c0e05b09131943671a638c4833596892c68fb45a9afb5249b",
+    "gms_v48": "d6ca4998640f72f5f20f3f290b0d1470d50f93783874fdbea324079e5f2d79c3",
     "gms_v61": "33ad6a973a263634662db6eadfa168fe0570b2e4e36efb14b16684094ef7743d",
     "gms_v72": "3ef1d667c4649ca9d409f8dcd61106ed65e13f38394d2974da9bd7768aa61858",
     "gms_v79": "fc17eef29af79da9f7ca5b54dfb8d3e8ebc7c3327333ee8dfff41a9edb6647f8",
@@ -18975,6 +18975,59 @@
     },
     {
       "kind": "op",
+      "op": "PET_AUTO_POT",
+      "packet": "pet/serverbound/PetItemUse",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CWvsContext::SendStatChangeItemUseRequestByPetQ"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 117
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 142
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 165
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 167
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 171
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 176
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 183
+        },
+        "gms_v92": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 200
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 203
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 174
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "SET_BACK_EFFECT",
       "direction": "clientbound",
       "tier1": false,
@@ -23051,62 +23104,6 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 213
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "PET_AUTO_POT",
-      "packet": "pet/serverbound/PetItemUse",
-      "direction": "serverbound",
-      "tier1": true,
-      "fnames": [
-        "CWvsContext::SendStatChangeItemUseRequestByPetQ"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 142
-        },
-        "gms_v72": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 165
-        },
-        "gms_v79": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 167
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 171
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 176
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 183
-        },
-        "gms_v92": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 200
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 203
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 174
         }
       }
     },
@@ -44682,6 +44679,62 @@
         },
         "gms_v95": {
           "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "cash/serverbound/CashItemUsePetSkill",
+      "tier1": true,
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "note": "disposition: version-absent (n-a, see _unimplemented.json)",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "note": "disposition: version-absent (n-a, see _unimplemented.json)",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "note": "disposition: version-absent (n-a, see _unimplemented.json)",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "n-a",
+          "note": "disposition: version-absent (n-a, see _unimplemented.json)",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "n-a",
+          "note": "disposition: version-absent (n-a, see _unimplemented.json)",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "n-a",
+          "note": "disposition: version-absent (n-a, see _unimplemented.json)",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "n-a",
+          "note": "disposition: version-absent (n-a, see _unimplemented.json)",
+          "opcode": -1
+        },
+        "gms_v92": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "n-a",
+          "note": "disposition: version-absent (n-a, see _unimplemented.json)",
           "opcode": -1
         },
         "jms_v185": {

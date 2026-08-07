@@ -4,9 +4,9 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `151512c858f10fbda3c4ae4041c0d26788a8f458a9d2f6ed0c6136dbe2430e69`
+Tool: `fdc0c767fb39d377e985f0e4c7936c22bb113e2503b24cf49dc9146bdb6c6ae1`
 
-- export gms_v48: `1a9d088004f0c60c0e05b09131943671a638c4833596892c68fb45a9afb5249b`
+- export gms_v48: `d6ca4998640f72f5f20f3f290b0d1470d50f93783874fdbea324079e5f2d79c3`
 - export gms_v61: `33ad6a973a263634662db6eadfa168fe0570b2e4e36efb14b16684094ef7743d`
 - export gms_v72: `3ef1d667c4649ca9d409f8dcd61106ed65e13f38394d2974da9bd7768aa61858`
 - export gms_v79: `fc17eef29af79da9f7ca5b54dfb8d3e8ebc7c3327333ee8dfff41a9edb6647f8`
@@ -664,6 +664,7 @@ Tool: `151512c858f10fbda3c4ae4041c0d26788a8f458a9d2f6ed0c6136dbe2430e69`
 | PET_LOOT | CPet::SendDropPickUpRequest; sub_58ED98 | pet/serverbound/PetDropPickUp (T1) | 0x074 | ✅ | 0x08D | ✅ | 0x0A4 | ✅ | 0x0A6 | ✅ | 0x0AA | ✅ | 0x0AF | ✅ | 0x0B6 | ✅ | 0x0C7 | 🟡ᶠ | 0x0CA | ✅ | 0x0AD | ✅ |
 | USE_REMOTE | CWvsContext::SendUseGachaponRemoteRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x074 | ❌ | 0x074 | ❌ | 0x077 | ❌ | 0x07F | ❌ | 0x080 | ❌ |  | ⬜ |
 | FOLLOW_CHARACTER_WITHRDAW |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ❌ |
+| PET_AUTO_POT | CWvsContext::SendStatChangeItemUseRequestByPetQ | pet/serverbound/PetItemUse (T1) | 0x075 | ✅ | 0x08E | ✅ | 0x0A5 | ✅ | 0x0A7 | ✅ | 0x0AB | ✅ | 0x0B0 | ✅ | 0x0B7 | ✅ | 0x0C8 | 🟡ᶠ | 0x0CB | ✅ | 0x0AE | ✅ |
 | WATER_OF_LIFE | CWvsContext::SendWaterOfLife |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ❌ | 0x075 | ❌ | 0x078 | ❌ | 0x080 | ❌ | 0x081 | ❌ |  | ⬜ |
 | MOVE_SUMMON | CVecCtrlSummoned::EndUpdateActive; sub_6E7CF8; sub_7FE86B; sub_9184E5 | summon/serverbound/SummonMoveHandle | 0x078 | ❌ | 0x092 | ❌ | 0x0A9 | ❌ | 0x0AB | ❌ | 0x0AF | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CC | ❌ | 0x0CF | ✅ | 0x0B2 | ✅ |
 | REPAIR_DURABILITY_ALL | CRepairDurabilityDlg::SendRepairDurabilityAll |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x079 | ❌ | 0x081 | ❌ | 0x082 | ❌ | 0x06D | ❌ |
@@ -693,7 +694,6 @@ Tool: `151512c858f10fbda3c4ae4041c0d26788a8f458a9d2f6ed0c6136dbe2430e69`
 | BOOBY_TRAP_ALERT | CWvsContext::SendBoobyTrapAlert |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08D | ❌ | 0x091 | ❌ | 0x095 | ❌ | 0x0A2 | ❌ | 0x0A5 | ❌ | 0x08F | ❌ |
 | ALLIANCE_REQUEST | CTabGuildAlliance::OnChangeMaster; CTabGuildAlliance::OnGradeChange; CTabGuildAlliance::OnInvite; CTabGuildAlliance::OnKick; CTabGuildAlliance::OnSetNotice; CTabGuildAlliance::OnWithdraw; CUIFadeYesNo::OnButtonClicked; CWndAllianceGrade::OnSaveGradeName; CWvsContext::OnAllianceResult; CWvsContext::OnGuildResult | guild/serverbound/GuildJoin (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08E | ✅ |  | ⬜ | 0x096 | ✅ | 0x0A4 | ❌ | 0x0A7 | ✅ | 0x091 | ✅ |
 | ITEM_PICKUP | CWvsContext::SendDropPickUpRequest; sub_70D987; sub_8316B8 | drop/serverbound/DropPickUp (T1) | 0x08E | ✅ | 0x0A9 | ✅ | 0x0C0 | ✅ | 0x0C2 | ✅ | 0x0CA | ✅ | 0x0D0 | ✅ | 0x0D7 | ✅ | 0x0EF | 🟡ᵈ | 0x0F6 | ✅ | 0x0D5 | ✅ |
-| PET_AUTO_POT | CWvsContext::SendStatChangeItemUseRequestByPetQ | pet/serverbound/PetItemUse (T1) |  | ⬜ | 0x08E | 🟡ᶠ | 0x0A5 | 🟡ᶠ | 0x0A7 | 🟡ᶠ | 0x0AB | ✅ | 0x0B0 | ✅ | 0x0B7 | ✅ | 0x0C8 | 🟡ᶠ | 0x0CB | ✅ | 0x0AE | ✅ |
 | ALLIANCE_OPERATION | CFadeWnd::SendCloseMessage; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnAllianceResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08F | ✅ | 0x093 | ✅ | 0x097 | ✅ | 0x0A5 | ❌ | 0x0A8 | ✅ | 0x092 | ✅ |
 | PET_EXCLUDE_ITEMS | CPet::SendUpdateExceptionListRequest | pet/serverbound/PetExcludeItem (T1) |  | ⬜ | 0x08F | ✅ | 0x0A6 | ✅ | 0x0A8 | ✅ | 0x0AC | ✅ | 0x0B1 | ✅ | 0x0B8 | ✅ | 0x0C9 | ❌ | 0x0CC | ✅ | 0x0AF | ✅ |
 | DENY_ALLIANCE_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnAllianceResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x090 | ❌ | 0x094 | ❌ | 0x098 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |
@@ -841,6 +841,7 @@ Tool: `151512c858f10fbda3c4ae4041c0d26788a8f458a9d2f6ed0c6136dbe2430e69`
 | cash/serverbound/CashItemUseItemMegaphone (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseMapleTV (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ❌ |
 | cash/serverbound/CashItemUseMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
+| cash/serverbound/CashItemUsePetSkill (T1) |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ❌ |  | ⬜ |  | ✅ |
 | cash/serverbound/CashItemUsePointReset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseSuperMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | cash/serverbound/CashItemUseTeleportRock (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
@@ -1051,16 +1052,16 @@ Tool: `151512c858f10fbda3c4ae4041c0d26788a8f458a9d2f6ed0c6136dbe2430e69`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 182 | 0 | 2 | 203 | 628 | 0 | 47.0% |
-| v61 | 258 | 0 | 59 | 235 | 463 | 0 | 46.7% |
-| v72 | 272 | 0 | 72 | 251 | 420 | 0 | 45.7% |
-| v79 | 316 | 0 | 71 | 247 | 381 | 0 | 49.8% |
-| v83 | 435 | 0 | 0 | 352 | 228 | 0 | 55.3% |
-| v84 | 409 | 0 | 0 | 358 | 248 | 0 | 53.3% |
-| v87 | 443 | 0 | 0 | 381 | 191 | 0 | 53.8% |
-| v92 | 5 | 0 | 154 | 714 | 142 | 0 | 0.6% |
-| v95 | 468 | 0 | 0 | 440 | 107 | 0 | 51.5% |
-| JMS185 | 417 | 0 | 0 | 399 | 199 | 0 | 51.1% |
+| v48 | 183 | 0 | 2 | 203 | 628 | 0 | 47.2% |
+| v61 | 259 | 0 | 58 | 235 | 464 | 0 | 46.9% |
+| v72 | 273 | 0 | 71 | 251 | 421 | 0 | 45.9% |
+| v79 | 317 | 0 | 70 | 247 | 382 | 0 | 50.0% |
+| v83 | 435 | 0 | 0 | 352 | 229 | 0 | 55.3% |
+| v84 | 409 | 0 | 0 | 358 | 249 | 0 | 53.3% |
+| v87 | 443 | 0 | 0 | 381 | 192 | 0 | 53.8% |
+| v92 | 5 | 0 | 154 | 715 | 142 | 0 | 0.6% |
+| v95 | 468 | 0 | 0 | 440 | 108 | 0 | 51.5% |
+| JMS185 | 418 | 0 | 0 | 399 | 199 | 0 | 51.2% |
 
 ## Conflicts
 

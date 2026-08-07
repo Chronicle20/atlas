@@ -22,6 +22,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -708,7 +709,7 @@ func (m *mockMonsterProcessor) CreateMonster(_ uuid.UUID, f field.Model, monster
 	})
 }
 
-func (m *mockMonsterProcessor) GetInMapRect(_ field.Model, _, _, _, _ int16, _ uint32) ([]monster.RestModel, error) {
+func (m *mockMonsterProcessor) GetInMapRect(_ field.Model, _, _, _, _ int16, _ uint32, _ ...requests.Configurator) ([]monster.RestModel, error) {
 	return nil, nil
 }
 

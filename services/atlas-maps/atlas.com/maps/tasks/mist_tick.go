@@ -25,11 +25,41 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const MistTickTask = "mist_tick_task"
+
+// MistRectRequestTimeout bounds a single GetInMapRect attempt against
+// atlas-monsters. It is deliberately far below requests.DefaultTimeout
+// (10s, libs/atlas-rest/requests/client.go:9) and below the 1000ms mist tick
+// cadence (see NewMistTick's caller in main.go): a rect lookup that hasn't
+// answered inside one tick is already useless for this tick, and without a
+// short per-call cap a single degraded call could block its mist's tick for
+// up to 10s, delaying REMOVE_MIST for expired mists sharing the tenant and
+// starving every other mist processTenant hasn't gotten to yet.
+//
+// Paired with MistRectRequestRetries: the GET helper's default retry policy
+// (3 attempts, exponential backoff up to 2s between them,
+// libs/atlas-rest/requests/get.go) would let a single degraded call re-time-out
+// up to 3x plus backoff -- multiple seconds, still well past this tick. A
+// stale rect result is not worth chasing inside the tick loop; the next tick
+// tries again in a second anyway.
+const MistRectRequestTimeout = 500 * time.Millisecond
+
+// MistRectRequestRetries disables retrying within a single tick's rect call
+// (see MistRectRequestTimeout) so one call's worst case stays at one timeout,
+// not one timeout times the GET helper's default retry count.
+const MistRectRequestRetries = 1
+
+// mistTenantConcurrency bounds how many of one tenant's mists are ticked in
+// parallel by processTenant. Even with MistRectRequestTimeout capping a
+// single call, a tenant running many mists must not fan out unbounded
+// against atlas-monsters; kept small, explicit, and named rather than
+// inferred from the mist count.
+const mistTenantConcurrency = 4
 
 // EnvCommandTopicCharacterBuff is the Kafka topic where APPLY-disease
 // commands are published. Mirrors atlas-monsters' value (services
@@ -208,7 +238,11 @@ func NewMistTick(l logrus.FieldLogger, interval int, posLookup PositionLookup) *
 			x1, y1, x2, y2 := m.Rect()
 			// limit 0 == no cap. ctx is already tenant-decorated by
 			// processTenant, so the REST call is tenant-scoped (NFR-3).
-			return monster.NewProcessor(l, ctx).GetInMapRect(m.Field(), x1, y1, x2, y2, 0)
+			// SetTimeout/SetRetries cap this single call well under the tick
+			// cadence (MistRectRequestTimeout) so one degraded call can't
+			// block the tenant's whole tick.
+			return monster.NewProcessor(l, ctx).GetInMapRect(m.Field(), x1, y1, x2, y2, 0,
+				requests.SetTimeout(MistRectRequestTimeout), requests.SetRetries(MistRectRequestRetries))
 		},
 	}
 }
@@ -238,31 +272,69 @@ func (r *MistTick) runOnce(ctx context.Context) {
 	wg.Wait()
 }
 
+// processTenant ticks every mist in the tenant's bucket. Mists are processed
+// with bounded fan-out (mistTenantConcurrency) rather than serially, so one
+// mist blocked on a slow GetInMapRect (capped by MistRectRequestTimeout, but
+// still up to ~500ms) cannot head-of-line block the rest of the tenant's
+// mists for the whole tick.
+//
+// Safety: r.registry is a *mist.Registry guarded by its own sync.RWMutex
+// (atlas-maps/mist/registry.go) -- Destroy/UpdateLastTick from concurrent
+// workers are safe. prov is shared across workers; producer.ProviderImpl's
+// underlying writer manager is also mutex-guarded
+// (libs/atlas-kafka/producer/manager.go) and is already called concurrently
+// across TENANTS by runOnce today, so sharing it across a tenant's mist
+// workers is the same safety property one level down. Each worker builds its
+// own message.Buffer (tickCharacters/tickMonsters), so there is no shared
+// mutable buffer between mists either.
 func (r *MistTick) processTenant(ctx context.Context, t tenant.Model) {
 	tctx := tenant.WithContext(ctx, t)
 	prov := r.producerProvider(tctx)
 
 	mists := r.registry.AllByTenant(t)
+	sem := make(chan struct{}, mistTenantConcurrency)
+	var wg sync.WaitGroup
 	for _, m := range mists {
-		if m.Expired() {
-			if _, err := r.processorFactory(r.l, tctx, prov, r.registry).Destroy(m.Id(), mistKafka.ReasonExpired); err != nil {
-				r.l.WithError(err).Errorf("MistTick: failed to destroy expired mist [%s].", m.Id())
-			}
-			continue
-		}
-		if !m.ShouldTick() {
-			continue
-		}
-		switch m.TargetKind() {
-		case mistKafka.TargetKindMonster:
-			r.tickMonsters(tctx, prov, t, m)
-		default:
-			// Empty target kind normalizes to CHARACTER in mist.Create; the
-			// default arm also covers any mist built directly by a test.
-			r.tickCharacters(tctx, prov, t, m)
-		}
-		r.registry.UpdateLastTick(t, m.Id(), time.Now())
+		m := m
+		wg.Add(1)
+		sem <- struct{}{}
+		routine.Go(r.l, tctx, func(gctx context.Context) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			r.tickOneMist(gctx, prov, t, m)
+		})
 	}
+	wg.Wait()
+}
+
+// tickOneMist runs the full per-mist tick body: destroy-if-expired,
+// skip-if-not-due, dispatch to the character or monster tick, and advance
+// lastTick. This is the unit processTenant fans out concurrently; it is
+// deliberately self-contained so bounding concurrency is just bounding how
+// many of these run at once.
+func (r *MistTick) tickOneMist(ctx context.Context, prov producer.Provider, t tenant.Model, m mist.Mist) {
+	if m.Expired() {
+		if _, err := r.processorFactory(r.l, ctx, prov, r.registry).Destroy(m.Id(), mistKafka.ReasonExpired); err != nil {
+			r.l.WithError(err).Errorf("MistTick: failed to destroy expired mist [%s].", m.Id())
+		}
+		return
+	}
+	if !m.ShouldTick() {
+		return
+	}
+	switch m.TargetKind() {
+	case mistKafka.TargetKindMonster:
+		r.tickMonsters(ctx, prov, t, m)
+	default:
+		// Empty target kind normalizes to CHARACTER in mist.Create; the
+		// default arm also covers any mist built directly by a test.
+		r.tickCharacters(ctx, prov, t, m)
+	}
+	// Called exactly once per mist per tick, on every path through the
+	// switch above -- including tickMonsters' rect-lookup-error path, which
+	// logs and returns rather than short-circuiting here. Preserved
+	// unchanged from the pre-concurrency version.
+	r.registry.UpdateLastTick(t, m.Id(), time.Now())
 }
 
 // tickCharacters applies the mist's status to every character in the field

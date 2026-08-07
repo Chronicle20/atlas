@@ -14,7 +14,7 @@ import (
 type Processor interface {
 	CountInMap(transactionId uuid.UUID, field field.Model) (int, error)
 	CreateMonster(transactionId uuid.UUID, field field.Model, monsterId uint32, x int16, y int16, fh int16, team int8)
-	GetInMapRect(f field.Model, x1, y1, x2, y2 int16, limit uint32) ([]RestModel, error)
+	GetInMapRect(f field.Model, x1, y1, x2, y2 int16, limit uint32, configurators ...requests.Configurator) ([]RestModel, error)
 }
 
 type ProcessorImpl struct {
@@ -53,6 +53,10 @@ func (p *ProcessorImpl) CreateMonster(_ uuid.UUID, field field.Model, monsterId 
 // the server and mask any endpoint bug. One authority per question.
 //
 // limit == 0 means "no cap". The result is drained across all pages.
-func (p *ProcessorImpl) GetInMapRect(f field.Model, x1, y1, x2, y2 int16, limit uint32) ([]RestModel, error) {
-	return requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(inMapRectUrl(f, x1, y1, x2, y2, limit), 250, Extract, model.Filters[RestModel]())()
+//
+// configurators are forwarded to every page's GET (e.g. requests.SetTimeout
+// to bound a caller on a tight tick budget); callers on the default REST
+// timeout can omit them.
+func (p *ProcessorImpl) GetInMapRect(f field.Model, x1, y1, x2, y2 int16, limit uint32, configurators ...requests.Configurator) ([]RestModel, error) {
+	return requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(inMapRectUrl(f, x1, y1, x2, y2, limit), 250, Extract, model.Filters[RestModel](), configurators...)()
 }

@@ -18,6 +18,58 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
+// TestMistTick_MonsterTarget_SlowLookupDoesNotBlockSiblingMist proves the
+// per-tenant fan-out (processTenant / mistTenantConcurrency) actually
+// isolates latency, not just correctness: one mist's monstersInRect blocks
+// indefinitely (simulating a degraded atlas-monsters past
+// MistRectRequestTimeout), and the sibling mist in the SAME tenant must still
+// emit well before the blocked call is released. Under the old serial loop
+// this would deadlock the test (the good mist's tick body would never run
+// until the bad one returned).
+func TestMistTick_MonsterTarget_SlowLookupDoesNotBlockSiblingMist(t *testing.T) {
+	tt := mkTickTenant()
+	reg := mist.NewTestRegistry()
+	rec := newRecordingProducer()
+	mt := newTestMistTick(t, reg, rec, nil)
+
+	blocked := mkMonsterMist(t)
+	fast := mkMonsterMist(t)
+	require.NoError(t, reg.Add(tt, blocked))
+	require.NoError(t, reg.Add(tt, fast))
+
+	release := make(chan struct{})
+	mt.monstersInRect = func(_ context.Context, mm mist.Mist) ([]monster.RestModel, error) {
+		if mm.Id() == blocked.Id() {
+			<-release // never returns until the test says so
+			return nil, errors.New("atlas-monsters unavailable")
+		}
+		return []monster.RestModel{mkMonsterRest(9001, 500, 300)}, nil
+	}
+
+	done := make(chan struct{})
+	go func() {
+		mt.runOnce(context.Background())
+		close(done)
+	}()
+	t.Cleanup(func() {
+		close(release)
+		<-done
+	})
+
+	// The fast mist's APPLY_STATUS must land while the blocked mist's lookup
+	// is still hanging -- proof the two mists ran concurrently, not serially.
+	require.Eventually(t, func() bool {
+		return len(rec.Messages(EnvCommandTopicMonster)) == 1
+	}, 500*time.Millisecond, 5*time.Millisecond,
+		"sibling mist's tick did not emit while the other mist's rect lookup was still blocked")
+
+	select {
+	case <-done:
+		t.Fatal("runOnce returned before the blocked mist's lookup was released")
+	default:
+	}
+}
+
 // mkMonsterMist builds a player-cast mist anchored at (500,300) with the
 // level-1 Poison Mist rectangle from WZ (lt -110,-82 / rb 110,83), i.e.
 // absolute bounds (390,218)-(610,383). The caller registers it.

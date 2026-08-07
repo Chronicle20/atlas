@@ -184,4 +184,45 @@ describe("TransportsPage", () => {
       await screen.findByRole("tab", { name: /Scheduled\s*2/ }),
     ).toBeInTheDocument();
   });
+
+  it("shows a loading message while the scheduled routes fetch is in flight", async () => {
+    // A promise that never resolves keeps the query in its initial loading state.
+    vi.mocked(transportsService.getScheduledRoutes).mockImplementation(
+      () => new Promise(() => {}),
+    );
+
+    renderPage();
+
+    expect(
+      await screen.findByText(/loading scheduled routes/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/no scheduled routes configured/i)).toBeNull();
+    expect(screen.queryByText(/failed to load scheduled routes/i)).toBeNull();
+  });
+
+  it("shows an unambiguous error message when the scheduled routes fetch fails", async () => {
+    vi.mocked(transportsService.getScheduledRoutes).mockRejectedValue(
+      new Error("network down"),
+    );
+
+    renderPage();
+
+    expect(
+      await screen.findByText(/failed to load scheduled routes/i),
+    ).toBeInTheDocument();
+    // Must not read as "nothing configured" — that's a different state.
+    expect(screen.queryByText(/no scheduled routes configured/i)).toBeNull();
+  });
+
+  it("shows a plain empty message when zero scheduled routes are configured", async () => {
+    vi.mocked(transportsService.getScheduledRoutes).mockResolvedValue([]);
+
+    renderPage();
+
+    expect(
+      await screen.findByText(/no scheduled routes configured/i),
+    ).toBeInTheDocument();
+    // Must not read as a failure — that's a different state.
+    expect(screen.queryByText(/failed to load/i)).toBeNull();
+  });
 });

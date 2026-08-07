@@ -1,6 +1,6 @@
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Ship } from "lucide-react";
+import { AlertTriangle, Ship } from "lucide-react";
 
 import { DataTable } from "@/components/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -98,12 +98,27 @@ function TransportsPageContent() {
           value="scheduled"
           className="flex-1 min-h-0 overflow-x-auto"
         >
-          <DataTable
-            columns={scheduledColumns}
-            data={routes}
-            onRefresh={() => void scheduledQuery.refetch()}
-            isRefreshing={scheduledQuery.isFetching}
-          />
+          {scheduledQuery.isLoading ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Loading scheduled routes…
+            </p>
+          ) : scheduledQuery.isError ? (
+            <p className="inline-flex w-full items-center justify-center gap-1.5 py-8 text-center text-sm text-destructive">
+              <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+              Failed to load scheduled routes.
+            </p>
+          ) : routes.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No scheduled routes configured.
+            </p>
+          ) : (
+            <DataTable
+              columns={scheduledColumns}
+              data={routes}
+              onRefresh={() => void scheduledQuery.refetch()}
+              isRefreshing={scheduledQuery.isFetching}
+            />
+          )}
         </TabsContent>
 
         <TabsContent

@@ -337,7 +337,7 @@ Tool: `151512c858f10fbda3c4ae4041c0d26788a8f458a9d2f6ed0c6136dbe2430e69`
 | SPAWN_MIST | CAffectedAreaPool::OnAffectedAreaCreated | field/clientbound/FieldAffectedAreaCreated (T1) | 0x0CA | ✅ | 0x0D2 | ✅ | 0x0F3 | ✅ | 0x0FB | ✅ | 0x111 | ✅ | 0x118 | ✅ | 0x122 | ✅ | 0x140 | ✅ | 0x148 | ✅ | 0x126 | ✅ |
 | DESTROY_HIRED_MERCHANT | CEmployeePool::OnEmployeeLeaveField |  |  | ⬜ | 0x0CB | ✅ | 0x0EC | ✅ | 0x0F4 | ✅ | 0x10A | ✅ | 0x111 | ✅ | 0x11B | ✅ | 0x138 | ❌ | 0x140 | ✅ | 0x11F | ✅ |
 | DISABLE_UI | CUserLocal::OnSetStandAloneMode; sub_86C50E | ui/clientbound/Disable |  | ⬜ |  | ⬜ | 0x0CB | ❌ | 0x0CF | 🟡ᵈ | 0x0DE | ✅ | 0x0E3 | ✅ | 0x0EC | ✅ | 0x100 | 🟡ᵈ | 0x0FE | ✅ | 0x0E8 | ✅ |
-| REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x0CB | ✅ | 0x0D3 | ✅ | 0x0F4 | ✅ | 0x0FC | ✅ | 0x112 | ✅ | 0x119 | ✅ | 0x123 | ✅ | 0x141 | 🟡ᶠ | 0x149 | ✅ | 0x127 | ✅ |
+| REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x0CB | ✅ | 0x0D3 | ✅ | 0x0F4 | ✅ | 0x0FC | ✅ | 0x112 | ✅ | 0x119 | ✅ | 0x123 | ✅ | 0x141 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
 | SPAWN_GUIDE | CUserLocal::OnHireTutor; sub_86C65C |  |  | ⬜ |  | ⬜ | 0x0CC | ❌ | 0x0D0 | ❌ | 0x0DF | ❌ | 0x0E4 | ❌ | 0x0ED | ❌ | 0x101 | ❌ | 0x0FF | ❌ | 0x0E9 | ❌ |
 | UPDATE_HIRED_MERCHANT | CEmployeePool::OnEmployeeMiniRoomBalloon |  |  | ⬜ | 0x0CC | ✅ | 0x0ED | ✅ | 0x0F5 | ✅ | 0x10B | ✅ | 0x112 | ✅ | 0x11C | ✅ | 0x139 | ❌ | 0x141 | ✅ | 0x120 | ✅ |
 | DROP_ITEM_FROM_MAPOBJECT | CDropPool::OnDropEnterField | drop/clientbound/DropSpawn |  | ⬜ | 0x0CD | 🟡ᵈ | 0x0EE | 🟡ᵈ | 0x0F6 | 🟡ᵈ | 0x10C | ✅ | 0x113 | ✅ | 0x11D | ✅ | 0x13A | ❌ | 0x142 | ✅ | 0x121 | ✅ |
@@ -1058,7 +1058,7 @@ Tool: `151512c858f10fbda3c4ae4041c0d26788a8f458a9d2f6ed0c6136dbe2430e69`
 | v83 | 435 | 0 | 0 | 352 | 228 | 0 | 55.3% |
 | v84 | 409 | 0 | 0 | 358 | 248 | 0 | 53.3% |
 | v87 | 443 | 0 | 0 | 381 | 191 | 0 | 53.8% |
-| v92 | 6 | 0 | 154 | 713 | 142 | 0 | 0.7% |
+| v92 | 7 | 0 | 153 | 713 | 142 | 0 | 0.8% |
 | v95 | 468 | 0 | 0 | 440 | 107 | 0 | 51.5% |
 | JMS185 | 417 | 0 | 0 | 399 | 199 | 0 | 51.1% |
 

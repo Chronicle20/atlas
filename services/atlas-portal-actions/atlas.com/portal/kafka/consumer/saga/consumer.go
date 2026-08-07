@@ -49,7 +49,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 }
 
 // handleStatusEventCompleted handles saga completion events
-// For transport sagas, the warp already happened - just cleanup
+// For portal action sagas (warp or transport), the move already happened - just cleanup
 func handleStatusEventCompleted(l logrus.FieldLogger) message.Handler[saga.StatusEvent[saga.StatusEventCompletedBody]] {
 	return func(logger logrus.FieldLogger, ctx context.Context, e saga.StatusEvent[saga.StatusEventCompletedBody]) {
 		if e.Type != saga.StatusEventTypeCompleted {
@@ -66,7 +66,7 @@ func handleStatusEventCompleted(l logrus.FieldLogger) message.Handler[saga.Statu
 		l.WithFields(logrus.Fields{
 			"transaction_id": e.TransactionId.String(),
 			"character_id":   pendingAction.CharacterId,
-		}).Debug("Transport saga completed, cleaning up pending action")
+		}).Debug("Portal action saga completed, cleaning up pending action")
 
 		// Cleanup - warp already happened via saga orchestrator
 		action.GetRegistry().Remove(ctx, e.TransactionId)
@@ -91,10 +91,11 @@ func handleStatusEventFailed(l logrus.FieldLogger) message.Handler[saga.StatusEv
 		l.WithFields(logrus.Fields{
 			"transaction_id": e.TransactionId.String(),
 			"character_id":   pendingAction.CharacterId,
+			"kind":           pendingAction.Kind,
 			"error_code":     e.Body.ErrorCode,
 			"reason":         e.Body.Reason,
 			"failed_step":    e.Body.FailedStep,
-		}).Info("Transport saga failed, sending failure message to character")
+		}).Info("Portal action saga failed, sending failure message to character")
 
 		// Determine the message to send
 		failureMessage := resolveFailureMessage(pendingAction, e.Body.ErrorCode)
@@ -114,14 +115,17 @@ func handleStatusEventFailed(l logrus.FieldLogger) message.Handler[saga.StatusEv
 	}
 }
 
-// resolveFailureMessage determines the appropriate failure message based on error code
+// resolveFailureMessage determines the appropriate failure message based on
+// error code, falling back to a default chosen by the kind of portal action
+// that failed (task-184 FR-2.7).
 func resolveFailureMessage(pendingAction action.PendingAction, errorCode string) string {
 	// Use custom failure message if provided
 	if pendingAction.FailureMessage != "" {
 		return pendingAction.FailureMessage
 	}
 
-	// Default messages based on error code
+	// Default messages based on error code. These codes are emitted only on the
+	// transport path; a warp saga never produces them.
 	switch errorCode {
 	case "TRANSPORT_CAPACITY_FULL":
 		return "The transport is currently full. Please try again later."
@@ -131,6 +135,14 @@ func resolveFailureMessage(pendingAction action.PendingAction, errorCode string)
 		return "Transport service is currently unavailable."
 	case "TRANSPORT_SERVICE_ERROR":
 		return "Transport service is currently unavailable."
+	}
+
+	// No specific code: pick by what actually failed. An empty Kind means the
+	// entry was written by a replica predating the field, so it keeps the
+	// pre-existing transport text.
+	switch pendingAction.Kind {
+	case action.KindWarp:
+		return "You cannot move there right now."
 	default:
 		return "Unable to board transport at this time."
 	}
@@ -140,7 +152,7 @@ func resolveFailureMessage(pendingAction action.PendingAction, errorCode string)
 func sendFailureMessage(l logrus.FieldLogger, ctx context.Context, characterId uint32, ch channel.Model, message string) {
 	s := sharedsaga.NewBuilder().
 		SetSagaType(sharedsaga.InventoryTransaction).
-		SetInitiatedBy("portal-action-transport-failure").
+		SetInitiatedBy("portal-action-failure").
 		AddStep(
 			fmt.Sprintf("message-%d", characterId),
 			sharedsaga.Pending,

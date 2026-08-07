@@ -1889,11 +1889,13 @@
       {
         "opCode": "0x140",
         "writer": "AffectedAreaCreated",
+        "fname": "CAffectedAreaPool::OnAffectedAreaCreated",
         "services": ["channel"]
       },
       {
         "opCode": "0x141",
         "writer": "AffectedAreaRemoved",
+        "fname": "CAffectedAreaPool::OnAffectedAreaRemoved",
         "services": ["channel"]
       },
       {

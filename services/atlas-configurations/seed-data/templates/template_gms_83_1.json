@@ -4014,11 +4014,13 @@
       {
         "opCode": "0x111",
         "writer": "AffectedAreaCreated",
+        "fname": "CAffectedAreaPool::OnAffectedAreaCreated",
         "services": ["channel"]
       },
       {
         "opCode": "0x112",
         "writer": "AffectedAreaRemoved",
+        "fname": "CAffectedAreaPool::OnAffectedAreaRemoved",
         "services": ["channel"]
       },
       {

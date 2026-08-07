@@ -3801,11 +3801,13 @@
       {
         "opCode": "0x126",
         "writer": "AffectedAreaCreated",
+        "fname": "CAffectedAreaPool::OnAffectedAreaCreated",
         "services": ["channel"]
       },
       {
         "opCode": "0x127",
         "writer": "AffectedAreaRemoved",
+        "fname": "CAffectedAreaPool::OnAffectedAreaRemoved",
         "services": ["channel"]
       },
       {

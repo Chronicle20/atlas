@@ -148,10 +148,15 @@ runs:
         # reads deploy/k8s/base/versions.json; service-registration-guard
         # reads deploy/k8s/overlays/main/kustomization.yaml) stay ungated.
         #
-        # Fail safe: an empty or unreadable diff yields "false", so a
-        # detection failure runs the full guard set rather than skipping it.
+        # Fail safe on three counts: an empty or unreadable diff yields
+        # "false"; force-all yields "false" (an operator who explicitly
+        # asked for a full sweep gets one, even when the diff happens to
+        # be deploy-only); and consumers gate with `!= 'true'`, so any
+        # unexpected value runs the guard rather than skipping it.
         DEPLOY_ONLY="false"
-        if [ -n "$CHANGED_FILES" ] && ! echo "$CHANGED_FILES" | grep -qv "^deploy/"; then
+        if [ "${{ inputs.force-all }}" = "true" ]; then
+          echo "force-all requested - deploy-only suppressed, full guard set will run"
+        elif [ -n "$CHANGED_FILES" ] && ! echo "$CHANGED_FILES" | grep -qv "^deploy/"; then
           DEPLOY_ONLY="true"
           echo "deploy-only change set - source-only guards will be skipped"
         fi

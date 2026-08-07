@@ -57,7 +57,7 @@ func handleStatusEventCompleted(l logrus.FieldLogger) message.Handler[saga.Statu
 		}
 
 		// Try to find and remove pending action
-		pendingAction, found := action.GetRegistry().Get(ctx, e.TransactionId)
+		pendingAction, found := action.GetRegistry().Get(l, ctx, e.TransactionId)
 		if !found {
 			// Not a portal action saga, ignore
 			return
@@ -69,7 +69,7 @@ func handleStatusEventCompleted(l logrus.FieldLogger) message.Handler[saga.Statu
 		}).Debug("Portal action saga completed, cleaning up pending action")
 
 		// Cleanup - warp already happened via saga orchestrator
-		action.GetRegistry().Remove(ctx, e.TransactionId)
+		action.GetRegistry().Remove(l, ctx, e.TransactionId)
 	}
 }
 
@@ -82,7 +82,7 @@ func handleStatusEventFailed(l logrus.FieldLogger) message.Handler[saga.StatusEv
 		}
 
 		// Try to find pending action
-		pendingAction, found := action.GetRegistry().Get(ctx, e.TransactionId)
+		pendingAction, found := action.GetRegistry().Get(l, ctx, e.TransactionId)
 		if !found {
 			// Not a portal action saga, ignore
 			return
@@ -111,7 +111,7 @@ func handleStatusEventFailed(l logrus.FieldLogger) message.Handler[saga.StatusEv
 		character.EnableActions(l)(ctx)(ch, pendingAction.CharacterId)
 
 		// Cleanup
-		action.GetRegistry().Remove(ctx, e.TransactionId)
+		action.GetRegistry().Remove(l, ctx, e.TransactionId)
 	}
 }
 

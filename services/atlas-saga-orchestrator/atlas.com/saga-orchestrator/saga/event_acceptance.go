@@ -217,6 +217,16 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	// anywhere. This comment is the only coupling record between the two
 	// services.
 	//
+	// A second silent-degradation trap for whoever adds a fourth action here:
+	// the ForCharacter(characterId) guard in processor.go treats
+	// ExtractCharacterId(step) == 0 as "unconstrained" (deliberately, for
+	// actions never routed through ForCharacter). A new action added to this
+	// EventKindCharacterMapChanged entry whose payload has no case in
+	// ExtractCharacterId (character_extractor.go) also returns 0 — the guard
+	// then silently stops applying to it, with no compile error and no test
+	// failure. Add a case to ExtractCharacterId for any new action landing
+	// here.
+	//
 	// Correlation is (transactionId, characterId). handleCharacterMapChangedEvent
 	// passes ForCharacter(e.CharacterId) so the WarpPartyQuestMembersToMap
 	// fan-out — N warps stamped with one transactionId, see

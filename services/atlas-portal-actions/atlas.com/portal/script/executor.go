@@ -150,7 +150,7 @@ func (e *OperationExecutor) executeWarp(f field.Model, characterId uint32, op op
 	// (consumer.go, task-184 FR-2.3), this registration is what lets
 	// handleStatusEventFailed release the player when the warp does not land.
 	sagaId := uuid.New()
-	action.GetRegistry().AddWithTTL(e.ctx, sagaId, action.PendingAction{
+	action.GetRegistry().AddWithTTL(e.l, e.ctx, sagaId, action.PendingAction{
 		CharacterId: characterId,
 		WorldId:     f.WorldId(),
 		ChannelId:   f.ChannelId(),
@@ -463,7 +463,7 @@ func (e *OperationExecutor) executeStartInstanceTransport(f field.Model, charact
 	sagaId := uuid.New()
 
 	// Register pending action for saga failure handling
-	action.GetRegistry().Add(e.ctx, sagaId, action.PendingAction{
+	action.GetRegistry().Add(e.l, e.ctx, sagaId, action.PendingAction{
 		CharacterId:    characterId,
 		WorldId:        f.WorldId(),
 		ChannelId:      f.ChannelId(),
@@ -587,7 +587,7 @@ func (e *OperationExecutor) executeWarpToSavedLocation(f field.Model, characterI
 	e.l.Debugf("Warping character [%d] to saved location [%s]", characterId, locationType)
 
 	sagaId := uuid.New()
-	action.GetRegistry().AddWithTTL(e.ctx, sagaId, action.PendingAction{
+	action.GetRegistry().AddWithTTL(e.l, e.ctx, sagaId, action.PendingAction{
 		CharacterId: characterId,
 		WorldId:     f.WorldId(),
 		ChannelId:   f.ChannelId(),

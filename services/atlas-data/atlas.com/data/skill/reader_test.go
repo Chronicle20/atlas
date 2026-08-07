@@ -3547,3 +3547,64 @@ func TestParseJobId(t *testing.T) {
 		t.Fatal("ParseJobId(\"112\") expected error (missing .img suffix), got nil")
 	}
 }
+
+// TestLevelPathPopulatesCommonKeys pins FR-6.1 from the `level` side: the
+// keys added for `common` are read by the one shared getEffect, so a `level`
+// node that happens to carry them populates them too.
+func TestLevelPathPopulatesCommonKeys(t *testing.T) {
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="112.img">
+  <imgdir name="skill">
+    <imgdir name="1121000">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="mastery" value="40"/>
+          <int name="range" value="150"/>
+          <int name="dot" value="12"/>
+          <int name="dotInterval" value="2"/>
+          <int name="dotTime" value="8"/>
+          <int name="mhpR" value="5"/>
+          <int name="mmpR" value="6"/>
+          <int name="itemConsume" value="2331000"/>
+          <int name="itemCon" value="2000000"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 95, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	models, err := rms()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(models) != 1 {
+		t.Fatalf("len(models) = %d, want 1", len(models))
+	}
+	ef := models[0].Effects[0]
+	if ef.Mastery != 40 {
+		t.Fatalf("Mastery = %d, want 40", ef.Mastery)
+	}
+	if ef.Range != 150 {
+		t.Fatalf("Range = %d, want 150", ef.Range)
+	}
+	if ef.Dot != 12 || ef.DotInterval != 2 || ef.DotTime != 8 {
+		t.Fatalf("dot triple = (%d,%d,%d), want (12,2,8)", ef.Dot, ef.DotInterval, ef.DotTime)
+	}
+	if ef.MHPRRate != 5 || ef.MMPRRate != 6 {
+		t.Fatalf("(MHPRRate,MMPRRate) = (%d,%d), want (5,6)", ef.MHPRRate, ef.MMPRRate)
+	}
+	if ef.ConsumeItemId != 2331000 {
+		t.Fatalf("ConsumeItemId = %d, want 2331000", ef.ConsumeItemId)
+	}
+	if ef.ItemConsume != 2000000 {
+		t.Fatalf("ItemConsume = %d, want 2000000", ef.ItemConsume)
+	}
+}

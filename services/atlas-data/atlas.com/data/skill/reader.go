@@ -246,6 +246,46 @@ func getEffect(t tenant.Model, skillId skill.Id, overTime bool, node xml.Node) e
 		SetItemConsumeNumber(uint32(node.GetIntegerWithDefault("itemConNo", 0))).
 		SetMoveTo(node.GetIntegerWithDefault("moveTo", -1))
 
+	// Skill.wz `common` keys (task-192). Read here, in the single shared
+	// getEffect, so they populate on BOTH the `common` and `level` paths
+	// (FR-6.1). Absent keys default to 0, matching the `level` path's rule
+	// for every key it does not find.
+	e.SetRange(node.GetIntegerWithDefault("range", 0)).
+		SetMastery(node.GetIntegerWithDefault("mastery", 0)).
+		SetZ(node.GetIntegerWithDefault("z", 0)).
+		SetDot(node.GetIntegerWithDefault("dot", 0)).
+		SetCr(node.GetIntegerWithDefault("cr", 0)).
+		SetDotInterval(node.GetIntegerWithDefault("dotInterval", 0)).
+		SetDotTime(node.GetIntegerWithDefault("dotTime", 0)).
+		SetDamR(node.GetIntegerWithDefault("damR", 0)).
+		SetCriticaldamageMin(node.GetIntegerWithDefault("criticaldamageMin", 0)).
+		SetMHPRRate(uint16(node.GetIntegerWithDefault("mhpR", 0))).
+		SetV(node.GetIntegerWithDefault("v", 0)).
+		SetIgnoreMobpdpR(node.GetIntegerWithDefault("ignoreMobpdpR", 0)).
+		SetEpad(node.GetIntegerWithDefault("epad", 0)).
+		SetW(node.GetIntegerWithDefault("w", 0)).
+		SetU(node.GetIntegerWithDefault("u", 0)).
+		SetEpdd(node.GetIntegerWithDefault("epdd", 0)).
+		SetEmdd(node.GetIntegerWithDefault("emdd", 0)).
+		SetSelfDestruction(node.GetIntegerWithDefault("selfDestruction", 0)).
+		SetAsrR(node.GetIntegerWithDefault("asrR", 0)).
+		SetMMPRRate(uint16(node.GetIntegerWithDefault("mmpR", 0))).
+		SetT(node.GetIntegerWithDefault("t", 0)).
+		SetEr(node.GetIntegerWithDefault("er", 0)).
+		SetPddR(node.GetIntegerWithDefault("pddR", 0)).
+		SetTerR(node.GetIntegerWithDefault("terR", 0)).
+		SetMadX(node.GetIntegerWithDefault("madX", 0)).
+		SetSubProp(node.GetIntegerWithDefault("subProp", 0)).
+		SetEmhp(node.GetIntegerWithDefault("emhp", 0)).
+		SetCriticaldamageMax(node.GetIntegerWithDefault("criticaldamageMax", 0)).
+		SetExpR(node.GetIntegerWithDefault("expR", 0)).
+		SetEmmp(node.GetIntegerWithDefault("emmp", 0)).
+		SetConsumeItemId(node.GetIntegerWithDefault("itemConsume", 0)).
+		SetMddR(node.GetIntegerWithDefault("mddR", 0)).
+		SetSubTime(node.GetIntegerWithDefault("subTime", 0)).
+		SetPadX(node.GetIntegerWithDefault("padX", 0)).
+		SetMesoR(node.GetIntegerWithDefault("mesoR", 0))
+
 	ms := make(map[string]uint32)
 
 	if skill.Is(skillId, skill.BeginnerRecoveryId, skill.NoblesseRecoveryId, skill.LegendRecoveryId, skill.EvanRecoveryId) {

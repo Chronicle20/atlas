@@ -2,7 +2,9 @@ package tenants
 
 import (
 	"atlas-configurations/outbox"
+	configsocket "atlas-configurations/socket"
 	"atlas-configurations/tenants/characters/preset"
+	"atlas-configurations/tenants/socket"
 	"context"
 	"encoding/json"
 	"os"
@@ -100,6 +102,7 @@ func Make(e Entity) (RestModel, error) {
 	if err != nil {
 		return RestModel{}, err
 	}
+	rm.Socket = socket.Normalize(rm.Socket)
 	rm.Id = e.Id.String()
 	return rm, nil
 }
@@ -113,12 +116,26 @@ func (p *ProcessorImpl) GetByRegionAndVersion(region string, majorVersion uint16
 }
 
 func (p *ProcessorImpl) UpdateById(tenantId uuid.UUID, input RestModel) error {
+	input.Socket = socket.Normalize(input.Socket)
+	issues := socketValidate(input.Socket)
+
+	// The preset validator always runs, even when socket issues already
+	// exist, so a single 400 can report every problem the request has -
+	// socket and preset failures must never mask each other. This means an
+	// atlas-data round trip (p.validator.Validate) now happens on every
+	// invalid-socket request too, not just clean ones; that I/O was already
+	// paid on every valid-socket request and is not gated behind
+	// WithValidator being unset, so the added cost is one otherwise-skippable
+	// call on the socket-invalid path.
+	var presetErrs []preset.ValidationError
 	if p.validator != nil {
 		assigned, errs := p.validator.Validate(p.ctx, input.Characters.Presets)
 		input.Characters.Presets = assigned
-		if len(errs) > 0 {
-			return &validationFailureError{errors: errs}
-		}
+		presetErrs = errs
+	}
+
+	if len(issues) > 0 || len(presetErrs) > 0 {
+		return &validationFailureError{errors: presetErrs, socketIssues: issues}
 	}
 
 	res, err := json.Marshal(input)
@@ -149,6 +166,11 @@ func (p *ProcessorImpl) DeleteById(tenantId uuid.UUID) error {
 }
 
 func (p *ProcessorImpl) Create(input RestModel) (uuid.UUID, error) {
+	input.Socket = socket.Normalize(input.Socket)
+	if issues := socketValidate(input.Socket); len(issues) > 0 {
+		return uuid.Nil, &validationFailureError{socketIssues: issues}
+	}
+
 	res, err := json.Marshal(input)
 	if err != nil {
 		return uuid.Nil, err
@@ -187,4 +209,11 @@ func (p *ProcessorImpl) Create(input RestModel) (uuid.UUID, error) {
 		return uuid.Nil, err
 	}
 	return tenantId, nil
+}
+
+// socketValidate runs the shared, dependency-free socket rules. Unlike preset
+// validation it is not routed through WithValidator, because it needs no
+// atlas-data client and must therefore never be skippable.
+func socketValidate(rm socket.RestModel) []configsocket.Issue {
+	return configsocket.Validate(socket.ToValidationInput(rm))
 }

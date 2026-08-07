@@ -106,6 +106,7 @@ func handleUpdateConfigurationTenant(db *gorm.DB) rest.InputHandler[RestModel] {
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
+				w.WriteHeader(http.StatusNoContent)
 			}
 		})
 	}
@@ -116,6 +117,13 @@ func handleCreateConfigurationTenant(db *gorm.DB) rest.InputHandler[RestModel] {
 		return func(w http.ResponseWriter, r *http.Request) {
 			tenantId, err := NewProcessor(d.Logger(), d.Context(), db).Create(input)
 			if err != nil {
+				var ve *validationFailureError
+				if errors.As(err, &ve) {
+					w.Header().Set("Content-Type", "application/vnd.api+json")
+					w.WriteHeader(http.StatusBadRequest)
+					_ = json.NewEncoder(w).Encode(map[string]any{"errors": ve.AsJSONAPIErrors()})
+					return
+				}
 				d.Logger().WithError(err).Errorf("Unable to create configuration tenant.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
@@ -144,7 +152,9 @@ func handleDeleteConfigurationTenant(db *gorm.DB) rest.GetHandler {
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to delete configuration tenant.")
 					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
 				}
+				w.WriteHeader(http.StatusNoContent)
 			}
 		})
 	}

@@ -173,15 +173,50 @@ describe("TransportRouteDetailPage", () => {
   });
 
   it("never renders a schedule date", async () => {
-    vi.mocked(transportsService.getScheduledRoute).mockResolvedValue({
-      route: scheduledRoute("open_entry"),
-      schedule: trips,
-    });
+    // The clock is pinned for the same reason as the tick test below: the
+    // time axis labels round wall-clock hours, and adjacent `HH:MM` labels
+    // concatenate in `textContent`. Run for real at 23:2x UTC and the axis
+    // emits "23:20" then "23:30" — "23:2023:30" — which contains a literal
+    // "2023" that has nothing to do with a rendered date. Pinning makes the
+    // axis deterministic so the year check below means what it says.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-06T12:00:00Z"));
 
-    const { container } = renderDetail();
+    try {
+      vi.mocked(transportsService.getScheduledRoute).mockResolvedValue({
+        route: scheduledRoute("open_entry"),
+        schedule: trips,
+      });
 
-    await screen.findByRole("heading", { name: "Orbis to Ellinia" });
-    expect(container.textContent).not.toContain("2023");
+      const { container } = renderDetail();
+
+      await vi.waitFor(() => {
+        expect(
+          screen.getByRole("heading", { name: "Orbis to Ellinia" }),
+        ).toBeInTheDocument();
+      });
+
+      const text = container.textContent ?? "";
+      // Date *shapes*, not one hard-coded year: the fixture's 2023 dates must
+      // not surface in any format the page might reach for.
+      expect(text).not.toMatch(/\d{4}-\d{2}-\d{2}/); // ISO
+      expect(text).not.toMatch(/\d{1,2}\/\d{1,2}\/\d{2,4}/); // locale short
+      expect(text).not.toMatch(
+        /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/,
+      ); // month name
+
+      // A bare year has no separator to key off, so the clock-derived labels
+      // — axis ticks and the NOW marker, all pure `HH:MM(:SS)` by
+      // construction — come out first. Otherwise their concatenation is
+      // indistinguishable from a rendered year.
+      const clockless = container.cloneNode(true) as HTMLElement;
+      clockless
+        .querySelectorAll("[data-axis-tick], [data-now-label]")
+        .forEach((node) => node.remove());
+      expect(clockless.textContent ?? "").not.toContain("2023");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("replaces the timeline with a fault message when there are no trips", async () => {

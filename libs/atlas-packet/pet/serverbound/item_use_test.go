@@ -109,6 +109,30 @@ func TestItemUseBytesV79(t *testing.T) {
 	}
 }
 
+// TestItemUseBytesV92 pins the v92 PET_AUTO_POT (sb op 200=0xC8) send order.
+// IDA GMS_v92_1_DEVM.exe (session acdfccff):
+// CWvsContext::SendStatChangeItemUseRequestByPetQ@0x9b3a00 —
+// COutPacket(0xC8)@0x9b3abe (200, matches registry opcode 200),
+// EncodeBuffer(&Src,8)@0x9b3ad6 (petId), Encode1(a7=buffSkill)@0x9b3ae4,
+// Encode4(v14=updateTime via sub_936E80)@0x9b3af3, Encode2(a4=source)@0x9b3b01,
+// Encode4(v10=itemId/Args)@0x9b3b0b. Wire = petId(8)+buffSkill(1)+
+// updateTime(4)+source(2)+itemId(4); byte-identical to gms_v61/v72/v79/v83.
+// packet-audit:verify packet=pet/serverbound/PetItemUse version=gms_v92 ida=0x9b3a00
+func TestItemUseBytesV92(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 92, 1)
+	got := ItemUse{petId: 0x0102030405060708, buffSkill: true, updateTime: 100, source: 5, itemId: 2000001}.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // petId EncodeBuffer(8)@0x9b3ad6 (LE)
+		0x01,                   // buffSkill Encode1@0x9b3ae4
+		0x64, 0x00, 0x00, 0x00, // updateTime Encode4@0x9b3af3 (100 LE)
+		0x05, 0x00, // source Encode2@0x9b3b01 (5 LE)
+		0x81, 0x84, 0x1E, 0x00, // itemId Encode4@0x9b3b0b (2000001 LE)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v92 = % X, want % X", got, want)
+	}
+}
+
 // TestItemUseBytesV48 pins the v48 PET_AUTO_POT (sb op 117=0x75) send — NO
 // leading petSN (v48 is single-pet). IDA GMS_v48_1_DEVM.exe (session
 // 0bb5f11a): sub_70DC8D@0x70dc8d (named

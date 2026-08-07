@@ -664,7 +664,7 @@ Tool: `fdc0c767fb39d377e985f0e4c7936c22bb113e2503b24cf49dc9146bdb6c6ae1`
 | PET_LOOT | CPet::SendDropPickUpRequest; sub_58ED98 | pet/serverbound/PetDropPickUp (T1) | 0x074 | ✅ | 0x08D | ✅ | 0x0A4 | ✅ | 0x0A6 | ✅ | 0x0AA | ✅ | 0x0AF | ✅ | 0x0B6 | ✅ | 0x0C7 | 🟡ᶠ | 0x0CA | ✅ | 0x0AD | ✅ |
 | USE_REMOTE | CWvsContext::SendUseGachaponRemoteRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x074 | ❌ | 0x074 | ❌ | 0x077 | ❌ | 0x07F | ❌ | 0x080 | ❌ |  | ⬜ |
 | FOLLOW_CHARACTER_WITHRDAW |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ❌ |
-| PET_AUTO_POT | CWvsContext::SendStatChangeItemUseRequestByPetQ | pet/serverbound/PetItemUse (T1) | 0x075 | ✅ | 0x08E | ✅ | 0x0A5 | ✅ | 0x0A7 | ✅ | 0x0AB | ✅ | 0x0B0 | ✅ | 0x0B7 | ✅ | 0x0C8 | 🟡ᶠ | 0x0CB | ✅ | 0x0AE | ✅ |
+| PET_AUTO_POT | CWvsContext::SendStatChangeItemUseRequestByPetQ | pet/serverbound/PetItemUse (T1) | 0x075 | ✅ | 0x08E | ✅ | 0x0A5 | ✅ | 0x0A7 | ✅ | 0x0AB | ✅ | 0x0B0 | ✅ | 0x0B7 | ✅ | 0x0C8 | ✅ | 0x0CB | ✅ | 0x0AE | ✅ |
 | WATER_OF_LIFE | CWvsContext::SendWaterOfLife |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ❌ | 0x075 | ❌ | 0x078 | ❌ | 0x080 | ❌ | 0x081 | ❌ |  | ⬜ |
 | MOVE_SUMMON | CVecCtrlSummoned::EndUpdateActive; sub_6E7CF8; sub_7FE86B; sub_9184E5 | summon/serverbound/SummonMoveHandle | 0x078 | ❌ | 0x092 | ❌ | 0x0A9 | ❌ | 0x0AB | ❌ | 0x0AF | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CC | ❌ | 0x0CF | ✅ | 0x0B2 | ✅ |
 | REPAIR_DURABILITY_ALL | CRepairDurabilityDlg::SendRepairDurabilityAll |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x079 | ❌ | 0x081 | ❌ | 0x082 | ❌ | 0x06D | ❌ |
@@ -1059,7 +1059,7 @@ Tool: `fdc0c767fb39d377e985f0e4c7936c22bb113e2503b24cf49dc9146bdb6c6ae1`
 | v83 | 435 | 0 | 0 | 352 | 229 | 0 | 55.3% |
 | v84 | 409 | 0 | 0 | 358 | 249 | 0 | 53.3% |
 | v87 | 443 | 0 | 0 | 381 | 192 | 0 | 53.8% |
-| v92 | 5 | 0 | 154 | 715 | 142 | 0 | 0.6% |
+| v92 | 6 | 0 | 153 | 715 | 142 | 0 | 0.7% |
 | v95 | 468 | 0 | 0 | 440 | 108 | 0 | 51.5% |
 | JMS185 | 418 | 0 | 0 | 399 | 199 | 0 | 51.2% |
 

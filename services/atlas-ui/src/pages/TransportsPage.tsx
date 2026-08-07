@@ -8,6 +8,7 @@ import { useTenant } from "@/context/tenant-context";
 import { useScheduledRoutes, useVessels } from "@/lib/hooks/api/useTransports";
 import { FreshnessIndicator } from "@/components/features/transports/FreshnessIndicator";
 import { InstanceRoutesTable } from "@/components/features/transports/InstanceRoutesTable";
+import { VesselsTable } from "@/components/features/transports/VesselsTable";
 import { compareRoutesBySeverityThenName } from "@/components/features/transports/transport-format";
 import { createScheduledRouteColumns } from "@/pages/transports-columns";
 
@@ -115,10 +116,14 @@ function TransportsPageContent() {
           />
         </TabsContent>
 
-        <TabsContent
-          value="vessels"
-          className="flex-1 min-h-0 overflow-x-auto"
-        />
+        <TabsContent value="vessels" className="flex-1 min-h-0 overflow-x-auto">
+          <VesselsTable
+            vessels={vessels}
+            routes={routes}
+            isLoading={vesselsQuery.isLoading || scheduledQuery.isLoading}
+            isError={vesselsQuery.isError || scheduledQuery.isError}
+          />
+        </TabsContent>
       </Tabs>
     </div>
   );

@@ -15,6 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -183,10 +184,20 @@ func handleGetNpcMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 					return
 				}
 
+				// npc_spawn_index rows are derived from MAP documents at ingest,
+				// so shared content lands in the canonical partition rather than
+				// the requesting tenant's own (issue #1213).
+				partition, perr := searchindex.ResolvePartitionTenantId[SpawnIndexEntity](db, d.Context())
+				if perr != nil {
+					d.Logger().WithError(perr).Errorf("Unable to resolve spawn-index partition for npcId=%d.", npcId)
+					server.WriteErrorResponse(d.Logger())(w)(perr)
+					return
+				}
+
 				start := time.Now()
 				var rows []SpawnIndexEntity
-				qerr := db.WithContext(d.Context()).
-					Where("tenant_id = ? AND npc_id = ?", t.Id(), npcId).
+				qerr := db.WithContext(database.WithoutTenantFilter(d.Context())).
+					Where("tenant_id = ? AND npc_id = ?", partition, npcId).
 					Order("spawn_count DESC, map_id ASC").
 					Find(&rows).Error
 				if qerr != nil {

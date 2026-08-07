@@ -63,6 +63,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 			}
 
 			ms := make([]RestModel, 0)
+			stats := Stats{}
 			for _, sxml := range ssxml.ChildNodes {
 				skillId, err := strconv.Atoi(sxml.Name)
 				if err != nil {
@@ -70,12 +71,14 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 				}
 				l.Debugf("Processing skill [%d] for job [%d].", skillId, jobId)
 
-				m, err := produceSkill(t, skill.Id(skillId), sxml)
+				m, s, err := produceSkill(l, t, jobId, skill.Id(skillId), sxml)
 				if err != nil {
 					return model.ErrorProvider[[]RestModel](err)
 				}
+				stats.Add(s)
 				ms = append(ms, m)
 			}
+			l.Debugf("Derived %d skills for job [%d].", stats.Processed, jobId)
 			return model.FixedProvider[[]RestModel](ms)
 		}
 	}
@@ -103,7 +106,7 @@ func isSuperGmHealDispel(t tenant.Model, skillId skill.Id) bool {
 	return ok && id == skill.SuperGmHealDispel
 }
 
-func produceSkill(t tenant.Model, skillId skill.Id, xml xml.Node) (RestModel, error) {
+func produceSkill(l logrus.FieldLogger, t tenant.Model, jobId uint32, skillId skill.Id, xml xml.Node) (RestModel, Stats, error) {
 	element := readElement(xml)
 	action := false
 	buff := false
@@ -123,10 +126,29 @@ func produceSkill(t tenant.Model, skillId skill.Id, xml xml.Node) (RestModel, er
 
 	}
 
+	stats := Stats{Processed: 1}
 	es := make([]effect.RestModel, 0)
-	level, err := xml.ChildByName("level")
-	if err == nil {
+	maxLevel := uint8(0)
+
+	// FR-1.2: COMMON WINS UNCONDITIONALLY. When `common` is present the
+	// `level` subtree is not read at all. Detection is structural — never
+	// gated on region/major/minor (FR-1.4).
+	if common, err := xml.ChildByName("common"); err == nil {
+		var commonStats Stats
+		es, maxLevel, commonStats = expandCommon(l, t, jobId, skillId, buff, common)
+		stats.Add(commonStats)
+		stats.FromCommon = 1
+	} else if level, err := xml.ChildByName("level"); err == nil {
 		es = getEffects(t, skillId, buff, level.ChildNodes)
+		if n := len(es); n > 255 {
+			maxLevel = 255
+		} else {
+			maxLevel = uint8(n)
+		}
+		stats.FromLevel = 1
+	} else {
+		// FR-1.3: neither subtree. Zero effects, maxLevel 0, no panic.
+		stats.Neither = 1
 	}
 
 	name, desc := "", ""
@@ -134,13 +156,6 @@ func produceSkill(t tenant.Model, skillId skill.Id, xml xml.Node) (RestModel, er
 	if err == nil {
 		name = ss.Name()
 		desc = ss.Desc()
-	}
-
-	maxLevel := uint8(0)
-	if n := len(es); n > 255 {
-		maxLevel = 255
-	} else {
-		maxLevel = uint8(n)
 	}
 
 	m := RestModel{
@@ -154,7 +169,7 @@ func produceSkill(t tenant.Model, skillId skill.Id, xml xml.Node) (RestModel, er
 		Effects:       es,
 	}
 
-	return m, nil
+	return m, stats, nil
 }
 
 func getEffects(t tenant.Model, skillId skill.Id, buff bool, nodes []xml.Node) []effect.RestModel {

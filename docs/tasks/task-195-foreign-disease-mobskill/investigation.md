@@ -212,3 +212,125 @@ touched here:
   `BlueAura`, `YellowAura`; the registry has them `NoOp`. Atlas never
   originates these stats, so the bit is never set.
 - gms_v61's remote decoder has no `ReverseInput` (Confuse) branch at all.
+
+---
+
+# Addendum — two party-buff defects found during live testing
+
+Found while verifying the disease work on the `atlas-pr-1202` k3s environment
+(tenant `0162160f-…`, GMS 83.1). Neither is a regression from the foreign-CTS
+change above; both are pre-existing and were simply exposed by the same test
+session. Reproduced from `atlas-channel` pod logs: Haste (`4101004`, cast by
+character 2) produced `Character [2] applying effect` **and** `Character [1]
+applying effect`; Sharp Eyes (`3221002`, cast by character 1, jobId 322 =
+Marksman) produced only `Character [1] applying effect`, on all four casts.
+
+## 7. Marksman Sharp Eyes never reached the party
+
+`CUserLocal::SendSkillUseRequest` (gms_v83 `@0x96d399`) writes:
+
+```
+Encode4 updateTime · Encode4 skillId · Encode1 nSLV
+if is_antirepeat_buff_skill(skillId): Encode2 castX, Encode2 castY
+if skillId == 4121006:                Encode4 nSpiritJavelinItemID
+if dwAffectedMemberBitmap:            Encode1 bitmap  (+ Encode2 when 2311001)
+if nMobCount >= 0:                    Encode1 nMobCount, Encode4 × nMobCount
+Encode2 delay                          (unconditional)
+```
+
+`is_antirepeat_buff_skill` lists `3121000`, `3121002` (Bowmaster Sharp Eyes)
+and `3221000` — and stops. **`3221002` is in it on no supported client.** The
+v83 disassembly `@0x96d6ca` is decisive: `sub 0x2F9F68` → 3121000, `dec/dec` →
+3121002, `sub 0x1869E` (99,998) → 3221000, `sub 0xD6D84` → 4101004. Confirmed
+independently per version:
+
+| version | function | 3221002 present? |
+|---|---|---|
+| gms_v72 | `@0x877789` | no |
+| gms_v79 | `@0x8c42bd` | no |
+| gms_v83 | `@0x96d6ca` | no |
+| gms_v84 | `@0x9ad4e4` | no |
+| gms_v87 | `@0x9f20fc` | no |
+| gms_v92 | `@0x919150` | no |
+| gms_v95 | `@0x939dc0` | no |
+| jms_v185 | `@0xa3e223` | no |
+
+(gms_v48 and gms_v61 have no symbol for this function in their IDBs; not
+re-derived — neither is affected by the fix either way, since the change only
+removes an entry.)
+
+`libs/atlas-packet/model/skill_usage_info.go` listed `MarksmanSharpEyesId` in
+`isAntiRepeatBuffSkill`, so the decoder consumed 4 castX/castY bytes the client
+never sent. The affected-party bitmap read then ran past the end of the 12-byte
+packet and returned 0, and `selectPartyMembers`' `memberBitmap == 0` gate
+resolved caster-only. Haste (`4101004`) *is* anti-repeat client-side, which is
+why it aligned and worked — the asymmetry is a Nexon omission, not a pattern.
+Same failure mode as task-155 / Time Leap.
+
+`3221002` also had to come out of `isMobAffectingBuff`: gms_v83
+`CUserLocal::DoActiveSkill` compares against 3221002 at `0x967ff7` and
+dispatches to `loc_969275`, which pushes `dwTargetFlag = 2` — the party bit
+only, never the mob bit (4) — so `DoActiveSkill_StatChange` `@0x969e21` passes
+`nMobCount = -1` and no mob block is emitted. Left in, the decoder would have
+read the trailing delay short's low byte as a mob count and manufactured
+phantom target ids.
+
+Fixed in `skill_usage_info.go`; pinned by
+`TestDecodeMarksmanSharpEyesReadsPartyBitmap` (12-byte wire fixture, with the
+non-zero trailing delay acting as the mob-block canary) and
+`TestIsAntiRepeatExcludesMarksmanSharpEyesOnly`. Both were confirmed to fail
+when the entry is reinstated.
+
+### Still open in the same lists
+
+Four more entries are in Atlas's `isAntiRepeatBuffSkill` but in no client's
+`is_antirepeat_buff_skill`: `HermitShadowWeb 4111003`,
+`CorsairSpeedInfusion 5221010`, `NightWalkerStage3ShadowWeb 14111001`,
+`AranStage4ComboBarrier 21120007`. Each misaligns its own skill's decode the
+same way. They are **not** fixed here: unlike 3221002, none of them appears as
+an immediate in `DoActiveSkill`, so their `dwTargetFlag` is set by the
+skill-type jump table and their `isMobAffectingBuff` membership could not be
+derived. Removing them from one list without knowing the other would relocate
+the misalignment rather than remove it. Fixing them needs a reversal of the
+`DoActiveSkill` type dispatch.
+
+## 8. Party-buff recipients got no SKILL_AFFECTED effect
+
+`CUser::OnEffect` (gms_v83 `@0x9377d9`) case **2** reads `Decode4 skillId` +
+`Decode1 nSLV` and calls `CUser::ShowSkillAffected` `@0x93632a` — the
+buff-received animation drawn over the *affected* player. Case 1 (`SKILL_USE`)
+draws the *caster's* cast animation and is not a substitute.
+
+`libs/atlas-packet/character/effect_body.go` has defined
+`CharacterSkillAffectedEffectBody` / `…ForeignBody` all along, but no service
+ever called either — they were dead code. `character_skill_use.go:176-178`
+announces only `SKILL_USE` (self + foreign) for the caster, so a party-buff
+recipient received `CharacterBuffGive` and nothing else: no effect over the
+player who received Haste, no animation on the recipient of Sharp Eyes.
+
+Now emitted from the party-apply site: `applyToParty` returns the ids it
+applied to, and `announceSkillAffected` writes `CharacterEffect`
+(`SKILL_AFFECTED`) to each non-caster recipient's own session plus
+`CharacterEffectForeign` to everyone else on their map. The caster is excluded —
+their client renders the cast locally
+(`DoActiveSkill_StatChange` → `CUser::ShowSkillEffect`) and already receives
+`SKILL_USE`.
+
+### Template coverage (pre-existing, unchanged here)
+
+No template edit was needed: `SKILL_AFFECTED = 2` is already in the
+`operations` table of every `CharacterEffect` / `CharacterEffectForeign` writer
+that exists. But the writer set itself is uneven, and this predates and equally
+affects the already-shipping `SKILL_USE` effect:
+
+| template | CharacterEffect | CharacterEffectForeign |
+|---|---|---|
+| gms_61 / 72 / 79 / 83 / 84 / 87 | ✅ | ✅ |
+| gms_95, jms_185 | ✅ (two entries) | ❌ — the second entry is also named `CharacterEffect`, so foreign effect writes find no writer |
+| gms_12, gms_48, gms_92 | ❌ absent | ❌ absent |
+
+v83 — the version under test — is fully wired. The other rows are a separate
+config defect and were not touched: naming gms_95's `0xE0` / jms_185's `0xCC`
+as the foreign writer is an inference from opcode ordering in the v61–v87
+templates, not client-derived, and gms_12/48/92 need per-version opcode
+evidence before entries are added.

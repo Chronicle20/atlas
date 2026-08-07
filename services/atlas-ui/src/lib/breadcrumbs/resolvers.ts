@@ -23,6 +23,7 @@ import {
   servicesService,
   getServiceTypeDisplayName,
 } from "@/services/api/services.service";
+import { transportsService } from "@/services/api/transports.service";
 
 // Types for resolver functions
 export type EntityResolver<T = string> = (
@@ -67,6 +68,7 @@ export const EntityType = {
   PORTAL: "portal",
   ITEM: "item",
   QUEST: "quest",
+  TRANSPORT_ROUTE: "transport-route",
 } as const;
 export type EntityType = (typeof EntityType)[keyof typeof EntityType];
 
@@ -94,6 +96,9 @@ const CACHE_CONFIG = {
     [EntityType.PORTAL]: 30 * 60 * 1000, // 30 minutes (rarely changes)
     [EntityType.ITEM]: 30 * 60 * 1000, // 30 minutes (rarely changes)
     [EntityType.QUEST]: 30 * 60 * 1000, // 30 minutes (rarely changes)
+    // Seeded tenant configuration; the route's live state churns, its name
+    // does not.
+    [EntityType.TRANSPORT_ROUTE]: 30 * 60 * 1000, // 30 minutes
   },
   // Maximum cache size per entity type
   MAX_SIZE: 1000,
@@ -361,6 +366,25 @@ const resolvers: Record<EntityType, EntityResolver> = {
       throw new ResolverError(`Failed to resolve quest: ${error}`, true);
     }
   },
+
+  [EntityType.TRANSPORT_ROUTE]: async (_tenant, entityId, options = {}) => {
+    try {
+      const route = await transportsService.getScheduledRouteById(
+        entityId,
+        options,
+      );
+      return route.attributes?.name || `Route ${entityId}`;
+    } catch (error) {
+      console.warn(
+        `Failed to resolve transport route name for ID ${entityId}:`,
+        error,
+      );
+      throw new ResolverError(
+        `Failed to resolve transport route: ${error}`,
+        true,
+      );
+    }
+  },
 };
 
 /**
@@ -552,6 +576,7 @@ export function getEntityTypeFromRoute(pathname: string): EntityType | null {
   if (pathname.includes("/reactors/")) return EntityType.REACTOR;
   if (pathname.includes("/items/")) return EntityType.ITEM;
   if (pathname.includes("/quests/")) return EntityType.QUEST;
+  if (pathname.includes("/transports/")) return EntityType.TRANSPORT_ROUTE;
 
   return null;
 }

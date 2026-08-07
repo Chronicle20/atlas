@@ -11,17 +11,24 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
+// RouteRestModel is the JSON:API resource for an instance transport route.
+//
+// BoardingWindow and TravelDuration are time.Duration and therefore serialise
+// as integer nanosecond counts. They are retained unchanged for existing
+// consumers; new consumers read the unit-explicit *Seconds fields.
 type RouteRestModel struct {
-	ID                uuid.UUID     `json:"-"`
-	Name              string        `json:"name"`
-	StartMapId        _map.Id       `json:"startMapId"`
-	TransitMapIds     []_map.Id     `json:"transitMapIds"`
-	DestinationMapId  _map.Id       `json:"destinationMapId"`
-	Capacity          uint32        `json:"capacity"`
-	BoardingWindow    time.Duration `json:"boardingWindow"`
-	TravelDuration    time.Duration `json:"travelDuration"`
-	EffectItemIds     []item.Id     `json:"effectItemIds"`
-	ForcedReturnMapId _map.Id       `json:"forcedReturnMapId"`
+	ID                    uuid.UUID     `json:"-"`
+	Name                  string        `json:"name"`
+	StartMapId            _map.Id       `json:"startMapId"`
+	TransitMapIds         []_map.Id     `json:"transitMapIds"`
+	DestinationMapId      _map.Id       `json:"destinationMapId"`
+	Capacity              uint32        `json:"capacity"`
+	BoardingWindow        time.Duration `json:"boardingWindow"`
+	TravelDuration        time.Duration `json:"travelDuration"`
+	BoardingWindowSeconds uint32        `json:"boardingWindowSeconds"`
+	TravelDurationSeconds uint32        `json:"travelDurationSeconds"`
+	EffectItemIds         []item.Id     `json:"effectItemIds"`
+	ForcedReturnMapId     _map.Id       `json:"forcedReturnMapId"`
 }
 
 func (r RouteRestModel) GetID() string {
@@ -43,16 +50,18 @@ func (r RouteRestModel) GetName() string {
 
 func TransformRoute(m RouteModel) (RouteRestModel, error) {
 	return RouteRestModel{
-		ID:                m.Id(),
-		Name:              m.Name(),
-		StartMapId:        m.StartMapId(),
-		TransitMapIds:     m.TransitMapIds(),
-		DestinationMapId:  m.DestinationMapId(),
-		Capacity:          m.Capacity(),
-		BoardingWindow:    m.BoardingWindow(),
-		TravelDuration:    m.TravelDuration(),
-		EffectItemIds:     m.EffectItemIds(),
-		ForcedReturnMapId: m.ForcedReturnMapId(),
+		ID:                    m.Id(),
+		Name:                  m.Name(),
+		StartMapId:            m.StartMapId(),
+		TransitMapIds:         m.TransitMapIds(),
+		DestinationMapId:      m.DestinationMapId(),
+		Capacity:              m.Capacity(),
+		BoardingWindow:        m.BoardingWindow(),
+		TravelDuration:        m.TravelDuration(),
+		BoardingWindowSeconds: uint32(m.BoardingWindow().Seconds()),
+		TravelDurationSeconds: uint32(m.TravelDuration().Seconds()),
+		EffectItemIds:         m.EffectItemIds(),
+		ForcedReturnMapId:     m.ForcedReturnMapId(),
 	}, nil
 }
 
@@ -63,6 +72,11 @@ type InstanceStatusRestModel struct {
 	Characters    int       `json:"characters"`
 	BoardingUntil string    `json:"boardingUntil"`
 	ArrivalAt     string    `json:"arrivalAt"`
+	// CreatedAt is the instance's creation instant. The stuck-timeout sweep
+	// force-warps on now - createdAt exceeding the route's MaxLifetime, so a
+	// client that wants to warn ahead of that has to compare the same
+	// quantity rather than infer it from boardingUntil.
+	CreatedAt string `json:"createdAt"`
 }
 
 func (r InstanceStatusRestModel) GetID() string {
@@ -94,6 +108,7 @@ func TransformInstanceStatus(inst TransportInstance) (InstanceStatusRestModel, e
 		Characters:    inst.CharacterCount(),
 		BoardingUntil: inst.BoardingUntil().Format(time.RFC3339),
 		ArrivalAt:     inst.ArrivalAt().Format(time.RFC3339),
+		CreatedAt:     inst.CreatedAt().Format(time.RFC3339),
 	}, nil
 }
 

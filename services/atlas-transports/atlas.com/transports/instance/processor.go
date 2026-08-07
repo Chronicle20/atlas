@@ -27,6 +27,7 @@ type Processor interface {
 	GetRoute(id uuid.UUID) (RouteModel, bool)
 	IsTransitMap(mapId _map.Id) bool
 	GetRouteByTransitMap(mapId _map.Id) (RouteModel, error)
+	GetInstancesByRoute(routeId uuid.UUID) []TransportInstance
 
 	StartTransport(mb *message.Buffer) func(characterId uint32, routeId uuid.UUID, f field.Model) error
 	StartTransportAndEmit(characterId uint32, routeId uuid.UUID, f field.Model) error
@@ -128,6 +129,16 @@ func (p *ProcessorImpl) cancelRouteEffects(mb *message.Buffer, route RouteModel,
 			p.l.WithError(err).Errorf("Unable to buffer cancel of effect item [%d] for character [%d] on route [%s].", itemId, characterId, route.Name())
 		}
 	}
+}
+
+// GetInstancesByRoute returns the live instances for a route. Instances are
+// written under the creating tenant's id (StartTransport -> FindOrCreateInstance),
+// and the per-route set is tenant-keyed, so the read must use the same
+// tenant the request carries - p.t is resolved from the same context
+// rest.RegisterHandler installed it into, exactly as every other read in
+// this processor relies on.
+func (p *ProcessorImpl) GetInstancesByRoute(routeId uuid.UUID) []TransportInstance {
+	return getInstanceRegistry().GetInstancesByRoute(p.t.Id(), routeId)
 }
 
 func (p *ProcessorImpl) StartTransport(mb *message.Buffer) func(characterId uint32, routeId uuid.UUID, f field.Model) error {

@@ -39,6 +39,7 @@ export const sidebarItems: SidebarGroupItem[] = [
       { title: "Maps", url: "/maps" },
       { title: "Reactors", url: "/reactors" },
       { title: "Reward Pools", url: "/reward-pools" },
+      { title: "Transports", url: "/transports" },
     ],
   },
   {

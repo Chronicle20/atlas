@@ -235,6 +235,16 @@ const TenantsMtsConfigPage = lazyWithReload(() =>
     default: m.TenantsMtsConfigPage,
   })),
 );
+const TransportsPage = lazyWithReload(() =>
+  import("@/pages/TransportsPage").then((m) => ({
+    default: m.TransportsPage,
+  })),
+);
+const TransportRouteDetailPage = lazyWithReload(() =>
+  import("@/pages/TransportRouteDetailPage").then((m) => ({
+    default: m.TransportRouteDetailPage,
+  })),
+);
 
 function GachaponRedirect() {
   const { id } = useParams();
@@ -294,6 +304,11 @@ export function App() {
                     <Route
                       path="/maps/:id/portals/:portalId"
                       element={<PortalDetailPage />}
+                    />
+                    <Route path="/transports" element={<TransportsPage />} />
+                    <Route
+                      path="/transports/routes/:routeId"
+                      element={<TransportRouteDetailPage />}
                     />
                     <Route path="/merchants" element={<MerchantsPage />} />
                     <Route

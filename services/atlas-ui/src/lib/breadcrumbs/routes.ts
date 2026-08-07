@@ -216,6 +216,21 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     parent: "/",
   },
 
+  // Transport routes
+  {
+    pattern: "/transports",
+    label: "Transports",
+    parent: "/",
+  },
+  {
+    // Matches App.tsx's `/transports/routes/:routeId`. `parent` skips straight
+    // back to the board — there is no page at `/transports/routes`.
+    pattern: "/transports/routes/[id]",
+    label: "Route",
+    parent: "/transports",
+    entityType: "transport-route",
+  },
+
   // Template routes
   {
     pattern: "/templates/[id]",
@@ -526,6 +541,8 @@ export const ROUTE_PATTERNS = {
   REACTOR_DETAIL: "/reactors/[id]",
   REWARD_POOLS: "/reward-pools",
   SETUP: "/setup",
+  TRANSPORTS: "/transports",
+  TRANSPORT_ROUTE_DETAIL: "/transports/routes/[id]",
   TENANTS: "/tenants",
   TENANT_DETAIL: "/tenants/[id]",
   TENANT_PROPERTIES: "/tenants/[id]/properties",

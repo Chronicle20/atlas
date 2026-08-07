@@ -1,4 +1,4 @@
-import { type ColumnDef } from "@tanstack/react-table";
+import { type DataTableColumnDef } from "@/components/data-table-features";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +20,9 @@ interface ColumnProps {
   onDelete?: (service: Service) => void;
 }
 
-export const getColumns = ({ onDelete }: ColumnProps): ColumnDef<Service>[] => [
+export const getColumns = ({
+  onDelete,
+}: ColumnProps): DataTableColumnDef<Service>[] => [
   {
     accessorKey: "id",
     header: "Service ID",

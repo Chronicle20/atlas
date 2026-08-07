@@ -1,4 +1,4 @@
-import { type ColumnDef } from "@tanstack/react-table";
+import { type DataTableColumnDef } from "@/components/data-table-features";
 import {
   Tooltip,
   TooltipContent,
@@ -51,7 +51,7 @@ export const getColumns = ({
   banStatusLoading,
   onBanAccount,
   onRemoveBan,
-}: ColumnProps): ColumnDef<Account>[] => {
+}: ColumnProps): DataTableColumnDef<Account>[] => {
   return [
     {
       accessorKey: "id",

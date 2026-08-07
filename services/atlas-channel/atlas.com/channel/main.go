@@ -716,6 +716,8 @@ func produceWriters() []string {
 		fieldcb.KiteSpawnWriter,
 		fieldcb.KiteErrorWriter,
 		fieldcb.KiteDestroyWriter,
+		fieldcb.AffectedAreaCreatedWriter,
+		fieldcb.AffectedAreaRemovedWriter,
 		fieldcb.ClockWriter,
 		fieldcb.StopClockWriter,
 		fieldcb.OxQuizWriter,

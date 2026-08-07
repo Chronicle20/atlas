@@ -65,6 +65,40 @@ type ModelBuilder struct {
 	cureAbnormalStatuses []string
 	statups              []statup.RestModel
 	monsterStatus        map[string]uint32
+
+	rangeValue        int32
+	mastery           int32
+	z                 int32
+	dot               int32
+	cr                int32
+	dotInterval       int32
+	dotTime           int32
+	damR              int32
+	criticaldamageMin int32
+	v                 int32
+	ignoreMobpdpR     int32
+	epad              int32
+	w                 int32
+	u                 int32
+	epdd              int32
+	emdd              int32
+	selfDestruction   int32
+	asrR              int32
+	t                 int32
+	er                int32
+	pddR              int32
+	terR              int32
+	madX              int32
+	subProp           int32
+	emhp              int32
+	criticaldamageMax int32
+	expR              int32
+	emmp              int32
+	consumeItemId     int32
+	mddR              int32
+	subTime           int32
+	padX              int32
+	mesoR             int32
 }
 
 func (b *ModelBuilder) SetDuration(duration int32) *ModelBuilder {
@@ -437,6 +471,39 @@ func (b *ModelBuilder) Build() RestModel {
 		MonsterStatus:        b.monsterStatus,
 		LT:                   ltPtr,
 		RB:                   rbPtr,
+		Range:                b.rangeValue,
+		Mastery:              b.mastery,
+		Z:                    b.z,
+		Dot:                  b.dot,
+		Cr:                   b.cr,
+		DotInterval:          b.dotInterval,
+		DotTime:              b.dotTime,
+		DamR:                 b.damR,
+		CriticaldamageMin:    b.criticaldamageMin,
+		V:                    b.v,
+		IgnoreMobpdpR:        b.ignoreMobpdpR,
+		Epad:                 b.epad,
+		W:                    b.w,
+		U:                    b.u,
+		Epdd:                 b.epdd,
+		Emdd:                 b.emdd,
+		SelfDestruction:      b.selfDestruction,
+		AsrR:                 b.asrR,
+		T:                    b.t,
+		Er:                   b.er,
+		PddR:                 b.pddR,
+		TerR:                 b.terR,
+		MadX:                 b.madX,
+		SubProp:              b.subProp,
+		Emhp:                 b.emhp,
+		CriticaldamageMax:    b.criticaldamageMax,
+		ExpR:                 b.expR,
+		Emmp:                 b.emmp,
+		ConsumeItemId:        b.consumeItemId,
+		MddR:                 b.mddR,
+		SubTime:              b.subTime,
+		PadX:                 b.padX,
+		MesoR:                b.mesoR,
 	}
 }
 
@@ -454,3 +521,43 @@ func (b *ModelBuilder) SetTarget(target uint32) *ModelBuilder {
 	b.target = target
 	return b
 }
+
+func (b *ModelBuilder) SetRange(v int32) *ModelBuilder             { b.rangeValue = v; return b }
+func (b *ModelBuilder) SetMastery(v int32) *ModelBuilder           { b.mastery = v; return b }
+func (b *ModelBuilder) SetZ(v int32) *ModelBuilder                 { b.z = v; return b }
+func (b *ModelBuilder) SetDot(v int32) *ModelBuilder               { b.dot = v; return b }
+func (b *ModelBuilder) SetCr(v int32) *ModelBuilder                { b.cr = v; return b }
+func (b *ModelBuilder) SetDotInterval(v int32) *ModelBuilder       { b.dotInterval = v; return b }
+func (b *ModelBuilder) SetDotTime(v int32) *ModelBuilder           { b.dotTime = v; return b }
+func (b *ModelBuilder) SetDamR(v int32) *ModelBuilder              { b.damR = v; return b }
+func (b *ModelBuilder) SetCriticaldamageMin(v int32) *ModelBuilder { b.criticaldamageMin = v; return b }
+func (b *ModelBuilder) SetMHPRRate(v uint16) *ModelBuilder         { b.mhprRate = v; return b }
+func (b *ModelBuilder) SetV(v int32) *ModelBuilder                 { b.v = v; return b }
+func (b *ModelBuilder) SetIgnoreMobpdpR(v int32) *ModelBuilder     { b.ignoreMobpdpR = v; return b }
+func (b *ModelBuilder) SetEpad(v int32) *ModelBuilder              { b.epad = v; return b }
+func (b *ModelBuilder) SetW(v int32) *ModelBuilder                 { b.w = v; return b }
+func (b *ModelBuilder) SetU(v int32) *ModelBuilder                 { b.u = v; return b }
+func (b *ModelBuilder) SetEpdd(v int32) *ModelBuilder              { b.epdd = v; return b }
+func (b *ModelBuilder) SetEmdd(v int32) *ModelBuilder              { b.emdd = v; return b }
+func (b *ModelBuilder) SetSelfDestruction(v int32) *ModelBuilder   { b.selfDestruction = v; return b }
+func (b *ModelBuilder) SetAsrR(v int32) *ModelBuilder              { b.asrR = v; return b }
+func (b *ModelBuilder) SetMMPRRate(v uint16) *ModelBuilder         { b.mmprRate = v; return b }
+func (b *ModelBuilder) SetT(v int32) *ModelBuilder                 { b.t = v; return b }
+func (b *ModelBuilder) SetEr(v int32) *ModelBuilder                { b.er = v; return b }
+func (b *ModelBuilder) SetPddR(v int32) *ModelBuilder              { b.pddR = v; return b }
+func (b *ModelBuilder) SetTerR(v int32) *ModelBuilder              { b.terR = v; return b }
+func (b *ModelBuilder) SetMadX(v int32) *ModelBuilder              { b.madX = v; return b }
+func (b *ModelBuilder) SetSubProp(v int32) *ModelBuilder           { b.subProp = v; return b }
+func (b *ModelBuilder) SetEmhp(v int32) *ModelBuilder              { b.emhp = v; return b }
+func (b *ModelBuilder) SetCriticaldamageMax(v int32) *ModelBuilder { b.criticaldamageMax = v; return b }
+func (b *ModelBuilder) SetExpR(v int32) *ModelBuilder              { b.expR = v; return b }
+func (b *ModelBuilder) SetEmmp(v int32) *ModelBuilder              { b.emmp = v; return b }
+
+// SetConsumeItemId sets wz `common/itemConsume`. See RestModel.ConsumeItemId:
+// this is NOT the same key as `itemCon`, which SetItemConsume carries.
+func (b *ModelBuilder) SetConsumeItemId(v int32) *ModelBuilder { b.consumeItemId = v; return b }
+
+func (b *ModelBuilder) SetMddR(v int32) *ModelBuilder    { b.mddR = v; return b }
+func (b *ModelBuilder) SetSubTime(v int32) *ModelBuilder { b.subTime = v; return b }
+func (b *ModelBuilder) SetPadX(v int32) *ModelBuilder    { b.padX = v; return b }
+func (b *ModelBuilder) SetMesoR(v int32) *ModelBuilder   { b.mesoR = v; return b }

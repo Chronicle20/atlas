@@ -60,6 +60,49 @@ type RestModel struct {
 	Statups              []statup.RestModel `json:"statups"`
 	MonsterStatus        map[string]uint32  `json:"monsterStatus"`
 	CardStats            cardItemUp         `json:"cardStats"`
+
+	// Fields below are Skill.wz `common` keys (task-192). Go name is the
+	// PascalCase of the wz key and the JSON tag is the wz key verbatim; the
+	// semantics of most of them are unverified, so no key is given an
+	// invented descriptive name. Populated from both the `common` and
+	// `level` read paths.
+	Range             int32 `json:"range"`
+	Mastery           int32 `json:"mastery"`
+	Z                 int32 `json:"z"`
+	Dot               int32 `json:"dot"`
+	Cr                int32 `json:"cr"`
+	DotInterval       int32 `json:"dotInterval"`
+	DotTime           int32 `json:"dotTime"`
+	DamR              int32 `json:"damR"`
+	CriticaldamageMin int32 `json:"criticaldamageMin"`
+	V                 int32 `json:"v"`
+	IgnoreMobpdpR     int32 `json:"ignoreMobpdpR"`
+	Epad              int32 `json:"epad"`
+	W                 int32 `json:"w"`
+	U                 int32 `json:"u"`
+	Epdd              int32 `json:"epdd"`
+	Emdd              int32 `json:"emdd"`
+	SelfDestruction   int32 `json:"selfDestruction"`
+	AsrR              int32 `json:"asrR"`
+	T                 int32 `json:"t"`
+	Er                int32 `json:"er"`
+	PddR              int32 `json:"pddR"`
+	TerR              int32 `json:"terR"`
+	MadX              int32 `json:"madX"`
+	SubProp           int32 `json:"subProp"`
+	Emhp              int32 `json:"emhp"`
+	CriticaldamageMax int32 `json:"criticaldamageMax"`
+	ExpR              int32 `json:"expR"`
+	Emmp              int32 `json:"emmp"`
+	// ConsumeItemId is wz `common/itemConsume`. It is deliberately NOT the
+	// `itemConsume` JSON attribute above, which is wz `itemCon` — the two are
+	// distinct keys that never co-occur, and folding them would silently
+	// merge two differently-sourced values (FR-6.4, design §5.4).
+	ConsumeItemId int32 `json:"consumeItemId"`
+	MddR          int32 `json:"mddR"`
+	SubTime       int32 `json:"subTime"`
+	PadX          int32 `json:"padX"`
+	MesoR         int32 `json:"mesoR"`
 }
 
 type cardItemUp struct {

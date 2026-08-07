@@ -79,15 +79,20 @@ export function ConfigExportButton({ kind, id }: ConfigExportButtonProps) {
     </Button>
   );
 
-  // The tooltip earns its place only while the page has unsaved edits - an
-  // always-on tooltip on a self-explanatory button is noise. `Tooltip` mounts
-  // its own TooltipProvider (components/ui/tooltip.tsx), so none is added here.
-  if (!actionBar?.dirty) return button;
-
+  // The Tooltip root is ALWAYS mounted, even when the page is clean and the
+  // content is suppressed - React reconciles by element type at a position,
+  // so a component that returns a bare <Button> when clean and a <Tooltip>
+  // wrapping that same button when dirty would remount the button's DOM node
+  // on every dirty/clean flip, silently dropping focus if it was focused.
+  // Keeping the root stable and gating only the TooltipContent avoids that.
+  // `Tooltip` mounts its own TooltipProvider (components/ui/tooltip.tsx), so
+  // none is added here.
   return (
     <Tooltip>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent>Exports the last saved configuration</TooltipContent>
+      {actionBar?.dirty ? (
+        <TooltipContent>Exports the last saved configuration</TooltipContent>
+      ) : null}
     </Tooltip>
   );
 }

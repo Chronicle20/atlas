@@ -300,4 +300,33 @@ describe("Route Configuration", () => {
       expect(detail?.labelResolver?.({ id: "110" })).toBe("Fighter");
     });
   });
+
+  describe("Transports routes (task-198)", () => {
+    it("registers /transports and its route detail, so the shell renders a trail instead of nothing", () => {
+      // BreadcrumbBar renders null for a route with no config; an unregistered
+      // page is what forces a page-local back button.
+      expect(findRouteConfig("/transports")?.label).toBe("Transports");
+
+      const detail = findRouteConfig(
+        "/transports/routes/9f1a2b3c-0000-4000-8000-000000000000",
+      );
+      expect(detail).toBeTruthy();
+      expect(detail?.parent).toBe("/transports");
+      expect(detail?.entityType).toBe("transport-route");
+    });
+
+    it("builds a Home / Transports / <route> trail with the id carried for resolution", () => {
+      const crumbs = getBreadcrumbsFromRoute(
+        "/transports/routes/9f1a2b3c-0000-4000-8000-000000000000",
+      );
+
+      expect(crumbs.map((crumb) => crumb.href)).toEqual([
+        "/",
+        "/transports",
+        "/transports/routes/9f1a2b3c-0000-4000-8000-000000000000",
+      ]);
+      expect(crumbs[2]?.entityId).toBe("9f1a2b3c-0000-4000-8000-000000000000");
+      expect(crumbs[2]?.entityType).toBe("transport-route");
+    });
+  });
 });

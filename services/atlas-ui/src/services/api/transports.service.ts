@@ -59,6 +59,18 @@ export const transportsService = {
     return { route: doc.data, schedule };
   },
 
+  /**
+   * One route's attributes without its trip rows. The breadcrumb only needs
+   * the name, and `include=schedule` would drag ~96 trip resources along
+   * with it.
+   */
+  async getScheduledRouteById(
+    routeId: string,
+    options?: ServiceOptions,
+  ): Promise<ScheduledRoute> {
+    return api.getOne<ScheduledRoute>(`${SCHEDULED_PATH}/${routeId}`, options);
+  },
+
   async getInstanceRoutes(options?: ServiceOptions): Promise<InstanceRoute[]> {
     return fetchAll<InstanceRoute>(INSTANCE_PATH, undefined, options);
   },

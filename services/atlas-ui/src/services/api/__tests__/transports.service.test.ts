@@ -4,10 +4,11 @@ import { api } from "@/lib/api/client";
 import { transportsService } from "@/services/api/transports.service";
 
 vi.mock("@/lib/api/client", () => ({
-  api: { get: vi.fn() },
+  api: { get: vi.fn(), getOne: vi.fn() },
 }));
 
 const mockedGet = vi.mocked(api.get);
+const mockedGetOne = vi.mocked(api.getOne);
 
 function pagedDocument<T>(data: T[]) {
   return {
@@ -19,6 +20,7 @@ function pagedDocument<T>(data: T[]) {
 describe("transportsService", () => {
   beforeEach(() => {
     mockedGet.mockReset();
+    mockedGetOne.mockReset();
   });
 
   it("drains the scheduled route list without asking for the schedule", async () => {
@@ -31,6 +33,22 @@ describe("transportsService", () => {
     expect(routes).toHaveLength(1);
     const url = mockedGet.mock.calls[0]?.[0] as string;
     expect(url).toContain("/api/transports/routes");
+    expect(url).not.toContain("include=schedule");
+  });
+
+  it("reads one route by id without dragging its schedule along", async () => {
+    // The breadcrumb resolver only needs the name; `include=schedule` would
+    // attach ~96 trip resources to every crumb resolution.
+    mockedGetOne.mockResolvedValueOnce({
+      id: "r1",
+      attributes: { name: "boat-orbis-ellinia" },
+    });
+
+    const route = await transportsService.getScheduledRouteById("r1");
+
+    expect(route.attributes.name).toBe("boat-orbis-ellinia");
+    const url = mockedGetOne.mock.calls[0]?.[0] as string;
+    expect(url).toBe("/api/transports/routes/r1");
     expect(url).not.toContain("include=schedule");
   });
 

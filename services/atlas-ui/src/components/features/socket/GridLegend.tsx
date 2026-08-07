@@ -44,7 +44,9 @@ export function GridLegend({ rowCount, showsOpcodeGaps }: GridLegendProps) {
           <span aria-hidden="true" className="font-mono">
             0x—
           </span>
-          opcode in the baseline&apos;s range that nothing defines
+          opcode in the baseline&apos;s range that nothing defines — or, when
+          named, one the baseline binds to a definition listed at its lower
+          opcode
         </span>
       )}
       <span className="ml-auto">

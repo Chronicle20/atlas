@@ -51,14 +51,31 @@ export interface Row {
 }
 
 /**
- * A placeholder for an opcode inside the baseline's range that NO visualized
- * object binds - so no Definition row can exist for it. Rendered as a blank
- * row so a contiguous opcode range reads as contiguous, and the holes in it
- * are the candidate slots for definitions that have not been written yet.
+ * A placeholder for an opcode inside the baseline's range that no Definition
+ * row is ORDERED at. Rendered as a blank row so a contiguous opcode range
+ * reads as contiguous, and the holes in it are the candidate slots for
+ * definitions that have not been written yet.
+ *
+ * Two kinds, distinguished by `boundBy`:
+ *
+ * - absent (`undefined`) - the baseline does not bind this number at all.
+ *   A genuine hole: "No Definition".
+ * - present - the baseline DOES bind this number, but only as the non-lowest
+ *   opcode of a Definition that FR-2.6 orders at its lowest one instead
+ *   (real corpus fact: gms_95_1's `ServerListRequestHandle` binds both 0x04
+ *   and 0x0B, so its row sits at 0x04 and 0x0B had no row at all). Without
+ *   this second kind the number vanished from the column entirely - neither
+ *   a row nor a gap - which read as a silently skipped opcode. It is NOT a
+ *   hole, so it must not be labelled one; the row points back at the owning
+ *   Definition and the opcode it is ordered at.
  */
 export interface GapRow {
   gap: true;
   opCodeValue: number;
+  /** Definition names the baseline binds here, when they sort elsewhere. */
+  boundBy?: string[];
+  /** The lowest opcode of `boundBy`'s first Definition - where its row is. */
+  boundByOpCodeValue?: number;
 }
 
 /** What the grid actually renders: Definition rows interleaved with gaps. */
@@ -370,18 +387,50 @@ export function withOpcodeGaps(
   const baseline = objects.find((o) => o.key === baselineKey);
   if (!baseline) return rows;
 
+  // Every number the baseline binds, and - separately - the numbers a row is
+  // actually ORDERED at. The two differ for a Definition with several
+  // bindings: FR-2.6 orders it at its LOWEST opcode, so its other opcodes are
+  // bound but unoccupied. Scanning `bound` alone (the earlier behavior) left
+  // those numbers with neither a row nor a gap.
   const bound = new Set<number>();
-  for (const bindings of entriesOf(baseline, kind).values()) {
-    for (const b of bindings) {
-      if (b.opCodeValue !== null) bound.add(b.opCodeValue);
+  const occupied = new Set<number>();
+  const owners = new Map<number, string[]>();
+  const lowestOf = new Map<string, number>();
+  for (const [name, bindings] of entriesOf(baseline, kind)) {
+    const values = bindings
+      .map((b) => b.opCodeValue)
+      .filter((v): v is number => v !== null);
+    if (values.length === 0) continue;
+    for (const v of values) {
+      bound.add(v);
+      const list = owners.get(v);
+      if (list) list.push(name);
+      else owners.set(v, [name]);
     }
+    const lowest = Math.min(...values);
+    lowestOf.set(name, lowest);
+    occupied.add(lowest);
   }
   if (bound.size < 2) return rows;
 
   const min = Math.min(...bound);
   const max = Math.max(...bound);
-  const gaps: number[] = [];
-  for (let v = min; v <= max; v++) if (!bound.has(v)) gaps.push(v);
+  const gaps: GapRow[] = [];
+  for (let v = min; v <= max; v++) {
+    if (occupied.has(v)) continue;
+    const boundBy = owners.get(v);
+    if (boundBy === undefined) {
+      gaps.push({ gap: true, opCodeValue: v });
+      continue;
+    }
+    const sorted = [...boundBy].sort((a, b) => a.localeCompare(b));
+    gaps.push({
+      gap: true,
+      opCodeValue: v,
+      boundBy: sorted,
+      boundByOpCodeValue: lowestOf.get(sorted[0]!)!,
+    });
+  }
   if (gaps.length === 0) return rows;
   if (direction === "desc") gaps.reverse();
 
@@ -399,16 +448,15 @@ export function withOpcodeGaps(
       // prefix, so drain them before the tail begins.
       if (!flushed) {
         flushed = true;
-        while (i < gaps.length)
-          out.push({ gap: true, opCodeValue: gaps[i++]! });
+        while (i < gaps.length) out.push(gaps[i++]!);
       }
     } else if (!flushed) {
-      while (i < gaps.length && before(gaps[i]!, rv)) {
-        out.push({ gap: true, opCodeValue: gaps[i++]! });
+      while (i < gaps.length && before(gaps[i]!.opCodeValue, rv)) {
+        out.push(gaps[i++]!);
       }
     }
     out.push(row);
   }
-  while (i < gaps.length) out.push({ gap: true, opCodeValue: gaps[i++]! });
+  while (i < gaps.length) out.push(gaps[i++]!);
   return out;
 }

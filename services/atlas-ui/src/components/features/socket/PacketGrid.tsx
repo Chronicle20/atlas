@@ -131,6 +131,10 @@ export function PacketGrid({
                 columnCount={objects.length + (showFName ? 1 : 0)}
                 baselineColumnIndex={gapBaselineIndex}
                 rowIndex={i + 2}
+                {...(row.boundBy !== undefined ? { boundBy: row.boundBy } : {})}
+                {...(row.boundByOpCodeValue !== undefined
+                  ? { boundByOpCodeValue: row.boundByOpCodeValue }
+                  : {})}
               />
             ) : (
               <PacketGridRow

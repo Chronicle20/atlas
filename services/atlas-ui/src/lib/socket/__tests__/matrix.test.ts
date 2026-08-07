@@ -663,6 +663,61 @@ describe("withOpcodeGaps", () => {
     ]);
   });
 
+  // The second regression: gms_95_1's ServerListRequestHandle binds BOTH 0x04
+  // and 0x0B. FR-2.6 orders it at 0x04, so nothing was ever rendered at 0x0B -
+  // and because 0x0B was "bound", no gap row was emitted either. The number
+  // vanished from the column between 0x0A and the 0x0C hole. It must appear,
+  // and it must NOT claim "no definition".
+  describe("an opcode bound only as a definition's non-lowest binding", () => {
+    const multi = obj("multi", 95, {
+      ServerListRequest: [binding("0x04"), binding("0x0B")],
+      RegisterPin: [binding("0x0A")],
+      CharacterViewAll: [binding("0x0D")],
+    });
+    const multiInput = {
+      objects: [multi],
+      kind: "writer" as const,
+      baselineKey: "multi",
+      direction: "asc" as const,
+    };
+    const multiRows = sortRows(
+      buildRows({ objects: [multi], kind: "writer", baselineKey: "multi" }),
+      "opcode",
+      "asc",
+    );
+
+    it("still occupies its position in the opcode column", () => {
+      const out = withOpcodeGaps(multiRows, multiInput);
+      expect(
+        out.map((r) => (isGapRow(r) ? `gap:${r.opCodeValue}` : r.name)),
+      ).toEqual([
+        "ServerListRequest",
+        "gap:5",
+        "gap:6",
+        "gap:7",
+        "gap:8",
+        "gap:9",
+        "RegisterPin",
+        "gap:11",
+        "gap:12",
+        "CharacterViewAll",
+      ]);
+    });
+
+    it("names the owning definition and where its row sits", () => {
+      const out = withOpcodeGaps(multiRows, multiInput);
+      const at0b = out.filter(isGapRow).find((g) => g.opCodeValue === 0x0b);
+      expect(at0b?.boundBy).toEqual(["ServerListRequest"]);
+      expect(at0b?.boundByOpCodeValue).toBe(0x04);
+    });
+
+    it("leaves a genuine hole unnamed", () => {
+      const out = withOpcodeGaps(multiRows, multiInput);
+      const at0c = out.filter(isGapRow).find((g) => g.opCodeValue === 0x0c);
+      expect(at0c?.boundBy).toBeUndefined();
+    });
+  });
+
   it("returns the rows untouched when the baseline has fewer than two opcodes", () => {
     const lone = obj("lone", 95, { Only: [binding("0x01")] });
     const loneRows = buildRows({

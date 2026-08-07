@@ -1,6 +1,7 @@
 package script
 
 import (
+	"atlas-portal-actions/dedupe"
 	"context"
 	"errors"
 	"testing"
@@ -125,4 +126,53 @@ func TestHandleEnterCommand_ErrorAfterMoveDoesNotUnlock(t *testing.T) {
 	})
 	handleEnterCommand(l, ctx, nil, testEnterCommand())
 	assert.Equal(t, 0, *unlocks)
+}
+
+// fakeGate returns a fixed decision and counts calls.
+type fakeGate struct {
+	allow bool
+	calls int
+}
+
+func (g *fakeGate) Allow(_ logrus.FieldLogger, _ context.Context, _ dedupe.Key) bool {
+	g.calls++
+	return g.allow
+}
+
+func withGate(t *testing.T, g dedupe.Gate) {
+	t.Helper()
+	prev := gateFn
+	gateFn = func() dedupe.Gate { return g }
+	t.Cleanup(func() { gateFn = prev })
+}
+
+// FR-4.2/FR-3.1: a dropped duplicate performs NO rule evaluation, executes no
+// operation, and does not unlock the client.
+func TestHandleEnterCommand_DuplicateDroppedBeforeProcessing(t *testing.T) {
+	unlocks, fp, l, ctx := consumerTestHarness(t, ProcessResult{
+		Allow: true, MatchedRule: "r1", CharacterMoved: true,
+	})
+	g := &fakeGate{allow: false}
+	withGate(t, g)
+
+	handleEnterCommand(l, ctx, nil, testEnterCommand())
+
+	assert.Equal(t, 1, g.calls, "the gate is consulted")
+	assert.Equal(t, 0, fp.calls, "the script processor must never be invoked for a duplicate")
+	assert.Equal(t, 0, *unlocks, "a dropped duplicate emits no EnableActions")
+}
+
+// A first ENTER passes the gate and is processed normally.
+func TestHandleEnterCommand_AllowedByGateIsProcessed(t *testing.T) {
+	unlocks, fp, l, ctx := consumerTestHarness(t, ProcessResult{
+		Allow: true, MatchedRule: "r1", CharacterMoved: false,
+	})
+	g := &fakeGate{allow: true}
+	withGate(t, g)
+
+	handleEnterCommand(l, ctx, nil, testEnterCommand())
+
+	assert.Equal(t, 1, g.calls)
+	assert.Equal(t, 1, fp.calls)
+	assert.Equal(t, 1, *unlocks)
 }

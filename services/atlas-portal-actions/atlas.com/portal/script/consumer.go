@@ -2,6 +2,7 @@ package script
 
 import (
 	"atlas-portal-actions/character"
+	"atlas-portal-actions/dedupe"
 	"context"
 
 	consumer2 "atlas-portal-actions/kafka/consumer"
@@ -75,6 +76,7 @@ var (
 		return NewProcessor(l, ctx, db)
 	}
 	enableActionsFn = character.EnableActions
+	gateFn          = dedupe.GetGate
 )
 
 // handleEnterCommand handles a portal enter command
@@ -85,6 +87,23 @@ func handleEnterCommand(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, 
 	// Create field model from command
 	ch := channel.NewModel(c.WorldId, c.ChannelId)
 	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+
+	// Duplicate-command gate (task-184 FR-3.1). Evaluated before any script
+	// load, condition evaluation, or operation dispatch, so a duplicate has no
+	// side effect at all. Fails open on a Redis error — FR-2's conditional
+	// unlock is the primary fix and stands on its own; this must never become a
+	// single point of failure for portal traversal.
+	//
+	// A non-zero drop rate here means some outcome path is still unlocking a
+	// character whose warp is in flight.
+	if !gateFn().Allow(l, ctx, dedupe.Key{
+		CharacterId: c.Body.CharacterId,
+		MapId:       c.MapId,
+		Instance:    c.Instance,
+		PortalId:    c.PortalId,
+	}) {
+		return
+	}
 
 	// Create processor with tenant context from Kafka message
 	processor := newScriptProcessorFn(l, ctx, db)

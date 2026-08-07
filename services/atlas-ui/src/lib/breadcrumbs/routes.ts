@@ -165,7 +165,10 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     pattern: "/jobs/[id]",
     label: "Job Details",
     parent: "/jobs",
-    entityType: "job",
+    // Deliberately no `entityType`: job names come from the static
+    // job-advancement tree via labelResolver, not from an async entity
+    // resolver. Declaring one would mark the crumb `dynamic` and the
+    // resolver lookup would miss, overwriting the label with "Unknown".
     labelResolver: (params) =>
       getJobNameById(Number(params.id)) ?? `Job ${params.id}`,
   },
@@ -191,10 +194,69 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
 
   // Reactor routes
   {
+    pattern: "/reactors",
+    label: "Reactors",
+    parent: "/",
+  },
+  {
     pattern: "/reactors/[id]",
     label: "Reactor Details",
-    parent: "/",
+    parent: "/reactors",
     entityType: "reactor",
+  },
+
+  // Merchant routes
+  {
+    pattern: "/merchants",
+    label: "Merchants",
+    parent: "/",
+  },
+  {
+    pattern: "/merchants/[id]",
+    label: "Merchant Details",
+    parent: "/merchants",
+  },
+
+  // Marketplace routes
+  {
+    pattern: "/marketplace",
+    label: "Marketplace",
+    parent: "/",
+  },
+
+  // Ranking routes
+  {
+    pattern: "/rankings",
+    label: "Rankings",
+    parent: "/",
+  },
+
+  // Ban routes
+  {
+    pattern: "/bans",
+    label: "Bans",
+    parent: "/",
+  },
+  {
+    // Matches App.tsx's `/bans/:banId` — the param name differs but
+    // matchesPattern/extractParams key off position, not name.
+    pattern: "/bans/[id]",
+    label: "Ban Details",
+    parent: "/bans",
+  },
+
+  // Login history routes
+  {
+    pattern: "/login-history",
+    label: "Login History",
+    parent: "/",
+  },
+
+  // Packet matrix routes
+  {
+    pattern: "/packet-matrix",
+    label: "Packet Matrix",
+    parent: "/",
   },
 
   // Reward pool routes
@@ -207,6 +269,7 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     pattern: "/reward-pools/[id]",
     label: "Pool",
     parent: "/reward-pools",
+    entityType: "reward-pool",
   },
 
   // Setup routes
@@ -550,8 +613,18 @@ export const ROUTE_PATTERNS = {
   MAPS: "/maps",
   MAP_DETAIL: "/maps/[id]",
   MAP_PORTAL_DETAIL: "/maps/[id]/portals/[portalId]",
+  REACTORS: "/reactors",
   REACTOR_DETAIL: "/reactors/[id]",
+  MERCHANTS: "/merchants",
+  MERCHANT_DETAIL: "/merchants/[id]",
+  MARKETPLACE: "/marketplace",
+  RANKINGS: "/rankings",
+  BANS: "/bans",
+  BAN_DETAIL: "/bans/[id]",
+  LOGIN_HISTORY: "/login-history",
+  PACKET_MATRIX: "/packet-matrix",
   REWARD_POOLS: "/reward-pools",
+  REWARD_POOL_DETAIL: "/reward-pools/[id]",
   SETUP: "/setup",
   TRANSPORTS: "/transports",
   TRANSPORT_ROUTE_DETAIL: "/transports/routes/[id]",

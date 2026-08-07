@@ -28,6 +28,7 @@ vi.mock("@/services/api", () => ({
   },
   npcsService: {
     getNPCById: vi.fn(),
+    getNpcName: vi.fn(),
   },
   templatesService: {
     getById: vi.fn(),
@@ -511,12 +512,11 @@ describe("Entity-Specific Resolution", () => {
 
   it("should resolve NPC names with fallback to ID", async () => {
     const { npcsService } = await import("@/services/api");
-    (npcsService.getNPCById as ReturnType<typeof vi.fn>).mockResolvedValue({
-      id: 101112,
-      hasShop: true,
-      hasConversation: false,
-      name: "Test NPC",
-    });
+    // The name comes from the WZ-backed /api/data/npcs/{id} record, not from
+    // the shop/conversation index that getNPCById returns.
+    (npcsService.getNpcName as ReturnType<typeof vi.fn>).mockResolvedValue(
+      "Test NPC",
+    );
 
     const result = await resolveEntityLabel(
       EntityType.NPC,

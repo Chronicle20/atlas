@@ -24,6 +24,7 @@ import {
   getServiceTypeDisplayName,
 } from "@/services/api/services.service";
 import { transportsService } from "@/services/api/transports.service";
+import { rewardPoolsService } from "@/services/api/reward-pools.service";
 
 // Types for resolver functions
 export type EntityResolver<T = string> = (
@@ -69,6 +70,7 @@ export const EntityType = {
   ITEM: "item",
   QUEST: "quest",
   TRANSPORT_ROUTE: "transport-route",
+  REWARD_POOL: "reward-pool",
 } as const;
 export type EntityType = (typeof EntityType)[keyof typeof EntityType];
 
@@ -99,6 +101,7 @@ const CACHE_CONFIG = {
     // Seeded tenant configuration; the route's live state churns, its name
     // does not.
     [EntityType.TRANSPORT_ROUTE]: 30 * 60 * 1000, // 30 minutes
+    [EntityType.REWARD_POOL]: 30 * 60 * 1000, // 30 minutes (name rarely changes)
   },
   // Maximum cache size per entity type
   MAX_SIZE: 1000,
@@ -265,10 +268,12 @@ const resolvers: Record<EntityType, EntityResolver> = {
     }
   },
 
-  [EntityType.NPC]: async (_tenant, entityId, options = {}) => {
+  [EntityType.NPC]: async (_tenant, entityId, _options = {}) => {
     try {
-      const npc = await npcsService.getNPCById(parseInt(entityId), options);
-      return npc?.name || `NPC ${entityId}`;
+      // getNPCById only indexes shop/conversation ownership — it carries no
+      // name. The name lives on the WZ-backed /api/data/npcs/{id} record.
+      const name = await npcsService.getNpcName(parseInt(entityId));
+      return name || `NPC ${entityId}`;
     } catch (error) {
       console.warn(`Failed to resolve NPC name for ID ${entityId}:`, error);
       throw new ResolverError(`Failed to resolve NPC: ${error}`, true);
@@ -383,6 +388,19 @@ const resolvers: Record<EntityType, EntityResolver> = {
         `Failed to resolve transport route: ${error}`,
         true,
       );
+    }
+  },
+
+  [EntityType.REWARD_POOL]: async (_tenant, entityId, _options = {}) => {
+    try {
+      const pool = await rewardPoolsService.getPoolById(entityId);
+      return pool.attributes?.name || `Pool ${entityId}`;
+    } catch (error) {
+      console.warn(
+        `Failed to resolve reward pool name for ID ${entityId}:`,
+        error,
+      );
+      throw new ResolverError(`Failed to resolve reward pool: ${error}`, true);
     }
   },
 };
@@ -577,6 +595,7 @@ export function getEntityTypeFromRoute(pathname: string): EntityType | null {
   if (pathname.includes("/items/")) return EntityType.ITEM;
   if (pathname.includes("/quests/")) return EntityType.QUEST;
   if (pathname.includes("/transports/")) return EntityType.TRANSPORT_ROUTE;
+  if (pathname.includes("/reward-pools/")) return EntityType.REWARD_POOL;
 
   return null;
 }

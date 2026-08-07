@@ -108,7 +108,7 @@ func TestApply_HappyPath_EmitsExactlyOneCreate(t *testing.T) {
 	require.Equal(t, int16(110), b.RbX)
 	require.Equal(t, int16(83), b.RbY)
 	require.Equal(t, "POISON", b.Disease)
-	require.Equal(t, int32(0), b.DiseaseValue)      // design D1c -- magnitude unread for POISON
+	require.Equal(t, int32(0), b.DiseaseValue)       // design D1c -- magnitude unread for POISON
 	require.Equal(t, int64(4000), b.DiseaseDuration) // design D1a -- per-target = mist lifetime
 	require.Equal(t, int64(4000), b.Duration)
 	require.Equal(t, PlayerMistTickIntervalMs, b.TickIntervalMs)

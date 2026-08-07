@@ -179,6 +179,58 @@ func TestMistTick_MonsterTarget_BodyKeySetMatchesChannel(t *testing.T) {
 	}, keys)
 }
 
+// TestMistTick_MonsterTarget_DotTickIntervalStrictlyLessThanReapplyInterval
+// guards the cross-service cadence relationship that the previous fix wave
+// silently broke: monsterDotTickIntervalMs must be strictly less than the
+// mist's own re-apply period (m.TickInterval(), driven here by
+// SetTickInterval in mkMonsterMist). If a future change re-echoes the mist's
+// re-apply interval into the emitted APPLY_STATUS body -- as the earlier,
+// incorrect fix attempt did -- the eligible damage window in atlas-monsters
+// (P - T, see monsterDotTickIntervalMs's doc comment) collapses to zero and
+// no poison damage ever lands, even though every other assertion in this
+// file still passes.
+func TestMistTick_MonsterTarget_DotTickIntervalStrictlyLessThanReapplyInterval(t *testing.T) {
+	tt := mkTickTenant()
+	reg := mist.NewTestRegistry()
+	rec := newRecordingProducer()
+	mt := newTestMistTick(t, reg, rec, nil)
+
+	// Built with the PRODUCTION re-apply cadence
+	// (poisonmist.PlayerMistTickIntervalMs, 3000ms) rather than
+	// mkMonsterMist's 1000ms fixture value, so this test actually exercises
+	// the real P vs T relationship instead of a coincidental match.
+	f := field.NewBuilder(0, 0, 100000000).SetInstance(uuid.Nil).Build()
+	m := mist.NewBuilder(uuid.New(), f).
+		SetOwner("CHARACTER", 1001).
+		SetKinds(mistKafka.TargetKindMonster, mistKafka.EffectKindDamageOverTime).
+		SetSource(2111003, 1).
+		SetOrigin(500, 300).
+		SetBounds(-110, -82, 110, 83).
+		SetDisease("POISON", 0, 4000*time.Millisecond).
+		SetDuration(4000 * time.Millisecond).
+		SetTickInterval(3000 * time.Millisecond).
+		Build()
+	require.NoError(t, reg.Add(tt, m))
+	mt.monstersInRect = func(context.Context, mist.Mist) ([]monster.RestModel, error) {
+		return []monster.RestModel{mkMonsterRest(9001, 500, 300)}, nil
+	}
+	mt.runOnce(context.Background())
+
+	msgs := rec.Messages(EnvCommandTopicMonster)
+	require.Len(t, msgs, 1)
+
+	var cmd struct {
+		Body struct {
+			TickInterval uint32 `json:"tickInterval"`
+		} `json:"body"`
+	}
+	require.NoError(t, json.Unmarshal(msgs[0].Value, &cmd))
+
+	reapplyIntervalMs := uint32(m.TickInterval().Milliseconds())
+	require.Less(t, cmd.Body.TickInterval, reapplyIntervalMs,
+		"emitted DoT tickInterval must be strictly less than the mist's re-apply interval, or the atlas-monsters damage window (P-T) collapses to zero")
+}
+
 // TestMistTick_MonsterTarget_LookupFailureIsolatedPerMist asserts a failing
 // rect query on one mist does not prevent another mist in the same tenant from
 // ticking (FR-4.6, NFR-2).

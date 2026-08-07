@@ -24,26 +24,32 @@ func init() {
 	channelhandler.Register(skill2.FirePoisonMagicianPoisonMist, Apply)
 }
 
-// PlayerMistTickIntervalMs is the re-apply cadence of a player-cast mist --
+// PlayerMistTickIntervalMs is the RE-APPLY cadence of a player-cast mist --
 // how often atlas-maps re-issues APPLY_STATUS(POISON) to every monster still
-// standing in the cloud. It is NOT the DoT damage cadence; that 1000ms tick
-// lives entirely inside atlas-monsters (services/atlas-monsters/atlas.com/monsters/monster/status.go:129-134,
-// StatusExpirationTask) and only fires once `since(lastTick) >= 1000ms`.
+// standing in the cloud (mist.Mist.ShouldTick, mist/model.go:216-223). It is
+// NOT the DoT damage cadence and does NOT flow into atlas-monsters' DoT gate.
+//
+// atlas-maps sends a SEPARATE, strictly smaller DoT tick interval on every
+// APPLY_STATUS command (monsterDotTickIntervalMs,
+// services/atlas-maps/atlas.com/maps/tasks/mist_tick.go, currently 1000ms).
+// atlas-monsters' StatusEffect.ShouldTick gates actual damage on
+// `since(lastTick) >= tickInterval`
+// (services/atlas-monsters/atlas.com/monsters/monster/status.go:129-134).
 //
 // It must be an interval, not a WZ value: the `dotInterval` node does not
 // exist in any provisioned Skill.wz (task-200 design §2.1).
 //
-// This value MUST exceed atlas-monsters' 1000ms DoT cadence. atlas-monsters'
-// ModelBuilder.AddStatusEffect REPLACES a same-type POISON on every re-apply
-// with a fresh StatusEffect whose lastTick = now
+// This value MUST exceed the DoT tick interval sent by atlas-maps.
+// atlas-monsters' ModelBuilder.AddStatusEffect REPLACES a same-type POISON on
+// every re-apply with a fresh StatusEffect whose lastTick = now
 // (services/atlas-monsters/atlas.com/monsters/monster/builder.go:141-163,
-// services/atlas-monsters/atlas.com/monsters/monster/status.go:35-49). A
-// re-apply period at or near the DoT cadence keeps resetting lastTick before
-// StatusExpirationTask's `since(lastTick) >= 1000ms` gate can ever pass, so
-// the eligible tick window per cycle is only `PlayerMistTickIntervalMs -
-// 1000ms` wide -- at 1000ms that window is ~0ms and a 4-40s mist deals
-// roughly 0-1 damage ticks instead of ~4-40. 3000ms leaves the gate open for
-// roughly two full DoT ticks per re-apply cycle, so damage actually lands.
+// services/atlas-monsters/atlas.com/monsters/monster/status.go:35-49). So the
+// eligible damage window per re-apply cycle is `PlayerMistTickIntervalMs (P)
+// - monsterDotTickIntervalMs (T)` wide, NOT P. A prior fix attempt set
+// atlas-maps' emitted TickInterval to this same constant (P == T by
+// construction), which makes that window exactly 0 regardless of P's value --
+// the mist would never deal damage no matter how this constant was tuned.
+// With P = 3000ms and T = 1000ms the window is a genuine 2000ms per cycle.
 const PlayerMistTickIntervalMs int64 = 3000
 
 // MaxPlayerMistDurationMs rejects (never truncates) an implausible mist

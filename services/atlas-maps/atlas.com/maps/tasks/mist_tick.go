@@ -54,6 +54,36 @@ const MistRectRequestTimeout = 500 * time.Millisecond
 // not one timeout times the GET helper's default retry count.
 const MistRectRequestRetries = 1
 
+// monsterDotTickIntervalMs is the DAMAGE tick cadence sent on APPLY_STATUS,
+// deliberately DISTINCT from -- and strictly smaller than -- the mist's
+// re-apply period (mist.Mist.TickInterval, driven by
+// poisonmist.PlayerMistTickIntervalMs at 3000ms). These are two different
+// concepts that must never be collapsed into one value again:
+//
+//   - The mist's re-apply period P is how often THIS FILE re-issues
+//     APPLY_STATUS(POISON) to every monster still in the cloud
+//     (mist.Mist.ShouldTick, mist/model.go:216-223).
+//   - monsterDotTickIntervalMs (T) is the cadence atlas-monsters uses to gate
+//     actual damage inside StatusEffect.ShouldTick
+//     (services/atlas-monsters/atlas.com/monsters/monster/status.go:129-134).
+//
+// atlas-monsters' ModelBuilder.AddStatusEffect REPLACES a same-type POISON on
+// every re-apply with a fresh StatusEffect whose lastTick = now
+// (services/atlas-monsters/atlas.com/monsters/monster/builder.go:141-163,
+// services/atlas-monsters/atlas.com/monsters/monster/status.go:35-49). That
+// means the window in which a damage tick can actually fire before the next
+// re-apply resets lastTick is `P - T` wide, not P. If T >= P that window is
+// <= 0 and NO damage ever lands, regardless of how large either value is
+// individually -- this is exactly the bug the previous fix attempt introduced
+// by echoing the mist's own re-apply interval here (it set P == T by
+// construction, i.e. window == 0 always). Keeping T fixed at 1000ms and P at
+// 3000ms leaves a genuine 2000ms eligible window per cycle.
+//
+// The consumer.go fallback of 1000ms for an OMITTED tickInterval
+// (services/atlas-monsters/atlas.com/monsters/kafka/consumer/monster/consumer.go:113-122)
+// is irrelevant here: this path always sends an explicit value.
+const monsterDotTickIntervalMs = 1000
+
 // mistTenantConcurrency bounds how many of one tenant's mists are ticked in
 // parallel by processTenant. Even with MistRectRequestTimeout capping a
 // single call, a tenant running many mists must not fan out unbounded
@@ -192,7 +222,9 @@ func applyStatusCommandProvider(m mist.Mist, monsterUniqueId uint32) model.Provi
 			SourceSkillLevel:  m.SourceSkillLevel(),
 			Statuses:          map[string]int32{m.Disease(): m.DiseaseValue()},
 			Duration:          uint32(m.DiseaseDuration().Milliseconds()),
-			TickInterval:      uint32(m.TickInterval().Milliseconds()),
+			// monsterDotTickIntervalMs, NOT m.TickInterval() -- see that
+			// constant's doc comment for why the two must stay decoupled.
+			TickInterval: monsterDotTickIntervalMs,
 		},
 	}
 	return kafkaProducer.SingleMessageProvider(key, value)

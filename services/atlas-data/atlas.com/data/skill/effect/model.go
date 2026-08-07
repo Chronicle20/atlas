@@ -6,11 +6,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 )
 
-func NewModelBuilder() *ModelBuilder {
-	return &ModelBuilder{}
-}
-
-type ModelBuilder struct {
+// Model is the immutable domain representation of a single skill effect
+// (one `level` entry, or one node synthesized from `common` — see
+// skill.getEffect, the single shared implementation for both read paths).
+// It is produced by ModelBuilder.Build() and converted to the wire shape via
+// Transform. Private fields + getters, per the project's immutable-model
+// convention; construction goes exclusively through ModelBuilder in
+// builder.go.
+type Model struct {
 	weaponAttack         int16
 	magicAttack          int16
 	weaponDefense        int16
@@ -65,392 +68,133 @@ type ModelBuilder struct {
 	cureAbnormalStatuses []string
 	statups              []statup.RestModel
 	monsterStatus        map[string]uint32
-}
-
-func (b *ModelBuilder) SetDuration(duration int32) *ModelBuilder {
-	b.duration = duration
-	return b
-}
-
-func (b *ModelBuilder) SetHp(hp uint16) *ModelBuilder {
-	b.hp = hp
-	return b
-}
-
-func (b *ModelBuilder) SetHPRecovery(hpr float64) *ModelBuilder {
-	b.hpr = hpr
-	return b
-}
-
-func (b *ModelBuilder) SetMp(mp uint16) *ModelBuilder {
-	b.mp = mp
-	return b
-}
-
-func (b *ModelBuilder) SetMPRecovery(mpr float64) *ModelBuilder {
-	b.mpr = mpr
-	return b
-}
-
-func (b *ModelBuilder) SetHPCon(hpCon uint16) *ModelBuilder {
-	b.hpCon = hpCon
-	return b
-}
-
-func (b *ModelBuilder) SetMPCon(mpCon uint16) *ModelBuilder {
-	b.mpCon = mpCon
-	return b
-}
-
-func (b *ModelBuilder) SetProp(prop float64) *ModelBuilder {
-	b.prop = prop
-	return b
-}
-
-func (b *ModelBuilder) SetCP(cp uint32) *ModelBuilder {
-	b.cp = cp
-	return b
-}
-
-func (b *ModelBuilder) SetCureAbnormalStatuses(statuses []string) *ModelBuilder {
-	b.cureAbnormalStatuses = statuses
-	return b
-}
-
-func (b *ModelBuilder) SetNuffSkill(nuffSkill uint32) *ModelBuilder {
-	b.nuffSkill = nuffSkill
-	return b
-}
-
-func (b *ModelBuilder) SetMobCount(mobCount uint32) *ModelBuilder {
-	b.mobCount = mobCount
-	return b
-}
-
-func (b *ModelBuilder) SetCooldown(cooldown uint32) *ModelBuilder {
-	b.cooldown = cooldown
-	return b
-}
-
-func (b *ModelBuilder) SetMorphId(morphId uint32) *ModelBuilder {
-	b.morphId = morphId
-	return b
-}
-
-func (b *ModelBuilder) SetGhost(ghost uint32) *ModelBuilder {
-	b.ghost = ghost
-	return b
-}
-
-func (b *ModelBuilder) SetFatigue(fatigue uint32) *ModelBuilder {
-	b.fatigue = fatigue
-	return b
-}
-
-func (b *ModelBuilder) SetRepeatEffect(repeatEffect bool) *ModelBuilder {
-	b.repeatEffect = repeatEffect
-	return b
-}
-
-func (b *ModelBuilder) SetMob(mob uint32) *ModelBuilder {
-	b.mob = mob
-	return b
-}
-
-func (b *ModelBuilder) SetSkill(skill bool) *ModelBuilder {
-	b.skill = skill
-	return b
-}
-
-// Duration returns the effect duration in milliseconds. -1 is the
-// "no duration" sentinel (the wz `time` attribute was missing).
-// Positive values are ms counts converted from raw wz seconds at
-// read time. Consumers should use time.Duration(d) * time.Millisecond.
-// See task-054.
-func (b *ModelBuilder) Duration() int32 {
-	return b.duration
-}
-
-func (b *ModelBuilder) SetOverTime(overTime bool) *ModelBuilder {
-	b.overTime = overTime
-	return b
-}
-
-func (b *ModelBuilder) SetWeaponAttack(weaponAttack int16) *ModelBuilder {
-	b.weaponAttack = weaponAttack
-	return b
-}
-
-func (b *ModelBuilder) SetWeaponDefense(weaponDefense int16) *ModelBuilder {
-	b.weaponDefense = weaponDefense
-	return b
-}
-
-func (b *ModelBuilder) SetMagicAttack(magicAttack int16) *ModelBuilder {
-	b.magicAttack = magicAttack
-	return b
-}
-
-func (b *ModelBuilder) SetMagicDefense(magicDefense int16) *ModelBuilder {
-	b.magicDefense = magicDefense
-	return b
-}
-
-func (b *ModelBuilder) SetAccuracy(accuracy int16) *ModelBuilder {
-	b.accuracy = accuracy
-	return b
-}
-
-func (b *ModelBuilder) SetAvoidability(avoidability int16) *ModelBuilder {
-	b.avoidability = avoidability
-	return b
-}
-
-func (b *ModelBuilder) SetSpeed(speed int16) *ModelBuilder {
-	b.speed = speed
-	return b
-}
-
-func (b *ModelBuilder) SetJump(jump int16) *ModelBuilder {
-	b.jump = jump
-	return b
-}
-
-func (b *ModelBuilder) SetBarrier(barrier int32) *ModelBuilder {
-	b.barrier = barrier
-	return b
-}
-
-func (b *ModelBuilder) Barrier() int32 {
-	return b.barrier
-}
-
-func (b *ModelBuilder) MapProtection() byte {
-	return b.mapProtection
-}
-
-func (b *ModelBuilder) SetMapProtection(protection byte) *ModelBuilder {
-	b.mapProtection = protection
-	return b
-}
-
-func (b *ModelBuilder) OverTime() bool {
-	return b.overTime
-}
-
-func (b *ModelBuilder) WeaponAttack() int16 {
-	return b.weaponAttack
-}
-
-func (b *ModelBuilder) WeaponDefense() int16 {
-	return b.weaponDefense
-}
-
-func (b *ModelBuilder) MagicAttack() int16 {
-	return b.magicAttack
-}
-
-func (b *ModelBuilder) MagicDefense() int16 {
-	return b.magicDefense
-}
-
-func (b *ModelBuilder) Accuracy() int16 {
-	return b.accuracy
-}
-
-func (b *ModelBuilder) Avoidability() int16 {
-	return b.avoidability
-}
-
-func (b *ModelBuilder) Speed() int16 {
-	return b.speed
-}
-
-func (b *ModelBuilder) Jump() int16 {
-	return b.jump
-}
-
-func (b *ModelBuilder) SetX(x int16) *ModelBuilder {
-	b.x = x
-	return b
-}
-
-func (b *ModelBuilder) SetY(y int16) *ModelBuilder {
-	b.y = y
-	return b
-}
-
-func (b *ModelBuilder) SetLT(p point.Model) *ModelBuilder {
-	b.lt = p
-	return b
-}
-
-func (b *ModelBuilder) SetRB(p point.Model) *ModelBuilder {
-	b.rb = p
-	return b
-}
-
-func (b *ModelBuilder) LT() point.Model {
-	return b.lt
-}
-
-func (b *ModelBuilder) RB() point.Model {
-	return b.rb
-}
-
-func (b *ModelBuilder) SetDamage(damage uint32) *ModelBuilder {
-	b.damage = damage
-	return b
-}
-
-func (b *ModelBuilder) SetFixDamage(damage int32) *ModelBuilder {
-	b.fixDamage = damage
-	return b
-}
-
-func (b *ModelBuilder) SetAttackCount(count uint32) *ModelBuilder {
-	b.attackCount = count
-	return b
-}
-
-func (b *ModelBuilder) SetBulletCount(count uint16) *ModelBuilder {
-	b.bulletCount = count
-	return b
-}
-
-func (b *ModelBuilder) SetBulletConsume(consume uint16) *ModelBuilder {
-	b.bulletConsume = consume
-	return b
-}
-
-func (b *ModelBuilder) SetMoneyConsume(consume uint32) *ModelBuilder {
-	b.moneyCon = consume
-	return b
-}
-
-func (b *ModelBuilder) SetItemConsume(consume uint32) *ModelBuilder {
-	b.itemCon = consume
-	return b
-}
-
-func (b *ModelBuilder) SetItemConsumeNumber(number uint32) *ModelBuilder {
-	b.itemConNo = number
-	return b
-}
-
-func (b *ModelBuilder) SetMoveTo(moveTo int32) *ModelBuilder {
-	b.moveTo = moveTo
-	return b
-}
-
-func (b *ModelBuilder) X() int16 {
-	return b.x
-}
-
-func (b *ModelBuilder) Damage() uint32 {
-	return b.damage
-}
 
-func (b *ModelBuilder) Y() int16 {
-	return b.y
-}
-
-func (b *ModelBuilder) Prop() float64 {
-	return b.prop
-}
-
-func (b *ModelBuilder) MorphId() uint32 {
-	return b.morphId
-}
-
-func (b *ModelBuilder) SetMonsterStatus(ms map[string]uint32) *ModelBuilder {
-	b.monsterStatus = ms
-	return b
-}
-
-func (b *ModelBuilder) SetStatups(statups []statup.RestModel) *ModelBuilder {
-	b.statups = statups
-	return b
-}
-
-func (b *ModelBuilder) Build() RestModel {
-	var ltPtr *PointRestModel
-	if b.lt.X() != 0 || b.lt.Y() != 0 {
-		ltPtr = &PointRestModel{X: int16(b.lt.X()), Y: int16(b.lt.Y())}
-	}
-	var rbPtr *PointRestModel
-	if b.rb.X() != 0 || b.rb.Y() != 0 {
-		rbPtr = &PointRestModel{X: int16(b.rb.X()), Y: int16(b.rb.Y())}
-	}
-	return RestModel{
-		WeaponAttack:         b.weaponAttack,
-		MagicAttack:          b.magicAttack,
-		WeaponDefense:        b.weaponDefense,
-		MagicDefense:         b.magicDefense,
-		Accuracy:             b.accuracy,
-		Avoidability:         b.avoidability,
-		Speed:                b.speed,
-		Jump:                 b.jump,
-		Hp:                   b.hp,
-		Mp:                   b.mp,
-		HPR:                  b.hpr,
-		MPR:                  b.mpr,
-		MHPRRate:             b.mhprRate,
-		MMPRRate:             b.mmprRate,
-		MobSkill:             b.mobSkill,
-		MobSkillLevel:        b.mobSkillLevel,
-		MHPR:                 b.mhpR,
-		MMPR:                 b.mmpR,
-		HPConsume:            b.hpCon,
-		MPConsume:            b.mpCon,
-		Duration:             b.duration,
-		Target:               b.target,
-		Barrier:              b.barrier,
-		Mob:                  b.mob,
-		OverTime:             b.overTime, // Kept lowercase `b.overTime` as per request
-		RepeatEffect:         b.repeatEffect,
-		MoveTo:               b.moveTo,
-		CP:                   b.cp,
-		NuffSkill:            b.nuffSkill,
-		Skill:                b.skill,
-		X:                    b.x,
-		Y:                    b.y,
-		MobCount:             b.mobCount,
-		MoneyConsume:         b.moneyCon,
-		Cooldown:             b.cooldown,
-		MorphId:              b.morphId,
-		Ghost:                b.ghost,
-		Fatigue:              b.fatigue,
-		Berserk:              b.berserk,
-		Booster:              b.booster,
-		Prop:                 b.prop,
-		ItemConsume:          b.itemCon,
-		ItemConsumeAmount:    b.itemConNo,
-		Damage:               b.damage,
-		AttackCount:          b.attackCount,
-		FixDamage:            b.fixDamage,
-		BulletCount:          b.bulletCount,
-		BulletConsume:        b.bulletConsume,
-		MapProtection:        b.mapProtection,
-		CureAbnormalStatuses: b.cureAbnormalStatuses,
-		Statups:              b.statups,
-		MonsterStatus:        b.monsterStatus,
-		LT:                   ltPtr,
-		RB:                   rbPtr,
-	}
-}
-
-func (b *ModelBuilder) SetMobSkill(mobSkill uint16) *ModelBuilder {
-	b.mobSkill = mobSkill
-	return b
-}
-
-func (b *ModelBuilder) SetMobSkillLevel(skillLevel uint16) *ModelBuilder {
-	b.mobSkillLevel = skillLevel
-	return b
-}
-
-func (b *ModelBuilder) SetTarget(target uint32) *ModelBuilder {
-	b.target = target
-	return b
-}
+	rangeValue        int32
+	mastery           int32
+	z                 int32
+	dot               int32
+	cr                int32
+	dotInterval       int32
+	dotTime           int32
+	damR              int32
+	criticaldamageMin int32
+	v                 int32
+	ignoreMobpdpR     int32
+	epad              int32
+	w                 int32
+	u                 int32
+	epdd              int32
+	emdd              int32
+	selfDestruction   int32
+	asrR              int32
+	t                 int32
+	er                int32
+	pddR              int32
+	terR              int32
+	madX              int32
+	subProp           int32
+	emhp              int32
+	criticaldamageMax int32
+	expR              int32
+	emmp              int32
+	consumeItemId     int32
+	mddR              int32
+	subTime           int32
+	padX              int32
+	mesoR             int32
+}
+
+func (m Model) WeaponAttack() int16  { return m.weaponAttack }
+func (m Model) MagicAttack() int16   { return m.magicAttack }
+func (m Model) WeaponDefense() int16 { return m.weaponDefense }
+func (m Model) MagicDefense() int16  { return m.magicDefense }
+func (m Model) Accuracy() int16      { return m.accuracy }
+func (m Model) Avoidability() int16  { return m.avoidability }
+func (m Model) Speed() int16         { return m.speed }
+func (m Model) Jump() int16          { return m.jump }
+func (m Model) Hp() uint16           { return m.hp }
+func (m Model) Mp() uint16           { return m.mp }
+func (m Model) HPR() float64         { return m.hpr }
+func (m Model) MPR() float64         { return m.mpr }
+func (m Model) MHPRRate() uint16     { return m.mhprRate }
+func (m Model) MMPRRate() uint16     { return m.mmprRate }
+func (m Model) MobSkill() uint16     { return m.mobSkill }
+func (m Model) MobSkillLevel() uint16 {
+	return m.mobSkillLevel
+}
+func (m Model) MHPR() byte                { return m.mhpR }
+func (m Model) MMPR() byte                { return m.mmpR }
+func (m Model) HPConsume() uint16         { return m.hpCon }
+func (m Model) MPConsume() uint16         { return m.mpCon }
+func (m Model) Duration() int32           { return m.duration }
+func (m Model) Target() uint32            { return m.target }
+func (m Model) Barrier() int32            { return m.barrier }
+func (m Model) Mob() uint32               { return m.mob }
+func (m Model) OverTime() bool            { return m.overTime }
+func (m Model) RepeatEffect() bool        { return m.repeatEffect }
+func (m Model) MoveTo() int32             { return m.moveTo }
+func (m Model) CP() uint32                { return m.cp }
+func (m Model) NuffSkill() uint32         { return m.nuffSkill }
+func (m Model) Skill() bool               { return m.skill }
+func (m Model) X() int16                  { return m.x }
+func (m Model) Y() int16                  { return m.y }
+func (m Model) MobCount() uint32          { return m.mobCount }
+func (m Model) MoneyConsume() uint32      { return m.moneyCon }
+func (m Model) Cooldown() uint32          { return m.cooldown }
+func (m Model) MorphId() uint32           { return m.morphId }
+func (m Model) Ghost() uint32             { return m.ghost }
+func (m Model) Fatigue() uint32           { return m.fatigue }
+func (m Model) Berserk() uint32           { return m.berserk }
+func (m Model) Booster() uint32           { return m.booster }
+func (m Model) Prop() float64             { return m.prop }
+func (m Model) ItemConsume() uint32       { return m.itemCon }
+func (m Model) ItemConsumeAmount() uint32 { return m.itemConNo }
+func (m Model) Damage() uint32            { return m.damage }
+func (m Model) AttackCount() uint32       { return m.attackCount }
+func (m Model) FixDamage() int32          { return m.fixDamage }
+func (m Model) LT() point.Model           { return m.lt }
+func (m Model) RB() point.Model           { return m.rb }
+func (m Model) BulletCount() uint16       { return m.bulletCount }
+func (m Model) BulletConsume() uint16     { return m.bulletConsume }
+func (m Model) MapProtection() byte       { return m.mapProtection }
+func (m Model) CureAbnormalStatuses() []string {
+	return m.cureAbnormalStatuses
+}
+func (m Model) Statups() []statup.RestModel { return m.statups }
+func (m Model) MonsterStatus() map[string]uint32 {
+	return m.monsterStatus
+}
+
+func (m Model) Range() int32             { return m.rangeValue }
+func (m Model) Mastery() int32           { return m.mastery }
+func (m Model) Z() int32                 { return m.z }
+func (m Model) Dot() int32               { return m.dot }
+func (m Model) Cr() int32                { return m.cr }
+func (m Model) DotInterval() int32       { return m.dotInterval }
+func (m Model) DotTime() int32           { return m.dotTime }
+func (m Model) DamR() int32              { return m.damR }
+func (m Model) CriticaldamageMin() int32 { return m.criticaldamageMin }
+func (m Model) V() int32                 { return m.v }
+func (m Model) IgnoreMobpdpR() int32     { return m.ignoreMobpdpR }
+func (m Model) Epad() int32              { return m.epad }
+func (m Model) W() int32                 { return m.w }
+func (m Model) U() int32                 { return m.u }
+func (m Model) Epdd() int32              { return m.epdd }
+func (m Model) Emdd() int32              { return m.emdd }
+func (m Model) SelfDestruction() int32   { return m.selfDestruction }
+func (m Model) AsrR() int32              { return m.asrR }
+func (m Model) T() int32                 { return m.t }
+func (m Model) Er() int32                { return m.er }
+func (m Model) PddR() int32              { return m.pddR }
+func (m Model) TerR() int32              { return m.terR }
+func (m Model) MadX() int32              { return m.madX }
+func (m Model) SubProp() int32           { return m.subProp }
+func (m Model) Emhp() int32              { return m.emhp }
+func (m Model) CriticaldamageMax() int32 { return m.criticaldamageMax }
+func (m Model) ExpR() int32              { return m.expR }
+func (m Model) Emmp() int32              { return m.emmp }
+func (m Model) ConsumeItemId() int32     { return m.consumeItemId }
+func (m Model) MddR() int32              { return m.mddR }
+func (m Model) SubTime() int32           { return m.subTime }
+func (m Model) PadX() int32              { return m.padX }
+func (m Model) MesoR() int32             { return m.mesoR }

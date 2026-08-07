@@ -621,10 +621,28 @@ func (m *CharacterTemporaryStat) HasDisease() bool {
 	return false
 }
 
+// serverOnlyStatNames are temporary stats that exist only for server-side
+// lifecycle bookkeeping (Odin lineage). No supported client has a
+// SecondaryStat bit for them — IDA-verified across every version Atlas holds
+// a binary for (GMS v48/v61/v72/v79/v83/v84/v87/v92/v95, JMS v185), see
+// docs/tasks/task-164-summon-temp-stats/prd.md §1.1 — so they are never
+// encoded into any CTS mask or payload, on any tenant version. Summon
+// visibility for observers is carried by the summon object packets
+// (task-088/106), not by a buff. Adding a name here requires the same
+// IDA evidence trail.
+var serverOnlyStatNames = map[character.TemporaryStatType]bool{
+	character.TemporaryStatTypePuppet: true,
+	character.TemporaryStatTypeSummon: true,
+}
+
 func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Model) func(n string, sourceId int32, amount int32, level byte, expiresAt time.Time) {
 	return func(t tenant.Model) func(n string, sourceId int32, amount int32, level byte, expiresAt time.Time) {
 		return func(n string, sourceId int32, amount int32, level byte, expiresAt time.Time) {
 			name := character.TemporaryStatType(n)
+			if serverOnlyStatNames[name] {
+				l.Debugf("Skipping server-only temporary stat [%s]; it has no client wire representation.", name)
+				return
+			}
 			st, err := CharacterTemporaryStatTypeByName(t)(name)
 			if err != nil {
 				l.WithError(err).Errorf("Attempting to add buff [%s], but cannot find it.", name)

@@ -8,6 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
@@ -922,5 +925,160 @@ func TestForeignReadOrderNamesOnlyRealStats(t *testing.T) {
 		if !known[n] {
 			t.Errorf("foreignReadOrder names %q, which no supported version's registry has", n)
 		}
+	}
+}
+
+// TestCTSServerOnlyStatsSkippedSilently proves PUPPET/SUMMON never reach the
+// wire and never log at ERROR (task-164 FR-1/FR-3, acceptance (a)). Both the
+// self and foreign encodes of a CTS holding only server-only stats must be
+// byte-identical to a freshly-constructed empty CTS, on EVERY supported tenant
+// version (FR-7/FR-7.1 — all seven registry classes, including the legacy
+// pre-v61 8-byte-mask class). The two AddStat calls must each log exactly one
+// DEBUG entry (skip trace) and nothing at ERROR.
+//
+// Zero expiry (time.Time{}) is used throughout: it saturates to a constant
+// duration on both the modern and legacy writers, so byte comparisons are
+// deterministic and need no offset arithmetic (design §5.1).
+func TestCTSServerOnlyStatsSkippedSilently(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			l, hook := testlog.NewNullLogger()
+			l.SetLevel(logrus.DebugLevel)
+
+			// sourceId/amount/level are arbitrary; only wire disposition matters.
+			input := NewCharacterTemporaryStat()
+			input.AddStat(l)(tn)(string(character.TemporaryStatTypePuppet), 1, 1, 1, time.Time{})
+			input.AddStat(l)(tn)(string(character.TemporaryStatTypeSummon), 2, 1, 1, time.Time{})
+
+			for _, e := range hook.AllEntries() {
+				if e.Level <= logrus.ErrorLevel {
+					t.Errorf("server-only stat add logged at %s: %q", e.Level, e.Message)
+				}
+			}
+			if got := len(hook.AllEntries()); got != 2 {
+				t.Errorf("expected exactly 2 DEBUG skip entries, got %d", got)
+			}
+			for _, e := range hook.AllEntries() {
+				if e.Level != logrus.DebugLevel {
+					t.Errorf("skip entry logged at %s, want DEBUG: %q", e.Level, e.Message)
+				}
+			}
+
+			empty := NewCharacterTemporaryStat()
+			if got, want := input.Encode(nil, ctx)(nil), empty.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("Encode with server-only stats differs from empty CTS:\ngot  % x\nwant % x", got, want)
+			}
+			if got, want := input.EncodeForeign(nil, ctx)(nil), empty.EncodeForeign(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("EncodeForeign with server-only stats differs from empty CTS:\ngot  % x\nwant % x", got, want)
+			}
+		})
+	}
+}
+
+// TestCTSAddStatUnknownNameStillErrors pins the existing behavior for
+// genuinely unregistered stat names (task-164 acceptance (d)): the stat is
+// dropped AND the ERROR log fires. Guards against the server-only skip
+// accidentally widening into a general silent-drop. Looped over every
+// supported version because the error path must NOT become version-dependent.
+func TestCTSAddStatUnknownNameStillErrors(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			l, hook := testlog.NewNullLogger()
+
+			input := NewCharacterTemporaryStat()
+			input.AddStat(l)(tn)("BOGUS", 1, 1, 1, time.Time{})
+
+			errorEntries := 0
+			for _, e := range hook.AllEntries() {
+				if e.Level == logrus.ErrorLevel {
+					errorEntries++
+					if e.Message != "Attempting to add buff [BOGUS], but cannot find it." {
+						t.Errorf("unexpected error message: %q", e.Message)
+					}
+				}
+			}
+			if errorEntries != 1 {
+				t.Errorf("expected exactly 1 ERROR entry for unknown stat, got %d", errorEntries)
+			}
+
+			empty := NewCharacterTemporaryStat()
+			if got, want := input.Encode(nil, ctx)(nil), empty.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("unknown stat leaked into encode:\ngot  % x\nwant % x", got, want)
+			}
+		})
+	}
+}
+
+// TestCTSMixedBuffServerOnlyByteInvariance proves a buff carrying both a wire
+// stat and server-only stats encodes byte-identically to the same buff without
+// the server-only stats (task-164 acceptance (b)), on EVERY supported tenant
+// version.
+//
+// Determinism: the self Encode path writes each per-stat duration as a function
+// of expiresAt evaluated at encode time, which is not stable across two Encode
+// calls. Passing the zero time saturates that field to a constant on both the
+// modern and legacy writers (pinned by TestNoExpiryStatEncodesSaturatedDuration
+// and TestLegacyDurationUnitsNoExpirySaturates), so the FULL byte slices compare
+// equal with no offset arithmetic — which also keeps this test correct on the
+// legacy pre-v61 class, whose mask is 8 bytes rather than 16 (design §5.1).
+//
+// Booster is the wire-stat probe because it is registered unconditionally
+// (shift 11, before any version gate), so it exists in every registry class and
+// sits inside the legacy mask's bits 0-46.
+func TestCTSMixedBuffServerOnlyByteInvariance(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			l, _ := testlog.NewNullLogger()
+
+			// Booster + the two server-only stats. sourceId/amount arbitrary;
+			// only wire disposition is under test.
+			mixed := NewCharacterTemporaryStat()
+			mixed.AddStat(l)(tn)(string(character.TemporaryStatTypeBooster), 1001, -2, 1, time.Time{})
+			mixed.AddStat(l)(tn)(string(character.TemporaryStatTypePuppet), 1002, 1, 1, time.Time{})
+			mixed.AddStat(l)(tn)(string(character.TemporaryStatTypeSummon), 1003, 1, 1, time.Time{})
+
+			plain := NewCharacterTemporaryStat()
+			plain.AddStat(l)(tn)(string(character.TemporaryStatTypeBooster), 1001, -2, 1, time.Time{})
+
+			if got, want := mixed.Encode(nil, ctx)(nil), plain.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("Encode differs:\ngot  % x\nwant % x", got, want)
+			}
+			if got, want := mixed.EncodeForeign(nil, ctx)(nil), plain.EncodeForeign(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("EncodeForeign differs:\ngot  % x\nwant % x", got, want)
+			}
+		})
+	}
+}
+
+// TestCTSPureServerOnlyBuffEncodesAsEmpty proves a buff whose changes are ALL
+// server-only yields exactly the empty-CTS body (task-164 acceptance (c),
+// FR-5/FR-6): mask claims nothing, no per-stat blocks, standard trailer. The
+// buff writers emit unconditionally, so these bytes are what an emitted
+// empty-mask GIVE_BUFF / cancel-reset carries — on every supported version,
+// including the legacy class where that mask is 8 zero bytes.
+func TestCTSPureServerOnlyBuffEncodesAsEmpty(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			l, _ := testlog.NewNullLogger()
+
+			pure := NewCharacterTemporaryStat()
+			pure.AddStat(l)(tn)(string(character.TemporaryStatTypePuppet), 1, 1, 1, time.Time{})
+
+			empty := NewCharacterTemporaryStat()
+			if got, want := pure.Encode(nil, ctx)(nil), empty.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("pure server-only Encode differs from empty CTS:\ngot  % x\nwant % x", got, want)
+			}
+			if got, want := pure.EncodeForeign(nil, ctx)(nil), empty.EncodeForeign(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("pure server-only EncodeForeign differs from empty CTS:\ngot  % x\nwant % x", got, want)
+			}
+		})
 	}
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type SkillUsageInfo struct {
@@ -21,12 +22,23 @@ type SkillUsageInfo struct {
 	delay                     uint16
 }
 
-func (m *SkillUsageInfo) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *SkillUsageInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
+		t := tenant.MustFromContext(ctx)
 		m.updateTime = r.ReadUint32()
 		m.skillId = r.ReadUint32()
 		m.skillLevel = r.ReadByte()
-		if isAntiRepeatBuffSkill(skill.Id(m.skillId)) {
+		// gms_48 (CUserLocal::SendSkillUseRequest @0x6AFA91) and gms_61 (@0x7BA213)
+		// have NO is_antirepeat_buff_skill gate at all in SendSkillUseRequest — the
+		// function goes straight from Encode1(nSLV) to the 4121006/bitmap/mob-count
+		// blocks. The gate first appears at gms_72 (@0x8774D9, is_antirepeat_buff_skill
+		// @0x877789) and is present on every version from there through gms_95, and on
+		// jms_185 (@0xA3DE65, is_antirepeat_buff_skill @0xA3E223 — verified, 2311001 is
+		// a member). Unconditionally reading castX/castY for isAntiRepeatBuffSkill
+		// members on gms_48/gms_61 over-reads 4 bytes and misaligns every field after
+		// it (task-163 DIV-1, docs/tasks/task-163-priest-dispel-party/version-findings.md).
+		if isAntiRepeatBuffSkill(skill.Id(m.skillId)) &&
+			((t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.IsRegion("JMS")) {
 			m.castX = r.ReadInt16()
 			m.castY = r.ReadInt16()
 		}

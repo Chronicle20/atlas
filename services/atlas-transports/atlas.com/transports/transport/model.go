@@ -224,8 +224,6 @@ func (m Model) Evaluate(now time.Time) Transition {
 		return to(LockedEntry, InTransit, departure)
 	} else if nowTimeOfDay.Before(arrival) {
 		return to(InTransit, AwaitingReturn, arrival)
-	} else if futureTrip != nil {
-		return to(AwaitingReturn, OpenEntry, timeOfDay(futureTrip.BoardingOpen()))
 	}
 	return Transition{State: OutOfService}
 }

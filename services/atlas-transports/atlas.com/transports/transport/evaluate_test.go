@@ -197,7 +197,6 @@ func TestEvaluate_NextAtIsAlwaysInTheFuture(t *testing.T) {
 	for minute := 0; minute < 24*60; minute += 7 {
 		now := base.Add(time.Duration(minute) * time.Minute)
 		got := m.Evaluate(now)
-		require.Equal(t, OpenEntry != "", true)
 		if got.State == OutOfService {
 			continue
 		}

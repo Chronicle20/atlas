@@ -174,31 +174,38 @@ func (r *MistTick) processTenant(ctx context.Context, t tenant.Model) {
 		if !m.ShouldTick() {
 			continue
 		}
-		members := r.charsInField(t, m.Field())
-		if len(members) == 0 {
-			r.registry.UpdateLastTick(t, m.Id(), time.Now())
-			continue
-		}
-		emitErr := message.Emit(prov)(func(buf *message.Buffer) error {
-			for _, cid := range members {
-				x, y, err := r.posLookup(tctx, cid)
-				if err != nil {
-					r.l.WithError(err).Debugf("MistTick: position fetch failed for character [%d].", cid)
-					continue
-				}
-				if !m.Contains(x, y) {
-					continue
-				}
-				if err := buf.Put(EnvCommandTopicCharacterBuff, applyDiseaseCommandProvider(m, cid)); err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-		if emitErr != nil {
-			r.l.WithError(emitErr).Errorf("MistTick: failed to emit apply-disease for mist [%s].", m.Id())
-		}
+		r.tickCharacters(tctx, prov, t, m)
 		r.registry.UpdateLastTick(t, m.Id(), time.Now())
+	}
+}
+
+// tickCharacters applies the mist's status to every character in the field
+// whose position falls inside the mist's bounding box. This is the original
+// (pre-task-200) mist tick body, extracted verbatim -- the monster AREA_POISON
+// path must behave identically before and after (NFR-5).
+func (r *MistTick) tickCharacters(ctx context.Context, prov producer.Provider, t tenant.Model, m mist.Mist) {
+	members := r.charsInField(t, m.Field())
+	if len(members) == 0 {
+		return
+	}
+	emitErr := message.Emit(prov)(func(buf *message.Buffer) error {
+		for _, cid := range members {
+			x, y, err := r.posLookup(ctx, cid)
+			if err != nil {
+				r.l.WithError(err).Debugf("MistTick: position fetch failed for character [%d].", cid)
+				continue
+			}
+			if !m.Contains(x, y) {
+				continue
+			}
+			if err := buf.Put(EnvCommandTopicCharacterBuff, applyDiseaseCommandProvider(m, cid)); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if emitErr != nil {
+		r.l.WithError(emitErr).Errorf("MistTick: failed to emit apply-disease for mist [%s].", m.Id())
 	}
 }
 

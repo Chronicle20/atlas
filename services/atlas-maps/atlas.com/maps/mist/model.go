@@ -37,6 +37,8 @@ type Mist struct {
 	tickInterval     time.Duration
 	targetKind       string
 	effectKind       string
+	elemAttr         int32
+	skillDelay       int16
 	createdAt        time.Time
 	expiresAt        time.Time
 	lastTick         time.Time
@@ -150,6 +152,23 @@ func (m Mist) EffectKind() string {
 	return m.effectKind
 }
 
+// ElemAttr returns the AffectedAreaCreated `nElemAttr` wire value. The client
+// stores it raw at AFFECTEDAREA+0x30 (v83 @0x431b3b, v95 @0x437fd9) and never
+// reads it on any rendering path -- it takes the skill's element from its own
+// Skill.wz. Atlas models no mist element, so this is 0 for every mist.
+func (m Mist) ElemAttr() int32 {
+	return m.elemAttr
+}
+
+// SkillDelay returns the AffectedAreaCreated `skillDelay` wire value: a
+// DRAW DELAY in units of 100 ms, not a lifetime. The client computes
+// tStart = get_update_time() + 100*skillDelay (v83 @0x431b50, v95 @0x437fa3)
+// and gates the mist's first draw on it, so any non-zero value hides the mist
+// for that long. Atlas has no per-mist cast delay to express: 0 = draw now.
+func (m Mist) SkillDelay() int16 {
+	return m.skillDelay
+}
+
 // Duration returns the total lifetime of this mist.
 func (m Mist) Duration() time.Duration {
 	return m.duration
@@ -231,6 +250,8 @@ type Builder struct {
 	tickInterval     time.Duration
 	targetKind       string
 	effectKind       string
+	elemAttr         int32
+	skillDelay       int16
 	createdAt        time.Time
 	expiresAt        time.Time
 	lastTick         time.Time
@@ -303,6 +324,14 @@ func (b *Builder) SetKinds(targetKind, effectKind string) *Builder {
 	return b
 }
 
+// SetRender sets the client-render wire values carried on MIST_CREATED. Both
+// are 0 for every mist Atlas creates; see the getters for why.
+func (b *Builder) SetRender(elemAttr int32, skillDelay int16) *Builder {
+	b.elemAttr = elemAttr
+	b.skillDelay = skillDelay
+	return b
+}
+
 // SetDuration sets the total mist lifetime and recomputes expiresAt from createdAt.
 func (b *Builder) SetDuration(d time.Duration) *Builder {
 	b.duration = d
@@ -339,6 +368,8 @@ func (b *Builder) Build() Mist {
 		tickInterval:     b.tickInterval,
 		targetKind:       b.targetKind,
 		effectKind:       b.effectKind,
+		elemAttr:         b.elemAttr,
+		skillDelay:       b.skillDelay,
 		createdAt:        b.createdAt,
 		expiresAt:        b.expiresAt,
 		lastTick:         b.lastTick,

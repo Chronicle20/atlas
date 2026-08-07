@@ -41,6 +41,11 @@ type CreatedBody struct {
 	RbX              int16  `json:"rbX"`
 	RbY              int16  `json:"rbY"`
 	Duration         int64  `json:"duration"`
+	// ElemAttr is the client's `nElemAttr`; SkillDelay is its `skillDelay`
+	// draw delay (units of 100 ms). The existing `Type` field IS the client's
+	// `nType` -- do not add a second key for it.
+	ElemAttr   int32 `json:"elemAttr"`
+	SkillDelay int16 `json:"skillDelay"`
 }
 
 // DestroyedBody mirrors atlas-maps' MIST_DESTROYED payload.

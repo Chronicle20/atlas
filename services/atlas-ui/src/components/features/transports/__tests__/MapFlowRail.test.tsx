@@ -3,13 +3,20 @@ import { render, screen } from "@testing-library/react";
 
 import { MapFlowRail } from "@/components/features/transports/MapFlowRail";
 import { MapCell } from "@/components/map-cell";
-import type { RouteState, ScheduledRoute } from "@/types/models/transport";
+import type {
+  RouteState,
+  ScheduledRoute,
+  ScheduledRouteAttributes,
+} from "@/types/models/transport";
 
 vi.mock("@/components/map-cell", () => ({
   MapCell: vi.fn(({ mapId }: { mapId: string }) => <span>map:{mapId}</span>),
 }));
 
-function route(state: RouteState): ScheduledRoute {
+function route(
+  state: RouteState,
+  overrides: Partial<ScheduledRouteAttributes> = {},
+): ScheduledRoute {
   return {
     id: "r1",
     attributes: {
@@ -26,6 +33,7 @@ function route(state: RouteState): ScheduledRoute {
       cycleIntervalSeconds: 900,
       nextTransitionAt: "",
       nextState: "",
+      ...overrides,
     },
   };
 }
@@ -93,5 +101,34 @@ describe("MapFlowRail", () => {
     for (const [props] of calls) {
       expect(typeof props.mapId).toBe("string");
     }
+  });
+
+  it("captions a direct route with no en-route stop as walk in then arrival", () => {
+    // With enRouteMapIds empty, stops collapse to [start, staging,
+    // destination]: two legs, not the four the default fixture exercises.
+    // The staging→destination leg leads straight into the destination, so
+    // it must read as the arrival leg, not a departure.
+    render(
+      <MapFlowRail
+        route={route("open_entry", { enRouteMapIds: [] })}
+        tenant={null}
+      />,
+    );
+
+    expect(screen.getByText("walk in")).toBeInTheDocument();
+    expect(screen.getByText("warp on arrival")).toBeInTheDocument();
+    expect(screen.queryByText("warp on departure")).not.toBeInTheDocument();
+  });
+
+  it("makes the in-transit stops discoverable without colour", () => {
+    // The only visual signal for the active leg is an SVG's colour/stroke
+    // width, and that SVG is aria-hidden. The accessible name is the only
+    // channel left, so it must name the state, not just the sequence.
+    render(<MapFlowRail route={route("in_transit")} tenant={null} />);
+
+    const figure = screen.getByRole("img", { name: /map flow/i });
+    expect(figure).toHaveAccessibleName(
+      /in transit through 200090010, 200090011/i,
+    );
   });
 });

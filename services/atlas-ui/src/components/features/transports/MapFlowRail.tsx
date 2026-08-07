@@ -24,11 +24,15 @@ interface Leg {
  *
  * A single hidden `role="img"` element carries the whole rail's accessible
  * name and sequence summary, so assistive tech gets one labelled figure
- * rather than one per connector. The per-leg SVG arrows are decorative
- * (`aria-hidden`) because each leg's meaning is already conveyed by its
- * visible caption text, not by the arrow's colour or dash pattern alone; the
- * stop badges stay ordinary HTML so MapCell's link and copyable tooltip
- * remain reachable — wrapping them in role="img" would hide them from AT.
+ * rather than one per connector. When the route is in transit, that same
+ * name appends which stops are currently being traversed — "where the
+ * vessel currently is" must survive without colour, and the per-leg
+ * highlight is otherwise conveyed only by an SVG's colour/stroke-width. The
+ * per-leg SVG arrows themselves are decorative (`aria-hidden`) because each
+ * leg's identity is already conveyed by its visible caption text, not by the
+ * arrow's colour or dash pattern alone; the stop badges stay ordinary HTML
+ * so MapCell's link and copyable tooltip remain reachable — wrapping them in
+ * role="img" would hide them from AT.
  */
 export function MapFlowRail({ route, tenant }: MapFlowRailProps) {
   const {
@@ -49,19 +53,28 @@ export function MapFlowRail({ route, tenant }: MapFlowRailProps) {
   ];
 
   // One leg between each adjacent pair of stops. The caption names the
-  // mechanism that moves a character across it.
+  // mechanism that moves a character across it. Position in the chain, not
+  // just the adjacent stops' en-route flags, decides the caption: the first
+  // leg (start→staging) is always "walk in", the last leg (→destination) is
+  // always "warp on arrival" — even when there's no en-route stop between
+  // staging and the destination, i.e. `enRouteMapIds` is empty and the last
+  // leg's neighbours are both non-en-route. Every leg in between is a
+  // "warp on departure" that carries the character onto or through the
+  // en-route chain.
   const legs: Leg[] = stops.slice(1).map((stop, index) => {
     const previous = stops[index]!;
-    if (!previous.enRoute && !stop.enRoute && index === 0) {
+    const isFirstLeg = index === 0;
+    const isLastLeg = index === stops.length - 2;
+    if (isFirstLeg) {
       return { caption: "walk in", enRoute: false };
     }
-    if (stop.enRoute) {
-      return { caption: "warp on departure", enRoute: true };
-    }
-    if (previous.enRoute) {
+    if (isLastLeg) {
       return { caption: "warp on arrival", enRoute: false };
     }
-    return { caption: "warp on departure", enRoute: false };
+    return {
+      caption: "warp on departure",
+      enRoute: stop.enRoute || previous.enRoute,
+    };
   });
 
   const inTransit = state === "in_transit";
@@ -74,11 +87,20 @@ export function MapFlowRail({ route, tenant }: MapFlowRailProps) {
     )
     .join(" then ");
 
+  // "Where the vessel currently is" must be discoverable without colour —
+  // the only other signal for the active leg is an SVG's colour/stroke-width
+  // (see RailLeg), which is aria-hidden. Naming the en-route stops here is
+  // the accessible channel for that state.
+  const transitClause =
+    inTransit && enRouteMapIds.length > 0
+      ? ` — currently in transit through ${enRouteMapIds.join(", ")}`
+      : "";
+
   return (
     <div className="space-y-3">
       <span
         role="img"
-        aria-label={`Map flow for ${name}: ${sequenceSummary}`}
+        aria-label={`Map flow for ${name}: ${sequenceSummary}${transitClause}`}
         className="sr-only"
       />
       <div className="overflow-x-auto">

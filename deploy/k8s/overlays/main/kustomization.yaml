@@ -293,7 +293,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-pets/atlas-pets
     newTag: main-ae33415
   - name: ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions
-    newTag: main-ae33415
+    newTag: main-0eee5b4
   - name: ghcr.io/chronicle20/atlas-portals/atlas-portals
     newTag: main-ae33415
   - name: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap
@@ -315,7 +315,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-rps/atlas-rps
     newTag: main-ae33415
   - name: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator
-    newTag: main-ae33415
+    newTag: main-0eee5b4
   - name: ghcr.io/chronicle20/atlas-skills/atlas-skills
     newTag: main-ae33415
   - name: ghcr.io/chronicle20/atlas-storage/atlas-storage

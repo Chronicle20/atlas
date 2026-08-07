@@ -10,9 +10,19 @@
 # `../../base` wholesale). The `pr-cleanup` overlay does not include base at
 # all, so no exclusion is needed there.
 #
-# RECONCILE_DRY_RUN defaults to "true": the orchestrator logs what it would
-# delete without deleting anything until an operator flips this ConfigMap
-# value (or patches it per-env) after validating a few dry-run cycles.
+# RECONCILE_DRY_RUN is "false": the orchestrator actually removes orphaned
+# tenants/<uuid>/ prefixes. It shipped as "true" and ran observe-only from
+# 2026-07-18 to 2026-08-07; over those 20 days it never deleted anything, so
+# orphans that aged past RECONCILE_MIN_AGE_HOURS leaked permanently (7 stale
+# atlas-renders prefixes were live evidence). The dry-run cycles it was
+# gating on have been validated — a keep-list POST correctly enumerated every
+# prefix with counts, bytes, and ages. Set back to "true" to re-observe.
+#
+# Deleting is guarded four ways, all in reconcile-minio.sh / atlas-data's
+# minioreconcile package: an empty keep-list is refused outright, the
+# canonical sentinel UUID is never a delete candidate, a prefix newer than
+# RECONCILE_MIN_AGE_HOURS is kept, and an unreachable namespace aborts the
+# whole run rather than treating its tenants as orphaned.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -45,7 +55,7 @@ kind: ConfigMap
 metadata:
   name: atlas-minio-reconcile-config
 data:
-  RECONCILE_DRY_RUN: "true"
+  RECONCILE_DRY_RUN: "false"
   RECONCILE_MIN_AGE_HOURS: "48"
 ---
 apiVersion: batch/v1

@@ -35,6 +35,20 @@ const (
 // unchecked narrowing turns an evaluated -2 into uint16(65534). A violation is
 // a loud FR-7.1 failure, never a silent wrap. It applies ONLY to the `common`
 // path — the `level` path's conversions are untouched (FR-6.5).
+//
+// The upper bound is capped at maxInt32 for EVERY key, even ones whose
+// destination Go field is a uint32 (mobCount, cooltime, morph, damage,
+// attackCount, moneyCon, itemCon, itemConNo). That is not the destination
+// field's width — it is the transport's: every synthesized node is consumed
+// by xml.GetIntegerWithDefault (xml/model.go:82-102), which parses with
+// strconv.ParseInt(c.Value, 10, 32), a SIGNED 32-bit parse. A value in
+// [2147483648, 4294967295] would pass a maxUint32 range check here, get
+// written into the node, and then silently fail that ParseInt — degrading to
+// GetIntegerWithDefault's default (0, or 1 for mobCount) one call downstream
+// of the FR-7.5 guard this table exists to enforce. Do not widen a bound past
+// maxInt32 to match a uint32/uint16 destination field without first checking
+// whether that key is read via GetIntegerWithDefault (it is, for every key in
+// this table — none go through a wider or unsigned parse).
 type commonKeyDef struct {
 	name string
 	kind commonKind
@@ -43,12 +57,14 @@ type commonKeyDef struct {
 }
 
 const (
-	minInt16  = math.MinInt16
-	maxInt16  = math.MaxInt16
+	minInt16 = math.MinInt16
+	maxInt16 = math.MaxInt16
+	minInt32 = math.MinInt32
+	maxInt32 = math.MaxInt32
+	// maxUint16 is a destination-field bound (e.g. hp/mp/mpCon land in a
+	// uint16), which is narrower than the maxInt32 transport bound below and
+	// so is safe to use directly.
 	maxUint16 = math.MaxUint16
-	minInt32  = math.MinInt32
-	maxInt32  = math.MaxInt32
-	maxUint32 = math.MaxUint32
 	// getEffect multiplies a non-negative `time` by 1000 to convert wz
 	// seconds to milliseconds; bound it so that product still fits int32.
 	maxTimeSeconds = math.MaxInt32 / 1000
@@ -72,9 +88,9 @@ var commonKeys = []commonKeyDef{
 	{name: "hpCon", kind: commonExpr, min: 0, max: maxUint16},
 	{name: "mpCon", kind: commonExpr, min: 0, max: maxUint16},
 	{name: "prop", kind: commonExpr, min: minInt32, max: maxInt32},
-	{name: "mobCount", kind: commonExpr, min: 0, max: maxUint32},
-	{name: "cooltime", kind: commonExpr, min: 0, max: maxUint32},
-	{name: "morph", kind: commonExpr, min: 0, max: maxUint32},
+	{name: "mobCount", kind: commonExpr, min: 0, max: maxInt32},
+	{name: "cooltime", kind: commonExpr, min: 0, max: maxInt32},
+	{name: "morph", kind: commonExpr, min: 0, max: maxInt32},
 	{name: "pad", kind: commonExpr, min: minInt16, max: maxInt16},
 	{name: "pdd", kind: commonExpr, min: minInt16, max: maxInt16},
 	{name: "mad", kind: commonExpr, min: minInt16, max: maxInt16},
@@ -85,13 +101,13 @@ var commonKeys = []commonKeyDef{
 	{name: "jump", kind: commonExpr, min: minInt16, max: maxInt16},
 	{name: "x", kind: commonExpr, min: minInt16, max: maxInt16},
 	{name: "y", kind: commonExpr, min: minInt16, max: maxInt16},
-	{name: "damage", kind: commonExpr, min: 0, max: maxUint32},
-	{name: "attackCount", kind: commonExpr, min: 0, max: maxUint32},
+	{name: "damage", kind: commonExpr, min: 0, max: maxInt32},
+	{name: "attackCount", kind: commonExpr, min: 0, max: maxInt32},
 	{name: "bulletCount", kind: commonExpr, min: 0, max: maxUint16},
 	{name: "bulletConsume", kind: commonExpr, min: 0, max: maxUint16},
-	{name: "moneyCon", kind: commonExpr, min: 0, max: maxUint32},
-	{name: "itemCon", kind: commonExpr, min: 0, max: maxUint32},
-	{name: "itemConNo", kind: commonExpr, min: 0, max: maxUint32},
+	{name: "moneyCon", kind: commonExpr, min: 0, max: maxInt32},
+	{name: "itemCon", kind: commonExpr, min: 0, max: maxInt32},
+	{name: "itemConNo", kind: commonExpr, min: 0, max: maxInt32},
 
 	// Keys task-192 added to the effect model.
 	{name: "mhpR", kind: commonExpr, min: 0, max: maxUint16},

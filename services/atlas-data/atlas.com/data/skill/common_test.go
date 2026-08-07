@@ -289,3 +289,55 @@ func TestSynthesizedNodesAreCanonicalIntegers(t *testing.T) {
 		}
 	}
 }
+
+// TestCommonExprAboveMaxInt32IsRangeViolation pins the fix for a
+// review-caught FR-7.5 regression: `damage` (and its uint32 siblings) lands
+// in a synthesized xml.IntegerNode consumed by xml.GetIntegerWithDefault
+// (xml/model.go), which parses with strconv.ParseInt(..., 32) — a SIGNED
+// 32-bit parse — regardless of the destination Go field's width. A value in
+// [2147483648, 4294967295] must therefore be rejected as a range violation
+// at synthesis time (loud, counted), never written into the node: writing it
+// would let ParseInt fail downstream and silently degrade to
+// GetIntegerWithDefault's default, exactly the failure mode this table
+// exists to prevent.
+func TestCommonExprAboveMaxInt32IsRangeViolation(t *testing.T) {
+	common := xml.Node{
+		Name: "common",
+		IntegerNodes: []xml.IntegerNode{
+			{Name: "maxLevel", Value: "1"},
+		},
+		StringNodes: []xml.StringNode{
+			// 2147483647 + 1 = 2147483648, one past math.MaxInt32, well
+			// within maxUint32 (the field's Go width) — exactly the gap the
+			// review finding identified.
+			{Name: "damage", Value: "2147483647+x"},
+		},
+	}
+	l, hook, ctx := commonTestContext(t)
+	tn := tenant.MustFromContext(ctx)
+	nodes, maxLevel, failures := synthesizeCommonNodes(l, tn, 100, 1001003, &common)
+	if maxLevel != 1 {
+		t.Fatalf("maxLevel = %d, want 1", maxLevel)
+	}
+	if failures != 1 {
+		t.Fatalf("failures = %d, want 1 (the out-of-range damage value)", failures)
+	}
+	if len(nodes) != 1 {
+		t.Fatalf("len(nodes) = %d, want 1", len(nodes))
+	}
+	for _, in := range nodes[0].IntegerNodes {
+		if in.Name == "damage" {
+			t.Fatalf("synthesized node carries damage=%q, want it dropped by the range check", in.Value)
+		}
+	}
+	entries := hook.AllEntries()
+	if len(entries) != 1 {
+		t.Fatalf("logged %d entries, want 1 ERROR", len(entries))
+	}
+	if entries[0].Level != logrus.ErrorLevel {
+		t.Fatalf("logged at %s, want ERROR", entries[0].Level)
+	}
+	if entries[0].Data["key"] != "damage" {
+		t.Fatalf("logged key = %v, want \"damage\"", entries[0].Data["key"])
+	}
+}

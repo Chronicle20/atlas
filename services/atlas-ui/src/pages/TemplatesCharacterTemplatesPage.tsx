@@ -24,6 +24,7 @@ export function TemplatesCharacterTemplatesPage() {
         {
           id: template.id,
           updates: {
+            ...template.attributes,
             characters: { ...template.attributes.characters, templates },
           },
         },

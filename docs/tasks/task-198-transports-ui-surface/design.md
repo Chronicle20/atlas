@@ -381,8 +381,19 @@ vessel gets two lanes (its own and its partner's, so the alternation and the tur
 visible); an independent route gets one. The partner route's trips come from a second detail
 fetch, keyed by the partner's id, resolved through the vessel list.
 
-Trip times are formatted **time-of-day only**, everywhere, with no date component — enforced by a
-single `formatTimeOfDay()` helper in `transport-format.ts` that all timeline code must go through.
+Under the last lane sits a **time axis**: a rule with ticks at round wall-clock times across the
+window (`timelineAxisTicks` picks the coarsest interval from 1m…1h that keeps the window under six
+gridlines) and a `HH:MM` label per tick. Without it, horizontal position — the strip's whole
+subject — carries no absolute value, and every real time is locked inside a segment's tooltip. The
+NOW marker is stamped with the second it is drawn at (`NOW HH:MM:SS`) rather than the bare word:
+it is the one time on the strip that moves, and the countdowns beside it tick every second.
+
+Trip times are formatted **time-of-day only**, everywhere, with no date component — enforced by
+`formatTimeOfDay()` in `transport-format.ts` (and its `formatTimeOfDayMs` / `formatClockMs`
+siblings, which take milliseconds-since-UTC-midnight for the axis and the marker) that all
+timeline code must go through. Axis ticks past UTC midnight keep counting up so the axis stays
+monotonic; only their labels wrap, so a window straddling midnight reads `23:50 · 00:00 · 00:10`
+rather than `24:00`.
 
 **Open question 4 — window size. Decision: derive it from the schedule, don't hard-code ±30 min.**
 A fixed window puts two legs on screen for the 15-minute boat and ten for the 6-minute plane. The

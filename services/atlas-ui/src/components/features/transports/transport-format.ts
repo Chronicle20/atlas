@@ -100,8 +100,84 @@ export function formatDurationSeconds(seconds: number): string {
 export function formatTimeOfDay(iso: string): string {
   const parsed = new Date(iso);
   if (Number.isNaN(parsed.getTime())) return "—";
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${pad(parsed.getUTCHours())}:${pad(parsed.getUTCMinutes())}`;
+  return formatTimeOfDayMs(utcTimeOfDayMs(iso));
+}
+
+const pad2 = (value: number) => String(value).padStart(2, "0");
+
+/**
+ * `HH:MM` for a milliseconds-since-UTC-midnight value, wrapping across day
+ * boundaries so a window straddling UTC midnight labels its far side `00:05`
+ * rather than `24:05`.
+ */
+export function formatTimeOfDayMs(ms: number): string {
+  const wrapped = nowUtcTimeOfDayMs(ms);
+  return `${pad2(Math.floor(wrapped / 3_600_000))}:${pad2(
+    Math.floor(wrapped / 60_000) % 60,
+  )}`;
+}
+
+/**
+ * `HH:MM:SS` for a milliseconds-since-UTC-midnight value.
+ *
+ * Only "now" is rendered at this precision. Every other time on a schedule
+ * surface is a fixed trip boundary that `formatTimeOfDay` shows to the minute;
+ * now is the one value that moves while you watch it, and a marker that reads
+ * the same for a whole minute reads as a frozen chart.
+ */
+export function formatClockMs(ms: number): string {
+  const wrapped = nowUtcTimeOfDayMs(ms);
+  return `${formatTimeOfDayMs(wrapped)}:${pad2(
+    Math.floor(wrapped / 1000) % 60,
+  )}`;
+}
+
+/** Candidate axis intervals, coarsening from a minute to an hour. */
+const AXIS_STEPS_MS = [
+  60_000,
+  2 * 60_000,
+  5 * 60_000,
+  10 * 60_000,
+  15 * 60_000,
+  30 * 60_000,
+  3_600_000,
+];
+
+/** The most ticks an axis draws before its labels start to collide. */
+const MAX_AXIS_INTERVALS = 6;
+
+/**
+ * Gridline times for a timeline window centred on `nowMs`, as milliseconds
+ * since UTC midnight paired with their fractional position across the window.
+ *
+ * Ticks land on round wall-clock times (`:00`, `:15`, `:30`) rather than on
+ * offsets from now, so the axis reads as a clock: the same instant drawn on
+ * two routes carries the same gridlines, and a label lines up with the trip
+ * boundaries the schedule was generated from. Returned times may exceed a day
+ * — `formatTimeOfDayMs` wraps them — so that a window spanning UTC midnight
+ * still gets a monotonically increasing axis.
+ */
+export function timelineAxisTicks(
+  nowMs: number,
+  halfWindowMs: number,
+): { ms: number; fraction: number }[] {
+  if (halfWindowMs <= 0) return [];
+
+  const start = nowMs - halfWindowMs;
+  const span = 2 * halfWindowMs;
+  const step =
+    AXIS_STEPS_MS.find((candidate) => span / candidate <= MAX_AXIS_INTERVALS) ??
+    AXIS_STEPS_MS[AXIS_STEPS_MS.length - 1]!;
+
+  const ticks: { ms: number; fraction: number }[] = [];
+  for (
+    let ms = Math.ceil(start / step) * step;
+    ms <= start + span;
+    ms += step
+  ) {
+    ticks.push({ ms, fraction: (ms - start) / span });
+  }
+  return ticks;
 }
 
 /** Milliseconds since UTC midnight for a schedule timestamp. */

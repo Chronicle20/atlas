@@ -3,13 +3,16 @@ import { describe, expect, it } from "vitest";
 import {
   compareRoutesBySeverityThenName,
   findVesselForRoute,
+  formatClockMs,
   formatCountdown,
   formatDurationSeconds,
   formatTimeOfDay,
+  formatTimeOfDayMs,
   isInstanceStuck,
   nowUtcTimeOfDayMs,
   resolveVesselRoutes,
   segmentSpan,
+  timelineAxisTicks,
   timelineHalfWindowMs,
   transitionLabel,
   utcTimeOfDayMs,
@@ -137,6 +140,83 @@ describe("formatTimeOfDay", () => {
     expect(formatTimeOfDay("2023-01-01T08:07:00Z")).toBe("08:07");
     expect(formatTimeOfDay("2023-01-01T23:59:00Z")).toBe("23:59");
     expect(formatTimeOfDay("2023-01-01T08:07:00Z")).not.toContain("2023");
+  });
+
+  it("returns an em dash for an unparseable timestamp", () => {
+    expect(formatTimeOfDay("not a date")).toBe("—");
+  });
+});
+
+describe("formatTimeOfDayMs / formatClockMs", () => {
+  it("renders a milliseconds-since-midnight value as a clock time", () => {
+    expect(formatTimeOfDayMs(8 * 60 * MINUTE + 7 * MINUTE)).toBe("08:07");
+    expect(formatClockMs(8 * 60 * MINUTE + 7 * MINUTE + 12_000)).toBe(
+      "08:07:12",
+    );
+  });
+
+  it("wraps past a day rather than rendering an impossible hour", () => {
+    // Axis ticks past UTC midnight keep counting up so the axis stays
+    // monotonic; only the label wraps.
+    expect(formatTimeOfDayMs(24 * 60 * MINUTE)).toBe("00:00");
+    expect(formatTimeOfDayMs(24 * 60 * MINUTE + 10 * MINUTE)).toBe("00:10");
+  });
+});
+
+describe("timelineAxisTicks", () => {
+  const at = (hours: number, minutes: number) =>
+    hours * 60 * MINUTE + minutes * MINUTE;
+
+  it("lands on round wall-clock times, not on offsets from now", () => {
+    // now is 12:03:30, so ticks anchored on now would read :03:30 — the axis
+    // has to read as a clock instead.
+    const ticks = timelineAxisTicks(at(12, 3) + 30_000, 30 * MINUTE);
+
+    expect(ticks.map((tick) => formatTimeOfDayMs(tick.ms))).toEqual([
+      "11:40",
+      "11:50",
+      "12:00",
+      "12:10",
+      "12:20",
+      "12:30",
+    ]);
+  });
+
+  it("coarsens the interval with the window so the labels never crowd", () => {
+    const narrow = timelineAxisTicks(at(12, 0), 10 * MINUTE);
+    const wide = timelineAxisTicks(at(12, 0), 30 * MINUTE);
+
+    expect(narrow.map((tick) => formatTimeOfDayMs(tick.ms))).toEqual([
+      "11:50",
+      "11:55",
+      "12:00",
+      "12:05",
+      "12:10",
+    ]);
+    expect(wide).toHaveLength(7);
+  });
+
+  it("positions each tick as a fraction of the window", () => {
+    const ticks = timelineAxisTicks(at(12, 0), 30 * MINUTE);
+
+    expect(ticks[0]?.fraction).toBe(0);
+    expect(ticks[ticks.length - 1]?.fraction).toBe(1);
+    expect(
+      ticks.find((tick) => formatTimeOfDayMs(tick.ms) === "12:00")?.fraction,
+    ).toBe(0.5);
+  });
+
+  it("keeps counting past UTC midnight so the axis stays monotonic", () => {
+    const ticks = timelineAxisTicks(at(23, 55), 30 * MINUTE);
+
+    expect(ticks.map((tick) => tick.ms)).toEqual(
+      [...ticks].sort((a, b) => a.ms - b.ms).map((tick) => tick.ms),
+    );
+    expect(ticks.map((tick) => formatTimeOfDayMs(tick.ms))).toContain("00:10");
+  });
+
+  it("returns no ticks for a degenerate window", () => {
+    expect(timelineAxisTicks(at(12, 0), 0)).toEqual([]);
   });
 });
 

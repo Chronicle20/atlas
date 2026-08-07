@@ -1,9 +1,12 @@
 import { useMemo } from "react";
 
 import {
+  formatClockMs,
   formatTimeOfDay,
+  formatTimeOfDayMs,
   nowUtcTimeOfDayMs,
   segmentSpan,
+  timelineAxisTicks,
   timelineHalfWindowMs,
   utcTimeOfDayMs,
 } from "@/components/features/transports/transport-format";
@@ -29,6 +32,10 @@ const LANE_GAP = 12;
 /** Room above each lane rail for its route-name caption. */
 const LANE_LABEL_HEIGHT = 15;
 const TOP_PAD = 18;
+/** Room below the last rail for the time axis: rule, ticks, and hour labels. */
+const AXIS_HEIGHT = 22;
+/** Half the width a `HH:MM` label needs, used to keep the end ticks on-canvas. */
+const AXIS_LABEL_HALF_WIDTH = 16;
 
 const SEGMENT_STYLE = {
   open: {
@@ -78,13 +85,16 @@ const SEGMENT_KINDS = ["open", "locked", "transit"] as const;
  * Each lane is captioned in place with its route name, and the legend below
  * carries a colour swatch per phase — the strip encodes phase entirely in
  * colour and lane identity entirely in vertical position, so neither can be
- * left to a bare list of words.
+ * left to a bare list of words. The third encoding, horizontal position, is
+ * spelled out by the time axis under the last rail: round wall-clock ticks
+ * across the window plus a NOW marker stamped with the second it is drawn at,
+ * so "when" is legible without hovering a segment for its tooltip.
  */
 export function VesselTimeline({ lanes, nowEpochMs }: VesselTimelineProps) {
   const nowMs = nowUtcTimeOfDayMs(nowEpochMs);
-  // Reuses formatTimeOfDay (rather than re-deriving HH:MM padding) by
-  // handing it an ISO string built from the same epoch instant.
-  const nowLabel = formatTimeOfDay(new Date(nowEpochMs).toISOString());
+  // The marker carries seconds where the axis does not: it is the one time on
+  // the strip that moves, and the countdowns beside it tick every second.
+  const nowClockLabel = formatClockMs(nowMs);
 
   const halfWindowMs = useMemo(
     () =>
@@ -98,15 +108,22 @@ export function VesselTimeline({ lanes, nowEpochMs }: VesselTimelineProps) {
     [lanes],
   );
 
-  const height =
+  const axisY =
     TOP_PAD + lanes.length * (LANE_LABEL_HEIGHT + LANE_HEIGHT + LANE_GAP);
+  const height = axisY + AXIS_HEIGHT;
+
+  // Not memoised: the window slides with `nowMs`, so this is a fresh handful
+  // of ticks on every tick of the clock either way.
+  const ticks = timelineAxisTicks(nowMs, halfWindowMs);
 
   const ariaLabel = useMemo(
     () =>
-      `Trip timeline, times UTC. Now ${nowLabel}, window plus or minus ${Math.round(
+      `Trip timeline, times UTC. Now ${formatTimeOfDayMs(
+        nowUtcTimeOfDayMs(nowEpochMs),
+      )}, window plus or minus ${Math.round(
         halfWindowMs / 60_000,
       )} minutes. ${lanes.map(laneAriaPhrase).join(" ")}`,
-    [lanes, nowLabel, halfWindowMs],
+    [lanes, nowEpochMs, halfWindowMs],
   );
 
   return (
@@ -182,12 +199,63 @@ export function VesselTimeline({ lanes, nowEpochMs }: VesselTimelineProps) {
             );
           })}
 
+          {/*
+            The time axis. Without it the strip shows only that one block sits
+            left of another — every absolute time stays locked inside a
+            segment's tooltip. Rule and ticks take the border token and the
+            labels the muted one, so the clock reads as ground and the trips
+            stay the figure.
+          */}
+          <g data-time-axis="">
+            <line
+              x1={0}
+              y1={axisY}
+              x2={WIDTH}
+              y2={axisY}
+              className="stroke-border"
+              strokeWidth={1}
+            />
+            {ticks.map((tick) => {
+              const x = tick.fraction * WIDTH;
+              const label = formatTimeOfDayMs(tick.ms);
+              return (
+                <g key={tick.ms}>
+                  <line
+                    x1={x}
+                    y1={axisY}
+                    x2={x}
+                    y2={axisY + 4}
+                    className="stroke-border"
+                    strokeWidth={1}
+                  />
+                  {/*
+                    The first and last ticks sit on the window's edges, where a
+                    centred label would hang half off the canvas.
+                  */}
+                  <text
+                    data-axis-tick={label}
+                    x={Math.min(
+                      WIDTH - AXIS_LABEL_HALF_WIDTH,
+                      Math.max(AXIS_LABEL_HALF_WIDTH, x),
+                    )}
+                    y={axisY + 16}
+                    textAnchor="middle"
+                    fontSize={10}
+                    className="fill-muted-foreground"
+                  >
+                    {label}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
+
           <line
             data-now-marker=""
             x1={WIDTH / 2}
             y1={0}
             x2={WIDTH / 2}
-            y2={height}
+            y2={axisY + 4}
             className="stroke-foreground"
             strokeWidth={1.5}
             strokeDasharray="3 3"
@@ -198,7 +266,7 @@ export function VesselTimeline({ lanes, nowEpochMs }: VesselTimelineProps) {
             className="fill-foreground"
             fontSize={10}
           >
-            NOW
+            {`NOW ${nowClockLabel}`}
           </text>
         </svg>
       </div>
@@ -222,14 +290,12 @@ export function VesselTimeline({ lanes, nowEpochMs }: VesselTimelineProps) {
             {SEGMENT_STYLE[kind].label}
           </span>
         ))}
-        <span>
-          times UTC
-          {lanes[0]?.trips[0]
-            ? ` · first trip boards ${formatTimeOfDay(
-                lanes[0].trips[0].attributes.boardingOpen,
-              )}`
-            : ""}
-        </span>
+        {/*
+          The axis now carries absolute times, so this says what unit those
+          are in and stops — the old "first trip boards HH:MM" note was
+          standing in for a scale, and a single anchor time is a worse one.
+        */}
+        <span>times UTC</span>
       </div>
     </div>
   );

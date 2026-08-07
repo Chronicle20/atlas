@@ -115,6 +115,67 @@ describe("VesselTimeline", () => {
     expect(container.querySelector("[data-now-marker]")).not.toBeNull();
   });
 
+  it("stamps the NOW marker with the instant it is drawn at", () => {
+    // A bare "NOW" says where the marker is but not when, which leaves every
+    // absolute time on the strip locked inside a segment tooltip.
+    render(
+      <VesselTimeline
+        lanes={[{ label: "Orbis to Ellinia", trips: outbound }]}
+        nowEpochMs={Date.parse("2026-08-06T12:00:07Z")}
+      />,
+    );
+
+    expect(screen.getByText("NOW 12:00:07")).toBeInTheDocument();
+  });
+
+  it("draws a time axis of round wall-clock ticks across the window", () => {
+    const { container } = render(
+      <VesselTimeline
+        lanes={[{ label: "Orbis to Ellinia", trips: outbound }]}
+        nowEpochMs={nowEpochMs}
+      />,
+    );
+
+    expect(container.querySelector("[data-time-axis]")).not.toBeNull();
+
+    const ticks = Array.from(
+      container.querySelectorAll("[data-axis-tick]"),
+    ).map((node) => node.getAttribute("data-axis-tick"));
+
+    // Two boardings 30m apart give a 30m half-window, so the axis spans
+    // 11:30-12:30 and lands on the round ten-minute marks inside it.
+    expect(ticks).toEqual([
+      "11:30",
+      "11:40",
+      "11:50",
+      "12:00",
+      "12:10",
+      "12:20",
+      "12:30",
+    ]);
+  });
+
+  it("wraps axis labels across UTC midnight rather than running past 24:00", () => {
+    const lateTrips = [
+      trip("m1", "23:40", "23:45", "23:47", "23:57"),
+      trip("m2", "00:10", "00:15", "00:17", "00:27"),
+    ];
+    const { container } = render(
+      <VesselTimeline
+        lanes={[{ label: "Orbis to Ellinia", trips: lateTrips }]}
+        nowEpochMs={Date.parse("2026-08-06T23:55:00Z")}
+      />,
+    );
+
+    const ticks = Array.from(
+      container.querySelectorAll("[data-axis-tick]"),
+    ).map((node) => node.getAttribute("data-axis-tick"));
+
+    expect(ticks).toContain("23:50");
+    expect(ticks).toContain("00:10");
+    expect(ticks.some((label) => label!.startsWith("24"))).toBe(false);
+  });
+
   it("labels trip times as time of day only, never with a date", () => {
     const { container } = render(
       <VesselTimeline

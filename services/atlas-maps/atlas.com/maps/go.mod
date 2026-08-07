@@ -16,7 +16,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/jtumidanski/api2go v1.0.4
 	github.com/prometheus/client_golang v1.24.1
-	github.com/redis/go-redis/v9 v9.21.0
+	github.com/redis/go-redis/v9 v9.22.0
 	github.com/segmentio/kafka-go v0.4.51
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
@@ -75,7 +75,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/grpc v1.81.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
-	gorm.io/driver/postgres v1.6.0 // indirect
+	gorm.io/driver/postgres v1.6.2 // indirect
 )
 
 replace github.com/Chronicle20/atlas/libs/atlas-constants => ../../../../libs/atlas-constants

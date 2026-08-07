@@ -16,6 +16,7 @@ import {
   type ConfigExportKind,
 } from "@/lib/utils/config-export";
 import { downloadJson } from "@/lib/utils/download-json";
+import { createErrorFromUnknown } from "@/types/api/errors";
 
 export interface ConfigExportButtonProps {
   kind: ConfigExportKind;
@@ -59,8 +60,12 @@ export function ConfigExportButton({ kind, id }: ConfigExportButtonProps) {
       toast.success(
         kind === "template" ? "Template exported" : "Tenant exported",
       );
-    } catch {
-      toast.error("Export failed");
+    } catch (e) {
+      // Route through createErrorFromUnknown so the real cause survives into
+      // the toast (a JSON.stringify failure on a cyclic/BigInt payload reads
+      // as its own message, not a generic string). Same convention as every
+      // other async-catch site under components/features/.
+      toast.error(createErrorFromUnknown(e, "Export failed").message);
     }
   };
 

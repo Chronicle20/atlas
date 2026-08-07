@@ -175,7 +175,9 @@ describe("ConfigExportButton", () => {
     await waitFor(() => expect(button).toBeEnabled());
     await userEvent.click(button);
 
-    expect(vi.mocked(toast.error)).toHaveBeenCalledWith("Export failed");
+    // The thrown error's own message must survive into the toast - a bare
+    // "Export failed" would discard the only diagnostic the user ever sees.
+    expect(vi.mocked(toast.error)).toHaveBeenCalledWith("Export failed: nope");
     expect(vi.mocked(toast.success)).not.toHaveBeenCalled();
   });
 

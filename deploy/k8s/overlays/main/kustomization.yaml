@@ -221,7 +221,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
     newTag: main-edf5425
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
-    newTag: main-ae33415
+    newTag: main-2b57edc
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
     newTag: main-ae33415
   - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations

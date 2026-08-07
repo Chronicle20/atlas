@@ -187,11 +187,16 @@ export function useCreateTemplate(): UseMutationResult<
 
 /**
  * Hook to update an existing template
+ *
+ * `updates` is the WHOLE attribute document (see templatesService.update) -
+ * never a partial. A caller only changing one section (socket, worlds, ...)
+ * must spread the currently-loaded template's attributes and override just
+ * that section, not hand a bare `{ socket: {...} }`.
  */
 export function useUpdateTemplate(): UseMutationResult<
   Template,
   Error,
-  { id: string; updates: Partial<TemplateAttributes> }
+  { id: string; updates: TemplateAttributes }
 > {
   const queryClient = useQueryClient();
 
@@ -206,11 +211,14 @@ export function useUpdateTemplate(): UseMutationResult<
         templateKeys.detail(id),
       );
 
-      // Optimistically update the cache if we have previous data
+      // Optimistically update the cache. `updates` is already the whole
+      // document, so no spread over the (possibly stale) previous value -
+      // spreading a whole document over a stale one is how a sparse read
+      // would leak into the cache.
       if (previousTemplate) {
         const optimisticTemplate: Template = {
           ...previousTemplate,
-          attributes: { ...previousTemplate.attributes, ...updates },
+          attributes: updates,
         };
         queryClient.setQueryData(templateKeys.detail(id), optimisticTemplate);
       }
@@ -361,7 +369,7 @@ export function useUpdateTemplatesBatch(): UseMutationResult<
   BatchResult<Template>,
   Error,
   {
-    updates: Array<{ id: string; data: Partial<TemplateAttributes> }>;
+    updates: Array<{ id: string; data: TemplateAttributes }>;
     options?: ServiceOptions;
   }
 > {

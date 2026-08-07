@@ -6,6 +6,7 @@
 export const DEPLOYMENT_ROUTE_PREFIXES = [
   "/templates",
   "/tenants",
+  "/packet-matrix",
   "/services",
   "/baselines",
 ] as const;

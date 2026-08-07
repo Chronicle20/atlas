@@ -57,6 +57,8 @@ A paginated response has the shape:
 
 `item-strings`, `maps`, `npcs`, `monsters`, and `reactors` (in `?search=` mode, and `item-strings` in filter mode) each resolve a single tenant partition per request: if the active tenant has any rows in the resource's search-index table, only that tenant's rows are visible; otherwise the global version-scoped canonical partition is used wholesale. There is no per-row merge.
 
+The two spawn-index-backed endpoints — `GET /api/data/npcs/{npcId}/maps` and `GET /api/data/monsters/{monsterId}/maps` — resolve their partition the same way, probing `npc_spawn_index` / `monster_spawn_index` respectively. The probe must be against the spawn-index table itself: those tables are derived from MAP documents at ingest and are absent from `baseline.DumpTables`, so a tenant restored from a baseline dump has its own `documents` and search-index rows while its spawn-index rows are empty and must resolve to canonical.
+
 ## Endpoints
 
 ### POST /api/data/process

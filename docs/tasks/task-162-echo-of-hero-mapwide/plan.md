@@ -1,725 +1,289 @@
 # Echo of Hero — Map-Wide Buff Application — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+Task: task-162-echo-of-hero-mapwide
+Source: `prd.md` v2, `design.md` v2
+Updated: 2026-08-07 — rebased onto main; restructured for the registry-handler
+design (D1 revised) and the 11-version scope (FR-5).
 
-**Goal:** Casting any of the four X005 Echo of Hero skills (1005 / 10001005 / 20001005 / 20011005) buffs every eligible live-session character in the caster's field — caster included exactly once, dead characters and hidden GMs excluded — instead of only the caster.
-
-**Architecture:** Only `services/atlas-channel` changes, two production files. The generic buff step in `UseSkill` (`skill/handler/common.go`) gains a routing branch: X005 casts fan out through a new map-wide recipient selector (`skill/handler/recipients.go`); all other skills keep the existing self + party-bitmap path byte-for-byte. Each recipient is buffed via the existing `buff.Processor.Apply` operator — no new packets, topics, or REST surface.
-
-**Tech Stack:** Go, seam-variable test injection (package-level `var ...Func`), Builder-pattern test fixtures, logrus structured logging.
+---
 
 ## Global Constraints
 
-- `libs/atlas-packet` MUST NOT change — X005 stays out of `isPartyBuff` / `isMobAffectingBuff` / `isAntiRepeatBuffSkill` (design §1 closed FR-4/OQ-1 via IDA: an X005 cast carries no bitmap and no mob section).
-- `services/atlas-data`, `services/atlas-buffs`, and all other services MUST NOT change (PRD §7).
-- No new skill-id constants — all five ids already exist in `libs/atlas-constants/skill/constants.go`: `BeginnerEchoOfHeroId = Id(1005)` (line 2908), `SuperGmHideId = Id(9101004)` (line 3247), `NoblesseEchoOfHeroId = Id(10001005)` (line 3262), `LegendEchoOfHeroId = Id(20001005)` (line 3378), `EvanEchoOfHeroId = Id(20011005)` (line 3420) (DOM-21).
-- No `*_testhelpers.go` files — tests use the existing seam-variable + Builder patterns in the `handler` package.
-- Caster buffed exactly once (FR-1); per-recipient fetch/apply failure skips that recipient and never aborts the cast (FR-2.4); party membership, client bitmap, and LT/RB rectangles ignored for X005 recipient selection (FR-2.3).
-- Verification gate before "done": `go test -race ./...`, `go vet ./...`, `go build ./...` clean in the atlas-channel module; `tools/redis-key-guard.sh` clean from the worktree root; `docker buildx bake atlas-channel` only if `go.mod` changed (not expected — no new module deps).
-- Commit messages end with `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
+- **`common.go` and `recipients.go` MUST NOT be modified.** The design's D1/D2
+  revision makes this task purely additive. A non-empty diff in either file
+  means the implementation drifted from the design — stop and re-read design §3.5.
+- **No wire-id literals in the diff.** No `1005`, `10001005`, `20001005`,
+  `20011005`, `9101004`, or `5101004` may appear in new code. Registration is on
+  `skill.Identity` constants; the hidden check is `buff.IsGmHidden`.
+  `tools/skill-job-id-guard.sh` enforces this.
+- **No `MajorVersion()` comparison, version table, or gates.yaml entry.** Version
+  correctness is structural (design §7.3).
+- **No new goroutines** (`tools/goroutine-guard.sh`), no raw keyed go-redis
+  (`tools/redis-key-guard.sh`), no `*_testhelpers.go` files.
+- **DOM-21:** define no new constants — all four identities exist in
+  `libs/atlas-constants/skill/identities_gen.go`.
+- Run `tools/lint.sh` (fix mode) before each commit.
 
 ## File Structure
 
-| File | Role |
+| File | Change |
 |---|---|
-| `services/atlas-channel/atlas.com/channel/skill/handler/recipients.go` (modify) | Add `loadBuffsFunc` seam, `MapWideSelectionStats`, `SelectMapWideRecipients` — sits beside the two existing party selectors, reuses `PartyRecipient` + Builder and the existing `inMapCharacterIdsFunc` / `loadPartyMemberFunc` seams. |
-| `services/atlas-channel/atlas.com/channel/skill/handler/map_wide_recipients_test.go` (create) | Selector unit tests: caster included, dead / hidden / fetch-failure exclusions, deterministic order, stats counts. |
-| `services/atlas-channel/atlas.com/channel/skill/handler/common.go` (modify) | `isEchoOfHero` predicate, `applyToMap` fan-out + summary log, `applyBuffToRecipients` routing helper; `UseSkill`'s buff step (currently lines 107–111) delegates to it. |
-| `services/atlas-channel/atlas.com/channel/skill/handler/common_echo_of_hero_test.go` (create) | Routing unit tests: each X005 id → map-wide (caster exactly once), non-X005 → legacy path (map-wide selector untouched), operator-error continuation. |
+| `services/atlas-channel/atlas.com/channel/skill/handler/echoofhero/echoofhero.go` | **new** — `init()` registration ×4, `echoDeps`, `applyEchoOfHero` core, `Apply` production wiring |
+| `services/atlas-channel/atlas.com/channel/skill/handler/echoofhero/echoofhero_test.go` | **new** — core-loop + registration + version-resolution tests |
+| `services/atlas-channel/atlas.com/channel/skill/handler/registrations/registrations.go` | **+1 line** — blank import |
 
-**Design-fidelity notes (intentional, small deviations from design.md §3 sketches):**
-- The routing branch is extracted into `applyBuffToRecipients(l, ctx, f, characterId, info, applyBuffFunc)` rather than written inline in `UseSkill`, and `applyToMap` takes plain arguments (like `applyToMobs`) rather than the curried shape sketched in design §3.1. Behavior is identical; the named helper is what makes the routing testable with a recorded operator (design §6 "recorded apply operator") without emitting Kafka from tests.
-- `MapWideSelectionStats` carries `inMap` (sweep size) instead of the design's `applied` — only the apply loop in `applyToMap` can count successful operator calls, and the summary log (design §3.4) needs both `in_map` and `applied`.
+Reference template throughout: `skill/handler/healdispel/` (same map-wide shape,
+same `isGmHidden` seam, same deps-struct pattern).
 
 ---
 
-### Task 1: Map-wide recipient selector
+### Task 1: Echo of Hero core fan-out loop (TDD)
 
-**Files:**
-- Modify: `services/atlas-channel/atlas.com/channel/skill/handler/recipients.go`
-- Test: `services/atlas-channel/atlas.com/channel/skill/handler/map_wide_recipients_test.go` (create)
-
-**Interfaces:**
-- Consumes (all existing):
-  - `inMapCharacterIdsFunc(l logrus.FieldLogger, ctx context.Context, f field.Model) map[uint32]struct{}` — seam at `recipients.go:57`
-  - `loadPartyMemberFunc(l logrus.FieldLogger, ctx context.Context, memberId uint32) (character.Model, error)` — seam at `recipients.go:73`
-  - `buff.NewProcessor(l, ctx).GetByCharacterId(characterId uint32) ([]buff.Model, error)` — `character/buff/processor.go:18`
-  - `buff.Model.SourceId() int32` — `character/buff/model.go:31`; test constructor `buff.NewBuff(sourceId int32, level byte, duration int32, changes []stat.Model, createdAt, expiresAt time.Time) Model`
-  - `NewPartyRecipientBuilder()` / `PartyRecipient` — `recipients.go:20-46`
-  - `skill2.SuperGmHideId` (`Id(9101004)`), `skill2.Id` is `uint32`
-- Produces (Task 2 relies on these exact signatures):
-  - `var loadBuffsFunc func(l logrus.FieldLogger, ctx context.Context, characterId uint32) ([]buff.Model, error)`
-  - `type MapWideSelectionStats struct { inMap, skippedDead, skippedHidden, fetchFailures int }`
-  - `func SelectMapWideRecipients(l logrus.FieldLogger, ctx context.Context, f field.Model, casterId uint32) ([]PartyRecipient, MapWideSelectionStats)`
+Builds the pure, offline-testable core: given a recipient list and seams, apply
+the buff to everyone except the caster, dead characters, and hidden GMs.
 
 - [ ] **Step 1: Write the failing tests**
 
-Create `services/atlas-channel/atlas.com/channel/skill/handler/map_wide_recipients_test.go`. Helpers `testLogger()`, `mkField()`, `mkMemberChar()`, `recipientIds()`, `eqIds()`, and the `testCasterId`/`testMemberA`/`testMemberB` constants already exist in this package (`recipients_test.go`, `common_apply_to_mobs_test.go`) — reuse them, do not redefine.
+  Create `echoofhero/echoofhero_test.go`. Follow `healdispel_test.go`'s shape:
+  a `capture` struct recording applies, a `newDeps(...)` helper returning
+  `echoDeps`, and `channelhandler.NewPartyRecipientBuilder()` for recipients.
 
-```go
-package handler
+  Fixtures:
+  ```go
+  const casterId, aliveA, aliveB, deadC, hiddenD = uint32(100), 101, 102, 103, 104
 
-import (
-	"context"
-	"errors"
-	"math"
-	"testing"
-	"time"
+  func mkRecipient(id uint32, hp uint16) channelhandler.PartyRecipient {
+      return channelhandler.NewPartyRecipientBuilder().
+          SetId(id).SetHp(hp).SetMaxHp(1000).SetMp(100).SetMaxMp(100).Build()
+  }
+  ```
 
-	"atlas-channel/character"
-	"atlas-channel/character/buff"
+  Tests:
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
-	"github.com/sirupsen/logrus"
-)
+  | Test | Asserts |
+  |---|---|
+  | `TestAppliesToAllLivingNonCaster` | recipients `{caster, aliveA, aliveB}` → `applyBuff` called for `aliveA`, `aliveB` only |
+  | `TestCasterSkippedNotDoubleBuffed` | caster present in selector output → **zero** `applyBuff` calls for `casterId` (FR-1.1) |
+  | `TestDeadRecipientSkipped` | `deadC` has `Hp()==0` → no apply for it (FR-2.2) |
+  | `TestHiddenGmSkipped` | `isGmHidden(hiddenD)` returns true → no apply for it (FR-2.3) |
+  | `TestHiddenCheckErrorSkipsOnlyThatRecipient` | `isGmHidden(aliveA)` returns error → `aliveA` skipped, `aliveB` still applied (FR-2.5) |
+  | `TestApplyErrorDoesNotAbortRemaining` | `applyBuff(aliveA)` errors → `aliveB` still applied (D4) |
+  | `TestZeroDurationAppliesToNobody` | `e.Duration()==0` → zero applies (FR-1.2) |
+  | `TestNoStatUpsAppliesToNobody` | `len(e.StatUps())==0` → zero applies (FR-1.2) |
+  | `TestEmptyMapIsNoOp` | selector returns empty → zero applies, no error |
 
-// installMapWideSeams replaces the three external-lookup seams used by the
-// map-wide selector with deterministic in-memory implementations.
-func installMapWideSeams(t *testing.T, inMap map[uint32]struct{}, chars map[uint32]character.Model, buffs map[uint32][]buff.Model, buffErrs map[uint32]error) {
-	t.Helper()
-	prevInMap := inMapCharacterIdsFunc
-	prevMember := loadPartyMemberFunc
-	prevBuffs := loadBuffsFunc
-
-	inMapCharacterIdsFunc = func(_ logrus.FieldLogger, _ context.Context, _ field.Model) map[uint32]struct{} {
-		return inMap
-	}
-	loadPartyMemberFunc = func(_ logrus.FieldLogger, _ context.Context, memberId uint32) (character.Model, error) {
-		mc, ok := chars[memberId]
-		if !ok {
-			return character.Model{}, errors.New("character not found")
-		}
-		return mc, nil
-	}
-	loadBuffsFunc = func(_ logrus.FieldLogger, _ context.Context, characterId uint32) ([]buff.Model, error) {
-		if err, ok := buffErrs[characterId]; ok {
-			return nil, err
-		}
-		return buffs[characterId], nil
-	}
-
-	t.Cleanup(func() {
-		inMapCharacterIdsFunc = prevInMap
-		loadPartyMemberFunc = prevMember
-		loadBuffsFunc = prevBuffs
-	})
-}
-
-// mkHideBuff models the task-156 hide state: a buff sourced from SuperGmHide.
-func mkHideBuff() buff.Model {
-	return buff.NewBuff(int32(skill2.SuperGmHideId), 1, math.MaxInt32, nil, time.Now(), time.Now().Add(time.Hour))
-}
-
-// mkOtherBuff is any non-hide buff — its presence must not exclude a recipient.
-func mkOtherBuff() buff.Model {
-	return buff.NewBuff(int32(skill2.BeginnerEchoOfHeroId), 1, 60000, nil, time.Now(), time.Now().Add(time.Hour))
-}
-
-func TestSelectMapWideRecipients_IncludesCasterAndAllLiveCharacters(t *testing.T) {
-	installMapWideSeams(t,
-		map[uint32]struct{}{testCasterId: {}, testMemberA: {}, testMemberB: {}},
-		map[uint32]character.Model{
-			testCasterId: mkMemberChar(testCasterId, 500),
-			testMemberA:  mkMemberChar(testMemberA, 500),
-			testMemberB:  mkMemberChar(testMemberB, 500),
-		},
-		nil, nil,
-	)
-
-	got, stats := SelectMapWideRecipients(testLogger(), context.Background(), mkField(), testCasterId)
-	if want := []uint32{testCasterId, testMemberA, testMemberB}; !eqIds(recipientIds(got), want) {
-		t.Fatalf("got %v, want %v", recipientIds(got), want)
-	}
-	if stats.inMap != 3 || stats.skippedDead != 0 || stats.skippedHidden != 0 || stats.fetchFailures != 0 {
-		t.Fatalf("stats = %+v, want inMap=3 and zero skips", stats)
-	}
-}
-
-func TestSelectMapWideRecipients_ReturnsIdsInAscendingOrder(t *testing.T) {
-	installMapWideSeams(t,
-		map[uint32]struct{}{30: {}, 10: {}, 20: {}},
-		map[uint32]character.Model{
-			10: mkMemberChar(10, 500),
-			20: mkMemberChar(20, 500),
-			30: mkMemberChar(30, 500),
-		},
-		nil, nil,
-	)
-
-	got, _ := SelectMapWideRecipients(testLogger(), context.Background(), mkField(), 10)
-	for i, want := range []uint32{10, 20, 30} {
-		if got[i].Id() != want {
-			t.Fatalf("recipient[%d] = %d, want %d (ascending order)", i, got[i].Id(), want)
-		}
-	}
-}
-
-func TestSelectMapWideRecipients_ExcludesDead(t *testing.T) {
-	installMapWideSeams(t,
-		map[uint32]struct{}{testCasterId: {}, testMemberA: {}},
-		map[uint32]character.Model{
-			testCasterId: mkMemberChar(testCasterId, 500),
-			testMemberA:  mkMemberChar(testMemberA, 0), // dead
-		},
-		nil, nil,
-	)
-
-	got, stats := SelectMapWideRecipients(testLogger(), context.Background(), mkField(), testCasterId)
-	if want := []uint32{testCasterId}; !eqIds(recipientIds(got), want) {
-		t.Fatalf("got %v, want %v", recipientIds(got), want)
-	}
-	if stats.skippedDead != 1 {
-		t.Fatalf("skippedDead = %d, want 1", stats.skippedDead)
-	}
-}
-
-func TestSelectMapWideRecipients_ExcludesHiddenGm(t *testing.T) {
-	installMapWideSeams(t,
-		map[uint32]struct{}{testCasterId: {}, testMemberA: {}},
-		map[uint32]character.Model{
-			testCasterId: mkMemberChar(testCasterId, 500),
-			testMemberA:  mkMemberChar(testMemberA, 500),
-		},
-		map[uint32][]buff.Model{
-			testMemberA: {mkHideBuff()},
-		},
-		nil,
-	)
-
-	got, stats := SelectMapWideRecipients(testLogger(), context.Background(), mkField(), testCasterId)
-	if want := []uint32{testCasterId}; !eqIds(recipientIds(got), want) {
-		t.Fatalf("got %v, want %v", recipientIds(got), want)
-	}
-	if stats.skippedHidden != 1 {
-		t.Fatalf("skippedHidden = %d, want 1", stats.skippedHidden)
-	}
-}
-
-func TestSelectMapWideRecipients_NonHideBuffDoesNotExclude(t *testing.T) {
-	installMapWideSeams(t,
-		map[uint32]struct{}{testCasterId: {}, testMemberA: {}},
-		map[uint32]character.Model{
-			testCasterId: mkMemberChar(testCasterId, 500),
-			testMemberA:  mkMemberChar(testMemberA, 500),
-		},
-		map[uint32][]buff.Model{
-			testMemberA: {mkOtherBuff()},
-		},
-		nil,
-	)
-
-	got, _ := SelectMapWideRecipients(testLogger(), context.Background(), mkField(), testCasterId)
-	if want := []uint32{testCasterId, testMemberA}; !eqIds(recipientIds(got), want) {
-		t.Fatalf("got %v, want %v", recipientIds(got), want)
-	}
-}
-
-func TestSelectMapWideRecipients_CharacterFetchFailureSkipsOnlyThatRecipient(t *testing.T) {
-	installMapWideSeams(t,
-		map[uint32]struct{}{testCasterId: {}, testMemberA: {}, testMemberB: {}},
-		map[uint32]character.Model{
-			// testMemberA intentionally absent -> fetch error
-			testCasterId: mkMemberChar(testCasterId, 500),
-			testMemberB:  mkMemberChar(testMemberB, 500),
-		},
-		nil, nil,
-	)
-
-	got, stats := SelectMapWideRecipients(testLogger(), context.Background(), mkField(), testCasterId)
-	if want := []uint32{testCasterId, testMemberB}; !eqIds(recipientIds(got), want) {
-		t.Fatalf("got %v, want %v", recipientIds(got), want)
-	}
-	if stats.fetchFailures != 1 {
-		t.Fatalf("fetchFailures = %d, want 1", stats.fetchFailures)
-	}
-}
-
-func TestSelectMapWideRecipients_BuffFetchFailureSkipsOnlyThatRecipient(t *testing.T) {
-	installMapWideSeams(t,
-		map[uint32]struct{}{testCasterId: {}, testMemberA: {}, testMemberB: {}},
-		map[uint32]character.Model{
-			testCasterId: mkMemberChar(testCasterId, 500),
-			testMemberA:  mkMemberChar(testMemberA, 500),
-			testMemberB:  mkMemberChar(testMemberB, 500),
-		},
-		nil,
-		map[uint32]error{testMemberA: errors.New("buff service down")},
-	)
-
-	got, stats := SelectMapWideRecipients(testLogger(), context.Background(), mkField(), testCasterId)
-	if want := []uint32{testCasterId, testMemberB}; !eqIds(recipientIds(got), want) {
-		t.Fatalf("got %v, want %v", recipientIds(got), want)
-	}
-	if stats.fetchFailures != 1 {
-		t.Fatalf("fetchFailures = %d, want 1", stats.fetchFailures)
-	}
-}
-```
+  Build the `effect.Model` the same way the sibling handler tests do — check
+  `healdispel_test.go` / `mprecovery_test.go` for the in-package construction
+  idiom and mirror it rather than inventing a builder.
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `cd services/atlas-channel/atlas.com/channel && go test ./skill/handler/ -run TestSelectMapWideRecipients -v`
-Expected: FAIL to build with `undefined: loadBuffsFunc` and `undefined: SelectMapWideRecipients`.
+  ```sh
+  cd services/atlas-channel/atlas.com/channel && go test ./skill/handler/echoofhero/...
+  ```
+  Expect compile failure (no `echoofhero.go` yet). That is the correct red state.
 
-- [ ] **Step 3: Implement the selector**
+- [ ] **Step 3: Implement the core**
 
-In `services/atlas-channel/atlas.com/channel/skill/handler/recipients.go`:
+  Create `echoofhero/echoofhero.go` with the package doc, `echoDeps`, and
+  `applyEchoOfHero` exactly as sketched in design §3.1:
 
-Add to the import block: `"sort"`, `"atlas-channel/character/buff"`, and `skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"` (the `skill2` alias matches `common.go`'s convention). The block becomes:
+  1. Gate: `if e.Duration() <= 0 || len(e.StatUps()) == 0 { return nil }`
+  2. `rs := d.selectInMap(f)`; sort ascending by `Id()`
+  3. Per recipient — skip caster, skip `Hp()==0`, skip/count on `isGmHidden`
+     error, skip on hidden, else `d.applyBuff(r.Id())` counting apply failures
+  4. Emit the `echo_of_hero_apply_summary` debug log with every counter
 
-```go
-import (
-	"atlas-channel/character"
-	"atlas-channel/character/buff"
-	"atlas-channel/data/skill/effect"
-	_map "atlas-channel/map"
-	"atlas-channel/party"
-	"atlas-channel/session"
-	"context"
-	"sort"
-	"sync"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
-	"github.com/sirupsen/logrus"
-)
-```
-
-Append at the end of the file:
-
-```go
-// loadBuffsFunc is the recipient-buff-list seam tests can replace. The
-// map-wide selector uses it to detect hidden GMs — task-156 models hide as
-// a buff with SourceId == SuperGmHideId (9101004). Until task-156 lands no
-// such buff exists, so the exclusion is vacuously true (FR-2.2).
-var loadBuffsFunc = func(l logrus.FieldLogger, ctx context.Context, characterId uint32) ([]buff.Model, error) {
-	return buff.NewProcessor(l, ctx).GetByCharacterId(characterId)
-}
-
-// MapWideSelectionStats summarizes one map-wide recipient selection for the
-// echo_of_hero_apply_summary log line.
-type MapWideSelectionStats struct {
-	inMap         int
-	skippedDead   int
-	skippedHidden int
-	fetchFailures int
-}
-
-// SelectMapWideRecipients returns every character with a live session in the
-// caster's field — INCLUDING the caster — excluding dead characters (Hp 0)
-// and hidden GMs (any active buff sourced from SuperGmHide). Party
-// membership, the client bitmap, and LT/RB rectangles are all ignored
-// (FR-2.3); the field-scoped session sweep already bounds recipients to the
-// caster's world/channel/map/instance and therefore tenant. A per-recipient
-// fetch failure skips that recipient and continues (FR-2.4). Ids are
-// processed in ascending order for deterministic logs and tests.
-func SelectMapWideRecipients(l logrus.FieldLogger, ctx context.Context, f field.Model, casterId uint32) ([]PartyRecipient, MapWideSelectionStats) {
-	inMap := inMapCharacterIdsFunc(l, ctx, f)
-	ids := make([]uint32, 0, len(inMap))
-	for id := range inMap {
-		ids = append(ids, id)
-	}
-	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
-
-	stats := MapWideSelectionStats{inMap: len(ids)}
-	out := make([]PartyRecipient, 0, len(ids))
-	for _, id := range ids {
-		c, cErr := loadPartyMemberFunc(l, ctx, id)
-		if cErr != nil {
-			stats.fetchFailures++
-			l.WithError(cErr).Debugf("Skipping map-wide recipient [%d] for caster [%d]: character fetch failed.", id, casterId)
-			continue
-		}
-		if c.Hp() == 0 {
-			stats.skippedDead++
-			continue
-		}
-		buffs, bErr := loadBuffsFunc(l, ctx, id)
-		if bErr != nil {
-			stats.fetchFailures++
-			l.WithError(bErr).Debugf("Skipping map-wide recipient [%d] for caster [%d]: buff fetch failed.", id, casterId)
-			continue
-		}
-		hidden := false
-		for _, b := range buffs {
-			if b.SourceId() == int32(skill2.SuperGmHideId) {
-				hidden = true
-				break
-			}
-		}
-		if hidden {
-			stats.skippedHidden++
-			continue
-		}
-		out = append(out, NewPartyRecipientBuilder().
-			SetId(c.Id()).
-			SetX(c.X()).
-			SetY(c.Y()).
-			SetHp(c.Hp()).
-			SetMaxHp(c.MaxHp()).
-			Build())
-	}
-	return out, stats
-}
-```
+  Counters: `applied`, `skippedCaster`, `skippedDead`, `skippedHidden`,
+  `fetchFailures`, `applyFailures`. Return `nil` — a cast is never failed by a
+  per-recipient problem (FR-2.5).
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `cd services/atlas-channel/atlas.com/channel && go test ./skill/handler/ -run TestSelectMapWideRecipients -v`
-Expected: PASS (7 tests).
+  ```sh
+  cd services/atlas-channel/atlas.com/channel && go test -race ./skill/handler/echoofhero/...
+  ```
 
-- [ ] **Step 5: Run the whole handler package to catch regressions**
+- [ ] **Step 5: Commit**
 
-Run: `cd services/atlas-channel/atlas.com/channel && go test -race ./skill/handler/`
-Expected: ok (existing party selector tests unchanged and passing).
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add services/atlas-channel/atlas.com/channel/skill/handler/recipients.go services/atlas-channel/atlas.com/channel/skill/handler/map_wide_recipients_test.go
-git commit -m "feat(channel): map-wide recipient selector for Echo of Hero (task-162)
-
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
-```
+  ```sh
+  git add services/atlas-channel/atlas.com/channel/skill/handler/echoofhero/
+  git commit -m "feat(atlas-channel): Echo of Hero map-wide fan-out core [task-162]"
+  ```
 
 ---
 
-### Task 2: Echo of Hero routing branch in UseSkill
+### Task 2: Registration, production wiring, and version correctness (TDD)
 
-**Files:**
-- Modify: `services/atlas-channel/atlas.com/channel/skill/handler/common.go` (buff step currently at lines 107–111; new helpers appended after `applyToParty`)
-- Test: `services/atlas-channel/atlas.com/channel/skill/handler/common_echo_of_hero_test.go` (create)
-
-**Interfaces:**
-- Consumes:
-  - `SelectMapWideRecipients(l, ctx, f, casterId) ([]PartyRecipient, MapWideSelectionStats)` and `loadBuffsFunc` — from Task 1
-  - `applyToParty(l)(ctx)(f, casterId, memberBitmap)(idOperator)` — existing, `common.go:342`
-  - `model2.Operator[uint32]` = `func(uint32) error` — `libs/atlas-model/model/processor.go:44`
-  - `packetmodel.SkillUsageInfo` accessors `SkillId() uint32`, `SkillLevel() byte`, `AffectedPartyMemberBitmap() byte`; test builder `packetmodel.NewSkillUsageInfoBuilder()`
-  - `skill2.Is(skillId, refs...)` — `libs/atlas-constants/skill/model.go:76`
-  - Existing test fixtures: `installPartySeams`, `threePersonParty`, `mkPartyMember`, `mkMemberChar`, `mkField`, `testLogger`, `testCasterId`/`testMemberA`/`testMemberB`
-  - `installMapWideSeams(t *testing.T, inMap map[uint32]struct{}, chars map[uint32]character.Model, buffs map[uint32][]buff.Model, buffErrs map[uint32]error)` — test helper from Task 1's `map_wide_recipients_test.go` (same package)
-- Produces:
-  - `func isEchoOfHero(skillId skill2.Id) bool`
-  - `func applyBuffToRecipients(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, applyBuffFunc model2.Operator[uint32])`
-  - `func applyToMap(l logrus.FieldLogger, ctx context.Context, f field.Model, casterId uint32, info packetmodel.SkillUsageInfo, idOperator model2.Operator[uint32])`
+Wires the core to the registry and to real processors, and pins the version
+behavior that FR-5 depends on.
 
 - [ ] **Step 1: Write the failing tests**
 
-Create `services/atlas-channel/atlas.com/channel/skill/handler/common_echo_of_hero_test.go`:
+  Append to `echoofhero_test.go`:
 
-```go
-package handler
+  | Test | Asserts |
+  |---|---|
+  | `TestRegistration` | `channelhandler.Lookup(id)` returns a non-nil handler for each of `skill2.BeginnerEchoOfHero`, `NoblesseEchoOfHero`, `LegendEchoOfHero`, `EvanEchoOfHero` (precedent: `resurrection_test.go:104`, `timeleap_test.go:186`) |
+  | `TestVersionResolution_UnboundOnV12AndV48` | `constants.For("GMS", 12, 1).Skill.Resolve(skill2.Id(1005))` and the v48 equivalent both return `ok == false` — proving the handler is unreachable, and the task inert, on the two versions that ship no X005 (design §7.2) |
+  | `TestVersionResolution_BeginnerOnlyOnV61` | v61 resolves wire `1005` → `BeginnerEchoOfHero` (`ok`), while wire `10001005` (Noblesse) returns `ok == false` |
+  | `TestVersionResolution_EvanUnboundBeforeV84` | v79 resolves `20011005` → `ok == false`; v84 resolves it → `EvanEchoOfHero` |
 
-import (
-	"context"
-	"errors"
-	"fmt"
-	"testing"
+  These four are the mechanical proof of design §7.3 — that registering all four
+  identities is correct on all 11 versions without version code. They mirror
+  `registry_test.go`'s `TestDispatch_v48HideNotCorkscrew`, the established
+  version-correctness precedent in this package.
 
-	"atlas-channel/character"
-	"atlas-channel/character/buff"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
-	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
-)
-
-// FR-1: every X005 variant routes map-wide; the caster is enumerated by the
-// map sweep and buffed exactly once (no separate self-apply).
-func TestApplyBuffToRecipients_EchoOfHeroRoutesMapWide(t *testing.T) {
-	for _, sid := range []skill2.Id{
-		skill2.BeginnerEchoOfHeroId,
-		skill2.NoblesseEchoOfHeroId,
-		skill2.LegendEchoOfHeroId,
-		skill2.EvanEchoOfHeroId,
-	} {
-		t.Run(fmt.Sprintf("skill_%d", uint32(sid)), func(t *testing.T) {
-			installMapWideSeams(t,
-				map[uint32]struct{}{testCasterId: {}, testMemberA: {}},
-				map[uint32]character.Model{
-					testCasterId: mkMemberChar(testCasterId, 500),
-					testMemberA:  mkMemberChar(testMemberA, 500),
-				},
-				nil, nil,
-			)
-
-			calls := map[uint32]int{}
-			op := func(id uint32) error { calls[id]++; return nil }
-
-			info := packetmodel.NewSkillUsageInfoBuilder().SetSkillId(uint32(sid)).SetSkillLevel(1).Build()
-			applyBuffToRecipients(testLogger(), context.Background(), mkField(), testCasterId, info, op)
-
-			if calls[testCasterId] != 1 {
-				t.Fatalf("caster applied %d times, want exactly 1 (FR-1)", calls[testCasterId])
-			}
-			if calls[testMemberA] != 1 {
-				t.Fatalf("member applied %d times, want exactly 1", calls[testMemberA])
-			}
-			if len(calls) != 2 {
-				t.Fatalf("got %d distinct recipients, want 2", len(calls))
-			}
-		})
-	}
-}
-
-// FR-1.1: non-X005 skills keep the legacy self + party-bitmap path and never
-// touch the map-wide selector.
-func TestApplyBuffToRecipients_NonEchoUsesLegacyPartyPath(t *testing.T) {
-	a := mkPartyMember(testMemberA, true, channel.Id(0), _map.Id(40000))
-	b := mkPartyMember(testMemberB, true, channel.Id(0), _map.Id(40000))
-	installPartySeams(t, threePersonParty(a, b), nil,
-		map[uint32]struct{}{testMemberA: {}, testMemberB: {}},
-		map[uint32]character.Model{
-			testMemberA: mkMemberChar(testMemberA, 500),
-			testMemberB: mkMemberChar(testMemberB, 500),
-		},
-	)
-
-	// Guard: the map-wide selector must not run for non-echo skills. The
-	// selector is the only caller of loadBuffsFunc, so tripping it here
-	// means the routing took the wrong branch.
-	prevBuffs := loadBuffsFunc
-	buffsCalled := false
-	loadBuffsFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32) ([]buff.Model, error) {
-		buffsCalled = true
-		return nil, nil
-	}
-	t.Cleanup(func() { loadBuffsFunc = prevBuffs })
-
-	calls := map[uint32]int{}
-	op := func(id uint32) error { calls[id]++; return nil }
-
-	// 1301007 (Spearman Hyper Body) — any non-X005 id exercises the legacy
-	// path; bitmap selects members A (bit 4) and B (bit 3).
-	info := packetmodel.NewSkillUsageInfoBuilder().SetSkillId(1301007).SetSkillLevel(30).SetAffectedPartyMemberBitmap(0b11000).Build()
-	applyBuffToRecipients(testLogger(), context.Background(), mkField(), testCasterId, info, op)
-
-	if buffsCalled {
-		t.Fatal("map-wide selector ran for a non-echo skill (FR-1.1)")
-	}
-	for _, id := range []uint32{testCasterId, testMemberA, testMemberB} {
-		if calls[id] != 1 {
-			t.Fatalf("recipient %d applied %d times, want 1", id, calls[id])
-		}
-	}
-	if len(calls) != 3 {
-		t.Fatalf("got %d distinct recipients, want 3", len(calls))
-	}
-}
-
-// FR-2.4: a per-recipient apply failure skips that recipient and continues.
-func TestApplyToMap_OperatorErrorContinues(t *testing.T) {
-	installMapWideSeams(t,
-		map[uint32]struct{}{testCasterId: {}, testMemberA: {}, testMemberB: {}},
-		map[uint32]character.Model{
-			testCasterId: mkMemberChar(testCasterId, 500),
-			testMemberA:  mkMemberChar(testMemberA, 500),
-			testMemberB:  mkMemberChar(testMemberB, 500),
-		},
-		nil, nil,
-	)
-
-	calls := map[uint32]int{}
-	op := func(id uint32) error {
-		calls[id]++
-		if id == testMemberA {
-			return errors.New("buff service rejected")
-		}
-		return nil
-	}
-
-	info := packetmodel.NewSkillUsageInfoBuilder().SetSkillId(uint32(skill2.BeginnerEchoOfHeroId)).SetSkillLevel(1).Build()
-	applyToMap(testLogger(), context.Background(), mkField(), testCasterId, info, op)
-
-	for _, id := range []uint32{testCasterId, testMemberA, testMemberB} {
-		if calls[id] != 1 {
-			t.Fatalf("recipient %d attempted %d times, want 1", id, calls[id])
-		}
-	}
-}
-
-func TestIsEchoOfHero(t *testing.T) {
-	for _, sid := range []skill2.Id{
-		skill2.BeginnerEchoOfHeroId,
-		skill2.NoblesseEchoOfHeroId,
-		skill2.LegendEchoOfHeroId,
-		skill2.EvanEchoOfHeroId,
-	} {
-		if !isEchoOfHero(sid) {
-			t.Fatalf("isEchoOfHero(%d) = false, want true", uint32(sid))
-		}
-	}
-	for _, sid := range []skill2.Id{skill2.SuperGmHideId, skill2.Id(1301007), skill2.Id(0)} {
-		if isEchoOfHero(sid) {
-			t.Fatalf("isEchoOfHero(%d) = true, want false", uint32(sid))
-		}
-	}
-}
-```
+  > Note: the resolve assertions read the generated version sets directly, so
+  > they will fail loudly if a future constants regeneration changes X005
+  > availability — which is the intent. If one fails, update design §7.2's table
+  > from the generated source; do not weaken the test.
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `cd services/atlas-channel/atlas.com/channel && go test ./skill/handler/ -run 'TestApplyBuffToRecipients|TestApplyToMap|TestIsEchoOfHero' -v`
-Expected: FAIL to build with `undefined: applyBuffToRecipients`, `undefined: applyToMap`, `undefined: isEchoOfHero`.
+  ```sh
+  cd services/atlas-channel/atlas.com/channel && go test ./skill/handler/echoofhero/...
+  ```
+  `TestRegistration` fails (no `init()` yet); the resolution tests should
+  **pass immediately** — they assert existing constants behavior. If any
+  resolution test fails on first run, the availability table in design §7.2 is
+  wrong: re-derive it from `libs/atlas-constants/skill/version_*_gen.go` and
+  correct the docs before continuing.
 
-- [ ] **Step 3: Implement the routing branch**
+- [ ] **Step 3: Implement registration and production wiring**
 
-In `services/atlas-channel/atlas.com/channel/skill/handler/common.go`:
+  Add to `echoofhero.go`:
 
-3a. Replace the buff step inside `UseSkill` (currently lines 107–111):
+  ```go
+  func init() {
+      channelhandler.Register(skill2.BeginnerEchoOfHero, Apply)
+      channelhandler.Register(skill2.NoblesseEchoOfHero, Apply)
+      channelhandler.Register(skill2.LegendEchoOfHero, Apply)
+      channelhandler.Register(skill2.EvanEchoOfHero, Apply)
+  }
+  ```
 
-```go
-			if e.Duration() > 0 && len(e.StatUps()) > 0 {
-				applyBuffFunc := buff.NewProcessor(l, ctx).Apply(f, characterId, int32(info.SkillId()), info.SkillLevel(), e.Duration(), e.StatUps())
-				_ = applyBuffFunc(characterId)
-				_ = applyToParty(l)(ctx)(f, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
-			}
-```
+  And `Apply`, matching `channelhandler.Handler`'s signature and mirroring
+  `healdispel.Apply`'s deps construction (`healdispel.go:160-206`):
 
-with:
+  ```go
+  bp := buff.NewProcessor(l, ctx)
+  d := echoDeps{
+      selectInMap: func(f field.Model) []channelhandler.PartyRecipient {
+          return channelhandler.SelectAllCharactersInMap(l, ctx, f)
+      },
+      isGmHidden: func(id uint32) (bool, error) {
+          bs, err := bp.GetByCharacterId(id)
+          if err != nil {
+              return false, err
+          }
+          return buff.IsGmHidden(ctx, bs), nil
+      },
+      applyBuff: bp.Apply(f, characterId, int32(info.SkillId()), info.SkillLevel(), e.Duration(), e.StatUps()),
+  }
+  return applyEchoOfHero(l, f, characterId, info, e, d)
+  ```
 
-```go
-			if e.Duration() > 0 && len(e.StatUps()) > 0 {
-				applyBuffFunc := buff.NewProcessor(l, ctx).Apply(f, characterId, int32(info.SkillId()), info.SkillLevel(), e.Duration(), e.StatUps())
-				applyBuffToRecipients(l, ctx, f, characterId, info, applyBuffFunc)
-			}
-```
+  `buff.Processor.Apply` returns `model.Operator[uint32]`
+  (`libs/atlas-model/model/processor.go:50` — `func(M) error`), so `applyBuff`
+  should be typed as that rather than a bare func literal. It is the same
+  operator `common.go:176` builds for the caster. Use `e.StatUps()` (not a
+  rewritten set): the Shadow Stars rewrite in `UseSkill` applies to that skill
+  only.
 
-Everything else in `UseSkill` (HP/MP/item consume, cooldown, mount short-circuit, `applyToMobs`, registry dispatch) is untouched (FR-1.2; X005 has no `AffectedMobIds` and no registered handler, so both no-op for it).
+- [ ] **Step 4: Add the blank import**
 
-3b. Append after `applyToParty` at the end of the file:
+  In `skill/handler/registrations/registrations.go`, insert in alphabetical
+  position among the existing imports:
 
-```go
-// isEchoOfHero reports whether skillId is one of the four X005 Echo of Hero
-// variants (Beginner/Noblesse/Legend/Evan), which buff every eligible
-// character in the caster's field rather than self + party (FR-1).
-func isEchoOfHero(skillId skill2.Id) bool {
-	return skill2.Is(skillId,
-		skill2.BeginnerEchoOfHeroId,
-		skill2.NoblesseEchoOfHeroId,
-		skill2.LegendEchoOfHeroId,
-		skill2.EvanEchoOfHeroId,
-	)
-}
+  ```go
+  _ "atlas-channel/skill/handler/echoofhero"   // Echo of Hero map-wide — task-162
+  ```
 
-// applyBuffToRecipients routes the generic buff step to its recipient set:
-// Echo of Hero fans out map-wide via applyToMap — the caster is enumerated
-// by the map sweep like everyone else, so there is deliberately NO separate
-// self-apply on that branch (FR-1: caster buffed exactly once). Every other
-// skill keeps the legacy self + party-bitmap path (FR-1.1).
-func applyBuffToRecipients(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, applyBuffFunc model2.Operator[uint32]) {
-	if isEchoOfHero(skill2.Id(info.SkillId())) {
-		applyToMap(l, ctx, f, characterId, info, applyBuffFunc)
-		return
-	}
-	_ = applyBuffFunc(characterId)
-	_ = applyToParty(l)(ctx)(f, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
-}
+- [ ] **Step 5: Run the tests to verify they pass**
 
-// applyToMap applies idOperator to every map-wide recipient selected by
-// SelectMapWideRecipients (FR-2). A per-recipient apply failure skips that
-// recipient and continues (FR-2.4). One summary line is logged per cast.
-func applyToMap(l logrus.FieldLogger, ctx context.Context, f field.Model, casterId uint32, info packetmodel.SkillUsageInfo, idOperator model2.Operator[uint32]) {
-	recipients, stats := SelectMapWideRecipients(l, ctx, f, casterId)
-	applied := 0
-	for _, r := range recipients {
-		if err := idOperator(r.Id()); err != nil {
-			l.WithError(err).Debugf("Echo of Hero apply failed for recipient [%d]; continuing.", r.Id())
-			continue
-		}
-		applied++
-	}
-	l.WithFields(logrus.Fields{
-		"caster":         casterId,
-		"skill_id":       info.SkillId(),
-		"skill_level":    info.SkillLevel(),
-		"in_map":         stats.inMap,
-		"applied":        applied,
-		"skipped_dead":   stats.skippedDead,
-		"skipped_hidden": stats.skippedHidden,
-		"fetch_failures": stats.fetchFailures,
-	}).Debug("echo_of_hero_apply_summary")
-}
-```
-
-No import changes are needed in `common.go` — `skill2`, `model2`, `packetmodel`, `field`, `logrus`, `buff`, and `context` are already imported.
-
-- [ ] **Step 4: Run the new tests to verify they pass**
-
-Run: `cd services/atlas-channel/atlas.com/channel && go test ./skill/handler/ -run 'TestApplyBuffToRecipients|TestApplyToMap|TestIsEchoOfHero' -v`
-Expected: PASS (4 top-level tests, 4 subtests under the echo routing test).
-
-- [ ] **Step 5: Run the whole handler package with race detector**
-
-Run: `cd services/atlas-channel/atlas.com/channel && go test -race ./skill/handler/`
-Expected: ok — including all pre-existing party selector tests (`recipients_test.go`), which guard FR-1.1 / AC-6.
+  ```sh
+  cd services/atlas-channel/atlas.com/channel && go test -race ./skill/handler/...
+  ```
+  The whole `skill/handler` tree, to catch registry-collision or regression.
 
 - [ ] **Step 6: Commit**
 
-```bash
-git add services/atlas-channel/atlas.com/channel/skill/handler/common.go services/atlas-channel/atlas.com/channel/skill/handler/common_echo_of_hero_test.go
-git commit -m "feat(channel): route X005 Echo of Hero casts map-wide (task-162)
-
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
-```
+  ```sh
+  git add services/atlas-channel/atlas.com/channel/skill/handler/
+  git commit -m "feat(atlas-channel): register Echo of Hero handler for all versions [task-162]"
+  ```
 
 ---
 
 ### Task 3: Full verification gate
 
-**Files:** none created or modified — verification only. All commands run from the worktree root (`.worktrees/task-162-echo-of-hero-mapwide`) except where a `cd` is shown.
+- [ ] **Step 1: Full atlas-channel suite with race detector**
 
-**Interfaces:**
-- Consumes: the committed output of Tasks 1–2.
-- Produces: a verified branch ready for code review (`superpowers:requesting-code-review` is the next phase step per CLAUDE.md — run it before any PR).
+  ```sh
+  cd services/atlas-channel/atlas.com/channel && go test -race ./...
+  ```
 
-- [ ] **Step 1: Full atlas-channel test suite with race detector**
+- [ ] **Step 2: Vet and build**
 
-Run: `cd services/atlas-channel/atlas.com/channel && go test -race ./...`
-Expected: all packages `ok` (or cached), zero failures.
+  ```sh
+  cd services/atlas-channel/atlas.com/channel && go vet ./... && go build ./...
+  ```
 
-- [ ] **Step 2: Vet**
+- [ ] **Step 3: Repo guards** (all from the worktree root, never with a global
+      `GOWORK=off` prefix)
 
-Run: `cd services/atlas-channel/atlas.com/channel && go vet ./...`
-Expected: no output, exit 0.
+  ```sh
+  tools/redis-key-guard.sh
+  tools/goroutine-guard.sh
+  tools/skill-job-id-guard.sh
+  tools/lint.sh --check
+  ```
+  `skill-job-id-guard.sh` is the one that matters most here — it is the
+  mechanical proof that no version-divergent wire literal entered the diff.
+  `lint.sh --check` needs nvm 22 on PATH or it false-fails.
 
-- [ ] **Step 3: Build**
+- [ ] **Step 4: Confirm the diff is scoped**
 
-Run: `cd services/atlas-channel/atlas.com/channel && go build ./...`
-Expected: no output, exit 0.
+  ```sh
+  git diff --name-only main...HEAD -- libs/ services/atlas-data services/atlas-buffs \
+      services/atlas-configurations
+  # must be empty (AC: libs/atlas-packet diff empty, no template changes)
 
-- [ ] **Step 4: Redis key guard**
+  git diff --name-only main...HEAD -- \
+      services/atlas-channel/atlas.com/channel/skill/handler/common.go \
+      services/atlas-channel/atlas.com/channel/skill/handler/recipients.go
+  # must be empty (design §3.5)
+  ```
 
-Run from the worktree root (no `GOWORK=off` prefix — it causes false FAILs): `tools/redis-key-guard.sh`
-Expected: clean pass, exit 0.
+- [ ] **Step 5: Docker bake — only if `go.mod` changed**
 
-- [ ] **Step 5: Confirm the diff is scoped to atlas-channel (AC-7)**
+  Not expected (no new module deps). If `services/atlas-channel/atlas.com/channel/go.mod`
+  moved:
+  ```sh
+  docker buildx bake atlas-channel
+  ```
 
-Run: `git diff --name-only main...HEAD -- libs/ services/atlas-data services/atlas-buffs`
-Expected: empty output — `libs/atlas-packet` (FR-4), `atlas-data`, and `atlas-buffs` untouched.
+- [ ] **Step 6: Acceptance-criteria sweep**
 
-Run: `git diff --name-only main...HEAD`
-Expected: exactly the two production files, the two test files, and `docs/tasks/task-162-echo-of-hero-mapwide/*`.
+  Walk `prd.md` §10 line by line and record evidence (file:line or test name)
+  for each. Anything not demonstrable is not done.
 
-- [ ] **Step 6: Docker bake — only if go.mod changed**
+- [ ] **Step 7: Code review before PR** *(mandatory — CLAUDE.md)*
 
-Run: `git diff --name-only main...HEAD -- services/atlas-channel/atlas.com/channel/go.mod`
-Expected: empty (no new module deps). If empty, `docker buildx bake atlas-channel` is NOT required per CLAUDE.md (bake is mandatory only for services whose `go.mod` was touched). If non-empty, run `docker buildx bake atlas-channel` from the worktree root and require success.
+  Run `superpowers:requesting-code-review`; it dispatches
+  `plan-adherence-reviewer` + `backend-guidelines-reviewer` (Go only — no
+  frontend changes). Findings land in
+  `docs/tasks/task-162-echo-of-hero-mapwide/audit.md`. Pin reviewer subagents to
+  the cheaper model per project preference, and ensure they run **inside this
+  worktree**.
 
-- [ ] **Step 7: Acceptance-criteria sweep**
+---
 
-Confirm each PRD §10 criterion maps to evidence:
-- Map-wide application incl. caster once → `TestApplyBuffToRecipients_EchoOfHeroRoutesMapWide` (all four ids)
-- Dead excluded → `TestSelectMapWideRecipients_ExcludesDead`
-- Hidden GM (SourceId 9101004) excluded → `TestSelectMapWideRecipients_ExcludesHiddenGm`
-- Other-map exclusion → by construction (field-scoped `inMapCharacterIdsFunc`); covered by the stubbed in-map set omitting outsiders
-- Non-X005 unchanged → `TestApplyBuffToRecipients_NonEchoUsesLegacyPartyPath` + pre-existing `recipients_test.go` suite passing
-- Fetch-failure skip → `TestSelectMapWideRecipients_CharacterFetchFailureSkipsOnlyThatRecipient`, `..._BuffFetchFailureSkipsOnlyThatRecipient`, `TestApplyToMap_OperatorErrorContinues`
-- `libs/atlas-packet` diff empty → Step 5
-- Gates clean → Steps 1–4
+## Manual verification (post-merge, optional)
 
-No commit in this task (nothing changed). Report the branch as ready for the code-review phase.
+Not required for the PR gate, but the highest-value smoke test given the
+version scope: on a `gms_v83` tenant, park two characters and a dead character
+in one map, cast Echo of Hero, and confirm the buff icon appears on both live
+characters and not the dead one. A `gms_v61` tenant additionally confirms the
+Beginner-only binding dispatches correctly (`OQ-3`).

@@ -1,45 +1,103 @@
 # task-162 Echo of Hero Map-Wide — Execution Context
 
+Updated: 2026-08-07 — rebased onto main (254 commits). Decisions D1/D2/D3/D5 were
+revised; the pre-rebase versions of this file are obsolete, do not follow them.
+
 ## What this task does
 
-The four X005 Echo of Hero skills (`1005`, `10001005`, `20001005`, `20011005`) currently buff only the caster. This task routes their casts to a map-wide recipient set: every live-session character in the caster's field, caster included exactly once, excluding dead characters (HP 0) and hidden GMs (any buff with `SourceId == 9101004`). Server-side routing only — no packet, data, or buff-service changes.
+The four X005 Echo of Hero skills currently buff only the caster. This task adds a
+per-skill registry handler that fans the buff out to every live-session character in
+the caster's field, excluding the caster (already buffed by the generic step), dead
+characters (HP 0), and hidden GMs. Server-side routing only — no packet, data, buff-service,
+or template changes, and **no `common.go` change**.
+
+## Why this got smaller on rebase
+
+Three tasks landed while this one sat:
+
+- **task-187** — `UseSkill` resolves the wire id to a `skill.Identity` through the
+  tenant's version set, then dispatches the registry on the Identity. Raw wire-id
+  compares are banned by `tools/skill-job-id-guard.sh`.
+- **task-156** — added `SelectAllCharactersInMap`, the `healdispel` handler package
+  (the template for this task), and `character/buff.IsGmHidden` — the canonical
+  **version-aware** hidden-GM check.
+- **the per-skill handler registry** — seven handler subpackages already exist.
+
+So the recipient selector and the hidden predicate already exist, and version
+correctness falls out of Identity keying instead of needing per-version logic.
 
 ## Key files
 
 | File | Why it matters |
 |---|---|
-| `services/atlas-channel/atlas.com/channel/skill/handler/common.go` | `UseSkill` owns the generic buff step (lines 107–111 pre-change). Gains `isEchoOfHero`, `applyBuffToRecipients` (routing), `applyToMap` (fan-out + `echo_of_hero_apply_summary` debug log). |
-| `services/atlas-channel/atlas.com/channel/skill/handler/recipients.go` | Party selectors + seams live here. Gains `loadBuffsFunc` seam, `MapWideSelectionStats`, `SelectMapWideRecipients`. Reuses `PartyRecipient`/Builder, `inMapCharacterIdsFunc`, `loadPartyMemberFunc`. |
-| `services/atlas-channel/atlas.com/channel/character/buff/processor.go` | `GetByCharacterId` (line 18) backs the hidden-GM check; `Apply` (line 19) is the unchanged per-recipient buff operator. |
-| `services/atlas-channel/atlas.com/channel/character/buff/model.go` | `Model.SourceId()` (line 31); `NewBuff(...)` constructor used by tests to fabricate hide buffs. |
-| `libs/atlas-constants/skill/constants.go` | All five ids exist: `BeginnerEchoOfHeroId=1005` (l.2908), `SuperGmHideId=9101004` (l.3247), `NoblesseEchoOfHeroId=10001005` (l.3262), `LegendEchoOfHeroId=20001005` (l.3378), `EvanEchoOfHeroId=20011005` (l.3420). DOM-21: define nothing new. |
-| `libs/atlas-packet/model/skill_usage_info.go` | MUST NOT change (FR-4, IDA-verified in design §1). X005 stays out of `isPartyBuff`. |
+| `skill/handler/healdispel/healdispel.go` | **The template.** Same map-wide shape, same `isGmHidden` seam, same deps-struct pattern. Production wiring at lines 160-206; copy its structure. |
+| `skill/handler/registry.go` | `Register(id skill2.Identity, h Handler)` / `Lookup`. Keyed on Identity, not wire id — this is the whole version story. |
+| `skill/handler/recipients.go` | `SelectAllCharactersInMap` (l.204) — reuse as-is. **Do not modify this file.** |
+| `skill/handler/common.go` | `UseSkill`: generic buff step (l.175-179) buffs the caster; registry dispatch (l.194-201) runs after. **Do not modify this file.** |
+| `character/buff/hidden.go` | `IsGmHidden(ctx, bs)` (l.21) — version-aware hide detection. Use this, never a `SourceId` literal compare. |
+| `skill/handler/registrations/registrations.go` | One blank import to add. |
+| `libs/atlas-constants/skill/identities_gen.go` | `BeginnerEchoOfHero` (l.11) + the other three identities. DOM-21: define nothing new. |
+| `libs/atlas-constants/skill/version_*_gen.go` | Per-version `Id → Identity` maps — the source of truth for the availability table. |
 
 ## Locked decisions (design.md §2)
 
-- **D1** Routing is a branch inside the generic buff step, not a registry handler (registry dispatches *after* the buff step → would double-apply the caster) and not a mount-style pre-buff short-circuit (would duplicate effect gating).
-- **D2** `SelectMapWideRecipients` returns `[]PartyRecipient` — caster enumerated by the session sweep like everyone else, applied exactly once.
-- **D3** Hidden-GM detection = per-recipient buff fetch, skip on any `SourceId() == int32(skill.SuperGmHideId)`. Vacuously true until task-156 lands; implement anyway (FR-2.2).
-- **D4** Uniform skip-and-continue on any per-recipient failure (character fetch, buff fetch, or apply error). Never abort the cast.
-- **D6** Collect ids via the existing mutex-guarded `inMapCharacterIdsFunc` sweep, then fetch/filter **sequentially**, ids sorted ascending (deterministic tests/logs).
+- **D1** Routing is a **registry handler** (`echoofhero/` package), not an inline
+  `common.go` branch. The generic step buffs the caster only (X005 is not an
+  `isPartyBuff`, so its bitmap is 0 and `applyToParty` no-ops on
+  `recipients.go:236-238`); the handler covers everyone else. `common.go` diff must
+  be empty.
+- **D2** Reuse `SelectAllCharactersInMap`; filter caster/dead/hidden in the handler.
+  No new selector.
+- **D3** Hidden-GM check is `buff.IsGmHidden(ctx, bs)`. A raw
+  `SourceId() == 9101004` compare is **version-incorrect** (hide is `5101004` at
+  v0.48) and is the single largest correctness fix in the rebase.
+- **D4** Uniform skip-and-continue on any per-recipient failure. Never abort the cast.
+- **D5** No `isEchoOfHero` id predicate — registration is on the four Identity
+  constants. An id predicate is both redundant and the banned idiom.
+- **D6** Concurrent id sweep (inside the reused selector), sequential fetch/filter,
+  recipients sorted ascending.
+- **D7** `echoDeps` function-seam struct + pure `applyEchoOfHero` core, mirroring
+  `healDispelDeps`.
 
-## Plan deviations from design sketches (intentional, behavior-identical)
+## Version scope (11 versions — FR-5)
 
-- Routing extracted to `applyBuffToRecipients(l, ctx, f, characterId, info, applyBuffFunc)` instead of inline in `UseSkill`; `applyToMap` takes plain args (matching `applyToMobs`) instead of the curried sketch. This is what lets tests inject a recorded operator without emitting Kafka.
-- `MapWideSelectionStats` carries `inMap` (not the design parenthetical's `applied`) — successful applies are countable only in `applyToMap`'s operator loop; the summary log gets both.
+X005 availability is **not** version-stable (the v1 docs claimed it was):
 
-## Dependencies & cross-task notes
+| Version | Beginner | Noblesse | Legend | Evan |
+|---|:---:|:---:|:---:|:---:|
+| `gms_v12`, `gms_v48` | — | — | — | — |
+| `gms_v61` | ✓ | — | — | — |
+| `gms_v72` | ✓ | ✓ | — | — |
+| `gms_v79`, `gms_v83` | ✓ | ✓ | ✓ | — |
+| `gms_v84`, `gms_v87`, `gms_v92`, `gms_v95`, `jms_v185` | ✓ | ✓ | ✓ | ✓ |
 
-- **task-156** (`gm-hide-heal-dispel`): defines hide as a `DARK_SIGHT` buff with `SourceId == 9101004`. Not a build dependency — the check compiles and tests against stubbed buffs today and becomes effective when task-156 lands.
-- **No new module deps** — `go.mod` untouched, so `docker buildx bake atlas-channel` is not required (re-verify in Task 3 Step 6).
-- Existing party-buff behavior (bitmap MSB-first, `SelectPartyMembersInMap`) is frozen (FR-1.1); `recipients_test.go` is the regression guard.
+This is the **tenant version set (11)**, not the packet matrix's 9 columns (which
+omit `gms_v12`/`gms_v92`) — irrelevant here because this is a zero-packet change.
+
+**No per-version code is written.** On `gms_v48` wire `1005` is unbound, so
+`set.Skill.Resolve` returns `ok == false`, `Lookup` is never called, and the handler
+is inert. Registering all four identities is therefore correct on all 11 versions.
+Task 2's four resolution tests pin this mechanically.
+
+## Guards this task must satisfy
+
+`tools/skill-job-id-guard.sh` (no version-divergent wire literals — the important
+one), `tools/goroutine-guard.sh`, `tools/redis-key-guard.sh`, `tools/lint.sh --check`
+(needs nvm 22 on PATH or it false-fails). No template guards apply — no template
+changes.
 
 ## Test conventions in this package
 
-- Seam-variable override + `t.Cleanup` restore (`installPartySeams` precedent, `recipients_test.go:30`). New `installMapWideSeams` follows it; no `*_testhelpers.go` files.
-- Shared fixtures already in package scope: `testLogger()`, `mkField()` (`common_apply_to_mobs_test.go:104`), `mkMemberChar()`, `recipientIds()`, `eqIds()`, `testCasterId=100`/`testMemberA=101`/`testMemberB=102`, `threePersonParty`, `mkPartyMember`.
-- `character.NewModelBuilder().SetId(...).SetHp(...).SetMaxHp(...).MustBuild()` builds character models; `buff.NewBuff(sourceId, level, duration, changes, createdAt, expiresAt)` builds buff models.
+- Deps-struct seams + `t.Cleanup` restore; no `*_testhelpers.go` files.
+- `channelhandler.NewPartyRecipientBuilder().SetId(..).SetHp(..)...Build()` for
+  recipients; `character.NewModelBuilder()...MustBuild()` for characters.
+- `healdispel_test.go`'s `capture` struct + `newDeps(...)` helper is the shape to copy.
+- `registry_test.go`'s `TestDispatch_v48HideNotCorkscrew` is the version-correctness
+  test precedent for Task 2's resolution tests.
 
-## Verification gate (Task 3)
+## Dependencies
 
-`go test -race ./...`, `go vet ./...`, `go build ./...` in `services/atlas-channel/atlas.com/channel`; `tools/redis-key-guard.sh` from worktree root (never with a global `GOWORK=off` prefix); `git diff --name-only main...HEAD -- libs/ services/atlas-data services/atlas-buffs` must be empty. Code review (`superpowers:requesting-code-review`) is mandatory before any PR.
+- No new module deps — `go.mod` untouched, so `docker buildx bake atlas-channel` is
+  not required (re-verify in Task 3 Step 5).
+- Code review (`superpowers:requesting-code-review`) is mandatory before any PR;
+  reviewers must run inside this worktree, pinned to the cheaper model.

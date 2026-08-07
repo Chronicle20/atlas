@@ -60,6 +60,47 @@ describe("VesselTimeline", () => {
     expect(screen.getByText("Ellinia to Orbis")).toBeInTheDocument();
   });
 
+  it("captions each lane in place, so a rail's route is readable off the chart", () => {
+    // A legend that lists two names in argument order does not say which rail
+    // is which; the name has to sit on the rail it belongs to.
+    const { container } = render(
+      <VesselTimeline
+        lanes={[
+          { label: "Orbis to Ellinia", trips: outbound, emphasised: true },
+          { label: "Ellinia to Orbis", trips: inbound },
+        ]}
+        nowEpochMs={nowEpochMs}
+      />,
+    );
+
+    const labels = Array.from(
+      container.querySelectorAll("[data-lane-label]"),
+    ).map((node) => node.getAttribute("data-lane-label"));
+    expect(labels).toEqual(["Orbis to Ellinia", "Ellinia to Orbis"]);
+    // Drawn inside the figure, not in the legend beneath it.
+    expect(container.querySelector("svg [data-lane-label]")).not.toBeNull();
+  });
+
+  it("gives every legend key the colour it stands for", () => {
+    // Phase is encoded in the strip *only* by colour, so a key that names the
+    // phase without showing its swatch explains nothing.
+    const { container } = render(
+      <VesselTimeline
+        lanes={[{ label: "Orbis to Ellinia", trips: outbound }]}
+        nowEpochMs={nowEpochMs}
+      />,
+    );
+
+    for (const kind of ["open", "locked", "transit"]) {
+      const swatch = container.querySelector(`[data-legend-swatch="${kind}"]`);
+      expect(swatch).not.toBeNull();
+      // The swatch's fill must match the class the matching segments carry.
+      const segment = container.querySelector(`[data-segment="${kind}"]`);
+      const fill = segment?.getAttribute("class")?.replace("fill-", "bg-");
+      expect(swatch?.getAttribute("class")).toContain(fill);
+    }
+  });
+
   it("is a labelled figure with a NOW marker", () => {
     const { container } = render(
       <VesselTimeline

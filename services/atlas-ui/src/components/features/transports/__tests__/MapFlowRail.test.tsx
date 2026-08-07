@@ -50,9 +50,17 @@ describe("MapFlowRail", () => {
       "map:200090010",
       "map:200090011",
       "map:101000300",
-      // the observation map is rendered separately, after the chain
-      "map:200000111",
     ]);
+  });
+
+  it("labels each stop with its role in the chain", () => {
+    render(<MapFlowRail route={route("open_entry")} tenant={null} />);
+
+    expect(screen.getByText("start")).toBeInTheDocument();
+    expect(screen.getByText("staging")).toBeInTheDocument();
+    expect(screen.getByText("en route 1")).toBeInTheDocument();
+    expect(screen.getByText("en route 2")).toBeInTheDocument();
+    expect(screen.getByText("destination")).toBeInTheDocument();
   });
 
   it("captions each leg with what moves a character across it", () => {
@@ -63,12 +71,13 @@ describe("MapFlowRail", () => {
     expect(screen.getByText("warp on arrival")).toBeInTheDocument();
   });
 
-  it("annotates the observation map as an effect origin, not a stop", () => {
+  it("keeps the observation map off the rail — it is not a stop", () => {
+    // It is still reported, as one cell of the detail page's configuration
+    // strip; the rail is only the chain a character actually traverses.
     render(<MapFlowRail route={route("open_entry")} tenant={null} />);
 
-    expect(
-      screen.getByText(/ARRIVED\/DEPARTED effects fire/i),
-    ).toBeInTheDocument();
+    expect(screen.queryByText("map:200000111")).toBeNull();
+    expect(screen.queryByText(/ARRIVED\/DEPARTED effects fire/i)).toBeNull();
   });
 
   it("exposes the rail to assistive tech as a labelled figure", () => {

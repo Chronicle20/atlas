@@ -25,14 +25,30 @@ interface VesselTimelineProps {
 
 const WIDTH = 720;
 const LANE_HEIGHT = 34;
-const LANE_GAP = 10;
+const LANE_GAP = 12;
+/** Room above each lane rail for its route-name caption. */
+const LANE_LABEL_HEIGHT = 15;
 const TOP_PAD = 18;
 
 const SEGMENT_STYLE = {
-  open: { className: "fill-emerald-500/70", label: "boarding open" },
-  locked: { className: "fill-amber-500/70", label: "boarding closed" },
-  transit: { className: "fill-sky-500/70", label: "in transit" },
+  open: {
+    className: "fill-emerald-500/70",
+    swatchClassName: "bg-emerald-500/70",
+    label: "boarding open",
+  },
+  locked: {
+    className: "fill-amber-500/70",
+    swatchClassName: "bg-amber-500/70",
+    label: "boarding closed",
+  },
+  transit: {
+    className: "fill-sky-500/70",
+    swatchClassName: "bg-sky-500/70",
+    label: "in transit",
+  },
 } as const;
+
+const SEGMENT_KINDS = ["open", "locked", "transit"] as const;
 
 /**
  * A windowed strip of trips around now — one lane per route, two lanes when
@@ -58,6 +74,11 @@ const SEGMENT_STYLE = {
  * with no trips renders an explicit worded state (visually, as an SVG
  * caption, and in the accessible name) rather than a blank rail that could
  * read as a failed fetch.
+ *
+ * Each lane is captioned in place with its route name, and the legend below
+ * carries a colour swatch per phase — the strip encodes phase entirely in
+ * colour and lane identity entirely in vertical position, so neither can be
+ * left to a bare list of words.
  */
 export function VesselTimeline({ lanes, nowEpochMs }: VesselTimelineProps) {
   const nowMs = nowUtcTimeOfDayMs(nowEpochMs);
@@ -77,7 +98,8 @@ export function VesselTimeline({ lanes, nowEpochMs }: VesselTimelineProps) {
     [lanes],
   );
 
-  const height = TOP_PAD + lanes.length * (LANE_HEIGHT + LANE_GAP);
+  const height =
+    TOP_PAD + lanes.length * (LANE_LABEL_HEIGHT + LANE_HEIGHT + LANE_GAP);
 
   const ariaLabel = useMemo(
     () =>
@@ -98,10 +120,31 @@ export function VesselTimeline({ lanes, nowEpochMs }: VesselTimelineProps) {
           style={{ minWidth: `${WIDTH / 2}px` }}
         >
           {lanes.map((lane, laneIndex) => {
-            const y = TOP_PAD + laneIndex * (LANE_HEIGHT + LANE_GAP);
+            const blockTop =
+              TOP_PAD +
+              laneIndex * (LANE_LABEL_HEIGHT + LANE_HEIGHT + LANE_GAP);
+            const y = blockTop + LANE_LABEL_HEIGHT;
             const isEmpty = lane.trips.length === 0;
             return (
               <g key={lane.label} data-empty-lane={isEmpty ? "" : undefined}>
+                {/*
+                  Which rail is which route has to be readable off the chart
+                  itself — a legend listing two names in the order they happen
+                  to be passed does not say which lane belongs to which.
+                */}
+                <text
+                  data-lane-label={lane.label}
+                  x={0}
+                  y={blockTop + 10}
+                  fontSize={11}
+                  className={
+                    lane.emphasised
+                      ? "fill-foreground font-medium"
+                      : "fill-muted-foreground"
+                  }
+                >
+                  {lane.label}
+                </text>
                 <rect
                   x={0}
                   y={y}
@@ -160,15 +203,25 @@ export function VesselTimeline({ lanes, nowEpochMs }: VesselTimelineProps) {
         </svg>
       </div>
 
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        {lanes.map((lane) => (
-          <span key={lane.label} className="font-medium text-foreground">
-            {lane.label}
+      {/*
+        Each key carries the swatch it names. Naming the three phases without
+        showing their colours leaves the strip's only encoding unexplained;
+        the lane names are drawn on the lanes themselves, not repeated here.
+      */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        {SEGMENT_KINDS.map((kind) => (
+          <span key={kind} className="inline-flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              data-legend-swatch={kind}
+              className={cn(
+                "inline-block h-2.5 w-3.5 rounded-[2px]",
+                SEGMENT_STYLE[kind].swatchClassName,
+              )}
+            />
+            {SEGMENT_STYLE[kind].label}
           </span>
         ))}
-        <span>boarding open</span>
-        <span>boarding closed</span>
-        <span>in transit</span>
         <span>
           times UTC
           {lanes[0]?.trips[0]

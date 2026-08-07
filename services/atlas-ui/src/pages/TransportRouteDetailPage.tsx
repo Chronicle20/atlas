@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from "react";
-import { Link, useParams } from "react-router-dom";
-import { AlertTriangle, ArrowLeft } from "lucide-react";
+import { useParams } from "react-router-dom";
+import { AlertTriangle } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -103,7 +103,6 @@ export function TransportRouteDetailPage() {
     const notFound = isNotFoundError(detailQuery.error);
     return (
       <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
-        <BackLink />
         <ErrorDisplay
           title={notFound ? "Route not found" : "Error"}
           error={
@@ -120,9 +119,7 @@ export function TransportRouteDetailPage() {
   const label = transitionLabel(attributes.nextState);
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
-      <BackLink />
-
+    <div className="flex flex-col flex-1 min-h-0 space-y-6 overflow-y-auto p-10 pb-16">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-2xl font-bold tracking-tight">{attributes.name}</h2>
         <RouteStatePill state={attributes.state} />
@@ -145,7 +142,12 @@ export function TransportRouteDetailPage() {
           <CardTitle>Configuration</CardTitle>
         </CardHeader>
         <CardContent>
-          <dl className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-3">
+          {/*
+            A ruled cell grid, not free-floating label/value pairs: these are
+            the seeded numbers an operator reads off against each other, and
+            the 1px gap over `bg-border` is what draws the rules between them.
+          */}
+          <dl className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-px border bg-border">
             <Field label="Observation map">
               <MapCell
                 mapId={String(attributes.observationMapId)}
@@ -193,23 +195,10 @@ export function TransportRouteDetailPage() {
   );
 }
 
-function BackLink() {
-  return (
-    <Link
-      to="/transports"
-      className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:underline"
-    >
-      <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-      Transports
-    </Link>
-  );
-}
-
 function DetailSkeleton() {
   return (
     <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
       <span className="sr-only">Loading route…</span>
-      <Skeleton className="h-5 w-32" />
       <Skeleton className="h-8 w-64" />
       <Skeleton className="h-40 w-full" />
       <Skeleton className="h-32 w-full" />
@@ -220,9 +209,11 @@ function DetailSkeleton() {
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 text-sm">{children}</dd>
+    <div className="bg-card px-3 py-2.5">
+      <dt className="font-mono text-[10px] uppercase tracking-[0.13em] text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="mt-1 font-mono text-[13px] tabular-nums">{children}</dd>
     </div>
   );
 }

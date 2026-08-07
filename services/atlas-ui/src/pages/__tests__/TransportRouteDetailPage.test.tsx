@@ -258,10 +258,11 @@ describe("TransportRouteDetailPage", () => {
     await screen.findByRole("heading", { name: "Orbis to Ellinia" });
     const figure = await screen.findByRole("img", { name: /trip timeline/i });
 
-    // VesselTimeline's SVG height is TOP_PAD + lanes.length * (LANE_HEIGHT +
-    // LANE_GAP) = 18 + n*44 — 106 is only reachable with exactly two lanes,
-    // so this is an objective count, not just a text-presence guess.
-    expect(figure).toHaveAttribute("viewBox", "0 0 720 106");
+    // VesselTimeline's SVG height is TOP_PAD + lanes.length *
+    // (LANE_LABEL_HEIGHT + LANE_HEIGHT + LANE_GAP) = 18 + n*61 — 140 is only
+    // reachable with exactly two lanes, so this is an objective count, not
+    // just a text-presence guess.
+    expect(figure).toHaveAttribute("viewBox", "0 0 720 140");
 
     const ariaLabel = figure.getAttribute("aria-label") ?? "";
     // Content, not just count: each lane's own trip time must be present,
@@ -305,10 +306,10 @@ describe("TransportRouteDetailPage", () => {
     await screen.findByRole("heading", { name: "Orbis to Ellinia" });
     const figure = screen.getByRole("img", { name: /trip timeline/i });
 
-    // Single-lane height (18 + 1*44 = 62): the partner is resolved (it's in
+    // Single-lane height (18 + 1*61 = 79): the partner is resolved (it's in
     // `routes`) but its schedule hasn't arrived, so the page must fall back
     // to the solo-lane form rather than rendering a half-built second lane.
-    expect(figure).toHaveAttribute("viewBox", "0 0 720 62");
+    expect(figure).toHaveAttribute("viewBox", "0 0 720 79");
     expect(figure.getAttribute("aria-label") ?? "").not.toContain(
       "Ellinia to Orbis",
     );
@@ -351,7 +352,7 @@ describe("TransportRouteDetailPage", () => {
     await screen.findByRole("heading", { name: "Orbis to Ellinia" });
     const figure = await screen.findByRole("img", { name: /trip timeline/i });
 
-    expect(figure).toHaveAttribute("viewBox", "0 0 720 106");
+    expect(figure).toHaveAttribute("viewBox", "0 0 720 140");
     const ariaLabel = figure.getAttribute("aria-label") ?? "";
     expect(ariaLabel).toContain("Orbis to Ellinia: boards 11:45");
     expect(ariaLabel).toContain("Ellinia to Orbis: boards 03:00");

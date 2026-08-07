@@ -38,7 +38,7 @@ func (m *SkillUsageInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(
 		// members on gms_48/gms_61 over-reads 4 bytes and misaligns every field after
 		// it (task-163 DIV-1, docs/tasks/task-163-priest-dispel-party/version-findings.md).
 		if isAntiRepeatBuffSkill(skill.Id(m.skillId)) &&
-			((t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS") {
+			((t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.IsRegion("JMS")) {
 			m.castX = r.ReadInt16()
 			m.castY = r.ReadInt16()
 		}

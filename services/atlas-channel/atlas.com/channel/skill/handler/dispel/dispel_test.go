@@ -35,15 +35,6 @@ func testInfo() packetmodel.SkillUsageInfo {
 		Build()
 }
 
-func fullPropEffect(t *testing.T) effect.Model {
-	t.Helper()
-	m, err := effect.Extract(effect.RestModel{Prop: 1.0})
-	if err != nil {
-		t.Fatalf("effect.Extract failed: %v", err)
-	}
-	return m
-}
-
 // cancelCall records a single CancelByTypes invocation.
 type cancelCall struct {
 	characterId uint32

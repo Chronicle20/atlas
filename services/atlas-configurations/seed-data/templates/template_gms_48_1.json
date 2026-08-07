@@ -954,7 +954,10 @@
         "opCode": "0x75",
         "validator": "LoggedInValidator",
         "handler": "PetItemUseHandle",
-        "services": ["channel"],
+        "fname": "CWvsContext::SendStatChangeItemUseRequestByPetQ",
+        "services": [
+          "channel"
+        ],
         "options": {
           "skillGate": "equipAbility"
         }

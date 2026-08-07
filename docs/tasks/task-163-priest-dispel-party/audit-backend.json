@@ -1,0 +1,44 @@
+{
+  "service": "atlas-channel + atlas-packet (libs)",
+  "path": "services/atlas-channel/atlas.com/channel/skill/handler/dispel; libs/atlas-packet/model",
+  "date": "2026-08-07",
+  "build": "pass",
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "skill/handler/dispel",
+      "type": "support (skill socket-handler package; no model.go, no resource.go)",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "n/a", "evidence": "No Processor type declared; logic lives in registered Apply closure, dispel.go:73-117"},
+        {"id": "FILE-02", "name": "RestModel in rest.go", "status": "n/a", "evidence": "No RestModel; not a REST package"},
+        {"id": "FILE-03", "name": "Cross-service requests in requests.go", "status": "n/a", "evidence": "Only in-service call is buff.NewProcessor(...).CancelByTypes, dispel.go:64-66"},
+        {"id": "FILE-04", "name": "entity.go placement", "status": "n/a", "evidence": "No GORM entity in package"},
+        {"id": "FILE-05", "name": "Builder/Model/administrator/provider/state placement", "status": "n/a", "evidence": "None of these symbols declared"},
+        {"id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "dispel.go bundles zero File-Responsibilities categories; matches healdispel.go/mysticdoor.go single-file precedent"},
+        {"id": "DOM-21", "name": "No duplication of atlas-constants types", "status": "pass", "evidence": "dispellableStatTypes built from libs/atlas-constants/character/temporary_stat.go:6-24; skill2.PriestDispel from libs/atlas-constants/skill; tenant.IsRegion/MajorAtLeast from libs/atlas-tenant/tenant.go:88,93"},
+        {"id": "GOROUTINE", "name": "No bare go statements", "status": "pass", "evidence": "grep '^\\s*go ' over dispel.go: no matches"},
+        {"id": "GETENV", "name": "No os.Getenv in handler", "status": "pass", "evidence": "grep os.Getenv over dispel.go: no matches"},
+        {"id": "ERR-ISOLATION", "name": "Per-recipient failure does not abort loop", "status": "pass", "evidence": "dispel.go:97-100 logs and continues on cancelByTypesFunc error"},
+        {"id": "REGISTRY", "name": "Registered via Identity, not wire id", "status": "pass", "evidence": "dispel.go:14 channelhandler.Register(skill2.PriestDispel, Apply)"},
+        {"id": "WIRING", "name": "Blank import added to registrations.go", "status": "pass", "evidence": "registrations.go diff: _ \"atlas-channel/skill/handler/dispel\" // Priest Dispel party cure — task-163"}
+      ]
+    },
+    {
+      "name": "libs/atlas-packet/model (SkillUsageInfo.Decode)",
+      "type": "shared decoder (not a domain package)",
+      "checks": [
+        {"id": "DECODE-SCOPE", "name": "Fix applied at shared gate, covers all isAntiRepeatBuffSkill skills", "status": "pass", "evidence": "skill_usage_info.go:40-41 gates the shared isAntiRepeatBuffSkill (line 259) predicate, not just Dispel"},
+        {"id": "DECODE-CTX", "name": "tenant.MustFromContext caller supplies tenant-bearing ctx", "status": "pass", "evidence": "sole prod call site character_skill_use.go:47 runs where character_skill_use.go:107 already calls tenant.MustFromContext(ctx)"},
+        {"id": "DECODE-TEST-BOUNDARY", "name": "Gate boundary covered by tests both sides", "status": "pass", "evidence": "TestDecodeDispelGms61NoCastXY (skill_usage_info_test.go:20-58) and TestDecodeDispelGms83HasCastXY (skill_usage_info_test.go:64-96)"},
+        {"id": "DECODE-TEST-MIGRATION", "name": "Pre-existing tests updated not left to panic", "status": "pass", "evidence": "4 tests migrated context.Background() -> pt.CreateContext at skill_usage_info_test.go:127,158,183,242; pt.CreateContext pre-existing helper libs/atlas-packet/test/context.go:43 (task-157)"},
+        {"id": "DECODE-JMS", "name": "JMS branch documented as unverified, conservative default", "status": "pass", "evidence": "skill_usage_info.go:29-33 comment"}
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "dispel_test.go tests are scenario-style (sequential if-asserts) rather than tests := []struct{...}{} table-driven; DOM-20 is a domain-package (model.go) checklist item and does not apply to this handler package, so this is style-only, not a finding."
+  ]
+}

@@ -12927,6 +12927,81 @@
     },
     {
       "kind": "op",
+      "op": "SPECIAL_MOVE",
+      "direction": "serverbound",
+      "tier1": false,
+      "fnames": [
+        "CGrenade::SendTimeBombInfo",
+        "CUserLocal::DoActiveSkill_DamageMeter",
+        "CUserLocal::DoActiveSkill_Flying",
+        "CUserLocal::DoActiveSkill_Heal",
+        "CUserLocal::DoActiveSkill_MobCapture",
+        "CUserLocal::DoActiveSkill_OpenGate",
+        "CUserLocal::DoActiveSkill_RecoveryAura",
+        "CUserLocal::DoActiveSkill_SmokeShell",
+        "CUserLocal::DoActiveSkill_StatChangeAdmin",
+        "CUserLocal::DoActiveSkill_Summon",
+        "CUserLocal::DoActiveSkill_SummonMonster",
+        "CUserLocal::DoActiveSkill_TownPortal",
+        "CUserLocal::SendSkillUseRequest",
+        "CUserLocal::TryDoingMonsterMagnet",
+        "CUserLocal::TryDoingSwallowAbsorb",
+        "sub_8C0CBE"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 83
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 90
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 89
+        },
+        "gms_v83": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 91
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 91
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 94
+        },
+        "gms_v92": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 102
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 103
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 86
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "SUMMON_ITEM_INAVAILABLE",
       "packet": "field/clientbound/FieldSummonItemUnavailable",
       "direction": "clientbound",
@@ -14629,82 +14704,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 97
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "SPECIAL_MOVE",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CGrenade::SendTimeBombInfo",
-        "CUserLocal::DoActiveSkill_DamageMeter",
-        "CUserLocal::DoActiveSkill_Flying",
-        "CUserLocal::DoActiveSkill_Heal",
-        "CUserLocal::DoActiveSkill_MobCapture",
-        "CUserLocal::DoActiveSkill_OpenGate",
-        "CUserLocal::DoActiveSkill_RecoveryAura",
-        "CUserLocal::DoActiveSkill_SmokeShell",
-        "CUserLocal::DoActiveSkill_StatChangeAdmin",
-        "CUserLocal::DoActiveSkill_Summon",
-        "CUserLocal::DoActiveSkill_SummonMonster",
-        "CUserLocal::DoActiveSkill_TownPortal",
-        "CUserLocal::SendSkillUseRequest",
-        "CUserLocal::TryDoingMonsterMagnet",
-        "CUserLocal::TryDoingSwallowAbsorb",
-        "sub_845C36",
-        "sub_8C0CBE"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 90
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 90
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 89
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 91
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 91
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 94
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 102
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 103
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 86
         }
       }
     },

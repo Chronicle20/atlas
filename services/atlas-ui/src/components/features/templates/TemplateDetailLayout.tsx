@@ -6,6 +6,7 @@ import {
   DetailActionBar,
   DetailActionBarProvider,
 } from "@/components/DetailActionBarContext";
+import { ConfigExportButton } from "@/components/features/config/ConfigExportButton";
 
 interface TemplateDetailLayoutProps {
   children: ReactNode;
@@ -27,11 +28,14 @@ export function TemplateDetailLayout({ children }: TemplateDetailLayoutProps) {
   return (
     <DetailActionBarProvider>
       <div className="flex flex-1 flex-col overflow-hidden space-y-6 p-10 pb-6">
-        <div className="space-y-0.5">
-          <h2 className="text-2xl font-bold tracking-tight">
-            Template Details
-          </h2>
-          <p className="text-muted-foreground">{id}</p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-0.5">
+            <h2 className="text-2xl font-bold tracking-tight">
+              Template Details
+            </h2>
+            <p className="text-muted-foreground">{id}</p>
+          </div>
+          <ConfigExportButton kind="template" id={id} />
         </div>
         <Separator className="my-6" />
         <div className="flex flex-1 flex-col overflow-hidden space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">

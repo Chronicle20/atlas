@@ -99,3 +99,15 @@ export function DetailActionBar() {
     />
   );
 }
+
+/**
+ * Read the shared action bar's current state without registering anything.
+ * Used by controls that render beside the bar's owner and need to know whether
+ * the page has unsaved edits - e.g. the header Export button, which exports the
+ * last SAVED document and says so while the page is dirty. Returns null outside
+ * a DetailActionBarProvider, or when no page has registered.
+ */
+export function useDetailActionBarState(): DetailActionBarConfig | null {
+  const ctx = useContext(DetailActionBarContext);
+  return ctx?.config ?? null;
+}

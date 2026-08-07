@@ -51,7 +51,7 @@ function cellAriaLabel(
  * across eleven narrow columns, and the key order is the object's own, which
  * is the order the template author wrote.
  */
-export function formatOptionValue(value: unknown): string {
+function formatOptionValue(value: unknown): string {
   if (value === undefined) return "";
   if (value === null) return "null";
   if (typeof value !== "object") return String(value);

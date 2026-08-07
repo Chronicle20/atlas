@@ -22,9 +22,9 @@ interface OpCodedEntry {
  * untouched (FR-2.7), so this module never has to track a key list.
  */
 export interface ExportableConfigAttributes {
-  region?: string;
-  majorVersion?: number;
-  minorVersion?: number;
+  region?: string | undefined;
+  majorVersion?: number | undefined;
+  minorVersion?: number | undefined;
   npcs?: unknown[] | null;
   worlds?: unknown[] | null;
   socket?: {
@@ -35,9 +35,9 @@ export interface ExportableConfigAttributes {
 
 export interface ConfigExportMeta {
   id: string;
-  region?: string;
-  majorVersion?: number;
-  minorVersion?: number;
+  region?: string | undefined;
+  majorVersion?: number | undefined;
+  minorVersion?: number | undefined;
 }
 
 function byOpCode(a: OpCodedEntry, b: OpCodedEntry): number {
@@ -63,8 +63,14 @@ export function toConfigExportPayload<T extends ExportableConfigAttributes>(
   attributes: T,
 ): T {
   // Built as a record because assigning to a property of a generic T is not
-  // expressible in TypeScript; the assertion is confined to the return.
-  const out: Record<string, unknown> = { ...attributes };
+  // expressible in TypeScript; the assertion is confined to the return. The
+  // spread source is explicitly typed as the (non-generic) structural
+  // interface so the object literal has a known shape to assert from -
+  // spreading the bare generic T leaves TypeScript unable to see that every
+  // property value is index-signature-compatible.
+  const out: Record<string, unknown> = {
+    ...(attributes as ExportableConfigAttributes),
+  } as Record<string, unknown>;
   out.npcs = attributes.npcs ?? [];
   out.worlds = attributes.worlds ?? [];
 

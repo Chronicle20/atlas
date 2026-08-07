@@ -115,7 +115,9 @@ describe("ConfigExportButton", () => {
     await userEvent.click(button);
 
     expect(vi.mocked(downloadJson)).toHaveBeenCalledTimes(1);
-    const [filename, payload] = vi.mocked(downloadJson).mock.calls[0];
+    const call = vi.mocked(downloadJson).mock.calls[0];
+    expect(call).toBeDefined();
+    const [filename, payload] = call!;
     expect(filename).toBe("template_gms_83_1.json");
     expect(payload).not.toHaveProperty("id");
     expect(payload).toMatchObject({ region: "GMS", npcs: [], worlds: [] });
@@ -152,7 +154,7 @@ describe("ConfigExportButton", () => {
     await waitFor(() => expect(button).toBeEnabled());
     await userEvent.click(button);
 
-    expect(vi.mocked(downloadJson).mock.calls[0][0]).toBe(
+    expect(vi.mocked(downloadJson).mock.calls[0]?.[0]).toBe(
       "tenant_gms_83_1.json",
     );
     expect(vi.mocked(toast.success)).toHaveBeenCalledWith("Tenant exported");

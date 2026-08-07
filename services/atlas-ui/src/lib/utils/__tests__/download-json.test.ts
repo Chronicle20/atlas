@@ -39,8 +39,8 @@ describe("downloadJson", () => {
 
     expect(createObjectURL).toHaveBeenCalledTimes(1);
     expect(blobs).toHaveLength(1);
-    expect(blobs[0].type).toBe("application/json");
-    await expect(blobs[0].text()).resolves.toBe(
+    expect(blobs[0]?.type).toBe("application/json");
+    await expect(blobs[0]?.text()).resolves.toBe(
       `${JSON.stringify({ region: "GMS", n: [1, 2] }, null, 2)}\n`,
     );
   });

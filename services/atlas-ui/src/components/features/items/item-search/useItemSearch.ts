@@ -11,6 +11,22 @@ import {
 
 const PAGE_SIZE = 50;
 
+// Mirrors the itemStringKeys / itemCommoditiesKeys shape (`all` + one leaf,
+// `as const`) with the tenant id folded into the leaf like mtsListingsKeys:
+// without it, switching tenants while a picker stays open could serve one
+// tenant's cached search results under another until the next debounce
+// settles a new term/page — today that's only avoided because
+// TenantProvider calls `queryClient.clear()` on every tenant switch.
+export const itemSearchKeys = {
+  all: ["item-search"] as const,
+  search: (
+    tenantId: string | undefined,
+    poolKey: SearchPoolKey,
+    term: string,
+    page: number,
+  ) => [...itemSearchKeys.all, tenantId ?? "", poolKey, term, page] as const,
+};
+
 export interface UseItemSearchOptions {
   poolKey: SearchPoolKey;
   /** Queries only fire while the consumer's popover is open. */
@@ -71,7 +87,12 @@ export function useItemSearch({
   };
 
   const query = useQuery({
-    queryKey: ["item-search", poolKey, settled.term, settled.page],
+    queryKey: itemSearchKeys.search(
+      activeTenant?.id,
+      poolKey,
+      settled.term,
+      settled.page,
+    ),
     queryFn: () => itemsService.searchItems(filters),
     enabled: open && !!activeTenant && settled.term.trim().length > 0,
     placeholderData: keepPreviousData,

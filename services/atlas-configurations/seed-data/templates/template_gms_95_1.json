@@ -619,7 +619,10 @@
         "opCode": "0x50",
         "validator": "LoggedInValidator",
         "handler": "CharacterStateChangeByPortableChairHandle",
-        "fname": "CWvsContext::TryRecovery"
+        "fname": "CWvsContext::TryRecovery",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x52",
@@ -652,7 +655,10 @@
         "opCode": "0x58",
         "validator": "LoggedInValidator",
         "handler": "CharacterSkillBookUseHandle",
-        "fname": "CWvsContext::SendSkillLearnItemUseRequest"
+        "fname": "CWvsContext::SendSkillLearnItemUseRequest",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x5A",
@@ -2515,7 +2521,10 @@
       {
         "opCode": "0x32",
         "writer": "CharacterSkillLearnItemResult",
-        "fname": "CWvsContext::OnSkillLearnItemResult"
+        "fname": "CWvsContext::OnSkillLearnItemResult",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x34",

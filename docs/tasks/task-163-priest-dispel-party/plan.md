@@ -59,7 +59,7 @@ atlas-constants, ida-pro-mcp (audit only).
 Guards against re-implementing landed work. If any assertion below fails, STOP
 and re-read `main` before proceeding — the plan's premises have moved again.
 
-- [ ] **Step 1: Assert the producer surface exists**
+- [x] **Step 1: Assert the producer surface exists**
 
 From the worktree root:
 ```bash
@@ -70,14 +70,14 @@ grep -n "CancelByTypes(f field.Model, characterId uint32, types \[\]string) erro
 Expected: all three hit. The processor signature is **uncurried, `[]string`,
 returns `error`** — the handler adapts to it.
 
-- [ ] **Step 2: Assert the registry is Identity-keyed**
+- [x] **Step 2: Assert the registry is Identity-keyed**
 
 ```bash
 grep -n "map\[skill2.Identity\]Handler\|func Register\|func Lookup" services/atlas-channel/atlas.com/channel/skill/handler/registry.go
 ```
 Expected: `registry map[skill2.Identity]Handler`, `Register(id skill2.Identity, h Handler)`.
 
-- [ ] **Step 3: Record the current registrations list**
+- [x] **Step 3: Record the current registrations list**
 
 ```bash
 cat services/atlas-channel/atlas.com/channel/skill/handler/registrations/registrations.go
@@ -85,7 +85,7 @@ cat services/atlas-channel/atlas.com/channel/skill/handler/registrations/registr
 Expected: seven blank imports (heal, healdispel, hide, mprecovery, mysticdoor,
 resurrection, timeleap). Note them — Task 2 adds an eighth and removes none.
 
-- [ ] **Step 4: Confirm the identity↔wire binding on every version**
+- [x] **Step 4: Confirm the identity↔wire binding on every version**
 
 ```bash
 grep -rn "PriestDispel: *2311001" libs/atlas-constants/skill/ | wc -l
@@ -120,7 +120,7 @@ must be regenerated before continuing.
 - Produces: `dispel.Apply` matching `channelhandler.Handler`, registered for
   `skill2.PriestDispel` in `init()`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `dispel_test.go` as internal `package dispel`. Cover, at minimum:
 
@@ -147,14 +147,14 @@ Harness notes:
   needing passes must build via `effect.Extract(effect.RestModel{Prop: 1.0})`.
 - Use `logrus/hooks/test` (`logtest.NewNullLogger()`) for the summary assertion.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 go test ./skill/handler/dispel/ -v
 ```
 Expected: compile failure — package does not exist.
 
-- [ ] **Step 3: Implement the handler**
+- [x] **Step 3: Implement the handler**
 
 Create `dispel.go`. Shape (design §3.2):
 
@@ -211,14 +211,14 @@ var cancelByTypesFunc = func(l logrus.FieldLogger, ctx context.Context, f field.
 Do **not** import `constants` or `tenant`; do **not** call `skill2.Is` on
 `info.SkillId()`.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 go test -race ./skill/handler/dispel/ -v && go vet ./skill/handler/dispel/
 ```
 Expected: all tests PASS, vet clean.
 
-- [ ] **Step 5: Verify nothing shared moved**
+- [x] **Step 5: Verify nothing shared moved**
 
 From the worktree root:
 ```bash
@@ -230,7 +230,7 @@ git status --porcelain -- \
 ```
 Expected: EMPTY.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/skill/handler/dispel/
@@ -245,7 +245,7 @@ git commit -m "feat(task-163): Priest Dispel party debuff cure handler"
 - Modify: `services/atlas-channel/atlas.com/channel/skill/handler/registrations/registrations.go`
 - Modify: `services/atlas-channel/docs/domain.md`
 
-- [ ] **Step 1: Add the blank import (additive)**
+- [x] **Step 1: Add the blank import (additive)**
 
 Insert one line into the existing import block, keeping all seven current
 imports:
@@ -260,7 +260,7 @@ grep -c "atlas-channel/skill/handler/" services/atlas-channel/atlas.com/channel/
 ```
 Expected: `8`.
 
-- [ ] **Step 2: Document the handler**
+- [x] **Step 2: Document the handler**
 
 Add a paragraph to `services/atlas-channel/docs/domain.md` next to the existing
 `skill/handler/healdispel` entry, matching its shape: registered identity,
@@ -268,7 +268,7 @@ recipient selection (caster + bitmap-selected in-map party members, map-wide),
 the six-type cure set and why STUN/SEDUCE/CONFUSE are excluded, per-recipient
 prop roll, and the log-and-continue failure policy.
 
-- [ ] **Step 3: Run the full module verification**
+- [x] **Step 3: Run the full module verification**
 
 From `services/atlas-channel/atlas.com/channel`:
 ```bash
@@ -277,7 +277,7 @@ go build ./... && go vet ./... && go test -race ./...
 Expected: all clean / all tests PASS — including the untouched `healdispel`,
 `heal`, `resurrection`, and `common_apply_to_mobs_test.go` suites.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/skill/handler/registrations/registrations.go services/atlas-channel/docs/domain.md
@@ -306,13 +306,13 @@ Time Leap 5121010).
 
 **This task changes no code.** Its output is evidence.
 
-- [ ] **Step 1: Record the current decoder's assumed layout**
+- [x] **Step 1: Record the current decoder's assumed layout**
 
 Read `libs/atlas-packet/model/skill_usage_info.go` and write the exact assumed
 field order for `2311001` into `version-findings.md`, noting the double `delay`
 read. This is the hypothesis every version is tested against.
 
-- [ ] **Step 2: Audit each reachable version**
+- [x] **Step 2: Audit each reachable version**
 
 For each of gms_48, 61, 72, 79, 83, 84, 87, 92, 95, jms_185 (gms_12 is excluded
 — Step 3), determine from that version's client whether a `2311001` cast writes
@@ -335,7 +335,7 @@ Record one row per version:
 
 | Version | castX/castY written? | bitmap written? | mob list written? | Matches current decoder? | Evidence |
 
-- [ ] **Step 3: Record gms_12 as unreachable**
+- [x] **Step 3: Record gms_12 as unreachable**
 
 ```bash
 grep -c CharacterUseSkillHandle services/atlas-configurations/seed-data/templates/template_gms_12_1.json
@@ -344,7 +344,7 @@ grep -c '"handler"' services/atlas-configurations/seed-data/templates/template_g
 Expected: `0` and `24`. Record: no skill-use packet is routed on gms_12, so no
 per-skill handler fires; Dispel is unreachable there and out of scope.
 
-- [ ] **Step 4: Confirm per-version effect data**
+- [x] **Step 4: Confirm per-version effect data**
 
 For each reachable version, confirm `atlas-data` resolves an effect for
 `2311001` and record the prop curve (`GET /api/data/skills/2311001` with that
@@ -354,14 +354,14 @@ no-op the handler cannot compensate for. Do **not** cite prop values from
 memory; the v83 figures (34 at L1 → 100 at L20) are a reference to re-verify,
 not a source.
 
-- [ ] **Step 5: Mark the unreadable honestly**
+- [x] **Step 5: Mark the unreadable honestly**
 
 Any version whose client could not be read is recorded as **unverified, with the
 reason** (no IDB / instance unavailable / function not located). It is never
 folded into the v83 assumption and never reported as passing. Same for any
 version whose `atlas-data` lookup could not be run.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add docs/tasks/task-163-priest-dispel-party/version-findings.md
@@ -380,14 +380,14 @@ Run this task **only** for versions Task 3 recorded as diverging from the
 current decoder. If every reachable version confirmed, skip to Task 5 and note
 in `version-findings.md` that no code change was required.
 
-- [ ] **Step 1: Write the failing byte-layout test**
+- [x] **Step 1: Write the failing byte-layout test**
 
 For each divergent version, add a test that feeds the true byte sequence for a
 `2311001` cast (as derived in Task 3) and asserts
 `AffectedPartyMemberBitmap()` decodes to the expected non-zero value. The
 task-111 precedent: the wire-layout regression test lands with the fix.
 
-- [ ] **Step 2: Correct the decode for those versions only**
+- [x] **Step 2: Correct the decode for those versions only**
 
 Scope discipline — the fix makes **Dispel's** bitmap decode correctly on every
 reachable version. It does **not** become a general version-aware rewrite of the
@@ -395,7 +395,7 @@ three membership lists for all ~50 skills; that is a separate task with its own
 evidence budget. Leave the `// TODO this is not all inclusive` comments in place
 and add a comment citing this task's finding and its evidence.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 From `libs/atlas-packet`:
 ```bash
@@ -407,7 +407,7 @@ go test -race ./... && go build ./...
 ```
 Expected: clean in both — a decoder change ripples into every skill handler.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add libs/atlas-packet/model/
@@ -422,7 +422,7 @@ git commit -m "fix(task-163): correct Dispel skill-use decode on <versions>"
 Verification + design §8). A failure here reopens the offending task; do not
 claim done until every gate passes.
 
-- [ ] **Step 1: Docker bake the changed service**
+- [x] **Step 1: Docker bake the changed service**
 
 From the worktree root:
 ```bash
@@ -432,7 +432,7 @@ Expected: image builds. (`go build` will NOT catch a missing `COPY libs/...` in
 the shared Dockerfile — only bake will. No new lib was added, so no Dockerfile
 edits are expected.)
 
-- [ ] **Step 2: Repo guards**
+- [x] **Step 2: Repo guards**
 
 From the worktree root:
 ```bash
@@ -445,7 +445,7 @@ Expected: all exit 0. `skill-job-id-guard.sh` is the one that would catch a raw
 wire-id comparison slipping into the new package. `lint.sh --check` needs nvm22
 on PATH for its frontend leg — run `tools/lint.sh` (fix mode) before committing.
 
-- [ ] **Step 3: Confirm the negative-space constraints**
+- [x] **Step 3: Confirm the negative-space constraints**
 
 From the worktree root:
 ```bash
@@ -460,7 +460,7 @@ git log --oneline main..HEAD
 Expected: the `diff --stat` output is EMPTY; the grep prints `8`; the log shows
 the task's doc + code commits.
 
-- [ ] **Step 4: Re-run the changed-module gates**
+- [x] **Step 4: Re-run the changed-module gates**
 
 From `services/atlas-channel/atlas.com/channel`:
 ```bash
@@ -471,14 +471,14 @@ And, if Task 4 ran, from `libs/atlas-packet`:
 go test -race ./... && go vet ./... && go build ./...
 ```
 
-- [ ] **Step 5: Confirm the per-version claim is backed**
+- [x] **Step 5: Confirm the per-version claim is backed**
 
 Open `docs/tasks/task-163-priest-dispel-party/version-findings.md` and confirm
 every one of the 11 versions has a row with either evidence or an explicit
 "unverified — reason". A blank row, or a version silently absent, means the
 "all supported versions" claim is not yet earned — do not report it as met.
 
-- [ ] **Step 6: Code review**
+- [x] **Step 6: Code review**
 
 Run `superpowers:requesting-code-review` (mandatory before any PR). It should
 dispatch `plan-adherence-reviewer` and `backend-guidelines-reviewer`; findings

@@ -44,17 +44,17 @@ const FIELDS: Array<
   | { key: ItemFieldKey; label: string; kind: "item" }
   | { key: NumberFieldKey; label: string; kind: "number" }
 > = [
-  { key: "templateId", label: "Template ID", kind: "item" },
+  { key: "templateId", label: "Template", kind: "item" },
   { key: "mesoPrice", label: "Meso Price", kind: "number" },
   { key: "discountRate", label: "Discount Rate", kind: "number" },
-  { key: "tokenTemplateId", label: "Token Template ID", kind: "item" },
+  { key: "tokenTemplateId", label: "Token Template", kind: "item" },
   { key: "tokenPrice", label: "Token Price", kind: "number" },
   { key: "period", label: "Period", kind: "number" },
   { key: "levelLimit", label: "Level Limit", kind: "number" },
 ];
 
 /** Read-only rendering of an item id, used for the non-editable edit-mode
- *  Template ID row. Falls back to the raw id while loading or on failure. */
+ *  Template row. Falls back to the raw id while loading or on failure. */
 function ResolvedItemName({ value, id }: { value: number; id: string }) {
   const current = useItemName(value > 0 ? String(value) : "");
   return (
@@ -111,7 +111,7 @@ export function NpcShopCommodityDialog({
             // must never target the picker trigger. The field name is
             // instead conveyed by wrapping the Label + picker in a
             // `role="group"`/`aria-labelledby` pair: the group (not the
-            // button) carries "Template ID"/"Token Template ID", while the
+            // button) carries "Template"/"Token Template", while the
             // trigger's own text remains its accessible name. `id={controlId}`
             // is still passed to ItemPicker for a stable, addressable DOM id
             // on the trigger — it's just no longer what a <label for> targets.

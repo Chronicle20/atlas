@@ -174,6 +174,9 @@ func TestAffectedAreaCreatedFields(t *testing.T) {
 // reads exactly one CInPacket::Decode4 (dwId, the mist object id) and then does
 // only local rendering/cleanup — no further packet reads in any version:
 //
+//	v61  @0x4246b0: CInPacket::Decode4
+//	v72  @0x42ec4e: CInPacket::Decode4
+//	v79  @0x42f0de: CInPacket::Decode4
 //	v83  @0x43234d: v39 = CInPacket::Decode4(a2)        [0x43236f]
 //	v87  @0x43388c: v37 = CInPacket::Decode4(a2)        [0x4338ae]
 //	v95  @0x4360a0: pos = CInPacket::Decode4(iPacket)   [0x4360e1]
@@ -182,6 +185,9 @@ func TestAffectedAreaCreatedFields(t *testing.T) {
 // Wire layout is identical across all versions: dwId(4) little-endian = 4 bytes.
 // Atlas encodes WriteInt(mistKey(mistId)) — a single LE uint32 — matching exactly.
 //
+// packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v61 ida=0x4246b0
+// packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v72 ida=0x42ec4e
+// packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v79 ida=0x42f0de
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v83 ida=0x43234d
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v84 ida=0x432fb4
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v87 ida=0x43388c
@@ -201,6 +207,9 @@ func TestAffectedAreaRemovedByteOutput(t *testing.T) {
 		Name, Region string
 		Major, Minor uint16
 	}{
+		{"GMS v61", "GMS", 61, 1},
+		{"GMS v72", "GMS", 72, 1},
+		{"GMS v79", "GMS", 79, 1},
 		{"GMS v83", "GMS", 83, 1},
 		{"GMS v84", "GMS", 84, 1},
 		{"GMS v87", "GMS", 87, 1},

@@ -8905,8 +8905,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 62
         },
         "gms_v61": {

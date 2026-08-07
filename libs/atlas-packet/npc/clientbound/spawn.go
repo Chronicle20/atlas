@@ -32,7 +32,7 @@ func hasEnabledFlag(ctx context.Context) bool {
 		// shape: every version except GMS below 61 carries the byte.
 		return true
 	}
-	return t.Region() != "GMS" || t.MajorVersion() >= 61
+	return !t.IsRegion("GMS") || t.MajorAtLeast(61)
 }
 
 const NpcSpawnWriter = "SpawnNPC"

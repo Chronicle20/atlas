@@ -236,7 +236,7 @@ func (m *MonsterTemporaryStat) IsMovementAffectingStat(t tenant.Model) bool {
 // introduced at v79 (anchor CMob::OnStatSet DecodeBuffer(16)). Legacy range only
 // — v79/v83/84/87/95/jms are unchanged.
 func legacyMobStatMask(t tenant.Model) bool {
-	return t.IsRegion("GMS") && t.MajorVersion() < 79
+	return t.IsRegion("GMS") && !t.MajorAtLeast(79)
 }
 
 func (m *MonsterTemporaryStat) EncodeMask(_ logrus.FieldLogger, t tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
@@ -534,14 +534,14 @@ func mobHasTeamAndEffectItem(t tenant.Model) bool {
 // mobLegacyV12Tail reports the GMS v12-and-older tail, which is a bare int rather
 // than the team/effectItemId pair. v48 sits between the two: no tail at all.
 func mobLegacyV12Tail(t tenant.Model) bool {
-	return t.Region() == "GMS" && t.MajorVersion() <= 12
+	return t.IsRegion("GMS") && t.MajorAtMost(12)
 }
 
 func (m *MonsterModel) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(13)) || t.IsRegion("JMS") {
 			w.WriteByteArray(m.monsterTemporaryStat.Encode(l, ctx)(options))
 		}
 		w.WriteInt16(m.x)
@@ -570,7 +570,7 @@ func (m *MonsterModel) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 func (m *MonsterModel) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(13)) || t.IsRegion("JMS") {
 			m.monsterTemporaryStat.Decode(l, ctx)(r, options)
 		}
 		m.x = r.ReadInt16()

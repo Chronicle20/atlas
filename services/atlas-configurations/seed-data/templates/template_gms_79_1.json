@@ -3921,6 +3921,18 @@
         ]
       },
       {
+        "opCode": "0xFB",
+        "writer": "AffectedAreaCreated",
+        "fname": "CAffectedAreaPool::OnAffectedAreaCreated",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xFC",
+        "writer": "AffectedAreaRemoved",
+        "fname": "CAffectedAreaPool::OnAffectedAreaRemoved",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0xFD",
         "writer": "SpawnDoor",
         "fname": "CTownPortalPool::OnTownPortalCreated",

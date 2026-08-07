@@ -199,25 +199,37 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.AwaitCharacterCreated: {EventKindCharacterCreated, EventKindCharacterCreationFailed},
 	sharedsaga.AwaitInventoryCreated: {EventKindInventoryCreated, EventKindInventoryCreationFailed},
 
-	// WarpToRandomPortal advances on the confirmed map change: atlas-character
-	// emits character.map_changed (tagged with the saga transactionId) after the
-	// warp lands, which handleCharacterMapChangedEvent turns into a StepCompleted.
-	// This is required for any saga that chains a step AFTER the warp — e.g. the
-	// teleport-rock consume_rock DestroyAsset (task-124). map_changed is a sound
-	// completion signal HERE because WarpToRandomPortal always targets a different
-	// map (teleport rock rejects same-map with mode 9; transports warp cross-map).
+	// All three warp actions advance on character.map_changed, tagged with the
+	// saga transactionId. atlas-maps warp.ProcessorImpl.ChangeMap
+	// (services/atlas-maps/atlas.com/maps/character/warp/processor.go) emits
+	// MAP_CHANGED *unconditionally* — there is no same-map short-circuit there
+	// or in changeMapFromCommand, so a portal-to-portal warp within one map
+	// acknowledges exactly like a cross-map one.
 	//
-	// WarpToPortal and WarpToSavedLocation share the same "handler fires and
-	// returns without StepCompleted" gap, but they can warp WITHIN the current map
-	// (portal-to-portal), where no map_changed fires — so map_changed is NOT a safe
-	// completion signal for them, and they stay self-completing {} below. Nothing
-	// chains a step after them today; when something needs to, complete them in the
-	// handler (or via a warp-ack event) rather than copying this map_changed entry.
-	sharedsaga.WarpToRandomPortal: {EventKindCharacterMapChanged},
+	// An earlier revision of this comment asserted the opposite and left
+	// WarpToPortal and WarpToSavedLocation self-completing ({}). That claim was
+	// false against the code, and every portal warp saga consequently ran to
+	// SAGA_TIMEOUT — including the ones that succeeded, which made FAILED
+	// worthless as a "the warp did not land" signal (task-184).
+	//
+	// If a same-map short-circuit is ever added to ChangeMap, these three
+	// entries break SILENTLY: the step hangs to timeout again with no error
+	// anywhere. This comment is the only coupling record between the two
+	// services.
+	//
+	// Correlation is (transactionId, characterId). handleCharacterMapChangedEvent
+	// passes ForCharacter(e.CharacterId) so the WarpPartyQuestMembersToMap
+	// fan-out — N warps stamped with one transactionId, see
+	// handleWarpPartyQuestMembers — cannot complete a later step belonging to a
+	// different character. The residual case it cannot separate is one saga in
+	// which the fan-out warps character X and a later step is a WarpToPortal
+	// also naming X; if that ever becomes necessary, give the follow-on warp
+	// its own saga rather than qualifying the correlation here.
+	sharedsaga.WarpToRandomPortal:  {EventKindCharacterMapChanged},
+	sharedsaga.WarpToPortal:        {EventKindCharacterMapChanged},
+	sharedsaga.WarpToSavedLocation: {EventKindCharacterMapChanged},
 
 	// Fire-and-forget / self-completing actions (no Kafka event advances them).
-	sharedsaga.WarpToPortal:               {},
-	sharedsaga.WarpToSavedLocation:        {},
 	sharedsaga.SaveLocation:               {},
 	sharedsaga.SendMessage:                {},
 	sharedsaga.FieldEffect:                {},

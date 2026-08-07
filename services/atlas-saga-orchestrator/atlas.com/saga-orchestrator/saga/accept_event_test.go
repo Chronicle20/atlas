@@ -13,6 +13,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -440,4 +441,111 @@ func TestAcceptEvent_NoOptionIsUnconstrained(t *testing.T) {
 
 	_, ok := p.AcceptEvent(tx, EventKindCharacterMapChanged)
 	assert.True(t, ok)
+}
+
+// FR-4.3: WarpToPortal completes on a MAP_CHANGED carrying the saga tx id.
+func TestAcceptEvent_WarpToPortalCompletesOnMapChanged(t *testing.T) {
+	p, _, ctx := newAcceptEventTestProcessor(t)
+	tx := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("portal-action-warp").
+		AddStep("warp-100", Pending, WarpToPortal, WarpToPortalPayload{
+			CharacterId: 100,
+			WorldId:     0,
+			ChannelId:   1,
+			MapId:       _map.Id(200090510),
+			PortalId:    3,
+		}).
+		Build()
+	require.NoError(t, err)
+	putAcceptEventSaga(t, ctx, s)
+
+	decision, ok := p.AcceptEvent(tx, EventKindCharacterMapChanged, ForCharacter(100))
+	require.True(t, ok, "WarpToPortal must accept map_changed (FR-1.1)")
+	assert.Equal(t, "warp-100", decision.Step.StepId())
+}
+
+// FR-4.3: same for WarpToSavedLocation.
+func TestAcceptEvent_WarpToSavedLocationCompletesOnMapChanged(t *testing.T) {
+	p, _, ctx := newAcceptEventTestProcessor(t)
+	tx := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("portal-action-warp-saved-location").
+		AddStep("warp-saved-100-FREE_MARKET", Pending, WarpToSavedLocation, WarpToSavedLocationPayload{
+			CharacterId:  100,
+			WorldId:      0,
+			ChannelId:    1,
+			LocationType: "FREE_MARKET",
+		}).
+		Build()
+	require.NoError(t, err)
+	putAcceptEventSaga(t, ctx, s)
+
+	decision, ok := p.AcceptEvent(tx, EventKindCharacterMapChanged, ForCharacter(100))
+	require.True(t, ok, "WarpToSavedLocation must accept map_changed (FR-1.1)")
+	assert.Equal(t, "warp-saved-100-FREE_MARKET", decision.Step.StepId())
+}
+
+// FR-4.5: the same-map case. The old comment claimed no map_changed fires for
+// a portal-to-portal warp within one map; atlas-maps
+// warp.ProcessorImpl.ChangeMap emits it unconditionally. The acceptance path
+// is map-agnostic, so this asserts no same-map special case was introduced.
+func TestAcceptEvent_WarpToPortalSameMapCompletes(t *testing.T) {
+	p, _, ctx := newAcceptEventTestProcessor(t)
+	tx := uuid.New()
+	const sameMap = 200090510
+	s, err := NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("portal-action-warp").
+		AddStep("warp-100", Pending, WarpToPortal, WarpToPortalPayload{
+			CharacterId: 100,
+			WorldId:     0,
+			ChannelId:   1,
+			MapId:       _map.Id(sameMap), // target == origin
+			PortalId:    3,
+		}).
+		Build()
+	require.NoError(t, err)
+	putAcceptEventSaga(t, ctx, s)
+
+	_, ok := p.AcceptEvent(tx, EventKindCharacterMapChanged, ForCharacter(100))
+	assert.True(t, ok, "a same-map warp acknowledges exactly like a cross-map one (FR-4.5)")
+}
+
+// FR-4.4 on the newly-accepting action: the party-quest fan-out case this
+// whole guard exists for.
+func TestAcceptEvent_WarpToPortalRejectsOtherCharacter(t *testing.T) {
+	p, hook, ctx := newAcceptEventTestProcessor(t)
+	tx := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("portal-action-warp").
+		AddStep("warp-B", Pending, WarpToPortal, WarpToPortalPayload{
+			CharacterId: 200, // character B
+			WorldId:     0,
+			ChannelId:   1,
+			MapId:       _map.Id(200090510),
+			PortalId:    3,
+		}).
+		Build()
+	require.NoError(t, err)
+	putAcceptEventSaga(t, ctx, s)
+
+	// character A's arrival must not complete B's step
+	_, ok := p.AcceptEvent(tx, EventKindCharacterMapChanged, ForCharacter(100))
+	assert.False(t, ok)
+
+	var found bool
+	for _, e := range hook.AllEntries() {
+		if e.Data["reason"] == SkipReasonCharacterIdMismatch {
+			found = true
+		}
+	}
+	assert.True(t, found, "reason must be character_id_mismatch (FR-1.5)")
 }

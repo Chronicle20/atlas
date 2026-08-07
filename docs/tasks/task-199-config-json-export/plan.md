@@ -61,7 +61,7 @@ All paths below are relative to `services/atlas-ui/` unless stated otherwise. Ru
 - Consumes: nothing.
 - Produces: `export function downloadJson(filename: string, payload: unknown): void` — serialises `payload` as `JSON.stringify(payload, null, 2)` plus a trailing `"\n"`, wraps it in an `application/json` Blob, and triggers a download named `filename`. Throws whatever `JSON.stringify` throws, without having created an object URL.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/lib/utils/__tests__/download-json.test.ts`:
 
@@ -145,12 +145,12 @@ describe("downloadJson", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd services/atlas-ui && npx vitest run src/lib/utils/__tests__/download-json.test.ts`
 Expected: FAIL — cannot resolve `@/lib/utils/download-json`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `src/lib/utils/download-json.ts`:
 
@@ -186,12 +186,12 @@ export function downloadJson(filename: string, payload: unknown): void {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `cd services/atlas-ui && npx vitest run src/lib/utils/__tests__/download-json.test.ts`
 Expected: PASS — 4 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-ui/src/lib/utils/download-json.ts \
@@ -218,7 +218,7 @@ git commit -m "feat(ui): add downloadJson helper for client-side JSON export"
 
 Not added to the `src/lib/utils/index.ts` barrel — that barrel re-exports only `toast` and `maplestory`; call sites import from the module path directly, matching `asset-url`, `clock`, `reward-pool-chance`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/lib/utils/__tests__/config-export.test.ts`:
 
@@ -384,12 +384,12 @@ describe("configExportFilename", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd services/atlas-ui && npx vitest run src/lib/utils/__tests__/config-export.test.ts`
 Expected: FAIL — cannot resolve `@/lib/utils/config-export`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `src/lib/utils/config-export.ts`:
 
@@ -506,12 +506,12 @@ export function configExportFilename(
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `cd services/atlas-ui && npx vitest run src/lib/utils/__tests__/config-export.test.ts`
 Expected: PASS — 14 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-ui/src/lib/utils/config-export.ts \
@@ -535,7 +535,7 @@ git commit -m "feat(ui): add config export payload projection and filename deriv
   - `export interface ConfigExportButtonProps { kind: ConfigExportKind; id: string | undefined }`
   - `export function ConfigExportButton(props: ConfigExportButtonProps): JSX.Element`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/components/features/config/__tests__/ConfigExportButton.test.tsx`:
 
@@ -732,12 +732,12 @@ describe("ConfigExportButton", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd services/atlas-ui && npx vitest run src/components/features/config/__tests__/ConfigExportButton.test.tsx`
 Expected: FAIL — cannot resolve `@/components/features/config/ConfigExportButton`.
 
-- [ ] **Step 3: Add the `useDetailActionBarState` accessor**
+- [x] **Step 3: Add the `useDetailActionBarState` accessor**
 
 In `src/components/DetailActionBarContext.tsx`, append this export at the end of the file (after `DetailActionBar`):
 
@@ -755,7 +755,7 @@ export function useDetailActionBarState(): DetailActionBarConfig | null {
 }
 ```
 
-- [ ] **Step 4: Write the `ConfigExportButton` implementation**
+- [x] **Step 4: Write the `ConfigExportButton` implementation**
 
 Create `src/components/features/config/ConfigExportButton.tsx`:
 
@@ -855,12 +855,12 @@ export function ConfigExportButton({ kind, id }: ConfigExportButtonProps) {
 }
 ```
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [x] **Step 5: Run the test to verify it passes**
 
 Run: `cd services/atlas-ui && npx vitest run src/components/features/config/__tests__/ConfigExportButton.test.tsx`
 Expected: PASS — 8 tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-ui/src/components/DetailActionBarContext.tsx \
@@ -883,7 +883,7 @@ git commit -m "feat(ui): add ConfigExportButton and DetailActionBar state access
 - Consumes: `ConfigExportButton` (Task 3).
 - Produces: nothing new — the layouts' props are unchanged.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `src/components/features/templates/__tests__/TemplateDetailLayout.test.tsx`:
 
@@ -969,12 +969,12 @@ describe("TenantDetailLayout", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd services/atlas-ui && npx vitest run src/components/features/templates/__tests__/TemplateDetailLayout.test.tsx src/components/features/tenants/__tests__/TenantDetailLayout.test.tsx`
 Expected: FAIL — `Unable to find an accessible element with the role "button" and name "Export"`.
 
-- [ ] **Step 3: Wire the template layout**
+- [x] **Step 3: Wire the template layout**
 
 In `src/components/features/templates/TemplateDetailLayout.tsx`, add the import:
 
@@ -1007,7 +1007,7 @@ with
         </div>
 ```
 
-- [ ] **Step 4: Wire the tenant layout**
+- [x] **Step 4: Wire the tenant layout**
 
 In `src/components/features/tenants/TenantDetailLayout.tsx`, add the import:
 
@@ -1038,12 +1038,12 @@ with
 
 The `DetailActionBar` at the bottom of each layout and the `DetailActionBarProvider` wrapper are untouched — the export button renders inside the provider (so `useDetailActionBarState` resolves) but in a different branch of the tree from the save bar.
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cd services/atlas-ui && npx vitest run src/components/features/templates/__tests__/TemplateDetailLayout.test.tsx src/components/features/tenants/__tests__/TenantDetailLayout.test.tsx`
 Expected: PASS — 2 tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-ui/src/components/features/templates/TemplateDetailLayout.tsx \
@@ -1064,22 +1064,22 @@ git commit -m "feat(ui): render the config Export button in both detail layouts"
 - Consumes: everything from Tasks 1–4.
 - Produces: a branch that satisfies every acceptance criterion in `prd.md` §10.
 
-- [ ] **Step 1: Run the full unit suite**
+- [x] **Step 1: Run the full unit suite**
 
 Run: `cd services/atlas-ui && npm run test`
 Expected: PASS, no new failures. If a pre-existing failure appears, capture its output and confirm it also fails on `main` before treating it as unrelated — do not silence it.
 
-- [ ] **Step 2: Type-check via the build**
+- [x] **Step 2: Type-check via the build**
 
 Run: `cd services/atlas-ui && npm run build`
 Expected: `tsc -b` clean (this is the type-check, and it covers the new test files), then a successful `vite build`.
 
-- [ ] **Step 3: Run the shared lint & format guard**
+- [x] **Step 3: Run the shared lint & format guard**
 
 Run (from the worktree root, with nvm 22 on PATH): `tools/lint.sh --check`
 Expected: exit 0. If it reports formatting drift, run `tools/lint.sh` (no flags) to fix in place, then re-run `--check`.
 
-- [ ] **Step 4: Confirm the diff containment**
+- [x] **Step 4: Confirm the diff containment**
 
 Run (from the worktree root):
 
@@ -1089,7 +1089,7 @@ git diff --name-only main...HEAD | grep -v '^services/atlas-ui/' | grep -v '^doc
 
 Expected: no output. Any path printed is a violation of the Global Constraints — no Go module may be touched, so no `docker buildx bake` target is in scope.
 
-- [ ] **Step 5: Manually verify the exported file against a seed**
+- [ ] **Step 5: Manually verify the exported file against a seed** — NOT PERFORMED. Deferred to the human partner by explicit decision: this step needs a real browser (dev server + click + inspect the downloaded file), which the execution environment cannot drive. Everything it would cover at the data level is covered by automated fixtures (key order, sorting, null normalisation, trailing newline); what remains uncovered is the browser's actual download behaviour — notably the synchronous `URL.revokeObjectURL` in `download-json.ts`, which jsdom cannot exercise.
 
 Run the dev server (`cd services/atlas-ui && npm run dev`), open a Template Details page for a seeded version, click **Export**, and check the downloaded file:
 
@@ -1101,7 +1101,7 @@ tail -c 2 ~/Downloads/template_gms_83_1.json | od -c
 
 Expected: keys in the order `['region','majorVersion','minorVersion','usesPin','socket','characters','npcs','worlds','cashShop']` (a live tenant may carry a subset), the file ending in `}\n`, and a diff against `services/atlas-configurations/seed-data/templates/template_gms_83_1.json` showing only intentional drift. Record what you observed — do not claim this step passed without the actual output.
 
-- [ ] **Step 6: Commit any gate fixes**
+- [x] **Step 6: Commit any gate fixes**
 
 ```bash
 git add -A services/atlas-ui

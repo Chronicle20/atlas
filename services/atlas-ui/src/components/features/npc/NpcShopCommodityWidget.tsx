@@ -8,6 +8,7 @@ interface NpcShopCommodityWidgetProps {
   tokenPrice: number;
   tokenTemplateId: number;
   name?: string;
+  tokenName?: string;
   iconUrl?: string;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -19,11 +20,17 @@ export function NpcShopCommodityWidget({
   tokenPrice,
   tokenTemplateId,
   name,
+  tokenName,
   iconUrl,
   onEdit,
   onDelete,
 }: NpcShopCommodityWidgetProps) {
-  const priceLine = formatPrice(mesoPrice, tokenPrice, tokenTemplateId);
+  const priceLine = formatPrice(
+    mesoPrice,
+    tokenPrice,
+    tokenTemplateId,
+    tokenName,
+  );
   const displayName = name || `Item #${templateId}`;
   const hasActions = onEdit || onDelete;
   return (
@@ -89,11 +96,18 @@ function formatPrice(
   mesoPrice: number,
   tokenPrice: number,
   tokenTemplateId: number,
+  tokenName?: string,
 ): string {
   const parts: string[] = [];
   if (mesoPrice > 0) parts.push(`${mesoPrice.toLocaleString()} mesos`);
   if (tokenPrice > 0 && tokenTemplateId > 0) {
-    parts.push(`${tokenPrice.toLocaleString()} × item ${tokenTemplateId}`);
+    // Prefer the token item's name; the raw id is only a fallback for while
+    // the name query is in flight or when the item has no string entry.
+    parts.push(
+      tokenName
+        ? `${tokenPrice.toLocaleString()} ${tokenName}`
+        : `${tokenPrice.toLocaleString()} × item ${tokenTemplateId}`,
+    );
   }
   if (parts.length === 0) return "Free";
   return parts.join(" · ");

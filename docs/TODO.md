@@ -12,7 +12,6 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 - [ ] **atlas-object-id silent-collision fallback** - On Redis allocator failure, monsters/reactors/drops fall back to returning `objectid.MinId` instead of failing the spawn, so every entity spawned during a Redis outage gets ID 1,000,000 and they all collide in storage
 
 ### High Priority (Feature Incomplete)
-- [ ] **TokenItem Purchasing** - Returns "not implemented" error in NPC shops
 - [ ] **Reactor Actions** - Boss weakening, environment manipulation, mass kill sagas
 - [ ] **Lint burn-down (task-171 follow-up)** - The Go linter layer of
   `tools/lint.sh` is rev-gated (`--new-from-rev` merge-base) so only new code
@@ -265,9 +264,6 @@ that is not available on the wire:
 
 ### NPC Conversations Service
 - [ ] Stale TODO comment in condition evaluator (`conversation/processor.go:590`)
-
-### NPC Shops Service
-- [ ] **Implement TokenItem purchasing** (`shops/processor.go:430`)
 
 ### Pets Service
 - [ ] Generate cashId if cashId == 0 (`pet/processor.go:199`)

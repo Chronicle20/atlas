@@ -96,10 +96,19 @@ export function NpcShopCard({ npcId, hasShop }: NpcShopCardProps) {
     setRecharger(shop?.data.attributes.recharger ?? false);
   }
 
-  const templateIds = useMemo(
-    () => commodities.map((c) => c.attributes.templateId),
-    [commodities],
-  );
+  // Token template ids ride along in the same batch so a token shop's price
+  // line can name the token item instead of printing its raw id. Deduped —
+  // one shop typically prices every commodity in the same token.
+  const templateIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const c of commodities) {
+      ids.add(c.attributes.templateId);
+      if (c.attributes.tokenTemplateId > 0) {
+        ids.add(c.attributes.tokenTemplateId);
+      }
+    }
+    return [...ids];
+  }, [commodities]);
   const itemBatch = useItemBatchData(templateIds);
   const itemDataById = useMemo(() => {
     const m = new Map<
@@ -368,6 +377,9 @@ export function NpcShopCard({ npcId, hasShop }: NpcShopCardProps) {
                   const data = itemDataById.get(
                     commodity.attributes.templateId,
                   );
+                  const tokenData = itemDataById.get(
+                    commodity.attributes.tokenTemplateId,
+                  );
                   return (
                     <NpcShopCommodityWidget
                       key={commodity.id}
@@ -376,6 +388,9 @@ export function NpcShopCard({ npcId, hasShop }: NpcShopCardProps) {
                       tokenPrice={commodity.attributes.tokenPrice}
                       tokenTemplateId={commodity.attributes.tokenTemplateId}
                       {...(data?.name !== undefined && { name: data.name })}
+                      {...(tokenData?.name !== undefined && {
+                        tokenName: tokenData.name,
+                      })}
                       {...(data?.iconUrl !== undefined && {
                         iconUrl: data.iconUrl,
                       })}

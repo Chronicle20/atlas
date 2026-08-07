@@ -390,6 +390,12 @@ const (
 	SkipReasonUnmatchedEvent     = "unmatched_event"
 	SkipReasonNilTransactionId   = "nil_transaction_id"
 	SkipReasonSagaTerminal       = "saga_terminal"
+	// SkipReasonCharacterIdMismatch: a character-scoped event (today only
+	// character.map_changed) carried a characterId that does not match the
+	// character named by the current step's payload. Expected traffic under
+	// the WarpPartyQuestMembersToMap fan-out, which stamps N warps with one
+	// transaction id — see saga/handler.go handleWarpPartyQuestMembers.
+	SkipReasonCharacterIdMismatch = "character_id_mismatch"
 )
 
 // LogSkip emits a debug-level structured log with a `reason` field.

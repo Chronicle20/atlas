@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -348,4 +349,95 @@ func TestAcceptEvent_TerminalRoutesLateSuccessOnly(t *testing.T) {
 	_, ok = p.AcceptEvent(tx, EventKindCharacterMesoChanged)
 	assert.False(t, ok)
 	assert.Equal(t, 1, refunds, "success outcome must dispatch exactly one inverse")
+}
+
+// FR-1.3/FR-1.5: a MAP_CHANGED for character A must not complete a step whose
+// payload names character B. WarpToRandomPortal is used here because it
+// already accepts EventKindCharacterMapChanged before Task 3 lands.
+func TestAcceptEvent_CharacterIdMismatchSkips(t *testing.T) {
+	p, hook, ctx := newAcceptEventTestProcessor(t)
+	tx := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("warp-1", Pending, WarpToRandomPortal, WarpToRandomPortalPayload{
+			CharacterId: 100,
+			FieldId:     field.Id("0:1:0:00000000-0000-0000-0000-000000000000"),
+		}).
+		Build()
+	require.NoError(t, err)
+	putAcceptEventSaga(t, ctx, s)
+
+	_, ok := p.AcceptEvent(tx, EventKindCharacterMapChanged, ForCharacter(999))
+	assert.False(t, ok, "an event for a different character must not complete the step")
+
+	var found bool
+	for _, e := range hook.AllEntries() {
+		if e.Data["reason"] == SkipReasonCharacterIdMismatch {
+			found = true
+			assert.Equal(t, uint32(999), e.Data["event_character_id"])
+			assert.Equal(t, uint32(100), e.Data["step_character_id"])
+		}
+	}
+	assert.True(t, found, "the skip must be logged with reason character_id_mismatch")
+}
+
+// The matching character completes normally.
+func TestAcceptEvent_CharacterIdMatchAccepts(t *testing.T) {
+	p, _, ctx := newAcceptEventTestProcessor(t)
+	tx := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("warp-1", Pending, WarpToRandomPortal, WarpToRandomPortalPayload{
+			CharacterId: 100,
+			FieldId:     field.Id("0:1:0:00000000-0000-0000-0000-000000000000"),
+		}).
+		Build()
+	require.NoError(t, err)
+	putAcceptEventSaga(t, ctx, s)
+
+	decision, ok := p.AcceptEvent(tx, EventKindCharacterMapChanged, ForCharacter(100))
+	require.True(t, ok)
+	assert.Equal(t, "warp-1", decision.Step.StepId())
+}
+
+// A payload with no character id is unconstrained — every pre-existing
+// action's behaviour is preserved.
+func TestAcceptEvent_NoCharacterIdInPayloadIsUnconstrained(t *testing.T) {
+	p, _, ctx := newAcceptEventTestProcessor(t)
+	tx := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("warp-1", Pending, WarpToRandomPortal, struct{ Nothing string }{}).
+		Build()
+	require.NoError(t, err)
+	putAcceptEventSaga(t, ctx, s)
+
+	_, ok := p.AcceptEvent(tx, EventKindCharacterMapChanged, ForCharacter(999))
+	assert.True(t, ok, "ExtractCharacterId returns 0 -> unconstrained -> accept")
+}
+
+// Calling without the option is unchanged behaviour for the other ~60 sites.
+func TestAcceptEvent_NoOptionIsUnconstrained(t *testing.T) {
+	p, _, ctx := newAcceptEventTestProcessor(t)
+	tx := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("warp-1", Pending, WarpToRandomPortal, WarpToRandomPortalPayload{
+			CharacterId: 100,
+			FieldId:     field.Id("0:1:0:00000000-0000-0000-0000-000000000000"),
+		}).
+		Build()
+	require.NoError(t, err)
+	putAcceptEventSaga(t, ctx, s)
+
+	_, ok := p.AcceptEvent(tx, EventKindCharacterMapChanged)
+	assert.True(t, ok)
 }

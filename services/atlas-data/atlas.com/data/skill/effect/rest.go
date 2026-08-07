@@ -116,3 +116,122 @@ type area struct {
 	Start uint32 `json:"start"`
 	End   uint32 `json:"end"`
 }
+
+// Transform converts the immutable domain Model into its wire representation.
+// LT/RB collapse to nil when the rectangle is the zero point, matching the
+// wz `time`-absent-vector convention the client expects (an absent rectangle
+// serializes as JSON null, not {"x":0,"y":0}). CardStats has no builder-side
+// setter (nothing populates it yet), so it always transforms to its zero
+// value — unchanged from the prior direct-to-RestModel behavior.
+func Transform(m Model) (RestModel, error) {
+	var ltPtr *PointRestModel
+	if m.LT().X() != 0 || m.LT().Y() != 0 {
+		ltPtr = &PointRestModel{X: int16(m.LT().X()), Y: int16(m.LT().Y())}
+	}
+	var rbPtr *PointRestModel
+	if m.RB().X() != 0 || m.RB().Y() != 0 {
+		rbPtr = &PointRestModel{X: int16(m.RB().X()), Y: int16(m.RB().Y())}
+	}
+	return RestModel{
+		WeaponAttack:         m.WeaponAttack(),
+		MagicAttack:          m.MagicAttack(),
+		WeaponDefense:        m.WeaponDefense(),
+		MagicDefense:         m.MagicDefense(),
+		Accuracy:             m.Accuracy(),
+		Avoidability:         m.Avoidability(),
+		Speed:                m.Speed(),
+		Jump:                 m.Jump(),
+		Hp:                   m.Hp(),
+		Mp:                   m.Mp(),
+		HPR:                  m.HPR(),
+		MPR:                  m.MPR(),
+		MHPRRate:             m.MHPRRate(),
+		MMPRRate:             m.MMPRRate(),
+		MobSkill:             m.MobSkill(),
+		MobSkillLevel:        m.MobSkillLevel(),
+		MHPR:                 m.MHPR(),
+		MMPR:                 m.MMPR(),
+		HPConsume:            m.HPConsume(),
+		MPConsume:            m.MPConsume(),
+		Duration:             m.Duration(),
+		Target:               m.Target(),
+		Barrier:              m.Barrier(),
+		Mob:                  m.Mob(),
+		OverTime:             m.OverTime(),
+		RepeatEffect:         m.RepeatEffect(),
+		MoveTo:               m.MoveTo(),
+		CP:                   m.CP(),
+		NuffSkill:            m.NuffSkill(),
+		Skill:                m.Skill(),
+		X:                    m.X(),
+		Y:                    m.Y(),
+		MobCount:             m.MobCount(),
+		MoneyConsume:         m.MoneyConsume(),
+		Cooldown:             m.Cooldown(),
+		MorphId:              m.MorphId(),
+		Ghost:                m.Ghost(),
+		Fatigue:              m.Fatigue(),
+		Berserk:              m.Berserk(),
+		Booster:              m.Booster(),
+		Prop:                 m.Prop(),
+		ItemConsume:          m.ItemConsume(),
+		ItemConsumeAmount:    m.ItemConsumeAmount(),
+		Damage:               m.Damage(),
+		AttackCount:          m.AttackCount(),
+		FixDamage:            m.FixDamage(),
+		LT:                   ltPtr,
+		RB:                   rbPtr,
+		BulletCount:          m.BulletCount(),
+		BulletConsume:        m.BulletConsume(),
+		MapProtection:        m.MapProtection(),
+		CureAbnormalStatuses: m.CureAbnormalStatuses(),
+		Statups:              m.Statups(),
+		MonsterStatus:        m.MonsterStatus(),
+		Range:                m.Range(),
+		Mastery:              m.Mastery(),
+		Z:                    m.Z(),
+		Dot:                  m.Dot(),
+		Cr:                   m.Cr(),
+		DotInterval:          m.DotInterval(),
+		DotTime:              m.DotTime(),
+		DamR:                 m.DamR(),
+		CriticaldamageMin:    m.CriticaldamageMin(),
+		V:                    m.V(),
+		IgnoreMobpdpR:        m.IgnoreMobpdpR(),
+		Epad:                 m.Epad(),
+		W:                    m.W(),
+		U:                    m.U(),
+		Epdd:                 m.Epdd(),
+		Emdd:                 m.Emdd(),
+		SelfDestruction:      m.SelfDestruction(),
+		AsrR:                 m.AsrR(),
+		T:                    m.T(),
+		Er:                   m.Er(),
+		PddR:                 m.PddR(),
+		TerR:                 m.TerR(),
+		MadX:                 m.MadX(),
+		SubProp:              m.SubProp(),
+		Emhp:                 m.Emhp(),
+		CriticaldamageMax:    m.CriticaldamageMax(),
+		ExpR:                 m.ExpR(),
+		Emmp:                 m.Emmp(),
+		ConsumeItemId:        m.ConsumeItemId(),
+		MddR:                 m.MddR(),
+		SubTime:              m.SubTime(),
+		PadX:                 m.PadX(),
+		MesoR:                m.MesoR(),
+	}, nil
+}
+
+// TransformAll converts a slice of domain Models to their wire representation.
+func TransformAll(ms []Model) ([]RestModel, error) {
+	rms := make([]RestModel, 0, len(ms))
+	for _, m := range ms {
+		rm, err := Transform(m)
+		if err != nil {
+			return nil, err
+		}
+		rms = append(rms, rm)
+	}
+	return rms, nil
+}

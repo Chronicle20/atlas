@@ -475,9 +475,14 @@ func getEffect(t tenant.Model, skillId skill.Id, overTime bool, node xml.Node) e
 	}
 
 	statups = produceBuffStatAmount(statups, character.TemporaryStatTypeMorph, int32(e.MorphId()))
-	return e.SetMonsterStatus(ms).
+	m := e.SetMonsterStatus(ms).
 		SetStatups(statups).
 		Build()
+	// Transform is a pure struct copy over an already-built Model; it never
+	// errors in practice (mirrors the no-op-error Transform convention used
+	// elsewhere, e.g. atlas-query-aggregator's transport.Transform).
+	rm, _ := effect.Transform(m)
+	return rm
 }
 
 func getMob(node xml.Node) uint32 {

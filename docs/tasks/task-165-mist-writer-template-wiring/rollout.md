@@ -151,22 +151,27 @@ For each patched tenant, after the restart completes:
    appear for that tenant afterward.
 3. Record the result in Section 4.
 
-## 4. Known limitation — mist client-side expiry is not fixed by this rollout
+## 4. Mist client-side expiry
 
 Client disassembly established that the client computes a mist's client-side
 expiry as `phase * 100 + <current time>` from the `AffectedAreaCreated`
-packet's `phase` field. `services/atlas-channel/atlas.com/channel/kafka/consumer/mist/consumer.go:93`
-currently always sends `phase = 0`; the real mist duration is instead written
-into a trailing field (`tEnd`) that the client stores raw but does not read
-when computing expiry.
+packet's `phase` field. This was previously a known defect: the consumer sent
+a hardcoded `phase = 0`, so every mist expired on the client almost
+immediately regardless of its real server-side duration.
 
-This is a **pre-existing defect, out of scope for this rollout**. After this
-rollout, mists will render correctly on the client — which is what proves the
-writer wiring is working — but their client-side visible lifetime is driven by
-`phase = 0`, not by the mist's actual configured duration. When verifying this
-rollout (Section 3.5), expect mists to appear; do **not** treat a mist that
-disappears earlier or later than its configured duration as a rollout failure.
-Fixing the `phase` computation is a separate change.
+**This is now fixed (task-12).** `services/atlas-channel/atlas.com/channel/kafka/consumer/mist/consumer.go`
+derives `phase` from the mist's real duration (`Duration / 100`, i.e.
+milliseconds converted to the client's 100ms unit), clamped to the wire
+field's `int16` range and floored at 1 for sub-100ms/zero/negative durations.
+The trailing `tEnd` field is unchanged and still carries the raw duration in
+milliseconds (its ultimate client-side purpose remains open — see
+`discovery.md` — but it is not the field the client uses to compute expiry).
+
+When verifying this rollout (Section 3.5), expect mists to render **and**
+persist for their full configured duration before disappearing on the
+client. A mist that disappears substantially earlier or later than its
+configured duration should now be treated as a rollout/regression concern,
+not expected behavior.
 
 ## 5. Environment record
 

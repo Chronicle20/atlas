@@ -5,6 +5,7 @@ import (
 	"atlas-channel/server"
 	"atlas-channel/socket/writer"
 	"context"
+	"math"
 	"testing"
 
 	"github.com/google/uuid"
@@ -112,6 +113,9 @@ func TestMistCreated_BroadcastsAffectedAreaCreated(t *testing.T) {
 	if lastCreated.TEnd() != 8000 {
 		t.Fatalf("AffectedAreaCreated.TEnd: want 8000 (duration ms), got %d", lastCreated.TEnd())
 	}
+	if lastCreated.Phase() != 80 {
+		t.Fatalf("AffectedAreaCreated.Phase: want 80 (8000ms / 100), got %d", lastCreated.Phase())
+	}
 	if lastCreated.SkillId() != 2121006 {
 		t.Fatalf("AffectedAreaCreated.SkillId: want 2121006, got %d", lastCreated.SkillId())
 	}
@@ -144,6 +148,70 @@ func TestMistCreated_WrongType_DoesNotBroadcast(t *testing.T) {
 
 	if *createdCalls != 0 {
 		t.Fatalf("wrong-type event: want 0 broadcasts, got %d", *createdCalls)
+	}
+}
+
+// TestMistPhase covers the duration(ms) -> phase(100ms units) conversion
+// performed for the AffectedAreaCreated `phase` field, including the
+// int16-overflow clamp, the sub-100ms truncation floor, and the degenerate
+// zero/negative cases (task-12: phase must carry the real mist lifetime so
+// the client computes the correct expiry instead of `0*100 + now`).
+func TestMistPhase(t *testing.T) {
+	tests := []struct {
+		name       string
+		durationMs int64
+		want       int16
+	}{
+		{name: "normal duration", durationMs: 8000, want: 80},
+		{name: "exact 100ms boundary", durationMs: 100, want: 1},
+		{name: "sub-100ms truncation floors to 1", durationMs: 50, want: 1},
+		{name: "zero duration floors to 1", durationMs: 0, want: 1},
+		{name: "negative duration floors to 1", durationMs: -5000, want: 1},
+		{name: "int16-max duration is exact", durationMs: int64(math.MaxInt16) * 100, want: math.MaxInt16},
+		{name: "overflow clamps to int16 max", durationMs: int64(math.MaxInt16)*100 + 100, want: math.MaxInt16},
+		{name: "large overflow clamps to int16 max", durationMs: 1_000_000_000, want: math.MaxInt16},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := mistPhase(tt.durationMs); got != tt.want {
+				t.Fatalf("mistPhase(%d): want %d, got %d", tt.durationMs, tt.want, got)
+			}
+		})
+	}
+}
+
+// TestMistCreated_PhaseOverflow_ClampsToInt16Max asserts the consumer-level
+// wiring (not just the mistPhase helper in isolation) clamps a duration that
+// would overflow the wire int16 phase field, so a very long mist does not
+// wrap into a negative phase (which would compute a client-side expiry in
+// the past).
+func TestMistCreated_PhaseOverflow_ClampsToInt16Max(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	restore, _, lastCreated, _, _ := withRecordingBroadcasters(t)
+	defer restore()
+
+	h := handleMistCreated(sc, nil)
+	h(logrus.New(), ctx, mist2.Event[mist2.CreatedBody]{
+		Tenant:    tm.Id(),
+		WorldId:   sc.WorldId(),
+		ChannelId: sc.ChannelId(),
+		MapId:     100000000,
+		Instance:  uuid.Nil,
+		MistId:    uuid.New(),
+		Type:      mist2.EventTypeCreated,
+		Body: mist2.CreatedBody{
+			Duration: 1_000_000_000, // far beyond int16*100
+		},
+	})
+
+	if lastCreated.Phase() != math.MaxInt16 {
+		t.Fatalf("AffectedAreaCreated.Phase: want %d (int16 max, clamped), got %d", int16(math.MaxInt16), lastCreated.Phase())
+	}
+	if lastCreated.Phase() < 0 {
+		t.Fatalf("AffectedAreaCreated.Phase must never be negative (would compute a past expiry), got %d", lastCreated.Phase())
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"math"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -75,6 +76,38 @@ var affectedAreaRemovedBroadcaster = func(l logrus.FieldLogger, ctx context.Cont
 	}
 }
 
+// mistPhaseUnitMs is the client's unit for the AffectedAreaCreated `phase`
+// field: CAffectedAreaPool::OnAffectedAreaCreated computes the mist's
+// absolute client-side expiry tick as `phase * 100 + get_update_time()`
+// (gms_48 0x421933-0x42193f, gms_61 0x423fbb-0x423fc7, gms_92
+// 0x43936d/0x439383/0x4393c4 — see
+// docs/tasks/task-165-mist-writer-template-wiring/discovery.md). phase is
+// therefore the mist lifetime expressed in units of 100 ms.
+const mistPhaseUnitMs = 100
+
+// mistPhase converts a mist duration in milliseconds to the wire `phase`
+// value (units of 100 ms). The field is a signed 16-bit wire value
+// (Decode2/WriteInt16 on every version), so a duration longer than
+// math.MaxInt16*100 (~54.6 minutes) is clamped to math.MaxInt16 rather than
+// overflowing into a negative phase, which would compute a client-side
+// expiry in the past. A positive duration under 100ms would truncate to 0 —
+// which the client itself clamps to 1 (gms_48 0x421945-0x42194a, gms_61
+// 0x423fcd-0x423fd2, gms_92 0x4393c7-0x4393cb) — so it is floored to 1 here
+// instead, to keep that intent explicit in server code rather than relying
+// on client-side clamping. A zero or negative duration is degenerate input;
+// it is likewise floored to 1 so the mist still gets a well-defined
+// (minimal) client-side lifetime instead of an immediate/negative expiry.
+func mistPhase(durationMs int64) int16 {
+	phase := durationMs / mistPhaseUnitMs
+	if phase > math.MaxInt16 {
+		return math.MaxInt16
+	}
+	if phase < 1 {
+		return 1
+	}
+	return int16(phase)
+}
+
 func handleMistCreated(sc server.Model, wp writer.Producer) message.Handler[mist2.Event[mist2.CreatedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e mist2.Event[mist2.CreatedBody]) {
 		if e.Type != mist2.EventTypeCreated {
@@ -90,7 +123,7 @@ func handleMistCreated(sc server.Model, wp writer.Producer) message.Handler[mist
 			e.Body.Type,
 			int32(e.Body.SourceSkillId),
 			byte(e.Body.SourceSkillLevel),
-			0, // phase (server default; B1.1b)
+			mistPhase(e.Body.Duration), // phase <- duration (ms) / 100, clamped/floored
 			e.Body.OriginX, e.Body.OriginY,
 			e.Body.LtX, e.Body.LtY,
 			e.Body.RbX, e.Body.RbY,

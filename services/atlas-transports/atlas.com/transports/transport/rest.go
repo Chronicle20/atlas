@@ -10,18 +10,26 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-// RestModel is the JSON:API resource for a transport route
+// RestModel is the JSON:API resource for a transport route.
+//
+// CycleInterval is a time.Duration and therefore serialises as an integer
+// nanosecond count. It is retained unchanged for existing consumers; new
+// consumers read the unit-explicit *Seconds fields below.
 type RestModel struct {
-	ID               uuid.UUID               `json:"-"`
-	Name             string                  `json:"name"`
-	StartMapID       _map.Id                 `json:"startMapId"`
-	StagingMapID     _map.Id                 `json:"stagingMapId"`
-	EnRouteMapIDs    []_map.Id               `json:"enRouteMapIds"`
-	DestinationMapID _map.Id                 `json:"destinationMapId"`
-	ObservationMapID _map.Id                 `json:"observationMapId"`
-	State            string                  `json:"state"`
-	CycleInterval    time.Duration           `json:"cycleInterval"`
-	Schedule         []TripScheduleRestModel `json:"-"`
+	ID                    uuid.UUID               `json:"-"`
+	Name                  string                  `json:"name"`
+	StartMapID            _map.Id                 `json:"startMapId"`
+	StagingMapID          _map.Id                 `json:"stagingMapId"`
+	EnRouteMapIDs         []_map.Id               `json:"enRouteMapIds"`
+	DestinationMapID      _map.Id                 `json:"destinationMapId"`
+	ObservationMapID      _map.Id                 `json:"observationMapId"`
+	State                 string                  `json:"state"`
+	CycleInterval         time.Duration           `json:"cycleInterval"`
+	BoardingWindowSeconds uint32                  `json:"boardingWindowSeconds"`
+	PreDepartureSeconds   uint32                  `json:"preDepartureSeconds"`
+	TravelDurationSeconds uint32                  `json:"travelDurationSeconds"`
+	CycleIntervalSeconds  uint32                  `json:"cycleIntervalSeconds"`
+	Schedule              []TripScheduleRestModel `json:"-"`
 }
 
 // GetID returns the resource ID
@@ -111,16 +119,20 @@ func Transform(m Model) (RestModel, error) {
 	}
 
 	return RestModel{
-		ID:               m.Id(),
-		Name:             m.Name(),
-		StartMapID:       m.StartMapId(),
-		StagingMapID:     m.StagingMapId(),
-		EnRouteMapIDs:    m.EnRouteMapIds(),
-		DestinationMapID: m.DestinationMapId(),
-		ObservationMapID: m.ObservationMapId(),
-		State:            string(m.State()),
-		CycleInterval:    m.CycleInterval(),
-		Schedule:         schedule,
+		ID:                    m.Id(),
+		Name:                  m.Name(),
+		StartMapID:            m.StartMapId(),
+		StagingMapID:          m.StagingMapId(),
+		EnRouteMapIDs:         m.EnRouteMapIds(),
+		DestinationMapID:      m.DestinationMapId(),
+		ObservationMapID:      m.ObservationMapId(),
+		State:                 string(m.State()),
+		CycleInterval:         m.CycleInterval(),
+		BoardingWindowSeconds: uint32(m.BoardingWindowDuration().Seconds()),
+		PreDepartureSeconds:   uint32(m.PreDepartureDuration().Seconds()),
+		TravelDurationSeconds: uint32(m.TravelDuration().Seconds()),
+		CycleIntervalSeconds:  uint32(m.CycleInterval().Seconds()),
+		Schedule:              schedule,
 	}, nil
 }
 
@@ -146,6 +158,9 @@ func Extract(r RestModel) (Model, error) {
 		SetObservationMapId(r.ObservationMapID).
 		SetState(RouteState(r.State)).
 		SetSchedule(schedule).
+		SetBoardingWindowDuration(time.Duration(r.BoardingWindowSeconds) * time.Second).
+		SetPreDepartureDuration(time.Duration(r.PreDepartureSeconds) * time.Second).
+		SetTravelDuration(time.Duration(r.TravelDurationSeconds) * time.Second).
 		SetCycleInterval(r.CycleInterval).
 		Build()
 }

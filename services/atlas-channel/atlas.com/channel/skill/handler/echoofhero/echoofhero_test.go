@@ -11,7 +11,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
@@ -259,5 +261,66 @@ func TestEmptyMapIsNoOp(t *testing.T) {
 	}
 	if len(c.applied) != 0 {
 		t.Fatalf("applied = %v, want none for an empty map", c.applied)
+	}
+}
+
+// TestRegistration proves init() installs the handler under all four Echo of
+// Hero identities (precedent: resurrection_test.go's
+// TestResurrection_RegistersAllThreeIds, timeleap_test.go's
+// TestTimeLeapRegistered).
+func TestRegistration(t *testing.T) {
+	for _, id := range []skill2.Identity{
+		skill2.BeginnerEchoOfHero, skill2.NoblesseEchoOfHero,
+		skill2.LegendEchoOfHero, skill2.EvanEchoOfHero,
+	} {
+		h, ok := channelhandler.Lookup(id)
+		if !ok || h == nil {
+			t.Fatalf("Lookup(%v) = (%v, %v), want non-nil handler", id, h, ok)
+		}
+	}
+}
+
+// TestVersionResolution_UnboundOnV12AndV48 proves wire 1005 resolves to no
+// identity at all on gms_v12 and gms_v48 (design §7.2): neither version ships
+// any Echo of Hero variant, so the handler -- though registered -- is
+// unreachable there without any version-specific code in this package.
+func TestVersionResolution_UnboundOnV12AndV48(t *testing.T) {
+	if _, ok := constants.For("GMS", 12, 1).Skill.Resolve(skill2.Id(1005)); ok {
+		t.Fatal("gms_v12 wire 1005 resolved to an identity, want unbound")
+	}
+	if _, ok := constants.For("GMS", 48, 1).Skill.Resolve(skill2.Id(1005)); ok {
+		t.Fatal("gms_v48 wire 1005 resolved to an identity, want unbound")
+	}
+}
+
+// TestVersionResolution_BeginnerOnlyOnV61 proves gms_v61 ships only the
+// Beginner variant (design §7.2): wire 1005 resolves to BeginnerEchoOfHero,
+// but Noblesse's wire 10001005 resolves to nothing.
+func TestVersionResolution_BeginnerOnlyOnV61(t *testing.T) {
+	id, ok := constants.For("GMS", 61, 1).Skill.Resolve(skill2.Id(1005))
+	if !ok {
+		t.Fatal("gms_v61 wire 1005 failed to resolve to any identity")
+	}
+	if id != skill2.BeginnerEchoOfHero {
+		t.Fatalf("gms_v61 wire 1005 resolved to %v, want BeginnerEchoOfHero", id)
+	}
+	if _, ok := constants.For("GMS", 61, 1).Skill.Resolve(skill2.Id(10001005)); ok {
+		t.Fatal("gms_v61 wire 10001005 resolved to an identity, want unbound (Noblesse not shipped until v72)")
+	}
+}
+
+// TestVersionResolution_EvanUnboundBeforeV84 proves the Evan variant is
+// unbound until gms_v84 (design §7.2): wire 20011005 resolves to nothing on
+// gms_v79, but resolves to EvanEchoOfHero on gms_v84.
+func TestVersionResolution_EvanUnboundBeforeV84(t *testing.T) {
+	if _, ok := constants.For("GMS", 79, 1).Skill.Resolve(skill2.Id(20011005)); ok {
+		t.Fatal("gms_v79 wire 20011005 resolved to an identity, want unbound (Evan not shipped until v84)")
+	}
+	id, ok := constants.For("GMS", 84, 1).Skill.Resolve(skill2.Id(20011005))
+	if !ok {
+		t.Fatal("gms_v84 wire 20011005 failed to resolve to any identity")
+	}
+	if id != skill2.EvanEchoOfHero {
+		t.Fatalf("gms_v84 wire 20011005 resolved to %v, want EvanEchoOfHero", id)
 	}
 }

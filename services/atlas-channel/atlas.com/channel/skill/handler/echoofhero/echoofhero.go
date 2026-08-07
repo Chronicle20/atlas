@@ -11,7 +11,10 @@
 package echoofhero
 
 import (
+	"atlas-channel/character/buff"
 	"atlas-channel/data/skill/effect"
+	"atlas-channel/socket/writer"
+	"context"
 	"sort"
 
 	channelhandler "atlas-channel/skill/handler"
@@ -19,9 +22,17 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	model "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
+
+func init() {
+	channelhandler.Register(skill2.BeginnerEchoOfHero, Apply)
+	channelhandler.Register(skill2.NoblesseEchoOfHero, Apply)
+	channelhandler.Register(skill2.LegendEchoOfHero, Apply)
+	channelhandler.Register(skill2.EvanEchoOfHero, Apply)
+}
 
 // echoDeps holds Echo of Hero's fan-out collaborators as function seams so
 // the core loop is unit-testable offline (no Kafka/REST/session).
@@ -94,4 +105,43 @@ func applyEchoOfHero(
 	}).Debug("echo_of_hero_apply_summary")
 
 	return nil
+}
+
+// Apply is the registered Echo of Hero handler for all four identities
+// (Beginner/Noblesse/Legend/Evan). It builds production deps and delegates to
+// applyEchoOfHero. applyBuff reuses the same buff operator the generic
+// UseSkill step already constructed to buff the caster (e.StatUps(), not a
+// rewritten set -- the Shadow Stars rewrite in UseSkill applies to that skill
+// only), so every recipient in the fan-out gets an identical buff to the
+// caster's.
+func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
+	wp writer.Producer, f field.Model, characterId uint32,
+	info packetmodel.SkillUsageInfo, e effect.Model,
+) error {
+	return func(ctx context.Context) func(
+		wp writer.Producer, f field.Model, characterId uint32,
+		info packetmodel.SkillUsageInfo, e effect.Model,
+	) error {
+		return func(
+			wp writer.Producer, f field.Model, characterId uint32,
+			info packetmodel.SkillUsageInfo, e effect.Model,
+		) error {
+			bp := buff.NewProcessor(l, ctx)
+
+			d := echoDeps{
+				selectInMap: func(f field.Model) []channelhandler.PartyRecipient {
+					return channelhandler.SelectAllCharactersInMap(l, ctx, f)
+				},
+				isGmHidden: func(id uint32) (bool, error) {
+					bs, err := bp.GetByCharacterId(id)
+					if err != nil {
+						return false, err
+					}
+					return buff.IsGmHidden(ctx, bs), nil
+				},
+				applyBuff: bp.Apply(f, characterId, int32(info.SkillId()), info.SkillLevel(), e.Duration(), e.StatUps()),
+			}
+			return applyEchoOfHero(l, f, characterId, info, e, d)
+		}
+	}
 }

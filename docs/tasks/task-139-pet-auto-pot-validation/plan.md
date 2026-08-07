@@ -1863,6 +1863,21 @@ channel pet processor already exposes an owner-scoped fetch; filter `Slot() >= 0
 `petId` zero when the version does not read it, and treat `petId == 0` as the
 absent case (a real Atlas pet id is never 0).
 
+> **Revision (post-merge review).** Treating `petId == 0` as "absent" is not
+> sufficient on its own: it conflates "this version has no petId field"
+> (gms_48) with "this version has the field and the client sent literal 0"
+> (malformed or forged on v61+). The second case was falling through into the
+> spawned-pet branch, contradicting this section's own "never fall back from
+> one to the other" invariant. It was not exploitable — the fallback only ever
+> resolves the caller's *own* spawned pet and `evaluateAutoPot`'s ownership
+> check still gates the result — but the code no longer matches the comment.
+> Resolution: `classifyPetIdInput(hasWirePetId, petId)`, a pure helper gated on
+> the now-exported `pet2.HasLeadingPetId(t)`, returns
+> (usePetId, reason, ok) and rejects the third case with the existing
+> `pet_not_found` reason. Table-tested in `pet_item_use_test.go`
+> (`TestClassifyPetIdInput`); no new rejection reason was introduced, so the
+> documented reason vocabulary above is unchanged.
+
 **Version note (rebase revision).** Otherwise the handler stays version-uniform:
 every GMS client uses the same worn-equip gate and the same pet-ability slot list
 (design §1.1, verified in `CPet__UpdatePetAbility` v61 `0x614b60`), so

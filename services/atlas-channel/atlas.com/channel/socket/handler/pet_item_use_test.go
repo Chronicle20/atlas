@@ -135,3 +135,34 @@ func TestMatchPetAbilityEquips(t *testing.T) {
 		t.Error("sawData = true with no ability data, want false")
 	}
 }
+
+// TestClassifyPetIdInput pins the version-gated pet-resolution decision. The
+// wire petId is present on GMS v61+ and all JMS, absent on gms_48. Deciding on
+// `petId != 0` alone cannot tell "this version has no petId field" from "this
+// version has one and the client sent literal 0" — the latter is malformed or
+// forged and must be rejected, not quietly routed into the spawned-pet branch
+// (the FR-1 invariant the handler comment states: never fall back from one
+// resolution path to the other).
+func TestClassifyPetIdInput(t *testing.T) {
+	cases := []struct {
+		name         string
+		hasWirePetId bool
+		petId        uint64
+		wantUsePetId bool
+		wantReason   string
+		wantOk       bool
+	}{
+		{"v48 no wire field", false, 0, false, "", true},
+		{"v48 ignores a stray non-zero", false, 99, false, "", true},
+		{"v61+ real petId", true, 987654321, true, "", true},
+		{"v61+ zero petId is rejected", true, 0, false, "pet_not_found", false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			usePetId, reason, ok := classifyPetIdInput(c.hasWirePetId, c.petId)
+			if usePetId != c.wantUsePetId || reason != c.wantReason || ok != c.wantOk {
+				t.Errorf("got (%v,%q,%v), want (%v,%q,%v)", usePetId, reason, ok, c.wantUsePetId, c.wantReason, c.wantOk)
+			}
+		})
+	}
+}

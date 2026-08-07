@@ -24,6 +24,7 @@ import (
 	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // skillGate option values (tenant handler config, design §3.2): the FR-3 gate
@@ -71,13 +72,18 @@ func PetItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 			return
 		}
 
-		// gms_48 has no petId on the wire (a real Atlas pet id is never 0): the
-		// lookup branches on whether the decoded packet carried one. petId
-		// present -> resolve that pet directly (narrowing-guarded below by
-		// evaluateAutoPot's ownership/spawn checks). petId absent -> resolve the
-		// character's spawned pet. Never fall back from one to the other — that
-		// would reopen the FR-1 ownership hole this task exists to close.
-		hasPetId := p.PetId() != 0
+		// gms_48 has no petId on the wire: the lookup branches on whether this
+		// version carries one at all, not merely on whether the decoded value is
+		// non-zero. petId present -> resolve that pet directly (narrowing-guarded
+		// below by evaluateAutoPot's ownership/spawn checks). Field absent ->
+		// resolve the character's spawned pet. Field present but zero -> reject.
+		// Never fall back from one to the other — that would reopen the FR-1
+		// ownership hole this task exists to close.
+		hasPetId, reason, ok := classifyPetIdInput(pet2.HasLeadingPetId(tenant.MustFromContext(ctx)), p.PetId())
+		if !ok {
+			reject(reason)
+			return
+		}
 
 		// Parallel fetch — one round-trip of latency, not three (design §3.1).
 		// model.Future carries no per-future error (Group.Wait returns only the
@@ -126,8 +132,6 @@ func PetItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 				reject("pet_not_found")
 				return
 			}
-			var reason string
-			var ok bool
 			pm, reason, ok = resolveSpawnedPet(spawnedPets)
 			if !ok {
 				reject(reason)
@@ -159,6 +163,30 @@ func PetItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 
 		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character2.Id(s.CharacterId()), item.Id(p.ItemId()), slot.Position(p.Source()), 1, p.UpdateTime())
 	}
+}
+
+// classifyPetIdInput decides how the target pet is resolved, given whether the
+// tenant's client version puts a petId on the wire at all
+// (pet2.HasLeadingPetId) and what the decoder produced. Returns
+// (usePetId, reason, ok); ok=false means reject with reason.
+//
+// The three cases are deliberately distinct, because testing `petId != 0`
+// alone conflates two of them:
+//   - version has no petId field (gms_48): resolve the character's spawned
+//     pet. Any value the decoder left in petId is meaningless here.
+//   - version has the field and the client sent one: resolve that pet by id.
+//   - version has the field and the client sent 0: a real Atlas pet id is
+//     never 0, so this is malformed or forged. Reject. Falling through to the
+//     spawned-pet branch here is what would breach the FR-1 invariant "never
+//     fall back from one resolution path to the other".
+func classifyPetIdInput(hasWirePetId bool, petId uint64) (bool, string, bool) {
+	if !hasWirePetId {
+		return false, "", true
+	}
+	if petId == 0 {
+		return false, "pet_not_found", false
+	}
+	return true, "", true
 }
 
 // resolveSpawnedPet implements the gms_48 (petId-absent) branch of pet

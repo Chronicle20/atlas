@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { ItemRow } from "../templates/ItemRow";
 import { ItemSearchCombobox } from "../templates/ItemSearchCombobox";
-import type { SearchPoolKey } from "../templates/poolSearchConfig";
+import type { SearchPoolKey } from "@/lib/items/poolSearchConfig";
 
 interface EquipmentSectionProps {
   equipment: CharacterPresetEquipmentEntry[];

@@ -1,0 +1,10 @@
+packet: report/clientbound/ClaimResultSuccess
+direction: clientbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnClaimResult
+    address: "0x9cf310"
+    decompile_sha256: 44c56179d6db8bca5f124b4a87223d476652a0b8b62f4f3a88939d895c55bf8b
+verifies:
+    - report/clientbound/claim_result_test.go#TestClaimResultSuccessByteOutputV92

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -68,6 +69,124 @@ func TestExportRunDeterministic(t *testing.T) {
 		t.Fatal("no functions in export")
 	}
 }
+
+// fakeMCPWithBinary embeds fakeMCP and additionally implements
+// idasrc.BinaryInfoProvider, exercising exportRun's type-assertion path
+// (task-27: populate the export's top-level "binary"/"md5" provenance).
+type fakeMCPWithBinary struct {
+	*fakeMCP
+	name, md5 string
+	err       error
+}
+
+func (f *fakeMCPWithBinary) GetBinaryInfo(_ context.Context) (string, string, error) {
+	return f.name, f.md5, f.err
+}
+
+// TestExportRunPopulatesBinaryProvenance asserts that when the client
+// implements idasrc.BinaryInfoProvider, exportRun calls it and writes the
+// result into the export's top-level "binary"/"md5" fields; a plain fakeMCP
+// (no BinaryInfoProvider) continues to leave them empty (pre-task-27
+// behaviour, preserved for every other test in this file).
+func TestExportRunPopulatesBinaryProvenance(t *testing.T) {
+	dir := t.TempDir()
+
+	// Positive case: a roster that resolves via the prior-export testdata file
+	// (mirrors TestExportRunDeterministic), with a client that ALSO implements
+	// BinaryInfoProvider.
+	opts2 := baseExportOpts(filepath.Join(dir, "gms_v95_with_binary.json"))
+	fc2 := &fakeMCPWithBinary{
+		fakeMCP: &fakeMCP{
+			addrs:  map[string]string{"CLogin::OnFoo": "0x1", "CLogin::OnBar": "0x2"},
+			decomp: map[string]string{"0x1": "void CLogin::OnFoo(CLogin *this, CInPacket *a2)\n{\n  CInPacket::Decode4(a2);\n}\n", "0x2": "void CLogin::OnBar(CLogin *this, CInPacket *a2)\n{\n  CInPacket::Decode1(a2);\n}\n"},
+		},
+		name: "GMS_v92_1_DEVM.exe", md5: "bdef16653b92eefca2361fd5668cc509",
+	}
+	if code := exportRun(opts2, fc2, io.Discard, io.Discard); code != 0 {
+		t.Fatalf("exportRun (with binary) exit = %d", code)
+	}
+	b, err := os.ReadFile(opts2.Output)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+	var doc struct {
+		Binary string `json:"binary"`
+		MD5    string `json:"md5"`
+	}
+	if err := json.Unmarshal(b, &doc); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if doc.Binary != "GMS_v92_1_DEVM.exe" {
+		t.Errorf("binary = %q, want GMS_v92_1_DEVM.exe", doc.Binary)
+	}
+	if doc.MD5 != "bdef16653b92eefca2361fd5668cc509" {
+		t.Errorf("md5 = %q, want bdef16653b92eefca2361fd5668cc509", doc.MD5)
+	}
+
+	// Negative case: a plain fakeMCP (no BinaryInfoProvider) leaves both empty,
+	// AND logs a one-line stderr note (task-27 review I3: the capability being
+	// optional is right, silently skipping it is not — the same failure class
+	// as the original empty-provenance bug, for any future MCPClient that
+	// forgets to implement BinaryInfoProvider).
+	out3 := filepath.Join(dir, "gms_v95_no_binary.json")
+	opts3 := baseExportOpts(out3)
+	fc3 := &fakeMCP{
+		addrs:  map[string]string{"CLogin::OnFoo": "0x1", "CLogin::OnBar": "0x2"},
+		decomp: map[string]string{"0x1": "void CLogin::OnFoo(CLogin *this, CInPacket *a2)\n{\n  CInPacket::Decode4(a2);\n}\n", "0x2": "void CLogin::OnBar(CLogin *this, CInPacket *a2)\n{\n  CInPacket::Decode1(a2);\n}\n"},
+	}
+	var stderr3 bytes.Buffer
+	if code := exportRun(opts3, fc3, io.Discard, &stderr3); code != 0 {
+		t.Fatalf("exportRun (no binary) exit = %d", code)
+	}
+	b3, err := os.ReadFile(out3)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+	var doc3 struct {
+		Binary string `json:"binary"`
+		MD5    string `json:"md5"`
+	}
+	if err := json.Unmarshal(b3, &doc3); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if doc3.Binary != "" || doc3.MD5 != "" {
+		t.Errorf("binary/md5 = %q/%q, want empty (no BinaryInfoProvider)", doc3.Binary, doc3.MD5)
+	}
+	if !bytes.Contains(stderr3.Bytes(), []byte("does not implement idasrc.BinaryInfoProvider")) {
+		t.Errorf("stderr = %q, want a note that the client lacks BinaryInfoProvider", stderr3.String())
+	}
+}
+
+// TestExportRunBinaryInfoErrorAborts asserts that when a client DOES implement
+// BinaryInfoProvider but the call itself errors, exportRun aborts loudly
+// (exit 3, no output file written) rather than silently leaving binary/md5
+// empty — task-27 review I2: the commit message claims this behaviour but no
+// test exercised the error path (fakeMCPWithBinary.err was always nil).
+func TestExportRunBinaryInfoErrorAborts(t *testing.T) {
+	dir := t.TempDir()
+	out := filepath.Join(dir, "gms_v95_binary_error.json")
+	opts := baseExportOpts(out)
+	fc := &fakeMCPWithBinary{
+		fakeMCP: &fakeMCP{
+			addrs:  map[string]string{"CLogin::OnFoo": "0x1", "CLogin::OnBar": "0x2"},
+			decomp: map[string]string{"0x1": "void CLogin::OnFoo(CLogin *this, CInPacket *a2)\n{\n  CInPacket::Decode4(a2);\n}\n", "0x2": "void CLogin::OnBar(CLogin *this, CInPacket *a2)\n{\n  CInPacket::Decode1(a2);\n}\n"},
+		},
+		err: errBinaryInfoTest,
+	}
+	var stderr bytes.Buffer
+	code := exportRun(opts, fc, io.Discard, &stderr)
+	if code != 3 {
+		t.Fatalf("exportRun exit = %d, want 3", code)
+	}
+	if _, err := os.Stat(out); !os.IsNotExist(err) {
+		t.Errorf("output file %s should not have been written on binary-info error", out)
+	}
+	if !bytes.Contains(stderr.Bytes(), []byte("export: binary info:")) {
+		t.Errorf("stderr = %q, want the binary-info error message", stderr.String())
+	}
+}
+
+var errBinaryInfoTest = errors.New("fake binary-info transport error")
 
 // twoFnMCP harvests exactly CLogin::OnFoo + CLogin::OnBar. The Foo body is
 // parameterised so a caller can force the harvest to DIFFER from a previously

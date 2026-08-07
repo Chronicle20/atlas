@@ -6,7 +6,9 @@ import (
 	"atlas-channel/character/skill"
 	"atlas-channel/consumable"
 	"atlas-channel/data/skill/effect"
+	_map "atlas-channel/map"
 	"atlas-channel/monster"
+	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 	"math/rand"
@@ -14,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	charcon "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	inventoryconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
@@ -21,6 +24,8 @@ import (
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
+	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -81,9 +86,29 @@ var cancelStatusFunc = func(p monster.Processor, f field.Model, monsterId uint32
 	return p.CancelStatus(f, monsterId, statusTypes, sourceCharacterId, sourceSkillId, sourceSkillClass)
 }
 
+// applyCooldownFunc is the cast-time cooldown emit seam tests can replace.
+var applyCooldownFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model, skillId skill2.Id, cooldown uint32, characterId uint32) error {
+	return skill.NewProcessor(l, ctx).ApplyCooldown(f, skillId, cooldown)(characterId)
+}
+
+// shouldApplyCastCooldown gates the generic cast-time cooldown. Battleship
+// (5221006) is exempt: its cooldown applies only when the ship breaks, never
+// on cast (FR-2.3/FR-4.3) — the WZ cooltime would otherwise fire here.
+func shouldApplyCastCooldown(cooldown uint32, skillId skill2.Id) bool {
+	return cooldown > 0 && !skill2.IsBattleshipMountSkill(skillId)
+}
+
 func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
 	return func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
 		return func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
+			// Resolved once and reused for every version-sensitive wire-id
+			// comparison in this closure (task-187): a raw wire-keyed compare
+			// cannot tell a v0.48 SuperGM Hide cast (wire 5101004) apart from a
+			// v0.62+ Brawler Corkscrew Blow cast (same wire).
+			t := tenant.MustFromContext(ctx)
+			set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+			castId, castIdOk := set.Skill.Resolve(skill2.Id(info.SkillId()))
+
 			// Shadow Stars pre-flight (FR-5): validate the client-chosen star
 			// and resolve the cast cost BEFORE any HP/MP/cooldown spend. A bogus
 			// or unowned star aborts the whole cast — no MP, no cooldown, no buff,
@@ -91,7 +116,7 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 			// or trigger consumption of an unintended item.
 			statupsToApply := e.StatUps()
 			var shadowStarDraws []StarDraw
-			if skill2.Id(info.SkillId()) == skill2.NightLordShadowStarsId {
+			if castIdOk && skill2.IsIdentity(castId, skill2.NightLordShadowStars) {
 				assets, invErr := loadCasterInventoryFunc(character.NewProcessor(l, ctx), characterId)
 				if invErr != nil {
 					l.WithError(invErr).Warnf("Character [%d] cast Shadow Stars [%d] but inventory load failed; aborting cast.", characterId, info.SkillId())
@@ -134,15 +159,18 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 					l.WithError(cErr).Warnf("Character [%d] cast skill [%d] requiring item [%d] but failed to load inventory; cast permitted.", characterId, info.SkillId(), itemId)
 				}
 			}
-			if e.Cooldown() > 0 {
-				_ = skill.NewProcessor(l, ctx).ApplyCooldown(f, skill2.Id(info.SkillId()), e.Cooldown())(characterId)
-			}
-			// Mount toggle (tamed + skill-only). Runs BEFORE the generic buff
-			// apply and short-circuits it: mounts apply MONSTER_RIDING with a
-			// MaxInt32 duration and a vehicle-id amount, or cancel on re-cast.
 			skillId := skill2.Id(info.SkillId())
-			if skill2.IsTamedMountSkill(skillId) || isSkillOnlyMount(skillId, info.SkillLevel()) {
-				if err := HandleMount(l, f, characterId, info, e, newMountDeps(l, ctx)); err != nil {
+			if shouldApplyCastCooldown(e.Cooldown(), skillId) {
+				_ = applyCooldownFunc(l, ctx, f, skillId, e.Cooldown(), characterId)
+			}
+			// Mount toggle (tamed + skill-only + battleship). Runs BEFORE the
+			// generic buff apply and short-circuits it: mounts apply
+			// MONSTER_RIDING with a MaxInt32 duration and a vehicle-id amount,
+			// or cancel on re-cast.
+			// Routed through the resolved Identity (task-187) rather than a raw
+			// wire compare, per the defensive-consistency scope for mount sites.
+			if castIdOk && (skill2.IsTamedMountSkillIdentity(castId) || isSkillOnlyMountIdentity(castId, info.SkillLevel()) || skill2.IsBattleshipMountSkillIdentity(castId)) {
+				if err := HandleMount(l, f, characterId, info, e, castId, newMountDeps(l, ctx)); err != nil {
 					l.WithError(err).Errorf("Mount toggle failed for character [%d] skill [%d].", characterId, info.SkillId())
 				}
 				return nil
@@ -151,7 +179,8 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 			if e.Duration() > 0 && len(statupsToApply) > 0 {
 				applyBuffFunc := buff.NewProcessor(l, ctx).Apply(f, characterId, int32(info.SkillId()), info.SkillLevel(), e.Duration(), statupsToApply)
 				_ = applyBuffFunc(characterId)
-				_ = applyToParty(l)(ctx)(f, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
+				recipients := applyToParty(l)(ctx)(f, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
+				announceSkillAffected(l, ctx, wp, f, characterId, recipients, info.SkillId(), info.SkillLevel())
 			}
 
 			// Shadow Stars cast cost (FR-4): charge bulletConsume (200 in WZ) of the
@@ -166,10 +195,13 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 			// Handle mob-affecting buffs (crash, dispel, etc.)
 			applyToMobs(l, ctx, f, characterId, info, e)
 
-			// Per-skill dispatcher (Heal, Dispel, Cure, MPEater, Drain, ...).
-			if h, ok := Lookup(skill2.Id(info.SkillId())); ok {
-				if err := h(l)(ctx)(wp, f, characterId, info, e); err != nil {
-					l.WithError(err).Errorf("Skill handler for [%d] failed for character [%d].", info.SkillId(), characterId)
+			// Per-skill dispatcher (Heal, Dispel, Cure, MPEater, Drain, ...),
+			// routed on the Identity resolved above.
+			if castIdOk {
+				if h, ok := Lookup(castId); ok {
+					if err := h(l)(ctx)(wp, f, characterId, info, e); err != nil {
+						l.WithError(err).Errorf("Skill handler for [%d] failed for character [%d].", info.SkillId(), characterId)
+					}
 				}
 			}
 
@@ -273,15 +305,18 @@ func applyToMobs(l logrus.FieldLogger, ctx context.Context, f field.Model, chara
 	}
 
 	t := tenant.MustFromContext(ctx)
+	set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+	id, idOk := set.Skill.Resolve(sid)
+
 	monsterStatuses := make(map[string]int32, len(e.MonsterStatus()))
 	for k, v := range e.MonsterStatus() {
 		monsterStatuses[k] = int32(v)
 	}
 
-	isCancel := isCrashOrDispel(sid)
+	isCancel := idOk && isCrashOrDispel(id)
 	cancelClass := ""
 	if isCancel {
-		cancelClass = dispelSkillClass(sid)
+		cancelClass = dispelSkillClass(id)
 	}
 
 	// Branch selection mirrors the FR-4.9 rule: a skill takes EITHER the
@@ -306,8 +341,8 @@ func applyToMobs(l logrus.FieldLogger, ctx context.Context, f field.Model, chara
 		var kind string
 		if isCancel {
 			kind = cancelClass
-		} else {
-			kind = mobBuffApplyKind(sid)
+		} else if idOk {
+			kind = mobBuffApplyKind(id)
 		}
 		if kind == "" {
 			l.WithFields(logrus.Fields{
@@ -360,12 +395,16 @@ func buildSummaryFields(characterId uint32, sid skill2.Id, slvl uint32, mobsInRe
 	}
 }
 
-func isCrashOrDispel(skillId skill2.Id) bool {
-	return skill2.Is(skillId,
-		skill2.CrusaderArmorCrashId,
-		skill2.WhiteKnightMagicCrashId,
-		skill2.DragonKnightPowerCrashId,
-		skill2.PriestDispelId,
+// isCrashOrDispel resolves the incoming wire id to its version-blind
+// Identity before comparing (task-187): a raw wire-keyed skill2.Is compare
+// against these canonical constants would silently misclassify a version
+// where an unrelated skill happens to share the wire id.
+func isCrashOrDispel(id skill2.Identity) bool {
+	return skill2.IsIdentity(id,
+		skill2.CrusaderArmorCrash,
+		skill2.WhiteKnightMagicCrash,
+		skill2.DragonKnightPowerCrash,
+		skill2.PriestDispel,
 	)
 }
 
@@ -373,15 +412,16 @@ func isCrashOrDispel(skillId skill2.Id) bool {
 // class — warrior crashes are physical melee, Priest Dispel is magic. The
 // returned string matches atlas-monsters' monster.ReflectKind* constants.
 // Returns "" for unrecognized skills so the downstream guard falls through
-// to normal cancel semantics.
-func dispelSkillClass(skillId skill2.Id) string {
+// to normal cancel semantics. Identity-keyed (task-187) for the same reason
+// as isCrashOrDispel.
+func dispelSkillClass(id skill2.Identity) string {
 	switch {
-	case skill2.Is(skillId,
-		skill2.CrusaderArmorCrashId,
-		skill2.WhiteKnightMagicCrashId,
-		skill2.DragonKnightPowerCrashId):
+	case skill2.IsIdentity(id,
+		skill2.CrusaderArmorCrash,
+		skill2.WhiteKnightMagicCrash,
+		skill2.DragonKnightPowerCrash):
 		return monster2.ReflectKindPhysical
-	case skill2.Is(skillId, skill2.PriestDispelId):
+	case skill2.IsIdentity(id, skill2.PriestDispel):
 		return monster2.ReflectKindMagical
 	default:
 		return ""
@@ -389,19 +429,65 @@ func dispelSkillClass(skillId skill2.Id) string {
 }
 
 // applyToParty applies idOperator to every party member selected for a party
-// buff. Party buffs apply map-wide (no LT/RB rectangle), so member selection
-// is driven by the client-sent affected-member bitmap via
-// SelectPartyMembersInMap rather than the range-limited Heal selector.
-func applyToParty(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, casterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
-	return func(ctx context.Context) func(f field.Model, casterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
-		return func(f field.Model, casterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
-			return func(idOperator model2.Operator[uint32]) error {
+// buff and returns the ids it applied to. Party buffs apply map-wide (no LT/RB
+// rectangle), so member selection is driven by the client-sent affected-member
+// bitmap via SelectPartyMembersInMap rather than the range-limited Heal
+// selector. The returned ids feed announceSkillAffected — the recipients are
+// resolved once here and reused rather than re-selected.
+func applyToParty(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, casterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) []uint32 {
+	return func(ctx context.Context) func(f field.Model, casterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) []uint32 {
+		return func(f field.Model, casterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) []uint32 {
+			return func(idOperator model2.Operator[uint32]) []uint32 {
 				recipients := SelectPartyMembersInMap(l, ctx, f, casterId, memberBitmap)
+				ids := make([]uint32, 0, len(recipients))
 				for _, r := range recipients {
 					_ = idOperator(r.Id())
+					ids = append(ids, r.Id())
 				}
-				return nil
+				return ids
 			}
 		}
 	}
+}
+
+// announceSkillAffected draws the buff-received animation over every party
+// member who was buffed by SOMEONE ELSE's cast, and over the same player on
+// every other client in the map.
+//
+// The caster is excluded: their own client already renders the cast locally
+// (CUserLocal::DoActiveSkill_StatChange calls CUser::ShowSkillEffect right
+// after SendSkillUseRequest) and the server additionally sends them SKILL_USE.
+// SKILL_AFFECTED is the recipient-facing arm — gms_v83 CUser::OnEffect
+// @0x9377d9 case 2 → CUser::ShowSkillAffected @0x93632a.
+func announceSkillAffected(
+	l logrus.FieldLogger, ctx context.Context, wp writer.Producer,
+	f field.Model, casterId uint32, recipientIds []uint32,
+	skillId uint32, skillLevel byte,
+) {
+	for _, id := range recipientIds {
+		if id == casterId {
+			continue
+		}
+		skillAffectedEmitFunc(l, ctx, wp, f, id, skillId, skillLevel)
+	}
+}
+
+// skillAffectedEmitFunc is the per-recipient SKILL_AFFECTED emit seam tests
+// can replace. Production writes the self-facing CharacterEffect to the
+// recipient's own session and the CharacterEffectForeign to everyone else on
+// their map.
+var skillAffectedEmitFunc = func(
+	l logrus.FieldLogger, ctx context.Context, wp writer.Producer,
+	f field.Model, recipientId uint32, skillId uint32, skillLevel byte,
+) {
+	_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(f.Channel())(
+		recipientId,
+		session.Announce(l)(ctx)(wp)(charcb.CharacterEffectWriter)(
+			charpkt.CharacterSkillAffectedEffectBody(skillId, skillLevel)),
+	)
+	_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(
+		f, recipientId,
+		session.Announce(l)(ctx)(wp)(charcb.CharacterEffectForeignWriter)(
+			charpkt.CharacterSkillAffectedEffectForeignBody(recipientId, skillId, skillLevel)),
+	)
 }

@@ -39,7 +39,7 @@ func effectiveMaxHpOrBase(effective uint32, base uint16) uint16 {
 }
 
 func init() {
-	channelhandler.Register(skill2.ClericHealId, Apply)
+	channelhandler.Register(skill2.ClericHeal, Apply)
 }
 
 // Apply is the Heal handler installed in the per-skill registry.

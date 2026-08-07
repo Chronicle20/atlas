@@ -95,9 +95,9 @@ func happyCasterLoader(_ logrus.FieldLogger, _ context.Context, _ uint32) (uint1
 
 // TestMPRecoveryRegistered: init() installs Apply in the shared registry.
 func TestMPRecoveryRegistered(t *testing.T) {
-	h, ok := channelhandler.Lookup(skill2.BrawlerMPRecoveryId)
+	h, ok := channelhandler.Lookup(skill2.BrawlerMPRecovery)
 	if !ok || h == nil {
-		t.Fatalf("Lookup(BrawlerMPRecoveryId) = (%v, %v), want non-nil handler", h, ok)
+		t.Fatalf("Lookup(BrawlerMPRecovery) = (%v, %v), want non-nil handler", h, ok)
 	}
 }
 

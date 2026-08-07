@@ -1,4 +1,4 @@
-import { type ColumnDef } from "@tanstack/react-table";
+import { type DataTableColumnDef } from "@/components/data-table-features";
 import type { Tenant } from "@/types/models/tenant";
 import type { TenantConfig } from "@/services/api/tenants.service";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,7 @@ export const hiddenColumns = ["id"];
 export const getColumns = ({
   tenant,
   tenantConfig,
-}: ColumnProps): ColumnDef<MerchantShop>[] => {
+}: ColumnProps): DataTableColumnDef<MerchantShop>[] => {
   return [
     {
       accessorKey: "id",

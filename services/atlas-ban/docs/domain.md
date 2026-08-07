@@ -117,3 +117,88 @@ Primary domain processor providing login history operations.
 ### HistoryPurge
 
 Background task that periodically removes login history records older than 90 days.
+
+---
+
+# Report Domain
+
+## Responsibility
+
+The report domain persists player-submitted reports against another player — `sue` (in-game report of general misconduct) and `claim` (chat-log-corroborated report submitted through the claim UI). A report snapshots the reporter and accused identity, a reason code, an optional description, and — for `claim` reports — the client-submitted chat log plus a best-effort server-captured transcript, so GMs can review a report without depending on data that may since have changed or expired.
+
+## Core Models
+
+### Model
+
+Immutable domain representation of a report.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uuid.UUID | Report identifier (surrogate, generated in Go at create time — never a business-value PK) |
+| tenantId | uuid.UUID | Tenant identifier |
+| kind | Kind | `sue` or `claim` |
+| reporterId | uint32 | Character ID of the reporter |
+| reporterName | string | Character name of the reporter |
+| accusedId | uint32 | Character ID of the accused |
+| accusedName | string | Character name of the accused |
+| reasonType | byte | Client-supplied reason code |
+| description | string | Reporter-supplied description, capped at 2000 characters (runes) |
+| chatLog | *string | Client-submitted chat log for `claim` reports; nil for `sue` reports, capped at 16384 bytes |
+| serverTranscript | []TranscriptLine | Server-captured chat lines involving reporter and accused, snapshotted at creation; nil when atlas-messages was unreachable (best-effort corroboration, not a required field) |
+| status | Status | `open`, `reviewed`, or `actioned` |
+| createdAt | time.Time | Creation timestamp |
+| updatedAt | time.Time | Last update timestamp |
+
+### Kind
+
+| Value | Name | Description |
+|-------|------|-------------|
+| "sue" | KindSue | In-game general-misconduct report |
+| "claim" | KindClaim | Chat-log-corroborated report submitted through the claim UI |
+
+### Status
+
+| Value | Name | Description |
+|-------|------|-------------|
+| "open" | StatusOpen | Newly created, not yet reviewed |
+| "reviewed" | StatusReviewed | A GM has looked at it |
+| "actioned" | StatusActioned | A GM has taken action on it |
+
+### TranscriptLine
+
+One server-captured chat line attached to a report's `serverTranscript`.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| timestamp | int64 | Unix-milli capture time |
+| senderId | uint32 | Character ID of the line's author |
+| senderName | string | Character name of the line's author |
+| chatType | string | Chat channel/type the line was captured from |
+| text | string | Line content |
+
+## Invariants
+
+- Kind must be `sue` or `claim`; Status must be `open`, `reviewed`, or `actioned`
+- The accused must resolve to a real character in the tenant (by id or by name) or creation is rejected with `NOT_FOUND`, never persisted
+- Description is truncated (never rejected) at 2000 runes; the cut always lands on a full rune so the stored value is valid UTF-8
+- ChatLog is truncated (never rejected) at 16384 bytes; the cut walks rune-by-rune so it never splits a multi-byte sequence
+- ServerTranscript is best-effort: an atlas-messages outage persists the report with a nil transcript rather than failing the report
+- A report's status transitions are not otherwise constrained (no enforced state machine beyond the three valid values)
+
+## Processors
+
+### Processor
+
+Primary domain processor providing report operations.
+
+| Method | Description |
+|--------|-------------|
+| CreateFromCommand | Resolve reporter/accused, snapshot the chat transcript, persist the report, and buffer exactly one status event (CREATED or ERROR) |
+| CreateFromCommandAndEmit | CreateFromCommand and emit the buffered event |
+| UpdateStatus | Update a report's status by ID |
+| GetById | Retrieve a report by ID |
+| ByIdProvider | Provider for a report by ID |
+| GetByTenant | Retrieve all reports for the tenant |
+| GetByStatus | Retrieve reports filtered by status |
+
+Reporter/accused resolution goes through `atlas-ban`'s `character` REST client; the server-captured transcript goes through the `chat` REST client (`atlas-messages` `/api/chat/history` — see that service's docs for the exposure caveat on this endpoint).

@@ -4,11 +4,20 @@ import (
 	"encoding/json"
 
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // RouteRestModel is the JSON:API resource for routes
 type RouteRestModel struct {
-	Id                     string   `json:"-"`
+	Id string `json:"-"`
+	// Uuid is a stable, tenant-scoped UUIDv5 derived from
+	// (tenantId, resourceName, slug). It exists so atlas-transports can
+	// key its Redis registry on an id that survives restarts and is
+	// identical across replicas. The JSON:API resource id stays the
+	// slug, because configuration-status events and the CRUD routes
+	// reference resources by slug.
+	Uuid                   string   `json:"uuid"`
 	Name                   string   `json:"name"`
 	StartMapId             uint32   `json:"startMapId"`
 	StagingMapId           uint32   `json:"stagingMapId"`
@@ -38,7 +47,7 @@ func (r RouteRestModel) GetName() string {
 }
 
 // TransformRoute converts a map[string]interface{} to a RouteRestModel
-func TransformRoute(data map[string]interface{}) (RouteRestModel, error) {
+func TransformRoute(tenantId uuid.UUID, data map[string]interface{}) (RouteRestModel, error) {
 	id, _ := data["id"].(string)
 
 	attributes, ok := data["attributes"].(map[string]interface{})
@@ -99,6 +108,7 @@ func TransformRoute(data map[string]interface{}) (RouteRestModel, error) {
 
 	return RouteRestModel{
 		Id:                     id,
+		Uuid:                   tenant.DerivedId(tenantId, "routes", id).String(),
 		Name:                   name,
 		StartMapId:             startMapId,
 		StagingMapId:           stagingMapId,
@@ -147,7 +157,14 @@ func CreateSingleRouteJsonData(route map[string]interface{}) (json.RawMessage, e
 
 // VesselRestModel is the JSON:API resource for vessels
 type VesselRestModel struct {
-	Id              string `json:"-"`
+	Id string `json:"-"`
+	// Uuid is a stable, tenant-scoped UUIDv5 derived from
+	// (tenantId, resourceName, slug). It exists so atlas-transports can
+	// key its Redis registry on an id that survives restarts and is
+	// identical across replicas. The JSON:API resource id stays the
+	// slug, because configuration-status events and the CRUD routes
+	// reference resources by slug.
+	Uuid            string `json:"uuid"`
 	Name            string `json:"name"`
 	RouteAID        string `json:"routeAID"`
 	RouteBID        string `json:"routeBID"`
@@ -171,7 +188,7 @@ func (v VesselRestModel) GetName() string {
 }
 
 // TransformVessel converts a map[string]interface{} to a VesselRestModel
-func TransformVessel(data map[string]interface{}) (VesselRestModel, error) {
+func TransformVessel(tenantId uuid.UUID, data map[string]interface{}) (VesselRestModel, error) {
 	id, _ := data["id"].(string)
 
 	attributes, ok := data["attributes"].(map[string]interface{})
@@ -192,6 +209,7 @@ func TransformVessel(data map[string]interface{}) (VesselRestModel, error) {
 
 	return VesselRestModel{
 		Id:              id,
+		Uuid:            tenant.DerivedId(tenantId, "vessels", id).String(),
 		Name:            name,
 		RouteAID:        routeAID,
 		RouteBID:        routeBID,
@@ -360,7 +378,14 @@ func CreateSingleMtsConfigJsonData(config map[string]interface{}) (json.RawMessa
 
 // InstanceRouteRestModel is the JSON:API resource for instance routes
 type InstanceRouteRestModel struct {
-	Id                    string   `json:"-"`
+	Id string `json:"-"`
+	// Uuid is a stable, tenant-scoped UUIDv5 derived from
+	// (tenantId, resourceName, slug). It exists so atlas-transports can
+	// key its Redis registry on an id that survives restarts and is
+	// identical across replicas. The JSON:API resource id stays the
+	// slug, because configuration-status events and the CRUD routes
+	// reference resources by slug.
+	Uuid                  string   `json:"uuid"`
 	Name                  string   `json:"name"`
 	StartMapId            uint32   `json:"startMapId"`
 	TransitMapIds         []uint32 `json:"transitMapIds"`
@@ -369,6 +394,13 @@ type InstanceRouteRestModel struct {
 	BoardingWindowSeconds uint32   `json:"boardingWindowSeconds"`
 	TravelDurationSeconds uint32   `json:"travelDurationSeconds"`
 	TransitMessage        string   `json:"transitMessage,omitempty"`
+	// EffectItemIds are the consumable item ids atlas-transports applies on
+	// boarding and cancels on every terminal path of this route. Optional.
+	EffectItemIds []uint32 `json:"effectItemIds,omitempty"`
+	// ForcedReturnMapId is where atlas-transports warps a character whose
+	// travel timer expired, instead of destinationMapId. Zero means "not
+	// set". It mirrors the client's Map.wz info/forcedReturn node. Optional.
+	ForcedReturnMapId uint32 `json:"forcedReturnMapId,omitempty"`
 }
 
 // GetID returns the resource ID
@@ -388,7 +420,7 @@ func (r InstanceRouteRestModel) GetName() string {
 }
 
 // TransformInstanceRoute converts a map[string]interface{} to an InstanceRouteRestModel
-func TransformInstanceRoute(data map[string]interface{}) (InstanceRouteRestModel, error) {
+func TransformInstanceRoute(tenantId uuid.UUID, data map[string]interface{}) (InstanceRouteRestModel, error) {
 	id, _ := data["id"].(string)
 
 	attributes, ok := data["attributes"].(map[string]interface{})
@@ -434,8 +466,23 @@ func TransformInstanceRoute(data map[string]interface{}) (InstanceRouteRestModel
 
 	transitMessage, _ := attributes["transitMessage"].(string)
 
+	var effectItemIds []uint32
+	if val, ok := attributes["effectItemIds"].([]interface{}); ok {
+		for _, v := range val {
+			if f, ok := v.(float64); ok {
+				effectItemIds = append(effectItemIds, uint32(f))
+			}
+		}
+	}
+
+	forcedReturnMapId := uint32(0)
+	if val, ok := attributes["forcedReturnMapId"].(float64); ok {
+		forcedReturnMapId = uint32(val)
+	}
+
 	return InstanceRouteRestModel{
 		Id:                    id,
+		Uuid:                  tenant.DerivedId(tenantId, "instance-routes", id).String(),
 		Name:                  name,
 		StartMapId:            startMapId,
 		TransitMapIds:         transitMapIds,
@@ -444,6 +491,8 @@ func TransformInstanceRoute(data map[string]interface{}) (InstanceRouteRestModel
 		BoardingWindowSeconds: boardingWindowSeconds,
 		TravelDurationSeconds: travelDurationSeconds,
 		TransitMessage:        transitMessage,
+		EffectItemIds:         effectItemIds,
+		ForcedReturnMapId:     forcedReturnMapId,
 	}, nil
 }
 
@@ -461,6 +510,8 @@ func ExtractInstanceRoute(r InstanceRouteRestModel) (map[string]interface{}, err
 			"boardingWindowSeconds": r.BoardingWindowSeconds,
 			"travelDurationSeconds": r.TravelDurationSeconds,
 			"transitMessage":        r.TransitMessage,
+			"effectItemIds":         r.EffectItemIds,
+			"forcedReturnMapId":     r.ForcedReturnMapId,
 		},
 	}, nil
 }

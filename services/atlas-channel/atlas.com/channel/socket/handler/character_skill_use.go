@@ -12,15 +12,18 @@ import (
 	"atlas-channel/socket/writer"
 	summoncmd "atlas-channel/summon"
 	"context"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/summon"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // CUserLocal::DoActiveSkill_TownPortal
@@ -73,6 +76,19 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			return
 		}
 
+		// Battleship post-break cooldown is enforced server-side: the client
+		// greys the icon, but a packet-editing client must not remount a
+		// broken ship (FR-2.4). Zero extra round-trips — CooldownExpiresAt is
+		// decorated onto the already-loaded skill model.
+		if battleshipCastBlocked(sui.SkillId(), sm.CooldownExpiresAt(), time.Now()) {
+			l.Debugf("Character [%d] attempting to cast battleship while on post-break cooldown (expires [%s]).", s.CharacterId(), sm.CooldownExpiresAt())
+			err = enableActions(l)(ctx)(wp)(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, s.CharacterId())
+			}
+			return
+		}
+
 		se, err := skill3.NewProcessor(l, ctx).GetEffect(sui.SkillId(), sui.SkillLevel())
 		if err != nil {
 			err = enableActions(l)(ctx)(wp)(s)
@@ -84,6 +100,14 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 
 		l.Debugf("Character [%d] using skill [%d] at level [%d].", s.CharacterId(), sui.SkillId(), sui.SkillLevel())
 
+		// Resolved once and reused below (task-187): HeroEnrage and
+		// DarkKnightBeholder are routed through the resolved Identity rather
+		// than a raw wire compare, for defensive consistency with the guard
+		// that bans raw wire compares outside the resolver.
+		t := tenant.MustFromContext(ctx)
+		set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+		castId, castIdOk := set.Skill.Resolve(skill.Id(sui.SkillId()))
+
 		// Enrage (Hero) requires and consumes the caster's combo orbs. Gate the
 		// cast here — before the buff applies — on the caster being at their orb
 		// cap ("max combo orbs"), reading the live count from atlas-buffs. A cast
@@ -92,7 +116,7 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		// error so a transient atlas-buffs hiccup never blocks a legitimate cast.
 		consumeEnrageOrbs := false
 		var enrageComboSource int32
-		if skill.Id(sui.SkillId()) == skill.HeroEnrageId {
+		if castIdOk && skill.IsIdentity(castId, skill.HeroEnrage) {
 			line, hasCombo := comboSkillIds(c.Skills())
 			if !hasCombo {
 				l.Debugf("Character [%d] cast Enrage without a Combo Attack skill; rejecting.", s.CharacterId())
@@ -125,7 +149,7 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			// skill book (c.Skills() — decorated above). Non-Beholder summons
 			// send 0/0.
 			var auraLevel, hexLevel byte
-			if sui.SkillId() == uint32(skill.DarkKnightBeholderId) {
+			if castIdOk && skill.IsIdentity(castId, skill.DarkKnightBeholder) {
 				auraLevel = skillLevelOf(c.Skills(), skill.DarkKnightAuraOfTheBeholderId)
 				hexLevel = skillLevelOf(c.Skills(), skill.DarkKnightHexOfTheBeholderId)
 			}
@@ -178,4 +202,11 @@ func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 			return session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)
 		}
 	}
+}
+
+// battleshipCastBlocked reports whether a 5221006 cast must be rejected
+// because the post-break cooldown is still running (FR-2.4). Scoped to
+// battleship: a generic cast-time cooldown gate is out of scope here.
+func battleshipCastBlocked(skillId uint32, cooldownExpiresAt time.Time, now time.Time) bool {
+	return skill.Id(skillId) == skill.CorsairBattleshipId && now.Before(cooldownExpiresAt)
 }

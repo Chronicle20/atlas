@@ -7,6 +7,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type SkillUsageInfo struct {
@@ -21,12 +22,23 @@ type SkillUsageInfo struct {
 	delay                     uint16
 }
 
-func (m *SkillUsageInfo) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *SkillUsageInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
+		t := tenant.MustFromContext(ctx)
 		m.updateTime = r.ReadUint32()
 		m.skillId = r.ReadUint32()
 		m.skillLevel = r.ReadByte()
-		if isAntiRepeatBuffSkill(skill.Id(m.skillId)) {
+		// gms_48 (CUserLocal::SendSkillUseRequest @0x6AFA91) and gms_61 (@0x7BA213)
+		// have NO is_antirepeat_buff_skill gate at all in SendSkillUseRequest — the
+		// function goes straight from Encode1(nSLV) to the 4121006/bitmap/mob-count
+		// blocks. The gate first appears at gms_72 (@0x8774D9, is_antirepeat_buff_skill
+		// @0x877789) and is present on every version from there through gms_95, and on
+		// jms_185 (@0xA3DE65, is_antirepeat_buff_skill @0xA3E223 — verified, 2311001 is
+		// a member). Unconditionally reading castX/castY for isAntiRepeatBuffSkill
+		// members on gms_48/gms_61 over-reads 4 bytes and misaligns every field after
+		// it (task-163 DIV-1, docs/tasks/task-163-priest-dispel-party/version-findings.md).
+		if isAntiRepeatBuffSkill(skill.Id(m.skillId)) &&
+			((t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.IsRegion("JMS")) {
 			m.castX = r.ReadInt16()
 			m.castY = r.ReadInt16()
 		}
@@ -164,7 +176,14 @@ func isMobAffectingBuff(skillId skill.Id) bool {
 		skill.BowmasterMapleWarriorId,
 		skill.BowmasterSharpEyesId,
 		skill.MarksmanMapleWarriorId,
-		skill.MarksmanSharpEyesId,
+		// MarksmanSharpEyesId (3221002) is deliberately ABSENT. gms_v83
+		// CUserLocal::DoActiveSkill compares esi against 3221002 at 0x967ff7
+		// and dispatches to loc_969275, which pushes dwTargetFlag = 2 — the
+		// party bit only, never the mob bit (4). DoActiveSkill_StatChange
+		// @0x969e21 therefore leaves nMobCount at -1 and
+		// CUserLocal::SendSkillUseRequest @0x96d399 emits no mob block for
+		// this skill at all. Reading one here consumed the always-present
+		// trailing delay short instead.
 		skill.AssassinHasteId,
 		skill.HermitMesoUpId,
 		skill.HermitShadowWebId,
@@ -272,7 +291,16 @@ func isAntiRepeatBuffSkill(skillId skill.Id) bool {
 		skill.BowmasterMapleWarriorId,
 		skill.BowmasterSharpEyesId,
 		skill.MarksmanMapleWarriorId,
-		skill.MarksmanSharpEyesId,
+		// MarksmanSharpEyesId (3221002) is deliberately ABSENT — the client's
+		// is_antirepeat_buff_skill lists 3121000, 3121002 (Bowmaster Sharp
+		// Eyes) and 3221000, and then stops; 3221002 appears nowhere in it on
+		// ANY supported client. Verified by decompiling that function per
+		// version: gms_v72 @0x877789, gms_v79 @0x8c42bd, gms_v83 @0x96d6ca,
+		// gms_v84 @0x9ad4e4, gms_v87 @0x9f20fc, gms_v92 @0x919150, gms_v95
+		// @0x939dc0, jms_v185 @0xa3e223. Listing it here made the decoder eat
+		// 4 castX/castY bytes the client never sends, pushing the
+		// affected-party bitmap past the end of the 12-byte packet so it read
+		// 0 and Sharp Eyes only ever buffed the Marksman themselves.
 		skill.AssassinHasteId,
 		skill.HermitMesoUpId,
 		skill.HermitShadowWebId,

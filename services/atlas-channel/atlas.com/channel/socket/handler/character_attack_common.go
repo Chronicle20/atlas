@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"atlas-channel/battleship"
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/character/skill"
 	skill2 "atlas-channel/data/skill"
 	"atlas-channel/data/skill/effect"
+	"atlas-channel/data/skill/effect/statup"
 	"atlas-channel/drop"
 	"atlas-channel/effective_stats"
 	_map "atlas-channel/map"
@@ -21,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
@@ -633,6 +636,68 @@ func drainTryHeal(
 	}
 }
 
+// beaconApplyDeps groups the emit closures beaconTryApply needs so tests can
+// record ordering without Kafka. Mirrors the damageInfoEntryDeps pattern.
+type beaconApplyDeps struct {
+	monsterExists func(monsterId uint32) bool
+	cancelByTypes func(types []string) error
+	applyNoExpiry func(sourceId int32, level byte, mobId int32) error
+}
+
+// beaconTargetMonsterId picks the beacon lock target: the LAST damage entry
+// whose monster id is nonzero and still exists in the field registry. WZ has
+// no mobCount for 5211006/5220011 (single-target), so multiple entries only
+// occur on malformed packets; last-valid-wins matches Cosmic's per-monster
+// loop order (design.md §5.2).
+func beaconTargetMonsterId(monsterIds []uint32, exists func(uint32) bool) (uint32, bool) {
+	var target uint32
+	found := false
+	for _, id := range monsterIds {
+		if id == 0 || !exists(id) {
+			continue
+		}
+		target = id
+		found = true
+	}
+	return target, found
+}
+
+// beaconTryApply handles Homing Beacon (5211006) / Bullseye (5220011): on a
+// valid strike it emits CANCEL_BY_TYPES(HOMING_BEACON) then a no-expiry APPLY
+// whose statup amount is the struck monster's object id. Both commands share
+// the character-keyed buff command topic, so ordering is guaranteed and the
+// old lock (either skill id) is always cleared first (FR-1.4). A whiff emits
+// nothing (FR-1.5). Failures are logged and swallowed — the attack pipeline
+// (damage, projectile, broadcast) is already complete and must not be
+// affected (FR-1.6). skill.OutlawHomingBeaconId (5211006) and
+// skill.CorsairBullseyeId (5220011) are NOT in the task-187
+// divergences.csv (checked: no job/skill row for wireId 5211006 or
+// 5220011), so a raw comparison here is not banned by
+// tools/skill-job-id-guard.sh.
+func beaconTryApply(l logrus.FieldLogger, ai packetmodel.AttackInfo, skillLevel byte, f field.Model, characterId uint32, deps beaconApplyDeps) {
+	sid := skill3.Id(ai.SkillId())
+	if sid != skill3.OutlawHomingBeaconId && sid != skill3.CorsairBullseyeId {
+		return
+	}
+
+	ids := make([]uint32, 0, len(ai.DamageInfo()))
+	for _, di := range ai.DamageInfo() {
+		ids = append(ids, di.MonsterId())
+	}
+	mobId, ok := beaconTargetMonsterId(ids, deps.monsterExists)
+	if !ok {
+		return
+	}
+
+	if err := deps.cancelByTypes([]string{string(charconst.TemporaryStatTypeHomingBeacon)}); err != nil {
+		l.WithError(err).Errorf("Beacon: unable to cancel prior HOMING_BEACON for character [%d]; skipping apply.", characterId)
+		return
+	}
+	if err := deps.applyNoExpiry(int32(ai.SkillId()), skillLevel, int32(mobId)); err != nil {
+		l.WithError(err).Errorf("Beacon: unable to apply HOMING_BEACON (mob [%d]) for character [%d].", mobId, characterId)
+	}
+}
+
 func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
@@ -643,6 +708,17 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					if err != nil {
 						return err
 					}
+
+					// Resolved once and reused for every version-sensitive
+					// wire-id comparison below (task-187): the registered-check
+					// gate that skips the generic HP/MP cost block MUST key on
+					// the caster's version-blind skill Identity, not the raw
+					// wire id -- a raw compare cannot distinguish a v0.48
+					// SuperGM Hide cast (wire 5101004) from a v0.62+ Brawler
+					// Corkscrew Blow cast (same wire).
+					t := tenant.MustFromContext(ctx)
+					set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+					attackId, attackIdOk := set.Skill.Resolve(skill3.Id(ai.SkillId()))
 
 					var sk skill.Model
 					var se effect.Model
@@ -660,6 +736,22 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 							return session.NewProcessor(l, ctx).Destroy(s)
 						}
 
+						// Battleship Cannon/Torpedo are usable only while
+						// riding the battleship (FR-6.1). Soft rejection (no
+						// costs, no damage, no broadcast): a briefly desynced
+						// legitimate client — e.g. the cast→BUFF_APPLIED
+						// mirror window — must not be disconnected. Routed
+						// through battleship.Processor.IsRiding, which is
+						// itself a pure mirror read: zero I/O in the attack
+						// hot path (FR-6.2).
+						if !battleshipAttackPermitted(l, ctx, s.CharacterId(), skill3.Id(ai.SkillId())) {
+							l.WithFields(logrus.Fields{
+								"character_id": s.CharacterId(),
+								"skill_id":     ai.SkillId(),
+							}).Debug("battleship_attack_rejected_not_riding")
+							return nil
+						}
+
 						se, err = skill2.NewProcessor(l, ctx).GetEffect(ai.SkillId(), sk.Level())
 						if err != nil {
 							return err
@@ -669,8 +761,9 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						// against the field's drops BEFORE any side effect (FR-6 —
 						// rejection must skip cost, damage, broadcast, and destruction).
 						// One field-scoped fetch; the map keys structurally enforce the
-						// same-field/instance check.
-						if skill3.Is(skill3.Id(ai.SkillId()), skill3.ChiefBanditMesoExplosionId) {
+						// same-field/instance check. Routed through the resolved
+						// Identity (task-187) rather than a raw wire compare.
+						if attackIdOk && skill3.IsIdentity(attackId, skill3.ChiefBanditMesoExplosion) {
 							ds, dErr := drop.NewProcessor(l, ctx).InMapModelProvider(s.Field())()
 							if dErr != nil {
 								return dErr
@@ -692,7 +785,11 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						// CharacterUseSkill packet. Without this gate,
 						// dual-packet skills like Heal would
 						// double-deduct MP.
-						if _, registered := handler.Lookup(skill3.Id(ai.SkillId())); !registered {
+						registered := false
+						if attackIdOk {
+							_, registered = handler.Lookup(attackId)
+						}
+						if !registered {
 							if se.HPConsume() > 0 {
 								_ = cp.ChangeHP(s.Field(), s.CharacterId(), -int16(se.HPConsume()))
 							}
@@ -709,7 +806,6 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 
 					mp := monster.NewProcessor(l, ctx)
 					mirror := monster.GetStatusMirror()
-					t := tenant.MustFromContext(ctx)
 					attackKind := attackKindFromAttackType(ai.AttackType())
 
 					// Lazy effective-stats fetch: needed when a damage entry
@@ -870,7 +966,22 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// TODO apply Bandit Steal
 					// TODO Fire Demon ice weaken
 					// TODO Ice Demon fire weaken
-					// TODO Homing Beacon / Bullseye
+					if ai.AttackType() == packetmodel.AttackTypeRanged && ai.SkillId() > 0 {
+						bp := buff.NewProcessor(l, ctx)
+						beaconTryApply(l, ai, sk.Level(), s.Field(), s.CharacterId(), beaconApplyDeps{
+							monsterExists: func(monsterId uint32) bool {
+								_, gErr := mp.GetById(monsterId)
+								return gErr == nil
+							},
+							cancelByTypes: func(types []string) error {
+								return bp.CancelByTypes(s.Field(), s.CharacterId(), types)
+							},
+							applyNoExpiry: func(sourceId int32, level byte, mobId int32) error {
+								return bp.ApplyNoExpiry(s.Field(), s.CharacterId(), sourceId, level,
+									[]statup.Model{statup.NewModel(string(charconst.TemporaryStatTypeHomingBeacon), mobId)})(s.CharacterId())
+							},
+						})
+					}
 					// TODO Flame Thrower
 					// TODO Snow Charge
 					// TODO Hamstring
@@ -888,4 +999,21 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 			}
 		}
 	}
+}
+
+// battleshipAttackPermitted gates the battleship-dependent attack skills
+// (Cannon 5221007, Torpedo 5221008) on an active battleship ride. Every
+// attack entry point (melee/ranged/magic/energy/touch) funnels through
+// processAttack, so this single gate covers them all. Skills outside the
+// pair always pass. Goes through battleship.Processor.IsRiding (a mirror
+// read, no I/O) rather than the mirror directly — battleship.NewProcessor
+// is a trivial struct init, so constructing one per attack costs nothing
+// beyond the read itself. The rejection stays soft: it returns false (never
+// destroys the session), matching the caller's nil-return handling.
+func battleshipAttackPermitted(l logrus.FieldLogger, ctx context.Context, characterId uint32, skillId skill3.Id) bool {
+	if !skill3.Is(skillId, skill3.CorsairBattleshipCannonId, skill3.CorsairBattleshipTorpedoId) {
+		return true
+	}
+	_, riding := battleship.NewProcessor(l, ctx).IsRiding(characterId)
+	return riding
 }

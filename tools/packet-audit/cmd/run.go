@@ -623,6 +623,41 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ErrorResponse", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::SendGivePopularityRequest":
 		return []candidate{{name: "Change", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendClaimRequest":
+		return []candidate{{name: "ClaimRequest", dir: csvpkg.DirServerbound}}
+
+	// CWvsContext::OnClaimResult / CWvsContext::OnSueCharacterResult (task-145
+	// FAM-CAP follow-up). Both are the SetSkillResponse-style "mode + optional
+	// payload" shape (design.md §3.1) — the IDA decompile shows one switch
+	// where at most one arm reads a body, not N distinct-body sub-handlers —
+	// so per DISPATCHER_FAMILY.md's narrow criteria neither is a true
+	// mode-prefix client dispatcher. But docs/packets/dispatchers/claim_result
+	// .yaml and sue_character_result.yaml legitimately exist as the per-version
+	// `operations` mode-table source of truth consumed by `packet-audit
+	// operations` (cmd/operations.go), and dispatcher-lint's FAM-CAP guard
+	// (FR-5.1) requires every file in that directory to be either
+	// discrete-implemented here or capped via families.yaml/the baseline —
+	// it does not special-case non-family operations tables. A families.yaml
+	// cap is the wrong disposition here: capping is unconditional per-op
+	// (matrix grade.go: `family: in.Families[baseFName(ref.FName)]`) and would
+	// silently demote the byte-fixtures task-145 Task 24 already verified
+	// (packet-audit:verify markers in claim_result_test.go /
+	// sue_character_result_test.go) from ✅ back to 🧩; the baseline is
+	// legacy-only and reached empty deliberately (DISPATCHER_FAMILY.md: "new
+	// families must be authored discrete-per-mode from the start"). So:
+	// discrete-per-mode registration. ClaimResultSuccess/ClaimResultNotice
+	// already carry #Success/#Notice packet-audit:fname markers in
+	// report/clientbound/claim_result.go — only this run.go wiring was
+	// missing. SueCharacterResult never branches its body (one `result byte`,
+	// same shape for every value), so it gets a single catch-all #Result arm —
+	// a lone #-entry for tool bookkeeping, not a false family claim (see the
+	// CWvsContext::ResignQuest#Action precedent above).
+	case "CWvsContext::OnClaimResult#Success":
+		return []candidate{{name: "ClaimResultSuccess", pkg: "report", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnClaimResult#Notice":
+		return []candidate{{name: "ClaimResultNotice", pkg: "report", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnSueCharacterResult#Result":
+		return []candidate{{name: "SueCharacterResult", pkg: "report", dir: csvpkg.DirClientbound}}
 
 	// --- merchant bucket (task-069, sub-phase 2f) ---
 	case "CWvsContext::OnEntrustedShopCheckResult#OpenShop":
@@ -777,6 +812,11 @@ func candidatesFromFName(fname string) []candidate {
 		// Struct is ItemCancel; handler constant = "CharacterItemCancelHandle".
 		// Client sends opcode 0x4F (79) with Encode4(nItemID).
 		return []candidate{{name: "ItemCancel", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::CheckTemporaryStatDuration":
+		// CANCEL_DEBUFF. Struct is CancelDebuff; handler constant =
+		// "CancelDebuffHandle". Empty body: COutPacket(opcode) then SendPacket
+		// with no intervening encode calls, on every version (task-190).
+		return []candidate{{name: "CancelDebuff", dir: csvpkg.DirServerbound}}
 	// --- Character serverbound chairs/expression bucket (Task 13) ---
 	case "CUserLocal::HandleXKeyDown":
 		// Struct is ChairFixed; handler constant = "CharacterChairInteractionHandle".

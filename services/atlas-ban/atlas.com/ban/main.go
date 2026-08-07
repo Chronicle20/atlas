@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-ban/ban"
 	"atlas-ban/history"
+	"atlas-ban/report"
 	"atlas-ban/tasks"
 	"context"
 	"os"
@@ -12,6 +13,7 @@ import (
 
 	account2 "atlas-ban/kafka/consumer/account"
 	ban2 "atlas-ban/kafka/consumer/ban"
+	report4 "atlas-ban/kafka/consumer/report"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
@@ -50,7 +52,7 @@ func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(ban.Migration, history.Migration))
+	db := database.Connect(l, database.SetMigrations(ban.Migration, history.Migration, report.Migration))
 
 	server.RegisterTransientErrorClassifier(func(err error) bool {
 		if database.IsTransientConnectionError(err) {
@@ -69,6 +71,10 @@ func main() {
 	if err := account2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
+	report4.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := report4.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
@@ -79,6 +85,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(ban.InitResource(GetServer())(db)).
 		AddRouteInitializer(history.InitResource(GetServer())(db)).
+		AddRouteInitializer(report.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()

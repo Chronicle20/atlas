@@ -13,7 +13,7 @@ func TestIsTamedMountSkill(t *testing.T) {
 		{"Legend MonsterRider", 20001004, true},
 		{"Evan MonsterRider", 20011004, true},
 		{"Broomstick (skill-only)", 1019, false},
-		{"Battleship (out of scope)", 5221006, false},
+		{"Battleship (skill mount, not tamed)", 5221006, false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -41,7 +41,7 @@ func TestSkillOnlyMountVehicleId(t *testing.T) {
 		{"Noblesse SpaceShip formula", 1001014, 2, 1932002, true},
 		{"Legend Balrog", 20001031, 1, 1932010, true},
 		{"Tamed MonsterRider not skill-only", 1004, 1, 0, false},
-		{"Battleship not skill-only", 5221006, 1, 0, false},
+		{"Battleship not fixed-vehicle", 5221006, 1, 0, false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -51,6 +51,27 @@ func TestSkillOnlyMountVehicleId(t *testing.T) {
 			}
 			if vid != tc.expectedVid {
 				t.Errorf("SkillOnlyMountVehicleId(%d, %d) vid = %d, want %d", tc.id, tc.level, vid, tc.expectedVid)
+			}
+		})
+	}
+}
+
+func TestIsBattleshipMountSkill(t *testing.T) {
+	tests := []struct {
+		name     string
+		id       Id
+		expected bool
+	}{
+		{"Battleship", 5221006, true},
+		{"Cannon is not the mount", 5221007, false},
+		{"Torpedo is not the mount", 5221008, false},
+		{"Broomstick (skill-only)", 1019, false},
+		{"Tamed MonsterRider", 1004, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := IsBattleshipMountSkill(tc.id); got != tc.expected {
+				t.Errorf("IsBattleshipMountSkill(%d) = %v, want %v", tc.id, got, tc.expected)
 			}
 		})
 	}

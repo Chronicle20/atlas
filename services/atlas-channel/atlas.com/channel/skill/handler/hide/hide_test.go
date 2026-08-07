@@ -7,8 +7,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
@@ -32,7 +34,13 @@ type hideCapture struct {
 
 func deps(caster character.Model, hidden bool, c *hideCapture) hideDeps {
 	return hideDeps{
-		loadCaster:        func(uint32) (character.Model, error) { return caster, nil },
+		loadCaster: func(uint32) (character.Model, error) { return caster, nil },
+		// isSuperGm mirrors the pre-task-187 version-blind comparison: these
+		// unit tests exercise applyHide's core loop with canonical (v83-era)
+		// job ids directly, not tenant-version resolution -- that property is
+		// pinned separately (skill/handler/version_resolve_test.go's v48/v83
+		// IsSuperGm tests, and TestResolveHideSourceId_v48VsV83 below).
+		isSuperGm:         func(jid job.Id) bool { return job.IsA(jid, job.SuperGmId) },
 		isHidden:          func(uint32) (bool, error) { return hidden, nil },
 		applyHide:         func(field.Model, uint32, byte) error { c.applied++; return nil },
 		cancelHide:        func(field.Model, uint32) error { c.cancelled++; return nil },
@@ -75,5 +83,21 @@ func TestHideOff(t *testing.T) {
 	}
 	if c.applied != 0 || c.despawned != 0 {
 		t.Errorf("hide OFF leaked apply/despawn: %+v", c)
+	}
+}
+
+// TestResolveHideSourceId_v48VsV83 pins the outbound half of the task-187
+// v0.48 correctness fix: the GM-hide buff's SourceId must be the CASTER'S
+// VERSION's wire id for SuperGmHide, not the hardcoded canonical (v83-era)
+// wire value -- otherwise a v0.48 hide buff would carry SourceId 9101004 (not
+// a valid v0.48 wire id at all), and character/buff.IsGmHidden's
+// version-aware resolve (which resolves the SAME tenant's version set) would
+// never recognize it as a hide buff.
+func TestResolveHideSourceId_v48VsV83(t *testing.T) {
+	if got := resolveHideSourceId(constants.For("GMS", 48, 1)); got != 5101004 {
+		t.Errorf("resolveHideSourceId(v48) = %d, want 5101004", got)
+	}
+	if got := resolveHideSourceId(constants.For("GMS", 83, 1)); got != int32(skill2.SuperGmHideId) {
+		t.Errorf("resolveHideSourceId(v83) = %d, want %d (canonical)", got, skill2.SuperGmHideId)
 	}
 }

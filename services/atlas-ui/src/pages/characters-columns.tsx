@@ -1,4 +1,4 @@
-import { type ColumnDef } from "@tanstack/react-table";
+import { type DataTableColumnDef } from "@/components/data-table-features";
 import type { Tenant, TenantConfig } from "@/types/models/tenant";
 import { getJobNameById } from "@/lib/jobs";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +50,7 @@ export const getColumns = ({
   tenantConfig,
   accountMap,
   onRefresh,
-}: ColumnProps): ColumnDef<Character>[] => {
+}: ColumnProps): DataTableColumnDef<Character>[] => {
   return [
     {
       accessorKey: "id",

@@ -16386,6 +16386,97 @@
           "comment": "CONDITIONAL if flag1 != 0 AND flag2 != 0: item, 55 bytes GW_CashItemInfo blob, appended to m_aCashItemInfo"
         }
       ]
+    },
+    "CWvsContext::OnClaimResult": {
+      "address": "0x9fa7d0",
+      "direction": "clientbound",
+      "notes": "byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table (0x9e5830), case 44 call-site @0x9e599e. Decode1(mode) @0x9fa819 (inlined into the switch) is the only unconditional read; mode==2 is the sole value that reads further (hasRemaining, remaining). Every other reachable mode (3, 0x41-0x45, 0x47, 0x48) renders a StringPool/CUtilDlg::Notice from the mode byte alone; unlisted modes fall through to `default: return`. Opcode 0x2C matches STATUS.md's pre-filled v95 column value. Byte-identical to the v72/v79/v83/v84/v87/v92 twins.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte @0x9fa819"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasRemaining @0x9fa839, mode==2 only",
+          "guard": "mode == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "remaining int32 @0x9fa843, mode==2 only",
+          "guard": "mode == 2"
+        }
+      ]
+    },
+    "CWvsContext::OnClaimSvrStatusChanged": {
+      "address": "0x9f1650",
+      "direction": "clientbound",
+      "notes": "byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table (0x9e5830), case 46 call-site @0x9e59b8. Single Decode1 != 0 read @0x9f1663, stored directly to m_bClaimSvrConnected, no branches. Opcode 0x2E matches STATUS.md's pre-filled v95 column value. Byte-identical to the v72/v79/v83/v84/v87/v92 twins.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "connected != 0 @0x9f1663"
+        }
+      ]
+    },
+    "CWvsContext::OnSetClaimSvrAvailableTime": {
+      "address": "0x9f1620",
+      "direction": "clientbound",
+      "notes": "byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table (0x9e5830), case 45 call-site @0x9e59ab. Two unconditional Decode1 reads, no branches. Opcode 0x2D matches STATUS.md's pre-filled v95 column value. Byte-identical to the v72/v79/v83/v84/v87/v92 twins.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "openHour @0x9f1632"
+        },
+        {
+          "op": "Decode1",
+          "comment": "closeHour @0x9f1634"
+        }
+      ]
+    },
+    "CWvsContext::OnSueCharacterResult": {
+      "address": "0x9fae10",
+      "direction": "clientbound",
+      "notes": "byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table (0x9e5830), case 55 call-site @0x9e5991. Decode1(result) @0x9fae39 is the only read (iPacket zeroed immediately after @0x9fae43); a five-way branch (0/1/2/3/else) purely picks a StringPool notice id for a CUIStatusBar::ChatLogAdd render, no further packet reads. Opcode 0x37 matches STATUS.md's pre-filled v95 column value. Byte-identical to the v61/v72/v79/v83/v84/v87/v92 twins.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "result byte @0x9fae39"
+        }
+      ]
+    },
+    "CWvsContext::SendClaimRequest": {
+      "address": "0xa05fb0",
+      "direction": "serverbound",
+      "notes": "byte-verified 2026-08-05 (task-145 Task 24, independently re-decompiled) via COutPacket::COutPacket(&oPacket, 118) @0xa065dc -- opcode 118/0x76, matches STATUS.md's pre-filled v95 column value. Encode1(bChatClaim=v33) @0xa065ee (v33 set to 1 on the DoModal==1000 \"chat claim\" path @0xa06436, 0 on the DoModal==1001 \"regular claim\" path @0xa06178). EncodeStr(targetName) @0xa0660d. Encode1(reasonType) @0xa0661b. EncodeStr(description) @0xa0663a. Guarded EncodeStr(chatLog) @0xa066f5, gated on the same v33 (bChatClaim, checked via `if ( v33 )` @0xa06641) that fed the first Encode1. CClientSocket::SendPacket @0xa06724. Byte-identical to the v72/v79/v83/v84/v87/v92 twins.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "bChatClaim (v33; also gates the trailing chatLog string below) @0xa065ee"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "targetCharacterName @0xa0660d"
+        },
+        {
+          "op": "Encode1",
+          "comment": "reasonType (nType) @0xa0661b"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "description (sContext) @0xa0663a"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "chatLog (only when bChatClaim) @0xa066f5",
+          "guard": "v33"
+        }
+      ]
+    },
+    "CWvsContext::CheckTemporaryStatDuration": {
+      "address": "0x9f2d30",
+      "direction": "serverbound",
+      "calls": []
     }
   }
 }

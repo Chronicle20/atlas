@@ -10,17 +10,31 @@ import (
 
 	channelhandler "atlas-channel/skill/handler"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const (
 	testCasterId = uint32(1001)
 	testLevel    = byte(7)
 )
+
+// testCtx builds a tenant-bearing context: Apply resolves the cast's wire
+// skill id through the tenant's version set (task-187), so it can no longer
+// run against a bare context.Background().
+func testCtx(t *testing.T, region string, major, minor uint16) context.Context {
+	t.Helper()
+	tm, err := tenant.Create(uuid.New(), region, major, minor)
+	if err != nil {
+		t.Fatalf("tenant.Create: %v", err)
+	}
+	return tenant.WithContext(context.Background(), tm)
+}
 
 func bishopInfo() packetmodel.SkillUsageInfo {
 	return packetmodel.NewSkillUsageInfoBuilder().
@@ -86,11 +100,52 @@ func mkRecipient(id uint32, x, y int16) channelhandler.PartyRecipient {
 }
 
 func TestResurrection_RegistersAllThreeIds(t *testing.T) {
-	for _, id := range []skill2.Id{skill2.BishopResurrectionId, skill2.GmResurrectionId, skill2.SuperGmResurrectionId} {
+	for _, id := range []skill2.Identity{skill2.BishopResurrection, skill2.GmResurrection, skill2.SuperGmResurrection} {
 		h, ok := channelhandler.Lookup(id)
 		if !ok || h == nil {
-			t.Fatalf("Lookup(%d) = (%v, %v), want non-nil handler", id, h, ok)
+			t.Fatalf("Lookup(%v) = (%v, %v), want non-nil handler", id, h, ok)
 		}
+	}
+}
+
+// TestResurrection_v48SuperGmWireUsesMapSelector proves the task-187
+// wire-to-identity resolution end to end for the divergent Resurrection
+// variant: at v0.48, SuperGmResurrection is wire 5101005 (NOT the canonical
+// 9101005). A v48 cast of wire 5101005 must resolve to SuperGmResurrection
+// and take the map-scoped (party-agnostic) recipient path, not the
+// party-scoped Bishop path.
+func TestResurrection_v48SuperGmWireUsesMapSelector(t *testing.T) {
+	prevParty, prevMap := selectDeadParty, selectDeadMap
+	partyCalled, mapCalled := false, false
+	selectDeadParty = func(_ logrus.FieldLogger, _ context.Context, _ field.Model, _ uint32, _, _ int16, _ effect.Model, _ byte) []channelhandler.PartyRecipient {
+		partyCalled = true
+		return nil
+	}
+	selectDeadMap = func(_ logrus.FieldLogger, _ context.Context, _ field.Model, _ uint32, _, _ int16, _ effect.Model) []channelhandler.PartyRecipient {
+		mapCalled = true
+		return nil
+	}
+	t.Cleanup(func() { selectDeadParty, selectDeadMap = prevParty, prevMap })
+
+	prevCaster, prevBroadcast := loadCaster, broadcastEffects
+	loadCaster = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (int16, int16, byte, error) {
+		return 0, 0, testLevel, nil
+	}
+	broadcastEffects = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, _ field.Model, _ uint32, _ byte, _ uint32, _ byte) {
+	}
+	t.Cleanup(func() { loadCaster, broadcastEffects = prevCaster, prevBroadcast })
+
+	v48SuperGmInfo := packetmodel.NewSkillUsageInfoBuilder().
+		SetSkillId(5101005).
+		SetSkillLevel(1).
+		Build()
+
+	err := Apply(testLogger())(testCtx(t, "GMS", 48, 1))(nil, testField(), testCasterId, v48SuperGmInfo, effect.Model{})
+	if err != nil {
+		t.Fatalf("Apply err: %v", err)
+	}
+	if partyCalled || !mapCalled {
+		t.Fatalf("v48 wire 5101005 (SuperGmResurrection): partyCalled=%v mapCalled=%v, want map only", partyCalled, mapCalled)
 	}
 }
 
@@ -99,7 +154,7 @@ func TestResurrection_SetHPBeforeWarpPerRecipient(t *testing.T) {
 		[]channelhandler.PartyRecipient{mkRecipient(42, 100, 50), mkRecipient(43, -10, 20)},
 		nil, nil, nil)
 
-	err := Apply(testLogger())(context.Background())(nil, testField(), testCasterId, bishopInfo(), effect.Model{})
+	err := Apply(testLogger())(testCtx(t, "GMS", 83, 1))(nil, testField(), testCasterId, bishopInfo(), effect.Model{})
 	if err != nil {
 		t.Fatalf("Apply err: %v", err)
 	}
@@ -114,7 +169,7 @@ func TestResurrection_SetHPBeforeWarpPerRecipient(t *testing.T) {
 
 func TestResurrection_EmptyRecipientsBroadcastsNoSetHP(t *testing.T) {
 	events, broadcast := installHandlerSeams(t, nil, nil, nil, nil)
-	err := Apply(testLogger())(context.Background())(nil, testField(), testCasterId, bishopInfo(), effect.Model{})
+	err := Apply(testLogger())(testCtx(t, "GMS", 83, 1))(nil, testField(), testCasterId, bishopInfo(), effect.Model{})
 	if err != nil {
 		t.Fatalf("Apply err: %v", err)
 	}
@@ -133,7 +188,7 @@ func TestResurrection_PerRecipientFailureIsolation(t *testing.T) {
 		map[uint32]error{42: errors.New("setHP boom")},
 		nil)
 
-	_ = Apply(testLogger())(context.Background())(nil, testField(), testCasterId, bishopInfo(), effect.Model{})
+	_ = Apply(testLogger())(testCtx(t, "GMS", 83, 1))(nil, testField(), testCasterId, bishopInfo(), effect.Model{})
 	want := []string{"setHP:42:65535", "setHP:43:65535", "warp:43:0:0"}
 	if fmt.Sprint(*events) != fmt.Sprint(want) {
 		t.Fatalf("events = %v, want %v", *events, want)
@@ -148,7 +203,7 @@ func TestResurrection_CasterLoadErrorNoOp(t *testing.T) {
 		[]channelhandler.PartyRecipient{mkRecipient(42, 0, 0)},
 		errors.New("caster load failed"), nil, nil)
 
-	err := Apply(testLogger())(context.Background())(nil, testField(), testCasterId, bishopInfo(), effect.Model{})
+	err := Apply(testLogger())(testCtx(t, "GMS", 83, 1))(nil, testField(), testCasterId, bishopInfo(), effect.Model{})
 	if err != nil {
 		t.Fatalf("Apply err: %v", err)
 	}
@@ -171,7 +226,7 @@ func TestResurrection_WarpFailureIsolation(t *testing.T) {
 		nil,
 		map[uint32]error{42: errors.New("warp boom")})
 
-	err := Apply(testLogger())(context.Background())(nil, testField(), testCasterId, bishopInfo(), effect.Model{})
+	err := Apply(testLogger())(testCtx(t, "GMS", 83, 1))(nil, testField(), testCasterId, bishopInfo(), effect.Model{})
 	if err != nil {
 		t.Fatalf("Apply err: %v", err)
 	}

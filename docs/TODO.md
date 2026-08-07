@@ -12,7 +12,6 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 - [ ] **atlas-object-id silent-collision fallback** - On Redis allocator failure, monsters/reactors/drops fall back to returning `objectid.MinId` instead of failing the spawn, so every entity spawned during a Redis outage gets ID 1,000,000 and they all collide in storage
 
 ### High Priority (Feature Incomplete)
-- [ ] **TokenItem Purchasing** - Returns "not implemented" error in NPC shops
 - [ ] **Reactor Actions** - Boss weakening, environment manipulation, mass kill sagas
 - [ ] **Lint burn-down (task-171 follow-up)** - The Go linter layer of
   `tools/lint.sh` is rev-gated (`--new-from-rev` merge-base) so only new code
@@ -266,9 +265,6 @@ that is not available on the wire:
 ### NPC Conversations Service
 - [ ] Stale TODO comment in condition evaluator (`conversation/processor.go:590`)
 
-### NPC Shops Service
-- [ ] **Implement TokenItem purchasing** (`shops/processor.go:430`)
-
 ### Pets Service
 - [ ] Generate cashId if cashId == 0 (`pet/processor.go:199`)
 
@@ -291,6 +287,13 @@ that is not available on the wire:
 - [ ] BladeRecruit job ID handling (`job/model.go:92`)
 - [ ] Translated name for FairytaleLandBeanstalkClimb2 (`map/constants.go:1641`)
 - [ ] Define HiddenStreet Nett's Pyramid battle room maps (926010100-926023500) (`map/model.go:434`)
+
+### atlas-packet
+- [ ] **Foreign-CTS shapes that still disagree with the client (non-disease).** Found while sweeping `SecondaryStat::DecodeForRemote` across all ten clients for task-195 / #1196; left alone there because none is a disease and none is reachable today. Evidence in `docs/tasks/task-195-foreign-disease-mobskill/investigation.md` §6.
+  - `ShadowPartner` (v87+) foreign-writes `Short(level) + Short(sourceId)` via `LevelSourceForeignValueWriter`, truncating a 7-digit player skill id into 16 bits. The client reads one `Decode4` reason (`rShadowPartner` in the v95 PDB).
+  - `BanMap` foreign-writes 4 bytes unconditionally, but gms_v48's remote decoder (`sub_5CBA1F`) reads none for that bit.
+  - v95's remote decoder reads a `Decode4` reason for `Mechanic`, `DarkAura`, `BlueAura`, `YellowAura`; the registry has them `NoOp`. Latent only — atlas never originates these stats, so the bits are never set.
+  - gms_v61's remote decoder has no `ReverseInput` branch at all, so a v61 tenant setting `Confuse` would desync. Atlas has no v61 Confuse source today.
 
 ### atlas-object-id
 - [ ] **Silent ID-collision on Redis failure.** `IdAllocator.Allocate` in each consumer (`services/atlas-monsters/atlas.com/monsters/monster/id_allocator.go:38-41`, and the inline equivalents in atlas-reactors and atlas-drops registries) swallows the error from `objectid.Allocator.Allocate` and returns `objectid.MinId` (1,000,000) as a fallback. Effect: during a Redis outage every monster, reactor, or drop spawned across the deployment is assigned the same id (1,000,000) and they collide in the per-tenant `<entity>:{tenantId}:{id}` storage key — only one entity survives in storage even though many were created. The v83 client also crashes on duplicate oids in the same field. Fix: propagate the allocation error all the way up to the spawn caller (Create/CreateAndEmit/etc.) and fail the spawn loudly. Discovered while documenting the shared allocator in task-019.
@@ -356,7 +359,9 @@ Deferred items from task-004 (Vite + React Router migration). The migration itse
 
 ### Phase 5 (Jest → Vitest — mechanical migration shipped; follow-ups below)
 
-The mechanical migration landed: `jest.*` → `vi.*`, `next/navigation` + `next/link` mocks swapped for `react-router-dom` equivalents. Follow-up cleanup reports **471 passed / 0 skipped / 0 failed** across 26 test files (Vitest). Tests are excluded from `tsc -b` because test files carry pre-existing semantic type errors that are orthogonal to the migration.
+The mechanical migration landed: `jest.*` → `vi.*`, `next/navigation` + `next/link` mocks swapped for `react-router-dom` equivalents. `grep -rlE 'jest\.(fn|mock|spyOn)' src` now returns zero. The suite stands at **1890 passed / 0 skipped / 0 failed** across 234 test files (Vitest).
+
+Tests are **no longer excluded from `tsc -b`** — `tsconfig.app.json` includes all of `src` and excludes only `src/lib/api/examples/**`, so `npm run build` type-checks test files under the same strict flags as production code. (Corrected 2026-08-07: this paragraph previously claimed the opposite, which misled task-199 into shipping four commits that passed `npm run test` while failing `tsc -b`.)
 
 All previously-skipped tests have been resolved:
 
@@ -367,7 +372,7 @@ All previously-skipped tests have been resolved:
 - [x] ~~`src/components/features/characters/__tests__/CharacterRenderer.test.tsx`~~ — reintroduced `data-testid="character-image"` on the migrated `<img>` markup.
 - Deleted obsolete `accounts.service.test.ts`, `templates.service.test.ts`, `useTemplates.test.tsx`, and `conversations.service.test.ts` — they targeted class-based `BaseService` methods (`validate`, `transformResponse`, etc.) removed in the plain-object rewrite. Current surfaces are covered by the hook tests under `lib/hooks/api/__tests__/`.
 
-Strict `tsconfig.app.json` status — all 7 home-hub strict flags are now on for production code:
+Strict `tsconfig.app.json` status — all 7 home-hub strict flags are now on, for test files as well as production code (see the last item):
 
 - [x] ~~`noImplicitOverride`, `noUncheckedIndexedAccess`, `noUncheckedSideEffectImports`.~~ Done.
 - [x] ~~`verbatimModuleSyntax`.~~ Done — ~30 call sites converted to `import { type X, Y }`.
@@ -399,6 +404,106 @@ Logged from `docs/tasks/task-037-character-presets/` design §7.
 - [ ] **`<ItemPicker>` / `<SkillPicker>` components** — replace free-text uint32 inputs in `services/atlas-ui/src/pages/{templates,tenants}-character-presets-form.tsx` with searchable pickers backed by atlas-data.
 - [ ] **Non-explorer 4th-job presets** — extend `services/atlas-configurations/seed-data/templates/template_gms_83_1.json` with Cygnus / Aran / Resistance / Legend 4th-job presets.
 
+## task-145-player-reports follow-ups
+
+Deferred from task-145 (player sue/claim reports). Design/plan/findings live under
+`docs/tasks/task-145-player-reports/`.
+
+### Feature scope deferred (result-code plumbing already expressive; wiring deferred)
+
+- [x] **Claim quota / mesos-cost enforcement.** Done. A claim now costs
+  `report.ClaimCostMesos` (300), charged only after atlas-ban confirms creation, with an
+  affordability pre-check that emits claim mode `0x43` (`NOT_ENOUGH_MESOS`). atlas-ban
+  counts the reporter's claims in a rolling `ClaimQuotaWindow` (7 days), rejects at
+  `MaxClaimsPerWindow` (100) with mode `0x45` (`EXCEEDED`), and reports the true remaining
+  count in the success payload instead of the former hard-coded 100.
+- [ ] **Sue daily limit.** `sue` result code 2 (`DAILY_LIMIT`, "you may only report users 10
+  times a day") is still never emitted — the claim quota above deliberately excludes sue,
+  and nothing counts sue volume. Claim modes `0x47` (`TIME_WINDOW`) and `0x48`
+  (`FALSE_REPORT_CITED`) likewise remain expressible but unused: Atlas advertises an
+  always-open claim window (`open=0, close=0`) and tracks no false-report citations.
+- [ ] **Accused-notification codes.** `sue` result code 3 and claim mode `0x03`
+  (`REPORTED_NOTICE`) are accepted by the writers' operations tables, but nothing sends a
+  notice to the *accused* character today — only the reporter's own result/claim packet is
+  ever announced (`services/atlas-channel/atlas.com/channel/kafka/consumer/report/consumer.go`
+  `handleStatusEvent`/`reportAnnouncer` target only `ReporterId`). Wiring this needs a second
+  announce target (the accused's session) keyed off `AccusedId`, when prioritized.
+
+### Blocked (need re-verification once unblocked, not scope decisions)
+
+- [ ] **gms-12 report enablement.** Blocked on registry files + IDA export for gms_v12 —
+  there is no `docs/packets/registry/gms_v12.yaml` and no gms_v12 column in the coverage
+  matrix at all, so sue/claim opcodes for gms-12 are genuinely unverifiable today (unlike
+  gms_v92, which this branch fully brought up — registry `docs/packets/registry/gms_v92.yaml`,
+  IDA export, matrix column, all six sue/claim ops wired into
+  `template_gms_92_1.json`, all 5 gms_92 report cells verified ✅). Config-entry work only
+  when a gms_v12 IDB/registry becomes available — no code changes anticipated.
+- [ ] **3 jms_185 clientbound claim cells blocked on a wedged IDA session.**
+  `CLAIM_RESULT`/`CLAIM_AVAILABLE_TIME`/`CLAIM_STATUS_CHANGED` are live-routed on jms
+  (`CWvsContext::OnPacket` @ `0xaebfe7`, cases `0x2A`/`0x2B`/`0x2C`, handlers named at
+  `0xb0e9c3`/`0xb0ec69`/`0xb0ec92` — see `packet-findings.md` §7.3) and are ready to verify,
+  but the jms IDA session (`b6864e54`) was wedged for this entire campaign: `idb_list`
+  reported `is_active:true` with a recent `last_accessed`, but a direct `lookup_funcs` call
+  against it timed out while sibling sessions responded normally in the same window. This is
+  an infrastructure outage, not unscoped work — retry the verification pass
+  (`/verify-packet` × those 3 cells) once the instance is healthy. Note: jms has **no**
+  `CLAIM_REQUEST` send-site at all (5 independent exhaustive searches, §7.3) and **no** `sue`
+  at all (§7.4) — those are genuine, already-recorded absences, not blocked work; do not
+  re-open them.
+
+### Test-coverage gaps (design/behavior judged correct; coverage deferred during review)
+
+- [ ] `[]TranscriptLine` nil-vs-empty-slice asymmetry is untested
+  (`services/atlas-ban/atlas.com/ban/report/model.go`). The frontend already handles both
+  cases explicitly (`ReportDetailPage.tsx`'s `serverTranscript && serverTranscript.length > 0`
+  guard treats a missing and an empty transcript identically), but the Go side has no test
+  pinning that a zero-length captured transcript round-trips as `[]TranscriptLine{}` rather
+  than `nil` (or vice versa) through the `jsonb` column.
+- [ ] `chat/processor.go`'s `RecentInvolving` doc comment
+  (`services/atlas-messages/atlas.com/messages/chat/processor.go:19-20`) asserts a
+  "merged and sorted ascending by timestamp" contract with no `httptest` coverage of the
+  404/empty/refused response paths for `/api/chat/history`.
+- [ ] Report consumer wiring (topic resolution, header-parser registration, tenant
+  round-trip on the happy path) in
+  `services/atlas-ban/atlas.com/ban/kafka/consumer/report/` is verified only by
+  code-comparison against the contract file, not by an in-package test. Live acceptance
+  (task-145 plan Step 6, human-executed against real tenants) is the actual gate for this
+  path; add an in-package consumer test if that live pass is not run promptly.
+- [ ] `libs/atlas-redis/keyed_sorted_set.go`'s `AddBounded` (line 60) tests omit the
+  exact-score-boundary case and the `maxCount<=0`/`ttl<=0` no-op branches.
+- [ ] `services/atlas-messages/atlas.com/messages/chat/resource.go`'s
+  `handleGetChatHistory` (line 82) has no end-to-end `httptest` coverage of the
+  400/500/200 response shapes.
+- [ ] Handler→processor argument-order wiring for the sue/claim handlers
+  (`services/atlas-channel/atlas.com/channel/socket/handler/`) is verified only by code
+  inspection; the handler tests re-pin codec decode (matching this codebase's pre-existing
+  convention for other handlers) rather than asserting the processor call shape directly.
+
+### Tooling defects found in `tools/packet-audit` (all confirmed live during this branch)
+
+- [ ] **Direction inference produces silently-confident false-empty records.** A brand-new
+  serverbound FName absent from both the prior-export roster and `candidatesFromFName` falls
+  back to `DirClientbound` (`export.go`'s `directionFor`/`dirOf`); `ParseDecompile`
+  (`parse.go`) then searches only for `CInPacket::Decode*`, finds none in a pure
+  `COutPacket` send-site, and returns **zero calls without erroring** — counted as
+  "1 resolved, 0 unresolved" rather than flagged as a gap. Reproduced live twice on this
+  branch (gms_v92's `SendClaimRequest`, and again against the correct IDA endpoint during
+  Task 23). Narrow mitigation already identified: treat a zero-call parse for a
+  newly-introduced FName with no direction source as `unresolved` rather than confidently
+  empty — does not touch the well-exercised inference paths for known FNames.
+- [ ] **The CLI's default `--ida-url` points at a stale server.** Hardcoded default is
+  `http://192.168.20.3:13337/mcp`; the working endpoint in this environment is
+  `http://192.168.20.3:8745/mcp`. Port 13337 runs an older MCP schema whose `survey_binary`
+  rejects the `database` parameter, so any export run against the CLI's own default dies
+  with `Invalid params: unexpected parameters: ['database']`. This is a wrong default value
+  in the tool, not an environment quirk — fix the default flag.
+- [ ] **`md5: "unavailable"` is written as a value, silently.** A full (non-`--splice`)
+  `export --version gms_v83` against the correct IDA endpoint writes `"md5": "unavailable"`
+  with exit 0, because `survey_binary` reports no hash for that IDB — this value would then
+  serve as a freshness anchor that can never match a real hash. Currently latent only because
+  every affected export on this branch used `--splice`. Fix: treat `"unavailable"` (and any
+  other non-hex string) as an error, not a value, before any full re-export.
+
 ## task-081 packet-audit validation follow-ups
 
 Deferred from task-081 (validation-pivot). The exporter + validation toolchain + the
@@ -424,3 +529,39 @@ left silent (see `docs/tasks/task-081-ida-export-reharvest/four-version-validati
 - [ ] Optional: a `validate` mode that also handles if/else-chain dispatch handlers
   (e.g. `CLogin::OnCheckPasswordResult`) — currently honest `unverifiable` (a genuine
   static-extraction wall; may not be worth the complexity).
+
+## task-190 follow-up: USER_CALC_DAMAGE_STAT_SET_REQUEST handler (reserved as task-192)
+
+Deferred from task-190 (disease-duration + CANCEL_DEBUFF). `USER_CALC_DAMAGE_STAT_SET_REQUEST`
+is the tail of the same client handshake task-190 implements handlers for:
+`CWvsContext::OnTemporaryStatReset` ends with `if (IsCalcDamageStat(mask)) { COutPacket(0x6C);
+SendPacket(...); }` — so it fires more often once task-190's FR-2 (temporary-stat reset routing)
+ships. It was kept out of scope on evidence, not overlooked: unlike `CANCEL_DEBUFF`, this send is
+one-shot per stat reset, not a per-frame loop, so it cannot wedge a client the way an unhandled
+`CANCEL_DEBUFF` did — the cost of leaving it unhandled is a possibly-stale client-side
+damage-range display, not a hang. See `docs/tasks/task-190-disease-duration-cancel-debuff/investigation.md`
+§8.3 for the IDA evidence.
+
+- [ ] **Implement `USER_CALC_DAMAGE_STAT_SET_REQUEST` as task-192** — use 192 for this
+  follow-up rather than calling `tools/task-numbers.sh next` fresh (it will now return a
+  higher number, since 192 is already reserved).
+  **Do not use task-184.** 184 was previously assigned to a gms_61 opcode-corruption incident
+  (7 template edits wrong, caught by `matrix --check`) whose branch and PR were reverted and
+  deleted. The deletion is what let `tools/task-numbers.sh next` report 184 as free when this
+  entry was first written — its folder/branch/commit-subject scan is blind to anything whose
+  artifacts were deleted after a revert. The commit that recorded this very note has since
+  registered 184 in the tool's git-history scan, so `next` no longer offers it — but that
+  registration is incidental, not the reason to avoid it: a number can look free to
+  `tools/task-numbers.sh` and still be historically used, so treat the tool's output as a
+  hint, not proof, and skip 184 on the historical grounds above regardless of what `next`
+  reports at any given moment.
+  Opcode is IDA-confirmed for only three of the ten live-tenant versions so far:
+  GMS v48 `0x56` (86), GMS v61 `0x63` (99), GMS v83 `0x6C` (108)
+  (`investigation.md:214`). The remaining seven (v72, v79, v84, v87, v92, v95, JMS v185) need
+  the same per-version IDB pass task-190 ran for `CANCEL_DEBUFF` before a handler can be wired
+  and routed in the seed templates.
+  **Opcode collision to respect:** at GMS v61 the byte `0x63` is this packet
+  (`USER_CALC_DAMAGE_STAT_SET_REQUEST`), while at GMS v83/v84 the same byte `0x63` is
+  `CANCEL_DEBUFF` (`investigation.md:172-184`) — the two must never be routed by a hard-coded
+  `0x63` constant; always resolve per-tenant from the version-specific template/registry
+  entry, the same way task-190's `CancelDebuffHandle` routing does.

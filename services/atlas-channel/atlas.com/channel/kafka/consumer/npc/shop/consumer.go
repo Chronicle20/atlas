@@ -14,6 +14,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -81,7 +82,8 @@ func handleEnteredStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 			l.WithError(err).Errorf("Unable to get shop for NPC [%d].", e.Body.NpcTemplateId)
 			return
 		}
-		bp := writer.NPCShopBody(e.Body.NpcTemplateId, nsm.Commodities(), sms)
+		set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+		bp := writer.NPCShopBody(e.Body.NpcTemplateId, nsm.Commodities(), sms, set.Skill)
 		_ = session.Announce(l)(ctx)(wp)(npcpkt.NPCShopWriter)(bp)(s)
 	}
 }

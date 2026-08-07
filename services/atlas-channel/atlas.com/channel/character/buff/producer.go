@@ -39,6 +39,37 @@ func ApplyCommandProvider(f field.Model, characterId uint32, fromId uint32, sour
 	return producer.SingleMessageProvider(key, value)
 }
 
+// ApplyNoExpiryCommandProvider emits an APPLY carrying the explicit noExpiry
+// flag (Duration 0 — atlas-buffs rejects the flag with a nonzero duration).
+func ApplyNoExpiryCommandProvider(f field.Model, characterId uint32, fromId uint32, sourceId int32, level byte, statups []statup.Model) model.Provider[[]kafka.Message] {
+	changes := make([]buff.StatChange, 0)
+	for _, su := range statups {
+		changes = append(changes, buff.StatChange{
+			Type:   su.Mask(),
+			Amount: su.Amount(),
+		})
+	}
+
+	key := producer.CreateKey(int(characterId))
+	value := &buff.Command[buff.ApplyCommandBody]{
+		WorldId:     f.WorldId(),
+		ChannelId:   f.ChannelId(),
+		MapId:       f.MapId(),
+		Instance:    f.Instance(),
+		CharacterId: characterId,
+		Type:        buff.CommandTypeApply,
+		Body: buff.ApplyCommandBody{
+			FromId:   fromId,
+			SourceId: sourceId,
+			Level:    level,
+			Duration: 0,
+			Changes:  changes,
+			NoExpiry: true,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func CancelCommandProvider(f field.Model, characterId uint32, sourceId int32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &buff.Command[buff.CancelCommandBody]{
@@ -67,6 +98,24 @@ func CancelByTypesCommandProvider(f field.Model, characterId uint32, types []str
 		Body: buff.CancelByTypesCommandBody{
 			Types: append([]string(nil), types...),
 		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// ExpireCommandProvider asks atlas-buffs to sweep ONE character's buffs. The
+// world rides in the envelope: the channel knows the live session's world, and
+// that is authoritative for an in-session character (the fleet sweep instead
+// reads world from the registry model). (task-190 FR-2.6)
+func ExpireCommandProvider(f field.Model, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &buff.Command[buff.ExpireCommandBody]{
+		WorldId:     f.WorldId(),
+		ChannelId:   f.ChannelId(),
+		MapId:       f.MapId(),
+		Instance:    f.Instance(),
+		CharacterId: characterId,
+		Type:        buff.CommandTypeExpire,
+		Body:        buff.ExpireCommandBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

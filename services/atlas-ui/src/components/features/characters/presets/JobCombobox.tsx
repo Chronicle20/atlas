@@ -28,6 +28,11 @@ export function JobCombobox({ value, onChange }: JobComboboxProps) {
   const [search, setSearch] = useState("");
   const jobs = usePresetJobOptions();
 
+  // Prefer the version-correct name from the availability-gated options; an
+  // id outside that set (still loading, or a manually-entered id the tenant
+  // hasn't released) falls back to the static advancement-graph name.
+  const selectedName = jobs.find((j) => j.id === value)?.name ?? jobName(value);
+
   const term = search.trim().toLowerCase();
   const rows = term
     ? jobs.filter(
@@ -57,7 +62,7 @@ export function JobCombobox({ value, onChange }: JobComboboxProps) {
           aria-label="Class"
           className="w-full justify-between font-normal"
         >
-          {jobName(value)}
+          {selectedName}
           <ChevronsUpDown className="size-4 opacity-50" />
         </Button>
       </PopoverTrigger>

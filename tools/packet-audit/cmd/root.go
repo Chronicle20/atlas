@@ -41,6 +41,9 @@ func Run(args []string, stderr io.Writer) int {
 	if len(args) > 0 && args[0] == "registry" {
 		return runRegistry(args[1:], stderr)
 	}
+	if len(args) > 0 && args[0] == "seed-fname" {
+		return runSeedFName(args[1:], stderr)
+	}
 	if len(args) > 0 && args[0] == "matrix" {
 		return runMatrix(args[1:], stderr)
 	}

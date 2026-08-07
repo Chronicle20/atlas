@@ -18,14 +18,16 @@ import (
 	"github.com/sirupsen/logrus"
 
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func init() {
-	channelhandler.Register(skill2.SuperGmHealDispelId, Apply)
+	channelhandler.Register(skill2.SuperGmHealDispel, Apply)
 }
 
 // diseaseTypes is the exact atlas-buffs disease set (buffs/character/immunity.go)
@@ -50,6 +52,7 @@ var diseaseTypes = []string{
 // packets without re-loading the caster.
 type healDispelDeps struct {
 	loadCaster      func(characterId uint32) (character.Model, error)
+	isSuperGm       func(jobId job.Id) bool
 	isGmHidden      func(characterId uint32) (bool, error)
 	selectInMap     func(f field.Model) []channelhandler.PartyRecipient
 	effectiveMax    func(f field.Model, characterId uint32) (maxHp uint32, maxMp uint32, err error)
@@ -99,7 +102,7 @@ func applyHealDispel(l logrus.FieldLogger, f field.Model, characterId uint32, d 
 		l.WithError(err).Errorf("Heal+Dispel: failed to load caster [%d].", characterId)
 		return nil
 	}
-	if !job.IsA(c.JobId(), job.SuperGmId) {
+	if !d.isSuperGm(c.JobId()) {
 		l.Warnf("Character [%d] cast SuperGM Heal+Dispel without SuperGM job; rejecting.", characterId)
 		return nil
 	}
@@ -165,14 +168,18 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 			sp := session.NewProcessor(l, ctx)
 			mp := channelmap.NewProcessor(l, ctx)
 
+			t := tenant.MustFromContext(ctx)
+			set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+
 			d := healDispelDeps{
 				loadCaster: func(id uint32) (character.Model, error) { return cp.GetById()(id) },
+				isSuperGm:  func(jobId job.Id) bool { return channelhandler.IsSuperGm(set, jobId) },
 				isGmHidden: func(id uint32) (bool, error) {
 					bs, err := bp.GetByCharacterId(id)
 					if err != nil {
 						return false, err
 					}
-					return buff.IsGmHidden(bs), nil
+					return buff.IsGmHidden(ctx, bs), nil
 				},
 				selectInMap: func(f field.Model) []channelhandler.PartyRecipient {
 					return channelhandler.SelectAllCharactersInMap(l, ctx, f)

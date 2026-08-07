@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: atlas-tenants
+  labels:
+    atlas.seed-catalog: "true"
 spec:
   replicas: 2
   selector:
@@ -12,9 +14,13 @@ spec:
       labels:
         app: atlas-tenants
     spec:
+      # volumes/volumeMounts are declared empty so the seed-catalog
+      # component's JSON `add` patches have an array to append to.
+      volumes: []
       containers:
         - name: atlas-tenants
           image: ghcr.io/chronicle20/atlas-tenants/atlas-tenants:latest
+          volumeMounts: []
           ports:
             - containerPort: 8080
           envFrom:

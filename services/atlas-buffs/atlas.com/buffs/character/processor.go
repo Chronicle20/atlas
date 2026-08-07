@@ -18,12 +18,13 @@ import (
 
 type Processor interface {
 	GetById(characterId uint32) (Model, error)
-	Apply(worldId world.Id, channelId channel.Id, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool) error
+	Apply(worldId world.Id, channelId channel.Id, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool, noExpiry bool) error
 	Cancel(worldId world.Id, characterId uint32, sourceId int32) error
 	CancelAll(worldId world.Id, characterId uint32) error
 	CancelByStatTypes(worldId world.Id, characterId uint32, types []string) error
 	UpdateStatValue(worldId world.Id, characterId uint32, sourceId int32, statType string, operation string, amount int32, capValue int32) error
 	ExpireBuffs() error
+	ExpireForCharacter(worldId world.Id, characterId uint32) error
 	ProcessPoisonTicks() error
 }
 
@@ -45,14 +46,14 @@ func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
 	return GetRegistry().Get(p.ctx, characterId)
 }
 
-func (p *ProcessorImpl) Apply(worldId world.Id, channelId channel.Id, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool) error {
+func (p *ProcessorImpl) Apply(worldId world.Id, channelId channel.Id, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool, noExpiry bool) error {
 	if isDiseaseChange(changes) && GetRegistry().HasImmunity(p.ctx, characterId) {
 		p.l.Debugf("Character [%d] is immune to disease, skipping apply.", characterId)
 		return nil
 	}
 
 	err := message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
-		applied, err := GetRegistry().Apply(p.ctx, worldId, channelId, characterId, sourceId, level, duration, changes, accumulate)
+		applied, err := GetRegistry().Apply(p.ctx, worldId, channelId, characterId, sourceId, level, duration, changes, accumulate, noExpiry)
 		if err != nil {
 			return err
 		}
@@ -61,7 +62,7 @@ func (p *ProcessorImpl) Apply(worldId world.Id, channelId channel.Id, characterI
 		// changes/expiry so the channel sets (and later cancels) each stat icon
 		// independently.
 		for _, b := range applied {
-			if err := buf.Put(character2.EnvEventStatusTopic, appliedStatusEventProvider(worldId, characterId, fromId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt())); err != nil {
+			if err := buf.Put(character2.EnvEventStatusTopic, appliedStatusEventProvider(worldId, characterId, fromId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt(), b.NoExpiry())); err != nil {
 				return err
 			}
 		}
@@ -87,7 +88,7 @@ func (p *ProcessorImpl) Cancel(worldId world.Id, characterId uint32, sourceId in
 	// client clears every icon rather than leaving the others stuck.
 	err = message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
 		for _, b := range cancelled {
-			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt())); err != nil {
+			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt(), b.NoExpiry())); err != nil {
 				return err
 			}
 		}
@@ -111,7 +112,7 @@ func (p *ProcessorImpl) CancelAll(worldId world.Id, characterId uint32) error {
 	}
 	err := message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
 		for _, b := range buffs {
-			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt())); err != nil {
+			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt(), b.NoExpiry())); err != nil {
 				return err
 			}
 		}
@@ -147,7 +148,7 @@ func (p *ProcessorImpl) CancelByStatTypes(worldId world.Id, characterId uint32, 
 
 	err = message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
 		for _, b := range cancelled {
-			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt())); err != nil {
+			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt(), b.NoExpiry())); err != nil {
 				return err
 			}
 		}
@@ -190,23 +191,46 @@ func (p *ProcessorImpl) UpdateStatValue(worldId world.Id, characterId uint32, so
 func (p *ProcessorImpl) ExpireBuffs() error {
 	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
 		for _, c := range GetRegistry().GetCharacters(p.ctx) {
-			ebs := GetRegistry().GetExpired(p.ctx, c.Id())
-			for _, eb := range ebs {
-				p.l.Debugf("Expired buff for character [%d] from [%d].", c.Id(), eb.SourceId())
-				if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(c.WorldId(), c.Id(), eb.SourceId(), eb.Level(), eb.Duration(), eb.Changes(), eb.CreatedAt(), eb.ExpiresAt())); err != nil {
-					return err
-				}
-			}
-			if len(ebs) > 0 {
-				sets := make([][]stat.Model, 0, len(ebs))
-				for _, eb := range ebs {
-					sets = append(sets, eb.Changes())
-				}
-				markBerserkDirtyOnMaxHpChange(p.l, p.ctx, c.Id(), sets...)
+			if err := p.expireInto(buf, c.WorldId(), c.Id()); err != nil {
+				return err
 			}
 		}
 		return nil
 	})
+}
+
+// ExpireForCharacter sweeps ONE character, so a single client's CANCEL_DEBUFF
+// nudge does not force a fleet-wide pass. WorldId comes from the command
+// envelope — the channel knows the live session's world, which is authoritative
+// for an in-session character. Semantics are identical to the fleet sweep by
+// construction: both call expireInto. (task-190 FR-2.6.1)
+func (p *ProcessorImpl) ExpireForCharacter(worldId world.Id, characterId uint32) error {
+	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
+		return p.expireInto(buf, worldId, characterId)
+	})
+}
+
+// expireInto prunes one character's lapsed buffs and puts one EXPIRED event per
+// lapsed buff on buf. Registry.GetExpired already does prune-and-return, so no
+// new expiry semantics are invented here. When nothing has lapsed it puts
+// nothing, and message.Emit then emits nothing — FR-2.9 / NFR-2.1 hold
+// structurally, not by an explicit guard.
+func (p *ProcessorImpl) expireInto(buf *message.Buffer, worldId world.Id, characterId uint32) error {
+	ebs := GetRegistry().GetExpired(p.ctx, characterId)
+	for _, eb := range ebs {
+		p.l.Debugf("Expired buff for character [%d] from [%d].", characterId, eb.SourceId())
+		if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, eb.SourceId(), eb.Level(), eb.Duration(), eb.Changes(), eb.CreatedAt(), eb.ExpiresAt(), eb.NoExpiry())); err != nil {
+			return err
+		}
+	}
+	if len(ebs) > 0 {
+		sets := make([][]stat.Model, 0, len(ebs))
+		for _, eb := range ebs {
+			sets = append(sets, eb.Changes())
+		}
+		markBerserkDirtyOnMaxHpChange(p.l, p.ctx, characterId, sets...)
+	}
+	return nil
 }
 
 func ExpireBuffs(l logrus.FieldLogger, ctx context.Context) error {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"atlas-portal-actions/action"
+	"atlas-portal-actions/dedupe"
 	"atlas-portal-actions/script"
 	"os"
 
@@ -49,6 +50,7 @@ func main() {
 
 	rc := atlas.Connect(l)
 	action.InitRegistry(rc)
+	dedupe.InitGate(rc)
 
 	// Initialize database connection
 	db := database.Connect(l, database.SetMigrations(

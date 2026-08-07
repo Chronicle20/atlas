@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/diff"
 )
 
 // fname-doc maintains a `// packet-audit:fname <IDAName>` comment on every
@@ -217,12 +219,35 @@ func codecStructs(src string) []string {
 
 // fnamedocOrder is the priority order for resolving WriterName->IDAName: the
 // first version that supplies a report wins. v95 is first (PDB-named,
-// authoritative). The gms_jms_185 alias is kept for historical audit-dir compat.
-var fnamedocOrder = []string{"gms_v95", "gms_v83", "gms_v84", "gms_v87", "gms_v79", "gms_v72", "gms_v61", "gms_v48", "jms_v185", "gms_jms_185"}
+// authoritative). gms_v92 is placed LAST, not near v95: its Task 27 export
+// deliberately carries many unresolved dispatcher-arm/plain-name entries
+// (see docs/tasks/task-145-player-reports's Task 28 notes), so a v92 report
+// for a given WriterName is frequently a lower-fidelity base-fname match
+// (no "#Arm" suffix) versus another version's arm-resolved one. Ranking it
+// early would let that weaker match silently win priority and drift the
+// hand-authored `packet-audit:fname` comment (found for CashItemUseVegaScroll:
+// v92 is the ONLY version with any report for that writer, and its IDAName
+// lacks the "#VegaScroll" arm suffix the comment correctly documents). The
+// gms_jms_185 alias is kept for historical audit-dir compat.
+var fnamedocOrder = []string{"gms_v95", "gms_v83", "gms_v84", "gms_v87", "gms_v79", "gms_v72", "gms_v61", "gms_v48", "jms_v185", "gms_jms_185", "gms_v92"}
 
 // loadReportFNames builds WriterName -> IDAName across all version audit dirs,
 // preferring the v95 report (PDB-named, authoritative) when a writer appears in
 // several versions.
+//
+// A report whose IDA side was never actually resolved (diff.VerdictUnresolved,
+// 🚫 — "IDA read-order unresolved: ... (export gap)", numeric 4) is skipped
+// entirely: its IDAName came from a static export-address match, not a
+// confirmed read-order comparison, so citing it in a `packet-audit:fname`
+// doc comment would assert a confidence the report doesn't have. Found via
+// gms_v92/CashItemUseVegaScroll.json (task-28): the export's
+// `unresolved: true, calls: [{op: Unresolved}]` entry for
+// CWvsContext::SendConsumeCashItemUseRequest still produced a report (the
+// pipeline doesn't skip merely-unresolved exports), and — being the ONLY
+// version to ever produce a report for that WriterName — it would otherwise
+// have overwritten the hand-verified, arm-suffixed
+// "CWvsContext::SendConsumeCashItemUseRequest#VegaScroll" comment (task-130,
+// IDA-verified per-version CUIVega send sites) with a weaker, unsuffixed one.
 func loadReportFNames(auditsDir string) (map[string]string, error) {
 	order := fnamedocOrder
 	out := map[string]string{}
@@ -233,11 +258,17 @@ func loadReportFNames(auditsDir string) (map[string]string, error) {
 			if err != nil {
 				return nil, err
 			}
-			var r struct{ WriterName, IDAName string }
+			var r struct {
+				WriterName, IDAName string
+				Rows                []struct{ Verdict int }
+			}
 			if json.Unmarshal(raw, &r) != nil {
 				continue
 			}
 			if r.WriterName == "" || r.IDAName == "" {
+				continue
+			}
+			if reportHasUnresolvedRow(r.Rows) {
 				continue
 			}
 			if _, ok := out[r.WriterName]; !ok {
@@ -246,6 +277,16 @@ func loadReportFNames(auditsDir string) (map[string]string, error) {
 		}
 	}
 	return out, nil
+}
+
+// reportHasUnresolvedRow reports whether any row carries diff.VerdictUnresolved.
+func reportHasUnresolvedRow(rows []struct{ Verdict int }) bool {
+	for _, row := range rows {
+		if diff.Verdict(row.Verdict) == diff.VerdictUnresolved {
+			return true
+		}
+	}
+	return false
 }
 
 // loadDispatcherSet reads the dispatcher base fnames from families.yaml without

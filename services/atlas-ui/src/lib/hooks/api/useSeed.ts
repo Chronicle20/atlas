@@ -11,12 +11,15 @@ import {
   type DataStatus,
   type DropsSeedStatus,
   type GachaponsSeedStatus,
+  type InstanceRoutesSeedStatus,
   type MapActionScriptsSeedStatus,
   type NpcConversationsSeedStatus,
   type NpcShopsSeedStatus,
   type PortalScriptsSeedStatus,
   type QuestConversationsSeedStatus,
   type ReactorScriptsSeedStatus,
+  type TransportRoutesSeedStatus,
+  type TransportVesselsSeedStatus,
   type WzInputStatus,
 } from "@/services/api/seed.service";
 import { useTenant } from "@/context/tenant-context";
@@ -56,6 +59,12 @@ const reactorScriptsSeedStatusKey = (tenantId: string) =>
   ["reactorScriptsSeedStatus", tenantId] as const;
 const mapActionScriptsSeedStatusKey = (tenantId: string) =>
   ["mapActionScriptsSeedStatus", tenantId] as const;
+const transportRoutesSeedStatusKey = (tenantId: string) =>
+  ["transportRoutesSeedStatus", tenantId] as const;
+const transportVesselsSeedStatusKey = (tenantId: string) =>
+  ["transportVesselsSeedStatus", tenantId] as const;
+const instanceRoutesSeedStatusKey = (tenantId: string) =>
+  ["instanceRoutesSeedStatus", tenantId] as const;
 
 export function useSeedDrops(): UseMutationResult<void, Error, void> {
   const { activeTenant } = useTenant();
@@ -184,6 +193,52 @@ export function useSeedMapActionScripts(): UseMutationResult<
       if (!activeTenant) return;
       void queryClient.invalidateQueries({
         queryKey: mapActionScriptsSeedStatusKey(activeTenant.id),
+      });
+    },
+  });
+}
+
+export function useSeedTransportRoutes(): UseMutationResult<void, Error, void> {
+  const { activeTenant } = useTenant();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => seedService.seedRoutes(),
+    onSuccess: () => {
+      if (!activeTenant) return;
+      void queryClient.invalidateQueries({
+        queryKey: transportRoutesSeedStatusKey(activeTenant.id),
+      });
+    },
+  });
+}
+
+export function useSeedTransportVessels(): UseMutationResult<
+  void,
+  Error,
+  void
+> {
+  const { activeTenant } = useTenant();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => seedService.seedVessels(),
+    onSuccess: () => {
+      if (!activeTenant) return;
+      void queryClient.invalidateQueries({
+        queryKey: transportVesselsSeedStatusKey(activeTenant.id),
+      });
+    },
+  });
+}
+
+export function useSeedInstanceRoutes(): UseMutationResult<void, Error, void> {
+  const { activeTenant } = useTenant();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => seedService.seedInstanceRoutes(),
+    onSuccess: () => {
+      if (!activeTenant) return;
+      void queryClient.invalidateQueries({
+        queryKey: instanceRoutesSeedStatusKey(activeTenant.id),
       });
     },
   });
@@ -372,6 +427,54 @@ export function useMapActionScriptsSeedStatus(): UseQueryResult<
       ? mapActionScriptsSeedStatusKey(activeTenant.id)
       : ["mapActionScriptsSeedStatus", "none"],
     queryFn: () => seedService.getMapActionScriptsSeedStatus(activeTenant!),
+    enabled: !!activeTenant,
+    staleTime: 0,
+    refetchInterval: 5000,
+  });
+}
+
+export function useTransportRoutesSeedStatus(): UseQueryResult<
+  TransportRoutesSeedStatus,
+  Error
+> {
+  const { activeTenant } = useTenant();
+  return useQuery({
+    queryKey: activeTenant
+      ? transportRoutesSeedStatusKey(activeTenant.id)
+      : ["transportRoutesSeedStatus", "none"],
+    queryFn: () => seedService.getTransportRoutesSeedStatus(activeTenant!),
+    enabled: !!activeTenant,
+    staleTime: 0,
+    refetchInterval: 5000,
+  });
+}
+
+export function useTransportVesselsSeedStatus(): UseQueryResult<
+  TransportVesselsSeedStatus,
+  Error
+> {
+  const { activeTenant } = useTenant();
+  return useQuery({
+    queryKey: activeTenant
+      ? transportVesselsSeedStatusKey(activeTenant.id)
+      : ["transportVesselsSeedStatus", "none"],
+    queryFn: () => seedService.getTransportVesselsSeedStatus(activeTenant!),
+    enabled: !!activeTenant,
+    staleTime: 0,
+    refetchInterval: 5000,
+  });
+}
+
+export function useInstanceRoutesSeedStatus(): UseQueryResult<
+  InstanceRoutesSeedStatus,
+  Error
+> {
+  const { activeTenant } = useTenant();
+  return useQuery({
+    queryKey: activeTenant
+      ? instanceRoutesSeedStatusKey(activeTenant.id)
+      : ["instanceRoutesSeedStatus", "none"],
+    queryFn: () => seedService.getInstanceRoutesSeedStatus(activeTenant!),
     enabled: !!activeTenant,
     staleTime: 0,
     refetchInterval: 5000,

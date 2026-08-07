@@ -21,6 +21,9 @@ import {
   FileArchive,
   FileText,
   RotateCcw,
+  Ship,
+  Anchor,
+  Plane,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import {
@@ -32,6 +35,9 @@ import {
   useSeedPortalScripts,
   useSeedReactorScripts,
   useSeedMapActionScripts,
+  useSeedTransportRoutes,
+  useSeedTransportVessels,
+  useSeedInstanceRoutes,
   useUploadWzFiles,
   useRunDataProcessing,
   useWzInputStatus,
@@ -44,6 +50,9 @@ import {
   usePortalScriptsSeedStatus,
   useReactorScriptsSeedStatus,
   useMapActionScriptsSeedStatus,
+  useTransportRoutesSeedStatus,
+  useTransportVesselsSeedStatus,
+  useInstanceRoutesSeedStatus,
 } from "@/lib/hooks/api/useSeed";
 import { SetupRow } from "@/components/features/setup/SetupRow";
 import {
@@ -66,6 +75,9 @@ export function SetupPage() {
   const seedPortalScripts = useSeedPortalScripts();
   const seedReactorScripts = useSeedReactorScripts();
   const seedMapActionScripts = useSeedMapActionScripts();
+  const seedTransportRoutes = useSeedTransportRoutes();
+  const seedTransportVessels = useSeedTransportVessels();
+  const seedInstanceRoutes = useSeedInstanceRoutes();
 
   const uploadWz = useUploadWzFiles();
   const runProcessing = useRunDataProcessing();
@@ -81,6 +93,9 @@ export function SetupPage() {
   const portalScriptsSeed = usePortalScriptsSeedStatus();
   const reactorScriptsSeed = useReactorScriptsSeedStatus();
   const mapActionScriptsSeed = useMapActionScriptsSeedStatus();
+  const transportRoutesSeed = useTransportRoutesSeedStatus();
+  const transportVesselsSeed = useTransportVesselsSeedStatus();
+  const instanceRoutesSeed = useInstanceRoutesSeedStatus();
 
   const restoreMutation = useRestoreBaseline(activeTenant);
 
@@ -267,6 +282,39 @@ export function SetupPage() {
         return !d
           ? "—"
           : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "map action", "map actions")}`;
+      },
+    },
+    {
+      label: "Transport Routes",
+      icon: <Ship className="h-5 w-5" />,
+      mutation: seedTransportRoutes,
+      formatBadge: () => {
+        const d = transportRoutesSeed.data;
+        return !d
+          ? "—"
+          : `${formatCount(d.routeCount)} ${pluralize(d.routeCount, "route", "routes")}`;
+      },
+    },
+    {
+      label: "Transport Vessels",
+      icon: <Anchor className="h-5 w-5" />,
+      mutation: seedTransportVessels,
+      formatBadge: () => {
+        const d = transportVesselsSeed.data;
+        return !d
+          ? "—"
+          : `${formatCount(d.vesselCount)} ${pluralize(d.vesselCount, "vessel", "vessels")}`;
+      },
+    },
+    {
+      label: "Instance Transport Routes",
+      icon: <Plane className="h-5 w-5" />,
+      mutation: seedInstanceRoutes,
+      formatBadge: () => {
+        const d = instanceRoutesSeed.data;
+        return !d
+          ? "—"
+          : `${formatCount(d.routeCount)} ${pluralize(d.routeCount, "route", "routes")}`;
       },
     },
   ];

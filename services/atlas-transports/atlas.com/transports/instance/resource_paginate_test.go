@@ -148,15 +148,13 @@ func TestGetAllInstanceRoutesPaginates(t *testing.T) {
 
 // TestGetInstanceRouteStatusPaginates proves
 // GET /transports/instance-routes/{routeId}/status is now paginated.
-// GetInstanceRouteStatusHandler hardcodes uuid.Nil as the tenant id passed
-// to InstanceRegistry.GetInstancesByRoute (a pre-existing quirk, unrelated
-// to this task and left untouched) - instances are seeded under that same
-// uuid.Nil tenant so the handler can find them. The route's capacity is 1
+// Instances are seeded under a concrete tenant and read back as that same
+// tenant, matching how the handler scopes its read. The route's capacity is 1
 // and each instance is filled to capacity before the next
 // FindOrCreateInstance call, forcing 3 distinct instances instead of one
 // reused instance. Instance ids are server-generated (uuid.New()), so the
-// determinism assertion sorts the expected ids the same way the handler
-// does rather than asserting fixed literals.
+// determinism assertion sorts the expected ids the same way the handler does
+// rather than asserting fixed literals.
 func TestGetInstanceRouteStatusPaginates(t *testing.T) {
 	setupInstanceTestRegistry(t)
 
@@ -172,11 +170,13 @@ func TestGetInstanceRouteStatusPaginates(t *testing.T) {
 		t.Fatalf("seed build failed: %v", err)
 	}
 
+	tenantId := uuid.New()
+
 	reg := getInstanceRegistry()
 	now := time.Now()
 	seededIds := make([]string, 0, 3)
 	for i := 0; i < 3; i++ {
-		inst := reg.FindOrCreateInstance(uuid.Nil, route, now)
+		inst := reg.FindOrCreateInstance(tenantId, route, now)
 		reg.AddCharacter(inst.InstanceId(), CharacterEntry{CharacterId: uint32(i + 1)})
 		seededIds = append(seededIds, inst.InstanceId().String())
 	}
@@ -188,7 +188,7 @@ func TestGetInstanceRouteStatusPaginates(t *testing.T) {
 	path := "/transports/instance-routes/" + route.Id().String() + "/status"
 
 	t.Run("FirstPageOfTwoInAscendingIdOrder", func(t *testing.T) {
-		rr := doGetInstance(t, router, uuid.New(), path+"?page[number]=1&page[size]=2")
+		rr := doGetInstance(t, router, tenantId, path+"?page[number]=1&page[size]=2")
 		if rr.Code != http.StatusOK {
 			t.Fatalf("status = %d, want 200, body=%s", rr.Code, rr.Body.String())
 		}
@@ -227,14 +227,14 @@ func TestGetInstanceRouteStatusPaginates(t *testing.T) {
 	})
 
 	t.Run("PageSizeZeroIsBadRequest", func(t *testing.T) {
-		rr := doGetInstance(t, router, uuid.New(), path+"?page[size]=0")
+		rr := doGetInstance(t, router, tenantId, path+"?page[size]=0")
 		if rr.Code != http.StatusBadRequest {
 			t.Fatalf("status = %d, want 400", rr.Code)
 		}
 	})
 
 	t.Run("PastLastPageReturnsEmptyWithPrevAtLast", func(t *testing.T) {
-		rr := doGetInstance(t, router, uuid.New(), path+"?page[number]=99&page[size]=2")
+		rr := doGetInstance(t, router, tenantId, path+"?page[number]=99&page[size]=2")
 		if rr.Code != http.StatusOK {
 			t.Fatalf("status = %d, want 200, body=%s", rr.Code, rr.Body.String())
 		}

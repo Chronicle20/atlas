@@ -21,8 +21,7 @@ func ReadStatus(ctx context.Context, db *gorm.DB, src CatalogSource, g Group) (S
 
 	roots, err := src.Roots(t)
 	if err == nil && len(roots) > 0 {
-		rev, _ := src.Revision(roots[0])
-		out.CatalogRevision = rev
+		out.CatalogRevision = revisionFor(src, roots)
 	}
 
 	row, err := ReadSeedState(db.WithContext(ctx), t.Id(), g.Name)

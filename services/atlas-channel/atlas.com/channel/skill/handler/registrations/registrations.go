@@ -4,6 +4,8 @@
 package registrations
 
 import (
+	_ "atlas-channel/skill/handler/dispel"       // Priest Dispel party cure — task-163
+	_ "atlas-channel/skill/handler/echoofhero"   // Echo of Hero map-wide — task-162
 	_ "atlas-channel/skill/handler/heal"         // Cleric Heal — task 045
 	_ "atlas-channel/skill/handler/healdispel"   // SuperGM Heal + Dispel — task-156
 	_ "atlas-channel/skill/handler/hide"         // SuperGM Hide — task-156

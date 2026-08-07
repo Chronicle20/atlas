@@ -57,12 +57,12 @@ func TestRequiredClassification(t *testing.T) {
 
 func buffWithStat(statType ts.TemporaryStatType) buff.Model {
 	future := time.Now().Add(time.Minute)
-	return buff.NewBuff(0, 1, 0, []stat.Model{stat.NewStat(string(statType), 1)}, time.Now(), future)
+	return buff.NewBuff(0, 1, 0, []stat.Model{stat.NewStat(string(statType), 1)}, time.Now(), future, false)
 }
 
 func expiredBuffWithStat(statType ts.TemporaryStatType) buff.Model {
 	past := time.Now().Add(-time.Minute)
-	return buff.NewBuff(0, 1, 0, []stat.Model{stat.NewStat(string(statType), 1)}, past, past)
+	return buff.NewBuff(0, 1, 0, []stat.Model{stat.NewStat(string(statType), 1)}, past, past, false)
 }
 
 func TestComputeCount(t *testing.T) {

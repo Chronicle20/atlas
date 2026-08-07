@@ -26,9 +26,10 @@ type Command[E any] struct {
 }
 
 type ApplyCommandBody struct {
-	FromId   uint32       `json:"fromId"`
-	SourceId int32        `json:"sourceId"`
-	Level    byte         `json:"level"`
+	FromId   uint32 `json:"fromId"`
+	SourceId int32  `json:"sourceId"`
+	Level    byte   `json:"level"`
+	// milliseconds — contract owner: atlas-buffs kafka/message/character/kafka.go (task-190)
 	Duration int32        `json:"duration"`
 	Changes  []StatChange `json:"changes"`
 }

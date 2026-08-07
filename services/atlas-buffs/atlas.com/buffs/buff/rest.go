@@ -15,6 +15,7 @@ type RestModel struct {
 	Changes   []stat.RestModel `json:"changes"`
 	CreatedAt time.Time        `json:"createdAt"`
 	ExpiresAt time.Time        `json:"expiresAt"`
+	NoExpiry  bool             `json:"noExpiry"`
 }
 
 func (r RestModel) GetName() string {
@@ -44,5 +45,6 @@ func Transform(m Model) (RestModel, error) {
 		Changes:   cs,
 		CreatedAt: m.createdAt,
 		ExpiresAt: m.expiresAt,
+		NoExpiry:  m.noExpiry,
 	}, nil
 }

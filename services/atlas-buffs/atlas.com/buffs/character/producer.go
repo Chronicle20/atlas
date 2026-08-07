@@ -13,7 +13,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-func appliedStatusEventProvider(worldId world.Id, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time) model.Provider[[]kafka.Message] {
+func appliedStatusEventProvider(worldId world.Id, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time, noExpiry bool) model.Provider[[]kafka.Message] {
 	statups := make([]character2.StatChange, 0)
 	for _, su := range changes {
 		statups = append(statups, character2.StatChange{
@@ -35,6 +35,7 @@ func appliedStatusEventProvider(worldId world.Id, characterId uint32, fromId uin
 			Changes:   statups,
 			CreatedAt: createdAt,
 			ExpiresAt: expiresAt,
+			NoExpiry:  noExpiry,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -54,7 +55,7 @@ func changeHPCommandProvider(worldId world.Id, channelId channel.Id, characterId
 	return producer.SingleMessageProvider(key, value)
 }
 
-func expiredStatusEventProvider(worldId world.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time) model.Provider[[]kafka.Message] {
+func expiredStatusEventProvider(worldId world.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time, noExpiry bool) model.Provider[[]kafka.Message] {
 	statups := make([]character2.StatChange, 0)
 	for _, su := range changes {
 		statups = append(statups, character2.StatChange{
@@ -75,6 +76,7 @@ func expiredStatusEventProvider(worldId world.Id, characterId uint32, sourceId i
 			Changes:   statups,
 			CreatedAt: createdAt,
 			ExpiresAt: expiresAt,
+			NoExpiry:  noExpiry,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

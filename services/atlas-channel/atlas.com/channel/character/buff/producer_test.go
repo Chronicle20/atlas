@@ -1,12 +1,19 @@
 package buff
 
 import (
+	"bytes"
 	"encoding/json"
 	"testing"
 
 	buffmsg "atlas-channel/kafka/message/buff"
 
+	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 )
 
 func TestCancelByTypesCommandProvider(t *testing.T) {
@@ -33,5 +40,66 @@ func TestCancelByTypesCommandProvider(t *testing.T) {
 	}
 	if len(cmd.Body.Types) != 2 || cmd.Body.Types[0] != "STUN" || cmd.Body.Types[1] != "POISON" {
 		t.Errorf("Body.Types = %v, want [STUN POISON]", cmd.Body.Types)
+	}
+}
+
+// TestExpireCommandProvider guards CommandTypeExpire's wire value and the
+// EXPIRE envelope shape the same way TestCancelByTypesCommandProvider guards
+// CANCEL_BY_TYPES: a typo'd/renamed CommandTypeExpire would compile and run
+// cleanly, but atlas-buffs would never claim the message and the CANCEL_DEBUFF
+// sweep would silently do nothing (task-190 FR-2.6.1).
+func TestExpireCommandProvider(t *testing.T) {
+	instance := uuid.New()
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).SetInstance(instance).Build()
+
+	msgs, err := ExpireCommandProvider(f, 42)()
+	if err != nil {
+		t.Fatalf("provider returned error: %v", err)
+	}
+	if len(msgs) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(msgs))
+	}
+
+	wantKey := producer.CreateKey(42)
+	if !bytes.Equal(msgs[0].Key, wantKey) {
+		t.Errorf("Key = %v, want %v (same derivation as sibling commands)", msgs[0].Key, wantKey)
+	}
+
+	// Assert the literal wire string, not the constant — comparing the
+	// constant to itself would not catch an accidental rename of
+	// CommandTypeExpire.
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(msgs[0].Value, &raw); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	var typ string
+	if err := json.Unmarshal(raw["type"], &typ); err != nil {
+		t.Fatalf("unmarshal type failed: %v", err)
+	}
+	if typ != "EXPIRE" {
+		t.Errorf("Type = %q, want %q", typ, "EXPIRE")
+	}
+	if body, ok := raw["body"]; !ok || string(body) != "{}" {
+		t.Errorf("Body = %s, want {}", body)
+	}
+
+	var cmd buffmsg.Command[buffmsg.ExpireCommandBody]
+	if err := json.Unmarshal(msgs[0].Value, &cmd); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if cmd.WorldId != world.Id(1) {
+		t.Errorf("WorldId = %d, want 1", cmd.WorldId)
+	}
+	if cmd.ChannelId != channel.Id(2) {
+		t.Errorf("ChannelId = %d, want 2", cmd.ChannelId)
+	}
+	if cmd.MapId != _map.Id(100000000) {
+		t.Errorf("MapId = %d, want 100000000", cmd.MapId)
+	}
+	if cmd.Instance != instance {
+		t.Errorf("Instance = %v, want %v", cmd.Instance, instance)
+	}
+	if cmd.CharacterId != 42 {
+		t.Errorf("CharacterId = %d, want 42", cmd.CharacterId)
 	}
 }

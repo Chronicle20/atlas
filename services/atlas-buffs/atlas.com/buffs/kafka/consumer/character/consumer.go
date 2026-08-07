@@ -43,6 +43,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateStatValue))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleExpire))); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -52,12 +55,17 @@ func handleApply(l logrus.FieldLogger, ctx context.Context, c character2.Command
 		return
 	}
 
+	if c.Body.NoExpiry && c.Body.Duration != 0 {
+		l.Warnf("Rejecting malformed APPLY for character [%d] source [%d]: noExpiry with nonzero duration [%d].", c.CharacterId, c.Body.SourceId, c.Body.Duration)
+		return
+	}
+
 	statChanges := make([]stat.Model, 0)
 	for _, cs := range c.Body.Changes {
 		statChanges = append(statChanges, stat.NewStat(cs.Type, cs.Amount))
 	}
 
-	if err := character.NewProcessor(l, ctx).Apply(c.WorldId, c.ChannelId, c.CharacterId, c.Body.FromId, c.Body.SourceId, c.Body.Level, c.Body.Duration, statChanges, c.Body.Accumulate); err != nil {
+	if err := character.NewProcessor(l, ctx).Apply(c.WorldId, c.ChannelId, c.CharacterId, c.Body.FromId, c.Body.SourceId, c.Body.Level, c.Body.Duration, statChanges, c.Body.Accumulate, c.Body.NoExpiry); err != nil {
 		l.WithError(err).Errorf("Unable to apply buff [%d] to character [%d].", c.Body.SourceId, c.CharacterId)
 	}
 }
@@ -99,5 +107,17 @@ func handleUpdateStatValue(l logrus.FieldLogger, ctx context.Context, c characte
 
 	if err := character.NewProcessor(l, ctx).UpdateStatValue(c.WorldId, c.CharacterId, c.Body.SourceId, c.Body.StatType, c.Body.Operation, c.Body.Amount, c.Body.Cap); err != nil {
 		l.WithError(err).Errorf("Unable to update stat value on buff [%d] for character [%d].", c.Body.SourceId, c.CharacterId)
+	}
+}
+
+// handleExpire answers a character's CANCEL_DEBUFF nudge with a per-character
+// expiry sweep. Nothing lapsed ⇒ nothing emitted (task-190 FR-2.9).
+func handleExpire(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ExpireCommandBody]) {
+	if c.Type != character2.CommandTypeExpire {
+		return
+	}
+
+	if err := character.NewProcessor(l, ctx).ExpireForCharacter(c.WorldId, c.CharacterId); err != nil {
+		l.WithError(err).Errorf("Unable to expire buffs for character [%d].", c.CharacterId)
 	}
 }

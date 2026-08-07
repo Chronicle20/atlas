@@ -25,7 +25,7 @@ func comboTestBuff(sourceId int32, comboValue int32, expired bool) buff.Model {
 	if expired {
 		exp = time.Now().Add(-time.Hour)
 	}
-	return buff.NewBuff(sourceId, 20, 150000, []stat.Model{stat.NewStat("COMBO", comboValue)}, time.Now().Add(-time.Minute), exp)
+	return buff.NewBuff(sourceId, 20, 150000, []stat.Model{stat.NewStat("COMBO", comboValue)}, time.Now().Add(-time.Minute), exp, false)
 }
 
 func comboTestLine(t *testing.T, advanced bool) comboLine {

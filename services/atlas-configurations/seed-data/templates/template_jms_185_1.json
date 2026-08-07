@@ -645,6 +645,15 @@
         ]
       },
       {
+        "opCode": "0x5E",
+        "validator": "LoggedInValidator",
+        "handler": "CancelDebuffHandle",
+        "fname": "CWvsContext::CheckTemporaryStatDuration",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x5F",
         "validator": "LoggedInValidator",
         "handler": "PortalScriptHandle",

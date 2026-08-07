@@ -1065,7 +1065,9 @@ func (p *ProcessorImpl) executeMist(m Model, sd mobskill.Model, skillId byte, sk
 // AREA_POISON skill. Pure (no side effects) so it can be unit-tested directly
 // without a Kafka mock.
 func buildMistCreateBody(m Model, sd mobskill.Model, skillId byte, skillLevel byte) mistKafka.CreateCommandBody {
-	durMs := int64(sd.Duration()) * int64(time.Second/time.Millisecond)
+	// mobskill.Duration() is MILLISECONDS (atlas-data mobskill/reader.go —
+	// the single conversion point, task-190 FR-1.1). Forward it; do not scale.
+	durMs := int64(sd.Duration())
 	if durMs > MistDurationCapMs {
 		durMs = MistDurationCapMs
 	}
@@ -1102,7 +1104,9 @@ func (p *ProcessorImpl) executeStatBuff(m Model, sd mobskill.Model, skillId byte
 	}
 
 	statuses := map[string]int32{string(statusName): sd.X()}
-	duration := time.Duration(sd.Duration()) * time.Second
+	// mobskill.Duration() is MILLISECONDS (task-190 FR-1.1). Before that change
+	// this multiplied ms-scale seconds and made a 20s immunity last ~5.5h.
+	duration := time.Duration(sd.Duration()) * time.Millisecond
 	category := monster2.SkillCategory(uint16(skillId))
 
 	// FR-4.8: Immunity mutual exclusion. WEAPON_ATTACK_IMMUNE and

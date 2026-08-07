@@ -3,7 +3,6 @@ package handler
 import (
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/data/skill/effect/statup"
-	"math"
 	"testing"
 	"time"
 
@@ -44,7 +43,6 @@ type recordingDeps struct {
 	applyAmount    int32
 	applyStatups   []statup.Model
 	applySource    int32
-	applyDur       int32
 	cancelCount    int
 	cancelSrc      int32
 	vehicleId      int32
@@ -76,10 +74,9 @@ func (d *recordingDeps) mountDeps() mountDeps {
 			}
 			return 0, false, nil
 		},
-		applyBuff: func(f field.Model, characterId uint32, sourceId int32, level byte, duration int32, statups []statup.Model) error {
+		applyBuff: func(f field.Model, characterId uint32, sourceId int32, level byte, statups []statup.Model) error {
 			d.applyCalled = true
 			d.applySource = sourceId
-			d.applyDur = duration
 			d.applyStatups = statups
 			if len(statups) > 0 {
 				d.applyAmount = statups[0].Amount()
@@ -193,9 +190,6 @@ func TestMountTamedAppliesVehicleFromSlot18(t *testing.T) {
 	if d.applySource != int32(tamedMountSkillId) {
 		t.Errorf("Apply sourceId = %d, want skillId %d", d.applySource, tamedMountSkillId)
 	}
-	if d.applyDur != int32(math.MaxInt32) {
-		t.Errorf("Apply duration = %d, want MaxInt32 %d", d.applyDur, int32(math.MaxInt32))
-	}
 	if d.cancelCount != 0 {
 		t.Errorf("expected no Cancel, got %d", d.cancelCount)
 	}
@@ -237,9 +231,6 @@ func TestMountSkillOnlyNoSlotCheck(t *testing.T) {
 	}
 	if d.applySource != int32(skillOnlyMountSkillId) {
 		t.Errorf("Apply sourceId = %d, want skillId %d", d.applySource, skillOnlyMountSkillId)
-	}
-	if d.applyDur != int32(math.MaxInt32) {
-		t.Errorf("Apply duration = %d, want MaxInt32 %d", d.applyDur, int32(math.MaxInt32))
 	}
 }
 
@@ -355,9 +346,6 @@ func TestHandleMountBattleshipApplies(t *testing.T) {
 	}
 	if d.applyAmount != 1932000 {
 		t.Fatalf("MONSTER_RIDING amount = %d, want config-resolved 1932000", d.applyAmount)
-	}
-	if d.applyDur != MountBuffDuration {
-		t.Fatalf("duration = %d, want MountBuffDuration", d.applyDur)
 	}
 	if !d.initCalled || d.initSkillLevel != 7 || d.initCharLevel != 150 {
 		t.Fatalf("initShipHP = (called %v, skill %d, char %d), want (true, 7, 150)", d.initCalled, d.initSkillLevel, d.initCharLevel)

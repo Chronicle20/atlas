@@ -8,7 +8,6 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
-	"math"
 
 	_mapconsumer "atlas-channel/kafka/consumer/map"
 
@@ -26,13 +25,11 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-// HideBuffDuration is the effectively-permanent duration for the GM-hide buff.
-// atlas-buffs rejects duration <= 0, so the toggle uses the largest int32
-// (~24.8 days). The client toggles hide OFF by cancelling the buff (CANCEL_BUFF),
-// NOT by re-casting the skill, so the reveal spawn is driven from
-// socket/handler/character_buff_cancel.go on cancel; the OFF branch below is a
-// defensive fallback for a re-cast that the live client does not actually send.
-const HideBuffDuration = int32(math.MaxInt32)
+// GM hide never expires on its own. The client toggles it OFF by cancelling the
+// buff (CANCEL_BUFF), NOT by re-casting the skill, so the reveal spawn is driven
+// from socket/handler/character_buff_cancel.go on cancel; the OFF branch below
+// is a defensive fallback for a re-cast that the live client does not actually
+// send.
 
 func init() {
 	channelhandler.Register(skill2.SuperGmHide, Apply)
@@ -151,7 +148,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 					// DARK_SIGHT amount must be non-zero: the v83 client's
 					// CUser::IsDarkSight tests the stat != 0.
 					statups := []statup.Model{statup.NewModel(string(charconst.TemporaryStatTypeDarkSight), 1)}
-					return bp.Apply(f, id, hideSourceId, level, HideBuffDuration, statups)(id)
+					return bp.ApplyNoExpiry(f, id, hideSourceId, level, statups)(id)
 				},
 				cancelHide: func(f field.Model, id uint32) error {
 					return bp.Cancel(f, id, hideSourceId)

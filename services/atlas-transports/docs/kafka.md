@@ -224,7 +224,16 @@ Instance transport lifecycle events.
 |-------|------|-------------|
 | routeId | uuid.UUID | Route identifier |
 | instanceId | uuid.UUID | Instance identifier |
-| reason | string | Cancellation reason (MAP_EXIT, LOGOUT, STUCK) |
+| reason | string | Cancellation reason (MAP_EXIT, LOGOUT, STUCK, TIMEOUT) |
+
+**Cancellation Reasons:**
+
+| Reason | Description |
+|--------|-------------|
+| MAP_EXIT | Character entered a non-transit map while in transport |
+| LOGOUT | Character logged out during transport |
+| STUCK | Instance exceeded max lifetime; characters were force-warped to the route start map |
+| TIMEOUT | The travel timer expired on a route declaring a forced return; the character was sent back rather than delivered |
 
 **Partition Key:** Character ID integer
 
@@ -254,6 +263,26 @@ Character commands for map changes.
 
 **Partition Key:** Character ID integer
 
+### COMMAND_TOPIC_CONSUMABLE
+
+Emitted for routes that declare `effectItemIds`. Applies the declared effects
+when a character boards an instance transport, and cancels them on every
+terminal path (travel-timer arrival, entering a non-transit map, logout, stuck
+timeout, graceful shutdown). Routes declaring no effects emit nothing.
+
+`transactionId` is always the nil UUID: these are not saga-driven applications,
+and atlas-saga-orchestrator skips saga completion for a nil transaction id.
+`mapId`/`instance` are left zero — APPLY resolves the character's live map
+itself, and CANCEL's field reaches atlas-buffs' `Cancel`, which reads only
+`worldId`.
+
+| Command Type | Body | Purpose |
+|--------------|------|---------|
+| APPLY_CONSUMABLE_EFFECT | `{itemId}` | Apply a route's declared transit effect on boarding |
+| CANCEL_CONSUMABLE_EFFECT | `{itemId}` | Remove it on every terminal path |
+
+**Partition Key:** Character ID integer
+
 ## Message Types
 
 ### StatusEvent[E] (kafka/message/transport/kafka.go)
@@ -279,6 +308,10 @@ Generic instance transport command.
 ### Event[E] (kafka/message/instance_transport/kafka.go)
 
 Generic instance transport event.
+
+### Command[E] (kafka/message/consumable/kafka.go)
+
+Generic consumable effect command.
 
 ### StatusEvent[E] (kafka/message/map/kafka.go)
 

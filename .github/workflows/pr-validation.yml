@@ -152,6 +152,31 @@ jobs:
         run: ./tools/goroutine-guard.sh
 
   # ============================================
+  # Buff Duration Guard
+  # Self-tests + builds the buffdurationguard
+  # analyzer and runs it over every Go module
+  # under services/ and libs/. Fails on any
+  # seconds→ms scaling in a
+  # COMMAND_TOPIC_CHARACTER_BUFF duration field
+  # (task-190 FR-3.2).
+  # ============================================
+  buff-duration-guard:
+    name: Buff Duration Guard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: buff duration guard
+        run: ./tools/buff-duration-guard.sh
+
+  # ============================================
   # LB Port Drift Guard
   # Regenerates the per-version login/channel LB
   # socket port manifests from versions.json and
@@ -320,6 +345,27 @@ jobs:
 
       - name: template opcode order guard
         run: ./tools/template-opcode-order-guard.sh
+
+  # ============================================
+  # Enforces that every MOVE handler in every
+  # tenant socket-config template carries a
+  # well-formed, template-consistent movement
+  # `types` table. A missing or typo'd entry
+  # silently degrades that element to a 3-byte
+  # decode and desyncs the packet. See
+  # docs/packets/TEMPLATE_CONVENTIONS.md.
+  # Pure shell + python3, no Go setup.
+  # ============================================
+  template-movement-types-guard:
+    name: Template Movement Types Guard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: template movement types guard
+        run: ./tools/template-movement-types-guard.sh
 
   # ============================================
   # Skill/Job Id Guard
@@ -710,7 +756,7 @@ jobs:
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard, outbox-guard, goroutine-guard, gen-lb-ports, service-registration-guard, template-opcode-order-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard, outbox-guard, goroutine-guard, buff-duration-guard, gen-lb-ports, service-registration-guard, template-opcode-order-guard, template-movement-types-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
     if: always()
     runs-on: ubuntu-latest
 
@@ -729,9 +775,11 @@ jobs:
           GUARD_RESULT="${{ needs.redis-key-guard.result }}"
           OUTBOX_GUARD_RESULT="${{ needs.outbox-guard.result }}"
           GOROUTINE_GUARD_RESULT="${{ needs.goroutine-guard.result }}"
+          BUFF_DURATION_GUARD_RESULT="${{ needs.buff-duration-guard.result }}"
           LBPORTS_RESULT="${{ needs.gen-lb-ports.result }}"
           SVC_REG_GUARD_RESULT="${{ needs.service-registration-guard.result }}"
           TMPL_ORDER_GUARD_RESULT="${{ needs.template-opcode-order-guard.result }}"
+          TMPL_MOVE_GUARD_RESULT="${{ needs.template-movement-types-guard.result }}"
           SKILL_JOB_ID_GUARD_RESULT="${{ needs.skill-job-id-guard.result }}"
           CONSTANTS_DRIFT_GUARD_RESULT="${{ needs.atlas-constants-drift-guard.result }}"
           LINT_GO_RESULT="${{ needs.lint-go.result }}"
@@ -747,9 +795,11 @@ jobs:
           echo "| Redis Key Guard | $GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Outbox Guard | $OUTBOX_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Goroutine Guard | $GOROUTINE_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Buff Duration Guard | $BUFF_DURATION_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| LB Port Drift Guard | $LBPORTS_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Service Registration Guard | $SVC_REG_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Template Opcode Order Guard | $TMPL_ORDER_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Template Movement Types Guard | $TMPL_MOVE_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Skill/Job Id Guard | $SKILL_JOB_ID_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| atlas-constants Generator Drift Guard | $CONSTANTS_DRIFT_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Lint & Format Guard (Go) | $LINT_GO_RESULT |" >> $GITHUB_STEP_SUMMARY
@@ -758,7 +808,7 @@ jobs:
           # Fail if any required job failed. update-pr-overlay is allowed
           # to be skipped (e.g., when the deploy-env label is absent) but
           # not to fail outright.
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$OUTBOX_GUARD_RESULT" == "failure" ] || [ "$GOROUTINE_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$OUTBOX_GUARD_RESULT" == "failure" ] || [ "$GOROUTINE_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

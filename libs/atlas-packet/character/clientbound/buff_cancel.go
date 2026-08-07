@@ -29,8 +29,25 @@ func (m BuffCancel) Encode(l logrus.FieldLogger, ctx context.Context) func(optio
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
+		// Reset mask: names ONLY the stats being cancelled. Not EncodeSetMask —
+		// that one asserts the TwoState/base bits unconditionally, which on a
+		// reset would tell the client to tear down RideVehicle and GuidedBullet
+		// on every buff expiry (task-190).
 		m.cts.EncodeMask(l, t, options)(w)
-		w.WriteByte(0) // tSwallowBuffTime
+		// Trailing byte: nSecondaryStatChangedPoint, NOT tSwallowBuffTime. The
+		// client reads it only when the mask contains a movement-affecting stat
+		// (SecondaryStat::IsMovementAffectingStat — Speed/Jump/Stun/Weakness/
+		// Slow/Morph/Ghost/BasicStatUp/Attract), then feeds it to
+		// CMovePath::SetStatChangedPoint. Writing it unconditionally is safe:
+		// when the client does not read it, it is trailing slack the client
+		// ignores; it must never be omitted, or a movement-affecting reset
+		// (any mob disease) would read one byte past the end.
+		//
+		// task-167 derived that filter per version as model.MovementAffectingMask
+		// and gated this write on it. The gate is held back until every version's
+		// filter bits are name-resolved — v72/v79/v92/JMS are positional or
+		// inferred today — because a wrong bit there omits a byte the client reads.
+		w.WriteByte(0)
 		return w.Bytes()
 	}
 }
@@ -40,7 +57,7 @@ func (m *BuffCancel) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *r
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.cts = *model.NewCharacterTemporaryStat()
 		_ = m.cts.DecodeMask(r, t)
-		_ = r.ReadByte() // tSwallowBuffTime
+		_ = r.ReadByte() // nSecondaryStatChangedPoint
 	}
 }
 
@@ -66,8 +83,12 @@ func (m BuffCancelForeign) Encode(l logrus.FieldLogger, ctx context.Context) fun
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.characterId)
+		// Reset mask — same reasoning as BuffCancel.Encode above. The foreign
+		// reset feeds CUserRemote::OnResetTemporaryStat, which drives the other
+		// players' view of this character's mount; an unconditional RideVehicle
+		// bit desyncs their render of it just as it desyncs the owner's.
 		m.cts.EncodeMask(l, t, options)(w)
-		w.WriteByte(0) // tSwallowBuffTime
+		w.WriteByte(0) // nSecondaryStatChangedPoint — see BuffCancel.Encode
 		return w.Bytes()
 	}
 }
@@ -78,6 +99,6 @@ func (m *BuffCancelForeign) Decode(_ logrus.FieldLogger, ctx context.Context) fu
 		m.characterId = r.ReadUint32()
 		m.cts = *model.NewCharacterTemporaryStat()
 		_ = m.cts.DecodeMask(r, t)
-		_ = r.ReadByte() // tSwallowBuffTime
+		_ = r.ReadByte() // nSecondaryStatChangedPoint
 	}
 }

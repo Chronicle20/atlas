@@ -34,55 +34,19 @@ func NewOperationExecutor(l logrus.FieldLogger, ctx context.Context) *OperationE
 	}
 }
 
-// ExecuteOperation executes a single operation
-// portalId is the numeric ID of the current portal (for operations like block_portal)
+// ExecuteOperation executes a single operation.
+// portalId is the numeric ID of the current portal (for operations like block_portal).
+// Dispatch goes through opTable, which is also the classification authority for
+// whether an operation moves the character — see optable.go.
 func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, portalId uint32, op operation.Model) error {
 	e.l.Debugf("Executing operation [%s] for character [%d]", op.Type(), characterId)
 
-	switch op.Type() {
-	case "play_portal_sound":
-		return e.executePlayPortalSound(f, characterId, op)
-
-	case "warp":
-		return e.executeWarp(f, characterId, op)
-
-	case "drop_message":
-		return e.executeDropMessage(f, characterId, op)
-
-	case "show_hint":
-		return e.executeShowHint(f, characterId, op)
-
-	case "block_portal":
-		return e.executeBlockPortal(f, characterId, portalId, op)
-
-	case "create_skill":
-		return e.executeCreateSkill(characterId, op)
-
-	case "update_skill":
-		return e.executeUpdateSkill(characterId, op)
-
-	case "start_instance_transport":
-		return e.executeStartInstanceTransport(f, characterId, op)
-
-	case "apply_consumable_effect":
-		return e.executeApplyConsumableEffect(f, characterId, op)
-
-	case "cancel_consumable_effect":
-		return e.executeCancelConsumableEffect(f, characterId, op)
-
-	case "save_location":
-		return e.executeSaveLocation(f, characterId, portalId, op)
-
-	case "warp_to_saved_location":
-		return e.executeWarpToSavedLocation(f, characterId, op)
-
-	case "start_quest":
-		return e.executeStartQuest(f, characterId, op)
-
-	default:
+	def, ok := opTable[op.Type()]
+	if !ok {
 		e.l.Warnf("Unknown operation type [%s] for character [%d]", op.Type(), characterId)
 		return nil
 	}
+	return def.run(e, f, characterId, portalId, op)
 }
 
 // ExecuteOperations executes multiple operations

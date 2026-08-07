@@ -730,6 +730,24 @@
     address: 7022966
   note: 'sub_6B2710 case a1==101 -> sub_6B2976. (common 102-124 -> sub_6B2A51; remote 125-143 -> sub_6B2AE4; local 144-155 -> sub_6B2C6D: leaf ops DEFERRED, see remaining.)'
 
+# ---------------- clientbound: CAffectedAreaPool::OnPacket @0x42182f ----------------
+- op: SPAWN_MIST
+  direction: clientbound
+  opcode: 202
+  fname: CAffectedAreaPool::OnAffectedAreaCreated
+  provenance: ida-discovered
+  ida:
+    address: 4331604
+  note: 'CAffectedAreaPool::OnPacket @0x42182f: sub eax, 0CAh / jz -> OnAffectedAreaCreated @0x421854. Case constant READ from disasm (0x421833), not derived from v61.'
+- op: REMOVE_MIST
+  direction: clientbound
+  opcode: 203
+  fname: CAffectedAreaPool::OnAffectedAreaRemoved
+  provenance: ida-discovered
+  ida:
+    address: 4333183
+  note: 'CAffectedAreaPool::OnPacket @0x42182f: dec eax / jnz ret -> OnAffectedAreaRemoved @0x421e7f for a1==0xCB. Case constant READ from disasm (0x42183a).'
+
 # ---------------- clientbound: CCashShop::OnPacket @0x4534d6 ----------------
 - op: IDA_0X0FE
   direction: clientbound

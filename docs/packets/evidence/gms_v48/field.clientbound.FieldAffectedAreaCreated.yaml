@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldAffectedAreaCreated
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CAffectedAreaPool::OnAffectedAreaCreated
+    address: "0x421854"
+    decompile_sha256: 3697148e5cc62860b5e18279c3980576d5352cea7c88e56def0f740632194ff0

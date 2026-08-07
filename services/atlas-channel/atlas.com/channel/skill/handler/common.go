@@ -6,7 +6,9 @@ import (
 	"atlas-channel/character/skill"
 	"atlas-channel/consumable"
 	"atlas-channel/data/skill/effect"
+	_map "atlas-channel/map"
 	"atlas-channel/monster"
+	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 	"math/rand"
@@ -22,6 +24,8 @@ import (
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
+	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -175,7 +179,8 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 			if e.Duration() > 0 && len(statupsToApply) > 0 {
 				applyBuffFunc := buff.NewProcessor(l, ctx).Apply(f, characterId, int32(info.SkillId()), info.SkillLevel(), e.Duration(), statupsToApply)
 				_ = applyBuffFunc(characterId)
-				_ = applyToParty(l)(ctx)(f, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
+				recipients := applyToParty(l)(ctx)(f, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
+				announceSkillAffected(l, ctx, wp, f, characterId, recipients, info.SkillId(), info.SkillLevel())
 			}
 
 			// Shadow Stars cast cost (FR-4): charge bulletConsume (200 in WZ) of the
@@ -424,19 +429,65 @@ func dispelSkillClass(id skill2.Identity) string {
 }
 
 // applyToParty applies idOperator to every party member selected for a party
-// buff. Party buffs apply map-wide (no LT/RB rectangle), so member selection
-// is driven by the client-sent affected-member bitmap via
-// SelectPartyMembersInMap rather than the range-limited Heal selector.
-func applyToParty(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, casterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
-	return func(ctx context.Context) func(f field.Model, casterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
-		return func(f field.Model, casterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
-			return func(idOperator model2.Operator[uint32]) error {
+// buff and returns the ids it applied to. Party buffs apply map-wide (no LT/RB
+// rectangle), so member selection is driven by the client-sent affected-member
+// bitmap via SelectPartyMembersInMap rather than the range-limited Heal
+// selector. The returned ids feed announceSkillAffected — the recipients are
+// resolved once here and reused rather than re-selected.
+func applyToParty(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, casterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) []uint32 {
+	return func(ctx context.Context) func(f field.Model, casterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) []uint32 {
+		return func(f field.Model, casterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) []uint32 {
+			return func(idOperator model2.Operator[uint32]) []uint32 {
 				recipients := SelectPartyMembersInMap(l, ctx, f, casterId, memberBitmap)
+				ids := make([]uint32, 0, len(recipients))
 				for _, r := range recipients {
 					_ = idOperator(r.Id())
+					ids = append(ids, r.Id())
 				}
-				return nil
+				return ids
 			}
 		}
 	}
+}
+
+// announceSkillAffected draws the buff-received animation over every party
+// member who was buffed by SOMEONE ELSE's cast, and over the same player on
+// every other client in the map.
+//
+// The caster is excluded: their own client already renders the cast locally
+// (CUserLocal::DoActiveSkill_StatChange calls CUser::ShowSkillEffect right
+// after SendSkillUseRequest) and the server additionally sends them SKILL_USE.
+// SKILL_AFFECTED is the recipient-facing arm — gms_v83 CUser::OnEffect
+// @0x9377d9 case 2 → CUser::ShowSkillAffected @0x93632a.
+func announceSkillAffected(
+	l logrus.FieldLogger, ctx context.Context, wp writer.Producer,
+	f field.Model, casterId uint32, recipientIds []uint32,
+	skillId uint32, skillLevel byte,
+) {
+	for _, id := range recipientIds {
+		if id == casterId {
+			continue
+		}
+		skillAffectedEmitFunc(l, ctx, wp, f, id, skillId, skillLevel)
+	}
+}
+
+// skillAffectedEmitFunc is the per-recipient SKILL_AFFECTED emit seam tests
+// can replace. Production writes the self-facing CharacterEffect to the
+// recipient's own session and the CharacterEffectForeign to everyone else on
+// their map.
+var skillAffectedEmitFunc = func(
+	l logrus.FieldLogger, ctx context.Context, wp writer.Producer,
+	f field.Model, recipientId uint32, skillId uint32, skillLevel byte,
+) {
+	_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(f.Channel())(
+		recipientId,
+		session.Announce(l)(ctx)(wp)(charcb.CharacterEffectWriter)(
+			charpkt.CharacterSkillAffectedEffectBody(skillId, skillLevel)),
+	)
+	_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(
+		f, recipientId,
+		session.Announce(l)(ctx)(wp)(charcb.CharacterEffectForeignWriter)(
+			charpkt.CharacterSkillAffectedEffectForeignBody(recipientId, skillId, skillLevel)),
+	)
 }

@@ -2208,7 +2208,7 @@
       {
         "opCode": "0x34",
         "writer": "SueCharacterResult",
-        "services": ["channel"],
+        "fname": "CWvsContext::OnSueCharacterResult",
         "options": {
           "operations": {
             "SUCCESS": "0x00",
@@ -2217,7 +2217,10 @@
             "REPORTED_NOTICE": "0x03",
             "GENERIC_FAILURE": "0x04"
           }
-        }
+        },
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x38",

@@ -415,6 +415,7 @@
         "opCode": "0x30",
         "validator": "LoggedInValidator",
         "handler": "CharacterChairPortableHandle",
+        "fname": "CWvsContext::SendSitOnPortableChairRequest",
         "services": [
           "channel"
         ]
@@ -464,6 +465,7 @@
         "opCode": "0x4D",
         "validator": "LoggedInValidator",
         "handler": "CompartmentSortHandle",
+        "fname": "CWvsContext::SendSortItemRequest",
         "services": [
           "channel"
         ]
@@ -505,6 +507,7 @@
         "opCode": "0x5A",
         "validator": "LoggedInValidator",
         "handler": "ShopScannerItemUseHandle",
+        "fname": "CWvsContext::SendShopScannerItemUseRequest",
         "services": [
           "channel"
         ]
@@ -531,6 +534,7 @@
         "opCode": "0x6A",
         "validator": "LoggedInValidator",
         "handler": "FameChangeHandle",
+        "fname": "CWvsContext::SendGivePopularityRequest",
         "services": [
           "channel"
         ]
@@ -548,6 +552,7 @@
         "opCode": "0x6D",
         "validator": "LoggedInValidator",
         "handler": "PetSpawnHandle",
+        "fname": "CWvsContext::SendActivatePetRequest",
         "services": [
           "channel"
         ]
@@ -583,6 +588,7 @@
         "opCode": "0x75",
         "validator": "LoggedInValidator",
         "handler": "ClaimRequest",
+        "fname": "CWvsContext::SendClaimRequest",
         "services": [
           "channel"
         ]
@@ -591,6 +597,7 @@
         "opCode": "0x76",
         "validator": "LoggedInValidator",
         "handler": "QuestActionHandle",
+        "fname": "CQuest::StartQuest",
         "services": [
           "channel"
         ]
@@ -599,6 +606,7 @@
         "opCode": "0x7D",
         "validator": "LoggedInValidator",
         "handler": "SueCharacter",
+        "fname": "CField::SendChatMsgSlash",
         "services": [
           "channel"
         ]
@@ -607,6 +615,7 @@
         "opCode": "0x8C",
         "validator": "LoggedInValidator",
         "handler": "MessengerOperationHandle",
+        "fname": "CFadeWnd::SendCloseMessage",
         "services": [
           "channel"
         ]
@@ -646,6 +655,7 @@
         "opCode": "0xB0",
         "validator": "LoggedInValidator",
         "handler": "GuildBBSHandle",
+        "fname": "CUIGuildBBS::SendLoadListRequest",
         "services": [
           "channel"
         ]
@@ -815,6 +825,7 @@
         "opCode": "0xC8",
         "validator": "LoggedInValidator",
         "handler": "PetItemUseHandle",
+        "fname": "CWvsContext::SendStatChangeItemUseRequestByPetQ",
         "services": [
           "channel"
         ]
@@ -823,6 +834,7 @@
         "opCode": "0xC9",
         "validator": "LoggedInValidator",
         "handler": "PetItemExcludeHandle",
+        "fname": "CPet::SendUpdateExceptionListRequest",
         "services": [
           "channel"
         ]
@@ -1332,6 +1344,7 @@
         "opCode": "0xFF",
         "validator": "LoggedInValidator",
         "handler": "MonsterCarnival",
+        "fname": "CUIMonsterCarnival::RequestSend",
         "services": [
           "channel"
         ]
@@ -1340,6 +1353,7 @@
         "opCode": "0x10C",
         "validator": "LoggedInValidator",
         "handler": "CashShopOperationHandle",
+        "fname": "CCashShop::RequestCashPurchaseRecord",
         "services": [
           "channel"
         ]
@@ -1348,6 +1362,7 @@
         "opCode": "0x129",
         "validator": "LoggedInValidator",
         "handler": "ItcQueryCashRequestHandle",
+        "fname": "CITC::TrySendQueryCashRequest",
         "services": [
           "channel"
         ]
@@ -1598,6 +1613,7 @@
       {
         "opCode": "0x11",
         "writer": "Ping",
+        "fname": "CClientSocket::OnAliveReq",
         "services": [
           "login",
           "channel"
@@ -1667,6 +1683,7 @@
       {
         "opCode": "0x25",
         "writer": "CharacterSkillChange",
+        "fname": "CWvsContext::OnChangeSkillRecordResult",
         "services": [
           "channel"
         ]
@@ -1695,6 +1712,7 @@
       {
         "opCode": "0x2E",
         "writer": "ClaimResult",
+        "fname": "CWvsContext::OnClaimResult",
         "options": {
           "operations": {
             "SUCCESS": "0x02",
@@ -1715,6 +1733,7 @@
       {
         "opCode": "0x2F",
         "writer": "ClaimAvailableTime",
+        "fname": "CWvsContext::OnSetClaimSvrAvailableTime",
         "services": [
           "channel"
         ]
@@ -1722,6 +1741,7 @@
       {
         "opCode": "0x30",
         "writer": "ClaimSvrStatusChanged",
+        "fname": "CWvsContext::OnClaimSvrStatusChanged",
         "services": [
           "channel"
         ]
@@ -1742,6 +1762,7 @@
       {
         "opCode": "0x38",
         "writer": "SueCharacterResult",
+        "fname": "CWvsContext::OnSueCharacterResult",
         "options": {
           "operations": {
             "SUCCESS": "0x00",
@@ -1766,6 +1787,7 @@
       {
         "opCode": "0x46",
         "writer": "RemoveTownDoor",
+        "fname": "CWvsContext::OnTownPortal",
         "services": [
           "channel"
         ]
@@ -1804,6 +1826,7 @@
       {
         "opCode": "0x49",
         "writer": "IncubatorResult",
+        "fname": "CWvsContext::OnIncubatorResult",
         "services": [
           "channel"
         ]
@@ -1846,6 +1869,7 @@
       {
         "opCode": "0x50",
         "writer": "PetCashFoodResult",
+        "fname": "CWvsContext::OnCashPetFoodResult",
         "services": [
           "channel"
         ]
@@ -1883,6 +1907,7 @@
       {
         "opCode": "0x80",
         "writer": "ScriptProgress",
+        "fname": "CWvsContext::OnScriptProgressMessage",
         "services": [
           "channel"
         ]
@@ -1906,6 +1931,7 @@
       {
         "opCode": "0x9D",
         "writer": "FieldEffectWeather",
+        "fname": "CField::OnBlowWeather",
         "services": [
           "channel"
         ]
@@ -1913,6 +1939,7 @@
       {
         "opCode": "0xAB",
         "writer": "StalkResult",
+        "fname": "CField::OnStalkResult",
         "services": [
           "channel"
         ]
@@ -1920,6 +1947,7 @@
       {
         "opCode": "0xAF",
         "writer": "FootholdInfo",
+        "fname": "CField::OnFootHoldInfo",
         "services": [
           "channel"
         ]
@@ -1951,6 +1979,7 @@
       {
         "opCode": "0xB4",
         "writer": "ChatGeneralChat",
+        "fname": "CUser::OnChat",
         "services": [
           "channel"
         ]
@@ -1958,6 +1987,7 @@
       {
         "opCode": "0xB5",
         "writer": "ChalkboardUse",
+        "fname": "CUser::OnADBoard",
         "services": [
           "channel"
         ]
@@ -1974,6 +2004,7 @@
       {
         "opCode": "0xC3",
         "writer": "PetActivated",
+        "fname": "CUser::OnPetPacket",
         "options": {
           "operations": {
             "NORMAL": 0,
@@ -1990,6 +2021,7 @@
       {
         "opCode": "0xC6",
         "writer": "PetMovement",
+        "fname": "CPet::OnMove",
         "services": [
           "channel"
         ]
@@ -1997,6 +2029,7 @@
       {
         "opCode": "0xC7",
         "writer": "PetChat",
+        "fname": "CPet::OnAction",
         "services": [
           "channel"
         ]
@@ -2004,6 +2037,7 @@
       {
         "opCode": "0xC9",
         "writer": "PetExcludeResponse",
+        "fname": "CPet::OnLoadExceptionList",
         "services": [
           "channel"
         ]
@@ -2011,6 +2045,7 @@
       {
         "opCode": "0xCA",
         "writer": "PetCommandResponse",
+        "fname": "CPet::OnActionCommand",
         "services": [
           "channel"
         ]
@@ -2074,6 +2109,7 @@
       {
         "opCode": "0xDA",
         "writer": "CharacterSkillPrepareForeign",
+        "fname": "CUserRemote::OnSkillPrepare",
         "services": [
           "channel"
         ]
@@ -2081,6 +2117,7 @@
       {
         "opCode": "0xDB",
         "writer": "CharacterSkillCancelForeign",
+        "fname": "CUserRemote::OnSkillCancel",
         "services": [
           "channel"
         ]
@@ -2088,6 +2125,7 @@
       {
         "opCode": "0xDC",
         "writer": "CharacterDamage",
+        "fname": "CUserRemote::OnHit",
         "services": [
           "channel"
         ]
@@ -2095,6 +2133,7 @@
       {
         "opCode": "0xDD",
         "writer": "CharacterExpression",
+        "fname": "CUser::OnEmotion",
         "services": [
           "channel"
         ]
@@ -2126,6 +2165,7 @@
       {
         "opCode": "0xE5",
         "writer": "PartyMemberHP",
+        "fname": "CUserRemote::OnReceiveHP",
         "services": [
           "channel"
         ]
@@ -2133,6 +2173,7 @@
       {
         "opCode": "0xE9",
         "writer": "CharacterSitResult",
+        "fname": "CUserLocal::OnSitResult",
         "services": [
           "channel"
         ]
@@ -2140,6 +2181,7 @@
       {
         "opCode": "0xF7",
         "writer": "CharacterHint",
+        "fname": "CUserLocal::OnBalloonMsg",
         "services": [
           "channel"
         ]
@@ -2147,6 +2189,7 @@
       {
         "opCode": "0xFF",
         "writer": "UiLock",
+        "fname": "CUserLocal::OnSetDirectionMode",
         "services": [
           "channel"
         ]
@@ -2154,6 +2197,7 @@
       {
         "opCode": "0x100",
         "writer": "UiDisable",
+        "fname": "CUserLocal::OnSetStandAloneMode",
         "services": [
           "channel"
         ]
@@ -2214,6 +2258,7 @@
       {
         "opCode": "0x11A",
         "writer": "MonsterStatSet",
+        "fname": "CMob::OnStatSet",
         "services": [
           "channel"
         ]
@@ -2221,6 +2266,7 @@
       {
         "opCode": "0x11B",
         "writer": "MonsterStatReset",
+        "fname": "CMob::OnStatReset",
         "services": [
           "channel"
         ]
@@ -2228,6 +2274,7 @@
       {
         "opCode": "0x11E",
         "writer": "MonsterDamage",
+        "fname": "CMob::OnDamaged",
         "services": [
           "channel"
         ]
@@ -2235,6 +2282,7 @@
       {
         "opCode": "0x122",
         "writer": "MonsterHealth",
+        "fname": "CMob::OnHPIndicator",
         "services": [
           "channel"
         ]
@@ -2272,6 +2320,7 @@
       {
         "opCode": "0x13A",
         "writer": "DropSpawn",
+        "fname": "CDropPool::OnDropEnterField",
         "services": [
           "channel"
         ]
@@ -2279,6 +2328,7 @@
       {
         "opCode": "0x13C",
         "writer": "DropDestroy",
+        "fname": "CDropPool::OnDropLeaveField",
         "services": [
           "channel"
         ]
@@ -2286,6 +2336,7 @@
       {
         "opCode": "0x142",
         "writer": "SpawnDoor",
+        "fname": "CTownPortalPool::OnTownPortalCreated",
         "services": [
           "channel"
         ]
@@ -2293,6 +2344,7 @@
       {
         "opCode": "0x143",
         "writer": "RemoveDoor",
+        "fname": "CTownPortalPool::OnTownPortalRemoved",
         "services": [
           "channel"
         ]
@@ -2300,6 +2352,7 @@
       {
         "opCode": "0x146",
         "writer": "ReactorHit",
+        "fname": "CReactorPool::OnReactorChangeState",
         "services": [
           "channel"
         ]
@@ -2307,6 +2360,7 @@
       {
         "opCode": "0x148",
         "writer": "ReactorSpawn",
+        "fname": "CReactorPool::OnReactorEnterField",
         "services": [
           "channel"
         ]
@@ -2314,6 +2368,7 @@
       {
         "opCode": "0x149",
         "writer": "ReactorDestroy",
+        "fname": "CReactorPool::OnReactorLeaveField",
         "services": [
           "channel"
         ]
@@ -2321,6 +2376,7 @@
       {
         "opCode": "0x152",
         "writer": "MonsterCarnivalStart",
+        "fname": "CField_MonsterCarnival::OnEnter",
         "services": [
           "channel"
         ]
@@ -2328,6 +2384,7 @@
       {
         "opCode": "0x153",
         "writer": "MonsterCarnivalObtainedCP",
+        "fname": "CField_MonsterCarnival::OnPersonalCP",
         "services": [
           "channel"
         ]
@@ -2335,6 +2392,7 @@
       {
         "opCode": "0x154",
         "writer": "MonsterCarnivalPartyCP",
+        "fname": "CField_MonsterCarnival::OnTeamCP",
         "services": [
           "channel"
         ]
@@ -2342,6 +2400,7 @@
       {
         "opCode": "0x155",
         "writer": "MonsterCarnivalSummon",
+        "fname": "CField_MonsterCarnival::OnRequestResult",
         "services": [
           "channel"
         ]
@@ -2349,6 +2408,7 @@
       {
         "opCode": "0x156",
         "writer": "MonsterCarnivalMessage",
+        "fname": "CField_MonsterCarnival::OnRequestResult",
         "services": [
           "channel"
         ]
@@ -2356,6 +2416,7 @@
       {
         "opCode": "0x157",
         "writer": "MonsterCarnivalDied",
+        "fname": "CField_MonsterCarnival::OnProcessForDeath",
         "services": [
           "channel"
         ]
@@ -2363,6 +2424,7 @@
       {
         "opCode": "0x158",
         "writer": "MonsterCarnivalLeave",
+        "fname": "CField_MonsterCarnival::OnShowMemberOutMsg",
         "services": [
           "channel"
         ]
@@ -2370,6 +2432,7 @@
       {
         "opCode": "0x159",
         "writer": "MonsterCarnivalResult",
+        "fname": "CField_MonsterCarnival::OnShowGameResult",
         "services": [
           "channel"
         ]
@@ -2377,6 +2440,7 @@
       {
         "opCode": "0x15E",
         "writer": "AriantScore",
+        "fname": "CField_Witchtower::OnScoreUpdate",
         "services": [
           "channel"
         ]
@@ -2384,6 +2448,7 @@
       {
         "opCode": "0x168",
         "writer": "StorageOperation",
+        "fname": "CTrunkDlg::OnPacket",
         "options": {
           "operations": {
             "RETRIEVE_ASSETS": 9,
@@ -2405,6 +2470,7 @@
       {
         "opCode": "0x16C",
         "writer": "MessengerOperation",
+        "fname": "CUIMessenger::OnPacket",
         "options": {
           "operations": {
             "ADD": 0,
@@ -2530,6 +2596,7 @@
       {
         "opCode": "0x185",
         "writer": "CharacterKeyMap",
+        "fname": "CFuncKeyMappedMan::OnInit",
         "services": [
           "channel"
         ]
@@ -2537,6 +2604,7 @@
       {
         "opCode": "0x186",
         "writer": "CharacterKeyMapAutoHp",
+        "fname": "CFuncKeyMappedMan::OnPetConsumeItemInit",
         "services": [
           "channel"
         ]
@@ -2544,6 +2612,7 @@
       {
         "opCode": "0x187",
         "writer": "CharacterKeyMapAutoMp",
+        "fname": "CFuncKeyMappedMan::OnPetConsumeMPItemInit",
         "services": [
           "channel"
         ]

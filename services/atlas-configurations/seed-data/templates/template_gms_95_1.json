@@ -793,7 +793,10 @@
         "opCode": "0x76",
         "validator": "LoggedInValidator",
         "handler": "ClaimRequest",
-        "services": ["channel"]
+        "fname": "CWvsContext::SendClaimRequest",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x77",
@@ -2444,7 +2447,7 @@
       {
         "opCode": "0x2C",
         "writer": "ClaimResult",
-        "services": ["channel"],
+        "fname": "CWvsContext::OnClaimResult",
         "options": {
           "operations": {
             "SUCCESS": "0x02",
@@ -2457,17 +2460,26 @@
             "TIME_WINDOW": "0x47",
             "FALSE_REPORT_CITED": "0x48"
           }
-        }
+        },
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x2D",
         "writer": "ClaimAvailableTime",
-        "services": ["channel"]
+        "fname": "CWvsContext::OnSetClaimSvrAvailableTime",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x2E",
         "writer": "ClaimSvrStatusChanged",
-        "services": ["channel"]
+        "fname": "CWvsContext::OnClaimSvrStatusChanged",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x2F",
@@ -2524,7 +2536,7 @@
       {
         "opCode": "0x37",
         "writer": "SueCharacterResult",
-        "services": ["channel"],
+        "fname": "CWvsContext::OnSueCharacterResult",
         "options": {
           "operations": {
             "SUCCESS": "0x00",
@@ -2533,7 +2545,10 @@
             "REPORTED_NOTICE": "0x03",
             "GENERIC_FAILURE": "0x04"
           }
-        }
+        },
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x3B",

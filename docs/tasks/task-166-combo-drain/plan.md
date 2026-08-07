@@ -2,25 +2,84 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make the `COMBO_DRAIN` buff (Aran skill 21100005) actually heal the attacker `x`% of each accepted attack's total damage, replacing the `// TODO Combo Drain` in atlas-channel's attack pipeline.
+Revised 2026-08-07: rebased onto `main` (254 commits); every line reference
+re-derived; architecture changed from design Approach B to Approach C; Task 4
+(version-scope verification) added.
 
-**Architecture:** Design Approach B — `processAttack` fetches the attacker's buffs exactly once (hoisted above the projectile planner, which loses its internal fetch and instead receives the slice), and a new `comboDrainTryProc` evaluates the same slice post-damage, emitting at most one `ChangeHP` Kafka command through the existing `character.Processor`. Pure helpers (`buffStatAmount`, `attackTotalDamage`, `comboDrainHealAmount`) are pinned by table tests, mirroring the MP Eater / computeReflect style already in the handler package.
+**Goal:** Make the `COMBO_DRAIN` buff (Aran skill 21100005) actually heal the
+attacker `x`% of each accepted attack's total damage, replacing the
+`// TODO Combo Drain` in atlas-channel's attack pipeline — correct on every
+supported client version that ships the skill, with no version branch.
 
-**Tech Stack:** Go, atlas-channel service only. Existing `buff.Processor` REST read, existing `ChangeHP` Kafka command. No new endpoints, topics, packets, or schema.
+**Architecture:** Design Approach C — `processAttack` builds a per-attack
+memoized `loadBuffs` closure (mirroring the neighbouring `loadEffectiveStats`),
+hands it to the two existing buff consumers (projectile gate, Pick Pocket) in
+place of their own processor, and a new `comboDrainTryProc` calls it
+post-damage, emitting at most one `ChangeHP` Kafka command through the existing
+`character.Processor`. Pure helpers (`buffStatAmount`, `attackTotalDamage`,
+`comboDrainHealAmount`) are pinned by table tests, mirroring the
+`drainHealAmount` / MP Eater / `computeReflect` style already in the package.
+
+**Tech Stack:** Go, atlas-channel service only. Existing `buff.Processor` REST
+read, existing `ChangeHP` Kafka command. No new endpoints, topics, packets,
+templates, or schema — on any of the eleven supported versions.
 
 ## Global Constraints
 
 - Single service touched: `services/atlas-channel/atlas.com/channel` (design §1).
-- Exactly one buff lookup per attack, ever (PRD NFR / design §2 Approach B).
-- Buff-service failure degrades to "no heal" with a logged warning; the attack pipeline is never aborted (FR-1, design §3.1).
-- Heal is once per accepted attack, from the plain total over all monsters and hit lines — no Cosmic per-monster running-total (PRD §1, FR-2).
-- `heal = totalDamage * percent / 100`, integer arithmetic, clamped to `math.MaxInt16` before narrowing to `int16`; no emission when `heal <= 0` (FR-2).
-- Buff-only gate: no job, skill-ownership, or attack-type check (FR-3, design Approach D rejection).
-- Gate stat: `ts.TemporaryStatTypeComboDrain` from `libs/atlas-constants/character` (`"COMBO_DRAIN"`); never a string literal.
-- Tests use production constructors (`buff.NewBuff`, `stat.NewStat`, `packetmodel.NewAttackInfo`/`NewDamageInfo` builders) — no `*_testhelpers.go` (project rule).
-- Keep the diff to the TODO block minimal: replace exactly the one `// TODO Combo Drain` line in place with the call (design §7 — sibling tasks edit neighboring lines in their own worktrees).
-- Verification gates (design §6): `go test -race ./...`, `go vet ./...`, `go build ./...` clean in the module; `tools/redis-key-guard.sh` clean from repo root; `docker buildx bake atlas-channel` from the worktree root (mandatory even though `go.mod` is untouched).
-- All repo paths below are relative to the worktree root (`.worktrees/task-166-combo-drain`). The Go module root is `services/atlas-channel/atlas.com/channel` — run go commands from there.
+- **No version branch.** The diff must contain no `MajorVersion`,
+  `MajorAtLeast`, `IsRegion`, or version-keyed literal, and must modify no
+  socket-config template (PRD FR-5, design §6.1). Availability is data-driven:
+  versions without Aran cannot produce the statup.
+- At most one buff REST read per attack, and only when a consumer needs one —
+  the memoized loader is the mechanism; the two existing consumers keep their
+  gate-before-fetch behavior (PRD NFR, design §3 Approach C).
+- Buff-service failure degrades to "no heal" with a logged warning; the attack
+  pipeline is never aborted, and the existing consumers' degraded postures are
+  unchanged (FR-1, FR-4, design §4.1).
+- Heal is once per accepted attack, from the plain total over all monsters and
+  hit lines — no Cosmic per-monster running-total (PRD §1, FR-2).
+- `heal = totalDamage * percent / 100`, integer arithmetic, clamped to
+  `math.MaxInt16` before narrowing to `int16`; no emission when `heal <= 0`
+  (FR-2).
+- Buff-only gate: no job, skill-ownership, version, or attack-type check
+  (FR-3, FR-5, design Approach D rejection).
+- Gate stat: `charconst.TemporaryStatTypeComboDrain` from
+  `libs/atlas-constants/character` (`"COMBO_DRAIN"`); never a string literal.
+- Tests use production constructors (`buff.NewBuff` — **seven** args now,
+  `stat.NewStat`, `packetmodel.NewAttackInfo`/`NewDamageInfo` builders) — no
+  `*_testhelpers.go` (project rule).
+- Keep the diff to the TODO block minimal: replace exactly the one
+  `// TODO Combo Drain` line in place with the call (design §9 — sibling tasks
+  edit neighbouring lines in their own worktrees).
+- Verification gates (design §8) are Task 5; do not claim done before they run.
+- All repo paths below are relative to the worktree root
+  (`.worktrees/task-166-combo-drain`). The Go module root is
+  `services/atlas-channel/atlas.com/channel` — run go commands from there.
+
+### Line references (re-derived against `main` @ `e0f5bd01d`)
+
+| What | Where |
+|---|---|
+| `// TODO Combo Drain` | `character_attack_common.go:991` |
+| `cp := character.NewProcessor(l, ctx)` | `character_attack_common.go:706` |
+| `pp.Plan(c, ai, se)` call site | `character_attack_common.go:805` |
+| `loadEffectiveStats` memoization idiom to mirror | `character_attack_common.go:816-827` |
+| `pickPocketResolveState(...)` call site | `character_attack_common.go:836-842` |
+| `pickPocketResolveState` definition | `character_attack_common.go:276-282` |
+| `ProjectileProcessor` interface | `character_attack_projectile.go:44-47` |
+| `ProjectileProcessorImpl` struct + ctor | `character_attack_projectile.go:49-63` |
+| `Plan` method signature | `character_attack_projectile.go:65` |
+| internal buff fetch to delete | `character_attack_projectile.go:98-106` |
+| `hasBuff` (matching rules to mirror) | `character_attack_projectile.go:198` |
+| `buffWithStat` / `expiredBuffWithStat` (names taken) | `character_attack_projectile_test.go:58,63` |
+| `testField` (reuse as-is) | `mystic_door_enter_test.go:30` |
+| `buff.NewBuff` (7 args) | `character/buff/model.go:63` |
+| `stat.NewStat` | `character/buff/stat/model.go:16` |
+| `docs/TODO.md` Combo Drain item | `docs/TODO.md:151` |
+
+Re-confirm each with `grep` before editing — sibling worktrees land in this
+file frequently and these numbers drift.
 
 ---
 
@@ -31,17 +90,22 @@
 - Test: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_combo_drain_test.go`
 
 **Interfaces:**
-- Consumes: `buff.Model` (`atlas-channel/character/buff`: `Expired() bool`, `Changes() []stat.Model`), `stat.Model` (`Type() string`, `Amount() int32`), `packetmodel.AttackInfo` (`DamageInfo() []DamageInfo`), `packetmodel.DamageInfo` (`Damages() []uint32`), `ts.TemporaryStatType` (`libs/atlas-constants/character`).
-- Produces (Task 2 and 3 rely on these exact signatures):
-  - `func buffStatAmount(buffs []buff.Model, statType ts.TemporaryStatType) (int32, bool)`
+- Consumes: `buff.Model` (`atlas-channel/character/buff`: `Expired() bool`,
+  `Changes() []stat.Model`), `stat.Model` (`Type() string`, `Amount() int32`),
+  `packetmodel.AttackInfo` (`DamageInfo() []DamageInfo`), `packetmodel.DamageInfo`
+  (`Damages() []uint32`), `charconst.TemporaryStatType`.
+- Produces (Tasks 2 and 3 rely on these exact signatures):
+  - `func buffStatAmount(buffs []buff.Model, statType charconst.TemporaryStatType) (int32, bool)`
   - `func attackTotalDamage(ai packetmodel.AttackInfo) uint64`
   - `func comboDrainHealAmount(totalDamage uint64, percent int32) int16`
 
-Note on names already taken in package `handler` tests: `buffWithStat`/`expiredBuffWithStat` (fixed amount 1) live in `character_attack_projectile_test.go`, and `testField` lives in `mystic_door_enter_test.go`. The new test file defines amount-parameterized buff helpers under fresh names and reuses `testField` as-is.
+Names already taken in package `handler` tests: `buffWithStat`/`expiredBuffWithStat`
+(fixed amount 1) and `testField`. The new test file defines amount-parameterized
+buff helpers under fresh names and reuses `testField` as-is.
 
 - [ ] **Step 1: Write the failing tests**
 
-Create `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_combo_drain_test.go`:
+Create `character_attack_combo_drain_test.go`:
 
 ```go
 package handler
@@ -54,24 +118,25 @@ import (
 	"atlas-channel/character/buff"
 	"atlas-channel/character/buff/stat"
 
-	ts "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
 // comboDrainBuffWithAmount builds a live buff carrying a single COMBO_DRAIN
-// stat change of the given amount.
+// stat change of the given amount. buff.NewBuff takes seven arguments — the
+// trailing bool is noExpiry.
 func comboDrainBuffWithAmount(amount int32) buff.Model {
 	return buff.NewBuff(0, 1, 0,
-		[]stat.Model{stat.NewStat(string(ts.TemporaryStatTypeComboDrain), amount)},
-		time.Now(), time.Now().Add(time.Hour))
+		[]stat.Model{stat.NewStat(string(charconst.TemporaryStatTypeComboDrain), amount)},
+		time.Now(), time.Now().Add(time.Hour), false)
 }
 
 // expiredComboDrainBuffWithAmount builds an already-expired COMBO_DRAIN buff.
 func expiredComboDrainBuffWithAmount(amount int32) buff.Model {
 	past := time.Now().Add(-time.Hour)
 	return buff.NewBuff(0, 1, 0,
-		[]stat.Model{stat.NewStat(string(ts.TemporaryStatTypeComboDrain), amount)},
-		past, past)
+		[]stat.Model{stat.NewStat(string(charconst.TemporaryStatTypeComboDrain), amount)},
+		past, past, false)
 }
 
 // attackWithDamages builds an AttackInfo of the given type with one
@@ -89,14 +154,14 @@ func attackWithDamages(at packetmodel.AttackType, monsterDamages ...[]uint32) pa
 
 func TestBuffStatAmount(t *testing.T) {
 	otherStat := buff.NewBuff(0, 1, 0,
-		[]stat.Model{stat.NewStat(string(ts.TemporaryStatTypeSoulArrow), 1)},
-		time.Now(), time.Now().Add(time.Hour))
+		[]stat.Model{stat.NewStat(string(charconst.TemporaryStatTypeSoulArrow), 1)},
+		time.Now(), time.Now().Add(time.Hour), false)
 	mixedStats := buff.NewBuff(0, 1, 0,
 		[]stat.Model{
-			stat.NewStat(string(ts.TemporaryStatTypeSoulArrow), 1),
-			stat.NewStat(string(ts.TemporaryStatTypeComboDrain), 4),
+			stat.NewStat(string(charconst.TemporaryStatTypeSoulArrow), 1),
+			stat.NewStat(string(charconst.TemporaryStatTypeComboDrain), 4),
 		},
-		time.Now(), time.Now().Add(time.Hour))
+		time.Now(), time.Now().Add(time.Hour), false)
 
 	tests := []struct {
 		name       string
@@ -114,7 +179,7 @@ func TestBuffStatAmount(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			amount, ok := buffStatAmount(tc.buffs, ts.TemporaryStatTypeComboDrain)
+			amount, ok := buffStatAmount(tc.buffs, charconst.TemporaryStatTypeComboDrain)
 			if ok != tc.wantOk || amount != tc.wantAmount {
 				t.Fatalf("buffStatAmount = (%d, %v), want (%d, %v)", amount, ok, tc.wantAmount, tc.wantOk)
 			}
@@ -169,19 +234,23 @@ func TestComboDrainHealAmount(t *testing.T) {
 }
 ```
 
+Before running: confirm `buff.NewBuff`'s arity and `packetmodel.NewDamageInfo`'s
+builder methods against source — both changed since this plan was first written.
+
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run (from `services/atlas-channel/atlas.com/channel`):
+From `services/atlas-channel/atlas.com/channel`:
 
 ```bash
 go test ./socket/handler/ -run 'TestBuffStatAmount|TestAttackTotalDamage|TestComboDrainHealAmount' -v
 ```
 
-Expected: compilation FAILURE — `undefined: buffStatAmount`, `undefined: attackTotalDamage`, `undefined: comboDrainHealAmount`.
+Expected: compilation FAILURE — `undefined: buffStatAmount`,
+`undefined: attackTotalDamage`, `undefined: comboDrainHealAmount`.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_combo_drain.go`:
+Create `character_attack_combo_drain.go`:
 
 ```go
 package handler
@@ -190,13 +259,14 @@ import (
 	"atlas-channel/character/buff"
 	"math"
 
-	ts "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
 // buffStatAmount returns the Amount of the first stat change of statType
-// carried by a non-expired buff, mirroring hasBuff's matching rules.
-func buffStatAmount(buffs []buff.Model, statType ts.TemporaryStatType) (int32, bool) {
+// carried by a non-expired buff, mirroring hasBuff's matching rules
+// (character_attack_projectile.go).
+func buffStatAmount(buffs []buff.Model, statType charconst.TemporaryStatType) (int32, bool) {
 	for _, b := range buffs {
 		if b.Expired() {
 			continue
@@ -264,17 +334,25 @@ git commit -m "feat(channel): combo drain pure helpers (task-166)"
 ### Task 2: `comboDrainTryProc` orchestrator
 
 **Files:**
-- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_combo_drain.go` (append function + imports)
-- Test: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_combo_drain_test.go` (append tests)
+- Modify: `character_attack_combo_drain.go` (append function + imports)
+- Test: `character_attack_combo_drain_test.go` (append tests)
 
 **Interfaces:**
-- Consumes: Task 1's three helpers (exact signatures above); `field.Model` (`libs/atlas-constants/field`); `logrus.FieldLogger`.
-- Produces (Task 3's call site relies on this exact signature — `changeHP` matches `character.Processor.ChangeHP(f field.Model, characterId uint32, amount int16) error`):
-  - `func comboDrainTryProc(l logrus.FieldLogger, buffs []buff.Model, changeHP func(f field.Model, characterId uint32, amount int16) error, f field.Model, characterId uint32, ai packetmodel.AttackInfo)`
+- Consumes: Task 1's three helpers; `field.Model`
+  (`libs/atlas-constants/field`); `logrus.FieldLogger`.
+- Produces (Task 3's call site relies on this exact signature — `getBuffs`
+  matches `buff.Processor.GetByCharacterId` and therefore the Task-3 loader;
+  `changeHP` matches `character.Processor.ChangeHP`):
+  - `func comboDrainTryProc(l logrus.FieldLogger, getBuffs func(characterId uint32) ([]buff.Model, error), changeHP func(f field.Model, characterId uint32, amount int16) error, f field.Model, characterId uint32, ai packetmodel.AttackInfo)`
+
+The proc takes the **loader**, not a slice, so the "at most one read" property
+lives in one place and is directly testable with a counting fake (PRD §10).
 
 - [ ] **Step 1: Write the failing tests**
 
-Append to `character_attack_combo_drain_test.go`. New imports needed in the test file's import block: `"atlas-channel/character/buff/stat"` and `ts` are already there; add `"github.com/Chronicle20/atlas/libs/atlas-constants/field"`, `"github.com/sirupsen/logrus"`, `"errors"`:
+Append to `character_attack_combo_drain_test.go`; add `"errors"`,
+`"github.com/Chronicle20/atlas/libs/atlas-constants/field"` and
+`"github.com/sirupsen/logrus"` to its import block:
 
 ```go
 // recordingChangeHP captures every emission comboDrainTryProc makes and can
@@ -289,6 +367,18 @@ func (r *recordingChangeHP) fn(_ field.Model, _ uint32, amount int16) error {
 	return r.err
 }
 
+// countingBuffs serves a fixed buff slice (or error) and counts invocations.
+type countingBuffs struct {
+	buffs []buff.Model
+	err   error
+	calls int
+}
+
+func (c *countingBuffs) fn(_ uint32) ([]buff.Model, error) {
+	c.calls++
+	return c.buffs, c.err
+}
+
 func TestComboDrainTryProc(t *testing.T) {
 	l := logrus.New()
 	f := testField(100000000)
@@ -296,6 +386,7 @@ func TestComboDrainTryProc(t *testing.T) {
 	tests := []struct {
 		name      string
 		buffs     []buff.Model
+		buffErr   error
 		ai        packetmodel.AttackInfo
 		changeErr error
 		wantCalls []int16
@@ -321,10 +412,8 @@ func TestComboDrainTryProc(t *testing.T) {
 			wantCalls: nil,
 		},
 		{
-			// The handler collapses a buff-fetch error to nil buffs, so this
-			// case is also the buff-fetch-error AC at proc level.
-			name:      "nil buffs (fetch error posture)",
-			buffs:     nil,
+			name:      "buff fetch error",
+			buffErr:   errors.New("buffs down"),
 			ai:        attackWithDamages(packetmodel.AttackTypeMelee, []uint32{1000}),
 			wantCalls: nil,
 		},
@@ -355,6 +444,7 @@ func TestComboDrainTryProc(t *testing.T) {
 		},
 		// Attack-type blindness (melee/ranged/magic/energy AC): the proc has
 		// no type filter by construction; these pin that none creeps in.
+		// Energy is the touch handler's type (character_attack_touch.go).
 		{
 			name:      "ranged attack heals",
 			buffs:     []buff.Model{comboDrainBuffWithAmount(5)},
@@ -368,7 +458,7 @@ func TestComboDrainTryProc(t *testing.T) {
 			wantCalls: []int16{50},
 		},
 		{
-			name:      "energy attack heals",
+			name:      "energy (touch) attack heals",
 			buffs:     []buff.Model{comboDrainBuffWithAmount(5)},
 			ai:        attackWithDamages(packetmodel.AttackTypeEnergy, []uint32{1000}),
 			wantCalls: []int16{50},
@@ -377,7 +467,11 @@ func TestComboDrainTryProc(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			rec := &recordingChangeHP{err: tc.changeErr}
-			comboDrainTryProc(l, tc.buffs, rec.fn, f, 42, tc.ai)
+			cb := &countingBuffs{buffs: tc.buffs, err: tc.buffErr}
+			comboDrainTryProc(l, cb.fn, rec.fn, f, 42, tc.ai)
+			if cb.calls > 1 {
+				t.Fatalf("getBuffs called %d times, want at most 1", cb.calls)
+			}
 			if len(rec.calls) != len(tc.wantCalls) {
 				t.Fatalf("changeHP called %d times (%v), want %d (%v)", len(rec.calls), rec.calls, len(tc.wantCalls), tc.wantCalls)
 			}
@@ -401,25 +495,36 @@ Expected: compilation FAILURE — `undefined: comboDrainTryProc`.
 
 - [ ] **Step 3: Write the implementation**
 
-Append to `character_attack_combo_drain.go`. Extend its import block with `"github.com/Chronicle20/atlas/libs/atlas-constants/field"` and `"github.com/sirupsen/logrus"`:
+Append to `character_attack_combo_drain.go`; extend its imports with
+`"github.com/Chronicle20/atlas/libs/atlas-constants/field"` and
+`"github.com/sirupsen/logrus"`:
 
 ```go
 // comboDrainTryProc evaluates Combo Drain for one accepted attack and emits
 // at most one ChangeHP via the injected changeHP: once per attack, computed
 // from the plain damage total across all monsters and hit lines (no
 // per-monster running total). The gate is the COMBO_DRAIN stat alone — no
-// job, skill-ownership, or attack-type check. Failures are logged and
-// swallowed — never abort the attack pipeline. Downstream max-HP clamping
-// is owned by atlas-character.
+// job, skill-ownership, attack-type, or version check. A version whose
+// client has no Aran simply never carries the stat, so this is correct on
+// every supported version without a branch (design §6.1). Failures are
+// logged and swallowed — never abort the attack pipeline. Downstream
+// max-HP clamping is owned by atlas-character.
 func comboDrainTryProc(
 	l logrus.FieldLogger,
-	buffs []buff.Model,
+	getBuffs func(characterId uint32) ([]buff.Model, error),
 	changeHP func(f field.Model, characterId uint32, amount int16) error,
 	f field.Model,
 	characterId uint32,
 	ai packetmodel.AttackInfo,
 ) {
-	percent, ok := buffStatAmount(buffs, ts.TemporaryStatTypeComboDrain)
+	buffs, err := getBuffs(characterId)
+	if err != nil {
+		// The loader already logged the failure at Warn level once per
+		// attack; skipping the heal is the FR-1 degraded posture.
+		l.WithError(err).Debugf("Combo Drain: buff snapshot unavailable for character [%d]; skipping heal.", characterId)
+		return
+	}
+	percent, ok := buffStatAmount(buffs, charconst.TemporaryStatTypeComboDrain)
 	if !ok {
 		return
 	}
@@ -452,33 +557,48 @@ git commit -m "feat(channel): combo drain proc orchestrator (task-166)"
 
 ---
 
-### Task 3: Single shared buff fetch + wiring into `processAttack`
+### Task 3: Shared memoized buff loader + wiring into `processAttack`
 
 **Files:**
-- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_projectile.go` (`Plan` signature gains `buffs`, internal fetch removed, `bp` field dropped)
-- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go` (hoisted buff fetch; `Plan` call site; TODO line replaced with the proc call; `buff` import added)
+- Modify: `character_attack_projectile.go` (`Plan` gains a `getBuffs` param;
+  internal fetch replaced; `bp` field dropped)
+- Modify: `character_attack_common.go` (`loadBuffs` closure; `Plan` call site;
+  Pick Pocket call site; TODO line replaced with the proc call)
+- Test: `character_attack_combo_drain_test.go` (append the loader test)
 - Modify: `docs/TODO.md` (check off the Combo Drain line item)
 
 **Interfaces:**
-- Consumes: `comboDrainTryProc` (Task 2 signature); `buff.NewProcessor(l, ctx).GetByCharacterId(characterId uint32) ([]buff.Model, error)`; `character.Processor.ChangeHP` (`cp` is already in scope in `processAttack`); `session.Model.Field()`/`.CharacterId()`.
-- Produces: `ProjectileProcessor.Plan(c character.Model, ai packetmodel.AttackInfo, se effect.Model, buffs []buff.Model) (*ProjectilePlan, bool)` — new interface shape. `Plan` has exactly one production call site (`character_attack_common.go:316`) and no test constructs a `ProjectileProcessorImpl` or calls `Plan` directly (the projectile tests exercise the pure helpers `computeCount`/`resolvePlan`/`hasBuff`, which already take `[]buff.Model` and are untouched), so no test-file edits are required in this task.
+- Consumes: `comboDrainTryProc` (Task 2 signature);
+  `buff.NewProcessor(l, ctx).GetByCharacterId(characterId uint32) ([]buff.Model, error)`;
+  `character.Processor.ChangeHP` (`cp` already in scope);
+  `session.Model.Field()`/`.CharacterId()`.
+- Produces: `ProjectileProcessor.Plan(c character.Model, ai packetmodel.AttackInfo, se effect.Model, getBuffs func(characterId uint32) ([]buff.Model, error)) (*ProjectilePlan, bool)`.
 
-No new test file in this task: the behavior it wires is pinned by Task 2's proc tests (including the nil-buffs fetch-error posture) and by the existing projectile helper tests, which this task must keep green. The refactor is behavior-neutral for the planner: the same slice reaches the same decision points, fetched by the caller instead.
+Before editing, confirm no test constructs `ProjectileProcessorImpl` or calls
+`Plan`:
 
-- [ ] **Step 1: Change `ProjectileProcessor.Plan` to accept the buff slice**
+```bash
+grep -rn "ProjectileProcessorImpl\|\.Plan(" services/atlas-channel/atlas.com/channel
+```
 
-In `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_projectile.go`:
+Expected: the interface/impl definitions plus exactly one production call site.
+If a test appears, update it mechanically in this task.
 
-(a) Interface (currently at line 43):
+- [ ] **Step 1: Change `ProjectileProcessor.Plan` to accept the loader**
+
+In `character_attack_projectile.go`:
+
+(a) Interface (currently line 44):
 
 ```go
 type ProjectileProcessor interface {
-	Plan(c character.Model, ai packetmodel.AttackInfo, se effect.Model, buffs []buff.Model) (*ProjectilePlan, bool)
+	Plan(c character.Model, ai packetmodel.AttackInfo, se effect.Model, getBuffs func(characterId uint32) ([]buff.Model, error)) (*ProjectilePlan, bool)
 	Emit(characterId uint32, plan *ProjectilePlan) error
 }
 ```
 
-(b) Drop the `bp` field from the struct and constructor (the `buff` import stays — `hasBuff`/`computeCount` still use `buff.Model`):
+(b) Drop the `bp` field from the struct and constructor (the `buff` import
+stays — `hasBuff`/`computeCount` still use `buff.Model`):
 
 ```go
 type ProjectileProcessorImpl struct {
@@ -496,61 +616,84 @@ func NewProjectileProcessor(l logrus.FieldLogger, ctx context.Context) Projectil
 }
 ```
 
-(c) Update the method signature and delete the internal fetch. The method opens:
+(c) Update the method signature (line 65) and swap the fetch — the fetch stays
+where it is, behind the same gates; only its source changes:
 
 ```go
-func (p *ProjectileProcessorImpl) Plan(c character.Model, ai packetmodel.AttackInfo, se effect.Model, buffs []buff.Model) (*ProjectilePlan, bool) {
+func (p *ProjectileProcessorImpl) Plan(c character.Model, ai packetmodel.AttackInfo, se effect.Model, getBuffs func(characterId uint32) ([]buff.Model, error)) (*ProjectilePlan, bool) {
 ```
 
-and this entire block (currently right after the `requiredClassification` gate) is deleted — the `buffs` parameter feeds the Soul Arrow check and `computeCount` directly:
+and at line 98:
 
 ```go
-	buffs, err := p.bp.GetByCharacterId(c.Id())
-	if err != nil {
-		// Treat a buff-lookup failure as "no buffs" so consumption still fires.
-		// Soul Arrow is a gameplay-critical skip but we'd rather over-consume than
-		// nil-ref the attack hot path.
-		p.l.WithError(err).WithField("characterId", c.Id()).
-			Warnf("Unable to load buffs for projectile gate; assuming none active.")
-		buffs = nil
-	}
+	buffs, err := getBuffs(c.Id())
 ```
 
-Everything below (`hasBuff(buffs, ts.TemporaryStatTypeSoulArrow)` check, `computeCount(weaponType, se, buffs)`) is unchanged — it already consumes the local name `buffs`, which is now the parameter.
+Leave the surrounding warn block, `projectileConsumptionSkipped` and
+`computeCount` untouched — the planner keeps its own domain warning and its
+"assume none active" posture.
 
-- [ ] **Step 2: Hoist the single buff fetch in `processAttack` and pass it to `Plan`**
+- [ ] **Step 2: Add the memoized loader in `processAttack`**
 
-In `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go`, add `"atlas-channel/character/buff"` to the import block (first group, alongside `"atlas-channel/character"`), then replace (currently lines 313–316):
-
-```go
-					// Compute projectile consumption plan before broadcasting so planner
-					// errors surface before visible side effects. Emission happens post-broadcast.
-					pp := NewProjectileProcessor(l, ctx)
-					projectilePlan, hasProjectilePlan := pp.Plan(c, ai, se)
-```
-
-with:
+In `character_attack_common.go`, immediately before the `pp := NewProjectileProcessor(l, ctx)`
+block (currently line 802-805), insert:
 
 ```go
-					// One buff snapshot per attack, taken at attack-accept time and
-					// shared by the projectile consumption gate and post-damage
-					// buff-driven effects (Combo Drain). A lookup failure degrades to
-					// "no buffs active" for every consumer — never aborts the attack.
-					buffs, buffErr := buff.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
-					if buffErr != nil {
-						l.WithError(buffErr).Warnf("Unable to load buffs for character [%d] attack; assuming none active.", s.CharacterId())
-						buffs = nil
+					// One buff snapshot per attack, shared by the projectile
+					// consumption gate, Pick Pocket, and post-damage
+					// buff-driven effects (Combo Drain). Fetched at most once
+					// and only when a consumer actually needs it; a lookup
+					// failure is cached as "no buffs active" for every
+					// consumer and never aborts the attack. Mirrors
+					// loadEffectiveStats below.
+					var attackBuffs []buff.Model
+					attackBuffsLoaded := false
+					loadBuffs := func(characterId uint32) ([]buff.Model, error) {
+						if attackBuffsLoaded {
+							return attackBuffs, nil
+						}
+						attackBuffsLoaded = true
+						bs, bErr := buff.NewProcessor(l, ctx).GetByCharacterId(characterId)
+						if bErr != nil {
+							l.WithError(bErr).Warnf("Unable to load buffs for character [%d] attack; assuming none active.", characterId)
+							attackBuffs = nil
+							return nil, bErr
+						}
+						attackBuffs = bs
+						return attackBuffs, nil
 					}
-
-					// Compute projectile consumption plan before broadcasting so planner
-					// errors surface before visible side effects. Emission happens post-broadcast.
-					pp := NewProjectileProcessor(l, ctx)
-					projectilePlan, hasProjectilePlan := pp.Plan(c, ai, se, buffs)
 ```
 
-- [ ] **Step 3: Replace the TODO line with the proc call**
+`buff` is already imported in this file (`atlas-channel/character/buff`).
 
-In the same file, in the post-broadcast TODO block (currently line 420), replace exactly this one line:
+- [ ] **Step 3: Point both existing consumers at the loader**
+
+`Plan` call site (currently line 805):
+
+```go
+					projectilePlan, hasProjectilePlan := pp.Plan(c, ai, se, loadBuffs)
+```
+
+Pick Pocket call site (currently line 837) — replace
+`buff.NewProcessor(l, ctx).GetByCharacterId` with `loadBuffs`:
+
+```go
+					ppState := pickPocketResolveState(
+						l,
+						loadBuffs,
+						skill2.NewProcessor(l, ctx).GetEffect,
+						ai.SkillId(),
+						s.CharacterId(),
+					)
+```
+
+No signature change for `pickPocketResolveState` — it already takes a
+`getBuffs` function.
+
+- [ ] **Step 4: Replace the TODO line with the proc call**
+
+In the post-broadcast TODO block (currently line 991), replace exactly this one
+line:
 
 ```go
 					// TODO Combo Drain
@@ -559,50 +702,126 @@ In the same file, in the post-broadcast TODO block (currently line 420), replace
 with:
 
 ```go
-					comboDrainTryProc(l, buffs, cp.ChangeHP, s.Field(), s.CharacterId(), ai)
+					comboDrainTryProc(l, loadBuffs, cp.ChangeHP, s.Field(), s.CharacterId(), ai)
 ```
 
-Do not touch any neighboring TODO line — sibling tasks own them in their own worktrees, and a one-line in-place replacement is the merge-friendliest diff. Ordering satisfies FR-3: this sits after the per-monster damage loop (`ai.DamageInfo()` is final) and after broadcast/projectile `Emit`, independent of broadcast success.
+Do not touch any neighbouring TODO line — sibling tasks own them in their own
+worktrees, and a one-line in-place replacement is the merge-friendliest diff.
+Ordering satisfies FR-3: this sits after the per-monster damage loop
+(`ai.DamageInfo()` is final) and after broadcast/projectile `Emit`, independent
+of broadcast success.
 
-- [ ] **Step 4: Run the full package tests**
+- [ ] **Step 5: Add the loader test**
+
+Append to `character_attack_combo_drain_test.go` a test that pins the
+one-read-per-attack AC on the loader shape itself — a closure built with the
+same memoize-and-cache-the-failure logic, asserting that (a) three calls
+produce one underlying fetch and return the same slice, and (b) when the
+underlying fetch fails, the error surfaces once and subsequent calls return
+`nil, nil` without re-fetching. If the loader is inlined in `processAttack`
+and therefore untestable directly, extract it into a small package-level
+constructor in `character_attack_combo_drain.go`
+(`func newAttackBuffLoader(l logrus.FieldLogger, fetch func(uint32) ([]buff.Model, error)) func(uint32) ([]buff.Model, error)`)
+and have `processAttack` call that — prefer this, it keeps the AC honest.
+
+- [ ] **Step 6: Run the full package tests**
 
 ```bash
 go test ./socket/handler/ -v
 ```
 
-Expected: PASS — including all pre-existing projectile tests (`TestComputeCount`, `TestResolvePlan_*`, `TestRequiredClassification`), the cost-gate test, MP Eater tests, and Tasks 1–2's Combo Drain tests. If anything referencing `Plan` or `bp` fails to compile, a call site was missed — `grep -rn "\.Plan(c" services/atlas-channel` must show only the one updated site.
+Expected: PASS — including all pre-existing projectile tests
+(`TestComputeCount`, `TestResolvePlan_*`, `TestRequiredClassification`), the
+cost-gate test, MP Eater, drain, Pick Pocket, Mortal Blow, Sacrifice and combo
+tests, plus Tasks 1–2's Combo Drain tests. If anything referencing `Plan` or
+`bp` fails to compile, a call site was missed.
 
-- [ ] **Step 5: Check off the TODO.md line item**
+- [ ] **Step 7: Check off the TODO.md line item**
 
-In `docs/TODO.md` (currently line 108), change:
+In `docs/TODO.md` (currently line 151), change `- [ ] Combo Drain` to
+`- [x] Combo Drain`.
 
-```markdown
-- [ ] Combo Drain
-```
-
-to:
-
-```markdown
-- [x] Combo Drain
-```
-
-- [ ] **Step 6: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_projectile.go services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go docs/TODO.md
+git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_projectile.go \
+        services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go \
+        services/atlas-channel/atlas.com/channel/socket/handler/character_attack_combo_drain.go \
+        services/atlas-channel/atlas.com/channel/socket/handler/character_attack_combo_drain_test.go \
+        docs/TODO.md
 git commit -m "feat(channel): wire combo drain heal into attack pipeline (task-166)"
 ```
 
 ---
 
-### Task 4: Verification gates
+### Task 4: Version-scope verification
 
-**Files:**
-- None created or modified — this task runs the design §6 gates and must show clean output before the branch can be called done. No commit unless a gate forces a fix.
+**Files:** none created or modified — this task proves the version claims in
+PRD §4A / design §6 hold for the produced diff. No commit unless a check fails.
 
-**Interfaces:**
-- Consumes: the completed Tasks 1–3.
-- Produces: evidence for `superpowers:verification-before-completion`.
+**Interfaces:** consumes the completed Tasks 1–3; produces evidence for the
+PRD's "Version coverage" acceptance criteria.
+
+- [ ] **Step 1: No version or region branch in the diff**
+
+```bash
+git diff main -- services/ | grep -n '^+' | grep -E 'MajorVersion|MajorAtLeast|MinorVersion|IsRegion|Region\(\)'
+echo "exit=$?"
+```
+
+Expected: no matches (`exit=1`). A hit means the implementation grew a version
+gate it must not have (PRD FR-5).
+
+- [ ] **Step 2: No template, packet, or matrix change**
+
+```bash
+git diff --stat main -- services/atlas-configurations/seed-data/templates/
+git diff --stat main -- docs/packets/ libs/atlas-packet/
+```
+
+Expected: both empty. This feature routes no new handler on any of the eleven
+templates and promotes no coverage-matrix cell.
+
+- [ ] **Step 3: Re-confirm the per-version applicability table**
+
+Re-derive rather than trust the doc — these are the exact commands the table
+was built from. From the worktree root:
+
+```bash
+# Aran Combo Drain presence per version (expect: absent in 12/48/61/72,
+# present in 79/83/84/87/92/95/jms185)
+grep -l "21100005" libs/atlas-constants/gen/wzsnapshot/*.json | sort
+
+# Attack handler routing per template (expect: gms_12_1 and gms_92_1 have none)
+for f in services/atlas-configurations/seed-data/templates/template_*.json; do
+  printf "%-28s" "$(basename "$f")"
+  for h in CharacterMeleeAttackHandle CharacterRangedAttackHandle \
+           CharacterMagicAttackHandle CharacterTouchAttackHandle; do
+    printf " %s=%s" "${h#Character}" "$(grep -c "\"$h\"" "$f")"
+  done
+  echo
+done
+```
+
+If either output disagrees with PRD §4A / design §6.2, update the docs in the
+same commit — the table is a claim about the repo and must stay true.
+
+- [ ] **Step 4: Confirm no divergent-id comparison was introduced**
+
+```bash
+tools/skill-job-id-guard.sh
+grep -rn "21100005\|AranStage2ComboDrainId" services/atlas-channel/atlas.com/channel/socket/handler/character_attack_combo_drain.go
+```
+
+Expected: guard exit 0; the grep finds nothing — the gate is the temporary
+stat, never the skill id.
+
+---
+
+### Task 5: Verification gates
+
+**Files:** none created or modified — runs the design §8 gates. No commit
+unless a gate forces a fix.
 
 - [ ] **Step 1: Module gates (from `services/atlas-channel/atlas.com/channel`)**
 
@@ -610,15 +829,22 @@ git commit -m "feat(channel): wire combo drain heal into attack pipeline (task-1
 go build ./... && go vet ./... && go test -race ./...
 ```
 
-Expected: all three exit 0; `go test -race` shows `ok` for every package including `atlas-channel/socket/handler`, no `DATA RACE` output.
+Expected: all three exit 0; `go test -race` shows `ok` for every package
+including `atlas-channel/socket/handler`, no `DATA RACE` output.
 
-- [ ] **Step 2: Redis key guard (from the worktree root)**
+- [ ] **Step 2: Repo-root guards**
 
 ```bash
 tools/redis-key-guard.sh
+tools/goroutine-guard.sh
+tools/skill-job-id-guard.sh
+tools/buff-duration-guard.sh
+tools/lint.sh --check
 ```
 
-Expected: exit 0, no violations (this change adds no Redis usage). Per project memory, run from repo root without a global `GOWORK=off` prefix.
+Expected: each exits 0. `tools/lint.sh` (no flags) rewrites formatting in place
+if `--check` fails. Per project memory, `lint.sh --check` false-fails without
+nvm on PATH — load nvm 22 first.
 
 - [ ] **Step 3: Docker bake (from the worktree root — mandatory)**
 
@@ -626,7 +852,8 @@ Expected: exit 0, no violations (this change adds no Redis usage). Per project m
 docker buildx bake atlas-channel
 ```
 
-Expected: image builds successfully. `go.mod` was not touched, but the project rule requires the bake for every changed service regardless.
+Expected: image builds successfully. `go.mod` is untouched, but the project
+rule requires the bake for every changed service regardless.
 
 - [ ] **Step 4: Confirm the TODO marker is gone**
 
@@ -636,4 +863,7 @@ grep -rn "TODO Combo Drain" services/ docs/TODO.md ; echo "exit=$?"
 
 Expected: no matches, `exit=1`.
 
-If any gate fails: fix, re-run every gate from Step 1, and amend/commit the fix on the task branch. After all gates pass, run `superpowers:requesting-code-review` before opening a PR (project rule — not part of this plan's tasks, but the required next step).
+If any gate fails: fix, re-run every gate from Step 1, and commit the fix on the
+task branch. After all gates pass, run `superpowers:requesting-code-review`
+before opening a PR (project rule — not part of this plan's tasks, but the
+required next step).

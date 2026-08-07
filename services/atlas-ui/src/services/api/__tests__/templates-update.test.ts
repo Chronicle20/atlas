@@ -84,6 +84,35 @@ describe("templatesService.update", () => {
   });
 });
 
+// handleUpdateConfigurationTemplate writes no response body on success, so
+// api.patch resolves to undefined; reading response.data off it threw
+// "Cannot read properties of undefined (reading 'data')" after the request had
+// already succeeded server-side.
+describe("templatesService.update bodiless PATCH response", () => {
+  beforeEach(() => {
+    patch.mockReset().mockResolvedValue(undefined);
+    put.mockReset();
+    getOne.mockReset();
+  });
+
+  it("returns the sent document when the server answers with no body", async () => {
+    const attributes = fullAttributes();
+
+    const result = await templatesService.update("t1", attributes);
+
+    expect(result.id).toBe("t1");
+    expect(result.attributes.region).toBe("GMS");
+    expect(result.attributes.socket.handlers).toEqual([]);
+  });
+
+  it("does the same for a sparse patch()", async () => {
+    const result = await templatesService.patch("t1", { usesPin: true });
+
+    expect(result.id).toBe("t1");
+    expect(result.attributes.usesPin).toBe(true);
+  });
+});
+
 // templates.RestModel declares NPCs/Worlds without omitempty, so a template
 // stored without an `npcs` key (template_jms_185_1.json and four others) is
 // served as `"npcs": null`. Feeding that straight back into update() failed

@@ -59,6 +59,7 @@ export interface TemplatesResponse {
  * Absent and empty mean the same thing here, so read them as empty.
  */
 function sortTemplate(template: Template): Template {
+  if (!template.attributes.socket) return template;
   return {
     ...template,
     attributes: {
@@ -312,6 +313,14 @@ export const templatesService = {
    * Transport is PATCH. atlas-configurations binds /configurations/templates/{id}
    * to http.MethodPatch only (templates/resource.go) - there is no PUT route, so
    * the previous api.put call could only ever have 405'd.
+   *
+   * That PATCH handler writes NO response body on success
+   * (handleUpdateConfigurationTemplate returns without marshalling anything), so
+   * api.patch resolves to undefined and `response.data` threw "Cannot read
+   * properties of undefined (reading 'data')". Fall back to the document we
+   * just sent, the same way tenantsService.updateTenantConfiguration does.
+   * Server-assigned values (character preset ids) still require a follow-up
+   * GET - this return value is the request echo, not a server read.
    */
   async update(
     id: string,
@@ -319,12 +328,12 @@ export const templatesService = {
     options?: ServiceOptions,
   ): Promise<Template> {
     throwIfInvalid(data, options?.validate !== false);
-    const response = await api.patch<TemplateResponse>(
+    const response = await api.patch<TemplateResponse | undefined>(
       `${BASE_PATH}/${id}`,
       wrapTemplate(data, id),
       options,
     );
-    return sortTemplate(response.data);
+    return sortTemplate(response?.data ?? { id, attributes: data });
   },
 
   async patch(
@@ -332,12 +341,14 @@ export const templatesService = {
     data: Partial<TemplateAttributes>,
     options?: ServiceOptions,
   ): Promise<Template> {
-    const response = await api.patch<TemplateResponse>(
+    const response = await api.patch<TemplateResponse | undefined>(
       `${BASE_PATH}/${id}`,
       wrapTemplate(data as TemplateAttributes, id),
       options,
     );
-    return sortTemplate(response.data);
+    return sortTemplate(
+      response?.data ?? { id, attributes: data as TemplateAttributes },
+    );
   },
 
   async delete(id: string, options?: ServiceOptions): Promise<void> {

@@ -1092,6 +1092,11 @@ func buildMistCreateBody(m Model, sd mobskill.Model, skillId byte, skillLevel by
 		TickIntervalMs:   1000,
 		SourceSkillId:    uint32(skillId),
 		SourceSkillLevel: uint32(skillLevel),
+		// Explicit rather than relying on atlas-maps' empty-value default.
+		// A monster AREA_POISON mist poisons CHARACTERS with a named status;
+		// the player-cast mists added in task-200 target MONSTERS with a DoT.
+		TargetKind: mistKafka.TargetKindCharacter,
+		EffectKind: mistKafka.EffectKindDisease,
 	}
 }
 

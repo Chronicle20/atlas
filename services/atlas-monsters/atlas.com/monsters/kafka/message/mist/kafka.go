@@ -18,6 +18,19 @@ const (
 
 	CommandTypeCreate = "CREATE"
 	CommandTypeCancel = "CANCEL"
+
+	// TargetKind selects who a mist's per-tick effect is applied to. An empty
+	// value means CHARACTER, so producers written before task-200 (the
+	// atlas-monsters AREA_POISON path) keep working unchanged.
+	TargetKindCharacter = "CHARACTER"
+	TargetKindMonster   = "MONSTER"
+
+	// EffectKind selects what the mist's per-tick effect does. An empty value
+	// means DISEASE. DISEASE applies a named character status via
+	// COMMAND_TOPIC_CHARACTER_BUFF; DAMAGE_OVER_TIME applies a damage-bearing
+	// monster status via COMMAND_TOPIC_MONSTER APPLY_STATUS.
+	EffectKindDisease        = "DISEASE"
+	EffectKindDamageOverTime = "DAMAGE_OVER_TIME"
 )
 
 // Command is the envelope for mist commands published to EnvCommandTopic.
@@ -48,6 +61,10 @@ type CreateCommandBody struct {
 	TickIntervalMs   int64      `json:"tickIntervalMs"`
 	SourceSkillId    uint32     `json:"sourceSkillId"`
 	SourceSkillLevel uint32     `json:"sourceSkillLevel"`
+	// TargetKind is "CHARACTER" or "MONSTER"; empty means CHARACTER.
+	TargetKind string `json:"targetKind"`
+	// EffectKind is "DISEASE" or "DAMAGE_OVER_TIME"; empty means DISEASE.
+	EffectKind string `json:"effectKind"`
 }
 
 // CancelCommandBody requests cancellation of an existing mist by id.

@@ -1666,7 +1666,12 @@
         "fname": "CWvsContext::OnInventoryOperation",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "petSkill": {
+            "autoSpeaking": "0x100"
+          }
+        }
       },
       {
         "opCode": "0x1B",

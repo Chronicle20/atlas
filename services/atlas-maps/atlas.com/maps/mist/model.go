@@ -12,8 +12,10 @@ import (
 )
 
 // Mist represents an area-of-effect mist field placed on a map. It carries a
-// disease (status effect) that is applied to characters whose position falls
-// within its axis-aligned bounding box on each tick.
+// status effect that is applied on each tick to whatever its targetKind names
+// -- characters (the monster AREA_POISON path) or monsters (player-cast
+// mists). The disease* fields are the generic status name / magnitude /
+// per-target duration triple; the names are historical.
 type Mist struct {
 	id               uuid.UUID
 	f                field.Model
@@ -33,6 +35,8 @@ type Mist struct {
 	diseaseDuration  time.Duration
 	duration         time.Duration
 	tickInterval     time.Duration
+	targetKind       string
+	effectKind       string
 	createdAt        time.Time
 	expiresAt        time.Time
 	lastTick         time.Time
@@ -133,6 +137,19 @@ func (m Mist) DiseaseDuration() time.Duration {
 	return m.diseaseDuration
 }
 
+// TargetKind reports who this mist's per-tick effect applies to: CHARACTER or
+// MONSTER. Never empty on a mist built through Processor.Create, which
+// normalizes an absent value to CHARACTER.
+func (m Mist) TargetKind() string {
+	return m.targetKind
+}
+
+// EffectKind reports what this mist's per-tick effect does: DISEASE or
+// DAMAGE_OVER_TIME. Never empty on a mist built through Processor.Create.
+func (m Mist) EffectKind() string {
+	return m.effectKind
+}
+
 // Duration returns the total lifetime of this mist.
 func (m Mist) Duration() time.Duration {
 	return m.duration
@@ -158,13 +175,17 @@ func (m Mist) LastTick() time.Time {
 	return m.lastTick
 }
 
+// Rect returns the mist's absolute axis-aligned bounding box in world
+// coordinates: (x1, y1) top-left, (x2, y2) bottom-right. Bounds are inclusive,
+// matching Contains and the atlas-monsters in-rect endpoint.
+func (m Mist) Rect() (int16, int16, int16, int16) {
+	return m.originX + m.ltX, m.originY + m.ltY, m.originX + m.rbX, m.originY + m.rbY
+}
+
 // Contains reports whether the given world coordinates fall within the mist's
 // axis-aligned bounding box (inclusive of edges).
 func (m Mist) Contains(x, y int16) bool {
-	minX := m.originX + m.ltX
-	maxX := m.originX + m.rbX
-	minY := m.originY + m.ltY
-	maxY := m.originY + m.rbY
+	minX, minY, maxX, maxY := m.Rect()
 	return x >= minX && x <= maxX && y >= minY && y <= maxY
 }
 
@@ -208,6 +229,8 @@ type Builder struct {
 	diseaseDuration  time.Duration
 	duration         time.Duration
 	tickInterval     time.Duration
+	targetKind       string
+	effectKind       string
 	createdAt        time.Time
 	expiresAt        time.Time
 	lastTick         time.Time
@@ -272,6 +295,14 @@ func (b *Builder) SetDisease(disease string, value int32, duration time.Duration
 	return b
 }
 
+// SetKinds sets the target and effect descriptors. Grouped rather than split
+// into two single-field setters because the pair is meaningless apart.
+func (b *Builder) SetKinds(targetKind, effectKind string) *Builder {
+	b.targetKind = targetKind
+	b.effectKind = effectKind
+	return b
+}
+
 // SetDuration sets the total mist lifetime and recomputes expiresAt from createdAt.
 func (b *Builder) SetDuration(d time.Duration) *Builder {
 	b.duration = d
@@ -306,6 +337,8 @@ func (b *Builder) Build() Mist {
 		diseaseDuration:  b.diseaseDuration,
 		duration:         b.duration,
 		tickInterval:     b.tickInterval,
+		targetKind:       b.targetKind,
+		effectKind:       b.effectKind,
 		createdAt:        b.createdAt,
 		expiresAt:        b.expiresAt,
 		lastTick:         b.lastTick,

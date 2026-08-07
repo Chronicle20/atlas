@@ -194,3 +194,52 @@ func TestDestroyedEventProvider_BuildsDestroyedEvent(t *testing.T) {
 	require.Equal(t, mistKafka.ReasonExpired, event.Body.Reason)
 	require.Equal(t, id, event.MistId)
 }
+
+// TestProcessor_Create_EmptyKinds_NormalizeToCharacterDisease pins FR-2.3: the
+// existing atlas-monsters AREA_POISON producer omits the descriptors, and its
+// behavior must be unchanged.
+func TestProcessor_Create_EmptyKinds_NormalizeToCharacterDisease(t *testing.T) {
+	tt, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, _ := newTestMistProcessor(t, tt, newRecordingProducer())
+
+	m, err := p.Create(mistKafka.CreateCommandBody{
+		WorldId: 0, ChannelId: 0, MapId: 100000000, Instance: uuid.Nil,
+		OwnerType: "MONSTER", OwnerId: 7,
+		Duration: 5000, TickIntervalMs: 1000,
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if m.TargetKind() != mistKafka.TargetKindCharacter {
+		t.Fatalf("TargetKind = %q, want CHARACTER", m.TargetKind())
+	}
+	if m.EffectKind() != mistKafka.EffectKindDisease {
+		t.Fatalf("EffectKind = %q, want DISEASE", m.EffectKind())
+	}
+}
+
+// TestProcessor_Create_ExplicitKinds_RoundTrip pins the player-cast path.
+func TestProcessor_Create_ExplicitKinds_RoundTrip(t *testing.T) {
+	tt, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, _ := newTestMistProcessor(t, tt, newRecordingProducer())
+
+	m, err := p.Create(mistKafka.CreateCommandBody{
+		WorldId: 0, ChannelId: 0, MapId: 100000000, Instance: uuid.Nil,
+		OwnerType: "CHARACTER", OwnerId: 1001,
+		TargetKind: mistKafka.TargetKindMonster,
+		EffectKind: mistKafka.EffectKindDamageOverTime,
+		Duration:   4000, TickIntervalMs: 1000,
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if m.TargetKind() != mistKafka.TargetKindMonster || m.EffectKind() != mistKafka.EffectKindDamageOverTime {
+		t.Fatalf("kinds = (%q,%q), want (MONSTER,DAMAGE_OVER_TIME)", m.TargetKind(), m.EffectKind())
+	}
+}

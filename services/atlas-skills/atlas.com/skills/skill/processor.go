@@ -1,26 +1,34 @@
 package skill
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-skills/kafka/message"
 	skill2 "atlas-skills/kafka/message/skill"
-	"atlas-skills/kafka/producer"
+	"atlas-skills/macro"
 	"context"
 	"errors"
+	"strconv"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	constskill "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Processor defines the interface for skill processing operations
 type Processor interface {
-	// ByCharacterIdProvider returns a provider for all skills for a character
-	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
+	// ByCharacterIdProvider returns a provider for one page of skills for a character
+	ByCharacterIdProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]]
 
 	// ByIdProvider returns a provider for a skill by ID
 	ByIdProvider(characterId uint32, id uint32) model.Provider[Model]
@@ -43,6 +51,16 @@ type Processor interface {
 	// SetCooldownAndEmit applies a cooldown to a skill and emits a status event
 	SetCooldownAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32, cooldown uint32) (Model, error)
 
+	// ResetCooldowns clears every active cooldown for the character except
+	// the listed skill ids, buffering one COOLDOWN_EXPIRED status event per
+	// cleared skill. Returns the cleared skill ids. Registry-only — never
+	// touches the DB. An empty enumeration (or all-excepted) is a
+	// successful no-op.
+	ResetCooldowns(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, exceptSkillIds []uint32) ([]uint32, error)
+
+	// ResetCooldownsAndEmit wraps ResetCooldowns with the producer emit flow.
+	ResetCooldownsAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, exceptSkillIds []uint32) ([]uint32, error)
+
 	// ClearAll clears all cooldowns for a character
 	ClearAll(characterId uint32) error
 
@@ -63,6 +81,19 @@ type Processor interface {
 	// DeleteForSagaCompensation is the buffer-based inner form (tests use this to
 	// avoid Kafka dependency).
 	DeleteForSagaCompensation(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32) error
+
+	// WithTransaction returns a Processor that executes against the given transaction
+	WithTransaction(tx *gorm.DB) Processor
+
+	// TransferSp moves one skill point from fromSkillId to toSkillId (SP Reset
+	// item 505000<itemTier>), re-validating job tree, exclusion list, tier, and
+	// level/cap state authoritatively, and cleaning up macro references when the
+	// source drops to level 0. All mutation happens inside a single gorm
+	// transaction (see TransferSp's implementation) — see task-126 design §4.6.
+	TransferSp(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, jobId job.Id, fromSkillId uint32, toSkillId uint32, itemTier byte, targetMaxLevel byte) error
+
+	// TransferSpAndEmit wraps TransferSp with the producer emit flow.
+	TransferSpAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, jobId job.Id, fromSkillId uint32, toSkillId uint32, itemTier byte, targetMaxLevel byte) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -83,6 +114,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	return &ProcessorImpl{
 		l:   p.l,
@@ -92,10 +125,12 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	}
 }
 
-// ByCharacterIdProvider returns a provider for all skills for a character
-func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	mp := model.SliceMap(Make)(getByCharacterId(characterId)(p.db.WithContext(p.ctx)))()
-	return model.SliceMap(model.Decorate(model.Decorators(p.CooldownDecorator(characterId))))(mp)(model.ParallelMap())
+// ByCharacterIdProvider returns a provider for one page of skills for a
+// character. The cooldown decoration (live state from GetRegistry(), not DB
+// data) is applied per returned item, matching the old unpaged behavior.
+func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	mp := model.MapPaged(Make)(getByCharacterIdPaged(characterId, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
+	return model.MapPaged(model.Decorate(model.Decorators(p.CooldownDecorator(characterId))))(mp)(model.ParallelMap())
 }
 
 // ByIdProvider returns a provider for a skill by ID
@@ -133,13 +168,17 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 	}
 }
 
-// CreateAndEmit creates a new skill and emits a status event
+// CreateAndEmit creates a new skill and emits a status event. The create
+// write and the outbox enqueue share one transaction (Create's own
+// ExecuteTransaction is safely re-entrant inside this outer one).
 func (p *ProcessorImpl) CreateAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) (Model, error) {
 	var s Model
-	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		var err error
-		s, err = p.Create(buf)(transactionId, worldId, characterId, id, level, masterLevel, expiration)
-		return err
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var err error
+			s, err = p.WithTransaction(tx).Create(buf)(transactionId, worldId, characterId, id, level, masterLevel, expiration)
+			return err
+		})
 	})
 	return s, err
 }
@@ -177,13 +216,17 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 	}
 }
 
-// UpdateAndEmit updates an existing skill and emits a status event
+// UpdateAndEmit updates an existing skill and emits a status event. The
+// update write and the outbox enqueue share one transaction (Update's own
+// ExecuteTransaction is safely re-entrant inside this outer one).
 func (p *ProcessorImpl) UpdateAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) (Model, error) {
 	var s Model
-	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		var err error
-		s, err = p.Update(buf)(transactionId, worldId, characterId, id, level, masterLevel, expiration)
-		return err
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var err error
+			s, err = p.WithTransaction(tx).Update(buf)(transactionId, worldId, characterId, id, level, masterLevel, expiration)
+			return err
+		})
 	})
 	return s, err
 }
@@ -219,6 +262,56 @@ func (p *ProcessorImpl) SetCooldownAndEmit(transactionId uuid.UUID, worldId worl
 	return s, err
 }
 
+// ResetCooldowns clears every active cooldown for the character except the
+// listed skill ids. Per-skill Clear failures are logged and skipped —
+// partial success beats none, and command re-delivery is a harmless no-op.
+// Unlike SetCooldown this never touches the DB: it is registry + events only.
+func (p *ProcessorImpl) ResetCooldowns(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, exceptSkillIds []uint32) ([]uint32, error) {
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, exceptSkillIds []uint32) ([]uint32, error) {
+		cooldowns, err := GetRegistry().GetAllForCharacter(p.ctx, characterId)
+		if err != nil {
+			return nil, err
+		}
+		except := make(map[uint32]struct{}, len(exceptSkillIds))
+		for _, id := range exceptSkillIds {
+			except[id] = struct{}{}
+		}
+		cleared := make([]uint32, 0, len(cooldowns))
+		for skillId := range cooldowns {
+			if _, skip := except[skillId]; skip {
+				continue
+			}
+			if cErr := GetRegistry().Clear(p.ctx, characterId, skillId); cErr != nil {
+				p.l.WithError(cErr).Errorf("Unable to clear cooldown for character [%d] skill [%d]; continuing.", characterId, skillId)
+				continue
+			}
+			_ = mb.Put(skill2.EnvStatusEventTopic, statusEventCooldownExpiredProvider(transactionId, worldId, characterId, skillId))
+			cleared = append(cleared, skillId)
+		}
+		return cleared, nil
+	}
+}
+
+// ResetCooldownsAndEmit clears cooldowns and emits the buffered status events.
+func (p *ProcessorImpl) ResetCooldownsAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, exceptSkillIds []uint32) ([]uint32, error) {
+	var cleared []uint32
+	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		var rErr error
+		cleared, rErr = p.ResetCooldowns(buf)(transactionId, worldId, characterId, exceptSkillIds)
+		return rErr
+	})
+	if err != nil {
+		return cleared, err
+	}
+	p.l.WithFields(logrus.Fields{
+		"transaction_id":   transactionId.String(),
+		"character_id":     characterId,
+		"cleared_count":    len(cleared),
+		"except_skill_ids": exceptSkillIds,
+	}).Info("Reset skill cooldowns.")
+	return cleared, nil
+}
+
 // ExpireCooldowns expires all cooldowns that have passed their expiration time
 func ExpireCooldowns(l logrus.FieldLogger, ctx context.Context) {
 	for _, s := range GetRegistry().GetAll(ctx) {
@@ -245,14 +338,22 @@ func (p *ProcessorImpl) Delete(characterId uint32) error {
 
 // CooldownDecorator returns a decorator that adds cooldown information to a skill model
 func (p *ProcessorImpl) CooldownDecorator(characterId uint32) model.Decorator[Model] {
-	return func(m Model) Model {
-		ct, err := GetRegistry().Get(p.ctx, characterId, m.Id())
-		if err != nil {
-			return m
-		}
-		updated, _ := CloneModel(m).SetCooldownExpiresAt(ct).Build()
-		return updated
-	}
+	return model.ErrDecorator(
+		func(m Model) (Model, error) {
+			ct, err := GetRegistry().Get(p.ctx, characterId, m.Id())
+			if err != nil {
+				return m, err
+			}
+			updated, err := CloneModel(m).SetCooldownExpiresAt(ct).Build()
+			if err != nil {
+				return m, err
+			}
+			return updated, nil
+		},
+		func(m Model, err error) {
+			degrade.Observe(p.l, "skills.skill.cooldown", characterId, err)
+		},
+	)
 }
 
 // RequestCreate sends a command to create a skill
@@ -285,10 +386,140 @@ func (p *ProcessorImpl) DeleteForSagaCompensation(mb *message.Buffer) func(trans
 	}
 }
 
-// DeleteForSagaCompensationAndEmit wraps DeleteForSagaCompensation with the
-// producer emit flow.
+// DeleteForSagaCompensationAndEmit wraps DeleteForSagaCompensation with an
+// explicit transaction (the underlying deleteSkill write was previously a
+// bare, un-transacted call) and the outbox emit flow, so the delete and the
+// status-event enqueue commit atomically.
 func (p *ProcessorImpl) DeleteForSagaCompensationAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.DeleteForSagaCompensation(buf)(transactionId, worldId, characterId, skillId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).DeleteForSagaCompensation(buf)(transactionId, worldId, characterId, skillId)
+		})
 	})
+}
+
+// TransferSpAndEmit wraps TransferSp with the producer emit flow.
+func (p *ProcessorImpl) TransferSpAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, jobId job.Id, fromSkillId uint32, toSkillId uint32, itemTier byte, targetMaxLevel byte) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.TransferSp(buf)(transactionId, worldId, characterId, jobId, fromSkillId, toSkillId, itemTier, targetMaxLevel)
+	})
+}
+
+// TransferSp moves one skill point FromSkillId -> ToSkillId. Structural
+// validation (job tree, exclusion list, tier vs. itemTier) happens first and
+// needs no DB access; all state-derived validation (source level, target cap)
+// and mutation (source -1, target +1, macro cleanup) happens inside ONE
+// gorm-native transaction (p.db.Transaction — NOT database.ExecuteTransaction,
+// which is a documented no-op) so the skill rows and any macro rows commit or
+// roll back together. See task-126 design §4.6.
+func (p *ProcessorImpl) TransferSp(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, jobId job.Id, fromSkillId uint32, toSkillId uint32, itemTier byte, targetMaxLevel byte) error {
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, jobId job.Id, fromSkillId uint32, toSkillId uint32, itemTier byte, targetMaxLevel byte) error {
+		reject := func(errType string, detailSkillId uint32) error {
+			p.l.WithFields(logrus.Fields{
+				"character_id": characterId,
+				"from":         fromSkillId,
+				"to":           toSkillId,
+				"tier":         itemTier,
+			}).Warnf("Rejected SP transfer: [%s].", errType)
+			_ = mb.Put(skill2.EnvStatusEventTopic, statusEventErrorProvider(transactionId, worldId, characterId, detailSkillId, errType, strconv.FormatUint(uint64(detailSkillId), 10)))
+			return nil
+		}
+
+		// Structural validation (no DB needed).
+		fromJob := job.IdFromSkillId(constskill.Id(fromSkillId))
+		toJob := job.IdFromSkillId(constskill.Id(toSkillId))
+		if !job.Is(jobId, fromJob) || !job.Is(jobId, toJob) {
+			return reject(skill2.StatusEventErrorTypeInvalidTarget, toSkillId)
+		}
+		if constskill.IsPointResetExcluded(constskill.Id(fromSkillId)) || constskill.IsPointResetExcluded(constskill.Id(toSkillId)) {
+			return reject(skill2.StatusEventErrorTypeInvalidTarget, toSkillId)
+		}
+		fromTier := job.Advancement(fromJob)
+		toTier := job.Advancement(toJob)
+		if toTier != int(itemTier) || fromTier < 1 || fromTier > int(itemTier) {
+			return reject(skill2.StatusEventErrorTypeWrongTier, toSkillId)
+		}
+
+		return p.db.Transaction(func(tx *gorm.DB) error {
+			sp := p.WithTransaction(tx)
+
+			from, err := sp.ByIdProvider(characterId, fromSkillId)()
+			if err != nil || from.Level() == 0 {
+				return reject(skill2.StatusEventErrorTypeSkillAtZero, fromSkillId)
+			}
+
+			// Target row may not exist yet: treat as level 0 / masterLevel 0.
+			var toLevel, toMaster byte
+			var toExists bool
+			var toExpiration time.Time
+			if to, err := sp.ByIdProvider(characterId, toSkillId)(); err == nil {
+				toLevel, toMaster, toExpiration, toExists = to.Level(), to.MasterLevel(), to.Expiration(), true
+			}
+
+			effectiveCap := targetMaxLevel
+			if job.IsFourthJob(toJob) {
+				effectiveCap = toMaster // 4th-job cap is the earned master level (design §9.2)
+			}
+			if toLevel >= effectiveCap {
+				return reject(skill2.StatusEventErrorTypeSkillAtCap, toSkillId)
+			}
+
+			newFromLevel := from.Level() - 1
+			newToLevel := toLevel + 1
+
+			// Apply: source -1, target +1 (master levels untouched, FR-15/16).
+			if _, err := sp.Update(mb)(transactionId, worldId, characterId, fromSkillId, newFromLevel, from.MasterLevel(), from.Expiration()); err != nil {
+				return err
+			}
+			if toExists {
+				if _, err := sp.Update(mb)(transactionId, worldId, characterId, toSkillId, newToLevel, toMaster, toExpiration); err != nil {
+					return err
+				}
+			} else {
+				if _, err := sp.Create(mb)(transactionId, worldId, characterId, toSkillId, newToLevel, 0, time.Time{}); err != nil {
+					return err
+				}
+			}
+
+			// Macro cleanup (FR-18) inside the same tx — only when the source
+			// skill drops to level 0.
+			if newFromLevel == 0 {
+				mp := macro.NewProcessor(p.l, p.ctx, tx)
+				macros, err := mp.ByCharacterIdProvider(characterId)()
+				if err != nil {
+					return err
+				}
+				changed := false
+				updated := make([]macro.Model, 0, len(macros))
+				for _, m := range macros {
+					b := macro.CloneModel(m)
+					if uint32(m.SkillId1()) == fromSkillId {
+						b = b.SetSkillId1(0)
+						changed = true
+					}
+					if uint32(m.SkillId2()) == fromSkillId {
+						b = b.SetSkillId2(0)
+						changed = true
+					}
+					if uint32(m.SkillId3()) == fromSkillId {
+						b = b.SetSkillId3(0)
+						changed = true
+					}
+					nm, err := b.Build()
+					if err != nil {
+						return err
+					}
+					updated = append(updated, nm)
+				}
+				if changed {
+					if _, err := mp.Update(mb)(transactionId, worldId, characterId, updated); err != nil {
+						return err
+					}
+				}
+			}
+
+			_ = mb.Put(skill2.EnvStatusEventTopic, statusEventSpTransferredProvider(transactionId, worldId, characterId, toSkillId, fromSkillId, newFromLevel, newToLevel))
+			return nil
+		})
+	}
 }

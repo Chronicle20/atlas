@@ -1,0 +1,10 @@
+packet: character/serverbound/DeleteCharacter
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_50043F
+    address: "0x50043f"
+    decompile_sha256: fcb3df115416c6a39248b25b8fa8446f56c6bccc0f3fcf93cd9d283bc3fd3678
+verifies:
+    - libs/atlas-packet/character/serverbound/delete_test.go#TestDeleteCharacterV48ByteOutput

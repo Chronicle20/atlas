@@ -9,9 +9,14 @@
  * perform the complete tenant onboarding flow.
  */
 
-import { tenantsService, type TenantBasic, type TenantConfig, type TenantConfigAttributes } from './tenants.service';
-import { templatesService } from './templates.service';
-import type { Template } from '@/types/models/template';
+import {
+  tenantsService,
+  type TenantBasic,
+  type TenantConfig,
+  type TenantConfigAttributes,
+} from "./tenants.service";
+import { templatesService } from "./templates.service";
+import type { Template } from "@/types/models/template";
 
 /**
  * Result of a successful tenant onboarding
@@ -26,8 +31,10 @@ export interface OnboardResult {
  */
 export class TemplateNotFoundError extends Error {
   constructor(region: string, majorVersion: number, minorVersion: number) {
-    super(`Template not found for region=${region}, majorVersion=${majorVersion}, minorVersion=${minorVersion}`);
-    this.name = 'TemplateNotFoundError';
+    super(
+      `Template not found for region=${region}, majorVersion=${majorVersion}, minorVersion=${minorVersion}`,
+    );
+    this.name = "TemplateNotFoundError";
   }
 }
 
@@ -36,7 +43,7 @@ export class TenantCreationError extends Error {
 
   constructor(message: string, originalError?: unknown) {
     super(message);
-    this.name = 'TenantCreationError';
+    this.name = "TenantCreationError";
     this.originalError = originalError;
   }
 }
@@ -47,7 +54,7 @@ export class ConfigurationCreationError extends Error {
 
   constructor(message: string, tenantId: string, originalError?: unknown) {
     super(message);
-    this.name = 'ConfigurationCreationError';
+    this.name = "ConfigurationCreationError";
     this.tenantId = tenantId;
     this.originalError = originalError;
   }
@@ -72,7 +79,10 @@ class OnboardingService {
    * @throws TenantCreationError if tenant creation fails
    * @throws ConfigurationCreationError if config creation fails (includes tenant ID for recovery)
    */
-  async onboardTenant(name: string, template: Template): Promise<OnboardResult> {
+  async onboardTenant(
+    name: string,
+    template: Template,
+  ): Promise<OnboardResult> {
     // Step 1: Create tenant in atlas-tenants
     let tenant: TenantBasic;
     try {
@@ -84,8 +94,8 @@ class OnboardingService {
       });
     } catch (error) {
       throw new TenantCreationError(
-        'Failed to create tenant in atlas-tenants',
-        error
+        "Failed to create tenant in atlas-tenants",
+        error,
       );
     }
 
@@ -102,17 +112,22 @@ class OnboardingService {
         npcs: template.attributes.npcs,
         socket: template.attributes.socket,
         worlds: template.attributes.worlds,
-        ...(template.attributes.cashShop !== undefined && { cashShop: template.attributes.cashShop }),
+        ...(template.attributes.cashShop !== undefined && {
+          cashShop: template.attributes.cashShop,
+        }),
       };
 
       // Pass tenant ID to ensure configuration uses the same UUID
-      config = await tenantsService.createTenantConfiguration(tenant.id, configAttributes);
+      config = await tenantsService.createTenantConfiguration(
+        tenant.id,
+        configAttributes,
+      );
     } catch (error) {
       // Provide tenant ID in error for potential manual recovery
       throw new ConfigurationCreationError(
         `Failed to create configuration in atlas-configurations. Tenant ${tenant.id} was created but has no configuration.`,
         tenant.id,
-        error
+        error,
       );
     }
 
@@ -138,13 +153,13 @@ class OnboardingService {
     name: string,
     region: string,
     majorVersion: number,
-    minorVersion: number
+    minorVersion: number,
   ): Promise<OnboardResult> {
     // Fetch the template by version
     const templates = await templatesService.getByRegionAndVersion(
       region,
       majorVersion,
-      minorVersion
+      minorVersion,
     );
 
     const template = templates[0];

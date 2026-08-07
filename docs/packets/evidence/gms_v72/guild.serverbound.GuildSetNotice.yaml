@@ -1,0 +1,10 @@
+packet: guild/serverbound/GuildSetNotice
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendSetGuildNoticeMsg
+    address: "0x5154fd"
+    decompile_sha256: 787baecbc0212741ae04a11251b674ed987c5183a6b9586c4581738e7f93e5cd
+verifies:
+  - libs/atlas-packet/guild/serverbound/operation_set_notice_test.go#TestSetNoticeRoundTrip

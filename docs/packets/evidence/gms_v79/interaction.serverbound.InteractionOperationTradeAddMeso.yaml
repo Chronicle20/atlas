@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationTradeAddMeso
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CTradingRoomDlg::PutMoney
+    address: "0x736ec4"
+    decompile_sha256: 94c9def329adca7ccb6f439fe94dd8dbcc5f1d7ff2914cdc6c8652c52ac779c3
+verifies:
+  - libs/atlas-packet/interaction/serverbound/operation_trade_add_meso_test.go#TestOperationTradeAddMesoRoundTrip

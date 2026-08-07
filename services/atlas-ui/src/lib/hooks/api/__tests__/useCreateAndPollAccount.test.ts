@@ -9,20 +9,21 @@ const tenant = {
   attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
 } as never;
 
-const accountFixture = (id: string, name: string) => ({
-  id,
-  type: "accounts",
-  attributes: {
-    name,
-    gender: 0,
-    loggedIn: 0,
-    lastLogin: 0,
-    characterSlots: 3,
-    pinAttempts: 0,
-    picAttempts: 0,
-    tos: false,
-  },
-}) as never;
+const accountFixture = (id: string, name: string) =>
+  ({
+    id,
+    type: "accounts",
+    attributes: {
+      name,
+      gender: 0,
+      loggedIn: 0,
+      lastLogin: 0,
+      characterSlots: 3,
+      pinAttempts: 0,
+      picAttempts: 0,
+      tos: false,
+    },
+  }) as never;
 
 describe("useCreateAndPollAccount", () => {
   beforeEach(() => {
@@ -42,7 +43,9 @@ describe("useCreateAndPollAccount", () => {
   });
 
   it("transitions submitting → polling → success when account materialises", async () => {
-    const create = vi.spyOn(accountsService, "createAccount").mockResolvedValue();
+    const create = vi
+      .spyOn(accountsService, "createAccount")
+      .mockResolvedValue();
     const list = vi
       .spyOn(accountsService, "getAllAccounts")
       .mockResolvedValueOnce([])
@@ -115,8 +118,12 @@ describe("useCreateAndPollAccount", () => {
   });
 
   it("retry() from timeout re-polls without re-creating the account", async () => {
-    const create = vi.spyOn(accountsService, "createAccount").mockResolvedValue();
-    const list = vi.spyOn(accountsService, "getAllAccounts").mockResolvedValue([]);
+    const create = vi
+      .spyOn(accountsService, "createAccount")
+      .mockResolvedValue();
+    const list = vi
+      .spyOn(accountsService, "getAllAccounts")
+      .mockResolvedValue([]);
 
     const { result } = renderHook(() => useCreateAndPollAccount(tenant));
     void act(() => {
@@ -165,12 +172,14 @@ describe("useCreateAndPollAccount", () => {
 
   it("bails out if tenant.id changes mid-poll", async () => {
     vi.spyOn(accountsService, "createAccount").mockResolvedValue();
-    const list = vi.spyOn(accountsService, "getAllAccounts").mockResolvedValue([]);
+    const list = vi
+      .spyOn(accountsService, "getAllAccounts")
+      .mockResolvedValue([]);
 
     const initialTenant = tenant;
     const { result, rerender } = renderHook(
       ({ t }: { t: typeof tenant }) => useCreateAndPollAccount(t),
-      { initialProps: { t: initialTenant } }
+      { initialProps: { t: initialTenant } },
     );
 
     void act(() => {

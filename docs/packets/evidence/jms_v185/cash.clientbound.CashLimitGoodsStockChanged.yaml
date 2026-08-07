@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashLimitGoodsStockChanged
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#LIMIT_GOODS_STOCK_CHANGED
+    address: "0x48d4d4"
+    decompile_sha256: 45cf7ea2d530dc86b781ce7d8e14c18db3fbcea558888119a3d037f80a0d1d1b
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_jms_test.go#TestLimitGoodsStockChangedByteFixture

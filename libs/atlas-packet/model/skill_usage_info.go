@@ -3,9 +3,10 @@ package model
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 type SkillUsageInfo struct {
@@ -56,6 +57,10 @@ func (m *SkillUsageInfo) SkillId() uint32 {
 
 func (m *SkillUsageInfo) SkillLevel() byte {
 	return m.skillLevel
+}
+
+func (m *SkillUsageInfo) SpiritJavelinItemId() uint32 {
+	return m.spiritJavelinItemId
 }
 
 func (m *SkillUsageInfo) AffectedPartyMemberBitmap() byte {
@@ -168,7 +173,6 @@ func isMobAffectingBuff(skillId skill.Id) bool {
 		skill.ShadowerMapleWarriorId,
 		skill.BuccaneerMapleWarriorId,
 		skill.BuccaneerSpeedInfusionId,
-		skill.BuccaneerTimeLeapId,
 		skill.CorsairMapleWarriorId,
 		skill.CorsairSpeedInfusionId,
 		skill.DawnWarriorStage1IronBodyId,
@@ -205,6 +209,14 @@ func isPartyBuff(skillId skill.Id) bool {
 		skill.ClericHealId,
 		skill.ClericBlessId,
 		skill.PriestDispelId,
+		// BishopResurrectionId: the v83 client writes the affected-member
+		// bitmap for 2321006 (CUserLocal::SendSkillUseRequest @0x96d399 —
+		// bitmap byte present whenever non-zero, and FindParty @0x96db3f
+		// special-cases 2321006 to set bits for DEAD members only; the client
+		// never sends the packet with a zero bitmap). Not anti-repeat
+		// (@0x96d6ca) and not mob-affecting: wire is
+		// updateTime(4) skillId(4) slv(1) bitmap(1) delay(2).
+		skill.BishopResurrectionId,
 		skill.PriestHolySymbolId,
 		skill.BishopMapleWarriorId,
 		skill.BishopHolyShieldId,
@@ -227,7 +239,7 @@ func isPartyBuff(skillId skill.Id) bool {
 		skill.AranStage4ComboBarrierId,
 		skill.EvanStage5MagicShieldId,
 		skill.EvanStage7MagicResistanceId,
-		//skill.EvanStage8RecoveryAuraId,
+		// skill.EvanStage8RecoveryAuraId,
 		skill.EvanStage9MapleWarriorId,
 	)
 }
@@ -269,7 +281,6 @@ func isAntiRepeatBuffSkill(skillId skill.Id) bool {
 		skill.ShadowerMapleWarriorId,
 		skill.BuccaneerMapleWarriorId,
 		skill.BuccaneerSpeedInfusionId,
-		skill.BuccaneerTimeLeapId,
 		skill.CorsairMapleWarriorId,
 		skill.CorsairSpeedInfusionId,
 		skill.DawnWarriorStage1IronBodyId,

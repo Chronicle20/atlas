@@ -21,6 +21,7 @@ A microservice that manages item and meso drops within game maps. Drops are stor
 | REST_PORT | HTTP server port |
 | SERVICE_ID | UUID identifying this service instance |
 | CONFIGURATIONS | Base URL for atlas-configurations service |
+| BASE_SERVICE_URL | Fallback base service URL used when CONFIGURATIONS is unset |
 | COMMAND_TOPIC_DROP | Kafka topic for drop commands |
 | EVENT_TOPIC_DROP_STATUS | Kafka topic for drop status events |
 

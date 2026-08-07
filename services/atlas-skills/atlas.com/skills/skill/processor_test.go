@@ -2,17 +2,22 @@ package skill_test
 
 import (
 	"atlas-skills/kafka/message"
+	skillmsg "atlas-skills/kafka/message/skill"
 	"atlas-skills/skill"
 	"atlas-skills/test"
+	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func setupCooldownRegistry(t *testing.T) {
@@ -51,12 +56,12 @@ func TestByCharacterIdProvider_Empty(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
-	skills, err := processor.ByCharacterIdProvider(12345)()
+	skills, err := processor.ByCharacterIdProvider(12345, model.Page{Number: 1, Size: 250})()
 	if err != nil {
 		t.Fatalf("ByCharacterIdProvider() unexpected error: %v", err)
 	}
-	if len(skills) != 0 {
-		t.Errorf("len(skills) = %d, want 0", len(skills))
+	if len(skills.Items) != 0 {
+		t.Errorf("len(skills.Items) = %d, want 0", len(skills.Items))
 	}
 }
 
@@ -80,12 +85,12 @@ func TestByCharacterIdProvider_WithSkills(t *testing.T) {
 		t.Fatalf("Create() unexpected error: %v", err)
 	}
 
-	skills, err := processor.ByCharacterIdProvider(characterId)()
+	skills, err := processor.ByCharacterIdProvider(characterId, model.Page{Number: 1, Size: 250})()
 	if err != nil {
 		t.Fatalf("ByCharacterIdProvider() unexpected error: %v", err)
 	}
-	if len(skills) != 2 {
-		t.Errorf("len(skills) = %d, want 2", len(skills))
+	if len(skills.Items) != 2 {
+		t.Errorf("len(skills.Items) = %d, want 2", len(skills.Items))
 	}
 }
 
@@ -251,9 +256,9 @@ func TestDelete(t *testing.T) {
 	_, _ = processor.Create(mb)(transactionId, worldId, characterId, 1001002, 5, 15, expiration)
 
 	// Verify skills exist
-	skills, _ := processor.ByCharacterIdProvider(characterId)()
-	if len(skills) != 2 {
-		t.Fatalf("Expected 2 skills before delete, got %d", len(skills))
+	skills, _ := processor.ByCharacterIdProvider(characterId, model.Page{Number: 1, Size: 250})()
+	if len(skills.Items) != 2 {
+		t.Fatalf("Expected 2 skills before delete, got %d", len(skills.Items))
 	}
 
 	// Delete all skills for character
@@ -263,9 +268,9 @@ func TestDelete(t *testing.T) {
 	}
 
 	// Verify skills are deleted
-	skills, _ = processor.ByCharacterIdProvider(characterId)()
-	if len(skills) != 0 {
-		t.Errorf("len(skills) = %d, want 0 after delete", len(skills))
+	skills, _ = processor.ByCharacterIdProvider(characterId, model.Page{Number: 1, Size: 250})()
+	if len(skills.Items) != 0 {
+		t.Errorf("len(skills.Items) = %d, want 0 after delete", len(skills.Items))
 	}
 }
 
@@ -371,12 +376,12 @@ func TestMultipleSkillsForCharacter(t *testing.T) {
 	}
 
 	// Fetch all skills
-	skills, err := processor.ByCharacterIdProvider(characterId)()
+	skills, err := processor.ByCharacterIdProvider(characterId, model.Page{Number: 1, Size: 250})()
 	if err != nil {
 		t.Fatalf("ByCharacterIdProvider() unexpected error: %v", err)
 	}
-	if len(skills) != len(skillIds) {
-		t.Errorf("len(skills) = %d, want %d", len(skills), len(skillIds))
+	if len(skills.Items) != len(skillIds) {
+		t.Errorf("len(skills.Items) = %d, want %d", len(skills.Items), len(skillIds))
 	}
 }
 
@@ -409,15 +414,15 @@ func TestDifferentCharacters(t *testing.T) {
 	}
 
 	// Verify character 1 has 2 skills
-	skills1, _ := processor.ByCharacterIdProvider(char1)()
-	if len(skills1) != 2 {
-		t.Errorf("Character 1 skills = %d, want 2", len(skills1))
+	skills1, _ := processor.ByCharacterIdProvider(char1, model.Page{Number: 1, Size: 250})()
+	if len(skills1.Items) != 2 {
+		t.Errorf("Character 1 skills = %d, want 2", len(skills1.Items))
 	}
 
 	// Verify character 2 has 1 skill
-	skills2, _ := processor.ByCharacterIdProvider(char2)()
-	if len(skills2) != 1 {
-		t.Errorf("Character 2 skills = %d, want 1", len(skills2))
+	skills2, _ := processor.ByCharacterIdProvider(char2, model.Page{Number: 1, Size: 250})()
+	if len(skills2.Items) != 1 {
+		t.Errorf("Character 2 skills = %d, want 1", len(skills2.Items))
 	}
 }
 
@@ -460,5 +465,162 @@ func TestDeleteForSagaCompensation_Missing(t *testing.T) {
 	err := processor.DeleteForSagaCompensation(mb)(uuid.New(), world.Id(0), 9999 /* char */, 1001001 /* skill */)
 	if err != nil {
 		t.Fatalf("DeleteForSagaCompensation should be idempotent on missing row, got error: %v", err)
+	}
+}
+
+func setupResetProcessor(t *testing.T) (skill.Processor, context.Context, func()) {
+	t.Helper()
+	setupCooldownRegistry(t)
+	db := test.SetupTestDB(t)
+	ctx := test.CreateTestContext()
+	logger, _ := logtest.NewNullLogger()
+	processor := skill.NewProcessor(logger, ctx, db)
+	return processor, ctx, func() { test.CleanupTestDB(db) }
+}
+
+func decodeCooldownExpiredEvents(t *testing.T, mb *message.Buffer) []skillmsg.StatusEvent[skillmsg.StatusEventCooldownExpiredBody] {
+	t.Helper()
+	events := make([]skillmsg.StatusEvent[skillmsg.StatusEventCooldownExpiredBody], 0)
+	for _, m := range mb.GetAll()[skillmsg.EnvStatusEventTopic] {
+		var e skillmsg.StatusEvent[skillmsg.StatusEventCooldownExpiredBody]
+		if err := json.Unmarshal(m.Value, &e); err != nil {
+			t.Fatalf("failed to decode buffered event: %v", err)
+		}
+		events = append(events, e)
+	}
+	return events
+}
+
+func TestResetCooldowns_ClearsAllButExcepted(t *testing.T) {
+	processor, ctx, cleanup := setupResetProcessor(t)
+	defer cleanup()
+
+	characterId := uint32(100)
+	if err := skill.GetRegistry().Apply(ctx, characterId, 5121010, 2940); err != nil {
+		t.Fatalf("Apply() unexpected error: %v", err)
+	}
+	if err := skill.GetRegistry().Apply(ctx, characterId, 1311006, 300); err != nil {
+		t.Fatalf("Apply() unexpected error: %v", err)
+	}
+	if err := skill.GetRegistry().Apply(ctx, characterId, 5221006, 60); err != nil {
+		t.Fatalf("Apply() unexpected error: %v", err)
+	}
+
+	transactionId := uuid.New()
+	worldId := world.Id(1)
+	mb := message.NewBuffer()
+	cleared, err := processor.ResetCooldowns(mb)(transactionId, worldId, characterId, []uint32{5121010})
+	if err != nil {
+		t.Fatalf("ResetCooldowns() unexpected error: %v", err)
+	}
+	if len(cleared) != 2 {
+		t.Fatalf("cleared = %v, want 2 entries", cleared)
+	}
+	for _, id := range cleared {
+		if id == 5121010 {
+			t.Fatalf("excepted skill 5121010 was cleared")
+		}
+	}
+
+	// Registry: excepted survives, others are gone.
+	if _, err := skill.GetRegistry().Get(ctx, characterId, 5121010); err != nil {
+		t.Fatalf("excepted cooldown 5121010 missing from registry: %v", err)
+	}
+	if _, err := skill.GetRegistry().Get(ctx, characterId, 1311006); err == nil {
+		t.Fatalf("cooldown 1311006 still in registry after reset")
+	}
+	if _, err := skill.GetRegistry().Get(ctx, characterId, 5221006); err == nil {
+		t.Fatalf("cooldown 5221006 still in registry after reset")
+	}
+
+	// Events: one COOLDOWN_EXPIRED per cleared skill with real ids.
+	events := decodeCooldownExpiredEvents(t, mb)
+	if len(events) != 2 {
+		t.Fatalf("buffered %d events, want 2", len(events))
+	}
+	seen := map[uint32]bool{}
+	for _, e := range events {
+		if e.Type != skillmsg.StatusEventTypeCooldownExpired {
+			t.Errorf("event type = %s, want COOLDOWN_EXPIRED", e.Type)
+		}
+		if e.TransactionId != transactionId {
+			t.Errorf("event transactionId = %s, want %s", e.TransactionId, transactionId)
+		}
+		if e.WorldId != worldId {
+			t.Errorf("event worldId = %d, want %d", e.WorldId, worldId)
+		}
+		if e.CharacterId != characterId {
+			t.Errorf("event characterId = %d, want %d", e.CharacterId, characterId)
+		}
+		seen[e.SkillId] = true
+	}
+	if !seen[1311006] || !seen[5221006] {
+		t.Errorf("events cover skills %v, want 1311006 and 5221006", seen)
+	}
+	if seen[5121010] {
+		t.Errorf("event emitted for excepted skill 5121010")
+	}
+}
+
+func TestResetCooldowns_NoActiveCooldowns_NoOp(t *testing.T) {
+	processor, _, cleanup := setupResetProcessor(t)
+	defer cleanup()
+
+	mb := message.NewBuffer()
+	cleared, err := processor.ResetCooldowns(mb)(uuid.New(), world.Id(0), 100, []uint32{5121010})
+	if err != nil {
+		t.Fatalf("ResetCooldowns() unexpected error: %v", err)
+	}
+	if len(cleared) != 0 {
+		t.Fatalf("cleared = %v, want empty", cleared)
+	}
+	if len(decodeCooldownExpiredEvents(t, mb)) != 0 {
+		t.Fatalf("events buffered for no-op reset")
+	}
+}
+
+func TestResetCooldowns_AllExcepted_NoOp(t *testing.T) {
+	processor, ctx, cleanup := setupResetProcessor(t)
+	defer cleanup()
+
+	characterId := uint32(100)
+	if err := skill.GetRegistry().Apply(ctx, characterId, 5121010, 2940); err != nil {
+		t.Fatalf("Apply() unexpected error: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	cleared, err := processor.ResetCooldowns(mb)(uuid.New(), world.Id(0), characterId, []uint32{5121010})
+	if err != nil {
+		t.Fatalf("ResetCooldowns() unexpected error: %v", err)
+	}
+	if len(cleared) != 0 {
+		t.Fatalf("cleared = %v, want empty", cleared)
+	}
+	if len(decodeCooldownExpiredEvents(t, mb)) != 0 {
+		t.Fatalf("events buffered when every cooldown was excepted")
+	}
+	if _, err := skill.GetRegistry().Get(ctx, characterId, 5121010); err != nil {
+		t.Fatalf("excepted cooldown removed: %v", err)
+	}
+}
+
+func TestResetCooldowns_MultipleExceptions(t *testing.T) {
+	processor, ctx, cleanup := setupResetProcessor(t)
+	defer cleanup()
+
+	characterId := uint32(100)
+	for _, id := range []uint32{5121010, 1311006, 5221006} {
+		if err := skill.GetRegistry().Apply(ctx, characterId, id, 60); err != nil {
+			t.Fatalf("Apply() unexpected error: %v", err)
+		}
+	}
+
+	mb := message.NewBuffer()
+	cleared, err := processor.ResetCooldowns(mb)(uuid.New(), world.Id(0), characterId, []uint32{5121010, 1311006})
+	if err != nil {
+		t.Fatalf("ResetCooldowns() unexpected error: %v", err)
+	}
+	if len(cleared) != 1 || cleared[0] != 5221006 {
+		t.Fatalf("cleared = %v, want [5221006]", cleared)
 	}
 }

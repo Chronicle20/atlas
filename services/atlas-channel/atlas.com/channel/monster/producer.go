@@ -3,10 +3,11 @@ package monster
 import (
 	monster2 "atlas-channel/kafka/message/monster"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func ApplyStatusCommandProvider(f field.Model, monsterId uint32, sourceCharacterId uint32, sourceSkillId uint32, sourceSkillLevel uint32, statuses map[string]int32, duration uint32) model.Provider[[]kafka.Message] {
@@ -161,6 +162,27 @@ func DrainMpCommandProvider(f field.Model, monsterId uint32, characterId uint32,
 			CharacterId: characterId,
 			SkillId:     skillId,
 			Amount:      amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// KillCommandProvider builds the KILL command for atlas-monsters to kill a
+// monster as the result of a Mortal Blow proc. Keyed by the monster's
+// unique id so it lands on the same partition as the triggering DAMAGE
+// command and processes after it — if the attack itself already killed the
+// monster, atlas-monsters finds it gone and drops the kill silently.
+func KillCommandProvider(f field.Model, monsterId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(monsterId))
+	value := &monster2.Command[monster2.KillCommandBody]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		MonsterId: monsterId,
+		Type:      monster2.CommandTypeKill,
+		Body: monster2.KillCommandBody{
+			CharacterId: characterId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

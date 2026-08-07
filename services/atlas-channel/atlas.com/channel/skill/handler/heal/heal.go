@@ -1,24 +1,26 @@
 package heal
 
 import (
+	"atlas-channel/character"
+	"atlas-channel/data/skill/effect"
+	"atlas-channel/effective_stats"
+	"atlas-channel/session"
+	"atlas-channel/socket/writer"
 	"context"
 	"math"
 	"math/rand"
 
-	"atlas-channel/character"
-	"atlas-channel/data/skill/effect"
-	"atlas-channel/effective_stats"
 	character2 "atlas-channel/kafka/message/character"
 	channelmap "atlas-channel/map"
-	"atlas-channel/session"
+
 	channelhandler "atlas-channel/skill/handler"
 	socketHandler "atlas-channel/socket/handler"
-	"atlas-channel/socket/writer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
 )
 
 // effectiveMaxHpOrBase narrows the effective MaxHp from
@@ -37,7 +39,7 @@ func effectiveMaxHpOrBase(effective uint32, base uint16) uint16 {
 }
 
 func init() {
-	channelhandler.Register(skill2.ClericHealId, Apply)
+	channelhandler.Register(skill2.ClericHeal, Apply)
 }
 
 // Apply is the Heal handler installed in the per-skill registry.
@@ -91,7 +93,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				stats = effective_stats.RestModel{Intelligence: uint32(c.Intelligence())}
 			}
 
-			warnIfMissingRectangle(skill2.Id(info.SkillId()), info.SkillLevel(), e, func() {
+			channelhandler.WarnIfMissingRectangle(skill2.Id(info.SkillId()), info.SkillLevel(), e, func() {
 				l.Warnf("Heal: skill effect [%d] level [%d] has no LT/RB rectangle — falling back to caster-only.", info.SkillId(), info.SkillLevel())
 			})
 

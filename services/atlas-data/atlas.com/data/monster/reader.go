@@ -10,9 +10,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 func parseMonsterId(filePath string) (uint32, error) {
@@ -26,7 +27,6 @@ func parseMonsterId(filePath string) (uint32, error) {
 		return 0, err
 	}
 	return uint32(id), nil
-
 }
 
 func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[RestModel] {
@@ -65,6 +65,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 			m.ExplosiveReward = node.GetIntegerWithDefault("explosiveReward", 0) > 0
 			m.FFALoot = node.GetIntegerWithDefault("publicReward", 0) > 0
 			m.Undead = node.GetIntegerWithDefault("undead", 0) > 0
+			m.FixedDamage = uint32(node.GetIntegerWithDefault("fixedDamage", 0))
 			ms, err := GetMonsterStringRegistry().Get(t, strconv.Itoa(int(monsterId)))
 			if err != nil {
 				return model.ErrorProvider[RestModel](err)

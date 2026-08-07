@@ -1,27 +1,29 @@
 package mysticdoor
 
 import (
-	"context"
-
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
-	datamap "atlas-channel/data/map"
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/data/skill/effect/statup"
 	"atlas-channel/door"
 	"atlas-channel/socket/writer"
+	"context"
+
+	datamap "atlas-channel/data/map"
+
 	channelhandler "atlas-channel/skill/handler"
+
+	"github.com/sirupsen/logrus"
 
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
 )
 
 func init() {
-	channelhandler.Register(skill2.PriestMysticDoorId, Apply)
+	channelhandler.Register(skill2.PriestMysticDoor, Apply)
 }
 
 // loadMap retrieves the map's fieldLimit, town flag, and whether a valid

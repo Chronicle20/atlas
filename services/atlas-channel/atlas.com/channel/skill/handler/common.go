@@ -11,7 +11,10 @@ import (
 	"context"
 	"math/rand"
 
+	"github.com/sirupsen/logrus"
+
 	charcon "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	inventoryconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
@@ -21,7 +24,6 @@ import (
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // loadCasterFunc is the caster-load seam tests can replace. Production
@@ -32,10 +34,23 @@ var loadCasterFunc = func(cp character.Processor, characterId uint32) (character
 	return cp.GetById()(characterId)
 }
 
+// loadCasterWithInventoryFunc is the inventory-decorated caster-load seam the
+// generic itemCon consume path uses (it needs an arbitrary compartment, not
+// just the USE compartment loadCasterInventoryFunc returns). Tests replace it.
+var loadCasterWithInventoryFunc = func(cp character.Processor, characterId uint32) (character.Model, error) {
+	return cp.GetById(cp.InventoryDecorator)(characterId)
+}
+
+// requestItemConsumeFunc is the consumable-request seam tests can replace.
+// Production delegates to consumable.Processor.RequestItemConsume.
+var requestItemConsumeFunc = func(p consumable.Processor, f field.Model, characterId charcon.Id, itemId itemconst.Id, source slot.Position, quantity int16, updateTime uint32) error {
+	return p.RequestItemConsume(f, characterId, itemId, source, quantity, updateTime)
+}
+
 // rectQueryFunc is the mob-selection seam tests can replace. Production
 // calls atlas-monsters via monster.Processor.GetInMapRect; tests inject a
 // stub returning a fixed slice.
-var rectQueryFunc = func(p *monster.Processor, f field.Model, x1, y1, x2, y2 int16, limit uint32) ([]monster.Model, error) {
+var rectQueryFunc = func(p monster.Processor, f field.Model, x1, y1, x2, y2 int16, limit uint32) ([]monster.Model, error) {
 	return p.GetInMapRect(f, x1, y1, x2, y2, limit)
 }
 
@@ -58,18 +73,63 @@ var reflectLookupFunc = func(t tenant.Model, monsterId uint32, kind string) (mon
 }
 
 // applyStatusFunc is the status-apply emit seam tests can replace.
-var applyStatusFunc = func(p *monster.Processor, f field.Model, monsterId, characterId, skillId, skillLevel uint32, statuses map[string]int32, duration uint32) error {
+var applyStatusFunc = func(p monster.Processor, f field.Model, monsterId, characterId, skillId, skillLevel uint32, statuses map[string]int32, duration uint32) error {
 	return p.ApplyStatus(f, monsterId, characterId, skillId, skillLevel, statuses, duration)
 }
 
 // cancelStatusFunc is the status-cancel emit seam tests can replace.
-var cancelStatusFunc = func(p *monster.Processor, f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId, sourceSkillId uint32, sourceSkillClass string) error {
+var cancelStatusFunc = func(p monster.Processor, f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId, sourceSkillId uint32, sourceSkillClass string) error {
 	return p.CancelStatus(f, monsterId, statusTypes, sourceCharacterId, sourceSkillId, sourceSkillClass)
+}
+
+// applyCooldownFunc is the cast-time cooldown emit seam tests can replace.
+var applyCooldownFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model, skillId skill2.Id, cooldown uint32, characterId uint32) error {
+	return skill.NewProcessor(l, ctx).ApplyCooldown(f, skillId, cooldown)(characterId)
+}
+
+// shouldApplyCastCooldown gates the generic cast-time cooldown. Battleship
+// (5221006) is exempt: its cooldown applies only when the ship breaks, never
+// on cast (FR-2.3/FR-4.3) — the WZ cooltime would otherwise fire here.
+func shouldApplyCastCooldown(cooldown uint32, skillId skill2.Id) bool {
+	return cooldown > 0 && !skill2.IsBattleshipMountSkill(skillId)
 }
 
 func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
 	return func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
 		return func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
+			// Resolved once and reused for every version-sensitive wire-id
+			// comparison in this closure (task-187): a raw wire-keyed compare
+			// cannot tell a v0.48 SuperGM Hide cast (wire 5101004) apart from a
+			// v0.62+ Brawler Corkscrew Blow cast (same wire).
+			t := tenant.MustFromContext(ctx)
+			set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+			castId, castIdOk := set.Skill.Resolve(skill2.Id(info.SkillId()))
+
+			// Shadow Stars pre-flight (FR-5): validate the client-chosen star
+			// and resolve the cast cost BEFORE any HP/MP/cooldown spend. A bogus
+			// or unowned star aborts the whole cast — no MP, no cooldown, no buff,
+			// no consume — so a crafted client cannot inject an id into the buff
+			// or trigger consumption of an unintended item.
+			statupsToApply := e.StatUps()
+			var shadowStarDraws []StarDraw
+			if castIdOk && skill2.IsIdentity(castId, skill2.NightLordShadowStars) {
+				assets, invErr := loadCasterInventoryFunc(character.NewProcessor(l, ctx), characterId)
+				if invErr != nil {
+					l.WithError(invErr).Warnf("Character [%d] cast Shadow Stars [%d] but inventory load failed; aborting cast.", characterId, info.SkillId())
+					return nil
+				}
+				rewritten, draws, shortfall, ok := resolveShadowStarsCast(assets, e.StatUps(), info.SpiritJavelinItemId(), int(e.BulletConsume()))
+				if !ok {
+					l.Warnf("Character [%d] cast Shadow Stars [%d] with invalid star [%d] (not a throwing star or not owned); aborting cast.", characterId, info.SkillId(), info.SpiritJavelinItemId())
+					return nil
+				}
+				if shortfall {
+					l.Warnf("Character [%d] cast Shadow Stars [%d]: insufficient star [%d] for cast cost [%d]; consuming what's available.", characterId, info.SkillId(), info.SpiritJavelinItemId(), e.BulletConsume())
+				}
+				statupsToApply = rewritten
+				shadowStarDraws = draws
+			}
+
 			if e.HPConsume() > 0 {
 				_ = character.NewProcessor(l, ctx).ChangeHP(f, characterId, -int16(e.HPConsume()))
 			}
@@ -78,45 +138,65 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 			}
 			if itemId := e.ItemConsume(); itemId > 0 {
 				cp := character.NewProcessor(l, ctx)
-				if c, cErr := cp.GetById(cp.InventoryDecorator)(characterId); cErr == nil {
+				if c, cErr := loadCasterWithInventoryFunc(cp, characterId); cErr == nil {
 					if invType, typeOk := inventoryconst.TypeFromItemId(itemconst.Id(itemId)); typeOk {
-						if a, found := c.Inventory().CompartmentByType(invType).FindFirstByItemId(itemId); found {
-							_ = consumable.NewProcessor(l, ctx).RequestItemConsume(f, charcon.Id(characterId), itemconst.Id(itemId), slot.Position(a.Slot()), 0)
+						amount := int16(e.ItemConsumeAmount())
+						if amount < 1 {
+							// Absent itemConNo (reader default 0) means one item (FR-1).
+							amount = 1
+						}
+						if a, found := c.Inventory().CompartmentByType(invType).FindFirstByItemIdWithQuantity(itemId, amount); found {
+							_ = requestItemConsumeFunc(consumable.NewProcessor(l, ctx), f, charcon.Id(characterId), itemconst.Id(itemId), slot.Position(a.Slot()), amount, 0)
 						} else {
-							l.Warnf("Character [%d] cast skill [%d] requiring item [%d] but no such item found in inventory; cast permitted (defense-in-depth gate only).", characterId, info.SkillId(), itemId)
+							l.Warnf("Character [%d] cast skill [%d] requiring [%d]x item [%d] but no single slot holds enough; cast permitted (defense-in-depth gate only).", characterId, info.SkillId(), amount, itemId)
 						}
 					}
 				} else {
 					l.WithError(cErr).Warnf("Character [%d] cast skill [%d] requiring item [%d] but failed to load inventory; cast permitted.", characterId, info.SkillId(), itemId)
 				}
 			}
-			if e.Cooldown() > 0 {
-				_ = skill.NewProcessor(l, ctx).ApplyCooldown(f, skill2.Id(info.SkillId()), e.Cooldown())(characterId)
-			}
-			// Mount toggle (tamed + skill-only). Runs BEFORE the generic buff
-			// apply and short-circuits it: mounts apply MONSTER_RIDING with a
-			// MaxInt32 duration and a vehicle-id amount, or cancel on re-cast.
 			skillId := skill2.Id(info.SkillId())
-			if skill2.IsTamedMountSkill(skillId) || isSkillOnlyMount(skillId, info.SkillLevel()) {
-				if err := HandleMount(l, f, characterId, info, e, newMountDeps(l, ctx)); err != nil {
+			if shouldApplyCastCooldown(e.Cooldown(), skillId) {
+				_ = applyCooldownFunc(l, ctx, f, skillId, e.Cooldown(), characterId)
+			}
+			// Mount toggle (tamed + skill-only + battleship). Runs BEFORE the
+			// generic buff apply and short-circuits it: mounts apply
+			// MONSTER_RIDING with a MaxInt32 duration and a vehicle-id amount,
+			// or cancel on re-cast.
+			// Routed through the resolved Identity (task-187) rather than a raw
+			// wire compare, per the defensive-consistency scope for mount sites.
+			if castIdOk && (skill2.IsTamedMountSkillIdentity(castId) || isSkillOnlyMountIdentity(castId, info.SkillLevel()) || skill2.IsBattleshipMountSkillIdentity(castId)) {
+				if err := HandleMount(l, f, characterId, info, e, castId, newMountDeps(l, ctx)); err != nil {
 					l.WithError(err).Errorf("Mount toggle failed for character [%d] skill [%d].", characterId, info.SkillId())
 				}
 				return nil
 			}
 
-			if e.Duration() > 0 && len(e.StatUps()) > 0 {
-				applyBuffFunc := buff.NewProcessor(l, ctx).Apply(f, characterId, int32(info.SkillId()), info.SkillLevel(), e.Duration(), e.StatUps())
+			if e.Duration() > 0 && len(statupsToApply) > 0 {
+				applyBuffFunc := buff.NewProcessor(l, ctx).Apply(f, characterId, int32(info.SkillId()), info.SkillLevel(), e.Duration(), statupsToApply)
 				_ = applyBuffFunc(characterId)
 				_ = applyToParty(l)(ctx)(f, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
+			}
+
+			// Shadow Stars cast cost (FR-4): charge bulletConsume (200 in WZ) of the
+			// chosen star after the buff is applied. shadowStarDraws is empty for every
+			// other skill.
+			if len(shadowStarDraws) > 0 {
+				if err := emitStarConsume(l, ctx, characterId, shadowStarDraws); err != nil {
+					l.WithError(err).Errorf("Character [%d] Shadow Stars cast-cost consume failed.", characterId)
+				}
 			}
 
 			// Handle mob-affecting buffs (crash, dispel, etc.)
 			applyToMobs(l, ctx, f, characterId, info, e)
 
-			// Per-skill dispatcher (Heal, Dispel, Cure, MPEater, Drain, ...).
-			if h, ok := Lookup(skill2.Id(info.SkillId())); ok {
-				if err := h(l)(ctx)(wp, f, characterId, info, e); err != nil {
-					l.WithError(err).Errorf("Skill handler for [%d] failed for character [%d].", info.SkillId(), characterId)
+			// Per-skill dispatcher (Heal, Dispel, Cure, MPEater, Drain, ...),
+			// routed on the Identity resolved above.
+			if castIdOk {
+				if h, ok := Lookup(castId); ok {
+					if err := h(l)(ctx)(wp, f, characterId, info, e); err != nil {
+						l.WithError(err).Errorf("Skill handler for [%d] failed for character [%d].", info.SkillId(), characterId)
+					}
 				}
 			}
 
@@ -220,15 +300,18 @@ func applyToMobs(l logrus.FieldLogger, ctx context.Context, f field.Model, chara
 	}
 
 	t := tenant.MustFromContext(ctx)
+	set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+	id, idOk := set.Skill.Resolve(sid)
+
 	monsterStatuses := make(map[string]int32, len(e.MonsterStatus()))
 	for k, v := range e.MonsterStatus() {
 		monsterStatuses[k] = int32(v)
 	}
 
-	isCancel := isCrashOrDispel(sid)
+	isCancel := idOk && isCrashOrDispel(id)
 	cancelClass := ""
 	if isCancel {
-		cancelClass = dispelSkillClass(sid)
+		cancelClass = dispelSkillClass(id)
 	}
 
 	// Branch selection mirrors the FR-4.9 rule: a skill takes EITHER the
@@ -253,8 +336,8 @@ func applyToMobs(l logrus.FieldLogger, ctx context.Context, f field.Model, chara
 		var kind string
 		if isCancel {
 			kind = cancelClass
-		} else {
-			kind = mobBuffApplyKind(sid)
+		} else if idOk {
+			kind = mobBuffApplyKind(id)
 		}
 		if kind == "" {
 			l.WithFields(logrus.Fields{
@@ -307,12 +390,16 @@ func buildSummaryFields(characterId uint32, sid skill2.Id, slvl uint32, mobsInRe
 	}
 }
 
-func isCrashOrDispel(skillId skill2.Id) bool {
-	return skill2.Is(skillId,
-		skill2.CrusaderArmorCrashId,
-		skill2.WhiteKnightMagicCrashId,
-		skill2.DragonKnightPowerCrashId,
-		skill2.PriestDispelId,
+// isCrashOrDispel resolves the incoming wire id to its version-blind
+// Identity before comparing (task-187): a raw wire-keyed skill2.Is compare
+// against these canonical constants would silently misclassify a version
+// where an unrelated skill happens to share the wire id.
+func isCrashOrDispel(id skill2.Identity) bool {
+	return skill2.IsIdentity(id,
+		skill2.CrusaderArmorCrash,
+		skill2.WhiteKnightMagicCrash,
+		skill2.DragonKnightPowerCrash,
+		skill2.PriestDispel,
 	)
 }
 
@@ -320,15 +407,16 @@ func isCrashOrDispel(skillId skill2.Id) bool {
 // class — warrior crashes are physical melee, Priest Dispel is magic. The
 // returned string matches atlas-monsters' monster.ReflectKind* constants.
 // Returns "" for unrecognized skills so the downstream guard falls through
-// to normal cancel semantics.
-func dispelSkillClass(skillId skill2.Id) string {
+// to normal cancel semantics. Identity-keyed (task-187) for the same reason
+// as isCrashOrDispel.
+func dispelSkillClass(id skill2.Identity) string {
 	switch {
-	case skill2.Is(skillId,
-		skill2.CrusaderArmorCrashId,
-		skill2.WhiteKnightMagicCrashId,
-		skill2.DragonKnightPowerCrashId):
+	case skill2.IsIdentity(id,
+		skill2.CrusaderArmorCrash,
+		skill2.WhiteKnightMagicCrash,
+		skill2.DragonKnightPowerCrash):
 		return monster2.ReflectKindPhysical
-	case skill2.Is(skillId, skill2.PriestDispelId):
+	case skill2.IsIdentity(id, skill2.PriestDispel):
 		return monster2.ReflectKindMagical
 	default:
 		return ""

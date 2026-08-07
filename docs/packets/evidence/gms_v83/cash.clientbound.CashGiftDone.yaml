@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashGiftDone
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#GIFT_SUCCESS
+    address: "0x47a856"
+    decompile_sha256: 0e0c1abe064b5b0f232004c9cc24ab53b92fd3ddd3bc5cf1eb013525fe632b5b
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_gift_test.go#TestGiftDoneByteFixture

@@ -2,11 +2,63 @@ package buff
 
 import (
 	"atlas-buffs/buff/stat"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestNewNoExpiryBuff(t *testing.T) {
+	b, err := NewNoExpiryBuff(int32(5211006), byte(1), setupTestChanges())
+
+	assert.NoError(t, err)
+	assert.True(t, b.NoExpiry())
+	assert.Equal(t, int32(0), b.Duration())
+	assert.True(t, b.ExpiresAt().IsZero())
+	assert.False(t, b.Expired(), "no-expiry buff must never report expired despite zero expiresAt")
+	assert.Len(t, b.Changes(), 2)
+}
+
+func TestNewNoExpiryBuff_EmptyChanges(t *testing.T) {
+	_, err := NewNoExpiryBuff(int32(5211006), byte(1), []stat.Model{})
+	assert.ErrorIs(t, err, ErrEmptyChanges)
+}
+
+func TestNewBuff_StillRejectsNonPositiveDuration(t *testing.T) {
+	_, err := NewBuff(int32(2001001), byte(5), 0, setupTestChanges())
+	assert.ErrorIs(t, err, ErrInvalidDuration)
+	_, err = NewBuff(int32(2001001), byte(5), -1, setupTestChanges())
+	assert.ErrorIs(t, err, ErrInvalidDuration)
+}
+
+func TestNoExpiryBuff_JSONRoundTrip(t *testing.T) {
+	b, err := NewNoExpiryBuff(int32(5220011), byte(10), setupTestChanges())
+	assert.NoError(t, err)
+
+	data, err := json.Marshal(b)
+	assert.NoError(t, err)
+
+	var out Model
+	assert.NoError(t, json.Unmarshal(data, &out))
+	assert.True(t, out.NoExpiry())
+	assert.False(t, out.Expired())
+}
+
+// A finite buff marshalled before this change has no noExpiry field; it must
+// unmarshal to noExpiry=false so previously Redis-persisted buffs are unaffected.
+func TestFiniteBuff_JSONAbsentNoExpiryDefaultsFalse(t *testing.T) {
+	b, err := NewBuff(int32(2001001), byte(5), 60000, setupTestChanges())
+	assert.NoError(t, err)
+
+	data, err := json.Marshal(b)
+	assert.NoError(t, err)
+	assert.NotContains(t, string(data), "noExpiry", "omitempty must keep finite-buff JSON unchanged")
+
+	var out Model
+	assert.NoError(t, json.Unmarshal(data, &out))
+	assert.False(t, out.NoExpiry())
+}
 
 func setupTestChanges() []stat.Model {
 	return []stat.Model{
@@ -165,4 +217,96 @@ func TestBuff_DurationInMilliseconds(t *testing.T) {
 	}
 	assert.True(t, diff <= tolerance,
 		"expected ExpiresAt-CreatedAt within %v of %v, got %v (diff %v)", tolerance, expected, gap, diff)
+}
+
+func TestModel_WithStatAmount_ReplacesTargetStat(t *testing.T) {
+	changes := []stat.Model{stat.NewStat("COMBO", 1), stat.NewStat("WATK", 20)}
+	m, err := NewBuff(1111002, 20, 150000, changes)
+	if err != nil {
+		t.Fatalf("NewBuff: %v", err)
+	}
+
+	updated, ok := m.WithStatAmount("COMBO", 3)
+	if !ok {
+		t.Fatal("expected ok=true for present stat type")
+	}
+
+	var combo, watk int32
+	for _, c := range updated.Changes() {
+		switch c.Type() {
+		case "COMBO":
+			combo = c.Amount()
+		case "WATK":
+			watk = c.Amount()
+		}
+	}
+	if combo != 3 {
+		t.Fatalf("COMBO amount = %d, want 3", combo)
+	}
+	if watk != 20 {
+		t.Fatalf("WATK amount = %d, want 20 (other stats preserved)", watk)
+	}
+}
+
+func TestModel_WithStatAmount_PreservesIdentityAndExpiry(t *testing.T) {
+	m, err := NewBuff(1111002, 20, 150000, []stat.Model{stat.NewStat("COMBO", 1)})
+	if err != nil {
+		t.Fatalf("NewBuff: %v", err)
+	}
+
+	updated, ok := m.WithStatAmount("COMBO", 2)
+	if !ok {
+		t.Fatal("expected ok=true")
+	}
+	if updated.SourceId() != m.SourceId() || updated.Level() != m.Level() || updated.Duration() != m.Duration() {
+		t.Fatal("identity fields must be preserved")
+	}
+	if !updated.CreatedAt().Equal(m.CreatedAt()) || !updated.ExpiresAt().Equal(m.ExpiresAt()) {
+		t.Fatal("createdAt/expiresAt must be preserved (remaining-duration contract)")
+	}
+	// original untouched (immutability)
+	if m.Changes()[0].Amount() != 1 {
+		t.Fatalf("original buff mutated: COMBO = %d, want 1", m.Changes()[0].Amount())
+	}
+}
+
+func TestModel_WithStatAmount_MissingStatType(t *testing.T) {
+	m, err := NewBuff(1111002, 20, 150000, []stat.Model{stat.NewStat("WATK", 20)})
+	if err != nil {
+		t.Fatalf("NewBuff: %v", err)
+	}
+	if _, ok := m.WithStatAmount("COMBO", 3); ok {
+		t.Fatal("expected ok=false for absent stat type")
+	}
+}
+
+// TestModel_WithStatAmount_PreservesNoExpiry is the regression test for
+// task-167 FR-2.4: WithStatAmount must preserve the noExpiry flag on
+// no-expiry buffs (e.g. HOMING_BEACON locks) so they are never reaped by
+// the expiration ticker.
+func TestModel_WithStatAmount_PreservesNoExpiry(t *testing.T) {
+	m, err := NewNoExpiryBuff(5211006, 1, []stat.Model{stat.NewStat("LOCK", 1)})
+	if err != nil {
+		t.Fatalf("NewNoExpiryBuff: %v", err)
+	}
+
+	updated, ok := m.WithStatAmount("LOCK", 2)
+	if !ok {
+		t.Fatal("expected ok=true for present stat type")
+	}
+
+	// Stat amount must have changed.
+	if updated.Changes()[0].Amount() != 2 {
+		t.Fatalf("LOCK amount = %d, want 2", updated.Changes()[0].Amount())
+	}
+
+	// Critical: noExpiry flag must be preserved.
+	if !updated.NoExpiry() {
+		t.Fatal("noExpiry flag lost after WithStatAmount — buff will be reaped")
+	}
+
+	// Expired() must short-circuit and return false.
+	if updated.Expired() {
+		t.Fatal("no-expiry buff must never report expired")
+	}
 }

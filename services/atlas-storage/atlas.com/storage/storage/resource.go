@@ -5,12 +5,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -35,7 +36,7 @@ func handleGetStorageRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 					s, err := NewProcessor(d.Logger(), d.Context(), db).GetOrCreateStorage(worldId, accountId)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to get or create storage for world %d account %d.", worldId, accountId)
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -43,7 +44,7 @@ func handleGetStorageRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 					restModel, err := Transform(s)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to transform storage for world %d account %d.", worldId, accountId)
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -70,7 +71,7 @@ func handleCreateStorageRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *
 							return
 						}
 						d.Logger().WithError(err).Errorf("Unable to create storage for world %d account %d.", worldId, accountId)
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -78,7 +79,7 @@ func handleCreateStorageRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *
 					restModel, err := Transform(s)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to transform storage for world %d account %d.", worldId, accountId)
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 

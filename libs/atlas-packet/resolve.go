@@ -4,8 +4,9 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
 
 // WithResolvedCode resolves a byte code from options at encode time and delegates to the factory-produced encoder.
@@ -91,4 +92,45 @@ func ResolveName(l logrus.FieldLogger, options map[string]interface{}, property 
 		}
 	}
 	return "", false
+}
+
+// ResolveValue looks up a uint32 wire value from the runtime options map.
+// Same nested-map format as ResolveCode: options[property][key] = value,
+// where the value may be a JSON number (float64) or a string parsable by
+// strconv.ParseUint with base 0 (e.g. "0x4FAE6F"). Unlike ResolveCode there
+// is no safe sentinel for a 4-byte wire value, so any miss logs an error and
+// returns (0, false); callers must skip the write rather than send a guess.
+func ResolveValue(l logrus.FieldLogger, options map[string]interface{}, property string, key string) (uint32, bool) {
+	genericValues, ok := options[property]
+	if !ok {
+		l.Errorf("Property [%s] missing from options when resolving value [%s].", property, key)
+		return 0, false
+	}
+
+	values, ok := genericValues.(map[string]interface{})
+	if !ok {
+		l.Errorf("Property [%s] is not a map when resolving value [%s].", property, key)
+		return 0, false
+	}
+
+	raw, ok := values[key]
+	if !ok {
+		l.Errorf("Value [%s] not configured in property [%s].", key, property)
+		return 0, false
+	}
+
+	switch v := raw.(type) {
+	case float64:
+		return uint32(v), true
+	case string:
+		n, err := strconv.ParseUint(v, 0, 32)
+		if err != nil {
+			l.WithError(err).Errorf("Value [%s] in property [%s] has unparseable value [%q].", key, property, v)
+			return 0, false
+		}
+		return uint32(n), true
+	default:
+		l.Errorf("Value [%s] in property [%s] has unsupported type %T.", key, property, raw)
+		return 0, false
+	}
 }

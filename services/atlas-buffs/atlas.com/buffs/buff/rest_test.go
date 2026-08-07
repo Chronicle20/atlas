@@ -66,3 +66,13 @@ func TestTransform_StatChanges(t *testing.T) {
 	assert.Equal(t, "INT", rm.Changes[2].Type)
 	assert.Equal(t, int32(15), rm.Changes[2].Amount)
 }
+
+func TestTransform_NoExpiry(t *testing.T) {
+	b, err := NewNoExpiryBuff(int32(5211006), byte(1), []stat.Model{stat.NewStat("HOMING_BEACON", 1000001)})
+	assert.NoError(t, err)
+
+	rm, err := Transform(b)
+	assert.NoError(t, err)
+	assert.True(t, rm.NoExpiry)
+	assert.True(t, rm.ExpiresAt.IsZero())
+}

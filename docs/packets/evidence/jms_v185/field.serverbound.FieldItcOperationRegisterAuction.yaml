@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationRegisterAuction
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnRegisterSaleEntry#RegisterAuction
+    address: "0x6041b9"
+    decompile_sha256: b9f3df40dd5ddd1fd05850abd1cdc656aa903f21214f1a880f7da70bebe34aab
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationRegisterAuctionByteOutput_jms

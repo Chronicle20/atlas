@@ -2,6 +2,7 @@ go 1.26.0
 
 use (
 	./libs/atlas-constants
+	./libs/atlas-constants/gen
 	./libs/atlas-database
 	./libs/atlas-kafka
 	./libs/atlas-lock
@@ -13,6 +14,7 @@ use (
 	./libs/atlas-redis
 	./libs/atlas-rest
 	./libs/atlas-retry
+	./libs/atlas-routine
 	./libs/atlas-saga
 	./libs/atlas-script-core
 	./libs/atlas-seeder
@@ -42,7 +44,7 @@ use (
 	./services/atlas-expressions/atlas.com/expressions
 	./services/atlas-fame/atlas.com/fame
 	./services/atlas-families/atlas.com/family
-	./services/atlas-gachapons/atlas.com/gachapons
+	./services/atlas-reward-pools/atlas.com/reward-pools
 	./services/atlas-guilds/atlas.com/guilds
 	./services/atlas-inventory/atlas.com/inventory
 	./services/atlas-invites/atlas.com/invites
@@ -54,10 +56,12 @@ use (
 	./services/atlas-merchant/atlas.com/merchant
 	./services/atlas-messages/atlas.com/messages
 	./services/atlas-messengers/atlas.com/messengers
+	./services/atlas-mini-games/atlas.com/mini-games
 	./services/atlas-monster-book/atlas.com/monster-book
 	./services/atlas-monster-death/atlas.com/monster
 	./services/atlas-monsters/atlas.com/monsters
 	./services/atlas-mounts/atlas.com/mounts
+	./services/atlas-mts/atlas.com/mts
 	./services/atlas-notes/atlas.com/notes
 	./services/atlas-npc-conversations/atlas.com/npc
 	./services/atlas-npc-shops/atlas.com/npc
@@ -68,10 +72,12 @@ use (
 	./services/atlas-portals/atlas.com/portals
 	./services/atlas-query-aggregator/atlas.com/query-aggregator
 	./services/atlas-quest/atlas.com/quest
+	./services/atlas-rankings/atlas.com/rankings
 	./services/atlas-rates/atlas.com/rates
 	./services/atlas-reactor-actions/atlas.com/reactor
 	./services/atlas-reactors/atlas.com/reactors
 	./services/atlas-renders/atlas.com/renders
+	./services/atlas-rps/atlas.com/rps
 	./services/atlas-saga-orchestrator/atlas.com/saga-orchestrator
 	./services/atlas-skills/atlas.com/skills
 	./services/atlas-storage/atlas.com/storage

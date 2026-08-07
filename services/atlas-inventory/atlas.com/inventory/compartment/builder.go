@@ -3,8 +3,9 @@ package compartment
 import (
 	"atlas-inventory/asset"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
 
 func Clone(m Model) *ModelBuilder {

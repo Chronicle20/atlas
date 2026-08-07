@@ -1,0 +1,99 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2083002,
+      "startState": "askLeave",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkMap",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Do you wish to leave?"
+          },
+          "id": "askLeave",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">",
+                    "type": "mapId",
+                    "value": "240050400"
+                  }
+                ],
+                "nextState": "warpToRoadBetween"
+              },
+              {
+                "conditions": [],
+                "nextState": "warpToCaveEntrance"
+              }
+            ]
+          },
+          "id": "checkMap",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "240050600",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToRoadBetween",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "240040700",
+                  "portalName": "out00"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToCaveEntrance",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "2083002",
+    "type": "npc-conversation"
+  }
+}

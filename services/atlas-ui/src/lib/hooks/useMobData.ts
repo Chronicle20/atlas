@@ -3,11 +3,11 @@
  * Provides name and icon URL data for mobs using atlas-data API and atlas-assets
  */
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo } from 'react';
-import { useTenant } from '@/context/tenant-context';
-import { monstersService } from '@/services/api/monsters.service';
-import { getAssetIconUrl } from '@/lib/utils/asset-url';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
+import { useTenant } from "@/context/tenant-context";
+import { monstersService } from "@/services/api/monsters.service";
+import { getAssetIconUrl } from "@/lib/utils/asset-url";
 
 interface MobDataResult {
   id: number;
@@ -32,17 +32,17 @@ const DEFAULT_OPTIONS = {
 };
 
 function generateMobDataQueryKey(mobId: number, tenantId?: string): string[] {
-  return ['mob-data', tenantId || '', mobId.toString()];
+  return ["mob-data", tenantId || "", mobId.toString()];
 }
 
 /**
  * Hook for fetching single mob data (name and icon)
  */
-export function useMobData(
-  mobId: number,
-  hookOptions: UseMobDataOptions = {}
-) {
-  const options = useMemo(() => ({ ...DEFAULT_OPTIONS, ...hookOptions }), [hookOptions]);
+export function useMobData(mobId: number, hookOptions: UseMobDataOptions = {}) {
+  const options = useMemo(
+    () => ({ ...DEFAULT_OPTIONS, ...hookOptions }),
+    [hookOptions],
+  );
   const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
 
@@ -52,7 +52,7 @@ export function useMobData(
     queryKey,
     queryFn: async (): Promise<MobDataResult> => {
       if (!activeTenant) {
-        return { id: mobId, cached: false, error: 'No active tenant' };
+        return { id: mobId, cached: false, error: "No active tenant" };
       }
 
       const iconUrl = getAssetIconUrl(
@@ -60,7 +60,7 @@ export function useMobData(
         activeTenant.attributes.region,
         activeTenant.attributes.majorVersion,
         activeTenant.attributes.minorVersion,
-        'mob',
+        "mob",
         mobId,
       );
 
@@ -73,7 +73,8 @@ export function useMobData(
           id: mobId,
           iconUrl,
           cached: false,
-          error: error instanceof Error ? error.message : 'Unknown error occurred',
+          error:
+            error instanceof Error ? error.message : "Unknown error occurred",
         };
       }
     },
@@ -81,8 +82,8 @@ export function useMobData(
     staleTime: options.staleTime,
     gcTime: options.gcTime,
     retry: (failureCount, error) => {
-      const errorMessage = error?.message?.toLowerCase() || '';
-      if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+      const errorMessage = error?.message?.toLowerCase() || "";
+      if (errorMessage.includes("404") || errorMessage.includes("not found")) {
         return false;
       }
       return failureCount < options.retry;
@@ -92,7 +93,7 @@ export function useMobData(
   });
 
   const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['mob-data', mobId.toString()] });
+    queryClient.invalidateQueries({ queryKey: ["mob-data", mobId.toString()] });
   }, [queryClient, mobId]);
 
   return {

@@ -1,0 +1,10 @@
+packet: buddy/clientbound/BuddyChannelChange
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnFriendResult
+    address: "0x935ecf"
+    decompile_sha256: acd23ed01c01c04e960659b54231d1c2ecc998cd84f29d9e4b3f1ce13e2b3cf6
+verifies:
+    - libs/atlas-packet/buddy/clientbound/v72_test.go#TestBuddyDataArmsV72

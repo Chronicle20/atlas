@@ -12,17 +12,24 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
-func parseJobId(filePath string) (uint32, error) {
+// ParseJobId derives a job id from a Skill.wz image name. The name reaches
+// this helper as the root <imgdir name="…"> attribute (e.g. "112.img");
+// non-numeric per-mob images like "MobSkill.img" or "BFSkill.img" return an
+// error. Exported so the `job` package can share this logic rather than
+// duplicate it.
+func ParseJobId(filePath string) (uint32, error) {
 	baseName := filepath.Base(filePath)
 	if !strings.HasSuffix(baseName, ".img") {
 		return 0, fmt.Errorf("file does not match expected format: %s", filePath)
@@ -33,7 +40,6 @@ func parseJobId(filePath string) (uint32, error) {
 		return 0, err
 	}
 	return uint32(id), nil
-
 }
 
 func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
@@ -45,7 +51,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 				return model.ErrorProvider[[]RestModel](err)
 			}
 
-			jobId, err := parseJobId(exml.Name)
+			jobId, err := ParseJobId(exml.Name)
 			if err != nil {
 				return model.ErrorProvider[[]RestModel](err)
 			}
@@ -75,6 +81,28 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 	}
 }
 
+// isSuperGmHolySymbol reports whether skillId is this tenant version's
+// SuperGM Holy Symbol skill. SuperGmHolySymbolId is a DIVERGENT wire id
+// (canonical 9101002, but 5101002 at v0.48) so a raw skill.Is compare would
+// silently miss it at v0.48; resolve skillId to its version-independent
+// Identity first (task-187).
+func isSuperGmHolySymbol(t tenant.Model, skillId skill.Id) bool {
+	set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+	id, ok := set.Skill.Resolve(skillId)
+	return ok && id == skill.SuperGmHolySymbol
+}
+
+// isSuperGmHealDispel reports whether skillId is this tenant version's
+// SuperGM Heal + Dispel skill. SuperGmHealDispelId is a DIVERGENT wire id
+// (canonical 9101000, but 5101000 at v0.48) so a raw skill.Is compare would
+// silently miss it at v0.48; resolve skillId to its version-independent
+// Identity first (task-187).
+func isSuperGmHealDispel(t tenant.Model, skillId skill.Id) bool {
+	set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+	id, ok := set.Skill.Resolve(skillId)
+	return ok && id == skill.SuperGmHealDispel
+}
+
 func produceSkill(t tenant.Model, skillId skill.Id, xml xml.Node) (RestModel, error) {
 	element := readElement(xml)
 	action := false
@@ -87,7 +115,7 @@ func produceSkill(t tenant.Model, skillId skill.Id, xml xml.Node) (RestModel, er
 		action = hasAnyAction(xml)
 		buff = getBuff(xml)
 
-		if isCategory1(skillId) {
+		if isCategory1(skillId) || isSuperGmHealDispel(t, skillId) {
 			buff = false
 		} else if skill.IsBuff(skillId) {
 			buff = true
@@ -98,7 +126,7 @@ func produceSkill(t tenant.Model, skillId skill.Id, xml xml.Node) (RestModel, er
 	es := make([]effect.RestModel, 0)
 	level, err := xml.ChildByName("level")
 	if err == nil {
-		es = getEffects(skillId, buff, level.ChildNodes)
+		es = getEffects(t, skillId, buff, level.ChildNodes)
 	}
 
 	name, desc := "", ""
@@ -129,15 +157,16 @@ func produceSkill(t tenant.Model, skillId skill.Id, xml xml.Node) (RestModel, er
 	return m, nil
 }
 
-func getEffects(skillId skill.Id, buff bool, nodes []xml.Node) []effect.RestModel {
+func getEffects(t tenant.Model, skillId skill.Id, buff bool, nodes []xml.Node) []effect.RestModel {
 	results := make([]effect.RestModel, 0)
 	for _, node := range nodes {
-		result := getEffect(skillId, buff, node)
+		result := getEffect(t, skillId, buff, node)
 		results = append(results, result)
 	}
 	return results
 }
-func getEffect(skillId skill.Id, overTime bool, node xml.Node) effect.RestModel {
+
+func getEffect(t tenant.Model, skillId skill.Id, overTime bool, node xml.Node) effect.RestModel {
 	e := effect.NewModelBuilder().
 		SetDuration(node.GetIntegerWithDefault("time", -1)).
 		SetHp(uint16(node.GetIntegerWithDefault("hp", 0))).
@@ -253,7 +282,7 @@ func getEffect(skillId skill.Id, overTime bool, node xml.Node) effect.RestModel 
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeMagicGuard, int32(e.X()))
 	} else if skill.Is(skillId, skill.ClericInvincibleId) {
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeInvincible, int32(e.X()))
-	} else if skill.Is(skillId, skill.PriestHolySymbolId, skill.SuperGmHolySymbolId) {
+	} else if skill.Is(skillId, skill.PriestHolySymbolId) || isSuperGmHolySymbol(t, skillId) {
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeHolySymbol, int32(e.X()))
 	} else if skill.Is(skillId, skill.FirePoisonArchMagicianInfinityId, skill.IceLightningArchMagicianInfinityId) {
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeInfinity, int32(e.X()))
@@ -268,7 +297,7 @@ func getEffect(skillId skill.Id, overTime bool, node xml.Node) effect.RestModel 
 	} else if skill.Is(skillId, skill.EvanStage6SlowId) {
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeMagicResist, int32(e.X()))
 	} else if skill.Is(skillId, skill.PriestMysticDoorId, skill.HunterSoulArrowBowId, skill.CrossbowmanSoulArrowCrossbowId, skill.WindArcherStage2SoulArrowId) {
-		//TODO this is weird right?
+		// TODO this is weird right?
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeSoulArrow, int32(e.X()))
 	} else if skill.Is(skillId, skill.RangerPuppetId, skill.SniperPuppetId, skill.WindArcherStage3PuppetId, skill.OutlawOctopusId, skill.CorsairWrathOfTheOctopiId) {
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypePuppet, 1)
@@ -295,7 +324,13 @@ func getEffect(skillId skill.Id, overTime bool, node xml.Node) effect.RestModel 
 	} else if skill.Is(skillId, skill.ChiefBanditPickpocketId) {
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypePickPocket, int32(e.X()))
 	} else if skill.Is(skillId, skill.NightLordShadowStarsId) {
-		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeShadowClaw, 0)
+		// The SHADOW_CLAW placeholder value MUST be nonzero: produceBuffStatAmount
+		// drops the statup entirely when value == 0 (its `if value != 0` guard),
+		// so a literal 0 here means SHADOW_CLAW never reaches atlas-channel at
+		// all. atlas-channel overwrites this placeholder with the client-chosen
+		// throwing-star item id at cast time (rewriteShadowClawStatups); the
+		// value here only needs to survive the guard.
+		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeShadowClaw, 1)
 	} else if skill.Is(skillId, skill.PirateDashId, skill.ThunderBreakerStage1DashId) {
 		// TODO space dash
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeDashSpeed, int32(e.X()))
@@ -310,7 +345,7 @@ func getEffect(skillId skill.Id, overTime bool, node xml.Node) effect.RestModel 
 		skill.SpearmanSpearBoosterId, skill.SpearmanPolearmBoosterId, skill.HunterBowBoosterId, skill.CrossbowmanCrossbowBoosterId, skill.AssassinClawBoosterId, skill.BanditDaggerBoosterId,
 		skill.FirePoisonMagicianSpellBoosterId, skill.IceLightningMagicianSpellBoosterId, skill.BrawlerKnucklerBoosterId, skill.GunslingerGunBoosterId, skill.DawnWarriorStage2SwordBoosterId,
 		skill.BlazeWizardStage2SpellBoosterId, skill.WindArcherStage2BowBoosterId, skill.NightWalkerStage2ClawBoosterId, skill.ThunderBreakerStage2KnuckleBoosterId, skill.EvanStage6MagicBoosterId) {
-		//TODO power explosion
+		// TODO power explosion
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeBooster, int32(e.X()))
 	} else if skill.Is(skillId, skill.HeroMapleWarriorId, skill.PaladinMapleWarriorId, skill.DarkKnightMapleWarriorId, skill.FirePoisonArchMagicianMapleWarriorId, skill.IceLightningArchMagicianMapleWarriorId,
 		skill.BishopMapleWarriorId, skill.BowmasterMapleWarriorId, skill.MarksmanMapleWarriorId, skill.NightLordMapleWarriorId, skill.ShadowerMapleWarriorId, skill.CorsairMapleWarriorId, skill.BuccaneerMapleWarriorId,
@@ -429,9 +464,9 @@ func getAbnormalStatuses(node xml.Node) []string {
 
 func getMapProtection(sourceId item.Id) byte {
 	if item.Is(sourceId, item.UseRedBeanPorridge, item.UseSoftWhiteBun) {
-		return 1 //elnath cold
+		return 1 // elnath cold
 	} else if sourceId == item.UseAirBubble {
-		return 2 //aqua road underwater
+		return 2 // aqua road underwater
 	} else {
 		return 0
 	}
@@ -493,7 +528,6 @@ func isCategory1(id skill.Id) bool {
 		skill.RangerMortalBlowId, skill.SniperMortalBlowId,
 		skill.AssassinDrainId, skill.HermitShadowWebId, skill.BanditStealId, skill.ShadowerSmokescreenId, skill.ChiefBanditChakraId,
 		skill.GunslingerRecoilShotId, skill.MarauderEnergyDrainId,
-		skill.SuperGmHealDispelId,
 		skill.AranStage1CombatStepId,
 		skill.EvanStage4IceBreathId, skill.EvanStage7FireBreathId, skill.EvanStage8RecoveryAuraId,
 		skill.BlazeWizardStage3FlameGearId, skill.NightWalkerStage3ShadowWebId, skill.NightWalkerStage3PoisonBombId, skill.NightWalkerStage2VampireId,

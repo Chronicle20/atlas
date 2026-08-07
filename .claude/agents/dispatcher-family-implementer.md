@@ -45,33 +45,18 @@ of this agent is to not repeat those failures. The single most important fact:
 
 ## Procedure
 
-For the family in your prompt, execute DISPATCHER_FAMILY.md's "canonical pattern"
-steps 1–6 for EVERY mode the family supports (enumerate the modes from the client
-`switch` via ida-pro-mcp and from `docs/packets/dispatchers/<family>.yaml` /
-the tenant `operations` table — do not guess the mode set):
+**Execute `docs/packets/DISPATCHER_FAMILY.md`'s "canonical pattern" steps 1–6
+verbatim for EVERY mode the family supports.** Do not paraphrase or work from a
+remembered version — that file is your spec and owns the full step-by-step
+(discrete struct per mode, `Encode` writes mode byte + full arm body, per-mode
+`WithResolvedCode("operations", FIXED_KEY, func(mode byte)…)` body function,
+`run.go` `#`-entry per mode, per-mode verification, body function as the usable
+API), the banned anti-patterns (AP-1..AP-8), and the enforced invariants
+(INV-1..INV-5). Enumerate the mode set from the client `switch` via ida-pro-mcp
+and `docs/packets/dispatchers/<family>.yaml` / the tenant `operations` table —
+never guess it.
 
-1. One discrete struct per mode in ONE consolidated clientbound file (e.g.
-   `<family>_operation.go`), never a `*_result_<shape>_modes.go` sprawl. Bodyless
-   notice/error arms still get their own discrete `struct { mode byte }`.
-2. Each struct's `Encode` writes the mode byte THEN the full arm body — every
-   field traced to a decompile line you cite. No mode-byte-only stub for an arm
-   that has a body (AP-7).
-3. A per-mode body function that FIXES the operation key and resolves the
-   per-version byte: `WithResolvedCode("operations", FIXED_KEY, func(mode byte)
-   packet.Encoder { return clientbound.NewXxx(mode, /* arm data */) })`. The
-   constructor takes `mode byte` as its first param; the body func passes the
-   RESOLVED mode through. ZERO `mode: 0x` literals; ZERO `func(_ byte)`.
-4. `run.go` `candidatesFromFName`: one `case "<Fname>#<Mode>":` per mode →
-   that mode's discrete struct `{name, pkg, dir: clientbound}`.
-5. Per-mode verification per `docs/packets/audits/VERIFYING_A_PACKET.md`:
-   synthetic `#`-entry, audit report, byte-fixture with a `packet-audit:verify`
-   marker, evidence. The op-row aggregates worst-of all arms (the FIELD_EFFECT
-   model — the family is NOT in `families.yaml`).
-6. A body function is the usable API a feature calls. No orphaned codec — every
-   clientbound struct must be constructed by a body function (or, for
-   non-operations families, a real consumer/handler).
-
-Hard constraints, in priority order:
+Agent-specific execution rules (in addition to the playbook):
 
 1. NEVER fabricate bytes, opcodes, mode values, or read orders from MapleStory
    knowledge. Every fixture byte and every mode value traces to a decompile line
@@ -87,13 +72,9 @@ Hard constraints, in priority order:
      committed per-version audit report (`docs/packets/audits/<ver>/<Name>.md`
      Verdict) before reporting it. If the comment and the code disagree, the code
      +report win — and freshening the stale comment is part of the work.
-2. The mode byte is per-tenant/version DATA. It is resolved from the `operations`
-   table at emit time — never written as a literal in a struct or constructor.
-   This is the bug that sank the MTS split; do not reintroduce it.
-3. Match the reference implementations exactly:
-   `libs/atlas-packet/npc/clientbound/conversation.go` (discrete per-type) and
-   `libs/atlas-packet/field/clientbound/mts_operation.go` +
-   `libs/atlas-packet/field/mts_operation_body.go` (discrete per-mode + body funcs).
+2. The reference implementations to copy exactly are named in DISPATCHER_FAMILY.md
+   (`npc/clientbound/conversation.go`, `field/clientbound/mts_operation.go` +
+   `field/mts_operation_body.go`).
 
 ## Definition of done — all of these, or you are not done
 

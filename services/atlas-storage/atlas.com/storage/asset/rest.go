@@ -13,6 +13,7 @@ type RestModel struct {
 	// stackable fields
 	Quantity     uint32 `json:"quantity"`
 	OwnerId      uint32 `json:"ownerId"`
+	Owner        string `json:"owner"`
 	Flag         uint16 `json:"flag"`
 	Rechargeable uint64 `json:"rechargeable"`
 	// equipment fields
@@ -69,6 +70,7 @@ func Extract(rm RestModel) (Model, error) {
 		expiration:     rm.Expiration,
 		quantity:       rm.Quantity,
 		ownerId:        rm.OwnerId,
+		owner:          rm.Owner,
 		flag:           rm.Flag,
 		rechargeable:   rm.Rechargeable,
 		strength:       rm.Strength,

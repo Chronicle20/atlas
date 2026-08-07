@@ -1,10 +1,11 @@
 package drop
 
 import (
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func SpawnDropCommandProvider(f field.Model, itemId uint32, quantity uint32, mesos uint32, x int16, y int16, dropperId uint32) model.Provider[[]kafka.Message] {

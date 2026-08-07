@@ -1,6 +1,9 @@
 package monster
 
 import (
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -8,12 +11,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 // debuffWireValue returns the nValue to ship in an APPLY command for a mob
-// debuff skill. v83 wire convention (per Cosmic's giveDebuff): magnitude-
+// debuff skill. v83 wire convention: magnitude-
 // bearing diseases carry their value in the WZ `x` attribute and pass through
 // unchanged, while stat-flag diseases (SEAL/DARKNESS/CURSE/etc.) have no `x`
 // in the WZ and need a literal 1 — the client treats nValue==0 as "stat not
@@ -49,15 +50,15 @@ type buffCommand[E any] struct {
 }
 
 type applyDiseaseBody struct {
-	FromId   uint32       `json:"fromId"`
-	SourceId int32        `json:"sourceId"`
-	Level    byte         `json:"level"`
+	FromId   uint32 `json:"fromId"`
+	SourceId int32  `json:"sourceId"`
+	Level    byte   `json:"level"`
+	// milliseconds — contract owner: atlas-buffs kafka/message/character/kafka.go (task-190)
 	Duration int32        `json:"duration"`
 	Changes  []statChange `json:"changes"`
 }
 
-type cancelAllBuffsBody struct {
-}
+type cancelAllBuffsBody struct{}
 
 type statChange struct {
 	Type   string `json:"type"`

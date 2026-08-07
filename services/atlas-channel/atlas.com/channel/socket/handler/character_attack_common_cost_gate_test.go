@@ -1,24 +1,29 @@
 package handler
 
 import (
+	"atlas-channel/data/skill/effect"
+	"atlas-channel/socket/writer"
 	"context"
 	"testing"
 
-	"atlas-channel/data/skill/effect"
 	channelhandler "atlas-channel/skill/handler"
-	"atlas-channel/socket/writer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
 )
 
 // TestProcessAttack_RegisteredSkill_GateUsesLookup pins the dispatcher-membership
 // gate that processAttack uses to skip the HPConsume/MPConsume block. The actual
-// branch in character_attack_common.go reads:
+// branch in character_attack_common.go resolves the wire id to an Identity via
+// the caster's tenant version set, then reads:
 //
-//	if _, registered := handler.Lookup(skill3.Id(ai.SkillId())); !registered { ... cost ... }
+//	if id, rok := set.Skill.Resolve(skill3.Id(ai.SkillId())); rok {
+//		_, registered = handler.Lookup(id)
+//	}
+//	if !registered { ... cost ... }
 //
 // End-to-end behavior with a fake character.Processor / monster.Processor is out
 // of scope for this gate test; the gate is one line of code and Lookup's own
@@ -26,7 +31,7 @@ import (
 // public Register/Lookup contract that processAttack relies on, so any future
 // refactor of the registry surface will surface here.
 func TestProcessAttack_RegisteredSkill_GateUsesLookup(t *testing.T) {
-	id := skill2.Id(900900900)
+	id := skill2.Identity(900900900)
 	channelhandler.Register(id, func(_ logrus.FieldLogger) func(_ context.Context) func(
 		wp writer.Producer, f field.Model, characterId uint32,
 		info packetmodel.SkillUsageInfo, e effect.Model,
@@ -36,7 +41,8 @@ func TestProcessAttack_RegisteredSkill_GateUsesLookup(t *testing.T) {
 			packetmodel.SkillUsageInfo, effect.Model,
 		) error {
 			return func(_ writer.Producer, _ field.Model, _ uint32,
-				_ packetmodel.SkillUsageInfo, _ effect.Model) error {
+				_ packetmodel.SkillUsageInfo, _ effect.Model,
+			) error {
 				return nil
 			}
 		}

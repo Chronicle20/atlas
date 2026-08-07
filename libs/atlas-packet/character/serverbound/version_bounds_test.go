@@ -55,6 +55,22 @@ func TestCreateCharacterVersionBoundary(t *testing.T) {
 // Encode4(dwKey,crc32) before CMovePath::Flush, while v83 EndUpdateActive
 // (@0x9cb992) writes only fieldKey+crc. So the dr-block is present v84+, NOT
 // v87+. v84..86 must therefore match the v87 dr-block layout and differ from v83.
+//
+// v92/v95 are pinned by prefix + length delta rather than whole-packet
+// equality (task-191). movement-types-derivation.md §5 confirms the v88+
+// CMovePath header gained a StartVx/StartVy int16 pair (v95 CMovePath::
+// Encode@0x666e20 writes four Encode2 + one Encode1, where v83/v87/JMS write
+// two Encode2 + one Encode1), so the trailing model.Movement blob this test's
+// zero-value m encodes is 4 bytes longer at v92/v95 than at v87 — even though
+// the dr-block this test actually pins is unchanged. The old
+// `encode(95) == encode(87)` whole-packet assertion conflated the two: it
+// only held because model.Movement.Encode was version-blind before task-191,
+// and broke the instant that was (correctly) fixed. Pin both facts
+// explicitly instead: (1) the dr-block prefix — v95[:len(v87)] — still
+// matches v87 byte-for-byte, and (2) v92/v95 are exactly 4 bytes longer than
+// v87. The semantic identity of those 4 bytes as StartVx/StartVy is
+// independently verified with non-zero values by model/movement_test.go's
+// TestMovementHeaderVersionBoundary and TestMovementHeaderRoundTrip.
 // packet-audit:verify packet=character/serverbound/Move version=gms_v83 ida=0x9cb992
 func TestMoveVersionBoundary(t *testing.T) {
 	m := Move{dr0: 100, dr1: 200, fieldKey: 42, dr2: 300, dr3: 400, crc: 500, dwKey: 600, crc32: 700}
@@ -76,7 +92,14 @@ func TestMoveVersionBoundary(t *testing.T) {
 			t.Errorf("Move v%d must match the v87 dr-block layout (len %d vs %d)", major, len(got), len(v87))
 		}
 	}
-	if v95 := encode(95); !bytes.Equal(v95, v87) {
-		t.Errorf("Move v95 must match the v87 dr-block layout (len %d vs %d)", len(v95), len(v87))
+	for _, major := range []uint16{92, 95} {
+		got := encode(major)
+		if len(got) != len(v87)+4 {
+			t.Errorf("Move v%d must be exactly 4 bytes longer than v87 (v88+ StartVx/StartVy header): got len %d, v87 len %d", major, len(got), len(v87))
+			continue
+		}
+		if !bytes.Equal(got[:len(v87)], v87) {
+			t.Errorf("Move v%d dr-block prefix must match v87 exactly: got % x, want % x", major, got[:len(v87)], v87)
+		}
 	}
 }

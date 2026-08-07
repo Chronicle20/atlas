@@ -1,0 +1,48 @@
+{
+  "WriterName": "ChatWhisper",
+  "IDAName": "sub_4E8635",
+  "Address": "0x4e8635",
+  "Variant": "GMS/v61",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/chat/serverbound/whisper.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "Encode1 mode=(!msgEmpty+1)|4 @0x4e870a",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "EncodeStr targetName @0x4e8722",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "EncodeStr msg @0x4e8742",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

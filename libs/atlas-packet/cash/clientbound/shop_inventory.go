@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // CashInventoryItem represents a single item in the cash inventory.
@@ -165,34 +166,5 @@ func (m *CashShopPurchaseSuccess) Decode(_ logrus.FieldLogger, _ context.Context
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.item = decodeCashInventoryItemSkipPadding(r)
-	}
-}
-
-// CashShopGifts - mode, empty gift list (stub)
-type CashShopGifts struct {
-	mode byte
-}
-
-func NewCashShopGifts(mode byte) CashShopGifts {
-	return CashShopGifts{mode: mode}
-}
-
-func (m CashShopGifts) Mode() byte        { return m.mode }
-func (m CashShopGifts) Operation() string { return CashShopOperationWriter }
-func (m CashShopGifts) String() string    { return "cash shop gifts" }
-
-func (m CashShopGifts) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
-	w := response.NewWriter(l)
-	return func(options map[string]interface{}) []byte {
-		w.WriteByte(m.mode)
-		w.WriteShort(0)
-		return w.Bytes()
-	}
-}
-
-func (m *CashShopGifts) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
-	return func(r *request.Reader, options map[string]interface{}) {
-		m.mode = r.ReadByte()
-		_ = r.ReadUint16() // gift count (always 0 in current impl)
 	}
 }

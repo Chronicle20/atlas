@@ -22,6 +22,7 @@ The atlas-fame service manages character fame (reputation) transactions. It vali
 | DB_PORT | Postgres database port |
 | DB_NAME | Postgres database name |
 | BOOTSTRAP_SERVERS | Kafka host:port |
+| REST_PORT | HTTP server port |
 | BASE_SERVICE_URL | Base service URL (scheme://host:port/api/) |
 | COMMAND_TOPIC_FAME | Kafka topic for fame commands |
 | COMMAND_TOPIC_CHARACTER | Kafka topic for character commands |

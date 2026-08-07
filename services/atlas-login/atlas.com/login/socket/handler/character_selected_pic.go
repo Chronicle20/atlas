@@ -10,10 +10,11 @@ import (
 	"context"
 	"net"
 
+	"github.com/sirupsen/logrus"
+
 	loginCB "github.com/Chronicle20/atlas/libs/atlas-packet/login/clientbound"
 	loginSB "github.com/Chronicle20/atlas/libs/atlas-packet/login/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {

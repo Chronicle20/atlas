@@ -45,31 +45,39 @@ The resource `id` is the area door id rendered as a decimal string.
 
 ### GET /characters/{characterId}/doors
 
-Retrieves all doors owned by a character for the tenant in context.
+Retrieves all doors owned by a character for the tenant in context. Paginated; results are sorted ascending by `pairId` (areaDoorId).
 
 **Parameters:**
 - `characterId` (path, character.Id): the owner character id.
+- `page[number]` (query, int, optional): 1-based page number. Default 1. Must be >= 1.
+- `page[size]` (query, int, optional): page size. Default 50. Must be between 1 and 250.
+- `limit` (query): rejected outright; use `page[size]` instead.
 
 **Request model:** none.
 
-**Response model:** array of `doors` resources (`RestModel`).
+**Response model:** paginated array of `doors` resources (`RestModel`). The JSON:API document includes a `meta` block (`total`, `page.number`, `page.size`, `page.last`) and `links` (`self`, `first`, `last`, and `prev`/`next` where applicable).
 
 **Error conditions:**
+- 400 Bad Request: `page[number]` or `page[size]` is non-integer, out of range, or the legacy `limit` param is present.
 - 500 Internal Server Error: failure retrieving doors or building the REST model.
 
 ### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/doors
 
-Retrieves all doors whose area field matches the given world, channel, map, and instance.
+Retrieves all doors whose area field matches the given world, channel, map, and instance. Paginated; results are sorted ascending by `pairId` (areaDoorId).
 
 **Parameters:**
 - `worldId` (path, world.Id): the world id.
 - `channelId` (path, channel.Id): the channel id.
 - `mapId` (path, _map.Id): the map id.
 - `instanceId` (path, uuid.UUID): the instance id.
+- `page[number]` (query, int, optional): 1-based page number. Default 1. Must be >= 1.
+- `page[size]` (query, int, optional): page size. Default 50. Must be between 1 and 250.
+- `limit` (query): rejected outright; use `page[size]` instead.
 
 **Request model:** none.
 
-**Response model:** array of `doors` resources (`RestModel`).
+**Response model:** paginated array of `doors` resources (`RestModel`). The JSON:API document includes a `meta` block (`total`, `page.number`, `page.size`, `page.last`) and `links` (`self`, `first`, `last`, and `prev`/`next` where applicable).
 
 **Error conditions:**
+- 400 Bad Request: `page[number]` or `page[size]` is non-integer, out of range, or the legacy `limit` param is present.
 - 500 Internal Server Error: failure retrieving doors or building the REST model.

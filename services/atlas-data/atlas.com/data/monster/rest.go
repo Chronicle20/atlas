@@ -18,6 +18,7 @@ type RestModel struct {
 	HpRecovery         uint32            `json:"hp_recovery"`
 	MpRecovery         uint32            `json:"mp_recovery"`
 	Boss               bool              `json:"boss"`
+	FixedDamage        uint32            `json:"fixed_damage"`
 	ExplosiveReward    bool              `json:"explosive_reward"`
 	FFALoot            bool              `json:"ffa_loot"`
 	Undead             bool              `json:"undead"`
@@ -66,6 +67,16 @@ type loseItem struct {
 	X      byte   `json:"x"`
 }
 
+// GetName/GetID satisfy jsonapi.MarshalIdentifier so a []loseItem slice can
+// be marshaled via server.MarshalPaginatedResponse (GET
+// /data/monsters/{id}/loseItems). Previously missing: any non-empty
+// LoseItems slice made that endpoint 500 ("all elements within the slice
+// must implement api2go.MarshalIdentifier"), a pre-existing bug masked by
+// the resource test suite skipping the non-empty case. Discovered while
+// adding pagination coverage for this route (task-117 task 18).
+func (l loseItem) GetName() string { return "lose-items" }
+func (l loseItem) GetID() string   { return strconv.Itoa(int(l.Id)) }
+
 type skill struct {
 	Id    uint32 `json:"id"`
 	Level uint32 `json:"level"`
@@ -89,7 +100,7 @@ type coolDamage struct {
 }
 
 type AttackInfo struct {
-	Pos         uint8 `json:"pos"`         // 1, 2, or 3 (matches WZ attackN naming)
+	Pos         uint8 `json:"pos"` // 1, 2, or 3 (matches WZ attackN naming)
 	ConMP       int32 `json:"conMP"`
 	AttackAfter int32 `json:"attackAfter"` // milliseconds
 }

@@ -9,14 +9,17 @@ import (
 	"path"
 	"reflect"
 	"regexp"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // seedLocks serializes concurrent Seed() calls per (tenant, group).
@@ -51,7 +54,7 @@ func Seed(ctx context.Context, db *gorm.DB, src CatalogSource, g Group) (Result,
 			Subdomains: map[string]SubdomainCounts{},
 		}, t.Id(), "failure")
 	}
-	rev, _ := src.Revision(roots[0])
+	rev := revisionFor(src, roots)
 
 	subCounts := make(map[string]SubdomainCounts, len(g.Subdomains))
 	var mu sync.Mutex
@@ -60,7 +63,7 @@ func Seed(ctx context.Context, db *gorm.DB, src CatalogSource, g Group) (Result,
 	for _, sd := range g.Subdomains {
 		sd := sd
 		eg.Go(func() error {
-			counts := runSubdomain(gctx, db, src, roots[0], t, sd)
+			counts := runSubdomain(gctx, db, src, roots, t, sd)
 			mu.Lock()
 			subCounts[sd.Name()] = counts
 			mu.Unlock()
@@ -82,7 +85,7 @@ func Seed(ctx context.Context, db *gorm.DB, src CatalogSource, g Group) (Result,
 	return persistAndReturn(ctx, db, g, res, t.Id(), outcome)
 }
 
-func runSubdomain(ctx context.Context, db *gorm.DB, src CatalogSource, root string, t tenant.Model, sd SubdomainAny) SubdomainCounts {
+func runSubdomain(ctx context.Context, db *gorm.DB, src CatalogSource, roots []string, t tenant.Model, sd SubdomainAny) SubdomainCounts {
 	var counts SubdomainCounts
 	deleted, err := sd.DeleteAllForTenant(db.WithContext(ctx))
 	if err != nil {
@@ -91,19 +94,35 @@ func runSubdomain(ctx context.Context, db *gorm.DB, src CatalogSource, root stri
 	}
 	counts.Deleted = deleted
 
-	files, err := src.Walk(root, sd.Path())
-	if err != nil {
-		counts.Errors = appendError(counts.Errors, fmt.Sprintf("walk %s: %v", sd.Path(), err))
-		return counts
+	// Merge the subdomain's files across every root. Roots arrive
+	// least-specific first, so a later root's copy of the same filename
+	// overwrites the earlier one (FR-1.4). Walk returns (nil, nil) for a
+	// missing directory, so a root that contributes nothing costs one
+	// ReadDir ENOENT.
+	owner := make(map[string]string)
+	for _, root := range roots {
+		files, err := src.Walk(root, sd.Path())
+		if err != nil {
+			counts.Errors = appendError(counts.Errors, fmt.Sprintf("walk %s: %v", sd.Path(), err))
+			return counts
+		}
+		for _, name := range files {
+			owner[name] = root
+		}
 	}
+	names := make([]string, 0, len(owner))
+	for name := range owner {
+		names = append(names, name)
+	}
+	sort.Strings(names)
 
 	pattern := sd.EntityIDPattern()
-	for _, name := range files {
+	for _, name := range names {
 		if err := ctx.Err(); err != nil {
 			counts.Errors = appendError(counts.Errors, fmt.Sprintf("%s: %v", name, err))
 			return counts
 		}
-		rows, err := loadOne(ctx, src, root, t, sd, pattern, name)
+		rows, err := loadOne(ctx, src, owner[name], t, sd, pattern, name)
 		if err != nil {
 			counts.Failed++
 			counts.Errors = appendError(counts.Errors, fmt.Sprintf("%s: %v", name, err))
@@ -117,6 +136,22 @@ func runSubdomain(ctx context.Context, db *gorm.DB, src CatalogSource, root stri
 		counts.Created += rowCount(rows)
 	}
 	return counts
+}
+
+// revisionFor joins each root's non-empty CATALOG_REVISION with "+" in
+// root order. A single-root source yields exactly the string it yielded
+// before shared roots existed, so the nine existing consumers see no
+// change. A plain join (not a hash) keeps the value readable in logs.
+func revisionFor(src CatalogSource, roots []string) string {
+	parts := make([]string, 0, len(roots))
+	for _, root := range roots {
+		rev, err := src.Revision(root)
+		if err != nil || rev == "" {
+			continue
+		}
+		parts = append(parts, rev)
+	}
+	return strings.Join(parts, "+")
 }
 
 func loadOne(ctx context.Context, src CatalogSource, root string, t tenant.Model, sd SubdomainAny, pattern *regexp.Regexp, filename string) (any, error) {

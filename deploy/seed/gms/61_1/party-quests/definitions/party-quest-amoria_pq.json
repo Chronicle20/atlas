@@ -1,0 +1,195 @@
+{
+  "data": {
+    "attributes": {
+      "bonus": {
+        "duration": 60,
+        "entry": "auto",
+        "mapId": 670010800,
+        "properties": {
+          "couplesRequiredPieces": 35,
+          "couplesVariant": 670010750,
+          "cupidCodePieceId": 4031597,
+          "vaultVariant": 670010800
+        }
+      },
+      "duration": 2700,
+      "exit": 670011000,
+      "failRequirements": [],
+      "fieldLock": "channel",
+      "name": "Amorian Challenge Party Quest",
+      "questId": "amoria_pq",
+      "registration": {
+        "duration": 0,
+        "mapId": 670010100,
+        "mode": "instant",
+        "type": "party"
+      },
+      "rewards": [],
+      "stages": [
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 0,
+          "mapIds": [
+            670010200
+          ],
+          "name": "Cloud Piece Collection",
+          "properties": {
+            "mirrorReactor": 6702000,
+            "npcId": 9201047,
+            "wingHammerId": 4031596
+          },
+          "rewards": [
+            {
+              "amount": 2000,
+              "type": "experience"
+            }
+          ],
+          "type": "monster_killing",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 1,
+          "mapIds": [
+            670010300,
+            670010301,
+            670010302
+          ],
+          "name": "Heart Strings Combination",
+          "properties": {
+            "maxAttempts": 7,
+            "npcId": 9201044
+          },
+          "rewards": [
+            {
+              "amount": 4000,
+              "type": "experience"
+            }
+          ],
+          "type": "combination_puzzle",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 2,
+          "mapIds": [
+            670010400
+          ],
+          "name": "Twister Switcher Combination",
+          "properties": {
+            "maxAttempts": 7,
+            "npcId": 9201044
+          },
+          "rewards": [
+            {
+              "amount": 6000,
+              "type": "experience"
+            }
+          ],
+          "type": "combination_puzzle",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [
+            {
+              "operator": ">=",
+              "referenceId": 4031597,
+              "type": "item",
+              "value": 50
+            }
+          ],
+          "duration": 0,
+          "index": 3,
+          "mapIds": [
+            670010500
+          ],
+          "name": "Last Man Standing",
+          "properties": {
+            "collectItemId": 4031597,
+            "npcId": 9201045
+          },
+          "rewards": [
+            {
+              "amount": 8000,
+              "type": "experience"
+            }
+          ],
+          "type": "item_collection",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 4,
+          "mapIds": [
+            670010600
+          ],
+          "name": "Fluttering Hearts",
+          "properties": {},
+          "rewards": [
+            {
+              "amount": 9000,
+              "type": "experience"
+            }
+          ],
+          "type": "reactor_trigger",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [
+            {
+              "operator": ">=",
+              "referenceId": 4031594,
+              "type": "item",
+              "value": 1
+            }
+          ],
+          "duration": 0,
+          "index": 5,
+          "mapIds": [
+            670010700
+          ],
+          "name": "Boss Stage",
+          "properties": {
+            "bossPhases": 3,
+            "collectItemId": 4031594
+          },
+          "rewards": [
+            {
+              "amount": 11000,
+              "type": "experience"
+            }
+          ],
+          "type": "boss",
+          "warpType": "all"
+        }
+      ],
+      "startEvents": [
+        {
+          "target": "party",
+          "type": "warp",
+          "value": "670010200"
+        }
+      ],
+      "startRequirements": [
+        {
+          "operator": "eq",
+          "referenceId": 0,
+          "type": "party_size",
+          "value": 6
+        },
+        {
+          "operator": "gte",
+          "referenceId": 0,
+          "type": "level_min",
+          "value": 40
+        }
+      ]
+    },
+    "id": "amoria_pq",
+    "type": "party-quest-definition"
+  }
+}

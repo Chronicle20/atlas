@@ -1,10 +1,11 @@
 package summon
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const EnvEventTopicSummonStatus = "EVENT_TOPIC_SUMMON_STATUS"
@@ -75,7 +76,7 @@ type StatusEventAttackedBody struct {
 }
 
 // StatusEventSkillBody carries the Beholder aura skill-effect visual. NewStance
-// is the animation stance the client plays (Cosmic uses 5 for the heal pulse and
+// is the animation stance the client plays (5 for the heal pulse and
 // 6-8 for the buff pulse). Consumed by atlas-channel to rebroadcast the
 // SummonSkill clientbound packet map-wide.
 type StatusEventSkillBody struct {

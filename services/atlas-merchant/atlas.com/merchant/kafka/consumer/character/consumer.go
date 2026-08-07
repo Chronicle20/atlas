@@ -6,13 +6,14 @@ import (
 	"atlas-merchant/shop"
 	"context"
 
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	consumer2 "github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer2.Config, decorators ...model.Decorator[consumer2.Config])) func(consumerGroupId string) {
@@ -49,9 +50,14 @@ func handleLogout(db *gorm.DB) func(logrus.FieldLogger, context.Context, charact
 		}
 
 		for _, s := range shops {
-			if s.ShopType() == shop.CharacterShop && s.State() != shop.Closed {
+			switch shop.LogoutAction(s.ShopType(), s.State()) {
+			case shop.LogoutClose:
 				if err := p.CloseShopAndEmit(s.Id(), e.CharacterId, shop.CloseReasonDisconnect); err != nil {
-					l.WithError(err).Errorf("Error closing character shop [%s] on disconnect.", s.Id())
+					l.WithError(err).Errorf("Error closing shop [%s] on disconnect.", s.Id())
+				}
+			case shop.LogoutExitMaintenance:
+				if err := p.ExitMaintenanceAndEmit(s.Id(), e.CharacterId); err != nil {
+					l.WithError(err).Errorf("Error exiting maintenance for shop [%s] on disconnect.", s.Id())
 				}
 			}
 		}

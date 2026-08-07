@@ -36,18 +36,26 @@ func e2eInputs(t *testing.T) Inputs {
 		}},
 		Reports: map[string]map[string]LoadedReport{
 			"gms_v83": {
-				"AuthResult": {WriterName: "AuthResult", IDAName: "CLogin::OnCheckPasswordResult", Address: "0x5e1230",
-					AtlasFile: "libs/atlas-packet/login/clientbound/auth_result.go", Verdict: diff.VerdictMatch},
-				"StatRegistry": {WriterName: "StatRegistry", IDAName: "GW_CharacterStat::Decode", Address: "0x123456",
-					AtlasFile: "libs/atlas-packet/model/stat_registry.go", Verdict: diff.VerdictMatch},
+				"AuthResult": {
+					WriterName: "AuthResult", IDAName: "CLogin::OnCheckPasswordResult", Address: "0x5e1230",
+					AtlasFile: "libs/atlas-packet/login/clientbound/auth_result.go", Verdict: diff.VerdictMatch,
+				},
+				"StatRegistry": {
+					WriterName: "StatRegistry", IDAName: "GW_CharacterStat::Decode", Address: "0x123456",
+					AtlasFile: "libs/atlas-packet/model/stat_registry.go", Verdict: diff.VerdictMatch,
+				},
 			},
 			"gms_v87": {
-				"AuthResult": {WriterName: "AuthResult", IDAName: "CLogin::OnCheckPasswordResult", Address: "0x6f1230",
-					AtlasFile: "libs/atlas-packet/login/clientbound/auth_result.go", Verdict: diff.VerdictDeferred},
+				"AuthResult": {
+					WriterName: "AuthResult", IDAName: "CLogin::OnCheckPasswordResult", Address: "0x6f1230",
+					AtlasFile: "libs/atlas-packet/login/clientbound/auth_result.go", Verdict: diff.VerdictDeferred,
+				},
 				// Report present for v87 ACCOUNT_INFO — Atlas implements it — so the
 				// coverage-gap conflict fires (not mere absence).
-				"AccountInfo": {WriterName: "AccountInfo", IDAName: "CLogin::OnAccountInfoResult", Address: "0x7a4500",
-					AtlasFile: "libs/atlas-packet/login/clientbound/account_info.go", Verdict: diff.VerdictMatch},
+				"AccountInfo": {
+					WriterName: "AccountInfo", IDAName: "CLogin::OnAccountInfoResult", Address: "0x7a4500",
+					AtlasFile: "libs/atlas-packet/login/clientbound/account_info.go", Verdict: diff.VerdictMatch,
+				},
 			},
 		},
 		Routed: map[string]map[RouteKey]bool{

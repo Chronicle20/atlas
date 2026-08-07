@@ -8,10 +8,13 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // CUserLocal::DoActiveSkill_Prepare (serverbound)
@@ -22,11 +25,21 @@ const CharacterSkillPrepareHandle = "CharacterSkillPrepareHandle"
 //
 // Conditions (D4):
 //   - The character owns the skill (present in their skill book at level > 0).
-//   - The skill is a keydown skill per IsKeyDownSkill.
-func shouldBroadcastKeydown(skills []skill2.Model, skillId uint32) bool {
+//   - The skill resolves (via ctx's tenant version set) to a keydown-skill
+//     Identity per IsKeyDownSkillIdentity. skillId is a raw wire id, and
+//     keydown membership is version-scoped (task-187): wire 5101004 is the
+//     keydown Brawler Corkscrew Blow at v0.62+ but the non-keydown SuperGM
+//     Hide at v0.48.
+func shouldBroadcastKeydown(ctx context.Context, skills []skill2.Model, skillId uint32) bool {
+	t := tenant.MustFromContext(ctx)
+	set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+	id, ok := set.Skill.Resolve(skill.Id(skillId))
+	if !ok || !skill.IsKeyDownSkillIdentity(id) {
+		return false
+	}
 	for _, sm := range skills {
 		if sm.Id() == skill.Id(skillId) && sm.Level() > 0 {
-			return skill.IsKeyDownSkill(skill.Id(skillId))
+			return true
 		}
 	}
 	return false
@@ -47,7 +60,7 @@ func CharacterSkillPrepareHandleFunc(l logrus.FieldLogger, ctx context.Context, 
 			return
 		}
 
-		if !shouldBroadcastKeydown(c.Skills(), info.SkillId()) {
+		if !shouldBroadcastKeydown(ctx, c.Skills(), info.SkillId()) {
 			l.Debugf("Character [%d] skill prepare [%d]: not a keydown skill or not owned, skipping broadcast.", s.CharacterId(), info.SkillId())
 			return
 		}
@@ -55,4 +68,3 @@ func CharacterSkillPrepareHandleFunc(l logrus.FieldLogger, ctx context.Context, 
 		_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), AnnounceForeignSkillPrepare(l)(ctx)(wp)(s.CharacterId(), *info))
 	}
 }
-

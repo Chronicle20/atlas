@@ -3,17 +3,18 @@ package shop
 import (
 	"strconv"
 
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/google/uuid"
-	goredis "github.com/redis/go-redis/v9"
 )
 
 type Registry struct {
-	activeShops   *atlas.TenantRegistry[uint32, ActiveShopEntry]
-	mapPlacement  *atlas.Index // mapId → set of shopIds
-	client        *goredis.Client
+	activeShops  *atlas.TenantRegistry[uint32, ActiveShopEntry]
+	mapPlacement *atlas.Index // mapId → set of shopIds
+	client       *goredis.Client
 }
 
 type ActiveShopEntry struct {

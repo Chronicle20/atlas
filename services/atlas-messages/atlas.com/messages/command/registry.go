@@ -5,16 +5,19 @@ import (
 	"context"
 	"sync"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 type registry struct {
 	commandRegistry []Producer
 }
 
-var once sync.Once
-var r *registry
+var (
+	once sync.Once
+	r    *registry
+)
 
 func Registry() *registry {
 	once.Do(func() {

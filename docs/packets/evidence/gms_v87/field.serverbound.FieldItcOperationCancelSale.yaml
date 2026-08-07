@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationCancelSale
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnCancelSaleItem
+    address: "0x5cf8dd"
+    decompile_sha256: 25aeb6d420f5e24efb860995a6dd6874e98b734c824625c4c32488e18a052bf6
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationCancelSaleByteOutput_v87

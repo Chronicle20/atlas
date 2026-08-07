@@ -4,9 +4,11 @@
 
 ### GET /tenants
 
-Retrieves all tenants.
+Retrieves all tenants (paginated).
 
-**Parameters**: None
+**Parameters**:
+- `page[number]` (query, int, optional): Page number, 1-based. Default 1.
+- `page[size]` (query, int, optional): Page size. Default 50, maximum 250.
 
 **Request Model**: None
 
@@ -24,11 +26,27 @@ Retrieves all tenants.
         "minorVersion": 0
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": 0,
+    "page": {
+      "number": 0,
+      "size": 0,
+      "last": 0
+    }
+  },
+  "links": {
+    "self": "string",
+    "first": "string",
+    "last": "string",
+    "prev": "string",
+    "next": "string"
+  }
 }
 ```
 
 **Error Conditions**:
+- 400: Invalid page[number] or page[size]
 - 500: Internal server error
 
 ---
@@ -171,10 +189,12 @@ Deletes a tenant.
 
 ### GET /tenants/{tenantId}/configurations/routes
 
-Retrieves all routes for a tenant.
+Retrieves all routes for a tenant (paginated).
 
 **Parameters**:
 - `tenantId` (path, uuid): Tenant identifier
+- `page[number]` (query, int, optional): Page number, 1-based. Default 1.
+- `page[size]` (query, int, optional): Page size. Default 50, maximum 250.
 
 **Request Model**: None
 
@@ -198,12 +218,27 @@ Retrieves all routes for a tenant.
         "cycleInterval": 0
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": 0,
+    "page": {
+      "number": 0,
+      "size": 0,
+      "last": 0
+    }
+  },
+  "links": {
+    "self": "string",
+    "first": "string",
+    "last": "string",
+    "prev": "string",
+    "next": "string"
+  }
 }
 ```
 
 **Error Conditions**:
-- 400: Invalid tenant ID format
+- 400: Invalid tenant ID format or invalid page[number]/page[size]
 - 500: Internal server error
 
 ---
@@ -378,37 +413,70 @@ Deletes a route.
 
 ---
 
-### POST /tenants/{tenantId}/configurations/routes/seed
+### POST /tenants/configurations/routes/seed
 
-Deletes all existing routes for a tenant and loads them from seed files.
+Triggers asynchronous seed data loading for the tenant's routes from the shared seed catalog (`deploy/seed/shared/all/routes`, merged with any version-specific override root). Deletes all existing routes for the tenant and reloads them from catalog files. Unlike the CRUD endpoints above, the tenant is identified by request headers, not a `{tenantId}` path segment — this endpoint is mounted at `/tenants/configurations/routes/seed` (`configurations` is the *second* path segment here, not the third), which does not collide with the `{tenantId}`-scoped CRUD routes.
 
-**Parameters**:
-- `tenantId` (path, uuid): Tenant identifier
+**Headers**:
+- `TENANT_ID` (uuid, required): Tenant identifier
+- `REGION` (string, required): Tenant region
+- `MAJOR_VERSION` (uint16, required): Tenant major version
+- `MINOR_VERSION` (uint16, required): Tenant minor version
+
+**Parameters**: None
+
+**Request Model**: None
+
+**Response Model**: None. Seeding runs asynchronously in the background; poll `GET /tenants/configurations/routes/seed/status` for progress.
+
+**Error Conditions**:
+- 202: Seed operation started
+- 400: Missing or invalid tenant headers
+
+---
+
+### GET /tenants/configurations/routes/seed/status
+
+Retrieves seed catalog status for the routes seed group. Response is a plain JSON document, not a JSON:API resource.
+
+**Headers**: Same as `POST /tenants/configurations/routes/seed`.
+
+**Parameters**: None
 
 **Request Model**: None
 
 **Response Model**:
 ```json
 {
-  "deletedCount": 0,
-  "createdCount": 0,
-  "failedCount": 0,
-  "errors": ["string"]
+  "groupName": "routes",
+  "subdomains": {
+    "routes": {
+      "count": 0,
+      "updatedAt": null
+    }
+  },
+  "updatedAt": null,
+  "catalogRevision": "string",
+  "tenantSeededRevision": null,
+  "tenantSeededAt": null
 }
 ```
 
 **Error Conditions**:
-- 400: Invalid tenant ID format
-- 500: Internal server error
+- 200: Status retrieved
+- 400: Missing or invalid tenant headers
+- 500: Internal server error (failure reading seed status)
 
 ---
 
 ### GET /tenants/{tenantId}/configurations/vessels
 
-Retrieves all vessels for a tenant.
+Retrieves all vessels for a tenant (paginated).
 
 **Parameters**:
 - `tenantId` (path, uuid): Tenant identifier
+- `page[number]` (query, int, optional): Page number, 1-based. Default 1.
+- `page[size]` (query, int, optional): Page size. Default 50, maximum 250.
 
 **Request Model**: None
 
@@ -426,12 +494,27 @@ Retrieves all vessels for a tenant.
         "turnaroundDelay": 0
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": 0,
+    "page": {
+      "number": 0,
+      "size": 0,
+      "last": 0
+    }
+  },
+  "links": {
+    "self": "string",
+    "first": "string",
+    "last": "string",
+    "prev": "string",
+    "next": "string"
+  }
 }
 ```
 
 **Error Conditions**:
-- 400: Invalid tenant ID format
+- 400: Invalid tenant ID format or invalid page[number]/page[size]
 - 500: Internal server error
 
 ---
@@ -576,37 +659,70 @@ Deletes a vessel.
 
 ---
 
-### POST /tenants/{tenantId}/configurations/vessels/seed
+### POST /tenants/configurations/vessels/seed
 
-Deletes all existing vessels for a tenant and loads them from seed files.
+Triggers asynchronous seed data loading for the tenant's vessels from the shared seed catalog (`deploy/seed/shared/all/vessels`, merged with any version-specific override root). Deletes all existing vessels for the tenant and reloads them from catalog files. Unlike the CRUD endpoints above, the tenant is identified by request headers, not a `{tenantId}` path segment — this endpoint is mounted at `/tenants/configurations/vessels/seed` (`configurations` is the *second* path segment here, not the third), which does not collide with the `{tenantId}`-scoped CRUD routes.
 
-**Parameters**:
-- `tenantId` (path, uuid): Tenant identifier
+**Headers**:
+- `TENANT_ID` (uuid, required): Tenant identifier
+- `REGION` (string, required): Tenant region
+- `MAJOR_VERSION` (uint16, required): Tenant major version
+- `MINOR_VERSION` (uint16, required): Tenant minor version
+
+**Parameters**: None
+
+**Request Model**: None
+
+**Response Model**: None. Seeding runs asynchronously in the background; poll `GET /tenants/configurations/vessels/seed/status` for progress.
+
+**Error Conditions**:
+- 202: Seed operation started
+- 400: Missing or invalid tenant headers
+
+---
+
+### GET /tenants/configurations/vessels/seed/status
+
+Retrieves seed catalog status for the vessels seed group. Response is a plain JSON document, not a JSON:API resource.
+
+**Headers**: Same as `POST /tenants/configurations/vessels/seed`.
+
+**Parameters**: None
 
 **Request Model**: None
 
 **Response Model**:
 ```json
 {
-  "deletedCount": 0,
-  "createdCount": 0,
-  "failedCount": 0,
-  "errors": ["string"]
+  "groupName": "vessels",
+  "subdomains": {
+    "vessels": {
+      "count": 0,
+      "updatedAt": null
+    }
+  },
+  "updatedAt": null,
+  "catalogRevision": "string",
+  "tenantSeededRevision": null,
+  "tenantSeededAt": null
 }
 ```
 
 **Error Conditions**:
-- 400: Invalid tenant ID format
-- 500: Internal server error
+- 200: Status retrieved
+- 400: Missing or invalid tenant headers
+- 500: Internal server error (failure reading seed status)
 
 ---
 
 ### GET /tenants/{tenantId}/configurations/instance-routes
 
-Retrieves all instance routes for a tenant.
+Retrieves all instance routes for a tenant (paginated).
 
 **Parameters**:
 - `tenantId` (path, uuid): Tenant identifier
+- `page[number]` (query, int, optional): Page number, 1-based. Default 1.
+- `page[size]` (query, int, optional): Page size. Default 50, maximum 250.
 
 **Request Model**: None
 
@@ -628,12 +744,27 @@ Retrieves all instance routes for a tenant.
         "transitMessage": "string"
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": 0,
+    "page": {
+      "number": 0,
+      "size": 0,
+      "last": 0
+    }
+  },
+  "links": {
+    "self": "string",
+    "first": "string",
+    "last": "string",
+    "prev": "string",
+    "next": "string"
+  }
 }
 ```
 
 **Error Conditions**:
-- 400: Invalid tenant ID format
+- 400: Invalid tenant ID format or invalid page[number]/page[size]
 - 500: Internal server error
 
 ---
@@ -798,9 +929,266 @@ Deletes an instance route.
 
 ---
 
-### POST /tenants/{tenantId}/configurations/instance-routes/seed
+### POST /tenants/configurations/instance-routes/seed
 
-Deletes all existing instance routes for a tenant and loads them from seed files.
+Triggers asynchronous seed data loading for the tenant's instance routes from the shared seed catalog (`deploy/seed/shared/all/instance-routes`, merged with any version-specific override root). Deletes all existing instance routes for the tenant and reloads them from catalog files. Unlike the CRUD endpoints above, the tenant is identified by request headers, not a `{tenantId}` path segment — this endpoint is mounted at `/tenants/configurations/instance-routes/seed` (`configurations` is the *second* path segment here, not the third), which does not collide with the `{tenantId}`-scoped CRUD routes.
+
+**Headers**:
+- `TENANT_ID` (uuid, required): Tenant identifier
+- `REGION` (string, required): Tenant region
+- `MAJOR_VERSION` (uint16, required): Tenant major version
+- `MINOR_VERSION` (uint16, required): Tenant minor version
+
+**Parameters**: None
+
+**Request Model**: None
+
+**Response Model**: None. Seeding runs asynchronously in the background; poll `GET /tenants/configurations/instance-routes/seed/status` for progress.
+
+**Error Conditions**:
+- 202: Seed operation started
+- 400: Missing or invalid tenant headers
+
+---
+
+### GET /tenants/configurations/instance-routes/seed/status
+
+Retrieves seed catalog status for the instance-routes seed group. Response is a plain JSON document, not a JSON:API resource.
+
+**Headers**: Same as `POST /tenants/configurations/instance-routes/seed`.
+
+**Parameters**: None
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "groupName": "instance-routes",
+  "subdomains": {
+    "instance-routes": {
+      "count": 0,
+      "updatedAt": null
+    }
+  },
+  "updatedAt": null,
+  "catalogRevision": "string",
+  "tenantSeededRevision": null,
+  "tenantSeededAt": null
+}
+```
+
+**Error Conditions**:
+- 200: Status retrieved
+- 400: Missing or invalid tenant headers
+- 500: Internal server error (failure reading seed status)
+
+---
+
+### GET /tenants/{tenantId}/configurations/mts-configs
+
+Retrieves the MTS configuration for a tenant.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "mts-configs",
+    "id": "string",
+    "attributes": {
+      "listingFee": 0,
+      "commissionRate": 0,
+      "maxActiveListings": 0,
+      "minLevel": 0,
+      "auctionMinHours": 0,
+      "auctionMaxHours": 0,
+      "priceFloor": 0,
+      "pageSize": 0,
+      "minBidIncrement": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
+- 404: No MTS configuration found for tenant
+
+---
+
+### GET /tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}
+
+Retrieves an MTS configuration by ID.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `mtsConfigId` (path, string): MTS configuration identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "mts-configs",
+    "id": "string",
+    "attributes": {
+      "listingFee": 0,
+      "commissionRate": 0,
+      "maxActiveListings": 0,
+      "minLevel": 0,
+      "auctionMinHours": 0,
+      "auctionMaxHours": 0,
+      "priceFloor": 0,
+      "pageSize": 0,
+      "minBidIncrement": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format or missing MTS configuration ID
+- 404: MTS configuration not found
+
+---
+
+### POST /tenants/{tenantId}/configurations/mts-configs
+
+Creates a new MTS configuration.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "mts-configs",
+    "attributes": {
+      "listingFee": 0,
+      "commissionRate": 0,
+      "maxActiveListings": 0,
+      "minLevel": 0,
+      "auctionMinHours": 0,
+      "auctionMaxHours": 0,
+      "priceFloor": 0,
+      "pageSize": 0,
+      "minBidIncrement": 0
+    }
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "mts-configs",
+    "id": "string",
+    "attributes": {
+      "listingFee": 0,
+      "commissionRate": 0,
+      "maxActiveListings": 0,
+      "minLevel": 0,
+      "auctionMinHours": 0,
+      "auctionMaxHours": 0,
+      "priceFloor": 0,
+      "pageSize": 0,
+      "minBidIncrement": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body or tenant ID format
+- 500: Internal server error
+
+---
+
+### PATCH /tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}
+
+Updates an existing MTS configuration.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `mtsConfigId` (path, string): MTS configuration identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "mts-configs",
+    "id": "string",
+    "attributes": {
+      "listingFee": 0,
+      "commissionRate": 0,
+      "maxActiveListings": 0,
+      "minLevel": 0,
+      "auctionMinHours": 0,
+      "auctionMaxHours": 0,
+      "priceFloor": 0,
+      "pageSize": 0,
+      "minBidIncrement": 0
+    }
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "mts-configs",
+    "id": "string",
+    "attributes": {
+      "listingFee": 0,
+      "commissionRate": 0,
+      "maxActiveListings": 0,
+      "minLevel": 0,
+      "auctionMinHours": 0,
+      "auctionMaxHours": 0,
+      "priceFloor": 0,
+      "pageSize": 0,
+      "minBidIncrement": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body, tenant ID format, or missing MTS configuration ID
+- 500: Internal server error (includes MTS configuration not found)
+
+---
+
+### DELETE /tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}
+
+Deletes an MTS configuration.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `mtsConfigId` (path, string): MTS configuration identifier
+
+**Request Model**: None
+
+**Response Model**: None (204 No Content)
+
+**Error Conditions**:
+- 400: Invalid tenant ID format or missing MTS configuration ID
+- 500: Internal server error
+
+---
+
+### POST /tenants/{tenantId}/configurations/mts-configs/seed
+
+Deletes all existing MTS configurations for a tenant and loads them from seed files.
 
 **Parameters**:
 - `tenantId` (path, uuid): Tenant identifier

@@ -8,16 +8,18 @@ import (
 	"atlas-channel/cashshop/wallet"
 	"atlas-channel/cashshop/wishlist"
 	"atlas-channel/character"
+	"atlas-channel/minigame"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"atlas-channel/storage"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	cashcb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -30,6 +32,16 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 		// TODO block when in event
 		// TODO block when in mini dungeon
 		// TODO block when already in cash shop
+
+		// Block entry while seated at a mini-game (Omok / Match Cards) room: a
+		// player must not migrate to the cash shop mid-room. Fail open on a
+		// mini-games read error so an outage there does not break cash-shop entry.
+		if inGame, mgErr := minigame.NewProcessor(l, ctx).InGame(s.CharacterId()); mgErr != nil {
+			l.WithError(mgErr).Warnf("Unable to determine mini-game membership for character [%d]; allowing cash shop entry.", s.CharacterId())
+		} else if inGame {
+			l.Debugf("Blocking cash shop entry for character [%d] currently in a mini-game room.", s.CharacterId())
+			return
+		}
 
 		a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
 		if err != nil {
@@ -87,11 +99,6 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			return
 		}
 
-		//err = session.Announce(l)(wp)(cashcb.CashShopOperationWriter)(s, writer.CashShopCashGiftsBody(l)(s.Tenant()))
-		//if err != nil {
-		//	return
-		//}
-
 		wl, err := wishlist.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update wish list for character [%d].", s.CharacterId())
@@ -122,5 +129,6 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce [%d] has entered the cash shop.", s.CharacterId())
 		}
+		_ = session.NewProcessor(l, ctx).SetCashScene(s.SessionId(), session.CashSceneCashShop)
 	}
 }

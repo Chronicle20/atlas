@@ -3,9 +3,10 @@ package reply
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {
@@ -28,6 +29,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		t:   tenant.MustFromContext(ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) Add(threadId uint32, posterId uint32, message string) (Model, error) {
 	return create(p.db.WithContext(p.ctx), p.t.Id(), threadId, posterId, message)

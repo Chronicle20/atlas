@@ -1,21 +1,21 @@
 package listener_test
 
 import (
+	"atlas-channel/listener"
+	"atlas-channel/server"
 	"context"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"atlas-channel/listener"
-	"atlas-channel/server"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // nopDeps is a Dependencies where every callback succeeds and returns
@@ -43,7 +43,7 @@ func makeTenant(t *testing.T) tenant.Model {
 }
 
 func makeServerModel(t *testing.T, tm tenant.Model, w world.Id, c channel.Id) server.Model {
-	return server.Register(tm, channel.NewModel(w, c), "127.0.0.1", 8585+int(c))
+	return server.NewProcessor(logrus.New(), context.Background()).Register(tm, channel.NewModel(w, c), "127.0.0.1", 8585+int(c))
 }
 
 func TestRegistry_AddStoresAndSnapshotsHandle(t *testing.T) {

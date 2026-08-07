@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashPurchaseRecordDone
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#PURCHASE_RECORD
+    address: "0x474f8c"
+    decompile_sha256: 66e6ff4e06e0c94e09ff31fdc0a90a4a01b49e105569432a36bc0ab95ae942de
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_misc_test.go#TestPurchaseRecordDoneByteFixture

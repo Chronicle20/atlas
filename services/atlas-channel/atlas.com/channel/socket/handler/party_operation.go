@@ -8,11 +8,12 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	invite2 "github.com/Chronicle20/atlas/libs/atlas-constants/invite"
 	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
 	partysb "github.com/Chronicle20/atlas/libs/atlas-packet/party/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 type PartyOperation byte

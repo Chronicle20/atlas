@@ -14,6 +14,9 @@ import (
 	"context"
 	"errors"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -21,15 +24,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	invpkt "github.com/Chronicle20/atlas/libs/atlas-packet/inventory"
 	invcb "github.com/Chronicle20/atlas/libs/atlas-packet/inventory/clientbound"
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -207,13 +209,13 @@ func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			err = enableActions(l)(ctx)(wp)(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, s.CharacterId())
 			}
-		}()
-		go func() {
+		})
+		routine.Go(l, ctx, func(_ context.Context) {
 			p := pet.NewModelBuilder(e.PetId, 0, 0, "").
 				SetOwnerID(e.OwnerId).
 				SetSlot(e.Body.Slot).
@@ -221,7 +223,7 @@ func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[
 				SetFullness(e.Body.Fullness).
 				MustBuild()
 			_ = _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), session.Announce(l)(ctx)(wp)(petpkt.PetCommandResponseWriter)(petpkt.NewPetCommandResponse(p.OwnerId(), p.Slot(), e.Body.CommandId, e.Body.Success, false).Encode))
-		}()
+		})
 	}
 }
 

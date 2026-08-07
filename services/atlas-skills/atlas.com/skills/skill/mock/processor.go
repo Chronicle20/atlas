@@ -5,8 +5,11 @@ import (
 	"atlas-skills/skill"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // ProcessorMock is a mock implementation of skill.Processor
@@ -15,9 +18,9 @@ type ProcessorMock struct {
 }
 
 // ByCharacterIdProvider mocks the ByCharacterIdProvider method
-func (m *ProcessorMock) ByCharacterIdProvider(characterId uint32) model.Provider[[]skill.Model] {
-	args := m.Called(characterId)
-	return args.Get(0).(model.Provider[[]skill.Model])
+func (m *ProcessorMock) ByCharacterIdProvider(characterId uint32, page model.Page) model.Provider[model.Paged[skill.Model]] {
+	args := m.Called(characterId, page)
+	return args.Get(0).(model.Provider[model.Paged[skill.Model]])
 }
 
 // ByIdProvider mocks the ByIdProvider method
@@ -90,4 +93,16 @@ func (m *ProcessorMock) RequestCreate(characterId uint32, id uint32, level byte,
 func (m *ProcessorMock) RequestUpdate(characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) error {
 	args := m.Called(characterId, id, level, masterLevel, expiration)
 	return args.Error(0)
+}
+
+// ResetCooldowns mocks the ResetCooldowns method
+func (m *ProcessorMock) ResetCooldowns(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, exceptSkillIds []uint32) ([]uint32, error) {
+	args := m.Called(mb)
+	return args.Get(0).(func(transactionId uuid.UUID, worldId world.Id, characterId uint32, exceptSkillIds []uint32) ([]uint32, error))
+}
+
+// ResetCooldownsAndEmit mocks the ResetCooldownsAndEmit method
+func (m *ProcessorMock) ResetCooldownsAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, exceptSkillIds []uint32) ([]uint32, error) {
+	args := m.Called(transactionId, worldId, characterId, exceptSkillIds)
+	return args.Get(0).([]uint32), args.Error(1)
 }

@@ -1,6 +1,7 @@
 package monster
 
 import (
+	"atlas-monsters/character/hidden"
 	mistKafka "atlas-monsters/kafka/message/mist"
 	"atlas-monsters/monster/information"
 	"atlas-monsters/monster/mobskill"
@@ -10,6 +11,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -18,12 +25,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/alicebob/miniredis/v2"
-	"github.com/google/uuid"
-	goredis "github.com/redis/go-redis/v9"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // emittedEvent captures a single Kafka message emitted during a test.
@@ -309,6 +311,52 @@ func TestDamageControllerSwitchOnDpsLead(t *testing.T) {
 	}
 	if body.ActorId != 2 {
 		t.Errorf("START_CONTROL ActorId=2 expected, got %d", body.ActorId)
+	}
+}
+
+// TestDamageDPSLeadSwitchSkippedWhenLeaderHidden verifies the DPS-leader
+// controller-switch guard added in processor.go's Damage (~line 531): when
+// the character who just became damage leader is GM-hidden, the switch must
+// be skipped entirely — no STOP_CONTROL/START_CONTROL, and the monster's
+// controller stays unchanged. This is the acceptance-critical assertion
+// ("a hidden GM must NEVER be selected as controller") for the Damage path;
+// every other Damage test leaves hiddenFn nil and only exercises the
+// fail-open branch, so none of them exercise this guard. Mirrors
+// TestDamageControllerSwitchOnDpsLead but with hiddenFn reporting the new
+// leader (character 2) as hidden.
+func TestDamageDPSLeadSwitchSkippedWhenLeaderHidden(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	uniqueId := m.UniqueId()
+	// Pre-populate: character 1 controls and leads damage.
+	if _, err := r.ControlMonster(ten, uniqueId, 1); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+	if _, err := r.ApplyDamage(ten, 1, 50, uniqueId, time.Now().UnixMilli()); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	p, events := newRecordingProcessorWithBodies(t, ten)
+	// Character 2 is about to become damage leader — mark it GM-hidden.
+	p.hiddenFn = func() (map[uint32]struct{}, error) { return map[uint32]struct{}{2: {}}, nil }
+	p.Damage(uniqueId, 2, []uint32{500}, 0)
+
+	for _, e := range *events {
+		if e.Type == EventMonsterStatusStopControl || e.Type == EventMonsterStatusStartControl {
+			t.Fatalf("hidden damage leader must not trigger a controller switch, got event %q", e.Type)
+		}
+	}
+
+	got, err := r.GetMonster(ten, uniqueId)
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if got.ControlCharacterId() != 1 {
+		t.Fatalf("expected controller to remain 1 (hidden leader must not gain control), got %d", got.ControlCharacterId())
 	}
 }
 
@@ -843,7 +891,7 @@ func TestExecuteStatBuff_ReflectStatus_PopulatesReflectMetadata(t *testing.T) {
 	sd := mobskill.NewModelBuilder().
 		SetSkillId(uint16(skillId)).
 		SetLevel(uint16(skillLevel)).
-		SetDuration(60).
+		SetDuration(60_000). // 60s in ms
 		SetX(30).
 		SetBoundingBox(-50, -30, 50, 30).
 		Build()
@@ -963,7 +1011,7 @@ func TestExecuteStatBuff_PhysicalImmune_CancelsActiveMagicImmune(t *testing.T) {
 	sd := mobskill.NewModelBuilder().
 		SetSkillId(uint16(skillId)).
 		SetLevel(uint16(skillLevel)).
-		SetDuration(60).
+		SetDuration(60_000). // 60s in ms
 		SetX(1).
 		Build()
 
@@ -1019,7 +1067,7 @@ func TestExecuteStatBuff_MagicImmune_CancelsActivePhysicalImmune(t *testing.T) {
 	sd := mobskill.NewModelBuilder().
 		SetSkillId(uint16(skillId)).
 		SetLevel(uint16(skillLevel)).
-		SetDuration(60).
+		SetDuration(60_000). // 60s in ms
 		SetX(1).
 		Build()
 
@@ -1065,7 +1113,7 @@ func TestExecuteStatBuff_PhysicalImmune_NoMagicImmune_DoesNotCancel(t *testing.T
 	sd := mobskill.NewModelBuilder().
 		SetSkillId(uint16(skillId)).
 		SetLevel(uint16(skillLevel)).
-		SetDuration(60).
+		SetDuration(60_000). // 60s in ms
 		SetX(1).
 		Build()
 
@@ -1113,7 +1161,9 @@ func TestDamageRepickGuard_FiresOnFirstHitMiss(t *testing.T) {
 // TestBuildMistCreateBody verifies the pure mapping from a casting monster +
 // AREA_POISON skill data to the wire MIST_CREATE body. Field identity, owner
 // identity, origin coordinates, bounding box, disease/duration, and skill
-// references must all flow through unchanged (modulo seconds→ms).
+// references must all flow through unchanged. mobskill.Duration() is
+// MILLISECONDS (task-190 FR-1.1) and this body forwards it verbatim — there is
+// no scaling here.
 func TestBuildMistCreateBody(t *testing.T) {
 	r := GetMonsterRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
@@ -1128,7 +1178,7 @@ func TestBuildMistCreateBody(t *testing.T) {
 		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
 		SetLevel(5).
 		SetX(80).
-		SetDuration(10). // seconds
+		SetDuration(10_000). // milliseconds — mobskill.Duration() is ms since task-190
 		SetBoundingBox(-50, -30, 50, 30).
 		Build()
 
@@ -1171,7 +1221,10 @@ func TestBuildMistCreateBody(t *testing.T) {
 
 // TestBuildMistCreateBody_DurationCap verifies that absurdly long durations
 // (e.g. atlas-data reporting 30 minutes) are clamped to MistDurationCapMs so
-// the per-mist tick load is bounded.
+// per-mist tick load stays bounded. Before task-190 this clamp fired on a
+// 1000×-inflated value and silently pinned EVERY mob mist to exactly 60s; it
+// now applies to real milliseconds, so only mists authored longer than 60s
+// clamp.
 func TestBuildMistCreateBody_DurationCap(t *testing.T) {
 	r := GetMonsterRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
@@ -1185,7 +1238,7 @@ func TestBuildMistCreateBody_DurationCap(t *testing.T) {
 		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
 		SetLevel(1).
 		SetX(80).
-		SetDuration(1800). // 30 minutes — must clamp
+		SetDuration(1_800_000). // 30 minutes in ms — must clamp to MistDurationCapMs
 		SetBoundingBox(-50, -30, 50, 30).
 		Build()
 
@@ -1193,6 +1246,37 @@ func TestBuildMistCreateBody_DurationCap(t *testing.T) {
 	if body.Duration != MistDurationCapMs || body.DiseaseDuration != MistDurationCapMs {
 		t.Errorf("expected clamp to %d, got Duration=%d DiseaseDuration=%d",
 			MistDurationCapMs, body.Duration, body.DiseaseDuration)
+	}
+}
+
+// TestBuildMistCreateBody_UnderCapIsNotClamped is the regression guard for the
+// defect the cap used to mask: before task-190 a 30s authored mist arrived here
+// as 30_000_000 and was pinned to exactly 60_000. It must now pass through.
+func TestBuildMistCreateBody_UnderCapIsNotClamped(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100020000)).SetInstance(uuid.New()).Build()
+	m := r.CreateMonster(ctx, ten, f, uint32(8800002), 300, 400, 0, 5, 0, 1000, 200)
+
+	sd := mobskill.NewModelBuilder().
+		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
+		SetLevel(5).
+		SetX(80).
+		SetDuration(30_000). // 30s authored in WZ, delivered as ms
+		SetBoundingBox(-50, -30, 50, 30).
+		Build()
+
+	body := buildMistCreateBody(m, sd, byte(monster2.SkillTypeAreaPoison), 5)
+
+	if body.Duration != 30_000 || body.DiseaseDuration != 30_000 {
+		t.Errorf("duration: got %d/%d want 30000/30000 (must not clamp below the 60s cap)",
+			body.Duration, body.DiseaseDuration)
+	}
+	if body.Duration == MistDurationCapMs {
+		t.Errorf("duration was pinned to the cap (%d) — the pre-task-190 defect has returned", MistDurationCapMs)
 	}
 }
 
@@ -1212,7 +1296,7 @@ func TestExecuteMist_ProducesMistCreateCommand(t *testing.T) {
 		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
 		SetLevel(5).
 		SetX(80).
-		SetDuration(10).
+		SetDuration(10_000).
 		SetBoundingBox(-50, -30, 50, 30).
 		Build()
 
@@ -1508,7 +1592,7 @@ func TestUseBasicAttack_HappyPath_DeductsMpAndRegistersCooldown(t *testing.T) {
 	m := r.CreateMonster(ctx, ten, f, monsterId, 0, 0, 0, 5, 0, 3000, 100)
 	uniqueId := m.UniqueId()
 
-	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten, emit: func(string, model.Provider[[]kafka.Message]) error { return nil }}
 
 	// pos=2 corresponds to AttackInfo.Pos=1 internally? No — we normalize
 	// the wire/zero-indexed attackPos to the 1-indexed information.Pos by
@@ -1708,9 +1792,9 @@ func TestUseBasicAttack_DeadMonster_Skips(t *testing.T) {
 func applyDoomEffectFromPlayer(durationMs int) StatusEffect {
 	return NewStatusEffect(
 		SourceTypePlayerSkill,
-		1001,                          // sourceCharacterId
+		1001,                            // sourceCharacterId
 		uint32(skillconst.PriestDoomId), // sourceSkillId
-		30,                            // sourceSkillLevel
+		30,                              // sourceSkillLevel
 		map[string]int32{monster2.StatusDoom: 1},
 		time.Duration(durationMs)*time.Millisecond,
 		0,
@@ -1718,8 +1802,8 @@ func applyDoomEffectFromPlayer(durationMs int) StatusEffect {
 }
 
 // TestApplyStatusEffect_Doom_BypassesElementalImmunity verifies that DOOM is
-// applied to a monster with full elemental resistance (the case Cosmic
-// source treats as the skill's intended counter-niche). Pins the explicit
+// applied to a monster with full elemental resistance — the skill's intended
+// counter-niche. Pins the explicit
 // short-circuit at the top of isElementallyImmune.
 func TestApplyStatusEffect_Doom_BypassesElementalImmunity(t *testing.T) {
 	r := GetMonsterRegistry()
@@ -1964,5 +2048,531 @@ func TestGetInFieldRect_NormalizesCornerOrder(t *testing.T) {
 	}
 	if len(got) != 1 {
 		t.Errorf("expected normalized rect to include (50,50); got %d", len(got))
+	}
+}
+
+// mpChangedRecorder returns an emitter that collects MP_CHANGED envelopes.
+func mpChangedRecorder(t *testing.T, out *[]statusEvent[statusEventMpChangedBody]) emitter {
+	t.Helper()
+	return func(topic string, provider model.Provider[[]kafka.Message]) error {
+		msgs, err := provider()
+		if err != nil {
+			return err
+		}
+		for _, msg := range msgs {
+			var env statusEvent[statusEventMpChangedBody]
+			if err := json.Unmarshal(msg.Value, &env); err != nil {
+				continue
+			}
+			if env.Type == EventMonsterStatusMpChanged {
+				*out = append(*out, env)
+			}
+		}
+		return nil
+	}
+}
+
+func TestUseBasicAttack_Deduct_EmitsMpChanged(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("miniredis: %v", err)
+	}
+	defer mr.Close()
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	prevAttackReg := attackCooldownReg
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
+	defer func() { attackCooldownReg = prevAttackReg }()
+
+	prevHook := testInformationLookup
+	testInformationLookup = func(monsterId uint32) (information.Model, error) {
+		return information.NewModelBuilder().
+			SetAttacks([]information.AttackInfo{{Pos: 2, ConMP: 5, AttackAfter: 1500}}).
+			Build(), nil
+	}
+	defer func() { testInformationLookup = prevHook }()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100)
+
+	var emitted []statusEvent[statusEventMpChangedBody]
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten, emit: mpChangedRecorder(t, &emitted)}
+
+	p.UseBasicAttack(m.UniqueId(), uint8(1)) // 0-indexed; matches Pos=2
+
+	if len(emitted) != 1 {
+		t.Fatalf("expected exactly 1 MP_CHANGED, got %d", len(emitted))
+	}
+	e := emitted[0]
+	if e.Body.Reason != MpChangeReasonBasicAttack {
+		t.Errorf("Reason = %q, want %q", e.Body.Reason, MpChangeReasonBasicAttack)
+	}
+	if e.Body.CharacterId != 0 || e.Body.SkillId != 0 {
+		t.Errorf("CharacterId/SkillId = %d/%d, want 0/0", e.Body.CharacterId, e.Body.SkillId)
+	}
+	if e.Body.Amount != 5 || e.Body.MonsterMpAfter != 95 {
+		t.Errorf("Amount/MonsterMpAfter = %d/%d, want 5/95", e.Body.Amount, e.Body.MonsterMpAfter)
+	}
+	if e.UniqueId != m.UniqueId() {
+		t.Errorf("UniqueId = %d, want %d", e.UniqueId, m.UniqueId())
+	}
+}
+
+func TestUseBasicAttack_NoDeduct_NoMpChanged(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("miniredis: %v", err)
+	}
+	defer mr.Close()
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	prevAttackReg := attackCooldownReg
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
+	defer func() { attackCooldownReg = prevAttackReg }()
+
+	prevHook := testInformationLookup
+	testInformationLookup = func(monsterId uint32) (information.Model, error) {
+		return information.NewModelBuilder().
+			SetAttacks([]information.AttackInfo{{Pos: 2, ConMP: 0, AttackAfter: 0}}).
+			Build(), nil
+	}
+	defer func() { testInformationLookup = prevHook }()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100)
+
+	var emitted []statusEvent[statusEventMpChangedBody]
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten, emit: mpChangedRecorder(t, &emitted)}
+
+	p.UseBasicAttack(m.UniqueId(), uint8(1))
+
+	if len(emitted) != 0 {
+		t.Fatalf("ConMP=0 must not emit MP_CHANGED, got %d", len(emitted))
+	}
+}
+
+func TestUseSkill_Deduct_EmitsMpChanged(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("miniredis: %v", err)
+	}
+	defer mr.Close()
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	prevCooldown := cooldownReg
+	cooldownReg = &cooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-cooldown", func(s string) string { return s })}
+	defer func() { cooldownReg = prevCooldown }()
+
+	// Skill 126 (Slow) maps to SkillCategoryDebuff; with inFieldFn returning
+	// no targets the executor is a no-op, isolating the deduct+emit.
+	prevSkill := testMobSkillLookup
+	testMobSkillLookup = func(skillId uint16, level uint16) (mobskill.Model, error) {
+		return mobskill.NewModelBuilder().
+			SetSkillId(skillId).
+			SetLevel(level).
+			SetMpCon(10).
+			Build(), nil
+	}
+	defer func() { testMobSkillLookup = prevSkill }()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100)
+
+	var emitted []statusEvent[statusEventMpChangedBody]
+	p := &ProcessorImpl{
+		l:         logrus.New(),
+		ctx:       tenant.WithContext(ctx, ten),
+		t:         ten,
+		emit:      mpChangedRecorder(t, &emitted),
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	p.UseSkill(m.UniqueId(), 1, 126, 1)
+
+	if len(emitted) != 1 {
+		t.Fatalf("expected exactly 1 MP_CHANGED, got %d", len(emitted))
+	}
+	e := emitted[0]
+	if e.Body.Reason != MpChangeReasonSkillCast {
+		t.Errorf("Reason = %q, want %q", e.Body.Reason, MpChangeReasonSkillCast)
+	}
+	if e.Body.CharacterId != 0 {
+		t.Errorf("CharacterId = %d, want 0", e.Body.CharacterId)
+	}
+	if e.Body.SkillId != 126 {
+		t.Errorf("SkillId = %d, want the mob skill id 126", e.Body.SkillId)
+	}
+	if e.Body.Amount != 10 || e.Body.MonsterMpAfter != 90 {
+		t.Errorf("Amount/MonsterMpAfter = %d/%d, want 10/90", e.Body.Amount, e.Body.MonsterMpAfter)
+	}
+
+	got, _ := r.GetMonster(ten, m.UniqueId())
+	if got.Mp() != 90 {
+		t.Errorf("registry Mp = %d, want 90", got.Mp())
+	}
+}
+
+func TestUseSkill_ZeroMpCon_NoMpChanged(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("miniredis: %v", err)
+	}
+	defer mr.Close()
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	prevCooldown := cooldownReg
+	cooldownReg = &cooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-cooldown", func(s string) string { return s })}
+	defer func() { cooldownReg = prevCooldown }()
+
+	prevSkill := testMobSkillLookup
+	testMobSkillLookup = func(skillId uint16, level uint16) (mobskill.Model, error) {
+		return mobskill.NewModelBuilder().SetSkillId(skillId).SetLevel(level).Build(), nil
+	}
+	defer func() { testMobSkillLookup = prevSkill }()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100)
+
+	var emitted []statusEvent[statusEventMpChangedBody]
+	p := &ProcessorImpl{
+		l:         logrus.New(),
+		ctx:       tenant.WithContext(ctx, ten),
+		t:         ten,
+		emit:      mpChangedRecorder(t, &emitted),
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	p.UseSkill(m.UniqueId(), 1, 126, 1)
+
+	if len(emitted) != 0 {
+		t.Fatalf("MpCon=0 must not emit MP_CHANGED, got %d", len(emitted))
+	}
+}
+
+// testProcessorWithHidden builds a ProcessorImpl with hiddenFn stubbed to
+// return the given hidden set / error, matching the file's established
+// direct-struct-literal construction convention (see newRecordingProcessor,
+// puppet_test.go) rather than routing through NewProcessor.
+func testProcessorWithHidden(t *testing.T, ten tenant.Model, hidden map[uint32]struct{}, hiddenErr error) *ProcessorImpl {
+	t.Helper()
+	return &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: context.Background(),
+		t:   ten,
+		hiddenFn: func() (map[uint32]struct{}, error) {
+			return hidden, hiddenErr
+		},
+	}
+}
+
+// TestGetControllerCandidateExcludesHidden verifies a hidden character is
+// dropped from the candidate pool (FR-4.1), leaving the visible character.
+func TestGetControllerCandidateExcludesHidden(t *testing.T) {
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	GetMonsterRegistry().Clear(context.Background())
+	GetPuppetRegistry().Clear(context.Background())
+	f := testField()
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{1: {}}, nil)
+	cid, err := p.getControllerCandidate(f, 0, 0, idsProvider(1, 2))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cid != 2 {
+		t.Fatalf("expected visible character 2, got %d", cid)
+	}
+}
+
+// TestGetControllerCandidateOnlyHiddenIsSentinel verifies an all-hidden pool
+// yields ErrNoControllerCandidate (FR-4.3).
+func TestGetControllerCandidateOnlyHiddenIsSentinel(t *testing.T) {
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	GetMonsterRegistry().Clear(context.Background())
+	GetPuppetRegistry().Clear(context.Background())
+	f := testField()
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{1: {}}, nil)
+	_, err := p.getControllerCandidate(f, 0, 0, idsProvider(1))
+	if !errors.Is(err, ErrNoControllerCandidate) {
+		t.Fatalf("expected ErrNoControllerCandidate, got %v", err)
+	}
+}
+
+// TestGetControllerCandidateEmptyPoolIsSentinel verifies an empty candidate
+// pool (no characters in field at all) also yields the sentinel.
+func TestGetControllerCandidateEmptyPoolIsSentinel(t *testing.T) {
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	GetMonsterRegistry().Clear(context.Background())
+	GetPuppetRegistry().Clear(context.Background())
+	f := testField()
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{}, nil)
+	_, err := p.getControllerCandidate(f, 0, 0, idsProvider())
+	if !errors.Is(err, ErrNoControllerCandidate) {
+		t.Fatalf("expected ErrNoControllerCandidate, got %v", err)
+	}
+}
+
+// TestGetControllerCandidateRedisFailureFailsOpen verifies a hiddenFn error
+// degrades to unfiltered election rather than blocking control assignment
+// (design §4.5 fail-open).
+func TestGetControllerCandidateRedisFailureFailsOpen(t *testing.T) {
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	GetMonsterRegistry().Clear(context.Background())
+	GetPuppetRegistry().Clear(context.Background())
+	f := testField()
+
+	p := testProcessorWithHidden(t, ten, nil, errors.New("redis down"))
+	cid, err := p.getControllerCandidate(f, 0, 0, idsProvider(1))
+	if err != nil || cid != 1 {
+		t.Fatalf("fail-open expected candidate 1, got %d err %v", cid, err)
+	}
+}
+
+// TestControlCountsDoNotResurrectNonPoolControllers guards the pool-leak fix:
+// a monster controlled by character 9 (not in the field's candidate pool)
+// must never make 9 eligible, even though the old
+// `controlCounts[m.ControlCharacterId()] += 1` insert-on-increment pattern
+// would have inserted it into the map.
+func TestControlCountsDoNotResurrectNonPoolControllers(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	GetPuppetRegistry().Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	if _, err := r.ControlMonster(ten, m.UniqueId(), 9); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{}, nil)
+	cid, err := p.getControllerCandidate(f, 0, 0, idsProvider(2))
+	if err != nil || cid != 2 {
+		t.Fatalf("expected 2, got %d err %v", cid, err)
+	}
+}
+
+// TestFindNextControllerNoCandidateIsNoop verifies FindNextController treats
+// ErrNoControllerCandidate as a logged no-op success, leaving the monster
+// uncontrolled instead of surfacing an error to the caller (enter/exit/
+// hide/reveal call sites all inherit this via the one choke point).
+func TestFindNextControllerNoCandidateIsNoop(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	GetPuppetRegistry().Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{1: {}}, nil)
+	if err := p.FindNextController(idsProvider(1))(m); err != nil {
+		t.Fatalf("no-candidate must be a no-op success, got %v", err)
+	}
+
+	got, err := p.GetById(m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if got.ControlCharacterId() != 0 {
+		t.Fatalf("mob must stay uncontrolled, controller=%d", got.ControlCharacterId())
+	}
+}
+
+// TestPuppetBiasSkipsHiddenOwner verifies the puppet-vicinity owner bias
+// (FR-4.2) skips a hidden owner, falling back to the least-loaded visible
+// candidate — mirrors puppet_test.go's TestAddPuppetBiasesController.
+func TestPuppetBiasSkipsHiddenOwner(t *testing.T) {
+	r := GetMonsterRegistry()
+	pr := GetPuppetRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	pr.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 100, 100, 0, 5, 0, 100, 50)
+
+	// Puppet owner (char 1) is GM-hidden; in vicinity at (110,110): distanceSq=200 < 177777.
+	hiddenOwner := uint32(1)
+	pr.Add(ctx, ten, f, hiddenOwner, 110, 110)
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{1: {}}, nil)
+	cid, err := p.getControllerCandidate(f, m.X(), m.Y(), idsProvider(1, 2))
+	if err != nil {
+		t.Fatalf("getControllerCandidate: %v", err)
+	}
+	if cid != 2 {
+		t.Fatalf("expected hidden puppet owner bias skipped, candidate 2, got %d", cid)
+	}
+}
+
+// TestRelinquishOnHideMutatesSetBeforeLocationFailure verifies the hidden-set
+// mutation applies even when the character's live field cannot be resolved
+// (FR-7.2): the set write must never be gated on a successful location
+// lookup, so election exclusion still holds while the location is retried by
+// reconciliation.
+func TestRelinquishOnHideMutatesSetBeforeLocationFailure(t *testing.T) {
+	ten := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), ten)
+	hidden.GetRegistry().Clear(ctx)
+	t.Cleanup(func() { hidden.GetRegistry().Clear(context.Background()) })
+
+	p := NewProcessor(newPickerLogger(), ctx).(*ProcessorImpl)
+	p.locationFn = func(uint32) (field.Model, error) {
+		return field.Model{}, errors.New("maps unavailable")
+	}
+
+	if err := p.RelinquishControlOnHide(77); err != nil {
+		t.Fatalf("location failure must not propagate: %v", err)
+	}
+
+	ms, err := hidden.GetRegistry().MemberSet(context.Background(), ten)
+	if err != nil {
+		t.Fatalf("MemberSet: %v", err)
+	}
+	if _, ok := ms[77]; !ok {
+		t.Fatalf("hidden-set mutation must apply even when location fails (FR-7.2)")
+	}
+}
+
+// TestRelinquishOnHideReassignsControlledMobs verifies that hiding a
+// controlling character releases and reassigns every monster it controls in
+// its field to the remaining eligible (non-hidden) candidate.
+func TestRelinquishOnHideReassignsControlledMobs(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), ten)
+	r.Clear(ctx)
+	GetPuppetRegistry().Clear(ctx)
+	hidden.GetRegistry().Clear(ctx)
+	t.Cleanup(func() { hidden.GetRegistry().Clear(context.Background()) })
+
+	f := testField()
+	mob1 := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	mob2 := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	if _, err := r.ControlMonster(ten, mob1.UniqueId(), 1); err != nil {
+		t.Fatalf("ControlMonster mob1: %v", err)
+	}
+	if _, err := r.ControlMonster(ten, mob2.UniqueId(), 1); err != nil {
+		t.Fatalf("ControlMonster mob2: %v", err)
+	}
+
+	p := NewProcessor(newPickerLogger(), ctx).(*ProcessorImpl)
+	p.locationFn = func(uint32) (field.Model, error) { return f, nil }
+	p.inFieldFn = func(field.Model) ([]uint32, error) { return []uint32{1, 2}, nil }
+
+	if err := p.RelinquishControlOnHide(1); err != nil {
+		t.Fatalf("RelinquishControlOnHide: %v", err)
+	}
+
+	for _, id := range []uint32{mob1.UniqueId(), mob2.UniqueId()} {
+		m, err := p.GetById(id)
+		if err != nil {
+			t.Fatalf("GetById(%d): %v", id, err)
+		}
+		if m.ControlCharacterId() != 2 {
+			t.Fatalf("mob [%d] expected controller 2, got %d", id, m.ControlCharacterId())
+		}
+	}
+}
+
+// TestRelinquishOnHideOnlyHiddenLeftLeavesUncontrolled verifies that when the
+// hiding character is the sole occupant of the field, released monsters are
+// left uncontrolled (FR-4.3) rather than erroring.
+func TestRelinquishOnHideOnlyHiddenLeftLeavesUncontrolled(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), ten)
+	r.Clear(ctx)
+	GetPuppetRegistry().Clear(ctx)
+	hidden.GetRegistry().Clear(ctx)
+	t.Cleanup(func() { hidden.GetRegistry().Clear(context.Background()) })
+
+	f := testField()
+	mob := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	if _, err := r.ControlMonster(ten, mob.UniqueId(), 1); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+
+	p := NewProcessor(newPickerLogger(), ctx).(*ProcessorImpl)
+	p.locationFn = func(uint32) (field.Model, error) { return f, nil }
+	p.inFieldFn = func(field.Model) ([]uint32, error) { return []uint32{1}, nil }
+
+	if err := p.RelinquishControlOnHide(1); err != nil {
+		t.Fatalf("RelinquishControlOnHide: %v", err)
+	}
+
+	m, err := p.GetById(mob.UniqueId())
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if m.ControlCharacterId() != 0 {
+		t.Fatalf("expected uncontrolled, got %d", m.ControlCharacterId())
+	}
+}
+
+// TestRestoreCandidacyOnRevealRemovesFromSetAndSweeps verifies that revealing
+// a character removes it from the hidden set and re-runs election over
+// uncontrolled monsters in its field, electing the now-visible character
+// (FR-3). The Remove-before-sweep ordering closes the SREM-vs-concurrent-
+// election race (design D5).
+func TestRestoreCandidacyOnRevealRemovesFromSetAndSweeps(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), ten)
+	r.Clear(ctx)
+	GetPuppetRegistry().Clear(ctx)
+	hidden.GetRegistry().Clear(ctx)
+	t.Cleanup(func() { hidden.GetRegistry().Clear(context.Background()) })
+
+	if err := hidden.GetRegistry().Add(ctx, ten, 1); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+
+	f := testField()
+	mob := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+
+	p := NewProcessor(newPickerLogger(), ctx).(*ProcessorImpl)
+	p.locationFn = func(uint32) (field.Model, error) { return f, nil }
+	p.inFieldFn = func(field.Model) ([]uint32, error) { return []uint32{1}, nil }
+
+	if err := p.RestoreCandidacyOnReveal(1); err != nil {
+		t.Fatalf("RestoreCandidacyOnReveal: %v", err)
+	}
+
+	ms, err := hidden.GetRegistry().MemberSet(context.Background(), ten)
+	if err != nil {
+		t.Fatalf("MemberSet: %v", err)
+	}
+	if len(ms) != 0 {
+		t.Fatalf("set entry must be removed on reveal, got %v", ms)
+	}
+
+	m, err := p.GetById(mob.UniqueId())
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if m.ControlCharacterId() != 1 {
+		t.Fatalf("reveal sweep must elect the revealed character, got %d", m.ControlCharacterId())
 	}
 }

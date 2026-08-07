@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const AdminChatHandle = "AdminChat"
@@ -25,9 +26,9 @@ func NewAdminChat(chatType byte, flag byte, message string) AdminChat {
 	return AdminChat{chatType: chatType, flag: flag, message: message}
 }
 
-func (m AdminChat) ChatType() byte    { return m.chatType }
-func (m AdminChat) Flag() byte        { return m.flag }
-func (m AdminChat) Message() string   { return m.message }
+func (m AdminChat) ChatType() byte  { return m.chatType }
+func (m AdminChat) Flag() byte      { return m.flag }
+func (m AdminChat) Message() string { return m.message }
 
 func (m AdminChat) Operation() string {
 	return AdminChatHandle

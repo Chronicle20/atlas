@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func setupCooldownRegistryTest(t *testing.T) {
@@ -222,4 +223,67 @@ func TestCooldownRegistry_MultipleSkillsSameCharacter(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.True(t, exp2.After(exp1))
+}
+
+func TestGetAllForCharacter_ReturnsOnlyCharacterEntries(t *testing.T) {
+	setupCooldownRegistryTest(t)
+	ten := setupCooldownTestTenant(t)
+	ctx := cooldownTestCtx(ten)
+	r := GetRegistry()
+
+	assert.NoError(t, r.Apply(ctx, 100, 5121010, 2940))
+	assert.NoError(t, r.Apply(ctx, 100, 1311006, 300))
+	assert.NoError(t, r.Apply(ctx, 200, 5221006, 60))
+
+	got, err := r.GetAllForCharacter(ctx, 100)
+	assert.NoError(t, err)
+	assert.Len(t, got, 2)
+	assert.Contains(t, got, uint32(5121010))
+	assert.Contains(t, got, uint32(1311006))
+}
+
+func TestGetAllForCharacter_PrefixSafety(t *testing.T) {
+	setupCooldownRegistryTest(t)
+	ten := setupCooldownTestTenant(t)
+	ctx := cooldownTestCtx(ten)
+	r := GetRegistry()
+
+	// charId 100 must not match 1000 or 1001 entries.
+	assert.NoError(t, r.Apply(ctx, 1000, 5121010, 60))
+	assert.NoError(t, r.Apply(ctx, 1001, 1311006, 60))
+
+	got, err := r.GetAllForCharacter(ctx, 100)
+	assert.NoError(t, err)
+	assert.Empty(t, got)
+
+	got1000, err := r.GetAllForCharacter(ctx, 1000)
+	assert.NoError(t, err)
+	assert.Len(t, got1000, 1)
+	assert.Contains(t, got1000, uint32(5121010))
+}
+
+func TestGetAllForCharacter_UnknownCharacter_Empty(t *testing.T) {
+	setupCooldownRegistryTest(t)
+	ten := setupCooldownTestTenant(t)
+	ctx := cooldownTestCtx(ten)
+
+	got, err := GetRegistry().GetAllForCharacter(ctx, 42)
+	assert.NoError(t, err)
+	assert.Empty(t, got)
+}
+
+func TestGetAllForCharacter_SkipsMalformedSuffixes(t *testing.T) {
+	setupCooldownRegistryTest(t)
+	ten := setupCooldownTestTenant(t)
+	ctx := cooldownTestCtx(ten)
+	r := GetRegistry()
+
+	assert.NoError(t, r.Apply(ctx, 100, 5121010, 60))
+	// Malformed suffix under the same character prefix — non-numeric skill id.
+	assert.NoError(t, r.reg.Put(ctx, ten, "100:notaskill", time.Now().Add(time.Minute)))
+
+	got, err := r.GetAllForCharacter(ctx, 100)
+	assert.NoError(t, err)
+	assert.Len(t, got, 1)
+	assert.Contains(t, got, uint32(5121010))
 }

@@ -3,8 +3,9 @@ package saga
 import (
 	"testing"
 
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/stretchr/testify/assert"
+
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 // allActions lists every Action constant from libs/atlas-saga/model.go (lines
@@ -31,6 +32,9 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.ReleaseFromCharacter, sharedsaga.AcceptToCharacter, sharedsaga.ReleaseFromStorage,
 	sharedsaga.TransferToCashShop, sharedsaga.WithdrawFromCashShop, sharedsaga.AcceptToCashShop,
 	sharedsaga.ReleaseFromCashShop,
+	sharedsaga.TransferToMts, sharedsaga.WithdrawFromMts, sharedsaga.AcceptToMtsListing,
+	sharedsaga.ReleaseFromMtsHolding, sharedsaga.MtsSettlePurchase, sharedsaga.MtsMoveListingToHolding,
+	sharedsaga.MtsBidEscrow,
 	sharedsaga.RequestGuildName, sharedsaga.RequestGuildEmblem, sharedsaga.RequestGuildDisband,
 	sharedsaga.RequestGuildCapacityIncrease, sharedsaga.CreateInvite,
 	sharedsaga.CreateCharacter, sharedsaga.AwaitCharacterCreated, sharedsaga.AwaitInventoryCreated,
@@ -39,6 +43,11 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.RegisterPartyQuest, sharedsaga.WarpPartyQuestMembersToMap, sharedsaga.LeavePartyQuest,
 	sharedsaga.EnterPartyQuestBonus, sharedsaga.UpdatePqCustomData, sharedsaga.HitReactor,
 	sharedsaga.BroadcastPqMessage, sharedsaga.StageClearAttemptPq, sharedsaga.FieldEffectWeather,
+	sharedsaga.StartRPSGame,
+	sharedsaga.SetAssetOwner, sharedsaga.ApplyAssetLock, sharedsaga.IncubatorResult,
+	sharedsaga.TransferAP, sharedsaga.TransferSP,
+	sharedsaga.CreateNote,
+	sharedsaga.EmitMegaphone, sharedsaga.EnqueueWorldBroadcast,
 }
 
 // TestAcceptanceTable_EveryActionRepresented asserts every Action constant
@@ -97,6 +106,11 @@ func TestStepAcceptsEvent_KnownSuccessKinds(t *testing.T) {
 		{sharedsaga.RequestGuildDisband, EventKindGuildDisbanded},
 		{sharedsaga.RequestGuildCapacityIncrease, EventKindGuildCapacityUpdated},
 		{sharedsaga.CreateInvite, EventKindInviteCreated},
+		// A warp step advances only once the character's map change is confirmed
+		// (character.map_changed), so a step chained after the warp — e.g. the
+		// teleport-rock consume_rock DestroyAsset (task-124) — actually runs.
+		// Without this the warp step never completes and the next step is stranded.
+		{sharedsaga.WarpToRandomPortal, EventKindCharacterMapChanged},
 	}
 	for _, tc := range cases {
 		if !StepAcceptsEvent(tc.action, tc.kind) {

@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationMerchantBuy
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CPersonalShopDlg::BuyItem#Merchant
+    address: "0x689ce7"
+    decompile_sha256: 70d3711c99fff0eb6dd24ef4557108f6600dc0eee7241ea79781b78f647f4385
+verifies:
+  - libs/atlas-packet/interaction/serverbound/operation_merchant_buy_test.go#TestOperationMerchantBuyBytes

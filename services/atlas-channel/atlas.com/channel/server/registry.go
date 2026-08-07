@@ -4,8 +4,10 @@ import (
 	"sync"
 )
 
-var registry *Registry
-var once sync.Once
+var (
+	registry *Registry
+	once     sync.Once
+)
 
 // Registry holds the per-(tenant, world, channel) Model entries this
 // process knows about. Backing map keyed by server.Key so Deregister

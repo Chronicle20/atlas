@@ -4,14 +4,17 @@ import (
 	"atlas-maps/character/location"
 	"atlas-maps/kafka/message"
 	characterKafka "atlas-maps/kafka/message/character"
-	"atlas-maps/kafka/producer"
+	mapsproducer "atlas-maps/kafka/producer"
 	_map "atlas-maps/map"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // handleChannelChangeRequestFunc consumes CHANNEL_CHANGE_REQUEST commands
@@ -59,7 +62,7 @@ func handleChannelChangeRequestFunc(db *gorm.DB) func(l logrus.FieldLogger, ctx 
 
 		pp := producer.ProviderImpl(l)(ctx)
 		if err := message.Emit(pp)(func(buf *message.Buffer) error {
-			return buf.Put(characterKafka.EnvEventTopicCharacterStatus, producer.ChannelChangedStatusProvider(transactionId, c.CharacterId, c.WorldId, c.OldChannelId, newField))
+			return buf.Put(characterKafka.EnvEventTopicCharacterStatus, mapsproducer.ChannelChangedStatusProvider(transactionId, c.CharacterId, c.WorldId, c.OldChannelId, newField))
 		}); err != nil {
 			l.WithError(err).Errorf("CHANNEL_CHANGE_REQUEST: failed to emit CHANNEL_CHANGED status for character [%d].", c.CharacterId)
 		}

@@ -1,11 +1,10 @@
 package mock
 
 import (
-	"time"
-
 	"atlas-rates/character"
 	"atlas-rates/data/cash"
 	"atlas-rates/rate"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"

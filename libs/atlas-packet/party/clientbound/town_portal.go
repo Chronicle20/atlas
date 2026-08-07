@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // TownPortal is the PARTY_OPERATION sub-op that sets (or clears) ONE party
@@ -16,8 +17,8 @@ import (
 // (CWvsContext aTownPortal[slot]). While a viewer is in a party the v83 client
 // renders town doors SOLELY from this array (CField::OnTownPortalChanged
 // @0x5365c8 ignores the solo SPAWN_PORTAL), so a door cast/removed while in a
-// party must update it here — the per-slot surgical equivalent of Cosmic's
-// partyPortal, fired on door create/remove rather than a full PARTYDATA reload.
+// party must update it here — a per-slot surgical update fired on door
+// create/remove rather than a full PARTYDATA reload.
 //
 // Body (per IDA OnPartyResult): Decode1 mode, Decode1 slot, Decode4 townId,
 // Decode4 targetId, [Decode4 skillId — GMS v95+ only], Decode2 x, Decode2 y ->

@@ -1,6 +1,9 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import type { Tenant } from "@/services/api/tenants.service";
-import { skillsService, type SkillDefinition } from "@/services/api/skills.service";
+import {
+  skillsService,
+  type SkillDefinition,
+} from "@/services/api/skills.service";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 
 export interface SkillDefinitionWithIcon extends SkillDefinition {
@@ -32,10 +35,28 @@ export async function fetchSkillDefinitionWithIcon(
   };
 }
 
-/** Retry policy shared with the batch hook: never retry a 404. */
-export function skillDefinitionRetry(failureCount: number, error: Error): boolean {
+/**
+ * Retry policy shared with the batch hook.
+ *
+ * A 404 here has two causes we cannot tell apart from a single response: a
+ * genuinely-missing skill id, or a skill that is briefly unavailable while
+ * atlas-data re-ingests a freshly published baseline (a preset row fetches
+ * per-skill, so it surfaces every such blip individually — see
+ * task-186). So a 404 gets a small bounded number of retries: enough for a
+ * re-ingest blip to self-heal without a manual reload, few enough that a
+ * permanently-invalid id does not hammer the backend. Non-404 errors keep the
+ * original three-attempt budget.
+ */
+export const SKILL_DEFINITION_404_MAX_RETRIES = 2;
+
+export function skillDefinitionRetry(
+  failureCount: number,
+  error: Error,
+): boolean {
   const msg = error?.message?.toLowerCase() ?? "";
-  if (msg.includes("404") || msg.includes("not found")) return false;
+  if (msg.includes("404") || msg.includes("not found")) {
+    return failureCount < SKILL_DEFINITION_404_MAX_RETRIES;
+  }
   return failureCount < 3;
 }
 

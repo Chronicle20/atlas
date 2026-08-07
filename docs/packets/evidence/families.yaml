@@ -19,12 +19,31 @@
 #
 # Adding/removing an entry is a reviewed edit. Verify the body first.
 dispatchers:
-  # CCashShop::OnCashItemResult — GRADUATED (task-096): all Atlas-supported mode
-  # arms of CASHSHOP_OPERATION have decompile-verified per-mode body codecs in
-  # cash/clientbound (each writes the leading mode byte THEN the full arm body,
-  # not mode-byte-only), each with a packet-audit:verify byte-fixture + fresh
-  # pinned evidence across gms_v83/v84/v87/v95/jms_v185. Supported arms (synthetic
-  # #-suffix FNames in the per-version exports): CashShopInventory (LOAD_LOCKER),
+  # CCashShop::OnCashItemResult — GRADUATED (task-183): all 57 mode arms
+  # verified across all applicable versions. task-183 added 48 new mode-arm
+  # codecs (gift/coupon/package item-blob, counter, failure, scalar/notice/
+  # transfer/gachapon/maple-point arms) on top of the 9 pre-existing arms
+  # below, each new arm derived from the GMS v95.1 IDB and gated per-version
+  # per docs/tasks/task-183-cashshop-result-family/arm-catalog.md (the
+  # per-arm×version source of wire truth — hex mode present vs `n-a` absent,
+  # each present cell proven by full switch-case enumeration at the dispatch
+  # address). Every one of the 57 arms now has a packet-audit:verify
+  # byte-fixture + pinned evidence for each version in which it is present
+  # (gms_v48/v61/v72/v79/v83/v84/v87/v95/jms_v185, minus each arm's
+  # documented `n-a` versions). This entry was briefly re-listed live
+  # (UN-GRADUATED, task-183 Wave 2/3) while the 48 new arms were implemented
+  # but not yet verified, so the op-row honestly capped at 🧩 instead of
+  # reading a false ✅ off only the 9 old arms; it is removed again now that
+  # the completeness gate confirms zero unverified present cells.
+  #
+  # Prior GRADUATED history (task-096), retained for context — this record
+  # covered only the original 9 arms and is now superseded by the above: all
+  # Atlas-supported mode arms of CASHSHOP_OPERATION have decompile-verified
+  # per-mode body codecs in cash/clientbound (each writes the leading mode byte
+  # THEN the full arm body, not mode-byte-only), each with a packet-audit:verify
+  # byte-fixture + fresh pinned evidence across gms_v83/v84/v87/v95/jms_v185.
+  # Supported arms (synthetic #-suffix FNames in the per-version exports):
+  # CashShopInventory (LOAD_LOCKER),
   # LoadInventoryFailure (LOAD_INVENTORY_FAILURE / LOAD_LOCKER_FAILED),
   # WishListLoad (LOAD_WISH_DONE) + WishListUpdate (SET_WISH_DONE) — split into
   # discrete per-mode structs (task-096: no struct serves >1 mode; the failure
@@ -124,3 +143,20 @@ dispatchers:
   # dispatchers v83 0x7c8a4c, v84 0x7eec1a (CTrunkDlg__OnPacket_recv_0x13C), v87
   # 0x81c336, v95 0x76a990, jms 0x84e5a1 (shift -1). ErrorMessage is version-absent
   # in jms (its dispatcher has no Decode1+DecodeStr arm) so it is not an arm there.
+  # CRPSGameDlg::OnPacket — GRADUATED (task-132): all Atlas-emitted mode arms of
+  # RPS_GAME have decompile-verified per-mode body codecs in rps/clientbound
+  # (operation.go: each writes the leading mode byte THEN the full arm body, not
+  # mode-byte-only), each with a packet-audit:verify byte-fixture + pinned evidence
+  # across gms_v83/v84/v87/v95/jms_v185. Atlas-emitted arms (synthetic #-suffix
+  # FNames in the per-version exports): Open (OPEN=8 -> CRPSGameDlg(ante): Decode4
+  # ante/participation-fee), Result (RESULT=11 -> Decode1 npcThrow + SIGNED int8
+  # Decode1 straightVictoryCount; the SIGN encodes win(>=0)/lose(<0), client-derived
+  # tie via userSelect==npcSelect), End (END/CLOSE=13 -> CWnd::Destroy, mode-byte
+  # only). Mode bytes are VERSION-UNIFORM (only the opcode shifts): v83 0x138,
+  # v84 0x13F, v87 0x149, v95 0x173, jms185 0x151. OnPacket dispatchers decompile-
+  # confirmed + reviewer-re-verified: v83 0x73fff1, v84 0x761d15, v87 0x78aba7,
+  # v95 0x6d9e00, jms185 0x7ae3dc. The mode-byte-only UI states (modes 6/7/9/10/12/14)
+  # are client-local UI ticks not emitted by atlas-rps, so they are not arms.
+  # (Serverbound RPS_ACTION is NOT listed here — it is not a client read-demux; its
+  # six senders OnBtStart/SendSelection/Update/OnBtContinue/OnBtExit/OnBtRetry are
+  # separate per-fname structs, see rps/serverbound + task-132 ida-rps-serverbound.md.)

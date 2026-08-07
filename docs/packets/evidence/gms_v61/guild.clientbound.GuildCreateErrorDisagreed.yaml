@@ -1,0 +1,10 @@
+packet: guild/clientbound/GuildCreateErrorDisagreed
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult
+    address: "0x851543"
+    decompile_sha256: b2f6980b132671ae0d0cd3924d2b884b180ea811e2bcd5aa63524d75b0b3d4ff
+verifies:
+    - libs/atlas-packet/guild/clientbound/v61_test.go#TestGuildModeOnlyArmsV61

@@ -1,0 +1,67 @@
+# Plan Audit — task-172-legacy-wz-ingest
+
+**Plan Path:** docs/tasks/task-172-legacy-wz-ingest/plan.md
+**Audit Date:** 2026-07-17
+**Branch:** task-172-legacy-wz-ingest
+**Base Branch:** main (base commit c9490b724)
+**Diff reviewed:** `.superpowers/sdd/review-c9490b724..718644c41.diff` (10 commits, c9490b724..718644c41)
+
+## Executive Summary
+
+All 9 plan tasks were implemented; code matches the plan's specified contracts almost verbatim (function names, signatures, error sentinels, error text). Every unit/integration test specified in the plan exists and passes (spot-verified live: `libs/atlas-wz` full suite, atlas-data `data/workers` + `item` packages, atlas-renders build+storage tests, `go vet` clean in all three modules, `redis-key-guard.sh`/`goroutine-guard.sh` clean). Task 9 (E2E) is the one task that does not fully match its plan text: the plan mandated ingesting the three real sample sets through the live service, but only the parser layer (C-1/C-2/C-3-lib) was exercised against real archives; the service/DB layer is honestly documented as PENDING a PR-gated ephemeral deploy. This is a legitimate external-blocker deferral, not an improper one — verified below. No `// TODO`/stub/501 found in any touched file. Two small, functionally-beneficial deviations (a data-race fix, a 5th canvas call-site migration) were made but not logged in `context.md`'s decisions list — cosmetic gaps only.
+
+## Task Completion
+
+| # | Task | Status | Evidence / Notes |
+|---|------|--------|------------------|
+| 1 | `wztest` fixture builder + round-trip test | DONE | `libs/atlas-wz/wztest/builder.go` (new), `libs/atlas-wz/wz/fixture_roundtrip_test.go` — API matches plan (`NewBuilder`, `SetVersion`, `SetEncryption`, `SetRawRootEntryName`, `AddDir`/`AddImage`, `Img`/`ImgWithKey`/`Int`/`Str`/`Sub`/`Canvas`). `TestFixtureRoundTripGMS` PASS (verified live). |
+| 2 | C-1 two-phase detection + `GameVersion()` | DONE | `libs/atlas-wz/wz/file.go:3077-3256` (diff) — `detectVersion` rewritten to phase1 (version via `tryParseWithVersion`) / phase2 (`readFirstEntryNames`+`isSaneEntryName`/`allSaneEntryNames`), error text `"no encryption candidate"` present verbatim (`file.go` diff line ~3147). `EncryptionType.String()` added in `crypto/keygen.go:2679-2689`. `GameVersion()` accessor added. `TestDetectUnencrypted/GMS/KMS/NoSaneCandidateErrors` PASS (verified live). |
+| 3 | C-2 per-image key fallback | DONE | `errBadImageTag` sentinel, `Image.keyOverride`, `parse`/`parseWithKey` retry loop in `wz/image.go`; key-range table (`registerImageKey`, `CanvasEncryptionKeyFor`) in `wz/file.go`. All 4 plan-listed canvas call sites migrated (`charparts/extract.go`, `icons/extract.go`, `mapimage/minimap.go`, `mapimage/decoder.go`) **plus a 5th** discovered and fixed in atlas-data (`services/atlas-data/atlas.com/data/data/workers/ui.go:4771-4772`, commit `7d4b10734`) — a legitimate superset, not a gap. `TestPerImageKeyFallback/CanvasKeyForFallbackImage/PerImageFallbackConcurrent` PASS (verified live, `-race`). |
+| 4 | C-3 (lib) `NewSubFile` veneer | DONE | `wz/file.go`: `parent *File` field, `NewSubFile(parent, root, name)`, delegation added to `LockParse`, `Close` (no-op when `parent != nil`), `registerImageKey`, `CanvasEncryptionKeyFor` — matches plan text exactly. `TestNewSubFile` PASS (verified live), including the `sub.Close()` must-not-affect-parent assertion. |
+| 5 | C-3 (service) `OpenArchive` resolver | DONE | `services/atlas-data/atlas.com/data/data/workers/runtime.go`: `ErrCategoryAbsent`, `monolithState`/`monolithFile` (sync.Once memo), `CloseMonolith`, `monolithSubArchive` (Base.wz→root, stem-match, else `ErrCategoryAbsent`), `OpenArchive` (per-archive object first, monolithic fallback second). `fetchArchive` deleted; `fetchAndSerializeArchiveOnce` rebased on `OpenArchive`. `character.go` both call sites (`emitSmapSidecar`, `emitZmapSidecar`) migrated to `OpenArchive`. `TestMonolithSubArchiveCategory/Base/AbsentCategory`, `TestOpenArchiveNilClient` PASS (verified live). |
+| 6 | C-3.4 skip-tolerance + C-5 version warning | DONE | `services/atlas-data/atlas.com/data/data/runwz.go`: `runOne` rewritten over `workers.OpenArchive`; `errors.Is(err, workers.ErrCategoryAbsent)` → warn+skip (never fail); `versionWarnOnce sync.Once` + `wzFile.GameVersion()` mismatch warning; `defer workers.CloseMonolith()` added to `RunWorkers`. `data/wzsource.go` (`FetchAndOpen`) deleted — confirmed only caller was `runwz.go` (now migrated). No isolated unit test for `runOne` per plan's own rationale (needs live MinIO); covered by Task 5 unit tests + Task 9 E2E. |
+| 7 | C-4 legacy String adapter | DONE | `services/atlas-data/atlas.com/data/data/workers/stringw.go`: `stringSources` struct + `resolveStringSources` (modern flat/Eqp wins; `legacyItem` engages only when both empty) implemented exactly as planned; `String.Run` rewritten to route through it. `item/string_registry.go` **confirmed unchanged** (no diff hunk for that file) — matches context.md decision 4 (single-pass `InitStringFlat` walker reused instead of a per-subtree initializer refactor), and the decision is explicitly recorded in `context.md` §Decisions #4. `TestResolveStringSourcesModern/Legacy/Empty` and `TestInitStringFlatLegacyItemImg` PASS (verified live). |
+| 8 | Full verification sweep | DONE | Re-verified independently (not just trusting prior claim): `libs/atlas-wz` — `go build`, `go vet`, `go test -race ./...` all clean/pass. `services/atlas-data/atlas.com/data` — same, all clean/pass. `services/atlas-renders/atlas.com/renders` — `go build`/`go vet` clean, `storage` package tests pass. `tools/redis-key-guard.sh` and `tools/goroutine-guard.sh` both exit 0 from repo root. No `docker-bake.hcl`/`go.work`/`services.json`/`Dockerfile` changes in the diff, consistent with context.md's claim that `wztest/` ships inside the existing `libs/atlas-wz` COPY (docker bakes not independently re-run per task instructions — trusted from prior controller run). |
+| 9 | E2E ingest of real sample sets | PARTIAL (legitimate) | See dedicated verdict below. |
+
+**Completion Rate:** 9/9 tasks show implementation work; 8/9 fully satisfy their plan text; 1/9 (Task 9) is intentionally split into a completed sub-layer and a genuinely-blocked sub-layer, both honestly disclosed in `e2e-results.md`.
+**Skipped without approval:** 0
+**Partial implementations:** 1 (Task 9 — see below; not attributable to agent laziness, see verdict)
+
+## Skipped / Deferred Tasks
+
+### Task 9 — Layer 2 (service/DB ingest) deferred pending `deploy-env`
+
+What's missing: the plan's Steps 2-5 require deploying **this branch's** `atlas-data` image and running the live upload→process flow against the three real sample sets (GMS v12, GMS v48, JMS v185), then recording per-document-type counts, `item_string_search_index` row counts, the C-3.4 skip-log lines, presence/absence of the C-5 warning, and iterating on any domain-reader schema drift. None of this happened yet — `e2e-results.md` explicitly labels it "PENDING isolated deploy."
+
+Potential impact: the service-layer wiring (`OpenArchive`'s MinIO Stat/Download path, the dispatcher's skip-on-`ErrCategoryAbsent` and version-warning lines, the String worker's legacy-adapter path end-to-end through real XML, and any GORM/domain-reader schema drift specific to old `.img` shapes) is unverified against real data. Unit tests cover each piece in isolation with synthetic fixtures; nothing yet proves they compose correctly against ~30,000 real images end-to-end through MinIO + the tenant DB. This is a real residual risk for "ready to merge," independent of whether the deferral itself was legitimate.
+
+## Task 9 Completeness Verdict
+
+**Verdict: legitimate escalation of a genuine external blocker, not an improper deferral of producible work.**
+
+Reasoning:
+- **What was produced is real and substantial.** A diagnostic harness (not committed, per the "no real archives in the repo" constraint) opened all three real sample sets — GMS v12 (262 MB monolithic), GMS v48 (16 split archives), JMS v185 (16 archives) — through this branch's actual `wz.Open` and forced `Image.Properties()` on all 30,030 images. Results are quantified, not asserted: 0 parse errors across all three generations, exact/near-exact image-count matches against the design's expected magnitudes, and a directly-measured C-2 fallback-hit count for JMS (2,876/18,345 = 15.7%, broken down per-archive). This is meaningfully stronger evidence than the unit-test fixtures alone and could not have been skipped without leaving the parser-layer claims (C-1/C-2/C-3-lib) as pure theory.
+- **The remaining gap (Layer 2) has a genuine, confirmed external blocker.** I dispatched a sub-agent to search the repo for any manual/ad-hoc deploy path that could substitute for the PR-gated `deploy-env` label (the plan itself offers "a manual image push + deploy against the dev cluster" as a nominal alternative). Findings: no such path exists. `tools/` has no deploy/push script; the only per-branch isolated environment mechanism in the project is the ArgoCD `ApplicationSet` watching PRs labeled `deploy-env` (`docs/tasks/task-063-ephemeral-pr-deployments/design.md`); a documented "force-create for non-PR branches" runbook section was planned in task-063 but never implemented (confirmed absent from `docs/runbooks/ephemeral-pr-deployments.md`); `deploy/k8s/overlays/` has only `main`, `pr`, `pr-cleanup` — no scratch/dev namespace. Deploying into the shared `atlas-main` namespace instead (as `e2e-results.md` itself notes) would pollute a shared tenant with three legacy data sets and is not a real alternative, it's a different bug.
+- **This matches CLAUDE.md's carve-out, not its prohibition.** "No Deferring Producible Work" explicitly excludes "a true external blocker" from the no-defer rule, provided it is surfaced and not silently marked done. `e2e-results.md`'s own "Status" section states Layer 2 is "pending," not complete — there is no over-claiming. The plan's Task 9 also anticipated this exact split by pre-declaring E2E as "Task 9 splits into two verification layers" in the results doc's own framing, and gives a concrete, actionable completion path ("apply the deploy-env label, then for each set...") rather than hand-waving it away.
+- **Caveat:** the plan's Step 9 literally says "STOP and escalate to the user rather than marking the task done" if the environment/samples are unavailable. The agent did not hard-stop; it proceeded to commit the Layer-1 results and continue toward the review/PR phase with Layer 2 explicitly flagged as outstanding. Read charitably this is a better outcome than a hard stop (maximal producible verification was completed and the remaining step was made concrete and actionable for whoever opens the PR); read strictly it is a mild deviation from "STOP and escalate" phrasing. I do not consider this a severity-worthy finding given the honesty of the disclosure, but flag it for the record.
+
+## Build & Test Results
+
+| Service/Module | Build | Vet | Tests | Notes |
+|---|---|---|---|---|
+| libs/atlas-wz | PASS | PASS | PASS (`-race`, all packages incl. `wz`, `crypto`, `charparts`, `icons`, `mapimage`, `wztest` [no test files]) | Re-verified live in this audit. |
+| services/atlas-data/atlas.com/data | PASS | PASS | PASS (`-race`, full suite incl. `data/workers`, `item`) | Re-verified live in this audit. |
+| services/atlas-renders/atlas.com/renders | PASS | PASS | PASS (`storage` package spot-checked) | Re-verified live; no code changes to this service, build/vet prove `libs/atlas-wz` API compatibility. |
+| repo-root guards | — | — | PASS | `tools/redis-key-guard.sh` exit 0, `tools/goroutine-guard.sh` exit 0 (re-run live). |
+| docker buildx bake atlas-data / atlas-renders | (not re-run) | — | — | Per task instructions, trusted from prior controller run (Task 8 claim); no Dockerfile/docker-bake.hcl/go.work changes in the diff, consistent with that claim. |
+
+## Overall Assessment
+
+- **Plan Adherence:** MOSTLY_COMPLETE (8/9 tasks fully match plan text; Task 9's parser-layer sub-scope is fully done, service-layer sub-scope is genuinely blocked and honestly disclosed, not silently dropped)
+- **Recommendation:** NEEDS_REVIEW — code-complete and internally verified, but the branch should not be represented as fully E2E-verified until Layer 2 (service/DB ingest against real data via the PR ephemeral env) actually runs and its results are appended to `e2e-results.md`. This is a pre-PR-open gate for "ready to merge," not a code defect.
+
+## Action Items
+
+1. After opening the PR, apply the `deploy-env` label and complete Task 9 Layer 2 exactly as `e2e-results.md` §"To complete Layer 2" specifies: ingest all three sample sets, record per-document-type counts, `item_string_search_index` row counts, the C-3.4 skip lines (expect QUEST skipped for v12), presence/absence of the C-5 warning, and fix any domain-reader schema drift iteratively on this branch before merge.
+2. Cosmetic only — add two lines to `context.md`'s Decisions list documenting (a) the `Image.parsed bool → atomic.Bool` data-race fix discovered by `-race` during Task 3 (`libs/atlas-wz/wz/image.go`), and (b) the 5th canvas call site (`services/atlas-data/atlas.com/data/data/workers/ui.go`) migrated to `CanvasEncryptionKeyFor` beyond the plan's original four. Neither is a functional gap; both are currently only self-documented via inline code comments / commit messages rather than the task's canonical decision log.

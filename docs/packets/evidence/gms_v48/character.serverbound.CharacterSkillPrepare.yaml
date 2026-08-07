@@ -1,0 +1,8 @@
+packet: character/serverbound/CharacterSkillPrepare
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_6ADD4C
+    address: "0x6add4c"
+    decompile_sha256: 5f899b78db092313a1a2a881798f5de6ec3ebdd3b445b380161d6a4a2250be10

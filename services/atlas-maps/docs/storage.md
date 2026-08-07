@@ -14,6 +14,20 @@ Records the first time a character visits a map.
 | map_id | uint32 | Not null |
 | first_visited_at | timestamp | Not null, default CURRENT_TIMESTAMP |
 
+### character_locations
+
+Persists a character's last-known field (world, channel, map, instance).
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| tenant_id | UUID | Primary key (composite with character_id) |
+| character_id | uint32 | Primary key (composite with tenant_id) |
+| world_id | world.Id | Not null |
+| channel_id | channel.Id | Not null |
+| map_id | uint32 | Not null |
+| instance | UUID | Not null, default '00000000-0000-0000-0000-000000000000' |
+| updated_at | timestamp | Not null |
+
 ## Relationships
 
 None.
@@ -24,6 +38,7 @@ None.
 |------|---------|------|
 | idx_visits_tenant_char_map | tenant_id, character_id, map_id | Unique |
 | idx_visits_tenant_char | tenant_id, character_id | Non-unique |
+| (primary key) | tenant_id, character_id (character_locations) | Unique (composite primary key) |
 
 ## Migration Rules
 
@@ -71,3 +86,11 @@ Process-local cache holding Map Info Models retrieved from atlas-data. State is 
 | Key | Value |
 |-----|-------|
 | (tenant, mapId) | Data Map Info Model |
+
+### Mist Registry
+
+Tenant-scoped, in-memory registry of active Mist values, keyed by mist id within each tenant's bucket. State is not persisted. Expired entries are removed by the mist tick task.
+
+| Key | Value |
+|-----|-------|
+| (tenant, mistId) | Mist |

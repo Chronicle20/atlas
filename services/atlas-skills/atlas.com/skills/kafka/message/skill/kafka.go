@@ -3,16 +3,20 @@ package skill
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_SKILL"
-	CommandTypeRequestCreate = "REQUEST_CREATE"
-	CommandTypeRequestUpdate = "REQUEST_UPDATE"
-	CommandTypeRequestDelete = "REQUEST_DELETE"
-	CommandTypeSetCooldown   = "SET_COOLDOWN"
+	EnvCommandTopic           = "COMMAND_TOPIC_SKILL"
+	CommandTypeRequestCreate  = "REQUEST_CREATE"
+	CommandTypeRequestUpdate  = "REQUEST_UPDATE"
+	CommandTypeRequestDelete  = "REQUEST_DELETE"
+	CommandTypeSetCooldown    = "SET_COOLDOWN"
+	CommandTypeTransferSp     = "TRANSFER_SP"
+	CommandTypeResetCooldowns = "RESET_COOLDOWNS"
 )
 
 type Command[E any] struct {
@@ -42,11 +46,32 @@ type SetCooldownBody struct {
 	Cooldown uint32 `json:"cooldown"`
 }
 
+// ResetCooldownsBody clears every active cooldown for the character except
+// the listed skill ids. SourceSkillId identifies the triggering skill
+// (5121010 for Time Leap) and is observability-only; generic senders may
+// pass 0.
+type ResetCooldownsBody struct {
+	ExceptSkillIds []uint32 `json:"exceptSkillIds"`
+	SourceSkillId  uint32   `json:"sourceSkillId"`
+}
+
 // RequestDeleteBody is the saga-correlated REQUEST_DELETE command body.
 // Used by the orchestrator's character-creation reverse-walk compensator
 // (plan Phase 5 / Phase 6). Idempotent on missing skill row.
 type RequestDeleteBody struct {
 	SkillId uint32 `json:"skillId"`
+}
+
+// TransferSpBody moves one skill point FromSkillId -> ToSkillId (SP Reset
+// item 505000<ItemTier>). JobId and TargetMaxLevel are supplied by the
+// trusted server-side caller (atlas-channel) because atlas-skills stores
+// neither job nor game data; everything state-derived is re-validated here.
+type TransferSpBody struct {
+	JobId          job.Id `json:"jobId"`
+	FromSkillId    uint32 `json:"fromSkillId"`
+	ToSkillId      uint32 `json:"toSkillId"`
+	ItemTier       byte   `json:"itemTier"`
+	TargetMaxLevel byte   `json:"targetMaxLevel"`
 }
 
 const (
@@ -56,6 +81,13 @@ const (
 	StatusEventTypeDeleted         = "DELETED"
 	StatusEventTypeCooldownApplied = "COOLDOWN_APPLIED"
 	StatusEventTypeCooldownExpired = "COOLDOWN_EXPIRED"
+	StatusEventTypeSpTransferred   = "SP_TRANSFERRED"
+	StatusEventTypeError           = "ERROR"
+
+	StatusEventErrorTypeSkillAtZero   = "SKILL_AT_ZERO"
+	StatusEventErrorTypeSkillAtCap    = "SKILL_AT_CAP"
+	StatusEventErrorTypeWrongTier     = "WRONG_TIER"
+	StatusEventErrorTypeInvalidTarget = "INVALID_TARGET"
 )
 
 type StatusEvent[E any] struct {
@@ -83,8 +115,22 @@ type StatusEventCooldownAppliedBody struct {
 	CooldownExpiresAt time.Time `json:"cooldownExpiresAt"`
 }
 
-type StatusEventCooldownExpiredBody struct {
-}
+type StatusEventCooldownExpiredBody struct{}
 
 // StatusEventDeletedBody is the empty body emitted alongside StatusEventTypeDeleted.
 type StatusEventDeletedBody struct{}
+
+// StatusEventSpTransferredBody signals a completed SP transfer; the envelope
+// SkillId carries the target skill. This is the saga-completion event.
+type StatusEventSpTransferredBody struct {
+	FromSkillId uint32 `json:"fromSkillId"`
+	FromLevel   byte   `json:"fromLevel"`
+	ToLevel     byte   `json:"toLevel"`
+}
+
+// StatusEventErrorBody reports a rejected TRANSFER_SP; Error is one of the
+// StatusEventErrorType* constants, Detail names the offending skill id.
+type StatusEventErrorBody struct {
+	Error  string `json:"error"`
+	Detail string `json:"detail"`
+}

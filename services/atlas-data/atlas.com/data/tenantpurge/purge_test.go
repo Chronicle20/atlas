@@ -1,10 +1,9 @@
 package tenantpurge
 
 import (
+	"atlas-data/canonical"
 	"context"
 	"testing"
-
-	"atlas-data/canonical"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -48,6 +47,11 @@ func TestPurgeDeletesRows(t *testing.T) {
 	}
 	id := uuid.MustParse("11111111-1111-1111-1111-111111111111")
 	if err := db.Exec(`INSERT INTO documents (id, tenant_id, type) VALUES ('a', ?, 'item')`, id.String()).Error; err != nil {
+		t.Fatal(err)
+	}
+	// FR-1.4 / design D9: PurgeTables lists `documents` whole-table, so the JOB
+	// type added by task-185 is purged with no per-type registration.
+	if err := db.Exec(`INSERT INTO documents (id, tenant_id, type) VALUES ('b', ?, 'JOB')`, id.String()).Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := db.Exec(`INSERT INTO tenant_baselines (tenant_id) VALUES (?)`, id.String()).Error; err != nil {

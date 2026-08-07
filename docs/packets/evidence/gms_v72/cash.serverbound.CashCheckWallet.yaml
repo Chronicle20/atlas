@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashCheckWallet
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::TrySendQueryCashRequest
+    address: "0x46b1e6"
+    decompile_sha256: aa576a693a7033b175070a05b84a60cc0419e5f5f7257901e421332a778c67df
+verifies:
+  - libs/atlas-packet/cash/serverbound/check_wallet_test.go#TestCheckWalletV72Bytes

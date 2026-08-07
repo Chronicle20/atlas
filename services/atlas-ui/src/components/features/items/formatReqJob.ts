@@ -8,5 +8,7 @@ const JOB_BITS: Array<{ bit: number; name: string }> = [
 
 export function formatReqJob(reqJob: number): string[] {
   if (!reqJob) return [];
-  return JOB_BITS.filter(({ bit }) => (reqJob & bit) !== 0).map(({ name }) => name);
+  return JOB_BITS.filter(({ bit }) => (reqJob & bit) !== 0).map(
+    ({ name }) => name,
+  );
 }

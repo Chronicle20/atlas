@@ -4,24 +4,25 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 const UiLockWriter = "UiLock"
 
 type Lock struct {
-	enable                      bool
-	tAfterLeaveDirectionMode    int32
+	enable                   bool
+	tAfterLeaveDirectionMode int32
 }
 
 func NewUiLock(enable bool, tAfterLeaveDirectionMode int32) Lock {
 	return Lock{enable: enable, tAfterLeaveDirectionMode: tAfterLeaveDirectionMode}
 }
 
-func (m Lock) Enable() bool     { return m.enable }
+func (m Lock) Enable() bool      { return m.enable }
 func (m Lock) Operation() string { return UiLockWriter }
 func (m Lock) String() string    { return fmt.Sprintf("enable [%t]", m.enable) }
 

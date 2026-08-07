@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // backgroundSeeds tracks outstanding postSeed goroutines.  Tests call
@@ -46,7 +48,7 @@ func postSeed(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, src Catalo
 	return func(w http.ResponseWriter, _ *http.Request) {
 		t := tenant.MustFromContext(ctx)
 		backgroundSeeds.Add(1)
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			defer backgroundSeeds.Done()
 			bgCtx := tenant.WithContext(context.Background(), t)
 			res, err := Seed(bgCtx, db, src, g)
@@ -63,7 +65,16 @@ func postSeed(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, src Catalo
 				"catalog_revision": res.CatalogRevision,
 				"subdomains":       summarize(res.Subdomains),
 			}).Info("Seed complete")
-		}()
+			if g.AfterSeed == nil {
+				return
+			}
+			if err := g.AfterSeed(bgCtx, db, res); err != nil {
+				l.WithError(err).WithFields(logrus.Fields{
+					"tenant_id":  t.Id(),
+					"group_name": g.Name,
+				}).Error("AfterSeed hook failed; seeded data is committed but downstream consumers were not notified")
+			}
+		})
 		w.WriteHeader(http.StatusAccepted)
 	}
 }

@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationPersonalStoreBuy
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: sub_60D81E
+    address: "0x60d81e"
+    decompile_sha256: a94df792bb4e233c572ed5cfbe5714c191f2d6050884c696510a6d6e6ad01526
+verifies:
+    - libs/atlas-packet/interaction/serverbound/v61_test.go#TestOperationPersonalStoreBuyV61Bytes

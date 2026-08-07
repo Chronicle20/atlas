@@ -1,0 +1,10 @@
+packet: guild/serverbound/GuildOperation
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CUIFadeYesNo::OnButtonClicked
+    address: "0x50285e"
+    decompile_sha256: 33904546c9bef9d3cab5a323efaa80919d15c29a25393533aa9803d98343bc4f
+verifies:
+  - libs/atlas-packet/guild/serverbound/operation_test.go#TestOperationRoundTrip

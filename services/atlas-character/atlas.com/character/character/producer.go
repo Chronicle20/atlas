@@ -3,6 +3,9 @@ package character
 import (
 	character2 "atlas-character/kafka/message/character"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
@@ -11,8 +14,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func awardLevelCommandProvider(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount byte) model.Provider[[]kafka.Message] {
@@ -73,42 +74,6 @@ func logoutEventProvider(transactionId uuid.UUID, characterId uint32, field fiel
 			ChannelId: field.ChannelId(),
 			MapId:     field.MapId(),
 			Instance:  field.Instance(),
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
-func changeChannelEventProvider(transactionId uuid.UUID, characterId uint32, oldField field.Model, newField field.Model) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &character2.StatusEvent[character2.ChangeChannelEventLoginBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		WorldId:       newField.WorldId(),
-		Type:          character2.StatusEventTypeChannelChanged,
-		Body: character2.ChangeChannelEventLoginBody{
-			ChannelId:    newField.ChannelId(),
-			OldChannelId: oldField.ChannelId(),
-			MapId:        newField.MapId(),
-			Instance:     newField.Instance(),
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
-func mapChangedEventProvider(transactionId uuid.UUID, characterId uint32, oldField field.Model, newField field.Model, targetPortalId uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &character2.StatusEvent[character2.StatusEventMapChangedBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		WorldId:       newField.WorldId(),
-		Type:          character2.StatusEventTypeMapChanged,
-		Body: character2.StatusEventMapChangedBody{
-			ChannelId:      newField.ChannelId(),
-			OldMapId:       oldField.MapId(),
-			OldInstance:    oldField.Instance(),
-			TargetMapId:    newField.MapId(),
-			TargetInstance: newField.Instance(),
-			TargetPortalId: targetPortalId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -215,6 +180,21 @@ func notEnoughMesoErrorStatusEventProvider(transactionId uuid.UUID, characterId 
 	return producer.SingleMessageProvider(key, value)
 }
 
+func apTransferErrorStatusEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, errorType string, detail string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatusEventApTransferErrorBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		Type:          character2.StatusEventTypeError,
+		Body: character2.StatusEventApTransferErrorBody{
+			Error:  errorType,
+			Detail: detail,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func fameChangedStatusEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, amount int8, actorId uint32, actorType string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character2.StatusEvent[character2.FameChangedStatusEventBody]{
@@ -258,20 +238,6 @@ func statChangedProvider(transactionId uuid.UUID, channel channel.Model, charact
 			ExclRequestSent: true,
 			Updates:         updates,
 			Values:          values,
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
-func updatedEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, updatedFields map[string]interface{}) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &character2.StatusEvent[character2.StatusEventUpdatedBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		WorldId:       worldId,
-		Type:          character2.StatusEventTypeUpdated,
-		Body: character2.StatusEventUpdatedBody{
-			UpdatedFields: updatedFields,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

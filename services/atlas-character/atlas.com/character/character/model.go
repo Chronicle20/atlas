@@ -80,6 +80,11 @@ func (m Model) Level() byte {
 	return m.level
 }
 
+// version-stable per task-187 audit (audit/README.md, divergences.csv):
+// Cygnus (job type 1xxx) is not part of the audit's divergent job set (only
+// wire 500/510/900/910 GM<->Pirate remap across the provisioned GMS
+// versions) -- job.IsCygnus(m.jobId) is safe to leave raw-Id-keyed. Model is
+// also a value receiver with no tenant in scope to resolve through.
 func (m Model) MaxClassLevel() byte {
 	if job.IsCygnus(m.jobId) {
 		return 120
@@ -96,6 +101,10 @@ func (m Model) Id() uint32 {
 	return m.id
 }
 
+// version-stable per task-187 audit (audit/README.md, divergences.csv):
+// Beginner/Noblesse/Legend/Evan roots are not part of the audit's divergent
+// job set -- job.IsBeginner(m.JobId()) is safe to leave raw-Id-keyed. Model
+// is also a value receiver with no tenant in scope to resolve through.
 func (m Model) IsBeginner() bool {
 	return job.IsBeginner(m.JobId())
 }
@@ -425,6 +434,7 @@ func (c *modelBuilder) Build() Model {
 		spawnPoint:         c.spawnPoint,
 		gm:                 c.gm,
 		meso:               c.meso,
+		hpMpUsed:           c.hpMpUsed,
 		skills:             c.skills,
 	}
 }

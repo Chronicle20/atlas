@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldKiteError",
+  "IDAName": "CMessageBoxPool::OnCreateFailed",
+  "Address": "0x629c2a",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/kite_error.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

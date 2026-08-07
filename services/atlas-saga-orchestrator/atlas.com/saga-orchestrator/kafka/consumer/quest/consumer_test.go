@@ -1,6 +1,7 @@
 package quest
 
 import (
+	"atlas-saga-orchestrator/saga"
 	"context"
 	"testing"
 
@@ -13,7 +14,6 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 
 	quest2 "atlas-saga-orchestrator/kafka/message/quest"
-	"atlas-saga-orchestrator/saga"
 )
 
 func mustTenantCtx(t *testing.T) context.Context {

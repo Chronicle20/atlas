@@ -8,9 +8,10 @@ import (
 	"strings"
 )
 
-const defaultRoutesPath = "/configurations/routes"
-const defaultInstanceRoutesPath = "/configurations/instance-routes"
-const defaultVesselsPath = "/configurations/vessels"
+const (
+	defaultRpsRewardsPath = "/configurations/rps-rewards"
+	defaultMtsConfigsPath = "/configurations/mts-configs"
+)
 
 // SeedResult represents the result of a seed operation
 type SeedResult struct {
@@ -20,46 +21,32 @@ type SeedResult struct {
 	Errors       []string `json:"errors,omitempty"`
 }
 
-// getRoutesPath returns the path to the routes seed directory.
-func getRoutesPath() string {
-	if path := os.Getenv("ROUTES_SEED_PATH"); path != "" {
+// getRpsRewardsPath returns the path to the rps-rewards seed directory.
+func getRpsRewardsPath() string {
+	if path := os.Getenv("RPS_REWARDS_SEED_PATH"); path != "" {
 		return path
 	}
-	return defaultRoutesPath
+	return defaultRpsRewardsPath
 }
 
-// getInstanceRoutesPath returns the path to the instance routes seed directory.
-func getInstanceRoutesPath() string {
-	if path := os.Getenv("INSTANCE_ROUTES_SEED_PATH"); path != "" {
+// LoadRpsRewardFiles reads all JSON files from the rps-rewards seed directory
+// and parses them into map[string]interface{} structs.
+func LoadRpsRewardFiles() ([]map[string]interface{}, []error) {
+	return loadSeedFiles(getRpsRewardsPath())
+}
+
+// getMtsConfigsPath returns the path to the mts configs seed directory.
+func getMtsConfigsPath() string {
+	if path := os.Getenv("MTS_CONFIGS_SEED_PATH"); path != "" {
 		return path
 	}
-	return defaultInstanceRoutesPath
+	return defaultMtsConfigsPath
 }
 
-// LoadRouteFiles reads all JSON files from the routes seed directory
+// LoadMtsConfigFiles reads all JSON files from the mts configs seed directory
 // and parses them into map[string]interface{} structs.
-func LoadRouteFiles() ([]map[string]interface{}, []error) {
-	return loadSeedFiles(getRoutesPath())
-}
-
-// LoadInstanceRouteFiles reads all JSON files from the instance routes seed directory
-// and parses them into map[string]interface{} structs.
-func LoadInstanceRouteFiles() ([]map[string]interface{}, []error) {
-	return loadSeedFiles(getInstanceRoutesPath())
-}
-
-// getVesselsPath returns the path to the vessels seed directory.
-func getVesselsPath() string {
-	if path := os.Getenv("VESSELS_SEED_PATH"); path != "" {
-		return path
-	}
-	return defaultVesselsPath
-}
-
-// LoadVesselFiles reads all JSON files from the vessels seed directory
-// and parses them into map[string]interface{} structs.
-func LoadVesselFiles() ([]map[string]interface{}, []error) {
-	return loadSeedFiles(getVesselsPath())
+func LoadMtsConfigFiles() ([]map[string]interface{}, []error) {
+	return loadSeedFiles(getMtsConfigsPath())
 }
 
 // loadSeedFiles reads all JSON files from the given directory and parses them.

@@ -12,7 +12,10 @@ import {
   useMonsterBookCollection,
 } from "@/lib/hooks/api/useMonsterBook";
 import { createErrorFromUnknown } from "@/types/api/errors";
-import type { MonsterBookCard, MonsterBookCollection } from "@/types/monster-book";
+import type {
+  MonsterBookCard,
+  MonsterBookCollection,
+} from "@/types/monster-book";
 import type { Tenant } from "@/services/api/tenants.service";
 
 const CARD_LEVEL_MAX = 5;
@@ -43,14 +46,20 @@ export function MonsterBookWidget({ characterId }: Props) {
     }
   }, [collectionQuery.isError, collectionQuery.error]);
 
-  if (collectionQuery.isLoading || (!activeTenant && !collectionQuery.isError)) {
+  if (
+    collectionQuery.isLoading ||
+    (!activeTenant && !collectionQuery.isError)
+  ) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Monster Book</CardTitle>
         </CardHeader>
         <CardContent>
-          <Skeleton data-testid="monster-book-loading" className="h-32 w-full" />
+          <Skeleton
+            data-testid="monster-book-loading"
+            className="h-32 w-full"
+          />
         </CardContent>
       </Card>
     );
@@ -67,7 +76,11 @@ export function MonsterBookWidget({ characterId }: Props) {
             <p className="text-sm text-muted-foreground">
               Failed to load Monster Book.
             </p>
-            <Button size="sm" variant="outline" onClick={() => collectionQuery.refetch()}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => collectionQuery.refetch()}
+            >
               Retry
             </Button>
           </div>
@@ -85,7 +98,10 @@ export function MonsterBookWidget({ characterId }: Props) {
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             {collection.coverCardId > 0 && activeTenant ? (
-              <CoverImage cardId={collection.coverCardId} tenant={activeTenant} />
+              <CoverImage
+                cardId={collection.coverCardId}
+                tenant={activeTenant}
+              />
             ) : (
               <div className="h-12 w-12 rounded border bg-muted" aria-hidden />
             )}
@@ -97,7 +113,9 @@ export function MonsterBookWidget({ characterId }: Props) {
       <CardContent className="space-y-4">
         <StatsRow collection={collection} />
         {collection.totalUniqueCards === 0 ? (
-          <p className="text-sm text-muted-foreground">No cards collected yet.</p>
+          <p className="text-sm text-muted-foreground">
+            No cards collected yet.
+          </p>
         ) : (
           <CardList
             cards={cards}
@@ -134,7 +152,11 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 }
 
 function CardList({
-  cards, tenant, isLoadingMore, hasNextPage, onLoadMore,
+  cards,
+  tenant,
+  isLoadingMore,
+  hasNextPage,
+  onLoadMore,
 }: {
   cards: MonsterBookCard[];
   tenant: Tenant | null;
@@ -153,7 +175,12 @@ function CardList({
       </ul>
       {hasNextPage && (
         <div className="flex justify-center">
-          <Button size="sm" variant="outline" onClick={onLoadMore} disabled={isLoadingMore}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onLoadMore}
+            disabled={isLoadingMore}
+          >
             {isLoadingMore ? "Loading..." : "Load more"}
           </Button>
         </div>
@@ -162,20 +189,27 @@ function CardList({
   );
 }
 
-function CardRow({ card, tenant }: { card: MonsterBookCard; tenant: Tenant | null }) {
+function CardRow({
+  card,
+  tenant,
+}: {
+  card: MonsterBookCard;
+  tenant: Tenant | null;
+}) {
   const { monsterId, name } = useMonsterBookCardName(tenant, card.cardId);
 
   const displayName = name ?? `Card ${card.cardId}`;
-  const iconUrl = tenant && monsterId
-    ? getAssetIconUrl(
-        tenant.id,
-        tenant.attributes.region,
-        tenant.attributes.majorVersion,
-        tenant.attributes.minorVersion,
-        "mob",
-        monsterId,
-      )
-    : null;
+  const iconUrl =
+    tenant && monsterId
+      ? getAssetIconUrl(
+          tenant.id,
+          tenant.attributes.region,
+          tenant.attributes.majorVersion,
+          tenant.attributes.minorVersion,
+          "mob",
+          monsterId,
+        )
+      : null;
 
   return (
     <div className="flex items-center gap-3 rounded border p-2">
@@ -195,7 +229,9 @@ function CardRow({ card, tenant }: { card: MonsterBookCard; tenant: Tenant | nul
         <div className="flex items-center gap-2">
           <span className="truncate text-sm font-medium">{displayName}</span>
           {card.isSpecial && (
-            <Badge variant="default" className="shrink-0">Special</Badge>
+            <Badge variant="default" className="shrink-0">
+              Special
+            </Badge>
           )}
         </div>
         <span className="text-xs text-muted-foreground">

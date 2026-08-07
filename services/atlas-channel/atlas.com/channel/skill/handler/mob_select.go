@@ -7,7 +7,7 @@ import (
 )
 
 // calculateBoundingBox derives the (x1, y1, x2, y2) target rectangle for a
-// monster-buff skill cast. Mirrors Cosmic StatEffect.calculateBoundingBox.
+// monster-buff skill cast from the effect's WZ lt/rb offsets.
 //
 // When the caster faces left, the rectangle is (casterPos + lt) → (casterPos + rb).
 // When the caster faces right, the rectangle mirrors about the caster's X:
@@ -72,9 +72,13 @@ func intersectMobIds(client, server []uint32) (applied, anomaly []uint32) {
 //
 // Crash/Dispel kinds continue to come from dispelSkillClass (common.go) and
 // are not handled here.
-func mobBuffApplyKind(skillId skill2.Id) string {
+//
+// Identity-keyed (task-187): resolved once by the caller (applyToMobs) via
+// the caster's tenant version set before this classification runs, rather
+// than a raw wire-id compare.
+func mobBuffApplyKind(id skill2.Identity) string {
 	switch {
-	case skill2.Is(skillId, skill2.PriestDoomId):
+	case skill2.IsIdentity(id, skill2.PriestDoom):
 		return monster2.ReflectKindMagical
 	default:
 		return ""

@@ -1,10 +1,9 @@
 package character
 
 import (
-	"context"
-
 	"atlas-effective-stats/external/data/equipment"
 	"atlas-effective-stats/stat"
+	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 )

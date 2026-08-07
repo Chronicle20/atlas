@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldUseDoor
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CField::TryEnterTownPortal#UseDoor
+    address: "0x51b86c"
+    decompile_sha256: cb9c624f9b9648f87530a54e3b3e7cf018207a615d6c602d2c9c0c3166f728d8
+verifies:
+    - libs/atlas-packet/field/serverbound/use_door_test.go#TestUseDoorByteOutputV72

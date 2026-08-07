@@ -1,0 +1,91 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9270017,
+      "startState": "askLeave",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "farewell",
+                "text": "Yes"
+              },
+              {
+                "nextState": "patience",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "The plane will be taking off soon, will you leave now? You will have to buy the plane ticket again to come in here."
+          },
+          "id": "askLeave",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Please hold on for a sec, and plane will be taking off. Thanks for your patience."
+          },
+          "id": "patience",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "performWarp",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "The ticket is not refundable, hope to see you again!"
+          },
+          "id": "farewell",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "103000000",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performWarp",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "9270017",
+    "type": "npc-conversation"
+  }
+}

@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"atlas-maps/mist"
 	"context"
 	"encoding/json"
 	"sync"
@@ -8,17 +9,17 @@ import (
 	"time"
 
 	mistKafka "atlas-maps/kafka/message/mist"
-	"atlas-maps/kafka/producer"
-	"atlas-maps/mist"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // recordingProducer captures emitted messages by topic for assertions
@@ -33,7 +34,7 @@ func newRecordingProducer() *recordingProducer {
 }
 
 func (m *recordingProducer) Provider() producer.Provider {
-	return func(token string) kafkaProducer.MessageProducer {
+	return func(token string) producer.MessageProducer {
 		return func(prov model.Provider[[]kafka.Message]) error {
 			msgs, err := prov()
 			if err != nil {
@@ -159,11 +160,13 @@ func TestMistTick_LiveMist_AppliesDiseaseToContainedCharacters(t *testing.T) {
 	require.Equal(t, insideId, cmd.CharacterId)
 	require.Equal(t, int32(100020), cmd.Body.SourceId)
 	require.Equal(t, byte(5), cmd.Body.Level)
-	// Duration is in SECONDS (atlas-buffs' buff.NewBuff multiplies by
-	// time.Second). 30s mist disease -> 30, not 30000ms. The previous
-	// 30000 expectation pinned a bug where AREA_POISON DoTs persisted
-	// for hours instead of the configured mist disease duration.
-	require.Equal(t, int32(30), cmd.Body.Duration)
+	// Duration is MILLISECONDS. atlas-buffs' buff.NewBuff has computed
+	// expiresAt = now + duration*time.Millisecond since task-054 (197324e40);
+	// the contract owner is
+	// services/atlas-buffs/atlas.com/buffs/kafka/message/character/kafka.go on
+	// ApplyCommandBody.Duration. A 30s mist disease is 30000, not 30. This
+	// expectation reverses the one commit 11e07dfa7 introduced (task-190).
+	require.Equal(t, int32(30_000), cmd.Body.Duration)
 	require.Len(t, cmd.Body.Changes, 1)
 	require.Equal(t, "POISON", cmd.Body.Changes[0].Type)
 	require.Equal(t, int32(80), cmd.Body.Changes[0].Amount)

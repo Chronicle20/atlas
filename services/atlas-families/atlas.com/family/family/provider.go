@@ -1,11 +1,13 @@
 package family
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // GetByCharacterIdProvider returns a provider for finding a family member by character ID

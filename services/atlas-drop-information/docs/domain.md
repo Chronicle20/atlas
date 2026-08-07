@@ -18,16 +18,29 @@ Represents an item that can drop from a specific monster.
 - `questId` - associated quest identifier (0 if none)
 - `chance` - drop chance value
 
+**JSONModel / DropJSON** (`monster/drop/subdomain.go`)
+- `JSONModel.Drops` - list of `DropJSON` entries decoded from a catalog file's `attributes.drops`
+- `DropJSON` - `itemId`, `minimumQuantity`, `maximumQuantity`, `questId` (omitempty), `chance`
+
 ### Invariants
 
 - All fields are immutable after construction
 - Model is constructed via Builder pattern
+- Builder rejects a nil `tenantId`
 
 ### Processors
 
 **Processor** (`monster/drop/processor.go`)
-- `GetAll` - retrieves all monster drops for the current tenant
-- `GetForMonster` - retrieves all drops for a specific monster
+- `GetAll` - retrieves every monster drop for the tenant, unpaged (used by `continent.Processor.GetAll`'s aggregation)
+- `GetForMonster` - retrieves a page of drops for a specific monster
+- `GetForItem` - retrieves a page of drops for a specific item
+- `Count` - returns the total row count for the tenant
+
+**Subdomain** (`monster/drop/subdomain.go`)
+- `Build` - constructs `Model` instances from a catalog entity ID (`monster-{monsterId}.json`) and decoded `JSONModel`
+- `BulkCreate` - persists built models via `BulkCreateMonsterDrop`
+- `DeleteAllForTenant` - removes all monster drops for the tenant
+- `Count` - reports current row count for seed status reporting
 
 ---
 
@@ -49,16 +62,28 @@ Represents an item that can drop globally across a continent or all continents.
 - `questId` - associated quest identifier (0 if none)
 - `chance` - drop chance value
 
+**JSONModel / DropJSON** (`continent/drop/subdomain.go`)
+- `JSONModel.Drops` - list of `DropJSON` entries decoded from a catalog file's `attributes.drops`
+- `DropJSON` - `itemId`, `minimumQuantity`, `maximumQuantity`, `questId` (omitempty), `chance`
+
 ### Invariants
 
 - All fields are immutable after construction
 - Model is constructed via Builder pattern
+- Builder rejects a nil `tenantId`
 - `continentId` of -1 indicates a global drop applying to all continents
 
 ### Processors
 
 **Processor** (`continent/drop/processor.go`)
 - `GetAll` - retrieves all continent drops for the current tenant
+- `Count` - returns the total row count for the tenant
+
+**Subdomain** (`continent/drop/subdomain.go`)
+- `Build` - constructs `Model` instances from a catalog entity ID (`continent-{continentId}.json`, signed) and decoded `JSONModel`
+- `BulkCreate` - persists built models via `BulkCreateContinentDrop`
+- `DeleteAllForTenant` - removes all continent drops for the tenant
+- `Count` - reports current row count for seed status reporting
 
 ---
 
@@ -97,39 +122,25 @@ Represents an item that can drop from a specific reactor.
 - `questId` - associated quest identifier (0 if none)
 - `chance` - drop chance value
 
+**JSONModel / DropJSON** (`reactor/drop/subdomain.go`)
+- `JSONModel.Drops` - list of `DropJSON` entries decoded from a catalog file's included `drops` resources
+- `DropJSON` - `itemId`, `questId` (omitempty), `chance`
+
 ### Invariants
 
 - All fields are immutable after construction
 - Model is constructed via Builder pattern
+- Builder rejects a nil `tenantId`
 
 ### Processors
 
 **Processor** (`reactor/drop/processor.go`)
 - `GetAll` - retrieves all reactor drops for the current tenant
 - `GetForReactor` - retrieves all drops for a specific reactor
+- `Count` - returns the total row count for the tenant
 
----
-
-## Seed
-
-### Responsibility
-
-Handles seeding of drop data from JSON files into the database.
-
-### Core Models
-
-**SeedResult** (`seed/seed.go`)
-- `DeletedCount` - number of records deleted
-- `CreatedCount` - number of records created
-- `FailedCount` - number of records that failed to create
-- `Errors` - slice of error messages
-
-**CombinedSeedResult** (`seed/seed.go`)
-- `MonsterDrops` - seed result for monster drops
-- `ContinentDrops` - seed result for continent drops
-- `ReactorDrops` - seed result for reactor drops
-
-### Processors
-
-**Processor** (`seed/processor.go`)
-- `Seed` - executes full seed operation for monster, continent, and reactor drops
+**Subdomain** (`reactor/drop/subdomain.go`)
+- `Build` - constructs `Model` instances from a catalog entity ID (`reactor-{reactorId}.json`) and decoded `JSONModel`
+- `BulkCreate` - persists built models via `BulkCreateReactorDrop`
+- `DeleteAllForTenant` - removes all reactor drops for the tenant
+- `Count` - reports current row count for seed status reporting

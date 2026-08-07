@@ -5,12 +5,13 @@ import (
 	"context"
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func testDatabase(t *testing.T) *gorm.DB {
@@ -52,8 +53,8 @@ func TestProcessorImpl_GetAll_Success(t *testing.T) {
 	db := testDatabase(t)
 
 	// Seed test data for multiple continents
-	seedTestData(t, db, te.Id(), 0, []uint32{2000000, 2000001, 2000002})  // Victoria Island
-	seedTestData(t, db, te.Id(), 1, []uint32{2000003, 2000004})           // Ossyria
+	seedTestData(t, db, te.Id(), 0, []uint32{2000000, 2000001, 2000002}) // Victoria Island
+	seedTestData(t, db, te.Id(), 1, []uint32{2000003, 2000004})          // Ossyria
 
 	p := drop.NewProcessor(l, ctx, db)
 
@@ -170,9 +171,9 @@ func TestProcessorImpl_GetAll_MultipleContinents(t *testing.T) {
 	db := testDatabase(t)
 
 	// Seed data for multiple continents
-	seedTestData(t, db, te.Id(), 0, []uint32{2000000})   // Victoria Island
-	seedTestData(t, db, te.Id(), 1, []uint32{2000001})   // Ossyria
-	seedTestData(t, db, te.Id(), 2, []uint32{2000002})   // Ludus Lake
+	seedTestData(t, db, te.Id(), 0, []uint32{2000000}) // Victoria Island
+	seedTestData(t, db, te.Id(), 1, []uint32{2000001}) // Ossyria
+	seedTestData(t, db, te.Id(), 2, []uint32{2000002}) // Ludus Lake
 
 	p := drop.NewProcessor(l, ctx, db)
 

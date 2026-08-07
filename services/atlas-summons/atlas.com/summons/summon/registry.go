@@ -6,14 +6,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	goredis "github.com/redis/go-redis/v9"
 )
 
 // storedSummon is the JSON-serializable representation stored in Redis. The
@@ -22,37 +23,37 @@ import (
 // field.Model. Times serialize as unix-milli (0 == zero time), matching the
 // monster blueprint's time-field convention.
 type storedSummon struct {
-	Id                 uint32 `json:"id"`
-	TenantId           string `json:"tenantId"`
-	TenantRegion       string `json:"tenantRegion"`
-	TenantMajorVersion uint16 `json:"tenantMajorVersion"`
-	TenantMinorVersion uint16 `json:"tenantMinorVersion"`
-	OwnerCharacterId   uint32 `json:"ownerCharacterId"`
-	SkillId            uint32 `json:"skillId"`
-	SkillLevel         byte   `json:"skillLevel"`
-	SummonType         string `json:"summonType"`
-	MovementType       byte   `json:"movementType"`
-	WorldId            byte   `json:"worldId"`
-	ChannelId        byte          `json:"channelId"`
-	MapId            uint32        `json:"mapId"`
-	Instance         string        `json:"instance"`
-	X                int16         `json:"x"`
-	Y                int16         `json:"y"`
-	Stance           byte          `json:"stance"`
-	Hp               int32         `json:"hp"`
-	MaxHp            int32         `json:"maxHp"`
-	Animated         bool          `json:"animated"`
-	SpawnTimeMs      int64         `json:"spawnTimeMs,omitempty"`
-	ExpiresAtMs      int64         `json:"expiresAtMs,omitempty"`
-	NextHealAtMs     int64         `json:"nextHealAtMs,omitempty"`
-	NextBuffAtMs     int64         `json:"nextBuffAtMs,omitempty"`
-	HealAmount       int16         `json:"healAmount,omitempty"`
-	HealIntervalMs   int64         `json:"healIntervalMs,omitempty"`
-	BuffIntervalMs   int64         `json:"buffIntervalMs,omitempty"`
-	BuffSourceId     int32         `json:"buffSourceId,omitempty"`
-	BuffLevel        byte          `json:"buffLevel,omitempty"`
-	BuffDuration     int32         `json:"buffDuration,omitempty"`
-	BuffChanges      []StatChange  `json:"buffChanges,omitempty"`
+	Id                 uint32       `json:"id"`
+	TenantId           string       `json:"tenantId"`
+	TenantRegion       string       `json:"tenantRegion"`
+	TenantMajorVersion uint16       `json:"tenantMajorVersion"`
+	TenantMinorVersion uint16       `json:"tenantMinorVersion"`
+	OwnerCharacterId   uint32       `json:"ownerCharacterId"`
+	SkillId            uint32       `json:"skillId"`
+	SkillLevel         byte         `json:"skillLevel"`
+	SummonType         string       `json:"summonType"`
+	MovementType       byte         `json:"movementType"`
+	WorldId            byte         `json:"worldId"`
+	ChannelId          byte         `json:"channelId"`
+	MapId              uint32       `json:"mapId"`
+	Instance           string       `json:"instance"`
+	X                  int16        `json:"x"`
+	Y                  int16        `json:"y"`
+	Stance             byte         `json:"stance"`
+	Hp                 int32        `json:"hp"`
+	MaxHp              int32        `json:"maxHp"`
+	Animated           bool         `json:"animated"`
+	SpawnTimeMs        int64        `json:"spawnTimeMs,omitempty"`
+	ExpiresAtMs        int64        `json:"expiresAtMs,omitempty"`
+	NextHealAtMs       int64        `json:"nextHealAtMs,omitempty"`
+	NextBuffAtMs       int64        `json:"nextBuffAtMs,omitempty"`
+	HealAmount         int16        `json:"healAmount,omitempty"`
+	HealIntervalMs     int64        `json:"healIntervalMs,omitempty"`
+	BuffIntervalMs     int64        `json:"buffIntervalMs,omitempty"`
+	BuffSourceId       int32        `json:"buffSourceId,omitempty"`
+	BuffLevel          byte         `json:"buffLevel,omitempty"`
+	BuffDuration       int32        `json:"buffDuration,omitempty"`
+	BuffChanges        []StatChange `json:"buffChanges,omitempty"`
 }
 
 // timeToMs returns 0 for the zero time, else unix-milli.
@@ -82,31 +83,31 @@ func toStored(t tenant.Model, m Model) storedSummon {
 		TenantMajorVersion: t.MajorVersion(),
 		TenantMinorVersion: t.MinorVersion(),
 		OwnerCharacterId:   m.ownerCharacterId,
-		SkillId:          m.skillId,
-		SkillLevel:       m.skillLevel,
-		SummonType:       string(m.summonType),
-		MovementType:     byte(m.movementType),
-		WorldId:          byte(f.WorldId()),
-		ChannelId:        byte(f.ChannelId()),
-		MapId:            uint32(f.MapId()),
-		Instance:         f.Instance().String(),
-		X:                m.x,
-		Y:                m.y,
-		Stance:           m.stance,
-		Hp:               m.hp,
-		MaxHp:            m.maxHp,
-		Animated:         m.animated,
-		SpawnTimeMs:      timeToMs(m.spawnTime),
-		ExpiresAtMs:      timeToMs(m.expiresAt),
-		NextHealAtMs:     timeToMs(m.nextHealAt),
-		NextBuffAtMs:     timeToMs(m.nextBuffAt),
-		HealAmount:       m.healAmount,
-		HealIntervalMs:   m.healInterval.Milliseconds(),
-		BuffIntervalMs:   m.buffInterval.Milliseconds(),
-		BuffSourceId:     m.buffSourceId,
-		BuffLevel:        m.buffLevel,
-		BuffDuration:     m.buffDuration,
-		BuffChanges:      changes,
+		SkillId:            m.skillId,
+		SkillLevel:         m.skillLevel,
+		SummonType:         string(m.summonType),
+		MovementType:       byte(m.movementType),
+		WorldId:            byte(f.WorldId()),
+		ChannelId:          byte(f.ChannelId()),
+		MapId:              uint32(f.MapId()),
+		Instance:           f.Instance().String(),
+		X:                  m.x,
+		Y:                  m.y,
+		Stance:             m.stance,
+		Hp:                 m.hp,
+		MaxHp:              m.maxHp,
+		Animated:           m.animated,
+		SpawnTimeMs:        timeToMs(m.spawnTime),
+		ExpiresAtMs:        timeToMs(m.expiresAt),
+		NextHealAtMs:       timeToMs(m.nextHealAt),
+		NextBuffAtMs:       timeToMs(m.nextBuffAt),
+		HealAmount:         m.healAmount,
+		HealIntervalMs:     m.healInterval.Milliseconds(),
+		BuffIntervalMs:     m.buffInterval.Milliseconds(),
+		BuffSourceId:       m.buffSourceId,
+		BuffLevel:          m.buffLevel,
+		BuffDuration:       m.buffDuration,
+		BuffChanges:        changes,
 	}
 }
 
@@ -160,8 +161,10 @@ type Registry struct {
 	ownerIdx *atlasredis.KeyedSet[string]
 }
 
-var registry *Registry
-var once sync.Once
+var (
+	registry *Registry
+	once     sync.Once
+)
 
 func newRegistry(rc *goredis.Client) *Registry {
 	return &Registry{
@@ -177,9 +180,11 @@ func GetRegistry() *Registry          { return registry }
 func storeSuffix(t tenant.Model, id uint32) string {
 	return fmt.Sprintf("%s:%d", t.Id().String(), id)
 }
+
 func fieldSuffix(t tenant.Model, f field.Model) string {
 	return fmt.Sprintf("%s:%d:%d:%d:%s", t.Id().String(), f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
 }
+
 func ownerSuffix(t tenant.Model, characterId uint32) string {
 	return fmt.Sprintf("%s:%d", t.Id().String(), characterId)
 }
@@ -210,6 +215,7 @@ func (r *Registry) Get(ctx context.Context, t tenant.Model, id uint32) (Model, e
 func (r *Registry) GetInField(ctx context.Context, t tenant.Model, f field.Model) ([]Model, error) {
 	return r.loadMembers(ctx, t, r.fieldIdx, fieldSuffix(t, f))
 }
+
 func (r *Registry) GetByOwner(ctx context.Context, t tenant.Model, characterId uint32) ([]Model, error) {
 	return r.loadMembers(ctx, t, r.ownerIdx, ownerSuffix(t, characterId))
 }

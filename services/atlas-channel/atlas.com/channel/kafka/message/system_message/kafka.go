@@ -1,9 +1,10 @@
 package system_message
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -40,8 +41,7 @@ type SendMessageBody struct {
 
 // PlayPortalSoundBody is the body for playing the portal sound effect
 // This is an empty struct as no additional data is needed
-type PlayPortalSoundBody struct {
-}
+type PlayPortalSoundBody struct{}
 
 // ShowInfoBody is the body for showing info/tutorial effects to a character
 type ShowInfoBody struct {

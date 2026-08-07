@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const AuthPermanentBanWriter = "AuthPermanentBan"
@@ -21,8 +22,8 @@ func NewAuthPermanentBan(bannedCode byte) AuthPermanentBan {
 }
 
 func (m AuthPermanentBan) BannedCode() byte  { return m.bannedCode }
-func (m AuthPermanentBan) Operation() string  { return AuthPermanentBanWriter }
-func (m AuthPermanentBan) String() string     { return fmt.Sprintf("bannedCode [%d]", m.bannedCode) }
+func (m AuthPermanentBan) Operation() string { return AuthPermanentBanWriter }
+func (m AuthPermanentBan) String() string    { return fmt.Sprintf("bannedCode [%d]", m.bannedCode) }
 
 func (m AuthPermanentBan) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)

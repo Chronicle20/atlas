@@ -1,0 +1,10 @@
+packet: guild/clientbound/GuildInfo
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult
+    address: "0x92e31f"
+    decompile_sha256: 483cc6e70e3d6af8919b90b8aa6d9a8226decaad5903ddb4a12e50c35514dce9
+verifies:
+  - libs/atlas-packet/guild/clientbound/v72_test.go#TestGuildDataArmsV72

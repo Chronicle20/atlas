@@ -1,5 +1,5 @@
-import { Skeleton } from '@/components/ui/skeleton';
-import { TableSkeleton } from '../TableSkeleton';
+import { Skeleton } from "@/components/ui/skeleton";
+import { TableSkeleton } from "../TableSkeleton";
 
 /**
  * TemplatePageSkeleton provides a loading state specifically for the Templates page.
@@ -14,13 +14,13 @@ export function TemplatePageSkeleton() {
           <Skeleton className="h-8 w-28" /> {/* "Templates" title */}
         </div>
       </div>
-      
+
       {/* Table content */}
       <div className="mt-4">
-        <TableSkeleton 
-          rows={10} 
-          columns={6} 
-          showHeader={true} 
+        <TableSkeleton
+          rows={10}
+          columns={6}
+          showHeader={true}
           showActions={true}
         />
       </div>

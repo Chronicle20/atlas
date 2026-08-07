@@ -1,0 +1,2618 @@
+- name: BeginnerThreeSnails
+  domain: skill
+  canonicalToken: 1000
+  displayName: Beginner Three Snails
+- name: BeginnerRecovery
+  domain: skill
+  canonicalToken: 1001
+  displayName: Beginner Recovery
+- name: BeginnerNimbleFeet
+  domain: skill
+  canonicalToken: 1002
+  displayName: Beginner Nimble Feet
+- name: BeginnerSoulOfCraftsman
+  domain: skill
+  canonicalToken: 1003
+  displayName: Beginner Soul Of Craftsman
+- name: BeginnerMonsterRiding
+  domain: skill
+  canonicalToken: 1004
+  displayName: Beginner Monster Riding
+- name: BeginnerEchoOfHero
+  domain: skill
+  canonicalToken: 1005
+  displayName: Beginner Echo Of Hero
+- name: BeginnerJumpDown
+  domain: skill
+  canonicalToken: 1006
+  displayName: Beginner Jump Down
+- name: BeginnerMaker
+  domain: skill
+  canonicalToken: 1007
+  displayName: Beginner Maker
+- name: BeginnerMultiPet
+  domain: skill
+  canonicalToken: 1008
+  displayName: Beginner Multi Pet
+- name: BeginnerBamboo
+  domain: skill
+  canonicalToken: 1009
+  displayName: Beginner Bamboo
+- name: BeginnerInvincible
+  domain: skill
+  canonicalToken: 1010
+  displayName: Beginner Invincible
+- name: BeginnerBerserk
+  domain: skill
+  canonicalToken: 1011
+  displayName: Beginner Berserk
+- name: BeginnerBlessOfNymph
+  domain: skill
+  canonicalToken: 1012
+  displayName: Beginner Bless Of Nymph
+- name: BeginnerSpaceShip
+  domain: skill
+  canonicalToken: 1013
+  displayName: Beginner Space Ship
+- name: BeginnerYetiMount1
+  domain: skill
+  canonicalToken: 1017
+  displayName: Beginner Yeti Mount1
+- name: BeginnerYetiMount2
+  domain: skill
+  canonicalToken: 1018
+  displayName: Beginner Yeti Mount2
+- name: BeginnerBroomstick
+  domain: skill
+  canonicalToken: 1019
+  displayName: Beginner Broomstick
+- name: BeginnerBalrogMount
+  domain: skill
+  canonicalToken: 1031
+  displayName: Beginner Balrog Mount
+- name: WarriorImprovedHpRecovery
+  domain: skill
+  canonicalToken: 1000000
+  displayName: Warrior Improved Hp Recovery
+- name: WarriorImprovedMaxHpIncrease
+  domain: skill
+  canonicalToken: 1000001
+  displayName: Warrior Improved Max Hp Increase
+- name: WarriorEndure
+  domain: skill
+  canonicalToken: 1000002
+  displayName: Warrior Endure
+- name: WarriorIronBody
+  domain: skill
+  canonicalToken: 1001003
+  displayName: Warrior Iron Body
+- name: WarriorPowerStrike
+  domain: skill
+  canonicalToken: 1001004
+  displayName: Warrior Power Strike
+- name: WarriorSlashBlast
+  domain: skill
+  canonicalToken: 1001005
+  displayName: Warrior Slash Blast
+- name: NoblesseSpaceShip
+  domain: skill
+  canonicalToken: 1001014
+  displayName: Noblesse Space Ship
+- name: FighterSwordMastery
+  domain: skill
+  canonicalToken: 1100000
+  displayName: Fighter Sword Mastery
+- name: FighterAxeMastery
+  domain: skill
+  canonicalToken: 1100001
+  displayName: Fighter Axe Mastery
+- name: FighterFinalAttackSword
+  domain: skill
+  canonicalToken: 1100002
+  displayName: Fighter Final Attack Sword
+- name: FighterFinalAttackAxe
+  domain: skill
+  canonicalToken: 1100003
+  displayName: Fighter Final Attack Axe
+- name: FighterSwordBooster
+  domain: skill
+  canonicalToken: 1101004
+  displayName: Fighter Sword Booster
+- name: FighterAxeBooster
+  domain: skill
+  canonicalToken: 1101005
+  displayName: Fighter Axe Booster
+- name: FighterRage
+  domain: skill
+  canonicalToken: 1101006
+  displayName: Fighter Rage
+- name: FighterPowerGuard
+  domain: skill
+  canonicalToken: 1101007
+  displayName: Fighter Power Guard
+- name: CrusaderImprovingMpRecovery
+  domain: skill
+  canonicalToken: 1110000
+  displayName: Crusader Improving Mp Recovery
+- name: CrusaderShieldMastery
+  domain: skill
+  canonicalToken: 1110001
+  displayName: Crusader Shield Mastery
+- name: CrusaderComboAttack
+  domain: skill
+  canonicalToken: 1111002
+  displayName: Crusader Combo Attack
+- name: CrusaderPanicSword
+  domain: skill
+  canonicalToken: 1111003
+  displayName: Crusader Panic Sword
+- name: CrusaderPanicAxe
+  domain: skill
+  canonicalToken: 1111004
+  displayName: Crusader Panic Axe
+- name: CrusaderComaSword
+  domain: skill
+  canonicalToken: 1111005
+  displayName: Crusader Coma Sword
+- name: CrusaderComaAxe
+  domain: skill
+  canonicalToken: 1111006
+  displayName: Crusader Coma Axe
+- name: CrusaderArmorCrash
+  domain: skill
+  canonicalToken: 1111007
+  displayName: Crusader Armor Crash
+- name: CrusaderShout
+  domain: skill
+  canonicalToken: 1111008
+  displayName: Crusader Shout
+- name: HeroAdvancedComboAttack
+  domain: skill
+  canonicalToken: 1120003
+  displayName: Hero Advanced Combo Attack
+- name: HeroAchilles
+  domain: skill
+  canonicalToken: 1120004
+  displayName: Hero Achilles
+- name: HeroGuardian
+  domain: skill
+  canonicalToken: 1120005
+  displayName: Hero Guardian
+- name: HeroMapleWarrior
+  domain: skill
+  canonicalToken: 1121000
+  displayName: Hero Maple Warrior
+- name: HeroMonsterMagnet
+  domain: skill
+  canonicalToken: 1121001
+  displayName: Hero Monster Magnet
+- name: HeroPowerStance
+  domain: skill
+  canonicalToken: 1121002
+  displayName: Hero Power Stance
+- name: HeroRush
+  domain: skill
+  canonicalToken: 1121006
+  displayName: Hero Rush
+- name: HeroBrandish
+  domain: skill
+  canonicalToken: 1121008
+  displayName: Hero Brandish
+- name: HeroEnrage
+  domain: skill
+  canonicalToken: 1121010
+  displayName: Hero Enrage
+- name: HeroHerosWill
+  domain: skill
+  canonicalToken: 1121011
+  displayName: Hero Heros Will
+- name: PageSwordMastery
+  domain: skill
+  canonicalToken: 1200000
+  displayName: Page Sword Mastery
+- name: PageBluntWeaponMastery
+  domain: skill
+  canonicalToken: 1200001
+  displayName: Page Blunt Weapon Mastery
+- name: PageSwordFinalAttack
+  domain: skill
+  canonicalToken: 1200002
+  displayName: Page Sword Final Attack
+- name: PageBluntFinalAttack
+  domain: skill
+  canonicalToken: 1200003
+  displayName: Page Blunt Final Attack
+- name: PageSwordBooster
+  domain: skill
+  canonicalToken: 1201004
+  displayName: Page Sword Booster
+- name: PageBluntWeaponBooster
+  domain: skill
+  canonicalToken: 1201005
+  displayName: Page Blunt Weapon Booster
+- name: PageThreaten
+  domain: skill
+  canonicalToken: 1201006
+  displayName: Page Threaten
+- name: PagePowerGuard
+  domain: skill
+  canonicalToken: 1201007
+  displayName: Page Power Guard
+- name: WhiteKnightImprovingMpRecovery
+  domain: skill
+  canonicalToken: 1210000
+  displayName: White Knight Improving Mp Recovery
+- name: WhiteKnightShieldMastery
+  domain: skill
+  canonicalToken: 1210001
+  displayName: White Knight Shield Mastery
+- name: WhiteKnightChargedBlow
+  domain: skill
+  canonicalToken: 1211002
+  displayName: White Knight Charged Blow
+- name: WhiteKnightFireChargeSword
+  domain: skill
+  canonicalToken: 1211003
+  displayName: White Knight Fire Charge Sword
+- name: WhiteKnightFlameChargeBluntWeapon
+  domain: skill
+  canonicalToken: 1211004
+  displayName: White Knight Flame Charge Blunt Weapon
+- name: WhiteKnightIceChargeSword
+  domain: skill
+  canonicalToken: 1211005
+  displayName: White Knight Ice Charge Sword
+- name: WhiteKnightBlizzardChargeBluntWeapon
+  domain: skill
+  canonicalToken: 1211006
+  displayName: White Knight Blizzard Charge Blunt Weapon
+- name: WhiteKnightThunderChargeSword
+  domain: skill
+  canonicalToken: 1211007
+  displayName: White Knight Thunder Charge Sword
+- name: WhiteKnightLightningChargeBluntWeapon
+  domain: skill
+  canonicalToken: 1211008
+  displayName: White Knight Lightning Charge Blunt Weapon
+- name: WhiteKnightMagicCrash
+  domain: skill
+  canonicalToken: 1211009
+  displayName: White Knight Magic Crash
+- name: PaladinAchilles
+  domain: skill
+  canonicalToken: 1220005
+  displayName: Paladin Achilles
+- name: PaladinGuardian
+  domain: skill
+  canonicalToken: 1220006
+  displayName: Paladin Guardian
+- name: PaladinAdvancedCharge
+  domain: skill
+  canonicalToken: 1220010
+  displayName: Paladin Advanced Charge
+- name: PaladinMapleWarrior
+  domain: skill
+  canonicalToken: 1221000
+  displayName: Paladin Maple Warrior
+- name: PaladinMonsterMagnet
+  domain: skill
+  canonicalToken: 1221001
+  displayName: Paladin Monster Magnet
+- name: PaladinPowerStance
+  domain: skill
+  canonicalToken: 1221002
+  displayName: Paladin Power Stance
+- name: PaladinHolyChargeSword
+  domain: skill
+  canonicalToken: 1221003
+  displayName: Paladin Holy Charge Sword
+- name: PaladinDivineChargeBluntWeapon
+  domain: skill
+  canonicalToken: 1221004
+  displayName: Paladin Divine Charge Blunt Weapon
+- name: PaladinRush
+  domain: skill
+  canonicalToken: 1221007
+  displayName: Paladin Rush
+- name: PaladinBlast
+  domain: skill
+  canonicalToken: 1221009
+  displayName: Paladin Blast
+- name: PaladinHeavensHammer
+  domain: skill
+  canonicalToken: 1221011
+  displayName: Paladin Heavens Hammer
+- name: PaladinHerosWill
+  domain: skill
+  canonicalToken: 1221012
+  displayName: Paladin Heros Will
+- name: SpearmanSpearMastery
+  domain: skill
+  canonicalToken: 1300000
+  displayName: Spearman Spear Mastery
+- name: SpearmanPolearmMastery
+  domain: skill
+  canonicalToken: 1300001
+  displayName: Spearman Polearm Mastery
+- name: SpearmanFinalAttackSpear
+  domain: skill
+  canonicalToken: 1300002
+  displayName: Spearman Final Attack Spear
+- name: SpearmanFinalAttackPolearm
+  domain: skill
+  canonicalToken: 1300003
+  displayName: Spearman Final Attack Polearm
+- name: SpearmanSpearBooster
+  domain: skill
+  canonicalToken: 1301004
+  displayName: Spearman Spear Booster
+- name: SpearmanPolearmBooster
+  domain: skill
+  canonicalToken: 1301005
+  displayName: Spearman Polearm Booster
+- name: SpearmanIronWill
+  domain: skill
+  canonicalToken: 1301006
+  displayName: Spearman Iron Will
+- name: SpearmanHyperBody
+  domain: skill
+  canonicalToken: 1301007
+  displayName: Spearman Hyper Body
+- name: DragonKnightElementalResistance
+  domain: skill
+  canonicalToken: 1310000
+  displayName: Dragon Knight Elemental Resistance
+- name: DragonKnightSpearCrusher
+  domain: skill
+  canonicalToken: 1311001
+  displayName: Dragon Knight Spear Crusher
+- name: DragonKnightPolearmCrusher
+  domain: skill
+  canonicalToken: 1311002
+  displayName: Dragon Knight Polearm Crusher
+- name: DragonKnightDragonFurySpear
+  domain: skill
+  canonicalToken: 1311003
+  displayName: Dragon Knight Dragon Fury Spear
+- name: DragonKnightDragonFuryPolearm
+  domain: skill
+  canonicalToken: 1311004
+  displayName: Dragon Knight Dragon Fury Polearm
+- name: DragonKnightSacrifice
+  domain: skill
+  canonicalToken: 1311005
+  displayName: Dragon Knight Sacrifice
+- name: DragonKnightDragonRoar
+  domain: skill
+  canonicalToken: 1311006
+  displayName: Dragon Knight Dragon Roar
+- name: DragonKnightPowerCrash
+  domain: skill
+  canonicalToken: 1311007
+  displayName: Dragon Knight Power Crash
+- name: DragonKnightDragonBlood
+  domain: skill
+  canonicalToken: 1311008
+  displayName: Dragon Knight Dragon Blood
+- name: DarkKnightAchilles
+  domain: skill
+  canonicalToken: 1320005
+  displayName: Dark Knight Achilles
+- name: DarkKnightBerserk
+  domain: skill
+  canonicalToken: 1320006
+  displayName: Dark Knight Berserk
+- name: DarkKnightAuraOfTheBeholder
+  domain: skill
+  canonicalToken: 1320008
+  displayName: Dark Knight Aura Of The Beholder
+- name: DarkKnightHexOfTheBeholder
+  domain: skill
+  canonicalToken: 1320009
+  displayName: Dark Knight Hex Of The Beholder
+- name: DarkKnightMapleWarrior
+  domain: skill
+  canonicalToken: 1321000
+  displayName: Dark Knight Maple Warrior
+- name: DarkKnightMonsterMagnet
+  domain: skill
+  canonicalToken: 1321001
+  displayName: Dark Knight Monster Magnet
+- name: DarkKnightPowerStance
+  domain: skill
+  canonicalToken: 1321002
+  displayName: Dark Knight Power Stance
+- name: DarkKnightRush
+  domain: skill
+  canonicalToken: 1321003
+  displayName: Dark Knight Rush
+- name: DarkKnightBeholder
+  domain: skill
+  canonicalToken: 1321007
+  displayName: Dark Knight Beholder
+- name: DarkKnightHerosWill
+  domain: skill
+  canonicalToken: 1321010
+  displayName: Dark Knight Heros Will
+- name: MagicianImprovedMpRecovery
+  domain: skill
+  canonicalToken: 2000000
+  displayName: Magician Improved Mp Recovery
+- name: MagicianImprovedMaxMpIncrease
+  domain: skill
+  canonicalToken: 2000001
+  displayName: Magician Improved Max Mp Increase
+- name: MagicianMagicGuard
+  domain: skill
+  canonicalToken: 2001002
+  displayName: Magician Magic Guard
+- name: MagicianMagicArmor
+  domain: skill
+  canonicalToken: 2001003
+  displayName: Magician Magic Armor
+- name: MagicianEnergyBolt
+  domain: skill
+  canonicalToken: 2001004
+  displayName: Magician Energy Bolt
+- name: MagicianMagicClaw
+  domain: skill
+  canonicalToken: 2001005
+  displayName: Magician Magic Claw
+- name: FirePoisonWizardMpEater
+  domain: skill
+  canonicalToken: 2100000
+  displayName: Fire Poison Wizard Mp Eater
+- name: FirePoisonWizardMeditation
+  domain: skill
+  canonicalToken: 2101001
+  displayName: Fire Poison Wizard Meditation
+- name: FirePoisonWizardTeleport
+  domain: skill
+  canonicalToken: 2101002
+  displayName: Fire Poison Wizard Teleport
+- name: FirePoisonWizardSlow
+  domain: skill
+  canonicalToken: 2101003
+  displayName: Fire Poison Wizard Slow
+- name: FirePoisonWizardFireArrow
+  domain: skill
+  canonicalToken: 2101004
+  displayName: Fire Poison Wizard Fire Arrow
+- name: FirePoisonWizardPoisonBreath
+  domain: skill
+  canonicalToken: 2101005
+  displayName: Fire Poison Wizard Poison Breath
+- name: FirePoisonMagicianPartialResistance
+  domain: skill
+  canonicalToken: 2110000
+  displayName: Fire Poison Magician Partial Resistance
+- name: FirePoisonMagicianElementAmplification
+  domain: skill
+  canonicalToken: 2110001
+  displayName: Fire Poison Magician Element Amplification
+- name: FirePoisonMagicianExplosion
+  domain: skill
+  canonicalToken: 2111002
+  displayName: Fire Poison Magician Explosion
+- name: FirePoisonMagicianPoisonMist
+  domain: skill
+  canonicalToken: 2111003
+  displayName: Fire Poison Magician Poison Mist
+- name: FirePoisonMagicianSeal
+  domain: skill
+  canonicalToken: 2111004
+  displayName: Fire Poison Magician Seal
+- name: FirePoisonMagicianSpellBooster
+  domain: skill
+  canonicalToken: 2111005
+  displayName: Fire Poison Magician Spell Booster
+- name: FirePoisonMagicianElementComposition
+  domain: skill
+  canonicalToken: 2111006
+  displayName: Fire Poison Magician Element Composition
+- name: FirePoisonArchMagicianMapleWarrior
+  domain: skill
+  canonicalToken: 2121000
+  displayName: Fire Poison Arch Magician Maple Warrior
+- name: FirePoisonArchMagicianBigBang
+  domain: skill
+  canonicalToken: 2121001
+  displayName: Fire Poison Arch Magician Big Bang
+- name: FirePoisonArchMagicianManaReflection
+  domain: skill
+  canonicalToken: 2121002
+  displayName: Fire Poison Arch Magician Mana Reflection
+- name: FirePoisonArchMagicianFireDemon
+  domain: skill
+  canonicalToken: 2121003
+  displayName: Fire Poison Arch Magician Fire Demon
+- name: FirePoisonArchMagicianInfinity
+  domain: skill
+  canonicalToken: 2121004
+  displayName: Fire Poison Arch Magician Infinity
+- name: FirePoisonArchMagicianElquines
+  domain: skill
+  canonicalToken: 2121005
+  displayName: Fire Poison Arch Magician Elquines
+- name: FirePoisonArchMagicianParalyze
+  domain: skill
+  canonicalToken: 2121006
+  displayName: Fire Poison Arch Magician Paralyze
+- name: FirePoisonArchMagicianMeteorShower
+  domain: skill
+  canonicalToken: 2121007
+  displayName: Fire Poison Arch Magician Meteor Shower
+- name: FirePoisonArchMagicianHerosWill
+  domain: skill
+  canonicalToken: 2121008
+  displayName: Fire Poison Arch Magician Heros Will
+- name: IceLightningWizardMpEater
+  domain: skill
+  canonicalToken: 2200000
+  displayName: Ice Lightning Wizard Mp Eater
+- name: IceLightningWizardMeditation
+  domain: skill
+  canonicalToken: 2201001
+  displayName: Ice Lightning Wizard Meditation
+- name: IceLightningWizardTeleport
+  domain: skill
+  canonicalToken: 2201002
+  displayName: Ice Lightning Wizard Teleport
+- name: IceLightningWizardSlow
+  domain: skill
+  canonicalToken: 2201003
+  displayName: Ice Lightning Wizard Slow
+- name: IceLightningWizardColdBeam
+  domain: skill
+  canonicalToken: 2201004
+  displayName: Ice Lightning Wizard Cold Beam
+- name: IceLightningWizardThunderBolt
+  domain: skill
+  canonicalToken: 2201005
+  displayName: Ice Lightning Wizard Thunder Bolt
+- name: IceLightningMagicianPartialResistance
+  domain: skill
+  canonicalToken: 2210000
+  displayName: Ice Lightning Magician Partial Resistance
+- name: IceLightningMagicianElementAmplification
+  domain: skill
+  canonicalToken: 2210001
+  displayName: Ice Lightning Magician Element Amplification
+- name: IceLightningMagicianIceStrike
+  domain: skill
+  canonicalToken: 2211002
+  displayName: Ice Lightning Magician Ice Strike
+- name: IceLightningMagicianThunderSpear
+  domain: skill
+  canonicalToken: 2211003
+  displayName: Ice Lightning Magician Thunder Spear
+- name: IceLightningMagicianSeal
+  domain: skill
+  canonicalToken: 2211004
+  displayName: Ice Lightning Magician Seal
+- name: IceLightningMagicianSpellBooster
+  domain: skill
+  canonicalToken: 2211005
+  displayName: Ice Lightning Magician Spell Booster
+- name: IceLightningMagicianElementComposition
+  domain: skill
+  canonicalToken: 2211006
+  displayName: Ice Lightning Magician Element Composition
+- name: IceLightningArchMagicianMapleWarrior
+  domain: skill
+  canonicalToken: 2221000
+  displayName: Ice Lightning Arch Magician Maple Warrior
+- name: IceLightningArchMagicianBigBang
+  domain: skill
+  canonicalToken: 2221001
+  displayName: Ice Lightning Arch Magician Big Bang
+- name: IceLightningArchMagicianManaReflection
+  domain: skill
+  canonicalToken: 2221002
+  displayName: Ice Lightning Arch Magician Mana Reflection
+- name: IceLightningArchMagicianIceDemon
+  domain: skill
+  canonicalToken: 2221003
+  displayName: Ice Lightning Arch Magician Ice Demon
+- name: IceLightningArchMagicianInfinity
+  domain: skill
+  canonicalToken: 2221004
+  displayName: Ice Lightning Arch Magician Infinity
+- name: IceLightningArchMagicianIfrit
+  domain: skill
+  canonicalToken: 2221005
+  displayName: Ice Lightning Arch Magician Ifrit
+- name: IceLightningArchMagicianChainLightning
+  domain: skill
+  canonicalToken: 2221006
+  displayName: Ice Lightning Arch Magician Chain Lightning
+- name: IceLightningArchMagicianBlizzard
+  domain: skill
+  canonicalToken: 2221007
+  displayName: Ice Lightning Arch Magician Blizzard
+- name: IceLightningArchMagicianHerosWill
+  domain: skill
+  canonicalToken: 2221008
+  displayName: Ice Lightning Arch Magician Heros Will
+- name: ClericMpEater
+  domain: skill
+  canonicalToken: 2300000
+  displayName: Cleric Mp Eater
+- name: ClericTeleport
+  domain: skill
+  canonicalToken: 2301001
+  displayName: Cleric Teleport
+- name: ClericHeal
+  domain: skill
+  canonicalToken: 2301002
+  displayName: Cleric Heal
+- name: ClericInvincible
+  domain: skill
+  canonicalToken: 2301003
+  displayName: Cleric Invincible
+- name: ClericBless
+  domain: skill
+  canonicalToken: 2301004
+  displayName: Cleric Bless
+- name: ClericHolyArrow
+  domain: skill
+  canonicalToken: 2301005
+  displayName: Cleric Holy Arrow
+- name: PriestElementalResistance
+  domain: skill
+  canonicalToken: 2310000
+  displayName: Priest Elemental Resistance
+- name: PriestDispel
+  domain: skill
+  canonicalToken: 2311001
+  displayName: Priest Dispel
+- name: PriestMysticDoor
+  domain: skill
+  canonicalToken: 2311002
+  displayName: Priest Mystic Door
+- name: PriestHolySymbol
+  domain: skill
+  canonicalToken: 2311003
+  displayName: Priest Holy Symbol
+- name: PriestShiningRay
+  domain: skill
+  canonicalToken: 2311004
+  displayName: Priest Shining Ray
+- name: PriestDoom
+  domain: skill
+  canonicalToken: 2311005
+  displayName: Priest Doom
+- name: PriestSummonDragon
+  domain: skill
+  canonicalToken: 2311006
+  displayName: Priest Summon Dragon
+- name: BishopMapleWarrior
+  domain: skill
+  canonicalToken: 2321000
+  displayName: Bishop Maple Warrior
+- name: BishopBigBang
+  domain: skill
+  canonicalToken: 2321001
+  displayName: Bishop Big Bang
+- name: BishopManaReflection
+  domain: skill
+  canonicalToken: 2321002
+  displayName: Bishop Mana Reflection
+- name: BishopBahamut
+  domain: skill
+  canonicalToken: 2321003
+  displayName: Bishop Bahamut
+- name: BishopInfinity
+  domain: skill
+  canonicalToken: 2321004
+  displayName: Bishop Infinity
+- name: BishopHolyShield
+  domain: skill
+  canonicalToken: 2321005
+  displayName: Bishop Holy Shield
+- name: BishopResurrection
+  domain: skill
+  canonicalToken: 2321006
+  displayName: Bishop Resurrection
+- name: BishopAngelRay
+  domain: skill
+  canonicalToken: 2321007
+  displayName: Bishop Angel Ray
+- name: BishopGenesis
+  domain: skill
+  canonicalToken: 2321008
+  displayName: Bishop Genesis
+- name: BishopHerosWill
+  domain: skill
+  canonicalToken: 2321009
+  displayName: Bishop Heros Will
+- name: BowmanTheBlessingOfAmazon
+  domain: skill
+  canonicalToken: 3000000
+  displayName: Bowman The Blessing Of Amazon
+- name: BowmanCriticalShot
+  domain: skill
+  canonicalToken: 3000001
+  displayName: Bowman Critical Shot
+- name: BowmanTheEyeOfAmazon
+  domain: skill
+  canonicalToken: 3000002
+  displayName: Bowman The Eye Of Amazon
+- name: BowmanFocus
+  domain: skill
+  canonicalToken: 3001003
+  displayName: Bowman Focus
+- name: BowmanArrowBlow
+  domain: skill
+  canonicalToken: 3001004
+  displayName: Bowman Arrow Blow
+- name: BowmanDoubleShot
+  domain: skill
+  canonicalToken: 3001005
+  displayName: Bowman Double Shot
+- name: HunterBowMastery
+  domain: skill
+  canonicalToken: 3100000
+  displayName: Hunter Bow Mastery
+- name: HunterFinalAttackBow
+  domain: skill
+  canonicalToken: 3100001
+  displayName: Hunter Final Attack Bow
+- name: HunterBowBooster
+  domain: skill
+  canonicalToken: 3101002
+  displayName: Hunter Bow Booster
+- name: HunterPowerKnockBack
+  domain: skill
+  canonicalToken: 3101003
+  displayName: Hunter Power Knock Back
+- name: HunterSoulArrowBow
+  domain: skill
+  canonicalToken: 3101004
+  displayName: Hunter Soul Arrow Bow
+- name: HunterArrowBombBow
+  domain: skill
+  canonicalToken: 3101005
+  displayName: Hunter Arrow Bomb Bow
+- name: RangerThrust
+  domain: skill
+  canonicalToken: 3110000
+  displayName: Ranger Thrust
+- name: RangerMortalBlow
+  domain: skill
+  canonicalToken: 3110001
+  displayName: Ranger Mortal Blow
+- name: RangerPuppet
+  domain: skill
+  canonicalToken: 3111002
+  displayName: Ranger Puppet
+- name: RangerInferno
+  domain: skill
+  canonicalToken: 3111003
+  displayName: Ranger Inferno
+- name: RangerArrowRain
+  domain: skill
+  canonicalToken: 3111004
+  displayName: Ranger Arrow Rain
+- name: RangerSilverHawk
+  domain: skill
+  canonicalToken: 3111005
+  displayName: Ranger Silver Hawk
+- name: RangerStrafe
+  domain: skill
+  canonicalToken: 3111006
+  displayName: Ranger Strafe
+- name: BowmasterBowExpert
+  domain: skill
+  canonicalToken: 3120005
+  displayName: Bowmaster Bow Expert
+- name: BowmasterMapleWarrior
+  domain: skill
+  canonicalToken: 3121000
+  displayName: Bowmaster Maple Warrior
+- name: BowmasterSharpEyes
+  domain: skill
+  canonicalToken: 3121002
+  displayName: Bowmaster Sharp Eyes
+- name: BowmasterDragonsBreath
+  domain: skill
+  canonicalToken: 3121003
+  displayName: Bowmaster Dragons Breath
+- name: BowmasterHurricane
+  domain: skill
+  canonicalToken: 3121004
+  displayName: Bowmaster Hurricane
+- name: BowmasterPhoenix
+  domain: skill
+  canonicalToken: 3121006
+  displayName: Bowmaster Phoenix
+- name: BowmasterHamstring
+  domain: skill
+  canonicalToken: 3121007
+  displayName: Bowmaster Hamstring
+- name: BowmasterConcentrate
+  domain: skill
+  canonicalToken: 3121008
+  displayName: Bowmaster Concentrate
+- name: BowmasterHerosWill
+  domain: skill
+  canonicalToken: 3121009
+  displayName: Bowmaster Heros Will
+- name: CrossbowmanCrossbowMastery
+  domain: skill
+  canonicalToken: 3200000
+  displayName: Crossbowman Crossbow Mastery
+- name: CrossbowmanFinalAttackCrossbow
+  domain: skill
+  canonicalToken: 3200001
+  displayName: Crossbowman Final Attack Crossbow
+- name: CrossbowmanCrossbowBooster
+  domain: skill
+  canonicalToken: 3201002
+  displayName: Crossbowman Crossbow Booster
+- name: CrossbowmanPowerKnockBack
+  domain: skill
+  canonicalToken: 3201003
+  displayName: Crossbowman Power Knock Back
+- name: CrossbowmanSoulArrowCrossbow
+  domain: skill
+  canonicalToken: 3201004
+  displayName: Crossbowman Soul Arrow Crossbow
+- name: CrossbowmanIronArrowCrossbow
+  domain: skill
+  canonicalToken: 3201005
+  displayName: Crossbowman Iron Arrow Crossbow
+- name: SniperThrust
+  domain: skill
+  canonicalToken: 3210000
+  displayName: Sniper Thrust
+- name: SniperMortalBlow
+  domain: skill
+  canonicalToken: 3210001
+  displayName: Sniper Mortal Blow
+- name: SniperPuppet
+  domain: skill
+  canonicalToken: 3211002
+  displayName: Sniper Puppet
+- name: SniperBlizzard
+  domain: skill
+  canonicalToken: 3211003
+  displayName: Sniper Blizzard
+- name: SniperArrowEruption
+  domain: skill
+  canonicalToken: 3211004
+  displayName: Sniper Arrow Eruption
+- name: SniperGoldenEagle
+  domain: skill
+  canonicalToken: 3211005
+  displayName: Sniper Golden Eagle
+- name: SniperStrafe
+  domain: skill
+  canonicalToken: 3211006
+  displayName: Sniper Strafe
+- name: MarksmanMarksmanBoost
+  domain: skill
+  canonicalToken: 3220004
+  displayName: Marksman Marksman Boost
+- name: MarksmanMapleWarrior
+  domain: skill
+  canonicalToken: 3221000
+  displayName: Marksman Maple Warrior
+- name: MarksmanPiercingArrow
+  domain: skill
+  canonicalToken: 3221001
+  displayName: Marksman Piercing Arrow
+- name: MarksmanSharpEyes
+  domain: skill
+  canonicalToken: 3221002
+  displayName: Marksman Sharp Eyes
+- name: MarksmanDragonsBreath
+  domain: skill
+  canonicalToken: 3221003
+  displayName: Marksman Dragons Breath
+- name: MarksmanFrostprey
+  domain: skill
+  canonicalToken: 3221005
+  displayName: Marksman Frostprey
+- name: MarksmanBlind
+  domain: skill
+  canonicalToken: 3221006
+  displayName: Marksman Blind
+- name: MarksmanSnipe
+  domain: skill
+  canonicalToken: 3221007
+  displayName: Marksman Snipe
+- name: MarksmanHerosWill
+  domain: skill
+  canonicalToken: 3221008
+  displayName: Marksman Heros Will
+- name: RogueNimbleBody
+  domain: skill
+  canonicalToken: 4000000
+  displayName: Rogue Nimble Body
+- name: RogueKeenEyes
+  domain: skill
+  canonicalToken: 4000001
+  displayName: Rogue Keen Eyes
+- name: RogueDisorder
+  domain: skill
+  canonicalToken: 4001002
+  displayName: Rogue Disorder
+- name: RogueDarkSight
+  domain: skill
+  canonicalToken: 4001003
+  displayName: Rogue Dark Sight
+- name: RogueDoubleStab
+  domain: skill
+  canonicalToken: 4001334
+  displayName: Rogue Double Stab
+- name: RogueLuckySeven
+  domain: skill
+  canonicalToken: 4001344
+  displayName: Rogue Lucky Seven
+- name: AssassinClawMastery
+  domain: skill
+  canonicalToken: 4100000
+  displayName: Assassin Claw Mastery
+- name: AssassinCriticalThrow
+  domain: skill
+  canonicalToken: 4100001
+  displayName: Assassin Critical Throw
+- name: AssassinEndure
+  domain: skill
+  canonicalToken: 4100002
+  displayName: Assassin Endure
+- name: AssassinClawBooster
+  domain: skill
+  canonicalToken: 4101003
+  displayName: Assassin Claw Booster
+- name: AssassinHaste
+  domain: skill
+  canonicalToken: 4101004
+  displayName: Assassin Haste
+- name: AssassinDrain
+  domain: skill
+  canonicalToken: 4101005
+  displayName: Assassin Drain
+- name: HermitAlchemist
+  domain: skill
+  canonicalToken: 4110000
+  displayName: Hermit Alchemist
+- name: HermitMesoUp
+  domain: skill
+  canonicalToken: 4111001
+  displayName: Hermit Meso Up
+- name: HermitShadowPartner
+  domain: skill
+  canonicalToken: 4111002
+  displayName: Hermit Shadow Partner
+- name: HermitShadowWeb
+  domain: skill
+  canonicalToken: 4111003
+  displayName: Hermit Shadow Web
+- name: HermitShadowMeso
+  domain: skill
+  canonicalToken: 4111004
+  displayName: Hermit Shadow Meso
+- name: HermitAvenger
+  domain: skill
+  canonicalToken: 4111005
+  displayName: Hermit Avenger
+- name: HermitFlashJump
+  domain: skill
+  canonicalToken: 4111006
+  displayName: Hermit Flash Jump
+- name: NightLordShadowShifter
+  domain: skill
+  canonicalToken: 4120002
+  displayName: Night Lord Shadow Shifter
+- name: NightLordVenomousStar
+  domain: skill
+  canonicalToken: 4120005
+  displayName: Night Lord Venomous Star
+- name: NightLordMapleWarrior
+  domain: skill
+  canonicalToken: 4121000
+  displayName: Night Lord Maple Warrior
+- name: NightLordTaunt
+  domain: skill
+  canonicalToken: 4121003
+  displayName: Night Lord Taunt
+- name: NightLordNinjaAmbush
+  domain: skill
+  canonicalToken: 4121004
+  displayName: Night Lord Ninja Ambush
+- name: NightLordShadowStars
+  domain: skill
+  canonicalToken: 4121006
+  displayName: Night Lord Shadow Stars
+- name: NightLordTripleThrow
+  domain: skill
+  canonicalToken: 4121007
+  displayName: Night Lord Triple Throw
+- name: NightLordNinjaStorm
+  domain: skill
+  canonicalToken: 4121008
+  displayName: Night Lord Ninja Storm
+- name: NightLordHerosWill
+  domain: skill
+  canonicalToken: 4121009
+  displayName: Night Lord Heros Will
+- name: BanditDaggerMastery
+  domain: skill
+  canonicalToken: 4200000
+  displayName: Bandit Dagger Mastery
+- name: BanditEndure
+  domain: skill
+  canonicalToken: 4200001
+  displayName: Bandit Endure
+- name: BanditDaggerBooster
+  domain: skill
+  canonicalToken: 4201002
+  displayName: Bandit Dagger Booster
+- name: BanditHaste
+  domain: skill
+  canonicalToken: 4201003
+  displayName: Bandit Haste
+- name: BanditSteal
+  domain: skill
+  canonicalToken: 4201004
+  displayName: Bandit Steal
+- name: BanditSavageBlow
+  domain: skill
+  canonicalToken: 4201005
+  displayName: Bandit Savage Blow
+- name: ChiefBanditShieldMastery
+  domain: skill
+  canonicalToken: 4210000
+  displayName: Chief Bandit Shield Mastery
+- name: ChiefBanditChakra
+  domain: skill
+  canonicalToken: 4211001
+  displayName: Chief Bandit Chakra
+- name: ChiefBanditAssaulter
+  domain: skill
+  canonicalToken: 4211002
+  displayName: Chief Bandit Assaulter
+- name: ChiefBanditPickpocket
+  domain: skill
+  canonicalToken: 4211003
+  displayName: Chief Bandit Pickpocket
+- name: ChiefBanditBandOfThieves
+  domain: skill
+  canonicalToken: 4211004
+  displayName: Chief Bandit Band Of Thieves
+- name: ChiefBanditMesoGuard
+  domain: skill
+  canonicalToken: 4211005
+  displayName: Chief Bandit Meso Guard
+- name: ChiefBanditMesoExplosion
+  domain: skill
+  canonicalToken: 4211006
+  displayName: Chief Bandit Meso Explosion
+- name: ShadowerShadowShifter
+  domain: skill
+  canonicalToken: 4220002
+  displayName: Shadower Shadow Shifter
+- name: ShadowerVenomousStab
+  domain: skill
+  canonicalToken: 4220005
+  displayName: Shadower Venomous Stab
+- name: ShadowerMapleWarrior
+  domain: skill
+  canonicalToken: 4221000
+  displayName: Shadower Maple Warrior
+- name: ShadowerAssassinate
+  domain: skill
+  canonicalToken: 4221001
+  displayName: Shadower Assassinate
+- name: ShadowerTaunt
+  domain: skill
+  canonicalToken: 4221003
+  displayName: Shadower Taunt
+- name: ShadowerNinjaAmbush
+  domain: skill
+  canonicalToken: 4221004
+  displayName: Shadower Ninja Ambush
+- name: ShadowerSmokescreen
+  domain: skill
+  canonicalToken: 4221006
+  displayName: Shadower Smokescreen
+- name: ShadowerBoomerangStep
+  domain: skill
+  canonicalToken: 4221007
+  displayName: Shadower Boomerang Step
+- name: ShadowerHerosWill
+  domain: skill
+  canonicalToken: 4221008
+  displayName: Shadower Heros Will
+- name: PirateBulletTime
+  domain: skill
+  canonicalToken: 5000000
+  displayName: Pirate Bullet Time
+- name: PirateFlashFist
+  domain: skill
+  canonicalToken: 5001001
+  displayName: Pirate Flash Fist
+- name: PirateSommersaultKick
+  domain: skill
+  canonicalToken: 5001002
+  displayName: Pirate Sommersault Kick
+- name: PirateDoubleShot
+  domain: skill
+  canonicalToken: 5001003
+  displayName: Pirate Double Shot
+- name: PirateDash
+  domain: skill
+  canonicalToken: 5001005
+  displayName: Pirate Dash
+- name: BrawlerImproveMaxHp
+  domain: skill
+  canonicalToken: 5100000
+  displayName: Brawler Improve Max Hp
+- name: BrawlerKnucklerMastery
+  domain: skill
+  canonicalToken: 5100001
+  displayName: Brawler Knuckler Mastery
+- name: BrawlerBackspinBlow
+  domain: skill
+  canonicalToken: 5101002
+  displayName: Brawler Backspin Blow
+- name: BrawlerDoubleUppercut
+  domain: skill
+  canonicalToken: 5101003
+  displayName: Brawler Double Uppercut
+- name: BrawlerCorkscrewBlow
+  domain: skill
+  canonicalToken: 5101004
+  displayName: Brawler Corkscrew Blow
+- name: BrawlerMPRecovery
+  domain: skill
+  canonicalToken: 5101005
+  displayName: Brawler MP Recovery
+- name: BrawlerKnucklerBooster
+  domain: skill
+  canonicalToken: 5101006
+  displayName: Brawler Knuckler Booster
+- name: BrawlerOakBarrel
+  domain: skill
+  canonicalToken: 5101007
+  displayName: Brawler Oak Barrel
+- name: MarauderStunMastery
+  domain: skill
+  canonicalToken: 5110000
+  displayName: Marauder Stun Mastery
+- name: MarauderEnergyCharge
+  domain: skill
+  canonicalToken: 5110001
+  displayName: Marauder Energy Charge
+- name: MarauderEnergyBlast
+  domain: skill
+  canonicalToken: 5111002
+  displayName: Marauder Energy Blast
+- name: MarauderEnergyDrain
+  domain: skill
+  canonicalToken: 5111004
+  displayName: Marauder Energy Drain
+- name: MarauderTransformation
+  domain: skill
+  canonicalToken: 5111005
+  displayName: Marauder Transformation
+- name: MarauderShockwave
+  domain: skill
+  canonicalToken: 5111006
+  displayName: Marauder Shockwave
+- name: BuccaneerMapleWarrior
+  domain: skill
+  canonicalToken: 5121000
+  displayName: Buccaneer Maple Warrior
+- name: BuccaneerDragonStrike
+  domain: skill
+  canonicalToken: 5121001
+  displayName: Buccaneer Dragon Strike
+- name: BuccaneerEnergyOrb
+  domain: skill
+  canonicalToken: 5121002
+  displayName: Buccaneer Energy Orb
+- name: BuccaneerSuperTransformation
+  domain: skill
+  canonicalToken: 5121003
+  displayName: Buccaneer Super Transformation
+- name: BuccaneerDemolition
+  domain: skill
+  canonicalToken: 5121004
+  displayName: Buccaneer Demolition
+- name: BuccaneerSnatch
+  domain: skill
+  canonicalToken: 5121005
+  displayName: Buccaneer Snatch
+- name: BuccaneerBarrage
+  domain: skill
+  canonicalToken: 5121007
+  displayName: Buccaneer Barrage
+- name: BuccaneerPiratesRage
+  domain: skill
+  canonicalToken: 5121008
+  displayName: Buccaneer Pirates Rage
+- name: BuccaneerSpeedInfusion
+  domain: skill
+  canonicalToken: 5121009
+  displayName: Buccaneer Speed Infusion
+- name: BuccaneerTimeLeap
+  domain: skill
+  canonicalToken: 5121010
+  displayName: Buccaneer Time Leap
+- name: GunslingerGunMastery
+  domain: skill
+  canonicalToken: 5200000
+  displayName: Gunslinger Gun Mastery
+- name: GunslingerInvisibleShot
+  domain: skill
+  canonicalToken: 5201001
+  displayName: Gunslinger Invisible Shot
+- name: GunslingerGrenade
+  domain: skill
+  canonicalToken: 5201002
+  displayName: Gunslinger Grenade
+- name: GunslingerGunBooster
+  domain: skill
+  canonicalToken: 5201003
+  displayName: Gunslinger Gun Booster
+- name: GunslingerBlankShot
+  domain: skill
+  canonicalToken: 5201004
+  displayName: Gunslinger Blank Shot
+- name: GunslingerWings
+  domain: skill
+  canonicalToken: 5201005
+  displayName: Gunslinger Wings
+- name: GunslingerRecoilShot
+  domain: skill
+  canonicalToken: 5201006
+  displayName: Gunslinger Recoil Shot
+- name: OutlawBurstFire
+  domain: skill
+  canonicalToken: 5210000
+  displayName: Outlaw Burst Fire
+- name: OutlawOctopus
+  domain: skill
+  canonicalToken: 5211001
+  displayName: Outlaw Octopus
+- name: OutlawGaviota
+  domain: skill
+  canonicalToken: 5211002
+  displayName: Outlaw Gaviota
+- name: OutlawFlamethrower
+  domain: skill
+  canonicalToken: 5211004
+  displayName: Outlaw Flamethrower
+- name: OutlawIceSplitter
+  domain: skill
+  canonicalToken: 5211005
+  displayName: Outlaw Ice Splitter
+- name: OutlawHomingBeacon
+  domain: skill
+  canonicalToken: 5211006
+  displayName: Outlaw Homing Beacon
+- name: CorsairElementalBoost
+  domain: skill
+  canonicalToken: 5220001
+  displayName: Corsair Elemental Boost
+- name: CorsairWrathOfTheOctopi
+  domain: skill
+  canonicalToken: 5220002
+  displayName: Corsair Wrath Of The Octopi
+- name: CorsairBullseye
+  domain: skill
+  canonicalToken: 5220011
+  displayName: Corsair Bullseye
+- name: CorsairMapleWarrior
+  domain: skill
+  canonicalToken: 5221000
+  displayName: Corsair Maple Warrior
+- name: CorsairAerialStrike
+  domain: skill
+  canonicalToken: 5221003
+  displayName: Corsair Aerial Strike
+- name: CorsairRapidFire
+  domain: skill
+  canonicalToken: 5221004
+  displayName: Corsair Rapid Fire
+- name: CorsairBattleship
+  domain: skill
+  canonicalToken: 5221006
+  displayName: Corsair Battleship
+- name: CorsairBattleshipCannon
+  domain: skill
+  canonicalToken: 5221007
+  displayName: Corsair Battleship Cannon
+- name: CorsairBattleshipTorpedo
+  domain: skill
+  canonicalToken: 5221008
+  displayName: Corsair Battleship Torpedo
+- name: CorsairHypnotize
+  domain: skill
+  canonicalToken: 5221009
+  displayName: Corsair Hypnotize
+- name: CorsairSpeedInfusion
+  domain: skill
+  canonicalToken: 5221010
+  displayName: Corsair Speed Infusion
+- name: MapleLeafBrigadierAntiMacro
+  domain: skill
+  canonicalToken: 8001000
+  displayName: Maple Leaf Brigadier Anti Macro
+- name: MapleLeafBrigadierTeleport
+  domain: skill
+  canonicalToken: 8001001
+  displayName: Maple Leaf Brigadier Teleport
+- name: GmHaste
+  domain: skill
+  canonicalToken: 9001000
+  displayName: Gm Haste
+- name: GmSuperDragonRoar
+  domain: skill
+  canonicalToken: 9001001
+  displayName: Gm Super Dragon Roar
+- name: GmTeleport
+  domain: skill
+  canonicalToken: 9001002
+  displayName: Gm Teleport
+- name: GmHide
+  domain: skill
+  canonicalToken: 9001004
+  displayName: Gm Hide
+- name: GmResurrection
+  domain: skill
+  canonicalToken: 9001005
+  displayName: Gm Resurrection
+- name: SuperGmHealDispel
+  domain: skill
+  canonicalToken: 9101000
+  displayName: Super Gm Heal Dispel
+- name: SuperGmHaste
+  domain: skill
+  canonicalToken: 9101001
+  displayName: Super Gm Haste
+- name: SuperGmHolySymbol
+  domain: skill
+  canonicalToken: 9101002
+  displayName: Super Gm Holy Symbol
+- name: SuperGmBless
+  domain: skill
+  canonicalToken: 9101003
+  displayName: Super Gm Bless
+- name: SuperGmHide
+  domain: skill
+  canonicalToken: 9101004
+  displayName: Super Gm Hide
+- name: SuperGmResurrection
+  domain: skill
+  canonicalToken: 9101005
+  displayName: Super Gm Resurrection
+- name: SuperGmDragonRoar
+  domain: skill
+  canonicalToken: 9101006
+  displayName: Super Gm Dragon Roar
+- name: SuperGmTeleport
+  domain: skill
+  canonicalToken: 9101007
+  displayName: Super Gm Teleport
+- name: SuperGmHyperBody
+  domain: skill
+  canonicalToken: 9101008
+  displayName: Super Gm Hyper Body
+- name: NoblesseThreeSnails
+  domain: skill
+  canonicalToken: 10001000
+  displayName: Noblesse Three Snails
+- name: NoblesseRecovery
+  domain: skill
+  canonicalToken: 10001001
+  displayName: Noblesse Recovery
+- name: NoblesseNimbleFeet
+  domain: skill
+  canonicalToken: 10001002
+  displayName: Noblesse Nimble Feet
+- name: NoblesseSoulOfCraftsman
+  domain: skill
+  canonicalToken: 10001003
+  displayName: Noblesse Soul Of Craftsman
+- name: NoblesseMonsterRiding
+  domain: skill
+  canonicalToken: 10001004
+  displayName: Noblesse Monster Riding
+- name: NoblesseEchoOfHero
+  domain: skill
+  canonicalToken: 10001005
+  displayName: Noblesse Echo Of Hero
+- name: NoblesseJumpDown
+  domain: skill
+  canonicalToken: 10001006
+  displayName: Noblesse Jump Down
+- name: NoblesseMaker
+  domain: skill
+  canonicalToken: 10001007
+  displayName: Noblesse Maker
+- name: NoblesseMultiPet
+  domain: skill
+  canonicalToken: 10001008
+  displayName: Noblesse Multi Pet
+- name: NoblesseBamboo
+  domain: skill
+  canonicalToken: 10001009
+  displayName: Noblesse Bamboo
+- name: NoblesseInvincible
+  domain: skill
+  canonicalToken: 10001010
+  displayName: Noblesse Invincible
+- name: NoblesseBerserk
+  domain: skill
+  canonicalToken: 10001011
+  displayName: Noblesse Berserk
+- name: NoblesseBlessOfNymph
+  domain: skill
+  canonicalToken: 10001012
+  displayName: Noblesse Bless Of Nymph
+- name: NoblesseYetiMount1
+  domain: skill
+  canonicalToken: 10001019
+  displayName: Noblesse Yeti Mount1
+- name: NoblesseYetiMount2
+  domain: skill
+  canonicalToken: 10001022
+  displayName: Noblesse Yeti Mount2
+- name: NoblesseBroomstick
+  domain: skill
+  canonicalToken: 10001023
+  displayName: Noblesse Broomstick
+- name: NoblesseBalrogMount
+  domain: skill
+  canonicalToken: 10001031
+  displayName: Noblesse Balrog Mount
+- name: DawnWarriorStage1ImprovedMaxHpIncrease
+  domain: skill
+  canonicalToken: 11000005
+  displayName: Dawn Warrior Stage1 Improved Max Hp Increase
+- name: DawnWarriorStage1IronBody
+  domain: skill
+  canonicalToken: 11001001
+  displayName: Dawn Warrior Stage1 Iron Body
+- name: DawnWarriorStage1PowerStrike
+  domain: skill
+  canonicalToken: 11001002
+  displayName: Dawn Warrior Stage1 Power Strike
+- name: DawnWarriorStage1SlashBlast
+  domain: skill
+  canonicalToken: 11001003
+  displayName: Dawn Warrior Stage1 Slash Blast
+- name: DawnWarriorStage1Soul
+  domain: skill
+  canonicalToken: 11001004
+  displayName: Dawn Warrior Stage1 Soul
+- name: DawnWarriorStage2SwordMastery
+  domain: skill
+  canonicalToken: 11100000
+  displayName: Dawn Warrior Stage2 Sword Mastery
+- name: DawnWarriorStage2SwordBooster
+  domain: skill
+  canonicalToken: 11101001
+  displayName: Dawn Warrior Stage2 Sword Booster
+- name: DawnWarriorStage2FinalAttackSword
+  domain: skill
+  canonicalToken: 11101002
+  displayName: Dawn Warrior Stage2 Final Attack Sword
+- name: DawnWarriorStage2Rage
+  domain: skill
+  canonicalToken: 11101003
+  displayName: Dawn Warrior Stage2 Rage
+- name: DawnWarriorStage2SoulBlade
+  domain: skill
+  canonicalToken: 11101004
+  displayName: Dawn Warrior Stage2 Soul Blade
+- name: DawnWarriorStage2SoulRush
+  domain: skill
+  canonicalToken: 11101005
+  displayName: Dawn Warrior Stage2 Soul Rush
+- name: DawnWarriorStage3ImprovedMpRecovery
+  domain: skill
+  canonicalToken: 11110000
+  displayName: Dawn Warrior Stage3 Improved Mp Recovery
+- name: DawnWarriorStage3AdvancedCombo
+  domain: skill
+  canonicalToken: 11110005
+  displayName: Dawn Warrior Stage3 Advanced Combo
+- name: DawnWarriorStage3ComboAttack
+  domain: skill
+  canonicalToken: 11111001
+  displayName: Dawn Warrior Stage3 Combo Attack
+- name: DawnWarriorStage3Panic
+  domain: skill
+  canonicalToken: 11111002
+  displayName: Dawn Warrior Stage3 Panic
+- name: DawnWarriorStage3Coma
+  domain: skill
+  canonicalToken: 11111003
+  displayName: Dawn Warrior Stage3 Coma
+- name: DawnWarriorStage3Brandish
+  domain: skill
+  canonicalToken: 11111004
+  displayName: Dawn Warrior Stage3 Brandish
+- name: DawnWarriorStage3SoulDriver
+  domain: skill
+  canonicalToken: 11111006
+  displayName: Dawn Warrior Stage3 Soul Driver
+- name: DawnWarriorStage3SoulCharge
+  domain: skill
+  canonicalToken: 11111007
+  displayName: Dawn Warrior Stage3 Soul Charge
+- name: BlazeWizardStage1ImprovedMaxMpIncrease
+  domain: skill
+  canonicalToken: 12000005
+  displayName: Blaze Wizard Stage1 Improved Max Mp Increase
+- name: BlazeWizardStage1MagicGuard
+  domain: skill
+  canonicalToken: 12001001
+  displayName: Blaze Wizard Stage1 Magic Guard
+- name: BlazeWizardStage1MagicArmor
+  domain: skill
+  canonicalToken: 12001002
+  displayName: Blaze Wizard Stage1 Magic Armor
+- name: BlazeWizardStage1MagicClaw
+  domain: skill
+  canonicalToken: 12001003
+  displayName: Blaze Wizard Stage1 Magic Claw
+- name: BlazeWizardStage1Flame
+  domain: skill
+  canonicalToken: 12001004
+  displayName: Blaze Wizard Stage1 Flame
+- name: BlazeWizardStage3SpellMastery
+  domain: skill
+  canonicalToken: 12100007
+  displayName: Blaze Wizard Stage3 Spell Mastery
+- name: BlazeWizardStage2Meditation
+  domain: skill
+  canonicalToken: 12101000
+  displayName: Blaze Wizard Stage2 Meditation
+- name: BlazeWizardStage2Slow
+  domain: skill
+  canonicalToken: 12101001
+  displayName: Blaze Wizard Stage2 Slow
+- name: BlazeWizardStage2FireArrow
+  domain: skill
+  canonicalToken: 12101002
+  displayName: Blaze Wizard Stage2 Fire Arrow
+- name: BlazeWizardStage2Teleport
+  domain: skill
+  canonicalToken: 12101003
+  displayName: Blaze Wizard Stage2 Teleport
+- name: BlazeWizardStage2SpellBooster
+  domain: skill
+  canonicalToken: 12101004
+  displayName: Blaze Wizard Stage2 Spell Booster
+- name: BlazeWizardStage2ElementalReset
+  domain: skill
+  canonicalToken: 12101005
+  displayName: Blaze Wizard Stage2 Elemental Reset
+- name: BlazeWizardStage2FirePillar
+  domain: skill
+  canonicalToken: 12101006
+  displayName: Blaze Wizard Stage2 Fire Pillar
+- name: BlazeWizardStage3ElementResistance
+  domain: skill
+  canonicalToken: 12110000
+  displayName: Blaze Wizard Stage3 Element Resistance
+- name: BlazeWizardStage3ElementAmplification
+  domain: skill
+  canonicalToken: 12110001
+  displayName: Blaze Wizard Stage3 Element Amplification
+- name: BlazeWizardStage3Seal
+  domain: skill
+  canonicalToken: 12111002
+  displayName: Blaze Wizard Stage3 Seal
+- name: BlazeWizardStage3MeteorShower
+  domain: skill
+  canonicalToken: 12111003
+  displayName: Blaze Wizard Stage3 Meteor Shower
+- name: BlazeWizardStage3Ifrit
+  domain: skill
+  canonicalToken: 12111004
+  displayName: Blaze Wizard Stage3 Ifrit
+- name: BlazeWizardStage3FlameGear
+  domain: skill
+  canonicalToken: 12111005
+  displayName: Blaze Wizard Stage3 Flame Gear
+- name: BlazeWizardStage3FireStrike
+  domain: skill
+  canonicalToken: 12111006
+  displayName: Blaze Wizard Stage3 Fire Strike
+- name: WindArcherStage1CriticalShot
+  domain: skill
+  canonicalToken: 13000000
+  displayName: Wind Archer Stage1 Critical Shot
+- name: WindArcherStage1TheEyeOfAmazon
+  domain: skill
+  canonicalToken: 13000001
+  displayName: Wind Archer Stage1 The Eye Of Amazon
+- name: WindArcherStage1Focus
+  domain: skill
+  canonicalToken: 13001002
+  displayName: Wind Archer Stage1 Focus
+- name: WindArcherStage1DoubleShot
+  domain: skill
+  canonicalToken: 13001003
+  displayName: Wind Archer Stage1 Double Shot
+- name: WindArcherStage1Storm
+  domain: skill
+  canonicalToken: 13001004
+  displayName: Wind Archer Stage1 Storm
+- name: WindArcherStage2BowMastery
+  domain: skill
+  canonicalToken: 13100000
+  displayName: Wind Archer Stage2 Bow Mastery
+- name: WindArcherStage2Thrust
+  domain: skill
+  canonicalToken: 13100004
+  displayName: Wind Archer Stage2 Thrust
+- name: WindArcherStage2BowBooster
+  domain: skill
+  canonicalToken: 13101001
+  displayName: Wind Archer Stage2 Bow Booster
+- name: WindArcherStage2FinalAttackBow
+  domain: skill
+  canonicalToken: 13101002
+  displayName: Wind Archer Stage2 Final Attack Bow
+- name: WindArcherStage2SoulArrow
+  domain: skill
+  canonicalToken: 13101003
+  displayName: Wind Archer Stage2 Soul Arrow
+- name: WindArcherStage2StormBreak
+  domain: skill
+  canonicalToken: 13101005
+  displayName: Wind Archer Stage2 Storm Break
+- name: WindArcherStage2WindWalk
+  domain: skill
+  canonicalToken: 13101006
+  displayName: Wind Archer Stage2 Wind Walk
+- name: WindArcherStage3BowExpert
+  domain: skill
+  canonicalToken: 13110003
+  displayName: Wind Archer Stage3 Bow Expert
+- name: WindArcherStage3ArrowRain
+  domain: skill
+  canonicalToken: 13111000
+  displayName: Wind Archer Stage3 Arrow Rain
+- name: WindArcherStage3Strafe
+  domain: skill
+  canonicalToken: 13111001
+  displayName: Wind Archer Stage3 Strafe
+- name: WindArcherStage3Hurricane
+  domain: skill
+  canonicalToken: 13111002
+  displayName: Wind Archer Stage3 Hurricane
+- name: WindArcherStage3Puppet
+  domain: skill
+  canonicalToken: 13111004
+  displayName: Wind Archer Stage3 Puppet
+- name: WindArcherStage3EagleEye
+  domain: skill
+  canonicalToken: 13111005
+  displayName: Wind Archer Stage3 Eagle Eye
+- name: WindArcherStage3WindPiercing
+  domain: skill
+  canonicalToken: 13111006
+  displayName: Wind Archer Stage3 Wind Piercing
+- name: WindArcherStage3WindShot
+  domain: skill
+  canonicalToken: 13111007
+  displayName: Wind Archer Stage3 Wind Shot
+- name: NightWalkerStage1NimbleBody
+  domain: skill
+  canonicalToken: 14000000
+  displayName: Night Walker Stage1 Nimble Body
+- name: NightWalkerStage1KeenEyes
+  domain: skill
+  canonicalToken: 14000001
+  displayName: Night Walker Stage1 Keen Eyes
+- name: NightWalkerStage1Disorder
+  domain: skill
+  canonicalToken: 14001002
+  displayName: Night Walker Stage1 Disorder
+- name: NightWalkerStage1DarkSight
+  domain: skill
+  canonicalToken: 14001003
+  displayName: Night Walker Stage1 Dark Sight
+- name: NightWalkerStage1LuckySeven
+  domain: skill
+  canonicalToken: 14001004
+  displayName: Night Walker Stage1 Lucky Seven
+- name: NightWalkerStage1Darkness
+  domain: skill
+  canonicalToken: 14001005
+  displayName: Night Walker Stage1 Darkness
+- name: NightWalkerStage2ClawMastery
+  domain: skill
+  canonicalToken: 14100000
+  displayName: Night Walker Stage2 Claw Mastery
+- name: NightWalkerStage2CriticalThrow
+  domain: skill
+  canonicalToken: 14100001
+  displayName: Night Walker Stage2 Critical Throw
+- name: NightWalkerStage2Vanish
+  domain: skill
+  canonicalToken: 14100005
+  displayName: Night Walker Stage2 Vanish
+- name: NightWalkerStage2ClawBooster
+  domain: skill
+  canonicalToken: 14101002
+  displayName: Night Walker Stage2 Claw Booster
+- name: NightWalkerStage2Haste
+  domain: skill
+  canonicalToken: 14101003
+  displayName: Night Walker Stage2 Haste
+- name: NightWalkerStage2FlashJump
+  domain: skill
+  canonicalToken: 14101004
+  displayName: Night Walker Stage2 Flash Jump
+- name: NightWalkerStage2Vampire
+  domain: skill
+  canonicalToken: 14101006
+  displayName: Night Walker Stage2 Vampire
+- name: NightWalkerStage3Alchemist
+  domain: skill
+  canonicalToken: 14110003
+  displayName: Night Walker Stage3 Alchemist
+- name: NightWalkerStage3Venom
+  domain: skill
+  canonicalToken: 14110004
+  displayName: Night Walker Stage3 Venom
+- name: NightWalkerStage3ShadowPartner
+  domain: skill
+  canonicalToken: 14111000
+  displayName: Night Walker Stage3 Shadow Partner
+- name: NightWalkerStage3ShadowWeb
+  domain: skill
+  canonicalToken: 14111001
+  displayName: Night Walker Stage3 Shadow Web
+- name: NightWalkerStage3Avenger
+  domain: skill
+  canonicalToken: 14111002
+  displayName: Night Walker Stage3 Avenger
+- name: NightWalkerStage3TripleThrow
+  domain: skill
+  canonicalToken: 14111005
+  displayName: Night Walker Stage3 Triple Throw
+- name: NightWalkerStage3PoisonBomb
+  domain: skill
+  canonicalToken: 14111006
+  displayName: Night Walker Stage3 Poison Bomb
+- name: ThunderBreakerStage1QuickMotion
+  domain: skill
+  canonicalToken: 15000000
+  displayName: Thunder Breaker Stage1 Quick Motion
+- name: ThunderBreakerStage1FirstStrike
+  domain: skill
+  canonicalToken: 15001001
+  displayName: Thunder Breaker Stage1 First Strike
+- name: ThunderBreakerStage1SomersaultKick
+  domain: skill
+  canonicalToken: 15001002
+  displayName: Thunder Breaker Stage1 Somersault Kick
+- name: ThunderBreakerStage1Dash
+  domain: skill
+  canonicalToken: 15001003
+  displayName: Thunder Breaker Stage1 Dash
+- name: ThunderBreakerStage1LightningSprite
+  domain: skill
+  canonicalToken: 15001004
+  displayName: Thunder Breaker Stage1 Lightning Sprite
+- name: ThunderBreakerStage2KnuckleMastery
+  domain: skill
+  canonicalToken: 15100001
+  displayName: Thunder Breaker Stage2 Knuckle Mastery
+- name: ThunderBreakerStage2EnergyCharge
+  domain: skill
+  canonicalToken: 15100004
+  displayName: Thunder Breaker Stage2 Energy Charge
+- name: ThunderBreakerStage2ImprovedMaxHpIncrease
+  domain: skill
+  canonicalToken: 15100007
+  displayName: Thunder Breaker Stage2 Improved Max Hp Increase
+- name: ThunderBreakerStage2KnuckleBooster
+  domain: skill
+  canonicalToken: 15101002
+  displayName: Thunder Breaker Stage2 Knuckle Booster
+- name: ThunderBreakerStage2CorkscrewBlow
+  domain: skill
+  canonicalToken: 15101003
+  displayName: Thunder Breaker Stage2 Corkscrew Blow
+- name: ThunderBreakerStage2EnergyBlast
+  domain: skill
+  canonicalToken: 15101005
+  displayName: Thunder Breaker Stage2 Energy Blast
+- name: ThunderBreakerStage2LightningCharge
+  domain: skill
+  canonicalToken: 15101006
+  displayName: Thunder Breaker Stage2 Lightning Charge
+- name: ThunderBreakerStage3CriticalPunch
+  domain: skill
+  canonicalToken: 15110000
+  displayName: Thunder Breaker Stage3 Critical Punch
+- name: ThunderBreakerStage3EnergyDrain
+  domain: skill
+  canonicalToken: 15111001
+  displayName: Thunder Breaker Stage3 Energy Drain
+- name: ThunderBreakerStage3Transformation
+  domain: skill
+  canonicalToken: 15111002
+  displayName: Thunder Breaker Stage3 Transformation
+- name: ThunderBreakerStage3ShockWave
+  domain: skill
+  canonicalToken: 15111003
+  displayName: Thunder Breaker Stage3 Shock Wave
+- name: ThunderBreakerStage3Barrage
+  domain: skill
+  canonicalToken: 15111004
+  displayName: Thunder Breaker Stage3 Barrage
+- name: ThunderBreakerStage3SpeedInfusion
+  domain: skill
+  canonicalToken: 15111005
+  displayName: Thunder Breaker Stage3 Speed Infusion
+- name: ThunderBreakerStage3Spark
+  domain: skill
+  canonicalToken: 15111006
+  displayName: Thunder Breaker Stage3 Spark
+- name: ThunderBreakerStage3SharkWave
+  domain: skill
+  canonicalToken: 15111007
+  displayName: Thunder Breaker Stage3 Shark Wave
+- name: LegendBlessOfNymph
+  domain: skill
+  canonicalToken: 20000012
+  displayName: Legend Bless Of Nymph
+- name: LegendThreeSnails
+  domain: skill
+  canonicalToken: 20001000
+  displayName: Legend Three Snails
+- name: LegendRecovery
+  domain: skill
+  canonicalToken: 20001001
+  displayName: Legend Recovery
+- name: LegendNimbleFeet
+  domain: skill
+  canonicalToken: 20001002
+  displayName: Legend Nimble Feet
+- name: LegendSoulOfCraftsman
+  domain: skill
+  canonicalToken: 20001003
+  displayName: Legend Soul Of Craftsman
+- name: LegendMonsterRiding
+  domain: skill
+  canonicalToken: 20001004
+  displayName: Legend Monster Riding
+- name: LegendEchoOfHero
+  domain: skill
+  canonicalToken: 20001005
+  displayName: Legend Echo Of Hero
+- name: LegendDamageMeter
+  domain: skill
+  canonicalToken: 20001006
+  displayName: Legend Damage Meter
+- name: LegendMaker
+  domain: skill
+  canonicalToken: 20001007
+  displayName: Legend Maker
+- name: LegendBamboo
+  domain: skill
+  canonicalToken: 20001009
+  displayName: Legend Bamboo
+- name: LegendInvincible
+  domain: skill
+  canonicalToken: 20001010
+  displayName: Legend Invincible
+- name: LegendBerserk
+  domain: skill
+  canonicalToken: 20001011
+  displayName: Legend Berserk
+- name: LegendYetiMount1
+  domain: skill
+  canonicalToken: 20001019
+  displayName: Legend Yeti Mount1
+- name: LegendYetiMount2
+  domain: skill
+  canonicalToken: 20001022
+  displayName: Legend Yeti Mount2
+- name: LegendBroomstick
+  domain: skill
+  canonicalToken: 20001023
+  displayName: Legend Broomstick
+- name: LegendBalrogMount
+  domain: skill
+  canonicalToken: 20001031
+  displayName: Legend Balrog Mount
+- name: EvanBlessOfNymph
+  domain: skill
+  canonicalToken: 20010012
+  displayName: Evan Bless Of Nymph
+- name: EvanThreeSnails
+  domain: skill
+  canonicalToken: 20011000
+  displayName: Evan Three Snails
+- name: EvanRecovery
+  domain: skill
+  canonicalToken: 20011001
+  displayName: Evan Recovery
+- name: EvanNimbleFeet
+  domain: skill
+  canonicalToken: 20011002
+  displayName: Evan Nimble Feet
+- name: EvanSoulOfCraftsman
+  domain: skill
+  canonicalToken: 20011003
+  displayName: Evan Soul Of Craftsman
+- name: EvanMonsterRiding
+  domain: skill
+  canonicalToken: 20011004
+  displayName: Evan Monster Riding
+- name: EvanEchoOfHero
+  domain: skill
+  canonicalToken: 20011005
+  displayName: Evan Echo Of Hero
+- name: EvanDamageMeter
+  domain: skill
+  canonicalToken: 20011006
+  displayName: Evan Damage Meter
+- name: EvanMaker
+  domain: skill
+  canonicalToken: 20011007
+  displayName: Evan Maker
+- name: EvanBamboo
+  domain: skill
+  canonicalToken: 20011009
+  displayName: Evan Bamboo
+- name: EvanInvincible
+  domain: skill
+  canonicalToken: 20011010
+  displayName: Evan Invincible
+- name: EvanBerserk
+  domain: skill
+  canonicalToken: 20011011
+  displayName: Evan Berserk
+- name: AranStage1ComboAbility
+  domain: skill
+  canonicalToken: 21000000
+  displayName: Aran Stage1 Combo Ability
+- name: AranStage1DoubleSwing
+  domain: skill
+  canonicalToken: 21000002
+  displayName: Aran Stage1 Double Swing
+- name: AranStage1CombatStep
+  domain: skill
+  canonicalToken: 21001001
+  displayName: Aran Stage1 Combat Step
+- name: AranStage1PolearmBooster
+  domain: skill
+  canonicalToken: 21001003
+  displayName: Aran Stage1 Polearm Booster
+- name: AranStage2PolearmMastery
+  domain: skill
+  canonicalToken: 21100000
+  displayName: Aran Stage2 Polearm Mastery
+- name: AranStage2TripleSwing
+  domain: skill
+  canonicalToken: 21100001
+  displayName: Aran Stage2 Triple Swing
+- name: AranStage2FinalCharge
+  domain: skill
+  canonicalToken: 21100002
+  displayName: Aran Stage2 Final Charge
+- name: AranStage2ComboSmash
+  domain: skill
+  canonicalToken: 21100004
+  displayName: Aran Stage2 Combo Smash
+- name: AranStage2ComboDrain
+  domain: skill
+  canonicalToken: 21100005
+  displayName: Aran Stage2 Combo Drain
+- name: AranStage2BodyPressure
+  domain: skill
+  canonicalToken: 21101003
+  displayName: Aran Stage2 Body Pressure
+- name: AranStage3ComboCritical
+  domain: skill
+  canonicalToken: 21110000
+  displayName: Aran Stage3 Combo Critical
+- name: AranStage3FullSwing
+  domain: skill
+  canonicalToken: 21110002
+  displayName: Aran Stage3 Full Swing
+- name: AranStage3FinalToss
+  domain: skill
+  canonicalToken: 21110003
+  displayName: Aran Stage3 Final Toss
+- name: AranStage3ComboFenrir
+  domain: skill
+  canonicalToken: 21110004
+  displayName: Aran Stage3 Combo Fenrir
+- name: AranStage3RollingSpin
+  domain: skill
+  canonicalToken: 21110006
+  displayName: Aran Stage3 Rolling Spin
+- name: AranStage3FullSwingDoubleSwing
+  domain: skill
+  canonicalToken: 21110007
+  displayName: Aran Stage3 Full Swing Double Swing
+- name: AranStage3FullSwingTripleSwing
+  domain: skill
+  canonicalToken: 21110008
+  displayName: Aran Stage3 Full Swing Triple Swing
+- name: AranStage3SmartKnockback
+  domain: skill
+  canonicalToken: 21111001
+  displayName: Aran Stage3 Smart Knockback
+- name: AranStage3SnowCharge
+  domain: skill
+  canonicalToken: 21111005
+  displayName: Aran Stage3 Snow Charge
+- name: AranStage4HighMastery
+  domain: skill
+  canonicalToken: 21120001
+  displayName: Aran Stage4 High Mastery
+- name: AranStage4OverSwing
+  domain: skill
+  canonicalToken: 21120002
+  displayName: Aran Stage4 Over Swing
+- name: AranStage4HighDefense
+  domain: skill
+  canonicalToken: 21120004
+  displayName: Aran Stage4 High Defense
+- name: AranStage4FinalBlow
+  domain: skill
+  canonicalToken: 21120005
+  displayName: Aran Stage4 Final Blow
+- name: AranStage4ComboTempest
+  domain: skill
+  canonicalToken: 21120006
+  displayName: Aran Stage4 Combo Tempest
+- name: AranStage4ComboBarrier
+  domain: skill
+  canonicalToken: 21120007
+  displayName: Aran Stage4 Combo Barrier
+- name: AranStage4OverswingDoubleSwing
+  domain: skill
+  canonicalToken: 21120009
+  displayName: Aran Stage4 Overswing Double Swing
+- name: AranStage4OverswingTripleSwing
+  domain: skill
+  canonicalToken: 21120010
+  displayName: Aran Stage4 Overswing Triple Swing
+- name: AranStage4MapleWarrior
+  domain: skill
+  canonicalToken: 21121000
+  displayName: Aran Stage4 Maple Warrior
+- name: AranStage4FreezeStanding
+  domain: skill
+  canonicalToken: 21121003
+  displayName: Aran Stage4 Freeze Standing
+- name: AranStage4HerosWill
+  domain: skill
+  canonicalToken: 21121008
+  displayName: Aran Stage4 Heros Will
+- name: EvanStage1DragonSoul
+  domain: skill
+  canonicalToken: 22000000
+  displayName: Evan Stage1 Dragon Soul
+- name: EvanStage1MagicMissile
+  domain: skill
+  canonicalToken: 22001001
+  displayName: Evan Stage1 Magic Missile
+- name: EvanStage2FireCircle
+  domain: skill
+  canonicalToken: 22101000
+  displayName: Evan Stage2 Fire Circle
+- name: EvanStage2Teleport
+  domain: skill
+  canonicalToken: 22101001
+  displayName: Evan Stage2 Teleport
+- name: EvanStage3LightningBolt
+  domain: skill
+  canonicalToken: 22111000
+  displayName: Evan Stage3 Lightning Bolt
+- name: EvanStage3MagicGuard
+  domain: skill
+  canonicalToken: 22111001
+  displayName: Evan Stage3 Magic Guard
+- name: EvanStage4IceBreath
+  domain: skill
+  canonicalToken: 22121000
+  displayName: Evan Stage4 Ice Breath
+- name: EvanStage4ElementalReset
+  domain: skill
+  canonicalToken: 22121001
+  displayName: Evan Stage4 Elemental Reset
+- name: EvanStage5MagicFlare
+  domain: skill
+  canonicalToken: 22131000
+  displayName: Evan Stage5 Magic Flare
+- name: EvanStage5MagicShield
+  domain: skill
+  canonicalToken: 22131001
+  displayName: Evan Stage5 Magic Shield
+- name: EvanStage6CriticalMagic
+  domain: skill
+  canonicalToken: 22140000
+  displayName: Evan Stage6 Critical Magic
+- name: EvanStage6DragonThrust
+  domain: skill
+  canonicalToken: 22141001
+  displayName: Evan Stage6 Dragon Thrust
+- name: EvanStage6MagicBooster
+  domain: skill
+  canonicalToken: 22141002
+  displayName: Evan Stage6 Magic Booster
+- name: EvanStage6Slow
+  domain: skill
+  canonicalToken: 22141003
+  displayName: Evan Stage6 Slow
+- name: EvanStage7MagicAmplification
+  domain: skill
+  canonicalToken: 22150000
+  displayName: Evan Stage7 Magic Amplification
+- name: EvanStage7FireBreath
+  domain: skill
+  canonicalToken: 22151001
+  displayName: Evan Stage7 Fire Breath
+- name: EvanStage7KillerWings
+  domain: skill
+  canonicalToken: 22151002
+  displayName: Evan Stage7 Killer Wings
+- name: EvanStage7MagicResistance
+  domain: skill
+  canonicalToken: 22151003
+  displayName: Evan Stage7 Magic Resistance
+- name: EvanStage8DragonFury
+  domain: skill
+  canonicalToken: 22160000
+  displayName: Evan Stage8 Dragon Fury
+- name: EvanStage8Earthquake
+  domain: skill
+  canonicalToken: 22161001
+  displayName: Evan Stage8 Earthquake
+- name: EvanStage8PhantomImprint
+  domain: skill
+  canonicalToken: 22161002
+  displayName: Evan Stage8 Phantom Imprint
+- name: EvanStage8RecoveryAura
+  domain: skill
+  canonicalToken: 22161003
+  displayName: Evan Stage8 Recovery Aura
+- name: EvanStage9MagicMastery
+  domain: skill
+  canonicalToken: 22170001
+  displayName: Evan Stage9 Magic Mastery
+- name: EvanStage9MapleWarrior
+  domain: skill
+  canonicalToken: 22171000
+  displayName: Evan Stage9 Maple Warrior
+- name: EvanStage9Illusion
+  domain: skill
+  canonicalToken: 22171002
+  displayName: Evan Stage9 Illusion
+- name: EvanStage9FlameWheel
+  domain: skill
+  canonicalToken: 22171003
+  displayName: Evan Stage9 Flame Wheel
+- name: EvanStage9HerosWill
+  domain: skill
+  canonicalToken: 22171004
+  displayName: Evan Stage9 Heros Will
+- name: EvanStage10BlessingOfTheOnyx
+  domain: skill
+  canonicalToken: 22181000
+  displayName: Evan Stage10 Blessing Of The Onyx
+- name: EvanStage10Blaze
+  domain: skill
+  canonicalToken: 22181001
+  displayName: Evan Stage10 Blaze
+- name: EvanStage10DarkFog
+  domain: skill
+  canonicalToken: 22181002
+  displayName: Evan Stage10 Dark Fog
+- name: EvanStage10SoulStone
+  domain: skill
+  canonicalToken: 22181003
+  displayName: Evan Stage10 Soul Stone
+- name: Beginner
+  domain: job
+  canonicalToken: 0
+  displayName: Beginner
+- name: Warrior
+  domain: job
+  canonicalToken: 100
+  displayName: Warrior
+- name: Fighter
+  domain: job
+  canonicalToken: 110
+  displayName: Fighter
+- name: Crusader
+  domain: job
+  canonicalToken: 111
+  displayName: Crusader
+- name: Hero
+  domain: job
+  canonicalToken: 112
+  displayName: Hero
+- name: Page
+  domain: job
+  canonicalToken: 120
+  displayName: Page
+- name: WhiteKnight
+  domain: job
+  canonicalToken: 121
+  displayName: White Knight
+- name: Paladin
+  domain: job
+  canonicalToken: 122
+  displayName: Paladin
+- name: Spearman
+  domain: job
+  canonicalToken: 130
+  displayName: Spearman
+- name: DragonKnight
+  domain: job
+  canonicalToken: 131
+  displayName: Dragon Knight
+- name: DarkKnight
+  domain: job
+  canonicalToken: 132
+  displayName: Dark Knight
+- name: Magician
+  domain: job
+  canonicalToken: 200
+  displayName: Magician
+- name: FirePoisonWizard
+  domain: job
+  canonicalToken: 210
+  displayName: Fire Poison Wizard
+- name: FirePoisonMagician
+  domain: job
+  canonicalToken: 211
+  displayName: Fire Poison Magician
+- name: FirePoisonArchMagician
+  domain: job
+  canonicalToken: 212
+  displayName: Fire Poison Arch Magician
+- name: IceLightningWizard
+  domain: job
+  canonicalToken: 220
+  displayName: Ice Lightning Wizard
+- name: IceLightningMagician
+  domain: job
+  canonicalToken: 221
+  displayName: Ice Lightning Magician
+- name: IceLightningArchMagician
+  domain: job
+  canonicalToken: 222
+  displayName: Ice Lightning Arch Magician
+- name: Cleric
+  domain: job
+  canonicalToken: 230
+  displayName: Cleric
+- name: Priest
+  domain: job
+  canonicalToken: 231
+  displayName: Priest
+- name: Bishop
+  domain: job
+  canonicalToken: 232
+  displayName: Bishop
+- name: Bowman
+  domain: job
+  canonicalToken: 300
+  displayName: Bowman
+- name: Hunter
+  domain: job
+  canonicalToken: 310
+  displayName: Hunter
+- name: Ranger
+  domain: job
+  canonicalToken: 311
+  displayName: Ranger
+- name: Bowmaster
+  domain: job
+  canonicalToken: 312
+  displayName: Bowmaster
+- name: Crossbowman
+  domain: job
+  canonicalToken: 320
+  displayName: Crossbowman
+- name: Sniper
+  domain: job
+  canonicalToken: 321
+  displayName: Sniper
+- name: Marksman
+  domain: job
+  canonicalToken: 322
+  displayName: Marksman
+- name: Rogue
+  domain: job
+  canonicalToken: 400
+  displayName: Rogue
+- name: Assassin
+  domain: job
+  canonicalToken: 410
+  displayName: Assassin
+- name: Hermit
+  domain: job
+  canonicalToken: 411
+  displayName: Hermit
+- name: NightLord
+  domain: job
+  canonicalToken: 412
+  displayName: Night Lord
+- name: Bandit
+  domain: job
+  canonicalToken: 420
+  displayName: Bandit
+- name: ChiefBandit
+  domain: job
+  canonicalToken: 421
+  displayName: Chief Bandit
+- name: Shadower
+  domain: job
+  canonicalToken: 422
+  displayName: Shadower
+- name: Pirate
+  domain: job
+  canonicalToken: 500
+  displayName: Pirate
+- name: Brawler
+  domain: job
+  canonicalToken: 510
+  displayName: Brawler
+- name: Marauder
+  domain: job
+  canonicalToken: 511
+  displayName: Marauder
+- name: Buccaneer
+  domain: job
+  canonicalToken: 512
+  displayName: Buccaneer
+- name: Gunslinger
+  domain: job
+  canonicalToken: 520
+  displayName: Gunslinger
+- name: Outlaw
+  domain: job
+  canonicalToken: 521
+  displayName: Outlaw
+- name: Corsair
+  domain: job
+  canonicalToken: 522
+  displayName: Corsair
+- name: MapleLeafBrigadier
+  domain: job
+  canonicalToken: 800
+  displayName: Maple Leaf Brigadier
+- name: Gm
+  domain: job
+  canonicalToken: 900
+  displayName: Gm
+- name: SuperGm
+  domain: job
+  canonicalToken: 910
+  displayName: Super Gm
+- name: Noblesse
+  domain: job
+  canonicalToken: 1000
+  displayName: Noblesse
+- name: DawnWarriorStage1
+  domain: job
+  canonicalToken: 1100
+  displayName: Dawn Warrior Stage1
+- name: DawnWarriorStage2
+  domain: job
+  canonicalToken: 1110
+  displayName: Dawn Warrior Stage2
+- name: DawnWarriorStage3
+  domain: job
+  canonicalToken: 1111
+  displayName: Dawn Warrior Stage3
+- name: DawnWarriorStage4
+  domain: job
+  canonicalToken: 1112
+  displayName: Dawn Warrior Stage4
+- name: BlazeWizardStage1
+  domain: job
+  canonicalToken: 1200
+  displayName: Blaze Wizard Stage1
+- name: BlazeWizardStage2
+  domain: job
+  canonicalToken: 1210
+  displayName: Blaze Wizard Stage2
+- name: BlazeWizardStage3
+  domain: job
+  canonicalToken: 1211
+  displayName: Blaze Wizard Stage3
+- name: BlazeWizardStage4
+  domain: job
+  canonicalToken: 1212
+  displayName: Blaze Wizard Stage4
+- name: WindArcherStage1
+  domain: job
+  canonicalToken: 1300
+  displayName: Wind Archer Stage1
+- name: WindArcherStage2
+  domain: job
+  canonicalToken: 1310
+  displayName: Wind Archer Stage2
+- name: WindArcherStage3
+  domain: job
+  canonicalToken: 1311
+  displayName: Wind Archer Stage3
+- name: WindArcherStage4
+  domain: job
+  canonicalToken: 1312
+  displayName: Wind Archer Stage4
+- name: NightWalkerStage1
+  domain: job
+  canonicalToken: 1400
+  displayName: Night Walker Stage1
+- name: NightWalkerStage2
+  domain: job
+  canonicalToken: 1410
+  displayName: Night Walker Stage2
+- name: NightWalkerStage3
+  domain: job
+  canonicalToken: 1411
+  displayName: Night Walker Stage3
+- name: NightWalkerStage4
+  domain: job
+  canonicalToken: 1412
+  displayName: Night Walker Stage4
+- name: ThunderBreakerStage1
+  domain: job
+  canonicalToken: 1500
+  displayName: Thunder Breaker Stage1
+- name: ThunderBreakerStage2
+  domain: job
+  canonicalToken: 1510
+  displayName: Thunder Breaker Stage2
+- name: ThunderBreakerStage3
+  domain: job
+  canonicalToken: 1511
+  displayName: Thunder Breaker Stage3
+- name: ThunderBreakerStage4
+  domain: job
+  canonicalToken: 1512
+  displayName: Thunder Breaker Stage4
+- name: Legend
+  domain: job
+  canonicalToken: 2000
+  displayName: Legend
+- name: Evan
+  domain: job
+  canonicalToken: 2001
+  displayName: Evan
+- name: AranStage1
+  domain: job
+  canonicalToken: 2100
+  displayName: Aran Stage1
+- name: AranStage2
+  domain: job
+  canonicalToken: 2110
+  displayName: Aran Stage2
+- name: AranStage3
+  domain: job
+  canonicalToken: 2111
+  displayName: Aran Stage3
+- name: AranStage4
+  domain: job
+  canonicalToken: 2112
+  displayName: Aran Stage4
+- name: EvanStage1
+  domain: job
+  canonicalToken: 2200
+  displayName: Evan Stage1
+- name: EvanStage2
+  domain: job
+  canonicalToken: 2210
+  displayName: Evan Stage2
+- name: EvanStage3
+  domain: job
+  canonicalToken: 2211
+  displayName: Evan Stage3
+- name: EvanStage4
+  domain: job
+  canonicalToken: 2212
+  displayName: Evan Stage4
+- name: EvanStage5
+  domain: job
+  canonicalToken: 2213
+  displayName: Evan Stage5
+- name: EvanStage6
+  domain: job
+  canonicalToken: 2214
+  displayName: Evan Stage6
+- name: EvanStage7
+  domain: job
+  canonicalToken: 2215
+  displayName: Evan Stage7
+- name: EvanStage8
+  domain: job
+  canonicalToken: 2216
+  displayName: Evan Stage8
+- name: EvanStage9
+  domain: job
+  canonicalToken: 2217
+  displayName: Evan Stage9
+- name: EvanStage10
+  domain: job
+  canonicalToken: 2218
+  displayName: Evan Stage10
+# ---------------------------------------------------------------------------
+# Big-Bang-introduced identities (task-187 Task 1 audit, no v83 constant).
+#
+# Grounded in docs/tasks/task-187-version-aware-id-semantics/audit/
+# bigbang-v092-v095.md (the v0.92<->v0.95 job-skill-membership reorg) plus
+# the corresponding rows in divergences.csv. These wire ids have no
+# pre-existing *Id = Id(N) constant in skill/constants.go, so the mechanical
+# bootstrap above never surfaced them; they are hand-added here per the
+# task-2 brief step 1 instruction, using the same job-prefixed naming
+# convention as their sibling consts in the same job family.
+#
+# The v95 rename-TARGET tokens from the same audit rows, 11000005 and
+# 12000005, are deliberately NOT added here: both already have an existing
+# v83-era constant (DawnWarriorStage1ImprovedMaxHpIncreaseId and
+# BlazeWizardStage1ImprovedMaxMpIncreaseId respectively) bound to a
+# different, stale pre-Big-Bang meaning. Adding a second identity at the
+# same token would collide (ValidateIdentityTokens forbids two identities
+# sharing a token within a domain). The rename-SOURCE tokens (11000000,
+# 12000000) have no such collision and are included below. Reconciling
+# which identity a wireId of 11000005/12000005 binds to *per version* is
+# Task 4's job (the wireId->identity binding table), not this namespace
+# assembly step -- see task-2-report.md for the full writeup.
+- name: WarriorHpBoost
+  domain: skill
+  canonicalToken: 1000006
+  displayName: HP Boost
+- name: MagicianMpBoost
+  domain: skill
+  canonicalToken: 2000006
+  displayName: MP Boost
+- name: FighterEnhancedBasics
+  domain: skill
+  canonicalToken: 1100009
+  displayName: Enhanced Basics
+- name: FighterGroundSmash
+  domain: skill
+  canonicalToken: 1101008
+  displayName: Ground Smash
+- name: AssassinShadowResistance
+  domain: skill
+  canonicalToken: 4100006
+  displayName: Shadow Resistance
+- name: BanditShadowResistance
+  domain: skill
+  canonicalToken: 4200006
+  displayName: Shadow Resistance
+- name: BrawlerCriticalPunch
+  domain: skill
+  canonicalToken: 5100008
+  displayName: Critical Punch
+- name: BrawlerHpBoost
+  domain: skill
+  canonicalToken: 5100009
+  displayName: HP Boost
+- name: DawnWarriorStage1MaxHpEnhancement
+  domain: skill
+  canonicalToken: 11000000
+  displayName: Max HP Enhancement
+- name: BlazeWizardStage1IncreasingMaxMp
+  domain: skill
+  canonicalToken: 12000000
+  displayName: Increasing Max MP
+- name: HeroCombatMastery
+  domain: skill
+  canonicalToken: 1120012
+  displayName: Combat Mastery

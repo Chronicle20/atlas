@@ -1,11 +1,10 @@
 package writer
 
 import (
-	"testing"
-
 	"atlas-channel/character"
 	"atlas-channel/guild"
 	"atlas-channel/monsterbook"
+	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"

@@ -1,17 +1,18 @@
 package searchindex
 
 import (
+	"atlas-data/canonical"
 	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
-	"atlas-data/canonical"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const (

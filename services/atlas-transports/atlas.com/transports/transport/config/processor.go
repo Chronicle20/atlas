@@ -4,19 +4,20 @@ import (
 	"atlas-transports/transport"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Processor defines the interface for configuration operations
 type Processor interface {
 	// GetRoutes returns all routes for a tenant
-	GetRoutes(tenantId string) ([]transport.Model, error)
+	GetRoutes(t tenant.Model) ([]transport.Model, error)
 
 	// GetVessels returns all vessels for a tenant
-	GetVessels(tenantId string) ([]transport.SharedVesselModel, error)
+	GetVessels(t tenant.Model) ([]transport.SharedVesselModel, error)
 
 	// LoadConfigurationsForTenant loads all configurations for a tenant and returns routes and vessels
 	LoadConfigurationsForTenant(tenant tenant.Model) ([]transport.Model, []transport.SharedVesselModel, error)
@@ -36,33 +37,39 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-// GetRoutes returns all routes for a tenant
-func (p *ProcessorImpl) GetRoutes(tenantId string) ([]transport.Model, error) {
-	p.l.Debugf("Fetching routes for tenant [%s]", tenantId)
-	return requests.SliceProvider[RouteRestModel, transport.Model](p.l, p.ctx)(requestRoutes(tenantId), ExtractRoute, model.Filters[transport.Model]())()
+var _ Processor = (*ProcessorImpl)(nil)
+
+// GetRoutes returns all routes for a tenant. atlas-tenants' GET
+// /tenants/{tenantId}/configurations/routes is now paginated (task-117);
+// LoadConfigurationsForTenant (a startup per-tenant bootstrap) needs the
+// complete set, so this drains every page rather than fetching just the
+// first.
+func (p *ProcessorImpl) GetRoutes(t tenant.Model) ([]transport.Model, error) {
+	p.l.Debugf("Fetching routes for tenant [%s]", t.Id())
+	return requests.DrainProvider[RouteRestModel, transport.Model](p.l, p.ctx)(routesUrl(t.Id().String()), 250, ExtractRouteFor(p.l, t), model.Filters[transport.Model]())()
 }
 
-// GetVessels returns all vessels for a tenant
-func (p *ProcessorImpl) GetVessels(tenantId string) ([]transport.SharedVesselModel, error) {
-	p.l.Debugf("Fetching vessels for tenant [%s]", tenantId)
-	return requests.SliceProvider[VesselRestModel, transport.SharedVesselModel](p.l, p.ctx)(requestVessels(tenantId), ExtractVessel, model.Filters[transport.SharedVesselModel]())()
+// GetVessels returns all vessels for a tenant. Same paginated-upstream/
+// startup-bootstrap reasoning as GetRoutes above.
+func (p *ProcessorImpl) GetVessels(t tenant.Model) ([]transport.SharedVesselModel, error) {
+	p.l.Debugf("Fetching vessels for tenant [%s]", t.Id())
+	return requests.DrainProvider[VesselRestModel, transport.SharedVesselModel](p.l, p.ctx)(vesselsUrl(t.Id().String()), 250, ExtractVessel, model.Filters[transport.SharedVesselModel]())()
 }
 
 // LoadConfigurationsForTenant loads all configurations for a tenant and returns routes and vessels
-func (p *ProcessorImpl) LoadConfigurationsForTenant(tenant tenant.Model) ([]transport.Model, []transport.SharedVesselModel, error) {
-	tenantId := tenant.Id().String()
-	p.l.Infof("Loading configurations for tenant [%s]", tenantId)
+func (p *ProcessorImpl) LoadConfigurationsForTenant(t tenant.Model) ([]transport.Model, []transport.SharedVesselModel, error) {
+	p.l.Infof("Loading configurations for tenant [%s]", t.Id())
 
-	routes, err := p.GetRoutes(tenantId)
+	routes, err := p.GetRoutes(t)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	vessels, err := p.GetVessels(tenantId)
+	vessels, err := p.GetVessels(t)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	p.l.Infof("Loaded [%d] routes and [%d] vessels for tenant [%s]", len(routes), len(vessels), tenantId)
+	p.l.Infof("Loaded [%d] routes and [%d] vessels for tenant [%s]", len(routes), len(vessels), t.Id())
 	return routes, vessels, nil
 }

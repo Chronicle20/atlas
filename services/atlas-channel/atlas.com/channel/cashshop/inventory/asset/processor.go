@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 type Processor interface {
@@ -30,6 +31,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // ByIdProvider returns a provider function that fetches an asset by ID
 func (p *ProcessorImpl) ByIdProvider(accountId uint32, compartmentId uuid.UUID, assetId uint32) model.Provider[Model] {

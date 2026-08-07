@@ -1,0 +1,10 @@
+packet: chat/clientbound/ChatWorldMessageSuperMegaphone
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnBroadcastMsg#SuperMegaphone
+    address: "0xb0985b"
+    decompile_sha256: 88d15589d37a23bed018d8597abd161b68b2fc2d59bc833eb3105a0e205dd6f6
+verifies:
+    - libs/atlas-packet/chat/clientbound/world_message_test.go#TestWorldMessageSuperMegaphoneByteOutputJms

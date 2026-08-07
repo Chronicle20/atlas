@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterStatSet
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnStatSet
+    address: "0x63ae2b"
+    decompile_sha256: 023025d2f96a2405265844ed383462e97f229a3bee36702f8a55fca41b06d2a9
+verifies:
+  - libs/atlas-packet/monster/clientbound/stat_test.go#TestMonsterStatSetByteOutputV79

@@ -12,8 +12,51 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 - [ ] **atlas-object-id silent-collision fallback** - On Redis allocator failure, monsters/reactors/drops fall back to returning `objectid.MinId` instead of failing the spawn, so every entity spawned during a Redis outage gets ID 1,000,000 and they all collide in storage
 
 ### High Priority (Feature Incomplete)
-- [ ] **TokenItem Purchasing** - Returns "not implemented" error in NPC shops
 - [ ] **Reactor Actions** - Boss weakening, environment manipulation, mass kill sagas
+- [ ] **Lint burn-down (task-171 follow-up)** - The Go linter layer of
+  `tools/lint.sh` is rev-gated (`--new-from-rev` merge-base) so only new code
+  fails CI. Burn down: fix pre-existing `standard`-group findings per module
+  (run `tools/lint.sh --check --go --base <ancient-rev>` to enumerate), remove
+  any escape-hatch exclusions in `.golangci.yml` marked "task-171 burn-down",
+  then delete the `--new-from-rev` gating from `tools/lint.sh` so the linter
+  layer enforces whole-tree like the formatters already do.
+  - UI eslint suppressions: task-171 Task 3 (commit 947c45f71) landed 9 inline
+    `eslint-disable` suppressions in atlas-ui (6 `react-hooks/set-state-in-effect`
+    for genuine async-fetch/timer effects in
+    `services/atlas-ui/src/components/item-name-cell.tsx`,
+    `services/atlas-ui/src/components/map-cell.tsx`,
+    `services/atlas-ui/src/lib/hooks/api/useAccountByName.ts`,
+    `services/atlas-ui/src/pages/AccountsPage.tsx`,
+    `services/atlas-ui/src/components/features/npc/conversation/ConversationCanvas.tsx`,
+    and `services/atlas-ui/src/lib/hooks/useBreadcrumbs.ts`; 3
+    `react-hooks/use-memo` on variadic-dependency hooks in
+    `services/atlas-ui/src/lib/utils/debounce.ts`). Burn down by migrating the
+    ad-hoc fetch/loading-state hooks to React Query (which removes the manual
+    loading state), then removing the suppressions.
+  - atlas-tenant aliasing convention: `libs/atlas-tenant` declares `package
+    tenant` but its directory path ends in `atlas-tenant`, so every import
+    MUST be aliased as `tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"`
+    — an unaliased import makes goimports inject a duplicate and break the
+    build (CI `lint-go --check` catches it, but confusingly).
+    `.golangci.yml` carries an explanatory NOTE at the goimports settings. A
+    durable fix (rename the package/dir to match, or switch the formatter to
+    gci) can retire this convention.
+
+## MTS backend-audit follow-up — pre-existing debt (from task-102)
+
+The task-102 full-service backend audits surfaced pre-existing DOM findings in
+code task-102 did NOT create (its own additions audited clean). Deferred to a
+dedicated follow-up rather than expanding task-102 into unrelated domains. See
+`docs/tasks/task-102-mts-marketplace/audit-atlas-cashshop.md` and
+`audit-atlas-tenants.md` for file:line detail.
+
+- [ ] **atlas-cashshop `wallet` domain (Important ×4):** no `builder.go` (Model
+  from raw struct literals, no validated `Build()`); no `Model.ToEntity()`; eager
+  provider (`db.First` wrapped in `FixedProvider` instead of lazy `database.Query`);
+  POST/PATCH handlers collapse every error to 500 (should be 400/404/409).
+- [ ] **atlas-tenants configuration resource (Important ×2):** no `TransformSlice`
+  (list handlers use inline loops); no `Model.ToEntity()`. Inherited by copy-paste
+  from the Route/Vessel resources (the `mts-configs` additions themselves are clean).
 
 ## Leader-election adoption (depends on task-064)
 
@@ -222,9 +265,6 @@ that is not available on the wire:
 ### NPC Conversations Service
 - [ ] Stale TODO comment in condition evaluator (`conversation/processor.go:590`)
 
-### NPC Shops Service
-- [ ] **Implement TokenItem purchasing** (`shops/processor.go:430`)
-
 ### Pets Service
 - [ ] Generate cashId if cashId == 0 (`pet/processor.go:199`)
 
@@ -380,3 +420,39 @@ left silent (see `docs/tasks/task-081-ida-export-reharvest/four-version-validati
 - [ ] Optional: a `validate` mode that also handles if/else-chain dispatch handlers
   (e.g. `CLogin::OnCheckPasswordResult`) — currently honest `unverifiable` (a genuine
   static-extraction wall; may not be worth the complexity).
+
+## task-190 follow-up: USER_CALC_DAMAGE_STAT_SET_REQUEST handler (reserved as task-192)
+
+Deferred from task-190 (disease-duration + CANCEL_DEBUFF). `USER_CALC_DAMAGE_STAT_SET_REQUEST`
+is the tail of the same client handshake task-190 implements handlers for:
+`CWvsContext::OnTemporaryStatReset` ends with `if (IsCalcDamageStat(mask)) { COutPacket(0x6C);
+SendPacket(...); }` — so it fires more often once task-190's FR-2 (temporary-stat reset routing)
+ships. It was kept out of scope on evidence, not overlooked: unlike `CANCEL_DEBUFF`, this send is
+one-shot per stat reset, not a per-frame loop, so it cannot wedge a client the way an unhandled
+`CANCEL_DEBUFF` did — the cost of leaving it unhandled is a possibly-stale client-side
+damage-range display, not a hang. See `docs/tasks/task-190-disease-duration-cancel-debuff/investigation.md`
+§8.3 for the IDA evidence.
+
+- [ ] **Implement `USER_CALC_DAMAGE_STAT_SET_REQUEST` as task-192** — use 192 for this
+  follow-up rather than calling `tools/task-numbers.sh next` fresh (it will now return a
+  higher number, since 192 is already reserved).
+  **Do not use task-184.** 184 was previously assigned to a gms_61 opcode-corruption incident
+  (7 template edits wrong, caught by `matrix --check`) whose branch and PR were reverted and
+  deleted. The deletion is what let `tools/task-numbers.sh next` report 184 as free when this
+  entry was first written — its folder/branch/commit-subject scan is blind to anything whose
+  artifacts were deleted after a revert. The commit that recorded this very note has since
+  registered 184 in the tool's git-history scan, so `next` no longer offers it — but that
+  registration is incidental, not the reason to avoid it: a number can look free to
+  `tools/task-numbers.sh` and still be historically used, so treat the tool's output as a
+  hint, not proof, and skip 184 on the historical grounds above regardless of what `next`
+  reports at any given moment.
+  Opcode is IDA-confirmed for only three of the ten live-tenant versions so far:
+  GMS v48 `0x56` (86), GMS v61 `0x63` (99), GMS v83 `0x6C` (108)
+  (`investigation.md:214`). The remaining seven (v72, v79, v84, v87, v92, v95, JMS v185) need
+  the same per-version IDB pass task-190 ran for `CANCEL_DEBUFF` before a handler can be wired
+  and routed in the seed templates.
+  **Opcode collision to respect:** at GMS v61 the byte `0x63` is this packet
+  (`USER_CALC_DAMAGE_STAT_SET_REQUEST`), while at GMS v83/v84 the same byte `0x63` is
+  `CANCEL_DEBUFF` (`investigation.md:172-184`) — the two must never be routed by a hard-coded
+  `0x63` constant; always resolve per-tenant from the version-specific template/registry
+  entry, the same way task-190's `CancelDebuffHandle` routing does.

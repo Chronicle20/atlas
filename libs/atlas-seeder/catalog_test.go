@@ -7,8 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // tenantGMS83 creates a GMS 83.1 tenant for tests.
@@ -216,5 +217,67 @@ func TestFilesystemCatalogSource_Roots_ZeroVersion(t *testing.T) {
 	_, rootsErr := src.Roots(tm)
 	if rootsErr == nil {
 		t.Fatal("Roots(zero-version tenant) returned nil error, want error")
+	}
+}
+
+// newSharedTestSource returns a CatalogSource with both a shared root and
+// the tenant's version-specific root, over the testdata/good fixture tree.
+func newSharedTestSource(t *testing.T) CatalogSource {
+	t.Helper()
+	return NewFilesystemCatalogSourceWithShared("ATLAS_SEEDER_CATALOG_TEST_OVERRIDE", "testdata/good", "shared/all")
+}
+
+func TestFilesystemCatalogSource_Roots_SharedFirstThenVersion(t *testing.T) {
+	roots, err := newSharedTestSource(t).Roots(tenantGMS83(t))
+	if err != nil {
+		t.Fatalf("Roots: %v", err)
+	}
+	if len(roots) != 2 {
+		t.Fatalf("len(roots) = %d, want 2", len(roots))
+	}
+	if !strings.HasSuffix(roots[0], filepath.Join("shared", "all")) {
+		t.Errorf("roots[0] = %q, want shared root first", roots[0])
+	}
+	if !strings.HasSuffix(roots[1], filepath.Join("gms", "83_1")) {
+		t.Errorf("roots[1] = %q, want version-specific root second", roots[1])
+	}
+}
+
+// The nine existing consumers construct the plain source; it must keep
+// returning exactly one root so their composite revision never changes.
+func TestFilesystemCatalogSource_Roots_PlainSourceStillSingleRoot(t *testing.T) {
+	roots, err := newTestSource(t).Roots(tenantGMS83(t))
+	if err != nil {
+		t.Fatalf("Roots: %v", err)
+	}
+	if len(roots) != 1 {
+		t.Fatalf("len(roots) = %d, want 1", len(roots))
+	}
+}
+
+func TestRevisionFor_SingleRootIsUnchanged(t *testing.T) {
+	src := newTestSource(t)
+	roots, _ := src.Roots(tenantGMS83(t))
+	if got := revisionFor(src, roots); got != "test-rev-abc123" {
+		t.Fatalf("revisionFor = %q, want %q", got, "test-rev-abc123")
+	}
+}
+
+func TestRevisionFor_TwoRootsJoinsWithPlus(t *testing.T) {
+	src := newSharedTestSource(t)
+	roots, _ := src.Roots(tenantGMS83(t))
+	want := "shared-rev-xyz789+test-rev-abc123"
+	if got := revisionFor(src, roots); got != want {
+		t.Fatalf("revisionFor = %q, want %q", got, want)
+	}
+}
+
+func TestRevisionFor_SkipsEmptyRevisions(t *testing.T) {
+	src := newSharedTestSource(t)
+	// t.TempDir() has no CATALOG_REVISION → Revision returns ("", nil).
+	roots, _ := src.Roots(tenantGMS83(t))
+	got := revisionFor(src, []string{t.TempDir(), roots[1]})
+	if got != "test-rev-abc123" {
+		t.Fatalf("revisionFor = %q, want %q (empty root contributes nothing)", got, "test-rev-abc123")
 	}
 }

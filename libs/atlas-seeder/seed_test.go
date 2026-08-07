@@ -9,8 +9,9 @@ import (
 	"testing"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type widgetAttrs struct {
@@ -28,10 +29,13 @@ type widgetSubdomain struct {
 	rows    []widgetRow
 }
 
-func (w *widgetSubdomain) Name() string                    { return "widgets" }
-func (w *widgetSubdomain) Path() string                    { return "widgets" }
-func (w *widgetSubdomain) Type() string                    { return "widget" }
-func (w *widgetSubdomain) EntityIDPattern() *regexp.Regexp { return regexp.MustCompile(`^widget-(\d+)\.json$`) }
+func (w *widgetSubdomain) Name() string { return "widgets" }
+func (w *widgetSubdomain) Path() string { return "widgets" }
+func (w *widgetSubdomain) Type() string { return "widget" }
+func (w *widgetSubdomain) EntityIDPattern() *regexp.Regexp {
+	return regexp.MustCompile(`^widget-(\d+)\.json$`)
+}
+
 func (w *widgetSubdomain) DeleteAllForTenant(_ *gorm.DB) (int64, error) {
 	w.mu.Lock()
 	cleared := int64(len(w.rows))
@@ -54,10 +58,12 @@ func (w *widgetSubdomain) Decode(b []byte) (widgetAttrs, error) {
 	}
 	return a, nil
 }
+
 func (w *widgetSubdomain) Build(_ tenant.Model, id string, a widgetAttrs) ([]widgetRow, error) {
 	n, _ := uintFromString(id)
 	return []widgetRow{{ID: n, Name: a.Name}}, nil
 }
+
 func (w *widgetSubdomain) BulkCreate(_ *gorm.DB, rows []widgetRow) error {
 	w.mu.Lock()
 	w.rows = append(w.rows, rows...)
@@ -65,10 +71,12 @@ func (w *widgetSubdomain) BulkCreate(_ *gorm.DB, rows []widgetRow) error {
 	w.created.Add(int64(len(rows)))
 	return nil
 }
+
 func (w *widgetSubdomain) Count(_ *gorm.DB) (int64, *time.Time, error) {
 	now := time.Now().UTC()
 	return w.created.Load(), &now, nil
 }
+
 func (w *widgetSubdomain) Rows() []widgetRow {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -138,14 +146,17 @@ func TestSeed_SuccessfulRunPersistsStateAndCountsCreated(t *testing.T) {
 
 type failingSubdomain struct{}
 
-func (f *failingSubdomain) Name() string                    { return "broken" }
-func (f *failingSubdomain) Path() string                    { return "widgets" }
-func (f *failingSubdomain) Type() string                    { return "widget" }
-func (f *failingSubdomain) EntityIDPattern() *regexp.Regexp { return regexp.MustCompile(`^widget-(\d+)\.json$`) }
+func (f *failingSubdomain) Name() string { return "broken" }
+func (f *failingSubdomain) Path() string { return "widgets" }
+func (f *failingSubdomain) Type() string { return "widget" }
+func (f *failingSubdomain) EntityIDPattern() *regexp.Regexp {
+	return regexp.MustCompile(`^widget-(\d+)\.json$`)
+}
 func (f *failingSubdomain) DeleteAllForTenant(_ *gorm.DB) (int64, error) { return 0, nil }
 func (f *failingSubdomain) Decode(_ []byte) (widgetAttrs, error) {
 	return widgetAttrs{}, errBad
 }
+
 func (f *failingSubdomain) Build(_ tenant.Model, _ string, _ widgetAttrs) ([]widgetRow, error) {
 	return nil, nil
 }
@@ -246,6 +257,65 @@ func TestSeed_SerializesConcurrentCallsPerTenantGroup(t *testing.T) {
 	// race would land anywhere between 0 and 8.
 	if got := sub.Rows(); len(got) != 2 {
 		t.Fatalf("final row set has %d rows, want 2 (catalog has 2 widget files); rows=%+v", len(got), got)
+	}
+}
+
+func TestSeed_MergesRootsWithVersionSpecificWinning(t *testing.T) {
+	t.Cleanup(ResetMetricsForTest)
+	db := openTestDB(t)
+	src := NewFilesystemCatalogSourceWithShared("X_NO_ENV", goodFixtureRoot(t), "shared/all")
+	sub := &widgetSubdomain{}
+	g := Group{
+		Name:       "merge-group",
+		URLPrefix:  "/merge",
+		Subdomains: []SubdomainAny{AdaptSubdomain[widgetAttrs, widgetRow](sub)},
+	}
+	ctx := tenant.WithContext(context.Background(), tenantGMS83(t))
+	res, err := Seed(ctx, db, src, g)
+	if err != nil {
+		t.Fatalf("Seed: %v", err)
+	}
+	// gms/83_1 has widget-1 + widget-2; shared/all has widget-2 + widget-3.
+	// Union = 3 files, and widget-2 resolves to the VERSION-SPECIFIC copy.
+	if res.Subdomains["widgets"].Created != 3 {
+		t.Fatalf("created = %d, want 3 (union of both roots)", res.Subdomains["widgets"].Created)
+	}
+	rows := sub.Rows()
+	sort.Slice(rows, func(i, j int) bool { return rows[i].ID < rows[j].ID })
+	want := []widgetRow{{ID: 1, Name: "one"}, {ID: 2, Name: "two"}, {ID: 3, Name: "three"}}
+	if len(rows) != len(want) {
+		t.Fatalf("rows = %+v, want %+v", rows, want)
+	}
+	for i := range rows {
+		if rows[i] != want[i] {
+			t.Fatalf("rows[%d] = %+v, want %+v (version-specific must win)", i, rows[i], want[i])
+		}
+	}
+	if res.CatalogRevision != "shared-rev-xyz789+test-rev-abc123" {
+		t.Fatalf("revision = %q, want composite", res.CatalogRevision)
+	}
+}
+
+func TestSeed_MissingSharedRootIsANoOp(t *testing.T) {
+	t.Cleanup(ResetMetricsForTest)
+	db := openTestDB(t)
+	src := NewFilesystemCatalogSourceWithShared("X_NO_ENV", goodFixtureRoot(t), "shared/does-not-exist")
+	sub := &widgetSubdomain{}
+	g := Group{
+		Name:       "missing-shared",
+		URLPrefix:  "/missing",
+		Subdomains: []SubdomainAny{AdaptSubdomain[widgetAttrs, widgetRow](sub)},
+	}
+	ctx := tenant.WithContext(context.Background(), tenantGMS83(t))
+	res, err := Seed(ctx, db, src, g)
+	if err != nil {
+		t.Fatalf("Seed: %v", err)
+	}
+	if res.Subdomains["widgets"].Created != 2 {
+		t.Fatalf("created = %d, want 2 (version root only)", res.Subdomains["widgets"].Created)
+	}
+	if len(res.Subdomains["widgets"].Errors) != 0 {
+		t.Fatalf("errors = %v, want none (absent root is not an error)", res.Subdomains["widgets"].Errors)
 	}
 }
 

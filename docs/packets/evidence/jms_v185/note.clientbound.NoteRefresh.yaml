@@ -1,0 +1,10 @@
+packet: note/clientbound/NoteRefresh
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMemoResult#Refresh
+    address: "0xb0c6d0"
+    decompile_sha256: 3d780e364d7d5732bac349589584dee09f11da7912e176c642ca01ec48480437
+verifies:
+  - libs/atlas-packet/note/clientbound/operation_test.go#TestNoteOperationArmsJMS185

@@ -1,0 +1,10 @@
+packet: character/clientbound/BuffGiveForeign
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnSetTemporaryStat
+    address: "0x88cb10"
+    decompile_sha256: 3fd46d9d10fabed23b6770e3381410017a1a5bea075ccb4fbb6757085082fe63
+verifies:
+  - libs/atlas-packet/character/clientbound/buff_give_test.go#TestBuffGiveForeignV72Mask

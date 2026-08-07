@@ -65,6 +65,4 @@ func (b *modelBuilder) Build() (Model, error) {
 	}, nil
 }
 
-var (
-	ErrMissingId = errors.New("skill id is required")
-)
+var ErrMissingId = errors.New("skill id is required")

@@ -16,7 +16,9 @@ import (
 	"atlas-channel/listener"
 	_map "atlas-channel/map"
 	"atlas-channel/merchant"
+	"atlas-channel/minigame"
 	"atlas-channel/monster"
+	controllernpc "atlas-channel/npc/controller"
 	"atlas-channel/party"
 	"atlas-channel/party/hpsync"
 	"atlas-channel/party_quest"
@@ -32,6 +34,10 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -44,17 +50,18 @@ import (
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
+	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
+	merchantcb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/clientbound"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
+	npcbody "github.com/Chronicle20/atlas/libs/atlas-packet/npc"
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 	reactorpkt "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
 	summonpkt "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -177,7 +184,7 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 			}
 		}
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			for k, v := range cms {
 				if k != s.CharacterId() {
 					for _, p := range v.Pets() {
@@ -189,7 +196,7 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 					}
 				}
 			}
-		}()
+		})
 
 		// spawn the entering character's OWN spawned pets back to themselves.
 		// enterMap spawns self's pets to other players, and the loop above spawns
@@ -197,7 +204,7 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 		// change, cash-shop return) nothing re-sends the owner's own pet to the
 		// owner. Without this the pet stays invisible to its owner even though it
 		// is still spawned (slot >= 0).
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			cp := character.NewProcessor(l, ctx)
 			self, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator)(s.CharacterId())
 			if err != nil {
@@ -211,74 +218,80 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 					}
 				}
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := npc2.NewProcessor(l, ctx).ForEachInMap(f.MapId(), spawnNPCForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Errorf("SpawnForSelf: unable to spawn npcs for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := monster.NewProcessor(l, ctx).ForEachInMap(f, spawnMonsterForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn monsters for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := summoncmd.NewProcessor(l, ctx).ForEachInMap(f, spawnSummonForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn summons for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := drop.NewProcessor(l, ctx).ForEachInMap(f, spawnDropsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn drops for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := reactor.NewProcessor(l, ctx).ForEachInMap(f, spawnReactorsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn reactors for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := door.NewProcessor(l, ctx).ForEachInMap(f, spawnDoorsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn doors for character [%d].", s.CharacterId())
 			}
-		}()
-		go func() {
+		})
+		routine.Go(l, ctx, func(_ context.Context) {
 			// Town side: render the walkable town door to a player entering the
 			// return town (FR-3.2/FR-3.4) — the area-side spawn above misses it.
 			spawnTownDoorsForSession(l, ctx, wp, s)
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := chalkboard.NewProcessor(l, ctx).ForEachInMap(f, spawnChalkboardsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn chalkboards for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := chair.NewProcessor(l, ctx).ForEachInMap(f, spawnChairsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn chairs for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := merchant.NewProcessor(l, ctx).ForEachInField(f, spawnMerchantsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn merchants for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
+			if err := minigame.NewProcessor(l, ctx).ForEachInField(f, spawnMiniGamesForSession(l)(ctx)(wp)(s)); err != nil {
+				l.WithError(err).Debugf("SpawnForSelf: unable to spawn mini-games for character [%d].", s.CharacterId())
+			}
+		})
+
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := hpsync.Sync(l, ctx, wp, s.Field(), s.CharacterId()); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to sync party member HP for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			md, err := mapData.NewProcessor(l, ctx).GetById(f.MapId())
 			if err != nil {
 				l.WithError(err).Errorf("SpawnForSelf: unable to retrieve map data for map [%d].", f.MapId())
@@ -288,9 +301,9 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 				now := time.Now()
 				_ = session.Announce(l)(ctx)(wp)(fieldcb.ClockWriter)(fieldcb.NewTownClock(byte(now.Hour()), byte(now.Minute()), byte(now.Second())).Encode)(s)
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			hasShip, err := route.NewProcessor(l, ctx).IsBoatInMap(f.MapId())
 			if err != nil {
 				l.WithError(err).Errorf("SpawnForSelf: unable to retrieve boat data for map [%d].", f.MapId())
@@ -301,9 +314,9 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 			} else {
 				_ = session.Announce(l)(ctx)(wp)(fieldcb.FieldTransportStateWriter)(fieldcb.NewFieldTransport(fieldcb.TransportStateMove1, false).Encode)(s)
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			timer, terr := party_quest.NewProcessor(l, ctx).GetTimerByCharacterId(s.CharacterId())
 			if terr != nil {
 				return
@@ -312,9 +325,9 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 				return
 			}
 			_ = session.Announce(l)(ctx)(wp)(fieldcb.ClockWriter)(fieldcb.NewTimerClock(uint32(timer.Duration().Seconds())).Encode)(s)
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			we, werr := weather.NewProcessor(l, ctx).GetActive(f)
 			if werr != nil {
 				return
@@ -331,7 +344,7 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 			if ci.StateChangeItem > 0 {
 				applyConsumableEffectSaga(l, saga.NewProcessor(l, ctx), s.CharacterId(), f, ci.StateChangeItem)
 			}
-		}()
+		})
 
 		return nil
 	}
@@ -377,7 +390,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			}
 
 			// spawn self's pets for every other player in the map
-			go func() {
+			routine.Go(l, ctx, func(_ context.Context) {
 				for _, k := range ids {
 					if k == s.CharacterId() {
 						continue
@@ -397,7 +410,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 						}
 					}
 				}
-			}()
+			})
 
 			// "spawn world for self" (SpawnForSelf) is handled by the SetField-writing
 			// path (session bootstrap and warpCharacter) to guarantee packet ordering.
@@ -424,6 +437,23 @@ func spawnSummonForSession(l logrus.FieldLogger) func(ctx context.Context) func(
 	}
 }
 
+// emitCharacterSpawn sends the CharacterSpawn packet for c to session s using
+// the already-fetched buff state bs. This is the single wire-emit choke point
+// shared by the gated (spawnCharacterForSession) and ungated
+// (spawnCharacterForSessionRevealed) operators below — it contains NO
+// suppression logic itself; callers decide whether/when a spawn is gated.
+func emitCharacterSpawn(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model, bs []buff.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model, bs []buff.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(c character.Model, bs []buff.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+			return func(c character.Model, bs []buff.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					return session.Announce(l)(ctx)(wp)(charpkt.CharacterSpawnWriter)(writer.CharacterSpawnBody(c, bs, g, enteringField))(s)
+				}
+			}
+		}
+	}
+}
+
 func spawnCharacterForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
@@ -434,10 +464,92 @@ func spawnCharacterForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 						bs = make([]buff.Model, 0)
 					}
 
-					return session.Announce(l)(ctx)(wp)(charpkt.CharacterSpawnWriter)(writer.CharacterSpawnBody(c, bs, g, enteringField))(s)
+					// GM-hide suppression (task-156). A character hidden via the
+					// SuperGM Hide skill must not be spawned to any OTHER viewer.
+					// This is the single choke point for every character spawn —
+					// enterMap->others and SpawnForSelf-of-others both pass here —
+					// so a viewer entering while a GM is hidden never sees the
+					// spawn (race-safe: the check is in the same path that emits
+					// it). c is never the viewer's own character (both callers
+					// skip k == s.CharacterId()), so self-view is never suppressed.
+					if buff.IsGmHidden(ctx, bs) {
+						return nil
+					}
+
+					return emitCharacterSpawn(l)(ctx)(wp)(c, bs, g, enteringField)(s)
 				}
 			}
 		}
+	}
+}
+
+// spawnCharacterForSessionRevealed sends a CharacterSpawn for c to session s
+// with NO GM-hide suppression check. It exists solely for the "hide off"
+// reveal path (SpawnCharacterInMap below).
+//
+// It is intentionally ungated: the reveal caller (skill/handler/hide) has
+// just PRODUCED an async CANCEL command for the hide buff to atlas-buffs —
+// that cancellation is Kafka-mediated and eventually-consistent, not a
+// synchronous local mutation. A gated read here (buff.NewProcessor(...).
+// GetByCharacterId + buff.IsGmHidden, as spawnCharacterForSession above does)
+// would very likely still observe the not-yet-cancelled hide buff and wrongly
+// re-suppress the very spawn that is supposed to un-hide the character,
+// leaving the GM permanently invisible to anyone already in the map. The
+// reveal caller is the one deciding to end the hide, so this path must force
+// the spawn rather than depend on server-side buff state catching up.
+//
+// Including the still-present DARK_SIGHT buff in bs is safe: DARK_SIGHT
+// foreign-encodes as a no-op on a remote character, and nothing in the spawn
+// packet itself hides a remote character — only the server declining to emit
+// CharacterSpawn does. No filtering of bs is needed.
+//
+// NO reference to buff.IsGmHidden appears in this function — that absence is
+// the structural guarantee that the reveal path can never be gated.
+func spawnCharacterForSessionRevealed(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+			return func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					bs, err := buff.NewProcessor(l, ctx).GetByCharacterId(c.Id())
+					if err != nil {
+						bs = make([]buff.Model, 0)
+					}
+
+					return emitCharacterSpawn(l)(ctx)(wp)(c, bs, g, enteringField)(s)
+				}
+			}
+		}
+	}
+}
+
+// DespawnCharacterInMap broadcasts a CharacterDespawn for characterId to every
+// OTHER session in field f — the "hide on" half of the GM-hide toggle. Reuses
+// the existing per-session despawn operator so the packet matches a normal exit.
+func DespawnCharacterInMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(f field.Model, characterId uint32) error {
+	return func(f field.Model, characterId uint32) error {
+		return _map.NewProcessor(l, ctx).ForOtherSessionsInMap(f, characterId, despawnForSession(l)(ctx)(wp)(characterId))
+	}
+}
+
+// SpawnCharacterInMap broadcasts a CharacterSpawn for characterId to every OTHER
+// session in field f — the "hide off" (reveal) half of the GM-hide toggle. It
+// uses spawnCharacterForSessionRevealed (NOT the gated spawnCharacterForSession)
+// so the spawn packet is byte-identical to a normal map-entry spawn (buffs +
+// guild + enteringField=false, since the caster is already standing in the
+// map) while being immune to the async-cancel race: the hide-buff CANCEL this
+// caller just produced to atlas-buffs is eventually-consistent, so a gated
+// read here could still observe the stale hide buff and wrongly re-suppress
+// the reveal, leaving the GM permanently invisible. See
+// spawnCharacterForSessionRevealed's doc comment for the full rationale.
+func SpawnCharacterInMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(f field.Model, characterId uint32) error {
+	return func(f field.Model, characterId uint32) error {
+		cp := character.NewProcessor(l, ctx)
+		c, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator)(characterId)
+		if err != nil {
+			return err
+		}
+		g, _ := guild.NewProcessor(l, ctx).GetByMemberId(characterId)
+		return _map.NewProcessor(l, ctx).ForOtherSessionsInMap(f, characterId, spawnCharacterForSessionRevealed(l)(ctx)(wp)(c, g, false))
 	}
 }
 
@@ -457,7 +569,31 @@ func handleStatusEventCharacterExit(sc server.Model, wp writer.Producer) func(l 
 		if err != nil {
 			l.WithError(err).Errorf("Unable to despawn character [%d] for characters in map [%d] instance [%s].", e.Body.CharacterId, e.MapId, e.Instance)
 		}
-		return
+
+		// NPC-controller reassignment (task-176, FR-5.3): release the
+		// exiting character's NPCs and hand them to the least-loaded
+		// remaining non-hidden session; none left -> uncontrolled until the
+		// next enter (lazy stale re-claim also covers a missed exit).
+		cp := controllernpc.NewProcessor(l, ctx)
+		released, rerr := cp.ReleaseFor(f, e.Body.CharacterId)
+		if rerr != nil {
+			l.WithError(rerr).Warnf("Unable to release NPC controller entries for exiting character [%d] in field [%s].", e.Body.CharacterId, f.Id())
+			return
+		}
+		if len(released) == 0 {
+			return
+		}
+		assignments, aerr := cp.ElectFor(f, released, e.Body.CharacterId)
+		if aerr != nil {
+			l.WithError(aerr).Warnf("Unable to re-elect NPC controllers after character [%d] left field [%s].", e.Body.CharacterId, f.Id())
+			return
+		}
+		for npcId, winner := range assignments {
+			if gerr := controllernpc.AnnounceGrant(l, ctx, wp)(f, winner, npcId); gerr != nil {
+				l.WithError(gerr).Warnf("Unable to announce NPC [%d] controller grant to [%d].", npcId, winner)
+			}
+		}
+		l.Debugf("NPC-controller exit: character [%d] released [%d] NPCs in field [%s]; reassigned [%d].", e.Body.CharacterId, len(released), f.Id(), len(assignments))
 	}
 }
 
@@ -475,12 +611,24 @@ func spawnNPCForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[npc2.Model] {
 		return func(wp writer.Producer) func(s session.Model) model.Operator[npc2.Model] {
 			return func(s session.Model) model.Operator[npc2.Model] {
+				cp := controllernpc.NewProcessor(l, ctx)
 				return func(n npc2.Model) error {
 					err := session.Announce(l)(ctx)(wp)(npcpkt.NpcSpawnWriter)(npcpkt.NewNpcSpawn(n.Id(), n.Template(), n.X(), n.CY(), int32(n.F()), n.Fh(), n.RX0(), n.RX1()).Encode)(s)
 					if err != nil {
 						return err
 					}
-					return session.Announce(l)(ctx)(wp)(npcpkt.NpcSpawnRequestControllerWriter)(npcpkt.NewNpcSpawnRequestController(n.Id(), n.Template(), n.X(), n.CY(), int32(n.F()), n.Fh(), n.RX0(), n.RX1(), true).Encode)(s)
+					// Single-controller election (task-176, FR-5.2/FR-5.4):
+					// claim synchronously so NpcSpawn -> grant land on the
+					// same session in order; non-controllers get spawn only.
+					claimed, cerr := cp.TryClaim(s.Field(), n.Id(), s.CharacterId())
+					if cerr != nil {
+						l.WithError(cerr).Warnf("NPC-controller claim failed for NPC [%d]; session [%d] gets spawn only.", n.Id(), s.CharacterId())
+						return nil
+					}
+					if !claimed {
+						return nil
+					}
+					return session.Announce(l)(ctx)(wp)(npcpkt.NpcSpawnRequestControllerWriter)(npcbody.NpcControllerGrantBody(n.Id(), n.Template(), n.X(), n.CY(), int32(n.F()), n.Fh(), n.RX0(), n.RX1(), true))(s)
 				}
 			}
 		}
@@ -488,17 +636,26 @@ func spawnNPCForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 }
 
 // spawnMonsterForSession sends the per-mob spawn packet to the entering session
-// and, when the entering character is the current controller, also re-issues the
-// MonsterControl packet that grants client-side ownership.
+// and, when the entering character is the current controller, follows it with
+// the MonsterControl packet that grants client-side ownership — Spawn first,
+// Control second, always.
 //
-// Why the re-issue: on cash-shop return atlas-monsters reassigns control via
-// CharacterEnter (MAP_STATUS) and emits StartControl events that atlas-channel
-// turns into MonsterControl packets — but those land on the wire ~1s before the
-// matching mob spawn packets that this function emits. The v83 client drops
-// (or ignores) MonsterControl for an unknown uniqueId, so by the time the spawn
-// renders the mob it has no formal owner. Sending MonsterControl right after
-// the spawn closes that gap deterministically; the earlier Kafka-driven
-// MonsterControl is at worst a harmless duplicate.
+// Why Spawn MUST precede Control for the entering player: an unknown-mob
+// MonsterControl is NOT dropped by the client. CMobPool::OnMobChangeController
+// -> SetLocalMob materializes the mob from the Control body (CreateMob ->
+// CMob::Init) on v79 AND v83. If Control arrives before Spawn the mob is born
+// from the Control payload: a 0/1 stance routes CMob::Init into
+// CMob::OnResolveMoveAction (null-deref crash), and a control-first birth on a
+// slope lands ~0.67px below the surface (fall-through) — and the later Spawn is
+// then a no-op (GetMob hits -> SetTemporaryStat only, never re-Init/reposition).
+//
+// That race is now prevented at the source: atlas-monsters' ControlOnEnter
+// assigns the *entering* player in-place WITHOUT emitting StartControl (see
+// monster/processor.go ControlOnEnter), so no early MonsterControl is produced
+// for a still-loading client. This function is the sole controller-grant for the
+// entering player, guaranteeing Spawn-then-Control. (An already-present player
+// that becomes controller on enter still gets a StartControl-driven packet — safe,
+// since that client already has the mob spawned.)
 func spawnMonsterForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
 		return func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
@@ -668,19 +825,51 @@ func spawnMerchantsForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 		return func(wp writer.Producer) func(s session.Model) model.Operator[merchant.Model] {
 			return func(s session.Model) model.Operator[merchant.Model] {
 				return func(m merchant.Model) error {
-					miniRoomType := interactionpkt.MerchantShopMiniRoomType
-					if m.ShopType() == 1 {
-						miniRoomType = interactionpkt.PersonalShopMiniRoomType
+					if m.ShopType() == merchant.HiredMerchantShopType {
+						// Hired merchant renders as a standalone employee NPC (D1); spawn
+						// it to the entering player.
+						ownerName := ""
+						if c, err := character.NewProcessor(l, ctx).GetById()(m.CharacterId()); err != nil {
+							l.WithError(err).Warnf("Unable to resolve hired-merchant owner [%d] name for field spawn.", m.CharacterId())
+						} else {
+							ownerName = c.Name()
+						}
+						spawn := merchant.ToEmployeeSpawn(m, ownerName)
+						return session.Announce(l)(ctx)(wp)(merchantcb.MerchantEmployeeSpawnWriter)(spawn.Encode)(s)
 					}
+					// Personal store: box on the owner's avatar.
 					mr := &interactionpkt.MiniRoomBase{
-						MiniRoomTypeVal: miniRoomType,
-						Title:           m.Title(),
-						CapacityVal:     4,
-						OwnerId:         m.CharacterId(),
-						VisitorCount:    byte(len(m.Visitors())),
-						VisitorList:     []interactionpkt.MiniRoomVisitor{},
+						MiniRoomTypeVal: interactionpkt.PersonalShopMiniRoomType,
+						// Id = dwMiniRoomSN: the client echoes it as the visit
+						// serialNumber and the server resolves via
+						// GetByCharacterId(serialNumber), so it must be the owner's
+						// character id (task-127; see merchant consumer note).
+						Id:           m.CharacterId(),
+						Title:        m.Title(),
+						Spec:         merchant.StoreSkinSpec(m.PermitItemId()),
+						CapacityVal:  4,
+						OwnerId:      m.CharacterId(),
+						VisitorCount: byte(len(m.Visitors())),
+						VisitorList:  []interactionpkt.MiniRoomVisitor{},
 					}
 					return session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Spawn(m.CharacterId()))(s)
+				}
+			}
+		}
+	}
+}
+
+// spawnMiniGamesForSession announces the UPDATE_CHAR_BOX balloon for every
+// mini-game room (Omok/Match Cards) currently registered in the field to the
+// entering session, mirroring the merchant/shop balloon spawn above. Capacity
+// is fixed at 2 for both game dialogs (design §5; matches gameRoomCapacity in
+// kafka/consumer/minigame/consumer.go).
+func spawnMiniGamesForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[minigame.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[minigame.Model] {
+		return func(wp writer.Producer) func(s session.Model) model.Operator[minigame.Model] {
+			return func(s session.Model) model.Operator[minigame.Model] {
+				return func(m minigame.Model) error {
+					return session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(interactioncb.MiniRoomBalloonBody(m.OwnerId(), m.RoomType(), m.Id(), m.Title(), m.HasPassword(), m.PieceType(), m.Occupancy(), 2, m.InProgress()))(s)
 				}
 			}
 		}
@@ -704,7 +893,9 @@ func handleStatusEventWeatherStart(sc server.Model, wp writer.Producer) func(l l
 			l.WithError(err).Errorf("Unable to broadcast weather start to map [%d] instance [%s].", e.MapId, e.Instance)
 		}
 
-		go applyWeatherEffects(l, ctx, wp, f, e.Body.ItemId)
+		routine.Go(l, ctx, func(_ context.Context) {
+			applyWeatherEffects(l, ctx, wp, f, e.Body.ItemId)
+		})
 	}
 }
 

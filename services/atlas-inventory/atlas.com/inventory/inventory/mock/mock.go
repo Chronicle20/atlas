@@ -4,9 +4,10 @@ import (
 	"atlas-inventory/inventory"
 	"atlas-inventory/kafka/message"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type ProcessorImpl struct {

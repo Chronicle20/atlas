@@ -37,11 +37,21 @@ Immutable representation of a character.
 | face | uint32 | Face ID |
 | ap | uint16 | Available AP |
 | sp | string | Available SP (comma-separated) |
-| mapId | map.Id | Current map |
-| instance | uuid.UUID | Map instance |
 | spawnPoint | uint32 | Spawn point ID |
 | gm | int | GM level |
 | skills | []skill.Model | Character skills |
+
+Map assignment (mapId, instance) is not part of this Model; atlas-maps owns character location state.
+
+#### Temporal Data
+Transient position/stance data, held in a Redis-backed registry keyed by character ID (not persisted with the character record).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| x | int16 | X position |
+| y | int16 | Y position |
+| fh | int16 | Foothold |
+| stance | byte | Current stance |
 
 #### Builder
 Creates new character models with configurable stat allocation.
@@ -81,6 +91,8 @@ Represents AP distribution request.
 - HP cannot exceed maxHp
 - MP cannot exceed maxMp
 - Meso cannot overflow uint32
+- AP rebalance target floors must be at least 4 (the base primary stat value)
+- AP transfer (point reset) validates source and target against per-job primary stat caps (4-32767) and HP/MP pool caps (30000) before applying
 
 ### Processors
 
@@ -94,13 +106,13 @@ Handles character operations.
 | GetForName | Retrieve characters by name |
 | GetAll | Retrieve all characters |
 | IsValidName | Validate character name |
+| CheckNameValidity | Validate character name and uniqueness within a world, returning a reason/detail |
 | Create | Create new character |
 | Delete | Delete character |
 | DeleteByAccountId | Delete all characters for an account |
+| DeleteForSagaCompensation | Delete character as a saga compensation step (idempotent on missing rows) |
 | Login | Process character login |
 | Logout | Process character logout |
-| ChangeChannel | Process channel change |
-| ChangeMap | Process map change |
 | ChangeJob | Change character job |
 | ChangeHair | Change hair style |
 | ChangeFace | Change face |
@@ -121,6 +133,8 @@ Handles character operations.
 | ClampMP | Clamp MP to max value |
 | DeductExperience | Deduct experience |
 | ResetStats | Reset character stats |
+| RebalanceAP | Reclaim AP spent on primary stats above base and reassign to target floors |
+| TransferAP | Transfer one already-spent AP point between a stat/pool source and target (AP Reset) |
 | ProcessLevelChange | Apply level-up bonuses |
 | ProcessJobChange | Apply job-change bonuses |
 | Update | Update character properties |
@@ -178,7 +192,7 @@ Handles drop coordination.
 ## Data Portal
 
 ### Responsibility
-Retrieves portal position data from external data service for map change positioning.
+Retrieves portal position data from the external data service by map ID and portal ID.
 
 ### Core Models
 

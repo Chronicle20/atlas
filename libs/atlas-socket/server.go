@@ -11,11 +11,23 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/crypto"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
+)
+
+const (
+	// readTimeout bounds a single Read so the loop can periodically run idle
+	// detection instead of blocking indefinitely.
+	readTimeout = 5 * time.Second
+	// partialFrameTimeout bounds how long a half-delivered frame may stall
+	// before the session is torn down. Only reached mid-frame, where waiting is
+	// correct but unbounded waiting is not.
+	partialFrameTimeout = 30 * time.Second
 )
 
 type OpReader interface {
@@ -31,8 +43,7 @@ type OpReadWriter interface {
 	OpWriter
 }
 
-type ByteReadWriter struct {
-}
+type ByteReadWriter struct{}
 
 func (b ByteReadWriter) Read(r *request.Reader) uint16 {
 	return uint16(r.ReadByte())
@@ -44,8 +55,7 @@ func (b ByteReadWriter) Write(op uint16) func(w *response.Writer) {
 	}
 }
 
-type ShortReadWriter struct {
-}
+type ShortReadWriter struct{}
 
 func (s ShortReadWriter) Read(r *request.Reader) uint16 {
 	return r.ReadUint16()
@@ -122,7 +132,7 @@ func Run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup, configur
 		}
 	}(lis)
 
-	go func() {
+	routine.Go(l, ctx, func(_ context.Context) {
 		<-ctx.Done()
 		l.Infof("Closing listener.")
 		err := lis.Close()
@@ -132,7 +142,7 @@ func Run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup, configur
 			}
 			l.WithError(err).Errorf("Error closing listener.")
 		}
-	}()
+	})
 
 	for {
 		conn, err := lis.Accept()
@@ -149,7 +159,7 @@ func Run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup, configur
 
 		l.Infof("Client [%s] connected.", conn.RemoteAddr())
 
-		go run(l, ctx, wg)(c, conn, uuid.New(), 4)
+		routine.Go(l, ctx, func(_ context.Context) { run(l, ctx, wg)(c, conn, uuid.New(), 4) })
 	}
 }
 
@@ -170,11 +180,11 @@ func run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(con
 			}
 		}(conn)
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			<-ctx.Done()
 			l.Infof("Closing connection from [%s].", conn.RemoteAddr())
 			conn.Close()
-		}()
+		})
 
 		config.creator(sessionId, conn)
 
@@ -190,19 +200,50 @@ func run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(con
 		for {
 			buffer := make([]byte, readSize)
 
-			_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
-			_, err := conn.Read(buffer)
-			if err != nil {
-				if os.IsTimeout(err) {
-					// Check idle state on timeout
-					if config.idleNotifier != nil && !isIdle && config.idleThreshold > 0 {
-						if time.Since(lastActivity) > config.idleThreshold {
-							isIdle = true
-							config.idleNotifier(sessionId)
-						}
-					}
+			// net.Conn.Read returns whatever has already arrived, up to len(buffer) --
+			// it does not fill the buffer. Bodies that exceed one TCP segment (~1460
+			// bytes on a typical path) therefore arrive across several reads, so read
+			// until the frame is complete. Taking a short read as a whole frame both
+			// hands the decryptor a zero-padded tail (AES-OFB turns those zeros into
+			// raw keystream, i.e. plausible-looking garbage) and leaves the remainder
+			// in the socket, where the next iteration consumes it as a header --
+			// desynchronising the stream permanently. Small packets hid this because
+			// they almost always arrive in one segment.
+			read := 0
+			stalledSince := time.Now()
+			for read < len(buffer) {
+				_ = conn.SetReadDeadline(time.Now().Add(readTimeout))
+				n, err := conn.Read(buffer[read:])
+				read += n
+				if n > 0 {
+					stalledSince = time.Now()
+				}
+				if err == nil {
 					continue
 				}
+
+				if os.IsTimeout(err) {
+					// Idle detection only applies at a frame boundary. Mid-frame the peer
+					// still owes us bytes, so a quiet socket is an incomplete send rather
+					// than an inactive client -- keep waiting, but not forever: a peer that
+					// announces a length and then stops would otherwise pin this goroutine.
+					if read == 0 && header {
+						if config.idleNotifier != nil && !isIdle && config.idleThreshold > 0 {
+							if time.Since(lastActivity) > config.idleThreshold {
+								isIdle = true
+								config.idleNotifier(sessionId)
+							}
+						}
+						continue
+					}
+					if time.Since(stalledSince) < partialFrameTimeout {
+						continue
+					}
+					l.Warnf("Abandoning partial frame: got [%d] of [%d] bytes before the peer went quiet for [%s].", read, len(buffer), partialFrameTimeout)
+					config.destroyer(sessionId)
+					return
+				}
+
 				if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) || errors.Is(err, syscall.ECONNRESET) {
 					l.Infof("Connection ended.")
 				} else {
@@ -223,7 +264,7 @@ func run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(con
 
 				result := buffer
 				result = config.decryptor(sessionId, buffer)
-				go handle(fl)(config, sessionId, result)
+				routine.Go(fl, ctx, func(_ context.Context) { handle(fl)(config, sessionId, result) })
 			}
 
 			header = !header

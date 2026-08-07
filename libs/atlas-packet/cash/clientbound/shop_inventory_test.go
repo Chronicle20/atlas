@@ -3,8 +3,9 @@ package clientbound
 import (
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 func testItem() CashInventoryItem {
@@ -115,20 +116,6 @@ func TestCashShopPurchaseSuccessRoundTrip(t *testing.T) {
 			}
 			if output.Item().TemplateId != input.Item().TemplateId {
 				t.Errorf("templateId: got %v, want %v", output.Item().TemplateId, input.Item().TemplateId)
-			}
-		})
-	}
-}
-
-func TestCashShopGiftsRoundTrip(t *testing.T) {
-	for _, v := range pt.Variants {
-		t.Run(v.Name, func(t *testing.T) {
-			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := NewCashShopGifts(0x4F)
-			output := CashShopGifts{}
-			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			if output.Mode() != input.Mode() {
-				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
 			}
 		})
 	}

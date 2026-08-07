@@ -1,14 +1,15 @@
 package reactor
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_REACTOR"
+	EnvCommandTopic           = "COMMAND_TOPIC_REACTOR"
 	CommandTypeDestroyInField = "DESTROY_IN_FIELD"
 )
 
@@ -21,5 +22,4 @@ type Command[E any] struct {
 	Body      E          `json:"body"`
 }
 
-type DestroyInFieldCommandBody struct {
-}
+type DestroyInFieldCommandBody struct{}

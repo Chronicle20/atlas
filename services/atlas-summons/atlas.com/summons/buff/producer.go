@@ -11,14 +11,15 @@
 package buff
 
 import (
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 const (
@@ -44,9 +45,10 @@ type Command[E any] struct {
 
 // ApplyCommandBody mirrors buffs/kafka/message/character/kafka.go:30-43.
 type ApplyCommandBody struct {
-	FromId   uint32       `json:"fromId"`
-	SourceId int32        `json:"sourceId"`
-	Level    byte         `json:"level"`
+	FromId   uint32 `json:"fromId"`
+	SourceId int32  `json:"sourceId"`
+	Level    byte   `json:"level"`
+	// milliseconds — contract owner: atlas-buffs kafka/message/character/kafka.go (task-190)
 	Duration int32        `json:"duration"`
 	Changes  []StatChange `json:"changes"`
 	// Accumulate, when true, asks atlas-buffs to store each change as its own

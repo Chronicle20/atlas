@@ -1,0 +1,327 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "introDialogue",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkJobStyle",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Whoa... this is it!!! With this sample, the studies that are taking place in Omega Sector will be reinvigorated with results! I am also at a loss for words for finding someone that is more talented than me at hunting. I'll have to get back on track! Anyway, for your job well done, I'll have to reward you accordingly."
+            },
+            "id": "introDialogue",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "200"
+                    }
+                  ],
+                  "nextState": "warriorSelection"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "200"
+                    },
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "300"
+                    }
+                  ],
+                  "nextState": "magicianSelection"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "300"
+                    },
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "400"
+                    }
+                  ],
+                  "nextState": "bowmanSelection"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "400"
+                    },
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "500"
+                    }
+                  ],
+                  "nextState": "thiefSelection"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "pirateSelection"
+                }
+              ]
+            },
+            "id": "checkJobStyle",
+            "type": "genericAction"
+          },
+          {
+            "id": "warriorSelection",
+            "listSelection": {
+              "choices": [
+                {
+                  "context": {
+                    "selectedItem": "2043002"
+                  },
+                  "nextState": "awardItem",
+                  "text": "#i2043002# #t2043002#"
+                },
+                {
+                  "context": {
+                    "selectedItem": "2043102"
+                  },
+                  "nextState": "awardItem",
+                  "text": "#i2043102# #t2043102#"
+                },
+                {
+                  "context": {
+                    "selectedItem": "2043202"
+                  },
+                  "nextState": "awardItem",
+                  "text": "#i2043202# #t2043202#"
+                },
+                {
+                  "context": {
+                    "selectedItem": "2044002"
+                  },
+                  "nextState": "awardItem",
+                  "text": "#i2044002# #t2044002#"
+                },
+                {
+                  "context": {
+                    "selectedItem": "2044102"
+                  },
+                  "nextState": "awardItem",
+                  "text": "#i2044102# #t2044102#"
+                },
+                {
+                  "context": {
+                    "selectedItem": "2044202"
+                  },
+                  "nextState": "awardItem",
+                  "text": "#i2044202# #t2044202#"
+                },
+                {
+                  "context": {
+                    "selectedItem": "2044402"
+                  },
+                  "nextState": "awardItem",
+                  "text": "#i2044402# #t2044402#"
+                },
+                {
+                  "context": {
+                    "selectedItem": "2044302"
+                  },
+                  "nextState": "awardItem",
+                  "text": "#i2044302# #t2044302#"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "title": "Here, please select the scroll of your choice. All success rates are at 10%. \r\n\r\n#rSELECT A ITEM\r\n#b"
+            },
+            "type": "listSelection"
+          },
+          {
+            "id": "magicianSelection",
+            "listSelection": {
+              "choices": [
+                {
+                  "context": {
+                    "selectedItem": "2043702"
+                  },
+                  "nextState": "awardItem",
+                  "text": "#i2043702# #t2043702#"
+                },
+                {
+                  "context": {
+                    "selectedItem": "2043802"
+                  },
+                  "nextState": "awardItem",
+                  "text": "#i2043802# #t2043802#"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "title": "Here, please select the scroll of your choice. All success rates are at 10%. \r\n\r\n#rSELECT A ITEM\r\n#b"
+            },
+            "type": "listSelection"
+          },
+          {
+            "id": "bowmanSelection",
+            "listSelection": {
+              "choices": [
+                {
+                  "context": {
+                    "selectedItem": "2044502"
+                  },
+                  "nextState": "awardItem",
+                  "text": "#i2044502# #t2044502#"
+                },
+                {
+                  "context": {
+                    "selectedItem": "2044602"
+                  },
+                  "nextState": "awardItem",
+                  "text": "#i2044602# #t2044602#"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "title": "Here, please select the scroll of your choice. All success rates are at 10%. \r\n\r\n#rSELECT A ITEM\r\n#b"
+            },
+            "type": "listSelection"
+          },
+          {
+            "id": "thiefSelection",
+            "listSelection": {
+              "choices": [
+                {
+                  "context": {
+                    "selectedItem": "2043302"
+                  },
+                  "nextState": "awardItem",
+                  "text": "#i2043302# #t2043302#"
+                },
+                {
+                  "context": {
+                    "selectedItem": "2044702"
+                  },
+                  "nextState": "awardItem",
+                  "text": "#i2044702# #t2044702#"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "title": "Here, please select the scroll of your choice. All success rates are at 10%. \r\n\r\n#rSELECT A ITEM\r\n#b"
+            },
+            "type": "listSelection"
+          },
+          {
+            "id": "pirateSelection",
+            "listSelection": {
+              "choices": [
+                {
+                  "context": {
+                    "selectedItem": "2044802"
+                  },
+                  "nextState": "awardItem",
+                  "text": "#i2044802# #t2044802#"
+                },
+                {
+                  "context": {
+                    "selectedItem": "2044902"
+                  },
+                  "nextState": "awardItem",
+                  "text": "#i2044902# #t2044902#"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "title": "Here, please select the scroll of your choice. All success rates are at 10%. \r\n\r\n#rSELECT A ITEM\r\n#b"
+            },
+            "type": "listSelection"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "{context.selectedItem}",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "amount": "12000"
+                  },
+                  "type": "award_exp"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "awardItem",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 3414,
+      "questName": "Eliminating Mateons (10% Scrolls)",
+      "startStateMachine": {
+        "startState": "noDialogue",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "noDialogue",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "3414",
+    "type": "quest-conversation"
+  }
+}

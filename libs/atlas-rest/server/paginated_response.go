@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 )
 
 // MarshalPaginatedResponse marshals a slice into a JSON:API document with

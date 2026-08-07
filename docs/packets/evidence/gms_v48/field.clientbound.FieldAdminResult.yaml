@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldAdminResult
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnAdminResult
+    address: "0x4c96c4"
+    decompile_sha256: b58014ae2cdb51ffcdb4d4541664e5460cb51676264defa2e4aa87f145003ffc

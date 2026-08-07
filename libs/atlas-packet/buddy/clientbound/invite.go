@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 const BuddyInviteWriter = "BuddyInvite"
@@ -87,7 +88,9 @@ func (m *Invite) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *reque
 		_ = model.ReadPaddedString(r, 13) // friendName
 		_ = r.ReadByte()                  // flag
 		_ = r.ReadInt32()                 // channelId
-		_ = model.ReadPaddedString(r, 17) // friendGroup
-		_ = r.ReadByte()                  // inShop
+		if model.BuddyHasFriendGroup(ctx) {
+			_ = model.ReadPaddedString(r, 17) // friendGroup (absent in GMS < 72, e.g. v61)
+		}
+		_ = r.ReadByte() // inShop
 	}
 }

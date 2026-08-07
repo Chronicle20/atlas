@@ -154,6 +154,42 @@ Resource type: `instances`
 
 ---
 
+### atlas-pets
+
+#### GET /characters/{characterId}/pets
+
+Retrieves pets owned by a character. Paginated (page[number]/page[size] query parameters).
+
+**Parameters**
+
+| Name | Type | Location | Description |
+|------|------|----------|-------------|
+| characterId | uint32 | path | Character ID |
+
+**Response Model**
+
+Resource type: `pets`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| cashId | uint64 | Cash shop item ID |
+| templateId | uint32 | Pet template ID |
+| name | string | Pet name |
+| level | byte | Pet level |
+| closeness | uint16 | Pet closeness (tameness) |
+| fullness | byte | Pet fullness |
+| expiration | time.Time | Pet expiration time |
+| ownerId | uint32 | Owning character ID |
+| slot | int8 | Pet slot |
+| x | int16 | X position |
+| y | int16 | Y position |
+| stance | byte | Stance |
+| fh | int16 | Foothold ID |
+| flag | uint16 | Flag |
+| purchaseBy | uint32 | Purchasing account ID |
+
+---
+
 ### atlas-data
 
 #### GET /data/maps/{mapId}
@@ -244,3 +280,48 @@ Retrieves skills matching a name.
 **Response Model**
 
 Array of skills matching the name. Same resource type and fields as GET /data/skills/{skillId}.
+
+#### POST /data/maps/{mapId}/footholds/below
+
+Retrieves the foothold below a given position within a map.
+
+**Parameters**
+
+| Name | Type | Location | Description |
+|------|------|----------|-------------|
+| mapId | uint32 | path | Map identifier |
+
+**Request Model**
+
+Resource type: `positions`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| x | int16 | X position |
+| y | int16 | Y position |
+
+**Response Model**
+
+Resource type: `footholds`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Foothold ID |
+
+#### GET /data/monsters/{monsterId}
+
+Retrieves monster template data by ID.
+
+**Parameters**
+
+| Name | Type | Location | Description |
+|------|------|----------|-------------|
+| monsterId | uint32 | path | Monster template ID |
+
+**Response Model**
+
+Resource type: `monsters`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| name | string | Monster name |

@@ -1,0 +1,10 @@
+packet: teleportrock/clientbound/MapTransferError
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMapTransferResult
+    address: "0x71da2c"
+    decompile_sha256: 3c98fc3c198f9ee43e82a99a62da2140efed19aa83387b6900112213ac5e3bab
+verifies:
+  - libs/atlas-packet/teleportrock/clientbound/result_test.go#TestMapTransferErrorGoldenV48

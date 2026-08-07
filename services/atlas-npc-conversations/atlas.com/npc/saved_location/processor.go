@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 // ErrNotFound is returned when no saved location exists
@@ -31,6 +32,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*processor)(nil)
 
 // GetSavedLocation retrieves a saved location for a character by type
 func (p *processor) GetSavedLocation(characterId uint32, locationType string) model.Provider[Model] {

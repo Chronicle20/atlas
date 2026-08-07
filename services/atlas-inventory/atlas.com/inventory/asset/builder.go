@@ -3,8 +3,9 @@ package asset
 import (
 	"time"
 
-	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/google/uuid"
+
+	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 )
 
 func Clone(m Model) *ModelBuilder {
@@ -17,6 +18,7 @@ func Clone(m Model) *ModelBuilder {
 		createdAt:      m.createdAt,
 		quantity:       m.quantity,
 		ownerId:        m.ownerId,
+		owner:          m.owner,
 		flag:           m.flag,
 		rechargeable:   m.rechargeable,
 		strength:       m.strength,
@@ -34,8 +36,8 @@ func Clone(m Model) *ModelBuilder {
 		hands:          m.hands,
 		speed:          m.speed,
 		jump:           m.jump,
-		slots:     m.slots,
-		levelType: m.levelType,
+		slots:          m.slots,
+		levelType:      m.levelType,
 		level:          m.level,
 		experience:     m.experience,
 		hammersApplied: m.hammersApplied,
@@ -57,6 +59,7 @@ type ModelBuilder struct {
 	// stackable fields
 	quantity     uint32
 	ownerId      uint32
+	owner        string
 	flag         uint16
 	rechargeable uint64
 	// equipment fields
@@ -75,8 +78,8 @@ type ModelBuilder struct {
 	hands          uint16
 	speed          uint16
 	jump           uint16
-	slots     uint16
-	levelType byte
+	slots          uint16
+	levelType      byte
 	level          byte
 	experience     uint32
 	hammersApplied uint32
@@ -96,32 +99,33 @@ func NewBuilder(compartmentId uuid.UUID, templateId uint32) *ModelBuilder {
 	}
 }
 
-func (b *ModelBuilder) SetId(id uint32) *ModelBuilder                  { b.id = id; return b }
-func (b *ModelBuilder) SetCompartmentId(id uuid.UUID) *ModelBuilder    { b.compartmentId = id; return b }
-func (b *ModelBuilder) SetSlot(slot int16) *ModelBuilder               { b.slot = slot; return b }
-func (b *ModelBuilder) SetTemplateId(id uint32) *ModelBuilder          { b.templateId = id; return b }
-func (b *ModelBuilder) SetExpiration(e time.Time) *ModelBuilder      { b.expiration = e; return b }
-func (b *ModelBuilder) SetCreatedAt(t time.Time) *ModelBuilder       { b.createdAt = t; return b }
-func (b *ModelBuilder) SetQuantity(q uint32) *ModelBuilder           { b.quantity = q; return b }
-func (b *ModelBuilder) SetOwnerId(id uint32) *ModelBuilder           { b.ownerId = id; return b }
-func (b *ModelBuilder) SetFlag(f uint16) *ModelBuilder               { b.flag = f; return b }
-func (b *ModelBuilder) SetRechargeable(r uint64) *ModelBuilder       { b.rechargeable = r; return b }
-func (b *ModelBuilder) SetStrength(v uint16) *ModelBuilder           { b.strength = v; return b }
-func (b *ModelBuilder) SetDexterity(v uint16) *ModelBuilder          { b.dexterity = v; return b }
-func (b *ModelBuilder) SetIntelligence(v uint16) *ModelBuilder       { b.intelligence = v; return b }
-func (b *ModelBuilder) SetLuck(v uint16) *ModelBuilder               { b.luck = v; return b }
-func (b *ModelBuilder) SetHp(v uint16) *ModelBuilder                 { b.hp = v; return b }
-func (b *ModelBuilder) SetMp(v uint16) *ModelBuilder                 { b.mp = v; return b }
-func (b *ModelBuilder) SetWeaponAttack(v uint16) *ModelBuilder       { b.weaponAttack = v; return b }
-func (b *ModelBuilder) SetMagicAttack(v uint16) *ModelBuilder        { b.magicAttack = v; return b }
-func (b *ModelBuilder) SetWeaponDefense(v uint16) *ModelBuilder      { b.weaponDefense = v; return b }
-func (b *ModelBuilder) SetMagicDefense(v uint16) *ModelBuilder       { b.magicDefense = v; return b }
-func (b *ModelBuilder) SetAccuracy(v uint16) *ModelBuilder           { b.accuracy = v; return b }
-func (b *ModelBuilder) SetAvoidability(v uint16) *ModelBuilder       { b.avoidability = v; return b }
-func (b *ModelBuilder) SetHands(v uint16) *ModelBuilder              { b.hands = v; return b }
-func (b *ModelBuilder) SetSpeed(v uint16) *ModelBuilder              { b.speed = v; return b }
-func (b *ModelBuilder) SetJump(v uint16) *ModelBuilder               { b.jump = v; return b }
-func (b *ModelBuilder) SetSlots(v uint16) *ModelBuilder              { b.slots = v; return b }
+func (b *ModelBuilder) SetId(id uint32) *ModelBuilder               { b.id = id; return b }
+func (b *ModelBuilder) SetCompartmentId(id uuid.UUID) *ModelBuilder { b.compartmentId = id; return b }
+func (b *ModelBuilder) SetSlot(slot int16) *ModelBuilder            { b.slot = slot; return b }
+func (b *ModelBuilder) SetTemplateId(id uint32) *ModelBuilder       { b.templateId = id; return b }
+func (b *ModelBuilder) SetExpiration(e time.Time) *ModelBuilder     { b.expiration = e; return b }
+func (b *ModelBuilder) SetCreatedAt(t time.Time) *ModelBuilder      { b.createdAt = t; return b }
+func (b *ModelBuilder) SetQuantity(q uint32) *ModelBuilder          { b.quantity = q; return b }
+func (b *ModelBuilder) SetOwnerId(id uint32) *ModelBuilder          { b.ownerId = id; return b }
+func (b *ModelBuilder) SetOwner(o string) *ModelBuilder             { b.owner = o; return b }
+func (b *ModelBuilder) SetFlag(f uint16) *ModelBuilder              { b.flag = f; return b }
+func (b *ModelBuilder) SetRechargeable(r uint64) *ModelBuilder      { b.rechargeable = r; return b }
+func (b *ModelBuilder) SetStrength(v uint16) *ModelBuilder          { b.strength = v; return b }
+func (b *ModelBuilder) SetDexterity(v uint16) *ModelBuilder         { b.dexterity = v; return b }
+func (b *ModelBuilder) SetIntelligence(v uint16) *ModelBuilder      { b.intelligence = v; return b }
+func (b *ModelBuilder) SetLuck(v uint16) *ModelBuilder              { b.luck = v; return b }
+func (b *ModelBuilder) SetHp(v uint16) *ModelBuilder                { b.hp = v; return b }
+func (b *ModelBuilder) SetMp(v uint16) *ModelBuilder                { b.mp = v; return b }
+func (b *ModelBuilder) SetWeaponAttack(v uint16) *ModelBuilder      { b.weaponAttack = v; return b }
+func (b *ModelBuilder) SetMagicAttack(v uint16) *ModelBuilder       { b.magicAttack = v; return b }
+func (b *ModelBuilder) SetWeaponDefense(v uint16) *ModelBuilder     { b.weaponDefense = v; return b }
+func (b *ModelBuilder) SetMagicDefense(v uint16) *ModelBuilder      { b.magicDefense = v; return b }
+func (b *ModelBuilder) SetAccuracy(v uint16) *ModelBuilder          { b.accuracy = v; return b }
+func (b *ModelBuilder) SetAvoidability(v uint16) *ModelBuilder      { b.avoidability = v; return b }
+func (b *ModelBuilder) SetHands(v uint16) *ModelBuilder             { b.hands = v; return b }
+func (b *ModelBuilder) SetSpeed(v uint16) *ModelBuilder             { b.speed = v; return b }
+func (b *ModelBuilder) SetJump(v uint16) *ModelBuilder              { b.jump = v; return b }
+func (b *ModelBuilder) SetSlots(v uint16) *ModelBuilder             { b.slots = v; return b }
 func (b *ModelBuilder) SetLocked(v bool) *ModelBuilder {
 	if v {
 		b.flag = af.SetFlag(b.flag, af.FlagLock)
@@ -130,6 +134,7 @@ func (b *ModelBuilder) SetLocked(v bool) *ModelBuilder {
 	}
 	return b
 }
+
 func (b *ModelBuilder) SetSpikes(v bool) *ModelBuilder {
 	if v {
 		b.flag = af.SetFlag(b.flag, af.FlagSpikes)
@@ -138,6 +143,7 @@ func (b *ModelBuilder) SetSpikes(v bool) *ModelBuilder {
 	}
 	return b
 }
+
 func (b *ModelBuilder) SetKarmaUsed(v bool) *ModelBuilder {
 	if v {
 		b.flag = af.SetFlag(b.flag, af.FlagKarmaEquip)
@@ -146,6 +152,7 @@ func (b *ModelBuilder) SetKarmaUsed(v bool) *ModelBuilder {
 	}
 	return b
 }
+
 func (b *ModelBuilder) SetCold(v bool) *ModelBuilder {
 	if v {
 		b.flag = af.SetFlag(b.flag, af.FlagCold)
@@ -154,6 +161,7 @@ func (b *ModelBuilder) SetCold(v bool) *ModelBuilder {
 	}
 	return b
 }
+
 func (b *ModelBuilder) SetCanBeTraded(v bool) *ModelBuilder {
 	if v {
 		b.flag = af.ClearFlag(b.flag, af.FlagUntradeable)
@@ -162,23 +170,25 @@ func (b *ModelBuilder) SetCanBeTraded(v bool) *ModelBuilder {
 	}
 	return b
 }
+
 func (b *ModelBuilder) AddFlag(f af.Flag) *ModelBuilder {
 	b.flag = af.SetFlag(b.flag, f)
 	return b
 }
+
 func (b *ModelBuilder) RemoveFlag(f af.Flag) *ModelBuilder {
 	b.flag = af.ClearFlag(b.flag, f)
 	return b
 }
-func (b *ModelBuilder) SetLevelType(v byte) *ModelBuilder            { b.levelType = v; return b }
-func (b *ModelBuilder) SetLevel(v byte) *ModelBuilder                { b.level = v; return b }
-func (b *ModelBuilder) SetExperience(v uint32) *ModelBuilder         { b.experience = v; return b }
-func (b *ModelBuilder) SetHammersApplied(v uint32) *ModelBuilder     { b.hammersApplied = v; return b }
-func (b *ModelBuilder) SetEquippedSince(t *time.Time) *ModelBuilder  { b.equippedSince = t; return b }
-func (b *ModelBuilder) SetCashId(v int64) *ModelBuilder              { b.cashId = v; return b }
-func (b *ModelBuilder) SetCommodityId(v uint32) *ModelBuilder        { b.commodityId = v; return b }
-func (b *ModelBuilder) SetPurchaseBy(v uint32) *ModelBuilder         { b.purchaseBy = v; return b }
-func (b *ModelBuilder) SetPetId(v uint32) *ModelBuilder              { b.petId = v; return b }
+func (b *ModelBuilder) SetLevelType(v byte) *ModelBuilder           { b.levelType = v; return b }
+func (b *ModelBuilder) SetLevel(v byte) *ModelBuilder               { b.level = v; return b }
+func (b *ModelBuilder) SetExperience(v uint32) *ModelBuilder        { b.experience = v; return b }
+func (b *ModelBuilder) SetHammersApplied(v uint32) *ModelBuilder    { b.hammersApplied = v; return b }
+func (b *ModelBuilder) SetEquippedSince(t *time.Time) *ModelBuilder { b.equippedSince = t; return b }
+func (b *ModelBuilder) SetCashId(v int64) *ModelBuilder             { b.cashId = v; return b }
+func (b *ModelBuilder) SetCommodityId(v uint32) *ModelBuilder       { b.commodityId = v; return b }
+func (b *ModelBuilder) SetPurchaseBy(v uint32) *ModelBuilder        { b.purchaseBy = v; return b }
+func (b *ModelBuilder) SetPetId(v uint32) *ModelBuilder             { b.petId = v; return b }
 
 func (b *ModelBuilder) Build() Model {
 	return Model{
@@ -190,6 +200,7 @@ func (b *ModelBuilder) Build() Model {
 		createdAt:      b.createdAt,
 		quantity:       b.quantity,
 		ownerId:        b.ownerId,
+		owner:          b.owner,
 		flag:           b.flag,
 		rechargeable:   b.rechargeable,
 		strength:       b.strength,
@@ -207,8 +218,8 @@ func (b *ModelBuilder) Build() Model {
 		hands:          b.hands,
 		speed:          b.speed,
 		jump:           b.jump,
-		slots:     b.slots,
-		levelType: b.levelType,
+		slots:          b.slots,
+		levelType:      b.levelType,
 		level:          b.level,
 		experience:     b.experience,
 		hammersApplied: b.hammersApplied,

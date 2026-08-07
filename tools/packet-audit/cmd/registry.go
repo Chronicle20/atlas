@@ -10,9 +10,10 @@ import (
 	"sort"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/opregistry"
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/seedcsv"
-	"gopkg.in/yaml.v3"
 )
 
 // seedVersions maps registry version keys to CSV column keys. gms_v84 has no

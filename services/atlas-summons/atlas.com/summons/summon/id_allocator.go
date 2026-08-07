@@ -4,9 +4,10 @@ import (
 	"context"
 	"sync"
 
+	goredis "github.com/redis/go-redis/v9"
+
 	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	goredis "github.com/redis/go-redis/v9"
 )
 
 // IdAllocator wraps the shared field-scoped object-id allocator so summons share
@@ -15,8 +16,10 @@ import (
 // client.
 type IdAllocator struct{ inner objectid.Allocator }
 
-var idAllocator *IdAllocator
-var idAllocatorOnce sync.Once
+var (
+	idAllocator     *IdAllocator
+	idAllocatorOnce sync.Once
+)
 
 func InitIdAllocator(rc *goredis.Client) {
 	idAllocatorOnce.Do(func() { idAllocator = &IdAllocator{inner: objectid.NewRedisAllocator(rc)} })

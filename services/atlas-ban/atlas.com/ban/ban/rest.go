@@ -6,12 +6,12 @@ import (
 )
 
 type RestModel struct {
-	Id         uint32 `json:"-"`
-	BanType    byte   `json:"banType"`
-	Value      string `json:"value"`
-	Reason     string `json:"reason"`
-	ReasonCode byte   `json:"reasonCode"`
-	Permanent  bool   `json:"permanent"`
+	Id         uint32    `json:"-"`
+	BanType    byte      `json:"banType"`
+	Value      string    `json:"value"`
+	Reason     string    `json:"reason"`
+	ReasonCode byte      `json:"reasonCode"`
+	Permanent  bool      `json:"permanent"`
 	ExpiresAt  time.Time `json:"expiresAt"`
 	IssuedBy   string    `json:"issuedBy"`
 }
@@ -62,12 +62,12 @@ func Extract(rm RestModel) (Model, error) {
 }
 
 type CheckRestModel struct {
-	Id         uint32 `json:"-"`
-	Banned     bool   `json:"banned"`
-	BanType    byte   `json:"banType,omitempty"`
-	Reason     string `json:"reason,omitempty"`
-	ReasonCode byte   `json:"reasonCode,omitempty"`
-	Permanent  bool   `json:"permanent,omitempty"`
+	Id         uint32    `json:"-"`
+	Banned     bool      `json:"banned"`
+	BanType    byte      `json:"banType,omitempty"`
+	Reason     string    `json:"reason,omitempty"`
+	ReasonCode byte      `json:"reasonCode,omitempty"`
+	Permanent  bool      `json:"permanent,omitempty"`
 	ExpiresAt  time.Time `json:"expiresAt,omitempty"`
 }
 

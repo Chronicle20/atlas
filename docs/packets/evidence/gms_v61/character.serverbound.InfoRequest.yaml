@@ -1,0 +1,10 @@
+packet: character/serverbound/InfoRequest
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendCharacterInfoRequest
+    address: "0x845b68"
+    decompile_sha256: 5ad8343e4508ab6a1ff4fd51c874f13df266dbc29f9c8e0a03e18f41e1ad3f30
+verifies:
+    - libs/atlas-packet/character/serverbound/v61_test.go#TestInfoRequestByteOutputV61

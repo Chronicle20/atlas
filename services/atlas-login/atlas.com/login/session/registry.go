@@ -11,8 +11,10 @@ type Registry struct {
 	sessionRegistry map[uuid.UUID]map[uuid.UUID]Model
 }
 
-var sessionRegistryOnce sync.Once
-var sessionRegistry *Registry
+var (
+	sessionRegistryOnce sync.Once
+	sessionRegistry     *Registry
+)
 
 func getRegistry() *Registry {
 	sessionRegistryOnce.Do(func() {

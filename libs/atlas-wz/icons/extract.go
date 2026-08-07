@@ -89,10 +89,10 @@ func ExtractItemIcon(f *wz.File, id uint32) (image.Image, error) {
 	return nil, ErrNotFound
 }
 
-// ExtractNpcIcon returns the decoded stand/0 (or fallback) canvas for the
-// given NPC id from a parsed Npc.wz file.
+// ExtractNpcIcon returns the decoded info/default (or stand/0 fallback)
+// canvas for the given NPC id from a parsed Npc.wz file.
 func ExtractNpcIcon(f *wz.File, id uint32) (image.Image, error) {
-	return extractEntityIcon(f, id, findStandCanvas)
+	return extractEntityIcon(f, id, findNpcCanvas)
 }
 
 // ExtractMobIcon returns the decoded stand/0 (or fallback) canvas for the
@@ -327,6 +327,20 @@ func splitSiblingUOL(uol string) (string, string, bool) {
 	return name, tail, true
 }
 
+// findNpcCanvas prefers info/default — the static likeness carried by NPCs
+// whose stand animation is a 1-px placeholder (e.g. 1101000, 1101001) — then
+// falls back to the shared stand/move ordering. Matching only a canvas among
+// info's children excludes top-level `default` animation dirs such as
+// 1209003.img's.
+func findNpcCanvas(props []property.Property) *property.CanvasProperty {
+	if info := findSub(props, "info"); info != nil {
+		if cp := findSubCanvas(info.Children(), "default"); cp != nil {
+			return cp
+		}
+	}
+	return findStandCanvas(props)
+}
+
 // findStandCanvas finds the stand/0 canvas for NPCs and mobs. Falls back to
 // move/0 or any first canvas in any sub.
 func findStandCanvas(props []property.Property) *property.CanvasProperty {
@@ -429,7 +443,7 @@ func decodeCanvas(f *wz.File, cp *property.CanvasProperty) (image.Image, error) 
 	if err != nil {
 		return nil, fmt.Errorf("read canvas data: %w", err)
 	}
-	img, err := canvas.Decompress(data, cp.Width(), cp.Height(), cp.Format(), f.CanvasEncryptionKey())
+	img, err := canvas.Decompress(data, cp.Width(), cp.Height(), cp.Format(), f.CanvasEncryptionKeyFor(cp.DataOffset()))
 	if err != nil {
 		return nil, fmt.Errorf("decompress canvas: %w", err)
 	}

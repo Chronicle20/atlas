@@ -11,10 +11,11 @@ import (
 	"strconv"
 	"time"
 
-	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
+
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // ItemType represents the type of rate-affecting item
@@ -44,15 +45,15 @@ type TrackedItem struct {
 
 func (t TrackedItem) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		TemplateId    uint32                  `json:"templateId"`
-		ItemType      ItemType                `json:"itemType"`
-		RateType      rate.Type               `json:"rateType"`
+		TemplateId    uint32                   `json:"templateId"`
+		ItemType      ItemType                 `json:"itemType"`
+		RateType      rate.Type                `json:"rateType"`
 		BonusExpTiers []equipment.BonusExpTier `json:"bonusExpTiers,omitempty"`
-		EquippedSince *time.Time              `json:"equippedSince,omitempty"`
-		AcquiredAt    time.Time               `json:"acquiredAt"`
-		BaseRate      float64                 `json:"baseRate"`
-		DurationMins  int32                   `json:"durationMins"`
-		TimeWindows   []cash.TimeWindow       `json:"timeWindows,omitempty"`
+		EquippedSince *time.Time               `json:"equippedSince,omitempty"`
+		AcquiredAt    time.Time                `json:"acquiredAt"`
+		BaseRate      float64                  `json:"baseRate"`
+		DurationMins  int32                    `json:"durationMins"`
+		TimeWindows   []cash.TimeWindow        `json:"timeWindows,omitempty"`
 	}{
 		TemplateId:    t.TemplateId,
 		ItemType:      t.ItemType,
@@ -288,4 +289,3 @@ func (t *ItemTracker) CleanupExpiredItems(ctx context.Context, characterId uint3
 func itemSource(templateId uint32) string {
 	return fmt.Sprintf("item:%d", templateId)
 }
-

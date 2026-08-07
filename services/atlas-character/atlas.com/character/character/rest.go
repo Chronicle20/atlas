@@ -4,11 +4,12 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type RestModel struct {
@@ -39,12 +40,15 @@ type RestModel struct {
 	Sp                 string   `json:"sp"`
 	// MapId is create-time INPUT only (consumed by Extract / POST CreateAndEmit).
 	// It is absent from GET responses — atlas-maps owns character location (task-087).
-	MapId              _map.Id `json:"mapId"`
-	SpawnPoint         uint32  `json:"spawnPoint"`
-	Gm                 int      `json:"gm"`
-	X                  int16    `json:"x"`
-	Y                  int16    `json:"y"`
-	Stance             byte     `json:"stance"`
+	MapId      _map.Id `json:"mapId"`
+	SpawnPoint uint32  `json:"spawnPoint"`
+	// Gm is a pointer so PATCH can distinguish an explicit gm:0 (demote) from
+	// an absent field (no change). GET responses always set it.
+	Gm     *int  `json:"gm"`
+	X      int16 `json:"x"`
+	Y      int16 `json:"y"`
+	Fh     int16 `json:"fh"`
+	Stance byte  `json:"stance"`
 }
 
 func (r RestModel) GetName() string {
@@ -80,6 +84,7 @@ func Transform(l logrus.FieldLogger, ctx context.Context) func(m Model) (RestMod
 }
 
 func transformWithTemporal(m Model, td temporalData) RestModel {
+	gm := m.GM()
 	rm := RestModel{
 		Id:                 m.Id(),
 		AccountId:          m.AccountId(),
@@ -107,9 +112,10 @@ func transformWithTemporal(m Model, td temporalData) RestModel {
 		Ap:                 m.AP(),
 		Sp:                 m.SPString(),
 		SpawnPoint:         m.SpawnPoint(),
-		Gm:                 m.GM(),
+		Gm:                 &gm,
 		X:                  td.X(),
 		Y:                  td.Y(),
+		Fh:                 td.Fh(),
 		Stance:             td.Stance(),
 	}
 	return rm
@@ -146,6 +152,13 @@ func Extract(m RestModel) (Model, error) {
 		SetAp(m.Ap).
 		SetSp(m.Sp).
 		SetSpawnPoint(m.SpawnPoint).
-		SetGm(m.Gm).
+		SetGm(derefOrZero(m.Gm)).
 		Build(), nil
+}
+
+func derefOrZero(v *int) int {
+	if v == nil {
+		return 0
+	}
+	return *v
 }

@@ -3,6 +3,7 @@ package writer
 import (
 	"atlas-channel/buddylist"
 	"atlas-channel/character"
+	"atlas-channel/character/teleportrock"
 	"atlas-channel/quest"
 	model2 "atlas-channel/socket/model"
 	"time"
@@ -13,7 +14,7 @@ import (
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
-func BuildCharacterData(c character.Model, bl buddylist.Model, mapId _map.Id) charpkt.CharacterData {
+func BuildCharacterData(c character.Model, bl buddylist.Model, mapId _map.Id, trm teleportrock.Model) charpkt.CharacterData {
 	cd := charpkt.CharacterData{
 		Stats: charpkt.CharacterStats{
 			Id:         c.Id(),
@@ -43,6 +44,10 @@ func BuildCharacterData(c character.Model, bl buddylist.Model, mapId _map.Id) ch
 		BuddyCapacity: bl.Capacity(),
 		Meso:          c.Meso(),
 	}
+
+	// Saved teleport-rock lists (FR-15/16). Codec pads to 5/10 with EmptyMapId.
+	cd.TeleportMaps = trm.Regular()
+	cd.VipTeleportMaps = trm.Vip()
 
 	// Pet IDs
 	for i, p := range c.Pets() {

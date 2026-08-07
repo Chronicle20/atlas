@@ -1,8 +1,9 @@
 package saved_location
 
 import (
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 type modelBuilder struct {

@@ -1,0 +1,130 @@
+{
+  "service": "libs/atlas-seeder, libs/atlas-outbox, libs/atlas-tenant, atlas-tenants, atlas-transports",
+  "path": "task-189-tenant-config-seed-provisioning (Go changes vs 24c78aa85)",
+  "date": "2026-08-03",
+  "build": "pass",
+  "testsPassed": 5,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "configuration/seed",
+      "type": "support",
+      "checks": [
+        {
+          "id": "FILE-06",
+          "name": "No package-named catch-all / no >=2-responsibility collapse",
+          "status": "fail",
+          "evidence": "services/atlas-tenants/atlas.com/tenants/configuration/seed/groups.go:33-44 (InitResource, resource.go responsibility) and :96-126 (afterSeed Kafka-emission business logic, processor.go/producer.go responsibility) live in one file."
+        },
+        {
+          "id": "SUB-01",
+          "name": "Business logic not in handler",
+          "status": "pass",
+          "evidence": "afterSeed business logic delegates writes to configuration.AppendConfigurationEntries/DeleteConfigurationByResourceName (parent administrator.go); no db.Create/db.Save in configuration/seed/*.go"
+        },
+        {
+          "id": "SUB-02",
+          "name": "Has administrator for writes",
+          "status": "pass",
+          "evidence": "configuration/seed/subdomain.go:48-54,87-93 delegate to configuration.DeleteConfigurationByResourceName / configuration.AppendConfigurationEntries (services/atlas-tenants/atlas.com/tenants/configuration/administrator.go:95-174)"
+        }
+      ]
+    },
+    {
+      "name": "configuration",
+      "type": "domain (pre-existing, model.go untouched)",
+      "checks": [
+        {
+          "id": "FILE-01",
+          "name": "Processor logic in processor.go",
+          "status": "pass",
+          "evidence": "configuration/processor.go:186-198 (tenantCtx) and all 18 ...AndEmit methods stay in processor.go"
+        },
+        {
+          "id": "FILE-02",
+          "name": "RestModel + Transform in rest.go",
+          "status": "pass",
+          "evidence": "configuration/rest.go:10-22,188-215,378-461 (Uuid field + tenant.DerivedId call in Transform*)"
+        },
+        {
+          "id": "FILE-05",
+          "name": "Write funcs in administrator.go",
+          "status": "pass",
+          "evidence": "configuration/administrator.go:95-174 (AppendConfigurationEntries, CountConfigurationEntries)"
+        },
+        {
+          "id": "DOM-10",
+          "name": "Test DB has tenant callbacks",
+          "status": "warn",
+          "evidence": "services/atlas-tenants/atlas.com/tenants/test/database.go:14-40 SetupTestDB does not call database.RegisterTenantCallbacks; documented-as-intentional per administrator_test.go:12-16 (explicit tenant_id predicate filtering, provider.go untouched by this branch); graded non-blocking per context.md Section 7 verification"
+        },
+        {
+          "id": "DOM-20",
+          "name": "Table-driven tests",
+          "status": "warn",
+          "evidence": "Most new test files (emit_tenant_test.go, catalog_test.go, seed_test.go, handlers_test.go, rest_test.go) use discrete func TestX(t *testing.T) rather than tests := []struct{...} + t.Run; only libs/atlas-tenant/id_test.go:43 uses a literal table. Non-blocking per testing-guide.md 'Prefer', substantive assertions present."
+        },
+        {
+          "id": "DOM-26",
+          "name": "Goroutines spawned via routine.Go",
+          "status": "pass",
+          "evidence": "libs/atlas-seeder/handlers.go:51 uses routine.Go(l, ctx, ...); tools/goroutine-guard.sh exits 0"
+        }
+      ]
+    },
+    {
+      "name": "transport/config, instance/config",
+      "type": "domain (pre-existing, model.go untouched)",
+      "checks": [
+        {
+          "id": "FILE-02",
+          "name": "RestModel + Extract in rest.go",
+          "status": "pass",
+          "evidence": "services/atlas-transports/atlas.com/transports/transport/config/rest.go:43-95 and instance/config/rest.go:32-79 (ExtractRouteFor)"
+        },
+        {
+          "id": "FILE-03",
+          "name": "Cross-service request funcs in requests.go",
+          "status": "pass",
+          "evidence": "requests.go unmodified in both packages; ExtractRouteFor consumed via requests.DrainProvider from processor.go"
+        }
+      ]
+    },
+    {
+      "name": "libs/atlas-outbox, libs/atlas-tenant",
+      "type": "support (shared library)",
+      "checks": [
+        {
+          "id": "anti-pattern",
+          "name": "Silent tenant-free emit",
+          "status": "pass",
+          "evidence": "libs/atlas-outbox/bridge.go:26-35 logs a Warn when tenant.ID header is absent; bridge_test.go:129-163 tests both branches"
+        },
+        {
+          "id": "test-coverage",
+          "name": "DerivedId stability/collision tests",
+          "status": "pass",
+          "evidence": "libs/atlas-tenant/id_test.go:16-59 (stability, cross-tenant, cross-resource, pinned vectors, version-5 check)"
+        }
+      ]
+    }
+  ],
+  "dockerBuild": {
+    "atlas-tenants": "pass (docker buildx bake atlas-tenants)",
+    "atlas-transports": "pass (docker buildx bake atlas-transports)"
+  },
+  "guards": {
+    "go vet": "clean (all 5 modules)",
+    "tools/goroutine-guard.sh": "exit 0",
+    "tools/redis-key-guard.sh": "exit 0",
+    "tools/service-registration-guard.sh": "clean"
+  },
+  "blocking": [
+    "FILE-06: services/atlas-tenants/atlas.com/tenants/configuration/seed/groups.go collapses resource.go-responsibility route registration (InitResource, lines 33-44) with processor.go/producer.go-responsibility Kafka-emission business logic (afterSeed, Groups, newGroup, lines 46-126) into one file."
+  ],
+  "nonBlocking": [
+    "DOM-20: prefer table-driven tests (tests := []struct{...}{...} + t.Run) for new test files listed above.",
+    "DOM-10: services/atlas-tenants/atlas.com/tenants/test/database.go SetupTestDB does not register tenant GORM callbacks; currently safe (verified in context.md Section 7) but a latent test-coverage gap if the package ever starts relying on context-based tenant filtering."
+  ]
+}

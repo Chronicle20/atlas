@@ -10,13 +10,14 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 )
 
@@ -69,7 +70,6 @@ func handleStatusEventArrived(sc server.Model, wp writer.Producer) message.Handl
 		// Broadcast to all characters in the map across all instances
 		err := _map.NewProcessor(l, ctx).ForSessionsInMapAllInstances(sc.WorldId(), sc.ChannelId(), mapId,
 			session.Announce(l)(ctx)(wp)(fieldcb.FieldTransportStateWriter)(fieldcb.NewFieldTransport(fieldcb.TransportStateEnter1, false).Encode))
-
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast transport arrival to characters in map [%d].", mapId)
 		}
@@ -90,7 +90,6 @@ func handleStatusEventDeparted(sc server.Model, wp writer.Producer) message.Hand
 		// Broadcast to all characters in the map across all instances
 		err := _map.NewProcessor(l, ctx).ForSessionsInMapAllInstances(sc.WorldId(), sc.ChannelId(), mapId,
 			session.Announce(l)(ctx)(wp)(fieldcb.FieldTransportStateWriter)(fieldcb.NewFieldTransport(fieldcb.TransportStateMove1, false).Encode))
-
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast transport departure to characters in map [%d].", mapId)
 		}

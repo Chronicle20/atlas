@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +22,12 @@ interface ChangeGmDialogProps {
   onSuccess?: () => void;
 }
 
-export function ChangeGmDialog({ character, open, onOpenChange, onSuccess }: ChangeGmDialogProps) {
+export function ChangeGmDialog({
+  character,
+  open,
+  onOpenChange,
+  onSuccess,
+}: ChangeGmDialogProps) {
   const currentGm = character.attributes.gm;
   const [gmLevel, setGmLevel] = useState<string>(currentGm > 0 ? "0" : "1");
   const [isLoading, setIsLoading] = useState(false);
@@ -69,7 +81,7 @@ export function ChangeGmDialog({ character, open, onOpenChange, onSuccess }: Cha
     setIsLoading(true);
 
     try {
-      await charactersService.update( character.id, { gm: gmValue });
+      await charactersService.update(character.id, { gm: gmValue });
       const action = gmValue > 0 ? "promoted to GM" : "demoted from GM";
       toast.success(`Successfully ${action}: ${character.attributes.name}`);
 
@@ -83,7 +95,7 @@ export function ChangeGmDialog({ character, open, onOpenChange, onSuccess }: Cha
       toast.error(errorMessage);
 
       if (import.meta.env.DEV) {
-        console.error('GM change error:', error);
+        console.error("GM change error:", error);
       }
     } finally {
       setIsLoading(false);
@@ -107,12 +119,15 @@ export function ChangeGmDialog({ character, open, onOpenChange, onSuccess }: Cha
           <DialogHeader>
             <DialogTitle>Change GM Status</DialogTitle>
             <DialogDescription>
-              Change the GM status for character <strong>{character.attributes.name}</strong>.
+              Change the GM status for character{" "}
+              <strong>{character.attributes.name}</strong>.
               <br />
-              Current GM level: <strong>{currentGm === 0 ? "None (0)" : currentGm}</strong>
+              Current GM level:{" "}
+              <strong>{currentGm === 0 ? "None (0)" : currentGm}</strong>
               <br />
               <span className="text-xs text-muted-foreground mt-1 block">
-                GM characters can use admin commands in-game (@ban, @item, @mob, etc.)
+                GM characters can use admin commands in-game (@ban, @item, @mob,
+                etc.)
               </span>
             </DialogDescription>
           </DialogHeader>
@@ -127,7 +142,11 @@ export function ChangeGmDialog({ character, open, onOpenChange, onSuccess }: Cha
                 placeholder="0 = normal, 1 = GM"
                 disabled={isLoading}
                 required
-                className={validationError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                className={
+                  validationError
+                    ? "border-red-500 focus-visible:ring-red-500"
+                    : ""
+                }
               />
               {validationError && (
                 <p className="text-sm text-red-500 mt-1">{validationError}</p>
@@ -148,7 +167,11 @@ export function ChangeGmDialog({ character, open, onOpenChange, onSuccess }: Cha
               disabled={isLoading || !!validationError}
               variant={parseInt(gmLevel, 10) > 0 ? "default" : "destructive"}
             >
-              {isLoading ? "Updating..." : parseInt(gmLevel, 10) > 0 ? "Promote to GM" : "Remove GM"}
+              {isLoading
+                ? "Updating..."
+                : parseInt(gmLevel, 10) > 0
+                  ? "Promote to GM"
+                  : "Remove GM"}
             </Button>
           </DialogFooter>
         </form>

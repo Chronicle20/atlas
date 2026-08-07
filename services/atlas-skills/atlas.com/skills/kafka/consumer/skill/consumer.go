@@ -6,13 +6,14 @@ import (
 	"atlas-skills/skill"
 	"context"
 
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -37,7 +38,13 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandSetCooldown(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandResetCooldowns(db)))); err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestDelete(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandTransferSp(db)))); err != nil {
 				return err
 			}
 			return nil
@@ -81,6 +88,24 @@ func handleCommandSetCooldown(db *gorm.DB) message.Handler[skill2.Command[skill2
 	}
 }
 
+// handleCommandResetCooldowns clears every active cooldown for the
+// character except the command's exclusion list. SourceSkillId is
+// observability-only (5121010 for Time Leap; generic senders may pass 0).
+func handleCommandResetCooldowns(db *gorm.DB) message.Handler[skill2.Command[skill2.ResetCooldownsBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c skill2.Command[skill2.ResetCooldownsBody]) {
+		if c.Type != skill2.CommandTypeResetCooldowns {
+			return
+		}
+		if _, err := skill.NewProcessor(l, ctx, db).ResetCooldownsAndEmit(c.TransactionId, c.WorldId, c.CharacterId, c.Body.ExceptSkillIds); err != nil {
+			l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id":  c.TransactionId.String(),
+				"character_id":    c.CharacterId,
+				"source_skill_id": c.Body.SourceSkillId,
+			}).Error("Unable to reset cooldowns.")
+		}
+	}
+}
+
 // handleCommandRequestDelete handles the saga-correlated REQUEST_DELETE command
 // used by the orchestrator's character-creation reverse-walk compensator
 // (plan Phase 5 / Phase 6). Idempotent on missing rows.
@@ -95,6 +120,21 @@ func handleCommandRequestDelete(db *gorm.DB) message.Handler[skill2.Command[skil
 				"character_id":   c.CharacterId,
 				"skill_id":       c.Body.SkillId,
 			}).Error("Saga-compensation delete skill failed.")
+		}
+	}
+}
+
+// handleCommandTransferSp handles the authoritative TRANSFER_SP command (task-126
+// AP/SP Reset): moves one skill point FromSkillId -> ToSkillId, re-validating
+// job tree/exclusion/tier/level state, and cleans up macro references when the
+// source drops to level 0.
+func handleCommandTransferSp(db *gorm.DB) message.Handler[skill2.Command[skill2.TransferSpBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c skill2.Command[skill2.TransferSpBody]) {
+		if c.Type != skill2.CommandTypeTransferSp {
+			return
+		}
+		if err := skill.NewProcessor(l, ctx, db).TransferSpAndEmit(c.TransactionId, c.WorldId, c.CharacterId, c.Body.JobId, c.Body.FromSkillId, c.Body.ToSkillId, c.Body.ItemTier, c.Body.TargetMaxLevel); err != nil {
+			l.WithError(err).Errorf("Unable to transfer SP for character [%d].", c.CharacterId)
 		}
 	}
 }

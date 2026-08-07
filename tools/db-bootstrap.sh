@@ -60,7 +60,7 @@ fi
 # ---- Databases (edit this list for now) ----
 DBS=(
   atlas-accounts
-  atlas-ban
+  atlas-bans
   atlas-buddies
   atlas-cashshop
   atlas-characters
@@ -69,7 +69,7 @@ DBS=(
   atlas-drops
   atlas-families
   atlas-fame
-  atlas-gachapons
+  atlas-reward-pools
   atlas-guilds
   atlas-inventory
   atlas-keys
@@ -77,6 +77,10 @@ DBS=(
   atlas-maps
   atlas-marriages
   atlas-merchant
+  atlas-mini-games
+  atlas-monster-book
+  atlas-mounts
+  atlas-mts
   atlas-notes
   atlas-npc-conversations
   atlas-npc-shops
@@ -84,6 +88,7 @@ DBS=(
   atlas-pets
   atlas-portal-actions
   atlas-quest
+  atlas-rankings
   atlas-reactor-actions
   atlas-saga-orchestrator
   atlas-skills

@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const ServerLoadWriter = "ServerLoad"
@@ -19,9 +20,9 @@ func NewServerLoad(code byte) ServerLoad {
 	return ServerLoad{code: code}
 }
 
-func (m ServerLoad) Code() byte          { return m.code }
-func (m ServerLoad) Operation() string   { return ServerLoadWriter }
-func (m ServerLoad) String() string      { return fmt.Sprintf("code [%d]", m.code) }
+func (m ServerLoad) Code() byte        { return m.code }
+func (m ServerLoad) Operation() string { return ServerLoadWriter }
+func (m ServerLoad) String() string    { return fmt.Sprintf("code [%d]", m.code) }
 
 func (m ServerLoad) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)

@@ -3,12 +3,13 @@ package collection
 import (
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 )
 
 type statsUpdate struct {

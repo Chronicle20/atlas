@@ -4,15 +4,17 @@ import (
 	"atlas-data/skill/effect"
 	"atlas-data/xml"
 	"context"
+	"fmt"
 	"strconv"
 	"testing"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus/hooks/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const testXML = `
@@ -3173,6 +3175,314 @@ func TestReader_FreezeDoublesDuration(t *testing.T) {
 	}
 }
 
+// TestReader_ShadowStars_EmitsNonzeroShadowClawPlaceholder pins the
+// zero-guard fix (task-158): produceBuffStatAmount drops a statup whose
+// value == 0, so skill 4121006 (Night Lord Shadow Stars) MUST emit a nonzero
+// SHADOW_CLAW placeholder to survive the guard. atlas-channel overwrites this
+// placeholder with the client-chosen throwing-star item id at cast time.
+func TestReader_ShadowStars_EmitsNonzeroShadowClawPlaceholder(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="412.img">
+  <imgdir name="skill">
+    <imgdir name="4121006">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="time" value="30"/>
+          <int name="mpCon" value="10"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm, ok := rmm["4121006"]
+	if !ok {
+		t.Fatal("rmm[4121006] does not exist.")
+	}
+	if len(rm.Effects) != 1 {
+		t.Fatalf("len(rm.Effects) = %d, want 1", len(rm.Effects))
+	}
+	su, ok := findStatup(rm.Effects[0].Statups, string(character.TemporaryStatTypeShadowClaw))
+	if !ok {
+		t.Fatalf("expected a SHADOW_CLAW statup to be emitted for skill 4121006 (zero-guard fix), got none in %+v", rm.Effects[0].Statups)
+	}
+	if su.Amount == 0 {
+		t.Fatalf("SHADOW_CLAW statup Amount = 0, want nonzero (produceBuffStatAmount drops zero-value statups)")
+	}
+}
+
+// TestReader_SuperGmHolySymbol_V48Wire_ClassifiesAsHolySymbol pins task-187:
+// SuperGM Holy Symbol is wire 5101002 at v0.48 (DIVERGENT from the v83+
+// canonical 9101002). Before the fix, reader.go's raw
+// skill.Is(skillId, skill.PriestHolySymbolId, skill.SuperGmHolySymbolId)
+// compare silently missed the v48 wire id, so no HOLY_SYMBOL statup would be
+// emitted.
+func TestReader_SuperGmHolySymbol_V48Wire_ClassifiesAsHolySymbol(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 48, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="510.img">
+  <imgdir name="skill">
+    <imgdir name="5101002">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="x" value="10"/>
+          <int name="mpCon" value="4"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm, ok := rmm["5101002"]
+	if !ok {
+		t.Fatal("rmm[5101002] does not exist.")
+	}
+	if len(rm.Effects) != 1 {
+		t.Fatalf("len(rm.Effects) = %d, want 1", len(rm.Effects))
+	}
+	su, ok := findStatup(rm.Effects[0].Statups, string(character.TemporaryStatTypeHolySymbol))
+	if !ok {
+		t.Fatalf("expected a HOLY_SYMBOL statup for v48 wire skill 5101002, got none in %+v", rm.Effects[0].Statups)
+	}
+	if su.Amount != 10 {
+		t.Fatalf("HOLY_SYMBOL statup Amount = %d, want 10", su.Amount)
+	}
+}
+
+// TestReader_SuperGmHolySymbol_V83Canonical_ClassifiesAsHolySymbol pins the
+// v83+ canonical wire id (9101002) still classifies correctly after the
+// task-187 fix.
+func TestReader_SuperGmHolySymbol_V83Canonical_ClassifiesAsHolySymbol(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="910.img">
+  <imgdir name="skill">
+    <imgdir name="9101002">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="x" value="10"/>
+          <int name="mpCon" value="4"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm, ok := rmm["9101002"]
+	if !ok {
+		t.Fatal("rmm[9101002] does not exist.")
+	}
+	if len(rm.Effects) != 1 {
+		t.Fatalf("len(rm.Effects) = %d, want 1", len(rm.Effects))
+	}
+	su, ok := findStatup(rm.Effects[0].Statups, string(character.TemporaryStatTypeHolySymbol))
+	if !ok {
+		t.Fatalf("expected a HOLY_SYMBOL statup for v83 canonical skill 9101002, got none in %+v", rm.Effects[0].Statups)
+	}
+	if su.Amount != 10 {
+		t.Fatalf("HOLY_SYMBOL statup Amount = %d, want 10", su.Amount)
+	}
+}
+
+// TestReader_PriestHolySymbol_StableSkill_Unchanged pins that the
+// version-stable PriestHolySymbolId (2311003, unchanged across versions)
+// still classifies as HolySymbol via the raw skill.Is compare after
+// SuperGmHolySymbolId was pulled out into a separately-resolved check --
+// no regression to the stable half of the classification.
+func TestReader_PriestHolySymbol_StableSkill_Unchanged(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="231.img">
+  <imgdir name="skill">
+    <imgdir name="2311003">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="x" value="10"/>
+          <int name="mpCon" value="4"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm, ok := rmm["2311003"]
+	if !ok {
+		t.Fatal("rmm[2311003] does not exist.")
+	}
+	if len(rm.Effects) != 1 {
+		t.Fatalf("len(rm.Effects) = %d, want 1", len(rm.Effects))
+	}
+	su, ok := findStatup(rm.Effects[0].Statups, string(character.TemporaryStatTypeHolySymbol))
+	if !ok {
+		t.Fatalf("expected a HOLY_SYMBOL statup for Priest Holy Symbol (2311003), got none in %+v", rm.Effects[0].Statups)
+	}
+	if su.Amount != 10 {
+		t.Fatalf("HOLY_SYMBOL statup Amount = %d, want 10", su.Amount)
+	}
+}
+
+// healDispelCategory1XML is a shared skill body for the SuperGM Heal+Dispel
+// tests below: a top-level <effect> (no hit/ball) makes getBuff(exml)
+// initially true, and the level node omits `time` so effect.Duration stays
+// the -1 sentinel and OverTime is fed straight from produceSkill's `buff`
+// var -- letting the tests observe whether isCategory1/isSuperGmHealDispel
+// forced buff back to false.
+const healDispelCategory1XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="%s.img">
+  <imgdir name="skill">
+    <imgdir name="%s">
+      <imgdir name="effect">
+        <canvas name="0" width="1" height="1">
+          <vector name="origin" x="0" y="0"/>
+          <int name="delay" value="60"/>
+        </canvas>
+      </imgdir>
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="mpCon" value="10"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+// TestReader_SuperGmHealDispel_V48Wire_ClassifiesAsCategory1 pins task-187:
+// SuperGM Heal+Dispel is wire 5101000 at v0.48 (DIVERGENT from the v83+
+// canonical 9101000). Before the fix, isCategory1's raw
+// skill.Is(id, ..., skill.SuperGmHealDispelId, ...) compare silently missed
+// the v48 wire id, leaving buff (and thus OverTime, since this fixture omits
+// `time`) at getBuff's true default instead of being forced false.
+func TestReader_SuperGmHealDispel_V48Wire_ClassifiesAsCategory1(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 48, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	xmlData := fmt.Sprintf(healDispelCategory1XML, "510", "5101000")
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm, ok := rmm["5101000"]
+	if !ok {
+		t.Fatal("rmm[5101000] does not exist.")
+	}
+	if len(rm.Effects) != 1 {
+		t.Fatalf("len(rm.Effects) = %d, want 1", len(rm.Effects))
+	}
+	if rm.Effects[0].OverTime {
+		t.Fatalf("OverTime = true, want false (v48 wire SuperGM Heal+Dispel 5101000 must classify into isCategory1, forcing buff/OverTime false)")
+	}
+}
+
+// TestReader_SuperGmHealDispel_V83Canonical_ClassifiesAsCategory1 pins the
+// v83+ canonical wire id (9101000) still classifies correctly after the
+// task-187 fix.
+func TestReader_SuperGmHealDispel_V83Canonical_ClassifiesAsCategory1(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	xmlData := fmt.Sprintf(healDispelCategory1XML, "910", "9101000")
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm, ok := rmm["9101000"]
+	if !ok {
+		t.Fatal("rmm[9101000] does not exist.")
+	}
+	if len(rm.Effects) != 1 {
+		t.Fatalf("len(rm.Effects) = %d, want 1", len(rm.Effects))
+	}
+	if rm.Effects[0].OverTime {
+		t.Fatalf("OverTime = true, want false (v83 canonical SuperGM Heal+Dispel 9101000 must classify into isCategory1, forcing buff/OverTime false)")
+	}
+}
+
+// TestReader_ClericHeal_StableSkill_Unchanged pins that ClericHealId
+// (2301002, a version-stable member of isCategory1's raw skill.Is list)
+// still forces buff/OverTime false after SuperGmHealDispelId was pulled out
+// of that list into a separately-resolved check -- no regression to the
+// stable members of isCategory1.
+func TestReader_ClericHeal_StableSkill_Unchanged(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	xmlData := fmt.Sprintf(healDispelCategory1XML, "230", "2301002")
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm, ok := rmm["2301002"]
+	if !ok {
+		t.Fatal("rmm[2301002] does not exist.")
+	}
+	if len(rm.Effects) != 1 {
+		t.Fatalf("len(rm.Effects) = %d, want 1", len(rm.Effects))
+	}
+	if rm.Effects[0].OverTime {
+		t.Fatalf("OverTime = true, want false (ClericHealId 2301002 must remain in isCategory1, forcing buff/OverTime false)")
+	}
+}
+
 func TestSkillReaderBroomstickVehicleId(t *testing.T) {
 	statups := mountStatupsForSkill(skill.BeginnerBroomstickId, 1)
 	got, ok := findStatup(statups, string(character.TemporaryStatTypeMonsterRiding))
@@ -3217,5 +3527,23 @@ func TestSkillReaderNonMountEmitsNoMonsterRiding(t *testing.T) {
 	statups := mountStatupsForSkill(skill.ClericHealId, 1)
 	if got, ok := findStatup(statups, string(character.TemporaryStatTypeMonsterRiding)); ok {
 		t.Fatalf("non-mount skill should emit no MONSTER_RIDING statup, got %+v", got)
+	}
+}
+
+func TestParseJobId(t *testing.T) {
+	id, err := ParseJobId("112.img")
+	if err != nil {
+		t.Fatalf("ParseJobId(\"112.img\") returned error: %v", err)
+	}
+	if id != 112 {
+		t.Fatalf("ParseJobId(\"112.img\") = %d, want 112", id)
+	}
+
+	if _, err := ParseJobId("MobSkill.img"); err == nil {
+		t.Fatal("ParseJobId(\"MobSkill.img\") expected error, got nil")
+	}
+
+	if _, err := ParseJobId("112"); err == nil {
+		t.Fatal("ParseJobId(\"112\") expected error (missing .img suffix), got nil")
 	}
 }

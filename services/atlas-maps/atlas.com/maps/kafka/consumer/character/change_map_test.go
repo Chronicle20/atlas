@@ -1,15 +1,16 @@
 package character
 
 import (
+	"atlas-maps/character/warp"
 	"testing"
 
-	"atlas-maps/character/warp"
 	characterKafka "atlas-maps/kafka/message/character"
+
+	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 type recordingWarp struct {

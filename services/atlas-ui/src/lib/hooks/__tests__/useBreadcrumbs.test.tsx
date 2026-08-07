@@ -1,41 +1,47 @@
-import { vi, type MockedFunction } from 'vitest';
+import { vi, type MockedFunction } from "vitest";
 /**
  * Tests for useBreadcrumbs hook
  */
 
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { useBreadcrumbs, useSimpleBreadcrumbs, useBreadcrumbNavigation } from '../useBreadcrumbs';
-import * as resolvers from '@/lib/breadcrumbs/resolvers';
-import * as utils from '@/lib/breadcrumbs/utils';
-import * as routes from '@/lib/breadcrumbs/routes';
+import { renderHook, act, waitFor } from "@testing-library/react";
+import {
+  useBreadcrumbs,
+  useSimpleBreadcrumbs,
+  useBreadcrumbNavigation,
+} from "../useBreadcrumbs";
+import * as resolvers from "@/lib/breadcrumbs/resolvers";
+import * as utils from "@/lib/breadcrumbs/utils";
+import * as routes from "@/lib/breadcrumbs/routes";
 
 // Mock dependencies
-vi.mock('react-router-dom', async () => ({
-  ...(await vi.importActual<typeof import('react-router-dom')>('react-router-dom')),
+vi.mock("react-router-dom", async () => ({
+  ...(await vi.importActual<typeof import("react-router-dom")>(
+    "react-router-dom",
+  )),
   useNavigate: vi.fn(),
-  useLocation: vi.fn(() => ({ pathname: '/' })),
+  useLocation: vi.fn(() => ({ pathname: "/" })),
 }));
 
-vi.mock('@/context/tenant-context', () => ({
+vi.mock("@/context/tenant-context", () => ({
   useTenant: vi.fn(),
 }));
 
-vi.mock('@/lib/breadcrumbs/resolvers', () => ({
+vi.mock("@/lib/breadcrumbs/resolvers", () => ({
   resolveEntityLabel: vi.fn(),
   preloadEntityLabels: vi.fn(),
   invalidateEntityLabels: vi.fn(),
   getEntityTypeFromRoute: vi.fn(),
   EntityType: {
-    ACCOUNT: 'account',
-    CHARACTER: 'character',
-    GUILD: 'guild',
-    NPC: 'npc',
-    TEMPLATE: 'template',
-    TENANT: 'tenant',
+    ACCOUNT: "account",
+    CHARACTER: "character",
+    GUILD: "guild",
+    NPC: "npc",
+    TEMPLATE: "template",
+    TENANT: "tenant",
   },
 }));
 
-vi.mock('@/lib/breadcrumbs/utils', () => ({
+vi.mock("@/lib/breadcrumbs/utils", () => ({
   parsePathname: vi.fn(),
   buildBreadcrumbPath: vi.fn(),
   filterVisibleBreadcrumbs: vi.fn(),
@@ -43,14 +49,14 @@ vi.mock('@/lib/breadcrumbs/utils', () => ({
   getBreadcrumbKey: vi.fn(),
 }));
 
-vi.mock('@/lib/breadcrumbs/routes', () => ({
+vi.mock("@/lib/breadcrumbs/routes", () => ({
   findRouteConfig: vi.fn(),
   getBreadcrumbsFromRoute: vi.fn(),
 }));
 
 // Import mocked modules
 import { useLocation, useNavigate } from "react-router-dom";
-import { useTenant } from '@/context/tenant-context';
+import { useTenant } from "@/context/tenant-context";
 
 const mockUseNavigate = vi.mocked(useNavigate);
 const mockUseLocation = vi.mocked(useLocation);
@@ -76,10 +82,10 @@ const mockRoutes = routes as unknown as {
 
 // Test data
 const mockTenant = {
-  id: 'test-tenant-id',
+  id: "test-tenant-id",
   attributes: {
-    name: 'Test Tenant',
-    region: 'US',
+    name: "Test Tenant",
+    region: "US",
     majorVersion: 1,
     minorVersion: 0,
   },
@@ -87,44 +93,50 @@ const mockTenant = {
 
 const mockBreadcrumbs = [
   {
-    segment: '',
-    label: 'Home',
-    href: '/',
+    segment: "",
+    label: "Home",
+    href: "/",
     dynamic: false,
     isCurrentPage: false,
   },
   {
-    segment: 'characters',
-    label: 'Characters',
-    href: '/characters',
+    segment: "characters",
+    label: "Characters",
+    href: "/characters",
     dynamic: false,
     isCurrentPage: false,
   },
   {
-    segment: 'char-123',
-    label: 'Loading...',
-    href: '/characters/char-123',
+    segment: "char-123",
+    label: "Loading...",
+    href: "/characters/char-123",
     dynamic: true,
     isCurrentPage: true,
-    entityId: 'char-123',
-    entityType: 'character',
+    entityId: "char-123",
+    entityType: "character",
   },
 ];
 
 const mockRouteConfig = {
-  pattern: '/characters/[id]',
-  label: 'Character Details',
-  parent: '/characters',
-  entityType: 'character',
+  pattern: "/characters/[id]",
+  label: "Character Details",
+  parent: "/characters",
+  entityType: "character",
 };
 
-describe('useBreadcrumbs', () => {
+describe("useBreadcrumbs", () => {
   beforeEach(() => {
     // Reset all mocks
     vi.clearAllMocks();
 
     // Setup default mock implementations
-    mockUseLocation.mockReturnValue({ pathname: '/characters/char-123', search: '', hash: '', state: null, key: 'default' } as ReturnType<typeof useLocation>);
+    mockUseLocation.mockReturnValue({
+      pathname: "/characters/char-123",
+      search: "",
+      hash: "",
+      state: null,
+      key: "default",
+    } as ReturnType<typeof useLocation>);
     mockUseNavigate.mockReturnValue(vi.fn());
     mockUseTenant.mockReturnValue({
       activeTenant: mockTenant,
@@ -138,9 +150,13 @@ describe('useBreadcrumbs', () => {
     // Setup breadcrumb utility mocks
     mockUtils.parsePathname.mockReturnValue(mockBreadcrumbs);
     mockUtils.buildBreadcrumbPath.mockImplementation((segments) => segments);
-    mockUtils.filterVisibleBreadcrumbs.mockImplementation((segments) => segments);
+    mockUtils.filterVisibleBreadcrumbs.mockImplementation(
+      (segments) => segments,
+    );
     mockUtils.getParentBreadcrumb.mockReturnValue(mockBreadcrumbs[1]);
-    mockUtils.getBreadcrumbKey.mockReturnValue('home|characters|character-detail');
+    mockUtils.getBreadcrumbKey.mockReturnValue(
+      "home|characters|character-detail",
+    );
 
     // Setup route mocks
     mockRoutes.findRouteConfig.mockReturnValue(mockRouteConfig);
@@ -148,20 +164,24 @@ describe('useBreadcrumbs', () => {
 
     // Setup resolver mocks
     mockResolvers.resolveEntityLabel.mockResolvedValue({
-      label: 'Test Character',
+      label: "Test Character",
       fromCache: false,
       resolvedAt: Date.now(),
       isFallback: false,
     });
-    mockResolvers.getEntityTypeFromRoute.mockReturnValue(resolvers.EntityType.CHARACTER);
+    mockResolvers.getEntityTypeFromRoute.mockReturnValue(
+      resolvers.EntityType.CHARACTER,
+    );
     mockResolvers.preloadEntityLabels.mockResolvedValue();
     mockResolvers.invalidateEntityLabels.mockImplementation(() => {});
   });
 
-  describe('basic functionality', () => {
-    it('should return initial breadcrumbs', () => {
+  describe("basic functionality", () => {
+    it("should return initial breadcrumbs", () => {
       // Use autoResolve: false to test initial state without async resolution
-      const { result } = renderHook(() => useBreadcrumbs({ autoResolve: false }));
+      const { result } = renderHook(() =>
+        useBreadcrumbs({ autoResolve: false }),
+      );
 
       expect(result.current.breadcrumbs).toEqual(mockBreadcrumbs);
       expect(result.current.loading).toBe(false);
@@ -169,56 +189,68 @@ describe('useBreadcrumbs', () => {
       expect(result.current.routeConfig).toEqual(mockRouteConfig);
     });
 
-    it('should parse pathname correctly', () => {
+    it("should parse pathname correctly", () => {
       renderHook(() => useBreadcrumbs());
 
-      expect(mockUtils.parsePathname).toHaveBeenCalledWith('/characters/char-123');
+      expect(mockUtils.parsePathname).toHaveBeenCalledWith(
+        "/characters/char-123",
+      );
     });
 
-    it('should find route config', () => {
+    it("should find route config", () => {
       renderHook(() => useBreadcrumbs());
 
-      expect(mockRoutes.findRouteConfig).toHaveBeenCalledWith('/characters/char-123');
+      expect(mockRoutes.findRouteConfig).toHaveBeenCalledWith(
+        "/characters/char-123",
+      );
     });
   });
 
-  describe('dynamic label resolution', () => {
-    it('should resolve dynamic labels when autoResolve is enabled', async () => {
+  describe("dynamic label resolution", () => {
+    it("should resolve dynamic labels when autoResolve is enabled", async () => {
       renderHook(() => useBreadcrumbs({ autoResolve: true }));
 
       await waitFor(() => {
         expect(mockResolvers.resolveEntityLabel).toHaveBeenCalledWith(
           resolvers.EntityType.CHARACTER,
-          'char-123',
+          "char-123",
           mockTenant,
           expect.objectContaining({
-            fallback: 'Unknown',
+            fallback: "Unknown",
             timeout: 5000,
             useCache: true,
-          })
+          }),
         );
       });
     });
 
-    it('should not resolve dynamic labels when autoResolve is disabled', () => {
+    it("should not resolve dynamic labels when autoResolve is disabled", () => {
       renderHook(() => useBreadcrumbs({ autoResolve: false }));
 
       expect(mockResolvers.resolveEntityLabel).not.toHaveBeenCalled();
     });
 
-    it('should update breadcrumb labels after resolution', async () => {
-      const { result } = renderHook(() => useBreadcrumbs({ autoResolve: true }));
+    it("should update breadcrumb labels after resolution", async () => {
+      const { result } = renderHook(() =>
+        useBreadcrumbs({ autoResolve: true }),
+      );
 
       await waitFor(() => {
-        const characterBreadcrumb = result.current.breadcrumbs.find(b => b.entityId === 'char-123');
-        expect(characterBreadcrumb?.label).toBe('Test Character');
+        const characterBreadcrumb = result.current.breadcrumbs.find(
+          (b) => b.entityId === "char-123",
+        );
+        expect(characterBreadcrumb?.label).toBe("Test Character");
       });
     });
 
-    it('should handle resolution errors gracefully', async () => {
-      mockResolvers.resolveEntityLabel.mockRejectedValue(new Error('Resolution failed'));
+    it("should handle resolution errors gracefully", async () => {
+      mockResolvers.resolveEntityLabel.mockRejectedValue(
+        new Error("Resolution failed"),
+      );
 
-      const { result } = renderHook(() => useBreadcrumbs({ autoResolve: true }));
+      const { result } = renderHook(() =>
+        useBreadcrumbs({ autoResolve: true }),
+      );
 
       await waitFor(() => {
         expect(result.current.error).toBe(null); // Should not set global error for individual failures
@@ -226,8 +258,8 @@ describe('useBreadcrumbs', () => {
     });
   });
 
-  describe('navigation utilities', () => {
-    it('should navigate to parent when goToParent is called', () => {
+  describe("navigation utilities", () => {
+    it("should navigate to parent when goToParent is called", () => {
       const mockPush = vi.fn();
       mockUseNavigate.mockReturnValue(mockPush);
 
@@ -237,10 +269,10 @@ describe('useBreadcrumbs', () => {
         result.current.navigation.goToParent();
       });
 
-      expect(mockPush).toHaveBeenCalledWith('/characters');
+      expect(mockPush).toHaveBeenCalledWith("/characters");
     });
 
-    it('should navigate to specific breadcrumb', () => {
+    it("should navigate to specific breadcrumb", () => {
       const mockPush = vi.fn();
       mockUseNavigate.mockReturnValue(mockPush);
 
@@ -250,67 +282,67 @@ describe('useBreadcrumbs', () => {
         result.current.navigation.navigateTo(mockBreadcrumbs[1]!);
       });
 
-      expect(mockPush).toHaveBeenCalledWith('/characters');
+      expect(mockPush).toHaveBeenCalledWith("/characters");
     });
 
-    it('should return parent breadcrumb', () => {
+    it("should return parent breadcrumb", () => {
       const { result } = renderHook(() => useBreadcrumbs());
 
       expect(result.current.navigation.getParent()).toEqual(mockBreadcrumbs[1]);
     });
   });
 
-  describe('resolution utilities', () => {
-    it('should manually resolve entity labels', async () => {
+  describe("resolution utilities", () => {
+    it("should manually resolve entity labels", async () => {
       const { result } = renderHook(() => useBreadcrumbs());
 
       await act(async () => {
         const resolved = await result.current.resolution.resolveLabel(
           resolvers.EntityType.CHARACTER,
-          'char-456'
+          "char-456",
         );
-        expect(resolved.label).toBe('Test Character');
+        expect(resolved.label).toBe("Test Character");
       });
     });
 
-    it('should invalidate entity labels', () => {
+    it("should invalidate entity labels", () => {
       const { result } = renderHook(() => useBreadcrumbs());
 
       act(() => {
         result.current.resolution.invalidateLabels(
           resolvers.EntityType.CHARACTER,
-          ['char-123']
+          ["char-123"],
         );
       });
 
       expect(mockResolvers.invalidateEntityLabels).toHaveBeenCalledWith(
         resolvers.EntityType.CHARACTER,
-        ['char-123'],
-        mockTenant
+        ["char-123"],
+        mockTenant,
       );
     });
 
-    it('should preload entity labels', async () => {
+    it("should preload entity labels", async () => {
       const { result } = renderHook(() => useBreadcrumbs());
 
       await act(async () => {
         await result.current.resolution.preloadLabels(
           resolvers.EntityType.CHARACTER,
-          ['char-456', 'char-789']
+          ["char-456", "char-789"],
         );
       });
 
       expect(mockResolvers.preloadEntityLabels).toHaveBeenCalledWith(
         resolvers.EntityType.CHARACTER,
-        ['char-456', 'char-789'],
+        ["char-456", "char-789"],
         mockTenant,
-        expect.any(Object)
+        expect.any(Object),
       );
     });
   });
 
-  describe('options handling', () => {
-    it('should apply maxItems option', () => {
+  describe("options handling", () => {
+    it("should apply maxItems option", () => {
       renderHook(() => useBreadcrumbs({ maxItems: 2 }));
 
       expect(mockUtils.buildBreadcrumbPath).toHaveBeenCalledWith(
@@ -318,27 +350,27 @@ describe('useBreadcrumbs', () => {
         expect.objectContaining({
           maxItems: 2,
           showEllipsis: true,
-        })
+        }),
       );
     });
 
-    it('should apply hiddenRoutes option', () => {
-      const hiddenRoutes = ['admin', 'settings'];
+    it("should apply hiddenRoutes option", () => {
+      const hiddenRoutes = ["admin", "settings"];
       renderHook(() => useBreadcrumbs({ hiddenRoutes }));
 
       expect(mockUtils.filterVisibleBreadcrumbs).toHaveBeenCalledWith(
         expect.any(Array),
         expect.objectContaining({
           hiddenRoutes,
-        })
+        }),
       );
     });
   });
 
-  describe('error handling', () => {
-    it('should handle parsing errors', () => {
+  describe("error handling", () => {
+    it("should handle parsing errors", () => {
       mockUtils.parsePathname.mockImplementation(() => {
-        throw new Error('Parse error');
+        throw new Error("Parse error");
       });
 
       const { result } = renderHook(() => useBreadcrumbs());
@@ -347,7 +379,7 @@ describe('useBreadcrumbs', () => {
       expect(result.current.breadcrumbs).toEqual([]);
     });
 
-    it('should handle missing tenant gracefully', () => {
+    it("should handle missing tenant gracefully", () => {
       mockUseTenant.mockReturnValue({
         activeTenant: null,
         tenants: [],
@@ -357,7 +389,9 @@ describe('useBreadcrumbs', () => {
         fetchTenantConfiguration: vi.fn(),
       } as unknown as ReturnType<typeof useTenant>);
 
-      const { result } = renderHook(() => useBreadcrumbs({ autoResolve: true }));
+      const { result } = renderHook(() =>
+        useBreadcrumbs({ autoResolve: true }),
+      );
 
       expect(result.current.breadcrumbs).toEqual(mockBreadcrumbs);
       expect(mockResolvers.resolveEntityLabel).not.toHaveBeenCalled();
@@ -365,8 +399,8 @@ describe('useBreadcrumbs', () => {
   });
 });
 
-describe('useSimpleBreadcrumbs', () => {
-  it('should return simplified breadcrumbs', () => {
+describe("useSimpleBreadcrumbs", () => {
+  it("should return simplified breadcrumbs", () => {
     const { result } = renderHook(() => useSimpleBreadcrumbs());
 
     expect(result.current).toEqual(mockBreadcrumbs);
@@ -374,23 +408,27 @@ describe('useSimpleBreadcrumbs', () => {
       expect.any(Array),
       expect.objectContaining({
         maxItems: 3,
-      })
+      }),
     );
   });
 });
 
-describe('useBreadcrumbNavigation', () => {
-  it('should return navigation utilities with simplified breadcrumbs', () => {
+describe("useBreadcrumbNavigation", () => {
+  it("should return navigation utilities with simplified breadcrumbs", () => {
     const { result } = renderHook(() => useBreadcrumbNavigation());
 
     expect(result.current.breadcrumbs).toEqual([
-      { label: 'Home', href: '/', isCurrentPage: false },
-      { label: 'Characters', href: '/characters', isCurrentPage: false },
-      { label: 'Loading...', href: '/characters/char-123', isCurrentPage: true },
+      { label: "Home", href: "/", isCurrentPage: false },
+      { label: "Characters", href: "/characters", isCurrentPage: false },
+      {
+        label: "Loading...",
+        href: "/characters/char-123",
+        isCurrentPage: true,
+      },
     ]);
 
-    expect(typeof result.current.goToParent).toBe('function');
-    expect(typeof result.current.navigateTo).toBe('function');
-    expect(typeof result.current.getParent).toBe('function');
+    expect(typeof result.current.goToParent).toBe("function");
+    expect(typeof result.current.navigateTo).toBe("function");
+    expect(typeof result.current.getParent).toBe("function");
   });
 });

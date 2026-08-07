@@ -1,25 +1,25 @@
 package handler
 
 import (
+	"atlas-channel/battleship"
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/data/skill/effect/statup"
+	"atlas-channel/socket/writer"
 	"context"
-	"math"
+	"time"
+
+	"github.com/sirupsen/logrus"
 
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	atlaspacket "github.com/Chronicle20/atlas/libs/atlas-packet"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
-
-// MountBuffDuration is the duration applied to the MONSTER_RIDING buff. Mounts
-// persist until the player toggles dismount, changes job, or logs out — there
-// is no "never expires" path through atlas-buffs (it rejects duration <= 0), so
-// we use the largest representable positive int32. See context.md §4.
-const MountBuffDuration = int32(math.MaxInt32)
 
 // Tamed-mount equip slots (libs/atlas-constants/inventory/slot).
 const (
@@ -38,17 +38,38 @@ type mountDeps struct {
 	// equipInSlot returns the item id equipped at pos (a negative equip slot),
 	// found=false when the slot is empty.
 	equipInSlot func(characterId uint32, pos int16) (int32, bool, error)
-	// applyBuff applies a buff (MONSTER_RIDING) carrying statups for characterId.
-	applyBuff func(f field.Model, characterId uint32, sourceId int32, level byte, duration int32, statups []statup.Model) error
+	// applyBuff applies the MONSTER_RIDING buff carrying statups for characterId.
+	// Mounts persist until the player toggles dismount, changes job, or logs
+	// out, so this is the no-expiry path — see context.md §4.
+	applyBuff func(f field.Model, characterId uint32, sourceId int32, level byte, statups []statup.Model) error
 	// cancelBuff cancels the buff sourced from sourceId for characterId.
 	cancelBuff func(f field.Model, characterId uint32, sourceId int32) error
+	// resolveVehicleId resolves the battleship vehicle item id from the
+	// tenant's CharacterBuffGive writer options table (DOM-25). ok=false on
+	// any miss — the mount is aborted rather than sent with a guess.
+	resolveVehicleId func() (int32, bool)
+	// characterLevel loads the caster's current character level (ship HP formula input).
+	characterLevel func(characterId uint32) (byte, error)
+	// initShipHP seeds the fresh full ship HP pool (battleship processor).
+	initShipHP func(characterId uint32, skillLevel byte, charLevel byte, ttl time.Duration) error
+	// clearShipHP best-effort clears any ship HP state (mirror + Redis) for
+	// characterId. Used when initShipHP fails: a stale pool from a prior ride
+	// must not be left live for the next Drain to see (see the initShipHP
+	// error branch below).
+	clearShipHP func(characterId uint32)
 }
 
-// isSkillOnlyMount reports whether the skill is a skill-only mount (SpaceShip,
-// Yeti, Broomstick, Balrog) — one whose vehicle id is fixed by the skill rather
-// than read from an equipped taming-mob item.
-func isSkillOnlyMount(id skill2.Id, level byte) bool {
-	_, ok := skill2.SkillOnlyMountVehicleId(id, int(level))
+// isSkillOnlyMountIdentity reports whether id is a skill-only mount
+// (SpaceShip, Yeti, Broomstick, Balrog) — one whose vehicle id is fixed by
+// the skill rather than read from an equipped taming-mob item.
+//
+// Identity-keyed (task-187): the caller resolves the caster's wire skill id
+// to its version-blind Identity before calling in, per the defensive-
+// consistency scope for mount sites (these mount identities are not
+// themselves part of the divergent set, but route through resolution for
+// consistency with the guard that bans raw wire compares outside it).
+func isSkillOnlyMountIdentity(id skill2.Identity, level byte) bool {
+	_, ok := skill2.SkillOnlyMountVehicleIdentity(id, int(level))
 	return ok
 }
 
@@ -80,19 +101,26 @@ func tamedMountStatups(e effect.Model, vehicleId int32) []statup.Model {
 //
 // Cases (design §5.1):
 //  1. Already mounted (active MONSTER_RIDING from this skill) -> Cancel, no Apply.
-//  2. Tamed, slots -18 AND -19 both present, not mounted -> Apply the effect's
+//  2. Battleship (5221006), not mounted -> resolve the tenant-configured
+//     vehicle id (DOM-25); on a resolve miss, abort (no buff, no HP state).
+//     On success, Apply MONSTER_RIDING with the resolved vehicle id and seed a
+//     fresh full ship HP pool.
+//  3. Tamed, slots -18 AND -19 both present, not mounted -> Apply the effect's
 //     statups with MONSTER_RIDING amount = item@-18 (the taming-mob/vehicle id),
 //     sourceId = skillId, duration = MaxInt32.
-//  3. Tamed, slot -18 empty -> silent no-op.
-//  4. Tamed, slot -19 empty -> silent no-op.
-//  5. Skill-only, not mounted -> Apply the effect's full statup set (the vehicle
+//  4. Tamed, slot -18 empty -> silent no-op.
+//  5. Tamed, slot -19 empty -> silent no-op.
+//  6. Skill-only, not mounted -> Apply the effect's full statup set (the vehicle
 //     id atlas-data injected into MONSTER_RIDING plus any stats the skill grants),
 //     no slot lookup.
 //
 // All no-op paths return nil; the caller (character_skill_use.go) unconditionally
 // re-enables actions after UseSkill returns, so HandleMount never needs to.
-func HandleMount(l logrus.FieldLogger, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model, deps mountDeps) error {
-	skillId := skill2.Id(info.SkillId())
+//
+// id is the caster's cast resolved to its version-blind Identity (task-187),
+// computed once by the caller (UseSkill) alongside the routing gate that
+// decides to call HandleMount at all.
+func HandleMount(l logrus.FieldLogger, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model, id skill2.Identity, deps mountDeps) error {
 	sourceId := int32(info.SkillId())
 
 	mounted, err := deps.isMounted(characterId, sourceId)
@@ -110,26 +138,66 @@ func HandleMount(l logrus.FieldLogger, f field.Model, characterId uint32, info p
 		return nil
 	}
 
-	// Case 5: skill-only mount -> apply the effect's full statup set. atlas-data
+	// Battleship (5221006): the vehicle id is a client wire value resolved
+	// from tenant configuration (DOM-25) and injected as the MONSTER_RIDING
+	// amount (atlas-data emits a skill-id placeholder by design). A fresh
+	// full ship HP pool is seeded on every mount (FR-2.2); no cooldown is
+	// applied here — break is the only cooldown trigger (FR-2.3).
+	if skill2.IsBattleshipMountSkillIdentity(id) {
+		vehicleId, ok := deps.resolveVehicleId()
+		if !ok {
+			l.Errorf("Character [%d] battleship mount aborted: vehicle id unresolved from tenant config.", characterId)
+			return nil
+		}
+		charLevel, err := deps.characterLevel(characterId)
+		if err != nil {
+			l.WithError(err).Errorf("Character [%d] battleship mount aborted: unable to load character level.", characterId)
+			return err
+		}
+		if err := deps.applyBuff(f, characterId, sourceId, info.SkillLevel(), tamedMountStatups(e, vehicleId)); err != nil {
+			return err
+		}
+		if err := deps.initShipHP(characterId, info.SkillLevel(), charLevel, time.Duration(e.Duration())*time.Millisecond); err != nil {
+			// Non-fatal (Redis trouble must never block a mount).
+			// But a failed seed must not leave a PRIOR ride's pool
+			// live: dismount clears state asynchronously via the
+			// BUFF_EXPIRED hook, so a fast remount can still find
+			// the old key. Best-effort clear so the next drain
+			// takes the lazy full re-init path instead of
+			// decrementing a stale pool.
+			//
+			// Assumption: this clear targets the PRIOR ride, because the
+			// new ride's own mirror entry is only set later, asynchronously,
+			// by the buff consumer's APPLIED hook (applyBuff above emits the
+			// buff event; StartRide runs after a Kafka produce/consume round
+			// trip). A same-process synchronous clear beating that round
+			// trip is considered implausible and is not guarded against.
+			l.WithError(err).Warnf("Character [%d] battleship ship HP init failed; clearing any stale pool.", characterId)
+			deps.clearShipHP(characterId)
+		}
+		return nil
+	}
+
+	// Case 6: skill-only mount -> apply the effect's full statup set. atlas-data
 	// already injected the vehicle id into the MONSTER_RIDING statup, so the
 	// effect carries the vehicle plus any stats the skill grants (e.g. the Yeti
 	// Rider's +10 weapon/magic defense). No equip-slot lookup.
-	if isSkillOnlyMount(skillId, info.SkillLevel()) {
+	if isSkillOnlyMountIdentity(id, info.SkillLevel()) {
 		if len(monsterRidingStatups(e)) == 0 {
 			l.Warnf("Character [%d] cast skill-only mount [%d] but effect carries no MONSTER_RIDING statup; no-op.", characterId, info.SkillId())
 			return nil
 		}
-		return deps.applyBuff(f, characterId, sourceId, info.SkillLevel(), MountBuffDuration, e.StatUps())
+		return deps.applyBuff(f, characterId, sourceId, info.SkillLevel(), e.StatUps())
 	}
 
-	// Cases 2-4: tamed mount. Require BOTH the taming-mob (-18) and saddle (-19).
+	// Cases 3-5: tamed mount. Require BOTH the taming-mob (-18) and saddle (-19).
 	tamingMobId, hasTamingMob, err := deps.equipInSlot(characterId, tamingMobSlot)
 	if err != nil {
 		l.WithError(err).Debugf("Character [%d] mount toggle: failed to read taming-mob slot for skill [%d]; treating as empty.", characterId, info.SkillId())
 		hasTamingMob = false
 	}
 	if !hasTamingMob {
-		// Case 3: no taming mob equipped -> silent no-op.
+		// Case 4: no taming mob equipped -> silent no-op.
 		return nil
 	}
 
@@ -139,14 +207,14 @@ func HandleMount(l logrus.FieldLogger, f field.Model, characterId uint32, info p
 		hasSaddle = false
 	}
 	if !hasSaddle {
-		// Case 4: no saddle equipped -> silent no-op.
+		// Case 5: no saddle equipped -> silent no-op.
 		return nil
 	}
 
-	// Case 2: both slots present -> mount. The vehicle id is the taming-mob item
+	// Case 3: both slots present -> mount. The vehicle id is the taming-mob item
 	// id (overriding atlas-data's skill-id placeholder); other granted stats are
 	// preserved.
-	return deps.applyBuff(f, characterId, sourceId, info.SkillLevel(), MountBuffDuration, tamedMountStatups(e, tamingMobId))
+	return deps.applyBuff(f, characterId, sourceId, info.SkillLevel(), tamedMountStatups(e, tamingMobId))
 }
 
 // monsterRidingStatups filters the effect's statups down to MONSTER_RIDING.
@@ -188,11 +256,34 @@ func newMountDeps(l logrus.FieldLogger, ctx context.Context) mountDeps {
 			}
 			return int32(a.TemplateId()), true, nil
 		},
-		applyBuff: func(f field.Model, characterId uint32, sourceId int32, level byte, duration int32, statups []statup.Model) error {
-			return bp.Apply(f, characterId, sourceId, level, duration, statups)(characterId)
+		applyBuff: func(f field.Model, characterId uint32, sourceId int32, level byte, statups []statup.Model) error {
+			return bp.ApplyNoExpiry(f, characterId, sourceId, level, statups)(characterId)
 		},
 		cancelBuff: func(f field.Model, characterId uint32, sourceId int32) error {
 			return bp.Cancel(f, characterId, sourceId)
+		},
+		resolveVehicleId: func() (int32, bool) {
+			t := tenant.MustFromContext(ctx)
+			opts, ok := writer.TenantWriterOptions(t.Id(), charpkt.CharacterBuffGiveWriter)
+			if !ok {
+				l.Errorf("Writer options for [%s] missing; cannot resolve battleship vehicle id.", charpkt.CharacterBuffGiveWriter)
+				return 0, false
+			}
+			v, ok := atlaspacket.ResolveValue(l, opts, "vehicles", "CORSAIR_BATTLESHIP")
+			return int32(v), ok
+		},
+		characterLevel: func(characterId uint32) (byte, error) {
+			c, err := cp.GetById()(characterId)
+			if err != nil {
+				return 0, err
+			}
+			return c.Level(), nil
+		},
+		initShipHP: func(characterId uint32, skillLevel byte, charLevel byte, ttl time.Duration) error {
+			return battleship.NewProcessor(l, ctx).InitShipHP(characterId, skillLevel, charLevel, ttl)
+		},
+		clearShipHP: func(characterId uint32) {
+			battleship.NewProcessor(l, ctx).Clear(characterId)
 		},
 	}
 }

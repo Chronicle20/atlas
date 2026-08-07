@@ -7,18 +7,18 @@ import (
 )
 
 type Model struct {
-	tenantId  uuid.UUID
-	id        uint32
-	name      string
-	password  string
-	pin       string
+	tenantId    uuid.UUID
+	id          uint32
+	name        string
+	password    string
+	pin         string
 	pic         string
 	pinAttempts int
 	picAttempts int
 	state       State
-	gender byte
-	tos    bool
-	updatedAt time.Time
+	gender      byte
+	tos         bool
+	updatedAt   time.Time
 }
 
 func (a Model) Id() uint32 {

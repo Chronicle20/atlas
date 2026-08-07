@@ -6,14 +6,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // TestRequestCreateAndEquipAssetKafkaMessageEmission validates the actual Kafka message emission
@@ -36,11 +37,11 @@ func TestRequestCreateAndEquipAssetKafkaMessageEmission(t *testing.T) {
 	t.Run("validates message structure for create command", func(t *testing.T) {
 		// Since RequestCreateAndEquipAsset delegates to RequestCreateItem,
 		// we need to validate the underlying Kafka message structure
-		
+
 		// Get the inventory type for the template ID
 		inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 		require.True(t, ok, "Template ID should map to valid inventory type")
-		
+
 		// Create the message provider directly (same as RequestCreateItem does)
 		provider := RequestCreateAssetCommandProvider(
 			transactionId,
@@ -54,36 +55,36 @@ func TestRequestCreateAndEquipAssetKafkaMessageEmission(t *testing.T) {
 
 		// Verify provider is created
 		require.NotNil(t, provider, "Provider should be created")
-		
+
 		// Get the messages
 		messages, err := provider()
 		require.NoError(t, err, "Provider should generate messages without error")
 		require.Len(t, messages, 1, "Should generate exactly one message")
-		
+
 		message := messages[0]
-		
+
 		// Validate message key
 		expectedKey := producer.CreateKey(int(characterId))
 		assert.Equal(t, expectedKey, message.Key, "Message key should be based on character ID")
-		
+
 		// Validate message value is not nil
 		require.NotNil(t, message.Value, "Message value should not be nil")
-		
+
 		// Deserialize and validate command structure
 		var command compartment.Command[compartment.CreateAssetCommandBody]
 		err = json.Unmarshal(message.Value, &command)
 		require.NoError(t, err, "Message should deserialize to Command[CreateAssetCommandBody]")
-		
+
 		// Validate command fields
 		assert.Equal(t, transactionId, command.TransactionId, "Transaction ID should match")
 		assert.Equal(t, characterId, command.CharacterId, "Character ID should match")
 		assert.Equal(t, byte(inventoryType), command.InventoryType, "Inventory type should match")
 		assert.Equal(t, compartment.CommandCreateAsset, command.Type, "Command type should be CREATE_ASSET")
-		
+
 		// Validate command body
 		assert.Equal(t, templateId, command.Body.TemplateId, "Template ID should match")
 		assert.Equal(t, quantity, command.Body.Quantity, "Quantity should match")
-		
+
 		// Validate default values in command body
 		assert.Equal(t, time.Time{}, command.Body.Expiration, "Expiration should be zero time")
 		assert.Equal(t, uint32(0), command.Body.OwnerId, "Owner ID should be zero")
@@ -107,20 +108,20 @@ func TestRequestCreateAndEquipAssetKafkaMessageEmission(t *testing.T) {
 		// Generate messages multiple times to ensure consistency
 		messages1, err1 := provider()
 		require.NoError(t, err1)
-		
+
 		messages2, err2 := provider()
 		require.NoError(t, err2)
-		
+
 		// Messages should be identical
 		assert.Equal(t, messages1, messages2, "Multiple calls should produce identical messages")
-		
+
 		// Verify both messages serialize to the same JSON
 		json1, err1 := json.Marshal(messages1[0])
 		require.NoError(t, err1)
-		
+
 		json2, err2 := json.Marshal(messages2[0])
 		require.NoError(t, err2)
-		
+
 		assert.JSONEq(t, string(json1), string(json2), "Messages should serialize to identical JSON")
 	})
 
@@ -143,19 +144,19 @@ func TestRequestCreateAndEquipAssetKafkaMessageEmission(t *testing.T) {
 		// Verify the message is compatible with Kafka transport
 		kafkaMessage := messages[0]
 		assert.IsType(t, kafka.Message{}, kafkaMessage, "Should be a valid Kafka message")
-		
+
 		// Verify headers (if any)
 		// Note: Headers are typically added by the producer infrastructure,
 		// so we don't expect them in the raw message
-		
+
 		// Verify the message can be round-tripped through JSON
 		originalJSON, err := json.Marshal(kafkaMessage)
 		require.NoError(t, err)
-		
+
 		var roundTrippedMessage kafka.Message
 		err = json.Unmarshal(originalJSON, &roundTrippedMessage)
 		require.NoError(t, err)
-		
+
 		assert.Equal(t, kafkaMessage.Key, roundTrippedMessage.Key, "Key should survive round-trip")
 		assert.Equal(t, kafkaMessage.Value, roundTrippedMessage.Value, "Value should survive round-trip")
 	})
@@ -186,10 +187,10 @@ func TestRequestCreateAndEquipAssetKafkaMessageEmission(t *testing.T) {
 
 				// Test inventory type mapping
 				inventoryType, ok := inventory.TypeFromItemId(item.Id(tc.templateId))
-				
+
 				if tc.shouldPass {
 					require.True(t, ok, "Template ID %d should map to valid inventory type", tc.templateId)
-					
+
 					// Create and validate message
 					provider := RequestCreateAssetCommandProvider(
 						transactionId,
@@ -200,18 +201,18 @@ func TestRequestCreateAndEquipAssetKafkaMessageEmission(t *testing.T) {
 						time.Time{},
 						false,
 					)
-					
+
 					messages, err := provider()
 					require.NoError(t, err, "Should generate messages for valid template ID")
 					require.Len(t, messages, 1, "Should generate exactly one message")
-					
+
 					var command compartment.Command[compartment.CreateAssetCommandBody]
 					err = json.Unmarshal(messages[0].Value, &command)
 					require.NoError(t, err, "Message should deserialize correctly")
-					
+
 					assert.Equal(t, tc.templateId, command.Body.TemplateId, "Template ID should match")
 					assert.Equal(t, tc.quantity, command.Body.Quantity, "Quantity should match")
-					
+
 				} else {
 					require.False(t, ok, "Template ID %d should not map to valid inventory type", tc.templateId)
 				}
@@ -236,19 +237,19 @@ func TestRequestCreateAndEquipAssetKafkaMessageEmission(t *testing.T) {
 		startTime := time.Now()
 		messages, err := provider()
 		endTime := time.Now()
-		
+
 		require.NoError(t, err, "Message generation should complete quickly")
 		require.Len(t, messages, 1, "Should generate exactly one message")
-		
+
 		// Verify message generation was fast
 		duration := endTime.Sub(startTime)
 		assert.Less(t, duration, time.Millisecond*100, "Message generation should be fast")
-		
+
 		// Verify transaction context is preserved
 		var command compartment.Command[compartment.CreateAssetCommandBody]
 		err = json.Unmarshal(messages[0].Value, &command)
 		require.NoError(t, err)
-		
+
 		assert.Equal(t, transactionId, command.TransactionId, "Transaction ID context should be preserved")
 	})
 }
@@ -284,18 +285,18 @@ func TestRequestCreateAndEquipAssetMessageHandling(t *testing.T) {
 		var command compartment.Command[compartment.CreateAssetCommandBody]
 		err = json.Unmarshal(message.Value, &command)
 		require.NoError(t, err, "Message should match compartment service Command structure")
-		
+
 		// Verify all required fields are present and correctly typed
 		assert.NotEqual(t, uuid.Nil, command.TransactionId, "Transaction ID should not be nil")
 		assert.Greater(t, command.CharacterId, uint32(0), "Character ID should be positive")
 		assert.Equal(t, compartment.CommandCreateAsset, command.Type, "Command type should be CREATE_ASSET")
 		assert.Greater(t, command.Body.TemplateId, uint32(0), "Template ID should be positive")
 		assert.Greater(t, command.Body.Quantity, uint32(0), "Quantity should be positive")
-		
+
 		// Verify the message is valid JSON
 		jsonBytes, err := json.Marshal(command)
 		require.NoError(t, err, "Command should be serializable to JSON")
-		
+
 		var validation interface{}
 		err = json.Unmarshal(jsonBytes, &validation)
 		require.NoError(t, err, "Command JSON should be valid")
@@ -304,7 +305,7 @@ func TestRequestCreateAndEquipAssetMessageHandling(t *testing.T) {
 	t.Run("validates message topic routing", func(t *testing.T) {
 		// Verify that the message would be sent to the correct topic
 		// This is tested by ensuring the provider is created with the correct topic
-		assert.Equal(t, "COMMAND_TOPIC_COMPARTMENT", compartment.EnvCommandTopic, 
+		assert.Equal(t, "COMMAND_TOPIC_COMPARTMENT", compartment.EnvCommandTopic,
 			"Command topic should match compartment service expectation")
 	})
 
@@ -312,28 +313,28 @@ func TestRequestCreateAndEquipAssetMessageHandling(t *testing.T) {
 		// Test that different characters get different partition keys
 		char1 := uint32(12345)
 		char2 := uint32(67890)
-		
+
 		inventoryType, _ := inventory.TypeFromItemId(item.Id(templateId))
-		
+
 		provider1 := RequestCreateAssetCommandProvider(transactionId, char1, inventoryType, templateId, quantity, time.Time{}, false)
 		provider2 := RequestCreateAssetCommandProvider(transactionId, char2, inventoryType, templateId, quantity, time.Time{}, false)
-		
+
 		messages1, err1 := provider1()
 		require.NoError(t, err1)
-		
+
 		messages2, err2 := provider2()
 		require.NoError(t, err2)
-		
+
 		// Different characters should have different partition keys
-		assert.NotEqual(t, messages1[0].Key, messages2[0].Key, 
+		assert.NotEqual(t, messages1[0].Key, messages2[0].Key,
 			"Different characters should have different partition keys")
-		
+
 		// Same character should have same partition key
 		provider3 := RequestCreateAssetCommandProvider(uuid.New(), char1, inventoryType, templateId, quantity, time.Time{}, false)
 		messages3, err3 := provider3()
 		require.NoError(t, err3)
-		
-		assert.Equal(t, messages1[0].Key, messages3[0].Key, 
+
+		assert.Equal(t, messages1[0].Key, messages3[0].Key,
 			"Same character should have same partition key")
 	})
 
@@ -341,7 +342,7 @@ func TestRequestCreateAndEquipAssetMessageHandling(t *testing.T) {
 		// Test with nil transaction ID should still work (UUID zero value)
 		nilTransactionId := uuid.Nil
 		inventoryType, _ := inventory.TypeFromItemId(item.Id(templateId))
-		
+
 		provider := RequestCreateAssetCommandProvider(
 			nilTransactionId,
 			characterId,
@@ -351,15 +352,15 @@ func TestRequestCreateAndEquipAssetMessageHandling(t *testing.T) {
 			time.Time{},
 			false,
 		)
-		
+
 		messages, err := provider()
 		require.NoError(t, err, "Provider should handle nil transaction ID gracefully")
 		require.Len(t, messages, 1)
-		
+
 		var command compartment.Command[compartment.CreateAssetCommandBody]
 		err = json.Unmarshal(messages[0].Value, &command)
 		require.NoError(t, err)
-		
+
 		assert.Equal(t, nilTransactionId, command.TransactionId, "Nil transaction ID should be preserved")
 	})
 }
@@ -370,7 +371,7 @@ func TestRequestCreateAndEquipAssetErrorProvider(t *testing.T) {
 		// Test that error providers work correctly
 		testError := assert.AnError
 		errorProvider := model.ErrorProvider[[]kafka.Message](testError)
-		
+
 		result, err := errorProvider()
 		assert.Error(t, err, "Error provider should return error")
 		assert.Equal(t, testError, err, "Error should match provided error")
@@ -382,10 +383,10 @@ func TestRequestCreateAndEquipAssetErrorProvider(t *testing.T) {
 		testMessages := []kafka.Message{
 			{Key: []byte("test-key"), Value: []byte("test-value")},
 		}
-		
+
 		fixedProvider := model.FixedProvider(testMessages)
 		result, err := fixedProvider()
-		
+
 		assert.NoError(t, err, "Fixed provider should not return error")
 		assert.Equal(t, testMessages, result, "Result should match provided messages")
 	})

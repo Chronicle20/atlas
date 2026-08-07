@@ -1,0 +1,48 @@
+package skillavailability
+
+import (
+	"context"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+)
+
+type Processor interface {
+	// GetAvailable returns every skill identity released/playable at the
+	// requesting tenant's (region, major, minor), sorted ascending by that
+	// version's wire id (constants/skill.Set.AvailableIdentities' ordering).
+	GetAvailable() []RestModel
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{l: l, ctx: ctx}
+}
+
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) GetAvailable() []RestModel {
+	t := tenant.MustFromContext(p.ctx)
+	set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+
+	identities := set.Skill.AvailableIdentities()
+	ms := make([]RestModel, 0, len(identities))
+	for _, id := range identities {
+		wire, ok := set.Skill.Wire(id)
+		if !ok {
+			// Invariant: AvailableIdentities is a subset of this version's
+			// semantics (Set.Resolve/Wire), so every available identity has
+			// a wire binding. Skip defensively rather than emit a bogus id.
+			p.l.Errorf("Available skill identity [%d] has no wire binding for this tenant version; skipping.", id)
+			continue
+		}
+		ms = append(ms, RestModel{Id: uint32(wire), Name: set.Skill.Name(id)})
+	}
+	return ms
+}

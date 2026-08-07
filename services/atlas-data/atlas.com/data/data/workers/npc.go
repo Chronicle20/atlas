@@ -1,17 +1,18 @@
 package workers
 
 import (
+	"atlas-data/npc"
 	"context"
 	"fmt"
 	"path/filepath"
 
-	"github.com/Chronicle20/atlas/libs/atlas-wz/icons"
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
+	"github.com/Chronicle20/atlas/libs/atlas-wz/icons"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
+
 	minio "atlas-data/storage/minio"
-	"atlas-data/npc"
 )
 
 type Npc struct{}
@@ -36,7 +37,7 @@ func (Npc) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio
 		}
 		// Note: leave NPC string registry populated; Map worker may need it.
 	}
-	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Npc.wz"), npc.RegisterNpc(db)); err != nil {
+	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Npc.wz"), npc.NewProcessor(l, ctx, db).RegisterNpc); err != nil {
 		return err
 	}
 	prefix := minioAssetPrefix(p)

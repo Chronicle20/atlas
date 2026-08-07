@@ -4,13 +4,15 @@
 
 ### GET /api/shops
 
-Retrieves all shops for the current tenant.
+Retrieves all shops for the current tenant. Paginated.
 
 **Parameters**
 
-| Name    | In    | Type   | Description                              |
-|---------|-------|--------|------------------------------------------|
-| include | query | string | Optional. "commodities" to include items |
+| Name         | In    | Type   | Description                                |
+|--------------|-------|--------|---------------------------------------------|
+| include      | query | string | Optional. "commodities" to include items    |
+| page[number] | query | int    | Optional. Page number, 1-based (default 1)  |
+| page[size]   | query | int    | Optional. Page size (default 50, max 250)   |
 
 **Request Headers**
 
@@ -23,7 +25,7 @@ Retrieves all shops for the current tenant.
 
 **Response Model**
 
-JSON:API response with array of shop resources.
+Paginated JSON:API response with array of shop resources.
 
 | Field      | Type   | Description                    |
 |------------|--------|--------------------------------|
@@ -46,9 +48,10 @@ JSON:API response with array of shop resources.
 
 **Error Conditions**
 
-| Status | Description            |
-|--------|------------------------|
-| 500    | Internal server error  |
+| Status | Description                        |
+|--------|-------------------------------------|
+| 400    | Invalid page[number] or page[size]  |
+| 500    | Internal server error               |
 
 ---
 
@@ -224,13 +227,15 @@ JSON:API response with updated shop resource.
 
 ### GET /api/npcs/{npcId}/shop/characters
 
-Retrieves characters currently in a shop.
+Retrieves characters currently in a shop. Registry-backed (in-memory, not a database query). Paginated.
 
 **Parameters**
 
-| Name  | In   | Type   | Description             |
-|-------|------|--------|-------------------------|
-| npcId | path | uint32 | NPC template identifier |
+| Name         | In    | Type   | Description                                 |
+|--------------|-------|--------|-----------------------------------------------|
+| npcId        | path  | uint32 | NPC template identifier                       |
+| page[number] | query | int    | Optional. Page number, 1-based (default 1)    |
+| page[size]   | query | int    | Optional. Page size (default 250, max 250)    |
 
 **Request Headers**
 
@@ -243,7 +248,7 @@ Retrieves characters currently in a shop.
 
 **Response Model**
 
-JSON:API response with array of character identifiers.
+Paginated JSON:API response with array of character identifiers, stable-sorted ascending by character ID.
 
 | Field | Type   | Description           |
 |-------|--------|-----------------------|
@@ -252,9 +257,10 @@ JSON:API response with array of character identifiers.
 
 **Error Conditions**
 
-| Status | Description            |
-|--------|------------------------|
-| 500    | Internal server error  |
+| Status | Description                        |
+|--------|-------------------------------------|
+| 400    | Invalid page[number] or page[size]  |
+| 500    | Internal server error               |
 
 ---
 
@@ -400,7 +406,33 @@ Deletes all commodities for an NPC's shop.
 
 ### POST /api/shops/seed
 
-Seeds the database with shop data from JSON files on disk. Deletes all existing shops and commodities for the tenant before seeding.
+Triggers an asynchronous seed of shop and commodity data from JSON files on disk (catalog root: SEED_CATALOG_ROOT, default `./deploy/seed`, under `npc-shops/shops`). The request returns immediately; the seed itself runs in the background. Deletes all existing commodities then all existing shops for the tenant before bulk-creating from file data.
+
+**Request Headers**
+
+| Name          | Type   | Required | Description           |
+|---------------|--------|----------|-----------------------|
+| TENANT_ID     | string | Yes      | Tenant identifier     |
+| REGION        | string | Yes      | Region code           |
+| MAJOR_VERSION | string | Yes      | Major version number  |
+| MINOR_VERSION | string | Yes      | Minor version number  |
+
+**Response Model**
+
+No response body.
+
+**Error Conditions**
+
+| Status | Description                          |
+|--------|----------------------------------------|
+| 202    | Accepted; seed started in the background |
+| 400    | Missing/invalid tenant headers          |
+
+---
+
+### GET /api/shops/seed/status
+
+Retrieves the status of the most recent seed operation for the tenant, along with current row counts.
 
 **Request Headers**
 
@@ -415,18 +447,79 @@ Seeds the database with shop data from JSON files on disk. Deletes all existing 
 
 JSON response (not JSON:API).
 
-| Field              | Type     | Description                      |
-|--------------------|----------|----------------------------------|
-| deletedShops       | int      | Number of shops deleted          |
-| deletedCommodities | int      | Number of commodities deleted    |
-| createdShops       | int      | Number of shops created          |
-| createdCommodities | int      | Number of commodities created    |
-| failedCount        | int      | Number of failed operations      |
-| errors             | []string | Error messages (omitted if none) |
+| Field                | Type                        | Description                                                        |
+|----------------------|------------------------------|---------------------------------------------------------------------|
+| groupName            | string                       | Seed group name ("npc-shops")                                       |
+| subdomains           | map[string]SubdomainStatus   | Per-subdomain status, keyed by "npc-shops" and "commodities"        |
+| updatedAt            | timestamp \| null            | Most recent subdomain update timestamp                              |
+| catalogRevision      | string                       | Revision identifier of the on-disk seed catalog                     |
+| tenantSeededRevision | string \| null               | Catalog revision the tenant was last seeded with                    |
+| tenantSeededAt       | timestamp \| null            | Timestamp of the tenant's last completed seed                       |
+
+**SubdomainStatus**
+
+| Field     | Type               | Description                          |
+|-----------|--------------------|----------------------------------------|
+| count     | int64              | Current row count for the subdomain    |
+| updatedAt | timestamp \| null  | Most recent row update timestamp       |
 
 **Error Conditions**
 
-| Status | Description            |
-|--------|------------------------|
-| 200    | Success                |
-| 500    | Internal server error  |
+| Status | Description                     |
+|--------|-----------------------------------|
+| 200    | Success                           |
+| 400    | Missing/invalid tenant headers    |
+| 500    | Internal server error             |
+
+---
+
+### GET /api/commodities/items/{itemId}
+
+Retrieves all commodities across shops that reference the given item template ID. Paginated.
+
+**Parameters**
+
+| Name         | In    | Type   | Description                                 |
+|--------------|-------|--------|-----------------------------------------------|
+| itemId       | path  | uint32 | Item template identifier                      |
+| page[number] | query | int    | Optional. Page number, 1-based (default 1)    |
+| page[size]   | query | int    | Optional. Page size (default 250, max 250)    |
+
+**Request Headers**
+
+| Name          | Type   | Required | Description           |
+|---------------|--------|----------|-----------------------|
+| TENANT_ID     | string | Yes      | Tenant identifier     |
+| REGION        | string | Yes      | Region code           |
+| MAJOR_VERSION | string | Yes      | Major version number  |
+| MINOR_VERSION | string | Yes      | Minor version number  |
+
+**Response Model**
+
+Paginated JSON:API response with array of commodity resources.
+
+| Field      | Type   | Description        |
+|------------|--------|---------------------|
+| type       | string | "commodities"       |
+| id         | string | Commodity identifier |
+| attributes | object | Commodity attributes |
+
+**Attributes**
+
+| Field           | Type   | Description                              |
+|-----------------|--------|-------------------------------------------|
+| npcId           | uint32 | NPC template identifier                   |
+| templateId      | uint32 | Item template identifier                  |
+| mesoPrice       | uint32 | Price in mesos                            |
+| discountRate    | byte   | Discount percentage                       |
+| tokenTemplateId | uint32 | Alternative currency item identifier      |
+| tokenPrice      | uint32 | Price in alternative currency             |
+| period          | uint32 | Time limit on purchase in minutes         |
+| levelLimit      | uint32 | Minimum level required                    |
+
+**Error Conditions**
+
+| Status | Description                        |
+|--------|-------------------------------------|
+| 400    | Invalid itemId, page[number], or page[size] |
+| 500    | Internal server error               |

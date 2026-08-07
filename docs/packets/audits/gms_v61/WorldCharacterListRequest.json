@@ -1,0 +1,30 @@
+{
+  "WriterName": "WorldCharacterListRequest",
+  "IDAName": "CLogin::SendLoginPacket",
+  "Address": "0x564dc9",
+  "Variant": "GMS/v61",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/login/serverbound/world_character_list_request.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "worldId @0x564efc (*(BYTE*)v9)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "channelId @0x564f07 (a3)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

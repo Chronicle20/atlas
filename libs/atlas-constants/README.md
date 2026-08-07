@@ -21,17 +21,20 @@ a service-local copy.
 |---|---|---|
 | [`asset`](./asset) | `Id`, `Quantity` (item-instance ids); `Flag` bitset + `HasFlag` / `SetFlag` / `ClearFlag` | Anything dealing with concrete item instances on a character. |
 | [`channel`](./channel) | `Id` (`byte`), `StatusType` | Channel identifiers in routing or socket code. **Don't redeclare as `string` or `uint8`.** |
+| [`constants`](./constants) | `For(region, major, minor) SkillJobSet` | The tenant-keyed entry point for version-aware skill/job identity resolution — bundles a tenant version's `skill.Set` + `job.Set` (see `skill`/`job` below). Falls back to the canonical GMS 83.1 baseline for an unprovisioned version. |
 | [`character`](./character) | `Id` (`uint32`), temporary stat constants | Character ID parameters; do not invent `int` / `string` aliases. |
 | [`field`](./field) | `Id` (`string`) | Field/instance string identifiers (distinct from `map.Id`). |
 | [`inventory`](./inventory) | `Type` (Equip/Use/Setup/ETC/Cash, with `.Token()`), `TypeFromItemId` | Anywhere you derive a "compartment" from an item id. **This is the canonical compartment enum — services should not reinvent it.** |
 | [`inventory/slot`](./inventory/slot) | `Position`, `Type`, `Slot`, `GetSlotByType`, `GetSlotByPosition` | Equip-slot logic (cap, top, weapon, ring1…). |
 | [`invite`](./invite) | `Id`, `Type`, `CommandType`, `StatusType` | Party / guild / family invite flows. |
 | [`item`](./item) | `Id`, `Classification`, `WeaponType`, `GetClassification`, `GetWeaponType`, `Is*` predicates, named `Classification*` constants for hat/face/eye/earring/top/overall/bottom/shoes/gloves/shield/cape/ring/pendant/belt/medal/tamed-mob/saddle, all use+setup+etc+cash singletons | Anything that maps item id → category. **Use `item.GetClassification(id)` instead of `id / 10000`. Use the named `Classification*` constants instead of bare numeric literals.** |
-| [`job`](./job) | `Id`, `Type` | Job / class IDs and type-codes (Beginner / Warrior / Magician / …). |
+| [`merchant`](./merchant) | `ShopType` (character/hired-merchant), `ShopState` (Draft/Open/Maintenance/Closed) | Anything interpreting merchant-shop rows off the REST/Kafka wire. **Do not hand-mirror these bytes in services.** |
+| [`job`](./job) | `Id`, `Type`, `Identity`, `Set`, `Resolve`/`Wire`/`Available` | Job / class IDs and type-codes (Beginner / Warrior / Magician / …). `Id` is the single-version-blind convention (v83-era numbering); `Identity` is the version-independent stable name, resolved to a tenant version's actual wire `Id` via `constants.For(...).Job` — use `Identity` + `constants.For` for any version-sensitive job logic (job IDs were reassigned across client versions, e.g. GM/SuperGM vs. Pirate at `500`/`510`; see docs/tasks/task-187-version-aware-id-semantics). |
 | [`map`](./map) | `Id` (`uint32`), field-limit constants | Map IDs in routing, drop tables, spawn rules. |
+| [`miniroom`](./miniroom) | Mini-room (`CMiniRoom`) type bytes: `Omok`=1, `MatchCards`=2, `Trade`=3, `PersonalShop`=4, `MerchantShop`=5, `CashTrade`=6 | The room-type discriminator on mini-room create/enter/balloon packets and mini-game room/record events. **Don't redeclare 1/2 as local omok/match-card consts.** |
 | [`monster`](./monster) | `Id`, monster status / skill constants | Monster IDs and per-monster status flags. |
 | [`point`](./point) | `X`, `Y` (`int16`) | Map coordinates — keep them typed, don't pass raw ints. |
-| [`skill`](./skill) | `Id`, summon-movement constants | Player and mob skill IDs. |
+| [`skill`](./skill) | `Id`, `Identity`, `Set`, `Resolve`/`Wire`/`Available`, summon-movement constants | Player and mob skill IDs. `Id` is the single-version-blind convention (v83-era numbering); `Identity` is the version-independent stable name, resolved to a tenant version's actual wire `Id` via `constants.For(...).Skill` — use `Identity` + `constants.For` for any version-sensitive skill logic (skill IDs were reassigned across client versions, e.g. `5101004` = Super GM Hide pre-v62 but Brawler Corkscrew Blow from v62 onward; see docs/tasks/task-187-version-aware-id-semantics). |
 | [`stat`](./stat) | `Type` | Character stat keys. |
 | [`world`](./world) | `Id` (`byte`) | World identifiers. **`world.Id` is `byte`, not `string` or `uint32`.** |
 

@@ -1,0 +1,10 @@
+packet: guild/clientbound/GuildInviteErrorNotAcceptingInvites
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnGuildResult
+    address: "0x98099f"
+    decompile_sha256: 48181f34c4aeac02a467fe3bab4523d9a37333ed83f0e5c3427da35ac0d7e747
+verifies:
+  - libs/atlas-packet/guild/clientbound/v79_test.go#TestGuildTargetBearingArmsV79

@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const CharacterSkillCancelForeignWriter = "CharacterSkillCancelForeign"
@@ -31,8 +32,8 @@ func NewSkillCancelForeign(characterId uint32, skillId uint32) SkillCancelForeig
 }
 
 func (m SkillCancelForeign) CharacterId() uint32 { return m.characterId }
-func (m SkillCancelForeign) SkillId() uint32    { return m.skillId }
-func (m SkillCancelForeign) Operation() string  { return CharacterSkillCancelForeignWriter }
+func (m SkillCancelForeign) SkillId() uint32     { return m.skillId }
+func (m SkillCancelForeign) Operation() string   { return CharacterSkillCancelForeignWriter }
 
 func (m SkillCancelForeign) String() string {
 	return fmt.Sprintf("foreign skill cancel characterId [%d] skillId [%d]", m.characterId, m.skillId)

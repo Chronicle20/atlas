@@ -1,5 +1,4 @@
-
-import { type ColumnDef } from "@tanstack/react-table";
+import { type DataTableColumnDef } from "@/components/data-table-features";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,14 +20,19 @@ interface ColumnProps {
   onDelete?: (service: Service) => void;
 }
 
-export const getColumns = ({ onDelete }: ColumnProps): ColumnDef<Service>[] => [
+export const getColumns = ({
+  onDelete,
+}: ColumnProps): DataTableColumnDef<Service>[] => [
   {
     accessorKey: "id",
     header: "Service ID",
     cell: ({ row }) => {
       const id = row.getValue("id") as string;
       return (
-        <Link to={`/services/${id}`} className="font-mono text-xs text-primary hover:underline">
+        <Link
+          to={`/services/${id}`}
+          className="font-mono text-xs text-primary hover:underline"
+        >
           {id}
         </Link>
       );

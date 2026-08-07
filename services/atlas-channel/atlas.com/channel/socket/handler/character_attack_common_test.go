@@ -2,13 +2,19 @@ package handler
 
 import (
 	"atlas-channel/monster"
+	"errors"
+	"io"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
+	skill3 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
 )
 
 // TestComputeReflect_InsideRange_ReturnsClampedReflectedDamage exercises the
@@ -158,15 +164,15 @@ func TestReflectFlow_PhysicalInsideRange_EmitsReflect(t *testing.T) {
 
 	uniqueId := uint32(700001)
 	mirror.OnApplied(tm, uniqueId, monster.StatusEffectAppliedBody{
-		EffectId:       uuid.NewString(),
-		Statuses:       map[string]int32{"WEAPON_REFLECT": 1},
-		Duration:       60000,
-		ReflectKind:    monster2.ReflectKindPhysical,
-		ReflectPercent: 30,
-		ReflectLtX:     -100,
-		ReflectLtY:     -100,
-		ReflectRbX:     100,
-		ReflectRbY:     100,
+		EffectId:         uuid.NewString(),
+		Statuses:         map[string]int32{"WEAPON_REFLECT": 1},
+		Duration:         60000,
+		ReflectKind:      monster2.ReflectKindPhysical,
+		ReflectPercent:   30,
+		ReflectLtX:       -100,
+		ReflectLtY:       -100,
+		ReflectRbX:       100,
+		ReflectRbY:       100,
 		ReflectMaxDamage: 9999,
 	}, time.Now())
 	t.Cleanup(func() { mirror.OnMonsterGone(tm, uniqueId) })
@@ -179,7 +185,7 @@ func TestReflectFlow_PhysicalInsideRange_EmitsReflect(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected reflect info for monster %d kind %s", uniqueId, kind)
 	}
-	r, within := computeReflect([]int32{1000}, info, /*charX*/ 50, 0, /*monX*/ 0, 0)
+	r, within := computeReflect([]int32{1000}, info /*charX*/, 50, 0 /*monX*/, 0, 0)
 	if !within {
 		t.Fatalf("expected within range")
 	}
@@ -330,5 +336,107 @@ func TestAttackKindFromAttackType(t *testing.T) {
 				t.Fatalf("attackKindFromAttackType(%v) = %q, want %q", tc.at, got, tc.want)
 			}
 		})
+	}
+}
+
+// TestBeaconTargetMonsterId exercises the beacon lock-target selection: skip
+// zero ids, skip monsters absent from the field registry, and let the LAST
+// remaining valid entry win (Cosmic per-monster loop order; WZ has no
+// mobCount for 5211006/5220011 so multi-entry only arises from malformed
+// packets).
+func TestBeaconTargetMonsterId(t *testing.T) {
+	existsAll := func(uint32) bool { return true }
+
+	// Whiff: no entries.
+	if _, ok := beaconTargetMonsterId(nil, existsAll); ok {
+		t.Fatal("whiff must yield no target")
+	}
+	// Zero monster ids are skipped.
+	if _, ok := beaconTargetMonsterId([]uint32{0, 0}, existsAll); ok {
+		t.Fatal("zero ids must yield no target")
+	}
+	// Single hit.
+	id, ok := beaconTargetMonsterId([]uint32{1000001}, existsAll)
+	if !ok || id != 1000001 {
+		t.Fatalf("single hit: got %d ok=%v", id, ok)
+	}
+	// Multi-entry: LAST valid entry wins (Cosmic per-monster loop order,
+	// design.md §5.2; WZ has no mobCount so this is a defensive rule).
+	id, ok = beaconTargetMonsterId([]uint32{1000001, 1000002}, existsAll)
+	if !ok || id != 1000002 {
+		t.Fatalf("last-wins: got %d ok=%v", id, ok)
+	}
+	// Monster missing from the field registry is skipped.
+	id, ok = beaconTargetMonsterId([]uint32{1000001, 1000002}, func(m uint32) bool { return m == 1000001 })
+	if !ok || id != 1000001 {
+		t.Fatalf("missing-monster skip: got %d ok=%v", id, ok)
+	}
+}
+
+// TestBeaconTryApply exercises the beacon apply gate: non-beacon skills and
+// whiffs emit nothing, a hit emits CANCEL_BY_TYPES then APPLY in that order,
+// and a cancel failure prevents the apply from running (FR-1.4/FR-1.5/FR-1.6).
+func TestBeaconTryApply(t *testing.T) {
+	mkAttack := func(skillId uint32, monsterIds ...uint32) packetmodel.AttackInfo {
+		ai := packetmodel.NewAttackInfo(packetmodel.AttackTypeRanged)
+		ai.SetSkillId(skillId)
+		for _, m := range monsterIds {
+			di := packetmodel.NewDamageInfo(1)
+			di.SetMonsterId(m)
+			ai.AddDamageInfo(*di)
+		}
+		return *ai
+	}
+
+	type call struct {
+		kind  string
+		mobId int32
+	}
+	l := logrus.New()
+	l.SetOutput(io.Discard)
+	record := func(calls *[]call) beaconApplyDeps {
+		return beaconApplyDeps{
+			monsterExists: func(uint32) bool { return true },
+			cancelByTypes: func(types []string) error {
+				*calls = append(*calls, call{kind: "cancel"})
+				return nil
+			},
+			applyNoExpiry: func(sourceId int32, level byte, mobId int32) error {
+				*calls = append(*calls, call{kind: "apply", mobId: mobId})
+				return nil
+			},
+		}
+	}
+
+	// Non-beacon skill: nothing emitted.
+	var calls []call
+	beaconTryApply(l, mkAttack(4001344, 1000001), 1, field.Model{}, 42, record(&calls))
+	if len(calls) != 0 {
+		t.Fatalf("non-beacon skill must emit nothing, got %v", calls)
+	}
+
+	// Whiff: nothing emitted, prior lock untouched (FR-1.5).
+	calls = nil
+	beaconTryApply(l, mkAttack(uint32(skill3.OutlawHomingBeaconId)), 1, field.Model{}, 42, record(&calls))
+	if len(calls) != 0 {
+		t.Fatalf("whiff must emit nothing, got %v", calls)
+	}
+
+	// Hit: CANCEL_BY_TYPES then APPLY, in that order (FR-1.4).
+	calls = nil
+	beaconTryApply(l, mkAttack(uint32(skill3.CorsairBullseyeId), 1000001), 10, field.Model{}, 42, record(&calls))
+	if len(calls) != 2 || calls[0].kind != "cancel" || calls[1].kind != "apply" || calls[1].mobId != 1000001 {
+		t.Fatalf("hit must emit cancel then apply(mobId): got %v", calls)
+	}
+
+	// Cancel failure: apply is not attempted (lock state stays consistent).
+	calls = nil
+	deps := record(&calls)
+	deps.cancelByTypes = func([]string) error { return errors.New("kafka down") }
+	beaconTryApply(l, mkAttack(uint32(skill3.OutlawHomingBeaconId), 1000001), 1, field.Model{}, 42, deps)
+	for _, c := range calls {
+		if c.kind == "apply" {
+			t.Fatal("apply must not run after cancel failure")
+		}
 	}
 }

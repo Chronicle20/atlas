@@ -1,16 +1,16 @@
 package pet
 
 import (
+	"atlas-pets/pet/exclude"
 	"testing"
 	"time"
 
-	"atlas-pets/pet/exclude"
-
-	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 // newPetTenantDB seeds two pet rows in two tenants. Auto-increment IDs are

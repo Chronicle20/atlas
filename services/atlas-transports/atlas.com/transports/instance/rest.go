@@ -3,21 +3,25 @@ package instance
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 type RouteRestModel struct {
-	ID               uuid.UUID     `json:"-"`
-	Name             string        `json:"name"`
-	StartMapId       _map.Id       `json:"startMapId"`
-	TransitMapIds    []_map.Id     `json:"transitMapIds"`
-	DestinationMapId _map.Id       `json:"destinationMapId"`
-	Capacity         uint32        `json:"capacity"`
-	BoardingWindow   time.Duration `json:"boardingWindow"`
-	TravelDuration   time.Duration `json:"travelDuration"`
+	ID                uuid.UUID     `json:"-"`
+	Name              string        `json:"name"`
+	StartMapId        _map.Id       `json:"startMapId"`
+	TransitMapIds     []_map.Id     `json:"transitMapIds"`
+	DestinationMapId  _map.Id       `json:"destinationMapId"`
+	Capacity          uint32        `json:"capacity"`
+	BoardingWindow    time.Duration `json:"boardingWindow"`
+	TravelDuration    time.Duration `json:"travelDuration"`
+	EffectItemIds     []item.Id     `json:"effectItemIds"`
+	ForcedReturnMapId _map.Id       `json:"forcedReturnMapId"`
 }
 
 func (r RouteRestModel) GetID() string {
@@ -39,14 +43,16 @@ func (r RouteRestModel) GetName() string {
 
 func TransformRoute(m RouteModel) (RouteRestModel, error) {
 	return RouteRestModel{
-		ID:               m.Id(),
-		Name:             m.Name(),
-		StartMapId:       m.StartMapId(),
-		TransitMapIds:    m.TransitMapIds(),
-		DestinationMapId: m.DestinationMapId(),
-		Capacity:         m.Capacity(),
-		BoardingWindow:   m.BoardingWindow(),
-		TravelDuration:   m.TravelDuration(),
+		ID:                m.Id(),
+		Name:              m.Name(),
+		StartMapId:        m.StartMapId(),
+		TransitMapIds:     m.TransitMapIds(),
+		DestinationMapId:  m.DestinationMapId(),
+		Capacity:          m.Capacity(),
+		BoardingWindow:    m.BoardingWindow(),
+		TravelDuration:    m.TravelDuration(),
+		EffectItemIds:     m.EffectItemIds(),
+		ForcedReturnMapId: m.ForcedReturnMapId(),
 	}, nil
 }
 

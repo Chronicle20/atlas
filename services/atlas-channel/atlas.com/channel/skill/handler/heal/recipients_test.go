@@ -1,10 +1,8 @@
 package heal
 
 import (
-	"testing"
-
-	"atlas-channel/data/skill/effect"
 	"atlas-channel/skill/handler"
+	"testing"
 )
 
 func TestSelectRecipients_CasterAlwaysIncluded(t *testing.T) {
@@ -30,20 +28,5 @@ func TestSelectRecipients_PrependsCasterToParty(t *testing.T) {
 	}
 	if got[1].Id != 2 || got[2].Id != 3 {
 		t.Fatalf("recipients ids = %v, want [1,2,3]", []uint32{got[0].Id, got[1].Id, got[2].Id})
-	}
-}
-
-func TestWarnIfMissingRectangle_OncePerTuple(t *testing.T) {
-	defer resetWarnedRectangles()
-
-	calls := 0
-	logf := func() { calls++ }
-
-	warnIfMissingRectangle(2301002, 1, effect.Model{}, logf)
-	warnIfMissingRectangle(2301002, 1, effect.Model{}, logf)
-	warnIfMissingRectangle(2301002, 2, effect.Model{}, logf)
-
-	if calls != 2 {
-		t.Fatalf("warn calls = %d, want 2 (one per (id, level))", calls)
 	}
 }

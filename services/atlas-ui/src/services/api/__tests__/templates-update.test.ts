@@ -83,3 +83,43 @@ describe("templatesService.update", () => {
     expect(put).not.toHaveBeenCalled();
   });
 });
+
+// templates.RestModel declares NPCs/Worlds without omitempty, so a template
+// stored without an `npcs` key (template_jms_185_1.json and four others) is
+// served as `"npcs": null`. Feeding that straight back into update() failed
+// validation ("NPCs must be an array") and broke every Packet Matrix
+// read-modify-write on those templates.
+describe("templatesService.getById null-collection normalisation", () => {
+  beforeEach(() => {
+    patch
+      .mockReset()
+      .mockResolvedValue({ data: { id: "t1", attributes: fullAttributes() } });
+    put.mockReset();
+    getOne.mockReset();
+  });
+
+  it("reads a null npcs/worlds as an empty array", async () => {
+    getOne.mockResolvedValue({
+      id: "t1",
+      attributes: { ...fullAttributes(), npcs: null, worlds: null },
+    });
+
+    const template = await templatesService.getById("t1");
+
+    expect(template.attributes.npcs).toEqual([]);
+    expect(template.attributes.worlds).toEqual([]);
+  });
+
+  it("round-trips such a template back through update", async () => {
+    getOne.mockResolvedValue({
+      id: "t1",
+      attributes: { ...fullAttributes(), npcs: null, worlds: null },
+    });
+
+    const fresh = await templatesService.getById("t1");
+    await expect(
+      templatesService.update("t1", fresh.attributes),
+    ).resolves.toBeDefined();
+    expect(patch).toHaveBeenCalledTimes(1);
+  });
+});

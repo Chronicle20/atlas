@@ -46,11 +46,25 @@ export interface TemplatesResponse {
   data: Template[];
 }
 
+/**
+ * Normalises the collections atlas-configurations serialises as `null`.
+ *
+ * templates.RestModel declares `NPCs []npcs.RestModel` / `Worlds
+ * []worlds.RestModel` without omitempty (templates/rest.go), so a template
+ * whose stored document has no `npcs` key - five of the eleven seeds,
+ * including template_jms_185_1.json - comes back as `"npcs": null`. That value
+ * then fails validateTemplate's Array.isArray check on the way back out, which
+ * broke every read-modify-write on those templates (the Packet Matrix's
+ * mark-unsupported / add / delete flows all round-trip the whole document).
+ * Absent and empty mean the same thing here, so read them as empty.
+ */
 function sortTemplate(template: Template): Template {
   return {
     ...template,
     attributes: {
       ...template.attributes,
+      npcs: template.attributes.npcs ?? [],
+      worlds: template.attributes.worlds ?? [],
       socket: {
         ...template.attributes.socket,
         handlers: [...template.attributes.socket.handlers].sort(

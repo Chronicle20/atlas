@@ -60,7 +60,7 @@ func TestValidate_AcceptsEverySeedTemplate(t *testing.T) {
 			}
 		}
 	}
-	if total != 2993 {
-		t.Errorf("corpus size = %d entries, want 2993 (2971 after task-145, plus the 22 AffectedArea mist writer entries added in task-165)", total)
+	if total != 2994 {
+		t.Errorf("corpus size = %d entries, want 2994 (2971 after task-145, plus the 22 AffectedArea mist writer entries added in task-165, plus the gms_48 PetItemUseHandle binding added in task-139)", total)
 	}
 }

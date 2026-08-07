@@ -115,7 +115,23 @@ function TooltipContent({
         )}
         {...props}
       >
-        <div className={cn("flex items-center", copyable ? "gap-2" : "")}>
+        {/*
+          The content is portaled, but React replays synthetic events up the
+          React tree — without stopping propagation a click anywhere in a
+          copyable tooltip reaches whatever wraps it (often a <Link>, e.g. the
+          map cells in MapDetailTabs/ConnectedMapsRow) and navigates. A
+          copyable tooltip exists to hand over its value, so it swallows its
+          own clicks instead.
+        */}
+        <div
+          className={cn("flex items-center", copyable ? "gap-2" : "")}
+          {...(copyable
+            ? {
+                onPointerDown: (e: React.PointerEvent) => e.stopPropagation(),
+                onClick: (e: React.MouseEvent) => e.stopPropagation(),
+              }
+            : {})}
+        >
           {copyable && (
             <button
               type="button"
@@ -123,6 +139,7 @@ function TooltipContent({
                 e.preventDefault();
                 void copyToClipboard(getTextContent(children));
               }}
+              onClick={(e) => e.preventDefault()}
               className="text-primary-foreground opacity-70 hover:opacity-100 hover:bg-primary-foreground/20 hover:scale-110 p-1 rounded cursor-pointer transition-all duration-200"
               aria-label="Copy to clipboard"
             >

@@ -185,6 +185,31 @@ describe("TransportsPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("carries the instance count before the Instance tab is ever opened", async () => {
+    // Radix unmounts inactive tab panels, so a count published upward by the
+    // Instance tab's own table would read 0 on the Scheduled tab and only
+    // correct itself once the tab was clicked.
+    vi.mocked(transportsService.getScheduledRoutes).mockResolvedValue([]);
+    vi.mocked(transportsService.getInstanceRoutes).mockResolvedValue([
+      { id: "i1", attributes: {} },
+      { id: "i2", attributes: {} },
+      { id: "i3", attributes: {} },
+    ] as unknown as Awaited<
+      ReturnType<typeof transportsService.getInstanceRoutes>
+    >);
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("tab", { name: /Instance\s*3/ }),
+    ).toBeInTheDocument();
+    // Still on Scheduled — the count did not require visiting the tab.
+    expect(screen.getByRole("tab", { name: /Scheduled/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
   it("shows a loading message while the scheduled routes fetch is in flight", async () => {
     // A promise that never resolves keeps the query in its initial loading state.
     vi.mocked(transportsService.getScheduledRoutes).mockImplementation(

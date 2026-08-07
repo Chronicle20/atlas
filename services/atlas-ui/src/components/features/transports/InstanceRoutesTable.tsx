@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 
 import {
@@ -32,17 +32,18 @@ import type { InstanceRoute, InstanceStatus } from "@/types/models/transport";
 
 interface InstanceRoutesTableProps {
   tenant: Tenant | null;
-  /** Reports the instance-route count so the tab label can carry it. */
-  onCountChange?: (count: number) => void;
 }
 
 /** Column count of the header row, for the loading/error/empty full-width cells. */
 const INSTANCE_TABLE_COLUMN_COUNT = 8;
 
-export function InstanceRoutesTable({
-  tenant,
-  onCountChange,
-}: InstanceRoutesTableProps) {
+/**
+ * The Instance tab's table. It does not report its row count upward — Radix
+ * unmounts inactive tab panels, so a count published from here would stay at
+ * zero until the tab was first opened. TransportsPage reads the same query
+ * directly for its tab label.
+ */
+export function InstanceRoutesTable({ tenant }: InstanceRoutesTableProps) {
   const routesQuery = useInstanceRoutes();
   const routes = useMemo(() => routesQuery.data ?? [], [routesQuery.data]);
   const routeIds = useMemo(() => routes.map((route) => route.id), [routes]);
@@ -58,10 +59,6 @@ export function InstanceRoutesTable({
   }, [routeIds, statusQueries]);
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    onCountChange?.(routes.length);
-  }, [routes.length, onCountChange]);
 
   const toggle = (routeId: string) => {
     setExpanded((previous) => {

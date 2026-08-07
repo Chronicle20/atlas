@@ -1,11 +1,15 @@
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AlertTriangle, Ship } from "lucide-react";
 
 import { DataTable } from "@/components/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTenant } from "@/context/tenant-context";
-import { useScheduledRoutes, useVessels } from "@/lib/hooks/api/useTransports";
+import {
+  useInstanceRoutes,
+  useScheduledRoutes,
+  useVessels,
+} from "@/lib/hooks/api/useTransports";
 import { FreshnessIndicator } from "@/components/features/transports/FreshnessIndicator";
 import { InstanceRoutesTable } from "@/components/features/transports/InstanceRoutesTable";
 import { VesselsTable } from "@/components/features/transports/VesselsTable";
@@ -38,6 +42,11 @@ function TransportsPageContent() {
 
   const scheduledQuery = useScheduledRoutes();
   const vesselsQuery = useVessels();
+  // Read here rather than through a callback from the Instance tab's table:
+  // Radix unmounts inactive tab panels, so a child-reported count would sit at
+  // zero until the tab was first opened. React Query dedupes this against the
+  // table's own identical query, so the tab label costs no extra request.
+  const instanceRoutesQuery = useInstanceRoutes();
 
   const routes = useMemo(
     () =>
@@ -51,11 +60,7 @@ function TransportsPageContent() {
     [activeTenant, vessels],
   );
 
-  const [instanceRouteCount, setInstanceRouteCount] = useState(0);
-  const handleInstanceCountChange = useCallback(
-    (count: number) => setInstanceRouteCount(count),
-    [],
-  );
+  const instanceRouteCount = instanceRoutesQuery.data?.length ?? 0;
 
   const handleTabChange = (value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -94,10 +99,14 @@ function TransportsPageContent() {
           <TabsTrigger value="vessels">Vessels {vessels.length}</TabsTrigger>
         </TabsList>
 
-        <TabsContent
-          value="scheduled"
-          className="flex-1 min-h-0 overflow-x-auto"
-        >
+        {/*
+          No `overflow-*` on this panel, unlike the two below it. `DataTable`
+          reserves a fixed `h-[calc(100vh-10rem)]` block and scrolls its own
+          body, so making the panel a scroll container turns that
+          reserved-but-empty space into a page-length scrollbar over nothing.
+          Same treatment MerchantsPage gives its DataTable panel.
+        */}
+        <TabsContent value="scheduled" className="flex-1 min-h-0">
           {scheduledQuery.isLoading ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
               Loading scheduled routes…
@@ -123,15 +132,12 @@ function TransportsPageContent() {
 
         <TabsContent
           value="instance"
-          className="flex-1 min-h-0 overflow-x-auto"
+          className="flex-1 min-h-0 overflow-y-auto"
         >
-          <InstanceRoutesTable
-            tenant={activeTenant}
-            onCountChange={handleInstanceCountChange}
-          />
+          <InstanceRoutesTable tenant={activeTenant} />
         </TabsContent>
 
-        <TabsContent value="vessels" className="flex-1 min-h-0 overflow-x-auto">
+        <TabsContent value="vessels" className="flex-1 min-h-0 overflow-y-auto">
           <VesselsTable
             vessels={vessels}
             routes={routes}

@@ -3,7 +3,9 @@ package tasks
 import (
 	"atlas-maps/kafka/message"
 	"atlas-maps/mist"
+	"atlas-maps/monster"
 	"context"
+	"strconv"
 	"sync"
 	"time"
 
@@ -33,6 +35,11 @@ const MistTickTask = "mist_tick_task"
 // commands are published. Mirrors atlas-monsters' value (services
 // communicate via topic-name only — no shared library import).
 const EnvCommandTopicCharacterBuff = "COMMAND_TOPIC_CHARACTER_BUFF"
+
+// EnvCommandTopicMonster is the Kafka topic where APPLY_STATUS commands are
+// published. Mirrors atlas-channel's value (services communicate via
+// topic-name only -- no shared library import).
+const EnvCommandTopicMonster = "COMMAND_TOPIC_MONSTER"
 
 // PositionLookup resolves a character's current world coordinates. Injected
 // as a seam so MistTick can be unit-tested without standing up the
@@ -96,6 +103,71 @@ func applyDiseaseCommandProvider(m mist.Mist, characterId uint32) model.Provider
 	return kafkaProducer.SingleMessageProvider(key, value)
 }
 
+// monsterCommand is the COMMAND_TOPIC_MONSTER envelope, mirrored from
+// atlas-channel's kafka/message/monster/kafka.go Command[E].
+type monsterCommand[E any] struct {
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
+	MonsterId uint32     `json:"monsterId"`
+	Type      string     `json:"type"`
+	Body      E          `json:"body"`
+}
+
+// applyStatusBody is a byte-compatible mirror of atlas-channel's
+// monster.ApplyStatusCommandBody (services/atlas-channel/atlas.com/channel/kafka/message/monster/kafka.go:44-52),
+// verified key-for-key and type-for-type against atlas-monsters' consumer
+// body (services/atlas-monsters/atlas.com/monsters/kafka/consumer/monster/kafka.go:53-61).
+//
+// COMMAND_TOPIC_MONSTER is a SHARED topic: every registered handler in
+// atlas-monsters unmarshals every message on it, so a key that is
+// same-named-but-narrower in a sibling command body produces decode-error
+// spam on unrelated handlers (see the KILL/useSkill skillId byte-vs-uint32
+// collision). Reuse the exact existing key set -- add nothing, rename
+// nothing, retype nothing.
+//
+// Duration and TickInterval are MILLISECONDS.
+type applyStatusBody struct {
+	SourceType        string           `json:"sourceType"`
+	SourceCharacterId uint32           `json:"sourceCharacterId"`
+	SourceSkillId     uint32           `json:"sourceSkillId"`
+	SourceSkillLevel  uint32           `json:"sourceSkillLevel"`
+	Statuses          map[string]int32 `json:"statuses"`
+	Duration          uint32           `json:"duration"`
+	TickInterval      uint32           `json:"tickInterval"`
+}
+
+// applyStatusCommandProvider builds one APPLY_STATUS command for a monster
+// standing inside the mist. Keyed on the monster unique id so it lands on the
+// same partition as every other command for that monster.
+//
+// The POISON magnitude is intentionally the mist's DiseaseValue, which is 0
+// for a player-cast mist: atlas-monsters computes poison damage as
+// maxHP/(70 - sourceSkillLevel) (monster/status_task.go calculatePoisonDamage)
+// and never reads the magnitude for POISON. VENOM is the status that does.
+func applyStatusCommandProvider(m mist.Mist, monsterUniqueId uint32) model.Provider[[]kafka.Message] {
+	key := kafkaProducer.CreateKey(int(monsterUniqueId))
+	value := &monsterCommand[applyStatusBody]{
+		WorldId:   m.Field().WorldId(),
+		ChannelId: m.Field().ChannelId(),
+		MapId:     m.Field().MapId(),
+		Instance:  m.Field().Instance(),
+		MonsterId: monsterUniqueId,
+		Type:      "APPLY_STATUS",
+		Body: applyStatusBody{
+			SourceType:        "PLAYER_SKILL",
+			SourceCharacterId: m.OwnerId(),
+			SourceSkillId:     m.SourceSkillId(),
+			SourceSkillLevel:  m.SourceSkillLevel(),
+			Statuses:          map[string]int32{m.Disease(): m.DiseaseValue()},
+			Duration:          uint32(m.DiseaseDuration().Milliseconds()),
+			TickInterval:      uint32(m.TickInterval().Milliseconds()),
+		},
+	}
+	return kafkaProducer.SingleMessageProvider(key, value)
+}
+
 // MistTick is the periodic tick task that expires mists past their lifetime
 // and re-applies the disease to characters currently inside the mist's
 // bounding box. It is registered via tasks.Register in main.
@@ -107,6 +179,7 @@ type MistTick struct {
 	producerProvider func(ctx context.Context) producer.Provider
 	processorFactory func(l logrus.FieldLogger, ctx context.Context, p producer.Provider, r *mist.Registry) mist.Processor
 	charsInField     func(t tenant.Model, f field.Model) []uint32
+	monstersInRect   func(ctx context.Context, m mist.Mist) ([]monster.RestModel, error)
 }
 
 // NewMistTick constructs a MistTick wired to the singleton mist registry
@@ -130,6 +203,12 @@ func NewMistTick(l logrus.FieldLogger, interval int, posLookup PositionLookup) *
 				return nil
 			}
 			return ids
+		},
+		monstersInRect: func(ctx context.Context, m mist.Mist) ([]monster.RestModel, error) {
+			x1, y1, x2, y2 := m.Rect()
+			// limit 0 == no cap. ctx is already tenant-decorated by
+			// processTenant, so the REST call is tenant-scoped (NFR-3).
+			return monster.NewProcessor(l, ctx).GetInMapRect(m.Field(), x1, y1, x2, y2, 0)
 		},
 	}
 }
@@ -174,7 +253,14 @@ func (r *MistTick) processTenant(ctx context.Context, t tenant.Model) {
 		if !m.ShouldTick() {
 			continue
 		}
-		r.tickCharacters(tctx, prov, t, m)
+		switch m.TargetKind() {
+		case mistKafka.TargetKindMonster:
+			r.tickMonsters(tctx, prov, t, m)
+		default:
+			// Empty target kind normalizes to CHARACTER in mist.Create; the
+			// default arm also covers any mist built directly by a test.
+			r.tickCharacters(tctx, prov, t, m)
+		}
 		r.registry.UpdateLastTick(t, m.Id(), time.Now())
 	}
 }
@@ -206,6 +292,44 @@ func (r *MistTick) tickCharacters(ctx context.Context, prov producer.Provider, t
 	})
 	if emitErr != nil {
 		r.l.WithError(emitErr).Errorf("MistTick: failed to emit apply-disease for mist [%s].", m.Id())
+	}
+}
+
+// tickMonsters applies the mist's damage-over-time status to every monster the
+// atlas-monsters rect endpoint reports inside the mist's bounding box.
+//
+// The endpoint is authoritative for containment -- this does NOT re-filter
+// with Mist.Contains. Double-filtering would mask an endpoint bug and would
+// diverge if the two rect conventions (inclusive vs exclusive edges) ever
+// differed. One authority per question.
+func (r *MistTick) tickMonsters(ctx context.Context, prov producer.Provider, t tenant.Model, m mist.Mist) {
+	monsters, err := r.monstersInRect(ctx, m)
+	if err != nil {
+		r.l.WithError(err).Errorf("MistTick: monster rect lookup failed for mist [%s]; skipping this mist's tick.", m.Id())
+		return
+	}
+	if len(monsters) == 0 {
+		r.l.Debugf("MistTick: mist [%s] found 0 monsters in rect.", m.Id())
+		return
+	}
+	emitErr := message.Emit(prov)(func(buf *message.Buffer) error {
+		applied := 0
+		for _, rm := range monsters {
+			uniqueId, cErr := strconv.Atoi(rm.Id)
+			if cErr != nil {
+				r.l.WithError(cErr).Warnf("MistTick: unparseable monster id [%s] for mist [%s].", rm.Id, m.Id())
+				continue
+			}
+			if pErr := buf.Put(EnvCommandTopicMonster, applyStatusCommandProvider(m, uint32(uniqueId))); pErr != nil {
+				return pErr
+			}
+			applied++
+		}
+		r.l.Debugf("MistTick: mist [%s] applied [%s] to %d of %d monsters in rect.", m.Id(), m.Disease(), applied, len(monsters))
+		return nil
+	})
+	if emitErr != nil {
+		r.l.WithError(emitErr).Errorf("MistTick: failed to emit apply-status for mist [%s].", m.Id())
 	}
 }
 

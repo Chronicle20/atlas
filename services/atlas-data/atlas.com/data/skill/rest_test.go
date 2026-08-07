@@ -49,11 +49,12 @@ func TestRest(t *testing.T) {
 	}
 	ctx := tenant.WithContext(context.Background(), tn)
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(testXML)))
-	res, err := rms()
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(testXML)))()
 	if err != nil {
 		t.Fatal(err)
 	}
+	res := d.Models
+	rms := model.FixedProvider(res)
 	irmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)

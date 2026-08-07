@@ -1,7 +1,11 @@
 package workers
 
 import (
+	"atlas-data/skill"
+	"context"
 	"errors"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -52,4 +56,32 @@ func TestLogJobDocCount_NoWarnWhenDocumentsWritten(t *testing.T) {
 	require.Len(t, hook.Entries, 1)
 	require.Equal(t, logrus.InfoLevel, hook.Entries[0].Level)
 	require.Contains(t, hook.Entries[0].Message, "written=82")
+}
+
+// TestSkillWorker_SummaryEmittedOnWalkError pins the exact composition Skill.Run
+// uses around the SKILL registration walk: skillStats.Log(l) is deferred
+// immediately after the accumulator is declared, so it still fires when
+// registerAllInDirectory returns a walk-level error (corrupt job image, I/O
+// failure) rather than being skipped by an early return. This matches
+// data/processor.go's WorkerSkill branch, which logs unconditionally.
+func TestSkillWorker_SummaryEmittedOnWalkError(t *testing.T) {
+	l, hook := test.NewNullLogger()
+
+	var walkErr error
+	func() {
+		var skillStats skill.StatsAccumulator
+		defer skillStats.Log(l)
+		walkErr = registerAllInDirectory(l, context.Background(), filepath.Join(t.TempDir(), "does-not-exist"), skillStats.Wrap(func(path string) (skill.Stats, error) {
+			return skill.Stats{Processed: 1}, nil
+		}))
+	}()
+	require.Error(t, walkErr, "a missing Skill.wz directory must be a walk-level error")
+
+	var summary bool
+	for _, entry := range hook.AllEntries() {
+		if entry.Level == logrus.InfoLevel && strings.Contains(entry.Message, "skills: processed=") {
+			summary = true
+		}
+	}
+	require.True(t, summary, "the run summary must be logged even when the walk itself failed")
 }

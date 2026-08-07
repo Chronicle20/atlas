@@ -47,12 +47,15 @@ func (Skill) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *min
 		defer func() { _ = mobskill.GetMobSkillStringRegistry().Clear(t) }()
 	}
 	// Register skills (per-job images) and the single MobSkill.img.
-	// Accumulate the FR-7.3 run summary across every per-job image.
+	// Accumulate the FR-7.3 run summary across every per-job image. Deferred
+	// so the summary is still emitted on a walk-level error (corrupt job
+	// image, I/O failure) — matching data/processor.go's WorkerSkill branch,
+	// which logs unconditionally regardless of err.
 	var skillStats skill.StatsAccumulator
+	defer skillStats.Log(l)
 	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Skill.wz"), skillStats.Wrap(skill.NewProcessor(l, ctx, db).RegisterSkill)); err != nil {
 		return err
 	}
-	skillStats.Log(l)
 	if err := mobskill.NewProcessor(l, ctx, db).RegisterMobSkill(filepath.Join(root, "Skill.wz", "MobSkill.img.xml")); err != nil {
 		l.WithError(err).Warnf("mobskill RegisterMobSkill failed")
 	}

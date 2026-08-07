@@ -14,7 +14,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -104,16 +103,8 @@ func GetInstanceRouteStatusHandler(d *rest.HandlerDependency, c *rest.HandlerCon
 				return
 			}
 
-			// Instances are written under the creating tenant's id
-			// (Processor.StartTransport -> FindOrCreateInstance), and the
-			// per-route set is tenant-keyed. Read under the same tenant the
-			// request carries - rest.RegisterHandler has already installed it
-			// in the context, exactly as the sibling handlers' NewProcessor
-			// calls rely on.
-			t := tenant.MustFromContext(d.Context())
-
-			ir := getInstanceRegistry()
-			instances := ir.GetInstancesByRoute(t.Id(), routeId)
+			p := NewProcessor(d.Logger(), d.Context())
+			instances := p.GetInstancesByRoute(routeId)
 
 			statuses := make([]InstanceStatusRestModel, 0)
 			for _, inst := range instances {

@@ -325,10 +325,10 @@ images:
   - name: ghcr.io/chronicle20/atlas-tenants/atlas-tenants
     newTag: main-d3b301b
   - name: ghcr.io/chronicle20/atlas-transports/atlas-transports
-    newTag: main-d3b301b
+    newTag: main-fb2a984
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
     newTag: main-d3b301b
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-b314e14
+    newTag: main-fb2a984
 commonLabels:
   atlas.env: main

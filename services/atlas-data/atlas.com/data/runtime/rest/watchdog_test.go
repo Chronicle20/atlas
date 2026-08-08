@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"atlas-data/ingestrun"
 	"context"
 	"testing"
 	"time"
@@ -20,7 +21,7 @@ func newTestRedis(t *testing.T) (*goredis.Client, *redis.Registry[string, string
 	t.Helper()
 	mr := miniredis.RunT(t)
 	rdb := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
-	return rdb, newIngestJobRegistry(rdb)
+	return rdb, ingestrun.NewJobRegistry(rdb)
 }
 
 func ptrTime(t time.Time) *time.Time { return &t }
@@ -51,7 +52,7 @@ func TestWatchdogSweep(t *testing.T) {
 				name: "stuck",
 				labels: map[string]string{
 					labelIngest: "true",
-					"scope":     "tenants-t", "region": "GMS", "version": "83.1",
+					"scope":     "tenants-t", "region": "GMS", "version": "83.1", "tenant": "t",
 				},
 				created:   now.Add(-2 * time.Hour),
 				updatedAt: ptrTime(now.Add(-1 * time.Hour)),
@@ -66,7 +67,7 @@ func TestWatchdogSweep(t *testing.T) {
 				name: "healthy",
 				labels: map[string]string{
 					labelIngest: "true",
-					"scope":     "tenants-t", "region": "GMS", "version": "83.1",
+					"scope":     "tenants-t", "region": "GMS", "version": "83.1", "tenant": "t",
 				},
 				created:   now.Add(-10 * time.Minute),
 				updatedAt: ptrTime(now),
@@ -81,7 +82,7 @@ func TestWatchdogSweep(t *testing.T) {
 				name: "old-no-heartbeat",
 				labels: map[string]string{
 					labelIngest: "true",
-					"scope":     "tenants-t", "region": "GMS", "version": "83.1",
+					"scope":     "tenants-t", "region": "GMS", "version": "83.1", "tenant": "t",
 				},
 				created: now.Add(-3 * time.Hour),
 				active:  1,
@@ -95,7 +96,7 @@ func TestWatchdogSweep(t *testing.T) {
 				name: "done",
 				labels: map[string]string{
 					labelIngest: "true",
-					"scope":     "tenants-t", "region": "GMS", "version": "83.1",
+					"scope":     "tenants-t", "region": "GMS", "version": "83.1", "tenant": "t",
 				},
 				created:   now.Add(-3 * time.Hour),
 				succeeded: 1,
@@ -161,7 +162,7 @@ func TestJobCreatorWritesHeartbeatToRedis(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	suffix := ingestJobKeySuffix("tenants/t1", "GMS", 83, 1)
+	suffix := ingestrun.KeySuffix("tenants/t1", "GMS", 83, 1)
 	got, err := reg.Get(context.Background(), suffix)
 	if err != nil {
 		t.Fatalf("registry missing job key suffix %q: %v", suffix, err)

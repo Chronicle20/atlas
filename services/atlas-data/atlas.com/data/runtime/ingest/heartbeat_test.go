@@ -1,6 +1,7 @@
 package ingest
 
 import (
+	"atlas-data/ingestrun"
 	"context"
 	"testing"
 	"time"
@@ -16,7 +17,7 @@ func newTestRedis(t *testing.T) (*goredis.Client, *miniredis.Miniredis, *redis.R
 	t.Helper()
 	mr := miniredis.RunT(t)
 	c := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
-	return c, mr, newIngestJobRegistry(c)
+	return c, mr, ingestrun.NewJobRegistry(c)
 }
 
 // TestRunHeartbeat_FirstTickIsImmediate proves runHeartbeat does not wait a

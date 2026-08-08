@@ -3,6 +3,7 @@ package ingest
 import (
 	"atlas-data/data"
 	"atlas-data/data/workers"
+	"atlas-data/ingestrun"
 	"context"
 	"fmt"
 	"os"
@@ -40,7 +41,7 @@ func Run(ctx context.Context, l logrus.FieldLogger) error {
 	// for the PR-544 evidence trail.
 	if suffix := ingestJobSuffixFromEnv(); suffix != "" {
 		rdb := redis.Connect(l)
-		reg := newIngestJobRegistry(rdb)
+		reg := ingestrun.NewJobRegistry(rdb)
 		routine.Go(l, ctx, func(_ context.Context) { runHeartbeat(ctx, l, reg, suffix) })
 	} else {
 		l.Info("ingest heartbeat skipped: SCOPE/REGION/MAJOR_VERSION/MINOR_VERSION env not set (compose / test path)")

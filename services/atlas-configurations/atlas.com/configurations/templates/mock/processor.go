@@ -23,6 +23,7 @@ type ProcessorMock struct {
 	CreateFunc                         func(input templates.RestModel) (uuid.UUID, error)
 	UpdateByIdFunc                     func(templateId uuid.UUID, input templates.RestModel) error
 	DeleteByIdFunc                     func(templateId uuid.UUID) error
+	ReseedByIdFunc                     func(templateId uuid.UUID) error
 }
 
 var _ templates.Processor = (*ProcessorMock)(nil)
@@ -114,6 +115,13 @@ func (m *ProcessorMock) UpdateById(templateId uuid.UUID, input templates.RestMod
 func (m *ProcessorMock) DeleteById(templateId uuid.UUID) error {
 	if m.DeleteByIdFunc != nil {
 		return m.DeleteByIdFunc(templateId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) ReseedById(templateId uuid.UUID) error {
+	if m.ReseedByIdFunc != nil {
+		return m.ReseedByIdFunc(templateId)
 	}
 	return nil
 }

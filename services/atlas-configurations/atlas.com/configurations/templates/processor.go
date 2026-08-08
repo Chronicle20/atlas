@@ -6,6 +6,8 @@ import (
 	"atlas-configurations/templates/socket"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
@@ -14,6 +16,17 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+)
+
+// Sentinel errors the re-seed handler maps to HTTP statuses. server.
+// WriteErrorResponse maps everything to 500, so the handler switches on these
+// and writes the JSON:API error document itself (design D6).
+var (
+	// ErrTemplateNotFound wraps gorm.ErrRecordNotFound for a template id -> 404.
+	ErrTemplateNotFound = errors.New("template not found")
+	// ErrNoShippedTemplate means the row exists but this image ships no seed
+	// file for its region/version -> 409. There is nothing to reset to.
+	ErrNoShippedTemplate = errors.New("no shipped template")
 )
 
 type Processor interface {
@@ -30,6 +43,7 @@ type Processor interface {
 	Create(input RestModel) (uuid.UUID, error)
 	UpdateById(templateId uuid.UUID, input RestModel) error
 	DeleteById(templateId uuid.UUID) error
+	ReseedById(templateId uuid.UUID) error
 }
 
 type ProcessorImpl struct {
@@ -214,6 +228,66 @@ func (p *ProcessorImpl) UpdateById(templateId uuid.UUID, input RestModel) error 
 
 func (p *ProcessorImpl) DeleteById(templateId uuid.UUID) error {
 	return database.ExecuteTransaction(p.db, delete(p.ctx, templateId))
+}
+
+// ReseedById replaces a template's stored content with the file this image
+// ships for its region/version (FR-3.1).
+//
+// It writes through canonicalBytes - Create's exact validation and marshalling
+// - not UpdateById, whose preset validator would reassign
+// input.Characters.Presets and persist bytes differing from the shipped file
+// (FR-3.4). It reuses the existing `update` transaction function with the
+// ENTITY's region/version columns rather than the file's, so a hypothetical
+// key mismatch cannot rewrite the lookup key (FR-3.3).
+func (p *ProcessorImpl) ReseedById(templateId uuid.UUID) error {
+	e, err := byIdEntityProvider(p.ctx)(templateId)(p.db)()
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("%w: %s", ErrTemplateNotFound, templateId)
+		}
+		return err
+	}
+
+	entry, ok := p.catalog.Lookup(e.Region, e.MajorVersion, e.MinorVersion)
+	if !ok {
+		return fmt.Errorf("%w for %s %d.%d", ErrNoShippedTemplate, e.Region, e.MajorVersion, e.MinorVersion)
+	}
+
+	data, err := canonicalBytes(entry.Model)
+	if err != nil {
+		return err
+	}
+
+	// Best-effort: the point of re-seed is to repair a row, so a row whose
+	// stored document is too broken to hash must still be repairable. Log and
+	// carry on with an empty before-revision rather than failing.
+	beforeRevision := ""
+	if rm, mErr := Make(e); mErr == nil {
+		if rev, rErr := Revision(rm); rErr == nil {
+			beforeRevision = rev
+		} else {
+			p.l.WithError(rErr).WithField("templateId", templateId.String()).Warn("Unable to compute pre-reseed revision")
+		}
+	} else {
+		p.l.WithError(mErr).WithField("templateId", templateId.String()).Warn("Unable to read pre-reseed template document")
+	}
+
+	if err := database.ExecuteTransaction(p.db, update(p.ctx, templateId, e.Region, e.MajorVersion, e.MinorVersion, data)); err != nil {
+		return err
+	}
+
+	// NFR-3: the change must be reconstructable from logs alone.
+	p.l.WithFields(logrus.Fields{
+		"templateId":     templateId.String(),
+		"region":         e.Region,
+		"majorVersion":   e.MajorVersion,
+		"minorVersion":   e.MinorVersion,
+		"file":           entry.FileName,
+		"beforeRevision": beforeRevision,
+		"afterRevision":  entry.Revision,
+	}).Info("Template re-seeded from shipped defaults")
+
+	return nil
 }
 
 // socketValidate runs the shared, dependency-free socket rules. Unlike preset

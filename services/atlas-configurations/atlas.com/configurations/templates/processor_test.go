@@ -687,3 +687,181 @@ func TestViewRestModelFlattensEmbeddedFields(t *testing.T) {
 		t.Errorf("embedded struct was nested under \"RestModel\" instead of flattened")
 	}
 }
+
+// FR-3.1 / FR-3.2 / FR-3.3: re-seed restores the shipped content, preserves
+// the row's UUID, and leaves the region/version key untouched.
+func TestReseedRestoresShippedContent(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+	catalog := LoadCatalog(l, seedTemplatesDir())
+
+	entry, ok := catalog.Lookup("GMS", 83, 1)
+	if !ok {
+		t.Fatalf("GMS 83.1 missing from the seed corpus")
+	}
+	p := NewProcessor(l, ctx, db).WithCatalog(catalog)
+	id, err := p.Create(entry.Model)
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	// Drift the row.
+	mutated := entry.Model
+	mutated.UsesPin = !mutated.UsesPin
+	data, err := canonicalBytes(mutated)
+	if err != nil {
+		t.Fatalf("canonicalBytes: %v", err)
+	}
+	if err := db.Model(&Entity{}).Where("id = ?", id).Update("data", []byte(data)).Error; err != nil {
+		t.Fatalf("mutate: %v", err)
+	}
+	before, err := p.ViewByIdProvider(id)()
+	if err != nil {
+		t.Fatalf("ViewByIdProvider (before): %v", err)
+	}
+	if !before.SeedDrift {
+		t.Fatalf("precondition failed: template is not drifted")
+	}
+
+	if err := p.ReseedById(id); err != nil {
+		t.Fatalf("ReseedById: %v", err)
+	}
+
+	after, err := p.ViewByIdProvider(id)()
+	if err != nil {
+		t.Fatalf("ViewByIdProvider (after): %v", err)
+	}
+	if after.SeedDrift {
+		t.Errorf("SeedDrift = true after re-seed")
+	}
+	if after.StoredRevision != entry.Revision {
+		t.Errorf("StoredRevision = %q, want %q", after.StoredRevision, entry.Revision)
+	}
+	if after.UsesPin != entry.Model.UsesPin {
+		t.Errorf("UsesPin = %v, want %v - the mutation survived the re-seed", after.UsesPin, entry.Model.UsesPin)
+	}
+
+	var e Entity
+	if err := db.Where("id = ?", id).First(&e).Error; err != nil {
+		t.Fatalf("read back: %v", err)
+	}
+	if e.Id != id {
+		t.Errorf("Id = %s, want %s - re-seed must never delete-and-recreate", e.Id, id)
+	}
+	if e.Region != "GMS" || e.MajorVersion != 83 || e.MinorVersion != 1 {
+		t.Errorf("key changed: (%s,%d,%d), want (GMS,83,1)", e.Region, e.MajorVersion, e.MinorVersion)
+	}
+}
+
+// FR-3.7: re-seeding an undrifted template succeeds and leaves the row
+// byte-identical.
+func TestReseedIsIdempotent(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+	catalog := LoadCatalog(l, seedTemplatesDir())
+
+	entry, ok := catalog.Lookup("GMS", 83, 1)
+	if !ok {
+		t.Fatalf("GMS 83.1 missing from the seed corpus")
+	}
+	p := NewProcessor(l, ctx, db).WithCatalog(catalog)
+	id, err := p.Create(entry.Model)
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	var first Entity
+	if err := db.Where("id = ?", id).First(&first).Error; err != nil {
+		t.Fatalf("read back: %v", err)
+	}
+
+	for i := 0; i < 2; i++ {
+		if err := p.ReseedById(id); err != nil {
+			t.Fatalf("ReseedById (call %d): %v", i+1, err)
+		}
+	}
+
+	var last Entity
+	if err := db.Where("id = ?", id).First(&last).Error; err != nil {
+		t.Fatalf("read back: %v", err)
+	}
+	if string(last.Data) != string(first.Data) {
+		t.Errorf("re-seed is not idempotent - Data changed")
+	}
+}
+
+// The 404 branch: an id with no row.
+func TestReseedUnknownIdReturnsNotFound(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+	p := NewProcessor(l, ctx, db).WithCatalog(LoadCatalog(l, seedTemplatesDir()))
+
+	err := p.ReseedById(uuid.New())
+	if !errors.Is(err, ErrTemplateNotFound) {
+		t.Errorf("error = %v, want ErrTemplateNotFound", err)
+	}
+}
+
+// The 409 branch: the row exists but no seed file ships for its key.
+func TestReseedNoShippedFileReturnsConflict(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+
+	// A catalog that knows only the TEST fixture, so GMS 83.1 misses.
+	p := NewProcessor(l, ctx, db).WithCatalog(LoadCatalog(l, filepath.Join("testdata", "templates")))
+	id, err := p.Create(createTestRestModel("GMS", 83, 1))
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	err = p.ReseedById(id)
+	if !errors.Is(err, ErrNoShippedTemplate) {
+		t.Errorf("error = %v, want ErrNoShippedTemplate", err)
+	}
+}
+
+// FR-3.4: re-seed must produce a row byte-identical to a fresh Create of the
+// same file - i.e. it must NOT route through UpdateById's preset validator.
+func TestReseedProducesSameBytesAsFreshCreate(t *testing.T) {
+	l := testLogger()
+	ctx := context.Background()
+	catalog := LoadCatalog(l, seedTemplatesDir())
+
+	entry, ok := catalog.Lookup("GMS", 83, 1)
+	if !ok {
+		t.Fatalf("GMS 83.1 missing from the seed corpus")
+	}
+
+	freshDB := setupTestDB(t)
+	freshP := NewProcessor(l, ctx, freshDB).WithCatalog(catalog)
+	freshId, err := freshP.Create(entry.Model)
+	if err != nil {
+		t.Fatalf("Create (fresh): %v", err)
+	}
+	var fresh Entity
+	if err := freshDB.Where("id = ?", freshId).First(&fresh).Error; err != nil {
+		t.Fatalf("read back (fresh): %v", err)
+	}
+
+	reseedDB := setupTestDB(t)
+	reseedP := NewProcessor(l, ctx, reseedDB).WithCatalog(catalog)
+	reseedId, err := reseedP.Create(createTestRestModel("GMS", 83, 1))
+	if err != nil {
+		t.Fatalf("Create (stub): %v", err)
+	}
+	if err := reseedP.ReseedById(reseedId); err != nil {
+		t.Fatalf("ReseedById: %v", err)
+	}
+	var reseeded Entity
+	if err := reseedDB.Where("id = ?", reseedId).First(&reseeded).Error; err != nil {
+		t.Fatalf("read back (reseeded): %v", err)
+	}
+
+	if string(reseeded.Data) != string(fresh.Data) {
+		t.Errorf("re-seeded bytes differ from a fresh boot seed of the same file")
+	}
+}

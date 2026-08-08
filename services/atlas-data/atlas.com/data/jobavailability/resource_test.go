@@ -45,7 +45,9 @@ type jobAvailabilityResponse struct {
 		Type       string `json:"type"`
 		Id         string `json:"id"`
 		Attributes struct {
-			Name string `json:"name"`
+			Name     string  `json:"name"`
+			Parent   *uint16 `json:"parent"`
+			Identity uint16  `json:"identity"`
 		} `json:"attributes"`
 	} `json:"data"`
 	Meta struct {
@@ -146,4 +148,106 @@ func TestGetJobAvailability_Paginates(t *testing.T) {
 	require.Equal(t, 1, body.Meta.Page.Number)
 	require.Equal(t, 10, body.Meta.Page.Size)
 	require.NotEmpty(t, body.Links.Next, "expected links.next since more than one page remains")
+}
+
+// TestGetJobAvailability_RootMarshalsNullParent asserts design D8: a nil
+// *uint16 marshals to JSON null, unambiguously distinct from 0. Beginner IS
+// wire id 0, so "parent": 0 and "no parent" must not collide -- this is the
+// one place where being wrong is invisible until a v0.48 tenant renders
+// Beginner as its own child. Asserted against the raw response body because
+// unmarshalling into *uint16 would hide a literal 0 encoded as null.
+func TestGetJobAvailability_RootMarshalsNullParent(t *testing.T) {
+	rr, body := getJobAvailability(t, "GMS", 48, 1)
+	require.Equal(t, http.StatusOK, rr.Code, "body: %s", rr.Body.String())
+	require.Contains(t, rr.Body.String(), `"parent":null`)
+
+	var foundBeginner, foundGm, foundSuperGm bool
+	for _, d := range body.Data {
+		switch d.Id {
+		case "0":
+			foundBeginner = true
+			require.Nil(t, d.Attributes.Parent, "Beginner is a root; parent must be null, not 0")
+		case "500":
+			foundGm = true
+			require.Equal(t, "Gm", d.Attributes.Name)
+			require.NotNil(t, d.Attributes.Parent)
+			require.Equal(t, uint16(0), *d.Attributes.Parent, "Gm advances from Beginner (wire id 0)")
+		case "510":
+			foundSuperGm = true
+			require.NotNil(t, d.Attributes.Parent)
+			require.Equal(t, uint16(500), *d.Attributes.Parent, "Super Gm advances from Gm, which is wire id 500 at v48")
+		}
+	}
+
+	require.True(t, foundBeginner, "gms 48.1 must expose wire id 0")
+	require.True(t, foundGm, "gms 48.1 must expose wire id 500")
+	require.True(t, foundSuperGm, "gms 48.1 must expose wire id 510")
+}
+
+// TestGetJobAvailability_IdentityIsCanonicalNotWire pins design D9 on the
+// fixture where the two genuinely differ: at gms 48.1 wire id 500 is Gm,
+// whose canonical identity token is 900. The frontend keys rail curation on
+// identity precisely so a wire-keyed rail cannot put Gm in the Explorers
+// group in pirate colours.
+func TestGetJobAvailability_IdentityIsCanonicalNotWire(t *testing.T) {
+	_, v48 := getJobAvailability(t, "GMS", 48, 1)
+	for _, d := range v48.Data {
+		if d.Id == "500" {
+			require.Equal(t, uint16(900), d.Attributes.Identity)
+			return
+		}
+	}
+	t.Fatal("gms 48.1 response did not contain wire id 500")
+}
+
+// TestGetJobAvailability_V72IdentityMatchesWireForPirate -- the contrast
+// case. At gms 72.1 wire id 500 IS Pirate, so identity == wire there.
+func TestGetJobAvailability_V72IdentityMatchesWireForPirate(t *testing.T) {
+	_, v72 := getJobAvailability(t, "GMS", 72, 1)
+	for _, d := range v72.Data {
+		if d.Id == "500" {
+			require.Equal(t, "Pirate", d.Attributes.Name)
+			require.Equal(t, uint16(500), d.Attributes.Identity)
+			return
+		}
+	}
+	t.Fatal("gms 72.1 response did not contain wire id 500")
+}
+
+// TestGetJobAvailability_NoParentPointsOutsideTheResponse is FR-3.4 at the
+// API boundary: every non-null parent must be an id the same response also
+// returns.
+func TestGetJobAvailability_NoParentPointsOutsideTheResponse(t *testing.T) {
+	for _, v := range []struct {
+		region       string
+		major, minor uint16
+	}{
+		{"GMS", 12, 1},
+		{"GMS", 48, 1},
+		{"GMS", 61, 1},
+		{"GMS", 72, 1},
+		{"GMS", 79, 1},
+		{"GMS", 83, 1},
+		{"GMS", 84, 1},
+		{"GMS", 87, 1},
+		{"GMS", 92, 1},
+		{"GMS", 95, 1},
+		{"JMS", 185, 1},
+	} {
+		rr, doc := getJobAvailabilityQuery(t, v.region, v.major, v.minor, "page[size]=250")
+		require.Equal(t, http.StatusOK, rr.Code, "%s %d.%d body: %s", v.region, v.major, v.minor, rr.Body.String())
+		present := make(map[string]struct{}, len(doc.Data))
+		for _, d := range doc.Data {
+			present[d.Id] = struct{}{}
+		}
+		for _, d := range doc.Data {
+			if d.Attributes.Parent == nil {
+				continue
+			}
+			pid := strconv.Itoa(int(*d.Attributes.Parent))
+			if _, ok := present[pid]; !ok {
+				t.Errorf("%s %d.%d: job %s has parent %s, which is absent from the response", v.region, v.major, v.minor, d.Id, pid)
+			}
+		}
+	}
 }

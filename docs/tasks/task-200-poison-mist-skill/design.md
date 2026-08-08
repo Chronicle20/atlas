@@ -38,8 +38,9 @@ Everything else in the PRD is implemented as specified.
 ```
 atlas-channel                       atlas-maps                      atlas-monsters
 ─────────────                       ──────────                      ──────────────
-UseSkill (common.go:201)
-  └─ Lookup(FirePoisonMagicianPoisonMist)
+processAttack (character_attack_common.go)
+  └─ attackCastTryApply
+       └─ LookupAttackCast(FirePoisonMagicianPoisonMist)
        └─ skill/handler/poisonmist
             emits CREATE ──────►  COMMAND_TOPIC_MIST
                                     └─ mist.Processor.Create
@@ -380,11 +381,36 @@ five single-field setters.
 
 New package `atlas-channel/skill/handler/poisonmist`, blank-imported from
 `skill/handler/registrations`, registered in `init()` as
-`channelhandler.Register(skill2.FirePoisonMagicianPoisonMist, Apply)`.
+`channelhandler.RegisterAttackCast(skill2.FirePoisonMagicianPoisonMist, Apply)`.
 
-Dispatch is already identity-keyed: `UseSkill` resolves the incoming wire id via
-`constants.For(region, major, minor).Skill.Resolve(...)` and calls
-`Lookup(castId)` at `common.go:201`. Verified that
+> **Correction (live test, 2026-08-08).** This originally read
+> `channelhandler.Register(...)` — the use-skill registry — and that was wrong.
+> Poison Mist carries `damage: 100`, `attackCount: 1`, `mobCount: 1`,
+> `prop: 0.41` in Skill.wz (verified live: `GET /api/data/skills/2111003` on the
+> GMS 83.1 tenant), so the client delivers it on the **magic-attack** packet
+> (opcode `0x2E`, `CharacterMagicAttackHandle`) and never on USE_SKILL. The
+> use-skill registry is read by `processAttack` but only to decide whether to
+> skip the generic HP/MP cost block — it never invokes the handler. Net effect
+> in-game: the direct magic-attack damage landed, no mist was ever created
+> (no `SPAWN_MIST`, no poison DoT), no log line was emitted, and the skill
+> additionally cast for free because the cost gate saw it as "registered."
+>
+> The fix adds a second, opt-in registry — `RegisterAttackCast` /
+> `LookupAttackCast` — invoked from `attackCastTryApply` in
+> `character_attack_common.go`, in the post-broadcast fire-and-forget region
+> beside the projectile and meso-explosion emits. It is deliberately separate
+> from the use-skill registry rather than a merge of the two: Heal is genuinely
+> dual-packet (magic attack for the undead damage, use-skill for the party
+> heal), so a single shared registry read from both dispatch sites would fire
+> Heal's handler twice per cast. It also takes the skill id and level directly
+> instead of a `packetmodel.SkillUsageInfo`, because `processAttack` holds an
+> `AttackInfo` and synthesizing a `SkillUsageInfo` would hand handlers
+> zero-valued `AffectedMobIds` / `AffectedPartyMemberBitmap` fields that look
+> real.
+
+Dispatch is identity-keyed on both paths: `processAttack` resolves the incoming
+wire id via `constants.For(region, major, minor).Skill.Resolve(...)` and calls
+`LookupAttackCast(attackId)`. Verified that
 `FirePoisonMagicianPoisonMist ↔ 2111003` exists in every provisioned version's
 generated map (v12/v48/v61/v72/v79/v83/v84/v87/v92/v95/jms). No raw `2111003`
 compare anywhere — which also keeps `tools/skill-job-id-guard.sh` green.

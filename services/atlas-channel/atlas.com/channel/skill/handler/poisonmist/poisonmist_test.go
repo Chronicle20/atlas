@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
 const (
@@ -66,16 +66,6 @@ func harness(t *testing.T, casterErr error) *[]mistmsg.CreateCommandBody {
 	return &emitted
 }
 
-// testInfo builds the cast packet's SkillUsageInfo. The wire skill id is
-// 2111003 on all eleven provisioned versions; the handler forwards it verbatim
-// because the client compares it against its own WZ.
-func testInfo() packetmodel.SkillUsageInfo {
-	return packetmodel.NewSkillUsageInfoBuilder().
-		SetSkillId(testSkillId).
-		SetSkillLevel(testLevel).
-		Build()
-}
-
 func testField() field.Model {
 	return field.NewBuilder(0, 0, 100000000).SetInstance(uuid.Nil).Build()
 }
@@ -85,7 +75,10 @@ func run(t *testing.T, e effect.Model) (*[]mistmsg.CreateCommandBody, *test.Hook
 	l, hook := test.NewNullLogger()
 	l.SetLevel(logrus.DebugLevel)
 	emitted := harness(t, nil)
-	err := Apply(l)(context.Background())(nil, testField(), testCharId, testInfo(), e)
+	// The WIRE skill id is passed, not the resolved Identity: 2111003 on all
+	// eleven provisioned versions, and the handler forwards it verbatim
+	// because the client compares it against its own WZ.
+	err := Apply(l)(context.Background())(nil, testField(), testCharId, skill2.Id(testSkillId), testLevel, e)
 	require.NoError(t, err)
 	return emitted, hook
 }
@@ -164,7 +157,7 @@ func TestApply_ImplausibleLifetime_Rejected(t *testing.T) {
 func TestApply_CasterLoadFailure_EmitsNothingAndReturnsNil(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	emitted := harness(t, errors.New("character service down"))
-	err := Apply(l)(context.Background())(nil, testField(), testCharId, testInfo(), stubEffect(4000, -110, -82, 110, 83))
+	err := Apply(l)(context.Background())(nil, testField(), testCharId, skill2.Id(testSkillId), testLevel, stubEffect(4000, -110, -82, 110, 83))
 	require.NoError(t, err)
 	require.Empty(t, *emitted)
 }

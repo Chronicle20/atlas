@@ -698,6 +698,44 @@ func beaconTryApply(l logrus.FieldLogger, ai packetmodel.AttackInfo, skillLevel 
 	}
 }
 
+// attackCastTryApply runs the per-skill attack-cast handler registered for
+// castId, if any. It is the ATTACK-packet twin of the UseSkill dispatcher in
+// skill/handler/common.go, for skills the client delivers on a
+// melee/ranged/magic attack packet rather than USE_SKILL.
+//
+// Poison Mist (2111003) is the motivating case and the reason this exists:
+// it carries `damage`/`attackCount`/`mobCount` in Skill.wz, so the v83 client
+// sends it on opcode 0x2E (CharacterMagicAttackHandle) and never on USE_SKILL.
+// Registered on the use-skill registry it silently never fired -- the mist was
+// never created, so neither SPAWN_MIST nor the poison DoT ever happened.
+//
+// castId is the resolved version-blind Identity (the registry key); wireSkillId
+// is the raw per-version id the packet carried, which handlers put back on the
+// wire for the client to match against its own WZ.
+//
+// Failures are logged and swallowed, matching beaconTryApply and the projectile
+// / meso-explosion emits: by the time this runs the damage is applied and the
+// attack is broadcast, so nothing here may abort the pipeline.
+func attackCastTryApply(
+	l logrus.FieldLogger,
+	ctx context.Context,
+	wp writer.Producer,
+	f field.Model,
+	characterId uint32,
+	castId skill3.Identity,
+	wireSkillId skill3.Id,
+	skillLevel byte,
+	e effect.Model,
+) {
+	h, ok := handler.LookupAttackCast(castId)
+	if !ok {
+		return
+	}
+	if err := h(l)(ctx)(wp, f, characterId, wireSkillId, skillLevel, e); err != nil {
+		l.WithError(err).Errorf("Attack-cast handler for skill [%d] failed for character [%d].", wireSkillId, characterId)
+	}
+}
+
 func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
@@ -960,6 +998,25 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 								l.WithError(herr).Errorf("Sacrifice: CHANGE_HP emit failed for caster [%d] skill [%d].", s.CharacterId(), ai.SkillId())
 							}
 						}
+					}
+
+					// Per-skill attack-cast dispatcher (Poison Mist, ...). This is
+					// the ATTACK-packet twin of the UseSkill dispatcher at
+					// skill/handler/common.go, for skills the client delivers on
+					// a melee/ranged/magic attack packet instead of USE_SKILL.
+					// It is a SEPARATE registry from handler.Lookup on purpose --
+					// see handler.AttackCastHandler's doc for why folding the two
+					// would double-fire dual-packet skills like Heal and zero out
+					// the attack-only skills' MP cost.
+					//
+					// Placed here, after damage/broadcast/projectile, with the
+					// same fire-and-forget posture as the emits above: the attack
+					// pipeline is already complete and a handler failure must
+					// never abort it. The WIRE skill id is passed (not the
+					// resolved Identity) because handlers put it on the wire for
+					// the client to match against its own WZ.
+					if attackIdOk && ai.SkillId() > 0 {
+						attackCastTryApply(l, ctx, wp, s.Field(), s.CharacterId(), attackId, skill3.Id(ai.SkillId()), sk.Level(), se)
 					}
 
 					// TODO apply attack effect (heal, mp consumption, dispel, cure all, combo reset, etc)

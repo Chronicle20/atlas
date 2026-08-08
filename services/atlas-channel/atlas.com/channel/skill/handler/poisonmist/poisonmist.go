@@ -17,11 +17,17 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
-	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
+// Poison Mist is registered on the ATTACK-cast registry, not the use-skill
+// one. The client delivers 2111003 on a magic-attack packet (opcode 0x2E at
+// GMS v83) because the skill carries `damage`/`attackCount`/`mobCount` in
+// Skill.wz -- verified live: `GET /api/data/skills/2111003` returns
+// damage 100, attackCount 1, mobCount 1, prop 0.41. It never arrives on
+// USE_SKILL, so a channelhandler.Register here would never fire (and would
+// additionally suppress the generic MP cost -- see AttackCastHandler's doc).
 func init() {
-	channelhandler.Register(skill2.FirePoisonMagicianPoisonMist, Apply)
+	channelhandler.RegisterAttackCast(skill2.FirePoisonMagicianPoisonMist, Apply)
 }
 
 // PlayerMistTickIntervalMs is the RE-APPLY cadence of a player-cast mist --
@@ -79,30 +85,35 @@ var emitCreate = func(l logrus.FieldLogger, ctx context.Context, body mistmsg.Cr
 	return mist.NewProcessor(l, ctx).Create(body)
 }
 
-// Apply is the Poison Mist handler installed in the per-skill registry.
+// Apply is the Poison Mist handler installed in the per-skill attack-cast
+// registry.
 //
-// By the time it runs, UseSkill has already charged MP and applied the
-// cooldown. Every rejection below returns nil and emits nothing: there is no
-// MP or cooldown rollback path, by design (FR-3.2 / FR-6.5).
+// By the time it runs, processAttack has already charged MP, applied the
+// direct magic-attack damage, and broadcast the attack. Every rejection below
+// returns nil and emits nothing: there is no MP or cooldown rollback path, by
+// design (FR-3.2 / FR-6.5).
 func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 	wp writer.Producer,
 	f field.Model,
 	characterId uint32,
-	info packetmodel.SkillUsageInfo,
+	skillId skill2.Id,
+	skillLevel byte,
 	e effect.Model,
 ) error {
 	return func(ctx context.Context) func(
 		wp writer.Producer,
 		f field.Model,
 		characterId uint32,
-		info packetmodel.SkillUsageInfo,
+		skillId skill2.Id,
+		skillLevel byte,
 		e effect.Model,
 	) error {
 		return func(
 			wp writer.Producer,
 			f field.Model,
 			characterId uint32,
-			info packetmodel.SkillUsageInfo,
+			skillId skill2.Id,
+			skillLevel byte,
 			e effect.Model,
 		) error {
 			duration := e.Duration()
@@ -168,8 +179,8 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				// pick the rendering arm (v83 @0x431d50, v95 @0x437515), so it
 				// must be the id that version binds. This is the one place a
 				// raw wire id is the correct value.
-				SourceSkillId:    uint32(info.SkillId()),
-				SourceSkillLevel: uint32(info.SkillLevel()),
+				SourceSkillId:    uint32(skillId),
+				SourceSkillLevel: uint32(skillLevel),
 			}
 
 			if err := emitCreate(l, ctx, body); err != nil {
@@ -178,7 +189,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 			}
 
 			l.Infof("Poison Mist: character [%d] cast level [%d] at (%d,%d), rect lt(%d,%d) rb(%d,%d), lifetime %d ms.",
-				characterId, info.SkillLevel(), x, y, lt.X(), lt.Y(), rb.X(), rb.Y(), duration)
+				characterId, skillLevel, x, y, lt.X(), lt.Y(), rb.X(), rb.Y(), duration)
 			return nil
 		}
 	}

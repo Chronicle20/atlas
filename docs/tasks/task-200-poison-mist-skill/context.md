@@ -20,7 +20,7 @@ Atlas owns most of the mist machinery already. Only the player-cast side is miss
 | `AffectedAreaCreated` / `Removed` writers in all 11 seed templates | committed in `ae3341511` (#1226, task-165) | **Verify, do not re-add.** |
 | Monster `APPLY_STATUS` with `PLAYER_SKILL` DoT | `services/atlas-channel/atlas.com/channel/monster/producer.go:13`; consumed at `services/atlas-monsters/.../kafka/consumer/monster/consumer.go:108` | Complete. atlas-maps becomes a second producer. |
 | Monster rect endpoint client | `services/atlas-channel/atlas.com/channel/monster/requests.go:33` `inMapRectUrl` | Exists in atlas-channel; copied into atlas-maps in Task 6. |
-| Skill identity registry | `services/atlas-channel/atlas.com/channel/skill/handler/registry.go:39` `Register` | Complete. Dispatch resolves the wire id to an Identity at `common.go:201` before `Lookup`. |
+| Skill identity registry | `services/atlas-channel/atlas.com/channel/skill/handler/registry.go` `Register` / `RegisterAttackCast` | Complete. TWO registries, both identity-keyed. `Register`/`Lookup` is the USE_SKILL path (`common.go:201`). `RegisterAttackCast`/`LookupAttackCast` is the ATTACK-packet path (`character_attack_common.go` `attackCastTryApply`) — Poison Mist uses this one; see design.md §4.2 correction note for why the two must stay separate. |
 
 ## 2. Verified facts the design rests on
 

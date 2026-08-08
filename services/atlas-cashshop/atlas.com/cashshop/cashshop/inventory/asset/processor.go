@@ -27,6 +27,7 @@ type Processor interface {
 	GetByCompartmentId(compartmentId uuid.UUID) ([]Model, error)
 	Create(mb *message.Buffer) func(compartmentId uuid.UUID, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
 	CreateAndEmit(compartmentId uuid.UUID, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
+	NextCashId() (int64, error)
 	CreateWithCashId(mb *message.Buffer) func(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
 	CreateWithCashIdAndEmit(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
 	UpdateQuantity(id uint32, quantity uint32) error
@@ -131,6 +132,14 @@ func (p *ProcessorImpl) CreateAndEmit(compartmentId uuid.UUID, templateId uint32
 		})
 	})
 	return result, txErr
+}
+
+// NextCashId reserves a fresh, collision-checked cash serial without creating
+// an asset. A pet purchase needs the serial BEFORE either row exists, because
+// the pet row and the cash asset row must be created carrying the same value
+// (see asset.PetSerialNumber in libs/atlas-packet).
+func (p *ProcessorImpl) NextCashId() (int64, error) {
+	return generateUniqueCashId(p.db.WithContext(p.ctx))
 }
 
 func (p *ProcessorImpl) CreateWithCashId(mb *message.Buffer) func(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error) {

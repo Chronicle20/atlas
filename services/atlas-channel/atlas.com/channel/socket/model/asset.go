@@ -36,6 +36,8 @@ func NewAsset(zeroPosition bool, a asset.Model) packetmodel.Asset {
 	if a.IsPet() {
 		base = base.SetPetInfo(a.PetId(), a.PetName(), a.PetLevel(), a.Fullness(), a.Closeness())
 		base = base.SetPetFlag(a.PetFlag())
+		base = base.SetPetDeadDate(a.PetDeadDate())
+		base = base.SetPetSerialNumber(a.PetSerialNumber())
 	}
 
 	return base

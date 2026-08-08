@@ -22,6 +22,12 @@ func PetItemExcludeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 		for i, itemId := range p.ItemIds() {
 			items = append(items, exclude.NewModel(uint32(i), uint32(itemId)))
 		}
-		_ = pet.NewProcessor(l, ctx).SetExcludeItems(s.CharacterId(), uint32(p.PetId()), items)
+		// p.PetId() is the client's pet serial, not the Atlas pet id.
+		pm, err := pet.NewProcessor(l, ctx).GetBySerialNumber(s.CharacterId(), p.PetId())
+		if err != nil {
+			l.WithError(err).Debugf("Unable to resolve pet [%d] for character [%d].", p.PetId(), s.CharacterId())
+			return
+		}
+		_ = pet.NewProcessor(l, ctx).SetExcludeItems(s.CharacterId(), pm.Id(), items)
 	}
 }

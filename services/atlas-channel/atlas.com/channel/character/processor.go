@@ -137,6 +137,8 @@ func (p *ProcessorImpl) PetAssetEnrichmentDecorator(m Model) Model {
 					SetCloseness(pm.Closeness()).
 					SetFullness(pm.Fullness()).
 					SetPetSlot(pm.Slot()).
+					SetPetDeadDate(pm.Expiration()).
+					SetPetSerialNumber(pm.SerialNumber()).
 					MustBuild()
 			}
 		}

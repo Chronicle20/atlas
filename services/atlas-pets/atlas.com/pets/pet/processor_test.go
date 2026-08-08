@@ -775,6 +775,54 @@ func TestProcessor_EvaluateHungerSpawned(t *testing.T) {
 	}
 }
 
+// The FULLNESS_CHANGED amount is a SIGNED delta against the previous fullness.
+// Hunger decay must report it negative (and AwardFullness positive), because
+// atlas-channel treats amount>0 as "the pet was fed" and answers with the pet's
+// eat-reaction packet. Emitting old-new here made every hunger tick replay that
+// reaction. The body must also carry the post-decay fullness.
+func TestProcessor_EvaluateHungerEmitsNegativeAmount(t *testing.T) {
+	dp := &pdm.Processor{}
+	dp.GetByIdFn = func(petId uint32) (data2.Model, error) {
+		return data2.NewModelBuilder().SetHunger(6).Build(), nil
+	}
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithDataProcessor(dp))
+
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).SetFullness(100)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	if err = p.EvaluateHunger(mb)(p1.OwnerId()); err != nil {
+		t.Fatalf("Failed to process hunger: %v", err)
+	}
+
+	se, ok := mb.GetAll()[pet2.EnvStatusEventTopic]
+	if !ok {
+		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+	var saw bool
+	for _, msg := range se {
+		var env pet2.StatusEvent[pet2.FullnessChangedStatusEventBody]
+		if err = json.Unmarshal(msg.Value, &env); err != nil {
+			t.Fatalf("Failed to unmarshal status event: %v", err)
+		}
+		if env.Type != pet2.StatusEventTypeFullnessChanged {
+			continue
+		}
+		saw = true
+		if env.Body.Amount != -6 {
+			t.Fatalf("Amount = %d, want -6 (decay is a negative delta)", env.Body.Amount)
+		}
+		if env.Body.Fullness != 94 {
+			t.Fatalf("Fullness = %d, want 94 (post-decay)", env.Body.Fullness)
+		}
+	}
+	if !saw {
+		t.Fatalf("Expected a %s event", pet2.StatusEventTypeFullnessChanged)
+	}
+}
+
 func TestProcessor_EvaluateHungerSunny(t *testing.T) {
 	dp := &pdm.Processor{}
 	dp.GetByIdFn = func(petId uint32) (data2.Model, error) {

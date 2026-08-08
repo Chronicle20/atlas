@@ -736,7 +736,18 @@ func (p *ProcessorImpl) EvaluateHunger(mb *message.Buffer) func(ownerId uint32) 
 					return err
 				}
 				if byte(newFullness) != pe.Fullness() {
-					err = mb.Put(pet.EnvStatusEventTopic, fullnessChangedEventProvider(pe, int8(int16(pe.Fullness())-newFullness)))
+					// Amount is signed and relative to the PREVIOUS fullness, so
+					// decay must report a negative delta (new-old) — the mirror of
+					// AwardFullness's positive +amount. Reporting old-new made every
+					// hunger tick look like a feed to atlas-channel, which replied
+					// with the pet's eat-reaction packet. The event body must also
+					// carry the post-decay fullness, not the stale pre-decay value.
+					var dm Model
+					dm, err = Clone(pe).SetFullness(byte(newFullness)).Build()
+					if err != nil {
+						return err
+					}
+					err = mb.Put(pet.EnvStatusEventTopic, fullnessChangedEventProvider(dm, int8(newFullness-int16(pe.Fullness()))))
 					if err != nil {
 						return err
 					}

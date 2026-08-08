@@ -49,6 +49,7 @@ func spawnEventProvider(m Model, tm *TemporalData) model.Provider[[]kafka.Messag
 			Y:          tm.Y(),
 			Stance:     tm.Stance(),
 			FH:         tm.FH(),
+			CashId:     m.CashId(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

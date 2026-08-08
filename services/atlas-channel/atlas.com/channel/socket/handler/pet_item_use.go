@@ -10,7 +10,6 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
-	"math"
 
 	"github.com/sirupsen/logrus"
 
@@ -58,13 +57,6 @@ func PetItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 			}
 		}
 
-		// Atlas pet ids are uint32; the wire petId (pet locker SN) round-trips
-		// as the pet id, so anything wider is forged.
-		if p.PetId() > math.MaxUint32 {
-			reject("pet_not_found")
-			return
-		}
-
 		gate, _ := readerOptions["skillGate"].(string)
 		if gate != skillGateEquipAbility && gate != skillGatePetSkillFlag {
 			// Fail closed and loud: a template gap must never be permissive.
@@ -79,6 +71,12 @@ func PetItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 		// resolve the character's spawned pet. Field present but zero -> reject.
 		// Never fall back from one to the other — that would reopen the FR-1
 		// ownership hole this task exists to close.
+		//
+		// The wire value is the pet's CLIENT serial (GW_ItemSlotBase::liCashItemSN
+		// = the cash serial for a purchased pet), not the Atlas pet id, so it is a
+		// full 64 bits. It used to be range-checked against MaxUint32 on the theory
+		// that the two were the same number; that check rejected every
+		// cash-purchased pet outright.
 		hasPetId, reason, ok := classifyPetIdInput(pet2.HasLeadingPetId(tenant.MustFromContext(ctx)), p.PetId())
 		if !ok {
 			reject(reason)
@@ -102,7 +100,7 @@ func PetItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 		)
 		if hasPetId {
 			model.Submit(pg, func() (any, error) {
-				pm, pmErr = pet.NewProcessor(l, ctx).GetById(uint32(p.PetId()))
+				pm, pmErr = pet.NewProcessor(l, ctx).GetBySerialNumber(s.CharacterId(), p.PetId())
 				return nil, nil
 			})
 		} else {

@@ -23,11 +23,39 @@ func TestPetCommandResponse(t *testing.T) {
 }
 
 func TestPetFoodResponse(t *testing.T) {
-	input := NewPetFoodResponse(1234, 1, 5, false, true)
+	input := NewPetFoodResponse(1234, 1, false, true)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			test.RoundTrip(t, ctx, input.Encode, input.Decode, nil)
+		})
+	}
+}
+
+// The mode-1 (food) arm carries NO action index. CPet::OnActionCommand selects
+// the reaction from m_aFoodReaction by the pet's level and then reads
+// Decode1(success) directly after the mode byte — verified GMS v83
+// @0x7048ab (`if (v5 != 1)` falls through to the m_aFoodReaction level scan,
+// then `if (CInPacket::Decode1(a2)) v7 = v11+2 else v7 = v11+3`) and GMS v95
+// @0x6a3930 (same shape with PDB symbols: `m_aFoodReaction` scan then
+// `if (CInPacket::Decode1(iPacket)) p_actSuccess = &v12->actSuccess else
+// &v12->actFail`). Emitting an animation byte here shifts success and balloon
+// one byte late, so a successfully fed pet plays its actFail reaction.
+func TestPetFoodResponseBytesOmitsAnimation(t *testing.T) {
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			got := NewPetFoodResponse(0x01020304, 0x05, true, false).Encode(nil, ctx)(nil)
+			want := []byte{
+				0x04, 0x03, 0x02, 0x01, // ownerId (upstream)
+				0x05, // slot (upstream)
+				0x01, // mode (food)
+				0x01, // success
+				0x00, // balloon
+			}
+			if !bytes.Equal(got, want) {
+				t.Fatalf("food = % X, want % X", got, want)
+			}
 		})
 	}
 }

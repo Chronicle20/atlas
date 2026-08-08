@@ -1205,6 +1205,14 @@
   ida:
     address: 5748606
   note: 'send-site 0x58e90b: COutPacket(114)+EncBuffer(petId,8)+Enc1(type)+Enc1(action)+EncStr(msg). v61 PET_CHAT=139.'
+- op: PET_AUTO_POT
+  direction: serverbound
+  opcode: 117
+  fname: CWvsContext::SendStatChangeItemUseRequestByPetQ
+  provenance: ida-discovered
+  ida:
+    address: 7396493
+  note: 'task-139 re-harvest (was unresolved/n-a; the IDB symbol carries a double-underscore rename, CWvsContext__SendStatChangeItemUseRequestByPetQ, per IDA''s Class::Method identifier restriction). send-site 0x70dc8d: COutPacket(117)+Encode1(a4=buffSkill)@0x70dcd5+Encode4(v7=updateTime)@0x70dce3+Encode2(a2=source/slot)@0x70dcee+Encode4(a3=itemId)@0x70dcf9 — NO leading EncodeBuffer(petSN,8) (v48 predates multi-pet). v61 op142 is the first version to carry the petSN. Corrects the prior false n-a (op was absent from the registry, an artifact of the encoder being unresolved at the original harvest time, not genuine absence).'
 - op: SUMMON_ATTACK
   direction: serverbound
   opcode: 121

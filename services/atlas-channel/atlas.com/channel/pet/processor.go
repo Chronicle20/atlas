@@ -4,6 +4,7 @@ import (
 	pet2 "atlas-channel/kafka/message/pet"
 	"atlas-channel/pet/exclude"
 	"context"
+	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
@@ -18,6 +19,7 @@ type Processor interface {
 	GetById(petId uint32) (Model, error)
 	ByOwnerProvider(ownerId uint32) model.Provider[[]Model]
 	GetByOwner(ownerId uint32) ([]Model, error)
+	GetBySerialNumber(ownerId uint32, serialNumber uint64) (Model, error)
 	Spawn(characterId uint32, petId uint32, lead bool) error
 	Despawn(characterId uint32, petId uint32) error
 	AttemptCommand(petId uint32, commandId byte, byName bool, characterId uint32) error
@@ -38,6 +40,55 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 var _ Processor = (*ProcessorImpl)(nil)
+
+// ErrPetNotFound is returned when a wire serial number does not name any pet
+// the character owns.
+var ErrPetNotFound = errors.New("pet not found")
+
+// GetBySerialNumber resolves the identifier the CLIENT uses for a pet
+// (GW_ItemSlotBase::liCashItemSN, echoed back on every serverbound pet packet)
+// to the owning character's pet.
+//
+// The lookup is deliberately scoped to ownerId: the serial arrives from the
+// client, so resolving it against every pet in the world would let a crafted
+// packet address someone else's pet. Scoping the search is what makes that
+// impossible rather than merely checked afterwards.
+//
+// The match order mirrors asset.PetSerialNumber (libs/atlas-packet): a
+// cash-purchased pet is addressed by its cash serial; a pet with no serial
+// (never bought from the cash shop, so nothing to match in the locker) is
+// addressed by its Atlas pet id. Pets carrying a cash serial are matched first
+// so an id can never shadow a serial.
+func (p *ProcessorImpl) GetBySerialNumber(ownerId uint32, serialNumber uint64) (Model, error) {
+	if serialNumber == 0 {
+		return Model{}, ErrPetNotFound
+	}
+	ps, err := p.GetByOwner(ownerId)
+	if err != nil {
+		return Model{}, err
+	}
+	return SelectBySerialNumber(ps, serialNumber)
+}
+
+// SelectBySerialNumber is the pure matching half of GetBySerialNumber. Pets
+// carrying a cash serial are matched first so that a pet id can never shadow
+// another pet's serial.
+func SelectBySerialNumber(ps []Model, serialNumber uint64) (Model, error) {
+	if serialNumber == 0 {
+		return Model{}, ErrPetNotFound
+	}
+	for _, pm := range ps {
+		if pm.CashId() != 0 && pm.CashId() == serialNumber {
+			return pm, nil
+		}
+	}
+	for _, pm := range ps {
+		if pm.CashId() == 0 && uint64(pm.Id()) == serialNumber {
+			return pm, nil
+		}
+	}
+	return Model{}, ErrPetNotFound
+}
 
 func (p *ProcessorImpl) ByIdProvider(petId uint32) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(petId), Extract)

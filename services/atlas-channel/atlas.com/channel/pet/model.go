@@ -33,6 +33,19 @@ func (m Model) CashId() uint64 {
 	return m.cashId
 }
 
+// SerialNumber is the identifier the CLIENT uses for this pet — the value it
+// receives in GW_ItemSlotBase::liCashItemSN and echoes back on every serverbound
+// pet packet. It mirrors asset.PetSerialNumber in libs/atlas-packet: the cash
+// serial for a cash-purchased pet, otherwise the Atlas pet id. The two must stay
+// in lockstep, or the client cannot bind the spawned pet to its inventory slot
+// (CPet::GetItemSlot, GMS v83 @0x703af3).
+func (m Model) SerialNumber() uint64 {
+	if m.cashId != 0 {
+		return m.cashId
+	}
+	return uint64(m.id)
+}
+
 func (m Model) TemplateId() uint32 {
 	return m.templateId
 }

@@ -51,6 +51,11 @@
   {
    "fname": "CEntrustedShopDlg::DeleteBlackList",
    "reason": "Entrusted-shop (hired merchant) blacklist DELETE send is version-absent in gms_v61: no CEntrustedShopDlg::DeleteBlackList in the v61 binary (same exhaustive class/BlackList scan as AddBlackList). Post-v72 feature. (interaction-legacy-audit family pass, task-127)"
+  },
+  {
+   "fname": "CWvsContext::SendConsumeCashItemUseRequest",
+   "packet": "cash/serverbound/CashItemUsePetSkill",
+   "reason": "task-139 cash-item-use-pet-skill coverage sweep (IDA session 965202bf, GMS_v61). CWvsContext::SendConsumeCashItemUseRequest @0x832a5d dispatches a switch on get_consume_cash_item_type(itemId). Type 28 IS uniquely dispatched (jumptable case 28 @0x834a4e, not folded into the default list 'cases 27,34,35,37,38,40,42-44'), but its ENTIRE body is only five instructions: mov ecx,[var_58]; lea eax,[var_2C]; push eax; call sub_832700; jmp def_832B01 — ZERO COutPacket Encode calls of any kind (no Encode1/2/4/8/Buffer/Str), jumping straight into the function's shared default cleanup. Decompiling sub_832700 shows it checks a global flag (dword_975D08) then a per-field secured value (field+252 via TSecType<ulong>::GetData) against the range [910000000,910000022] — a reserved/event map-id band — calling an unrelated helper sub_715A69 only inside that map range, else writing a chat-log line; nothing in it touches the packet buffer or references a pet object (CPet/GetPet/CharacterData pet-index). Case 28 on v61 therefore writes zero wire bytes and its guard logic is unrelated to pets. Positive absence."
   }
  ]
 }

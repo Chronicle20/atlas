@@ -9,6 +9,8 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	petskill "github.com/Chronicle20/atlas/libs/atlas-constants/pet/skill"
+	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -48,11 +50,14 @@ type Asset struct {
 	rechargeable uint64
 	owner        string
 	// pet fields
-	petId     uint32
-	petName   string
-	petLevel  byte
-	closeness uint16
-	fullness  byte
+	petId           uint32
+	petName         string
+	petLevel        byte
+	closeness       uint16
+	fullness        byte
+	petFlag         uint16
+	petDeadDate     time.Time
+	petSerialNumber uint64
 }
 
 func NewAsset(zeroPosition bool, slot int16, templateId uint32, expiration time.Time) Asset {
@@ -165,6 +170,27 @@ func (m Asset) SetPetInfo(petId uint32, petName string, petLevel, fullness byte,
 	m.petLevel = petLevel
 	m.fullness = fullness
 	m.closeness = closeness
+	return m
+}
+
+func (m Asset) PetDeadDate() time.Time { return m.petDeadDate }
+
+// SetPetDeadDate sets GW_ItemSlotPet::dateDead — the "water of life dries up"
+// clock, which belongs to the PET, not to the cash item wrapping it. It is a
+// distinct field from Asset.expiration; conflating the two is what made a
+// freshly-bought pet render as dried up (see encodePetDeadDate).
+func (m Asset) SetPetDeadDate(t time.Time) Asset {
+	m.petDeadDate = t
+	return m
+}
+
+func (m Asset) PetFlag() uint16 { return m.petFlag }
+
+// SetPetFlag sets the Atlas-canonical pet skill mask (see atlas-constants
+// pet/skill). The wire encoding translates it through the tenant's petSkill
+// options table at encode time — canonical bits never hit the wire directly.
+func (m Asset) SetPetFlag(flag uint16) Asset {
+	m.petFlag = flag
 	return m
 }
 
@@ -334,8 +360,68 @@ func (m *Asset) encodeStackableInfo(l logrus.FieldLogger, _ context.Context) fun
 	}
 }
 
-func (m *Asset) encodePetCashItemInfo(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+// encodePetDeadDate renders GW_ItemSlotPet::dateDead (the 8-byte FILETIME at
+// struct offset +89; GW_ItemSlotPet::RawDecode GMS v83 @0x4e4219 reads it with
+// DecodeBuffer(this+89, 8)).
+//
+// The client's "is this pet dried up?" predicate is GMS v83 sub_4E4044
+// @0x4E4044 — `CompareFileTime(dateDead, 0x0217E646BB058000) >= 0`, where the
+// constant at dword_AF30B0 is 150842304000000000 = 2079-01-01. CompareFileTime
+// treats FILETIME as unsigned, so the MsTime zero-time sentinel (-1 =
+// 0xFFFFFFFFFFFFFFFF, the maximum FILETIME) compares ABOVE the threshold and
+// the pet reads as already dead — CUIToolTip::GetPetDeadDate @0x8ebfde then
+// renders SP_678 "The water of life has dried up".
+//
+// So an unset dead date must NOT go out as the MsTime sentinel. Zero is used
+// instead: it is unambiguously below the threshold, so the pet stays usable and
+// the client falls back to the item's own `permanent` WZ property for its
+// tooltip text. A pet whose life date is genuinely known always takes the
+// MsTime path below.
+func encodePetDeadDate(t time.Time) int64 {
+	if t.IsZero() {
+		return 0
+	}
+	return MsTime(t)
+}
+
+// PetSerialNumber is the value the client sees as GW_ItemSlotBase::liCashItemSN
+// for a pet, and it is the pet's ONLY identity on the wire. The client keys it
+// twice, so both consumers must agree on it:
+//
+//   - cash-shop locker removal — CCashShop::OnCashItemResMoveLtoSDone
+//     (GMS v83 @0x47aee2) scans m_aCashItemInfo and drops the entry whose liSN
+//     matches the withdrawn item's liCashItemSN. Sending anything but the real
+//     cash serial leaves the pet sitting in the locker UI forever.
+//   - spawned-pet binding — CPet::GetItemSlot (GMS v83 @0x703af3) resolves the
+//     active pet's inventory slot with
+//     CharacterData::FindCashItemSlotPosition(CASH, sn), where sn is the value
+//     from OnPetActivated.
+//
+// The serial is supplied by the caller (SetPetSerialNumber) rather than read off
+// this Asset's own cashId, because the pet record — not the inventory row — is
+// the single source that every consumer resolves against: the item block here,
+// the PetActivated packet, and atlas-channel's wire->pet lookup. Deriving it
+// from the inventory row instead would let those disagree for any pet whose two
+// rows were written before they shared a serial.
+//
+// Falls back to the Atlas pet id when no serial was set, which is what a pet
+// that never came from the cash shop uses (it has no locker entry to match).
+func (m Asset) PetSerialNumber() uint64 {
+	if m.petSerialNumber != 0 {
+		return m.petSerialNumber
+	}
+	return uint64(m.petId)
+}
+
+// SetPetSerialNumber sets the client-facing pet serial. See PetSerialNumber.
+func (m Asset) SetPetSerialNumber(sn uint64) Asset {
+	m.petSerialNumber = sn
+	return m
+}
+
+func (m *Asset) encodePetCashItemInfo(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		if !m.zeroPosition {
 			w.WriteInt8(int8(m.slot))
@@ -343,17 +429,25 @@ func (m *Asset) encodePetCashItemInfo(l logrus.FieldLogger, _ context.Context) f
 		w.WriteByte(3)
 		w.WriteInt(m.templateId)
 		w.WriteBool(true)
-		w.WriteLong(uint64(m.petId))
+		w.WriteLong(m.PetSerialNumber())
 		w.WriteInt64(MsTime(time.Time{}))
 		WritePaddedString(w, m.petName, 13)
 		w.WriteByte(m.petLevel)
 		w.WriteShort(m.closeness)
 		w.WriteByte(m.fullness)
-		w.WriteInt64(MsTime(m.expiration))
-		w.WriteShort(0)   // attribute
-		w.WriteShort(0)   // skill
-		w.WriteInt(18000) // remaining life
-		w.WriteShort(0)   // attribute
+		w.WriteInt64(encodePetDeadDate(m.petDeadDate))
+		w.WriteShort(0)                                              // petAttribute
+		w.WriteShort(resolvePetSkillWireMask(l, options, m.petFlag)) // usPetSkill
+		// GW_ItemSlotPet::RawDecode gained remainLife in the v72 revision and the
+		// trailing attribute short in the v79 revision: v48 (@0x49c77e) and v61
+		// (@0x4b52f2) read neither, v72 reads remainLife only (@0x4d06dd), v79
+		// (@0x4d84c4) and v83 (@0x4e4219) read both. IDA-verified.
+		if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
+			w.WriteInt(18000) // remaining life
+		}
+		if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
+			w.WriteShort(0) // attribute
+		}
 		return w.Bytes()
 	}
 }
@@ -430,7 +524,11 @@ func (m *Asset) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *reques
 
 		if isCash {
 			if typeByte == 3 {
-				m.petId = uint32(r.ReadUint64())
+				// GW_ItemSlotBase::liCashItemSN for a pet is PetSerialNumber() —
+				// 64 bits wide, and not necessarily the Atlas pet id — so it
+				// decodes into its own field rather than being truncated into
+				// the uint32 petId.
+				m.petSerialNumber = r.ReadUint64()
 			} else {
 				m.cashId = r.ReadInt64()
 			}
@@ -544,15 +642,46 @@ func (m *Asset) decodeStackableInfo(r *request.Reader, isCash bool) {
 	}
 }
 
+// decodePetDeadDate is the inverse of encodePetDeadDate: it maps the
+// "unset" wire value (0) back to the zero time so the codec round-trips.
+func decodePetDeadDate(v int64) time.Time {
+	if v == 0 {
+		return time.Time{}
+	}
+	return FromMsTime(v)
+}
+
 func (m *Asset) decodePetInfo(r *request.Reader) {
 	_ = FromMsTime(r.ReadInt64()) // msTime(time.Time{})
 	m.petName = ReadPaddedString(r, 13)
 	m.petLevel = r.ReadByte()
 	m.closeness = r.ReadUint16()
 	m.fullness = r.ReadByte()
-	m.expiration = FromMsTime(r.ReadInt64())
+	m.petDeadDate = decodePetDeadDate(r.ReadInt64())
 	_ = r.ReadUint16() // attribute
 	_ = r.ReadUint16() // skill
 	_ = r.ReadUint32() // remaining life
 	_ = r.ReadUint16() // attribute
+}
+
+// resolvePetSkillWireMask translates the Atlas-canonical pet skill mask into
+// the tenant's client usPetSkill bits via the writer options "petSkill" table
+// (DOM-25: the wire bit values are client-interpreted and version-dependent).
+// Semantic bits with no table entry encode as absent — never a guessed value.
+func resolvePetSkillWireMask(l logrus.FieldLogger, options map[string]interface{}, petFlag uint16) uint16 {
+	if petFlag == 0 {
+		return 0
+	}
+	var wire uint16
+	for _, k := range petskill.All() {
+		if !petskill.Has(petFlag, k) {
+			continue
+		}
+		if v, ok := atlas_packet.ResolveCode16(l, options, "petSkill", string(k)); ok {
+			wire |= v
+		} else {
+			l.Debugf("Pet skill [%s] set on pet but no petSkill wire bit configured; encoding as absent.", k)
+		}
+	}
+	return wire
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/pet/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -96,6 +97,17 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 				if len(windows) > 0 {
 					m.TimeWindows = windows
 				}
+			}
+
+			// 0519 pet skill pouches: the skill key(s) and add flag live under
+			// info (not spec) — add=1 grants the skill, add=0 removes it.
+			for _, k := range skill.All() {
+				if i.GetBool(string(k), false) {
+					m.PetSkills = append(m.PetSkills, string(k))
+				}
+			}
+			if len(m.PetSkills) > 0 {
+				m.PetSkillAdd = i.GetBool("add", false)
 			}
 
 			s, err := cxml.ChildByName("spec")

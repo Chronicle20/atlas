@@ -13,47 +13,50 @@ var ErrInvalidId = errors.New("asset id must be greater than 0")
 
 func Clone(m Model) *ModelBuilder {
 	return &ModelBuilder{
-		id:             m.id,
-		compartmentId:  m.compartmentId,
-		slot:           m.slot,
-		templateId:     m.templateId,
-		expiration:     m.expiration,
-		createdAt:      m.createdAt,
-		quantity:       m.quantity,
-		ownerId:        m.ownerId,
-		owner:          m.owner,
-		flag:           m.flag,
-		rechargeable:   m.rechargeable,
-		strength:       m.strength,
-		dexterity:      m.dexterity,
-		intelligence:   m.intelligence,
-		luck:           m.luck,
-		hp:             m.hp,
-		mp:             m.mp,
-		weaponAttack:   m.weaponAttack,
-		magicAttack:    m.magicAttack,
-		weaponDefense:  m.weaponDefense,
-		magicDefense:   m.magicDefense,
-		accuracy:       m.accuracy,
-		avoidability:   m.avoidability,
-		hands:          m.hands,
-		speed:          m.speed,
-		jump:           m.jump,
-		slots:          m.slots,
-		levelType:      m.levelType,
-		level:          m.level,
-		experience:     m.experience,
-		hammersApplied: m.hammersApplied,
-		equippedSince:  m.equippedSince,
-		cashId:         m.cashId,
-		commodityId:    m.commodityId,
-		purchaseBy:     m.purchaseBy,
-		petId:          m.petId,
-		petName:        m.petName,
-		petLevel:       m.petLevel,
-		closeness:      m.closeness,
-		fullness:       m.fullness,
-		petSlot:        m.petSlot,
+		id:              m.id,
+		compartmentId:   m.compartmentId,
+		slot:            m.slot,
+		templateId:      m.templateId,
+		expiration:      m.expiration,
+		createdAt:       m.createdAt,
+		quantity:        m.quantity,
+		ownerId:         m.ownerId,
+		owner:           m.owner,
+		flag:            m.flag,
+		rechargeable:    m.rechargeable,
+		strength:        m.strength,
+		dexterity:       m.dexterity,
+		intelligence:    m.intelligence,
+		luck:            m.luck,
+		hp:              m.hp,
+		mp:              m.mp,
+		weaponAttack:    m.weaponAttack,
+		magicAttack:     m.magicAttack,
+		weaponDefense:   m.weaponDefense,
+		magicDefense:    m.magicDefense,
+		accuracy:        m.accuracy,
+		avoidability:    m.avoidability,
+		hands:           m.hands,
+		speed:           m.speed,
+		jump:            m.jump,
+		slots:           m.slots,
+		levelType:       m.levelType,
+		level:           m.level,
+		experience:      m.experience,
+		hammersApplied:  m.hammersApplied,
+		equippedSince:   m.equippedSince,
+		cashId:          m.cashId,
+		commodityId:     m.commodityId,
+		purchaseBy:      m.purchaseBy,
+		petId:           m.petId,
+		petName:         m.petName,
+		petLevel:        m.petLevel,
+		petFlag:         m.petFlag,
+		closeness:       m.closeness,
+		fullness:        m.fullness,
+		petSlot:         m.petSlot,
+		petDeadDate:     m.petDeadDate,
+		petSerialNumber: m.petSerialNumber,
 	}
 }
 
@@ -102,12 +105,15 @@ type ModelBuilder struct {
 	commodityId uint32
 	purchaseBy  uint32
 	// pet fields
-	petId     uint32
-	petName   string
-	petLevel  byte
-	closeness uint16
-	fullness  byte
-	petSlot   int8
+	petId           uint32
+	petName         string
+	petLevel        byte
+	petFlag         uint16
+	closeness       uint16
+	fullness        byte
+	petSlot         int8
+	petDeadDate     time.Time
+	petSerialNumber uint64
 }
 
 func NewBuilder(compartmentId uuid.UUID, templateId uint32) *ModelBuilder {
@@ -218,56 +224,64 @@ func (b *ModelBuilder) SetPurchaseBy(v uint32) *ModelBuilder        { b.purchase
 func (b *ModelBuilder) SetPetId(v uint32) *ModelBuilder             { b.petId = v; return b }
 func (b *ModelBuilder) SetPetName(v string) *ModelBuilder           { b.petName = v; return b }
 func (b *ModelBuilder) SetPetLevel(v byte) *ModelBuilder            { b.petLevel = v; return b }
+func (b *ModelBuilder) SetPetFlag(v uint16) *ModelBuilder           { b.petFlag = v; return b }
 func (b *ModelBuilder) SetCloseness(v uint16) *ModelBuilder         { b.closeness = v; return b }
 func (b *ModelBuilder) SetFullness(v byte) *ModelBuilder            { b.fullness = v; return b }
 func (b *ModelBuilder) SetPetSlot(v int8) *ModelBuilder             { b.petSlot = v; return b }
+
+func (b *ModelBuilder) SetPetDeadDate(t time.Time) *ModelBuilder { b.petDeadDate = t; return b }
+
+func (b *ModelBuilder) SetPetSerialNumber(v uint64) *ModelBuilder { b.petSerialNumber = v; return b }
 
 func (b *ModelBuilder) Build() (Model, error) {
 	if b.id == 0 {
 		return Model{}, ErrInvalidId
 	}
 	return Model{
-		id:             b.id,
-		compartmentId:  b.compartmentId,
-		slot:           b.slot,
-		templateId:     b.templateId,
-		expiration:     b.expiration,
-		createdAt:      b.createdAt,
-		quantity:       b.quantity,
-		ownerId:        b.ownerId,
-		owner:          b.owner,
-		flag:           b.flag,
-		rechargeable:   b.rechargeable,
-		strength:       b.strength,
-		dexterity:      b.dexterity,
-		intelligence:   b.intelligence,
-		luck:           b.luck,
-		hp:             b.hp,
-		mp:             b.mp,
-		weaponAttack:   b.weaponAttack,
-		magicAttack:    b.magicAttack,
-		weaponDefense:  b.weaponDefense,
-		magicDefense:   b.magicDefense,
-		accuracy:       b.accuracy,
-		avoidability:   b.avoidability,
-		hands:          b.hands,
-		speed:          b.speed,
-		jump:           b.jump,
-		slots:          b.slots,
-		levelType:      b.levelType,
-		level:          b.level,
-		experience:     b.experience,
-		hammersApplied: b.hammersApplied,
-		equippedSince:  b.equippedSince,
-		cashId:         b.cashId,
-		commodityId:    b.commodityId,
-		purchaseBy:     b.purchaseBy,
-		petId:          b.petId,
-		petName:        b.petName,
-		petLevel:       b.petLevel,
-		closeness:      b.closeness,
-		fullness:       b.fullness,
-		petSlot:        b.petSlot,
+		id:              b.id,
+		compartmentId:   b.compartmentId,
+		slot:            b.slot,
+		templateId:      b.templateId,
+		expiration:      b.expiration,
+		createdAt:       b.createdAt,
+		quantity:        b.quantity,
+		ownerId:         b.ownerId,
+		owner:           b.owner,
+		flag:            b.flag,
+		rechargeable:    b.rechargeable,
+		strength:        b.strength,
+		dexterity:       b.dexterity,
+		intelligence:    b.intelligence,
+		luck:            b.luck,
+		hp:              b.hp,
+		mp:              b.mp,
+		weaponAttack:    b.weaponAttack,
+		magicAttack:     b.magicAttack,
+		weaponDefense:   b.weaponDefense,
+		magicDefense:    b.magicDefense,
+		accuracy:        b.accuracy,
+		avoidability:    b.avoidability,
+		hands:           b.hands,
+		speed:           b.speed,
+		jump:            b.jump,
+		slots:           b.slots,
+		levelType:       b.levelType,
+		level:           b.level,
+		experience:      b.experience,
+		hammersApplied:  b.hammersApplied,
+		equippedSince:   b.equippedSince,
+		cashId:          b.cashId,
+		commodityId:     b.commodityId,
+		purchaseBy:      b.purchaseBy,
+		petId:           b.petId,
+		petName:         b.petName,
+		petLevel:        b.petLevel,
+		petFlag:         b.petFlag,
+		petDeadDate:     b.petDeadDate,
+		petSerialNumber: b.petSerialNumber,
+		closeness:       b.closeness,
+		fullness:        b.fullness,
+		petSlot:         b.petSlot,
 	}, nil
 }
 

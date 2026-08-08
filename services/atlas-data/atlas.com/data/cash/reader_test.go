@@ -811,3 +811,65 @@ func TestReaderProtectTime(t *testing.T) {
 		t.Fatalf("ProtectTime(5061001) = %d, want 30", got)
 	}
 }
+
+const testPetSkillXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="0519.img">
+  <imgdir name="05190001">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="consumeHP" value="1"/>
+      <int name="add" value="1"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05190006">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="consumeMP" value="1"/>
+      <int name="add" value="1"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05191001">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="consumeHP" value="1"/>
+      <int name="add" value="0"/>
+    </imgdir>
+  </imgdir>
+</imgdir>
+`
+
+func TestReaderPetSkills(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testPetSkillXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rmm) != 3 {
+		t.Fatalf("len(rmm) = %d, want 3", len(rmm))
+	}
+
+	cases := []struct {
+		id     string
+		skills []string
+		add    bool
+	}{
+		{"5190001", []string{"consumeHP"}, true},
+		{"5190006", []string{"consumeMP"}, true},
+		{"5191001", []string{"consumeHP"}, false},
+	}
+	for _, c := range cases {
+		rm, ok := rmm[c.id]
+		if !ok {
+			t.Fatalf("rmm[%s] does not exist", c.id)
+		}
+		if len(rm.PetSkills) != len(c.skills) || rm.PetSkills[0] != c.skills[0] {
+			t.Errorf("[%s] PetSkills = %v, want %v", c.id, rm.PetSkills, c.skills)
+		}
+		if rm.PetSkillAdd != c.add {
+			t.Errorf("[%s] PetSkillAdd = %t, want %t", c.id, rm.PetSkillAdd, c.add)
+		}
+	}
+}

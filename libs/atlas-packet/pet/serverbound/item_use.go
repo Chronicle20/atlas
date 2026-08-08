@@ -8,6 +8,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const PetItemUseHandle = "PetItemUseHandle"
@@ -49,10 +50,13 @@ func (m ItemUse) String() string {
 	return fmt.Sprintf("petId [%d] buffSkill [%t] updateTime [%d] source [%d] itemId [%d]", m.petId, m.buffSkill, m.updateTime, m.source, m.itemId)
 }
 
-func (m ItemUse) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m ItemUse) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	t := tenant.MustFromContext(ctx)
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		w.WriteLong(m.petId)
+		if HasLeadingPetId(t) {
+			w.WriteLong(m.petId) // absent on GMS v48 (single-pet; @0x70dc8d has no EncodeBuffer(petSN,8))
+		}
 		w.WriteBool(m.buffSkill)
 		w.WriteInt(m.updateTime)
 		w.WriteInt16(m.source)
@@ -61,9 +65,12 @@ func (m ItemUse) Encode(l logrus.FieldLogger, _ context.Context) func(options ma
 	}
 }
 
-func (m *ItemUse) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *ItemUse) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		m.petId = r.ReadUint64()
+		if HasLeadingPetId(t) {
+			m.petId = r.ReadUint64() // absent on GMS v48 (single-pet)
+		}
 		m.buffSkill = r.ReadBool()
 		m.updateTime = r.ReadUint32()
 		m.source = r.ReadInt16()

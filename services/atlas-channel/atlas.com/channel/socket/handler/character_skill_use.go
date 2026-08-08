@@ -196,14 +196,6 @@ func skillLevelOf(skills []skill2.Model, id skill.Id) byte {
 	return 0
 }
 
-func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
-	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
-		return func(wp writer.Producer) func(s session.Model) error {
-			return session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)
-		}
-	}
-}
-
 // battleshipCastBlocked reports whether a 5221006 cast must be rejected
 // because the post-break cooldown is still running (FR-2.4). Scoped to
 // battleship: a generic cast-time cooldown gate is out of scope here.

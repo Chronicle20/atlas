@@ -775,6 +775,54 @@ func TestProcessor_EvaluateHungerSpawned(t *testing.T) {
 	}
 }
 
+// The FULLNESS_CHANGED amount is a SIGNED delta against the previous fullness.
+// Hunger decay must report it negative (and AwardFullness positive), because
+// atlas-channel treats amount>0 as "the pet was fed" and answers with the pet's
+// eat-reaction packet. Emitting old-new here made every hunger tick replay that
+// reaction. The body must also carry the post-decay fullness.
+func TestProcessor_EvaluateHungerEmitsNegativeAmount(t *testing.T) {
+	dp := &pdm.Processor{}
+	dp.GetByIdFn = func(petId uint32) (data2.Model, error) {
+		return data2.NewModelBuilder().SetHunger(6).Build(), nil
+	}
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithDataProcessor(dp))
+
+	p1, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).SetFullness(100)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	if err = p.EvaluateHunger(mb)(p1.OwnerId()); err != nil {
+		t.Fatalf("Failed to process hunger: %v", err)
+	}
+
+	se, ok := mb.GetAll()[pet2.EnvStatusEventTopic]
+	if !ok {
+		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+	var saw bool
+	for _, msg := range se {
+		var env pet2.StatusEvent[pet2.FullnessChangedStatusEventBody]
+		if err = json.Unmarshal(msg.Value, &env); err != nil {
+			t.Fatalf("Failed to unmarshal status event: %v", err)
+		}
+		if env.Type != pet2.StatusEventTypeFullnessChanged {
+			continue
+		}
+		saw = true
+		if env.Body.Amount != -6 {
+			t.Fatalf("Amount = %d, want -6 (decay is a negative delta)", env.Body.Amount)
+		}
+		if env.Body.Fullness != 94 {
+			t.Fatalf("Fullness = %d, want 94 (post-decay)", env.Body.Fullness)
+		}
+	}
+	if !saw {
+		t.Fatalf("Expected a %s event", pet2.StatusEventTypeFullnessChanged)
+	}
+}
+
 func TestProcessor_EvaluateHungerSunny(t *testing.T) {
 	dp := &pdm.Processor{}
 	dp.GetByIdFn = func(petId uint32) (data2.Model, error) {
@@ -1643,5 +1691,86 @@ func TestProcessor_DespawnAndEmit_RidesOuterTransaction(t *testing.T) {
 	}
 	if after.Slot() != 0 {
 		t.Fatalf("Despawn's pet-slot write escaped the outer transaction and survived its rollback: expected slot 0 (unchanged), got %d", after.Slot())
+	}
+}
+
+func TestProcessor_SetSkill(t *testing.T) {
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
+
+	mb := message.NewBuffer()
+	i := mustBuild(t, pet.NewModelBuilder(0, 7000001, 5000017, "Skiller", 1))
+	o, err := p.Create(mb)(i)
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	// enable consumeHP (canonical bit 1<<1); a non-idempotent write must emit
+	// FLAG_CHANGED — asserted here for contrast with the idempotent case
+	// below, so an always-empty-buffer bug in SetSkill can't pass silently.
+	enableBuf := message.NewBuffer()
+	if err := p.SetSkill(enableBuf)(o.Id())("consumeHP")(true); err != nil {
+		t.Fatalf("SetSkill enable: %v", err)
+	}
+	m, err := p.GetById(o.Id())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Flag() != 2 {
+		t.Errorf("Flag = %d, want 2", m.Flag())
+	}
+	if se, ok := enableBuf.GetAll()[pet2.EnvStatusEventTopic]; !ok || len(se) != 1 {
+		t.Fatalf("Expected 1 FLAG_CHANGED event from a non-idempotent SetSkill call, got %v", enableBuf.GetAll())
+	}
+
+	// idempotent re-enable: no error, unchanged flag, AND no event emitted.
+	idempotentBuf := message.NewBuffer()
+	if err := p.SetSkill(idempotentBuf)(o.Id())("consumeHP")(true); err != nil {
+		t.Fatalf("SetSkill idempotent enable: %v", err)
+	}
+	m, err = p.GetById(o.Id())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Flag() != 2 {
+		t.Errorf("Flag after idempotent enable = %d, want 2", m.Flag())
+	}
+	if ke := idempotentBuf.GetAll(); len(ke) != 0 {
+		t.Errorf("Idempotent SetSkill emitted events, want none: %v", ke)
+	}
+
+	// enable a second skill; both bits present
+	if err := p.SetSkill(message.NewBuffer())(o.Id())("autoSpeaking")(true); err != nil {
+		t.Fatalf("SetSkill autoSpeaking: %v", err)
+	}
+	m, err = p.GetById(o.Id())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Flag() != 2|256 {
+		t.Errorf("Flag = %d, want %d", m.Flag(), 2|256)
+	}
+
+	// disable consumeHP
+	if err := p.SetSkill(message.NewBuffer())(o.Id())("consumeHP")(false); err != nil {
+		t.Fatalf("SetSkill disable: %v", err)
+	}
+	m, err = p.GetById(o.Id())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Flag() != 256 {
+		t.Errorf("Flag after disable = %d, want 256", m.Flag())
+	}
+
+	// unknown key: warn + drop, no error, no change
+	if err := p.SetSkill(message.NewBuffer())(o.Id())("bogus")(true); err != nil {
+		t.Fatalf("SetSkill unknown key returned error: %v", err)
+	}
+	m, err = p.GetById(o.Id())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Flag() != 256 {
+		t.Errorf("Flag after unknown key = %d, want 256", m.Flag())
 	}
 }

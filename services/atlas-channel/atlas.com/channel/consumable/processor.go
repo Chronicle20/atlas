@@ -16,6 +16,7 @@ import (
 
 type Processor interface {
 	RequestItemConsume(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, quantity int16, updateTime uint32) error
+	RequestItemConsumeWithPet(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, updateTime uint32, petId uint64) error
 	RequestItemReward(f field.Model, characterId character.Id, itemId item.Id, source slot.Position) error
 	RequestScrollUse(f field.Model, characterId character.Id, scrollSlot slot.Position, equipSlot slot.Position, whiteScroll bool, legendarySpirit bool, updateTime uint32) error
 	RequestVegaScrollUse(f field.Model, characterId character.Id, vegaItemId item.Id, vegaSlot slot.Position, scrollSlot slot.Position, equipSlot slot.Position) error
@@ -46,6 +47,15 @@ func (p *ProcessorImpl) RequestItemConsume(f field.Model, characterId character.
 	}
 	p.l.Debugf("Character [%d] using item [%d] from slot [%d]. quantity [%d], updateTime [%d]", characterId, itemId, source, quantity, updateTime)
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestItemConsumeCommandProvider(f, characterId, source, itemId, quantity))
+}
+
+// RequestItemConsumeWithPet is RequestItemConsume for consume paths that carry
+// a target pet (0519 pet skill pouches). The auto-pot path deliberately does
+// NOT use it: its pet validation happens at the socket handler and nothing
+// downstream needs the pet.
+func (p *ProcessorImpl) RequestItemConsumeWithPet(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, updateTime uint32, petId uint64) error {
+	p.l.Debugf("Character [%d] using pet skill item [%d] from slot [%d] on pet [%d]. updateTime [%d]", characterId, itemId, source, petId, updateTime)
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestItemConsumeWithPetCommandProvider(f, characterId, source, itemId, 1, petId))
 }
 
 func (p *ProcessorImpl) RequestItemReward(f field.Model, characterId character.Id, itemId item.Id, source slot.Position) error {

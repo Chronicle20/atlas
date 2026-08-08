@@ -1002,6 +1002,18 @@
         ]
       },
       {
+        "opCode": "0x75",
+        "validator": "LoggedInValidator",
+        "handler": "PetItemUseHandle",
+        "fname": "CWvsContext::SendStatChangeItemUseRequestByPetQ",
+        "services": [
+          "channel"
+        ],
+        "options": {
+          "skillGate": "equipAbility"
+        }
+      },
+      {
         "opCode": "0x78",
         "validator": "LoggedInValidator",
         "handler": "SummonMoveHandle",
@@ -1716,7 +1728,12 @@
         "fname": "CWvsContext::OnInventoryOperation",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "petSkill": {
+            "autoSpeaking": "0x100"
+          }
+        }
       },
       {
         "opCode": "0x1B",

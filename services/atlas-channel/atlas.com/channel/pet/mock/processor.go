@@ -8,14 +8,15 @@ import (
 )
 
 type ProcessorMock struct {
-	ByIdProviderFunc    func(petId uint32) model.Provider[pet.Model]
-	GetByIdFunc         func(petId uint32) (pet.Model, error)
-	ByOwnerProviderFunc func(ownerId uint32) model.Provider[[]pet.Model]
-	GetByOwnerFunc      func(ownerId uint32) ([]pet.Model, error)
-	SpawnFunc           func(characterId uint32, petId uint32, lead bool) error
-	DespawnFunc         func(characterId uint32, petId uint32) error
-	AttemptCommandFunc  func(petId uint32, commandId byte, byName bool, characterId uint32) error
-	SetExcludeItemsFunc func(characterId uint32, petId uint32, items []exclude.Model) error
+	ByIdProviderFunc      func(petId uint32) model.Provider[pet.Model]
+	GetByIdFunc           func(petId uint32) (pet.Model, error)
+	ByOwnerProviderFunc   func(ownerId uint32) model.Provider[[]pet.Model]
+	GetByOwnerFunc        func(ownerId uint32) ([]pet.Model, error)
+	GetBySerialNumberFunc func(ownerId uint32, serialNumber uint64) (pet.Model, error)
+	SpawnFunc             func(characterId uint32, petId uint32, lead bool) error
+	DespawnFunc           func(characterId uint32, petId uint32) error
+	AttemptCommandFunc    func(petId uint32, commandId byte, byName bool, characterId uint32) error
+	SetExcludeItemsFunc   func(characterId uint32, petId uint32, items []exclude.Model) error
 }
 
 var _ pet.Processor = (*ProcessorMock)(nil)
@@ -46,6 +47,13 @@ func (m *ProcessorMock) GetByOwner(ownerId uint32) ([]pet.Model, error) {
 		return m.GetByOwnerFunc(ownerId)
 	}
 	return nil, nil
+}
+
+func (m *ProcessorMock) GetBySerialNumber(ownerId uint32, serialNumber uint64) (pet.Model, error) {
+	if m.GetBySerialNumberFunc != nil {
+		return m.GetBySerialNumberFunc(ownerId, serialNumber)
+	}
+	return pet.Model{}, nil
 }
 
 func (m *ProcessorMock) Spawn(characterId uint32, petId uint32, lead bool) error {

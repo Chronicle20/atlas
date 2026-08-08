@@ -3850,13 +3850,17 @@
         "opCode": "0xF3",
         "writer": "AffectedAreaCreated",
         "fname": "CAffectedAreaPool::OnAffectedAreaCreated",
-        "services": ["channel"]
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0xF4",
         "writer": "AffectedAreaRemoved",
         "fname": "CAffectedAreaPool::OnAffectedAreaRemoved",
-        "services": ["channel"]
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0xF5",

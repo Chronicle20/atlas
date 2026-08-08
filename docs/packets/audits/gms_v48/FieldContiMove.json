@@ -3,7 +3,7 @@
   "IDAName": "CField_ContiMove::OnContiMove",
   "Address": "",
   "Variant": "GMS/v48",
-  "BranchDepth": 0,
+  "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/field/clientbound/conti_move.go",
   "Rows": [
     {
@@ -14,8 +14,17 @@
       "IDAComment": "function not found in IDB",
       "Verdict": 4,
       "Note": "IDA read-order unresolved: function not found in IDB"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 1,
+      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
     }
   ],
-  "Verdict": 4,
+  "Verdict": 1,
   "FlatInvalid": false
 }

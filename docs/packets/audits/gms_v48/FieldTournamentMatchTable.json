@@ -8,14 +8,23 @@
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 0,
+      "AtlasOp": 5,
       "AtlasKind": 0,
       "IDAOp": 6,
       "IDAComment": "function not found in IDB",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 4,
+      "Note": "IDA read-order unresolved: function not found in IDB"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 1,
+      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
     }
   ],
-  "Verdict": 2,
+  "Verdict": 1,
   "FlatInvalid": false
 }

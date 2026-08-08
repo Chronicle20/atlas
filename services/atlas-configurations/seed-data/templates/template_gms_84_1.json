@@ -4143,13 +4143,17 @@
         "opCode": "0x118",
         "writer": "AffectedAreaCreated",
         "fname": "CAffectedAreaPool::OnAffectedAreaCreated",
-        "services": ["channel"]
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x119",
         "writer": "AffectedAreaRemoved",
         "fname": "CAffectedAreaPool::OnAffectedAreaRemoved",
-        "services": ["channel"]
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x11A",

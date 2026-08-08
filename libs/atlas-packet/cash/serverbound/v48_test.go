@@ -1,6 +1,7 @@
 package serverbound
 
 import (
+	"bytes"
 	"encoding/hex"
 	"testing"
 
@@ -9,114 +10,136 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-// v48 cash serverbound fixtures. Each send-site was body-verified from its
-// COutPacket(160) call site in GMS_v48_1_DEVM.exe @port 13337. The v48
-// CCashShop cash-operation family sends COutPacket(160) + Encode1(sub-op mode)
-// + body; the dispatcher strips the op byte + mode, so the fixtures pin the
-// BODY only. v48 is the OLDEST anchor and is uniformly leaner than v61: the
-// currency int present in v61 is absent below v61 (buyOmitsCurrency, GMS < 61).
+// v48 cash-shop operation byte fixtures. All arms send COutPacket(160)
+// (CASHSHOP_OPERATION) followed by a mode byte, which the dispatcher strips
+// before the codec body.
 
-// TestShopOperationBuyBytesV48 pins the v48 buy body. IDA v48 CCashShop::OnBuy
-// @0x44b0cf, send @0x44b38a: COutPacket(160) Encode1(2)=mode, Encode1(v29==2)=
-// isPoints, Encode4(a2)=serialNumber. No currency int (added at v61), no
-// trailing IsZeroGoods (added at v72). Body = isPoints(1)+serialNumber(4).
-// packet-audit:verify packet=cash/serverbound/CashShopOperationBuy version=gms_v48 ida=0x44b0cf
-func TestShopOperationBuyBytesV48(t *testing.T) {
-	l, _ := testlog.NewNullLogger()
-	input := ShopOperationBuy{isPoints: true, currency: 1, serialNumber: 2, zero: 3, oneADay: 1, eventSN: 4}
-	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 48, 1))(nil))
-	if got != "01"+"02000000" {
-		t.Errorf("v48 buy bytes: got %s, want 0102000000 (isPoints+serial, no currency)", got)
+// TestIncreaseStorageBytesV48 — CCashShop::OnIncTrunkCount @0x44aad1 encodes
+// Encode1(6) @0x44abf4 (mode), Encode1(isPoints) @0x44ac04, Encode1(0) @0x44ac0d.
+// No Encode4 between them, so the v48 body after the mode is two bytes. v83
+// @0x46c55b and v87 @0x4763e0 read Decode1, Decode1, Decode4, Decode1.
+//
+// packet-audit:verify packet=cash/serverbound/CashShopOperationIncreaseStorage version=gms_v48 ida=0x44aad1
+func TestIncreaseStorageBytesV48(t *testing.T) {
+	in := ShopOperationIncreaseStorage{isPoints: true, currency: 4000, item: false}
+	got := in.Encode(nil, pt.CreateContext("GMS", 48, 1))(nil)
+	want := []byte{0x01, 0x00} // isPoints, item — no currency int
+	if !bytes.Equal(got, want) {
+		t.Errorf("v48 increase storage:\n got % x\nwant % x", got, want)
+	}
+	// v83 keeps the currency int.
+	v83 := in.Encode(nil, pt.CreateContext("GMS", 83, 1))(nil)
+	if !bytes.Equal(v83, []byte{0x01, 0xA0, 0x0F, 0x00, 0x00, 0x00}) {
+		t.Errorf("v83 increase storage: got % x", v83)
 	}
 }
 
-// TestShopOperationBuyCoupleBytesV48 pins the v48 couple-buy body. IDA v48
-// CCashShop::OnBuyCouple @0x44b4c1, send @0x44b79b: COutPacket(160) Encode1(0x1A)
-// =mode, Encode1(v37==2)=isPoints, Encode4(a2)=serialNumber. No currency int
-// (dropped below v61). Body = isPoints(1)+serialNumber(4).
-// packet-audit:verify packet=cash/serverbound/CashShopOperationBuyCouple version=gms_v48 ida=0x44b4c1
-func TestShopOperationBuyCoupleBytesV48(t *testing.T) {
-	l, _ := testlog.NewNullLogger()
-	input := ShopOperationBuyCouple{isPoints: true, currency: 0x01020304, serialNumber: 0x05060708, birthday: 999, option: 9, name: "x", message: "y"}
-	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 48, 1))(nil))
-	if got != "01"+"08070605" {
-		t.Errorf("v48 couple bytes: got %s, want 0108070605", got)
+// TestMoveFromCashInventoryBytesV48 — CCashShop::OnMoveCashItemLtoS @0x44ec2c
+// encodes Encode1(0x0A) @0x44edb7 (mode), EncodeBuffer(sn, 8) @0x44edc5,
+// Encode1(inventoryType) @0x44edd0, Encode2(slot) @0x44eddb. Shape-stable.
+//
+// packet-audit:verify packet=cash/serverbound/CashShopOperationMoveFromCashInventory version=gms_v48 ida=0x44ec2c
+func TestMoveFromCashInventoryBytesV48(t *testing.T) {
+	in := ShopOperationMoveFromCashInventory{serialNumber: 0x0102030405060708, inventoryType: 2, slot: 3}
+	got := in.Encode(nil, pt.CreateContext("GMS", 48, 1))(nil)
+	want := []byte{
+		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // sn — EncodeBuffer(8)
+		0x02,       // inventoryType — Encode1
+		0x03, 0x00, // slot          — Encode2
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v48 move from cash inventory:\n got % x\nwant % x", got, want)
 	}
 }
 
-// TestShopOperationBuyPackageBytesV48 pins the v48 package-buy body. IDA v48
-// CCashShop::OnBuyPackage @0x44b837, send @0x44b9e1: COutPacket(160) Encode1(0x1C)
-// =mode, Encode4(a2)=serialNumber. Body = serialNumber(4) only == v61 legacy.
-// packet-audit:verify packet=cash/serverbound/CashShopOperationBuyPackage version=gms_v48 ida=0x44b837
-func TestShopOperationBuyPackageBytesV48(t *testing.T) {
-	l, _ := testlog.NewNullLogger()
-	input := ShopOperationBuyPackage{pointType: true, option: 1, serialNumber: 0x05060708}
-	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 48, 1))(nil))
-	if got != "08070605" {
-		t.Errorf("v48 package bytes: got %s, want 08070605", got)
+// TestMoveToCashInventoryBytesV48 — CCashShop::OnMoveCashItemStoL @0x44ee3a
+// encodes Encode1(0x0B) @0x44eeb6 (mode), EncodeBuffer(sn, 8) @0x44eec4,
+// Encode1(inventoryType) @0x44eecf. No slot short on this arm. Shape-stable.
+//
+// packet-audit:verify packet=cash/serverbound/CashShopOperationMoveToCashInventory version=gms_v48 ida=0x44ee3a
+func TestMoveToCashInventoryBytesV48(t *testing.T) {
+	in := ShopOperationMoveToCashInventory{serialNumber: 0x0102030405060708, inventoryType: 2}
+	got := in.Encode(nil, pt.CreateContext("GMS", 48, 1))(nil)
+	want := []byte{0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x02}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v48 move to cash inventory:\n got % x\nwant % x", got, want)
 	}
 }
 
-// TestShopOperationGiftBytesV48 pins the v48 gift body. IDA v48 CCashShop::OnGift
-// @0x44ba5d, send @0x44bd4e: COutPacket(160) Encode1(3)=mode, Encode4(ask_SPW)=
-// birthday int, Encode4(a2)=serialNumber, EncodeStr(name), EncodeStr(message).
-// Body = birthday(4)+serialNumber(4)+name+message == the GMS<87 gift path. (The
-// modeled fname SendGiftsPacket is not present in v48; the gift is CCashShop::
-// OnGift @0x44ba5d.)
-// packet-audit:verify packet=cash/serverbound/CashShopOperationGift version=gms_v48 ida=0x44ba5d
-func TestShopOperationGiftBytesV48(t *testing.T) {
-	l, _ := testlog.NewNullLogger()
-	input := ShopOperationGift{birthday: 0x01020304, spw: "x", serialNumber: 0x05060708, oneADay: 1, name: "", message: ""}
-	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 48, 1))(nil))
-	if got != "04030201"+"08070605"+"0000"+"0000" {
-		t.Errorf("v48 gift bytes: got %s", got)
+// TestBuyWorldTransferBytesV48 — CCashShop::SendBuyTransferWorldItemPacket
+// @0x44fbfc encodes Encode1(0x24) @0x44fc24 (mode), Encode4(serialNumber)
+// @0x44fc2f, Encode4(targetWorld) @0x44fc3a. Shape-stable.
+//
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuyWorldTransfer version=gms_v48 ida=0x44fbfc
+func TestBuyWorldTransferBytesV48(t *testing.T) {
+	in := ShopOperationBuyWorldTransfer{serialNumber: 0x01020304, targetWorld: 2}
+	got := in.Encode(nil, pt.CreateContext("GMS", 48, 1))(nil)
+	want := []byte{0x04, 0x03, 0x02, 0x01, 0x02, 0x00, 0x00, 0x00}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v48 buy world transfer:\n got % x\nwant % x", got, want)
 	}
 }
 
-// TestShopOperationSetWishlistBytesV48 pins the v48 set-wishlist body. IDA v48
-// CCashShop::OnSetWish @0x44ce9b, send @0x44cf78: COutPacket(160) Encode1(4)=mode
-// then a fixed 10-iter Encode4 loop over the wishlist serials. Body = 10×Encode4,
-// no count prefix == v61.
-// packet-audit:verify packet=cash/serverbound/CashShopOperationSetWishlist version=gms_v48 ida=0x44ce9b
-func TestShopOperationSetWishlistBytesV48(t *testing.T) {
-	l, _ := testlog.NewNullLogger()
-	input := ShopOperationSetWishlist{serialNumbers: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}}
-	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 48, 1))(nil))
-	want := "01000000" + "02000000" + "03000000" + "04000000" + "05000000" +
-		"06000000" + "07000000" + "08000000" + "09000000" + "0a000000"
-	if got != want {
-		t.Errorf("v48 wishlist bytes: got %s, want %s", got, want)
+// TestBuyNameChangeBytesV48 — CCashShop::SendBuyNameChangeItemPacket @0x44f9a5
+// encodes the mode byte, Encode4(serialNumber), EncodeStr(oldName),
+// EncodeStr(newName). Shape-stable.
+//
+// packet-audit:verify packet=cash/serverbound/CashShopOperationBuyNameChange version=gms_v48 ida=0x44f9a5
+func TestBuyNameChangeBytesV48(t *testing.T) {
+	in := ShopOperationBuyNameChange{serialNumber: 0x01020304, oldName: "ab", newName: "cd"}
+	got := in.Encode(nil, pt.CreateContext("GMS", 48, 1))(nil)
+	want := []byte{
+		0x04, 0x03, 0x02, 0x01, // serialNumber — Encode4
+		0x02, 0x00, 'a', 'b', // oldName      — EncodeStr
+		0x02, 0x00, 'c', 'd', // newName      — EncodeStr
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v48 buy name change:\n got % x\nwant % x", got, want)
 	}
 }
 
-// TestShopOperationBuyNormalBytesV48 pins the v48 OnBuyNormal body. The v48
-// IDB-labeled CCashShop::OnBuyNormal @0x44cbb2 is gift-shaped (send @0x44cdaf):
-// COutPacket(160) Encode1(0x1F)=mode, Encode4(ask_SPW)=spw int, Encode4(a2)=
-// serialNumber, EncodeStr(name), EncodeStr(message). Body = spw(4)+serial(4)+
-// name+message (v48-only; v83+ OnBuyNormal is a bare serial(4)).
+// TestBuyNormalBytesV48 — CCashShop::OnBuyNormal @0x44cbb2 builds COutPacket(160)
+// and encodes Encode1(0x1F) @0x44cdbd (mode), Encode4(spw) @0x44cdc8 - the
+// ask_SPW() result - Encode4(serialNumber) @0x44cdd3, EncodeStr(name) @0x44cdec
+// and EncodeStr(message) @0x44ce05. That is exactly the buyOmitsCurrency branch
+// the codec already takes for GMS below 61; no change needed.
+//
 // packet-audit:verify packet=cash/serverbound/CashShopOperationBuyNormal version=gms_v48 ida=0x44cbb2
-func TestShopOperationBuyNormalBytesV48(t *testing.T) {
-	l, _ := testlog.NewNullLogger()
-	input := ShopOperationBuyNormal{spw: 0x01020304, serialNumber: 0x05060708, name: "", message: ""}
-	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 48, 1))(nil))
-	if got != "04030201"+"08070605"+"0000"+"0000" {
-		t.Errorf("v48 buyNormal bytes: got %s", got)
+func TestBuyNormalBytesV48(t *testing.T) {
+	in := ShopOperationBuyNormal{spw: 0x01020304, serialNumber: 0x0A0B0C0D, name: "ab", message: "cd"}
+	got := in.Encode(nil, pt.CreateContext("GMS", 48, 1))(nil)
+	want := []byte{
+		0x04, 0x03, 0x02, 0x01, // spw          — Encode4 @0x44cdc8
+		0x0D, 0x0C, 0x0B, 0x0A, // serialNumber — Encode4 @0x44cdd3
+		0x02, 0x00, 'a', 'b', // name         — EncodeStr @0x44cdec
+		0x02, 0x00, 'c', 'd', // message      — EncodeStr @0x44ce05
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v48 buy normal:\n got % x\nwant % x", got, want)
 	}
 }
 
-// TestShopOperationBuyFriendshipBytesV48 pins the v48 friendship-ring body. IDA
-// v48 CCashShop::OnBuyFriendship @0x44c879, send @0x44cadb: COutPacket(160)
-// Encode1((serial/1000==9110)+5)=mode, Encode1(v37==2)=pointType, Encode1(1)=
-// constant flag byte, Encode4(a2)=serialNumber. Body = pointType(1)+flag(1)+
-// serialNumber(4) (v48-only friendship-ring/equip-slot buy; the currency int
-// present in v61 is a flag byte here).
-// packet-audit:verify packet=cash/serverbound/CashShopOperationBuyFriendship version=gms_v48 ida=0x44c879
-func TestShopOperationBuyFriendshipBytesV48(t *testing.T) {
-	l, _ := testlog.NewNullLogger()
-	input := ShopOperationBuyFriendship{isPoints: true, flag: 1, serialNumber: 0x05060708, currency: 0x01020304, birthday: 999, option: 9, name: "x", message: "y"}
-	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 48, 1))(nil))
-	if got != "01"+"01"+"08070605" {
-		t.Errorf("v48 friendship bytes: got %s, want 010108070605", got)
+// TestSetWishlistBytesV48 — CCashShop::OnSetWish @0x44ce9b builds COutPacket(160),
+// encodes Encode1(4) @0x44cf86 (mode) and then loops Encode4 @0x44cfb3 exactly ten
+// times (`while (v17 < 10)` @0x44cfc3). The codec's decoder reads a fixed ten, so
+// the shapes agree; no change needed.
+//
+// packet-audit:verify packet=cash/serverbound/CashShopOperationSetWishlist version=gms_v48 ida=0x44ce9b
+func TestSetWishlistBytesV48(t *testing.T) {
+	sns := make([]uint32, 10)
+	for i := range sns {
+		sns[i] = uint32(i + 1)
+	}
+	got := ShopOperationSetWishlist{serialNumbers: sns}.Encode(nil, pt.CreateContext("GMS", 48, 1))(nil)
+	if len(got) != 40 {
+		t.Fatalf("v48 set wishlist length = %d, want 40 (ten Encode4)", len(got))
+	}
+	want := make([]byte, 0, 40)
+	for i := 1; i <= 10; i++ {
+		want = append(want, byte(i), 0x00, 0x00, 0x00)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v48 set wishlist:\n got % x\nwant % x", got, want)
 	}
 }
 

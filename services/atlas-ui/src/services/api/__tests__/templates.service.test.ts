@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { api } from "@/lib/api/client";
 import { templatesService } from "@/services/api/templates.service";
+import type { Template, TemplateAttributes } from "@/types/models/template";
 
 describe("templatesService.reseed", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
@@ -10,6 +12,7 @@ describe("templatesService.reseed", () => {
   });
   afterEach(() => {
     vi.unstubAllGlobals();
+    api.setTenant(null);
   });
 
   it("POSTs to the reseed sub-resource with no body", async () => {
@@ -51,5 +54,68 @@ describe("templatesService.reseed", () => {
     });
 
     await expect(templatesService.reseed("abc-123")).rejects.toBeDefined();
+  });
+
+  it("omits tenant headers even when a tenant is active", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 204,
+      json: async () => ({}),
+    });
+
+    // Templates are global (NFR-5): the reseed endpoint is deliberately not
+    // tenant-scoped. Setting a tenant here reproduces what TenantProvider
+    // does globally on the shared ApiClient singleton in the running app -
+    // without this, createHeaders (lib/api/client.ts) has nothing to attach
+    // and the assertion below would pass whether or not skipTenantHeaders
+    // was wired through, making the test vacuous.
+    api.setTenant({
+      id: "tenant-1",
+      attributes: {
+        name: "gms",
+        region: "GMS",
+        majorVersion: 83,
+        minorVersion: 1,
+      },
+    });
+
+    await templatesService.reseed("abc-123");
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const headers = new Headers(init.headers);
+    expect(headers.has("TENANT_ID")).toBe(false);
+    expect(headers.has("REGION")).toBe(false);
+    expect(headers.has("MAJOR_VERSION")).toBe(false);
+    expect(headers.has("MINOR_VERSION")).toBe(false);
+  });
+});
+
+describe("templatesService.cloneTemplate", () => {
+  it("strips computed keys so a clone never POSTs stale drift metadata", () => {
+    const source: Template = {
+      id: "src-1",
+      attributes: {
+        region: "GMS",
+        majorVersion: 83,
+        minorVersion: 1,
+        shippedRevision: "abc123",
+        storedRevision: "def456",
+        seedDrift: true,
+        usesPin: false,
+        characters: { templates: [], presets: [] },
+        npcs: [],
+        socket: { handlers: [], writers: [] },
+        worlds: [],
+      } as TemplateAttributes,
+    };
+
+    const cloned = templatesService.cloneTemplate(source);
+
+    expect(cloned).not.toHaveProperty("shippedRevision");
+    expect(cloned).not.toHaveProperty("storedRevision");
+    expect(cloned).not.toHaveProperty("seedDrift");
+    expect(cloned.region).toBe("");
+    expect(cloned.majorVersion).toBe(0);
+    expect(cloned.minorVersion).toBe(0);
   });
 });

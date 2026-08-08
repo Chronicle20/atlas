@@ -4,6 +4,7 @@ import (
 	"atlas-data/ingestrun"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,7 +15,9 @@ import (
 	"github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	ktesting "k8s.io/client-go/testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -306,6 +309,25 @@ func TestProcessStatusRunningWithLiveJobStaysRunning(t *testing.T) {
 	_, attrs := decodeRun(t, doStatus(t, jc, regs, "", false))
 	if attrs.Phase != string(ingestrun.PhaseRunning) {
 		t.Fatalf("phase = %s, want running", attrs.Phase)
+	}
+}
+
+// A failed Job list is not evidence of absence — corroborateRunning must keep
+// reporting the stored `running` phase rather than downgrading to `unknown`
+// (the deliberate §4.4-over-§7 deviation: resource.go:158-161).
+func TestProcessStatusRunningWithJobListErrorStaysRunning(t *testing.T) {
+	regs, _ := newRegs(t)
+	_ = seedRunning(t, regs)
+
+	cs := fake.NewSimpleClientset()
+	cs.PrependReactor("list", "jobs", func(action ktesting.Action) (bool, runtime.Object, error) {
+		return true, nil, fmt.Errorf("simulated apiserver failure")
+	})
+	jc := &JobCreator{K8s: cs, Namespace: "ns"}
+
+	_, attrs := decodeRun(t, doStatus(t, jc, regs, "", false))
+	if attrs.Phase != string(ingestrun.PhaseRunning) {
+		t.Fatalf("phase = %s, want running (a failed List must not be treated as evidence the Job is gone)", attrs.Phase)
 	}
 }
 

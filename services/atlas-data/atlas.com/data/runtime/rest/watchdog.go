@@ -125,12 +125,25 @@ func (w Watchdog) deleteStuckJob(ctx context.Context, j *batchv1.Job) {
 		if suffix := ingestJobKeySuffixFromLabels(j); suffix != "" {
 			reason := fmt.Sprintf("watchdog deleted the ingest Job after %ds without a heartbeat", w.TimeoutSecs)
 			now := time.Now().UTC()
+			runId := ingestRunIdFromJob(j)
 			// Per-worker states are left exactly as the ingest pod wrote them:
 			// the worker still `running` when the watchdog fired is the whole
 			// diagnostic value, and marking it failed would assert something we
 			// do not know.
 			_, err := rr.UpdateWithTTL(ctx, suffix+ingestrun.RunKeySuffix, ingestrun.RecordTTL,
 				func(rec ingestrun.Record) ingestrun.Record {
+					// Guarded exactly like every ingest-pod write (see
+					// runtime/ingest/progress.go's guardedUpdate): a sweep that
+					// lags a re-triggered run for the same (scope, region,
+					// version) must not stamp phase=stuck over a newer run's
+					// live record. Re-evaluated on every optimistic-lock retry
+					// so a stale sweep can never win the race. An empty runId
+					// on either side (older record predating run ids, or a Job
+					// whose env we couldn't read) means the guard cannot
+					// decide, and the write is allowed through.
+					if rec.RunId != "" && runId != "" && rec.RunId != runId {
+						return rec
+					}
 					return rec.WithPhase(ingestrun.PhaseStuck, now, reason)
 				})
 			if err != nil && !errors.Is(err, redis.ErrNotFound) && w.L != nil {
@@ -138,6 +151,23 @@ func (w Watchdog) deleteStuckJob(ctx context.Context, j *batchv1.Job) {
 			}
 		}
 	}
+}
+
+// ingestRunIdFromJob recovers the run id the JobCreator stamped onto the Job
+// at creation time. Job objects carry no run-id label (jobs.go's renderJob
+// only labels scope/region/version/tenant); the run id instead rides as the
+// INGEST_RUN_ID env var injected into every container (jobs.go:292-294), so
+// that is what the Watchdog reads back to guard its stuck-record write.
+// Returns "" if no container carries the var.
+func ingestRunIdFromJob(j *batchv1.Job) string {
+	for _, c := range j.Spec.Template.Spec.Containers {
+		for _, e := range c.Env {
+			if e.Name == "INGEST_RUN_ID" {
+				return e.Value
+			}
+		}
+	}
+	return ""
 }
 
 // jobRegistry is a convenience accessor that returns the JobCreator's Registry,

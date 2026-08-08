@@ -243,7 +243,7 @@ func TestGetMonstersInMapRectCapIsMaxNotLimit(t *testing.T) {
 		req := worldRequestWithTenant(http.MethodGet, base+"&max=1&page[number]=1&page[size]=250", tenantId)
 		resp, err := (&http.Client{}).Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -257,7 +257,7 @@ func TestGetMonstersInMapRectCapIsMaxNotLimit(t *testing.T) {
 		req := worldRequestWithTenant(http.MethodGet, base+"&max=0&page[number]=1&page[size]=250", tenantId)
 		resp, err := (&http.Client{}).Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -271,7 +271,7 @@ func TestGetMonstersInMapRectCapIsMaxNotLimit(t *testing.T) {
 		req := worldRequestWithTenant(http.MethodGet, base+"&limit=0&page[number]=1&page[size]=250", tenantId)
 		resp, err := (&http.Client{}).Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode,
 			"a `limit` param must keep 400ing -- that ban is why the cap is spelled `max`")

@@ -49,7 +49,10 @@ describe("useReseedTemplate", () => {
       new Error("no shipped template"),
     );
     const qc = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
     const invalidate = vi.spyOn(qc, "invalidateQueries");
 

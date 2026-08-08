@@ -1,0 +1,10 @@
+packet: login/clientbound/ServerStatus
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCheckUserLimitResult
+    address: "0x5011d6"
+    decompile_sha256: 7dd13a2f41a31e04f67cd380533b843cd83ceca26d0a35f8eb1abcaf7e3e37b1
+verifies:
+    - libs/atlas-packet/login/clientbound/login_v48_test.go#TestServerStatusBytesV48

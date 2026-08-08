@@ -1,39 +1,48 @@
 {
   "WriterName": "MessengerOperationDeclineInvite",
   "IDAName": "CFadeWnd::SendCloseMessage",
-  "Address": "",
+  "Address": "0x4bce54",
   "Variant": "GMS/v48",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/messenger/serverbound/operation_decline_invite.go",
   "Rows": [
     {
       "Index": 0,
-      "AtlasOp": 4,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "op (5 = DECLINE)",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "fromName",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "myName",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "trailing (0)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

@@ -1,0 +1,10 @@
+packet: login/clientbound/PinOperation
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCheckPinCodeResult
+    address: "0x503956"
+    decompile_sha256: 2532d8808776102b1c566d20ec1858348f8ca625cb99a14a82db8b2308b036d5
+verifies:
+    - libs/atlas-packet/login/clientbound/login_v48_test.go#TestPinOperationBytesV48

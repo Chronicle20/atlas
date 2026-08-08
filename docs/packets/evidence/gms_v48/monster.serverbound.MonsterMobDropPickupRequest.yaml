@@ -1,0 +1,10 @@
+packet: monster/serverbound/MonsterMobDropPickupRequest
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CMob::SendDropPickUpRequest
+    address: "0x55220a"
+    decompile_sha256: 5e5589dc9659244d90840278335f7fe1bf6580bb8743b2250b8773b0e5f54229
+verifies:
+    - libs/atlas-packet/monster/serverbound/mob_drop_pickup_v48_test.go#TestMobDropPickupRequestBytesV48

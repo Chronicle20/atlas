@@ -1,0 +1,11 @@
+packet: reactor/clientbound/ReactorSpawn
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CReactorPool::OnReactorEnterField
+    address: "0x5a54b4"
+    decompile_sha256: 8363317831ded416344a5628cc091e8a7eeb0a52e3070b52a70f2e34b50c4108
+verifies:
+    - libs/atlas-packet/reactor/clientbound/v48_test.go#TestReactorSpawnBytesV48
+    - libs/atlas-packet/reactor/clientbound/v48_test.go#TestReactorSpawnNameBoundary

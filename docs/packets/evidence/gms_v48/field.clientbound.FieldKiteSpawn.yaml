@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldKiteSpawn
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CMessageBoxPool::OnMessageBoxEnterField
+    address: "0x5432f7"
+    decompile_sha256: 8554786667dace1f1879eff62c3ad69a58c71c3faa37496ba8dac5f1a9095b0f
+verifies:
+    - libs/atlas-packet/field/clientbound/kite_v48_test.go#TestKiteSpawnBytesV48

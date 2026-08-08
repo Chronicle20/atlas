@@ -1,16 +1,17 @@
 # MessengerOperationDeclineInvite (← `CFadeWnd::SendCloseMessage`)
 
-- **IDA:** 
+- **IDA:** 0x4bce54
 - **Atlas file:** `libs/atlas-packet/messenger/serverbound/operation_decline_invite.go`
 - **Variant:** GMS/v48
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | string | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `op (5 = DECLINE)` | ✅ |  |
+| 1 | string | string `fromName` | ✅ |  |
+| 2 | string | string `myName` | ✅ |  |
+| 3 | byte | byte `trailing (0)` | ✅ |  |
 

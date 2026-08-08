@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashShopOperationIncreaseStorage
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnIncTrunkCount
+    address: "0x44aad1"
+    decompile_sha256: 9334ec0632ea5ab7eba5b14395bb0463cb0dc128be9d8c1c80dd66e19add56a2
+verifies:
+    - libs/atlas-packet/cash/serverbound/v48_test.go#TestIncreaseStorageBytesV48

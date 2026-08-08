@@ -3,7 +3,7 @@
   "IDAName": "CWvsContext::SendConsumeCashItemUseRequest",
   "Address": "0x70e495",
   "Variant": "GMS/v48",
-  "BranchDepth": 2,
+  "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/cash/serverbound/item_use_megaphone.go",
   "Rows": [
     {

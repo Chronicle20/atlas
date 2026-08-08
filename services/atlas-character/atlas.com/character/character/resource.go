@@ -155,6 +155,18 @@ func handleGetCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
+			// Any non-404 failure (DB unavailable, decorator error, context
+			// deadline) must surface as an error status. Falling through here
+			// marshals the zero-value model and answers 200 with
+			// {"id":"0", …all-zero attributes}, which callers decode without
+			// error -- atlas-channel then runs the whole attack/damage
+			// pipeline against character 0 with jobId 0, no skills and no
+			// inventory instead of failing loudly.
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to retrieve character [%d].", characterId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
 
 			res, err := model.Map(Transform(d.Logger(), d.Context()))(model.FixedProvider(cs))()
 			if err != nil {

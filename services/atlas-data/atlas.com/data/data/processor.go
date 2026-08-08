@@ -150,7 +150,9 @@ func (p *ProcessorImpl) StartWorker(name string, path string) error {
 			p.l.WithError(err).Errorf("Failed to initialize skill string registry.")
 			return err
 		}
-		err = p.RegisterAllData(path, "Skill.wz", skill.NewProcessor(p.l, p.ctx, p.db).RegisterSkill)()
+		var skillStats skill.StatsAccumulator
+		err = p.RegisterAllData(path, "Skill.wz", skillStats.Wrap(skill.NewProcessor(p.l, p.ctx, p.db).RegisterSkill))()
+		skillStats.Log(p.l)
 		_ = skill.GetSkillStringRegistry().Clear(t)
 	} else if name == WorkerPet {
 		if err = item.InitStringFlat(p.db)(p.l)(p.ctx)(filepath.Join(path, "String.wz", "Pet.img.xml")); err != nil {

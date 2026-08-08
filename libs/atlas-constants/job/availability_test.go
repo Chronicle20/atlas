@@ -56,6 +56,24 @@ func TestResolveWire_CygnusStage4StillPresent(t *testing.T) {
 	}
 }
 
+// TestResolveWire_SuperGmNotBoundAtJms185 pins task-202 FR-2.3: the JMS
+// v185 Skill.wz root has no 910 image at all (900/Gm is present; 910/SuperGm
+// is absent), confirmed against the GMS v95 Skill.wz which has both. The
+// presence layer (identities.yaml's per-version wire join) already excludes
+// SuperGm from jms 185 independently of availability.csv's released flag --
+// this test guards that exclusion against regressing if the presence data
+// is ever regenerated from a corrected/updated JMS WZ. See
+// docs/tasks/task-202-version-correct-job-hierarchy/availability-audit.md.
+func TestResolveWire_SuperGmNotBoundAtJms185(t *testing.T) {
+	s := newSet_jms_185_1()
+	if _, bound := s.Wire(SuperGm); bound {
+		t.Fatalf("jms 185.1: Wire(SuperGm) resolved -- expected no binding (910.img is absent from the JMS v185 Skill.wz root)")
+	}
+	if s.Available(SuperGm) {
+		t.Fatalf("jms 185.1: Available(SuperGm) = true, want false")
+	}
+}
+
 // TestAvailable_CygnusTiers1To3NoRegression is the guard on the split: the
 // tiers that DID ship must be unaffected -- available from gms 79 onward,
 // unavailable at gms 72 and earlier.

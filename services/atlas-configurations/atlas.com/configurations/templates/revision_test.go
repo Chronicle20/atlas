@@ -71,7 +71,7 @@ func TestRevisionIsStableLowercaseHex(t *testing.T) {
 		t.Errorf("revision length = %d, want 64: %q", len(first), first)
 	}
 	for _, c := range first {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
 			t.Fatalf("revision is not lowercase hex: %q", first)
 		}
 	}

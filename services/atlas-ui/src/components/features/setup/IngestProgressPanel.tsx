@@ -85,43 +85,26 @@ export function IngestProgressPanel({
         </p>
       </div>
 
-      {/* When a specific worker already carries its own .error, that is the
-          more precise diagnostic — surfacing the run-level reason too would
-          just repeat the same text (the reason is usually derived from the
-          failing worker) in a second place. */}
-      {run.reason && !run.workers.some((w) => w.error) ? (
+      {run.reason ? (
         <p className="mt-1 text-xs text-destructive">{run.reason}</p>
       ) : null}
 
       <ul className="mt-2 grid gap-1 sm:grid-cols-2">
-        {run.workers.map((w) => {
-          // A worker still `running` under a terminal run phase was the one
-          // in flight when the run ended — a derived presentation concern,
-          // requiring no extra stored state (PRD Q1).
-          const interrupted = terminal && w.state === "running";
-          // While the run itself is actively `running`, an individual
-          // worker's `running` state is redundant with the phase indicator
-          // above (and would otherwise collide with it as a duplicate text
-          // match) — a progress ellipsis conveys the same thing.
-          const stateLabel = interrupted
-            ? "interrupted"
-            : w.state === "running"
-              ? "…"
-              : w.state;
-          return (
-            <li
-              key={w.name}
-              className="flex items-baseline justify-between gap-2 text-xs"
-            >
-              <span className="font-mono">{w.name}</span>
-              <span className="text-muted-foreground">
-                <span>{stateLabel}</span>
-                {w.error ? <span> — {w.error}</span> : null} ·{" "}
-                {workerDuration(w, now)}
-              </span>
-            </li>
-          );
-        })}
+        {run.workers.map((w) => (
+          <li
+            key={w.name}
+            className="flex items-baseline justify-between gap-2 text-xs"
+          >
+            <span className="font-mono">{w.name}</span>
+            <span className="text-muted-foreground">
+              {/* A worker still `running` under a terminal run phase was the
+                  one in flight when the run ended — a derived presentation
+                  concern, requiring no extra stored state. */}
+              {terminal && w.state === "running" ? "interrupted" : w.state}
+              {w.error ? ` — ${w.error}` : ""} · {workerDuration(w, now)}
+            </span>
+          </li>
+        ))}
       </ul>
     </div>
   );

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { IngestProgressPanel } from "@/components/features/setup/IngestProgressPanel";
 import type { IngestPhase, IngestRun } from "@/services/api/seed.service";
 
@@ -39,7 +39,13 @@ function run(phase: IngestPhase, over: Partial<IngestRun> = {}): IngestRun {
 describe("IngestProgressPanel", () => {
   it("shows the phase and the completed-of-total count", () => {
     render(<IngestProgressPanel run={run("running")} isError={false} />);
-    expect(screen.getByText(/running/i)).toBeInTheDocument();
+    // Scoped outside the worker list: the fixture's MAP worker is also
+    // `running`, which independently and correctly renders that same word
+    // inside the <ul> — the phase indicator itself never lives there.
+    const phaseText = screen.getByText(
+      (content, element) => /running/i.test(content) && !element?.closest("ul"),
+    );
+    expect(phaseText).toBeInTheDocument();
     expect(screen.getByText(/1\s*\/\s*2/)).toBeInTheDocument();
   });
 
@@ -47,7 +53,10 @@ describe("IngestProgressPanel", () => {
     render(<IngestProgressPanel run={run("running")} isError={false} />);
     expect(screen.getByText("STRING")).toBeInTheDocument();
     expect(screen.getByText("MAP")).toBeInTheDocument();
-    expect(screen.getByText("succeeded")).toBeInTheDocument();
+    // The worker row renders state and duration as one text node
+    // ("succeeded · 2m 40s"), so an exact match on the bare word never
+    // hits — match the substring instead.
+    expect(screen.getByText(/succeeded/)).toBeInTheDocument();
   });
 
   it("surfaces the reason on a stuck run", () => {
@@ -72,7 +81,33 @@ describe("IngestProgressPanel", () => {
       ],
     });
     render(<IngestProgressPanel run={r} isError={false} />);
-    expect(screen.getByText(/boom/)).toBeInTheDocument();
+    // Scoped to the MAP worker row: the fixture's run-level `reason` also
+    // contains "boom" here, since a real reason is typically derived from
+    // the failing worker's own error — this asserts specifically that the
+    // worker row itself surfaces it, not just the reason banner.
+    const workerRow = screen.getByText("MAP").closest("li");
+    expect(workerRow).not.toBeNull();
+    expect(
+      within(workerRow as HTMLElement).getByText(/boom/),
+    ).toBeInTheDocument();
+  });
+
+  it("surfaces both a distinct run-level reason and a worker's own error", () => {
+    const r = run("stuck", {
+      reason: "watchdog deleted the ingest Job after 7200s without a heartbeat",
+      workers: [
+        {
+          name: "STRING",
+          state: "failed",
+          startedAt: "2026-08-08T10:00:01Z",
+          finishedAt: "2026-08-08T10:00:09Z",
+          error: "rate limited by WZ source",
+        },
+      ],
+    });
+    render(<IngestProgressPanel run={r} isError={false} />);
+    expect(screen.getByText(/without a heartbeat/)).toBeInTheDocument();
+    expect(screen.getByText(/rate limited by WZ source/)).toBeInTheDocument();
   });
 
   it("renders a worker still running under a terminal phase as interrupted", () => {

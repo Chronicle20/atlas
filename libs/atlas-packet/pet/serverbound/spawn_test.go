@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // packet-audit:verify packet=pet/serverbound/PetSpawn version=gms_v87 ida=0xabbb70
@@ -23,7 +24,11 @@ func TestSpawnRoundTrip(t *testing.T) {
 			if output.Slot() != input.Slot() {
 				t.Errorf("slot: got %v, want %v", output.Slot(), input.Slot())
 			}
-			if output.Lead() != input.Lead() {
+			// The lead byte is absent before v72 (see hasPetSpawnLead): v48
+			// CWvsContext::SendActivatePetRequest @0x71d118 encodes only tick +
+			// slot. This assertion previously ran on every variant, which pinned
+			// Atlas's own output rather than the client's send order.
+			if hasPetSpawnLead(tenant.MustFromContext(ctx)) && output.Lead() != input.Lead() {
 				t.Errorf("lead: got %v, want %v", output.Lead(), input.Lead())
 			}
 		})

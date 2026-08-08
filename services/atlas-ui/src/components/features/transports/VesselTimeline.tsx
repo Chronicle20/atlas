@@ -275,6 +275,7 @@ export function VesselTimeline({ lanes, nowEpochMs }: VesselTimelineProps) {
             strokeDasharray="3 3"
           />
           <text
+            data-now-label={nowClockLabel}
             x={WIDTH / 2 + 4}
             y={12}
             className="fill-foreground"

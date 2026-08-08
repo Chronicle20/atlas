@@ -430,6 +430,14 @@
         ]
       },
       {
+        "opCode": "0x32",
+        "validator": "LoggedInValidator",
+        "handler": "HiredMerchantOperationHandle",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x34",
         "validator": "LoggedInValidator",
         "handler": "StorageOperationHandle",
@@ -475,6 +483,23 @@
         ]
       },
       {
+        "opCode": "0x3B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseSummonBagHandle",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x3C",
+        "validator": "LoggedInValidator",
+        "handler": "PetFoodHandle",
+        "fname": "CWvsContext::SendPetFoodItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x3D",
         "validator": "LoggedInValidator",
         "handler": "MountFoodHandle",
@@ -511,6 +536,15 @@
         ]
       },
       {
+        "opCode": "0x42",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseScrollHandle",
+        "fname": "CWvsContext::SendUpgradeItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x43",
         "validator": "LoggedInValidator",
         "handler": "CharacterDistributeApHandle",
@@ -524,6 +558,14 @@
         "validator": "LoggedInValidator",
         "handler": "CharacterHealOverTimeHandle",
         "fname": "CWvsContext::SendStatChangeRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x46",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterUseSkillHandle",
         "services": [
           "channel"
         ]
@@ -569,6 +611,15 @@
         "validator": "LoggedInValidator",
         "handler": "CharacterInfoRequestHandle",
         "fname": "CWvsContext::SendCharacterInfoRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x4D",
+        "validator": "LoggedInValidator",
+        "handler": "PetSpawnHandle",
+        "fname": "CWvsContext::SendActivatePetRequest",
         "services": [
           "channel"
         ]
@@ -1186,6 +1237,14 @@
             }
           ]
         },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x87",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBomb",
         "services": [
           "channel"
         ]
@@ -1945,6 +2004,36 @@
         ]
       },
       {
+        "opCode": "0x38",
+        "writer": "IncubatorResult",
+        "fname": "CWvsContext::OnIncubatorResult",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x39",
+        "writer": "ShopScannerResult",
+        "fname": "CWvsContext::OnShopScannerResult",
+        "options": {
+          "operations": {
+            "RESULT": 6,
+            "HOT_LIST": 7
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x3F",
+        "writer": "PetCashFoodResult",
+        "fname": "sub_720293",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x42",
         "writer": "SetAvatarMegaphone",
         "fname": "CWvsContext::OnSetAvatarMegaphone",
@@ -1956,6 +2045,13 @@
         "opCode": "0x43",
         "writer": "ClearAvatarMegaphone",
         "fname": "sub_721465",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x49",
+        "writer": "SetField",
         "services": [
           "channel"
         ]
@@ -2045,16 +2141,16 @@
       },
       {
         "opCode": "0x55",
-        "writer": "FieldObstacleOnOffList",
-        "fname": "CField::OnFieldObstacleOnOffStatus",
+        "writer": "FieldEffectWeather",
+        "fname": "CField::OnBlowWeather",
         "services": [
           "channel"
         ]
       },
       {
         "opCode": "0x56",
-        "writer": "FieldEffectWeather",
-        "fname": "CField::OnBlowWeather",
+        "writer": "PlayJukebox",
+        "fname": "CField::OnPlayJukeBox",
         "services": [
           "channel"
         ]
@@ -2148,16 +2244,745 @@
         ]
       },
       {
+        "opCode": "0x67",
+        "writer": "CharacterChatGeneral",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x68",
+        "writer": "ChalkboardUse",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x69",
+        "writer": "MiniRoom",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x6B",
+        "writer": "CharacterItemUpgrade",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x6F",
+        "writer": "PetMovement",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x70",
+        "writer": "PetChat",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x77",
+        "writer": "SummonMove",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x78",
+        "writer": "SummonAttack",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x7A",
+        "writer": "SummonDamage",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x7E",
+        "writer": "CharacterMovement",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x7F",
+        "writer": "CharacterAttackMelee",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x80",
+        "writer": "CharacterAttackRanged",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x81",
+        "writer": "CharacterAttackMagic",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x82",
+        "writer": "CharacterSkillPrepareForeign",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x84",
+        "writer": "CharacterDamage",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x85",
+        "writer": "CharacterExpression",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x88",
+        "writer": "CharacterAppearanceUpdate",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x8A",
+        "writer": "CharacterBuffGiveForeign",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x8B",
+        "writer": "CharacterBuffCancelForeign",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x8C",
+        "writer": "PartyMemberHP",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x8D",
+        "writer": "GuildNameChanged",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x8E",
+        "writer": "GuildEmblemChanged",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x9E",
+        "writer": "SpawnMonster",
+        "fname": "CMobPool::OnMobEnterField",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x9F",
+        "writer": "DestroyMonster",
+        "fname": "CMobPool::OnMobLeaveField",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xA0",
+        "writer": "ControlMonster",
+        "fname": "CMobPool::OnMobChangeController",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xA2",
+        "writer": "MoveMonster",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xA3",
+        "writer": "MoveMonsterAck",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xA5",
+        "writer": "MonsterStatSet",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xA6",
+        "writer": "MonsterStatReset",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xA7",
+        "writer": "ResetMonsterAnimation",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xA8",
+        "writer": "MobAffected",
+        "fname": "CMob::OnAffected",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xA9",
+        "writer": "MonsterDamage",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xAA",
+        "writer": "MonsterSpecialEffectBySkill",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xB1",
+        "writer": "SpawnNPC",
+        "fname": "CNpcPool::OnNpcEnterField",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xB3",
+        "writer": "SpawnNPCRequestController",
+        "fname": "CNpcPool::OnNpcChangeController",
+        "options": {
+          "operations": {
+            "GRANT": 1,
+            "REVOKE": 0
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xB5",
+        "writer": "NPCAction",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xBC",
+        "writer": "SpawnHiredMerchant",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xBD",
+        "writer": "DestroyHiredMerchant",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xBE",
+        "writer": "UpdateHiredMerchant",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xC1",
+        "writer": "DropSpawn",
+        "fname": "CDropPool::OnDropEnterField",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xC2",
+        "writer": "DropDestroy",
+        "fname": "CDropPool::OnDropLeaveField",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xCA",
         "writer": "AffectedAreaCreated",
         "fname": "CAffectedAreaPool::OnAffectedAreaCreated",
-        "services": ["channel"]
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0xCB",
         "writer": "AffectedAreaRemoved",
         "fname": "CAffectedAreaPool::OnAffectedAreaRemoved",
-        "services": ["channel"]
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xCE",
+        "writer": "SpawnDoor",
+        "fname": "CTownPortalPool::OnTownPortalCreated",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xCF",
+        "writer": "RemoveDoor",
+        "fname": "CTownPortalPool::OnTownPortalRemoved",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xD2",
+        "writer": "ReactorHit",
+        "fname": "CReactorPool::OnReactorChangeState",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xD4",
+        "writer": "ReactorSpawn",
+        "fname": "CReactorPool::OnReactorEnterField",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xD5",
+        "writer": "ReactorDestroy",
+        "fname": "CReactorPool::OnReactorLeaveField",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0xED",
@@ -2169,6 +2994,26 @@
             "START_SELECT": 9,
             "RESULT": 11,
             "END": 13
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xEE",
+        "writer": "MessengerOperation",
+        "options": {
+          "operations": {
+            "ENTER": 0,
+            "SELF_ENTER_RESULT": 1,
+            "LEAVE": 2,
+            "INVITE": 3,
+            "INVITE_RESULT": 4,
+            "BLOCKED": 5,
+            "CHAT": 6,
+            "AVATAR": 7,
+            "MIGRATED": 8
           }
         },
         "services": [

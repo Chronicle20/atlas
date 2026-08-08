@@ -1,21 +1,30 @@
 {
   "WriterName": "MessengerOperationChat",
   "IDAName": "CUIMessenger::ProcessChat",
-  "Address": "",
+  "Address": "0x61b27c",
   "Variant": "GMS/v48",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/messenger/serverbound/operation_chat.go",
   "Rows": [
     {
       "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "op (6)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 4,
+      "IDAComment": "text",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

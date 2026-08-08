@@ -12,11 +12,14 @@
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
 | 0 | byte | byte `` | ✅ |  |
-| 1 | int32 | byte `` | ❌ | width mismatch |
+| 1 | byte | byte `` | ✅ |  |
 | 2 | int32 | byte `` | ❌ | width mismatch |
-| 3 | int32 | int32 `` | ✅ |  |
+| 3 | byte | int32 `` | ❌ | width mismatch |
 | 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 7 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 8 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 9 | string | byte `` | ❌ | atlas: extra — client never reads this field |
+| 10 | string | byte `` | ❌ | atlas: extra — client never reads this field |
 

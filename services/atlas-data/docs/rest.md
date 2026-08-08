@@ -76,16 +76,60 @@ Creates a Kubernetes ingest Job (`MODE=ingest`) that fetches WZ archives for the
 - 403 Forbidden: `scope=shared` without `X-Atlas-Operator: 1`
 - 503 Service Unavailable: Kubernetes JobCreator unavailable (not running `MODE=rest`, or in-cluster config/ConfigMap unavailable)
 
+The run record for the target triple is initialised (or reset) at Job creation, so a run that dies before the ingest pod's first write is still represented.
+
 ---
 
 ### GET /api/data/process
 
-Lists active/recent ingest Jobs this service manages.
+Returns the most recent ingest run for one `(scope, region, version)` triple.
+Region and version come from the standard tenant headers.
+
+#### Query Parameters
+
+- `scope` (optional): `""` or `"tenant"` (default) returns the caller's own
+  tenant's run; `"shared"` returns the version-scoped canonical dataset's run
+  and requires `X-Atlas-Operator: 1`.
 
 #### Response
 
-- 200: `{"jobs": [{"name","scope","region","version","tenant","active","succeeded","failed","startTime"}, ...]}` (raw JSON, not a JSON:API document)
-- 503 Service Unavailable: Kubernetes client unavailable
+- 200: a JSON:API document, resource type `ingestRun`, id
+  `<scope>:<region>:<major>.<minor>`.
+
+Attributes: `runId`, `jobName`, `scope`, `region`, `version`, `tenant`,
+`phase`, `startedAt`, `finishedAt`, `reason`, `workersTotal`,
+`workersComplete`, and `workers` — one entry per registered ingest worker with
+`name`, `state`, `startedAt`, `finishedAt`, `error`.
+
+`phase` is one of:
+
+| Phase | Meaning |
+|---|---|
+| `none` | No run record exists for the triple. Not an error. |
+| `running` | A run is in flight, corroborated by a fresh heartbeat or a live Job. |
+| `succeeded` | Every worker finished without error. |
+| `failed` | The ingest process returned an error; `reason` carries it. |
+| `stuck` | The Watchdog deleted the Job for heartbeat staleness; `reason` names the timeout. |
+| `unknown` | The record says `running` but neither a fresh heartbeat nor a live Job corroborates it. Computed at read time, never stored. |
+
+Worker `state` is one of `pending`, `running`, `succeeded`, `failed`, or
+`skipped`. `skipped` is a category genuinely absent from a monolithic `Data.wz`
+(v12 has no Quest); it does not stop a run reaching `succeeded`. A worker left
+in `running` under a terminal run phase was the one in flight when the run
+ended.
+
+Terminal phases are served straight from Redis with no Kubernetes call, so a
+run stays readable after its Job is garbage-collected or watchdog-deleted. Run
+records carry a 7-day TTL refreshed on every write; an evicted record reports
+`none`.
+
+#### Errors
+
+- 400 Bad Request: invalid `scope` value
+- 403 Forbidden: `scope=shared` without `X-Atlas-Operator: 1`
+
+An unavailable Kubernetes client no longer yields 503 — the stored record is
+still served, with only the live-Job cross-check degraded.
 
 ---
 

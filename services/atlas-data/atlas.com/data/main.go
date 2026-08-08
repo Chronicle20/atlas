@@ -87,8 +87,13 @@ func main() {
 	// MODE=rest additionally provisions a JobCreator + Watchdog so the
 	// /api/data/process handler can launch ingest Jobs.
 	var jc *restruntime.JobCreator
+	var ingestRegs *restruntime.IngestRegistries
 	if os.Getenv("MODE") == "rest" {
 		rdb := redis.Connect(l)
+		// Built from the client directly, not from the JobCreator: the status
+		// handler must still serve the stored run record when the in-cluster
+		// config is unavailable and jc is therefore nil (FR-4.5).
+		ingestRegs = restruntime.NewIngestRegistries(rdb)
 		var jcErr error
 		jc, jcErr = restruntime.NewJobCreatorInClusterWithRedis(rdb)
 		if jcErr != nil {
@@ -169,7 +174,7 @@ func main() {
 		SetWriteTimeout(time.Hour).
 		AddRouteInitializer(data.InitResource(db)(GetServer())).
 		AddRouteInitializer(wzinput.InitResource(mc)(GetServer())).
-		AddRouteInitializer(restruntime.InitResource(jc)(GetServer())).
+		AddRouteInitializer(restruntime.InitResource(jc, ingestRegs)(GetServer())).
 		AddRouteInitializer(baseline.InitResource(db, mc)(GetServer())).
 		AddRouteInitializer(tenantpurge.InitResource(db, mc)(GetServer())).
 		AddRouteInitializer(minioreconcile.InitResource(mc)(GetServer())).

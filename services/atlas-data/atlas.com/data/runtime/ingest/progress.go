@@ -49,22 +49,17 @@ func (s *redisSink) writeCtx(ctx context.Context) (context.Context, context.Canc
 	return context.WithTimeout(context.WithoutCancel(ctx), progressWriteTimeout)
 }
 
-// apply mutates the record under the run-id guard.
+// guardedUpdate runs fn through UpdateWithTTL under the run-id guard: a record
+// whose RunId differs from this pod's is left untouched.
 //
 // The guard is evaluated inside the mutator, so it runs against the freshly
 // read value on every optimistic-lock retry: a superseded pod can never win
 // the race. An empty runId on either side means the guard cannot decide (a
 // record written before run ids existed, or a pod with no INGEST_RUN_ID), and
-// the write is allowed through.
-func (s *redisSink) apply(ctx context.Context, what string, fn func(ingestrun.Record) ingestrun.Record) {
-	if s == nil || s.reg == nil {
-		return
-	}
-	wctx, cancel := s.writeCtx(ctx)
-	defer cancel()
-
-	stale := false
-	_, err := s.reg.UpdateWithTTL(wctx, s.key, ingestrun.RecordTTL, func(rec ingestrun.Record) ingestrun.Record {
+// the write is allowed through. Every mutation — Init included — goes through
+// this one guard so a stale pod can never revert a newer run's record.
+func (s *redisSink) guardedUpdate(wctx context.Context, fn func(ingestrun.Record) ingestrun.Record) (err error, stale bool) {
+	_, err = s.reg.UpdateWithTTL(wctx, s.key, ingestrun.RecordTTL, func(rec ingestrun.Record) ingestrun.Record {
 		if rec.RunId != "" && s.runId != "" && rec.RunId != s.runId {
 			stale = true
 			return rec
@@ -72,6 +67,19 @@ func (s *redisSink) apply(ctx context.Context, what string, fn func(ingestrun.Re
 		stale = false
 		return fn(rec)
 	})
+	return err, stale
+}
+
+// apply mutates the record under the run-id guard, logging (never returning)
+// any failure — every non-Init write is best-effort telemetry.
+func (s *redisSink) apply(ctx context.Context, what string, fn func(ingestrun.Record) ingestrun.Record) {
+	if s == nil || s.reg == nil {
+		return
+	}
+	wctx, cancel := s.writeCtx(ctx)
+	defer cancel()
+
+	err, stale := s.guardedUpdate(wctx, fn)
 	if stale {
 		s.l.Debugf("ingest progress write dropped (%s): record belongs to a different run than this pod (%s)", what, s.runId)
 		return
@@ -85,6 +93,10 @@ func (s *redisSink) apply(ctx context.Context, what string, fn func(ingestrun.Re
 // runId, jobName and startedAt (design Q2) — and only seeds the worker roster
 // and confirms phase=running. seed is written only when no record exists, i.e.
 // Redis lost it between Job creation and pod start.
+//
+// Routed through the same guardedUpdate as every other write: a pod scheduled
+// so late that Redis already holds a newer run's record (possibly already
+// terminal) must not revert that record back to running (design §3.1).
 func (s *redisSink) Init(ctx context.Context, seed ingestrun.Record, roster []string, now time.Time) {
 	if s == nil || s.reg == nil {
 		return
@@ -92,9 +104,13 @@ func (s *redisSink) Init(ctx context.Context, seed ingestrun.Record, roster []st
 	wctx, cancel := s.writeCtx(ctx)
 	defer cancel()
 
-	_, err := s.reg.UpdateWithTTL(wctx, s.key, ingestrun.RecordTTL, func(rec ingestrun.Record) ingestrun.Record {
+	err, stale := s.guardedUpdate(wctx, func(rec ingestrun.Record) ingestrun.Record {
 		return rec.WithRoster(roster).WithPhase(ingestrun.PhaseRunning, now, "")
 	})
+	if stale {
+		s.l.Debugf("ingest progress init dropped: record belongs to a different run than this pod (%s)", s.runId)
+		return
+	}
 	if errors.Is(err, redis.ErrNotFound) {
 		if perr := s.reg.PutWithTTL(wctx, s.key, seed, ingestrun.RecordTTL); perr != nil {
 			s.l.WithError(perr).Warnf("ingest progress seed failed (key=%s)", s.key)

@@ -175,6 +175,35 @@ func TestSinkDropsWritesForASupersededRun(t *testing.T) {
 	}
 }
 
+// A pod scheduled so late that Redis already holds a newer (possibly already
+// terminal) run's record must not have its own Init revert that record back
+// to running — Init is a mutation like any other and must honor the same
+// superseded-pod guard as WorkerStarted/WorkerFinished/Finish (design §3.1).
+func TestSinkInitDropsWritesForASupersededRun(t *testing.T) {
+	s, _, _ := testSink(t, "run-OLD")
+	ctx := context.Background()
+	now := time.Now().UTC()
+
+	fresh := ingestrun.NewRecord("run-NEW", "job-2", "shared", "GMS", "83.1", "", now, []string{"STRING"})
+	fresh = fresh.WithPhase(ingestrun.PhaseSucceeded, now, "")
+	if err := s.reg.PutWithTTL(ctx, s.key, fresh, ingestrun.RecordTTL); err != nil {
+		t.Fatal(err)
+	}
+
+	s.Init(ctx, seedFor("run-OLD", now), []string{"STRING", "MAP"}, now)
+
+	got := readRecord(t, s)
+	if got.RunId != "run-NEW" {
+		t.Fatalf("runId = %s, want run-NEW", got.RunId)
+	}
+	if got.Phase != ingestrun.PhaseSucceeded {
+		t.Fatalf("phase = %s: the stale pod's Init reverted a completed run to running", got.Phase)
+	}
+	if len(got.Workers) != 1 || got.Workers[0].Name != "STRING" {
+		t.Fatalf("roster mutated by a stale pod's Init: %+v", got.Workers)
+	}
+}
+
 // FR-2.5: a Redis outage is warn-logged telemetry, never an ingest failure.
 func TestSinkSurvivesRedisOutage(t *testing.T) {
 	s, mr, _ := testSink(t, "run-1")

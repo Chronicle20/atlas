@@ -109,12 +109,6 @@ export const JOB_GRAPH: Record<number, JobEntry> = {
   2218: { id: 2218, name: "Evan 10", parent: 2217 },
 };
 
-/** Branch root ids (parent === null), ascending. */
-export const JOB_ROOTS: number[] = Object.values(JOB_GRAPH)
-  .filter((e) => e.parent === null)
-  .map((e) => e.id)
-  .sort((a, b) => a - b);
-
 /** Every graph entry, ascending by id — the full selectable job set before tenant gating. */
 export const JOB_LIST: JobEntry[] = Object.values(JOB_GRAPH).sort(
   (a, b) => a.id - b.id,
@@ -131,51 +125,6 @@ export function jobName(id: number): string {
   return JOB_GRAPH[id]?.name ?? `Job ${id}`;
 }
 
-/** Direct children of a node, ascending by id. */
-export function childrenOf(id: number): number[] {
-  return Object.values(JOB_GRAPH)
-    .filter((e) => e.parent === id)
-    .map((e) => e.id)
-    .sort((a, b) => a - b);
-}
-
-/** Walk parent edges to the branch root. Returns the id itself if it is a root or unknown. */
-export function rootOf(id: number): number {
-  let cur: JobEntry | undefined = JOB_GRAPH[id];
-  if (!cur) return id;
-  while (cur.parent != null) {
-    const next: JobEntry | undefined = JOB_GRAPH[cur.parent];
-    if (!next) break;
-    cur = next;
-  }
-  return cur.id;
-}
-
-/**
- * Branch root ids the tenant actually has, ascending.
- *
- * `available` is the set of job ids returned by GET /api/data/jobs — the
- * tenant's ingested job set. It replaces the retired hand-maintained
- * version-floor tables that used to map a job id to the minimum majorVersion
- * that shipped it: existence is data, not a hand-maintained table. Callers
- * must not pass an empty set to mean "unknown"; see JobsPage's isSuccess gate.
- */
-export function visibleRoots(available: ReadonlySet<number>): number[] {
-  return JOB_ROOTS.filter((r) => available.has(r));
-}
-
-/**
- * Direct children of a node that the tenant has. Lets the tree hide a subtree
- * the tenant's version never shipped (e.g. Pirate on a v48 tenant) while
- * showing its siblings.
- */
-export function visibleChildrenOf(
-  id: number,
-  available: ReadonlySet<number>,
-): number[] {
-  return childrenOf(id).filter((c) => available.has(c));
-}
-
 /** Root -> node advancement path (inclusive), for breadcrumbs. */
 export function jobTreePath(jobId: number): JobEntry[] {
   const path: JobEntry[] = [];
@@ -185,62 +134,4 @@ export function jobTreePath(jobId: number): JobEntry[] {
     cur = cur.parent != null ? JOB_GRAPH[cur.parent] : undefined;
   }
   return path;
-}
-
-/**
- * Every advancement chain below entryId: one array per root-to-leaf path of
- * the subtree, EXCLUDING entryId itself, DFS in ascending child order. A chain
- * containing any job the tenant does not have is dropped entirely (matches
- * visibleChildrenOf semantics). A leaf entry yields [].
- */
-export function advancementChains(
-  entryId: number,
-  available: ReadonlySet<number>,
-): number[][] {
-  const walk = (id: number): number[][] => {
-    const kids = childrenOf(id);
-    if (kids.length === 0) return [[]];
-    const out: number[][] = [];
-    for (const k of kids) {
-      for (const rest of walk(k)) out.push([k, ...rest]);
-    }
-    return out;
-  };
-  return walk(entryId)
-    .filter((chain) => chain.length > 0)
-    .filter((chain) => chain.every((id) => available.has(id)));
-}
-
-function ordinal(n: number): string {
-  if (n === 1) return "1st";
-  if (n === 2) return "2nd";
-  if (n === 3) return "3rd";
-  return `${n}th`;
-}
-
-/**
- * Tier tag for a flow chip: "Base" for a tree root with children, "" for a
- * childless root or unknown id, else the ordinal advancement depth
- * ("1st" … "10th") measured from the tree root.
- */
-export function tierLabel(jobId: number): string {
-  const depth = jobTreePath(jobId).length - 1;
-  if (depth < 0) return "";
-  if (depth === 0) return childrenOf(jobId).length > 0 ? "Base" : "";
-  return ordinal(depth);
-}
-
-/** Count of tenant-available nodes in entryId's subtree, entry included (0 if the entry itself is absent). */
-export function subtreeCount(
-  entryId: number,
-  available: ReadonlySet<number>,
-): number {
-  if (JOB_GRAPH[entryId] === undefined || !available.has(entryId)) return 0;
-  return (
-    1 +
-    visibleChildrenOf(entryId, available).reduce(
-      (n, k) => n + subtreeCount(k, available),
-      0,
-    )
-  );
 }

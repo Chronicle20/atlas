@@ -115,6 +115,34 @@ describe("toConfigExportPayload", () => {
   });
 });
 
+describe("toConfigExportPayload computed attributes", () => {
+  it("strips the server-computed drift keys", () => {
+    const out = toConfigExportPayload(
+      fixture({
+        shippedRevision: "aa".repeat(32),
+        storedRevision: "bb".repeat(32),
+        seedDrift: true,
+      }) as never,
+    ) as Record<string, unknown>;
+
+    expect(out).not.toHaveProperty("shippedRevision");
+    expect(out).not.toHaveProperty("storedRevision");
+    expect(out).not.toHaveProperty("seedDrift");
+  });
+
+  it("leaves the configured document intact", () => {
+    const out = toConfigExportPayload(
+      fixture({ seedDrift: true }) as never,
+    ) as Record<string, unknown>;
+
+    expect(out.region).toBe("GMS");
+    expect(out.majorVersion).toBe(83);
+    expect(out.minorVersion).toBe(1);
+    expect(out).toHaveProperty("socket");
+    expect(out).toHaveProperty("characters");
+  });
+});
+
 describe("configExportFilename", () => {
   const meta = {
     id: "8b1d4c4e-0000-4000-8000-000000000000",

@@ -355,10 +355,37 @@ export const templatesService = {
     return api.delete(`${BASE_PATH}/${id}`, options);
   },
 
+  /**
+   * Resets one template to the configuration shipped in the currently deployed
+   * image. Destructive: any edit made through the UI is overwritten.
+   *
+   * The endpoint returns 204 with no body, so there is nothing to sort or
+   * validate on the way back out - the caller invalidates and refetches.
+   *
+   * Templates are global (NFR-5), so this request must NOT carry tenant
+   * headers - unlike every other method on this service. `skipTenantHeaders`
+   * always wins here regardless of what the caller passed, because the
+   * endpoint is deliberately not tenant-scoped and TenantProvider sets a
+   * tenant globally on the shared ApiClient singleton.
+   */
+  async reseed(id: string, options?: ServiceOptions): Promise<void> {
+    await api.post<void>(`${BASE_PATH}/${id}/reseed`, undefined, {
+      ...options,
+      skipTenantHeaders: true,
+    });
+  },
+
   cloneTemplate(template: Template): TemplateAttributes {
     const cloned: TemplateAttributes = JSON.parse(
       JSON.stringify(template.attributes),
     );
+    // shippedRevision/storedRevision/seedDrift are computed on read by
+    // atlas-configurations, never persisted - cloning them would POST stale
+    // values for a template that doesn't exist yet. Matches the same three
+    // keys config-export.ts strips for the same reason.
+    delete (cloned as Partial<TemplateAttributes>).shippedRevision;
+    delete (cloned as Partial<TemplateAttributes>).storedRevision;
+    delete (cloned as Partial<TemplateAttributes>).seedDrift;
     cloned.region = "";
     cloned.majorVersion = 0;
     cloned.minorVersion = 0;

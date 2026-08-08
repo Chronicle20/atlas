@@ -7,6 +7,7 @@ import {
   DetailActionBarProvider,
 } from "@/components/DetailActionBarContext";
 import { ConfigExportButton } from "@/components/features/config/ConfigExportButton";
+import { TemplateReseedButton } from "@/components/features/templates/TemplateReseedButton";
 
 interface TemplateDetailLayoutProps {
   children: ReactNode;
@@ -35,7 +36,10 @@ export function TemplateDetailLayout({ children }: TemplateDetailLayoutProps) {
             </h2>
             <p className="text-muted-foreground">{id}</p>
           </div>
-          <ConfigExportButton kind="template" id={id} />
+          <div className="flex items-center gap-2">
+            <TemplateReseedButton id={id} />
+            <ConfigExportButton kind="template" id={id} />
+          </div>
         </div>
         <Separator className="my-6" />
         <div className="flex flex-1 flex-col overflow-hidden space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">

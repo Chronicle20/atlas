@@ -404,7 +404,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 							for i, e := range p.Excludes() {
 								excludeIds[i] = e.ItemId()
 							}
-							if err := session.Announce(l)(ctx)(wp)(petpkt.PetExcludeResponseWriter)(petpkt.NewPetExcludeResponse(p.OwnerId(), p.Slot(), uint64(p.Id()), excludeIds).Encode)(s); err != nil {
+							if err := session.Announce(l)(ctx)(wp)(petpkt.PetExcludeResponseWriter)(petpkt.NewPetExcludeResponse(p.OwnerId(), p.Slot(), p.SerialNumber(), excludeIds).Encode)(s); err != nil {
 								l.WithError(err).Errorf("enterMap: unable to announce pet [%d] exclusion list to character [%d].", p.Id(), s.CharacterId())
 							}
 						}

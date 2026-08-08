@@ -446,7 +446,7 @@ func handleExcludeChanged(sc server.Model, wp writer.Producer) message.Handler[p
 			for i, e := range p.Excludes() {
 				excludeIds[i] = e.ItemId()
 			}
-			return session.Announce(l)(ctx)(wp)(petpkt.PetExcludeResponseWriter)(petpkt.NewPetExcludeResponse(p.OwnerId(), p.Slot(), uint64(p.Id()), excludeIds).Encode)(s)
+			return session.Announce(l)(ctx)(wp)(petpkt.PetExcludeResponseWriter)(petpkt.NewPetExcludeResponse(p.OwnerId(), p.Slot(), p.SerialNumber(), excludeIds).Encode)(s)
 		})
 	}
 }

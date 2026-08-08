@@ -114,6 +114,46 @@ every version.
 | Cygnus tier 4 (`1112/1212/1312/1412/1512`), all released=true versions | **OVER-CLAIMED — fixed in Task 3** | `investigation.md` Finding 3; `CygnusStage4` class added to `classOf`, 11 CSV rows `released=false`, `libs/atlas-constants/job/availability_test.go` pins it (`TestAvailable_CygnusStage4NeverReleased`, `TestResolveWire_CygnusStage4StillPresent`) |
 | Cygnus tiers 1–3 (Noblesse + DawnWarrior/BlazeWizard/WindArcher/NightWalker/ThunderBreaker stages 1–3), gms 79/83/84/87/92/95, jms 185 | **CORRECT** | `investigation.md` Finding 3 sweep methodology; spot-checked live in this task: `GET /api/data/jobs/1000/skills` (Noblesse) at gms 83 returns 25 real skill ids, `GET /api/data/jobs/1100/skills` (DawnWarrior stage 1) returns 5, `GET /api/data/jobs/1111/skills` (DawnWarrior stage 3) returns 8 — none empty. `libs/atlas-constants/job/availability_test.go`'s `TestAvailable_CygnusTiers1To3NoRegression` pins `Available()=true` at gms79+/jms185 and `=false` at gms72 and earlier for every tier-1–3 identity that has a wire binding at that version. |
 
+### Aran
+
+`investigation.md` does not carry a live-content sweep for Aran (its Finding
+2 discusses only the `released=false` gms 79 stub, a different cell than the
+six `released=true` cells below). Closed here with fresh live queries
+against `atlas-main`'s provisioned tenants, run for all five Aran job
+identities in `gen/identities.yaml` at every `released=true` version:
+`AranBeginner` (wire 2000), `AranStage1` (2100), `AranStage2` (2110),
+`AranStage3` (2111), `AranStage4` (2112). `AranStage4` is the critical check
+— its token (2112) sits in the same "…12" position as the five Cygnus 4th-
+job branches that turned out to be empty stubs, so it cannot be assumed
+non-empty by analogy; it must be queried directly.
+
+```sh
+wget -qO- --header 'TENANT_ID: ec876921-c363-4cc6-9c51-5bb8d57f9553' --header 'REGION: GMS' \
+  --header 'MAJOR_VERSION: 83' --header 'MINOR_VERSION: 1' http://localhost:8080/api/data/jobs/2112/skills
+```
+
+Real output, 2026-08-07, `atlas-data` pod `atlas-data-6ddd7fb-7js2x`:
+
+| Version | 2000 (Beginner) | 2100 (Stage1) | 2110 (Stage2) | 2111 (Stage3) | 2112 (Stage4) |
+|---|---|---|---|---|---|
+| gms 83.1 | 27 skills, e.g. `[20001000,...,20001031]` | `[21000002,21000000,21001001,21001003]` (4) | `[21100001,...,21100005]` (6) | `[21110002,...,21110008]` (9) | `[21121000,21120002,...,21120010]` (11) |
+| gms 84.1 | 36 skills | 4 (identical to gms83) | 6 (identical) | 9 (identical) | 11 (identical) |
+| gms 87.1 | 44 skills | 4 (identical) | 6 (identical) | 9 (identical) | 11 (identical) |
+| gms 92.1 | 68 skills | 4 (identical) | 6 (identical) | 9 (identical) | 11 (identical) |
+| gms 95.1 | 68 skills (identical to gms92) | 4 (identical) | 6 (identical) | 9 (identical) | 11 (identical) |
+| jms 185.1 | 40 skills (JMS-specific ordering/subset) | 4 (identical) | 6 (identical) | 9 (identical) | 11 (identical) |
+
+None of the five job ids ever returns `{"skills":[]}` at any of the six
+versions — including `2112` (Stage4), the one that would have mirrored the
+Cygnus-tier-4 pattern had it been an empty stub. The beginner tier (2000)'s
+skill count grows across versions (27→36→44→68), which is the normal
+incremental-patch pattern already seen for Aran's beginner skills and for
+GM/SuperGM/Pirate above — not evidence of a defect.
+
+| Cell | Verdict | Evidence |
+|---|---|---|
+| Aran, gms 83/84/87/92/95, jms 185 | **CORRECT** | Live queries above — all five job ids (2000/2100/2110/2111/2112) return non-empty skill lists at every `released=true` version, including the Stage4 id whose token position is analogous to Cygnus's empty tier 4. No hidden empty tier exists in the Aran class; no fix needed. |
+
 ### Evan
 
 `investigation.md` Finding 4: the v0.84+ `Skill.wz` has both a top-level
@@ -298,7 +338,7 @@ SuperGM. Recorded here per "never silently omit a cell," not fixed here.
 | GM | 11 (gms 12/48/61/72/79/83/84/87/92/95, jms 185) | 10 CORRECT, 1 UNVERIFIED (gms 12) |
 | SuperGM | 11 (same versions) | 9 CORRECT, 1 UNVERIFIED (gms 12), 1 OVER-CLAIMED — fixed (jms 185) |
 | Pirate | 8 (gms 72/79/83/84/87/92/95, jms 185) | 8 CORRECT |
-| Aran | 6 (gms 83/84/87/92/95, jms 185) | 6 CORRECT |
+| Aran | 6 (gms 83/84/87/92/95, jms 185) | 6 CORRECT — live-queried all 5 job ids (2000/2100/2110/2111/2112) per version, see Step 2 Aran section |
 | Evan | 5 (gms 84/87/92/95, jms 185) | 5 CORRECT |
 | Cygnus | 7 (gms 79/83/84/87/92/95, jms 185) | 7 CORRECT (tiers 1–3; tier 4 already split out and fixed under `CygnusStage4`) |
 | CygnusStage4 | 0 (all `released=false`, this is the fixed state) | worked example, see above |

@@ -93,7 +93,7 @@
 - Consumes: nothing from earlier tasks.
 - Produces: `job.Read` returns `[]RestModel{}` (len 0) for a numeric image whose root has no `skill` child; unchanged one-element result for a present-but-empty `skill` node. `Processor.RegisterJob(path string) (int, error)` therefore returns `0` for such an image — its signature is unchanged.
 
-- [ ] **Step 1: Rewrite the missing-`skill`-node test to assert no model**
+- [x] **Step 1: Rewrite the missing-`skill`-node test to assert no model**
 
 Replace `TestRead_MissingSkillNode_ProducesEmptyList` in `services/atlas-data/atlas.com/data/job/reader_test.go` with:
 
@@ -113,7 +113,7 @@ func TestRead_MissingSkillNode_ProducesNoModel(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the test and verify it fails**
+- [x] **Step 2: Run the test and verify it fails**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go test ./job/ -run 'TestRead_MissingSkillNode_ProducesNoModel' -v
@@ -121,7 +121,7 @@ cd services/atlas-data/atlas.com/data && go test ./job/ -run 'TestRead_MissingSk
 
 Expected: FAIL — `Should be empty, but was [{900 []}]`.
 
-- [ ] **Step 3: Make the reader branch on node presence**
+- [x] **Step 3: Make the reader branch on node presence**
 
 In `services/atlas-data/atlas.com/data/job/reader.go`, replace lines 46-58 (the `skills := make(...)` block through the `return`) with:
 
@@ -165,7 +165,7 @@ Also update the doc comment's second bullet (currently `reader.go:22-24`) to rea
 //     representable and distinguishable from "the job is absent".
 ```
 
-- [ ] **Step 4: Run the reader tests and verify they pass**
+- [x] **Step 4: Run the reader tests and verify they pass**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go test ./job/ -run 'TestRead_' -v
@@ -173,7 +173,7 @@ cd services/atlas-data/atlas.com/data && go test ./job/ -run 'TestRead_' -v
 
 Expected: PASS, including `TestRead_EmptySkillNode_ProducesEmptyList` (still one model, id 800, empty skills) and `TestRead_NonNumericImage_ProducesNothingAndNoError`.
 
-- [ ] **Step 5: Add the both-walk-orders regression test**
+- [x] **Step 5: Add the both-walk-orders regression test**
 
 Append to `services/atlas-data/atlas.com/data/job/processor_test.go`:
 
@@ -233,7 +233,7 @@ func TestRegisterJob_DragonImageCannotBlankRealDocument(t *testing.T) {
 
 Note: `writeTempImage` (declared in `reader_test.go`) uses a fresh `t.TempDir()` per call, so the two calls above do not collide.
 
-- [ ] **Step 6: Run the whole job package suite**
+- [x] **Step 6: Run the whole job package suite**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go test -race ./job/...
@@ -241,7 +241,7 @@ cd services/atlas-data/atlas.com/data && go test -race ./job/...
 
 Expected: PASS. Both subtests of `TestRegisterJob_DragonImageCannotBlankRealDocument` pass; `dragon then real` would have passed before the fix, `real then dragon` would not.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-data/atlas.com/data/job/
@@ -265,7 +265,7 @@ document upsert used to blank every Evan stage document."
 - Consumes: Task 1's `RegisterJob(path string) (int, error)` returning 0 for a skipped image.
 - Produces: `jobStats` in package `workers` with `Wrap(rf func(path string) (int, error)) RegisterFunc` and `Log(l logrus.FieldLogger)`. `countingRegister` and `logJobDocCount` are removed.
 
-- [ ] **Step 1: Write the failing accumulator tests**
+- [x] **Step 1: Write the failing accumulator tests**
 
 Replace `TestCountingRegister_SumsWrittenDocuments`, `TestCountingRegister_PropagatesErrorAndAddsNothing`, `TestLogJobDocCount_WarnsOnZero` and `TestLogJobDocCount_NoWarnWhenDocumentsWritten` in `services/atlas-data/atlas.com/data/data/workers/skill_test.go` with:
 
@@ -325,7 +325,7 @@ func TestJobStats_LogWarnsOnZeroDocuments(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the tests and verify they fail**
+- [x] **Step 2: Run the tests and verify they fail**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go test ./data/workers/ -run 'TestJobStats' -v
@@ -333,7 +333,7 @@ cd services/atlas-data/atlas.com/data && go test ./data/workers/ -run 'TestJobSt
 
 Expected: FAIL to build — `undefined: jobStats`.
 
-- [ ] **Step 3: Implement the accumulator**
+- [x] **Step 3: Implement the accumulator**
 
 In `services/atlas-data/atlas.com/data/data/workers/skill.go`, replace `countingRegister` and `logJobDocCount` (lines 119-143) with:
 
@@ -399,7 +399,7 @@ The `defer` mirrors the SKILL pass above it: the summary is still emitted when t
 
 Add `"strings"` to `skill.go`'s import block (alongside `"strconv"`).
 
-- [ ] **Step 4: Run the tests and verify they pass**
+- [x] **Step 4: Run the tests and verify they pass**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go test -race ./data/workers/
@@ -407,7 +407,7 @@ cd services/atlas-data/atlas.com/data && go test -race ./data/workers/
 
 Expected: PASS. The pre-existing `TestSkillWorker_SummaryEmittedOnWalkError` is untouched and still passes.
 
-- [ ] **Step 5: Build the whole service and commit**
+- [x] **Step 5: Build the whole service and commit**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go build ./... && go vet ./...
@@ -434,7 +434,7 @@ is visible in the run summary instead of silent."
 - Consumes: nothing from earlier tasks.
 - Produces: release class label `"CygnusStage4"` returned by `classOf` for job tokens 1112/1212/1312/1412/1512 and skill tokens `1112xxxx`/`1212xxxx`/`1312xxxx`/`1412xxxx`/`1512xxxx`. `job.Set.Available(DawnWarriorStage4)` etc. is `false` at every version; `Set.Resolve`/`Set.Wire` still answer for them.
 
-- [ ] **Step 1: Write the failing generator test**
+- [x] **Step 1: Write the failing generator test**
 
 Append to `libs/atlas-constants/gen/availability_test.go`:
 
@@ -474,7 +474,7 @@ func TestClassOf_CygnusTiers1To3Unchanged(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run it and verify it fails**
+- [x] **Step 2: Run it and verify it fails**
 
 ```bash
 cd libs/atlas-constants/gen && go test -run 'TestClassOf_Cygnus' -v ./...
@@ -482,7 +482,7 @@ cd libs/atlas-constants/gen && go test -run 'TestClassOf_Cygnus' -v ./...
 
 Expected: FAIL — `classOf(job, 1112) = "Cygnus", want CygnusStage4`.
 
-- [ ] **Step 3: Add the `CygnusStage4` case to `classOf`**
+- [x] **Step 3: Add the `CygnusStage4` case to `classOf`**
 
 In `libs/atlas-constants/gen/availability.go`, insert immediately **before** the `case t >= 1000 && t <= 1599:` arm:
 
@@ -503,7 +503,7 @@ In `libs/atlas-constants/gen/availability.go`, insert immediately **before** the
 		return "CygnusStage4"
 ```
 
-- [ ] **Step 4: Run the generator tests and verify they pass**
+- [x] **Step 4: Run the generator tests and verify they pass**
 
 ```bash
 cd libs/atlas-constants/gen && go test -run 'TestClassOf' -v ./...
@@ -511,7 +511,7 @@ cd libs/atlas-constants/gen && go test -run 'TestClassOf' -v ./...
 
 Expected: PASS.
 
-- [ ] **Step 5: Add the eleven `CygnusStage4` rows to availability.csv**
+- [x] **Step 5: Add the eleven `CygnusStage4` rows to availability.csv**
 
 In `docs/tasks/task-187-version-aware-id-semantics/audit/availability.csv`, insert ten rows immediately after the last `Cygnus` row of the main block (the `jms,185,1,job,Cygnus,...` row), and one row in the trailing `gms,12,1` block after its `Cygnus` row — matching the file's existing layout. All eleven use the identical `meymink` cell:
 
@@ -521,7 +521,7 @@ gms,48,1,job,CygnusStage4,false,"Cygnus 4th job is unreleased at every supported
 
 Write all eleven explicitly (`gms,12,1` · `gms,48,1` · `gms,61,1` · `gms,72,1` · `gms,79,1` · `gms,83,1` · `gms,84,1` · `gms,87,1` · `gms,92,1` · `gms,95,1` · `jms,185,1`), every one `job,CygnusStage4,false`. Do **not** rely on `loadReleaseMatrix`'s missing-class default: it only errors when a version has *no* rows at all, so an omitted row would silently default to `false` — the right answer for the wrong reason.
 
-- [ ] **Step 6: Verify the CSV parses and the audit validator passes**
+- [x] **Step 6: Verify the CSV parses and the audit validator passes**
 
 ```bash
 cd libs/atlas-constants/gen && go test -run 'TestAudit|TestBuildAvailability' -v ./...
@@ -529,7 +529,7 @@ cd libs/atlas-constants/gen && go test -run 'TestAudit|TestBuildAvailability' -v
 
 Expected: PASS. `audit_validate_test.go` enforces per-row shape (non-empty `identityName`, non-empty `meymink`, `released ∈ {true,false}`, provisioned version key) and does not enforce a class count, so no validator change is needed.
 
-- [ ] **Step 7: Regenerate the per-version sets**
+- [x] **Step 7: Regenerate the per-version sets**
 
 ```bash
 cd libs/atlas-constants/gen && go run . && go run . -check
@@ -538,7 +538,7 @@ git -C ../../.. status --short libs/atlas-constants/
 
 Expected: `go run . -check` exits 0; `git status` shows modified `libs/atlas-constants/job/version_gms_79_1_gen.go`, `..._83_1_...`, `..._84_1_...`, `..._87_1_...`, `..._92_1_...`, `..._95_1_...`, `..._jms_185_1_...` (the seven versions where Cygnus was `released=true`). The pre-v79 files should be unchanged — Cygnus was already `false` there.
 
-- [ ] **Step 8: Pin the availability split with library tests**
+- [x] **Step 8: Pin the availability split with library tests**
 
 Create `libs/atlas-constants/job/availability_test.go`:
 
@@ -634,7 +634,7 @@ func TestAvailable_CygnusTiers1To3NoRegression(t *testing.T) {
 }
 ```
 
-- [ ] **Step 9: Run the library tests**
+- [x] **Step 9: Run the library tests**
 
 ```bash
 cd libs/atlas-constants && go test -race ./... && go vet ./...
@@ -642,7 +642,7 @@ cd libs/atlas-constants && go test -race ./... && go vet ./...
 
 Expected: PASS, including `constants/golden_test.go` and `gen/drift_test.go`.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add libs/atlas-constants/ docs/tasks/task-187-version-aware-id-semantics/audit/availability.csv
@@ -666,7 +666,7 @@ The identities stay in the namespace -- presence is not release."
 - Consumes: Task 3's `CygnusStage4` split (the audit's worked example).
 - Produces: a written verdict — `CORRECT`, `OVER-CLAIMED`, or `UNVERIFIED` — for every (class, version) cell where `availability.csv` says `released=true`. Any `OVER-CLAIMED` cell is fixed by the same mechanism as Task 3 (a new class label + eleven CSV rows + regenerate) before this task is complete.
 
-- [ ] **Step 1: Enumerate the `released=true` surface**
+- [x] **Step 1: Enumerate the `released=true` surface**
 
 ```bash
 awk -F, 'NR>1 && $6=="true" {print $5" "$1" "$2"."$3}' docs/tasks/task-187-version-aware-id-semantics/audit/availability.csv | sort
@@ -674,7 +674,7 @@ awk -F, 'NR>1 && $6=="true" {print $5" "$1" "$2"."$3}' docs/tasks/task-187-versi
 
 This is the entire audit surface. A tier-level over-claim is only observable where a class is `released=true`; where it is `false`, every tier is already unavailable and a tier split changes nothing. Record the command and its output verbatim in the audit document.
 
-- [ ] **Step 2: Close the evidenced cells from `investigation.md`**
+- [x] **Step 2: Close the evidenced cells from `investigation.md`**
 
 `investigation.md`'s live-baseline sweep (`GET /api/data/jobs/{id}/skills` on `atlas-main`, gms 79/83/84/87/92/95 + jms 185) already covers Cygnus, Aran, Evan, and Pirate at those versions. For each such cell write a verdict citing that sweep. Expected verdicts, to be confirmed against the sweep rather than assumed:
 
@@ -683,7 +683,7 @@ This is the entire audit surface. A tier-level over-claim is only observable whe
 - **Aran** — verdict from the sweep.
 - **Pirate** — verdict from the sweep for gms 79+; gms 72 has no sweep evidence, see Step 3.
 
-- [ ] **Step 3: Close the unevidenced cells by live query where the version is provisioned**
+- [x] **Step 3: Close the unevidenced cells by live query where the version is provisioned**
 
 Unevidenced cells: GM/SuperGM at gms 12/48/61/72, and Pirate at gms 72. Close each one by querying a provisioned tenant at that version — the same method `investigation.md` used. On an `atlas-data` pod (busybox image, so `wget`, not `curl`):
 
@@ -695,15 +695,15 @@ wget -qO - --header 'TENANT_ID: <uuid>' --header 'REGION: GMS' \
 
 Resolve the tenant uuid from the live tenant list rather than inventing one. Where the version is **not** provisioned, record the cell as `UNVERIFIED` and name the blocker ("gms 12.1 has no provisioned tenant in atlas-main"). Never infer the verdict from the patch log, and never silently omit the cell.
 
-- [ ] **Step 4: Answer the jms 185 provenance question (PRD §9 Q6)**
+- [x] **Step 4: Answer the jms 185 provenance question (PRD §9 Q6)**
 
 Record in the audit document: the live sweep returned byte-identical Cygnus/Evan results for jms 185 and GMS, which is direct evidence for the *content* question. The `meymink` caveat concerns *release timing*, a different claim; per FR-2.4's convention (WZ wins for content, patch log wins for dates) the caveat stays as written. State this as the answer, not as an open question.
 
-- [ ] **Step 5: Write `availability-audit.md`**
+- [x] **Step 5: Write `availability-audit.md`**
 
 One section per class (`GM`, `SuperGM`, `Pirate`, `Aran`, `Evan`, plus `Cygnus`/`CygnusStage4` as the worked example), each with a table of (version, verdict, evidence). Classes found correct get a written verdict — a silent pass is not a result (FR-2.3). Head the document with the Step 1 command + output so the surface is reproducible.
 
-- [ ] **Step 6: Amend the stale TODO entry**
+- [x] **Step 6: Amend the stale TODO entry**
 
 In `docs/TODO.md` line ~405, amend the "Non-explorer 4th-job presets" entry: strike the Cygnus half with a pointer to this task's finding, leave the Aran/Legend half untouched.
 
@@ -711,7 +711,7 @@ In `docs/TODO.md` line ~405, amend the "Non-explorer 4th-job presets" entry: str
 - [ ] **Non-explorer 4th-job presets** — extend `services/atlas-configurations/seed-data/templates/template_gms_83_1.json` with ~~Cygnus /~~ Aran / Resistance / Legend 4th-job presets. (Cygnus 4th job is struck: verified in task-202 that no Cygnus 4th-job skills exist at any supported version — the WZ `skill` node is present but empty at 1112/1212/1312/1412/1512. See `docs/tasks/task-202-version-correct-job-hierarchy/availability-audit.md`.)
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add docs/tasks/task-202-version-correct-job-hierarchy/availability-audit.md docs/TODO.md
@@ -734,7 +734,7 @@ If Step 2 or 3 found an OVER-CLAIMED cell, fix it first — new class label in `
   - `func ParentIdentity(id Identity) (Identity, bool)` — version-blind structural edge; `(0, false)` for the five roots and for any unknown identity.
   - `func (s Set) ParentWire(id Identity) (Id, bool)` — this version's edge in wire ids, `(0, false)` when `id` is a root, when its parent is not `Available` at this version, or when its parent has no wire binding.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `libs/atlas-constants/job/parents_test.go`:
 
@@ -864,7 +864,7 @@ func TestParentWire_D7PolicyGuard(t *testing.T) {
 
 `allVersionSets()` is declared in `availability_test.go` (Task 3); both files are in package `job`.
 
-- [ ] **Step 2: Run the tests and verify they fail**
+- [x] **Step 2: Run the tests and verify they fail**
 
 ```bash
 cd libs/atlas-constants && go test ./job/ -run 'TestParent' -v
@@ -872,7 +872,7 @@ cd libs/atlas-constants && go test ./job/ -run 'TestParent' -v
 
 Expected: FAIL to build — `undefined: ParentIdentity`.
 
-- [ ] **Step 3: Write the parent table**
+- [x] **Step 3: Write the parent table**
 
 Create `libs/atlas-constants/job/parents.go`:
 
@@ -1040,7 +1040,7 @@ func (s Set) ParentWire(id Identity) (Id, bool) {
 }
 ```
 
-- [ ] **Step 4: Run the tests and verify they pass**
+- [x] **Step 4: Run the tests and verify they pass**
 
 ```bash
 cd libs/atlas-constants && go test -race ./job/ -run 'TestParent' -v
@@ -1048,7 +1048,7 @@ cd libs/atlas-constants && go test -race ./job/ -run 'TestParent' -v
 
 Expected: PASS, all five tests.
 
-- [ ] **Step 5: Run the full library suite and commit**
+- [x] **Step 5: Run the full library suite and commit**
 
 ```bash
 cd libs/atlas-constants && go test -race ./... && go vet ./...
@@ -1074,7 +1074,7 @@ from atlas-ui's JOB_GRAPH."
 - Consumes: Task 5's `job.Set.ParentWire(id Identity) (job.Id, bool)`.
 - Produces: `job-availability` resources with attributes `{ "name": string, "parent": number|null, "identity": number }`. `id` semantics, pagination, and ordering (ascending by wire id) are unchanged. Wire-format example on gms 48.1: `{"id":"500","attributes":{"name":"Gm","parent":0,"identity":900}}`.
 
-- [ ] **Step 1: Write the failing resource tests**
+- [x] **Step 1: Write the failing resource tests**
 
 Append to `services/atlas-data/atlas.com/data/jobavailability/resource_test.go` (extend the file's existing `jobAvailabilityResponse` attribute struct to carry `Parent *uint16 \`json:"parent"\`` and `Identity uint16 \`json:"identity"\`` first — follow the shape already in that file):
 
@@ -1187,7 +1187,7 @@ func TestGetJobAvailability_NoParentPointsOutsideTheResponse(t *testing.T) {
 
 Simplify the first test's local struct juggling if the file's existing helper types already give you typed access to `doc.Data[i].Attributes` — match the file's conventions rather than importing this shape verbatim. The two assertions that must survive any such simplification are the raw-body `"parent":null` check and the `*Parent == 0` check on Gm.
 
-- [ ] **Step 2: Run the tests and verify they fail**
+- [x] **Step 2: Run the tests and verify they fail**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go test ./jobavailability/ -run 'TestGetJobAvailability_(RootMarshals|IdentityIs|V72Identity|NoParentPoints)' -v
@@ -1195,7 +1195,7 @@ cd services/atlas-data/atlas.com/data && go test ./jobavailability/ -run 'TestGe
 
 Expected: FAIL to build — the attribute struct has no `Parent`/`Identity` field.
 
-- [ ] **Step 3: Extend the RestModel**
+- [x] **Step 3: Extend the RestModel**
 
 In `services/atlas-data/atlas.com/data/jobavailability/rest.go`, replace the struct with:
 
@@ -1224,7 +1224,7 @@ type RestModel struct {
 }
 ```
 
-- [ ] **Step 4: Populate them in the processor**
+- [x] **Step 4: Populate them in the processor**
 
 In `services/atlas-data/atlas.com/data/jobavailability/processor.go`, replace line 45 with:
 
@@ -1238,7 +1238,7 @@ In `services/atlas-data/atlas.com/data/jobavailability/processor.go`, replace li
 		ms = append(ms, m)
 ```
 
-- [ ] **Step 5: Run the tests and verify they pass**
+- [x] **Step 5: Run the tests and verify they pass**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go test -race ./jobavailability/ -v
@@ -1246,7 +1246,7 @@ cd services/atlas-data/atlas.com/data && go test -race ./jobavailability/ -v
 
 Expected: PASS, including the pre-existing `TestGetJobAvailability_V48HasGmNotPirate` and `TestGetJobAvailability_V72HasPirate` (the added attributes are additive).
 
-- [ ] **Step 6: Build, vet, and commit**
+- [x] **Step 6: Build, vet, and commit**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go build ./... && go vet ./...
@@ -1281,7 +1281,7 @@ token, so clients can key version-stable curation on a job concept."
   - `useJobGraph(): JobGraphResult { graph: JobGraph; isSuccess: boolean; isPending: boolean; isError: boolean }` and `useJobNameLookup(): (id: number) => string` from `useJobGraph.ts`.
 - Nothing is deleted in this task; `job-advancement-tree.ts` and `lib/jobs.ts` are untouched and still compile.
 
-- [ ] **Step 1: Widen the availability service**
+- [x] **Step 1: Widen the availability service**
 
 In `services/atlas-ui/src/services/api/availability.service.ts`, replace the resource/entry types and the fetch helper:
 
@@ -1390,7 +1390,7 @@ export interface JobAvailabilityResult {
 }
 ```
 
-- [ ] **Step 2: Write the failing graph tests**
+- [x] **Step 2: Write the failing graph tests**
 
 Create `services/atlas-ui/src/lib/jobs/__tests__/job-graph.test.ts`:
 
@@ -1492,7 +1492,7 @@ describe("graph helpers", () => {
 });
 ```
 
-- [ ] **Step 3: Run the tests and verify they fail**
+- [x] **Step 3: Run the tests and verify they fail**
 
 ```bash
 cd services/atlas-ui && npx vitest run src/lib/jobs/__tests__/job-graph.test.ts
@@ -1500,7 +1500,7 @@ cd services/atlas-ui && npx vitest run src/lib/jobs/__tests__/job-graph.test.ts
 
 Expected: FAIL — cannot resolve `@/lib/jobs/job-graph`.
 
-- [ ] **Step 4: Implement `job-graph.ts`**
+- [x] **Step 4: Implement `job-graph.ts`**
 
 Create `services/atlas-ui/src/lib/jobs/job-graph.ts`:
 
@@ -1640,7 +1640,7 @@ export function subtreeCount(graph: JobGraph, entryId: number): number {
 }
 ```
 
-- [ ] **Step 5: Run the graph tests and verify they pass**
+- [x] **Step 5: Run the graph tests and verify they pass**
 
 ```bash
 cd services/atlas-ui && npx vitest run src/lib/jobs/__tests__/job-graph.test.ts
@@ -1648,7 +1648,7 @@ cd services/atlas-ui && npx vitest run src/lib/jobs/__tests__/job-graph.test.ts
 
 Expected: PASS, all cases.
 
-- [ ] **Step 6: Write the failing hook tests**
+- [x] **Step 6: Write the failing hook tests**
 
 Create `services/atlas-ui/src/lib/hooks/api/__tests__/useJobGraph.test.tsx`, following the mocking conventions already used by the repo's other `lib/hooks/api/__tests__` files (mock `@/lib/hooks/api/useJobs`, `@/lib/hooks/api/useJobAvailability`, and `@/context/tenant-context` with `vi.mock`):
 
@@ -1728,7 +1728,7 @@ describe("useJobNameLookup", () => {
 });
 ```
 
-- [ ] **Step 7: Run them and verify they fail**
+- [x] **Step 7: Run them and verify they fail**
 
 ```bash
 cd services/atlas-ui && npx vitest run src/lib/hooks/api/__tests__/useJobGraph.test.tsx
@@ -1736,7 +1736,7 @@ cd services/atlas-ui && npx vitest run src/lib/hooks/api/__tests__/useJobGraph.t
 
 Expected: FAIL — cannot resolve `@/lib/hooks/api/useJobGraph`.
 
-- [ ] **Step 8: Implement the hook**
+- [x] **Step 8: Implement the hook**
 
 Create `services/atlas-ui/src/lib/hooks/api/useJobGraph.ts`:
 
@@ -1807,7 +1807,7 @@ export function useJobNameLookup(): (id: number) => string {
 }
 ```
 
-- [ ] **Step 9: Run the hook tests and the type-check**
+- [x] **Step 9: Run the hook tests and the type-check**
 
 ```bash
 cd services/atlas-ui && npx vitest run src/lib/hooks/api/__tests__/useJobGraph.test.tsx && npm run build
@@ -1815,7 +1815,7 @@ cd services/atlas-ui && npx vitest run src/lib/hooks/api/__tests__/useJobGraph.t
 
 Expected: tests PASS; `npm run build` clean (nothing was deleted yet, so every existing consumer still compiles).
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add services/atlas-ui/src/services/api/availability.service.ts \
@@ -1851,7 +1851,7 @@ migrated yet."
   - `AdvancementFlow` props become `{ graph, entryId, selectedJobId, accent, onSelect }` — the `available` prop is gone (the graph is the available set).
 - After this task `job-advancement-tree.ts` retains only `JobEntry`, `JOB_GRAPH`, `JOB_LIST`, `jobName`, and `jobTreePath`; Task 9 deletes the file.
 
-- [ ] **Step 1: Rewrite the rail-groups tests**
+- [x] **Step 1: Rewrite the rail-groups tests**
 
 In `services/atlas-ui/src/components/features/jobs/__tests__/rail-groups.test.ts`, build fixture graphs with `buildJobGraph` and assert against identity-keyed rails. Add these cases (keeping the file's existing coverage, retargeted to the new signatures):
 
@@ -1909,7 +1909,7 @@ it("v0.79: the Legends group is absent entirely", () => {
 });
 ```
 
-- [ ] **Step 2: Run them and verify they fail**
+- [x] **Step 2: Run them and verify they fail**
 
 ```bash
 cd services/atlas-ui && npx vitest run src/components/features/jobs/__tests__/rail-groups.test.ts
@@ -1917,7 +1917,7 @@ cd services/atlas-ui && npx vitest run src/components/features/jobs/__tests__/ra
 
 Expected: FAIL — `visibleRailGroups` still takes a `ReadonlySet<number>`, and `RailEntry` has no `identity`.
 
-- [ ] **Step 3: Rewrite `rail-groups.ts` on identity keys**
+- [x] **Step 3: Rewrite `rail-groups.ts` on identity keys**
 
 Replace `services/atlas-ui/src/components/features/jobs/rail-groups.ts` with:
 
@@ -2042,7 +2042,7 @@ export function visibleRailGroups(graph: JobGraph): VisibleRailGroup[] {
 }
 ```
 
-- [ ] **Step 4: Run the rail-groups tests and verify they pass**
+- [x] **Step 4: Run the rail-groups tests and verify they pass**
 
 ```bash
 cd services/atlas-ui && npx vitest run src/components/features/jobs/__tests__/rail-groups.test.ts
@@ -2050,7 +2050,7 @@ cd services/atlas-ui && npx vitest run src/components/features/jobs/__tests__/ra
 
 Expected: PASS.
 
-- [ ] **Step 5: Convert `AdvancementFlow` to take the graph**
+- [x] **Step 5: Convert `AdvancementFlow` to take the graph**
 
 In `services/atlas-ui/src/components/features/jobs/advancement-flow.tsx`:
 
@@ -2088,7 +2088,7 @@ it("v0.83: every Cygnus branch ends at 3rd job", () => {
 });
 ```
 
-- [ ] **Step 6: Rewire `JobsPage.tsx`**
+- [x] **Step 6: Rewire `JobsPage.tsx`**
 
 In `services/atlas-ui/src/pages/JobsPage.tsx`:
 
@@ -2140,7 +2140,7 @@ In `services/atlas-ui/src/pages/JobsPage.tsx`:
   Import `rootOf` from `@/lib/jobs/job-graph` for the fallback.
 - The `defaultJobId` line is unchanged (`groups[0]?.entries[0]?.id ?? 100`).
 
-- [ ] **Step 7: Add the JobsPage gating tests**
+- [x] **Step 7: Add the JobsPage gating tests**
 
 In the JobsPage test file (create `services/atlas-ui/src/pages/__tests__/JobsPage.test.tsx` if the repo has none; otherwise extend it), mock `@/lib/hooks/api/useJobGraph` and assert:
 
@@ -2158,11 +2158,11 @@ it("renders the load-error card when either query fails", () => {
 
 Write both bodies out concretely against the file's existing render/router harness — the assertions above are the contract, not placeholders.
 
-- [ ] **Step 8: Delete the now-orphaned helpers**
+- [x] **Step 8: Delete the now-orphaned helpers**
 
 From `services/atlas-ui/src/lib/jobs/job-advancement-tree.ts`, delete `JOB_ROOTS`, `childrenOf`, `rootOf`, `visibleRoots`, `visibleChildrenOf`, `advancementChains`, `tierLabel`, and `subtreeCount`. Keep `JobEntry`, `JOB_GRAPH`, `JOB_LIST`, `jobName`, and `jobTreePath` — Task 9's consumers still reference them, and Task 9 deletes the file outright. Trim `src/lib/jobs/__tests__/job-advancement-tree.test.ts` to match.
 
-- [ ] **Step 9: Run the atlas-ui suite and type-check**
+- [x] **Step 9: Run the atlas-ui suite and type-check**
 
 ```bash
 cd services/atlas-ui && npm run test && npm run build
@@ -2170,7 +2170,7 @@ cd services/atlas-ui && npm run test && npm run build
 
 Expected: both clean.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add services/atlas-ui/src/components/features/jobs/ \
@@ -2205,7 +2205,7 @@ Explorers as a pirate."
 - Produces: `JobNameResolver = (id: number) => string`, threaded into non-component call sites. `RouteConfig.labelResolver` becomes `(params: Record<string, string>, ctx: BreadcrumbResolverContext) => string` with `BreadcrumbResolverContext { jobName: JobNameResolver }`. `getColumns` gains a required `jobName: JobNameResolver` prop.
 - After this task, `grep -rn "JOB_GRAPH\|jobNameMap\|getJobNameById\|JOB_LIST" services/atlas-ui/src` returns nothing.
 
-- [ ] **Step 1: Migrate the component-level name consumers**
+- [x] **Step 1: Migrate the component-level name consumers**
 
 Each of these is a React component and can call the hook directly. In every case, replace the static import with `import { useJobNameLookup } from "@/lib/hooks/api/useJobGraph";`, add `const jobName = useJobNameLookup();` at the top of the component, and leave the call sites (`jobName(attrs.jobId)`) textually unchanged:
 
@@ -2214,7 +2214,7 @@ Each of these is a React component and can call the hook directly. In every case
 - `components/features/characters/presets/PresetCard.tsx` (line 7, line 109)
 - `components/features/characters/presets/JobCombobox.tsx` (line 11, line 34 — it stays a fallback: `jobs.find((j) => j.id === value)?.name ?? jobName(value)`)
 
-- [ ] **Step 2: Migrate `SkillsSection` to the graph-parameterised path**
+- [x] **Step 2: Migrate `SkillsSection` to the graph-parameterised path**
 
 In `components/features/characters/SkillsSection.tsx`, replace the `jobTreePath` import with:
 
@@ -2232,7 +2232,7 @@ and line 16 with:
 
 While the graph is unknown, `path` is `[]` — the same shape the old helper returned for an unmapped id, so the component's existing empty-path handling covers it.
 
-- [ ] **Step 3: Thread a resolver into the breadcrumb route table**
+- [x] **Step 3: Thread a resolver into the breadcrumb route table**
 
 In `services/atlas-ui/src/lib/breadcrumbs/routes.ts`:
 
@@ -2275,13 +2275,13 @@ with the label line becoming `label: config.labelResolver ? config.labelResolver
 
 Delete `services/atlas-ui/src/lib/jobs.ts`.
 
-- [ ] **Step 4: Supply the context from `useBreadcrumbs`**
+- [x] **Step 4: Supply the context from `useBreadcrumbs`**
 
 In `services/atlas-ui/src/lib/hooks/useBreadcrumbs.ts`, add `const jobName = useJobNameLookup();`, build `const resolverCtx = useMemo(() => ({ jobName }), [jobName]);`, pass it to every `getBreadcrumbsFromRoute(pathname, resolverCtx)` call, and add `resolverCtx` to the dependency array of the memo/effect that produces `initialBreadcrumbs`. `useJobNameLookup` returns a `useCallback`-stable function, so this does not re-fire on every render.
 
 Update `lib/breadcrumbs/__tests__/routes.test.ts:360` to `expect(detail?.labelResolver?.({ id: "110" }, { jobName: () => "Fighter" })).toBe("Fighter");`.
 
-- [ ] **Step 5: Thread the resolver into the two table column builders**
+- [x] **Step 5: Thread the resolver into the two table column builders**
 
 `pages/characters-columns.tsx`: add `jobName: JobNameResolver;` to `ColumnProps` (importing the type from `@/lib/breadcrumbs/routes`), destructure it in `getColumns`, and replace line 124 with `name = jobName(id);`. Delete the `getJobNameById` import.
 
@@ -2289,7 +2289,7 @@ Update `lib/breadcrumbs/__tests__/routes.test.ts:360` to `expect(detail?.labelRe
 
 `pages/GuildDetailPage.tsx`: it is a page component, so add `const jobName = useJobNameLookup();` and replace line 158 with `name = jobName(id);`. Delete the `getJobNameById` import.
 
-- [ ] **Step 6: Drop the `JOB_LIST` fallback from `usePresetJobOptions`**
+- [x] **Step 6: Drop the `JOB_LIST` fallback from `usePresetJobOptions`**
 
 Replace the last two paragraphs of `usePresetJobOptions`'s doc comment and its body:
 
@@ -2319,14 +2319,14 @@ export function usePresetJobOptions(): PresetJobOption[] {
 
 Delete the `JOB_LIST` import. Update `components/features/characters/presets/__tests__/JobCombobox.test.tsx` and any other test asserting the old fallback: the pending state now yields an empty option list.
 
-- [ ] **Step 7: Delete the static advancement tree**
+- [x] **Step 7: Delete the static advancement tree**
 
 ```bash
 git rm services/atlas-ui/src/lib/jobs/job-advancement-tree.ts \
        services/atlas-ui/src/lib/jobs/__tests__/job-advancement-tree.test.ts
 ```
 
-- [ ] **Step 8: Verify no static table or version literal survives**
+- [x] **Step 8: Verify no static table or version literal survives**
 
 ```bash
 cd services/atlas-ui && \
@@ -2336,7 +2336,7 @@ cd services/atlas-ui && \
 
 Expected: the first grep prints nothing. The second prints nothing under any job-related file; investigate and remove any hit that decides job naming, parenting, or visibility (FR-4.7). Both greps exiting non-zero (no matches) is the pass condition.
 
-- [ ] **Step 9: Run the full atlas-ui gate**
+- [x] **Step 9: Run the full atlas-ui gate**
 
 ```bash
 cd services/atlas-ui && npm run test && npm run build
@@ -2344,7 +2344,7 @@ cd services/atlas-ui && npm run test && npm run build
 
 Expected: both clean. `npm run build` is the type-check that catches a missed call site; `npm run test` alone would not.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add -A services/atlas-ui/src
@@ -2367,7 +2367,7 @@ v83 JOB_LIST — an empty list plus a pending state beats a wrong list."
 - Consumes: Tasks 1–9.
 - Produces: a branch that satisfies every CLAUDE.md §Build & Verification gate, with `audit.md` written by the review agents.
 
-- [ ] **Step 1: Go gates on every changed module**
+- [x] **Step 1: Go gates on every changed module**
 
 ```bash
 (cd libs/atlas-constants && go test -race ./... && go vet ./...)
@@ -2377,7 +2377,7 @@ v83 JOB_LIST — an empty list plus a pending state beats a wrong list."
 
 Expected: all clean; `go run . -check` exits 0 (no generated-file drift).
 
-- [ ] **Step 2: Repo-root guards**
+- [x] **Step 2: Repo-root guards**
 
 ```bash
 tools/redis-key-guard.sh
@@ -2390,13 +2390,13 @@ Expected: all exit 0. `tools/lint.sh --check` needs nvm on PATH; if it false-fai
 
 No template guard is needed — this branch touches no file under `services/atlas-configurations/seed-data/templates/`. No service-registration guard is needed — no service was added.
 
-- [ ] **Step 3: atlas-ui gate**
+- [x] **Step 3: atlas-ui gate**
 
 ```bash
 cd services/atlas-ui && npm run build && npm run test
 ```
 
-- [ ] **Step 4: Docker bake if any `go.mod` changed**
+- [x] **Step 4: Docker bake if any `go.mod` changed**
 
 ```bash
 git diff --name-only origin/main...HEAD -- '**/go.mod'
@@ -2404,7 +2404,7 @@ git diff --name-only origin/main...HEAD -- '**/go.mod'
 
 If that prints anything, run `docker buildx bake atlas-data` (and any other listed service) from the worktree root and confirm it succeeds. If it prints nothing, record that the bake was correctly skipped — do not skip silently.
 
-- [ ] **Step 5: Verify against the merge result, not the branch tip**
+- [x] **Step 5: Verify against the merge result, not the branch tip**
 
 ```bash
 git fetch origin main && git merge origin/main
@@ -2412,11 +2412,11 @@ git fetch origin main && git merge origin/main
 
 Re-run Steps 1–3 after the merge. A branch that passes at its own tip but not against current `main` is not verified.
 
-- [ ] **Step 6: Code review before the PR**
+- [x] **Step 6: Code review before the PR**
 
 Invoke `superpowers:requesting-code-review`. Both guideline reviewers apply (Go and TS changed). Ensure the agents run inside this worktree and write to `docs/tasks/task-202-version-correct-job-hierarchy/audit.md`. Address findings, then re-run Steps 1–3.
 
-- [ ] **Step 7: Confirm the PRD acceptance criteria**
+- [x] **Step 7: Confirm the PRD acceptance criteria**
 
 Walk `prd.md` §10 item by item and check each box, citing the test or command that proves it. Any item that cannot be proven is a blocker, not a footnote — except the two explicitly out of scope (the Evan re-ingest/baseline republish, PRD §9 Q4), which must be restated in the PR description as a known, accepted gap with the operational follow-up named.
 

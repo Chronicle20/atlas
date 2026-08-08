@@ -77,3 +77,10 @@ func ingestJobSuffixFromEnv() string {
 	}
 	return fmt.Sprintf("%s:%s:%d.%d", scope, region, major, minor)
 }
+
+// ingestRunIdFromEnv returns the run identity JobCreator injected into the
+// rendered Job. Empty in the compose / unit-test path, which disables the
+// superseded-pod guard (there is no competing pod there).
+func ingestRunIdFromEnv() string {
+	return os.Getenv("INGEST_RUN_ID")
+}

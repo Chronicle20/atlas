@@ -30,6 +30,7 @@ import (
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -301,17 +302,24 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 
 		monster.GetLiveMirror().UpdateAggro(tenant.MustFromContext(ctx), e.UniqueId, e.Body.ControllerHasAggro)
 
-		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
-		m := monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
-			SetControlCharacterId(e.Body.ActorId).
-			SetX(e.Body.X).SetY(e.Body.Y).
-			SetStance(e.Body.Stance).
-			SetFH(e.Body.FH).
-			SetTeam(e.Body.Team).
-			MustBuild()
-		sf := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterControlWriter)(writer.StartControlMonsterBody(m, e.Body.ControllerHasAggro))
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ActorId, sf)
+		// Prefer the authoritative model: the event envelope carries no status
+		// effects, and the Spawn/Control bodies both encode a temporary-stat
+		// block. Falling back to the envelope on a fetch failure preserves the
+		// pre-existing behaviour rather than dropping the grant entirely.
+		m, err := monsterGetByIdFn(l, ctx, e.UniqueId)
 		if err != nil {
+			l.WithError(err).Warnf("Unable to retrieve monster [%d] for control grant; falling back to the event envelope.", e.UniqueId)
+			f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+			m = monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
+				SetControlCharacterId(e.Body.ActorId).
+				SetX(e.Body.X).SetY(e.Body.Y).
+				SetStance(e.Body.Stance).
+				SetFH(e.Body.FH).
+				SetTeam(e.Body.Team).
+				MustBuild()
+		}
+
+		if err := controlGrantFn(l, ctx, sc, wp, m, e.Body.ControllerHasAggro, e.Body.ActorId); err != nil {
 			l.WithError(err).Errorf("Unable to start control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
 		}
 	}
@@ -375,6 +383,48 @@ const statusVenomKey = "VENOM"
 // broadcaster spy vars below).
 var monsterGetByIdFn = func(l logrus.FieldLogger, ctx context.Context, uniqueId uint32) (monster.Model, error) {
 	return monster.NewProcessor(l, ctx).GetById(uniqueId)
+}
+
+// controlGrantFn delivers controller ownership of one mob to one character as
+// Spawn-then-Control, in that order, on a single session.
+//
+// The ordering is load-bearing, not defensive. On v79 (CMobPool::SetLocalMob
+// 0x645ce1) and v83 (0x678308) a MonsterControl for an unknown mob is NOT
+// dropped: GetMob misses, and the client materializes the mob from the Control
+// body via CreateMob -> CMob::Init. A 0/1 stance then routes into
+// CMob::OnResolveMoveAction and null-derefs, and a control-first birth on a
+// slope lands the mob below the surface. Sending Spawn first makes that
+// impossible.
+//
+// The leading Spawn is safe when the client already has the mob:
+// CMobPool::OnMobEnterField (v83 0x67945a, v79 0x646e33) takes its GetMob-hit
+// branch, which sets m_bInViewSplit and calls CMob::SetTemporaryStat and
+// nothing else — no CMob::Init, no reposition, no SetActive, no
+// CMovePath::DiscardByInterrupt. Position, stance and in-flight movement are
+// untouched. SetTemporaryStat re-bases the mob's temp-stat block, which
+// SetLocalMob already does on every controller change anyway.
+//
+// Package-level seam so tests can assert grant delivery without standing up a
+// session; the ordering itself lives in spawnThenControlOperator.
+var controlGrantFn = func(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, m monster.Model, aggro bool, characterId uint32) error {
+	return session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(characterId, spawnThenControlOperator(l, ctx, wp, m, aggro))
+}
+
+// announceFn is the single-packet announce seam, held as a var so
+// spawnThenControlOperator's packet ordering is assertable in a unit test.
+var announceFn = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, writerName string, body packet.Encode, s session.Model) error {
+	return session.Announce(l)(ctx)(wp)(writerName)(body)(s)
+}
+
+// spawnThenControlOperator emits Spawn followed by Control on one session. The
+// order is the whole point — see controlGrantFn.
+func spawnThenControlOperator(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, m monster.Model, aggro bool) model2.Operator[session.Model] {
+	return func(s session.Model) error {
+		if err := announceFn(l, ctx, wp, monsterpkt.MonsterSpawnWriter, writer.SpawnMonsterBody(m, false), s); err != nil {
+			return err
+		}
+		return announceFn(l, ctx, wp, monsterpkt.MonsterControlWriter, writer.StartControlMonsterBody(m, aggro), s)
+	}
 }
 
 // monsterStatBroadcaster is the channel-side broadcast seam. The handlers

@@ -83,18 +83,30 @@ func (p *ProcessorImpl) GetById(templateId uuid.UUID) (RestModel, error) {
 	return p.ByIdProvider(templateId)()
 }
 
-func (p *ProcessorImpl) Create(input RestModel) (uuid.UUID, error) {
+// canonicalBytes applies the write-path normalization and validation and
+// returns the EXACT bytes Create persists. Both Create and ReseedById call it,
+// which is what makes a re-seeded row byte-identical to a freshly seeded one.
+//
+// UpdateById deliberately does NOT call it: UpdateById additionally runs the
+// preset validator, which reassigns input.Characters.Presets before
+// marshalling. Re-seeding through that path would persist bytes differing from
+// the shipped file, and the row would report drift again the instant it was
+// reset (FR-3.4).
+func canonicalBytes(input RestModel) (json.RawMessage, error) {
 	input.Socket = socket.Normalize(input.Socket)
 	if issues := socketValidate(input.Socket); len(issues) > 0 {
-		return uuid.Nil, &validationFailureError{socketIssues: issues}
+		return nil, &validationFailureError{socketIssues: issues}
 	}
 
 	res, err := json.Marshal(input)
 	if err != nil {
-		return uuid.Nil, err
+		return nil, err
 	}
-	rm := &json.RawMessage{}
-	err = rm.UnmarshalJSON(res)
+	return json.RawMessage(res), nil
+}
+
+func (p *ProcessorImpl) Create(input RestModel) (uuid.UUID, error) {
+	data, err := canonicalBytes(input)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -107,13 +119,9 @@ func (p *ProcessorImpl) Create(input RestModel) (uuid.UUID, error) {
 			Region:       input.Region,
 			MajorVersion: input.MajorVersion,
 			MinorVersion: input.MinorVersion,
-			Data:         *rm,
+			Data:         data,
 		}
-		err := db.Create(e).Error
-		if err != nil {
-			return err
-		}
-		return nil
+		return db.Create(e).Error
 	})
 	if err != nil {
 		return uuid.Nil, err

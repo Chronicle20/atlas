@@ -1,8 +1,11 @@
 package templates
 
 import (
+	"atlas-configurations/templates/socket"
+	"atlas-configurations/templates/socket/handler"
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -369,5 +372,58 @@ func TestMake_InvalidJSON(t *testing.T) {
 	_, err := Make(entity)
 	if err == nil {
 		t.Error("expected error for invalid JSON")
+	}
+}
+
+// Design §5 step 2: Entity.Data must equal canonicalBytes(input) exactly.
+// This is the pin that keeps re-seed producing a row byte-identical to what a
+// fresh boot seed of the same file would produce. If Create ever grows a
+// transformation canonicalBytes lacks, re-seeded rows report drift the instant
+// they are reset, and this test is what catches it.
+func TestCanonicalBytesMatchesCreate(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+	p := NewProcessor(l, ctx, db)
+
+	in := createTestRestModel("GMS", 83, 1)
+
+	id, err := p.Create(in)
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	want, err := canonicalBytes(in)
+	if err != nil {
+		t.Fatalf("canonicalBytes: %v", err)
+	}
+
+	var e Entity
+	if err := db.Where("id = ?", id).First(&e).Error; err != nil {
+		t.Fatalf("read back: %v", err)
+	}
+	if string(e.Data) != string(want) {
+		t.Errorf("Entity.Data != canonicalBytes\n got: %s\nwant: %s", e.Data, want)
+	}
+}
+
+// canonicalBytes must reject an invalid socket configuration with the same
+// error type Create surfaces, so the re-seed handler's 400 branch can reuse
+// the existing validationFailureError rendering verbatim.
+func TestCanonicalBytesSurfacesValidationFailure(t *testing.T) {
+	in := createTestRestModel("GMS", 83, 1)
+	// A handler with no validator is silently dropped by the channel
+	// dispatcher, so socket.Validate rejects it.
+	in.Socket = socket.RestModel{
+		Handlers: []handler.RestModel{{OpCode: "0x01", Handler: "SomeHandle"}},
+	}
+
+	_, err := canonicalBytes(in)
+	if err == nil {
+		t.Fatalf("canonicalBytes accepted an invalid socket configuration")
+	}
+	var ve *validationFailureError
+	if !errors.As(err, &ve) {
+		t.Fatalf("error type = %T, want *validationFailureError", err)
 	}
 }

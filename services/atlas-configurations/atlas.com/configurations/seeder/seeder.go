@@ -5,11 +5,9 @@ import (
 	"atlas-configurations/templates"
 	"atlas-configurations/tenants"
 	"context"
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
-	"sort"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -36,13 +34,6 @@ func DefaultConfig() Config {
 	}
 }
 
-// ConfigMetadata represents the minimal JSON structure needed to identify a configuration
-type ConfigMetadata struct {
-	Region       string `json:"region"`
-	MajorVersion uint16 `json:"majorVersion"`
-	MinorVersion uint16 `json:"minorVersion"`
-}
-
 // SeedResult tracks the outcome of seeding operations
 type SeedResult struct {
 	Imported int
@@ -52,19 +43,25 @@ type SeedResult struct {
 
 // Seeder handles importing seed data into the database
 type Seeder struct {
-	l      logrus.FieldLogger
-	ctx    context.Context
-	db     *gorm.DB
-	config Config
+	l   logrus.FieldLogger
+	ctx context.Context
+	db  *gorm.DB
+	// catalog is the shipped-template catalog, loaded once in main.go. The
+	// seeder no longer reads or parses files itself: templates.LoadCatalog is
+	// the single parse path (FR-1.7), so the drift comparison and the boot
+	// import can never disagree about what a file contains.
+	catalog templates.Catalog
+	config  Config
 }
 
 // NewSeeder creates a new Seeder instance
-func NewSeeder(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, config Config) *Seeder {
+func NewSeeder(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, config Config, catalog templates.Catalog) *Seeder {
 	return &Seeder{
-		l:      l,
-		ctx:    ctx,
-		db:     db,
-		config: config,
+		l:       l,
+		ctx:     ctx,
+		db:      db,
+		config:  config,
+		catalog: catalog,
 	}
 }
 
@@ -102,27 +99,21 @@ func (s *Seeder) Run() error {
 	return nil
 }
 
-// seedTemplates imports all template seed files
+// seedTemplates imports every shipped template that does not already exist.
+// The outcome strings and SeedResult counters are unchanged.
 func (s *Seeder) seedTemplates() SeedResult {
 	result := SeedResult{}
-	templatesPath := filepath.Join(s.config.SeedPath, "templates")
 
-	files, err := s.discoverFiles(templatesPath)
-	if err != nil {
-		s.l.WithError(err).Warn("Failed to discover template files")
+	entries := s.catalog.Entries()
+	if len(entries) == 0 {
+		s.l.WithField("path", filepath.Join(s.config.SeedPath, "templates")).Debug("No template seed files found")
 		return result
 	}
 
-	if len(files) == 0 {
-		s.l.WithField("path", templatesPath).Debug("No template seed files found")
-		return result
-	}
+	s.l.WithField("count", len(entries)).Info("Discovered template seed files")
 
-	s.l.WithField("count", len(files)).Info("Discovered template seed files")
-
-	for _, file := range files {
-		outcome := s.importTemplate(file)
-		switch outcome {
+	for _, entry := range entries {
+		switch s.importTemplate(entry) {
 		case "imported":
 			result.Imported++
 		case "skipped":
@@ -133,52 +124,6 @@ func (s *Seeder) seedTemplates() SeedResult {
 	}
 
 	return result
-}
-
-// discoverFiles finds all JSON files in the specified directory
-func (s *Seeder) discoverFiles(dir string) ([]string, error) {
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		s.l.WithField("directory", dir).Debug("Seed directory does not exist")
-		return []string{}, nil
-	}
-
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	var files []string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		if filepath.Ext(entry.Name()) == ".json" {
-			files = append(files, filepath.Join(dir, entry.Name()))
-		}
-	}
-
-	// Sort for deterministic ordering
-	sort.Strings(files)
-	return files, nil
-}
-
-// extractMetadata reads a JSON file and extracts the configuration metadata
-func (s *Seeder) extractMetadata(filePath string) (*ConfigMetadata, error) {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	var meta ConfigMetadata
-	if err := json.Unmarshal(data, &meta); err != nil {
-		return nil, err
-	}
-
-	if meta.Region == "" {
-		return nil, errors.New("missing required field: region")
-	}
-
-	return &meta, nil
 }
 
 // templateExists checks if a template with the given identifiers already exists
@@ -194,53 +139,32 @@ func (s *Seeder) templateExists(region string, majorVersion uint16, minorVersion
 	return true, nil
 }
 
-// importTemplate imports a single template file if it doesn't already exist
-func (s *Seeder) importTemplate(filePath string) string {
-	fileName := filepath.Base(filePath)
-	l := s.l.WithField("file", fileName)
-
-	// Extract metadata to check existence
-	meta, err := s.extractMetadata(filePath)
-	if err != nil {
-		l.WithError(err).Error("Failed to extract template metadata")
-		return "failed"
-	}
-
-	l = l.WithFields(logrus.Fields{
-		"region":       meta.Region,
-		"majorVersion": meta.MajorVersion,
-		"minorVersion": meta.MinorVersion,
+// importTemplate creates a template if no row exists on its key.
+//
+// CREATE-IF-ABSENT, DELIBERATELY (FR-4.1). It returns "skipped" for an
+// existing key regardless of whether the file's content differs from the
+// stored row. Reconciling on boot would silently discard operator edits on
+// every redeploy; correcting drift is an explicit operator action
+// (POST /configurations/templates/{id}/reseed), never a startup side effect.
+func (s *Seeder) importTemplate(entry templates.CatalogEntry) string {
+	l := s.l.WithFields(logrus.Fields{
+		"file":         entry.FileName,
+		"region":       entry.Model.Region,
+		"majorVersion": entry.Model.MajorVersion,
+		"minorVersion": entry.Model.MinorVersion,
 	})
 
-	// Check if already exists
-	exists, err := s.templateExists(meta.Region, meta.MajorVersion, meta.MinorVersion)
+	exists, err := s.templateExists(entry.Model.Region, entry.Model.MajorVersion, entry.Model.MinorVersion)
 	if err != nil {
 		l.WithError(err).Error("Failed to check template existence")
 		return "failed"
 	}
-
 	if exists {
 		l.Debug("Template already exists, skipping")
 		return "skipped"
 	}
 
-	// Read full file content
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		l.WithError(err).Error("Failed to read template file")
-		return "failed"
-	}
-
-	// Parse into RestModel
-	var model templates.RestModel
-	if err := json.Unmarshal(data, &model); err != nil {
-		l.WithError(err).Error("Failed to parse template JSON")
-		return "failed"
-	}
-
-	// Create the template
-	processor := templates.NewProcessor(s.l, s.ctx, s.db)
-	id, err := processor.Create(model)
+	id, err := templates.NewProcessor(s.l, s.ctx, s.db).Create(entry.Model)
 	if err != nil {
 		l.WithError(err).Error("Failed to create template")
 		return "failed"

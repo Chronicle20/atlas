@@ -7,6 +7,7 @@ import (
 	"atlas-configurations/tenants"
 	"context"
 	"os"
+	"path/filepath"
 
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
@@ -73,7 +74,19 @@ func main() {
 		"seedPath":    seedConfig.SeedPath,
 		"seedEnabled": seedConfig.Enabled,
 	}).Info("Seed configuration loaded")
-	s := seeder.NewSeeder(l, rt.Context(), db, seedConfig)
+
+	// The shipped-template catalog is loaded UNCONDITIONALLY, before the
+	// seeder and before route registration. SEED_ENABLED gates whether
+	// templates are imported, not whether the service knows what ships - an
+	// operator who has disabled seeding still needs drift detection and the
+	// reset button.
+	catalog := templates.InitShippedCatalog(l, filepath.Join(seedConfig.SeedPath, "templates"))
+	l.WithFields(map[string]interface{}{
+		"path":  filepath.Join(seedConfig.SeedPath, "templates"),
+		"count": catalog.Len(),
+	}).Info("Shipped template catalog loaded")
+
+	s := seeder.NewSeeder(l, rt.Context(), db, seedConfig, catalog)
 	if err := s.Run(); err != nil {
 		l.WithError(err).Error("Seed import failed")
 	}

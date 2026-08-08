@@ -338,10 +338,10 @@ Tool: `1791f06bcb28a90251f9ae22080d791a9406d31c0bd2e56bc2ff10d9bb85b564`
 | KOREAN_EVENT | CUserLocal::OnOpenClassCompetitionPage |  |  | ⬜ |  | ⬜ | 0x0C9 | ❌ | 0x0CD | ❌ | 0x0DB | ❌ | 0x0DF | ❌ | 0x0E8 | ❌ | 0x0FC | ❌ | 0x0FA | ❌ | 0x0E3 | ❌ |
 | LOCK_UI | CUserLocal::OnSetDirectionMode; CUserLocal::SetDirectionMode; sub_A2CD83 | ui/clientbound/Lock |  | ⬜ |  | ⬜ | 0x0CA | ❌ | 0x0CE | ❌ | 0x0DD | ❌ | 0x0E2 | ❌ | 0x0EB | ❌ | 0x0FF | 🟡ᵈ | 0x0FD | ✅ | 0x0E7 | ❌ |
 | SPAWN_HIRED_MERCHANT | CEmployeePool::OnEmployeeEnterField |  |  | ⬜ | 0x0CA | ✅ | 0x0EB | ✅ | 0x0F3 | ✅ | 0x109 | ✅ | 0x110 | ✅ | 0x11A | ✅ | 0x137 | ❌ | 0x13F | ✅ | 0x11E | ✅ |
-| SPAWN_MIST | CAffectedAreaPool::OnAffectedAreaCreated | field/clientbound/FieldAffectedAreaCreated (T1) | 0x0CA | ✅ | 0x0D2 | ✅ | 0x0F3 | ✅ | 0x0FB | ✅ | 0x111 | ✅ | 0x118 | ✅ | 0x122 | ✅ | 0x140 | ❌ | 0x148 | ✅ | 0x126 | ✅ |
+| SPAWN_MIST | CAffectedAreaPool::OnAffectedAreaCreated | field/clientbound/FieldAffectedAreaCreated (T1) | 0x0CA | ✅ | 0x0D2 | ✅ | 0x0F3 | ✅ | 0x0FB | ✅ | 0x111 | ✅ | 0x118 | ✅ | 0x122 | ✅ | 0x140 | ✅ | 0x148 | ✅ | 0x126 | ✅ |
 | DESTROY_HIRED_MERCHANT | CEmployeePool::OnEmployeeLeaveField |  |  | ⬜ | 0x0CB | ✅ | 0x0EC | ✅ | 0x0F4 | ✅ | 0x10A | ✅ | 0x111 | ✅ | 0x11B | ✅ | 0x138 | ❌ | 0x140 | ✅ | 0x11F | ✅ |
 | DISABLE_UI | CUserLocal::OnSetStandAloneMode; sub_86C50E | ui/clientbound/Disable |  | ⬜ |  | ⬜ | 0x0CB | ❌ | 0x0CF | 🟡ᵈ | 0x0DE | ✅ | 0x0E3 | ✅ | 0x0EC | ✅ | 0x100 | 🟡ᵈ | 0x0FE | ✅ | 0x0E8 | ✅ |
-| REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x0CB | ✅ | 0x0D3 | ✅ | 0x0F4 | ✅ | 0x0FC | ✅ | 0x112 | ✅ | 0x119 | ✅ | 0x123 | ✅ | 0x141 | 🟡ᶠ | 0x149 | ✅ | 0x127 | ✅ |
+| REMOVE_MIST | CAffectedAreaPool::OnAffectedAreaRemoved | field/clientbound/FieldAffectedAreaRemoved (T1) | 0x0CB | ✅ | 0x0D3 | ✅ | 0x0F4 | ✅ | 0x0FC | ✅ | 0x112 | ✅ | 0x119 | ✅ | 0x123 | ✅ | 0x141 | ✅ | 0x149 | ✅ | 0x127 | ✅ |
 | SPAWN_GUIDE | CUserLocal::OnHireTutor; sub_86C65C |  |  | ⬜ |  | ⬜ | 0x0CC | ❌ | 0x0D0 | ❌ | 0x0DF | ❌ | 0x0E4 | ❌ | 0x0ED | ❌ | 0x101 | ❌ | 0x0FF | ❌ | 0x0E9 | ❌ |
 | UPDATE_HIRED_MERCHANT | CEmployeePool::OnEmployeeMiniRoomBalloon |  |  | ⬜ | 0x0CC | ✅ | 0x0ED | ✅ | 0x0F5 | ✅ | 0x10B | ✅ | 0x112 | ✅ | 0x11C | ✅ | 0x139 | ❌ | 0x141 | ✅ | 0x120 | ✅ |
 | SPAWN_DOOR | CTownPortalPool::OnTownPortalCreated | door/clientbound/SpawnDoor (T1) | 0x0CE | ✅ | 0x0D4 | ✅ | 0x0F5 | ✅ | 0x0FD | ✅ | 0x113 | ✅ | 0x11A | ✅ | 0x124 | ✅ | 0x142 | ❌ | 0x14A | ✅ | 0x128 | ✅ |
@@ -1059,7 +1059,7 @@ Tool: `1791f06bcb28a90251f9ae22080d791a9406d31c0bd2e56bc2ff10d9bb85b564`
 | v83 | 435 | 0 | 0 | 353 | 228 | 0 | 55.2% |
 | v84 | 409 | 0 | 0 | 359 | 248 | 0 | 53.3% |
 | v87 | 443 | 0 | 0 | 382 | 191 | 0 | 53.7% |
-| v92 | 6 | 0 | 153 | 715 | 142 | 0 | 0.7% |
+| v92 | 8 | 0 | 152 | 714 | 142 | 0 | 0.9% |
 | v95 | 468 | 0 | 0 | 441 | 107 | 0 | 51.5% |
 | JMS185 | 418 | 0 | 0 | 400 | 198 | 0 | 51.1% |
 

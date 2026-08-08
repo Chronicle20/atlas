@@ -9,6 +9,7 @@ import {
   subtreeCount,
   tierLabel,
   type JobGraph,
+  type JobNode,
 } from "@/lib/jobs/job-graph";
 import type { JobAvailabilityEntry } from "@/services/api/availability.service";
 
@@ -93,5 +94,60 @@ describe("graph helpers", () => {
   it("jobNodeName falls back to `Job <id>` for an id the graph does not carry", () => {
     expect(jobNodeName(v48(), 500)).toBe("Gm");
     expect(jobNodeName(v48(), 9999)).toBe("Job 9999");
+  });
+});
+
+// buildJobGraph cannot produce a cycle from acyclic input (re-rooting only
+// ever nulls a dangling parent), so these malformed graphs are constructed
+// directly as Map<number, JobNode> — the shape an API response would have
+// to be in to trigger the bug this guards against.
+function selfParentGraph(): JobGraph {
+  const g = new Map<number, JobNode>();
+  g.set(5, { id: 5, identity: 5, name: "Self", parent: 5 });
+  return g;
+}
+
+function mutualCycleGraph(): JobGraph {
+  const g = new Map<number, JobNode>();
+  g.set(1, { id: 1, identity: 1, name: "A", parent: 2 });
+  g.set(2, { id: 2, identity: 2, name: "B", parent: 1 });
+  return g;
+}
+
+describe("cycle guards on malformed (API-sourced) graphs", () => {
+  it("rootOf terminates on a self-parenting node", () => {
+    expect(rootOf(selfParentGraph(), 5)).toBe(5);
+  });
+
+  it("rootOf terminates on a two-node mutual cycle, returning the last node before the repeat", () => {
+    expect(rootOf(mutualCycleGraph(), 1)).toBe(2);
+  });
+
+  it("jobTreePath terminates on a self-parenting node", () => {
+    expect(jobTreePath(selfParentGraph(), 5).map((n) => n.id)).toEqual([5]);
+  });
+
+  it("jobTreePath terminates on a two-node mutual cycle, truncated at the repeat", () => {
+    expect(jobTreePath(mutualCycleGraph(), 1).map((n) => n.id)).toEqual([2, 1]);
+  });
+
+  it("tierLabel terminates on a cyclic graph (via jobTreePath)", () => {
+    expect(tierLabel(mutualCycleGraph(), 1)).not.toBeUndefined();
+  });
+
+  it("advancementChains terminates on a self-parenting node", () => {
+    expect(advancementChains(selfParentGraph(), 5)).toEqual([[5]]);
+  });
+
+  it("advancementChains terminates on a two-node mutual cycle", () => {
+    expect(advancementChains(mutualCycleGraph(), 1)).toEqual([[2, 1]]);
+  });
+
+  it("subtreeCount terminates on a self-parenting node", () => {
+    expect(subtreeCount(selfParentGraph(), 5)).toBe(1);
+  });
+
+  it("subtreeCount terminates on a two-node mutual cycle, counting each node once", () => {
+    expect(subtreeCount(mutualCycleGraph(), 1)).toBe(2);
   });
 });

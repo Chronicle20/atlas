@@ -66,9 +66,15 @@ export function childrenOf(graph: JobGraph, id: number): number[] {
 export function rootOf(graph: JobGraph, id: number): number {
   let cur = graph.get(id);
   if (!cur) return id;
+  // Cycle guard: the graph is built from API data, so a malformed parent
+  // edge (self-parent, or a mutual cycle) must degrade to the last node
+  // visited before the repeat rather than loop forever — this is a plain
+  // synchronous while loop, which nothing can preempt once it's spinning.
+  const visited = new Set<number>([cur.id]);
   while (cur.parent !== null) {
     const next = graph.get(cur.parent);
-    if (!next) break;
+    if (!next || visited.has(next.id)) break;
+    visited.add(next.id);
     cur = next;
   }
   return cur.id;
@@ -77,8 +83,12 @@ export function rootOf(graph: JobGraph, id: number): number {
 /** Root -> node advancement path (inclusive). Empty when the node is absent. */
 export function jobTreePath(graph: JobGraph, id: number): JobNode[] {
   const path: JobNode[] = [];
+  // Cycle guard: same reasoning as rootOf — a malformed parent edge must
+  // truncate the path at the repeat instead of growing it without bound.
+  const visited = new Set<number>();
   let cur = graph.get(id);
-  while (cur) {
+  while (cur && !visited.has(cur.id)) {
+    visited.add(cur.id);
     path.unshift(cur);
     cur = cur.parent !== null ? graph.get(cur.parent) : undefined;
   }
@@ -114,23 +124,44 @@ export function advancementChains(
   graph: JobGraph,
   entryId: number,
 ): number[][] {
-  const walk = (id: number): number[][] => {
+  const walk = (id: number, ancestors: ReadonlySet<number>): number[][] => {
     const kids = childrenOf(graph, id);
     if (kids.length === 0) return [[]];
     const out: number[][] = [];
     for (const k of kids) {
-      for (const rest of walk(k)) out.push([k, ...rest]);
+      // Cycle guard: the graph is built from API data, so a child that
+      // reappears in its own ancestor chain must terminate this branch as a
+      // leaf rather than recurse forever (a stack-overflow RangeError, not a
+      // hang, but still not something a rendering component should catch).
+      if (ancestors.has(k)) {
+        out.push([k]);
+        continue;
+      }
+      const nextAncestors = new Set(ancestors);
+      nextAncestors.add(k);
+      for (const rest of walk(k, nextAncestors)) out.push([k, ...rest]);
     }
     return out;
   };
-  return walk(entryId).filter((chain) => chain.length > 0);
+  return walk(entryId, new Set([entryId])).filter((chain) => chain.length > 0);
 }
 
 /** Count of nodes in entryId's subtree, entry included (0 if the entry is absent). */
 export function subtreeCount(graph: JobGraph, entryId: number): number {
   if (!graph.has(entryId)) return 0;
-  return (
-    1 +
-    childrenOf(graph, entryId).reduce((n, k) => n + subtreeCount(graph, k), 0)
-  );
+  const walk = (id: number, ancestors: ReadonlySet<number>): number => {
+    return (
+      1 +
+      childrenOf(graph, id).reduce((n, k) => {
+        // Cycle guard: mirrors advancementChains' ancestor-chain check — a
+        // child that reappears in its own ancestor chain stops recursing
+        // there instead of overflowing the call stack.
+        if (ancestors.has(k)) return n;
+        const nextAncestors = new Set(ancestors);
+        nextAncestors.add(k);
+        return n + walk(k, nextAncestors);
+      }, 0)
+    );
+  };
+  return walk(entryId, new Set([entryId]));
 }

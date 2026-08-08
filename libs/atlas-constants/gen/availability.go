@@ -71,6 +71,20 @@ func classOf(domain string, canonicalToken uint64) string {
 		return "SuperGM"
 	case t >= 500 && t <= 599:
 		return "Pirate"
+	// CygnusStage4 (task-202 FR-2.1): the five Cygnus 4th-job branches are
+	// PRESENT in every supported version's Skill.wz but their `skill` node is
+	// empty -- the tier was never released in the version range we support
+	// (docs/tasks/task-202-version-correct-job-hierarchy/investigation.md
+	// Finding 3, corroborated by a live GET /api/data/jobs/{id}/skills sweep
+	// across gms 79/83/84/87/92/95 and jms 185). Presence != release, so the
+	// identities stay in identities.yaml and Set.Resolve/Set.Wire keep
+	// answering for them; only Set.Available flips.
+	//
+	// Deliberately an explicit token list rather than arithmetic: the list is
+	// greppable and a sixth Cygnus branch must be added on purpose. This arm
+	// MUST stay above the 1000..1599 range arm below.
+	case t == 1112, t == 1212, t == 1312, t == 1412, t == 1512:
+		return "CygnusStage4"
 	case t >= 1000 && t <= 1599:
 		return "Cygnus"
 	case t == 2000 || (t >= 2100 && t <= 2199):

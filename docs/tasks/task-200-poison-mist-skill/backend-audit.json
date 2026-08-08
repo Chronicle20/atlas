@@ -1,0 +1,96 @@
+{
+  "service": "multi-service (atlas-data, atlas-channel, atlas-maps, atlas-monsters, libs/atlas-packet)",
+  "path": "task-200-poison-mist-skill branch diff vs origin/main",
+  "date": "2026-08-07",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "atlas-maps/mist",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists with Build() validation", "status": "fail", "evidence": "services/atlas-maps/atlas.com/maps/mist/model.go:231-377 (Builder in model.go, no invariant checks in Build())"},
+        {"id": "DOM-02", "name": "ToEntity() method", "status": "n/a", "evidence": "No entity.go — in-memory registry, not GORM-persisted"},
+        {"id": "DOM-03", "name": "Make(Entity) function", "status": "n/a", "evidence": "No entity.go — in-memory registry, not GORM-persisted"},
+        {"id": "DOM-04", "name": "Transform function", "status": "n/a", "evidence": "No rest.go — no REST surface"},
+        {"id": "DOM-05", "name": "TransformSlice function", "status": "n/a", "evidence": "No rest.go — no REST surface"},
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/mist/processor.go:39"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "services/atlas-maps/atlas.com/maps/mist/processor_test.go, model_test.go use discrete TestXxx funcs, no tests:=[]struct{} + t.Run"},
+        {"id": "DOM-21", "name": "No atlas-constants duplication", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/mist/model.go:8-11 uses world.Id/channel.Id/_map.Id/field.Model from libs/atlas-constants"},
+        {"id": "DOM-23", "name": "Kafka topic naming convention", "status": "pass", "evidence": "deploy/k8s/base/env-configmap.yaml:20,47,48,134; resolved via topic.EnvProvider in libs/atlas-kafka/producer/manager.go:67"},
+        {"id": "DOM-25", "name": "No client wire byte hardcoding", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/mist/model.go:155-170; services/atlas-channel/atlas.com/channel/kafka/consumer/mist/consumer.go:87; SourceSkillId wire-id forwarding explicitly authorized"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/tasks/mist_tick.go:299,333; tools/goroutine-guard.sh exit 0"},
+        {"id": "FILE-05", "name": "Builder in builder.go", "status": "fail", "evidence": "No builder.go in services/atlas-maps/atlas.com/maps/mist/ package (ls confirms 8 files, none named builder.go); Builder/NewBuilder/Build() + new SetKinds/SetRender methods in model.go:231-377"}
+      ]
+    },
+    {
+      "name": "atlas-maps/monster",
+      "type": "support (REST client)",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/monster/processor.go"},
+        {"id": "FILE-02", "name": "RestModel in rest.go", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/monster/rest.go"},
+        {"id": "FILE-03", "name": "requests in requests.go", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/monster/requests.go"},
+        {"id": "EXT-01", "name": "JSON:API relationship interfaces", "status": "fail", "evidence": "services/atlas-maps/atlas.com/maps/monster/rest.go — RestModel has GetID/SetID/GetName but no SetToOneReferenceID/SetToManyReferenceIDs; new GetInMapRect call site (processor.go:60-62) exercises this decode path"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/monster/processor_rect_test.go:24-84"},
+        {"id": "EXT-03", "name": "404 vs other errors distinguished", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/monster/processor.go:60-62 bubbles DrainProvider error unmodified"},
+        {"id": "EXT-04", "name": "No hardcoded service URL", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/monster/requests.go:16 requests.RootUrl(\"MONSTERS\")"}
+      ]
+    },
+    {
+      "name": "atlas-channel/mist",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/mist/processor.go:13-32"},
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/mist/processor.go:22"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in tests", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/mist/producer_test.go calls CreateCommandProvider directly, no live producer path"}
+      ]
+    },
+    {
+      "name": "atlas-channel/skill/handler/poisonmist",
+      "type": "new package",
+      "checks": [
+        {"id": "DOM-13", "name": "No cross-domain logic in handler", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/skill/handler/poisonmist/poisonmist.go:87-185"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/skill/handler/poisonmist/poisonmist_test.go:50-67"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "poisonmist_test.go — nine discrete TestApply_* funcs, no table+t.Run"},
+        {"id": "DOM-25", "name": "No client wire byte hardcoding", "status": "pass", "evidence": "poisonmist.go:166-171 — documented deliberate wire-id forwarding, authorized exception"}
+      ]
+    },
+    {
+      "name": "atlas-channel/kafka/consumer/mist",
+      "type": "kafka consumer",
+      "checks": [
+        {"id": "multitenancy", "name": "Tenant-scoped consumption", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/kafka/consumer/mist/consumer.go:29,94,120"}
+      ]
+    },
+    {
+      "name": "atlas-maps/tasks (MistTick concurrency)",
+      "type": "task",
+      "checks": [
+        {"id": "concurrency-tenant-context", "name": "Tenant context propagation into workers", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/tasks/mist_tick.go:323,333,349,410"},
+        {"id": "concurrency-registry-locking", "name": "Registry locking under concurrent access", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/mist/registry.go:32-35,86-104,125-137,139-153"},
+        {"id": "concurrency-panic-safety", "name": "WaitGroup/semaphore correctness under panic", "status": "pass", "evidence": "libs/atlas-routine/routine.go:14-24; libs/atlas-routine/routine_test.go TestGoFnDefersRunBeforeRecoverLog; mist_tick.go:334-335"},
+        {"id": "concurrency-failure-isolation", "name": "Per-mist failure isolation, no silent swallow", "status": "pass", "evidence": "mist_tick.go:411-414; mist_tick_monster_test.go:287-307"},
+        {"id": "DOM-26", "name": "goroutine-guard letter and spirit", "status": "pass", "evidence": "mist_tick.go:299,333; tools/goroutine-guard.sh exit 0"}
+      ]
+    },
+    {
+      "name": "cross-service mist contract mirror",
+      "type": "contract",
+      "checks": [
+        {"id": "contract-createcommandbody", "name": "CreateCommandBody byte-for-byte across 3 services", "status": "pass", "evidence": "atlas-maps kafka.go:46-70, atlas-channel kafka.go:55-79, atlas-monsters kafka.go:44-68"},
+        {"id": "contract-applystatusbody", "name": "applyStatusBody key set matches shared COMMAND_TOPIC_MONSTER handler set", "status": "pass", "evidence": "mist_tick.go:191-199; mist_tick_monster_test.go:200-230"},
+        {"id": "contract-areapoison-explicit-kinds", "name": "atlas-monsters AREA_POISON sets TargetKind/EffectKind explicitly", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/processor.go (+5 lines); processor_test.go additions"}
+      ]
+    }
+  ],
+  "blocking": [
+    "FILE-05: services/atlas-maps/atlas.com/maps/mist/model.go:231-377 — Builder/NewBuilder/Build() (plus new SetKinds/SetRender) live in model.go, no builder.go file in the package",
+    "EXT-01: services/atlas-maps/atlas.com/maps/monster/rest.go — RestModel missing SetToOneReferenceID/SetToManyReferenceIDs, exercised by the new GetInMapRect call site"
+  ],
+  "nonBlocking": [
+    "DOM-01: services/atlas-maps/atlas.com/maps/mist/model.go:349-377 — Builder.Build() performs no invariant validation",
+    "DOM-20: mist/processor_test.go, mist/model_test.go, tasks/mist_tick_monster_test.go, skill/handler/poisonmist/poisonmist_test.go use discrete TestXxx funcs instead of table-driven tests + t.Run"
+  ]
+}

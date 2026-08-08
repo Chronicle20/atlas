@@ -1,19 +1,21 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
-import { JOB_LIST } from "@/lib/jobs/job-advancement-tree";
+import { FIXTURE_JOBS_SORTED } from "@/lib/jobs/__tests__/job-graph-fixtures";
 import { buildJobGraph } from "@/lib/jobs/job-graph";
 import type { JobAvailabilityEntry } from "@/services/api/availability.service";
 import { BranchRail } from "@/components/features/jobs/branch-rail";
 import { visibleRailGroups } from "@/components/features/jobs/rail-groups";
 
-// The structural fixture source (job-advancement-tree's JOB_LIST) predates
-// identity/wire-id divergence, so identity === id here.
-const FULL_AVAILABILITY: JobAvailabilityEntry[] = JOB_LIST.map((e) => ({
-  id: e.id,
-  name: e.name,
-  parent: e.parent,
-  identity: e.id,
-}));
+// The structural fixture source predates identity/wire-id divergence, so
+// identity === id here.
+const FULL_AVAILABILITY: JobAvailabilityEntry[] = FIXTURE_JOBS_SORTED.map(
+  (e) => ({
+    id: e.id,
+    name: e.name,
+    parent: e.parent,
+    identity: e.id,
+  }),
+);
 
 /** Everything except the Evan branch (introduced after this tenant's version). */
 const NO_EVAN: ReadonlySet<number> = new Set(

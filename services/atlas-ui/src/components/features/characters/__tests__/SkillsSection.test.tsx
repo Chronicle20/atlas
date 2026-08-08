@@ -2,11 +2,30 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SkillsSection } from "../SkillsSection";
+import { buildJobGraph } from "@/lib/jobs/job-graph";
+import { FIXTURE_JOBS_SORTED } from "@/lib/jobs/__tests__/job-graph-fixtures";
 
 const fakeTenant = {
   id: "t1",
   attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
 } as never;
+
+// SkillsSection reads the tenant's job graph via useJobGraph; mock it to the
+// structural fixture (built the same way production does, via
+// buildJobGraph) rather than standing up a TenantProvider + real
+// availability/jobs queries for a component test that isn't about the graph.
+const FIXTURE_GRAPH = buildJobGraph(
+  FIXTURE_JOBS_SORTED.map((e) => ({ ...e, identity: e.id })),
+  new Set(FIXTURE_JOBS_SORTED.map((e) => e.id)),
+);
+vi.mock("@/lib/hooks/api/useJobGraph", () => ({
+  useJobGraph: () => ({
+    graph: FIXTURE_GRAPH,
+    isSuccess: true,
+    isPending: false,
+    isError: false,
+  }),
+}));
 
 vi.mock("@/lib/hooks/api/useCharacterSkills", () => ({
   useCharacterSkills: vi.fn().mockReturnValue({

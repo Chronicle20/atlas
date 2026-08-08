@@ -2,6 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { LeaderboardRow } from "@/components/features/rankings/LeaderboardRow";
 import type { RankingEntry } from "@/services/api/rankings.service";
+import { FIXTURE_JOB_TREE } from "@/lib/jobs/__tests__/job-graph-fixtures";
+
+// The job badge's name comes from the tenant's job graph via
+// useJobNameLookup; mock it to the structural fixture rather than standing
+// up a QueryClientProvider for a component test that isn't about the graph.
+vi.mock("@/lib/hooks/api/useJobGraph", () => ({
+  useJobNameLookup: () => (id: number) =>
+    FIXTURE_JOB_TREE[id]?.name ?? `Job ${id}`,
+}));
 
 vi.mock("@/context/tenant-context", () => ({
   useTenant: () => ({
@@ -100,7 +109,7 @@ describe("LeaderboardRow", () => {
         </tbody>
       </table>,
     );
-    // jobId 110 -> "Fighter" via jobName; the raw id must not be shown.
+    // jobId 110 -> "Fighter" via the job graph; the raw id must not be shown.
     expect(screen.getByText("Fighter")).toBeInTheDocument();
     expect(screen.queryByText("110")).not.toBeInTheDocument();
   });

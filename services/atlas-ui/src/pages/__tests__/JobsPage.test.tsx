@@ -10,7 +10,7 @@ import {
 import type { Tenant } from "@/services/api/tenants.service";
 import type { SkillDefinitionWithIcon } from "@/lib/hooks/api/useSkillDefinition";
 import type { SkillEffect } from "@/services/api/skills.service";
-import { JOB_LIST } from "@/lib/jobs/job-advancement-tree";
+import { FIXTURE_JOBS_SORTED } from "@/lib/jobs/__tests__/job-graph-fixtures";
 import { buildJobGraph, type JobGraph } from "@/lib/jobs/job-graph";
 import type { JobAvailabilityEntry } from "@/services/api/availability.service";
 import type { JobGraphResult } from "@/lib/hooks/api/useJobGraph";
@@ -100,16 +100,18 @@ function renderAt(path: string) {
   );
 }
 
-// The structural fixture source (job-advancement-tree's JOB_LIST) predates
-// identity/wire-id divergence, so identity === id here; the graph-level
-// wire-id-vs-identity divergence itself is covered by job-graph.test.ts and
-// rail-groups.test.ts, not by this page-level suite.
-const FULL_AVAILABILITY: JobAvailabilityEntry[] = JOB_LIST.map((e) => ({
-  id: e.id,
-  name: e.name,
-  parent: e.parent,
-  identity: e.id,
-}));
+// The structural fixture source predates identity/wire-id divergence, so
+// identity === id here; the graph-level wire-id-vs-identity divergence
+// itself is covered by job-graph.test.ts and rail-groups.test.ts, not by
+// this page-level suite.
+const FULL_AVAILABILITY: JobAvailabilityEntry[] = FIXTURE_JOBS_SORTED.map(
+  (e) => ({
+    id: e.id,
+    name: e.name,
+    parent: e.parent,
+    identity: e.id,
+  }),
+);
 
 function graphOf(ids: readonly number[]): JobGraph {
   return buildJobGraph(FULL_AVAILABILITY, new Set(ids));

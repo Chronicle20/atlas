@@ -1,17 +1,23 @@
-export interface JobEntry {
+/**
+ * Test-only structural fixture: a full, modern-tenant job advancement tree
+ * (identity === wire id throughout), used by tests that need a large,
+ * internally-consistent job set without exercising a real
+ * useJobAvailability/useJobs query pair.
+ *
+ * This is fixture data only — it is NOT a production source of truth. The
+ * production graph is built at runtime from the tenant's job-availability +
+ * WZ-presence APIs via buildJobGraph (see @/lib/jobs/job-graph). The static
+ * table this fixture is descended from was deleted in task-202 FR-4.2
+ * because it named wire ids with v83 assumptions baked in (e.g. wire 500 =
+ * "Pirate", wrong on a v0.48 tenant, where wire 500 is Gm).
+ */
+export interface FixtureJobEntry {
   id: number;
   name: string;
   parent: number | null;
 }
 
-// Structural source of truth for the job advancement graph.
-// Ported from the former lib/utils/job-tree.ts JOB_TREE, whose ids/names derive
-// from libs/atlas-constants/job/constants.go::Jobs (v83 conventions). One
-// intentional divergence: constants.go has GM (900) and Super GM (910) as
-// roots, but in-game they present as an advancement line from Beginner, so
-// this display graph parents 900 under 0 and 910 under 900 (task-182).
-// Order per branch: branch leader -> 1st -> 2nd -> 3rd -> 4th.
-export const JOB_GRAPH: Record<number, JobEntry> = {
+export const FIXTURE_JOB_TREE: Record<number, FixtureJobEntry> = {
   // Beginner branch
   0: { id: 0, name: "Beginner", parent: null },
   // Warrior
@@ -60,10 +66,7 @@ export const JOB_GRAPH: Record<number, JobEntry> = {
   520: { id: 520, name: "Gunslinger", parent: 500 },
   521: { id: 521, name: "Outlaw", parent: 520 },
   522: { id: 522, name: "Corsair", parent: 521 },
-  // Special / Admin. Maple Leaf Brigadier stays a standalone root. In-game, GM
-  // and Super GM present as an advancement line from Beginner, so the DISPLAY
-  // graph adopts Beginner > GM > Super GM — an intentional divergence from
-  // libs/atlas-constants/job/constants.go, where 900/910 are roots (task-182).
+  // Special / Admin
   800: { id: 800, name: "Maple Leaf Brigadier", parent: null },
   900: { id: 900, name: "GM", parent: 0 },
   910: { id: 910, name: "Super GM", parent: 900 },
@@ -95,7 +98,7 @@ export const JOB_GRAPH: Record<number, JobEntry> = {
   2110: { id: 2110, name: "Aran 2", parent: 2100 },
   2111: { id: 2111, name: "Aran 3", parent: 2110 },
   2112: { id: 2112, name: "Aran 4", parent: 2111 },
-  // Evan (separate root per job/constants.go)
+  // Evan (separate root)
   2001: { id: 2001, name: "Evan", parent: null },
   2200: { id: 2200, name: "Evan 1", parent: 2001 },
   2210: { id: 2210, name: "Evan 2", parent: 2200 },
@@ -109,29 +112,7 @@ export const JOB_GRAPH: Record<number, JobEntry> = {
   2218: { id: 2218, name: "Evan 10", parent: 2217 },
 };
 
-/** Every graph entry, ascending by id — the full selectable job set before tenant gating. */
-export const JOB_LIST: JobEntry[] = Object.values(JOB_GRAPH).sort(
-  (a, b) => a.id - b.id,
-);
-
-/**
- * Display name for a job id, sourced from the advancement graph so Aran, Evan
- * and Cygnus render by name everywhere (preset badges, class picker, rankings)
- * — not just the explorer classes the old curated list covered. Falls back to
- * `Job <id>` for an id the graph does not cover; the backend stays the
- * validator of record, so an unmapped id remains usable.
- */
-export function jobName(id: number): string {
-  return JOB_GRAPH[id]?.name ?? `Job ${id}`;
-}
-
-/** Root -> node advancement path (inclusive), for breadcrumbs. */
-export function jobTreePath(jobId: number): JobEntry[] {
-  const path: JobEntry[] = [];
-  let cur: JobEntry | undefined = JOB_GRAPH[jobId];
-  while (cur) {
-    path.unshift(cur);
-    cur = cur.parent != null ? JOB_GRAPH[cur.parent] : undefined;
-  }
-  return path;
-}
+/** Every fixture entry, ascending by id. */
+export const FIXTURE_JOBS_SORTED: FixtureJobEntry[] = Object.values(
+  FIXTURE_JOB_TREE,
+).sort((a, b) => a.id - b.id);

@@ -2,7 +2,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { JOB_LIST, type JobEntry } from "@/lib/jobs/job-advancement-tree";
+import { FIXTURE_JOBS_SORTED } from "@/lib/jobs/__tests__/job-graph-fixtures";
+import type { PresetJobOption } from "@/lib/hooks/usePresetJobOptions";
 
 const getSkillsByJobIdMock = vi.fn();
 vi.mock("@/services/api/jobs.service", () => ({
@@ -21,7 +22,7 @@ vi.mock("@/context/tenant-context", () => ({
 }));
 
 // Version-gated option list — mocked to a controlled set (see JobCombobox test).
-const optionsMock = vi.fn<() => JobEntry[]>();
+const optionsMock = vi.fn<() => PresetJobOption[]>();
 vi.mock("@/lib/hooks/usePresetJobOptions", () => ({
   usePresetJobOptions: () => optionsMock(),
 }));
@@ -43,7 +44,7 @@ function renderButton(
 
 beforeEach(() => {
   getSkillsByJobIdMock.mockReset();
-  optionsMock.mockReturnValue(JOB_LIST);
+  optionsMock.mockReturnValue(FIXTURE_JOBS_SORTED);
 });
 
 describe("JobSkillsAddButton", () => {

@@ -2,7 +2,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Character } from "@/types/models/character";
 import type { Tenant } from "@/services/api/tenants.service";
-import { jobTreePath } from "@/lib/jobs/job-advancement-tree";
+import { useJobGraph } from "@/lib/hooks/api/useJobGraph";
+import { jobTreePath } from "@/lib/jobs/job-graph";
 import { useCharacterSkills } from "@/lib/hooks/api/useCharacterSkills";
 import { useJobSkills } from "@/lib/hooks/api/useJobSkills";
 import { SkillWidget } from "./SkillWidget";
@@ -13,7 +14,8 @@ interface Props {
 }
 
 export function SkillsSection({ character, tenant }: Props) {
-  const path = jobTreePath(character.attributes.jobId);
+  const { graph } = useJobGraph();
+  const path = jobTreePath(graph, character.attributes.jobId);
   const { data: characterSkills } = useCharacterSkills(tenant, character.id);
 
   if (path.length === 0) {

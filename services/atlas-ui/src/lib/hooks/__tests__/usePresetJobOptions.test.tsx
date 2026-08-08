@@ -43,16 +43,16 @@ describe("usePresetJobOptions", () => {
     expect(names).toContain("Warrior");
   });
 
-  it("returns the graceful fallback (full graph) while availability is unknown (pending), never empty", () => {
+  it("returns an empty list while availability is unknown (pending), never a static fallback", () => {
     useJobAvailabilityMock.mockReturnValue({
       isSuccess: false,
       data: undefined,
     });
     const { result } = renderHook(() => usePresetJobOptions());
-    expect(result.current.length).toBeGreaterThan(0);
-    // Permissive fallback: the backend validates the chosen id, and a picker
-    // must never be blank while availability is still loading.
-    const ids = result.current.map((j) => j.id);
-    expect(ids).toContain(2100);
+    // Pending means "unknown", not "empty" — but offering the static v83
+    // list here would show wrong names on a non-v83 tenant (task-202
+    // FR-4.2), so the picker gets an empty list plus its own pending
+    // affordance instead of a plausible-looking wrong answer.
+    expect(result.current).toEqual([]);
   });
 });

@@ -1,7 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { JOB_LIST, type JobEntry } from "@/lib/jobs/job-advancement-tree";
+import {
+  FIXTURE_JOB_TREE,
+  FIXTURE_JOBS_SORTED,
+} from "@/lib/jobs/__tests__/job-graph-fixtures";
+import type { PresetJobOption } from "@/lib/hooks/usePresetJobOptions";
 
 Element.prototype.scrollIntoView ||= () => {};
 
@@ -9,14 +13,23 @@ Element.prototype.scrollIntoView ||= () => {};
 // set from GET /api/data/jobs). Mock it so these tests drive the filter/pick
 // behaviour against a controlled list; the gating itself is covered in
 // usePresetJobOptions.test.tsx.
-const optionsMock = vi.fn<() => JobEntry[]>();
+const optionsMock = vi.fn<() => PresetJobOption[]>();
 vi.mock("@/lib/hooks/usePresetJobOptions", () => ({
   usePresetJobOptions: () => optionsMock(),
 }));
 
+// The trigger's fallback name (id outside the version-gated options) comes
+// from the tenant's job graph via useJobNameLookup, not a component-local
+// query — mock it to the same structural fixture so "falls back" coverage
+// stays meaningful without standing up a QueryClientProvider.
+vi.mock("@/lib/hooks/api/useJobGraph", () => ({
+  useJobNameLookup: () => (id: number) =>
+    FIXTURE_JOB_TREE[id]?.name ?? `Job ${id}`,
+}));
+
 import { JobCombobox } from "../JobCombobox";
 
-beforeEach(() => optionsMock.mockReturnValue(JOB_LIST));
+beforeEach(() => optionsMock.mockReturnValue(FIXTURE_JOBS_SORTED));
 
 describe("JobCombobox", () => {
   it("shows the current job's name on the trigger", () => {
@@ -47,7 +60,7 @@ describe("JobCombobox", () => {
     // diverge (e.g. wire id 500 is "Gm" pre-v0.61 but "Pirate" at v0.61+).
     optionsMock.mockReturnValue([
       { id: 500, name: "Gm", parent: null },
-      ...JOB_LIST,
+      ...FIXTURE_JOBS_SORTED,
     ]);
     render(<JobCombobox value={500} onChange={vi.fn()} />);
     expect(screen.getByRole("combobox", { name: /class/i })).toHaveTextContent(
@@ -55,12 +68,14 @@ describe("JobCombobox", () => {
     );
   });
 
-  it("falls back to the static jobName for a selected id NOT in the options", () => {
+  it("falls back to the job graph's name for a selected id NOT in the options", () => {
     // The id isn't in the availability-gated set (still loading, or a
-    // manually-entered id the tenant hasn't released): fall back to the
-    // pre-existing static jobName lookup, which renders "Job <id>" for ids
-    // outside the advancement graph too.
-    optionsMock.mockReturnValue(JOB_LIST.filter((j) => j.id !== 100));
+    // manually-entered id the tenant hasn't released): fall back to
+    // useJobNameLookup, which renders "Job <id>" for ids outside the graph
+    // too.
+    optionsMock.mockReturnValue(
+      FIXTURE_JOBS_SORTED.filter((j) => j.id !== 100),
+    );
     render(<JobCombobox value={100} onChange={vi.fn()} />);
     expect(screen.getByRole("combobox", { name: /class/i })).toHaveTextContent(
       "Warrior",
@@ -97,7 +112,7 @@ describe("JobCombobox", () => {
 
   it("hides Aran when the tenant's job set excludes it", async () => {
     // A version without Aran: usePresetJobOptions returns explorer jobs only.
-    optionsMock.mockReturnValue(JOB_LIST.filter((j) => j.id < 1000));
+    optionsMock.mockReturnValue(FIXTURE_JOBS_SORTED.filter((j) => j.id < 1000));
     render(<JobCombobox value={0} onChange={vi.fn()} />);
     await userEvent.click(screen.getByRole("combobox", { name: /class/i }));
     await userEvent.type(

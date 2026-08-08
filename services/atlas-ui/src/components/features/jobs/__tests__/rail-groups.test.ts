@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { JOB_GRAPH, JOB_LIST } from "@/lib/jobs/job-advancement-tree";
+import {
+  FIXTURE_JOB_TREE,
+  FIXTURE_JOBS_SORTED,
+} from "@/lib/jobs/__tests__/job-graph-fixtures";
 import { buildJobGraph, type JobGraph } from "@/lib/jobs/job-graph";
 import type { JobAvailabilityEntry } from "@/services/api/availability.service";
 import {
@@ -8,17 +11,19 @@ import {
   visibleRailGroups,
 } from "@/components/features/jobs/rail-groups";
 
-// The structural fixture source (job-advancement-tree's JOB_GRAPH) predates
-// identity/wire-id divergence, so its wire id doubles as the canonical
-// identity here — every modern-tenant fixture below is identity === id,
-// which is the common case. The v0.48/v0.72/v0.79 fixtures further down are
-// the ones that actually exercise a wire id != identity.
-const FULL_AVAILABILITY: JobAvailabilityEntry[] = JOB_LIST.map((e) => ({
-  id: e.id,
-  name: e.name,
-  parent: e.parent,
-  identity: e.id,
-}));
+// The structural fixture source predates identity/wire-id divergence, so its
+// wire id doubles as the canonical identity here — every modern-tenant
+// fixture below is identity === id, which is the common case. The
+// v0.48/v0.72/v0.79 fixtures further down are the ones that actually
+// exercise a wire id != identity.
+const FULL_AVAILABILITY: JobAvailabilityEntry[] = FIXTURE_JOBS_SORTED.map(
+  (e) => ({
+    id: e.id,
+    name: e.name,
+    parent: e.parent,
+    identity: e.id,
+  }),
+);
 
 function graphOf(present: ReadonlySet<number>): JobGraph {
   return buildJobGraph(FULL_AVAILABILITY, present);
@@ -26,7 +31,7 @@ function graphOf(present: ReadonlySet<number>): JobGraph {
 
 /** Every id in the graph — the "modern tenant has everything" case. */
 const ALL_IDS: ReadonlySet<number> = new Set(
-  Object.values(JOB_GRAPH).map((e) => e.id),
+  Object.values(FIXTURE_JOB_TREE).map((e) => e.id),
 );
 
 /** Everything except the Evan branch — a tenant whose ingest predates Evan. */

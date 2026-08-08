@@ -14,9 +14,32 @@ interface Props {
 }
 
 export function SkillsSection({ character, tenant }: Props) {
-  const { graph } = useJobGraph();
+  const { graph, isPending, isError } = useJobGraph();
   const path = jobTreePath(graph, character.attributes.jobId);
   const { data: characterSkills } = useCharacterSkills(tenant, character.id);
+
+  // The graph is unknown (not yet loaded, or a fresh cache after a tenant
+  // switch) until useJobGraph reports isSuccess. Asserting "no skill book"
+  // off an empty `path` here would be a false negative on every initial
+  // load and tenant switch — gate on isPending/isError first, same
+  // discipline useJobGraph's own contract requires of callers.
+  if (isPending) {
+    return (
+      <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-2">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-24" />
+        ))}
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Couldn't load this tenant's job graph.
+      </p>
+    );
+  }
 
   if (path.length === 0) {
     return (

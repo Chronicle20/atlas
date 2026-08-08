@@ -50,9 +50,11 @@ const HAIR_IDS = [30000, 30002, 30030, 30031, 31000, 31001];
 const FACE_IDS = [20000, 20001, 20002, 21000, 21001];
 
 beforeEach(() => {
-  jobOptionsMock.mockReturnValue(
-    FIXTURE_JOBS_SORTED.filter((j) => j.id < 1000),
-  );
+  jobOptionsMock.mockReturnValue({
+    options: FIXTURE_JOBS_SORTED.filter((j) => j.id < 1000),
+    isPending: false,
+    isError: false,
+  });
   useFaceIdsMock.mockReturnValue({
     data: FACE_IDS,
     isLoading: false,

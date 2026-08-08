@@ -26,7 +26,7 @@ interface JobComboboxProps {
 export function JobCombobox({ value, onChange }: JobComboboxProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const jobs = usePresetJobOptions();
+  const { options: jobs, isPending, isError } = usePresetJobOptions();
   const jobName = useJobNameLookup();
 
   // Prefer the version-correct name from the availability-gated options; an
@@ -121,7 +121,11 @@ export function JobCombobox({ value, onChange }: JobComboboxProps) {
           )}
           {rows.length === 0 && manualId === undefined && (
             <li className="px-2 py-1 text-sm text-muted-foreground">
-              No matches.
+              {isPending
+                ? "Loading this tenant's job list…"
+                : isError
+                  ? "Couldn't load this tenant's job list."
+                  : "No matches."}
             </li>
           )}
         </ul>

@@ -111,3 +111,43 @@ func TestFindNextController_AlreadyPresentPlayerEmitsStartControl(t *testing.T) 
 		t.Fatalf("expected controlCharacterId=%d; got %d", existing, got.ControlCharacterId())
 	}
 }
+
+// TestFindNextController_NoAggroDoesNotRepick pins the guard that keeps the
+// map-enter path quiet, which routing the entering player through StartControl
+// now depends on.
+//
+// StartControl re-picks the mob's next skill on a controller change, but only
+// when the new controller has aggro. Without that gate every mob in a map
+// decides a skill the moment a player walks in — the incident where twelve
+// freshly-spawned Wyverns all cast skill 126 on entry. RepickAndEmit publishes
+// NEXT_SKILL_DECIDED on the same MONSTER_STATUS topic as StartControl, so a
+// re-pick here would show up as a second emission.
+func TestFindNextController_NoAggroDoesNotRepick(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	const enter = uint32(7)
+	r.CreateMonster(ctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50)
+	mons := r.GetMonstersInMap(tm, testField())
+	if len(mons) != 1 {
+		t.Fatalf("expected 1 monster; got %d", len(mons))
+	}
+	m := mons[0]
+	if m.ControllerHasAggro() {
+		t.Fatalf("a freshly created, undamaged monster must not have controller aggro")
+	}
+
+	emitted := 0
+	p := recordingProcessor(ctx, tm, &emitted)
+
+	if err := p.FindNextController(model.FixedProvider([]uint32{enter}))(m); err != nil {
+		t.Fatalf("FindNextController: %v", err)
+	}
+
+	// Exactly one: the StartControl. A second would be NEXT_SKILL_DECIDED.
+	if emitted != 1 {
+		t.Fatalf("a no-aggro assignment must emit only StartControl and no re-pick; got %d emissions", emitted)
+	}
+}

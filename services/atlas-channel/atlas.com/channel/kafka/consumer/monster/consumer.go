@@ -29,6 +29,7 @@ import (
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -304,10 +305,15 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 
 		// Prefer the authoritative model: the event envelope carries no status
 		// effects, and the Spawn/Control bodies both encode a temporary-stat
-		// block. Falling back to the envelope on a fetch failure preserves the
-		// pre-existing behaviour rather than dropping the grant entirely.
+		// block. That matters beyond cosmetics here — the map-enter fast path
+		// (map consumer spawnMonsterForSession) may already have sent a Spawn
+		// carrying real temporary stats, and CMob::SetTemporaryStat resets the
+		// block before decoding, so an envelope-derived Spawn would wipe them.
+		// Falling back to the envelope on a fetch failure still beats dropping
+		// the grant, which is the bug this whole path exists to fix.
 		m, err := monsterGetByIdFn(l, ctx, e.UniqueId)
 		if err != nil {
+			degrade.Observe(l, "channel.monster.control_grant_fetch", e.UniqueId, err)
 			l.WithError(err).Warnf("Unable to retrieve monster [%d] for control grant; falling back to the event envelope.", e.UniqueId)
 			f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 			m = monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
@@ -403,6 +409,17 @@ var monsterGetByIdFn = func(l logrus.FieldLogger, ctx context.Context, uniqueId 
 // CMovePath::DiscardByInterrupt. Position, stance and in-flight movement are
 // untouched. SetTemporaryStat re-bases the mob's temp-stat block, which
 // SetLocalMob already does on every controller change anyway.
+//
+// A duplicate grant is possible: the map-enter fast path
+// (map consumer spawnMonsterForSession) and this handler can both fire for the
+// same mob and session when the controller assignment lands before the
+// channel's monster-list read. Each path is internally ordered, so the
+// Spawn-before-Control invariant still holds. The repeat Control is near-inert
+// on the client — SetLocalMob's GetMob hit branch runs SetTemporaryStat, then
+// CMob::SetActive(1), which self-guards on the already-active flag (v83
+// 0x6637ec). The one live effect is CMob::ChaseTarget, re-issued when the
+// control type exceeds 1, i.e. only for an aggro grant; it re-targets an
+// already-chasing mob rather than changing its state.
 //
 // Package-level seam so tests can assert grant delivery without standing up a
 // session; the ordering itself lives in spawnThenControlOperator.

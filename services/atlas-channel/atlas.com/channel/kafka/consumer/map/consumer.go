@@ -189,7 +189,7 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 				if k != s.CharacterId() {
 					for _, p := range v.Pets() {
 						if p.Slot() >= 0 {
-							if err := session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))(s); err != nil {
+							if err := session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), p.SerialNumber(), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))(s); err != nil {
 								l.WithError(err).Errorf("SpawnForSelf: unable to spawn character [%d] pet for [%d]", k, s.CharacterId())
 							}
 						}
@@ -213,7 +213,7 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 			}
 			for _, p := range self.Pets() {
 				if p.Slot() >= 0 {
-					if err := session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))(s); err != nil {
+					if err := session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), p.SerialNumber(), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))(s); err != nil {
 						l.WithError(err).Errorf("SpawnForSelf: unable to spawn own pet for character [%d].", s.CharacterId())
 					}
 				}
@@ -397,7 +397,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 					}
 					for _, p := range self.Pets() {
 						if p.Slot() >= 0 {
-							if err := session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(k, session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))); err != nil {
+							if err := session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(k, session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), p.SerialNumber(), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))); err != nil {
 								l.WithError(err).Errorf("enterMap: unable to spawn character [%d] pet for [%d]", s.CharacterId(), k)
 							}
 							excludeIds := make([]uint32, len(p.Excludes()))

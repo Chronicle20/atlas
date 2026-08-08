@@ -12,6 +12,14 @@ vi.mock("@/components/features/config/ConfigExportButton", () => ({
   ),
 }));
 
+vi.mock("@/components/features/templates/TemplateReseedButton", () => ({
+  TemplateReseedButton: ({ id }: { id?: string }) => (
+    <button type="button" data-id={id}>
+      Reset to shipped defaults
+    </button>
+  ),
+}));
+
 describe("TemplateDetailLayout", () => {
   it("renders an Export control in the header for the routed template", () => {
     render(

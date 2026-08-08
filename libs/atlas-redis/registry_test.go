@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"testing"
@@ -802,5 +803,67 @@ func TestCompositeKey(t *testing.T) {
 	expected := "world1:channel2:100000000"
 	if key != expected {
 		t.Fatalf("expected %s, got %s", expected, key)
+	}
+}
+
+func TestRegistry_UpdateWithTTL_RetainsTTL(t *testing.T) {
+	client, mr := setupTestRedis(t)
+	ctx := context.Background()
+
+	r := NewRegistry[string, string](client, "test", func(k string) string { return k })
+	if err := r.PutWithTTL(ctx, "key1", "value1", time.Hour); err != nil {
+		t.Fatalf("PutWithTTL failed: %v", err)
+	}
+
+	got, err := r.UpdateWithTTL(ctx, "key1", time.Hour, func(v string) string { return v + "-updated" })
+	if err != nil {
+		t.Fatalf("UpdateWithTTL failed: %v", err)
+	}
+	if got != "value1-updated" {
+		t.Fatalf("expected value1-updated, got %s", got)
+	}
+
+	stored, err := r.Get(ctx, "key1")
+	if err != nil {
+		t.Fatalf("Get failed: %v", err)
+	}
+	if stored != "value1-updated" {
+		t.Fatalf("stored value is %s, want value1-updated", stored)
+	}
+
+	// The whole point: SET without an expiry option clears the TTL, so an
+	// UpdateWithTTL that forgot to pass ttl would leave this at 0.
+	if ttl := mr.TTL(namespacedKey("test", "key1")); ttl <= 0 {
+		t.Fatalf("TTL after UpdateWithTTL is %v, want > 0", ttl)
+	}
+}
+
+// TestRegistry_Update_ClearsTTL pins the defect UpdateWithTTL exists to work
+// around. If a future refactor makes Update preserve TTLs this test fails
+// loudly rather than silently changing behaviour for every existing caller.
+func TestRegistry_Update_ClearsTTL(t *testing.T) {
+	client, mr := setupTestRedis(t)
+	ctx := context.Background()
+
+	r := NewRegistry[string, string](client, "test", func(k string) string { return k })
+	if err := r.PutWithTTL(ctx, "key1", "value1", time.Hour); err != nil {
+		t.Fatalf("PutWithTTL failed: %v", err)
+	}
+	if _, err := r.Update(ctx, "key1", func(v string) string { return v + "-updated" }); err != nil {
+		t.Fatalf("Update failed: %v", err)
+	}
+	if ttl := mr.TTL(namespacedKey("test", "key1")); ttl != 0 {
+		t.Fatalf("TTL after Update is %v, want 0 (Update clears TTLs)", ttl)
+	}
+}
+
+func TestRegistry_UpdateWithTTL_NotFound(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	ctx := context.Background()
+
+	r := NewRegistry[string, string](client, "test", func(k string) string { return k })
+	_, err := r.UpdateWithTTL(ctx, "missing", time.Hour, func(v string) string { return v })
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("got %v, want ErrNotFound", err)
 	}
 }

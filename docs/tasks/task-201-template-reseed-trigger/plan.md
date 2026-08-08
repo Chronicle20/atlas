@@ -74,7 +74,7 @@
 - Consumes: `templates.RestModel` (`templates/rest.go:11`), `socket.Normalize` (`templates/socket/rest.go:30`).
 - Produces: `func Revision(rm RestModel) (string, error)` — lowercase hex SHA-256 of `json.Marshal` applied to `rm` after clearing `Id` and applying `socket.Normalize`. Every later task uses exactly this name and signature.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `templates/revision_test.go`:
 
@@ -181,7 +181,7 @@ func TestRevisionDiffersOnContentChange(t *testing.T) {
 
 `createTestRestModel` already exists at `templates/processor_test.go:52` — do not redefine it.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-configurations/atlas.com/configurations
@@ -190,7 +190,7 @@ go test ./templates/ -run 'TestRevision' -v
 
 Expected: FAIL — `undefined: Revision`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `templates/revision.go`:
 
@@ -229,7 +229,7 @@ func Revision(rm RestModel) (string, error) {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-configurations/atlas.com/configurations
@@ -238,7 +238,7 @@ go test ./templates/ -run 'TestRevision' -v
 
 Expected: PASS — all four tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-configurations/atlas.com/configurations/templates/revision.go \
@@ -268,7 +268,7 @@ git commit -m "feat(atlas-configurations): add canonical template Revision funct
   - `func LoadCatalog(l logrus.FieldLogger, dir string) Catalog` — pure, no globals.
   - `func InitShippedCatalog(l logrus.FieldLogger, dir string) Catalog` and `func ShippedCatalog() Catalog` — the `sync.Once` + `sync.RWMutex` singleton (FR-1.2).
 
-- [ ] **Step 1: Create the test fixtures**
+- [x] **Step 1: Create the test fixtures**
 
 `templates/testdata/templates/valid_template.json`:
 
@@ -343,7 +343,7 @@ this file is not a template and must be ignored by extension
 
 `usesPin` differs so the duplicate test can prove *which* file won, not merely that one did.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 Create `templates/shipped_test.go`:
 
@@ -506,7 +506,7 @@ func seedTemplatesDir() string {
 
 `testLogger()` already exists at `templates/processor_test.go:46` — do not redefine it.
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x] **Step 3: Run test to verify it fails**
 
 ```bash
 cd services/atlas-configurations/atlas.com/configurations
@@ -515,7 +515,7 @@ go test ./templates/ -run 'TestLoadCatalog|TestZeroCatalog|TestInitShippedCatalo
 
 Expected: FAIL — `undefined: LoadCatalog`, `undefined: Catalog`.
 
-- [ ] **Step 4: Write the implementation**
+- [x] **Step 4: Write the implementation**
 
 Create `templates/shipped.go`:
 
@@ -699,7 +699,7 @@ func ShippedCatalog() Catalog {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-configurations/atlas.com/configurations
@@ -708,7 +708,7 @@ go test ./templates/ -run 'TestLoadCatalog|TestZeroCatalog|TestInitShippedCatalo
 
 Expected: PASS — all six tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-configurations/atlas.com/configurations/templates/shipped.go \
@@ -729,7 +729,7 @@ git commit -m "feat(atlas-configurations): add shipped-template catalog"
 - Consumes: `socket.Normalize`, `socketValidate` (`templates/processor.go:167`), `validationFailureError` (`templates/validation_error.go:14`).
 - Produces: `func canonicalBytes(input RestModel) (json.RawMessage, error)` — unexported; returns the exact bytes `Create` persists, or a `*validationFailureError` when the socket config fails validation. `Create` and (Task 5) `ReseedById` both call it; `UpdateById` deliberately does not.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `templates/processor_test.go`:
 
@@ -792,7 +792,7 @@ Add these imports to `templates/processor_test.go` if not already present: `erro
 
 > If `socket.Validate` does not in fact reject a validator-less handler, replace the fixture in `TestCanonicalBytesSurfacesValidationFailure` with whichever minimal socket document `atlas-configurations/socket.Validate` does reject — read `socket/validate.go` and pick the first blocking rule. The assertion (a `*validationFailureError` surfaces) is the point; the specific invalid document is not.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-configurations/atlas.com/configurations
@@ -801,7 +801,7 @@ go test ./templates/ -run 'TestCanonicalBytes' -v
 
 Expected: FAIL — `undefined: canonicalBytes`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `templates/processor.go`, add `canonicalBytes` and rewrite `Create` to call it. Replace the body of `Create` (currently lines 86-122) with:
 
@@ -855,7 +855,7 @@ func (p *ProcessorImpl) Create(input RestModel) (uuid.UUID, error) {
 
 The removed `rm := &json.RawMessage{}; rm.UnmarshalJSON(res)` round-trip was a no-op: `json.RawMessage.UnmarshalJSON` copies its argument without validating it, so `json.RawMessage(res)` is byte-equivalent.
 
-- [ ] **Step 4: Run the full templates package**
+- [x] **Step 4: Run the full templates package**
 
 ```bash
 cd services/atlas-configurations/atlas.com/configurations
@@ -864,7 +864,7 @@ go test ./templates/... -v
 
 Expected: PASS — the two new tests plus every pre-existing test in the package (`Create`'s observable behaviour is unchanged).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-configurations/atlas.com/configurations/templates/processor.go \
@@ -889,7 +889,7 @@ git commit -m "refactor(atlas-configurations): extract canonicalBytes from templ
   - `Processor` gains: `WithCatalog(c Catalog) Processor`, `ViewByIdProvider(templateId uuid.UUID) model.Provider[ViewRestModel]`, `ViewByRegionAndVersionProvider(region string, majorVersion uint16, minorVersion uint16) model.Provider[ViewRestModel]`, `AllViewProvider(page model.Page) model.Provider[model.Paged[ViewRestModel]]`.
   - `ProcessorImpl` gains an unexported `makeView(rm RestModel) (ViewRestModel, error)`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `templates/processor_test.go`:
 
@@ -1156,7 +1156,7 @@ func TestViewRestModelFlattensEmbeddedFields(t *testing.T) {
 
 Add `path/filepath` to `templates/processor_test.go`'s imports if not already present.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-configurations/atlas.com/configurations
@@ -1165,7 +1165,7 @@ go test ./templates/ -run 'TestShippedSeeds|TestDrift|TestNoCatalogEntry|TestUnw
 
 Expected: FAIL — `undefined: ViewRestModel`, `p.WithCatalog undefined`, `p.ViewByIdProvider undefined`.
 
-- [ ] **Step 3: Add `ViewRestModel`**
+- [x] **Step 3: Add `ViewRestModel`**
 
 Append to `templates/rest.go`:
 
@@ -1193,7 +1193,7 @@ type ViewRestModel struct {
 }
 ```
 
-- [ ] **Step 4: Add catalog injection and the view providers**
+- [x] **Step 4: Add catalog injection and the view providers**
 
 In `templates/processor.go`:
 
@@ -1281,7 +1281,7 @@ func (p *ProcessorImpl) AllViewProvider(page model.Page) model.Provider[model.Pa
 
 > `model.MapPaged` is used by `AllProvider` at `templates/processor.go:64` over an entity provider. If its signature does not accept a `model.Provider[model.Paged[RestModel]]` directly, map the paged provider inline instead — read `libs/atlas-model/model` for the exact combinator and use whichever one composes `Provider[Paged[A]]` + `func(A) (B, error)` into `Provider[Paged[B]]`. Keep `model.ParallelMap()` in the call so NFR-2 still holds.
 
-- [ ] **Step 5: Update the mock**
+- [x] **Step 5: Update the mock**
 
 In `templates/mock/processor.go`, add the four fields and four methods:
 
@@ -1322,7 +1322,7 @@ func (m *ProcessorMock) AllViewProvider(page model.Page) model.Provider[model.Pa
 }
 ```
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-configurations/atlas.com/configurations
@@ -1333,7 +1333,7 @@ Expected: PASS — every new test, including all eleven subtests of `TestShipped
 
 If `TestShippedSeedsReportNoDrift` fails on `StoredRevision != ShippedRevision`, do **not** weaken the test: `Marshal ∘ Unmarshal` is no longer the identity on `RestModel`, which is exactly the failure design §5 exists to catch. Find the offending field (add a `t.Logf` dumping both marshalled documents and diff them) and fix the round-trip.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-configurations/atlas.com/configurations/templates/rest.go \
@@ -1359,7 +1359,7 @@ git commit -m "feat(atlas-configurations): compute template seed drift on read"
   - `var ErrNoShippedTemplate = errors.New("no shipped template")`
   - `Processor` gains `ReseedById(templateId uuid.UUID) error`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `templates/processor_test.go`:
 
@@ -1545,7 +1545,7 @@ func TestReseedProducesSameBytesAsFreshCreate(t *testing.T) {
 
 Add `errors` and `github.com/google/uuid` to `templates/processor_test.go`'s imports if not already present.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-configurations/atlas.com/configurations
@@ -1554,7 +1554,7 @@ go test ./templates/ -run 'TestReseed' -v
 
 Expected: FAIL — `undefined: ErrTemplateNotFound`, `p.ReseedById undefined`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `templates/processor.go`, add the sentinels near the top of the file (after the imports):
 
@@ -1637,7 +1637,7 @@ func (p *ProcessorImpl) ReseedById(templateId uuid.UUID) error {
 }
 ```
 
-- [ ] **Step 4: Update the mock**
+- [x] **Step 4: Update the mock**
 
 In `templates/mock/processor.go`, add:
 
@@ -1654,7 +1654,7 @@ func (m *ProcessorMock) ReseedById(templateId uuid.UUID) error {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-configurations/atlas.com/configurations
@@ -1663,7 +1663,7 @@ go build ./... && go test ./templates/... -v
 
 Expected: PASS — all five `TestReseed*` tests plus everything before them.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-configurations/atlas.com/configurations/templates/processor.go \
@@ -1684,7 +1684,7 @@ git commit -m "feat(atlas-configurations): add template ReseedById"
 - Consumes: `ViewRestModel`, `ShippedCatalog()`, `ReseedById`, `ErrTemplateNotFound`, `ErrNoShippedTemplate`, `validationFailureError.AsJSONAPIErrors` (`templates/validation_error.go:29`), `rest.ParseTemplateId` (`rest/handler.go:55`).
 - Produces: route `POST /configurations/templates/{templateId}/reseed`; unexported `func writeJSONAPIError(w http.ResponseWriter, status int, title string, detail string)`. The three GET handlers and the POST-create handler now marshal `ViewRestModel`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `templates/resource_reseed_test.go`:
 
@@ -1882,7 +1882,7 @@ func assertJSONAPIErrorDocument(t *testing.T, rr *httptest.ResponseRecorder, wan
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-configurations/atlas.com/configurations
@@ -1891,7 +1891,7 @@ go test ./templates/ -run 'TestReseedReturns|TestReseedUnknownIdReturns404|TestR
 
 Expected: FAIL — 404/405 on the reseed route, and `shippedRevision` absent from the GET response.
 
-- [ ] **Step 3: Register the route and switch the read handlers**
+- [x] **Step 3: Register the route and switch the read handlers**
 
 In `templates/resource.go`:
 
@@ -1997,7 +1997,7 @@ func handleReseedConfigurationTemplate(db *gorm.DB) rest.GetHandler {
 
 Add `strconv` to the file's imports.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-configurations/atlas.com/configurations
@@ -2006,7 +2006,7 @@ go build ./... && go test ./templates/... -v
 
 Expected: PASS — the four new resource tests plus every pre-existing one, including `resource_paginate_test.go` and `resource_no_content_test.go`. If a pre-existing paginate assertion reads the attribute set, update its expectation to include the three new keys — do not remove the keys.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-configurations/atlas.com/configurations/templates/resource.go \
@@ -2027,7 +2027,7 @@ git commit -m "feat(atlas-configurations): expose drift attributes and POST /tem
 - Consumes: `templates.Catalog`, `templates.CatalogEntry`, `templates.InitShippedCatalog` (Task 2).
 - Produces: `func NewSeeder(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, config Config, catalog templates.Catalog) *Seeder`. `ConfigMetadata`, `Seeder.extractMetadata` and `Seeder.discoverFiles` are removed. `Seeder.importTemplate(entry templates.CatalogEntry) string` still returns `"imported"` / `"skipped"` / `"failed"`, and `SeedResult` is unchanged.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `seeder/seeder_test.go`:
 
@@ -2153,7 +2153,7 @@ func readTemplateData(db *gorm.DB, id uuid.UUID) (string, error) {
 
 Imports needed in `seeder/seeder_test.go`: `encoding/json`, `path/filepath`, `github.com/google/uuid`, `gorm.io/driver/sqlite`, `gorm.io/gorm`, `gorm.io/gorm/logger`, `atlas-configurations/templates`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-configurations/atlas.com/configurations
@@ -2162,7 +2162,7 @@ go test ./seeder/ -v
 
 Expected: FAIL to compile — `NewSeeder` takes four arguments, not five.
 
-- [ ] **Step 3: Rewrite the seeder**
+- [x] **Step 3: Rewrite the seeder**
 
 In `seeder/seeder.go`:
 
@@ -2289,7 +2289,7 @@ func (s *Seeder) importTemplate(entry templates.CatalogEntry) string {
 
 Add `path/filepath` to `main.go`'s imports.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-configurations/atlas.com/configurations
@@ -2298,7 +2298,7 @@ go build ./... && go test ./... -v
 
 Expected: PASS across every package.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-configurations/atlas.com/configurations/seeder/seeder.go \
@@ -2313,7 +2313,7 @@ git commit -m "refactor(atlas-configurations): seed templates from the shipped c
 
 **Files:** none modified — this task only runs the gates.
 
-- [ ] **Step 1: Full race-enabled test run**
+- [x] **Step 1: Full race-enabled test run**
 
 ```bash
 cd services/atlas-configurations/atlas.com/configurations
@@ -2322,7 +2322,7 @@ go test -race ./...
 
 Expected: `ok` for every package. `InitShippedCatalog`'s `sync.Once` + `sync.RWMutex` are what `-race` is checking here.
 
-- [ ] **Step 2: Vet and build**
+- [x] **Step 2: Vet and build**
 
 ```bash
 cd services/atlas-configurations/atlas.com/configurations
@@ -2331,7 +2331,7 @@ go vet ./... && go build ./...
 
 Expected: no output.
 
-- [ ] **Step 3: Confirm `go.mod` is untouched**
+- [x] **Step 3: Confirm `go.mod` is untouched**
 
 ```bash
 git diff --stat -- services/atlas-configurations/atlas.com/configurations/go.mod services/atlas-configurations/atlas.com/configurations/go.sum
@@ -2339,7 +2339,7 @@ git diff --stat -- services/atlas-configurations/atlas.com/configurations/go.mod
 
 Expected: empty. If either changed, a non-stdlib dependency crept in — remove it, or `docker buildx bake atlas-configurations` becomes mandatory per CLAUDE.md item 4.
 
-- [ ] **Step 4: Repo-root guards**
+- [x] **Step 4: Repo-root guards**
 
 From the worktree root:
 
@@ -2351,7 +2351,7 @@ tools/lint.sh --check
 
 Expected: exit 0 each. `tools/lint.sh --check` needs nvm on PATH — if it false-fails on the atlas-ui leg, run `tools/lint.sh` (fix mode) first and re-check.
 
-- [ ] **Step 5: Commit any formatting the linter rewrote**
+- [x] **Step 5: Commit any formatting the linter rewrote**
 
 ```bash
 git add -A services/atlas-configurations
@@ -2373,7 +2373,7 @@ git diff --cached --quiet || git commit -m "style(atlas-configurations): apply l
   - `TemplateAttributes` gains `shippedRevision?: string; storedRevision?: string; seedDrift?: boolean`.
   - `templatesService.reseed(id: string, options?: ServiceOptions): Promise<void>`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create (or append to) `src/services/api/__tests__/templates.service.test.ts`:
 
@@ -2428,7 +2428,7 @@ describe("templatesService.reseed", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-ui
@@ -2437,7 +2437,7 @@ npx vitest run src/services/api/__tests__/templates.service.test.ts
 
 Expected: FAIL — `templatesService.reseed is not a function`.
 
-- [ ] **Step 3: Add the type fields**
+- [x] **Step 3: Add the type fields**
 
 In `src/types/models/template.ts`, inside `TemplateAttributes` (after `minorVersion`):
 
@@ -2460,7 +2460,7 @@ In `src/types/models/template.ts`, inside `TemplateAttributes` (after `minorVers
 
 All three are optional because fixtures and any older API predate them, and `exactOptionalPropertyTypes` is on: read sites must handle `undefined`.
 
-- [ ] **Step 4: Add the service call**
+- [x] **Step 4: Add the service call**
 
 In `src/services/api/templates.service.ts`, next to `delete` (around line 354):
 
@@ -2479,7 +2479,7 @@ In `src/services/api/templates.service.ts`, next to `delete` (around line 354):
 
 `api.post` omits the body entirely when `data` is `undefined` (`src/lib/api/client.ts:242`), which is what the test asserts.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-ui
@@ -2488,7 +2488,7 @@ npx vitest run src/services/api/__tests__/templates.service.test.ts
 
 Expected: PASS — both tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-ui/src/types/models/template.ts \
@@ -2509,7 +2509,7 @@ git commit -m "feat(atlas-ui): add template reseed service call and drift attrib
 - Consumes: `templatesService.reseed` (Task 9), `templateKeys` (`src/lib/hooks/api/useTemplates.ts:31`).
 - Produces: `export function useReseedTemplate(): UseMutationResult<void, Error, { id: string }>`. Callers invoke `mutateAsync({ id })`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/lib/hooks/api/__tests__/useReseedTemplate.test.tsx`:
 
@@ -2581,7 +2581,7 @@ describe("useReseedTemplate", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-ui
@@ -2590,7 +2590,7 @@ npx vitest run src/lib/hooks/api/__tests__/useReseedTemplate.test.tsx
 
 Expected: FAIL — `useReseedTemplate` is not exported.
 
-- [ ] **Step 3: Write the hook**
+- [x] **Step 3: Write the hook**
 
 In `src/lib/hooks/api/useTemplates.ts`, after `useDeleteTemplate`:
 
@@ -2620,7 +2620,7 @@ export function useReseedTemplate(): UseMutationResult<
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-ui
@@ -2629,7 +2629,7 @@ npx vitest run src/lib/hooks/api/__tests__/useReseedTemplate.test.tsx
 
 Expected: PASS — both tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-ui/src/lib/hooks/api/useTemplates.ts \
@@ -2650,7 +2650,7 @@ git commit -m "feat(atlas-ui): add useReseedTemplate mutation"
 - Consumes: `useTemplate` (`src/lib/hooks/api/useTemplates.ts:113`), `useReseedTemplate` (Task 10), `Button`, `AlertDialog*` (`src/components/ui/alert-dialog.tsx`), `Tooltip*` (`src/components/ui/tooltip.tsx`), `toast` from `sonner`, `createErrorFromUnknown` (`src/types/api/errors.ts`), `buttonVariants` + `cn`.
 - Produces: `export function TemplateReseedButton({ id }: { id: string | undefined })`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/components/features/templates/__tests__/TemplateReseedButton.test.tsx`:
 
@@ -2791,7 +2791,7 @@ describe("TemplateReseedButton", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-ui
@@ -2800,7 +2800,7 @@ npx vitest run src/components/features/templates/__tests__/TemplateReseedButton.
 
 Expected: FAIL — cannot resolve `TemplateReseedButton`.
 
-- [ ] **Step 3: Write the component**
+- [x] **Step 3: Write the component**
 
 Create `src/components/features/templates/TemplateReseedButton.tsx`:
 
@@ -2947,7 +2947,7 @@ export function TemplateReseedButton({ id }: TemplateReseedButtonProps) {
 }
 ```
 
-- [ ] **Step 4: Mount it in the layout**
+- [x] **Step 4: Mount it in the layout**
 
 In `src/components/features/templates/TemplateDetailLayout.tsx`, add the import:
 
@@ -2964,7 +2964,7 @@ and replace the single-child header action with a flex row:
           </div>
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-ui
@@ -2973,7 +2973,7 @@ npx vitest run src/components/features/templates/__tests__/
 
 Expected: PASS — all seven new tests plus the existing `TemplateDetailLayout.test.tsx`. If the layout test asserts on the header's child structure, update its expectation to include the new button rather than removing the button.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-ui/src/components/features/templates/
@@ -2992,7 +2992,7 @@ git commit -m "feat(atlas-ui): add reset-to-shipped-defaults action to template 
 - Consumes: `Badge` (`src/components/ui/badge.tsx`), `Tooltip*`, `DataTableColumnDef`, `Template`.
 - Produces: a new column with `id: "seedDrift"` in the array `getColumns` returns, placed after the `attributes.minorVersion` column and before `actions`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/pages/__tests__/templates-columns.test.tsx`:
 
@@ -3044,7 +3044,7 @@ describe("templates-columns seedDrift", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-ui
@@ -3053,7 +3053,7 @@ npx vitest run src/pages/__tests__/templates-columns.test.tsx
 
 Expected: FAIL — "seedDrift column is missing".
 
-- [ ] **Step 3: Add the column**
+- [x] **Step 3: Add the column**
 
 In `src/pages/templates-columns.tsx`, add the imports:
 
@@ -3097,7 +3097,7 @@ and insert this column object between the `attributes.minorVersion` column and t
   },
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-ui
@@ -3106,7 +3106,7 @@ npx vitest run src/pages/__tests__/templates-columns.test.tsx src/pages/__tests_
 
 Expected: PASS — the four new tests plus the existing page test. If `TemplatesPage.test.tsx` asserts a column count, update the expected number.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-ui/src/pages/templates-columns.tsx \
@@ -3126,7 +3126,7 @@ git commit -m "feat(atlas-ui): show a seed-drift badge on the templates list"
 - Consumes: nothing new.
 - Produces: `toConfigExportPayload` now deletes `shippedRevision`, `storedRevision` and `seedDrift` from its output. The signature is unchanged.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `src/lib/utils/__tests__/config-export.test.ts`:
 
@@ -3160,7 +3160,7 @@ describe("toConfigExportPayload computed attributes", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-ui
@@ -3169,7 +3169,7 @@ npx vitest run src/lib/utils/__tests__/config-export.test.ts
 
 Expected: FAIL — `shippedRevision` is present in the output.
 
-- [ ] **Step 3: Strip the keys**
+- [x] **Step 3: Strip the keys**
 
 In `src/lib/utils/config-export.ts`, inside `toConfigExportPayload`, immediately after the `out` object is built and before the `npcs` / `worlds` normalization:
 
@@ -3186,7 +3186,7 @@ In `src/lib/utils/config-export.ts`, inside `toConfigExportPayload`, immediately
   delete out.seedDrift;
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-ui
@@ -3195,7 +3195,7 @@ npx vitest run src/lib/utils/__tests__/config-export.test.ts
 
 Expected: PASS — the two new tests plus every existing one.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-ui/src/lib/utils/config-export.ts \
@@ -3210,7 +3210,7 @@ git commit -m "fix(atlas-ui): keep computed drift keys out of the config export"
 **Files:**
 - Modify: `docs/packets/TEMPLATE_CONVENTIONS.md`
 
-- [ ] **Step 1: Record the presets-carry-ids condition**
+- [x] **Step 1: Record the presets-carry-ids condition**
 
 Design §7 established empirically that no shipped template can be perturbed by the preset validator: six seed files carry presets and every preset already has an id (`templates/characters/preset/validator.go:37-41` assigns one only when `Id == ""`), and the other five carry none. That is a property of the current corpus, not an invariant.
 
@@ -3232,7 +3232,7 @@ template, not a gameplay failure. As of task-201, all eleven shipped templates
 satisfy it - six carry presets, all with ids; five carry none.
 ```
 
-- [ ] **Step 2: Full Go verification**
+- [x] **Step 2: Full Go verification**
 
 From the worktree root:
 
@@ -3243,7 +3243,7 @@ cd services/atlas-configurations/atlas.com/configurations && \
 
 Expected: `ok` per package, no vet output, no build output.
 
-- [ ] **Step 3: Full UI verification**
+- [x] **Step 3: Full UI verification**
 
 ```bash
 cd services/atlas-ui
@@ -3253,7 +3253,7 @@ npm run build
 
 Expected: all vitest suites pass; the build succeeds (it type-checks tests, so a `exactOptionalPropertyTypes` violation in the new optional attributes surfaces here and nowhere else).
 
-- [ ] **Step 4: Repo-root guards**
+- [x] **Step 4: Repo-root guards**
 
 From the worktree root:
 
@@ -3274,14 +3274,14 @@ git diff --name-only main... -- services/atlas-configurations/seed-data/
 
 Expected: empty.
 
-- [ ] **Step 5: Commit the docs**
+- [x] **Step 5: Commit the docs**
 
 ```bash
 git add docs/packets/TEMPLATE_CONVENTIONS.md
 git commit -m "docs: record the presets-carry-ids condition for seed templates"
 ```
 
-- [ ] **Step 6: Code review before PR**
+- [x] **Step 6: Code review before PR**
 
 Per CLAUDE.md ("Code Review Before PR"), invoke `superpowers:requesting-code-review`. It dispatches `plan-adherence-reviewer`, `backend-guidelines-reviewer` (Go changed) and `frontend-guidelines-reviewer` (TS changed); findings land in `docs/tasks/task-201-template-reseed-trigger/audit.md`. Pin the reviewer subagents to a cheaper model per the project's model preference. Do not open the PR until the audit is addressed.
 

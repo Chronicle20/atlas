@@ -6,6 +6,7 @@ import (
 	"atlas-channel/consumable"
 	cashData "atlas-channel/data/cash"
 	"atlas-channel/incubator"
+	"atlas-channel/pet"
 	"atlas-channel/saga"
 	"atlas-channel/session"
 	"atlas-channel/shopscanner"
@@ -64,6 +65,29 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 				updateTime = sp.UpdateTime()
 			}
 			_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), itemId, source, 1, updateTime)
+			return
+		}
+		if it == CashSlotItemTypePetSkill {
+			// Case-28 sub-body carries a bare 8-byte petId and nothing else --
+			// update_time is already decoded once from the common ItemUse header
+			// above (jms_v185 IDA-verified, task-139 task-8/9; see
+			// libs/atlas-packet/cash/serverbound/item_use_pet_skill.go). There is
+			// no per-type trailing/leading updateTime to re-derive here.
+			sp := cashsb.NewItemUsePetSkill()
+			sp.Decode(l, ctx)(r, readerOptions)
+			// The wire value is the pet's CLIENT serial
+			// (GW_ItemSlotBase::liCashItemSN), not the Atlas pet id. Resolve it
+			// here, at the socket boundary, exactly as the other serverbound pet
+			// handlers do: atlas-consumables' ConsumePetSkillPouch keys on the
+			// Atlas pet id (it calls pet.GetById and range-checks against
+			// MaxUint32), so forwarding a 64-bit cash serial would fail every
+			// pouch use on a cash-purchased pet with ErrPetCannotLearn.
+			pm, perr := pet.NewProcessor(l, ctx).GetBySerialNumber(s.CharacterId(), sp.PetId())
+			if perr != nil {
+				l.WithError(perr).Debugf("Unable to resolve pet [%d] for character [%d] pet-skill pouch use.", sp.PetId(), s.CharacterId())
+				return
+			}
+			_ = consumable.NewProcessor(l, ctx).RequestItemConsumeWithPet(s.Field(), character.Id(s.CharacterId()), itemId, source, updateTime, uint64(pm.Id()))
 			return
 		}
 		if it == CashSlotItemTypeChalkboard {
@@ -595,6 +619,7 @@ const (
 	CashSlotItemTypeNote          = CashSlotItemType(21)
 	CashSlotItemTypeStoreSearch   = CashSlotItemType(29)
 	CashSlotItemTypePetConsumable = CashSlotItemType(30)
+	CashSlotItemTypePetSkill      = CashSlotItemType(28)
 	CashSlotItemTypeChalkboard    = CashSlotItemType(32)
 	CashSlotItemTypeItemTag       = CashSlotItemType(25)
 	CashSlotItemTypeSeal          = CashSlotItemType(26)
@@ -831,8 +856,8 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 		if category == 518 {
 			return CashSlotItemType(5)
 		}
-		if category == 519 {
-			return CashSlotItemType(28)
+		if category == item.ClassificationPetSkill {
+			return CashSlotItemTypePetSkill
 		}
 		if category == item.ClassificationCurrencySack {
 			return CashSlotItemType(19)

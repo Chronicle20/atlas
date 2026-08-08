@@ -54,7 +54,7 @@ func (m ChatRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 	t := tenant.MustFromContext(ctx)
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		if hasLeadingPetId(t) {
+		if HasLeadingPetId(t) {
 			w.WriteLong(m.petId) // absent on GMS v48 (single-pet; @0x58e90b leads with type)
 		}
 		// updateTime is GMS v95+ only: CPet::DoAction sends 5 encode calls in
@@ -73,7 +73,7 @@ func (m ChatRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 func (m *ChatRequest) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if hasLeadingPetId(t) {
+		if HasLeadingPetId(t) {
 			m.petId = r.ReadUint64() // absent on GMS v48 (single-pet)
 		}
 		// updateTime is GMS v95+ only: CPet::DoAction sends 5 encode calls in

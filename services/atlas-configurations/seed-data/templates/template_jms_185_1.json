@@ -1091,7 +1091,10 @@
         "fname": "CWvsContext::SendStatChangeItemUseRequestByPetQ",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "skillGate": "petSkillFlag"
+        }
       },
       {
         "opCode": "0xAF",
@@ -2035,7 +2038,14 @@
         "fname": "CWvsContext::OnInventoryOperation",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "petSkill": {
+            "consumeHP": "0x20",
+            "consumeMP": "0x40",
+            "autoSpeaking": "0x100"
+          }
+        }
       },
       {
         "opCode": "0x1D",
@@ -2487,7 +2497,14 @@
         "fname": "CStage::OnSetField",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "petSkill": {
+            "consumeHP": "0x20",
+            "consumeMP": "0x40",
+            "autoSpeaking": "0x100"
+          }
+        }
       },
       {
         "opCode": "0x7C",

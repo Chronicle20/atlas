@@ -74,6 +74,20 @@ export interface TemplateAttributes {
   region: string;
   majorVersion: number;
   minorVersion: number;
+  /**
+   * SHA-256 of the seed file baked into the RUNNING image for this
+   * region/version. Empty string when no such file ships. Computed
+   * server-side; ignored on write.
+   */
+  shippedRevision?: string;
+  /** SHA-256 of the persisted template content. Computed server-side. */
+  storedRevision?: string;
+  /**
+   * True when shippedRevision is non-empty and differs from storedRevision.
+   * Advisory and image-relative (NFR-4) - during a rolling update two replicas
+   * may briefly disagree - so this is never an error state.
+   */
+  seedDrift?: boolean;
   usesPin: boolean;
   characters: {
     templates: CharacterTemplate[];

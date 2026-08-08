@@ -33,6 +33,7 @@ a service-local copy.
 | [`map`](./map) | `Id` (`uint32`), field-limit constants | Map IDs in routing, drop tables, spawn rules. |
 | [`miniroom`](./miniroom) | Mini-room (`CMiniRoom`) type bytes: `Omok`=1, `MatchCards`=2, `Trade`=3, `PersonalShop`=4, `MerchantShop`=5, `CashTrade`=6 | The room-type discriminator on mini-room create/enter/balloon packets and mini-game room/record events. **Don't redeclare 1/2 as local omok/match-card consts.** |
 | [`monster`](./monster) | `Id`, monster status / skill constants | Monster IDs and per-monster status flags. |
+| [`pet/skill`](./pet/skill) | `Key`, `Flag`, `All`, `BitFor`, `Has`, `Apply` | Pet skill semantic keys and canonical storage bits (0519 pouch items). |
 | [`point`](./point) | `X`, `Y` (`int16`) | Map coordinates — keep them typed, don't pass raw ints. |
 | [`skill`](./skill) | `Id`, `Identity`, `Set`, `Resolve`/`Wire`/`Available`, summon-movement constants | Player and mob skill IDs. `Id` is the single-version-blind convention (v83-era numbering); `Identity` is the version-independent stable name, resolved to a tenant version's actual wire `Id` via `constants.For(...).Skill` — use `Identity` + `constants.For` for any version-sensitive skill logic (skill IDs were reassigned across client versions, e.g. `5101004` = Super GM Hide pre-v62 but Brawler Corkscrew Blow from v62 onward; see docs/tasks/task-187-version-aware-id-semantics). |
 | [`stat`](./stat) | `Type` | Character stat keys. |

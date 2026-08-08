@@ -330,6 +330,30 @@ export function useDeleteTemplate(): UseMutationResult<
   });
 }
 
+/**
+ * Resets one template to the configuration shipped in the deployed image.
+ *
+ * Invalidates on SUCCESS only (FR-5.6): a failed re-seed changed nothing
+ * server-side, so refetching would only churn. The detail query is invalidated
+ * so the open page re-reads, and the lists query so the drift badge clears
+ * without a manual reload.
+ */
+export function useReseedTemplate(): UseMutationResult<
+  void,
+  Error,
+  { id: string }
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id }) => templatesService.reseed(id),
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: templateKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
+    },
+  });
+}
+
 // ============================================================================
 // BATCH OPERATION HOOKS
 // ============================================================================

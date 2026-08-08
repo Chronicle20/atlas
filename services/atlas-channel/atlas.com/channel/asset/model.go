@@ -50,12 +50,15 @@ type Model struct {
 	commodityId uint32
 	purchaseBy  uint32
 	// pet fields
-	petId     uint32
-	petName   string
-	petLevel  byte
-	closeness uint16
-	fullness  byte
-	petSlot   int8
+	petId           uint32
+	petName         string
+	petLevel        byte
+	petFlag         uint16
+	closeness       uint16
+	fullness        byte
+	petSlot         int8
+	petDeadDate     time.Time
+	petSerialNumber uint64
 }
 
 func (m Model) Id() uint32                { return m.id }
@@ -100,9 +103,21 @@ func (m Model) PurchaseBy() uint32        { return m.purchaseBy }
 func (m Model) PetId() uint32             { return m.petId }
 func (m Model) PetName() string           { return m.petName }
 func (m Model) PetLevel() byte            { return m.petLevel }
+func (m Model) PetFlag() uint16           { return m.petFlag }
 func (m Model) Closeness() uint16         { return m.closeness }
 func (m Model) Fullness() byte            { return m.fullness }
 func (m Model) PetSlot() int8             { return m.petSlot }
+
+// PetDeadDate is the pet's own "water of life" clock, sourced from atlas-pets.
+// It is deliberately separate from Expiration (the cash item's expiry) — the
+// client renders a pet as dried up from this field alone.
+func (m Model) PetDeadDate() time.Time { return m.petDeadDate }
+
+// PetSerialNumber is the identifier the CLIENT uses for this pet. It comes from
+// the pet record (pet.Model.SerialNumber), not from this asset's cashId, so the
+// inventory item block, the PetActivated packet and atlas-channel's wire->pet
+// lookup all resolve against one value.
+func (m Model) PetSerialNumber() uint64 { return m.petSerialNumber }
 
 func (m Model) InventoryType() inventory.Type {
 	t, _ := inventory.TypeFromItemId(item.Id(m.templateId))

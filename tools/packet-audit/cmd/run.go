@@ -2193,6 +2193,11 @@ func candidatesFromFName(fname string) []candidate {
 			{name: "ItemUseTripleMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
 			{name: "ItemUseMapleTV", dir: csvpkg.DirServerbound, pkg: "cash"},
 			{name: "ItemUseTeleportRock", dir: csvpkg.DirServerbound, pkg: "cash"},
+			// Pet-skill-pouch cash-slot type 28 (task-139/task-8, jms-only sender):
+			// the jump-table case-28 arm writes a bare 8-byte pet locker SN and
+			// nothing else (jms_v185 @0xaf1a42, entry 0xaf16df) — see
+			// item_use_pet_skill_test.go for the full decompile trail.
+			{name: "ItemUsePetSkill", dir: csvpkg.DirServerbound, pkg: "cash"},
 		}
 	// Item Megaphone (cash-slot type 14): the REAL send function, separate
 	// from the main dispatcher above (task-123 phase 19, gms_v95

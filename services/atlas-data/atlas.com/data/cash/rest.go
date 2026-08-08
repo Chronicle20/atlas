@@ -42,6 +42,8 @@ type RestModel struct {
 	BgmPath         string             `json:"bgmPath,omitempty"`
 	Spec            map[SpecType]int32 `json:"spec"`
 	TimeWindows     []TimeWindow       `json:"timeWindows,omitempty"` // Active time windows from info/time
+	PetSkills       []string           `json:"petSkills,omitempty"`
+	PetSkillAdd     bool               `json:"petSkillAdd,omitempty"`
 }
 
 func (r RestModel) GetName() string {

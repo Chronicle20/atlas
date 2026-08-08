@@ -71,6 +71,17 @@ export function toConfigExportPayload<T extends ExportableConfigAttributes>(
   const out: Record<string, unknown> = {
     ...(attributes as ExportableConfigAttributes),
   } as Record<string, unknown>;
+  // The ONLY place this module's "everything else is passed through untouched,
+  // so we never track a key list" principle is knowingly broken. These three
+  // are COMPUTED by atlas-configurations (task-201), not configured: they are
+  // not part of the document's shape at all, and the exported file exists to
+  // be promoted into seed-data/templates/. A committed seed file carrying a
+  // stale hash of itself is exactly the noise task-201 exists to remove. The
+  // server drops them on parse either way, so this is hygiene, not a fix.
+  delete out.shippedRevision;
+  delete out.storedRevision;
+  delete out.seedDrift;
+
   out.npcs = attributes.npcs ?? [];
   out.worlds = attributes.worlds ?? [];
 

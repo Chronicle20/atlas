@@ -19,8 +19,9 @@ import (
 //   - A non-numeric image yields an empty slice and NO error, so the new
 //     registration pass adds no `register MobSkill.img.xml` warn noise to the
 //     SKILL worker (see data/workers/walk.go:45-47).
-//   - A missing or empty `skill` child yields a model with an empty skill
-//     list. FR-2.4 requires "the job exists with zero skills" to be
+//   - An ABSENT `skill` child yields NO model (task-202 FR-1.1): the image is
+//     not a job document. A PRESENT but empty `skill` child yields a model with
+//     an empty skill list (FR-1.2) -- "the job exists with zero skills" stays
 //     representable and distinguishable from "the job is absent".
 //
 // Skill ids are emitted in WZ document order, not sorted (FR-1.2): the order is
@@ -43,15 +44,30 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 				return model.FixedProvider([]RestModel{})
 			}
 
+			ssxml, err := exml.ChildByName("skill")
+			if err != nil {
+				// FR-1.1 (task-202): no `skill` node at all means this image is
+				// not a job document. Skill.wz/Dragon/ at v0.84+ holds Evan's
+				// Mir ANIMATION images named exactly 2200.img-2218.img; emitting
+				// an empty model for them let document upsert (last-write-wins
+				// on (tenant, type, document_id)) blank the real Evan documents.
+				// Returning no model makes the outcome independent of walk order.
+				//
+				// A PRESENT but empty `skill` node is the opposite case and
+				// still yields a model (FR-1.2): 1112.img (Cygnus 4th job) is a
+				// real job with zero skills. Never collapse these two into a
+				// len(skills) == 0 check.
+				l.Debugf("Image [%s] has no skill node; not a JOB document.", exml.Name)
+				return model.FixedProvider([]RestModel{})
+			}
+
 			skills := make([]uint32, 0)
-			if ssxml, err := exml.ChildByName("skill"); err == nil {
-				for _, sxml := range ssxml.ChildNodes {
-					skillId, err := strconv.ParseUint(sxml.Name, 10, 32)
-					if err != nil {
-						continue
-					}
-					skills = append(skills, uint32(skillId))
+			for _, sxml := range ssxml.ChildNodes {
+				skillId, err := strconv.ParseUint(sxml.Name, 10, 32)
+				if err != nil {
+					continue
 				}
+				skills = append(skills, uint32(skillId))
 			}
 			l.Debugf("Read [%d] skills for job [%d].", len(skills), jobId)
 

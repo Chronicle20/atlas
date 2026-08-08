@@ -34,6 +34,12 @@ vi.mock("../SpawnProgressionSection", () => ({
 vi.mock("@/context/tenant-context", () => ({
   useTenant: () => ({ activeTenant: null }),
 }));
+// PresetEditor's job badge reads the tenant's job graph via
+// useJobNameLookup; mock it rather than standing up a QueryClientProvider
+// for a test about equipment/inventory/skills index-callback wiring.
+vi.mock("@/lib/hooks/api/useJobGraph", () => ({
+  useJobNameLookup: () => (id: number) => `Job ${id}`,
+}));
 vi.mock("@/lib/hooks/api/useItemStrings", () => ({
   useItemName: () => ({ data: "Item", isError: false }),
 }));

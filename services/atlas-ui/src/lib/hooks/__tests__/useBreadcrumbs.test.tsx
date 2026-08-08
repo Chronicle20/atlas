@@ -54,6 +54,15 @@ vi.mock("@/lib/breadcrumbs/routes", () => ({
   getBreadcrumbsFromRoute: vi.fn(),
 }));
 
+// useBreadcrumbs threads a JobNameResolver from useJobNameLookup into
+// getBreadcrumbsFromRoute's context param. The real hook needs a
+// QueryClientProvider (via useJobGraph's underlying useQuery calls) that
+// this test's renderHook doesn't set up, so it's mocked to a stable no-op —
+// the mocked getBreadcrumbsFromRoute above never actually calls it.
+vi.mock("@/lib/hooks/api/useJobGraph", () => ({
+  useJobNameLookup: vi.fn(() => (id: number) => `Job ${id}`),
+}));
+
 // Import mocked modules
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTenant } from "@/context/tenant-context";

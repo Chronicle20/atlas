@@ -109,3 +109,55 @@ func TestRegisterJob_NonNumericImageWritesNothing(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 0, n)
 }
+
+// dragonAnimationImageXML is the shape of Skill.wz/Dragon/2200.img.xml at
+// GMS v0.84+: the same root imgdir NAME as the real job image, an `info`
+// node, and NO `skill` node. See docs/tasks/task-202-.../investigation.md
+// Finding 4.
+const dragonAnimationImageXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="2200.img">
+  <imgdir name="info"></imgdir>
+</imgdir>`
+
+// realEvanJobImageXML is the top-level Skill.wz/2200.img.xml.
+const realEvanJobImageXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="2200.img">
+  <imgdir name="info"></imgdir>
+  <imgdir name="skill">
+    <imgdir name="22000000"/>
+    <imgdir name="22001001"/>
+  </imgdir>
+</imgdir>`
+
+// TestRegisterJob_DragonImageCannotBlankRealDocument pins FR-1.3. The two
+// images share a document key (2200), so before the FR-1.1 fix whichever was
+// registered LAST won -- and filepath.WalkDir visits "Dragon/" after every
+// numeric filename, so the animation image always won. Both orders are
+// exercised explicitly: the point is that the outcome no longer depends on
+// order at all, which asserting only the ASCII order would not show.
+func TestRegisterJob_DragonImageCannotBlankRealDocument(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		first string
+		last  string
+	}{
+		{name: "real then dragon", first: realEvanJobImageXML, last: dragonAnimationImageXML},
+		{name: "dragon then real", first: dragonAnimationImageXML, last: realEvanJobImageXML},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			db := setupResourceTestDB(t)
+			l, _ := test.NewNullLogger()
+			ctx := testCtx(t, uuid.New(), "GMS", 84, 1)
+			p := NewProcessor(l, ctx, db)
+
+			_, err := p.RegisterJob(writeTempImage(t, "first.img.xml", tc.first))
+			require.NoError(t, err)
+			_, err = p.RegisterJob(writeTempImage(t, "last.img.xml", tc.last))
+			require.NoError(t, err)
+
+			m, ok := p.GetSkillsForJob(2200)
+			require.True(t, ok, "the real 2200 JOB document must exist")
+			require.Equal(t, []uint32{22000000, 22001001}, m.Skills)
+		})
+	}
+}

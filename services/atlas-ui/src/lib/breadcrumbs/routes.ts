@@ -4,7 +4,18 @@
  */
 
 import { type BreadcrumbSegment } from "./utils";
-import { getJobNameById } from "@/lib/jobs";
+
+/** A version-correct job-name resolver, supplied by the calling component. */
+export type JobNameResolver = (id: number) => string;
+
+/**
+ * Context a labelResolver may need but cannot fetch itself: the route table
+ * is a plain module-level array, not a component, so it cannot call hooks.
+ * useBreadcrumbs supplies this from useJobNameLookup().
+ */
+export interface BreadcrumbResolverContext {
+  jobName: JobNameResolver;
+}
 
 // Types for route configuration
 export interface RouteConfig {
@@ -27,7 +38,10 @@ export interface RouteConfig {
   /** Entity type for dynamic routes */
   entityType?: string;
   /** Custom label resolver function */
-  labelResolver?: (params: Record<string, string>) => string;
+  labelResolver?: (
+    params: Record<string, string>,
+    ctx: BreadcrumbResolverContext,
+  ) => string;
 }
 
 // Comprehensive route configuration for all application routes
@@ -165,12 +179,13 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     pattern: "/jobs/[id]",
     label: "Job Details",
     parent: "/jobs",
-    // Deliberately no `entityType`: job names come from the static
-    // job-advancement tree via labelResolver, not from an async entity
-    // resolver. Declaring one would mark the crumb `dynamic` and the
-    // resolver lookup would miss, overwriting the label with "Unknown".
-    labelResolver: (params) =>
-      getJobNameById(Number(params.id)) ?? `Job ${params.id}`,
+    // Deliberately no `entityType`: job names come from the tenant's job
+    // graph via labelResolver, not from an async entity resolver. Declaring
+    // one would mark the crumb `dynamic` and the resolver lookup would miss,
+    // overwriting the label with "Unknown". The graph is version-correct —
+    // the static table this replaced named wire id 500 "Pirate" even on a
+    // v0.48 tenant, where it is Gm (task-202 FR-4.2).
+    labelResolver: (params, ctx) => ctx.jobName(Number(params.id)),
   },
 
   // Map routes
@@ -492,6 +507,7 @@ export function getRouteHierarchy(pathname: string): RouteConfig[] {
 // Get breadcrumb segments with route-specific configuration
 export function getBreadcrumbsFromRoute(
   pathname: string,
+  ctx: BreadcrumbResolverContext,
 ): Partial<BreadcrumbSegment>[] {
   const hierarchy = getRouteHierarchy(pathname);
   const params = findRouteConfig(pathname)
@@ -504,7 +520,9 @@ export function getBreadcrumbsFromRoute(
 
     const breadcrumb: Partial<BreadcrumbSegment> = {
       segment: config.pattern.split("/").pop() || "",
-      label: config.labelResolver ? config.labelResolver(params) : config.label,
+      label: config.labelResolver
+        ? config.labelResolver(params, ctx)
+        : config.label,
       href,
       dynamic: config.entityType !== undefined,
       isCurrentPage: isLast,

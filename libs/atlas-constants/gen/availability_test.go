@@ -76,7 +76,7 @@ func TestClassOf_KnownBoundaries(t *testing.T) {
 		{"job", 500, "Pirate"},        // Pirate
 		{"job", 522, "Pirate"},        // Corsair
 		{"job", 1000, "Cygnus"},       // Noblesse
-		{"job", 1512, "Cygnus"},       // ThunderBreakerStage4
+		{"job", 1512, "CygnusStage4"}, // ThunderBreakerStage4 (task-202: split out of Cygnus)
 		{"job", 2000, "Aran"},         // Legend
 		{"job", 2112, "Aran"},         // AranStage4
 		{"job", 2001, "Evan"},         // Evan
@@ -99,6 +99,40 @@ func TestClassOf_KnownBoundaries(t *testing.T) {
 	for _, c := range cases {
 		if got := classOf(c.domain, c.token); got != c.want {
 			t.Errorf("classOf(%q, %d) = %q, want %q", c.domain, c.token, got, c.want)
+		}
+	}
+}
+
+// TestClassOf_CygnusStage4IsItsOwnClass pins task-202 FR-2.1/2.2. The whole
+// 1000-1599 range used to map to a single "Cygnus" label, so there was no
+// way to express "Cygnus, but not tier 4" -- and Cygnus 4th job is empty in
+// the WZ at every supported version (docs/tasks/task-202-.../investigation.md
+// Finding 3: 1112/1212/1312/1412/1512 all have a PRESENT but EMPTY skill
+// node, contrast 1111 with 218 children).
+//
+// The five tokens are matched by an explicit list, not by arithmetic. The
+// arithmetic form (t%10 == 2 && t >= 1100) is exact today but is a fact
+// about today's five branches, not a rule; a sixth Cygnus branch must be
+// added deliberately rather than inherited by accident.
+func TestClassOf_CygnusStage4IsItsOwnClass(t *testing.T) {
+	for _, tok := range []uint64{1112, 1212, 1312, 1412, 1512} {
+		if got := classOf("job", tok); got != "CygnusStage4" {
+			t.Errorf("classOf(job, %d) = %q, want CygnusStage4", tok, got)
+		}
+		// FR-2.2: the floor-by-10000 relationship must carry the split into
+		// the skill domain for free.
+		if got := classOf("skill", tok*10000+1000); got != "CygnusStage4" {
+			t.Errorf("classOf(skill, %d) = %q, want CygnusStage4", tok*10000+1000, got)
+		}
+	}
+}
+
+// TestClassOf_CygnusTiers1To3Unchanged is the no-regression guard on the
+// split: everything else in 1000-1599 must still be plain Cygnus.
+func TestClassOf_CygnusTiers1To3Unchanged(t *testing.T) {
+	for _, tok := range []uint64{1000, 1100, 1110, 1111, 1200, 1210, 1211, 1300, 1310, 1311, 1400, 1410, 1411, 1500, 1510, 1511} {
+		if got := classOf("job", tok); got != "Cygnus" {
+			t.Errorf("classOf(job, %d) = %q, want Cygnus", tok, got)
 		}
 	}
 }

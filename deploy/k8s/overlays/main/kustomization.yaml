@@ -225,7 +225,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
     newTag: main-03a2abe
   - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
-    newTag: main-03a2abe
+    newTag: main-30f7956
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
     newTag: main-03a2abe
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
@@ -329,6 +329,6 @@ images:
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
     newTag: main-03a2abe
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-03a2abe
+    newTag: main-30f7956
 commonLabels:
   atlas.env: main

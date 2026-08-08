@@ -355,6 +355,17 @@ export const templatesService = {
     return api.delete(`${BASE_PATH}/${id}`, options);
   },
 
+  /**
+   * Resets one template to the configuration shipped in the currently deployed
+   * image. Destructive: any edit made through the UI is overwritten.
+   *
+   * The endpoint returns 204 with no body, so there is nothing to sort or
+   * validate on the way back out - the caller invalidates and refetches.
+   */
+  async reseed(id: string, options?: ServiceOptions): Promise<void> {
+    await api.post<void>(`${BASE_PATH}/${id}/reseed`, undefined, options);
+  },
+
   cloneTemplate(template: Template): TemplateAttributes {
     const cloned: TemplateAttributes = JSON.parse(
       JSON.stringify(template.attributes),

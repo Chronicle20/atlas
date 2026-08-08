@@ -54,6 +54,7 @@ vi.mock("@/lib/hooks/api/useSeed", () => ({
     data: { fileCount: 2, totalBytes: 1024, updatedAt: null },
   }),
   useDataStatus: () => ({ data: dataStatusData }),
+  useIngestRun: () => ({ data: undefined, isError: false }),
   useDropsSeedStatus: () => emptyStatus,
   useGachaponsSeedStatus: () => emptyStatus,
   useNpcConversationsSeedStatus: () => emptyStatus,

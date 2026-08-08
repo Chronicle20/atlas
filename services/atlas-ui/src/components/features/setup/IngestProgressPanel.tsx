@@ -5,7 +5,7 @@ import {
 } from "@/components/features/setup/ingest-progress";
 
 interface IngestProgressPanelProps {
-  run?: IngestRun;
+  run?: IngestRun | undefined;
   isError: boolean;
 }
 

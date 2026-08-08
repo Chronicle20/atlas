@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { BaselinesPage } from "@/pages/BaselinesPage";
 import type { CanonicalSelection } from "@/lib/headers";
 import type { Baseline } from "@/services/api/baseline.service";
+import type { IngestPhase, IngestRun } from "@/services/api/seed.service";
 
 // The picker has its own tests; stub it with a button that selects GMS 83.1.
 vi.mock("@/components/features/baselines/BaselineTargetPicker", () => ({
@@ -34,6 +35,10 @@ let dataStatus:
       baselineSha256: string | null;
     }
   | undefined;
+let ingestRun: { data: IngestRun | undefined; isError: boolean } = {
+  data: undefined,
+  isError: false,
+};
 const uploadMutate = vi.fn();
 const processMutate = vi.fn();
 const publishMutate = vi.fn();
@@ -47,6 +52,7 @@ vi.mock("@/lib/hooks/api/useCanonicalData", () => ({
   }),
   useCanonicalWzInputStatus: () => ({ data: wzStatus }),
   useCanonicalDataStatus: () => ({ data: dataStatus }),
+  useCanonicalIngestRun: () => ingestRun,
   useUploadCanonicalWz: () => ({ mutate: uploadMutate, isPending: false }),
   useRunCanonicalProcessing: () => ({
     mutate: processMutate,
@@ -58,10 +64,32 @@ vi.mock("@/lib/hooks/api/useCanonicalData", () => ({
   }),
 }));
 
+function ingestRunFixture(
+  phase: IngestPhase,
+  over: Partial<IngestRun> = {},
+): IngestRun {
+  return {
+    runId: "r1",
+    jobName: "j1",
+    scope: "shared",
+    region: "GMS",
+    version: "83.1",
+    phase,
+    startedAt: "2026-08-08T10:00:00Z",
+    finishedAt: null,
+    reason: null,
+    workersTotal: 11,
+    workersComplete: 0,
+    workers: [],
+    ...over,
+  };
+}
+
 beforeEach(() => {
   baselines = [];
   wzStatus = undefined;
   dataStatus = undefined;
+  ingestRun = { data: undefined, isError: false };
   uploadMutate.mockClear();
   processMutate.mockClear();
   publishMutate.mockClear();
@@ -190,5 +218,59 @@ describe("BaselinesPage", () => {
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /replace baseline/i }));
     expect(publishMutate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("BaselinesPage publish gate", () => {
+  it("disables Publish Baseline while a shared ingest is running", async () => {
+    wzStatus = { fileCount: 10, totalBytes: 2048, updatedAt: null };
+    dataStatus = {
+      documentCount: 42,
+      updatedAt: null,
+      baselineRestoredAt: null,
+      baselineSha256: null,
+    };
+    ingestRun = { data: ingestRunFixture("running"), isError: false };
+    render(<BaselinesPage />);
+    fireEvent.click(screen.getByText("pick-gms-83"));
+    const button = await screen.findByRole("button", {
+      name: /publish baseline/i,
+    });
+    expect(button).toBeDisabled();
+    expect(screen.getByText(/cannot publish/i)).toBeInTheDocument();
+  });
+
+  it("enables Publish Baseline when the shared ingest succeeded", async () => {
+    wzStatus = { fileCount: 10, totalBytes: 2048, updatedAt: null };
+    dataStatus = {
+      documentCount: 42,
+      updatedAt: null,
+      baselineRestoredAt: null,
+      baselineSha256: null,
+    };
+    ingestRun = { data: ingestRunFixture("succeeded"), isError: false };
+    render(<BaselinesPage />);
+    fireEvent.click(screen.getByText("pick-gms-83"));
+    const button = await screen.findByRole("button", {
+      name: /publish baseline/i,
+    });
+    expect(button).toBeEnabled();
+  });
+
+  it("enables Publish Baseline when no ingest has been recorded", async () => {
+    wzStatus = { fileCount: 10, totalBytes: 2048, updatedAt: null };
+    dataStatus = {
+      documentCount: 42,
+      updatedAt: null,
+      baselineRestoredAt: null,
+      baselineSha256: null,
+    };
+    ingestRun = { data: ingestRunFixture("none"), isError: false };
+    render(<BaselinesPage />);
+    fireEvent.click(screen.getByText("pick-gms-83"));
+    const button = await screen.findByRole("button", {
+      name: /publish baseline/i,
+    });
+    expect(button).toBeEnabled();
   });
 });

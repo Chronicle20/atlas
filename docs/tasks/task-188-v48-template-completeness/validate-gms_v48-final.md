@@ -1,0 +1,1133 @@
+# validate report
+
+verified 435 / divergent 116 / missing-mode 0 / extra-mode 3 / unverifiable 557 / allowlisted 0
+
+## verified
+
+- ALLIANCEDATA::Decode
+- AvatarLook::Decode
+- CAffectedAreaPool::OnAffectedAreaCreated
+- CAffectedAreaPool::OnAffectedAreaRemoved
+- CAvatar::SetEmotion
+- CCashShop::OnBuy
+- CCashShop::OnBuyCouple
+- CCashShop::OnBuyFriendship
+- CCashShop::OnBuyNormal
+- CCashShop::OnBuyPackage
+- CCashShop::OnCashItemGachaponResult
+- CCashShop::OnCashItemNameChangeResBuyDone
+- CCashShop::OnCashItemResBuyDone
+- CCashShop::OnCashItemResBuyFailed
+- CCashShop::OnCashItemResBuyNormalDone
+- CCashShop::OnCashItemResBuyNormalFailed
+- CCashShop::OnCashItemResBuyPackageDone
+- CCashShop::OnCashItemResBuyPackageFailed
+- CCashShop::OnCashItemResCoupleFailed
+- CCashShop::OnCashItemResDestroyDone
+- CCashShop::OnCashItemResDestroyFailed
+- CCashShop::OnCashItemResExpireDone
+- CCashShop::OnCashItemResFriendShipFailed
+- CCashShop::OnCashItemResGiftDone
+- CCashShop::OnCashItemResGiftFailed
+- CCashShop::OnCashItemResGiftPackageDone
+- CCashShop::OnCashItemResGiftPackageFailed
+- CCashShop::OnCashItemResIncCharacterSlotCountFailed
+- CCashShop::OnCashItemResIncSlotCountFailed
+- CCashShop::OnCashItemResLimitGoodsCountChanged
+- CCashShop::OnCashItemResLoadLockerFailed
+- CCashShop::OnCashItemResLoadWishDone
+- CCashShop::OnCashItemResLoadWishFailed
+- CCashShop::OnCashItemResMoveLtoSFailed
+- CCashShop::OnCashItemResMoveStoLFailed
+- CCashShop::OnCashItemResRebateDone
+- CCashShop::OnCashItemResRebateFailed
+- CCashShop::OnCashItemResSetWishDone
+- CCashShop::OnCashItemResSetWishFailed
+- CCashShop::OnCashItemResTransferWorldDone
+- CCashShop::OnCashItemResTransferWorldFailed
+- CCashShop::OnCashItemResUseCouponDone
+- CCashShop::OnCashItemResUseCouponFailed
+- CCashShop::OnCashShopGachaponStampResult
+- CCashShop::OnCheckTransferWorldPossibleResult
+- CCashShop::OnGift
+- CCashShop::OnOneADay
+- CCashShop::OnSetWish
+- CCashShop::SendBuyAvatarPacket
+- CCashShop::SendGiftsPacket
+- CCashShop::TrySendQueryCashRequest
+- CClientSocket::OnAliveReq
+- CClientSocket::OnAuthenCodeChanged
+- CClientSocket::OnAuthenMessage
+- CClientSocket::OnConnect
+- CClientSocket::OnMigrateCommand
+- CDropPool::OnDropEnterField
+- CDropPool::OnDropLeaveField
+- CEmployeePool::OnEmployeeLeaveField
+- CField::AddBlackList
+- CField::DeleteBlackList
+- CField::InputGuildName
+- CField::OnAdminResult
+- CField::OnDesc
+- CField::OnFieldSpecificData
+- CField::OnPlayJukeBox
+- CField::OnQuiz
+- CField::OnSetObjectState
+- CField::OnSetQuestTime
+- CField::OnSummonItemInavailable
+- CField::OnTransferChannelReqIgnored
+- CField::OnTransferFieldReqIgnored
+- CField::OnWarnMessage
+- CField::SendAcceptFriendMsg
+- CField::SendCreateGuildAgreeMsg
+- CField::SendCreateNewPartyMsg
+- CField::SendDeleteFriendMsg
+- CField::SendInviteGuildMsg
+- CField::SendInviteTradingRoomMsg
+- CField::SendJoinPartyMsg
+- CField::SendKickGuildMsg
+- CField::SendKickPartyMsg
+- CField::SendSetFriendMsg
+- CField::SendSetGradeNameMsg
+- CField::SendSetGuildMarkMsg
+- CField::SendSetGuildNoticeMsg
+- CField::SendSetMemberGradeMsg
+- CField::SendTransferFieldRequest
+- CField::SendWithdrawGuildMsg
+- CField_GuildBoss::BasicActionAttack
+- CField_SnowBall::BasicActionAttack
+- CField_SnowBall::Update
+- CField_Wedding::OnWeddingProgress
+- CFuncKeyMappedMan::SaveFuncKeyMap
+- CItemInfo::GetItemDesc
+- CItemInfo::GetItemName
+- CItemInfo::GetMapString
+- CLogin::MakeVACDlg
+- CLogin::OnCheckDuplicatedIDResult
+- CLogin::OnCheckPasswordResult
+- CLogin::OnCheckPinCodeResult
+- CLogin::OnCheckUserLimitResult
+- CLogin::OnConfirmEULAResult
+- CLogin::OnCreateNewCharacterResult
+- CLogin::OnDeleteCharacterResult
+- CLogin::OnSetAccountResult
+- CLogin::OnUpdatePinCodeResult
+- CLogin::OnWorldInformation
+- CLogin::ResetVAC
+- CLogin::SendCheckPasswordPacket
+- CLogin::SendCheckUserLimitPacket
+- CLogin::SendLoginPacket
+- CLogin::SendSetGenderPacket
+- CLogin::SendViewAllCharPacket
+- CMemoryGameDlg::OnTieRequest
+- CMemoryGameDlg::SendTurnUpCard
+- CMessageBoxPool::OnMessageBoxEnterField
+- CMessageBoxPool::OnMessageBoxLeaveField
+- CMiniRoomBaseDlg::DecodeAvatar
+- CMiniRoomBaseDlg::OnAvatar
+- CMiniRoomBaseDlg::OnEnterBase
+- CMiniRoomBaseDlg::OnLeaveBase
+- CMiniRoomBaseDlg::OnPacketBase#MemoryGameSkip
+- CMiniRoomBaseDlg::SendInviteResult
+- CMob::GenerateMovePath
+- CMob::OnAffected
+- CMob::OnCtrlAck
+- CMob::OnDamaged
+- CMob::OnMove
+- CMob::OnSpecialEffectBySkill
+- CMob::OnStatReset
+- CMob::OnStatSet
+- CMob::OnSuspendReset
+- CMob::SendDropPickUpRequest
+- CMob::TryFirstSelfDestruction
+- CMobPool::OnMobChangeController
+- CMobPool::OnMobEnterField
+- CNpc::GenerateMovePath
+- CNpc::OnMove
+- CNpcPool::OnNpcChangeController
+- CNpcPool::OnNpcEnterField
+- CNpcPool::OnNpcLeaveField
+- COmokDlg::OnRetreatRequest
+- COmokDlg::PutStoneChecker
+- COutPacket::Encode1
+- CPersonalShopDlg::BuyItem
+- CPersonalShopDlg::DeliverBlackList
+- CPersonalShopDlg::MoveItemToInventory
+- CPersonalShopDlg::OnClickBanButton
+- CPersonalShopDlg::PutItem
+- CPet::DoAction
+- CPet::OnAction
+- CRPSGameDlg::OnBtStart
+- CReactorPool::FindHitReactor
+- CReactorPool::OnReactorChangeState
+- CReactorPool::OnReactorEnterField
+- CReactorPool::OnReactorLeaveField
+- CScriptMan::OnAskMenu
+- CScriptMan::OnAskPetAll
+- CScriptMan::OnAskYesNo
+- CScriptMan::OnScriptMessage
+- CStage::OnSetCashShop
+- CStoreBankDlg::OnPacket
+- CSummonedPool::OnAttack
+- CSummonedPool::OnSkill
+- CTownPortalPool::OnTownPortalCreated
+- CTownPortalPool::OnTownPortalRemoved
+- CUIFadeYesNo::OnButtonClicked
+- CUIMessenger::OnChat
+- CUIMessenger::OnCreate
+- CUIMessenger::OnDestroy
+- CUIMessenger::OnLeave
+- CUIMessenger::OnSelfEnterResult
+- CUIStatusBar::ChatLogAdd
+- CUIUserInfo::SetWishItemInfo
+- CUser::GetVecCtrl
+- CUser::OnChat
+- CUser::OnEffect
+- CUser::SetConsumeItemEffect
+- CUser::ShowItemUpgradeEffect
+- CUserLocal::DoActiveSkill_Prepare
+- CUserLocal::HandleXKeyDown
+- CUserLocal::SendSkillCancelRequest
+- CUserLocal::TryDoingBodyAttack
+- CUserPool::OnUserEnterField
+- CUserPool::OnUserLeaveField
+- CUserRemote::OnAttack
+- CUserRemote::OnAvatarModified
+- CUserRemote::OnGuildMarkChanged
+- CUserRemote::OnGuildNameChanged
+- CUserRemote::OnHit
+- CUserRemote::OnMovingShootAttackPrepare
+- CUserRemote::OnReceiveHP
+- CUserRemote::OnResetTemporaryStat
+- CUserRemote::OnSetTemporaryStat
+- CUserRemote::OnSkillPrepare
+- CVecCtrlUser::EndUpdateActive
+- CWishListGiveDlg::OnPacket
+- CWishListRecvDlg::OnPacket
+- CWvsContext::GetCharacterData
+- CWvsContext::GetGuildName
+- CWvsContext::LoadFriend
+- CWvsContext::OnAllianceResult
+- CWvsContext::OnAntiMacroResult
+- CWvsContext::OnAvatarMegaphoneRes
+- CWvsContext::OnBroadcastMsg
+- CWvsContext::OnCashPetFoodResult
+- CWvsContext::OnChangeSkillRecordResult
+- CWvsContext::OnCharacterInfo
+- CWvsContext::OnClaimResult
+- CWvsContext::OnClaimSvrStatusChanged
+- CWvsContext::OnDestroyShopResult
+- CWvsContext::OnIncubatorResult
+- CWvsContext::OnInventoryGrow
+- CWvsContext::OnMapTransferResult
+- CWvsContext::OnMapleTVUseRes
+- CWvsContext::OnMemoResult
+- CWvsContext::OnQuestClear
+- CWvsContext::OnSetAvatarMegaphone
+- CWvsContext::OnSetGender
+- CWvsContext::OnSetTamingMobInfo
+- CWvsContext::OnShopScannerResult
+- CWvsContext::OnSkillLearnItemResult
+- CWvsContext::OnSkillUseResult
+- CWvsContext::OnStatChanged
+- CWvsContext::OnSueCharacterResult
+- CWvsContext::OnTemporaryStatReset
+- CWvsContext::OnTemporaryStatSet
+- CWvsContext::OnTownPortal
+- CWvsContext::OnTradeMoneyLimit
+- CWvsContext::OnWeddingGiftResult
+- CWvsContext::SendActivatePetRequest
+- CWvsContext::SendCharacterInfoRequest
+- CWvsContext::SendConsumeCashItemUseRequest
+- CWvsContext::SendEmotionChange
+- CWvsContext::SendGivePopularityRequest
+- CWvsContext::SendMapTransferRequest
+- CWvsContext::SendPetFoodItemUseRequest
+- CWvsContext::SendSitOnPortableChairRequest
+- CWvsContext::SendSkillLearnItemUseRequest
+- CWvsContext::SendStatChangeRequest
+- CWvsContext::SendTamingMobFoodItemUseRequest
+- CWvsContext::SendUpgradeItemUseRequest
+- CWvsContext::TryRecovery
+- GUILDDATA::Decode
+- GUILDMEMBER::Decode
+- GW_CharacterStat::DecodeChangeStat
+- MiniRoom_OnEnterResult_mode5
+- MiniRoom_OnInvite_m2
+- PARTYDATA::Decode
+- sub_402EE1
+- sub_40E88D
+- sub_41803C
+- sub_42284D
+- sub_453D31
+- sub_453D71
+- sub_453D93
+- sub_453DF4
+- sub_453E13
+- sub_453ECD
+- sub_453F5A
+- sub_4540DA
+- sub_454153
+- sub_45424E
+- sub_4542BF
+- sub_454CB9
+- sub_454CF3
+- sub_454DEF
+- sub_454E26
+- sub_454F18
+- sub_454F4F
+- sub_454FE9
+- sub_455020
+- sub_455172
+- sub_455191
+- sub_4552DF
+- sub_4553C1
+- sub_4553E0
+- sub_455483
+- sub_4554A2
+- sub_4555A0
+- sub_4555BF
+- sub_4556D3
+- sub_45586E
+- sub_455A0E
+- sub_455A7F
+- sub_455C5A
+- sub_455F15
+- sub_455FE0
+- sub_465378
+- sub_49B627
+- sub_49B813
+- sub_49C964
+- sub_49CBEB
+- sub_49CC09
+- sub_49CC27
+- sub_49CCDB
+- sub_49E94A
+- sub_4B0AE5
+- sub_4C3DEF
+- sub_4C4F3B
+- sub_4C5886
+- sub_4C6AEF
+- sub_4C71B5
+- sub_4C95F2
+- sub_4CB90A
+- sub_4CBB78
+- sub_4CBC9A
+- sub_4CBD0E
+- sub_4CBD88
+- sub_4FAAFA
+- sub_4FE15D
+- sub_500174
+- sub_500254
+- sub_50043F
+- sub_500545
+- sub_500693
+- sub_500931
+- sub_5011D6
+- sub_50120A
+- sub_5013ED
+- sub_5016DB
+- sub_5017B6
+- sub_501973
+- sub_502293
+- sub_50232D
+- sub_5028A6
+- sub_502B70
+- sub_5034B2
+- sub_503517
+- sub_5037D5
+- sub_5038F1
+- sub_503956
+- sub_503C92
+- sub_530EE0
+- sub_53875D
+- sub_546A05
+- sub_549040
+- sub_54E2D7
+- sub_5531D5
+- sub_5586F0
+- sub_566A30
+- sub_56D1F0
+- sub_573A54
+- sub_573B11
+- sub_578388
+- sub_57E987
+- sub_582E66
+- sub_5832D1
+- sub_58847F
+- sub_588B4B
+- sub_588D46
+- sub_588DFC
+- sub_58C7CC
+- sub_58DF8A
+- sub_58ED98
+- sub_5997EF
+- sub_5B0C11
+- sub_5B0D5C
+- sub_5B0E90
+- sub_5B1037
+- sub_5B1195
+- sub_5B12E8
+- sub_5B1494
+- sub_5B1640
+- sub_5B18B5
+- sub_5B430A
+- sub_5B4B82
+- sub_5B7422
+- sub_5B7693
+- sub_5B78C0
+- sub_5CA524
+- sub_5CBA1F
+- sub_5CC826
+- sub_5D75AF
+- sub_5D7613
+- sub_5D9424
+- sub_5DA381
+- sub_5E3082
+- sub_5E7F74
+- sub_5E819A
+- sub_5E836C
+- sub_5F9718
+- sub_61B8E5
+- sub_65EA0D
+- sub_65EB4F
+- sub_676664
+- sub_69D6BF
+- sub_69DF44
+- sub_69FA53
+- sub_6A0528
+- sub_6A228C
+- sub_6A3AC7
+- sub_6B277B
+- sub_6B2976
+- sub_6BBC17
+- sub_6D8943
+- sub_6E5BD6
+- sub_6E7CF8
+- sub_6F234D
+- sub_6F3CA3
+- sub_70BD0D
+- sub_70D8DE
+- sub_70D987
+- sub_70DD49
+- sub_713202
+- sub_719DD9
+- sub_71B543
+- sub_71B887
+- sub_71B96B
+- sub_71B9C0
+- sub_71BD0C
+- sub_71BDD8
+- sub_71BEA4
+- sub_71BF70
+- sub_71CD00
+- sub_71CE49
+- sub_71CE62
+- sub_71CEB3
+- sub_71F525
+- sub_71F54E
+- sub_72025D
+- sub_720293
+- sub_72032B
+- sub_720A89
+- sub_721129
+- sub_721465
+- sub_721481
+- sub_7215EA
+- sub_72B0AC
+- sub_72B131
+- sub_733B6B
+- sub_733BAA
+- sub_733BF4
+- sub_733C07
+
+## divergent
+
+- CCashShop::OnCashItemResCoupleDone — length: hand 5 vs live 4
+- CCashShop::OnCashItemResFriendShipDone — length: hand 5 vs live 4
+- CCashShop::OnCashItemResGiftCouponDone — length: hand 5 vs live 4
+- CCashShop::OnCashItemResLoadLockerDone — length: hand 9 vs live 5
+- CCashShop::OnCashItemResult — length: hand 86 vs live 74
+- CCashShop::OnCashItemResult#BUY_NORMAL_FAILED — at [1]: hand=byte live=int32
+- CCashShop::OnCashItemResult#BUY_NORMAL_SUCCESS — length: hand 3 vs live 2
+- CCashShop::OnCashItemResult#BUY_PACKAGE_FAILED — at [1]: hand=byte live=int32
+- CCashShop::OnCashItemResult#COUPLE_FAILED — at [1]: hand=byte live=int32
+- CCashShop::OnCashItemResult#COUPLE_SUCCESS — length: hand 5 vs live 4
+- CCashShop::OnCashItemResult#DESTROY_FAILED — length: hand 2 vs live 1
+- CCashShop::OnCashItemResult#DESTROY_SUCCESS — length: hand 2 vs live 1
+- CCashShop::OnCashItemResult#EXPIRE_DONE — length: hand 2 vs live 1
+- CCashShop::OnCashItemResult#FRIENDSHIP_FAILED — at [1]: hand=byte live=int32
+- CCashShop::OnCashItemResult#FRIENDSHIP_SUCCESS — length: hand 5 vs live 4
+- CCashShop::OnCashItemResult#GIFT_FAILED — length: hand 2 vs live 1
+- CCashShop::OnCashItemResult#GIFT_PACKAGE_FAILED — at [1]: hand=byte live=int32
+- CCashShop::OnCashItemResult#GIFT_PACKAGE_SUCCESS — length: hand 6 vs live 5
+- CCashShop::OnCashItemResult#GIFT_SUCCESS — length: hand 5 vs live 4
+- CCashShop::OnCashItemResult#INC_CHARACTER_SLOT_COUNT_FAILED — length: hand 2 vs live 1
+- CCashShop::OnCashItemResult#INC_CHARACTER_SLOT_COUNT_SUCCESS — length: hand 2 vs live 1
+- CCashShop::OnCashItemResult#LOAD_WISH_FAILED — length: hand 2 vs live 1
+- CCashShop::OnCashItemResult#MOVE_L_TO_S_FAILED — length: hand 2 vs live 1
+- CCashShop::OnCashItemResult#MOVE_S_TO_L_FAILED — length: hand 2 vs live 1
+- CCashShop::OnCashItemResult#REBATE_FAILED — length: hand 2 vs live 1
+- CCashShop::OnCashItemResult#REBATE_SUCCESS — length: hand 3 vs live 2
+- CCashShop::OnCashItemResult#SET_WISH_FAILED — length: hand 2 vs live 1
+- CCashShop::OnCashItemResult#TRANSFER_WORLD_FAILED — length: hand 2 vs live 1
+- CCashShop::OnCheckDuplicatedIDResult — length: hand 1 vs live 2
+- CCashShop::OnNoticeFreeCashItem — length: hand 2 vs live 1
+- CEmployeePool::OnEmployeeEnterField — length: hand 1 vs live 12
+- CEmployeePool::OnEmployeeMiniRoomBalloon — length: hand 1 vs live 7
+- CFadeWnd::SendCloseMessage — length: hand 4 vs live 10
+- CField::OnClock — length: hand 1 vs live 0
+- CField::OnCoupleMessage — length: hand 8 vs live 6
+- CField::OnDestroyClock — length: hand 1 vs live 0
+- CField::OnFieldEffect — hand has only 1 field(s) but live known prefix requires 7
+- CField::OnGroupMessage — length: hand 4 vs live 3
+- CField::OnWhisper — length: hand 28 vs live 14
+- CField::SendChatMsgSlash — length: hand 1 vs live 0
+- CField::TryEnterTownPortal — length: hand 1 vs live 0
+- CLogin::OnViewAllCharResult — length: hand 1 vs live 20
+- CMemoListDlg::SetRet — length: hand 4 vs live 10
+- CMessageBoxPool::OnCreateFailed — length: hand 1 vs live 0
+- CMiniRoomBaseDlg::OnPacketBase — length: hand 1 vs live 18
+- CNpcPool::SetLocalNpc — length: hand 1 vs live 7
+- CPersonalShopDlg::OnRefresh — hand has only 1 field(s) but live known prefix requires 5
+- CPet::OnMove — length: hand 1 vs live 0
+- CPet::OnNameChanged — length: hand 1 vs live 2
+- CRPSGameDlg::SendSelection — length: hand 1 vs live 2
+- CScriptMan::OnAskAvatar — length: hand 1 vs live 3
+- CScriptMan::OnAskMembershopAvatar — length: hand 1 vs live 3
+- CScriptMan::OnAskNumber — length: hand 1 vs live 4
+- CScriptMan::OnAskPet — length: hand 1 vs live 4
+- CScriptMan::OnAskText — length: hand 1 vs live 4
+- CScriptMan::OnPacket — length: hand 1 vs live 0
+- CScriptMan::OnSay — length: hand 1 vs live 3
+- CSecurityClient::OnPacket — length: hand 1 vs live 6
+- CStage::OnSetITC — length: hand 1 vs live 0
+- CSummonedPool::OnMove — length: hand 1 vs live 0
+- CUIGuildBBS::OnComment — length: hand 2 vs live 3
+- CUIGuildBBS::OnCommentDelete — length: hand 2 vs live 3
+- CUIGuildBBS::OnDelete — length: hand 1 vs live 2
+- CUIGuildBBS::OnRegister — length: hand 6 vs live 7
+- CUIGuildBBS::SendLoadListRequest — length: hand 1 vs live 2
+- CUIGuildBBS::SendViewEntryRequest — length: hand 1 vs live 2
+- CUIMessenger::OnAvatar — length: hand 1 vs live 12
+- CUIMessenger::OnBlocked — length: hand 1 vs live 2
+- CUIMessenger::OnEnter — length: hand 1 vs live 15
+- CUIMessenger::OnInvite — length: hand 1 vs live 4
+- CUIMessenger::OnInviteResult — length: hand 1 vs live 2
+- CUIMessenger::OnMigrated — length: hand 1 vs live 14
+- CUIMessenger::OnPacket — length: hand 1 vs live 53
+- CUIMessenger::ProcessChat — length: hand 2 vs live 4
+- CUIMessenger::SendInviteMsg — length: hand 2 vs live 53
+- CUser::OnMiniRoomBalloon — length: hand 1 vs live 8
+- CUser::OnPetPacket — length: hand 1 vs live 0
+- CUser::SetActiveEffectItem — length: hand 1 vs live 0
+- CUserLocal::HandleLButtonClk — length: hand 1 vs live 0
+- CUserLocal::HandleUpKeyDown — length: hand 1 vs live 0
+- CUserPool::OnUserRemotePacket — length: hand 1 vs live 107
+- CUserRemote::OnMove — length: hand 1 vs live 0
+- CWvsContext::OnClearAvatarMegaphone — length: hand 1 vs live 0
+- CWvsContext::OnEntrustedShopCheckResult — length: hand 1 vs live 7
+- CWvsContext::OnGivePopularityResult — length: hand 10 vs live 6
+- CWvsContext::OnGuildResult — length: hand 85 vs live 82
+- CWvsContext::OnMarriageRequest — length: hand 1 vs live 3
+- CWvsContext::OnMarriageResult — length: hand 1 vs live 8
+- CWvsContext::OnMessage — length: hand 29 vs live 25
+- CWvsContext::OnPartyResult — length: hand 34 vs live 31
+- CWvsContext::OnSetClaimSvrAvailableTime — length: hand 1 vs live 2
+- CWvsContext::SendAbilityUpRequest — length: hand 1 vs live 0
+- CWvsContext::SendMigrateToShopRequest — length: hand 1 vs live 0
+- MiniRoom_OnInviteResult_m3 — length: hand 7 vs live 4
+- sub_45487A — length: hand 5 vs live 4
+- sub_45573F — length: hand 5 vs live 4
+- sub_4558DF — length: hand 5 vs live 4
+- sub_4B07CE — length: hand 5 vs live 4
+- sub_4BCE54 — length: hand 0 vs live 10
+- sub_4C5100 — length: hand 2 vs live 5
+- sub_4FFFC4 — length: hand 0 vs live 2
+- sub_50073B — length: hand 0 vs live 1
+- sub_50273F — length: hand 0 vs live 1
+- sub_5459C4 — length: hand 0 vs live 18
+- sub_550383 — length: hand 0 vs live 6
+- sub_568A2A — length: hand 3 vs live 6
+- sub_58883F — length: hand 6 vs live 7
+- sub_5B0AE4 — length: hand 3 vs live 31
+- sub_6ADD4C — length: hand 0 vs live 4
+- sub_6E9923 — length: hand 0 vs live 1
+- sub_712894 — length: hand 0 vs live 1
+- sub_71B265 — length: hand 9 vs live 6
+- sub_71B7D9 — length: hand 2 vs live 1
+- sub_71CF3B — length: hand 0 vs live 2
+- sub_71D059 — length: hand 0 vs live 2
+- sub_720928 — length: hand 4 vs live 3
+
+## missing-mode
+
+
+## extra-mode
+
+- CWvsContext::OnMemoResult#Display — Atlas #Mode case 2 absent from client dispatch
+- CWvsContext::OnMemoResult#SendError — Atlas #Mode case 4 absent from client dispatch
+- CWvsContext::OnMemoResult#SendSuccess — Atlas #Mode case 3 absent from client dispatch
+
+## unverifiable
+
+- CAdminShopDlg::OnPacket — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CCashShop::OnCashItemResult#BUY_FAILED — per-mode shape not extractable (no usable dispatch selector)
+- CCashShop::OnCashItemResult#BUY_PACKAGE_SUCCESS — per-mode shape not extractable (no usable dispatch selector)
+- CCashShop::OnCashItemResult#CashItemMovedToCashInventory — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CCashShop::OnCashItemResult#CashItemMovedToInventory — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CCashShop::OnCashItemResult#CashShopInventory — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CCashShop::OnCashItemResult#CashShopPurchaseSuccess — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CCashShop::OnCashItemResult#GIFT_COUPON_SUCCESS — per-mode shape not extractable (no usable dispatch selector)
+- CCashShop::OnCashItemResult#InventoryCapacityFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CCashShop::OnCashItemResult#InventoryCapacitySuccess — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CCashShop::OnCashItemResult#LIMIT_GOODS_COUNT_CHANGED — per-mode shape not extractable (no usable dispatch selector)
+- CCashShop::OnCashItemResult#LOAD_INVENTORY_FAILURE — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CCashShop::OnCashItemResult#LOAD_WISHLIST — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CCashShop::OnCashItemResult#NAME_CHANGE_BUY_DONE — per-mode shape not extractable (no usable dispatch selector)
+- CCashShop::OnCashItemResult#TRANSFER_WORLD_SUCCESS — per-mode shape not extractable (no usable dispatch selector)
+- CCashShop::OnCashItemResult#UPDATE_WISHLIST — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CCashShop::OnCashItemResult#USE_COUPON_FAILED — per-mode shape not extractable (no usable dispatch selector)
+- CCashShop::OnCashItemResult#USE_COUPON_SUCCESS — per-mode shape not extractable (no usable dispatch selector)
+- CCashShop::OnChargeParamResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CCashShop::OnCheckNameChangePossibleResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CCashShop::OnPurchaseExpChanged — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CCashShop::OnQueryCashResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CCashShop::RequestCashPurchaseRecord — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CCashTradingRoomDlg::Trade — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CClientSocket::OnAliveReq#PingReceive — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CClientSocket::OnAliveReq#PongSend — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CClientSocket::OnConnect#ChannelConnect — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CClientSocket::OnConnect#Hello — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CClientSocket::OnConnect#StartError — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CEmployee::Init — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CEmployee::SetBalloon — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CEntrustedShopDlg::OnRefresh#UpdateMerchant — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnBlowWeather — Unresolved span at [3]; 1 hand field(s) beyond verified prefix
+- CField::OnCharacterSale — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnFieldEffect#BossHp — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnFieldEffect#String — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnFieldEffect#Summon — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnFieldEffect#Tremble — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnFieldObstacleAllReset — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnFieldObstacleOnOff — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnFieldObstacleOnOffStatus — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnHontailTimer — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnItemUpgrade — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnSetQuestClear — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnStalkResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnWhisper#Error — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnWhisper#FindResultCashShop — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnWhisper#FindResultChannel — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnWhisper#FindResultError — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnWhisper#FindResultMap — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnWhisper#Receive — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnWhisper#SendResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::OnZakumTimer — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::Send — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::SendChatMsg — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::SendChatMsgSlash#AdminCommand — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::SendChatMsgSlash#SueCharacter — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::SendTransferChannelRequest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField::TryEnterTownPortal#UseDoor — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_AriantArena::OnShowResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_AriantArena::OnUserScore — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_Battlefield::OnScoreUpdate — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_Battlefield::OnTeamChanged — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_Coconut::BasicActionAttack — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_Coconut::BasicActionAttack#Coconut — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_Coconut::OnCoconutHit — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_Coconut::OnCoconutScore — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_ContiMove::OnContiMove — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_ContiMove::OnContiState — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_GuildBoss::BasicActionAttack#GuildBoss — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_GuildBoss::OnHealerMove — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_GuildBoss::OnPulleyStateChange — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_Massacre::OnMassacreIncGauge — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_MassacreResult::OnMassacreResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_MonsterCarnival::OnEnter — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_MonsterCarnival::OnPersonalCP — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_MonsterCarnival::OnProcessForDeath — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_MonsterCarnival::OnRequestResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_MonsterCarnival::OnShowGameResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_MonsterCarnival::OnShowMemberOutMsg — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_MonsterCarnival::OnTeamCP — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_SnowBall::BasicActionAttack#Snowball — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_SnowBall::OnSnowBallHit — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_SnowBall::OnSnowBallMsg — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_SnowBall::OnSnowBallState — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_SnowBall::OnSnowBallTouch — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_SnowBall::Update#LeftKnockback — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_Tournament::OnPacket — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_Tournament::OnTournament — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_Tournament::OnTournamentMatchTable — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_Tournament::OnTournamentSetPrize — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_Tournament::OnTournamentUEW — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_Wedding::OnWeddingProgress#Action — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_Wedding::OnWeddingProgress#Talk — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_Witchtower::OnPacket — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CField_Witchtower::OnScoreUpdate — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CFuncKeyMappedMan::OnInit — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CFuncKeyMappedMan::OnPetConsumeItemInit — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CFuncKeyMappedMan::OnPetConsumeMPItemInit — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CHATLOG_ADD — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnBidAuctionFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnBuyItemDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnBuyItemFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnBuyWishDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnBuyWishFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnBuyZzimItemDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnBuyZzimItemFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnCancelSaleItemDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnCancelSaleItemFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnCancelWishDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnCancelWishFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnDeleteZzimDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnDeleteZzimFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnGetITCListDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnGetITCListFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnGetSearchITCListDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnGetSearchITCListFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnGetUserPurchaseItemDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnGetUserPurchaseItemFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnGetUserSaleItemDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnGetUserSaleItemFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnLoadWishSaleListDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnLoadWishSaleListFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnMoveITCPurchaseItemLtoSDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnMoveITCPurchaseItemLtoSFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResRegisterSaleEntryDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResRegisterSaleEntryFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#BidAuctionFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#BuyItemDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#BuyItemFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#BuyWishDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#BuyWishFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#BuyZzimItemDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#BuyZzimItemFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#CancelSaleItemDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#CancelSaleItemFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#CancelWishDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#CancelWishFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#DeleteZzimDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#DeleteZzimFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#GetItcListDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#GetItcListFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#GetSearchItcListDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#GetSearchItcListFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#GetUserPurchaseItemDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#GetUserPurchaseItemFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#GetUserSaleItemDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#GetUserSaleItemFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#LoadWishSaleListDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#LoadWishSaleListFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#Mode — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#NotifyCancelWishResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#RegisterSaleEntryDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#RegisterSaleEntryFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#RegisterWishItemDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#RegisterWishItemFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#SaleCurrentItemToWishDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#SaleCurrentItemToWishFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#SetZzimDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#SetZzimFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNormalItemResult#SuccessBidInfo — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnNotifyCancelWishResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnQueryCashResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnRegisterWishItemDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnRegisterWishItemFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnSaleCurrentItemToWishDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnSaleCurrentItemToWishFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnSetZzimDone — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnSetZzimFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CITC::OnSuccessBidInfoResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::ChangeStepImmediate — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::LoginAuth — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::OnAcceptLicense — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::OnCheckPasswordResult#AuthLoginFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::OnCheckPasswordResult#AuthPermanentBan — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::OnCheckPasswordResult#AuthTemporaryBan — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::OnCheckPinCodeResult#RegisterPin — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::OnCreateNewCharacterResult#AddCharacterError — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::OnGuestIDLoginResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::OnLatestConnectedWorld — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::OnRecommendWorldMessage — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::OnSelectCharacterByVACResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::OnSelectCharacterResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::OnSetAccountResult#AfterLogin — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::OnViewAllCharResult#CharacterViewAllCharacters — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::OnViewAllCharResult#CharacterViewAllCount — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::OnWorldInformation#ServerListEnd — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::SendCheckDuplicateIDPacket — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::SendDeleteCharPacket — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::SendNewCharPacket — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::SendSelectCharPacket — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::SendSelectCharPacketByVAC — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CLogin::SendSelectCharPacketByVAC#AllCharacterListSelect — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMapLoadable::OnSetBackEffect — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMapLoadable::SetObjectState — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMapleTVMan::OnClearMessage — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMapleTVMan::OnSendMessageResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMapleTVMan::OnSetMessage — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMiniRoomBaseDlg::CheckAndSendChat — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMiniRoomBaseDlg::OnCheckSSN2Static — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMiniRoomBaseDlg::OnEnterResultStatic — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMiniRoomBaseDlg::OnPacketBase#Enter — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMiniRoomBaseDlg::OnPacketBase#EnterResultError — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccess — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMiniRoomBaseDlg::OnPacketBase#Invite — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMiniRoomBaseDlg::OnPacketBase#InviteResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMiniRoomBaseDlg::OnPacketBase#Leave — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMiniRoomBaseDlg::OnPacketBase#MemoryGameResult — per-mode shape not extractable (no usable dispatch selector)
+- CMob::Init — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMob::OnCatchEffect — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMob::OnEffectByItem — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMob::OnHPIndicator — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMob::OnIncMobChargeCount — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMob::OnMobAttackedByMob — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMob::OnMobSpeaking — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMob::SetDamagedByMob — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMob::SetTemporaryStat — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMob::Update — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMobPool::OnMobCrcKeyChanged — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CMobPool::OnMobLeaveField — Unresolved span at [2]; 1 hand field(s) beyond verified prefix
+- CNpc::Init — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CNpc::OnSetSpecialAction — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CNpc::OnUpdateLimitedInfo — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CParcelDlg::OnPacket — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CPersonalShopDlg::BuyItem#Merchant — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CPersonalShopDlg::MoveItemToInventory#Merchant — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CPersonalShopDlg::PutItem#Merchant — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CPet::Init — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CPet::OnActionCommand — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CPet::OnLoadExceptionList — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CPet::SendUpdateExceptionListRequest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CQuest::StartQuest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CQuest::StartQuest#ActionScriptEnd — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CQuest::StartQuest#ActionScriptStart — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CRPSGameDlg::OnPacket#END — per-mode shape not extractable (no usable dispatch selector)
+- CRPSGameDlg::OnPacket#OPEN — per-mode shape not extractable (no usable dispatch selector)
+- CRPSGameDlg::OnPacket#RESULT — per-mode shape not extractable (no usable dispatch selector)
+- CRPSGameDlg::OnPacket#START_SELECT — per-mode shape not extractable (no usable dispatch selector)
+- CScriptMan::OnAskAvatar#AskAvatar — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnAskBoxText — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnAskBoxText#AskBoxText — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnAskMembershopAvatar#AskMemberShopAvatar — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnAskMenu#AskMenu — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnAskMenu#Selection — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnAskNumber#AskNumber — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnAskPet#AskPet — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnAskPetAll#AskPetAll — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnAskQuiz#AskQuiz — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnAskSlideMenu#AskSlideMenu — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnAskSpeedQuiz#AskSpeedQuiz — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnAskText#AskText — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnAskText#Reply — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnAskYesNo#AskYesNo — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnSay#Reply — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnSay#Say — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnSayImage — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CScriptMan::OnSayImage#SayImage — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CSecurityClient::OnCheckClientIntegrityRequest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::OnPacket — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::OnPacket#GenericError — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::OnPacket#GenericErrorWithReason — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::OnPacket#InventoryFull — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::OnPacket#NeedMoreItems — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::OnPacket#NotEnoughMoney — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::OnPacket#NotEnoughMoney2 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::OnPacket#Ok — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::OnPacket#OutOfStock — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::OnPacket#OutOfStock2 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::OnPacket#OutOfStock3 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::OnPacket#Simple — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::OnPacket#TradeLimit — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::SendBuyRequest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::SendPacket — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::SendRechargeRequest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::SendSellRequest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CShopDlg::SetShopDlg — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CStage::OnSetField — Unresolved span at [15]; 34 hand field(s) beyond verified prefix
+- CStage::OnSetField#WarpToMap — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CSummonedPool::OnCreated — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CSummonedPool::OnHit — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CSummonedPool::OnRemoved — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CTradingRoomDlg::PutItem — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CTradingRoomDlg::PutMoney — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CTradingRoomDlg::Trade — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CTrunkDlg::OnPacket — Unresolved span at [7]; 3 hand field(s) beyond verified prefix
+- CTrunkDlg::OnPacket#ErrorMessage — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CTrunkDlg::OnPacket#ErrorNotEnoughMesos — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CTrunkDlg::OnPacket#ErrorOneOfAKind — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CTrunkDlg::OnPacket#RetrieveAssets — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CTrunkDlg::OnPacket#Show — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CTrunkDlg::OnPacket#StoreAssets — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CTrunkDlg::OnPacket#UpdateAssets — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CTrunkDlg::OnPacket#UpdateMeso — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CTrunkDlg::SendPacket — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CTrunkDlg::SetGetItems — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CTutor::OnMessage — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUIAntiMacro::SetRet — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUIFadeYesNo::OnButtonClicked#Join — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUIGuildBBS::OnGuildBBSPacket — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUIGuildBBS::OnGuildBBSPacket#BBSEntryNotFound — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUIGuildBBS::OnGuildBBSPacket#BBSThread — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUIGuildBBS::OnGuildBBSPacket#BBSThreadList — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUIMessenger::OnPacket#Add — per-mode shape not extractable (no usable dispatch selector)
+- CUIMessenger::OnPacket#Chat — per-mode shape not extractable (no usable dispatch selector)
+- CUIMessenger::OnPacket#InviteDeclined — per-mode shape not extractable (no usable dispatch selector)
+- CUIMessenger::OnPacket#InviteSent — per-mode shape not extractable (no usable dispatch selector)
+- CUIMessenger::OnPacket#Join — per-mode shape not extractable (no usable dispatch selector)
+- CUIMessenger::OnPacket#Remove — per-mode shape not extractable (no usable dispatch selector)
+- CUIMessenger::OnPacket#RequestInvite — per-mode shape not extractable (no usable dispatch selector)
+- CUIMessenger::OnPacket#Update — per-mode shape not extractable (no usable dispatch selector)
+- CUIMessenger::SendPacket — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUIMonsterCarnival::RequestSend — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUIStatusBar::SendCoupleMessage — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUIStatusBar::SendGroupMessage — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUser::OnADBoard — Unresolved span at [2]; 1 hand field(s) beyond verified prefix
+- CUser::OnEmotion — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUser::OnRandomEmotion — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::CheckPortal_Collision — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnBalloonMsg — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnHireTutor — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnIncComboResponse — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnMakerResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnMesoGive_Failed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnMesoGive_Succeeded — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnNotifyHPDecByField — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnOpenClassCompetitionPage — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnOpenUI — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnPlayEventSound — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnPlayMinigameSound — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnQuestResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnSetDirectionMode — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnSetStandAloneMode — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnSitResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnSkillCooltimeSet — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnTeleport — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnTutorMsg — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnTutorMsg#Idx — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::OnTutorMsg#Message — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::SendBanMapByMobRequest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::SetMonsterBookCover — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::TalkToNpc — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::TryDoingMagicAttack — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::TryDoingMeleeAttack — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::TryDoingNormalAttack — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::TryDoingShootAttack — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserLocal::Update — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserRemote::OnPetActivated — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserRemote::OnSetActivePortableChair — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserRemote::OnShowUpgradeTombEffect — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserRemote::OnSkillCancel — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUserRemote::OnThrowGrenade — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CUtilDlgEx::SetUtilDlgEx_INPUT_STR — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CVecCtrlSummoned::EndUpdateActive — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnBonusExpRateChanged — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnBridleMobCatchFail — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnBroadcastMsg#Megaphone — per-mode shape not extractable (no usable dispatch selector)
+- CWvsContext::OnBroadcastMsg#SuperMegaphone — per-mode shape not extractable (no usable dispatch selector)
+- CWvsContext::OnCancelNameChangeResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnCancelNameChangebyOther — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnCancelTransferWorldResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnEntrustedShopCheckResult#ConfirmManage — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnEntrustedShopCheckResult#ErrorSimple — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnEntrustedShopCheckResult#FreeFormNotice — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnEntrustedShopCheckResult#OpenShop — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnEntrustedShopCheckResult#RemoteShopWarp — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnEntrustedShopCheckResult#ShopRename — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnEntrustedShopCheckResult#ShopSearch — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFakeGMNotice — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFamilyChartResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFamilyFamousPointIncResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFamilyInfoResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFamilyJoinAccepted — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFamilyJoinRequest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFamilyJoinRequestResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFamilyNotifyLoginOrLogout — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFamilyPrivilegeList — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFamilyResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFamilySetPrivilege — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFamilySummonRequest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFieldSetVariable — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnForcedStatReset — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnForcedStatSet — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFriendResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFriendResult#AlreadyBuddy — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFriendResult#CannotBuddyGm — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFriendResult#CapacityUpdate — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFriendResult#ChannelChange — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFriendResult#CharacterNotFound — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFriendResult#Invite — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFriendResult#ListFull — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFriendResult#ListUpdate — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFriendResult#OtherListFull — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFriendResult#UnknownError — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFriendResult#UnknownError2 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFriendResult#UnknownError3 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFriendResult#UnknownError4 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnFriendResult#Update — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGatherItemResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGivePopularityResult#ErrorResponse — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGivePopularityResult#GiveResponse — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGivePopularityResult#ReceiveResponse — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildBBSPacket — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#BoardAuthKeyUpdate — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#CapacityChange — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#CreateError — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#CreateErrorCannotAsAdmin — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#CreateErrorDisagreed — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#CreateErrorNameInUse — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#Disband — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#DisbandError — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#EmblemChange — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#IncreaseCapacityError — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#Info — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#Invite — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#InviteDenied — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#InviteErrorAnotherInvite — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#InviteErrorNotAcceptingInvites — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#JoinErrorAlreadyJoined — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#JoinErrorMaxMembers — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#JoinErrorNotInChannel — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#MemberExpel — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#MemberExpelledErrorNotInGuild — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#MemberJoined — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#MemberLeft — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#MemberQuitErrorNotInGuild — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#MemberStatusUpdate — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#MemberTitleUpdate — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#MemberUpdate — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#NoticeChange — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#QuestErrorDisconnected — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#QuestErrorLessThanSixMembers — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#QuestWaitingNotice — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#RequestAgreement — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#RequestEmblem — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#RequestName — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#SetSkillResponse — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#ShowTitles — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnGuildResult#TitleChange — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnHourChanged — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnImitatedNPCData — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnImitatedNPCResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnInventoryOperation — Unresolved span at [8]; 2 hand field(s) beyond verified prefix
+- CWvsContext::OnInventoryOperation#Add — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnInventoryOperation#ChangeBatch — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnInventoryOperation#ChangeMove — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnInventoryOperation#QuantityUpdate — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnInventoryOperation#Remove — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnLimitedNPCDisableInfo — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMacroSysDataInit — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMemoNotify_Receive — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMemoResult#Display — per-mode selector matched no reads
+- CWvsContext::OnMemoResult#SendError — per-mode selector matched no reads
+- CWvsContext::OnMemoResult#SendSuccess — per-mode selector matched no reads
+- CWvsContext::OnMessage#CashItemExpire — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#CompleteQuestRecord — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#DropLossStackableItem — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#DropLossUnStackableItem — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#DropPickUpGameFileDamaged — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#DropPickUpInventoryFull — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#DropPickUpItemUnavailable — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#DropPickUpMeso — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#DropPickUpStackableItem — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#DropPickUpUnStackableItem — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#ForfeitQuestRecord — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#GeneralItemExpire — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#GiveBuff — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#IncreaseExperience — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#IncreaseFame — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#IncreaseGuildPoint — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#IncreaseMeso — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#SystemMessage — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMessage#UpdateQuestRecord — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMonsterBookSetCard — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnMonsterBookSetCover — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnNewYearCardRes — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnNotifyJobChange — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnNotifyLevelUp — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnNotifyMarriedPartnerMapTransfer — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnNotifyWedding — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnOpenFullClientDownloadLink — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#AlreadyJoined1 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#AlreadyJoined2 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#BeginnerCannotCreate — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#BlockingInvitations — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#ChangeLeader — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#Created — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#Disband — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#GmCannotCreate — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#Invite — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#InviteReject — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#Join — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#Left — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#NotInParty — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#OnlySameChannel — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#OnlyWithinVicinity — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#OperationBody — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#PartyFull — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#RequestDenied — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#TakingCareOfInvitation — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#UnableToFindCharacter — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#UnableToFindInChannel — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#UnableToHandOver — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyResult#Update — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPartyValue — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnPotionDiscountRateChanged — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnRandomMorphRes — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnScriptProgressMessage — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnSetPotionDiscountRate — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnSetWeekEventMessage — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnShopLinkResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnSortItemResult — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::OnSuccessInUsegachaponBox — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::ResignQuest#Action — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::SendAbilityUpRequest#DistributeAp — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::SendDropMoneyRequest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::SendGatherItemRequest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::SendGetUpFromChairRequest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::SendMapTransferItemUseRequest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::SendSkillUpRequest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::SendSortItemRequest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::SendStatChangeItemCancelRequest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CWvsContext::SendStatChangeItemUseRequestByPetQ — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CharacterData::Decode — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- CharacterData::SetQuest — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- GW_CharacterStat::Decode — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- GW_CharacterStat::DecodeMoney — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- GW_ItemSlotBase::Decode — Unresolved span at [1]; 1 hand field(s) beyond verified prefix
+- GW_NewYearCardRecord::Decode — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- HIBYTE — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- MobStat::DecodeTemporary — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- SKILLENTRY::GetSpecialUOL — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- SecondaryStat::DecodeForLocal — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- SecondaryStat::DecodeForRemote — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- ZRef<CharacterData> — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- _bstr_t::_bstr_t — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- alloca — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- atoi — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- dword_80EB98 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- dword_977F70 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- dword_977F88 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- dword_AA75C0 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- dword_AA75D8 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- dword_B0FEA4 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- dword_B0FEA8 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- dword_B0FEC0 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- is_throw_bomb_skill — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- sub_49C882 — Unresolved span at [3]; 1 hand field(s) beyond verified prefix
+- sub_49D320 — Unresolved span at [9]; 28 hand field(s) beyond verified prefix
+- sub_4C7B59 — Unresolved span at [7]; 10 hand field(s) beyond verified prefix
+- sub_4C930A — Unresolved span at [3]; 1 hand field(s) beyond verified prefix
+- sub_502E3A — Unresolved span at [1]; 1 hand field(s) beyond verified prefix
+- sub_657679 — base resolve failed: idasrc: decompile : Failed to parse address (missing 0x prefix): 
+- sub_71FF8E — Unresolved span at [15]; 1 hand field(s) beyond verified prefix
+
+## allowlisted
+
+

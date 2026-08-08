@@ -1,0 +1,66 @@
+{
+  "service": "task-188-v48-template-completeness (libs/atlas-packet, services/atlas-configurations, tools/packet-audit)",
+  "path": "libs/atlas-packet; services/atlas-configurations/atlas.com/configurations; tools/packet-audit",
+  "date": "2026-08-07",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "N/A (no domain packages in diff scope)",
+      "type": "domain",
+      "checks": [
+        { "id": "DOM-01..24", "name": "domain CRUD checklist", "status": "pass", "evidence": "N/A per run instructions — no model.go/resource.go package in the 32 changed files; not counted against overall status" }
+      ]
+    },
+    {
+      "name": "DOM-25 client wire values",
+      "type": "support",
+      "checks": [
+        { "id": "DOM-25", "name": "New/changed writers with client-interpreted sub-op codes are config-resolved", "status": "pass", "evidence": "services/atlas-configurations/seed-data/templates/template_gms_48_1.json new ShopScannerResult (0x39) and MessengerOperation (0xEE) writer entries carry options.operations tables matching WithResolvedCode call sites in libs/atlas-packet/merchant/shop_scanner_body.go and libs/atlas-packet/messenger/operation_body.go" }
+      ]
+    },
+    {
+      "name": "DOM-26 goroutine guard",
+      "type": "support",
+      "checks": [
+        { "id": "DOM-26", "name": "No bare go statements", "status": "pass", "evidence": "tools/goroutine-guard.sh exits 0 repo-wide; no go statements added by this diff" }
+      ]
+    },
+    {
+      "name": "Version-gating idiom",
+      "type": "support",
+      "checks": [
+        { "id": "VER-01", "name": "set_field.go damage-seed gate uses MajorAtLeast idiom", "status": "fail", "evidence": "libs/atlas-packet/field/clientbound/set_field.go:74 and :126 use raw `t.MajorVersion() > 28` instead of t.MajorAtLeast(29); sibling condition on adjacent lines correctly uses t.MajorAtLeast(61)" },
+        { "id": "VER-02", "name": "model/monster.go legacy-v12-tail gate uses MajorAtMost idiom", "status": "fail", "evidence": "libs/atlas-packet/model/monster.go:537 mobLegacyV12Tail uses raw `t.MajorVersion() <= 12` instead of the available t.MajorAtMost(12) (libs/atlas-tenant/tenant.go:98), unused anywhere in atlas-packet" },
+        { "id": "VER-03", "name": "npc/clientbound/spawn.go hasEnabledFlag uses MajorAtLeast idiom", "status": "fail", "evidence": "libs/atlas-packet/npc/clientbound/spawn.go:35 uses raw `t.MajorVersion() >= 61` instead of t.MajorAtLeast(61), inconsistent with hasPetSpawnLead/hasReactorName/hasWorldBalloons in the same diff" },
+        { "id": "VER-04", "name": "No regression to an already-verified version's wire bytes", "status": "pass", "evidence": "All version-gate changes narrow only the v48 (or, for effect_weather.go, v61) boundary; all pre-existing round-trip/byte-fixture tests for v61/v72/v79/v83/v84/v87/v95/JMS still pass" }
+      ]
+    },
+    {
+      "name": "Testing guide / anti-patterns",
+      "type": "support",
+      "checks": [
+        { "id": "TEST-01", "name": "Byte-fixture tests cite IDA evidence, no invented values", "status": "pass", "evidence": "all new *_v48_test.go files cite IDA addresses and Decode* call sequences per CLAUDE.md Verification Over Memory" },
+        { "id": "TEST-02", "name": "go test -count=1 clean in all affected modules", "status": "pass", "evidence": "libs/atlas-packet, services/atlas-configurations/atlas.com/configurations, tools/packet-audit all pass" },
+        { "id": "TEST-03", "name": "Kafka producer stubbing (DOM-24)", "status": "pass", "evidence": "N/A — no emit/AndEmit/Produce calls in changed files" }
+      ]
+    },
+    {
+      "name": "File Responsibilities / External HTTP / Scaffolding",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-01..06", "name": "File responsibilities checklist", "status": "pass", "evidence": "N/A — no Processor/RestModel/entity/administrator/provider files in scope" },
+        { "id": "EXT-01..04", "name": "External HTTP client checklist", "status": "pass", "evidence": "N/A — no cross-service REST client code in scope" },
+        { "id": "SCAFFOLD-01..08", "name": "Service scaffolding checklist", "status": "pass", "evidence": "N/A — no new service directory or new atlas-channel Writer/Handler constant registered" }
+      ]
+    }
+  ],
+  "blocking": [
+    "VER-01: libs/atlas-packet/field/clientbound/set_field.go:74,126 — raw `t.MajorVersion() > 28` comparison; use t.MajorAtLeast(29)",
+    "VER-02: libs/atlas-packet/model/monster.go:537 — raw `t.MajorVersion() <= 12` comparison; use t.MajorAtMost(12)",
+    "VER-03: libs/atlas-packet/npc/clientbound/spawn.go:35 — raw `t.MajorVersion() >= 61` comparison; use t.MajorAtLeast(61)"
+  ],
+  "nonBlocking": []
+}

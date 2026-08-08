@@ -1,0 +1,115 @@
+# coverage-manifest — task-188 (gms_v48 template completeness)
+#
+# Scope: bring the gms_v48 tenant socket template up to the coverage the other
+# version columns already carry. The template gained 58 handler/writer bindings
+# (146 -> 204 entries); the codec work below is what those bindings exposed.
+#
+# Written retroactively, at the pre-PR review step, after the completeness
+# critic flagged its absence. Every entry is derived from the branch's actual
+# git + matrix delta against origin/main, not from intent.
+
+ops:
+  # Promoted n-a -> verified on gms_v48 by this branch (15).
+  - CANNOT_SPAWN_KITE                       # clientbound
+  - MOB_AFFECTED                            # clientbound
+  - MOB_DROP_PICKUP_REQUEST                 # serverbound
+  - PET_FOOD                                # serverbound
+  - REACTOR_DESTROY                         # clientbound
+  - REACTOR_HIT                             # clientbound
+  - REMOVE_DOOR                             # clientbound
+  - REMOVE_KITE                             # clientbound
+  - SPAWN_DOOR                              # clientbound
+  - SPAWN_KITE                              # clientbound
+  - SPAWN_MONSTER                           # clientbound
+  - SPAWN_NPC                               # clientbound
+  - SPAWN_NPC_REQUEST_CONTROLLER            # clientbound
+  - SPAWN_PET                               # serverbound
+  - USE_UPGRADE_SCROLL                      # serverbound
+
+reclassified:
+  # n-a -> incomplete: the v48 switch-walk proved these ops DO exist on v48, so
+  # "not applicable" was wrong. They are now honestly graded as unfinished
+  # rather than silently excluded. No codec claims coverage for them.
+  - ENTRUSTED_SHOP_CHECK_RESULT             # clientbound
+  - KILL_MONSTER                            # clientbound
+  - REMOVE_ITEM_FROM_MAP                    # clientbound
+  - REMOVE_NPC                              # clientbound
+  - SPAWN_MONSTER_CONTROL                   # clientbound
+  - SPAWN_PET                               # clientbound
+
+  # n-a -> partial / incomplete -> partial: wired and routed, tier-1 fixture
+  # still owed.
+  - AVATAR_MEGAPHONE_RESULT                 # clientbound
+  - DROP_ITEM_FROM_MAPOBJECT                # clientbound
+  - PLAY_JUKEBOX                            # clientbound
+  - REACTOR_SPAWN                           # clientbound
+
+  # verified -> n-a. NOT a regression: CField::OnPacket @0x4c66f2 case 'U'(85)
+  # is ?OnBlowWeather@CField@@ @0x4c930a, not the obstacle list. Neither
+  # CField::OnFieldObstacleOnOff nor ::OnFieldObstacleOnOffStatus resolves in
+  # the v48 IDB, so the op does not exist on this version and the prior ✅ was
+  # attached to the wrong handler. See commit 5270b70fe.
+  - FIELD_OBSTACLE_ONOFF_LIST               # clientbound
+
+versions:
+  # The task is scoped to gms_v48, but four codec deltas below have boundaries
+  # that necessarily decide behaviour for neighbouring legacy columns. Those
+  # versions are listed because they are TOUCHED, not because they are claimed
+  # verified — see fields[] for the per-gate evidence status.
+  - gms_v48                                 # the task's column
+  - gms_v61                                 # boundary decisions only
+  - gms_v72                                 # boundary decisions only
+  - gms_v79                                 # boundary decisions only
+
+fields:
+  - "cash/serverbound/shop_operation_increase_storage.go: currency Encode4 gated
+     OFF for v48. VERIFIED — CCashShop::OnIncTrunkCount @0x44aad1 encodes three
+     bytes, no Encode4; v83 @0x46c55b and v87 @0x4763e0 read the wider shape.
+     v61/v72/v79 are UNRESOLVED (export carries an 'Unresolved' stub) and the
+     gate deliberately excludes v48 only rather than guessing a boundary."
+
+  - "field/clientbound/effect_weather.go: leading-bool gate moved from
+     'less than 61' to 'equals 61'. VERIFIED for v48 (sub_4C930A reads Decode1
+     @0x4c9328 BEFORE Decode4(itemId) @0x4c932e) and for v61 (sub_4ED39C
+     @0x4ed39c reads Decode4 first, no leading byte). v72/v79 are NOT verified
+     and remain on encodeGMS; flagged in the codec comment."
+
+  - "reactor/clientbound/spawn.go: trailing reactor-name string gated at the
+     v79/v83 boundary, NOT this task's v48/v61 line. VERIFIED on both sides —
+     v48 @0x5a54b4, v72 @0x69207c, v79 @0x6b77bb read six fields and no name;
+     v83 @0x735127, v84 @0x75271c, v87 @0x77af9c, v95 @0x6cf490 follow with a
+     DecodeStr. This CHANGES v61/v72/v79 output: Atlas previously wrote all
+     four legacy versions a trailing string their clients never read. No
+     already-verified cell regressed (full matrix diff: zero non-v48 cell
+     changes)."
+
+  - "pet/serverbound/spawn.go: trailing 'lead' byte gated at v61. Bounds
+     VERIFIED — absent v48 (CWvsContext::SendActivatePetRequest @0x71d118,
+     two fields), present v72 (@0x91c241, Encode1(lead) @0x91c529), v87
+     @0xabbb70 and v95 @0x9f6980 keep the three-field shape. The v61 placement
+     itself is INFERRED and labelled as such in the codec: the v61 IDB names no
+     equivalent send-site and gms_v61.yaml registers no serverbound SPAWN_PET,
+     so no matrix cell depends on the choice. Re-derive before trusting it if a
+     v61 tenant ever routes this op."
+
+  - "model/monster.go, npc/clientbound/spawn.go, npc/clientbound/
+     spawn_request_controller.go, login/clientbound/server_list_entry.go,
+     field/clientbound/set_field.go: v48 field-presence gates, each pinned to
+     per-version IDA addresses in the codec comments."
+
+out_of_scope:
+  # Wired into the v48 template and routed, but NOT verified by this branch —
+  # they hold the 'incomplete'/'partial' grades listed under reclassified[].
+  - "gms_v48 tier-1 fixtures for the four partial cells above"
+
+  # Five CASHSHOP_OPERATION arms still owe a byte fixture on v48 — see
+  # cash-fixture-demotions.md for why they lost the ✅ they used to carry.
+  - CASHSHOP_OPERATION_BUY                  # gms_v48 fixture owed
+  - CASHSHOP_OPERATION_BUY_COUPLE           # gms_v48 fixture owed
+  - CASHSHOP_OPERATION_BUY_FRIENDSHIP       # gms_v48 fixture owed
+  - CASHSHOP_OPERATION_BUY_PACKAGE          # gms_v48 fixture owed
+  - CASHSHOP_OPERATION_GIFT                 # gms_v48 fixture owed
+
+  # Boundary re-derivation for the legacy columns this branch touched but did
+  # not verify (effect_weather v72/v79; increase-storage v61/v72/v79).
+  - "gms_v61/v72/v79 boundary verification for the two unresolved gates"

@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldKiteDestroy
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CMessageBoxPool::OnMessageBoxLeaveField
+    address: "0x5438de"
+    decompile_sha256: 631c7daf9abc9c66cb9d30e1bfc29dcc19cfd494b55316ebe7f6156ca31f7aca
+verifies:
+    - libs/atlas-packet/field/clientbound/kite_v48_test.go#TestKiteDestroyBytesV48

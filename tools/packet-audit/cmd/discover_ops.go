@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -26,7 +25,7 @@ type discoverOpsOpts struct {
 	Dispatchers []string // one or more dispatcher names/addresses
 	IDAURL      string
 	IDAPort     int
-	IDADatabase string
+	IDADatabase string // session id for the session-based IDA-MCP server
 	Out         string // worklist markdown path
 	Apply       bool
 }
@@ -75,16 +74,7 @@ func runDiscoverOps(args []string, stderr io.Writer) int {
 		return 3
 	}
 
-	var client idasrc.MCPClient
-	hc := &http.Client{Timeout: 60 * time.Second}
-	switch {
-	case opts.IDADatabase != "":
-		client = idasrc.NewMCPHTTPClientWithDatabase(opts.IDAURL, hc, opts.IDADatabase)
-	case opts.IDAPort != 0:
-		client = idasrc.NewMCPHTTPClientWithInstance(opts.IDAURL, hc, opts.IDAPort)
-	default:
-		client = idasrc.NewMCPHTTPClient(opts.IDAURL, hc)
-	}
+	client := newIDAClient(opts.IDAURL, 60*time.Second, opts.IDAPort, opts.IDADatabase)
 	return discoverOpsRun(opts, client, stderr)
 }
 

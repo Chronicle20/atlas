@@ -1,7 +1,7 @@
 {
   "WriterName": "PetSpawn",
   "IDAName": "CWvsContext::SendActivatePetRequest",
-  "Address": "",
+  "Address": "0x71d118",
   "Variant": "GMS/v48",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/pet/serverbound/spawn.go",
@@ -10,19 +10,19 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
@@ -30,10 +30,10 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 1,
+      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
     }
   ],
-  "Verdict": 2,
+  "Verdict": 1,
   "FlatInvalid": false
 }

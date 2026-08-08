@@ -80,11 +80,11 @@ func main() {
 	// templates are imported, not whether the service knows what ships - an
 	// operator who has disabled seeding still needs drift detection and the
 	// reset button.
+	// InitShippedCatalog already logs the outcome itself (directory + entry
+	// count on success, or a WARN when the catalog is empty) - a second log
+	// line here would either duplicate it or, worse, contradict the WARN with
+	// a trailing INFO "loaded". See templates/shipped.go.
 	catalog := templates.InitShippedCatalog(l, filepath.Join(seedConfig.SeedPath, "templates"))
-	l.WithFields(map[string]interface{}{
-		"path":  filepath.Join(seedConfig.SeedPath, "templates"),
-		"count": catalog.Len(),
-	}).Info("Shipped template catalog loaded")
 
 	s := seeder.NewSeeder(l, rt.Context(), db, seedConfig, catalog)
 	if err := s.Run(); err != nil {

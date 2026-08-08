@@ -85,6 +85,33 @@ kafka/consumer/mist  ◄──────────────── EVENT_T
 > than dropped because atlas-channel genuinely uses the cap for `mobCount`;
 > removing it would silently uncap AoE target selection.
 
+> **Correction (live test, 2026-08-08) — the DoT never ticked in the ephemeral
+> env, for a reason outside this design.**
+>
+> With the rect lookup fixed, `atlas-maps` logged
+> `MistTick: mist [...] applied [POISON] to 1 of 1 monsters in rect` every ~3s
+> and the monsters REST showed the effect landing
+> (`{sourceSkillId: 2111003, sourceSkillLevel: 30, statuses: {POISON: 0}}`) —
+> but their HP never moved.
+>
+> `atlas-monsters` registers all sweep tasks, `StatusExpirationTask` among
+> them, only inside its leader-election callback (`main.go` `registerSweepTasks`),
+> and leader election is on by default. The lease key was
+> `atlas:lock:<name>` — no deployment component — while every namespace shares
+> one Redis (`REDIS_URL` = `redis.home:6379` in both `atlas-main` and each
+> `atlas-pr-NNNN`, no DB separation). `atlas-main`'s pod held
+> `atlas:lock:monsters-sweep` (`"Acquired leader for [monsters-sweep]."` +
+> `"Initializing status expiration task to run every 1000ms."`); the
+> `atlas-pr-1255` pod logged neither and had never registered the task.
+>
+> Fixed in `libs/atlas-lock` by scoping the key to `ATLAS_ENV`:
+> `atlas:lock:<env>:<name>`. Not a task-200 defect — it disabled every
+> leader-gated sweep in every ephemeral namespace (`atlas-monsters`' drop
+> timers, aggro decay, skill-picker sweep, recovery and hidden reconciliation
+> alongside the DoT tick, plus `atlas-rankings`, `atlas-summons`,
+> `atlas-doors` and `atlas-world`). Landed here because it is what blocked
+> verifying this feature at all.
+
 No new service, no new topic, no new REST endpoint. The four seams that change
 are: the skill-handler registry (one new subpackage), the mist command/event
 bodies (additive fields), the mist tick (one new branch), and the atlas-maps

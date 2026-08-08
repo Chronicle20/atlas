@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -62,6 +63,46 @@ func applyDefaults(c *config) {
 
 const keyPrefix = "atlas:lock:"
 
+// EnvVar names the deployment-environment discriminator baked into every lease
+// key. Every Atlas service already carries it -- it is the same suffix that
+// scopes Kafka topics (COMMAND_TOPIC_MIST-a628) and database names
+// (atlas-maps-a628).
+//
+// Without it a lease name like "monsters-sweep" is GLOBAL across every
+// deployment sharing a Redis, and every Atlas deployment does share one
+// (REDIS_URL is redis.home:6379 in both atlas-main and each ephemeral
+// atlas-pr-NNNN namespace, with no DB separation). The permanent main
+// deployment wins the race at startup and holds the lease indefinitely, so a
+// PR namespace's pod never becomes leader and silently runs NONE of its
+// leader-gated work -- for atlas-monsters that is the whole sweep set:
+// StatusExpirationTask (DoT ticks), drop timers, aggro decay, the skill
+// picker sweep, monster recovery, and hidden reconciliation.
+//
+// Found in task-200 live testing: Poison Mist applied POISON to monsters
+// correctly and their HP never moved, because atlas-pr-1255's atlas-monsters
+// pod had never registered StatusExpirationTask. atlas-main's pod held
+// atlas:lock:monsters-sweep.
+const EnvVar = "ATLAS_ENV"
+
+// unscopedEnv is the placeholder used when EnvVar is unset. It is a marker,
+// not isolation: two deployments that both leave ATLAS_ENV unset and share a
+// Redis still collide, and no key can separate them. Naming the shared bucket
+// makes that visible in `redis-cli keys atlas:lock:*` instead of hiding it
+// behind an omitted segment.
+const unscopedEnv = "unscoped"
+
+// scopeFromEnv reads the environment discriminator. Read once in New and
+// stored on the LeaderElection so the key can never change under a running
+// election -- an env mutation mid-flight would otherwise move the lease out
+// from under the renewer while fn still believes it is leader.
+func scopeFromEnv() string {
+	v := strings.TrimSpace(os.Getenv(EnvVar))
+	if v == "" {
+		return unscopedEnv
+	}
+	return v
+}
+
 // LeaderElection runs a callback on exactly one pod for a named lease.
 //
 // Construction is cheap; only Run blocks. A single LeaderElection instance
@@ -70,7 +111,10 @@ const keyPrefix = "atlas:lock:"
 type LeaderElection struct {
 	rc   *goredis.Client
 	name string
-	cfg  config
+	// env is the deployment scope segment of the key, captured at New. See
+	// scopeFromEnv.
+	env string
+	cfg config
 }
 
 // New constructs a LeaderElection bound to a Redis client and a service-scoped
@@ -100,11 +144,15 @@ func New(rc *goredis.Client, name string, opts ...Option) (*LeaderElection, erro
 	if cfg.gracePeriod < time.Second || cfg.gracePeriod > 30*time.Second {
 		return nil, fmt.Errorf("lock: GracePeriod %s out of range [1s, 30s]", cfg.gracePeriod)
 	}
-	return &LeaderElection{rc: rc, name: name, cfg: cfg}, nil
+	return &LeaderElection{rc: rc, name: name, env: scopeFromEnv(), cfg: cfg}, nil
 }
 
+// keyPath is the Redis lease key: prefix, deployment scope, then the
+// service-scoped lease name. The scope segment is what keeps an ephemeral PR
+// namespace from contending with the permanent deployment on a shared Redis
+// -- see EnvVar.
 func (le *LeaderElection) keyPath() string {
-	return keyPrefix + le.name
+	return keyPrefix + le.env + ":" + le.name
 }
 
 // Run blocks until ctx is cancelled.

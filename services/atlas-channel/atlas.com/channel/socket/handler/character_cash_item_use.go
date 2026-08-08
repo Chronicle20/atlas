@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"atlas-channel/pet"
 	"atlas-channel/chalkboard"
 	character2 "atlas-channel/character"
 	"atlas-channel/consumable"
@@ -74,7 +75,19 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			// no per-type trailing/leading updateTime to re-derive here.
 			sp := cashsb.NewItemUsePetSkill()
 			sp.Decode(l, ctx)(r, readerOptions)
-			_ = consumable.NewProcessor(l, ctx).RequestItemConsumeWithPet(s.Field(), character.Id(s.CharacterId()), itemId, source, updateTime, sp.PetId())
+			// The wire value is the pet's CLIENT serial
+			// (GW_ItemSlotBase::liCashItemSN), not the Atlas pet id. Resolve it
+			// here, at the socket boundary, exactly as the other serverbound pet
+			// handlers do: atlas-consumables' ConsumePetSkillPouch keys on the
+			// Atlas pet id (it calls pet.GetById and range-checks against
+			// MaxUint32), so forwarding a 64-bit cash serial would fail every
+			// pouch use on a cash-purchased pet with ErrPetCannotLearn.
+			pm, perr := pet.NewProcessor(l, ctx).GetBySerialNumber(s.CharacterId(), sp.PetId())
+			if perr != nil {
+				l.WithError(perr).Debugf("Unable to resolve pet [%d] for character [%d] pet-skill pouch use.", sp.PetId(), s.CharacterId())
+				return
+			}
+			_ = consumable.NewProcessor(l, ctx).RequestItemConsumeWithPet(s.Field(), character.Id(s.CharacterId()), itemId, source, updateTime, uint64(pm.Id()))
 			return
 		}
 		if it == CashSlotItemTypeChalkboard {

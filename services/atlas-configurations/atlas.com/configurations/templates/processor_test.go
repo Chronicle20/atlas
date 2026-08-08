@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/uuid"
@@ -425,5 +426,264 @@ func TestCanonicalBytesSurfacesValidationFailure(t *testing.T) {
 	var ve *validationFailureError
 	if !errors.As(err, &ve) {
 		t.Fatalf("error type = %T, want *validationFailureError", err)
+	}
+}
+
+// THE load-bearing test (PRD acceptance criteria, design §5). Every shipped
+// seed file, created into a fresh database and read back through the view
+// provider, must report NO drift. If Create or Normalize perturbs anything the
+// revision sees, every template reports permanent phantom drift and the badge
+// becomes noise. Table-driven over the directory so a new version bring-up is
+// covered without editing this test.
+func TestShippedSeedsReportNoDrift(t *testing.T) {
+	l := testLogger()
+	catalog := LoadCatalog(l, seedTemplatesDir())
+	if catalog.Len() == 0 {
+		t.Fatalf("no seed templates found at %s - a wrong path would make this test vacuously pass", seedTemplatesDir())
+	}
+
+	for _, entry := range catalog.Entries() {
+		t.Run(entry.FileName, func(t *testing.T) {
+			db := setupTestDB(t)
+			ctx := context.Background()
+			p := NewProcessor(l, ctx, db).WithCatalog(catalog)
+
+			id, err := p.Create(entry.Model)
+			if err != nil {
+				t.Fatalf("Create(%s): %v", entry.FileName, err)
+			}
+
+			v, err := p.ViewByIdProvider(id)()
+			if err != nil {
+				t.Fatalf("ViewByIdProvider: %v", err)
+			}
+
+			if v.ShippedRevision != entry.Revision {
+				t.Errorf("ShippedRevision = %q, want %q", v.ShippedRevision, entry.Revision)
+			}
+			if v.StoredRevision != entry.Revision {
+				t.Errorf("StoredRevision = %q, want %q (Marshal∘Unmarshal is not the identity on this document - see design §5)", v.StoredRevision, entry.Revision)
+			}
+			if v.SeedDrift {
+				t.Errorf("SeedDrift = true for a freshly seeded template")
+			}
+		})
+	}
+}
+
+// FR-2.3: a stored row whose content no longer matches the shipped file drifts.
+func TestDriftDetectedAfterMutation(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+	catalog := LoadCatalog(l, seedTemplatesDir())
+
+	entry, ok := catalog.Lookup("GMS", 83, 1)
+	if !ok {
+		t.Fatalf("GMS 83.1 missing from the seed corpus")
+	}
+
+	p := NewProcessor(l, ctx, db).WithCatalog(catalog)
+	id, err := p.Create(entry.Model)
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	// Mutate the stored document out from under the row, the way a UI PATCH
+	// or an out-of-band edit would.
+	mutated := entry.Model
+	mutated.UsesPin = !mutated.UsesPin
+	data, err := canonicalBytes(mutated)
+	if err != nil {
+		t.Fatalf("canonicalBytes: %v", err)
+	}
+	if err := db.Model(&Entity{}).Where("id = ?", id).Update("data", []byte(data)).Error; err != nil {
+		t.Fatalf("mutate: %v", err)
+	}
+
+	v, err := p.ViewByIdProvider(id)()
+	if err != nil {
+		t.Fatalf("ViewByIdProvider: %v", err)
+	}
+	if !v.SeedDrift {
+		t.Errorf("SeedDrift = false after mutating the stored document")
+	}
+	if v.StoredRevision == v.ShippedRevision {
+		t.Errorf("revisions are equal after mutation: %q", v.StoredRevision)
+	}
+	if v.ShippedRevision != entry.Revision {
+		t.Errorf("ShippedRevision = %q, want %q - the shipped side must not move", v.ShippedRevision, entry.Revision)
+	}
+}
+
+// FR-2.4: absence of a shipped file is NOT drift. The template reports an
+// empty shippedRevision and seedDrift false.
+func TestNoCatalogEntryIsNotDrift(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+
+	// A catalog that knows only about the TEST fixture, so GMS 83.1 misses.
+	catalog := LoadCatalog(l, filepath.Join("testdata", "templates"))
+	p := NewProcessor(l, ctx, db).WithCatalog(catalog)
+
+	id, err := p.Create(createTestRestModel("GMS", 83, 1))
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	v, err := p.ViewByIdProvider(id)()
+	if err != nil {
+		t.Fatalf("ViewByIdProvider: %v", err)
+	}
+	if v.ShippedRevision != "" {
+		t.Errorf("ShippedRevision = %q, want empty", v.ShippedRevision)
+	}
+	if v.SeedDrift {
+		t.Errorf("SeedDrift = true with no shipped file")
+	}
+	if v.StoredRevision == "" {
+		t.Errorf("StoredRevision is empty - it is always computed")
+	}
+}
+
+// A processor with no catalog wired must degrade to FR-2.4 behaviour rather
+// than panicking on a nil map.
+func TestUnwiredProcessorReportsNoShippedFile(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+	p := NewProcessor(l, ctx, db)
+
+	id, err := p.Create(createTestRestModel("GMS", 83, 1))
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	v, err := p.ViewByIdProvider(id)()
+	if err != nil {
+		t.Fatalf("ViewByIdProvider: %v", err)
+	}
+	if v.ShippedRevision != "" || v.SeedDrift {
+		t.Errorf("unwired processor reported shipped=%q drift=%v, want \"\"/false", v.ShippedRevision, v.SeedDrift)
+	}
+}
+
+// The list and by-region-and-version read paths must carry the same computed
+// attributes as the by-id path - the list page renders per-row badges from them.
+func TestViewProvidersAgreeAcrossReadPaths(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+	catalog := LoadCatalog(l, seedTemplatesDir())
+
+	entry, ok := catalog.Lookup("GMS", 83, 1)
+	if !ok {
+		t.Fatalf("GMS 83.1 missing from the seed corpus")
+	}
+	p := NewProcessor(l, ctx, db).WithCatalog(catalog)
+	id, err := p.Create(entry.Model)
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	byId, err := p.ViewByIdProvider(id)()
+	if err != nil {
+		t.Fatalf("ViewByIdProvider: %v", err)
+	}
+	byVersion, err := p.ViewByRegionAndVersionProvider("GMS", 83, 1)()
+	if err != nil {
+		t.Fatalf("ViewByRegionAndVersionProvider: %v", err)
+	}
+	paged, err := p.AllViewProvider(model.Page{Number: 1, Size: 50})()
+	if err != nil {
+		t.Fatalf("AllViewProvider: %v", err)
+	}
+	if len(paged.Items) != 1 {
+		t.Fatalf("AllViewProvider returned %d items, want 1", len(paged.Items))
+	}
+
+	for name, got := range map[string]ViewRestModel{"byVersion": byVersion, "all": paged.Items[0]} {
+		if got.ShippedRevision != byId.ShippedRevision || got.StoredRevision != byId.StoredRevision || got.SeedDrift != byId.SeedDrift {
+			t.Errorf("%s view disagrees with by-id view: %+v vs %+v", name, got, byId)
+		}
+	}
+}
+
+// D3: the three computed attributes must NOT be persisted. If they ever land
+// on RestModel, Create writes them into Entity.Data, Make reads them back, and
+// the revision is computed over bytes containing a previous revision.
+func TestComputedAttributesAreNotPersisted(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+	catalog := LoadCatalog(l, seedTemplatesDir())
+
+	entry, ok := catalog.Lookup("GMS", 83, 1)
+	if !ok {
+		t.Fatalf("GMS 83.1 missing from the seed corpus")
+	}
+	p := NewProcessor(l, ctx, db).WithCatalog(catalog)
+	id, err := p.Create(entry.Model)
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	var e Entity
+	if err := db.Where("id = ?", id).First(&e).Error; err != nil {
+		t.Fatalf("read back: %v", err)
+	}
+	var stored map[string]any
+	if err := json.Unmarshal(e.Data, &stored); err != nil {
+		t.Fatalf("unmarshal stored document: %v", err)
+	}
+	for _, k := range []string{"shippedRevision", "storedRevision", "seedDrift"} {
+		if _, present := stored[k]; present {
+			t.Errorf("computed attribute %q leaked into the stored document", k)
+		}
+	}
+}
+
+// The view model's JSON:API identity must promote from the embedded RestModel,
+// or api2go emits the wrong resource type and no id.
+func TestViewRestModelIdentityPromotes(t *testing.T) {
+	v := ViewRestModel{RestModel: RestModel{Id: "abc"}}
+	if v.GetName() != "templates" {
+		t.Errorf("GetName() = %q, want templates", v.GetName())
+	}
+	if v.GetID() != "abc" {
+		t.Errorf("GetID() = %q, want abc", v.GetID())
+	}
+	if err := v.SetID("def"); err != nil {
+		t.Fatalf("SetID: %v", err)
+	}
+	if v.GetID() != "def" {
+		t.Errorf("after SetID, GetID() = %q, want def", v.GetID())
+	}
+}
+
+// encoding/json flattens anonymous embedded structs, so the wire shape is
+// RestModel's attributes plus exactly three keys - no per-field restating.
+func TestViewRestModelFlattensEmbeddedFields(t *testing.T) {
+	v := ViewRestModel{
+		RestModel:       createTestRestModel("GMS", 83, 1),
+		ShippedRevision: "aa",
+		StoredRevision:  "bb",
+		SeedDrift:       true,
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	var got map[string]any
+	if err := json.Unmarshal(b, &got); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	for _, k := range []string{"region", "majorVersion", "minorVersion", "usesPin", "socket", "shippedRevision", "storedRevision", "seedDrift"} {
+		if _, present := got[k]; !present {
+			t.Errorf("key %q missing from the marshalled view model", k)
+		}
+	}
+	if _, present := got["RestModel"]; present {
+		t.Errorf("embedded struct was nested under \"RestModel\" instead of flattened")
 	}
 }

@@ -123,7 +123,11 @@ func handleGetMonstersInMapRect(d *rest.HandlerDependency, c *rest.HandlerContex
 							w.WriteHeader(http.StatusBadRequest)
 							return
 						}
-						limit, _ := parseUint32QueryOrDefault(q, "limit", 0)
+						// `max`, not `limit`: ParseParams above rejects any
+						// request carrying a `limit` param outright (the
+						// repo-wide task-117 ban), so naming the cap `limit`
+						// made this endpoint 400 on every call that used it.
+						limit, _ := parseUint32QueryOrDefault(q, "max", 0)
 
 						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instance).Build()
 						p := monster.NewProcessor(d.Logger(), d.Context())

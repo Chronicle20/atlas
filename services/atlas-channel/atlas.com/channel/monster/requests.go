@@ -8,8 +8,14 @@ import (
 )
 
 const (
-	mapMonstersResource     = "worlds/%d/channels/%d/maps/%d/instances/%s/monsters"
-	mapMonstersRectResource = "worlds/%d/channels/%d/maps/%d/instances/%s/monsters/in-rect?x1=%d&y1=%d&x2=%d&y2=%d&limit=%d"
+	mapMonstersResource = "worlds/%d/channels/%d/maps/%d/instances/%s/monsters"
+	// The result cap is spelled `max`, NOT `limit`. Any request carrying a
+	// `limit` query param is rejected with 400 by paginate.ParseParams
+	// (libs/atlas-rest/server/paginate/params.go) -- the repo-wide ban that
+	// makes page[number]/page[size] the only paging vocabulary (task-117).
+	// This URL is drained through requests.DrainProvider, which appends those
+	// page params, so a `limit` here 400s every single rect query.
+	mapMonstersRectResource = "worlds/%d/channels/%d/maps/%d/instances/%s/monsters/in-rect?x1=%d&y1=%d&x2=%d&y2=%d&max=%d"
 	monstersResource        = "monsters/%d"
 )
 

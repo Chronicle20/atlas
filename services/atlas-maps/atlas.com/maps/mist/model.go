@@ -89,10 +89,75 @@ func (m Mist) SourceSkillLevel() uint32 {
 	return m.sourceSkillLevel
 }
 
-// Type returns the mist/affected-area type discriminator. Defaults to 0.
+// Type returns the mist/affected-area type discriminator (the client's
+// AFFECTEDAREA::nType, +0x4). Defaults to 0 -- see AffectedAreaTypeFor for why
+// that default is dangerous for a player-cast mist.
 func (m Mist) Type() int32 {
 	return m.mistType
 }
+
+// AFFECTEDAREA::nType wire values. The client has no enum symbol for this
+// field even in the PDB-backed GMS v95 IDB (AFFECTEDAREA::nType is a bare
+// `int`), so these names are ours; the VALUES are read from the client.
+//
+// Only three values are load-bearing. Everything the client does with nType:
+//
+//   - == 0  CAffectedAreaPool::GetAffectedAreaByPoint (v83 sub_431783
+//     @0x4317b6, v95 @0x434cc0 PDB-named) selects an area for the LOCAL USER
+//     iff `!nType && tCur >= tStart && PtInRect(rcArea, ptUser)`, and returns
+//     `nSLV | (nSkillID << 8)` -- a MOB-skill disease descriptor.
+//     CUserLocal::Update (v83 @0x94b7ba) calls it every frame and, on a hit,
+//     computes `AFFECTEDAREA.nDamage (+0x34) * (100 - resist) / 100`
+//     (@0x94b801) and damages the local user.
+//   - == 2  CAffectedAreaPool::IsSmokeAreaByPoint (v95 @0x434f40) -- Smoke
+//     Screen. v83 CAffectedAreaPool::Update (@0x43109f) also gates the
+//     fade-out animation on `nType == 2`.
+//   - == 3  CAffectedAreaPool::OnAffectedAreaCreated (v83 @0x431ade, v95
+//     @0x437ec0) routes to CItemInfo::GetAreaBuffItem -- an area-buff ITEM,
+//     not a skill.
+//
+// Nothing reads any other value: the per-skill construction path
+// (CAffectedAreaPool::AffectedAreaAnimationCreated, v95 @0x4372c0) dispatches
+// purely on nSkillID, and the user/party aura lookups
+// (GetAffectAreaByPoint @0x4350f0, GetAr01AreaPAD/MAD) filter on
+// nSkillID + dwOwnerID and ignore nType entirely.
+//
+// This is why a player-cast mist MUST NOT go out as 0. `nDamage` is written
+// ONLY on the mob-skill arms of AffectedAreaAnimationCreated
+// (`pa.p->nDamage = a[nSLV-1].nX` under `nSkillID == 130` / `== 131`); the
+// 2111003 (Poison Mist) arm never touches it, so the field holds whatever was
+// in the freshly-allocated AFFECTEDAREA. Sending nType 0 for Poison Mist made
+// the v83 client find the caster standing inside their own cloud and bill them
+// that uninitialized value -- observed live as a 1,434,803-damage self-hit
+// (clamped to 999999) roughly one second after every cast.
+//
+// AffectedAreaTypeUserSkill is 1 because 1 is inert: the only requirement the
+// client imposes is "not 0, not 2, not 3".
+const (
+	AffectedAreaTypeMobSkill  = int32(0)
+	AffectedAreaTypeUserSkill = int32(1)
+)
+
+// AffectedAreaTypeFor maps a mist's owner to its nType. A monster-owned mist
+// IS a mob disease cloud and must stay 0 -- that is what makes the client
+// apply it to players standing in it (the pre-task-200 AREA_POISON behaviour,
+// which must not change). A character-owned mist is a user skill area.
+//
+// Derived from ownerType rather than carried on COMMAND_TOPIC_MIST on purpose:
+// nType is a client wire detail, and no producer should have to know the
+// client's value table to create a mist.
+func AffectedAreaTypeFor(ownerType string) int32 {
+	if ownerType == OwnerTypeCharacter {
+		return AffectedAreaTypeUserSkill
+	}
+	return AffectedAreaTypeMobSkill
+}
+
+// Mist owner types, as carried on COMMAND_TOPIC_MIST CreateCommandBody.
+const (
+	OwnerTypeCharacter = "CHARACTER"
+	OwnerTypeMonster   = "MONSTER"
+)
 
 // OriginX returns the x coordinate of the mist's origin (anchor).
 func (m Mist) OriginX() int16 {

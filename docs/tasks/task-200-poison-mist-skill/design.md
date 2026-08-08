@@ -59,6 +59,32 @@ kafka/consumer/mist  ◄──────────────── EVENT_T
   └─ AffectedAreaRemoved → all sessions in field
 ```
 
+> **Correction (live test, 2026-08-08) — the `GetInMapRect` leg never worked.**
+>
+> `monster.GetInMapRect` built its URL with a `&limit=%d` query param
+> (`atlas-maps/monster/requests.go`), and the server rejects **any** request
+> carrying a `limit` param with 400 — `paginate.ParseParams`
+> (`libs/atlas-rest/server/paginate/params.go`) enforces the task-117 repo-wide
+> rule that paging is expressed only via `page[number]`/`page[size]`. The URL is
+> drained through `requests.DrainProvider`, which appends exactly those params,
+> so every rect lookup 400'd.
+>
+> Live on `atlas-pr-1255`, once per second per mist:
+> `MistTick: monster rect lookup failed for mist [...]; skipping this mist's
+> tick. error: "bad request"` — no monster was ever poisoned. Reproduced
+> directly: the same URL returns 200 with the expected monster once `&limit=0`
+> is removed.
+>
+> Reusing this design's rect endpoint hid a **pre-existing** bug of the same
+> shape: `atlas-channel/monster/requests.go` has the identical template, so
+> `skill/handler/common.go`'s AoE mob-select helper had been 400ing on every
+> call too.
+>
+> Fixed by renaming the cap `limit` → `max` on `/monsters/in-rect`, in both
+> client templates and the server's `parseUint32QueryOrDefault`. Renamed rather
+> than dropped because atlas-channel genuinely uses the cap for `mobCount`;
+> removing it would silently uncap AoE target selection.
+
 No new service, no new topic, no new REST endpoint. The four seams that change
 are: the skill-handler registry (one new subpackage), the mist command/event
 bodies (additive fields), the mist tick (one new branch), and the atlas-maps
@@ -247,6 +273,56 @@ the pool (not on this packet's create path):
 
 - `nType == 2` → `IsSmokeAreaByPoint` (v95 `@0x434f40`, `p->nType == 2`), the
   Smokescreen miss-chance area. Reserved; **do not** use for Poison Mist.
+
+> **Correction (live test, 2026-08-08) — D2 was WRONG. `nType = 1`.**
+>
+> This section's sweep of the pool's `nType` readers **missed
+> `CAffectedAreaPool::GetAffectedAreaByPoint`** (v83 `sub_431783` `@0x4317b6`,
+> v95 `@0x434cc0`, PDB-named). Its predicate is:
+>
+> ```c
+> if ( !p->nType && tCur - p->tStart >= 0 && PtInRect(&p->rcArea, ptUser) )
+>     *dwDiseaseData = p->nSLV | (p->nSkillID << 8);   // a MOB-skill descriptor
+> ```
+>
+> `CUserLocal::Update` calls it every frame for the **local user** (v83
+> `@0x94b7ba`) and, on a hit, computes
+> `AFFECTEDAREA.nDamage (+0x34) * (100 - resist) / 100` (`@0x94b801`) and
+> damages them. So `nType == 0` does not mean "unused default" — it is the
+> client's *mob disease cloud* marker, and it is the **only** `nType` test that
+> can fire for a mist standing over a player.
+>
+> `nDamage` compounds it. `CAffectedAreaPool::AffectedAreaAnimationCreated`
+> (v95 `@0x4372c0`) writes `pa.p->nDamage = a[nSLV-1].nX` **only** under
+> `nSkillID == 130` and `nSkillID == 131`; the `nSkillID == 2111003` arm sets
+> `tEnd`/`bEnd` and builds fog layers and never touches `nDamage`. A
+> character-owned mist sent as `nType 0` therefore bills the caster whatever was
+> left in the freshly-allocated `AFFECTEDAREA`.
+>
+> Observed live on `atlas-pr-1255` (GMS 83.1, map 240011000): ~0.9 s after every
+> cast the client sent `CharacterDamageHandle nAttackIdx [-4] damage [1434803]`,
+> clamped by the channel to 999999 — instant death, three casts in a row.
+>
+> The claim in §2 item 2 that "`nType` has exactly one meaningful value on this
+> packet (`3`)" is true of `OnAffectedAreaCreated` in isolation and false of the
+> pool as a whole. Read-order analysis of the decoder is not sufficient to
+> choose a field's value; the field's *readers* have to be enumerated too.
+>
+> **Corrected decision: `nType = 1` for a character-owned mist, `0` for a
+> monster-owned one**, derived from `ownerType` in `atlas-maps`
+> (`mist.AffectedAreaTypeFor`) rather than carried on `COMMAND_TOPIC_MIST` —
+> no producer should need the client's value table. Keeping `0` for the mob path
+> is required, not cosmetic: it is what makes a mob's cloud apply to players
+> standing in it (the pre-task-200 AREA_POISON behaviour).
+>
+> `1` specifically because the complete set of values the client reads is
+> {`0` disease cloud, `2` smoke screen, `3` area-buff item}; the per-skill
+> construction path dispatches on `nSkillID` alone and the user/party aura
+> lookups (`GetAffectAreaByPoint`, `GetAr01AreaPAD`/`MAD`) ignore `nType`
+> entirely. `1` is inert. Note the GMS v95 PDB carries **no enum symbol** for
+> `AFFECTEDAREA::nType` (it is a bare `int`), so "1 = user skill" is our name
+> for an unnamed value, not a client-attested one — the verified property is
+> "not 0, not 2, not 3".
 
 **OQ-2 resolved.** The client's own reaction to `nSkillID == 2111003` is purely
 cosmetic: fetch the skill's `tile` UOL, build the fog layers, and compute its

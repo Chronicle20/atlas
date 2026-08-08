@@ -70,7 +70,10 @@ func TestGetInMapRect_DrainsAllPagesAndCarriesBounds(t *testing.T) {
 	if len(got) != 300 {
 		t.Fatalf("len(got) = %d, want 300 (drain must not stop at page 1)", len(got))
 	}
-	for _, want := range []string{"x1=390", "y1=218", "x2=610", "y2=383", "limit=0"} {
+	// `max=0`, not `limit=0` -- a `limit` param is rejected with 400 by the
+	// server's paginate.ParseParams (task-117 ban), which is exactly how this
+	// call silently failed in production. See requests_rect_url_test.go.
+	for _, want := range []string{"x1=390", "y1=218", "x2=610", "y2=383", "max=0"} {
 		if !strings.Contains(firstQuery, want) {
 			t.Fatalf("query %q missing %q", firstQuery, want)
 		}

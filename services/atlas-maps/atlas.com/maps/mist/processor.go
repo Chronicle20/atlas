@@ -83,6 +83,11 @@ func (p *ProcessorImpl) Create(body mistKafka.CreateCommandBody) (Mist, error) {
 		SetDuration(time.Duration(body.Duration)*time.Millisecond).
 		SetTickInterval(time.Duration(body.TickIntervalMs)*time.Millisecond).
 		SetSource(body.SourceSkillId, body.SourceSkillLevel).
+		// nType is derived here rather than carried on the command -- see
+		// AffectedAreaTypeFor. Leaving it at the zero value marks the mist as
+		// a MOB disease cloud, which makes the client damage any player
+		// standing in it, including the caster of a player-cast mist.
+		SetType(AffectedAreaTypeFor(body.OwnerType)).
 		SetKinds(targetKind, effectKind).
 		Build()
 

@@ -7,5 +7,9 @@ ida:
     address: "0x45a6b5"
     decompile_sha256: 1e4a2198bd99d99ef37d7605ce696d348885bd4c932a0b955a02b657389468a1
 verifies:
+    - libs/atlas-packet/cash/serverbound/coupon_code_test.go#TestCouponCodeByteFixtureSelfRedeem
+    - libs/atlas-packet/cash/serverbound/coupon_code_test.go#TestCouponCodeByteFixtureTargetedRedeem
+    - libs/atlas-packet/cash/serverbound/coupon_code_test.go#TestCouponCodeByteFixtureShapesDiffer
+    - libs/atlas-packet/cash/serverbound/coupon_code_test.go#TestCouponCodeJmsCarriesTypeByte
     - libs/atlas-packet/cash/serverbound/coupon_code_test.go#TestCouponCodeRoundTripSelfRedeem
     - libs/atlas-packet/cash/serverbound/coupon_code_test.go#TestCouponCodeRoundTripTargetedRedeem

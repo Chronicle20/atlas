@@ -62,7 +62,18 @@ func (m CouponCode) Operation() string {
 }
 
 func (m CouponCode) String() string {
-	// The coupon code is a secret; log its length, never its value.
+	// The coupon code is a SECRET: a redeemable bearer token. Log its length,
+	// never its value — a code in a log line is a code anyone with log access
+	// can redeem.
+	//
+	// targetCharacter IS logged verbatim, deliberately. It is a character
+	// identifier, not a credential, and it is the only field that distinguishes
+	// a self-redeem from a targeted one — which is exactly what an operator
+	// needs to see when triaging a coupon complaint. It is also the field whose
+	// emptiness gates the third wire string, so its value is load-bearing for
+	// diagnosing a body-shape mismatch. Revisit if it is ever found to carry
+	// something more sensitive than a name or id (see the type doc: which of
+	// the two it carries is UNVERIFIED).
 	return fmt.Sprintf("targetCharacter [%s], code length [%d]", m.targetCharacter, len(m.code))
 }
 

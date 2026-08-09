@@ -913,6 +913,15 @@
         ]
       },
       {
+        "opCode": "0xA7",
+        "validator": "LoggedInValidator",
+        "handler": "CashItemGachaponHandle",
+        "fname": "CUICashItemGachapon::OnButtonClicked",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xAA",
         "validator": "LoggedInValidator",
         "handler": "PetMovementHandle",
@@ -4331,6 +4340,20 @@
             "SHOW_NOTICE_1465": 166,
             "REFRESH_LOCKER_OR_NOTICE": 167,
             "SHOW_NOTICE_1464": 168
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x16D",
+        "writer": "CashItemGachaponResult",
+        "fname": "CCashShop::OnCashItemGachaponResult",
+        "options": {
+          "operations": {
+            "SUCCESS": 235,
+            "FAILED": 234
           }
         },
         "services": [

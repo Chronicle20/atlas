@@ -1196,6 +1196,15 @@
         ]
       },
       {
+        "opCode": "0xA1",
+        "validator": "LoggedInValidator",
+        "handler": "CashItemGachaponHandle",
+        "fname": "CUICashItemGachapon::OnButtonClicked",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xA4",
         "validator": "LoggedInValidator",
         "handler": "MobCrcKeyChangedReply",
@@ -4642,6 +4651,20 @@
             "NAME_CHANGE_BUY_DONE": 158,
             "TRANSFER_WORLD_SUCCESS": 160,
             "TRANSFER_WORLD_FAILED": 161
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x14D",
+        "writer": "CashItemGachaponResult",
+        "fname": "CCashShop::OnCashItemGachaponResult",
+        "options": {
+          "operations": {
+            "SUCCESS": 229,
+            "FAILED": 228
           }
         },
         "services": [

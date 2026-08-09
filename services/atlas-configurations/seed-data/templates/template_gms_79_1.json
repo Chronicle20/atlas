@@ -1124,6 +1124,15 @@
         ]
       },
       {
+        "opCode": "0x9F",
+        "validator": "LoggedInValidator",
+        "handler": "CashItemGachaponHandle",
+        "fname": "CUICashItemGachapon::OnButtonClicked",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xA3",
         "validator": "LoggedInValidator",
         "handler": "PetMovementHandle",

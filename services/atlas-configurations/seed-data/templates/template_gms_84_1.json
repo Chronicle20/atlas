@@ -1201,6 +1201,15 @@
         ]
       },
       {
+        "opCode": "0xA5",
+        "validator": "LoggedInValidator",
+        "handler": "CashItemGachaponHandle",
+        "fname": "CUICashItemGachapon::OnButtonClicked",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xAA",
         "validator": "LoggedInValidator",
         "handler": "MobCrcKeyChangedReply",
@@ -4704,6 +4713,20 @@
             "GACHAPON_COPY_FAILED": 168,
             "CHANGE_MAPLE_POINT_SUCCESS": 169,
             "CHANGE_MAPLE_POINT_FAILED": 170
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x154",
+        "writer": "CashItemGachaponResult",
+        "fname": "CCashShop::OnCashItemGachaponResult",
+        "options": {
+          "operations": {
+            "SUCCESS": 238,
+            "FAILED": 237
           }
         },
         "services": [

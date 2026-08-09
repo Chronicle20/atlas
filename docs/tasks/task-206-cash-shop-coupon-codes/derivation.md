@@ -143,14 +143,62 @@ Rows are marked `verified` (anchored) or `aligned` (ordinal inference).
 An `aligned` row is safe to *encode* — the byte is real and the client will
 render *a* notice for it — but the specific English wording is unconfirmed.
 
+**WZ/StringPool cross-check (this pass).** Attempted to close the "specific
+English wording is unconfirmed" gap for `aligned` rows using local WZ/String
+data instead of decompilation. Three routes were checked:
+
+1. **Local extracted XML dump.** No `tmp/<tenant-uuid>/GMS/83.1/` tree exists
+   in this worktree or environment (the memory note describing this path
+   referenced an ephemeral dump from an unrelated past session that was not
+   persisted). Other MapleStory client source checkouts present on this
+   machine (`~/source/Cosmic`, `~/source/ms_1172`, etc., unrelated to this
+   Atlas task) do have an extracted `String.wz/Cash.img.xml`, but its
+   structure is item-**id**-keyed (`<imgdir name="5000011"><string
+   name="name" value="Monkey"/>`) — cash-shop item catalog names/descriptions,
+   not a generic small-integer string-pool table. It cannot answer "what text
+   does string-pool id 535 map to" at all; the id space it uses (7-digit cash
+   item ids) is structurally disjoint from the 3–4 digit `StringPool` ids
+   `NoticeFailReason` passes to `StringPool::GetString`. Dead end.
+2. **Live atlas-data REST.** Confirmed by direct code read: atlas-data's
+   String.wz ingester (`item/string_registry.go`) only walks numeric-named
+   *item-id* child nodes of `Cash.img`/`Consume.img`/etc. and captures a
+   single `name` leaf keyed by that item id; its only string route
+   (`/data/item-strings/{itemId}`) explicitly filters `item_id >= 1000000`.
+   There is no route, and no ingested table, that accepts an arbitrary small
+   `StringPool` id (534, 535, 547, …) and returns text. Dead end.
+3. **IDA `StringPoolStrings` enum (not raw WZ, but the closest available
+   substitute).** The gms_v83 IDB (session `41f13e0d`) has a local enum type
+   `StringPoolStrings` whose members are named `SP_<id>_<ABBREVIATED_TEXT>`
+   (e.g. `SP_587_D_MAPLEPOINTS`) — Hex-Rays auto-resolves this name whenever a
+   raw integer literal is passed **directly** as the id argument to
+   `StringPool::GetString`/`GetStringW` (whose prototype parameter is typed
+   `StringPoolStrings`), even though the enum's ~6000+ members cannot be bulk
+   -enumerated through the available type-query API (confirmed: `type_query`
+   returns `member_count: 0` even for a control COM enum, `tagBINDSTRING`,
+   that is known to have members — an API limitation, not evidence the enum
+   is empty). `NoticeFailReason` itself stores each case's id into a variable
+   before calling `GetString`, so Hex-Rays can't resolve a name there — the
+   raw literals in the table below are unaffected. But `find(type=immediate)`
+   over the whole binary for each target id, followed by decompiling any
+   second occurrence, surfaced two cases where the *same* id is passed as a
+   **direct literal** to `GetString` elsewhere in the client, which forced
+   Hex-Rays to resolve the friendly name — see the `verified (cross-decompile)`
+   rows below. This is real, citable evidence (not ordinal inference), so
+   those two rows are promoted. The other 49 `aligned` ids either have no
+   second literal occurrence anywhere in the 10MB binary, or their only other
+   occurrences are unrelated numeric coincidences (checked and rejected:
+   536/540/544/552/555/557/583/etc. recur as item-category ids, UI window
+   coordinates, or unrelated mode-byte comparisons, not `GetString` calls) —
+   those rows are left `aligned`, unchanged.
+
 | Key | Byte | StringPool id | Conf. | Evidence (case body addr) |
 |---|---|---|---|---|
 | REQUEST_TIMED_OUT | 0xA3 | 534 | aligned | `0x47c195` |
-| NOT_ENOUGH_CASH | 0xA5 | 535 | aligned | `0x47c1ab` |
+| NOT_ENOUGH_CASH | 0xA5 | 535 | **verified (cross-decompile)** | `0x47c1ab`; independently confirmed at `0x5c3813` — `CITCBidAuctionDlg` bid-confirm handler (`sub_5C373E`, gms_v83) calls `StringPool::GetString(Instance, &v15, SP_535_YOU_DONT_HAVE_ENOUGH_CASH)` directly when the account balance is insufficient to place the bid. The enum member name `SP_535_YOU_DONT_HAVE_ENOUGH_CASH` matches `NOT_ENOUGH_CASH` |
 | CANNOT_GIFT_WHEN_UNDERAGE | 0xA6 | 536 | aligned | `0x47c1c1` |
 | EXCEEDED_GIFT_LIMIT | 0xA7 | 537 | aligned | `0x47c1d7` |
 | CANNOT_GIFT_TO_OWN_ACCOUNT | 0xA8 | 4537 | aligned | `0x47c57a` |
-| INCORRECT_NAME | 0xA9 | 4538 | aligned | `0x47c590` |
+| INCORRECT_NAME | 0xA9 | 4538 | **verified (cross-decompile)** | `0x47c590`; independently confirmed at `0x46ecc4` — `CCashShop::OnGiftMateInfoResult` (gms_v83) calls `StringPool::GetString(Instance, &v42, SP_4538_PLEASE_CONFIRM_WHETHER_R_NTHE_CHARACTERS_NAME_IS_CORRECT)` directly when the gift recipient lookup returns nothing (`CInPacket::Decode1(arg0) == 0`). The enum member name matches `INCORRECT_NAME`; notably this second occurrence is inside `CCashShop` itself, not an unrelated class |
 | CANNOT_GIFT_GENDER_RESTRICTION | 0xAA | 4539 | aligned | `0x47c5a6` |
 | CANNOT_GIFT_RECIPIENT_INVENTORY_FULL | 0xAB | 4540 | aligned | `0x47c5b9` |
 | EXCEEDED_CASH_ITEM_LIMIT | 0xAC | 538 | aligned | `0x47c1ed` |

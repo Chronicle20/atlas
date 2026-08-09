@@ -44,6 +44,7 @@ require (
 	github.com/Chronicle20/atlas/libs/atlas-rest v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-service v0.0.0-00010101000000-000000000000
+	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/google/uuid v1.6.0
 	github.com/jtumidanski/api2go v1.0.4
 	github.com/sirupsen/logrus v1.9.4
@@ -53,7 +54,6 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0 // indirect
-	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-tracing v0.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect

@@ -376,6 +376,151 @@ func CreateSingleMtsConfigJsonData(config map[string]interface{}) (json.RawMessa
 	return CreateMtsConfigJsonData([]map[string]interface{}{config})
 }
 
+// TradeTaxTierRestModel is one meso-tax band inside a TradeConfigRestModel's
+// taxTiers array. The JSON keys must match what atlas-trades decodes in
+// services/atlas-trades/atlas.com/trades/configuration/rest.go (TierRestModel).
+type TradeTaxTierRestModel struct {
+	Threshold uint32  `json:"threshold"`
+	Rate      float64 `json:"rate"`
+}
+
+// TradeConfigRestModel is the JSON:API resource for the per-tenant
+// player-to-player trade configuration. The attribute JSON keys must match what
+// atlas-trades decodes in
+// services/atlas-trades/atlas.com/trades/configuration/rest.go (RestModel).
+type TradeConfigRestModel struct {
+	Id                        string                  `json:"-"`
+	TaxEnabled                bool                    `json:"taxEnabled"`
+	TaxTiers                  []TradeTaxTierRestModel `json:"taxTiers"`
+	MaxStagedItems            int                     `json:"maxStagedItems"`
+	MinTradeLevel             int                     `json:"minTradeLevel"`
+	ReservationTtlSeconds     int                     `json:"reservationTtlSeconds"`
+	AttestationTimeoutSeconds int                     `json:"attestationTimeoutSeconds"`
+}
+
+// GetID returns the resource ID
+func (m TradeConfigRestModel) GetID() string {
+	return m.Id
+}
+
+// SetID sets the resource ID
+func (m *TradeConfigRestModel) SetID(id string) error {
+	m.Id = id
+	return nil
+}
+
+// GetName returns the resource name
+func (m TradeConfigRestModel) GetName() string {
+	return "trade-configs"
+}
+
+// TransformTradeConfig converts a map[string]interface{} to a
+// TradeConfigRestModel.
+//
+// taxTiers is an array of objects rather than a scalar, so it decodes as
+// []interface{} of map[string]interface{} with float64 numbers — its arm below
+// differs from the `attributes["x"].(float64)` pattern the scalar knobs use.
+func TransformTradeConfig(data map[string]interface{}) (TradeConfigRestModel, error) {
+	id, _ := data["id"].(string)
+
+	attributes, ok := data["attributes"].(map[string]interface{})
+	if !ok {
+		attributes = make(map[string]interface{})
+	}
+
+	taxEnabled := false
+	if val, ok := attributes["taxEnabled"].(bool); ok {
+		taxEnabled = val
+	}
+
+	var taxTiers []TradeTaxTierRestModel
+	if raw, ok := attributes["taxTiers"].([]interface{}); ok {
+		taxTiers = make([]TradeTaxTierRestModel, 0, len(raw))
+		for _, entry := range raw {
+			tier, ok := entry.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			threshold := uint32(0)
+			if val, ok := tier["threshold"].(float64); ok {
+				threshold = uint32(val)
+			}
+			rate := float64(0)
+			if val, ok := tier["rate"].(float64); ok {
+				rate = val
+			}
+			taxTiers = append(taxTiers, TradeTaxTierRestModel{Threshold: threshold, Rate: rate})
+		}
+	}
+
+	maxStagedItems := 0
+	if val, ok := attributes["maxStagedItems"].(float64); ok {
+		maxStagedItems = int(val)
+	}
+
+	minTradeLevel := 0
+	if val, ok := attributes["minTradeLevel"].(float64); ok {
+		minTradeLevel = int(val)
+	}
+
+	reservationTtlSeconds := 0
+	if val, ok := attributes["reservationTtlSeconds"].(float64); ok {
+		reservationTtlSeconds = int(val)
+	}
+
+	attestationTimeoutSeconds := 0
+	if val, ok := attributes["attestationTimeoutSeconds"].(float64); ok {
+		attestationTimeoutSeconds = int(val)
+	}
+
+	return TradeConfigRestModel{
+		Id:                        id,
+		TaxEnabled:                taxEnabled,
+		TaxTiers:                  taxTiers,
+		MaxStagedItems:            maxStagedItems,
+		MinTradeLevel:             minTradeLevel,
+		ReservationTtlSeconds:     reservationTtlSeconds,
+		AttestationTimeoutSeconds: attestationTimeoutSeconds,
+	}, nil
+}
+
+// ExtractTradeConfig converts a TradeConfigRestModel to a map[string]interface{}
+func ExtractTradeConfig(m TradeConfigRestModel) (map[string]interface{}, error) {
+	tiers := make([]map[string]interface{}, 0, len(m.TaxTiers))
+	for _, t := range m.TaxTiers {
+		tiers = append(tiers, map[string]interface{}{
+			"threshold": t.Threshold,
+			"rate":      t.Rate,
+		})
+	}
+
+	return map[string]interface{}{
+		"type": "trade-configs",
+		"id":   m.Id,
+		"attributes": map[string]interface{}{
+			"taxEnabled":                m.TaxEnabled,
+			"taxTiers":                  tiers,
+			"maxStagedItems":            m.MaxStagedItems,
+			"minTradeLevel":             m.MinTradeLevel,
+			"reservationTtlSeconds":     m.ReservationTtlSeconds,
+			"attestationTimeoutSeconds": m.AttestationTimeoutSeconds,
+		},
+	}, nil
+}
+
+// CreateTradeConfigJsonData creates a JSON:API compliant data structure for trade configs
+func CreateTradeConfigJsonData(configs []map[string]interface{}) (json.RawMessage, error) {
+	data := map[string]interface{}{
+		"data": configs,
+	}
+	return json.Marshal(data)
+}
+
+// CreateSingleTradeConfigJsonData creates a JSON:API compliant data structure for a single trade config
+func CreateSingleTradeConfigJsonData(config map[string]interface{}) (json.RawMessage, error) {
+	return CreateTradeConfigJsonData([]map[string]interface{}{config})
+}
+
 // InstanceRouteRestModel is the JSON:API resource for instance routes
 type InstanceRouteRestModel struct {
 	Id string `json:"-"`

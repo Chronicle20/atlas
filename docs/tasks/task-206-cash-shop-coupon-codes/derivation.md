@@ -749,8 +749,10 @@ defaults + 1 default = 57. ✅
 
 ### `USE_COUPON` request body — the third string is GONE
 
-Opcode **269 / `0x10D`**, built by `sub_484430` @ `0x484430` (the v92
-`CCashShop::OnStatusCoupon`; unnamed in this IDB). No mode byte.
+Opcode **269 / `0x10D`**, built by `CCashShop::OnStatusCoupon` @ `0x484430`
+(**named in task-4's export pass**; was `sub_484430` — an unnamed symbol blocked
+`packet-audit export`'s by-name harvest, so the evidence citation could not be
+pinned until it was named). No mode byte.
 
 | # | Field | Read | Evidence |
 |---|---|---|---|

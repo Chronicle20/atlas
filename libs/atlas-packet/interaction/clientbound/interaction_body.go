@@ -223,6 +223,14 @@ func CharacterInteractionTradePutItemBody(side byte, tradeSlot byte, a model.Ass
 // discrete game-shaped struct — see InteractionMiniGameRoom for the
 // IDA-derived two-list layout). yourSlot is the recipient's slot (0 owner /
 // 1 visitor); gameKind is the piece/sub-type byte (Cosmic `piece`).
+// CharacterInteractionTradeAddMesoBody announces a side's staged meso total.
+// The amount is ABSOLUTE, not a delta — see InteractionTradeAddMeso.
+func CharacterInteractionTradeAddMesoBody(side byte, amount uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeTradeAddMeso, func(mode byte) packet.Encoder {
+		return NewInteractionTradeAddMeso(mode, side, amount)
+	})
+}
+
 func CharacterInteractionMiniGameRoomBody(roomType interaction.RoomType, capacity byte, yourSlot byte, players []MiniGameRoomPlayer, title string, gameKind byte, tournament bool, round byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeEnterResult, func(mode byte) packet.Encoder {
 		return NewInteractionMiniGameRoom(mode, roomType, capacity, yourSlot, players, title, gameKind, tournament, round)

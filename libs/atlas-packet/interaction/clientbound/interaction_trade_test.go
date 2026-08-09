@@ -77,3 +77,37 @@ func TestInteractionTradePutItemHeaderBytes(t *testing.T) {
 		t.Errorf("header bytes: got %s, want 0f0001", got)
 	}
 }
+
+// TestInteractionTradeAddMesoBytes pins the mode-16 arm: Decode1 side, Decode4
+// amount (v83 sub_7C208E @0x7c208e). The client ASSIGNS the amount
+// (this[v3+115] = Decode4), so an authoritative re-echo of the last valid
+// amount is how the server corrects an out-of-range stage (design §4.2).
+func TestInteractionTradeAddMesoBytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			raw := NewInteractionTradeAddMeso(16, 1, 1000000).Encode(l, ctx)(nil)
+			if got := hex.EncodeToString(raw); got != "100140420f00" {
+				t.Errorf("bytes: got %s, want 100140420f00", got)
+			}
+		})
+	}
+}
+
+func TestInteractionTradeAddMesoRoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := NewInteractionTradeAddMeso(16, 0, 987654321)
+			output := InteractionTradeAddMeso{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.Side() != input.Side() {
+				t.Errorf("side: got %v, want %v", output.Side(), input.Side())
+			}
+			if output.Amount() != input.Amount() {
+				t.Errorf("amount: got %v, want %v", output.Amount(), input.Amount())
+			}
+		})
+	}
+}

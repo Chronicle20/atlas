@@ -57,3 +57,42 @@ func (m *InteractionTradePutItem) Decode(l logrus.FieldLogger, ctx context.Conte
 		m.asset.Decode(l, ctx)(r, options)
 	}
 }
+
+// InteractionTradeAddMeso is the mode-16 arm of CTradingRoomDlg's dispatcher
+// (v83 sub_7C208E @0x7c208e): Decode1 side, Decode4 amount. The client ASSIGNS
+// the value (this[v3+115] = Decode4) rather than accumulating, so re-sending
+// the last valid amount is an authoritative correction the client's view snaps
+// back to.
+//
+// packet-audit:fname CTradingRoomDlg::OnSetMoney
+type InteractionTradeAddMeso struct {
+	mode   byte
+	side   byte
+	amount uint32
+}
+
+func NewInteractionTradeAddMeso(mode byte, side byte, amount uint32) InteractionTradeAddMeso {
+	return InteractionTradeAddMeso{mode: mode, side: side, amount: amount}
+}
+
+func (m InteractionTradeAddMeso) Mode() byte     { return m.mode }
+func (m InteractionTradeAddMeso) Side() byte     { return m.side }
+func (m InteractionTradeAddMeso) Amount() uint32 { return m.amount }
+
+func (m InteractionTradeAddMeso) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteByte(m.side)
+		w.WriteInt(m.amount)
+		return w.Bytes()
+	}
+}
+
+func (m *InteractionTradeAddMeso) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.side = r.ReadByte()
+		m.amount = r.ReadUint32()
+	}
+}

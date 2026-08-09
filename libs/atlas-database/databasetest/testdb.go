@@ -24,10 +24,7 @@ func NewInMemoryTenantDB(t *testing.T, migrations ...database.Migrator) *gorm.DB
 	l, _ := test.NewNullLogger()
 	l.SetLevel(logrus.DebugLevel)
 
-	// TranslateError mirrors the production Connect() setting so a duplicate-key
-	// insert translates to gorm.ErrDuplicatedKey here too (sqlite driver maps
-	// its extended result codes 1555/2067 to it), not just against Postgres.
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{TranslateError: true})
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
 
 	// gorm's sqlite driver hands out a fresh, empty in-memory database per

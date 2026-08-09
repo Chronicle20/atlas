@@ -19,11 +19,10 @@ var ErrAlreadyOpened = errors.New("surprise box already opened for this transact
 // Duplicate detection relies on the (tenant_id, transaction_id) primary key
 // constraint, not a read-then-write check — a SELECT-then-INSERT has a race
 // window where two concurrent redeliveries both observe "not present" and
-// both insert. The constraint violation is translated to ErrAlreadyOpened via
-// gorm's driver-native error translation (gorm.Config{TranslateError: true},
-// enabled on both the production Postgres connector and the sqlite in-memory
-// test helper), which maps Postgres SQLSTATE 23505 and sqlite extended codes
-// 1555/2067 to the same gorm.ErrDuplicatedKey sentinel.
+// both insert. The constraint violation is classified by isDuplicateKeyError
+// (see duplicate.go), which recognizes it under both drivers this service
+// runs against: Postgres SQLSTATE 23505 in production, sqlite extended codes
+// 1555/2067 in tests.
 func Insert(db *gorm.DB, tenantId uuid.UUID, transactionId uuid.UUID, accountId uint32, assetId uint32) error {
 	e := entity{
 		TenantId:      tenantId,
@@ -36,7 +35,7 @@ func Insert(db *gorm.DB, tenantId uuid.UUID, transactionId uuid.UUID, accountId 
 	if err == nil {
 		return nil
 	}
-	if errors.Is(err, gorm.ErrDuplicatedKey) {
+	if isDuplicateKeyError(err) {
 		return ErrAlreadyOpened
 	}
 	return err

@@ -203,9 +203,10 @@ type applyStatusBody struct {
 // same partition as every other command for that monster.
 //
 // The POISON magnitude is intentionally the mist's DiseaseValue, which is 0
-// for a player-cast mist: atlas-monsters computes poison damage as
-// maxHP/(70 - sourceSkillLevel) (monster/status_task.go calculatePoisonDamage)
-// and never reads the magnitude for POISON. VENOM is the status that does.
+// for a player-cast mist: the magnitude is target-derived, so atlas-monsters
+// resolves it per monster at apply time as ceil(maxHP/(70 - sourceSkillLevel))
+// capped at 32767 (monster.ResolvePoisonDamage) and overwrites whatever
+// arrives here. VENOM, by contrast, carries its magnitude from the caster.
 func applyStatusCommandProvider(m mist.Mist, monsterUniqueId uint32) model.Provider[[]kafka.Message] {
 	key := kafkaProducer.CreateKey(int(monsterUniqueId))
 	value := &monsterCommand[applyStatusBody]{

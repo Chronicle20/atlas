@@ -585,6 +585,10 @@ func (p *ProcessorImpl) damageCore(m Model, characterId uint32, damages []uint32
 	hasLast := false
 	killed := false
 	firstHitObserved := false
+	// Sum of every line this attack landed -- the attack's damage, which is
+	// what the DAMAGED event reports. Lines are summed rather than reporting
+	// only the last one because a multi-line attack is one event.
+	var totalApplied uint32
 	nowMs := time.Now().UnixMilli()
 	for _, d := range damages {
 		s, err := GetMonsterRegistry().ApplyDamage(p.t, characterId, d, m.UniqueId(), nowMs)
@@ -593,6 +597,7 @@ func (p *ProcessorImpl) damageCore(m Model, characterId uint32, damages []uint32
 			break
 		}
 		last = s
+		totalApplied += s.VisibleDamage
 		hasLast = true
 		if s.WasFirstHit {
 			firstHitObserved = true
@@ -609,7 +614,7 @@ func (p *ProcessorImpl) damageCore(m Model, characterId uint32, damages []uint32
 
 	// Always emit damaged so the channel writes the final HP-bar packet,
 	// even when the attack lands a kill.
-	if err := p.emit(EnvEventTopicMonsterStatus, damagedStatusEventProvider(last.Monster, last.CharacterId, last.CharacterId, isBoss, DamageSourceCharacterAttack, last.Monster.DamageSummary())); err != nil {
+	if err := p.emit(EnvEventTopicMonsterStatus, damagedStatusEventProvider(last.Monster, last.CharacterId, last.CharacterId, isBoss, DamageSourceCharacterAttack, totalApplied, last.Monster.DamageSummary())); err != nil {
 		p.l.WithError(err).Errorf("Monster [%d] damaged, but unable to display that for the characters in the field.", last.Monster.UniqueId())
 	}
 
@@ -755,7 +760,7 @@ func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32,
 		return
 	}
 
-	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(s.Monster, observerUniqueId, attackerUniqueId, false, DamageSourceMonsterAttack, s.Monster.DamageSummary()))
+	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(s.Monster, observerUniqueId, attackerUniqueId, false, DamageSourceMonsterAttack, s.VisibleDamage, s.Monster.DamageSummary()))
 }
 
 // spawnRevives spawns the revive/next-phase monsters when a monster dies
@@ -1207,7 +1212,7 @@ func (p *ProcessorImpl) executeHeal(m Model, observerId uint32, sd mobskill.Mode
 		healed := target.Heal(healAmount)
 		GetMonsterRegistry().UpdateMonster(p.t, targetId, healed)
 		// Emit a damaged event with 0 damage to trigger HP bar update
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(healed, observerId, m.UniqueId(), false, DamageSourceHeal, healed.DamageSummary()))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(healed, observerId, m.UniqueId(), false, DamageSourceHeal, 0, healed.DamageSummary()))
 	}
 
 	healMonster(m.UniqueId())
@@ -1397,6 +1402,22 @@ func (p *ProcessorImpl) ApplyStatusEffect(uniqueId uint32, effect StatusEffect) 
 				return errors.New("boss immunity")
 			}
 		}
+	}
+
+	if _, poison := effect.Statuses()[StatusPoison]; poison {
+		// Poison never lands the kill (StatusExpirationTask caps a tick at
+		// currentHP-1), so a monster already at 1 HP can only accumulate a
+		// status that will never do anything. Reject it rather than let a
+		// re-applying mist churn a permanent no-op effect.
+		if m.Hp() <= 1 {
+			p.l.Debugf("Monster [%d] is at [%d] HP. Poison rejected.", uniqueId, m.Hp())
+			return errors.New("poison floor")
+		}
+		// The POISON magnitude is target-derived, not caster-supplied: it
+		// depends on the monster's max HP, which the caster does not know.
+		// Resolve it here so the applied damage and the magnitude the client
+		// renders from come from one place.
+		effect = effect.WithStatus(StatusPoison, ResolvePoisonDamage(m.MaxHp(), effect.SourceSkillLevel()))
 	}
 
 	m, err = GetMonsterRegistry().ApplyStatusEffect(p.t, uniqueId, effect)

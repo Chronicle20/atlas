@@ -61,7 +61,10 @@ func stopControlStatusEventProvider(m Model, characterId uint32) model.Provider[
 	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusStopControl, statusEventStopControlBody{ActorId: characterId})
 }
 
-func damagedStatusEventProvider(m Model, observerId uint32, actorId uint32, boss bool, damageSource string, damageSummary []entry) model.Provider[[]kafka.Message] {
+// damagedStatusEventProvider builds the DAMAGED event. damage is the amount
+// this event applied (0 for a heal, which emits DAMAGED purely to refresh the
+// HP bar); damageSummary is the monster's cumulative per-character totals.
+func damagedStatusEventProvider(m Model, observerId uint32, actorId uint32, boss bool, damageSource string, damage uint32, damageSummary []entry) model.Provider[[]kafka.Message] {
 	var damageEntries []damageEntry
 	for _, e := range damageSummary {
 		damageEntries = append(damageEntries, damageEntry{
@@ -76,6 +79,7 @@ func damagedStatusEventProvider(m Model, observerId uint32, actorId uint32, boss
 		ObserverId:    observerId,
 		ActorId:       actorId,
 		Boss:          boss,
+		Damage:        damage,
 		DamageSource:  damageSource,
 		DamageEntries: damageEntries,
 	})

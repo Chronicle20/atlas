@@ -161,10 +161,14 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				RbX:        int16(rb.X()),
 				RbY:        int16(rb.Y()),
 				Disease:    "POISON",
-				// Magnitude 0 is correct, not a shortcut: atlas-monsters
-				// computes poison damage as maxHP/(70 - sourceSkillLevel) and
-				// never reads the POISON magnitude (VENOM is the status that
-				// does). A non-zero value here would be dead payload.
+				// Magnitude 0 is correct, not a shortcut: the POISON
+				// magnitude is TARGET-derived, so only atlas-monsters can fill
+				// it in. It resolves the value per monster at apply time as
+				// ceil(maxHP/(70 - sourceSkillLevel)) capped at 32767
+				// (monster.ResolvePoisonDamage), and that single value is both
+				// the damage each tick applies and the magnitude the client
+				// renders its own tick numbers from. Anything sent here would
+				// be overwritten.
 				DiseaseValue: 0,
 				// Per-target duration = the mist's lifetime. With no WZ
 				// `dotTime`, this is the value that matches the skill's

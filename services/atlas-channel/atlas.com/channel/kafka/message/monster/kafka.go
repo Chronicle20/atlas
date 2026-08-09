@@ -164,11 +164,16 @@ type StatusEventStopControlBody struct {
 }
 
 type StatusEventDamagedBody struct {
-	X             int16         `json:"x"`
-	Y             int16         `json:"y"`
-	ObserverId    uint32        `json:"observerId"`
-	ActorId       uint32        `json:"actorId"`
-	Boss          bool          `json:"boss"`
+	X          int16  `json:"x"`
+	Y          int16  `json:"y"`
+	ObserverId uint32 `json:"observerId"`
+	ActorId    uint32 `json:"actorId"`
+	Boss       bool   `json:"boss"`
+	// Damage is the amount THIS event applied. DamageEntries is the monster's
+	// running per-character total (kill credit / drop ownership) -- reading its
+	// last element as "the damage" reports a cumulative figure, which is what
+	// this field exists to prevent.
+	Damage        uint32        `json:"damage"`
 	DamageSource  string        `json:"damageSource"`
 	DamageEntries []DamageEntry `json:"damageEntries"`
 }

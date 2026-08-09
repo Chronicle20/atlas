@@ -431,3 +431,26 @@ func TestHandleStatusEventDestroyedAndKilled_RemoveMirrorEntry(t *testing.T) {
 		t.Fatalf("KILLED must evict the mirror entry")
 	}
 }
+
+// A DoT tick must NOT get a server-side MonsterDamage packet: the client
+// renders poison ticks itself from the POISON magnitude in the temporary-stat
+// packet. Echoing one here previously sent the monster's CUMULATIVE
+// per-character damage total (the last DamageEntries element) as if it were
+// the tick, which read as five-figure numbers on a 15,200 HP mob.
+func TestShouldEchoDamagePacket(t *testing.T) {
+	tests := []struct {
+		source string
+		want   bool
+	}{
+		{source: monster2.DamageSourceMonsterAttack, want: true},
+		{source: monster2.DamageSourceDamageOverTime, want: false},
+		{source: monster2.DamageSourceCharacterAttack, want: false},
+		{source: monster2.DamageSourceHeal, want: false},
+		{source: "", want: false},
+	}
+	for _, tt := range tests {
+		if got := shouldEchoDamagePacket(tt.source); got != tt.want {
+			t.Errorf("shouldEchoDamagePacket(%q) = %v, want %v", tt.source, got, tt.want)
+		}
+	}
+}

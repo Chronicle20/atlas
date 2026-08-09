@@ -1,6 +1,7 @@
 package item
 
 import (
+	"atlas-reward-pools/gachapon"
 	"atlas-reward-pools/rest"
 	"errors"
 	"net/http"
@@ -73,12 +74,22 @@ func handleCreateItem(d *rest.HandlerDependency, c *rest.HandlerContext, rm Rest
 	return rest.ParseGachaponId(d.Logger(), func(gachaponId string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			t := tenant.MustFromContext(d.Context())
+
+			pool, err := gachapon.NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(gachaponId)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Retrieving gachapon [%s] to validate item.", gachaponId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
 			m, err := NewBuilder(t.Id(), 0).
 				SetGachaponId(gachaponId).
+				SetKind(pool.Kind()).
 				SetItemId(rm.ItemId).
 				SetQuantity(rm.Quantity).
 				SetTier(rm.Tier).
 				SetWeight(rm.Weight).
+				SetCommodityId(rm.CommodityId).
 				Build()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Building item model.")
@@ -102,7 +113,7 @@ func handleUpdateItem(d *rest.HandlerDependency, c *rest.HandlerContext, rm Rest
 	return rest.ParseGachaponId(d.Logger(), func(gachaponId string) http.HandlerFunc {
 		return rest.ParseItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				err := NewProcessor(d.Logger(), d.Context(), d.DB()).Update(itemId, rm.ItemId, rm.Quantity, rm.Tier, rm.Weight)
+				err := NewProcessor(d.Logger(), d.Context(), d.DB()).Update(itemId, rm.ItemId, rm.Quantity, rm.Tier, rm.Weight, rm.CommodityId)
 				if err != nil {
 					if errors.Is(err, gorm.ErrRecordNotFound) {
 						w.WriteHeader(http.StatusNotFound)

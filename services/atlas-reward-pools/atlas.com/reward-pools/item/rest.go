@@ -3,12 +3,13 @@ package item
 import "strconv"
 
 type RestModel struct {
-	Id         uint32 `json:"-"`
-	GachaponId string `json:"gachaponId"`
-	ItemId     uint32 `json:"itemId"`
-	Quantity   uint32 `json:"quantity"`
-	Tier       string `json:"tier"`
-	Weight     uint32 `json:"weight"`
+	Id          uint32 `json:"-"`
+	GachaponId  string `json:"gachaponId"`
+	ItemId      uint32 `json:"itemId"`
+	Quantity    uint32 `json:"quantity"`
+	Tier        string `json:"tier"`
+	Weight      uint32 `json:"weight"`
+	CommodityId uint32 `json:"commodityId"`
 }
 
 func (r RestModel) GetName() string {
@@ -30,19 +31,21 @@ func (r *RestModel) SetID(idStr string) error {
 
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:         m.Id(),
-		GachaponId: m.GachaponId(),
-		ItemId:     m.ItemId(),
-		Quantity:   m.Quantity(),
-		Tier:       m.Tier(),
-		Weight:     m.Weight(),
+		Id:          m.Id(),
+		GachaponId:  m.GachaponId(),
+		ItemId:      m.ItemId(),
+		Quantity:    m.Quantity(),
+		Tier:        m.Tier(),
+		Weight:      m.Weight(),
+		CommodityId: m.CommodityId(),
 	}, nil
 }
 
 type JSONModel struct {
-	GachaponId string `json:"gachaponId"`
-	ItemId     uint32 `json:"itemId"`
-	Quantity   uint32 `json:"quantity"`
-	Tier       string `json:"tier"`
-	Weight     uint32 `json:"weight"`
+	GachaponId  string `json:"gachaponId"`
+	ItemId      uint32 `json:"itemId"`
+	Quantity    uint32 `json:"quantity"`
+	Tier        string `json:"tier"`
+	Weight      uint32 `json:"weight"`
+	CommodityId uint32 `json:"commodityId"`
 }

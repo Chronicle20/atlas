@@ -630,6 +630,24 @@ Call-site anchor: `CCashShop::OnStatusCoupon` @ `0x47b9f1` calls
 @ `0x487e10`) = 55, equal to 72 switch cases − 18 defaults + 1 default = 55. ✅
 Atlas needs **one additional error constant** to cover v87 fully.
 
+**Reserved reason bytes that are NOT notices** (added task-206 Task 9 — this
+section was the only GMS version without the subsection its siblings carry;
+nothing mis-sends today because none of the three is mapped, but the record
+had no in-place warning against a future hand-edit). The implied trio from
+v83's 162/164/177 plus the proven +15 is 177/179/192, and decompiling
+`CCashShop::OnCashItemResUseCouponFailed` @ `0x485f93` **confirms all three
+exactly**:
+
+| Byte | Behaviour | Evidence |
+|---|---|---|
+| 177 (0xB1) | `NoticeFailReason` (default text — 177 is in the default-case set) **then** `CCashShop::SendTransferFieldPacket` — kicks the player out of the cash shop | `if ( v3 == 177 \|\| v3 == 179 )` @ `0x485fb9`; `NoticeFailReason` @ `0x485fc8`, `SendTransferFieldPacket` @ `0x485fcf` |
+| 179 (0xB3) | same as 177 | `0x485fb9` |
+| 192 (0xC0) | notice StringPool **558** **then** `CCashShop::OnStatusExit` — the coupon "wrong number → disconnect" byte | `if ( v4 == 192 )` @ `0x485fda`; `GetString(&v6, 558)` @ `0x485ff3`, `CUtilDlg::Notice` @ `0x485ff8`, `OnStatusExit` @ `0x486002` |
+
+192 = v83's 177 + 15 ✅ and both 177 and 179 are in v87's default-case set, so
+none of the three collides with a mapped key. None is mapped in
+`cash_shop_operation.yaml`.
+
 ### `USE_COUPON` request body
 
 Opcode **243 / `0xF3`**, built by `CCashShop::OnStatusCoupon` @ `0x47b9d4`.
@@ -651,8 +669,9 @@ No mode byte.
 
 **Status: PARTIAL.** The `errors` enum and the `USE_COUPON` body are fully
 derived. The serverbound arm table is **not** complete — see the explicit gap
-statement at the end of this section. The clientbound 57-arm table was **not**
-re-derived in this pass — see the note below.
+statement at the end of this section. The clientbound 57-arm table **was**
+derived in full by task-206 Task 9 — see
+"### gms_v92 clientbound arm table" below.
 
 - Serverbound `CASHSHOP_OPERATION` opcode: **268 / `0x10C`**.
 - Serverbound `COUPON_CODE` opcode: **269 / `0x10D`** (registry correct;
@@ -796,20 +815,113 @@ writes the v92 column of `cash_shop_operation_handle.yaml`.** What remains:
 decompile (and name) the 25 v92 sender functions, which is ~25 small
 decompiles in session `acdfccff`.
 
-### gms_v92 clientbound template diff
+### gms_v92 clientbound arm table
 
-**NOT DERIVED in this pass.** The v92 clientbound `OnCashItemResult` arm table
-(`0x495300`) was not enumerated — the pass ran out of budget on the four
-serverbound tables. Note for whoever picks this up: an IDA-derived v92 column
-**already exists** in
-`docs/tasks/task-183-cashshop-result-family/arm-catalog.md` (that table carries
-all nine tenant versions, v92 included), while
-`docs/packets/dispatchers/cash_shop_operation.yaml` has **no** `gms_v92` key
-anywhere in the file (verified by grep). So the correct next step is probably
-*not* a fresh decompile but (a) porting the arm-catalog's v92 column into the
-YAML and (b) diffing it against `template_gms_92_1.json`'s 57 keys — with a
-spot re-derivation from `0x495300` to confirm the catalog.
+**DERIVED IN FULL this pass (task-206 Task 9) — the earlier note above is
+superseded and its premise was wrong.** `docs/tasks/task-183-cashshop-result-
+family/arm-catalog.md` does **not** carry a v92 column: its nine per-arm columns
+are v48 / v61 / v72 / v79 / v83 / v84 / v87 / v95 / jms — v92 is not among them
+(`grep -c v92 arm-catalog.md` → 0). There was nothing to port, so the whole arm
+table was enumerated directly rather than spot-checked.
 
+**Why this mattered.** `cash_shop_operation.yaml` had no `gms_v92` key anywhere,
+and `packet-audit operations` short-circuits on `len(expected) == 0`, so
+`template_gms_92_1.json`'s 57 `CashShopOperation` `operations` keys were
+validated by **nothing** while `--check` still reported OK.
+
+**Jump-table header.** `CCashShop::OnCashItemResult` @ `0x495300`
+(session `acdfccff`): `CInPacket::Decode1` @ `0x49530a`,
+`add eax, 0FFFFFFADh` (bias −83) @ `0x495312`, `cmp eax, 66h` @ `0x495315`,
+`ja def_495325` @ `0x495318`, annotated **"switch 103 cases"** with
+**"default case, cases 84-86,93-96,102,105,125-146,157,158,161-166,168-171,
+174,175,177"**. Domain **83…185** = 103 values; the default set has 46 members
+(3+4+1+1+22+2+6+4+2+1); 103 − 46 = **57 explicit cases**, matching the 57
+distinct jump targets IDA lists at `jmp ds:jpt_495325` and the first arm's own
+annotation `jumptable 00495325 case 83` @ `0x49532c`.
+
+**This is not an ordinal alignment.** All 57 handlers carry their real mangled
+symbols in this IDB, so each mode byte is attached to its Atlas key through the
+`handler:` fname already recorded in `cash_shop_operation.yaml` — every row is
+`verified`, none is `aligned`. The five arms the brief asked to be re-derived
+by hand (including both coupon arms) are marked ★.
+
+| Atlas key | mode | handler fname | dispatch call addr |
+|---|---|---|---|
+| ★ LIMIT_GOODS_COUNT_CHANGED | 83 | `CCashShop::OnCashItemResLimitGoodsCountChanged` | `0x49532f` |
+| LOAD_INVENTORY_SUCCESS | 87 | `CCashShop::OnCashItemResLoadLockerDone` | `0x49533c` |
+| LOAD_INVENTORY_FAILURE | 88 | `CCashShop::OnCashItemResLoadLockerFailed` | `0x495349` |
+| LOAD_GIFT_SUCCESS | 89 | `CCashShop::OnCashItemResLoadGiftDone` | `0x495356` |
+| LOAD_GIFT_FAILED | 90 | `CCashShop::OnCashItemResLoadGiftFailed` | `0x495363` |
+| LOAD_WISHLIST | 91 | `CCashShop::OnCashItemResLoadWishDone` | `0x495370` |
+| LOAD_WISH_FAILED | 92 | `CCashShop::OnCashItemResLoadWishFailed` | `0x49537d` |
+| UPDATE_WISHLIST | 97 | `CCashShop::OnCashItemResSetWishDone` | `0x49538a` |
+| SET_WISH_FAILED | 98 | `CCashShop::OnCashItemResSetWishFailed` | `0x495397` |
+| PURCHASE_SUCCESS | 99 | `CCashShop::OnCashItemResBuyDone` | `0x4953a4` |
+| BUY_FAILED | 100 | `CCashShop::OnCashItemResBuyFailed` | `0x4953b1` |
+| ★ USE_COUPON_SUCCESS | 101 | `CCashShop::OnCashItemResUseCouponDone` | `0x4953f2` |
+| GIFT_COUPON_SUCCESS | 103 | `CCashShop::OnCashItemResGiftCouponDone` | `0x4953ff` |
+| ★ USE_COUPON_FAILED | 104 | `CCashShop::OnCashItemResUseCouponFailed` | `0x49540c` |
+| GIFT_SUCCESS | 106 | `CCashShop::OnCashItemResGiftDone` | `0x495419` |
+| GIFT_FAILED | 107 | `CCashShop::OnCashItemResGiftFailed` | `0x495426` |
+| INVENTORY_CAPACITY_INCREASE_SUCCESS | 108 | `CCashShop::OnCashItemResIncSlotCountDone` | `0x495433` |
+| INVENTORY_CAPACITY_INCREASE_FAILED | 109 | `CCashShop::OnCashItemResIncSlotCountFailed` | `0x495440` |
+| INC_TRUNK_COUNT_SUCCESS | 110 | `CCashShop::OnCashItemResIncTrunkCountDone` | `0x49544d` |
+| INC_TRUNK_COUNT_FAILED | 111 | `CCashShop::OnCashItemResIncTrunkCountFailed` | `0x49545a` |
+| INC_CHARACTER_SLOT_COUNT_SUCCESS | 112 | `CCashShop::OnCashItemResIncCharacterSlotCountDone` | `0x495467` |
+| INC_CHARACTER_SLOT_COUNT_FAILED | 113 | `CCashShop::OnCashItemResIncCharacterSlotCountFailed` | `0x495474` |
+| INC_BUY_CHARACTER_COUNT_SUCCESS | 114 | `CCashShop::OnCashItemResIncBuyCharacterCountDone` | `0x495481` |
+| INC_BUY_CHARACTER_COUNT_FAILED | 115 | `CCashShop::OnCashItemResIncBuyCharacterCountFailed` | `0x49548e` |
+| ENABLE_EQUIP_SLOT_EXT_SUCCESS | 116 | `CCashShop::OnCashItemResEnableEquipSlotExtDone` | `0x49549b` |
+| ENABLE_EQUIP_SLOT_EXT_FAILED | 117 | `CCashShop::OnCashItemResEnableEquipSlotExtFailed` | `0x4954a8` |
+| CASH_ITEM_MOVED_TO_INVENTORY | 118 | `CCashShop::OnCashItemResMoveLtoSDone` | `0x4954b5` |
+| MOVE_L_TO_S_FAILED | 119 | `CCashShop::OnCashItemResMoveLtoSFailed` | `0x4954c2` |
+| CASH_ITEM_MOVED_TO_CASH_INVENTORY | 120 | `CCashShop::OnCashItemResMoveStoLDone` | `0x4954cf` |
+| MOVE_S_TO_L_FAILED | 121 | `CCashShop::OnCashItemResMoveStoLFailed` | `0x4954dc` |
+| DESTROY_SUCCESS | 122 | `CCashShop::OnCashItemResDestroyDone` | `0x4954e9` |
+| DESTROY_FAILED | 123 | `CCashShop::OnCashItemResDestroyFailed` | `0x4954f6` |
+| EXPIRE_DONE | 124 | `CCashShop::OnCashItemResExpireDone` | `0x49555e` |
+| REBATE_SUCCESS | 147 | `CCashShop::OnCashItemResRebateDone` | `0x495503` |
+| REBATE_FAILED | 148 | `CCashShop::OnCashItemResRebateFailed` | `0x495510` |
+| COUPLE_SUCCESS | 149 | `CCashShop::OnCashItemResCoupleDone` | `0x49551d` |
+| COUPLE_FAILED | 150 | `CCashShop::OnCashItemResCoupleFailed` | `0x49552a` |
+| BUY_PACKAGE_SUCCESS | 151 | `CCashShop::OnCashItemResBuyPackageDone` | `0x4953be` |
+| BUY_PACKAGE_FAILED | 152 | `CCashShop::OnCashItemResBuyPackageFailed` | `0x4953cb` |
+| GIFT_PACKAGE_SUCCESS | 153 | `CCashShop::OnCashItemResGiftPackageDone` | `0x4953d8` |
+| GIFT_PACKAGE_FAILED | 154 | `CCashShop::OnCashItemResGiftPackageFailed` | `0x4953e5` |
+| ★ BUY_NORMAL_SUCCESS | 155 | `CCashShop::OnCashItemResBuyNormalDone` | `0x49556b` |
+| BUY_NORMAL_FAILED | 156 | `CCashShop::OnCashItemResBuyNormalFailed` | `0x495578` |
+| FRIENDSHIP_SUCCESS | 159 | `CCashShop::OnCashItemResFriendShipDone` | `0x495537` |
+| FRIENDSHIP_FAILED | 160 | `CCashShop::OnCashItemResFriendShipFailed` | `0x495544` |
+| FREE_CASH_ITEM_DONE | 167 | `CCashShop::OnCashItemResFreeCashItemDone` | `0x495551` |
+| PURCHASE_RECORD | 172 | `CCashShop::OnCashItemResPurchaseRecord` | `0x4955ac` |
+| PURCHASE_RECORD_FAILED | 173 | `CCashShop::OnCashItemResPurchaseRecordFailed` | `0x4955b9` |
+| NAME_CHANGE_BUY_DONE | 176 | `CCashShop::OnCashItemNameChangeResBuyDone` | `0x495585` |
+| TRANSFER_WORLD_SUCCESS | 178 | `CCashShop::OnCashItemResTransferWorldDone` | `0x495592` |
+| TRANSFER_WORLD_FAILED | 179 | `CCashShop::OnCashItemResTransferWorldFailed` | `0x49559f` |
+| GACHAPON_OPEN_SUCCESS | 180 | `CCashShop::OnCashItemResCashGachaponOpenDone` | `0x4955c6` |
+| GACHAPON_OPEN_FAILED | 181 | `CCashShop::OnCashItemResCashGachaponOpenFailed` | `0x4955d3` |
+| GACHAPON_COPY_SUCCESS | 182 | `CCashShop::OnCashItemResCashGachaponCopyDone` | `0x4955e0` |
+| GACHAPON_COPY_FAILED | 183 | `CCashShop::OnCashItemResCashGachaponCopyFailed` | `0x4955ed` |
+| ★ CHANGE_MAPLE_POINT_SUCCESS | 184 | `CCashShop::OnCashItemResChangeMaplePointDone` | `0x4955fa` |
+| CHANGE_MAPLE_POINT_FAILED | 185 | `CCashShop::OnCashItemResChangeMaplePointFailed` | `0x495607` |
+
+★ spot re-derivations (done first, before the full sweep, as the catalog-
+agreement gate the brief specified): `USE_COUPON_SUCCESS` = **101** @ `0x4953f2`,
+`USE_COUPON_FAILED` = **104** @ `0x49540c`, `LIMIT_GOODS_COUNT_CHANGED` = **83**
+@ `0x49532f` (independently confirmed by the disassembler comment
+`jumptable 00495325 case 83`), `BUY_NORMAL_SUCCESS` = **155** @ `0x49556b`,
+`CHANGE_MAPLE_POINT_SUCCESS` = **184** @ `0x4955fa`. All five equal the shipped
+template values (101 and 104 for the two coupon arms, as the brief predicted).
+
+**Diff against `template_gms_92_1.json` (57 existing keys): ZERO differences.**
+Same key set (no template-only key, no derived-only key) and the same value for
+all 57. So Step 4's "treat disagreement as a template bug" branch did not fire:
+**no v92 wire byte changed**, and `packet-audit operations` regenerates the file
+byte-identically. The only change is that the column now EXISTS in the YAML, so
+`--check` actually validates those 57 keys instead of skipping them.
+
+Ten of the YAML's 67 `operations` keys have no v92 arm (absent by full case
+enumeration, so `n-a`, recorded as key-omission per this file's convention).
 ---
 
 ## gms_v95
@@ -1165,6 +1277,559 @@ pair and one else-arm).
 
 ---
 
+## gms_v48
+
+IDB `GMS_v48_1_DEVM.exe.i64`, session `93cc947e`. Failure-reason sink:
+`CCashShop::NoticeFailReason` @ `0x456073` (already named in this IDB).
+
+### `errors` enum
+
+**Jump-table header (read, not inferred).** `add eax, 0FFFFFF8Fh` (bias −113) @ `0x456079`,
+`cmp eax, 2Ah` @ `0x45607c`, IDA annotation **"switch 43 cases"** with
+**"default case, cases 114,139,140"**. Domain **113…155** (43 values) minus the
+3 default-set values ⇒ **40 explicit cases**, which equals the 40 distinct
+jump-table targets IDA lists at the `jmp ds:jpt_…` line.
+
+**The constant-offset hypothesis FAILS — nothing here is offset-derived.**
+The test the v84/v87/v92/v95 passes used is exact set-equality of the
+default-case set under a constant offset. v83's domain is 163…233 (71 cases,
+18-member default set); this version's is 113…155 (43 cases, 3-member default
+set). Neither the case count, the range, nor the default set maps under any
+offset — in particular the offset the `OnStatusCoupon` gate would imply
+(137 − 195 = -58) predicts a domain starting at 105, not 113. **Rejected.**
+Per the stop rule, every case body was instead decompiled individually and
+its `StringPool` id read (addresses in the table below).
+
+**How the keys were assigned.** The 40 explicit cases were aligned ordinally
+against v83's 53-case list. Four independent constraints pin that alignment:
+
+- **Anchor A (exact, direct).** Exactly one case in this version does not use
+  the StringPool — it builds the inline literal `"The coupon system will be
+  available soon."` (`aTheCouponSyste`). It is case **143** @ `0x4562de`, at
+  ordinal position 28 of this version's case list. v83's inline-literal case
+  (`0xD2`) is at ordinal position 35 of its 53. ⇒ `COUPON_SYSTEM_AVAILABLE_SOON`.
+- **Anchor B (exact, call site).** `CCashShop::OnStatusCoupon` @ `0x44d304`
+  calls `NoticeFailReason(this, 137)` when the cash-shop-loaded flag
+  `[this+0x40]` is clear (address from §"Legacy versions — COUPON_CODE
+  applicability"). Case 137 sits at ordinal position 24 here; v83's gate (195)
+  sits at ordinal 29 of its 53. ⇒ `CASH_SHOP_NOT_AVAILABLE_DURING_BETA`.
+- **Anchor C (structural, id-block deltas).** StringPool ids are not stable
+  across GMS versions (this version's default-case id is 534; v83's is 557), so
+  id *equality* proves nothing. What is stable is the *internal delta pattern*
+  of each contiguous run. Every multi-member run in this version's id list has
+  a byte-identical delta pattern to the correspondingly-positioned run in v83's
+  (see the `v83 id` column below) — a run inserted or deleted anywhere would
+  break it.
+- **Anchor D (paired singleton).** v83 uses two consecutive ids at two far-apart
+  ordinals — 3274 at ordinal 17 (`COUPON_NOT_REGISTERED`) and 3275 at ordinal 31
+  (`ONLY_AVAILABLE_TO_USERS_BUYING`). This version reproduces that signature
+  exactly with 2938 / 2939 at the correspondingly-mapped ordinals.
+
+Anchors A and B independently fix how many keys are missing *before* each of
+them, and the id-delta alignment fixes *which*. The two counts agree, which
+is the consistency check — see the row-count self-check below.
+
+Rows are `aligned` (ordinal inference, same evidence class as the v83 `aligned`
+rows — the byte is real and the client renders *a* notice for it, but the exact
+English wording is unconfirmed) or `verified` where an anchor names the row
+directly. No `aligned` row is restated as `verified` anywhere.
+
+| Key | Byte | StringPool id | v83 id | Conf. | Evidence (case body addr) |
+|---|---|---|---|---|---|
+| REQUEST_TIMED_OUT | 0x71 (113) | 514 | 534 | aligned | `0x45608e` |
+| NOT_ENOUGH_CASH | 0x73 (115) | 515 | 535 | aligned | `0x4560a4` |
+| CANNOT_GIFT_WHEN_UNDERAGE | 0x74 (116) | 516 | 536 | aligned | `0x4560ba` |
+| EXCEEDED_GIFT_LIMIT | 0x75 (117) | 517 | 537 | aligned | `0x4560d0` |
+| EXCEEDED_CASH_ITEM_LIMIT | 0x76 (118) | 518 | 538 | aligned | `0x4560e6` |
+| INCORRECT_NAME_OR_GENDER_RESTRICTION | 0x77 (119) | 519 | 539 | aligned | `0x4560fc` |
+| INVALID_COUPON_CODE | 0x78 (120) | 526 | 547 | aligned | `0x456196` |
+| COUPON_EXPIRED | 0x79 (121) | 522 | 543 | aligned | `0x45613e` |
+| COUPON_ALREADY_USED | 0x7A (122) | 521 | 542 | aligned | `0x456128` |
+| COUPON_INTERNET_CAFE_RESTRICTION | 0x7B (123) | 523 | 544 | aligned | `0x456154` |
+| INTERNET_CAFE_COUPON_ALREADY_USED | 0x7C (124) | 524 | 545 | aligned | `0x45616a` |
+| INTERNET_CAFE_COUPON_EXPIRED | 0x7D (125) | 525 | 546 | aligned | `0x456180` |
+| COUPON_NOT_REGISTERED | 0x7E (126) | 2938 | 3274 | aligned | `0x45629e` |
+| COUPON_GENDER_RESTRICTION | 0x7F (127) | 520 | 541 | aligned | `0x456112` |
+| COUPON_ONLY_FOR_MAPLE_STORY | 0x80 (128) | 529 | 552 | aligned | `0x4561ac` |
+| INVENTORY_FULL | 0x81 (129) | 775 | 853 | aligned | `0x4561c2` |
+| NOT_AVAILABLE_FOR_PURCHASE | 0x82 (130) | 530 | 553 | aligned | `0x4561d8` |
+| CANNOT_GIFT_INVALID_NAME_OR_GENDER | 0x83 (131) | 531 | 554 | aligned | `0x4561ee` |
+| CHECK_NAME_OF_RECEIVER | 0x84 (132) | 554 | 583 | aligned | `0x456204` |
+| NOT_AVAILABLE_FOR_PURCHASE_AT_HOUR | 0x85 (133) | 2264 | 2505 | aligned | `0x45621a` |
+| OUT_OF_STOCK | 0x86 (134) | 2265 | 2506 | aligned | `0x456230` |
+| EXCEEDED_SPENDING_LIMIT | 0x87 (135) | 532 | 555 | aligned | `0x456246` |
+| NOT_ENOUGH_MESOS | 0x88 (136) | 263 | 5599 | aligned | `0x45625c` |
+| CASH_SHOP_NOT_AVAILABLE_DURING_BETA | 0x89 (137) | 533 | 556 | **verified (anchor B)** | `0x456272` |
+| INVALID_BIRTHDAY | 0x8A (138) | 495 | 514 | aligned | `0x456288` |
+| ONLY_AVAILABLE_TO_USERS_BUYING | 0x8D (141) | 2939 | 3275 | aligned | `0x4562b4` |
+| ALREADY_APPLIED | 0x8E (142) | 3210 | 3558 | aligned | `0x4562ca` |
+| COUPON_SYSTEM_AVAILABLE_SOON | 0x8F (143) | inline literal | inline | **verified (anchor A)** | `0x4562de` |
+| FIFTEEN_DAY_LIMIT | 0x90 (144) | 3449 | 3749 | aligned | `0x4562fd` |
+| NOT_ENOUGH_GIFT_TOKENS | 0x91 (145) | 3643 | 3992 | aligned | `0x456313` |
+| CANNOT_SEND_TECHNICAL_DIFFICULTIES | 0x92 (146) | 3644 | 3993 | aligned | `0x456329` |
+| CANNOT_GIFT_ACCOUNT_AGE | 0x93 (147) | 3645 | 3994 | aligned | `0x45633f` |
+| CANNOT_GIFT_PREVIOUS_INFRACTIONS | 0x94 (148) | 3646 | 3995 | aligned | `0x456355` |
+| CANNOT_GIFT_AT_THIS_TIME | 0x95 (149) | 3647 | 3996 | aligned | `0x45636b` |
+| CANNOT_GIFT_LIMIT | 0x96 (150) | 3648 | 3997 | aligned | `0x456381` |
+| CANNOT_GIFT_TECHNICAL_DIFFICULTIES | 0x97 (151) | 3649 | 3998 | aligned | `0x456394` |
+| CANNOT_TRANSFER_UNDER_LEVEL_TWENTY | 0x98 (152) | 3655 | 4002 | aligned | `0x4563a7` |
+| CANNOT_TRANSFER_TO_SAME_WORLD | 0x99 (153) | 3658 | 4005 | aligned | `0x4563ba` |
+| CANNOT_TRANSFER_TO_NEW_WORLD | 0x9A (154) | 3659 | 4006 | aligned | `0x4563cd` |
+| CANNOT_TRANSFER_OUT | 0x9B (155) | 3660 | 4007 | aligned | `0x4563e0` |
+| UNKNOWN_ERROR | *(any unlisted byte)* | 534 | 557 | verified | default case `0x4563f3` |
+
+#### Atlas keys ABSENT from this version (13) — no case exists
+
+These are absent-by-enumeration, not unknown: the full case list above is
+complete for the switch's whole domain, so a key with no row has no byte.
+
+- `CANNOT_GIFT_TO_OWN_ACCOUNT`
+- `INCORRECT_NAME`
+- `CANNOT_GIFT_GENDER_RESTRICTION`
+- `CANNOT_GIFT_RECIPIENT_INVENTORY_FULL`
+- `COUPON_CANNOT_BE_GIFTED`
+- `DAILY_PURCHASE_LIMIT`
+- `COUPON_USAGE_LIMIT`
+- `CANNOT_TRANSFER_NO_EMPTY_SLOTS`
+- `EVENT_ENDED_OR_CANT_BE_FREELY_TESTED`
+- `CANNOT_BE_PURCHASED_WITH_MAPLE_POINTS`
+- `PLEASE_TRY_AGAIN`
+- `CANNOT_BE_PURCHASED_WHEN_UNDER_SEVEN`
+- `CANNOT_BE_RECEIVED_WHEN_UNDER_SEVEN`
+
+**Row-count self-check:** 40 mapped rows + 13 absent = 53 Atlas keys;
+40 explicit cases = 43 domain values − 3 default-set values. ✅
+
+**Reserved reason bytes that are NOT notices** (must never be mapped to an
+Atlas key — they change client state):
+
+| Byte | Behaviour | Evidence |
+|---|---|---|
+| 112 (0x70) | `NoticeFailReason` (default text) **then** `CCashShop::SendTransferFieldPacket` — kicks the player out of the cash shop | `CCashShop::OnCashItemResUseCouponFailed` @ `0x454cb9`, branch `0x454cd4` |
+| 114 (0x72) | same as 112 | `0x454cd4` |
+
+Neither byte is an explicit case (112 is below the switch domain / in the
+default set, 114 is in the default set), so neither can collide with a mapped
+key — machine-checked. **This version has NO coupon-specific
+"wrong number → `OnStatusExit`" byte**: unlike v83 (`0xB1`) / v84 (186) /
+v87 (192) / v92 (15), the `else` arm of `OnCashItemResUseCouponFailed` is a
+plain `NoticeFailReason` call with no follow-up — same shape as jms_v185.
+
+---
+
+## gms_v61
+
+IDB `GMS_v61.1_U_DEVM.exe.i64`, session `415bf585`. Failure-reason sink:
+`CCashShop::NoticeFailReason` @ `0x463ef4` (already named in this IDB).
+
+### `errors` enum
+
+**Jump-table header (read, not inferred).** `add eax, 0FFFFFF80h` (bias −128) @ `0x463efa`,
+`cmp eax, 33h` @ `0x463efd`, IDA annotation **"switch 52 cases"** with
+**"default case, cases 129,155,156,159-162,164,165"**. Domain **128…179** (52 values) minus the
+9 default-set values ⇒ **43 explicit cases**, which equals the 43 distinct
+jump-table targets IDA lists at the `jmp ds:jpt_…` line.
+
+**The constant-offset hypothesis FAILS — nothing here is offset-derived.**
+The test the v84/v87/v92/v95 passes used is exact set-equality of the
+default-case set under a constant offset. v83's domain is 163…233 (71 cases,
+18-member default set); this version's is 128…179 (52 cases, 9-member default
+set). Neither the case count, the range, nor the default set maps under any
+offset — in particular the offset the `OnStatusCoupon` gate would imply
+(153 − 195 = -42) predicts a domain starting at 121, not 128. **Rejected.**
+Per the stop rule, every case body was instead decompiled individually and
+its `StringPool` id read (addresses in the table below).
+
+**How the keys were assigned.** The 43 explicit cases were aligned ordinally
+against v83's 53-case list. Four independent constraints pin that alignment:
+
+- **Anchor A (exact, direct).** Exactly one case in this version does not use
+  the StringPool — it builds the inline literal `"The coupon system will be
+  available soon."` (`aTheCouponSyste`). It is case **167** @ `0x4641a3`, at
+  ordinal position 31 of this version's case list. v83's inline-literal case
+  (`0xD2`) is at ordinal position 35 of its 53. ⇒ `COUPON_SYSTEM_AVAILABLE_SOON`.
+- **Anchor B (exact, call site).** `CCashShop::OnStatusCoupon` @ `0x45a6d2`
+  calls `NoticeFailReason(this, 153)` when the cash-shop-loaded flag
+  `[this+0x40]` is clear (address from §"Legacy versions — COUPON_CODE
+  applicability"). Case 153 sits at ordinal position 25 here; v83's gate (195)
+  sits at ordinal 29 of its 53. ⇒ `CASH_SHOP_NOT_AVAILABLE_DURING_BETA`.
+- **Anchor C (structural, id-block deltas).** StringPool ids are not stable
+  across GMS versions (this version's default-case id is 569; v83's is 557), so
+  id *equality* proves nothing. What is stable is the *internal delta pattern*
+  of each contiguous run. Every multi-member run in this version's id list has
+  a byte-identical delta pattern to the correspondingly-positioned run in v83's
+  (see the `v83 id` column below) — a run inserted or deleted anywhere would
+  break it.
+- **Anchor D (paired singleton).** v83 uses two consecutive ids at two far-apart
+  ordinals — 3274 at ordinal 17 (`COUPON_NOT_REGISTERED`) and 3275 at ordinal 31
+  (`ONLY_AVAILABLE_TO_USERS_BUYING`). This version reproduces that signature
+  exactly with 3194 / 3195 at the correspondingly-mapped ordinals.
+
+Anchors A and B independently fix how many keys are missing *before* each of
+them, and the id-delta alignment fixes *which*. The two counts agree, which
+is the consistency check — see the row-count self-check below.
+
+Rows are `aligned` (ordinal inference, same evidence class as the v83 `aligned`
+rows — the byte is real and the client renders *a* notice for it, but the exact
+English wording is unconfirmed) or `verified` where an anchor names the row
+directly. No `aligned` row is restated as `verified` anywhere.
+
+| Key | Byte | StringPool id | v83 id | Conf. | Evidence (case body addr) |
+|---|---|---|---|---|---|
+| REQUEST_TIMED_OUT | 0x80 (128) | 547 | 534 | aligned | `0x463f0f` |
+| NOT_ENOUGH_CASH | 0x82 (130) | 548 | 535 | aligned | `0x463f25` |
+| CANNOT_GIFT_WHEN_UNDERAGE | 0x83 (131) | 549 | 536 | aligned | `0x463f3b` |
+| EXCEEDED_GIFT_LIMIT | 0x84 (132) | 550 | 537 | aligned | `0x463f51` |
+| EXCEEDED_CASH_ITEM_LIMIT | 0x85 (133) | 551 | 538 | aligned | `0x463f67` |
+| INCORRECT_NAME_OR_GENDER_RESTRICTION | 0x86 (134) | 552 | 539 | aligned | `0x463f7d` |
+| INVALID_COUPON_CODE | 0x87 (135) | 560 | 547 | aligned | `0x46402d` |
+| COUPON_EXPIRED | 0x88 (136) | 556 | 543 | aligned | `0x463fd5` |
+| COUPON_ALREADY_USED | 0x89 (137) | 555 | 542 | aligned | `0x463fbf` |
+| COUPON_INTERNET_CAFE_RESTRICTION | 0x8A (138) | 557 | 544 | aligned | `0x463feb` |
+| INTERNET_CAFE_COUPON_ALREADY_USED | 0x8B (139) | 558 | 545 | aligned | `0x464001` |
+| INTERNET_CAFE_COUPON_EXPIRED | 0x8C (140) | 559 | 546 | aligned | `0x464017` |
+| COUPON_NOT_REGISTERED | 0x8D (141) | 3194 | 3274 | aligned | `0x46414b` |
+| COUPON_GENDER_RESTRICTION | 0x8E (142) | 554 | 541 | aligned | `0x463fa9` |
+| COUPON_CANNOT_BE_GIFTED | 0x8F (143) | 563 | 551 | aligned | `0x464043` |
+| COUPON_ONLY_FOR_MAPLE_STORY | 0x90 (144) | 564 | 552 | aligned | `0x464059` |
+| INVENTORY_FULL | 0x91 (145) | 836 | 853 | aligned | `0x46406f` |
+| NOT_AVAILABLE_FOR_PURCHASE | 0x92 (146) | 565 | 553 | aligned | `0x464085` |
+| CANNOT_GIFT_INVALID_NAME_OR_GENDER | 0x93 (147) | 566 | 554 | aligned | `0x46409b` |
+| CHECK_NAME_OF_RECEIVER | 0x94 (148) | 590 | 583 | aligned | `0x4640b1` |
+| NOT_AVAILABLE_FOR_PURCHASE_AT_HOUR | 0x95 (149) | 2465 | 2505 | aligned | `0x4640c7` |
+| OUT_OF_STOCK | 0x96 (150) | 2466 | 2506 | aligned | `0x4640dd` |
+| EXCEEDED_SPENDING_LIMIT | 0x97 (151) | 567 | 555 | aligned | `0x4640f3` |
+| NOT_ENOUGH_MESOS | 0x98 (152) | 278 | 5599 | aligned | `0x464109` |
+| CASH_SHOP_NOT_AVAILABLE_DURING_BETA | 0x99 (153) | 568 | 556 | **verified (anchor B)** | `0x46411f` |
+| INVALID_BIRTHDAY | 0x9A (154) | 527 | 514 | aligned | `0x464135` |
+| ONLY_AVAILABLE_TO_USERS_BUYING | 0x9D (157) | 3195 | 3275 | aligned | `0x464161` |
+| ALREADY_APPLIED | 0x9E (158) | 3480 | 3558 | aligned | `0x464177` |
+| DAILY_PURCHASE_LIMIT | 0xA3 (163) | 553 | 540 | aligned | `0x463f93` |
+| COUPON_USAGE_LIMIT | 0xA6 (166) | 4380 | 4457 | aligned | `0x46418d` |
+| COUPON_SYSTEM_AVAILABLE_SOON | 0xA7 (167) | inline literal | inline | **verified (anchor A)** | `0x4641a3` |
+| FIFTEEN_DAY_LIMIT | 0xA8 (168) | 3670 | 3749 | aligned | `0x4641c0` |
+| NOT_ENOUGH_GIFT_TOKENS | 0xA9 (169) | 3917 | 3992 | aligned | `0x4641d6` |
+| CANNOT_SEND_TECHNICAL_DIFFICULTIES | 0xAA (170) | 3918 | 3993 | aligned | `0x4641ec` |
+| CANNOT_GIFT_ACCOUNT_AGE | 0xAB (171) | 3919 | 3994 | aligned | `0x464202` |
+| CANNOT_GIFT_PREVIOUS_INFRACTIONS | 0xAC (172) | 3920 | 3995 | aligned | `0x464218` |
+| CANNOT_GIFT_AT_THIS_TIME | 0xAD (173) | 3921 | 3996 | aligned | `0x46422e` |
+| CANNOT_GIFT_LIMIT | 0xAE (174) | 3922 | 3997 | aligned | `0x464244` |
+| CANNOT_GIFT_TECHNICAL_DIFFICULTIES | 0xAF (175) | 3923 | 3998 | aligned | `0x464257` |
+| CANNOT_TRANSFER_UNDER_LEVEL_TWENTY | 0xB0 (176) | 3927 | 4002 | aligned | `0x46426a` |
+| CANNOT_TRANSFER_TO_SAME_WORLD | 0xB1 (177) | 3930 | 4005 | aligned | `0x46427d` |
+| CANNOT_TRANSFER_TO_NEW_WORLD | 0xB2 (178) | 3931 | 4006 | aligned | `0x464290` |
+| CANNOT_TRANSFER_OUT | 0xB3 (179) | 3932 | 4007 | aligned | `0x4642a3` |
+| UNKNOWN_ERROR | *(any unlisted byte)* | 569 | 557 | verified | default case `0x4642b6` |
+
+#### Atlas keys ABSENT from this version (10) — no case exists
+
+These are absent-by-enumeration, not unknown: the full case list above is
+complete for the switch's whole domain, so a key with no row has no byte.
+
+- `CANNOT_GIFT_TO_OWN_ACCOUNT`
+- `INCORRECT_NAME`
+- `CANNOT_GIFT_GENDER_RESTRICTION`
+- `CANNOT_GIFT_RECIPIENT_INVENTORY_FULL`
+- `CANNOT_TRANSFER_NO_EMPTY_SLOTS`
+- `EVENT_ENDED_OR_CANT_BE_FREELY_TESTED`
+- `CANNOT_BE_PURCHASED_WITH_MAPLE_POINTS`
+- `PLEASE_TRY_AGAIN`
+- `CANNOT_BE_PURCHASED_WHEN_UNDER_SEVEN`
+- `CANNOT_BE_RECEIVED_WHEN_UNDER_SEVEN`
+
+**Row-count self-check:** 43 mapped rows + 10 absent = 53 Atlas keys;
+43 explicit cases = 52 domain values − 9 default-set values. ✅
+
+**Reserved reason bytes that are NOT notices** (must never be mapped to an
+Atlas key — they change client state):
+
+| Byte | Behaviour | Evidence |
+|---|---|---|
+| 127 (0x7F) | `NoticeFailReason` (default text) **then** `CCashShop::SendTransferFieldPacket` — kicks the player out of the cash shop | `CCashShop::OnCashItemResUseCouponFailed` @ `0x462936`, branch `0x462953` |
+| 129 (0x81) | same as 127 | `0x462953` |
+
+Neither byte is an explicit case (127 is below the switch domain / in the
+default set, 129 is in the default set), so neither can collide with a mapped
+key — machine-checked. **This version has NO coupon-specific
+"wrong number → `OnStatusExit`" byte**: unlike v83 (`0xB1`) / v84 (186) /
+v87 (192) / v92 (15), the `else` arm of `OnCashItemResUseCouponFailed` is a
+plain `NoticeFailReason` call with no follow-up — same shape as jms_v185.
+
+---
+
+## gms_v72
+
+IDB `GMS_v72.1_U_DEVM.exe.i64`, session `c8acae95`. Failure-reason sink:
+`CCashShop::NoticeFailReason` @ `0x473ba9` (already named in this IDB).
+
+### `errors` enum
+
+**Jump-table header (read, not inferred).** `add eax, 0FFFFFF73h` (bias −141) @ `0x473baf`,
+`cmp eax, 3Ah` @ `0x473bb4`, IDA annotation **"switch 59 cases"** with
+**"default case, cases 142,172,173,176-179,181,182,184"**. Domain **141…199** (59 values) minus the
+10 default-set values ⇒ **49 explicit cases**, which equals the 49 distinct
+jump-table targets IDA lists at the `jmp ds:jpt_…` line.
+
+**The constant-offset hypothesis FAILS — nothing here is offset-derived.**
+The test the v84/v87/v92/v95 passes used is exact set-equality of the
+default-case set under a constant offset. v83's domain is 163…233 (71 cases,
+18-member default set); this version's is 141…199 (59 cases, 10-member default
+set). Neither the case count, the range, nor the default set maps under any
+offset — in particular the offset the `OnStatusCoupon` gate would imply
+(170 − 195 = -25) predicts a domain starting at 138, not 141. **Rejected.**
+Per the stop rule, every case body was instead decompiled individually and
+its `StringPool` id read (addresses in the table below).
+
+**How the keys were assigned.** The 49 explicit cases were aligned ordinally
+against v83's 53-case list. Four independent constraints pin that alignment:
+
+- **Anchor A (exact, direct).** Exactly one case in this version does not use
+  the StringPool — it builds the inline literal `"The coupon system will be
+  available soon."` (`aTheCouponSyste`). It is case **185** @ `0x473e5a`, at
+  ordinal position 35 of this version's case list. v83's inline-literal case
+  (`0xD2`) is at ordinal position 35 of its 53. ⇒ `COUPON_SYSTEM_AVAILABLE_SOON`.
+- **Anchor B (exact, call site).** `CCashShop::OnStatusCoupon` @ `0x4698f5`
+  calls `NoticeFailReason(this, 170)` when the cash-shop-loaded flag
+  `[this+0x40]` is clear (address from §"Legacy versions — COUPON_CODE
+  applicability"). Case 170 sits at ordinal position 29 here; v83's gate (195)
+  sits at ordinal 29 of its 53. ⇒ `CASH_SHOP_NOT_AVAILABLE_DURING_BETA`.
+- **Anchor C (structural, id-block deltas).** StringPool ids are not stable
+  across GMS versions (this version's default-case id is 558; v83's is 557), so
+  id *equality* proves nothing. What is stable is the *internal delta pattern*
+  of each contiguous run. Every multi-member run in this version's id list has
+  a byte-identical delta pattern to the correspondingly-positioned run in v83's
+  (see the `v83 id` column below) — a run inserted or deleted anywhere would
+  break it.
+- **Anchor D (paired singleton).** v83 uses two consecutive ids at two far-apart
+  ordinals — 3274 at ordinal 17 (`COUPON_NOT_REGISTERED`) and 3275 at ordinal 31
+  (`ONLY_AVAILABLE_TO_USERS_BUYING`). This version reproduces that signature
+  exactly with 3249 / 3250 at the correspondingly-mapped ordinals.
+
+Anchors A and B independently fix how many keys are missing *before* each of
+them, and the id-delta alignment fixes *which*. The two counts agree, which
+is the consistency check — see the row-count self-check below.
+
+Rows are `aligned` (ordinal inference, same evidence class as the v83 `aligned`
+rows — the byte is real and the client renders *a* notice for it, but the exact
+English wording is unconfirmed) or `verified` where an anchor names the row
+directly. No `aligned` row is restated as `verified` anywhere.
+
+| Key | Byte | StringPool id | v83 id | Conf. | Evidence (case body addr) |
+|---|---|---|---|---|---|
+| REQUEST_TIMED_OUT | 0x8D (141) | 536 | 534 | aligned | `0x473bc6` |
+| NOT_ENOUGH_CASH | 0x8F (143) | 537 | 535 | aligned | `0x473bdc` |
+| CANNOT_GIFT_WHEN_UNDERAGE | 0x90 (144) | 538 | 536 | aligned | `0x473bf2` |
+| EXCEEDED_GIFT_LIMIT | 0x91 (145) | 539 | 537 | aligned | `0x473c08` |
+| CANNOT_GIFT_TO_OWN_ACCOUNT | 0x92 (146) | 4509 | 4537 | aligned | `0x473fa5` |
+| INCORRECT_NAME | 0x93 (147) | 4510 | 4538 | aligned | `0x473fb8` |
+| CANNOT_GIFT_GENDER_RESTRICTION | 0x94 (148) | 4511 | 4539 | aligned | `0x473fcb` |
+| CANNOT_GIFT_RECIPIENT_INVENTORY_FULL | 0x95 (149) | 4512 | 4540 | aligned | `0x473fde` |
+| EXCEEDED_CASH_ITEM_LIMIT | 0x96 (150) | 540 | 538 | aligned | `0x473c1e` |
+| INCORRECT_NAME_OR_GENDER_RESTRICTION | 0x97 (151) | 541 | 539 | aligned | `0x473c34` |
+| INVALID_COUPON_CODE | 0x98 (152) | 549 | 547 | aligned | `0x473ce4` |
+| COUPON_EXPIRED | 0x99 (153) | 545 | 543 | aligned | `0x473c8c` |
+| COUPON_ALREADY_USED | 0x9A (154) | 544 | 542 | aligned | `0x473c76` |
+| COUPON_INTERNET_CAFE_RESTRICTION | 0x9B (155) | 546 | 544 | aligned | `0x473ca2` |
+| INTERNET_CAFE_COUPON_ALREADY_USED | 0x9C (156) | 547 | 545 | aligned | `0x473cb8` |
+| INTERNET_CAFE_COUPON_EXPIRED | 0x9D (157) | 548 | 546 | aligned | `0x473cce` |
+| COUPON_NOT_REGISTERED | 0x9E (158) | 3249 | 3274 | aligned | `0x473e02` |
+| COUPON_GENDER_RESTRICTION | 0x9F (159) | 543 | 541 | aligned | `0x473c60` |
+| COUPON_CANNOT_BE_GIFTED | 0xA0 (160) | 552 | 551 | aligned | `0x473cfa` |
+| COUPON_ONLY_FOR_MAPLE_STORY | 0xA1 (161) | 553 | 552 | aligned | `0x473d10` |
+| INVENTORY_FULL | 0xA2 (162) | 854 | 853 | aligned | `0x473d26` |
+| NOT_AVAILABLE_FOR_PURCHASE | 0xA3 (163) | 554 | 553 | aligned | `0x473d3c` |
+| CANNOT_GIFT_INVALID_NAME_OR_GENDER | 0xA4 (164) | 555 | 554 | aligned | `0x473d52` |
+| CHECK_NAME_OF_RECEIVER | 0xA5 (165) | 584 | 583 | aligned | `0x473d68` |
+| NOT_AVAILABLE_FOR_PURCHASE_AT_HOUR | 0xA6 (166) | 2488 | 2505 | aligned | `0x473d7e` |
+| OUT_OF_STOCK | 0xA7 (167) | 2489 | 2506 | aligned | `0x473d94` |
+| EXCEEDED_SPENDING_LIMIT | 0xA8 (168) | 556 | 555 | aligned | `0x473daa` |
+| NOT_ENOUGH_MESOS | 0xA9 (169) | 5092 | 5599 | aligned | `0x473dc0` |
+| CASH_SHOP_NOT_AVAILABLE_DURING_BETA | 0xAA (170) | 557 | 556 | **verified (anchor B)** | `0x473dd6` |
+| INVALID_BIRTHDAY | 0xAB (171) | 516 | 514 | aligned | `0x473dec` |
+| ONLY_AVAILABLE_TO_USERS_BUYING | 0xAE (174) | 3250 | 3275 | aligned | `0x473e18` |
+| ALREADY_APPLIED | 0xAF (175) | 3534 | 3558 | aligned | `0x473e2e` |
+| DAILY_PURCHASE_LIMIT | 0xB4 (180) | 542 | 540 | aligned | `0x473c4a` |
+| COUPON_USAGE_LIMIT | 0xB7 (183) | 4436 | 4457 | aligned | `0x473e44` |
+| COUPON_SYSTEM_AVAILABLE_SOON | 0xB9 (185) | inline literal | inline | **verified (anchor A)** | `0x473e5a` |
+| FIFTEEN_DAY_LIMIT | 0xBA (186) | 3724 | 3749 | aligned | `0x473e77` |
+| NOT_ENOUGH_GIFT_TOKENS | 0xBB (187) | 3968 | 3992 | aligned | `0x473e8d` |
+| CANNOT_SEND_TECHNICAL_DIFFICULTIES | 0xBC (188) | 3969 | 3993 | aligned | `0x473ea3` |
+| CANNOT_GIFT_ACCOUNT_AGE | 0xBD (189) | 3970 | 3994 | aligned | `0x473eb9` |
+| CANNOT_GIFT_PREVIOUS_INFRACTIONS | 0xBE (190) | 3971 | 3995 | aligned | `0x473ecf` |
+| CANNOT_GIFT_AT_THIS_TIME | 0xBF (191) | 3972 | 3996 | aligned | `0x473ee5` |
+| CANNOT_GIFT_LIMIT | 0xC0 (192) | 3973 | 3997 | aligned | `0x473efb` |
+| CANNOT_GIFT_TECHNICAL_DIFFICULTIES | 0xC1 (193) | 3974 | 3998 | aligned | `0x473f11` |
+| CANNOT_TRANSFER_UNDER_LEVEL_TWENTY | 0xC2 (194) | 3978 | 4002 | aligned | `0x473f27` |
+| CANNOT_TRANSFER_TO_SAME_WORLD | 0xC3 (195) | 3981 | 4005 | aligned | `0x473f3d` |
+| CANNOT_TRANSFER_TO_NEW_WORLD | 0xC4 (196) | 3982 | 4006 | aligned | `0x473f53` |
+| CANNOT_TRANSFER_OUT | 0xC5 (197) | 3983 | 4007 | aligned | `0x473f69` |
+| CANNOT_TRANSFER_NO_EMPTY_SLOTS | 0xC6 (198) | 3984 | 4008 | aligned | `0x473f7f` |
+| EVENT_ENDED_OR_CANT_BE_FREELY_TESTED | 0xC7 (199) | 3996 | 4020 | aligned | `0x473f92` |
+| UNKNOWN_ERROR | *(any unlisted byte)* | 558 | 557 | verified | default case `0x473ff1` |
+
+#### Atlas keys ABSENT from this version (4) — no case exists
+
+These are absent-by-enumeration, not unknown: the full case list above is
+complete for the switch's whole domain, so a key with no row has no byte.
+
+- `CANNOT_BE_PURCHASED_WITH_MAPLE_POINTS`
+- `PLEASE_TRY_AGAIN`
+- `CANNOT_BE_PURCHASED_WHEN_UNDER_SEVEN`
+- `CANNOT_BE_RECEIVED_WHEN_UNDER_SEVEN`
+
+**Row-count self-check:** 49 mapped rows + 4 absent = 53 Atlas keys;
+49 explicit cases = 59 domain values − 10 default-set values. ✅
+
+**Reserved reason bytes that are NOT notices** (must never be mapped to an
+Atlas key — they change client state):
+
+| Byte | Behaviour | Evidence |
+|---|---|---|
+| 140 (0x8C) | `NoticeFailReason` (default text) **then** `CCashShop::SendTransferFieldPacket` — kicks the player out of the cash shop | `CCashShop::OnCashItemResUseCouponFailed` @ `0x4724a4`, branch `0x4724c3` |
+| 142 (0x8E) | same as 140 | `0x4724c3` |
+
+Neither byte is an explicit case (140 is below the switch domain / in the
+default set, 142 is in the default set), so neither can collide with a mapped
+key — machine-checked. **This version has NO coupon-specific
+"wrong number → `OnStatusExit`" byte**: unlike v83 (`0xB1`) / v84 (186) /
+v87 (192) / v92 (15), the `else` arm of `OnCashItemResUseCouponFailed` is a
+plain `NoticeFailReason` call with no follow-up — same shape as jms_v185.
+
+---
+
+## gms_v79
+
+IDB `GMS_v79_1_DEVM.exe.i64`, session `1438cecd`. Failure-reason sink:
+`CCashShop::NoticeFailReason` @ `0x475075` (already named in this IDB).
+
+### `errors` enum
+
+**Jump-table header (read, not inferred).** `add eax, 0FFFFFF65h` (bias −155) @ `0x47507b`,
+`cmp eax, 43h` @ `0x475080`, IDA annotation **"switch 68 cases"** with
+**"default case, cases 156,186,187,190-193,195,196,198,214-218"**. Domain **155…222** (68 values) minus the
+15 default-set values ⇒ **53 explicit cases**, which equals the 53 distinct
+jump-table targets IDA lists at the `jmp ds:jpt_…` line.
+
+**The constant-offset hypothesis FAILS — nothing here is offset-derived.**
+The test the v84/v87/v92/v95 passes used is exact set-equality of the
+default-case set under a constant offset. v83's domain is 163…233 (71 cases,
+18-member default set); this version's is 155…222 (68 cases, 15-member default
+set). Neither the case count, the range, nor the default set maps under any
+offset — in particular the offset the `OnStatusCoupon` gate would imply
+(184 − 195 = -11) predicts a domain starting at 152, not 155. **Rejected.**
+Per the stop rule, every case body was instead decompiled individually and
+its `StringPool` id read (addresses in the table below).
+
+**How the keys were assigned.** The 53 explicit cases were aligned ordinally
+against v83's 53-case list. Four independent constraints pin that alignment:
+
+- **Anchor A (exact, direct).** Exactly one case in this version does not use
+  the StringPool — it builds the inline literal `"The coupon system will be
+  available soon."` (`aTheCouponSyste`). It is case **199** @ `0x475326`, at
+  ordinal position 35 of this version's case list. v83's inline-literal case
+  (`0xD2`) is at ordinal position 35 of its 53. ⇒ `COUPON_SYSTEM_AVAILABLE_SOON`.
+- **Anchor B (exact, call site).** `CCashShop::OnStatusCoupon` @ `0x46aa5b`
+  calls `NoticeFailReason(this, 184)` when the cash-shop-loaded flag
+  `[this+0x40]` is clear (address from §"Legacy versions — COUPON_CODE
+  applicability"). Case 184 sits at ordinal position 29 here; v83's gate (195)
+  sits at ordinal 29 of its 53. ⇒ `CASH_SHOP_NOT_AVAILABLE_DURING_BETA`.
+- **Anchor C (structural, id-block deltas).** StringPool ids are not stable
+  across GMS versions (this version's default-case id is 558; v83's is 557), so
+  id *equality* proves nothing. What is stable is the *internal delta pattern*
+  of each contiguous run. Every multi-member run in this version's id list has
+  a byte-identical delta pattern to the correspondingly-positioned run in v83's
+  (see the `v83 id` column below) — a run inserted or deleted anywhere would
+  break it.
+- **Anchor D (paired singleton).** v83 uses two consecutive ids at two far-apart
+  ordinals — 3274 at ordinal 17 (`COUPON_NOT_REGISTERED`) and 3275 at ordinal 31
+  (`ONLY_AVAILABLE_TO_USERS_BUYING`). This version reproduces that signature
+  exactly with 3254 / 3255 at the correspondingly-mapped ordinals.
+
+Case count 53 equals v83's 53 and both anchors land on their v83 ordinal
+unchanged (29 and 35), so the alignment is a straight 1:1 with no holes.
+
+Rows are `aligned` (ordinal inference, same evidence class as the v83 `aligned`
+rows — the byte is real and the client renders *a* notice for it, but the exact
+English wording is unconfirmed) or `verified` where an anchor names the row
+directly. No `aligned` row is restated as `verified` anywhere.
+
+| Key | Byte | StringPool id | v83 id | Conf. | Evidence (case body addr) |
+|---|---|---|---|---|---|
+| REQUEST_TIMED_OUT | 0x9B (155) | 536 | 534 | aligned | `0x475092` |
+| NOT_ENOUGH_CASH | 0x9D (157) | 537 | 535 | aligned | `0x4750a8` |
+| CANNOT_GIFT_WHEN_UNDERAGE | 0x9E (158) | 538 | 536 | aligned | `0x4750be` |
+| EXCEEDED_GIFT_LIMIT | 0x9F (159) | 539 | 537 | aligned | `0x4750d4` |
+| CANNOT_GIFT_TO_OWN_ACCOUNT | 0xA0 (160) | 4499 | 4537 | aligned | `0x475477` |
+| INCORRECT_NAME | 0xA1 (161) | 4500 | 4538 | aligned | `0x47548d` |
+| CANNOT_GIFT_GENDER_RESTRICTION | 0xA2 (162) | 4501 | 4539 | aligned | `0x4754a3` |
+| CANNOT_GIFT_RECIPIENT_INVENTORY_FULL | 0xA3 (163) | 4502 | 4540 | aligned | `0x4754b6` |
+| EXCEEDED_CASH_ITEM_LIMIT | 0xA4 (164) | 540 | 538 | aligned | `0x4750ea` |
+| INCORRECT_NAME_OR_GENDER_RESTRICTION | 0xA5 (165) | 541 | 539 | aligned | `0x475100` |
+| INVALID_COUPON_CODE | 0xA6 (166) | 549 | 547 | aligned | `0x4751b0` |
+| COUPON_EXPIRED | 0xA7 (167) | 545 | 543 | aligned | `0x475158` |
+| COUPON_ALREADY_USED | 0xA8 (168) | 544 | 542 | aligned | `0x475142` |
+| COUPON_INTERNET_CAFE_RESTRICTION | 0xA9 (169) | 546 | 544 | aligned | `0x47516e` |
+| INTERNET_CAFE_COUPON_ALREADY_USED | 0xAA (170) | 547 | 545 | aligned | `0x475184` |
+| INTERNET_CAFE_COUPON_EXPIRED | 0xAB (171) | 548 | 546 | aligned | `0x47519a` |
+| COUPON_NOT_REGISTERED | 0xAC (172) | 3254 | 3274 | aligned | `0x4752ce` |
+| COUPON_GENDER_RESTRICTION | 0xAD (173) | 543 | 541 | aligned | `0x47512c` |
+| COUPON_CANNOT_BE_GIFTED | 0xAE (174) | 552 | 551 | aligned | `0x4751c6` |
+| COUPON_ONLY_FOR_MAPLE_STORY | 0xAF (175) | 553 | 552 | aligned | `0x4751dc` |
+| INVENTORY_FULL | 0xB0 (176) | 853 | 853 | aligned | `0x4751f2` |
+| NOT_AVAILABLE_FOR_PURCHASE | 0xB1 (177) | 554 | 553 | aligned | `0x475208` |
+| CANNOT_GIFT_INVALID_NAME_OR_GENDER | 0xB2 (178) | 555 | 554 | aligned | `0x47521e` |
+| CHECK_NAME_OF_RECEIVER | 0xB3 (179) | 584 | 583 | aligned | `0x475234` |
+| NOT_AVAILABLE_FOR_PURCHASE_AT_HOUR | 0xB4 (180) | 2490 | 2505 | aligned | `0x47524a` |
+| OUT_OF_STOCK | 0xB5 (181) | 2491 | 2506 | aligned | `0x475260` |
+| EXCEEDED_SPENDING_LIMIT | 0xB6 (182) | 556 | 555 | aligned | `0x475276` |
+| NOT_ENOUGH_MESOS | 0xB7 (183) | 5347 | 5599 | aligned | `0x47528c` |
+| CASH_SHOP_NOT_AVAILABLE_DURING_BETA | 0xB8 (184) | 557 | 556 | **verified (anchor B)** | `0x4752a2` |
+| INVALID_BIRTHDAY | 0xB9 (185) | 516 | 514 | aligned | `0x4752b8` |
+| ONLY_AVAILABLE_TO_USERS_BUYING | 0xBC (188) | 3255 | 3275 | aligned | `0x4752e4` |
+| ALREADY_APPLIED | 0xBD (189) | 3538 | 3558 | aligned | `0x4752fa` |
+| DAILY_PURCHASE_LIMIT | 0xC2 (194) | 542 | 540 | aligned | `0x475116` |
+| COUPON_USAGE_LIMIT | 0xC5 (197) | 4428 | 4457 | aligned | `0x475310` |
+| COUPON_SYSTEM_AVAILABLE_SOON | 0xC7 (199) | inline literal | inline | **verified (anchor A)** | `0x475326` |
+| FIFTEEN_DAY_LIMIT | 0xC8 (200) | 3728 | 3749 | aligned | `0x475343` |
+| NOT_ENOUGH_GIFT_TOKENS | 0xC9 (201) | 3971 | 3992 | aligned | `0x475359` |
+| CANNOT_SEND_TECHNICAL_DIFFICULTIES | 0xCA (202) | 3972 | 3993 | aligned | `0x47536f` |
+| CANNOT_GIFT_ACCOUNT_AGE | 0xCB (203) | 3973 | 3994 | aligned | `0x475385` |
+| CANNOT_GIFT_PREVIOUS_INFRACTIONS | 0xCC (204) | 3974 | 3995 | aligned | `0x47539b` |
+| CANNOT_GIFT_AT_THIS_TIME | 0xCD (205) | 3975 | 3996 | aligned | `0x4753b1` |
+| CANNOT_GIFT_LIMIT | 0xCE (206) | 3976 | 3997 | aligned | `0x4753c7` |
+| CANNOT_GIFT_TECHNICAL_DIFFICULTIES | 0xCF (207) | 3977 | 3998 | aligned | `0x4753dd` |
+| CANNOT_TRANSFER_UNDER_LEVEL_TWENTY | 0xD0 (208) | 3981 | 4002 | aligned | `0x4753f3` |
+| CANNOT_TRANSFER_TO_SAME_WORLD | 0xD1 (209) | 3984 | 4005 | aligned | `0x475409` |
+| CANNOT_TRANSFER_TO_NEW_WORLD | 0xD2 (210) | 3985 | 4006 | aligned | `0x47541f` |
+| CANNOT_TRANSFER_OUT | 0xD3 (211) | 3986 | 4007 | aligned | `0x475435` |
+| CANNOT_TRANSFER_NO_EMPTY_SLOTS | 0xD4 (212) | 3987 | 4008 | aligned | `0x47544b` |
+| EVENT_ENDED_OR_CANT_BE_FREELY_TESTED | 0xD5 (213) | 3999 | 4020 | aligned | `0x475461` |
+| CANNOT_BE_PURCHASED_WITH_MAPLE_POINTS | 0xDB (219) | 5025 | 5063 | aligned | `0x4754c9` |
+| PLEASE_TRY_AGAIN | 0xDC (220) | 5026 | 5064 | aligned | `0x4754dc` |
+| CANNOT_BE_PURCHASED_WHEN_UNDER_SEVEN | 0xDD (221) | 5324 | 5573 | aligned | `0x4754ef` |
+| CANNOT_BE_RECEIVED_WHEN_UNDER_SEVEN | 0xDE (222) | 5325 | 5574 | aligned | `0x475502` |
+| UNKNOWN_ERROR | *(any unlisted byte)* | 558 | 557 | verified | default case `0x475515` |
+
+**Row-count self-check:** 53 mapped rows + 0 absent = 53 Atlas keys;
+53 explicit cases = 68 domain values − 15 default-set values. ✅
+
+**Reserved reason bytes that are NOT notices** (must never be mapped to an
+Atlas key — they change client state):
+
+| Byte | Behaviour | Evidence |
+|---|---|---|
+| 154 (0x9A) | `NoticeFailReason` (default text) **then** `CCashShop::SendTransferFieldPacket` — kicks the player out of the cash shop | `CCashShop::OnCashItemResUseCouponFailed` @ `0x473769`, branch `0x473788` |
+| 156 (0x9C) | same as 154 | `0x473788` |
+
+Neither byte is an explicit case (154 is below the switch domain / in the
+default set, 156 is in the default set), so neither can collide with a mapped
+key — machine-checked. **This version has NO coupon-specific
+"wrong number → `OnStatusExit`" byte**: unlike v83 (`0xB1`) / v84 (186) /
+v87 (192) / v92 (15), the `else` arm of `OnCashItemResUseCouponFailed` is a
+plain `NoticeFailReason` call with no follow-up — same shape as jms_v185.
+
+---
+
 ## Legacy versions — COUPON_CODE applicability
 
 The four legacy templates bind the CLIENTBOUND coupon arms
@@ -1257,6 +1922,10 @@ request.
 
 | version | reason-byte scale | domain | explicit reasons |
 |---|---|---|---|
+| gms_v48 | **no constant offset** — ordinal alignment, anchored | 113–155 (`0x71`–`0x9B`) | 40 explicit + default; **40 of 53 Atlas keys mapped, 13 absent** |
+| gms_v61 | **no constant offset** — ordinal alignment, anchored | 128–179 (`0x80`–`0xB3`) | 43 explicit + default; **43 of 53 mapped, 10 absent** |
+| gms_v72 | **no constant offset** — ordinal alignment, anchored | 141–199 (`0x8D`–`0xC7`) | 49 explicit + default; **49 of 53 mapped, 4 absent** |
+| gms_v79 | **no constant offset** — ordinal alignment, anchored, 1:1 with v83 | 155–222 (`0x9B`–`0xDE`) | 53 explicit + default; **all 53 mapped** |
 | gms_v83 | v83 baseline | `0xA3`–`0xE9` | 53 + default |
 | gms_v84 | v83 **+ 9** | `0xAC`–`0xF2` | 53 + default |
 | gms_v87 | v83 **+ 15** | `0xB2`–`0xF9` | 54 (one new) + default |

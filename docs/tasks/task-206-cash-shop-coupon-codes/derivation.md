@@ -13,6 +13,7 @@ Method: `docs/packets/audits/VERIFYING_A_PACKET.md`. Sessions resolved from
 | gms_v87 | `GMSv87_4GB.exe.i64` | `d51ecbd3` |
 | gms_v92 | `GMS_v92_1_DEVM.exe.i64` | `acdfccff` |
 | gms_v95 | `GMS_v95.0_U_DEVM.exe.i64` | `79906a1e` |
+| jms_v185 | `MapleStory_dump_SCY.exe.i64` | `b6864e54` |
 
 ---
 
@@ -910,6 +911,258 @@ is therefore **not** certified complete.
 
 ---
 
+## jms_v185
+
+**Status: body COMPLETE, errors enum PARTIAL (30 of 53 Atlas keys resolved).**
+The `COUPON_CODE` body is fully derived and carries a field no GMS version has.
+The `NoticeFailReason` enum **fails** the constant-offset set-equality test that
+proved v84/v87/v92/v95, so only the sub-domain where equality *does* hold was
+mapped; the remaining 23 keys are recorded as unresolved rather than
+offset-guessed. See "Why the offset proof stops at 211" below.
+
+- Serverbound `CASHSHOP_OPERATION` opcode: **245 / `0xF5`**
+  (`docs/packets/registry/jms_v185.yaml`).
+- Serverbound `COUPON_CODE` opcode: **246 / `0xF6`** — **registry value
+  CONFIRMED**, see below.
+- Request builder: `CCashShop::OnStatusCoupon` @ `0x482450` (already named in
+  this IDB; matches the registry's declared `fname`).
+- Coupon input dialog: `CCashShop::ShowCouponInputDlg` @ `0x482661`
+  (**named this pass**; was `sub_482661`).
+- Failure sink: `CCashShop::NoticeFailReason` @ `0x48eaf2`.
+- Coupon failure arm: `CCashShop::OnCashItemResUseCouponFailed` @ `0x48d390`.
+
+### Registry confirmation — `COUPON_CODE` opcode 246
+
+Task 1 left `jms_v185.yaml`'s `COUPON_CODE` at 246 with `provenance:
+csv-import`, never IDA-confirmed. It is **correct**. The only `COutPacket`
+ctor site for 246 inside the `CCashShop` region is
+`COutPacket::COutPacket(&oPacket, 0xF6)` @ `0x4825a4`, in
+`CCashShop::OnStatusCoupon` @ `0x482450`. Byte search `68 F6 00 00 00` returns
+5 hits; the other four are not packet ctors — `0x479519` is inside
+`CCashShop::Init` where 246 is the width argument of
+`CWnd::CreateWnd(this+4672, 0, 426, 246, 163, …)` @ `0x47952a`, and
+`0x565f9b` / `0x90f113` / `0xa7e6fc` are outside the `CCashShop` code region
+(`0x478e6f`–`0x48f002`). 246 = `CASHSHOP_OPERATION`(245) + 1, matching every
+other version's +1 relation. Registry `provenance` promoted `csv-import` →
+`manual` with the address; the numeric value is unchanged.
+
+### `COUPON_CODE` request body — a trailing `Encode1` no GMS version has
+
+No mode byte: after the ctor @ `0x4825a4` the first packet write is an
+`EncodeStr` @ `0x4825c1`. There is **no leading `Encode1`**, confirmed at the
+instruction level over the whole send path `0x4825a4`–`0x482618`.
+
+The three strings and the byte come from `CCashShop::ShowCouponInputDlg`
+@ `0x482661`, which fills three out-parameters from one modal dialog:
+`a2` ← `CCtrlEdit::GetText` on edit control #1 @ `0x48273b`, `a3` ←
+`CCtrlEdit::GetText` on edit control #2 @ `0x482766`, `a4` ←
+`*(v13[1]._m_nRef + 72)` @ `0x482793` (a control-derived integer).
+`OnStatusCoupon` calls it as `ShowCouponInputDlg(&v14, &s, &nType)` @
+`0x482488`-`0x48248e`, so `v14` = edit #1, `s` = edit #2, `nType` = the control
+value.
+
+| # | Field | Read | Evidence |
+|---|---|---|---|
+| 1 | target character id (`str`) — empty on the plain-redeem path | `COutPacket::EncodeStr` | ctor `0x4825a4`; `ZXString<char>::operator=(&v6, &s)` @ `0x4825b9` → `EncodeStr` @ `0x4825c1`. `s` is `ShowCouponInputDlg`'s second out-param and is the value that gates field 4 — the same structural role field 1 plays on v83/v84/v87, which gms_v95 names `sCharacterID` (`0x487fda`). |
+| 2 | coupon code (`str`) | `COutPacket::EncodeStr` | `lea eax,[ebp+var_18]` @ `0x4825c9`, `operator=` @ `0x4825d2` → `EncodeStr` @ `0x4825da`. `var_18` is `v14`, `ShowCouponInputDlg`'s first out-param (edit control #1). |
+| 3 | `nType` (`byte`) — **JMS-only field** | `COutPacket::Encode1` | `push [ebp+nType]` @ `0x4825df` → `Encode1` @ `0x4825e5`. Sourced from `*(v13[1]._m_nRef + 72)` @ `0x482793` in `ShowCouponInputDlg` — a value selected in the coupon dialog. **Semantics unknown / unverified**; only its position, width (1 byte) and origin are established. It is unconditionally on the wire. |
+| 4 | third string — reachable only when field 1 is non-empty | `COutPacket::EncodeStr` | guard `mov eax,[ebp+s._m_pStr]; cmp eax,ebx; jz` @ `0x4825ea`-`0x4825ef` plus `cmp [eax],bl; jz` @ `0x4825f1`-`0x4825f3` (i.e. `if (s && *s)`); `operator=` @ `0x482601` → `EncodeStr` @ `0x482609`. Encodes `var_14` (`v15`), written by `sub_868B75(&s, &v15)` @ `0x48258b` only inside the same `s`-non-empty branch. |
+
+`CClientSocket::SendPacket` @ `0x482618`; the in-flight flag `[this+1Ch]` is set
+to 1 @ `0x482620`. The whole builder is skipped when that flag is already set
+(`if (*(this+7)) return;` @ `0x482463`).
+
+**Row-count self-check:** 3 `EncodeStr` call sites (the third guarded) + 1
+`Encode1` in the send path → 4 rows. No other `Encode*` call between the ctor
+@ `0x4825a4` and `SendPacket` @ `0x482618`. ✅
+
+**Practical wire shape for jms_v185:**
+`[opcode 0xF6][str characterId][str couponCode][byte nType]` and, only when
+`characterId` is non-empty, a trailing `[str]`.
+
+### `errors` enum
+
+`CCashShop::NoticeFailReason` @ `0x48eaf2` is a jump-table switch:
+`add eax, 0FFFFFF4Eh` (bias **−178**) @ `0x48eb03`, `cmp eax, 3Bh` @ `0x48eb08`,
+`ja def_48EB13` @ `0x48eb0d`, `jmp jpt_48EB13[eax*4]` @ `0x48eb13`. IDA's own
+annotation reads **"switch 60 cases"** with **"default case, cases
+179,189,190,213-216,218,219,221,226,234,235"**. Accepted domain 178…237
+(`0xB2`…`0xED`) minus those 13 → **47 explicit case labels** (46 distinct
+bodies: 217 and 224 share one @ `0x48eec9`), everything else falling to the
+default notice (StringPool id 594, `0x48efcd`).
+
+**Anchor A (direct decompile).** `CCashShop::OnCashItemResUseCouponFailed`
+@ `0x48d390` reads one `Decode1` @ `0x48d39b` and passes it unmodified to
+`NoticeFailReason` @ `0x48d3b4` / `0x48d3be`. Its transfer-field pair is
+`if (v3 == 177 || v3 == 179)` @ `0x48d3af` → `SendTransferFieldPacket`
+@ `0x48d3c5`. v83's pair is 162, 164. **177 − 162 = 179 − 164 = +15.**
+
+**Anchor B (structural, StringPool run).** v83's four contiguous gift-failure
+cases 168–171 carry the contiguous StringPool run 4537, 4538, 4539, 4540
+(`0x47c57a`–`0x47c5b9`). jms cases 183–186 — exactly 168–171 + 15 — carry the
+contiguous run 4591, 4592, 4593, 4594 (`0x48edab`, `0x48edc1`, `0x48edd7`,
+`0x48eded`). A four-long contiguous id run landing on the four +15-corresponding
+positions is independent corroboration of the shift.
+
+**Anchor C (the brief's cash-shop-disabled gate) DOES NOT EXIST on jms.**
+`CCashShop::OnStatusCoupon` @ `0x482450` contains **no** `NoticeFailReason`
+call — its only gate is the in-flight flag `if (*(this+7)) return;` @
+`0x482463`. Confirmed by `xrefs_to 0x48eaf2`: 28 call sites, every one an
+`On*Failed` / `On*Result` receive handler, none in `OnStatusCoupon`. So the
+`X − 195 == offset` check the plan prescribed cannot be run on this version,
+and no value is asserted in its place.
+
+#### Why the offset proof stops at 211 (the equality test FAILS globally)
+
+The test the GMS passes used is exact set-equality of the default-case set
+under a constant offset. Under +15 it **fails**:
+
+- v83 domain 163…233 (71 cases) → +15 = 178…248. jms domain is 178…**237**
+  (60 cases). Same start, different end.
+- v83 default set + 15 = `{179,189,190,192,212,213,216-219,221,222,224,
+  240-244}` (18 values). jms default set = `{179,189,190,213-216,218,219,221,
+  226,234,235}` (13 values). **Not equal.**
+
+Per the plan's stop rule, no table is offset-derived from that. Each of the 47
+case bodies was instead read individually for its StringPool id (addresses in
+the tables below), and a cross-version id mapping was tested and **rejected**:
+the jms id for a +15-corresponding case is not a constant offset of the v83 id
+(v83 163→534 vs jms 178→574 is +40; v83 166→536 vs jms 181→577 is +41; v83
+178→543 vs jms 193→5919 is unrelated). JMS ships its own string table, so
+StringPool ids cannot be used to name jms keys.
+
+What *does* hold is set-equality on a **sub-domain**, and that is what is
+tabled. Restricted to v83 `[163,196]` → jms `[178,211]`:
+
+- v83 explicit cases in `[163,196]`: 30 values. +15 → jms `[178,211]`.
+- jms explicit cases in `[178,211]`: 31 values.
+- The two sets differ by **exactly one member**: jms **192**. 192 = v83 177 + 15,
+  and v83 177 (`0xB1`) is the coupon "wrong number → disconnect" reason that
+  v83 handles *specially* in `OnCashItemResUseCouponFailed` rather than as a
+  notice. jms's `OnCashItemResUseCouponFailed` @ `0x48d390` has **no** such
+  special branch (its whole body is the 177/179 pair and one else-arm), so that
+  reason became a plain notice case. Coherent divergence, not noise.
+- All 30 gap positions inside the sub-domain match. An inserted or deleted
+  reason anywhere inside `[178,211]` would break the gap pattern; none does.
+
+Rows in `[178,211]` are therefore marked `aligned (prefix set-equality)` —
+the same evidence class as the GMS `aligned` rows: the byte is real and the
+client renders *a* notice for it, but the specific Japanese wording is
+unconfirmed. Rows above 211 are **not** mapped.
+
+#### Mapped rows — Atlas keys #2–#31
+
+| Key | Byte | StringPool id | Conf. | Evidence (case body addr) |
+|---|---|---|---|---|
+| REQUEST_TIMED_OUT | 0xB2 (178) | 574 | aligned (prefix set-equality) | `0x48eb1c` |
+| NOT_ENOUGH_CASH | 0xB4 (180) | 575 | aligned (prefix set-equality) | `0x48eb32` |
+| CANNOT_GIFT_WHEN_UNDERAGE | 0xB5 (181) | 577 | aligned (prefix set-equality) | `0x48eb48` |
+| EXCEEDED_GIFT_LIMIT | 0xB6 (182) | 578 | aligned (prefix set-equality) | `0x48eb5e` |
+| CANNOT_GIFT_TO_OWN_ACCOUNT | 0xB7 (183) | 4591 | aligned (block-anchored, B) | `0x48edab` |
+| INCORRECT_NAME | 0xB8 (184) | 4592 | aligned (block-anchored, B) | `0x48edc1` |
+| CANNOT_GIFT_GENDER_RESTRICTION | 0xB9 (185) | 4593 | aligned (block-anchored, B) | `0x48edd7` |
+| CANNOT_GIFT_RECIPIENT_INVENTORY_FULL | 0xBA (186) | 4594 | aligned (block-anchored, B) | `0x48eded` |
+| EXCEEDED_CASH_ITEM_LIMIT | 0xBB (187) | 579 | aligned (prefix set-equality) | `0x48eb74` |
+| INCORRECT_NAME_OR_GENDER_RESTRICTION | 0xBC (188) | 580 | aligned (prefix set-equality) | `0x48eb8a` |
+| INVALID_COUPON_CODE | 0xBF (191) | 587 | aligned (prefix set-equality) | `0x48ec35` |
+| COUPON_EXPIRED | 0xC1 (193) | 5919 | aligned (prefix set-equality) | `0x48ebc7` |
+| COUPON_ALREADY_USED | 0xC2 (194) | 584 | aligned (prefix set-equality) | `0x48ebf3` |
+| COUPON_INTERNET_CAFE_RESTRICTION | 0xC3 (195) | 585 | aligned (prefix set-equality) | `0x48ec09` |
+| INTERNET_CAFE_COUPON_ALREADY_USED | 0xC4 (196) | 586 | aligned (prefix set-equality) | `0x48ec1f` |
+| INTERNET_CAFE_COUPON_EXPIRED | 0xC5 (197) | 3434 | aligned (prefix set-equality) | `0x48ed53` |
+| COUPON_NOT_REGISTERED | 0xC6 (198) | 582 | aligned (prefix set-equality) | `0x48ebb1` |
+| COUPON_GENDER_RESTRICTION | 0xC7 (199) | 589 | aligned (prefix set-equality) | `0x48ec4b` |
+| COUPON_CANNOT_BE_GIFTED | 0xC8 (200) | 590 | aligned (prefix set-equality) | `0x48ec61` |
+| COUPON_ONLY_FOR_MAPLE_STORY | 0xC9 (201) | 894 | aligned (prefix set-equality) | `0x48ec77` |
+| INVENTORY_FULL | 0xCA (202) | 591 | aligned (prefix set-equality) | `0x48ec8d` |
+| NOT_AVAILABLE_FOR_PURCHASE | 0xCB (203) | 592 | aligned (prefix set-equality) | `0x48eca3` |
+| CANNOT_GIFT_INVALID_NAME_OR_GENDER | 0xCC (204) | 614 | aligned (prefix set-equality) | `0x48ecb9` |
+| CHECK_NAME_OF_RECEIVER | 0xCD (205) | 2708 | aligned (prefix set-equality) | `0x48eccf` |
+| NOT_AVAILABLE_FOR_PURCHASE_AT_HOUR | 0xCE (206) | 2709 | aligned (prefix set-equality) | `0x48ece5` |
+| OUT_OF_STOCK | 0xCF (207) | 593 | aligned (prefix set-equality) | `0x48ecfb` |
+| EXCEEDED_SPENDING_LIMIT | 0xD0 (208) | 257 | aligned (prefix set-equality) | `0x48ed11` |
+| NOT_ENOUGH_MESOS | 0xD1 (209) | 5043 | aligned (prefix set-equality) | `0x48ed27` |
+| CASH_SHOP_NOT_AVAILABLE_DURING_BETA | 0xD2 (210) | 5522 | aligned (prefix set-equality) | `0x48ed3d` |
+| INVALID_BIRTHDAY | 0xD3 (211) | 3435 | aligned (prefix set-equality) | `0x48ed69` |
+| UNKNOWN_ERROR | *(any byte outside 178–237, or a default-set byte)* | 594 | verified | default case `0x48efcd` |
+
+#### Unresolved Atlas keys (23) — recorded absent, NOT guessed
+
+Every key from `ONLY_AVAILABLE_TO_USERS_BUYING` onward falls above jms 211,
+where the case set diverges from v83+15 (v83+15 predicts 214, 215, 220, 223,
+225–239, 245–248; jms actually has 212, 217, 220, 222–225, 227–233, 236, 237).
+No byte is asserted for any of them:
+
+`ONLY_AVAILABLE_TO_USERS_BUYING`, `ALREADY_APPLIED`, `DAILY_PURCHASE_LIMIT`,
+`COUPON_USAGE_LIMIT`, `COUPON_SYSTEM_AVAILABLE_SOON`, `FIFTEEN_DAY_LIMIT`,
+`NOT_ENOUGH_GIFT_TOKENS`, `CANNOT_SEND_TECHNICAL_DIFFICULTIES`,
+`CANNOT_GIFT_ACCOUNT_AGE`, `CANNOT_GIFT_PREVIOUS_INFRACTIONS`,
+`CANNOT_GIFT_AT_THIS_TIME`, `CANNOT_GIFT_LIMIT`,
+`CANNOT_GIFT_TECHNICAL_DIFFICULTIES`, `CANNOT_TRANSFER_UNDER_LEVEL_TWENTY`,
+`CANNOT_TRANSFER_TO_SAME_WORLD`, `CANNOT_TRANSFER_TO_NEW_WORLD`,
+`CANNOT_TRANSFER_OUT`, `CANNOT_TRANSFER_NO_EMPTY_SLOTS`,
+`EVENT_ENDED_OR_CANT_BE_FREELY_TESTED`,
+`CANNOT_BE_PURCHASED_WITH_MAPLE_POINTS`, `PLEASE_TRY_AGAIN`,
+`CANNOT_BE_PURCHASED_WHEN_UNDER_SEVEN`, `CANNOT_BE_RECEIVED_WHEN_UNDER_SEVEN`.
+
+Reason: no evidence route survives. Offset derivation is barred by the failed
+set-equality; StringPool cross-mapping is barred by the rejected id relation
+above; ordinal alignment is barred because the tail has 16 cases against 23
+keys. Resolving them requires reading the Japanese text behind each id from a
+JMS String.wz / StringPool dump, which is not present in this environment (the
+same dead end documented for gms_v83's `aligned` rows).
+
+The 16 unassigned tail cases are recorded here as raw evidence so a future pass
+with a JMS string table can finish the mapping without re-decompiling:
+
+| Byte | StringPool id | Evidence (case body addr) |
+|---|---|---|
+| 0xD4 (212) | 3722 | `0x48ed7f` |
+| 0xD9 (217) | 581 | `0x48eec9` (shared body with 224) |
+| 0xDC (220) | 4511 | `0x48ed95` |
+| 0xDE (222) | 4813 | `0x48ee9d` |
+| 0xDF (223) | 4814 | `0x48eeb3` |
+| 0xE0 (224) | 581 | `0x48eec9` (shared body with 217) |
+| 0xE1 (225) | 4986 | `0x48eedf` |
+| 0xE3 (227) | 5473 | `0x48ee2f` |
+| 0xE4 (228) | 5452 | `0x48ee45` |
+| 0xE5 (229) | 5455 | `0x48ee5b` |
+| 0xE6 (230) | 5456 | `0x48ee71` |
+| 0xE7 (231) | 5457 | `0x48ee87` |
+| 0xE8 (232) | 5786 (`0x169A`), `ZXString<char>::Format` with literal 30 | `0x48eef5`; `GetString` @ `0x48ef0e`, `Format` @ `0x48ef2c` |
+| 0xE9 (233) | 5786 (`0x169A`), `ZXString<char>::Format` with literal 70 | `0x48ef5c`; `GetString` @ `0x48ef75`, `Format` @ `0x48ef97` |
+| 0xEC (236) | 5664 | `0x48ee03` |
+| 0xED (237) | 5890 | `0x48ee19` |
+
+One further case inside the mapped sub-domain has no Atlas key:
+
+| Byte | StringPool id | Evidence | Note |
+|---|---|---|---|
+| 0xC0 (192) | 583 | `0x48ebdd` | = v83 `0xB1` + 15. A default case on v83/v84/v87 (handled specially in `OnCashItemResUseCouponFailed`); a plain notice on jms. Key unknown / unverified. |
+
+**Row-count self-check:** domain 178–237 = 60 values; 13 default-set values ⇒
+**47 explicit case labels**, matching IDA's "switch 60 cases" header. Split:
+sub-domain `[178,211]` = 34 values − 3 defaults (179, 189, 190) = 31 explicit
+= **30 Atlas-keyed rows + 1 unkeyed (192)**; tail `[212,237]` = 26 values − 10
+defaults (213–216, 218, 219, 221, 226, 234, 235) = **16 explicit, all
+unkeyed**. 31 + 16 = 47 ✅. Atlas key coverage: **30 of 53** mapped,
+**23 recorded absent**, plus `UNKNOWN_ERROR` on the default case.
+
+**Reserved reason bytes that are NOT notices** (must not be sent as a generic
+coupon error — they change client state):
+
+| Byte | Behaviour | Evidence |
+|---|---|---|
+| 0xB1 (177) | `NoticeFailReason` (default text — 177 is in the default-case set) **then** `CCashShop::SendTransferFieldPacket` — kicks the player out of the cash shop | `OnCashItemResUseCouponFailed` @ `0x48d3af`, `0x48d3be`, `0x48d3c5` |
+| 0xB3 (179) | same as 0xB1 | `0x48d3af` |
+
+jms has **no** coupon-specific "wrong number → `OnStatusExit`" byte; the v83
+`0xB1` / v84 `186` / v92 `15` special branch is absent from
+`OnCashItemResUseCouponFailed` @ `0x48d390` (its entire body is the 177/179
+pair and one else-arm).
+
+---
+
 ## Cross-version summary of the two values the codec needs
 
 | version | `COUPON_CODE` opcode | body |
@@ -919,6 +1172,7 @@ is therefore **not** certified complete.
 | gms_v87 | 243 / `0xF3` | same as v83 |
 | gms_v92 | 269 / `0x10D` | `str characterId` · `str couponCode` (no optional third) |
 | gms_v95 | 276 / `0x114` | `str characterId` · `str couponCode` (no optional third) |
+| jms_v185 | 246 / `0xF6` (registry confirmed) | `str characterId` · `str couponCode` · **`byte nType`** · optional `str` (guarded by `characterId` non-empty) |
 
 | version | reason-byte scale | domain | explicit reasons |
 |---|---|---|---|
@@ -927,3 +1181,4 @@ is therefore **not** certified complete.
 | gms_v87 | v83 **+ 15** | `0xB2`–`0xF9` | 54 (one new) + default |
 | gms_v92 | v83 **− 162** (1-based) | 1–69 | 56 (five new, two dropped) + default |
 | gms_v95 | identical to gms_v92 | 1–69 | 56 + default |
+| jms_v185 | v83 **+ 15** on `[163,196]` **only** — global set-equality FAILS above that | 178–237 (`0xB2`–`0xED`) | 47 explicit + default; **30 of 53 Atlas keys mapped, 23 absent** |

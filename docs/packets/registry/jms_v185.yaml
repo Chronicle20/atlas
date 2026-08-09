@@ -3375,7 +3375,19 @@
   opcode: 246
   fname: CCashShop::OnStatusCoupon
   packet: cash/serverbound/CouponCode
-  provenance: csv-import
+  provenance: manual
+  note: >-
+    task-206 IDA-confirmed 246 (value unchanged; provenance promoted from
+    csv-import, which had never been checked against the jms IDB). The jms v185
+    client builds the coupon packet with COutPacket(&oPacket, 0xF6) at 0x4825a4
+    inside CCashShop::OnStatusCoupon @ 0x482450. The other four 68 F6 00 00 00
+    byte hits are not packet ctors: 0x479519 is a CWnd::CreateWnd width argument
+    in CCashShop::Init, and 0x565f9b / 0x90f113 / 0xa7e6fc are outside the
+    CCashShop code region. 246 = CASHSHOP_OPERATION(245) + 1, matching every
+    other version's +1 relation. Body is NOT the GMS shape - it carries a
+    trailing Encode1(nType) between the coupon code and the optional third
+    string. Evidence:
+    docs/tasks/task-206-cash-shop-coupon-codes/derivation.md.
 - op: UNNAMED_R387
   direction: serverbound
   opcode: 247

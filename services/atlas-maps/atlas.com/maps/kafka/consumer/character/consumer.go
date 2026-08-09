@@ -2,7 +2,6 @@ package character
 
 import (
 	"atlas-maps/character/location"
-	"atlas-maps/data/map/info"
 	consumer2 "atlas-maps/kafka/consumer"
 	characterKafka "atlas-maps/kafka/message/character"
 	_map "atlas-maps/map"
@@ -50,9 +49,12 @@ func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, 
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogoutFunc(db)))); err != nil {
 			return err
 		}
-		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChangedFunc(db)))); err != nil {
-			return err
-		}
+		// NOTE: atlas-maps deliberately does NOT handle MAP_CHANGED here.
+		// It is the sole emitter of that event (kafka/producer/character.go,
+		// reached only from character/warp.ChangeMap); consuming it re-ran the
+		// transition and emitted CharacterEnter twice per warp (issue #1192).
+		// The map transition, location persistence, and map-time-limit timer
+		// hooks all live in warp.ChangeMap.
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChangedFunc(db)))); err != nil {
 			return err
 		}
@@ -132,34 +134,6 @@ func handleStatusEventLogoutFunc(db *gorm.DB) func(l logrus.FieldLogger, ctx con
 
 			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
 			_ = p.ExitAndEmit(transactionId, current, event.CharacterId)
-		}
-	}
-}
-
-func handleStatusEventMapChangedFunc(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, event characterKafka.StatusEvent[characterKafka.StatusEventMapChangedBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, event characterKafka.StatusEvent[characterKafka.StatusEventMapChangedBody]) {
-		if event.Type == characterKafka.EventCharacterStatusTypeMapChanged {
-			l.Debugf("Character [%d] has changed maps. worldId [%d] channelId [%d] oldMapId [%d] oldInstance [%s] newMapId [%d] newInstance [%s].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.OldMapId, event.Body.OldInstance, event.Body.TargetMapId, event.Body.TargetInstance)
-			transactionId := uuid.New()
-			newField := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.TargetMapId).SetInstance(event.Body.TargetInstance).Build()
-			oldField := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.OldMapId).SetInstance(event.Body.OldInstance).Build()
-			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
-			_ = p.TransitionMapAndEmit(transactionId, newField, event.CharacterId, oldField)
-			if _, err := location.NewProcessor(l, ctx, db).Set(event.CharacterId, newField); err != nil {
-				l.WithError(err).Warnf("location.Set on MAP_CHANGED failed for character [%d].", event.CharacterId)
-			}
-
-			// --- map-time-limit timer hooks (task-050) ---
-			tp := timer.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx))
-			tp.CancelIfTracked(event.CharacterId)
-			md, err := info.NewProcessor(l, ctx).GetById(event.Body.TargetMapId)
-			if err != nil {
-				l.WithError(err).Debugf("MapTimer: skipping registration for character [%d] target map [%d]; map info unavailable.", event.CharacterId, event.Body.TargetMapId)
-			} else if md.IsTimeLimited() {
-				if err := tp.Register(transactionId, event.CharacterId, newField, md.ForcedReturnMapId(), uint32(md.TimeLimit())); err != nil {
-					l.WithError(err).Warnf("MapTimer: failed to register timer for character [%d] map [%d].", event.CharacterId, event.Body.TargetMapId)
-				}
-			}
 		}
 	}
 }

@@ -1,0 +1,112 @@
+{
+  "service": "atlas-maps",
+  "path": "services/atlas-maps",
+  "date": "2026-08-09",
+  "build": "pass",
+  "testsPassed": 21,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "character/warp",
+      "type": "support",
+      "checks": [
+        {
+          "id": "FILE-01",
+          "name": "Processor interface + ProcessorImpl methods in processor.go",
+          "status": "pass",
+          "evidence": "services/atlas-maps/atlas.com/maps/character/warp/processor.go:34,50,60,81,116"
+        },
+        {
+          "id": "FILE-06",
+          "name": "No package-named catch-all file",
+          "status": "pass",
+          "evidence": "character/warp package contains only processor.go and processor_test.go"
+        },
+        {
+          "id": "DI-CONSTRUCTOR-SIGNATURE",
+          "name": "NewProcessor(l, ctx, db) signature preserved",
+          "status": "pass",
+          "evidence": "services/atlas-maps/atlas.com/maps/character/warp/processor.go:60"
+        },
+        {
+          "id": "DI-NEW-DEPS-COMPOSITION",
+          "name": "New deps (timer.Processor, info.Processor) constructed via their own NewProcessor(l, ctx, ...)",
+          "status": "pass",
+          "evidence": "services/atlas-maps/atlas.com/maps/character/warp/processor.go:68-69, matching map/timer/processor.go:37 and data/map/info/processor.go:24"
+        },
+        {
+          "id": "TEST-SEAM-SYNC",
+          "name": "newProcessorWithDeps test seam updated, no *_testhelpers.go added",
+          "status": "pass",
+          "evidence": "services/atlas-maps/atlas.com/maps/character/warp/processor.go:75-79; processor_test.go:131,179,210"
+        },
+        {
+          "id": "DOM-06",
+          "name": "Processor accepts logrus.FieldLogger",
+          "status": "pass",
+          "evidence": "services/atlas-maps/atlas.com/maps/character/warp/processor.go:60"
+        },
+        {
+          "id": "ERROR-PARITY-APPLYMAPTIMER",
+          "name": "applyMapTimer failures logged, not swallowed silently, don't abort ChangeMap",
+          "status": "pass",
+          "evidence": "services/atlas-maps/atlas.com/maps/character/warp/processor.go:116-129"
+        },
+        {
+          "id": "ERROR-PARITY-LOGLEVELS",
+          "name": "Log levels match the deleted consumer's original handling",
+          "status": "pass",
+          "evidence": "services/atlas-maps/atlas.com/maps/character/warp/processor.go:121 (Debugf), :128 (Warnf), matching deleted kafka/consumer/character/consumer.go handleStatusEventMapChangedFunc"
+        },
+        {
+          "id": "TEST-HELPER-CONVENTION",
+          "name": "No new *_testhelpers.go; new fixtures use domain Builder",
+          "status": "pass",
+          "evidence": "processor_test.go:172-178,207-209 use info.NewBuilder()...Build(); git show --stat HEAD lists only processor_test.go as touched test file"
+        },
+        {
+          "id": "DOM-24-STYLE",
+          "name": "Emit-path tests stubbed / faked, no live producer touched",
+          "status": "pass",
+          "evidence": "processor_test.go:28-47 capturingProducer fake; all three tests (:117,:164,:199) inject it via newProcessorWithDeps"
+        }
+      ]
+    },
+    {
+      "name": "kafka/consumer/character",
+      "type": "support",
+      "checks": [
+        {
+          "id": "FILE-01",
+          "name": "No new business logic misplaced into consumer.go",
+          "status": "pass",
+          "evidence": "services/atlas-maps/atlas.com/maps/kafka/consumer/character/consumer.go:39-74; handleStatusEventMapChangedFunc deleted, no replacement logic added here"
+        },
+        {
+          "id": "FILE-06",
+          "name": "No new catch-all responsibility introduced",
+          "status": "pass",
+          "evidence": "services/atlas-maps/atlas.com/maps/kafka/consumer/character/consumer.go:52-57 (comment only)"
+        },
+        {
+          "id": "CONTRACT-DELETION-INTERNAL",
+          "name": "atlas-maps confirmed as sole in-repo registrant of deleted handler / sole caller of MapChangedStatusProvider",
+          "status": "pass",
+          "evidence": "grep -rn MapChangedStatusProvider services/atlas-maps/atlas.com/maps -> only character/warp/processor.go:92-93; InitHandlers (consumer.go:39-74) no longer registers MAP_CHANGED for EVENT_TOPIC_CHARACTER_STATUS"
+        },
+        {
+          "id": "CONTRACT-DELETION-CROSS-SERVICE",
+          "name": "Other services' consumption of MAP_CHANGED verified",
+          "status": "warn",
+          "evidence": "Out of scope for this atlas-maps-only audit; commit message asserts ~18 other services consume EVENT_TOPIC_CHARACTER_STATUS but this was not independently verified from this worktree"
+        }
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "docs/domain.md Warp Processor section omits timer-application failures from the logged-and-swallowed failure list, while processor.go:41's doc comment and the code itself (processor.go:116-129) include them",
+    "CONTRACT-DELETION-CROSS-SERVICE: cross-service consumption of EVENT_TOPIC_CHARACTER_STATUS/MAP_CHANGED not verified within this audit's scope (services/atlas-maps only)"
+  ]
+}

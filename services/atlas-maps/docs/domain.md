@@ -207,7 +207,7 @@ Area-of-effect field placed on a map that applies a disease to characters whose 
 
 ### Map Timer Lifecycle
 
-- On MAP_CHANGED, any prior timer for the character is cancelled. If the target map is time-limited, a new timer is registered for the configured seconds and MAP_TIMER_STARTED is emitted.
+- On ChangeMap, any prior timer for the character is cancelled. If the destination map is time-limited, a new timer is registered for the configured seconds and MAP_TIMER_STARTED is emitted. When map info for the destination is unavailable, no timer is registered.
 - On CHANNEL_CHANGED, any tracked timer for the character is force-returned: the entry is removed and its timer stopped. No CHANGE_MAP is emitted here; forced-return persistence for this case is handled by the Character Location Lifecycle.
 - On SESSION_DESTROYED for a character, any tracked timer is force-returned: the entry is removed and its timer stopped. No CHANGE_MAP is emitted here; forced-return persistence is handled by the Character Location Lifecycle at the character's next LOGIN.
 - On timer expiry, the entry is claimed (only when the token matches) and CHANGE_MAP is emitted to the forced-return map.
@@ -217,7 +217,6 @@ Area-of-effect field placed on a map that applies a disease to characters whose 
 - On CREATED, a Location Model is seeded for the character with channelId 0, since the character is not yet bound to a channel.
 - On LOGIN, the Location Model is set to the login field.
 - On LOGOUT, the current field is resolved via Location.Resolve; the resolved field (unchanged, or forced-return) is persisted as the Location Model.
-- On MAP_CHANGED, the Location Model is set to the new field.
 - On CHANNEL_CHANGED, the Location Model is set to the new field.
 - On CHANNEL_CHANGE_REQUEST, the target field is resolved via Location.Resolve; the resolved field is persisted as the Location Model.
 - On DELETED, the Location Model for the character is removed.
@@ -351,7 +350,7 @@ Manages a character's persisted last-known field.
 
 Coordinates a character's authoritative map change. Both the CHANGE_MAP command path and the character-location warp path invoke this processor so the two cannot diverge.
 
-- ChangeMap: Persists the destination field via the Location Processor, emits MAP_CHANGED (using either a target portal id or an exact landing position), and transitions the character's map registries. Uses the character's current Location Model as the old field, defaulting to the destination when no prior Location Model exists. Returns an error only when the durable Set fails; emit and transition failures are logged and the call still succeeds.
+- ChangeMap: Persists the destination field via the Location Processor, emits MAP_CHANGED (using either a target portal id or an exact landing position), transitions the character's map registries, and re-arms the map-time-limit timer for the destination. Uses the character's current Location Model as the old field, defaulting to the destination when no prior Location Model exists. Returns an error only when the durable Set fails; emit, transition, and map-timer failures are logged and the call still succeeds.
 
 ### Mist Processor
 

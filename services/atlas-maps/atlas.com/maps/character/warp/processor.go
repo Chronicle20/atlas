@@ -2,7 +2,9 @@ package warp
 
 import (
 	"atlas-maps/character/location"
+	"atlas-maps/data/map/info"
 	"atlas-maps/kafka/message"
+	"atlas-maps/map/timer"
 	"context"
 
 	characterKafka "atlas-maps/kafka/message/character"
@@ -31,12 +33,13 @@ type mapTransitioner interface {
 // call ChangeMap so the two paths cannot diverge.
 type Processor interface {
 	// ChangeMap persists dest as the character's location, emits the canonical
-	// MAP_CHANGED status event, and transitions the per-map registries. dest
-	// must be a fully-formed field (world, channel, map, instance). The current
-	// row is read internally for the MAP_CHANGED "old" side; if absent, oldField
-	// defaults to dest (parity with the pre-task-087 consumer). Returns an error
-	// only when the durable Set fails; emit/transition failures are logged and
-	// the call still succeeds (parity with the consumer).
+	// MAP_CHANGED status event, transitions the per-map registries, and
+	// re-arms the map-time-limit timer for dest. dest must be a fully-formed
+	// field (world, channel, map, instance). The current row is read
+	// internally for the MAP_CHANGED "old" side; if absent, oldField defaults
+	// to dest (parity with the pre-task-087 consumer). Returns an error only
+	// when the durable Set fails; emit/transition/timer failures are logged
+	// and the call still succeeds (parity with the consumer).
 	//
 	// When useTargetPosition is true the emitted MAP_CHANGED carries an exact
 	// (targetX, targetY) landing instead of a named portal — atlas-channel then
@@ -50,6 +53,8 @@ type ProcessorImpl struct {
 	lp  location.Processor
 	pp  producer.Provider
 	mp  mapTransitioner
+	tp  timer.Processor
+	ip  info.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -60,6 +65,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		lp:  location.NewProcessor(l, ctx, db),
 		pp:  pp,
 		mp:  _map.NewProcessor(l, ctx, pp, db),
+		tp:  timer.NewProcessor(l, ctx, pp),
+		ip:  info.NewProcessor(l, ctx),
 	}
 }
 
@@ -67,8 +74,8 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 // newProcessorWithDeps is the unit-test seam (mirrors location's
 // newProcessorWithInfo). It is not exported and not a *_testhelpers.go file.
-func newProcessorWithDeps(l logrus.FieldLogger, ctx context.Context, lp location.Processor, pp producer.Provider, mp mapTransitioner) *ProcessorImpl {
-	return &ProcessorImpl{l: l, ctx: ctx, lp: lp, pp: pp, mp: mp}
+func newProcessorWithDeps(l logrus.FieldLogger, ctx context.Context, lp location.Processor, pp producer.Provider, mp mapTransitioner, tp timer.Processor, ip info.Processor) *ProcessorImpl {
+	return &ProcessorImpl{l: l, ctx: ctx, lp: lp, pp: pp, mp: mp, tp: tp, ip: ip}
 }
 
 func (p *ProcessorImpl) ChangeMap(transactionId uuid.UUID, characterId uint32, worldId world.Id, dest field.Model, portalId uint32, useTargetPosition bool, targetX int16, targetY int16) error {
@@ -92,5 +99,32 @@ func (p *ProcessorImpl) ChangeMap(transactionId uuid.UUID, characterId uint32, w
 		p.l.WithError(err).Warnf("ChangeMap: TransitionMapAndEmit failed for character [%d].", characterId)
 	}
 
+	p.applyMapTimer(transactionId, characterId, dest)
+
 	return nil
+}
+
+// applyMapTimer re-arms the map-time-limit timer (task-050) for the warp
+// destination: any timer tracked for the character is cancelled, and a fresh
+// one is registered when dest is time-limited.
+//
+// This lives on the warp path rather than on a MAP_CHANGED consumer because
+// atlas-maps is the sole emitter of MAP_CHANGED; consuming its own event
+// re-ran the whole transition and emitted CharacterEnter twice per warp
+// (issue #1192). ChangeMap is the only site that emits MAP_CHANGED, so timer
+// reachability here is exactly what the consumer had.
+func (p *ProcessorImpl) applyMapTimer(transactionId uuid.UUID, characterId uint32, dest field.Model) {
+	p.tp.CancelIfTracked(characterId)
+
+	md, err := p.ip.GetById(dest.MapId())
+	if err != nil {
+		p.l.WithError(err).Debugf("MapTimer: skipping registration for character [%d] target map [%d]; map info unavailable.", characterId, dest.MapId())
+		return
+	}
+	if !md.IsTimeLimited() {
+		return
+	}
+	if err := p.tp.Register(transactionId, characterId, dest, md.ForcedReturnMapId(), uint32(md.TimeLimit())); err != nil {
+		p.l.WithError(err).Warnf("MapTimer: failed to register timer for character [%d] map [%d].", characterId, dest.MapId())
+	}
 }

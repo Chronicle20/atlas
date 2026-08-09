@@ -69,7 +69,7 @@ next generator run silently reverts you — always re-run the generator.
 | # | File | What to add |
 |---|---|---|
 | 5.1 | `deploy/shared/routes.conf` | nginx location block(s), alphabetically placed, bare container name (`http://atlas-<svc>:8080`). |
-| 5.2 | regenerate | Run `tools/gen-routes.sh` to rebuild `deploy/k8s/base/routes.conf.template.generated` from the shared source. Commit both. (`deploy/scripts/sync-k8s-ingress-routes.sh` is dead — it targets a `deploy/k8s/ingress.yaml` that no longer exists.) `deploy/shared/test/routes_nginxt.sh` drift-checks the pair and runs in CI. |
+| 5.2 | regenerate | Run `tools/gen-routes.sh` to rebuild `deploy/k8s/base/routes.conf.template.generated` from the shared source. Commit both. (`deploy/scripts/sync-k8s-ingress-routes.sh` is dead — it targets a `deploy/k8s/ingress.yaml` that no longer exists.) `deploy/shared/test/routes_nginxt.sh` drift-checks the pair, but it is docker-based and **operator-run — nothing in CI invokes it** (see `deploy/shared/test/README.md`), so a stale generated file will not fail the PR. Run it yourself. |
 
 ## 6. Databases
 

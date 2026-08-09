@@ -157,9 +157,13 @@ StatusEventTypeCouponFailed   = "COUPON_FAILED"
 type CouponRedeemedBody struct {
     CompartmentId uuid.UUID `json:"compartmentId"`
     AssetIds      []uint32  `json:"assetIds"`
-    MaplePoints   uint32    `json:"maplePoints"`   // absolute post-award balance
+    MaplePoints   uint32    `json:"maplePoints"`   // DELTA — the Maple Points this coupon awarded, NOT a balance
 }
+```
 
+**Correction (task-206 derivation).** PRD Q5 is answered: `UseCouponDone.maplePoint` is a delta, not an absolute post-award balance. `CCashShop::OnCashItemResUseCouponDone` @ `0x479d8a` reads it at `0x479efb` and uses it only at `0x47a0b6`-`0x47a0df` to format `SP_587_D_MAPLEPOINTS` inside the `SP_585_YOU_HAVE_RECEIVED` sentence; the balance itself is refreshed separately by `CCashShop::OnQueryCashResult` @ `0x478f81`.
+
+```go
 type CouponFailedBody struct {
     Error string `json:"error"`   // one of the FR-3.4 key strings
 }

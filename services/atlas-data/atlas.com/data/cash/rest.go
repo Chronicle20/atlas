@@ -44,6 +44,7 @@ type RestModel struct {
 	TimeWindows     []TimeWindow       `json:"timeWindows,omitempty"` // Active time windows from info/time
 	PetSkills       []string           `json:"petSkills,omitempty"`
 	PetSkillAdd     bool               `json:"petSkillAdd,omitempty"`
+	TradeBlock      bool               `json:"tradeBlock"`
 }
 
 func (r RestModel) GetName() string {

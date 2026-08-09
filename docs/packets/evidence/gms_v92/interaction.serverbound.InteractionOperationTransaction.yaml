@@ -1,10 +1,10 @@
 packet: interaction/serverbound/InteractionOperationTransaction
 direction: serverbound
-version: jms_v185
+version: gms_v92
 category: TIER1-FIXTURE
 ida:
     function: CTradingRoomDlg::OnTrade
-    address: "0x845ed5"
-    decompile_sha256: bde95e8c96fc90a533437bc1875c151c255a33c4f8b26cb9cacc118e909ce45a
+    address: "0x744440"
+    decompile_sha256: 08b574b468ffdd7ebb7ec377accb0590e5fa02c0f09ff149b6cc5713ed781608
 verifies:
     - libs/atlas-packet/interaction/serverbound/operation_transaction_test.go#TestOperationTransactionByteOutput

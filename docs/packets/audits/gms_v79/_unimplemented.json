@@ -79,6 +79,11 @@
    "fname": "CWvsContext::SendConsumeCashItemUseRequest",
    "packet": "cash/serverbound/CashItemUsePetSkill",
    "reason": "task-139 cash-item-use-pet-skill coverage sweep (IDA session 9a7d3642, GMS_v79). CWvsContext::SendConsumeCashItemUseRequest @0x95634a dispatches a switch on get_consume_cash_item_type(itemId) (via the USE_CASH_ITEM opcode 0x4D header: Encode2(slot)@0x9563ca, Encode4(itemId)@0x9563d6, per the existing task-137 IDA annotation at 0x9563b3). Type 28 has NO unique arm at all: the compiler-generated comment at every jump-into-default site (0x9563eb 'ja def_9563F1', and 13 more jmp/jz/jnz sites at 0x956636, 0x9585d4, 0x9585f2, 0x958606, 0x95861a, 0x958759, 0x9587f9, 0x95880a, 0x958995, 0x958ae5, 0x95a3cf, 0x95a4f7, 0x95a59e) explicitly lists 'jumptable 009563F1 default case, cases 28,35,36,38,39,41,43-45,54-59,62,67'. No dedicated code, no Encode call, no pet reference for type 28. Positive absence."
+  },
+  {
+   "fname": "CTradingRoomDlg::OnTrade",
+   "packet": "interaction/serverbound/InteractionOperationTransaction",
+   "reason": "TRANSACTION (serverbound PLAYER_INTERACTION CRC-attestation reply) is version-absent in gms_v79. The v79 confirm arm is mode 17, CTradingRoomDlg::OnTrade @0x7358c4, reached from the full switch of CTradingRoomDlg::OnPacket @0x735775 (cases 15 put-item / 16 put-money / 17 confirm / 20 meso-limit, no others). Its body is `*((_DWORD*)this+110)=1; CWnd::InvalidateRect(this,0);` (20 bytes, no Decode*/Encode* calls), so nothing is sent on receipt. The ONLY v79 outbound confirm is the user-driven button handler CTradingRoomDlg::Trade @0x73709a \u2014 COutPacket(120); Encode1(0x11) with NO entry list \u2014 i.e. TRADE_CONFIRM, not TRANSACTION; CCashTradingRoomDlg::Trade @0x47e5f5 likewise encodes Encode1(0x11) with no list. Matches tradeCrcPresent (libs/atlas-packet/interaction/serverbound/version_gate.go) and the IDA-verified TRANSACTION mode table in docs/packets/dispatchers/character_interaction_handle.yaml (gms_v83/v84/v87/v95 only). See docs/tasks/task-205-player-trade/version-matrix.md."
   }
  ]
 }

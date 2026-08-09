@@ -2257,7 +2257,22 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "OperationTradeAddMeso", dir: csvpkg.DirServerbound, pkg: "interaction"}}
 	case "CTradingRoomDlg::Trade":
 		return []candidate{{name: "OperationTradeConfirm", dir: csvpkg.DirServerbound, pkg: "interaction"}}
-	case "CCashTradingRoomDlg::Trade":
+	// TRANSACTION (serverbound PLAYER_INTERACTION mode 0x14 on GMS v83+, 0x12 on
+	// jms_v185) is NOT a user action: it is the client's automatic CRC-attestation
+	// reply, emitted from the mode-17 clientbound receive handler
+	// CTradingRoomDlg::OnTrade. IDA-verified on gms_v83 @0x7c20bc
+	// (COutPacket(123); Encode1(0x14); Encode1(count); {Encode4 itemId, Encode4
+	// crc}...), gms_v95 @0x763f20 (COutPacket(144); Encode1(0x14); ...) and
+	// jms_v185 @0x845ed5 (COutPacket(0x7C); Encode1(0x12); ...).
+	//
+	// This case previously read CCashTradingRoomDlg::Trade. That was wrong: on
+	// both gms_v83 (@0x485dcd) and gms_v95 (@0x49e180) that function is the cash
+	// room's Trade BUTTON handler and encodes Encode1(0x11) — TRADE_CONFIRM —
+	// exactly like CTradingRoomDlg::Trade. It is left unlinked rather than
+	// re-pointed at OperationTradeConfirm, which CTradingRoomDlg::Trade already
+	// claims (two reports for one writer name in one version would collide).
+	// See docs/tasks/task-205-player-trade/version-matrix.md.
+	case "CTradingRoomDlg::OnTrade":
 		return []candidate{{name: "OperationTransaction", dir: csvpkg.DirServerbound, pkg: "interaction"}}
 	case "CPersonalShopDlg::PutItem":
 		return []candidate{{name: "OperationPersonalStorePutItem", dir: csvpkg.DirServerbound, pkg: "interaction"}}

@@ -3,6 +3,24 @@
   "md5": "bdef16653b92eefca2361fd5668cc509",
   "generated_at": "2026-08-05T00:00:00Z",
   "functions": {
+    "CTradingRoomDlg::OnTrade": {
+      "address": "0x744440",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "count (number of crc entries)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "data/itemId (per-entry first)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "crc (per-entry second)"
+        }
+      ]
+    },
     "CAffectedAreaPool::OnAffectedAreaCreated": {
       "address": "0x4392a0",
       "direction": "clientbound",

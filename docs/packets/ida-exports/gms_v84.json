@@ -3,6 +3,24 @@
   "md5": "",
   "generated_at": "2026-06-13T12:51:12Z",
   "functions": {
+    "CTradingRoomDlg::OnTrade": {
+      "address": "0x7e8202",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "count (number of crc entries)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "data/itemId (per-entry first)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "crc (per-entry second)"
+        }
+      ]
+    },
     "CUser::OnMiniRoomBalloon#Remove": {
       "address": "0x96ffb6",
       "direction": "clientbound",

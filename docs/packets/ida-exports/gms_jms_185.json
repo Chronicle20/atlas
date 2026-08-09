@@ -3,6 +3,24 @@
   "md5": "af6652ff9b7c549341f35e3569d7564a",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CTradingRoomDlg::OnTrade": {
+      "address": "0x845ed5",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "count (number of crc entries)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "data/itemId (per-entry first)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "crc (per-entry second)"
+        }
+      ]
+    },
     "CUser::OnMiniRoomBalloon#Remove": {
       "address": "0x9f7d25",
       "direction": "clientbound",

@@ -3,6 +3,24 @@
   "md5": "3c71fd8872d5efbe16183ae8c51f887d",
   "generated_at": "2026-05-13T00:00:00Z",
   "functions": {
+    "CTradingRoomDlg::OnTrade": {
+      "address": "0x763f20",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "count (number of crc entries)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "data/itemId (per-entry first)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "crc (per-entry second)"
+        }
+      ]
+    },
     "CMiniRoomBaseDlg::OnPacketBase#MemoryGamePutStoneError": {
       "address": "0x680360",
       "direction": "clientbound",

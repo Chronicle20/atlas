@@ -9,10 +9,14 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
 
 // TestInteractionTradePutItemRoundTrip pins the mode-15 arm: Decode1 side,
-// Decode1 trade slot, then GW_ItemSlotBase (v83 sub_7C1FB7 @0x7c1fb7).
+// Decode1 trade slot, then GW_ItemSlotBase (v83 sub_7C1FB7 @0x7c1fb7). It
+// encodes, decodes the raw bytes back into a fresh InteractionTradePutItem,
+// and asserts the decoded side/tradeSlot/asset fields equal the input and
+// that the reader is fully drained afterward.
 func TestInteractionTradePutItemRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -33,6 +37,30 @@ func TestInteractionTradePutItemRoundTrip(t *testing.T) {
 			}
 			if raw[2] != 3 {
 				t.Errorf("tradeSlot: got %d, want 3", raw[2])
+			}
+
+			req := request.Request(raw)
+			reader := request.NewRequestReader(&req, 0)
+			var out InteractionTradePutItem
+			out.Decode(l, ctx)(&reader, nil)
+
+			if out.Mode() != input.Mode() {
+				t.Errorf("decoded mode = %d, want %d", out.Mode(), input.Mode())
+			}
+			if out.Side() != input.Side() {
+				t.Errorf("decoded side = %d, want %d", out.Side(), input.Side())
+			}
+			if out.TradeSlot() != input.TradeSlot() {
+				t.Errorf("decoded tradeSlot = %d, want %d", out.TradeSlot(), input.TradeSlot())
+			}
+			if out.Asset().TemplateId() != input.Asset().TemplateId() {
+				t.Errorf("decoded asset templateId = %d, want %d", out.Asset().TemplateId(), input.Asset().TemplateId())
+			}
+			if out.Asset().Quantity() != input.Asset().Quantity() {
+				t.Errorf("decoded asset quantity = %d, want %d", out.Asset().Quantity(), input.Asset().Quantity())
+			}
+			if got := reader.GetRestAsBytes(); len(got) != 0 {
+				t.Errorf("reader not drained: %d bytes remaining", len(got))
 			}
 		})
 	}

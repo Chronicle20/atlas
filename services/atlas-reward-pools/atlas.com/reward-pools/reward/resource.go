@@ -2,6 +2,7 @@ package reward
 
 import (
 	"atlas-reward-pools/rest"
+	"errors"
 	"net/http"
 	"sort"
 
@@ -33,6 +34,20 @@ func handleSelectReward(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 			result, err := NewProcessor(d.Logger(), d.Context(), d.DB()).SelectReward(gachaponId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Selecting reward for gachapon [%s].", gachaponId)
+				if errors.Is(err, ErrEmptyPool) {
+					// The pool exists but has nothing to give. 409, not 500:
+					// the caller (atlas-cashshop) distinguishes this from a
+					// missing pool to log POOL_EMPTY vs POOL_MISSING.
+					w.WriteHeader(http.StatusConflict)
+					return
+				}
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					// No pool row matches gachaponId at all. 404, not 500:
+					// distinct from ErrEmptyPool above so the caller can log
+					// POOL_MISSING vs POOL_EMPTY.
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}

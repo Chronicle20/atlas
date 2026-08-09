@@ -21,6 +21,24 @@ type poolItem struct {
 	// original uniform pick; global-pool items never set a weight and so
 	// always read 0.
 	Weight uint32
+	// CommodityId is the cash shop commodity (serial number) this entry
+	// grants. It is 0 for every kind except cash-surprise; global-pool items
+	// never set it and so always read 0.
+	CommodityId uint32
+}
+
+// ErrEmptyPool is returned when a pool exists but has no eligible entries.
+// It is distinct from the not-found error a missing pool produces so the
+// resource can answer 409 vs 404, and so atlas-cashshop can log POOL_EMPTY
+// vs POOL_MISSING (PRD FR-3.7).
+var ErrEmptyPool = errors.New("reward pool has no eligible entries")
+
+// usesFlatWeights reports whether a pool kind rolls the whole pool weighted
+// by item.Weight — never the tiered selectTier roll, and never the shared
+// global pool. Incubator machines and cash-surprise boxes both do; the
+// classic gachapon does not. Adding a fourth kind means deciding here.
+func usesFlatWeights(kind string) bool {
+	return kind == gachapon.KindIncubator || kind == gachapon.KindCashSurprise
 }
 
 type Processor interface {
@@ -49,16 +67,22 @@ func (p *ProcessorImpl) SelectReward(gachaponId string) (Model, error) {
 	var tier string
 	var pool []poolItem
 
-	if g.Kind() == gachapon.KindIncubator {
-		// Incubator machines draw from the whole machine's item set,
-		// across every tier, weighted by item.Weight — never the tiered
-		// selectTier roll, and never the shared global pool.
+	if usesFlatWeights(g.Kind()) {
+		// Incubator machines and cash-surprise boxes draw from the whole
+		// pool's item set, across every tier, weighted by item.Weight —
+		// never the tiered selectTier roll, and never the shared global
+		// pool.
 		machineItems, err := item.NewProcessor(p.l, p.ctx, p.db).GetByGachaponId(gachaponId)()
 		if err != nil {
 			return Model{}, err
 		}
 		for _, mi := range machineItems {
-			pool = append(pool, poolItem{ItemId: mi.ItemId(), Quantity: mi.Quantity(), Weight: mi.Weight()})
+			pool = append(pool, poolItem{
+				ItemId:      mi.ItemId(),
+				Quantity:    mi.Quantity(),
+				Weight:      mi.Weight(),
+				CommodityId: mi.CommodityId(),
+			})
 		}
 		tier = ""
 	} else {
@@ -74,7 +98,7 @@ func (p *ProcessorImpl) SelectReward(gachaponId string) (Model, error) {
 	}
 
 	if len(pool) == 0 {
-		return Model{}, errors.New("no items available in pool for tier: " + tier)
+		return Model{}, ErrEmptyPool
 	}
 
 	selected, err := selectItem(pool)
@@ -86,13 +110,15 @@ func (p *ProcessorImpl) SelectReward(gachaponId string) (Model, error) {
 		SetItemId(selected.ItemId).
 		SetQuantity(selected.Quantity).
 		SetTier(tier).
+		SetCommodityId(selected.CommodityId).
 		Build()
 
 	p.l.WithFields(logrus.Fields{
-		"gachapon_id": gachaponId,
-		"tier":        tier,
-		"item_id":     selected.ItemId,
-		"quantity":    selected.Quantity,
+		"gachapon_id":  gachaponId,
+		"tier":         tier,
+		"item_id":      selected.ItemId,
+		"quantity":     selected.Quantity,
+		"commodity_id": selected.CommodityId,
 	}).Infof("Gachapon reward selected.")
 
 	return result, nil
@@ -104,9 +130,10 @@ func (p *ProcessorImpl) GetPrizePool(gachaponId string, tier string) ([]Model, e
 		return nil, err
 	}
 
-	if g.Kind() == gachapon.KindIncubator {
-		// Incubator pools roll the whole machine weighted by item.Weight —
-		// they have no tiers and never merge the global pool (SelectReward).
+	if usesFlatWeights(g.Kind()) {
+		// Incubator and cash-surprise pools roll the whole machine weighted
+		// by item.Weight — they have no tiers and never merge the global
+		// pool (SelectReward).
 		machineItems, err := item.NewProcessor(p.l, p.ctx, p.db).GetByGachaponId(gachaponId)()
 		if err != nil {
 			return nil, err
@@ -117,6 +144,7 @@ func (p *ProcessorImpl) GetPrizePool(gachaponId string, tier string) ([]Model, e
 				SetItemId(mi.ItemId()).
 				SetQuantity(mi.Quantity()).
 				SetWeight(mi.Weight()).
+				SetCommodityId(mi.CommodityId()).
 				Build())
 		}
 		return results, nil
@@ -158,10 +186,16 @@ func (p *ProcessorImpl) getMergedPool(gachaponId string, tier string) ([]poolIte
 
 	var pool []poolItem
 	for _, mi := range machineItems {
-		pool = append(pool, poolItem{ItemId: mi.ItemId(), Quantity: mi.Quantity(), Weight: mi.Weight()})
+		pool = append(pool, poolItem{
+			ItemId:      mi.ItemId(),
+			Quantity:    mi.Quantity(),
+			Weight:      mi.Weight(),
+			CommodityId: mi.CommodityId(),
+		})
 	}
 	for _, gi := range globalItems {
-		// Global-pool items have no weight concept; they always read 0.
+		// Global-pool items have no weight or commodity concept; they always
+		// read 0 for both.
 		pool = append(pool, poolItem{ItemId: gi.ItemId(), Quantity: gi.Quantity(), Weight: 0})
 	}
 	return pool, nil

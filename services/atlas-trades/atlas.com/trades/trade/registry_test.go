@@ -7,8 +7,10 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -20,12 +22,12 @@ func TestRegistryRejectsSecondRoomForOwner(t *testing.T) {
 	reg := &Registry{rooms: newRoomMap(), members: newMemberMap(), handles: newHandleMap()}
 	tm := testTenant(t)
 
-	first := NewBuilder(3, 100, "Owner", testField(t)).SetHandle(100).Build()
+	first := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetHandle(100).Build()
 	if err := reg.Create(tm, first); err != nil {
 		t.Fatalf("first create: %v", err)
 	}
 
-	second := NewBuilder(3, 100, "Owner", testField(t)).SetHandle(100).Build()
+	second := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetHandle(100).Build()
 	if err := reg.Create(tm, second); err != ErrOwnerHasRoom {
 		t.Fatalf("second create: got %v, want ErrOwnerHasRoom", err)
 	}
@@ -38,12 +40,12 @@ func TestRegistryIndexesBothParticipants(t *testing.T) {
 	reg := &Registry{rooms: newRoomMap(), members: newMemberMap(), handles: newHandleMap()}
 	tm := testTenant(t)
 
-	room := NewBuilder(3, 100, "Owner", testField(t)).SetHandle(100).SetVisitor(200, "Guest").Build()
+	room := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetHandle(100).SetVisitor(200, "Guest").Build()
 	if err := reg.Create(tm, room); err != nil {
 		t.Fatalf("create: %v", err)
 	}
 
-	for _, id := range []uint32{100, 200} {
+	for _, id := range []character.Id{100, 200} {
 		if _, ok := reg.GetByMember(tm, id); !ok {
 			t.Errorf("GetByMember(%d): not found", id)
 		}
@@ -57,14 +59,14 @@ func TestRegistryRemoveClearsEveryIndex(t *testing.T) {
 	reg := &Registry{rooms: newRoomMap(), members: newMemberMap(), handles: newHandleMap()}
 	tm := testTenant(t)
 
-	room := NewBuilder(3, 100, "Owner", testField(t)).SetHandle(100).SetVisitor(200, "Guest").Build()
+	room := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetHandle(100).SetVisitor(200, "Guest").Build()
 	_ = reg.Create(tm, room)
 	reg.Remove(tm, room.Id())
 
 	if _, ok := reg.Get(tm, room.Id()); ok {
 		t.Error("room still present after Remove")
 	}
-	for _, id := range []uint32{100, 200} {
+	for _, id := range []character.Id{100, 200} {
 		if _, ok := reg.GetByMember(tm, id); ok {
 			t.Errorf("member index still holds character %d", id)
 		}
@@ -79,7 +81,7 @@ func TestRegistryRemoveClearsEveryIndex(t *testing.T) {
 func TestRegistryUpdateIsCompareAndSetOnState(t *testing.T) {
 	reg := &Registry{rooms: newRoomMap(), members: newMemberMap(), handles: newHandleMap()}
 	tm := testTenant(t)
-	room := NewBuilder(3, 100, "Owner", testField(t)).SetHandle(100).SetVisitor(200, "Guest").SetState(StateOpen).Build()
+	room := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetHandle(100).SetVisitor(200, "Guest").SetState(StateOpen).Build()
 	_ = reg.Create(tm, room)
 
 	transition := func(r Room) (Room, error) {
@@ -102,7 +104,7 @@ func TestRegistryTenantIsolation(t *testing.T) {
 	reg := &Registry{rooms: newRoomMap(), members: newMemberMap(), handles: newHandleMap()}
 	a, b := testTenant(t), testOtherTenant(t)
 
-	room := NewBuilder(3, 100, "Owner", testField(t)).SetHandle(100).Build()
+	room := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetHandle(100).Build()
 	_ = reg.Create(a, room)
 
 	if _, ok := reg.Get(b, room.Id()); ok {
@@ -111,7 +113,7 @@ func TestRegistryTenantIsolation(t *testing.T) {
 	if _, ok := reg.GetByMember(b, 100); ok {
 		t.Error("tenant B can resolve tenant A's member")
 	}
-	if err := reg.Create(b, NewBuilder(3, 100, "Owner", testField(t)).SetHandle(100).Build()); err != nil {
+	if err := reg.Create(b, NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetHandle(100).Build()); err != nil {
 		t.Errorf("tenant B blocked by tenant A's occupancy: %v", err)
 	}
 }
@@ -134,9 +136,9 @@ func TestRegistryAllIsTenantScoped(t *testing.T) {
 	reg := &Registry{rooms: newRoomMap(), members: newMemberMap(), handles: newHandleMap()}
 	a, b := testTenant(t), testOtherTenant(t)
 
-	roomA1 := NewBuilder(3, 100, "Owner", testField(t)).SetHandle(100).Build()
-	roomA2 := NewBuilder(3, 300, "Other", testField(t)).SetHandle(300).Build()
-	roomB := NewBuilder(3, 500, "Foreign", testField(t)).SetHandle(500).Build()
+	roomA1 := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetHandle(100).Build()
+	roomA2 := NewBuilder(miniroom.Trade, 300, "Other", testField(t)).SetHandle(300).Build()
+	roomB := NewBuilder(miniroom.Trade, 500, "Foreign", testField(t)).SetHandle(500).Build()
 	_ = reg.Create(a, roomA1)
 	_ = reg.Create(a, roomA2)
 	_ = reg.Create(b, roomB)
@@ -159,7 +161,7 @@ func TestRegistryUpdateReindexesNewParticipants(t *testing.T) {
 	reg := &Registry{rooms: newRoomMap(), members: newMemberMap(), handles: newHandleMap()}
 	tm := testTenant(t)
 
-	room := NewBuilder(3, 100, "Owner", testField(t)).SetHandle(100).Build()
+	room := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetHandle(100).Build()
 	_ = reg.Create(tm, room)
 
 	if _, ok := reg.GetByMember(tm, 200); ok {
@@ -179,6 +181,64 @@ func TestRegistryUpdateReindexesNewParticipants(t *testing.T) {
 	}
 }
 
+// TestRegistryHandleIndexIsDistinctFromTheMemberIndex pins that the handle
+// index really keys on Room.Handle() and not on the owner's character id. Every
+// other test builds rooms whose handle EQUALS the owner id, so an `index` that
+// wrote reg.handles[t][r.OwnerId()] would pass them all. Here the two differ.
+func TestRegistryHandleIndexIsDistinctFromTheMemberIndex(t *testing.T) {
+	reg := &Registry{rooms: newRoomMap(), members: newMemberMap(), handles: newHandleMap()}
+	tm := testTenant(t)
+
+	room := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetHandle(9999).SetVisitor(200, "Guest").Build()
+	if err := reg.Create(tm, room); err != nil {
+		t.Fatalf("create: %v", err)
+	}
+
+	got, ok := reg.GetByHandle(tm, 9999)
+	if !ok {
+		t.Fatal("GetByHandle(9999): not found — the handle index is keyed on something other than Handle()")
+	}
+	if got.Id() != room.Id() {
+		t.Errorf("GetByHandle(9999) resolved room %v, want %v", got.Id(), room.Id())
+	}
+	if _, ok = reg.GetByHandle(tm, 100); ok {
+		t.Error("GetByHandle(100) resolved a room — the handle index is keyed on the owner id")
+	}
+
+	reg.Remove(tm, room.Id())
+	if _, ok = reg.GetByHandle(tm, 9999); ok {
+		t.Error("handle index still holds 9999 after Remove")
+	}
+}
+
+// TestRegistryRejectsCollidingHandle pins that a second room cannot claim a
+// wire handle another room already owns. Without the guard the newer room would
+// overwrite handles[t][h], and removing it would delete the entry, stranding
+// the older room unreachable via GetByHandle.
+func TestRegistryRejectsCollidingHandle(t *testing.T) {
+	reg := &Registry{rooms: newRoomMap(), members: newMemberMap(), handles: newHandleMap()}
+	tm := testTenant(t)
+
+	first := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetHandle(7777).Build()
+	if err := reg.Create(tm, first); err != nil {
+		t.Fatalf("first create: %v", err)
+	}
+
+	// A different owner, so the occupancy check passes and only the handle collides.
+	second := NewBuilder(miniroom.Trade, 300, "Other", testField(t)).SetHandle(7777).Build()
+	if err := reg.Create(tm, second); err != ErrHandleInUse {
+		t.Fatalf("colliding create: got %v, want ErrHandleInUse", err)
+	}
+
+	got, ok := reg.GetByHandle(tm, 7777)
+	if !ok || got.Id() != first.Id() {
+		t.Error("the rejected create disturbed the first room's handle entry")
+	}
+	if _, ok = reg.GetByMember(tm, 300); ok {
+		t.Error("the rejected create left a member index entry behind")
+	}
+}
+
 // TestRegistryConcurrentAccess exercises every lock path from many goroutines
 // at once so `-race` can prove the RWMutex covers each of them, and asserts
 // that exactly one of N racing transitions wins the compare-and-set.
@@ -186,7 +246,7 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 	reg := &Registry{rooms: newRoomMap(), members: newMemberMap(), handles: newHandleMap()}
 	tm := testTenant(t)
 
-	room := NewBuilder(3, 100, "Owner", testField(t)).SetHandle(100).SetVisitor(200, "Guest").SetState(StateOpen).Build()
+	room := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetHandle(100).SetVisitor(200, "Guest").SetState(StateOpen).Build()
 	if err := reg.Create(tm, room); err != nil {
 		t.Fatalf("create: %v", err)
 	}

@@ -4,13 +4,16 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
 )
 
 // TestBuilderSeatsOwnerAtPositionZero pins that a freshly built room is solo,
 // OPEN_SOLO, and that the handle defaults to the owner's character id
 // (design §2.3).
 func TestBuilderSeatsOwnerAtPositionZero(t *testing.T) {
-	room := NewBuilder(3, 100, "Owner", testField(t)).Build()
+	room := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).Build()
 
 	if got := room.State(); got != StateOpenSolo {
 		t.Errorf("State() = %v, want %v", got, StateOpenSolo)
@@ -30,8 +33,8 @@ func TestBuilderSeatsOwnerAtPositionZero(t *testing.T) {
 	if room.Id() == uuid.Nil {
 		t.Error("Id() is the nil uuid; the builder must mint one")
 	}
-	if room.RoomType() != 3 {
-		t.Errorf("RoomType() = %d, want 3", room.RoomType())
+	if room.RoomType() != miniroom.Trade {
+		t.Errorf("RoomType() = %d, want miniroom.Trade (%d)", room.RoomType(), miniroom.Trade)
 	}
 	if !room.Field().Equals(testField(t)) {
 		t.Errorf("Field() = %v, want the field passed to NewBuilder", room.Field())
@@ -44,7 +47,7 @@ func TestBuilderSeatsOwnerAtPositionZero(t *testing.T) {
 // TestBuilderSetVisitorSeatsPositionOne pins that SetVisitor adds the invited
 // character at position 1 and leaves the owner at position 0.
 func TestBuilderSetVisitorSeatsPositionOne(t *testing.T) {
-	room := NewBuilder(6, 100, "Owner", testField(t)).SetVisitor(200, "Guest").Build()
+	room := NewBuilder(miniroom.CashTrade, 100, "Owner", testField(t)).SetVisitor(200, "Guest").Build()
 
 	owner, ok := room.ParticipantFor(100)
 	if !ok {
@@ -69,7 +72,7 @@ func TestBuilderSetVisitorSeatsPositionOne(t *testing.T) {
 // TestParticipantForUnknownCharacter pins the miss path — a packet arriving
 // from a character who is not in the room must not resolve a participant.
 func TestParticipantForUnknownCharacter(t *testing.T) {
-	room := NewBuilder(3, 100, "Owner", testField(t)).SetVisitor(200, "Guest").Build()
+	room := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetVisitor(200, "Guest").Build()
 
 	if _, ok := room.ParticipantFor(999); ok {
 		t.Error("ParticipantFor(999) resolved a character that is not in the room")
@@ -81,7 +84,7 @@ func TestParticipantForUnknownCharacter(t *testing.T) {
 // after the FIRST confirm, is frozen.
 func TestRoomFrozenStates(t *testing.T) {
 	base := func(s State) Room {
-		return NewBuilder(3, 100, "Owner", testField(t)).SetVisitor(200, "Guest").SetState(s).Build()
+		return NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetVisitor(200, "Guest").SetState(s).Build()
 	}
 
 	for _, s := range []State{StateOpenSolo, StatePendingInvite, StateAwaitingAttestation, StateSettling} {
@@ -110,7 +113,7 @@ func TestRoomFrozenStates(t *testing.T) {
 // mutation — the registry relies on the pre-image staying valid when a
 // compare-and-set loses.
 func TestWithStateLeavesTheOriginalUntouched(t *testing.T) {
-	room := NewBuilder(3, 100, "Owner", testField(t)).SetState(StateOpen).Build()
+	room := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetState(StateOpen).Build()
 
 	settling := room.WithState(StateSettling)
 
@@ -129,7 +132,7 @@ func TestWithStateLeavesTheOriginalUntouched(t *testing.T) {
 // copies the participant slice rather than writing into the shared backing
 // array of the room it was called on.
 func TestWithParticipantLeavesTheOriginalUntouched(t *testing.T) {
-	room := NewBuilder(3, 100, "Owner", testField(t)).SetVisitor(200, "Guest").SetState(StateOpen).Build()
+	room := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetVisitor(200, "Guest").SetState(StateOpen).Build()
 
 	updated := room.WithParticipant(1, func(p Participant) Participant {
 		return p.WithMesoStaged(5000).WithConfirmed(true)
@@ -155,7 +158,7 @@ func TestWithParticipantLeavesTheOriginalUntouched(t *testing.T) {
 // nobody occupies (position 1 of a solo room) leaves the room unchanged rather
 // than fabricating a participant.
 func TestWithParticipantOnAbsentPositionIsANoOp(t *testing.T) {
-	room := NewBuilder(3, 100, "Owner", testField(t)).SetState(StateOpen).Build()
+	room := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetState(StateOpen).Build()
 
 	updated := room.WithParticipant(1, func(p Participant) Participant { return p.WithConfirmed(true) })
 
@@ -171,15 +174,15 @@ func TestWithParticipantOnAbsentPositionIsANoOp(t *testing.T) {
 // duplicate-slot probe (FR-3.3), including that WithItem does not write into
 // the receiver's item slice.
 func TestParticipantWithItemAndHasTradeSlot(t *testing.T) {
-	room := NewBuilder(3, 100, "Owner", testField(t)).SetState(StateOpen).Build()
+	room := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetState(StateOpen).Build()
 	owner, _ := room.ParticipantFor(100)
 
 	if owner.HasTradeSlot(1) {
 		t.Error("HasTradeSlot(1) = true on a participant with no staged items")
 	}
 
-	one := owner.WithItem(NewStagedItem(1, 4001, 2000000, 3, 2, 5))
-	two := one.WithItem(NewStagedItem(4, 4002, 1302000, 1, 1, 9))
+	one := owner.WithItem(NewStagedItem(1, 4001, 2000000, 3, inventory.TypeValueUse, 5))
+	two := one.WithItem(NewStagedItem(4, 4002, 1302000, 1, inventory.TypeValueEquip, -11))
 
 	if len(owner.Items()) != 0 {
 		t.Errorf("original participant gained %d items", len(owner.Items()))
@@ -200,15 +203,21 @@ func TestParticipantWithItemAndHasTradeSlot(t *testing.T) {
 
 	got := two.Items()[0]
 	if got.TradeSlot() != 1 || got.AssetId() != 4001 || got.TemplateId() != 2000000 ||
-		got.Quantity() != 3 || got.InventoryType() != 2 || got.SourceSlot() != 5 {
+		got.Quantity() != 3 || got.InventoryType() != inventory.TypeValueUse || got.SourceSlot() != 5 {
 		t.Errorf("staged item round-trip = %+v, want the values passed to NewStagedItem", got)
+	}
+
+	// slot.Position is signed: an equipped source slot is negative, which a
+	// byte source slot could not carry.
+	if eq := two.Items()[1]; eq.SourceSlot() != -11 || eq.InventoryType() != inventory.TypeValueEquip {
+		t.Errorf("equip staged item = slot %d type %d, want -11 / %d", eq.SourceSlot(), eq.InventoryType(), inventory.TypeValueEquip)
 	}
 }
 
 // TestItemsIsNotWritableThroughTheGetter pins that a caller cannot reach into
 // a participant's staged items through the returned slice.
 func TestItemsIsNotWritableThroughTheGetter(t *testing.T) {
-	room := NewBuilder(3, 100, "Owner", testField(t)).SetState(StateOpen).Build()
+	room := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetState(StateOpen).Build()
 	owner, _ := room.ParticipantFor(100)
 	owner = owner.WithItem(NewStagedItem(1, 4001, 2000000, 3, 2, 5))
 
@@ -223,7 +232,7 @@ func TestItemsIsNotWritableThroughTheGetter(t *testing.T) {
 // TestParticipantsIsNotWritableThroughTheGetter pins the same for the room's
 // participant list.
 func TestParticipantsIsNotWritableThroughTheGetter(t *testing.T) {
-	room := NewBuilder(3, 100, "Owner", testField(t)).SetVisitor(200, "Guest").Build()
+	room := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetVisitor(200, "Guest").Build()
 
 	escaped := room.Participants()
 	escaped[0] = Participant{}

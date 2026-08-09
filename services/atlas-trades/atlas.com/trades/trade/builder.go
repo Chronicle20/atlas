@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
@@ -20,12 +21,13 @@ type Builder struct {
 	createdAt    time.Time
 }
 
-// NewBuilder starts a solo room owned by ownerId at position 0. handle defaults
-// to ownerId (design §2.3); override with SetHandle only in tests.
-func NewBuilder(roomType byte, ownerId uint32, ownerName string, f field.Model) *Builder {
+// NewBuilder starts a solo room owned by ownerId at position 0. roomType is a
+// miniroom type byte — miniroom.Trade or miniroom.CashTrade. handle defaults to
+// ownerId (design §2.3); override with SetHandle only in tests.
+func NewBuilder(roomType byte, ownerId character.Id, ownerName string, f field.Model) *Builder {
 	return &Builder{
 		id:       uuid.New(),
-		handle:   ownerId,
+		handle:   uint32(ownerId),
 		roomType: roomType,
 		f:        f,
 		state:    StateOpenSolo,
@@ -45,7 +47,7 @@ func (b *Builder) SetState(s State) *Builder { b.state = s; return b }
 func (b *Builder) SetCreatedAt(t time.Time) *Builder { b.createdAt = t; return b }
 
 // SetVisitor seats the invited character at position 1.
-func (b *Builder) SetVisitor(characterId uint32, name string) *Builder {
+func (b *Builder) SetVisitor(characterId character.Id, name string) *Builder {
 	b.participants = append(b.participants, Participant{
 		characterId: characterId, name: name, position: 1, items: []StagedItem{},
 	})

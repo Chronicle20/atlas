@@ -2,6 +2,15 @@
 // tenant-partitioned in-memory registry. Room is an immutable snapshot of one
 // live trade; the registry (registry.go) owns the only mutable state — every
 // mutation swaps an old Room for a new one under a single write lock.
+//
+// IN-PACKAGE INVARIANT: Registry.Get/GetByMember/GetByHandle/All return Room
+// values whose `participants` backing array is SHARED with the registry's
+// stored copy. Out-of-package callers cannot reach it (Participants() and
+// Items() copy), and every With* transform allocates a fresh slice, so the
+// sharing is safe as written. But code inside this package must never write
+// through `r.participants[i]` on a Room it got from the registry — that would
+// mutate registry state outside the lock. Mutate only via WithParticipant,
+// and only inside Registry.Update's callback.
 package trade
 
 import (
@@ -9,7 +18,12 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 // State is the trade room lifecycle (design §3.1).
@@ -32,25 +46,28 @@ const (
 // StagedItem is one item claimed for trade. Under the reserve-at-staging model
 // (design §5.3) the asset is STILL IN the owner's inventory, held by an
 // atlas-inventory reservation; only settlement moves it.
+//
+// tradeSlot is the 1..9 slot of the client's trade dialog — a wire-local
+// coordinate with no shared-constants equivalent, so it stays a byte.
 type StagedItem struct {
 	tradeSlot     byte
-	assetId       uint32
-	templateId    uint32
-	quantity      uint32
-	inventoryType byte
-	sourceSlot    int16
+	assetId       asset.Id
+	templateId    item.Id
+	quantity      asset.Quantity
+	inventoryType inventory.Type
+	sourceSlot    slot.Position
 }
 
-func (s StagedItem) TradeSlot() byte     { return s.tradeSlot }
-func (s StagedItem) AssetId() uint32     { return s.assetId }
-func (s StagedItem) TemplateId() uint32  { return s.templateId }
-func (s StagedItem) Quantity() uint32    { return s.quantity }
-func (s StagedItem) InventoryType() byte { return s.inventoryType }
-func (s StagedItem) SourceSlot() int16   { return s.sourceSlot }
+func (s StagedItem) TradeSlot() byte               { return s.tradeSlot }
+func (s StagedItem) AssetId() asset.Id             { return s.assetId }
+func (s StagedItem) TemplateId() item.Id           { return s.templateId }
+func (s StagedItem) Quantity() asset.Quantity      { return s.quantity }
+func (s StagedItem) InventoryType() inventory.Type { return s.inventoryType }
+func (s StagedItem) SourceSlot() slot.Position     { return s.sourceSlot }
 
 // NewStagedItem builds one staged item. StagedItem is a value type with no
 // mutable state, so it needs no builder.
-func NewStagedItem(tradeSlot byte, assetId uint32, templateId uint32, quantity uint32, inventoryType byte, sourceSlot int16) StagedItem {
+func NewStagedItem(tradeSlot byte, assetId asset.Id, templateId item.Id, quantity asset.Quantity, inventoryType inventory.Type, sourceSlot slot.Position) StagedItem {
 	return StagedItem{
 		tradeSlot:     tradeSlot,
 		assetId:       assetId,
@@ -65,7 +82,7 @@ func NewStagedItem(tradeSlot byte, assetId uint32, templateId uint32, quantity u
 // invited character; position drives which side of the client dialog receives
 // which update (FR-1.5).
 type Participant struct {
-	characterId uint32
+	characterId character.Id
 	name        string
 	position    byte
 	confirmed   bool
@@ -74,12 +91,12 @@ type Participant struct {
 	items       []StagedItem
 }
 
-func (p Participant) CharacterId() uint32 { return p.characterId }
-func (p Participant) Name() string        { return p.name }
-func (p Participant) Position() byte      { return p.position }
-func (p Participant) Confirmed() bool     { return p.confirmed }
-func (p Participant) Attested() bool      { return p.attested }
-func (p Participant) MesoStaged() uint32  { return p.mesoStaged }
+func (p Participant) CharacterId() character.Id { return p.characterId }
+func (p Participant) Name() string              { return p.name }
+func (p Participant) Position() byte            { return p.position }
+func (p Participant) Confirmed() bool           { return p.confirmed }
+func (p Participant) Attested() bool            { return p.attested }
+func (p Participant) MesoStaged() uint32        { return p.mesoStaged }
 
 // Items returns a copy of the staged items, so a caller cannot write through
 // the returned slice into the participant's state.
@@ -110,9 +127,9 @@ func (p Participant) WithItem(i StagedItem) Participant {
 
 // HasTradeSlot reports whether the given 1..9 trade slot is already occupied
 // (FR-3.3).
-func (p Participant) HasTradeSlot(slot byte) bool {
+func (p Participant) HasTradeSlot(tradeSlot byte) bool {
 	for _, i := range p.items {
-		if i.tradeSlot == slot {
+		if i.tradeSlot == tradeSlot {
 			return true
 		}
 	}
@@ -123,7 +140,12 @@ func (p Participant) HasTradeSlot(slot byte) bool {
 // identity and registry key, Handle is the uint32 wire serial the client's
 // invite carries (invite.CreateCommandBody.ReferenceId is invite.Id = uint32,
 // so a uuid does not fit). Handle is set to the owner's character id, matching
-// the existing mini-room convention in atlas-channel.
+// the existing mini-room convention in atlas-channel — but it is a wire serial,
+// not a character reference, so it is a plain uint32 rather than character.Id:
+// a later task may hand SetHandle a value that is not anyone's character id.
+//
+// roomType is a miniroom type byte — miniroom.Trade (3) or miniroom.CashTrade
+// (6) from libs/atlas-constants/miniroom.
 type Room struct {
 	id           uuid.UUID
 	handle       uint32
@@ -153,7 +175,7 @@ func (r Room) Participants() []Participant {
 }
 
 // OwnerId returns position 0's character id.
-func (r Room) OwnerId() uint32 {
+func (r Room) OwnerId() character.Id {
 	for _, p := range r.participants {
 		if p.position == 0 {
 			return p.characterId
@@ -163,7 +185,7 @@ func (r Room) OwnerId() uint32 {
 }
 
 // VisitorId returns position 1's character id, or 0 when the room is solo.
-func (r Room) VisitorId() uint32 {
+func (r Room) VisitorId() character.Id {
 	for _, p := range r.participants {
 		if p.position == 1 {
 			return p.characterId
@@ -173,7 +195,7 @@ func (r Room) VisitorId() uint32 {
 }
 
 // ParticipantFor returns the participant acting as characterId.
-func (r Room) ParticipantFor(characterId uint32) (Participant, bool) {
+func (r Room) ParticipantFor(characterId character.Id) (Participant, bool) {
 	for _, p := range r.participants {
 		if p.characterId == characterId {
 			return p, true

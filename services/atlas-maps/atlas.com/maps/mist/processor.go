@@ -60,6 +60,19 @@ func NewProcessorWithRegistry(l logrus.FieldLogger, ctx context.Context, p produ
 // tenant, and emits MIST_CREATED. On emit failure the registry insert is
 // rolled back so the registry stays in lockstep with downstream observers.
 func (p *ProcessorImpl) Create(body mistKafka.CreateCommandBody) (Mist, error) {
+	// Normalize the descriptors exactly once, here, so every Mist in the
+	// registry has non-empty kinds and the tick task can switch on them
+	// without an empty-string case. This is what gives the pre-task-200
+	// atlas-monsters producer byte-for-byte unchanged behavior (FR-2.3).
+	targetKind := body.TargetKind
+	if targetKind == "" {
+		targetKind = mistKafka.TargetKindCharacter
+	}
+	effectKind := body.EffectKind
+	if effectKind == "" {
+		effectKind = mistKafka.EffectKindDisease
+	}
+
 	id := uuid.New()
 	f := field.NewBuilder(body.WorldId, body.ChannelId, body.MapId).SetInstance(body.Instance).Build()
 	m := NewBuilder(id, f).
@@ -70,6 +83,12 @@ func (p *ProcessorImpl) Create(body mistKafka.CreateCommandBody) (Mist, error) {
 		SetDuration(time.Duration(body.Duration)*time.Millisecond).
 		SetTickInterval(time.Duration(body.TickIntervalMs)*time.Millisecond).
 		SetSource(body.SourceSkillId, body.SourceSkillLevel).
+		// nType is derived here rather than carried on the command -- see
+		// AffectedAreaTypeFor. Leaving it at the zero value marks the mist as
+		// a MOB disease cloud, which makes the client damage any player
+		// standing in it, including the caster of a player-cast mist.
+		SetType(AffectedAreaTypeFor(body.OwnerType)).
+		SetKinds(targetKind, effectKind).
 		Build()
 
 	if err := p.r.Add(p.t, m); err != nil {

@@ -249,6 +249,20 @@ func getEffect(t tenant.Model, skillId skill.Id, overTime bool, node xml.Node) e
 	e.SetLT(point.NewModel(point.X(int16(ltX)), point.Y(int16(ltY)))).
 		SetRB(point.NewModel(point.X(int16(rbX)), point.Y(int16(rbY))))
 
+	// DoT fields. `dot` is a raw damage-per-tick integer, forwarded unscaled.
+	// `dotInterval` and `dotTime` are WZ SECONDS -- converted to milliseconds
+	// HERE, the single conversion point, matching the `time` treatment above
+	// (task-054). No downstream service may re-scale.
+	//
+	// Read here rather than in the `common`-key block below (task-192) because
+	// this is the ONLY site that may scale them: that block forwards its keys
+	// unscaled, and re-reading dot* there would silently undo the conversion.
+	// Both blocks live in the shared getEffect, so the `common` and `level`
+	// paths are covered either way. See task-200 design §2.1.
+	e.SetDot(node.GetIntegerWithDefault("dot", 0)).
+		SetDotInterval(node.GetIntegerWithDefault("dotInterval", 0) * 1000).
+		SetDotTime(node.GetIntegerWithDefault("dotTime", 0) * 1000)
+
 	e.SetX(int16(node.GetIntegerWithDefault("x", 0))).
 		SetY(int16(node.GetIntegerWithDefault("y", 0))).
 		SetDamage(uint32(node.GetIntegerWithDefault("damage", 100))).
@@ -268,10 +282,7 @@ func getEffect(t tenant.Model, skillId skill.Id, overTime bool, node xml.Node) e
 	e.SetRange(node.GetIntegerWithDefault("range", 0)).
 		SetMastery(node.GetIntegerWithDefault("mastery", 0)).
 		SetZ(node.GetIntegerWithDefault("z", 0)).
-		SetDot(node.GetIntegerWithDefault("dot", 0)).
 		SetCr(node.GetIntegerWithDefault("cr", 0)).
-		SetDotInterval(node.GetIntegerWithDefault("dotInterval", 0)).
-		SetDotTime(node.GetIntegerWithDefault("dotTime", 0)).
 		SetDamR(node.GetIntegerWithDefault("damR", 0)).
 		SetCriticaldamageMin(node.GetIntegerWithDefault("criticaldamageMin", 0)).
 		SetMHPRRate(uint16(node.GetIntegerWithDefault("mhpR", 0))).

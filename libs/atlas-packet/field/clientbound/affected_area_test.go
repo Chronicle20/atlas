@@ -83,6 +83,7 @@ func TestAffectedAreaCreatedWireShape(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaCreated version=gms_v83 ida=0x431a63
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaCreated version=gms_v84 ida=0x4326ca
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaCreated version=gms_v87 ida=0x432f3f
+// packet-audit:verify packet=field/clientbound/FieldAffectedAreaCreated version=gms_v92 ida=0x4392a0
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaCreated version=gms_v95 ida=0x437ec0
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaCreated version=jms_v185 ida=0x436572
 func TestAffectedAreaCreatedByteOutput(t *testing.T) {
@@ -243,6 +244,7 @@ func TestAffectedAreaCreatedFields(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v83 ida=0x43234d
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v84 ida=0x432fb4
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v87 ida=0x43388c
+// packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v92 ida=0x4371f0
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=gms_v95 ida=0x4360a0
 // packet-audit:verify packet=field/clientbound/FieldAffectedAreaRemoved version=jms_v185 ida=0x436eda
 func TestAffectedAreaRemovedByteOutput(t *testing.T) {

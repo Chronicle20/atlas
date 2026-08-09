@@ -67,7 +67,7 @@ func NewMonsterRecoveryTask(l logrus.FieldLogger, ctx context.Context, interval 
 	tk.emitFn = func(t tenant.Model, m Model) error {
 		tctx := tenant.WithContext(tk.ctx, t)
 		return producer.ProviderImpl(tk.l)(tctx)(EnvEventTopicMonsterStatus)(
-			damagedStatusEventProvider(m, m.UniqueId(), m.UniqueId(), false, DamageSourceHeal, m.DamageSummary()),
+			damagedStatusEventProvider(m, m.UniqueId(), m.UniqueId(), false, DamageSourceHeal, 0, m.DamageSummary()),
 		)
 	}
 	tk.mpEmitFn = func(t tenant.Model, m Model, amount uint32) error {
@@ -77,7 +77,10 @@ func NewMonsterRecoveryTask(l logrus.FieldLogger, ctx context.Context, interval 
 		)
 	}
 	// Compile-time guard so unused imports fail loudly if any wiring drifts.
-	var _ model.Provider[[]kafka.Message] = damagedStatusEventProvider(Model{}, 0, 0, false, "", nil)
+	// The explicit type IS the assertion here, so staticcheck's "it can be
+	// inferred" suggestion would delete the only thing this line does.
+	//nolint:staticcheck // QF1011: explicit type is the point of the guard
+	var _ model.Provider[[]kafka.Message] = damagedStatusEventProvider(Model{}, 0, 0, false, "", 0, nil)
 	return tk
 }
 

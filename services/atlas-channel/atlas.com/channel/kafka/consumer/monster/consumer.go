@@ -206,6 +206,25 @@ func destroyForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 	}
 }
 
+// shouldEchoDamagePacket reports whether a DAMAGED event needs the server to
+// send a MonsterDamage packet, i.e. whether the damage number has no
+// client-side rendering of its own.
+//
+//   - CHARACTER_ATTACK: no. Observers already render it from the attack
+//     broadcast (CharacterAttack*Writer,
+//     socket/handler/character_attack_common.go).
+//   - DAMAGE_OVER_TIME: no. The client runs a poison tick on its own timer and
+//     renders the number from the POISON magnitude carried in the monster
+//     temporary-stat packet (handleStatusEffectApplied), which atlas-monsters
+//     resolves to the real per-tick damage. Echoing here double-renders it.
+//   - HEAL: no. Emitted purely so the HP bar refreshes; it carries no damage.
+//   - MONSTER_ATTACK: yes. Nothing else renders it.
+//
+// The HP-bar packet, by contrast, is server-driven for every source.
+func shouldEchoDamagePacket(damageSource string) bool {
+	return damageSource == monster2.DamageSourceMonsterAttack
+}
+
 func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventDamagedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventDamagedBody]) {
 		if e.Type != monster2.EventStatusDamaged {
@@ -246,16 +265,10 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 				l.WithError(err).Errorf("Unable to announce monster [%d] health.", e.UniqueId)
 			}
 		})
-		// Only echo a MonsterDamage packet for damage sources that have no
-		// corresponding client-side attack broadcast. Player attacks are
-		// already rendered to observers by CharacterAttack*Writer in
-		// socket/handler/character_attack_common.go, so emitting here too
-		// would double-render the damage number.
-		if e.Body.DamageSource == monster2.DamageSourceMonsterAttack || e.Body.DamageSource == monster2.DamageSourceDamageOverTime {
+		if shouldEchoDamagePacket(e.Body.DamageSource) {
 			routine.Go(l, ctx, func(_ context.Context) {
 				err = _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
-					de := e.Body.DamageEntries[len(e.Body.DamageEntries)-1]
-					return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDamageWriter)(monsterpkt.NewMonsterDamage(m.UniqueId(), monsterpkt.MonsterDamageTypeUnk3, uint32(de.Damage), m.Hp(), m.MaxHp()).Encode)(s)
+					return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDamageWriter)(monsterpkt.NewMonsterDamage(m.UniqueId(), monsterpkt.MonsterDamageTypeUnk3, e.Body.Damage, m.Hp(), m.MaxHp()).Encode)(s)
 				})
 			})
 		}

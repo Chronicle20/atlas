@@ -53,6 +53,9 @@ type Model struct {
 	damage               uint32
 	attackCount          uint32
 	fixDamage            int32
+	dot                  int32
+	dotInterval          int32
+	dotTime              int32
 	lt                   point.Model
 	rb                   point.Model
 	bulletCount          uint16
@@ -133,6 +136,26 @@ func (m Model) LT() point.Model {
 // RB returns the skill effect's right-bottom rectangle corner.
 func (m Model) RB() point.Model {
 	return m.rb
+}
+
+// Dot returns the raw per-tick damage-over-time magnitude from WZ `dot`.
+// It is zero on every provisioned version -- the node does not exist in any
+// pre-v1.17 Skill.wz (task-200 design §2.1). Callers that need a DoT
+// magnitude must not assume this is populated.
+func (m Model) Dot() int32 {
+	return m.dot
+}
+
+// DotInterval returns the DoT tick interval in MILLISECONDS (atlas-data
+// converts from WZ seconds). Zero on every provisioned version.
+func (m Model) DotInterval() int32 {
+	return m.dotInterval
+}
+
+// DotTime returns the DoT lifetime in MILLISECONDS (atlas-data converts from
+// WZ seconds). Zero on every provisioned version.
+func (m Model) DotTime() int32 {
+	return m.dotTime
 }
 
 // MobCount returns the cap on monsters affected by an AoE monster-buff

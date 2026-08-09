@@ -75,30 +75,15 @@ var affectedAreaRemovedBroadcaster = func(l logrus.FieldLogger, ctx context.Cont
 	}
 }
 
-// mistSkillDelay is the AffectedAreaCreated `skillDelay` wire value: a
-// delay-before-drawing in units of 100 ms, NOT a lifetime. The client computes
-// AFFECTEDAREA.tStart (+0x14) as `get_update_time() + 100*skillDelay` (v83
-// @0x431b50, v95 @0x437fa3) and CAffectedAreaPool::Update gates the mist's
-// first draw on it — `if (tStart && tCur - tStart >= 0) { FindAndDraw();
-// tStart = 0; }` (v83 @0x431214-0x431238) — so any non-zero value hides the
-// mist for that long before it is ever drawn. Atlas has no per-mist cast delay
-// to express, so it sends 0: draw immediately.
+// The `skillDelay` and `nElemAttr` wire values now travel on MIST_CREATED
+// (atlas-maps mist.Mist.SkillDelay() / .ElemAttr(), where the full IDB
+// rationale lives). Both are 0 for every mist Atlas creates today.
 //
-// The mist's visible lifetime is not carried on this packet at all. The client
-// derives it from its own WZ skill data, and on the mob-skill arms (130/131,
-// v83 @0x4321cb/0x43206d) it does not compute an end tick — removal is driven
-// entirely by the server's AffectedAreaRemoved, which atlas-maps emits when the
-// mist expires.
-const mistSkillDelay = int16(0)
-
-// mistElemAttr is the AffectedAreaCreated `nElemAttr` wire value (the trailing
-// Decode4, stored raw at AFFECTEDAREA+0x30 — v83 @0x431b3b). It is not a time
-// field. Atlas does not model a mist elemental attribute, so it sends 0.
-const mistElemAttr = int32(0)
-
 // mistPhase is the GMS v92+ `nPhase` wire value (AFFECTEDAREA+0x48, v95
-// @0x437fde). Atlas does not model it; 0 matches the legacy versions, which
-// omit the field entirely.
+// @0x437fde). It is compared for equality only inside IsSmokeAreaByPoint /
+// GetAffectAreaByPoint, neither of which any Atlas mist can reach (task-200
+// design §3.3-3.4). Atlas does not model it; 0 matches the legacy versions,
+// which omit the field entirely.
 const mistPhase = int32(0)
 
 func handleMistCreated(sc server.Model, wp writer.Producer) message.Handler[mist2.Event[mist2.CreatedBody]] {
@@ -116,11 +101,11 @@ func handleMistCreated(sc server.Model, wp writer.Producer) message.Handler[mist
 			e.Body.Type,
 			int32(e.Body.SourceSkillId),
 			byte(e.Body.SourceSkillLevel),
-			mistSkillDelay, // draw immediately — this field is not a duration
+			e.Body.SkillDelay,
 			e.Body.OriginX, e.Body.OriginY,
 			e.Body.LtX, e.Body.LtY,
 			e.Body.RbX, e.Body.RbY,
-			mistElemAttr,
+			e.Body.ElemAttr,
 			mistPhase,
 		)
 		affectedAreaCreatedBroadcaster(l, ctx, wp, f, body)

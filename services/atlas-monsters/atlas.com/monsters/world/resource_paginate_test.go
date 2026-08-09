@@ -202,3 +202,78 @@ func TestGetMonstersInMapRectPaginates(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("%d", near.UniqueId()), doc.Data.DataArray[1].ID)
 	_ = far
 }
+
+// TestGetMonstersInMapRectCapIsMaxNotLimit pins both halves of the fix for the
+// task-200 live defect: every /monsters/in-rect call from atlas-maps and
+// atlas-channel 400'd because the client URL templates spelled the result cap
+// `limit`, and paginate.ParseParams rejects a `limit` param outright
+// (libs/atlas-rest/server/paginate/params.go -- the task-117 repo-wide ban on
+// any paging vocabulary other than page[number]/page[size]).
+//
+// The mist tick logged "monster rect lookup failed ... bad request" once per
+// second per mist and no monster was ever poisoned.
+//
+// Both directions matter, so both are asserted here: `max` must WORK (or the
+// cap is silently gone and channel's AoE mob selection becomes unbounded), and
+// `limit` must still 400 (or a future reader "helpfully" restores the old
+// spelling and re-breaks the endpoint).
+func TestGetMonstersInMapRectCapIsMaxNotLimit(t *testing.T) {
+	tenantId := uuid.New()
+	ten, err := tenant.Create(tenantId, "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+
+	worldId := world.Id(3)
+	channelId := channel.Id(3)
+	mapId := mapconst.Id(200000001)
+	instanceId := uuid.Nil
+	f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
+
+	reg := monster.GetMonsterRegistry()
+	reg.CreateMonster(ctx, ten, f, 9300018, 10, 10, 0, 0, 0, 100, 100)
+	reg.CreateMonster(ctx, ten, f, 9300018, 50, 50, 0, 0, 0, 100, 100)
+
+	srv := httptest.NewServer(setupWorldRouter())
+	defer srv.Close()
+
+	base := fmt.Sprintf("%s/worlds/%d/channels/%d/maps/%d/instances/%s/monsters/in-rect?x1=0&y1=0&x2=100&y2=100",
+		srv.URL, worldId, channelId, mapId, instanceId)
+
+	t.Run("max caps the result and returns 200", func(t *testing.T) {
+		req := worldRequestWithTenant(http.MethodGet, base+"&max=1&page[number]=1&page[size]=250", tenantId)
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var doc jsonapi.Document
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&doc))
+		require.NotNil(t, doc.Data)
+		assert.Len(t, doc.Data.DataArray, 1, "max=1 must cap the rect result to one monster")
+	})
+
+	t.Run("max=0 means no cap", func(t *testing.T) {
+		req := worldRequestWithTenant(http.MethodGet, base+"&max=0&page[number]=1&page[size]=250", tenantId)
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var doc jsonapi.Document
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&doc))
+		require.NotNil(t, doc.Data)
+		assert.Len(t, doc.Data.DataArray, 2)
+	})
+
+	t.Run("limit is still rejected", func(t *testing.T) {
+		req := worldRequestWithTenant(http.MethodGet, base+"&limit=0&page[number]=1&page[size]=250", tenantId)
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode,
+			"a `limit` param must keep 400ing -- that ban is why the cap is spelled `max`")
+	})
+}

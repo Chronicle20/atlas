@@ -3,6 +3,7 @@ package monster
 import (
 	monster2 "atlas-maps/data/map/monster"
 	"atlas-maps/map/character"
+	"atlas-maps/monster"
 	"context"
 	"errors"
 	"math"
@@ -21,6 +22,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -705,6 +707,10 @@ func (m *mockMonsterProcessor) CreateMonster(_ uuid.UUID, f field.Model, monster
 		Fh:        fh,
 		Team:      team,
 	})
+}
+
+func (m *mockMonsterProcessor) GetInMapRect(_ field.Model, _, _, _, _ int16, _ uint32, _ ...requests.Configurator) ([]monster.RestModel, error) {
+	return nil, nil
 }
 
 func (m *mockMonsterProcessor) GetCreatedMonsters() []MockCreatedMonster {

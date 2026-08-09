@@ -31322,8 +31322,7 @@
           "opcode": 290
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 320
         },
         "gms_v95": {
@@ -31483,8 +31482,7 @@
           "opcode": 291
         },
         "gms_v92": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 321
         },
         "gms_v95": {

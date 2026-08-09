@@ -47,12 +47,15 @@ func handleStatusEventCharacterEnter(l logrus.FieldLogger, ctx context.Context, 
 
 	p := monster.NewProcessor(l, ctx)
 	provider := p.NotControlledInFieldProvider(f)
-	// ControlOnEnter (not FindNextController): when the entering character is the
-	// chosen controller, assign in-place without emitting StartControl — the
-	// channel sends Spawn-then-Control for the still-loading client, so Control
-	// never races ahead of Spawn (which would make the client materialize the mob
-	// from the Control body: 0/1-stance crash + slope fall-through).
-	_ = model.ForEachSlice(provider, p.ControlOnEnter(e.Body.CharacterId, _map.NewProcessor(l, ctx).CharacterIdsInFieldProvider(f)), model.ParallelExecute())
+	// Always emit StartControl, including when the chosen controller is the
+	// entering character. The channel's START_CONTROL handler sends
+	// Spawn-then-Control, so a Control packet can never reach a client that has
+	// not been told about the mob — the invariant a silent in-place assignment
+	// used to protect by relying on the channel's map-enter spawn observing this
+	// write. It cannot: the channel spawns off CHARACTER_STATUS while this runs
+	// off MAP_STATUS, and it routinely wins the race, leaving the mob assigned
+	// in the registry but frozen on the client forever.
+	_ = model.ForEachSlice(provider, p.FindNextController(_map.NewProcessor(l, ctx).CharacterIdsInFieldProvider(f)), model.ParallelExecute())
 }
 
 func handleStatusEventCharacterExit(l logrus.FieldLogger, ctx context.Context, e statusEvent[characterExit]) {

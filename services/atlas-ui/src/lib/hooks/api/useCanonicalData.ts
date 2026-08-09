@@ -8,6 +8,7 @@ import {
 import {
   seedService,
   type DataStatus,
+  type IngestRun,
   type WzInputStatus,
 } from "@/services/api/seed.service";
 import {
@@ -34,6 +35,14 @@ const canonicalDataStatusKey = (sel: CanonicalSelection) =>
     sel.minorVersion,
   ] as const;
 export const baselinesKey = ["baselines"] as const;
+const canonicalIngestRunKey = (sel: CanonicalSelection) =>
+  [
+    "canonical",
+    "ingestRun",
+    sel.region,
+    sel.majorVersion,
+    sel.minorVersion,
+  ] as const;
 
 export function useCanonicalWzInputStatus(
   sel: CanonicalSelection | null,
@@ -58,6 +67,21 @@ export function useCanonicalDataStatus(
     enabled: !!sel,
     staleTime: 0,
     refetchInterval: 5000,
+  });
+}
+
+export function useCanonicalIngestRun(
+  sel: CanonicalSelection | null,
+): UseQueryResult<IngestRun, Error> {
+  return useQuery({
+    queryKey: sel
+      ? canonicalIngestRunKey(sel)
+      : ["canonical", "ingestRun", "none"],
+    queryFn: () => seedService.getCanonicalIngestRun(sel!),
+    enabled: !!sel,
+    staleTime: 0,
+    refetchInterval: 5000,
+    retry: false,
   });
 }
 

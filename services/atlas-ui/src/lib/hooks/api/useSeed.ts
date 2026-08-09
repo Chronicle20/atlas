@@ -11,6 +11,7 @@ import {
   type DataStatus,
   type DropsSeedStatus,
   type GachaponsSeedStatus,
+  type IngestRun,
   type InstanceRoutesSeedStatus,
   type MapActionScriptsSeedStatus,
   type NpcConversationsSeedStatus,
@@ -43,6 +44,7 @@ const wzInputStatusKey = (tenantId: string) =>
   ["wzInputStatus", tenantId] as const;
 export const dataStatusKey = (tenantId: string) =>
   ["dataStatus", tenantId] as const;
+const ingestRunKey = (tenantId: string) => ["ingestRun", tenantId] as const;
 const dropsSeedStatusKey = (tenantId: string) =>
   ["dropsSeedStatus", tenantId] as const;
 const gachaponsSeedStatusKey = (tenantId: string) =>
@@ -305,6 +307,23 @@ export function useDataStatus(): UseQueryResult<DataStatus, Error> {
     enabled: !!activeTenant,
     staleTime: 0,
     refetchInterval: 5000,
+  });
+}
+
+export function useIngestRun(): UseQueryResult<IngestRun, Error> {
+  const { activeTenant } = useTenant();
+  return useQuery({
+    queryKey: activeTenant
+      ? ingestRunKey(activeTenant.id)
+      : ["ingestRun", "none"],
+    queryFn: () => seedService.getIngestRun(activeTenant!),
+    enabled: !!activeTenant,
+    staleTime: 0,
+    refetchInterval: 5000,
+    // No retry, and the panel renders from query.isError rather than raising a
+    // toast: an unreachable endpoint gives a steady "progress unavailable"
+    // panel on a 5s cadence that never escalates.
+    retry: false,
   });
 }
 

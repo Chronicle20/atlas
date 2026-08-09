@@ -3,10 +3,12 @@ package ingest
 import (
 	"atlas-data/data"
 	"atlas-data/data/workers"
+	"atlas-data/ingestrun"
 	"context"
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	minio "atlas-data/storage/minio"
 
@@ -33,20 +35,41 @@ func Run(ctx context.Context, l logrus.FieldLogger) error {
 		return fmt.Errorf("minio init: %w", err)
 	}
 
-	// Refresh the Watchdog heartbeat every 30s while workers run. The REST pod
-	// writes the key once at Job creation (runtime/rest/jobs.go) and never
-	// refreshes — without this goroutine, Map.wz processing exceeds the 30-min
-	// Watchdog cutoff and the Job is deleted mid-execution. See heartbeat.go
-	// for the PR-544 evidence trail.
+	// Refresh the Watchdog heartbeat every 30s while workers run, and publish
+	// per-worker progress to the run record the REST pod initialised at Job
+	// creation. Both are gated on the same env-derived suffix: absent SCOPE/
+	// REGION means the compose / unit-test path, where neither signal has a
+	// reader (PRD FR-2.6).
+	var sink *redisSink
 	if suffix := ingestJobSuffixFromEnv(); suffix != "" {
 		rdb := redis.Connect(l)
-		reg := newIngestJobRegistry(rdb)
+		reg := ingestrun.NewJobRegistry(rdb)
 		routine.Go(l, ctx, func(_ context.Context) { runHeartbeat(ctx, l, reg, suffix) })
+
+		runId := ingestRunIdFromEnv()
+		sink = newRedisSink(l, ingestrun.NewRunRegistry(rdb), suffix, runId)
+		now := time.Now().UTC()
+		sink.Init(ctx, ingestrun.NewRecord(
+			runId, "", p.ScopeKey, p.Region,
+			fmt.Sprintf("%d.%d", p.MajorVersion, p.MinorVersion),
+			os.Getenv("TENANT_ID"), now, workers.RegisteredNames(),
+		), workers.RegisteredNames(), now)
 	} else {
-		l.Info("ingest heartbeat skipped: SCOPE/REGION/MAJOR_VERSION/MINOR_VERSION env not set (compose / test path)")
+		l.Info("ingest heartbeat and progress skipped: SCOPE/REGION/MAJOR_VERSION/MINOR_VERSION env not set (compose / test path)")
 	}
 
-	return data.RunWorkers(l, db, mc)(ctx, p)
+	// Build the option list conditionally: passing a typed-nil *redisSink
+	// through data.WithProgress would produce a non-nil interface whose
+	// methods then run on a nil receiver.
+	var opts []data.RunOption
+	if sink != nil {
+		opts = append(opts, data.WithProgress(sink))
+	}
+	runErr := data.RunWorkers(l, db, mc, opts...)(ctx, p)
+	if sink != nil {
+		sink.Finish(ctx, runErr, time.Now().UTC())
+	}
+	return runErr
 }
 
 func paramsFromEnv() (workers.Params, error) {

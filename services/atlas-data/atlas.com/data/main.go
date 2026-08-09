@@ -87,8 +87,13 @@ func main() {
 	// MODE=rest additionally provisions a JobCreator + Watchdog so the
 	// /api/data/process handler can launch ingest Jobs.
 	var jc *restruntime.JobCreator
+	var ingestRegs *restruntime.IngestRegistries
 	if os.Getenv("MODE") == "rest" {
 		rdb := redis.Connect(l)
+		// Built from the client directly, not from the JobCreator: the status
+		// handler must still serve the stored run record when the in-cluster
+		// config is unavailable and jc is therefore nil (FR-4.5).
+		ingestRegs = restruntime.NewIngestRegistries(rdb)
 		var jcErr error
 		jc, jcErr = restruntime.NewJobCreatorInClusterWithRedis(rdb)
 		if jcErr != nil {
@@ -100,19 +105,14 @@ func main() {
 			} else if len(active) > 0 {
 				l.Infof("restart recovery: %d active ingest job(s): %v", len(active), active)
 			}
-			// TimeoutSecs is the maximum heartbeat staleness the Watchdog
-			// tolerates before deleting a Job. The ingest pod now refreshes
-			// its heartbeat every 30s (runtime/ingest/heartbeat.go), so any
-			// timeout > ~60s would suffice in the happy path. Pick 7200 (2 h)
-			// as a generous belt-and-braces margin for a wedged heartbeat
-			// goroutine or a transient Redis blip on the writer side, and to
-			// absorb future archive growth without a code change. The legacy
-			// value (1800) was a self-inflicted half-hour cap: with no in-pod
-			// heartbeat, every Job's heartbeat went stale at creation+timeout
-			// regardless of actual progress (PR-544: Map worker killed at
-			// 30:28 mid-loop, ~80 maps left without layout.json/minimap.png).
+			// TimeoutSecs: see restruntime.DefaultWatchdogTimeoutSecs for the
+			// rationale. The legacy value (1800) was a self-inflicted
+			// half-hour cap: with no in-pod heartbeat, every Job's heartbeat
+			// went stale at creation+timeout regardless of actual progress
+			// (PR-544: Map worker killed at 30:28 mid-loop, ~80 maps left
+			// without layout.json/minimap.png).
 			routine.Go(l, rt.Context(), func(_ context.Context) {
-				restruntime.Watchdog{L: l, JobCreator: jc, TimeoutSecs: 7200}.Run(rt.Context())
+				restruntime.Watchdog{L: l, JobCreator: jc, TimeoutSecs: restruntime.DefaultWatchdogTimeoutSecs}.Run(rt.Context())
 			})
 		}
 	}
@@ -174,7 +174,7 @@ func main() {
 		SetWriteTimeout(time.Hour).
 		AddRouteInitializer(data.InitResource(db)(GetServer())).
 		AddRouteInitializer(wzinput.InitResource(mc)(GetServer())).
-		AddRouteInitializer(restruntime.InitResource(jc)(GetServer())).
+		AddRouteInitializer(restruntime.InitResource(jc, ingestRegs)(GetServer())).
 		AddRouteInitializer(baseline.InitResource(db, mc)(GetServer())).
 		AddRouteInitializer(tenantpurge.InitResource(db, mc)(GetServer())).
 		AddRouteInitializer(minioreconcile.InitResource(mc)(GetServer())).

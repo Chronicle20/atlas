@@ -42,10 +42,11 @@ func splitPrerequisites(registered []workers.Worker) (prereq, rest []workers.Wor
 	return prereq, rest
 }
 
-func RunWorkers(l logrus.FieldLogger, db *gorm.DB, mc *minio.Client) func(ctx context.Context, p workers.Params) error {
+func RunWorkers(l logrus.FieldLogger, db *gorm.DB, mc *minio.Client, opts ...RunOption) func(ctx context.Context, p workers.Params) error {
 	return func(ctx context.Context, p workers.Params) error {
 		defer workers.CloseMonolith()
 		maxParallel := envInt("INGEST_MAX_PARALLEL", 4)
+		cfg := newRunConfig(opts)
 
 		// versionWarnOnce implements the C-5 declared-version cross-check:
 		// warn (never fail) once per job when the archives' detected game
@@ -54,25 +55,31 @@ func RunWorkers(l logrus.FieldLogger, db *gorm.DB, mc *minio.Client) func(ctx co
 
 		// runOne resolves the worker's archive (per-archive object or
 		// monolithic Data.wz sub-view) and runs it under the given
-		// (tenanted, cancellable) context. A category genuinely absent
-		// from a monolithic data set (v12 has no Quest) skips that worker
-		// instead of failing the whole ingest run (task-172 C-3.4).
+		// (tenanted, cancellable) context. runWithProgress owns the
+		// ErrCategoryAbsent skip contract (task-172 C-3.4) and reports both
+		// transitions to the progress sink. This is the single chokepoint for
+		// both the sequential prerequisite phase and the parallel fan-out.
 		runOne := func(tctx context.Context, w workers.Worker) error {
-			wzFile, cleanup, err := workers.OpenArchive(tctx, l, mc, p, w.ArchiveName())
-			if err != nil {
-				if errors.Is(err, workers.ErrCategoryAbsent) {
-					l.Warnf("%s: %s absent from monolithic Data.wz — skipping worker (category not present in this data set)", w.Name(), w.ArchiveName())
-					return nil
+			return runWithProgress(tctx, cfg.sink, w.Name(), func(tctx context.Context) error {
+				wzFile, cleanup, err := workers.OpenArchive(tctx, l, mc, p, w.ArchiveName())
+				if err != nil {
+					if errors.Is(err, workers.ErrCategoryAbsent) {
+						l.Warnf("%s: %s absent from monolithic Data.wz — skipping worker (category not present in this data set)", w.Name(), w.ArchiveName())
+						// Propagated so runWithProgress classifies it as
+						// skipped; it swallows the error, preserving the
+						// pre-task-203 "return nil" behaviour for callers.
+						return err
+					}
+					return fmt.Errorf("%s open %s: %w", w.Name(), w.ArchiveName(), err)
 				}
-				return fmt.Errorf("%s open %s: %w", w.Name(), w.ArchiveName(), err)
-			}
-			defer cleanup()
-			if gv := wzFile.GameVersion(); gv != 0 && gv != int(p.MajorVersion) {
-				versionWarnOnce.Do(func() {
-					l.Warnf("WZ data declares game version %d but ingest params are %s %d.%d — check the upload landed under the intended tenant/version", gv, p.Region, p.MajorVersion, p.MinorVersion)
-				})
-			}
-			return w.Run(tctx, l, db, mc, wzFile, p)
+				defer cleanup()
+				if gv := wzFile.GameVersion(); gv != 0 && gv != int(p.MajorVersion) {
+					versionWarnOnce.Do(func() {
+						l.Warnf("WZ data declares game version %d but ingest params are %s %d.%d — check the upload landed under the intended tenant/version", gv, p.Region, p.MajorVersion, p.MinorVersion)
+					})
+				}
+				return w.Run(tctx, l, db, mc, wzFile, p)
+			})
 		}
 
 		prereq, rest := splitPrerequisites(workers.Registered)

@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 
 	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
@@ -21,17 +20,6 @@ const heartbeatInterval = 30 * time.Second
 // without cleanup. Long enough that a transient Redis blip on the writer
 // side does not flag the Job as stuck.
 const heartbeatTTL = time.Hour
-
-// ingestJobNamespace is the Redis namespace used for all ingest/job-lifecycle
-// keys. Must match the value in runtime/rest/jobs.go.
-const ingestJobNamespace = "data-ingest"
-
-// newIngestJobRegistry returns the env-global Registry used for heartbeat
-// writes. The Registry's keyFn is the identity so the caller supplies the
-// full suffix ("scope:region:ver" or "scope:region:ver:updatedAt").
-func newIngestJobRegistry(rdb *goredis.Client) *redis.Registry[string, string] {
-	return redis.NewRegistry[string, string](rdb, ingestJobNamespace, func(s string) string { return s })
-}
 
 // runHeartbeat ticks every heartbeatInterval and refreshes the Redis
 // `<suffix>:updatedAt` key the REST pod's Watchdog reads to decide whether a
@@ -70,7 +58,7 @@ func runHeartbeat(ctx context.Context, l logrus.FieldLogger, reg *redis.Registry
 }
 
 // ingestJobSuffixFromEnv reconstructs the Watchdog's per-Job key suffix from
-// the ingest pod's env vars. Shape matches runtime/rest/jobs.go:ingestJobKeySuffix.
+// the ingest pod's env vars. Shape matches ingestrun.KeySuffix.
 // Returns "" if any required env is missing so callers can skip heartbeating
 // (e.g. unit-test / compose runs without the REST pod's key in Redis).
 func ingestJobSuffixFromEnv() string {
@@ -88,4 +76,11 @@ func ingestJobSuffixFromEnv() string {
 		return ""
 	}
 	return fmt.Sprintf("%s:%s:%d.%d", scope, region, major, minor)
+}
+
+// ingestRunIdFromEnv returns the run identity JobCreator injected into the
+// rendered Job. Empty in the compose / unit-test path, which disables the
+// superseded-pod guard (there is no competing pod there).
+func ingestRunIdFromEnv() string {
+	return os.Getenv("INGEST_RUN_ID")
 }

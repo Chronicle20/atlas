@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"atlas-data/ingestrun"
 	"context"
 	"testing"
 	"time"
@@ -9,6 +10,7 @@ import (
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
@@ -20,7 +22,7 @@ func newTestRedis(t *testing.T) (*goredis.Client, *redis.Registry[string, string
 	t.Helper()
 	mr := miniredis.RunT(t)
 	rdb := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
-	return rdb, newIngestJobRegistry(rdb)
+	return rdb, ingestrun.NewJobRegistry(rdb)
 }
 
 func ptrTime(t time.Time) *time.Time { return &t }
@@ -51,7 +53,7 @@ func TestWatchdogSweep(t *testing.T) {
 				name: "stuck",
 				labels: map[string]string{
 					labelIngest: "true",
-					"scope":     "tenants-t", "region": "GMS", "version": "83.1",
+					"scope":     "tenants-t", "region": "GMS", "version": "83.1", "tenant": "t",
 				},
 				created:   now.Add(-2 * time.Hour),
 				updatedAt: ptrTime(now.Add(-1 * time.Hour)),
@@ -66,7 +68,7 @@ func TestWatchdogSweep(t *testing.T) {
 				name: "healthy",
 				labels: map[string]string{
 					labelIngest: "true",
-					"scope":     "tenants-t", "region": "GMS", "version": "83.1",
+					"scope":     "tenants-t", "region": "GMS", "version": "83.1", "tenant": "t",
 				},
 				created:   now.Add(-10 * time.Minute),
 				updatedAt: ptrTime(now),
@@ -81,7 +83,7 @@ func TestWatchdogSweep(t *testing.T) {
 				name: "old-no-heartbeat",
 				labels: map[string]string{
 					labelIngest: "true",
-					"scope":     "tenants-t", "region": "GMS", "version": "83.1",
+					"scope":     "tenants-t", "region": "GMS", "version": "83.1", "tenant": "t",
 				},
 				created: now.Add(-3 * time.Hour),
 				active:  1,
@@ -95,7 +97,7 @@ func TestWatchdogSweep(t *testing.T) {
 				name: "done",
 				labels: map[string]string{
 					labelIngest: "true",
-					"scope":     "tenants-t", "region": "GMS", "version": "83.1",
+					"scope":     "tenants-t", "region": "GMS", "version": "83.1", "tenant": "t",
 				},
 				created:   now.Add(-3 * time.Hour),
 				succeeded: 1,
@@ -161,7 +163,7 @@ func TestJobCreatorWritesHeartbeatToRedis(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	suffix := ingestJobKeySuffix("tenants/t1", "GMS", 83, 1)
+	suffix := ingestrun.KeySuffix("tenants/t1", "GMS", 83, 1)
 	got, err := reg.Get(context.Background(), suffix)
 	if err != nil {
 		t.Fatalf("registry missing job key suffix %q: %v", suffix, err)
@@ -169,7 +171,161 @@ func TestJobCreatorWritesHeartbeatToRedis(t *testing.T) {
 	if got != name {
 		t.Fatalf("registry job key = %q, want %q", got, name)
 	}
-	if _, err := reg.Get(context.Background(), suffix+":updatedAt"); err != nil {
+	if _, err := reg.Get(context.Background(), suffix+ingestrun.HeartbeatKeySuffix); err != nil {
 		t.Fatalf("registry missing updatedAt: %v", err)
+	}
+}
+
+func TestDeleteStuckJobWritesStuckRecord(t *testing.T) {
+	ctx := context.Background()
+	mr := miniredis.RunT(t)
+	rdb := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	regs := NewIngestRegistries(rdb)
+
+	scope := "tenants/t1"
+	suffix := ingestrun.KeySuffix(scope, "GMS", 83, 1)
+
+	// A record left mid-run: STRING done, MAP still going.
+	rec := ingestrun.NewRecord("run-1", "j1", scope, "GMS", "83.1", "t1",
+		time.Now().UTC().Add(-time.Hour), []string{"STRING", "MAP"})
+	rec = rec.WithWorkerTerminal("STRING", ingestrun.WorkerSucceeded, time.Now().UTC(), "")
+	rec = rec.WithWorkerRunning("MAP", time.Now().UTC())
+	if err := regs.Run.PutWithTTL(ctx, suffix+ingestrun.RunKeySuffix, rec, ingestrun.RecordTTL); err != nil {
+		t.Fatal(err)
+	}
+	if err := regs.Job.PutWithTTL(ctx, suffix, "j1", time.Hour); err != nil {
+		t.Fatal(err)
+	}
+	if err := regs.Job.PutWithTTL(ctx, suffix+ingestrun.HeartbeatKeySuffix, time.Now().UTC().Format(time.RFC3339), time.Hour); err != nil {
+		t.Fatal(err)
+	}
+
+	job := &batchv1.Job{ObjectMeta: metav1.ObjectMeta{
+		Name: "j1", Namespace: "ns",
+		Labels: map[string]string{
+			labelIngest: "true", "scope": "tenants-t1",
+			"region": "GMS", "version": "83.1", "tenant": "t1",
+		},
+	}}
+	cs := fake.NewSimpleClientset(job)
+	jc := &JobCreator{K8s: cs, Namespace: "ns", Registry: regs.Job, RunRegistry: regs.Run}
+	w := Watchdog{L: logrus.New(), JobCreator: jc, TimeoutSecs: 1800}
+
+	w.deleteStuckJob(ctx, job)
+
+	got, err := regs.Run.Get(ctx, suffix+ingestrun.RunKeySuffix)
+	if err != nil {
+		t.Fatalf("run record gone: %v", err)
+	}
+	if got.Phase != ingestrun.PhaseStuck {
+		t.Fatalf("phase = %s, want stuck", got.Phase)
+	}
+	if got.Reason == "" {
+		t.Fatal("stuck record has no reason")
+	}
+	if got.FinishedAt == nil {
+		t.Fatal("stuck record has no finishedAt")
+	}
+	// Q1: the per-worker states are preserved exactly.
+	if got.Workers[0].State != ingestrun.WorkerSucceeded {
+		t.Fatalf("STRING = %s, want succeeded", got.Workers[0].State)
+	}
+	if got.Workers[1].State != ingestrun.WorkerRunning {
+		t.Fatalf("MAP = %s, want running (preserved, not rewritten)", got.Workers[1].State)
+	}
+	// The two heartbeat keys are still removed, as before.
+	if _, err := regs.Job.Get(ctx, suffix); err == nil {
+		t.Fatal("job-name key not removed")
+	}
+	if _, err := regs.Job.Get(ctx, suffix+ingestrun.HeartbeatKeySuffix); err == nil {
+		t.Fatal("heartbeat key not removed")
+	}
+}
+
+func TestDeleteStuckJobDoesNotClobberNewerRun(t *testing.T) {
+	ctx := context.Background()
+	mr := miniredis.RunT(t)
+	rdb := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	regs := NewIngestRegistries(rdb)
+
+	scope := "tenants/t1"
+	suffix := ingestrun.KeySuffix(scope, "GMS", 83, 1)
+
+	// A newer run's live record — a re-triggered ingest for the same
+	// (scope, region, version) that started after the stuck sweep began.
+	newer := ingestrun.NewRecord("run-new", "j2", scope, "GMS", "83.1", "t1",
+		time.Now().UTC(), []string{"STRING", "MAP"})
+	newer = newer.WithWorkerRunning("STRING", time.Now().UTC())
+	if err := regs.Run.PutWithTTL(ctx, suffix+ingestrun.RunKeySuffix, newer, ingestrun.RecordTTL); err != nil {
+		t.Fatal(err)
+	}
+
+	// The stuck Job belongs to the OLDER run (run-old), reconstructed here from
+	// the same INGEST_RUN_ID env var the JobCreator stamps at creation time.
+	job := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "j1", Namespace: "ns",
+			Labels: map[string]string{
+				labelIngest: "true", "scope": "tenants-t1",
+				"region": "GMS", "version": "83.1", "tenant": "t1",
+			},
+		},
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Name: "ingest",
+						Env:  []corev1.EnvVar{{Name: "INGEST_RUN_ID", Value: "run-old"}},
+					}},
+				},
+			},
+		},
+	}
+	cs := fake.NewSimpleClientset(job)
+	jc := &JobCreator{K8s: cs, Namespace: "ns", Registry: regs.Job, RunRegistry: regs.Run}
+	w := Watchdog{L: logrus.New(), JobCreator: jc, TimeoutSecs: 1800}
+
+	w.deleteStuckJob(ctx, job)
+
+	got, err := regs.Run.Get(ctx, suffix+ingestrun.RunKeySuffix)
+	if err != nil {
+		t.Fatalf("newer run record gone: %v", err)
+	}
+	if got.RunId != "run-new" {
+		t.Fatalf("runId = %s, want run-new (record must not be overwritten)", got.RunId)
+	}
+	if got.Phase != ingestrun.PhaseRunning {
+		t.Fatalf("phase = %s, want running (stuck-old must not clobber newer run)", got.Phase)
+	}
+	if got.Reason != "" {
+		t.Fatalf("reason = %q, want empty (untouched)", got.Reason)
+	}
+	if got.Workers[0].State != ingestrun.WorkerRunning {
+		t.Fatalf("STRING = %s, want running (untouched)", got.Workers[0].State)
+	}
+}
+
+func TestDeleteStuckJobWithNoRecordIsQuiet(t *testing.T) {
+	ctx := context.Background()
+	mr := miniredis.RunT(t)
+	rdb := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	regs := NewIngestRegistries(rdb)
+
+	job := &batchv1.Job{ObjectMeta: metav1.ObjectMeta{
+		Name: "j1", Namespace: "ns",
+		Labels: map[string]string{
+			labelIngest: "true", "scope": "shared", "region": "GMS", "version": "83.1",
+		},
+	}}
+	cs := fake.NewSimpleClientset(job)
+	jc := &JobCreator{K8s: cs, Namespace: "ns", Registry: regs.Job, RunRegistry: regs.Run}
+	w := Watchdog{L: logrus.New(), JobCreator: jc, TimeoutSecs: 1800}
+
+	// Must not panic and must not resurrect a record that was never written.
+	w.deleteStuckJob(ctx, job)
+
+	suffix := ingestrun.KeySuffix("shared", "GMS", 83, 1)
+	if _, err := regs.Run.Get(ctx, suffix+ingestrun.RunKeySuffix); err == nil {
+		t.Fatal("deleteStuckJob created a record where none existed")
 	}
 }

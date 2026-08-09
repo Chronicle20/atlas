@@ -40,9 +40,12 @@ import {
   pluralize,
 } from "@/components/features/setup/setup-format";
 import { BaselineTargetPicker } from "@/components/features/baselines/BaselineTargetPicker";
+import { IngestProgressPanel } from "@/components/features/setup/IngestProgressPanel";
+import { ingestPublishBlockReason } from "@/components/features/setup/ingest-progress";
 import {
   useBaselines,
   useCanonicalDataStatus,
+  useCanonicalIngestRun,
   useCanonicalWzInputStatus,
   usePublishCanonicalBaseline,
   useRunCanonicalProcessing,
@@ -62,6 +65,7 @@ export function BaselinesPage() {
   const uploadWz = useUploadCanonicalWz(sel);
   const runProcessing = useRunCanonicalProcessing(sel);
   const publish = usePublishCanonicalBaseline(sel);
+  const ingestRun = useCanonicalIngestRun(sel);
 
   const baselines = baselinesQuery.data ?? [];
   const wzData = wzInput.data;
@@ -150,8 +154,16 @@ export function BaselinesPage() {
     wzData.fileCount === 0 ||
     uploadWz.isPending ||
     runProcessing.isPending;
+  const ingestBlockReason = ingestPublishBlockReason(
+    ingestRun.data,
+    ingestRun.isError,
+  );
   const publishDisabled =
-    !sel || !docData || docData.documentCount === 0 || publish.isPending;
+    !sel ||
+    !docData ||
+    docData.documentCount === 0 ||
+    publish.isPending ||
+    ingestBlockReason !== null;
 
   return (
     <div className="flex flex-col space-y-6 p-10 pb-16 overflow-y-auto">
@@ -306,6 +318,11 @@ export function BaselinesPage() {
             }
           />
 
+          <IngestProgressPanel
+            run={ingestRun.data}
+            isError={ingestRun.isError}
+          />
+
           <SetupRow
             icon={<Send className="h-5 w-5" />}
             label="Publish Baseline"
@@ -332,6 +349,11 @@ export function BaselinesPage() {
                   "Publish Baseline"
                 )}
               </Button>
+            }
+            warning={
+              ingestBlockReason ? (
+                <p className="text-xs text-destructive">{ingestBlockReason}</p>
+              ) : undefined
             }
           />
         </CardContent>

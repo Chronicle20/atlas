@@ -121,6 +121,60 @@ func (r *Registry[K, V]) Update(ctx context.Context, key K, fn func(V) V) (V, er
 	return result, fmt.Errorf("optimistic lock failed after %d retries", updateMaxRetries)
 }
 
+// UpdateWithTTL is Update with an explicit expiry on the write.
+//
+// Update's pipelined Set passes 0, and in Redis a SET without an expiry option
+// CLEARS any existing TTL — so a key created with PutWithTTL becomes immortal
+// on its first Update. Callers whose key must keep expiring across mutations
+// (e.g. a bounded-lifetime progress record) must use this variant and pass the
+// same ttl on every write. Update's zero-TTL behaviour is deliberately left
+// unchanged: every existing caller relies on it.
+//
+// fn may run multiple times (optimistic-lock retry) and must be pure.
+func (r *Registry[K, V]) UpdateWithTTL(ctx context.Context, key K, ttl time.Duration, fn func(V) V) (V, error) {
+	rk := namespacedKey(r.namespace, r.keyFn(key))
+
+	var result V
+	txFn := func(tx *goredis.Tx) error {
+		data, err := tx.Get(ctx, rk).Bytes()
+		if errors.Is(err, goredis.Nil) {
+			return ErrNotFound
+		}
+		if err != nil {
+			return err
+		}
+
+		current, err := r.unmarshal(data)
+		if err != nil {
+			return err
+		}
+
+		result = fn(current)
+		newData, err := r.marshal(result)
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.TxPipelined(ctx, func(pipe goredis.Pipeliner) error {
+			pipe.Set(ctx, rk, newData, ttl)
+			return nil
+		})
+		return err
+	}
+
+	for i := 0; i < updateMaxRetries; i++ {
+		err := r.client.Watch(ctx, txFn, rk)
+		if err == nil {
+			return result, nil
+		}
+		if errors.Is(err, goredis.TxFailedErr) {
+			continue
+		}
+		return result, err
+	}
+	return result, fmt.Errorf("optimistic lock failed after %d retries", updateMaxRetries)
+}
+
 // PutWithTTL stores value under key with a native Redis TTL.
 func (r *Registry[K, V]) PutWithTTL(ctx context.Context, key K, value V, ttl time.Duration) error {
 	data, err := r.marshal(value)

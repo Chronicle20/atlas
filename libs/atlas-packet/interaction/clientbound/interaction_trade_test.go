@@ -147,3 +147,37 @@ func TestInteractionTradeMesoLimitIsBodyless(t *testing.T) {
 		})
 	}
 }
+
+// TestInteractionTradeConfirmRoundTrip proves Decode drains cleanly and
+// consumes no extra bytes for the mode-17 bodyless arm — the byte pin above
+// only shows what Encode produces, not that Decode reads exactly that much.
+func TestInteractionTradeConfirmRoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := NewInteractionTradeConfirm(17)
+			output := InteractionTradeConfirm{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.Mode() != input.Mode() {
+				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
+			}
+		})
+	}
+}
+
+// TestInteractionTradeMesoLimitRoundTrip proves Decode drains cleanly and
+// consumes no extra bytes for the mode-21 bodyless arm — the byte pin above
+// only shows what Encode produces, not that Decode reads exactly that much.
+func TestInteractionTradeMesoLimitRoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := NewInteractionTradeMesoLimit(21)
+			output := InteractionTradeMesoLimit{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.Mode() != input.Mode() {
+				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
+			}
+		})
+	}
+}

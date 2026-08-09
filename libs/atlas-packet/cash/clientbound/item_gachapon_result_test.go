@@ -48,12 +48,22 @@ func sampleGachaponItem() CashInventoryItem {
 
 // The 55-byte GW_CashItemInfo blob is unconditional on this packet — unlike
 // GachaponOpenDone there is no isCashItem gate byte (design.md §1.3).
-// packet-audit:verify packet=cash/clientbound/CashItemGachaponResult version=gms_v83 ida=0x478e2b
-// packet-audit:verify packet=cash/clientbound/CashItemGachaponResult version=gms_v84 ida=0x47bf59
-// packet-audit:verify packet=cash/clientbound/CashItemGachaponResult version=gms_v87 ida=0x4844a4
-// packet-audit:verify packet=cash/clientbound/CashItemGachaponResult version=gms_v92 ida=0x495770
-// packet-audit:verify packet=cash/clientbound/CashItemGachaponResult version=gms_v95 ida=0x4997e0
-// packet-audit:verify packet=cash/clientbound/CashItemGachaponResult version=jms_v185 ida=0x48b21d
+// packet-audit:verify packet=cash/clientbound/CashItemGachaponResult version=gms_v83 ida=0x47c75e
+// packet-audit:verify packet=cash/clientbound/CashItemGachaponResult version=gms_v84 ida=0x47f8fc
+// packet-audit:verify packet=cash/clientbound/CashItemGachaponResult version=gms_v87 ida=0x487f5a
+// packet-audit:verify packet=cash/clientbound/CashItemGachaponResult version=gms_v92 ida=0x491530
+// packet-audit:verify packet=cash/clientbound/CashItemGachaponResult version=gms_v95 ida=0x495820
+// packet-audit:verify packet=cash/clientbound/CashItemGachaponResult version=jms_v185 ida=0x48f840
+//
+// Correction (task-207): the addresses originally carried here (v83
+// 0x478e2b, v84 0x47bf59, v87 0x4844a4, v92 0x495770, v95 0x4997e0, jms
+// 0x48b21d) were CCashShop::OnPacket — the opcode dispatcher switch, not the
+// CCashShop::OnCashItemGachaponResult leaf handler. Live-IDB decompile
+// (idb_list sessions 41f13e0d/5881cf84/d51ecbd3/acdfccff/79906a1e/b6864e54)
+// confirmed the dispatcher's case 0x14D/0x154/0x15E/0x180/0x188/0x16D calls
+// CCashShop::OnCashItemGachaponResult at the addresses now cited above; the
+// read order (mode, then guarded sn/remain/blob/delegate) matches this
+// file's fixtures exactly on every version.
 func TestCashItemGachaponSuccessEncodePerVersion(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for version, opts := range gachaponOpsByVersion() {

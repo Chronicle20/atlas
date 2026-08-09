@@ -3120,7 +3120,7 @@
       "address": "0xb0c6d0",
       "region": "JMS",
       "direction": "clientbound",
-      "note": "mode=3 (Display), raw v3==0 branch @0xb0c7aa. sub_55C3E4(this+3511) clears the existing memo list (not a wire read); Decode1(count) @0xb0c7b2 then loop count×: sub_55C3A6 (list append, not a wire read) + sub_510E70(entry, iPacket) @0xb0c7cf which decodes one GW_Memo: Decode4(id)@0x510e82 + DecodeStr(sender)@0x510e8a + DecodeStr(message)@0x510ead + DecodeBuffer(timestamp,8)@0x510ed2 + Decode1(flag)@0x510ede. Wire identical to GMS v79/v72/v83/v84/v87/v95.",
+      "note": "mode=3 (Display), raw v3==0 branch @0xb0c7aa. sub_55C3E4(this+3511) clears the existing memo list (not a wire read); Decode1(count) @0xb0c7b2 then loop count\u00d7: sub_55C3A6 (list append, not a wire read) + sub_510E70(entry, iPacket) @0xb0c7cf which decodes one GW_Memo: Decode4(id)@0x510e82 + DecodeStr(sender)@0x510e8a + DecodeStr(message)@0x510ead + DecodeBuffer(timestamp,8)@0x510ed2 + Decode1(flag)@0x510ede. Wire identical to GMS v79/v72/v83/v84/v87/v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -3189,7 +3189,7 @@
       "address": "0xb0c6d0",
       "region": "JMS",
       "direction": "clientbound",
-      "note": "mode=7 (Refresh), raw v6==2 branch @0xb0c700 tail-calls CWvsContext::OnMemoNotify_Receive(this) @0xb0c708 with no CInPacket argument — no further wire reads beyond the mode byte. Mode number matches GMS v72/v79/v83/v84/v87/v95's REFRESH=7. Wire shape (mode-only) identical across all versions.",
+      "note": "mode=7 (Refresh), raw v6==2 branch @0xb0c700 tail-calls CWvsContext::OnMemoNotify_Receive(this) @0xb0c708 with no CInPacket argument \u2014 no further wire reads beyond the mode byte. Mode number matches GMS v72/v79/v83/v84/v87/v95's REFRESH=7. Wire shape (mode-only) identical across all versions.",
       "calls": [
         {
           "op": "Decode1",
@@ -14740,6 +14740,68 @@
       "address": "0xb0783e",
       "direction": "serverbound",
       "calls": []
+    },
+    "CCashShop::OnCashItemGachaponResult": {
+      "address": "0x48f840",
+      "direction": "clientbound",
+      "note": "CASHSHOP_CASH_ITEM_GACHAPON_RESULT (task-207). mode(Decode1) unconditional. SUCCESS (mode=235): sn:DecodeBuffer(8, LARGE_INTEGER int64, matched against m_aCashItemInfo[i].liSN) + remain:Decode4 (int32 new quantity) + newItem:DecodeBuffer(0x37=55, GW_CashItemInfo, UNCONDITIONAL) + delegate to CUICashItemGachapon::OnCashItemGachaponResult for itemId/count/jackpot. FAILED (mode=234): no further reads, StringPool notice only.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "sn: 8 bytes LARGE_INTEGER (int64)",
+          "guard": "mode == 235"
+        },
+        {
+          "op": "Decode4",
+          "comment": "remain (int32, new box quantity)",
+          "guard": "mode == 235"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "newItem: 55 bytes GW_CashItemInfo blob, unconditional within SUCCESS arm",
+          "guard": "mode == 235"
+        },
+        {
+          "op": "Delegate",
+          "comment": "trailing itemId/count/jackpot read by the UI class, not CCashShop",
+          "guard": "mode == 235",
+          "ref": "CUICashItemGachapon::OnCashItemGachaponResult"
+        }
+      ]
+    },
+    "CUICashItemGachapon::OnCashItemGachaponResult": {
+      "address": "0xa6e3f4",
+      "direction": "clientbound",
+      "note": "CUICashItemGachapon::OnCashItemGachaponResult (task-207) \u2014 reads the trailing itemId/count/jackpot fields of CASHSHOP_CASH_ITEM_GACHAPON_RESULT's SUCCESS arm, delegated to by CCashShop::OnCashItemGachaponResult.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId (int32, rewarded template id)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count (byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "jackpot (byte, selects CashGachaponJackpot vs CashGachaponNormal sfx)"
+        }
+      ]
+    },
+    "CUICashItemGachapon::OnButtonClicked": {
+      "address": "0xa6e309",
+      "direction": "serverbound",
+      "note": "CUICashItemGachapon::OnButtonClicked (task-207) \u2014 nId==2000 (Open button): COutPacket(<op>) + EncodeBuffer(&m_liItemSN, 8), no other fields.",
+      "calls": [
+        {
+          "op": "EncodeBuffer",
+          "comment": "cashId: 8 bytes LARGE_INTEGER (int64), the cash serial (m_liItemSN)"
+        }
+      ]
     }
   }
 }

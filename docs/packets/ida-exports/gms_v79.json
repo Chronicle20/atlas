@@ -21320,6 +21320,17 @@
       "address": "0x96ad48",
       "direction": "serverbound",
       "calls": []
+    },
+    "CUICashItemGachapon::OnButtonClicked": {
+      "address": "0x8efda6",
+      "direction": "serverbound",
+      "note": "CUICashItemGachapon::OnButtonClicked (task-207) \u2014 nId==2000 (Open button): COutPacket(<op>) + EncodeBuffer(&m_liItemSN, 8), no other fields.",
+      "calls": [
+        {
+          "op": "EncodeBuffer",
+          "comment": "cashId: 8 bytes LARGE_INTEGER (int64), the cash serial (m_liItemSN)"
+        }
+      ]
     }
   }
 }

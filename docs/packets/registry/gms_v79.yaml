@@ -2504,6 +2504,7 @@
   direction: serverbound
   opcode: 159
   fname: CUICashItemGachapon::OnButtonClicked
+  packet: cash/serverbound/CashItemGachaponButton
   provenance: ida-discovered
   ida:
     address: 9371046

@@ -1,0 +1,11 @@
+packet: cash/serverbound/CashItemGachaponButton
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUICashItemGachapon::OnButtonClicked
+    address: "0x9db82d"
+    decompile_sha256: 776bdd6f03ede63da0919dcf03ee9447d2359602ffe873403efeca1d4f71d834
+verifies:
+    - libs/atlas-packet/cash/serverbound/item_gachapon_button_test.go#TestCashItemGachaponButtonRoundTrip
+    - libs/atlas-packet/cash/serverbound/item_gachapon_button_test.go#TestCashItemGachaponButtonDecode

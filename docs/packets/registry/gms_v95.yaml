@@ -1985,6 +1985,7 @@
   direction: clientbound
   opcode: 392
   fname: CCashShop::OnCashItemGachaponResult
+  packet: cash/clientbound/CashItemGachaponResult
   provenance: csv-import
 - op: CASHSHOP_CASH_GACHAPON_OPEN_RESULT
   direction: clientbound
@@ -3306,6 +3307,7 @@
   direction: serverbound
   opcode: 185
   fname: CUICashItemGachapon::OnButtonClicked
+  packet: cash/serverbound/CashItemGachaponButton
   provenance: csv-import
 - op: CASH_GACHAPON_BUTTON
   direction: serverbound

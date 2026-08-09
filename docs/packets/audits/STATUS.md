@@ -9,13 +9,13 @@ Tool: `1791f06bcb28a90251f9ae22080d791a9406d31c0bd2e56bc2ff10d9bb85b564`
 - export gms_v48: `ff3af9606ae94598c02edfb33d98b819b3be915c23ab7a70a3d8bc7e9fddad79`
 - export gms_v61: `33ad6a973a263634662db6eadfa168fe0570b2e4e36efb14b16684094ef7743d`
 - export gms_v72: `3ef1d667c4649ca9d409f8dcd61106ed65e13f38394d2974da9bd7768aa61858`
-- export gms_v79: `fc17eef29af79da9f7ca5b54dfb8d3e8ebc7c3327333ee8dfff41a9edb6647f8`
-- export gms_v83: `9fb838fd21dbc0968917804616a67d6d8fd1e849cf3e48bbf2248491176d0782`
-- export gms_v84: `3921827a0778585af970b61ca47a7c65dce209dda237d6414ef3bd044076f481`
-- export gms_v87: `8170df113a0fc48b35a70d91d6555a54bc21dc769f4a6435afe81e567328bd2f`
-- export gms_v92: `99406f920df40b6f51305e7043172295941d77f9b728927079cdae6891396f02`
-- export gms_v95: `1a57e174359089dee46ea01f15f1b430674b6de4caeff17b6c6e58f53c4e831c`
-- export jms_v185: `66cd4f3a498e4155371478a4a53e09f2e65dce72e732843d7d1d9e5586a16ced`
+- export gms_v79: `98e8eb24850e38aa52225fd271c9d548c4e30e9c81777572bffccb489f0ebbb5`
+- export gms_v83: `9f832433d17e6e99382d763fd3dbc126036e2078644b2b7b302d3ca53b5b65c3`
+- export gms_v84: `1a42b99ca955fc2285650229398459dc47b89289dd10631ff7bd8b81aa39a812`
+- export gms_v87: `23f26ebb751bb9eccd3411701b5e1a4fa5908653e78072cdf5748ffe2ddc13d2`
+- export gms_v92: `d57718229fbb4510f2ff1b419371bf65842d1ff538347a51c7a2dca0671db684`
+- export gms_v95: `d428f367798c57ff84facc746bb49057b991c0cc26926e1290a211777e3db877`
+- export jms_v185: `6e0ec9c7e027cdaef6254ce87e3e0acaf1e4dc7252684b062ae8af17b445439d`
 
 ## Clientbound
 
@@ -406,7 +406,7 @@ Tool: `1791f06bcb28a90251f9ae22080d791a9406d31c0bd2e56bc2ff10d9bb85b564`
 | CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashBuyFailed (T1) |  | ⬜ | 0x0FF | ✅ | 0x123 | ✅ | 0x12F | ✅ | 0x145 | ✅ | 0x14C | ✅ | 0x156 | ✅ | 0x178 | ❌ | 0x180 | ✅ | 0x164 | ✅ |
 | IDA_0X0FF | CCashShop::OnOneADay |  | 0x0FF | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | CASHSHOP_CASH_ITEM_RESULT | CCashShop::OnCashItemResult | cash/clientbound/CashBuyFailed (T1) | 0x100 | ✅ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
-| CASHSHOP_CASH_ITEM_GACHAPON_RESULT | CCashShop::OnCashItemGachaponResult |  | 0x101 | ❌ | 0x100 | ❌ | 0x124 | ❌ |  | ⬜ | 0x14D | ❌ | 0x154 | ❌ | 0x15E | ❌ | 0x180 | ❌ | 0x188 | ❌ | 0x16D | ❌ |
+| CASHSHOP_CASH_ITEM_GACHAPON_RESULT | CCashShop::OnCashItemGachaponResult |  | 0x101 | ❌ | 0x100 | ❌ | 0x124 | ❌ |  | ⬜ | 0x14D | ✅ | 0x154 | ✅ | 0x15E | ✅ | 0x180 | ✅ | 0x188 | ✅ | 0x16D | ✅ |
 | CASHSHOP_CHECK_NAME_CHANGE | CCashShop::OnCheckDuplicatedIDResult; CCashShop::OnCheckNameChangePossibleResult; sub_455A7F; sub_463900; sub_473519 |  | 0x102 | ❌ | 0x101 | ❌ | 0x125 | ❌ | 0x131 | ❌ | 0x148 | ❌ | 0x14F | ❌ | 0x159 | ❌ | 0x17B | ❌ | 0x183 | ❌ |  | ⬜ |
 | CASHSHOP_GACHAPON_STAMP_RESULT | CCashShop::OnCashShopGachaponStampResult |  | 0x103 | ❌ | 0x102 | ❌ | 0x126 | ❌ | 0x135 | ❌ | 0x14C | ❌ | 0x153 | ❌ | 0x15D | ❌ | 0x17F | ❌ | 0x187 | ❌ | 0x16B | ❌ |
 | SNOWBALL_STATE | CField_SnowBall::OnSnowBallState | field/clientbound/FieldSnowballState (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x103 | ✅ | 0x119 | ✅ | 0x120 | ✅ | 0x12A | ✅ | 0x14A | ❌ | 0x152 | ✅ | 0x131 | ✅ |
@@ -483,7 +483,7 @@ Tool: `1791f06bcb28a90251f9ae22080d791a9406d31c0bd2e56bc2ff10d9bb85b564`
 | CASHSHOP_GIFT_INFO_RESULT | CCashShop::OnGiftMateInfoResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x147 | ❌ | 0x14E | ❌ | 0x158 | ❌ | 0x17A | ❌ | 0x182 | ❌ | 0x166 | ❌ |
 | CASHSHOP_REGISTER_NEW_CHARACTER_RESULT |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x14A | ❌ | 0x151 | ❌ | 0x15B | ❌ | 0x17D | ❌ | 0x185 | ❌ |  | ⬜ |
 | VICIOUS_HAMMER | CField::OnItemUpgrade | field/clientbound/FieldViciousHammerFailure (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x14A | ✅ | 0x162 | ✅ | 0x16C | ✅ | 0x177 | ✅ | 0x199 | ❌ | 0x1A9 | ✅ |  | ⬜ |
-| CASHSHOP_CASH_GACHAPON_OPEN_RESULT | CCashShop::OnCashItemGachaponResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x14E | ❌ | 0x155 | ❌ | 0x15F | ❌ | 0x181 | ❌ | 0x189 | ❌ |  | ⬜ |
+| CASHSHOP_CASH_GACHAPON_OPEN_RESULT | CCashShop::OnCashItemGachaponResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x155 | ❌ | 0x15F | ❌ | 0x181 | ❌ | 0x189 | ❌ |  | ⬜ |
 | TIP_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15B | ❌ |
 | OPEN_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15C | ❌ |
 | ARIANT_SCORE | CField_Witchtower::OnPacket; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldAriantScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ | 0x166 | ✅ |  | ⬜ |
@@ -715,12 +715,12 @@ Tool: `1791f06bcb28a90251f9ae22080d791a9406d31c0bd2e56bc2ff10d9bb85b564`
 | USE_SOLOMON_ITEM | CWvsContext::SendExpUpItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x09D | ❌ | 0x0A1 | ❌ | 0x0A5 | ❌ | 0x0B2 | ❌ | 0x0B5 | ❌ | 0x071 | ❌ |
 | FIELD_DAMAGE_MOB | CMob::Update; sub_6361DF | character/serverbound/CharacterMonsterDamageFriendly (T1) |  | ⬜ | 0x09E | ✅ | 0x0B5 | ✅ | 0x0B7 | ✅ | 0x0BF | ✅ | 0x0C4 | ✅ | 0x0CB | ✅ | 0x0DF | ❌ | 0x0E6 | ✅ | 0x0C5 | ✅ |
 | USE_GACHA_EXP | CWvsContext::SendTempExpUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x09E | ❌ | 0x0A2 | ❌ | 0x0A6 | ❌ | 0x0B3 | ❌ | 0x0B6 | ❌ | 0x072 | ❌ |
+| CASH_ITEM_GACHAPON_BUTTON | CUICashItemGachapon::OnButtonClicked | cash/serverbound/CashItemGachaponButton (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x09F | ✅ | 0x0A1 | ✅ | 0x0A5 | ✅ | 0x0A9 | ✅ | 0x0B6 | ✅ | 0x0B9 | ✅ | 0x0A7 | ✅ |
 | MOB_DAMAGE_MOB_FRIENDLY | CMob::Update; sub_6361DF | character/serverbound/CharacterMonsterDamageFriendly (T1) |  | ⬜ | 0x09F | ✅ | 0x0B6 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x0C5 | ✅ | 0x0CC | ✅ | 0x0E0 | ❌ | 0x0E7 | ✅ | 0x0C6 | ✅ |
 | NEW_YEAR_CARD_REQUEST | CUIFadeYesNo::OnButtonClicked; CUINewYearCardSenderDlg::_SendNewYearCard | guild/serverbound/GuildJoin (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x09F | ✅ | 0x0A3 | ✅ | 0x0A7 | ✅ | 0x0B4 | ❌ | 0x0B7 | ✅ |  | ⬜ |
 | CASHSHOP_OPERATION | CCashShop::ApplyWishListEvent; CCashShop::GiftWishItem; CCashShop::OnBuy; CCashShop::OnBuyCouple; CCashShop::OnBuyFriendship; CCashShop::OnBuyNormal; CCashShop::OnBuyPackage; CCashShop::OnBuySlotInc; CCashShop::OnCashGachaponCopy; CCashShop::OnEnableEquipSlotExt; CCashShop::OnExItemSlot; CCashShop::OnGift; CCashShop::OnGiftMateInfoResult; CCashShop::OnGiftPackage; CCashShop::OnIncCharacterSlotCount; CCashShop::OnIncTrunkCount; CCashShop::OnMoveCashItemLtoS; CCashShop::OnMoveCashItemStoL; CCashShop::OnRebateLockerItem; CCashShop::OnRemoveWish; CCashShop::OnSetWish; CCashShop::RequestCashPurchaseRecord; CCashShop::SendBuyAvatarPacket; CCashShop::SendBuyNameChangeItemPacket; CCashShop::SendBuyTransferWorldItemPacket; CCashShop::SendGiftsPacket | cash/serverbound/CashShopOperationGetPurchaseRecord (T1) | 0x0A0 | ❌ | 0x0C4 | ❌ | 0x0DB | ✅ | 0x0DD | ✅ | 0x0E5 | ✅ | 0x0EB | ✅ | 0x0F2 | ✅ | 0x10C | ❌ | 0x113 | ✅ | 0x0F5 | ✅ |
 | MONSTER_BOMB | CMob::TryFirstSelfDestruction | monster/serverbound/MonsterMonsterBomb (T1) |  | ⬜ | 0x0A0 | ✅ | 0x0B7 | ✅ | 0x0B9 | ✅ | 0x0C1 | ✅ | 0x0C6 | ✅ | 0x0CD | ✅ | 0x0E1 | ❌ | 0x0E8 | ✅ | 0x0C7 | ✅ |
 | MORPH_REQUEST | CUINewYearCardSenderDlg::_SendNewYearCard; CUIRandomMorphDlg::_SendMorphRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A0 | ❌ | 0x0A4 | ❌ | 0x0A8 | ❌ | 0x0B5 | ❌ | 0x0B8 | ❌ |  | ⬜ |
-| CASH_ITEM_GACHAPON_BUTTON | CUICashItemGachapon::OnButtonClicked |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A1 | ❌ | 0x0A5 | ❌ | 0x0A9 | ❌ | 0x0B6 | ❌ | 0x0B9 | ❌ |  | ⬜ |
 | MOB_DAMAGE_MOB | CMob::SetDamagedByMob | monster/serverbound/MonsterMobDamageMob (T1) |  | ⬜ | 0x0A1 | ✅ | 0x0B8 | ✅ | 0x0BA | ✅ | 0x0C2 | ✅ | 0x0C7 | ✅ | 0x0CE | ✅ | 0x0E2 | ❌ | 0x0E9 | ✅ | 0x0C8 | ✅ |
 | CLICK_GUIDE | CUserLocal::HandleLButtonDblClk |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A2 | ❌ |  | ⬜ | 0x0AC | ❌ | 0x0B9 | ❌ | 0x0BC | ❌ | 0x09C | ❌ |
 | ARAN_COMBO_COUNTER | CUserLocal::RequestIncCombo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A3 | ❌ | 0x0A9 | ❌ | 0x0AD | ❌ | 0x0BA | ❌ | 0x0BD | ❌ | 0x09D | ❌ |
@@ -1055,13 +1055,13 @@ Tool: `1791f06bcb28a90251f9ae22080d791a9406d31c0bd2e56bc2ff10d9bb85b564`
 | v48 | 197 | 0 | 19 | 195 | 605 | 0 | 47.9% |
 | v61 | 259 | 0 | 58 | 236 | 463 | 0 | 46.8% |
 | v72 | 273 | 0 | 71 | 252 | 420 | 0 | 45.8% |
-| v79 | 317 | 0 | 70 | 248 | 381 | 0 | 49.9% |
-| v83 | 435 | 0 | 0 | 353 | 228 | 0 | 55.2% |
-| v84 | 409 | 0 | 0 | 359 | 248 | 0 | 53.3% |
-| v87 | 443 | 0 | 0 | 382 | 191 | 0 | 53.7% |
-| v92 | 8 | 0 | 152 | 714 | 142 | 0 | 0.9% |
-| v95 | 468 | 0 | 0 | 441 | 107 | 0 | 51.5% |
-| JMS185 | 418 | 0 | 0 | 400 | 198 | 0 | 51.1% |
+| v79 | 318 | 0 | 70 | 248 | 380 | 0 | 50.0% |
+| v83 | 437 | 0 | 0 | 350 | 229 | 0 | 55.5% |
+| v84 | 411 | 0 | 0 | 357 | 248 | 0 | 53.5% |
+| v87 | 445 | 0 | 0 | 380 | 191 | 0 | 53.9% |
+| v92 | 10 | 0 | 152 | 712 | 142 | 0 | 1.1% |
+| v95 | 470 | 0 | 0 | 439 | 107 | 0 | 51.7% |
+| JMS185 | 420 | 0 | 0 | 399 | 197 | 0 | 51.3% |
 
 ## Conflicts
 

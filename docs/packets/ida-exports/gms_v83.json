@@ -14895,7 +14895,7 @@
       "calls": [
         {
           "op": "Encode4",
-          "comment": "updateTime (get_update_time()) — v83 IDA-verified @0xa0a1b2, task-125 (function already named CWvsContext::SendSkillLearnItemUseRequest in the IDB; select_instance() is dead on the live MCP server (\"Method 'select_instance' not found\") so this entry was spliced by hand from a live decompile via the session-based idb tool, database=ce4ff298, filename MapleStory_dump.exe.i64, path ...\\\\GMS\\\\v83_Me\\\\...)",
+          "comment": "updateTime (get_update_time()) \u2014 v83 IDA-verified @0xa0a1b2, task-125 (function already named CWvsContext::SendSkillLearnItemUseRequest in the IDB; select_instance() is dead on the live MCP server (\"Method 'select_instance' not found\") so this entry was spliced by hand from a live decompile via the session-based idb tool, database=ce4ff298, filename MapleStory_dump.exe.i64, path ...\\\\GMS\\\\v83_Me\\\\...)",
           "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
         },
         {
@@ -14913,7 +14913,7 @@
     "CWvsContext::OnSkillLearnItemResult": {
       "address": "0xa1e5af",
       "direction": "clientbound",
-      "note": "SKILL_LEARN_ITEM_RESULT (task-125). v83 IDA-verified: CWvsContext::OnPacket case 0x33 (51) delegates directly. v83 body (no leading byte — MajorVersion()<84): Decode4 characterId (CUserPool::GetUser lookup), then under an if(user-found) guard (v36): Decode1 isMasteryBook (gates MASTERY_BOOK vs SKILL_BOOK message), Decode4 skillId (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse (gates avatar glow effect + \"cannot use\" message), Decode1 success (gates success/failure sound+message). select_instance() is dead on the live MCP server, so this entry was spliced by hand from a live decompile via the session-based idb tool, database=ce4ff298, filename MapleStory_dump.exe.i64, path ...\\\\GMS\\\\v83_Me\\\\...",
+      "note": "SKILL_LEARN_ITEM_RESULT (task-125). v83 IDA-verified: CWvsContext::OnPacket case 0x33 (51) delegates directly. v83 body (no leading byte \u2014 MajorVersion()<84): Decode4 characterId (CUserPool::GetUser lookup), then under an if(user-found) guard (v36): Decode1 isMasteryBook (gates MASTERY_BOOK vs SKILL_BOOK message), Decode4 skillId (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse (gates avatar glow effect + \"cannot use\" message), Decode1 success (gates success/failure sound+message). select_instance() is dead on the live MCP server, so this entry was spliced by hand from a live decompile via the session-based idb tool, database=ce4ff298, filename MapleStory_dump.exe.i64, path ...\\\\GMS\\\\v83_Me\\\\...",
       "calls": [
         {
           "op": "Decode4",
@@ -15485,6 +15485,68 @@
       "address": "0xa20935",
       "direction": "serverbound",
       "calls": []
+    },
+    "CCashShop::OnCashItemGachaponResult": {
+      "address": "0x47c75e",
+      "direction": "clientbound",
+      "note": "CASHSHOP_CASH_ITEM_GACHAPON_RESULT (task-207). mode(Decode1) unconditional. SUCCESS (mode=229): sn:DecodeBuffer(8, LARGE_INTEGER int64, matched against m_aCashItemInfo[i].liSN) + remain:Decode4 (int32 new quantity) + newItem:DecodeBuffer(0x37=55, GW_CashItemInfo, UNCONDITIONAL) + delegate to CUICashItemGachapon::OnCashItemGachaponResult for itemId/count/jackpot. FAILED (mode=228): no further reads, StringPool notice only.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "sn: 8 bytes LARGE_INTEGER (int64)",
+          "guard": "mode == 229"
+        },
+        {
+          "op": "Decode4",
+          "comment": "remain (int32, new box quantity)",
+          "guard": "mode == 229"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "newItem: 55 bytes GW_CashItemInfo blob, unconditional within SUCCESS arm",
+          "guard": "mode == 229"
+        },
+        {
+          "op": "Delegate",
+          "comment": "trailing itemId/count/jackpot read by the UI class, not CCashShop",
+          "guard": "mode == 229",
+          "ref": "CUICashItemGachapon::OnCashItemGachaponResult"
+        }
+      ]
+    },
+    "CUICashItemGachapon::OnCashItemGachaponResult": {
+      "address": "0x99aa92",
+      "direction": "clientbound",
+      "note": "CUICashItemGachapon::OnCashItemGachaponResult (task-207) \u2014 reads the trailing itemId/count/jackpot fields of CASHSHOP_CASH_ITEM_GACHAPON_RESULT's SUCCESS arm, delegated to by CCashShop::OnCashItemGachaponResult.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId (int32, rewarded template id)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count (byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "jackpot (byte, selects CashGachaponJackpot vs CashGachaponNormal sfx)"
+        }
+      ]
+    },
+    "CUICashItemGachapon::OnButtonClicked": {
+      "address": "0x99a9a7",
+      "direction": "serverbound",
+      "note": "CUICashItemGachapon::OnButtonClicked (task-207) \u2014 nId==2000 (Open button): COutPacket(<op>) + EncodeBuffer(&m_liItemSN, 8), no other fields.",
+      "calls": [
+        {
+          "op": "EncodeBuffer",
+          "comment": "cashId: 8 bytes LARGE_INTEGER (int64), the cash serial (m_liItemSN)"
+        }
+      ]
     }
   }
 }

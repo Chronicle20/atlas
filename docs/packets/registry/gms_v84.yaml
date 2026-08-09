@@ -2255,6 +2255,7 @@
   direction: clientbound
   opcode: 340
   fname: CCashShop::OnCashItemGachaponResult
+  packet: cash/clientbound/CashItemGachaponResult
   provenance: ida-discovered
   ida:
     address: 4716796
@@ -3640,6 +3641,7 @@
   direction: serverbound
   opcode: 165
   fname: CUICashItemGachapon::OnButtonClicked
+  packet: cash/serverbound/CashItemGachaponButton
   provenance: ida-discovered
   ida:
     address: 10336301

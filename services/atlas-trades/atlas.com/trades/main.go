@@ -17,7 +17,12 @@ const serviceName = "atlas-trades"
 
 // consumerGroupId is the Kafka consumer group this service registers under. It
 // is also the literal that deploy/k8s/overlays/pr/scripts/gen-consumer-group-patch.sh
-// reads out of this file to derive KAFKA_CONSUMER_GROUP for ephemeral envs.
+// reads out of this file to derive KAFKA_CONSUMER_GROUP for ephemeral envs, and
+// that tools/service-registration-guard.sh mirrors to decide whether this
+// service needs a generated PR consumer-group document. Deleting it while no
+// consumer is registered yet would silently drop both.
+//
+//nolint:unused // read by gen-consumer-group-patch.sh / service-registration-guard.sh
 var consumerGroupId = consumergroup.Resolve("Trade Service")
 
 type Server struct {
@@ -43,7 +48,6 @@ func GetServer() Server {
 func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
-	l.WithField("consumer_group", consumerGroupId).Info("Resolved Kafka consumer group.")
 
 	// Transient DB-connection errors surface as 503 + Retry-After (DOM-27,
 	// task-168) instead of 500, so callers retry rather than treating a

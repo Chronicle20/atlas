@@ -249,6 +249,16 @@ header comment — see the yaml's updated header for the corrected status).
   caveat documented in `task-0.4-jms-resolve.md` §1: the request-side
   feature (`SendChangeMaplePoint`) IS reachable and wired in this jms v185
   build (double-click item 5222002 in the Cash Locker → `COutPacket(0xA7)`).
+  **Updated by task-207:** an exhaustive `push 0A7h` scan of the jms_v185
+  binary found `0xA7` has two real senders, not one:
+  `CCashShop::SendChangeMaplePoint` (`0x4851be`, `COutPacket` construction at
+  `0x4851d3`) and `CUICashItemGachapon::OnButtonClicked` (`0xa6e309`,
+  `COutPacket` construction at `0xa6e3a4`) — both encode an 8-byte serial and
+  are indistinguishable on the wire. GMS separates these into two distinct
+  opcodes on every version that has both (e.g. v87 169 vs 171); jms_v185
+  collapses them onto the single opcode 167. The registry now carries both
+  senders as separate rows at `direction: serverbound, opcode: 167` in
+  `docs/packets/registry/jms_v185.yaml`.
   Four zero-decode candidate handlers in the switch are structurally
   identical to v95's "zero packet reads, canned notice" shape for this arm
   and cannot be disambiguated further without decoding jms's Japanese

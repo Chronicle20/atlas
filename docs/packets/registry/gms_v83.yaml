@@ -2853,11 +2853,14 @@
   opcode: 160
   fname: CUINewYearCardSenderDlg::_SendNewYearCard
   provenance: csv-import
+# IDA-derived: CUICashItemGachapon::OnButtonClicked send site 0x99a9a7 (task-207)
 - op: CASH_ITEM_GACHAPON_BUTTON
   direction: serverbound
   opcode: 161
   fname: CUICashItemGachapon::OnButtonClicked
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 10070439
 - op: CLICK_GUIDE
   direction: serverbound
   opcode: 162

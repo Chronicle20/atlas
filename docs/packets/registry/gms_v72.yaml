@@ -1868,7 +1868,7 @@
     address: 4655917
   note: 'v72 CCashShop::OnPacket op 291 = OnCashItemResult (CASHSHOP_OPERATION); v79=303.'
 # task-207: opcode 292's fname CCashShop::OnCashItemGachaponResult was a
-# mis-attribution. v72's handler at 0x470d24 (4655917) is a verified 3-line
+# mis-attribution. v72's handler at 0x470d24 is a verified 3-line
 # stub — CInPacket::Decode1(a2) written straight into a CWvsContext flag byte
 # — not a gachapon result (design.md §1.1; feature-na-evidence.yaml carries
 # the full proof). Row removed so the cell grades n-a rather than a false

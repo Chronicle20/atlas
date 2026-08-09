@@ -776,7 +776,7 @@
   ida:
     address: 4535510
 # task-207: opcode 257's fname CCashShop::OnCashItemGachaponResult was a
-# mis-attribution. v48's handler at 0x4536b9 (4535510) is a verified 3-line
+# mis-attribution. v48's handler at 0x4536b9 is a verified 3-line
 # stub — CInPacket::Decode1(a2) written straight into a CWvsContext flag byte
 # — not a gachapon result (design.md §1.1; feature-na-evidence.yaml carries
 # the full proof). Row removed so the cell grades n-a rather than a false

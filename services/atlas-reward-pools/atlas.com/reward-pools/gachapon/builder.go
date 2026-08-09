@@ -7,13 +7,15 @@ import (
 	"github.com/google/uuid"
 )
 
-// KindGachapon and KindIncubator are the closed union of valid Kind values
-// for a gachapon machine: the classic tiered reward pool, and the Pigmy Egg
-// incubator pool. Every comparison against a machine's Kind must reference
-// one of these constants rather than a bare string literal.
+// KindGachapon, KindIncubator and KindCashSurprise are the closed union of
+// valid Kind values for a reward pool: the classic tiered reward pool, the
+// Pigmy Egg incubator pool, and the Cash Shop Surprise box pool (task-207).
+// Every comparison against a pool's Kind must reference one of these
+// constants rather than a bare string literal.
 const (
-	KindGachapon  = "gachapon"
-	KindIncubator = "incubator"
+	KindGachapon     = "gachapon"
+	KindIncubator    = "incubator"
+	KindCashSurprise = "cash-surprise"
 )
 
 // DefaultKind is the Kind a gachapon machine reports when the builder's
@@ -74,7 +76,7 @@ func (b *Builder) Build() (Model, error) {
 	if b.id == "" {
 		return Model{}, errors.New("id cannot be empty")
 	}
-	if b.kind != KindGachapon && b.kind != KindIncubator {
+	if !isValidKind(b.kind) {
 		return Model{}, fmt.Errorf("gachapon: invalid kind %q", b.kind)
 	}
 	return Model{
@@ -87,4 +89,11 @@ func (b *Builder) Build() (Model, error) {
 		rareWeight:     b.rareWeight,
 		kind:           b.kind,
 	}, nil
+}
+
+// isValidKind enforces the closed union. Adding a fourth kind means adding
+// it here and deciding, in reward/processor.go, whether it rolls flat or
+// tiered — see usesFlatWeights.
+func isValidKind(kind string) bool {
+	return kind == KindGachapon || kind == KindIncubator || kind == KindCashSurprise
 }

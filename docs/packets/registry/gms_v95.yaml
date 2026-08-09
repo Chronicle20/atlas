@@ -3803,6 +3803,7 @@
   direction: serverbound
   opcode: 276
   fname: CCashShop::OnStatusCoupon
+  packet: cash/serverbound/CouponCode
   provenance: csv-import
 - op: UNNAMED_R387
   direction: serverbound

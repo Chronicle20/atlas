@@ -122,7 +122,10 @@ func Connect(l logrus.FieldLogger, configurators ...Configurator) *gorm.DB {
 		sqlDB.SetConnMaxIdleTime(getDurationEnv("DB_CONN_MAX_IDLE_TIME", 3*time.Minute))
 
 		var errOpen error
-		db, errOpen = gorm.Open(postgres.New(postgres.Config{Conn: sqlDB}), &gorm.Config{})
+		// TranslateError turns driver-specific constraint violations (e.g. Postgres
+		// SQLSTATE 23505) into gorm's typed sentinel errors (gorm.ErrDuplicatedKey,
+		// etc.) so callers can use errors.Is instead of matching driver error text.
+		db, errOpen = gorm.Open(postgres.New(postgres.Config{Conn: sqlDB}), &gorm.Config{TranslateError: true})
 		if errOpen != nil {
 			_ = sqlDB.Close()
 			return true, errOpen

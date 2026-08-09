@@ -10,6 +10,7 @@ import (
 	"atlas-cashshop/kafka/consumer/character"
 	itemConsumer "atlas-cashshop/kafka/consumer/item"
 	walletConsumer "atlas-cashshop/kafka/consumer/wallet"
+	"atlas-cashshop/surprise/opening"
 	"atlas-cashshop/wallet"
 	"atlas-cashshop/wishlist"
 	"context"
@@ -54,7 +55,7 @@ func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, opening.Migration, outboxlib.Migration))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.

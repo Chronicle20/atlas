@@ -6,6 +6,7 @@ import (
 	consumer2 "atlas-cashshop/kafka/consumer"
 	"atlas-cashshop/kafka/message/cashshop"
 	cashshop2 "atlas-cashshop/kafka/producer/cashshop"
+	"atlas-cashshop/surprise"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
@@ -53,6 +54,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandExpire(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleOpenSurprise(db)))); err != nil {
 				return err
 			}
 			return nil
@@ -130,6 +134,21 @@ func handleCommandExpire(db *gorm.DB) message.Handler[cashshop.Command[cashshop.
 		)
 		if err != nil {
 			l.WithError(err).Errorf("Failed to expire cashshop asset [%d] for account [%d].", c.Body.AssetId, c.Body.AccountId)
+		}
+	}
+}
+
+func handleOpenSurprise(db *gorm.DB) message.Handler[cashshop.Command[cashshop.OpenSurpriseCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c cashshop.Command[cashshop.OpenSurpriseCommandBody]) {
+		// COMMAND_TOPIC_CASH_SHOP is shared across handlers: without this
+		// guard another command's body unmarshals into OpenSurpriseCommandBody
+		// and produces a garbage open request.
+		if c.Type != cashshop.CommandTypeOpenSurprise {
+			return
+		}
+		err := surprise.NewProcessor(l, ctx, db).OpenAndEmit(c.Body.TransactionId, c.Body.AccountId, c.CharacterId, c.Body.CashId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to open surprise box [%d] for character [%d].", c.Body.CashId, c.CharacterId)
 		}
 	}
 }

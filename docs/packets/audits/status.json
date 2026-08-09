@@ -37982,60 +37982,6 @@
     },
     {
       "kind": "op",
-      "op": "CASHSHOP_CASH_ITEM_GACHAPON_RESULT",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "CCashShop::OnCashItemGachaponResult"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 257
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 256
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 292
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 333
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 340
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 350
-        },
-        "gms_v92": {
-          "state": "verified",
-          "opcode": 384
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 392
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 365
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "CASHSHOP_CHECK_NAME_CHANGE",
       "direction": "clientbound",
       "tier1": false,
@@ -42994,6 +42940,57 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "CASHSHOP_CASH_ITEM_GACHAPON_RESULT",
+      "direction": "clientbound",
+      "tier1": false,
+      "fnames": [
+        "CCashShop::OnCashItemGachaponResult"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 333
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 340
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 350
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 384
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 392
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 365
         }
       }
     },

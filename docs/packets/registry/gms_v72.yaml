@@ -1867,14 +1867,13 @@
   ida:
     address: 4655917
   note: 'v72 CCashShop::OnPacket op 291 = OnCashItemResult (CASHSHOP_OPERATION); v79=303.'
-- op: CASHSHOP_CASH_ITEM_GACHAPON_RESULT
-  direction: clientbound
-  opcode: 292
-  fname: CCashShop::OnCashItemGachaponResult
-  provenance: ida-discovered
-  ida:
-    address: 4655917
-  note: 'v72-EXTRA cash op (no v79 equiv): CCashShop::OnCashItemGachaponResult.'
+# task-207: opcode 292's fname CCashShop::OnCashItemGachaponResult was a
+# mis-attribution. v72's handler at 0x470d24 (4655917) is a verified 3-line
+# stub — CInPacket::Decode1(a2) written straight into a CWvsContext flag byte
+# — not a gachapon result (design.md §1.1; feature-na-evidence.yaml carries
+# the full proof). Row removed so the cell grades n-a rather than a false
+# ❌; StateNA derives solely from registry absence
+# (internal/matrix/grade.go), not from feature-na-evidence.yaml alone.
 - op: CASHSHOP_CHECK_NAME_CHANGE
   direction: clientbound
   opcode: 293

@@ -388,9 +388,18 @@ type TradeTaxTierRestModel struct {
 // player-to-player trade configuration. The attribute JSON keys must match what
 // atlas-trades decodes in
 // services/atlas-trades/atlas.com/trades/configuration/rest.go (RestModel).
+// TaxEnabled is a *bool, not a bool, because PATCH decodes into this whole
+// struct and ExtractTradeConfig writes the whole attributes object back. With a
+// plain bool an operator PATCHing only maxStagedItems would silently disable the
+// meso tax tenant-wide — the absent attribute would decode as false and
+// overwrite a stored true. nil means "the request did not mention this knob":
+// ExtractTradeConfig omits the key, and UpdateTradeConfig's attribute merge
+// keeps whatever was stored. An explicit false is a non-nil pointer and is
+// honoured (api2go's omitempty on a pointer omits only nil, never
+// pointer-to-false).
 type TradeConfigRestModel struct {
 	Id                        string                  `json:"-"`
-	TaxEnabled                bool                    `json:"taxEnabled"`
+	TaxEnabled                *bool                   `json:"taxEnabled,omitempty"`
 	TaxTiers                  []TradeTaxTierRestModel `json:"taxTiers"`
 	MaxStagedItems            int                     `json:"maxStagedItems"`
 	MinTradeLevel             int                     `json:"minTradeLevel"`
@@ -428,9 +437,10 @@ func TransformTradeConfig(data map[string]interface{}) (TradeConfigRestModel, er
 		attributes = make(map[string]interface{})
 	}
 
-	taxEnabled := false
+	// Absent stays nil so a PATCH that never mentioned the knob cannot flip it.
+	var taxEnabled *bool
 	if val, ok := attributes["taxEnabled"].(bool); ok {
-		taxEnabled = val
+		taxEnabled = &val
 	}
 
 	var taxTiers []TradeTaxTierRestModel
@@ -494,18 +504,56 @@ func ExtractTradeConfig(m TradeConfigRestModel) (map[string]interface{}, error) 
 		})
 	}
 
+	attributes := map[string]interface{}{
+		"taxTiers":                  tiers,
+		"maxStagedItems":            m.MaxStagedItems,
+		"minTradeLevel":             m.MinTradeLevel,
+		"reservationTtlSeconds":     m.ReservationTtlSeconds,
+		"attestationTimeoutSeconds": m.AttestationTimeoutSeconds,
+	}
+	// A nil TaxEnabled means the request never mentioned the knob: leave the key
+	// out entirely so UpdateTradeConfig's merge keeps the stored value.
+	if m.TaxEnabled != nil {
+		attributes["taxEnabled"] = *m.TaxEnabled
+	}
+
 	return map[string]interface{}{
-		"type": "trade-configs",
-		"id":   m.Id,
-		"attributes": map[string]interface{}{
-			"taxEnabled":                m.TaxEnabled,
-			"taxTiers":                  tiers,
-			"maxStagedItems":            m.MaxStagedItems,
-			"minTradeLevel":             m.MinTradeLevel,
-			"reservationTtlSeconds":     m.ReservationTtlSeconds,
-			"attestationTimeoutSeconds": m.AttestationTimeoutSeconds,
-		},
+		"type":       "trade-configs",
+		"id":         m.Id,
+		"attributes": attributes,
 	}, nil
+}
+
+// mergeTradeConfigAttributes returns a copy of incoming whose attributes carry
+// every attribute the stored config had but that incoming omitted. This is what
+// makes a partial PATCH safe: an attribute the request never mentioned survives
+// instead of being reset. Attributes present in incoming always win, including
+// an explicit false or zero.
+func mergeTradeConfigAttributes(existing map[string]interface{}, incoming map[string]interface{}) map[string]interface{} {
+	existingAttributes, ok := existing["attributes"].(map[string]interface{})
+	if !ok {
+		return incoming
+	}
+
+	incomingAttributes, ok := incoming["attributes"].(map[string]interface{})
+	if !ok {
+		incomingAttributes = make(map[string]interface{})
+	}
+
+	merged := make(map[string]interface{}, len(existingAttributes)+len(incomingAttributes))
+	for k, v := range existingAttributes {
+		merged[k] = v
+	}
+	for k, v := range incomingAttributes {
+		merged[k] = v
+	}
+
+	out := make(map[string]interface{}, len(incoming))
+	for k, v := range incoming {
+		out[k] = v
+	}
+	out["attributes"] = merged
+	return out
 }
 
 // CreateTradeConfigJsonData creates a JSON:API compliant data structure for trade configs

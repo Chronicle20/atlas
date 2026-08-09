@@ -1126,13 +1126,16 @@ func (p *ProcessorImpl) UpdateTradeConfig(mb *message.Buffer) func(tenantId uuid
 				// Ensure the config ID matches
 				config["id"] = configID
 
-				// Check if it's an array of resources
+				// Attributes the PATCH omitted are carried over from the stored
+				// config rather than reset — see mergeTradeConfigAttributes. A
+				// plain overwrite here would let a PATCH of one knob silently
+				// disable the meso tax tenant-wide.
 				if resources, ok := existingData["data"].([]interface{}); ok {
 					found := false
 					for i, resource := range resources {
 						if resourceMap, ok := resource.(map[string]interface{}); ok {
 							if id, ok := resourceMap["id"].(string); ok && id == configID {
-								resources[i] = config
+								resources[i] = mergeTradeConfigAttributes(resourceMap, config)
 								found = true
 								break
 							}
@@ -1146,7 +1149,7 @@ func (p *ProcessorImpl) UpdateTradeConfig(mb *message.Buffer) func(tenantId uuid
 					existingData["data"] = resources
 				} else if data, ok := existingData["data"].(map[string]interface{}); ok {
 					if id, ok := data["id"].(string); ok && id == configID {
-						existingData["data"] = config
+						existingData["data"] = mergeTradeConfigAttributes(data, config)
 					} else {
 						return Model{}, errors.New("trade config not found")
 					}

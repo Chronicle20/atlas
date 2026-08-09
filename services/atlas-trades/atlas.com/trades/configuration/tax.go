@@ -25,7 +25,7 @@ func ValidateTiers(tiers []Tier) error {
 // delivered, and no third party is credited (design §6.5).
 //
 // Arithmetic width: meso is uint32, and every uint32 is exactly representable
-// in float64 (24 bits of magnitude against a 53-bit mantissa), so widening the
+// in float64 (32 bits of magnitude against a 53-bit mantissa), so widening the
 // amount loses nothing. A Model's rates are validated into [0, 1], which bounds
 // the product by the amount itself — the multiply cannot overflow, math.Floor
 // truncates it to an integral float below 2^32, and the uint32 conversion is

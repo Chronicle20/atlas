@@ -88,7 +88,7 @@ const (
 	CashShopOperationErrorCannotGiftRecipientInventoryFull  = "CANNOT_GIFT_RECIPIENT_INVENTORY_FULL"
 	CashShopOperationErrorExceededCashItemLimit             = "EXCEEDED_CASH_ITEM_LIMIT"
 	CashShopOperationErrorIncorrectNameOrGenderRestriction  = "INCORRECT_NAME_OR_GENDER_RESTRICTION"
-	CashShopOperationErrorInvalidCouponCode                 = "INVALID_COUPON_COUPON"
+	CashShopOperationErrorInvalidCouponCode                 = "INVALID_COUPON_CODE"
 	CashShopOperationErrorCouponExpired                     = "COUPON_EXPIRED"
 	CashShopOperationErrorCouponAlreadyUsed                 = "COUPON_ALREADY_USED"
 	CashShopOperationErrorCouponInternetCafeRestriction     = "COUPON_INTERNET_CAFE_RESTRICTION"

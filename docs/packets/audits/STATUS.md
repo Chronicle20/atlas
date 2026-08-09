@@ -721,6 +721,7 @@ Tool: `48777ba4fb2a76b6e3b6b49c6385405286f1ae7dcfbfea791fdc6b1fc08e7f42`
 | MONSTER_BOMB | CMob::TryFirstSelfDestruction | monster/serverbound/MonsterMonsterBomb (T1) |  | ⬜ | 0x0A0 | ✅ | 0x0B7 | ✅ | 0x0B9 | ✅ | 0x0C1 | ✅ | 0x0C6 | ✅ | 0x0CD | ✅ | 0x0E1 | ❌ | 0x0E8 | ✅ | 0x0C7 | ✅ |
 | MORPH_REQUEST | CUINewYearCardSenderDlg::_SendNewYearCard; CUIRandomMorphDlg::_SendMorphRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A0 | ❌ | 0x0A4 | ❌ | 0x0A8 | ❌ | 0x0B5 | ❌ | 0x0B8 | ❌ |  | ⬜ |
 | CASH_ITEM_GACHAPON_BUTTON | CUICashItemGachapon::OnButtonClicked |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A1 | ❌ | 0x0A5 | ❌ | 0x0A9 | ❌ | 0x0B6 | ❌ | 0x0B9 | ❌ |  | ⬜ |
+| COUPON_CODE | CCashShop::OnStatusCoupon |  | 0x0A1 | ❌ | 0x0C5 | ❌ | 0x0DC | ❌ | 0x0DE | ❌ | 0x0E6 | ❌ | 0x0EC | ❌ | 0x0F3 | ❌ | 0x10D | ❌ | 0x114 | ❌ | 0x0F6 | ❌ |
 | MOB_DAMAGE_MOB | CMob::SetDamagedByMob | monster/serverbound/MonsterMobDamageMob (T1) |  | ⬜ | 0x0A1 | ✅ | 0x0B8 | ✅ | 0x0BA | ✅ | 0x0C2 | ✅ | 0x0C7 | ✅ | 0x0CE | ✅ | 0x0E2 | ❌ | 0x0E9 | ✅ | 0x0C8 | ✅ |
 | CLICK_GUIDE | CUserLocal::HandleLButtonDblClk |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A2 | ❌ |  | ⬜ | 0x0AC | ❌ | 0x0B9 | ❌ | 0x0BC | ❌ | 0x09C | ❌ |
 | ARAN_COMBO_COUNTER | CUserLocal::RequestIncCombo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A3 | ❌ | 0x0A9 | ❌ | 0x0AD | ❌ | 0x0BA | ❌ | 0x0BD | ❌ | 0x09D | ❌ |
@@ -782,7 +783,6 @@ Tool: `48777ba4fb2a76b6e3b6b49c6385405286f1ae7dcfbfea791fdc6b1fc08e7f42`
 | UNNAMED_R377 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E3 | ❌ | 0x0E3 | ❌ | 0x0F0 | ❌ | 0x108 | ❌ | 0x10F | ❌ | 0x0F0 | ❌ |
 | MOB_TIME_BOMB_END | CMob::UpdateTimeBomb | monster/serverbound/MonsterMobTimeBombEnd (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E4 | ❌ | 0x0EB | ✅ | 0x0CA | ✅ |
 | MOB_ESCORT_COLLISION | CMob::SendCollisionEscort | monster/serverbound/MonsterMobEscortCollision (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E5 | 🟡ᶠ | 0x0EC | ✅ | 0x0CB | ✅ |
-| COUPON_CODE | CCashShop::OnStatusCoupon |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E6 | ❌ | 0x0EC | ❌ | 0x0F3 | ❌ | 0x10D | ❌ | 0x114 | ❌ | 0x0F6 | ❌ |
 | MOB_REQUEST_ESCORT_INFO | CMob::SendRequestEscortPath | monster/serverbound/MonsterMobRequestEscortInfo (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E6 | 🟡ᶠ | 0x0ED | ✅ | 0x0CC | ✅ |
 | MOB_ESCORT_STOP_END_REQUEST | CMob::SendEscortStopEndRequest | monster/serverbound/MonsterMobEscortStopEndRequest (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E7 | 🟡ᶠ | 0x0EE | ✅ | 0x0CD | ✅ |
 | UNNAMED_R387 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E7 | ❌ | 0x0E7 | ❌ | 0x0F4 | ❌ | 0x10E | ❌ | 0x115 | ❌ | 0x0F7 | ❌ |
@@ -1052,10 +1052,10 @@ Tool: `48777ba4fb2a76b6e3b6b49c6385405286f1ae7dcfbfea791fdc6b1fc08e7f42`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 197 | 0 | 19 | 195 | 605 | 0 | 47.9% |
-| v61 | 259 | 0 | 58 | 236 | 463 | 0 | 46.8% |
-| v72 | 273 | 0 | 71 | 252 | 420 | 0 | 45.8% |
-| v79 | 317 | 0 | 70 | 248 | 381 | 0 | 49.9% |
+| v48 | 197 | 0 | 19 | 196 | 604 | 0 | 47.8% |
+| v61 | 259 | 0 | 58 | 237 | 462 | 0 | 46.8% |
+| v72 | 273 | 0 | 71 | 253 | 419 | 0 | 45.7% |
+| v79 | 317 | 0 | 70 | 249 | 380 | 0 | 49.8% |
 | v83 | 435 | 0 | 0 | 353 | 228 | 0 | 55.2% |
 | v84 | 409 | 0 | 0 | 359 | 248 | 0 | 53.3% |
 | v87 | 443 | 0 | 0 | 382 | 191 | 0 | 53.7% |

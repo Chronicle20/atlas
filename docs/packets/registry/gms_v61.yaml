@@ -2657,6 +2657,23 @@
   ida:
     address: 4549752
   note: 'v61 op196: CCashShop cash-purchase family — all sub-ops COutPacket(196)+Encode1(sub-op)+body (OnBuy/OnBuyCouple/OnBuyFriendship/OnBuyPackage/OnEnableEquipSlotExt/SendGiftsPacket/OnSetWish all verified as sub-structs). Representative fname kept = CCashShop::RequestCashPurchaseRecord (v72 parity), but that purchase-record sub-op is v61-ABSENT — an exhaustive COutPacket(196) send-site sweep found no mode+single-serial sender; v61 mode 0x27 is a name-entry dialog, not a record query (see _unimplemented.json). v72 CASHSHOP_OPERATION=219 (Δ-23).'
+- op: COUPON_CODE
+  direction: serverbound
+  opcode: 197
+  fname: CCashShop::OnStatusCoupon
+  packet: cash/serverbound/CouponCode
+  provenance: manual
+  note: >-
+    task-206: the previous registry absence (and the matrix n-a) was
+    "nobody looked", not client-absence. CCashShop::OnStatusCoupon @ 0x45a6b5
+    builds COutPacket(0xC5) at 0x45a75b (push 0C5h @ 0x45a753 =
+    CASHSHOP_OPERATION 196 + 1) and sends it at 0x45a7c4. Body is three
+    EncodeStr and no Encode1: EncodeStr(characterId) @ 0x45a778,
+    EncodeStr(couponCode) @ 0x45a791, then EncodeStr(third) @ 0x45a7b5
+    guarded on characterId being non-empty (dead, characterId is never
+    populated) — the same shape as gms_v83. Empty codes are filtered client
+    side ("Please enter the coupon code." @ 0x9614e8, DoModal @ 0x45a741).
+    See docs/tasks/task-206-cash-shop-coupon-codes/derivation.md.
 - op: ENTER_MTS
   direction: serverbound
   opcode: 135

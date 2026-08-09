@@ -1163,10 +1163,89 @@ pair and one else-arm).
 
 ---
 
+## Legacy versions — COUPON_CODE applicability
+
+The four legacy templates bind the CLIENTBOUND coupon arms
+(USE_COUPON_SUCCESS/USE_COUPON_FAILED at 54/57, 61/64, 69/72, 81/84), so the
+receive half exists on all four. This section settles the SEND half, which is
+what the registry and the coverage matrix key `n-a` on.
+
+**Verdict: `present` on all four.** The registry `n-a` was "nobody looked", not
+"the client cannot send" — every one of the four binaries carries a fully
+implemented `CCashShop::OnStatusCoupon` that builds and sends the packet.
+
+| version | IDB binary | session | OnStatusCoupon | "Please enter the coupon code." | opcode+1 push | verdict |
+|---|---|---|---|---|---|---|
+| gms_v48 | `GMS_v48_1_DEVM.exe.i64` | `93cc947e` | `?OnStatusCoupon@CCashShop@@QAEXXZ` @ `0x44d2e7` (size `0x113`) | **not found** — `find_regex "enter the coupon code"` returned 0 matches; the broader `find_regex "coupon"` returned exactly 3 strings, none of them this one (`0x7faf1c` "The coupon system will be available soon.", `0x7fe000` "…1 [Quick Delivery Coupon]…", `0x7fe0dc` "You do not have the Quick Delivery Coupon."). v48 has no empty-code guard at all — see note below. | `push 0A1h` @ `0x44d340` (= 161 = `CASHSHOP_OPERATION` 160 + 1) | **present** |
+| gms_v61 | `GMS_v61.1_U_DEVM.exe.i64` | `415bf585` | `?OnStatusCoupon@CCashShop@@QAEXXZ` @ `0x45a6b5` (size `0x158`) | `aPleaseEnterThe` @ `0x9614e8`, referenced from the empty-code else-arm: `CDialog::DoModal(aPleaseEnterThe, -1)` @ `0x45a741` inside `OnStatusCoupon` | `push 0C5h` @ `0x45a753` (= 197 = `CASHSHOP_OPERATION` 196 + 1) | **present** |
+| gms_v72 | `GMS_v72.1_U_DEVM.exe.i64` | `c8acae95` | `?OnStatusCoupon@CCashShop@@QAEXXZ` @ `0x4698d8` (size `0x158`) | `aPleaseEnterThe` @ `0xa5aa6c`, referenced from `CDialog::DoModal(aPleaseEnterThe, -1)` @ `0x469964` inside `OnStatusCoupon` | `push 0DCh` @ `0x469976` (= 220 = `CASHSHOP_OPERATION` 219 + 1) | **present** |
+| gms_v79 | `GMS_v79_1_DEVM.exe.i64` | `1438cecd` | `?OnStatusCoupon@CCashShop@@QAEXXZ` @ `0x46aa3e` (size `0x158`) | `aPleaseEnterThe` @ `0xabed1c`, referenced from `CDialog::DoModal(aPleaseEnterThe, -1)` @ `0x46aaca` inside `OnStatusCoupon` | `push 0DEh` @ `0x46aae4` call site, immediate at `0x46aadc` (= 222 = `CASHSHOP_OPERATION` 221 + 1) | **present** |
+
+All four functions were already named in their IDBs — no `rename` was needed.
+The serverbound `CASHSHOP_OPERATION` opcodes were read from the registries
+(`gms_v48.yaml:1260` = 160, `gms_v61.yaml` = 196, `gms_v72.yaml` = 219,
+`gms_v79.yaml` = 221), **not** from the brief's clientbound-flavoured list; the
+`+1` relation holds against the serverbound values on all four.
+
+### Request body — identical to the gms_v83 shape on all four
+
+Every legacy send is three `EncodeStr` calls and **no** `Encode1` — so the JMS
+`nType` divergence (see `## jms_v185`) does not appear here, and the v92/v95
+drop of the third field has not happened yet either. Field order, with the
+stack slot that carries each value:
+
+1. `EncodeStr(characterId)` — the *second* argument of
+   `CCouponUseSelectDlg::Confirm(ZXString<char>&, ZXString<char>&)`; never
+   populated by the dialog, so it is always the empty string on the wire.
+2. `EncodeStr(couponCode)` — the *first* `Confirm` argument, the one
+   `CCtrlEdit::GetText` writes the typed code into.
+3. `EncodeStr(<third string>)` — guarded by `if (characterId && *characterId)`,
+   i.e. dead code, exactly as on v83, because field 1 is always empty.
+
+| version | ctor | field 1 `EncodeStr` | field 2 `EncodeStr` | guard | field 3 `EncodeStr` | `SendPacket` |
+|---|---|---|---|---|---|---|
+| gms_v48 | `COutPacket(0xA1)` @ `0x44d348` | `0x44d365` (`var_10`) | `0x44d37e` (`var_14`) | `cmp eax, ebx` / `cmp [eax], bl` @ `0x44d386`–`0x44d38c` on `var_10` | `0x44d3a2` (`var_18`) | `0x44d3b1` |
+| gms_v61 | `COutPacket(0xC5)` @ `0x45a75b` | `0x45a778` (`var_14`) | `0x45a791` (`var_10`) | `0x45a799`–`0x45a79f` on `var_14` | `0x45a7b5` (`var_18`) | `0x45a7c4` |
+| gms_v72 | `COutPacket(0xDC)` @ `0x46997e` | `0x46999b` (`var_14`) | `0x4699b4` (`var_10`) | `0x4699bc`–`0x4699c2` on `var_14` | `0x4699d8` (`var_18`) | `0x4699e7` |
+| gms_v79 | `COutPacket(0xDE)` @ `0x46aae4` | `0x46ab01` (`var_14`) | `0x46ab1a` (`var_10`) | `0x46ab22`–`0x46ab28` on `var_14` | `0x46ab3e` (`var_18`) | `0x46ab4d` |
+
+The v48 slot assignment is transposed relative to v61/v72/v79 (`var_10` is
+characterId there, `var_14` on the later three), but the *wire* order is the
+same on all four. v48's `Confirm` call at `0x44d32f` pushes `var_10` then
+`var_14`, so `var_14` is argument 1 — and `Confirm` @ `0x44d3fa` assigns
+`CCtrlEdit::GetText` (`0x44d4cc`) into argument 1. That fixes `var_14` as the
+coupon code and `var_10` as characterId.
+
+### One real behavioural divergence: v48 has no client-side empty-code guard
+
+v61/v72/v79 (and v83+) call `ZXString<char>::TrimRight` / `TrimLeft` on the
+typed code, test its length, and on empty show
+`"Please enter the coupon code."` via `CDialog::DoModal` + `CUtilDlg::Notice`
+*instead of* sending. v48 does none of that: `OnStatusCoupon` @ `0x44d2e7`
+goes straight from `Confirm(...) == 1` (`0x44d334`) to
+`COutPacket(0xA1)` (`0x44d348`). That is why the literal is absent from the
+whole v48 binary — it is not a missing-feature signal, it is a missing-guard
+one. **Server consequence:** a v48 client can send an empty / untrimmed coupon
+code, so the server must trim and reject empties itself rather than relying on
+the client filter that the other five versions apply.
+
+The other guard is shared by all four: the entry `NoticeFailReason` early-out
+when the cash-shop-loaded flag (`this+0x40`) is clear — reason `137` on v48
+(`0x44d304`), `153` on v61 (`0x45a6d2`), `170` on v72 (`0x4698f5`), `184` on
+v79 (`0x46aa5b`). And all four set the in-flight latch `this+0x18 = 1`
+after `SendPacket`, so the client self-throttles to one outstanding coupon
+request.
+
+---
+
 ## Cross-version summary of the two values the codec needs
 
 | version | `COUPON_CODE` opcode | body |
 |---|---|---|
+| gms_v48 | 161 / `0xA1` | `str characterId` · `str couponCode` · optional `str` (dead: field 1 always empty). No client-side empty-code guard. |
+| gms_v61 | 197 / `0xC5` | same as v48 |
+| gms_v72 | 220 / `0xDC` | same as v48 |
+| gms_v79 | 222 / `0xDE` | same as v48 |
 | gms_v83 | 230 / `0xE6` | `str characterId` · `str couponCode` · optional `str` (dead: field 1 always empty) |
 | gms_v84 | **236 / `0xEC`** (registry says 230 — bug) | same as v83 |
 | gms_v87 | 243 / `0xF3` | same as v83 |

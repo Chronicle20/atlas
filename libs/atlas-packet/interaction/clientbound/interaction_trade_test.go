@@ -102,6 +102,9 @@ func TestInteractionTradeAddMesoRoundTrip(t *testing.T) {
 			input := NewInteractionTradeAddMeso(16, 0, 987654321)
 			output := InteractionTradeAddMeso{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.Mode() != input.Mode() {
+				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
+			}
 			if output.Side() != input.Side() {
 				t.Errorf("side: got %v, want %v", output.Side(), input.Side())
 			}

@@ -1,6 +1,8 @@
 package item
 
 import (
+	"atlas-reward-pools/gachapon"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -143,4 +145,40 @@ func TestGetItemsByGachaponIdAndTierPaginates(t *testing.T) {
 		require.NotNil(t, doc.Meta)
 		assert.EqualValues(t, 2, doc.Meta["total"], "must exclude the rare-tier row")
 	})
+}
+
+// TestCreateItemForNonExistentGachaponIs404 drives
+// POST /gachapons/{gachaponId}/items through the real resource router for a
+// gachaponId that has no backing pool row. handleCreateItem must map the
+// resulting gorm.ErrRecordNotFound to 404, matching handleUpdateItem's
+// not-found handling, rather than falling through to a generic 500.
+func TestCreateItemForNonExistentGachaponIs404(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, Migration, gachapon.Migration)
+	tenantId := uuid.New()
+
+	srv := httptest.NewServer(setupItemRouter(db))
+	defer srv.Close()
+
+	body, err := jsonapi.Marshal(RestModel{
+		GachaponId: "no-such-gachapon",
+		ItemId:     2000000,
+		Quantity:   1,
+		Tier:       "common",
+	})
+	require.NoError(t, err)
+
+	url := fmt.Sprintf("%s/gachapons/no-such-gachapon/items", srv.URL)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("TENANT_ID", tenantId.String())
+	req.Header.Set("REGION", "GMS")
+	req.Header.Set("MAJOR_VERSION", "83")
+	req.Header.Set("MINOR_VERSION", "1")
+
+	resp, err := (&http.Client{}).Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }

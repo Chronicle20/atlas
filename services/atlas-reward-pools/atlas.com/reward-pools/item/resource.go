@@ -77,6 +77,10 @@ func handleCreateItem(d *rest.HandlerDependency, c *rest.HandlerContext, rm Rest
 
 			pool, err := gachapon.NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(gachaponId)
 			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
 				d.Logger().WithError(err).Errorf("Retrieving gachapon [%s] to validate item.", gachaponId)
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return

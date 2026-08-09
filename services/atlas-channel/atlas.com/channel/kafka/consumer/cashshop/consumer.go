@@ -54,6 +54,16 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventSurpriseOpened(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventSurpriseFailed(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -148,5 +158,84 @@ func handleStatusEventError(sc server.Model, wp writer.Producer) message.Handler
 		op := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopInventoryCapacityIncreaseFailedBody(e.Body.Error))
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, op)
 		return
+	}
+}
+
+func handleStatusEventSurpriseOpened(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.SurpriseOpenedEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.SurpriseOpenedEventBody]) {
+		if e.Type != cashshop2.StatusEventTypeSurpriseOpened {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+			a, err := asset.NewProcessor(l, ctx).GetById(s.AccountId(), e.Body.CompartmentId, e.Body.RewardAssetId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve surprise reward asset [%d] for character [%d].", e.Body.RewardAssetId, e.CharacterId)
+				return err
+			}
+
+			item := cashpkt.CashInventoryItem{
+				CashId:      a.Item().CashId(),
+				AccountId:   s.AccountId(),
+				CharacterId: e.CharacterId,
+				TemplateId:  a.Item().TemplateId(),
+				CommodityId: a.CommodityId(),
+				Quantity:    int16(a.Item().Quantity()),
+				GiftFrom:    "",
+				Expiration:  packetmodel.MsTime(a.Expiration()),
+			}
+
+			// sn is the BOX's serial — the client matches it against
+			// m_aCashItemInfo[i].liSN to find the row to decrement, and
+			// removes that row when remain is 0. jackpot is always 0: the
+			// byte only picks CashGachaponJackpot vs CashGachaponNormal sfx
+			// and the pool model has no notion of a jackpot tier.
+			err = session.Announce(l)(ctx)(wp)(cashpkt.CashItemGachaponResultWriter)(
+				cashpkt.CashItemGachaponSuccessBody(
+					e.Body.BoxCashId,
+					int32(e.Body.BoxRemaining),
+					item,
+					int32(e.Body.RewardTemplateId),
+					byte(e.Body.RewardCount),
+					0,
+				))(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce surprise open result to character [%d].", e.CharacterId)
+				return err
+			}
+			return nil
+		})
+	}
+}
+
+func handleStatusEventSurpriseFailed(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.SurpriseFailedEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.SurpriseFailedEventBody]) {
+		if e.Type != cashshop2.StatusEventTypeSurpriseFailed {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		// The FAILED arm has an empty body — the client reads only the mode
+		// byte, calls StringPool::GetString(<fixed id>) and shows a notice.
+		// e.Body.Reason has no field to travel in and stays server-side.
+		l.Infof("Surprise open failed for character [%d]: %s.", e.CharacterId, e.Body.Reason)
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+			err := session.Announce(l)(ctx)(wp)(cashpkt.CashItemGachaponResultWriter)(cashpkt.CashItemGachaponFailedBody())(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce surprise open failure to character [%d].", e.CharacterId)
+				return err
+			}
+			return nil
+		})
 	}
 }

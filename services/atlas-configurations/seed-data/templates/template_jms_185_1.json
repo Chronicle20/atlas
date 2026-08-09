@@ -1757,6 +1757,15 @@
         ]
       },
       {
+        "opCode": "0xF6",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCouponCodeHandle",
+        "fname": "CCashShop::OnStatusCoupon",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x10A",
         "validator": "NoOpValidator",
         "handler": "ItcStatusChargeHandle",

@@ -1995,6 +1995,15 @@
         ]
       },
       {
+        "opCode": "0x114",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCouponCodeHandle",
+        "fname": "CCashShop::OnStatusCoupon",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x128",
         "validator": "LoggedInValidator",
         "handler": "ItemUpgradeUpdateHandle",
@@ -2464,15 +2473,15 @@
         "fname": "CWvsContext::OnClaimResult",
         "options": {
           "operations": {
-            "SUCCESS": "0x02",
-            "REPORTED_NOTICE": "0x03",
-            "TRY_AGAIN": "0x41",
-            "RECHECK_NAME": "0x42",
-            "NOT_ENOUGH_MESOS": "0x43",
-            "CANNOT_CONNECT": "0x44",
-            "EXCEEDED": "0x45",
-            "TIME_WINDOW": "0x47",
-            "FALSE_REPORT_CITED": "0x48"
+            "SUCCESS": 2,
+            "REPORTED_NOTICE": 3,
+            "TRY_AGAIN": 65,
+            "RECHECK_NAME": 66,
+            "NOT_ENOUGH_MESOS": 67,
+            "CANNOT_CONNECT": 68,
+            "EXCEEDED": 69,
+            "TIME_WINDOW": 71,
+            "FALSE_REPORT_CITED": 72
           }
         },
         "services": [
@@ -2556,11 +2565,11 @@
         "fname": "CWvsContext::OnSueCharacterResult",
         "options": {
           "operations": {
-            "SUCCESS": "0x00",
-            "UNABLE_TO_LOCATE": "0x01",
-            "DAILY_LIMIT": "0x02",
-            "REPORTED_NOTICE": "0x03",
-            "GENERIC_FAILURE": "0x04"
+            "SUCCESS": 0,
+            "UNABLE_TO_LOCATE": 1,
+            "DAILY_LIMIT": 2,
+            "REPORTED_NOTICE": 3,
+            "GENERIC_FAILURE": 4
           }
         },
         "services": [

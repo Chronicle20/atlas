@@ -1423,6 +1423,15 @@
         "services": [
           "channel"
         ]
+      },
+      {
+        "opCode": "0xA1",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCouponCodeHandle",
+        "fname": "CCashShop::OnStatusCoupon",
+        "services": [
+          "channel"
+        ]
       }
     ],
     "writers": [

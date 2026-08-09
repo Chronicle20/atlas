@@ -1,4 +1,4 @@
-package coupon
+package reward
 
 import (
 	"encoding/json"
@@ -21,10 +21,10 @@ func TestRewardRoundTripsThroughJSON(t *testing.T) {
 	if len(out) != 2 {
 		t.Fatalf("len = %d, want 2", len(out))
 	}
-	if out[0].Type() != RewardTypeCurrency || out[0].Currency() != 2 || out[0].Amount() != 10000 {
+	if out[0].Type() != TypeCurrency || out[0].Currency() != 2 || out[0].Amount() != 10000 {
 		t.Errorf("currency reward = %+v", out[0])
 	}
-	if out[1].Type() != RewardTypeCashItem || out[1].SerialNumber() != 50200000 || out[1].Quantity() != 1 {
+	if out[1].Type() != TypeCashItem || out[1].SerialNumber() != 50200000 || out[1].Quantity() != 1 {
 		t.Errorf("cash item reward = %+v", out[1])
 	}
 }

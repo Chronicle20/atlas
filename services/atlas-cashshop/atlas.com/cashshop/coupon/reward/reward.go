@@ -1,4 +1,4 @@
-package coupon
+package reward
 
 import (
 	"database/sql/driver"
@@ -7,14 +7,14 @@ import (
 	"fmt"
 )
 
-type RewardType string
+type Type string
 
 const (
-	RewardTypeCurrency RewardType = "CURRENCY"
-	RewardTypeCashItem RewardType = "CASH_ITEM"
+	TypeCurrency Type = "CURRENCY"
+	TypeCashItem Type = "CASH_ITEM"
 )
 
-var ErrInvalidReward = errors.New("invalid reward")
+var ErrInvalid = errors.New("invalid reward")
 
 // Reward is a discriminated value. Only the fields belonging to its Type are
 // meaningful; the others are zero and are omitted from JSON.
@@ -24,11 +24,11 @@ var ErrInvalidReward = errors.New("invalid reward")
 // second enum for the same thing (DOM-21).
 //
 // Mesos and regular-inventory items are explicit non-goals (PRD §2); adding
-// either means adding a RewardType here AND a granter in granter.go, and — for
+// either means adding a Type here AND a granter in granter.go, and — for
 // a reward owned by another service — is the point at which the local
 // redemption transaction has to become a saga (design §2.1).
 type Reward struct {
-	rewardType   RewardType
+	rewardType   Type
 	currency     uint32
 	amount       uint32
 	serialNumber uint32
@@ -36,14 +36,14 @@ type Reward struct {
 }
 
 func NewCurrencyReward(currency uint32, amount uint32) Reward {
-	return Reward{rewardType: RewardTypeCurrency, currency: currency, amount: amount}
+	return Reward{rewardType: TypeCurrency, currency: currency, amount: amount}
 }
 
 func NewCashItemReward(serialNumber uint32, quantity uint32) Reward {
-	return Reward{rewardType: RewardTypeCashItem, serialNumber: serialNumber, quantity: quantity}
+	return Reward{rewardType: TypeCashItem, serialNumber: serialNumber, quantity: quantity}
 }
 
-func (r Reward) Type() RewardType     { return r.rewardType }
+func (r Reward) Type() Type           { return r.rewardType }
 func (r Reward) Currency() uint32     { return r.currency }
 func (r Reward) Amount() uint32       { return r.amount }
 func (r Reward) SerialNumber() uint32 { return r.serialNumber }
@@ -51,21 +51,21 @@ func (r Reward) Quantity() uint32     { return r.quantity }
 
 func (r Reward) Validate() error {
 	switch r.rewardType {
-	case RewardTypeCurrency:
+	case TypeCurrency:
 		if r.amount == 0 {
-			return fmt.Errorf("%w: currency reward amount must be positive", ErrInvalidReward)
+			return fmt.Errorf("%w: currency reward amount must be positive", ErrInvalid)
 		}
 		return nil
-	case RewardTypeCashItem:
+	case TypeCashItem:
 		if r.serialNumber == 0 {
-			return fmt.Errorf("%w: cash item reward needs a serial number", ErrInvalidReward)
+			return fmt.Errorf("%w: cash item reward needs a serial number", ErrInvalid)
 		}
 		if r.quantity == 0 {
-			return fmt.Errorf("%w: cash item reward quantity must be positive", ErrInvalidReward)
+			return fmt.Errorf("%w: cash item reward quantity must be positive", ErrInvalid)
 		}
 		return nil
 	default:
-		return fmt.Errorf("%w: unknown reward type %q", ErrInvalidReward, r.rewardType)
+		return fmt.Errorf("%w: unknown reward type %q", ErrInvalid, r.rewardType)
 	}
 }
 
@@ -73,11 +73,11 @@ func (r Reward) Validate() error {
 // document in the jsonb column and in the REST attribute, so an admin editing
 // a bundle sees exactly what is stored.
 type rewardJSON struct {
-	Type         RewardType `json:"type"`
-	Currency     uint32     `json:"currency,omitempty"`
-	Amount       uint32     `json:"amount,omitempty"`
-	SerialNumber uint32     `json:"serialNumber,omitempty"`
-	Quantity     uint32     `json:"quantity,omitempty"`
+	Type         Type   `json:"type"`
+	Currency     uint32 `json:"currency,omitempty"`
+	Amount       uint32 `json:"amount,omitempty"`
+	SerialNumber uint32 `json:"serialNumber,omitempty"`
+	Quantity     uint32 `json:"quantity,omitempty"`
 }
 
 func (r Reward) MarshalJSON() ([]byte, error) {
@@ -125,7 +125,7 @@ func (rs *Rewards) Scan(src interface{}) error {
 	case string:
 		b = []byte(v)
 	default:
-		return fmt.Errorf("coupon: cannot scan %T into Rewards", src)
+		return fmt.Errorf("reward: cannot scan %T into Rewards", src)
 	}
 	if len(b) == 0 {
 		*rs = nil
@@ -136,7 +136,7 @@ func (rs *Rewards) Scan(src interface{}) error {
 
 func (rs Rewards) Validate() error {
 	if len(rs) == 0 {
-		return fmt.Errorf("%w: a coupon must grant at least one reward", ErrInvalidReward)
+		return fmt.Errorf("%w: a coupon must grant at least one reward", ErrInvalid)
 	}
 	for i, r := range rs {
 		if err := r.Validate(); err != nil {
@@ -150,7 +150,7 @@ func (rs Rewards) Validate() error {
 func (rs Rewards) CashItemCount() int {
 	n := 0
 	for _, r := range rs {
-		if r.Type() == RewardTypeCashItem {
+		if r.Type() == TypeCashItem {
 			n++
 		}
 	}

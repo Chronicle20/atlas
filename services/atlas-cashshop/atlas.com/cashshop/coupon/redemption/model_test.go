@@ -1,7 +1,7 @@
 package redemption
 
 import (
-	"atlas-cashshop/coupon"
+	"atlas-cashshop/coupon/reward"
 	"errors"
 	"testing"
 	"time"
@@ -33,8 +33,8 @@ func TestIsUniqueViolation(t *testing.T) {
 	}
 }
 
-func validRewards() coupon.Rewards {
-	return coupon.Rewards{coupon.NewCurrencyReward(1, 100)}
+func validRewards() reward.Rewards {
+	return reward.Rewards{reward.NewCurrencyReward(1, 100)}
 }
 
 func TestBuilderRejectsAnInvalidRedemption(t *testing.T) {

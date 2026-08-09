@@ -19,9 +19,11 @@ import (
 	"atlas-cashshop/cashshop/commodity"
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
+	"atlas-cashshop/coupon/reward"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/wallet"
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -130,15 +132,19 @@ func stubCommodityProcessor(t *testing.T, itemId uint32) commodity.Processor {
 func TestGranterForDispatchesByType(t *testing.T) {
 	_, tm := newGranterTestDB(t)
 	l, ctx := testLoggerAndContext(t, tm)
-	if _, err := granterFor(l, ctx, NewCurrencyReward(1, 5)); err != nil {
+	if _, err := granterFor(l, ctx, reward.NewCurrencyReward(1, 5)); err != nil {
 		t.Errorf("currency: %v", err)
 	}
-	if _, err := granterFor(l, ctx, NewCashItemReward(50200000, 1)); err != nil {
+	if _, err := granterFor(l, ctx, reward.NewCashItemReward(50200000, 1)); err != nil {
 		t.Errorf("cash item: %v", err)
 	}
 	// An unknown type must be a hard error, not a silent no-op: a coupon that
 	// claims to grant something and grants nothing is worse than one that fails.
-	if _, err := granterFor(l, ctx, Reward{rewardType: "MESO", amount: 1}); err == nil {
+	// reward.Reward's fields are unexported, so an unknown-type value is built
+	// the only way a real one could arrive: decoded from the stored jsonb.
+	var unknown reward.Reward
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"MESO","amount":1}`), &unknown))
+	if _, err := granterFor(l, ctx, unknown); err == nil {
 		t.Error("want an error for an unknown reward type")
 	}
 }
@@ -147,11 +153,11 @@ func TestCurrencyGranterCreditsTheWalletAndReportsTheDelta(t *testing.T) {
 	db, tm := newGranterTestDB(t)
 	l, gctx := testLoggerAndContext(t, tm)
 	seedWallet(t, db, gctx, 1001, 100, 200, 300) // credit, points, prepaid
-	g, err := granterFor(l, gctx, NewCurrencyReward(2, 500))
+	g, err := granterFor(l, gctx, reward.NewCurrencyReward(2, 500))
 	require.NoError(t, err)
 	mb := message.NewBuffer()
 
-	got, err := g.Grant(mb)(db, redemptionContext{accountId: 1001}, NewCurrencyReward(2, 500))
+	got, err := g.Grant(mb)(db, redemptionContext{accountId: 1001}, reward.NewCurrencyReward(2, 500))
 	if err != nil {
 		t.Fatalf("Grant: %v", err)
 	}
@@ -177,11 +183,11 @@ func TestCashItemGranterRechecksCapacityInsideTheTransaction(t *testing.T) {
 	// granterFor's real commodity processor is used deliberately: the capacity
 	// re-check must run BEFORE any commodity resolution, so a full locker
 	// never depends on a remote lookup succeeding.
-	g, err := granterFor(l, gctx, NewCashItemReward(50200000, 1))
+	g, err := granterFor(l, gctx, reward.NewCashItemReward(50200000, 1))
 	require.NoError(t, err)
 	mb := message.NewBuffer()
 
-	_, err = g.Grant(mb)(db, redemptionContext{accountId: 1002, compartmentId: cid}, NewCashItemReward(50200000, 1))
+	_, err = g.Grant(mb)(db, redemptionContext{accountId: 1002, compartmentId: cid}, reward.NewCashItemReward(50200000, 1))
 	var re *RedemptionError
 	if !errors.As(err, &re) || re.Key() != ErrorKeyInventoryFull {
 		t.Fatalf("err = %v, want a RedemptionError with key %s", err, ErrorKeyInventoryFull)
@@ -195,7 +201,7 @@ func TestCashItemGranterReturnsTheAssetId(t *testing.T) {
 	g := cashItemGranter{l: l, ctx: gctx, cp: stubCommodityProcessor(t, couponRewardTemplateId)}
 	mb := message.NewBuffer()
 
-	got, err := g.Grant(mb)(db, redemptionContext{accountId: 1003, characterId: 77, compartmentId: cid}, NewCashItemReward(50200000, 1))
+	got, err := g.Grant(mb)(db, redemptionContext{accountId: 1003, characterId: 77, compartmentId: cid}, reward.NewCashItemReward(50200000, 1))
 	if err != nil {
 		t.Fatalf("Grant: %v", err)
 	}

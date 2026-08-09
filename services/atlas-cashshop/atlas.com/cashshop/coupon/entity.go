@@ -1,6 +1,7 @@
 package coupon
 
 import (
+	"atlas-cashshop/coupon/reward"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,8 +34,8 @@ type Entity struct {
 	StartsAt        *time.Time
 	ExpiresAt       *time.Time
 	MaxUses         *uint32
-	RedemptionCount uint32  `gorm:"not null;default:0"`
-	Rewards         Rewards `gorm:"not null;type:jsonb"`
+	RedemptionCount uint32         `gorm:"not null;default:0"`
+	Rewards         reward.Rewards `gorm:"not null;type:jsonb"`
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }

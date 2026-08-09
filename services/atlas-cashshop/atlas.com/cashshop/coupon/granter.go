@@ -4,6 +4,7 @@ import (
 	"atlas-cashshop/cashshop/commodity"
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
+	"atlas-cashshop/coupon/reward"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/wallet"
 	"context"
@@ -40,19 +41,19 @@ type grantedReward struct {
 // (design §2). When a reward type owned by ANOTHER service is added, that
 // granter is the single place a saga gets introduced.
 type rewardGranter interface {
-	Grant(mb *message.Buffer) func(tx *gorm.DB, rc redemptionContext, r Reward) (grantedReward, error)
+	Grant(mb *message.Buffer) func(tx *gorm.DB, rc redemptionContext, r reward.Reward) (grantedReward, error)
 }
 
-func granterFor(l logrus.FieldLogger, ctx context.Context, r Reward) (rewardGranter, error) {
+func granterFor(l logrus.FieldLogger, ctx context.Context, r reward.Reward) (rewardGranter, error) {
 	switch r.Type() {
-	case RewardTypeCurrency:
+	case reward.TypeCurrency:
 		return currencyGranter{l: l, ctx: ctx}, nil
-	case RewardTypeCashItem:
+	case reward.TypeCashItem:
 		return cashItemGranter{l: l, ctx: ctx, cp: commodity.NewProcessor(l, ctx)}, nil
 	default:
 		// Never silently skip: a coupon that claims to grant something and
 		// grants nothing is worse than one that fails loudly.
-		return nil, fmt.Errorf("%w: no granter for reward type %q", ErrInvalidReward, r.Type())
+		return nil, fmt.Errorf("%w: no granter for reward type %q", reward.ErrInvalid, r.Type())
 	}
 }
 
@@ -61,8 +62,8 @@ type currencyGranter struct {
 	ctx context.Context
 }
 
-func (g currencyGranter) Grant(mb *message.Buffer) func(tx *gorm.DB, rc redemptionContext, r Reward) (grantedReward, error) {
-	return func(tx *gorm.DB, rc redemptionContext, r Reward) (grantedReward, error) {
+func (g currencyGranter) Grant(mb *message.Buffer) func(tx *gorm.DB, rc redemptionContext, r reward.Reward) (grantedReward, error) {
+	return func(tx *gorm.DB, rc redemptionContext, r reward.Reward) (grantedReward, error) {
 		wp := wallet.NewProcessor(g.l, g.ctx, tx).WithTransaction(tx)
 		w, err := wp.GetByAccountId(rc.accountId)
 		if err != nil {
@@ -94,8 +95,8 @@ type cashItemGranter struct {
 	cp  commodity.Processor
 }
 
-func (g cashItemGranter) Grant(mb *message.Buffer) func(tx *gorm.DB, rc redemptionContext, r Reward) (grantedReward, error) {
-	return func(tx *gorm.DB, rc redemptionContext, r Reward) (grantedReward, error) {
+func (g cashItemGranter) Grant(mb *message.Buffer) func(tx *gorm.DB, rc redemptionContext, r reward.Reward) (grantedReward, error) {
+	return func(tx *gorm.DB, rc redemptionContext, r reward.Reward) (grantedReward, error) {
 		// Re-read capacity INSIDE the transaction, and before any remote
 		// lookup, so a full locker is rejected on this handle's view of the
 		// rows rather than on the processor's earlier pre-flight read.
@@ -123,7 +124,7 @@ func (g cashItemGranter) Grant(mb *message.Buffer) func(tx *gorm.DB, rc redempti
 		// only the asset, so granting a pet here would produce a locker item
 		// with no pet behind it. Refuse loudly rather than write that row.
 		if item.GetClassification(item.Id(ci.ItemId())) == item.ClassificationPet {
-			return grantedReward{}, fmt.Errorf("%w: commodity %d is a pet; coupons cannot grant pets", ErrInvalidReward, r.SerialNumber())
+			return grantedReward{}, fmt.Errorf("%w: commodity %d is a pet; coupons cannot grant pets", reward.ErrInvalid, r.SerialNumber())
 		}
 
 		am, err := asset.NewProcessor(g.l, g.ctx, tx).

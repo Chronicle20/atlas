@@ -7,6 +7,7 @@ import (
 	"time"
 
 	goredis "github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
 
 	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -17,7 +18,24 @@ const limiterNamespace = "coupon-attempts"
 var (
 	limiterOnce  sync.Once
 	limiterStore *redis.TenantCounter
+
+	limiterUnwiredOnce sync.Once
 )
+
+// warnIfLimiterUnwired logs ONCE when no store was ever installed.
+//
+// Without it an unwired limiter is invisible: Allowed returns (true, nil) and
+// RecordFailure/Reset return nil, so brute-force braking would be silently off
+// in production with every test still passing. The fail-open behaviour itself
+// is deliberate and unchanged — this only makes the condition observable.
+func warnIfLimiterUnwired(l logrus.FieldLogger) {
+	if limiterStore != nil {
+		return
+	}
+	limiterUnwiredOnce.Do(func() {
+		l.Warnf("Coupon rate limiter has no counter store; brute-force braking is DISABLED. InitLimiter was never called.")
+	})
+}
 
 // InitLimiter wires the shared Redis client. Called once from main.go, like
 // the other registry initializers in this project.

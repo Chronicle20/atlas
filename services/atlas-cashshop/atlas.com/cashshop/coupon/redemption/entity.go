@@ -1,7 +1,7 @@
 package redemption
 
 import (
-	"atlas-cashshop/coupon"
+	"atlas-cashshop/coupon/reward"
 	"errors"
 	"time"
 
@@ -31,7 +31,7 @@ type Entity struct {
 	AccountId      uint32         `gorm:"not null;uniqueIndex:idx_redemptions_tenant_coupon_account,priority:3;index:idx_redemptions_tenant_account,priority:2"`
 	CharacterId    uint32         `gorm:"not null"`
 	TransactionId  uuid.UUID      `gorm:"not null;type:uuid"`
-	RewardsGranted coupon.Rewards `gorm:"not null;type:jsonb"`
+	RewardsGranted reward.Rewards `gorm:"not null;type:jsonb"`
 	RedeemedAt     time.Time      `gorm:"not null"`
 }
 

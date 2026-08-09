@@ -1,6 +1,7 @@
 package coupon
 
 import (
+	"atlas-cashshop/coupon/reward"
 	"errors"
 	"fmt"
 	"time"
@@ -51,7 +52,7 @@ type Model struct {
 	expiresAt       *time.Time
 	maxUses         *uint32
 	redemptionCount uint32
-	rewards         Rewards
+	rewards         reward.Rewards
 	createdAt       time.Time
 	updatedAt       time.Time
 }
@@ -65,7 +66,7 @@ func (m Model) StartsAt() *time.Time    { return m.startsAt }
 func (m Model) ExpiresAt() *time.Time   { return m.expiresAt }
 func (m Model) MaxUses() *uint32        { return m.maxUses }
 func (m Model) RedemptionCount() uint32 { return m.redemptionCount }
-func (m Model) Rewards() Rewards        { return m.rewards }
+func (m Model) Rewards() reward.Rewards { return m.rewards }
 func (m Model) CreatedAt() time.Time    { return m.createdAt }
 func (m Model) UpdatedAt() time.Time    { return m.updatedAt }
 
@@ -104,7 +105,7 @@ type Builder struct {
 	expiresAt       *time.Time
 	maxUses         *uint32
 	redemptionCount uint32
-	rewards         Rewards
+	rewards         reward.Rewards
 }
 
 // NewBuilder normalizes the code immediately, so a Model can never hold an
@@ -121,7 +122,7 @@ func (b *Builder) SetStartsAt(t *time.Time) *Builder    { b.startsAt = t; return
 func (b *Builder) SetExpiresAt(t *time.Time) *Builder   { b.expiresAt = t; return b }
 func (b *Builder) SetMaxUses(n *uint32) *Builder        { b.maxUses = n; return b }
 func (b *Builder) SetRedemptionCount(n uint32) *Builder { b.redemptionCount = n; return b }
-func (b *Builder) SetRewards(r Rewards) *Builder        { b.rewards = r; return b }
+func (b *Builder) SetRewards(r reward.Rewards) *Builder { b.rewards = r; return b }
 
 var ErrInvalidCoupon = errors.New("invalid coupon")
 

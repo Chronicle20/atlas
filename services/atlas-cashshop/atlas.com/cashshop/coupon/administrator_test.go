@@ -24,6 +24,7 @@ package coupon
 //     run as proof of race-safety.
 
 import (
+	"atlas-cashshop/coupon/reward"
 	"errors"
 	"testing"
 	"time"
@@ -70,7 +71,7 @@ func loadCount(t *testing.T, db *gorm.DB, id uuid.UUID) uint32 {
 
 func TestReserveUseRespectsMaxUses(t *testing.T) {
 	db, tm := newCouponTestDB(t)
-	id := seedCoupon(t, db, tm, NewBuilder("LIMITED").SetMaxUses(ptrU32(2)).SetRewards(Rewards{NewCurrencyReward(1, 1)}))
+	id := seedCoupon(t, db, tm, NewBuilder("LIMITED").SetMaxUses(ptrU32(2)).SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}))
 
 	for i := 1; i <= 2; i++ {
 		ok, err := reserveUse(db, tm, id)
@@ -95,7 +96,7 @@ func TestReserveUseRespectsMaxUses(t *testing.T) {
 
 func TestReserveUseUnlimitedWhenMaxUsesIsNull(t *testing.T) {
 	db, tm := newCouponTestDB(t)
-	id := seedCoupon(t, db, tm, NewBuilder("UNLIMITED").SetRewards(Rewards{NewCurrencyReward(1, 1)}))
+	id := seedCoupon(t, db, tm, NewBuilder("UNLIMITED").SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}))
 	for i := 0; i < 5; i++ {
 		if ok, err := reserveUse(db, tm, id); err != nil || !ok {
 			t.Fatalf("reserve %d: ok=%v err=%v", i, ok, err)
@@ -109,7 +110,7 @@ func TestReserveUseUnlimitedWhenMaxUsesIsNull(t *testing.T) {
 func TestReserveUseIsTenantScoped(t *testing.T) {
 	db, tm := newCouponTestDB(t)
 	other := otherTenantModel(t)
-	id := seedCoupon(t, db, tm, NewBuilder("SCOPED").SetMaxUses(ptrU32(1)).SetRewards(Rewards{NewCurrencyReward(1, 1)}))
+	id := seedCoupon(t, db, tm, NewBuilder("SCOPED").SetMaxUses(ptrU32(1)).SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}))
 	ok, err := reserveUse(db, other, id)
 	if err != nil {
 		t.Fatal(err)
@@ -121,7 +122,7 @@ func TestReserveUseIsTenantScoped(t *testing.T) {
 
 func TestReleaseUseDecrementsWithoutGoingNegative(t *testing.T) {
 	db, tm := newCouponTestDB(t)
-	id := seedCoupon(t, db, tm, NewBuilder("REL").SetRewards(Rewards{NewCurrencyReward(1, 1)}))
+	id := seedCoupon(t, db, tm, NewBuilder("REL").SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}))
 	if _, err := reserveUse(db, tm, id); err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +156,7 @@ func (redemptionRow) TableName() string { return redemptionsTable }
 func TestDeleteEntityRefusesWhenRedemptionsExist(t *testing.T) {
 	db, tm := newCouponTestDB(t)
 	require.NoError(t, db.AutoMigrate(&redemptionRow{}))
-	id := seedCoupon(t, db, tm, NewBuilder("DELME").SetRewards(Rewards{NewCurrencyReward(1, 1)}))
+	id := seedCoupon(t, db, tm, NewBuilder("DELME").SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}))
 
 	require.NoError(t, db.Create(&redemptionRow{Id: uuid.New(), TenantId: tm.Id(), CouponId: id}).Error)
 
@@ -171,7 +172,7 @@ func TestDeleteEntitySucceedsWithoutRedemptionsAndIsTenantScoped(t *testing.T) {
 	db, tm := newCouponTestDB(t)
 	require.NoError(t, db.AutoMigrate(&redemptionRow{}))
 	other := otherTenantModel(t)
-	id := seedCoupon(t, db, tm, NewBuilder("DELOK").SetRewards(Rewards{NewCurrencyReward(1, 1)}))
+	id := seedCoupon(t, db, tm, NewBuilder("DELOK").SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}))
 
 	// Another tenant cannot delete this coupon.
 	assert.ErrorIs(t, deleteEntity(db, other, id), gorm.ErrRecordNotFound)
@@ -187,10 +188,10 @@ func TestDeleteEntitySucceedsWithoutRedemptionsAndIsTenantScoped(t *testing.T) {
 func TestUpdateEntityNeverClobbersRedemptionCountAndIsTenantScoped(t *testing.T) {
 	db, tm := newCouponTestDB(t)
 	other := otherTenantModel(t)
-	id := seedCoupon(t, db, tm, NewBuilder("UPD").SetDescription("before").SetRewards(Rewards{NewCurrencyReward(1, 1)}))
+	id := seedCoupon(t, db, tm, NewBuilder("UPD").SetDescription("before").SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}))
 	require.NoError(t, db.Model(&Entity{}).Where("id = ?", id).UpdateColumn("redemption_count", 3).Error)
 
-	m, err := NewBuilder("UPD").SetId(id).SetDescription("after").SetActive(false).SetRewards(Rewards{NewCurrencyReward(2, 7)}).Build()
+	m, err := NewBuilder("UPD").SetId(id).SetDescription("after").SetActive(false).SetRewards(reward.Rewards{reward.NewCurrencyReward(2, 7)}).Build()
 	require.NoError(t, err)
 
 	// Another tenant's update must find nothing to write.
@@ -213,10 +214,10 @@ func TestProvidersAreTenantScopedAndFilterOnlyWhatIsSet(t *testing.T) {
 	future := time.Now().Add(24 * time.Hour)
 	batchId := uuid.New()
 
-	activeId := seedCoupon(t, db, tm, NewBuilder("ACTIVE").SetExpiresAt(&future).SetBatchId(batchId).SetRewards(Rewards{NewCurrencyReward(1, 1)}))
-	inactiveId := seedCoupon(t, db, tm, NewBuilder("INACTIVE").SetActive(false).SetExpiresAt(&past).SetRewards(Rewards{NewCurrencyReward(1, 1)}))
+	activeId := seedCoupon(t, db, tm, NewBuilder("ACTIVE").SetExpiresAt(&future).SetBatchId(batchId).SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}))
+	inactiveId := seedCoupon(t, db, tm, NewBuilder("INACTIVE").SetActive(false).SetExpiresAt(&past).SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}))
 	// Same code in another tenant — a leak across the boundary is observable.
-	seedCoupon(t, db, other, NewBuilder("ACTIVE").SetRewards(Rewards{NewCurrencyReward(1, 1)}))
+	seedCoupon(t, db, other, NewBuilder("ACTIVE").SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}))
 
 	t.Run("byCode is tenant scoped", func(t *testing.T) {
 		got, err := byCodeEntityProvider(tm, "ACTIVE")(db)()
@@ -275,7 +276,7 @@ func TestProvidersAreTenantScopedAndFilterOnlyWhatIsSet(t *testing.T) {
 // whole protection, and this test is what fails if it returns.
 func TestCreateEntityRoundTripsAnInactiveCoupon(t *testing.T) {
 	db, tm := newCouponTestDB(t)
-	id := seedCoupon(t, db, tm, NewBuilder("INACT").SetActive(false).SetRewards(Rewards{NewCurrencyReward(1, 1)}))
+	id := seedCoupon(t, db, tm, NewBuilder("INACT").SetActive(false).SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}))
 
 	var e Entity
 	require.NoError(t, db.Where("id = ?", id).First(&e).Error)
@@ -296,8 +297,8 @@ func TestCreateEntityRoundTripsAnInactiveCoupon(t *testing.T) {
 func TestDeleteEntityRefusalPreservesTheAuditTrail(t *testing.T) {
 	db, tm := newCouponTestDB(t)
 	require.NoError(t, db.AutoMigrate(&redemptionRow{}))
-	redeemed := seedCoupon(t, db, tm, NewBuilder("BLOCKED").SetRewards(Rewards{NewCurrencyReward(1, 1)}))
-	clean := seedCoupon(t, db, tm, NewBuilder("CLEAN").SetRewards(Rewards{NewCurrencyReward(1, 1)}))
+	redeemed := seedCoupon(t, db, tm, NewBuilder("BLOCKED").SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}))
+	clean := seedCoupon(t, db, tm, NewBuilder("CLEAN").SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}))
 	require.NoError(t, db.Create(&redemptionRow{Id: uuid.New(), TenantId: tm.Id(), CouponId: redeemed}).Error)
 
 	// The redeemed coupon is refused and SURVIVES.

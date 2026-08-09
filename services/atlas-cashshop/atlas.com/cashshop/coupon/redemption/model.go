@@ -1,7 +1,7 @@
 package redemption
 
 import (
-	"atlas-cashshop/coupon"
+	"atlas-cashshop/coupon/reward"
 	"errors"
 	"fmt"
 	"time"
@@ -15,7 +15,7 @@ type Model struct {
 	accountId      uint32
 	characterId    uint32
 	transactionId  uuid.UUID
-	rewardsGranted coupon.Rewards
+	rewardsGranted reward.Rewards
 	redeemedAt     time.Time
 }
 
@@ -24,7 +24,7 @@ func (m Model) CouponId() uuid.UUID            { return m.couponId }
 func (m Model) AccountId() uint32              { return m.accountId }
 func (m Model) CharacterId() uint32            { return m.characterId }
 func (m Model) TransactionId() uuid.UUID       { return m.transactionId }
-func (m Model) RewardsGranted() coupon.Rewards { return m.rewardsGranted }
+func (m Model) RewardsGranted() reward.Rewards { return m.rewardsGranted }
 func (m Model) RedeemedAt() time.Time          { return m.redeemedAt }
 
 type Builder struct {
@@ -33,7 +33,7 @@ type Builder struct {
 	accountId      uint32
 	characterId    uint32
 	transactionId  uuid.UUID
-	rewardsGranted coupon.Rewards
+	rewardsGranted reward.Rewards
 	redeemedAt     time.Time
 }
 
@@ -43,7 +43,7 @@ func NewBuilder(couponId uuid.UUID, accountId uint32, characterId uint32) *Build
 
 func (b *Builder) SetId(id uuid.UUID) *Builder                 { b.id = id; return b }
 func (b *Builder) SetTransactionId(id uuid.UUID) *Builder      { b.transactionId = id; return b }
-func (b *Builder) SetRewardsGranted(r coupon.Rewards) *Builder { b.rewardsGranted = r; return b }
+func (b *Builder) SetRewardsGranted(r reward.Rewards) *Builder { b.rewardsGranted = r; return b }
 func (b *Builder) SetRedeemedAt(t time.Time) *Builder          { b.redeemedAt = t; return b }
 
 var ErrInvalidRedemption = errors.New("invalid redemption")

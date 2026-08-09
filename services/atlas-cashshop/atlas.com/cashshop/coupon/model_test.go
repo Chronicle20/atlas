@@ -1,6 +1,7 @@
 package coupon
 
 import (
+	"atlas-cashshop/coupon/reward"
 	"errors"
 	"testing"
 	"time"
@@ -22,7 +23,7 @@ func TestRedeemableAtLadderOrder(t *testing.T) {
 		{
 			"active, open window, uses left",
 			func() Model {
-				m, _ := NewBuilder("OK").SetRewards(Rewards{NewCurrencyReward(1, 1)}).Build()
+				m, _ := NewBuilder("OK").SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}).Build()
 				return m
 			},
 			"",
@@ -30,7 +31,7 @@ func TestRedeemableAtLadderOrder(t *testing.T) {
 		{
 			"inactive reports NOT_REGISTERED",
 			func() Model {
-				m, _ := NewBuilder("OFF").SetActive(false).SetRewards(Rewards{NewCurrencyReward(1, 1)}).Build()
+				m, _ := NewBuilder("OFF").SetActive(false).SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}).Build()
 				return m
 			},
 			ErrorKeyNotRegistered,
@@ -38,7 +39,7 @@ func TestRedeemableAtLadderOrder(t *testing.T) {
 		{
 			"before startsAt reports NOT_REGISTERED",
 			func() Model {
-				m, _ := NewBuilder("EARLY").SetStartsAt(ptrTime(future)).SetRewards(Rewards{NewCurrencyReward(1, 1)}).Build()
+				m, _ := NewBuilder("EARLY").SetStartsAt(ptrTime(future)).SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}).Build()
 				return m
 			},
 			ErrorKeyNotRegistered,
@@ -46,7 +47,7 @@ func TestRedeemableAtLadderOrder(t *testing.T) {
 		{
 			"after expiresAt reports EXPIRED",
 			func() Model {
-				m, _ := NewBuilder("OLD").SetExpiresAt(ptrTime(past)).SetRewards(Rewards{NewCurrencyReward(1, 1)}).Build()
+				m, _ := NewBuilder("OLD").SetExpiresAt(ptrTime(past)).SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}).Build()
 				return m
 			},
 			ErrorKeyExpired,
@@ -54,7 +55,7 @@ func TestRedeemableAtLadderOrder(t *testing.T) {
 		{
 			"exhausted reports USAGE_LIMIT",
 			func() Model {
-				m, _ := NewBuilder("USED").SetMaxUses(ptrU32(1)).SetRedemptionCount(1).SetRewards(Rewards{NewCurrencyReward(1, 1)}).Build()
+				m, _ := NewBuilder("USED").SetMaxUses(ptrU32(1)).SetRedemptionCount(1).SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}).Build()
 				return m
 			},
 			ErrorKeyUsageLimit,
@@ -62,7 +63,7 @@ func TestRedeemableAtLadderOrder(t *testing.T) {
 		{
 			"inactive AND expired reports NOT_REGISTERED — inactive wins",
 			func() Model {
-				m, _ := NewBuilder("BOTH").SetActive(false).SetExpiresAt(ptrTime(past)).SetRewards(Rewards{NewCurrencyReward(1, 1)}).Build()
+				m, _ := NewBuilder("BOTH").SetActive(false).SetExpiresAt(ptrTime(past)).SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}).Build()
 				return m
 			},
 			ErrorKeyNotRegistered,
@@ -88,7 +89,7 @@ func TestRedeemableAtLadderOrder(t *testing.T) {
 }
 
 func TestBuilderDefaultsAndNormalization(t *testing.T) {
-	m, err := NewBuilder("  maple2026 ").SetRewards(Rewards{NewCurrencyReward(1, 1)}).Build()
+	m, err := NewBuilder("  maple2026 ").SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}).Build()
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
@@ -107,7 +108,7 @@ func TestBuilderDefaultsAndNormalization(t *testing.T) {
 }
 
 func TestBuilderRejectsAnEmptyOrInvalidCoupon(t *testing.T) {
-	if _, err := NewBuilder("   ").SetRewards(Rewards{NewCurrencyReward(1, 1)}).Build(); err == nil {
+	if _, err := NewBuilder("   ").SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}).Build(); err == nil {
 		t.Error("want an error for an empty code")
 	}
 	if _, err := NewBuilder("OK").Build(); err == nil {
@@ -115,7 +116,7 @@ func TestBuilderRejectsAnEmptyOrInvalidCoupon(t *testing.T) {
 	}
 	now := time.Now()
 	if _, err := NewBuilder("OK").
-		SetRewards(Rewards{NewCurrencyReward(1, 1)}).
+		SetRewards(reward.Rewards{reward.NewCurrencyReward(1, 1)}).
 		SetStartsAt(ptrTime(now.Add(time.Hour))).
 		SetExpiresAt(ptrTime(now)).
 		Build(); err == nil {

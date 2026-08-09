@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -24,23 +25,38 @@ func jsonRoundTrip(in map[string]interface{}) (map[string]interface{}, error) {
 	return out, nil
 }
 
+func boolPtr(v bool) *bool { return &v }
+
+func intPtr(v int) *int { return &v }
+
+// wantIntPtr asserts an optional int attribute survived with the expected value.
+func wantIntPtr(t *testing.T, name string, got *int, want int) {
+	t.Helper()
+	if got == nil {
+		t.Errorf("%s: got nil, want %d", name, want)
+		return
+	}
+	if *got != want {
+		t.Errorf("%s: got %d, want %d", name, *got, want)
+	}
+}
+
 // TestTradeConfigRoundTrip pins that ExtractTradeConfig -> TransformTradeConfig
 // preserves every knob, including the taxTiers array — the one attribute that
 // is a list of objects rather than a scalar, and therefore the one whose
 // Transform arm cannot use the `attributes["x"].(float64)` shape.
 func TestTradeConfigRoundTrip(t *testing.T) {
-	enabled := true
 	original := TradeConfigRestModel{
 		Id:         "trade-configs",
-		TaxEnabled: &enabled,
+		TaxEnabled: boolPtr(true),
 		TaxTiers: []TradeTaxTierRestModel{
 			{Threshold: 100000000, Rate: 0.060},
 			{Threshold: 100000, Rate: 0.008},
 		},
-		MaxStagedItems:            9,
-		MinTradeLevel:             15,
-		ReservationTtlSeconds:     300,
-		AttestationTimeoutSeconds: 5,
+		MaxStagedItems:            intPtr(9),
+		MinTradeLevel:             intPtr(15),
+		ReservationTtlSeconds:     intPtr(300),
+		AttestationTimeoutSeconds: intPtr(5),
 	}
 
 	extracted, err := ExtractTradeConfig(original)
@@ -69,18 +85,11 @@ func TestTradeConfigRoundTrip(t *testing.T) {
 	} else if *got.TaxEnabled != *original.TaxEnabled {
 		t.Errorf("TaxEnabled: got %v, want %v", *got.TaxEnabled, *original.TaxEnabled)
 	}
-	if got.MaxStagedItems != original.MaxStagedItems {
-		t.Errorf("MaxStagedItems: got %d, want %d", got.MaxStagedItems, original.MaxStagedItems)
-	}
-	if got.MinTradeLevel != original.MinTradeLevel {
-		t.Errorf("MinTradeLevel: got %d, want %d", got.MinTradeLevel, original.MinTradeLevel)
-	}
-	if got.ReservationTtlSeconds != original.ReservationTtlSeconds {
-		t.Errorf("ReservationTtlSeconds: got %d, want %d", got.ReservationTtlSeconds, original.ReservationTtlSeconds)
-	}
-	if got.AttestationTimeoutSeconds != original.AttestationTimeoutSeconds {
-		t.Errorf("AttestationTimeoutSeconds: got %d, want %d", got.AttestationTimeoutSeconds, original.AttestationTimeoutSeconds)
-	}
+	wantIntPtr(t, "MaxStagedItems", got.MaxStagedItems, 9)
+	wantIntPtr(t, "MinTradeLevel", got.MinTradeLevel, 15)
+	wantIntPtr(t, "ReservationTtlSeconds", got.ReservationTtlSeconds, 300)
+	wantIntPtr(t, "AttestationTimeoutSeconds", got.AttestationTimeoutSeconds, 5)
+
 	if len(got.TaxTiers) != len(original.TaxTiers) {
 		t.Fatalf("TaxTiers: got %d tiers, want %d", len(got.TaxTiers), len(original.TaxTiers))
 	}
@@ -92,8 +101,9 @@ func TestTradeConfigRoundTrip(t *testing.T) {
 }
 
 // TestTradeConfigTransformToleratesMissingAttributes pins that a malformed or
-// empty payload yields zeros rather than panicking — atlas-trades folds zeros
-// back to its shipped defaults.
+// empty payload yields nils rather than panicking, and — critically — that an
+// absent attribute is nil rather than a zero value, so ExtractTradeConfig will
+// omit it and the merge will keep whatever was stored.
 func TestTradeConfigTransformToleratesMissingAttributes(t *testing.T) {
 	got, err := TransformTradeConfig(map[string]interface{}{"id": "trade-configs"})
 	if err != nil {
@@ -105,8 +115,9 @@ func TestTradeConfigTransformToleratesMissingAttributes(t *testing.T) {
 	if len(got.TaxTiers) != 0 {
 		t.Errorf("TaxTiers: got %d tiers, want 0", len(got.TaxTiers))
 	}
-	if got.MaxStagedItems != 0 || got.ReservationTtlSeconds != 0 || got.AttestationTimeoutSeconds != 0 {
-		t.Errorf("scalar knobs: got %+v, want zeros", got)
+	if got.MaxStagedItems != nil || got.MinTradeLevel != nil ||
+		got.ReservationTtlSeconds != nil || got.AttestationTimeoutSeconds != nil {
+		t.Errorf("scalar knobs: got %+v, want all nil for absent attributes", got)
 	}
 }
 
@@ -144,18 +155,10 @@ func TestSeedTradeConfigFileMatchesDesignDefaults(t *testing.T) {
 	} else if !*rm.TaxEnabled {
 		t.Error("taxEnabled: got false, want true")
 	}
-	if rm.MaxStagedItems != 9 {
-		t.Errorf("maxStagedItems: got %d, want 9", rm.MaxStagedItems)
-	}
-	if rm.MinTradeLevel != 0 {
-		t.Errorf("minTradeLevel: got %d, want 0", rm.MinTradeLevel)
-	}
-	if rm.ReservationTtlSeconds != 300 {
-		t.Errorf("reservationTtlSeconds: got %d, want 300", rm.ReservationTtlSeconds)
-	}
-	if rm.AttestationTimeoutSeconds != 5 {
-		t.Errorf("attestationTimeoutSeconds: got %d, want 5", rm.AttestationTimeoutSeconds)
-	}
+	wantIntPtr(t, "maxStagedItems", rm.MaxStagedItems, 9)
+	wantIntPtr(t, "minTradeLevel", rm.MinTradeLevel, 0)
+	wantIntPtr(t, "reservationTtlSeconds", rm.ReservationTtlSeconds, 300)
+	wantIntPtr(t, "attestationTimeoutSeconds", rm.AttestationTimeoutSeconds, 5)
 
 	want := []TradeTaxTierRestModel{
 		{Threshold: 100000000, Rate: 0.060},
@@ -175,45 +178,45 @@ func TestSeedTradeConfigFileMatchesDesignDefaults(t *testing.T) {
 	}
 }
 
-// storedTradeConfig is the JSONB shape a seeded tenant carries: one JSON:API
-// resource with the full design §8 attribute set.
+// storedTradeConfig is the JSONB shape a configured tenant carries: one JSON:API
+// resource with the full attribute set. minTradeLevel is deliberately non-zero
+// so that a wipe-to-zero is detectable — its default IS 0, so a zero here would
+// hide exactly the corruption these tests exist to catch.
 func storedTradeConfig() map[string]interface{} {
 	return map[string]interface{}{
 		"id":   "trade-configs",
 		"type": "trade-configs",
 		"attributes": map[string]interface{}{
-			"taxEnabled":                true,
-			"taxTiers":                  []interface{}{map[string]interface{}{"threshold": float64(100000), "rate": 0.008}},
+			"taxEnabled": true,
+			"taxTiers": []interface{}{
+				map[string]interface{}{"threshold": float64(50000000), "rate": 0.11},
+				map[string]interface{}{"threshold": float64(100000), "rate": 0.008},
+			},
 			"maxStagedItems":            float64(9),
-			"minTradeLevel":             float64(0),
+			"minTradeLevel":             float64(15),
 			"reservationTtlSeconds":     float64(300),
 			"attestationTimeoutSeconds": float64(5),
 		},
 	}
 }
 
-// TestPartialPatchPreservesTaxEnabled pins the fix for the PATCH hazard: an
-// operator who PATCHes only maxStagedItems must not silently disable the meso
-// tax tenant-wide. The request decodes into the full TradeConfigRestModel with
-// TaxEnabled nil (the attribute was never sent); ExtractTradeConfig omits the
-// key, and the merge carries the stored true forward.
-func TestPartialPatchPreservesTaxEnabled(t *testing.T) {
-	stored := storedTradeConfig()
+// applyPatch runs one PATCH body through the real production path: the JSON:API
+// decode the input handler performs, then ExtractTradeConfig, then the merge
+// UpdateTradeConfig applies, then the JSONB round trip, then the Transform a
+// later GET performs.
+func applyPatch(t *testing.T, stored map[string]interface{}, body string) TradeConfigRestModel {
+	t.Helper()
 
-	// What jsonapi.Unmarshal produces for a body that names only maxStagedItems.
-	patch := TradeConfigRestModel{Id: "trade-configs", MaxStagedItems: 3}
+	var patch TradeConfigRestModel
+	if err := jsonapi.Unmarshal([]byte(body), &patch); err != nil {
+		t.Fatalf("jsonapi.Unmarshal: %v", err)
+	}
 
 	incoming, err := ExtractTradeConfig(patch)
 	if err != nil {
 		t.Fatalf("ExtractTradeConfig: %v", err)
 	}
-	if _, present := incoming["attributes"].(map[string]interface{})["taxEnabled"]; present {
-		t.Fatal("ExtractTradeConfig emitted taxEnabled for a nil pointer")
-	}
 
-	// UpdateTradeConfig marshals the merged config into the JSONB column and a
-	// later GET unmarshals it back, so round-trip here too — otherwise the
-	// numbers stay Go ints and Transform's float64 assertions all miss.
 	merged, err := jsonRoundTrip(mergeTradeConfigAttributes(stored, incoming))
 	if err != nil {
 		t.Fatalf("json round trip: %v", err)
@@ -223,52 +226,150 @@ func TestPartialPatchPreservesTaxEnabled(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TransformTradeConfig: %v", err)
 	}
-	if got.TaxEnabled == nil {
-		t.Fatal("taxEnabled was dropped by a PATCH that never mentioned it")
+	return got
+}
+
+// patchDocument builds a JSON:API PATCH body naming exactly one attribute.
+func patchDocument(attribute string, value string) string {
+	return fmt.Sprintf(`{"data":{"type":"trade-configs","id":"trade-configs","attributes":{%q:%s}}}`, attribute, value)
+}
+
+// TestPartialPatchThroughTheRealPathPreservesEveryOtherAttribute is the sweep
+// the earlier round was missing. For EACH attribute in turn it PATCHes that one
+// attribute through the real jsonapi.Unmarshal -> ExtractTradeConfig -> merge
+// path and asserts every other stored attribute survives untouched.
+//
+// The earlier TestMergePreservesUnmentionedAttributesGenerally hand-built a
+// partial `incoming` map and so only proved the merge function correct in
+// isolation — it never exercised whether ExtractTradeConfig actually produces a
+// partial map. It did not, for five of the six attributes, and the merge cannot
+// rescue a key that arrives written at its zero value.
+func TestPartialPatchThroughTheRealPathPreservesEveryOtherAttribute(t *testing.T) {
+	cases := []struct {
+		attribute string
+		value     string
+	}{
+		{"taxEnabled", "false"},
+		{"maxStagedItems", "3"},
+		{"minTradeLevel", "40"},
+		{"reservationTtlSeconds", "120"},
+		{"attestationTimeoutSeconds", "8"},
+		{"taxTiers", `[{"threshold":7,"rate":0.5}]`},
 	}
-	if !*got.TaxEnabled {
-		t.Error("taxEnabled: got false, want the stored true to survive the partial PATCH")
-	}
-	if got.MaxStagedItems != 3 {
-		t.Errorf("maxStagedItems: got %d, want the patched 3", got.MaxStagedItems)
+
+	for _, c := range cases {
+		t.Run(c.attribute, func(t *testing.T) {
+			got := applyPatch(t, storedTradeConfig(), patchDocument(c.attribute, c.value))
+
+			if c.attribute != "taxEnabled" {
+				if got.TaxEnabled == nil {
+					t.Error("taxEnabled was wiped by a PATCH that never mentioned it")
+				} else if !*got.TaxEnabled {
+					t.Error("taxEnabled: got false, want the stored true to survive")
+				}
+			}
+			if c.attribute != "maxStagedItems" {
+				wantIntPtr(t, "maxStagedItems", got.MaxStagedItems, 9)
+			}
+			if c.attribute != "minTradeLevel" {
+				wantIntPtr(t, "minTradeLevel", got.MinTradeLevel, 15)
+			}
+			if c.attribute != "reservationTtlSeconds" {
+				wantIntPtr(t, "reservationTtlSeconds", got.ReservationTtlSeconds, 300)
+			}
+			if c.attribute != "attestationTimeoutSeconds" {
+				wantIntPtr(t, "attestationTimeoutSeconds", got.AttestationTimeoutSeconds, 5)
+			}
+			if c.attribute != "taxTiers" {
+				want := []TradeTaxTierRestModel{
+					{Threshold: 50000000, Rate: 0.11},
+					{Threshold: 100000, Rate: 0.008},
+				}
+				if len(got.TaxTiers) != len(want) {
+					t.Fatalf("taxTiers: got %d tiers, want the stored %d to survive", len(got.TaxTiers), len(want))
+				}
+				for i := range want {
+					if got.TaxTiers[i] != want[i] {
+						t.Errorf("taxTiers[%d]: got %+v, want the stored %+v", i, got.TaxTiers[i], want[i])
+					}
+				}
+			}
+		})
 	}
 }
 
-// TestPatchCanStillDisableTheTax pins the other half: an explicit
-// taxEnabled=false is a non-nil pointer, is serialised, and overwrites the
-// stored true. Without this the fix above would make the knob unturnable.
-func TestPatchCanStillDisableTheTax(t *testing.T) {
+// TestPartialPatchAppliesThePatchedAttribute pins the other half of the sweep:
+// the attribute the PATCH does name must actually change. Without this, an
+// ExtractTradeConfig that omitted everything would pass the preservation sweep.
+func TestPartialPatchAppliesThePatchedAttribute(t *testing.T) {
 	stored := storedTradeConfig()
 
-	disabled := false
-	patch := TradeConfigRestModel{Id: "trade-configs", TaxEnabled: &disabled, MaxStagedItems: 9}
-
-	incoming, err := ExtractTradeConfig(patch)
-	if err != nil {
-		t.Fatalf("ExtractTradeConfig: %v", err)
+	if got := applyPatch(t, stored, patchDocument("maxStagedItems", "3")); got.MaxStagedItems == nil || *got.MaxStagedItems != 3 {
+		t.Errorf("maxStagedItems: got %v, want the patched 3", got.MaxStagedItems)
+	}
+	if got := applyPatch(t, stored, patchDocument("minTradeLevel", "40")); got.MinTradeLevel == nil || *got.MinTradeLevel != 40 {
+		t.Errorf("minTradeLevel: got %v, want the patched 40", got.MinTradeLevel)
+	}
+	if got := applyPatch(t, stored, patchDocument("reservationTtlSeconds", "120")); got.ReservationTtlSeconds == nil || *got.ReservationTtlSeconds != 120 {
+		t.Errorf("reservationTtlSeconds: got %v, want the patched 120", got.ReservationTtlSeconds)
+	}
+	if got := applyPatch(t, stored, patchDocument("attestationTimeoutSeconds", "8")); got.AttestationTimeoutSeconds == nil || *got.AttestationTimeoutSeconds != 8 {
+		t.Errorf("attestationTimeoutSeconds: got %v, want the patched 8", got.AttestationTimeoutSeconds)
 	}
 
-	merged, err := jsonRoundTrip(mergeTradeConfigAttributes(stored, incoming))
+	got := applyPatch(t, stored, patchDocument("taxTiers", `[{"threshold":7,"rate":0.5}]`))
+	if len(got.TaxTiers) != 1 {
+		t.Fatalf("taxTiers: got %d tiers, want the patched 1", len(got.TaxTiers))
+	}
+	if got.TaxTiers[0] != (TradeTaxTierRestModel{Threshold: 7, Rate: 0.5}) {
+		t.Errorf("taxTiers[0]: got %+v, want {7 0.5}", got.TaxTiers[0])
+	}
+}
+
+// TestExplicitZeroIsTransmittedAndStored pins that the optionality fix does not
+// trade one silent-corruption bug for another: an operator who deliberately
+// clears the level gate with `minTradeLevel: 0` must have that stored, not
+// discarded as "absent". api2go marshals via encoding/json, whose omitempty
+// omits only a nil pointer — never a pointer to 0.
+func TestExplicitZeroIsTransmittedAndStored(t *testing.T) {
+	// The wire must carry the explicit zero out.
+	raw, err := jsonapi.Marshal(TradeConfigRestModel{Id: "trade-configs", MinTradeLevel: intPtr(0)})
 	if err != nil {
-		t.Fatalf("json round trip: %v", err)
+		t.Fatalf("jsonapi.Marshal: %v", err)
+	}
+	want := `{"data":{"type":"trade-configs","id":"trade-configs","attributes":{"minTradeLevel":0}}}`
+	if string(raw) != want {
+		t.Errorf("an explicit zero did not survive marshalling:\n got: %s\nwant: %s", raw, want)
 	}
 
-	got, err := TransformTradeConfig(merged)
-	if err != nil {
-		t.Fatalf("TransformTradeConfig: %v", err)
+	// And the inbound path must store it over a non-zero stored value.
+	got := applyPatch(t, storedTradeConfig(), patchDocument("minTradeLevel", "0"))
+	if got.MinTradeLevel == nil {
+		t.Fatal("minTradeLevel: got nil, want the explicit 0 to be stored")
 	}
+	if *got.MinTradeLevel != 0 {
+		t.Errorf("minTradeLevel: got %d, want the explicit 0 to overwrite the stored 15", *got.MinTradeLevel)
+	}
+}
+
+// TestExplicitFalseIsTransmittedAndStored is the taxEnabled counterpart: the
+// meso-tax off switch must stay turnable.
+func TestExplicitFalseIsTransmittedAndStored(t *testing.T) {
+	got := applyPatch(t, storedTradeConfig(), patchDocument("taxEnabled", "false"))
 	if got.TaxEnabled == nil {
 		t.Fatal("taxEnabled: got nil, want an explicit false")
 	}
 	if *got.TaxEnabled {
-		t.Error("taxEnabled: got true, want the explicit false to win")
+		t.Error("taxEnabled: got true, want the explicit false to overwrite the stored true")
 	}
 }
 
-// TestMergePreservesUnmentionedAttributesGenerally pins that the merge is not
-// taxEnabled-specific: any attribute the incoming config omits survives, and
-// any attribute it names wins — including an explicit zero.
-func TestMergePreservesUnmentionedAttributesGenerally(t *testing.T) {
+// TestMergePreservesUnmentionedAttributes pins mergeTradeConfigAttributes in
+// isolation: an omitted attribute survives, a named one wins (including an
+// explicit zero), and the stored map is not mutated in place. This covers the
+// merge function only — that production actually hands it a partial map is what
+// TestPartialPatchThroughTheRealPathPreservesEveryOtherAttribute covers.
+func TestMergePreservesUnmentionedAttributes(t *testing.T) {
 	stored := storedTradeConfig()
 	incoming := map[string]interface{}{
 		"id":   "trade-configs",
@@ -313,19 +414,20 @@ const tradeConfigWireDocument = `{"data":{"type":"trade-configs","id":"trade-con
 // TestTradeConfigWireShape pins the serialized JSON:API form, in particular that
 // api2go nests taxTiers as an array of {threshold, rate} objects directly under
 // attributes. A structural change here silently breaks atlas-trades' decode.
+// minTradeLevel is 0 here on purpose: it must still appear on the wire, since
+// the knob is a *int and omitempty omits only nil.
 func TestTradeConfigWireShape(t *testing.T) {
-	enabled := true
 	rm := TradeConfigRestModel{
 		Id:         "trade-configs",
-		TaxEnabled: &enabled,
+		TaxEnabled: boolPtr(true),
 		TaxTiers: []TradeTaxTierRestModel{
 			{Threshold: 100000000, Rate: 0.060},
 			{Threshold: 100000, Rate: 0.008},
 		},
-		MaxStagedItems:            9,
-		MinTradeLevel:             0,
-		ReservationTtlSeconds:     300,
-		AttestationTimeoutSeconds: 5,
+		MaxStagedItems:            intPtr(9),
+		MinTradeLevel:             intPtr(0),
+		ReservationTtlSeconds:     intPtr(300),
+		AttestationTimeoutSeconds: intPtr(5),
 	}
 
 	raw, err := jsonapi.Marshal(rm)

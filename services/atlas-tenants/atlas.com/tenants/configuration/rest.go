@@ -388,23 +388,32 @@ type TradeTaxTierRestModel struct {
 // player-to-player trade configuration. The attribute JSON keys must match what
 // atlas-trades decodes in
 // services/atlas-trades/atlas.com/trades/configuration/rest.go (RestModel).
-// TaxEnabled is a *bool, not a bool, because PATCH decodes into this whole
-// struct and ExtractTradeConfig writes the whole attributes object back. With a
-// plain bool an operator PATCHing only maxStagedItems would silently disable the
-// meso tax tenant-wide — the absent attribute would decode as false and
-// overwrite a stored true. nil means "the request did not mention this knob":
-// ExtractTradeConfig omits the key, and UpdateTradeConfig's attribute merge
-// keeps whatever was stored. An explicit false is a non-nil pointer and is
-// honoured (api2go's omitempty on a pointer omits only nil, never
-// pointer-to-false).
+// EVERY knob is optional, because PATCH decodes into this whole struct and
+// ExtractTradeConfig writes the whole attributes object back. A non-optional
+// field would arrive at its Go zero value on a request that never mentioned it
+// and silently overwrite the stored setting — that is how a PATCH of one knob
+// wipes the rest.
+//
+// nil (or, for TaxTiers, empty) means "the request did not mention this knob":
+// ExtractTradeConfig omits the key entirely, and UpdateTradeConfig's attribute
+// merge carries the stored value forward. An explicit zero value is a non-nil
+// pointer and IS transmitted and stored — api2go marshals via encoding/json
+// (api2go@v1.0.4/jsonapi/marshal.go), whose omitempty omits only a nil pointer,
+// never a pointer to false or 0. So `minTradeLevel: 0` and `taxEnabled: false`
+// both survive the round trip and win over the stored value.
+//
+// TaxTiers is a slice, where omitempty cannot distinguish nil from empty — but
+// an empty tax table is meaningless (atlas-trades substitutes the shipped table
+// for one anyway, see WithTaxTiers), so collapsing both to "not mentioned" is
+// the correct reading.
 type TradeConfigRestModel struct {
 	Id                        string                  `json:"-"`
 	TaxEnabled                *bool                   `json:"taxEnabled,omitempty"`
-	TaxTiers                  []TradeTaxTierRestModel `json:"taxTiers"`
-	MaxStagedItems            int                     `json:"maxStagedItems"`
-	MinTradeLevel             int                     `json:"minTradeLevel"`
-	ReservationTtlSeconds     int                     `json:"reservationTtlSeconds"`
-	AttestationTimeoutSeconds int                     `json:"attestationTimeoutSeconds"`
+	TaxTiers                  []TradeTaxTierRestModel `json:"taxTiers,omitempty"`
+	MaxStagedItems            *int                    `json:"maxStagedItems,omitempty"`
+	MinTradeLevel             *int                    `json:"minTradeLevel,omitempty"`
+	ReservationTtlSeconds     *int                    `json:"reservationTtlSeconds,omitempty"`
+	AttestationTimeoutSeconds *int                    `json:"attestationTimeoutSeconds,omitempty"`
 }
 
 // GetID returns the resource ID
@@ -463,58 +472,65 @@ func TransformTradeConfig(data map[string]interface{}) (TradeConfigRestModel, er
 		}
 	}
 
-	maxStagedItems := 0
-	if val, ok := attributes["maxStagedItems"].(float64); ok {
-		maxStagedItems = int(val)
-	}
-
-	minTradeLevel := 0
-	if val, ok := attributes["minTradeLevel"].(float64); ok {
-		minTradeLevel = int(val)
-	}
-
-	reservationTtlSeconds := 0
-	if val, ok := attributes["reservationTtlSeconds"].(float64); ok {
-		reservationTtlSeconds = int(val)
-	}
-
-	attestationTimeoutSeconds := 0
-	if val, ok := attributes["attestationTimeoutSeconds"].(float64); ok {
-		attestationTimeoutSeconds = int(val)
-	}
-
 	return TradeConfigRestModel{
 		Id:                        id,
 		TaxEnabled:                taxEnabled,
 		TaxTiers:                  taxTiers,
-		MaxStagedItems:            maxStagedItems,
-		MinTradeLevel:             minTradeLevel,
-		ReservationTtlSeconds:     reservationTtlSeconds,
-		AttestationTimeoutSeconds: attestationTimeoutSeconds,
+		MaxStagedItems:            optionalInt(attributes, "maxStagedItems"),
+		MinTradeLevel:             optionalInt(attributes, "minTradeLevel"),
+		ReservationTtlSeconds:     optionalInt(attributes, "reservationTtlSeconds"),
+		AttestationTimeoutSeconds: optionalInt(attributes, "attestationTimeoutSeconds"),
 	}, nil
 }
 
-// ExtractTradeConfig converts a TradeConfigRestModel to a map[string]interface{}
-func ExtractTradeConfig(m TradeConfigRestModel) (map[string]interface{}, error) {
-	tiers := make([]map[string]interface{}, 0, len(m.TaxTiers))
-	for _, t := range m.TaxTiers {
-		tiers = append(tiers, map[string]interface{}{
-			"threshold": t.Threshold,
-			"rate":      t.Rate,
-		})
+// optionalInt reads a JSON number attribute into a *int, leaving it nil when the
+// attribute is absent. Absent must stay distinguishable from an explicit 0:
+// minTradeLevel's default IS zero, so a wiped value would otherwise be
+// indistinguishable from an operator intentionally clearing the level gate.
+func optionalInt(attributes map[string]interface{}, key string) *int {
+	val, ok := attributes[key].(float64)
+	if !ok {
+		return nil
 	}
+	out := int(val)
+	return &out
+}
 
-	attributes := map[string]interface{}{
-		"taxTiers":                  tiers,
-		"maxStagedItems":            m.MaxStagedItems,
-		"minTradeLevel":             m.MinTradeLevel,
-		"reservationTtlSeconds":     m.ReservationTtlSeconds,
-		"attestationTimeoutSeconds": m.AttestationTimeoutSeconds,
-	}
-	// A nil TaxEnabled means the request never mentioned the knob: leave the key
-	// out entirely so UpdateTradeConfig's merge keeps the stored value.
+// ExtractTradeConfig converts a TradeConfigRestModel to a map[string]interface{}.
+//
+// An attribute the caller left unset is OMITTED from the returned map rather
+// than written at its Go zero value, so UpdateTradeConfig's merge carries the
+// stored value forward. Writing every key unconditionally is what let a PATCH
+// naming one knob reset all the others.
+func ExtractTradeConfig(m TradeConfigRestModel) (map[string]interface{}, error) {
+	attributes := make(map[string]interface{}, 6)
+
 	if m.TaxEnabled != nil {
 		attributes["taxEnabled"] = *m.TaxEnabled
+	}
+	// An empty table is never a meaningful instruction, so treat it as "not
+	// mentioned" and keep whatever tiers are stored.
+	if len(m.TaxTiers) > 0 {
+		tiers := make([]map[string]interface{}, 0, len(m.TaxTiers))
+		for _, t := range m.TaxTiers {
+			tiers = append(tiers, map[string]interface{}{
+				"threshold": t.Threshold,
+				"rate":      t.Rate,
+			})
+		}
+		attributes["taxTiers"] = tiers
+	}
+	if m.MaxStagedItems != nil {
+		attributes["maxStagedItems"] = *m.MaxStagedItems
+	}
+	if m.MinTradeLevel != nil {
+		attributes["minTradeLevel"] = *m.MinTradeLevel
+	}
+	if m.ReservationTtlSeconds != nil {
+		attributes["reservationTtlSeconds"] = *m.ReservationTtlSeconds
+	}
+	if m.AttestationTimeoutSeconds != nil {
+		attributes["attestationTimeoutSeconds"] = *m.AttestationTimeoutSeconds
 	}
 
 	return map[string]interface{}{
@@ -525,10 +541,13 @@ func ExtractTradeConfig(m TradeConfigRestModel) (map[string]interface{}, error) 
 }
 
 // mergeTradeConfigAttributes returns a copy of incoming whose attributes carry
-// every attribute the stored config had but that incoming omitted. This is what
-// makes a partial PATCH safe: an attribute the request never mentioned survives
-// instead of being reset. Attributes present in incoming always win, including
-// an explicit false or zero.
+// every attribute the stored config had but that incoming omitted. Attributes
+// present in incoming always win, including an explicit false or zero.
+//
+// This only protects a knob if ExtractTradeConfig actually omits its key when
+// the caller did not set it — the merge cannot rescue a key that arrives
+// written at its zero value. The two halves are a pair: every field of
+// TradeConfigRestModel is optional, and ExtractTradeConfig omits each unset one.
 func mergeTradeConfigAttributes(existing map[string]interface{}, incoming map[string]interface{}) map[string]interface{} {
 	existingAttributes, ok := existing["attributes"].(map[string]interface{})
 	if !ok {

@@ -187,3 +187,31 @@ func TestTaxTiersGetterReturnsACopy(t *testing.T) {
 		t.Fatalf("Model tier table was mutated through the getter: %+v", after[0])
 	}
 }
+
+// TestEmptyTierTableFallsBackToDefaults pins the defence in depth the review
+// asked about: an EMPTY tax table must be treated like a malformed one and
+// replaced by the shipped table, never read as "no tax". Without the
+// len(tiers) == 0 arm in WithTaxTiers, an empty table would reach Tax(), whose
+// loop would match nothing and return 0 for every amount — silently disabling
+// meso tax collection tenant-wide.
+func TestEmptyTierTableFallsBackToDefaults(t *testing.T) {
+	cases := map[string]Model{
+		"FromTiers(nil)":              FromTiers(nil),
+		"FromTiers(empty)":            FromTiers([]Tier{}),
+		"WithTaxTiers(empty)":         DefaultConfig().WithTaxTiers([]Tier{}),
+		"Extract with no wire tiers":  Extract(RestModel{TaxEnabled: true}),
+		"Extract with an empty array": Extract(RestModel{TaxEnabled: true, TaxTiers: []TierRestModel{}}),
+	}
+
+	for name, m := range cases {
+		t.Run(name, func(t *testing.T) {
+			if len(m.TaxTiers()) != len(DefaultConfig().TaxTiers()) {
+				t.Fatalf("tier count: got %d, want the default table's %d", len(m.TaxTiers()), len(DefaultConfig().TaxTiers()))
+			}
+			tax, delivered := Tax(m, 100_000_000)
+			if tax != 6_000_000 || delivered != 94_000_000 {
+				t.Errorf("Tax(100000000): got tax %d delivered %d, want 6000000/94000000 — an empty table silently disabled the tax", tax, delivered)
+			}
+		})
+	}
+}

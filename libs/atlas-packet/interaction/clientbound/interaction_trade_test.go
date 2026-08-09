@@ -114,3 +114,36 @@ func TestInteractionTradeAddMesoRoundTrip(t *testing.T) {
 		})
 	}
 }
+
+// TestInteractionTradeConfirmIsBodyless pins design §1.2: mode 17
+// (CTradingRoomDlg::OnTrade @0x7c20bc) reads NO body — it sets this[112]=1,
+// redraws, and immediately auto-sends serverbound 0x14 with the client's own
+// CRC list. A stray trailing byte here would be read as the next packet.
+func TestInteractionTradeConfirmIsBodyless(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			if got := hex.EncodeToString(NewInteractionTradeConfirm(17).Encode(l, ctx)(nil)); got != "11" {
+				t.Errorf("bytes: got %s, want 11", got)
+			}
+		})
+	}
+}
+
+// TestInteractionTradeMesoLimitIsBodyless pins design §1.2/§11.2: mode 21
+// (sub_7C21BD @0x7c21bd) reads no body; it shows SP_3977 ("Players that are
+// level 15 and below may only trade 1 million mesos per day"), clears
+// this[111] and re-enables both confirm buttons. CCashTradingRoomDlg::OnPacket
+// @0x4833b4 has NO mode-21 arm.
+func TestInteractionTradeMesoLimitIsBodyless(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			if got := hex.EncodeToString(NewInteractionTradeMesoLimit(21).Encode(l, ctx)(nil)); got != "15" {
+				t.Errorf("bytes: got %s, want 15", got)
+			}
+		})
+	}
+}

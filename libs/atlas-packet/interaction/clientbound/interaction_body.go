@@ -225,6 +225,24 @@ func CharacterInteractionTradeAddMesoBody(side byte, amount uint32) func(logrus.
 	})
 }
 
+// CharacterInteractionTradeConfirmBody prompts a client for its CRC
+// attestation. Send only after BOTH sides have confirmed (design §6.2).
+func CharacterInteractionTradeConfirmBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeTradeConfirm, func(mode byte) packet.Encoder {
+		return NewInteractionTradeConfirm(mode)
+	})
+}
+
+// CharacterInteractionTradeMesoLimitBody tells a client its meso stage was
+// refused. Absent from the cash trade room on every version; pair it with an
+// authoritative CharacterInteractionTradeAddMesoBody re-echo so the correction
+// lands even where this arm does not exist.
+func CharacterInteractionTradeMesoLimitBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeTradeMesoLimit, func(mode byte) packet.Encoder {
+		return NewInteractionTradeMesoLimit(mode)
+	})
+}
+
 // CharacterInteractionMiniGameRoomBody is the EnterResult SUCCESS body for an
 // Omok / Match Cards room (the game analogue of
 // CharacterInteractionEnterResultSuccessBody; same ENTER_RESULT mode key,

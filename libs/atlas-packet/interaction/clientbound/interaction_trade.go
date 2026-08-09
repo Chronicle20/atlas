@@ -96,3 +96,72 @@ func (m *InteractionTradeAddMeso) Decode(l logrus.FieldLogger, ctx context.Conte
 		m.amount = r.ReadUint32()
 	}
 }
+
+// InteractionTradeConfirm is the mode-17 arm (v83 CTradingRoomDlg::OnTrade
+// @0x7c20bc). It carries NO body: the client sets its confirmed flag, redraws,
+// and immediately sends serverbound PLAYER_INTERACTION mode 0x14 (TRANSACTION)
+// with its own {itemId, itemCRC} attestation list.
+//
+// Because receipt auto-replies, this arm is broadcast ONLY after BOTH sides
+// have confirmed — sending it on the first confirm would drive the
+// counterparty's attestation without its owner ever pressing Trade
+// (design §6.2).
+//
+// packet-audit:fname CTradingRoomDlg::OnTrade
+type InteractionTradeConfirm struct {
+	mode byte
+}
+
+func NewInteractionTradeConfirm(mode byte) InteractionTradeConfirm {
+	return InteractionTradeConfirm{mode: mode}
+}
+
+func (m InteractionTradeConfirm) Mode() byte { return m.mode }
+
+func (m InteractionTradeConfirm) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		return w.Bytes()
+	}
+}
+
+func (m *InteractionTradeConfirm) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+	}
+}
+
+// InteractionTradeMesoLimit is the mode-21 arm (v83 sub_7C21BD @0x7c21bd), the
+// server-side twin of CTradingRoomDlg::PutMoney's client-side daily-meso guard.
+// Bodyless: the client shows SP_3977, clears its local confirm flag
+// (this[111] = 0) and re-enables both confirm buttons.
+//
+// CCashTradingRoomDlg::OnPacket (@0x4833b4) dispatches 15/16/17 only — there is
+// no mode-21 arm in the cash room. Where the arm is absent, meso rejection
+// degrades to the authoritative TRADE_ADD_MESO re-echo alone (design §4.2).
+//
+// packet-audit:fname CTradingRoomDlg::OnMesoLimit
+type InteractionTradeMesoLimit struct {
+	mode byte
+}
+
+func NewInteractionTradeMesoLimit(mode byte) InteractionTradeMesoLimit {
+	return InteractionTradeMesoLimit{mode: mode}
+}
+
+func (m InteractionTradeMesoLimit) Mode() byte { return m.mode }
+
+func (m InteractionTradeMesoLimit) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		return w.Bytes()
+	}
+}
+
+func (m *InteractionTradeMesoLimit) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+	}
+}

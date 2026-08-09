@@ -7,6 +7,7 @@ import (
 
 	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
 
@@ -49,6 +50,15 @@ const (
 	// (CEntrustedShopDlg::OnPacket sub_51870D cases 0x2E/0x2F).
 	CharacterInteractionModeMerchantViewVisitList CharacterInteractionMode = "MERCHANT_VIEW_VISIT_LIST" // 46
 	CharacterInteractionModeMerchantViewBlackList CharacterInteractionMode = "MERCHANT_VIEW_BLACK_LIST" // 47
+
+	// Trade-family arms, CTradingRoomDlg's mode dispatcher (v83 sub_7C1F6D
+	// @0x7c1f6d). Bytes are per-version and resolved from the tenant
+	// "operations" table — the v83 values in these comments are documentation,
+	// never a default (DOM-25).
+	CharacterInteractionModeTradePutItem   CharacterInteractionMode = "TRADE_PUT_ITEM"   // 15
+	CharacterInteractionModeTradeAddMeso   CharacterInteractionMode = "TRADE_ADD_MESO"   // 16
+	CharacterInteractionModeTradeConfirm   CharacterInteractionMode = "TRADE_CONFIRM"    // 17
+	CharacterInteractionModeTradeMesoLimit CharacterInteractionMode = "TRADE_MESO_LIMIT" // 21
 
 	CharacterInteractionEnterErrorModeRoomClosed                CharacterInteractionEnterErrorMode = "ROOM_CLOSED"                   // 1
 	CharacterInteractionEnterErrorModeFull                      CharacterInteractionEnterErrorMode = "FULL"                          // 2
@@ -195,6 +205,15 @@ func CharacterInteractionLeaveReasonBody(slot byte, reason string) func(logrus.F
 func CharacterInteractionUpdateMerchantBody(meso uint32, items []interaction.RoomShopItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeUpdateMerchant, func(mode byte) packet.Encoder {
 		return NewInteractionUpdateMerchant(mode, meso, items)
+	})
+}
+
+// CharacterInteractionTradePutItemBody announces one staged item to a trade
+// room occupant. side is recipient-relative (0 = the receiving client's own
+// side, 1 = the counterparty); tradeSlot is 1..9.
+func CharacterInteractionTradePutItemBody(side byte, tradeSlot byte, a model.Asset) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeTradePutItem, func(mode byte) packet.Encoder {
+		return NewInteractionTradePutItem(mode, side, tradeSlot, a)
 	})
 }
 

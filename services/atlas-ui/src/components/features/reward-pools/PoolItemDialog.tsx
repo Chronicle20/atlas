@@ -113,12 +113,14 @@ export function PoolItemDialog({
               quantity: values.quantity,
               tier: "common",
               weight: (values as WeightItemFormData).weight,
+              commodityId: 0,
             }
           : {
               itemId: values.itemId,
               quantity: values.quantity,
               tier: (values as TierItemFormData).tier,
               weight: 0,
+              commodityId: 0,
             };
         if (isEdit)
           await updateItem.mutateAsync({

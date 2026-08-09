@@ -54,7 +54,13 @@ describe("useRewardPools", () => {
     });
     result.current.mutate({
       poolId: "4170001",
-      attributes: { itemId: 2000000, quantity: 1, tier: "common", weight: 50 },
+      attributes: {
+        itemId: 2000000,
+        quantity: 1,
+        tier: "common",
+        weight: 50,
+        commodityId: 0,
+      },
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(spy).toHaveBeenCalledWith({

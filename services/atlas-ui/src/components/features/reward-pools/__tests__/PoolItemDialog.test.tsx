@@ -66,6 +66,7 @@ describe("PoolItemDialog", () => {
         quantity: 1,
         tier: "common",
         weight: 50,
+        commodityId: 0,
       }),
     );
   });

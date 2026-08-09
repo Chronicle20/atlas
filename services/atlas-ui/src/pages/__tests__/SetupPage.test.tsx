@@ -172,7 +172,9 @@ describe("SetupPage (tenant-only)", () => {
     // The panel's own rendering logic is exercised by
     // IngestProgressPanel.test.tsx; this only asserts the Setup page passes
     // useIngestRun's live data through rather than dropping it.
-    expect(screen.getByText("running")).toBeInTheDocument();
+    // "Running" appears twice — the run's phase badge and the MAP worker's
+    // state — so this asserts presence, not uniqueness.
+    expect(screen.getAllByText("Running").length).toBeGreaterThan(0);
     expect(
       screen.getByText("1 / 2 workers", { exact: false }),
     ).toBeInTheDocument();

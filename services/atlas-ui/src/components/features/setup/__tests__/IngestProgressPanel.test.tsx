@@ -49,14 +49,22 @@ describe("IngestProgressPanel", () => {
     expect(screen.getByText(/1\s*\/\s*2/)).toBeInTheDocument();
   });
 
+  it("renders the run phase as a title-case badge", () => {
+    const { container } = render(
+      <IngestProgressPanel run={run("succeeded")} isError={false} />,
+    );
+    const badge = container.querySelector('[data-slot="badge"]');
+    expect(badge).not.toBeNull();
+    expect(badge).toHaveTextContent("Succeeded");
+  });
+
   it("lists every worker with its state", () => {
     render(<IngestProgressPanel run={run("running")} isError={false} />);
     expect(screen.getByText("STRING")).toBeInTheDocument();
     expect(screen.getByText("MAP")).toBeInTheDocument();
-    // The worker row renders state and duration as one text node
-    // ("succeeded · 2m 40s"), so an exact match on the bare word never
-    // hits — match the substring instead.
-    expect(screen.getByText(/succeeded/)).toBeInTheDocument();
+    // State and duration are separate cells of the row's grid (so they align
+    // across rows), and states are labelled in title case.
+    expect(screen.getByText("Succeeded")).toBeInTheDocument();
   });
 
   it("surfaces the reason on a stuck run", () => {

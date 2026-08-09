@@ -244,3 +244,170 @@ operations:
   - key: SHOW_NOTICE_1464
     handler: OnCashItemResShowNotice1464
     modes: { jms_v185: 168 }
+
+# errors — the reason byte every *_FAILED arm carries, resolved by
+# ResolveCode(l, options, "errors", key). Read from each version's
+# CCashShop::NoticeFailReason jump table; no template carried this table before
+# task-206, so every failure resolved to 99.
+#
+# CONFIDENCE. The BYTES are read from the jump table and are real. Most KEY
+# NAMES are ordinal alignment of the case list against the declared order of
+# the CashShopOperationError* constants, pinned by three anchors per version
+# (see docs/tasks/task-206-cash-shop-coupon-codes/derivation.md). Rows marked
+# `verified` there have direct evidence; rows marked `aligned` do not.
+# Encoding an aligned byte is safe — the client renders a notice for it — but
+# do not restate an aligned row as verified anywhere.
+#
+# RESERVED, DO NOT SEND as a generic failure: v83 0xA2/0xA4 and v84 171/173
+# kick the player out of the cash shop; v83 0xB1, v84 186, v92/v95 15 show the
+# wrong-coupon-number notice and then disconnect the cash shop; jms 177/179
+# kick the player out. None of them is mapped to an Atlas key here.
+#
+# UNKNOWN_ERROR is deliberately ABSENT: it is the jump table's default case on
+# every version, i.e. "any byte not listed here". Mapping it to a specific byte
+# would be wrong.
+#
+# gms_v92 and gms_v95 renumber the whole enum to a 1-based scale
+# (reason = v83 reason - 162) and drop CANNOT_BE_PURCHASED_WHEN_UNDER_SEVEN /
+# CANNOT_BE_RECEIVED_WHEN_UNDER_SEVEN out of the switch domain entirely (the
+# `cmp eax, 44h` caps it at 69) — those two keys omit both columns.
+#
+# jms_v185 is DELIBERATELY PARTIAL — 30 of the 53 keys, bytes 178-211
+# (0xB2-0xD3). The global constant-offset proof that carries v84/v87/v92/v95
+# FAILS on jms (its switch domain is 178-237, 60 cases with a 13-member default
+# set, which is not v83+15 under any offset); only set-equality on the
+# sub-domain [178,211] holds, and that is the extent of what is declared. All
+# ten coupon-specific keys fall inside the mapped range, so coupon redemption
+# is fully covered. The 23 keys with NO jms_v185 entry are:
+#   ONLY_AVAILABLE_TO_USERS_BUYING, ALREADY_APPLIED, DAILY_PURCHASE_LIMIT,
+#   COUPON_USAGE_LIMIT, COUPON_SYSTEM_AVAILABLE_SOON, FIFTEEN_DAY_LIMIT,
+#   NOT_ENOUGH_GIFT_TOKENS, CANNOT_SEND_TECHNICAL_DIFFICULTIES,
+#   CANNOT_GIFT_ACCOUNT_AGE, CANNOT_GIFT_PREVIOUS_INFRACTIONS,
+#   CANNOT_GIFT_AT_THIS_TIME, CANNOT_GIFT_LIMIT,
+#   CANNOT_GIFT_TECHNICAL_DIFFICULTIES, CANNOT_TRANSFER_UNDER_LEVEL_TWENTY,
+#   CANNOT_TRANSFER_TO_SAME_WORLD, CANNOT_TRANSFER_TO_NEW_WORLD,
+#   CANNOT_TRANSFER_OUT, CANNOT_TRANSFER_NO_EMPTY_SLOTS,
+#   EVENT_ENDED_OR_CANT_BE_FREELY_TESTED, CANNOT_BE_PURCHASED_WITH_MAPLE_POINTS,
+#   PLEASE_TRY_AGAIN, CANNOT_BE_PURCHASED_WHEN_UNDER_SEVEN,
+#   CANNOT_BE_RECEIVED_WHEN_UNDER_SEVEN.
+# They are UNRESOLVED, not absent-by-design: above jms 211 the case set
+# diverges from v83+15 (16 explicit cases against 23 keys), offset derivation
+# is barred by the failed set-equality, and JMS ships its own string table so
+# the StringPool ids cannot be cross-mapped from GMS. Closing them needs a JMS
+# String.wz / StringPool dump, which this repo does not have. DO NOT complete
+# this column by guessing or by offsetting — see derivation.md §jms_v185
+# "Unresolved Atlas keys (23)" for the 16 raw tail cases recorded for a future
+# pass.
+#
+# gms_v48/gms_v61/gms_v72/gms_v79 declare no column here; their enums are
+# derived separately. A version with no declared key is skipped entirely, so
+# their templates are untouched by this table.
+errors:
+  - key: REQUEST_TIMED_OUT
+    modes: { gms_v83: 163, gms_v84: 172, gms_v87: 178, gms_v92: 1, gms_v95: 1, jms_v185: 178 }
+  - key: NOT_ENOUGH_CASH
+    modes: { gms_v83: 165, gms_v84: 174, gms_v87: 180, gms_v92: 3, gms_v95: 3, jms_v185: 180 }
+  - key: CANNOT_GIFT_WHEN_UNDERAGE
+    modes: { gms_v83: 166, gms_v84: 175, gms_v87: 181, gms_v92: 4, gms_v95: 4, jms_v185: 181 }
+  - key: EXCEEDED_GIFT_LIMIT
+    modes: { gms_v83: 167, gms_v84: 176, gms_v87: 182, gms_v92: 5, gms_v95: 5, jms_v185: 182 }
+  - key: CANNOT_GIFT_TO_OWN_ACCOUNT
+    modes: { gms_v83: 168, gms_v84: 177, gms_v87: 183, gms_v92: 6, gms_v95: 6, jms_v185: 183 }
+  - key: INCORRECT_NAME
+    modes: { gms_v83: 169, gms_v84: 178, gms_v87: 184, gms_v92: 7, gms_v95: 7, jms_v185: 184 }
+  - key: CANNOT_GIFT_GENDER_RESTRICTION
+    modes: { gms_v83: 170, gms_v84: 179, gms_v87: 185, gms_v92: 8, gms_v95: 8, jms_v185: 185 }
+  - key: CANNOT_GIFT_RECIPIENT_INVENTORY_FULL
+    modes: { gms_v83: 171, gms_v84: 180, gms_v87: 186, gms_v92: 9, gms_v95: 9, jms_v185: 186 }
+  - key: EXCEEDED_CASH_ITEM_LIMIT
+    modes: { gms_v83: 172, gms_v84: 181, gms_v87: 187, gms_v92: 10, gms_v95: 10, jms_v185: 187 }
+  - key: INCORRECT_NAME_OR_GENDER_RESTRICTION
+    modes: { gms_v83: 173, gms_v84: 182, gms_v87: 188, gms_v92: 11, gms_v95: 11, jms_v185: 188 }
+  - key: INVALID_COUPON_CODE
+    modes: { gms_v83: 176, gms_v84: 185, gms_v87: 191, gms_v92: 14, gms_v95: 14, jms_v185: 191 }
+  - key: COUPON_EXPIRED
+    modes: { gms_v83: 178, gms_v84: 187, gms_v87: 193, gms_v92: 16, gms_v95: 16, jms_v185: 193 }
+  - key: COUPON_ALREADY_USED
+    modes: { gms_v83: 179, gms_v84: 188, gms_v87: 194, gms_v92: 17, gms_v95: 17, jms_v185: 194 }
+  - key: COUPON_INTERNET_CAFE_RESTRICTION
+    modes: { gms_v83: 180, gms_v84: 189, gms_v87: 195, gms_v92: 18, gms_v95: 18, jms_v185: 195 }
+  - key: INTERNET_CAFE_COUPON_ALREADY_USED
+    modes: { gms_v83: 181, gms_v84: 190, gms_v87: 196, gms_v92: 19, gms_v95: 19, jms_v185: 196 }
+  - key: INTERNET_CAFE_COUPON_EXPIRED
+    modes: { gms_v83: 182, gms_v84: 191, gms_v87: 197, gms_v92: 20, gms_v95: 20, jms_v185: 197 }
+  - key: COUPON_NOT_REGISTERED
+    modes: { gms_v83: 183, gms_v84: 192, gms_v87: 198, gms_v92: 21, gms_v95: 21, jms_v185: 198 }
+  - key: COUPON_GENDER_RESTRICTION
+    modes: { gms_v83: 184, gms_v84: 193, gms_v87: 199, gms_v92: 22, gms_v95: 22, jms_v185: 199 }
+  - key: COUPON_CANNOT_BE_GIFTED
+    modes: { gms_v83: 185, gms_v84: 194, gms_v87: 200, gms_v92: 23, gms_v95: 23, jms_v185: 200 }
+  - key: COUPON_ONLY_FOR_MAPLE_STORY
+    modes: { gms_v83: 186, gms_v84: 195, gms_v87: 201, gms_v92: 24, gms_v95: 24, jms_v185: 201 }
+  - key: INVENTORY_FULL
+    modes: { gms_v83: 187, gms_v84: 196, gms_v87: 202, gms_v92: 25, gms_v95: 25, jms_v185: 202 }
+  - key: NOT_AVAILABLE_FOR_PURCHASE
+    modes: { gms_v83: 188, gms_v84: 197, gms_v87: 203, gms_v92: 26, gms_v95: 26, jms_v185: 203 }
+  - key: CANNOT_GIFT_INVALID_NAME_OR_GENDER
+    modes: { gms_v83: 189, gms_v84: 198, gms_v87: 204, gms_v92: 27, gms_v95: 27, jms_v185: 204 }
+  - key: CHECK_NAME_OF_RECEIVER
+    modes: { gms_v83: 190, gms_v84: 199, gms_v87: 205, gms_v92: 28, gms_v95: 28, jms_v185: 205 }
+  - key: NOT_AVAILABLE_FOR_PURCHASE_AT_HOUR
+    modes: { gms_v83: 191, gms_v84: 200, gms_v87: 206, gms_v92: 29, gms_v95: 29, jms_v185: 206 }
+  - key: OUT_OF_STOCK
+    modes: { gms_v83: 192, gms_v84: 201, gms_v87: 207, gms_v92: 30, gms_v95: 30, jms_v185: 207 }
+  - key: EXCEEDED_SPENDING_LIMIT
+    modes: { gms_v83: 193, gms_v84: 202, gms_v87: 208, gms_v92: 31, gms_v95: 31, jms_v185: 208 }
+  - key: NOT_ENOUGH_MESOS
+    modes: { gms_v83: 194, gms_v84: 203, gms_v87: 209, gms_v92: 32, gms_v95: 32, jms_v185: 209 }
+  - key: CASH_SHOP_NOT_AVAILABLE_DURING_BETA
+    modes: { gms_v83: 195, gms_v84: 204, gms_v87: 210, gms_v92: 33, gms_v95: 33, jms_v185: 210 }
+  - key: INVALID_BIRTHDAY
+    modes: { gms_v83: 196, gms_v84: 205, gms_v87: 211, gms_v92: 34, gms_v95: 34, jms_v185: 211 }
+  # --- jms_v185 stops here: bytes above 211 are unresolved, see the header. ---
+  - key: ONLY_AVAILABLE_TO_USERS_BUYING
+    modes: { gms_v83: 199, gms_v84: 208, gms_v87: 214, gms_v92: 37, gms_v95: 37 }
+  - key: ALREADY_APPLIED
+    modes: { gms_v83: 200, gms_v84: 209, gms_v87: 215, gms_v92: 38, gms_v95: 38 }
+  - key: DAILY_PURCHASE_LIMIT
+    modes: { gms_v83: 205, gms_v84: 214, gms_v87: 220, gms_v92: 43, gms_v95: 43 }
+  - key: COUPON_USAGE_LIMIT
+    modes: { gms_v83: 208, gms_v84: 217, gms_v87: 223, gms_v92: 46, gms_v95: 46 }
+  - key: COUPON_SYSTEM_AVAILABLE_SOON
+    modes: { gms_v83: 210, gms_v84: 219, gms_v87: 225, gms_v92: 48, gms_v95: 48 }
+  - key: FIFTEEN_DAY_LIMIT
+    modes: { gms_v83: 211, gms_v84: 220, gms_v87: 226, gms_v92: 49, gms_v95: 49 }
+  - key: NOT_ENOUGH_GIFT_TOKENS
+    modes: { gms_v83: 212, gms_v84: 221, gms_v87: 227, gms_v92: 50, gms_v95: 50 }
+  - key: CANNOT_SEND_TECHNICAL_DIFFICULTIES
+    modes: { gms_v83: 213, gms_v84: 222, gms_v87: 228, gms_v92: 51, gms_v95: 51 }
+  - key: CANNOT_GIFT_ACCOUNT_AGE
+    modes: { gms_v83: 214, gms_v84: 223, gms_v87: 229, gms_v92: 52, gms_v95: 52 }
+  - key: CANNOT_GIFT_PREVIOUS_INFRACTIONS
+    modes: { gms_v83: 215, gms_v84: 224, gms_v87: 230, gms_v92: 53, gms_v95: 53 }
+  - key: CANNOT_GIFT_AT_THIS_TIME
+    modes: { gms_v83: 216, gms_v84: 225, gms_v87: 231, gms_v92: 54, gms_v95: 54 }
+  - key: CANNOT_GIFT_LIMIT
+    modes: { gms_v83: 217, gms_v84: 226, gms_v87: 232, gms_v92: 55, gms_v95: 55 }
+  - key: CANNOT_GIFT_TECHNICAL_DIFFICULTIES
+    modes: { gms_v83: 218, gms_v84: 227, gms_v87: 233, gms_v92: 56, gms_v95: 56 }
+  - key: CANNOT_TRANSFER_UNDER_LEVEL_TWENTY
+    modes: { gms_v83: 219, gms_v84: 228, gms_v87: 234, gms_v92: 57, gms_v95: 57 }
+  - key: CANNOT_TRANSFER_TO_SAME_WORLD
+    modes: { gms_v83: 220, gms_v84: 229, gms_v87: 235, gms_v92: 58, gms_v95: 58 }
+  - key: CANNOT_TRANSFER_TO_NEW_WORLD
+    modes: { gms_v83: 221, gms_v84: 230, gms_v87: 236, gms_v92: 59, gms_v95: 59 }
+  - key: CANNOT_TRANSFER_OUT
+    modes: { gms_v83: 222, gms_v84: 231, gms_v87: 237, gms_v92: 60, gms_v95: 60 }
+  - key: CANNOT_TRANSFER_NO_EMPTY_SLOTS
+    modes: { gms_v83: 223, gms_v84: 232, gms_v87: 238, gms_v92: 61, gms_v95: 61 }
+  - key: EVENT_ENDED_OR_CANT_BE_FREELY_TESTED
+    modes: { gms_v83: 224, gms_v84: 233, gms_v87: 239, gms_v92: 62, gms_v95: 62 }
+  - key: CANNOT_BE_PURCHASED_WITH_MAPLE_POINTS
+    modes: { gms_v83: 230, gms_v84: 239, gms_v87: 245, gms_v92: 68, gms_v95: 68 }
+  - key: PLEASE_TRY_AGAIN
+    modes: { gms_v83: 231, gms_v84: 240, gms_v87: 246, gms_v92: 69, gms_v95: 69 }
+  # gms_v92/gms_v95 cap their switch at 69, so these two have no case there.
+  - key: CANNOT_BE_PURCHASED_WHEN_UNDER_SEVEN
+    modes: { gms_v83: 232, gms_v84: 241, gms_v87: 247 }
+  - key: CANNOT_BE_RECEIVED_WHEN_UNDER_SEVEN
+    modes: { gms_v83: 233, gms_v84: 242, gms_v87: 248 }

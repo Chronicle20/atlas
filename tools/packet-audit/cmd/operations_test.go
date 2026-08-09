@@ -2,8 +2,13 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
+	"reflect"
+	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -304,5 +309,139 @@ errors:
 				t.Fatalf("stderr %q does not contain %q", errOut.String(), c.want)
 			}
 		})
+	}
+}
+
+// writeMinimalTemplates writes a minimal socket doc — with a handful of
+// pre-existing handlers spanning a range of opCodes — to every version's
+// template file under dir/templates, and returns that templates dir. Used by
+// tests that exercise addEntry's insert-when-absent path.
+func writeMinimalTemplates(t *testing.T, dir string) string {
+	t.Helper()
+	tplDir := filepath.Join(dir, "templates")
+	mustMkdirAll(t, tplDir)
+	writeAllTemplates(t, tplDir, `{"socket":{"handlers":[
+  {"opCode":"0x28","handler":"ExistingLow"},
+  {"opCode":"0xE5","handler":"ExistingMid"},
+  {"opCode":"0xFF","handler":"ExistingHigh"}
+],"writers":[]}}`)
+	return tplDir
+}
+
+// writeDispatcherDoc writes a single dispatcher enumeration YAML directly
+// into dir, matching the DispatchersDir: dir passed to operationsRun below.
+func writeDispatcherDoc(t *testing.T, dir, contents string) {
+	t.Helper()
+	mustMkdirAll(t, dir)
+	mustWrite(t, filepath.Join(dir, "d.yaml"), contents)
+}
+
+func handlerEntry(t *testing.T, path, name string) map[string]interface{} {
+	t.Helper()
+	var d struct {
+		Socket struct {
+			Handlers []map[string]interface{} `json:"handlers"`
+		} `json:"socket"`
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &d); err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range d.Socket.Handlers {
+		if e["handler"] == name {
+			return e
+		}
+	}
+	t.Fatalf("handler %q not found in %s", name, path)
+	return nil
+}
+
+func handlerOpCodes(t *testing.T, path string) []int {
+	t.Helper()
+	var d struct {
+		Socket struct {
+			Handlers []struct {
+				OpCode string `json:"opCode"`
+			} `json:"handlers"`
+		} `json:"socket"`
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &d); err != nil {
+		t.Fatal(err)
+	}
+	var out []int
+	for _, e := range d.Socket.Handlers {
+		n, err := strconv.ParseInt(e.OpCode, 0, 32)
+		if err != nil {
+			t.Fatalf("bad opCode %q", e.OpCode)
+		}
+		out = append(out, int(n))
+	}
+	return out
+}
+
+// A generated handler entry MUST carry a validator: BuildHandlerMap drops a
+// handler whose validator name is not in the validator map, with only a
+// Warnf, so a validator-less entry silently never routes.
+func TestAddEntryEmitsValidatorAndServices(t *testing.T) {
+	dir := t.TempDir()
+	tplDir := writeMinimalTemplates(t, dir)
+	writeDispatcherDoc(t, dir, `
+handler: CashShopCouponCodeHandle
+validator: LoggedInValidator
+services: [channel]
+fname: CCashShop::OnStatusCoupon
+op: COUPON_CODE
+opcodes:
+  gms_v83: "0xE6"
+`)
+	if code := operationsRun(operationsOpts{DispatchersDir: dir, TemplatesDir: tplDir}, io.Discard, io.Discard); code != 0 {
+		t.Fatalf("generate exit = %d, want 0", code)
+	}
+	e := handlerEntry(t, filepath.Join(tplDir, "template_gms_83_1.json"), "CashShopCouponCodeHandle")
+	if e["validator"] != "LoggedInValidator" {
+		t.Errorf("validator = %v, want LoggedInValidator", e["validator"])
+	}
+	if got := e["services"]; !reflect.DeepEqual(got, []interface{}{"channel"}) {
+		t.Errorf("services = %v, want [channel]", got)
+	}
+	if e["opCode"] != "0xE6" {
+		t.Errorf("opCode = %v, want 0xE6", e["opCode"])
+	}
+	if _, ok := e["options"]; ok {
+		t.Errorf("options should be omitted when the doc declares no tables, got %v", e["options"])
+	}
+}
+
+// A generated entry must land at its ascending-opCode position so
+// tools/template-opcode-order-guard.sh stays green.
+func TestAddEntryInsertsInSortedPosition(t *testing.T) {
+	dir := t.TempDir()
+	tplDir := writeMinimalTemplates(t, dir) // contains handlers 0x28, 0xE5, 0xFF
+	writeDispatcherDoc(t, dir, `
+handler: CashShopCouponCodeHandle
+validator: LoggedInValidator
+services: [channel]
+op: COUPON_CODE
+opcodes:
+  gms_v83: "0xE6"
+`)
+	if code := operationsRun(operationsOpts{DispatchersDir: dir, TemplatesDir: tplDir}, io.Discard, io.Discard); code != 0 {
+		t.Fatalf("generate exit = %d, want 0", code)
+	}
+	codes := handlerOpCodes(t, filepath.Join(tplDir, "template_gms_83_1.json"))
+	for i := 1; i < len(codes); i++ {
+		if codes[i] < codes[i-1] {
+			t.Fatalf("handlers not ascending at %d: 0x%X after 0x%X (%v)", i, codes[i], codes[i-1], codes)
+		}
+	}
+	if !slices.Contains(codes, 0xE6) {
+		t.Fatalf("0xE6 not inserted: %v", codes)
 	}
 }

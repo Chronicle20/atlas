@@ -18,12 +18,18 @@ func Migration(db *gorm.DB) error {
 // Rewards is jsonb because the bundle is always read and written whole and is
 // never queried by reward attribute.
 type Entity struct {
-	Id              uuid.UUID  `gorm:"primaryKey;type:uuid"`
-	TenantId        uuid.UUID  `gorm:"not null;index;uniqueIndex:idx_coupons_tenant_code;index:idx_coupons_tenant_batch,priority:1"`
-	BatchId         *uuid.UUID `gorm:"type:uuid;index:idx_coupons_tenant_batch,priority:2"`
-	Code            string     `gorm:"not null;type:varchar(32);uniqueIndex:idx_coupons_tenant_code"`
-	Description     string     `gorm:"type:text"`
-	Active          bool       `gorm:"not null;default:true"`
+	Id          uuid.UUID  `gorm:"primaryKey;type:uuid"`
+	TenantId    uuid.UUID  `gorm:"not null;index;uniqueIndex:idx_coupons_tenant_code;index:idx_coupons_tenant_batch,priority:1"`
+	BatchId     *uuid.UUID `gorm:"type:uuid;index:idx_coupons_tenant_batch,priority:2"`
+	Code        string     `gorm:"not null;type:varchar(32);uniqueIndex:idx_coupons_tenant_code"`
+	Description string     `gorm:"type:text"`
+	// Active carries NO `default:true`. GORM substitutes a column default for a
+	// zero-valued Go field when it builds the INSERT, so `default:true` would
+	// rewrite every coupon created inactive into an active one — the row would
+	// come back redeemable no matter what the admin asked for. The Builder
+	// already defaults Active to true, so the column default was redundant as
+	// well as wrong.
+	Active          bool `gorm:"not null"`
 	StartsAt        *time.Time
 	ExpiresAt       *time.Time
 	MaxUses         *uint32

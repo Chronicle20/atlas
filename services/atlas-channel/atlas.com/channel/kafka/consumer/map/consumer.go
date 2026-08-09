@@ -649,13 +649,14 @@ func spawnNPCForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 // slope lands ~0.67px below the surface (fall-through) — and the later Spawn is
 // then a no-op (GetMob hits -> SetTemporaryStat only, never re-Init/reposition).
 //
-// That race is now prevented at the source: atlas-monsters' ControlOnEnter
-// assigns the *entering* player in-place WITHOUT emitting StartControl (see
-// monster/processor.go ControlOnEnter), so no early MonsterControl is produced
-// for a still-loading client. This function is the sole controller-grant for the
-// entering player, guaranteeing Spawn-then-Control. (An already-present player
-// that becomes controller on enter still gets a StartControl-driven packet — safe,
-// since that client already has the mob spawned.)
+// This is a fast path, not the authority. atlas-monsters emits StartControl for
+// every controller assignment, and the channel's START_CONTROL handler delivers
+// it as Spawn-then-Control (see kafka/consumer/monster.controlGrantFn), so the
+// ordering invariant holds no matter which of the two arrives first. This
+// function cannot be the sole grant: it runs off EVENT_TOPIC_CHARACTER_STATUS
+// while the assignment runs off EVENT_TOPIC_MAP_STATUS, and it routinely reads
+// the monster list before the controller has been assigned at all — which used
+// to leave a re-entering player's mobs assigned upstream but frozen on screen.
 func spawnMonsterForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
 		return func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {

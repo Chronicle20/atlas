@@ -1,6 +1,6 @@
 import { type DataTableColumnDef } from "@/components/data-table-features";
 import type { Tenant, TenantConfig } from "@/types/models/tenant";
-import { getJobNameById } from "@/lib/jobs";
+import type { JobNameResolver } from "@/lib/breadcrumbs/routes";
 import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
@@ -41,6 +41,7 @@ interface ColumnProps {
   tenantConfig: TenantConfig | null;
   accountMap: Map<string, Account>;
   onRefresh?: () => void;
+  jobName: JobNameResolver;
 }
 
 export const hiddenColumns = ["id", "attributes.gm"];
@@ -50,6 +51,7 @@ export const getColumns = ({
   tenantConfig,
   accountMap,
   onRefresh,
+  jobName,
 }: ColumnProps): DataTableColumnDef<Character>[] => {
   return [
     {
@@ -121,7 +123,7 @@ export const getColumns = ({
         const id = Number(value);
         let name = String(value);
         if (!isNaN(id)) {
-          name = getJobNameById(id) || String(value);
+          name = jobName(id);
         }
 
         const gm = row.getValue("attributes_gm");

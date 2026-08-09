@@ -402,7 +402,7 @@ Logged from `docs/tasks/task-037-character-presets/` design §7.
 - [ ] **atlas-character-factory player-creation deterministic stats** — set `UseAverageStats=true` for the four equip steps in `buildCharacterCreationSaga` (`services/atlas-character-factory/atlas.com/character-factory/factory/processor.go:138-211`).
 - [ ] **AdminBootstrapWizard saga transactionId polling** — replace the "mutation resolved = success" assumption with per-row saga status polling (atlas-ui `AdminBootstrapWizard.tsx` step 4).
 - [ ] **`<ItemPicker>` / `<SkillPicker>` components** — replace free-text uint32 inputs in `services/atlas-ui/src/pages/{templates,tenants}-character-presets-form.tsx` with searchable pickers backed by atlas-data.
-- [ ] **Non-explorer 4th-job presets** — extend `services/atlas-configurations/seed-data/templates/template_gms_83_1.json` with Cygnus / Aran / Resistance / Legend 4th-job presets.
+- [ ] **Non-explorer 4th-job presets** — extend `services/atlas-configurations/seed-data/templates/template_gms_83_1.json` with ~~Cygnus /~~ Aran / Resistance / Legend 4th-job presets. (Cygnus 4th job is struck: verified in task-202 that no Cygnus 4th-job skills exist at any supported version — the WZ `skill` node is present but empty at 1112/1212/1312/1412/1512. See `docs/tasks/task-202-version-correct-job-hierarchy/availability-audit.md`.)
 
 ## task-145-player-reports follow-ups
 

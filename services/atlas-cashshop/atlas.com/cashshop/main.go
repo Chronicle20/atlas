@@ -4,6 +4,7 @@ import (
 	"atlas-cashshop/cashshop/inventory"
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
+	"atlas-cashshop/coupon"
 	"atlas-cashshop/kafka/consumer/account"
 	"atlas-cashshop/kafka/consumer/cashshop"
 	compartment2 "atlas-cashshop/kafka/consumer/cashshop/compartment"
@@ -54,7 +55,7 @@ func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, coupon.Migration, outboxlib.Migration))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.

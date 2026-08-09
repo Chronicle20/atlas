@@ -126,8 +126,13 @@ func updateEntity(db *gorm.DB, t tenant.Model, m Model) (Model, error) {
 var ErrHasRedemptions = errors.New("coupon has redemptions")
 
 // redemptionsTable is coupon_redemptions, referenced by NAME rather than by
-// type: package coupon/redemption imports package coupon (its Entity embeds
-// coupon.Rewards), so importing it back here would be an import cycle.
+// type. It was originally a string because package coupon/redemption imported
+// package coupon (its Entity embedded coupon.Rewards) and importing it back
+// here was an import cycle. That cycle is GONE — the reward types moved down
+// into package coupon/reward — so this could now be
+// redemption.Entity{}.TableName(). The string is retained only because
+// deleteEntity and its tests are settled code; there is no longer any
+// structural reason for it.
 const redemptionsTable = "coupon_redemptions"
 
 // deleteEntity removes a coupon, refusing when it has been redeemed.

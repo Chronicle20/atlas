@@ -30,6 +30,7 @@ import (
 	"atlas-cashshop/wallet"
 	"context"
 	"encoding/json"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -240,7 +241,16 @@ func testCharacter(t *testing.T) character.Model {
 // resolves a commodity over HTTP).
 func newTestProcessor(t *testing.T, ctx context.Context, db *gorm.DB) Processor {
 	t.Helper()
-	p := NewProcessor(testLogger(t), ctx, db).(*ProcessorImpl)
+	p, _ := newTestProcessorLogged(t, ctx, db)
+	return p
+}
+
+// newTestProcessorLogged is newTestProcessor plus the logrus hook, for the one
+// test that needs to see what was logged.
+func newTestProcessorLogged(t *testing.T, ctx context.Context, db *gorm.DB) (Processor, *test.Hook) {
+	t.Helper()
+	l, hook := test.NewNullLogger()
+	p := NewProcessor(l, ctx, db).(*ProcessorImpl)
 	p.chaP = stubCharacterProcessor{m: testCharacter(t)}
 	p.gf = func(l logrus.FieldLogger, gctx context.Context, r reward.Reward) (rewardGranter, error) {
 		if r.Type() == reward.TypeCashItem {
@@ -248,7 +258,17 @@ func newTestProcessor(t *testing.T, ctx context.Context, db *gorm.DB) Processor 
 		}
 		return granterFor(l, gctx, r)
 	}
-	return p
+	return p, hook
+}
+
+// loggedAtLevel reports whether any entry at level contains substr.
+func loggedAtLevel(hook *test.Hook, level logrus.Level, substr string) bool {
+	for _, e := range hook.AllEntries() {
+		if e.Level == level && strings.Contains(e.Message, substr) {
+			return true
+		}
+	}
+	return false
 }
 
 // --- seeding / assertion helpers --------------------------------------------
@@ -512,6 +532,44 @@ func TestRedeemPrepaidOnlyCouponStillSucceeds(t *testing.T) {
 	e := loadOnlyOutboxCouponEvent(t, db)
 	if e.Body.MaplePoints != 0 || e.Body.Credit != 0 || len(e.Body.AssetIds) != 0 {
 		t.Errorf("event body = %+v, want an all-zero body (prepaid has no field)", e.Body)
+	}
+	// The contract for a currency-only coupon: no assets, therefore no locker
+	// to name. A consumer keys off AssetIds; CompartmentId is only meaningful
+	// alongside a non-empty AssetIds.
+	if e.Body.CompartmentId != uuid.Nil {
+		t.Errorf("compartmentId = %s, want the nil UUID for a coupon that grants no cash items", e.Body.CompartmentId)
+	}
+}
+
+// TestRedeemWithoutACompartmentRowReportsUnknown covers an account that has no
+// cash locker of the required type AT ALL, as distinct from a full one.
+//
+// INVENTORY_FULL would tell the player to free a slot, which cannot fix a row
+// that does not exist; all three compartments are provisioned together at
+// account creation, so a missing one is an operator-side gap and gets the
+// generic notice.
+//
+// UNKNOWN_ERROR was ALSO what the un-classified fall-through produced, so the
+// key alone cannot show the mapping is deliberate. The ERROR log is what
+// distinguishes the two, and is asserted here for exactly that reason.
+func TestRedeemWithoutACompartmentRowReportsUnknown(t *testing.T) {
+	db, tm, ctx, events := newProcessorTestEnv(t)
+	seedWallet(t, db, ctx, testAccountId, 0, 0, 0)
+	// Deliberately no compartment seeded.
+	seedCoupon(t, db, tm, NewBuilder("ITEM").SetRewards(reward.Rewards{reward.NewCashItemReward(50200000, 1)}))
+	p, hook := newTestProcessorLogged(t, ctx, db)
+
+	if err := p.RedeemAndEmit(testCharacterId, "ITEM"); err == nil {
+		t.Fatal("want a rejection")
+	}
+	if got := events.lastCouponFailure(); got != ErrorKeyUnknown {
+		t.Errorf("emitted key = %q, want %q (a missing locker is not a full one)", got, ErrorKeyUnknown)
+	}
+	if !loggedAtLevel(hook, logrus.ErrorLevel, "has no cash locker of type") {
+		t.Error("the missing locker was not logged at ERROR; the condition must be classified, not fall through")
+	}
+	if got := countRedemptions(t, db, tm); got != 0 {
+		t.Errorf("redemption rows = %d, want 0", got)
 	}
 }
 

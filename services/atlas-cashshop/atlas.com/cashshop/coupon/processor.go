@@ -191,6 +191,14 @@ type redeemRequest struct {
 // currencyGranter reports neither field for those — so a prepaid-only coupon
 // mutates the wallet and yields an all-zero grantedTotals, byte-identical to a
 // granter that did nothing. err == nil is the only success signal.
+//
+// compartmentId is uuid.Nil for a coupon whose bundle contains NO cash items.
+// It names the locker the assetIds live in, so with no assets there is no
+// locker to name — and resolving one anyway would make a currency-only coupon
+// fail for an account whose locker row is missing, which has nothing to do
+// with the reward being granted. Nil compartmentId together with an empty
+// assetIds is the normal currency-only shape, not a bug; consumers must key
+// off assetIds. Pinned by TestRedeemPrepaidOnlyCouponStillSucceeds.
 type grantedTotals struct {
 	compartmentId uuid.UUID
 	assetIds      []uint32
@@ -235,14 +243,30 @@ func (p *ProcessorImpl) redeem(mb *message.Buffer) func(tx *gorm.DB, req redeemR
 		// is deterministic — a full locker reports INVENTORY_FULL rather than
 		// whichever grant happened to run first. Both are load-bearing.
 		//
-		// A bundle with no cash items skips the lookup entirely: a
-		// currency-only coupon must not fail because the account has never
-		// opened a cash locker.
+		// A bundle with no cash items skips the lookup entirely, and
+		// out.compartmentId stays uuid.Nil. See grantedTotals for why that is
+		// the contract rather than an omission.
 		need := uint32(m.Rewards().CashItemCount())
 		if need > 0 {
 			ccm, cerr := compartment.NewProcessor(p.l, p.ctx, tx).WithTransaction(tx).
 				GetByAccountIdAndType(req.accountId, req.compartmentType)
 			if cerr != nil {
+				if errors.Is(cerr, gorm.ErrRecordNotFound) {
+					// The account has no locker of this type AT ALL. That is
+					// not a full locker and INVENTORY_FULL would misdirect the
+					// player: freeing a slot cannot fix a row that does not
+					// exist. All three compartments are provisioned together
+					// when the account is created
+					// (kafka/consumer/account/consumer.go:60 ->
+					// inventory.Create -> createDefaultCompartments), so a
+					// missing one means provisioning failed or predates the
+					// service — an operator problem, reported as the generic
+					// notice and logged loudly rather than dressed up as a
+					// player-fixable one.
+					p.l.WithError(cerr).Errorf("Account [%d] has no cash locker of type [%d]; cash-shop provisioning is incomplete. Coupon redemption cannot proceed.",
+						req.accountId, req.compartmentType)
+					return out, NewRedemptionError(ErrorKeyUnknown, "account has no cash locker of this type")
+				}
 				return out, cerr
 			}
 			if ccm.Capacity() < uint32(len(ccm.Assets()))+need {

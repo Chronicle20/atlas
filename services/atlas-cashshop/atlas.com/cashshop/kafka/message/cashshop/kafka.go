@@ -110,6 +110,13 @@ type PurchaseEventBody struct {
 // already owns the asset-id -> CashInventoryItem projection (its purchase
 // handler at kafka/consumer/cashshop/consumer.go:105-124), and duplicating it
 // here would put packet concerns in atlas-cashshop.
+//
+// CompartmentId names the locker AssetIds live in. It is the ZERO UUID when
+// AssetIds is empty — a currency-only coupon grants nothing to a locker, so
+// there is no locker to name. That pairing (nil compartment + no assets) is
+// the normal currency-only shape, NOT a producer bug: consumers must decide
+// what to build from AssetIds and read CompartmentId only when it is
+// non-empty.
 type CouponRedeemedBody struct {
 	CompartmentId uuid.UUID `json:"compartmentId"`
 	AssetIds      []uint32  `json:"assetIds"`

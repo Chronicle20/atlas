@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-trades/ledger"
 	"context"
 	"os"
 
@@ -63,7 +64,7 @@ func main() {
 	// Live room state is the process-local in-memory trade.Registry, not the
 	// DB — atlas-trades runs replicas: 1 for that reason (design §9). The DB
 	// backs only the completed-trade ledger and the transactional outbox.
-	db := database.Connect(l, database.SetMigrations(outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(ledger.Migration, outboxlib.Migration))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.

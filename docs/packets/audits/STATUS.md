@@ -4,18 +4,18 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `0b2034d12f433449e6ff95631b5b62ee1a7ae35be5ecd6b245be7013c3b57684`
+Tool: `ffef83aca4ecd3db75b70a8c36bf74d477b42f6baf03a361680b382a2d3f4def`
 
-- export gms_v48: `ff3af9606ae94598c02edfb33d98b819b3be915c23ab7a70a3d8bc7e9fddad79`
-- export gms_v61: `33ad6a973a263634662db6eadfa168fe0570b2e4e36efb14b16684094ef7743d`
-- export gms_v72: `3ef1d667c4649ca9d409f8dcd61106ed65e13f38394d2974da9bd7768aa61858`
-- export gms_v79: `fc17eef29af79da9f7ca5b54dfb8d3e8ebc7c3327333ee8dfff41a9edb6647f8`
-- export gms_v83: `5545d7ac6bd532331b2ddcda74896c5c55ead0dc9f4a2c99d1e2b7c8058d0c76`
-- export gms_v84: `5d2d0c5eeb1a906a5e92aa1e0de2356c25ffe825b1e2ea1d454cbc63f41f8005`
-- export gms_v87: `49cb91b511f12c1b412a5e8a31020c7c999ea2a05043f3ab07518d1fcf9658dc`
-- export gms_v92: `9a36d46de4ffc75fb7fa3b077115e2be3c278dd6568ab99a80e1468f2d1406d0`
-- export gms_v95: `417078e8a942e875fe11f7834f5a4592be35deee7291bd0a5fcf9ccdd6d7bae0`
-- export jms_v185: `5ddede01b8f324027868381c8154c3057897126664657a2dde0b1a011ba585ff`
+- export gms_v48: `efc7d007da810aacf79d91b20bdb2a1eaf69fa014e2994074caa8bb8ca92d023`
+- export gms_v61: `c52dc68d06079daaeab0542db8981e81023a90d452e631cca9abc9b7b393eeca`
+- export gms_v72: `9b45b198c5d6f7e7d33306b7e8e1cb06fca8d853f81674b75dc68e5ae46f0526`
+- export gms_v79: `298bf14d53928a8d5526c9e8f02368eb8f8651f8e0d2b86a622e13d133d0df0b`
+- export gms_v83: `33fb874e5b8e4da40a32f58be6cdca529f979e4968888f4f3f15aee4535bbbe9`
+- export gms_v84: `9ba92967587427274b6fcb3669989010f3ce09aea14398ec15bb2badb1776632`
+- export gms_v87: `93df81d7281dacbcf81015ca9957285595975748b17a4f1fdc6b2648d9bb17a7`
+- export gms_v92: `d2f16cf9ad73271d53ba47071a90c6690cc48390bcfd78bfc4e3d5576a2343f9`
+- export gms_v95: `07d9af54a86d61b13319faa0dae3dce938049a0953f97171716777cbd1dc0ab3`
+- export jms_v185: `a603be42f9945cb9ce7bba3ea993127d3e59a7275056ebf36f931533b98fac58`
 
 ## Clientbound
 
@@ -946,6 +946,10 @@ Tool: `0b2034d12f433449e6ff95631b5b62ee1a7ae35be5ecd6b245be7013c3b57684`
 | guild/serverbound/GuildSetNotice (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildSetTitleNames (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildWithdraw (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
+| interaction/clientbound/InteractionInteractionTradeAddMeso (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| interaction/clientbound/InteractionInteractionTradeConfirm (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| interaction/clientbound/InteractionInteractionTradeMesoLimit (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ⬜ |
+| interaction/clientbound/InteractionInteractionTradePutItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/clientbound/InteractionInteractionUpdateMerchant (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationChat (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationFieldAddToBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
@@ -1052,16 +1056,16 @@ Tool: `0b2034d12f433449e6ff95631b5b62ee1a7ae35be5ecd6b245be7013c3b57684`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 196 | 0 | 19 | 195 | 606 | 0 | 47.8% |
-| v61 | 258 | 0 | 58 | 236 | 464 | 0 | 46.7% |
-| v72 | 272 | 0 | 71 | 252 | 421 | 0 | 45.7% |
-| v79 | 316 | 0 | 70 | 248 | 382 | 0 | 49.8% |
-| v83 | 435 | 0 | 0 | 353 | 228 | 0 | 55.2% |
-| v84 | 409 | 0 | 0 | 359 | 248 | 0 | 53.3% |
-| v87 | 443 | 0 | 0 | 382 | 191 | 0 | 53.7% |
-| v92 | 9 | 0 | 152 | 713 | 142 | 0 | 1.0% |
-| v95 | 468 | 0 | 0 | 441 | 107 | 0 | 51.5% |
-| JMS185 | 418 | 0 | 0 | 400 | 198 | 0 | 51.1% |
+| v48 | 200 | 0 | 19 | 195 | 606 | 0 | 48.3% |
+| v61 | 262 | 0 | 58 | 236 | 464 | 0 | 47.1% |
+| v72 | 276 | 0 | 71 | 252 | 421 | 0 | 46.1% |
+| v79 | 320 | 0 | 70 | 248 | 382 | 0 | 50.2% |
+| v83 | 439 | 0 | 0 | 353 | 228 | 0 | 55.4% |
+| v84 | 413 | 0 | 0 | 359 | 248 | 0 | 53.5% |
+| v87 | 447 | 0 | 0 | 382 | 191 | 0 | 53.9% |
+| v92 | 13 | 0 | 152 | 713 | 142 | 0 | 1.5% |
+| v95 | 472 | 0 | 0 | 441 | 107 | 0 | 51.7% |
+| JMS185 | 421 | 0 | 0 | 400 | 199 | 0 | 51.3% |
 
 ## Conflicts
 

@@ -22,7 +22,7 @@ type Reserves struct {
 }
 
 type Processor interface {
-	RequestReserve(transactionId uuid.UUID, characterId uint32, it inventory.Type, reserves []Reserves) error
+	RequestReserve(transactionId uuid.UUID, characterId uint32, it inventory.Type, expiry time.Duration, reserves []Reserves) error
 	ConsumeItem(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error
 	DestroyItem(characterId uint32, inventoryType inventory.Type, slot int16) error
 	CancelItemReservation(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error
@@ -44,8 +44,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 var _ Processor = (*ProcessorImpl)(nil)
 
-func (p *ProcessorImpl) RequestReserve(transactionId uuid.UUID, characterId uint32, it inventory.Type, reserves []Reserves) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(requestReserveCommandProvider(transactionId, characterId, it, reserves))
+func (p *ProcessorImpl) RequestReserve(transactionId uuid.UUID, characterId uint32, it inventory.Type, expiry time.Duration, reserves []Reserves) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(requestReserveCommandProvider(transactionId, characterId, it, expiry, reserves))
 }
 
 func Consume(f func(l logrus.FieldLogger) func(ctx context.Context) error) message.Handler[compartment.StatusEvent[compartment.ReservedEventBody]] {

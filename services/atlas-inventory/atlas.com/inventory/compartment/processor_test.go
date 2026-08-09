@@ -431,7 +431,7 @@ func TestConsumeRechargeablePreservesRow(t *testing.T) {
 			}
 
 			txId := uuid.New()
-			if err := cp.RequestReserve(mb)(txId, tc.characterId, inventory.TypeValueUse, []compartment.ReservationRequest{{Slot: slot, ItemId: tc.templateId, Quantity: 1}}); err != nil {
+			if err := cp.RequestReserve(mb)(txId, tc.characterId, inventory.TypeValueUse, 30*time.Second, []compartment.ReservationRequest{{Slot: slot, ItemId: tc.templateId, Quantity: 1}}); err != nil {
 				t.Fatalf("Failed to reserve: %v", err)
 			}
 			if err := cp.ConsumeAsset(mb)(txId, tc.characterId, inventory.TypeValueUse, slot); err != nil {
@@ -489,7 +489,7 @@ func TestConsumeNonRechargeableDeletes(t *testing.T) {
 
 	txId := uuid.New()
 	slot := int16(1)
-	if err := cp.RequestReserve(mb)(txId, characterId, inventory.TypeValueUse, []compartment.ReservationRequest{{Slot: slot, ItemId: 2000000, Quantity: 1}}); err != nil {
+	if err := cp.RequestReserve(mb)(txId, characterId, inventory.TypeValueUse, 30*time.Second, []compartment.ReservationRequest{{Slot: slot, ItemId: 2000000, Quantity: 1}}); err != nil {
 		t.Fatalf("Failed to reserve: %v", err)
 	}
 	if err := cp.ConsumeAsset(mb)(txId, characterId, inventory.TypeValueUse, slot); err != nil {
@@ -611,7 +611,7 @@ func TestDropRechargeableWithZeroQuantity(t *testing.T) {
 			}
 
 			consumeTx := uuid.New()
-			if err := cp.RequestReserve(mb)(consumeTx, tc.characterId, inventory.TypeValueUse, []compartment.ReservationRequest{{Slot: slot, ItemId: tc.templateId, Quantity: 1}}); err != nil {
+			if err := cp.RequestReserve(mb)(consumeTx, tc.characterId, inventory.TypeValueUse, 30*time.Second, []compartment.ReservationRequest{{Slot: slot, ItemId: tc.templateId, Quantity: 1}}); err != nil {
 				t.Fatalf("Failed to reserve: %v", err)
 			}
 			if err := cp.ConsumeAsset(mb)(consumeTx, tc.characterId, inventory.TypeValueUse, slot); err != nil {
@@ -1384,6 +1384,95 @@ func TestReleaseCommandFailedRoutesDirect(t *testing.T) {
 		}
 		if ev.Type == compartmentMsg.StatusEventTypeError && ev.Body.ErrorCode == compartmentMsg.ReleaseCommandFailed {
 			t.Fatalf("RELEASE_COMMAND_FAILED must not be enqueued in the outbox-bound buffer; it must go via the direct producer path (D7)")
+		}
+	}
+}
+
+// TestRequestReserveHonoursExpiry pins task-205 design §5.3: the reservation
+// TTL is caller-supplied, not the hard-coded 30s drop lifetime. A trade room
+// holds reservations for the whole trade window (default 300s) and refreshes
+// them on a ticker.
+func TestRequestReserveHonoursExpiry(t *testing.T) {
+	characterId := uint32(501)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	dcpi := &dcp.ProcessorImpl{}
+	dcpi.GetByIdFn = func(itemId uint32) (consumable.Model, error) {
+		return consumable.Extract(consumable.RestModel{SlotMax: 100})
+	}
+
+	ap := asset.NewProcessor(l, ctx, db).WithConsumableProcessor(dcpi)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	mb := message.NewBuffer()
+	if _, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 40); err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+	slot := int16(1)
+	if err := cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2000000, 100, time.Time{}, 0, 0, 0, false); err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+
+	if err := cp.RequestReserveAndEmit(uuid.New(), characterId, inventory.TypeValueUse, 300*time.Second, []compartment.ReservationRequest{
+		{Slot: slot, ItemId: 2000000, Quantity: 5},
+	}); err != nil {
+		t.Fatalf("reserve: %v", err)
+	}
+
+	res, ok := compartment.GetReservationRegistry().GetReservation(te, characterId, inventory.TypeValueUse, slot)
+	if !ok {
+		t.Fatal("expected a live reservation")
+	}
+	if remaining := time.Until(res.Expiry()); remaining <= 60*time.Second {
+		t.Errorf("expiry: got %v remaining, want > 60s (a 300s TTL was requested)", remaining)
+	}
+}
+
+// TestRequestReserveProcessesEveryRequest pins that a multi-item request
+// reserves EVERY item, not just the first. The pre-task-205 loop returned
+// mb.Put(...) on its first iteration, silently dropping every request after
+// the first.
+func TestRequestReserveProcessesEveryRequest(t *testing.T) {
+	characterId := uint32(502)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	dcpi := &dcp.ProcessorImpl{}
+	dcpi.GetByIdFn = func(itemId uint32) (consumable.Model, error) {
+		return consumable.Extract(consumable.RestModel{SlotMax: 100})
+	}
+
+	ap := asset.NewProcessor(l, ctx, db).WithConsumableProcessor(dcpi)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	mb := message.NewBuffer()
+	if _, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 40); err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+	if err := cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2000000, 5, time.Time{}, 0, 0, 0, false); err != nil {
+		t.Fatalf("Failed to create asset 1: %v", err)
+	}
+	if err := cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2000001, 3, time.Time{}, 0, 0, 0, false); err != nil {
+		t.Fatalf("Failed to create asset 2: %v", err)
+	}
+
+	if err := cp.RequestReserveAndEmit(uuid.New(), characterId, inventory.TypeValueUse, 30*time.Second, []compartment.ReservationRequest{
+		{Slot: 1, ItemId: 2000000, Quantity: 5},
+		{Slot: 2, ItemId: 2000001, Quantity: 3},
+	}); err != nil {
+		t.Fatalf("reserve: %v", err)
+	}
+
+	for _, slot := range []int16{1, 2} {
+		if q := compartment.GetReservationRegistry().GetReservedQuantity(te, characterId, inventory.TypeValueUse, slot); q == 0 {
+			t.Errorf("slot %d: expected a reservation, got 0 reserved", slot)
 		}
 	}
 }

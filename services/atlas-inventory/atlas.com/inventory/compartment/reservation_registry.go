@@ -165,6 +165,19 @@ func (r *ReservationRegistry) SwapReservation(t tenant.Model, characterId uint32
 	}
 }
 
+// GetReservation returns the first live reservation held on the given slot,
+// if any. Used to assert a caller-supplied TTL (task-205) was actually
+// honoured, since GetReservedQuantity below only surfaces quantity.
+func (r *ReservationRegistry) GetReservation(t tenant.Model, characterId uint32, inventoryType inventory.Type, slot int16) (Reservation, bool) {
+	key := reservationKey{characterId: characterId, inventoryType: inventoryType, slot: slot}
+
+	reservations := r.loadReservations(t, key)
+	if len(reservations) == 0 {
+		return Reservation{}, false
+	}
+	return reservations[0], true
+}
+
 func (r *ReservationRegistry) GetReservedQuantity(t tenant.Model, characterId uint32, inventoryType inventory.Type, slot int16) uint32 {
 	key := reservationKey{characterId: characterId, inventoryType: inventoryType, slot: slot}
 

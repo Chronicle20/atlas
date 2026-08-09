@@ -2,6 +2,7 @@ package compartment
 
 import (
 	"atlas-channel/kafka/message/compartment"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -85,7 +86,7 @@ func MergeCommandProvider(characterId uint32, inventoryType inventory.Type) mode
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RequestReserveCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, items []compartment.ItemBody) model.Provider[[]kafka.Message] {
+func RequestReserveCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, items []compartment.ItemBody) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.Command[compartment.RequestReserveCommandBody]{
 		CharacterId:   characterId,
@@ -93,6 +94,7 @@ func RequestReserveCommandProvider(transactionId uuid.UUID, characterId uint32, 
 		Type:          compartment.CommandRequestReserve,
 		Body: compartment.RequestReserveCommandBody{
 			TransactionId: transactionId,
+			ExpirySeconds: uint32(expiry.Seconds()),
 			Items:         items,
 		},
 	}

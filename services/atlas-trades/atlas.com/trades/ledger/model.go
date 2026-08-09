@@ -125,6 +125,12 @@ func (m Model) SettledAt() time.Time { return m.settledAt }
 
 // Sides returns a copy of the two sides, so a caller cannot write through the
 // returned slice into the entry's state.
+//
+// ORDERING: sides read back from the ledger are ordered by character id, and
+// items within a side by item id. That is a determinism guarantee, NOT a role
+// guarantee — the ledger has no column recording which side owned the room, so
+// Sides()[0] is the lower character id and says nothing about who initiated the
+// trade. Match on CharacterId, never on position.
 func (m Model) Sides() []SideModel {
 	if m.sides == nil {
 		return nil

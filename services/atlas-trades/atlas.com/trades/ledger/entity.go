@@ -21,6 +21,15 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
+// The ledger's three table names. They are constants rather than string
+// literals inside each TableName() because provider.go's EXISTS subquery
+// names two of them in raw SQL, and a rename that missed one would compile.
+const (
+	entryTable = "trade_ledger_entries"
+	sideTable  = "trade_ledger_sides"
+	itemTable  = "trade_ledger_items"
+)
+
 // Entry is one settled trade. The unique (tenant_id, transaction_id) index is
 // the write-side idempotency guard for FR-5.7: a duplicate settle for the same
 // settlement saga cannot produce a second row.
@@ -40,16 +49,21 @@ type Entry struct {
 	Sides         []Side     `gorm:"foreignKey:EntryId"`
 }
 
-func (Entry) TableName() string { return "trade_ledger_entries" }
+func (Entry) TableName() string { return entryTable }
 
 // Side is one participant's contribution to a settled trade. Exactly two rows
 // per Entry. CharacterName is denormalised because names change and the ledger
 // is a point-in-time record (PRD §6).
+//
+// tenant_id and character_id share one composite index rather than having one
+// each: the only query that reaches this table by character (the FR-7.2 GM
+// lookup) always filters on both, and a tenant_id-leading composite serves the
+// tenant-only reads too.
 type Side struct {
 	Id            uuid.UUID    `gorm:"type:uuid;primaryKey"`
-	TenantId      uuid.UUID    `gorm:"type:uuid;not null;index"`
+	TenantId      uuid.UUID    `gorm:"type:uuid;not null;index:idx_trade_side_tenant_char,priority:1"`
 	EntryId       uuid.UUID    `gorm:"type:uuid;not null;index"`
-	CharacterId   character.Id `gorm:"not null;index"`
+	CharacterId   character.Id `gorm:"not null;index:idx_trade_side_tenant_char,priority:2"`
 	CharacterName string       `gorm:"not null"`
 	MesoStaged    uint32       `gorm:"not null"`
 	MesoTax       uint32       `gorm:"not null"`
@@ -57,7 +71,7 @@ type Side struct {
 	Items         []ItemRow    `gorm:"foreignKey:SideId"`
 }
 
-func (Side) TableName() string { return "trade_ledger_sides" }
+func (Side) TableName() string { return sideTable }
 
 // ItemRow is one asset a side gave. AssetId and ReferenceId are nullable
 // because only identity-bearing assets (equips, pets, cash) carry them.
@@ -71,7 +85,7 @@ type ItemRow struct {
 	ReferenceId *uint32
 }
 
-func (ItemRow) TableName() string { return "trade_ledger_items" }
+func (ItemRow) TableName() string { return itemTable }
 
 // Migration creates the three ledger tables. Fresh tables, no backfill.
 func Migration(db *gorm.DB) error {

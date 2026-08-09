@@ -78,9 +78,7 @@ func TestByCharacterIgnoresUninvolvedCharacters(t *testing.T) {
 // TestByCharacterDoesNotLeakOtherTenants is the cross-tenant guard: two tenants
 // each record a trade for the SAME character id, and each tenant's lookup must
 // return only its own entry. Dropping the tenant_id filter from the entry load
-// returns two entries here. (The side scan's own tenant_id filter is defence in
-// depth — the entry load's filter alone already excludes the other tenant's
-// rows — so this test does not pin it.)
+// returns two entries here.
 func TestByCharacterDoesNotLeakOtherTenants(t *testing.T) {
 	db := testDb(t)
 	tenantA := testTenantId(t)
@@ -107,6 +105,135 @@ func TestByCharacterDoesNotLeakOtherTenants(t *testing.T) {
 	}
 	if len(found) != 1 || found[0].Id() != theirs.Id() {
 		t.Fatalf("tenant B lookup: got %v, want exactly [%s]", found, theirs.Id())
+	}
+}
+
+// TestByCharacterExistsSubqueryIsTenantScoped pins the tenant_id filter INSIDE
+// the EXISTS subquery, which the outer query's own filter cannot substitute
+// for. A foreign-tenant side row pointing at this tenant's entry is planted
+// directly — the administrator would never write one, but a bug, a restore or
+// a future cross-tenant feature could — and the lookup must not match on it.
+func TestByCharacterExistsSubqueryIsTenantScoped(t *testing.T) {
+	db := testDb(t)
+	tenantA := testTenantId(t)
+	tenantB := uuid.New()
+	mine := recordTrade(t, db, tenantA, time.Now(), 100, 200)
+
+	// Tenant B's side row, attached to tenant A's entry, for a character that
+	// appears nowhere in tenant A's own sides.
+	if err := db.Create(&Side{
+		Id:            uuid.New(),
+		TenantId:      tenantB,
+		EntryId:       mine.Id(),
+		CharacterId:   999,
+		CharacterName: "Planted",
+	}).Error; err != nil {
+		t.Fatalf("plant foreign-tenant side: %v", err)
+	}
+
+	from, to := alwaysWindow()
+	found, err := byCharacter(db, tenantA)(999, from, to)
+	if err != nil {
+		t.Fatalf("lookup: %v", err)
+	}
+	if len(found) != 0 {
+		t.Errorf("character 999 belongs to tenant B only: got %d entries, want 0", len(found))
+	}
+}
+
+// TestPreloadsExcludeForeignTenantChildRows pins the tenant_id filter on both
+// preloads. Child rows are fetched by foreign key in their own SELECT, which
+// the parent query's filter never reaches, so a foreign-tenant side or item
+// pointing at this tenant's parent would otherwise be served inside a local
+// entry — an unrelated tenant's character name and item on a GM's screen.
+func TestPreloadsExcludeForeignTenantChildRows(t *testing.T) {
+	db := testDb(t)
+	tenantA := testTenantId(t)
+	tenantB := uuid.New()
+	mine := recordTrade(t, db, tenantA, time.Now(), 100, 200)
+
+	before, err := byId(db, tenantA)(mine.Id())
+	if err != nil {
+		t.Fatalf("read before planting: %v", err)
+	}
+	if len(before.Sides()) != 2 || len(before.Sides()[0].Items()) != 1 {
+		t.Fatalf("baseline: got %d sides and %d items on the first, want 2 and 1",
+			len(before.Sides()), len(before.Sides()[0].Items()))
+	}
+
+	plantedSideId := uuid.New()
+	if err := db.Create(&Side{
+		Id:            plantedSideId,
+		TenantId:      tenantB,
+		EntryId:       mine.Id(),
+		CharacterId:   999,
+		CharacterName: "Planted",
+	}).Error; err != nil {
+		t.Fatalf("plant foreign-tenant side: %v", err)
+	}
+	// An item of tenant B's hanging off tenant A's own side (side ids are
+	// unique, so this reaches the Sides.Items preload rather than the dead
+	// planted side above).
+	if err := db.Create(&ItemRow{
+		Id:       uuid.New(),
+		TenantId: tenantB,
+		SideId:   before.Sides()[0].Id(),
+		ItemId:   4000000,
+		Quantity: 1,
+	}).Error; err != nil {
+		t.Fatalf("plant foreign-tenant item: %v", err)
+	}
+
+	after, err := byId(db, tenantA)(mine.Id())
+	if err != nil {
+		t.Fatalf("read after planting: %v", err)
+	}
+	if len(after.Sides()) != 2 {
+		t.Errorf("sides: got %d, want 2 (tenant B's side must not be preloaded)", len(after.Sides()))
+	}
+	for _, s := range after.Sides() {
+		if s.CharacterName() == "Planted" {
+			t.Errorf("tenant B's side leaked into tenant A's entry")
+		}
+		for _, i := range s.Items() {
+			if i.ItemId() == 4000000 {
+				t.Errorf("tenant B's item leaked onto tenant A's side %d", s.CharacterId())
+			}
+		}
+	}
+}
+
+// TestSidesAreOrderedDeterministically pins the preload's ORDER BY. Without it
+// the row order is whatever the storage engine returns, and Task 19 or the REST
+// layer indexing Sides()[0] would be reading a coin flip.
+func TestSidesAreOrderedDeterministically(t *testing.T) {
+	db := testDb(t)
+	tenantId := testTenantId(t)
+
+	// Added high-id-first, so an unordered preload has an insertion order to
+	// disagree with.
+	entry := NewBuilder(uuid.New(), field.NewBuilder(1, 2, 100000000).Build(), miniroom.Trade).
+		AddSide(900, "High", 0, 0, 0, []Item{NewItem(2000000, 1, nil, nil), NewItem(1000000, 1, nil, nil)}).
+		AddSide(100, "Low", 0, 0, 0, nil).
+		Build()
+	stored, err := create(db, tenantId)(entry)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+
+	readBack, err := byId(db, tenantId)(stored.Id())
+	if err != nil {
+		t.Fatalf("read back: %v", err)
+	}
+	if got := []character.Id{readBack.Sides()[0].CharacterId(), readBack.Sides()[1].CharacterId()}; got[0] != 100 || got[1] != 900 {
+		t.Errorf("side order: got %v, want [100 900] (ascending character id)", got)
+	}
+	high, ok := sideFor(readBack, 900)
+	if !ok {
+		t.Fatalf("lost the high side")
+	}
+	if got := []uint32{uint32(high.Items()[0].ItemId()), uint32(high.Items()[1].ItemId())}; got[0] != 1000000 || got[1] != 2000000 {
+		t.Errorf("item order: got %v, want [1000000 2000000] (ascending item id)", got)
 	}
 }
 

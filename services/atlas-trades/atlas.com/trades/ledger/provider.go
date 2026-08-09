@@ -12,12 +12,20 @@ import (
 
 // withSides adds the tenant-scoped preloads for an Entry query. A preload
 // issues its own SELECT, which the parent query's tenant filter does not reach,
-// so both repeat it. The foreign keys already confine a child to its own
-// tenant's parent, making this defence in depth rather than the only guard.
+// so both repeat it — a row written with a foreign tenant_id but a local
+// entry_id/side_id would otherwise be handed back inside a local entry.
+//
+// Both preloads are explicitly ordered. Without an ORDER BY the row order is
+// whatever the storage engine returns, and Model.Sides()[0] would be a
+// coin flip; see the ordering note on Model.Sides.
 func withSides(db *gorm.DB, tenantId uuid.UUID) *gorm.DB {
 	return db.
-		Preload("Sides", "tenant_id = ?", tenantId).
-		Preload("Sides.Items", "tenant_id = ?", tenantId)
+		Preload("Sides", func(tx *gorm.DB) *gorm.DB {
+			return tx.Where("tenant_id = ?", tenantId).Order("character_id ASC")
+		}).
+		Preload("Sides.Items", func(tx *gorm.DB) *gorm.DB {
+			return tx.Where("tenant_id = ?", tenantId).Order("item_id ASC, id ASC")
+		})
 }
 
 // entryByIdProvider yields the entry with the given id in the given tenant.
@@ -47,25 +55,25 @@ func entryByTransactionIdProvider(db *gorm.DB, tenantId uuid.UUID, transactionId
 	return model.FixedProvider(e)
 }
 
-// entriesByCharacterProvider yields every entry in [from, to] on which the
-// character appears as either side (FR-7.2), newest first. The side lookup is
-// a separate tenant-scoped query rather than a join so that neither half can
-// silently lose its tenant filter.
-func entriesByCharacterProvider(db *gorm.DB, tenantId uuid.UUID, characterId character.Id, from time.Time, to time.Time) model.Provider[[]Entry] {
-	var entryIds []uuid.UUID
-	err := db.Model(&Side{}).
-		Where("tenant_id = ? AND character_id = ?", tenantId, characterId).
-		Pluck("entry_id", &entryIds).Error
-	if err != nil {
-		return model.ErrorProvider[[]Entry](err)
-	}
-	if len(entryIds) == 0 {
-		return model.FixedProvider([]Entry{})
-	}
+// sideExistsForCharacter is the correlated EXISTS that matches an entry on
+// EITHER of its sides (FR-7.2). It carries its own tenant_id filter: the outer
+// query's filter does not reach inside a subquery, and without it a character
+// id that another tenant also uses would match this tenant's entries.
+//
+// EXISTS rather than collecting side ids and feeding them back as `id IN (…)`:
+// that shape grows one bind parameter per matched trade and a busy character
+// over a wide range would blow PostgreSQL's 65535-parameter limit.
+var sideExistsForCharacter = "EXISTS (SELECT 1 FROM " + sideTable + " WHERE " +
+	sideTable + ".entry_id = " + entryTable + ".id AND " +
+	sideTable + ".tenant_id = ? AND " + sideTable + ".character_id = ?)"
 
+// entriesByCharacterProvider yields every entry in [from, to] on which the
+// character appears as either side (FR-7.2), newest first.
+func entriesByCharacterProvider(db *gorm.DB, tenantId uuid.UUID, characterId character.Id, from time.Time, to time.Time) model.Provider[[]Entry] {
 	var es []Entry
-	err = withSides(db, tenantId).
-		Where("tenant_id = ? AND id IN ? AND settled_at >= ? AND settled_at <= ?", tenantId, entryIds, from, to).
+	err := withSides(db, tenantId).
+		Where(entryTable+".tenant_id = ? AND "+entryTable+".settled_at >= ? AND "+entryTable+".settled_at <= ?", tenantId, from, to).
+		Where(sideExistsForCharacter, tenantId, characterId).
 		Order("settled_at DESC").
 		Find(&es).Error
 	if err != nil {

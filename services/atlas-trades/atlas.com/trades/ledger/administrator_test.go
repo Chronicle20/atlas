@@ -13,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
@@ -273,12 +274,7 @@ func TestCreateIsAtomicAcrossTheThreeTables(t *testing.T) {
 	db := testDb(t)
 	tenantId := testTenantId(t)
 
-	if err := db.Exec(`
-		CREATE TRIGGER fail_item_insert BEFORE INSERT ON trade_ledger_items
-		BEGIN SELECT RAISE(ABORT, 'forced failure for atomicity test'); END;
-	`).Error; err != nil {
-		t.Fatalf("install trigger: %v", err)
-	}
+	databasetest.FailWritesOn(t, db, itemTable, databasetest.WriteCreate)
 
 	entry := NewBuilder(uuid.New(), testField(t), miniroom.Trade).
 		AddSide(100, "Alice", 0, 0, 0, []Item{NewItem(2000000, 1, nil, nil)}).
@@ -297,6 +293,106 @@ func TestCreateIsAtomicAcrossTheThreeTables(t *testing.T) {
 	}
 	if sides != 0 {
 		t.Errorf("side rows after rollback: got %d, want 0", sides)
+	}
+}
+
+// TestCreateDuplicateDoesNotAttemptAnInsert pins the in-transaction pre-read
+// itself, not just its observable result. Writes to trade_ledger_entries are
+// made to fail after the first create, so the second create can only succeed by
+// short-circuiting on the pre-read before it reaches tx.Create. Dropping the
+// pre-read and leaning on the unique index instead passes every other
+// idempotency test — on a single-connection database the index violation is
+// caught and the row re-read — but fails here.
+func TestCreateDuplicateDoesNotAttemptAnInsert(t *testing.T) {
+	db := testDb(t)
+	tenantId := testTenantId(t)
+	txId := uuid.New()
+
+	build := func() Model {
+		return NewBuilder(txId, testField(t), miniroom.Trade).
+			AddSide(100, "Alice", 0, 0, 0, nil).
+			AddSide(200, "Bob", 0, 0, 0, nil).
+			Build()
+	}
+
+	first, err := create(db, tenantId)(build())
+	if err != nil {
+		t.Fatalf("first create: %v", err)
+	}
+
+	databasetest.FailWritesOn(t, db, entryTable, databasetest.WriteCreate)
+
+	second, err := create(db, tenantId)(build())
+	if err != nil {
+		t.Fatalf("duplicate create must resolve without inserting, got: %v", err)
+	}
+	if second.Id() != first.Id() {
+		t.Errorf("duplicate create: got entry %s, want the stored %s", second.Id(), first.Id())
+	}
+}
+
+// TestCreateIsIdempotentWithinOneCallerTransaction pins the production shape
+// from create's doc comment: a settlement handler records the trade in its OWN
+// transaction, alongside its outbox rows. The retry then has to be caught by
+// the pre-read against rows the enclosing transaction has not committed yet.
+func TestCreateIsIdempotentWithinOneCallerTransaction(t *testing.T) {
+	db := testDb(t)
+	tenantId := testTenantId(t)
+	txId := uuid.New()
+
+	build := func() Model {
+		return NewBuilder(txId, testField(t), miniroom.Trade).
+			AddSide(100, "Alice", 0, 0, 0, nil).
+			AddSide(200, "Bob", 0, 0, 0, nil).
+			Build()
+	}
+
+	var first, second Model
+	err := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+		var cerr error
+		if first, cerr = create(tx, tenantId)(build()); cerr != nil {
+			return cerr
+		}
+		second, cerr = create(tx, tenantId)(build())
+		return cerr
+	})
+	if err != nil {
+		t.Fatalf("two creates in one caller transaction: %v", err)
+	}
+	if second.Id() != first.Id() {
+		t.Errorf("second create: got entry %s, want the first's %s", second.Id(), first.Id())
+	}
+	if got := countEntries(t, db, tenantId); got != 1 {
+		t.Errorf("entry count: got %d, want 1", got)
+	}
+}
+
+// TestCreateRollsBackWithTheCallersTransaction pins the other half of joining
+// the caller's transaction: when the settlement handler's transaction fails
+// AFTER the ledger write, the ledger row must go with it. A create that opened
+// its own transaction would have committed the row already, leaving a ledger
+// entry for a settlement that never happened.
+func TestCreateRollsBackWithTheCallersTransaction(t *testing.T) {
+	db := testDb(t)
+	tenantId := testTenantId(t)
+	sentinel := errors.New("caller failed after recording the trade")
+
+	entry := NewBuilder(uuid.New(), testField(t), miniroom.Trade).
+		AddSide(100, "Alice", 0, 0, 0, []Item{NewItem(2000000, 1, nil, nil)}).
+		AddSide(200, "Bob", 0, 0, 0, nil).
+		Build()
+
+	err := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+		if _, cerr := create(tx, tenantId)(entry); cerr != nil {
+			return cerr
+		}
+		return sentinel
+	})
+	if !errors.Is(err, sentinel) {
+		t.Fatalf("transaction error: got %v, want the caller's sentinel", err)
+	}
+	if got := countEntries(t, db, tenantId); got != 0 {
+		t.Errorf("entry rows after the caller rolled back: got %d, want 0", got)
 	}
 }
 

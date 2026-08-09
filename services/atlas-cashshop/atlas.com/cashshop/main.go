@@ -20,6 +20,7 @@ import (
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
@@ -58,6 +59,11 @@ func main() {
 	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, coupon.Migration, batch.Migration, redemption.Migration, outboxlib.Migration))
+
+	// The coupon redemption rate limiter counts failed attempts per account in
+	// Redis. It fails open, so a Redis outage degrades brute-force braking
+	// rather than blocking redemptions.
+	coupon.InitLimiter(redis.Connect(l))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.

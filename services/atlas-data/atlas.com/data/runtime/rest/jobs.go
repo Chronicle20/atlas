@@ -302,6 +302,16 @@ func renderJob(template *batchv1.JobTemplateSpec, namespace, scope, region strin
 	if v := os.Getenv("DB_NAME"); v != "" {
 		envs = append(envs, corev1.EnvVar{Name: "DB_NAME", Value: v})
 	}
+	// Inherit ATLAS_ENV for the same reason, and with more consequence:
+	// libs/atlas-redis derives its key prefix from it, so a Job pod without it
+	// namespaces every write as `atlas:...` while this pod reads
+	// `<env>:atlas:...`. The heartbeat then never refreshes (the Watchdog sees
+	// a Job frozen at its creation timestamp) and the run record never leaves
+	// all-pending, because both writers and the reader are addressing
+	// different keys in the same Redis.
+	if v := os.Getenv("ATLAS_ENV"); v != "" {
+		envs = append(envs, corev1.EnvVar{Name: "ATLAS_ENV", Value: v})
+	}
 
 	for i := range spec.Template.Spec.Containers {
 		spec.Template.Spec.Containers[i].Env = append(spec.Template.Spec.Containers[i].Env, envs...)

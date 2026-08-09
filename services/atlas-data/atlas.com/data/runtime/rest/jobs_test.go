@@ -212,3 +212,37 @@ func TestJobCreatorCreateInitialisesRunRecord(t *testing.T) {
 		t.Fatalf("run record TTL = %v, want > 0", ttl)
 	}
 }
+
+// The ingest pod and the REST pod must namespace Redis identically or every
+// progress/heartbeat write lands under a key nobody reads. ATLAS_ENV is what
+// libs/atlas-redis derives that namespace from, and it reaches the REST pod
+// through a Deployment env patch that Kustomize cannot apply to the
+// ConfigMap-embedded Job template — so, exactly like DB_NAME, it has to be
+// propagated here. PR-1266 evidence: the ingest pod wrote
+// `atlas:data-ingest:shared:GMS:48.1:run` while the REST pod read
+// `cc04:atlas:data-ingest:shared:GMS:48.1:run`, leaving every worker pending
+// in the UI for the whole run and freezing the Watchdog heartbeat at its
+// Job-creation value.
+func TestRenderJobPropagatesAtlasEnv(t *testing.T) {
+	t.Setenv("ATLAS_ENV", "cc04")
+	job := renderJob(testTemplate(), "ns", "shared", "GMS", 83, 1, "", "", "", "run-abc")
+	var found string
+	for _, e := range job.Spec.Template.Spec.Containers[0].Env {
+		if e.Name == "ATLAS_ENV" {
+			found = e.Value
+		}
+	}
+	if found != "cc04" {
+		t.Fatalf("ATLAS_ENV = %q, want cc04", found)
+	}
+}
+
+func TestRenderJobOmitsAtlasEnvWhenUnset(t *testing.T) {
+	t.Setenv("ATLAS_ENV", "")
+	job := renderJob(testTemplate(), "ns", "shared", "GMS", 83, 1, "", "", "", "run-abc")
+	for _, e := range job.Spec.Template.Spec.Containers[0].Env {
+		if e.Name == "ATLAS_ENV" {
+			t.Fatalf("did not expect ATLAS_ENV env when unset (main env uses the bare prefix)")
+		}
+	}
+}

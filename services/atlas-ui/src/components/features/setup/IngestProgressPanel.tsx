@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { IngestRun, IngestRunWorker } from "@/services/api/seed.service";
 import {
   formatDuration,
@@ -34,6 +35,30 @@ function workerDuration(w: IngestRunWorker, now: number): string {
 }
 
 /**
+ * A once-per-second clock, live only while `active`.
+ *
+ * The panel cannot read `Date.now()` at render and rely on the polling hook to
+ * re-render it: React Query's structural sharing returns the identical object
+ * when the fetched record is unchanged, so a run whose state is momentarily
+ * quiet produces no re-render at all and the elapsed readout freezes. Owning
+ * the tick here also keeps it independent of whatever else a host page
+ * happens to be re-rendering.
+ */
+function useNow(active: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    // A terminal run's duration is a fixed fact — no timer behind it.
+    if (!active) return;
+    // Only the interval callback sets state: the first tick lands within a
+    // second of activation, so an initial synchronous resync would buy
+    // nothing and cost a cascading render.
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [active]);
+  return now;
+}
+
+/**
  * Presentational only — it owns no fetching. Both the Setup page (tenant
  * scope) and the Baselines page (shared scope) mount this same component with
  * a different hook, so the two surfaces cannot drift.
@@ -42,6 +67,9 @@ export function IngestProgressPanel({
   run,
   isError,
 }: IngestProgressPanelProps) {
+  const terminal = run ? TERMINAL_PHASES.includes(run.phase) : true;
+  const now = useNow(!!run && !terminal && run.phase !== "none");
+
   if (isError || !run) {
     return (
       <div className="border-b last:border-0 py-3">
@@ -62,14 +90,7 @@ export function IngestProgressPanel({
     );
   }
 
-  // Presentational-only: no internal ticking clock is owned here (the
-  // polling hooks in Task 11 re-render this panel on their own cadence),
-  // so "now" is read once per render as a snapshot for the elapsed/duration
-  // display rather than driven by a timer.
-  // eslint-disable-next-line react-hooks/purity -- deliberate snapshot read, not a stateful clock
-  const now = Date.now();
   const elapsed = ingestElapsedMs(run, now);
-  const terminal = TERMINAL_PHASES.includes(run.phase);
 
   return (
     <div className="border-b last:border-0 py-3" aria-live="polite">

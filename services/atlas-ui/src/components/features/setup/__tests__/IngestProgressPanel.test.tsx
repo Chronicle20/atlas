@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { act, render, screen, within } from "@testing-library/react";
 import { IngestProgressPanel } from "@/components/features/setup/IngestProgressPanel";
 import type { IngestPhase, IngestRun } from "@/services/api/seed.service";
 
@@ -124,5 +124,49 @@ describe("IngestProgressPanel", () => {
   it("degrades to progress unavailable on error", () => {
     render(<IngestProgressPanel isError={true} />);
     expect(screen.getByText(/progress unavailable/i)).toBeInTheDocument();
+  });
+
+  // The elapsed readout must advance on its own. Relying on the polling hook
+  // to re-render it is wrong: React Query's structural sharing hands back the
+  // identical object when the record is unchanged, so a run that sits in one
+  // state (or a page whose other state is quiet) produces no re-render and the
+  // clock freezes — the PR-1266 report.
+  it("advances the elapsed readout while the run is non-terminal, with unchanged props", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      vi.setSystemTime(new Date("2026-08-08T10:00:10Z"));
+      const r = run("running", { startedAt: "2026-08-08T10:00:00Z" });
+      render(<IngestProgressPanel run={r} isError={false} />);
+      expect(screen.getByText(/elapsed 10s/)).toBeInTheDocument();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+      expect(screen.getByText(/elapsed 15s/)).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // The counterpart: once the run is terminal the duration is a fixed fact
+  // (finishedAt − startedAt), so no timer may keep running behind the panel.
+  it("holds the duration steady on a terminal run", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      vi.setSystemTime(new Date("2026-08-08T10:00:10Z"));
+      const r = run("succeeded", {
+        startedAt: "2026-08-08T10:00:00Z",
+        finishedAt: "2026-08-08T10:00:08Z",
+      });
+      render(<IngestProgressPanel run={r} isError={false} />);
+      expect(screen.getByText(/took 8s/)).toBeInTheDocument();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+      expect(screen.getByText(/took 8s/)).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

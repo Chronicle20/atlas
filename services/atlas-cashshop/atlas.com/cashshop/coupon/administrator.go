@@ -66,12 +66,14 @@ func CreateEntity(db *gorm.DB, t tenant.Model, m Model) (Model, error) {
 		Rewards:         m.Rewards(),
 	}
 
-	// Select("*") forces EVERY column into the INSERT. GORM otherwise omits a
-	// zero-valued field whose column carries a `default:` tag and substitutes
-	// the default — which is how a coupon created inactive would come back
-	// active. Entity.Active no longer carries such a tag; this keeps the insert
-	// honest if one is ever added back.
-	if err := db.Select("*").Create(e).Error; err != nil {
+	// What keeps a coupon created inactive from coming back active is the
+	// ABSENCE of a `default:` tag on Entity.Active — nothing here. GORM
+	// substitutes a column default for a zero-valued Go field while it builds
+	// the INSERT, and no call-site option prevents that: Select("*") was
+	// measured against a re-added `default:true` and the row still stored
+	// active=true. Re-adding the tag reintroduces the bug, and
+	// TestCreateEntityRoundTripsAnInactiveCoupon is what fails when someone does.
+	if err := db.Create(e).Error; err != nil {
 		return Model{}, err
 	}
 	return Make(*e)
@@ -128,24 +130,33 @@ var ErrHasRedemptions = errors.New("coupon has redemptions")
 // coupon.Rewards), so importing it back here would be an import cycle.
 const redemptionsTable = "coupon_redemptions"
 
+// deleteEntity removes a coupon, refusing when it has been redeemed.
+//
+// The "has it been redeemed?" test is a NOT EXISTS subquery inside the DELETE
+// itself, not a separate COUNT. Counting first and deleting second is a TOCTOU
+// gap: a redemption inserted between the two statements would be orphaned by a
+// delete that already decided there were none — destroying exactly the audit
+// trail ErrHasRedemptions exists to protect. One statement cannot be raced.
+//
+// RowsAffected == 0 is ambiguous on its own (no such coupon, or redemptions
+// blocked it), so a read-only follow-up disambiguates. That query runs AFTER
+// the destructive statement has already declined to act, so it cannot widen the
+// window — it only decides which error to report.
 func deleteEntity(db *gorm.DB, t tenant.Model, id uuid.UUID) error {
-	var count int64
-	err := db.Table(redemptionsTable).
-		Where("tenant_id = ? AND coupon_id = ?", t.Id(), id).
-		Count(&count).Error
-	if err != nil {
-		return err
-	}
-	if count > 0 {
-		return ErrHasRedemptions
-	}
-
-	res := db.Where("id = ? AND tenant_id = ?", id, t.Id()).Delete(&Entity{})
+	res := db.Where("id = ? AND tenant_id = ?", id, t.Id()).
+		Where("NOT EXISTS (SELECT 1 FROM " + redemptionsTable +
+			" WHERE " + redemptionsTable + ".tenant_id = coupons.tenant_id" +
+			" AND " + redemptionsTable + ".coupon_id = coupons.id)").
+		Delete(&Entity{})
 	if res.Error != nil {
 		return res.Error
 	}
-	if res.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
+	if res.RowsAffected == 1 {
+		return nil
 	}
-	return nil
+
+	if _, err := byIdEntityProvider(t, id)(db)(); err != nil {
+		return err
+	}
+	return ErrHasRedemptions
 }

@@ -265,3 +265,53 @@ func TestProvidersAreTenantScopedAndFilterOnlyWhatIsSet(t *testing.T) {
 		})
 	}
 }
+
+// TestCreateEntityRoundTripsAnInactiveCoupon is the guard named in
+// CreateEntity's comment. GORM substitutes a column default for a zero-valued
+// Go field while it builds the INSERT, so re-adding `default:true` to
+// Entity.Active would silently store every inactive coupon as active. No
+// call-site option prevents that — Select("*") was measured against a re-added
+// tag and the row still came back active — so the ABSENCE of the tag is the
+// whole protection, and this test is what fails if it returns.
+func TestCreateEntityRoundTripsAnInactiveCoupon(t *testing.T) {
+	db, tm := newCouponTestDB(t)
+	id := seedCoupon(t, db, tm, NewBuilder("INACT").SetActive(false).SetRewards(Rewards{NewCurrencyReward(1, 1)}))
+
+	var e Entity
+	require.NoError(t, db.Where("id = ?", id).First(&e).Error)
+	assert.False(t, e.Active,
+		"a coupon created inactive must be STORED inactive; a `default:` tag on Entity.Active would overwrite it")
+}
+
+// TestDeleteEntityRefusalPreservesTheAuditTrail pins the OUTCOME of the refusal:
+// the coupon survives, the redemption row survives, and a coupon with no
+// redemptions still deletes.
+//
+// It does NOT prove the absence of the TOCTOU gap. That property is structural —
+// the predicate is a NOT EXISTS subquery inside the DELETE, so there is no
+// window between a check and a write to interleave — and this harness
+// serializes writers anyway, so no test here could interleave one. Read this as
+// a behaviour guard, not as evidence that a COUNT-then-DELETE would fail it: it
+// would not.
+func TestDeleteEntityRefusalPreservesTheAuditTrail(t *testing.T) {
+	db, tm := newCouponTestDB(t)
+	require.NoError(t, db.AutoMigrate(&redemptionRow{}))
+	redeemed := seedCoupon(t, db, tm, NewBuilder("BLOCKED").SetRewards(Rewards{NewCurrencyReward(1, 1)}))
+	clean := seedCoupon(t, db, tm, NewBuilder("CLEAN").SetRewards(Rewards{NewCurrencyReward(1, 1)}))
+	require.NoError(t, db.Create(&redemptionRow{Id: uuid.New(), TenantId: tm.Id(), CouponId: redeemed}).Error)
+
+	// The redeemed coupon is refused and SURVIVES.
+	assert.ErrorIs(t, deleteEntity(db, tm, redeemed), ErrHasRedemptions)
+	var e Entity
+	assert.NoError(t, db.Where("id = ?", redeemed).First(&e).Error,
+		"a refused delete must leave the coupon and its audit trail intact")
+
+	// The redemption row is still there — the refusal did not cascade.
+	var orphaned int64
+	require.NoError(t, db.Model(&redemptionRow{}).Where("coupon_id = ?", redeemed).Count(&orphaned).Error)
+	assert.Equal(t, int64(1), orphaned)
+
+	// A coupon with no redemptions still deletes in the same one statement.
+	require.NoError(t, deleteEntity(db, tm, clean))
+	assert.ErrorIs(t, db.Where("id = ?", clean).First(&e).Error, gorm.ErrRecordNotFound)
+}

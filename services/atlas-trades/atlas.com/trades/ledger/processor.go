@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -27,6 +28,11 @@ type Processor interface {
 	// GetByCharacterId returns every entry settled in [from, to] on which the
 	// character appears as either side, newest first (FR-7.2).
 	GetByCharacterId(characterId character.Id, from time.Time, to time.Time) ([]Model, error)
+
+	// GetPageByCharacterId returns one page of the same selection, paged in the
+	// database. The REST list read uses this rather than GetByCharacterId so a
+	// busy character's whole history is never materialised to serve one page.
+	GetPageByCharacterId(characterId character.Id, from time.Time, to time.Time, page model.Page) (model.Paged[Model], error)
 }
 
 type ProcessorImpl struct {
@@ -59,4 +65,8 @@ func (p *ProcessorImpl) GetById(id uuid.UUID) (Model, error) {
 
 func (p *ProcessorImpl) GetByCharacterId(characterId character.Id, from time.Time, to time.Time) ([]Model, error) {
 	return byCharacter(p.db.WithContext(p.ctx), p.t.Id())(characterId, from, to)
+}
+
+func (p *ProcessorImpl) GetPageByCharacterId(characterId character.Id, from time.Time, to time.Time, page model.Page) (model.Paged[Model], error) {
+	return pageByCharacter(p.db.WithContext(p.ctx), p.t.Id())(characterId, from, to, page)
 }

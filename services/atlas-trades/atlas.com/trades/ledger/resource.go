@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"sort"
 	"strconv"
 	"time"
 
@@ -26,10 +25,10 @@ const (
 	GetLedgerEntryById = "get_trade_ledger_entry_by_id"
 )
 
-// maxPageSize is PRD §5's page-size cap for the ledger list. The default stays
-// at the repo-wide 50: the ledger is a monotonically growing log
-// (docs/rest-pagination.md), not a game-capped list. A request above the cap is
-// a 400, never a silent clamp.
+// maxPageSize is PRD §5's page[size] cap for the ledger list: a request above
+// it is a 400, never a silent clamp. It is lower than the repo-wide
+// paginate.MaxPageSize (250) because the PRD sets it; the endpoint's DEFAULT is
+// separately paginate.DefaultPageSize, passed at the ParseParams call below.
 const maxPageSize = 100
 
 // The default window when filter[from] / filter[to] are absent: everything ever
@@ -123,24 +122,14 @@ func handleGetLedgerEntries(db *gorm.DB) rest.GetHandler {
 				return
 			}
 
-			entries, err := NewProcessor(d.Logger(), d.Context(), db).GetByCharacterId(filters.characterId, filters.from, filters.to)
+			// Paged in SQL: the ledger grows without bound, so the page must
+			// never be cut out of a fully materialised history.
+			paged, err := NewProcessor(d.Logger(), d.Context(), db).GetPageByCharacterId(filters.characterId, filters.from, filters.to, page)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Reading ledger entries for character [%d].", filters.characterId)
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
-
-			// The provider orders by settled_at DESC, which two trades settled in
-			// the same instant do not distinguish. Breaking the tie on the entry
-			// id makes the order total, so a page boundary cannot drop or repeat
-			// an entry between requests.
-			sort.SliceStable(entries, func(i, j int) bool {
-				if entries[i].SettledAt().Equal(entries[j].SettledAt()) {
-					return entries[i].Id().String() < entries[j].Id().String()
-				}
-				return entries[i].SettledAt().After(entries[j].SettledAt())
-			})
-			paged := paginate.Slice(entries, page)
 
 			res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 			if err != nil {

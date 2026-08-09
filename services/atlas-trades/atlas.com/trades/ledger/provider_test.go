@@ -11,6 +11,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // recordTrade writes one settled trade between two characters and returns it.
@@ -310,5 +311,191 @@ func TestByTransactionIdDoesNotLeakOtherTenants(t *testing.T) {
 	}
 	if _, err := byTransactionId(db, tenantB)(entry.TransactionId()); err != nil {
 		t.Errorf("owning tenant transaction lookup: %v", err)
+	}
+}
+
+// TestPageByCharacterPagesInTheDatabase pins the REST list read's paging: each
+// page holds exactly the requested slice, newest first, and the total counts the
+// whole match rather than the page.
+func TestPageByCharacterPagesInTheDatabase(t *testing.T) {
+	db := testDb(t)
+	tenantId := testTenantId(t)
+	base := time.Date(2026, 8, 9, 12, 0, 0, 0, time.UTC)
+
+	oldest := recordTrade(t, db, tenantId, base.Add(-2*time.Hour), 100, 200)
+	middle := recordTrade(t, db, tenantId, base.Add(-time.Hour), 100, 200)
+	newest := recordTrade(t, db, tenantId, base, 100, 200)
+	from, to := alwaysWindow()
+
+	for number, want := range map[int][]uuid.UUID{
+		1: {newest.Id(), middle.Id()},
+		2: {oldest.Id()},
+		3: {},
+	} {
+		paged, err := pageByCharacter(db, tenantId)(100, from, to, model.Page{Number: number, Size: 2})
+		if err != nil {
+			t.Fatalf("page %d: %v", number, err)
+		}
+		if paged.Total != 3 {
+			t.Errorf("page %d: total got %d, want 3", number, paged.Total)
+		}
+		if len(paged.Items) != len(want) {
+			t.Fatalf("page %d: got %d entries, want %d", number, len(paged.Items), len(want))
+		}
+		for i := range want {
+			if paged.Items[i].Id() != want[i] {
+				t.Errorf("page %d position %d: got %s, want %s", number, i, paged.Items[i].Id(), want[i])
+			}
+		}
+	}
+}
+
+// TestPageByCharacterPreloadsSides pins that SQL paging did not cost the child
+// rows: a paged entry still carries both sides and their items.
+func TestPageByCharacterPreloadsSides(t *testing.T) {
+	db := testDb(t)
+	tenantId := testTenantId(t)
+	recordTrade(t, db, tenantId, time.Now(), 100, 200)
+	from, to := alwaysWindow()
+
+	paged, err := pageByCharacter(db, tenantId)(100, from, to, model.Page{Number: 1, Size: 10})
+	if err != nil {
+		t.Fatalf("page: %v", err)
+	}
+	if len(paged.Items) != 1 {
+		t.Fatalf("entries: got %d, want 1", len(paged.Items))
+	}
+	sides := paged.Items[0].Sides()
+	if len(sides) != 2 {
+		t.Fatalf("sides: got %d, want 2", len(sides))
+	}
+	if len(sides[0].Items()) != 1 {
+		t.Errorf("giver's items: got %d, want 1", len(sides[0].Items()))
+	}
+}
+
+// TestPageByCharacterDoesNotLeakOtherTenants is the cross-tenant guard on the
+// paged read. It runs against a bare db with no tenant in the context, where
+// database.RegisterTenantCallbacks contributes nothing, so only the query's own
+// tenant_id predicates can make it pass.
+//
+// The two predicates are redundant with each other FOR THIS QUERY, and the
+// mutations were run to establish that rather than assumed: dropping only the
+// outer entry filter still passes (the EXISTS subquery's own tenant filter
+// excludes the other tenant's entry), and dropping only the EXISTS filter also
+// still passes (the outer filter does). Dropping BOTH fails here with 2 entries
+// where 1 was wanted. The single-predicate failures are pinned separately by
+// TestPageByCharacterExistsSubqueryIsTenantScoped, which plants a foreign-tenant
+// side on a local entry so the outer filter cannot stand in.
+func TestPageByCharacterDoesNotLeakOtherTenants(t *testing.T) {
+	db := testDb(t)
+	tenantA := testTenantId(t)
+	tenantB := uuid.New()
+	settledAt := time.Now()
+
+	mine := recordTrade(t, db, tenantA, settledAt, 100, 200)
+	theirs := recordTrade(t, db, tenantB, settledAt, 100, 200)
+	from, to := alwaysWindow()
+
+	for name, tc := range map[string]struct {
+		tenantId uuid.UUID
+		want     uuid.UUID
+	}{
+		"tenant A": {tenantA, mine.Id()},
+		"tenant B": {tenantB, theirs.Id()},
+	} {
+		paged, err := pageByCharacter(db, tc.tenantId)(100, from, to, model.Page{Number: 1, Size: 10})
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if paged.Total != 1 || len(paged.Items) != 1 {
+			t.Fatalf("%s: got %d entries (total %d), want exactly 1", name, len(paged.Items), paged.Total)
+		}
+		if paged.Items[0].Id() != tc.want {
+			t.Errorf("%s: got entry %s, want %s", name, paged.Items[0].Id(), tc.want)
+		}
+	}
+}
+
+// TestPageByCharacterExistsSubqueryIsTenantScoped pins the tenant_id filter
+// INSIDE the paged read's EXISTS subquery, which the outer query's own filter
+// cannot substitute for — the paged shape has to carry it just as the unpaged
+// one does.
+func TestPageByCharacterExistsSubqueryIsTenantScoped(t *testing.T) {
+	db := testDb(t)
+	tenantA := testTenantId(t)
+	tenantB := uuid.New()
+	mine := recordTrade(t, db, tenantA, time.Now(), 100, 200)
+
+	if err := db.Create(&Side{
+		Id:            uuid.New(),
+		TenantId:      tenantB,
+		EntryId:       mine.Id(),
+		CharacterId:   999,
+		CharacterName: "Planted",
+	}).Error; err != nil {
+		t.Fatalf("plant foreign-tenant side: %v", err)
+	}
+
+	from, to := alwaysWindow()
+	paged, err := pageByCharacter(db, tenantA)(999, from, to, model.Page{Number: 1, Size: 10})
+	if err != nil {
+		t.Fatalf("page: %v", err)
+	}
+	if paged.Total != 0 || len(paged.Items) != 0 {
+		t.Errorf("character 999 belongs to tenant B only: got %d entries (total %d), want 0", len(paged.Items), paged.Total)
+	}
+}
+
+// TestPageByCharacterPreloadsExcludeForeignTenantChildRows pins the tenant_id
+// filter on the paged read's two preloads. Child rows are fetched in their own
+// SELECT, which neither the outer filter nor the page window reaches.
+func TestPageByCharacterPreloadsExcludeForeignTenantChildRows(t *testing.T) {
+	db := testDb(t)
+	tenantA := testTenantId(t)
+	tenantB := uuid.New()
+	mine := recordTrade(t, db, tenantA, time.Now(), 100, 200)
+
+	if err := db.Create(&Side{
+		Id:            uuid.New(),
+		TenantId:      tenantB,
+		EntryId:       mine.Id(),
+		CharacterId:   999,
+		CharacterName: "Planted",
+	}).Error; err != nil {
+		t.Fatalf("plant foreign-tenant side: %v", err)
+	}
+
+	from, to := alwaysWindow()
+	paged, err := pageByCharacter(db, tenantA)(100, from, to, model.Page{Number: 1, Size: 10})
+	if err != nil {
+		t.Fatalf("page: %v", err)
+	}
+	if len(paged.Items) != 1 {
+		t.Fatalf("entries: got %d, want 1", len(paged.Items))
+	}
+	for _, s := range paged.Items[0].Sides() {
+		if s.CharacterName() == "Planted" {
+			t.Errorf("tenant B's side leaked into tenant A's paged entry")
+		}
+	}
+}
+
+// TestPageByCharacterFiltersOnTimeRange pins that the paged read honours the
+// same inclusive window as the unpaged one.
+func TestPageByCharacterFiltersOnTimeRange(t *testing.T) {
+	db := testDb(t)
+	tenantId := testTenantId(t)
+	base := time.Date(2026, 8, 9, 12, 0, 0, 0, time.UTC)
+
+	recordTrade(t, db, tenantId, base.Add(-2*time.Hour), 100, 200)
+	newer := recordTrade(t, db, tenantId, base, 100, 200)
+
+	paged, err := pageByCharacter(db, tenantId)(100, base.Add(-time.Hour), base.Add(time.Hour), model.Page{Number: 1, Size: 10})
+	if err != nil {
+		t.Fatalf("windowed page: %v", err)
+	}
+	if paged.Total != 1 || len(paged.Items) != 1 || paged.Items[0].Id() != newer.Id() {
+		t.Fatalf("windowed page: got %d entries (total %d), want only %s", len(paged.Items), paged.Total, newer.Id())
 	}
 }

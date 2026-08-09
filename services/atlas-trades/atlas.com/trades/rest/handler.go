@@ -4,47 +4,18 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 type (
-	HandlerDependency   = server.HandlerDependency
-	HandlerContext      = server.HandlerContext
-	GetHandler          = server.GetHandler
-	InputHandler[M any] = server.InputHandler[M]
+	HandlerDependency = server.HandlerDependency
+	HandlerContext    = server.HandlerContext
+	GetHandler        = server.GetHandler
 )
 
-func ParseInput[M any](d *HandlerDependency, c *HandlerContext, next InputHandler[M]) http.HandlerFunc {
-	return server.ParseInput[M](d, c, next)
-}
-
 var RegisterHandler = server.RegisterHandler
-
-func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
-	return server.RegisterInputHandler[M](l)
-}
-
-func ParseChannelId(l logrus.FieldLogger, next func(channel.Id) http.HandlerFunc) http.HandlerFunc {
-	return server.ParseIntId[channel.Id](l, "channelId", next)
-}
-
-func ParseWorldId(l logrus.FieldLogger, next func(world.Id) http.HandlerFunc) http.HandlerFunc {
-	return server.ParseIntId[world.Id](l, "worldId", next)
-}
-
-func ParseMapId(l logrus.FieldLogger, next func(_map.Id) http.HandlerFunc) http.HandlerFunc {
-	return server.ParseIntId[_map.Id](l, "mapId", next)
-}
-
-func ParseCharacterId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
-	return server.ParseIntId[uint32](l, "characterId", next)
-}
 
 func ParseRoomId(l logrus.FieldLogger, next func(uuid.UUID) http.HandlerFunc) http.HandlerFunc {
 	return server.ParseUUIDId(l, "roomId", next)

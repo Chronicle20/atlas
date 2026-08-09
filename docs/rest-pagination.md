@@ -78,6 +78,8 @@ A handful of endpoints don't have a single-PK GORM entity backing the query — 
 - **atlas-families** `/families/tree/{id}` — graph traversal, not a table scan.
 - **atlas-chairs**, **atlas-party-quests** `/party-quests/instances`, **atlas-saga-orchestrator** `/sagas`, **atlas-drop-information** `/continents/drops` — in-memory registry dumps or computed aggregations (e.g. drops grouped by continent from a Go map) with no natural row order.
 
+- **atlas-trades** `GET /trades/rooms` — in-memory trade-room registry, sorted by room id before `paginate.Slice`. It is the one endpoint that passes a size other than the three constants above: PRD §5 (task-205) caps `page[size]` at **100**, so it passes `100` as **both** the default and the max. That third value is deliberate and PRD-mandated — do not "correct" it back to `paginate.MaxPageSize`. Its sibling `GET /trades/ledger` keeps `paginate.DefaultPageSize` as its default with the same 100 cap, and is DB-paged via `database.PagedQuery` (single-PK entity), not sliced in Go.
+
 **Adapter-choice rule:** DB entity with a single prioritized primary key → `database.PagedQuery`. Composite-PK entity, in-memory registry, graph traversal, or any other in-process aggregation → materialize the full (already game/content-bounded) collection, sort it by a field that is unique and stable across calls, then `paginate.Slice`. Never push an in-memory materialize-then-slice adapter onto something GORM could page in SQL — that defeats the point of PS-5.
 
 ## 4. Server-side pattern: `AllProvider(page, decorators...)`

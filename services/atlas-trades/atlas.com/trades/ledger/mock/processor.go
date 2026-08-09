@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // ProcessorMock implements ledger.Processor with per-method function fields.
@@ -17,6 +18,8 @@ type ProcessorMock struct {
 	RecordFunc           func(m ledger.Model) (ledger.Model, error)
 	GetByIdFunc          func(id uuid.UUID) (ledger.Model, error)
 	GetByCharacterIdFunc func(characterId character.Id, from time.Time, to time.Time) ([]ledger.Model, error)
+
+	GetPageByCharacterIdFunc func(characterId character.Id, from time.Time, to time.Time, page model.Page) (model.Paged[ledger.Model], error)
 }
 
 func (m *ProcessorMock) Record(e ledger.Model) (ledger.Model, error) {
@@ -38,6 +41,13 @@ func (m *ProcessorMock) GetByCharacterId(characterId character.Id, from time.Tim
 		return m.GetByCharacterIdFunc(characterId, from, to)
 	}
 	return nil, nil
+}
+
+func (m *ProcessorMock) GetPageByCharacterId(characterId character.Id, from time.Time, to time.Time, page model.Page) (model.Paged[ledger.Model], error) {
+	if m.GetPageByCharacterIdFunc != nil {
+		return m.GetPageByCharacterIdFunc(characterId, from, to, page)
+	}
+	return model.Paged[ledger.Model]{}, nil
 }
 
 var _ ledger.Processor = (*ProcessorMock)(nil)

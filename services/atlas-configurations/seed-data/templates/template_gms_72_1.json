@@ -7286,6 +7286,11 @@
           "hours": 4
         }
       ]
+    },
+    "surprise": {
+      "boxTemplateIds": [
+        5222000
+      ]
     }
   }
 }

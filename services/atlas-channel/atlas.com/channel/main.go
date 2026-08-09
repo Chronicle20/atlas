@@ -623,6 +623,7 @@ func produceWriters() []string {
 		cashcb.CashShopOpenWriter,
 		cashcb.CashShopOperationWriter,
 		cashcb.CashQueryResultWriter,
+		cashcb.CashItemGachaponResultWriter,
 		cashcb.VegaScrollWriter,
 		monstercb.MonsterSpawnWriter,
 		monstercb.MonsterDestroyWriter,
@@ -924,6 +925,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[petsb.PetItemUseHandle] = handler.PetItemUseHandleFunc
 	handlerMap[cashsb.CashShopOperationHandle] = handler.CashShopOperationHandleFunc
 	handlerMap[cashsb.CashShopCheckWalletHandle] = handler.CashShopCheckWalletHandleFunc
+	handlerMap[cashsb.CashItemGachaponHandle] = handler.CashItemGachaponHandleFunc
 	handlerMap[npcsb.NPCShopHandle] = handler.NPCShopHandleFunc
 	handlerMap[invsb.CompartmentMergeRequestHandle] = handler.CompartmentMergeHandleFunc
 	handlerMap[invsb.CompartmentSortRequestHandle] = handler.CompartmentSortHandleFunc

@@ -27,6 +27,7 @@ type Processor interface {
 	RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32) error
 	MoveFromCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte, slot int16) error
 	MoveToCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte) error
+	OpenSurprise(accountId uint32, characterId uint32, cashId int64) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -201,4 +202,14 @@ func (p *ProcessorImpl) MoveToCashInventory(accountId uint32, characterId uint32
 
 	p.l.Debugf("Created transfer saga [%s] for character [%d] transferring cash item [%d] to cash shop.", transactionId.String(), characterId, serialNumber)
 	return nil
+}
+
+// OpenSurprise forwards a Cash Shop Surprise open request. The transaction
+// id is minted here, once per click: atlas-cashshop's openings ledger keys
+// idempotency on it, so a Kafka redelivery replays this id and is rejected
+// while a genuine second click gets a fresh one.
+func (p *ProcessorImpl) OpenSurprise(accountId uint32, characterId uint32, cashId int64) error {
+	transactionId := uuid.New()
+	p.l.Debugf("Character [%d] opening surprise box [%d]. Transaction [%s].", characterId, cashId, transactionId)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(OpenSurpriseCommandProvider(characterId, transactionId, accountId, cashId))
 }

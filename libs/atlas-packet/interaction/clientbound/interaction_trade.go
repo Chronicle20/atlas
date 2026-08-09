@@ -110,7 +110,12 @@ func (m *InteractionTradeAddMeso) Decode(l logrus.FieldLogger, ctx context.Conte
 // counterparty's attestation without its owner ever pressing Trade
 // (design §6.2).
 //
-// packet-audit:fname CTradingRoomDlg::OnTrade
+// The #TradeConfirm suffix separates this bodyless RECEIVE shape from the SEND
+// shape of the SAME function — the serverbound CRC attestation
+// (interaction/serverbound/OperationTransaction), which is keyed on the
+// un-suffixed CTradingRoomDlg::OnTrade.
+//
+// packet-audit:fname CTradingRoomDlg::OnTrade#TradeConfirm
 type InteractionTradeConfirm struct {
 	mode byte
 }

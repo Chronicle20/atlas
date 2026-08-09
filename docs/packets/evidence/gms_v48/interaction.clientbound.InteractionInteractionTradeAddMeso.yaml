@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionTradeAddMeso
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CTradingRoomDlg::OnPutMoney
+    address: "0x5e6ba5"
+    decompile_sha256: 2ed3245d4c9d75bd6bf6b019dfffce0bc9b05345defcbe7b151826861cf3dce5
+verifies:
+    - libs/atlas-packet/interaction/clientbound/interaction_trade_test.go#TestInteractionTradeAddMesoByteOutput

@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionTradePutItem
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CTradingRoomDlg::OnPutItem
+    address: "0x7c1fb7"
+    decompile_sha256: 38351b2b25e371ce2f0aa273c4494f812f2cc558fbfbb9a709fcb90c98f79330
+verifies:
+    - libs/atlas-packet/interaction/clientbound/interaction_trade_test.go#TestInteractionTradePutItemByteOutput

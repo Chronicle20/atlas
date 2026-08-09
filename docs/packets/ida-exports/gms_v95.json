@@ -3,6 +3,68 @@
   "md5": "3c71fd8872d5efbe16183ae8c51f887d",
   "generated_at": "2026-05-13T00:00:00Z",
   "functions": {
+    "CTradingRoomDlg::OnPutItem": {
+      "address": "0x763a60",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (15 TRADE_PUT_ITEM; CTradingRoomDlg::OnPacket @0x7649a0 dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "side (recipient-relative room side; indexes this[side + N] item grid)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "tradeSlot (1..9 within that side's grid)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "asset (GW_ItemSlotBase::Decode; model.Asset substruct)"
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnPutMoney": {
+      "address": "0x763950",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (16 TRADE_ADD_MESO; CTradingRoomDlg::OnPacket @0x7649a0 dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "side (recipient-relative room side)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "amount (ASSIGNED: this[side + N] = Decode4(), not accumulated)"
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnTrade#TradeConfirm": {
+      "address": "0x763f20",
+      "direction": "clientbound",
+      "note": "Clientbound receive arm of CTradingRoomDlg::OnTrade. Same function as the serverbound TRANSACTION sender (interaction/serverbound/InteractionOperationTransaction), which is keyed on the un-suffixed CTradingRoomDlg::OnTrade; the #TradeConfirm suffix separates the two wire shapes (this arm is bodyless; the send carries count + {itemId, crc} pairs).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (17 TRADE_CONFIRM; CTradingRoomDlg::OnPacket @0x7649a0 dispatch byte). The arm reads NO body."
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnMesoLimitRefused": {
+      "address": "0x764160",
+      "direction": "clientbound",
+      "note": "This version's IDB spells the arm CTradingRoomDlg::OnExceedLimit; the v83 MSVC symbol CTradingRoomDlg::OnMesoLimitRefused is held as the stable export key across versions. Same arm, same (bodyless) shape.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (21 TRADE_MESO_LIMIT; CTradingRoomDlg::OnPacket @0x7649a0 dispatch byte). The arm reads NO body."
+        }
+      ]
+    },
     "CTradingRoomDlg::OnTrade": {
       "address": "0x763f20",
       "direction": "serverbound",

@@ -12,6 +12,15 @@
 # `interaction/clientbound/InteractionInteractionUpdateMerchant` carries. The
 # tool-correct ids are used below; they name the same four codecs.
 task: task-205-player-trade
+#
+# COVERAGE TOPOLOGY (controller ruling, Task 6 fix round): the four clientbound
+# arms are keyed on their OWN base fnames (CTradingRoomDlg::OnPutItem /
+# ::OnPutMoney / ::OnTrade#TradeConfirm / ::OnMesoLimitRefused), giving each an
+# independent sub-struct row. The alternative — the mini-game
+# CMiniRoomBaseDlg::OnPacketBase#Arm form — makes baseFName equal the
+# PLAYER_INTERACTION clientbound registry fname, so matrix.Build consumes the
+# arms into that op row, which grades worst-of-all and is ✅ on 8/10 versions
+# today; any unfinished cell would have degraded a currently-green cell.
 ops:
   - interaction/clientbound/InteractionInteractionTradePutItem
   - interaction/clientbound/InteractionInteractionTradeAddMeso

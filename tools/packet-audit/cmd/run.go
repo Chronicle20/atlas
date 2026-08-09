@@ -2392,6 +2392,38 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "MiniRoomBalloon", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CUser::OnMiniRoomBalloon#Remove":
 		return []candidate{{name: "MiniRoomBalloonRemove", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// Trade-room clientbound arms (task-205). CMiniRoomBaseDlg::OnPacketBase's
+	// default case virtual-dispatches into CTradingRoomDlg::OnPacket, whose switch
+	// selects one of four arms. Each arm is its OWN base fname — deliberately NOT
+	// the CMiniRoomBaseDlg::OnPacketBase#Arm form the mini-game arms use: that form
+	// makes baseFName equal the PLAYER_INTERACTION clientbound registry fname, so
+	// matrix.Build CONSUMES the arms into that op row, which grades worst-of-all
+	// candidates and is ✅ on 8/10 versions today. Own fnames give each arm an
+	// independent sub-struct row that cannot degrade an existing cell — the same
+	// shape CEntrustedShopDlg::OnRefresh#UpdateMerchant below already has.
+	//
+	// Per-version dispatcher + arm addresses and mode bytes:
+	// docs/tasks/task-205-player-trade/version-matrix.md §1 (every one read from
+	// that version's own IDB). Bodies are byte-identical on every version that has
+	// the arm; only the mode byte moves, and it is config-resolved (DOM-25).
+	case "CTradingRoomDlg::OnPutItem":
+		return []candidate{{name: "InteractionTradePutItem", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CTradingRoomDlg::OnPutMoney":
+		return []candidate{{name: "InteractionTradeAddMeso", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// The confirm arm and the TRANSACTION sender are the SAME function
+	// (CTradingRoomDlg::OnTrade): it reads no body, then replies with the CRC
+	// attestation. The #TradeConfirm suffix keys the bodyless RECEIVE shape; the
+	// un-suffixed name above keys the SEND shape. baseFName strips the suffix, and
+	// no registry op carries that base fname, so both grade as sub-struct rows.
+	case "CTradingRoomDlg::OnTrade#TradeConfirm":
+		return []candidate{{name: "InteractionTradeConfirm", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// v79/v87/v92/v95 spell this arm CTradingRoomDlg::OnExceedLimit in their own
+	// symbols; the v83 MSVC symbol is held as the stable export key across
+	// versions (each export entry records the local spelling in its note).
+	// Version-ABSENT on jms_v185: its dispatcher @0x845d95 has exactly three cases
+	// (13/14/15) — full switch enumeration, not a failed name search.
+	case "CTradingRoomDlg::OnMesoLimitRefused":
+		return []candidate{{name: "InteractionTradeMesoLimit", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CEntrustedShopDlg::OnRefresh#UpdateMerchant":
 		// UPDATE_MERCHANT (mode 25) is the hired-merchant shop refresh. The
 		// dispatcher's default case virtual-dispatches into the concrete dialog;

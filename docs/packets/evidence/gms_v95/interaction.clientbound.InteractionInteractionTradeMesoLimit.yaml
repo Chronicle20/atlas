@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionTradeMesoLimit
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CTradingRoomDlg::OnMesoLimitRefused
+    address: "0x764160"
+    decompile_sha256: e58a6ace14bc1bfc442bce36888d26f96eccbb51eaa82521e7032cf38cca0084
+verifies:
+    - libs/atlas-packet/interaction/clientbound/interaction_trade_test.go#TestInteractionTradeMesoLimitByteOutput

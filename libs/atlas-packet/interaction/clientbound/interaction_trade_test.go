@@ -66,30 +66,117 @@ func TestInteractionTradePutItemRoundTrip(t *testing.T) {
 	}
 }
 
-// TestInteractionTradePutItemHeaderBytes pins the fixed three-byte header ahead
-// of the asset blob so a field reorder is caught independently of asset codec
-// churn.
-func TestInteractionTradePutItemHeaderBytes(t *testing.T) {
+// tradeArmCase is one op × version cell: the version's tenant context plus the
+// mode byte its CTradingRoomDlg::OnPacket switch dispatches this arm on. Every
+// mode/address below was read from that version's own IDB by decompiling
+// CTradingRoomDlg::OnPacket and following its switch refs — see
+// docs/tasks/task-205-player-trade/version-matrix.md §1.
+type tradeArmCase struct {
+	name   string
+	region string
+	major  uint16
+	mode   byte
+}
+
+// TestInteractionTradePutItemByteOutput pins the mode-15 arm per version.
+//
+// Derived read order (identical on all ten; addresses in the markers):
+//
+//	Decode1 mode        the OnPacket dispatch byte
+//	Decode1 side        recipient-relative room side, indexes this[side + N]
+//	Decode1 tradeSlot   1..9 within that side's grid
+//	GW_ItemSlotBase::Decode   the staged item
+//
+// OPAQUE-LEDGER EXCEPTION (VERIFYING_A_PACKET §5): the trailing bytes are the
+// shared model.Asset codec, which the client reads inside GW_ItemSlotBase::Decode
+// — the audit reports record that row as "opaque type: model.Asset — register
+// boundary", so those bytes cannot cite a per-field decompile line here. They are
+// derived from the Atlas encoder plus model.Asset's own tier-1 verification. The
+// three leading bytes DO each cite a decompile line and are the fields this arm
+// owns; a reorder of them fails independently of asset-codec churn.
+//
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradePutItem version=gms_v48 ida=0x5e6ace
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradePutItem version=gms_v61 ida=0x68b37f
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradePutItem version=gms_v72 ida=0x6fdce7
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradePutItem version=gms_v79 ida=0x7357bf
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradePutItem version=gms_v83 ida=0x7c1fb7
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradePutItem version=gms_v84 ida=0x7e80fd
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradePutItem version=gms_v87 ida=0x81566e
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradePutItem version=gms_v92 ida=0x743f80
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradePutItem version=gms_v95 ida=0x763a60
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradePutItem version=jms_v185 ida=0x845dd0
+func TestInteractionTradePutItemByteOutput(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
-	a := model.NewAsset(true, 0, 2000000, time.Time{}).SetStackableInfo(50, 0, 0)
-	raw := NewInteractionTradePutItem(15, 0, 1, a).Encode(l, pt.CreateContext("GMS", 83, 1))(nil)
-	if got := hex.EncodeToString(raw[:3]); got != "0f0001" {
-		t.Errorf("header bytes: got %s, want 0f0001", got)
+	// side(01) tradeSlot(03) then the model.Asset blob for a stackable
+	// templateId 2000000, quantity 50.
+	const tail = "01030280841e0000ffffffffffffffff320000000000"
+	for _, c := range []tradeArmCase{
+		{"gms_v48", "GMS", 48, 13},
+		{"gms_v61", "GMS", 61, 14},
+		{"gms_v72", "GMS", 72, 14},
+		{"gms_v79", "GMS", 79, 15},
+		{"gms_v83", "GMS", 83, 15},
+		{"gms_v84", "GMS", 84, 15},
+		{"gms_v87", "GMS", 87, 15},
+		{"gms_v92", "GMS", 92, 15},
+		{"gms_v95", "GMS", 95, 15},
+		{"jms_v185", "JMS", 185, 13},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			a := model.NewAsset(true, 0, 2000000, time.Time{}).SetStackableInfo(50, 0, 0)
+			raw := NewInteractionTradePutItem(c.mode, 1, 3, a).Encode(l, pt.CreateContext(c.region, c.major, 1))(nil)
+			want := hex.EncodeToString([]byte{c.mode}) + tail
+			if got := hex.EncodeToString(raw); got != want {
+				t.Errorf("%s bytes: got %s, want %s", c.name, got, want)
+			}
+		})
 	}
 }
 
-// TestInteractionTradeAddMesoBytes pins the mode-16 arm: Decode1 side, Decode4
-// amount (v83 sub_7C208E @0x7c208e). The client ASSIGNS the amount
-// (this[v3+115] = Decode4), so an authoritative re-echo of the last valid
-// amount is how the server corrects an out-of-range stage (design §4.2).
-func TestInteractionTradeAddMesoBytes(t *testing.T) {
+// TestInteractionTradeAddMesoByteOutput pins the mode-16 arm per version.
+//
+// Derived read order (identical on all ten):
+//
+//	Decode1 mode
+//	Decode1 side
+//	Decode4 amount   ASSIGNED (this[side + N] = Decode4()), never accumulated
+//
+// The assignment semantics are why an authoritative re-echo of the last valid
+// amount is how the server corrects an out-of-range stage (design §4.2), and
+// they are the whole meso-rejection path on jms_v185, which has no
+// TRADE_MESO_LIMIT arm.
+//
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeAddMeso version=gms_v48 ida=0x5e6ba5
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeAddMeso version=gms_v61 ida=0x68b456
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeAddMeso version=gms_v72 ida=0x6fddbe
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeAddMeso version=gms_v79 ida=0x735896
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeAddMeso version=gms_v83 ida=0x7c208e
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeAddMeso version=gms_v84 ida=0x7e81d4
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeAddMeso version=gms_v87 ida=0x815745
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeAddMeso version=gms_v92 ida=0x743e70
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeAddMeso version=gms_v95 ida=0x763950
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeAddMeso version=jms_v185 ida=0x845ea7
+func TestInteractionTradeAddMesoByteOutput(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
-	for _, v := range pt.Variants {
-		t.Run(v.Name, func(t *testing.T) {
-			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			raw := NewInteractionTradeAddMeso(16, 1, 1000000).Encode(l, ctx)(nil)
-			if got := hex.EncodeToString(raw); got != "100140420f00" {
-				t.Errorf("bytes: got %s, want 100140420f00", got)
+	// side(01) amount(1000000 = 0x000F4240, little-endian 40420f00)
+	const tail = "0140420f00"
+	for _, c := range []tradeArmCase{
+		{"gms_v48", "GMS", 48, 14},
+		{"gms_v61", "GMS", 61, 15},
+		{"gms_v72", "GMS", 72, 15},
+		{"gms_v79", "GMS", 79, 16},
+		{"gms_v83", "GMS", 83, 16},
+		{"gms_v84", "GMS", 84, 16},
+		{"gms_v87", "GMS", 87, 16},
+		{"gms_v92", "GMS", 92, 16},
+		{"gms_v95", "GMS", 95, 16},
+		{"jms_v185", "JMS", 185, 14},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			raw := NewInteractionTradeAddMeso(c.mode, 1, 1000000).Encode(l, pt.CreateContext(c.region, c.major, 1))(nil)
+			want := hex.EncodeToString([]byte{c.mode}) + tail
+			if got := hex.EncodeToString(raw); got != want {
+				t.Errorf("%s bytes: got %s, want %s", c.name, got, want)
 			}
 		})
 	}
@@ -115,34 +202,94 @@ func TestInteractionTradeAddMesoRoundTrip(t *testing.T) {
 	}
 }
 
-// TestInteractionTradeConfirmIsBodyless pins design §1.2: mode 17
-// (CTradingRoomDlg::OnTrade @0x7c20bc) reads NO body — it sets this[112]=1,
-// redraws, and immediately auto-sends serverbound 0x14 with the client's own
-// CRC list. A stray trailing byte here would be read as the next packet.
-func TestInteractionTradeConfirmIsBodyless(t *testing.T) {
+// TestInteractionTradeConfirmByteOutput pins the confirm arm per version.
+//
+// Derived read order (identical on all ten): Decode1 mode, and NOTHING else —
+// the arm reads no body. It sets the local confirm flag, redraws, and on
+// gms_v83+ / jms_v185 immediately auto-sends the serverbound CRC attestation
+// (TRANSACTION). A stray trailing byte here would be read as the next packet.
+//
+// The same function is the TRANSACTION sender, which is why the export keys the
+// bodyless RECEIVE shape as CTradingRoomDlg::OnTrade#TradeConfirm and the SEND
+// shape as the un-suffixed CTradingRoomDlg::OnTrade.
+//
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeConfirm version=gms_v48 ida=0x5e6bd3
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeConfirm version=gms_v61 ida=0x68b484
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeConfirm version=gms_v72 ida=0x6fddec
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeConfirm version=gms_v79 ida=0x7358c4
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeConfirm version=gms_v83 ida=0x7c20bc
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeConfirm version=gms_v84 ida=0x7e8202
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeConfirm version=gms_v87 ida=0x815773
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeConfirm version=gms_v92 ida=0x744440
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeConfirm version=gms_v95 ida=0x763f20
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeConfirm version=jms_v185 ida=0x845ed5
+func TestInteractionTradeConfirmByteOutput(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
-	for _, v := range pt.Variants {
-		t.Run(v.Name, func(t *testing.T) {
-			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			if got := hex.EncodeToString(NewInteractionTradeConfirm(17).Encode(l, ctx)(nil)); got != "11" {
-				t.Errorf("bytes: got %s, want 11", got)
+	for _, c := range []tradeArmCase{
+		{"gms_v48", "GMS", 48, 15},
+		{"gms_v61", "GMS", 61, 16},
+		{"gms_v72", "GMS", 72, 16},
+		{"gms_v79", "GMS", 79, 17},
+		{"gms_v83", "GMS", 83, 17},
+		{"gms_v84", "GMS", 84, 17},
+		{"gms_v87", "GMS", 87, 17},
+		{"gms_v92", "GMS", 92, 17},
+		{"gms_v95", "GMS", 95, 17},
+		{"jms_v185", "JMS", 185, 15},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			raw := NewInteractionTradeConfirm(c.mode).Encode(l, pt.CreateContext(c.region, c.major, 1))(nil)
+			want := hex.EncodeToString([]byte{c.mode})
+			if got := hex.EncodeToString(raw); got != want {
+				t.Errorf("%s bytes: got %s, want %s", c.name, got, want)
 			}
 		})
 	}
 }
 
-// TestInteractionTradeMesoLimitIsBodyless pins design §1.2/§11.2: mode 21
-// (sub_7C21BD @0x7c21bd) reads no body; it shows SP_3977 ("Players that are
-// level 15 and below may only trade 1 million mesos per day"), clears
-// this[111] and re-enables both confirm buttons. CCashTradingRoomDlg::OnPacket
-// @0x4833b4 has NO mode-21 arm.
-func TestInteractionTradeMesoLimitIsBodyless(t *testing.T) {
+// TestInteractionTradeMesoLimitByteOutput pins the meso-limit arm per version.
+//
+// Derived read order: Decode1 mode, and NOTHING else. The arm shows the
+// daily-meso-limit notice, clears the local confirm flag and re-enables both
+// confirm buttons. Its StringPool id is per-version and not stable
+// (v48 3626 · v61 3901 · v72 3953 · v79 3956 · v83 SP_3977 · v84 3980 ·
+// v87 3985 · v92 4051 · v95 4018), which is what identifies it in the
+// symbol-stripped builds.
+//
+// jms_v185 is deliberately ABSENT from this table: its CTradingRoomDlg::OnPacket
+// @0x845d95 is a complete switch with exactly three cases (13/14/15) and no
+// default, so the arm does not exist there. Recorded as an n-a disposition in
+// docs/packets/audits/jms_v185/_unimplemented.json with that enumeration, not
+// inferred from a failed name search. No cash trading room on ANY version has
+// the arm either (every CCashTradingRoomDlg::OnPacket switch has three cases).
+//
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeMesoLimit version=gms_v48 ida=0x5e6be7
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeMesoLimit version=gms_v61 ida=0x68b498
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeMesoLimit version=gms_v72 ida=0x6fde00
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeMesoLimit version=gms_v79 ida=0x7358d8
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeMesoLimit version=gms_v83 ida=0x7c21bd
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeMesoLimit version=gms_v84 ida=0x7e8303
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeMesoLimit version=gms_v87 ida=0x815877
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeMesoLimit version=gms_v92 ida=0x744680
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionTradeMesoLimit version=gms_v95 ida=0x764160
+func TestInteractionTradeMesoLimitByteOutput(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
-	for _, v := range pt.Variants {
-		t.Run(v.Name, func(t *testing.T) {
-			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			if got := hex.EncodeToString(NewInteractionTradeMesoLimit(21).Encode(l, ctx)(nil)); got != "15" {
-				t.Errorf("bytes: got %s, want 15", got)
+	for _, c := range []tradeArmCase{
+		{"gms_v48", "GMS", 48, 18},
+		{"gms_v61", "GMS", 61, 19},
+		{"gms_v72", "GMS", 72, 19},
+		{"gms_v79", "GMS", 79, 20},
+		{"gms_v83", "GMS", 83, 21},
+		{"gms_v84", "GMS", 84, 21},
+		{"gms_v87", "GMS", 87, 21},
+		{"gms_v92", "GMS", 92, 21},
+		{"gms_v95", "GMS", 95, 21},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			raw := NewInteractionTradeMesoLimit(c.mode).Encode(l, pt.CreateContext(c.region, c.major, 1))(nil)
+			want := hex.EncodeToString([]byte{c.mode})
+			if got := hex.EncodeToString(raw); got != want {
+				t.Errorf("%s bytes: got %s, want %s", c.name, got, want)
 			}
 		})
 	}

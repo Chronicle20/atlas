@@ -85,4 +85,61 @@ describe("PoolItemDialog", () => {
     );
     expect(rewardPoolsService.createItem).not.toHaveBeenCalled();
   });
+
+  it("requires a commodity id for cash-surprise entries", async () => {
+    const user = userEvent.setup();
+    renderDialog({ kind: "cash-surprise" });
+    await user.type(screen.getByLabelText(/item id/i), "2000000");
+    await user.type(screen.getByLabelText(/quantity/i), "1");
+    await user.type(screen.getByLabelText(/^weight/i), "50");
+    // Left blank, the raw input coerces to NaN and zod reports a generic
+    // "expected number" error before the field-level .positive() message
+    // ever runs; typing the rejected value 0 is what exercises the schema's
+    // custom "Commodity id is required" message (mirrors the "weight 0"
+    // pattern the existing weight-required test above uses).
+    await user.type(screen.getByLabelText(/commodity id/i), "0");
+    await user.click(screen.getByRole("button", { name: /save|add/i }));
+    await waitFor(() =>
+      expect(screen.getByText(/commodity id is required/i)).toBeInTheDocument(),
+    );
+    expect(rewardPoolsService.createItem).not.toHaveBeenCalled();
+  });
+
+  it("submits commodityId alongside weight for cash-surprise entries", async () => {
+    const user = userEvent.setup();
+    renderDialog({ kind: "cash-surprise" });
+    await user.type(screen.getByLabelText(/item id/i), "2000000");
+    await user.type(screen.getByLabelText(/quantity/i), "1");
+    await user.type(screen.getByLabelText(/^weight/i), "50");
+    await user.type(screen.getByLabelText(/commodity id/i), "100200300");
+    await user.click(screen.getByRole("button", { name: /save|add/i }));
+    await waitFor(() =>
+      expect(rewardPoolsService.createItem).toHaveBeenCalledWith("4170001", {
+        itemId: 2000000,
+        quantity: 1,
+        tier: "common",
+        weight: 50,
+        commodityId: 100200300,
+      }),
+    );
+  });
+
+  it("does not send a commodityId for incubator entries", async () => {
+    const user = userEvent.setup();
+    renderDialog();
+    await user.type(screen.getByLabelText(/item id/i), "2000000");
+    await user.type(screen.getByLabelText(/quantity/i), "1");
+    await user.type(screen.getByLabelText(/^weight/i), "50");
+    expect(screen.queryByLabelText(/commodity id/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /save|add/i }));
+    await waitFor(() =>
+      expect(rewardPoolsService.createItem).toHaveBeenCalledWith("4170001", {
+        itemId: 2000000,
+        quantity: 1,
+        tier: "common",
+        weight: 50,
+        commodityId: 0,
+      }),
+    );
+  });
 });

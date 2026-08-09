@@ -23,8 +23,10 @@ import { createErrorFromUnknown } from "@/types/api/errors";
 import {
   tierItemSchema,
   weightItemSchema,
+  cashSurpriseItemSchema,
   type TierItemFormData,
   type WeightItemFormData,
+  type CashSurpriseItemFormData,
 } from "@/lib/schemas/reward-pools.schema";
 import {
   useCreatePoolItem,
@@ -38,7 +40,7 @@ import type { GlobalRewardItemData } from "@/types/models/global-reward-item";
 interface PoolItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  kind: "gachapon" | "incubator" | "global";
+  kind: "gachapon" | "incubator" | "cash-surprise" | "global";
   poolId?: string;
   item?: RewardPoolItemData | GlobalRewardItemData;
 }
@@ -51,29 +53,42 @@ export function PoolItemDialog({
   item,
 }: PoolItemDialogProps) {
   const isEdit = !!item;
-  const weighted = kind === "incubator";
-  const schema = weighted ? weightItemSchema : tierItemSchema;
+  const weighted = kind === "incubator" || kind === "cash-surprise";
+  const needsCommodity = kind === "cash-surprise";
+  const schema = needsCommodity
+    ? cashSurpriseItemSchema
+    : weighted
+      ? weightItemSchema
+      : tierItemSchema;
 
   // Create mode leaves the numeric fields blank (keys omitted, so RHF starts
   // them as undefined); DefaultValues<T> makes that representable under
   // exactOptionalPropertyTypes, where the exact z.infer type would force 0s.
-  const defaultValues: DefaultValues<TierItemFormData | WeightItemFormData> =
-    item
-      ? {
-          itemId: item.attributes.itemId,
-          quantity: item.attributes.quantity,
-          ...(weighted
+  const defaultValues: DefaultValues<
+    TierItemFormData | WeightItemFormData | CashSurpriseItemFormData
+  > = item
+    ? {
+        itemId: item.attributes.itemId,
+        quantity: item.attributes.quantity,
+        ...(needsCommodity
+          ? {
+              weight: (item as RewardPoolItemData).attributes.weight,
+              commodityId: (item as RewardPoolItemData).attributes.commodityId,
+            }
+          : weighted
             ? { weight: (item as RewardPoolItemData).attributes.weight }
             : {
                 tier: (item.attributes.tier || "common") as
                   "common" | "uncommon" | "rare",
               }),
-        }
-      : weighted
-        ? {}
-        : { tier: "common" as const };
+      }
+    : weighted
+      ? {}
+      : { tier: "common" as const };
 
-  const form = useForm<TierItemFormData | WeightItemFormData>({
+  const form = useForm<
+    TierItemFormData | WeightItemFormData | CashSurpriseItemFormData
+  >({
     resolver: zodResolver(schema),
     defaultValues,
   });
@@ -113,7 +128,12 @@ export function PoolItemDialog({
               quantity: values.quantity,
               tier: "common",
               weight: (values as WeightItemFormData).weight,
-              commodityId: 0,
+              ...(needsCommodity
+                ? {
+                    commodityId: (values as CashSurpriseItemFormData)
+                      .commodityId,
+                  }
+                : { commodityId: 0 }),
             }
           : {
               itemId: values.itemId,
@@ -172,20 +192,42 @@ export function PoolItemDialog({
             )}
           </div>
           {weighted ? (
-            <div className="space-y-2">
-              <Label htmlFor="pi-weight">Weight</Label>
-              <Input
-                id="pi-weight"
-                type="number"
-                {...form.register("weight" as const, { valueAsNumber: true })}
-              />
-              {"weight" in form.formState.errors &&
-                form.formState.errors.weight && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.weight.message}
-                  </p>
-                )}
-            </div>
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="pi-weight">Weight</Label>
+                <Input
+                  id="pi-weight"
+                  type="number"
+                  {...form.register("weight" as const, {
+                    valueAsNumber: true,
+                  })}
+                />
+                {"weight" in form.formState.errors &&
+                  form.formState.errors.weight && (
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.weight.message}
+                    </p>
+                  )}
+              </div>
+              {needsCommodity && (
+                <div className="space-y-2">
+                  <Label htmlFor="pi-commodityId">Commodity Id</Label>
+                  <Input
+                    id="pi-commodityId"
+                    type="number"
+                    {...form.register("commodityId" as const, {
+                      valueAsNumber: true,
+                    })}
+                  />
+                  {"commodityId" in form.formState.errors &&
+                    form.formState.errors.commodityId && (
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.commodityId.message}
+                      </p>
+                    )}
+                </div>
+              )}
+            </>
           ) : (
             <div className="space-y-2">
               <Label htmlFor="pi-tier">Tier</Label>

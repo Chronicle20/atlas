@@ -33,6 +33,7 @@ import { KindBadge } from "@/components/features/reward-pools/KindBadge";
 import { PoolFormDialog } from "@/components/features/reward-pools/PoolFormDialog";
 import { PoolItemDialog } from "@/components/features/reward-pools/PoolItemDialog";
 import { PoolItemsTable } from "@/components/features/reward-pools/PoolItemsTable";
+import { POOL_ITEM_TABLE_LAYOUT } from "@/lib/utils/reward-pool-chance";
 import type { RewardPoolItemData } from "@/types/models/reward-pool-item";
 import type { Tenant } from "@/types/models/tenant";
 
@@ -72,6 +73,13 @@ export function RewardPoolDetailPage() {
   const { data: pool, isLoading, error, refetch } = useRewardPool(id);
   const itemsQuery = useRewardPoolItems(id);
   const isIncubator = pool?.attributes.kind === "incubator";
+  // Both incubator and cash-surprise use the "flat" item-table layout (no
+  // tiers, no NPCs, no global-item merge) — see PoolItemsTable's
+  // POOL_ITEM_TABLE_LAYOUT, the single source of truth for that split, so a
+  // future third "flat" kind doesn't need this page updated separately.
+  const isFlatKind =
+    pool !== undefined &&
+    POOL_ITEM_TABLE_LAYOUT[pool.attributes.kind] === "flat";
   const globalQuery = useGlobalRewardItems();
   const deleteItem = useDeletePoolItem();
   const deletePool = useDeleteRewardPool();
@@ -100,7 +108,7 @@ export function RewardPoolDetailPage() {
 
   const attrs = pool.attributes;
   const items = itemsQuery.data ?? [];
-  const globalItems = isIncubator ? [] : (globalQuery.data ?? []);
+  const globalItems = isFlatKind ? [] : (globalQuery.data ?? []);
   const tierTotal =
     attrs.commonWeight + attrs.uncommonWeight + attrs.rareWeight;
   const eggIconUrl =
@@ -149,7 +157,7 @@ export function RewardPoolDetailPage() {
         </Button>
       </div>
 
-      {!isIncubator && (
+      {!isFlatKind && (
         <div className="shrink-0 grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardHeader>
@@ -216,7 +224,7 @@ export function RewardPoolDetailPage() {
             </p>
           )}
           <PoolItemsTable
-            kind={isIncubator ? "incubator" : "gachapon"}
+            kind={attrs.kind}
             poolId={id}
             tierWeights={{
               common: attrs.commonWeight,
@@ -251,7 +259,7 @@ export function RewardPoolDetailPage() {
       <PoolItemDialog
         open={itemDialog.open}
         onOpenChange={(open) => setItemDialog((s) => ({ ...s, open }))}
-        kind={isIncubator ? "incubator" : "gachapon"}
+        kind={attrs.kind}
         poolId={id}
         {...(itemDialog.item !== undefined && { item: itemDialog.item })}
       />

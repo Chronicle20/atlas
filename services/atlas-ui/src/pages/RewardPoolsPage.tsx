@@ -39,7 +39,10 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { createErrorFromUnknown } from "@/types/api/errors";
 import type { GlobalRewardItemData } from "@/types/models/global-reward-item";
-import type { RewardPoolData } from "@/types/models/reward-pool";
+import type {
+  RewardPoolData,
+  RewardPoolKind,
+} from "@/types/models/reward-pool";
 
 export function RewardPoolsPage() {
   const { activeTenant } = useTenant();
@@ -58,14 +61,25 @@ export function RewardPoolsPage() {
   );
 
   const pools = useMemo(() => poolsQuery.data ?? [], [poolsQuery.data]);
-  const gachapons = useMemo(
-    () => pools.filter((p) => p.attributes.kind === "gachapon"),
+  // Grouped by an exhaustive Record<RewardPoolKind, ...> rather than one
+  // `.filter()` per kind: the previous two-filter setup silently dropped any
+  // pool whose kind wasn't "gachapon" or "incubator" from every kind-specific
+  // tab (it still showed in "All"), which is exactly what would have
+  // happened to cash-surprise pools here.
+  const poolsByKind = useMemo(
+    () =>
+      pools.reduce<Record<RewardPoolKind, RewardPoolData[]>>(
+        (acc, p) => {
+          acc[p.attributes.kind].push(p);
+          return acc;
+        },
+        { gachapon: [], incubator: [], "cash-surprise": [] },
+      ),
     [pools],
   );
-  const incubators = useMemo(
-    () => pools.filter((p) => p.attributes.kind === "incubator"),
-    [pools],
-  );
+  const gachapons = poolsByKind.gachapon;
+  const incubators = poolsByKind.incubator;
+  const cashSurprises = poolsByKind["cash-surprise"];
   const globalItems = globalQuery.data ?? [];
   const error = poolsQuery.error?.message ?? null;
 
@@ -100,6 +114,9 @@ export function RewardPoolsPage() {
             </TabsTrigger>
             <TabsTrigger value="incubators">
               Incubators ({incubators.length})
+            </TabsTrigger>
+            <TabsTrigger value="cash-surprises">
+              Cash Surprise ({cashSurprises.length})
             </TabsTrigger>
             <TabsTrigger value="global">
               Global Pool ({globalItems.length})
@@ -137,6 +154,13 @@ export function RewardPoolsPage() {
           {poolTable(
             incubators,
             "No incubator pools",
+            "Seed defaults from Setup, or create one.",
+          )}
+        </TabsContent>
+        <TabsContent value="cash-surprises" className="mt-4">
+          {poolTable(
+            cashSurprises,
+            "No cash-surprise pools",
             "Seed defaults from Setup, or create one.",
           )}
         </TabsContent>

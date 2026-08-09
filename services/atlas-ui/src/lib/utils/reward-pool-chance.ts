@@ -3,6 +3,24 @@
 // (weight-proportional when the merged pool's Σweight > 0, else uniform).
 // Global items always enter the merged pool with weight 0.
 
+import type { RewardPoolKind } from "@/types/models/reward-pool";
+
+// The server's roll model has exactly two shapes: gachapon uses tiered
+// weights (three fixed tiers, per-item weight within a tier); incubator and
+// cash-surprise both use a single flat weight list. Keying this as a Record
+// over the full RewardPoolKind union (rather than an `isIncubator` boolean or
+// a two-way ternary) makes a future third kind a compile error at every call
+// site instead of silently falling into the tiered branch, which was exactly
+// the bug that would have hit cash-surprise if these call sites were left
+// untouched. Lives here (not in PoolItemsTable.tsx) so it's importable from
+// non-component modules without tripping react-refresh/only-export-components.
+export const POOL_ITEM_TABLE_LAYOUT: Record<RewardPoolKind, "tiered" | "flat"> =
+  {
+    gachapon: "tiered",
+    incubator: "flat",
+    "cash-surprise": "flat",
+  };
+
 export interface ChanceRow {
   key: string;
   chance: number;

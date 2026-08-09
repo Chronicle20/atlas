@@ -30,9 +30,11 @@ import {
   gachaponChances,
   incubatorChances,
   tierHasMixedWeights,
+  POOL_ITEM_TABLE_LAYOUT,
 } from "@/lib/utils/reward-pool-chance";
 import type { RewardPoolItemData } from "@/types/models/reward-pool-item";
 import type { GlobalRewardItemData } from "@/types/models/global-reward-item";
+import type { RewardPoolKind } from "@/types/models/reward-pool";
 
 const TIERS = ["common", "uncommon", "rare"] as const;
 type Tier = (typeof TIERS)[number];
@@ -50,7 +52,7 @@ function tierBadgeVariant(
 }
 
 interface PoolItemsTableProps {
-  kind: "gachapon" | "incubator";
+  kind: RewardPoolKind;
   poolId: string;
   tierWeights: { common: number; uncommon: number; rare: number };
   items: RewardPoolItemData[];
@@ -92,7 +94,8 @@ export function PoolItemsTable({
     );
   }
 
-  if (kind === "incubator") {
+  if (POOL_ITEM_TABLE_LAYOUT[kind] === "flat") {
+    const showCommodity = kind === "cash-surprise";
     const chances = incubatorChances(
       items.map((i) => ({ id: i.id, weight: i.attributes.weight })),
     );
@@ -105,6 +108,7 @@ export function PoolItemsTable({
                 <TableHead>Item</TableHead>
                 <TableHead>Quantity</TableHead>
                 <TableHead>Weight</TableHead>
+                {showCommodity && <TableHead>Commodity</TableHead>}
                 <TableHead>Chance</TableHead>
                 <TableHead className="w-16" />
               </TableRow>
@@ -117,6 +121,9 @@ export function PoolItemsTable({
                   <TableCell>
                     {it.attributes.weight > 0 ? it.attributes.weight : "—"}
                   </TableCell>
+                  {showCommodity && (
+                    <TableCell>{it.attributes.commodityId}</TableCell>
+                  )}
                   <TableCell>{pct(chances.get(it.id) ?? 0)}</TableCell>
                   <TableCell className="text-right">
                     <PoolItemActions
@@ -128,7 +135,10 @@ export function PoolItemsTable({
               ))}
               {items.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-muted-foreground">
+                  <TableCell
+                    colSpan={showCommodity ? 6 : 5}
+                    className="text-muted-foreground"
+                  >
                     No items in this pool.
                   </TableCell>
                 </TableRow>

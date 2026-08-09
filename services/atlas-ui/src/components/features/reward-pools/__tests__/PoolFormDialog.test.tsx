@@ -62,6 +62,32 @@ describe("PoolFormDialog", () => {
     );
   });
 
+  it("offers a cash-surprise kind and submits the box item id as the pool id", async () => {
+    const user = userEvent.setup();
+    renderDialog();
+    await user.click(screen.getByRole("radio", { name: /cash surprise/i }));
+    await user.type(screen.getByLabelText(/box item id/i), "5222000");
+    await user.type(screen.getByLabelText(/name/i), "Surprise Box");
+    await user.click(screen.getByRole("button", { name: /create/i }));
+    await waitFor(() =>
+      expect(rewardPoolsService.createPool).toHaveBeenCalledWith("5222000", {
+        name: "Surprise Box",
+        kind: "cash-surprise",
+        npcIds: [],
+        commonWeight: 0,
+        uncommonWeight: 0,
+        rareWeight: 0,
+      }),
+    );
+  });
+
+  it("does not render an NPC Ids field for cash-surprise pools", async () => {
+    const user = userEvent.setup();
+    renderDialog();
+    await user.click(screen.getByRole("radio", { name: /cash surprise/i }));
+    expect(screen.queryByLabelText(/NPC Ids/i)).not.toBeInTheDocument();
+  });
+
   it("edit mode locks kind and prefills", () => {
     renderDialog({
       mode: "edit",

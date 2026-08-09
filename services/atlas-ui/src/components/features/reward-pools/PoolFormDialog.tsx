@@ -17,8 +17,10 @@ import { createErrorFromUnknown } from "@/types/api/errors";
 import {
   gachaponPoolSchema,
   incubatorPoolSchema,
+  cashSurprisePoolSchema,
   type GachaponPoolFormData,
   type IncubatorPoolFormData,
+  type CashSurprisePoolFormData,
 } from "@/lib/schemas/reward-pools.schema";
 import {
   useCreateRewardPool,
@@ -97,6 +99,17 @@ export function PoolFormDialog({
     defaultValues: incubatorDefaults,
   });
 
+  // Create mode leaves boxItemId blank, same rationale as incubatorDefaults.
+  const cashSurpriseDefaults: DefaultValues<CashSurprisePoolFormData> =
+    pool && pool.attributes.kind === "cash-surprise"
+      ? { boxItemId: Number(pool.id), name: pool.attributes.name }
+      : { name: "" };
+
+  const cashSurpriseForm = useForm<CashSurprisePoolFormData>({
+    resolver: zodResolver(cashSurprisePoolSchema),
+    defaultValues: cashSurpriseDefaults,
+  });
+
   // npcIds is edited as a comma-separated string for gachapons
   const [npcIdsText, setNpcIdsText] = useState(
     (pool?.attributes.npcIds ?? []).join(", "),
@@ -111,6 +124,7 @@ export function PoolFormDialog({
     if (open) {
       gachaponForm.reset(gachaponDefaults);
       incubatorForm.reset(incubatorDefaults);
+      cashSurpriseForm.reset(cashSurpriseDefaults);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, pool]);
@@ -161,6 +175,202 @@ export function PoolFormDialog({
     }
   });
 
+  const submitCashSurprise = cashSurpriseForm.handleSubmit(async (values) => {
+    const attributes = {
+      name: values.name,
+      kind: "cash-surprise" as const,
+      npcIds: [],
+      commonWeight: 0,
+      uncommonWeight: 0,
+      rareWeight: 0,
+    };
+    try {
+      if (isEdit) await updatePool.mutateAsync({ id: pool!.id, attributes });
+      else
+        await createPool.mutateAsync({
+          id: String(values.boxItemId),
+          attributes,
+        });
+      toast.success(isEdit ? "Pool updated" : "Pool created");
+      onOpenChange(false);
+    } catch (e) {
+      toast.error(createErrorFromUnknown(e).message);
+    }
+  });
+
+  // Each kind renders its own form with its own useForm; select via an
+  // exhaustive switch (rather than a ternary/if-chain) so a future fourth
+  // kind that forgets a branch fails to compile — activeForm would be used
+  // before being definitely assigned. Mirrors the KindBadge Record idiom,
+  // adapted for JSX blocks that close over per-kind form objects.
+  let activeForm: React.ReactElement;
+  switch (kind) {
+    case "gachapon":
+      activeForm = (
+        <form onSubmit={submitGachapon} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="pf-name">Name</Label>
+            <Input id="pf-name" {...gachaponForm.register("name")} />
+            {gachaponForm.formState.errors.name && (
+              <p className="text-sm text-destructive">
+                {gachaponForm.formState.errors.name.message}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pf-npcs">NPC Ids (comma-separated)</Label>
+            <Input
+              id="pf-npcs"
+              value={npcIdsText}
+              onChange={(e) => setNpcIdsText(e.target.value)}
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="pf-cw">Common Weight</Label>
+              <Input
+                id="pf-cw"
+                type="number"
+                {...gachaponForm.register("commonWeight", {
+                  valueAsNumber: true,
+                })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pf-uw">Uncommon Weight</Label>
+              <Input
+                id="pf-uw"
+                type="number"
+                {...gachaponForm.register("uncommonWeight", {
+                  valueAsNumber: true,
+                })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pf-rw">Rare Weight</Label>
+              <Input
+                id="pf-rw"
+                type="number"
+                {...gachaponForm.register("rareWeight", {
+                  valueAsNumber: true,
+                })}
+              />
+            </div>
+          </div>
+          {gachaponForm.formState.errors.commonWeight && (
+            <p className="text-sm text-destructive">
+              {gachaponForm.formState.errors.commonWeight.message}
+            </p>
+          )}
+          <DialogFooter>
+            <Button type="submit" disabled={pending}>
+              {isEdit ? "Save" : "Create"}
+            </Button>
+          </DialogFooter>
+        </form>
+      );
+      break;
+    case "incubator":
+      activeForm = (
+        <form onSubmit={submitIncubator} className="space-y-4">
+          {!isEdit && (
+            <div className="space-y-2">
+              <Label htmlFor="pf-egg">Egg Item Id</Label>
+              <Input
+                id="pf-egg"
+                type="number"
+                {...incubatorForm.register("eggItemId", {
+                  valueAsNumber: true,
+                })}
+              />
+              {incubatorForm.formState.errors.eggItemId && (
+                <p className="text-sm text-destructive">
+                  {incubatorForm.formState.errors.eggItemId.message}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                The egg item id becomes the pool id (e.g. 4170001).
+              </p>
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="pf-iname">Name</Label>
+            <Input id="pf-iname" {...incubatorForm.register("name")} />
+            {incubatorForm.formState.errors.name && (
+              <p className="text-sm text-destructive">
+                {incubatorForm.formState.errors.name.message}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pf-snpc">Success NPC Id</Label>
+            <Input
+              id="pf-snpc"
+              type="number"
+              {...incubatorForm.register("successNpcId", {
+                valueAsNumber: true,
+              })}
+            />
+            {incubatorForm.formState.errors.successNpcId && (
+              <p className="text-sm text-destructive">
+                {incubatorForm.formState.errors.successNpcId.message}
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={pending}>
+              {isEdit ? "Save" : "Create"}
+            </Button>
+          </DialogFooter>
+        </form>
+      );
+      break;
+    case "cash-surprise":
+      activeForm = (
+        <form onSubmit={submitCashSurprise} className="space-y-4">
+          {!isEdit && (
+            <div className="space-y-2">
+              <Label htmlFor="pf-box">Box Item Id</Label>
+              <Input
+                id="pf-box"
+                type="number"
+                {...cashSurpriseForm.register("boxItemId", {
+                  valueAsNumber: true,
+                })}
+              />
+              {cashSurpriseForm.formState.errors.boxItemId && (
+                <p className="text-sm text-destructive">
+                  {cashSurpriseForm.formState.errors.boxItemId.message}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                The box item id becomes the pool id (e.g. 5222000).
+              </p>
+              <p className="text-sm text-muted-foreground">
+                A pool that awards a Surprise box will produce an endless box.
+                This is allowed; check your entries.
+              </p>
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="pf-csname">Name</Label>
+            <Input id="pf-csname" {...cashSurpriseForm.register("name")} />
+            {cashSurpriseForm.formState.errors.name && (
+              <p className="text-sm text-destructive">
+                {cashSurpriseForm.formState.errors.name.message}
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={pending}>
+              {isEdit ? "Save" : "Create"}
+            </Button>
+          </DialogFooter>
+        </form>
+      );
+      break;
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -182,124 +392,14 @@ export function PoolFormDialog({
               <RadioGroupItem value="incubator" id="kind-incubator" />
               <Label htmlFor="kind-incubator">Incubator</Label>
             </div>
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="cash-surprise" id="kind-cash-surprise" />
+              <Label htmlFor="kind-cash-surprise">Cash Surprise</Label>
+            </div>
           </RadioGroup>
         )}
 
-        {kind === "gachapon" ? (
-          <form onSubmit={submitGachapon} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="pf-name">Name</Label>
-              <Input id="pf-name" {...gachaponForm.register("name")} />
-              {gachaponForm.formState.errors.name && (
-                <p className="text-sm text-destructive">
-                  {gachaponForm.formState.errors.name.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pf-npcs">NPC Ids (comma-separated)</Label>
-              <Input
-                id="pf-npcs"
-                value={npcIdsText}
-                onChange={(e) => setNpcIdsText(e.target.value)}
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="pf-cw">Common Weight</Label>
-                <Input
-                  id="pf-cw"
-                  type="number"
-                  {...gachaponForm.register("commonWeight", {
-                    valueAsNumber: true,
-                  })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="pf-uw">Uncommon Weight</Label>
-                <Input
-                  id="pf-uw"
-                  type="number"
-                  {...gachaponForm.register("uncommonWeight", {
-                    valueAsNumber: true,
-                  })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="pf-rw">Rare Weight</Label>
-                <Input
-                  id="pf-rw"
-                  type="number"
-                  {...gachaponForm.register("rareWeight", {
-                    valueAsNumber: true,
-                  })}
-                />
-              </div>
-            </div>
-            {gachaponForm.formState.errors.commonWeight && (
-              <p className="text-sm text-destructive">
-                {gachaponForm.formState.errors.commonWeight.message}
-              </p>
-            )}
-            <DialogFooter>
-              <Button type="submit" disabled={pending}>
-                {isEdit ? "Save" : "Create"}
-              </Button>
-            </DialogFooter>
-          </form>
-        ) : (
-          <form onSubmit={submitIncubator} className="space-y-4">
-            {!isEdit && (
-              <div className="space-y-2">
-                <Label htmlFor="pf-egg">Egg Item Id</Label>
-                <Input
-                  id="pf-egg"
-                  type="number"
-                  {...incubatorForm.register("eggItemId", {
-                    valueAsNumber: true,
-                  })}
-                />
-                {incubatorForm.formState.errors.eggItemId && (
-                  <p className="text-sm text-destructive">
-                    {incubatorForm.formState.errors.eggItemId.message}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  The egg item id becomes the pool id (e.g. 4170001).
-                </p>
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="pf-iname">Name</Label>
-              <Input id="pf-iname" {...incubatorForm.register("name")} />
-              {incubatorForm.formState.errors.name && (
-                <p className="text-sm text-destructive">
-                  {incubatorForm.formState.errors.name.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pf-snpc">Success NPC Id</Label>
-              <Input
-                id="pf-snpc"
-                type="number"
-                {...incubatorForm.register("successNpcId", {
-                  valueAsNumber: true,
-                })}
-              />
-              {incubatorForm.formState.errors.successNpcId && (
-                <p className="text-sm text-destructive">
-                  {incubatorForm.formState.errors.successNpcId.message}
-                </p>
-              )}
-            </div>
-            <DialogFooter>
-              <Button type="submit" disabled={pending}>
-                {isEdit ? "Save" : "Create"}
-              </Button>
-            </DialogFooter>
-          </form>
-        )}
+        {activeForm}
       </DialogContent>
     </Dialog>
   );

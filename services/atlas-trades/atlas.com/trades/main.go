@@ -2,6 +2,7 @@ package main
 
 import (
 	"atlas-trades/ledger"
+	"atlas-trades/trade"
 	"context"
 	"os"
 
@@ -85,6 +86,8 @@ func main() {
 		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(trade.InitResource(GetServer())).
+		AddRouteInitializer(ledger.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 

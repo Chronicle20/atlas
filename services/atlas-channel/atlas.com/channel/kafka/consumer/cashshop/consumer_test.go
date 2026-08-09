@@ -329,9 +329,18 @@ func TestHandleSurpriseOpenedIgnoresWrongType(t *testing.T) {
 
 	characterId := uint32(6005)
 	accountId := uint32(9005)
+	compartmentId := uuid.New()
+	rewardAssetId := uint32(503)
 
 	cleanup := registerRealSession(t, tm, characterId, accountId)
 	defer cleanup()
+
+	// Stand up a valid asset fixture so that, if the type guard were removed,
+	// the asset fetch at consumer.go:176 would SUCCEED and a packet would be
+	// captured. Without this, an unset CASHSHOP_SERVICE_URL makes the fetch
+	// fail for an unrelated reason, and "0 announces" no longer proves the
+	// guard did the work — see task-15 fix-round-1 finding.
+	assetFixtureServer(t, accountId, compartmentId, rewardAssetId, 999999, 5010003, 12347, 1)
 
 	wp, captured := recordingWriterProducer(t)
 
@@ -340,8 +349,12 @@ func TestHandleSurpriseOpenedIgnoresWrongType(t *testing.T) {
 		CharacterId: characterId,
 		Type:        cashshop2.StatusEventTypeSurpriseFailed, // wrong type for this handler
 		Body: cashshop2.SurpriseOpenedEventBody{
-			BoxCashId:    423456789,
-			BoxRemaining: 1,
+			CompartmentId:    compartmentId,
+			BoxCashId:        423456789,
+			BoxRemaining:     1,
+			RewardAssetId:    rewardAssetId,
+			RewardTemplateId: 5010003,
+			RewardCount:      1,
 		},
 	})
 

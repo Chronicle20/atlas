@@ -8125,6 +8125,12 @@
           "hours": 4
         }
       ]
+    },
+    "coupons": {
+      "rateLimit": {
+        "attempts": 10,
+        "windowSeconds": 3600
+      }
     }
   }
 }

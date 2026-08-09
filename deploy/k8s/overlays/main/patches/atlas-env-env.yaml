@@ -769,6 +769,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-trades
+spec:
+  template:
+    spec:
+      containers:
+        - name: trades
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-transports
 spec:
   template:

@@ -785,6 +785,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-trades
+spec:
+  template:
+    spec:
+      containers:
+        - name: trades
+          env:
+            - name: KAFKA_CONSUMER_GROUP
+              value: "Trade Service [PLACEHOLDER_ATLAS_ENV]"
+            - name: ATLAS_ENV
+              value: "PLACEHOLDER_ATLAS_ENV"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-transports
 spec:
   template:

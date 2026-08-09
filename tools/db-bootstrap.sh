@@ -94,6 +94,7 @@ DBS=(
   atlas-skills
   atlas-storage
   atlas-tenants
+  atlas-trades
 )
 
 PSQL=(

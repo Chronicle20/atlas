@@ -524,6 +524,11 @@ location ~ ^/api/tenants(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+location ~ ^/api/trades(/.*)?$ {
+  set $u "atlas-trades.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/transports(/.*)?$ {
   set $u "atlas-transports.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;

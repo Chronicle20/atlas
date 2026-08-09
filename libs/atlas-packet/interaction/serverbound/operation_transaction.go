@@ -19,7 +19,13 @@ type TransactionEntry struct {
 func (e TransactionEntry) Data() uint32 { return e.data }
 func (e TransactionEntry) Crc() uint32  { return e.crc }
 
-// packet-audit:fname CCashTradingRoomDlg::Trade
+// OperationTransaction is the client's CRC attestation reply, NOT a user
+// action. The only sender on v83 is CTradingRoomDlg::OnTrade @0x7c20bc, which
+// fires automatically on receipt of clientbound mode 17. The former fname
+// (CCashTradingRoomDlg::Trade @0x485dcd) is wrong: that function sends
+// Encode1(0x11) — TRADE_CONFIRM — like CTradingRoomDlg::Trade @0x7c39a0
+// (task-205 design.md §1.5, §11.1).
+// packet-audit:fname CTradingRoomDlg::OnTrade
 type OperationTransaction struct {
 	entries []TransactionEntry
 }

@@ -186,6 +186,22 @@ const (
 	CharacterInteractionLeaveReasonMiniGameClosed   = "MINIGAME_CLOSED"   // 3 owner tore the room down
 	CharacterInteractionLeaveReasonMiniGameLeft     = "MINIGAME_LEFT"     // 4 visitor left voluntarily
 	CharacterInteractionLeaveReasonMiniGameExpelled = "MINIGAME_EXPELLED" // 5 visitor expelled by owner
+
+	// Trade leave-status keys, resolved via the same "leaveReason" tenant
+	// table. CTradingRoomDlg::OnLeave (v83 vtable off_B37448 slot +76 ->
+	// 0x7C221D) reads one status byte and branches: 2 SP_406 "Trade cancelled
+	// by the other character"; 7 success (SP_408 with the meso figure the
+	// client computes from its OWN CharacterData, else SP_407); 8 SP_409
+	// "Trade unsuccessful"; 9 SP_410 "...items which you cannot carry";
+	// 12 SP_411 "...the other person's on a different map"; 13 SP_5566 CRC
+	// mismatch. Distinct keys so the trade path never depends on another
+	// family's numeric values (DOM-25).
+	CharacterInteractionLeaveReasonTradeCancelled    = "TRADE_CANCELLED"     // 2
+	CharacterInteractionLeaveReasonTradeSuccess      = "TRADE_SUCCESS"       // 7
+	CharacterInteractionLeaveReasonTradeFailed       = "TRADE_FAILED"        // 8
+	CharacterInteractionLeaveReasonTradeCannotCarry  = "TRADE_CANNOT_CARRY"  // 9
+	CharacterInteractionLeaveReasonTradeDifferentMap = "TRADE_DIFFERENT_MAP" // 12
+	CharacterInteractionLeaveReasonTradeCrcFailed    = "TRADE_CRC_FAILED"    // 13
 )
 
 // CharacterInteractionLeaveReasonBody sends a LEAVE whose status byte is resolved

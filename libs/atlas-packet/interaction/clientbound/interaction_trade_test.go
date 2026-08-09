@@ -181,3 +181,41 @@ func TestInteractionTradeMesoLimitRoundTrip(t *testing.T) {
 		})
 	}
 }
+
+// TestTradeLeaveReasonKeysAreDistinct pins design §4.3: the trade leave path
+// gets its OWN leaveReason keys and never borrows the shop or mini-game keys'
+// numeric values (DOM-25 / the precedent at interaction_body.go:167-179).
+func TestTradeLeaveReasonKeysAreDistinct(t *testing.T) {
+	tradeKeys := []string{
+		CharacterInteractionLeaveReasonTradeCancelled,
+		CharacterInteractionLeaveReasonTradeSuccess,
+		CharacterInteractionLeaveReasonTradeFailed,
+		CharacterInteractionLeaveReasonTradeCannotCarry,
+		CharacterInteractionLeaveReasonTradeDifferentMap,
+		CharacterInteractionLeaveReasonTradeCrcFailed,
+	}
+	otherKeys := []string{
+		CharacterInteractionLeaveReasonShopClosed,
+		CharacterInteractionLeaveReasonUserBanned,
+		CharacterInteractionLeaveReasonOutOfStock,
+		CharacterInteractionLeaveReasonMiniGameClosed,
+		CharacterInteractionLeaveReasonMiniGameLeft,
+		CharacterInteractionLeaveReasonMiniGameExpelled,
+	}
+
+	seen := make(map[string]bool)
+	for _, k := range tradeKeys {
+		if k == "" {
+			t.Fatal("empty trade leave reason key")
+		}
+		if seen[k] {
+			t.Errorf("duplicate trade leave reason key %q", k)
+		}
+		seen[k] = true
+	}
+	for _, k := range otherKeys {
+		if seen[k] {
+			t.Errorf("trade leave reason key %q collides with a non-trade family key", k)
+		}
+	}
+}

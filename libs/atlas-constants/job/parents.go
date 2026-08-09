@@ -69,6 +69,28 @@ var parents = map[Identity]Identity{
 	ChiefBandit: Bandit,
 	Shadower:    ChiefBandit,
 
+	// Dual Blade (task-204) -- the third Rogue branch, and the only Explorer
+	// line with five advancements instead of three. Rooted at Rogue, NOT at
+	// Beginner: quest 2351 ("First Mission: Infiltration", the Dual Blade
+	// intro chain) has demandSummary "Make a job advancement as a #bRogue#k"
+	// and a job gate of [0,400,410,420,430,...], and every Dual Blade job id
+	// appears in the Thief-branch job gates (e.g. quest 2140 "Beginner
+	// Thief's First Training Session" gates on
+	// [400,410,411,412,420,421,422,430,431,432,433,434]).
+	//
+	// The chain is linear. WZ job gates order the branch by tier --
+	// 400,410,420,430,411,421,431,412,422,432,433,434 -- which puts 430
+	// alongside Assassin/Bandit, 431 alongside Hermit/ChiefBandit, 432
+	// alongside NightLord/Shadower, and 433/434 beyond the Explorer tiers;
+	// the level-70+ gate (quest 3121) admits 432/433/434 but not 430/431.
+	// All quest evidence read from the provisioned gms 92.1 tenant via
+	// atlas-data GET /api/data/quests (2026-08-09).
+	BladeRecruit:    Rogue,
+	BladeAcolyte:    BladeRecruit,
+	BladeSpecialist: BladeAcolyte,
+	BladeLord:       BladeSpecialist,
+	BladeMaster:     BladeLord,
+
 	// Pirate
 	Pirate:     Beginner,
 	Brawler:    Pirate,

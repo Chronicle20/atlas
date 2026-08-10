@@ -592,6 +592,95 @@ func CreateSingleRankingsJsonData(rankings map[string]interface{}) (json.RawMess
 	return json.Marshal(map[string]interface{}{"data": rankings})
 }
 
+// KiteConfigRestModel is the JSON:API resource for the per-tenant kite
+// (cash category 508 message-box) placement policy. One row per tenant, like
+// rankings — there is no id-addressed sub-resource.
+type KiteConfigRestModel struct {
+	Id                 string   `json:"-"`
+	MaxPerMap          int      `json:"maxPerMap"`
+	MaxMessageLength   int      `json:"maxMessageLength"`
+	BlockedMapPrefixes []uint32 `json:"blockedMapPrefixes"`
+}
+
+func (r KiteConfigRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *KiteConfigRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
+func (r KiteConfigRestModel) GetName() string {
+	return "kite-configs"
+}
+
+// TransformKiteConfig converts the stored JSONB map into a KiteConfigRestModel.
+func TransformKiteConfig(data map[string]interface{}) (KiteConfigRestModel, error) {
+	id, _ := data["id"].(string)
+
+	readInt := func(key string) int {
+		if v, ok := data[key].(float64); ok {
+			return int(v)
+		}
+		if v, ok := data[key].(int); ok {
+			return v
+		}
+		return 0
+	}
+
+	var prefixes []uint32
+	if raw, ok := data["blockedMapPrefixes"].([]interface{}); ok {
+		for _, e := range raw {
+			switch v := e.(type) {
+			case float64:
+				prefixes = append(prefixes, uint32(v))
+			case int:
+				prefixes = append(prefixes, uint32(v))
+			}
+		}
+	}
+
+	return KiteConfigRestModel{
+		Id:                 id,
+		MaxPerMap:          readInt("maxPerMap"),
+		MaxMessageLength:   readInt("maxMessageLength"),
+		BlockedMapPrefixes: prefixes,
+	}, nil
+}
+
+// ExtractKiteConfig converts a KiteConfigRestModel back into the stored JSONB map.
+func ExtractKiteConfig(r KiteConfigRestModel) (map[string]interface{}, error) {
+	prefixes := make([]interface{}, 0, len(r.BlockedMapPrefixes))
+	for _, p := range r.BlockedMapPrefixes {
+		prefixes = append(prefixes, p)
+	}
+	id := r.Id
+	if id == "" {
+		// Mirrors ExtractRankings: a fresh create carries no client-supplied
+		// id, so assign one here rather than persisting/serving an empty
+		// JSON:API resource id.
+		id = uuid.New().String()
+	}
+	return map[string]interface{}{
+		"id":                 id,
+		"maxPerMap":          r.MaxPerMap,
+		"maxMessageLength":   r.MaxMessageLength,
+		"blockedMapPrefixes": prefixes,
+	}, nil
+}
+
+// CreateSingleKiteConfigJsonData wraps one kite config in a JSON:API document,
+// mirroring CreateSingleRankingsJsonData. cfg is the flat map produced by
+// ExtractKiteConfig (id/maxPerMap/maxMessageLength/blockedMapPrefixes at the
+// top level, no nested "attributes"), and it is stored as-is under "data" so
+// that GetKiteConfigProvider round-trips it straight back into the same flat
+// shape TransformKiteConfig expects — unlike the Rankings/InstanceRoute
+// resources, which nest attributes under "attributes" on both sides.
+func CreateSingleKiteConfigJsonData(cfg map[string]interface{}) (json.RawMessage, error) {
+	return json.Marshal(map[string]interface{}{"data": cfg})
+}
+
 // RpsRewardRungRestModel is the nested JSON attribute shape of a single rung
 // embedded in the rps-rewards `ladder` array.
 type RpsRewardRungRestModel struct {

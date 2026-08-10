@@ -60,6 +60,16 @@ type ProcessorMock struct {
 	GetRankingsFunc           func(tenantID uuid.UUID) (map[string]interface{}, error)
 	RankingsProviderFunc      func(tenantID uuid.UUID) model.Provider[map[string]interface{}]
 
+	// Kite config operations
+	CreateKiteConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error)
+	CreateKiteConfigAndEmitFunc func(tenantID uuid.UUID, cfg map[string]interface{}) (configuration.Model, error)
+	UpdateKiteConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error)
+	UpdateKiteConfigAndEmitFunc func(tenantID uuid.UUID, cfg map[string]interface{}) (configuration.Model, error)
+	DeleteKiteConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) error
+	DeleteKiteConfigAndEmitFunc func(tenantID uuid.UUID) error
+	GetKiteConfigFunc           func(tenantID uuid.UUID) (map[string]interface{}, error)
+	KiteConfigProviderFunc      func(tenantID uuid.UUID) model.Provider[map[string]interface{}]
+
 	// Seed operations
 	SeedRpsRewardsFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
 	SeedMtsConfigsFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
@@ -665,6 +675,82 @@ func (m *ProcessorMock) GetRankings(tenantID uuid.UUID) (map[string]interface{},
 func (m *ProcessorMock) RankingsProvider(tenantID uuid.UUID) model.Provider[map[string]interface{}] {
 	if m.RankingsProviderFunc != nil {
 		return m.RankingsProviderFunc(tenantID)
+	}
+	return func() (map[string]interface{}, error) {
+		return map[string]interface{}{}, nil
+	}
+}
+
+// CreateKiteConfig is a mock implementation
+func (m *ProcessorMock) CreateKiteConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error) {
+	if m.CreateKiteConfigFunc != nil {
+		return m.CreateKiteConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error) {
+		return func(cfg map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// CreateKiteConfigAndEmit is a mock implementation
+func (m *ProcessorMock) CreateKiteConfigAndEmit(tenantID uuid.UUID, cfg map[string]interface{}) (configuration.Model, error) {
+	if m.CreateKiteConfigAndEmitFunc != nil {
+		return m.CreateKiteConfigAndEmitFunc(tenantID, cfg)
+	}
+	return configuration.Model{}, nil
+}
+
+// UpdateKiteConfig is a mock implementation
+func (m *ProcessorMock) UpdateKiteConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateKiteConfigFunc != nil {
+		return m.UpdateKiteConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error) {
+		return func(cfg map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// UpdateKiteConfigAndEmit is a mock implementation
+func (m *ProcessorMock) UpdateKiteConfigAndEmit(tenantID uuid.UUID, cfg map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateKiteConfigAndEmitFunc != nil {
+		return m.UpdateKiteConfigAndEmitFunc(tenantID, cfg)
+	}
+	return configuration.Model{}, nil
+}
+
+// DeleteKiteConfig is a mock implementation
+func (m *ProcessorMock) DeleteKiteConfig(mb *message.Buffer) func(tenantID uuid.UUID) error {
+	if m.DeleteKiteConfigFunc != nil {
+		return m.DeleteKiteConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) error {
+		return nil
+	}
+}
+
+// DeleteKiteConfigAndEmit is a mock implementation
+func (m *ProcessorMock) DeleteKiteConfigAndEmit(tenantID uuid.UUID) error {
+	if m.DeleteKiteConfigAndEmitFunc != nil {
+		return m.DeleteKiteConfigAndEmitFunc(tenantID)
+	}
+	return nil
+}
+
+// GetKiteConfig is a mock implementation
+func (m *ProcessorMock) GetKiteConfig(tenantID uuid.UUID) (map[string]interface{}, error) {
+	if m.GetKiteConfigFunc != nil {
+		return m.GetKiteConfigFunc(tenantID)
+	}
+	return map[string]interface{}{}, nil
+}
+
+// KiteConfigProvider is a mock implementation
+func (m *ProcessorMock) KiteConfigProvider(tenantID uuid.UUID) model.Provider[map[string]interface{}] {
+	if m.KiteConfigProviderFunc != nil {
+		return m.KiteConfigProviderFunc(tenantID)
 	}
 	return func() (map[string]interface{}, error) {
 		return map[string]interface{}{}, nil

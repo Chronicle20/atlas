@@ -123,7 +123,7 @@ func TestGracefulShutdown(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "test-consumer", "test-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(c)
 
@@ -178,7 +178,7 @@ func TestSpanPropagation(t *testing.T) {
 
 	errChan := make(chan error)
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "test-consumer", "test-topic", "test-group")
 	cm.AddConsumer(l, context.Background(), wg)(c, consumer.SetHeaderParsers(consumer.SpanHeaderParser))
 	_, _ = cm.RegisterHandler("test-topic", func(l logrus.FieldLogger, ctx context.Context, msg kafka.Message) (bool, error) {
@@ -230,7 +230,7 @@ func TestTenantPropagation(t *testing.T) {
 
 	errChan := make(chan error)
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "test-consumer", "test-topic", "test-group")
 	cm.AddConsumer(l, context.Background(), wg)(c, consumer.SetHeaderParsers(consumer.TenantHeaderParser))
 	_, _ = cm.RegisterHandler("test-topic", func(l logrus.FieldLogger, ctx context.Context, msg kafka.Message) (bool, error) {
@@ -272,7 +272,7 @@ func TestCommitAfterHandlerCompletes(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "test-consumer", "test-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(c)
 
@@ -322,7 +322,7 @@ func TestHandlerErrorPreventsCommit(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "test-consumer", "test-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(c)
 
@@ -365,7 +365,7 @@ func TestHandlerPanicPreventsCommit(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "test-consumer", "test-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(c)
 
@@ -407,7 +407,7 @@ func TestHandlerPanicPreventsCommit(t *testing.T) {
 func TestRegisterHandlerUnknownTopicReturnsError(t *testing.T) {
 	consumer.ResetInstance()
 
-	cm := consumer.GetManager()
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader))
 	_, err := cm.RegisterHandler("nonexistent-topic", func(l logrus.FieldLogger, ctx context.Context, msg kafka.Message) (bool, error) {
 		return true, nil
 	})
@@ -520,7 +520,7 @@ func TestRecreatesReaderOnEOF(t *testing.T) {
 		wg.Wait()
 	}()
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "test-consumer", "eof-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(c)
 
@@ -566,7 +566,7 @@ func TestContextCancelDoesNotRecreate(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "test-consumer", "cancel-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(c)
 
@@ -605,7 +605,7 @@ func TestRetryExhaustionRecreatesReader(t *testing.T) {
 		wg.Wait()
 	}()
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "test-consumer", "retry-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(c)
 
@@ -641,7 +641,7 @@ func TestMultipleHandlersAllCompleteBeforeCommit(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "test-consumer", "test-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(c)
 
@@ -702,7 +702,7 @@ func TestFetchTimeoutTicksWithoutRecreate(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer wg.Wait()
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "tick-consumer", "tick-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(
 		c,
@@ -771,7 +771,7 @@ func TestFetchTimeoutEscalatesAfterMaxToWedge(t *testing.T) {
 	// Goroutine-leak guard (risks R2): capture before the consumer starts.
 	goroutinesBefore := runtime.NumGoroutine()
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "wedge-consumer", "wedge-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(
 		c,
@@ -904,7 +904,7 @@ func TestFetchTimeoutResetsOnSuccessfulFetch(t *testing.T) {
 		wg.Wait()
 	}()
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "reset-consumer", "reset-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(
 		c,
@@ -1010,7 +1010,7 @@ func TestConsumer_DefaultIsSerial(t *testing.T) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "serial-test", "serial-topic", "serial-group")
 	// No SetMaxInFlight — default serial path.
 	cm.AddConsumer(l, ctx, wg)(c)
@@ -1080,7 +1080,7 @@ func TestConsumer_MaxInFlight_RunsConcurrently(t *testing.T) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "parallel-test", "parallel-topic", "parallel-group")
 	cm.AddConsumer(l, ctx, wg)(c, consumer.SetMaxInFlight(n))
 
@@ -1162,7 +1162,7 @@ func TestConsumer_MaxInFlight_PrefixCommitOrdering(t *testing.T) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "ordering-test", "ordering-topic", "ordering-group")
 	cm.AddConsumer(l, ctx, wg)(c, consumer.SetMaxInFlight(3))
 
@@ -1244,7 +1244,7 @@ func TestConsumer_MaxInFlight_FailedMessageBlocksCursor(t *testing.T) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "fail-cursor-test", "fail-cursor-topic", "fail-cursor-group")
 	cm.AddConsumer(l, ctx, wg)(c, consumer.SetMaxInFlight(3))
 
@@ -1306,7 +1306,7 @@ func TestConsumer_MaxInFlight_BackPressure(t *testing.T) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "backpressure-test", "backpressure-topic", "backpressure-group")
 	// Short fetch timeout so the back-pressure check inside the loop fires quickly.
 	cm.AddConsumer(l, ctx, wg)(
@@ -1382,7 +1382,7 @@ func TestAddConsumerWarnsWhenMaxWaitGTEFetchTimeout(t *testing.T) {
 		wg.Wait()
 	}()
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "misconfigured-consumer", "misconfigured-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(
 		c,
@@ -1424,7 +1424,7 @@ func TestAddConsumerNoWarnForHealthyDefaults(t *testing.T) {
 		wg.Wait()
 	}()
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "healthy-consumer", "healthy-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(c)
 

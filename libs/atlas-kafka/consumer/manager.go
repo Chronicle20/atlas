@@ -83,6 +83,7 @@ type Manager struct {
 	rp        ReaderProducer
 	gp        GroupProducer
 	prp       PartitionReaderProducer
+	engine    EngineName
 }
 
 var (
@@ -104,8 +105,9 @@ func GetManager(configurators ...ManagerConfig) *Manager {
 			rp: func(config kafka.ReaderConfig) KafkaReader {
 				return kafka.NewReader(config)
 			},
-			gp:  defaultGroupProducer,
-			prp: defaultPartitionReaderProducer,
+			gp:     defaultGroupProducer,
+			prp:    defaultPartitionReaderProducer,
+			engine: resolveEngine(logrus.StandardLogger()),
 		}
 		for _, configurator := range configurators {
 			configurator(manager)
@@ -185,11 +187,12 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 			startOffset:            c.startOffset,
 			gp:                     m.gp,
 			prp:                    m.prp,
+			engine:                 m.engine,
 		}
 
 		m.consumers[c.topic] = con
 
-		l := cl.WithFields(logrus.Fields{"originator": c.topic, "type": "kafka_consumer"})
+		l := cl.WithFields(logrus.Fields{"originator": c.topic, "type": "kafka_consumer", "engine": string(con.engine)})
 		routine.Go(l, ctx, func(_ context.Context) { con.start(l, ctx, wg) })
 	}
 }
@@ -248,6 +251,7 @@ type Consumer struct {
 	prp           PartitionReaderProducer
 	handlers      map[string]handler.Handler
 	headerParsers []HeaderParser
+	engine        EngineName
 	mu            sync.Mutex
 
 	// Read-only after construction; copied from Config in AddConsumer.
@@ -384,9 +388,13 @@ type Snapshot struct {
 	// AssignedPartitions is the sorted partition list this consumer holds in
 	// the current generation. Always non-nil; empty means healthy-idle (or
 	// the legacy engine, which does not observe assignment).
-	AssignedPartitions  []int
-	GenerationID        int32
-	LastAssignmentAt    time.Time
+	AssignedPartitions []int
+	GenerationID       int32
+	LastAssignmentAt   time.Time
+	// Engine is the consumer implementation this consumer is running:
+	// "consumergroup" or "reader". During a staged rollout both run in one
+	// cluster, so this is how an operator tells them apart.
+	Engine              string
 	TimeToFirstFetch    time.Duration
 	LastFetchDuration   time.Duration
 	MaxFetchDuration    time.Duration
@@ -446,6 +454,7 @@ func (c *Consumer) Snapshot() Snapshot {
 		AssignedPartitions:  append([]int{}, c.assignedPartitions...),
 		GenerationID:        c.generationID,
 		LastAssignmentAt:    c.lastAssignmentAt,
+		Engine:              string(c.engine),
 		TimeToFirstFetch:    c.timeToFirstFetch,
 		LastFetchDuration:   c.lastFetchDuration,
 		MaxFetchDuration:    c.maxFetchDuration,

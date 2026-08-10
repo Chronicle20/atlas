@@ -53,7 +53,7 @@ func decodeDebug(t *testing.T, body []byte) debugDoc {
 
 func TestDebugHandler_Empty(t *testing.T) {
 	consumer.ResetInstance()
-	cm := consumer.GetManager()
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader))
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/debug/consumers", nil)
@@ -73,7 +73,7 @@ func TestDebugHandler_Empty(t *testing.T) {
 
 func TestDebugHandler_RejectsNonGet(t *testing.T) {
 	consumer.ResetInstance()
-	cm := consumer.GetManager()
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader))
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/debug/consumers", nil)
@@ -106,7 +106,7 @@ func TestDebugHandler_PopulatedConsumer(t *testing.T) {
 		wg.Wait()
 	}()
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{"broker-1:9092", "broker-2:9092"}, "asset_status_event", "EVENT_TOPIC_ASSET_STATUS", "Channel Service - test")
 	cm.AddConsumer(l, ctx, wg)(c)
 

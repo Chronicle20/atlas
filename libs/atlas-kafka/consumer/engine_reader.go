@@ -26,11 +26,11 @@ import (
 // other recreate-eligible error: close reader, backoff, rebuild.
 var errFetchWedged = errors.New("consumer fetch wedged: exceeded consecutive timeouts")
 
-// start owns the full reader lifecycle: create reader → run fetch loop →
-// close reader → backoff → repeat, until the parent context is canceled.
-// Only a canceled parent ctx means shutdown; every other error (including
-// io.EOF) flows through the backoff + recreate path.
-func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) {
+// startReaderEngine owns the full reader lifecycle: create reader → run fetch
+// loop → close reader → backoff → repeat, until the parent context is
+// canceled. Only a canceled parent ctx means shutdown; every other error
+// (including io.EOF) flows through the backoff + recreate path.
+func (c *Consumer) startReaderEngine(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer wg.Done()
 

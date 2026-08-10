@@ -78,7 +78,7 @@ func TestIdleTickNeverWedges(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer wg.Wait()
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "idle-consumer", "idle-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(
 		c,
@@ -140,7 +140,7 @@ func TestNoProgressTicksEscalateToWedge(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer wg.Wait()
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "stuck-consumer", "stuck-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(
 		c,
@@ -204,7 +204,7 @@ func TestIdleTickResetsNoProgressCount(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer wg.Wait()
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "flappy-consumer", "flappy-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(
 		c,

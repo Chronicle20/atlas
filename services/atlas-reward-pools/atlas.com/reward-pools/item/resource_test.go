@@ -1,10 +1,13 @@
 package item
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -16,6 +19,7 @@ import (
 	"gorm.io/gorm"
 
 	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type testServerInformation struct{}
@@ -35,7 +39,11 @@ func setupItemRouter(db *gorm.DB) *mux.Router {
 }
 
 func requestWithTenant(method, url string, tenantId uuid.UUID) *http.Request {
-	req, err := http.NewRequest(method, url, nil)
+	return requestWithTenantBody(method, url, tenantId, nil)
+}
+
+func requestWithTenantBody(method, url string, tenantId uuid.UUID, body io.Reader) *http.Request {
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		panic(err)
 	}
@@ -57,6 +65,54 @@ func seedGachaponItem(t *testing.T, db *gorm.DB, tenantId uuid.UUID, id uint32, 
 		Build()
 	require.NoError(t, err)
 	require.NoError(t, CreateItem(db, m))
+}
+
+// TestCreateItemWithoutClientSuppliedId drives
+// POST /gachapons/{gachaponId}/items with the exact JSON:API creation payload
+// the UI sends: `data` carries a type and attributes but NO `id`, because the
+// row's id is server-generated. api2go's Unmarshal calls SetID(data.ID)
+// unconditionally, so an id-less create reaches SetID with "" — which must not
+// be treated as a malformed id.
+func TestCreateItemWithoutClientSuppliedId(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
+	tenantId := uuid.New()
+
+	srv := httptest.NewServer(setupItemRouter(db))
+	defer srv.Close()
+
+	body := `{"data":{"type":"gachapon-items","attributes":{"itemId":2000000,"quantity":1,"tier":"common","weight":50}}}`
+	url := fmt.Sprintf("%s/gachapons/henesys/items", srv.URL)
+	req := requestWithTenantBody(http.MethodPost, url, tenantId, strings.NewReader(body))
+
+	resp, err := (&http.Client{}).Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+
+	te, err := tenant.Create(tenantId, "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), te)
+
+	items, err := NewProcessor(logrus.New(), ctx, db).GetByGachaponId("henesys")()
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	assert.EqualValues(t, 2000000, items[0].ItemId())
+	assert.EqualValues(t, 50, items[0].Weight())
+}
+
+// TestSetIDAcceptsEmptyId pins the unmarshal-level contract directly: a
+// creation payload has no id, and RestModel must accept that rather than
+// failing the whole request.
+func TestSetIDAcceptsEmptyId(t *testing.T) {
+	var rm RestModel
+	require.NoError(t, rm.SetID(""))
+	assert.EqualValues(t, 0, rm.Id)
+
+	require.NoError(t, rm.SetID("7"))
+	assert.EqualValues(t, 7, rm.Id)
+
+	assert.Error(t, rm.SetID("not-a-number"), "a genuinely malformed id must still be rejected")
 }
 
 // TestGetItemsByGachaponIdPaginates drives GET /gachapons/{gachaponId}/items

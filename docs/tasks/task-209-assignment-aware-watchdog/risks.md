@@ -25,12 +25,13 @@ work that kafka-go currently owns and has hardened into our tree:
 | # | Risk | Impact | Mitigation |
 |---|---|---|---|
 | R1 | Offset-commit regression → message loss | **Critical.** Silent gameplay data loss (lost drops, lost EXP) | FR-1.3/FR-1.6. Never advance the cursor on commit failure. Dedicated tests for commit-failure and mid-generation shutdown. Loss is *worse* than duplication — on ambiguity, prefer redelivery |
-| R2 | Duplicate delivery amplified during generation churn | High — but task-208 Parts 1–2 make compartment writes idempotent | Sequence 209 to land **after** 208 Parts 1–2, so idempotency is in place before delivery semantics move |
+| R2 | Duplicate delivery amplified during generation churn | High. task-208's idempotency guard covers atlas-inventory, atlas-cashshop and atlas-storage — but **only those three**; other consumers of moved-semantics topics are unprotected | Prefer landing 208 first so the compartment writes are guarded before delivery semantics move. No longer blocking (R5 resolved), but it is the cheapest available safety net |
 | R3 | `maxInFlight` prefix-commit cursor mis-ported | High. Out-of-order commit → skipped messages under concurrency | FR-1.5. Default stays 1 (serial). Port the cursor per-partition and test at maxInFlight > 1 explicitly |
 | R4 | Partition-count increase no longer detected | Medium. A future repartition would silently strand partitions | PRD §9.5 — confirm the `ConsumerGroupConfig` watch equivalent before merge |
-| R5 | Merge conflict with task-208 Part 3 | Medium — same function, concurrent edit | Agree merge order before either lands (PRD §9.1) |
+| ~~R5~~ | ~~Merge conflict with task-208 Part 3~~ | **RESOLVED 2026-08-10** — 208 reverted its `libs/atlas-kafka` changes; verified that branch no longer touches the module. 209 is sole owner of `manager.go` | — |
 | R6 | Latency regression vs `*kafka.Reader` | Medium | Gate on task-136 S1: p99 ≤ 22 ms, max ≤ 87 ms |
 | R7 | New engine is *itself* wedge-prone in an unforeseen way | Medium | FR-5.1 env-var rollback; stage the rollout |
+| R8 | **No interim mitigation in flight.** With 208's Part 3 reverted, churn continues at baseline (19–246 recreates/hour/service) until 209 ships — and 209 is a migration, not a patch | Medium/schedule. Live gameplay stalls of 4–9 s persist for the duration | Accepted deliberately (option C chosen over the detection patch). If the window proves too long, the FR-2 assignment check is the part that delivers the fix — it could ship on the legacy engine first under FR-5.1 |
 
 ## Rollback
 

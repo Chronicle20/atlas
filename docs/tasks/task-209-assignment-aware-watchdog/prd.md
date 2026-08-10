@@ -40,14 +40,21 @@ rebalance stall rather than a backlog. In one 60-second window, wedge/recreate
 events were observed across ~25 services (recreate attempt counters at 442, 447,
 449, 469).
 
-Four prior tasks have tuned this watchdog — `task-016-kafka-consumer-selfheal`,
-`task-039-kafka-fetch-deadline`, `task-136-consumer-fetch-wedge`, and task-208's
-Part 3 — each compensating for the same missing fact: **the consumer cannot observe
-its own partition assignment**. `*kafka.Reader` exposes no assignment accessor, and
-`ReaderStats.Partition` is a constant stamped at construction (`reader.go:717`), not
-a live assignment. This task removes the gap at its source by migrating the consumer
-onto kafka-go's lower-level `ConsumerGroup` API, where `Generation.Assignments`
-(`consumergroup.go:321`) makes the assignment directly observable.
+Three prior tasks have tuned this watchdog — `task-016-kafka-consumer-selfheal`,
+`task-039-kafka-fetch-deadline`, `task-136-consumer-fetch-wedge` — and a fourth
+attempt (task-208's Part 3, a persistent-backoff mitigation) was written and then
+reverted in favour of this task. Each was compensating for the same missing fact:
+**the consumer cannot observe its own partition assignment**. `*kafka.Reader` exposes
+no assignment accessor, and `ReaderStats.Partition` is a constant stamped at
+construction (`reader.go:717`), not a live assignment. This task removes the gap at
+its source by migrating the consumer onto kafka-go's lower-level `ConsumerGroup` API,
+where `Generation.Assignments` (`consumergroup.go:321`) makes the assignment directly
+observable.
+
+Because task-208 reverted its `libs/atlas-kafka` changes, **no interim mitigation for
+the rebalance churn is in flight**. The churn — and the gameplay stalls it causes —
+continues at the measured baseline until this task ships. task-209 is the sole owner
+of `libs/atlas-kafka/consumer/manager.go`.
 
 ## 2. Goals
 
@@ -217,11 +224,13 @@ single-service build.
 
 ## 9. Open Questions
 
-1. **Coordination with task-208.** Its Part 3 rewrites `readerMadeProgress` with a
-   persistent backoff (15-min cap, "5× reduction in churn"). Working assumption:
-   **209 supersedes 208 Part 3**, and 208 keeps Parts 1–2 (idempotency), which are
-   needed regardless. Both branches edit `libs/atlas-kafka/consumer/manager.go`;
-   merge order must be agreed before either lands.
+1. ~~**Coordination with task-208.**~~ **RESOLVED (2026-08-10).** task-208 reverted its
+   Part 3; verified that branch `task-208-command-idempotency` no longer touches
+   `libs/atlas-kafka` (`git diff --stat main...HEAD -- libs/atlas-kafka` is empty). It
+   now carries only the idempotency work — `libs/atlas-database/idempotency.go` plus
+   wiring in atlas-inventory, atlas-cashshop and atlas-storage. **No file conflict
+   remains**, and the two branches can land in either order. Landing 208 first is still
+   *preferable* but no longer blocking — see `risks.md` R2.
 2. **Group blast radius.** One group spans N topics, so any rejoin stalls all of them.
    Out of scope here; C makes a per-topic group split tractable as a follow-up. Worth
    its own task?

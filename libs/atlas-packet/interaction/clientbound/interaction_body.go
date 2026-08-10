@@ -15,6 +15,13 @@ type CharacterInteractionMode = string
 
 type CharacterInteractionEnterErrorMode = string
 
+// CharacterInteractionInviteResultMode is the semantic key for a mini-room
+// invite refusal (mode 3, CMiniRoomBaseDlg::OnInviteResultStatic), resolved to
+// a numeric byte via the tenant "inviteResult" writer table (DOM-25). The
+// client decodes one byte and branches on it, so the code is a client-facing
+// wire value and must never be a Go literal.
+type CharacterInteractionInviteResultMode = string
+
 // CharacterInteractionMiniGameResultType is the semantic key for a mini-game
 // RESULT (mode 62) outcome, resolved to a numeric byte via the tenant
 // "resultType" writer table (DOM-25). The client reads the numeric value in
@@ -59,6 +66,17 @@ const (
 	CharacterInteractionModeTradeAddMeso   CharacterInteractionMode = "TRADE_ADD_MESO"   // 16
 	CharacterInteractionModeTradeConfirm   CharacterInteractionMode = "TRADE_CONFIRM"    // 17
 	CharacterInteractionModeTradeMesoLimit CharacterInteractionMode = "TRADE_MESO_LIMIT" // 21
+
+	// Invite-result keys resolved via the tenant "inviteResult" writer table.
+	// GMS v83 CMiniRoomBaseDlg::OnInviteResultStatic (@0x65E848) decodes one
+	// byte and branches: 1 -> SP_366 "Unable to find the character" (no name
+	// follows); 2 -> SP_403 "%s is doing something else right now";
+	// 3 -> SP_404 "%s have denied invitation"; 4 -> SP_405 "%s is currently not
+	// accepting any invitation". 0 renders nothing. Only the two refusals
+	// atlas-trades can currently produce are keyed here; the v83 bytes in these
+	// comments are documentation, never a default (DOM-25).
+	CharacterInteractionInviteResultCannotFindCharacter CharacterInteractionInviteResultMode = "CANNOT_FIND_CHARACTER" // 1
+	CharacterInteractionInviteResultBusy                CharacterInteractionInviteResultMode = "BUSY"                  // 2
 
 	CharacterInteractionEnterErrorModeRoomClosed                CharacterInteractionEnterErrorMode = "ROOM_CLOSED"                   // 1
 	CharacterInteractionEnterErrorModeFull                      CharacterInteractionEnterErrorMode = "FULL"                          // 2
@@ -120,10 +138,32 @@ func CharacterInteractionInviteBody(roomType byte, name string, dwSN uint32) fun
 	})
 }
 
+// CharacterInteractionInviteResultBody is the raw-byte entry point: it resolves
+// the mode from the tenant "operations" table but takes the result code as a
+// caller-supplied byte. Prefer CharacterInteractionInviteResultKeyBody, which
+// resolves the code too — a caller that has only a semantic refusal reason must
+// not invent its numeric value (DOM-25). Retained for a caller that already
+// holds a code from a non-tenant source; it has no callers today.
 func CharacterInteractionInviteResultBody(result byte, message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeInviteResult, func(mode byte) packet.Encoder {
 		return NewInteractionInviteResult(mode, result, message)
 	})
+}
+
+// CharacterInteractionInviteResultKeyBody refuses a mini-room invite by its
+// semantic KEY, resolving BOTH wire bytes from tenant tables: the mode from
+// "operations"/INVITE_RESULT and the refusal code from "inviteResult"/resultKey.
+// resultKey is one of the CharacterInteractionInviteResult* keys. message is the
+// name the client interpolates into the refusal string; the
+// CANNOT_FIND_CHARACTER arm reads no name, so an empty string is correct there.
+func CharacterInteractionInviteResultKeyBody(resultKey CharacterInteractionInviteResultMode, message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CharacterInteractionModeInviteResult)
+			result := atlas_packet.ResolveCode(l, options, "inviteResult", resultKey)
+			return NewInteractionInviteResult(mode, result, message).Encode(l, ctx)(options)
+		}
+	}
 }
 
 func CharacterInteractionChatBody(slot byte, message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {

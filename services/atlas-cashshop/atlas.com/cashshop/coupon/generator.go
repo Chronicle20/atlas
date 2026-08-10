@@ -65,12 +65,19 @@ func GenerateCode(length int) (string, error) {
 // error carrying no SQLSTATE, so a Postgres-only matcher would make the 409
 // mapping and the batch collision retry untestable on this branch's harness.
 //
-// gorm's TranslateError/ErrDuplicatedKey would collapse both arms into one,
-// but it is enabled on NEITHER connection (libs/atlas-database/connection.go
-// opens with a bare &gorm.Config{}, as does databasetest), and enabling it
-// would replace the raw *pgconn.PgError that redemption.IsUniqueViolation
-// depends on — silently breaking the same-account race classifier in
-// processor.go. Hence the two-arm matcher.
+// gorm's TranslateError/ErrDuplicatedKey WOULD collapse both arms into a
+// single errors.Is: gorm.io/driver/postgres@v1.6.2/error_translator.go:29-31
+// returns fmt.Errorf("%w: %w", translatedErr, pgErr), so errors.As still
+// resolves the *pgconn.PgError and redemption.IsUniqueViolation would keep
+// working; and gorm.io/driver/sqlite@v1.6.0/error_translator.go:11-12 maps
+// extended codes 1555/2067 to the same gorm.ErrDuplicatedKey. That
+// simplification is SAFE and is not taken here only because of BLAST RADIUS:
+// TranslateError is enabled on neither connection
+// (libs/atlas-database/connection.go:125 opens with a bare &gorm.Config{}, as
+// does databasetest), so turning it on changes the error surface of every
+// service in the monorepo — a libs/atlas-database change, not a coupon one.
+// If someone flips it repo-wide, replacing this function with a single
+// errors.Is(err, gorm.ErrDuplicatedKey) is the correct follow-up.
 func IsDuplicateCode(err error) bool {
 	if err == nil {
 		return false

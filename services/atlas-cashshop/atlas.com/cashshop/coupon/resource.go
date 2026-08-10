@@ -38,7 +38,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("", registerGet("get_coupons", handleGetCoupons(db))).Methods(http.MethodGet)
 			r.HandleFunc("", registerInput("create_coupon", handleCreateCoupon(db))).Methods(http.MethodPost)
 			r.HandleFunc("/{couponId}", registerGet("get_coupon", handleGetCoupon(db))).Methods(http.MethodGet)
-			r.HandleFunc("/{couponId}", registerInput("update_coupon", handleUpdateCoupon(db))).Methods(http.MethodPatch)
+			r.HandleFunc("/{couponId}", rest.RegisterInputHandler[PatchRestModel](l)(si)("update_coupon", handleUpdateCoupon(db))).Methods(http.MethodPatch)
 			r.HandleFunc("/{couponId}", registerGet("delete_coupon", handleDeleteCoupon(db))).Methods(http.MethodDelete)
 		}
 	}
@@ -214,12 +214,17 @@ func handleCreateCoupon(db *gorm.DB) rest.InputHandler[RestModel] {
 	}
 }
 
-// handleUpdateCoupon applies the editable fields. code and batchId are not
-// editable — the code is the identity a player types and the batch is the
-// generation that produced the row — so the stored values are used regardless
-// of what the body says.
-func handleUpdateCoupon(db *gorm.DB) rest.InputHandler[RestModel] {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
+// handleUpdateCoupon applies a PARTIAL update: a field the body omits keeps
+// its stored value. See PatchRestModel for the per-field semantics and for why
+// RestModel cannot be reused here — reading an omitted `active` as false, or
+// an omitted `expiresAt` as "clear the expiry", would silently turn a expired
+// single-use coupon into a never-expiring unlimited one.
+//
+// code and batchId are not editable — the code is the identity a player types
+// and the batch is the generation that produced the row — so the stored values
+// are used regardless of what the body says.
+func handleUpdateCoupon(db *gorm.DB) rest.InputHandler[PatchRestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input PatchRestModel) http.HandlerFunc {
 		return rest.ParseCouponId(d.Logger(), func(couponId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				p := NewProcessor(d.Logger(), d.Context(), db)
@@ -234,25 +239,27 @@ func handleUpdateCoupon(db *gorm.DB) rest.InputHandler[RestModel] {
 					return
 				}
 
-				if err = p.ValidateRewards(input.Rewards); err != nil {
-					writeInputError(d, w, err)
-					return
+				// Only a bundle the admin actually SUPPLIED is re-checked
+				// against atlas-data. Re-validating a preserved bundle would
+				// make an unrelated PATCH (deactivating a coupon, say) fail
+				// 422 because a commodity it references was retired since the
+				// coupon was created — blocking the very edit an operator
+				// reaches for in that situation.
+				if input.Rewards.Set {
+					var supplied reward.Rewards
+					if input.Rewards.Value != nil {
+						supplied = *input.Rewards.Value
+					}
+					if err = p.ValidateRewards(supplied); err != nil {
+						writeInputError(d, w, err)
+						return
+					}
 				}
 
-				// SetRedemptionCount carries the STORED count into the
-				// Builder, which is what makes "maxUses below the current
-				// redemption count" a 422 instead of a silent shrink.
-				m, err := NewBuilder(current.Code()).
-					SetId(couponId).
-					SetBatchId(current.BatchId()).
-					SetDescription(input.Description).
-					SetActive(input.Active).
-					SetStartsAt(input.StartsAt).
-					SetExpiresAt(input.ExpiresAt).
-					SetMaxUses(input.MaxUses).
-					SetRedemptionCount(current.RedemptionCount()).
-					SetRewards(input.Rewards).
-					Build()
+				// Apply carries the STORED redemption count into the Builder,
+				// which is what makes "maxUses below the current redemption
+				// count" a 422 instead of a silent shrink.
+				m, err := input.Apply(current)
 				if err != nil {
 					writeInputError(d, w, err)
 					return

@@ -112,6 +112,14 @@ func marshalCoupon(t *testing.T, rm coupon.RestModel) []byte {
 	return b
 }
 
+// patchBody writes a PATCH body from a RAW attributes document, because the
+// whole point of these tests is which keys are PRESENT: a Go struct with
+// omitempty cannot express "expiresAt is absent" versus "expiresAt is null",
+// and that distinction is the semantics under test.
+func patchBody(attributes string) []byte {
+	return []byte(`{"data":{"type":"coupons","attributes":` + attributes + `}}`)
+}
+
 func marshalBatch(t *testing.T, rm batch.RestModel) []byte {
 	t.Helper()
 	b, err := jsonapi.Marshal(rm)
@@ -300,13 +308,11 @@ func TestUpdateCouponRejectsMaxUsesBelowTheRedemptionCountWith422(t *testing.T) 
 	// state a PATCH has to refuse.
 	require.NoError(t, db.Model(&coupon.Entity{}).Where("id = ?", c.Id()).UpdateColumn("redemption_count", 3).Error)
 
-	body := marshalCoupon(t, coupon.RestModel{Active: true, MaxUses: ptrU32(2), Rewards: currencyBundle()})
-	resp, out := do(t, srv, tm, http.MethodPatch, "/coupons/"+c.Id().String(), body)
+	resp, out := do(t, srv, tm, http.MethodPatch, "/coupons/"+c.Id().String(), patchBody(`{"maxUses":2}`))
 	assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode, string(out))
 
 	t.Run("at or above the count is accepted", func(t *testing.T) {
-		body := marshalCoupon(t, coupon.RestModel{Active: true, MaxUses: ptrU32(3), Rewards: currencyBundle()})
-		resp, out := do(t, srv, tm, http.MethodPatch, "/coupons/"+c.Id().String(), body)
+		resp, out := do(t, srv, tm, http.MethodPatch, "/coupons/"+c.Id().String(), patchBody(`{"maxUses":3}`))
 		require.Equal(t, http.StatusOK, resp.StatusCode, string(out))
 		assert.EqualValues(t, 3, attr(t, *decodeDoc(t, out).Data.DataObject, "maxUses"))
 	})
@@ -316,9 +322,7 @@ func TestUpdateCouponEditsTheEditableFields(t *testing.T) {
 	srv, db, tm := newEnv(t)
 	c := seedCoupon(t, db, tm, coupon.NewBuilder("EDITME").SetDescription("before").SetRewards(currencyBundle()))
 
-	body := marshalCoupon(t, coupon.RestModel{
-		Code: "IGNORED", Description: "after", Active: false, Rewards: currencyBundle(),
-	})
+	body := patchBody(`{"code":"IGNORED","description":"after","active":false}`)
 	resp, out := do(t, srv, tm, http.MethodPatch, "/coupons/"+c.Id().String(), body)
 	require.Equal(t, http.StatusOK, resp.StatusCode, string(out))
 
@@ -335,9 +339,105 @@ func TestUpdateAndGetMissingCouponAre404(t *testing.T) {
 	resp, _ := do(t, srv, tm, http.MethodGet, "/coupons/"+missing, nil)
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 
-	body := marshalCoupon(t, coupon.RestModel{Active: true, Rewards: currencyBundle()})
-	resp, _ = do(t, srv, tm, http.MethodPatch, "/coupons/"+missing, body)
+	resp, _ = do(t, srv, tm, http.MethodPatch, "/coupons/"+missing, patchBody(`{"active":true}`))
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}
+
+// TestUpdateCouponPreservesOmittedFields is the PATCH-is-not-PUT guarantee.
+//
+// An admin deactivating one coupon sends only {"active":false}. Before partial
+// semantics, that same request silently turned a coupon that expired on
+// 2026-01-01 with one use left into a NEVER-EXPIRING, UNLIMITED-USE coupon,
+// because every omitted nullable field read as "clear it".
+func TestUpdateCouponPreservesOmittedFields(t *testing.T) {
+	srv, db, tm := newEnv(t)
+
+	starts := time.Now().UTC().Add(-48 * time.Hour).Truncate(time.Second)
+	expires := time.Now().UTC().Add(48 * time.Hour).Truncate(time.Second)
+	c := seedCoupon(t, db, tm, coupon.NewBuilder("PARTIAL").
+		SetDescription("winter promo").
+		SetStartsAt(&starts).
+		SetExpiresAt(&expires).
+		SetMaxUses(ptrU32(1)).
+		SetRewards(currencyBundle()))
+
+	resp, out := do(t, srv, tm, http.MethodPatch, "/coupons/"+c.Id().String(), patchBody(`{"active":false}`))
+	require.Equal(t, http.StatusOK, resp.StatusCode, string(out))
+
+	// Assert on a fresh GET, not just the PATCH response, so this is about
+	// what was STORED rather than what the handler happened to echo back.
+	resp, out = do(t, srv, tm, http.MethodGet, "/coupons/"+c.Id().String(), nil)
+	require.Equal(t, http.StatusOK, resp.StatusCode, string(out))
+	obj := *decodeDoc(t, out).Data.DataObject
+
+	assert.Equal(t, false, attr(t, obj, "active"), "the one field that was sent must change")
+	assert.Equal(t, "winter promo", attr(t, obj, "description"), "an omitted description must survive")
+	assert.EqualValues(t, 1, attr(t, obj, "maxUses"), "an omitted maxUses must NOT become unlimited")
+
+	expiresRaw, ok := attr(t, obj, "expiresAt").(string)
+	require.True(t, ok, "an omitted expiresAt must NOT be cleared")
+	gotExpires, err := time.Parse(time.RFC3339, expiresRaw)
+	require.NoError(t, err)
+	assert.True(t, expires.Equal(gotExpires), "expiresAt = %v, want the stored %v", gotExpires, expires)
+
+	startsRaw, ok := attr(t, obj, "startsAt").(string)
+	require.True(t, ok, "an omitted startsAt must NOT be cleared")
+	gotStarts, err := time.Parse(time.RFC3339, startsRaw)
+	require.NoError(t, err)
+	assert.True(t, starts.Equal(gotStarts), "startsAt = %v, want the stored %v", gotStarts, starts)
+
+	rewards, ok := attr(t, obj, "rewards").([]interface{})
+	require.True(t, ok, "an omitted rewards bundle must survive")
+	require.Len(t, rewards, 1)
+	assert.EqualValues(t, 100, rewards[0].(map[string]interface{})["amount"])
+}
+
+// TestUpdateCouponClearsExplicitNulls is the other half of partial semantics:
+// absence preserves, but an explicit null still clears, so an admin CAN remove
+// an expiry or lift a usage cap.
+func TestUpdateCouponClearsExplicitNulls(t *testing.T) {
+	srv, db, tm := newEnv(t)
+
+	starts := time.Now().UTC().Add(-48 * time.Hour).Truncate(time.Second)
+	expires := time.Now().UTC().Add(48 * time.Hour).Truncate(time.Second)
+	c := seedCoupon(t, db, tm, coupon.NewBuilder("CLEARME").
+		SetDescription("temporary").
+		SetStartsAt(&starts).
+		SetExpiresAt(&expires).
+		SetMaxUses(ptrU32(1)).
+		SetRewards(currencyBundle()))
+
+	body := patchBody(`{"startsAt":null,"expiresAt":null,"maxUses":null,"description":null}`)
+	resp, out := do(t, srv, tm, http.MethodPatch, "/coupons/"+c.Id().String(), body)
+	require.Equal(t, http.StatusOK, resp.StatusCode, string(out))
+
+	resp, out = do(t, srv, tm, http.MethodGet, "/coupons/"+c.Id().String(), nil)
+	require.Equal(t, http.StatusOK, resp.StatusCode, string(out))
+	obj := *decodeDoc(t, out).Data.DataObject
+
+	// These attributes are omitempty on the response, so cleared means absent.
+	assert.Nil(t, attr(t, obj, "startsAt"))
+	assert.Nil(t, attr(t, obj, "expiresAt"))
+	assert.Nil(t, attr(t, obj, "maxUses"))
+	assert.Nil(t, attr(t, obj, "description"))
+	assert.Equal(t, true, attr(t, obj, "active"), "an omitted active must survive the clears")
+}
+
+// TestUpdateCouponRejectsAnExplicitlyEmptiedBundle pins that `rewards: null`
+// is NOT a way to make a coupon that grants nothing.
+func TestUpdateCouponRejectsAnExplicitlyEmptiedBundle(t *testing.T) {
+	srv, db, tm := newEnv(t)
+	c := seedCoupon(t, db, tm, coupon.NewBuilder("KEEPREWARDS").SetRewards(currencyBundle()))
+
+	for name, body := range map[string]string{
+		"null":  `{"rewards":null}`,
+		"empty": `{"rewards":[]}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			resp, out := do(t, srv, tm, http.MethodPatch, "/coupons/"+c.Id().String(), patchBody(body))
+			assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode, string(out))
+		})
+	}
 }
 
 // --- DELETE /coupons/{id} ----------------------------------------------------
@@ -641,8 +741,7 @@ func TestAnotherTenantCanNeitherReadNorMutateTheseCoupons(t *testing.T) {
 	})
 
 	t.Run("cannot update the coupon", func(t *testing.T) {
-		body := marshalCoupon(t, coupon.RestModel{Description: "stolen", Active: false, Rewards: currencyBundle()})
-		resp, _ := do(t, srv, intruder, http.MethodPatch, "/coupons/"+id, body)
+		resp, _ := do(t, srv, intruder, http.MethodPatch, "/coupons/"+id, patchBody(`{"description":"stolen","active":false}`))
 		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 

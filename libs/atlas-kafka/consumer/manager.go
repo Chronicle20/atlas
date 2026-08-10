@@ -80,6 +80,8 @@ type Manager struct {
 	mu        *sync.Mutex
 	consumers map[string]*Consumer
 	rp        ReaderProducer
+	gp        GroupProducer
+	prp       PartitionReaderProducer
 }
 
 var (
@@ -101,6 +103,8 @@ func GetManager(configurators ...ManagerConfig) *Manager {
 			rp: func(config kafka.ReaderConfig) KafkaReader {
 				return kafka.NewReader(config)
 			},
+			gp:  defaultGroupProducer,
+			prp: defaultPartitionReaderProducer,
 		}
 		for _, configurator := range configurators {
 			configurator(manager)
@@ -176,6 +180,10 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 			fetchTimeout:           c.fetchTimeout,
 			maxConsecutiveTimeouts: c.maxConsecutiveTimeouts,
 			maxInFlight:            maxInFlight,
+			maxWait:                c.maxWait,
+			startOffset:            c.startOffset,
+			gp:                     m.gp,
+			prp:                    m.prp,
 		}
 
 		m.consumers[c.topic] = con
@@ -235,6 +243,8 @@ type Consumer struct {
 	brokers       []string
 	readerConfig  kafka.ReaderConfig
 	rp            ReaderProducer
+	gp            GroupProducer
+	prp           PartitionReaderProducer
 	handlers      map[string]handler.Handler
 	headerParsers []HeaderParser
 	mu            sync.Mutex
@@ -243,6 +253,8 @@ type Consumer struct {
 	fetchTimeout           time.Duration
 	maxConsecutiveTimeouts int
 	maxInFlight            int
+	maxWait                time.Duration
+	startOffset            int64
 
 	// Observable state — protected by mu.
 	aliveSince          time.Time

@@ -3843,6 +3843,30 @@
         ]
       },
       {
+        "opCode": "0x123",
+        "writer": "SpawnKiteError",
+        "fname": "CMessageBoxPool::OnCreateFailed",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x124",
+        "writer": "SpawnKite",
+        "fname": "CMessageBoxPool::OnMessageBoxEnterField",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x125",
+        "writer": "DestroyKite",
+        "fname": "CMessageBoxPool::OnMessageBoxLeaveField",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x126",
         "writer": "AffectedAreaCreated",
         "fname": "CAffectedAreaPool::OnAffectedAreaCreated",

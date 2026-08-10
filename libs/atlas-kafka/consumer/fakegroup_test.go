@@ -146,6 +146,10 @@ func newFakeGroup(gens ...*fakeGeneration) *fakeGroup {
 
 func (g *fakeGroup) Next(ctx context.Context) (Generation, error) {
 	g.mu.Lock()
+	if g.closed {
+		g.mu.Unlock()
+		return nil, errFakeGroupClosed
+	}
 	g.nextN++
 	if g.next > 0 {
 		prev := g.gens[g.next-1]
@@ -158,6 +162,10 @@ func (g *fakeGroup) Next(ctx context.Context) (Generation, error) {
 			return nil, ctx.Err()
 		}
 		g.mu.Lock()
+		if g.closed {
+			g.mu.Unlock()
+			return nil, errFakeGroupClosed
+		}
 	}
 	if g.next >= len(g.gens) {
 		g.mu.Unlock()

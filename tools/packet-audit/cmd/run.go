@@ -1147,6 +1147,14 @@ func candidatesFromFName(fname string) []candidate {
 		// task-092 Cluster-D: MOB_DROP_PICKUP_REQUEST — atlas MobDropPickupRequest
 		// (handle = "MobDropPickupRequest"). Two Encode4 (mobCrc, dropId).
 		return []candidate{{name: "MobDropPickupRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendBridleItemUseRequest":
+		// task-212: USE_CATCH_ITEM — atlas UseCatchItem (handle =
+		// "MonsterCatchItemUseHandle"), in monster/serverbound because the
+		// request targets a field monster and carries its object id.
+		// Encode4 updateTime + Encode2 nPOS + Encode4 nItemID + Encode4 mobId,
+		// identical on gms_v48 @0x70e0c5 / v61 @0x832005 / v72 @0x90457d /
+		// v79 @0x9558e5 / v95 @0x9e08c0.
+		return []candidate{{name: "UseCatchItem", pkg: "monster", dir: csvpkg.DirServerbound}}
 	case "CMob::Update":
 		// task-092 Cluster-A: CMob::Update (the mob per-frame tick) builds THREE
 		// distinct serverbound COutPackets at distinct send-sites/opcodes:

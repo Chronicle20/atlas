@@ -550,7 +550,7 @@
         "opCode": "0x46",
         "validator": "LoggedInValidator",
         "handler": "CharacterInventoryMoveHandle",
-        "fname": "sub_831C83",
+        "fname": "CWvsContext::SendMobSummonItemUseRequest",
         "services": [
           "channel"
         ]
@@ -586,7 +586,7 @@
         "opCode": "0x4A",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemUseSummonBagHandle",
-        "fname": "sub_832005",
+        "fname": "CWvsContext::SendBridleItemUseRequest",
         "services": [
           "channel"
         ]

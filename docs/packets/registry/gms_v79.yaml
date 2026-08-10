@@ -2922,6 +2922,13 @@
   ida:
     address: 9790282
   note: 'v79 CWvsContext::SendConsumeCashItemUseRequest COutPacket(77); push 4Dh;a2 @0x9563b3. v83 USE_CASH_ITEM=0x4f=79 (d-2). delta doc serverbound (ida-read).'
+- op: USE_CATCH_ITEM
+  direction: serverbound
+  opcode: 79
+  fname: CWvsContext::SendBridleItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 9787621
 - op: USE_SKILL_BOOK
   direction: serverbound
   opcode: 80

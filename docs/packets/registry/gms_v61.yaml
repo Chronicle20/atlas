@@ -2270,12 +2270,31 @@
   note: 'v61 send-site sub_8314D0 @0x8314d0: COutPacket(64)+Encode4(updateTime)+Encode1(compartmentType,guarded[1,5]) = SendGatherItemRequest twin; body == v72 [E4,E1]. CORRECTS prior mislabel op68/sub_831BB7 (a different item-id send).'
 - op: ITEM_MOVE
   direction: serverbound
-  opcode: 70
-  fname: sub_831C83
+  opcode: 66
+  fname: CWvsContext::SendChangeSlotPositionRequest
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_831C83 COutPacket(70), CWvsContext item region; Δ0 vs v72.'
+    address: 8590840
+  note: 'task-212 correction (v61 IDB session 415bf585, GMS_v61.1_U_DEVM.exe):
+    sub_8315F8@0x8315f8, renamed live to CWvsContext__SendChangeSlotPositionRequest
+    this pass; decompile emits COutPacket(66)+Encode4+Encode1+Encode2+Encode2+
+    Encode2 — the ITEM_MOVE / SendChangeSlotPositionRequest body shape. Real
+    ITEM_MOVE sender relocated here from opcode 70 (see USE_SUMMON_BAG note
+    below, which now correctly holds sub_831C83).'
+- op: USE_SUMMON_BAG
+  direction: serverbound
+  opcode: 70
+  fname: CWvsContext::SendMobSummonItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 8592515
+  note: 'task-212 correction (v61 IDB session 415bf585, GMS_v61.1_U_DEVM.exe):
+    sub_831C83@0x831c83 is named CWvsContext::SendMobSummonItemUseRequest;
+    decompile emits COutPacket(70)+Encode4(updateTime)+Encode1+Encode2 (no mob
+    id) — the real USE_SUMMON_BAG. Supersedes the prior send-site-harvest
+    ITEM_MOVE mislabel at this opcode (shared placeholder ctor-site address
+    0x5ffc4f = 6291023, not the function''s own address). The real ITEM_MOVE
+    sender is relocated to opcode 66 (see below).'
 - op: USE_ITEM
   direction: serverbound
   opcode: 67
@@ -2311,14 +2330,21 @@
   ida:
     address: 8592311
   note: 'v61 item-buff right-click cancel: CWndMan proc sub_4486B0 (v5==1 branch) calls sub_831BB7(-sourceId)@0x831bb7 = SendStatChangeItemCancelRequest: guard sub_4BDB9F(200,0); if sourceId/-10000==221 -> StringPool(4271) message; else COutPacket(68)+Encode4(sourceId). SINGLE Encode4. Prior registry op72/sub_831F44 was a mislabel (that is the IsRidingTamedMob 226xxxx MOUNT cancel, COutPacket(72)+[E4,E2,E4], a distinct packet). v61 item region shifted Δ-4 vs v72 (ITEM_SORT 64=v72 68-4; CANCEL 68=v72 72-4), so v72 CANCEL_ITEM_EFFECT=72 -> v61=68.'
-- op: USE_SUMMON_BAG
+- op: USE_CATCH_ITEM
   direction: serverbound
   opcode: 74
-  fname: sub_832005
+  fname: CWvsContext::SendBridleItemUseRequest
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_832005 COutPacket(74), CWvsContext item region; Δ0 vs v72.'
+    address: 8593413
+  note: 'task-212 correction (v61 IDB session 415bf585, GMS_v61.1_U_DEVM.exe):
+    sub_832005@0x832005 is named ?SendBridleItemUseRequest@CWvsContext@@;
+    decompile emits COutPacket(74)+Encode4(updateTime)+Encode2(pos)+
+    Encode4(itemId)+Encode4(mob uniqueId), guarded by itemId/10000==227 and
+    CMobPool::FindHitMobInRect — USE_CATCH_ITEM. Supersedes the prior
+    send-site-harvest USE_SUMMON_BAG mislabel at this opcode (shared
+    placeholder ctor-site address 0x5ffc4f = 6291023, not the function''s own
+    address).'
 - op: USE_SKILL_BOOK
   direction: serverbound
   opcode: 75

@@ -1756,6 +1756,13 @@
   provenance: ida-discovered
   ida:
     address: 7397167
+- op: USE_CATCH_ITEM
+  direction: serverbound
+  opcode: 63
+  fname: CWvsContext::SendBridleItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 7397573
 - op: USE_UPGRADE_SCROLL
   direction: serverbound
   opcode: 66

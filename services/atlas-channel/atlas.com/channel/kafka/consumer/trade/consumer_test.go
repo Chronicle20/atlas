@@ -15,6 +15,7 @@ import (
 
 	channelconst "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	atlaspacket "github.com/Chronicle20/atlas/libs/atlas-packet"
 	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
@@ -111,6 +112,16 @@ func newTestServer(t *testing.T, tm tenant.Model) server.Model {
 // handler made.
 func handleAndCapture(t *testing.T, d eventDispatch) []announceCall {
 	t.Helper()
+	return handleAndCaptureWith(t, d, testOptions)
+}
+
+// handleAndCaptureWith is handleAndCapture with an explicit writer option set,
+// so a test can model a client version whose operations table binds a
+// different set of arms. Both the encode step and the consumer's own
+// arm-presence gate read from the SAME table, which is what makes a
+// version-absent arm testable without a live writer registry.
+func handleAndCaptureWith(t *testing.T, d eventDispatch, opts map[string]interface{}) []announceCall {
+	t.Helper()
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
 	sc := newTestServer(t, tm)
@@ -119,9 +130,15 @@ func handleAndCapture(t *testing.T, d eventDispatch) []announceCall {
 	var recorded []announceCall
 	orig := tradeAnnouncer
 	tradeAnnouncer = func(_ logrus.FieldLogger, _ context.Context, _ server.Model, _ writer.Producer, cid charconst.Id, body packet.Encode) {
-		recorded = append(recorded, announceCall{characterId: cid, bytes: body(l, ctx)(testOptions)})
+		recorded = append(recorded, announceCall{characterId: cid, bytes: body(l, ctx)(opts)})
 	}
 	defer func() { tradeAnnouncer = orig }()
+
+	origGate := tradeMesoLimitConfigured
+	tradeMesoLimitConfigured = func(_ logrus.FieldLogger, _ context.Context) bool {
+		return atlaspacket.CodeConfigured(opts, "operations", interactioncb.CharacterInteractionModeTradeMesoLimit)
+	}
+	defer func() { tradeMesoLimitConfigured = origGate }()
 
 	d(sc)(l, ctx)
 	return recorded
@@ -448,6 +465,31 @@ func TestMesoRefusedSendsBothTheReEchoAndTheLimitArm(t *testing.T) {
 	// other client would rewrite that client's view of its own grid.
 	if got := len(callsTo(announced, 200)); got != 0 {
 		t.Errorf("counterparty received %d frames, want 0", got)
+	}
+}
+
+// TestMesoRefusedSkipsTheLimitArmWhereItIsVersionAbsent pins the jms_185 case:
+// CTradingRoomDlg there has no meso-limit arm, so template_jms_185_1.json binds
+// no TRADE_MESO_LIMIT operation. Sending it anyway would resolve to the 99
+// sentinel and hand the client a mode it cannot dispatch. The authoritative
+// TRADE_ADD_MESO re-echo must still go out — it is what actually corrects the
+// client, per design §4.2.
+func TestMesoRefusedSkipsTheLimitArmWhereItIsVersionAbsent(t *testing.T) {
+	ops := make(map[string]interface{}, len(testOperations))
+	for k, v := range testOperations {
+		if k == "TRADE_MESO_LIMIT" {
+			continue
+		}
+		ops[k] = v
+	}
+	opts := map[string]interface{}{"operations": ops, "leaveReason": testLeaveReason}
+
+	announced := handleAndCaptureWith(t, mesoRefusedEvent(characterId(100), lastValid(1_000_000)), opts)
+	if !receivedMode(t, announced, 100, "TRADE_ADD_MESO") {
+		t.Error("the authoritative re-echo must still be sent where the limit arm is absent")
+	}
+	if got := len(callsTo(announced, 100)); got != 1 {
+		t.Errorf("character received %d frames, want exactly 1 (the re-echo alone)", got)
 	}
 }
 

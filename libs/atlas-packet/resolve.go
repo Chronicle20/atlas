@@ -10,6 +10,32 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
 
+// CodeConfigured reports whether options[property][key] is present, without
+// resolving it and without logging. It is the quiet companion to ResolveCode,
+// for the case where an ABSENT key is a legitimate, expected state rather than
+// a misconfiguration: a dispatcher arm that a given client version simply does
+// not have (the tenant template is the per-version authority — DOM-25, so
+// "not in the operations table" IS "not on this version", and no version
+// number is hard-coded anywhere).
+//
+// Callers must skip the write when this returns false. Sending anyway routes
+// through ResolveCode's 99 sentinel, which the client has no arm for.
+// ResolveCode/ResolveValue stay loud because for them a miss is a real
+// misconfiguration; this predicate exists so a by-design absence does not have
+// to be logged as an error on every occurrence.
+func CodeConfigured(options map[string]interface{}, property string, key string) bool {
+	genericCodes, ok := options[property]
+	if !ok {
+		return false
+	}
+	codes, ok := genericCodes.(map[string]interface{})
+	if !ok {
+		return false
+	}
+	_, ok = codes[key]
+	return ok
+}
+
 // WithResolvedCode resolves a byte code from options at encode time and delegates to the factory-produced encoder.
 // This eliminates the need for service-layer wrapper functions that only resolve a code and delegate.
 func WithResolvedCode(codeProperty, key string, factory func(byte) packet.Encoder) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {

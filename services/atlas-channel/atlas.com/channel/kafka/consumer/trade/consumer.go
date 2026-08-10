@@ -26,6 +26,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	atlasmodel "github.com/Chronicle20/atlas/libs/atlas-model/model"
+	atlaspacket "github.com/Chronicle20/atlas/libs/atlas-packet"
 	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
@@ -160,6 +161,20 @@ var tradeAnnouncer = func(l logrus.FieldLogger, ctx context.Context, sc server.M
 	if err != nil {
 		l.WithError(err).Errorf("Unable to announce CharacterInteraction frame to character [%d].", characterId)
 	}
+}
+
+// tradeMesoLimitConfigured reports whether this tenant's CharacterInteraction
+// writer binds the TRADE_MESO_LIMIT operation, i.e. whether the client version
+// has that dispatcher arm at all. Package-level var so tests can exercise both
+// the present and absent versions without standing up a writer registry.
+var tradeMesoLimitConfigured = func(l logrus.FieldLogger, ctx context.Context) bool {
+	t := tenant.MustFromContext(ctx)
+	opts, ok := writer.TenantWriterOptions(t.Id(), interactioncb.CharacterInteractionWriter)
+	if !ok {
+		l.Warnf("Writer options for [%s] missing; TRADE_MESO_LIMIT not sent.", interactioncb.CharacterInteractionWriter)
+		return false
+	}
+	return atlaspacket.CodeConfigured(opts, "operations", interactioncb.CharacterInteractionModeTradeMesoLimit)
 }
 
 // announceToRoom sends the SAME body to every occupant. Bodies that carry a
@@ -369,7 +384,17 @@ func handleMesoRefusedEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 		}
 		l.Debugf("Meso stage refused for character [%d] in trade room [%s]. lastValidAmount [%d].", e.CharacterId, e.RoomId, e.Body.LastValidAmount)
 		announceTo(l, ctx, sc, wp, e.CharacterId, interactioncb.CharacterInteractionTradeAddMesoBody(ownSide, e.Body.LastValidAmount))
-		announceTo(l, ctx, sc, wp, e.CharacterId, interactioncb.CharacterInteractionTradeMesoLimitBody())
+		// The re-echo above is what actually snaps the client back, so the
+		// reason frame is skippable. TRADE_MESO_LIMIT is version-ABSENT on
+		// jms_185 — CTradingRoomDlg's dispatcher there has exactly three arms
+		// (13/14/15) and no meso-limit case, which is why the matrix grades
+		// that cell n-a and template_jms_185_1.json binds no such operation.
+		// Announcing regardless would resolve to ResolveCode's 99 sentinel and
+		// hand the client a mode it cannot dispatch. Presence in the tenant's
+		// operations table is the per-version authority (DOM-25).
+		if tradeMesoLimitConfigured(l, ctx) {
+			announceTo(l, ctx, sc, wp, e.CharacterId, interactioncb.CharacterInteractionTradeMesoLimitBody())
+		}
 	}
 }
 

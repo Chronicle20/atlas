@@ -8,6 +8,8 @@ import (
 	trademsg "atlas-trades/kafka/message/trade"
 	"atlas-trades/ledger"
 	"encoding/json"
+	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -18,6 +20,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
@@ -710,9 +713,14 @@ func TestSettlementSuccessCancelsBothHolds(t *testing.T) {
 	}
 }
 
-// TestSettlementSuccessIsIdempotent pins FR-5.7 at the boundary that actually
-// sees a redelivery: a repeated COMPLETED status must not write a second row.
-func TestSettlementSuccessIsIdempotent(t *testing.T) {
+// TestSecondCompletedDeliveryIsStoppedByTheRoomGuard pins the FIRST of the two
+// defences against a redelivered COMPLETED. It is the room guard that stops
+// this one: the winning delivery removed the room, so the second returns at
+// settledRoom without ever reaching the ledger. (ledger.Record's own
+// idempotency is pinned in the ledger package; the CAS that handles a
+// CONCURRENT second delivery is pinned by
+// TestSettlementSuccessDoesNotReEmitWhenAnotherDeliveryClaimsTheRoom.)
+func TestSecondCompletedDeliveryIsStoppedByTheRoomGuard(t *testing.T) {
 	p, e := testSettlingRoom(t)
 	room, _ := p.RoomForCharacter(100)
 
@@ -789,6 +797,155 @@ func TestSettlementStatusForAnUnknownRoomIsIgnored(t *testing.T) {
 	if got := len(readLedger(t, p)); got != 0 {
 		t.Errorf("ledger entries: got %d, want 0", got)
 	}
+}
+
+// --- cancel vs settle, raced across the teardown's REST reads ------------------
+
+// beginSettlingOnce drives the room to SETTLING the FIRST time a compartment is
+// read, which is the real window: every teardown resolves its staged slots over
+// REST between reading the room and ending it, and the attestation deadline
+// runs settle from an independent goroutine that no Kafka partition ordering
+// serialises against the teardown consumer.
+func beginSettlingOnce(t *testing.T, p *ProcessorImpl, roomId uuid.UUID) func() {
+	t.Helper()
+	var once sync.Once
+	return func() {
+		once.Do(func() {
+			if _, err := p.reg.Update(p.t, roomId, func(cur Room) (Room, error) {
+				return cur.WithState(StateSettling).WithSettlementId(uuid.New()), nil
+			}); err != nil {
+				t.Errorf("move to settling: %v", err)
+			}
+		})
+	}
+}
+
+// TestTeardownLosesToASettlementThatWinsDuringItsReads pins FR-6.5 through the
+// window a plain state read leaves open. Without the compare-and-set the
+// teardown would cancel both holds the in-flight saga is about to consume AND
+// delete the room its terminal status must find — so the swap would execute
+// with no ledger row and no SETTLED, while both clients had already seen
+// LEAVE 2.
+func TestTeardownLosesToASettlementThatWinsDuringItsReads(t *testing.T) {
+	p, e := testConfirmedRoom(t)
+	room, _ := p.RoomForCharacter(100)
+	p.invp.(*fakeInventory).onGetCompartment = beginSettlingOnce(t, p, room.Id())
+
+	if err := p.TeardownCharacter(uuid.New(), 200, ReasonTradeCancelled); err != nil {
+		t.Fatalf("teardown: %v", err)
+	}
+
+	assertNoEventOfType(t, e, trademsg.StatusTypeCancelled)
+	assertNoCompartmentCommandOfType(t, e, compartmentmsg.CommandCancelReservation)
+	survivor, ok := p.RoomForCharacter(100)
+	if !ok {
+		t.Fatal("the teardown deleted a room whose settlement had already started")
+	}
+	if survivor.State() != StateSettling {
+		t.Errorf("state: got %s, want %s", survivor.State(), StateSettling)
+	}
+}
+
+// TestSettlementRefusalLosesToASettlementThatWinsDuringItsReads pins the same
+// compare-and-set on the OTHER teardown caller: a pre-check refusal also runs
+// REST reads before it ends the room, and another trigger can reach SETTLING
+// inside that window.
+func TestSettlementRefusalLosesToASettlementThatWinsDuringItsReads(t *testing.T) {
+	p, e := testConfirmedRoomWithFullInventory(t, 200)
+	room, _ := p.RoomForCharacter(100)
+	p.invp.(*fakeInventory).onGetCompartment = beginSettlingOnce(t, p, room.Id())
+
+	for _, id := range []character.Id{100, 200} {
+		if err := p.Attest(uuid.New(), id, nil); err != nil {
+			t.Fatalf("attest for %d: %v", id, err)
+		}
+	}
+
+	assertNoEventOfType(t, e, trademsg.StatusTypeCancelled)
+	assertNoCompartmentCommandOfType(t, e, compartmentmsg.CommandCancelReservation)
+	if _, ok := p.RoomForCharacter(100); !ok {
+		t.Error("a pre-check refusal deleted a room whose settlement had already started")
+	}
+}
+
+// TestSettlementSuccessDoesNotReEmitWhenAnotherDeliveryClaimsTheRoom pins the
+// SECOND defence against a redelivered COMPLETED: the room is claimed by an
+// atomic compare-and-set, so two deliveries that both pass the state pre-filter
+// still produce exactly one SETTLED.
+func TestSettlementSuccessDoesNotReEmitWhenAnotherDeliveryClaimsTheRoom(t *testing.T) {
+	p, e := testSettlingRoom(t)
+	room, _ := p.RoomForCharacter(100)
+
+	// The competing delivery claims the room while this one is resolving its
+	// staged slots — after its state pre-filter, before its own claim.
+	var once sync.Once
+	p.invp.(*fakeInventory).onGetCompartment = func() {
+		once.Do(func() { p.reg.Remove(p.t, room.Id()) })
+	}
+
+	if err := p.SettlementSucceeded(uuid.New(), room.Id()); err != nil {
+		t.Fatalf("settle: %v", err)
+	}
+	assertNoEventOfType(t, e, trademsg.StatusTypeSettled)
+	assertNoCompartmentCommandOfType(t, e, compartmentmsg.CommandCancelReservation)
+	// The ledger row is written before the claim and is idempotent per
+	// settlement transaction, so the delivery that lost the claim has recorded
+	// the same single row the winner would have.
+	if got := len(readLedger(t, p)); got != 1 {
+		t.Errorf("ledger entries: got %d, want 1", got)
+	}
+}
+
+// --- the attestation deadline vs a failed emit -----------------------------------
+
+// TestConfirmArmsTheDeadlineEvenWhenTheEmitFails pins the wedge a failed emit
+// would otherwise leave. The registry swap to AWAITING_ATTESTATION is in-memory
+// and is NOT rolled back by the enclosing transaction, so a room whose confirm
+// failed to publish still sits in that state — with no mode 17 ever reaching
+// the clients, no attestation possible, and RefreshReservations keeping both
+// sides' holds alive indefinitely. Only the deadline can end it.
+func TestConfirmArmsTheDeadlineEvenWhenTheEmitFails(t *testing.T) {
+	p, _ := testStagedRoom(t)
+	room, _ := p.RoomForCharacter(100)
+	// Break the outbox so every buffered message fails to publish.
+	if err := p.db.Migrator().DropTable(&outbox.Entity{}); err != nil {
+		t.Fatalf("drop outbox: %v", err)
+	}
+
+	if err := p.Confirm(uuid.New(), 100, nil); err == nil {
+		t.Fatal("owner confirm: expected the broken outbox to surface an error")
+	}
+	if err := p.Confirm(uuid.New(), 200, nil); err == nil {
+		t.Fatal("visitor confirm: expected the broken outbox to surface an error")
+	}
+
+	updated, ok := p.RoomForCharacter(100)
+	if !ok {
+		t.Fatal("the room did not survive the confirms")
+	}
+	if updated.State() != StateAwaitingAttestation {
+		t.Fatalf("state: got %s, want %s — the in-memory swap is not rolled back", updated.State(), StateAwaitingAttestation)
+	}
+	if !p.timers.isArmed(p.t, room.Id()) {
+		t.Error("no attestation deadline armed: the room is wedged in AWAITING_ATTESTATION for good")
+	}
+}
+
+// TestSettlementRefusesWhenTheSlotMaxCannotBeRead pins design §7 on the
+// settlement path's second atlas-data read: an unreadable stack ceiling makes
+// the free-slot count unknowable, and assuming room is how a trade overflows an
+// inventory.
+func TestSettlementRefusesWhenTheSlotMaxCannotBeRead(t *testing.T) {
+	p, e := testConfirmedRoom(t)
+	p.idp = &fakeItemData{blocked: make(map[item.Id]bool), slotMaxErr: errors.New("atlas-data unreachable")}
+
+	for _, id := range []character.Id{100, 200} {
+		if err := p.Attest(uuid.New(), id, nil); err != nil {
+			t.Fatalf("attest for %d: %v", id, err)
+		}
+	}
+	assertCancelledWithReason(t, e, ReasonTradeCannotCarry)
+	assertNoSagaSubmitted(t, e)
 }
 
 // TestSettlementSuccessForARoomThatIsNotSettlingIsIgnored pins the state guard:

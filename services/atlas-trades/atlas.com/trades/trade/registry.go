@@ -232,6 +232,35 @@ func (reg *Registry) Remove(t tenant.Model, id uuid.UUID) {
 	reg.deindex(t, r)
 }
 
+// RemoveIf deletes the room ONLY IF claim accepts the state it is actually in,
+// and returns the room it removed. It is Remove's compare-and-set form and the
+// only safe way to end a room from a path that read it earlier.
+//
+// Every teardown does fallible REST work (re-resolving each staged item's slot)
+// between reading the room and ending it, and a settlement can win the race to
+// SETTLING inside that window — from an independent goroutine, in the
+// attestation deadline's case, so no Kafka partition ordering constrains it. An
+// unconditional Remove there would drop the holds the in-flight saga is about
+// to consume and delete the room its terminal status needs to find.
+//
+// claim RUNS UNDER THE WRITE LOCK, so the same purity rule as Update's fn
+// applies: decide from the Room it is handed, and nothing else.
+func (reg *Registry) RemoveIf(t tenant.Model, id uuid.UUID, claim func(Room) bool) (Room, bool) {
+	reg.mutex.Lock()
+	defer reg.mutex.Unlock()
+
+	r, ok := reg.rooms[t][id]
+	if !ok {
+		return Room{}, false
+	}
+	if !claim(r) {
+		return Room{}, false
+	}
+	delete(reg.rooms[t], id)
+	reg.deindex(t, r)
+	return r, true
+}
+
 // checkIndexable reports whether r can own its member and handle index entries
 // for tenant t. Entries already held by selfId belong to the room being
 // replaced and are not collisions; pass uuid.Nil when there is no such room.

@@ -51,9 +51,11 @@ const (
 // because the teardown consumers pick which one a trigger carries and pass it to
 // TeardownCharacter. The trailing numbers are the reference client's status
 // bytes; the actual values come from the tenant `leaveReason` table.
+// There is deliberately no TRADE_SUCCESS constant. A settled trade is announced
+// as SETTLED, not as a cancellation reason: it is the only outcome that carries
+// a ledger entry id, and atlas-channel resolves its own LEAVE 7 from that event.
 const (
 	ReasonTradeCancelled    = "TRADE_CANCELLED"     // 2
-	ReasonTradeSuccess      = "TRADE_SUCCESS"       // 7
 	ReasonTradeFailed       = "TRADE_FAILED"        // 8
 	ReasonTradeCannotCarry  = "TRADE_CANNOT_CARRY"  // 9
 	ReasonTradeDifferentMap = "TRADE_DIFFERENT_MAP" // 12
@@ -624,29 +626,83 @@ func (p *ProcessorImpl) teardownCharacter(mb *message.Buffer, txId uuid.UUID, ch
 	return p.teardownRoom(mb, txId, room, characterId, reason)
 }
 
-// releaseStagedReservations cancels the atlas-inventory reservation of every
-// item staged in the room, on BOTH sides.
+// stagedRelease is one reservation to cancel, with the slot it must be aimed at
+// already resolved.
+type stagedRelease struct {
+	reservationId uuid.UUID
+	characterId   character.Id
+	inventoryType inventory.Type
+	sourceSlot    slot.Position
+}
+
+// resolveStagedReleases works out which reservation to cancel, and where, for
+// every item staged in the room on BOTH sides. It performs the REST reads and
+// buffers NOTHING — the caller emits only after it has atomically claimed the
+// room (see Registry.RemoveIf).
 //
-// Every path that abandons a room without settling it must call this. Under the
-// reserve-at-staging model a staged asset never left its owner's inventory — it
-// is merely held — so a room that disappears without cancelling leaves the owner
-// unable to move, merge, drop or sell that stack until the TTL lapses, which is
-// five minutes by default and is REFRESHED for as long as the process believes
-// the room is alive.
+// Every path that abandons a room, settled or not, must end in these cancels.
+// Under the reserve-at-staging model a staged asset never left its owner's
+// inventory — it is merely held — so a room that disappears without cancelling
+// leaves the owner unable to move, merge, drop or sell that stack until the TTL
+// lapses, which is five minutes by default and is REFRESHED for as long as the
+// process believes the room is alive.
+//
+// The slot is RE-RESOLVED rather than taken from the staged item; see
+// resolveStagedSlot for why a recorded slot cannot be trusted.
+func (p *ProcessorImpl) resolveStagedReleases(room Room) []stagedRelease {
+	cache := p.newCompartmentCache()
+	out := make([]stagedRelease, 0)
+	for _, pt := range room.Participants() {
+		for _, i := range pt.Items() {
+			out = append(out, stagedRelease{
+				reservationId: i.ReservationId(),
+				characterId:   pt.CharacterId(),
+				inventoryType: i.InventoryType(),
+				sourceSlot:    p.resolveStagedSlot(cache, pt.CharacterId(), i),
+			})
+		}
+	}
+	return out
+}
+
+// withLateStages appends a release for any item staged into the room AFTER the
+// releases were resolved — the window between the compartment reads and the
+// claim, which is open on a room that was still OPEN when the teardown began.
+//
+// Their slots are the recorded ones rather than re-resolved: re-reading would
+// mean another REST round trip after the room is already gone, and the recorded
+// slot is right unless that same item ALSO moved inside the window. A cancel
+// aimed at the wrong slot is a no-op; emitting none guarantees the leak.
+func withLateStages(releases []stagedRelease, claimed Room) []stagedRelease {
+	known := make(map[uuid.UUID]struct{}, len(releases))
+	for _, r := range releases {
+		known[r.reservationId] = struct{}{}
+	}
+	for _, pt := range claimed.Participants() {
+		for _, i := range pt.Items() {
+			if _, ok := known[i.ReservationId()]; ok {
+				continue
+			}
+			releases = append(releases, stagedRelease{
+				reservationId: i.ReservationId(),
+				characterId:   pt.CharacterId(),
+				inventoryType: i.InventoryType(),
+				sourceSlot:    i.SourceSlot(),
+			})
+		}
+	}
+	return releases
+}
+
+// emitStagedReleases buffers the cancels resolveStagedReleases worked out.
 //
 // The cancel is a fire-and-forget command: atlas-inventory treats an unknown
 // reservation as a no-op, so cancelling one that already expired is harmless,
 // and cancelling twice is harmless for the same reason.
-//
-// The slot is RE-RESOLVED rather than taken from the staged item; see
-// resolveStagedSlot for why a recorded slot cannot be trusted.
-func (p *ProcessorImpl) releaseStagedReservations(mb *message.Buffer, room Room) error {
-	cache := p.newCompartmentCache()
-	for _, pt := range room.Participants() {
-		for _, i := range pt.Items() {
-			if err := p.resp.CancelReservation(mb)(i.ReservationId(), pt.CharacterId(), i.InventoryType(), p.resolveStagedSlot(cache, pt.CharacterId(), i)); err != nil {
-				return err
-			}
+func (p *ProcessorImpl) emitStagedReleases(mb *message.Buffer, releases []stagedRelease) error {
+	for _, r := range releases {
+		if err := p.resp.CancelReservation(mb)(r.reservationId, r.characterId, r.inventoryType, r.sourceSlot); err != nil {
+			return err
 		}
 	}
 	return nil

@@ -100,6 +100,18 @@ func (r *attestationTimers) Cancel(t tenant.Model, roomId uuid.UUID) {
 	}
 }
 
+// isArmed reports whether a deadline is currently armed for the room. Nothing
+// in the service branches on it — the settlement flow is driven by room state,
+// never by timer bookkeeping — but a deadline that silently failed to arm
+// wedges the room permanently and is otherwise only observable by waiting it
+// out, so it is exposed for the test that pins the arming.
+func (r *attestationTimers) isArmed(t tenant.Model, roomId uuid.UUID) bool {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	_, ok := r.stops[t][roomId]
+	return ok
+}
+
 // StopAll disarms every deadline. main registers it as a teardown so shutdown
 // does not wait on a sleeping timer.
 func (r *attestationTimers) StopAll() {
@@ -158,19 +170,26 @@ func (p *ProcessorImpl) Confirm(txId uuid.UUID, characterId character.Id, entrie
 		arm, cerr = txp.confirm(mb, txId, characterId, entries)
 		return cerr
 	})
-	if err != nil {
-		return err
-	}
 	// Armed OUTSIDE emit, on the root processor: the deadline outlives both the
 	// transaction and the command's context.
+	//
+	// Armed REGARDLESS OF err, because the registry swap to AWAITING_ATTESTATION
+	// is in-memory and a rolled-back transaction does not undo it (see emit).
+	// A room left in that state with no deadline is wedged for good: no mode 17
+	// ever reaches the clients, so no attestation can arrive, nothing else
+	// settles it, and RefreshReservations keeps both sides' holds alive
+	// indefinitely. confirm therefore reports the room to arm as soon as the
+	// swap lands, before it buffers anything.
 	if arm != uuid.Nil {
 		p.armAttestationDeadline(arm)
 	}
-	return nil
+	return err
 }
 
 // confirm returns the id of the room whose attestation deadline must be armed,
-// or uuid.Nil when this confirm was the first of the two.
+// or uuid.Nil when this confirm was the first of the two. The id is set the
+// moment the transition lands and is returned ALONGSIDE any later error, so a
+// failed emit cannot leave an unarmed AWAITING_ATTESTATION room behind.
 func (p *ProcessorImpl) confirm(mb *message.Buffer, txId uuid.UUID, characterId character.Id, entries []trademsg.CrcEntry) (uuid.UUID, error) {
 	room, ok := p.reg.GetByMember(p.t, characterId)
 	if !ok {
@@ -221,18 +240,24 @@ func (p *ProcessorImpl) confirm(mb *message.Buffer, txId uuid.UUID, characterId 
 		return uuid.Nil, nil
 	}
 
-	if err = mb.Put(trademsg.EnvEventTopicStatus, participantConfirmedProvider(txId, updated, characterId, pt.Position())); err != nil {
-		return uuid.Nil, err
+	// Decided before ANY buffering: from here on every return carries it.
+	var arm uuid.UUID
+	if updated.State() == StateAwaitingAttestation {
+		arm = updated.Id()
 	}
-	if updated.State() != StateAwaitingAttestation {
+
+	if err = mb.Put(trademsg.EnvEventTopicStatus, participantConfirmedProvider(txId, updated, characterId, pt.Position())); err != nil {
+		return arm, err
+	}
+	if arm == uuid.Nil {
 		return uuid.Nil, nil
 	}
 
 	p.l.WithFields(p.roomFields(updated)).Infof("Both sides of trade room [%s] confirmed; requesting attestation.", updated.Id().String())
 	if err = mb.Put(trademsg.EnvEventTopicStatus, attestationRequestedProvider(txId, updated, characterId)); err != nil {
-		return uuid.Nil, err
+		return arm, err
 	}
-	return updated.Id(), nil
+	return arm, nil
 }
 
 // --- TRANSACTION (the attestation reply) --------------------------------------
@@ -694,14 +719,31 @@ func (p *ProcessorImpl) settlementSucceeded(mb *message.Buffer, txId uuid.UUID, 
 		return nil
 	}
 
+	// The slot re-resolution runs first, because it is the fallible REST work
+	// and emit's contract puts every fallible read before the registry swap.
+	releases := p.resolveStagedReleases(room)
+
 	// The ledger write joins the enclosing transaction (see the administrator's
-	// create), so the row and the SETTLED event commit together. Record is
-	// idempotent per settlement transaction, so a redelivered COMPLETED status
-	// returns the existing entry rather than recording the trade twice.
+	// create), so the row and the SETTLED event commit together. It runs BEFORE
+	// the claim below rather than after: Record is idempotent per settlement
+	// transaction, so a redelivered COMPLETED that loses the claim has already
+	// re-read the same row rather than written a second one — whereas claiming
+	// first would make the ledger write conditional on winning a race it has no
+	// business depending on.
 	entry, err := ledger.NewProcessor(p.l, p.ctx, p.db).Record(settlementEntry(room))
 	if err != nil {
 		return err
 	}
+
+	// Compare-and-set. settledRoom's state test is a cheap pre-filter taken
+	// before the reads above; THIS is the authoritative one, so two concurrent
+	// COMPLETED deliveries produce exactly one SETTLED rather than two.
+	claimedModel, ok := p.reg.RemoveIf(p.t, room.Id(), settling)
+	if !ok {
+		p.l.Debugf("Trade room [%s] was already closed by another terminal status. Ignoring this one.", room.Id().String())
+		return nil
+	}
+	p.timers.Cancel(p.t, claimedModel.Id())
 
 	// OBLIGATION: a successful trade must still cancel both holds.
 	// TradeSettlementItem carries no reservation id, so the saga cannot do it,
@@ -709,18 +751,17 @@ func (p *ProcessorImpl) settlementSucceeded(mb *message.Buffer, txId uuid.UUID, 
 	// (compartment/processor.go:1767-1855) — the hold would sit on the giver's
 	// now-emptied slot for the rest of its 300s TTL, refusing that slot's merge,
 	// drop and any fresh reserve.
-	if err = p.releaseStagedReservations(mb, room); err != nil {
+	if err = p.emitStagedReleases(mb, withLateStages(releases, claimedModel)); err != nil {
 		return err
 	}
-	p.reg.Remove(p.t, room.Id())
 
 	var taxed uint32
-	for _, pt := range room.Participants() {
+	for _, pt := range claimedModel.Participants() {
 		taxed += pt.MesoTax()
 	}
 	recordSettled(p.t, taxed)
-	p.l.WithFields(p.roomFields(room)).WithField("ledger_entry_id", entry.Id().String()).Infof("Trade room [%s] settled.", room.Id().String())
-	return mb.Put(trademsg.EnvEventTopicStatus, settledProvider(txId, room, room.OwnerId(), entry.Id()))
+	p.l.WithFields(p.roomFields(claimedModel)).WithField("ledger_entry_id", entry.Id().String()).Infof("Trade room [%s] settled.", claimedModel.Id().String())
+	return mb.Put(trademsg.EnvEventTopicStatus, settledProvider(txId, claimedModel, claimedModel.OwnerId(), entry.Id()))
 }
 
 // SettlementFailed closes both dialogs with LEAVE 8 after the settlement saga
@@ -737,21 +778,56 @@ func (p *ProcessorImpl) settlementFailed(mb *message.Buffer, txId uuid.UUID, roo
 	if !ok {
 		return nil
 	}
-	recordSettlementFailed(p.t, sagaFailedReason)
 	p.l.WithFields(p.roomFields(room)).Warnf("Settlement saga for trade room [%s] failed: [%s].", room.Id().String(), reason)
+
+	// Claimed out of SETTLING rather than through teardownRoom, whose claim
+	// REFUSES a settling room — that refusal is what stops a cancel racing the
+	// saga, and this is the one caller that legitimately ends a settling room.
+	// It is a compare-and-set for the same reason as the success path: two
+	// deliveries of the same FAILED must produce one LEAVE 8, not two.
+	claimedModel, ok := p.claimRoom(room, settling)
+	if !ok {
+		p.l.Debugf("Trade room [%s] was already closed by another terminal status. Ignoring this one.", room.Id().String())
+		return nil
+	}
+	if err := p.emitStagedReleases(mb, claimedModel.releases); err != nil {
+		return err
+	}
+	recordSettlementFailed(p.t, sagaFailedReason)
+	recordCancelled(p.t, ReasonTradeFailed)
 	// Both sides are told, resolved from the ROOM. The FAILED event names one
 	// character — the failed expanded step's — and that is not a role, so it is
 	// never used to pick a side.
-	return p.teardownRoom(mb, txId, room, room.OwnerId(), ReasonTradeFailed)
+	return mb.Put(trademsg.EnvEventTopicStatus, cancelledProvider(txId, claimedModel.room, claimedModel.room.OwnerId(), ReasonTradeFailed))
 }
 
-// settledRoom resolves a room a terminal saga status refers to. A room that is
-// already gone is not an error: a redelivered status event, or a status that
-// raced the process restart, simply has nothing left to close.
+// settledRoom resolves a room a terminal saga status refers to. It is a cheap
+// PRE-FILTER; the authoritative check is the RemoveIf claim each caller takes
+// after its reads.
+//
+// A missing room has two very different causes, and only one of them is benign:
+//
+//   - A REDELIVERED status whose room another delivery already closed. Nothing
+//     left to do.
+//   - A status whose room was lost to a PROCESS RESTART. The registry is
+//     in-memory (design §9), but the saga lives in the orchestrator and keeps
+//     running, so the swap EXECUTES and this service never learns of it: no
+//     ledger row, no SETTLED, and both clients keep an open dialog until their
+//     next interaction is rejected. That contradicts FR-7.1 ("every settled
+//     trade writes one durable ledger row") and is NOT accepted anywhere in the
+//     PRD or the design — design §12's crash-recovery paragraph covers escrowed
+//     ASSETS only, and §15's "a restart cancels trades cleanly" is true of
+//     every state except SETTLING.
+//
+// The two are indistinguishable from here, which is why the miss is logged at
+// WARN with the transaction id rather than swallowed at DEBUG: until the
+// settlement is durable, that log line is the only trace a restarted settlement
+// leaves. Closing it needs a durable record of the in-flight settlement — a
+// design decision, deliberately not taken inside this task.
 func (p *ProcessorImpl) settledRoom(roomId uuid.UUID, outcome string) (Room, bool) {
 	room, ok := p.reg.Get(p.t, roomId)
 	if !ok {
-		p.l.Debugf("Settlement %s for trade room [%s], which is already gone. Ignoring.", outcome, roomId.String())
+		p.l.Warnf("Settlement %s for trade room [%s], which is no longer known to this process. If this was not a redelivery, the settlement executed with no ledger row: see settledRoom.", outcome, roomId.String())
 		return Room{}, false
 	}
 	if room.State() != StateSettling {
@@ -781,20 +857,63 @@ func settlementEntry(room Room) ledger.Model {
 	return b.Build()
 }
 
-// teardownRoom removes the room, releases both sides' holds and tells the
-// clients why. characterId names whose action triggered it; for a settlement
-// refusal there is no such actor, so callers pass the owner.
+// teardownRoom ends a room that is NOT settling: it releases both sides' holds
+// and tells the clients why. characterId names whose action triggered it; for a
+// settlement refusal there is no such actor, so callers pass the owner.
+//
+// The removal is a COMPARE-AND-SET, and that is load-bearing rather than
+// defensive. Every caller read the room before the fallible slot re-resolution
+// below, and a settlement can win the race to SETTLING inside that window —
+// from the attestation deadline's own goroutine, which no Kafka partition
+// ordering serialises against the teardown consumer. An unconditional removal
+// there would cancel the holds the in-flight saga is about to consume AND
+// delete the room its terminal status must find, so the swap would execute with
+// no ledger row and no SETTLED while both clients had already seen LEAVE 2.
+//
+// Losing the claim is not an error: FR-6.5 says settlement wins and the client
+// is reconciled by the settlement result.
 func (p *ProcessorImpl) teardownRoom(mb *message.Buffer, txId uuid.UUID, room Room, characterId character.Id, reason string) error {
-	// Released BEFORE the registry removal: releaseStagedReservations issues
-	// fallible REST reads, and emit's contract is that every fallible read
-	// happens before the registry swap.
-	if err := p.releaseStagedReservations(mb, room); err != nil {
+	claimed, ok := p.claimRoom(room, notSettling)
+	if !ok {
+		p.l.Infof("Teardown [%s] of trade room [%s] lost to its settlement. Ignoring: the saga's terminal status produces this room's LEAVE.", reason, room.Id().String())
+		return nil
+	}
+	if err := p.emitStagedReleases(mb, claimed.releases); err != nil {
 		return err
 	}
-	p.timers.Cancel(p.t, room.Id())
-	p.reg.Remove(p.t, room.Id())
 	recordCancelled(p.t, reason)
-	return mb.Put(trademsg.EnvEventTopicStatus, cancelledProvider(txId, room, characterId, reason))
+	return mb.Put(trademsg.EnvEventTopicStatus, cancelledProvider(txId, claimed.room, characterId, reason))
+}
+
+// claimedRoom is a room this command has exclusively ended, together with the
+// reservation cancels it owes.
+type claimedRoom struct {
+	room     Room
+	releases []stagedRelease
+}
+
+// notSettling claims a room no settlement has taken over.
+func notSettling(r Room) bool { return r.State() != StateSettling }
+
+// settling claims a room whose settlement saga has reached a terminal status.
+func settling(r Room) bool { return r.State() == StateSettling }
+
+// claimRoom resolves the room's reservation cancels and then removes it, but
+// only if `claim` still accepts the state it is in.
+//
+// The REST reads happen BEFORE the removal, which is emit's contract (the
+// registry is in-memory and a rolled-back transaction does not restore a room),
+// and the removal is atomic with the state test, which is what makes two
+// concurrent enders mutually exclusive. Anything staged inside that window is
+// picked up by withLateStages, so a hold filed late is still cancelled.
+func (p *ProcessorImpl) claimRoom(room Room, claim func(Room) bool) (claimedRoom, bool) {
+	releases := p.resolveStagedReleases(room)
+	claimedModel, ok := p.reg.RemoveIf(p.t, room.Id(), claim)
+	if !ok {
+		return claimedRoom{}, false
+	}
+	p.timers.Cancel(p.t, claimedModel.Id())
+	return claimedRoom{room: claimedModel, releases: withLateStages(releases, claimedModel)}, true
 }
 
 // roomFields is the structured-log context design §12 asks for at every state

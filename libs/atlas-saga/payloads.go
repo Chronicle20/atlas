@@ -597,6 +597,10 @@ type ReleaseFromStoragePayload struct {
 // expansion time, so the orchestrator can look it up by slot exactly as
 // expandTransferToStorage does.
 type TradeSettlementItem struct {
+	// InventoryType is the shared inventory.Type (int8). The expanded storage
+	// steps it feeds — ReleaseFromCharacterPayload / WithdrawFromStoragePayload
+	// and friends — declare InventoryType as byte, so expansion must convert
+	// explicitly: byte(it.InventoryType).
 	InventoryType inventory.Type `json:"inventoryType"` // Owning inventory (equip, use, etc.)
 	SourceSlot    slot.Position  `json:"sourceSlot"`    // Slot the asset occupies in the owner's inventory
 	AssetId       asset.Id       `json:"assetId"`       // Asset ID staged for transfer

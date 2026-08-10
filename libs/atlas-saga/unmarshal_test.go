@@ -1035,8 +1035,14 @@ func TestCreateNoteStepUnmarshal(t *testing.T) {
 }
 
 // TestUnmarshalTradeSettlement pins that a trade_settlement step round-trips
-// through the shared lib's payload unmarshaller — an unregistered action
-// deserialises to nil and fails at runtime with "unknown action type".
+// through the shared lib's payload unmarshaller into the CONCRETE payload type.
+// Forgetting the switch case in Step[T].UnmarshalJSON is silent, not loud: the
+// action falls through to the generic `default:` arm (unmarshal.go:600-608),
+// which decodes into map[string]any and assigns it via any(payload).(T) — an
+// assertion that always succeeds because Saga.Steps is []Step[any]. So the step
+// still unmarshals without error and still carries the field values, just
+// untyped. This test catches that only because it asserts the concrete
+// TradeSettlementPayload type: a map[string]any fails that assertion.
 func TestUnmarshalTradeSettlement(t *testing.T) {
 	raw := []byte(`{
 	  "transactionId": "11111111-1111-1111-1111-111111111111",

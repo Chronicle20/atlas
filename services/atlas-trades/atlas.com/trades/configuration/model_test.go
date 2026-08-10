@@ -20,9 +20,6 @@ func TestDefaultConfigKnobs(t *testing.T) {
 	if m.MinTradeLevel() != 0 {
 		t.Errorf("MinTradeLevel: got %d, want 0", m.MinTradeLevel())
 	}
-	if m.ReservationTtl() != 300*time.Second {
-		t.Errorf("ReservationTtl: got %s, want 5m0s", m.ReservationTtl())
-	}
 	if m.AttestationTimeout() != 5*time.Second {
 		t.Errorf("AttestationTimeout: got %s, want 5s", m.AttestationTimeout())
 	}
@@ -60,7 +57,6 @@ func TestWithTransformsDoNotMutateTheReceiver(t *testing.T) {
 		WithTaxEnabled(false).
 		WithMaxStagedItems(3).
 		WithMinTradeLevel(20).
-		WithReservationTtl(90 * time.Second).
 		WithAttestationTimeout(11 * time.Second)
 
 	if got.TaxEnabled() {
@@ -72,15 +68,12 @@ func TestWithTransformsDoNotMutateTheReceiver(t *testing.T) {
 	if got.MinTradeLevel() != 20 {
 		t.Errorf("WithMinTradeLevel(20): got %d", got.MinTradeLevel())
 	}
-	if got.ReservationTtl() != 90*time.Second {
-		t.Errorf("WithReservationTtl(90s): got %s", got.ReservationTtl())
-	}
 	if got.AttestationTimeout() != 11*time.Second {
 		t.Errorf("WithAttestationTimeout(11s): got %s", got.AttestationTimeout())
 	}
 
 	if !base.TaxEnabled() || base.MaxStagedItems() != 9 || base.MinTradeLevel() != 0 ||
-		base.ReservationTtl() != 300*time.Second || base.AttestationTimeout() != 5*time.Second {
+		base.AttestationTimeout() != 5*time.Second {
 		t.Errorf("receiver was mutated by the With* chain: %+v", base)
 	}
 }
@@ -94,9 +87,6 @@ func TestExtractFoldsAbsentKnobsToDefaults(t *testing.T) {
 	d := DefaultConfig()
 	if m.MaxStagedItems() != d.MaxStagedItems() {
 		t.Errorf("MaxStagedItems: got %d, want %d", m.MaxStagedItems(), d.MaxStagedItems())
-	}
-	if m.ReservationTtl() != d.ReservationTtl() {
-		t.Errorf("ReservationTtl: got %s, want %s", m.ReservationTtl(), d.ReservationTtl())
 	}
 	if m.AttestationTimeout() != d.AttestationTimeout() {
 		t.Errorf("AttestationTimeout: got %s, want %s", m.AttestationTimeout(), d.AttestationTimeout())

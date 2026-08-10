@@ -122,28 +122,12 @@ func main() {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	// Refresh the inventory reservations of every live room at TTL/3 so a trade
-	// window never outlives its reservations (design §5.3). Expiry is a backstop
-	// for a DEAD room, not a normal-path event: if it does fire mid-trade,
-	// settlement fails cleanly with LEAVE 8.
-	//
-	// The pace is per-tenant, so the loop is self-pacing: each pass reports the
-	// interval the tenants it just refreshed actually need, and the first pass
-	// runs immediately because no pass has yet reported one.
-	//
-	// The teardown below waits for the loop to observe the cancelled context and
-	// return, so shutdown does not complete while a pass is still running. That
-	// is NOT an ordering guarantee against the other teardowns: TeardownFunc runs
-	// each callback in its own goroutine off the same channel, so the outbox
-	// drainer can stop while a final pass is still emitting. Harmless — a pass
-	// writes to the transactional outbox, so its rows are durable and drained at
-	// the next boot.
-	refreshStopped := make(chan struct{})
-	routine.Go(l, rt.Context(), func(ctx context.Context) {
-		defer close(refreshStopped)
-		trade.RunReservationRefresh(l, ctx, db)
-	})
-	rt.TeardownFunc(func() { <-refreshStopped })
+	// There is no reservation-refresh loop. Under reserve-at-staging one was
+	// mandatory: a staged item was held by an atlas-inventory reservation with a
+	// TTL, and a trade window left open longer than the TTL would settle onto an
+	// expired hold. Escrow has no TTL to outlive — the asset is in atlas-trades'
+	// own custody table — so the loop was deleted rather than retuned
+	// (design §5A.10).
 
 	// Attestation deadlines are sleeping goroutines; without this, shutdown
 	// waits out the longest one.

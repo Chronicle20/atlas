@@ -20,12 +20,18 @@ type Tier struct {
 }
 
 // Model is the immutable per-tenant trade configuration (design §8).
+//
+// There is no reservation-TTL knob: task-205 moved staging from "reserve at
+// atlas-inventory" to "escrow inside atlas-trades", so a staged item no
+// longer has an inventory-side reservation to expire. A pending stage is
+// instead bounded by the saga orchestrator's own saga timeout, which emits
+// SAGA_FAILED and atlas-trades turns into a refusal — so no service-local
+// timeout is needed here.
 type Model struct {
 	taxEnabled         bool          // master switch for the meso tax (FR-9.1)
 	taxTiers           []Tier        // strictly descending by Threshold; first match wins
 	maxStagedItems     int           // per-side cap on staged item slots
 	minTradeLevel      int           // minimum character level allowed to trade; 0 = unrestricted
-	reservationTtl     time.Duration // how long an escrow reservation survives before it is released
 	attestationTimeout time.Duration // deadline for both sides to attest before the trade aborts
 }
 
@@ -47,10 +53,6 @@ func (m Model) MaxStagedItems() int {
 
 func (m Model) MinTradeLevel() int {
 	return m.minTradeLevel
-}
-
-func (m Model) ReservationTtl() time.Duration {
-	return m.reservationTtl
 }
 
 func (m Model) AttestationTimeout() time.Duration {
@@ -90,12 +92,6 @@ func (m Model) WithMinTradeLevel(level int) Model {
 	return m
 }
 
-// WithReservationTtl returns a copy with the escrow reservation TTL set.
-func (m Model) WithReservationTtl(ttl time.Duration) Model {
-	m.reservationTtl = ttl
-	return m
-}
-
 // WithAttestationTimeout returns a copy with the attestation deadline set.
 func (m Model) WithAttestationTimeout(timeout time.Duration) Model {
 	m.attestationTimeout = timeout
@@ -127,7 +123,6 @@ func DefaultConfig() Model {
 		taxTiers:           defaultTiers(),
 		maxStagedItems:     9,
 		minTradeLevel:      0,
-		reservationTtl:     300 * time.Second,
 		attestationTimeout: 5 * time.Second,
 	}
 }

@@ -117,6 +117,21 @@ func (ItemEntity) TableName() string { return itemTable }
 // 16 assigns rather than accumulates (design §1.6), so staging works in deltas
 // against this figure and the row is REPLACED on each stage — see UpsertMeso.
 // A row that accumulated would refund more than was ever debited.
+//
+// PendingStakeId / PendingAmount durably record an IN-FLIGHT award_mesos debit
+// between the moment the saga is submitted and the moment its terminal status
+// is applied. Staging used to keep that bookkeeping only in the room's
+// in-memory state; if the room was torn down while the saga was still running,
+// its terminal status arrived with nowhere to land — the debit had already
+// happened, but no durable record named the amount it should commit into
+// Amount, so the meso was silently lost. Recording the pending stake in the
+// row itself (rather than the room) means a terminal status can always resolve
+// against the row by stakeId alone, room or no room — see ArmMesoStake,
+// CommitMesoStake, AbandonMesoStake, and MesoStakeById.
+//
+// PendingStakeId is uuid.Nil when no stake is in flight; that is the "none"
+// sentinel rather than a nullable column, so the compare-and-set in
+// CommitMesoStake/AbandonMesoStake is a single ordinary equality check.
 type MesoEntity struct {
 	Id           uuid.UUID `gorm:"column:id;type:uuid;primaryKey;uniqueIndex:idx_trade_escrow_mesos_tenant_id,priority:2"`
 	TenantId     uuid.UUID `gorm:"column:tenant_id;type:uuid;not null;uniqueIndex:idx_trade_escrow_mesos_tenant_id,priority:1;uniqueIndex:idx_trade_escrow_mesos_room_owner,priority:1"`
@@ -128,6 +143,9 @@ type MesoEntity struct {
 	OwnerId character.Id `gorm:"column:owner_id;not null;uniqueIndex:idx_trade_escrow_mesos_room_owner,priority:3"`
 
 	Amount uint32 `gorm:"column:amount;not null"`
+
+	PendingStakeId uuid.UUID `gorm:"column:pending_stake_id;type:uuid"`
+	PendingAmount  uint32    `gorm:"column:pending_amount;not null;default:0"`
 
 	CreatedAt time.Time `gorm:"column:created_at"`
 	UpdatedAt time.Time `gorm:"column:updated_at"`

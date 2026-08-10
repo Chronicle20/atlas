@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
 	"sync"
 	"time"
 
@@ -1178,7 +1179,7 @@ func isExpandableAction(a Action) bool {
 	case TransferToStorage, WithdrawFromStorage,
 		TransferToCashShop, WithdrawFromCashShop,
 		TransferToMts, WithdrawFromMts, MtsSettlePurchase,
-		TradeSettlement, TransferToTrade:
+		TradeSettlement, TransferToTrade, TradeUnwind:
 		return true
 	default:
 		return false
@@ -1222,6 +1223,8 @@ func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
 		newSteps, err = p.expandTradeSettlement(st)
 	case TransferToTrade:
 		newSteps, err = p.expandTransferToTrade(st)
+	case TradeUnwind:
+		newSteps, err = p.expandTradeUnwind(st)
 	default:
 		return fmt.Errorf("unknown high-level action for expansion: %s", st.Action())
 	}
@@ -1444,11 +1447,18 @@ func (p *ProcessorImpl) expandTransferToTrade(st Step[any]) ([]Step[any], error)
 		return nil, fmt.Errorf("unable to lookup character [%d] inventory compartment: %w", payload.CharacterId, err)
 	}
 
+	// The JSON:API id is a string. One that does not parse is SKIPPED rather than
+	// coerced: an unchecked Sscanf leaves the target at zero, and zero is a
+	// legitimate-looking asset id — so an unparseable id would silently match a
+	// payload asking for asset 0 and stage the wrong item.
 	var foundAsset *compartment.AssetRestModel
 	for i := range comp.Assets {
-		var assetId uint32
-		fmt.Sscanf(comp.Assets[i].Id, "%d", &assetId)
-		if assetId == payload.AssetId {
+		assetId, perr := strconv.ParseUint(comp.Assets[i].Id, 10, 32)
+		if perr != nil {
+			p.l.WithError(perr).Warnf("Asset id [%s] in character [%d]'s compartment is not numeric. Skipping it.", comp.Assets[i].Id, payload.CharacterId)
+			continue
+		}
+		if uint32(assetId) == payload.AssetId {
 			foundAsset = &comp.Assets[i]
 			break
 		}
@@ -1525,21 +1535,27 @@ func (p *ProcessorImpl) expandTransferToTrade(st Step[any]) ([]Step[any], error)
 }
 
 // expandTradeSettlement expands the task-205 trade_settlement composite into
-// the concrete two-party swap. Step order matters (design §6.3): ALL releases
-// precede ALL accepts, so a slot freed by an outgoing item is available to an
-// incoming one, and a failure in either side's release compensates before
-// anything has been created.
+// the concrete two-party swap (design §5A.7).
 //
-// The tax figures arrive already resolved from atlas-trades (which owns the
-// tenant config); this expander does no rate arithmetic. The giver is deducted
-// MesoStaged and the receiver credited MesoDelivered — the difference is
-// destroyed, credited to nobody.
+// Under escrow-at-staging both sides' items are already in atlas-trades'
+// custody, so this expander performs NO compartment lookups: the item snapshot
+// travels on the payload, because there is no inventory row left to read. That
+// also retires the whole class of mid-trade substitution checks the old
+// reserve-based expander needed — an escrowed asset cannot be moved, merged,
+// dropped or swapped for another instance.
+//
+// Step order still matters: ALL releases precede ALL accepts, so a slot freed by
+// an outgoing item is available to an incoming one, and a failure in either
+// side's release compensates before anything has been created.
+//
+// Meso is CREDIT-ONLY. The staged amount was debited when it was staged
+// (design §5A.5); the tax is destroyed by crediting the receiver less than was
+// escrowed. An expander that also emitted the old negative leg would charge the
+// giver twice — see TestExpandTradeSettlementEmitsNoNegativeAward.
 //
 // Sides is a [2]TradeSettlementSide array, so "the other side" is `1-si` by
-// construction — the type guarantees exactly two participants and no length
-// check is possible or needed. Side ORDER carries no role meaning: neither
-// index is "the giver". Each side is the giver of its own contribution and the
-// receiver of the other's, which is exactly how the loops below read it.
+// construction. Side ORDER carries no role meaning: each side is the giver of
+// its own contribution and the receiver of the other's.
 func (p *ProcessorImpl) expandTradeSettlement(st Step[any]) ([]Step[any], error) {
 	payload, ok := st.Payload().(TradeSettlementPayload)
 	if !ok {
@@ -1548,90 +1564,26 @@ func (p *ProcessorImpl) expandTradeSettlement(st Step[any]) ([]Step[any], error)
 	if payload.Sides[0].CharacterId == payload.Sides[1].CharacterId {
 		return nil, fmt.Errorf("trade settlement names character [%d] on both sides", payload.Sides[0].CharacterId)
 	}
-	// The meso figures are uint32 but AwardMesosPayload.Amount is int32. A value
-	// above MaxInt32 would wrap on conversion and turn the giver's DEDUCTION
-	// into a credit. atlas-trades is expected to bound these at stage time, but
-	// that guard does not exist yet, so reject here rather than mint mesos.
+	// MesoDelivered is uint32 but AwardMesosPayload.Amount is int32. A value
+	// above MaxInt32 would wrap on conversion and turn a credit into a debit.
 	for _, side := range payload.Sides {
-		if side.MesoStaged > math.MaxInt32 || side.MesoDelivered > math.MaxInt32 {
-			return nil, fmt.Errorf("trade settlement meso for character [%d] exceeds int32 range (staged [%d], delivered [%d])", side.CharacterId, side.MesoStaged, side.MesoDelivered)
-		}
-	}
-
-	// Snapshot both sides' assets first: every accept needs an AssetData built
-	// from the asset as it exists BEFORE any release soft-deletes it. The
-	// snapshot is the whole AssetData, so cash-item ownership and expiry
-	// (atlas-asset-expiration) survive the transfer unchanged — FR-10.3 needs
-	// no special cash path.
-	type resolved struct {
-		item     TradeSettlementItem
-		assetId  uint32
-		snapshot asset2.AssetData
-	}
-	sides := [2][]resolved{}
-	for si, side := range payload.Sides {
-		for _, it := range side.Items {
-			comp, err := compartment.RequestCompartment(p.l, p.ctx)(uint32(side.CharacterId), byte(it.InventoryType))
-			if err != nil {
-				return nil, fmt.Errorf("unable to lookup character [%d] inventory compartment: %w", side.CharacterId, err)
-			}
-			var found *compartment.AssetRestModel
-			for i := range comp.Assets {
-				if comp.Assets[i].Slot == int16(it.SourceSlot) {
-					found = &comp.Assets[i]
-					break
-				}
-			}
-			if found == nil {
-				return nil, fmt.Errorf("no asset found at slot [%d] in character [%d] inventory [%d]", it.SourceSlot, side.CharacterId, it.InventoryType)
-			}
-			if found.TemplateId != uint32(it.TemplateId) {
-				return nil, fmt.Errorf("asset at slot [%d] for character [%d] is template [%d], expected [%d]", it.SourceSlot, side.CharacterId, found.TemplateId, it.TemplateId)
-			}
-			// The id is the RELEASE TARGET here, not an advisory field: an
-			// unparseable id would silently release asset 0. expandTransferToStorage
-			// discards this error; this call site must not.
-			var assetId uint32
-			if _, serr := fmt.Sscanf(found.Id, "%d", &assetId); serr != nil {
-				return nil, fmt.Errorf("unparseable asset id [%s] at slot [%d] for character [%d]: %w", found.Id, it.SourceSlot, side.CharacterId, serr)
-			}
-			// Instance identity, not just template identity. Reservations stop the
-			// staged slot being moved/merged/dropped, but a same-template
-			// DIFFERENT-INSTANCE substitution would still pass the template check
-			// above — and for equips distinct instances carry distinct scrolled
-			// stats, so the wrong instance would move.
-			if assetId != uint32(it.AssetId) {
-				return nil, fmt.Errorf("asset at slot [%d] for character [%d] is instance [%d], expected staged instance [%d]", it.SourceSlot, side.CharacterId, assetId, it.AssetId)
-			}
-			// The snapshot is of the whole SOURCE STACK, but the accept RECREATES
-			// the asset from it, so AssetData.Quantity is what the recipient is
-			// awarded. A partial stage (1 of a 200 stack) would otherwise release
-			// 1 from the giver and mint 200 for the receiver. The staged quantity
-			// is authoritative — it is what the release below takes, what the
-			// reservation holds, and what the client was shown. Every other field
-			// stays as snapshotted, so cash ownership, expiry and rolled stats
-			// still survive the transfer (FR-10.3).
-			snapshot := assetDataFromCompartmentAsset(found)
-			snapshot.Quantity = uint32(it.Quantity)
-			sides[si] = append(sides[si], resolved{item: it, assetId: assetId, snapshot: snapshot})
+		if side.MesoDelivered > math.MaxInt32 {
+			return nil, fmt.Errorf("trade settlement delivered meso for character [%d] exceeds int32 range (%d)", side.CharacterId, side.MesoDelivered)
 		}
 	}
 
 	steps := make([]Step[any], 0)
 
-	// 1. Every release, both sides.
-	for si, side := range payload.Sides {
-		for _, r := range sides[si] {
+	// 1. Every release from escrow, both sides.
+	for _, side := range payload.Sides {
+		for _, it := range side.Items {
 			steps = append(steps, NewStep[any](
-				fmt.Sprintf("release_from_character_%d_%d", side.CharacterId, r.assetId),
+				fmt.Sprintf("release_from_trade_%d_%d", side.CharacterId, it.AssetId),
 				Pending,
-				ReleaseFromCharacter,
-				ReleaseFromCharacterPayload{
+				ReleaseFromTrade,
+				ReleaseFromTradePayload{
 					TransactionId: payload.TransactionId,
-					CharacterId:   uint32(side.CharacterId),
-					InventoryType: byte(r.item.InventoryType),
-					AssetId:       r.assetId,
-					Quantity:      uint32(r.item.Quantity),
+					EscrowId:      it.EscrowId,
 				},
 			))
 		}
@@ -1640,87 +1592,151 @@ func (p *ProcessorImpl) expandTradeSettlement(st Step[any]) ([]Step[any], error)
 	// 2. Every accept, crossed: side 0's items go to side 1 and vice versa.
 	for si := range payload.Sides {
 		recipient := payload.Sides[1-si].CharacterId
-		for _, r := range sides[si] {
+		for _, it := range payload.Sides[si].Items {
 			steps = append(steps, NewStep[any](
-				fmt.Sprintf("accept_to_character_%d_%d", recipient, r.assetId),
+				fmt.Sprintf("accept_to_character_%d_%d", recipient, it.AssetId),
 				Pending,
 				AcceptToCharacter,
 				AcceptToCharacterPayload{
 					TransactionId: payload.TransactionId,
 					CharacterId:   uint32(recipient),
-					InventoryType: byte(r.item.InventoryType),
-					TemplateId:    uint32(r.item.TemplateId),
-					AssetData:     r.snapshot,
+					InventoryType: byte(it.InventoryType),
+					TemplateId:    uint32(it.TemplateId),
+					AssetData:     assetDataFromEscrowItem(it),
 				},
 			))
 		}
 	}
 
-	// 3. Meso, per side that staged any. Deduct the full staged amount from the
-	//    giver, credit the post-tax amount to the receiver.
-	//
-	//    ORDERING BOUND. Side 0's pair is appended before side 1's, so with both
-	//    sides staging meso the emitted order is deduct-A, credit-B, deduct-B,
-	//    credit-A: B is credited BEFORE being debited and transiently holds more
-	//    than the settlement's net result. That peak is bounded and does not trip
-	//    atlas-character's uint32 ceiling, but only just:
-	//
-	//      - atlas-trades' mesoSettleable (trade/settlement.go) refuses the
-	//        settlement unless each side's NET balance stays within
-	//        maxStageableMeso == math.MaxInt32 (trade/processor.go).
-	//        So  B_balance - B_staged + incoming <= MaxInt32.
-	//      - B's transient peak is B_balance + incoming, i.e. at most
-	//        MaxInt32 + B_staged, and B_staged is itself capped at MaxInt32.
-	//      - Peak <= 2*MaxInt32 = 4294967294.
-	//      - atlas-character rejects with ErrMesoOverflow only when the result
-	//        exceeds math.MaxUint32 == 4294967295 (character/processor.go
-	//        RequestChangeMeso).
-	//
-	//    The worst case therefore sits exactly ONE meso below the rejection
-	//    threshold. Reordering to deduct-A, deduct-B, credit-A, credit-B would
-	//    remove the transient peak entirely, but is NOT free: it moves both
-	//    debits ahead of both credits, changing which step a mid-saga failure
-	//    lands on and therefore which inverses the reverse-walk replays. Do not
-	//    change it without re-deriving the compensation traces in
-	//    trade_compensation_test.go.
+	// 3. Meso, per side that staged any: credit the post-tax amount to the OTHER
+	//    side. No debit — that already happened at stage time.
 	for si, side := range payload.Sides {
-		if side.MesoStaged == 0 {
+		if side.MesoDelivered == 0 {
 			continue
 		}
 		receiver := payload.Sides[1-si].CharacterId
-		steps = append(steps,
-			NewStep[any](
-				fmt.Sprintf("award_mesos_deduct_%d", side.CharacterId),
-				Pending,
-				AwardMesos,
-				AwardMesosPayload{
-					CharacterId: uint32(side.CharacterId),
-					WorldId:     payload.WorldId,
-					ChannelId:   payload.ChannelId,
-					ActorId:     uint32(receiver),
-					ActorType:   "CHARACTER",
-					Amount:      -int32(side.MesoStaged),
-					ShowEffect:  false,
-				},
-			),
-			NewStep[any](
-				fmt.Sprintf("award_mesos_credit_%d", receiver),
-				Pending,
-				AwardMesos,
-				AwardMesosPayload{
-					CharacterId: uint32(receiver),
-					WorldId:     payload.WorldId,
-					ChannelId:   payload.ChannelId,
-					ActorId:     uint32(side.CharacterId),
-					ActorType:   "CHARACTER",
-					Amount:      int32(side.MesoDelivered),
-					ShowEffect:  true,
-				},
-			),
-		)
+		steps = append(steps, NewStep[any](
+			fmt.Sprintf("award_mesos_credit_%d", receiver),
+			Pending,
+			AwardMesos,
+			AwardMesosPayload{
+				CharacterId: uint32(receiver),
+				WorldId:     payload.WorldId,
+				ChannelId:   payload.ChannelId,
+				ActorId:     uint32(side.CharacterId),
+				ActorType:   "CHARACTER",
+				Amount:      int32(side.MesoDelivered),
+			},
+		))
 	}
 
 	return steps, nil
+}
+
+// expandTradeUnwind expands the task-205 trade_unwind composite: every escrowed
+// item goes back to the character it came from, and every escrowed meso is
+// refunded in full (design §5A.8).
+//
+// It is the teardown twin of expandTradeSettlement and deliberately a separate
+// composite. The only difference is arithmetic — a refund is untaxed and a
+// delivery is not — but folding them together would have put an "is this a
+// refund?" branch inside the expander, which is exactly the kind of conditional
+// that silently taxes a refund one release later.
+func (p *ProcessorImpl) expandTradeUnwind(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload().(TradeUnwindPayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for TradeUnwind")
+	}
+	for _, m := range payload.Mesos {
+		if m.Amount > math.MaxInt32 {
+			return nil, fmt.Errorf("trade unwind refund for character [%d] exceeds int32 range (%d)", m.CharacterId, m.Amount)
+		}
+	}
+
+	steps := make([]Step[any], 0)
+
+	// Releases first, for the same reason settlement orders them first: a
+	// failure before anything has been created leaves nothing to unpick.
+	for _, ui := range payload.Items {
+		steps = append(steps, NewStep[any](
+			fmt.Sprintf("release_from_trade_%d_%d", ui.OwnerId, ui.Item.AssetId),
+			Pending,
+			ReleaseFromTrade,
+			ReleaseFromTradePayload{
+				TransactionId: payload.TransactionId,
+				EscrowId:      ui.Item.EscrowId,
+			},
+		))
+	}
+
+	for _, ui := range payload.Items {
+		steps = append(steps, NewStep[any](
+			fmt.Sprintf("accept_to_character_%d_%d", ui.OwnerId, ui.Item.AssetId),
+			Pending,
+			AcceptToCharacter,
+			AcceptToCharacterPayload{
+				TransactionId: payload.TransactionId,
+				CharacterId:   uint32(ui.OwnerId),
+				InventoryType: byte(ui.Item.InventoryType),
+				TemplateId:    uint32(ui.Item.TemplateId),
+				AssetData:     assetDataFromEscrowItem(ui.Item),
+			},
+		))
+	}
+
+	for _, m := range payload.Mesos {
+		if m.Amount == 0 {
+			continue
+		}
+		steps = append(steps, NewStep[any](
+			fmt.Sprintf("award_mesos_refund_%d", m.CharacterId),
+			Pending,
+			AwardMesos,
+			AwardMesosPayload{
+				CharacterId: uint32(m.CharacterId),
+				WorldId:     m.WorldId,
+				ChannelId:   m.ChannelId,
+				ActorId:     uint32(m.CharacterId),
+				ActorType:   "SYSTEM",
+				Amount:      int32(m.Amount),
+			},
+		))
+	}
+
+	return steps, nil
+}
+
+// assetDataFromEscrowItem rebuilds an inventory AssetData from the snapshot an
+// escrowed item carries, so a delivery or a refund restores scrolled stats, cash
+// ownership and expiry rather than a bare template (FR-10.3).
+//
+// Quantity comes from the escrowed item, which is the STAGED quantity — a
+// partial stage of 1 out of 200 escrowed 1, and must deliver 1.
+func assetDataFromEscrowItem(it TradeEscrowItem) asset2.AssetData {
+	return asset2.AssetData{
+		Quantity:      uint32(it.Quantity),
+		Strength:      it.Strength,
+		Dexterity:     it.Dexterity,
+		Intelligence:  it.Intelligence,
+		Luck:          it.Luck,
+		Hp:            it.HP,
+		Mp:            it.MP,
+		WeaponAttack:  it.WeaponAttack,
+		MagicAttack:   it.MagicAttack,
+		WeaponDefense: it.WeaponDefense,
+		MagicDefense:  it.MagicDefense,
+		Accuracy:      it.Accuracy,
+		Avoidability:  it.Avoidability,
+		Hands:         it.Hands,
+		Speed:         it.Speed,
+		Jump:          it.Jump,
+		Slots:         it.Slots,
+		LevelType:     it.ItemLevel,
+		Level:         it.Level,
+		Experience:    it.ItemExp,
+		Flag:          it.Flags,
+		Owner:         it.Owner,
+	}
 }
 
 // expandTransferToCashShop expands TransferToCashShop into ReleaseFromCharacter + AcceptToCashShop

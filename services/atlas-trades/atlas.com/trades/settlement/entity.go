@@ -97,16 +97,14 @@ type Side struct {
 
 func (Side) TableName() string { return sideTable }
 
-// ItemRow is one staged asset. SourceSlot is the RE-RESOLVED slot — the one
-// settlement corrected against the asset id before it built the saga payload,
-// not the slot the item was originally staged from. ReservationId is carried so
-// reconciliation can still cancel the hold: the saga payload has no room for it
-// and atlas-inventory's Release does not clear the reservation registry.
+// ItemRow is one escrowed asset. EscrowId names the custody row the settlement
+// saga releases from; InventoryType and SourceSlot are the item's provenance,
+// recorded for the ledger and for diagnosing a stuck row rather than replayed.
 type ItemRow struct {
 	Id            uuid.UUID      `gorm:"type:uuid;primaryKey"`
 	TenantId      uuid.UUID      `gorm:"type:uuid;not null;index"`
 	SideId        uuid.UUID      `gorm:"type:uuid;not null;index"`
-	ReservationId uuid.UUID      `gorm:"type:uuid;not null"`
+	EscrowId      uuid.UUID      `gorm:"column:escrow_id;type:uuid;not null"`
 	InventoryType inventory.Type `gorm:"not null"`
 	SourceSlot    slot.Position  `gorm:"not null"`
 	AssetId       asset.Id       `gorm:"not null"`

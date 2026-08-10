@@ -59,12 +59,12 @@ var (
 		[]string{"tenant"},
 	)
 
-	reservationExpiredTotal = promauto.NewCounterVec(
+	stageFailedTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "atlas_trades_reservation_expired_total",
-			Help: "Staged items whose reservation no longer covered the asset at settlement time, by tenant.",
+			Name: "atlas_trades_stage_failed_total",
+			Help: "Item stages whose escrow transfer failed, by tenant and reason. A non-zero rate means players' items are being refused into a dialog slot that then has to be freed.",
 		},
-		[]string{"tenant"},
+		[]string{"tenant", "reason"},
 	)
 )
 
@@ -87,6 +87,6 @@ func recordSettlementFailed(t tenant.Model, reason string) {
 	settlementFailedTotal.WithLabelValues(t.Id().String(), reason).Inc()
 }
 
-func recordReservationExpired(t tenant.Model) {
-	reservationExpiredTotal.WithLabelValues(t.Id().String()).Inc()
+func recordStageFailed(t tenant.Model, reason string) {
+	stageFailedTotal.WithLabelValues(t.Id().String(), reason).Inc()
 }

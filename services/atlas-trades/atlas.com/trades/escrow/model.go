@@ -118,15 +118,20 @@ type MesoModel struct {
 
 	amount uint32
 
+	pendingStakeId uuid.UUID
+	pendingAmount  uint32
+
 	createdAt time.Time
 }
 
-func (m MesoModel) Id() uuid.UUID         { return m.id }
-func (m MesoModel) RoomId() uuid.UUID     { return m.roomId }
-func (m MesoModel) OwnerId() character.Id { return m.ownerId }
-func (m MesoModel) TenantId() uuid.UUID   { return m.tenantId }
-func (m MesoModel) Amount() uint32        { return m.amount }
-func (m MesoModel) CreatedAt() time.Time  { return m.createdAt }
+func (m MesoModel) Id() uuid.UUID             { return m.id }
+func (m MesoModel) RoomId() uuid.UUID         { return m.roomId }
+func (m MesoModel) OwnerId() character.Id     { return m.ownerId }
+func (m MesoModel) TenantId() uuid.UUID       { return m.tenantId }
+func (m MesoModel) Amount() uint32            { return m.amount }
+func (m MesoModel) PendingStakeId() uuid.UUID { return m.pendingStakeId }
+func (m MesoModel) PendingAmount() uint32     { return m.pendingAmount }
+func (m MesoModel) CreatedAt() time.Time      { return m.createdAt }
 
 // Tenant rebuilds the tenant this row belongs to. See ItemModel.Tenant.
 func (m MesoModel) Tenant() (tenant.Model, error) {
@@ -179,14 +184,16 @@ func MakeItem(e ItemEntity) (ItemModel, error) {
 // MakeMeso maps a row back onto its immutable model.
 func MakeMeso(e MesoEntity) (MesoModel, error) {
 	return MesoModel{
-		id:           e.Id,
-		roomId:       e.RoomId,
-		ownerId:      e.OwnerId,
-		tenantId:     e.TenantId,
-		tenantRegion: e.TenantRegion,
-		tenantMajor:  e.TenantMajor,
-		tenantMinor:  e.TenantMinor,
-		amount:       e.Amount,
-		createdAt:    e.CreatedAt,
+		id:             e.Id,
+		roomId:         e.RoomId,
+		ownerId:        e.OwnerId,
+		tenantId:       e.TenantId,
+		tenantRegion:   e.TenantRegion,
+		tenantMajor:    e.TenantMajor,
+		tenantMinor:    e.TenantMinor,
+		amount:         e.Amount,
+		pendingStakeId: e.PendingStakeId,
+		pendingAmount:  e.PendingAmount,
+		createdAt:      e.CreatedAt,
 	}, nil
 }

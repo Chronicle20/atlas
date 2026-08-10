@@ -78,6 +78,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					message.AdaptHandler(message.PersistentConfig(handleInviteSentEvent(sc, wp))),
 					message.AdaptHandler(message.PersistentConfig(handleInviteRejectedEvent(sc, wp))),
 					message.AdaptHandler(message.PersistentConfig(handleItemStagedEvent(sc, wp))),
+					message.AdaptHandler(message.PersistentConfig(handleItemRefusedEvent(sc, wp))),
 					message.AdaptHandler(message.PersistentConfig(handleMesoStagedEvent(sc, wp))),
 					message.AdaptHandler(message.PersistentConfig(handleMesoRefusedEvent(sc, wp))),
 					message.AdaptHandler(message.PersistentConfig(handleParticipantConfirmedEvent(sc, wp))),
@@ -517,6 +518,33 @@ func handleMesoRefusedEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 		// neither carries the exclRequestSent bool, so neither releases the lock
 		// PutMoney armed on send. Without this the refused client can never
 		// stage again (design §5A.6).
+		unlockClient(l, ctx, sc, wp, e.CharacterId)
+	}
+}
+
+// handleItemRefusedEvent writes NOTHING BUT THE UNLOCK, and that is the entire
+// point of the event.
+//
+// A refused stage is player-visibly silent by design: the trade slot simply
+// stays empty, which is the feedback (design §7). But the client armed
+// CWvsContext::m_bExclRequestSent when it sent PUT_ITEM, and
+// CWvsContext::CanSendExclRequest then refuses every later exclusive request —
+// including ADD_MESO, which is why the reported symptom was "the mesos button
+// stopped working after I put an item in". Only the leading exclRequestSent bool
+// of STAT_CHANGED or INVENTORY_OPERATION, or a SET_FIELD, clears it, and a
+// refused stage produces none of the three: nothing left the inventory.
+//
+// So there is no trade packet here at all. The empty STAT_CHANGED is the whole
+// response (design §5A.6).
+func handleItemRefusedEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, e trade2.StatusEvent[trade2.ItemRefusedEventBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e trade2.StatusEvent[trade2.ItemRefusedEventBody]) {
+		if e.Type != trade2.StatusTypeItemRefused {
+			return
+		}
+		if !guard(sc, ctx, e) {
+			return
+		}
+		l.Debugf("Item stage refused for character [%d] in trade room [%s], trade slot [%d]. Releasing the action lock.", e.CharacterId, e.RoomId, e.Body.TradeSlot)
 		unlockClient(l, ctx, sc, wp, e.CharacterId)
 	}
 }

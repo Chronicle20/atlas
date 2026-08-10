@@ -142,6 +142,7 @@ const (
 	// expandTradeSettlement into release_from_character / accept_to_character /
 	// award_mesos steps.
 	TradeSettlement = sharedsaga.TradeSettlement
+	TradeUnwind     = sharedsaga.TradeUnwind
 
 	// Trade escrow custody (task-205 amendment, design §5A). transfer_to_trade
 	// is a COMPOSITE expanded by expandTransferToTrade into
@@ -290,6 +291,10 @@ type (
 	TradeSettlementPayload              = sharedsaga.TradeSettlementPayload
 	TradeSettlementSide                 = sharedsaga.TradeSettlementSide
 	TradeSettlementItem                 = sharedsaga.TradeSettlementItem
+	TradeEscrowItem                     = sharedsaga.TradeEscrowItem
+	TradeUnwindPayload                  = sharedsaga.TradeUnwindPayload
+	TradeUnwindItem                     = sharedsaga.TradeUnwindItem
+	TradeUnwindMeso                     = sharedsaga.TradeUnwindMeso
 	TransferToTradePayload              = sharedsaga.TransferToTradePayload
 	AcceptToTradePayload                = sharedsaga.AcceptToTradePayload
 	ReleaseFromTradePayload             = sharedsaga.ReleaseFromTradePayload
@@ -1339,6 +1344,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case TradeSettlement:
 		var payload TradeSettlementPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case TradeUnwind:
+		var payload TradeUnwindPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

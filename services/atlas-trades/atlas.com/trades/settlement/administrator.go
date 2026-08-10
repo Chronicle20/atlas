@@ -27,7 +27,7 @@ func toEntity(t tenant.Model, m Model) Entry {
 				Id:            uuid.New(),
 				TenantId:      t.Id(),
 				SideId:        s.Id(),
-				ReservationId: i.ReservationId(),
+				EscrowId:      i.EscrowId(),
 				InventoryType: i.InventoryType(),
 				SourceSlot:    i.SourceSlot(),
 				AssetId:       i.AssetId(),

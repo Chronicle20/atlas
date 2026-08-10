@@ -1,6 +1,7 @@
 package trade
 
 import (
+	"atlas-trades/escrow"
 	trademsg "atlas-trades/kafka/message/trade"
 	"atlas-trades/trade"
 	"context"
@@ -47,7 +48,7 @@ func newHarness(t *testing.T) *harness {
 		t.Fatalf("tenant.Create() error = %v", err)
 	}
 	ctx := tenant.WithContext(context.Background(), tm)
-	db := databasetest.NewInMemoryTenantDB(t, outbox.Migration)
+	db := databasetest.NewInMemoryTenantDB(t, outbox.Migration, escrow.Migration)
 	return &harness{t: t, tm: tm, ctx: ctx, db: db}
 }
 

@@ -41,6 +41,13 @@ const (
 	tradeTypeB     = byte(1)
 )
 
+// The escrow rows the two staged items live in. Fixed rather than random so a
+// failing assertion names a recognisable id.
+var (
+	tradeEscrowA = uuid.MustParse("aaaaaaaa-0000-0000-0000-000000000055")
+	tradeEscrowB = uuid.MustParse("bbbbbbbb-0000-0000-0000-000000000077")
+)
+
 // tradeRegrantCall captures a RequestAcceptAsset (re-grant) dispatch.
 type tradeRegrantCall struct {
 	CharacterId   uint32
@@ -70,6 +77,7 @@ type tradeRollbackHarness struct {
 	regrants    *[]tradeRegrantCall
 	destroys    *[]tradeDestroyCall
 	mesos       *[]tradeMesoCall
+	tradeMock   *stagingTradeMock
 }
 
 func newTradeRollbackHarness(t *testing.T) tradeRollbackHarness {
@@ -102,12 +110,15 @@ func newTradeRollbackHarness(t *testing.T) tradeRollbackHarness {
 		},
 	}
 
+	tradeMock := &stagingTradeMock{}
+
 	return tradeRollbackHarness{
-		compensator: NewCompensator(logger, tctx).WithCompartmentProcessor(compMock).WithCharacterProcessor(charMock),
+		compensator: NewCompensator(logger, tctx).WithCompartmentProcessor(compMock).WithCharacterProcessor(charMock).WithTradeProcessor(tradeMock),
 		tctx:        tctx,
 		regrants:    regrants,
 		destroys:    destroys,
 		mesos:       mesos,
+		tradeMock:   tradeMock,
 	}
 }
 
@@ -119,11 +130,11 @@ func tradeSettlementSagaBuilder(transactionId uuid.UUID, releaseA, releaseB, acc
 		SetTransactionId(transactionId).
 		SetSagaType(TradeTransaction).
 		SetInitiatedBy("trade-compensation-test").
-		AddStep("release_from_character_100_55", releaseA, ReleaseFromCharacter, ReleaseFromCharacterPayload{
-			TransactionId: transactionId, CharacterId: tradeCharA, InventoryType: tradeTypeA, AssetId: tradeAssetA, Quantity: 5,
+		AddStep("release_from_trade_100_55", releaseA, ReleaseFromTrade, ReleaseFromTradePayload{
+			TransactionId: transactionId, EscrowId: tradeEscrowA,
 		}).
-		AddStep("release_from_character_200_77", releaseB, ReleaseFromCharacter, ReleaseFromCharacterPayload{
-			TransactionId: transactionId, CharacterId: tradeCharB, InventoryType: tradeTypeB, AssetId: tradeAssetB, Quantity: 1,
+		AddStep("release_from_trade_200_77", releaseB, ReleaseFromTrade, ReleaseFromTradePayload{
+			TransactionId: transactionId, EscrowId: tradeEscrowB,
 		}).
 		AddStep("accept_to_character_200_55", acceptB, AcceptToCharacter, AcceptToCharacterPayload{
 			TransactionId: transactionId, CharacterId: tradeCharB, InventoryType: tradeTypeA, TemplateId: tradeTemplateA,
@@ -132,9 +143,6 @@ func tradeSettlementSagaBuilder(transactionId uuid.UUID, releaseA, releaseB, acc
 		AddStep("accept_to_character_100_77", acceptA, AcceptToCharacter, AcceptToCharacterPayload{
 			TransactionId: transactionId, CharacterId: tradeCharA, InventoryType: tradeTypeB, TemplateId: tradeTemplateB,
 			AssetData: asset2.AssetData{Quantity: 1, Owner: "Chronicle", WeaponAttack: 17},
-		}).
-		AddStep("award_mesos_deduct_100", deduct, AwardMesos, AwardMesosPayload{
-			CharacterId: tradeCharA, WorldId: 1, ChannelId: 1, ActorId: tradeCharB, ActorType: "CHARACTER", Amount: -10_000_000,
 		}).
 		AddStep("award_mesos_credit_200", credit, AwardMesos, AwardMesosPayload{
 			CharacterId: tradeCharB, WorldId: 1, ChannelId: 1, ActorId: tradeCharA, ActorType: "CHARACTER", Amount: 9_600_000,
@@ -154,16 +162,22 @@ func stageTradeSaga(t *testing.T, h tradeRollbackHarness, transactionId uuid.UUI
 }
 
 // TestTradeRollback_AcceptFailsAfterBothReleases is the half-swap shape: both
-// items left their owners and one landed with B, then B→A's accept failed.
-// Conservation requires B's newly received copy be destroyed AND both owners'
-// items be re-granted — otherwise A's item is gone and B holds two.
+// items left escrow and one landed with B, then B→A's accept failed.
+// Conservation requires B's newly received copy be destroyed AND both custody
+// rows be restored — otherwise A's item is gone and B holds two.
+//
+// Note what the release inverse is now: a RESTORE, not a re-grant. Under
+// escrow-at-staging the item was never in a compartment to give back — putting
+// it back into custody is both sufficient and safer, because it cannot race the
+// accept that may already have delivered the same item to the counterparty
+// (design §5A.7).
 func TestTradeRollback_AcceptFailsAfterBothReleases(t *testing.T) {
 	h := newTradeRollbackHarness(t)
 	txId := uuid.New()
 	s := stageTradeSaga(t, h, txId, tradeSettlementSagaBuilder(txId,
-		Completed, Completed, // both releases done
+		Completed, Completed, // both escrow releases done
 		Completed, Failed, // accept→B done, accept→A failed
-		Pending, Pending, // meso legs never ran
+		Pending, Pending, // meso credit never ran
 	))
 
 	h.compensator.DispatchTradeTransactionRollbacks(s)
@@ -172,55 +186,51 @@ func TestTradeRollback_AcceptFailsAfterBothReleases(t *testing.T) {
 	require.Len(t, *h.destroys, 1)
 	require.Equal(t, tradeDestroyCall{CharacterId: tradeCharB, TemplateId: tradeTemplateA, Quantity: 5, RemoveAll: false}, (*h.destroys)[0])
 
-	// Both completed releases are undone: each owner gets their own item back,
-	// with the snapshot from the paired accept step so stats survive.
-	require.Len(t, *h.regrants, 2)
-	byCharacter := map[uint32]tradeRegrantCall{}
-	for _, r := range *h.regrants {
-		byCharacter[r.CharacterId] = r
-	}
-	require.Equal(t, tradeTemplateA, byCharacter[tradeCharA].TemplateId, "A must get its OWN item back, not B's")
-	require.Equal(t, tradeTypeA, byCharacter[tradeCharA].InventoryType)
-	require.Equal(t, uint32(5), byCharacter[tradeCharA].AssetData.Quantity)
-	require.Equal(t, tradeTemplateB, byCharacter[tradeCharB].TemplateId, "B must get its OWN item back")
-	require.Equal(t, tradeTypeB, byCharacter[tradeCharB].InventoryType)
-	require.Equal(t, uint16(17), byCharacter[tradeCharB].AssetData.WeaponAttack, "the equip snapshot's stats must survive the rollback")
+	// Both completed releases are undone: each custody row comes back.
+	require.Len(t, h.tradeMock.restoreCalls, 2)
+	require.ElementsMatch(t, []uuid.UUID{tradeEscrowA, tradeEscrowB}, h.tradeMock.restoreCalls)
+
+	// Nothing is re-granted to a compartment: the items belong to escrow.
+	require.Empty(t, *h.regrants, "a settlement rollback must restore custody, not re-grant to inventories")
 
 	// No meso leg completed, so nothing to reverse.
 	require.Empty(t, *h.mesos)
 }
 
-// TestTradeRollback_CreditFailsAfterDeduct pins the meso half-swap: A was
-// debited the full staged amount and B's credit then failed. A must be made
-// whole, and B must not be credited by the rollback.
-func TestTradeRollback_CreditFailsAfterDeduct(t *testing.T) {
+// TestTradeRollback_CreditReversedWhenTheSagaFailsAfterIt pins the meso half.
+//
+// Settlement is CREDIT-ONLY now — the debit happened at stage time — so the only
+// meso inverse a rollback can owe is a negation of a credit that already landed.
+// Failing to reverse it would leave the receiver holding meso for a trade that
+// was rolled back.
+func TestTradeRollback_CreditReversedWhenTheSagaFailsAfterIt(t *testing.T) {
 	h := newTradeRollbackHarness(t)
 	txId := uuid.New()
 	s := stageTradeSaga(t, h, txId, tradeSettlementSagaBuilder(txId,
 		Completed, Completed,
 		Completed, Completed, // the whole item swap landed
-		Completed, Failed, // deduct done, credit failed
+		Pending, Completed, // the credit landed too
 	))
 
 	h.compensator.DispatchTradeTransactionRollbacks(s)
 
-	// Only the completed deduct is reversed, and with the opposite sign.
 	require.Len(t, *h.mesos, 1)
-	require.Equal(t, tradeMesoCall{CharacterId: tradeCharA, Amount: 10_000_000}, (*h.mesos)[0])
+	require.Equal(t, tradeMesoCall{CharacterId: tradeCharB, Amount: -9_600_000}, (*h.mesos)[0],
+		"the credit must be reversed with the opposite sign, and no debit re-applied")
 
-	// The item swap is unwound too: both accepts destroyed, both releases re-granted.
+	// The item swap is unwound too: both accepts destroyed, both rows restored.
 	require.Len(t, *h.destroys, 2)
-	require.Len(t, *h.regrants, 2)
+	require.Len(t, h.tradeMock.restoreCalls, 2)
 }
 
 // TestTradeRollback_FailureAfterFirstReleaseOnly pins the earliest failure
-// shape: only A's item left inventory before the second release failed. Exactly
-// one re-grant must fire — to A — and nothing may be destroyed.
+// shape: only A's row was released before the second release failed. Exactly one
+// restore must fire — for A's row — and nothing may be destroyed.
 func TestTradeRollback_FailureAfterFirstReleaseOnly(t *testing.T) {
 	h := newTradeRollbackHarness(t)
 	txId := uuid.New()
 	s := stageTradeSaga(t, h, txId, tradeSettlementSagaBuilder(txId,
-		Completed, Failed, // A released, B's release failed
+		Completed, Failed, // A's row released, B's release failed
 		Pending, Pending,
 		Pending, Pending,
 	))
@@ -229,34 +239,33 @@ func TestTradeRollback_FailureAfterFirstReleaseOnly(t *testing.T) {
 
 	require.Empty(t, *h.destroys, "nothing was created, so nothing may be destroyed")
 	require.Empty(t, *h.mesos)
-	require.Len(t, *h.regrants, 1)
-	require.Equal(t, tradeCharA, (*h.regrants)[0].CharacterId)
-	require.Equal(t, tradeTemplateA, (*h.regrants)[0].TemplateId)
+	require.Len(t, h.tradeMock.restoreCalls, 1)
+	require.Equal(t, tradeEscrowA, h.tradeMock.restoreCalls[0])
 }
 
 // TestTradeRollback_IsIdempotent pins that a second walk over the same saga
-// dispatches nothing. The meso inverses are negations and are NOT idempotent
-// downstream, so a repeated walk would hand A back 10,000,000 twice.
+// dispatches nothing. The meso inverse is a negation and is NOT idempotent
+// downstream, so a repeated walk would debit B 9,600,000 twice.
 func TestTradeRollback_IsIdempotent(t *testing.T) {
 	h := newTradeRollbackHarness(t)
 	txId := uuid.New()
 	s := stageTradeSaga(t, h, txId, tradeSettlementSagaBuilder(txId,
 		Completed, Completed,
 		Completed, Completed,
-		Completed, Failed,
+		Pending, Completed,
 	))
 
 	h.compensator.DispatchTradeTransactionRollbacks(s)
-	firstRegrants := len(*h.regrants)
+	firstRestores := len(h.tradeMock.restoreCalls)
 	firstDestroys := len(*h.destroys)
 	firstMesos := len(*h.mesos)
-	require.NotZero(t, firstRegrants)
+	require.NotZero(t, firstRestores)
 	require.NotZero(t, firstDestroys)
 	require.NotZero(t, firstMesos)
 
 	h.compensator.DispatchTradeTransactionRollbacks(s)
 
-	require.Len(t, *h.regrants, firstRegrants, "a second walk must not re-grant again")
+	require.Len(t, h.tradeMock.restoreCalls, firstRestores, "a second walk must not restore again")
 	require.Len(t, *h.destroys, firstDestroys, "a second walk must not destroy again")
 	require.Len(t, *h.mesos, firstMesos, "a second walk must not re-credit again — meso negation is not idempotent")
 }
@@ -280,51 +289,17 @@ func TestCompensateFailedStepRoutesTradeToTheReverseWalk(t *testing.T) {
 	// is on the dispatched inverses, not the return value.
 	_ = h.compensator.CompensateFailedStep(s)
 
-	require.NotEmpty(t, *h.regrants, "a failed trade step must reach the reverse-walk, not compensateStorageOperation's no-op path")
+	require.NotEmpty(t, h.tradeMock.restoreCalls, "a failed trade step must reach the reverse-walk, not compensateStorageOperation's no-op path")
 	require.NotEmpty(t, *h.destroys)
 }
 
-// TestTradeStepIdsCarryTheAssetIdLink pins the coupling the reverse-walk relies
-// on to pair a release with the accept holding its snapshot: expandTradeSettlement
-// appends the asset id to BOTH step ids, and tradeStepAssetId parses it back.
-// If the id format changes without this, releases silently lose their snapshot
-// and are skipped — i.e. the item is not re-granted.
-func TestTradeStepIdsCarryTheAssetIdLink(t *testing.T) {
-	p := testProcessorWithCompartments(t, tradeCompartments())
-	steps, err := p.expandTradeSettlement(NewStep[any]("trade_settlement", Pending, TradeSettlement, tradeSettlementFixture()))
-	require.NoError(t, err)
-
-	seen := map[uint32]int{}
-	for _, s := range steps {
-		switch s.Action() {
-		case ReleaseFromCharacter:
-			assetId, ok := tradeStepAssetId(s.StepId())
-			require.Truef(t, ok, "release step id %q must carry a parseable asset id", s.StepId())
-			pl := s.Payload().(ReleaseFromCharacterPayload)
-			require.Equalf(t, pl.AssetId, assetId, "step id %q must encode the payload's asset id", s.StepId())
-			seen[assetId]++
-		case AcceptToCharacter:
-			assetId, ok := tradeStepAssetId(s.StepId())
-			require.Truef(t, ok, "accept step id %q must carry a parseable asset id", s.StepId())
-			seen[assetId]++
-		}
-	}
-	require.Equal(t, map[uint32]int{tradeAssetA: 2, tradeAssetB: 2}, seen,
-		"each staged asset id must appear on exactly one release and one accept step id")
-}
-
-// TestTradeStepAssetIdRejectsUnparseableIds pins that the parser reports failure
-// rather than returning a plausible 0 — a 0 would silently pair every release
-// with the wrong snapshot.
-func TestTradeStepAssetIdRejectsUnparseableIds(t *testing.T) {
-	for _, bad := range []string{"release_from_character", "accept_to_character_100_", "trade_settlement", "", "award_mesos_deduct_x"} {
-		_, ok := tradeStepAssetId(bad)
-		require.Falsef(t, ok, "step id %q must not yield an asset id", bad)
-	}
-	id, ok := tradeStepAssetId("release_from_character_100_55")
-	require.True(t, ok)
-	require.Equal(t, uint32(55), id)
-}
+// The asset-id step-id pairing tests that used to sit here were DELETED, not
+// ported. They pinned the coupling that let the reverse-walk find the accept
+// step holding a release's snapshot, which existed only because a settlement
+// released from a CHARACTER and had to reconstruct the item to give it back.
+// Under escrow-at-staging a settlement releases from custody, and its inverse is
+// simply restoring that custody row (design §5A.7) — there is no snapshot to
+// pair and nothing for those tests to assert.
 
 // ---------------------------------------------------------------------------
 // Late-success absorption (fix round 2).
@@ -351,7 +326,7 @@ func TestLateSuccessfulAcceptDestroysTheDuplicate(t *testing.T) {
 	))
 
 	h.compensator.DispatchTradeTransactionRollbacks(s)
-	require.Len(t, *h.regrants, 2, "the walk re-grants both owners")
+	require.Len(t, h.tradeMock.restoreCalls, 2, "the walk restores both custody rows")
 	require.Empty(t, *h.destroys)
 
 	// Now the in-flight accept succeeds, after the saga went terminal.
@@ -367,10 +342,10 @@ func TestLateSuccessfulAcceptDestroysTheDuplicate(t *testing.T) {
 	require.Equal(t, tradeDestroyCall{CharacterId: tradeCharB, TemplateId: tradeTemplateA, Quantity: 5, RemoveAll: false}, (*h.destroys)[0])
 }
 
-// TestLateSuccessfulReleaseRegrantsTheItem pins the loss shape: the walk skipped
+// TestLateSuccessfulReleaseRestoresTheCustodyRow pins the loss shape: the walk skipped
 // B's still-pending release, then it succeeds late and soft-deletes B's item
 // with nothing to restore it.
-func TestLateSuccessfulReleaseRegrantsTheItem(t *testing.T) {
+func TestLateSuccessfulReleaseRestoresTheCustodyRow(t *testing.T) {
 	h := newTradeRollbackHarness(t)
 	txId := uuid.New()
 	s := stageTradeSaga(t, h, txId, tradeSettlementSagaBuilder(txId,
@@ -380,22 +355,19 @@ func TestLateSuccessfulReleaseRegrantsTheItem(t *testing.T) {
 	))
 
 	h.compensator.DispatchTradeTransactionRollbacks(s)
-	require.Len(t, *h.regrants, 1, "only A's completed release is reversed by the walk")
+	require.Len(t, h.tradeMock.restoreCalls, 1, "only A's completed release is reversed by the walk")
 
 	lateStep, ok := s.StepAt(1)
 	require.True(t, ok)
-	require.Equal(t, "release_from_character_200_77", lateStep.StepId())
+	require.Equal(t, "release_from_trade_200_77", lateStep.StepId())
 
 	compensated, err := h.compensator.CompensateLateStep(s, lateStep)
 	require.NoError(t, err)
 	require.True(t, compensated, "a late release in a trade saga must have a registered inverse")
 
-	require.Len(t, *h.regrants, 2)
-	late := (*h.regrants)[1]
-	require.Equal(t, tradeCharB, late.CharacterId, "B gets its own item back")
-	require.Equal(t, tradeTemplateB, late.TemplateId)
-	require.Equal(t, tradeTypeB, late.InventoryType)
-	require.Equal(t, uint16(17), late.AssetData.WeaponAttack, "the paired accept's snapshot must restore the equip stats")
+	require.Len(t, h.tradeMock.restoreCalls, 2)
+	require.Equal(t, tradeEscrowB, h.tradeMock.restoreCalls[1], "B's custody row must be restored")
+	require.Empty(t, *h.regrants, "a late release restores custody; it does not re-grant to a compartment")
 }
 
 // TestLateSuccessDoesNotDoubleCompensateAWalkedStep pins that the late path and
@@ -432,22 +404,27 @@ func TestLateCompensableRegistrationIsTradeScoped(t *testing.T) {
 			SetTransactionId(txId).
 			SetSagaType(sagaType).
 			SetInitiatedBy("scope-test").
-			AddStep("release_from_character", Completed, ReleaseFromCharacter, ReleaseFromCharacterPayload{CharacterId: tradeCharA}).
+			AddStep("release_from_trade", Completed, ReleaseFromTrade, ReleaseFromTradePayload{EscrowId: tradeEscrowA}).
 			Build()
 		require.NoError(t, err)
 		return s
 	}
 
 	for _, other := range []Type{StorageOperation, MtsOperation, InventoryTransaction, NoteSend} {
-		require.Falsef(t, isLateCompensable(build(other), ReleaseFromCharacter),
-			"%s must keep its pre-task-205 absorb behaviour for release_from_character", other)
+		require.Falsef(t, isLateCompensable(build(other), ReleaseFromTrade),
+			"%s must keep its pre-task-205 absorb behaviour for release_from_trade", other)
 		require.Falsef(t, isLateCompensable(build(other), AcceptToCharacter),
 			"%s must keep its pre-task-205 absorb behaviour for accept_to_character", other)
 	}
 
 	trade := build(TradeTransaction)
-	require.True(t, isLateCompensable(trade, ReleaseFromCharacter))
+	require.True(t, isLateCompensable(trade, ReleaseFromTrade))
 	require.True(t, isLateCompensable(trade, AcceptToCharacter))
+
+	// release_from_character is NOT trade-scoped any more: a settlement releases
+	// from custody, never from a compartment. Registering it would hand every
+	// storage/cash-shop/MTS saga an inverse it does not have.
+	require.False(t, isLateCompensable(trade, ReleaseFromCharacter))
 
 	// The base set is unchanged for every saga type, trade included.
 	for _, a := range []Action{AwardMesos, AwardAsset, DestroyAsset} {

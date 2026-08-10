@@ -16,7 +16,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -1894,12 +1893,13 @@ func (c *CompensatorImpl) compensateTradeTransaction(s Saga, failedStep Step[any
 //     instance of that template, which for a recipient who already owned one
 //     could pick the wrong instance; the item COUNT is still conserved, and the
 //     alternative is permanent loss.
-//   - ReleaseFromCharacter → RequestAcceptAsset, re-granting to the original
-//     owner using the AssetData snapshot carried on the paired
-//     AcceptToCharacter step, so scrolled stats / cash ownership / expiry
-//     survive the rollback. Pairing is by the asset id that expandTradeSettlement
-//     appends to BOTH step ids; tradeStepAssetId parses it back out and
-//     TestTradeStepIdsCarryTheAssetIdLink pins that coupling.
+//   - ReleaseFromTrade → RestoreTradeEscrow, un-soft-deleting the custody row.
+//     Under escrow-at-staging (design §5A.7) a settlement releases from ESCROW,
+//     not from a character, so the inverse is a custody restore rather than a
+//     re-grant: the item goes back to being escrowed, and whichever teardown
+//     follows returns it to its owner from there. That is strictly safer than
+//     re-granting here, because it cannot race the accept that may already have
+//     delivered the same item to the counterparty.
 //
 // Idempotency: each step's inverse is claimed via claimLateCompensation before
 // dispatch — the same per-step, optimistic-version marker the late-success path
@@ -1910,8 +1910,6 @@ func (c *CompensatorImpl) compensateTradeTransaction(s Saga, failedStep Step[any
 // Error rather than risking a duplicate — the same at-most-once posture
 // CompensateLateStep takes.
 func (c *CompensatorImpl) DispatchTradeTransactionRollbacks(s Saga) {
-	snapshots := tradeAcceptSnapshots(s)
-
 	steps := s.Steps()
 	for i := len(steps) - 1; i >= 0; i-- {
 		step := steps[i]
@@ -1956,31 +1954,20 @@ func (c *CompensatorImpl) DispatchTradeTransactionRollbacks(s Saga) {
 					"template_id":    payload.TemplateId,
 				}).Error("Reverse-walk: trade AcceptToCharacter → DestroyItem dispatch failed; continuing chain.")
 			}
-		case ReleaseFromCharacter:
-			payload, ok := step.Payload().(ReleaseFromCharacterPayload)
+		case ReleaseFromTrade:
+			payload, ok := step.Payload().(ReleaseFromTradePayload)
 			if !ok {
-				continue
-			}
-			snapshot, ok := snapshots[payload.AssetId]
-			if !ok {
-				c.l.WithFields(logrus.Fields{
-					"transaction_id": s.TransactionId().String(),
-					"step_id":        step.StepId(),
-					"character_id":   payload.CharacterId,
-					"asset_id":       payload.AssetId,
-				}).Error("Reverse-walk: trade ReleaseFromCharacter has no paired accept snapshot to re-grant; skipping.")
 				continue
 			}
 			if !c.claimTradeRollback(s, step) {
 				continue
 			}
-			if err := c.compP.RequestAcceptAsset(s.TransactionId(), payload.CharacterId, payload.InventoryType, snapshot.TemplateId, snapshot.AssetData); err != nil {
+			if err := c.tradeP.RestoreTradeEscrowAndEmit(s.TransactionId(), payload.EscrowId); err != nil {
 				c.l.WithError(err).WithFields(logrus.Fields{
 					"transaction_id": s.TransactionId().String(),
 					"step_id":        step.StepId(),
-					"character_id":   payload.CharacterId,
-					"template_id":    snapshot.TemplateId,
-				}).Error("Reverse-walk: trade ReleaseFromCharacter → AcceptToCharacter re-grant dispatch failed; continuing chain.")
+					"escrow_id":      payload.EscrowId.String(),
+				}).Error("Reverse-walk: trade ReleaseFromTrade → RestoreTradeEscrow dispatch failed; continuing chain.")
 			}
 		}
 	}
@@ -2011,51 +1998,6 @@ func (c *CompensatorImpl) claimTradeRollback(s Saga, step Step[any]) bool {
 		return false
 	}
 	return true
-}
-
-// tradeAcceptSnapshots indexes every accept step's AssetData snapshot by the
-// asset id its step id carries, WHATEVER the step's status. Status-blind is
-// deliberate: a release whose paired accept never ran still needs that accept's
-// snapshot to be re-granted, which is what makes failure-after-only-the-first-
-// release come out right. The key cannot collide across participants —
-// asset.Entity.Id is a table-wide autoIncrement primary key.
-func tradeAcceptSnapshots(s Saga) map[uint32]AcceptToCharacterPayload {
-	snapshots := make(map[uint32]AcceptToCharacterPayload)
-	for _, step := range s.Steps() {
-		if step.Action() != AcceptToCharacter {
-			continue
-		}
-		assetId, ok := tradeStepAssetId(step.StepId())
-		if !ok {
-			continue
-		}
-		if p, ok := step.Payload().(AcceptToCharacterPayload); ok {
-			snapshots[assetId] = p
-		}
-	}
-	return snapshots
-}
-
-// tradeAcceptSnapshot is the single-asset lookup used by the late-success path.
-func tradeAcceptSnapshot(s Saga, assetId uint32) (AcceptToCharacterPayload, bool) {
-	snapshot, ok := tradeAcceptSnapshots(s)[assetId]
-	return snapshot, ok
-}
-
-// tradeStepAssetId parses the asset id expandTradeSettlement appends to the
-// release and accept step ids it generates ("release_from_character_<owner>_<assetId>",
-// "accept_to_character_<recipient>_<assetId>"). It is the link that lets the
-// reverse-walk pair a release with the accept carrying its snapshot.
-func tradeStepAssetId(stepId string) (uint32, bool) {
-	idx := strings.LastIndex(stepId, "_")
-	if idx == -1 || idx == len(stepId)-1 {
-		return 0, false
-	}
-	parsed, err := strconv.ParseUint(stepId[idx+1:], 10, 32)
-	if err != nil {
-		return 0, false
-	}
-	return uint32(parsed), true
 }
 
 // assetDataFromMtsListingSnapshot reconstructs an inventory AssetData from the
@@ -2148,9 +2090,8 @@ var lateCompensableActions = map[Action]struct{}{
 // tradeLateCompensableActions extends lateCompensableActions for TradeTransaction
 // ONLY (task-205). These two actions are shared with the storage, cash-shop and
 // MTS flows, so they are deliberately NOT added to the global map: registering
-// them there would silently give every one of those saga types a re-grant /
-// destroy it does not have today, and the ReleaseFromCharacter inverse below
-// depends on the trade-specific step-id pairing that those flows do not produce.
+// them there would silently give every one of those saga types a destroy /
+// custody-restore it does not have today.
 //
 // Why trade needs them at all: the settlement reverse-walk skips a step that is
 // not yet Completed, so a settlement that times out with an accept IN FLIGHT
@@ -2159,8 +2100,8 @@ var lateCompensableActions = map[Action]struct{}{
 // is item DUPLICATION. Symmetrically a late-successful release is silent LOSS.
 // This is the same class MTS closed by registering its three custody actions.
 var tradeLateCompensableActions = map[Action]struct{}{
-	AcceptToCharacter:    {},
-	ReleaseFromCharacter: {},
+	AcceptToCharacter: {},
+	ReleaseFromTrade:  {},
 }
 
 // isLateCompensable reports whether a late-successful step has a registered
@@ -2355,22 +2296,22 @@ func (c *CompensatorImpl) dispatchLateInverse(s Saga, step Step[any]) error {
 		// copy this late accept created in the recipient's inventory is the
 		// duplicate and must go.
 		return c.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, false)
-	case ReleaseFromCharacter:
+	case ReleaseFromTrade:
+		// Both the settlement and the teardown unwind run as TradeTransaction —
+		// they are two outcomes of one trade lifecycle and need the same set of
+		// inverses, so DispatchTradeTransactionRollbacks covers both.
 		if s.SagaType() != TradeTransaction {
-			return fmt.Errorf("late ReleaseFromCharacter compensation is registered for trade settlements only, got saga type %s", s.SagaType())
+			return fmt.Errorf("late ReleaseFromTrade compensation is registered for trade sagas only, got saga type %s", s.SagaType())
 		}
-		payload, ok := step.Payload().(ReleaseFromCharacterPayload)
+		payload, ok := step.Payload().(ReleaseFromTradePayload)
 		if !ok {
-			return fmt.Errorf("invalid payload for late ReleaseFromCharacter compensation")
+			return fmt.Errorf("invalid payload for late ReleaseFromTrade compensation")
 		}
 		// The reverse-walk skipped this step (it was not Completed then), so
-		// nothing re-granted the item this late release soft-deleted. Restore it
-		// from the snapshot on the paired accept step.
-		snapshot, ok := tradeAcceptSnapshot(s, payload.AssetId)
-		if !ok {
-			return fmt.Errorf("late ReleaseFromCharacter compensation: no paired accept snapshot for asset [%d]", payload.AssetId)
-		}
-		return c.compP.RequestAcceptAsset(s.TransactionId(), payload.CharacterId, payload.InventoryType, snapshot.TemplateId, snapshot.AssetData)
+		// nothing has undone the custody release. Un-soft-delete the row: the
+		// item goes back to being escrowed, and the teardown that follows
+		// returns it to its owner from there.
+		return c.tradeP.RestoreTradeEscrowAndEmit(s.TransactionId(), payload.EscrowId)
 	case AwardCurrency:
 		payload, ok := step.Payload().(AwardCurrencyPayload)
 		if !ok {

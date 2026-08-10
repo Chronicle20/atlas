@@ -13,7 +13,6 @@
     ],
     "maxStagedItems": 9,
     "minTradeLevel": 0,
-    "reservationTtlSeconds": 300,
     "attestationTimeoutSeconds": 5
   }
 }

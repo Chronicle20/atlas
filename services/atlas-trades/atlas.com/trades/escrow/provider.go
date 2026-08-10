@@ -71,6 +71,33 @@ func MesoByOwner(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, ownerId
 	}
 }
 
+// MesoStakeById finds the escrow meso row currently carrying a given pending
+// stake id.
+//
+// Deliberately NOT tenant-scoped, matching AllItems/AllMesos: the caller
+// resolving an award_mesos saga's terminal status has only the stakeId it
+// submitted the saga with — by the time the status arrives the room that knew
+// the tenant may already be gone (that is the whole reason this durable path
+// exists, see MesoEntity's doc comment). The row itself carries the tenant
+// quad needed to rebuild the tenant once found (MesoModel.Tenant).
+func MesoStakeById(db *gorm.DB) func(stakeId uuid.UUID) (MesoModel, bool, error) {
+	return func(stakeId uuid.UUID) (MesoModel, bool, error) {
+		var e MesoEntity
+		err := db.Where("pending_stake_id = ?", stakeId).First(&e).Error
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return MesoModel{}, false, nil
+			}
+			return MesoModel{}, false, err
+		}
+		m, err := MakeMeso(e)
+		if err != nil {
+			return MesoModel{}, false, err
+		}
+		return m, true, nil
+	}
+}
+
 // AllItems yields EVERY live escrowed item across EVERY tenant, oldest first.
 //
 // Deliberately un-scoped: startup reconciliation runs before any request has

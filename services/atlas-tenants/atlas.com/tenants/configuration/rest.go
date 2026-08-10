@@ -412,7 +412,6 @@ type TradeConfigRestModel struct {
 	TaxTiers                  []TradeTaxTierRestModel `json:"taxTiers,omitempty"`
 	MaxStagedItems            *int                    `json:"maxStagedItems,omitempty"`
 	MinTradeLevel             *int                    `json:"minTradeLevel,omitempty"`
-	ReservationTtlSeconds     *int                    `json:"reservationTtlSeconds,omitempty"`
 	AttestationTimeoutSeconds *int                    `json:"attestationTimeoutSeconds,omitempty"`
 }
 
@@ -478,7 +477,6 @@ func TransformTradeConfig(data map[string]interface{}) (TradeConfigRestModel, er
 		TaxTiers:                  taxTiers,
 		MaxStagedItems:            optionalInt(attributes, "maxStagedItems"),
 		MinTradeLevel:             optionalInt(attributes, "minTradeLevel"),
-		ReservationTtlSeconds:     optionalInt(attributes, "reservationTtlSeconds"),
 		AttestationTimeoutSeconds: optionalInt(attributes, "attestationTimeoutSeconds"),
 	}, nil
 }
@@ -503,7 +501,7 @@ func optionalInt(attributes map[string]interface{}, key string) *int {
 // stored value forward. Writing every key unconditionally is what let a PATCH
 // naming one knob reset all the others.
 func ExtractTradeConfig(m TradeConfigRestModel) (map[string]interface{}, error) {
-	attributes := make(map[string]interface{}, 6)
+	attributes := make(map[string]interface{}, 5)
 
 	if m.TaxEnabled != nil {
 		attributes["taxEnabled"] = *m.TaxEnabled
@@ -525,9 +523,6 @@ func ExtractTradeConfig(m TradeConfigRestModel) (map[string]interface{}, error) 
 	}
 	if m.MinTradeLevel != nil {
 		attributes["minTradeLevel"] = *m.MinTradeLevel
-	}
-	if m.ReservationTtlSeconds != nil {
-		attributes["reservationTtlSeconds"] = *m.ReservationTtlSeconds
 	}
 	if m.AttestationTimeoutSeconds != nil {
 		attributes["attestationTimeoutSeconds"] = *m.AttestationTimeoutSeconds

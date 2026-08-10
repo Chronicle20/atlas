@@ -14,9 +14,9 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-// Item is one staged asset held by an in-flight settlement.
+// Item is one escrowed asset held by an in-flight settlement.
 type Item struct {
-	reservationId uuid.UUID
+	escrowId      uuid.UUID
 	inventoryType inventory.Type
 	sourceSlot    slot.Position
 	assetId       asset.Id
@@ -26,9 +26,9 @@ type Item struct {
 
 // NewItem builds one recorded item. Item is a value type with no mutable state,
 // so it needs no builder.
-func NewItem(reservationId uuid.UUID, inventoryType inventory.Type, sourceSlot slot.Position, assetId asset.Id, templateId item.Id, quantity asset.Quantity) Item {
+func NewItem(escrowId uuid.UUID, inventoryType inventory.Type, sourceSlot slot.Position, assetId asset.Id, templateId item.Id, quantity asset.Quantity) Item {
 	return Item{
-		reservationId: reservationId,
+		escrowId:      escrowId,
 		inventoryType: inventoryType,
 		sourceSlot:    sourceSlot,
 		assetId:       assetId,
@@ -37,7 +37,7 @@ func NewItem(reservationId uuid.UUID, inventoryType inventory.Type, sourceSlot s
 	}
 }
 
-func (i Item) ReservationId() uuid.UUID      { return i.reservationId }
+func (i Item) EscrowId() uuid.UUID           { return i.escrowId }
 func (i Item) InventoryType() inventory.Type { return i.inventoryType }
 func (i Item) SourceSlot() slot.Position     { return i.sourceSlot }
 func (i Item) AssetId() asset.Id             { return i.assetId }
@@ -142,7 +142,7 @@ func Make(e Entry) (Model, error) {
 	for _, s := range e.Sides {
 		items := make([]Item, 0, len(s.Items))
 		for _, i := range s.Items {
-			items = append(items, NewItem(i.ReservationId, i.InventoryType, i.SourceSlot, i.AssetId, i.TemplateId, i.Quantity))
+			items = append(items, NewItem(i.EscrowId, i.InventoryType, i.SourceSlot, i.AssetId, i.TemplateId, i.Quantity))
 		}
 		b.addSideWithId(s.Id, s.Position, s.CharacterId, s.CharacterName, s.MesoStaged, s.MesoTax, s.MesoDelivered, items)
 	}

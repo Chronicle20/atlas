@@ -145,6 +145,10 @@ const (
 	// TradeTransaction.
 	TradeSettlement Action = "trade_settlement"
 
+	// TradeUnwind is the teardown twin of TradeSettlement: a COMPOSITE that
+	// returns an abandoned trade's escrow to the people it came from.
+	TradeUnwind Action = "trade_unwind"
+
 	// Trade escrow custody (task-205, design §5A.2). transfer_to_trade is a
 	// COMPOSITE expanded into release_from_character + accept_to_trade, the
 	// same shape as transfer_to_mts; accept_to_trade and release_from_trade are

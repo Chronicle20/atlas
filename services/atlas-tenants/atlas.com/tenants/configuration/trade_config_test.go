@@ -55,7 +55,6 @@ func TestTradeConfigRoundTrip(t *testing.T) {
 		},
 		MaxStagedItems:            intPtr(9),
 		MinTradeLevel:             intPtr(15),
-		ReservationTtlSeconds:     intPtr(300),
 		AttestationTimeoutSeconds: intPtr(5),
 	}
 
@@ -87,7 +86,6 @@ func TestTradeConfigRoundTrip(t *testing.T) {
 	}
 	wantIntPtr(t, "MaxStagedItems", got.MaxStagedItems, 9)
 	wantIntPtr(t, "MinTradeLevel", got.MinTradeLevel, 15)
-	wantIntPtr(t, "ReservationTtlSeconds", got.ReservationTtlSeconds, 300)
 	wantIntPtr(t, "AttestationTimeoutSeconds", got.AttestationTimeoutSeconds, 5)
 
 	if len(got.TaxTiers) != len(original.TaxTiers) {
@@ -116,7 +114,7 @@ func TestTradeConfigTransformToleratesMissingAttributes(t *testing.T) {
 		t.Errorf("TaxTiers: got %d tiers, want 0", len(got.TaxTiers))
 	}
 	if got.MaxStagedItems != nil || got.MinTradeLevel != nil ||
-		got.ReservationTtlSeconds != nil || got.AttestationTimeoutSeconds != nil {
+		got.AttestationTimeoutSeconds != nil {
 		t.Errorf("scalar knobs: got %+v, want all nil for absent attributes", got)
 	}
 }
@@ -157,7 +155,6 @@ func TestSeedTradeConfigFileMatchesDesignDefaults(t *testing.T) {
 	}
 	wantIntPtr(t, "maxStagedItems", rm.MaxStagedItems, 9)
 	wantIntPtr(t, "minTradeLevel", rm.MinTradeLevel, 0)
-	wantIntPtr(t, "reservationTtlSeconds", rm.ReservationTtlSeconds, 300)
 	wantIntPtr(t, "attestationTimeoutSeconds", rm.AttestationTimeoutSeconds, 5)
 
 	want := []TradeTaxTierRestModel{
@@ -194,7 +191,6 @@ func storedTradeConfig() map[string]interface{} {
 			},
 			"maxStagedItems":            float64(9),
 			"minTradeLevel":             float64(15),
-			"reservationTtlSeconds":     float64(300),
 			"attestationTimeoutSeconds": float64(5),
 		},
 	}
@@ -252,7 +248,6 @@ func TestPartialPatchThroughTheRealPathPreservesEveryOtherAttribute(t *testing.T
 		{"taxEnabled", "false"},
 		{"maxStagedItems", "3"},
 		{"minTradeLevel", "40"},
-		{"reservationTtlSeconds", "120"},
 		{"attestationTimeoutSeconds", "8"},
 		{"taxTiers", `[{"threshold":7,"rate":0.5}]`},
 	}
@@ -273,9 +268,6 @@ func TestPartialPatchThroughTheRealPathPreservesEveryOtherAttribute(t *testing.T
 			}
 			if c.attribute != "minTradeLevel" {
 				wantIntPtr(t, "minTradeLevel", got.MinTradeLevel, 15)
-			}
-			if c.attribute != "reservationTtlSeconds" {
-				wantIntPtr(t, "reservationTtlSeconds", got.ReservationTtlSeconds, 300)
 			}
 			if c.attribute != "attestationTimeoutSeconds" {
 				wantIntPtr(t, "attestationTimeoutSeconds", got.AttestationTimeoutSeconds, 5)
@@ -309,9 +301,6 @@ func TestPartialPatchAppliesThePatchedAttribute(t *testing.T) {
 	}
 	if got := applyPatch(t, stored, patchDocument("minTradeLevel", "40")); got.MinTradeLevel == nil || *got.MinTradeLevel != 40 {
 		t.Errorf("minTradeLevel: got %v, want the patched 40", got.MinTradeLevel)
-	}
-	if got := applyPatch(t, stored, patchDocument("reservationTtlSeconds", "120")); got.ReservationTtlSeconds == nil || *got.ReservationTtlSeconds != 120 {
-		t.Errorf("reservationTtlSeconds: got %v, want the patched 120", got.ReservationTtlSeconds)
 	}
 	if got := applyPatch(t, stored, patchDocument("attestationTimeoutSeconds", "8")); got.AttestationTimeoutSeconds == nil || *got.AttestationTimeoutSeconds != 8 {
 		t.Errorf("attestationTimeoutSeconds: got %v, want the patched 8", got.AttestationTimeoutSeconds)
@@ -386,8 +375,8 @@ func TestMergePreservesUnmentionedAttributes(t *testing.T) {
 		t.Fatal("merged config has no attributes map")
 	}
 
-	if attributes["reservationTtlSeconds"] != float64(300) {
-		t.Errorf("reservationTtlSeconds: got %v, want the stored 300 to survive", attributes["reservationTtlSeconds"])
+	if attributes["attestationTimeoutSeconds"] != float64(5) {
+		t.Errorf("attestationTimeoutSeconds: got %v, want the stored 5 to survive", attributes["attestationTimeoutSeconds"])
 	}
 	if attributes["minTradeLevel"] != float64(0) {
 		t.Errorf("minTradeLevel: got %v, want the incoming explicit 0 to win", attributes["minTradeLevel"])
@@ -409,7 +398,7 @@ func TestMergePreservesUnmentionedAttributes(t *testing.T) {
 // services/atlas-trades/atlas.com/trades/configuration/rest_test.go — the two
 // tests together are the only thing that keeps the nested taxTiers object array
 // symmetric across the module boundary.
-const tradeConfigWireDocument = `{"data":{"type":"trade-configs","id":"trade-configs","attributes":{"taxEnabled":true,"taxTiers":[{"threshold":100000000,"rate":0.06},{"threshold":100000,"rate":0.008}],"maxStagedItems":9,"minTradeLevel":0,"reservationTtlSeconds":300,"attestationTimeoutSeconds":5}}}`
+const tradeConfigWireDocument = `{"data":{"type":"trade-configs","id":"trade-configs","attributes":{"taxEnabled":true,"taxTiers":[{"threshold":100000000,"rate":0.06},{"threshold":100000,"rate":0.008}],"maxStagedItems":9,"minTradeLevel":0,"attestationTimeoutSeconds":5}}}`
 
 // TestTradeConfigWireShape pins the serialized JSON:API form, in particular that
 // api2go nests taxTiers as an array of {threshold, rate} objects directly under
@@ -426,7 +415,6 @@ func TestTradeConfigWireShape(t *testing.T) {
 		},
 		MaxStagedItems:            intPtr(9),
 		MinTradeLevel:             intPtr(0),
-		ReservationTtlSeconds:     intPtr(300),
 		AttestationTimeoutSeconds: intPtr(5),
 	}
 

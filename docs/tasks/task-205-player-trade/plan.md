@@ -5568,7 +5568,7 @@ written for the same reason. `AcceptToMtsListingPayload`
 own copy of the wire contract, including the comment explaining why the copy
 exists (the orchestrator cannot import the destination service's module).
 
-- [ ] **Step 1: Write the failing unmarshal tests**
+- [x] **Step 1: Write the failing unmarshal tests**
 
 Extend `libs/atlas-saga/unmarshal_test.go` with `TestUnmarshalAcceptToTradeStep`
 and `TestUnmarshalReleaseFromTradeStep`, following
@@ -5576,7 +5576,7 @@ and `TestUnmarshalReleaseFromTradeStep`, following
 and that `step.Payload` type-asserts to the concrete payload — the guard against
 a payload registered under the wrong action string in `unmarshal.go`.
 
-- [ ] **Step 2: Write the failing expander test**
+- [x] **Step 2: Write the failing expander test**
 
 `saga/processor_trade_escrow_test.go`: `TestExpandTransferToTradeReleasesThenAccepts`
 asserts the composite expands to exactly `[release_from_character, accept_to_trade]`
@@ -5584,7 +5584,7 @@ in that order, with the accept payload carrying the full stat snapshot read from
 the source compartment. Model it on the existing `expandTransferToStorage`
 coverage.
 
-- [ ] **Step 3: Add the actions, payloads and unmarshal arms**
+- [x] **Step 3: Add the actions, payloads and unmarshal arms**
 
 `AcceptToTrade Action = "accept_to_trade"`, `ReleaseFromTrade Action = "release_from_trade"`,
 `TransferToTrade Action = "transfer_to_trade"`. `AcceptToTradePayload` carries
@@ -5593,20 +5593,20 @@ coverage.
 `ReleaseFromTradePayload` carries `TransactionId` and `EscrowId` only — the row
 holds everything else, exactly as `ReleaseFromMtsHoldingPayload` does.
 
-- [ ] **Step 4: Add the orchestrator's custody producer/processor and the expander**
+- [x] **Step 4: Add the orchestrator's custody producer/processor and the expander**
 
 `trade/processor.go` exposes `AcceptToTradeAndEmit` / `AcceptToTrade(mb)` /
 `ReleaseFromTradeAndEmit` / `ReleaseFromTrade(mb)`, copying `mts/processor.go`.
 `expandTransferToTrade` copies `expandTransferToStorage` (`saga/processor.go:1270`):
 look up the source asset, build the snapshot, emit the two steps.
 
-- [ ] **Step 5: Register the actions in the character extractor and re-run**
+- [x] **Step 5: Register the actions in the character extractor and re-run**
 
 `saga/character_extractor.go` must resolve a character id for both new actions,
 or event routing silently drops their completions. `go test -race ./...` in both
 modules; `go vet ./...`; `tools/lint.sh --check`.
 
-- [ ] **Step 6: Commit** — `feat(task-205): add the accept_to_trade / release_from_trade custody actions`
+- [x] **Step 6: Commit** — `feat(task-205): add the accept_to_trade / release_from_trade custody actions`
 
 ---
 
@@ -5628,21 +5628,21 @@ modules; `go vet ./...`; `tools/lint.sh --check`.
 
 Design §5A.3. Two tables: `trade_escrow_items` and `trade_escrow_mesos`.
 
-- [ ] **Step 1: Write the failing administrator tests**
+- [x] **Step 1: Write the failing administrator tests**
 
 `TestCreateItemIsTenantScoped`, `TestDeleteItemIsIdempotent` (a second delete
 affects zero rows and returns success — the unwind retries), and
 `TestUpsertMesoReplacesRatherThanAccumulates` (mode 16 is an assignment; an
 upsert that added would double-debit a re-stage).
 
-- [ ] **Step 2: Write the failing recovery-shape test**
+- [x] **Step 2: Write the failing recovery-shape test**
 
 `TestOrphanedProviderReadsAcrossTenants` — the reconciler runs with no tenant in
 context and must rebuild each row's tenant from its stored quad. This is the
 test that fails loudly if `TenantRegion` / `TenantMajor` / `TenantMinor` are
 omitted from the entity.
 
-- [ ] **Step 3: Write the entity**
+- [x] **Step 3: Write the entity**
 
 Copy the column discipline of `services/atlas-mts/atlas.com/mts/holding/entity.go`:
 surrogate UUID PK, `(tenant_id, id)` unique, **explicit name-keyed stat columns,
@@ -5652,20 +5652,20 @@ no JSON blob** (COPY/restore column-order safety). Add `room_id`, `owner_id`,
 `trade_escrow_mesos` is `(id, tenant quad, room_id, owner_id, amount, created_at)`
 with `(tenant_id, room_id, owner_id)` unique.
 
-- [ ] **Step 4: Write the model, builder, provider, administrator and processor**
+- [x] **Step 4: Write the model, builder, provider, administrator and processor**
 
 Immutable model, private fields + getters + Builder (no `*_testhelpers.go`).
 Every administrator write takes the caller's `*message.Buffer` so the row and
 the status event land in one outbox batch — the discipline `settlement` already
 follows.
 
-- [ ] **Step 5: Wire the custody consumer and the migration**
+- [x] **Step 5: Wire the custody consumer and the migration**
 
 The consumer handles `ACCEPT_TO_TRADE` (write the row, emit the saga step's
 completion event) and `RELEASE_FROM_TRADE` (soft-delete, emit completion).
 Register `escrow.Migration` in `main.go` alongside the existing ones.
 
-- [ ] **Step 6: Verify and commit** — `feat(task-205): add the trade escrow store and custody consumer`
+- [x] **Step 6: Verify and commit** — `feat(task-205): add the trade escrow store and custody consumer`
 
 `go test -race ./...`, `go vet ./...`, `tools/lint.sh --check`, and
 `docker buildx bake atlas-trades atlas-saga-orchestrator` (both `go.mod`s moved).
@@ -5691,7 +5691,7 @@ meso re-echo survive **unchanged** — only the custody half is rewritten.
 **The Kafka contract mirror is guarded.** `ITEM_REFUSED` must be added to *both*
 copies in the same commit or `tools/trade-contract-mirror-guard.sh` fails.
 
-- [ ] **Step 1: Write the failing meso-delta tests**
+- [x] **Step 1: Write the failing meso-delta tests**
 
 `TestAddMesoDebitsOnlyTheDelta`: escrow 1,000, client sends 1,500 → exactly one
 `award_mesos(−500)`, escrow row becomes 1,500. `TestAddMesoRefundsWhenTheTotalDrops`:
@@ -5699,20 +5699,20 @@ escrow 1,500, client sends 400 → `award_mesos(+1,100)`. `TestAddMesoZeroDeltaE
 These pin §5A.5; a naive implementation that debits the absolute total
 double-charges on every re-stage.
 
-- [ ] **Step 2: Write the failing refusal-unlock tests**
+- [x] **Step 2: Write the failing refusal-unlock tests**
 
 `TestRestrictionRefusalEmitsItemRefused` and `TestFreezeRuleRefusalEmitsItemRefused` —
 every refusal path emits the event that Task 30 turns into the client's unlock.
 A refusal that emits nothing is the wedge this whole slice exists to fix, so
 these are the load-bearing tests of the slice.
 
-- [ ] **Step 3: Write the failing stage-timeout test**
+- [x] **Step 3: Write the failing stage-timeout test**
 
 `TestStageNotResolvedWithinTimeoutRefuses` — a `transfer_to_trade` whose
 completion never arrives within `stageTimeoutSeconds` drops the stage and emits
 `ITEM_REFUSED` (design §5A.11).
 
-- [ ] **Step 4: Replace the reservation call with the escrow saga**
+- [x] **Step 4: Replace the reservation call with the escrow saga**
 
 `PutItem` keeps its restriction and slot checks, then submits `transfer_to_trade`
 instead of `RequestReserve`. The room slot is marked staged when the custody
@@ -5720,12 +5720,12 @@ consumer confirms the escrow row, **not** at submission — the mode-15 broadcas
 must follow the escrow write (§5A.4 step 4), or a failed saga leaves the
 counterparty's dialog showing an item that was never escrowed.
 
-- [ ] **Step 5: Delete the `compartment` package and its wiring**
+- [x] **Step 5: Delete the `compartment` package and its wiring**
 
 Nothing reserves any more. Removing the package is the check that nothing else
 still depends on it.
 
-- [ ] **Step 6: Verify and commit** — `feat(task-205): escrow staged items and meso instead of reserving`
+- [x] **Step 6: Verify and commit** — `feat(task-205): escrow staged items and meso instead of reserving`
 
 ---
 
@@ -5742,26 +5742,26 @@ still depends on it.
 
 Design §5A.8.
 
-- [ ] **Step 1: Write the failing unwind tests**
+- [x] **Step 1: Write the failing unwind tests**
 
 One per §3.3 trigger: each returns every escrow item to its owner and refunds
 every escrowed meso before the `LEAVE` is emitted.
 `TestUnwindIsIdempotentUnderRepeatedTeardown` pins the compare-and-set —
 a logout racing a map change must not refund twice.
 
-- [ ] **Step 2: Write the failing retry test**
+- [x] **Step 2: Write the failing retry test**
 
 `TestRetryTickerReattemptsAnEscrowRowWhoseReturnFailed` — an
 `accept_to_character` that failed on a full inventory leaves the row in escrow;
 the ticker re-attempts it and the row clears when the return succeeds. This is
 the failure mode §5A.8 accepts and must not silently leak.
 
-- [ ] **Step 3: Implement the unwind and the ticker**
+- [x] **Step 3: Implement the unwind and the ticker**
 
 The ticker replaces the reservation-refresh ticker at the same cadence; it is
 registered in `main.go` via `routine.Go` (`tools/goroutine-guard.sh`).
 
-- [ ] **Step 4: Verify and commit** — `feat(task-205): unwind trade escrow on teardown and retry stuck returns`
+- [x] **Step 4: Verify and commit** — `feat(task-205): unwind trade escrow on teardown and retry stuck returns`
 
 ---
 
@@ -5779,7 +5779,7 @@ registered in `main.go` via `routine.Go` (`tools/goroutine-guard.sh`).
 
 Design §5A.7.
 
-- [ ] **Step 1: Write the failing expansion test**
+- [x] **Step 1: Write the failing expansion test**
 
 `TestExpandTradeSettlementReleasesFromEscrowBeforeAccepting` asserts the exact
 step order of §5A.7 and — critically — that **no negative `award_mesos` step is
@@ -5787,23 +5787,23 @@ produced**. The debit already happened at stage time; a settlement that debits
 again charges the giver twice. Keep the existing coverage of the
 all-releases-before-all-accepts rule; it is unchanged.
 
-- [ ] **Step 2: Write the failing tax test**
+- [x] **Step 2: Write the failing tax test**
 
 `TestSettlementCreditsTheTaxedAmountOnly` — the receiver is credited
 `m − floor(m × rate(m))` and nobody is credited the difference (§6.5 unchanged).
 
-- [ ] **Step 3: Amend the payload and the expander**
+- [x] **Step 3: Amend the payload and the expander**
 
 `TradeSettlementSide` carries escrow ids in place of `(inventoryType, slot)`
 source references. The expander no longer performs a compartment lookup for the
 giver's items — the escrow row is the snapshot.
 
-- [ ] **Step 4: Amend pre-check 3**
+- [x] **Step 4: Amend pre-check 3**
 
 "every reservation is still live" becomes "every escrow row is still present and
 matches". Delete the reservation-liveness read; it has no source any more.
 
-- [ ] **Step 5: Verify and commit** — `feat(task-205): settle trades out of escrow`
+- [x] **Step 5: Verify and commit** — `feat(task-205): settle trades out of escrow`
 
 ---
 
@@ -5821,20 +5821,20 @@ matches". Delete the reservation-liveness read; it has no source any more.
 Design §5A.6. atlas-trades still writes no packet; this emission belongs to
 atlas-channel (§2.2).
 
-- [ ] **Step 1: Write the failing consumer tests**
+- [x] **Step 1: Write the failing consumer tests**
 
 `TestItemRefusedEmitsTheBareUnlock` and `TestMesoRefusedEmitsTheBareUnlock`
 assert a `STAT_CHANGED` with `exclRequestSent = true` and an **empty** update
 list, addressed to the acting character only. `TestItemRefusedEmitsNoInteractionFrame`
 pins that the slot stays empty — the unlock must not become visible feedback.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 Reuse the existing `enableActions` shape rather than writing a second one. The
 move out of package `handler` is the minimum needed to share it; do not
 duplicate it.
 
-- [ ] **Step 3: Verify and commit** — `fix(task-205): release the client action lock on every refused stage`
+- [x] **Step 3: Verify and commit** — `fix(task-205): release the client action lock on every refused stage`
 
 ---
 
@@ -5849,23 +5849,23 @@ duplicate it.
 
 Design §5A.10, §5A.11, §5A.12.
 
-- [ ] **Step 1: Write the failing config tests**
+- [x] **Step 1: Write the failing config tests**
 
 `stageTimeoutSeconds` defaults to 5 when absent and a partial PATCH cannot wipe
 it — the same optional-knob discipline the earlier config fixes established.
 
-- [ ] **Step 2: Swap the keys and confirm nothing still reads the old one**
+- [x] **Step 2: Swap the keys and confirm nothing still reads the old one**
 
 `grep -rn reservationTtlSeconds` must return only the seed-data migration note.
 
-- [ ] **Step 3: Run the full gate**
+- [x] **Step 3: Run the full gate**
 
 `go test -race ./...` and `go vet ./...` in every changed module;
 `go build ./...`; `docker buildx bake atlas-trades atlas-saga-orchestrator atlas-channel atlas-tenants`;
 `tools/redis-key-guard.sh`; `tools/goroutine-guard.sh`;
 `tools/trade-contract-mirror-guard.sh`; `tools/lint.sh --check`.
 
-- [ ] **Step 4: Live re-test of the reported defect**
+- [x] **Step 4: Live re-test of the reported defect**
 
 Stage an item, then stage mesos, then stage a second item, then cancel. All four
 must work, the staged item must leave the inventory window, and the cancelled
@@ -5873,7 +5873,30 @@ trade must return everything. This is the acceptance test for the whole slice;
 the original defect was invisible to every automated test because it lives
 inside the client.
 
-- [ ] **Step 5: Code review before PR, then commit** — `docs(task-205): record the escrow amendment in the PR notes`
+- [x] **Step 5: Code review before PR, then commit** — `docs(task-205): record the escrow amendment in the PR notes`
+
+---
+
+### Slice 7 as built — where the implementation diverged from this plan
+
+Four decisions were made during implementation that this plan did not
+anticipate. Each is amended in `design.md` at the section named; they are
+collected here so a reviewer diffing plan against branch is not left guessing.
+
+| Planned | Built | Why |
+|---|---|---|
+| Task 27 step 4: the **custody consumer** marks the slot staged and announces `ITEM_STAGED` | The **saga's terminal status** does, via `StageSucceeded` / `StageFailed` (§5A.4) | Confirmation and refusal become one signal on one topic in one order, so they cannot disagree — and the custody consumer stays at its own boundary, knowing nothing about rooms or dialog slots |
+| Task 27 step 3: a `stageTimeoutSeconds` config key bounds an unresolved stage | No key, and no local timer | The orchestrator already bounds its own saga and emits `SAGA_FAILED`, which this branch turns into `ITEM_REFUSED`. A second timeout would be a second unmaintained number racing the first |
+| Task 28: a **stuck-escrow retry ticker** sweeps orphaned rows | No ticker; the orphan is returned inline by `returnOrphanedStage` / `refundOrphanedStake` (§5A.8) | The row a ticker was meant to find announces itself — its own saga is completing. What remains is the return that fails on a full inventory, which startup recovery already sweeps. Net: one *fewer* background loop than the service started with |
+| §5A.5: the escrow meso row is upserted alongside the `award_mesos` | The row is **armed pending first and committed on completion**, via a compare-and-set on the stake id (§5A.5) | The naive ordering loses money: a teardown between the debit and the record destroys the only record of meso the player has already been charged. The compare-and-set also makes a superseded stake inert, which matters because a player can retype the meso box faster than a saga round trip |
+
+One defect was found and fixed while wiring this up, and is worth a reviewer's
+attention because it is invisible in normal operation: `escrowStore` reads must
+be rebound onto `emit`'s transaction (`ProcessorImpl.withTx`). A reader left on
+the root handle takes a second pooled connection to answer a question asked from
+inside a transaction — a deterministic deadlock at pool size 1, and a latent one
+in production whenever the pool is exhausted. It also read outside the
+transaction, so a command could miss its own earlier write.
 
 ---
 

@@ -288,6 +288,270 @@ func TestAllMesosReadsAcrossTenants(t *testing.T) {
 	}
 }
 
+// TestArmThenCommitMesoStake pins the happy path: a committed stake moves its
+// PendingAmount into Amount and clears both pending fields, so a subsequent
+// arm starts from a clean slate rather than seeing a stale stakeId.
+func TestArmThenCommitMesoStake(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	roomId := uuid.New()
+	ownerId := character.Id(100)
+	stakeId := uuid.New()
+
+	if err := ArmMesoStake(db, te)(roomId, ownerId, stakeId, 1_000); err != nil {
+		t.Fatalf("ArmMesoStake: %v", err)
+	}
+
+	ok, err := CommitMesoStake(db, te.Id())(roomId, ownerId, stakeId)
+	if err != nil {
+		t.Fatalf("CommitMesoStake: %v", err)
+	}
+	if !ok {
+		t.Fatalf("expected CommitMesoStake to match the armed stake")
+	}
+
+	got, found, err := MesoByOwner(db, te.Id())(roomId, ownerId)
+	if err != nil {
+		t.Fatalf("MesoByOwner: %v", err)
+	}
+	if !found {
+		t.Fatalf("expected a meso row to exist")
+	}
+	if got != 1_000 {
+		t.Errorf("expected the committed amount 1000, got %d", got)
+	}
+
+	mesos, err := MesosByRoom(db, te.Id())(roomId)
+	if err != nil {
+		t.Fatalf("MesosByRoom: %v", err)
+	}
+	if len(mesos) != 1 {
+		t.Fatalf("expected exactly 1 meso row, got %d", len(mesos))
+	}
+	if mesos[0].PendingStakeId() != uuid.Nil {
+		t.Errorf("expected PendingStakeId cleared, got %s", mesos[0].PendingStakeId())
+	}
+	if mesos[0].PendingAmount() != 0 {
+		t.Errorf("expected PendingAmount cleared, got %d", mesos[0].PendingAmount())
+	}
+}
+
+// TestCommitMesoStakeMismatchedIdIsNoOp pins the compare-and-set contract: a
+// stakeId that does not match the row's currently-armed stake must not commit
+// anything. This is what protects a superseded or misdelivered terminal status
+// from applying a debit the row no longer expects.
+func TestCommitMesoStakeMismatchedIdIsNoOp(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	roomId := uuid.New()
+	ownerId := character.Id(100)
+	stakeId := uuid.New()
+	otherStakeId := uuid.New()
+
+	if err := ArmMesoStake(db, te)(roomId, ownerId, stakeId, 1_000); err != nil {
+		t.Fatalf("ArmMesoStake: %v", err)
+	}
+
+	ok, err := CommitMesoStake(db, te.Id())(roomId, ownerId, otherStakeId)
+	if err != nil {
+		t.Fatalf("CommitMesoStake: %v", err)
+	}
+	if ok {
+		t.Fatalf("expected CommitMesoStake with a mismatched stakeId to report false")
+	}
+
+	got, found, err := MesoByOwner(db, te.Id())(roomId, ownerId)
+	if err != nil {
+		t.Fatalf("MesoByOwner: %v", err)
+	}
+	if !found {
+		t.Fatalf("expected a meso row to exist")
+	}
+	if got != 0 {
+		t.Errorf("expected Amount untouched at 0, got %d", got)
+	}
+}
+
+// TestCommitMesoStakeTwiceOnlyAppliesOnce pins that a redelivered terminal
+// status cannot double-apply. Kafka delivery is at-least-once, and the
+// compare-and-set clears PendingStakeId in the very UPDATE that commits, so
+// the second delivery finds nothing left to match.
+func TestCommitMesoStakeTwiceOnlyAppliesOnce(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	roomId := uuid.New()
+	ownerId := character.Id(100)
+	stakeId := uuid.New()
+
+	if err := ArmMesoStake(db, te)(roomId, ownerId, stakeId, 1_000); err != nil {
+		t.Fatalf("ArmMesoStake: %v", err)
+	}
+
+	first, err := CommitMesoStake(db, te.Id())(roomId, ownerId, stakeId)
+	if err != nil {
+		t.Fatalf("first CommitMesoStake: %v", err)
+	}
+	if !first {
+		t.Fatalf("expected the first CommitMesoStake to match")
+	}
+
+	second, err := CommitMesoStake(db, te.Id())(roomId, ownerId, stakeId)
+	if err != nil {
+		t.Fatalf("second CommitMesoStake: %v", err)
+	}
+	if second {
+		t.Fatalf("expected the second CommitMesoStake (redelivery) to report false")
+	}
+
+	got, _, err := MesoByOwner(db, te.Id())(roomId, ownerId)
+	if err != nil {
+		t.Fatalf("MesoByOwner: %v", err)
+	}
+	if got != 1_000 {
+		t.Errorf("expected the committed amount still 1000 (no double-apply), got %d", got)
+	}
+}
+
+// TestArmMesoStakeSupersedesPriorStake pins the "player retyped the box" case:
+// a second arm on the same row must overwrite the first stake, and the first
+// stake's later terminal status must then be inert.
+func TestArmMesoStakeSupersedesPriorStake(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	roomId := uuid.New()
+	ownerId := character.Id(100)
+	firstStakeId := uuid.New()
+	secondStakeId := uuid.New()
+
+	if err := ArmMesoStake(db, te)(roomId, ownerId, firstStakeId, 1_000); err != nil {
+		t.Fatalf("first ArmMesoStake: %v", err)
+	}
+	if err := ArmMesoStake(db, te)(roomId, ownerId, secondStakeId, 1_500); err != nil {
+		t.Fatalf("second ArmMesoStake: %v", err)
+	}
+
+	// The superseded stake's terminal status must be a no-op.
+	ok, err := CommitMesoStake(db, te.Id())(roomId, ownerId, firstStakeId)
+	if err != nil {
+		t.Fatalf("CommitMesoStake(first): %v", err)
+	}
+	if ok {
+		t.Fatalf("expected the superseded first stake's commit to report false")
+	}
+
+	// The current stake still commits normally.
+	ok, err = CommitMesoStake(db, te.Id())(roomId, ownerId, secondStakeId)
+	if err != nil {
+		t.Fatalf("CommitMesoStake(second): %v", err)
+	}
+	if !ok {
+		t.Fatalf("expected the current second stake's commit to match")
+	}
+
+	got, _, err := MesoByOwner(db, te.Id())(roomId, ownerId)
+	if err != nil {
+		t.Fatalf("MesoByOwner: %v", err)
+	}
+	if got != 1_500 {
+		t.Errorf("expected the second stake's amount 1500 committed, got %d", got)
+	}
+}
+
+// TestAbandonMesoStakeClearsWithoutCommitting pins the failure-path inverse of
+// commit: the pending fields clear but Amount is untouched, because an
+// abandoned stake's debit is unwound by the saga's own compensator, not by
+// this row.
+func TestAbandonMesoStakeClearsWithoutCommitting(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	roomId := uuid.New()
+	ownerId := character.Id(100)
+	stakeId := uuid.New()
+
+	// Arm on top of a row that already carries a committed amount, to prove
+	// abandon leaves that committed amount alone.
+	if err := UpsertMeso(db, te)(roomId, ownerId, 500); err != nil {
+		t.Fatalf("UpsertMeso: %v", err)
+	}
+	if err := ArmMesoStake(db, te)(roomId, ownerId, stakeId, 1_000); err != nil {
+		t.Fatalf("ArmMesoStake: %v", err)
+	}
+
+	ok, err := AbandonMesoStake(db, te.Id())(roomId, ownerId, stakeId)
+	if err != nil {
+		t.Fatalf("AbandonMesoStake: %v", err)
+	}
+	if !ok {
+		t.Fatalf("expected AbandonMesoStake to match the armed stake")
+	}
+
+	got, _, err := MesoByOwner(db, te.Id())(roomId, ownerId)
+	if err != nil {
+		t.Fatalf("MesoByOwner: %v", err)
+	}
+	if got != 500 {
+		t.Errorf("expected the pre-existing committed amount 500 untouched, got %d", got)
+	}
+
+	mesos, err := MesosByRoom(db, te.Id())(roomId)
+	if err != nil {
+		t.Fatalf("MesosByRoom: %v", err)
+	}
+	if len(mesos) != 1 {
+		t.Fatalf("expected exactly 1 meso row, got %d", len(mesos))
+	}
+	if mesos[0].PendingStakeId() != uuid.Nil {
+		t.Errorf("expected PendingStakeId cleared, got %s", mesos[0].PendingStakeId())
+	}
+	if mesos[0].PendingAmount() != 0 {
+		t.Errorf("expected PendingAmount cleared, got %d", mesos[0].PendingAmount())
+	}
+}
+
+// TestMesoStakeById pins the un-tenant-scoped lookup that lets a terminal
+// status resolve a stake without knowing which room — or tenant — it belongs
+// to in advance.
+func TestMesoStakeById(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	roomId := uuid.New()
+	ownerId := character.Id(100)
+	stakeId := uuid.New()
+
+	if err := ArmMesoStake(db, te)(roomId, ownerId, stakeId, 1_000); err != nil {
+		t.Fatalf("ArmMesoStake: %v", err)
+	}
+
+	got, found, err := MesoStakeById(db)(stakeId)
+	if err != nil {
+		t.Fatalf("MesoStakeById: %v", err)
+	}
+	if !found {
+		t.Fatalf("expected the armed stake to be found")
+	}
+	if got.RoomId() != roomId {
+		t.Errorf("expected RoomId %s, got %s", roomId, got.RoomId())
+	}
+	if got.OwnerId() != ownerId {
+		t.Errorf("expected OwnerId %d, got %d", ownerId, got.OwnerId())
+	}
+	if got.PendingAmount() != 1_000 {
+		t.Errorf("expected PendingAmount 1000, got %d", got.PendingAmount())
+	}
+
+	if _, found, err := MesoStakeById(db)(uuid.New()); err != nil {
+		t.Fatalf("MesoStakeById(unknown): %v", err)
+	} else if found {
+		t.Fatalf("expected an unknown stakeId to report not found, not an error")
+	}
+}
+
 // TestDeleteMesoIsIdempotent mirrors the item case: the unwind retries.
 func TestDeleteMesoIsIdempotent(t *testing.T) {
 	db := testDb(t)

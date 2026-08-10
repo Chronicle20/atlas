@@ -57,23 +57,58 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	}
 }
 
-// handleSagaCompleted closes a trade whose settlement saga finished. Design §6.4
-// makes this the ONLY place SETTLED originates: the client renders its
-// "received %d mesos after fees" line from its own character data, so the meso
-// award has to have landed before the dialog closes.
+// handleSagaCompleted resolves whichever of atlas-trades' three sagas this
+// status belongs to.
+//
+// One topic carries every saga in the deployment, and atlas-trades now submits
+// three kinds — an item stage, a meso stake, and a settlement — none of which
+// the envelope distinguishes: it carries a transaction id and nothing else. So
+// the routing is by OWNERSHIP, asked in ascending cost: a stage owns an escrow
+// row with its id, a stake owns a pending meso row with its id, and a settlement
+// owns a durable record with its id. Each probe reports whether it claimed the
+// transaction, and the first claim wins.
+//
+// Order matters only for cost, not correctness — the three id spaces are
+// disjoint, because each id is minted fresh for exactly one saga.
+//
+// For a settlement this is the ONLY place SETTLED originates (design §6.4): the
+// client renders its "received %d mesos after fees" line from its own character
+// data, so the meso award has to have landed before the dialog closes.
 func handleSagaCompleted(db *gorm.DB) message.Handler[sagamsg.StatusEvent[sagamsg.StatusEventCompletedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e sagamsg.StatusEvent[sagamsg.StatusEventCompletedBody]) {
 		if e.Type != sagamsg.StatusEventTypeCompleted {
 			return
 		}
-		if err := trade.NewProcessor(l, ctx, db).SettlementSucceeded(uuid.New(), e.TransactionId); err != nil {
+		p := trade.NewProcessor(l, ctx, db)
+
+		claimed, err := p.StageSucceeded(uuid.New(), e.TransactionId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to confirm the trade stage of transaction [%s].", e.TransactionId.String())
+			return
+		}
+		if claimed {
+			return
+		}
+
+		claimed, err = p.MesoStageSucceeded(uuid.New(), e.TransactionId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to commit the trade meso stake of transaction [%s].", e.TransactionId.String())
+			return
+		}
+		if claimed {
+			return
+		}
+
+		if err := p.SettlementSucceeded(uuid.New(), e.TransactionId); err != nil {
 			l.WithError(err).Errorf("Unable to record the settlement of transaction [%s].", e.TransactionId.String())
 		}
 	}
 }
 
-// handleSagaFailed closes a trade whose settlement saga was compensated, with
-// LEAVE 8 to BOTH sides (design §3.3).
+// handleSagaFailed is handleSagaCompleted's twin: same ownership routing, the
+// failing outcome of each. A failed settlement closes both dialogs with LEAVE 8
+// (design §3.3); a failed stage or stake refuses only the acting player, because
+// the counterparty was never told either existed.
 func handleSagaFailed(db *gorm.DB) message.Handler[sagamsg.StatusEvent[sagamsg.StatusEventFailedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e sagamsg.StatusEvent[sagamsg.StatusEventFailedBody]) {
 		if e.Type != sagamsg.StatusEventTypeFailed {
@@ -83,7 +118,27 @@ func handleSagaFailed(db *gorm.DB) message.Handler[sagamsg.StatusEvent[sagamsg.S
 		if reason == "" {
 			reason = e.Body.ErrorCode
 		}
-		if err := trade.NewProcessor(l, ctx, db).SettlementFailed(uuid.New(), e.TransactionId, reason); err != nil {
+		p := trade.NewProcessor(l, ctx, db)
+
+		claimed, err := p.StageFailed(uuid.New(), e.TransactionId, reason)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to refuse the trade stage of transaction [%s].", e.TransactionId.String())
+			return
+		}
+		if claimed {
+			return
+		}
+
+		claimed, err = p.MesoStageFailed(uuid.New(), e.TransactionId, reason)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to abandon the trade meso stake of transaction [%s].", e.TransactionId.String())
+			return
+		}
+		if claimed {
+			return
+		}
+
+		if err := p.SettlementFailed(uuid.New(), e.TransactionId, reason); err != nil {
 			l.WithError(err).Errorf("Unable to close the trade of transaction [%s] after its settlement failed.", e.TransactionId.String())
 		}
 	}

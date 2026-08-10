@@ -14,15 +14,13 @@ type TierRestModel struct {
 // RestModel is the JSON:API representation of the trade configuration fetched
 // from atlas-tenants. Fields default to the zero value when atlas-tenants has
 // not provisioned the resource; Extract folds any zero knob back to its default
-// so a partial config never yields a nonsensical zero (a zero reservation TTL
-// would expire every escrow reservation immediately).
+// so a partial config never yields a nonsensical zero.
 type RestModel struct {
 	Id                        string          `json:"-"`
 	TaxEnabled                bool            `json:"taxEnabled"`
 	TaxTiers                  []TierRestModel `json:"taxTiers"`
 	MaxStagedItems            int             `json:"maxStagedItems"`
 	MinTradeLevel             int             `json:"minTradeLevel"`
-	ReservationTtlSeconds     int             `json:"reservationTtlSeconds"`
 	AttestationTimeoutSeconds int             `json:"attestationTimeoutSeconds"`
 }
 
@@ -64,9 +62,6 @@ func Extract(r RestModel) Model {
 
 	if r.MaxStagedItems != 0 {
 		m = m.WithMaxStagedItems(r.MaxStagedItems)
-	}
-	if r.ReservationTtlSeconds != 0 {
-		m = m.WithReservationTtl(time.Duration(r.ReservationTtlSeconds) * time.Second)
 	}
 	if r.AttestationTimeoutSeconds != 0 {
 		m = m.WithAttestationTimeout(time.Duration(r.AttestationTimeoutSeconds) * time.Second)

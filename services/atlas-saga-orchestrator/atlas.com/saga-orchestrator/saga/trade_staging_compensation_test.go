@@ -1,6 +1,7 @@
 package saga
 
 import (
+	"atlas-saga-orchestrator/kafka/message"
 	"context"
 	"testing"
 
@@ -13,8 +14,6 @@ import (
 	compartmentmock "atlas-saga-orchestrator/compartment/mock"
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	tradesvc "atlas-saga-orchestrator/trade"
-
-	"atlas-saga-orchestrator/kafka/message"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )

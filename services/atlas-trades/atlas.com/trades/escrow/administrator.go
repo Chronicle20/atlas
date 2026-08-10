@@ -131,6 +131,89 @@ func UpsertMeso(db *gorm.DB, t tenant.Model) func(roomId uuid.UUID, ownerId char
 	}
 }
 
+// ArmMesoStake records an in-flight award_mesos debit against a participant's
+// escrow row BEFORE the saga that performs it is submitted, so a terminal
+// status that arrives after the room is gone still has somewhere durable to
+// resolve against (see MesoEntity's doc comment).
+//
+// It creates the row (Amount 0) if this is the participant's first stake in
+// the room. If a stake is already armed, it is OVERWRITTEN rather than
+// rejected: the player retyping the stake box submits a fresh saga before the
+// prior one necessarily finished, and the newer stake is authoritative — the
+// prior stakeId's eventual terminal status must become a no-op, which is
+// exactly what CommitMesoStake/AbandonMesoStake's compare-and-set gives it
+// once PendingStakeId has moved on.
+func ArmMesoStake(db *gorm.DB, t tenant.Model) func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID, amount uint32) error {
+	return func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID, amount uint32) error {
+		now := time.Now()
+		e := MesoEntity{
+			Id:             uuid.New(),
+			TenantId:       t.Id(),
+			TenantRegion:   t.Region(),
+			TenantMajor:    t.MajorVersion(),
+			TenantMinor:    t.MinorVersion(),
+			RoomId:         roomId,
+			OwnerId:        ownerId,
+			Amount:         0,
+			PendingStakeId: stakeId,
+			PendingAmount:  amount,
+			CreatedAt:      now,
+			UpdatedAt:      now,
+		}
+		return db.Clauses(clause.OnConflict{
+			Columns: []clause.Column{{Name: "tenant_id"}, {Name: "room_id"}, {Name: "owner_id"}},
+			DoUpdates: clause.Assignments(map[string]interface{}{
+				"pending_stake_id": stakeId,
+				"pending_amount":   amount,
+				"updated_at":       now,
+			}),
+		}).Create(&e).Error
+	}
+}
+
+// CommitMesoStake resolves an in-flight stake into the committed escrow total
+// — the durable counterpart of the room applying an award_mesos COMPLETED
+// status.
+//
+// The match on PendingStakeId happens INSIDE the UPDATE's WHERE clause, not as
+// a separate read-then-write, so two concurrent deliveries of the same (or a
+// stale) terminal status cannot both observe "still armed" and both commit:
+// only the delivery whose UPDATE actually matches a row moves Amount, and it
+// clears PendingStakeId in the same statement so a second delivery finds
+// nothing to match. This is also what makes a stale stakeId — one a later
+// ArmMesoStake already superseded — a silent no-op instead of double-applying
+// a debit the player no longer intends.
+func CommitMesoStake(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID) (bool, error) {
+	return func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID) (bool, error) {
+		res := db.Model(&MesoEntity{}).
+			Where("tenant_id = ? AND room_id = ? AND owner_id = ? AND pending_stake_id = ?", tenantId, roomId, ownerId, stakeId).
+			Updates(map[string]interface{}{
+				"amount":           gorm.Expr("pending_amount"),
+				"pending_stake_id": uuid.Nil,
+				"pending_amount":   0,
+				"updated_at":       time.Now(),
+			})
+		return res.RowsAffected > 0, res.Error
+	}
+}
+
+// AbandonMesoStake clears an in-flight stake WITHOUT committing it into
+// Amount — the durable counterpart of the room applying an award_mesos FAILED
+// or CANCELLED status. Same single-UPDATE compare-and-set as CommitMesoStake,
+// for the same reason: a stale or redelivered terminal status must be inert.
+func AbandonMesoStake(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID) (bool, error) {
+	return func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID) (bool, error) {
+		res := db.Model(&MesoEntity{}).
+			Where("tenant_id = ? AND room_id = ? AND owner_id = ? AND pending_stake_id = ?", tenantId, roomId, ownerId, stakeId).
+			Updates(map[string]interface{}{
+				"pending_stake_id": uuid.Nil,
+				"pending_amount":   0,
+				"updated_at":       time.Now(),
+			})
+		return res.RowsAffected > 0, res.Error
+	}
+}
+
 // DeleteMeso removes a participant's escrowed meso row for a room. Like
 // DeleteItem, a no-match is success.
 //

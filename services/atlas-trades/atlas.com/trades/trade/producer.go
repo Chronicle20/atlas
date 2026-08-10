@@ -131,6 +131,16 @@ func mesoStagedProvider(txId uuid.UUID, r Room, characterId character.Id, positi
 // the client already moved its own view to the amount it asked for, and because
 // mode 16 assigns rather than accumulates, re-sending the LAST VALID amount is
 // what snaps that view back.
+// itemRefusedProvider announces a stage that never reached escrow. It is
+// addressed to the STAGING character alone: the counterparty was never told the
+// item existed, so it has nothing to correct (design §5A.4).
+func itemRefusedProvider(txId uuid.UUID, r Room, characterId character.Id, position byte, tradeSlot byte) model.Provider[[]kafka.Message] {
+	return roomEventProvider(txId, r, characterId, trademsg.StatusTypeItemRefused, trademsg.ItemRefusedEventBody{
+		Position:  position,
+		TradeSlot: tradeSlot,
+	})
+}
+
 func mesoRefusedProvider(txId uuid.UUID, r Room, characterId character.Id, position byte, lastValid uint32) model.Provider[[]kafka.Message] {
 	return roomEventProvider(txId, r, characterId, trademsg.StatusTypeMesoRefused, trademsg.MesoRefusedEventBody{
 		Position:        position,

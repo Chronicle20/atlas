@@ -1,7 +1,6 @@
 package trade
 
 import (
-	"atlas-trades/compartment"
 	"atlas-trades/configuration"
 	characterdata "atlas-trades/data/character"
 	inventorydata "atlas-trades/data/inventory"
@@ -9,6 +8,7 @@ import (
 	"atlas-trades/data/location"
 	mapdata "atlas-trades/data/map"
 	sagadata "atlas-trades/data/saga"
+	"atlas-trades/escrow"
 	"atlas-trades/kafka/message"
 	invitemsg "atlas-trades/kafka/message/invite"
 	trademsg "atlas-trades/kafka/message/trade"
@@ -17,7 +17,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -85,6 +84,13 @@ const (
 // outcome is LEAVE 8.
 const maxStageableMeso = math.MaxInt32
 
+// mesoActorType labels the award_mesos a meso stake produces. The player is
+// moving their own meso into and out of escrow, so they are their own actor —
+// the same labelling expandTradeSettlement uses for the delivery leg
+// (saga/processor.go:1619). SYSTEM is reserved for the unwind refund, which no
+// player asked for.
+const mesoActorType = "CHARACTER"
+
 // characterProvider, mapProvider and locationProvider are the REST-client seams
 // the validation ladder reads through, injected so tests can fake them.
 type characterProvider interface {
@@ -100,8 +106,8 @@ type locationProvider interface {
 }
 
 // inventoryProvider reads the asset a PUT_ITEM addresses, and re-reads a whole
-// compartment when a staged item's recorded slot has to be re-resolved against
-// the asset's stable id (see resolveStagedSlot).
+// compartment when the settlement pre-checks need to know what the RECEIVING
+// side can carry.
 type inventoryProvider interface {
 	AssetInSlot(characterId character.Id, inventoryType inventory.Type, sourceSlot slot.Position) (inventorydata.Asset, error)
 	GetCompartment(characterId character.Id, inventoryType inventory.Type) (inventorydata.Model, error)
@@ -121,17 +127,77 @@ type sagaOutcomeProvider interface {
 	Outcome(transactionId uuid.UUID) (sagadata.Outcome, error)
 }
 
-// settlementSubmitter buffers the trade_settlement saga command. atlas-trades
-// submits the COMPOSITE only; the orchestrator expands it (design §6.3).
-type settlementSubmitter interface {
+// sagaSubmitter buffers every saga command atlas-trades produces. atlas-trades
+// submits COMPOSITES only; the orchestrator expands them (design §6.3, §5A.2).
+type sagaSubmitter interface {
 	Settle(mb *message.Buffer) func(transactionId uuid.UUID, payload sharedsaga.TradeSettlementPayload) error
+	Stage(mb *message.Buffer) func(transactionId uuid.UUID, payload sharedsaga.TransferToTradePayload) error
+	StageMeso(mb *message.Buffer) func(transactionId uuid.UUID, payload sharedsaga.AwardMesosPayload) error
+	Unwind(mb *message.Buffer) func(transactionId uuid.UUID, payload sharedsaga.TradeUnwindPayload) error
 }
 
-// reservationProducer issues the atlas-inventory reserve/cancel commands that
-// implement the reserve-at-staging model (design §5.3).
-type reservationProducer interface {
-	RequestReserve(mb *message.Buffer) func(reservationId uuid.UUID, characterId character.Id, inventoryType inventory.Type, sourceSlot slot.Position, templateId item.Id, quantity asset.Quantity, expiry time.Duration) error
-	CancelReservation(mb *message.Buffer) func(reservationId uuid.UUID, characterId character.Id, inventoryType inventory.Type, sourceSlot slot.Position) error
+// escrowStore reads atlas-trades' own custody rows — the assets that have
+// genuinely left their owners' compartments (design §5A.3).
+//
+// Under reserve-at-staging the staged asset was still in the owner's inventory,
+// so settlement and teardown re-read it from atlas-inventory and had to cope
+// with it having moved. Escrow makes the row itself authoritative and immutable
+// once written, which is why this replaces the compartment re-resolution the old
+// model needed rather than merely moving it.
+type escrowStore interface {
+	ItemById(escrowId uuid.UUID) (escrow.ItemModel, bool, error)
+	ItemsByRoom(roomId uuid.UUID) ([]escrow.ItemModel, error)
+	MesosByRoom(roomId uuid.UUID) ([]escrow.MesoModel, error)
+	MesoByOwner(roomId uuid.UUID, ownerId character.Id) (uint32, bool, error)
+
+	// withTx rebinds the reads onto a transaction.
+	//
+	// This is not a convenience. Every escrow read in this package happens inside
+	// emit's transaction, and a reader still bound to the ROOT handle would take a
+	// SECOND pooled connection to answer — one the transaction is not holding and
+	// cannot release. That is an outright deadlock whenever the pool is exhausted,
+	// and it is deterministic at pool size 1. It also reads outside the
+	// transaction, so a command could see escrow state its own earlier write in
+	// the same command had already changed.
+	withTx(tx *gorm.DB) escrowStore
+}
+
+// escrowReader binds the escrow package's tenant-scoped read closures to this
+// processor's database handle and tenant.
+type escrowReader struct {
+	db *gorm.DB
+	t  tenant.Model
+}
+
+func (e escrowReader) withTx(tx *gorm.DB) escrowStore {
+	e.db = tx
+	return e
+}
+
+// ItemById reports absence as (_, false, nil) rather than as an error: a
+// transaction id that names no escrow row is the ordinary case on this path —
+// it is how a settlement saga's status is told apart from a stage's.
+func (e escrowReader) ItemById(escrowId uuid.UUID) (escrow.ItemModel, bool, error) {
+	m, err := escrow.ItemById(e.db, e.t.Id())(escrowId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return escrow.ItemModel{}, false, nil
+		}
+		return escrow.ItemModel{}, false, err
+	}
+	return m, true, nil
+}
+
+func (e escrowReader) ItemsByRoom(roomId uuid.UUID) ([]escrow.ItemModel, error) {
+	return escrow.ItemsByRoom(e.db, e.t.Id())(roomId)
+}
+
+func (e escrowReader) MesosByRoom(roomId uuid.UUID) ([]escrow.MesoModel, error) {
+	return escrow.MesosByRoom(e.db, e.t.Id())(roomId)
+}
+
+func (e escrowReader) MesoByOwner(roomId uuid.UUID, ownerId character.Id) (uint32, bool, error) {
+	return escrow.MesoByOwner(e.db, e.t.Id())(roomId, ownerId)
 }
 
 // configProvider resolves the request tenant's trade configuration.
@@ -228,14 +294,29 @@ type Processor interface {
 	// status was never seen — the trades a restart would otherwise lose.
 	ReconcileSettlements() error
 
-	// RefreshReservations re-files the inventory reservation of every staged
-	// item in every live room, so a reservation TTL never expires under a trade
-	// that is still open (design §5.3). Task 20 drives it from a ticker.
+	// StageSucceeded confirms one staged item whose transfer_to_trade saga
+	// completed: the escrow row now exists, so the item stops being pending and
+	// is announced to both dialogs with ITEM_STAGED.
 	//
-	// It takes no transaction id: it emits no status event, only the
-	// COMPARTMENT commands, which are keyed by the reservation handle they
-	// re-file rather than by a command transaction.
-	RefreshReservations() error
+	// Keyed by the ESCROW ROW ID, which is also the staging saga's transaction
+	// id (see saga.BuildStage), so the terminal status needs no lookup table.
+	StageSucceeded(txId uuid.UUID, escrowId uuid.UUID) (bool, error)
+
+	// StageFailed frees the dialog slot a failed stage was holding and unlocks
+	// the staging client with ITEM_REFUSED. Nothing was ever announced, so the
+	// counterparty sees nothing at all.
+	//
+	// Returns false when escrowId names no pending stage, which is how the saga
+	// status consumer tells a staging saga from a settlement one.
+	StageFailed(txId uuid.UUID, escrowId uuid.UUID, reason string) (bool, error)
+
+	// MesoStageSucceeded commits an in-flight meso stake whose award_mesos
+	// completed, and announces it to both sides.
+	MesoStageSucceeded(txId uuid.UUID, stakeId uuid.UUID) (bool, error)
+
+	// MesoStageFailed abandons an in-flight meso stake, re-echoing the last
+	// valid amount so the staking client's dialog snaps back.
+	MesoStageFailed(txId uuid.UUID, stakeId uuid.UUID, reason string) (bool, error)
 
 	// TeardownCharacter removes the character's room, unless it is already
 	// settling (design §3.3, "cancel loses to settlement").
@@ -254,8 +335,8 @@ type ProcessorImpl struct {
 	locp   locationProvider
 	invp   inventoryProvider
 	idp    itemDataProvider
-	resp   reservationProducer
-	sgp    settlementSubmitter
+	esc    escrowStore
+	sgp    sagaSubmitter
 	sagad  sagaOutcomeProvider
 	timers *attestationTimers
 }
@@ -275,7 +356,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		locp:  location.NewProcessor(l, ctx),
 		invp:  inventorydata.NewProcessor(l, ctx),
 		idp:   itemdata.NewProcessor(l, ctx),
-		resp:  compartment.NewProcessor(l, ctx),
+		esc:   escrowReader{db: db, t: tenant.MustFromContext(ctx)},
 		sgp:   sagaproducer.NewProcessor(l, ctx),
 		sagad: sagadata.NewProcessor(l, ctx),
 		// Process-wide: an attestation deadline armed by one command is
@@ -318,10 +399,12 @@ func (p *ProcessorImpl) emit(f func(p *ProcessorImpl, mb *message.Buffer) error)
 }
 
 // withTx returns a shallow copy of the processor whose db handle is the given
-// transaction.
+// transaction. The escrow reader is rebound too — see escrowStore.withTx for why
+// leaving it on the root handle is a deadlock rather than an inefficiency.
 func (p *ProcessorImpl) withTx(tx *gorm.DB) *ProcessorImpl {
 	cp := *p
 	cp.db = tx
+	cp.esc = p.esc.withTx(tx)
 	return &cp
 }
 
@@ -711,134 +794,6 @@ func (p *ProcessorImpl) teardownCharacter(mb *message.Buffer, txId uuid.UUID, ch
 	return p.teardownRoom(mb, txId, room, characterId, reason)
 }
 
-// stagedRelease is one reservation to cancel, with the slot it must be aimed at
-// already resolved.
-type stagedRelease struct {
-	reservationId uuid.UUID
-	characterId   character.Id
-	inventoryType inventory.Type
-	sourceSlot    slot.Position
-}
-
-// resolveStagedReleases works out which reservation to cancel, and where, for
-// every item staged in the room on BOTH sides. It performs the REST reads and
-// buffers NOTHING — the caller emits only after it has atomically claimed the
-// room (see Registry.RemoveIf).
-//
-// Every path that abandons a room, settled or not, must end in these cancels.
-// Under the reserve-at-staging model a staged asset never left its owner's
-// inventory — it is merely held — so a room that disappears without cancelling
-// leaves the owner unable to move, merge, drop or sell that stack until the TTL
-// lapses, which is five minutes by default and is REFRESHED for as long as the
-// process believes the room is alive.
-//
-// The slot is RE-RESOLVED rather than taken from the staged item; see
-// resolveStagedSlot for why a recorded slot cannot be trusted.
-func (p *ProcessorImpl) resolveStagedReleases(room Room) []stagedRelease {
-	cache := p.newCompartmentCache()
-	out := make([]stagedRelease, 0)
-	for _, pt := range room.Participants() {
-		for _, i := range pt.Items() {
-			out = append(out, stagedRelease{
-				reservationId: i.ReservationId(),
-				characterId:   pt.CharacterId(),
-				inventoryType: i.InventoryType(),
-				sourceSlot:    p.resolveStagedSlot(cache, pt.CharacterId(), i),
-			})
-		}
-	}
-	return out
-}
-
-// withLateStages appends a release for any item staged into the room AFTER the
-// releases were resolved — the window between the compartment reads and the
-// claim, which is open on a room that was still OPEN when the teardown began.
-//
-// Their slots are the recorded ones rather than re-resolved: re-reading would
-// mean another REST round trip after the room is already gone, and the recorded
-// slot is right unless that same item ALSO moved inside the window. A cancel
-// aimed at the wrong slot is a no-op; emitting none guarantees the leak.
-func withLateStages(releases []stagedRelease, claimed Room) []stagedRelease {
-	known := make(map[uuid.UUID]struct{}, len(releases))
-	for _, r := range releases {
-		known[r.reservationId] = struct{}{}
-	}
-	for _, pt := range claimed.Participants() {
-		for _, i := range pt.Items() {
-			if _, ok := known[i.ReservationId()]; ok {
-				continue
-			}
-			releases = append(releases, stagedRelease{
-				reservationId: i.ReservationId(),
-				characterId:   pt.CharacterId(),
-				inventoryType: i.InventoryType(),
-				sourceSlot:    i.SourceSlot(),
-			})
-		}
-	}
-	return releases
-}
-
-// emitStagedReleases buffers the cancels resolveStagedReleases worked out.
-//
-// The cancel is a fire-and-forget command: atlas-inventory treats an unknown
-// reservation as a no-op, so cancelling one that already expired is harmless,
-// and cancelling twice is harmless for the same reason.
-func (p *ProcessorImpl) emitStagedReleases(mb *message.Buffer, releases []stagedRelease) error {
-	for _, r := range releases {
-		if err := p.resp.CancelReservation(mb)(r.reservationId, r.characterId, r.inventoryType, r.sourceSlot); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// resolveStagedSlot returns the slot a staged item's asset CURRENTLY occupies.
-//
-// A staged item's recorded sourceSlot goes stale under ordinary play. Nothing
-// stops a player rearranging their inventory while the trade dialog is open:
-// atlas-channel's move handler has no mini-room gate
-// (services/atlas-channel/atlas.com/channel/socket/handler/character_inventory_move.go:17-59),
-// and atlas-inventory permits a plain swap of a reserved slot, re-keying the
-// hold to the destination
-// (services/atlas-inventory/atlas.com/inventory/compartment/processor.go:490-507).
-// Only MERGE is reservation-guarded (canMergeAssets rule 4, :592-593).
-//
-// The reservation registry keys holds by (characterId, inventoryType, SLOT), so
-// a cancel aimed at the vacated slot silently no-ops while the real hold lives
-// on at the new slot until its TTL — and a refresh aimed there would file a
-// fresh 300s hold on whatever item was swapped in. Asset ID is the only stable
-// handle, so the slot is re-derived from it.
-//
-// Reacting to atlas-inventory's asset MOVED event instead would NOT close this:
-// a swap relays the destination asset through temporarySlot() (math.MinInt16),
-// and UpdateSlot suppresses any transition touching it
-// (services/atlas-inventory/atlas.com/inventory/asset/processor.go:250-252), so
-// an item swapped INTO the staged slot moves the staged asset out without
-// emitting anything that names it.
-//
-// A failed read or a vanished asset falls back to the recorded slot: cancelling
-// the wrong slot is a no-op, whereas cancelling nothing guarantees the leak.
-//
-// cache memoizes the compartment reads for the whole command; see
-// compartmentCache for why that matters.
-func (p *ProcessorImpl) resolveStagedSlot(cache *compartmentCache, characterId character.Id, i StagedItem) slot.Position {
-	c, err := cache.get(characterId, i.InventoryType())
-	if err != nil {
-		p.l.WithError(err).Warnf("Unable to re-resolve the slot of staged asset [%d] for character [%d]; falling back to the staged slot [%d].", i.AssetId(), characterId, i.SourceSlot())
-		return i.SourceSlot()
-	}
-	a, ok := c.FindById(i.AssetId())
-	if !ok {
-		p.l.Warnf("Staged asset [%d] is no longer in character [%d]'s compartment [%d]; falling back to the staged slot [%d].", i.AssetId(), characterId, i.InventoryType(), i.SourceSlot())
-		return i.SourceSlot()
-	}
-	if a.Slot() != i.SourceSlot() {
-		p.l.Infof("Staged asset [%d] moved from slot [%d] to [%d] in character [%d]'s inventory since it was staged.", i.AssetId(), i.SourceSlot(), a.Slot(), characterId)
-	}
-	return a.Slot()
-}
-
 // compartmentKey identifies one character's compartment within a single command.
 type compartmentKey struct {
 	characterId   character.Id
@@ -847,18 +802,15 @@ type compartmentKey struct {
 
 // compartmentCache memoizes compartment reads for the duration of ONE command.
 //
-// Without it, resolveStagedSlot refetched a whole compartment per staged item:
-// a room at the default cap of 9 items per side is up to 18 GETs to fetch at
-// most 2 distinct compartments, and the refresh runs every live room serially
-// inside a single database.ExecuteTransaction — so a pooled DB connection would
-// be held open across O(18N) synchronous HTTP round trips for N live rooms. That
-// also widens the refresh-vs-teardown window the liveness re-check guards.
+// It survived the move to escrow because the settlement pre-checks still read
+// live compartments — not the STAGED items, which are escrowed and no longer in
+// anyone's inventory, but the RECEIVING side's free slots and stackable merges
+// (design §6.1 check 1). Those reads are per (character, compartment) and a
+// settlement asks about both compartments of both sides, so without the memo one
+// pre-check refetches the same compartment once per item it is checking, holding
+// a pooled DB connection open across the round trips.
 //
-// A staged item's compartment cannot change while it is staged (the compartment
-// is part of the staged item's identity, and only the SLOT within it can move),
-// so one read per (character, compartment) per command is sufficient.
-//
-// A failed read is memoized too: the fallback is the same for every item in that
+// A failed read is memoized too: the outcome is the same for every item in that
 // compartment, so retrying per item would only multiply the latency of an
 // already-unreachable atlas-inventory.
 type compartmentCache struct {
@@ -941,28 +893,29 @@ func (p *ProcessorImpl) putItem(mb *message.Buffer, txId uuid.UUID, characterId 
 		return nil
 	}
 
-	// The reservation handle is minted BEFORE the registry swap so the staged
-	// item can carry it; the command that files it is buffered afterwards.
+	// The escrow row id is minted BEFORE the registry swap so the staged item
+	// can carry it; the saga that fills the row is buffered afterwards.
 	//
 	// The swap and the command are NOT atomic with each other, and deliberately
 	// so. The registry is in-memory and is not rolled back by the enclosing
 	// transaction (see emit's doc comment), so if the outbox insert fails the
-	// item is staged with no hold behind it. That exposure is self-healing: the
-	// refresh ticker re-issues REQUEST_RESERVE for every staged item it finds,
-	// so the missing hold is filed on the next tick.
+	// slot is held by a pending item whose saga was never submitted. That
+	// exposure is bounded by the stage timeout, which reaps a pending item whose
+	// terminal status never arrives.
 	//
-	// Buffering the reserve BEFORE the swap would trade that for a strictly
-	// worse failure: a stage that then lost the compare-and-set race would leave
-	// a reserve command already in the batch — an orphaned hold that no staged
-	// item references and therefore nothing ever cancels. A buffer has no
-	// un-put, so the ordering below is the one that fails safe.
-	reservationId := uuid.New()
-	stagedItem := NewStagedItem(targetSlot, a.Id(), a.TemplateId(), staged, it, sourceSlot, reservationId)
+	// Buffering the saga BEFORE the swap would trade that for a strictly worse
+	// failure: a stage that then lost the compare-and-set race would leave a
+	// staging command already in the batch — an escrow row that no dialog slot
+	// references and therefore nothing ever unwinds, with the player's item
+	// inside it. A buffer has no un-put, so the ordering below is the one that
+	// fails safe.
+	escrowId := uuid.New()
+	stagedItem := NewStagedItem(targetSlot, a.Id(), a.TemplateId(), staged, it, sourceSlot, escrowId)
 
 	// Compare-and-set: the frozen / slot / cap checks are re-run inside the
 	// write lock so a PUT_ITEM racing a CONFIRM or another PUT_ITEM cannot
 	// overshoot the cap or double-book a dialog slot.
-	updated, err := p.reg.Update(p.t, room.Id(), func(cur Room) (Room, error) {
+	_, err = p.reg.Update(p.t, room.Id(), func(cur Room) (Room, error) {
 		if cur.Frozen() {
 			return Room{}, ErrRoomFrozen
 		}
@@ -982,10 +935,161 @@ func (p *ProcessorImpl) putItem(mb *message.Buffer, txId uuid.UUID, characterId 
 		return nil
 	}
 
-	if err = p.resp.RequestReserve(mb)(reservationId, characterId, it, sourceSlot, a.TemplateId(), staged, cfg.ReservationTtl()); err != nil {
+	// NO ITEM_STAGED here. The item is pending: it holds its dialog slot against
+	// a second PUT_ITEM but stays unannounced until the escrow row exists, so a
+	// staging saga that fails never showed either dialog an item that was not
+	// actually escrowed (design §5A.4). StageSucceeded does the announcing.
+	return p.sgp.Stage(mb)(escrowId, sharedsaga.TransferToTradePayload{
+		TransactionId:       escrowId,
+		EscrowId:            escrowId,
+		RoomId:              room.Id(),
+		CharacterId:         uint32(characterId),
+		TradeSlot:           targetSlot,
+		SourceInventoryType: byte(it),
+		SourceSlot:          int16(sourceSlot),
+		AssetId:             uint32(a.Id()),
+		Quantity:            uint32(staged),
+	})
+}
+
+// StageSucceeded is the confirming half of putItem: the escrow row exists, so
+// the item stops being pending and both dialogs finally hear about it.
+func (p *ProcessorImpl) StageSucceeded(txId uuid.UUID, escrowId uuid.UUID) (bool, error) {
+	handled := false
+	err := p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
+		var err error
+		handled, err = p.stageSucceeded(mb, txId, escrowId)
 		return err
+	})
+	return handled, err
+}
+
+func (p *ProcessorImpl) stageSucceeded(mb *message.Buffer, txId uuid.UUID, escrowId uuid.UUID) (bool, error) {
+	room, pt, i, ok := p.findStagedItem(escrowId)
+	if !ok {
+		// No dialog slot claims this row. Either it is not a stage at all — a
+		// settlement's transaction id, which the caller distinguishes by this
+		// false — or the room was torn down while the stage was in flight, in
+		// which case the item is now escrowed with no trade left to deliver it
+		// and nothing else will ever come looking for it.
+		return p.returnOrphanedStage(mb, escrowId)
 	}
-	return mb.Put(trademsg.EnvEventTopicStatus, itemStagedProvider(txId, updated, characterId, pt.Position(), stagedItem))
+	if !i.Pending() {
+		// A redelivered terminal status. The announcement already went out;
+		// repeating it would add a second copy of the item to both dialogs.
+		p.l.Debugf("Stage [%s] is already confirmed. Ignoring the redelivery.", escrowId.String())
+		return true, nil
+	}
+
+	updated, err := p.reg.Update(p.t, room.Id(), func(cur Room) (Room, error) {
+		cp, found := cur.ParticipantFor(pt.CharacterId())
+		if !found {
+			return Room{}, ErrRoomNotFound
+		}
+		return cur.WithParticipant(cp.Position(), func(v Participant) Participant {
+			return v.WithConfirmedItem(escrowId)
+		}), nil
+	})
+	if err != nil {
+		p.l.WithError(err).Debugf("Unable to confirm stage [%s]; its room is gone. The teardown that removed it owns the unwind.", escrowId.String())
+		return true, nil
+	}
+	return true, mb.Put(trademsg.EnvEventTopicStatus, itemStagedProvider(txId, updated, pt.CharacterId(), pt.Position(), i.Confirmed()))
+}
+
+// StageFailed frees a dialog slot whose stage never made it into escrow.
+func (p *ProcessorImpl) StageFailed(txId uuid.UUID, escrowId uuid.UUID, reason string) (bool, error) {
+	handled := false
+	err := p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
+		var err error
+		handled, err = p.stageFailed(mb, txId, escrowId, reason)
+		return err
+	})
+	return handled, err
+}
+
+func (p *ProcessorImpl) stageFailed(mb *message.Buffer, txId uuid.UUID, escrowId uuid.UUID, reason string) (bool, error) {
+	room, pt, i, ok := p.findStagedItem(escrowId)
+	if !ok {
+		return false, nil
+	}
+	if !i.Pending() {
+		// The saga failed AFTER the accept was acked, so the item is escrowed
+		// and the orchestrator's reverse-walk owns returning it. Dropping the
+		// dialog slot here would desynchronise the dialog from the escrow.
+		p.l.Warnf("Stage [%s] failed after it was confirmed: [%s]. Leaving it to the saga's compensation.", escrowId.String(), reason)
+		return true, nil
+	}
+
+	p.l.Infof("Stage [%s] for character [%d] failed: [%s]. Freeing trade slot [%d].", escrowId.String(), pt.CharacterId(), reason, i.TradeSlot())
+	updated, err := p.reg.Update(p.t, room.Id(), func(cur Room) (Room, error) {
+		cp, found := cur.ParticipantFor(pt.CharacterId())
+		if !found {
+			return Room{}, ErrRoomNotFound
+		}
+		return cur.WithParticipant(cp.Position(), func(v Participant) Participant {
+			return v.WithoutItem(escrowId)
+		}), nil
+	})
+	if err != nil {
+		p.l.WithError(err).Debugf("Stage [%s] failed and its room is already gone. Nothing to free.", escrowId.String())
+		return true, nil
+	}
+
+	recordStageFailed(p.t, reason)
+	// The refusal is the ONLY thing the staging client gets, and it has to
+	// arrive: the client armed m_bExclRequestSent when it sent PUT_ITEM and
+	// nothing else in this path will clear it (design §5A.6).
+	return true, mb.Put(trademsg.EnvEventTopicStatus, itemRefusedProvider(txId, updated, pt.CharacterId(), pt.Position(), i.TradeSlot()))
+}
+
+// returnOrphanedStage hands back an item that reached escrow after its room was
+// already gone.
+//
+// This is the item twin of refundOrphanedStake, and it exists because a teardown
+// unwinds what is escrowed AT THAT MOMENT: a stage still in flight has no row to
+// find, so the teardown cannot include it and the row appears seconds later with
+// nothing referencing it. Without this the item is stranded in the custody table
+// permanently — the player's item, gone, with no error anywhere.
+//
+// It reports false when the row does not exist, which is what tells the caller
+// this transaction id was never a stage.
+func (p *ProcessorImpl) returnOrphanedStage(mb *message.Buffer, escrowId uuid.UUID) (bool, error) {
+	row, found, err := p.esc.ItemById(escrowId)
+	if err != nil {
+		return false, err
+	}
+	if !found {
+		return false, nil
+	}
+
+	p.l.Warnf("Trade escrow row [%s] was accepted after its room [%s] ended. Returning item [%d] to character [%d].", escrowId.String(), row.RoomId().String(), row.TemplateId(), row.OwnerId())
+
+	// No field lookup: an item return accepts to the owner's compartment, which
+	// atlas-inventory addresses by character id alone. Only the meso legs of an
+	// unwind need a world and channel, and this one has none.
+	txId := uuid.New()
+	return true, p.sgp.Unwind(mb)(txId, sharedsaga.TradeUnwindPayload{
+		TransactionId: txId,
+		Items: []sharedsaga.TradeUnwindItem{{
+			OwnerId: row.OwnerId(),
+			Item:    escrowItemPayload(row),
+		}},
+	})
+}
+
+// findStagedItem locates one staged item across the tenant's live rooms by its
+// escrow row. Rooms are few and in memory, so the scan is cheaper than the
+// index it would otherwise take to avoid it.
+func (p *ProcessorImpl) findStagedItem(escrowId uuid.UUID) (Room, Participant, StagedItem, bool) {
+	for _, room := range p.reg.All(p.t) {
+		for _, pt := range room.OrderedParticipants() {
+			if i, ok := pt.ItemByEscrow(escrowId); ok {
+				return room, pt, i, true
+			}
+		}
+	}
+	return Room{}, Participant{}, StagedItem{}, false
 }
 
 // itemData resolves the atlas-data view a restriction check needs. A lookup
@@ -1083,11 +1187,49 @@ func (p *ProcessorImpl) addMeso(mb *message.Buffer, txId uuid.UUID, characterId 
 		return nil
 	}
 
+	// A stake already in flight is not refused, it is superseded: the client can
+	// retype the box faster than a saga round trip, and refusing the second
+	// entry would re-echo a stale number over the one the player just typed.
+	// The pending txId is what makes the older saga's terminal status a no-op
+	// when it lands (see WithSettledMeso).
 	refused, err := p.mesoRefused(room, characterId, uint32(amount))
 	if err != nil {
 		return err
 	}
 	if refused {
+		return mb.Put(trademsg.EnvEventTopicStatus, mesoRefusedProvider(txId, room, characterId, pt.Position(), pt.MesoStaged()))
+	}
+
+	// Mode 16 assigns rather than accumulates (design §1.6), so the movement is
+	// the DELTA against what is already escrowed — and it is the ESCROW ROW, not
+	// the room, that is authoritative: the room's mesoStaged only advances once
+	// a stake settles, so reading it here would re-debit a stake still in
+	// flight (design §5A.5).
+	escrowed, _, err := p.esc.MesoByOwner(room.Id(), characterId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to read character [%d]'s escrowed meso. Refusing the stage rather than risking a double debit.", characterId)
+		return mb.Put(trademsg.EnvEventTopicStatus, mesoRefusedProvider(txId, room, characterId, pt.Position(), pt.MesoStaged()))
+	}
+
+	delta := int64(amount) - int64(escrowed)
+	if delta == 0 {
+		// Nothing moves, but the client still armed its lock on send, so the
+		// re-echo is not optional (design §5A.6). MESO_STAGED carries it.
+		return mb.Put(trademsg.EnvEventTopicStatus, mesoStagedProvider(txId, room, characterId, pt.Position(), uint32(amount)))
+	}
+
+	// The stake is armed on the ESCROW ROW before the room hears about it, and
+	// that ordering is the whole reason the row carries a pending state at all.
+	//
+	// The room is in memory. If it is torn down while this saga is in flight, the
+	// only record of an amount the player has already been debited would go with
+	// it — the unwind refunds the committed escrow, which does not yet include
+	// this stake, and the meso would be silently kept by the house. The durable
+	// arm means the terminal status can still resolve it with no room at all
+	// (see resolveMesoStake's room-gone branch).
+	stakeId := uuid.New()
+	if err = escrow.NewProcessor(p.l, p.ctx, p.db).ArmMesoStake(room.Id(), characterId, stakeId, uint32(amount)); err != nil {
+		p.l.WithError(err).Errorf("Unable to arm character [%d]'s meso stake. Refusing rather than debiting meso nothing would record.", characterId)
 		return mb.Put(trademsg.EnvEventTopicStatus, mesoRefusedProvider(txId, room, characterId, pt.Position(), pt.MesoStaged()))
 	}
 
@@ -1100,7 +1242,7 @@ func (p *ProcessorImpl) addMeso(mb *message.Buffer, txId uuid.UUID, characterId 
 			return Room{}, ErrRoomNotFound
 		}
 		return cur.WithParticipant(cp.Position(), func(v Participant) Participant {
-			return v.WithMesoStaged(uint32(amount))
+			return v.WithPendingMeso(stakeId, uint32(amount))
 		}), nil
 	})
 	if err != nil {
@@ -1108,7 +1250,145 @@ func (p *ProcessorImpl) addMeso(mb *message.Buffer, txId uuid.UUID, characterId 
 		return nil
 	}
 
-	return mb.Put(trademsg.EnvEventTopicStatus, mesoStagedProvider(txId, updated, characterId, pt.Position(), uint32(amount)))
+	// Negative debits the staking player, positive refunds them. ShowEffect is
+	// false: the meso chat line belongs to loot and shop trades, not to moving
+	// your own stake in and out of a dialog you are looking at.
+	return p.sgp.StageMeso(mb)(stakeId, sharedsaga.AwardMesosPayload{
+		CharacterId: uint32(characterId),
+		WorldId:     updated.Field().WorldId(),
+		ChannelId:   updated.Field().ChannelId(),
+		ActorId:     uint32(characterId),
+		ActorType:   mesoActorType,
+		Amount:      int32(-delta),
+		ShowEffect:  false,
+	})
+}
+
+// MesoStageSucceeded commits an in-flight stake and announces it to both sides.
+func (p *ProcessorImpl) MesoStageSucceeded(txId uuid.UUID, stakeId uuid.UUID) (bool, error) {
+	handled := false
+	err := p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
+		var err error
+		handled, err = p.resolveMesoStake(mb, txId, stakeId, true, "")
+		return err
+	})
+	return handled, err
+}
+
+// MesoStageFailed abandons an in-flight stake and snaps the staking client back.
+func (p *ProcessorImpl) MesoStageFailed(txId uuid.UUID, stakeId uuid.UUID, reason string) (bool, error) {
+	handled := false
+	err := p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
+		var err error
+		handled, err = p.resolveMesoStake(mb, txId, stakeId, false, reason)
+		return err
+	})
+	return handled, err
+}
+
+func (p *ProcessorImpl) resolveMesoStake(mb *message.Buffer, txId uuid.UUID, stakeId uuid.UUID, settled bool, reason string) (bool, error) {
+	ep := escrow.NewProcessor(p.l, p.ctx, p.db)
+	row, found, err := ep.MesoStakeById(stakeId)
+	if err != nil {
+		return false, err
+	}
+	if !found {
+		// Not a meso stake at all — this is how the saga status consumer tells a
+		// stake apart from an item stage or a settlement.
+		return false, nil
+	}
+	amount := row.PendingAmount()
+
+	// The DURABLE row decides first, and its compare-and-set is what makes a
+	// redelivered or superseded terminal status inert. Only then does the room
+	// follow; if there is no room left, the escrow is still consistent.
+	var matched bool
+	if settled {
+		matched, err = ep.CommitMesoStake(row.RoomId(), row.OwnerId(), stakeId)
+	} else {
+		matched, err = ep.AbandonMesoStake(row.RoomId(), row.OwnerId(), stakeId)
+	}
+	if err != nil {
+		return true, err
+	}
+	if !matched {
+		p.l.Debugf("Meso stake [%s] was already resolved. Ignoring the redelivery.", stakeId.String())
+		return true, nil
+	}
+
+	room, ok := p.reg.Get(p.t, row.RoomId())
+	if !ok {
+		// The room was torn down while the debit was in flight. Its unwind
+		// refunded the COMMITTED escrow, which did not include this stake — so if
+		// the debit landed, this is the only chance to give it back.
+		if !settled {
+			return true, nil
+		}
+		p.l.Warnf("Meso stake [%s] of [%d] settled into a trade room [%s] that is already gone. Refunding character [%d].", stakeId.String(), amount, row.RoomId().String(), row.OwnerId())
+		return true, p.refundOrphanedStake(mb, row, amount)
+	}
+
+	pt, found := room.ParticipantFor(row.OwnerId())
+	if !found {
+		return true, nil
+	}
+
+	resolved := false
+	updated, err := p.reg.Update(p.t, room.Id(), func(cur Room) (Room, error) {
+		cp, ok := cur.ParticipantFor(row.OwnerId())
+		if !ok {
+			return Room{}, ErrRoomNotFound
+		}
+		return cur.WithParticipant(cp.Position(), func(v Participant) Participant {
+			next, ok := v.WithSettledMeso(stakeId, settled)
+			resolved = ok
+			return next
+		}), nil
+	})
+	if err != nil || !resolved {
+		// The room went, or a newer stake superseded this one between the read
+		// and the write lock. The durable row is already correct either way.
+		return true, nil
+	}
+
+	if !settled {
+		p.l.Infof("Meso stake [%s] for character [%d] failed: [%s]. Re-echoing [%d].", stakeId.String(), row.OwnerId(), reason, pt.MesoStaged())
+		return true, mb.Put(trademsg.EnvEventTopicStatus, mesoRefusedProvider(txId, updated, row.OwnerId(), pt.Position(), pt.MesoStaged()))
+	}
+	return true, mb.Put(trademsg.EnvEventTopicStatus, mesoStagedProvider(txId, updated, row.OwnerId(), pt.Position(), amount))
+}
+
+// refundOrphanedStake hands back a stake whose debit landed after its room was
+// already torn down, as a one-meso trade_unwind.
+//
+// The delta is what has to be refunded, not the absolute stake: the committed
+// part was already returned by the teardown's own unwind, and refunding the
+// total on top of it would mint meso.
+func (p *ProcessorImpl) refundOrphanedStake(mb *message.Buffer, row escrow.MesoModel, amount uint32) error {
+	delta := int64(amount) - int64(row.Amount())
+	if delta <= 0 {
+		// The stake was a REDUCTION, so its saga credited the player already.
+		// Nothing is owed.
+		return nil
+	}
+	// The owner's CURRENT field, not the dead room's. The world and channel steer
+	// where the meso update is rendered, and a teardown is very often a channel
+	// change — announcing onto the room's old channel would credit the meso where
+	// the player no longer is.
+	f, err := p.locp.FieldOf(row.OwnerId())
+	if err != nil {
+		return fmt.Errorf("unable to locate character %d to refund an orphaned meso stake of %d: %w", row.OwnerId(), delta, err)
+	}
+	txId := uuid.New()
+	return p.sgp.Unwind(mb)(txId, sharedsaga.TradeUnwindPayload{
+		TransactionId: txId,
+		Mesos: []sharedsaga.TradeUnwindMeso{{
+			CharacterId: row.OwnerId(),
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			Amount:      uint32(delta),
+		}},
+	})
 }
 
 // mesoRefused reports whether the requested stage must be refused (FR-4.8). It
@@ -1164,232 +1444,4 @@ func counterpartyOf(room Room, characterId character.Id) character.Id {
 		}
 	}
 	return 0
-}
-
-// RefreshReservations re-files every live room's reservations so none expires
-// under an open trade (design §5.3).
-//
-// atlas-inventory has no refresh primitive, and its AddReservation APPENDS
-// unconditionally
-// (services/atlas-inventory/atlas.com/inventory/compartment/reservation_registry.go:110-125),
-// so simply re-sending REQUEST_RESERVE would stack a second hold on the same
-// slot every tick until the character's own stack read as fully reserved. The
-// refresh is therefore CANCEL_RESERVATION followed by REQUEST_RESERVE under the
-// same handle. Both commands are keyed by character id, so they share a
-// partition and atlas-inventory processes them in that order.
-func (p *ProcessorImpl) RefreshReservations() error {
-	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
-		return p.refreshReservations(mb)
-	})
-}
-
-func (p *ProcessorImpl) refreshReservations(mb *message.Buffer) error {
-	ttl := p.cfg.Get(p.l, p.ctx).ReservationTtl()
-	cache := p.newCompartmentCache()
-	for _, snapshot := range p.reg.All(p.t) {
-		// Cheap pre-filter only. The AUTHORITATIVE settling check is the one
-		// inside correctStagedSlots' write-locked closure: this snapshot was
-		// taken before the compartment reads below, so a room that settles
-		// during them would pass here.
-		if snapshot.State() == StateSettling {
-			continue
-		}
-
-		// The staged slots are re-resolved by asset id (resolveStagedSlot) and
-		// written back, so a player who rearranged their inventory mid-trade
-		// does not leave the hold stranded at the vacated slot — and so the
-		// slot the settlement payload is built from stays true.
-		room, ok := p.correctStagedSlots(cache, snapshot)
-		if !ok {
-			continue
-		}
-
-		for _, pt := range room.Participants() {
-			for _, i := range pt.Items() {
-				if err := p.resp.CancelReservation(mb)(i.ReservationId(), pt.CharacterId(), i.InventoryType(), i.SourceSlot()); err != nil {
-					return err
-				}
-				if err := p.resp.RequestReserve(mb)(i.ReservationId(), pt.CharacterId(), i.InventoryType(), i.SourceSlot(), i.TemplateId(), i.Quantity(), ttl); err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
-}
-
-// correctStagedSlots re-resolves every staged item's slot against its asset id
-// and writes the corrections back, returning the room to refresh from.
-//
-// It doubles as the refresh's REFRESHABILITY re-check, covering both ways a
-// snapshot can go stale while the compartment reads are in flight:
-//
-//   - The room was TORN DOWN. reg.All returns a snapshot and a concurrent
-//     teardown emits its cancels from a different transaction, so refreshing
-//     from the snapshot would re-file a 300s hold on a room that no longer
-//     exists and nothing would ever cancel it. Registry.Update reports
-//     ErrRoomNotFound once the room is gone.
-//   - The room began SETTLING. Its holds are now the settlement saga's to
-//     consume, and a CANCEL+REQUEST_RESERVE against them races that consume.
-//     refreshReservations' own state test runs against the pre-read snapshot,
-//     so this closure — which runs under the write lock, after the reads — is
-//     the authoritative one.
-//
-// Doing both inside the closure makes the check and the correction one atomic
-// step, rather than a check that could itself go stale before the emit.
-//
-// The REST reads happen BEFORE Update, never inside it: the closure runs under
-// the registry write lock and must stay pure.
-func (p *ProcessorImpl) correctStagedSlots(cache *compartmentCache, snapshot Room) (Room, bool) {
-	corrections := make(map[uuid.UUID]slot.Position)
-	for _, pt := range snapshot.Participants() {
-		for _, i := range pt.Items() {
-			if resolved := p.resolveStagedSlot(cache, pt.CharacterId(), i); resolved != i.SourceSlot() {
-				corrections[i.ReservationId()] = resolved
-			}
-		}
-	}
-
-	room, err := p.reg.Update(p.t, snapshot.Id(), func(cur Room) (Room, error) {
-		if cur.State() == StateSettling {
-			return Room{}, ErrRoomFrozen
-		}
-		if len(corrections) == 0 {
-			return cur, nil
-		}
-		return cur.WithEachParticipant(func(v Participant) Participant {
-			return v.WithRelocatedItems(corrections)
-		}), nil
-	})
-	if err != nil {
-		p.l.WithError(err).Debugf("Skipping the reservation refresh of trade room [%s]: it is no longer refreshable.", snapshot.Id().String())
-		return Room{}, false
-	}
-	return room, true
-}
-
-// RefreshReservations runs one refresh pass over the rooms of the tenant carried
-// by ctx.
-func RefreshReservations(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) error {
-	return NewProcessor(l, ctx, db).RefreshReservations()
-}
-
-// minReservationRefreshInterval floors the refresh pace. A tenant is free to
-// configure a very short — or, through a malformed resource, a zero —
-// reservation TTL, and a pace derived from it unchecked would turn the ticker
-// into a busy loop that republishes every hold continuously.
-const minReservationRefreshInterval = time.Second
-
-// ReservationRefreshInterval is how long may pass between two refresh passes for
-// a tenant on the given configuration: a THIRD of its reservation TTL, so a hold
-// survives two consecutively missed passes before it can lapse (design §5.3).
-//
-// It is a function of the configuration rather than a constant because the TTL
-// is per-tenant (configuration.Model.ReservationTtl, default 300s).
-func ReservationRefreshInterval(cfg configuration.Model) time.Duration {
-	interval := cfg.ReservationTtl() / 3
-	if interval < minReservationRefreshInterval {
-		return minReservationRefreshInterval
-	}
-	return interval
-}
-
-// RefreshAllReservations runs one refresh pass for EVERY tenant that owns a live
-// room, and returns how long the caller may wait before the next pass.
-//
-// It is the ticker's entry point, and it runs with no tenant in context: the
-// registry is asked which tenants have rooms, and each pass runs under that
-// tenant's own context so both its configuration and its registry partition
-// resolve correctly.
-//
-// The interval comes back from the same pass that used it rather than from a
-// separate enumeration, so the pace can never be derived from a different set of
-// tenants than the one just refreshed. It is the SHORTEST interval any live
-// tenant needs — a tenant with a 300s TTL being refreshed more often than it
-// needs is free, whereas one with a 60s TTL paced by another tenant's 300s would
-// lose its holds. With no live rooms it falls back to the shipped default, which
-// is also the pace a first pass runs at.
-//
-// One tenant's failure does not stop the others: every tenant is attempted, and
-// the error reports how many could not be refreshed. A refusal is not a failure
-// — a room that settled or was torn down mid-pass is skipped inside
-// RefreshReservations, by design.
-func RefreshAllReservations(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) (time.Duration, error) {
-	return refreshAllReservations(l, ctx, GetRegistry().Tenants(), configuration.GetRegistry(), func(tctx context.Context) error {
-		return RefreshReservations(l, tctx, db)
-	})
-}
-
-// refreshAllReservations is RefreshAllReservations' body with its three
-// dependencies — the live tenants, the config source and the per-tenant pass —
-// passed in, so the pacing and the keep-going-on-failure behaviour can be
-// exercised without standing up atlas-tenants or a database.
-//
-// ctx is the process context the ticker runs under; each pass gets it with the
-// tenant attached, so a shutdown cancels an in-flight pass rather than detaching
-// it.
-func refreshAllReservations(l logrus.FieldLogger, ctx context.Context, tenants []tenant.Model, cfgs configProvider, pass func(context.Context) error) (time.Duration, error) {
-	next := ReservationRefreshInterval(configuration.DefaultConfig())
-
-	var failures int
-	for _, t := range tenants {
-		tctx := tenant.WithContext(ctx, t)
-		if interval := ReservationRefreshInterval(cfgs.Get(l, tctx)); interval < next {
-			next = interval
-		}
-		if err := pass(tctx); err != nil {
-			l.WithError(err).Errorf("Unable to refresh the trade reservations of tenant [%s]. Its holds lapse when their TTL does, which fails settlement with a clean LEAVE.", t.Id().String())
-			failures++
-		}
-	}
-	if failures > 0 {
-		return next, fmt.Errorf("trade reservation refresh failed for %d tenant(s)", failures)
-	}
-	return next, nil
-}
-
-// reservationRefreshInitialDelay is how long the loop waits before its FIRST
-// pass: nothing.
-//
-// The pace is REPORTED BY a pass, so before one has run there is no honest
-// interval to wait — only a guess, and the shipped default (100s) is the WRONG
-// guess for any tenant whose TTL is under 300s. A tenant configured at 60s that
-// staged an item during that first window would have had its hold lapse at
-// t≈65s while the first pass was still waiting for t=100s, which is exactly the
-// failure the TTL/3 rule exists to prevent. Running immediately costs one
-// registry read on an empty registry and replaces the guess with the real pace.
-const reservationRefreshInitialDelay = time.Duration(0)
-
-// RunReservationRefresh drives the reservation-refresh loop until ctx is
-// cancelled, refreshing every live room's inventory holds so a trade window
-// never outlives its reservations (design §5.3).
-//
-// It returns only on cancellation, so callers run it under routine.Go.
-func RunReservationRefresh(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) {
-	runReservationRefresh(l, ctx, reservationRefreshInitialDelay, func(pctx context.Context) (time.Duration, error) {
-		return RefreshAllReservations(l, pctx, db)
-	})
-}
-
-// runReservationRefresh is RunReservationRefresh's body with the initial delay
-// and the pass injected, so the pacing — including the first fire, which no
-// pass has yet reported an interval for — can be exercised without a database.
-//
-// A timer rather than a ticker: each pass reports the interval the tenants it
-// just refreshed actually need, and a ticker's period is fixed at construction.
-func runReservationRefresh(l logrus.FieldLogger, ctx context.Context, initialDelay time.Duration, pass func(context.Context) (time.Duration, error)) {
-	timer := time.NewTimer(initialDelay)
-	defer timer.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-timer.C:
-			next, err := pass(ctx)
-			if err != nil {
-				l.WithError(err).Error("Unable to refresh trade reservations.")
-			}
-			timer.Reset(next)
-		}
-	}
 }

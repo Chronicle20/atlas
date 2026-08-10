@@ -177,9 +177,10 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.ReleaseFromStorage:   {EventKindStorageCompartmentReleased, EventKindStorageCompartmentError},
 
 	// Trade (task-205).
-	sharedsaga.TradeSettlement: {}, // composite: expanded into release_from_trade×N + accept_to_character×N + award_mesos
-	sharedsaga.TransferToTrade: {}, // composite: expanded into release_from_character + accept_to_trade
-	sharedsaga.AcceptToTrade:   {EventKindTradeCustodyAccepted, EventKindTradeCustodyError},
+	sharedsaga.TradeSettlement:  {}, // composite: expanded into release_from_trade×N + accept_to_character×N + award_mesos
+	sharedsaga.TradeUnwind:      {}, // composite: expanded into release_from_trade×N + accept_to_character×N + award_mesos
+	sharedsaga.TransferToTrade:  {}, // composite: expanded into release_from_character + accept_to_trade
+	sharedsaga.AcceptToTrade:    {EventKindTradeCustodyAccepted, EventKindTradeCustodyError},
 	sharedsaga.ReleaseFromTrade: {EventKindTradeCustodyReleased, EventKindTradeCustodyError},
 
 	// Cash shop.

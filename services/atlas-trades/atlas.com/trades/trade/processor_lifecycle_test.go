@@ -1,9 +1,9 @@
 package trade
 
 import (
-	"atlas-trades/compartment"
 	"atlas-trades/configuration"
 	characterdata "atlas-trades/data/character"
+	"atlas-trades/escrow"
 	"atlas-trades/kafka/message"
 	invitemsg "atlas-trades/kafka/message/invite"
 	trademsg "atlas-trades/kafka/message/trade"
@@ -230,7 +230,11 @@ func newLifecycleProcessor(t *testing.T, cfg configuration.Model, characters ...
 
 	tm := lifecycleTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
-	db := databasetest.NewInMemoryTenantDB(t, outbox.Migration, ledger.Migration, settlement.Migration)
+	// escrow.Migration is in the set because the meso-stake half of staging is
+	// NOT injected: addMeso and resolveMesoStake build an escrow.Processor over
+	// the command's own transaction, so the stake rows are real rows in this
+	// database even though the escrowStore reads go through a fake.
+	db := databasetest.NewInMemoryTenantDB(t, outbox.Migration, ledger.Migration, settlement.Migration, escrow.Migration)
 
 	rows := make(map[character.Id]testCharacter)
 	locations := make(map[character.Id]field.Model)
@@ -249,12 +253,15 @@ func newLifecycleProcessor(t *testing.T, cfg configuration.Model, characters ...
 		cp:   &fakeCharacters{rows: rows},
 		mp:   &fakeMaps{disallowed: make(map[_map.Id]bool)},
 		locp: &fakeLocations{fields: locations},
-		// The reservation producer only buffers messages, so the real one is
-		// used rather than a fake: the assertions in the staging suite are
-		// about the actual COMMAND_TOPIC_COMPARTMENT bytes.
-		resp: compartment.NewProcessor(l, ctx),
-		// Likewise the saga submitter: the settlement suite asserts on the
-		// actual COMMAND_TOPIC_SAGA bytes, including the concrete payload type.
+		// The custody store is faked rather than pointed at this database.
+		// escrowReader binds the ROOT handle, and every escrow read the
+		// processor issues happens INSIDE emit's transaction — against a
+		// single-connection sqlite pool that transaction is holding, so a real
+		// reader would block on itself rather than answer.
+		esc: newFakeEscrow(),
+		// The saga submitter is the real one: it only buffers messages, and the
+		// staging and settlement suites assert on the actual COMMAND_TOPIC_SAGA
+		// bytes, including each payload's concrete type.
 		sgp: sagaproducer.NewProcessor(l, ctx),
 		// A PER-TEST deadline registry, not the process singleton. Tests share
 		// the process, and an attestation deadline armed by one of them would

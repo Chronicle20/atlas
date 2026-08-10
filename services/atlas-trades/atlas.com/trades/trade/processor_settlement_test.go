@@ -5,7 +5,6 @@ import (
 	inventorydata "atlas-trades/data/inventory"
 	sagadata "atlas-trades/data/saga"
 	"atlas-trades/kafka/message"
-	compartmentmsg "atlas-trades/kafka/message/compartment"
 	sagamsg "atlas-trades/kafka/message/saga"
 	trademsg "atlas-trades/kafka/message/trade"
 	"atlas-trades/ledger"
@@ -34,14 +33,14 @@ import (
 // trade and the receiver's matching stack has room to merge into.
 const stagedQuantity = uint16(5)
 
-// testStagedRoom is an OPEN room between 100 and 200 with one staged item each.
+// testStagedRoom is an OPEN room between 100 and 200 with one CONFIRMED staged
+// item each — the escrow row written and the staging saga terminal, which is
+// what a settlement needs. A merely pending stage would settle short.
 func testStagedRoom(t *testing.T) (*ProcessorImpl, *emitted) {
 	t.Helper()
 	p, e := testOpenRoom(t)
 	for _, id := range []character.Id{100, 200} {
-		if err := p.PutItem(uuid.New(), id, byte(inventory.TypeValueUse), stagingSourceSlot, stagedQuantity, 1); err != nil {
-			t.Fatalf("put item for %d: %v", id, err)
-		}
+		stageOne(t, p, id, stagingSourceSlot, stagedQuantity, 1)
 	}
 	return p, e
 }
@@ -87,9 +86,7 @@ func testConfirmedRoomWithCrc(t *testing.T) (*ProcessorImpl, *emitted) {
 func testConfirmedRoomWithFullInventory(t *testing.T, receiver character.Id) (*ProcessorImpl, *emitted) {
 	t.Helper()
 	p, e := testOpenRoom(t)
-	if err := p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), stagingSourceSlot, stagedQuantity, 1); err != nil {
-		t.Fatalf("put item: %v", err)
-	}
+	stageOne(t, p, 100, stagingSourceSlot, stagedQuantity, 1)
 
 	// The receiver's compartment is rebuilt full: capacity 3, three slots taken,
 	// and NOT ONE of them holding the template it is about to be handed — so the
@@ -108,12 +105,26 @@ func testConfirmedRoomWithFullInventory(t *testing.T, receiver character.Id) (*P
 
 // testConfirmedRoomWithMeso is a confirmed room in which characterId staged
 // `amount` mesos and neither side staged an item.
+//
+// The stake is driven all the way through its award_mesos round trip, because
+// under escrow-at-staging AddMeso only ARMS it: the room's mesoStaged does not
+// advance until the debit reports terminal, and the escrow row is what a
+// teardown or a failed settlement would refund from.
 func testConfirmedRoomWithMeso(t *testing.T, characterId character.Id, amount uint32) (*ProcessorImpl, *emitted) {
 	t.Helper()
 	p, e := testOpenRoomWithMeso(t, characterId, amount*2)
 	if err := p.AddMeso(uuid.New(), characterId, int32(amount)); err != nil {
 		t.Fatalf("add meso: %v", err)
 	}
+	stakes := sagasWithAction(t, e, sharedsaga.AwardMesos)
+	if len(stakes) != 1 {
+		t.Fatalf("award_mesos sagas: got %d, want 1", len(stakes))
+	}
+	if _, err := p.MesoStageSucceeded(uuid.New(), stakes[0].TransactionId); err != nil {
+		t.Fatalf("meso stake succeeded: %v", err)
+	}
+	room, _ := p.RoomForCharacter(characterId)
+	escrowOf(t, p).setMeso(room.Id(), characterId, amount)
 	if got := mesoStagedBy(t, p, characterId); got != amount {
 		t.Fatalf("staged meso: got %d, want %d", got, amount)
 	}
@@ -180,11 +191,59 @@ func collectSagas(t *testing.T, e *emitted) []sharedsaga.Saga {
 	return out
 }
 
-func assertNoSagaSubmitted(t *testing.T, e *emitted) {
+// sagasWithAction narrows collectSagas to the one-step sagas whose step carries
+// the given action. Staging is a saga too now, so "how many sagas were
+// submitted" is no longer a question with a single meaningful answer: a
+// settlement assertion has to say WHICH saga it means, or a stage counts toward
+// it and every count is off by the number of items the harness staged.
+func sagasWithAction(t *testing.T, e *emitted, action sharedsaga.Action) []sharedsaga.Saga {
 	t.Helper()
-	if sagas := collectSagas(t, e); len(sagas) != 0 {
-		t.Errorf("saga commands: got %d, want 0", len(sagas))
+	var out []sharedsaga.Saga
+	for _, s := range collectSagas(t, e) {
+		if len(s.Steps) == 1 && s.Steps[0].Action == action {
+			out = append(out, s)
+		}
 	}
+	return out
+}
+
+func settlementSagas(t *testing.T, e *emitted) []sharedsaga.Saga {
+	t.Helper()
+	return sagasWithAction(t, e, sharedsaga.TradeSettlement)
+}
+
+func stageSagas(t *testing.T, e *emitted) []sharedsaga.Saga {
+	t.Helper()
+	return sagasWithAction(t, e, sharedsaga.TransferToTrade)
+}
+
+func unwindSagas(t *testing.T, e *emitted) []sharedsaga.Saga {
+	t.Helper()
+	return sagasWithAction(t, e, sharedsaga.TradeUnwind)
+}
+
+func assertNoSagaOfAction(t *testing.T, e *emitted, action sharedsaga.Action) {
+	t.Helper()
+	if sagas := sagasWithAction(t, e, action); len(sagas) != 0 {
+		t.Errorf("%s sagas: got %d, want 0", action, len(sagas))
+	}
+}
+
+// assertNoSettlementSubmitted requires that no trade_settlement composite left
+// the service. Staging and unwind sagas are deliberately not counted.
+func assertNoSettlementSubmitted(t *testing.T, e *emitted) {
+	t.Helper()
+	assertNoSagaOfAction(t, e, sharedsaga.TradeSettlement)
+}
+
+func assertNoStageSubmitted(t *testing.T, e *emitted) {
+	t.Helper()
+	assertNoSagaOfAction(t, e, sharedsaga.TransferToTrade)
+}
+
+func assertNoUnwindSubmitted(t *testing.T, e *emitted) {
+	t.Helper()
+	assertNoSagaOfAction(t, e, sharedsaga.TradeUnwind)
 }
 
 // settlementPayloadOf requires the saga to be the one-step trade_settlement
@@ -197,6 +256,48 @@ func settlementPayloadOf(t *testing.T, s sharedsaga.Saga) sharedsaga.TradeSettle
 	payload, ok := s.Steps[0].Payload.(sharedsaga.TradeSettlementPayload)
 	if !ok {
 		t.Fatalf("payload type: got %T, want TradeSettlementPayload", s.Steps[0].Payload)
+	}
+	return payload
+}
+
+// stagePayloadOf requires the saga to be the one-step transfer_to_trade
+// composite and returns its CONCRETE payload.
+func stagePayloadOf(t *testing.T, s sharedsaga.Saga) sharedsaga.TransferToTradePayload {
+	t.Helper()
+	if len(s.Steps) != 1 {
+		t.Fatalf("steps: got %d, want 1", len(s.Steps))
+	}
+	payload, ok := s.Steps[0].Payload.(sharedsaga.TransferToTradePayload)
+	if !ok {
+		t.Fatalf("payload type: got %T, want TransferToTradePayload", s.Steps[0].Payload)
+	}
+	return payload
+}
+
+// unwindPayloadOf requires the saga to be the one-step trade_unwind composite
+// and returns its CONCRETE payload.
+func unwindPayloadOf(t *testing.T, s sharedsaga.Saga) sharedsaga.TradeUnwindPayload {
+	t.Helper()
+	if len(s.Steps) != 1 {
+		t.Fatalf("steps: got %d, want 1", len(s.Steps))
+	}
+	payload, ok := s.Steps[0].Payload.(sharedsaga.TradeUnwindPayload)
+	if !ok {
+		t.Fatalf("payload type: got %T, want TradeUnwindPayload", s.Steps[0].Payload)
+	}
+	return payload
+}
+
+// awardMesosPayloadOf requires the saga to be the bare award_mesos a meso stake
+// submits and returns its CONCRETE payload.
+func awardMesosPayloadOf(t *testing.T, s sharedsaga.Saga) sharedsaga.AwardMesosPayload {
+	t.Helper()
+	if len(s.Steps) != 1 {
+		t.Fatalf("steps: got %d, want 1", len(s.Steps))
+	}
+	payload, ok := s.Steps[0].Payload.(sharedsaga.AwardMesosPayload)
+	if !ok {
+		t.Fatalf("payload type: got %T, want AwardMesosPayload", s.Steps[0].Payload)
 	}
 	return payload
 }
@@ -272,7 +373,7 @@ func TestBothConfirmsEnterAwaitingAttestation(t *testing.T) {
 	if room.State() != StateAwaitingAttestation {
 		t.Errorf("state: got %s, want %s", room.State(), StateAwaitingAttestation)
 	}
-	assertNoSagaSubmitted(t, e)
+	assertNoSettlementSubmitted(t, e)
 }
 
 // TestDoubleConfirmFromOneSideIsIgnored pins that a repeated confirm cannot
@@ -307,7 +408,7 @@ func TestConfirmOnASoloRoomDoesNotRequestAttestation(t *testing.T) {
 		t.Fatalf("confirm: %v", err)
 	}
 	assertNoEventOfType(t, e, trademsg.StatusTypeAttestationRequested)
-	assertNoSagaSubmitted(t, e)
+	assertNoSettlementSubmitted(t, e)
 }
 
 // --- attestation ---------------------------------------------------------------
@@ -322,7 +423,7 @@ func TestBothAttestationsSubmitOneSaga(t *testing.T) {
 		}
 	}
 
-	sagas := collectSagas(t, e)
+	sagas := settlementSagas(t, e)
 	if len(sagas) != 1 {
 		t.Fatalf("sagas submitted: got %d, want 1", len(sagas))
 	}
@@ -367,7 +468,7 @@ func TestOneSidedAttestationDoesNotSettle(t *testing.T) {
 	if err := p.Attest(uuid.New(), 100, nil); err != nil {
 		t.Fatalf("attest: %v", err)
 	}
-	assertNoSagaSubmitted(t, e)
+	assertNoSettlementSubmitted(t, e)
 	room, _ := p.RoomForCharacter(100)
 	if room.State() != StateAwaitingAttestation {
 		t.Errorf("state: got %s, want %s", room.State(), StateAwaitingAttestation)
@@ -388,7 +489,7 @@ func TestAttestationTimeoutSettlesAnyway(t *testing.T) {
 		t.Fatalf("expire: %v", err)
 	}
 
-	if got := len(collectSagas(t, e)); got != 1 {
+	if got := len(settlementSagas(t, e)); got != 1 {
 		t.Errorf("sagas submitted: got %d, want 1 — the attestation timeout did not settle the trade", got)
 	}
 }
@@ -403,7 +504,7 @@ func TestAttestationDeadlineIsArmedOnTheSecondConfirm(t *testing.T) {
 
 	deadline := time.Now().Add(2 * time.Second)
 	for {
-		if len(collectSagas(t, e)) == 1 {
+		if len(settlementSagas(t, e)) == 1 {
 			return
 		}
 		if time.Now().After(deadline) {
@@ -422,7 +523,7 @@ func TestExpireAttestationDoesNothingOnceSettling(t *testing.T) {
 	if err := p.ExpireAttestation(uuid.New(), room.Id()); err != nil {
 		t.Fatalf("expire: %v", err)
 	}
-	if got := len(collectSagas(t, e)); got != 1 {
+	if got := len(settlementSagas(t, e)); got != 1 {
 		t.Errorf("sagas submitted: got %d, want the original 1", got)
 	}
 }
@@ -461,7 +562,7 @@ func TestAttestationIsTheCounterpartyContributionNotTheWholeWindow(t *testing.T)
 		t.Fatalf("visitor attest: %v", err)
 	}
 
-	if got := len(collectSagas(t, e)); got != 1 {
+	if got := len(settlementSagas(t, e)); got != 1 {
 		t.Fatalf("sagas submitted: got %d, want 1 — a faithful two-sided attestation must settle", got)
 	}
 }
@@ -481,7 +582,7 @@ func TestAttestationWithAnUnconfirmedCrcIsRefused(t *testing.T) {
 	}
 
 	assertCancelledWithReason(t, e, ReasonTradeCrcFailed)
-	assertNoSagaSubmitted(t, e)
+	assertNoSettlementSubmitted(t, e)
 }
 
 // TestAttestationNamingMoreItemsThanTheCounterpartyStagedIsRefused pins the
@@ -500,7 +601,7 @@ func TestAttestationNamingMoreItemsThanTheCounterpartyStagedIsRefused(t *testing
 	}
 
 	assertCancelledWithReason(t, e, ReasonTradeCrcFailed)
-	assertNoSagaSubmitted(t, e)
+	assertNoSettlementSubmitted(t, e)
 }
 
 // TestCrcMismatchTearsDownWithStatusThirteen pins design §6.1 check 4.
@@ -514,7 +615,7 @@ func TestCrcMismatchTearsDownWithStatusThirteen(t *testing.T) {
 	}
 
 	assertCancelledWithReason(t, e, ReasonTradeCrcFailed)
-	assertNoSagaSubmitted(t, e)
+	assertNoSettlementSubmitted(t, e)
 	if _, ok := p.RoomForCharacter(100); ok {
 		t.Error("room survived a CRC mismatch")
 	}
@@ -530,7 +631,7 @@ func TestMatchingCrcSettles(t *testing.T) {
 		}
 	}
 	assertNoEventOfType(t, e, trademsg.StatusTypeCancelled)
-	if got := len(collectSagas(t, e)); got != 1 {
+	if got := len(settlementSagas(t, e)); got != 1 {
 		t.Errorf("sagas submitted: got %d, want 1", got)
 	}
 }
@@ -546,7 +647,7 @@ func TestAttestationAbsentOnLegacyVersionsIsNotAMismatch(t *testing.T) {
 		}
 	}
 	assertNoEventOfType(t, e, trademsg.StatusTypeCancelled)
-	if got := len(collectSagas(t, e)); got != 1 {
+	if got := len(settlementSagas(t, e)); got != 1 {
 		t.Errorf("sagas submitted: got %d, want 1", got)
 	}
 }
@@ -569,7 +670,7 @@ func TestPreCheckFailureTearsDownRatherThanKeepingTheRoom(t *testing.T) {
 	if _, ok := p.RoomForCharacter(100); ok {
 		t.Error("room survived a settlement pre-check failure")
 	}
-	assertNoSagaSubmitted(t, e)
+	assertNoSettlementSubmitted(t, e)
 }
 
 // TestAFullInventoryStillMergesIntoAMatchingStack guards the free-slot check
@@ -578,9 +679,7 @@ func TestPreCheckFailureTearsDownRatherThanKeepingTheRoom(t *testing.T) {
 // not a refusal.
 func TestAFullInventoryStillMergesIntoAMatchingStack(t *testing.T) {
 	p, e := testOpenRoom(t)
-	if err := p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), stagingSourceSlot, stagedQuantity, 1); err != nil {
-		t.Fatalf("put item: %v", err)
-	}
+	stageOne(t, p, 100, stagingSourceSlot, stagedQuantity, 1)
 	// 200's compartment is full — but slot 1 holds the very template it is
 	// about to receive, with room under the 200-unit stack ceiling.
 	assets := map[assetKey]inventorydata.Asset{
@@ -598,29 +697,41 @@ func TestAFullInventoryStillMergesIntoAMatchingStack(t *testing.T) {
 		}
 	}
 	assertNoEventOfType(t, e, trademsg.StatusTypeCancelled)
-	if got := len(collectSagas(t, e)); got != 1 {
+	if got := len(settlementSagas(t, e)); got != 1 {
 		t.Errorf("sagas submitted: got %d, want 1", got)
 	}
 }
 
-// TestSettlementRefusesWhenTheStagedAssetIsGone pins design §6.1 check 3: the
-// reservation is not observable from here, so what is verified is the state it
-// exists to protect. A vanished asset is TRADE_FAILED (8), not CANNOT_CARRY.
-func TestSettlementRefusesWhenTheStagedAssetIsGone(t *testing.T) {
+// TestSettlementRefusesWhenAStagedItemHasNoEscrowRow is the escrow-era
+// successor to design §6.1's check 3.
+//
+// Under reserve-at-staging the staged asset was still in its owner's
+// compartment, so the check re-read the compartment to confirm the asset had
+// not been spent out from under a hold that could lapse. Custody removes that
+// failure class — nobody can touch an escrowed asset and custody does not
+// expire — but it introduces a sharper one: a staged item whose row is NOT
+// there means the row was removed under a settlement that is already
+// committing. Skipping it would settle the trade minus one item, so the giver
+// loses it and the receiver never gets it. It is an error, not a value to skip.
+func TestSettlementRefusesWhenAStagedItemHasNoEscrowRow(t *testing.T) {
 	p, e := testConfirmedRoom(t)
-	// The owner's staged stack disappears from their inventory entirely.
-	delete(p.invp.(*fakeInventory).assets, assetKey{100, inventory.TypeValueUse, stagingSourceSlot})
+	// The owner's custody row disappears between the confirm and the settle.
+	escrowOf(t, p).release(stagedItemsOf(t, p, 100)[0].EscrowId())
 
-	for _, id := range []character.Id{100, 200} {
-		if err := p.Attest(uuid.New(), id, nil); err != nil {
-			t.Fatalf("attest for %d: %v", id, err)
-		}
+	if err := p.Attest(uuid.New(), 100, nil); err != nil {
+		t.Fatalf("owner attest: %v", err)
+	}
+	if err := p.Attest(uuid.New(), 200, nil); err == nil {
+		t.Fatal("visitor attest: expected the missing escrow row to surface an error rather than settle short")
+	}
+
+	assertNoSettlementSubmitted(t, e)
+	// The room is closed rather than left wedged in SETTLING, by the same
+	// recovery that covers an unwritable settlement record.
+	if _, ok := p.RoomForCharacter(100); ok {
+		t.Error("the room survived a settlement it could not build a payload for")
 	}
 	assertCancelledWithReason(t, e, ReasonTradeFailed)
-	assertNoSagaSubmitted(t, e)
-	if _, ok := p.RoomForCharacter(100); ok {
-		t.Error("room survived a lost reservation")
-	}
 }
 
 // TestSettlementRefusesWhenTheStagedMesoIsNoLongerHeld pins design §6.1 check 2
@@ -638,7 +749,7 @@ func TestSettlementRefusesWhenTheStagedMesoIsNoLongerHeld(t *testing.T) {
 		}
 	}
 	assertCancelledWithReason(t, e, ReasonTradeCannotCarry)
-	assertNoSagaSubmitted(t, e)
+	assertNoSettlementSubmitted(t, e)
 }
 
 // TestSettlementTaxIsResolvedBeforeTheSagaLeaves pins design §6.3: the tax is
@@ -652,7 +763,7 @@ func TestSettlementTaxIsResolvedBeforeTheSagaLeaves(t *testing.T) {
 		}
 	}
 
-	sagas := collectSagas(t, e)
+	sagas := settlementSagas(t, e)
 	if len(sagas) != 1 {
 		t.Fatalf("sagas submitted: got %d, want 1", len(sagas))
 	}
@@ -668,15 +779,20 @@ func TestSettlementTaxIsResolvedBeforeTheSagaLeaves(t *testing.T) {
 	}
 }
 
-// TestSettlementResolvesAStagedSlotThatMovedSinceTheStage pins the correction
-// the CONFIRM freeze does NOT provide. Nothing gates an inventory move while
-// the dialog is open, and the refresh only corrects on a tick boundary, so an
-// item dragged in the last tick interval before CONFIRM would otherwise be
-// handed to the orchestrator at its vacated slot — which the expander rejects
-// as a different asset instance, turning a valid trade into LEAVE 8.
-func TestSettlementResolvesAStagedSlotThatMovedSinceTheStage(t *testing.T) {
+// TestSettlementPayloadCarriesTheEscrowRowsSnapshot pins where the settlement
+// payload's items come from (design §5A.7). The ROOM knows which escrow rows a
+// side staged and nothing more; only the custody row carries the stat snapshot,
+// and the orchestrator can no longer look the asset up because the asset is not
+// in anybody's compartment any more.
+//
+// The escrow id is the load-bearing field: every expanded step names it, so a
+// payload that carried the room's view instead would release nothing.
+func TestSettlementPayloadCarriesTheEscrowRowsSnapshot(t *testing.T) {
 	p, e := testConfirmedRoom(t)
-	p.invp.(*fakeInventory).relocate(100, inventory.TypeValueUse, stagingSourceSlot, 8)
+	want := map[character.Id]uuid.UUID{
+		100: stagedItemsOf(t, p, 100)[0].EscrowId(),
+		200: stagedItemsOf(t, p, 200)[0].EscrowId(),
+	}
 
 	for _, id := range []character.Id{100, 200} {
 		if err := p.Attest(uuid.New(), id, nil); err != nil {
@@ -684,16 +800,24 @@ func TestSettlementResolvesAStagedSlotThatMovedSinceTheStage(t *testing.T) {
 		}
 	}
 
-	sagas := collectSagas(t, e)
+	sagas := settlementSagas(t, e)
 	if len(sagas) != 1 {
 		t.Fatalf("sagas submitted: got %d, want 1", len(sagas))
 	}
 	payload := settlementPayloadOf(t, sagas[0])
-	if got := payload.Sides[0].Items[0].SourceSlot; got != 8 {
-		t.Errorf("settled sourceSlot: got %d, want the asset's CURRENT slot 8", got)
-	}
-	if got := stagedItemsOf(t, p, 100)[0].SourceSlot(); got != 8 {
-		t.Errorf("staged sourceSlot: got %d, want the corrected 8 written back", got)
+	for _, side := range payload.Sides {
+		if len(side.Items) != 1 {
+			t.Fatalf("side %d items: got %d, want 1", side.CharacterId, len(side.Items))
+		}
+		if got := side.Items[0].EscrowId; got != want[side.CharacterId] {
+			t.Errorf("side %d escrowId: got %s, want the staged item's custody row %s", side.CharacterId, got, want[side.CharacterId])
+		}
+		if side.Items[0].WeaponAttack != escrowStatWeaponAttack || side.Items[0].Slots != escrowStatSlots {
+			t.Errorf("side %d stat snapshot: got weaponAttack %d slots %d, want the escrow row's %d / %d", side.CharacterId, side.Items[0].WeaponAttack, side.Items[0].Slots, escrowStatWeaponAttack, escrowStatSlots)
+		}
+		if side.Items[0].Owner != escrowOwnerName {
+			t.Errorf("side %d owner: got %q, want the escrow row's %q", side.CharacterId, side.Items[0].Owner, escrowOwnerName)
+		}
 	}
 }
 
@@ -753,43 +877,26 @@ func TestSettlementSuccessWritesTheLedgerAndEmitsSettled(t *testing.T) {
 	}
 }
 
-// TestSettlementSuccessCancelsBothHolds pins the obligation a successful trade
-// creates. TradeSettlementItem carries no reservation id, so the saga cannot
-// release the holds, and atlas-inventory's Release does not touch its
-// reservation registry — an uncancelled hold sits on the giver's now-emptied
-// slot for the rest of its TTL, refusing that slot's merge, drop and any fresh
-// reserve.
-func TestSettlementSuccessCancelsBothHolds(t *testing.T) {
+// TestSettlementSuccessUnwindsNothing pins the asymmetry in completeSettlement
+// that replaces the old "cancel both holds" obligation.
+//
+// A SUCCESSFUL settlement's expanded release_from_trade steps have already
+// emptied the escrow, so an unwind here would be a second delivery of assets
+// that are no longer in custody — the orchestrator would fail every leg, or
+// worse, succeed against rows a compensation had restored. Only failure unwinds
+// (see TestSettlementFailureUnwindsTheEscrowBackToBothOwners).
+func TestSettlementSuccessUnwindsNothing(t *testing.T) {
 	p, e := testSettlingRoom(t)
 	room, _ := p.RoomForCharacter(100)
-	want := map[uuid.UUID]character.Id{}
+	// The saga's releases emptied the custody store on its way to success.
 	for _, id := range []character.Id{100, 200} {
-		for _, i := range stagedItemsOf(t, p, id) {
-			want[i.ReservationId()] = id
-		}
-	}
-	if len(want) != 2 {
-		t.Fatalf("staged reservations: got %d, want 2", len(want))
+		escrowOf(t, p).release(stagedItemsOf(t, p, id)[0].EscrowId())
 	}
 
 	if err := p.SettlementSucceeded(uuid.New(), room.SettlementId()); err != nil {
 		t.Fatalf("settle: %v", err)
 	}
-
-	cancels := compartmentCommands[compartmentmsg.CancelReservationCommandBody](t, e, compartmentmsg.CommandCancelReservation)
-	if len(cancels) != 2 {
-		t.Fatalf("CANCEL_RESERVATION commands: got %d, want one per staged item (2)", len(cancels))
-	}
-	for _, c := range cancels {
-		if _, ok := want[c.TransactionId]; !ok {
-			t.Errorf("cancelled reservation %s was never staged", c.TransactionId)
-			continue
-		}
-		delete(want, c.TransactionId)
-	}
-	if len(want) != 0 {
-		t.Errorf("reservations left uncancelled after a SUCCESSFUL trade: %v", want)
-	}
+	assertNoUnwindSubmitted(t, e)
 }
 
 // TestSecondCompletedDeliveryFindsNoRecordAndDrops pins what actually stops a
@@ -836,8 +943,51 @@ func TestSettlementFailureEmitsStatusEightAndWritesNoLedgerRow(t *testing.T) {
 	if _, ok := p.RoomForCharacter(100); ok {
 		t.Error("room survived a failed settlement")
 	}
-	if got := len(compartmentCommands[compartmentmsg.CancelReservationCommandBody](t, e, compartmentmsg.CommandCancelReservation)); got != 2 {
-		t.Errorf("CANCEL_RESERVATION commands: got %d, want one per staged item (2)", got)
+}
+
+// TestSettlementFailureUnwindsTheEscrowBackToBothOwners pins the other half of
+// completeSettlement's asymmetry. A failed settlement has been compensated by
+// the orchestrator, which restored every custody row it had released — so both
+// players' items are sitting in escrow with no trade left to deliver them, and
+// somebody has to hand them back.
+//
+// It reads the escrow FRESH rather than replaying the settlement record's own
+// item list: the record is a snapshot taken at submission, while the escrow is
+// what the compensation actually managed to restore. Refunding the snapshot
+// would create items whose restore failed out of nothing.
+func TestSettlementFailureUnwindsTheEscrowBackToBothOwners(t *testing.T) {
+	p, e := testSettlingRoom(t)
+	room, _ := p.RoomForCharacter(100)
+	want := map[uuid.UUID]character.Id{
+		stagedItemsOf(t, p, 100)[0].EscrowId(): 100,
+		stagedItemsOf(t, p, 200)[0].EscrowId(): 200,
+	}
+
+	if err := p.SettlementFailed(uuid.New(), room.SettlementId(), "ACCEPT_FAILED"); err != nil {
+		t.Fatalf("fail: %v", err)
+	}
+
+	unwinds := unwindSagas(t, e)
+	if len(unwinds) != 1 {
+		t.Fatalf("trade_unwind sagas: got %d, want 1", len(unwinds))
+	}
+	payload := unwindPayloadOf(t, unwinds[0])
+	if len(payload.Items) != 2 {
+		t.Fatalf("unwind items: got %d, want one per escrowed item (2)", len(payload.Items))
+	}
+	for _, it := range payload.Items {
+		owner, ok := want[it.Item.EscrowId]
+		if !ok {
+			t.Errorf("unwind returned escrow row %s, which was never staged", it.Item.EscrowId)
+			continue
+		}
+		if it.OwnerId != owner {
+			t.Errorf("unwind ownerId for %s: got %d, want %d", it.Item.EscrowId, it.OwnerId, owner)
+		}
+		delete(want, it.Item.EscrowId)
+	}
+	if len(want) != 0 {
+		t.Errorf("escrow rows left in custody after a failed settlement: %v", want)
 	}
 }
 
@@ -869,8 +1019,8 @@ func TestTerminalStatusIsKeyedByTheSettlementRecord(t *testing.T) {
 		if len(side.Items()) != 1 {
 			t.Fatalf("recorded items for %d: got %d, want 1", side.CharacterId(), len(side.Items()))
 		}
-		if side.Items()[0].ReservationId() == uuid.Nil {
-			t.Error("recorded item carries no reservation id; a reconciled settlement could never cancel the hold")
+		if side.Items()[0].EscrowId() == uuid.Nil {
+			t.Error("recorded item carries no escrow id; a reconciled settlement could never name the custody row it moves")
 		}
 	}
 }
@@ -892,13 +1042,13 @@ func TestSettlementStatusForAnUnknownRoomIsIgnored(t *testing.T) {
 	}
 }
 
-// --- cancel vs settle, raced across the teardown's REST reads ------------------
+// --- cancel vs settle, raced across the pre-check's REST reads -----------------
 
 // beginSettlingOnce drives the room to SETTLING the FIRST time a compartment is
-// read, which is the real window: every teardown resolves its staged slots over
-// REST between reading the room and ending it, and the attestation deadline
-// runs settle from an independent goroutine that no Kafka partition ordering
-// serialises against the teardown consumer.
+// read, which is the real window: the settlement pre-checks read both sides'
+// compartments over REST between reading the room and ending it, and the
+// attestation deadline runs settle from an independent goroutine that no Kafka
+// partition ordering serialises against the teardown consumer.
 func beginSettlingOnce(t *testing.T, p *ProcessorImpl, roomId uuid.UUID) func() {
 	t.Helper()
 	var once sync.Once
@@ -913,36 +1063,18 @@ func beginSettlingOnce(t *testing.T, p *ProcessorImpl, roomId uuid.UUID) func() 
 	}
 }
 
-// TestTeardownLosesToASettlementThatWinsDuringItsReads pins FR-6.5 through the
-// window a plain state read leaves open. Without the compare-and-set the
-// teardown would cancel both holds the in-flight saga is about to consume AND
-// delete the room its terminal status must find — so the swap would execute
-// with no ledger row and no SETTLED, while both clients had already seen
-// LEAVE 2.
-func TestTeardownLosesToASettlementThatWinsDuringItsReads(t *testing.T) {
-	p, e := testConfirmedRoom(t)
-	room, _ := p.RoomForCharacter(100)
-	p.invp.(*fakeInventory).onGetCompartment = beginSettlingOnce(t, p, room.Id())
-
-	if err := p.TeardownCharacter(uuid.New(), 200, ReasonTradeCancelled); err != nil {
-		t.Fatalf("teardown: %v", err)
-	}
-
-	assertNoEventOfType(t, e, trademsg.StatusTypeCancelled)
-	assertNoCompartmentCommandOfType(t, e, compartmentmsg.CommandCancelReservation)
-	survivor, ok := p.RoomForCharacter(100)
-	if !ok {
-		t.Fatal("the teardown deleted a room whose settlement had already started")
-	}
-	if survivor.State() != StateSettling {
-		t.Errorf("state: got %s, want %s", survivor.State(), StateSettling)
-	}
-}
-
-// TestSettlementRefusalLosesToASettlementThatWinsDuringItsReads pins the same
-// compare-and-set on the OTHER teardown caller: a pre-check refusal also runs
-// REST reads before it ends the room, and another trigger can reach SETTLING
-// inside that window.
+// TestSettlementRefusalLosesToASettlementThatWinsDuringItsReads pins
+// teardownRoom's compare-and-set through the one window escrow-at-staging still
+// leaves open. A pre-check refusal runs both sides' compartment reads before it
+// ends the room, and another trigger can reach SETTLING inside that window; an
+// unconditional removal there would delete the room the in-flight saga's
+// terminal status must find AND unwind the custody it is about to deliver.
+//
+// (The plain-teardown twin of this test is gone with the reads it depended on:
+// teardown no longer resolves anything over REST before claiming the room, so
+// there is no longer a window to land a settlement in. FR-6.5 on that path is
+// covered by TestCancelLosesToSettlement and
+// TestTeardownCharacterLosesToSettlement.)
 func TestSettlementRefusalLosesToASettlementThatWinsDuringItsReads(t *testing.T) {
 	p, e := testConfirmedRoomWithFullInventory(t, 200)
 	room, _ := p.RoomForCharacter(100)
@@ -955,7 +1087,7 @@ func TestSettlementRefusalLosesToASettlementThatWinsDuringItsReads(t *testing.T)
 	}
 
 	assertNoEventOfType(t, e, trademsg.StatusTypeCancelled)
-	assertNoCompartmentCommandOfType(t, e, compartmentmsg.CommandCancelReservation)
+	assertNoUnwindSubmitted(t, e)
 	if _, ok := p.RoomForCharacter(100); !ok {
 		t.Error("a pre-check refusal deleted a room whose settlement had already started")
 	}
@@ -987,7 +1119,7 @@ func TestSettlementSuccessDoesNotReEmitWhenAnotherDeliveryResolvedTheRecord(t *t
 		t.Fatalf("settle: %v", err)
 	}
 	assertNoEventOfType(t, e, trademsg.StatusTypeSettled)
-	assertNoCompartmentCommandOfType(t, e, compartmentmsg.CommandCancelReservation)
+	assertNoUnwindSubmitted(t, e)
 	if got := len(readLedger(t, p)); got != 0 {
 		t.Errorf("ledger entries: got %d, want 0 — the losing delivery recorded a trade the winner owns", got)
 	}
@@ -999,8 +1131,8 @@ func TestSettlementSuccessDoesNotReEmitWhenAnotherDeliveryResolvedTheRecord(t *t
 // would otherwise leave. The registry swap to AWAITING_ATTESTATION is in-memory
 // and is NOT rolled back by the enclosing transaction, so a room whose confirm
 // failed to publish still sits in that state — with no mode 17 ever reaching
-// the clients, no attestation possible, and RefreshReservations keeping both
-// sides' holds alive indefinitely. Only the deadline can end it.
+// the clients, no attestation possible, and both sides' items sitting in
+// custody with nothing left to move them. Only the deadline can end it.
 func TestConfirmArmsTheDeadlineEvenWhenTheEmitFails(t *testing.T) {
 	p, _ := testStagedRoom(t)
 	room, _ := p.RoomForCharacter(100)
@@ -1042,7 +1174,7 @@ func TestSettlementRefusesWhenTheSlotMaxCannotBeRead(t *testing.T) {
 		}
 	}
 	assertCancelledWithReason(t, e, ReasonTradeCannotCarry)
-	assertNoSagaSubmitted(t, e)
+	assertNoSettlementSubmitted(t, e)
 }
 
 // TestTerminalStatusForATradeThatNeverSubmittedIsIgnored pins that a COMPLETED
@@ -1139,11 +1271,9 @@ func TestReconcileCompletesASettlementWhoseRoomTheRestartLost(t *testing.T) {
 		t.Errorf("SETTLED ledgerEntryId: got %s, want %s", settled[0].Body.LedgerEntryId, entries[0].Id())
 	}
 
-	// The holds must still be released: the room that would have cancelled them
-	// is gone, so the record is the only thing that knows they exist.
-	if got := len(compartmentCommands[compartmentmsg.CancelReservationCommandBody](t, e, compartmentmsg.CommandCancelReservation)); got != 2 {
-		t.Errorf("CANCEL_RESERVATION commands: got %d, want one per staged item (2)", got)
-	}
+	// A SUCCESSFUL settlement's releases already emptied the custody store, so
+	// the reconciled completion must not unwind on top of them.
+	assertNoUnwindSubmitted(t, e)
 	assertSettlementResolved(t, p, settlementId)
 }
 
@@ -1186,8 +1316,14 @@ func TestReconcileClosesASettlementWhoseSagaFailed(t *testing.T) {
 	if got := len(readLedger(t, p)); got != 0 {
 		t.Errorf("ledger entries: got %d, want 0 for a failed trade", got)
 	}
-	if got := len(compartmentCommands[compartmentmsg.CancelReservationCommandBody](t, e, compartmentmsg.CommandCancelReservation)); got != 2 {
-		t.Errorf("CANCEL_RESERVATION commands: got %d, want one per staged item (2)", got)
+	// The escrow must still go home: the room that would have unwound it is
+	// gone, so the durable record is the only thing that knows the room id.
+	unwinds := unwindSagas(t, e)
+	if len(unwinds) != 1 {
+		t.Fatalf("trade_unwind sagas: got %d, want 1", len(unwinds))
+	}
+	if got := len(unwindPayloadOf(t, unwinds[0]).Items); got != 2 {
+		t.Errorf("unwind items: got %d, want one per staged item (2)", got)
 	}
 	assertSettlementResolved(t, p, room.SettlementId())
 }
@@ -1269,9 +1405,17 @@ func assertSettlementResolved(t *testing.T, p *ProcessorImpl, settlementId uuid.
 
 // --- a settlement that never leaves the process ------------------------------------
 
-// failingSagaSubmitter refuses to buffer the saga command, which is the second
-// of the two ways the settle path can fail AFTER the room is already SETTLING.
+// failingSagaSubmitter refuses to buffer the SETTLEMENT command, which is the
+// second of the two ways the settle path can fail AFTER the room is already
+// SETTLING.
+//
+// It refuses only Settle, and that is deliberate rather than lazy: the recovery
+// this fake exists to exercise closes the trade by submitting a trade_unwind,
+// so a fake that refused every action would break the recovery too and the test
+// would pin nothing but a second-order failure. Embedding the real submitter
+// leaves the other three actions working.
 type failingSagaSubmitter struct {
+	sagaSubmitter
 	err error
 }
 
@@ -1282,20 +1426,27 @@ func (f *failingSagaSubmitter) Settle(_ *message.Buffer) func(transactionId uuid
 }
 
 // assertSettlementAbandoned requires the room to have been closed rather than
-// left in a state nothing can act on: SETTLING refuses teardown (FR-6.5), is
-// skipped by the reservation refresh, has had its attestation deadline
-// cancelled, and — with the command rolled back — has no durable record for the
-// reconciler to find it by.
+// left in a state nothing can act on: SETTLING refuses teardown (FR-6.5), has
+// had its attestation deadline cancelled, and — with the command rolled back —
+// has no durable record for the reconciler to find it by.
+//
+// Closing it also has to RETURN the custody. Nothing was settled, so both
+// players' items are still escrowed, and a room that vanishes without unwinding
+// keeps them.
 func assertSettlementAbandoned(t *testing.T, p *ProcessorImpl, e *emitted) {
 	t.Helper()
 	if room, ok := p.RoomForCharacter(100); ok {
 		t.Errorf("the room survived a failed settlement submission in state %s; nothing can act on it", room.State())
 	}
 	assertCancelledWithReason(t, e, ReasonTradeFailed)
-	if got := len(compartmentCommands[compartmentmsg.CancelReservationCommandBody](t, e, compartmentmsg.CommandCancelReservation)); got != 2 {
-		t.Errorf("CANCEL_RESERVATION commands: got %d, want one per staged item (2)", got)
+	unwinds := unwindSagas(t, e)
+	if len(unwinds) != 1 {
+		t.Fatalf("trade_unwind sagas: got %d, want 1", len(unwinds))
 	}
-	assertNoSagaSubmitted(t, e)
+	if got := len(unwindPayloadOf(t, unwinds[0]).Items); got != 2 {
+		t.Errorf("unwind items: got %d, want one per staged item (2)", got)
+	}
+	assertNoSettlementSubmitted(t, e)
 }
 
 // TestSettleFailingToRecordTheSettlementDoesNotWedgeTheRoom pins the first
@@ -1323,7 +1474,7 @@ func TestSettleFailingToRecordTheSettlementDoesNotWedgeTheRoom(t *testing.T) {
 // and the same wedge if the transition is not undone.
 func TestSettleFailingToSubmitTheSagaDoesNotWedgeTheRoom(t *testing.T) {
 	p, e := testConfirmedRoom(t)
-	p.sgp = &failingSagaSubmitter{err: errors.New("saga topic unavailable")}
+	p.sgp = &failingSagaSubmitter{sagaSubmitter: p.sgp, err: errors.New("saga topic unavailable")}
 
 	if err := p.Attest(uuid.New(), 100, nil); err != nil {
 		t.Fatalf("owner attest: %v", err)
@@ -1343,7 +1494,7 @@ func TestSettleFailingToSubmitTheSagaDoesNotWedgeTheRoom(t *testing.T) {
 // and would otherwise wedge a room nobody is waiting on a command for.
 func TestExpireAttestationFailingToSubmitDoesNotWedgeTheRoom(t *testing.T) {
 	p, e := testConfirmedRoom(t)
-	p.sgp = &failingSagaSubmitter{err: errors.New("saga topic unavailable")}
+	p.sgp = &failingSagaSubmitter{sagaSubmitter: p.sgp, err: errors.New("saga topic unavailable")}
 	room, _ := p.RoomForCharacter(100)
 
 	if err := p.ExpireAttestation(uuid.New(), room.Id()); err == nil {
@@ -1354,4 +1505,4 @@ func TestExpireAttestationFailingToSubmitDoesNotWedgeTheRoom(t *testing.T) {
 }
 
 // compile-time assurance the settlement fake satisfies the seam it stands in for.
-var _ settlementSubmitter = (*failingSagaSubmitter)(nil)
+var _ sagaSubmitter = (*failingSagaSubmitter)(nil)

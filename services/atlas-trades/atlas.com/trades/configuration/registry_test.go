@@ -48,7 +48,7 @@ func TestGetFallsBackToDefaultsOnFetchError(t *testing.T) {
 
 	d := DefaultConfig()
 	if got.TaxEnabled() != d.TaxEnabled() || got.MaxStagedItems() != d.MaxStagedItems() ||
-		got.ReservationTtl() != d.ReservationTtl() || got.AttestationTimeout() != d.AttestationTimeout() ||
+		got.AttestationTimeout() != d.AttestationTimeout() ||
 		len(got.TaxTiers()) != len(d.TaxTiers()) {
 		t.Fatalf("expected the shipped defaults on a fetch miss, got %+v", got)
 	}

@@ -44,19 +44,27 @@ const (
 	StateSettling            State = "SETTLING"
 )
 
-// StagedItem is one item claimed for trade. Under the reserve-at-staging model
-// (design §5.3) the asset is STILL IN the owner's inventory, held by an
-// atlas-inventory reservation; only settlement moves it.
+// StagedItem is one item claimed for trade. Under the escrow-at-staging model
+// (design §5A) the asset has genuinely LEFT its owner's compartment for
+// atlas-trades' own custody store; settlement and teardown both move it out of
+// there, never out of an inventory.
 //
 // tradeSlot is the 1..9 slot of the client's trade dialog — a wire-local
 // coordinate with no shared-constants equivalent, so it stays a byte.
 //
-// reservationId is the handle atlas-inventory filed the reservation under. The
-// reservation registry keys entries by (transactionId, characterId,
-// inventoryType, slot) and CANCEL_RESERVATION needs all four
-// (services/atlas-inventory/atlas.com/inventory/compartment/reservation_registry.go:110-153),
-// so the id has to travel with the staged item: without it every abandoned
-// stage would keep the owner's asset locked until the TTL expired.
+// escrowId is the custody row this item lives in, and doubles as the transaction
+// id of the staging saga that created it (one saga, one row, always). Every
+// later operation names it: release at settlement, return at teardown, restore
+// on compensation. inventoryType and sourceSlot survive for PROVENANCE only — a
+// return does not replay them, because the original slot may well be occupied by
+// the time the trade unwinds.
+//
+// pending is true between submitting the stage and the escrow row being
+// confirmed. A pending item HOLDS its dialog slot — the release step unlocks the
+// client before the row exists, so without the hold the client could stage a
+// second item into the same slot — but is NOT announced to either dialog, since
+// a saga that then failed would have shown both clients an item that was never
+// escrowed (design §5A.4).
 type StagedItem struct {
 	tradeSlot     byte
 	assetId       asset.Id
@@ -64,7 +72,8 @@ type StagedItem struct {
 	quantity      asset.Quantity
 	inventoryType inventory.Type
 	sourceSlot    slot.Position
-	reservationId uuid.UUID
+	escrowId      uuid.UUID
+	pending       bool
 }
 
 func (s StagedItem) TradeSlot() byte               { return s.tradeSlot }
@@ -73,11 +82,22 @@ func (s StagedItem) TemplateId() item.Id           { return s.templateId }
 func (s StagedItem) Quantity() asset.Quantity      { return s.quantity }
 func (s StagedItem) InventoryType() inventory.Type { return s.inventoryType }
 func (s StagedItem) SourceSlot() slot.Position     { return s.sourceSlot }
-func (s StagedItem) ReservationId() uuid.UUID      { return s.reservationId }
+func (s StagedItem) EscrowId() uuid.UUID           { return s.escrowId }
+func (s StagedItem) Pending() bool                 { return s.pending }
 
-// NewStagedItem builds one staged item. StagedItem is a value type with no
-// mutable state, so it needs no builder.
-func NewStagedItem(tradeSlot byte, assetId asset.Id, templateId item.Id, quantity asset.Quantity, inventoryType inventory.Type, sourceSlot slot.Position, reservationId uuid.UUID) StagedItem {
+// Confirmed returns a copy with the pending flag cleared — what the custody
+// consumer stores once the escrow row exists.
+func (s StagedItem) Confirmed() StagedItem {
+	s.pending = false
+	return s
+}
+
+// NewStagedItem builds one staged item, PENDING.
+//
+// Deliberately born pending: no path legitimately creates a staged item whose
+// escrow row already exists, and defaulting the other way would let a caller
+// announce an item to both dialogs before anything had been escrowed.
+func NewStagedItem(tradeSlot byte, assetId asset.Id, templateId item.Id, quantity asset.Quantity, inventoryType inventory.Type, sourceSlot slot.Position, escrowId uuid.UUID) StagedItem {
 	return StagedItem{
 		tradeSlot:     tradeSlot,
 		assetId:       assetId,
@@ -85,7 +105,8 @@ func NewStagedItem(tradeSlot byte, assetId asset.Id, templateId item.Id, quantit
 		quantity:      quantity,
 		inventoryType: inventoryType,
 		sourceSlot:    sourceSlot,
-		reservationId: reservationId,
+		escrowId:      escrowId,
+		pending:       true,
 	}
 }
 
@@ -118,6 +139,18 @@ type Participant struct {
 	confirmEntries []trademsg.CrcEntry
 	attestEntries  []trademsg.CrcEntry
 	items          []StagedItem
+
+	// pendingMesoTxId / pendingMesoAmount hold one in-flight meso stake, the
+	// meso twin of StagedItem.pending. mesoStaged is NOT advanced until the
+	// award_mesos saga completes, so the counterparty's dialog never renders a
+	// stake that the debit then failed to take.
+	//
+	// The staking client is the exception, and deliberately: mode 16 is an
+	// assignment, so its own dialog already shows the new number before the
+	// server sees the packet. A failure snaps it back with the authoritative
+	// re-echo MESO_REFUSED already carries (design §4.2, §5A.5).
+	pendingMesoTxId   uuid.UUID
+	pendingMesoAmount uint32
 }
 
 func (p Participant) CharacterId() character.Id { return p.characterId }
@@ -194,6 +227,38 @@ func (p Participant) WithSettlementMeso(tax uint32, delivered uint32) Participan
 
 func (p Participant) WithMesoStaged(v uint32) Participant { c := p; c.mesoStaged = v; return c }
 
+// PendingMesoTxId is the transaction of the in-flight meso stake, or uuid.Nil
+// when none is outstanding.
+func (p Participant) PendingMesoTxId() uuid.UUID { return p.pendingMesoTxId }
+
+// PendingMesoAmount is the ABSOLUTE stake the in-flight saga is moving toward.
+func (p Participant) PendingMesoAmount() uint32 { return p.pendingMesoAmount }
+
+// WithPendingMeso arms an in-flight meso stake.
+func (p Participant) WithPendingMeso(txId uuid.UUID, amount uint32) Participant {
+	c := p
+	c.pendingMesoTxId = txId
+	c.pendingMesoAmount = amount
+	return c
+}
+
+// WithSettledMeso resolves an in-flight meso stake, committing it when settled
+// is true and abandoning it otherwise. It is a no-op unless txId is the stake
+// actually outstanding, so a redelivered terminal status cannot commit an amount
+// a newer stake has already superseded.
+func (p Participant) WithSettledMeso(txId uuid.UUID, settled bool) (Participant, bool) {
+	if p.pendingMesoTxId == uuid.Nil || p.pendingMesoTxId != txId {
+		return p, false
+	}
+	c := p
+	if settled {
+		c.mesoStaged = p.pendingMesoAmount
+	}
+	c.pendingMesoTxId = uuid.Nil
+	c.pendingMesoAmount = 0
+	return c, true
+}
+
 // WithItem appends a staged item. Callers must have already rejected a
 // duplicate trade slot and enforced the maxStagedItems cap.
 func (p Participant) WithItem(i StagedItem) Participant {
@@ -218,23 +283,50 @@ func (p Participant) HasTradeSlot(tradeSlot byte) bool {
 // WithRelocatedItems returns a copy whose staged items carry the corrected
 // source slots given, keyed by reservation id. A staged item whose reservation
 // is absent from the map is left untouched.
-//
-// Relocation is a correction, not a re-stage: the asset is the same asset, it
-// simply moved within the owner's inventory after it was staged (see the
-// processor's resolveStagedSlot).
-func (p Participant) WithRelocatedItems(slots map[uuid.UUID]slot.Position) Participant {
-	if len(slots) == 0 || len(p.items) == 0 {
-		return p
+
+// WithConfirmedItem clears the pending flag on one staged item, identified by
+// its escrow row. Returns the participant unchanged if no such item is staged —
+// a redelivered custody ack must not resurrect an item a teardown already
+// removed.
+func (p Participant) WithConfirmedItem(escrowId uuid.UUID) Participant {
+	for i := range p.items {
+		if p.items[i].escrowId != escrowId {
+			continue
+		}
+		c := p
+		c.items = make([]StagedItem, len(p.items))
+		copy(c.items, p.items)
+		c.items[i] = c.items[i].Confirmed()
+		return c
 	}
-	c := p
-	c.items = make([]StagedItem, len(p.items))
-	copy(c.items, p.items)
-	for i := range c.items {
-		if s, ok := slots[c.items[i].reservationId]; ok {
-			c.items[i].sourceSlot = s
+	return p
+}
+
+// WithoutItem drops one staged item, identified by its escrow row. Used when a
+// stage is refused: the dialog slot it was holding has to come free, or the
+// player can never use that slot again.
+func (p Participant) WithoutItem(escrowId uuid.UUID) Participant {
+	for i := range p.items {
+		if p.items[i].escrowId != escrowId {
+			continue
+		}
+		c := p
+		c.items = make([]StagedItem, 0, len(p.items)-1)
+		c.items = append(c.items, p.items[:i]...)
+		c.items = append(c.items, p.items[i+1:]...)
+		return c
+	}
+	return p
+}
+
+// ItemByEscrow finds one staged item by its escrow row.
+func (p Participant) ItemByEscrow(escrowId uuid.UUID) (StagedItem, bool) {
+	for _, i := range p.items {
+		if i.escrowId == escrowId {
+			return i, true
 		}
 	}
-	return c
+	return StagedItem{}, false
 }
 
 // StagedQuantityFrom totals what this participant has already claimed out of one

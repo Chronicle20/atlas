@@ -32,6 +32,7 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.ReleaseFromCharacter, sharedsaga.AcceptToCharacter, sharedsaga.ReleaseFromStorage,
 	sharedsaga.TradeSettlement,
 	sharedsaga.TransferToTrade, sharedsaga.AcceptToTrade, sharedsaga.ReleaseFromTrade,
+	sharedsaga.TradeUnwind,
 	sharedsaga.TransferToCashShop, sharedsaga.WithdrawFromCashShop, sharedsaga.AcceptToCashShop,
 	sharedsaga.ReleaseFromCashShop,
 	sharedsaga.TransferToMts, sharedsaga.WithdrawFromMts, sharedsaga.AcceptToMtsListing,

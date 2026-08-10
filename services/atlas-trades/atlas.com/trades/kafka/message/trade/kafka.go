@@ -37,6 +37,7 @@ const (
 	StatusTypeInviteRejected       = "INVITE_REJECTED"
 	StatusTypeParticipantEntered   = "PARTICIPANT_ENTERED"
 	StatusTypeItemStaged           = "ITEM_STAGED"
+	StatusTypeItemRefused          = "ITEM_REFUSED"
 	StatusTypeMesoStaged           = "MESO_STAGED"
 	StatusTypeMesoRefused          = "MESO_REFUSED"
 	StatusTypeParticipantConfirmed = "PARTICIPANT_CONFIRMED"
@@ -181,6 +182,23 @@ type MesoStagedEventBody struct {
 type MesoRefusedEventBody struct {
 	Position        byte   `json:"position"`
 	LastValidAmount uint32 `json:"lastValidAmount"`
+}
+
+// ItemRefusedEventBody is the item twin of MesoRefusedEventBody, and it exists
+// for the LOCK rather than for the picture.
+//
+// A refused stage is player-visibly silent — the empty trade slot is the whole
+// feedback (design §7) — but the client armed CWvsContext::m_bExclRequestSent
+// when it sent PUT_ITEM, and CanSendExclRequest then refuses every subsequent
+// exclusive request, including ADD_MESO, until a server packet clears it. A
+// silent drop therefore wedges the dialog for the rest of the session. This
+// event is what atlas-channel turns into that unlock (design §5A.6).
+//
+// TradeSlot is carried for diagnostics: the refusal renders nothing, so the
+// client never needs to know which slot it was.
+type ItemRefusedEventBody struct {
+	Position  byte `json:"position"`
+	TradeSlot byte `json:"tradeSlot"`
 }
 
 type ParticipantConfirmedEventBody struct {

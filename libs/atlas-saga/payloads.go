@@ -592,33 +592,97 @@ type ReleaseFromStoragePayload struct {
 	Quantity      uint32    `json:"quantity"`      // Quantity to release (0 = all)
 }
 
-// TradeSettlementItem references one staged asset. Under the
-// reserve-at-staging model the asset is still in the owner's inventory at
-// expansion time, so the orchestrator can look it up by slot exactly as
-// expandTransferToStorage does.
-type TradeSettlementItem struct {
-	// InventoryType is the shared inventory.Type (int8). The expanded storage
-	// steps it feeds — ReleaseFromCharacterPayload / WithdrawFromStoragePayload
-	// and friends — declare InventoryType as byte, so expansion must convert
-	// explicitly: byte(it.InventoryType).
-	InventoryType inventory.Type `json:"inventoryType"` // Owning inventory (equip, use, etc.)
-	SourceSlot    slot.Position  `json:"sourceSlot"`    // Slot the asset occupies in the owner's inventory
-	AssetId       asset.Id       `json:"assetId"`       // Asset ID staged for transfer
-	TemplateId    item.Id        `json:"templateId"`    // Item template of the staged asset
-	Quantity      asset.Quantity `json:"quantity"`      // Quantity staged (partial stacks allowed)
+// TradeEscrowItem references one ESCROWED asset — an item that has already left
+// its owner's compartment for atlas-trades' custody store (design §5A).
+//
+// It carries the full stat snapshot because the orchestrator CANNOT look the
+// asset up any more: there is no compartment row to read. Under the old
+// reserve-at-staging model expansion re-read the item by slot; escrow removed
+// that option, and re-reading is not merely unavailable but wrong — the whole
+// point is that the asset is gone.
+type TradeEscrowItem struct {
+	EscrowId uuid.UUID `json:"escrowId"` // Custody row to release from
+
+	// InventoryType is the shared inventory.Type (int8) the item CAME from, and
+	// the one it is returned to. The expanded steps it feeds declare
+	// InventoryType as byte, so expansion must convert explicitly.
+	InventoryType inventory.Type `json:"inventoryType"`
+	SourceSlot    slot.Position  `json:"sourceSlot"` // Provenance only; a return does not replay it
+	AssetId       asset.Id       `json:"assetId"`    // Asset id at stage time, for the ledger
+	TemplateId    item.Id        `json:"templateId"`
+	Quantity      asset.Quantity `json:"quantity"`
+
+	// Stat snapshot, so a re-grant restores scrolled stats, cash ownership and
+	// expiry rather than a bare template.
+	Strength      uint16 `json:"strength"`
+	Dexterity     uint16 `json:"dexterity"`
+	Intelligence  uint16 `json:"intelligence"`
+	Luck          uint16 `json:"luck"`
+	HP            uint16 `json:"hp"`
+	MP            uint16 `json:"mp"`
+	WeaponAttack  uint16 `json:"weaponAttack"`
+	MagicAttack   uint16 `json:"magicAttack"`
+	WeaponDefense uint16 `json:"weaponDefense"`
+	MagicDefense  uint16 `json:"magicDefense"`
+	Accuracy      uint16 `json:"accuracy"`
+	Avoidability  uint16 `json:"avoidability"`
+	Hands         uint16 `json:"hands"`
+	Speed         uint16 `json:"speed"`
+	Jump          uint16 `json:"jump"`
+	Slots         uint16 `json:"slots"`
+	Level         byte   `json:"level"`
+	ItemLevel     byte   `json:"itemLevel"`
+	ItemExp       uint32 `json:"itemExp"`
+	Flags         uint16 `json:"flags"`
+	Owner         string `json:"owner"`
 }
+
+// TradeSettlementItem is the settlement view of an escrowed asset.
+type TradeSettlementItem = TradeEscrowItem
 
 // TradeSettlementSide is one participant's contribution. The tax figures are
 // RESOLVED INTEGERS computed by atlas-trades from the tenant config — the
-// orchestrator stays config-free (design §6.3). MesoStaged is deducted from
-// this side; MesoDelivered is credited to the other; the difference
-// (MesoTax) is destroyed.
+// orchestrator stays config-free (design §6.3).
+//
+// Under escrow-at-staging the meso was ALREADY debited when it was staged
+// (design §5A.5), so MesoStaged is informational here and produces NO negative
+// award: settlement only CREDITS MesoDelivered to the other side, and the
+// difference (MesoTax) is destroyed by crediting less than was escrowed. An
+// expander that still emitted the negative leg would charge the giver twice.
 type TradeSettlementSide struct {
 	CharacterId   character.Id          `json:"characterId"`   // Participant
 	Items         []TradeSettlementItem `json:"items"`         // Assets this side staged
 	MesoStaged    uint32                `json:"mesoStaged"`    // Mesos deducted from this side
 	MesoTax       uint32                `json:"mesoTax"`       // Mesos destroyed as tax
 	MesoDelivered uint32                `json:"mesoDelivered"` // Mesos credited to the other side
+}
+
+// TradeUnwindPayload returns an abandoned trade's escrow to the people it came
+// from — the teardown twin of TradeSettlementPayload (design §5A.8).
+//
+// It is a separate composite rather than a settlement with recipient == owner
+// because the meso arithmetic differs: an unwind refunds the FULL escrowed
+// amount, where a settlement delivers the taxed amount to the other side. Fusing
+// them would have put a "is this a refund?" branch inside the expander, which is
+// exactly the sort of conditional that silently taxes a refund one day.
+type TradeUnwindPayload struct {
+	TransactionId uuid.UUID         `json:"transactionId"`
+	Items         []TradeUnwindItem `json:"items"`
+	Mesos         []TradeUnwindMeso `json:"mesos"`
+}
+
+// TradeUnwindItem is one escrowed asset going back to its owner.
+type TradeUnwindItem struct {
+	OwnerId character.Id    `json:"ownerId"`
+	Item    TradeEscrowItem `json:"item"`
+}
+
+// TradeUnwindMeso is one participant's full escrowed meso refund.
+type TradeUnwindMeso struct {
+	CharacterId character.Id `json:"characterId"`
+	WorldId     world.Id     `json:"worldId"`
+	ChannelId   channel.Id   `json:"channelId"`
+	Amount      uint32       `json:"amount"`
 }
 
 // TransferToTradePayload is the composite atlas-trades submits when a player

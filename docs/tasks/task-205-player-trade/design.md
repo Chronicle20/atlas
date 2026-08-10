@@ -569,9 +569,30 @@ tenant to scope the commands that follow.
    (`kafka/consumer/asset/consumer.go:428,506`). `silent=false` writes the
    leading bool as **true**, so the same packet that removes the item from the
    client's inventory clears `m_bExclRequestSent`.
-4. atlas-trades' custody consumer writes the escrow row, marks the room slot
-   staged and emits `ITEM_STAGED`, which becomes the mode-15 broadcast to both
-   sides — unchanged from §4.2.
+4. atlas-trades' custody consumer writes the escrow row. The room slot is marked
+   staged and `ITEM_STAGED` emitted — the mode-15 broadcast to both sides,
+   unchanged from §4.2 — when the STAGING SAGA COMPLETES, not when the custody
+   command is handled.
+
+> **Amended during implementation.** Step 4 originally had the custody consumer
+> both write the row and announce the item. Announcing from the saga's terminal
+> status instead makes confirmation and refusal the same signal, arriving on the
+> same topic in the same order: `SAGA_COMPLETED` confirms, `SAGA_FAILED` refuses,
+> and there is no third path where the two can disagree. It also keeps the
+> custody consumer at its own boundary — it writes a row and acks, and knows
+> nothing about trade rooms or dialog slots.
+>
+> Between the swap and that status the item is **pending**: it holds its dialog
+> slot against a second `PUT_ITEM` (and counts toward `maxStagedItems`) but is
+> announced to nobody, so a stage that fails never showed either client an item
+> that was not escrowed.
+>
+> The saga status topic carries every saga in the deployment and its envelope
+> distinguishes none of them, so atlas-trades routes by **ownership**: a stage
+> owns an escrow row keyed by the transaction id, a meso stake owns a pending
+> meso row, a settlement owns a durable record. Each probe reports whether it
+> claimed the transaction and the first claim wins. The id spaces are disjoint
+> because each is minted fresh for exactly one saga.
 
 **No new clientbound code is required for the unlock.** It is a consequence of
 the mutation being real. This is the single strongest argument for the
@@ -589,6 +610,31 @@ delta > 0 → award_mesos(owner, −delta), upsert the escrow meso row
 delta < 0 → award_mesos(owner, +(−delta)), decrement or delete the row
 delta = 0 → re-echo only
 ```
+
+> **Amended during implementation.** The row is not upserted alongside the
+> `award_mesos`; it is **armed pending first, and committed only when that saga
+> completes** — a `(pending_stake_id, pending_amount)` pair on the escrow meso
+> row beside the committed `amount`, resolved by a compare-and-set on the stake
+> id.
+>
+> The naive ordering loses money. The room is in memory, so if it is torn down
+> while the debit is in flight, the only record of an amount the player has
+> already been charged goes with it: the teardown's unwind refunds the committed
+> escrow, which does not yet include the stake, and the meso is silently kept by
+> the house. The durable arm lets the terminal status resolve the stake with no
+> room at all — and when it settles into a room that is already gone, the delta
+> is refunded as a meso-only `trade_unwind`.
+>
+> The same compare-and-set makes a redelivered or superseded status inert, which
+> matters because a player can retype the meso box faster than a saga round trip.
+> A second stake supersedes the first rather than being refused; the first
+> saga's status then finds its stake id no longer armed and does nothing.
+>
+> `MESO_STAGED` is likewise withheld until the stake settles, so the counterparty
+> never sees a stake the debit then failed to take. The staking client is the
+> deliberate exception: mode 16 is an assignment, so its own dialog already moved
+> before the server saw the packet, and a failure snaps it back with the
+> authoritative re-echo `MESO_REFUSED` already carries (§4.2).
 
 Validation against a fresh character read is unchanged (§7, FR-4.8), and so is
 the refusal response (authoritative re-echo plus `TRADE_MESO_LIMIT` where the
@@ -664,6 +710,26 @@ retry ticker re-attempts every escrow row whose room no longer exists, at the
 same cadence the reservation-refresh ticker used to run. This ticker replaces
 that one rather than adding to the service's moving parts.
 
+> **Amended during implementation — no ticker was built.** The case a ticker was
+> meant to sweep is the row that appears *after* its room is already gone: a
+> stage still in flight when the teardown ran, whose escrow row lands seconds
+> later with nothing referencing it. That row has an owner and a completing saga,
+> so it does not need to be discovered by polling — it announces itself. The
+> staging saga's terminal status is handled by the same routing as any other
+> stage, finds no dialog slot claiming the row, and returns the item there and
+> then (`returnOrphanedStage`); the meso twin refunds the stake's delta
+> (`refundOrphanedStake`).
+>
+> That leaves only the return that fails on a genuinely full inventory. Its saga
+> compensates and the row stays in escrow, exactly as described above — durable,
+> owned, visible in the REST surface (§9), and swept by startup recovery
+> (§5A.9). A ticker would shorten the window on a case the player can also clear
+> themselves by making room, at the cost of a background loop that re-attempts a
+> saga on a cadence with no natural period. It was not worth the moving part.
+>
+> Net: the service ends this change with **one fewer** background loop than it
+> started with, not the same number.
+
 ### 5A.9 Crash recovery — now implementable
 
 §5.1's objection was that a released asset belongs to a saga transaction with no
@@ -703,10 +769,16 @@ unlock instead of corrupting state, which is the client's native semantics for
 every other exclusive request (item use, skill use, portal).
 
 The NFR is restated as: **the unlock must reach the client within 1 s p99**, and
-a stage that has not resolved within `trade.stageTimeoutSeconds` (new config
-key, default 5) emits the bare unlock of §5A.6 and drops the stage. Without that
-bound, a saga that never terminates locks the dialog for the rest of the
-session.
+a stage that never resolves must still be bounded — a saga that never terminates
+would otherwise lock the dialog for the rest of the session.
+
+> **Amended during implementation.** That bound is the ORCHESTRATOR's saga
+> timeout, not a new `trade.stageTimeoutSeconds`. The orchestrator already fails
+> a saga that does not terminate and publishes `SAGA_FAILED`; atlas-trades routes
+> that to `StageFailed`, which frees the dialog slot and emits `ITEM_REFUSED` —
+> §5A.6's unlock. Adding a service-local timeout would put two independent
+> deadlines on the same saga, and whichever fired first would silently own the
+> behaviour while the other decayed unmaintained.
 
 ### 5A.12 Risks introduced
 
@@ -903,8 +975,13 @@ precedent (`services/atlas-tenants/atlas.com/tenants/configuration/resource.go:8
 ```
 
 > **Amended by §5A.10 / §5A.11.** `reservationTtlSeconds` is removed — nothing
-> is reserved. `stageTimeoutSeconds` (default 5) is added: a stage whose escrow
-> saga has not resolved within it is dropped with the bare unlock of §5A.6.
+> is reserved. `stageTimeoutSeconds` was to replace it, and on implementation was
+> **not added**: the orchestrator already bounds its own saga and emits
+> `SAGA_FAILED`, which atlas-trades turns into the `ITEM_REFUSED` carrying §5A.6's
+> unlock. A service-local timeout would be a second number racing the first, and
+> whichever fired sooner would silently own the behaviour. The trade config
+> therefore ends this change one key SMALLER, with `attestationTimeoutSeconds` as
+> its only remaining duration.
 
 Absent config → shipped defaults, logged once at INFO (FR-9.2). Never a crash,
 never a silent disable.

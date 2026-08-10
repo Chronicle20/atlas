@@ -133,6 +133,6 @@ func (p *ProcessorImpl) buyWithTokens(mb *message.Buffer) func(c character.Model
 		}
 
 		p.l.Debugf("Character [%d] bought [%d] of item [%d] for [%d] of token item [%d].", characterId, quantity, itemTemplateId, cost, cm.TokenTemplateId())
-		return nil
+		return mb.Put(shops.EnvStatusEventTopic, okEventProvider(characterId))
 	}
 }

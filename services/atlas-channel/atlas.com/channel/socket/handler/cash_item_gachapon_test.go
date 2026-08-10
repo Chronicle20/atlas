@@ -74,8 +74,8 @@ func newGachaponTestSession(t *testing.T, accountId uint32, characterId uint32) 
 	session.AddSessionToRegistry(ten.Id(), s)
 
 	sp := session.NewProcessor(logrus.New(), ctx)
-	s = sp.SetAccountId(sessionId, accountId)
-	s = sp.SetCharacterId(sessionId, characterId)
+	sp.SetAccountId(sessionId, accountId)
+	sp.SetCharacterId(sessionId, characterId)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).Build()
 	s = sp.SetField(sessionId, f)
 

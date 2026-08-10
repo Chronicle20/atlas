@@ -10,7 +10,7 @@ Task: `task-207-cash-shop-surprise` · Worktree: `.worktrees/task-207-cash-shop-
 
 Item `5222000` ("Cash Shop Surprise") is a loot box that lives in the **cash locker**, not the character inventory. Double-clicking it there consumes one and grants a randomly-rolled **cash** item into the same locker. The in-game text is explicit: *"you'll only be able to open the box in the cash inventory."*
 
-Atlas had no implementation — before this branch, `5222000` appeared nowhere in `services/` or `libs/`, only in the backlog at `docs/research/missing-features/economy-and-trade.md:29`.
+Atlas had no implementation — before this branch, `5222000` appeared nowhere in `services/` or `libs/`, only in the backlog at `docs/research/missing-features/economy-and-trade.md:29`. That file is **not tracked in git** — not at the branch point, not at HEAD, not in the main checkout either (it has sat untracked in the working tree since 2026-08-07, a local research artifact rather than a committed doc). Task 20 therefore deliberately did **not** update it as part of this branch: there is nothing to mark delivered in version control, and copying an untracked scratch file into the branch would misrepresent it as a tracked deliverable. The delivered state is documented instead in this file and in `services/atlas-cashshop/docs/domain.md` § Surprise.
 
 ---
 
@@ -26,7 +26,7 @@ Atlas had no implementation — before this branch, `5222000` appeared nowhere i
 | Tier weights or flat? | **Flat**, same branch as incubator. Resolves PRD Q2. | design §4.1 |
 | Saga or in-service transaction? | **Single in-service transaction**, ordering roll → (consume + grant). The roll mutates nothing, so a failed grant loses nothing. Resolves PRD Q3. | design §2.2, §4.2 |
 | v79? | **Route serverbound only** (user decision, 2026-08-09). Overrides the design's `n-a` recommendation. The grant is silent — the item lands in the locker and is visible after reopening the Cash Shop. The v79 clientbound cell stays `n-a` with proof. | user answer; design §5 |
-| jms `0xA7` arm-catalog note? | **Correct it on this branch** (user decision, 2026-08-09). | user answer; design §1.5 |
+| jms `0xA7` arm-catalog note? | **Superseded, not a correction.** Task 3's image-wide RE pass (beyond design §1.5's UI-segment-bounded search) found opcode `0xA7` on jms_v185 has **two** real senders: `CCashShop::SendChangeMaplePoint` @ `0x4851be` and `CUICashItemGachapon::OnButtonClicked` @ `0xa6e309`, both emitting an 8-byte serial. task-183's original `arm-catalog.md` attribution to `SendChangeMaplePoint` was correct all along — design §1.5's "very likely wrong" was itself wrong, an artifact of the narrower search. Per the user's ruling, the registry now carries two op rows at 167 for this opcode; routing relies on server-side validation to reject a maple-point serial arriving on the Surprise-box handler (and vice versa). | user ruling, 2026-08-09; design §1.5 (superseded) |
 
 PRD Q1 (cash-only) stands. Q4, Q5 dissolved. Q6, Q7 answered by the RE pass.
 
@@ -50,6 +50,8 @@ Every value IDA-verified in `design.md` §1.1. Nothing here came from general Ma
 | jms_v185 | `b6864e54` | present | `0xA7` | `0x16D` | `0xEB` (235) | `0xEA` (234) | both |
 
 Resolve IDB sessions from `idb_list` **by binary name** and pass the session as the `database` parameter. `select_instance(port)` is dead.
+
+**jms_v185 `0xA7` is shared by two distinct senders**, confirmed by Task 3's image-wide RE pass (superseding design §1.5's narrower UI-segment-bounded search): `CUICashItemGachapon::OnButtonClicked` @ `0xa6e309` (this feature, `CASH_ITEM_GACHAPON_BUTTON` registry row, ✅) and `CCashShop::SendChangeMaplePoint` @ `0x4851be` (`CASHSHOP_SURPRISE` registry row, ❌ — a distinct, unrelated feature). Both emit an 8-byte serial on the wire; the two are indistinguishable by shape alone. The registry carries both as separate op rows bound to the same numeric opcode (167) on jms_v185 by the user's ruling; the Surprise-box handler and any future maple-point handler must reject a serial that resolves to the wrong domain via server-side validation, since the opcode alone cannot disambiguate.
 
 WZ cross-check (`design.md` §1.6): `GET /api/data/cash/items/5222000` returns 404 on v48/v61/v72 and 200 from v79 onward. The WZ axis and the binary axis agree exactly. The record is `{"slotMax":0,"spec":{}}` — **no WZ spec node**, so the drop table is entirely server-owned.
 
@@ -169,16 +171,36 @@ Recorded here so a reviewer does not read them as misses.
 
 ## 9. Verification results
 
-Fill this in as Task 20 Step 8 runs. A check that could not be run is recorded as **not run**, never as passed.
+Recorded by Task 20 (the verification gauntlet). A check that could not be run is recorded as **not run**, never as passed. Pre-existence of any failure is established against the **branch point `1e0a321b8`**, never the branch tip.
+
+Note on Task 20 Step 6's third bullet: `docs/research/missing-features/economy-and-trade.md` is **untracked, local-only** and is deliberately NOT added to this branch (human ruling). The plan brief's instruction to annotate it there does not apply.
 
 | Check | Result | Notes |
 |---|---|---|
-| v83 live: open with stack of 3 | | |
-| v83 live: open the last box (row removed) | | |
-| v84+ live: standalone opcode path | | |
-| Full locker → error, box intact | | |
-| Empty pool → error, box intact | | |
-| Forged asset id rejected, no state change | | |
-| Reward carries correct commodityId/templateId/quantity/expiration | | |
-| Two tenants, same box id, roll from their own pool only | | |
-| `gachapon` + `incubator` pools behaviourally unchanged | | |
+| `go test -race ./...` — all seven changed Go modules (libs/atlas-packet, libs/atlas-rest, atlas-cashshop, atlas-channel, atlas-reward-pools, atlas-configurations, tools/packet-audit) | **PASS** | Fresh (`-count=1`) runs, every module exit 0, no FAIL/panic |
+| `go vet ./...` — same seven modules | **PASS** | exit 0, no output |
+| `go build ./...` — same seven modules | **PASS** | exit 0 |
+| `docker buildx bake atlas-cashshop atlas-channel atlas-reward-pools atlas-configurations` | **PASS** | exit 0, all four images built. No `go.mod`/`go.sum`/`go.work` changed on this branch (verified with `git diff 1e0a321b8..HEAD --stat -- '**/go.mod' '**/go.sum' go.work go.work.sum` → empty), so CLAUDE.md item 4's mandatory-bake *trigger* does not fire; the four changed Go services were baked anyway per this task's Step 4 |
+| `tools/redis-key-guard.sh` | **PASS** | exit 0 |
+| `tools/goroutine-guard.sh` | **PASS** | exit 0 |
+| `tools/service-registration-guard.sh` | **not run** | Not required: `services.json`, `deploy/k8s`, `docker-bake.hcl`, `go.work`, `tools/db-bootstrap.sh` unchanged vs `1e0a321b8` |
+| `tools/lint.sh` (fix mode) then `tools/lint.sh --check` | **PASS (after fix)** | `nvm use 22` first, per the known false-fail trap. Fix mode **did rewrite three files** — `services/atlas-channel/.../socket/handler/cash_item_gachapon_test.go`, `services/atlas-reward-pools/.../item/resource_test.go`, `services/atlas-reward-pools/.../reward/resource_test.go`, all `defer resp.Body.Close()` → `defer func() { _ = resp.Body.Close() }()` (errcheck). Those three test files were **added by this branch** (Tasks 5, 6, 14), so the errcheck failures were **branch regressions, not pre-existing** — an earlier agent called them pre-existing based on a branch-tip run, which is not how pre-existence is established (branch point is `1e0a321b8`). The rewrites are kept and committed. `--check` then exits 0 across every Go module and atlas-ui (5 pre-existing atlas-ui ESLint *warnings*, 0 errors) |
+| `tools/template-opcode-order-guard.sh` | **PASS** | exit 0, 22 template arrays checked |
+| `tools/template-duplicate-binding-guard.sh` | **PASS** | exit 0, 22 template arrays checked |
+| `tools/skill-job-id-guard.sh` | **PASS** | exit 0, 14 divergent consts checked |
+| `tools/buff-duration-guard.sh` | **PASS** | exit 0 |
+| `tools/template-movement-types-guard.sh` | **PASS** | exit 0, 54 move handlers across 11 templates |
+| `go run ./tools/packet-audit matrix --check` (from repo root) | **PASS** | exit 0 |
+| `services/atlas-ui`: `npx vitest run` | **PASS** | 243 test files, 1994 tests, all passed |
+| `services/atlas-ui`: `npm run build` | **PASS** | exit 0, clean (pre-existing chunk-size warning only) |
+| v83 live: open with stack of 3 | **not run** | Requires a live tenant whose socket config carries the new opcodes (context.md §8); not available in this environment |
+| v83 live: open the last box (row removed) | **not run** | Same blocker |
+| v84+ live: standalone opcode path | **not run** | Same blocker |
+| Full locker → error, box intact | **not run** | Same blocker |
+| Empty pool → error, box intact | **not run** | Same blocker |
+| Forged asset id rejected, no state change | **not run** | Same blocker |
+| Reward carries correct commodityId/templateId/quantity/expiration | **not run** | Same blocker |
+| Two tenants, same box id, roll from their own pool only | **not run** | Same blocker |
+| `gachapon` + `incubator` pools behaviourally unchanged | **not run** (live); unit-level **PASS** | `services/atlas-reward-pools/atlas.com/reward-pools/reward` tests exercise all three kinds and pass under `go test -race`; no live-tenant regression check was run |
+
+Live-tenant rows above are blocked on the rollout step recorded in §8: socket configs must be reseeded/PATCHed with the new handler and writer entries before `OPEN_SURPRISE` (or its serverbound trigger) can fire on a running environment.

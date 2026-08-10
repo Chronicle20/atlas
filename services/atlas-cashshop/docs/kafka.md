@@ -29,6 +29,7 @@ Cash shop commands.
 | REQUEST_STORAGE_INCREASE_BY_ITEM | RequestCharacterSlotIncreaseByItemCommandBody | Unconditionally produces an EVENT_TOPIC_CASH_SHOP_STATUS ERROR event with code `UNKNOWN_ERROR` |
 | REQUEST_CHARACTER_SLOT_INCREASE_BY_ITEM | RequestCharacterSlotIncreaseByItemCommandBody | Unconditionally produces an EVENT_TOPIC_CASH_SHOP_STATUS ERROR event with code `UNKNOWN_ERROR` |
 | EXPIRE | ExpireCommandBody | Expire a cash shop asset, optionally creating a replacement |
+| OPEN_SURPRISE | OpenSurpriseCommandBody | Open a Cash Shop Surprise box (task-207); see Surprise domain doc |
 
 ### COMMAND_TOPIC_CASH_COMPARTMENT
 Cash compartment commands.
@@ -83,6 +84,8 @@ Cash shop status events.
 | INVENTORY_CAPACITY_INCREASED | InventoryCapacityIncreasedBody | Inventory capacity increased |
 | PURCHASE | PurchaseEventBody | Commodity purchased, asset created |
 | ERROR | ErrorEventBody | Operation failed; `error` is one of `NOT_ENOUGH_CASH`, `INVENTORY_FULL`, `UNKNOWN_ERROR` |
+| SURPRISE_OPENED | SurpriseOpenedEventBody | Cash Shop Surprise box opened; reward asset granted (task-207) |
+| SURPRISE_FAILED | SurpriseFailedEventBody | Cash Shop Surprise open rejected; `reason` is a log/operator-only field, never surfaced to the client (task-207) |
 
 ### EVENT_TOPIC_CASH_INVENTORY_STATUS
 Cash inventory status events.
@@ -178,6 +181,15 @@ Character inventory compartment commands (produced during inventory capacity inc
 {
   "currency": 1,
   "serialNumber": 67890
+}
+```
+
+#### OpenSurpriseCommandBody
+```json
+{
+  "transactionId": "uuid",
+  "accountId": 12345,
+  "cashId": 67890
 }
 ```
 
@@ -349,6 +361,25 @@ Character inventory compartment commands (produced during inventory capacity inc
   "price": 100,
   "compartmentId": "uuid",
   "assetId": 42
+}
+```
+
+#### SurpriseOpenedEventBody
+```json
+{
+  "compartmentId": "uuid",
+  "boxCashId": 67890,
+  "boxRemaining": 2,
+  "rewardAssetId": 42,
+  "rewardTemplateId": 5000,
+  "rewardCount": 1
+}
+```
+
+#### SurpriseFailedEventBody
+```json
+{
+  "reason": "LOCKER_FULL"
 }
 ```
 

@@ -181,7 +181,7 @@ func TestSelectRewardEmptyPoolReturns409(t *testing.T) {
 
 	resp, err := (&http.Client{}).Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusConflict, resp.StatusCode)
 }
@@ -202,7 +202,7 @@ func TestSelectRewardMissingPoolReturns404(t *testing.T) {
 
 	resp, err := (&http.Client{}).Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }

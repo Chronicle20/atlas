@@ -127,8 +127,10 @@ type SurpriseOpenedEventBody struct {
 // SurpriseFailedEventBody's Reason NEVER reaches the client: the FAILED arm
 // of this packet has an empty body and no error-code field (design.md §2.3).
 // It exists for the log and for operators. Closed set: BOX_NOT_FOUND,
-// NOT_OWNED, NOT_A_SURPRISE_BOX, LOCKER_FULL, POOL_EMPTY, POOL_MISSING,
-// COMMODITY_MISSING, INTERNAL.
+// NOT_A_SURPRISE_BOX, LOCKER_FULL, POOL_EMPTY, POOL_MISSING,
+// COMMODITY_MISSING, INTERNAL. (A box owned by another account is absent
+// from the account-scoped compartment scan, so it reports BOX_NOT_FOUND;
+// there is no distinct NOT_OWNED reason.)
 type SurpriseFailedEventBody struct {
 	Reason string `json:"reason"`
 }

@@ -50,8 +50,13 @@ func roomEventProvider[E any](txId uuid.UUID, r Room, characterId character.Id, 
 // errorProvider announces a mini-room enter error by its semantic KEY string,
 // for a command that failed before any room existed. atlas-channel resolves the
 // key to the per-version numeric code (DOM-25).
+//
+// OwnerId and VisitorId are deliberately ZERO: there is no room, so there are no
+// participants, and putting the acting character in OwnerId would read
+// downstream as a real room owner. CharacterId names who to answer, which is all
+// the ERROR handler needs.
 func errorProvider(txId uuid.UUID, f field.Model, roomType byte, characterId character.Id, code string) model.Provider[[]kafka.Message] {
-	return statusEventProvider(txId, f, uuid.Nil, 0, roomType, characterId, 0, characterId, trademsg.StatusTypeError, trademsg.ErrorEventBody{Code: code})
+	return statusEventProvider(txId, f, uuid.Nil, 0, roomType, 0, 0, characterId, trademsg.StatusTypeError, trademsg.ErrorEventBody{Code: code})
 }
 
 // roomErrorProvider announces a mini-room enter error against an existing room.
@@ -112,6 +117,28 @@ func inviteCommandProvider(txId uuid.UUID, r Room, targetCharacterId character.I
 			OriginatorId: r.OwnerId(),
 			TargetId:     targetCharacterId,
 			ReferenceId:  invite.Id(r.Handle()),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// inviteRejectCommandProvider retires the offer in atlas-invites when the client
+// declined it directly to us. Leaving it live is not merely untidy: a room's
+// handle defaults to the owner's character id, so the owner's NEXT room reuses
+// the same referenceId, and the invite registry's dedup
+// (services/atlas-invites/atlas.com/invites/invite/registry.go:89-107 returns
+// the existing invite on a referenceId match) would hand back the stale invite
+// instead of raising a fresh dialog until the old one timed out.
+func inviteRejectCommandProvider(txId uuid.UUID, r Room, targetCharacterId character.Id) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(r.Handle()))
+	value := &invitemsg.Command[invitemsg.RejectCommandBody]{
+		TransactionId: txId,
+		WorldId:       r.Field().WorldId(),
+		InviteType:    invite.TypeTrade,
+		Type:          invite.CommandTypeReject,
+		Body: invitemsg.RejectCommandBody{
+			TargetId:     targetCharacterId,
+			OriginatorId: r.OwnerId(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

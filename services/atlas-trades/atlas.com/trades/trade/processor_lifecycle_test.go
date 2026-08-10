@@ -611,6 +611,59 @@ func TestDeclineDestroysTheRoom(t *testing.T) {
 	}
 }
 
+// TestDeclineRetiresTheInviteInAtlasInvites pins that a client-originated
+// decline sends a REJECT command. Without it the invite lingers, and because a
+// room's handle defaults to the owner's character id, the owner's next room
+// reuses the same referenceId and the invite registry's dedup hands back the
+// stale invite instead of raising a fresh dialog.
+func TestDeclineRetiresTheInviteInAtlasInvites(t *testing.T) {
+	p, e := testPendingRoom(t)
+	room, _ := p.RoomForCharacter(100)
+	if err := p.DeclineInvite(uuid.New(), 200, 100); err != nil {
+		t.Fatalf("decline: %v", err)
+	}
+	raws := e.messages(t, invitemsg.EnvCommandTopic)
+	if len(raws) != 2 {
+		t.Fatalf("invite commands: got %d, want the CREATE plus a REJECT", len(raws))
+	}
+	var rej invitemsg.Command[invitemsg.RejectCommandBody]
+	if err := json.Unmarshal(raws[1], &rej); err != nil {
+		t.Fatalf("decode reject command: %v", err)
+	}
+	if rej.Type != invitec.CommandTypeReject {
+		t.Errorf("commandType: got %s, want REJECT", rej.Type)
+	}
+	if rej.InviteType != invitec.TypeTrade {
+		t.Errorf("inviteType: got %s, want TRADE", rej.InviteType)
+	}
+	if rej.Body.TargetId != 200 || rej.Body.OriginatorId != 100 {
+		t.Errorf("reject parties: got target %d originator %d, want 200/100", rej.Body.TargetId, rej.Body.OriginatorId)
+	}
+	if rej.WorldId != room.Field().WorldId() {
+		t.Errorf("worldId: got %d, want %d", rej.WorldId, room.Field().WorldId())
+	}
+}
+
+// TestInviteRejectedDoesNotEchoARejectBack pins the other direction: when
+// atlas-invites told US the invite was rejected or expired, it has already
+// deleted it, so a reject command would only make it fail to find the invite.
+func TestInviteRejectedDoesNotEchoARejectBack(t *testing.T) {
+	p, e := testPendingRoom(t)
+	if err := p.InviteRejected(uuid.New(), 200, 100); err != nil {
+		t.Fatalf("invite rejected: %v", err)
+	}
+	if _, ok := p.RoomForCharacter(100); ok {
+		t.Error("room survived a rejected invite")
+	}
+	if got := len(e.messages(t, invitemsg.EnvCommandTopic)); got != 1 {
+		t.Errorf("invite commands: got %d, want only the original CREATE", got)
+	}
+	cancelled := statusEvents[trademsg.CancelledEventBody](t, e, trademsg.StatusTypeCancelled)
+	if len(cancelled) != 1 {
+		t.Fatalf("CANCELLED events: got %d, want 1", len(cancelled))
+	}
+}
+
 // TestDeclineLeavesASoloRoomAlone pins the rejected transition: a decline
 // arriving for a room that never issued an invite (or whose invite was already
 // answered) must not destroy it.
@@ -753,14 +806,41 @@ func TestEnterRoomRejectsBelowMinLevel(t *testing.T) {
 
 // TestEnterRoomRejectsADifferentField pins that a character who left the room's
 // map between invite and accept is not seated into a room they cannot see.
+//
+// It passes room.Field() as f — exactly what the production invite-accept path
+// does (kafka/consumer/invite/consumer.go) — and moves the enterer via the
+// LOCATION service instead. Comparing f to the room would be a tautology, so a
+// check that trusted f would pass this test while seating the character.
 func TestEnterRoomRejectsADifferentField(t *testing.T) {
 	p, e := testPendingRoom(t)
 	room, _ := p.RoomForCharacter(100)
 	elsewhere := field.NewBuilder(1, 1, 200000000).Build()
-	if err := p.EnterRoom(uuid.New(), elsewhere, 200, room.Handle()); err != nil {
+	p.locp = &fakeLocations{fields: map[character.Id]field.Model{
+		100: room.Field(),
+		200: elsewhere,
+	}}
+	if err := p.EnterRoom(uuid.New(), room.Field(), 200, room.Handle()); err != nil {
 		t.Fatalf("enter: %v", err)
 	}
 	assertErrorEvent(t, e, errNotSameMap)
+	if _, ok := p.RoomForCharacter(200); ok {
+		t.Error("a character standing on another map was seated")
+	}
+}
+
+// TestEnterRoomRefusesWhenTheEnterersLocationCannotBeRead pins that an
+// unreadable location is a refusal, not a default-seat.
+func TestEnterRoomRefusesWhenTheEnterersLocationCannotBeRead(t *testing.T) {
+	p, e := testPendingRoom(t)
+	room, _ := p.RoomForCharacter(100)
+	p.locp = &fakeLocations{err: errors.New("atlas-maps unreachable")}
+	if err := p.EnterRoom(uuid.New(), room.Field(), 200, room.Handle()); err != nil {
+		t.Fatalf("enter: %v", err)
+	}
+	assertErrorEvent(t, e, errUnable)
+	if _, ok := p.RoomForCharacter(200); ok {
+		t.Error("an unreadable location still seated the character")
+	}
 }
 
 // TestEnterRoomRejectsACharacterAlreadyInAnotherRoom pins that the seat cannot
@@ -849,21 +929,31 @@ func TestTeardownCharacterWithoutARoomIsANoOp(t *testing.T) {
 // --- error mapping -----------------------------------------------------------
 
 // TestRegistryErrorCodeMapsEverySentinel pins that no registry rejection reaches
-// the client as an unexplained generic failure. It walks the sentinels the
-// registry actually declares, so a new one added without a mapping is caught by
-// the default arm below rather than shipping silently.
+// the client as an unexplained generic failure. The expectation table is checked
+// against AllRegistryErrors, so a sentinel added to the registry without a
+// deliberate mapping fails here rather than shipping silently under the default
+// arm.
 func TestRegistryErrorCodeMapsEverySentinel(t *testing.T) {
-	cases := map[error]string{
+	want := map[error]string{
 		ErrRoomNotFound: errRoomClosed,
 		ErrOwnerHasRoom: errOtherRequests,
 		ErrHandleInUse:  errOtherRequests,
 		ErrRoomFull:     errOtherRequests,
 		ErrRoomFrozen:   errUnable,
 	}
-	for err, want := range cases {
-		if got := registryErrorCode(err); got != want {
-			t.Errorf("registryErrorCode(%v): got %s, want %s", err, got, want)
+
+	for _, err := range AllRegistryErrors {
+		expected, ok := want[err]
+		if !ok {
+			t.Errorf("registry sentinel %v has no expected mapping here; decide its enterError key in registryErrorCode and add it to this table", err)
+			continue
 		}
+		if got := registryErrorCode(err); got != expected {
+			t.Errorf("registryErrorCode(%v): got %s, want %s", err, got, expected)
+		}
+	}
+	if len(want) != len(AllRegistryErrors) {
+		t.Errorf("this table has %d entries but the registry declares %d sentinels", len(want), len(AllRegistryErrors))
 	}
 	if got := registryErrorCode(errors.New("something else")); got != errUnable {
 		t.Errorf("registryErrorCode(unknown): got %s, want %s", got, errUnable)

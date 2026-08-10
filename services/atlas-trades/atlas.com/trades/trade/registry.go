@@ -31,6 +31,21 @@ var (
 	ErrHandleInUse = errors.New("trade: handle already in use")
 )
 
+// AllRegistryErrors is every sentinel Create/Update/Remove can hand back. It
+// exists so a caller that must map ALL of them — the processor's translation to
+// client-facing enterError keys — can be tested exhaustively: a sentinel added
+// above and not added here, or added here and left unmapped, fails that test
+// instead of silently degrading to a generic failure at runtime.
+//
+// Keep it in sync with the block above.
+var AllRegistryErrors = []error{
+	ErrOwnerHasRoom,
+	ErrRoomNotFound,
+	ErrRoomFull,
+	ErrRoomFrozen,
+	ErrHandleInUse,
+}
+
 // Registry is the tenant-partitioned in-memory store of trade rooms. One
 // RWMutex guards all three maps; the member and handle indexes are maintained
 // ONLY inside Create/Update/Remove, always alongside the room mutation, under

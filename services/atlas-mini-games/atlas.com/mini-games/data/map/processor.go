@@ -11,7 +11,8 @@ import (
 )
 
 // Processor is the map REST client used by the mini-game validation ladder.
-// FieldLimit backs the "cannot start game here" check (bit 0x80).
+// FieldLimit backs the "cannot start game here" check
+// (_map.FieldLimitNoMiniRoom).
 type Processor interface {
 	GetById(mapId _map.Id) (Model, error)
 	ByIdProvider(mapId _map.Id) model.Provider[Model]

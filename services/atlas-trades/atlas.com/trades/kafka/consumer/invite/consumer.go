@@ -70,13 +70,16 @@ func handleAccepted(db *gorm.DB) message.Handler[invitemsg.StatusEvent[invitemsg
 	}
 }
 
-// handleRejected covers both an explicit decline and an expired invite.
+// handleRejected covers both an explicit decline and an expired invite. It uses
+// InviteRejected rather than DeclineInvite because atlas-invites has already
+// retired the offer by the time it emits this — sending a reject back would only
+// make it fail to find the invite it just deleted.
 func handleRejected(db *gorm.DB) message.Handler[invitemsg.StatusEvent[invitemsg.RejectedEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e invitemsg.StatusEvent[invitemsg.RejectedEventBody]) {
 		if e.Type != invite.StatusTypeRejected || e.InviteType != invite.TypeTrade {
 			return
 		}
-		if err := trade.NewProcessor(l, ctx, db).DeclineInvite(e.TransactionId, e.Body.TargetId, e.Body.OriginatorId); err != nil {
+		if err := trade.NewProcessor(l, ctx, db).InviteRejected(e.TransactionId, e.Body.TargetId, e.Body.OriginatorId); err != nil {
 			l.WithError(err).Errorf("Unable to tear down character [%d]'s trade room after [%d] declined.", e.Body.OriginatorId, e.Body.TargetId)
 		}
 	}

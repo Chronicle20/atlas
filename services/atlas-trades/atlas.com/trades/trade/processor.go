@@ -104,8 +104,14 @@ type Processor interface {
 	// Invite offers the caller's room to targetCharacterId (FR-2.1).
 	Invite(txId uuid.UUID, f field.Model, characterId character.Id, targetCharacterId character.Id) error
 
-	// DeclineInvite tears down the originator's pending room (FR-2.5).
+	// DeclineInvite tears down the originator's pending room on a
+	// client-originated decline, and retires the offer in atlas-invites (FR-2.5).
 	DeclineInvite(txId uuid.UUID, characterId character.Id, originatorId character.Id) error
+
+	// InviteRejected tears down the originator's pending room after
+	// atlas-invites already retired the invite — a reject it processed, or an
+	// expiry (FR-2.6).
+	InviteRejected(txId uuid.UUID, characterId character.Id, originatorId character.Id) error
 
 	// EnterRoom seats characterId in the room owning the given wire handle
 	// (FR-1.5, FR-2.4).
@@ -346,16 +352,35 @@ func (p *ProcessorImpl) checkInviteTarget(room Room, targetCharacterId character
 
 // DeclineInvite tears the originator's pending room down (FR-2.5, design §3.1):
 // the reference client closes the inviter's dialog on a decline, so the room
-// does not survive it. It also covers FR-2.6 — atlas-invites emits REJECTED for
-// a timed-out invite (services/atlas-invites/atlas.com/invites/invite/task.go:51),
-// so expiry lands here too.
+// does not survive it.
+//
+// This is the CLIENT-originated decline — the COMMAND_TOPIC_TRADE
+// DECLINE_INVITE arm — so it also retires the offer in atlas-invites, which has
+// not heard about it (see inviteRejectCommandProvider for what a lingering
+// invite costs). Use InviteRejected for the other direction.
 func (p *ProcessorImpl) DeclineInvite(txId uuid.UUID, characterId character.Id, originatorId character.Id) error {
 	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
-		return p.declineInvite(mb, txId, characterId, originatorId)
+		return p.declineInvite(mb, txId, characterId, originatorId, true)
 	})
 }
 
-func (p *ProcessorImpl) declineInvite(mb *message.Buffer, txId uuid.UUID, characterId character.Id, originatorId character.Id) error {
+// InviteRejected tears the originator's pending room down after atlas-invites
+// has ALREADY retired the invite — an explicit reject it processed, or FR-2.6's
+// expiry, which its timeout task emits as a REJECTED status
+// (services/atlas-invites/atlas.com/invites/invite/task.go:43-54).
+//
+// It deliberately does not send a reject command back: the invite is already
+// gone, so atlas-invites would fail to locate it and log an error
+// (invite/processor.go:220-229), and the reject would be pure round-trip.
+func (p *ProcessorImpl) InviteRejected(txId uuid.UUID, characterId character.Id, originatorId character.Id) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
+		return p.declineInvite(mb, txId, characterId, originatorId, false)
+	})
+}
+
+// declineInvite is the shared body. retireInvite tells it whether atlas-invites
+// still holds the offer and therefore needs a REJECT command.
+func (p *ProcessorImpl) declineInvite(mb *message.Buffer, txId uuid.UUID, characterId character.Id, originatorId character.Id, retireInvite bool) error {
 	room, ok := p.reg.GetByMember(p.t, originatorId)
 	if !ok {
 		p.l.Debugf("Character [%d] declined a trade invite from [%d], which no longer has a room.", characterId, originatorId)
@@ -367,6 +392,11 @@ func (p *ProcessorImpl) declineInvite(mb *message.Buffer, txId uuid.UUID, charac
 	}
 
 	p.reg.Remove(p.t, room.Id())
+	if retireInvite {
+		if err := mb.Put(invitemsg.EnvCommandTopic, inviteRejectCommandProvider(txId, room, characterId)); err != nil {
+			return err
+		}
+	}
 	return mb.Put(trademsg.EnvEventTopicStatus, cancelledProvider(txId, room, originatorId, ReasonTradeCancelled))
 }
 
@@ -374,7 +404,11 @@ func (p *ProcessorImpl) declineInvite(mb *message.Buffer, txId uuid.UUID, charac
 // handle and moves it to OPEN (FR-1.5, FR-2.4). The dead / map / level ladder is
 // re-run for the entering character: the invite may have been accepted seconds
 // after it was sent, from a different situation than it was issued in (FR-4.5,
-// FR-4.6, FR-4.7).
+// FR-4.6, FR-4.7) — including from a different map, which is why the same-field
+// check reads the enterer's live location rather than trusting f.
+//
+// f addresses the ROOM-IS-GONE error only: with no room there is no field to
+// take one from, so the caller's is the only one available.
 func (p *ProcessorImpl) EnterRoom(txId uuid.UUID, f field.Model, characterId character.Id, handle uint32) error {
 	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.enterRoom(mb, txId, f, characterId, handle)
@@ -396,7 +430,16 @@ func (p *ProcessorImpl) enterRoom(mb *message.Buffer, txId uuid.UUID, f field.Mo
 	if room.State() != StatePendingInvite || room.VisitorId() != 0 {
 		return mb.Put(trademsg.EnvEventTopicStatus, roomErrorProvider(txId, room, characterId, errOtherRequests))
 	}
-	if !f.Equals(room.Field()) {
+	// Where the enterer ACTUALLY is, read from atlas-maps — not the f the caller
+	// handed us. On the invite-accept path f is derived from the room itself, so
+	// comparing it to the room would be a tautology and a character who changed
+	// map between invite and accept would be seated regardless.
+	ef, err := p.locp.FieldOf(characterId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to locate character [%d] entering trade room [%d]. Refusing rather than seating them blind.", characterId, handle)
+		return mb.Put(trademsg.EnvEventTopicStatus, roomErrorProvider(txId, room, characterId, errUnable))
+	}
+	if !ef.Equals(room.Field()) {
 		return mb.Put(trademsg.EnvEventTopicStatus, roomErrorProvider(txId, room, characterId, errNotSameMap))
 	}
 

@@ -59,7 +59,7 @@ func defaultFetcher(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UUI
 
 	tiers := make([]Tier, 0, len(rm.TaxTiers))
 	for _, t := range rm.TaxTiers {
-		tiers = append(tiers, Tier{Threshold: t.Threshold, Rate: t.Rate})
+		tiers = append(tiers, Tier(t))
 	}
 	if len(tiers) > 0 {
 		if verr := ValidateTiers(tiers); verr != nil {

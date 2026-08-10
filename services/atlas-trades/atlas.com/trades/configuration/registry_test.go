@@ -124,7 +124,12 @@ func TestGetWithoutATenantReturnsDefaults(t *testing.T) {
 
 // TestGetRegistryIsASingleton pins that every caller shares one cache.
 func TestGetRegistryIsASingleton(t *testing.T) {
-	if GetRegistry() != GetRegistry() {
+	// Bound to locals rather than compared inline: staticcheck SA4000 rejects
+	// `GetRegistry() != GetRegistry()` as identical expressions, but the two
+	// calls are exactly what this test needs to observe.
+	first := GetRegistry()
+	second := GetRegistry()
+	if first != second {
 		t.Fatal("GetRegistry returned two different instances")
 	}
 }

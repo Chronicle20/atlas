@@ -54,7 +54,7 @@ func Extract(r RestModel) Model {
 
 	tiers := make([]Tier, 0, len(r.TaxTiers))
 	for _, t := range r.TaxTiers {
-		tiers = append(tiers, Tier{Threshold: t.Threshold, Rate: t.Rate})
+		tiers = append(tiers, Tier(t))
 	}
 
 	m := d.

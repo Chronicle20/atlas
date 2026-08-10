@@ -1,3 +1,4 @@
+import { api } from "@/lib/api/client";
 import { fetchAll, fetchPaged } from "@/services/api/pagination";
 import type { ItemCashShopCommodity } from "@/types/models/npc";
 
@@ -31,6 +32,21 @@ function toModel(row: CommodityData): ItemCashShopCommodity {
 }
 
 export const commoditiesService = {
+  /**
+   * One commodity by SERIAL NUMBER (its JSON:API id). A direct by-id read
+   * (atlas-data document/storage.go#GetById), unlike the by-item route, which
+   * drains the whole catalog server-side — so resolving a handful of serials
+   * for display is far cheaper this way than draining.
+   */
+  async getBySerialNumber(
+    serialNumber: string | number,
+  ): Promise<ItemCashShopCommodity> {
+    const row = await api.getOne<CommodityData>(
+      `/api/data/commodity/items/${serialNumber}`,
+    );
+    return toModel(row);
+  },
+
   /**
    * Drain the whole cash-shop catalog — every commodity, for the active
    * tenant's version. A commodity's JSON:API id IS its SERIAL NUMBER

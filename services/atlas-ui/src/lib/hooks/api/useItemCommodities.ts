@@ -1,5 +1,10 @@
-import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import {
+  useQueries,
+  useQuery,
+  type UseQueryResult,
+} from "@tanstack/react-query";
 import { commoditiesService } from "@/services/api/commodities.service";
+import { itemStringsService } from "@/services/api/item-strings.service";
 import { useTenant } from "@/context/tenant-context";
 import type { ItemCashShopCommodity } from "@/types/models/npc";
 
@@ -9,6 +14,8 @@ export const itemCommoditiesKeys = {
     ["items", itemId, "commodities", tenantId ?? ""] as const,
   catalog: (tenantId?: string) =>
     ["commodities", "catalog", tenantId ?? ""] as const,
+  serialName: (serialNumber: string, tenantId?: string) =>
+    ["commodities", "serial-name", serialNumber, tenantId ?? ""] as const,
 };
 
 export function useItemCommodities(
@@ -66,4 +73,51 @@ export function useCommodityCatalog(
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
   });
+}
+
+/**
+ * Batched serial number → item NAME, for rendering rewards as "Zeta Nova Hat"
+ * instead of a bare serial. Two hops per serial — commodity by id, then the
+ * item's string — held in one query so the pair is cached as the one fact the
+ * caller actually wants.
+ *
+ * Deliberately not `useCommodityCatalog`: a coupon list shows a handful of
+ * distinct serials, and a by-id read is cheap (atlas-data storage GetById),
+ * whereas the catalog drain is ~36 requests. The picker drains because it
+ * needs the whole SET; a label only needs its own row.
+ *
+ * `undefined` = still loading, or the serial names no commodity (a stale
+ * reward) — callers fall back to showing the serial.
+ */
+export function useCashItemNames(
+  serialNumbers: number[],
+): Record<number, string | undefined> {
+  const { activeTenant } = useTenant();
+  const unique = Array.from(new Set(serialNumbers.filter((sn) => sn > 0)));
+  const results = useQueries({
+    queries: unique.map((serialNumber) => ({
+      queryKey: itemCommoditiesKeys.serialName(
+        String(serialNumber),
+        activeTenant?.id,
+      ),
+      queryFn: async () => {
+        const commodity =
+          await commoditiesService.getBySerialNumber(serialNumber);
+        const item = await itemStringsService.getItemString(
+          String(commodity.itemId),
+        );
+        return item.attributes.name;
+      },
+      enabled: !!activeTenant,
+      retry: false,
+      staleTime: 30 * 60 * 1000,
+      gcTime: 60 * 60 * 1000,
+    })),
+  });
+
+  const names: Record<number, string | undefined> = {};
+  unique.forEach((serialNumber, i) => {
+    names[serialNumber] = results[i]?.data;
+  });
+  return names;
 }

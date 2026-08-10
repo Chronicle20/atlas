@@ -27,9 +27,9 @@ import {
   useAccountNames,
   useCharacterNames,
 } from "@/lib/hooks/api/useActorNames";
+import { RewardSummary } from "@/components/features/coupons/RewardSummary";
 import {
   couponStatus,
-  formatRewards,
   formatTimestamp,
   formatUses,
   formatWindow,
@@ -120,7 +120,7 @@ export function CouponDetailPage() {
             <CardTitle className="text-sm font-medium">Rewards</CardTitle>
           </CardHeader>
           <CardContent className="text-sm">
-            {formatRewards(attrs.rewards)}
+            <RewardSummary rewards={attrs.rewards} />
           </CardContent>
         </Card>
       </div>
@@ -180,7 +180,9 @@ export function CouponDetailPage() {
                         </Link>
                       </TableCell>
                       <TableCell>
-                        {formatRewards(redemption.attributes.rewardsGranted)}
+                        <RewardSummary
+                          rewards={redemption.attributes.rewardsGranted}
+                        />
                       </TableCell>
                       <TableCell className="font-mono text-xs">
                         {redemption.attributes.transactionId}

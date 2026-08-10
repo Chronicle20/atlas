@@ -4,6 +4,7 @@ import { type DataTableColumnDef } from "@/components/data-table-features";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { RewardSummary } from "@/components/features/coupons/RewardSummary";
 import {
   couponStatus,
   formatRewards,
@@ -61,11 +62,15 @@ export const getColumns = ({
   {
     id: "rewards",
     header: "Rewards",
+    // The accessor stays name-free: it feeds sorting/filtering/CSV, which run
+    // outside React and so cannot resolve a serial to its item name. The cell
+    // is what the operator reads, and it names the item.
     accessorFn: (row) => formatRewards(row.attributes.rewards),
     cell: ({ row }) => (
-      <span className="text-sm">
-        {formatRewards(row.original.attributes.rewards)}
-      </span>
+      <RewardSummary
+        rewards={row.original.attributes.rewards}
+        className="text-sm"
+      />
     ),
   },
   {

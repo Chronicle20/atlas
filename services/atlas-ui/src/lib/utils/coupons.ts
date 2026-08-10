@@ -23,16 +23,40 @@ export function formatCurrency(currency: number): string {
   return "Prepaid";
 }
 
-export function formatReward(reward: CouponReward): string {
+/**
+ * A CASH_ITEM reward names a commodity SERIAL NUMBER, which means nothing to a
+ * reader — so callers that can resolve one to its item name pass `cashItemName`
+ * and get "Zeta Nova Hat ×1". Without it (or for a serial that resolves to
+ * nothing) the serial itself is shown, which is still unambiguous.
+ */
+export type CashItemNameLookup = (serialNumber: number) => string | undefined;
+
+export function formatReward(
+  reward: CouponReward,
+  cashItemName?: CashItemNameLookup,
+): string {
   if (reward.type === "CURRENCY") {
     return `${reward.amount} ${formatCurrency(reward.currency)}`;
   }
-  return `Cash item ${reward.serialNumber} ×${reward.quantity}`;
+  const name = cashItemName?.(reward.serialNumber);
+  return name
+    ? `${name} ×${reward.quantity}`
+    : `Cash item ${reward.serialNumber} ×${reward.quantity}`;
 }
 
-export function formatRewards(rewards: CouponReward[]): string {
+export function formatRewards(
+  rewards: CouponReward[],
+  cashItemName?: CashItemNameLookup,
+): string {
   if (rewards.length === 0) return "No rewards";
-  return rewards.map(formatReward).join(", ");
+  return rewards.map((reward) => formatReward(reward, cashItemName)).join(", ");
+}
+
+/** Every distinct cash-item serial in these rewards, for a batched name lookup. */
+export function cashItemSerials(rewards: CouponReward[]): number[] {
+  return rewards
+    .filter((reward) => reward.type === "CASH_ITEM")
+    .map((reward) => reward.serialNumber);
 }
 
 /**

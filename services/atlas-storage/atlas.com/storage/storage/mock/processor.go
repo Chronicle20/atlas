@@ -24,8 +24,10 @@ type ProcessorMock struct {
 	DepositRollbackFunc               func(body message.DepositRollbackBody) error
 	AcceptFunc                        func(worldId world.Id, accountId uint32, body compartment.AcceptCommandBody) (uint32, int16, error)
 	AcceptAndEmitFunc                 func(worldId world.Id, accountId uint32, characterId uint32, body compartment.AcceptCommandBody) error
+	AcceptOnceAndEmitFunc             func(worldId world.Id, accountId uint32, characterId uint32, body compartment.AcceptCommandBody) error
 	ReleaseFunc                       func(body compartment.ReleaseCommandBody) error
 	ReleaseAndEmitFunc                func(worldId world.Id, accountId uint32, characterId uint32, body compartment.ReleaseCommandBody) error
+	ReleaseOnceAndEmitFunc            func(worldId world.Id, accountId uint32, characterId uint32, body compartment.ReleaseCommandBody) error
 	MergeAndSortFunc                  func(worldId world.Id, accountId uint32) error
 	ArrangeAndEmitFunc                func(transactionId uuid.UUID, worldId world.Id, accountId uint32) error
 	EmitProjectionCreatedEventFunc    func(characterId uint32, accountId uint32, ch channel.Model, npcId uint32) error
@@ -116,6 +118,20 @@ func (m *ProcessorMock) Accept(worldId world.Id, accountId uint32, body compartm
 func (m *ProcessorMock) AcceptAndEmit(worldId world.Id, accountId uint32, characterId uint32, body compartment.AcceptCommandBody) error {
 	if m.AcceptAndEmitFunc != nil {
 		return m.AcceptAndEmitFunc(worldId, accountId, characterId, body)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) AcceptOnceAndEmit(worldId world.Id, accountId uint32, characterId uint32, body compartment.AcceptCommandBody) error {
+	if m.AcceptOnceAndEmitFunc != nil {
+		return m.AcceptOnceAndEmitFunc(worldId, accountId, characterId, body)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) ReleaseOnceAndEmit(worldId world.Id, accountId uint32, characterId uint32, body compartment.ReleaseCommandBody) error {
+	if m.ReleaseOnceAndEmitFunc != nil {
+		return m.ReleaseOnceAndEmitFunc(worldId, accountId, characterId, body)
 	}
 	return nil
 }

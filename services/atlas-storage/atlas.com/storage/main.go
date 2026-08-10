@@ -51,7 +51,10 @@ func Migrations(db *gorm.DB) error {
 	if err := storage.Migration(db); err != nil {
 		return err
 	}
-	return asset.Migration(db)
+	if err := asset.Migration(db); err != nil {
+		return err
+	}
+	return database.IdempotencyMigration(db)
 }
 
 func main() {
@@ -63,6 +66,10 @@ func main() {
 	projection.InitManager(rc)
 
 	db := database.Connect(l, database.SetMigrations(Migrations))
+
+	// ACCEPT/RELEASE claim an idempotency key so an at-least-once redelivery
+	// cannot duplicate or double-release a stored asset (task-208).
+	database.StartIdempotencySweeper(l, rt.Context(), db, database.DefaultIdempotencyRetention, database.DefaultIdempotencySweep)
 
 	server.RegisterTransientErrorClassifier(func(err error) bool {
 		if database.IsTransientConnectionError(err) {

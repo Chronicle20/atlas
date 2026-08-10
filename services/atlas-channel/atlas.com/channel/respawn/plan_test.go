@@ -175,6 +175,48 @@ func TestPlanRespawn_MultipleChargesDecrementRatherThanDestroy(t *testing.T) {
 	// Quantity: 1, RemoveAll: false — pinned by TestRespawnSagaStepOrdering.
 }
 
+func TestExpirationDays(t *testing.T) {
+	now := time.Date(2026, 8, 10, 12, 0, 0, 0, time.UTC)
+	tests := []struct {
+		name       string
+		expiration time.Time
+		want       byte
+	}{
+		{"no expiration set", time.Time{}, 0},
+		{"already expired", now.Add(-48 * time.Hour), 0},
+		{"expires in twelve hours rounds down", now.Add(12 * time.Hour), 0},
+		{"expires in three and a half days", now.Add(84 * time.Hour), 3},
+		{"expires in a year clamps to 255", now.AddDate(1, 0, 0), 255},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := expirationDays(tc.expiration, now); got != tc.want {
+				t.Errorf("expirationDays(%v) = %d, want %d", tc.expiration, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestPlanRespawn_SafetyCharmSuppressesExpLossAndIsConsumed(t *testing.T) {
+	c := buildCharacter(100000)                                             // non-beginner, non-zero exp
+	inv := buildInventory(map[uint32]uint32{uint32(item.SafetyCharmId): 2}) // two charges
+	// ordinaryField: non-town, no field limit
+	got := planRespawn(c, inv, ordinaryField, currentMap, false)
+
+	if got.ExpLoss != 0 {
+		t.Errorf("exp loss: got %d, want 0 (protective item held)", got.ExpLoss)
+	}
+	if got.Protective == nil {
+		t.Fatal("expected the safety charm to be selected for consumption")
+	}
+	if usesRemaining(got.Protective) != 1 {
+		t.Errorf("post-decrement charges: got %d, want 1", usesRemaining(got.Protective))
+	}
+	if !item.IsSafetyCharm(item.Id(got.Protective.TemplateId())) {
+		t.Errorf("template id %d is not the safety charm", got.Protective.TemplateId())
+	}
+}
+
 func stepIds(steps []saga.Step) []string {
 	ids := make([]string, 0, len(steps))
 	for _, s := range steps {

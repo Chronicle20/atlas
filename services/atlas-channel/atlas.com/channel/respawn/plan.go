@@ -72,6 +72,29 @@ func usesRemaining(a *asset.Model) byte {
 	return byte(q - 1)
 }
 
+// expirationDays is the whole days left before the asset expires, 0 when no
+// expiration is set or it has already passed. This feeds the second byte of
+// EffectProtectOnDie. The v83 client (CUser::OnEffect mode-6 arm @0x937e81)
+// reads safetyCharm then two bytes and formats StringPool string 0x0B96 from
+// both; which of the two the message calls "days" lives in String.wz, not the
+// binary, so this sourcing is the defensible reading of the field name and not
+// a verified one. See design.md OQ-3 — if the live message renders the two
+// values transposed, the fix is to swap them here and update that note.
+func expirationDays(expiration time.Time, now time.Time) byte {
+	if expiration.IsZero() {
+		return 0
+	}
+	d := expiration.Sub(now)
+	if d <= 0 {
+		return 0
+	}
+	days := int64(d.Hours() / 24)
+	if days > 255 {
+		return 255
+	}
+	return byte(days)
+}
+
 // planRespawn decides the respawn outcome. useDeathItem is the client's
 // Change.Premium() byte: CUIRevive::OnButtonClicked calls Revive(1) for OK and
 // Revive(0) for Cancel, so a zero here means the player declined the wheel and

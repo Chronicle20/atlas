@@ -5,7 +5,9 @@ import (
 	"atlas-channel/character"
 	map_ "atlas-channel/data/map"
 	channelInventory "atlas-channel/inventory"
+	channelMap "atlas-channel/map"
 	"atlas-channel/saga"
+	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 	"time"
@@ -16,6 +18,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
+	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 )
 
 // Processor interface defines operations for character respawn
@@ -74,7 +78,43 @@ func (p *ProcessorImpl) Respawn(f field.Model, characterId uint32, useDeathItem 
 	}
 
 	rp := planRespawn(c, inv, mapFactsOf(mapData), currentMapId, useDeathItem)
-	return p.createRespawnSaga(f, characterId, rp)
+	if err = p.createRespawnSaga(f, characterId, rp); err != nil {
+		return err
+	}
+	// A failed broadcast is logged, never fatal — the revive has already been
+	// committed to the saga at this point.
+	p.announceProtectOnDie(f, characterId, rp.Protective)
+	return nil
+}
+
+// announceProtectOnDie tells the dying player (and the map) that a death
+// protection item absorbed the experience loss, and how many uses are left.
+// The mode byte is resolved from the tenant's CharacterEffect writer options
+// (PROTECT_ON_DIE_ITEM_USE) rather than hard-coded.
+func (p *ProcessorImpl) announceProtectOnDie(f field.Model, characterId uint32, a *asset.Model) {
+	if a == nil {
+		return
+	}
+	templateId := a.TemplateId()
+	safetyCharm := item.IsSafetyCharm(item.Id(templateId))
+	remaining := usesRemaining(a)
+	days := expirationDays(a.Expiration(), time.Now())
+
+	p.l.Debugf("Character [%d] consumed death protection item [%d]: [%d] uses remaining, [%d] days, safetyCharm [%t].", characterId, templateId, remaining, days, safetyCharm)
+
+	err := session.NewProcessor(p.l, p.ctx).IfPresentByCharacterId(f.Channel())(characterId,
+		session.Announce(p.l)(p.ctx)(p.wp)(charcb.CharacterEffectWriter)(
+			charpkt.CharacterProtectOnDieItemUseEffectBody(safetyCharm, remaining, days, templateId)))
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to announce protect-on-die effect to character [%d].", characterId)
+	}
+
+	err = channelMap.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId,
+		session.Announce(p.l)(p.ctx)(p.wp)(charcb.CharacterEffectForeignWriter)(
+			charpkt.CharacterProtectOnDieItemUseEffectForeignBody(characterId, safetyCharm, remaining, days, templateId)))
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to broadcast protect-on-die effect for character [%d].", characterId)
+	}
 }
 
 // findProtectiveItem returns the death-protection asset that suppresses the

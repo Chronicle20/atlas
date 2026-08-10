@@ -32,6 +32,11 @@ import (
 // leaveReason key.
 const sagaFailedReason = "SAGA_FAILED"
 
+// submitFailedReason labels the settlement-failure metric when the settlement
+// never reached the orchestrator at all — the command that would have submitted
+// it failed after the room had already been moved to SETTLING.
+const submitFailedReason = "SUBMIT_FAILED"
+
 // --- the attestation deadline -------------------------------------------------
 
 // attestationTimers holds one armed deadline per room in AWAITING_ATTESTATION
@@ -270,20 +275,25 @@ func (p *ProcessorImpl) confirm(mb *message.Buffer, txId uuid.UUID, characterId 
 // Attest records one side's CRC attestation and, once both have replied,
 // settles.
 func (p *ProcessorImpl) Attest(txId uuid.UUID, characterId character.Id, entries []trademsg.CrcEntry) error {
-	return p.emit(func(txp *ProcessorImpl, mb *message.Buffer) error {
-		return txp.attest(mb, txId, characterId, entries)
+	var settled uuid.UUID
+	err := p.emit(func(txp *ProcessorImpl, mb *message.Buffer) error {
+		var aerr error
+		settled, aerr = txp.attest(mb, txId, characterId, entries)
+		return aerr
 	})
+	return p.recoverAbandonedSettlement(txId, settled, err)
 }
 
-func (p *ProcessorImpl) attest(mb *message.Buffer, txId uuid.UUID, characterId character.Id, entries []trademsg.CrcEntry) error {
+// attest returns the id of the room it drove to SETTLING, or uuid.Nil.
+func (p *ProcessorImpl) attest(mb *message.Buffer, txId uuid.UUID, characterId character.Id, entries []trademsg.CrcEntry) (uuid.UUID, error) {
 	room, ok := p.reg.GetByMember(p.t, characterId)
 	if !ok {
 		p.l.Debugf("Character [%d] issued TRANSACTION without a trade room. Dropping.", characterId)
-		return nil
+		return uuid.Nil, nil
 	}
 	if room.State() != StateAwaitingAttestation {
 		p.l.Debugf("Character [%d] issued TRANSACTION against trade room [%s] in state [%s]. Dropping.", characterId, room.Id().String(), room.State())
-		return nil
+		return uuid.Nil, nil
 	}
 
 	updated, err := p.reg.Update(p.t, room.Id(), func(cur Room) (Room, error) {
@@ -300,10 +310,10 @@ func (p *ProcessorImpl) attest(mb *message.Buffer, txId uuid.UUID, characterId c
 	})
 	if err != nil {
 		p.l.WithError(err).Debugf("Character [%d]'s TRANSACTION lost a race. Dropping.", characterId)
-		return nil
+		return uuid.Nil, nil
 	}
 	if !updated.BothAttested() {
-		return nil
+		return uuid.Nil, nil
 	}
 	return p.settle(mb, txId, updated)
 }
@@ -313,23 +323,82 @@ func (p *ProcessorImpl) attest(mb *message.Buffer, txId uuid.UUID, characterId c
 // simply not CRC-checked: its TRADE_CONFIRM list is the only evidence there is,
 // and comparing that list to itself would be a tautology.
 func (p *ProcessorImpl) ExpireAttestation(txId uuid.UUID, roomId uuid.UUID) error {
-	return p.emit(func(txp *ProcessorImpl, mb *message.Buffer) error {
-		return txp.expireAttestation(mb, txId, roomId)
+	var settled uuid.UUID
+	err := p.emit(func(txp *ProcessorImpl, mb *message.Buffer) error {
+		var eerr error
+		settled, eerr = txp.expireAttestation(mb, txId, roomId)
+		return eerr
 	})
+	return p.recoverAbandonedSettlement(txId, settled, err)
 }
 
-func (p *ProcessorImpl) expireAttestation(mb *message.Buffer, txId uuid.UUID, roomId uuid.UUID) error {
+// expireAttestation returns the id of the room it drove to SETTLING, or
+// uuid.Nil.
+func (p *ProcessorImpl) expireAttestation(mb *message.Buffer, txId uuid.UUID, roomId uuid.UUID) (uuid.UUID, error) {
 	room, ok := p.reg.Get(p.t, roomId)
 	if !ok {
 		p.l.Debugf("Attestation deadline for trade room [%s] fired after the room was gone. Ignoring.", roomId.String())
-		return nil
+		return uuid.Nil, nil
 	}
 	if room.State() != StateAwaitingAttestation {
 		p.l.Debugf("Attestation deadline for trade room [%s] fired in state [%s]. Ignoring.", roomId.String(), room.State())
-		return nil
+		return uuid.Nil, nil
 	}
 	p.l.WithFields(p.roomFields(room)).Infof("Attestation deadline lapsed for trade room [%s]; settling on the confirm lists.", roomId.String())
 	return p.settle(mb, txId, room)
+}
+
+// recoverAbandonedSettlement undoes a SETTLING transition whose command then
+// failed.
+//
+// The registry swap to SETTLING is IN-MEMORY and is not rolled back by the
+// enclosing transaction (see emit), but everything the swap was made for is:
+// a failed command publishes no saga and writes no durable record. The room
+// would then be stuck in a state nothing can act on — teardownCharacter refuses
+// a settling room (FR-6.5), refreshReservations skips it, its attestation
+// deadline has already been cancelled, and the reconciler has no record to find
+// it by. Both dialogs would stay open for the rest of the process's life.
+//
+// The recovery therefore CLOSES the trade rather than reverting it to
+// AWAITING_ATTESTATION: both sides have already attested, so nothing would ever
+// drive settlement again, and an open dialog that can never complete is worse
+// than a faithful LEAVE 8. Nothing moved — the saga was never published — so
+// there is nothing to compensate.
+//
+// It runs in its OWN transaction, because the one that failed is already
+// rolled back and anything buffered into it is gone.
+func (p *ProcessorImpl) recoverAbandonedSettlement(txId uuid.UUID, roomId uuid.UUID, cause error) error {
+	if cause == nil || roomId == uuid.Nil {
+		return cause
+	}
+	p.l.WithError(cause).Errorf("Trade room [%s] reached SETTLING but its command failed; no saga was submitted. Closing the trade rather than leaving the room wedged.", roomId.String())
+	if err := p.emit(func(txp *ProcessorImpl, mb *message.Buffer) error {
+		return txp.abandonSettlement(mb, txId, roomId)
+	}); err != nil {
+		// Second-order failure: the room stays SETTLING and the dialogs stay
+		// open. Loud, because nothing downstream will retry it.
+		p.l.WithError(err).Errorf("Unable to close trade room [%s] after its settlement failed to submit. The room is left settling.", roomId.String())
+	}
+	return cause
+}
+
+func (p *ProcessorImpl) abandonSettlement(mb *message.Buffer, txId uuid.UUID, roomId uuid.UUID) error {
+	room, ok := p.reg.Get(p.t, roomId)
+	if !ok {
+		return nil
+	}
+	claimed, ok := p.claimRoom(room, settling)
+	if !ok {
+		// Something else already ended it — a terminal status that raced in, or
+		// a previous recovery attempt.
+		return nil
+	}
+	if err := p.emitStagedReleases(mb, claimed.releases); err != nil {
+		return err
+	}
+	recordSettlementFailed(p.t, submitFailedReason)
+	recordCancelled(p.t, ReasonTradeFailed)
+	return mb.Put(trademsg.EnvEventTopicStatus, cancelledProvider(txId, claimed.room, claimed.room.OwnerId(), ReasonTradeFailed))
 }
 
 // --- settlement ---------------------------------------------------------------
@@ -349,10 +418,15 @@ func (p *ProcessorImpl) expireAttestation(mb *message.Buffer, txId uuid.UUID, ro
 //	(2) meso cap         -> TRADE_CANNOT_CARRY  (9)
 //	(3) reservation lost -> TRADE_FAILED        (8)
 //	(4) CRC mismatch     -> TRADE_CRC_FAILED    (13)
-func (p *ProcessorImpl) settle(mb *message.Buffer, txId uuid.UUID, room Room) error {
+//
+// It returns the id of the room it moved to SETTLING, so the caller can undo
+// that in-memory transition if the command it belongs to then fails — see
+// recoverAbandonedSettlement. Every other outcome returns uuid.Nil: a refusal
+// tears the room down itself, and a lost compare-and-set changed nothing.
+func (p *ProcessorImpl) settle(mb *message.Buffer, txId uuid.UUID, room Room) (uuid.UUID, error) {
 	if len(room.Participants()) != 2 {
 		p.l.Errorf("Trade room [%s] reached settlement with [%d] participants. Tearing it down.", room.Id().String(), len(room.Participants()))
-		return p.teardownRoom(mb, txId, room, room.OwnerId(), ReasonTradeFailed)
+		return uuid.Nil, p.teardownRoom(mb, txId, room, room.OwnerId(), ReasonTradeFailed)
 	}
 	cfg := p.cfg.Get(p.l, p.ctx)
 	cache := p.newCompartmentCache()
@@ -383,7 +457,7 @@ func (p *ProcessorImpl) settle(mb *message.Buffer, txId uuid.UUID, room Room) er
 	if reason, ok := p.preCheck(cache, ordered, taxes); !ok {
 		p.l.WithFields(p.roomFields(resolved)).Infof("Refusing to settle trade room [%s]: [%s].", resolved.Id().String(), reason)
 		recordSettlementFailed(p.t, reason)
-		return p.teardownRoom(mb, txId, resolved, resolved.OwnerId(), reason)
+		return uuid.Nil, p.teardownRoom(mb, txId, resolved, resolved.OwnerId(), reason)
 	}
 
 	settlementId := uuid.New()
@@ -412,7 +486,7 @@ func (p *ProcessorImpl) settle(mb *message.Buffer, txId uuid.UUID, room Room) er
 	})
 	if err != nil {
 		p.l.WithError(err).Debugf("Trade room [%s] was already driven to settlement by another command. Dropping.", resolved.Id().String())
-		return nil
+		return uuid.Nil, nil
 	}
 
 	p.timers.Cancel(p.t, updated.Id())
@@ -422,12 +496,19 @@ func (p *ProcessorImpl) settle(mb *message.Buffer, txId uuid.UUID, room Room) er
 	// commit or neither does. Without it a restart before the terminal status
 	// loses the room, and with it the trade that has already executed — no
 	// ledger row, no SETTLED (FR-7.1).
+	// From here on the room is SETTLING in memory and the swap will NOT be
+	// rolled back with the transaction, so every remaining failure is returned
+	// ALONGSIDE the room id: the caller closes the trade rather than leaving a
+	// room nothing can act on.
 	if _, err = settlement.NewProcessor(p.l, p.ctx, p.db).Submit(settlementRecordFor(settlementId, updated)); err != nil {
-		return err
+		return updated.Id(), err
 	}
 
 	p.l.WithFields(p.roomFields(updated)).WithField("settlement_id", settlementId.String()).Infof("Submitting settlement for trade room [%s].", updated.Id().String())
-	return p.sgp.Settle(mb)(settlementId, settlementPayload(settlementId, updated))
+	if err = p.sgp.Settle(mb)(settlementId, settlementPayload(settlementId, updated)); err != nil {
+		return updated.Id(), err
+	}
+	return updated.Id(), nil
 }
 
 // mesoSplit is one side's resolved tax outcome: tax is destroyed, delivered

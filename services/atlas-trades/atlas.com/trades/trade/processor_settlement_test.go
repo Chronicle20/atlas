@@ -4,6 +4,7 @@ import (
 	"atlas-trades/configuration"
 	inventorydata "atlas-trades/data/inventory"
 	sagadata "atlas-trades/data/saga"
+	"atlas-trades/kafka/message"
 	compartmentmsg "atlas-trades/kafka/message/compartment"
 	sagamsg "atlas-trades/kafka/message/saga"
 	trademsg "atlas-trades/kafka/message/trade"
@@ -715,14 +716,16 @@ func TestSettlementSuccessCancelsBothHolds(t *testing.T) {
 	}
 }
 
-// TestSecondCompletedDeliveryIsStoppedByTheRoomGuard pins the FIRST of the two
-// defences against a redelivered COMPLETED. It is the room guard that stops
-// this one: the winning delivery removed the room, so the second returns at
-// settledRoom without ever reaching the ledger. (ledger.Record's own
-// idempotency is pinned in the ledger package; the CAS that handles a
-// CONCURRENT second delivery is pinned by
-// TestSettlementSuccessDoesNotReEmitWhenAnotherDeliveryClaimsTheRoom.)
-func TestSecondCompletedDeliveryIsStoppedByTheRoomGuard(t *testing.T) {
+// TestSecondCompletedDeliveryFindsNoRecordAndDrops pins what actually stops a
+// redelivered COMPLETED: the DURABLE RECORD is gone, because the first delivery
+// deleted it. The room is gone by then too, but the room is not what decides —
+// after a restart there is no room at all, and the record still has to be the
+// thing that stops the second delivery.
+//
+// (ledger.Record's own idempotency is pinned in the ledger package; the same
+// arbiter under a CONCURRENT second delivery is pinned by
+// TestSettlementSuccessDoesNotReEmitWhenAnotherDeliveryResolvedTheRecord.)
+func TestSecondCompletedDeliveryFindsNoRecordAndDrops(t *testing.T) {
 	p, e := testSettlingRoom(t)
 	room, _ := p.RoomForCharacter(100)
 
@@ -737,6 +740,7 @@ func TestSecondCompletedDeliveryIsStoppedByTheRoomGuard(t *testing.T) {
 	if got := len(statusEvents[trademsg.SettledEventBody](t, e, trademsg.StatusTypeSettled)); got != 1 {
 		t.Errorf("SETTLED events: got %d, want 1", got)
 	}
+	assertSettlementResolved(t, p, room.SettlementId())
 }
 
 // TestSettlementFailureEmitsStatusEightAndWritesNoLedgerRow pins FR-5.3 and
@@ -965,11 +969,17 @@ func TestSettlementRefusesWhenTheSlotMaxCannotBeRead(t *testing.T) {
 	assertNoSagaSubmitted(t, e)
 }
 
-// TestSettlementSuccessForARoomThatIsNotSettlingIsIgnored pins the state guard:
-// a COMPLETED status can only close a room its own saga put into SETTLING.
-func TestSettlementSuccessForARoomThatIsNotSettlingIsIgnored(t *testing.T) {
+// TestTerminalStatusForATradeThatNeverSubmittedIsIgnored pins that a COMPLETED
+// can only close a trade that actually submitted a settlement. A room still
+// awaiting attestation has minted no settlement id and written no record, so
+// the status resolves nothing: the id it carries is uuid.Nil, which the record
+// lookup must refuse rather than match.
+func TestTerminalStatusForATradeThatNeverSubmittedIsIgnored(t *testing.T) {
 	p, e := testConfirmedRoom(t)
 	room, _ := p.RoomForCharacter(100)
+	if room.SettlementId() != uuid.Nil {
+		t.Fatalf("settlementId before submission: got %s, want the zero id", room.SettlementId())
+	}
 
 	if err := p.SettlementSucceeded(uuid.New(), room.SettlementId()); err != nil {
 		t.Fatalf("settle: %v", err)
@@ -979,7 +989,7 @@ func TestSettlementSuccessForARoomThatIsNotSettlingIsIgnored(t *testing.T) {
 		t.Errorf("ledger entries: got %d, want 0", got)
 	}
 	if _, ok := p.RoomForCharacter(100); !ok {
-		t.Error("a stray COMPLETED tore down a room that was not settling")
+		t.Error("a stray COMPLETED tore down a trade that had not submitted a settlement")
 	}
 }
 
@@ -1180,3 +1190,92 @@ func assertSettlementResolved(t *testing.T, p *ProcessorImpl, settlementId uuid.
 		t.Error("the settlement record survived its terminal outcome; unresolved settlements would accumulate")
 	}
 }
+
+// --- a settlement that never leaves the process ------------------------------------
+
+// failingSagaSubmitter refuses to buffer the saga command, which is the second
+// of the two ways the settle path can fail AFTER the room is already SETTLING.
+type failingSagaSubmitter struct {
+	err error
+}
+
+func (f *failingSagaSubmitter) Settle(_ *message.Buffer) func(transactionId uuid.UUID, payload sharedsaga.TradeSettlementPayload) error {
+	return func(_ uuid.UUID, _ sharedsaga.TradeSettlementPayload) error {
+		return f.err
+	}
+}
+
+// assertSettlementAbandoned requires the room to have been closed rather than
+// left in a state nothing can act on: SETTLING refuses teardown (FR-6.5), is
+// skipped by the reservation refresh, has had its attestation deadline
+// cancelled, and — with the command rolled back — has no durable record for the
+// reconciler to find it by.
+func assertSettlementAbandoned(t *testing.T, p *ProcessorImpl, e *emitted) {
+	t.Helper()
+	if room, ok := p.RoomForCharacter(100); ok {
+		t.Errorf("the room survived a failed settlement submission in state %s; nothing can act on it", room.State())
+	}
+	assertCancelledWithReason(t, e, ReasonTradeFailed)
+	if got := len(compartmentCommands[compartmentmsg.CancelReservationCommandBody](t, e, compartmentmsg.CommandCancelReservation)); got != 2 {
+		t.Errorf("CANCEL_RESERVATION commands: got %d, want one per staged item (2)", got)
+	}
+	assertNoSagaSubmitted(t, e)
+}
+
+// TestSettleFailingToRecordTheSettlementDoesNotWedgeTheRoom pins the first
+// post-CAS failure: the durable record cannot be written. The transaction rolls
+// back — no record, no saga — but the registry swap to SETTLING is in-memory
+// and does NOT roll back with it.
+func TestSettleFailingToRecordTheSettlementDoesNotWedgeTheRoom(t *testing.T) {
+	p, e := testConfirmedRoom(t)
+	if err := p.db.Migrator().DropTable(&settlement.Entry{}); err != nil {
+		t.Fatalf("drop settlements: %v", err)
+	}
+
+	if err := p.Attest(uuid.New(), 100, nil); err != nil {
+		t.Fatalf("owner attest: %v", err)
+	}
+	if err := p.Attest(uuid.New(), 200, nil); err == nil {
+		t.Fatal("visitor attest: expected the unwritable settlement record to surface an error")
+	}
+
+	assertSettlementAbandoned(t, p, e)
+}
+
+// TestSettleFailingToSubmitTheSagaDoesNotWedgeTheRoom pins the second post-CAS
+// failure: the saga command cannot be buffered. Same shape, different trigger —
+// and the same wedge if the transition is not undone.
+func TestSettleFailingToSubmitTheSagaDoesNotWedgeTheRoom(t *testing.T) {
+	p, e := testConfirmedRoom(t)
+	p.sgp = &failingSagaSubmitter{err: errors.New("saga topic unavailable")}
+
+	if err := p.Attest(uuid.New(), 100, nil); err != nil {
+		t.Fatalf("owner attest: %v", err)
+	}
+	if err := p.Attest(uuid.New(), 200, nil); err == nil {
+		t.Fatal("visitor attest: expected the refused saga submission to surface an error")
+	}
+
+	assertSettlementAbandoned(t, p, e)
+	if _, err := settlement.NewProcessor(p.l, p.ctx, p.db).GetByTransactionId(uuid.Nil); err == nil {
+		t.Error("a settlement record survived the rolled-back submission")
+	}
+}
+
+// TestExpireAttestationFailingToSubmitDoesNotWedgeTheRoom pins the same
+// recovery on the deadline path, which reaches settle from its own goroutine
+// and would otherwise wedge a room nobody is waiting on a command for.
+func TestExpireAttestationFailingToSubmitDoesNotWedgeTheRoom(t *testing.T) {
+	p, e := testConfirmedRoom(t)
+	p.sgp = &failingSagaSubmitter{err: errors.New("saga topic unavailable")}
+	room, _ := p.RoomForCharacter(100)
+
+	if err := p.ExpireAttestation(uuid.New(), room.Id()); err == nil {
+		t.Fatal("expire: expected the refused saga submission to surface an error")
+	}
+
+	assertSettlementAbandoned(t, p, e)
+}
+
+// compile-time assurance the settlement fake satisfies the seam it stands in for.
+var _ settlementSubmitter = (*failingSagaSubmitter)(nil)

@@ -5,6 +5,7 @@ import (
 	"atlas-channel/server"
 	"atlas-channel/socket/writer"
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -14,9 +15,11 @@ import (
 
 	channelconst "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -192,8 +195,11 @@ func attestationRequestedEvent(o ownerId, v visitorId) eventDispatch {
 	}
 }
 
+// mesoRefusedEvent refuses c's stage in a room that HAS a counterparty (200),
+// so "to the refused character only" is actually observable — a room with no
+// visitor would make that assertion vacuous.
 func mesoRefusedEvent(c characterId, lv lastValid) eventDispatch {
-	e := baseEvent(ownerId(c), visitorId(0), charconst.Id(c), trade2.StatusTypeMesoRefused, trade2.MesoRefusedEventBody{
+	e := baseEvent(ownerId(c), visitorId(200), charconst.Id(c), trade2.StatusTypeMesoRefused, trade2.MesoRefusedEventBody{
 		Position:        ownerPosition,
 		LastValidAmount: uint32(lv),
 	})
@@ -218,6 +224,87 @@ func settledEventOn(o ownerId, v visitorId, ch byte) eventDispatch {
 	return func(sc server.Model) func(logrus.FieldLogger, context.Context) {
 		return func(l logrus.FieldLogger, ctx context.Context) { handleSettledEvent(sc, nil)(l, ctx, e) }
 	}
+}
+
+// withStubVisitors swaps the visitor-list seam for one that names each entry
+// "C<characterId>" over a zero-value avatar, so an enter-result frame can be
+// round-tripped without a REST lookup.
+func withStubVisitors(d func(sc server.Model) func(logrus.FieldLogger, context.Context)) eventDispatch {
+	return func(sc server.Model) func(logrus.FieldLogger, context.Context) {
+		return func(l logrus.FieldLogger, ctx context.Context) {
+			orig := tradeRoomVisitorResolver
+			tradeRoomVisitorResolver = func(_ logrus.FieldLogger, _ context.Context, slot byte, cid charconst.Id) (interactionpkt.Visitor, error) {
+				return interactionpkt.NewBaseVisitor(slot, packetmodel.Avatar{}, fmt.Sprintf("C%d", cid)), nil
+			}
+			defer func() { tradeRoomVisitorResolver = orig }()
+			d(sc)(l, ctx)
+		}
+	}
+}
+
+func roomCreatedEvent(o ownerId) eventDispatch {
+	e := baseEvent(o, visitorId(0), charconst.Id(o), trade2.StatusTypeRoomCreated, trade2.RoomCreatedEventBody{Position: ownerPosition})
+	return withStubVisitors(func(sc server.Model) func(logrus.FieldLogger, context.Context) {
+		return func(l logrus.FieldLogger, ctx context.Context) { handleRoomCreatedEvent(sc, nil)(l, ctx, e) }
+	})
+}
+
+func participantEnteredEvent(o ownerId, v visitorId) eventDispatch {
+	e := baseEvent(o, v, charconst.Id(v), trade2.StatusTypeParticipantEntered, trade2.ParticipantEnteredEventBody{
+		CharacterId: charconst.Id(v),
+		Name:        "Partner",
+		Position:    visitorPosition,
+	})
+	return withStubVisitors(func(sc server.Model) func(logrus.FieldLogger, context.Context) {
+		return func(l logrus.FieldLogger, ctx context.Context) {
+			handleParticipantEnteredEvent(sc, nil)(l, ctx, e)
+		}
+	})
+}
+
+// inviteSentEvent addresses the invite at target, which the zero case uses to
+// exercise announceTo's "0 is not a character id" drop.
+func inviteSentEvent(o ownerId, target charconst.Id) eventDispatch {
+	e := baseEvent(o, visitorId(0), charconst.Id(o), trade2.StatusTypeInviteSent, trade2.InviteSentEventBody{
+		TargetCharacterId: target,
+		InviterName:       "Inviter",
+	})
+	return func(sc server.Model) func(logrus.FieldLogger, context.Context) {
+		return func(l logrus.FieldLogger, ctx context.Context) { handleInviteSentEvent(sc, nil)(l, ctx, e) }
+	}
+}
+
+func inviteRejectedEvent(o ownerId, code string, targetName string) eventDispatch {
+	e := baseEvent(o, visitorId(0), charconst.Id(o), trade2.StatusTypeInviteRejected, trade2.InviteRejectedEventBody{
+		Code:       code,
+		TargetName: targetName,
+	})
+	return func(sc server.Model) func(logrus.FieldLogger, context.Context) {
+		return func(l logrus.FieldLogger, ctx context.Context) {
+			handleInviteRejectedEvent(sc, nil)(l, ctx, e)
+		}
+	}
+}
+
+// decodeEnterResultRoom decodes the room blob that follows the ENTER_RESULT
+// mode byte of a captured frame.
+func decodeEnterResultRoom(t *testing.T, c announceCall) interactionpkt.Room {
+	t.Helper()
+	if got, want := c.bytes[0], modeByte(t, "ENTER_RESULT"); got != want {
+		t.Fatalf("frame mode: got %d, want ENTER_RESULT (%d)", got, want)
+	}
+	l, _ := testlog.NewNullLogger()
+	// The avatar codec is version-gated, so the frame must be decoded under the
+	// same tenant version it was encoded under (handleAndCapture's GMS 83.1);
+	// only the region/version matter, not the tenant's identity.
+	ctx := tenant.WithContext(context.Background(), newTestTenant(t))
+	// NewRequestReader's second argument is a timestamp, not an offset, so the
+	// mode byte is sliced off rather than skipped.
+	req := request.Request(c.bytes[1:])
+	reader := request.NewRequestReader(&req, 0)
+	var rm interactionpkt.Room
+	rm.Decode(l, ctx)(&reader, testOptions)
+	return rm
 }
 
 func cancelledEvent(o ownerId, v visitorId, reason string) eventDispatch {
@@ -356,6 +443,12 @@ func TestMesoRefusedSendsBothTheReEchoAndTheLimitArm(t *testing.T) {
 	if !receivedMode(t, announced, 100, "TRADE_MESO_LIMIT") {
 		t.Error("no meso-limit reason sent")
 	}
+	// The counterparty never staged anything and must not be told otherwise:
+	// the re-echo carries the refused side's own amount, so leaking it to the
+	// other client would rewrite that client's view of its own grid.
+	if got := len(callsTo(announced, 200)); got != 0 {
+		t.Errorf("counterparty received %d frames, want 0", got)
+	}
 }
 
 // TestSettledSendsLeaveSuccessToBothSides pins design §1.4: completion is
@@ -402,6 +495,95 @@ func TestSettledAddressesEachRecipientWithItsOwnSeat(t *testing.T) {
 		if got := cs[0].bytes[1]; got != tc.seat {
 			t.Errorf("character %d leave slot: got %d, want %d", tc.cid, got, tc.seat)
 		}
+	}
+}
+
+// TestRoomCreatedCarriesTheOwnerEntryAtSlotZero pins the enter-result shape the
+// reviewer had to establish by decompilation:
+// CMiniRoomBaseDlg::OnEnterResultBase (@0x65ec3d) populates the dialog's avatar
+// array EXCLUSIVELY from this visitor list — nothing seeds it from local
+// CharacterData — and ::OnLeaveBase (@0x65edb5) opens with a
+// CDisconnectException throw on a LEAVE naming a slot the array never filled.
+// An empty list here is therefore not a cosmetic gap: the very next
+// SETTLED/CANCELLED LEAVE for slot 0 disconnects the owner's client.
+func TestRoomCreatedCarriesTheOwnerEntryAtSlotZero(t *testing.T) {
+	announced := handleAndCapture(t, roomCreatedEvent(ownerId(100)))
+	cs := callsTo(announced, 100)
+	if len(cs) != 1 {
+		t.Fatalf("expected one enter-result frame for the owner, got %d", len(cs))
+	}
+	rm := decodeEnterResultRoom(t, cs[0])
+	if got := len(rm.Visitors()); got != 1 {
+		t.Fatalf("visitor count: got %d, want 1 (the owner's own entry)", got)
+	}
+	if got := rm.Visitors()[0].Slot(); got != ownerPosition {
+		t.Errorf("owner entry slot: got %d, want %d", got, ownerPosition)
+	}
+	if got := rm.Position(); got != ownerPosition {
+		t.Errorf("header position: got %d, want the owner's own seat %d", got, ownerPosition)
+	}
+}
+
+// TestParticipantEnteredGivesTheEntrantBothSeats pins the other half of the same
+// invariant: the entrant's dialog must know about BOTH occupants, or a later
+// LEAVE naming the owner's slot 0 hits the same disconnect branch. The header
+// position is the entrant's OWN seat, which is what the dialog branches on.
+func TestParticipantEnteredGivesTheEntrantBothSeats(t *testing.T) {
+	announced := handleAndCapture(t, participantEnteredEvent(ownerId(100), visitorId(200)))
+
+	cs := callsTo(announced, 200)
+	if len(cs) != 1 {
+		t.Fatalf("expected one enter-result frame for the entrant, got %d", len(cs))
+	}
+	rm := decodeEnterResultRoom(t, cs[0])
+	if got := len(rm.Visitors()); got != 2 {
+		t.Fatalf("visitor count: got %d, want 2", got)
+	}
+	for i, want := range []byte{ownerPosition, visitorPosition} {
+		if got := rm.Visitors()[i].Slot(); got != want {
+			t.Errorf("visitor[%d] slot: got %d, want %d", i, got, want)
+		}
+	}
+	if got := rm.Position(); got != visitorPosition {
+		t.Errorf("header position: got %d, want the entrant's own seat %d", got, visitorPosition)
+	}
+
+	// The owner, whose dialog is already open, gets the incremental ENTER.
+	if !receivedMode(t, announced, 100, "ENTER") {
+		t.Error("the owner did not receive the incremental ENTER for the new visitor")
+	}
+}
+
+// TestInviteRejectedPassesTheTargetNameThrough pins that the refused target's
+// name reaches the wire. GMS v83 CMiniRoomBaseDlg::OnInviteResultStatic
+// (@0x65E848) DecodeStr's a name for codes 2/3/4 and Formats it into the
+// message, so dropping it renders "%s is doing something else right now" with a
+// blank subject. The INVITE_RESULT frame is mode + code + AsciiString, and the
+// string is length-prefixed with a uint16.
+func TestInviteRejectedPassesTheTargetNameThrough(t *testing.T) {
+	announced := handleAndCapture(t, inviteRejectedEvent(ownerId(100), "BUSY", "Guest"))
+	cs := callsTo(announced, 100)
+	if len(cs) != 1 {
+		t.Fatalf("expected one invite-result frame for the inviter, got %d", len(cs))
+	}
+	b := cs[0].bytes
+	if got, want := b[0], modeByte(t, "INVITE_RESULT"); got != want {
+		t.Errorf("frame mode: got %d, want INVITE_RESULT (%d)", got, want)
+	}
+	if got, want := string(b[4:]), "Guest"; got != want {
+		t.Errorf("target name on the wire: got %q, want %q", got, want)
+	}
+}
+
+// TestAnnounceToDropsCharacterZero pins announceTo's guard: zero is not a
+// character id, and a frame addressed to it can only be a session lookup that
+// misses.
+func TestAnnounceToDropsCharacterZero(t *testing.T) {
+	if got := len(handleAndCapture(t, inviteSentEvent(ownerId(100), 0))); got != 0 {
+		t.Errorf("announced %d frames to character 0, want 0", got)
+	}
+	if got := len(handleAndCapture(t, inviteSentEvent(ownerId(100), 200))); got != 1 {
+		t.Fatalf("a real target must still be announced to: got %d frames, want 1", got)
 	}
 }
 

@@ -420,15 +420,16 @@ func (p *ProcessorImpl) invite(mb *message.Buffer, txId uuid.UUID, f field.Model
 		return mb.Put(trademsg.EnvEventTopicStatus, roomErrorProvider(txId, room, characterId, errUnable))
 	}
 	if targetCharacterId == characterId {
-		return mb.Put(trademsg.EnvEventTopicStatus, inviteRejectedProvider(txId, room, inviteResultCannotFind))
+		// CANNOT_FIND_CHARACTER's client arm reads no name, so none is carried.
+		return mb.Put(trademsg.EnvEventTopicStatus, inviteRejectedProvider(txId, room, inviteResultCannotFind, ""))
 	}
 
-	code, err := p.checkInviteTarget(room, targetCharacterId)
+	code, targetName, err := p.checkInviteTarget(room, targetCharacterId)
 	if err != nil {
 		return err
 	}
 	if code != "" {
-		return mb.Put(trademsg.EnvEventTopicStatus, inviteRejectedProvider(txId, room, code))
+		return mb.Put(trademsg.EnvEventTopicStatus, inviteRejectedProvider(txId, room, code, targetName))
 	}
 
 	// The transition is compare-and-set inside the write lock so a second INVITE
@@ -462,31 +463,35 @@ func invitableState(s State) bool {
 }
 
 // checkInviteTarget runs the target-side half of the invite ladder. It returns
-// the inviteResult KEY to refuse with, or "" when the target may be invited. A
-// non-nil error is an infrastructure failure and aborts the command.
-func (p *ProcessorImpl) checkInviteTarget(room Room, targetCharacterId character.Id) (string, error) {
+// the inviteResult KEY to refuse with — or "" when the target may be invited —
+// and the target's name, which every refusal arm except CANNOT_FIND_CHARACTER's
+// interpolates into its message. A non-nil error is an infrastructure failure
+// and aborts the command.
+func (p *ProcessorImpl) checkInviteTarget(room Room, targetCharacterId character.Id) (string, string, error) {
 	tm, err := p.cp.GetById(targetCharacterId)
 	if err != nil {
+		// The name is unavailable precisely because the read failed; the arm
+		// this refuses with reads no name, so nothing is lost.
 		p.l.WithError(err).Infof("Unable to read invite target [%d]; refusing the trade invite.", targetCharacterId)
-		return inviteResultCannotFind, nil
+		return inviteResultCannotFind, "", nil
 	}
 	tf, err := p.locp.FieldOf(targetCharacterId)
 	if err != nil {
 		p.l.WithError(err).Infof("Unable to locate invite target [%d]; refusing the trade invite.", targetCharacterId)
-		return inviteResultCannotFind, nil
+		return inviteResultCannotFind, tm.Name(), nil
 	}
 	// A target the inviter cannot see is reported as not found, which is what
 	// the reference client's code 1 says.
 	if !tf.Equals(room.Field()) {
-		return inviteResultCannotFind, nil
+		return inviteResultCannotFind, tm.Name(), nil
 	}
 	if tm.Hp() == 0 {
-		return inviteResultBusy, nil
+		return inviteResultBusy, tm.Name(), nil
 	}
 	if _, ok := p.reg.GetByMember(p.t, targetCharacterId); ok {
-		return inviteResultBusy, nil
+		return inviteResultBusy, tm.Name(), nil
 	}
-	return "", nil
+	return "", tm.Name(), nil
 }
 
 // DeclineInvite tears the originator's pending room down (FR-2.5, design §3.1):

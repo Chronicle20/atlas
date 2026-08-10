@@ -166,15 +166,21 @@ func assertErrorEvent(t *testing.T, e *emitted, code string) {
 }
 
 // assertInviteRejected requires exactly one INVITE_REJECTED carrying the given
-// inviteResult key.
-func assertInviteRejected(t *testing.T, e *emitted, code string) {
+// inviteResult key and target name. The name is asserted because every refusal
+// arm except CANNOT_FIND_CHARACTER's interpolates it into the client's message
+// (CMiniRoomBaseDlg::OnInviteResultStatic @0x65E848) — an empty one renders
+// "%s is doing something else right now" with a blank subject.
+func assertInviteRejected(t *testing.T, e *emitted, code string, targetName string) {
 	t.Helper()
-	evs := statusEvents[trademsg.ErrorEventBody](t, e, trademsg.StatusTypeInviteRejected)
+	evs := statusEvents[trademsg.InviteRejectedEventBody](t, e, trademsg.StatusTypeInviteRejected)
 	if len(evs) != 1 {
 		t.Fatalf("INVITE_REJECTED events: got %d, want 1", len(evs))
 	}
 	if evs[0].Body.Code != code {
 		t.Errorf("invite result: got %s, want %s", evs[0].Body.Code, code)
+	}
+	if evs[0].Body.TargetName != targetName {
+		t.Errorf("invite result target name: got %q, want %q", evs[0].Body.TargetName, targetName)
 	}
 }
 
@@ -479,7 +485,7 @@ func TestInviteRejectsUnknownTarget(t *testing.T) {
 	if err := p.Invite(uuid.New(), testField(t), 100, 999); err != nil {
 		t.Fatalf("invite: %v", err)
 	}
-	assertInviteRejected(t, e, inviteResultCannotFind)
+	assertInviteRejected(t, e, inviteResultCannotFind, "")
 	assertNoEventOfType(t, e, trademsg.StatusTypeInviteSent)
 	room, _ := p.RoomForCharacter(100)
 	if room.State() != StateOpenSolo {
@@ -501,7 +507,7 @@ func TestInviteRejectsTargetOnAnotherMap(t *testing.T) {
 	if err := p.Invite(uuid.New(), testField(t), 100, 200); err != nil {
 		t.Fatalf("invite: %v", err)
 	}
-	assertInviteRejected(t, e, inviteResultCannotFind)
+	assertInviteRejected(t, e, inviteResultCannotFind, "Guest")
 }
 
 // TestInviteRejectsDeadTarget pins FR-4.7 on the target side.
@@ -513,7 +519,7 @@ func TestInviteRejectsDeadTarget(t *testing.T) {
 	if err := p.Invite(uuid.New(), testField(t), 100, 200); err != nil {
 		t.Fatalf("invite: %v", err)
 	}
-	assertInviteRejected(t, e, inviteResultBusy)
+	assertInviteRejected(t, e, inviteResultBusy, "Guest")
 }
 
 // TestInviteRejectsTargetAlreadyTrading pins FR-1.2 on the target side: the
@@ -529,7 +535,7 @@ func TestInviteRejectsTargetAlreadyTrading(t *testing.T) {
 	if err := p.Invite(uuid.New(), testField(t), 100, 200); err != nil {
 		t.Fatalf("invite: %v", err)
 	}
-	assertInviteRejected(t, e, inviteResultBusy)
+	assertInviteRejected(t, e, inviteResultBusy, "Guest")
 }
 
 // TestInviteRejectsSelf pins that a character cannot invite themselves — the
@@ -543,7 +549,7 @@ func TestInviteRejectsSelf(t *testing.T) {
 	if err := p.Invite(uuid.New(), testField(t), 100, 100); err != nil {
 		t.Fatalf("invite: %v", err)
 	}
-	assertInviteRejected(t, e, inviteResultCannotFind)
+	assertInviteRejected(t, e, inviteResultCannotFind, "")
 	if len(e.messages(t, invitemsg.EnvCommandTopic)) != 0 {
 		t.Error("a self-invite still produced a COMMAND_TOPIC_INVITE message")
 	}

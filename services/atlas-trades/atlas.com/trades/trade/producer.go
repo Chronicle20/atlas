@@ -82,9 +82,14 @@ func inviteSentProvider(txId uuid.UUID, r Room, targetCharacterId character.Id, 
 }
 
 // inviteRejectedProvider tells the inviter their invite was refused, carrying an
-// inviteResult KEY string (see the inviteResult* constants in processor.go).
-func inviteRejectedProvider(txId uuid.UUID, r Room, code string) model.Provider[[]kafka.Message] {
-	return roomEventProvider(txId, r, r.OwnerId(), trademsg.StatusTypeInviteRejected, trademsg.ErrorEventBody{Code: code})
+// inviteResult KEY string (see the inviteResult* constants in processor.go) and
+// the refused target's name, which the client interpolates into every refusal
+// message except CANNOT_FIND_CHARACTER's.
+func inviteRejectedProvider(txId uuid.UUID, r Room, code string, targetName string) model.Provider[[]kafka.Message] {
+	return roomEventProvider(txId, r, r.OwnerId(), trademsg.StatusTypeInviteRejected, trademsg.InviteRejectedEventBody{
+		Code:       code,
+		TargetName: targetName,
+	})
 }
 
 // participantEnteredProvider announces the visitor taking seat 1.

@@ -137,14 +137,24 @@ func roomOccupants[E any](e trade2.StatusEvent[E]) []charconst.Id {
 	return ids
 }
 
+// announceTo sends one body to a single character, dropping the write when
+// there is no such character. Zero is not a character id: an event raised
+// before a room existed carries zero participant ids (atlas-trades'
+// errorProvider), and a body addressed to id 0 would be a session lookup that
+// can only miss. The check lives HERE rather than inside the seam so it is
+// production code the tests exercise, not stub behaviour they reimplement.
+func announceTo(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId charconst.Id, body packet.Encode) {
+	if characterId == 0 {
+		return
+	}
+	tradeAnnouncer(l, ctx, sc, wp, characterId, body)
+}
+
 // tradeAnnouncer is the channel-side seam that resolves a character's session
 // and announces one CharacterInteraction body to it. Package-level var so tests
 // can swap in a recording stub without a live net.Conn or a real writer
 // registry (mirrors the RPS consumer's rpsAnnouncer seam).
 var tradeAnnouncer = func(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId charconst.Id, body packet.Encode) {
-	if characterId == 0 {
-		return
-	}
 	err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(characterId),
 		session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(body))
 	if err != nil {
@@ -157,7 +167,7 @@ var tradeAnnouncer = func(l logrus.FieldLogger, ctx context.Context, sc server.M
 // this — they build a per-recipient body instead.
 func announceToRoom[E any](l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, e trade2.StatusEvent[E], body packet.Encode) {
 	for _, id := range roomOccupants(e) {
-		tradeAnnouncer(l, ctx, sc, wp, id, body)
+		announceTo(l, ctx, sc, wp, id, body)
 	}
 }
 
@@ -190,6 +200,16 @@ var tradeStagedAssetResolver = func(l logrus.FieldLogger, ctx context.Context, s
 // compartment by the time the status event is handled.
 var errAssetNotFound = errors.New("staged asset not present in the stager's compartment")
 
+// tradeRoomVisitorResolver is the seam that resolves a character into the
+// {slot, avatar, name} visitor entry the enter-result frame carries. Package-
+// level var so the enter-result shape can be tested without a REST round trip —
+// that shape is load-bearing: CMiniRoomBaseDlg::OnEnterResultBase (@0x65ec3d)
+// populates the dialog's avatar array EXCLUSIVELY from this list, and
+// ::OnLeaveBase (@0x65edb5) throws CDisconnectException on a LEAVE naming a slot
+// the array never filled. An omitted entry is a client disconnect, not a
+// cosmetic gap.
+var tradeRoomVisitorResolver = tradeRoomVisitor
+
 // tradeRoomVisitor resolves a character into the {slot, avatar, name} visitor
 // entry the enter-result frame carries.
 func tradeRoomVisitor(l logrus.FieldLogger, ctx context.Context, slot byte, characterId charconst.Id) (interactionpkt.Visitor, error) {
@@ -216,13 +236,13 @@ func handleRoomCreatedEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 			return
 		}
 		l.Debugf("Trade room [%s] created by character [%d]. roomType [%d], position [%d].", e.RoomId, e.OwnerId, e.RoomType, e.Body.Position)
-		owner, err := tradeRoomVisitor(l, ctx, e.Body.Position, e.OwnerId)
+		owner, err := tradeRoomVisitorResolver(l, ctx, e.Body.Position, e.OwnerId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to resolve owner [%d] for trade room [%s].", e.OwnerId, e.RoomId)
 			return
 		}
 		room := interactionpkt.NewTradeRoom(interactionpkt.RoomType(e.RoomType), e.Body.Position, []interactionpkt.Visitor{owner})
-		tradeAnnouncer(l, ctx, sc, wp, e.OwnerId, interactioncb.CharacterInteractionEnterResultSuccessBody(room))
+		announceTo(l, ctx, sc, wp, e.OwnerId, interactioncb.CharacterInteractionEnterResultSuccessBody(room))
 	}
 }
 
@@ -238,19 +258,19 @@ func handleParticipantEnteredEvent(sc server.Model, wp writer.Producer) func(l l
 			return
 		}
 		l.Debugf("Character [%d] entered trade room [%s] at position [%d].", e.Body.CharacterId, e.RoomId, e.Body.Position)
-		owner, err := tradeRoomVisitor(l, ctx, ownerPosition, e.OwnerId)
+		owner, err := tradeRoomVisitorResolver(l, ctx, ownerPosition, e.OwnerId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to resolve owner [%d] for trade room [%s].", e.OwnerId, e.RoomId)
 			return
 		}
-		visitor, err := tradeRoomVisitor(l, ctx, e.Body.Position, e.Body.CharacterId)
+		visitor, err := tradeRoomVisitorResolver(l, ctx, e.Body.Position, e.Body.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to resolve visitor [%d] for trade room [%s].", e.Body.CharacterId, e.RoomId)
 			return
 		}
 		room := interactionpkt.NewTradeRoom(interactionpkt.RoomType(e.RoomType), e.Body.Position, []interactionpkt.Visitor{owner, visitor})
-		tradeAnnouncer(l, ctx, sc, wp, e.Body.CharacterId, interactioncb.CharacterInteractionEnterResultSuccessBody(room))
-		tradeAnnouncer(l, ctx, sc, wp, e.OwnerId, interactioncb.CharacterInteractionEnterBody(visitor))
+		announceTo(l, ctx, sc, wp, e.Body.CharacterId, interactioncb.CharacterInteractionEnterResultSuccessBody(room))
+		announceTo(l, ctx, sc, wp, e.OwnerId, interactioncb.CharacterInteractionEnterBody(visitor))
 	}
 }
 
@@ -266,25 +286,27 @@ func handleInviteSentEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 			return
 		}
 		l.Debugf("Trade invite from [%s] to character [%d]. handle [%d].", e.Body.InviterName, e.Body.TargetCharacterId, e.Handle)
-		tradeAnnouncer(l, ctx, sc, wp, e.Body.TargetCharacterId, interactioncb.CharacterInteractionInviteBody(e.RoomType, e.Body.InviterName, e.Handle))
+		announceTo(l, ctx, sc, wp, e.Body.TargetCharacterId, interactioncb.CharacterInteractionInviteBody(e.RoomType, e.Body.InviterName, e.Handle))
 	}
 }
 
 // handleInviteRejectedEvent tells the inviter their offer was refused. The body
 // carries an inviteResult KEY string, resolved to the per-version numeric code
-// by the tenant inviteResult table inside the body func (DOM-25). The v83
-// CANNOT_FIND_CHARACTER arm reads no name, and BUSY interpolates one the
-// channel does not have on this path, so the message is empty either way.
-func handleInviteRejectedEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, e trade2.StatusEvent[trade2.ErrorEventBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, e trade2.StatusEvent[trade2.ErrorEventBody]) {
+// by the tenant inviteResult table inside the body func (DOM-25), and the
+// refused target's name. The name is passed straight through: the v83
+// CANNOT_FIND_CHARACTER arm reads none (atlas-trades sends "" there), while
+// BUSY and the other refusals interpolate it into their message, so dropping it
+// would render "%s is doing something else right now" with a blank subject.
+func handleInviteRejectedEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, e trade2.StatusEvent[trade2.InviteRejectedEventBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e trade2.StatusEvent[trade2.InviteRejectedEventBody]) {
 		if e.Type != trade2.StatusTypeInviteRejected {
 			return
 		}
 		if !guard(sc, ctx, e) {
 			return
 		}
-		l.Debugf("Trade invite rejected for room [%s]. code [%s].", e.RoomId, e.Body.Code)
-		tradeAnnouncer(l, ctx, sc, wp, e.CharacterId, interactioncb.CharacterInteractionInviteResultKeyBody(e.Body.Code, ""))
+		l.Debugf("Trade invite rejected for room [%s]. code [%s], targetName [%s].", e.RoomId, e.Body.Code, e.Body.TargetName)
+		announceTo(l, ctx, sc, wp, e.CharacterId, interactioncb.CharacterInteractionInviteResultKeyBody(e.Body.Code, e.Body.TargetName))
 	}
 }
 
@@ -307,7 +329,7 @@ func handleItemStagedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 		}
 		for _, id := range roomOccupants(e) {
 			side := sideFor(e.Body.Position, positionOf(e, id))
-			tradeAnnouncer(l, ctx, sc, wp, id, interactioncb.CharacterInteractionTradePutItemBody(side, e.Body.TradeSlot, a))
+			announceTo(l, ctx, sc, wp, id, interactioncb.CharacterInteractionTradePutItemBody(side, e.Body.TradeSlot, a))
 		}
 	}
 }
@@ -326,7 +348,7 @@ func handleMesoStagedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 		l.Debugf("Character [%d] staged [%d] meso in trade room [%s]. position [%d].", e.CharacterId, e.Body.Amount, e.RoomId, e.Body.Position)
 		for _, id := range roomOccupants(e) {
 			side := sideFor(e.Body.Position, positionOf(e, id))
-			tradeAnnouncer(l, ctx, sc, wp, id, interactioncb.CharacterInteractionTradeAddMesoBody(side, e.Body.Amount))
+			announceTo(l, ctx, sc, wp, id, interactioncb.CharacterInteractionTradeAddMesoBody(side, e.Body.Amount))
 		}
 	}
 }
@@ -346,8 +368,8 @@ func handleMesoRefusedEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 			return
 		}
 		l.Debugf("Meso stage refused for character [%d] in trade room [%s]. lastValidAmount [%d].", e.CharacterId, e.RoomId, e.Body.LastValidAmount)
-		tradeAnnouncer(l, ctx, sc, wp, e.CharacterId, interactioncb.CharacterInteractionTradeAddMesoBody(ownSide, e.Body.LastValidAmount))
-		tradeAnnouncer(l, ctx, sc, wp, e.CharacterId, interactioncb.CharacterInteractionTradeMesoLimitBody())
+		announceTo(l, ctx, sc, wp, e.CharacterId, interactioncb.CharacterInteractionTradeAddMesoBody(ownSide, e.Body.LastValidAmount))
+		announceTo(l, ctx, sc, wp, e.CharacterId, interactioncb.CharacterInteractionTradeMesoLimitBody())
 	}
 }
 
@@ -399,7 +421,7 @@ func handleSettledEvent(sc server.Model, wp writer.Producer) func(l logrus.Field
 		}
 		l.Debugf("Trade room [%s] settled. ledgerEntryId [%s].", e.RoomId, e.Body.LedgerEntryId)
 		for _, id := range roomOccupants(e) {
-			tradeAnnouncer(l, ctx, sc, wp, id, interactioncb.CharacterInteractionLeaveReasonBody(positionOf(e, id), interactioncb.CharacterInteractionLeaveReasonTradeSuccess))
+			announceTo(l, ctx, sc, wp, id, interactioncb.CharacterInteractionLeaveReasonBody(positionOf(e, id), interactioncb.CharacterInteractionLeaveReasonTradeSuccess))
 		}
 	}
 }
@@ -417,7 +439,7 @@ func handleCancelledEvent(sc server.Model, wp writer.Producer) func(l logrus.Fie
 		}
 		l.Debugf("Trade room [%s] cancelled. reason [%s].", e.RoomId, e.Body.Reason)
 		for _, id := range roomOccupants(e) {
-			tradeAnnouncer(l, ctx, sc, wp, id, interactioncb.CharacterInteractionLeaveReasonBody(positionOf(e, id), e.Body.Reason))
+			announceTo(l, ctx, sc, wp, id, interactioncb.CharacterInteractionLeaveReasonBody(positionOf(e, id), e.Body.Reason))
 		}
 	}
 }
@@ -436,7 +458,7 @@ func handleErrorEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLo
 			return
 		}
 		l.Debugf("Trade error for character [%d]. code [%s].", e.CharacterId, e.Body.Code)
-		tradeAnnouncer(l, ctx, sc, wp, e.CharacterId, interactioncb.CharacterInteractionEnterResultErrorBody(e.Body.Code))
+		announceTo(l, ctx, sc, wp, e.CharacterId, interactioncb.CharacterInteractionEnterResultErrorBody(e.Body.Code))
 	}
 }
 

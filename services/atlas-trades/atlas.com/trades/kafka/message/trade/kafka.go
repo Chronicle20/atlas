@@ -200,6 +200,22 @@ type CancelledEventBody struct {
 	Reason string `json:"reason"`
 }
 
+// InviteRejectedEventBody carries an inviteResult KEY string, which
+// atlas-channel resolves to a per-version code via the tenant inviteResult
+// table (DOM-25), plus the refused target's name.
+//
+// TargetName is load-bearing, not decoration: GMS v83
+// CMiniRoomBaseDlg::OnInviteResultStatic (@0x65E848) reads no name for code 1
+// (CANNOT_FIND_CHARACTER) but DecodeStr's one for codes 2/3/4 and Formats it
+// into the message ("%s is doing something else right now"). An empty name on
+// a BUSY refusal renders that message with a blank subject. It is therefore
+// empty ONLY for a refusal whose arm reads no name, or when the target could
+// not be read at all — which is itself always reported as CANNOT_FIND_CHARACTER.
+type InviteRejectedEventBody struct {
+	Code       string `json:"code"`
+	TargetName string `json:"targetName"`
+}
+
 // ErrorEventBody carries an enterError KEY string, resolved the same way.
 type ErrorEventBody struct {
 	Code string `json:"code"`

@@ -76,6 +76,31 @@ func TestFamilyCapMissingFnameFails(t *testing.T) {
 	}
 }
 
+// A SERVERBOUND dispatchers/*.yaml is a handler `options.operations` routing
+// table, not a client mode-prefix demultiplexer, so the family cap does not
+// apply to it — even with no run.go arms and no families.yaml entry. Its
+// clientbound sibling in the same directory is still guarded. (task-206)
+func TestFamilyCapServerboundSkipped(t *testing.T) {
+	dir := t.TempDir()
+	writeYAML(t, filepath.Join(dir, "sb.yaml"), "fname: CCashShop::OnStatusCoupon\ndirection: serverbound\n")
+	writeYAML(t, filepath.Join(dir, "sb_no_fname.yaml"), "handler: Foo\ndirection: serverbound\n")
+	writeYAML(t, filepath.Join(dir, "cb.yaml"), "fname: CPhantom::OnResult\ndirection: clientbound\n")
+	fp := filepath.Join(t.TempDir(), "families.yaml")
+	writeYAML(t, fp, "dispatchers: []\n")
+
+	cfg := dispatcherLintConfig{DispatchersDir: dir, FamiliesPath: fp}
+	vs, err := checkFamilyCap(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(vs) != 1 {
+		t.Fatalf("want exactly 1 violation (the clientbound phantom), got %d: %+v", len(vs), vs)
+	}
+	if familyOfViolation(vs[0]) != "CPhantom::OnResult" {
+		t.Fatalf("violation family = %q; want CPhantom::OnResult", familyOfViolation(vs[0]))
+	}
+}
+
 // The real repo tree passes the family-cap guard (every dispatchers/*.yaml is
 // discrete-implemented). Run from repo root, so DispatchersDir/FamiliesPath
 // resolve relative to it.

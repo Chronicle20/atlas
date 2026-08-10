@@ -1,16 +1,16 @@
 {
   "toolSha": "ffef83aca4ecd3db75b70a8c36bf74d477b42f6baf03a361680b382a2d3f4def",
   "exportHashes": {
-    "gms_v48": "efc7d007da810aacf79d91b20bdb2a1eaf69fa014e2994074caa8bb8ca92d023",
-    "gms_v61": "c52dc68d06079daaeab0542db8981e81023a90d452e631cca9abc9b7b393eeca",
-    "gms_v72": "9b45b198c5d6f7e7d33306b7e8e1cb06fca8d853f81674b75dc68e5ae46f0526",
-    "gms_v79": "298bf14d53928a8d5526c9e8f02368eb8f8651f8e0d2b86a622e13d133d0df0b",
-    "gms_v83": "33fb874e5b8e4da40a32f58be6cdca529f979e4968888f4f3f15aee4535bbbe9",
-    "gms_v84": "9ba92967587427274b6fcb3669989010f3ce09aea14398ec15bb2badb1776632",
-    "gms_v87": "93df81d7281dacbcf81015ca9957285595975748b17a4f1fdc6b2648d9bb17a7",
-    "gms_v92": "d2f16cf9ad73271d53ba47071a90c6690cc48390bcfd78bfc4e3d5576a2343f9",
-    "gms_v95": "07d9af54a86d61b13319faa0dae3dce938049a0953f97171716777cbd1dc0ab3",
-    "jms_v185": "a603be42f9945cb9ce7bba3ea993127d3e59a7275056ebf36f931533b98fac58"
+    "gms_v48": "2a9d92fbe9e27a3ae8025c482be3864ef9e6da7de729c36d4dfbc311e245f7f9",
+    "gms_v61": "642b7f9f0bb33456c8d882625543f90830cd2c1565449ffb67df10e7d37a61e2",
+    "gms_v72": "395713c15ddfb2f14c3d54ff1144b301202cc21b5fffe36e690f74ec03f476d9",
+    "gms_v79": "1748c565e1328db1f2e3d609abb9f01eaf2451ed271ccc5940d3756154866615",
+    "gms_v83": "f4e2b089c18fdb43711f47485df231623f5a618c94f08dc626f9d0dc23115e56",
+    "gms_v84": "3fa91a6da4fbbd4599a59c7015fbb3f2712da2a8f0945916ef426b21cde3a551",
+    "gms_v87": "bb32349c3b5fc92a8a570dcc9babc2460894c4f26ba08684bda8302f2c2c2e14",
+    "gms_v92": "926979ea91d008a3292a30ae24c7fd83efb4af66cfced48fda26e9ae4bc8d806",
+    "gms_v95": "2320c0b85f7a00149892696efd8a8fb9717cf088144c27b18d6caee80ad43368",
+    "jms_v185": "a8991592f4cfad843356e8cb78dcd1782f0220efe4ba28c222330da6e4e0dfd9"
   },
   "rows": [
     {
@@ -26092,6 +26092,57 @@
     },
     {
       "kind": "op",
+      "op": "COUPON_CODE",
+      "direction": "serverbound",
+      "tier1": false,
+      "fnames": [
+        "CCashShop::OnStatusCoupon"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 161
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 197
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 220
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 222
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 230
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 236
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 243
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 269
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 276
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 246
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "MOB_DAMAGE_MOB",
       "packet": "monster/serverbound/MonsterMobDamageMob",
       "direction": "serverbound",
@@ -34246,63 +34297,6 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "COUPON_CODE",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CCashShop::OnStatusCoupon"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 230
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 230
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 243
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 269
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 276
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 246
         }
       }
     },

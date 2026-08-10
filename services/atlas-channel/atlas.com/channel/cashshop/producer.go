@@ -51,6 +51,22 @@ func RequestPurchaseCommandProvider(characterId uint32, serialNumber uint32, cur
 	return producer.SingleMessageProvider(key, value)
 }
 
+// RequestCouponRedemptionCommandProvider carries the ALREADY-NORMALIZED coupon
+// code. The owning account is resolved service-side from CharacterId, and the
+// packet's targetCharacter field is deliberately not forwarded — targeted /
+// gift redemption is out of scope.
+func RequestCouponRedemptionCommandProvider(characterId uint32, code string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.RequestCouponRedemptionCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeRequestCouponRedemption,
+		Body: cashshop.RequestCouponRedemptionCommandBody{
+			Code: code,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func RequestInventoryIncreaseByTypeCommandProvider(characterId uint32, currency uint32, inventoryType byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &cashshop.Command[cashshop.RequestInventoryIncreaseByTypeCommandBody]{

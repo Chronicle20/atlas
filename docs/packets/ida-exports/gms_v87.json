@@ -83,6 +83,27 @@
         }
       ]
     },
+    "CCashShop::OnStatusCoupon": {
+      "address": "0x47b9d4",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*(this + 7) && sub_47BB2C(&v16) == 1 && v4"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*(this + 7) && sub_47BB2C(&v16) == 1 && v4"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*(this + 7) && sub_47BB2C(&v16) == 1 && v4 && v15"
+        }
+      ]
+    },
     "CUser::OnMiniRoomBalloon#Remove": {
       "address": "0x9b337d",
       "direction": "clientbound",

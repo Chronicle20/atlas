@@ -4,9 +4,18 @@ import (
 	"atlas-cashshop/configuration/tenant"
 	"context"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+)
+
+// Documented defaults for the coupon rate limiter, applied when a tenant has
+// not configured one. Resolved here alongside the other tenant defaults so no
+// call site ever carries a magic number (DOM-25).
+const (
+	DefaultCouponAttempts = 10
+	DefaultCouponWindow   = time.Hour
 )
 
 var (
@@ -50,4 +59,27 @@ func GetHourlyExpirations(l logrus.FieldLogger, ctx context.Context, tenantId uu
 		result[he.TemplateId] = he.Hours
 	}
 	return result
+}
+
+// GetCouponRateLimit returns the number of failed coupon attempts an account
+// may make per window, and the window itself.
+func GetCouponRateLimit(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UUID) (uint32, time.Duration) {
+	cfg, _ := GetTenantConfig(l, ctx, tenantId)
+	return couponRateLimitFrom(cfg)
+}
+
+func couponRateLimitFrom(cfg tenant.RestModel) (uint32, time.Duration) {
+	rl := cfg.CashShop.Coupons.RateLimit
+	attempts := uint32(DefaultCouponAttempts)
+	window := DefaultCouponWindow
+	// Zero is "unset", not "zero allowed": a 0 threshold would lock every
+	// account out of the coupon tab and a 0 window would make the Redis
+	// counter immortal.
+	if rl.Attempts > 0 {
+		attempts = rl.Attempts
+	}
+	if rl.WindowSeconds > 0 {
+		window = time.Duration(rl.WindowSeconds) * time.Second
+	}
+	return attempts, window
 }

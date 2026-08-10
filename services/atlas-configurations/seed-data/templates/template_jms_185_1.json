@@ -1758,6 +1758,15 @@
         ]
       },
       {
+        "opCode": "0xF6",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCouponCodeHandle",
+        "fname": "CCashShop::OnStatusCoupon",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x10A",
         "validator": "NoOpValidator",
         "handler": "ItcStatusChargeHandle",
@@ -4349,6 +4358,38 @@
             "SHOW_NOTICE_1465": 166,
             "REFRESH_LOCKER_OR_NOTICE": 167,
             "SHOW_NOTICE_1464": 168
+          },
+          "errors": {
+            "REQUEST_TIMED_OUT": 178,
+            "NOT_ENOUGH_CASH": 180,
+            "CANNOT_GIFT_WHEN_UNDERAGE": 181,
+            "EXCEEDED_GIFT_LIMIT": 182,
+            "CANNOT_GIFT_TO_OWN_ACCOUNT": 183,
+            "INCORRECT_NAME": 184,
+            "CANNOT_GIFT_GENDER_RESTRICTION": 185,
+            "CANNOT_GIFT_RECIPIENT_INVENTORY_FULL": 186,
+            "EXCEEDED_CASH_ITEM_LIMIT": 187,
+            "INCORRECT_NAME_OR_GENDER_RESTRICTION": 188,
+            "INVALID_COUPON_CODE": 191,
+            "COUPON_EXPIRED": 193,
+            "COUPON_ALREADY_USED": 194,
+            "COUPON_INTERNET_CAFE_RESTRICTION": 195,
+            "INTERNET_CAFE_COUPON_ALREADY_USED": 196,
+            "INTERNET_CAFE_COUPON_EXPIRED": 197,
+            "COUPON_NOT_REGISTERED": 198,
+            "COUPON_GENDER_RESTRICTION": 199,
+            "COUPON_CANNOT_BE_GIFTED": 200,
+            "COUPON_ONLY_FOR_MAPLE_STORY": 201,
+            "INVENTORY_FULL": 202,
+            "NOT_AVAILABLE_FOR_PURCHASE": 203,
+            "CANNOT_GIFT_INVALID_NAME_OR_GENDER": 204,
+            "CHECK_NAME_OF_RECEIVER": 205,
+            "NOT_AVAILABLE_FOR_PURCHASE_AT_HOUR": 206,
+            "OUT_OF_STOCK": 207,
+            "EXCEEDED_SPENDING_LIMIT": 208,
+            "NOT_ENOUGH_MESOS": 209,
+            "CASH_SHOP_NOT_AVAILABLE_DURING_BETA": 210,
+            "INVALID_BIRTHDAY": 211
           }
         },
         "services": [
@@ -5006,6 +5047,12 @@
           "hours": 4
         }
       ]
+    },
+    "coupons": {
+      "rateLimit": {
+        "attempts": 10,
+        "windowSeconds": 3600
+      }
     }
   }
 }

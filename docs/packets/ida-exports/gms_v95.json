@@ -83,6 +83,22 @@
         }
       ]
     },
+    "CCashShop::OnStatusCoupon": {
+      "address": "0x487ee0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "this->m_bCashShopAuthorized && !this->m_bCashShopRequestSent && CCouponUseSelectDlg::Confirm(&sCouponID, &sCharacterID) == 1"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "this->m_bCashShopAuthorized && !this->m_bCashShopRequestSent && CCouponUseSelectDlg::Confirm(&sCouponID, &sCharacterID) == 1"
+        }
+      ]
+    },
     "CMiniRoomBaseDlg::OnPacketBase#MemoryGamePutStoneError": {
       "address": "0x680360",
       "direction": "clientbound",

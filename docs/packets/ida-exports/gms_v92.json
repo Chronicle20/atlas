@@ -996,6 +996,22 @@
         }
       ]
     },
+    "CCashShop::OnStatusCoupon": {
+      "address": "0x484430",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "this[17] && !this[7] && sub_480D40(&v8, v9) == 1"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "this[17] && !this[7] && sub_480D40(&v8, v9) == 1"
+        }
+      ]
+    },
     "CCashShop::RequestCashPurchaseRecord": {
       "address": "",
       "direction": "serverbound",

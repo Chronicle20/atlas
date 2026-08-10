@@ -54,3 +54,11 @@ func ParseCompartmentId(l logrus.FieldLogger, next func(uuid.UUID) http.HandlerF
 func ParseAssetId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
 	return server.ParseIntId[uint32](l, "assetId", next)
 }
+
+func ParseCouponId(l logrus.FieldLogger, next func(uuid.UUID) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseUUIDId(l, "couponId", next)
+}
+
+func ParseBatchId(l logrus.FieldLogger, next func(uuid.UUID) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseUUIDId(l, "batchId", next)
+}

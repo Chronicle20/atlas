@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"math"
 	"testing"
 
 	"github.com/google/uuid"
@@ -192,5 +193,51 @@ func TestPurchaseUnknownCurrencyDeductsPrepaid(t *testing.T) {
 
 	if result.Prepaid() != 200 {
 		t.Errorf("Unknown currency should deduct from prepaid: expected 200, got %d", result.Prepaid())
+	}
+}
+
+func TestAwardCreditsEachCurrency(t *testing.T) {
+	base := Model{credit: 100, points: 200, prepaid: 300}
+	for _, c := range []struct {
+		name     string
+		currency uint32
+		credit   uint32
+		points   uint32
+		prepaid  uint32
+	}{
+		{"credit", 1, 150, 200, 300},
+		{"points", 2, 100, 250, 300},
+		{"prepaid", 3, 100, 200, 350},
+		{"prepaid fallback for unknown currency", 99, 100, 200, 350},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			got := base.Award(c.currency, 50)
+			if got.Credit() != c.credit || got.Points() != c.points || got.Prepaid() != c.prepaid {
+				t.Errorf("Award(%d, 50) = (%d,%d,%d), want (%d,%d,%d)",
+					c.currency, got.Credit(), got.Points(), got.Prepaid(), c.credit, c.points, c.prepaid)
+			}
+		})
+	}
+}
+
+func TestAwardSaturatesInsteadOfWrapping(t *testing.T) {
+	// A uint32 wrap would turn a huge reward into a near-zero balance and
+	// silently destroy the account's existing funds.
+	base := Model{credit: math.MaxUint32 - 5, points: math.MaxUint32, prepaid: 0}
+	got := base.Award(1, 100)
+	if got.Credit() != math.MaxUint32 {
+		t.Errorf("credit = %d, want saturate at %d", got.Credit(), uint32(math.MaxUint32))
+	}
+	got = base.Award(2, 1)
+	if got.Points() != math.MaxUint32 {
+		t.Errorf("points = %d, want saturate at %d", got.Points(), uint32(math.MaxUint32))
+	}
+}
+
+func TestAwardDoesNotMutateReceiver(t *testing.T) {
+	base := Model{credit: 10}
+	_ = base.Award(1, 5)
+	if base.Credit() != 10 {
+		t.Errorf("receiver mutated: credit = %d, want 10", base.Credit())
 	}
 }

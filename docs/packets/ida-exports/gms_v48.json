@@ -176,6 +176,45 @@
         }
       ]
     },
+    "CCashShop::OnStatusCoupon": {
+      "address": "0x44d2e7",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v8) == 1",
+          "ref": "sub_41803C"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v8) == 1"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v8) == 1",
+          "ref": "sub_41803C"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v8) == 1"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v8) == 1 && v9",
+          "ref": "sub_41803C"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v8) == 1 && v9"
+        }
+      ]
+    },
     "CMiniRoomBaseDlg::OnPacketBase#MemoryGameResult": {
       "address": "0x573e1d",
       "direction": "clientbound",

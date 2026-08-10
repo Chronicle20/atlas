@@ -6,16 +6,16 @@
 
 Tool: `ffef83aca4ecd3db75b70a8c36bf74d477b42f6baf03a361680b382a2d3f4def`
 
-- export gms_v48: `efc7d007da810aacf79d91b20bdb2a1eaf69fa014e2994074caa8bb8ca92d023`
-- export gms_v61: `c52dc68d06079daaeab0542db8981e81023a90d452e631cca9abc9b7b393eeca`
-- export gms_v72: `9b45b198c5d6f7e7d33306b7e8e1cb06fca8d853f81674b75dc68e5ae46f0526`
-- export gms_v79: `298bf14d53928a8d5526c9e8f02368eb8f8651f8e0d2b86a622e13d133d0df0b`
-- export gms_v83: `33fb874e5b8e4da40a32f58be6cdca529f979e4968888f4f3f15aee4535bbbe9`
-- export gms_v84: `9ba92967587427274b6fcb3669989010f3ce09aea14398ec15bb2badb1776632`
-- export gms_v87: `93df81d7281dacbcf81015ca9957285595975748b17a4f1fdc6b2648d9bb17a7`
-- export gms_v92: `d2f16cf9ad73271d53ba47071a90c6690cc48390bcfd78bfc4e3d5576a2343f9`
-- export gms_v95: `07d9af54a86d61b13319faa0dae3dce938049a0953f97171716777cbd1dc0ab3`
-- export jms_v185: `a603be42f9945cb9ce7bba3ea993127d3e59a7275056ebf36f931533b98fac58`
+- export gms_v48: `2a9d92fbe9e27a3ae8025c482be3864ef9e6da7de729c36d4dfbc311e245f7f9`
+- export gms_v61: `642b7f9f0bb33456c8d882625543f90830cd2c1565449ffb67df10e7d37a61e2`
+- export gms_v72: `395713c15ddfb2f14c3d54ff1144b301202cc21b5fffe36e690f74ec03f476d9`
+- export gms_v79: `1748c565e1328db1f2e3d609abb9f01eaf2451ed271ccc5940d3756154866615`
+- export gms_v83: `f4e2b089c18fdb43711f47485df231623f5a618c94f08dc626f9d0dc23115e56`
+- export gms_v84: `3fa91a6da4fbbd4599a59c7015fbb3f2712da2a8f0945916ef426b21cde3a551`
+- export gms_v87: `bb32349c3b5fc92a8a570dcc9babc2460894c4f26ba08684bda8302f2c2c2e14`
+- export gms_v92: `926979ea91d008a3292a30ae24c7fd83efb4af66cfced48fda26e9ae4bc8d806`
+- export gms_v95: `2320c0b85f7a00149892696efd8a8fb9717cf088144c27b18d6caee80ad43368`
+- export jms_v185: `a8991592f4cfad843356e8cb78dcd1782f0220efe4ba28c222330da6e4e0dfd9`
 
 ## Clientbound
 
@@ -721,6 +721,7 @@ Tool: `ffef83aca4ecd3db75b70a8c36bf74d477b42f6baf03a361680b382a2d3f4def`
 | MONSTER_BOMB | CMob::TryFirstSelfDestruction | monster/serverbound/MonsterMonsterBomb (T1) |  | ⬜ | 0x0A0 | ✅ | 0x0B7 | ✅ | 0x0B9 | ✅ | 0x0C1 | ✅ | 0x0C6 | ✅ | 0x0CD | ✅ | 0x0E1 | ❌ | 0x0E8 | ✅ | 0x0C7 | ✅ |
 | MORPH_REQUEST | CUINewYearCardSenderDlg::_SendNewYearCard; CUIRandomMorphDlg::_SendMorphRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A0 | ❌ | 0x0A4 | ❌ | 0x0A8 | ❌ | 0x0B5 | ❌ | 0x0B8 | ❌ |  | ⬜ |
 | CASH_ITEM_GACHAPON_BUTTON | CUICashItemGachapon::OnButtonClicked |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A1 | ❌ | 0x0A5 | ❌ | 0x0A9 | ❌ | 0x0B6 | ❌ | 0x0B9 | ❌ |  | ⬜ |
+| COUPON_CODE | CCashShop::OnStatusCoupon |  | 0x0A1 | ✅ | 0x0C5 | ✅ | 0x0DC | ✅ | 0x0DE | ✅ | 0x0E6 | ✅ | 0x0EC | ✅ | 0x0F3 | ✅ | 0x10D | ✅ | 0x114 | ✅ | 0x0F6 | ✅ |
 | MOB_DAMAGE_MOB | CMob::SetDamagedByMob | monster/serverbound/MonsterMobDamageMob (T1) |  | ⬜ | 0x0A1 | ✅ | 0x0B8 | ✅ | 0x0BA | ✅ | 0x0C2 | ✅ | 0x0C7 | ✅ | 0x0CE | ✅ | 0x0E2 | ❌ | 0x0E9 | ✅ | 0x0C8 | ✅ |
 | CLICK_GUIDE | CUserLocal::HandleLButtonDblClk |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A2 | ❌ |  | ⬜ | 0x0AC | ❌ | 0x0B9 | ❌ | 0x0BC | ❌ | 0x09C | ❌ |
 | ARAN_COMBO_COUNTER | CUserLocal::RequestIncCombo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A3 | ❌ | 0x0A9 | ❌ | 0x0AD | ❌ | 0x0BA | ❌ | 0x0BD | ❌ | 0x09D | ❌ |
@@ -782,7 +783,6 @@ Tool: `ffef83aca4ecd3db75b70a8c36bf74d477b42f6baf03a361680b382a2d3f4def`
 | UNNAMED_R377 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E3 | ❌ | 0x0E3 | ❌ | 0x0F0 | ❌ | 0x108 | ❌ | 0x10F | ❌ | 0x0F0 | ❌ |
 | MOB_TIME_BOMB_END | CMob::UpdateTimeBomb | monster/serverbound/MonsterMobTimeBombEnd (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E4 | ❌ | 0x0EB | ✅ | 0x0CA | ✅ |
 | MOB_ESCORT_COLLISION | CMob::SendCollisionEscort | monster/serverbound/MonsterMobEscortCollision (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E5 | 🟡ᶠ | 0x0EC | ✅ | 0x0CB | ✅ |
-| COUPON_CODE | CCashShop::OnStatusCoupon |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E6 | ❌ | 0x0E6 | ❌ | 0x0F3 | ❌ | 0x10D | ❌ | 0x114 | ❌ | 0x0F6 | ❌ |
 | MOB_REQUEST_ESCORT_INFO | CMob::SendRequestEscortPath | monster/serverbound/MonsterMobRequestEscortInfo (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E6 | 🟡ᶠ | 0x0ED | ✅ | 0x0CC | ✅ |
 | MOB_ESCORT_STOP_END_REQUEST | CMob::SendEscortStopEndRequest | monster/serverbound/MonsterMobEscortStopEndRequest (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E7 | 🟡ᶠ | 0x0EE | ✅ | 0x0CD | ✅ |
 | UNNAMED_R387 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E7 | ❌ | 0x0E7 | ❌ | 0x0F4 | ❌ | 0x10E | ❌ | 0x115 | ❌ | 0x0F7 | ❌ |
@@ -1056,16 +1056,16 @@ Tool: `ffef83aca4ecd3db75b70a8c36bf74d477b42f6baf03a361680b382a2d3f4def`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 200 | 0 | 19 | 195 | 606 | 0 | 48.3% |
-| v61 | 262 | 0 | 58 | 236 | 464 | 0 | 47.1% |
-| v72 | 276 | 0 | 71 | 252 | 421 | 0 | 46.1% |
-| v79 | 320 | 0 | 70 | 248 | 382 | 0 | 50.2% |
-| v83 | 439 | 0 | 0 | 353 | 228 | 0 | 55.4% |
-| v84 | 413 | 0 | 0 | 359 | 248 | 0 | 53.5% |
-| v87 | 447 | 0 | 0 | 382 | 191 | 0 | 53.9% |
-| v92 | 13 | 0 | 152 | 713 | 142 | 0 | 1.5% |
-| v95 | 472 | 0 | 0 | 441 | 107 | 0 | 51.7% |
-| JMS185 | 421 | 0 | 0 | 400 | 199 | 0 | 51.3% |
+| v48 | 201 | 0 | 19 | 195 | 605 | 0 | 48.4% |
+| v61 | 263 | 0 | 58 | 236 | 463 | 0 | 47.2% |
+| v72 | 277 | 0 | 71 | 252 | 420 | 0 | 46.2% |
+| v79 | 321 | 0 | 70 | 248 | 381 | 0 | 50.2% |
+| v83 | 440 | 0 | 0 | 352 | 228 | 0 | 55.6% |
+| v84 | 414 | 0 | 0 | 358 | 248 | 0 | 53.6% |
+| v87 | 448 | 0 | 0 | 381 | 191 | 0 | 54.0% |
+| v92 | 14 | 0 | 152 | 712 | 142 | 0 | 1.6% |
+| v95 | 473 | 0 | 0 | 440 | 107 | 0 | 51.8% |
+| JMS185 | 422 | 0 | 0 | 399 | 199 | 0 | 51.4% |
 
 ## Conflicts
 

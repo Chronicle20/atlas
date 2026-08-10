@@ -285,7 +285,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations
     newTag: main-906d424
   - name: ghcr.io/chronicle20/atlas-npc-shops/atlas-npc-shops
-    newTag: main-906d424
+    newTag: main-a147d84
   - name: ghcr.io/chronicle20/atlas-parties/atlas-parties
     newTag: main-b2b3874
   - name: ghcr.io/chronicle20/atlas-party-quests/atlas-party-quests

@@ -3,10 +3,12 @@ package trade
 import (
 	"atlas-trades/configuration"
 	inventorydata "atlas-trades/data/inventory"
+	sagadata "atlas-trades/data/saga"
 	compartmentmsg "atlas-trades/kafka/message/compartment"
 	sagamsg "atlas-trades/kafka/message/saga"
 	trademsg "atlas-trades/kafka/message/trade"
 	"atlas-trades/ledger"
+	"atlas-trades/settlement"
 	"encoding/json"
 	"errors"
 	"sync"
@@ -642,7 +644,7 @@ func TestSettlementSuccessWritesTheLedgerAndEmitsSettled(t *testing.T) {
 	p, e := testSettlingRoom(t)
 	room, _ := p.RoomForCharacter(100)
 
-	if err := p.SettlementSucceeded(uuid.New(), room.Id()); err != nil {
+	if err := p.SettlementSucceeded(uuid.New(), room.SettlementId()); err != nil {
 		t.Fatalf("settle: %v", err)
 	}
 
@@ -693,7 +695,7 @@ func TestSettlementSuccessCancelsBothHolds(t *testing.T) {
 		t.Fatalf("staged reservations: got %d, want 2", len(want))
 	}
 
-	if err := p.SettlementSucceeded(uuid.New(), room.Id()); err != nil {
+	if err := p.SettlementSucceeded(uuid.New(), room.SettlementId()); err != nil {
 		t.Fatalf("settle: %v", err)
 	}
 
@@ -725,7 +727,7 @@ func TestSecondCompletedDeliveryIsStoppedByTheRoomGuard(t *testing.T) {
 	room, _ := p.RoomForCharacter(100)
 
 	for i := 0; i < 2; i++ {
-		if err := p.SettlementSucceeded(uuid.New(), room.Id()); err != nil {
+		if err := p.SettlementSucceeded(uuid.New(), room.SettlementId()); err != nil {
 			t.Fatalf("settle %d: %v", i, err)
 		}
 	}
@@ -743,7 +745,7 @@ func TestSettlementFailureEmitsStatusEightAndWritesNoLedgerRow(t *testing.T) {
 	p, e := testSettlingRoom(t)
 	room, _ := p.RoomForCharacter(100)
 
-	if err := p.SettlementFailed(uuid.New(), room.Id(), "NOT_ENOUGH_MESOS"); err != nil {
+	if err := p.SettlementFailed(uuid.New(), room.SettlementId(), "NOT_ENOUGH_MESOS"); err != nil {
 		t.Fatalf("fail: %v", err)
 	}
 
@@ -759,26 +761,37 @@ func TestSettlementFailureEmitsStatusEightAndWritesNoLedgerRow(t *testing.T) {
 	}
 }
 
-// TestTerminalStatusResolvesTheRoomFromTheSettlementId pins the lookup the
-// saga-status consumer depends on. The FAILED body names ONE character — the
-// failed expanded step's — which is not a role, so the transaction id is the
-// only usable handle.
-func TestTerminalStatusResolvesTheRoomFromTheSettlementId(t *testing.T) {
+// TestTerminalStatusIsKeyedByTheSettlementRecord pins the identity the whole
+// terminal path now hangs on. The FAILED body names ONE character — the failed
+// expanded step's — which is not a role, and the room may not exist at all
+// after a restart, so the settlement transaction id is the only usable handle.
+func TestTerminalStatusIsKeyedByTheSettlementRecord(t *testing.T) {
 	p, _ := testSettlingRoom(t)
 	room, _ := p.RoomForCharacter(100)
 
-	found, ok := p.RoomBySettlement(room.SettlementId())
-	if !ok {
-		t.Fatal("the settling room could not be resolved from its settlement id")
+	s, err := settlement.NewProcessor(p.l, p.ctx, p.db).GetByTransactionId(room.SettlementId())
+	if err != nil {
+		t.Fatalf("the submitted settlement was not recorded durably: %v", err)
 	}
-	if found.Id() != room.Id() {
-		t.Errorf("resolved room: got %s, want %s", found.Id(), room.Id())
+	if s.RoomId() != room.Id() {
+		t.Errorf("recorded roomId: got %s, want %s", s.RoomId(), room.Id())
 	}
-	if _, ok = p.RoomBySettlement(uuid.New()); ok {
-		t.Error("an unrelated saga's transaction id resolved to a trade room")
+	if s.OwnerId() != 100 || s.VisitorId() != 200 {
+		t.Errorf("recorded participants: got %d and %d, want 100 and 200", s.OwnerId(), s.VisitorId())
 	}
-	if _, ok = p.RoomBySettlement(uuid.Nil); ok {
-		t.Error("a zero transaction id resolved to a trade room")
+	if len(s.Sides()) != 2 {
+		t.Fatalf("recorded sides: got %d, want 2", len(s.Sides()))
+	}
+	if s.Sides()[0].CharacterId() != 100 || s.Sides()[1].CharacterId() != 200 {
+		t.Errorf("recorded side order: got %d then %d, want the owner then the visitor", s.Sides()[0].CharacterId(), s.Sides()[1].CharacterId())
+	}
+	for _, side := range s.Sides() {
+		if len(side.Items()) != 1 {
+			t.Fatalf("recorded items for %d: got %d, want 1", side.CharacterId(), len(side.Items()))
+		}
+		if side.Items()[0].ReservationId() == uuid.Nil {
+			t.Error("recorded item carries no reservation id; a reconciled settlement could never cancel the hold")
+		}
 	}
 }
 
@@ -868,31 +881,35 @@ func TestSettlementRefusalLosesToASettlementThatWinsDuringItsReads(t *testing.T)
 	}
 }
 
-// TestSettlementSuccessDoesNotReEmitWhenAnotherDeliveryClaimsTheRoom pins the
-// SECOND defence against a redelivered COMPLETED: the room is claimed by an
-// atomic compare-and-set, so two deliveries that both pass the state pre-filter
-// still produce exactly one SETTLED.
-func TestSettlementSuccessDoesNotReEmitWhenAnotherDeliveryClaimsTheRoom(t *testing.T) {
+// TestSettlementSuccessDoesNotReEmitWhenAnotherDeliveryResolvedTheRecord pins
+// the arbiter. The durable settlement record — not the room — decides who owns
+// a terminal outcome, because after a restart there IS no room to race over:
+// whoever deletes the record emits, and everyone else drops.
+//
+// The stale room left standing here is exactly what reconciliation leaves
+// behind when it completes a settlement whose room this process still holds
+// from a previous delivery, so the room must not be able to authorise a second
+// SETTLED on its own.
+func TestSettlementSuccessDoesNotReEmitWhenAnotherDeliveryResolvedTheRecord(t *testing.T) {
 	p, e := testSettlingRoom(t)
 	room, _ := p.RoomForCharacter(100)
 
-	// The competing delivery claims the room while this one is resolving its
-	// staged slots — after its state pre-filter, before its own claim.
-	var once sync.Once
-	p.invp.(*fakeInventory).onGetCompartment = func() {
-		once.Do(func() { p.reg.Remove(p.t, room.Id()) })
+	// The competing delivery resolves the record, leaving the room behind.
+	won, err := settlement.NewProcessor(p.l, p.ctx, p.db).Resolve(room.SettlementId())
+	if err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
+	if !won {
+		t.Fatal("the settlement record was not there to resolve")
 	}
 
-	if err := p.SettlementSucceeded(uuid.New(), room.Id()); err != nil {
+	if err = p.SettlementSucceeded(uuid.New(), room.SettlementId()); err != nil {
 		t.Fatalf("settle: %v", err)
 	}
 	assertNoEventOfType(t, e, trademsg.StatusTypeSettled)
 	assertNoCompartmentCommandOfType(t, e, compartmentmsg.CommandCancelReservation)
-	// The ledger row is written before the claim and is idempotent per
-	// settlement transaction, so the delivery that lost the claim has recorded
-	// the same single row the winner would have.
-	if got := len(readLedger(t, p)); got != 1 {
-		t.Errorf("ledger entries: got %d, want 1", got)
+	if got := len(readLedger(t, p)); got != 0 {
+		t.Errorf("ledger entries: got %d, want 0 — the losing delivery recorded a trade the winner owns", got)
 	}
 }
 
@@ -954,7 +971,7 @@ func TestSettlementSuccessForARoomThatIsNotSettlingIsIgnored(t *testing.T) {
 	p, e := testConfirmedRoom(t)
 	room, _ := p.RoomForCharacter(100)
 
-	if err := p.SettlementSucceeded(uuid.New(), room.Id()); err != nil {
+	if err := p.SettlementSucceeded(uuid.New(), room.SettlementId()); err != nil {
 		t.Fatalf("settle: %v", err)
 	}
 	assertNoEventOfType(t, e, trademsg.StatusTypeSettled)
@@ -963,5 +980,203 @@ func TestSettlementSuccessForARoomThatIsNotSettlingIsIgnored(t *testing.T) {
 	}
 	if _, ok := p.RoomForCharacter(100); !ok {
 		t.Error("a stray COMPLETED tore down a room that was not settling")
+	}
+}
+
+// --- restart reconciliation -------------------------------------------------------
+
+// fakeSagaOutcome stands in for atlas-saga-orchestrator's GET
+// /sagas/{transactionId}. err models the two indistinguishable unknowns — the
+// orchestrator unreachable, and a saga it has not consumed yet (a 404) — which
+// must never be read as either terminal answer.
+type fakeSagaOutcome struct {
+	outcome sagadata.Outcome
+	err     error
+	calls   int
+}
+
+func (f *fakeSagaOutcome) Outcome(_ uuid.UUID) (sagadata.Outcome, error) {
+	f.calls++
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.outcome, nil
+}
+
+// restart drops every trace of the in-memory registry for the test's tenant,
+// which is what a process restart does to a live trade room. The durable
+// settlement record and the outbox survive it, exactly as they would.
+func restart(t *testing.T, p *ProcessorImpl) {
+	t.Helper()
+	for _, room := range p.reg.All(p.t) {
+		p.reg.Remove(p.t, room.Id())
+	}
+	if got := len(p.reg.All(p.t)); got != 0 {
+		t.Fatalf("rooms surviving the restart: got %d, want 0", got)
+	}
+}
+
+// TestReconcileCompletesASettlementWhoseRoomTheRestartLost pins the hole this
+// whole record exists for. The saga lives in atlas-saga-orchestrator and keeps
+// running across an atlas-trades restart, so a trade that FULLY EXECUTED used
+// to write no ledger row and emit no SETTLED — contradicting FR-7.1.
+func TestReconcileCompletesASettlementWhoseRoomTheRestartLost(t *testing.T) {
+	p, e := testSettlingRoom(t)
+	room, _ := p.RoomForCharacter(100)
+	settlementId := room.SettlementId()
+	restart(t, p)
+
+	p.sagad = &fakeSagaOutcome{outcome: sagadata.OutcomeSucceeded}
+	if err := p.ReconcileSettlements(); err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+
+	entries := readLedger(t, p)
+	if len(entries) != 1 {
+		t.Fatalf("ledger entries: got %d, want 1 — the executed trade left no audit record", len(entries))
+	}
+	if entries[0].TransactionId() != settlementId {
+		t.Errorf("ledger transactionId: got %s, want the settlement saga's %s", entries[0].TransactionId(), settlementId)
+	}
+	if len(entries[0].Sides()) != 2 {
+		t.Errorf("ledger sides: got %d, want 2", len(entries[0].Sides()))
+	}
+
+	settled := statusEvents[trademsg.SettledEventBody](t, e, trademsg.StatusTypeSettled)
+	if len(settled) != 1 {
+		t.Fatalf("SETTLED events: got %d, want 1", len(settled))
+	}
+	if settled[0].RoomId != room.Id() || settled[0].OwnerId != 100 || settled[0].VisitorId != 200 {
+		t.Errorf("SETTLED envelope: got room %s owner %d visitor %d, want the record's %s / 100 / 200", settled[0].RoomId, settled[0].OwnerId, settled[0].VisitorId, room.Id())
+	}
+	if settled[0].Body.LedgerEntryId != entries[0].Id() {
+		t.Errorf("SETTLED ledgerEntryId: got %s, want %s", settled[0].Body.LedgerEntryId, entries[0].Id())
+	}
+
+	// The holds must still be released: the room that would have cancelled them
+	// is gone, so the record is the only thing that knows they exist.
+	if got := len(compartmentCommands[compartmentmsg.CancelReservationCommandBody](t, e, compartmentmsg.CommandCancelReservation)); got != 2 {
+		t.Errorf("CANCEL_RESERVATION commands: got %d, want one per staged item (2)", got)
+	}
+	assertSettlementResolved(t, p, settlementId)
+}
+
+// TestReconcileIsIdempotent pins that reconciliation is safe to run repeatedly
+// — every boot runs it, and a boot loop must not double-credit or double-emit.
+func TestReconcileIsIdempotent(t *testing.T) {
+	p, e := testSettlingRoom(t)
+	room, _ := p.RoomForCharacter(100)
+	restart(t, p)
+
+	p.sagad = &fakeSagaOutcome{outcome: sagadata.OutcomeSucceeded}
+	for i := 0; i < 2; i++ {
+		if err := p.ReconcileSettlements(); err != nil {
+			t.Fatalf("reconcile %d: %v", i, err)
+		}
+	}
+
+	if got := len(readLedger(t, p)); got != 1 {
+		t.Errorf("ledger entries: got %d, want 1", got)
+	}
+	if got := len(statusEvents[trademsg.SettledEventBody](t, e, trademsg.StatusTypeSettled)); got != 1 {
+		t.Errorf("SETTLED events: got %d, want 1", got)
+	}
+	assertSettlementResolved(t, p, room.SettlementId())
+}
+
+// TestReconcileClosesASettlementWhoseSagaFailed pins the other terminal answer:
+// a compensated saga produces LEAVE 8 and NO ledger row (FR-7.3).
+func TestReconcileClosesASettlementWhoseSagaFailed(t *testing.T) {
+	p, e := testSettlingRoom(t)
+	room, _ := p.RoomForCharacter(100)
+	restart(t, p)
+
+	p.sagad = &fakeSagaOutcome{outcome: sagadata.OutcomeFailed}
+	if err := p.ReconcileSettlements(); err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+
+	assertCancelledWithReason(t, e, ReasonTradeFailed)
+	if got := len(readLedger(t, p)); got != 0 {
+		t.Errorf("ledger entries: got %d, want 0 for a failed trade", got)
+	}
+	if got := len(compartmentCommands[compartmentmsg.CancelReservationCommandBody](t, e, compartmentmsg.CommandCancelReservation)); got != 2 {
+		t.Errorf("CANCEL_RESERVATION commands: got %d, want one per staged item (2)", got)
+	}
+	assertSettlementResolved(t, p, room.SettlementId())
+}
+
+// TestReconcileLeavesAnUnknownOutcomeAlone pins the rule that matters most: a
+// trade that MAY have executed is never reported to the players as
+// unsuccessful. An unreachable orchestrator and a saga it has not consumed yet
+// are indistinguishable from here, and both leave the record for the next boot
+// or for the live status event.
+func TestReconcileLeavesAnUnknownOutcomeAlone(t *testing.T) {
+	p, e := testSettlingRoom(t)
+	room, _ := p.RoomForCharacter(100)
+	restart(t, p)
+
+	p.sagad = &fakeSagaOutcome{err: errors.New("atlas-saga-orchestrator unreachable")}
+	if err := p.ReconcileSettlements(); err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+
+	assertNoEventOfType(t, e, trademsg.StatusTypeSettled)
+	assertNoEventOfType(t, e, trademsg.StatusTypeCancelled)
+	if got := len(readLedger(t, p)); got != 0 {
+		t.Errorf("ledger entries: got %d, want 0", got)
+	}
+	if _, err := settlement.NewProcessor(p.l, p.ctx, p.db).GetByTransactionId(room.SettlementId()); err != nil {
+		t.Errorf("the settlement record was consumed on an unknown outcome: %v", err)
+	}
+}
+
+// TestReconcileLeavesARunningSagaAlone pins the third answer: a saga with
+// pending steps has not settled anything yet, so completing it would report an
+// outcome that has not happened.
+func TestReconcileLeavesARunningSagaAlone(t *testing.T) {
+	p, e := testSettlingRoom(t)
+	room, _ := p.RoomForCharacter(100)
+	restart(t, p)
+
+	p.sagad = &fakeSagaOutcome{outcome: sagadata.OutcomeRunning}
+	if err := p.ReconcileSettlements(); err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+
+	assertNoEventOfType(t, e, trademsg.StatusTypeSettled)
+	assertNoEventOfType(t, e, trademsg.StatusTypeCancelled)
+	if _, err := settlement.NewProcessor(p.l, p.ctx, p.db).GetByTransactionId(room.SettlementId()); err != nil {
+		t.Errorf("the settlement record was consumed for a saga that is still running: %v", err)
+	}
+}
+
+// TestTerminalStatusAfterARestartCompletesFromTheRecord pins the OTHER half of
+// the same hole: the terminal event is redelivered after the restart (the
+// consumer group resumes from its committed offset), and with no room it must
+// still settle the trade rather than drop.
+func TestTerminalStatusAfterARestartCompletesFromTheRecord(t *testing.T) {
+	p, e := testSettlingRoom(t)
+	room, _ := p.RoomForCharacter(100)
+	restart(t, p)
+
+	if err := p.SettlementSucceeded(uuid.New(), room.SettlementId()); err != nil {
+		t.Fatalf("settle: %v", err)
+	}
+	if got := len(readLedger(t, p)); got != 1 {
+		t.Errorf("ledger entries: got %d, want 1", got)
+	}
+	if got := len(statusEvents[trademsg.SettledEventBody](t, e, trademsg.StatusTypeSettled)); got != 1 {
+		t.Errorf("SETTLED events: got %d, want 1", got)
+	}
+	assertSettlementResolved(t, p, room.SettlementId())
+}
+
+// assertSettlementResolved requires the durable record to be gone, so
+// unfinished settlements cannot accumulate.
+func assertSettlementResolved(t *testing.T, p *ProcessorImpl, settlementId uuid.UUID) {
+	t.Helper()
+	if _, err := settlement.NewProcessor(p.l, p.ctx, p.db).GetByTransactionId(settlementId); err == nil {
+		t.Error("the settlement record survived its terminal outcome; unresolved settlements would accumulate")
 	}
 }

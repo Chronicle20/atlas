@@ -5,6 +5,7 @@ import (
 	sagaconsumer "atlas-trades/kafka/consumer/saga"
 	tradeconsumer "atlas-trades/kafka/consumer/trade"
 	"atlas-trades/ledger"
+	"atlas-trades/settlement"
 	"atlas-trades/trade"
 	"context"
 	"os"
@@ -67,7 +68,7 @@ func main() {
 	// Live room state is the process-local in-memory trade.Registry, not the
 	// DB — atlas-trades runs replicas: 1 for that reason (design §9). The DB
 	// backs only the completed-trade ledger and the transactional outbox.
-	db := database.Connect(l, database.SetMigrations(ledger.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(ledger.Migration, settlement.Migration, outboxlib.Migration))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
@@ -102,6 +103,17 @@ func main() {
 
 	// Attestation deadlines are sleeping goroutines; without this, shutdown
 	// waits out the longest one.
+	// Settlements submitted by a previous process whose terminal status this one
+	// never saw. Off the boot path in its own goroutine: the orchestrator is a
+	// REST hop away and a reconciliation failure must not wedge startup — every
+	// record it cannot resolve is simply left for the next boot or for the live
+	// status event.
+	routine.Go(l, rt.Context(), func(ctx context.Context) {
+		if err := trade.Reconcile(l, ctx, db); err != nil {
+			l.WithError(err).Error("Unable to reconcile in-flight trade settlements. Unresolved settlements remain durable and will be retried.")
+		}
+	})
+
 	rt.TeardownFunc(func() { trade.GetAttestationTimers().StopAll() })
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 

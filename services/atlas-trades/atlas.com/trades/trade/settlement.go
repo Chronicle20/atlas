@@ -3,16 +3,21 @@ package trade
 import (
 	"atlas-trades/configuration"
 	inventorydata "atlas-trades/data/inventory"
+	sagadata "atlas-trades/data/saga"
 	"atlas-trades/kafka/message"
 	trademsg "atlas-trades/kafka/message/trade"
 	"atlas-trades/ledger"
+	"atlas-trades/settlement"
 	"context"
+	"errors"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -411,6 +416,16 @@ func (p *ProcessorImpl) settle(mb *message.Buffer, txId uuid.UUID, room Room) er
 	}
 
 	p.timers.Cancel(p.t, updated.Id())
+
+	// The DURABLE record is written in the SAME transaction that enqueues the
+	// saga command, so submission and the record cannot diverge: either both
+	// commit or neither does. Without it a restart before the terminal status
+	// loses the room, and with it the trade that has already executed — no
+	// ledger row, no SETTLED (FR-7.1).
+	if _, err = settlement.NewProcessor(p.l, p.ctx, p.db).Submit(settlementRecordFor(settlementId, updated)); err != nil {
+		return err
+	}
+
 	p.l.WithFields(p.roomFields(updated)).WithField("settlement_id", settlementId.String()).Infof("Submitting settlement for trade room [%s].", updated.Id().String())
 	return p.sgp.Settle(mb)(settlementId, settlementPayload(settlementId, updated))
 }
@@ -702,159 +717,265 @@ func sortedEntries(in []trademsg.CrcEntry) []trademsg.CrcEntry {
 }
 
 // --- terminal saga status ------------------------------------------------------
+//
+// Everything below is driven by the DURABLE settlement record, not by the live
+// room. The room is process-local in-memory state and the saga is not, so a
+// restart between submission and the terminal status leaves a trade that has
+// executed with no room to close it from — which is exactly the hole this
+// record fills (see the settlement package).
+//
+// The record is also the ARBITER: whoever deletes it owns the outcome. That
+// single atomic delete replaces what was previously a room compare-and-set, and
+// unlike the room it works after a restart, when there is no room left to race
+// over.
 
 // SettlementSucceeded records the trade and closes both dialogs (FR-5.6,
 // FR-7.1). Per design §6.4 it runs ONLY on terminal saga success, so the meso
 // award has already reached atlas-character and the client's own figure is
 // current.
-func (p *ProcessorImpl) SettlementSucceeded(txId uuid.UUID, roomId uuid.UUID) error {
+//
+// settlementId is the saga's transaction id — the only identity that survives a
+// restart, and the one the status event carries.
+func (p *ProcessorImpl) SettlementSucceeded(txId uuid.UUID, settlementId uuid.UUID) error {
 	return p.emit(func(txp *ProcessorImpl, mb *message.Buffer) error {
-		return txp.settlementSucceeded(mb, txId, roomId)
+		return txp.completeSettlement(mb, txId, settlementId, true, "")
 	})
-}
-
-func (p *ProcessorImpl) settlementSucceeded(mb *message.Buffer, txId uuid.UUID, roomId uuid.UUID) error {
-	room, ok := p.settledRoom(roomId, "success")
-	if !ok {
-		return nil
-	}
-
-	// The slot re-resolution runs first, because it is the fallible REST work
-	// and emit's contract puts every fallible read before the registry swap.
-	releases := p.resolveStagedReleases(room)
-
-	// The ledger write joins the enclosing transaction (see the administrator's
-	// create), so the row and the SETTLED event commit together. It runs BEFORE
-	// the claim below rather than after: Record is idempotent per settlement
-	// transaction, so a redelivered COMPLETED that loses the claim has already
-	// re-read the same row rather than written a second one — whereas claiming
-	// first would make the ledger write conditional on winning a race it has no
-	// business depending on.
-	entry, err := ledger.NewProcessor(p.l, p.ctx, p.db).Record(settlementEntry(room))
-	if err != nil {
-		return err
-	}
-
-	// Compare-and-set. settledRoom's state test is a cheap pre-filter taken
-	// before the reads above; THIS is the authoritative one, so two concurrent
-	// COMPLETED deliveries produce exactly one SETTLED rather than two.
-	claimedModel, ok := p.reg.RemoveIf(p.t, room.Id(), settling)
-	if !ok {
-		p.l.Debugf("Trade room [%s] was already closed by another terminal status. Ignoring this one.", room.Id().String())
-		return nil
-	}
-	p.timers.Cancel(p.t, claimedModel.Id())
-
-	// OBLIGATION: a successful trade must still cancel both holds.
-	// TradeSettlementItem carries no reservation id, so the saga cannot do it,
-	// and atlas-inventory's Release does not touch the reservation registry
-	// (compartment/processor.go:1767-1855) — the hold would sit on the giver's
-	// now-emptied slot for the rest of its 300s TTL, refusing that slot's merge,
-	// drop and any fresh reserve.
-	if err = p.emitStagedReleases(mb, withLateStages(releases, claimedModel)); err != nil {
-		return err
-	}
-
-	var taxed uint32
-	for _, pt := range claimedModel.Participants() {
-		taxed += pt.MesoTax()
-	}
-	recordSettled(p.t, taxed)
-	p.l.WithFields(p.roomFields(claimedModel)).WithField("ledger_entry_id", entry.Id().String()).Infof("Trade room [%s] settled.", claimedModel.Id().String())
-	return mb.Put(trademsg.EnvEventTopicStatus, settledProvider(txId, claimedModel, claimedModel.OwnerId(), entry.Id()))
 }
 
 // SettlementFailed closes both dialogs with LEAVE 8 after the settlement saga
 // reported terminal failure. No ledger row is written: a failed trade is
 // observable through logs and metrics only (FR-7.3).
-func (p *ProcessorImpl) SettlementFailed(txId uuid.UUID, roomId uuid.UUID, reason string) error {
+func (p *ProcessorImpl) SettlementFailed(txId uuid.UUID, settlementId uuid.UUID, reason string) error {
 	return p.emit(func(txp *ProcessorImpl, mb *message.Buffer) error {
-		return txp.settlementFailed(mb, txId, roomId, reason)
+		return txp.completeSettlement(mb, txId, settlementId, false, reason)
 	})
 }
 
-func (p *ProcessorImpl) settlementFailed(mb *message.Buffer, txId uuid.UUID, roomId uuid.UUID, reason string) error {
-	room, ok := p.settledRoom(roomId, "failure")
-	if !ok {
-		return nil
-	}
-	p.l.WithFields(p.roomFields(room)).Warnf("Settlement saga for trade room [%s] failed: [%s].", room.Id().String(), reason)
-
-	// Claimed out of SETTLING rather than through teardownRoom, whose claim
-	// REFUSES a settling room — that refusal is what stops a cancel racing the
-	// saga, and this is the one caller that legitimately ends a settling room.
-	// It is a compare-and-set for the same reason as the success path: two
-	// deliveries of the same FAILED must produce one LEAVE 8, not two.
-	claimedModel, ok := p.claimRoom(room, settling)
-	if !ok {
-		p.l.Debugf("Trade room [%s] was already closed by another terminal status. Ignoring this one.", room.Id().String())
-		return nil
-	}
-	if err := p.emitStagedReleases(mb, claimedModel.releases); err != nil {
+// completeSettlement finishes one settlement, with or without a live room.
+//
+// Order is load-bearing:
+//
+//  1. The LEDGER is written first, on success. Record is idempotent per
+//     settlement transaction, so a delivery that goes on to lose the arbiter
+//     has re-read the same row rather than written a second one — whereas
+//     writing after the claim would make the audit record conditional on
+//     winning a race it has no business depending on.
+//  2. The RECORD is deleted, and its rows-affected decides the winner. Two
+//     concurrent deliveries serialise on that delete, so exactly one proceeds
+//     to emit.
+//  3. The ROOM, if this process still has one, is removed.
+//  4. The HOLDS are cancelled from the record — including on success, because
+//     TradeSettlementItem carries no reservation id and atlas-inventory's
+//     Release does not clear the reservation registry
+//     (compartment/processor.go:1767-1855), so the hold would otherwise sit on
+//     the giver's now-emptied slot for the rest of its 300s TTL.
+//  5. The client-visible outcome is emitted, built entirely from the record.
+func (p *ProcessorImpl) completeSettlement(mb *message.Buffer, txId uuid.UUID, settlementId uuid.UUID, success bool, reason string) error {
+	sp := settlement.NewProcessor(p.l, p.ctx, p.db)
+	s, err := sp.GetByTransactionId(settlementId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			p.l.Debugf("Terminal status for settlement [%s], which is already resolved. Ignoring.", settlementId.String())
+			return nil
+		}
 		return err
 	}
-	recordSettlementFailed(p.t, sagaFailedReason)
-	recordCancelled(p.t, ReasonTradeFailed)
-	// Both sides are told, resolved from the ROOM. The FAILED event names one
-	// character — the failed expanded step's — and that is not a role, so it is
-	// never used to pick a side.
-	return mb.Put(trademsg.EnvEventTopicStatus, cancelledProvider(txId, claimedModel.room, claimedModel.room.OwnerId(), ReasonTradeFailed))
+
+	var entryId uuid.UUID
+	if success {
+		entry, rerr := ledger.NewProcessor(p.l, p.ctx, p.db).Record(ledgerEntryFor(s))
+		if rerr != nil {
+			return rerr
+		}
+		entryId = entry.Id()
+	}
+
+	won, err := sp.Resolve(settlementId)
+	if err != nil {
+		return err
+	}
+	if !won {
+		p.l.Debugf("Settlement [%s] was resolved by another delivery. Ignoring this one.", settlementId.String())
+		return nil
+	}
+
+	if room, ok := p.reg.GetBySettlement(p.t, settlementId); ok {
+		p.reg.RemoveIf(p.t, room.Id(), settling)
+		p.timers.Cancel(p.t, room.Id())
+	}
+
+	if err = p.emitStagedReleases(mb, releasesFor(s)); err != nil {
+		return err
+	}
+
+	if !success {
+		recordSettlementFailed(p.t, sagaFailedReason)
+		recordCancelled(p.t, ReasonTradeFailed)
+		p.l.WithFields(p.settlementFields(s)).Warnf("Settlement [%s] failed: [%s].", settlementId.String(), reason)
+		// Both sides are told, resolved from the RECORD. The FAILED event names
+		// one character — the failed expanded step's — and that is not a role,
+		// so it is never used to pick a side.
+		return mb.Put(trademsg.EnvEventTopicStatus, recordCancelledProvider(txId, s, ReasonTradeFailed))
+	}
+
+	var taxed uint32
+	for _, side := range s.Sides() {
+		taxed += side.MesoTax()
+	}
+	recordSettled(p.t, taxed)
+	p.l.WithFields(p.settlementFields(s)).WithField("ledger_entry_id", entryId.String()).Infof("Settlement [%s] settled.", settlementId.String())
+	return mb.Put(trademsg.EnvEventTopicStatus, recordSettledProvider(txId, s, entryId))
 }
 
-// settledRoom resolves a room a terminal saga status refers to. It is a cheap
-// PRE-FILTER; the authoritative check is the RemoveIf claim each caller takes
-// after its reads.
+// releasesFor returns the reservation cancels a settlement record owes.
 //
-// A missing room has two very different causes, and only one of them is benign:
-//
-//   - A REDELIVERED status whose room another delivery already closed. Nothing
-//     left to do.
-//   - A status whose room was lost to a PROCESS RESTART. The registry is
-//     in-memory (design §9), but the saga lives in the orchestrator and keeps
-//     running, so the swap EXECUTES and this service never learns of it: no
-//     ledger row, no SETTLED, and both clients keep an open dialog until their
-//     next interaction is rejected. That contradicts FR-7.1 ("every settled
-//     trade writes one durable ledger row") and is NOT accepted anywhere in the
-//     PRD or the design — design §12's crash-recovery paragraph covers escrowed
-//     ASSETS only, and §15's "a restart cancels trades cleanly" is true of
-//     every state except SETTLING.
-//
-// The two are indistinguishable from here, which is why the miss is logged at
-// WARN with the transaction id rather than swallowed at DEBUG: until the
-// settlement is durable, that log line is the only trace a restarted settlement
-// leaves. Closing it needs a durable record of the in-flight settlement — a
-// design decision, deliberately not taken inside this task.
-func (p *ProcessorImpl) settledRoom(roomId uuid.UUID, outcome string) (Room, bool) {
-	room, ok := p.reg.Get(p.t, roomId)
-	if !ok {
-		p.l.Warnf("Settlement %s for trade room [%s], which is no longer known to this process. If this was not a redelivery, the settlement executed with no ledger row: see settledRoom.", outcome, roomId.String())
-		return Room{}, false
+// The slots come from the RECORD, which stored them already re-resolved at
+// submission time, so no compartment re-read is needed — and on the success
+// path none would help anyway: the asset has been released, so a lookup by
+// asset id finds nothing and falls back to the recorded slot regardless.
+func releasesFor(s settlement.Model) []stagedRelease {
+	out := make([]stagedRelease, 0)
+	for _, side := range s.Sides() {
+		for _, i := range side.Items() {
+			out = append(out, stagedRelease{
+				reservationId: i.ReservationId(),
+				characterId:   side.CharacterId(),
+				inventoryType: i.InventoryType(),
+				sourceSlot:    i.SourceSlot(),
+			})
+		}
 	}
-	if room.State() != StateSettling {
-		p.l.Warnf("Settlement %s for trade room [%s] in state [%s]. Ignoring.", outcome, roomId.String(), room.State())
-		return Room{}, false
-	}
-	return room, true
+	return out
 }
 
-// settlementEntry projects the settled room onto the ledger row. The settlement
-// saga's transaction id is the entry's, which is what makes the write
-// idempotent per settlement (FR-5.7).
+// ledgerEntryFor projects the durable settlement record onto the ledger row.
+// The settlement saga's transaction id is the entry's, which is what makes the
+// write idempotent per settlement (FR-5.7).
 //
-// Items carry the asset id but no referenceId: the staged item records the
-// asset's identity, and the equip/pet/cash reference lives on the asset in
+// Items carry the asset id but no referenceId: the record holds the asset's
+// identity, and the equip/pet/cash reference lives on the asset in
 // atlas-inventory, which has already released it by the time this runs.
-func settlementEntry(room Room) ledger.Model {
-	b := ledger.NewBuilder(room.SettlementId(), room.Field(), room.RoomType())
-	for _, pt := range room.OrderedParticipants() {
-		items := make([]ledger.Item, 0, len(pt.Items()))
-		for _, i := range pt.Items() {
+func ledgerEntryFor(s settlement.Model) ledger.Model {
+	b := ledger.NewBuilder(s.TransactionId(), s.Field(), s.RoomType())
+	for _, side := range s.Sides() {
+		items := make([]ledger.Item, 0, len(side.Items()))
+		for _, i := range side.Items() {
 			assetId := i.AssetId()
 			items = append(items, ledger.NewItem(i.TemplateId(), i.Quantity(), &assetId, nil))
 		}
-		b.AddSide(pt.CharacterId(), pt.Name(), pt.MesoStaged(), pt.MesoTax(), pt.MesoDelivered(), items)
+		b.AddSide(side.CharacterId(), side.CharacterName(), side.MesoStaged(), side.MesoTax(), side.MesoDelivered(), items)
 	}
 	return b.Build()
+}
+
+// settlementRecordFor projects a room that has just won the SETTLING transition
+// onto the durable record submitted alongside its saga.
+func settlementRecordFor(settlementId uuid.UUID, room Room) settlement.Model {
+	b := settlement.NewBuilder(settlementId, room.Id(), room.Handle(), room.RoomType(), room.Field(), room.OwnerId(), room.VisitorId())
+	for _, pt := range room.OrderedParticipants() {
+		items := make([]settlement.Item, 0, len(pt.Items()))
+		for _, i := range pt.Items() {
+			items = append(items, settlement.NewItem(i.ReservationId(), i.InventoryType(), i.SourceSlot(), i.AssetId(), i.TemplateId(), i.Quantity()))
+		}
+		b.AddSide(pt.Position(), pt.CharacterId(), pt.Name(), pt.MesoStaged(), pt.MesoTax(), pt.MesoDelivered(), items)
+	}
+	return b.Build()
+}
+
+// settlementFields is the structured-log context for a settlement that may no
+// longer have a room — the restart case, where roomFields has nothing to read.
+func (p *ProcessorImpl) settlementFields(s settlement.Model) logrus.Fields {
+	f := logrus.Fields{
+		"tenant_id":     p.t.Id().String(),
+		"room_id":       s.RoomId().String(),
+		"settlement_id": s.TransactionId().String(),
+		"owner_id":      uint32(s.OwnerId()),
+		"visitor_id":    uint32(s.VisitorId()),
+	}
+	return f
+}
+
+// --- startup reconciliation ------------------------------------------------------
+
+// Reconcile completes every settlement this service submitted but never saw the
+// outcome of — the trades a restart would otherwise have lost (FR-7.1).
+//
+// It runs at boot with NO tenant in context, so it enumerates the unfinished
+// records across every tenant and restores each row's own tenant before doing
+// anything with it. A failure for one tenant does not stop the others, and no
+// failure stops the service: the caller runs this off the request path.
+func Reconcile(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) error {
+	records, err := settlement.Unresolved(ctx, db)
+	if err != nil {
+		return err
+	}
+	if len(records) == 0 {
+		return nil
+	}
+
+	seen := make(map[uuid.UUID]struct{})
+	var failures int
+	for _, s := range records {
+		if _, ok := seen[s.TenantId()]; ok {
+			continue
+		}
+		seen[s.TenantId()] = struct{}{}
+		t, terr := s.Tenant()
+		if terr != nil {
+			l.WithError(terr).Errorf("Unable to restore tenant [%s] for settlement reconciliation. Its unfinished settlements are left for the next boot.", s.TenantId().String())
+			failures++
+			continue
+		}
+		if rerr := NewProcessor(l, tenant.WithContext(ctx, t), db).ReconcileSettlements(); rerr != nil {
+			l.WithError(rerr).Errorf("Unable to reconcile settlements for tenant [%s].", t.Id().String())
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("settlement reconciliation failed for %d tenant(s)", failures)
+	}
+	return nil
+}
+
+// ReconcileSettlements completes this tenant's unfinished settlements by asking
+// atlas-saga-orchestrator what became of each saga.
+//
+// It is safe to run repeatedly: a completed settlement's record is deleted, and
+// ledger.Record is idempotent per transaction id, so a second pass over the same
+// row can neither double-credit nor double-emit.
+//
+// An UNKNOWN outcome — the orchestrator unreachable, or the saga not yet
+// consumed and therefore a 404 — leaves the record exactly where it is. It is
+// never read as failure: a trade that may have executed must not be reported to
+// the players as unsuccessful, and the live status consumer will resolve it the
+// moment the terminal event arrives.
+func (p *ProcessorImpl) ReconcileSettlements() error {
+	records, err := settlement.NewProcessor(p.l, p.ctx, p.db).Unresolved()
+	if err != nil {
+		return err
+	}
+	for _, s := range records {
+		outcome, oerr := p.sagad.Outcome(s.TransactionId())
+		if oerr != nil {
+			p.l.WithError(oerr).WithFields(p.settlementFields(s)).Warnf("Unable to read the outcome of settlement [%s]. Leaving it unresolved rather than guessing.", s.TransactionId().String())
+			continue
+		}
+		switch outcome {
+		case sagadata.OutcomeSucceeded:
+			p.l.WithFields(p.settlementFields(s)).Infof("Reconciling settlement [%s]: the saga completed.", s.TransactionId().String())
+			if cerr := p.SettlementSucceeded(uuid.New(), s.TransactionId()); cerr != nil {
+				return cerr
+			}
+		case sagadata.OutcomeFailed:
+			p.l.WithFields(p.settlementFields(s)).Infof("Reconciling settlement [%s]: the saga failed.", s.TransactionId().String())
+			if cerr := p.SettlementFailed(uuid.New(), s.TransactionId(), sagaFailedReason); cerr != nil {
+				return cerr
+			}
+		default:
+			p.l.WithFields(p.settlementFields(s)).Infof("Settlement [%s] is still running; leaving it for the live status event.", s.TransactionId().String())
+		}
+	}
+	return nil
 }
 
 // teardownRoom ends a room that is NOT settling: it releases both sides' holds

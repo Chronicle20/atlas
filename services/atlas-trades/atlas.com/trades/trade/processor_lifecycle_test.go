@@ -9,6 +9,7 @@ import (
 	trademsg "atlas-trades/kafka/message/trade"
 	"atlas-trades/ledger"
 	sagaproducer "atlas-trades/saga"
+	"atlas-trades/settlement"
 	"context"
 	"encoding/json"
 	"errors"
@@ -223,7 +224,7 @@ func newLifecycleProcessor(t *testing.T, cfg configuration.Model, characters ...
 
 	tm := lifecycleTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
-	db := databasetest.NewInMemoryTenantDB(t, outbox.Migration, ledger.Migration)
+	db := databasetest.NewInMemoryTenantDB(t, outbox.Migration, ledger.Migration, settlement.Migration)
 
 	rows := make(map[character.Id]testCharacter)
 	locations := make(map[character.Id]field.Model)

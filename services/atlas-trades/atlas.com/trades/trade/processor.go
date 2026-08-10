@@ -8,6 +8,7 @@ import (
 	itemdata "atlas-trades/data/item"
 	"atlas-trades/data/location"
 	mapdata "atlas-trades/data/map"
+	sagadata "atlas-trades/data/saga"
 	"atlas-trades/kafka/message"
 	invitemsg "atlas-trades/kafka/message/invite"
 	trademsg "atlas-trades/kafka/message/trade"
@@ -113,6 +114,12 @@ type itemDataProvider interface {
 	SlotMax(inventoryType inventory.Type, templateId item.Id) (uint32, error)
 }
 
+// sagaOutcomeProvider reads what became of a submitted saga. Only startup
+// reconciliation asks: the live path is driven by the status event.
+type sagaOutcomeProvider interface {
+	Outcome(transactionId uuid.UUID) (sagadata.Outcome, error)
+}
+
 // settlementSubmitter buffers the trade_settlement saga command. atlas-trades
 // submits the COMPOSITE only; the orchestrator expands it (design §6.3).
 type settlementSubmitter interface {
@@ -181,13 +188,6 @@ type Processor interface {
 	// Encode4 of a signed int32 and a hostile client can send a negative.
 	AddMeso(txId uuid.UUID, characterId character.Id, amount int32) error
 
-	// RoomBySettlement resolves the room that submitted the settlement saga
-	// carrying the given transaction id. It is how a terminal saga status finds
-	// its trade: the FAILED body names ONE character — the failed expanded
-	// step's — which is not a role and may be either participant, so a side can
-	// never be inferred from it.
-	RoomBySettlement(settlementId uuid.UUID) (Room, bool)
-
 	// Confirm records one side pressing Trade (FR-5.1). It freezes staging from
 	// the FIRST confirm and, only once BOTH have confirmed, moves the room to
 	// AWAITING_ATTESTATION and prompts both clients (design §6.2). entries is
@@ -205,11 +205,21 @@ type Processor interface {
 
 	// SettlementSucceeded writes the ledger row, releases both sides' holds and
 	// closes both dialogs with LEAVE 7. Called only on terminal saga success.
-	SettlementSucceeded(txId uuid.UUID, roomId uuid.UUID) error
+	//
+	// It is keyed by the SETTLEMENT saga's transaction id rather than by a room
+	// id, because the room may not exist: a restart between submission and the
+	// terminal status leaves only the durable settlement record, which this
+	// path is driven from.
+	SettlementSucceeded(txId uuid.UUID, settlementId uuid.UUID) error
 
 	// SettlementFailed releases both sides' holds and closes both dialogs with
-	// LEAVE 8. No ledger row is written (FR-7.3).
-	SettlementFailed(txId uuid.UUID, roomId uuid.UUID, reason string) error
+	// LEAVE 8. No ledger row is written (FR-7.3). Keyed by settlement id for
+	// the same reason as SettlementSucceeded.
+	SettlementFailed(txId uuid.UUID, settlementId uuid.UUID, reason string) error
+
+	// ReconcileSettlements completes this tenant's settlements whose terminal
+	// status was never seen — the trades a restart would otherwise lose.
+	ReconcileSettlements() error
 
 	// RefreshReservations re-files the inventory reservation of every staged
 	// item in every live room, so a reservation TTL never expires under a trade
@@ -235,6 +245,7 @@ type ProcessorImpl struct {
 	idp    itemDataProvider
 	resp   reservationProducer
 	sgp    settlementSubmitter
+	sagad  sagaOutcomeProvider
 	timers *attestationTimers
 }
 
@@ -242,19 +253,20 @@ type ProcessorImpl struct {
 // processor issues is partitioned by that tenant.
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	return &ProcessorImpl{
-		l:    l,
-		ctx:  ctx,
-		db:   db,
-		t:    tenant.MustFromContext(ctx),
-		reg:  GetRegistry(),
-		cfg:  configuration.GetRegistry(),
-		cp:   characterdata.NewProcessor(l, ctx),
-		mp:   mapdata.NewProcessor(l, ctx),
-		locp: location.NewProcessor(l, ctx),
-		invp: inventorydata.NewProcessor(l, ctx),
-		idp:  itemdata.NewProcessor(l, ctx),
-		resp: compartment.NewProcessor(l, ctx),
-		sgp:  sagaproducer.NewProcessor(l, ctx),
+		l:     l,
+		ctx:   ctx,
+		db:    db,
+		t:     tenant.MustFromContext(ctx),
+		reg:   GetRegistry(),
+		cfg:   configuration.GetRegistry(),
+		cp:    characterdata.NewProcessor(l, ctx),
+		mp:    mapdata.NewProcessor(l, ctx),
+		locp:  location.NewProcessor(l, ctx),
+		invp:  inventorydata.NewProcessor(l, ctx),
+		idp:   itemdata.NewProcessor(l, ctx),
+		resp:  compartment.NewProcessor(l, ctx),
+		sgp:   sagaproducer.NewProcessor(l, ctx),
+		sagad: sagadata.NewProcessor(l, ctx),
 		// Process-wide: an attestation deadline armed by one command is
 		// cancelled by another, which will be running on a different processor.
 		timers: GetAttestationTimers(),
@@ -273,10 +285,6 @@ func (p *ProcessorImpl) RoomForCharacter(characterId character.Id) (Room, bool) 
 
 func (p *ProcessorImpl) RoomByHandle(handle uint32) (Room, bool) {
 	return p.reg.GetByHandle(p.t, handle)
-}
-
-func (p *ProcessorImpl) RoomBySettlement(settlementId uuid.UUID) (Room, bool) {
-	return p.reg.GetBySettlement(p.t, settlementId)
 }
 
 // emit runs a command's whole event batch through the transactional outbox

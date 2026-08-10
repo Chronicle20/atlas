@@ -3,10 +3,12 @@
 // submitted into the trade processor.
 //
 // The topic carries EVERY saga in the deployment, so both handlers discriminate
-// on StatusEvent.Type before touching Body, and then filter by the settlement
-// transaction id: a status whose transaction id matches no live trade room is
-// another service's saga (or a redelivery of one already handled) and is
-// dropped.
+// on StatusEvent.Type before touching Body. The FILTER is then the durable
+// settlement record: a status whose transaction id matches no unresolved
+// settlement is another service's saga, or a redelivery of one already handled,
+// and the processor drops it. Filtering on the in-memory ROOM instead would
+// drop the very case the record exists for — a terminal status redelivered
+// after a restart, when the trade has executed but the room is gone.
 //
 // The FAILED body's characterId is deliberately NOT used to identify a
 // participant. It names the failed EXPANDED step's character — for a trade
@@ -64,13 +66,8 @@ func handleSagaCompleted(db *gorm.DB) message.Handler[sagamsg.StatusEvent[sagams
 		if e.Type != sagamsg.StatusEventTypeCompleted {
 			return
 		}
-		p := trade.NewProcessor(l, ctx, db)
-		room, ok := p.RoomBySettlement(e.TransactionId)
-		if !ok {
-			return
-		}
-		if err := p.SettlementSucceeded(uuid.New(), room.Id()); err != nil {
-			l.WithError(err).Errorf("Unable to record the settlement of trade room [%s].", room.Id().String())
+		if err := trade.NewProcessor(l, ctx, db).SettlementSucceeded(uuid.New(), e.TransactionId); err != nil {
+			l.WithError(err).Errorf("Unable to record the settlement of transaction [%s].", e.TransactionId.String())
 		}
 	}
 }
@@ -82,17 +79,12 @@ func handleSagaFailed(db *gorm.DB) message.Handler[sagamsg.StatusEvent[sagamsg.S
 		if e.Type != sagamsg.StatusEventTypeFailed {
 			return
 		}
-		p := trade.NewProcessor(l, ctx, db)
-		room, ok := p.RoomBySettlement(e.TransactionId)
-		if !ok {
-			return
-		}
 		reason := e.Body.Reason
 		if reason == "" {
 			reason = e.Body.ErrorCode
 		}
-		if err := p.SettlementFailed(uuid.New(), room.Id(), reason); err != nil {
-			l.WithError(err).Errorf("Unable to close trade room [%s] after its settlement failed.", room.Id().String())
+		if err := trade.NewProcessor(l, ctx, db).SettlementFailed(uuid.New(), e.TransactionId, reason); err != nil {
+			l.WithError(err).Errorf("Unable to close the trade of transaction [%s] after its settlement failed.", e.TransactionId.String())
 		}
 	}
 }

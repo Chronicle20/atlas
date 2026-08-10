@@ -3,6 +3,7 @@ package trade
 import (
 	invitemsg "atlas-trades/kafka/message/invite"
 	trademsg "atlas-trades/kafka/message/trade"
+	"atlas-trades/settlement"
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -154,14 +155,33 @@ func attestationRequestedProvider(txId uuid.UUID, r Room, characterId character.
 	return roomEventProvider(txId, r, characterId, trademsg.StatusTypeAttestationRequested, trademsg.AttestationRequestedEventBody{})
 }
 
-// settledProvider announces a completed trade, which atlas-channel writes as
-// LEAVE 7. Per design §6.4 it is emitted ONLY after the settlement saga reports
-// terminal success, because the client renders its "received %d mesos after
-// fees" line from its own character data.
-func settledProvider(txId uuid.UUID, r Room, characterId character.Id, ledgerEntryId uuid.UUID) model.Provider[[]kafka.Message] {
-	return roomEventProvider(txId, r, characterId, trademsg.StatusTypeSettled, trademsg.SettledEventBody{
+// recordEventProvider is roomEventProvider for a room that may no longer
+// exist: the room identity comes from the DURABLE settlement record instead.
+// The terminal path uses it unconditionally — including when this process does
+// still hold the room — so that a settlement completed after a restart is
+// byte-identical to one completed live.
+//
+// CharacterId is the owner. Unlike a cancel, a terminal settlement has no
+// triggering character: the FAILED event names the failed expanded step's
+// character, which is not a role and must never be read as one.
+func recordEventProvider[E any](txId uuid.UUID, s settlement.Model, eventType string, body E) model.Provider[[]kafka.Message] {
+	return statusEventProvider(txId, s.Field(), s.RoomId(), s.Handle(), s.RoomType(), s.OwnerId(), s.VisitorId(), s.OwnerId(), eventType, body)
+}
+
+// recordSettledProvider announces a completed trade, which atlas-channel writes
+// as LEAVE 7. Per design §6.4 it is emitted ONLY after the settlement saga
+// reports terminal success, because the client renders its "received %d mesos
+// after fees" line from its own character data.
+func recordSettledProvider(txId uuid.UUID, s settlement.Model, ledgerEntryId uuid.UUID) model.Provider[[]kafka.Message] {
+	return recordEventProvider(txId, s, trademsg.StatusTypeSettled, trademsg.SettledEventBody{
 		LedgerEntryId: ledgerEntryId,
 	})
+}
+
+// recordCancelledProvider tears both dialogs down after a settlement failed,
+// carrying the leaveReason KEY atlas-channel resolves to a status byte.
+func recordCancelledProvider(txId uuid.UUID, s settlement.Model, reason string) model.Provider[[]kafka.Message] {
+	return recordEventProvider(txId, s, trademsg.StatusTypeCancelled, trademsg.CancelledEventBody{Reason: reason})
 }
 
 // cancelledProvider tears the room down on both clients, carrying the semantic

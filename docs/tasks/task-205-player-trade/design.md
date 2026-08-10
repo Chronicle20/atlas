@@ -794,12 +794,47 @@ room id, both character ids, transaction id. Metrics: `trade_rooms_opened`,
 `trade_meso_taxed_total`, `trade_reservation_expired`.
 
 **Crash recovery.** The registry starts empty. Live reservations expire on their
-own TTL — the only residue a crash can leave, and it self-heals. A client whose
-room vanished has its next interaction rejected with a room-closed error. The
-PRD's "reconcile escrowed assets at startup" requirement is **satisfied by
-construction** under Option A: there are no escrowed assets to reconcile. The
-FR-7 acceptance criterion "restarting atlas-trades mid-trade recovers every
-escrowed asset to its owner" is met trivially — nothing left the owner.
+own TTL — the only residue a crash can leave from a room that had not yet
+settled, and it self-heals. A client whose room vanished has its next
+interaction rejected with a room-closed error. The PRD's "reconcile escrowed
+assets at startup" requirement is **satisfied by construction** under Option A:
+there are no escrowed assets to reconcile. The FR-7 acceptance criterion
+"restarting atlas-trades mid-trade recovers every escrowed asset to its owner"
+is met trivially — nothing left the owner.
+
+A room in `SETTLING` is the **exception**, and it is not covered by any of the
+above. Its saga lives in atlas-saga-orchestrator and keeps running across an
+atlas-trades restart, so the swap executes whether or not this service is alive
+to hear about it. Losing the room would therefore lose a trade that HAPPENED —
+no ledger row and no `LEAVE 7`, contradicting FR-7.1's unconditional "every
+settled trade writes one durable ledger row".
+
+atlas-trades therefore keeps a **durable settlement record**
+(`trade_settlements` and its two child tables), written in the SAME transaction
+that enqueues the saga command so the two cannot diverge, and deleted once the
+terminal status has been handled so unfinished settlements never accumulate. It
+carries everything the terminal path needs without a room: both participants,
+their staged items at their re-resolved slots and reservation ids, the frozen
+tax split, and the room identity the status event's envelope requires.
+
+Two paths consume it, and both are idempotent:
+
+- the **live** `EVENT_TOPIC_SAGA_STATUS` consumer, which now resolves the trade
+  from the record rather than from the in-memory room — so a terminal event
+  redelivered after a restart still settles;
+- **startup reconciliation**, which asks the orchestrator
+  `GET /sagas/{transactionId}` for every unfinished record. That question is
+  answerable after a restart because the orchestrator's terminal states are
+  durable: completion is a soft delete to `status='completed'`
+  (`saga/store.go:203-212`), failure sets `status='failed'` (`:252-258`), both
+  are preserved against any later write (`:127-131`), `GetById` applies no
+  status filter (`:73-76`), and nothing purges saga rows.
+
+Whoever deletes the record owns the outcome, so exactly one of the two emits.
+An outcome the orchestrator cannot answer for — unreachable, or a saga it has
+not consumed yet — leaves the record untouched for the next boot or for the
+live event; it is **never** read as failure, because a trade that may have
+executed must not be reported to the players as unsuccessful.
 
 **Service registration.** atlas-trades follows
 [`docs/adding-a-new-service.md`](../../adding-a-new-service.md) in full, with
@@ -858,5 +893,5 @@ resolution.
 | Reservation TTL parameterisation regresses drop reservations | Every existing call site passes the current 30 s explicitly; no behaviour change outside trade |
 | Legacy versions diverge more than v83 predicts | §10.1's procedure derives each version independently; no v83 layout is assumed anywhere |
 | Cross-family room occupancy race (§2.1) | Accepted; best-effort check in atlas-channel, authoritative single-room check inside each service |
-| Single-replica atlas-trades is an availability point | Same posture as atlas-mini-games; rooms are ephemeral and a restart cancels trades cleanly |
+| Single-replica atlas-trades is an availability point | Same posture as atlas-mini-games. A restart cancels cleanly in every state EXCEPT `SETTLING`, whose saga keeps running in the orchestrator: those are covered by the durable settlement record and startup reconciliation (§12), which complete the trade — ledger row and `LEAVE 7`/`LEAVE 8` — after the room is gone |
 | `SP_408` shows no figure if the meso update races `LEAVE 7` | Cosmetic; §6.4 |

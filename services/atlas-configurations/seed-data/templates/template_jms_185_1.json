@@ -3157,7 +3157,7 @@
       },
       {
         "opCode": "0xCC",
-        "writer": "CharacterEffect",
+        "writer": "CharacterEffectForeign",
         "fname": "CUser::OnEffect",
         "options": {
           "operations": {

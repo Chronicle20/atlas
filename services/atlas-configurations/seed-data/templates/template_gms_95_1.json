@@ -3384,7 +3384,7 @@
       },
       {
         "opCode": "0xE0",
-        "writer": "CharacterEffect",
+        "writer": "CharacterEffectForeign",
         "fname": "CUser::OnEffect",
         "options": {
           "operations": {

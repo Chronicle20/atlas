@@ -1,0 +1,15 @@
+packet: cash/serverbound/CouponCode
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnStatusCoupon
+    address: "0x44d2e7"
+    decompile_sha256: 82763f45df196a19aaff2d8c598b1df8747a549f9dc567abc8dfaa12692cdb84
+verifies:
+    - libs/atlas-packet/cash/serverbound/coupon_code_test.go#TestCouponCodeByteFixtureSelfRedeem
+    - libs/atlas-packet/cash/serverbound/coupon_code_test.go#TestCouponCodeByteFixtureTargetedRedeem
+    - libs/atlas-packet/cash/serverbound/coupon_code_test.go#TestCouponCodeByteFixtureShapesDiffer
+    - libs/atlas-packet/cash/serverbound/coupon_code_test.go#TestCouponCodeJmsCarriesTypeByte
+    - libs/atlas-packet/cash/serverbound/coupon_code_test.go#TestCouponCodeRoundTripSelfRedeem
+    - libs/atlas-packet/cash/serverbound/coupon_code_test.go#TestCouponCodeRoundTripTargetedRedeem

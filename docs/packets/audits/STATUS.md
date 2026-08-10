@@ -6,16 +6,16 @@
 
 Tool: `893f30b441d2491b643f689dfd9d46303657b1a3e2cef2aa536eb66ae40a4893`
 
-- export gms_v48: `ff3af9606ae94598c02edfb33d98b819b3be915c23ab7a70a3d8bc7e9fddad79`
-- export gms_v61: `33ad6a973a263634662db6eadfa168fe0570b2e4e36efb14b16684094ef7743d`
-- export gms_v72: `3ef1d667c4649ca9d409f8dcd61106ed65e13f38394d2974da9bd7768aa61858`
-- export gms_v79: `98e8eb24850e38aa52225fd271c9d548c4e30e9c81777572bffccb489f0ebbb5`
-- export gms_v83: `9f832433d17e6e99382d763fd3dbc126036e2078644b2b7b302d3ca53b5b65c3`
-- export gms_v84: `1a42b99ca955fc2285650229398459dc47b89289dd10631ff7bd8b81aa39a812`
-- export gms_v87: `23f26ebb751bb9eccd3411701b5e1a4fa5908653e78072cdf5748ffe2ddc13d2`
-- export gms_v92: `d57718229fbb4510f2ff1b419371bf65842d1ff538347a51c7a2dca0671db684`
-- export gms_v95: `d428f367798c57ff84facc746bb49057b991c0cc26926e1290a211777e3db877`
-- export jms_v185: `6e0ec9c7e027cdaef6254ce87e3e0acaf1e4dc7252684b062ae8af17b445439d`
+- export gms_v48: `414865a74e4c7480d12a82d94114438a90b21c3b7fcb69e007baa4e00caca2d2`
+- export gms_v61: `e5175ce83d43a32fc545996e11d501ddca9412daefb935dfa9d6f84333ae8bdc`
+- export gms_v72: `5230a2d48fcdebcbfd2dab30729a5dd4fb254c4523dcd71e371b9e87e845ac72`
+- export gms_v79: `b0f09a1285c87886953c43c7b782ff86f5f1a947f9b93bfbd9c014e90c6f0160`
+- export gms_v83: `284d540d55e2b222bb8c0c8a276c9316310bca01476e51e4001c4212711bfe21`
+- export gms_v84: `90ce75b413b4b1d9a267b6edb51dc0ebdf2f3233d4f2e1273d46fc1f64bb7b12`
+- export gms_v87: `cd16c845609b9703e0212a41f454319a59911add26d8c8285339060c4eae91db`
+- export gms_v92: `6b4aa17cad3fd59b4f5e0a88fd3b030f813eee4ca0aa2bcf09629e53198d3f7a`
+- export gms_v95: `afe98d2b53779c8f3b74ac81a9a42b2f874eed82a59e8bc85c8f7e901e5b6f44`
+- export jms_v185: `ab1e5878776be8225f808ed8c1b3be6090b7fcf1d98f549eaac2d04e7248e47c`
 
 ## Clientbound
 
@@ -721,6 +721,7 @@ Tool: `893f30b441d2491b643f689dfd9d46303657b1a3e2cef2aa536eb66ae40a4893`
 | CASHSHOP_OPERATION | CCashShop::ApplyWishListEvent; CCashShop::GiftWishItem; CCashShop::OnBuy; CCashShop::OnBuyCouple; CCashShop::OnBuyFriendship; CCashShop::OnBuyNormal; CCashShop::OnBuyPackage; CCashShop::OnBuySlotInc; CCashShop::OnCashGachaponCopy; CCashShop::OnEnableEquipSlotExt; CCashShop::OnExItemSlot; CCashShop::OnGift; CCashShop::OnGiftMateInfoResult; CCashShop::OnGiftPackage; CCashShop::OnIncCharacterSlotCount; CCashShop::OnIncTrunkCount; CCashShop::OnMoveCashItemLtoS; CCashShop::OnMoveCashItemStoL; CCashShop::OnRebateLockerItem; CCashShop::OnRemoveWish; CCashShop::OnSetWish; CCashShop::RequestCashPurchaseRecord; CCashShop::SendBuyAvatarPacket; CCashShop::SendBuyNameChangeItemPacket; CCashShop::SendBuyTransferWorldItemPacket; CCashShop::SendGiftsPacket | cash/serverbound/CashShopOperationGetPurchaseRecord (T1) | 0x0A0 | ❌ | 0x0C4 | ❌ | 0x0DB | ✅ | 0x0DD | ✅ | 0x0E5 | ✅ | 0x0EB | ✅ | 0x0F2 | ✅ | 0x10C | ❌ | 0x113 | ✅ | 0x0F5 | ✅ |
 | MONSTER_BOMB | CMob::TryFirstSelfDestruction | monster/serverbound/MonsterMonsterBomb (T1) |  | ⬜ | 0x0A0 | ✅ | 0x0B7 | ✅ | 0x0B9 | ✅ | 0x0C1 | ✅ | 0x0C6 | ✅ | 0x0CD | ✅ | 0x0E1 | ❌ | 0x0E8 | ✅ | 0x0C7 | ✅ |
 | MORPH_REQUEST | CUINewYearCardSenderDlg::_SendNewYearCard; CUIRandomMorphDlg::_SendMorphRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A0 | ❌ | 0x0A4 | ❌ | 0x0A8 | ❌ | 0x0B5 | ❌ | 0x0B8 | ❌ |  | ⬜ |
+| COUPON_CODE | CCashShop::OnStatusCoupon |  | 0x0A1 | ✅ | 0x0C5 | ✅ | 0x0DC | ✅ | 0x0DE | ✅ | 0x0E6 | ✅ | 0x0EC | ✅ | 0x0F3 | ✅ | 0x10D | ✅ | 0x114 | ✅ | 0x0F6 | ✅ |
 | MOB_DAMAGE_MOB | CMob::SetDamagedByMob | monster/serverbound/MonsterMobDamageMob (T1) |  | ⬜ | 0x0A1 | ✅ | 0x0B8 | ✅ | 0x0BA | ✅ | 0x0C2 | ✅ | 0x0C7 | ✅ | 0x0CE | ✅ | 0x0E2 | ❌ | 0x0E9 | ✅ | 0x0C8 | ✅ |
 | CLICK_GUIDE | CUserLocal::HandleLButtonDblClk |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A2 | ❌ |  | ⬜ | 0x0AC | ❌ | 0x0B9 | ❌ | 0x0BC | ❌ | 0x09C | ❌ |
 | ARAN_COMBO_COUNTER | CUserLocal::RequestIncCombo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A3 | ❌ | 0x0A9 | ❌ | 0x0AD | ❌ | 0x0BA | ❌ | 0x0BD | ❌ | 0x09D | ❌ |
@@ -782,7 +783,6 @@ Tool: `893f30b441d2491b643f689dfd9d46303657b1a3e2cef2aa536eb66ae40a4893`
 | UNNAMED_R377 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E3 | ❌ | 0x0E3 | ❌ | 0x0F0 | ❌ | 0x108 | ❌ | 0x10F | ❌ | 0x0F0 | ❌ |
 | MOB_TIME_BOMB_END | CMob::UpdateTimeBomb | monster/serverbound/MonsterMobTimeBombEnd (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E4 | ❌ | 0x0EB | ✅ | 0x0CA | ✅ |
 | MOB_ESCORT_COLLISION | CMob::SendCollisionEscort | monster/serverbound/MonsterMobEscortCollision (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E5 | 🟡ᶠ | 0x0EC | ✅ | 0x0CB | ✅ |
-| COUPON_CODE | CCashShop::OnStatusCoupon |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E6 | ❌ | 0x0E6 | ❌ | 0x0F3 | ❌ | 0x10D | ❌ | 0x114 | ❌ | 0x0F6 | ❌ |
 | MOB_REQUEST_ESCORT_INFO | CMob::SendRequestEscortPath | monster/serverbound/MonsterMobRequestEscortInfo (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E6 | 🟡ᶠ | 0x0ED | ✅ | 0x0CC | ✅ |
 | MOB_ESCORT_STOP_END_REQUEST | CMob::SendEscortStopEndRequest | monster/serverbound/MonsterMobEscortStopEndRequest (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E7 | 🟡ᶠ | 0x0EE | ✅ | 0x0CD | ✅ |
 | UNNAMED_R387 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0E7 | ❌ | 0x0E7 | ❌ | 0x0F4 | ❌ | 0x10E | ❌ | 0x115 | ❌ | 0x0F7 | ❌ |
@@ -1052,16 +1052,16 @@ Tool: `893f30b441d2491b643f689dfd9d46303657b1a3e2cef2aa536eb66ae40a4893`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 197 | 0 | 19 | 194 | 606 | 0 | 48.0% |
-| v61 | 259 | 0 | 58 | 235 | 464 | 0 | 46.9% |
-| v72 | 273 | 0 | 71 | 251 | 421 | 0 | 45.9% |
-| v79 | 318 | 0 | 70 | 248 | 380 | 0 | 50.0% |
-| v83 | 437 | 0 | 0 | 350 | 229 | 0 | 55.5% |
-| v84 | 411 | 0 | 0 | 357 | 248 | 0 | 53.5% |
-| v87 | 445 | 0 | 0 | 380 | 191 | 0 | 53.9% |
-| v92 | 10 | 0 | 152 | 712 | 142 | 0 | 1.1% |
-| v95 | 470 | 0 | 0 | 439 | 107 | 0 | 51.7% |
-| JMS185 | 420 | 0 | 0 | 399 | 197 | 0 | 51.3% |
+| v48 | 198 | 0 | 19 | 194 | 605 | 0 | 48.2% |
+| v61 | 260 | 0 | 58 | 235 | 463 | 0 | 47.0% |
+| v72 | 274 | 0 | 71 | 251 | 420 | 0 | 46.0% |
+| v79 | 319 | 0 | 70 | 248 | 379 | 0 | 50.1% |
+| v83 | 438 | 0 | 0 | 349 | 229 | 0 | 55.7% |
+| v84 | 412 | 0 | 0 | 356 | 248 | 0 | 53.6% |
+| v87 | 446 | 0 | 0 | 379 | 191 | 0 | 54.1% |
+| v92 | 11 | 0 | 152 | 711 | 142 | 0 | 1.3% |
+| v95 | 471 | 0 | 0 | 438 | 107 | 0 | 51.8% |
+| JMS185 | 421 | 0 | 0 | 398 | 197 | 0 | 51.4% |
 
 ## Conflicts
 

@@ -21,6 +21,7 @@ a service-local copy.
 |---|---|---|
 | [`asset`](./asset) | `Id`, `Quantity` (item-instance ids); `Flag` bitset + `HasFlag` / `SetFlag` / `ClearFlag` | Anything dealing with concrete item instances on a character. |
 | [`channel`](./channel) | `Id` (`byte`), `StatusType` | Channel identifiers in routing or socket code. **Don't redeclare as `string` or `uint8`.** |
+| [`coupon`](./coupon) | `MaxCodeLength`, `Normalize`, `Plausible` | Cash-shop coupon code normalization (trim + uppercase) and the cheap plausibility gate before a DB lookup. Codes are stored normalized; the `(tenant_id, code)` unique index is the case-insensitivity guarantee. |
 | [`constants`](./constants) | `For(region, major, minor) SkillJobSet` | The tenant-keyed entry point for version-aware skill/job identity resolution — bundles a tenant version's `skill.Set` + `job.Set` (see `skill`/`job` below). Falls back to the canonical GMS 83.1 baseline for an unprovisioned version. |
 | [`character`](./character) | `Id` (`uint32`), temporary stat constants | Character ID parameters; do not invent `int` / `string` aliases. |
 | [`field`](./field) | `Id` (`string`) | Field/instance string identifiers (distinct from `map.Id`). |

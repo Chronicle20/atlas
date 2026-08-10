@@ -18,6 +18,7 @@ const (
 	CommandTypeRequestCharacterSlotIncreaseByItem = "REQUEST_CHARACTER_SLOT_INCREASE_BY_ITEM"
 	CommandTypeMoveFromCashInventory              = "MOVE_FROM_CASH_INVENTORY"
 	CommandTypeOpenSurprise                       = "OPEN_SURPRISE"
+	CommandTypeRequestCouponRedemption            = "REQUEST_COUPON_REDEMPTION"
 )
 
 type Command[E any] struct {
@@ -73,6 +74,18 @@ type OpenSurpriseCommandBody struct {
 	CashId        int64     `json:"cashId"`
 }
 
+// RequestCouponRedemptionCommandBody carries only the code: the channel has
+// already normalized it (trimmed + uppercased), and the owning ACCOUNT is
+// resolved service-side from Command.CharacterId, because the packet arrives
+// on a character session while wallets are account-scoped.
+//
+// The v83..v95 clients also send a leading target-character string, but
+// targeted redemption (gift coupons) is out of scope (PRD §2) and the field is
+// deliberately not carried here.
+type RequestCouponRedemptionCommandBody struct {
+	Code string `json:"code"`
+}
+
 const (
 	EnvEventTopicStatus                       = "EVENT_TOPIC_CASH_SHOP_STATUS"
 	EventCashShopStatusTypeCharacterEnter     = "CHARACTER_ENTER"
@@ -83,6 +96,8 @@ const (
 	StatusEventTypeCashItemMovedToInventory   = "CASH_ITEM_MOVED_TO_INVENTORY"
 	StatusEventTypeSurpriseOpened             = "SURPRISE_OPENED"
 	StatusEventTypeSurpriseFailed             = "SURPRISE_FAILED"
+	StatusEventTypeCouponRedeemed             = "COUPON_REDEEMED"
+	StatusEventTypeCouponFailed               = "COUPON_FAILED"
 )
 
 // TODO multiple services have different impl of this
@@ -144,4 +159,34 @@ type SurpriseOpenedEventBody struct {
 // COMMODITY_MISSING, INTERNAL.
 type SurpriseFailedEventBody struct {
 	Reason string `json:"reason"`
+}
+
+// CouponRedeemedBody describes one successful redemption.
+//
+// MaplePoints and Credit are DELTAS — the amounts this coupon awarded — not
+// balances. UseCouponDone.maplePoint is rendered by the client inside a
+// "You have received ... using the coupon" sentence and is skipped entirely
+// when zero; the balance is refreshed separately by CashQueryResult. See
+// docs/tasks/task-206-cash-shop-coupon-codes/derivation.md, "Blocking answer 1".
+//
+// AssetIds rather than fully-built CashInventoryItem records: the channel
+// already owns the asset-id -> CashInventoryItem projection (its purchase
+// handler at kafka/consumer/cashshop/consumer.go:105-124), and duplicating it
+// here would put packet concerns in atlas-cashshop.
+type CouponRedeemedBody struct {
+	CompartmentId uuid.UUID `json:"compartmentId"`
+	AssetIds      []uint32  `json:"assetIds"`
+	MaplePoints   uint32    `json:"maplePoints"`
+	Credit        uint32    `json:"credit"`
+}
+
+// CouponFailedBody carries one of the coupon.ErrorKey* strings.
+//
+// This is a DISTINCT event type rather than a reuse of StatusEventTypeError,
+// because the existing ERROR handler announces
+// CashShopInventoryCapacityIncreaseFailedBody — a different mode byte. A
+// coupon failure must go out on the USE_COUPON_FAILED arm, so folding it into
+// ERROR would force the channel to guess which failure arm an error belongs to.
+type CouponFailedBody struct {
+	Error string `json:"error"`
 }

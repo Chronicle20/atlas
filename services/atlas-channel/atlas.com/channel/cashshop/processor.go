@@ -25,6 +25,7 @@ type Processor interface {
 	RequestStorageIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error
 	RequestCharacterSlotIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error
 	RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32) error
+	RequestCouponRedemption(characterId uint32, code string) error
 	MoveFromCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte, slot int16) error
 	MoveToCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte) error
 	OpenSurprise(accountId uint32, characterId uint32, cashId int64) error
@@ -98,6 +99,14 @@ func (p *ProcessorImpl) RequestPurchase(characterId uint32, serialNumber uint32,
 	currency = resolvePurchaseCurrency(isPoints, currency)
 	p.l.Debugf("Character [%d] purchasing [%d] with currency [%d], zero [%d]", characterId, serialNumber, currency, zero)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPurchaseCommandProvider(characterId, serialNumber, currency))
+}
+
+// RequestCouponRedemption forwards an already-normalized coupon code to
+// atlas-cashshop. The code must NEVER be logged: it is a redeemable bearer
+// token, so only its length goes into the log line.
+func (p *ProcessorImpl) RequestCouponRedemption(characterId uint32, code string) error {
+	p.l.Debugf("Character [%d] submitting a coupon code of length [%d].", characterId, len(code))
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestCouponRedemptionCommandProvider(characterId, code))
 }
 
 // resolvePurchaseCurrency maps the buy packet's isPoints flag onto the wallet

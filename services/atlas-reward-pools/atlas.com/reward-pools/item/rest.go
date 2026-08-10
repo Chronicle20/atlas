@@ -20,7 +20,17 @@ func (r RestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
 }
 
+// SetID is called unconditionally by api2go's Unmarshal, including for
+// CREATE payloads, which carry no `data.id` because the row id is
+// server-generated. An empty id therefore means "unset", not "malformed": it
+// must leave Id at its zero value rather than fail the request, or every POST
+// is rejected with a 400 before the handler runs. A non-empty id that isn't a
+// number is still an error.
 func (r *RestModel) SetID(idStr string) error {
+	if idStr == "" {
+		r.Id = 0
+		return nil
+	}
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		return err

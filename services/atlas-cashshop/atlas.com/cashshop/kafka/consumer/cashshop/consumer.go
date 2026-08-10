@@ -3,6 +3,7 @@ package cashshop
 import (
 	cashshop3 "atlas-cashshop/cashshop"
 	"atlas-cashshop/cashshop/inventory/asset"
+	"atlas-cashshop/coupon"
 	consumer2 "atlas-cashshop/kafka/consumer"
 	"atlas-cashshop/kafka/message/cashshop"
 	cashshop2 "atlas-cashshop/kafka/producer/cashshop"
@@ -57,6 +58,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleOpenSurprise(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestCouponRedemption(db)))); err != nil {
 				return err
 			}
 			return nil
@@ -149,6 +153,20 @@ func handleOpenSurprise(db *gorm.DB) message.Handler[cashshop.Command[cashshop.O
 		err := surprise.NewProcessor(l, ctx, db).OpenAndEmit(c.Body.TransactionId, c.Body.AccountId, c.CharacterId, c.Body.CashId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to open surprise box [%d] for character [%d].", c.Body.CashId, c.CharacterId)
+		}
+	}
+}
+
+func handleCommandRequestCouponRedemption(db *gorm.DB) message.Handler[cashshop.Command[cashshop.RequestCouponRedemptionCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c cashshop.Command[cashshop.RequestCouponRedemptionCommandBody]) {
+		if c.Type != cashshop.CommandTypeRequestCouponRedemption {
+			return
+		}
+		// RedeemAndEmit owns the whole outcome, including emitting the failure
+		// event on the direct producer path, so a returned error has already
+		// been reported to the player and only needs logging here.
+		if err := coupon.NewProcessor(l, ctx, db).RedeemAndEmit(c.CharacterId, c.Body.Code); err != nil {
+			l.WithError(err).Debugf("Coupon redemption for character [%d] did not succeed.", c.CharacterId)
 		}
 	}
 }

@@ -29,15 +29,26 @@ export const incubatorPoolSchema = z.object({
 });
 export type IncubatorPoolFormData = z.infer<typeof incubatorPoolSchema>;
 
+// The item field is a picker that starts unset, so the value RHF submits when
+// nothing was chosen is `undefined` — that trips z.number()'s TYPE check, not
+// .positive(), and would surface zod's raw "expected number, received
+// undefined". The `error` option is what puts the authored message on that
+// path.
 export const tierItemSchema = z.object({
-  itemId: z.number().int().positive("Item id is required"),
+  itemId: z
+    .number({ error: "Item id is required" })
+    .int()
+    .positive("Item id is required"),
   quantity: z.number().int().positive(),
   tier: z.enum(["common", "uncommon", "rare"]),
 });
 export type TierItemFormData = z.infer<typeof tierItemSchema>;
 
 export const weightItemSchema = z.object({
-  itemId: z.number().int().positive("Item id is required"),
+  itemId: z
+    .number({ error: "Item id is required" })
+    .int()
+    .positive("Item id is required"),
   quantity: z.number().int().positive(),
   weight: z.number().int().positive("Weight must be at least 1"),
 });

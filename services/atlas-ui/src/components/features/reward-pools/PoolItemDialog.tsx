@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ItemPicker } from "@/components/features/items/item-search/ItemPicker";
 import { createErrorFromUnknown } from "@/types/api/errors";
 import {
   tierItemSchema,
@@ -191,12 +192,34 @@ export function PoolItemDialog({
           <DialogTitle>{isEdit ? "Edit Item" : "Add Item"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="pi-itemId">Item Id</Label>
-            <Input
-              id="pi-itemId"
-              type="number"
-              {...form.register("itemId", { valueAsNumber: true })}
+          {/* The picker trigger is a labelable <button>, so a <label
+              for="pi-itemId"> would override its text ("Select an item…" /
+              the resolved name) as the accessible name. The field name is
+              carried by a role="group"/aria-labelledby pair instead — same
+              wiring as NpcShopCommodityDialog. */}
+          <div
+            role="group"
+            aria-labelledby="pi-itemId-label"
+            className="space-y-2"
+          >
+            {/* htmlFor is deliberately absent (see above); the click-to-focus
+                affordance a <label> would normally give is restored by hand. */}
+            <Label
+              id="pi-itemId-label"
+              onClick={() => document.getElementById("pi-itemId")?.focus()}
+            >
+              Item
+            </Label>
+            <Controller
+              control={form.control}
+              name="itemId"
+              render={({ field }) => (
+                <ItemPicker
+                  id="pi-itemId"
+                  value={field.value ?? 0}
+                  onChange={field.onChange}
+                />
+              )}
             />
             {form.formState.errors.itemId && (
               <p className="text-sm text-destructive">

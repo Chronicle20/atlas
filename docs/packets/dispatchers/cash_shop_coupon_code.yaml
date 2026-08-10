@@ -1,0 +1,41 @@
+# CashShopCouponCodeHandle — serverbound COUPON_CODE (CCashShop::OnStatusCoupon).
+#
+# SOURCE OF TRUTH for this handler's tenant-template registration.
+# `packet-audit operations` adds the entry to any template missing it and
+# `--check` fails when one is absent.
+#
+# This op has NO mode table. It is NOT an arm of CASHSHOP_OPERATION: the client
+# has no single cash-shop request builder, and the coupon send is its own
+# opcode whose body starts immediately with strings, with no leading Encode1.
+# Consequently there is no `operations:` or `errors:` section here — only the
+# per-version opcode. Adding a USE_COUPON key to CashShopOperationHandle would
+# be wrong; see the "Structural finding" section of
+# docs/tasks/task-206-cash-shop-coupon-codes/derivation.md.
+#
+# gms_v48/v61/v72/v79 (the legacy four) DO send COUPON_CODE. Task 3
+# (commit bd2827f7c, independently reviewed and re-decompiled) proved all four
+# clients send this op and added it to all four registries; Task 4
+# (commit ec33e4b0f) shipped the codec for all ten versions with byte
+# fixtures, and all ten matrix cells are verified. The prior absence of this
+# op from those registries was never evidence that the legacy clients lack
+# it — see derivation.md, "Legacy versions — COUPON_CODE applicability", for
+# the evidence trail. template_gms_12_1.json is out of scope: v12 has no cash
+# shop.
+
+handler: CashShopCouponCodeHandle
+validator: LoggedInValidator
+services: [channel]
+fname: CCashShop::OnStatusCoupon
+op: COUPON_CODE
+direction: serverbound
+opcodes:
+  gms_v48: "0xA1"
+  gms_v61: "0xC5"
+  gms_v72: "0xDC"
+  gms_v79: "0xDE"
+  gms_v83: "0xE6"
+  gms_v84: "0xEC"
+  gms_v87: "0xF3"
+  gms_v92: "0x10D"
+  gms_v95: "0x114"
+  jms_v185: "0xF6"

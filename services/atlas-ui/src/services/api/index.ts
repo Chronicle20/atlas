@@ -204,3 +204,25 @@ export type {
 // Shared pagination utility (task-117)
 export { fetchPaged, fetchAll } from "./pagination";
 export type { PageMeta, PagedResult } from "./pagination";
+
+// Cash-shop coupon codes (task-206)
+export { couponsService, CouponConflictError } from "./coupons.service";
+export {
+  COUPON_RESOURCE_TYPE,
+  COUPON_BATCH_RESOURCE_TYPE,
+  COUPON_REDEMPTION_RESOURCE_TYPE,
+} from "./coupons.service";
+export type {
+  Coupon,
+  CouponAttributes,
+  CouponReward,
+  CouponBatch,
+  CouponBatchAttributes,
+  CouponRedemption,
+  CouponRedemptionAttributes,
+  CouponFilters,
+  CreateCouponInput,
+  UpdateCouponInput,
+  GenerateCouponBatchInput,
+  CouponRedemptionQuery,
+} from "./coupons.service";

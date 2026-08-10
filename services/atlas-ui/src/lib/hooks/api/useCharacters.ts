@@ -32,7 +32,10 @@ export const characterKeys = {
   pagedList: (tenant: Tenant | null, page: number, size: number) =>
     [...characterKeys.lists(), tenant?.id ?? "no-tenant", page, size] as const,
   details: () => [...characterKeys.all, "detail"] as const,
-  detail: (tenant: Tenant, characterId: string) =>
+  // `Tenant | null` like accountKeys.detail: the body already reads `tenant?.id`,
+  // so batched callers that only build keys once a tenant exists need no
+  // non-null assertion to reuse this key.
+  detail: (tenant: Tenant | null, characterId: string) =>
     [...characterKeys.details(), tenant?.id, characterId] as const,
 };
 

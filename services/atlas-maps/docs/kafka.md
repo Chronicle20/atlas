@@ -11,7 +11,6 @@ Character status events from character service.
 | CREATED | StatusEventCreatedBody | Character was created |
 | LOGIN | StatusEventLoginBody | Character logged in |
 | LOGOUT | StatusEventLogoutBody | Character logged out |
-| MAP_CHANGED | StatusEventMapChangedBody | Character changed maps |
 | CHANNEL_CHANGED | ChangeChannelEventLoginBody | Character changed channels |
 | DELETED | StatusEventDeletedBody | Character deleted |
 
@@ -612,5 +611,6 @@ buffCommand[E] {
 - Headers include span and tenant information for distributed tracing and multi-tenancy
 - Map command consumer starts from last offset (does not replay historical commands)
 - Data event (EVENT_TOPIC_DATA) consumer starts from last offset and runs in a dedicated consumer group
-- EVENT_TOPIC_CHARACTER_STATUS MAP_CHANGED and CHANNEL_CHANGED are both consumed and produced by this service (self-consumption to update in-memory map registries after a persisted location change)
+- EVENT_TOPIC_CHARACTER_STATUS CHANNEL_CHANGED is both consumed and produced by this service (self-consumption to update in-memory map registries after a persisted channel change)
+- EVENT_TOPIC_CHARACTER_STATUS MAP_CHANGED is produced but not consumed by this service. ChangeMap performs the location persistence, map registry transition, and map-timer re-arm inline; consuming the event repeated all three and emitted CharacterEnter twice per warp
 - COMMAND_TOPIC_CHARACTER CHANGE_MAP is both consumed and produced by this service

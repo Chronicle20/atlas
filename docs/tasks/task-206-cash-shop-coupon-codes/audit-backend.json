@@ -1,0 +1,94 @@
+{
+  "service": "atlas-cashshop + atlas-channel (task-206-cash-shop-coupon-codes)",
+  "path": "services/atlas-cashshop/atlas.com/cashshop/coupon, services/atlas-channel/atlas.com/channel (coupon-related files)",
+  "date": "2026-08-09",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "coupon",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists", "status": "fail", "evidence": "coupon/model.go:98,113,129 - Builder/NewBuilder/Build in model.go, no builder.go"},
+        {"id": "DOM-02", "name": "ToEntity() method", "status": "fail", "evidence": "no ToEntity(); coupon/administrator.go:54-80 builds &Entity{} manually"},
+        {"id": "DOM-03", "name": "Make(Entity) function", "status": "pass", "evidence": "coupon/entity.go:54"},
+        {"id": "DOM-04", "name": "Transform function", "status": "pass", "evidence": "coupon/rest.go:57"},
+        {"id": "DOM-05", "name": "TransformSlice function", "status": "fail", "evidence": "no TransformSlice; coupon/resource.go:110 uses model.SliceMap(Transform) instead (minor - no inline loop)"},
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "coupon/processor.go:58"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "coupon/resource.go:106,129,180,230,287"},
+        {"id": "DOM-08", "name": "POST/PATCH use RegisterInputHandler", "status": "pass", "evidence": "coupon/resource.go:39,41"},
+        {"id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "grep clean"},
+        {"id": "DOM-10", "name": "Test DB tenant callbacks", "status": "pass", "evidence": "coupon/administrator_test.go:49 via databasetest.NewInMemoryTenantDB -> libs/atlas-database/databasetest/testdb.go:39"},
+        {"id": "DOM-11", "name": "Providers lazy evaluation", "status": "pass", "evidence": "coupon/provider.go:17-37,82"},
+        {"id": "DOM-12", "name": "No os.Getenv in handlers", "status": "pass", "evidence": "grep clean"},
+        {"id": "DOM-13", "name": "No cross-domain logic in handlers", "status": "pass", "evidence": "coupon/resource.go calls only NewProcessor"},
+        {"id": "DOM-14", "name": "Handlers don't call providers directly", "status": "pass", "evidence": "coupon/resource.go"},
+        {"id": "DOM-15", "name": "No direct entity creation in handlers", "status": "pass", "evidence": "grep clean"},
+        {"id": "DOM-16", "name": "administrator.go exists", "status": "pass", "evidence": "coupon/administrator.go"},
+        {"id": "DOM-17", "name": "Domain error -> HTTP mapping", "status": "pass", "evidence": "coupon/resource.go:150-159"},
+        {"id": "DOM-18", "name": "JSON:API interface on RestModel", "status": "pass", "evidence": "coupon/rest.go:34,38,44"},
+        {"id": "DOM-19", "name": "Flat request models", "status": "pass", "evidence": "coupon/rest.go:19, coupon/patch.go:71"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "coupon/model_test.go, generator_test.go"},
+        {"id": "DOM-21", "name": "atlas-constants reuse", "status": "pass", "evidence": "libs/atlas-constants/coupon/ shared package; coupon/generator.go:12; coupon/reward/reward.go:22-24 reuses wallet.Model.Balance convention"},
+        {"id": "DOM-22", "name": "Dockerfile <-> go.mod parity", "status": "pass", "evidence": "Dockerfile:41,71,94 (3/3 per shared-root-Dockerfile mechanism, CLAUDE.md); go.work:14"},
+        {"id": "DOM-23", "name": "Kafka topic naming", "status": "pass", "evidence": "no new topic; reuses COMMAND_TOPIC_CASH_SHOP/EVENT_TOPIC_CASH_SHOP_STATUS as Type discriminators"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in tests", "status": "pass", "evidence": "outbox message.Buffer pattern; tests assert outbox/direct counts"},
+        {"id": "DOM-25", "name": "Client wire values config-resolved", "status": "pass", "evidence": "libs/atlas-packet/cash/clientbound/shop_operation_body.go:91,272 ResolveCode"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh rc=0"},
+        {"id": "DOM-27", "name": "Transient DB errors -> 503", "status": "pass", "evidence": "main.go:80-84 classifier; no bare 500 in resource.go"},
+        {"id": "DOM-28", "name": "No silent degradation in enrichment", "status": "fail", "evidence": "services/atlas-channel/.../kafka/consumer/cashshop/consumer.go:195-199 logs but no degrade.Observe metric (minor)"}
+      ]
+    },
+    {
+      "name": "coupon/batch",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists", "status": "fail", "evidence": "coupon/batch/model.go:32,43,55"},
+        {"id": "DOM-02", "name": "ToEntity() method", "status": "fail", "evidence": "coupon/batch/administrator.go:12-25 manual &Entity{}"},
+        {"id": "DOM-05", "name": "TransformSlice function", "status": "fail", "evidence": "coupon/batch/resource.go:51 uses model.SliceMap(Transform)"},
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "coupon/batch/processor.go:46"},
+        {"id": "DOM-08", "name": "POST uses RegisterInputHandler", "status": "pass", "evidence": "coupon/batch/resource.go:32"},
+        {"id": "DOM-16", "name": "administrator.go exists", "status": "pass", "evidence": "coupon/batch/administrator.go"},
+        {"id": "DOM-21", "name": "atlas-constants reuse", "status": "pass", "evidence": "shared couponrules package"}
+      ]
+    },
+    {
+      "name": "coupon/redemption",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists", "status": "fail", "evidence": "coupon/redemption/model.go:30,40,51"},
+        {"id": "DOM-02", "name": "ToEntity() method", "status": "fail", "evidence": "coupon/redemption/administrator.go:17-33 manual &Entity{}"},
+        {"id": "DOM-05", "name": "TransformSlice function", "status": "fail", "evidence": "coupon/redemption/resource.go:88 uses model.SliceMap(Transform)"},
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "coupon/redemption/processor.go:30"},
+        {"id": "DOM-08", "name": "POST/PATCH use RegisterInputHandler", "status": "pass", "evidence": "not triggered - no write routes (deliberate: no REST redeem)"},
+        {"id": "DOM-16", "name": "administrator.go exists", "status": "pass", "evidence": "coupon/redemption/administrator.go"},
+        {"id": "DOM-21", "name": "atlas-constants reuse", "status": "pass", "evidence": "shared couponrules package"}
+      ]
+    }
+  ],
+  "fileResponsibilities": [
+    {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "coupon/processor.go, coupon/batch/processor.go, coupon/redemption/processor.go only"},
+    {"id": "FILE-02", "name": "RestModel/Transform/JSON:API in rest.go", "status": "fail", "evidence": "coupon/patch.go:71,84,88,92 PatchRestModel with GetName/GetID/SetID outside rest.go (minor)"},
+    {"id": "FILE-03", "name": "Cross-service requests in requests.go", "status": "pass", "evidence": "not triggered - no cross-service HTTP calls in coupon/"},
+    {"id": "FILE-04", "name": "Entity+Migration+TableName in entity.go", "status": "pass", "evidence": "all three entity.go files"},
+    {"id": "FILE-05", "name": "Builder in builder.go", "status": "fail", "evidence": "Builder in model.go x3 (coupon, batch, redemption)"},
+    {"id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "no coupon.go/batch.go/redemption.go files"}
+  ],
+  "security": [
+    {"id": "SEC-secrets", "name": "No coupon code in logs/metrics", "status": "pass", "evidence": "coupon/processor.go:110,144,153 log len(code) only; coupon/metrics.go:8-30 closed label sets"},
+    {"id": "SEC-crypto-rand", "name": "crypto/rand for generation", "status": "pass", "evidence": "coupon/generator.go:4,48"},
+    {"id": "SEC-atomic", "name": "Atomic reservation not read-then-write", "status": "pass", "evidence": "coupon/administrator.go:21-32 reserveUse single UpdateColumns"},
+    {"id": "SEC-tenancy", "name": "Multi-tenancy scoping on every query", "status": "pass", "evidence": "coupon/provider.go:20,31,62; coupon/administrator.go:23,41,98,151-154"},
+    {"id": "SEC-no-redeem-endpoint", "name": "No REST redeem endpoint", "status": "pass", "evidence": "coupon/resource.go:29-42; redemption package has no write routes"}
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "DOM-01/FILE-05 (Important, x3): Builder lives in model.go not builder.go in coupon, batch, redemption",
+    "DOM-02 (Important, x3): no Model.ToEntity() in coupon, batch, redemption - administrator.go builds Entity via manual struct literal",
+    "DOM-05 (Minor, x3): no TransformSlice function; model.SliceMap(Transform) used instead (no inline loops, so functionally equivalent)",
+    "FILE-02 (Minor): PatchRestModel (JSON:API type) lives in coupon/patch.go instead of coupon/rest.go",
+    "DOM-28 (Minor): services/atlas-channel/.../kafka/consumer/cashshop/consumer.go:195-199 degrades wallet-refresh fetch failure with a log but no degrade.Observe metric"
+  ]
+}

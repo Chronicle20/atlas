@@ -54,7 +54,11 @@ func main() {
 	compartment.InitReservationRegistry(rc)
 	compartment.InitLockRegistry(rc)
 
-	db := database.Connect(l, database.SetMigrations(compartment.Migration, asset.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(compartment.Migration, asset.Migration, outboxlib.Migration, database.IdempotencyMigration))
+
+	// Durable-create command handlers claim an idempotency key so an
+	// at-least-once redelivery cannot duplicate an asset (task-208).
+	database.StartIdempotencySweeper(l, rt.Context(), db, database.DefaultIdempotencyRetention, database.DefaultIdempotencySweep)
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.

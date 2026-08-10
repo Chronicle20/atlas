@@ -1266,6 +1266,24 @@
   ida:
     address: 5748606
   note: 'send-site 0x44a44d etc: COutPacket(160), CCashShop cash-purchase family (OnBuy/OnBuyCouple/OnBuyFriendship/OnBuyPackage/OnGift/OnSetWish all COutPacket(160)+Enc1(sub-op)). v61 CASHSHOP_OPERATION=196.'
+- op: COUPON_CODE
+  direction: serverbound
+  opcode: 161
+  fname: CCashShop::OnStatusCoupon
+  packet: cash/serverbound/CouponCode
+  provenance: manual
+  note: >-
+    task-206: the previous registry absence (and the matrix n-a) was
+    "nobody looked", not client-absence. CCashShop::OnStatusCoupon @ 0x44d2e7
+    builds COutPacket(0xA1) at 0x44d348 (push 0A1h @ 0x44d340 =
+    CASHSHOP_OPERATION 160 + 1) and sends it at 0x44d3b1. Body is three
+    EncodeStr and no Encode1: EncodeStr(characterId) @ 0x44d365,
+    EncodeStr(couponCode) @ 0x44d37e, then EncodeStr(third) @ 0x44d3a2
+    guarded on characterId being non-empty (dead, characterId is never
+    populated) — the same shape as gms_v83. v48 alone has NO client-side
+    empty-code guard: the "Please enter the coupon code." literal is absent
+    from the whole binary, so an empty coupon code can reach the server.
+    See docs/tasks/task-206-cash-shop-coupon-codes/derivation.md.
 - op: GENERAL_CHAT
   direction: serverbound
   opcode: 40

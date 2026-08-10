@@ -1126,6 +1126,12 @@
       "boxTemplateIds": [
         5222000
       ]
+    },
+    "coupons": {
+      "rateLimit": {
+        "attempts": 10,
+        "windowSeconds": 3600
+      }
     }
   }
 }

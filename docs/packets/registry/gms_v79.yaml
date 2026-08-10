@@ -2556,6 +2556,23 @@
   ida:
     address: 4614123
   note: 'COutPacket(221)+Enc1(0x28=GET_PURCHASE_RECORD)+Enc4; v83 CASHSHOP_OPERATION=229 (d-8). purchase-record arm.'
+- op: COUPON_CODE
+  direction: serverbound
+  opcode: 222
+  fname: CCashShop::OnStatusCoupon
+  packet: cash/serverbound/CouponCode
+  provenance: manual
+  note: >-
+    task-206: the previous registry absence (and the matrix n-a) was
+    "nobody looked", not client-absence. CCashShop::OnStatusCoupon @ 0x46aa3e
+    builds COutPacket(0xDE) at 0x46aae4 (push 0DEh @ 0x46aadc =
+    CASHSHOP_OPERATION 221 + 1) and sends it at 0x46ab4d. Body is three
+    EncodeStr and no Encode1: EncodeStr(characterId) @ 0x46ab01,
+    EncodeStr(couponCode) @ 0x46ab1a, then EncodeStr(third) @ 0x46ab3e
+    guarded on characterId being non-empty (dead, characterId is never
+    populated) — the same shape as gms_v83. Empty codes are filtered client
+    side ("Please enter the coupon code." @ 0xabed1c, DoModal @ 0x46aaca).
+    See docs/tasks/task-206-cash-shop-coupon-codes/derivation.md.
 - op: CLAIM_REQUEST
   direction: serverbound
   opcode: 104

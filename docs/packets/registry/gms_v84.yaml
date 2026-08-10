@@ -3983,10 +3983,18 @@
   note: v84 opcode 0xEB verified from COutPacket(235) in RequestCashPurchaseRecord (task-085); csv-import 229 was wrong.
 - op: COUPON_CODE
   direction: serverbound
-  opcode: 230
+  opcode: 236
   fname: CCashShop::OnStatusCoupon
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  packet: cash/serverbound/CouponCode
+  provenance: manual
+  note: >-
+    task-206 corrected 230 -> 236. csv-import seeded 230 from the v83 column;
+    the v84 client builds the coupon packet with COutPacket(&pkt, 236) at
+    0x473c84 inside CCashShop::OnStatusCoupon @ 0x473bde. The 68 E6 00 00 00
+    byte hit at 0x473fd1 is a CreateDlg pixel coordinate in sub_473F02, not a
+    packet ctor. 236 = CASHSHOP_OPERATION(235) + 1, matching every other
+    version's +1 relation. Evidence:
+    docs/tasks/task-206-cash-shop-coupon-codes/derivation.md.
 - op: UNNAMED_R387
   direction: serverbound
   opcode: 231

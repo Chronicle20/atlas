@@ -1,0 +1,45 @@
+# coverage-manifest — task-206-cash-shop-coupon-codes
+#
+# Constructed by the packet-completeness-critic from the branch's actual git
+# delta (this manifest did not exist before this pass; PROCESS.md requires
+# one per packet task). Two ops are declared:
+#
+# 1. COUPON_CODE (serverbound) — the primary feature: a brand-new standalone
+#    opcode + codec (libs/atlas-packet/cash/serverbound/coupon_code.go),
+#    wired into all ten templates, all ten matrix cells promoted verified.
+# 2. CASHSHOP_OPERATION (both directions) — NOT the primary feature, but the
+#    branch's own plan (Task 28/29, PRD FR-2.2, design.md §5.1) deliberately
+#    touched this op's serverbound `options.operations` mode table (v87/v92/
+#    v95 gained full tables; a live BUY_NORMAL 20->32 transcription bug was
+#    fixed on v83/v84) and its clientbound `options.errors` notice-code table
+#    (all ten versions, jms_v185 partial by design). Declared here so those
+#    real template/codec edits are not silently unclaimed.
+
+ops:
+  - COUPON_CODE
+  - CASHSHOP_OPERATION
+
+versions:
+  - gms_v48
+  - gms_v61
+  - gms_v72
+  - gms_v79
+  - gms_v83
+  - gms_v84
+  - gms_v87
+  - gms_v92
+  - gms_v95
+  - jms_v185
+
+fields:
+  - "cash/serverbound/CouponCode: new standalone opcode, all ten versions (gms_v48 0xA1 .. jms_v185 0xF6); legacy four (v48/61/72/79) moved n-a -> verified after Task 3 proved they send the op"
+  - "cash/clientbound/*: CashShopOperationErrorInvalidCouponCode const value corrected INVALID_COUPON_COUPON -> INVALID_COUPON_CODE (Task 5); label-only, no wire-byte change"
+  - "CashShopOperationHandle (serverbound CASHSHOP_OPERATION, dispatcher family): options.operations mode table completed for gms_v87/gms_v92/gms_v95 (previously empty/absent); BUY_NORMAL corrected 20 -> 32 on gms_v83 and gms_v84 (transcription bug, CCashShop::OnBuyNormal push 20h == 32 decimal)"
+  - "CashShopOperation (clientbound CASHSHOP_OPERATION, dispatcher family): options.errors notice-code table added for all ten versions - gms_v83/84/87=53 keys, gms_v92/95=51 keys, jms_v185=30/53 keys (PARTIAL BY DESIGN, see below), gms_v48=40/61=43/72=49/79=53 legacy keys (Task 9)"
+  - "jms_v185 errors column is deliberately PARTIAL: 30 of 53 Atlas keys resolved by proven prefix set-equality in byte range [178,211]; the remaining 23 gift/transfer/limit keys need a JMS String.wz dump this repo lacks and are recorded absent-with-reason in the YAML, not guessed. All ten COUPON-specific error keys are inside the mapped range."
+  - "gms_v84 mode 72 / gms_v87 mode 74 / gms_v92 mode 75 / gms_v95 mode 76: real CashShopOperationHandle client sends confirmed by exhaustive byte search but with no known Atlas key; deliberately omitted from operations tables rather than guessed."
+  - "jms_v185 CouponCode body carries an extra unconditional Encode1(nType) byte (position/width/origin proven, semantics unverified) - modelled in the codec, never forwarded downstream."
+
+out_of_scope:
+  - cashShop.coupons.rateLimit          # service-side rate-limit config added to all 11 templates incl. gms_12; not a packet field
+  - tools/packet-audit/cmd/operations.go # tool-generator bug fixes (Task 6) enabling addEntry to emit handler+services; not a codec/template change itself

@@ -339,3 +339,40 @@ tell: **case 7 and case 20 resolve the SAME StringPool id (0x1B2)**, exactly the
 gms `TRADE_NOT_ALLOWED` / `TRADE_NOT_ALLOWED_2` pairing. Only those two keys were
 written; the remaining arms are positionally suggestive but their strings were not
 read, so they are left underived rather than mapped by position.
+
+### 6.6 `INVITE_DECLINE` exists on gms_v48/v61/v72 — added (Task 23 fix round)
+
+`character_interaction_handle.yaml` listed `INVITE_DECLINE` from gms_v79 up, and
+the three legacy templates omitted it. That was wrong: the sender exists on all
+three, and it is the same function whose accept arm supplies the already-routed
+`VISIT = 4`.
+
+| version | `CMiniRoomBaseDlg::SendInviteResult` | decline arm | accept arm | handler opCode |
+|---|---|---|---|---|
+| gms_v48 | `@0x545FCD` | `COutPacket(93)` · `Encode1(3u)` · `Encode4(dwSN)` · `Encode1(nErrCode)` | `Encode1(4u)` | 0x5D = 93 ✓ |
+| gms_v61 | `@0x5BF2A2` | `COutPacket(111)` · `Encode1(3u)` · `Encode4(dwSN)` · `Encode1(nErrCode)` | `Encode1(4u)` | 0x6F = 111 ✓ |
+| gms_v72 | `@0x60E8A4` | `COutPacket(121)` · `Encode1(3u)` · `Encode4(dwSN)` · `Encode1(nErrCode)` | `Encode1(4u)` | 0x79 = 121 ✓ |
+
+Each `COutPacket` opcode equals that template's own `CharacterInteractionHandle`
+`opCode`, so these are unambiguously the same route. Without the key,
+`isCharacterInteraction`
+(`services/atlas-channel/atlas.com/channel/socket/handler/character_interaction.go`)
+logs "Code [INVITE_DECLINE] not configured for use" and drops the packet — the
+inviter is never notified and the trade invite dangles. `INVITE_DECLINE: 3` is
+now routed on all three.
+
+### 6.7 Known `enterError` omissions — recorded, NOT guessed
+
+`enterError` is not covered by any dispatcher yaml or by
+`packet-audit operations --check`, so these gaps are invisible to CI. Recording
+them here so they are a known omission rather than a silent one. Every key
+listed as absent resolves to **99** through `atlas_packet.ResolveCode`.
+
+| template | enterError keys | note |
+|---|---|---|
+| gms_v48 | 18 | lacks `TRADE_NOT_ALLOWED_2`, `NOT_ENOUGH_MESOS`, `INCORRECT_PASSWORD`, `ITEM_EXPIRED` — the four keys gms_v61+ carry at 20/21/22/24. A v48 `TRADE_NOT_ALLOWED_2` resolves to 99. **The byte was not guessed**: v48's enter-error switch was not decompiled this pass, and the v48 mini-room enum is demonstrably shifted from v61's (see §6.1), so copying 20 across would be exactly the class of error §6.1 fixed. |
+| gms_v92 | 0 | the v92 writer has **no** `enterError` table at all — every enter-error key resolves to 99 there. Same reasoning: not populated by copying the v83 column. |
+| jms_v185 | 2 | `TRADE_NOT_ALLOWED` 7 / `TRADE_NOT_ALLOWED_2` 20 only, both proved by the shared StringPool id 0x1B2 in `OnEnterResultStatic` @0x6da234. The other twenty arms exist but are **non-positional** — `0xA`→SP 0xE37, `0xB`→0x1D7, `0xC`→0x1D4, `0x12`→0xE30, `0x19`→0x105 break any positional mapping to the gms key order — so mapping them by position would have produced wrong bytes. Left underived pending a StringPool read. |
+
+Closing any of these needs a decompile of that version's enter-error switch plus
+a StringPool read, which is a `CMiniRoomBaseDlg` enter-result job, not a trade one.

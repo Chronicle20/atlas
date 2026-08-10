@@ -4338,19 +4338,19 @@
           },
           "leaveReason": {
             "CANNOT_ESTABLISH_HERE": 1,
+            "TRADE_CANCELLED": 2,
             "SHOP_CLOSED": 3,
             "USER_BANNED": 5,
             "MINIGAME_CLOSED": 3,
             "MINIGAME_LEFT": 4,
             "MINIGAME_EXPELLED": 5,
             "TIME_LIMIT_PASSED": 6,
-            "OUT_OF_STOCK": 13,
-            "BANNED_TIME_LIMIT": 14,
-            "TRADE_CANCELLED": 2,
             "TRADE_SUCCESS": 7,
             "TRADE_FAILED": 8,
             "TRADE_CANNOT_CARRY": 9,
-            "TRADE_DIFFERENT_MAP": 12
+            "TRADE_DIFFERENT_MAP": 12,
+            "OUT_OF_STOCK": 13,
+            "BANNED_TIME_LIMIT": 14
           }
         },
         "services": [

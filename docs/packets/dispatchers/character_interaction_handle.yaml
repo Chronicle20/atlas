@@ -60,7 +60,16 @@ opcodes: { gms_v61: "0x6F", gms_v72: "0x79", gms_v79: "0x78", gms_v83: "0x7B", g
 operations:
   - { key: CREATE,                             modes: { gms_v48: 0, gms_v61: 0, gms_v72: 0, gms_v79: 0, gms_v83: 0, gms_v84: 0, gms_v87: 0, gms_v95: 0, jms_v185: 0 } }
   - { key: INVITE,                             modes: { gms_v48: 2, gms_v61: 2, gms_v72: 2, gms_v79: 2, gms_v83: 2, gms_v84: 2, gms_v87: 2, gms_v95: 2, jms_v185: 2 } }
-  - { key: INVITE_DECLINE,                     modes: { gms_v79: 3, gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v95: 3, jms_v185: 3 } }
+  # INVITE_DECLINE is NOT a v79+ feature - `CMiniRoomBaseDlg::SendInviteResult`
+  # exists on v48/v61/v72 too and sends the same mode 3 on the decline arm
+  # (v48 @0x545FCD `COutPacket(93)`, v61 @0x5BF2A2 `COutPacket(111)`,
+  # v72 @0x60E8A4 `COutPacket(121)` - each = that template's handler opCode
+  # 0x5D/0x6F/0x79 - then `Encode1(3u)` + `Encode4(dwSN)` + `Encode1(nErrCode)`;
+  # the accept arm of the same function is `Encode1(4u)` = VISIT, already routed).
+  # Without the key, `isCharacterInteraction` logs "Code [INVITE_DECLINE] not
+  # configured for use" and drops the decline, so the inviter is never told and
+  # the invite dangles (task-205 Task 23 fix round).
+  - { key: INVITE_DECLINE,                     modes: { gms_v48: 3, gms_v61: 3, gms_v72: 3, gms_v79: 3, gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v95: 3, jms_v185: 3 } }
   - { key: VISIT,                              modes: { gms_v48: 4, gms_v61: 4, gms_v72: 4, gms_v79: 4, gms_v83: 4, gms_v84: 4, gms_v87: 4, gms_v95: 4, jms_v185: 4 } }
   - { key: CHAT,                               modes: { gms_v48: 6, gms_v61: 6, gms_v72: 6, gms_v79: 6, gms_v83: 6, gms_v84: 6, gms_v87: 6, gms_v95: 6, jms_v185: 6 } }
   - { key: EXIT,                               modes: { gms_v61: 10, gms_v72: 10, gms_v79: 10, gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 10 } }

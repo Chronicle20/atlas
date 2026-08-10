@@ -245,7 +245,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-families/atlas-families
     newTag: main-3d5961f
   - name: ghcr.io/chronicle20/atlas-reward-pools/atlas-reward-pools
-    newTag: main-03a2abe
+    newTag: main-e9f8d4b
   - name: ghcr.io/chronicle20/atlas-guilds/atlas-guilds
     newTag: main-3d5961f
   - name: ghcr.io/chronicle20/atlas-inventory/atlas-inventory

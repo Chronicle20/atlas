@@ -1679,7 +1679,30 @@
         "fname": "CCashShop::RequestCashPurchaseRecord",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "operations": {
+            "BUY": 3,
+            "GIFT": 4,
+            "SET_WISHLIST": 5,
+            "INCREASE_INVENTORY": 6,
+            "INCREASE_STORAGE": 7,
+            "INCREASE_CHARACTER_SLOT": 8,
+            "ENABLE_EQUIP_SLOT": 9,
+            "MOVE_FROM_CASH_INVENTORY": 13,
+            "MOVE_TO_CASH_INVENTORY": 14,
+            "REBATE_LOCKER_ITEM": 26,
+            "BUY_COUPLE": 29,
+            "BUY_PACKAGE": 30,
+            "BUY_OTHER_PACKAGE": 31,
+            "BUY_NORMAL": 32,
+            "APPLY_WISHLIST": 33,
+            "BUY_FRIENDSHIP": 35,
+            "GET_PURCHASE_RECORD": 42,
+            "BUY_NAME_CHANGE": 48,
+            "BUY_WORLD_TRANSFER": 51
+          }
+        }
       },
       {
         "opCode": "0xF3",

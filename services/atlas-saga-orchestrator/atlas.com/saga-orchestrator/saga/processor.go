@@ -1303,8 +1303,21 @@ func (p *ProcessorImpl) expandTransferToStorage(st Step[any]) ([]Step[any], erro
 	var assetId uint32
 	fmt.Sscanf(foundAsset.Id, "%d", &assetId)
 
+	// Resolve quantity: if payload.Quantity is 0 (meaning "take all"), use the asset's quantity
+	actualQuantity := payload.Quantity
+	if actualQuantity == 0 && foundAsset.Quantity > 0 {
+		actualQuantity = foundAsset.Quantity
+		p.l.Debugf("Resolved quantity from asset: %d", actualQuantity)
+	}
+
 	// Build AssetData from flat REST model
 	assetData := assetDataFromCompartmentAsset(foundAsset)
+	// Override quantity with the resolved actual quantity. The snapshot is of the
+	// whole SOURCE STACK, but accept_to_storage RECREATES the asset from it, so
+	// AssetData.Quantity is what lands in storage — depositing 1 of a 200 stack
+	// would otherwise release 1 and store 200. This mirrors
+	// expandWithdrawFromStorage, which resolves the same way on the way back.
+	assetData.Quantity = actualQuantity
 
 	// Create expanded steps: RELEASE first (soft-delete), then ACCEPT (create in destination)
 	steps := []Step[any]{

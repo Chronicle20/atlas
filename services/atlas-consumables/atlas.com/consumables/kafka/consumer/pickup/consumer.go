@@ -69,7 +69,7 @@ func cardPickedUpProvider(cmd pickupmsg.Command) model.Provider[[]kafka.Message]
 		Type:        mbmsg.CommandTypeCardPickedUp,
 		Body: mbmsg.CardPickedUpBody{
 			CardId: cmd.ItemId,
-			Source: "drop_pickup",
+			Source: mbmsg.SourceDropPickup,
 		},
 	}
 	return kafkaProducer.SingleMessageProvider(key, value)

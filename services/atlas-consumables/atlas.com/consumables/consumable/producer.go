@@ -3,6 +3,7 @@ package consumable
 import (
 	"atlas-consumables/kafka/message/consumable"
 	foodmsg "atlas-consumables/kafka/message/food"
+	mbmsg "atlas-consumables/kafka/message/monsterbook"
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -82,6 +83,27 @@ func TamingMobFedEventProvider(worldId world.Id, characterId uint32, itemId uint
 		CharacterId:   characterId,
 		ItemId:        itemId,
 		TirednessHeal: tirednessHeal,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// MonsterBookCardPickedUpCommandProvider builds the MONSTER_BOOK
+// CARD_PICKED_UP command emitted when a monster card (classification 238) is
+// consumed out of the USE inventory. Keyed by characterId so a character's card
+// registrations stay ordered. transactionId doubles as the eventId — the same
+// contract the drop-pickup relay in kafka/consumer/pickup uses, and what
+// atlas-monster-book dedupes card inserts on.
+func MonsterBookCardPickedUpCommandProvider(tenantId uuid.UUID, characterId uint32, transactionId uuid.UUID, cardId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &mbmsg.Command[mbmsg.CardPickedUpBody]{
+		TenantId:    tenantId,
+		CharacterId: characterId,
+		EventId:     transactionId,
+		Type:        mbmsg.CommandTypeCardPickedUp,
+		Body: mbmsg.CardPickedUpBody{
+			CardId: cardId,
+			Source: mbmsg.SourceItemUse,
+		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

@@ -17,6 +17,7 @@ import (
 	compartment2 "atlas-consumables/kafka/message/compartment"
 	"atlas-consumables/kafka/message/consumable"
 	foodmsg "atlas-consumables/kafka/message/food"
+	"atlas-consumables/kafka/message/monsterbook"
 	sagamsg "atlas-consumables/kafka/message/saga"
 	assetOnce "atlas-consumables/kafka/once/asset"
 	once "atlas-consumables/kafka/once/compartment"
@@ -38,6 +39,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -280,6 +282,8 @@ func (p *ProcessorImpl) RequestItemConsume(c channel.Model, characterId uint32, 
 		itemConsumer = ConsumeSummoningSack(transactionId, c, characterId, slot, itemId)
 	} else if item2.GetClassification(itemId) == item2.ClassificationPetSkill {
 		itemConsumer = ConsumePetSkillPouch(transactionId, characterId, slot, itemId, petId)
+	} else if item2.GetClassification(itemId) == item2.ClassificationConsumableMonsterCard {
+		itemConsumer = ConsumeMonsterCard(transactionId, characterId, slot, itemId, it)
 	} else if ci, derr := p.cdp.GetById(uint32(itemId)); derr == nil && validateRewardTable(ci.Rewards()) == nil {
 		// Reward-box (random reward) item arriving through the generic
 		// item-use request. This is the path taken on client versions that
@@ -402,6 +406,45 @@ func ConsumeBare(transactionId uuid.UUID, characterId uint32, slot int16, itemId
 				return p.ConsumeError(characterId, transactionId, inventoryType, slot, err)
 			}
 			l.Debugf("Character [%d] bare-consumed item [%d] from slot [%d] (transaction [%s]).", characterId, itemId, slot, transactionId.String())
+			return nil
+		}
+	}
+}
+
+// ConsumeMonsterCard commits a reserved monster card (classification 238) and,
+// on success, emits MONSTER_BOOK.CARD_PICKED_UP so the card registers in the
+// character's monster book.
+//
+// Cards normally never reach the inventory — atlas-inventory's consume-on-pickup
+// divert registers them straight off the field drop. A card that did land in the
+// inventory (a pickup predating the consumeOnPickup parse fix, a GM grant, a
+// trade) is still usable from the USE tab, and without this branch the request
+// fell through to ConsumeBare: the card was destroyed and nothing registered.
+//
+// The card is consumed unconditionally, including when atlas-monster-book
+// rejects it as a duplicate — inventory-resident cards are the exception, not
+// the norm, and a consume-always path keeps this a single fire-and-forget emit
+// rather than a book round-trip inside the reservation window.
+func ConsumeMonsterCard(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id, inventoryType inventory2.Type) ItemConsumer {
+	return func(l logrus.FieldLogger) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			p := NewProcessor(l, ctx)
+			if err := compartment.NewProcessor(l, ctx).ConsumeItem(characterId, inventoryType, transactionId, slot); err != nil {
+				return p.ConsumeError(characterId, transactionId, inventoryType, slot, err)
+			}
+
+			t, err := tenant.FromContext(ctx)()
+			if err != nil {
+				l.WithError(err).Errorf("Character [%d] consumed monster card [%d] but tenant is absent from context; the card will not register.", characterId, itemId)
+				return err
+			}
+
+			err = producer.ProviderImpl(l)(ctx)(monsterbook.EnvCommandTopic)(MonsterBookCardPickedUpCommandProvider(t.Id(), characterId, transactionId, uint32(itemId)))
+			if err != nil {
+				l.WithError(err).Errorf("Character [%d] consumed monster card [%d] but MONSTER_BOOK.CARD_PICKED_UP emission failed; the card will not register.", characterId, itemId)
+				return err
+			}
+			l.Debugf("Character [%d] consumed monster card [%d] from slot [%d] (transaction [%s]).", characterId, itemId, slot, transactionId.String())
 			return nil
 		}
 	}

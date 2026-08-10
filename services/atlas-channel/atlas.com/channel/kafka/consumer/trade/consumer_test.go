@@ -163,6 +163,13 @@ func handleAndCaptureWith(t *testing.T, d eventDispatch, opts map[string]interfa
 	}
 	defer func() { tradeEnterErrorConfigured = origEnterGate }()
 
+	unlocked = nil
+	origUnlock := tradeUnlocker
+	tradeUnlocker = func(_ logrus.FieldLogger, _ context.Context, _ server.Model, _ writer.Producer, cid charconst.Id) {
+		unlocked = append(unlocked, cid)
+	}
+	defer func() { tradeUnlocker = origUnlock }()
+
 	origCancel := tradeCancelRequester
 	tradeCancelRequester = func(_ logrus.FieldLogger, _ context.Context, f field.Model, cid charconst.Id) error {
 		cancelled = append(cancelled, cancelCall{characterId: cid, field: f})
@@ -173,6 +180,11 @@ func handleAndCaptureWith(t *testing.T, d eventDispatch, opts map[string]interfa
 	d(sc)(l, ctx)
 	return recorded
 }
+
+// unlocked records the characters whose action lock the handler released.
+// Reset by handleAndCaptureWith on every run; the package's tests are not
+// parallel.
+var unlocked []charconst.Id
 
 // cancelCall captures one invocation of the tradeCancelRequester seam.
 type cancelCall struct {
@@ -530,7 +542,43 @@ func TestMesoRefusedSkipsTheLimitArmWhereItIsVersionAbsent(t *testing.T) {
 		t.Error("the authoritative re-echo must still be sent where the limit arm is absent")
 	}
 	if got := len(callsTo(announced, 100)); got != 1 {
-		t.Errorf("character received %d frames, want exactly 1 (the re-echo alone)", got)
+		t.Errorf("character received %d interaction frames, want exactly 1 (the re-echo alone)", got)
+	}
+	// The unlock is a StatChanged, not a CharacterInteraction body, so it is
+	// not one of the frames counted above — but it must still have been sent.
+	if len(unlocked) != 1 || unlocked[0] != 100 {
+		t.Errorf("expected the refused character to be unlocked, got %v", unlocked)
+	}
+}
+
+// TestMesoRefusedReleasesTheActionLock is the load-bearing test of design
+// §5A.6.
+//
+// CTradingRoomDlg::PutMoney arms m_bExclRequestSent on send and
+// CanSendExclRequest refuses every later PUT_ITEM and PUT_MONEY until a server
+// packet clears it. A refusal produces no meso mutation, so nothing clears it
+// implicitly: without an explicit unlock the player's mesos button and every
+// further item stage silently stop working for the rest of the session. That is
+// the exact bug reported against the reserve-at-staging build.
+func TestMesoRefusedReleasesTheActionLock(t *testing.T) {
+	handleAndCapture(t, mesoRefusedEvent(characterId(100), lastValid(1_000_000)))
+	if len(unlocked) != 1 {
+		t.Fatalf("expected exactly one unlock, got %d", len(unlocked))
+	}
+	if unlocked[0] != 100 {
+		t.Errorf("unlocked character %d, want the refused character 100", unlocked[0])
+	}
+}
+
+// TestMesoStagedDoesNotSendAnExplicitUnlock pins the converse. A SUCCESSFUL
+// meso stage is a real debit, so atlas-character publishes a STAT_CHANGED whose
+// own exclRequestSent bool clears the lock. Sending a second, empty unlock here
+// would be redundant at best; the rule is that only outcomes with no mutation
+// unlock explicitly.
+func TestMesoStagedDoesNotSendAnExplicitUnlock(t *testing.T) {
+	handleAndCapture(t, mesoStagedEvent(ownerId(100), visitorId(200), position(0)))
+	if len(unlocked) != 0 {
+		t.Errorf("a successful stage must not send an explicit unlock, got %v", unlocked)
 	}
 }
 

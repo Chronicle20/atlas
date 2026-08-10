@@ -166,6 +166,37 @@ var tradeAnnouncer = func(l logrus.FieldLogger, ctx context.Context, sc server.M
 	}
 }
 
+// unlockClient releases the acting client's exclusive-request lock.
+//
+// The v83 client arms CWvsContext::m_bExclRequestSent when it sends PUT_ITEM
+// (CTradingRoomDlg::PutItem @0x7c359f) or PUT_MONEY (::PutMoney @0x7c37ca), and
+// CanSendExclRequest @0x485bf7 then refuses BOTH until a server packet clears
+// it. A stage that succeeds clears it for free — the inventory or meso mutation
+// produces a delta whose leading exclRequestSent bool does the job. A stage that
+// is REFUSED produces no mutation, so without this the trade dialog is wedged
+// for the rest of the session: the mesos button and every further put-item stop
+// responding, which is exactly the defect the escrow amendment was written to
+// fix (design §5A.6).
+//
+// The slot stays empty either way. This adds no visible feedback; it only
+// releases the lock.
+func unlockClient(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId charconst.Id) {
+	if characterId == 0 {
+		return
+	}
+	tradeUnlocker(l, ctx, sc, wp, characterId)
+}
+
+// tradeUnlocker is the seam that resolves a character's session and sends the
+// bare unlock. Package-level var for the same reason tradeAnnouncer is one.
+var tradeUnlocker = func(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId charconst.Id) {
+	err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(characterId),
+		session.EnableActions(l)(ctx)(wp))
+	if err != nil {
+		l.WithError(err).Errorf("Unable to release the action lock for character [%d].", characterId)
+	}
+}
+
 // tradeMesoLimitConfigured reports whether this tenant's CharacterInteraction
 // writer binds the TRADE_MESO_LIMIT operation, i.e. whether the client version
 // has that dispatcher arm at all. Package-level var so tests can exercise both
@@ -482,6 +513,11 @@ func handleMesoRefusedEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 		if tradeMesoLimitConfigured(l, ctx) {
 			announceTo(l, ctx, sc, wp, e.CharacterId, interactioncb.CharacterInteractionTradeMesoLimitBody())
 		}
+		// The re-echo and the reason frame are both CharacterInteraction bodies;
+		// neither carries the exclRequestSent bool, so neither releases the lock
+		// PutMoney armed on send. Without this the refused client can never
+		// stage again (design §5A.6).
+		unlockClient(l, ctx, sc, wp, e.CharacterId)
 	}
 }
 

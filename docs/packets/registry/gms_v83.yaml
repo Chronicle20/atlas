@@ -3229,6 +3229,7 @@
   direction: serverbound
   opcode: 230
   fname: CCashShop::OnStatusCoupon
+  packet: cash/serverbound/CouponCode
   provenance: csv-import
 - op: UNNAMED_R387
   direction: serverbound

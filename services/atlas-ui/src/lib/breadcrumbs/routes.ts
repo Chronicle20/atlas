@@ -276,6 +276,21 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     parent: "/",
   },
 
+  // Coupon routes
+  {
+    pattern: "/coupons",
+    label: "Coupons",
+    parent: "/",
+  },
+  {
+    // Matches App.tsx's `/coupons/:couponId`. The label resolves to the
+    // coupon's own code (a coupon has no name), via the "coupon" resolver.
+    pattern: "/coupons/[id]",
+    label: "Coupon",
+    parent: "/coupons",
+    entityType: "coupon",
+  },
+
   // Reward pool routes
   {
     pattern: "/reward-pools",
@@ -643,6 +658,8 @@ export const ROUTE_PATTERNS = {
   BAN_DETAIL: "/bans/[id]",
   LOGIN_HISTORY: "/login-history",
   PACKET_MATRIX: "/packet-matrix",
+  COUPONS: "/coupons",
+  COUPON_DETAIL: "/coupons/[id]",
   REWARD_POOLS: "/reward-pools",
   REWARD_POOL_DETAIL: "/reward-pools/[id]",
   SETUP: "/setup",

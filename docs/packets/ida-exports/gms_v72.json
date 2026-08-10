@@ -143,6 +143,45 @@
         }
       ]
     },
+    "CCashShop::OnStatusCoupon": {
+      "address": "0x4698d8",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v14) == 1 && v3",
+          "ref": "sub_4160CB"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v14) == 1 && v3"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v14) == 1 && v3",
+          "ref": "sub_4160CB"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v14) == 1 && v3"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v14) == 1 && v3 && v13",
+          "ref": "sub_4160CB"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v14) == 1 && v3 && v13"
+        }
+      ]
+    },
     "CUser::OnMiniRoomBalloon#Remove": {
       "address": "0x847df1",
       "direction": "clientbound",

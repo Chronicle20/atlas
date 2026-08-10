@@ -45,6 +45,12 @@ vi.mock("@/services/api", () => ({
   },
 }));
 
+vi.mock("@/services/api/coupons.service", () => ({
+  couponsService: {
+    getOne: vi.fn(),
+  },
+}));
+
 // Mock tenant for testing
 const mockTenant = {
   id: "test-tenant-id",
@@ -597,6 +603,22 @@ describe("Entity-Specific Resolution", () => {
     );
 
     expect(result.label).toBe("Ban ban-2");
+  });
+
+  it("should resolve coupons to their code", async () => {
+    const { couponsService } = await import("@/services/api/coupons.service");
+    (couponsService.getOne as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "c-1",
+      attributes: { code: "SUMMER2026" },
+    });
+
+    const result = await resolveEntityLabel(
+      EntityType.COUPON,
+      "c-1",
+      mockTenant,
+    );
+
+    expect(result.label).toBe("SUMMER2026");
   });
 
   it("should resolve template names", async () => {

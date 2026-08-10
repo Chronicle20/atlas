@@ -2,8 +2,51 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
+	"io"
+	"os"
+	"path/filepath"
+	"reflect"
+	"slices"
+	"strconv"
+	"strings"
 	"testing"
+
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/matrix"
 )
+
+func mustMkdirAll(t *testing.T, dir string) {
+	t.Helper()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func mustWrite(t *testing.T, path, contents string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func mustRead(t *testing.T, path string) string {
+	t.Helper()
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(raw)
+}
+
+// writeAllTemplates writes body to every version's template filename under
+// dir (via matrix.VersionKeys / matrix.TemplatePath) so operationsRun finds a
+// file for each version in its loop.
+func writeAllTemplates(t *testing.T, dir, body string) {
+	t.Helper()
+	for _, vk := range matrix.VersionKeys {
+		mustWrite(t, filepath.Join(dir, filepath.Base(matrix.TemplatePath(vk))), body)
+	}
+}
 
 func TestNodeRoundTripPreservesOrder(t *testing.T) {
 	src := []byte(`{
@@ -44,10 +87,7 @@ func TestSetOperationsInjectsInYAMLOrder(t *testing.T) {
 }
 `)
 	n, _ := parseNode(src)
-	doc := dispatcherDoc{Writer: "CashShopOperation", Operations: []struct {
-		Key   string         `yaml:"key"`
-		Modes map[string]int `yaml:"modes"`
-	}{
+	doc := dispatcherDoc{Writer: "CashShopOperation", Operations: []opEntry{
 		{Key: "PURCHASE_SUCCESS", Modes: map[string]int{"gms_v95": 100}},
 		{Key: "LOAD_INVENTORY_SUCCESS", Modes: map[string]int{"gms_v95": 88}},
 	}}
@@ -55,16 +95,16 @@ func TestSetOperationsInjectsInYAMLOrder(t *testing.T) {
 	if w == nil {
 		t.Fatal("writer not found")
 	}
-	if !setOperations(w, doc, expectedTable(doc, "gms_v95")) {
-		t.Fatal("setOperations reported no change")
+	if !setTable(w, "operations", doc.Operations, expectedFor(doc.Operations, "gms_v95")) {
+		t.Fatal("setTable reported no change")
 	}
-	got := operationsOf(w)
+	got := tableOf(w, "operations")
 	if got["PURCHASE_SUCCESS"] != 100 || got["LOAD_INVENTORY_SUCCESS"] != 88 {
 		t.Errorf("operations wrong: %v", got)
 	}
 	// Re-running with the same expected table must be a no-op (idempotent).
-	if setOperations(w, doc, expectedTable(doc, "gms_v95")) {
-		t.Error("second setOperations should be idempotent")
+	if setTable(w, "operations", doc.Operations, expectedFor(doc.Operations, "gms_v95")) {
+		t.Error("second setTable should be idempotent")
 	}
 	out, _ := encodeNode(n)
 	// Insertion order from the YAML must be preserved in the emitted JSON.
@@ -88,20 +128,17 @@ func TestAddWriterAppendsEntry(t *testing.T) {
 }
 `)
 	n, _ := parseNode(src)
-	doc := dispatcherDoc{Writer: "NewOp", Operations: []struct {
-		Key   string         `yaml:"key"`
-		Modes map[string]int `yaml:"modes"`
-	}{
+	doc := dispatcherDoc{Writer: "NewOp", Operations: []opEntry{
 		{Key: "A", Modes: map[string]int{"gms_v87": 2}},
 	}}
-	if !addEntry(n, doc, "0x14B", expectedTable(doc, "gms_v87")) {
+	if !addEntry(n, doc, "gms_v87", "0x14B") {
 		t.Fatal("addEntry failed")
 	}
 	w := findEntryNode(entriesOf(n, "writers"), "writer", "NewOp")
 	if w == nil {
 		t.Fatal("new writer not found after add")
 	}
-	if got := operationsOf(w); got["A"] != 2 {
+	if got := tableOf(w, "operations"); got["A"] != 2 {
 		t.Errorf("new writer operations wrong: %v", got)
 	}
 	out, _ := encodeNode(n)
@@ -115,14 +152,11 @@ func TestAddWriterAppendsEntry(t *testing.T) {
 }
 
 func TestExpectedTableOmitsAbsentVersion(t *testing.T) {
-	doc := dispatcherDoc{Operations: []struct {
-		Key   string         `yaml:"key"`
-		Modes map[string]int `yaml:"modes"`
-	}{
+	entries := []opEntry{
 		{Key: "A", Modes: map[string]int{"gms_v83": 1}},
 		{Key: "B", Modes: map[string]int{"gms_v83": 2, "gms_v95": 9}},
-	}}
-	got := expectedTable(doc, "gms_v95")
+	}
+	got := expectedFor(entries, "gms_v95")
 	if len(got) != 1 || got["B"] != 9 {
 		t.Errorf("expected only B=9 for gms_v95, got %v", got)
 	}
@@ -145,10 +179,7 @@ func TestHandlerDocGeneratesHandlerOperations(t *testing.T) {
 }
 `)
 	n, _ := parseNode(src)
-	doc := dispatcherDoc{Handler: "CharacterInteractionHandle", Operations: []struct {
-		Key   string         `yaml:"key"`
-		Modes map[string]int `yaml:"modes"`
-	}{
+	doc := dispatcherDoc{Handler: "CharacterInteractionHandle", Operations: []opEntry{
 		{Key: "MERCHANT_ORGANIZE", Modes: map[string]int{"gms_v61": 38}},
 		{Key: "MERCHANT_WITHDRAW_MESO", Modes: map[string]int{"gms_v61": 41}},
 	}}
@@ -159,10 +190,10 @@ func TestHandlerDocGeneratesHandlerOperations(t *testing.T) {
 	if w == nil {
 		t.Fatal("handler entry not found")
 	}
-	if !setOperations(w, doc, expectedTable(doc, "gms_v61")) {
-		t.Fatal("setOperations reported no change")
+	if !setTable(w, "operations", doc.Operations, expectedFor(doc.Operations, "gms_v61")) {
+		t.Fatal("setTable reported no change")
 	}
-	got := operationsOf(w)
+	got := tableOf(w, "operations")
 	if got["MERCHANT_ORGANIZE"] != 38 || got["MERCHANT_WITHDRAW_MESO"] != 41 {
 		t.Errorf("handler operations wrong: %v", got)
 	}
@@ -181,13 +212,10 @@ func TestAddEntryAppendsHandlerWhenAbsent(t *testing.T) {
 }
 `)
 	n, _ := parseNode(src)
-	doc := dispatcherDoc{Handler: "CharacterInteractionHandle", Operations: []struct {
-		Key   string         `yaml:"key"`
-		Modes map[string]int `yaml:"modes"`
-	}{
+	doc := dispatcherDoc{Handler: "CharacterInteractionHandle", Operations: []opEntry{
 		{Key: "CREATE", Modes: map[string]int{"gms_v79": 0}},
 	}}
-	if !addEntry(n, doc, "0x78", expectedTable(doc, "gms_v79")) {
+	if !addEntry(n, doc, "gms_v79", "0x78") {
 		t.Fatal("addEntry failed")
 	}
 	w := findEntryNode(entriesOf(n, "handlers"), "handler", "CharacterInteractionHandle")
@@ -197,5 +225,223 @@ func TestAddEntryAppendsHandlerWhenAbsent(t *testing.T) {
 	out, _ := encodeNode(n)
 	if !bytes.Contains(out, []byte(`"handler": "CharacterInteractionHandle"`)) || !bytes.Contains(out, []byte(`"0x78"`)) {
 		t.Errorf("encoded output missing new handler:\n%s", out)
+	}
+}
+
+func TestOperations_GeneratesErrorsTable(t *testing.T) {
+	dir := t.TempDir()
+	dispatchers := filepath.Join(dir, "dispatchers")
+	templates := filepath.Join(dir, "templates")
+	mustMkdirAll(t, dispatchers)
+	mustMkdirAll(t, templates)
+
+	mustWrite(t, filepath.Join(dispatchers, "d.yaml"), `
+writer: TestWriter
+op: TEST_OP
+operations:
+  - key: A_SUCCESS
+    modes:
+      gms_v83: 1
+errors:
+  - key: INVALID_COUPON_CODE
+    modes:
+      gms_v83: 7
+  - key: COUPON_EXPIRED
+    modes:
+      gms_v83: 8
+`)
+	writeAllTemplates(t, templates, `{"socket":{"writers":[{"opCode":"0x1","writer":"TestWriter","options":{"operations":{"A_SUCCESS":1}}}],"handlers":[]}}`)
+
+	var out, errOut bytes.Buffer
+	if rc := operationsRun(operationsOpts{DispatchersDir: dispatchers, TemplatesDir: templates}, &out, &errOut); rc != 0 {
+		t.Fatalf("generate rc=%d stderr=%s", rc, errOut.String())
+	}
+
+	raw := mustRead(t, filepath.Join(templates, "template_gms_83_1.json"))
+	if !strings.Contains(raw, `"errors"`) {
+		t.Fatalf("errors table not written: %s", raw)
+	}
+	if !strings.Contains(raw, `"INVALID_COUPON_CODE": 7`) || !strings.Contains(raw, `"COUPON_EXPIRED": 8`) {
+		t.Fatalf("errors values wrong: %s", raw)
+	}
+
+	out.Reset()
+	errOut.Reset()
+	if rc := operationsRun(operationsOpts{DispatchersDir: dispatchers, TemplatesDir: templates, Check: true}, &out, &errOut); rc != 0 {
+		t.Fatalf("check after generate rc=%d stderr=%s", rc, errOut.String())
+	}
+}
+
+func TestOperations_CheckDetectsErrorsDriftMissingExtra(t *testing.T) {
+	cases := []struct {
+		name     string
+		errsNode string
+		want     string
+	}{
+		{"drift", `"errors":{"INVALID_COUPON_CODE":9}`, "operations DRIFT"},
+		{"missing", `"errors":{}`, "operations MISSING"},
+		{"extra", `"errors":{"INVALID_COUPON_CODE":7,"BOGUS":3}`, "operations EXTRA"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			dir := t.TempDir()
+			dispatchers := filepath.Join(dir, "dispatchers")
+			templates := filepath.Join(dir, "templates")
+			mustMkdirAll(t, dispatchers)
+			mustMkdirAll(t, templates)
+			mustWrite(t, filepath.Join(dispatchers, "d.yaml"), `
+writer: TestWriter
+op: TEST_OP
+errors:
+  - key: INVALID_COUPON_CODE
+    modes:
+      gms_v83: 7
+`)
+			writeAllTemplates(t, templates,
+				`{"socket":{"writers":[{"opCode":"0x1","writer":"TestWriter","options":{`+c.errsNode+`}}],"handlers":[]}}`)
+
+			var out, errOut bytes.Buffer
+			rc := operationsRun(operationsOpts{DispatchersDir: dispatchers, TemplatesDir: templates, Check: true}, &out, &errOut)
+			if rc != 1 {
+				t.Fatalf("rc=%d want 1; stderr=%s", rc, errOut.String())
+			}
+			if !strings.Contains(errOut.String(), c.want) {
+				t.Fatalf("stderr %q does not contain %q", errOut.String(), c.want)
+			}
+		})
+	}
+}
+
+// writeMinimalTemplates writes a minimal socket doc — with a handful of
+// pre-existing handlers spanning a range of opCodes — to every version's
+// template file under dir/templates, and returns that templates dir. Used by
+// tests that exercise addEntry's insert-when-absent path.
+func writeMinimalTemplates(t *testing.T, dir string) string {
+	t.Helper()
+	tplDir := filepath.Join(dir, "templates")
+	mustMkdirAll(t, tplDir)
+	writeAllTemplates(t, tplDir, `{"socket":{"handlers":[
+  {"opCode":"0x28","handler":"ExistingLow"},
+  {"opCode":"0xE5","handler":"ExistingMid"},
+  {"opCode":"0xFF","handler":"ExistingHigh"}
+],"writers":[]}}`)
+	return tplDir
+}
+
+// writeDispatcherDoc writes a single dispatcher enumeration YAML directly
+// into dir, matching the DispatchersDir: dir passed to operationsRun below.
+func writeDispatcherDoc(t *testing.T, dir, contents string) {
+	t.Helper()
+	mustMkdirAll(t, dir)
+	mustWrite(t, filepath.Join(dir, "d.yaml"), contents)
+}
+
+func handlerEntry(t *testing.T, path, name string) map[string]interface{} {
+	t.Helper()
+	var d struct {
+		Socket struct {
+			Handlers []map[string]interface{} `json:"handlers"`
+		} `json:"socket"`
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &d); err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range d.Socket.Handlers {
+		if e["handler"] == name {
+			return e
+		}
+	}
+	t.Fatalf("handler %q not found in %s", name, path)
+	return nil
+}
+
+func handlerOpCodes(t *testing.T, path string) []int {
+	t.Helper()
+	var d struct {
+		Socket struct {
+			Handlers []struct {
+				OpCode string `json:"opCode"`
+			} `json:"handlers"`
+		} `json:"socket"`
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &d); err != nil {
+		t.Fatal(err)
+	}
+	var out []int
+	for _, e := range d.Socket.Handlers {
+		n, err := strconv.ParseInt(e.OpCode, 0, 32)
+		if err != nil {
+			t.Fatalf("bad opCode %q", e.OpCode)
+		}
+		out = append(out, int(n))
+	}
+	return out
+}
+
+// A generated handler entry MUST carry a validator: BuildHandlerMap drops a
+// handler whose validator name is not in the validator map, with only a
+// Warnf, so a validator-less entry silently never routes.
+func TestAddEntryEmitsValidatorAndServices(t *testing.T) {
+	dir := t.TempDir()
+	tplDir := writeMinimalTemplates(t, dir)
+	writeDispatcherDoc(t, dir, `
+handler: CashShopCouponCodeHandle
+validator: LoggedInValidator
+services: [channel]
+fname: CCashShop::OnStatusCoupon
+op: COUPON_CODE
+opcodes:
+  gms_v83: "0xE6"
+`)
+	if code := operationsRun(operationsOpts{DispatchersDir: dir, TemplatesDir: tplDir}, io.Discard, io.Discard); code != 0 {
+		t.Fatalf("generate exit = %d, want 0", code)
+	}
+	e := handlerEntry(t, filepath.Join(tplDir, "template_gms_83_1.json"), "CashShopCouponCodeHandle")
+	if e["validator"] != "LoggedInValidator" {
+		t.Errorf("validator = %v, want LoggedInValidator", e["validator"])
+	}
+	if got := e["services"]; !reflect.DeepEqual(got, []interface{}{"channel"}) {
+		t.Errorf("services = %v, want [channel]", got)
+	}
+	if e["opCode"] != "0xE6" {
+		t.Errorf("opCode = %v, want 0xE6", e["opCode"])
+	}
+	if _, ok := e["options"]; ok {
+		t.Errorf("options should be omitted when the doc declares no tables, got %v", e["options"])
+	}
+}
+
+// A generated entry must land at its ascending-opCode position so
+// tools/template-opcode-order-guard.sh stays green.
+func TestAddEntryInsertsInSortedPosition(t *testing.T) {
+	dir := t.TempDir()
+	tplDir := writeMinimalTemplates(t, dir) // contains handlers 0x28, 0xE5, 0xFF
+	writeDispatcherDoc(t, dir, `
+handler: CashShopCouponCodeHandle
+validator: LoggedInValidator
+services: [channel]
+op: COUPON_CODE
+opcodes:
+  gms_v83: "0xE6"
+`)
+	if code := operationsRun(operationsOpts{DispatchersDir: dir, TemplatesDir: tplDir}, io.Discard, io.Discard); code != 0 {
+		t.Fatalf("generate exit = %d, want 0", code)
+	}
+	codes := handlerOpCodes(t, filepath.Join(tplDir, "template_gms_83_1.json"))
+	for i := 1; i < len(codes); i++ {
+		if codes[i] < codes[i-1] {
+			t.Fatalf("handlers not ascending at %d: 0x%X after 0x%X (%v)", i, codes[i], codes[i-1], codes)
+		}
+	}
+	if !slices.Contains(codes, 0xE6) {
+		t.Fatalf("0xE6 not inserted: %v", codes)
 	}
 }

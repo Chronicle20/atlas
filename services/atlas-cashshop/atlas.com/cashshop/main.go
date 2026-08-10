@@ -4,6 +4,9 @@ import (
 	"atlas-cashshop/cashshop/inventory"
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
+	"atlas-cashshop/coupon"
+	"atlas-cashshop/coupon/batch"
+	"atlas-cashshop/coupon/redemption"
 	"atlas-cashshop/kafka/consumer/account"
 	"atlas-cashshop/kafka/consumer/cashshop"
 	compartment2 "atlas-cashshop/kafka/consumer/cashshop/compartment"
@@ -17,6 +20,7 @@ import (
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
@@ -54,7 +58,12 @@ func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, coupon.Migration, batch.Migration, redemption.Migration, outboxlib.Migration))
+
+	// The coupon redemption rate limiter counts failed attempts per account in
+	// Redis. It fails open, so a Redis outage degrades brute-force braking
+	// rather than blocking redemptions.
+	coupon.InitLimiter(redis.Connect(l))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
@@ -114,6 +123,9 @@ func main() {
 		AddRouteInitializer(compartment.InitResource(GetServer())(db)).
 		AddRouteInitializer(asset.InitResource(GetServer())(db)).
 		AddRouteInitializer(inventory.InitResource(GetServer())(db)).
+		AddRouteInitializer(coupon.InitResource(GetServer())(db)).
+		AddRouteInitializer(batch.InitResource(GetServer())(db)).
+		AddRouteInitializer(redemption.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()

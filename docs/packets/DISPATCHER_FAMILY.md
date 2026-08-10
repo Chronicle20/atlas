@@ -135,6 +135,46 @@ that caps an op at the `🧩` `family` state) is also empty — every dispatcher
 graduated (task-096) — so `🧩` currently caps **no** op. A newly-added family that
 should cap needs an explicit `families.yaml` entry.
 
+## Serverbound dispatcher files are out of scope for FAM-CAP
+
+**What FAM-CAP models.** The family cap (`docs/packets/evidence/families.yaml`,
+enforced by `dispatcher-lint`'s FAM-CAP check) exists for a CLIENTBOUND
+mode-prefix demultiplexer: one opcode whose leading `switch(Decode1())` fans
+out to N arms that each read a DIFFERENT body. A single byte fixture only
+proves the one arm it exercises, so an un-migrated family is capped at
+`🧩` rather than allowed to read `✅` off one arm's evidence.
+
+**Why serverbound is out of scope.** A serverbound
+`docs/packets/dispatchers/*.yaml` is not that shape — it is the source of
+truth for a HANDLER's `options.operations` ROUTING table, i.e. the mode byte
+Atlas must map to a handler key. The modes are written by N INDEPENDENT
+client call sites (the client has no single request builder that could be
+"only partially proven" by one fixture), and each one already carries its
+own discrete struct with its own `packet-audit:fname` marker. There is no
+client demultiplexer to cap.
+
+**Why capping anyway would be harmful.** `grade.go` applies
+`in.Families[baseFName(ref.FName)]` per-op with **no direction check**, so
+adding a serverbound fname to `families.yaml` would demote already
+byte-fixture-verified cells from `✅ verified` down to `🧩 family`. This was
+measured, not estimated: adding task-206's two coupon/cash-shop serverbound
+fnames to `families.yaml` demoted **17 cells** (10 `COUPON_CODE` + 7
+`CASHSHOP_OPERATION`, all serverbound) — which is why the check now skips
+`direction: serverbound` files instead.
+
+**The behaviour is fail-safe.** Only an explicit `direction: serverbound`
+opts a file out. A dispatcher file that omits `direction:` (the clientbound
+default) is still fully guarded — verified by
+`TestFamilyCapServerboundSkipped` in
+`tools/packet-audit/cmd/family_cap_test.go`, which asserts a clientbound
+sibling in the same directory still fails FAM-CAP while the serverbound file
+(with or without a `fname:`) is silently skipped.
+
+**Precedent.** `docs/packets/evidence/families.yaml` already carries a note
+that serverbound `RPS_ACTION` is deliberately unlisted for the same reason;
+this section documents the rule the comment implements so it isn't only
+discoverable by reading `tools/packet-audit/cmd/dispatcher_lint.go`.
+
 ### Known limitations (the linter's blind spots)
 
 The linter only sees a family it is *enrolled* on — i.e. a base FName with **>1**

@@ -82,6 +82,18 @@ func ExtractCharacterId(step Step[any]) uint32 {
 		// off the saga's transactionId, which is the trade ledger's idempotency
 		// key, not off this field.
 		return uint32(p.Sides[0].CharacterId)
+	case TransferToTradePayload:
+		return p.CharacterId
+	case AcceptToTradePayload:
+		// The escrow row's owner IS the staging character: an accept_to_trade
+		// only ever follows that character's own release_from_character.
+		//
+		// ReleaseFromTradePayload has deliberately no case: it carries the
+		// escrow row id alone (the row holds the owner), so there is nothing to
+		// extract. It returns 0 = "unconstrained", which is correct — a release
+		// is never routed through ForCharacter. Same posture as
+		// ReleaseFromMtsHoldingPayload.
+		return p.OwnerId
 	case SelectGachaponRewardPayload:
 		return p.CharacterId
 	case EmitGachaponWinPayload:

@@ -1178,7 +1178,7 @@ func isExpandableAction(a Action) bool {
 	case TransferToStorage, WithdrawFromStorage,
 		TransferToCashShop, WithdrawFromCashShop,
 		TransferToMts, WithdrawFromMts, MtsSettlePurchase,
-		TradeSettlement:
+		TradeSettlement, TransferToTrade:
 		return true
 	default:
 		return false
@@ -1220,6 +1220,8 @@ func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
 		newSteps, err = p.expandMtsSettlePurchase(st)
 	case TradeSettlement:
 		newSteps, err = p.expandTradeSettlement(st)
+	case TransferToTrade:
+		newSteps, err = p.expandTransferToTrade(st)
 	default:
 		return fmt.Errorf("unknown high-level action for expansion: %s", st.Action())
 	}
@@ -1411,6 +1413,113 @@ func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], er
 		),
 	}
 
+	return steps, nil
+}
+
+// expandTransferToTrade expands the task-205 transfer_to_trade composite into
+// release_from_character + accept_to_trade — a staged item genuinely leaving
+// its owner's compartment for atlas-trades' escrow custody (design §5A.4).
+//
+// Order is not cosmetic. The release is what makes atlas-inventory publish the
+// asset deletion, which atlas-channel turns into an INVENTORY_OPERATION whose
+// leading exclRequestSent bool clears the client's m_bExclRequestSent. Nothing
+// else in the trade flow clears it, so an expansion that accepted first (or
+// skipped the release) would leave the trade dialog permanently unable to stage
+// anything more — the defect this whole amendment exists to fix (design §5A.1).
+//
+// The snapshot is read here rather than carried on the composite, matching
+// expandTransferToMts: a snapshot minted at submission time could disagree with
+// the asset by the time the release actually runs.
+func (p *ProcessorImpl) expandTransferToTrade(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload().(TransferToTradePayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for TransferToTrade")
+	}
+
+	p.l.Debugf("Looking up staged asset for character [%d] inventory [%d] assetId [%d]",
+		payload.CharacterId, payload.SourceInventoryType, payload.AssetId)
+
+	comp, err := compartment.RequestCompartment(p.l, p.ctx)(payload.CharacterId, payload.SourceInventoryType)
+	if err != nil {
+		return nil, fmt.Errorf("unable to lookup character [%d] inventory compartment: %w", payload.CharacterId, err)
+	}
+
+	var foundAsset *compartment.AssetRestModel
+	for i := range comp.Assets {
+		var assetId uint32
+		fmt.Sscanf(comp.Assets[i].Id, "%d", &assetId)
+		if assetId == payload.AssetId {
+			foundAsset = &comp.Assets[i]
+			break
+		}
+	}
+
+	// A missing asset means it was dropped, used or moved between the client's
+	// PUT_ITEM and this expansion. Failing here refuses the stage; atlas-trades
+	// turns that into ITEM_REFUSED, which unlocks the client (design §5A.6).
+	if foundAsset == nil {
+		return nil, fmt.Errorf("no asset found with id [%d] in character [%d] inventory [%d]",
+			payload.AssetId, payload.CharacterId, payload.SourceInventoryType)
+	}
+
+	p.l.Debugf("Found staged asset template [%d] id [%s] for trade escrow", foundAsset.TemplateId, foundAsset.Id)
+
+	steps := []Step[any]{
+		NewStep[any](
+			"release_from_character",
+			Pending,
+			ReleaseFromCharacter,
+			ReleaseFromCharacterPayload{
+				TransactionId: payload.TransactionId,
+				CharacterId:   payload.CharacterId,
+				InventoryType: payload.SourceInventoryType,
+				AssetId:       payload.AssetId,
+				Quantity:      payload.Quantity,
+			},
+		),
+		NewStep[any](
+			"accept_to_trade",
+			Pending,
+			AcceptToTrade,
+			AcceptToTradePayload{
+				TransactionId:       payload.TransactionId,
+				EscrowId:            payload.EscrowId,
+				RoomId:              payload.RoomId,
+				OwnerId:             payload.CharacterId,
+				TradeSlot:           payload.TradeSlot,
+				SourceInventoryType: payload.SourceInventoryType,
+				SourceSlot:          payload.SourceSlot,
+
+				// Item snapshot captured from inventory. Quantity is the STAGED
+				// amount from the composite, never the compartment stack's — a
+				// partial stage of 1-of-40 must escrow 1.
+				TemplateId:    foundAsset.TemplateId,
+				Quantity:      payload.Quantity,
+				Strength:      foundAsset.Strength,
+				Dexterity:     foundAsset.Dexterity,
+				Intelligence:  foundAsset.Intelligence,
+				Luck:          foundAsset.Luck,
+				HP:            foundAsset.Hp,
+				MP:            foundAsset.Mp,
+				WeaponAttack:  foundAsset.WeaponAttack,
+				MagicAttack:   foundAsset.MagicAttack,
+				WeaponDefense: foundAsset.WeaponDefense,
+				MagicDefense:  foundAsset.MagicDefense,
+				Accuracy:      foundAsset.Accuracy,
+				Avoidability:  foundAsset.Avoidability,
+				Hands:         foundAsset.Hands,
+				Speed:         foundAsset.Speed,
+				Jump:          foundAsset.Jump,
+				Slots:         foundAsset.Slots,
+				Level:         foundAsset.Level,
+				ItemLevel:     foundAsset.LevelType,
+				ItemExp:       foundAsset.Experience,
+				ViciousCount:  foundAsset.HammersApplied,
+				Flags:         foundAsset.Flag,
+				Owner:         foundAsset.Owner,
+			},
+		),
+	}
 	return steps, nil
 }
 

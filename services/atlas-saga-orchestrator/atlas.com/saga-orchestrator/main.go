@@ -25,6 +25,7 @@ import (
 	inventoryConsumer "atlas-saga-orchestrator/kafka/consumer/inventory"
 	mtsCustody "atlas-saga-orchestrator/kafka/consumer/mts/custody"
 	noteConsumer "atlas-saga-orchestrator/kafka/consumer/note"
+	tradeCustody "atlas-saga-orchestrator/kafka/consumer/trade/custody"
 
 	saga2 "atlas-saga-orchestrator/kafka/consumer/saga"
 
@@ -102,6 +103,7 @@ func main() {
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshopCompartment.InitConsumers(l)(cmf)(consumerGroupId)
 	mtsCustody.InitConsumers(l)(cmf)(consumerGroupId)
+	tradeCustody.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
@@ -122,6 +124,9 @@ func main() {
 	}
 	if err := cashshop.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := tradeCustody.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatalf("Unable to register trade custody status handlers.")
 	}
 	if err := mtsCustody.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Failed to register MTS custody status handlers.")

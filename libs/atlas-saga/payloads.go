@@ -621,6 +621,83 @@ type TradeSettlementSide struct {
 	MesoDelivered uint32                `json:"mesoDelivered"` // Mesos credited to the other side
 }
 
+// TransferToTradePayload is the composite atlas-trades submits when a player
+// stages an item. Expansion (expandTransferToTrade) turns it into
+// release_from_character + accept_to_trade, looking the item snapshot up from
+// the owner's compartment exactly as expandTransferToMts does — the snapshot is
+// deliberately NOT carried here, so it cannot go stale between submission and
+// expansion.
+//
+// EscrowId is minted by atlas-trades rather than by the orchestrator so the
+// staging path can correlate the eventual custody ack with the room slot it
+// belongs to without a second round trip.
+type TransferToTradePayload struct {
+	TransactionId       uuid.UUID `json:"transactionId"`
+	EscrowId            uuid.UUID `json:"escrowId"`
+	RoomId              uuid.UUID `json:"roomId"`
+	CharacterId         uint32    `json:"characterId"`
+	TradeSlot           byte      `json:"tradeSlot"`
+	SourceInventoryType byte      `json:"sourceInventoryType"`
+	SourceSlot          int16     `json:"sourceSlot"`
+	AssetId             uint32    `json:"assetId"`
+	Quantity            uint32    `json:"quantity"`
+}
+
+// AcceptToTradePayload (atomic, dispatched to the atlas-trades custody
+// consumer). Carries everything atlas-trades needs to CREATE the escrow row:
+// the room slot it backs, where it came from so a return can be described, and
+// the full item snapshot. Mirrors AcceptToMtsListingPayload.
+//
+// SourceInventoryType / SourceSlot are recorded for diagnostics and for the
+// ledger's provenance only. A return does NOT replay them: it accepts to the
+// owner's compartment and lets atlas-inventory choose the slot, because the
+// original slot may well be occupied by the time the trade unwinds.
+type AcceptToTradePayload struct {
+	TransactionId       uuid.UUID `json:"transactionId"`
+	EscrowId            uuid.UUID `json:"escrowId"`
+	RoomId              uuid.UUID `json:"roomId"`
+	OwnerId             uint32    `json:"ownerId"`
+	TradeSlot           byte      `json:"tradeSlot"`
+	SourceInventoryType byte      `json:"sourceInventoryType"`
+	SourceSlot          int16     `json:"sourceSlot"`
+
+	// Item snapshot
+	TemplateId    uint32 `json:"templateId"`
+	Quantity      uint32 `json:"quantity"`
+	Strength      uint16 `json:"strength"`
+	Dexterity     uint16 `json:"dexterity"`
+	Intelligence  uint16 `json:"intelligence"`
+	Luck          uint16 `json:"luck"`
+	HP            uint16 `json:"hp"`
+	MP            uint16 `json:"mp"`
+	WeaponAttack  uint16 `json:"weaponAttack"`
+	MagicAttack   uint16 `json:"magicAttack"`
+	WeaponDefense uint16 `json:"weaponDefense"`
+	MagicDefense  uint16 `json:"magicDefense"`
+	Accuracy      uint16 `json:"accuracy"`
+	Avoidability  uint16 `json:"avoidability"`
+	Hands         uint16 `json:"hands"`
+	Speed         uint16 `json:"speed"`
+	Jump          uint16 `json:"jump"`
+	Slots         uint16 `json:"slots"`
+	Level         byte   `json:"level"`
+	ItemLevel     byte   `json:"itemLevel"`
+	ItemExp       uint32 `json:"itemExp"`
+	RingId        uint32 `json:"ringId"`
+	ViciousCount  uint32 `json:"viciousCount"`
+	Flags         uint16 `json:"flags"`
+	Owner         string `json:"owner"`
+}
+
+// ReleaseFromTradePayload (atomic, dispatched to the atlas-trades custody
+// consumer). Carries only the row id: the escrow row holds the snapshot, so a
+// release can never disagree with the accept that created it. Mirrors
+// ReleaseFromMtsHoldingPayload.
+type ReleaseFromTradePayload struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	EscrowId      uuid.UUID `json:"escrowId"`
+}
+
 // TradeSettlementPayload is the whole two-party swap as one compensatable unit.
 type TradeSettlementPayload struct {
 	TransactionId uuid.UUID              `json:"transactionId"` // Saga transaction ID

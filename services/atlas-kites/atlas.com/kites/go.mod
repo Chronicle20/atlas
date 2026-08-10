@@ -6,17 +6,20 @@ require (
 	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-kafka v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
+	github.com/Chronicle20/atlas/libs/atlas-redis v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-rest v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-service v0.0.0-00010101000000-000000000000
+	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/google/uuid v1.6.0
 	github.com/jtumidanski/api2go v1.0.4
+	github.com/redis/go-redis/v9 v9.22.0
 	github.com/segmentio/kafka-go v0.4.51
 	github.com/sirupsen/logrus v1.9.4
 )
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000 // indirect
-	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0 // indirect
+	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
@@ -44,10 +47,12 @@ require (
 	github.com/klauspost/compress v1.19.1 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel/metric v1.45.0 // indirect
 	go.opentelemetry.io/otel/trace v1.45.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect

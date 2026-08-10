@@ -65,6 +65,14 @@ const RewardPoolDetailPage = lazyWithReload(() =>
     default: m.RewardPoolDetailPage,
   })),
 );
+const CouponsPage = lazyWithReload(() =>
+  import("@/pages/CouponsPage").then((m) => ({ default: m.CouponsPage })),
+);
+const CouponDetailPage = lazyWithReload(() =>
+  import("@/pages/CouponDetailPage").then((m) => ({
+    default: m.CouponDetailPage,
+  })),
+);
 const GuildsPage = lazyWithReload(() =>
   import("@/pages/GuildsPage").then((m) => ({ default: m.GuildsPage })),
 );
@@ -288,6 +296,11 @@ export function App() {
                     <Route
                       path="/characters/:id"
                       element={<CharacterDetailPage />}
+                    />
+                    <Route path="/coupons" element={<CouponsPage />} />
+                    <Route
+                      path="/coupons/:couponId"
+                      element={<CouponDetailPage />}
                     />
                     <Route path="/reward-pools" element={<RewardPoolsPage />} />
                     <Route

@@ -4,3 +4,4 @@ export { CharacterPageSkeleton } from "./CharacterPageSkeleton";
 export { GuildPageSkeleton } from "./GuildPageSkeleton";
 export { NpcPageSkeleton } from "./NpcPageSkeleton";
 export { TemplatePageSkeleton } from "./TemplatePageSkeleton";
+export { CouponPageSkeleton } from "./CouponPageSkeleton";

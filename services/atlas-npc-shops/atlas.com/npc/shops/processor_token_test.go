@@ -275,9 +275,7 @@ func TestBuyWithTokensSufficientBalanceSpansSlots(t *testing.T) {
 	}
 
 	all := buf.GetAll()
-	if got := len(all[shops.EnvStatusEventTopic]); got != 0 {
-		t.Errorf("expected no status events on success, got %d", got)
-	}
+	assertSingleOk(t, buf)
 
 	cmds := all[compartmentMessage.EnvCommandTopic]
 	if len(cmds) != 3 {
@@ -315,6 +313,8 @@ func TestBuyWithTokensQuantityMultipliesCost(t *testing.T) {
 	if err := p.buyWithTokens(buf)(c, cm, testItemId, 3); err != nil {
 		t.Fatalf("buyWithTokens returned an error: %v", err)
 	}
+
+	assertSingleOk(t, buf)
 
 	cmds := buf.GetAll()[compartmentMessage.EnvCommandTopic]
 	if len(cmds) != 2 {

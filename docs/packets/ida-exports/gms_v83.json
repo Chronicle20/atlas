@@ -3,6 +3,27 @@
   "md5": "80ff438ced539b831f0d2ed95099275d",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CCashShop::OnStatusCoupon": {
+      "address": "0x4710e8",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*(this + 6) && sub_471240(0, this, &v15) == 1 && v4"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*(this + 6) && sub_471240(0, this, &v15) == 1 && v4"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*(this + 6) && sub_471240(0, this, &v15) == 1 && v4 && v14"
+        }
+      ]
+    },
     "CWvsContext::SendMapTransferItemUseRequest": {
       "address": "0xa0a3bb",
       "direction": "serverbound",

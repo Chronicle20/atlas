@@ -27,6 +27,7 @@ import {
   getServiceTypeDisplayName,
 } from "@/services/api/services.service";
 import { transportsService } from "@/services/api/transports.service";
+import { couponsService } from "@/services/api/coupons.service";
 import { rewardPoolsService } from "@/services/api/reward-pools.service";
 
 // Types for resolver functions
@@ -76,6 +77,7 @@ export const EntityType = {
   REWARD_POOL: "reward-pool",
   MERCHANT: "merchant",
   BAN: "ban",
+  COUPON: "coupon",
 } as const;
 export type EntityType = (typeof EntityType)[keyof typeof EntityType];
 
@@ -111,6 +113,9 @@ const CACHE_CONFIG = {
     // title is the least stable label of the set.
     [EntityType.MERCHANT]: 5 * 60 * 1000, // 5 minutes
     [EntityType.BAN]: 30 * 60 * 1000, // 30 minutes (immutable once issued)
+    // A coupon's `code` is server-owned and never changes after creation;
+    // only its activation state and redemption count churn.
+    [EntityType.COUPON]: 30 * 60 * 1000, // 30 minutes
   },
   // Maximum cache size per entity type
   MAX_SIZE: 1000,
@@ -445,6 +450,17 @@ const resolvers: Record<EntityType, EntityResolver> = {
       throw new ResolverError(`Failed to resolve ban: ${error}`, true);
     }
   },
+
+  [EntityType.COUPON]: async (_tenant, entityId, options = {}) => {
+    try {
+      const coupon = await couponsService.getOne(entityId, options);
+      // A coupon has no name — its code is the identity operators read.
+      return coupon.attributes?.code || `Coupon ${entityId}`;
+    } catch (error) {
+      console.warn(`Failed to resolve coupon code for ID ${entityId}:`, error);
+      throw new ResolverError(`Failed to resolve coupon: ${error}`, true);
+    }
+  },
 };
 
 /**
@@ -640,6 +656,7 @@ export function getEntityTypeFromRoute(pathname: string): EntityType | null {
   if (pathname.includes("/reward-pools/")) return EntityType.REWARD_POOL;
   if (pathname.includes("/merchants/")) return EntityType.MERCHANT;
   if (pathname.includes("/bans/")) return EntityType.BAN;
+  if (pathname.includes("/coupons/")) return EntityType.COUPON;
 
   return null;
 }

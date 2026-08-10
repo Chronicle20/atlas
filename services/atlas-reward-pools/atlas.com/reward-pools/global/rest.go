@@ -17,7 +17,13 @@ func (r RestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
 }
 
+// SetID tolerates the empty id of a CREATE payload — see the identical note on
+// item.RestModel.SetID.
 func (r *RestModel) SetID(idStr string) error {
+	if idStr == "" {
+		r.Id = 0
+		return nil
+	}
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		return err

@@ -1,0 +1,10 @@
+packet: character/clientbound/ShowUpgradeTombEffect
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnShowUpgradeTombEffect
+    address: "0x983e40"
+    decompile_sha256: b4b1d2854cf4033edc288f41c0cc44d9d6c83cd01d4fad078c8f5bc4baf5faba
+verifies:
+  - libs/atlas-packet/character/clientbound/show_upgrade_tomb_effect_test.go#TestShowUpgradeTombEffectByteOutput

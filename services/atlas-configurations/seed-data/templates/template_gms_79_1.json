@@ -1124,6 +1124,15 @@
         ]
       },
       {
+        "opCode": "0x9F",
+        "validator": "LoggedInValidator",
+        "handler": "CashItemGachaponHandle",
+        "fname": "CUICashItemGachapon::OnButtonClicked",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xA3",
         "validator": "LoggedInValidator",
         "handler": "PetMovementHandle",
@@ -7737,6 +7746,11 @@
           "templateId": 5360042,
           "hours": 4
         }
+      ]
+    },
+    "surprise": {
+      "boxTemplateIds": [
+        5222000
       ]
     },
     "coupons": {

@@ -1,4 +1,4 @@
-export type RewardPoolKind = "gachapon" | "incubator";
+export type RewardPoolKind = "gachapon" | "incubator" | "cash-surprise";
 
 export interface RewardPoolAttributes {
   name: string;

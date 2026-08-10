@@ -155,3 +155,54 @@ func TestGetPrizePoolPaginates(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 }
+
+// TestSelectRewardEmptyPoolReturns409 drives POST
+// /gachapons/{gachaponId}/rewards/select against a cash-surprise pool that
+// exists but has no eligible entries: the resource must map the
+// reward.ErrEmptyPool sentinel to 409, not the generic error-writer default.
+func TestSelectRewardEmptyPoolReturns409(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, gachapon.Migration, item.Migration, global.Migration)
+	tenantId := uuid.New()
+
+	g, err := gachapon.NewBuilder(tenantId, "5222000").
+		SetName("Empty Cash Surprise Box").
+		SetNpcIds([]uint32{9100305}).
+		SetCommonWeight(100).
+		SetKind(gachapon.KindCashSurprise).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, gachapon.CreateGachapon(db, g))
+
+	srv := httptest.NewServer(setupRewardRouter(db))
+	defer srv.Close()
+
+	url := fmt.Sprintf("%s/gachapons/5222000/rewards/select", srv.URL)
+	req := requestWithTenant(http.MethodPost, url, tenantId)
+
+	resp, err := (&http.Client{}).Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusConflict, resp.StatusCode)
+}
+
+// TestSelectRewardMissingPoolReturns404 drives POST
+// /gachapons/{gachaponId}/rewards/select against a gachaponId that has no
+// backing pool row at all: this must map to 404, distinct from the 409 an
+// existing-but-empty pool produces.
+func TestSelectRewardMissingPoolReturns404(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, gachapon.Migration, item.Migration, global.Migration)
+	tenantId := uuid.New()
+
+	srv := httptest.NewServer(setupRewardRouter(db))
+	defer srv.Close()
+
+	url := fmt.Sprintf("%s/gachapons/9999999/rewards/select", srv.URL)
+	req := requestWithTenant(http.MethodPost, url, tenantId)
+
+	resp, err := (&http.Client{}).Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}

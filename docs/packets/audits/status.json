@@ -1,16 +1,16 @@
 {
-  "toolSha": "1bde9e1f1dfb0f5f970bc29aa898b9be00a829d48f604db3ee087f284c69caa8",
+  "toolSha": "023326bc91a4b62b8665adc75ee3b95273dd801531c4407a2b352106ad33d872",
   "exportHashes": {
     "gms_v48": "414865a74e4c7480d12a82d94114438a90b21c3b7fcb69e007baa4e00caca2d2",
     "gms_v61": "e5175ce83d43a32fc545996e11d501ddca9412daefb935dfa9d6f84333ae8bdc",
     "gms_v72": "5230a2d48fcdebcbfd2dab30729a5dd4fb254c4523dcd71e371b9e87e845ac72",
-    "gms_v79": "95f6b58af3b370ea962457536577b01724b3ca351a02ce6175b672f21d368507",
-    "gms_v83": "3af53b6d5f8976d26a4f9e4990d38c34bbd6beadac3a9fa0f5e732b05086ae12",
-    "gms_v84": "a8e4b0806fcc54384efa20d5c63408553486b332d8534620e4f780fc5b5479ce",
-    "gms_v87": "79a2dfbd0d2fd58b0f8ab0009a238cc6553815de3f71911434590391bb42b6ae",
-    "gms_v92": "15e342cfa8b269686d1ae93ba518da91c9fc4cf5ef4cc5cdf1d7dca42845f392",
-    "gms_v95": "24c9f3b1eb8c82042de3ef6891ca4dff9152193849bb2a3bc6d3254e441f5add",
-    "jms_v185": "1cf8e1c4d581ef07f1106e7da4aaf7acf30785883e6f5daf918dbd3b9d185a0d"
+    "gms_v79": "b0f09a1285c87886953c43c7b782ff86f5f1a947f9b93bfbd9c014e90c6f0160",
+    "gms_v83": "284d540d55e2b222bb8c0c8a276c9316310bca01476e51e4001c4212711bfe21",
+    "gms_v84": "90ce75b413b4b1d9a267b6edb51dc0ebdf2f3233d4f2e1273d46fc1f64bb7b12",
+    "gms_v87": "cd16c845609b9703e0212a41f454319a59911add26d8c8285339060c4eae91db",
+    "gms_v92": "6b4aa17cad3fd59b4f5e0a88fd3b030f813eee4ca0aa2bcf09629e53198d3f7a",
+    "gms_v95": "afe98d2b53779c8f3b74ac81a9a42b2f874eed82a59e8bc85c8f7e901e5b6f44",
+    "jms_v185": "ab1e5878776be8225f808ed8c1b3be6090b7fcf1d98f549eaac2d04e7248e47c"
   },
   "rows": [
     {
@@ -25460,6 +25460,58 @@
     },
     {
       "kind": "op",
+      "op": "CASH_ITEM_GACHAPON_BUTTON",
+      "packet": "cash/serverbound/CashItemGachaponButton",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CUICashItemGachapon::OnButtonClicked"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 159
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 161
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 165
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 169
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 182
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 185
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 167
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "KILL_MONSTER",
       "packet": "monster/clientbound/MonsterDestroy",
       "direction": "clientbound",
@@ -26031,62 +26083,6 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 255
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "CASH_ITEM_GACHAPON_BUTTON",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CUICashItemGachapon::OnButtonClicked"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 161
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 165
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 169
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 182
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 185
-        },
-        "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
         }
       }
     },
@@ -37980,66 +37976,6 @@
     },
     {
       "kind": "op",
-      "op": "CASHSHOP_CASH_ITEM_GACHAPON_RESULT",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "CCashShop::OnCashItemGachaponResult"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 257
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 256
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 292
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 333
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 340
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 350
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 384
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 392
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 365
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "CASHSHOP_CHECK_NAME_CHANGE",
       "direction": "clientbound",
       "tier1": false,
@@ -43003,6 +42939,57 @@
     },
     {
       "kind": "op",
+      "op": "CASHSHOP_CASH_ITEM_GACHAPON_RESULT",
+      "direction": "clientbound",
+      "tier1": false,
+      "fnames": [
+        "CCashShop::OnCashItemGachaponResult"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 333
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 340
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 350
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 384
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 392
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 365
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "CASHSHOP_CASH_GACHAPON_OPEN_RESULT",
       "direction": "clientbound",
       "tier1": false,
@@ -43027,9 +43014,8 @@
           "opcode": -1
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 334
+          "state": "n-a",
+          "opcode": -1
         },
         "gms_v84": {
           "state": "incomplete",

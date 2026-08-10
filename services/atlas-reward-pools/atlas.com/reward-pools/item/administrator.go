@@ -8,12 +8,13 @@ import (
 
 func CreateItem(db *gorm.DB, m Model) error {
 	e := &entity{
-		TenantId:   m.TenantId(),
-		GachaponId: m.GachaponId(),
-		ItemId:     m.ItemId(),
-		Quantity:   m.Quantity(),
-		Tier:       m.Tier(),
-		Weight:     m.Weight(),
+		TenantId:    m.TenantId(),
+		GachaponId:  m.GachaponId(),
+		ItemId:      m.ItemId(),
+		Quantity:    m.Quantity(),
+		Tier:        m.Tier(),
+		Weight:      m.Weight(),
+		CommodityId: m.CommodityId(),
 	}
 	return db.Create(e).Error
 }
@@ -29,14 +30,15 @@ func BulkCreateItem(db *gorm.DB, models []Model) error {
 	})
 }
 
-func UpdateItem(db *gorm.DB, id uint32, itemId uint32, quantity uint32, tier string, weight uint32) error {
+func UpdateItem(db *gorm.DB, id uint32, itemId uint32, quantity uint32, tier string, weight uint32, commodityId uint32) error {
 	result := db.Model(&entity{}).
 		Where(&entity{ID: id}).
 		Updates(map[string]interface{}{
-			"item_id":  itemId,
-			"quantity": quantity,
-			"tier":     tier,
-			"weight":   weight,
+			"item_id":      itemId,
+			"quantity":     quantity,
+			"tier":         tier,
+			"weight":       weight,
+			"commodity_id": commodityId,
 		})
 	if result.Error != nil {
 		return result.Error

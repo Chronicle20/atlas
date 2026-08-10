@@ -4,7 +4,9 @@ import (
 	"atlas-reward-pools/gachapon"
 	"atlas-reward-pools/global"
 	"atlas-reward-pools/item"
+	"atlas-reward-pools/reward"
 	"atlas-reward-pools/test"
+	"errors"
 	"testing"
 )
 
@@ -573,5 +575,314 @@ func TestGetPrizePoolMergesGlobalItems(t *testing.T) {
 	}
 	if !itemIds[6000001] {
 		t.Error("Expected global item 6000001 in pool")
+	}
+}
+
+// TestSelectRewardCashSurpriseExcludesGlobalPool: a cash-surprise pool rolls
+// flat-weighted over the whole pool and NEVER merges the shared global pool:
+// the global pool holds regular item ids that would be invalid as cash
+// rewards (PRD FR-3.2).
+func TestSelectRewardCashSurpriseExcludesGlobalPool(t *testing.T) {
+	processor, db, cleanup := test.CreateRewardProcessor(t)
+	defer cleanup()
+
+	tenantId := test.TestTenantId
+
+	gachaponModel, err := gachapon.NewBuilder(tenantId, "5222000").
+		SetName("Test Cash Surprise Box").
+		SetNpcIds([]uint32{9100300}).
+		SetCommonWeight(100).
+		SetUncommonWeight(0).
+		SetRareWeight(0).
+		SetKind(gachapon.KindCashSurprise).
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build cash-surprise gachapon model: %v", err)
+	}
+	err = gachapon.CreateGachapon(db, gachaponModel)
+	if err != nil {
+		t.Fatalf("Failed to create cash-surprise gachapon: %v", err)
+	}
+
+	cashItem, err := item.NewBuilder(tenantId, 0).
+		SetGachaponId("5222000").
+		SetItemId(5222001).
+		SetQuantity(1).
+		SetTier("common").
+		SetWeight(10).
+		SetCommodityId(40000).
+		SetKind(gachapon.KindCashSurprise).
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build cash-surprise item: %v", err)
+	}
+	err = item.CreateItem(db, cashItem)
+	if err != nil {
+		t.Fatalf("Failed to create cash-surprise item: %v", err)
+	}
+
+	// Global item on the "common" tier — must never appear in a cash-surprise
+	// roll, since cash-surprise kind does not merge the global pool.
+	globalItem, err := global.NewBuilder(tenantId, 0).
+		SetItemId(2000000).
+		SetQuantity(1).
+		SetTier("common").
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build global item: %v", err)
+	}
+	err = global.CreateItem(db, globalItem)
+	if err != nil {
+		t.Fatalf("Failed to create global item: %v", err)
+	}
+
+	for i := 0; i < 100; i++ {
+		result, err := processor.SelectReward("5222000")
+		if err != nil {
+			t.Fatalf("Failed to select cash-surprise reward: %v", err)
+		}
+		if result.ItemId() != 5222001 {
+			t.Fatalf("Unexpected cash-surprise item ID: %d, want 5222001", result.ItemId())
+		}
+		if result.CommodityId() != 40000 {
+			t.Fatalf("Unexpected commodityId: %d, want 40000", result.CommodityId())
+		}
+	}
+}
+
+// TestSelectRewardCashSurpriseUsesFlatWeights: flat weights, not the
+// three-tier roll — a pool whose entries span tiers must still be selectable
+// purely by weight.
+func TestSelectRewardCashSurpriseUsesFlatWeights(t *testing.T) {
+	processor, db, cleanup := test.CreateRewardProcessor(t)
+	defer cleanup()
+
+	tenantId := test.TestTenantId
+
+	gachaponModel, err := gachapon.NewBuilder(tenantId, "5222000").
+		SetName("Test Cash Surprise Flat Weights").
+		SetNpcIds([]uint32{9100301}).
+		SetCommonWeight(0).
+		SetUncommonWeight(0).
+		SetRareWeight(0).
+		SetKind(gachapon.KindCashSurprise).
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build cash-surprise gachapon model: %v", err)
+	}
+	err = gachapon.CreateGachapon(db, gachaponModel)
+	if err != nil {
+		t.Fatalf("Failed to create cash-surprise gachapon: %v", err)
+	}
+
+	commonItem, err := item.NewBuilder(tenantId, 0).
+		SetGachaponId("5222000").
+		SetItemId(5222010).
+		SetQuantity(1).
+		SetTier("common").
+		SetWeight(1).
+		SetCommodityId(40010).
+		SetKind(gachapon.KindCashSurprise).
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build common cash-surprise item: %v", err)
+	}
+	err = item.CreateItem(db, commonItem)
+	if err != nil {
+		t.Fatalf("Failed to create common cash-surprise item: %v", err)
+	}
+
+	uncommonItem, err := item.NewBuilder(tenantId, 0).
+		SetGachaponId("5222000").
+		SetItemId(5222011).
+		SetQuantity(1).
+		SetTier("uncommon").
+		SetWeight(0).
+		SetCommodityId(40011).
+		SetKind(gachapon.KindCashSurprise).
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build uncommon cash-surprise item: %v", err)
+	}
+	err = item.CreateItem(db, uncommonItem)
+	if err != nil {
+		t.Fatalf("Failed to create uncommon cash-surprise item: %v", err)
+	}
+
+	rareItem, err := item.NewBuilder(tenantId, 0).
+		SetGachaponId("5222000").
+		SetItemId(5222012).
+		SetQuantity(1).
+		SetTier("rare").
+		SetWeight(0).
+		SetCommodityId(40012).
+		SetKind(gachapon.KindCashSurprise).
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build rare cash-surprise item: %v", err)
+	}
+	err = item.CreateItem(db, rareItem)
+	if err != nil {
+		t.Fatalf("Failed to create rare cash-surprise item: %v", err)
+	}
+
+	for i := 0; i < 50; i++ {
+		result, err := processor.SelectReward("5222000")
+		if err != nil {
+			t.Fatalf("Failed to select cash-surprise reward: %v", err)
+		}
+		if result.ItemId() != 5222010 {
+			t.Fatalf("Unexpected cash-surprise item ID: %d, want weight-1 entry 5222010", result.ItemId())
+		}
+		if result.CommodityId() != 40010 {
+			t.Fatalf("Unexpected commodityId: %d, want 40010", result.CommodityId())
+		}
+		if result.Tier() != "" {
+			t.Errorf("Expected empty tier for cash-surprise reward, got %q", result.Tier())
+		}
+	}
+}
+
+// TestSelectRewardCashSurpriseEmptyPoolReturnsSentinel: a cash-surprise pool
+// with no items must return the ErrEmptyPool sentinel (PRD FR-3.7).
+func TestSelectRewardCashSurpriseEmptyPoolReturnsSentinel(t *testing.T) {
+	processor, db, cleanup := test.CreateRewardProcessor(t)
+	defer cleanup()
+
+	tenantId := test.TestTenantId
+
+	gachaponModel, err := gachapon.NewBuilder(tenantId, "5222000").
+		SetName("Test Empty Cash Surprise Box").
+		SetNpcIds([]uint32{9100302}).
+		SetCommonWeight(100).
+		SetUncommonWeight(0).
+		SetRareWeight(0).
+		SetKind(gachapon.KindCashSurprise).
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build cash-surprise gachapon model: %v", err)
+	}
+	err = gachapon.CreateGachapon(db, gachaponModel)
+	if err != nil {
+		t.Fatalf("Failed to create cash-surprise gachapon: %v", err)
+	}
+
+	_, err = processor.SelectReward("5222000")
+	if !errors.Is(err, reward.ErrEmptyPool) {
+		t.Fatalf("err = %v, want ErrEmptyPool", err)
+	}
+}
+
+// TestSelectRewardGachaponStillMergesGlobalPool is a regression control: a
+// gachapon-kind pool with ZERO machine items but a global item must still
+// succeed and return the global item — the tiered path must not be captured
+// by the flat-weight widening for incubator/cash-surprise.
+func TestSelectRewardGachaponStillMergesGlobalPool(t *testing.T) {
+	processor, db, cleanup := test.CreateRewardProcessor(t)
+	defer cleanup()
+
+	tenantId := test.TestTenantId
+
+	gachaponModel, err := gachapon.NewBuilder(tenantId, "test-gachapon-regression-1").
+		SetName("Regression Gachapon").
+		SetNpcIds([]uint32{9100303}).
+		SetCommonWeight(100).
+		SetUncommonWeight(0).
+		SetRareWeight(0).
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build gachapon model: %v", err)
+	}
+	err = gachapon.CreateGachapon(db, gachaponModel)
+	if err != nil {
+		t.Fatalf("Failed to create gachapon: %v", err)
+	}
+
+	globalItem, err := global.NewBuilder(tenantId, 0).
+		SetItemId(9000000).
+		SetQuantity(1).
+		SetTier("common").
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build global item: %v", err)
+	}
+	err = global.CreateItem(db, globalItem)
+	if err != nil {
+		t.Fatalf("Failed to create global item: %v", err)
+	}
+
+	result, err := processor.SelectReward("test-gachapon-regression-1")
+	if err != nil {
+		t.Fatalf("Failed to select reward: %v", err)
+	}
+	if result.ItemId() != 9000000 {
+		t.Errorf("Expected global item 9000000, got %d", result.ItemId())
+	}
+	if result.Tier() != "common" {
+		t.Errorf("Expected tier 'common', got %q", result.Tier())
+	}
+}
+
+// TestSelectRewardIncubatorStillExcludesGlobalPool is a regression control:
+// an incubator pool with one weighted item plus a global item must always
+// return the machine item, never the global one.
+func TestSelectRewardIncubatorStillExcludesGlobalPool(t *testing.T) {
+	processor, db, cleanup := test.CreateRewardProcessor(t)
+	defer cleanup()
+
+	tenantId := test.TestTenantId
+
+	gachaponModel, err := gachapon.NewBuilder(tenantId, "test-gachapon-regression-2").
+		SetName("Regression Incubator").
+		SetNpcIds([]uint32{9100304}).
+		SetCommonWeight(0).
+		SetUncommonWeight(0).
+		SetRareWeight(0).
+		SetKind(gachapon.KindIncubator).
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build incubator gachapon model: %v", err)
+	}
+	err = gachapon.CreateGachapon(db, gachaponModel)
+	if err != nil {
+		t.Fatalf("Failed to create incubator gachapon: %v", err)
+	}
+
+	machineItem, err := item.NewBuilder(tenantId, 0).
+		SetGachaponId("test-gachapon-regression-2").
+		SetItemId(9100000).
+		SetQuantity(1).
+		SetTier("common").
+		SetWeight(1).
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build incubator item: %v", err)
+	}
+	err = item.CreateItem(db, machineItem)
+	if err != nil {
+		t.Fatalf("Failed to create incubator item: %v", err)
+	}
+
+	globalItem, err := global.NewBuilder(tenantId, 0).
+		SetItemId(9100001).
+		SetQuantity(1).
+		SetTier("common").
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build global item: %v", err)
+	}
+	err = global.CreateItem(db, globalItem)
+	if err != nil {
+		t.Fatalf("Failed to create global item: %v", err)
+	}
+
+	for i := 0; i < 100; i++ {
+		result, err := processor.SelectReward("test-gachapon-regression-2")
+		if err != nil {
+			t.Fatalf("Failed to select incubator reward: %v", err)
+		}
+		if result.ItemId() != 9100000 {
+			t.Fatalf("Unexpected incubator item ID: %d, want machine item 9100000", result.ItemId())
+		}
 	}
 }

@@ -16,6 +16,12 @@ import (
 var (
 	ErrBadRequest = errors.New("bad request")
 	ErrNotFound   = errors.New("not found")
+	// ErrConflict is returned when a POST/PUT/PATCH response is HTTP 409 —
+	// the request is well-formed and the resource exists, but the server
+	// refuses it due to its current state (e.g. no eligible entries left to
+	// select from). Callers distinguish it from ErrBadRequest/ErrNotFound
+	// via errors.Is.
+	ErrConflict = errors.New("conflict")
 )
 
 // ErrServiceUnavailable is returned when a GET exhausted its attempts and the

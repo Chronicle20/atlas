@@ -5275,6 +5275,11 @@
         }
       ]
     },
+    "surprise": {
+      "boxTemplateIds": [
+        5222000
+      ]
+    },
     "coupons": {
       "rateLimit": {
         "attempts": 10,

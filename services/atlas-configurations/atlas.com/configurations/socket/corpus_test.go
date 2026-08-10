@@ -60,7 +60,7 @@ func TestValidate_AcceptsEverySeedTemplate(t *testing.T) {
 			}
 		}
 	}
-	if total != 3062 {
-		t.Errorf("corpus size = %d entries, want 3062 (3052 before task-206, plus the CashShopCouponCodeHandle binding routed in each of the 10 applicable versions — every template but gms_12)", total)
+	if total != 3075 {
+		t.Errorf("corpus size = %d entries, want 3075 (3052 before task-206, plus task-206's 10 CashShopCouponCodeHandle bindings — every template but gms_12 — plus task-207's 7 CashItemGachaponHandle handlers and 6 CashItemGachaponResult writers)", total)
 	}
 }

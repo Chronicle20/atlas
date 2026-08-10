@@ -11,6 +11,13 @@ type Model struct {
 	onSale   bool
 }
 
+// Id is the cash shop commodity serial number — the value a cash-surprise
+// reward pool entry names and the value GW_CashItemInfo carries as
+// CommodityId.
+func (m Model) Id() uint32 {
+	return m.id
+}
+
 func (m Model) ItemId() uint32 {
 	return m.itemId
 }

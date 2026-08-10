@@ -1,0 +1,21 @@
+{
+  "WriterName": "CashItemGachaponButton",
+  "IDAName": "CUICashItemGachapon::OnButtonClicked",
+  "Address": "0x99a9a7",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/item_gachapon_button.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "cashId: 8 bytes LARGE_INTEGER (int64), the cash serial (m_liItemSN)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

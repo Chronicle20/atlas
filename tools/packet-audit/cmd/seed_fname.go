@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -118,6 +119,8 @@ func runSeedFName(args []string, stderr io.Writer) int {
 		"directory holding <version>.yaml op registries")
 	templateDir := fs.String("template-dir", filepath.Join("services", "atlas-configurations", "seed-data", "templates"),
 		"directory holding template_<version>.json seed files")
+	atlasPacket := fs.String("atlas-packet", "libs/atlas-packet",
+		"atlas-packet library root (used to resolve which registry op a template entry actually binds, when one opcode carries several distinct fnames)")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -154,7 +157,7 @@ func runSeedFName(args []string, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "FAIL %s: %v\n", v.Registry, err)
 			return 1
 		}
-		resolved[v.Template] = applyDirect(st, indexRegistryByOpcode(vf, v.Registry, stderr))
+		resolved[v.Template] = applyDirect(st, indexRegistryByOpcode(vf, v.Registry), *atlasPacket, v.Registry, stderr)
 	}
 
 	// Pass 2 - versions with no registry borrow by implementation name.
@@ -249,49 +252,116 @@ func loadSeedTemplate(path string) (*seedTemplate, error) {
 	return &seedTemplate{Path: path, Doc: doc}, nil
 }
 
-// indexRegistryByOpcode builds "direction|opcode" -> fname, applying the
-// lexicographically-first-op tie-break where one opcode carries several
-// distinct fnames, and logging every such choice.
-func indexRegistryByOpcode(vf *opregistry.VersionFile, regStem string, stderr io.Writer) map[string]string {
-	type cand struct{ op, fname string }
-	groups := make(map[string][]cand)
+// opCand pairs a registry op with the fname it carries, for one shared
+// (direction, opcode) group.
+type opCand struct{ op, fname string }
+
+// indexRegistryByOpcode groups registry entries carrying a distinct fname by
+// "direction|opcode" (sorted lexicographically by op for a deterministic
+// fallback order). Ambiguity — a shared opcode with more than one distinct
+// fname — is NOT resolved here; that decision needs the template entry's
+// already-bound implementation (its handler/writer field), which only
+// applyDirect has, so it is resolved there per entry (see pickCandidate).
+func indexRegistryByOpcode(vf *opregistry.VersionFile, regStem string) map[string][]opCand {
+	seen := make(map[string]map[string]bool) // key -> fname -> already added
+	groups := make(map[string][]opCand)
 	for _, e := range vf.Entries {
 		fn := strings.TrimSpace(e.FName)
 		if fn == "" {
 			continue
 		}
 		k := string(e.Direction) + "|" + strconv.Itoa(e.Opcode)
-		groups[k] = append(groups[k], cand{op: e.Op, fname: fn})
+		if seen[k] == nil {
+			seen[k] = map[string]bool{}
+		}
+		if seen[k][fn] {
+			continue
+		}
+		seen[k][fn] = true
+		groups[k] = append(groups[k], opCand{op: e.Op, fname: fn})
 	}
-
-	keys := make([]string, 0, len(groups))
 	for k := range groups {
-		keys = append(keys, k)
+		sort.Slice(groups[k], func(i, j int) bool { return groups[k][i].op < groups[k][j].op })
 	}
-	sort.Strings(keys)
-
-	out := make(map[string]string, len(groups))
-	for _, k := range keys {
-		cs := groups[k]
-		sort.Slice(cs, func(i, j int) bool { return cs[i].op < cs[j].op })
-		distinct := map[string]bool{}
-		for _, c := range cs {
-			distinct[c.fname] = true
-		}
-		if len(distinct) > 1 {
-			names := make([]string, 0, len(cs))
-			for _, c := range cs {
-				names = append(names, c.op+"="+c.fname)
-			}
-			fmt.Fprintf(stderr, "ambiguous %s %s: %s - picking %s (lexicographically first op)\n",
-				regStem, k, strings.Join(names, ", "), cs[0].op)
-		}
-		out[k] = cs[0].fname
-	}
-	return out
+	_ = regStem // kept for call-site symmetry / future logging context
+	return groups
 }
 
-func applyDirect(st *seedTemplate, byOp map[string]string) map[string]string {
+// pickCandidate resolves which fname wins when one (direction, opcode) group
+// carries more than one distinct fname (task-19/task-207 fix-up: jms opcode
+// 167 has two real senders, CCashShop::SendChangeMaplePoint and
+// CUICashItemGachapon::OnButtonClicked, task-3's human-approved dual-row
+// ruling — neither row may be deleted or renamed to "win" the old
+// lexicographic sort).
+//
+// Preferred rule: the candidate whose Atlas Operation() constant matches the
+// template entry's already-bound `handler`/`writer` field — i.e. the
+// implementation the template actually binds at this opcode, which is ground
+// truth independent of registry op-name spelling. Falls back to the
+// lexicographically-first op (the pre-existing rule) when the bound
+// implementation can't be resolved for any candidate (fresh/virgin entry
+// with no atlas-packet Operation() match, or genuinely no committed binding).
+func pickCandidate(atlasRoot string, cands []opCand, bound string) (fname, rule string) {
+	if len(cands) == 1 {
+		return cands[0].fname, "only candidate"
+	}
+	bound = strings.TrimSpace(bound)
+	if bound != "" {
+		for _, c := range cands {
+			if v, ok := operationConstFor(atlasRoot, c.fname); ok && v == bound {
+				return c.fname, "bound implementation"
+			}
+		}
+	}
+	return cands[0].fname, "lexicographically first op"
+}
+
+// operationConstFor resolves the Atlas Operation() string constant a
+// registry fname's atlas-packet struct returns, by locating the struct
+// (candidatesFromFName + locateAtlasFile, the same resolution the report
+// generator uses) and reading its `func (m T) Operation() string { return
+// X }` body — X may itself be a string literal or, more commonly, a
+// package-level `const X = "..."` the same file declares. Returns ("",
+// false) when the struct, its Operation() method, or the constant cannot be
+// found (e.g. the fname has no atlas-packet wrapper at all).
+func operationConstFor(atlasRoot, fname string) (string, bool) {
+	cands := candidatesFromFName(fname)
+	if len(cands) == 0 {
+		return "", false
+	}
+	c := cands[0]
+	path, ok := locateAtlasFile(atlasRoot, c.name, c.pkg, c.dir)
+	if !ok {
+		return "", false
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "", false
+	}
+	src := string(b)
+	opFuncRe := regexp.MustCompile(`func \(\w+ \*?` + regexp.QuoteMeta(c.name) +
+		`\) Operation\(\) string\s*\{\s*return\s+("[^"]*"|\w+)\s*\}`)
+	m := opFuncRe.FindStringSubmatch(src)
+	if m == nil {
+		return "", false
+	}
+	ret := m[1]
+	if strings.HasPrefix(ret, `"`) {
+		v, err := strconv.Unquote(ret)
+		if err != nil {
+			return "", false
+		}
+		return v, true
+	}
+	constRe := regexp.MustCompile(`const\s+` + regexp.QuoteMeta(ret) + `\s*=\s*"([^"]*)"`)
+	cm := constRe.FindStringSubmatch(src)
+	if cm == nil {
+		return "", false
+	}
+	return cm[1], true
+}
+
+func applyDirect(st *seedTemplate, byOp map[string][]opCand, atlasRoot, regStem string, stderr io.Writer) map[string]string {
 	got := make(map[string]string)
 	apply := func(entries []seedEntry, dir opregistry.Direction, kind string) {
 		for i := range entries {
@@ -299,9 +369,18 @@ func applyDirect(st *seedTemplate, byOp map[string]string) map[string]string {
 			if !ok {
 				continue
 			}
-			fn := byOp[string(dir)+"|"+strconv.Itoa(code)]
-			if fn == "" {
+			cands := byOp[string(dir)+"|"+strconv.Itoa(code)]
+			if len(cands) == 0 {
 				continue
+			}
+			fn, rule := pickCandidate(atlasRoot, cands, entries[i].Name())
+			if len(cands) > 1 {
+				names := make([]string, 0, len(cands))
+				for _, c := range cands {
+					names = append(names, c.op+"="+c.fname)
+				}
+				fmt.Fprintf(stderr, "ambiguous %s %s|0x%X: %s - picking %s (%s)\n",
+					regStem, dir, code, strings.Join(names, ", "), fn, rule)
 			}
 			entries[i].FName = fn
 			if n := entries[i].Name(); n != "" {

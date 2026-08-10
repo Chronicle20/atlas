@@ -1201,6 +1201,15 @@
         ]
       },
       {
+        "opCode": "0xA5",
+        "validator": "LoggedInValidator",
+        "handler": "CashItemGachaponHandle",
+        "fname": "CUICashItemGachapon::OnButtonClicked",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xAA",
         "validator": "LoggedInValidator",
         "handler": "MobCrcKeyChangedReply",
@@ -4775,6 +4784,20 @@
         ]
       },
       {
+        "opCode": "0x154",
+        "writer": "CashItemGachaponResult",
+        "fname": "CCashShop::OnCashItemGachaponResult",
+        "options": {
+          "operations": {
+            "SUCCESS": 238,
+            "FAILED": 237
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x158",
         "writer": "CharacterKeyMap",
         "fname": "CFuncKeyMappedMan::OnInit",
@@ -8124,6 +8147,11 @@
           "templateId": 5360042,
           "hours": 4
         }
+      ]
+    },
+    "surprise": {
+      "boxTemplateIds": [
+        5222000
       ]
     },
     "coupons": {

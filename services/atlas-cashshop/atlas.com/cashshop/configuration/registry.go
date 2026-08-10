@@ -61,6 +61,24 @@ func GetHourlyExpirations(l logrus.FieldLogger, ctx context.Context, tenantId uu
 	return result
 }
 
+// DefaultSurpriseBoxTemplateId is the stock Cash Shop Surprise box. It is
+// the fallback, not a constant the open path compares against directly:
+// GetSurpriseBoxTemplateIds is the only reader, and a tenant may override
+// or extend the list.
+const DefaultSurpriseBoxTemplateId = uint32(5222000)
+
+// GetSurpriseBoxTemplateIds returns the cash item template ids that open as
+// a Cash Shop Surprise box for this tenant. GetTenantConfig returns a zero
+// RestModel when the fetch fails, so an empty list means "unconfigured" and
+// falls back to the stock box rather than disabling the feature.
+func GetSurpriseBoxTemplateIds(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UUID) []uint32 {
+	cfg, _ := GetTenantConfig(l, ctx, tenantId)
+	if len(cfg.CashShop.Surprise.BoxTemplateIds) == 0 {
+		return []uint32{DefaultSurpriseBoxTemplateId}
+	}
+	return cfg.CashShop.Surprise.BoxTemplateIds
+}
+
 // GetCouponRateLimit returns the number of failed coupon attempts an account
 // may make per window, and the window itself.
 func GetCouponRateLimit(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UUID) (uint32, time.Duration) {

@@ -2500,6 +2500,14 @@
   ida:
     address: 6582679
   note: 'reply COutPacket(154); v83 MOB_CRC_KEY_CHANGED_REPLY=164 (d-10).'
+- op: CASH_ITEM_GACHAPON_BUTTON
+  direction: serverbound
+  opcode: 159
+  fname: CUICashItemGachapon::OnButtonClicked
+  packet: cash/serverbound/CashItemGachaponButton
+  provenance: ida-discovered
+  ida:
+    address: 9371046
 - op: PET_CHAT
   direction: serverbound
   opcode: 164

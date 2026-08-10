@@ -20,6 +20,10 @@ func realTemplateDir() string {
 	return filepath.Join("..", "..", "..", "services", "atlas-configurations", "seed-data", "templates")
 }
 
+func realAtlasPacketDir() string {
+	return filepath.Join("..", "..", "..", "libs", "atlas-packet")
+}
+
 func realRegistryDir() string {
 	return filepath.Join("..", "..", "..", "docs", "packets", "registry")
 }
@@ -418,6 +422,83 @@ func TestSeedFName_AmbiguityPicksLexicographicallyFirstOp(t *testing.T) {
 	}
 }
 
+// TestSeedFName_AmbiguityPrefersBoundImplementationOverLexicographicOrder is
+// the task-19/task-207 fix-up regression test: jms opcode 167 (0xA7) carries
+// two real senders in the registry (CASHSHOP_SURPRISE -> fname
+// CCashShop::SendChangeMaplePoint, and CASH_ITEM_GACHAPON_BUTTON -> fname
+// CUICashItemGachapon::OnButtonClicked, task-3's human-approved dual-row
+// ruling) and CASHSHOP_SURPRISE sorts lexicographically first ('S' 0x53 <
+// '_' 0x5F). The template's committed `handler` field is
+// "CashItemGachaponHandle" - the Operation() constant
+// cash/serverbound/item_gachapon_button.go's CashItemGachaponButton struct
+// actually returns - which is CUICashItemGachapon::OnButtonClicked's fname,
+// NOT the lexicographically-first op's. The bound-implementation tie-break
+// must win over the lexicographic fallback here. This test fails against the
+// pre-fix tie-break (which always picks the lexicographically-first op and
+// would resolve to CCashShop::SendChangeMaplePoint instead).
+func TestSeedFName_AmbiguityPrefersBoundImplementationOverLexicographicOrder(t *testing.T) {
+	const reg = `- op: CASHSHOP_SURPRISE
+  direction: serverbound
+  opcode: 167
+  fname: CCashShop::SendChangeMaplePoint
+  provenance: manual
+- op: CASH_ITEM_GACHAPON_BUTTON
+  direction: serverbound
+  opcode: 167
+  fname: CUICashItemGachapon::OnButtonClicked
+  provenance: manual
+`
+	const tpl = `{
+  "region": "JMS",
+  "majorVersion": 185,
+  "minorVersion": 1,
+  "usesPin": false,
+  "socket": {
+    "handlers": [
+      {
+        "opCode": "0xA7",
+        "validator": "LoggedInValidator",
+        "handler": "CashItemGachaponHandle",
+        "services": [
+          "channel"
+        ]
+      }
+    ],
+    "writers": []
+  },
+  "characters": {
+    "templates": [],
+    "presets": []
+  },
+  "npcs": [],
+  "worlds": [],
+  "cashShop": {
+    "commodities": {}
+  }
+}
+`
+	regDir, tplDir := setupSeedFName(t,
+		map[string]string{"jms_v185": reg},
+		map[string]string{"jms_185_1": tpl})
+
+	var stderr bytes.Buffer
+	code := runSeedFName([]string{
+		"--write", "--registry-dir", regDir, "--template-dir", tplDir,
+		"--atlas-packet", realAtlasPacketDir(),
+	}, &stderr)
+	if code != 0 {
+		t.Fatalf("exit = %d, want 0. stderr:\n%s", code, stderr.String())
+	}
+	h, _ := socketOf(t, filepath.Join(tplDir, "template_jms_185_1.json"))
+	if got := string(h[0]["fname"]); got != `"CUICashItemGachapon::OnButtonClicked"` {
+		t.Errorf("tie-break did not pick the bound implementation (CashItemGachaponHandle -> "+
+			"CUICashItemGachapon::OnButtonClicked): fname = %s", got)
+	}
+	if !strings.Contains(stderr.String(), "ambiguous") || !strings.Contains(stderr.String(), "bound implementation") {
+		t.Errorf("tie-break decision was not logged as bound-implementation-driven:\n%s", stderr.String())
+	}
+}
+
 // gms_92_1 and gms_12_1 have no registry of their own. They resolve by
 // implementation name against adjacent versions, which is valid because the
 // implementation name is the definition identity within a direction. LoginHandle
@@ -770,7 +851,7 @@ func TestSeedFName_RealTemplatesSemanticFidelity(t *testing.T) {
 	tplDir, stems := copyRealTemplatesToTemp(t)
 
 	var stderr bytes.Buffer
-	if code := runSeedFName([]string{"--write", "--registry-dir", realRegistryDir(), "--template-dir", tplDir}, &stderr); code != 0 {
+	if code := runSeedFName([]string{"--write", "--registry-dir", realRegistryDir(), "--template-dir", tplDir, "--atlas-packet", realAtlasPacketDir()}, &stderr); code != 0 {
 		t.Fatalf("exit = %d, want 0. stderr:\n%s", code, stderr.String())
 	}
 
@@ -903,7 +984,7 @@ func TestSeedFName_RealTemplatesInsertionCoverage(t *testing.T) {
 	tplDir, stems, virgin := copyRealTemplatesVirginToTemp(t)
 
 	var stderr bytes.Buffer
-	if code := runSeedFName([]string{"--write", "--registry-dir", realRegistryDir(), "--template-dir", tplDir}, &stderr); code != 0 {
+	if code := runSeedFName([]string{"--write", "--registry-dir", realRegistryDir(), "--template-dir", tplDir, "--atlas-packet", realAtlasPacketDir()}, &stderr); code != 0 {
 		t.Fatalf("exit = %d, want 0. stderr:\n%s", code, stderr.String())
 	}
 
@@ -950,7 +1031,7 @@ func TestSeedFName_RealTemplatesIdempotentSecondRun(t *testing.T) {
 	tplDir, stems := copyRealTemplatesToTemp(t)
 
 	var stderr bytes.Buffer
-	if code := runSeedFName([]string{"--write", "--registry-dir", realRegistryDir(), "--template-dir", tplDir}, &stderr); code != 0 {
+	if code := runSeedFName([]string{"--write", "--registry-dir", realRegistryDir(), "--template-dir", tplDir, "--atlas-packet", realAtlasPacketDir()}, &stderr); code != 0 {
 		t.Fatalf("first run: exit = %d, want 0. stderr:\n%s", code, stderr.String())
 	}
 	firstPass := make(map[string][]byte, len(stems))
@@ -963,7 +1044,7 @@ func TestSeedFName_RealTemplatesIdempotentSecondRun(t *testing.T) {
 	}
 
 	stderr.Reset()
-	if code := runSeedFName([]string{"--write", "--registry-dir", realRegistryDir(), "--template-dir", tplDir}, &stderr); code != 0 {
+	if code := runSeedFName([]string{"--write", "--registry-dir", realRegistryDir(), "--template-dir", tplDir, "--atlas-packet", realAtlasPacketDir()}, &stderr); code != 0 {
 		t.Fatalf("second run: exit = %d, want 0. stderr:\n%s", code, stderr.String())
 	}
 	for _, stem := range stems {
@@ -996,7 +1077,7 @@ func TestSeedFName_PreservesOriginalOpcodeSpelling(t *testing.T) {
 	}
 
 	var stderr bytes.Buffer
-	if code := runSeedFName([]string{"--write", "--registry-dir", realRegistryDir(), "--template-dir", tplDir}, &stderr); code != 0 {
+	if code := runSeedFName([]string{"--write", "--registry-dir", realRegistryDir(), "--template-dir", tplDir, "--atlas-packet", realAtlasPacketDir()}, &stderr); code != 0 {
 		t.Fatalf("exit = %d, want 0. stderr:\n%s", code, stderr.String())
 	}
 

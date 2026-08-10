@@ -15672,7 +15672,7 @@
     "CWvsContext::OnMemoResult#Refresh": {
       "address": "0xa70785",
       "direction": "clientbound",
-      "note": "mode=7 (REFRESH). `result - 2 == 0` @0xa707b4 (mode-7) tail-calls CWvsContext::OnMemoNotify_Receive(this) @0xa708ea/0xa707bd with no CInPacket arg — no further wire reads. Mode number diverges from v83 (mode=8 there); wire shape (mode byte only) is identical.",
+      "note": "mode=7 (REFRESH). `result - 2 == 0` @0xa707b4 (mode-7) tail-calls CWvsContext::OnMemoNotify_Receive(this) @0xa708ea/0xa707bd with no CInPacket arg \u2014 no further wire reads. Mode number diverges from v83 (mode=8 there); wire shape (mode byte only) is identical.",
       "calls": [
         {
           "op": "Decode1",
@@ -15698,7 +15698,7 @@
     "CWvsContext::OnMemoResult#SendSuccess": {
       "address": "0xa70785",
       "direction": "clientbound",
-      "note": "mode=4 (SEND_SUCCESS). `v6 == 0` @0xa707aa (mode-4) branch sets a fixed StringPool notice id (2714) with no further Decode1 call — the errorCode byte is not read for this arm. Wire identical to v83/v95 (mode byte only).",
+      "note": "mode=4 (SEND_SUCCESS). `v6 == 0` @0xa707aa (mode-4) branch sets a fixed StringPool notice id (2714) with no further Decode1 call \u2014 the errorCode byte is not read for this arm. Wire identical to v83/v95 (mode byte only).",
       "calls": [
         {
           "op": "Decode1",
@@ -28677,6 +28677,68 @@
       "address": "0xa6bd3a",
       "direction": "serverbound",
       "calls": []
+    },
+    "CCashShop::OnCashItemGachaponResult": {
+      "address": "0x47f8fc",
+      "direction": "clientbound",
+      "note": "CASHSHOP_CASH_ITEM_GACHAPON_RESULT (task-207). mode(Decode1) unconditional. SUCCESS (mode=238): sn:DecodeBuffer(8, LARGE_INTEGER int64, matched against m_aCashItemInfo[i].liSN) + remain:Decode4 (int32 new quantity) + newItem:DecodeBuffer(0x37=55, GW_CashItemInfo, UNCONDITIONAL) + delegate to CUICashItemGachapon::OnCashItemGachaponResult for itemId/count/jackpot. FAILED (mode=237): no further reads, StringPool notice only.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "sn: 8 bytes LARGE_INTEGER (int64)",
+          "guard": "mode == 238"
+        },
+        {
+          "op": "Decode4",
+          "comment": "remain (int32, new box quantity)",
+          "guard": "mode == 238"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "newItem: 55 bytes GW_CashItemInfo blob, unconditional within SUCCESS arm",
+          "guard": "mode == 238"
+        },
+        {
+          "op": "Delegate",
+          "comment": "trailing itemId/count/jackpot read by the UI class, not CCashShop",
+          "guard": "mode == 238",
+          "ref": "CUICashItemGachapon::OnCashItemGachaponResult"
+        }
+      ]
+    },
+    "CUICashItemGachapon::OnCashItemGachaponResult": {
+      "address": "0x9db918",
+      "direction": "clientbound",
+      "note": "CUICashItemGachapon::OnCashItemGachaponResult (task-207) \u2014 reads the trailing itemId/count/jackpot fields of CASHSHOP_CASH_ITEM_GACHAPON_RESULT's SUCCESS arm, delegated to by CCashShop::OnCashItemGachaponResult.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId (int32, rewarded template id)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count (byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "jackpot (byte, selects CashGachaponJackpot vs CashGachaponNormal sfx)"
+        }
+      ]
+    },
+    "CUICashItemGachapon::OnButtonClicked": {
+      "address": "0x9db82d",
+      "direction": "serverbound",
+      "note": "CUICashItemGachapon::OnButtonClicked (task-207) \u2014 nId==2000 (Open button): COutPacket(<op>) + EncodeBuffer(&m_liItemSN, 8), no other fields.",
+      "calls": [
+        {
+          "op": "EncodeBuffer",
+          "comment": "cashId: 8 bytes LARGE_INTEGER (int64), the cash serial (m_liItemSN)"
+        }
+      ]
     }
   }
 }

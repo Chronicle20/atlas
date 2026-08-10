@@ -9,21 +9,17 @@ import { useTenant } from "@/context/tenant-context";
 import { useItemName } from "@/lib/hooks/api/useItemStrings";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { formatIncubatorName } from "@/lib/utils/egg-regions";
+import { ICON_SOURCE } from "@/lib/utils/reward-pool-chance";
 import type { RewardPoolData } from "@/types/models/reward-pool";
 
-/**
- * Incubator pools are identified by their egg item id (= pool id): show the
- * egg's item icon + resolved item name (region-appended when known), falling
- * back to the seeded pool name. Gachapon pools show the first NPC's icon
- * (the machine) when one is configured.
- */
 export function PoolNameCell({ pool }: { pool: RewardPoolData }) {
   const { activeTenant } = useTenant();
   const isIncubator = pool.attributes.kind === "incubator";
+  const iconSource = ICON_SOURCE[pool.attributes.kind];
   const { data: eggName } = useItemName(isIncubator ? pool.id : "");
   const firstNpcId = pool.attributes.npcIds[0];
   const iconUrl =
-    isIncubator && activeTenant
+    iconSource === "item" && activeTenant
       ? getAssetIconUrl(
           activeTenant.id,
           activeTenant.attributes.region,
@@ -32,7 +28,7 @@ export function PoolNameCell({ pool }: { pool: RewardPoolData }) {
           "item",
           parseInt(pool.id),
         )
-      : !isIncubator && activeTenant && firstNpcId !== undefined
+      : iconSource === "npc" && activeTenant && firstNpcId !== undefined
         ? getAssetIconUrl(
             activeTenant.id,
             activeTenant.attributes.region,

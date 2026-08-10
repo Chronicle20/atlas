@@ -13,6 +13,7 @@ import (
 	"atlas-cashshop/kafka/consumer/character"
 	itemConsumer "atlas-cashshop/kafka/consumer/item"
 	walletConsumer "atlas-cashshop/kafka/consumer/wallet"
+	"atlas-cashshop/surprise/opening"
 	"atlas-cashshop/wallet"
 	"atlas-cashshop/wishlist"
 	"context"
@@ -58,7 +59,7 @@ func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, coupon.Migration, batch.Migration, redemption.Migration, outboxlib.Migration, database.IdempotencyMigration))
+	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, opening.Migration, coupon.Migration, batch.Migration, redemption.Migration, outboxlib.Migration, database.IdempotencyMigration))
 
 	// ACCEPT/RELEASE claim an idempotency key so an at-least-once redelivery
 	// cannot duplicate or double-release a cash asset (task-208).

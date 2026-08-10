@@ -78,6 +78,9 @@ func createOrUpdate[A any](l logrus.FieldLogger, ctx context.Context) func(metho
 			if statusCode == http.StatusNotFound {
 				return result, ErrNotFound
 			}
+			if statusCode == http.StatusConflict {
+				return result, ErrConflict
+			}
 			if statusCode != http.StatusOK && statusCode != http.StatusCreated && statusCode != http.StatusAccepted && statusCode != http.StatusNoContent {
 				l.Debugf("Unable to successfully call [%s] on [%s], returned status code [%d].", method, url, statusCode)
 				return result, errors.New("unknown error")

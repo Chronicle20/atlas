@@ -1,7 +1,15 @@
 // Package character carries the EVENT_TOPIC_CHARACTER_STATUS envelopes this
-// service consumes to tear a character out of its trade room. Mirrors
-// services/atlas-mini-games/atlas.com/mini-games/kafka/message/character/kafka.go;
-// struct names, field names and json tags must match that file exactly.
+// service consumes to tear a character out of its trade room. Mirrors the
+// PRODUCERS of those events:
+//
+//   - LOGIN / LOGOUT — services/atlas-character/atlas.com/character/kafka/message/character/kafka.go
+//   - MAP_CHANGED / CHANNEL_CHANGED — services/atlas-maps/atlas.com/maps/kafka/message/character/kafka.go
+//     (emitted by services/atlas-maps/atlas.com/maps/kafka/producer/character.go;
+//     atlas-character declares neither type)
+//
+// Struct names, field names and json tags must match those files exactly. Only
+// the events this service reacts to are carried over; CREATED and DELETED are
+// omitted.
 package character
 
 import (
@@ -40,13 +48,21 @@ type StatusEventLogoutBody struct {
 	Instance  uuid.UUID  `json:"instance"`
 }
 
+// StatusEventMapChangedBody carries the full atlas-maps MAP_CHANGED body,
+// including the UseTargetPosition/TargetX/TargetY triple that
+// MapChangedStatusProvider populates. atlas-trades only needs the map
+// transition itself, but a narrowed copy is the drift class these mirrors
+// exist to prevent.
 type StatusEventMapChangedBody struct {
-	ChannelId      channel.Id `json:"channelId"`
-	OldMapId       _map.Id    `json:"oldMapId"`
-	OldInstance    uuid.UUID  `json:"oldInstance"`
-	TargetMapId    _map.Id    `json:"targetMapId"`
-	TargetInstance uuid.UUID  `json:"targetInstance"`
-	TargetPortalId uint32     `json:"targetPortalId"`
+	ChannelId         channel.Id `json:"channelId"`
+	OldMapId          _map.Id    `json:"oldMapId"`
+	OldInstance       uuid.UUID  `json:"oldInstance"`
+	TargetMapId       _map.Id    `json:"targetMapId"`
+	TargetInstance    uuid.UUID  `json:"targetInstance"`
+	TargetPortalId    uint32     `json:"targetPortalId"`
+	UseTargetPosition bool       `json:"useTargetPosition"`
+	TargetX           int16      `json:"targetX"`
+	TargetY           int16      `json:"targetY"`
 }
 
 type ChangeChannelEventLoginBody struct {

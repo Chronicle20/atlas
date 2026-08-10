@@ -1,10 +1,10 @@
 {
-  "toolSha": "023326bc91a4b62b8665adc75ee3b95273dd801531c4407a2b352106ad33d872",
+  "toolSha": "34d2910f1875ffcf55a226a8f9e63484bf352351395b77f86c5e7aa5d9ea0589",
   "exportHashes": {
     "gms_v48": "414865a74e4c7480d12a82d94114438a90b21c3b7fcb69e007baa4e00caca2d2",
     "gms_v61": "e5175ce83d43a32fc545996e11d501ddca9412daefb935dfa9d6f84333ae8bdc",
     "gms_v72": "cf0f3f6eb904b1de95aeae6582f02b1f13e1f80acbded50f13dc3dbe44e538f6",
-    "gms_v79": "b0f09a1285c87886953c43c7b782ff86f5f1a947f9b93bfbd9c014e90c6f0160",
+    "gms_v79": "f0075f14f41f704ecb53afd9c4c19b663d54672acebf640086911acb2efaea80",
     "gms_v83": "284d540d55e2b222bb8c0c8a276c9316310bca01476e51e4001c4212711bfe21",
     "gms_v84": "90ce75b413b4b1d9a267b6edb51dc0ebdf2f3233d4f2e1273d46fc1f64bb7b12",
     "gms_v87": "cd16c845609b9703e0212a41f454319a59911add26d8c8285339060c4eae91db",
@@ -7430,8 +7430,7 @@
           "opcode": 52
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 51
         },
         "gms_v83": {
@@ -27933,8 +27932,7 @@
           "opcode": 177
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 181
         },
         "gms_v83": {

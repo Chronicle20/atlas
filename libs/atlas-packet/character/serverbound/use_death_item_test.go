@@ -17,8 +17,9 @@ import (
 // IDA gms_v95 CUserLocal::RequestUpgradeTombEffect@0x908320 (op 58 = 0x03A).
 //
 // packet-audit:verify packet=character/serverbound/UseDeathItem version=gms_v72 ida=0x867654
+// packet-audit:verify packet=character/serverbound/UseDeathItem version=gms_v79 ida=0x8b2ff0
 //
-// The remaining seven versions (v79/v83/v84/v87/v92/v95/jms_v185) carry the
+// The remaining six versions (v83/v84/v87/v92/v95/jms_v185) carry the
 // identical wire layout per the IDA addresses in the doc comment above, but
 // their packet-audit:verify markers are deliberately deferred to their own
 // verification batches (task-210) — an unlinked marker with no evidence

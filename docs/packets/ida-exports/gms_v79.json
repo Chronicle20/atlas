@@ -11136,6 +11136,24 @@
         }
       ]
     },
+    "CUserLocal::RequestUpgradeTombEffect": {
+      "address": "0x8b2ff0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": ""
+        },
+        {
+          "op": "Encode4",
+          "comment": ""
+        },
+        {
+          "op": "Encode4",
+          "comment": ""
+        }
+      ]
+    },
     "CUserLocal::SendBanMapByMobRequest": {
       "address": "0x8b4eac",
       "direction": "serverbound",
@@ -12179,7 +12197,8 @@
     },
     "CUserRemote::OnShowUpgradeTombEffect": {
       "address": "0x8d9fe6",
-      "direction": "",
+      "direction": "clientbound",
+      "dispatcher": "per-user-remote",
       "calls": [
         {
           "op": "Decode4",

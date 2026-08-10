@@ -500,6 +500,12 @@ func TestRedeemSuccessGrantsAndEmits(t *testing.T) {
 	if len(e.Body.AssetIds) != 1 {
 		t.Errorf("assetIds = %v, want one", e.Body.AssetIds)
 	}
+	// The INVERSE of TestRedeemPrepaidOnlyCouponStillSucceeds' nil-check: when
+	// assets ARE granted, the locker they live in must be named. Without this,
+	// a regression that always returned uuid.Nil would pass the whole suite.
+	if e.Body.CompartmentId == uuid.Nil {
+		t.Error("compartmentId = the nil UUID alongside a granted asset; the consumer cannot locate the item")
+	}
 	if n := events.count(); n != 0 {
 		t.Errorf("direct-path messages = %d, want 0; the success event belongs to the outbox", n)
 	}

@@ -7,13 +7,22 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // toItemEntity maps the immutable model onto its row, stamping the tenant quad
 // so the row can rebuild its own tenant during startup reconciliation.
+//
+// The snapshot is EXPLODED into name-keyed columns rather than stored as a JSON
+// blob, matching atlas-mts's holdings table: a binary COPY/restore is then
+// column-order safe, and a stat is queryable when a stuck row has to be
+// diagnosed by hand.
 func toItemEntity(t tenant.Model, m ItemModel) ItemEntity {
+	s := m.Snapshot()
 	return ItemEntity{
 		Id:                  m.Id(),
 		TenantId:            t.Id(),
@@ -24,33 +33,40 @@ func toItemEntity(t tenant.Model, m ItemModel) ItemEntity {
 		OwnerId:             m.OwnerId(),
 		TradeSlot:           m.TradeSlot(),
 		SourceInventoryType: m.SourceInventoryType(),
-		SourceSlot:          m.SourceSlot(),
+		SourceSlot:          slot.Position(s.Slot),
 		AssetId:             m.AssetId(),
-		TemplateId:          m.TemplateId(),
-		Quantity:            m.Quantity(),
-		Strength:            m.Strength(),
-		Dexterity:           m.Dexterity(),
-		Intelligence:        m.Intelligence(),
-		Luck:                m.Luck(),
-		HP:                  m.HP(),
-		MP:                  m.MP(),
-		WeaponAttack:        m.WeaponAttack(),
-		MagicAttack:         m.MagicAttack(),
-		WeaponDefense:       m.WeaponDefense(),
-		MagicDefense:        m.MagicDefense(),
-		Accuracy:            m.Accuracy(),
-		Avoidability:        m.Avoidability(),
-		Hands:               m.Hands(),
-		Speed:               m.Speed(),
-		Jump:                m.Jump(),
-		Slots:               m.Slots(),
-		Level:               m.Level(),
-		ItemLevel:           m.ItemLevel(),
-		ItemExp:             m.ItemExp(),
-		RingId:              m.RingId(),
-		ViciousCount:        m.ViciousCount(),
-		Flags:               m.Flags(),
-		Owner:               m.Owner(),
+		TemplateId:          item.Id(s.TemplateId),
+		Quantity:            asset.Quantity(s.Quantity),
+		Expiration:          s.Expiration,
+		CashId:              s.CashId,
+		Rechargeable:        s.Rechargeable,
+		Strength:            s.Strength,
+		Dexterity:           s.Dexterity,
+		Intelligence:        s.Intelligence,
+		Luck:                s.Luck,
+		HP:                  s.Hp,
+		MP:                  s.Mp,
+		WeaponAttack:        s.WeaponAttack,
+		MagicAttack:         s.MagicAttack,
+		WeaponDefense:       s.WeaponDefense,
+		MagicDefense:        s.MagicDefense,
+		Accuracy:            s.Accuracy,
+		Avoidability:        s.Avoidability,
+		Hands:               s.Hands,
+		Speed:               s.Speed,
+		Jump:                s.Jump,
+		Slots:               s.Slots,
+		LevelType:           s.LevelType,
+		Level:               s.Level,
+		Experience:          s.Experience,
+		HammersApplied:      s.HammersApplied,
+		Flags:               s.Flag,
+		Owner:               s.Owner,
+		PetId:               s.PetId,
+		PetName:             s.PetName,
+		PetLevel:            s.PetLevel,
+		Closeness:           s.Closeness,
+		Fullness:            s.Fullness,
 	}
 }
 

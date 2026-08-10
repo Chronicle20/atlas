@@ -10,6 +10,7 @@ import (
 	tradeCustody "atlas-saga-orchestrator/kafka/message/trade/custody"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -17,40 +18,20 @@ import (
 // atlas-trades' custody consumer. It mirrors AcceptToTradeCommandBody rather
 // than reusing it so the saga layer never depends on the wire struct directly —
 // the same separation mts.AcceptToMtsListingParams keeps.
+//
+// Snapshot is the shared AssetSnapshot rather than a per-stat list, because the
+// asset it describes no longer exists anywhere: the release_from_character that
+// precedes this command has already deleted it. A field this struct forgets is a
+// field the item permanently loses.
 type AcceptToTradeParams struct {
 	EscrowId            uuid.UUID
 	RoomId              uuid.UUID
 	OwnerId             uint32
 	TradeSlot           byte
 	SourceInventoryType byte
-	SourceSlot          int16
 	AssetId             uint32
 
-	TemplateId    uint32
-	Quantity      uint32
-	Strength      uint16
-	Dexterity     uint16
-	Intelligence  uint16
-	Luck          uint16
-	HP            uint16
-	MP            uint16
-	WeaponAttack  uint16
-	MagicAttack   uint16
-	WeaponDefense uint16
-	MagicDefense  uint16
-	Accuracy      uint16
-	Avoidability  uint16
-	Hands         uint16
-	Speed         uint16
-	Jump          uint16
-	Slots         uint16
-	Level         byte
-	ItemLevel     byte
-	ItemExp       uint32
-	RingId        uint32
-	ViciousCount  uint32
-	Flags         uint16
-	Owner         string
+	Snapshot sharedsaga.AssetSnapshot
 }
 
 // Processor dispatches the atomic trade-escrow custody commands to atlas-trades

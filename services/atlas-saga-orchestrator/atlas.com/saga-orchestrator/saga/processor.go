@@ -1498,36 +1498,17 @@ func (p *ProcessorImpl) expandTransferToTrade(st Step[any]) ([]Step[any], error)
 				OwnerId:             payload.CharacterId,
 				TradeSlot:           payload.TradeSlot,
 				SourceInventoryType: payload.SourceInventoryType,
-				SourceSlot:          payload.SourceSlot,
 				AssetId:             payload.AssetId,
 
-				// Item snapshot captured from inventory. Quantity is the STAGED
-				// amount from the composite, never the compartment stack's — a
-				// partial stage of 1-of-40 must escrow 1.
-				TemplateId:    foundAsset.TemplateId,
-				Quantity:      payload.Quantity,
-				Strength:      foundAsset.Strength,
-				Dexterity:     foundAsset.Dexterity,
-				Intelligence:  foundAsset.Intelligence,
-				Luck:          foundAsset.Luck,
-				HP:            foundAsset.Hp,
-				MP:            foundAsset.Mp,
-				WeaponAttack:  foundAsset.WeaponAttack,
-				MagicAttack:   foundAsset.MagicAttack,
-				WeaponDefense: foundAsset.WeaponDefense,
-				MagicDefense:  foundAsset.MagicDefense,
-				Accuracy:      foundAsset.Accuracy,
-				Avoidability:  foundAsset.Avoidability,
-				Hands:         foundAsset.Hands,
-				Speed:         foundAsset.Speed,
-				Jump:          foundAsset.Jump,
-				Slots:         foundAsset.Slots,
-				Level:         foundAsset.Level,
-				ItemLevel:     foundAsset.LevelType,
-				ItemExp:       foundAsset.Experience,
-				ViciousCount:  foundAsset.HammersApplied,
-				Flags:         foundAsset.Flag,
-				Owner:         foundAsset.Owner,
+				// Snapshot taken HERE and carried from here on. This is the last
+				// point at which the asset can be read at all: the
+				// release_from_character above deletes it, and it is then in
+				// nobody's compartment until the trade settles or unwinds.
+				//
+				// Quantity is overridden with the STAGED amount from the
+				// composite, never the compartment stack's — a partial stage of
+				// 1-of-40 must escrow 1.
+				Snapshot: assetSnapshotFromCompartmentAsset(foundAsset, payload.Quantity),
 			},
 		),
 	}
@@ -1601,8 +1582,8 @@ func (p *ProcessorImpl) expandTradeSettlement(st Step[any]) ([]Step[any], error)
 					TransactionId: payload.TransactionId,
 					CharacterId:   uint32(recipient),
 					InventoryType: byte(it.InventoryType),
-					TemplateId:    uint32(it.TemplateId),
-					AssetData:     assetDataFromEscrowItem(it),
+					TemplateId:    it.Snapshot.TemplateId,
+					AssetData:     assetDataFromSnapshot(it.Snapshot),
 				},
 			))
 		}
@@ -1678,8 +1659,8 @@ func (p *ProcessorImpl) expandTradeUnwind(st Step[any]) ([]Step[any], error) {
 				TransactionId: payload.TransactionId,
 				CharacterId:   uint32(ui.OwnerId),
 				InventoryType: byte(ui.Item.InventoryType),
-				TemplateId:    uint32(ui.Item.TemplateId),
-				AssetData:     assetDataFromEscrowItem(ui.Item),
+				TemplateId:    ui.Item.Snapshot.TemplateId,
+				AssetData:     assetDataFromSnapshot(ui.Item.Snapshot),
 			},
 		))
 	}
@@ -1706,36 +1687,48 @@ func (p *ProcessorImpl) expandTradeUnwind(st Step[any]) ([]Step[any], error) {
 	return steps, nil
 }
 
-// assetDataFromEscrowItem rebuilds an inventory AssetData from the snapshot an
-// escrowed item carries, so a delivery or a refund restores scrolled stats, cash
-// ownership and expiry rather than a bare template (FR-10.3).
+// assetDataFromSnapshot rebuilds an inventory AssetData from an escrow snapshot,
+// so a delivery, a refund or a staging rollback restores the asset rather than a
+// bare template (FR-10.3).
 //
-// Quantity comes from the escrowed item, which is the STAGED quantity — a
-// partial stage of 1 out of 200 escrowed 1, and must deliver 1.
-func assetDataFromEscrowItem(it TradeEscrowItem) asset2.AssetData {
+// Expiration, CashId, Rechargeable and PetId are as load-bearing as the equip
+// stats: a cash item without its serial is a different item to the client, a pet
+// without its id is an empty shell, and a timed item without its expiry becomes
+// permanent. The bespoke stat list this replaced carried none of the four, and
+// cash items and pets are stageable (atlas-trades trade/restriction.go), so the
+// loss was reachable by any player.
+//
+// Quantity comes from the snapshot, which holds the STAGED quantity — a partial
+// stage of 1 out of 200 escrowed 1, and must deliver 1.
+func assetDataFromSnapshot(s AssetSnapshot) asset2.AssetData {
 	return asset2.AssetData{
-		Quantity:      uint32(it.Quantity),
-		Strength:      it.Strength,
-		Dexterity:     it.Dexterity,
-		Intelligence:  it.Intelligence,
-		Luck:          it.Luck,
-		Hp:            it.HP,
-		Mp:            it.MP,
-		WeaponAttack:  it.WeaponAttack,
-		MagicAttack:   it.MagicAttack,
-		WeaponDefense: it.WeaponDefense,
-		MagicDefense:  it.MagicDefense,
-		Accuracy:      it.Accuracy,
-		Avoidability:  it.Avoidability,
-		Hands:         it.Hands,
-		Speed:         it.Speed,
-		Jump:          it.Jump,
-		Slots:         it.Slots,
-		LevelType:     it.ItemLevel,
-		Level:         it.Level,
-		Experience:    it.ItemExp,
-		Flag:          it.Flags,
-		Owner:         it.Owner,
+		Expiration:     s.Expiration,
+		Quantity:       s.Quantity,
+		Owner:          s.Owner,
+		Flag:           s.Flag,
+		Rechargeable:   s.Rechargeable,
+		Strength:       s.Strength,
+		Dexterity:      s.Dexterity,
+		Intelligence:   s.Intelligence,
+		Luck:           s.Luck,
+		Hp:             s.Hp,
+		Mp:             s.Mp,
+		WeaponAttack:   s.WeaponAttack,
+		MagicAttack:    s.MagicAttack,
+		WeaponDefense:  s.WeaponDefense,
+		MagicDefense:   s.MagicDefense,
+		Accuracy:       s.Accuracy,
+		Avoidability:   s.Avoidability,
+		Hands:          s.Hands,
+		Speed:          s.Speed,
+		Jump:           s.Jump,
+		Slots:          s.Slots,
+		LevelType:      s.LevelType,
+		Level:          s.Level,
+		Experience:     s.Experience,
+		HammersApplied: s.HammersApplied,
+		CashId:         s.CashId,
+		PetId:          s.PetId,
 	}
 }
 
@@ -2156,6 +2149,54 @@ func (p *ProcessorImpl) expandMtsSettlePurchase(st Step[any]) ([]Step[any], erro
 	}
 
 	return steps, nil
+}
+
+// assetSnapshotFromCompartmentAsset flattens a compartment asset into the shared
+// AssetSnapshot, overriding the stack quantity with the amount actually being
+// moved (a partial stage escrows fewer than the compartment row holds).
+//
+// It exists because escrow-at-staging deletes the compartment row: after this
+// point there is nothing left to read, so every downstream consumer — the escrow
+// table, the settlement re-grant, the unwind refund, the staging compensator and
+// atlas-channel's trade frame — is served from this one snapshot.
+//
+// The pet block is deliberately limited to PetId. compartment.AssetRestModel
+// mirrors atlas-inventory's asset resource, which carries the pet's id but not
+// its name, level, closeness or fullness — those live in atlas-pets and are
+// joined in by whoever renders the pet. Fabricating them here would be inventing
+// state, so they stay zero and the pet is identified by its id.
+func assetSnapshotFromCompartmentAsset(a *compartment.AssetRestModel, quantity uint32) AssetSnapshot {
+	return AssetSnapshot{
+		Slot:           a.Slot,
+		TemplateId:     a.TemplateId,
+		Expiration:     a.Expiration,
+		CashId:         a.CashId,
+		Quantity:       quantity,
+		Flag:           a.Flag,
+		Owner:          a.Owner,
+		Rechargeable:   a.Rechargeable,
+		Strength:       a.Strength,
+		Dexterity:      a.Dexterity,
+		Intelligence:   a.Intelligence,
+		Luck:           a.Luck,
+		Hp:             a.Hp,
+		Mp:             a.Mp,
+		WeaponAttack:   a.WeaponAttack,
+		MagicAttack:    a.MagicAttack,
+		WeaponDefense:  a.WeaponDefense,
+		MagicDefense:   a.MagicDefense,
+		Accuracy:       a.Accuracy,
+		Avoidability:   a.Avoidability,
+		Hands:          a.Hands,
+		Speed:          a.Speed,
+		Jump:           a.Jump,
+		Slots:          a.Slots,
+		LevelType:      a.LevelType,
+		Level:          a.Level,
+		Experience:     a.Experience,
+		HammersApplied: a.HammersApplied,
+		PetId:          a.PetId,
+	}
 }
 
 // assetDataFromCompartmentAsset converts a compartment AssetRestModel to an AssetData struct

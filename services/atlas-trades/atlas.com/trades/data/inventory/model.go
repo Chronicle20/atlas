@@ -4,10 +4,14 @@
 // flagged untradeable?
 //
 // The asset projection is deliberately narrow — id, slot, templateId, quantity
-// and flag. Equipment statistics are irrelevant to staging: the settlement saga
-// looks the asset up again by slot at expansion time
-// (libs/atlas-saga/payloads.go TradeSettlementItem), so nothing downstream
-// depends on a stat snapshot taken here.
+// and flag. That is everything the stage DECISION needs: which asset is here,
+// how many of it, and is it flagged untradeable.
+//
+// It carries no stat snapshot on purpose. The snapshot that follows the item
+// through escrow is taken by the saga orchestrator during expansion of
+// transfer_to_trade, at the last moment before release_from_character deletes
+// the asset (see assetSnapshotFromCompartmentAsset). Taking a second one here
+// would create a second source of truth that could disagree with it.
 package inventory
 
 import (

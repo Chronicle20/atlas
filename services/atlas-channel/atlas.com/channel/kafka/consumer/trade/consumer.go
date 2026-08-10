@@ -6,7 +6,6 @@ package trade
 
 import (
 	"atlas-channel/character"
-	"atlas-channel/compartment"
 	consumer2 "atlas-channel/kafka/consumer"
 	trade2 "atlas-channel/kafka/message/trade"
 	"atlas-channel/listener"
@@ -16,7 +15,6 @@ import (
 	"atlas-channel/socket/writer"
 	tradeproc "atlas-channel/trade"
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/segmentio/kafka-go"
@@ -32,7 +30,6 @@ import (
 	atlaspacket "github.com/Chronicle20/atlas/libs/atlas-packet"
 	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
-	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -253,35 +250,6 @@ func announceToRoom[E any](l logrus.FieldLogger, ctx context.Context, sc server.
 	}
 }
 
-// tradeStagedAssetResolver is the seam that reads the staged asset back so it
-// can be encoded into the PUT_ITEM frame. Design §5 chose the RESERVE model
-// over escrow-at-staging, so a staged asset is still in the stager's own
-// compartment and is read from there; the staged QUANTITY comes from the event,
-// because a partial stack leaves the compartment row's own quantity untouched.
-// Package-level var so tests can supply an asset without a REST round trip.
-var tradeStagedAssetResolver = func(l logrus.FieldLogger, ctx context.Context, stagerId charconst.Id, b trade2.ItemStagedEventBody) (packetmodel.Asset, error) {
-	c, err := compartment.NewProcessor(l, ctx).GetByType(uint32(stagerId), b.InventoryType)
-	if err != nil {
-		return packetmodel.Asset{}, err
-	}
-	a, ok := c.FindById(uint32(b.AssetId))
-	if !ok {
-		return packetmodel.Asset{}, errAssetNotFound
-	}
-	// zeroPosition: the trade frame writes a bare GW_ItemSlotBase with no
-	// leading inventory position (InteractionTradePutItem.Encode), the same
-	// shape the shop and MTS views encode.
-	pa := socketmodel.NewAsset(true, *a)
-	if !a.IsEquipment() {
-		pa = pa.SetStackableInfo(uint32(b.Quantity), a.Flag(), a.Rechargeable())
-	}
-	return pa, nil
-}
-
-// errAssetNotFound reports a staged asset that is no longer in the stager's
-// compartment by the time the status event is handled.
-var errAssetNotFound = errors.New("staged asset not present in the stager's compartment")
-
 // tradeCancelRequester is the seam that asks atlas-trades to tear a room down.
 // CANCEL is the only teardown verb in the trade command contract, it is
 // idempotent (TeardownCharacter is a no-op for a character with no room —
@@ -300,9 +268,14 @@ var tradeCancelRequester = func(l logrus.FieldLogger, ctx context.Context, f fie
 // compares each client's confirm list to ITS OWN attest list
 // (settlement.go entriesMatch), never to the server's staged list, so a frame
 // that never reached either client cannot be caught at settle: the item is
-// staged, reserved and transferred while neither player ever saw it. A REST
-// hiccup reading the staged asset back, or resolving a participant's avatar,
-// must therefore not degrade to "settle anyway" — it must stop the trade.
+// escrowed and transferred while neither player ever saw it. A REST hiccup
+// resolving a participant's avatar must therefore not degrade to "settle
+// anyway" — it must stop the trade.
+//
+// Its remaining callers are all avatar resolution: the room-created and
+// participant-entered enter-result frames. The staged-item frame no longer needs
+// it, because the item block now travels on the event instead of being read back
+// (see handleItemStagedEvent) and there is nothing left there that can fail.
 //
 // Cancelling is safe for the participant who has no dialog open yet (the
 // room-created / participant-entered failures): CMiniRoomBaseDlg::OnPacketBase
@@ -441,8 +414,24 @@ func handleInviteRejectedEvent(sc server.Model, wp writer.Producer) func(l logru
 }
 
 // handleItemStagedEvent announces one staged item to BOTH occupants, each with
-// its own recipient-relative side byte. The asset is read back once per event
+// its own recipient-relative side byte. The item block is built once per event
 // and reused for both frames.
+//
+// It renders the snapshot the event carries and performs NO lookup. Under
+// escrow-at-staging the asset has already left its owner's compartment for
+// atlas-trades' escrow row by the time this fires, so it is in nobody's
+// compartment: the read-back this handler used to do could only ever miss, and
+// the miss cancelled the trade on the first staged item. Rendering from the
+// snapshot removes a REST round trip AND the abortOnDisplayFailure branch that
+// hung off it — there is no longer a failure mode here that can leave the item
+// invisible to one client, because the frame is built from data that arrived
+// with the event.
+//
+// zeroPosition (inside NewAssetFromSnapshot) is what makes this a bare
+// GW_ItemSlotBase with no leading inventory position, the shape
+// InteractionTradePutItem.Encode expects and the same one the shop and MTS views
+// use. Snapshot.Quantity is the STAGED amount, so a partial stack renders the
+// staged count rather than the source stack's.
 func handleItemStagedEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, e trade2.StatusEvent[trade2.ItemStagedEventBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, e trade2.StatusEvent[trade2.ItemStagedEventBody]) {
 		if e.Type != trade2.StatusTypeItemStaged {
@@ -451,16 +440,8 @@ func handleItemStagedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 		if !guard(sc, ctx, e) {
 			return
 		}
-		l.Debugf("Character [%d] staged item [%d] in trade room [%s]. position [%d], tradeSlot [%d].", e.CharacterId, e.Body.TemplateId, e.RoomId, e.Body.Position, e.Body.TradeSlot)
-		a, err := tradeStagedAssetResolver(l, ctx, e.CharacterId, e.Body)
-		if err != nil {
-			// Neither dialog shows the item, yet atlas-trades has it staged and
-			// reserved and settle will transfer it. errAssetNotFound is caught
-			// again at settle by stagedAssetsIntact; a TRANSIENT compartment
-			// failure is not, so both branches abort here.
-			abortOnDisplayFailure(l, ctx, e, e.CharacterId, err, fmt.Sprintf("staged asset [%d] for character [%d]", e.Body.AssetId, e.CharacterId))
-			return
-		}
+		l.Debugf("Character [%d] staged item [%d] in trade room [%s]. position [%d], tradeSlot [%d].", e.CharacterId, e.Body.Snapshot.TemplateId, e.RoomId, e.Body.Position, e.Body.TradeSlot)
+		a := socketmodel.NewAssetFromSnapshot(e.Body.Snapshot)
 		for _, id := range roomOccupants(e) {
 			side := sideFor(e.Body.Position, positionOf(e, id))
 			announceTo(l, ctx, sc, wp, id, interactioncb.CharacterInteractionTradePutItemBody(side, e.Body.TradeSlot, a))

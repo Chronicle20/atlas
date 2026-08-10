@@ -4,13 +4,13 @@ import (
 	"math"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 // trade_expansion_test.go — the escrow-at-staging expansion of trade_settlement
@@ -24,22 +24,36 @@ import (
 // which escrow makes impossible. They were deleted rather than ported; there is
 // nothing left for them to assert.
 
-// escrowItem builds one escrowed-item payload entry with a non-zero stat block,
-// so a snapshot that dropped fields shows up.
+// escrowItem builds one escrowed-item payload entry whose snapshot is non-zero
+// in every field group — equip stats, cash, expiry and pet — so a re-grant that
+// dropped any of them shows up. The cash/expiry/pet groups are the ones the
+// bespoke stat list this replaced never carried at all.
 func escrowItem(escrowId uuid.UUID, assetId uint32, templateId uint32, quantity uint32, inventoryType int8) TradeEscrowItem {
 	return TradeEscrowItem{
 		EscrowId:      escrowId,
 		InventoryType: inventory.Type(inventoryType),
-		SourceSlot:    3,
 		AssetId:       asset.Id(assetId),
-		TemplateId:    item.Id(templateId),
-		Quantity:      asset.Quantity(quantity),
-		WeaponAttack:  17,
-		Slots:         7,
-		Flags:         2,
-		Owner:         "Chronicle",
+		Snapshot: AssetSnapshot{
+			Slot:           3,
+			TemplateId:     templateId,
+			Quantity:       quantity,
+			Expiration:     escrowItemExpiration,
+			CashId:         4815162342,
+			Rechargeable:   200,
+			WeaponAttack:   17,
+			Slots:          7,
+			Flag:           2,
+			Owner:          "Chronicle",
+			LevelType:      1,
+			Level:          4,
+			Experience:     1234,
+			HammersApplied: 2,
+			PetId:          909,
+		},
 	}
 }
+
+var escrowItemExpiration = time.Date(2031, 4, 5, 6, 7, 8, 0, time.UTC)
 
 // tradeSettlementFixture is the canonical two-sided settlement: each side stages
 // one item, side 0 also stages meso.

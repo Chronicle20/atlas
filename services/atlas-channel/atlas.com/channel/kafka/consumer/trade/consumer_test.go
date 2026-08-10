@@ -4,11 +4,12 @@ import (
 	trade2 "atlas-channel/kafka/message/trade"
 	"atlas-channel/server"
 	"atlas-channel/socket/writer"
+	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -21,6 +22,7 @@ import (
 	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -224,19 +226,18 @@ func itemStagedEvent(o ownerId, v visitorId, p position) eventDispatch {
 		stager = charconst.Id(v)
 	}
 	e := baseEvent(o, v, stager, trade2.StatusTypeItemStaged, trade2.ItemStagedEventBody{
-		Position:   byte(p),
-		TradeSlot:  testTradeSlot,
-		AssetId:    1,
-		TemplateId: 2000000,
-		Quantity:   50,
+		Position:  byte(p),
+		TradeSlot: testTradeSlot,
+		AssetId:   1,
+		Snapshot:  sharedsaga.AssetSnapshot{TemplateId: 2000000, Quantity: 50},
 	})
+	// No resolver stub. The handler renders the event's own snapshot, and that
+	// is the point: the stub this replaced faked a successful compartment
+	// read-back, so it kept passing while the real read-back — against a
+	// compartment the item had already left — missed every time and cancelled
+	// the trade.
 	return func(sc server.Model) func(logrus.FieldLogger, context.Context) {
 		return func(l logrus.FieldLogger, ctx context.Context) {
-			orig := tradeStagedAssetResolver
-			tradeStagedAssetResolver = func(_ logrus.FieldLogger, _ context.Context, _ charconst.Id, b trade2.ItemStagedEventBody) (packetmodel.Asset, error) {
-				return packetmodel.NewAsset(true, 0, uint32(b.TemplateId), time.Time{}).SetStackableInfo(uint32(b.Quantity), 0, 0), nil
-			}
-			defer func() { tradeStagedAssetResolver = orig }()
 			handleItemStagedEvent(sc, nil)(l, ctx, e)
 		}
 	}
@@ -803,27 +804,23 @@ func TestErrorEventStillSendsTheKeysJmsDoesBind(t *testing.T) {
 
 // --- FIX 2 / FIX 4: a display failure must not leave the room live ------------
 
-// errDisplay is the transient REST failure the resolver seams raise.
+// errDisplay is the transient REST failure the visitor resolver seam raises —
+// the only display lookup left in this consumer now that the staged item's frame
+// is built from the event's own snapshot.
 var errDisplay = errors.New("compartment service unavailable")
 
-// failingItemStagedEvent is itemStagedEvent with the staged-asset read failing
-// TRANSIENTLY (not errAssetNotFound), which is the branch settle's
-// stagedAssetsIntact does NOT catch.
-func failingItemStagedEvent(o ownerId, v visitorId) eventDispatch {
+// snapshotStagedEvent stages one item described entirely by the snapshot the
+// event carries — the only source the handler has, since the asset has already
+// left its owner's compartment for escrow.
+func snapshotStagedEvent(o ownerId, v visitorId, s sharedsaga.AssetSnapshot) eventDispatch {
 	e := baseEvent(o, v, charconst.Id(o), trade2.StatusTypeItemStaged, trade2.ItemStagedEventBody{
-		Position:   ownerPosition,
-		TradeSlot:  testTradeSlot,
-		AssetId:    1,
-		TemplateId: 2000000,
-		Quantity:   50,
+		Position:  ownerPosition,
+		TradeSlot: testTradeSlot,
+		AssetId:   1,
+		Snapshot:  s,
 	})
 	return func(sc server.Model) func(logrus.FieldLogger, context.Context) {
 		return func(l logrus.FieldLogger, ctx context.Context) {
-			orig := tradeStagedAssetResolver
-			tradeStagedAssetResolver = func(logrus.FieldLogger, context.Context, charconst.Id, trade2.ItemStagedEventBody) (packetmodel.Asset, error) {
-				return packetmodel.Asset{}, errDisplay
-			}
-			defer func() { tradeStagedAssetResolver = orig }()
 			handleItemStagedEvent(sc, nil)(l, ctx, e)
 		}
 	}
@@ -863,25 +860,90 @@ func failingParticipantEnteredEvent(o ownerId, v visitorId) eventDispatch {
 	})
 }
 
-// TestStagedItemDisplayFailureCancelsTheTrade pins the invisible-transfer hole.
-// atlas-trades has the item staged and RESERVED and settle will transfer it;
-// entriesMatch (atlas-trades trade/settlement.go) compares each client's
-// confirm list to its OWN attest list, never to the server's staged list, so
-// attestation cannot catch an item neither dialog ever showed. Logging and
-// returning would let both players confirm a trade whose visible contents omit
-// an item: the giver loses it, the receiver gains it, neither having seen it.
-func TestStagedItemDisplayFailureCancelsTheTrade(t *testing.T) {
-	announced := handleAndCapture(t, failingItemStagedEvent(ownerId(100), visitorId(200)))
-	if got := len(announced); got != 0 {
-		t.Errorf("frames sent: got %d, want 0 — the asset could not be encoded", got)
-	}
-	if len(cancelled) != 1 {
-		t.Fatalf("CANCEL commands: got %d, want 1 — a display failure must stop the trade, not settle it invisibly", len(cancelled))
-	}
-	if cancelled[0].characterId != 100 {
-		t.Errorf("CANCEL addressed character %d, want the stager 100", cancelled[0].characterId)
+// TestStagedItemNeverCancelsTheTrade is the inverse of the display-failure test
+// this replaced, and it is the regression guard for the escrow defect.
+//
+// Under escrow-at-staging the asset has already left its owner's compartment
+// when ITEM_STAGED fires, so the compartment read-back this handler used to
+// perform could ONLY miss. Every item-carrying trade therefore self-cancelled on
+// its first staged item. The frame is now built from the snapshot the event
+// carries: there is no lookup left, hence no failure branch, hence no cancel.
+//
+// It runs over the plain stackable, the cash item and the pet because the three
+// take different arms of the item encoder, and a snapshot that fed one arm
+// garbage would previously have shown up only as a mis-rendered dialog.
+func TestStagedItemNeverCancelsTheTrade(t *testing.T) {
+	for name, s := range map[string]sharedsaga.AssetSnapshot{
+		"stackable": {TemplateId: 2000000, Quantity: 50},
+		"cash item": {TemplateId: 5040000, Quantity: 1, CashId: stagedCashId},
+		"pet":       {TemplateId: 5000000, Quantity: 1, CashId: stagedCashId, PetId: 909, PetName: stagedPetName, PetLevel: 3, Closeness: 450, Fullness: 88},
+	} {
+		t.Run(name, func(t *testing.T) {
+			announced := handleAndCapture(t, snapshotStagedEvent(ownerId(100), visitorId(200), s))
+			if got := len(announced); got != 2 {
+				t.Errorf("frames sent: got %d, want one per occupant (2)", got)
+			}
+			if len(cancelled) != 0 {
+				t.Fatalf("CANCEL commands: got %d, want 0 — rendering a staged item cannot fail any more", len(cancelled))
+			}
+		})
 	}
 }
+
+// TestStagedCashItemAndPetKeepTheirIdentity pins the second half of the escrow
+// defect: the snapshot must reach the wire with its cash serial and pet state
+// intact.
+//
+// Cash items and pets are stageable — atlas-trades' checkRestrictions blocks
+// equipped items, the untradeable flags and the WZ tradeBlock, and nothing about
+// the cash inventory — so a carrier that dropped these fields degraded a real
+// player's item. The assertion is on the ENCODED BYTES rather than on a struct
+// field, because the point is that the value survives all the way into the frame
+// both clients read.
+func TestStagedCashItemAndPetKeepTheirIdentity(t *testing.T) {
+	cash := make([]byte, 8)
+	binary.LittleEndian.PutUint64(cash, uint64(stagedCashId))
+
+	t.Run("cash item keeps its serial", func(t *testing.T) {
+		announced := handleAndCapture(t, snapshotStagedEvent(ownerId(100), visitorId(200),
+			sharedsaga.AssetSnapshot{TemplateId: 5040000, Quantity: 1, CashId: stagedCashId}))
+		if len(announced) == 0 {
+			t.Fatal("no frames announced")
+		}
+		if !bytes.Contains(announced[0].bytes, cash) {
+			t.Errorf("the staged cash item's serial %d is not in the frame: % x", stagedCashId, announced[0].bytes)
+		}
+	})
+
+	t.Run("pet keeps its name and serial", func(t *testing.T) {
+		announced := handleAndCapture(t, snapshotStagedEvent(ownerId(100), visitorId(200),
+			sharedsaga.AssetSnapshot{
+				TemplateId: 5000000, Quantity: 1, CashId: stagedCashId,
+				PetId: 909, PetName: stagedPetName, PetLevel: 3, Closeness: 450, Fullness: 88,
+			}))
+		if len(announced) == 0 {
+			t.Fatal("no frames announced")
+		}
+		if !bytes.Contains(announced[0].bytes, []byte(stagedPetName)) {
+			t.Errorf("the staged pet's name %q is not in the frame: % x", stagedPetName, announced[0].bytes)
+		}
+		// A pet's wire serial is its PET id, not its cash id: the pet block writes
+		// PetSerialNumber, which falls back to petId when no explicit serial was
+		// set (packetmodel Asset.PetSerialNumber). The snapshot carries no pet
+		// serial, so petId is what identifies the pet to the client — losing it
+		// would render an unidentifiable pet.
+		petSerial := make([]byte, 8)
+		binary.LittleEndian.PutUint64(petSerial, 909)
+		if !bytes.Contains(announced[0].bytes, petSerial) {
+			t.Errorf("the staged pet's serial (petId 909) is not in the frame: % x", announced[0].bytes)
+		}
+	})
+}
+
+const (
+	stagedCashId  = int64(4815162342)
+	stagedPetName = "Fluffy"
+)
 
 // TestRoomCreatedDisplayFailureCancelsTheRoom pins the soft-lock. atlas-trades
 // has already seated the owner, so without a teardown they can neither create

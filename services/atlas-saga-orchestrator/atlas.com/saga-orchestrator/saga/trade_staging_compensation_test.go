@@ -25,6 +25,8 @@ const (
 	stagingTemplate  = uint32(1302000)
 	stagingQuantity  = uint32(1)
 	stagingWeaponAtk = uint16(17)
+	stagingCashId    = int64(4815162342)
+	stagingPetId     = uint32(909)
 )
 
 // stagingTradeMock records the trade-custody dispatches a staging rollback makes.
@@ -112,9 +114,12 @@ func stagingSaga(t *testing.T, transactionId, escrowId uuid.UUID, release, accep
 		}).
 		AddStep("accept_to_trade", accept, AcceptToTrade, AcceptToTradePayload{
 			TransactionId: transactionId, EscrowId: escrowId, RoomId: uuid.New(),
-			OwnerId: stagingCharId, TradeSlot: 1, SourceInventoryType: stagingInvType, SourceSlot: 3,
-			TemplateId: stagingTemplate, Quantity: stagingQuantity, WeaponAttack: stagingWeaponAtk,
-			Owner: "Chronicle",
+			OwnerId: stagingCharId, TradeSlot: 1, SourceInventoryType: stagingInvType,
+			Snapshot: AssetSnapshot{
+				Slot: 3, TemplateId: stagingTemplate, Quantity: stagingQuantity,
+				WeaponAttack: stagingWeaponAtk, Owner: "Chronicle",
+				CashId: stagingCashId, PetId: stagingPetId,
+			},
 		}).
 		Build()
 	require.NoError(t, err)
@@ -151,6 +156,11 @@ func TestStagingRollbackRegrantsWhenTheEscrowAcceptFails(t *testing.T) {
 	assert.Equal(t, stagingWeaponAtk, got.AssetData.WeaponAttack,
 		"the re-grant must carry the AcceptToTrade snapshot's stats, not a bare template")
 	assert.Equal(t, "Chronicle", got.AssetData.Owner)
+	// Cash serial and pet id ride the same snapshot. A rollback that dropped them
+	// would hand the player back a stripped item — indistinguishable from the
+	// destroy this test exists to prevent, from the player's point of view.
+	assert.Equal(t, stagingCashId, got.AssetData.CashId)
+	assert.Equal(t, stagingPetId, got.AssetData.PetId)
 
 	assert.Empty(t, h.tradeMock.removeCalls,
 		"the accept FAILED, so no escrow row exists to remove")

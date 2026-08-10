@@ -12,9 +12,9 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 const (
@@ -161,14 +161,22 @@ type InviteSentEventBody struct {
 // ItemStagedEventBody names the staging SIDE by position, not by character.
 // atlas-channel converts it to each recipient's own recipient-relative side
 // byte before writing the packet.
+//
+// Snapshot is the whole item block atlas-channel renders into the PUT_ITEM
+// frame, and it is carried rather than looked up because under escrow-at-staging
+// the asset is in NOBODY's compartment by the time this event fires — it left
+// its owner for the escrow row before the stage was ever confirmed. atlas-channel
+// used to read it back out of the stager's compartment; that lookup misses on
+// every staged item now, and the miss cancelled the trade.
+//
+// Snapshot.Quantity is the STAGED amount, not the source stack's: a partial
+// stage of 1-of-40 must render 1.
 type ItemStagedEventBody struct {
-	Position      byte           `json:"position"`
-	TradeSlot     byte           `json:"tradeSlot"`
-	InventoryType inventory.Type `json:"inventoryType"`
-	SourceSlot    slot.Position  `json:"sourceSlot"`
-	AssetId       asset.Id       `json:"assetId"`
-	TemplateId    item.Id        `json:"templateId"`
-	Quantity      asset.Quantity `json:"quantity"`
+	Position  byte     `json:"position"`
+	TradeSlot byte     `json:"tradeSlot"`
+	AssetId   asset.Id `json:"assetId"` // Identity for logs and diagnostics; not in the snapshot
+
+	Snapshot sharedsaga.AssetSnapshot `json:"snapshot"`
 }
 
 type MesoStagedEventBody struct {

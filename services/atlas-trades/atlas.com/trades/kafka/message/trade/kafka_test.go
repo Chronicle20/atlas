@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 // TestCommandEnvelopeJsonShape pins the wire contract atlas-channel mirrors.
@@ -58,8 +60,8 @@ func TestStatusEventEnvelopeJsonShape(t *testing.T) {
 		CharacterId:   100,
 		Type:          StatusTypeItemStaged,
 		Body: ItemStagedEventBody{
-			Position: 0, TradeSlot: 1, InventoryType: 2, SourceSlot: 4,
-			AssetId: 55, TemplateId: 2000000, Quantity: 5,
+			Position: 0, TradeSlot: 1, AssetId: 55,
+			Snapshot: sharedsaga.AssetSnapshot{Slot: 4, TemplateId: 2000000, Quantity: 5, CashId: 42},
 		},
 	}
 	raw, err := json.Marshal(e)
@@ -76,9 +78,18 @@ func TestStatusEventEnvelopeJsonShape(t *testing.T) {
 		}
 	}
 	body := round["body"].(map[string]interface{})
-	for _, k := range []string{"position", "tradeSlot", "inventoryType", "sourceSlot", "assetId", "templateId", "quantity"} {
+	for _, k := range []string{"position", "tradeSlot", "assetId", "snapshot"} {
 		if _, ok := body[k]; !ok {
 			t.Errorf("item-staged body missing key %q", k)
+		}
+	}
+	// The snapshot is what atlas-channel renders the trade frame from, so the
+	// fields the old bespoke stat list omitted are pinned explicitly here: a tag
+	// that stops serialising is a cash item that arrives without its serial.
+	snap := body["snapshot"].(map[string]interface{})
+	for _, k := range []string{"slot", "templateId", "quantity", "expiration", "cashId", "rechargeable", "levelType", "experience", "hammersApplied", "petId", "petName", "owner"} {
+		if _, ok := snap[k]; !ok {
+			t.Errorf("item-staged snapshot missing key %q", k)
 		}
 	}
 }

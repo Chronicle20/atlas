@@ -9,6 +9,7 @@ import (
 	"sort"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -115,16 +116,43 @@ func (f *fakeItemData) SlotMax(_ inventory.Type, templateId item.Id) (uint32, er
 
 // --- the fake custody store ---------------------------------------------------
 
-// escrowStatWeaponAttack / escrowStatSlots / escrowOwnerName are the stat block
+// escrowStat* / escrowOwnerName / escrowCashId / escrowPetId are the snapshot
 // every accepted escrow row carries in these tests. They are deliberately
 // non-zero and mutually distinct so a settlement payload that dropped the
 // snapshot — or read it from the room rather than from the custody row — shows
 // up as a concrete wrong number rather than as a plausible zero.
+//
+// The cash serial, the expiry and the pet id are here because they are what the
+// original escrow column set silently dropped: cash items and pets are stageable
+// (checkRestrictions blocks equipped items, the untradeable flags and the WZ
+// tradeBlock, nothing else), so an item could come back out of a trade stripped
+// of its identity.
 const (
 	escrowStatWeaponAttack = uint16(17)
 	escrowStatSlots        = uint16(7)
 	escrowOwnerName        = "Chronicle"
+	escrowCashId           = int64(4815162342)
+	escrowPetId            = uint32(909)
 )
+
+// escrowExpiration is UTC-fixed so a round trip through Postgres compares equal.
+var escrowExpiration = time.Date(2031, 4, 5, 6, 7, 8, 0, time.UTC)
+
+// escrowSnapshotFor builds the snapshot a completed transfer_to_trade would have
+// captured for one staged item.
+func escrowSnapshotFor(i StagedItem) sharedsaga.AssetSnapshot {
+	return sharedsaga.AssetSnapshot{
+		Slot:         int16(i.SourceSlot()),
+		TemplateId:   uint32(i.TemplateId()),
+		Quantity:     uint32(i.Quantity()),
+		Expiration:   escrowExpiration,
+		CashId:       escrowCashId,
+		Owner:        escrowOwnerName,
+		WeaponAttack: escrowStatWeaponAttack,
+		Slots:        escrowStatSlots,
+		PetId:        escrowPetId,
+	}
+}
 
 // mesoOwner keys one participant's escrowed meso within one room.
 type mesoOwner struct {
@@ -233,12 +261,8 @@ func (f *fakeEscrow) accept(roomId uuid.UUID, ownerId character.Id, i StagedItem
 	defer f.mutex.Unlock()
 	f.items = append(f.items, escrow.NewItemBuilder(i.EscrowId(), roomId, ownerId).
 		SetTradeSlot(i.TradeSlot()).
-		SetSource(i.InventoryType(), i.SourceSlot(), i.AssetId()).
-		SetTemplateId(i.TemplateId()).
-		SetQuantity(i.Quantity()).
-		SetWeaponAttack(escrowStatWeaponAttack).
-		SetSlots(escrowStatSlots).
-		SetOwner(escrowOwnerName).
+		SetSource(i.InventoryType(), i.AssetId()).
+		SetSnapshot(escrowSnapshotFor(i)).
 		Build())
 }
 
@@ -725,8 +749,16 @@ func TestStageSucceededClearsPendingAndAnnouncesOnce(t *testing.T) {
 	if len(staged) != 1 {
 		t.Fatalf("ITEM_STAGED events: got %d, want 1", len(staged))
 	}
-	if staged[0].Body.Position != 0 || staged[0].Body.TradeSlot != 3 || staged[0].Body.Quantity != 5 {
+	if staged[0].Body.Position != 0 || staged[0].Body.TradeSlot != 3 || staged[0].Body.Snapshot.Quantity != 5 {
 		t.Errorf("ITEM_STAGED body: got %+v, want position 0 trade slot 3 quantity 5", staged[0].Body)
+	}
+	// The snapshot must come from the ESCROW ROW, not from the room's staged
+	// item: the room knows the trade slot and the quantity, but the asset that
+	// backs them has already been deleted from its owner's compartment, and only
+	// the custody row still carries its cash serial, expiry and pet identity.
+	// This is the whole payload atlas-channel renders the trade frame from.
+	if s := staged[0].Body.Snapshot; s.CashId != escrowCashId || s.Owner != escrowOwnerName || s.PetId != escrowPetId {
+		t.Errorf("ITEM_STAGED snapshot: got %+v, want the escrow row's cashId %d owner %q petId %d", s, escrowCashId, escrowOwnerName, escrowPetId)
 	}
 
 	// The redelivery.
@@ -1252,8 +1284,15 @@ func TestTeardownUnwindsEveryEscrowedItemAndMesoInOneSaga(t *testing.T) {
 		if it.OwnerId != owner {
 			t.Errorf("unwind ownerId for %s: got %d, want %d", it.Item.EscrowId, it.OwnerId, owner)
 		}
-		if it.Item.WeaponAttack != escrowStatWeaponAttack || it.Item.Slots != escrowStatSlots || it.Item.Owner != escrowOwnerName {
-			t.Errorf("unwind item %s lost its stat snapshot: %+v", it.Item.EscrowId, it.Item)
+		s := it.Item.Snapshot
+		if s.WeaponAttack != escrowStatWeaponAttack || s.Slots != escrowStatSlots || s.Owner != escrowOwnerName {
+			t.Errorf("unwind item %s lost its equip stats: %+v", it.Item.EscrowId, s)
+		}
+		// The cash serial, expiry and pet id ride the same snapshot. They are
+		// asserted separately because they were the fields the previous escrow
+		// shape omitted, and losing them degrades the item rather than failing.
+		if s.CashId != escrowCashId || !s.Expiration.Equal(escrowExpiration) || s.PetId != escrowPetId {
+			t.Errorf("unwind item %s lost its cash/expiry/pet state: %+v", it.Item.EscrowId, s)
 		}
 		delete(want, it.Item.EscrowId)
 	}

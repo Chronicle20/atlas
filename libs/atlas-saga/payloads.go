@@ -10,8 +10,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
@@ -595,46 +593,34 @@ type ReleaseFromStoragePayload struct {
 // TradeEscrowItem references one ESCROWED asset — an item that has already left
 // its owner's compartment for atlas-trades' custody store (design §5A).
 //
-// It carries the full stat snapshot because the orchestrator CANNOT look the
-// asset up any more: there is no compartment row to read. Under the old
-// reserve-at-staging model expansion re-read the item by slot; escrow removed
-// that option, and re-reading is not merely unavailable but wrong — the whole
-// point is that the asset is gone.
+// It carries a full AssetSnapshot because the orchestrator CANNOT look the asset
+// up any more: it is in nobody's compartment. Under the old reserve-at-staging
+// model expansion re-read the item by slot; escrow removed that option, and
+// re-reading is not merely unavailable but wrong — the whole point is that the
+// asset is gone.
+//
+// The snapshot is the SHARED AssetSnapshot rather than a bespoke stat list. The
+// bespoke list this replaced omitted Expiration, CashId, Rechargeable,
+// LevelType, Experience, HammersApplied and the entire pet block, so a
+// settlement or unwind of a cash item, a pet or a timed item silently re-granted
+// a degraded asset — it lost its cash serial, its expiry and its pet identity.
+// Cash items and pets ARE stageable: checkRestrictions
+// (atlas-trades trade/restriction.go) blocks equipped items, the untradeable
+// flags and the WZ tradeBlock, and nothing else.
 type TradeEscrowItem struct {
 	EscrowId uuid.UUID `json:"escrowId"` // Custody row to release from
 
 	// InventoryType is the shared inventory.Type (int8) the item CAME from, and
-	// the one it is returned to. The expanded steps it feeds declare
-	// InventoryType as byte, so expansion must convert explicitly.
+	// the one it is returned to. It is NOT derivable from the snapshot's
+	// TemplateId for cash-inventory items, whose template ids classify as equip
+	// or use, so it stays a distinct field.
 	InventoryType inventory.Type `json:"inventoryType"`
-	SourceSlot    slot.Position  `json:"sourceSlot"` // Provenance only; a return does not replay it
-	AssetId       asset.Id       `json:"assetId"`    // Asset id at stage time, for the ledger
-	TemplateId    item.Id        `json:"templateId"`
-	Quantity      asset.Quantity `json:"quantity"`
+	AssetId       asset.Id       `json:"assetId"` // Asset id at stage time, for the ledger and for step ids
 
-	// Stat snapshot, so a re-grant restores scrolled stats, cash ownership and
-	// expiry rather than a bare template.
-	Strength      uint16 `json:"strength"`
-	Dexterity     uint16 `json:"dexterity"`
-	Intelligence  uint16 `json:"intelligence"`
-	Luck          uint16 `json:"luck"`
-	HP            uint16 `json:"hp"`
-	MP            uint16 `json:"mp"`
-	WeaponAttack  uint16 `json:"weaponAttack"`
-	MagicAttack   uint16 `json:"magicAttack"`
-	WeaponDefense uint16 `json:"weaponDefense"`
-	MagicDefense  uint16 `json:"magicDefense"`
-	Accuracy      uint16 `json:"accuracy"`
-	Avoidability  uint16 `json:"avoidability"`
-	Hands         uint16 `json:"hands"`
-	Speed         uint16 `json:"speed"`
-	Jump          uint16 `json:"jump"`
-	Slots         uint16 `json:"slots"`
-	Level         byte   `json:"level"`
-	ItemLevel     byte   `json:"itemLevel"`
-	ItemExp       uint32 `json:"itemExp"`
-	Flags         uint16 `json:"flags"`
-	Owner         string `json:"owner"`
+	// Snapshot is everything needed to re-materialise the asset. Snapshot.Slot is
+	// the source slot — provenance only; a return does not replay it, because the
+	// original slot may be occupied by the time the trade resolves.
+	Snapshot AssetSnapshot `json:"snapshot"`
 }
 
 // TradeSettlementItem is the settlement view of an escrowed asset.
@@ -695,6 +681,11 @@ type TradeUnwindMeso struct {
 // EscrowId is minted by atlas-trades rather than by the orchestrator so the
 // staging path can correlate the eventual custody ack with the room slot it
 // belongs to without a second round trip.
+//
+// SourceSlot is the slot the CLIENT named in its PUT_ITEM. It is deliberately
+// not what the escrow snapshot records: expansion takes the slot off the
+// compartment row it actually found, which is authoritative. The client's claim
+// is kept on the composite so a disagreement is visible in the saga record.
 type TransferToTradePayload struct {
 	TransactionId       uuid.UUID `json:"transactionId"`
 	EscrowId            uuid.UUID `json:"escrowId"`
@@ -712,46 +703,25 @@ type TransferToTradePayload struct {
 // the room slot it backs, where it came from so a return can be described, and
 // the full item snapshot. Mirrors AcceptToMtsListingPayload.
 //
-// SourceInventoryType / SourceSlot are recorded for diagnostics and for the
-// ledger's provenance only. A return does NOT replay them: it accepts to the
-// owner's compartment and lets atlas-inventory choose the slot, because the
-// original slot may well be occupied by the time the trade unwinds.
+// The snapshot travels because by the time this step runs the preceding
+// release_from_character has already deleted the asset — nothing downstream can
+// read it back. It is the shared AssetSnapshot for the reason spelled out on
+// TradeEscrowItem: the bespoke stat list it replaced dropped cash serials,
+// expiry and pet state on the floor.
+//
+// SourceInventoryType and Snapshot.Slot are recorded for diagnostics and for the
+// ledger's provenance only. A return does NOT replay the slot: it accepts to the
+// owner's compartment and lets atlas-inventory choose, because the original slot
+// may well be occupied by the time the trade unwinds.
 type AcceptToTradePayload struct {
-	TransactionId       uuid.UUID `json:"transactionId"`
-	EscrowId            uuid.UUID `json:"escrowId"`
-	RoomId              uuid.UUID `json:"roomId"`
-	OwnerId             uint32    `json:"ownerId"`
-	TradeSlot           byte      `json:"tradeSlot"`
-	SourceInventoryType byte      `json:"sourceInventoryType"`
-	SourceSlot          int16     `json:"sourceSlot"`
-	AssetId             uint32    `json:"assetId"`
-
-	// Item snapshot
-	TemplateId    uint32 `json:"templateId"`
-	Quantity      uint32 `json:"quantity"`
-	Strength      uint16 `json:"strength"`
-	Dexterity     uint16 `json:"dexterity"`
-	Intelligence  uint16 `json:"intelligence"`
-	Luck          uint16 `json:"luck"`
-	HP            uint16 `json:"hp"`
-	MP            uint16 `json:"mp"`
-	WeaponAttack  uint16 `json:"weaponAttack"`
-	MagicAttack   uint16 `json:"magicAttack"`
-	WeaponDefense uint16 `json:"weaponDefense"`
-	MagicDefense  uint16 `json:"magicDefense"`
-	Accuracy      uint16 `json:"accuracy"`
-	Avoidability  uint16 `json:"avoidability"`
-	Hands         uint16 `json:"hands"`
-	Speed         uint16 `json:"speed"`
-	Jump          uint16 `json:"jump"`
-	Slots         uint16 `json:"slots"`
-	Level         byte   `json:"level"`
-	ItemLevel     byte   `json:"itemLevel"`
-	ItemExp       uint32 `json:"itemExp"`
-	RingId        uint32 `json:"ringId"`
-	ViciousCount  uint32 `json:"viciousCount"`
-	Flags         uint16 `json:"flags"`
-	Owner         string `json:"owner"`
+	TransactionId       uuid.UUID     `json:"transactionId"`
+	EscrowId            uuid.UUID     `json:"escrowId"`
+	RoomId              uuid.UUID     `json:"roomId"`
+	OwnerId             uint32        `json:"ownerId"`
+	TradeSlot           byte          `json:"tradeSlot"`
+	SourceInventoryType byte          `json:"sourceInventoryType"`
+	AssetId             uint32        `json:"assetId"`
+	Snapshot            AssetSnapshot `json:"snapshot"`
 }
 
 // ReleaseFromTradePayload (atomic, dispatched to the atlas-trades custody
@@ -1151,18 +1121,22 @@ type CreateNotePayload struct {
 	Flag       byte   `json:"flag"`       // Memo flag/type; 0 = plain note (player sends). Non-zero selects reward/gift render templates client-side.
 }
 
-// AssetSnapshot captures one inventory asset at decode time (item megaphone).
-// Snapshot DTO shared by saga payloads AND the kafka message structs of
-// channel/world/orchestrator (single source of truth; PRD Q6: snapshot at
-// decode time, never re-resolved).
+// AssetSnapshot captures one inventory asset at decode time (item megaphone,
+// and every trade-escrow payload). Snapshot DTO shared by saga payloads AND the
+// kafka message structs of channel/world/orchestrator (single source of truth;
+// PRD Q6: snapshot at decode time, never re-resolved).
 type AssetSnapshot struct {
-	Slot         int16     `json:"slot"`
-	TemplateId   uint32    `json:"templateId"`
-	Expiration   time.Time `json:"expiration"`
-	CashId       int64     `json:"cashId"`
-	Quantity     uint32    `json:"quantity"`
-	Flag         uint16    `json:"flag"`
-	Rechargeable uint64    `json:"rechargeable"`
+	Slot       int16     `json:"slot"`
+	TemplateId uint32    `json:"templateId"`
+	Expiration time.Time `json:"expiration"`
+	CashId     int64     `json:"cashId"`
+	Quantity   uint32    `json:"quantity"`
+	Flag       uint16    `json:"flag"`
+	// Owner is the item's owner tag (the name a scroll or a quest stamped on it).
+	// It is part of the rendered item block on every version, so a snapshot
+	// without it renders an owned item as unowned.
+	Owner        string `json:"owner"`
+	Rechargeable uint64 `json:"rechargeable"`
 	// equipment stats (zero for non-equips)
 	Strength       uint16 `json:"strength"`
 	Dexterity      uint16 `json:"dexterity"`

@@ -21,8 +21,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -72,32 +70,8 @@ func handleAccept(db *gorm.DB) message.Handler[custodymsg.Command[custodymsg.Acc
 		b := c.Body
 		m := escrow.NewItemBuilder(b.EscrowId, b.RoomId, character.Id(b.OwnerId)).
 			SetTradeSlot(b.TradeSlot).
-			SetSource(inventory.Type(b.SourceInventoryType), slot.Position(b.SourceSlot), asset.Id(b.AssetId)).
-			SetTemplateId(item.Id(b.TemplateId)).
-			SetQuantity(asset.Quantity(b.Quantity)).
-			SetStrength(b.Strength).
-			SetDexterity(b.Dexterity).
-			SetIntelligence(b.Intelligence).
-			SetLuck(b.Luck).
-			SetHP(b.HP).
-			SetMP(b.MP).
-			SetWeaponAttack(b.WeaponAttack).
-			SetMagicAttack(b.MagicAttack).
-			SetWeaponDefense(b.WeaponDefense).
-			SetMagicDefense(b.MagicDefense).
-			SetAccuracy(b.Accuracy).
-			SetAvoidability(b.Avoidability).
-			SetHands(b.Hands).
-			SetSpeed(b.Speed).
-			SetJump(b.Jump).
-			SetSlots(b.Slots).
-			SetLevel(b.Level).
-			SetItemLevel(b.ItemLevel).
-			SetItemExp(b.ItemExp).
-			SetRingId(b.RingId).
-			SetViciousCount(b.ViciousCount).
-			SetFlags(b.Flags).
-			SetOwner(b.Owner).
+			SetSource(inventory.Type(b.SourceInventoryType), asset.Id(b.AssetId)).
+			SetSnapshot(b.Snapshot).
 			Build()
 
 		if err := escrow.NewProcessor(l, ctx, db).Accept(c.TransactionId, m); err != nil {

@@ -2501,45 +2501,15 @@ func (c *CompensatorImpl) DispatchTradeStagingRollbacks(s Saga) {
 			if !c.claimTradeRollback(s, step) {
 				continue
 			}
-			assetData := assetDataFromTradeEscrowSnapshot(*escrowSnapshot)
-			if err := c.compP.RequestAcceptAsset(s.TransactionId(), payload.CharacterId, payload.InventoryType, escrowSnapshot.TemplateId, assetData); err != nil {
+			assetData := assetDataFromSnapshot(escrowSnapshot.Snapshot)
+			if err := c.compP.RequestAcceptAsset(s.TransactionId(), payload.CharacterId, payload.InventoryType, escrowSnapshot.Snapshot.TemplateId, assetData); err != nil {
 				c.l.WithError(err).WithFields(logrus.Fields{
 					"transaction_id": s.TransactionId().String(),
 					"step_id":        step.StepId(),
 					"character_id":   payload.CharacterId,
-					"template_id":    escrowSnapshot.TemplateId,
+					"template_id":    escrowSnapshot.Snapshot.TemplateId,
 				}).Error("Reverse-walk: staging ReleaseFromCharacter → AcceptToCharacter re-grant dispatch failed; continuing chain.")
 			}
 		}
-	}
-}
-
-// assetDataFromTradeEscrowSnapshot reconstructs an inventory AssetData from the
-// item snapshot carried on an AcceptToTrade step, so a staging compensation
-// re-grants the released item with its original equip stats intact.
-func assetDataFromTradeEscrowSnapshot(p AcceptToTradePayload) asset2.AssetData {
-	return asset2.AssetData{
-		Quantity:      p.Quantity,
-		Strength:      p.Strength,
-		Dexterity:     p.Dexterity,
-		Intelligence:  p.Intelligence,
-		Luck:          p.Luck,
-		Hp:            p.HP,
-		Mp:            p.MP,
-		WeaponAttack:  p.WeaponAttack,
-		MagicAttack:   p.MagicAttack,
-		WeaponDefense: p.WeaponDefense,
-		MagicDefense:  p.MagicDefense,
-		Accuracy:      p.Accuracy,
-		Avoidability:  p.Avoidability,
-		Hands:         p.Hands,
-		Speed:         p.Speed,
-		Jump:          p.Jump,
-		Slots:         p.Slots,
-		LevelType:     p.ItemLevel,
-		Level:         p.Level,
-		Experience:    p.ItemExp,
-		Flag:          p.Flags,
-		Owner:         p.Owner,
 	}
 }

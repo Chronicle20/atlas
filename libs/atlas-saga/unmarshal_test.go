@@ -1102,12 +1102,18 @@ func TestUnmarshalAcceptToTradeStep(t *testing.T) {
 			"ownerId": 100,
 			"tradeSlot": 3,
 			"sourceInventoryType": 2,
-			"sourceSlot": 7,
-			"templateId": 2000000,
-			"quantity": 42,
-			"strength": 11,
-			"flags": 8,
-			"owner": "Chronicle"
+			"assetId": 55,
+			"snapshot": {
+				"slot": 7,
+				"templateId": 2000000,
+				"quantity": 42,
+				"strength": 11,
+				"flag": 8,
+				"owner": "Chronicle",
+				"cashId": 4815162342,
+				"petId": 909,
+				"expiration": "2031-04-05T06:07:08Z"
+			}
 		},
 		"createdAt": "2026-08-10T00:00:00Z",
 		"updatedAt": "2026-08-10T00:00:00Z"
@@ -1130,17 +1136,30 @@ func TestUnmarshalAcceptToTradeStep(t *testing.T) {
 	if p.TradeSlot != 3 {
 		t.Errorf("tradeSlot: expected 3, got %d", p.TradeSlot)
 	}
-	if p.TemplateId != 2000000 {
-		t.Errorf("templateId: expected 2000000, got %d", p.TemplateId)
+	if p.Snapshot.TemplateId != 2000000 {
+		t.Errorf("templateId: expected 2000000, got %d", p.Snapshot.TemplateId)
 	}
-	if p.Quantity != 42 {
-		t.Errorf("quantity: expected 42, got %d", p.Quantity)
+	if p.Snapshot.Quantity != 42 {
+		t.Errorf("quantity: expected 42, got %d", p.Snapshot.Quantity)
 	}
-	if p.Strength != 11 {
-		t.Errorf("strength: expected 11, got %d", p.Strength)
+	if p.Snapshot.Strength != 11 {
+		t.Errorf("strength: expected 11, got %d", p.Snapshot.Strength)
 	}
-	if p.Owner != "Chronicle" {
-		t.Errorf("owner: expected Chronicle, got %q", p.Owner)
+	if p.Snapshot.Owner != "Chronicle" {
+		t.Errorf("owner: expected Chronicle, got %q", p.Snapshot.Owner)
+	}
+	// The cash serial, the pet id and the expiry decode too. They are asserted
+	// because a step is REHYDRATED from this JSON after a restart: a tag that
+	// stopped decoding would resume the saga with an item stripped of its
+	// identity, and the re-grant would silently hand back a lesser item.
+	if p.Snapshot.CashId != 4815162342 {
+		t.Errorf("cashId: expected 4815162342, got %d", p.Snapshot.CashId)
+	}
+	if p.Snapshot.PetId != 909 {
+		t.Errorf("petId: expected 909, got %d", p.Snapshot.PetId)
+	}
+	if p.Snapshot.Expiration.IsZero() {
+		t.Error("expiration: expected the encoded timestamp, got the zero time")
 	}
 }
 

@@ -455,7 +455,7 @@ func TestBothAttestationsSubmitOneSaga(t *testing.T) {
 		if len(side.Items) != 1 {
 			t.Fatalf("side %d items: got %d, want 1", i, len(side.Items))
 		}
-		if side.Items[0].AssetId != stagingAssetId || side.Items[0].Quantity != asset.Quantity(stagedQuantity) {
+		if side.Items[0].AssetId != stagingAssetId || side.Items[0].Snapshot.Quantity != uint32(stagedQuantity) {
 			t.Errorf("side %d item: got %+v, want asset %d quantity %d", i, side.Items[0], stagingAssetId, stagedQuantity)
 		}
 	}
@@ -812,11 +812,18 @@ func TestSettlementPayloadCarriesTheEscrowRowsSnapshot(t *testing.T) {
 		if got := side.Items[0].EscrowId; got != want[side.CharacterId] {
 			t.Errorf("side %d escrowId: got %s, want the staged item's custody row %s", side.CharacterId, got, want[side.CharacterId])
 		}
-		if side.Items[0].WeaponAttack != escrowStatWeaponAttack || side.Items[0].Slots != escrowStatSlots {
-			t.Errorf("side %d stat snapshot: got weaponAttack %d slots %d, want the escrow row's %d / %d", side.CharacterId, side.Items[0].WeaponAttack, side.Items[0].Slots, escrowStatWeaponAttack, escrowStatSlots)
+		snap := side.Items[0].Snapshot
+		if snap.WeaponAttack != escrowStatWeaponAttack || snap.Slots != escrowStatSlots {
+			t.Errorf("side %d stat snapshot: got weaponAttack %d slots %d, want the escrow row's %d / %d", side.CharacterId, snap.WeaponAttack, snap.Slots, escrowStatWeaponAttack, escrowStatSlots)
 		}
-		if side.Items[0].Owner != escrowOwnerName {
-			t.Errorf("side %d owner: got %q, want the escrow row's %q", side.CharacterId, side.Items[0].Owner, escrowOwnerName)
+		if snap.Owner != escrowOwnerName {
+			t.Errorf("side %d owner: got %q, want the escrow row's %q", side.CharacterId, snap.Owner, escrowOwnerName)
+		}
+		// Cash serial, expiry and pet id travel on the same snapshot. A
+		// settlement that lost them would hand the receiver a degraded item —
+		// the defect the bespoke stat list this replaced actually had.
+		if snap.CashId != escrowCashId || !snap.Expiration.Equal(escrowExpiration) || snap.PetId != escrowPetId {
+			t.Errorf("side %d cash/expiry/pet state: got %+v, want cashId %d expiration %s petId %d", side.CharacterId, snap, escrowCashId, escrowExpiration, escrowPetId)
 		}
 	}
 }

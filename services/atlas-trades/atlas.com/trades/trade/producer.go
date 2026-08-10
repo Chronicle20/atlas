@@ -13,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/invite"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 // statusEventProvider builds one EVENT_TOPIC_TRADE_STATUS message. The key is
@@ -105,15 +106,18 @@ func participantEnteredProvider(txId uuid.UUID, r Room, characterId character.Id
 // by position rather than by character: atlas-channel converts that to each
 // recipient's own recipient-relative side byte before writing the packet, so
 // this event is broadcast-shaped and needs no per-recipient variant.
-func itemStagedProvider(txId uuid.UUID, r Room, characterId character.Id, position byte, i StagedItem) model.Provider[[]kafka.Message] {
+//
+// The snapshot comes from the ESCROW ROW, which is the only place the asset
+// still exists: staging deleted it from its owner's compartment before this
+// event fires. Passing it explicitly (rather than letting atlas-channel look it
+// up) is the whole point — the read-back atlas-channel used to do could only
+// ever miss.
+func itemStagedProvider(txId uuid.UUID, r Room, characterId character.Id, position byte, i StagedItem, s sharedsaga.AssetSnapshot) model.Provider[[]kafka.Message] {
 	return roomEventProvider(txId, r, characterId, trademsg.StatusTypeItemStaged, trademsg.ItemStagedEventBody{
-		Position:      position,
-		TradeSlot:     i.TradeSlot(),
-		InventoryType: i.InventoryType(),
-		SourceSlot:    i.SourceSlot(),
-		AssetId:       i.AssetId(),
-		TemplateId:    i.TemplateId(),
-		Quantity:      i.Quantity(),
+		Position:  position,
+		TradeSlot: i.TradeSlot(),
+		AssetId:   i.AssetId(),
+		Snapshot:  s,
 	})
 }
 

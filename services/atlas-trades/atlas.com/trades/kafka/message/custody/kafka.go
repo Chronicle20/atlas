@@ -12,6 +12,8 @@ package custody
 
 import (
 	"github.com/google/uuid"
+
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 const (
@@ -38,44 +40,30 @@ type Command[E any] struct {
 
 // AcceptToTradeCommandBody carries every field needed to CREATE an escrow row.
 //
-// The stat block is spelled out rather than nested so the row can be written
-// with explicit name-keyed columns — the same COPY/restore column-order
-// discipline atlas-mts's holdings table follows.
+// The item state is the SHARED sharedsaga.AssetSnapshot rather than a stat list
+// spelled out here. The spelled-out list this replaced omitted Expiration,
+// CashId, Rechargeable, LevelType, Experience, HammersApplied and the whole pet
+// block, which meant a cash item, a pet or a timed item came back out of escrow
+// degraded — stripped of its cash serial, its expiry and its pet identity. Cash
+// items and pets are stageable (trade/restriction.go blocks only equipped items,
+// the untradeable flags and the WZ tradeBlock), so that was reachable.
+//
+// Nesting the snapshot does not compromise the row's COPY/restore column-order
+// discipline: escrow.toItemEntity still explodes it into explicit name-keyed
+// columns, exactly as atlas-mts's holdings table does.
+//
+// Snapshot.Slot is the source slot the item came from, Snapshot.TemplateId and
+// Snapshot.Quantity the staged template and STAGED amount (a partial stage of
+// 1-of-40 escrows 1).
 type AcceptToTradeCommandBody struct {
 	EscrowId            uuid.UUID `json:"escrowId"`
 	RoomId              uuid.UUID `json:"roomId"`
 	OwnerId             uint32    `json:"ownerId"`
 	TradeSlot           byte      `json:"tradeSlot"`
 	SourceInventoryType byte      `json:"sourceInventoryType"`
-	SourceSlot          int16     `json:"sourceSlot"`
 	AssetId             uint32    `json:"assetId"`
 
-	// item snapshot
-	TemplateId    uint32 `json:"templateId"`
-	Quantity      uint32 `json:"quantity"`
-	Strength      uint16 `json:"strength"`
-	Dexterity     uint16 `json:"dexterity"`
-	Intelligence  uint16 `json:"intelligence"`
-	Luck          uint16 `json:"luck"`
-	HP            uint16 `json:"hp"`
-	MP            uint16 `json:"mp"`
-	WeaponAttack  uint16 `json:"weaponAttack"`
-	MagicAttack   uint16 `json:"magicAttack"`
-	WeaponDefense uint16 `json:"weaponDefense"`
-	MagicDefense  uint16 `json:"magicDefense"`
-	Accuracy      uint16 `json:"accuracy"`
-	Avoidability  uint16 `json:"avoidability"`
-	Hands         uint16 `json:"hands"`
-	Speed         uint16 `json:"speed"`
-	Jump          uint16 `json:"jump"`
-	Slots         uint16 `json:"slots"`
-	Level         byte   `json:"level"`
-	ItemLevel     byte   `json:"itemLevel"`
-	ItemExp       uint32 `json:"itemExp"`
-	RingId        uint32 `json:"ringId"`
-	ViciousCount  uint32 `json:"viciousCount"`
-	Flags         uint16 `json:"flags"`
-	Owner         string `json:"owner"`
+	Snapshot sharedsaga.AssetSnapshot `json:"snapshot"`
 }
 
 // ReleaseFromTradeCommandBody soft-deletes the escrow row. The row holds the

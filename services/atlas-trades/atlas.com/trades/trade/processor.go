@@ -981,6 +981,20 @@ func (p *ProcessorImpl) stageSucceeded(mb *message.Buffer, txId uuid.UUID, escro
 		return true, nil
 	}
 
+	// The escrow row is the only surviving copy of the asset — staging deleted
+	// the compartment row before this status arrived — so both dialogs are drawn
+	// from it. A confirmed stage whose row is missing cannot be rendered and must
+	// not be announced: announcing a slot neither client can populate is exactly
+	// the invisible-transfer window the trade dialog's consent depends on not
+	// having.
+	row, found, err := p.esc.ItemById(escrowId)
+	if err != nil {
+		return false, err
+	}
+	if !found {
+		return false, fmt.Errorf("stage [%s] was confirmed but its escrow row is gone", escrowId.String())
+	}
+
 	updated, err := p.reg.Update(p.t, room.Id(), func(cur Room) (Room, error) {
 		cp, found := cur.ParticipantFor(pt.CharacterId())
 		if !found {
@@ -994,7 +1008,7 @@ func (p *ProcessorImpl) stageSucceeded(mb *message.Buffer, txId uuid.UUID, escro
 		p.l.WithError(err).Debugf("Unable to confirm stage [%s]; its room is gone. The teardown that removed it owns the unwind.", escrowId.String())
 		return true, nil
 	}
-	return true, mb.Put(trademsg.EnvEventTopicStatus, itemStagedProvider(txId, updated, pt.CharacterId(), pt.Position(), i.Confirmed()))
+	return true, mb.Put(trademsg.EnvEventTopicStatus, itemStagedProvider(txId, updated, pt.CharacterId(), pt.Position(), i.Confirmed(), row.Snapshot()))
 }
 
 // StageFailed frees a dialog slot whose stage never made it into escrow.

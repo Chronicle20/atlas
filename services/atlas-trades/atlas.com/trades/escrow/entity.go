@@ -77,6 +77,16 @@ type ItemEntity struct {
 	TemplateId item.Id        `gorm:"column:template_id;not null"`
 	Quantity   asset.Quantity `gorm:"column:quantity;not null"`
 
+	// Expiration / CashId / Rechargeable / the pet block are what make a cash
+	// item, a pet or a timed item survive escrow. Cash items and pets ARE
+	// stageable — checkRestrictions (trade/restriction.go) blocks only equipped
+	// items, the untradeable flags and the WZ tradeBlock — so a row that stored
+	// nothing but equip stats handed back a degraded asset: no cash serial, no
+	// expiry, no pet identity.
+	Expiration   time.Time `gorm:"column:expiration"`
+	CashId       int64     `gorm:"column:cash_id;not null;default:0"`
+	Rechargeable uint64    `gorm:"column:rechargeable;not null;default:0"`
+
 	Strength      uint16 `gorm:"column:strength;not null"`
 	Dexterity     uint16 `gorm:"column:dexterity;not null"`
 	Intelligence  uint16 `gorm:"column:intelligence;not null"`
@@ -93,13 +103,23 @@ type ItemEntity struct {
 	Speed         uint16 `gorm:"column:speed;not null"`
 	Jump          uint16 `gorm:"column:jump;not null"`
 	Slots         uint16 `gorm:"column:slots;not null"`
-	Level         byte   `gorm:"column:level;not null"`
-	ItemLevel     byte   `gorm:"column:item_level;not null"`
-	ItemExp       uint32 `gorm:"column:item_exp;not null"`
-	RingId        uint32 `gorm:"column:ring_id;not null"`
-	ViciousCount  uint32 `gorm:"column:vicious_count;not null"`
-	Flags         uint16 `gorm:"column:flags;not null"`
-	Owner         string `gorm:"column:owner;not null;default:''"`
+
+	// Named for the snapshot fields they hold, not for the packet-side aliases
+	// the first cut used (item_level / item_exp / vicious_count). One concept
+	// under two names across a service boundary is what let the original stat
+	// list drift from the asset it was supposed to reproduce.
+	LevelType      byte   `gorm:"column:level_type;not null;default:0"`
+	Level          byte   `gorm:"column:level;not null"`
+	Experience     uint32 `gorm:"column:experience;not null;default:0"`
+	HammersApplied uint32 `gorm:"column:hammers_applied;not null;default:0"`
+	Flags          uint16 `gorm:"column:flags;not null"`
+	Owner          string `gorm:"column:owner;not null;default:''"`
+
+	PetId     uint32 `gorm:"column:pet_id;not null;default:0"`
+	PetName   string `gorm:"column:pet_name;not null;default:''"`
+	PetLevel  byte   `gorm:"column:pet_level;not null;default:0"`
+	Closeness uint16 `gorm:"column:closeness;not null;default:0"`
+	Fullness  byte   `gorm:"column:fullness;not null;default:0"`
 
 	CreatedAt time.Time      `gorm:"column:created_at"`
 	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at;index"`
@@ -153,7 +173,30 @@ type MesoEntity struct {
 
 func (MesoEntity) TableName() string { return mesoTable }
 
+// staleItemColumns are columns an earlier shape of ItemEntity created that
+// nothing writes any more: ring_id was never sourced (no asset projection
+// anywhere in the fleet carries a ring id), and item_level / item_exp /
+// vicious_count were renamed to the snapshot's own vocabulary.
+//
+// AutoMigrate adds and widens columns but never drops them, so leaving these
+// behind is not cosmetic: each was created NOT NULL with no default, and an
+// INSERT that no longer names the column would be rejected by Postgres on any
+// database that had already been migrated to the old shape.
+var staleItemColumns = []string{"ring_id", "item_level", "item_exp", "vicious_count"}
+
 // Migration creates both tables. Fresh tables, no backfill.
 func Migration(db *gorm.DB) error {
-	return db.AutoMigrate(&ItemEntity{}, &MesoEntity{})
+	if err := db.AutoMigrate(&ItemEntity{}, &MesoEntity{}); err != nil {
+		return err
+	}
+	m := db.Migrator()
+	for _, c := range staleItemColumns {
+		if !m.HasColumn(&ItemEntity{}, c) {
+			continue
+		}
+		if err := m.DropColumn(&ItemEntity{}, c); err != nil {
+			return err
+		}
+	}
+	return nil
 }

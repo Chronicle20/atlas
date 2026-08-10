@@ -2,6 +2,7 @@ package escrow
 
 import (
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -9,9 +10,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -29,19 +29,61 @@ func testTenant(t *testing.T) tenant.Model {
 	return te
 }
 
-// testItem builds a staged-item model with the given identity. The stat block
-// is deliberately non-zero so a round trip that dropped columns shows up.
+// testItem builds a staged-item model with the given identity. The snapshot is
+// deliberately non-zero in EVERY field group — equip stats, cash, expiry and the
+// pet block — so a round trip that dropped a column shows up. The cash/expiry/pet
+// groups are the ones the original column set omitted entirely.
 func testItem(roomId uuid.UUID, ownerId character.Id, tradeSlot byte) ItemModel {
 	return NewItemBuilder(uuid.New(), roomId, ownerId).
 		SetTradeSlot(tradeSlot).
-		SetSource(inventory.TypeValueEquip, slot.Position(3), asset.Id(55)).
-		SetTemplateId(item.Id(1302000)).
-		SetQuantity(asset.Quantity(1)).
-		SetWeaponAttack(17).
-		SetSlots(7).
-		SetOwner("Chronicle").
+		SetSource(inventory.TypeValueEquip, asset.Id(55)).
+		SetSnapshot(testSnapshot()).
 		Build()
 }
+
+// testSnapshot is the reference asset every escrow round-trip test asserts on.
+func testSnapshot() sharedsaga.AssetSnapshot {
+	return sharedsaga.AssetSnapshot{
+		Slot:           3,
+		TemplateId:     1302000,
+		Expiration:     testExpiration,
+		CashId:         987654321,
+		Quantity:       1,
+		Flag:           2,
+		Owner:          "Chronicle",
+		Rechargeable:   4200,
+		Strength:       11,
+		Dexterity:      12,
+		Intelligence:   13,
+		Luck:           14,
+		Hp:             15,
+		Mp:             16,
+		WeaponAttack:   17,
+		MagicAttack:    18,
+		WeaponDefense:  19,
+		MagicDefense:   20,
+		Accuracy:       21,
+		Avoidability:   22,
+		Hands:          23,
+		Speed:          24,
+		Jump:           25,
+		Slots:          7,
+		LevelType:      1,
+		Level:          5,
+		Experience:     1234,
+		HammersApplied: 2,
+		PetId:          909,
+		PetName:        "Fluffy",
+		PetLevel:       3,
+		Closeness:      450,
+		Fullness:       88,
+	}
+}
+
+// testExpiration is UTC and truncated to the second: Postgres timestamps do not
+// carry a monotonic clock reading, so an untruncated time.Now() would fail the
+// round-trip comparison on sub-microsecond drift rather than on a real bug.
+var testExpiration = time.Date(2031, 4, 5, 6, 7, 8, 0, time.UTC)
 
 // TestCreateItemIsTenantScoped pins that an escrow row written under one tenant
 // is invisible to another. Escrow rows name an owner and are returned in bulk by
@@ -68,11 +110,14 @@ func TestCreateItemIsTenantScoped(t *testing.T) {
 	if len(got) != 1 {
 		t.Fatalf("own tenant: expected 1 row, got %d", len(got))
 	}
-	if got[0].WeaponAttack() != 17 {
-		t.Errorf("weaponAttack round trip: expected 17, got %d", got[0].WeaponAttack())
-	}
-	if got[0].Owner() != "Chronicle" {
-		t.Errorf("owner round trip: expected Chronicle, got %q", got[0].Owner())
+	// Whole-snapshot equality, not a spot check on two fields. The defect this
+	// replaced was a field that was never carried at all, which a spot check on
+	// weaponAttack and owner passed straight through.
+	want := testSnapshot()
+	gs := got[0].Snapshot()
+	gs.Expiration = gs.Expiration.UTC()
+	if gs != want {
+		t.Errorf("snapshot round trip:\n got %+v\nwant %+v", gs, want)
 	}
 
 	foreign, err := ItemsByRoom(db, other.Id())(roomId)

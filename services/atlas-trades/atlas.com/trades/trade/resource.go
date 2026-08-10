@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
@@ -37,13 +38,19 @@ const maxPageSize = 100
 // registry, so they describe THIS pod's rooms — which is why atlas-trades runs
 // single-replica (design §9). There are no write routes: rooms are created and
 // mutated exclusively by Kafka commands.
-func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
-	return func(router *mux.Router, l logrus.FieldLogger) {
-		registerGet := rest.RegisterHandler(l)(si)
+//
+// The db handle is threaded through to the processor, which the read handlers
+// share with the Kafka command path; the reads themselves touch only the
+// in-memory registry.
+func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
+	return func(db *gorm.DB) server.RouteInitializer {
+		return func(router *mux.Router, l logrus.FieldLogger) {
+			registerGet := rest.RegisterHandler(l)(si)
 
-		r := router.PathPrefix("/trades/rooms").Subrouter()
-		r.HandleFunc("", registerGet(GetRooms, handleGetRooms())).Methods(http.MethodGet)
-		r.HandleFunc("/{roomId}", registerGet(GetRoomById, handleGetRoomById())).Methods(http.MethodGet)
+			r := router.PathPrefix("/trades/rooms").Subrouter()
+			r.HandleFunc("", registerGet(GetRooms, handleGetRooms(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{roomId}", registerGet(GetRoomById, handleGetRoomById(db))).Methods(http.MethodGet)
+		}
 	}
 }
 
@@ -124,7 +131,7 @@ func (f roomFilters) matches(r Room) bool {
 
 // handleGetRooms serves GET /trades/rooms — the tenant's live rooms, filtered,
 // deterministically ordered and paged.
-func handleGetRooms() rest.GetHandler {
+func handleGetRooms(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			query := r.URL.Query()
@@ -142,7 +149,7 @@ func handleGetRooms() rest.GetHandler {
 			}
 
 			var matched []Room
-			for _, room := range NewProcessor(d.Logger(), d.Context()).RoomsForTenant() {
+			for _, room := range NewProcessor(d.Logger(), d.Context(), db).RoomsForTenant() {
 				if filters.matches(room) {
 					matched = append(matched, room)
 				}
@@ -170,11 +177,11 @@ func handleGetRooms() rest.GetHandler {
 // handleGetRoomById serves GET /trades/rooms/{roomId}. A settled or cancelled
 // room has been removed from the registry, so it 404s rather than serving a
 // stale snapshot (PRD §5).
-func handleGetRoomById() rest.GetHandler {
+func handleGetRoomById(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseRoomId(d.Logger(), func(roomId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				room, ok := NewProcessor(d.Logger(), d.Context()).RoomById(roomId)
+				room, ok := NewProcessor(d.Logger(), d.Context(), db).RoomById(roomId)
 				if !ok {
 					w.WriteHeader(http.StatusNotFound)
 					return

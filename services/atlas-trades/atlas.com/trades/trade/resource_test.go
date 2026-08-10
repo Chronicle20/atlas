@@ -31,12 +31,14 @@ var _ jsonapi.ServerInformation = &testServerInformation{}
 
 // testRouter mounts the real room resource, so every test drives the routes,
 // the tenant decorator and the JSON:API marshalling exactly as the service does.
+// The db handle is nil: both read routes serve the in-memory registry and never
+// touch the database.
 func testRouter(t *testing.T) *mux.Router {
 	t.Helper()
 	r := mux.NewRouter().PathPrefix("/api").Subrouter()
 	l := logrus.New()
 	l.SetLevel(logrus.PanicLevel)
-	InitResource(&testServerInformation{})(r, l)
+	InitResource(&testServerInformation{})(nil)(r, l)
 	return r
 }
 

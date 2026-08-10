@@ -1,12 +1,15 @@
 package main
 
 import (
+	inviteconsumer "atlas-trades/kafka/consumer/invite"
+	tradeconsumer "atlas-trades/kafka/consumer/trade"
 	"atlas-trades/ledger"
 	"atlas-trades/trade"
 	"context"
 	"os"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
@@ -21,10 +24,8 @@ const serviceName = "atlas-trades"
 // is also the literal that deploy/k8s/overlays/pr/scripts/gen-consumer-group-patch.sh
 // reads out of this file to derive KAFKA_CONSUMER_GROUP for ephemeral envs, and
 // that tools/service-registration-guard.sh mirrors to decide whether this
-// service needs a generated PR consumer-group document. Deleting it while no
-// consumer is registered yet would silently drop both.
-//
-//nolint:unused // read by gen-consumer-group-patch.sh / service-registration-guard.sh
+// service needs a generated PR consumer-group document. Deleting or renaming it
+// would silently drop both.
 var consumerGroupId = consumergroup.Resolve("Trade Service")
 
 type Server struct {
@@ -79,6 +80,19 @@ func main() {
 		publisher.Close()
 	})
 
+	// Trade room lifecycle commands from atlas-channel (create/invite/decline/
+	// enter), plus the answer half of the invites we issue: an accepted TRADE
+	// invite seats the visitor, a rejected or expired one tears the room down.
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
+	tradeconsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := tradeconsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	inviteconsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := inviteconsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	server.New(l).
@@ -86,7 +100,7 @@ func main() {
 		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
-		AddRouteInitializer(trade.InitResource(GetServer())).
+		AddRouteInitializer(trade.InitResource(GetServer())(db)).
 		AddRouteInitializer(ledger.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()

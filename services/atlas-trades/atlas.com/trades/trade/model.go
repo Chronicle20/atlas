@@ -226,6 +226,21 @@ func (r Room) WithState(s State) Room {
 	return c
 }
 
+// WithVisitor returns a copy of r with characterId seated at position 1
+// (FR-1.5). Callers must have already rejected a room that is not solo — this
+// transform appends unconditionally, so seating a visitor twice would produce
+// two position-1 participants. It allocates a fresh participant slice, so it is
+// safe to call on a Room obtained from the registry.
+func (r Room) WithVisitor(characterId character.Id, name string) Room {
+	c := r
+	c.participants = make([]Participant, len(r.participants), len(r.participants)+1)
+	copy(c.participants, r.participants)
+	c.participants = append(c.participants, Participant{
+		characterId: characterId, name: name, position: 1, items: []StagedItem{},
+	})
+	return c
+}
+
 // WithParticipant returns a copy of r with the participant at `position`
 // replaced by fn's result. Participants are value types, so fn receives and
 // returns a copy — this is the only way room state mutates.

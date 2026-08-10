@@ -3,78 +3,27 @@ package pickup
 import (
 	"context"
 	"encoding/json"
-	"sync"
+	"os"
 	"testing"
 
 	mbmsg "atlas-consumables/kafka/message/monsterbook"
 	pickupmsg "atlas-consumables/kafka/message/pickup"
 
 	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-// capturingWriter records every WriteMessages call so tests can verify
-// what the pickup consumer emitted (or did not emit).
-type capturingWriter struct {
-	topic string
-	mu    sync.Mutex
-	msgs  []kafka.Message
-}
+// emitted captures everything this package's tests produce to Kafka. Installed
+// once for the package; individual tests call emitted.Reset() rather than
+// reinstalling the manager (DOM-24(e)).
+var emitted *producertest.Capture
 
-func (w *capturingWriter) Topic() string { return w.topic }
-func (w *capturingWriter) WriteMessages(_ context.Context, msgs ...kafka.Message) error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	w.msgs = append(w.msgs, msgs...)
-	return nil
-}
-func (w *capturingWriter) Close() error { return nil }
-func (w *capturingWriter) Messages() []kafka.Message {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	out := make([]kafka.Message, len(w.msgs))
-	copy(out, w.msgs)
-	return out
-}
-
-// writerRegistry records every Writer constructed by the manager so tests
-// can inspect emissions per topic.
-type writerRegistry struct {
-	mu      sync.Mutex
-	writers map[string]*capturingWriter
-}
-
-func newWriterRegistry() *writerRegistry {
-	return &writerRegistry{writers: map[string]*capturingWriter{}}
-}
-
-func (r *writerRegistry) factory() kafkaProducer.WriterFactory {
-	return func(topicName string) kafkaProducer.Writer {
-		r.mu.Lock()
-		defer r.mu.Unlock()
-		w := &capturingWriter{topic: topicName}
-		r.writers[topicName] = w
-		return w
-	}
-}
-
-func (r *writerRegistry) get(topicName string) *capturingWriter {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	return r.writers[topicName]
-}
-
-func setupCapturingProducer(t *testing.T) *writerRegistry {
-	t.Helper()
-	reg := newWriterRegistry()
-	kafkaProducer.ResetInstance()
-	kafkaProducer.GetManager(kafkaProducer.ConfigWriterFactory(reg.factory()))
-	t.Cleanup(kafkaProducer.ResetInstance)
-	return reg
+func TestMain(m *testing.M) {
+	emitted = producertest.InstallCapturing()
+	os.Exit(m.Run())
 }
 
 func tenantCtx(t *testing.T, id uuid.UUID) context.Context {
@@ -87,7 +36,7 @@ func tenantCtx(t *testing.T, id uuid.UUID) context.Context {
 }
 
 func TestHandlePickupCardItemEmitsMonsterBookCommand(t *testing.T) {
-	reg := setupCapturingProducer(t)
+	emitted.Reset()
 	tid := uuid.New()
 	ctx := tenantCtx(t, tid)
 	logger := logrus.New()
@@ -105,35 +54,34 @@ func TestHandlePickupCardItemEmitsMonsterBookCommand(t *testing.T) {
 	handlePickup(logger, ctx, cmd)
 
 	// EnvProvider falls back to the env var token name when unset.
-	w := reg.get(mbmsg.EnvCommandTopic)
-	if w == nil {
-		t.Fatalf("no writer created for topic %s", mbmsg.EnvCommandTopic)
-	}
-	msgs := w.Messages()
+	msgs := emitted.Messages(mbmsg.EnvCommandTopic)
 	if len(msgs) != 1 {
 		t.Fatalf("expected 1 monster book message, got %d", len(msgs))
 	}
 
-	var emitted mbmsg.Command[mbmsg.CardPickedUpBody]
-	if err := json.Unmarshal(msgs[0].Value, &emitted); err != nil {
+	var out mbmsg.Command[mbmsg.CardPickedUpBody]
+	if err := json.Unmarshal(msgs[0].Value, &out); err != nil {
 		t.Fatalf("unmarshal emitted command: %v", err)
 	}
-	if emitted.Type != mbmsg.CommandTypeCardPickedUp {
-		t.Fatalf("expected Type=%q, got %q", mbmsg.CommandTypeCardPickedUp, emitted.Type)
+	if out.Type != mbmsg.CommandTypeCardPickedUp {
+		t.Fatalf("expected Type=%q, got %q", mbmsg.CommandTypeCardPickedUp, out.Type)
 	}
-	if emitted.Body.CardId != cmd.ItemId {
-		t.Fatalf("expected CardId=%d, got %d", cmd.ItemId, emitted.Body.CardId)
+	if out.Body.CardId != cmd.ItemId {
+		t.Fatalf("expected CardId=%d, got %d", cmd.ItemId, out.Body.CardId)
 	}
-	if emitted.EventId != txnId {
-		t.Fatalf("expected EventId=%s, got %s", txnId, emitted.EventId)
+	if out.Body.Source != mbmsg.SourceDropPickup {
+		t.Fatalf("expected Source=%q, got %q", mbmsg.SourceDropPickup, out.Body.Source)
 	}
-	if emitted.CharacterId != cmd.CharacterId {
-		t.Fatalf("expected CharacterId=%d, got %d", cmd.CharacterId, emitted.CharacterId)
+	if out.EventId != txnId {
+		t.Fatalf("expected EventId=%s, got %s", txnId, out.EventId)
+	}
+	if out.CharacterId != cmd.CharacterId {
+		t.Fatalf("expected CharacterId=%d, got %d", cmd.CharacterId, out.CharacterId)
 	}
 }
 
 func TestHandlePickupNonCardItemSkips(t *testing.T) {
-	reg := setupCapturingProducer(t)
+	emitted.Reset()
 	tid := uuid.New()
 	ctx := tenantCtx(t, tid)
 	logger := logrus.New()
@@ -149,13 +97,13 @@ func TestHandlePickupNonCardItemSkips(t *testing.T) {
 
 	handlePickup(logger, ctx, cmd)
 
-	if w := reg.get(mbmsg.EnvCommandTopic); w != nil && len(w.Messages()) > 0 {
-		t.Fatalf("expected no monster book emission for non-card item, got %d messages", len(w.Messages()))
+	if got := len(emitted.Messages(mbmsg.EnvCommandTopic)); got > 0 {
+		t.Fatalf("expected no monster book emission for non-card item, got %d messages", got)
 	}
 }
 
 func TestHandlePickupWrongTypeSkips(t *testing.T) {
-	reg := setupCapturingProducer(t)
+	emitted.Reset()
 	tid := uuid.New()
 	ctx := tenantCtx(t, tid)
 	logger := logrus.New()
@@ -171,7 +119,7 @@ func TestHandlePickupWrongTypeSkips(t *testing.T) {
 
 	handlePickup(logger, ctx, cmd)
 
-	if w := reg.get(mbmsg.EnvCommandTopic); w != nil && len(w.Messages()) > 0 {
-		t.Fatalf("expected no monster book emission for wrong type, got %d messages", len(w.Messages()))
+	if got := len(emitted.Messages(mbmsg.EnvCommandTopic)); got > 0 {
+		t.Fatalf("expected no monster book emission for wrong type, got %d messages", got)
 	}
 }

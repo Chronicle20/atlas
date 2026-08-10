@@ -1512,12 +1512,12 @@
     - sub_630C30
   provenance: manual
   note: IDA v92 CMobPool::OnMobPacket (0x64A6C0) case 0x123 dispatches to unnamed sub_630C30 (0x630C30); CSV fname kept as best-effort label, unnamed function recorded as alt.
-- op: SHOW_MAGNET
+- op: CATCH_MONSTER_WITH_ITEM
   direction: clientbound
   opcode: 292
   fname: CMob::OnEffectByItem
   provenance: manual
-  note: Registry FName was empty; filled from IDB. IDA v92 CMobPool::OnMobPacket (0x64A6C0) case 0x124 -> CMob::OnEffectByItem (0x630C50).
+  note: 'task-212 design F-1/§3. Renamed from placeholder SHOW_MAGNET (task-092-style stale CSV mislabel, same pattern as gms_v83.yaml/gms_v87.yaml): the CSV op-name label was wrong, but the opcode/fname were already correctly filled from the IDB. IDA v92 CMobPool::OnMobPacket (0x64A6C0) case 0x124 -> CMob::OnEffectByItem (0x630C50).'
 - op: MOB_SPEAKING
   direction: clientbound
   opcode: 293

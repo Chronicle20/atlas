@@ -2785,6 +2785,22 @@
         ]
       },
       {
+        "opCode": "0xAC",
+        "writer": "CatchMonster",
+        "fname": "CMob::OnCatchEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xAD",
+        "writer": "CatchMonsterWithItem",
+        "fname": "CMob::OnEffectByItem",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xB1",
         "writer": "SpawnNPC",
         "fname": "CNpcPool::OnNpcEnterField",

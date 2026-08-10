@@ -1939,6 +1939,14 @@
         ]
       },
       {
+        "opCode": "0x53",
+        "writer": "BridleMobCatchFail",
+        "fname": "CWvsContext::OnBridleMobCatchFail",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x73",
         "writer": "AvatarMegaphoneResult",
         "fname": "CWvsContext::OnAvatarMegaphoneRes",
@@ -2352,6 +2360,22 @@
         "opCode": "0x122",
         "writer": "MonsterHealth",
         "fname": "CMob::OnHPIndicator",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x123",
+        "writer": "CatchMonster",
+        "fname": "CMob::OnCatchEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x124",
+        "writer": "CatchMonsterWithItem",
+        "fname": "CMob::OnEffectByItem",
         "services": [
           "channel"
         ]

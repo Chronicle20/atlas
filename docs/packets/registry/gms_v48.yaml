@@ -1794,6 +1794,22 @@
   ida:
     address: 5574988
   note: 'CMobPool::OnMobPacket @0x559390 switches 162 OnMove / 163 OnCtrlAck / 165 OnStatSet / 166 OnStatReset / 167 OnSuspendReset / 168 OnAffected / 169 OnDamaged / 170 OnSpecialEffectBySkill. v61 uses 184.'
+- op: CATCH_MONSTER
+  direction: clientbound
+  opcode: 172
+  fname: CMob::OnCatchEffect
+  fname_alts:
+    - sub_5511F4
+  provenance: manual
+  note: 'task-212 design F-1. IDA v48 CMobPool::OnMobPacket (0x559390) case 172 (0x0AC) dispatches to unnamed sub_5511F4 (0x5511F4), one Decode1 read; canonical fname CMob::OnCatchEffect kept as best-effort label per precedent (gms_v92.yaml CATCH_MONSTER), unnamed function recorded as alt.'
+- op: CATCH_MONSTER_WITH_ITEM
+  direction: clientbound
+  opcode: 173
+  fname: CMob::OnEffectByItem
+  fname_alts:
+    - sub_551481
+  provenance: manual
+  note: 'task-212 design F-2. IDA v48 CMobPool::OnMobPacket (0x559390) case 173 (0x0AD) dispatches to unnamed sub_551481 (0x551481), Decode4 only (no trailing result byte) -- one field shorter than every other version''s CMob::OnEffectByItem, which also reads Decode1.'
 - op: SPAWN_PET
   direction: serverbound
   opcode: 77

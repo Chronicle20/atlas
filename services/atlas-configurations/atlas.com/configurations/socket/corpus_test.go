@@ -60,7 +60,7 @@ func TestValidate_AcceptsEverySeedTemplate(t *testing.T) {
 			}
 		}
 	}
-	if total != 3085 {
-		t.Errorf("corpus size = %d entries, want 3085 (3075 before task-212, plus task-212's 10 MonsterCatchItemUseHandle bindings across all ten templates, offset by gms_61 reusing its existing 0x4A slot rather than adding a new entry, plus gms_61's own +1 net-new ITEM_MOVE (0x42) entry from the slot-shift correction)", total)
+	if total != 3090 {
+		t.Errorf("corpus size = %d entries, want 3090 (3085 before task-212 task 6, plus task 6's 5 clientbound catch writer routes: gms_48_1 CatchMonster (0xAC) + CatchMonsterWithItem (0xAD), gms_92_1 BridleMobCatchFail (0x53) + CatchMonster (0x123) + CatchMonsterWithItem (0x124))", total)
 	}
 }

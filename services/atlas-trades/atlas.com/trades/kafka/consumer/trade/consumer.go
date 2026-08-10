@@ -53,6 +53,12 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAddMeso(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleConfirm(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleTransaction(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -130,6 +136,35 @@ func handleAddMeso(db *gorm.DB) message.Handler[trademsg.Command[trademsg.AddMes
 		}
 		if err := trade.NewProcessor(l, ctx, db).AddMeso(c.TransactionId, c.CharacterId, c.Body.Amount); err != nil {
 			l.WithError(err).Errorf("Unable to stage meso for character [%d].", c.CharacterId)
+		}
+	}
+}
+
+// handleConfirm records one side pressing Trade. The CRC list rides along and
+// is kept as that side's fallback attestation for the timeout path (design
+// §3.1); it is empty on the versions whose TRADE_CONFIRM carries none.
+func handleConfirm(db *gorm.DB) message.Handler[trademsg.Command[trademsg.ConfirmCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c trademsg.Command[trademsg.ConfirmCommandBody]) {
+		if c.Type != trademsg.CommandTypeConfirm {
+			return
+		}
+		if err := trade.NewProcessor(l, ctx, db).Confirm(c.TransactionId, c.CharacterId, c.Body.Entries); err != nil {
+			l.WithError(err).Errorf("Unable to confirm character [%d]'s trade.", c.CharacterId)
+		}
+	}
+}
+
+// handleTransaction records the client's automatic CRC attestation. TRANSACTION
+// is NOT a user action — CTradingRoomDlg::OnTrade sends it on receipt of
+// clientbound mode 17 (design §1.5) — so it arrives once per side, unprompted
+// by the player.
+func handleTransaction(db *gorm.DB) message.Handler[trademsg.Command[trademsg.TransactionCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c trademsg.Command[trademsg.TransactionCommandBody]) {
+		if c.Type != trademsg.CommandTypeTransaction {
+			return
+		}
+		if err := trade.NewProcessor(l, ctx, db).Attest(c.TransactionId, c.CharacterId, c.Body.Entries); err != nil {
+			l.WithError(err).Errorf("Unable to record character [%d]'s trade attestation.", c.CharacterId)
 		}
 	}
 }

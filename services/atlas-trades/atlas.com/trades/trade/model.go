@@ -14,6 +14,7 @@
 package trade
 
 import (
+	trademsg "atlas-trades/kafka/message/trade"
 	"time"
 
 	"github.com/google/uuid"
@@ -91,14 +92,32 @@ func NewStagedItem(tradeSlot byte, assetId asset.Id, templateId item.Id, quantit
 // Participant is one side of the trade. position 0 is the room owner, 1 the
 // invited character; position drives which side of the client dialog receives
 // which update (FR-1.5).
+//
+// confirmEntries and attestEntries are the two CRC lists the client sends: the
+// first with TRADE_CONFIRM, the second with its automatic TRANSACTION reply to
+// mode 17 (design §6.2). They are stored as the wire type rather than a
+// re-declared domain pair — a {data, crc} tuple carries no domain behaviour of
+// its own, and a parallel type would only be converted back at both boundaries.
+// Both are empty on GMS <= v79, where the payload has no CRC list at all
+// (design §4.4).
+//
+// mesoTax and mesoDelivered are RESOLVED at settlement time from the tenant's
+// tax table and then frozen onto the participant: the saga payload and the
+// ledger row must agree, and re-deriving them at ledger-write time would let a
+// tenant configuration change land between the two and record figures the
+// orchestrator never moved.
 type Participant struct {
-	characterId character.Id
-	name        string
-	position    byte
-	confirmed   bool
-	attested    bool
-	mesoStaged  uint32
-	items       []StagedItem
+	characterId    character.Id
+	name           string
+	position       byte
+	confirmed      bool
+	attested       bool
+	mesoStaged     uint32
+	mesoTax        uint32
+	mesoDelivered  uint32
+	confirmEntries []trademsg.CrcEntry
+	attestEntries  []trademsg.CrcEntry
+	items          []StagedItem
 }
 
 func (p Participant) CharacterId() character.Id { return p.characterId }
@@ -107,6 +126,31 @@ func (p Participant) Position() byte            { return p.position }
 func (p Participant) Confirmed() bool           { return p.confirmed }
 func (p Participant) Attested() bool            { return p.attested }
 func (p Participant) MesoStaged() uint32        { return p.mesoStaged }
+
+// MesoTax is what this side's staged meso pays in tax, resolved at settlement
+// time. Zero until then.
+func (p Participant) MesoTax() uint32 { return p.mesoTax }
+
+// MesoDelivered is what the COUNTERPARTY receives out of this side's staged
+// meso, resolved at settlement time. Zero until then.
+func (p Participant) MesoDelivered() uint32 { return p.mesoDelivered }
+
+// ConfirmEntries returns a copy of the CRC list this side sent with its
+// TRADE_CONFIRM.
+func (p Participant) ConfirmEntries() []trademsg.CrcEntry { return copyEntries(p.confirmEntries) }
+
+// AttestEntries returns a copy of the CRC list this side sent with its
+// TRANSACTION reply.
+func (p Participant) AttestEntries() []trademsg.CrcEntry { return copyEntries(p.attestEntries) }
+
+func copyEntries(in []trademsg.CrcEntry) []trademsg.CrcEntry {
+	if in == nil {
+		return nil
+	}
+	out := make([]trademsg.CrcEntry, len(in))
+	copy(out, in)
+	return out
+}
 
 // Items returns a copy of the staged items, so a caller cannot write through
 // the returned slice into the participant's state.
@@ -122,6 +166,31 @@ func (p Participant) Items() []StagedItem {
 func (p Participant) WithConfirmed(v bool) Participant { c := p; c.confirmed = v; return c }
 
 func (p Participant) WithAttested(v bool) Participant { c := p; c.attested = v; return c }
+
+// WithConfirmEntries returns a copy carrying the CRC list sent with
+// TRADE_CONFIRM. The slice is copied, so the caller's may be reused.
+func (p Participant) WithConfirmEntries(entries []trademsg.CrcEntry) Participant {
+	c := p
+	c.confirmEntries = copyEntries(entries)
+	return c
+}
+
+// WithAttestEntries returns a copy carrying the CRC list sent with the
+// TRANSACTION reply.
+func (p Participant) WithAttestEntries(entries []trademsg.CrcEntry) Participant {
+	c := p
+	c.attestEntries = copyEntries(entries)
+	return c
+}
+
+// WithSettlementMeso returns a copy carrying the resolved tax split for this
+// side's staged meso: tax is destroyed, delivered goes to the counterparty.
+func (p Participant) WithSettlementMeso(tax uint32, delivered uint32) Participant {
+	c := p
+	c.mesoTax = tax
+	c.mesoDelivered = delivered
+	return c
+}
 
 func (p Participant) WithMesoStaged(v uint32) Participant { c := p; c.mesoStaged = v; return c }
 
@@ -192,22 +261,30 @@ func (p Participant) StagedQuantityFrom(inventoryType inventory.Type, sourceSlot
 //
 // roomType is a miniroom type byte — miniroom.Trade (3) or miniroom.CashTrade
 // (6) from libs/atlas-constants/miniroom.
+// settlementId is the transaction id of the settlement saga this room
+// submitted, minted at the SETTLING transition. It is also the ledger's
+// idempotency key (FR-5.7) and the only handle the EVENT_TOPIC_SAGA_STATUS
+// consumer has for finding the room a terminal saga status belongs to — the
+// FAILED body's characterId names the failed expanded step's character, which
+// is not a role and may be either participant.
 type Room struct {
 	id           uuid.UUID
 	handle       uint32
 	roomType     byte
 	f            field.Model
 	state        State
+	settlementId uuid.UUID
 	participants []Participant
 	createdAt    time.Time
 }
 
-func (r Room) Id() uuid.UUID        { return r.id }
-func (r Room) Handle() uint32       { return r.handle }
-func (r Room) RoomType() byte       { return r.roomType }
-func (r Room) Field() field.Model   { return r.f }
-func (r Room) State() State         { return r.state }
-func (r Room) CreatedAt() time.Time { return r.createdAt }
+func (r Room) Id() uuid.UUID           { return r.id }
+func (r Room) Handle() uint32          { return r.handle }
+func (r Room) RoomType() byte          { return r.roomType }
+func (r Room) Field() field.Model      { return r.f }
+func (r Room) State() State            { return r.state }
+func (r Room) SettlementId() uuid.UUID { return r.settlementId }
+func (r Room) CreatedAt() time.Time    { return r.createdAt }
 
 // Participants returns a copy of the participant list, so a caller cannot
 // write through the returned slice into the room's state.
@@ -270,6 +347,57 @@ func (r Room) WithState(s State) Room {
 	c := r
 	c.state = s
 	return c
+}
+
+// WithSettlementId returns a copy of r carrying the settlement saga's
+// transaction id.
+func (r Room) WithSettlementId(id uuid.UUID) Room {
+	c := r
+	c.settlementId = id
+	return c
+}
+
+// BothConfirmed reports whether a SEATED PAIR has both confirmed. A solo room
+// can never satisfy it: the participant count is part of the test, so a single
+// confirmed owner does not read as a confirmed trade.
+func (r Room) BothConfirmed() bool {
+	if len(r.participants) != 2 {
+		return false
+	}
+	for _, p := range r.participants {
+		if !p.confirmed {
+			return false
+		}
+	}
+	return true
+}
+
+// BothAttested reports whether a seated pair has both replied to the mode-17
+// attestation prompt.
+func (r Room) BothAttested() bool {
+	if len(r.participants) != 2 {
+		return false
+	}
+	for _, p := range r.participants {
+		if !p.attested {
+			return false
+		}
+	}
+	return true
+}
+
+// OrderedParticipants returns the participants by POSITION — owner (0) first,
+// visitor (1) second. Every downstream consumer that indexes a pair (the saga
+// payload's [2]TradeSettlementSide, the ledger's two sides) needs a stable
+// order, and position is the only one the room defines. It is an ORDER, not a
+// role assignment: neither index is "the giver", because each side gives its
+// own contribution and receives the other's.
+func (r Room) OrderedParticipants() []Participant {
+	out := r.Participants()
+	if len(out) == 2 && out[0].position > out[1].position {
+		out[0], out[1] = out[1], out[0]
+	}
+	return out
 }
 
 // WithVisitor returns a copy of r with characterId seated at position 1

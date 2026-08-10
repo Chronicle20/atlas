@@ -2,6 +2,7 @@ package main
 
 import (
 	inviteconsumer "atlas-trades/kafka/consumer/invite"
+	sagaconsumer "atlas-trades/kafka/consumer/saga"
 	tradeconsumer "atlas-trades/kafka/consumer/trade"
 	"atlas-trades/ledger"
 	"atlas-trades/trade"
@@ -92,7 +93,16 @@ func main() {
 	if err := inviteconsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
+	// Terminal settlement outcomes. A trade's LEAVE 7 / LEAVE 8 is produced
+	// here, not when the saga is submitted (design §6.4).
+	sagaconsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := sagaconsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
+	// Attestation deadlines are sleeping goroutines; without this, shutdown
+	// waits out the longest one.
+	rt.TeardownFunc(func() { trade.GetAttestationTimers().StopAll() })
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	server.New(l).

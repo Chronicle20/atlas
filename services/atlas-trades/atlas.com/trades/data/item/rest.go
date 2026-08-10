@@ -1,5 +1,7 @@
-// Package item is the atlas-data item-information REST client. It answers one
-// question — does this item template set WZ `tradeBlock` (FR-4.2)?
+// Package item is the atlas-data item-information REST client. It answers two
+// questions — does this item template set WZ `tradeBlock` (FR-4.2), and how
+// many of it fit in one inventory slot (WZ `slotMax`, which the settlement
+// free-slot pre-check needs to count stackable merges, design §6.1 check 1)?
 //
 // atlas-data exposes tradeBlock on FIVE separate resources, one per inventory
 // compartment, at five different paths and with five different JSON:API type
@@ -39,6 +41,7 @@ func (r EquipmentRestModel) tradeBlock() bool { return r.TradeBlock }
 type ConsumableRestModel struct {
 	Id         item.Id `json:"-"`
 	TradeBlock bool    `json:"tradeBlock"`
+	SlotMax    uint32  `json:"slotMax"`
 }
 
 func (r ConsumableRestModel) GetName() string { return "consumables" }
@@ -53,11 +56,14 @@ func (r *ConsumableRestModel) SetToManyReferenceIDs(_ string, _ []string) error 
 
 func (r ConsumableRestModel) tradeBlock() bool { return r.TradeBlock }
 
+func (r ConsumableRestModel) slotMax() uint32 { return r.SlotMax }
+
 // SetupRestModel mirrors atlas-data's GET /data/setups/{id} response
 // (services/atlas-data/atlas.com/data/setup/rest.go:12,25).
 type SetupRestModel struct {
 	Id         item.Id `json:"-"`
 	TradeBlock bool    `json:"tradeBlock"`
+	SlotMax    uint32  `json:"slotMax"`
 }
 
 func (r SetupRestModel) GetName() string { return "setups" }
@@ -72,11 +78,14 @@ func (r *SetupRestModel) SetToManyReferenceIDs(_ string, _ []string) error { ret
 
 func (r SetupRestModel) tradeBlock() bool { return r.TradeBlock }
 
+func (r SetupRestModel) slotMax() uint32 { return r.SlotMax }
+
 // EtcRestModel mirrors atlas-data's GET /data/etcs/{id} response
 // (services/atlas-data/atlas.com/data/etc/rest.go:13,18).
 type EtcRestModel struct {
 	Id         item.Id `json:"-"`
 	TradeBlock bool    `json:"tradeBlock"`
+	SlotMax    uint32  `json:"slotMax"`
 }
 
 func (r EtcRestModel) GetName() string { return "etcs" }
@@ -91,11 +100,14 @@ func (r *EtcRestModel) SetToManyReferenceIDs(_ string, _ []string) error { retur
 
 func (r EtcRestModel) tradeBlock() bool { return r.TradeBlock }
 
+func (r EtcRestModel) slotMax() uint32 { return r.SlotMax }
+
 // CashRestModel mirrors atlas-data's GET /data/cash/items/{id} response
 // (services/atlas-data/atlas.com/data/cash/rest.go:47,50).
 type CashRestModel struct {
 	Id         item.Id `json:"-"`
 	TradeBlock bool    `json:"tradeBlock"`
+	SlotMax    uint32  `json:"slotMax"`
 }
 
 func (r CashRestModel) GetName() string { return "cash_items" }
@@ -110,6 +122,8 @@ func (r *CashRestModel) SetToManyReferenceIDs(_ string, _ []string) error { retu
 
 func (r CashRestModel) tradeBlock() bool { return r.TradeBlock }
 
+func (r CashRestModel) slotMax() uint32 { return r.SlotMax }
+
 func setItemId(target *item.Id, strId string) error {
 	id, err := strconv.ParseUint(strId, 10, 32)
 	if err != nil {
@@ -123,4 +137,13 @@ func setItemId(target *item.Id, strId string) error {
 // models: each carries the same single field this reader cares about.
 func extractTradeBlock[R interface{ tradeBlock() bool }](rm R) (bool, error) {
 	return rm.tradeBlock(), nil
+}
+
+// extractSlotMax is the shared Extract for the four STACKABLE wire models.
+// Equipment is absent by design: atlas-data's equipment resource carries no
+// slotMax, and an equip never merges — atlas-inventory's Accept only attempts a
+// merge for an asset that HasQuantity
+// (services/atlas-inventory/atlas.com/inventory/compartment/processor.go:1666).
+func extractSlotMax[R interface{ slotMax() uint32 }](rm R) (uint32, error) {
+	return rm.slotMax(), nil
 }

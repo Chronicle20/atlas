@@ -145,6 +145,30 @@ func (reg *Registry) GetByHandle(t tenant.Model, handle uint32) (Room, bool) {
 	return r, ok
 }
 
+// GetBySettlement resolves the room that submitted the settlement saga with the
+// given transaction id.
+//
+// It SCANS rather than reading an index. The member and handle indexes exist
+// because they are read on every command; this one is read at most twice per
+// settled trade, and a room only carries a settlement id for the seconds its
+// saga is in flight — so an index would add a third structure to keep
+// consistent inside Create/Update/Remove for no measurable gain. A tenant's
+// live-room count is bounded by its online population, and uuid.Nil is skipped
+// so a room that has not settled can never be matched by a zero-valued id.
+func (reg *Registry) GetBySettlement(t tenant.Model, settlementId uuid.UUID) (Room, bool) {
+	if settlementId == uuid.Nil {
+		return Room{}, false
+	}
+	reg.mutex.RLock()
+	defer reg.mutex.RUnlock()
+	for _, r := range reg.rooms[t] {
+		if r.settlementId == settlementId {
+			return r, true
+		}
+	}
+	return Room{}, false
+}
+
 // All returns every live room for tenant t (the REST list read).
 func (reg *Registry) All(t tenant.Model) []Room {
 	reg.mutex.RLock()

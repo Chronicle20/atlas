@@ -33,6 +33,9 @@ type assetKey struct {
 type fakeInventory struct {
 	assets map[assetKey]inventorydata.Asset
 	err    error
+	// capacity is the slot count every compartment reports. Zero means the
+	// default 24 — the settlement free-slot check is the only reader that cares.
+	capacity uint32
 	// onGetCompartment fires on each compartment read. The refresh does its
 	// reads between snapshotting the registry and taking the write lock, so
 	// this is the seam a test uses to land a concurrent teardown in exactly
@@ -69,7 +72,11 @@ func (f *fakeInventory) GetCompartment(characterId character.Id, inventoryType i
 		}
 		assets = append(assets, inventorydata.NewAsset(a.Id(), k.sourceSlot, a.TemplateId(), a.Quantity(), a.Flag()))
 	}
-	return inventorydata.NewModel(uuid.New(), inventoryType, 24, assets), nil
+	capacity := f.capacity
+	if capacity == 0 {
+		capacity = 24
+	}
+	return inventorydata.NewModel(uuid.New(), inventoryType, capacity, assets), nil
 }
 
 // relocate moves an asset to another slot the way an atlas-inventory swap
@@ -86,13 +93,35 @@ func (f *fakeInventory) relocate(characterId character.Id, inventoryType invento
 type fakeItemData struct {
 	blocked map[item.Id]bool
 	err     error
+	// slotMax is the per-template stack ceiling the settlement free-slot check
+	// counts merges with. An absent template reports defaultSlotMax.
+	slotMax map[item.Id]uint32
+	// slotMaxErr fails the slotMax lookup only, leaving tradeBlock readable —
+	// the two are separate atlas-data reads on the settlement path.
+	slotMaxErr error
 }
+
+// defaultSlotMax is what the fake reports for a template it has no entry for.
+// It is deliberately larger than any quantity the tests stage, so a merge is
+// possible whenever the templates match and a test that wants a NEW slot
+// consumed uses distinct templates rather than relying on a full stack.
+const defaultSlotMax = uint32(200)
 
 func (f *fakeItemData) TradeBlock(_ inventory.Type, templateId item.Id) (bool, error) {
 	if f.err != nil {
 		return false, f.err
 	}
 	return f.blocked[templateId], nil
+}
+
+func (f *fakeItemData) SlotMax(_ inventory.Type, templateId item.Id) (uint32, error) {
+	if f.slotMaxErr != nil {
+		return 0, f.slotMaxErr
+	}
+	if m, ok := f.slotMax[templateId]; ok {
+		return m, nil
+	}
+	return defaultSlotMax, nil
 }
 
 // --- harness -----------------------------------------------------------------

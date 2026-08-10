@@ -1,0 +1,819 @@
+package trade
+
+import (
+	"atlas-trades/configuration"
+	inventorydata "atlas-trades/data/inventory"
+	"atlas-trades/kafka/message"
+	trademsg "atlas-trades/kafka/message/trade"
+	"atlas-trades/ledger"
+	"context"
+	"sort"
+	"sync"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+)
+
+// sagaFailedReason labels the settlement-failure metric when the orchestrator,
+// not a pre-check, refused the trade. Pre-check refusals carry their own
+// leaveReason key.
+const sagaFailedReason = "SAGA_FAILED"
+
+// --- the attestation deadline -------------------------------------------------
+
+// attestationTimers holds one armed deadline per room in AWAITING_ATTESTATION
+// (design §3.1: the attestation is defence in depth, not a liveness
+// dependency — a client that never replies must not wedge a trade).
+//
+// Cancelling a timer is an OPTIMISATION, not a correctness requirement:
+// ExpireAttestation re-reads the room and does nothing unless it is still
+// awaiting attestation, so a stray wakeup after the room settled or was torn
+// down is already a no-op. The registry exists so the common case does not leak
+// a goroutine per trade for the length of the deadline.
+type attestationTimers struct {
+	mutex sync.Mutex
+	stops map[tenant.Model]map[uuid.UUID]chan struct{}
+}
+
+func newAttestationTimers() *attestationTimers {
+	return &attestationTimers{stops: make(map[tenant.Model]map[uuid.UUID]chan struct{})}
+}
+
+var (
+	attestationTimerRegistry *attestationTimers
+	attestationTimerOnce     sync.Once
+)
+
+// GetAttestationTimers returns the process-wide deadline registry.
+func GetAttestationTimers() *attestationTimers {
+	attestationTimerOnce.Do(func() { attestationTimerRegistry = newAttestationTimers() })
+	return attestationTimerRegistry
+}
+
+// Arm schedules fire for one room, replacing any deadline already armed for it.
+//
+// ctx is deliberately NOT the command's context. A Kafka handler's context is
+// done the moment the handler returns, so arming against it would fire the
+// deadline immediately-and-never: the goroutine would exit before the timer.
+func (r *attestationTimers) Arm(l logrus.FieldLogger, ctx context.Context, t tenant.Model, roomId uuid.UUID, d time.Duration, fire func()) {
+	stop := make(chan struct{})
+
+	r.mutex.Lock()
+	if r.stops[t] == nil {
+		r.stops[t] = make(map[uuid.UUID]chan struct{})
+	}
+	if existing, ok := r.stops[t][roomId]; ok {
+		close(existing)
+	}
+	r.stops[t][roomId] = stop
+	r.mutex.Unlock()
+
+	routine.Go(l, ctx, func(c context.Context) {
+		timer := time.NewTimer(d)
+		defer timer.Stop()
+		select {
+		case <-timer.C:
+			r.forget(t, roomId, stop)
+			fire()
+		case <-stop:
+		case <-c.Done():
+			r.forget(t, roomId, stop)
+		}
+	})
+}
+
+// Cancel disarms the room's deadline, if one is armed.
+func (r *attestationTimers) Cancel(t tenant.Model, roomId uuid.UUID) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	if stop, ok := r.stops[t][roomId]; ok {
+		close(stop)
+		delete(r.stops[t], roomId)
+	}
+}
+
+// StopAll disarms every deadline. main registers it as a teardown so shutdown
+// does not wait on a sleeping timer.
+func (r *attestationTimers) StopAll() {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	for t, rooms := range r.stops {
+		for id, stop := range rooms {
+			close(stop)
+			delete(rooms, id)
+		}
+		delete(r.stops, t)
+	}
+}
+
+// forget drops the registry entry for a deadline that has fired, but only if it
+// is still THIS deadline's — a re-arm between the fire and the lock installed a
+// newer channel that must survive.
+func (r *attestationTimers) forget(t tenant.Model, roomId uuid.UUID, stop chan struct{}) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	if held, ok := r.stops[t][roomId]; ok && held == stop {
+		delete(r.stops[t], roomId)
+	}
+}
+
+// detached returns a copy of the processor whose context carries the tenant but
+// no cancellation and no deadline of its own. The attestation timer fires long
+// after the command that armed it returned, so the fired work cannot run on
+// that command's context — and it must not run on its transaction either, which
+// is why Confirm arms from OUTSIDE emit, where p.db is still the root handle.
+func (p *ProcessorImpl) detached() *ProcessorImpl {
+	c := *p
+	c.ctx = tenant.WithContext(context.Background(), p.t)
+	return &c
+}
+
+// armAttestationDeadline schedules ExpireAttestation for the room.
+func (p *ProcessorImpl) armAttestationDeadline(roomId uuid.UUID) {
+	d := p.cfg.Get(p.l, p.ctx).AttestationTimeout()
+	dp := p.detached()
+	p.timers.Arm(p.l, dp.ctx, p.t, roomId, d, func() {
+		if err := dp.ExpireAttestation(uuid.New(), roomId); err != nil {
+			dp.l.WithError(err).Errorf("Unable to expire the attestation deadline of trade room [%s].", roomId.String())
+		}
+	})
+}
+
+// --- CONFIRM ------------------------------------------------------------------
+
+// Confirm records one side pressing Trade (FR-5.1). See the Processor interface
+// for the contract; the ordering below is design §6.2's.
+func (p *ProcessorImpl) Confirm(txId uuid.UUID, characterId character.Id, entries []trademsg.CrcEntry) error {
+	var arm uuid.UUID
+	err := p.emit(func(txp *ProcessorImpl, mb *message.Buffer) error {
+		var cerr error
+		arm, cerr = txp.confirm(mb, txId, characterId, entries)
+		return cerr
+	})
+	if err != nil {
+		return err
+	}
+	// Armed OUTSIDE emit, on the root processor: the deadline outlives both the
+	// transaction and the command's context.
+	if arm != uuid.Nil {
+		p.armAttestationDeadline(arm)
+	}
+	return nil
+}
+
+// confirm returns the id of the room whose attestation deadline must be armed,
+// or uuid.Nil when this confirm was the first of the two.
+func (p *ProcessorImpl) confirm(mb *message.Buffer, txId uuid.UUID, characterId character.Id, entries []trademsg.CrcEntry) (uuid.UUID, error) {
+	room, ok := p.reg.GetByMember(p.t, characterId)
+	if !ok {
+		p.l.Debugf("Character [%d] issued CONFIRM without a trade room. Dropping.", characterId)
+		return uuid.Nil, nil
+	}
+	// A confirm is only legal from OPEN. Past that the room is either already
+	// awaiting attestation or settling, and the reference client blocks a second
+	// press locally (design §3.2), so reaching here means a modified client.
+	if room.State() != StateOpen {
+		p.l.Warnf("Character [%d] issued CONFIRM against trade room [%s] in state [%s]. Dropping.", characterId, room.Id().String(), room.State())
+		return uuid.Nil, nil
+	}
+	pt, ok := room.ParticipantFor(characterId)
+	if !ok {
+		p.l.Debugf("Character [%d] issued CONFIRM but is not seated in room [%s]. Dropping.", characterId, room.Id().String())
+		return uuid.Nil, nil
+	}
+	if pt.Confirmed() {
+		p.l.Warnf("Character [%d] issued a second CONFIRM against trade room [%s]. Dropping: a repeated confirm cannot stand in for the counterparty's.", characterId, room.Id().String())
+		return uuid.Nil, nil
+	}
+
+	// One compare-and-set does both halves: the participant's confirm and, when
+	// it completes the pair, the transition. Splitting them would let two
+	// simultaneous confirms each observe the other as unconfirmed.
+	updated, err := p.reg.Update(p.t, room.Id(), func(cur Room) (Room, error) {
+		if cur.State() != StateOpen {
+			return Room{}, ErrRoomFrozen
+		}
+		cp, found := cur.ParticipantFor(characterId)
+		if !found {
+			return Room{}, ErrRoomNotFound
+		}
+		if cp.Confirmed() {
+			return Room{}, ErrRoomFrozen
+		}
+		next := cur.WithParticipant(cp.Position(), func(v Participant) Participant {
+			return v.WithConfirmed(true).WithConfirmEntries(entries)
+		})
+		if next.BothConfirmed() {
+			next = next.WithState(StateAwaitingAttestation)
+		}
+		return next, nil
+	})
+	if err != nil {
+		p.l.WithError(err).Debugf("Character [%d]'s CONFIRM lost a race. Dropping.", characterId)
+		return uuid.Nil, nil
+	}
+
+	if err = mb.Put(trademsg.EnvEventTopicStatus, participantConfirmedProvider(txId, updated, characterId, pt.Position())); err != nil {
+		return uuid.Nil, err
+	}
+	if updated.State() != StateAwaitingAttestation {
+		return uuid.Nil, nil
+	}
+
+	p.l.WithFields(p.roomFields(updated)).Infof("Both sides of trade room [%s] confirmed; requesting attestation.", updated.Id().String())
+	if err = mb.Put(trademsg.EnvEventTopicStatus, attestationRequestedProvider(txId, updated, characterId)); err != nil {
+		return uuid.Nil, err
+	}
+	return updated.Id(), nil
+}
+
+// --- TRANSACTION (the attestation reply) --------------------------------------
+
+// Attest records one side's CRC attestation and, once both have replied,
+// settles.
+func (p *ProcessorImpl) Attest(txId uuid.UUID, characterId character.Id, entries []trademsg.CrcEntry) error {
+	return p.emit(func(txp *ProcessorImpl, mb *message.Buffer) error {
+		return txp.attest(mb, txId, characterId, entries)
+	})
+}
+
+func (p *ProcessorImpl) attest(mb *message.Buffer, txId uuid.UUID, characterId character.Id, entries []trademsg.CrcEntry) error {
+	room, ok := p.reg.GetByMember(p.t, characterId)
+	if !ok {
+		p.l.Debugf("Character [%d] issued TRANSACTION without a trade room. Dropping.", characterId)
+		return nil
+	}
+	if room.State() != StateAwaitingAttestation {
+		p.l.Debugf("Character [%d] issued TRANSACTION against trade room [%s] in state [%s]. Dropping.", characterId, room.Id().String(), room.State())
+		return nil
+	}
+
+	updated, err := p.reg.Update(p.t, room.Id(), func(cur Room) (Room, error) {
+		if cur.State() != StateAwaitingAttestation {
+			return Room{}, ErrRoomFrozen
+		}
+		cp, found := cur.ParticipantFor(characterId)
+		if !found {
+			return Room{}, ErrRoomNotFound
+		}
+		return cur.WithParticipant(cp.Position(), func(v Participant) Participant {
+			return v.WithAttested(true).WithAttestEntries(entries)
+		}), nil
+	})
+	if err != nil {
+		p.l.WithError(err).Debugf("Character [%d]'s TRANSACTION lost a race. Dropping.", characterId)
+		return nil
+	}
+	if !updated.BothAttested() {
+		return nil
+	}
+	return p.settle(mb, txId, updated)
+}
+
+// ExpireAttestation settles a room whose attestation deadline lapsed, using
+// whatever attestation arrived (design §3.1). The side that never replied is
+// simply not CRC-checked: its TRADE_CONFIRM list is the only evidence there is,
+// and comparing that list to itself would be a tautology.
+func (p *ProcessorImpl) ExpireAttestation(txId uuid.UUID, roomId uuid.UUID) error {
+	return p.emit(func(txp *ProcessorImpl, mb *message.Buffer) error {
+		return txp.expireAttestation(mb, txId, roomId)
+	})
+}
+
+func (p *ProcessorImpl) expireAttestation(mb *message.Buffer, txId uuid.UUID, roomId uuid.UUID) error {
+	room, ok := p.reg.Get(p.t, roomId)
+	if !ok {
+		p.l.Debugf("Attestation deadline for trade room [%s] fired after the room was gone. Ignoring.", roomId.String())
+		return nil
+	}
+	if room.State() != StateAwaitingAttestation {
+		p.l.Debugf("Attestation deadline for trade room [%s] fired in state [%s]. Ignoring.", roomId.String(), room.State())
+		return nil
+	}
+	p.l.WithFields(p.roomFields(room)).Infof("Attestation deadline lapsed for trade room [%s]; settling on the confirm lists.", roomId.String())
+	return p.settle(mb, txId, room)
+}
+
+// --- settlement ---------------------------------------------------------------
+
+// settle runs the design §6.1 pre-checks against FRESH reads, then submits one
+// trade_settlement saga whose transaction id is also the ledger's idempotency
+// key (FR-5.7).
+//
+// A refusal TEARS THE ROOM DOWN (design §6.1's correction of PRD FR-4.9):
+// CTradingRoomDlg::OnLeave closes the dialog before showing any of these
+// notices, so there is no client state in which the room survives a status
+// 8/9/13. Under the reserve-at-staging model nothing needs reverting anyway.
+//
+// Failure -> LEAVE status mapping:
+//
+//	(1) free slots       -> TRADE_CANNOT_CARRY  (9)
+//	(2) meso cap         -> TRADE_CANNOT_CARRY  (9)
+//	(3) reservation lost -> TRADE_FAILED        (8)
+//	(4) CRC mismatch     -> TRADE_CRC_FAILED    (13)
+func (p *ProcessorImpl) settle(mb *message.Buffer, txId uuid.UUID, room Room) error {
+	if len(room.Participants()) != 2 {
+		p.l.Errorf("Trade room [%s] reached settlement with [%d] participants. Tearing it down.", room.Id().String(), len(room.Participants()))
+		return p.teardownRoom(mb, txId, room, room.OwnerId(), ReasonTradeFailed)
+	}
+	cfg := p.cfg.Get(p.l, p.ctx)
+	cache := p.newCompartmentCache()
+
+	// OBLIGATION: re-resolve every staged slot HERE, not just on the refresh
+	// tick. The refresh corrects a relocated item only on a tick boundary, and
+	// the CONFIRM freeze stops trade staging, not inventory moves — so an item
+	// dragged in the last tick interval before CONFIRM would otherwise be
+	// settled from a stale slot. The orchestrator's expander resolves the asset
+	// BY SLOT and then rejects a slot holding a different instance
+	// (saga/processor.go:1477-1481), so a stale slot is not a silent wrong-asset
+	// transfer — it is a saga failure, i.e. LEAVE 8 on a trade that was fine.
+	corrections := p.stagedSlotCorrections(cache, room)
+	resolved := room
+	if len(corrections) > 0 {
+		resolved = room.WithEachParticipant(func(v Participant) Participant {
+			return v.WithRelocatedItems(corrections)
+		})
+	}
+
+	ordered := resolved.OrderedParticipants()
+	var taxes [2]mesoSplit
+	for i, pt := range ordered {
+		tax, delivered := configuration.Tax(cfg, pt.MesoStaged())
+		taxes[i] = mesoSplit{tax: tax, delivered: delivered}
+	}
+
+	if reason, ok := p.preCheck(cache, ordered, taxes); !ok {
+		p.l.WithFields(p.roomFields(resolved)).Infof("Refusing to settle trade room [%s]: [%s].", resolved.Id().String(), reason)
+		recordSettlementFailed(p.t, reason)
+		return p.teardownRoom(mb, txId, resolved, resolved.OwnerId(), reason)
+	}
+
+	settlementId := uuid.New()
+	// Compare-and-set. Another goroutine that already drove this room to
+	// SETTLING wins, and this attempt becomes a no-op rather than a second saga
+	// (design §12). The corrections and the resolved tax split are written back
+	// in the same step, so the payload built below and the ledger row written at
+	// terminal success are derived from one and the same room.
+	updated, err := p.reg.Update(p.t, resolved.Id(), func(cur Room) (Room, error) {
+		if cur.State() != StateAwaitingAttestation {
+			return Room{}, ErrRoomFrozen
+		}
+		next := cur
+		if len(corrections) > 0 {
+			next = next.WithEachParticipant(func(v Participant) Participant {
+				return v.WithRelocatedItems(corrections)
+			})
+		}
+		for i, pt := range ordered {
+			split := taxes[i]
+			next = next.WithParticipant(pt.Position(), func(v Participant) Participant {
+				return v.WithSettlementMeso(split.tax, split.delivered)
+			})
+		}
+		return next.WithState(StateSettling).WithSettlementId(settlementId), nil
+	})
+	if err != nil {
+		p.l.WithError(err).Debugf("Trade room [%s] was already driven to settlement by another command. Dropping.", resolved.Id().String())
+		return nil
+	}
+
+	p.timers.Cancel(p.t, updated.Id())
+	p.l.WithFields(p.roomFields(updated)).WithField("settlement_id", settlementId.String()).Infof("Submitting settlement for trade room [%s].", updated.Id().String())
+	return p.sgp.Settle(mb)(settlementId, settlementPayload(settlementId, updated))
+}
+
+// mesoSplit is one side's resolved tax outcome: tax is destroyed, delivered
+// goes to the counterparty.
+type mesoSplit struct {
+	tax       uint32
+	delivered uint32
+}
+
+// stagedSlotCorrections re-resolves every staged item against its asset id and
+// returns the slots that moved, keyed by reservation id. The REST reads happen
+// here, never inside a Registry.Update closure, which runs under the write lock
+// and must stay pure.
+func (p *ProcessorImpl) stagedSlotCorrections(cache *compartmentCache, room Room) map[uuid.UUID]slot.Position {
+	corrections := make(map[uuid.UUID]slot.Position)
+	for _, pt := range room.Participants() {
+		for _, i := range pt.Items() {
+			if got := p.resolveStagedSlot(cache, pt.CharacterId(), i); got != i.SourceSlot() {
+				corrections[i.ReservationId()] = got
+			}
+		}
+	}
+	return corrections
+}
+
+// settlementPayload projects the room onto the composite the orchestrator
+// expands. Sides are ordered by seat, which the [2]TradeSettlementSide array
+// requires; that order carries no role meaning (see Room.OrderedParticipants).
+func settlementPayload(settlementId uuid.UUID, room Room) sharedsaga.TradeSettlementPayload {
+	payload := sharedsaga.TradeSettlementPayload{
+		TransactionId: settlementId,
+		WorldId:       room.Field().WorldId(),
+		ChannelId:     room.Field().ChannelId(),
+		RoomType:      room.RoomType(),
+	}
+	for i, pt := range room.OrderedParticipants() {
+		side := sharedsaga.TradeSettlementSide{
+			CharacterId:   pt.CharacterId(),
+			MesoStaged:    pt.MesoStaged(),
+			MesoTax:       pt.MesoTax(),
+			MesoDelivered: pt.MesoDelivered(),
+		}
+		for _, it := range pt.Items() {
+			side.Items = append(side.Items, sharedsaga.TradeSettlementItem{
+				InventoryType: it.InventoryType(),
+				SourceSlot:    it.SourceSlot(),
+				AssetId:       it.AssetId(),
+				TemplateId:    it.TemplateId(),
+				Quantity:      it.Quantity(),
+			})
+		}
+		payload.Sides[i] = side
+	}
+	return payload
+}
+
+// preCheck runs design §6.1's four checks against fresh reads and returns the
+// leaveReason key to refuse with, or ("", true) to proceed. ordered is the
+// slot-corrected participant pair; taxes[i] is ordered[i]'s resolved split.
+func (p *ProcessorImpl) preCheck(cache *compartmentCache, ordered []Participant, taxes [2]mesoSplit) (string, bool) {
+	// (1) Each side has room for what it is about to receive.
+	for i, receiver := range ordered {
+		if reason, ok := p.canCarry(cache, receiver, ordered[1-i].Items()); !ok {
+			return reason, false
+		}
+	}
+
+	// (2) Each side's meso stays inside [0, cap] after paying out and being
+	//     paid. The counterparty's DELIVERED amount is what arrives, not their
+	//     staged amount — the tax never reaches anybody.
+	for i, side := range ordered {
+		if reason, ok := p.mesoSettleable(side, taxes[1-i].delivered); !ok {
+			return reason, false
+		}
+	}
+
+	// (3) Every staged asset is still where the reservation should be holding
+	//     it, at the staged quantity.
+	for _, side := range ordered {
+		if reason, ok := p.stagedAssetsIntact(cache, side); !ok {
+			return reason, false
+		}
+	}
+
+	// (4) The attestation matches the confirm.
+	for _, side := range ordered {
+		if !entriesMatch(side.ConfirmEntries(), side.AttestEntries()) {
+			p.l.Warnf("Character [%d]'s TRANSACTION CRC list does not match the list it sent with TRADE_CONFIRM.", side.CharacterId())
+			return ReasonTradeCrcFailed, false
+		}
+	}
+
+	return "", true
+}
+
+// canCarry reports whether the receiver has room for `incoming`, simulating
+// atlas-inventory's Accept: it merges into the first existing stack of the same
+// template that has room, spilling any remainder into fresh slots
+// (services/atlas-inventory/atlas.com/inventory/compartment/processor.go:1666-1730).
+//
+// The receiver's OWN outgoing items are netted off first, because all releases
+// precede all accepts in the expanded saga (design §6.3) — a slot the receiver
+// empties is available to what it is about to be handed.
+//
+// Every read failure is a refusal. An unreadable compartment or an unreadable
+// slotMax cannot be defaulted: assuming room is how a trade overflows an
+// inventory, and this check exists precisely to stop that reaching the saga.
+func (p *ProcessorImpl) canCarry(cache *compartmentCache, receiver Participant, incoming []StagedItem) (string, bool) {
+	byType := make(map[inventory.Type][]StagedItem)
+	for _, it := range incoming {
+		byType[it.InventoryType()] = append(byType[it.InventoryType()], it)
+	}
+
+	for it, items := range byType {
+		c, err := cache.get(receiver.CharacterId(), it)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to read character [%d]'s compartment [%d] at settlement. Refusing the trade rather than assuming it fits.", receiver.CharacterId(), it)
+			return ReasonTradeCannotCarry, false
+		}
+
+		free, stacks := p.projectCompartment(c, receiver, it)
+		for _, in := range items {
+			slotMax, serr := p.idp.SlotMax(it, in.TemplateId())
+			if serr != nil {
+				p.l.WithError(serr).Errorf("Unable to read the slotMax of item [%d]. Refusing the trade rather than guessing how many slots it needs.", in.TemplateId())
+				return ReasonTradeCannotCarry, false
+			}
+			remaining := uint32(in.Quantity())
+			for si := range stacks {
+				if remaining == 0 {
+					break
+				}
+				if stacks[si].templateId != uint32(in.TemplateId()) || stacks[si].quantity >= slotMax {
+					continue
+				}
+				take := min(slotMax-stacks[si].quantity, remaining)
+				stacks[si].quantity += take
+				remaining -= take
+			}
+			for remaining > 0 {
+				if free == 0 {
+					p.l.Infof("Character [%d] has no free slot in compartment [%d] for the [%d] of item [%d] they are receiving.", receiver.CharacterId(), it, in.Quantity(), in.TemplateId())
+					return ReasonTradeCannotCarry, false
+				}
+				free--
+				take := min(slotMax, remaining)
+				stacks = append(stacks, simulatedStack{templateId: uint32(in.TemplateId()), quantity: take})
+				remaining -= take
+			}
+		}
+	}
+	return "", true
+}
+
+// simulatedStack is one occupied slot in the free-slot simulation.
+type simulatedStack struct {
+	templateId uint32
+	quantity   uint32
+}
+
+// projectCompartment returns the receiver's free slot count and its occupied
+// stacks, with what the receiver is GIVING AWAY out of this compartment already
+// netted off. Negative slots are the equipped positions and occupy no bag slot
+// (see restriction.go's assetView.SourceSlot).
+func (p *ProcessorImpl) projectCompartment(c inventorydata.Model, receiver Participant, it inventory.Type) (uint32, []simulatedStack) {
+	occupied := uint32(0)
+	stacks := make([]simulatedStack, 0, len(c.Assets()))
+	for _, a := range c.Assets() {
+		if a.Slot() < 1 {
+			continue
+		}
+		occupied++
+		given := receiver.StagedQuantityFrom(it, a.Slot())
+		if given >= a.Quantity() {
+			// The whole stack leaves; the slot frees.
+			occupied--
+			continue
+		}
+		stacks = append(stacks, simulatedStack{templateId: uint32(a.TemplateId()), quantity: uint32(a.Quantity() - given)})
+	}
+	if c.Capacity() <= occupied {
+		return 0, stacks
+	}
+	return c.Capacity() - occupied, stacks
+}
+
+// mesoSettleable reports whether the side can pay out what it staged and take
+// in what the counterparty delivers without leaving [0, cap]. The balance is
+// read FRESH: a value captured when the meso was staged would let a player
+// stage meso and spend it before confirming.
+func (p *ProcessorImpl) mesoSettleable(side Participant, incoming uint32) (string, bool) {
+	if side.MesoStaged() == 0 && incoming == 0 {
+		return "", true
+	}
+	cm, err := p.cp.GetById(side.CharacterId())
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to read character [%d]'s meso at settlement. Refusing the trade.", side.CharacterId())
+		return ReasonTradeFailed, false
+	}
+	if cm.Meso() < side.MesoStaged() {
+		p.l.Infof("Character [%d] staged [%d] meso but now holds [%d]. Refusing the settlement.", side.CharacterId(), side.MesoStaged(), cm.Meso())
+		return ReasonTradeCannotCarry, false
+	}
+	if uint64(cm.Meso())-uint64(side.MesoStaged())+uint64(incoming) > maxStageableMeso {
+		p.l.Infof("Character [%d] would hold more than [%d] meso after the trade. Refusing the settlement.", side.CharacterId(), uint32(maxStageableMeso))
+		return ReasonTradeCannotCarry, false
+	}
+	return "", true
+}
+
+// stagedAssetsIntact reports whether every asset this side staged is still
+// present, still the template it was staged as, and still holds at least what
+// was claimed out of it.
+//
+// This is design §6.1's check 3 as far as the reads available allow. The
+// RESERVATION itself is not observable from here — atlas-inventory exposes no
+// read of its reservation registry — so what is verified is the state the
+// reservation exists to protect. An asset that vanished or shrank is exactly
+// the outcome a lapsed or never-filed hold produces, which is why it increments
+// the reservation-expired counter.
+func (p *ProcessorImpl) stagedAssetsIntact(cache *compartmentCache, side Participant) (string, bool) {
+	for _, i := range side.Items() {
+		c, err := cache.get(side.CharacterId(), i.InventoryType())
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to re-read character [%d]'s compartment [%d] at settlement. Refusing the trade.", side.CharacterId(), i.InventoryType())
+			return ReasonTradeFailed, false
+		}
+		a, ok := c.FindById(i.AssetId())
+		if !ok {
+			p.l.Warnf("Staged asset [%d] is no longer in character [%d]'s compartment [%d]. Refusing the settlement.", i.AssetId(), side.CharacterId(), i.InventoryType())
+			recordReservationExpired(p.t)
+			return ReasonTradeFailed, false
+		}
+		if a.TemplateId() != i.TemplateId() {
+			p.l.Warnf("Staged asset [%d] for character [%d] is now template [%d], staged as [%d]. Refusing the settlement.", i.AssetId(), side.CharacterId(), a.TemplateId(), i.TemplateId())
+			return ReasonTradeFailed, false
+		}
+		if claimed := side.StagedQuantityFrom(i.InventoryType(), i.SourceSlot()); a.Quantity() < claimed {
+			p.l.Warnf("Character [%d] staged [%d] out of asset [%d], which now holds [%d]. Refusing the settlement.", side.CharacterId(), claimed, i.AssetId(), a.Quantity())
+			recordReservationExpired(p.t)
+			return ReasonTradeFailed, false
+		}
+	}
+	return "", true
+}
+
+// entriesMatch reports whether the attestation reproduces the confirm's CRC
+// list.
+//
+// An EMPTY attestation always matches. That is not laxity: the CRC list is
+// absent from the wire entirely on GMS <= v79 (the serverbound tradeCrcPresent
+// gate, design §4.4), and the timeout path settles with no attestation at all —
+// in both cases there is nothing to compare, and refusing would break every
+// legacy version and every slow client. A client that wants to skip the check
+// can only do so by sending nothing, which is indistinguishable from not
+// replying, which the deadline already settles.
+//
+// The comparison is order-insensitive. The client builds the list by walking
+// its dialog slots, so a reordering is not evidence of tampering; a changed or
+// missing pair is.
+func entriesMatch(confirmed []trademsg.CrcEntry, attested []trademsg.CrcEntry) bool {
+	if len(attested) == 0 {
+		return true
+	}
+	if len(attested) != len(confirmed) {
+		return false
+	}
+	a := sortedEntries(confirmed)
+	b := sortedEntries(attested)
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func sortedEntries(in []trademsg.CrcEntry) []trademsg.CrcEntry {
+	out := copyEntries(in)
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Data != out[j].Data {
+			return out[i].Data < out[j].Data
+		}
+		return out[i].Crc < out[j].Crc
+	})
+	return out
+}
+
+// --- terminal saga status ------------------------------------------------------
+
+// SettlementSucceeded records the trade and closes both dialogs (FR-5.6,
+// FR-7.1). Per design §6.4 it runs ONLY on terminal saga success, so the meso
+// award has already reached atlas-character and the client's own figure is
+// current.
+func (p *ProcessorImpl) SettlementSucceeded(txId uuid.UUID, roomId uuid.UUID) error {
+	return p.emit(func(txp *ProcessorImpl, mb *message.Buffer) error {
+		return txp.settlementSucceeded(mb, txId, roomId)
+	})
+}
+
+func (p *ProcessorImpl) settlementSucceeded(mb *message.Buffer, txId uuid.UUID, roomId uuid.UUID) error {
+	room, ok := p.settledRoom(roomId, "success")
+	if !ok {
+		return nil
+	}
+
+	// The ledger write joins the enclosing transaction (see the administrator's
+	// create), so the row and the SETTLED event commit together. Record is
+	// idempotent per settlement transaction, so a redelivered COMPLETED status
+	// returns the existing entry rather than recording the trade twice.
+	entry, err := ledger.NewProcessor(p.l, p.ctx, p.db).Record(settlementEntry(room))
+	if err != nil {
+		return err
+	}
+
+	// OBLIGATION: a successful trade must still cancel both holds.
+	// TradeSettlementItem carries no reservation id, so the saga cannot do it,
+	// and atlas-inventory's Release does not touch the reservation registry
+	// (compartment/processor.go:1767-1855) — the hold would sit on the giver's
+	// now-emptied slot for the rest of its 300s TTL, refusing that slot's merge,
+	// drop and any fresh reserve.
+	if err = p.releaseStagedReservations(mb, room); err != nil {
+		return err
+	}
+	p.reg.Remove(p.t, room.Id())
+
+	var taxed uint32
+	for _, pt := range room.Participants() {
+		taxed += pt.MesoTax()
+	}
+	recordSettled(p.t, taxed)
+	p.l.WithFields(p.roomFields(room)).WithField("ledger_entry_id", entry.Id().String()).Infof("Trade room [%s] settled.", room.Id().String())
+	return mb.Put(trademsg.EnvEventTopicStatus, settledProvider(txId, room, room.OwnerId(), entry.Id()))
+}
+
+// SettlementFailed closes both dialogs with LEAVE 8 after the settlement saga
+// reported terminal failure. No ledger row is written: a failed trade is
+// observable through logs and metrics only (FR-7.3).
+func (p *ProcessorImpl) SettlementFailed(txId uuid.UUID, roomId uuid.UUID, reason string) error {
+	return p.emit(func(txp *ProcessorImpl, mb *message.Buffer) error {
+		return txp.settlementFailed(mb, txId, roomId, reason)
+	})
+}
+
+func (p *ProcessorImpl) settlementFailed(mb *message.Buffer, txId uuid.UUID, roomId uuid.UUID, reason string) error {
+	room, ok := p.settledRoom(roomId, "failure")
+	if !ok {
+		return nil
+	}
+	recordSettlementFailed(p.t, sagaFailedReason)
+	p.l.WithFields(p.roomFields(room)).Warnf("Settlement saga for trade room [%s] failed: [%s].", room.Id().String(), reason)
+	// Both sides are told, resolved from the ROOM. The FAILED event names one
+	// character — the failed expanded step's — and that is not a role, so it is
+	// never used to pick a side.
+	return p.teardownRoom(mb, txId, room, room.OwnerId(), ReasonTradeFailed)
+}
+
+// settledRoom resolves a room a terminal saga status refers to. A room that is
+// already gone is not an error: a redelivered status event, or a status that
+// raced the process restart, simply has nothing left to close.
+func (p *ProcessorImpl) settledRoom(roomId uuid.UUID, outcome string) (Room, bool) {
+	room, ok := p.reg.Get(p.t, roomId)
+	if !ok {
+		p.l.Debugf("Settlement %s for trade room [%s], which is already gone. Ignoring.", outcome, roomId.String())
+		return Room{}, false
+	}
+	if room.State() != StateSettling {
+		p.l.Warnf("Settlement %s for trade room [%s] in state [%s]. Ignoring.", outcome, roomId.String(), room.State())
+		return Room{}, false
+	}
+	return room, true
+}
+
+// settlementEntry projects the settled room onto the ledger row. The settlement
+// saga's transaction id is the entry's, which is what makes the write
+// idempotent per settlement (FR-5.7).
+//
+// Items carry the asset id but no referenceId: the staged item records the
+// asset's identity, and the equip/pet/cash reference lives on the asset in
+// atlas-inventory, which has already released it by the time this runs.
+func settlementEntry(room Room) ledger.Model {
+	b := ledger.NewBuilder(room.SettlementId(), room.Field(), room.RoomType())
+	for _, pt := range room.OrderedParticipants() {
+		items := make([]ledger.Item, 0, len(pt.Items()))
+		for _, i := range pt.Items() {
+			assetId := i.AssetId()
+			items = append(items, ledger.NewItem(i.TemplateId(), i.Quantity(), &assetId, nil))
+		}
+		b.AddSide(pt.CharacterId(), pt.Name(), pt.MesoStaged(), pt.MesoTax(), pt.MesoDelivered(), items)
+	}
+	return b.Build()
+}
+
+// teardownRoom removes the room, releases both sides' holds and tells the
+// clients why. characterId names whose action triggered it; for a settlement
+// refusal there is no such actor, so callers pass the owner.
+func (p *ProcessorImpl) teardownRoom(mb *message.Buffer, txId uuid.UUID, room Room, characterId character.Id, reason string) error {
+	// Released BEFORE the registry removal: releaseStagedReservations issues
+	// fallible REST reads, and emit's contract is that every fallible read
+	// happens before the registry swap.
+	if err := p.releaseStagedReservations(mb, room); err != nil {
+		return err
+	}
+	p.timers.Cancel(p.t, room.Id())
+	p.reg.Remove(p.t, room.Id())
+	recordCancelled(p.t, reason)
+	return mb.Put(trademsg.EnvEventTopicStatus, cancelledProvider(txId, room, characterId, reason))
+}
+
+// roomFields is the structured-log context design §12 asks for at every state
+// transition: tenant, room and both characters.
+func (p *ProcessorImpl) roomFields(room Room) logrus.Fields {
+	return logrus.Fields{
+		"tenant_id":    p.t.Id().String(),
+		"room_id":      room.Id().String(),
+		"owner_id":     uint32(room.OwnerId()),
+		"visitor_id":   uint32(room.VisitorId()),
+		"room_state":   string(room.State()),
+		"staged_items": stagedItemCount(room),
+	}
+}
+
+func stagedItemCount(room Room) int {
+	n := 0
+	for _, pt := range room.Participants() {
+		n += len(pt.Items())
+	}
+	return n
+}

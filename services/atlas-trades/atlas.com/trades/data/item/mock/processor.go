@@ -13,6 +13,8 @@ import (
 type ProcessorMock struct {
 	TradeBlockProviderFunc func(inventoryType inventory.Type, templateId item.Id) model.Provider[bool]
 	TradeBlockFunc         func(inventoryType inventory.Type, templateId item.Id) (bool, error)
+	SlotMaxProviderFunc    func(inventoryType inventory.Type, templateId item.Id) model.Provider[uint32]
+	SlotMaxFunc            func(inventoryType inventory.Type, templateId item.Id) (uint32, error)
 }
 
 func (m *ProcessorMock) TradeBlockProvider(inventoryType inventory.Type, templateId item.Id) model.Provider[bool] {
@@ -27,6 +29,20 @@ func (m *ProcessorMock) TradeBlock(inventoryType inventory.Type, templateId item
 		return m.TradeBlockFunc(inventoryType, templateId)
 	}
 	return false, nil
+}
+
+func (m *ProcessorMock) SlotMaxProvider(inventoryType inventory.Type, templateId item.Id) model.Provider[uint32] {
+	if m.SlotMaxProviderFunc != nil {
+		return m.SlotMaxProviderFunc(inventoryType, templateId)
+	}
+	return model.FixedProvider(uint32(1))
+}
+
+func (m *ProcessorMock) SlotMax(inventoryType inventory.Type, templateId item.Id) (uint32, error) {
+	if m.SlotMaxFunc != nil {
+		return m.SlotMaxFunc(inventoryType, templateId)
+	}
+	return 1, nil
 }
 
 var _ itemdata.Processor = (*ProcessorMock)(nil)

@@ -11,6 +11,7 @@ import (
 	"atlas-trades/kafka/message"
 	invitemsg "atlas-trades/kafka/message/invite"
 	trademsg "atlas-trades/kafka/message/trade"
+	sagaproducer "atlas-trades/saga"
 	"context"
 	"errors"
 	"math"
@@ -29,6 +30,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -101,9 +103,18 @@ type inventoryProvider interface {
 	GetCompartment(characterId character.Id, inventoryType inventory.Type) (inventorydata.Model, error)
 }
 
-// itemDataProvider reads the WZ tradeBlock flag of an item template (FR-4.2).
+// itemDataProvider reads the WZ facts staging and settlement need: the
+// tradeBlock flag (FR-4.2) and the slotMax the free-slot pre-check counts
+// stackable merges with (design §6.1 check 1).
 type itemDataProvider interface {
 	TradeBlock(inventoryType inventory.Type, templateId item.Id) (bool, error)
+	SlotMax(inventoryType inventory.Type, templateId item.Id) (uint32, error)
+}
+
+// settlementSubmitter buffers the trade_settlement saga command. atlas-trades
+// submits the COMPOSITE only; the orchestrator expands it (design §6.3).
+type settlementSubmitter interface {
+	Settle(mb *message.Buffer) func(transactionId uuid.UUID, payload sharedsaga.TradeSettlementPayload) error
 }
 
 // reservationProducer issues the atlas-inventory reserve/cancel commands that
@@ -168,6 +179,36 @@ type Processor interface {
 	// Encode4 of a signed int32 and a hostile client can send a negative.
 	AddMeso(txId uuid.UUID, characterId character.Id, amount int32) error
 
+	// RoomBySettlement resolves the room that submitted the settlement saga
+	// carrying the given transaction id. It is how a terminal saga status finds
+	// its trade: the FAILED body names ONE character — the failed expanded
+	// step's — which is not a role and may be either participant, so a side can
+	// never be inferred from it.
+	RoomBySettlement(settlementId uuid.UUID) (Room, bool)
+
+	// Confirm records one side pressing Trade (FR-5.1). It freezes staging from
+	// the FIRST confirm and, only once BOTH have confirmed, moves the room to
+	// AWAITING_ATTESTATION and prompts both clients (design §6.2). entries is
+	// the CRC list the payload carried, empty on the versions that have none.
+	Confirm(txId uuid.UUID, characterId character.Id, entries []trademsg.CrcEntry) error
+
+	// Attest records one side's automatic TRANSACTION reply to that prompt and,
+	// once both have replied, runs the settlement pre-checks and submits the
+	// saga.
+	Attest(txId uuid.UUID, characterId character.Id, entries []trademsg.CrcEntry) error
+
+	// ExpireAttestation settles a room whose attestation deadline lapsed, using
+	// whatever attestation arrived (design §3.1).
+	ExpireAttestation(txId uuid.UUID, roomId uuid.UUID) error
+
+	// SettlementSucceeded writes the ledger row, releases both sides' holds and
+	// closes both dialogs with LEAVE 7. Called only on terminal saga success.
+	SettlementSucceeded(txId uuid.UUID, roomId uuid.UUID) error
+
+	// SettlementFailed releases both sides' holds and closes both dialogs with
+	// LEAVE 8. No ledger row is written (FR-7.3).
+	SettlementFailed(txId uuid.UUID, roomId uuid.UUID, reason string) error
+
 	// RefreshReservations re-files the inventory reservation of every staged
 	// item in every live room, so a reservation TTL never expires under a trade
 	// that is still open (design §5.3). Task 20 drives it from a ticker.
@@ -179,18 +220,20 @@ type Processor interface {
 }
 
 type ProcessorImpl struct {
-	l    logrus.FieldLogger
-	ctx  context.Context
-	db   *gorm.DB
-	t    tenant.Model
-	reg  *Registry
-	cfg  configProvider
-	cp   characterProvider
-	mp   mapProvider
-	locp locationProvider
-	invp inventoryProvider
-	idp  itemDataProvider
-	resp reservationProducer
+	l      logrus.FieldLogger
+	ctx    context.Context
+	db     *gorm.DB
+	t      tenant.Model
+	reg    *Registry
+	cfg    configProvider
+	cp     characterProvider
+	mp     mapProvider
+	locp   locationProvider
+	invp   inventoryProvider
+	idp    itemDataProvider
+	resp   reservationProducer
+	sgp    settlementSubmitter
+	timers *attestationTimers
 }
 
 // NewProcessor resolves the tenant from ctx once; every registry read the
@@ -209,6 +252,10 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		invp: inventorydata.NewProcessor(l, ctx),
 		idp:  itemdata.NewProcessor(l, ctx),
 		resp: compartment.NewProcessor(l, ctx),
+		sgp:  sagaproducer.NewProcessor(l, ctx),
+		// Process-wide: an attestation deadline armed by one command is
+		// cancelled by another, which will be running on a different processor.
+		timers: GetAttestationTimers(),
 	}
 }
 
@@ -224,6 +271,10 @@ func (p *ProcessorImpl) RoomForCharacter(characterId character.Id) (Room, bool) 
 
 func (p *ProcessorImpl) RoomByHandle(handle uint32) (Room, bool) {
 	return p.reg.GetByHandle(p.t, handle)
+}
+
+func (p *ProcessorImpl) RoomBySettlement(settlementId uuid.UUID) (Room, bool) {
+	return p.reg.GetBySettlement(p.t, settlementId)
 }
 
 // emit runs a command's whole event batch through the transactional outbox
@@ -311,6 +362,8 @@ func (p *ProcessorImpl) createRoom(mb *message.Buffer, txId uuid.UUID, f field.M
 		return mb.Put(trademsg.EnvEventTopicStatus, errorProvider(txId, f, roomType, characterId, registryErrorCode(err)))
 	}
 
+	recordRoomOpened(p.t)
+	p.l.WithFields(p.roomFields(room)).Infof("Opened trade room [%s].", room.Id().String())
 	return mb.Put(trademsg.EnvEventTopicStatus, roomCreatedProvider(txId, room))
 }
 
@@ -453,25 +506,16 @@ func (p *ProcessorImpl) declineInvite(mb *message.Buffer, txId uuid.UUID, charac
 		return nil
 	}
 
-	// Released BEFORE the registry removal: releaseStagedReservations issues
-	// fallible REST reads, and emit's contract is that every fallible read
-	// happens before the registry swap, so a failure aborts with the room
-	// still intact rather than half-torn-down.
-	//
-	// A PENDING_INVITE room is frozen against staging, so it should hold no
-	// reservations — but the release is unconditional rather than assumed,
-	// because a leaked hold is invisible until a player complains that an item
-	// will not move.
-	if err := p.releaseStagedReservations(mb, room); err != nil {
-		return err
-	}
-	p.reg.Remove(p.t, room.Id())
 	if retireInvite {
 		if err := mb.Put(invitemsg.EnvCommandTopic, inviteRejectCommandProvider(txId, room, characterId)); err != nil {
 			return err
 		}
 	}
-	return mb.Put(trademsg.EnvEventTopicStatus, cancelledProvider(txId, room, originatorId, ReasonTradeCancelled))
+	// A PENDING_INVITE room is frozen against staging, so it should hold no
+	// reservations — but teardownRoom releases unconditionally rather than
+	// assuming, because a leaked hold is invisible until a player complains
+	// that an item will not move.
+	return p.teardownRoom(mb, txId, room, originatorId, ReasonTradeCancelled)
 }
 
 // EnterRoom seats characterId at position 1 of the room owning the given wire
@@ -577,14 +621,7 @@ func (p *ProcessorImpl) teardownCharacter(mb *message.Buffer, txId uuid.UUID, ch
 		return nil
 	}
 
-	// Released BEFORE the registry removal, so emit's "every fallible read
-	// before the registry swap" contract still holds: releaseStagedReservations
-	// re-resolves each staged slot over REST.
-	if err := p.releaseStagedReservations(mb, room); err != nil {
-		return err
-	}
-	p.reg.Remove(p.t, room.Id())
-	return mb.Put(trademsg.EnvEventTopicStatus, cancelledProvider(txId, room, characterId, reason))
+	return p.teardownRoom(mb, txId, room, characterId, reason)
 }
 
 // releaseStagedReservations cancels the atlas-inventory reservation of every

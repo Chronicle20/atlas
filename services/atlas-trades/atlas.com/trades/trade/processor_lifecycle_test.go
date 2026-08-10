@@ -7,6 +7,8 @@ import (
 	"atlas-trades/kafka/message"
 	invitemsg "atlas-trades/kafka/message/invite"
 	trademsg "atlas-trades/kafka/message/trade"
+	"atlas-trades/ledger"
+	sagaproducer "atlas-trades/saga"
 	"context"
 	"encoding/json"
 	"errors"
@@ -221,7 +223,7 @@ func newLifecycleProcessor(t *testing.T, cfg configuration.Model, characters ...
 
 	tm := lifecycleTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
-	db := databasetest.NewInMemoryTenantDB(t, outbox.Migration)
+	db := databasetest.NewInMemoryTenantDB(t, outbox.Migration, ledger.Migration)
 
 	rows := make(map[character.Id]testCharacter)
 	locations := make(map[character.Id]field.Model)
@@ -244,7 +246,16 @@ func newLifecycleProcessor(t *testing.T, cfg configuration.Model, characters ...
 		// used rather than a fake: the assertions in the staging suite are
 		// about the actual COMMAND_TOPIC_COMPARTMENT bytes.
 		resp: compartment.NewProcessor(l, ctx),
+		// Likewise the saga submitter: the settlement suite asserts on the
+		// actual COMMAND_TOPIC_SAGA bytes, including the concrete payload type.
+		sgp: sagaproducer.NewProcessor(l, ctx),
+		// A PER-TEST deadline registry, not the process singleton. Tests share
+		// the process, and an attestation deadline armed by one of them would
+		// otherwise still be sleeping — holding a reference to that test's
+		// in-memory database — long after it returned.
+		timers: newAttestationTimers(),
 	}
+	t.Cleanup(p.timers.StopAll)
 	return p, &emitted{db: db}
 }
 

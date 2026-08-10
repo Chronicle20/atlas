@@ -132,6 +132,38 @@ func mesoRefusedProvider(txId uuid.UUID, r Room, characterId character.Id, posit
 	})
 }
 
+// participantConfirmedProvider announces that one side pressed Trade. The body
+// names the confirming SIDE by position, exactly as ITEM_STAGED does, so
+// atlas-channel can convert it to each recipient's recipient-relative side byte.
+//
+// It is emitted on EVERY confirm, including the first. What is NOT emitted on
+// the first confirm is ATTESTATION_REQUESTED (design §6.2): clientbound mode 17
+// makes the receiving client auto-reply TRANSACTION, so sending it before both
+// sides have confirmed would let one side drive the other's attestation.
+func participantConfirmedProvider(txId uuid.UUID, r Room, characterId character.Id, position byte) model.Provider[[]kafka.Message] {
+	return roomEventProvider(txId, r, characterId, trademsg.StatusTypeParticipantConfirmed, trademsg.ParticipantConfirmedEventBody{
+		Position: position,
+	})
+}
+
+// attestationRequestedProvider prompts BOTH clients for their CRC attestation
+// (clientbound mode 17). CharacterId names the second confirmer — the character
+// whose action produced the transition — while the event itself is addressed to
+// the room.
+func attestationRequestedProvider(txId uuid.UUID, r Room, characterId character.Id) model.Provider[[]kafka.Message] {
+	return roomEventProvider(txId, r, characterId, trademsg.StatusTypeAttestationRequested, trademsg.AttestationRequestedEventBody{})
+}
+
+// settledProvider announces a completed trade, which atlas-channel writes as
+// LEAVE 7. Per design §6.4 it is emitted ONLY after the settlement saga reports
+// terminal success, because the client renders its "received %d mesos after
+// fees" line from its own character data.
+func settledProvider(txId uuid.UUID, r Room, characterId character.Id, ledgerEntryId uuid.UUID) model.Provider[[]kafka.Message] {
+	return roomEventProvider(txId, r, characterId, trademsg.StatusTypeSettled, trademsg.SettledEventBody{
+		LedgerEntryId: ledgerEntryId,
+	})
+}
+
 // cancelledProvider tears the room down on both clients, carrying the semantic
 // leaveReason KEY string the channel resolves to a per-version status byte.
 // characterId is the character whose action triggered the teardown.

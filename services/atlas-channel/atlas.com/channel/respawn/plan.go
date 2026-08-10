@@ -54,6 +54,24 @@ func findWheelOfFortune(inv channelInventory.Model) *asset.Model {
 	return a
 }
 
+// usesRemaining is the charge count the client is told about after this death
+// spends one — the asset's quantity minus the single unit the DestroyAsset
+// step removes. The wire field is one byte, so a stack larger than 256 is
+// clamped rather than wrapped.
+func usesRemaining(a *asset.Model) byte {
+	if a == nil {
+		return 0
+	}
+	q := a.Quantity()
+	if q == 0 {
+		return 0
+	}
+	if q-1 > 255 {
+		return 255
+	}
+	return byte(q - 1)
+}
+
 // planRespawn decides the respawn outcome. useDeathItem is the client's
 // Change.Premium() byte: CUIRevive::OnButtonClicked calls Revive(1) for OK and
 // Revive(0) for Cancel, so a zero here means the player declined the wheel and

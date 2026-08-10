@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
@@ -106,14 +108,13 @@ func TestAssignedGenerationStartsOnePartitionLoop(t *testing.T) {
 		t.Fatal("LastAssignmentAt is zero after an assignment")
 	}
 
+	// grp.Close() (fakeGroup, mirroring kafka-go's Generation.close()) blocks
+	// until gen's Start'd runPartition goroutine has actually exited, so
+	// wg.Wait() below is already sufficient synchronization — no separate
+	// gen.wait() is needed (see TestGroupCloseWaitsForPartitionGoroutine,
+	// which pins that contract directly).
 	cancel()
 	wg.Wait()
-	// The assigned partition's runPartition goroutine is spawned via
-	// gen.Start and is not tracked by wg (mirrors production: kafka-go owns
-	// generation-scoped goroutines, not the caller). Wait for it explicitly
-	// so it cannot outlive the test and race a later test's mutation of the
-	// package-level drainTimeout var.
-	gen.wait()
 }
 
 // TestUnassignedToAssignedResetsNoProgressState is FR-2.4 end to end.
@@ -140,11 +141,11 @@ func TestUnassignedToAssignedResetsNoProgressState(t *testing.T) {
 		t.Fatalf("consecutiveTimeouts = %d on newly assigned partition, want 0", got)
 	}
 
+	// Same reasoning as TestAssignedGenerationStartsOnePartitionLoop: Close()
+	// already blocks on active's Start'd goroutine, so wg.Wait() alone is a
+	// sufficient barrier.
 	cancel()
 	wg.Wait()
-	// See the equivalent wait in TestAssignedGenerationStartsOnePartitionLoop:
-	// the active generation's runPartition goroutine is not tracked by wg.
-	active.wait()
 }
 
 // TestGroupProducerErrorBacksOffAndRetries: a failure to join must not kill
@@ -188,5 +189,92 @@ func TestPartitionIDsSorted(t *testing.T) {
 	}
 	if partitionIDs(nil) == nil {
 		t.Fatal("partitionIDs(nil) is nil, want an empty slice")
+	}
+}
+
+// TestGroupCloseWaitsForPartitionGoroutine pins the fake's join-on-Close
+// contract (task-209 review finding: fakeGroup.Close must mirror kafka-go's
+// Generation.close(), which blocks until every Start'd goroutine has
+// returned — consumergroup.go:344-360, 685-690). startGroupEngine's shutdown
+// safety depends on that block: its unconditional grp.Close() is what
+// guarantees a generation's runPartition goroutine cannot still be running
+// (and mutating shared state) when startGroupEngine's wg.Done() fires. This
+// test fails if either half of that chain regresses: a fakeGroup.Close()
+// that returns early, or a startGroupEngine that stops calling/awaiting it.
+//
+// The handler is held open on a channel the test controls; the pass/fail
+// gate is the ordering this produces (the engine cannot finish until the
+// handler is released, and the handler must have actually returned by the
+// time it does), not elapsed time. The 150ms window only proves the block is
+// real rather than a lucky scheduling race — a regressed fakeGroup.Close()
+// returns essentially instantly, so it would trip that window every run.
+func TestGroupCloseWaitsForPartitionGoroutine(t *testing.T) {
+	l, _ := silentLogger()
+
+	release := make(chan struct{})
+	handlerStarted := make(chan struct{})
+	var startedOnce sync.Once
+	var mu sync.Mutex
+	var handlerReturned bool
+
+	gen := newFakeGeneration(1, map[string][]kafka.PartitionAssignment{
+		"t": {{ID: 0, Offset: kafka.FirstOffset}},
+	})
+	grp := newFakeGroup(gen)
+
+	c := newGroupConsumer("t", grp)
+	rd := &scriptedPartitionReader{msgs: []kafka.Message{{Offset: 0, Value: []byte("m")}}}
+	c.prp = func(kafka.ReaderConfig, int64) KafkaReader { return rd }
+	c.handlers = map[string]handler.Handler{
+		"stuck": func(_ logrus.FieldLogger, _ context.Context, _ kafka.Message) (bool, error) {
+			startedOnce.Do(func() { close(handlerStarted) })
+			<-release
+			mu.Lock()
+			handlerReturned = true
+			mu.Unlock()
+			return true, nil
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
+
+	// Wait until the handler has actually been entered (not merely until the
+	// message was fetched) — this is what guarantees runPartitionFetchLoop's
+	// wg.Add(1) has already happened, so the upcoming cancel() is guaranteed
+	// to leave a genuinely outstanding handler behind for quiesce to wait on.
+	select {
+	case <-handlerStarted:
+	case <-time.After(3 * time.Second):
+		t.Fatal("handler was never dispatched")
+	}
+
+	cancel()
+
+	engineDone := make(chan struct{})
+	routine.Go(l, context.Background(), func(_ context.Context) {
+		wg.Wait()
+		close(engineDone)
+	})
+
+	select {
+	case <-engineDone:
+		t.Fatal("startGroupEngine finished (wg.Done fired) before the stuck handler was released; grp.Close() did not block on the generation's partition goroutine")
+	case <-time.After(150 * time.Millisecond):
+	}
+
+	close(release)
+
+	select {
+	case <-engineDone:
+	case <-time.After(3 * time.Second):
+		t.Fatal("startGroupEngine never finished after the handler was released")
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if !handlerReturned {
+		t.Fatal("engine finished without the handler having actually returned")
 	}
 }

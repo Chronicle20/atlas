@@ -179,10 +179,25 @@ func (g *fakeGroup) nextCalls() int {
 	return g.nextN
 }
 
+// Close mirrors kafka-go's ConsumerGroup.Close(), which transitively blocks
+// on Generation.close() joining every Start'd goroutine of the current
+// generation (consumergroup.go:344-360, 685-690) before returning. That join
+// is what makes startGroupEngine's unconditional grp.Close() — and therefore
+// its wg.Done() — safe: production code relies on Close() never returning
+// while a generation-scoped partition goroutine is still running. Reuses
+// fakeGeneration's existing wait() (its Start-tracking sync.WaitGroup)
+// instead of adding a second bookkeeping mechanism.
 func (g *fakeGroup) Close() error {
 	g.mu.Lock()
-	defer g.mu.Unlock()
 	g.closed = true
+	var cur *fakeGeneration
+	if g.next > 0 {
+		cur = g.gens[g.next-1]
+	}
+	g.mu.Unlock()
+	if cur != nil {
+		cur.wait()
+	}
 	return nil
 }
 

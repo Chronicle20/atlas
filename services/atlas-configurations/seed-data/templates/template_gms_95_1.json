@@ -652,6 +652,15 @@
         ]
       },
       {
+        "opCode": "0x57",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterCatchItemUseHandle",
+        "fname": "CWvsContext::SendBridleItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x58",
         "validator": "LoggedInValidator",
         "handler": "CharacterSkillBookUseHandle",

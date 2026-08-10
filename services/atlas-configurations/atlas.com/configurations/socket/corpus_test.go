@@ -60,7 +60,7 @@ func TestValidate_AcceptsEverySeedTemplate(t *testing.T) {
 			}
 		}
 	}
-	if total != 3075 {
-		t.Errorf("corpus size = %d entries, want 3075 (3052 before task-206, plus task-206's 10 CashShopCouponCodeHandle bindings — every template but gms_12 — plus task-207's 7 CashItemGachaponHandle handlers and 6 CashItemGachaponResult writers)", total)
+	if total != 3085 {
+		t.Errorf("corpus size = %d entries, want 3085 (3075 before task-212, plus task-212's 10 MonsterCatchItemUseHandle bindings across all ten templates, offset by gms_61 reusing its existing 0x4A slot rather than adding a new entry, plus gms_61's own +1 net-new ITEM_MOVE (0x42) entry from the slot-shift correction)", total)
 	}
 }

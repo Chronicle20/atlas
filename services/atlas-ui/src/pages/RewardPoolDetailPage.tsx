@@ -33,8 +33,10 @@ import { KindBadge } from "@/components/features/reward-pools/KindBadge";
 import { PoolFormDialog } from "@/components/features/reward-pools/PoolFormDialog";
 import { PoolItemDialog } from "@/components/features/reward-pools/PoolItemDialog";
 import { PoolItemsTable } from "@/components/features/reward-pools/PoolItemsTable";
-import { ICON_SOURCE } from "@/components/features/reward-pools/PoolNameCell";
-import { POOL_ITEM_TABLE_LAYOUT } from "@/lib/utils/reward-pool-chance";
+import {
+  ICON_SOURCE,
+  POOL_ITEM_TABLE_LAYOUT,
+} from "@/lib/utils/reward-pool-chance";
 import type {
   RewardPoolData,
   RewardPoolKind,

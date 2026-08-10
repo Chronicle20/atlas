@@ -21,6 +21,26 @@ export const POOL_ITEM_TABLE_LAYOUT: Record<RewardPoolKind, "tiered" | "flat"> =
     "cash-surprise": "flat",
   };
 
+/**
+ * Icon source per pool kind, shared by PoolNameCell (grid) and
+ * RewardPoolDetailPage (header). Incubator and cash-surprise pools are
+ * identified by an item id (= pool id), so they show that item's icon;
+ * gachapon pools show the first configured NPC's icon (the machine).
+ *
+ * Keyed as a Record over the full RewardPoolKind union (not an
+ * isIncubator/ternary check) so a future third kind is a compile error at
+ * every call site instead of silently falling into the gachapon NPC-icon
+ * branch — the same bug class POOL_ITEM_TABLE_LAYOUT above guards against.
+ * Lives here (not in PoolNameCell.tsx) so it's importable from
+ * RewardPoolDetailPage.tsx without tripping
+ * react-refresh/only-export-components on a component file.
+ */
+export const ICON_SOURCE: Record<RewardPoolKind, "item" | "npc"> = {
+  incubator: "item",
+  "cash-surprise": "item",
+  gachapon: "npc",
+};
+
 export interface ChanceRow {
   key: string;
   chance: number;

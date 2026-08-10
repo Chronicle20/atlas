@@ -9,33 +9,25 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-// byCouponIdProvider lists every redemption of one coupon, newest last, for
-// GET /coupons/{id}/redemptions.
-func byCouponIdProvider(t tenant.Model, couponId uuid.UUID) database.EntityProvider[[]Entity] {
-	return func(db *gorm.DB) model.Provider[[]Entity] {
-		var results []Entity
-		err := db.Where("tenant_id = ? AND coupon_id = ?", t.Id(), couponId).
-			Order("redeemed_at").
-			Find(&results).Error
-		if err != nil {
-			return model.ErrorProvider[[]Entity](err)
-		}
-		return model.FixedProvider(results)
+// byCouponIdPagedProvider pages every redemption of one coupon, newest last,
+// for GET /coupons/{id}/redemptions.
+//
+// The ORDER BY carries an id tiebreaker: redeemed_at is not unique (two
+// accounts can redeem inside the same clock tick) and this ordering is paged
+// on, so without it a page boundary could drop or duplicate a row.
+func byCouponIdPagedProvider(t tenant.Model, couponId uuid.UUID, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](
+			db.Where("tenant_id = ? AND coupon_id = ?", t.Id(), couponId).Order("redeemed_at, id"), page)
 	}
 }
 
-// byAccountIdProvider lists every redemption an account has made, for
+// byAccountIdPagedProvider pages every redemption an account has made, for
 // GET /coupon-redemptions?filter[accountId]=.
-func byAccountIdProvider(t tenant.Model, accountId uint32) database.EntityProvider[[]Entity] {
-	return func(db *gorm.DB) model.Provider[[]Entity] {
-		var results []Entity
-		err := db.Where("tenant_id = ? AND account_id = ?", t.Id(), accountId).
-			Order("redeemed_at").
-			Find(&results).Error
-		if err != nil {
-			return model.ErrorProvider[[]Entity](err)
-		}
-		return model.FixedProvider(results)
+func byAccountIdPagedProvider(t tenant.Model, accountId uint32, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](
+			db.Where("tenant_id = ? AND account_id = ?", t.Id(), accountId).Order("redeemed_at, id"), page)
 	}
 }
 

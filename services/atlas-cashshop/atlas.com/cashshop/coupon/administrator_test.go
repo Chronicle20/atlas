@@ -35,8 +35,14 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
+
+// testPage is one page big enough to hold every fixture these provider tests
+// seed, so a paged provider can stand in for the slice-returning one it
+// replaced without the assertions becoming assertions about paging.
+var testPage = model.Page{Number: 1, Size: 50}
 
 func newCouponTestDB(t *testing.T) (*gorm.DB, tenant.Model) {
 	t.Helper()
@@ -238,9 +244,10 @@ func TestProvidersAreTenantScopedAndFilterOnlyWhatIsSet(t *testing.T) {
 	})
 
 	t.Run("empty filters list only this tenant", func(t *testing.T) {
-		got, err := allEntityProvider(tm, Filters{})(db)()
+		got, err := allPagedEntityProvider(tm, Filters{}, testPage)(db)()
 		require.NoError(t, err)
-		assert.Len(t, got, 2)
+		assert.Len(t, got.Items, 2)
+		assert.Equal(t, 2, got.Total)
 	})
 
 	inactive := false
@@ -256,10 +263,10 @@ func TestProvidersAreTenantScopedAndFilterOnlyWhatIsSet(t *testing.T) {
 		"expiresAfter":  {Filters{ExpiresAfter: ptrTime(time.Now())}, []uuid.UUID{activeId}},
 	} {
 		t.Run("filter "+name, func(t *testing.T) {
-			got, err := allEntityProvider(tm, tc.f)(db)()
+			got, err := allPagedEntityProvider(tm, tc.f, testPage)(db)()
 			require.NoError(t, err)
-			ids := make([]uuid.UUID, 0, len(got))
-			for _, e := range got {
+			ids := make([]uuid.UUID, 0, len(got.Items))
+			for _, e := range got.Items {
 				ids = append(ids, e.Id)
 			}
 			assert.Equal(t, tc.want, ids)

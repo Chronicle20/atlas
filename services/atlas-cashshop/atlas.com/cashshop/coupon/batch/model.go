@@ -8,11 +8,17 @@ import (
 	"github.com/google/uuid"
 )
 
+// Model is one bulk generation.
+//
+// redeemedCount is NOT a stored column: it is counted from the redemption rows
+// of the batch's coupons when the batch is read, so it can never drift from
+// the audit trail the way a denormalized counter would.
 type Model struct {
 	id             uuid.UUID
 	description    string
 	requestedCount uint32
 	generatedCount uint32
+	redeemedCount  uint32
 	createdAt      time.Time
 }
 
@@ -20,6 +26,7 @@ func (m Model) Id() uuid.UUID          { return m.id }
 func (m Model) Description() string    { return m.description }
 func (m Model) RequestedCount() uint32 { return m.requestedCount }
 func (m Model) GeneratedCount() uint32 { return m.generatedCount }
+func (m Model) RedeemedCount() uint32  { return m.redeemedCount }
 func (m Model) CreatedAt() time.Time   { return m.createdAt }
 
 type Builder struct {
@@ -27,6 +34,7 @@ type Builder struct {
 	description    string
 	requestedCount uint32
 	generatedCount uint32
+	redeemedCount  uint32
 	createdAt      time.Time
 }
 
@@ -39,6 +47,7 @@ func NewBuilder(requestedCount uint32) *Builder {
 func (b *Builder) SetId(id uuid.UUID) *Builder         { b.id = id; return b }
 func (b *Builder) SetDescription(d string) *Builder    { b.description = d; return b }
 func (b *Builder) SetGeneratedCount(n uint32) *Builder { b.generatedCount = n; return b }
+func (b *Builder) SetRedeemedCount(n uint32) *Builder  { b.redeemedCount = n; return b }
 func (b *Builder) SetCreatedAt(t time.Time) *Builder   { b.createdAt = t; return b }
 
 var ErrInvalidBatch = errors.New("invalid batch")
@@ -55,6 +64,7 @@ func (b *Builder) Build() (Model, error) {
 		description:    b.description,
 		requestedCount: b.requestedCount,
 		generatedCount: b.generatedCount,
+		redeemedCount:  b.redeemedCount,
 		createdAt:      b.createdAt,
 	}, nil
 }

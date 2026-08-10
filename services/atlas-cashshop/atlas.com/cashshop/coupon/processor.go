@@ -1,6 +1,7 @@
 package coupon
 
 import (
+	"atlas-cashshop/cashshop/commodity"
 	"atlas-cashshop/cashshop/inventory/compartment"
 	"atlas-cashshop/character"
 	"atlas-cashshop/configuration"
@@ -11,6 +12,7 @@ import (
 	couponproducer "atlas-cashshop/kafka/producer/coupon"
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -23,6 +25,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -30,7 +33,8 @@ type Processor interface {
 	RedeemAndEmit(characterId uint32, code string) error
 	GetById(id uuid.UUID) (Model, error)
 	GetByCode(code string) (Model, error)
-	GetAll(f Filters) ([]Model, error)
+	AllProvider(f Filters, page model.Page) (model.Paged[Model], error)
+	ValidateRewards(rs reward.Rewards) error
 	Create(m Model) (Model, error)
 	Update(id uuid.UUID, m Model) (Model, error)
 	Delete(id uuid.UUID) error
@@ -352,12 +356,44 @@ func (p *ProcessorImpl) GetByCode(code string) (Model, error) {
 	return model.Map(Make)(byCodeEntityProvider(p.t, couponrules.Normalize(code))(p.db.WithContext(p.ctx)))()
 }
 
-func (p *ProcessorImpl) GetAll(f Filters) ([]Model, error) {
+// AllProvider pages the tenant's coupons in SQL. The unfiltered slice-returning
+// GetAll it replaced is deleted rather than shadowed (docs/rest-pagination.md §4).
+func (p *ProcessorImpl) AllProvider(f Filters, page model.Page) (model.Paged[Model], error) {
 	if f.Code != nil {
 		normalized := couponrules.Normalize(*f.Code)
 		f.Code = &normalized
 	}
-	return model.SliceMap(Make)(allEntityProvider(p.t, f)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+	ep := allPagedEntityProvider(p.t, f, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())()
+}
+
+// ValidateRewards answers the "reward references an unknown commodity serial"
+// case of PRD §5, which the Builder cannot: a serial number is only knowable
+// by asking atlas-data, and reward.Rewards.Validate is a pure local check.
+//
+// An unknown serial is wrapped in reward.ErrInvalid so callers map it to 422
+// alongside every other malformed-bundle rejection. Any OTHER failure of the
+// remote lookup (the service being down, a timeout) is returned unwrapped —
+// that is a 5xx, not the admin's fault, and dressing it up as 422 would tell
+// an operator their perfectly good serial was invalid.
+func (p *ProcessorImpl) ValidateRewards(rs reward.Rewards) error {
+	if err := rs.Validate(); err != nil {
+		return err
+	}
+	cp := commodity.NewProcessor(p.l, p.ctx)
+	for _, r := range rs {
+		if r.Type() != reward.TypeCashItem {
+			continue
+		}
+		if _, err := cp.GetById(r.SerialNumber()); err != nil {
+			if errors.Is(err, requests.ErrNotFound) {
+				return fmt.Errorf("%w: no commodity with serial number %d", reward.ErrInvalid, r.SerialNumber())
+			}
+			p.l.WithError(err).Errorf("Unable to resolve commodity [%d] while validating a coupon reward bundle.", r.SerialNumber())
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *ProcessorImpl) Create(m Model) (Model, error) {

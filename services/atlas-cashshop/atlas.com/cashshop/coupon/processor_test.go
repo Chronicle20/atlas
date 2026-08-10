@@ -687,10 +687,10 @@ func TestCrudRoundTrip(t *testing.T) {
 		t.Errorf("description = %q, want %q", updated.Description(), "second")
 	}
 
-	all, err := p.GetAll(Filters{})
+	all, err := p.AllProvider(Filters{}, model.Page{Number: 1, Size: 50})
 	require.NoError(t, err)
-	if len(all) != 1 {
-		t.Errorf("GetAll = %d coupons, want 1", len(all))
+	if len(all.Items) != 1 || all.Total != 1 {
+		t.Errorf("AllProvider = %d coupons (total %d), want 1", len(all.Items), all.Total)
 	}
 
 	require.NoError(t, p.Delete(created.Id()))

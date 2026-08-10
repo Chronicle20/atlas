@@ -20,16 +20,14 @@ func byIdEntityProvider(t tenant.Model, id uuid.UUID) database.EntityProvider[En
 	}
 }
 
-// allEntityProvider lists the tenant's batches oldest first. Batches carry no
-// filterable attributes of their own — a caller narrowing to one batch's
+// allPagedEntityProvider pages the tenant's batches oldest first. Batches carry
+// no filterable attributes of their own — a caller narrowing to one batch's
 // coupons uses coupon.Filters.BatchId instead.
-func allEntityProvider(t tenant.Model) database.EntityProvider[[]Entity] {
-	return func(db *gorm.DB) model.Provider[[]Entity] {
-		var results []Entity
-		err := db.Where("tenant_id = ?", t.Id()).Order("created_at").Find(&results).Error
-		if err != nil {
-			return model.ErrorProvider[[]Entity](err)
-		}
-		return model.FixedProvider(results)
+//
+// The id tiebreaker matters for the same reason it does on coupons: created_at
+// is not unique, and this ordering is paged on.
+func allPagedEntityProvider(t tenant.Model, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db.Where("tenant_id = ?", t.Id()).Order("created_at, id"), page)
 	}
 }

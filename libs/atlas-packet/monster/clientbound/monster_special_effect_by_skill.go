@@ -35,10 +35,14 @@ const MonsterSpecialEffectBySkillWriter = "MonsterSpecialEffectBySkill"
 //     a GMS-95 addition (jms v185, though numerically > 95, keeps the single-field
 //     shape), so the branch gates on GMS region AND major >= 95.
 //
-// Legacy (pre-v83) wire note: MONSTER_SPECIAL_EFFECT_BY_SKILL is a per-mob
-// OnMobPacket case (op 225), so the v79 client consumes a leading uniqueId via
-// CMobPool::OnMobPacket @0x646d46 (Decode4 @0x646d50 -> GetMob) BEFORE
-// CMob::OnSpecialEffectBySkill reads skillId. See legacyMobPoolPrefix.
+// Wire note: MONSTER_SPECIAL_EFFECT_BY_SKILL is a per-mob OnMobPacket case, so
+// the client consumes a leading uniqueId via CMobPool::OnMobPacket (Decode4 ->
+// GetMob) BEFORE CMob::OnSpecialEffectBySkill reads skillId. This is universal,
+// not legacy — confirmed on v48 @0x559390, v61 @0x5d48f3, v79 @0x646d46,
+// v83 @0x67936d, v92 @0x64a6c0, v95 @0x6570b0, jms @0x6f8732, and by symbol on
+// v84/v87 (task-212 design.md §2 F-1). It was previously gated to pre-v83 by
+// legacyMobPoolPrefix, which made every v83+ packet undecodable by the
+// client; the gate is deleted.
 //
 // packet-audit:fname CMob::OnSpecialEffectBySkill
 type MonsterSpecialEffectBySkill struct {
@@ -70,9 +74,7 @@ func (m MonsterSpecialEffectBySkill) Encode(l logrus.FieldLogger, ctx context.Co
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if legacyMobPoolPrefix(t) {
-			w.WriteInt(m.uniqueId)
-		}
+		w.WriteInt(m.uniqueId)
 		w.WriteInt32(m.skillId)
 		if v95SpecialEffectLayout(t) {
 			w.WriteInt32(m.characterId)
@@ -85,9 +87,7 @@ func (m MonsterSpecialEffectBySkill) Encode(l logrus.FieldLogger, ctx context.Co
 func (m *MonsterSpecialEffectBySkill) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if legacyMobPoolPrefix(t) {
-			m.uniqueId = r.ReadUint32()
-		}
+		m.uniqueId = r.ReadUint32()
 		m.skillId = r.ReadInt32()
 		if v95SpecialEffectLayout(t) {
 			m.characterId = r.ReadInt32()

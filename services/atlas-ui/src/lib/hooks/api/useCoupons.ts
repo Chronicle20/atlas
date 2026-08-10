@@ -4,6 +4,13 @@
  * Mirrors useAccounts.ts / useRewardPools.ts: a query-key factory, useQuery
  * readers, and useMutation writers that invalidate the list (and, for
  * update/delete, the touched detail) on success.
+ *
+ * Every query hook is gated on `!!activeTenant` (via `useTenant()`), matching
+ * useRewardPools.ts. Coupons are a tenant-scoped resource read through the
+ * singleton `apiClient`, which carries whatever tenant it was last set to —
+ * without the gate, a query mounted before an active tenant is set (or
+ * during a tenant switch) would fire against the wrong tenant's headers,
+ * reading another tenant's coupons or 400ing.
  */
 
 import {
@@ -26,6 +33,7 @@ import {
 } from "@/services/api/coupons.service";
 import type { PagedResult } from "@/services/api/pagination";
 import type { ServiceOptions } from "@/lib/api/query-params";
+import { useTenant } from "@/context/tenant-context";
 
 export const couponKeys = {
   all: ["coupons"] as const,
@@ -57,9 +65,11 @@ export function useCoupons(
   filters?: CouponFilters,
   options?: ServiceOptions,
 ): UseQueryResult<PagedResult<Coupon>, Error> {
+  const { activeTenant } = useTenant();
   return useQuery({
     queryKey: couponKeys.list(page, filters),
     queryFn: () => couponsService.list(page, filters, options),
+    enabled: !!activeTenant,
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -69,10 +79,11 @@ export function useCoupon(
   id: string,
   options?: ServiceOptions,
 ): UseQueryResult<Coupon, Error> {
+  const { activeTenant } = useTenant();
   return useQuery({
     queryKey: couponKeys.detail(id),
     queryFn: () => couponsService.getOne(id, options),
-    enabled: !!id,
+    enabled: !!activeTenant && !!id,
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -86,9 +97,11 @@ export function useCouponRedemptions(
   page: { number: number; size: number },
   options?: ServiceOptions,
 ): UseQueryResult<PagedResult<CouponRedemption>, Error> {
+  const { activeTenant } = useTenant();
   return useQuery({
     queryKey: couponKeys.redemptionsFor(query, page),
     queryFn: () => couponsService.listRedemptions(query, page, options),
+    enabled: !!activeTenant,
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -98,9 +111,11 @@ export function useCouponBatches(
   page: { number: number; size: number },
   options?: ServiceOptions,
 ): UseQueryResult<PagedResult<CouponBatch>, Error> {
+  const { activeTenant } = useTenant();
   return useQuery({
     queryKey: couponKeys.batchList(page),
     queryFn: () => couponsService.listBatches(page, options),
+    enabled: !!activeTenant,
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -110,10 +125,11 @@ export function useCouponBatch(
   id: string,
   options?: ServiceOptions,
 ): UseQueryResult<CouponBatch, Error> {
+  const { activeTenant } = useTenant();
   return useQuery({
     queryKey: couponKeys.batchDetail(id),
     queryFn: () => couponsService.getBatch(id, options),
-    enabled: !!id,
+    enabled: !!activeTenant && !!id,
     gcTime: 5 * 60 * 1000,
   });
 }

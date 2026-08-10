@@ -182,6 +182,7 @@ describe("Route Configuration", () => {
     it.each([
       ["/merchants/shop-1", "merchant", "shop-1"],
       ["/bans/ban-1", "ban", "ban-1"],
+      ["/coupons/c-1", "coupon", "c-1"],
     ])(
       "marks %s as a resolvable entity crumb",
       (pathname, entityType, entityId) => {
@@ -214,6 +215,8 @@ describe("Route Configuration", () => {
       ["/bans/ban-1", "Ban Details"],
       ["/login-history", "Login History"],
       ["/packet-matrix", "Packet Matrix"],
+      ["/coupons", "Coupons"],
+      ["/coupons/c-1", "Coupon"],
     ])("generates breadcrumbs for %s", (pathname, label) => {
       const breadcrumbs = getBreadcrumbsFromRoute(pathname, testCtx);
       expect(breadcrumbs[0]!.label).toBe("Home");

@@ -9,7 +9,6 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -24,6 +23,10 @@ import { Pager } from "@/components/common/Pager";
 import { CouponPageSkeleton } from "@/components/common/skeletons/CouponPageSkeleton";
 import { TableSkeleton } from "@/components/common/TableSkeleton";
 import { useCoupon, useCouponRedemptions } from "@/lib/hooks/api/useCoupons";
+import {
+  useAccountNames,
+  useCharacterNames,
+} from "@/lib/hooks/api/useActorNames";
 import {
   couponStatus,
   formatRewards,
@@ -49,6 +52,20 @@ export function CouponDetailPage() {
     redemptionPage,
   );
 
+  // PagedResult: rows under `.data`, pager off `.meta`. Read before the early
+  // returns below so the name lookups stay unconditional hooks.
+  const redemptions = redemptionsQuery.data?.data ?? [];
+  const meta = redemptionsQuery.data?.meta ?? null;
+
+  // The audit rows carry bare numeric ids; resolve them to names in one
+  // batch per page (an unresolved id falls back to the number itself).
+  const accountNames = useAccountNames(
+    redemptions.map((r) => r.attributes.accountId),
+  );
+  const characterNames = useCharacterNames(
+    redemptions.map((r) => r.attributes.characterId),
+  );
+
   if (couponQuery.isLoading) return <CouponPageSkeleton />;
 
   const coupon = couponQuery.data;
@@ -65,24 +82,18 @@ export function CouponDetailPage() {
 
   const attrs = coupon.attributes;
   const status = couponStatus(attrs);
-  // PagedResult again: rows under `.data`, pager off `.meta`.
-  const redemptions = redemptionsQuery.data?.data ?? [];
-  const meta = redemptionsQuery.data?.meta ?? null;
 
   return (
     <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="font-mono text-2xl font-bold tracking-tight">
-            {attrs.code}
-          </h2>
-          <Badge variant={status === "Active" ? "secondary" : "outline"}>
-            {status}
-          </Badge>
-        </div>
-        <Button variant="outline" asChild>
-          <Link to="/coupons">Back to coupons</Link>
-        </Button>
+      {/* No "back" affordance here: the breadcrumb bar in AppShell already
+          carries Coupons → <code>. */}
+      <div className="flex items-center gap-3">
+        <h2 className="font-mono text-2xl font-bold tracking-tight">
+          {attrs.code}
+        </h2>
+        <Badge variant={status === "Active" ? "secondary" : "outline"}>
+          {status}
+        </Badge>
       </div>
 
       {attrs.description && (
@@ -155,7 +166,8 @@ export function CouponDetailPage() {
                           to={`/accounts/${redemption.attributes.accountId}`}
                           className="text-primary hover:underline"
                         >
-                          {redemption.attributes.accountId}
+                          {accountNames[redemption.attributes.accountId] ??
+                            redemption.attributes.accountId}
                         </Link>
                       </TableCell>
                       <TableCell>
@@ -163,7 +175,8 @@ export function CouponDetailPage() {
                           to={`/characters/${redemption.attributes.characterId}`}
                           className="text-primary hover:underline"
                         >
-                          {redemption.attributes.characterId}
+                          {characterNames[redemption.attributes.characterId] ??
+                            redemption.attributes.characterId}
                         </Link>
                       </TableCell>
                       <TableCell>

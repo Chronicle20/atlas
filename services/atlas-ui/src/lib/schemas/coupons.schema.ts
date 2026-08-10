@@ -20,6 +20,14 @@ import type { CouponReward } from "@/services/api/coupons.service";
 export const REWARD_TYPES = ["CURRENCY", "CASH_ITEM"] as const;
 export type RewardType = (typeof REWARD_TYPES)[number];
 
+/**
+ * The three currency codes a CURRENCY reward may name, in wire order. Shared
+ * by the schema's refinement below and the editor's dropdown so the two can
+ * never disagree about what is selectable; `formatCurrency` (lib/utils/coupons)
+ * owns their labels.
+ */
+export const CURRENCY_VALUES = [1, 2, 3] as const;
+
 /** One reward row exactly as the form holds it — every field a string. */
 export interface RewardRowInput {
   type: RewardType;
@@ -71,9 +79,11 @@ function positiveInt(label: string) {
 export const couponRewardSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("CURRENCY"),
-    currency: z.number().refine((n) => n === 1 || n === 2 || n === 3, {
-      message: "Currency must be 1 (NX), 2 (Maple Points) or 3 (Prepaid)",
-    }),
+    currency: z
+      .number()
+      .refine((n) => (CURRENCY_VALUES as readonly number[]).includes(n), {
+        message: "Currency must be 1 (NX), 2 (Maple Points) or 3 (Prepaid)",
+      }),
     amount: positiveInt("Amount"),
   }),
   z.object({

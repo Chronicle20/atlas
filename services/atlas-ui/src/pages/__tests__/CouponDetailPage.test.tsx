@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CouponDetailPage } from "@/pages/CouponDetailPage";
 import { couponsService } from "@/services/api/coupons.service";
 import type { Coupon, CouponRedemption } from "@/services/api/coupons.service";
+import { accountsService } from "@/services/api/accounts.service";
+import { charactersService } from "@/services/api/characters.service";
 
 vi.mock("@/services/api/coupons.service", () => {
   class CouponConflictError extends Error {
@@ -29,6 +31,15 @@ vi.mock("@/services/api/coupons.service", () => {
     },
   };
 });
+
+// The redemption rows carry numeric ids; the page resolves them to names.
+vi.mock("@/services/api/accounts.service", () => ({
+  accountsService: { getAccountById: vi.fn() },
+}));
+
+vi.mock("@/services/api/characters.service", () => ({
+  charactersService: { getById: vi.fn() },
+}));
 
 vi.mock("@/context/tenant-context", () => ({
   useTenant: () => ({
@@ -90,6 +101,14 @@ describe("CouponDetailPage", () => {
   beforeEach(() => {
     vi.mocked(couponsService.getOne).mockReset();
     vi.mocked(couponsService.listRedemptions).mockReset();
+    vi.mocked(accountsService.getAccountById).mockReset();
+    vi.mocked(charactersService.getById).mockReset();
+    vi.mocked(accountsService.getAccountById).mockRejectedValue(
+      new Error("not resolved"),
+    );
+    vi.mocked(charactersService.getById).mockRejectedValue(
+      new Error("not resolved"),
+    );
   });
 
   it("renders the redemption history for that coupon", async () => {
@@ -113,8 +132,38 @@ describe("CouponDetailPage", () => {
 
     expect(await screen.findByText("tx-r1")).toBeInTheDocument();
     expect(screen.getByText("tx-r2")).toBeInTheDocument();
+    // Names could not be resolved here, so the rows degrade to the raw ids.
     expect(screen.getByText("42")).toBeInTheDocument();
     expect(screen.getByText("4300")).toBeInTheDocument();
+
+    // Navigation back to the list is the breadcrumb bar's job, not a button.
+    expect(
+      screen.queryByRole("link", { name: /back to coupons/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("resolves the redemption account and character ids to names", async () => {
+    vi.mocked(couponsService.getOne).mockResolvedValue(coupon);
+    vi.mocked(couponsService.listRedemptions).mockResolvedValue({
+      data: [makeRedemption("r1", 42, 4200)],
+      meta: { total: 1, page: { number: 1, size: 50, last: 1 } },
+    });
+    vi.mocked(accountsService.getAccountById).mockResolvedValue({
+      id: "42",
+      attributes: { name: "operator" },
+    } as Awaited<ReturnType<typeof accountsService.getAccountById>>);
+    vi.mocked(charactersService.getById).mockResolvedValue({
+      id: "4200",
+      attributes: { name: "Sharpie" },
+    } as Awaited<ReturnType<typeof charactersService.getById>>);
+
+    renderPage();
+
+    expect(await screen.findByText("operator")).toBeInTheDocument();
+    expect(await screen.findByText("Sharpie")).toBeInTheDocument();
+    // The name replaces the id rather than sitting beside it.
+    expect(screen.queryByText("42")).not.toBeInTheDocument();
+    expect(screen.queryByText("4200")).not.toBeInTheDocument();
   });
 
   it("shows an empty history rather than an error when the code was never redeemed", async () => {

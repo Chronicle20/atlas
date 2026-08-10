@@ -13,13 +13,23 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CashItemPicker } from "@/components/features/coupons/CashItemPicker";
 import {
+  CURRENCY_VALUES,
   emptyRewardRow,
   type RewardRowInput,
   type RewardType,
 } from "@/lib/schemas/coupons.schema";
+import { formatCurrency } from "@/lib/utils/coupons";
 
 export interface RewardRowsFieldProps {
   rows: RewardRowInput[];
@@ -100,15 +110,21 @@ export function RewardRowsField({
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor={`${rowId}-currency`}>Currency</Label>
-                  <Input
-                    id={`${rowId}-currency`}
-                    type="number"
+                  <Select
                     value={row.currency}
-                    onChange={(e) => patch(index, { currency: e.target.value })}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    1 = NX, 2 = Maple Points, 3 = Prepaid
-                  </p>
+                    onValueChange={(next) => patch(index, { currency: next })}
+                  >
+                    <SelectTrigger id={`${rowId}-currency`} className="w-full">
+                      <SelectValue placeholder="Select a currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCY_VALUES.map((currency) => (
+                        <SelectItem key={currency} value={String(currency)}>
+                          {formatCurrency(currency)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor={`${rowId}-amount`}>Amount</Label>
@@ -123,14 +139,11 @@ export function RewardRowsField({
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label htmlFor={`${rowId}-serial`}>Serial number</Label>
-                  <Input
+                  <Label htmlFor={`${rowId}-serial`}>Cash item</Label>
+                  <CashItemPicker
                     id={`${rowId}-serial`}
-                    type="number"
                     value={row.serialNumber}
-                    onChange={(e) =>
-                      patch(index, { serialNumber: e.target.value })
-                    }
+                    onChange={(serialNumber) => patch(index, { serialNumber })}
                   />
                 </div>
                 <div className="space-y-1">

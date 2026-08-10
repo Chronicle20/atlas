@@ -1,14 +1,18 @@
 package main
 
 import (
+	"atlas-trades/configuration"
+	characterconsumer "atlas-trades/kafka/consumer/character"
 	inviteconsumer "atlas-trades/kafka/consumer/invite"
 	sagaconsumer "atlas-trades/kafka/consumer/saga"
+	sessionconsumer "atlas-trades/kafka/consumer/session"
 	tradeconsumer "atlas-trades/kafka/consumer/trade"
 	"atlas-trades/ledger"
 	"atlas-trades/settlement"
 	"atlas-trades/trade"
 	"context"
 	"os"
+	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -100,6 +104,47 @@ func main() {
 	if err := sagaconsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
+	// Teardown triggers (design §3.3). A logout, a map change and a channel
+	// change each end an open trade, with the leaveReason their trigger implies;
+	// a destroyed session covers the client that vanished without a clean
+	// logout. All four lose to an in-flight settlement (FR-6.5).
+	characterconsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := characterconsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	sessionconsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := sessionconsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+
+	// Refresh the inventory reservations of every live room at TTL/3 so a trade
+	// window never outlives its reservations (design §5.3). Expiry is a backstop
+	// for a DEAD room, not a normal-path event: if it does fire mid-trade,
+	// settlement fails cleanly with LEAVE 8.
+	//
+	// A timer rather than a ticker, because the pace is per-tenant: each pass
+	// reports the interval the tenants it just refreshed actually need. The
+	// goroutine ends when rt.Context() is cancelled, and the teardown below waits
+	// for it, so a pass in flight is never abandoned mid-emit at shutdown.
+	refreshStopped := make(chan struct{})
+	routine.Go(l, rt.Context(), func(ctx context.Context) {
+		defer close(refreshStopped)
+		timer := time.NewTimer(trade.ReservationRefreshInterval(configuration.DefaultConfig()))
+		defer timer.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-timer.C:
+				next, err := trade.RefreshAllReservations(l, ctx, db)
+				if err != nil {
+					l.WithError(err).Error("Unable to refresh trade reservations.")
+				}
+				timer.Reset(next)
+			}
+		}
+	})
+	rt.TeardownFunc(func() { <-refreshStopped })
 
 	// Attestation deadlines are sleeping goroutines; without this, shutdown
 	// waits out the longest one.

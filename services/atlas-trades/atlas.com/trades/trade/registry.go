@@ -180,6 +180,26 @@ func (reg *Registry) All(t tenant.Model) []Room {
 	return out
 }
 
+// Tenants returns every tenant that currently owns at least one live room.
+//
+// It exists for the reservation-refresh ticker, which runs with NO tenant in
+// context and has no other way to learn which tenants have work: the registry is
+// the only record of a live room. Tenants whose map has been emptied by Remove
+// are skipped, so a tenant that once traded does not keep drawing refresh passes
+// forever.
+func (reg *Registry) Tenants() []tenant.Model {
+	reg.mutex.RLock()
+	defer reg.mutex.RUnlock()
+	out := make([]tenant.Model, 0, len(reg.rooms))
+	for t, rooms := range reg.rooms {
+		if len(rooms) == 0 {
+			continue
+		}
+		out = append(out, t)
+	}
+	return out
+}
+
 // Update mutates the room under a single write lock: fn receives the current
 // Room and returns its replacement. A non-nil error from fn leaves the room
 // untouched and is returned as-is — this is how state transitions are made

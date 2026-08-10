@@ -15,6 +15,7 @@ import (
 	sagaproducer "atlas-trades/saga"
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"time"
 
@@ -1191,8 +1192,82 @@ func (p *ProcessorImpl) correctStagedSlots(cache *compartmentCache, snapshot Roo
 	return room, true
 }
 
-// RefreshReservations is the ticker entry point Task 20 drives: one pass over
-// the rooms of the tenant carried by ctx.
+// RefreshReservations runs one refresh pass over the rooms of the tenant carried
+// by ctx.
 func RefreshReservations(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) error {
 	return NewProcessor(l, ctx, db).RefreshReservations(uuid.New())
+}
+
+// minReservationRefreshInterval floors the refresh pace. A tenant is free to
+// configure a very short — or, through a malformed resource, a zero —
+// reservation TTL, and a pace derived from it unchecked would turn the ticker
+// into a busy loop that republishes every hold continuously.
+const minReservationRefreshInterval = time.Second
+
+// ReservationRefreshInterval is how long may pass between two refresh passes for
+// a tenant on the given configuration: a THIRD of its reservation TTL, so a hold
+// survives two consecutively missed passes before it can lapse (design §5.3).
+//
+// It is a function of the configuration rather than a constant because the TTL
+// is per-tenant (configuration.Model.ReservationTtl, default 300s).
+func ReservationRefreshInterval(cfg configuration.Model) time.Duration {
+	interval := cfg.ReservationTtl() / 3
+	if interval < minReservationRefreshInterval {
+		return minReservationRefreshInterval
+	}
+	return interval
+}
+
+// RefreshAllReservations runs one refresh pass for EVERY tenant that owns a live
+// room, and returns how long the caller may wait before the next pass.
+//
+// It is the ticker's entry point, and it runs with no tenant in context: the
+// registry is asked which tenants have rooms, and each pass runs under that
+// tenant's own context so both its configuration and its registry partition
+// resolve correctly.
+//
+// The interval comes back from the same pass that used it rather than from a
+// separate enumeration, so the pace can never be derived from a different set of
+// tenants than the one just refreshed. It is the SHORTEST interval any live
+// tenant needs — a tenant with a 300s TTL being refreshed more often than it
+// needs is free, whereas one with a 60s TTL paced by another tenant's 300s would
+// lose its holds. With no live rooms it falls back to the shipped default, which
+// is also the pace a first pass runs at.
+//
+// One tenant's failure does not stop the others: every tenant is attempted, and
+// the error reports how many could not be refreshed. A refusal is not a failure
+// — a room that settled or was torn down mid-pass is skipped inside
+// RefreshReservations, by design.
+func RefreshAllReservations(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) (time.Duration, error) {
+	return refreshAllReservations(l, ctx, GetRegistry().Tenants(), configuration.GetRegistry(), func(tctx context.Context) error {
+		return RefreshReservations(l, tctx, db)
+	})
+}
+
+// refreshAllReservations is RefreshAllReservations' body with its three
+// dependencies — the live tenants, the config source and the per-tenant pass —
+// passed in, so the pacing and the keep-going-on-failure behaviour can be
+// exercised without standing up atlas-tenants or a database.
+//
+// ctx is the process context the ticker runs under; each pass gets it with the
+// tenant attached, so a shutdown cancels an in-flight pass rather than detaching
+// it.
+func refreshAllReservations(l logrus.FieldLogger, ctx context.Context, tenants []tenant.Model, cfgs configProvider, pass func(context.Context) error) (time.Duration, error) {
+	next := ReservationRefreshInterval(configuration.DefaultConfig())
+
+	var failures int
+	for _, t := range tenants {
+		tctx := tenant.WithContext(ctx, t)
+		if interval := ReservationRefreshInterval(cfgs.Get(l, tctx)); interval < next {
+			next = interval
+		}
+		if err := pass(tctx); err != nil {
+			l.WithError(err).Errorf("Unable to refresh the trade reservations of tenant [%s]. Its holds lapse when their TTL does, which fails settlement with a clean LEAVE.", t.Id().String())
+			failures++
+		}
+	}
+	if failures > 0 {
+		return next, fmt.Errorf("trade reservation refresh failed for %d tenant(s)", failures)
+	}
+	return next, nil
 }

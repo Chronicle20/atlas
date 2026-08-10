@@ -453,7 +453,11 @@ func (p *ProcessorImpl) declineInvite(mb *message.Buffer, txId uuid.UUID, charac
 		return nil
 	}
 
-	p.reg.Remove(p.t, room.Id())
+	// Released BEFORE the registry removal: releaseStagedReservations issues
+	// fallible REST reads, and emit's contract is that every fallible read
+	// happens before the registry swap, so a failure aborts with the room
+	// still intact rather than half-torn-down.
+	//
 	// A PENDING_INVITE room is frozen against staging, so it should hold no
 	// reservations — but the release is unconditional rather than assumed,
 	// because a leaked hold is invisible until a player complains that an item
@@ -461,6 +465,7 @@ func (p *ProcessorImpl) declineInvite(mb *message.Buffer, txId uuid.UUID, charac
 	if err := p.releaseStagedReservations(mb, room); err != nil {
 		return err
 	}
+	p.reg.Remove(p.t, room.Id())
 	if retireInvite {
 		if err := mb.Put(invitemsg.EnvCommandTopic, inviteRejectCommandProvider(txId, room, characterId)); err != nil {
 			return err
@@ -572,10 +577,13 @@ func (p *ProcessorImpl) teardownCharacter(mb *message.Buffer, txId uuid.UUID, ch
 		return nil
 	}
 
-	p.reg.Remove(p.t, room.Id())
+	// Released BEFORE the registry removal, so emit's "every fallible read
+	// before the registry swap" contract still holds: releaseStagedReservations
+	// re-resolves each staged slot over REST.
 	if err := p.releaseStagedReservations(mb, room); err != nil {
 		return err
 	}
+	p.reg.Remove(p.t, room.Id())
 	return mb.Put(trademsg.EnvEventTopicStatus, cancelledProvider(txId, room, characterId, reason))
 }
 
@@ -596,9 +604,10 @@ func (p *ProcessorImpl) teardownCharacter(mb *message.Buffer, txId uuid.UUID, ch
 // The slot is RE-RESOLVED rather than taken from the staged item; see
 // resolveStagedSlot for why a recorded slot cannot be trusted.
 func (p *ProcessorImpl) releaseStagedReservations(mb *message.Buffer, room Room) error {
+	cache := p.newCompartmentCache()
 	for _, pt := range room.Participants() {
 		for _, i := range pt.Items() {
-			if err := p.resp.CancelReservation(mb)(i.ReservationId(), pt.CharacterId(), i.InventoryType(), p.resolveStagedSlot(pt.CharacterId(), i)); err != nil {
+			if err := p.resp.CancelReservation(mb)(i.ReservationId(), pt.CharacterId(), i.InventoryType(), p.resolveStagedSlot(cache, pt.CharacterId(), i)); err != nil {
 				return err
 			}
 		}
@@ -632,8 +641,11 @@ func (p *ProcessorImpl) releaseStagedReservations(mb *message.Buffer, room Room)
 //
 // A failed read or a vanished asset falls back to the recorded slot: cancelling
 // the wrong slot is a no-op, whereas cancelling nothing guarantees the leak.
-func (p *ProcessorImpl) resolveStagedSlot(characterId character.Id, i StagedItem) slot.Position {
-	c, err := p.invp.GetCompartment(characterId, i.InventoryType())
+//
+// cache memoizes the compartment reads for the whole command; see
+// compartmentCache for why that matters.
+func (p *ProcessorImpl) resolveStagedSlot(cache *compartmentCache, characterId character.Id, i StagedItem) slot.Position {
+	c, err := cache.get(characterId, i.InventoryType())
 	if err != nil {
 		p.l.WithError(err).Warnf("Unable to re-resolve the slot of staged asset [%d] for character [%d]; falling back to the staged slot [%d].", i.AssetId(), characterId, i.SourceSlot())
 		return i.SourceSlot()
@@ -647,6 +659,59 @@ func (p *ProcessorImpl) resolveStagedSlot(characterId character.Id, i StagedItem
 		p.l.Infof("Staged asset [%d] moved from slot [%d] to [%d] in character [%d]'s inventory since it was staged.", i.AssetId(), i.SourceSlot(), a.Slot(), characterId)
 	}
 	return a.Slot()
+}
+
+// compartmentKey identifies one character's compartment within a single command.
+type compartmentKey struct {
+	characterId   character.Id
+	inventoryType inventory.Type
+}
+
+// compartmentCache memoizes compartment reads for the duration of ONE command.
+//
+// Without it, resolveStagedSlot refetched a whole compartment per staged item:
+// a room at the default cap of 9 items per side is up to 18 GETs to fetch at
+// most 2 distinct compartments, and the refresh runs every live room serially
+// inside a single database.ExecuteTransaction — so a pooled DB connection would
+// be held open across O(18N) synchronous HTTP round trips for N live rooms. That
+// also widens the refresh-vs-teardown window the liveness re-check guards.
+//
+// A staged item's compartment cannot change while it is staged (the compartment
+// is part of the staged item's identity, and only the SLOT within it can move),
+// so one read per (character, compartment) per command is sufficient.
+//
+// A failed read is memoized too: the fallback is the same for every item in that
+// compartment, so retrying per item would only multiply the latency of an
+// already-unreachable atlas-inventory.
+type compartmentCache struct {
+	p    *ProcessorImpl
+	seen map[compartmentKey]inventorydata.Model
+	errs map[compartmentKey]error
+}
+
+func (p *ProcessorImpl) newCompartmentCache() *compartmentCache {
+	return &compartmentCache{
+		p:    p,
+		seen: make(map[compartmentKey]inventorydata.Model),
+		errs: make(map[compartmentKey]error),
+	}
+}
+
+func (c *compartmentCache) get(characterId character.Id, inventoryType inventory.Type) (inventorydata.Model, error) {
+	k := compartmentKey{characterId: characterId, inventoryType: inventoryType}
+	if m, ok := c.seen[k]; ok {
+		return m, nil
+	}
+	if err, ok := c.errs[k]; ok {
+		return inventorydata.Model{}, err
+	}
+	m, err := c.p.invp.GetCompartment(characterId, inventoryType)
+	if err != nil {
+		c.errs[k] = err
+		return inventorydata.Model{}, err
+	}
+	c.seen[k] = m
+	return m, nil
 }
 
 // PutItem stages one item into the caller's side of the dialog (FR-3.1..FR-3.3,
@@ -942,9 +1007,12 @@ func (p *ProcessorImpl) RefreshReservations(txId uuid.UUID) error {
 
 func (p *ProcessorImpl) refreshReservations(mb *message.Buffer) error {
 	ttl := p.cfg.Get(p.l, p.ctx).ReservationTtl()
+	cache := p.newCompartmentCache()
 	for _, snapshot := range p.reg.All(p.t) {
-		// A settling room's assets are the settlement saga's business;
-		// re-filing under it would race the consume.
+		// Cheap pre-filter only. The AUTHORITATIVE settling check is the one
+		// inside correctStagedSlots' write-locked closure: this snapshot was
+		// taken before the compartment reads below, so a room that settles
+		// during them would pass here.
 		if snapshot.State() == StateSettling {
 			continue
 		}
@@ -953,7 +1021,7 @@ func (p *ProcessorImpl) refreshReservations(mb *message.Buffer) error {
 		// written back, so a player who rearranged their inventory mid-trade
 		// does not leave the hold stranded at the vacated slot — and so the
 		// slot the settlement payload is built from stays true.
-		room, ok := p.correctStagedSlots(snapshot)
+		room, ok := p.correctStagedSlots(cache, snapshot)
 		if !ok {
 			continue
 		}
@@ -975,27 +1043,39 @@ func (p *ProcessorImpl) refreshReservations(mb *message.Buffer) error {
 // correctStagedSlots re-resolves every staged item's slot against its asset id
 // and writes the corrections back, returning the room to refresh from.
 //
-// It doubles as the LIVENESS re-check the refresh needs. reg.All returns a
-// snapshot, and a concurrent teardown emits its cancels from a different
-// transaction: if teardown wins the race, refreshing from the snapshot would
-// re-file a 300s hold on a room that no longer exists, and nothing would ever
-// cancel it. Registry.Update fails with ErrRoomNotFound once the room is gone,
-// which is the signal to skip it — so the check and the correction are the same
-// atomic step rather than a check that could itself go stale.
+// It doubles as the refresh's REFRESHABILITY re-check, covering both ways a
+// snapshot can go stale while the compartment reads are in flight:
+//
+//   - The room was TORN DOWN. reg.All returns a snapshot and a concurrent
+//     teardown emits its cancels from a different transaction, so refreshing
+//     from the snapshot would re-file a 300s hold on a room that no longer
+//     exists and nothing would ever cancel it. Registry.Update reports
+//     ErrRoomNotFound once the room is gone.
+//   - The room began SETTLING. Its holds are now the settlement saga's to
+//     consume, and a CANCEL+REQUEST_RESERVE against them races that consume.
+//     refreshReservations' own state test runs against the pre-read snapshot,
+//     so this closure — which runs under the write lock, after the reads — is
+//     the authoritative one.
+//
+// Doing both inside the closure makes the check and the correction one atomic
+// step, rather than a check that could itself go stale before the emit.
 //
 // The REST reads happen BEFORE Update, never inside it: the closure runs under
 // the registry write lock and must stay pure.
-func (p *ProcessorImpl) correctStagedSlots(snapshot Room) (Room, bool) {
+func (p *ProcessorImpl) correctStagedSlots(cache *compartmentCache, snapshot Room) (Room, bool) {
 	corrections := make(map[uuid.UUID]slot.Position)
 	for _, pt := range snapshot.Participants() {
 		for _, i := range pt.Items() {
-			if resolved := p.resolveStagedSlot(pt.CharacterId(), i); resolved != i.SourceSlot() {
+			if resolved := p.resolveStagedSlot(cache, pt.CharacterId(), i); resolved != i.SourceSlot() {
 				corrections[i.ReservationId()] = resolved
 			}
 		}
 	}
 
 	room, err := p.reg.Update(p.t, snapshot.Id(), func(cur Room) (Room, error) {
+		if cur.State() == StateSettling {
+			return Room{}, ErrRoomFrozen
+		}
 		if len(corrections) == 0 {
 			return cur, nil
 		}
@@ -1004,7 +1084,7 @@ func (p *ProcessorImpl) correctStagedSlots(snapshot Room) (Room, bool) {
 		}), nil
 	})
 	if err != nil {
-		p.l.WithError(err).Debugf("Skipping the reservation refresh of trade room [%s]: it is no longer live.", snapshot.Id().String())
+		p.l.WithError(err).Debugf("Skipping the reservation refresh of trade room [%s]: it is no longer refreshable.", snapshot.Id().String())
 		return Room{}, false
 	}
 	return room, true

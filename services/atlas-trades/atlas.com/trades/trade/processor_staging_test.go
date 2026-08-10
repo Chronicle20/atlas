@@ -946,6 +946,125 @@ func TestRefreshSkipsARoomTornDownConcurrently(t *testing.T) {
 	}
 }
 
+// TestRefreshSkipsARoomThatBeginsSettlingConcurrently pins the SETTLING half of
+// the refreshability re-check. refreshReservations' own state test runs against
+// the pre-read snapshot, so a room that transitions to SETTLING during the
+// compartment reads would otherwise be corrected and then have CANCEL+
+// REQUEST_RESERVE emitted against holds the settlement saga is about to consume
+// — the exact race the snapshot check exists to prevent, through a window the
+// REST reads made much wider.
+func TestRefreshSkipsARoomThatBeginsSettlingConcurrently(t *testing.T) {
+	p, e := testOpenRoom(t)
+	if err := p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), stagingSourceSlot, 5, 1); err != nil {
+		t.Fatalf("put item: %v", err)
+	}
+	room, _ := p.RoomForCharacter(100)
+
+	// Settle the room in the real window: after the snapshot, during the slot
+	// reads, before the write lock.
+	var once sync.Once
+	p.invp.(*fakeInventory).onGetCompartment = func() {
+		once.Do(func() {
+			if _, err := p.reg.Update(p.t, room.Id(), func(cur Room) (Room, error) {
+				return cur.WithState(StateSettling), nil
+			}); err != nil {
+				t.Errorf("move to settling: %v", err)
+			}
+		})
+	}
+
+	if err := p.RefreshReservations(uuid.New()); err != nil {
+		t.Fatalf("refresh: %v", err)
+	}
+
+	assertNoCompartmentCommandOfType(t, e, compartmentmsg.CommandCancelReservation)
+	if got := len(compartmentCommands[compartmentmsg.RequestReserveCommandBody](t, e, compartmentmsg.CommandRequestReserve)); got != 1 {
+		t.Errorf("REQUEST_RESERVE commands: got %d, want only the original stage's — the refresh raced the settlement saga's consume", got)
+	}
+}
+
+// TestRefreshReadsEachCompartmentOncePerPass pins the memoization. Resolving a
+// slot per staged item re-fetched a whole compartment each time: at the default
+// cap that is up to 18 GETs per room per tick for at most 2 distinct
+// compartments, all issued serially inside the enclosing DB transaction, so a
+// pooled connection is held open across every one of those round trips.
+func TestRefreshReadsEachCompartmentOncePerPass(t *testing.T) {
+	p, _ := testOpenRoom(t)
+	// Four staged items across exactly two (character, compartment) pairs.
+	for i, sourceSlot := range []slot.Position{stagingSourceSlot, 2, 3} {
+		if err := p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), sourceSlot, 1, byte(i+1)); err != nil {
+			t.Fatalf("owner put item %d: %v", i, err)
+		}
+	}
+	if err := p.PutItem(uuid.New(), 200, byte(inventory.TypeValueUse), stagingSourceSlot, 1, 1); err != nil {
+		t.Fatalf("visitor put item: %v", err)
+	}
+
+	var reads int
+	p.invp.(*fakeInventory).onGetCompartment = func() { reads++ }
+
+	if err := p.RefreshReservations(uuid.New()); err != nil {
+		t.Fatalf("refresh: %v", err)
+	}
+	if reads != 2 {
+		t.Errorf("compartment reads: got %d, want 2 — one per (character, compartment), not one per staged item (4)", reads)
+	}
+}
+
+// TestTeardownReadsEachCompartmentOncePerPass pins the same memoization on the
+// teardown path, which resolves every staged item on both sides.
+func TestTeardownReadsEachCompartmentOncePerPass(t *testing.T) {
+	p, _ := testOpenRoom(t)
+	for i, sourceSlot := range []slot.Position{stagingSourceSlot, 2, 3} {
+		if err := p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), sourceSlot, 1, byte(i+1)); err != nil {
+			t.Fatalf("owner put item %d: %v", i, err)
+		}
+	}
+	if err := p.PutItem(uuid.New(), 200, byte(inventory.TypeValueUse), stagingSourceSlot, 1, 1); err != nil {
+		t.Fatalf("visitor put item: %v", err)
+	}
+
+	var reads int
+	p.invp.(*fakeInventory).onGetCompartment = func() { reads++ }
+
+	if err := p.TeardownCharacter(uuid.New(), 100, ReasonTradeCancelled); err != nil {
+		t.Fatalf("teardown: %v", err)
+	}
+	if reads != 2 {
+		t.Errorf("compartment reads: got %d, want 2 — one per (character, compartment), not one per staged item (4)", reads)
+	}
+}
+
+// TestResolveStagedSlotDoesNotRetryAFailedCompartmentRead pins that a failed
+// read is memoized too: every item in that compartment gets the same fallback,
+// so retrying per item would only multiply the latency of an atlas-inventory
+// that is already unreachable.
+func TestResolveStagedSlotDoesNotRetryAFailedCompartmentRead(t *testing.T) {
+	p, e := testOpenRoom(t)
+	for i, sourceSlot := range []slot.Position{stagingSourceSlot, 2, 3} {
+		if err := p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), sourceSlot, 1, byte(i+1)); err != nil {
+			t.Fatalf("put item %d: %v", i, err)
+		}
+	}
+
+	var reads int
+	p.invp = &fakeInventory{
+		err:              errors.New("atlas-inventory unreachable"),
+		onGetCompartment: func() { reads++ },
+	}
+
+	if err := p.TeardownCharacter(uuid.New(), 100, ReasonTradeCancelled); err != nil {
+		t.Fatalf("teardown: %v", err)
+	}
+	if reads != 1 {
+		t.Errorf("compartment reads: got %d, want 1 — a failed read must be memoized, not retried per staged item", reads)
+	}
+	// All three still cancel, at their recorded fallback slots.
+	if got := len(compartmentCommands[compartmentmsg.CancelReservationCommandBody](t, e, compartmentmsg.CommandCancelReservation)); got != 3 {
+		t.Errorf("CANCEL_RESERVATION commands: got %d, want 3", got)
+	}
+}
+
 // compile-time assurance the staging fakes satisfy the seams they stand in for.
 var (
 	_ inventoryProvider = (*fakeInventory)(nil)

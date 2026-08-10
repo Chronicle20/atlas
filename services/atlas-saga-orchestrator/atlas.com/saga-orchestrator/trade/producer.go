@@ -36,6 +36,7 @@ func AcceptToTradeProvider(transactionId uuid.UUID, params AcceptToTradeParams) 
 			TradeSlot:           params.TradeSlot,
 			SourceInventoryType: params.SourceInventoryType,
 			SourceSlot:          params.SourceSlot,
+			AssetId:             params.AssetId,
 			TemplateId:          params.TemplateId,
 			Quantity:            params.Quantity,
 			Strength:            params.Strength,

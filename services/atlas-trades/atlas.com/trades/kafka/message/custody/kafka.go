@@ -1,15 +1,13 @@
-// This is the orchestrator's own copy of the atlas-trades custody wire
-// contract. The orchestrator cannot import the atlas-trades module, so these
-// structs mirror
-// services/atlas-trades/atlas.com/trades/kafka/message/custody/kafka.go
-// byte-for-byte (identical JSON tags + Type discriminator strings). This
-// follows the mts/custody and cashshop/compartment precedent.
+// Package custody owns the COMMAND_TOPIC_TRADE_CUSTODY /
+// EVENT_TOPIC_TRADE_CUSTODY_STATUS contract — the trade limb of the
+// accept/release custody family (task-205 design §5A.2).
 //
-// Trade escrow exists because a staged item must genuinely LEAVE its owner's
-// compartment (task-205 design §5A): the resulting inventory delta is what
-// clears the client's m_bExclRequestSent, and nothing else in the trade flow
-// does. The escrow row is the durable custody record that makes returning the
-// item possible without knowing which saga staged it.
+// atlas-trades OWNS this contract; atlas-saga-orchestrator carries a mirror at
+// services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/kafka/message/trade/custody/kafka.go
+// because the two services live in separate Go modules and nothing in the
+// compiler links them. A field name or json tag changed in one copy and not the
+// other fails no build — it decodes into a zero-valued body at runtime,
+// silently. tools/trade-contract-mirror-guard.sh checks the pair.
 package custody
 
 import (

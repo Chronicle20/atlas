@@ -660,6 +660,7 @@ type AcceptToTradePayload struct {
 	TradeSlot           byte      `json:"tradeSlot"`
 	SourceInventoryType byte      `json:"sourceInventoryType"`
 	SourceSlot          int16     `json:"sourceSlot"`
+	AssetId             uint32    `json:"assetId"`
 
 	// Item snapshot
 	TemplateId    uint32 `json:"templateId"`

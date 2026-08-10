@@ -1,7 +1,9 @@
 package main
 
 import (
+	"atlas-trades/escrow"
 	characterconsumer "atlas-trades/kafka/consumer/character"
+	custodyconsumer "atlas-trades/kafka/consumer/custody"
 	inviteconsumer "atlas-trades/kafka/consumer/invite"
 	sagaconsumer "atlas-trades/kafka/consumer/saga"
 	sessionconsumer "atlas-trades/kafka/consumer/session"
@@ -70,7 +72,7 @@ func main() {
 	// Live room state is the process-local in-memory trade.Registry, not the
 	// DB — atlas-trades runs replicas: 1 for that reason (design §9). The DB
 	// backs only the completed-trade ledger and the transactional outbox.
-	db := database.Connect(l, database.SetMigrations(ledger.Migration, settlement.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(ledger.Migration, settlement.Migration, escrow.Migration, outboxlib.Migration))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
@@ -88,6 +90,11 @@ func main() {
 	// enter), plus the answer half of the invites we issue: an accepted TRADE
 	// invite seats the visitor, a rejected or expired one tears the room down.
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
+	custodyconsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := custodyconsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatalf("Unable to register trade custody command handlers.")
+	}
+
 	tradeconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := tradeconsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")

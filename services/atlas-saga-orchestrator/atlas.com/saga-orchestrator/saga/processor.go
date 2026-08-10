@@ -1489,6 +1489,7 @@ func (p *ProcessorImpl) expandTransferToTrade(st Step[any]) ([]Step[any], error)
 				TradeSlot:           payload.TradeSlot,
 				SourceInventoryType: payload.SourceInventoryType,
 				SourceSlot:          payload.SourceSlot,
+				AssetId:             payload.AssetId,
 
 				// Item snapshot captured from inventory. Quantity is the STAGED
 				// amount from the composite, never the compartment stack's — a

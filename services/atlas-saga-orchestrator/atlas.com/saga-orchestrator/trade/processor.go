@@ -24,6 +24,7 @@ type AcceptToTradeParams struct {
 	TradeSlot           byte
 	SourceInventoryType byte
 	SourceSlot          int16
+	AssetId             uint32
 
 	TemplateId    uint32
 	Quantity      uint32

@@ -1033,3 +1033,48 @@ func TestCreateNoteStepUnmarshal(t *testing.T) {
 		t.Errorf("payload round-trip mismatch: %+v", p)
 	}
 }
+
+// TestUnmarshalTradeSettlement pins that a trade_settlement step round-trips
+// through the shared lib's payload unmarshaller — an unregistered action
+// deserialises to nil and fails at runtime with "unknown action type".
+func TestUnmarshalTradeSettlement(t *testing.T) {
+	raw := []byte(`{
+	  "transactionId": "11111111-1111-1111-1111-111111111111",
+	  "sagaType": "trade_transaction",
+	  "initiatedBy": "atlas-trades",
+	  "steps": [{
+	    "stepId": "trade_settlement",
+	    "status": "pending",
+	    "action": "trade_settlement",
+	    "payload": {
+	      "transactionId": "11111111-1111-1111-1111-111111111111",
+	      "worldId": 1,
+	      "channelId": 1,
+	      "roomType": 3,
+	      "sides": [
+	        {"characterId": 100, "mesoStaged": 10000000, "mesoTax": 400000, "mesoDelivered": 9600000,
+	         "items": [{"inventoryType": 2, "sourceSlot": 1, "assetId": 55, "templateId": 2000000, "quantity": 5}]},
+	        {"characterId": 200, "mesoStaged": 0, "mesoTax": 0, "mesoDelivered": 0, "items": []}
+	      ]
+	    }
+	  }]
+	}`)
+
+	var s Saga
+	if err := json.Unmarshal(raw, &s); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(s.Steps) != 1 {
+		t.Fatalf("steps: got %d, want 1", len(s.Steps))
+	}
+	p, ok := s.Steps[0].Payload.(TradeSettlementPayload)
+	if !ok {
+		t.Fatalf("payload type: got %T, want TradeSettlementPayload", s.Steps[0].Payload)
+	}
+	if p.Sides[0].MesoDelivered != 9_600_000 {
+		t.Errorf("side 0 mesoDelivered: got %d, want 9600000", p.Sides[0].MesoDelivered)
+	}
+	if len(p.Sides[0].Items) != 1 || p.Sides[0].Items[0].AssetId != 55 {
+		t.Errorf("side 0 items: got %+v", p.Sides[0].Items)
+	}
+}

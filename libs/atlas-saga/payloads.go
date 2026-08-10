@@ -5,8 +5,13 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
@@ -585,6 +590,40 @@ type ReleaseFromStoragePayload struct {
 	CharacterId   uint32    `json:"characterId"`   // Character receiving the item
 	AssetId       uint32    `json:"assetId"`       // Asset ID to release (populated during expansion)
 	Quantity      uint32    `json:"quantity"`      // Quantity to release (0 = all)
+}
+
+// TradeSettlementItem references one staged asset. Under the
+// reserve-at-staging model the asset is still in the owner's inventory at
+// expansion time, so the orchestrator can look it up by slot exactly as
+// expandTransferToStorage does.
+type TradeSettlementItem struct {
+	InventoryType inventory.Type `json:"inventoryType"` // Owning inventory (equip, use, etc.)
+	SourceSlot    slot.Position  `json:"sourceSlot"`    // Slot the asset occupies in the owner's inventory
+	AssetId       asset.Id       `json:"assetId"`       // Asset ID staged for transfer
+	TemplateId    item.Id        `json:"templateId"`    // Item template of the staged asset
+	Quantity      asset.Quantity `json:"quantity"`      // Quantity staged (partial stacks allowed)
+}
+
+// TradeSettlementSide is one participant's contribution. The tax figures are
+// RESOLVED INTEGERS computed by atlas-trades from the tenant config — the
+// orchestrator stays config-free (design §6.3). MesoStaged is deducted from
+// this side; MesoDelivered is credited to the other; the difference
+// (MesoTax) is destroyed.
+type TradeSettlementSide struct {
+	CharacterId   character.Id          `json:"characterId"`   // Participant
+	Items         []TradeSettlementItem `json:"items"`         // Assets this side staged
+	MesoStaged    uint32                `json:"mesoStaged"`    // Mesos deducted from this side
+	MesoTax       uint32                `json:"mesoTax"`       // Mesos destroyed as tax
+	MesoDelivered uint32                `json:"mesoDelivered"` // Mesos credited to the other side
+}
+
+// TradeSettlementPayload is the whole two-party swap as one compensatable unit.
+type TradeSettlementPayload struct {
+	TransactionId uuid.UUID              `json:"transactionId"` // Saga transaction ID
+	WorldId       world.Id               `json:"worldId"`       // World ID
+	ChannelId     channel.Id             `json:"channelId"`     // Channel ID
+	RoomType      byte                   `json:"roomType"`      // miniroom.Trade or miniroom.CashTrade
+	Sides         [2]TradeSettlementSide `json:"sides"`         // The two participants
 }
 
 // TransferToMtsPayload — expanded into release_from_character + accept_to_mts_listing.

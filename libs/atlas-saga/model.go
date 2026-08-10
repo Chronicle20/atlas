@@ -130,6 +130,13 @@ const (
 	AcceptToCharacter    Action = "accept_to_character"
 	ReleaseFromStorage   Action = "release_from_storage"
 
+	// Trade actions (task-205). trade_settlement is a COMPOSITE: the
+	// orchestrator expands it into release_from_character / accept_to_character /
+	// award_mesos steps (see expandTradeSettlement). atlas-trades never
+	// enumerates concrete saga steps itself. The saga type is the pre-existing
+	// TradeTransaction.
+	TradeSettlement Action = "trade_settlement"
+
 	// Cash shop actions
 	TransferToCashShop   Action = "transfer_to_cash_shop"
 	WithdrawFromCashShop Action = "withdraw_from_cash_shop"

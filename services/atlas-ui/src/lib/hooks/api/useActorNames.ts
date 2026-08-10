@@ -23,7 +23,8 @@ import type { Tenant } from "@/types/models/tenant";
  * Distinct, truthy ids — id 0 is "none", never a real account/character.
  * Empty without a tenant, so no query is even constructed until there is one
  * (which also keeps every key identical to the detail pages' keys, both of
- * which fold a non-null tenant in).
+ * which fold a non-null tenant in). The hooks below still carry the usual
+ * `enabled: !!activeTenant` rather than leaning on this as the only guard.
  */
 function lookupIds(ids: number[], tenant: Tenant | null): number[] {
   if (!tenant) return [];
@@ -53,6 +54,7 @@ export function useAccountNames(
         const account = await accountsService.getAccountById(String(id));
         return account.attributes.name;
       },
+      enabled: !!activeTenant,
       staleTime: 10 * 60 * 1000,
       gcTime: 30 * 60 * 1000,
     })),
@@ -67,11 +69,12 @@ export function useCharacterNames(
   const unique = lookupIds(ids, activeTenant);
   const results = useQueries({
     queries: unique.map((id) => ({
-      queryKey: characterKeys.detail(activeTenant!, String(id)),
+      queryKey: characterKeys.detail(activeTenant, String(id)),
       queryFn: async () => {
         const character = await charactersService.getById(String(id));
         return character.attributes.name;
       },
+      enabled: !!activeTenant,
       staleTime: 5 * 60 * 1000,
       gcTime: 30 * 60 * 1000,
     })),

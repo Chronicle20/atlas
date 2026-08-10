@@ -67,11 +67,19 @@ export type CashSurprisePoolFormData = z.infer<typeof cashSurprisePoolSchema>;
 // A cash-surprise entry awards a cash shop COMMODITY (serial number), not a
 // raw item id: the commodity catalog owns the reward's itemId, count and
 // period, so rolling a commodity guarantees a self-consistent locker entry.
-// itemId stays on the entry for operator display only.
+// itemId and quantity stay on the entry for operator display only — the open
+// path grants `ci.ItemId()` × `ci.Count()` from the commodity itself
+// (atlas-cashshop surprise/processor.go) — so the form DERIVES both from the
+// chosen commodity rather than asking for them. Their messages are therefore
+// unreachable through the UI and phrased for the one control that exists.
+// Every derived field carries the `error` option as well as the .positive()
+// message: unpicked, they are `undefined`, which trips z.number()'s TYPE check
+// and would otherwise surface zod's raw "expected number, received undefined".
+const cashItemRequired = { error: "Choose a cash item" } as const;
 export const cashSurpriseItemSchema = z.object({
-  itemId: z.number().int().positive("Item id is required"),
-  quantity: z.number().int().positive(),
+  itemId: z.number(cashItemRequired).int().positive("Choose a cash item"),
+  quantity: z.number(cashItemRequired).int().positive("Choose a cash item"),
   weight: z.number().int().positive("Weight must be at least 1"),
-  commodityId: z.number().int().positive("Commodity id is required"),
+  commodityId: z.number(cashItemRequired).int().positive("Choose a cash item"),
 });
 export type CashSurpriseItemFormData = z.infer<typeof cashSurpriseItemSchema>;

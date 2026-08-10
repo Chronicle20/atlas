@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ItemPicker } from "@/components/features/items/item-search/ItemPicker";
+import { CashItemPicker } from "@/components/features/items/item-search/CashItemPicker";
 import { createErrorFromUnknown } from "@/types/api/errors";
 import {
   tierItemSchema,
@@ -134,6 +135,15 @@ export function PoolItemDialog({
     createGlobal.isPending ||
     updateGlobal.isPending;
 
+  // In cash-surprise mode one control feeds three fields, so all three of
+  // their messages surface on the single line under the picker.
+  const errors = form.formState.errors;
+  const pickerError = needsCommodity
+    ? (("commodityId" in errors ? errors.commodityId?.message : undefined) ??
+      errors.itemId?.message ??
+      errors.quantity?.message)
+    : errors.itemId?.message;
+
   const onSubmit = form.handleSubmit(async (values) => {
     try {
       if (kind === "global") {
@@ -208,33 +218,74 @@ export function PoolItemDialog({
               id="pi-itemId-label"
               onClick={() => document.getElementById("pi-itemId")?.focus()}
             >
-              Item
+              {needsCommodity ? "Cash item" : "Item"}
             </Label>
-            <Controller
-              control={form.control}
-              name="itemId"
-              render={({ field }) => (
-                <ItemPicker
-                  id="pi-itemId"
-                  value={field.value ?? 0}
-                  onChange={field.onChange}
-                />
-              )}
-            />
-            {form.formState.errors.itemId && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.itemId.message}
-              </p>
+            {needsCommodity ? (
+              /* One control, not three: the entry's itemId and quantity are
+                 display-only (the open path grants the COMMODITY's itemId and
+                 count), so asking for them separately invites a row that
+                 disagrees with what it actually grants. Picking the commodity
+                 sets all three. */
+              <Controller
+                control={form.control}
+                name={"commodityId" as const}
+                render={({ field }) => (
+                  <CashItemPicker
+                    id="pi-itemId"
+                    placeholder="Select a cash item…"
+                    value={field.value ? String(field.value) : ""}
+                    onChange={(commodity) => {
+                      field.onChange(Number(commodity.id));
+                      form.setValue("itemId", commodity.itemId, {
+                        shouldValidate: true,
+                      });
+                      form.setValue("quantity", commodity.count, {
+                        shouldValidate: true,
+                      });
+                    }}
+                  />
+                )}
+              />
+            ) : (
+              <Controller
+                control={form.control}
+                name="itemId"
+                render={({ field }) => (
+                  <ItemPicker
+                    id="pi-itemId"
+                    value={field.value ?? 0}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+            )}
+            {pickerError && (
+              <p className="text-sm text-destructive">{pickerError}</p>
             )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="pi-quantity">Quantity</Label>
-            <Input
-              id="pi-quantity"
-              type="number"
-              {...form.register("quantity", { valueAsNumber: true })}
-            />
-            {form.formState.errors.quantity && (
+            {needsCommodity ? (
+              <>
+                <Input
+                  id="pi-quantity"
+                  type="number"
+                  readOnly
+                  value={form.watch("quantity") ?? ""}
+                />
+                <p className="text-xs text-muted-foreground">
+                  The commodity&apos;s bundle count — atlas-cashshop grants that
+                  many, whatever this entry says.
+                </p>
+              </>
+            ) : (
+              <Input
+                id="pi-quantity"
+                type="number"
+                {...form.register("quantity", { valueAsNumber: true })}
+              />
+            )}
+            {form.formState.errors.quantity && !needsCommodity && (
               <p className="text-sm text-destructive">
                 {form.formState.errors.quantity.message}
               </p>
@@ -258,24 +309,6 @@ export function PoolItemDialog({
                     </p>
                   )}
               </div>
-              {needsCommodity && (
-                <div className="space-y-2">
-                  <Label htmlFor="pi-commodityId">Commodity Id</Label>
-                  <Input
-                    id="pi-commodityId"
-                    type="number"
-                    {...form.register("commodityId" as const, {
-                      valueAsNumber: true,
-                    })}
-                  />
-                  {"commodityId" in form.formState.errors &&
-                    form.formState.errors.commodityId && (
-                      <p className="text-sm text-destructive">
-                        {form.formState.errors.commodityId.message}
-                      </p>
-                    )}
-                </div>
-              )}
             </>
           ) : (
             <div className="space-y-2">

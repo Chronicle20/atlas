@@ -108,7 +108,7 @@ export function PoolItemsTable({
                 <TableHead>Item</TableHead>
                 <TableHead>Quantity</TableHead>
                 <TableHead>Weight</TableHead>
-                {showCommodity && <TableHead>Commodity</TableHead>}
+                {showCommodity && <TableHead>Serial</TableHead>}
                 <TableHead>Chance</TableHead>
                 <TableHead className="w-16" />
               </TableRow>
@@ -122,7 +122,12 @@ export function PoolItemsTable({
                     {it.attributes.weight > 0 ? it.attributes.weight : "—"}
                   </TableCell>
                   {showCommodity && (
-                    <TableCell>{it.attributes.commodityId}</TableCell>
+                    /* The item name and count either side of this cell are the
+                       commodity's own (PoolItemDialog derives them from it), so
+                       the serial only has to be identifiable, not explained. */
+                    <TableCell className="font-mono text-xs">
+                      {it.attributes.commodityId}
+                    </TableCell>
                   )}
                   <TableCell>{pct(chances.get(it.id) ?? 0)}</TableCell>
                   <TableCell className="text-right">

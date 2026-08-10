@@ -157,7 +157,7 @@ describe("RewardPoolDetailPage", () => {
     expect(screen.getByText("25.00%")).toBeInTheDocument();
   });
 
-  it("cash-surprise: flat item table with Commodity column, plain header name, item icon (not egg-formatted)", async () => {
+  it("cash-surprise: flat item table with Serial column, plain header name, item icon (not egg-formatted)", async () => {
     mocks.getPoolById.mockResolvedValue(surpriseBox);
     mocks.getItems.mockResolvedValue([
       {
@@ -186,8 +186,8 @@ describe("RewardPoolDetailPage", () => {
     ).not.toBeInTheDocument();
     // No tier-weights/NPC cards -- cash-surprise uses the flat layout.
     expect(screen.queryByText(/tier weights/i)).not.toBeInTheDocument();
-    // Flat table renders the Commodity column and its value.
-    expect(screen.getByText("Commodity")).toBeInTheDocument();
+    // Flat table renders the Serial column and its value.
+    expect(screen.getByText("Serial")).toBeInTheDocument();
     expect(screen.getByText("5300000")).toBeInTheDocument();
     // Header icon resolves via the "item" source (pool id), not the
     // gachapon NPC-icon branch (which would need npcIds populated). The

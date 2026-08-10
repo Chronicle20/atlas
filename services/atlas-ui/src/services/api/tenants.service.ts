@@ -119,6 +119,15 @@ interface TenantConfigAttributes {
         hours: number;
       }[];
     };
+    /**
+     * Cash item template ids that open as a Cash Shop Surprise box. An empty
+     * or absent list is NOT "the feature is off" — atlas-cashshop falls back
+     * to the stock box 5222000 (configuration/registry.go
+     * GetSurpriseBoxTemplateIds), so readers must apply the same fallback.
+     */
+    surprise?: {
+      boxTemplateIds?: number[];
+    };
   };
 }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useForm, type DefaultValues } from "react-hook-form";
+import { useForm, Controller, type DefaultValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import {
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ItemPicker } from "@/components/features/items/item-search/ItemPicker";
 import { createErrorFromUnknown } from "@/types/api/errors";
 import {
   gachaponPoolSchema,
@@ -26,6 +27,7 @@ import {
   useCreateRewardPool,
   useUpdateRewardPool,
 } from "@/lib/hooks/api/useRewardPools";
+import { useSurpriseBoxTemplateIds } from "@/lib/hooks/api/useSurpriseBoxes";
 import type {
   RewardPoolData,
   RewardPoolKind,
@@ -109,6 +111,18 @@ export function PoolFormDialog({
     resolver: zodResolver(cashSurprisePoolSchema),
     defaultValues: cashSurpriseDefaults,
   });
+
+  // A pool whose id isn't a configured box is never rolled (atlas-cashshop
+  // rejects the open with NOT_A_SURPRISE_BOX before it ever reaches the pool).
+  // Warned about, not blocked: the operator may add the id to the tenant
+  // configuration afterwards. Gated on isResolved so a still-loading (or
+  // failed) configuration read can't accuse a perfectly good box.
+  const surpriseBoxes = useSurpriseBoxTemplateIds();
+  const boxItemId = cashSurpriseForm.watch("boxItemId");
+  const unconfiguredBox =
+    surpriseBoxes.isResolved &&
+    !!boxItemId &&
+    !surpriseBoxes.ids.includes(boxItemId);
 
   // npcIds is edited as a comma-separated string for gachapons
   const [npcIdsText, setNpcIdsText] = useState(
@@ -329,14 +343,33 @@ export function PoolFormDialog({
       activeForm = (
         <form onSubmit={submitCashSurprise} className="space-y-4">
           {!isEdit && (
-            <div className="space-y-2">
-              <Label htmlFor="pf-box">Box Item Id</Label>
-              <Input
-                id="pf-box"
-                type="number"
-                {...cashSurpriseForm.register("boxItemId", {
-                  valueAsNumber: true,
-                })}
+            /* The picker trigger is a labelable <button>, so a <label
+               for="pf-box"> would override its text as the accessible name.
+               The field name is carried by a role="group"/aria-labelledby pair
+               instead — same wiring as PoolItemDialog. */
+            <div
+              role="group"
+              aria-labelledby="pf-box-label"
+              className="space-y-2"
+            >
+              <Label
+                id="pf-box-label"
+                onClick={() => document.getElementById("pf-box")?.focus()}
+              >
+                Box Item
+              </Label>
+              <Controller
+                control={cashSurpriseForm.control}
+                name="boxItemId"
+                render={({ field }) => (
+                  <ItemPicker
+                    id="pf-box"
+                    poolKey="cashSurpriseBoxes"
+                    placeholder="Select a box item…"
+                    value={field.value ?? 0}
+                    onChange={field.onChange}
+                  />
+                )}
               />
               {cashSurpriseForm.formState.errors.boxItemId && (
                 <p className="text-sm text-destructive">
@@ -346,6 +379,15 @@ export function PoolFormDialog({
               <p className="text-xs text-muted-foreground">
                 The box item id becomes the pool id (e.g. 5222000).
               </p>
+              {unconfiguredBox && (
+                <p className="text-sm text-warning-foreground">
+                  Item {boxItemId} is not one of this tenant&apos;s Surprise
+                  boxes ({surpriseBoxes.ids.join(", ")}), so opening it will
+                  never roll this pool. Add it to the tenant
+                  configuration&apos;s cashShop.surprise.boxTemplateIds, or pick
+                  a configured box.
+                </p>
+              )}
               <p className="text-sm text-muted-foreground">
                 A pool that awards a Surprise box will produce an endless box.
                 This is allowed; check your entries.

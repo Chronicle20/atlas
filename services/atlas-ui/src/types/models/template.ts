@@ -116,6 +116,10 @@ export interface TemplateAttributes {
         hours: number;
       }[];
     };
+    /** Cash item template ids that open as a Cash Shop Surprise box. */
+    surprise?: {
+      boxTemplateIds?: number[];
+    };
   };
 }
 

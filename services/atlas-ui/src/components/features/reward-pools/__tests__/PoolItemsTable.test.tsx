@@ -36,7 +36,7 @@ function cashSurpriseItem(
 const noop = () => {};
 
 describe("PoolItemsTable", () => {
-  it("cash-surprise: renders the Commodity column with each row's commodityId", () => {
+  it("cash-surprise: renders the Serial column with each row's commodityId", () => {
     render(
       <PoolItemsTable
         kind="cash-surprise"
@@ -48,12 +48,12 @@ describe("PoolItemsTable", () => {
         onDelete={noop}
       />,
     );
-    expect(screen.getByText("Commodity")).toBeInTheDocument();
+    expect(screen.getByText("Serial")).toBeInTheDocument();
     expect(screen.getByText("5300000")).toBeInTheDocument();
     expect(screen.getByText("item-5510000")).toBeInTheDocument();
   });
 
-  it("incubator: renders the flat layout without a Commodity column", () => {
+  it("incubator: renders the flat layout without a Serial column", () => {
     render(
       <PoolItemsTable
         kind="incubator"
@@ -65,10 +65,10 @@ describe("PoolItemsTable", () => {
         onDelete={noop}
       />,
     );
-    expect(screen.queryByText("Commodity")).not.toBeInTheDocument();
+    expect(screen.queryByText("Serial")).not.toBeInTheDocument();
   });
 
-  it("gachapon: renders the tiered layout, unaffected by the Commodity column addition", () => {
+  it("gachapon: renders the tiered layout, unaffected by the Serial column addition", () => {
     render(
       <PoolItemsTable
         kind="gachapon"
@@ -93,7 +93,7 @@ describe("PoolItemsTable", () => {
         onDelete={noop}
       />,
     );
-    expect(screen.queryByText("Commodity")).not.toBeInTheDocument();
+    expect(screen.queryByText("Serial")).not.toBeInTheDocument();
     expect(screen.getByText("item-2000000")).toBeInTheDocument();
   });
 });

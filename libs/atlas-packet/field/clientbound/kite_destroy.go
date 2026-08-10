@@ -12,11 +12,19 @@ import (
 
 const KiteDestroyWriter = "DestroyKite"
 
+// KiteDestroyAnimationType is the leading byte of REMOVE_KITE. It is a
+// SUPPRESS-ANIMATION FLAG, not a selector between two animations.
+// CMessageBoxPool::OnMessageBoxLeaveField (gms_v95 @0x635d60) always calls
+// RemoveMessageBox, then gates the RelMove / canvas swap /
+// CAnimationDisplayer::RegisterOneTimeAnimation despawn sequence on the byte
+// being zero. Any non-zero value removes the banner instantly with no visual.
 type KiteDestroyAnimationType byte
 
 const (
-	KiteDestroyAnimationType1 KiteDestroyAnimationType = 0
-	KiteDestroyAnimationType2 KiteDestroyAnimationType = 1
+	// KiteDestroyAnimated plays the one-shot despawn animation.
+	KiteDestroyAnimated KiteDestroyAnimationType = 0
+	// KiteDestroySilent removes the banner with no visual.
+	KiteDestroySilent KiteDestroyAnimationType = 1
 )
 
 // packet-audit:fname CMessageBoxPool::OnMessageBoxLeaveField

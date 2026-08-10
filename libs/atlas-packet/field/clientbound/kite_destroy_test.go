@@ -12,7 +12,7 @@ import (
 // packet-audit:verify packet=field/clientbound/FieldKiteDestroy version=jms_v185 ida=0x6d5f7f
 // packet-audit:verify packet=field/clientbound/FieldKiteDestroy version=gms_v84 ida=0x6710ab
 func TestKiteDestroy(t *testing.T) {
-	input := NewKiteDestroy(1, KiteDestroyAnimationType2)
+	input := NewKiteDestroy(1, KiteDestroySilent)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)

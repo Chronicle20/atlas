@@ -54,7 +54,11 @@ func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, outboxlib.Migration, database.IdempotencyMigration))
+
+	// ACCEPT/RELEASE claim an idempotency key so an at-least-once redelivery
+	// cannot duplicate or double-release a cash asset (task-208).
+	database.StartIdempotencySweeper(l, rt.Context(), db, database.DefaultIdempotencyRetention, database.DefaultIdempotencySweep)
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.

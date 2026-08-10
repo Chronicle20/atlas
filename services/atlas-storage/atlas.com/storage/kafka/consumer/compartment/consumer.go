@@ -13,6 +13,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	kafkaMessage "github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -50,7 +51,11 @@ func handleAcceptCommand(db *gorm.DB) kafkaMessage.Handler[compartment.Command[c
 			return
 		}
 
-		err := storage.NewProcessor(l, ctx, db).AcceptAndEmit(c.WorldId, c.AccountId, c.CharacterId, c.Body)
+		// Guarded: ACCEPT creates a durable storage asset and Kafka delivery is
+		// at-least-once (task-208).
+		err := database.ApplyOnce(l, ctx, db, c.Body.TransactionId, compartment.CommandAccept, c.Body, func(tx *gorm.DB) error {
+			return storage.NewProcessor(l, ctx, tx).AcceptAndEmit(c.WorldId, c.AccountId, c.CharacterId, c.Body)
+		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to accept item for account [%d] world [%d] transaction [%s].", c.AccountId, c.WorldId, c.Body.TransactionId)
 			return
@@ -76,7 +81,11 @@ func handleReleaseCommand(db *gorm.DB) kafkaMessage.Handler[compartment.Command[
 		}
 		inventoryType := assetModel.InventoryType()
 
-		err = storage.NewProcessor(l, ctx, db).ReleaseAndEmit(c.WorldId, c.AccountId, c.CharacterId, c.Body)
+		// Guarded: a redelivered RELEASE must not release the asset twice
+		// (task-208).
+		err = database.ApplyOnce(l, ctx, db, c.Body.TransactionId, compartment.CommandRelease, c.Body, func(tx *gorm.DB) error {
+			return storage.NewProcessor(l, ctx, tx).ReleaseAndEmit(c.WorldId, c.AccountId, c.CharacterId, c.Body)
+		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to release asset [%d] for account [%d] world [%d] transaction [%s].", c.Body.AssetId, c.AccountId, c.WorldId, c.Body.TransactionId)
 			return

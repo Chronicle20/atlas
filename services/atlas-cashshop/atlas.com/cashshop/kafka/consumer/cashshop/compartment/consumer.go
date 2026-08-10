@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -45,7 +46,11 @@ func handleAcceptCommand(db *gorm.DB) message.Handler[compartment.Command[compar
 		if c.Type != compartment.CommandAccept {
 			return
 		}
-		_ = compartment2.NewProcessor(l, ctx, db).AcceptAndEmit(c.AccountId, c.CharacterId, c.Body.CompartmentId, compartment2.CompartmentType(c.CompartmentType), c.Body.CashId, c.Body.TemplateId, c.Body.Quantity, c.Body.CommodityId, c.Body.PurchasedBy, c.Body.Flag, c.Body.TransactionId)
+		// Guarded: ACCEPT creates a durable cash-shop asset and Kafka delivery
+		// is at-least-once (task-208).
+		_ = database.ApplyOnce(l, ctx, db, c.Body.TransactionId, compartment.CommandAccept, c.Body, func(tx *gorm.DB) error {
+			return compartment2.NewProcessor(l, ctx, tx).AcceptAndEmit(c.AccountId, c.CharacterId, c.Body.CompartmentId, compartment2.CompartmentType(c.CompartmentType), c.Body.CashId, c.Body.TemplateId, c.Body.Quantity, c.Body.CommodityId, c.Body.PurchasedBy, c.Body.Flag, c.Body.TransactionId)
+		})
 	}
 }
 
@@ -54,6 +59,10 @@ func handleReleaseCommand(db *gorm.DB) message.Handler[compartment.Command[compa
 		if c.Type != compartment.CommandRelease {
 			return
 		}
-		_ = compartment2.NewProcessor(l, ctx, db).ReleaseAndEmit(c.AccountId, c.CharacterId, c.Body.CompartmentId, compartment2.CompartmentType(c.CompartmentType), c.Body.AssetId, c.Body.TransactionId, c.Body.CashId, c.Body.TemplateId)
+		// Guarded: RELEASE deletes the asset and emits the event the withdrawal
+		// saga advances on; a redelivery must not release twice (task-208).
+		_ = database.ApplyOnce(l, ctx, db, c.Body.TransactionId, compartment.CommandRelease, c.Body, func(tx *gorm.DB) error {
+			return compartment2.NewProcessor(l, ctx, tx).ReleaseAndEmit(c.AccountId, c.CharacterId, c.Body.CompartmentId, compartment2.CompartmentType(c.CompartmentType), c.Body.AssetId, c.Body.TransactionId, c.Body.CashId, c.Body.TemplateId)
+		})
 	}
 }

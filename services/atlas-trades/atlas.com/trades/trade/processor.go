@@ -225,7 +225,11 @@ type Processor interface {
 	// RefreshReservations re-files the inventory reservation of every staged
 	// item in every live room, so a reservation TTL never expires under a trade
 	// that is still open (design §5.3). Task 20 drives it from a ticker.
-	RefreshReservations(txId uuid.UUID) error
+	//
+	// It takes no transaction id: it emits no status event, only the
+	// COMPARTMENT commands, which are keyed by the reservation handle they
+	// re-file rather than by a command transaction.
+	RefreshReservations() error
 
 	// TeardownCharacter removes the character's room, unless it is already
 	// settling (design §3.3, "cancel loses to settlement").
@@ -1101,7 +1105,7 @@ func counterpartyOf(room Room, characterId character.Id) character.Id {
 // refresh is therefore CANCEL_RESERVATION followed by REQUEST_RESERVE under the
 // same handle. Both commands are keyed by character id, so they share a
 // partition and atlas-inventory processes them in that order.
-func (p *ProcessorImpl) RefreshReservations(txId uuid.UUID) error {
+func (p *ProcessorImpl) RefreshReservations() error {
 	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.refreshReservations(mb)
 	})
@@ -1195,7 +1199,7 @@ func (p *ProcessorImpl) correctStagedSlots(cache *compartmentCache, snapshot Roo
 // RefreshReservations runs one refresh pass over the rooms of the tenant carried
 // by ctx.
 func RefreshReservations(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) error {
-	return NewProcessor(l, ctx, db).RefreshReservations(uuid.New())
+	return NewProcessor(l, ctx, db).RefreshReservations()
 }
 
 // minReservationRefreshInterval floors the refresh pace. A tenant is free to
@@ -1270,4 +1274,50 @@ func refreshAllReservations(l logrus.FieldLogger, ctx context.Context, tenants [
 		return next, fmt.Errorf("trade reservation refresh failed for %d tenant(s)", failures)
 	}
 	return next, nil
+}
+
+// reservationRefreshInitialDelay is how long the loop waits before its FIRST
+// pass: nothing.
+//
+// The pace is REPORTED BY a pass, so before one has run there is no honest
+// interval to wait — only a guess, and the shipped default (100s) is the WRONG
+// guess for any tenant whose TTL is under 300s. A tenant configured at 60s that
+// staged an item during that first window would have had its hold lapse at
+// t≈65s while the first pass was still waiting for t=100s, which is exactly the
+// failure the TTL/3 rule exists to prevent. Running immediately costs one
+// registry read on an empty registry and replaces the guess with the real pace.
+const reservationRefreshInitialDelay = time.Duration(0)
+
+// RunReservationRefresh drives the reservation-refresh loop until ctx is
+// cancelled, refreshing every live room's inventory holds so a trade window
+// never outlives its reservations (design §5.3).
+//
+// It returns only on cancellation, so callers run it under routine.Go.
+func RunReservationRefresh(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) {
+	runReservationRefresh(l, ctx, reservationRefreshInitialDelay, func(pctx context.Context) (time.Duration, error) {
+		return RefreshAllReservations(l, pctx, db)
+	})
+}
+
+// runReservationRefresh is RunReservationRefresh's body with the initial delay
+// and the pass injected, so the pacing — including the first fire, which no
+// pass has yet reported an interval for — can be exercised without a database.
+//
+// A timer rather than a ticker: each pass reports the interval the tenants it
+// just refreshed actually need, and a ticker's period is fixed at construction.
+func runReservationRefresh(l logrus.FieldLogger, ctx context.Context, initialDelay time.Duration, pass func(context.Context) (time.Duration, error)) {
+	timer := time.NewTimer(initialDelay)
+	defer timer.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-timer.C:
+			next, err := pass(ctx)
+			if err != nil {
+				l.WithError(err).Error("Unable to refresh trade reservations.")
+			}
+			timer.Reset(next)
+		}
+	}
 }

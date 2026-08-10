@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -215,6 +216,91 @@ func TestRefreshAllReservationsPassContextCarriesCancellation(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("refresh all: %v", err)
+	}
+}
+
+// TestReservationRefreshRunsItsFirstPassImmediately pins the boot window. The
+// pace is reported BY a pass, so before one has run there is no honest interval
+// — and the shipped default (100s) is the wrong guess for any tenant whose TTL
+// is under 300s: one configured at 60s that staged an item at boot would lose
+// its hold at t≈65s while the first pass was still waiting for t=100s.
+//
+// The assertion is that the first pass runs on a timescale nowhere near the
+// default interval, which is what makes the boot window closed.
+func TestReservationRefreshRunsItsFirstPassImmediately(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ran := make(chan time.Duration, 1)
+	start := time.Now()
+	routine.Go(tickerLogger(), ctx, func(rctx context.Context) {
+		runReservationRefresh(tickerLogger(), rctx, reservationRefreshInitialDelay, func(context.Context) (time.Duration, error) {
+			select {
+			case ran <- time.Since(start):
+			default:
+			}
+			<-rctx.Done()
+			return time.Hour, nil
+		})
+	})
+
+	select {
+	case elapsed := <-ran:
+		if elapsed > time.Second {
+			t.Errorf("first pass ran after %s, want promptly — a tenant with a sub-default TTL loses its holds inside that window", elapsed)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the first pass never ran")
+	}
+}
+
+// TestReservationRefreshPacesLaterPassesFromTheReportedInterval pins that the
+// loop honours what each pass reports rather than a fixed period — the whole
+// reason it is a timer and not a ticker.
+func TestReservationRefreshPacesLaterPassesFromTheReportedInterval(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	fired := make(chan struct{}, 8)
+	routine.Go(tickerLogger(), ctx, func(rctx context.Context) {
+		runReservationRefresh(tickerLogger(), rctx, reservationRefreshInitialDelay, func(context.Context) (time.Duration, error) {
+			select {
+			case fired <- struct{}{}:
+			default:
+			}
+			return time.Millisecond, nil
+		})
+	})
+
+	// Three fires inside a second is only possible if the loop re-armed at the
+	// 1ms the pass reported; the default pace would deliver one.
+	for i := 0; i < 3; i++ {
+		select {
+		case <-fired:
+		case <-time.After(5 * time.Second):
+			t.Fatalf("pass %d never ran — the loop did not re-arm at the reported interval", i+1)
+		}
+	}
+}
+
+// TestReservationRefreshStopsOnContextCancellation pins the shutdown path
+// main.go's teardown waits on: the loop must return when the process context is
+// cancelled, or `<-refreshStopped` blocks shutdown forever.
+func TestReservationRefreshStopsOnContextCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	stopped := make(chan struct{})
+	routine.Go(tickerLogger(), ctx, func(rctx context.Context) {
+		defer close(stopped)
+		runReservationRefresh(tickerLogger(), rctx, time.Hour, func(context.Context) (time.Duration, error) {
+			return time.Hour, nil
+		})
+	})
+
+	cancel()
+	select {
+	case <-stopped:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the refresh loop did not return after its context was cancelled")
 	}
 }
 

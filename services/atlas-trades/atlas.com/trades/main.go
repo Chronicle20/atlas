@@ -1,7 +1,6 @@
 package main
 
 import (
-	"atlas-trades/configuration"
 	characterconsumer "atlas-trades/kafka/consumer/character"
 	inviteconsumer "atlas-trades/kafka/consumer/invite"
 	sagaconsumer "atlas-trades/kafka/consumer/saga"
@@ -12,7 +11,6 @@ import (
 	"atlas-trades/trade"
 	"context"
 	"os"
-	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -122,27 +120,21 @@ func main() {
 	// for a DEAD room, not a normal-path event: if it does fire mid-trade,
 	// settlement fails cleanly with LEAVE 8.
 	//
-	// A timer rather than a ticker, because the pace is per-tenant: each pass
-	// reports the interval the tenants it just refreshed actually need. The
-	// goroutine ends when rt.Context() is cancelled, and the teardown below waits
-	// for it, so a pass in flight is never abandoned mid-emit at shutdown.
+	// The pace is per-tenant, so the loop is self-pacing: each pass reports the
+	// interval the tenants it just refreshed actually need, and the first pass
+	// runs immediately because no pass has yet reported one.
+	//
+	// The teardown below waits for the loop to observe the cancelled context and
+	// return, so shutdown does not complete while a pass is still running. That
+	// is NOT an ordering guarantee against the other teardowns: TeardownFunc runs
+	// each callback in its own goroutine off the same channel, so the outbox
+	// drainer can stop while a final pass is still emitting. Harmless — a pass
+	// writes to the transactional outbox, so its rows are durable and drained at
+	// the next boot.
 	refreshStopped := make(chan struct{})
 	routine.Go(l, rt.Context(), func(ctx context.Context) {
 		defer close(refreshStopped)
-		timer := time.NewTimer(trade.ReservationRefreshInterval(configuration.DefaultConfig()))
-		defer timer.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-timer.C:
-				next, err := trade.RefreshAllReservations(l, ctx, db)
-				if err != nil {
-					l.WithError(err).Error("Unable to refresh trade reservations.")
-				}
-				timer.Reset(next)
-			}
-		}
+		trade.RunReservationRefresh(l, ctx, db)
 	})
 	rt.TeardownFunc(func() { <-refreshStopped })
 

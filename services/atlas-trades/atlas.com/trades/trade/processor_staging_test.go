@@ -772,7 +772,7 @@ func TestRefreshReservationsCancelsBeforeReReserving(t *testing.T) {
 	}
 	reservationId := stagedItemsOf(t, p, 100)[0].ReservationId()
 
-	if err := p.RefreshReservations(uuid.New()); err != nil {
+	if err := p.RefreshReservations(); err != nil {
 		t.Fatalf("refresh: %v", err)
 	}
 
@@ -829,7 +829,7 @@ func TestRefreshReservationsSkipsASettlingRoom(t *testing.T) {
 		t.Fatalf("move to settling: %v", err)
 	}
 
-	if err := p.RefreshReservations(uuid.New()); err != nil {
+	if err := p.RefreshReservations(); err != nil {
 		t.Fatalf("refresh: %v", err)
 	}
 	assertNoCompartmentCommandOfType(t, e, compartmentmsg.CommandCancelReservation)
@@ -877,7 +877,7 @@ func TestRefreshFollowsTheAssetAndDoesNotPoisonTheVacatedSlot(t *testing.T) {
 	}
 	p.invp.(*fakeInventory).relocate(100, inventory.TypeValueUse, stagingSourceSlot, 8)
 
-	if err := p.RefreshReservations(uuid.New()); err != nil {
+	if err := p.RefreshReservations(); err != nil {
 		t.Fatalf("refresh: %v", err)
 	}
 
@@ -909,7 +909,7 @@ func TestRefreshWritesTheCorrectedSlotBackToTheStagedItem(t *testing.T) {
 	}
 	p.invp.(*fakeInventory).relocate(100, inventory.TypeValueUse, stagingSourceSlot, 8)
 
-	if err := p.RefreshReservations(uuid.New()); err != nil {
+	if err := p.RefreshReservations(); err != nil {
 		t.Fatalf("refresh: %v", err)
 	}
 
@@ -967,7 +967,7 @@ func TestRefreshSkipsARoomTornDownConcurrently(t *testing.T) {
 		once.Do(func() { p.reg.Remove(p.t, room.Id()) })
 	}
 
-	if err := p.RefreshReservations(uuid.New()); err != nil {
+	if err := p.RefreshReservations(); err != nil {
 		t.Fatalf("refresh: %v", err)
 	}
 	if got := len(compartmentCommands[compartmentmsg.RequestReserveCommandBody](t, e, compartmentmsg.CommandRequestReserve)); got != 1 {
@@ -1002,7 +1002,7 @@ func TestRefreshSkipsARoomThatBeginsSettlingConcurrently(t *testing.T) {
 		})
 	}
 
-	if err := p.RefreshReservations(uuid.New()); err != nil {
+	if err := p.RefreshReservations(); err != nil {
 		t.Fatalf("refresh: %v", err)
 	}
 
@@ -1032,7 +1032,7 @@ func TestRefreshReadsEachCompartmentOncePerPass(t *testing.T) {
 	var reads int
 	p.invp.(*fakeInventory).onGetCompartment = func() { reads++ }
 
-	if err := p.RefreshReservations(uuid.New()); err != nil {
+	if err := p.RefreshReservations(); err != nil {
 		t.Fatalf("refresh: %v", err)
 	}
 	if reads != 2 {

@@ -2,6 +2,7 @@ package kite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -84,13 +85,21 @@ func fromEntry(e entry) Model {
 		Build()
 }
 
-func (r *Registry) Get(ctx context.Context, characterId uint32) (Model, bool) {
+// Get distinguishes a genuine cache miss from a real Redis failure:
+// TenantRegistry.Get returns the ErrNotFound sentinel for goredis.Nil (no
+// such key) and wraps every other failure (connection error, timeout,
+// corrupt JSON) in its own error — the two are never conflated upstream, so
+// they must not be conflated here either.
+func (r *Registry) Get(ctx context.Context, characterId uint32) (Model, bool, error) {
 	t := tenant.MustFromContext(ctx)
 	e, err := r.reg.Get(ctx, t, characterId)
 	if err != nil {
-		return Model{}, false
+		if errors.Is(err, atlas.ErrNotFound) {
+			return Model{}, false, nil
+		}
+		return Model{}, false, err
 	}
-	return fromEntry(e), true
+	return fromEntry(e), true, nil
 }
 
 func (r *Registry) Put(ctx context.Context, m Model) error {

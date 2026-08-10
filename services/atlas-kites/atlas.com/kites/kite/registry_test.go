@@ -48,7 +48,10 @@ func TestRegistryPutGetRemove(t *testing.T) {
 		t.Fatalf("Put: %v", err)
 	}
 
-	got, ok := getRegistry().Get(ctx, 42)
+	got, ok, err := getRegistry().Get(ctx, 42)
+	if err != nil {
+		t.Fatalf("Get: unexpected error: %v", err)
+	}
 	if !ok {
 		t.Fatal("Get: kite not found after Put")
 	}
@@ -62,8 +65,8 @@ func TestRegistryPutGetRemove(t *testing.T) {
 	if err := getRegistry().Remove(ctx, 42); err != nil {
 		t.Fatalf("Remove: %v", err)
 	}
-	if _, ok := getRegistry().Get(ctx, 42); ok {
-		t.Error("Get: kite still present after Remove")
+	if _, ok, err := getRegistry().Get(ctx, 42); ok || err != nil {
+		t.Errorf("Get after Remove: found=%v err=%v, want found=false err=nil", ok, err)
 	}
 }
 

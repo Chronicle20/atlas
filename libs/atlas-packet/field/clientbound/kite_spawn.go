@@ -13,17 +13,26 @@ import (
 const KiteSpawnWriter = "SpawnKite"
 
 // packet-audit:fname CMessageBoxPool::OnMessageBoxEnterField
+//
+// The sixth field is the spawn Y coordinate, NOT a kite-type discriminator.
+// CMessageBoxPool::OnMessageBoxEnterField (gms_v95 @0x6369c0, gms_v83
+// @0x65acdf) decodes it into MESSAGEBOX+32, then computes
+// renderX = (+28) - 3 and renderY = (+32) - 100 and feeds BOTH to a single
+// IWzVector2D::RelMove. The -3/-100 are sprite-anchor offsets, not flags.
+// The banner's appearance is selected by templateId alone, which is the sole
+// argument to CItemInfo::GetItemProp further down the same function. There is
+// no kite-type field on the wire.
 type KiteSpawn struct {
 	id         uint32
 	templateId uint32
 	message    string
 	name       string
 	x          int16
-	kiteType   int16
+	y          int16
 }
 
-func NewKiteSpawn(id uint32, templateId uint32, message string, name string, x int16, kiteType int16) KiteSpawn {
-	return KiteSpawn{id: id, templateId: templateId, message: message, name: name, x: x, kiteType: kiteType}
+func NewKiteSpawn(id uint32, templateId uint32, message string, name string, x int16, y int16) KiteSpawn {
+	return KiteSpawn{id: id, templateId: templateId, message: message, name: name, x: x, y: y}
 }
 
 func (m KiteSpawn) Operation() string { return KiteSpawnWriter }
@@ -39,7 +48,7 @@ func (m KiteSpawn) Encode(l logrus.FieldLogger, _ context.Context) func(options 
 		w.WriteAsciiString(m.message)
 		w.WriteAsciiString(m.name)
 		w.WriteInt16(m.x)
-		w.WriteInt16(m.kiteType)
+		w.WriteInt16(m.y)
 		return w.Bytes()
 	}
 }
@@ -51,6 +60,6 @@ func (m *KiteSpawn) Decode(_ logrus.FieldLogger, _ context.Context) func(r *requ
 		m.message = r.ReadAsciiString()
 		m.name = r.ReadAsciiString()
 		m.x = r.ReadInt16()
-		m.kiteType = r.ReadInt16()
+		m.y = r.ReadInt16()
 	}
 }

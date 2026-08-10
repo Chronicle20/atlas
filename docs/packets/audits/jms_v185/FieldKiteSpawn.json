@@ -56,7 +56,7 @@
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
-      "IDAComment": "y / kiteType (@line94)",
+      "IDAComment": "ptMessageBox.y (spawn y, @line94)",
       "Verdict": 0,
       "Note": ""
     }

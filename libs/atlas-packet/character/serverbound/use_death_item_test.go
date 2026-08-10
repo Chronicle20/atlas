@@ -17,13 +17,14 @@ import (
 // IDA gms_v95 CUserLocal::RequestUpgradeTombEffect@0x908320 (op 58 = 0x03A).
 //
 // packet-audit:verify packet=character/serverbound/UseDeathItem version=gms_v72 ida=0x867654
-// packet-audit:verify packet=character/serverbound/UseDeathItem version=gms_v79 ida=0x8b2ff0
-// packet-audit:verify packet=character/serverbound/UseDeathItem version=gms_v83 ida=0x95af8e
-// packet-audit:verify packet=character/serverbound/UseDeathItem version=gms_v84 ida=0x999277
-// packet-audit:verify packet=character/serverbound/UseDeathItem version=gms_v87 ida=0x9dd673
-// packet-audit:verify packet=character/serverbound/UseDeathItem version=gms_v92 ida=0x8ee9f0
-// packet-audit:verify packet=character/serverbound/UseDeathItem version=gms_v95 ida=0x908320
-// packet-audit:verify packet=character/serverbound/UseDeathItem version=jms_v185 ida=0xa25fc9
+//
+// The remaining seven versions (v79/v83/v84/v87/v92/v95/jms_v185) carry the
+// identical wire layout per the IDA addresses in the doc comment above, but
+// their packet-audit:verify markers are deliberately deferred to their own
+// verification batches (task-210) — an unlinked marker with no evidence
+// record/audit report fails `packet-audit matrix --check` as an orphan
+// marker (VERIFYING_A_PACKET.md §8). Each batch adds its own marker line
+// alongside its evidence pin.
 func TestUseDeathItemByteOutput(t *testing.T) {
 	variants := []struct {
 		name   string

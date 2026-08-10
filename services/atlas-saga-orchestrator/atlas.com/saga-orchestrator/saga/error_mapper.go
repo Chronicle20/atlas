@@ -11,27 +11,19 @@ func DetermineErrorCode(s Saga, failedStep Step[any]) string {
 	case StorageOperation:
 		return determineStorageErrorCode(failedStep)
 	case TradeTransaction:
-		return determineTradeErrorCode(failedStep)
-	default:
-		return sagaMsg.ErrorCodeUnknown
-	}
-}
-
-// determineTradeErrorCode determines the error code for a failed trade
-// settlement step (task-205). atlas-trades collapses EVERY failure of a
-// TradeTransaction saga into the client's LEAVE 8 ("Trade unsuccessful") —
-// design §5.3 — so the code here is diagnostic detail carried on the FAILED
-// event, not a branch the client sees. The steps a trade_settlement composite
-// expands into are release_from_character, accept_to_character and award_mesos.
-func determineTradeErrorCode(step Step[any]) string {
-	switch step.Action() {
-	case AwardMesos:
-		// The negative leg is the giver's deduction; it fails when the staged
-		// mesos are no longer there.
-		return sagaMsg.ErrorCodeNotEnoughMesos
-	case AcceptToCharacter:
-		// The recipient's inventory could not take the incoming item.
-		return sagaMsg.ErrorCodeInventoryFull
+		// task-205. A trade_settlement composite expands into
+		// release_from_character / accept_to_character / award_mesos — a subset of
+		// the storage step set — so the storage mapping applies verbatim and is
+		// reused rather than duplicated.
+		//
+		// Caveat this mapping does NOT resolve: award_mesos returns
+		// NOT_ENOUGH_MESOS for either leg regardless of sign. The negative
+		// (giver) leg genuinely fails on insufficiency; the positive (receiver)
+		// leg fails on the meso cap, and is mislabelled here. That is tolerable
+		// only because atlas-trades collapses EVERY TradeTransaction failure into
+		// the client's LEAVE 8 "Trade unsuccessful" (design §5.3) — the code is
+		// diagnostic detail on the FAILED event, never a branch the client sees.
+		return determineStorageErrorCode(failedStep)
 	default:
 		return sagaMsg.ErrorCodeUnknown
 	}

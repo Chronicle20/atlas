@@ -124,6 +124,16 @@ func handleSagaTimeout(l logrus.FieldLogger, ctx context.Context, txId uuid.UUID
 		NewCompensator(l, ctx).DispatchMtsOperationRollbacks(s)
 	}
 
+	// Dispatch the trade reverse-walk for a wedged settlement (task-205).
+	// Without this a timed-out trade_settlement leaves a HALF-SWAP: the
+	// completed releases/accepts stand, so one side's goods moved and the
+	// other's are destroyed. Fire-and-forget; each inverse is claimed once via
+	// the per-step marker, so this cannot double-refund alongside the
+	// step-driven path.
+	if s.SagaType() == TradeTransaction {
+		NewCompensator(l, ctx).DispatchTradeTransactionRollbacks(s)
+	}
+
 	// Finalize the lifecycle. If someone else already took Compensating → Failed
 	// (unlikely — stepCompleted(false) would have cancelled this timer), skip the
 	// emit to avoid duplicates.

@@ -3,6 +3,7 @@ package saga
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -10,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
 
@@ -57,11 +57,9 @@ func testProcessorWithCompartments(t *testing.T, assets []testAsset) *ProcessorI
 	t.Cleanup(srv.Close)
 	t.Setenv("INVENTORY_SERVICE_URL", srv.URL+"/")
 
-	_, tctx := setupContext()
-	logger, _ := test.NewNullLogger()
-	p, ok := NewProcessor(logger, tctx).(*ProcessorImpl)
-	require.True(t, ok, "NewProcessor must return *ProcessorImpl")
-	return p
+	// The base URL is resolved per request, not at construction, so the shared
+	// constructor can be reused verbatim once the env var is set.
+	return newTestExpansionProcessor(t)
 }
 
 // characterIdFromCompartmentPath pulls {id} out of
@@ -319,6 +317,66 @@ func TestExpandTradeSettlementFailsWhenStagedSlotMoved(t *testing.T) {
 	steps, err := p.expandTradeSettlement(NewStep[any]("trade_settlement", Pending, TradeSettlement, tradeSettlementFixture()))
 	require.Error(t, err)
 	require.Nil(t, steps, "a failed expansion must not emit a partial step list")
+}
+
+// TestExpandTradeSettlementFailsOnInstanceSubstitution pins the instance check:
+// the staged slot holding the RIGHT template but a DIFFERENT asset instance must
+// fail. Reservations block move/merge/drop, but a same-template substitution
+// would otherwise pass the template comparison — and two equips of one template
+// carry different scrolled stats.
+func TestExpandTradeSettlementFailsOnInstanceSubstitution(t *testing.T) {
+	swapped := tradeCompartments()
+	swapped[1].Id = "78" // same slot, same template, different instance
+	p := testProcessorWithCompartments(t, swapped)
+	steps, err := p.expandTradeSettlement(NewStep[any]("trade_settlement", Pending, TradeSettlement, tradeSettlementFixture()))
+	require.ErrorContains(t, err, "expected staged instance")
+	require.Nil(t, steps)
+}
+
+// TestExpandTradeSettlementFailsOnUnparseableAssetId pins that an asset id the
+// expander cannot represent is a loud error rather than a silent release of
+// asset 0. The reachable shape is an id outside uint32 (the JSON:API layer
+// already rejects a non-numeric id at unmarshal, before the expander sees it).
+func TestExpandTradeSettlementFailsOnUnparseableAssetId(t *testing.T) {
+	garbled := tradeCompartments()
+	garbled[0].Id = "4294967296" // 2^32 — parses as an int, overflows uint32
+	p := testProcessorWithCompartments(t, garbled)
+	steps, err := p.expandTradeSettlement(NewStep[any]("trade_settlement", Pending, TradeSettlement, tradeSettlementFixture()))
+	require.ErrorContains(t, err, "unparseable asset id")
+	require.Nil(t, steps)
+}
+
+// TestExpandTradeSettlementRejectsMesoAboveInt32 pins the overflow guard:
+// AwardMesosPayload.Amount is int32, so a staged amount above MaxInt32 would
+// wrap on conversion and turn the giver's deduction into a credit.
+func TestExpandTradeSettlementRejectsMesoAboveInt32(t *testing.T) {
+	p := testProcessorWithCompartments(t, tradeCompartments())
+
+	overflow := tradeSettlementFixture()
+	overflow.Sides[0].MesoStaged = math.MaxInt32 + 1
+	steps, err := p.expandTradeSettlement(NewStep[any]("trade_settlement", Pending, TradeSettlement, overflow))
+	require.ErrorContains(t, err, "exceeds int32 range")
+	require.Nil(t, steps)
+
+	// The boundary value itself is accepted, and its deduction stays negative.
+	atLimit := tradeSettlementFixture()
+	atLimit.Sides[0].MesoStaged = math.MaxInt32
+	atLimit.Sides[0].MesoDelivered = math.MaxInt32
+	steps, err = p.expandTradeSettlement(NewStep[any]("trade_settlement", Pending, TradeSettlement, atLimit))
+	require.NoError(t, err)
+	var sawDeduction bool
+	for _, s := range steps {
+		if s.Action() != AwardMesos {
+			continue
+		}
+		pl, ok := s.Payload().(AwardMesosPayload)
+		require.True(t, ok, "meso step payload must be AwardMesosPayload, got %T", s.Payload())
+		if pl.CharacterId == 100 {
+			require.Equal(t, int32(-math.MaxInt32), pl.Amount)
+			sawDeduction = true
+		}
+	}
+	require.True(t, sawDeduction)
 }
 
 // TestTradeSettlementStepUnmarshalsToConcretePayload pins that

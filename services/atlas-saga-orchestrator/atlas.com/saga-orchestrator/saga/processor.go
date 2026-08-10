@@ -15,6 +15,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -1424,6 +1425,15 @@ func (p *ProcessorImpl) expandTradeSettlement(st Step[any]) ([]Step[any], error)
 	if payload.Sides[0].CharacterId == payload.Sides[1].CharacterId {
 		return nil, fmt.Errorf("trade settlement names character [%d] on both sides", payload.Sides[0].CharacterId)
 	}
+	// The meso figures are uint32 but AwardMesosPayload.Amount is int32. A value
+	// above MaxInt32 would wrap on conversion and turn the giver's DEDUCTION
+	// into a credit. atlas-trades is expected to bound these at stage time, but
+	// that guard does not exist yet, so reject here rather than mint mesos.
+	for _, side := range payload.Sides {
+		if side.MesoStaged > math.MaxInt32 || side.MesoDelivered > math.MaxInt32 {
+			return nil, fmt.Errorf("trade settlement meso for character [%d] exceeds int32 range (staged [%d], delivered [%d])", side.CharacterId, side.MesoStaged, side.MesoDelivered)
+		}
+	}
 
 	// Snapshot both sides' assets first: every accept needs an AssetData built
 	// from the asset as it exists BEFORE any release soft-deletes it. The
@@ -1455,8 +1465,21 @@ func (p *ProcessorImpl) expandTradeSettlement(st Step[any]) ([]Step[any], error)
 			if found.TemplateId != uint32(it.TemplateId) {
 				return nil, fmt.Errorf("asset at slot [%d] for character [%d] is template [%d], expected [%d]", it.SourceSlot, side.CharacterId, found.TemplateId, it.TemplateId)
 			}
+			// The id is the RELEASE TARGET here, not an advisory field: an
+			// unparseable id would silently release asset 0. expandTransferToStorage
+			// discards this error; this call site must not.
 			var assetId uint32
-			fmt.Sscanf(found.Id, "%d", &assetId)
+			if _, serr := fmt.Sscanf(found.Id, "%d", &assetId); serr != nil {
+				return nil, fmt.Errorf("unparseable asset id [%s] at slot [%d] for character [%d]: %w", found.Id, it.SourceSlot, side.CharacterId, serr)
+			}
+			// Instance identity, not just template identity. Reservations stop the
+			// staged slot being moved/merged/dropped, but a same-template
+			// DIFFERENT-INSTANCE substitution would still pass the template check
+			// above — and for equips distinct instances carry distinct scrolled
+			// stats, so the wrong instance would move.
+			if assetId != uint32(it.AssetId) {
+				return nil, fmt.Errorf("asset at slot [%d] for character [%d] is instance [%d], expected staged instance [%d]", it.SourceSlot, side.CharacterId, assetId, it.AssetId)
+			}
 			sides[si] = append(sides[si], resolved{item: it, assetId: assetId, snapshot: assetDataFromCompartmentAsset(found)})
 		}
 	}

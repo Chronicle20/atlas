@@ -667,10 +667,12 @@ No mode byte.
 
 ## gms_v92
 
-**Status: PARTIAL.** The `errors` enum and the `USE_COUPON` body are fully
-derived. The serverbound arm table is **not** complete — see the explicit gap
-statement at the end of this section. The clientbound 57-arm table **was**
-derived in full by task-206 Task 9 — see
+**Status: COMPLETE.** The `errors` enum and the `USE_COUPON` body are fully
+derived. The serverbound arm table was completed by task-206 Task 29 — all 25
+candidate send sites decompiled, read and attributed (19 Atlas keys + one
+key-unknown arm at mode 75); see
+"### Serverbound `operations` (CashShopOperationHandle)" below. The clientbound
+57-arm table was derived in full by task-206 Task 9 — see
 "### gms_v92 clientbound arm table" below.
 
 - Serverbound `CASHSHOP_OPERATION` opcode: **268 / `0x10C`**.
@@ -990,9 +992,11 @@ enumeration, so `n-a`, recorded as key-omission per this file's convention).
 
 ## gms_v95
 
-**Status: SUBSTANTIALLY COMPLETE** — the `errors` enum and the `USE_COUPON`
-body are fully derived; three of the 25 serverbound sites are unresolved
-(named below).
+**Status: COMPLETE** — the `errors` enum and the `USE_COUPON` body are fully
+derived, and the serverbound arm table was completed by task-206 Task 29: all
+25 candidate send sites are read and attributed (19 Atlas keys + one
+key-unknown arm at mode 76), including the three formerly register-pushed
+sites resolved below.
 
 - Serverbound `CASHSHOP_OPERATION` opcode: **275 / `0x113`**.
 - Serverbound `COUPON_CODE` opcode: **276 / `0x114`** (registry correct;

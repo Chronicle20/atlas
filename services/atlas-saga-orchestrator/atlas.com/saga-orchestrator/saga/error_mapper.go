@@ -10,6 +10,28 @@ func DetermineErrorCode(s Saga, failedStep Step[any]) string {
 	switch s.SagaType() {
 	case StorageOperation:
 		return determineStorageErrorCode(failedStep)
+	case TradeTransaction:
+		return determineTradeErrorCode(failedStep)
+	default:
+		return sagaMsg.ErrorCodeUnknown
+	}
+}
+
+// determineTradeErrorCode determines the error code for a failed trade
+// settlement step (task-205). atlas-trades collapses EVERY failure of a
+// TradeTransaction saga into the client's LEAVE 8 ("Trade unsuccessful") —
+// design §5.3 — so the code here is diagnostic detail carried on the FAILED
+// event, not a branch the client sees. The steps a trade_settlement composite
+// expands into are release_from_character, accept_to_character and award_mesos.
+func determineTradeErrorCode(step Step[any]) string {
+	switch step.Action() {
+	case AwardMesos:
+		// The negative leg is the giver's deduction; it fails when the staged
+		// mesos are no longer there.
+		return sagaMsg.ErrorCodeNotEnoughMesos
+	case AcceptToCharacter:
+		// The recipient's inventory could not take the incoming item.
+		return sagaMsg.ErrorCodeInventoryFull
 	default:
 		return sagaMsg.ErrorCodeUnknown
 	}

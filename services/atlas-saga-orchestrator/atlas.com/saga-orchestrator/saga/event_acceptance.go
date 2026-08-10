@@ -170,6 +170,9 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.AcceptToCharacter:    {EventKindCompartmentAccepted, EventKindCompartmentError},
 	sharedsaga.ReleaseFromStorage:   {EventKindStorageCompartmentReleased, EventKindStorageCompartmentError},
 
+	// Trade (task-205).
+	sharedsaga.TradeSettlement: {}, // composite: expanded into release_from_character×N + accept_to_character×N + award_mesos
+
 	// Cash shop.
 	sharedsaga.TransferToCashShop:   {}, // composite
 	sharedsaga.WithdrawFromCashShop: {}, // composite

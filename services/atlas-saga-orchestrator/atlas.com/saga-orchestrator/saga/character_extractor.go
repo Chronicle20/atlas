@@ -74,6 +74,14 @@ func ExtractCharacterId(step Step[any]) uint32 {
 		return p.CharacterId
 	case ReleaseFromStoragePayload:
 		return p.CharacterId
+	case TradeSettlementPayload:
+		// A trade names TWO participants and this function can only surface one.
+		// Sides[0] is picked for determinism ONLY — side order carries no role
+		// meaning, so this is "a participant", never "the giver". Consumers that
+		// must reach both participants (atlas-trades' LEAVE 8 notification) key
+		// off the saga's transactionId, which is the trade ledger's idempotency
+		// key, not off this field.
+		return uint32(p.Sides[0].CharacterId)
 	case SelectGachaponRewardPayload:
 		return p.CharacterId
 	case EmitGachaponWinPayload:

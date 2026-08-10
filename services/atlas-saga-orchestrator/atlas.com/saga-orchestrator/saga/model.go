@@ -137,6 +137,11 @@ const (
 	AcceptToCharacter    = sharedsaga.AcceptToCharacter
 	ReleaseFromStorage   = sharedsaga.ReleaseFromStorage
 
+	// Trade actions (task-205). trade_settlement is a COMPOSITE expanded by
+	// expandTradeSettlement into release_from_character / accept_to_character /
+	// award_mesos steps.
+	TradeSettlement = sharedsaga.TradeSettlement
+
 	// Cash shop actions
 	TransferToCashShop   = sharedsaga.TransferToCashShop
 	WithdrawFromCashShop = sharedsaga.WithdrawFromCashShop
@@ -274,6 +279,9 @@ type (
 	MtsBidEscrowPayload                 = sharedsaga.MtsBidEscrowPayload
 	ReleaseFromCharacterPayload         = sharedsaga.ReleaseFromCharacterPayload
 	ReleaseFromStoragePayload           = sharedsaga.ReleaseFromStoragePayload
+	TradeSettlementPayload              = sharedsaga.TradeSettlementPayload
+	TradeSettlementSide                 = sharedsaga.TradeSettlementSide
+	TradeSettlementItem                 = sharedsaga.TradeSettlementItem
 	RequestGuildNamePayload             = sharedsaga.RequestGuildNamePayload
 	RequestGuildEmblemPayload           = sharedsaga.RequestGuildEmblemPayload
 	RequestGuildDisbandPayload          = sharedsaga.RequestGuildDisbandPayload
@@ -1314,6 +1322,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ReleaseFromStorage:
 		var payload ReleaseFromStoragePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case TradeSettlement:
+		var payload TradeSettlementPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

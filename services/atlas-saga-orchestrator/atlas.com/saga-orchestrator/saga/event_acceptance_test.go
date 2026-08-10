@@ -30,6 +30,7 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.ShowStorage, sharedsaga.DepositToStorage, sharedsaga.UpdateStorageMesos,
 	sharedsaga.TransferToStorage, sharedsaga.WithdrawFromStorage, sharedsaga.AcceptToStorage,
 	sharedsaga.ReleaseFromCharacter, sharedsaga.AcceptToCharacter, sharedsaga.ReleaseFromStorage,
+	sharedsaga.TradeSettlement,
 	sharedsaga.TransferToCashShop, sharedsaga.WithdrawFromCashShop, sharedsaga.AcceptToCashShop,
 	sharedsaga.ReleaseFromCashShop,
 	sharedsaga.TransferToMts, sharedsaga.WithdrawFromMts, sharedsaga.AcceptToMtsListing,

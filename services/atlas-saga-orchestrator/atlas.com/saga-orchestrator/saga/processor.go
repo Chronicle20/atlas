@@ -1176,7 +1176,8 @@ func isExpandableAction(a Action) bool {
 	switch a {
 	case TransferToStorage, WithdrawFromStorage,
 		TransferToCashShop, WithdrawFromCashShop,
-		TransferToMts, WithdrawFromMts, MtsSettlePurchase:
+		TransferToMts, WithdrawFromMts, MtsSettlePurchase,
+		TradeSettlement:
 		return true
 	default:
 		return false
@@ -1216,6 +1217,8 @@ func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
 		newSteps, err = p.expandWithdrawFromMts(st)
 	case MtsSettlePurchase:
 		newSteps, err = p.expandMtsSettlePurchase(st)
+	case TradeSettlement:
+		newSteps, err = p.expandTradeSettlement(st)
 	default:
 		return fmt.Errorf("unknown high-level action for expansion: %s", st.Action())
 	}
@@ -1392,6 +1395,148 @@ func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], er
 				AssetData:     assetData,
 			},
 		),
+	}
+
+	return steps, nil
+}
+
+// expandTradeSettlement expands the task-205 trade_settlement composite into
+// the concrete two-party swap. Step order matters (design §6.3): ALL releases
+// precede ALL accepts, so a slot freed by an outgoing item is available to an
+// incoming one, and a failure in either side's release compensates before
+// anything has been created.
+//
+// The tax figures arrive already resolved from atlas-trades (which owns the
+// tenant config); this expander does no rate arithmetic. The giver is deducted
+// MesoStaged and the receiver credited MesoDelivered — the difference is
+// destroyed, credited to nobody.
+//
+// Sides is a [2]TradeSettlementSide array, so "the other side" is `1-si` by
+// construction — the type guarantees exactly two participants and no length
+// check is possible or needed. Side ORDER carries no role meaning: neither
+// index is "the giver". Each side is the giver of its own contribution and the
+// receiver of the other's, which is exactly how the loops below read it.
+func (p *ProcessorImpl) expandTradeSettlement(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload().(TradeSettlementPayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for TradeSettlement")
+	}
+	if payload.Sides[0].CharacterId == payload.Sides[1].CharacterId {
+		return nil, fmt.Errorf("trade settlement names character [%d] on both sides", payload.Sides[0].CharacterId)
+	}
+
+	// Snapshot both sides' assets first: every accept needs an AssetData built
+	// from the asset as it exists BEFORE any release soft-deletes it. The
+	// snapshot is the whole AssetData, so cash-item ownership and expiry
+	// (atlas-asset-expiration) survive the transfer unchanged — FR-10.3 needs
+	// no special cash path.
+	type resolved struct {
+		item     TradeSettlementItem
+		assetId  uint32
+		snapshot asset2.AssetData
+	}
+	sides := [2][]resolved{}
+	for si, side := range payload.Sides {
+		for _, it := range side.Items {
+			comp, err := compartment.RequestCompartment(p.l, p.ctx)(uint32(side.CharacterId), byte(it.InventoryType))
+			if err != nil {
+				return nil, fmt.Errorf("unable to lookup character [%d] inventory compartment: %w", side.CharacterId, err)
+			}
+			var found *compartment.AssetRestModel
+			for i := range comp.Assets {
+				if comp.Assets[i].Slot == int16(it.SourceSlot) {
+					found = &comp.Assets[i]
+					break
+				}
+			}
+			if found == nil {
+				return nil, fmt.Errorf("no asset found at slot [%d] in character [%d] inventory [%d]", it.SourceSlot, side.CharacterId, it.InventoryType)
+			}
+			if found.TemplateId != uint32(it.TemplateId) {
+				return nil, fmt.Errorf("asset at slot [%d] for character [%d] is template [%d], expected [%d]", it.SourceSlot, side.CharacterId, found.TemplateId, it.TemplateId)
+			}
+			var assetId uint32
+			fmt.Sscanf(found.Id, "%d", &assetId)
+			sides[si] = append(sides[si], resolved{item: it, assetId: assetId, snapshot: assetDataFromCompartmentAsset(found)})
+		}
+	}
+
+	steps := make([]Step[any], 0)
+
+	// 1. Every release, both sides.
+	for si, side := range payload.Sides {
+		for _, r := range sides[si] {
+			steps = append(steps, NewStep[any](
+				fmt.Sprintf("release_from_character_%d_%d", side.CharacterId, r.assetId),
+				Pending,
+				ReleaseFromCharacter,
+				ReleaseFromCharacterPayload{
+					TransactionId: payload.TransactionId,
+					CharacterId:   uint32(side.CharacterId),
+					InventoryType: byte(r.item.InventoryType),
+					AssetId:       r.assetId,
+					Quantity:      uint32(r.item.Quantity),
+				},
+			))
+		}
+	}
+
+	// 2. Every accept, crossed: side 0's items go to side 1 and vice versa.
+	for si := range payload.Sides {
+		recipient := payload.Sides[1-si].CharacterId
+		for _, r := range sides[si] {
+			steps = append(steps, NewStep[any](
+				fmt.Sprintf("accept_to_character_%d_%d", recipient, r.assetId),
+				Pending,
+				AcceptToCharacter,
+				AcceptToCharacterPayload{
+					TransactionId: payload.TransactionId,
+					CharacterId:   uint32(recipient),
+					InventoryType: byte(r.item.InventoryType),
+					TemplateId:    uint32(r.item.TemplateId),
+					AssetData:     r.snapshot,
+				},
+			))
+		}
+	}
+
+	// 3. Meso, per side that staged any. Deduct the full staged amount from the
+	//    giver, credit the post-tax amount to the receiver.
+	for si, side := range payload.Sides {
+		if side.MesoStaged == 0 {
+			continue
+		}
+		receiver := payload.Sides[1-si].CharacterId
+		steps = append(steps,
+			NewStep[any](
+				fmt.Sprintf("award_mesos_deduct_%d", side.CharacterId),
+				Pending,
+				AwardMesos,
+				AwardMesosPayload{
+					CharacterId: uint32(side.CharacterId),
+					WorldId:     payload.WorldId,
+					ChannelId:   payload.ChannelId,
+					ActorId:     uint32(receiver),
+					ActorType:   "CHARACTER",
+					Amount:      -int32(side.MesoStaged),
+					ShowEffect:  false,
+				},
+			),
+			NewStep[any](
+				fmt.Sprintf("award_mesos_credit_%d", receiver),
+				Pending,
+				AwardMesos,
+				AwardMesosPayload{
+					CharacterId: uint32(receiver),
+					WorldId:     payload.WorldId,
+					ChannelId:   payload.ChannelId,
+					ActorId:     uint32(side.CharacterId),
+					ActorType:   "CHARACTER",
+					Amount:      int32(side.MesoDelivered),
+					ShowEffect:  true,
+				},
+			),
+		)
 	}
 
 	return steps, nil

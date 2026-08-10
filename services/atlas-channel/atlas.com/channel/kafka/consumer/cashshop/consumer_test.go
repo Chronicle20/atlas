@@ -71,6 +71,7 @@ func (discardConn) Close() error                { return nil }
 type consumerEnv struct {
 	t           *testing.T
 	logger      *logrus.Logger
+	logHook     *logtest.Hook
 	ctx         context.Context
 	tenant      tenant.Model
 	sc          server.Model
@@ -88,11 +89,13 @@ func newConsumerEnv(t *testing.T) *consumerEnv {
 	if err != nil {
 		t.Fatalf("tenant: %v", err)
 	}
-	l, _ := logtest.NewNullLogger()
+	l, hook := logtest.NewNullLogger()
+	l.SetLevel(logrus.DebugLevel)
 
 	env := &consumerEnv{
 		t:           t,
 		logger:      l,
+		logHook:     hook,
 		ctx:         tenant.WithContext(context.Background(), tm),
 		tenant:      tm,
 		assets:      make(map[string]string),
@@ -364,8 +367,11 @@ func TestCouponFailedAnnouncesOnTheCouponArm(t *testing.T) {
 
 // TestCouponFailedUnknownErrorFallsThroughToTheDefaultNotice pins the
 // deliberate absence of an UNKNOWN_ERROR key: it is the client jump table's
-// DEFAULT case on every version, so ResolveCode misses and returns 99, which
-// is itself unlisted and therefore renders the default notice — the intended
+// DEFAULT case on every version, so CashShopUseCouponFailedBody short-circuits
+// it to the documented default byte (99) before it ever reaches ResolveCode's
+// generic "errors" lookup — see couponUnknownErrorDefaultByte in
+// libs/atlas-packet/cash/clientbound/shop_operation_body.go. 99 is itself
+// unlisted and therefore renders the client's default notice — the intended
 // outcome. Nobody should "fix" this by adding a bogus UNKNOWN_ERROR key.
 func TestCouponFailedUnknownErrorFallsThroughToTheDefaultNotice(t *testing.T) {
 	env := newConsumerEnv(t)
@@ -379,5 +385,28 @@ func TestCouponFailedUnknownErrorFallsThroughToTheDefaultNotice(t *testing.T) {
 	}
 	if !env.reservedReasonBytes().excludes(99) {
 		t.Fatalf("99 collides with a reserved reason byte on %v — pick an explicit mapped key instead", env.reservedReasonBytes()[99])
+	}
+}
+
+// TestCouponFailedUnknownErrorDoesNotLogAtErrorLevel guards the operational
+// fix: UNKNOWN_ERROR is an ordinary path (missing locker row, transaction
+// failure), not a misconfiguration, so it must never emit ResolveCode's
+// generic ERROR-level "Defaulting to 99 which will likely cause a client
+// crash" line — that wording is correct for a genuinely unconfigured opcode
+// but sends operators chasing a client crash that will not happen here.
+func TestCouponFailedUnknownErrorDoesNotLogAtErrorLevel(t *testing.T) {
+	env := newConsumerEnv(t)
+	handleStatusEventCouponFailed(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.CouponFailedBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypeCouponFailed,
+		Body:        cashshop2.CouponFailedBody{Error: "UNKNOWN_ERROR"},
+	})
+	for _, e := range env.logHook.AllEntries() {
+		if e.Level <= logrus.WarnLevel {
+			t.Errorf("unexpected %s-level log for the UNKNOWN_ERROR default-notice path: %q", e.Level, e.Message)
+		}
+		if strings.Contains(e.Message, "will likely cause a client crash") {
+			t.Errorf("UNKNOWN_ERROR must not fall through ResolveCode's generic crash-warning fallback, got: %q", e.Message)
+		}
 	}
 }

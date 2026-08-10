@@ -266,10 +266,32 @@ func CashShopBuyFailedBody(message string) func(logrus.FieldLogger, context.Cont
 	}
 }
 
+// couponUnknownErrorDefaultByte is the wire byte NewUseCouponFailed sends for
+// the UNKNOWN_ERROR case. UNKNOWN_ERROR is the client jump table's DEFAULT
+// arm on every version, is intentionally absent from every template's
+// "errors" table, and 99 is proven unmapped on all ten versions (pinned by
+// TestCouponFailedUnknownErrorFallsThroughToTheDefaultNotice in
+// kafka/consumer/cashshop/consumer_test.go, which asserts both reason==99
+// and that 99 is not a reserved byte on any version). It is the SAME byte
+// ResolveCode's generic miss-fallback would have produced; the only change
+// here is skipping ResolveCode's ERROR-level "will likely cause a client
+// crash" log, which is correct for an unconfigured opcode but misleading for
+// this deliberately-unconfigured, non-crashing default-notice path.
+const couponUnknownErrorDefaultByte byte = 99
+
 func CashShopUseCouponFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
 			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationUseCouponFailed)
+			if message == CashShopOperationErrorUnknown {
+				// Short-circuit before ResolveCode's generic "errors" lookup.
+				// This is an ordinary path (missing locker row, transaction
+				// failure) that intentionally has no "errors" table entry, not
+				// a misconfiguration — logging it at ERROR sends operators
+				// chasing a client crash that will not happen.
+				l.Debugf("Coupon failure [%s] has no configured error code; resolving to the client's default-notice byte (%d) — this is the intended fallback, not a misconfiguration.", message, couponUnknownErrorDefaultByte)
+				return NewUseCouponFailed(mode, couponUnknownErrorDefaultByte).Encode(l, ctx)(options)
+			}
 			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
 			return NewUseCouponFailed(mode, errorCode).Encode(l, ctx)(options)
 		}

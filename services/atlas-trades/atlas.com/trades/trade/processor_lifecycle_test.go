@@ -1,6 +1,7 @@
 package trade
 
 import (
+	"atlas-trades/compartment"
 	"atlas-trades/configuration"
 	characterdata "atlas-trades/data/character"
 	"atlas-trades/kafka/message"
@@ -239,6 +240,10 @@ func newLifecycleProcessor(t *testing.T, cfg configuration.Model, characters ...
 		cp:   &fakeCharacters{rows: rows},
 		mp:   &fakeMaps{disallowed: make(map[_map.Id]bool)},
 		locp: &fakeLocations{fields: locations},
+		// The reservation producer only buffers messages, so the real one is
+		// used rather than a fake: the assertions in the staging suite are
+		// about the actual COMMAND_TOPIC_COMPARTMENT bytes.
+		resp: compartment.NewProcessor(l, ctx),
 	}
 	return p, &emitted{db: db}
 }

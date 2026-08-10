@@ -1,8 +1,11 @@
 package trade
 
 import (
+	"atlas-trades/compartment"
 	"atlas-trades/configuration"
 	characterdata "atlas-trades/data/character"
+	inventorydata "atlas-trades/data/inventory"
+	itemdata "atlas-trades/data/item"
 	"atlas-trades/data/location"
 	mapdata "atlas-trades/data/map"
 	"atlas-trades/kafka/message"
@@ -10,13 +13,19 @@ import (
 	trademsg "atlas-trades/kafka/message/trade"
 	"context"
 	"errors"
+	"math"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
@@ -60,6 +69,16 @@ const (
 	inviteResultBusy       = "BUSY"                  // 2
 )
 
+// maxStageableMeso bounds a single side's staged meso. atlas-saga-orchestrator's
+// trade_settlement expansion refuses a payload whose MesoStaged or MesoDelivered
+// exceeds math.MaxInt32, because AwardMesosPayload.Amount is a signed int32 and
+// a larger value would wrap the giver's DEDUCTION into a credit
+// (services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/processor.go:1429-1434).
+// Staging is where a player can actually type a number, so the bound is enforced
+// here too rather than being discovered at settlement, when the only remaining
+// outcome is LEAVE 8.
+const maxStageableMeso = math.MaxInt32
+
 // characterProvider, mapProvider and locationProvider are the REST-client seams
 // the validation ladder reads through, injected so tests can fake them.
 type characterProvider interface {
@@ -72,6 +91,23 @@ type mapProvider interface {
 
 type locationProvider interface {
 	FieldOf(characterId character.Id) (field.Model, error)
+}
+
+// inventoryProvider reads the asset a PUT_ITEM addresses.
+type inventoryProvider interface {
+	AssetInSlot(characterId character.Id, inventoryType inventory.Type, sourceSlot slot.Position) (inventorydata.Asset, error)
+}
+
+// itemDataProvider reads the WZ tradeBlock flag of an item template (FR-4.2).
+type itemDataProvider interface {
+	TradeBlock(inventoryType inventory.Type, templateId item.Id) (bool, error)
+}
+
+// reservationProducer issues the atlas-inventory reserve/cancel commands that
+// implement the reserve-at-staging model (design §5.3).
+type reservationProducer interface {
+	RequestReserve(mb *message.Buffer) func(reservationId uuid.UUID, characterId character.Id, inventoryType inventory.Type, sourceSlot slot.Position, templateId item.Id, quantity asset.Quantity, expiry time.Duration) error
+	CancelReservation(mb *message.Buffer) func(reservationId uuid.UUID, characterId character.Id, inventoryType inventory.Type, sourceSlot slot.Position) error
 }
 
 // configProvider resolves the request tenant's trade configuration.
@@ -117,6 +153,23 @@ type Processor interface {
 	// (FR-1.5, FR-2.4).
 	EnterRoom(txId uuid.UUID, f field.Model, characterId character.Id, handle uint32) error
 
+	// PutItem stages one item into the caller's side of the trade dialog
+	// (FR-3.1..FR-3.3). inventoryType, sourceSlot, quantity and targetSlot are
+	// the raw serverbound OperationTradePutItem fields; every one of them is
+	// untrusted and validated here. A refused stage is SILENT to the client —
+	// see checkRestrictions.
+	PutItem(txId uuid.UUID, characterId character.Id, inventoryType byte, sourceSlot slot.Position, quantity uint16, targetSlot byte) error
+
+	// AddMeso sets the caller's staged meso to the ABSOLUTE amount their input
+	// box carried (design §1.6). Signed because the serverbound codec is an
+	// Encode4 of a signed int32 and a hostile client can send a negative.
+	AddMeso(txId uuid.UUID, characterId character.Id, amount int32) error
+
+	// RefreshReservations re-files the inventory reservation of every staged
+	// item in every live room, so a reservation TTL never expires under a trade
+	// that is still open (design §5.3). Task 20 drives it from a ticker.
+	RefreshReservations(txId uuid.UUID) error
+
 	// TeardownCharacter removes the character's room, unless it is already
 	// settling (design §3.3, "cancel loses to settlement").
 	TeardownCharacter(txId uuid.UUID, characterId character.Id, reason string) error
@@ -132,6 +185,9 @@ type ProcessorImpl struct {
 	cp   characterProvider
 	mp   mapProvider
 	locp locationProvider
+	invp inventoryProvider
+	idp  itemDataProvider
+	resp reservationProducer
 }
 
 // NewProcessor resolves the tenant from ctx once; every registry read the
@@ -147,6 +203,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		cp:   characterdata.NewProcessor(l, ctx),
 		mp:   mapdata.NewProcessor(l, ctx),
 		locp: location.NewProcessor(l, ctx),
+		invp: inventorydata.NewProcessor(l, ctx),
+		idp:  itemdata.NewProcessor(l, ctx),
+		resp: compartment.NewProcessor(l, ctx),
 	}
 }
 
@@ -392,6 +451,13 @@ func (p *ProcessorImpl) declineInvite(mb *message.Buffer, txId uuid.UUID, charac
 	}
 
 	p.reg.Remove(p.t, room.Id())
+	// A PENDING_INVITE room is frozen against staging, so it should hold no
+	// reservations — but the release is unconditional rather than assumed,
+	// because a leaked hold is invisible until a player complains that an item
+	// will not move.
+	if err := p.releaseStagedReservations(mb, room); err != nil {
+		return err
+	}
 	if retireInvite {
 		if err := mb.Put(invitemsg.EnvCommandTopic, inviteRejectCommandProvider(txId, room, characterId)); err != nil {
 			return err
@@ -504,5 +570,335 @@ func (p *ProcessorImpl) teardownCharacter(mb *message.Buffer, txId uuid.UUID, ch
 	}
 
 	p.reg.Remove(p.t, room.Id())
+	if err := p.releaseStagedReservations(mb, room); err != nil {
+		return err
+	}
 	return mb.Put(trademsg.EnvEventTopicStatus, cancelledProvider(txId, room, characterId, reason))
+}
+
+// releaseStagedReservations cancels the atlas-inventory reservation of every
+// item staged in the room, on BOTH sides.
+//
+// Every path that abandons a room without settling it must call this. Under the
+// reserve-at-staging model a staged asset never left its owner's inventory — it
+// is merely held — so a room that disappears without cancelling leaves the owner
+// unable to move, merge, drop or sell that stack until the TTL lapses, which is
+// five minutes by default and is REFRESHED for as long as the process believes
+// the room is alive.
+//
+// The cancel is a fire-and-forget command: atlas-inventory treats an unknown
+// reservation as a no-op, so cancelling one that already expired is harmless,
+// and cancelling twice is harmless for the same reason.
+func (p *ProcessorImpl) releaseStagedReservations(mb *message.Buffer, room Room) error {
+	for _, pt := range room.Participants() {
+		for _, i := range pt.Items() {
+			if err := p.resp.CancelReservation(mb)(i.ReservationId(), pt.CharacterId(), i.InventoryType(), i.SourceSlot()); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// PutItem stages one item into the caller's side of the dialog (FR-3.1..FR-3.3,
+// FR-4.1..FR-4.4). Every rejection below is a SILENT drop: the reference client
+// has no put-item-time error arm, so the empty dialog slot is the feedback and
+// the server-side log is the diagnostic (design §7).
+func (p *ProcessorImpl) PutItem(txId uuid.UUID, characterId character.Id, inventoryType byte, sourceSlot slot.Position, quantity uint16, targetSlot byte) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
+		return p.putItem(mb, txId, characterId, inventoryType, sourceSlot, quantity, targetSlot)
+	})
+}
+
+func (p *ProcessorImpl) putItem(mb *message.Buffer, txId uuid.UUID, characterId character.Id, inventoryType byte, sourceSlot slot.Position, quantity uint16, targetSlot byte) error {
+	room, pt, ok := p.stageableRoom(characterId, "PUT_ITEM")
+	if !ok {
+		return nil
+	}
+
+	cfg := p.cfg.Get(p.l, p.ctx)
+	if !stageSlotAvailable(pt, targetSlot, cfg.MaxStagedItems()) {
+		p.l.Debugf("Character [%d] staged into trade slot [%d], which is out of the 1..%d range or already occupied. Dropping.", characterId, targetSlot, cfg.MaxStagedItems())
+		return nil
+	}
+
+	it, ok := stageableInventoryType(inventoryType)
+	if !ok {
+		p.l.Infof("Character [%d] staged from compartment byte [%d], which is not a stageable inventory. Dropping.", characterId, inventoryType)
+		return nil
+	}
+
+	a, err := p.invp.AssetInSlot(characterId, it, sourceSlot)
+	if err != nil {
+		p.l.WithError(err).Infof("Unable to read the asset character [%d] staged from compartment [%d] slot [%d]. Dropping.", characterId, it, sourceSlot)
+		return nil
+	}
+
+	if err = checkRestrictions(assetView{Flags: a.Flag(), SourceSlot: a.Slot()}, p.itemData(it, a.TemplateId()), inventoryType); err != nil {
+		p.l.WithError(err).Infof("Refusing to stage item [%d] for character [%d].", a.TemplateId(), characterId)
+		return nil
+	}
+
+	staged, ok := p.stageableQuantity(characterId, pt, it, sourceSlot, a, quantity)
+	if !ok {
+		return nil
+	}
+
+	// The reservation handle is minted BEFORE the registry swap so the staged
+	// item can carry it; the command that files it is buffered afterwards, in
+	// the same outbox batch, so a room mutation and its reservation publish or
+	// roll back together.
+	reservationId := uuid.New()
+	stagedItem := NewStagedItem(targetSlot, a.Id(), a.TemplateId(), staged, it, sourceSlot, reservationId)
+
+	// Compare-and-set: the frozen / slot / cap checks are re-run inside the
+	// write lock so a PUT_ITEM racing a CONFIRM or another PUT_ITEM cannot
+	// overshoot the cap or double-book a dialog slot.
+	updated, err := p.reg.Update(p.t, room.Id(), func(cur Room) (Room, error) {
+		if cur.Frozen() {
+			return Room{}, ErrRoomFrozen
+		}
+		cp, found := cur.ParticipantFor(characterId)
+		if !found {
+			return Room{}, ErrRoomNotFound
+		}
+		if !stageSlotAvailable(cp, targetSlot, cfg.MaxStagedItems()) {
+			return Room{}, ErrRoomFrozen
+		}
+		return cur.WithParticipant(cp.Position(), func(v Participant) Participant {
+			return v.WithItem(stagedItem)
+		}), nil
+	})
+	if err != nil {
+		p.l.WithError(err).Debugf("Character [%d]'s stage into trade slot [%d] lost a race. Dropping.", characterId, targetSlot)
+		return nil
+	}
+
+	if err = p.resp.RequestReserve(mb)(reservationId, characterId, it, sourceSlot, a.TemplateId(), staged, cfg.ReservationTtl()); err != nil {
+		return err
+	}
+	return mb.Put(trademsg.EnvEventTopicStatus, itemStagedProvider(txId, updated, characterId, pt.Position(), stagedItem))
+}
+
+// itemData resolves the atlas-data view a restriction check needs. A lookup
+// FAILURE is reported as Unreadable rather than as a tradeable default, and is
+// logged at ERROR because it means atlas-data is unreachable — not that the item
+// forbids trading (design §7).
+func (p *ProcessorImpl) itemData(inventoryType inventory.Type, templateId item.Id) itemDataView {
+	blocked, err := p.idp.TradeBlock(inventoryType, templateId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to read the trade restrictions of item [%d]. Refusing the stage rather than assuming it is tradeable.", templateId)
+		return itemDataView{Unreadable: true}
+	}
+	return itemDataView{TradeBlock: blocked}
+}
+
+// stageableRoom resolves the room a staging command may act on. A missing room
+// is a DEBUG-level drop (the command simply arrived late), while a frozen room
+// is a WARN: the reference client blocks staging locally once either side has
+// confirmed, so reaching the server means a modified client (FR-3.6).
+func (p *ProcessorImpl) stageableRoom(characterId character.Id, what string) (Room, Participant, bool) {
+	room, ok := p.reg.GetByMember(p.t, characterId)
+	if !ok {
+		p.l.Debugf("Character [%d] issued %s without a trade room. Dropping.", characterId, what)
+		return Room{}, Participant{}, false
+	}
+	if room.Frozen() {
+		p.l.Warnf("Character [%d] issued %s against a frozen trade room [%s]; staging after confirm indicates a modified client. Dropping.", characterId, what, room.Id().String())
+		return Room{}, Participant{}, false
+	}
+	pt, ok := room.ParticipantFor(characterId)
+	if !ok {
+		p.l.Debugf("Character [%d] issued %s but is not seated in room [%s]. Dropping.", characterId, what, room.Id().String())
+		return Room{}, Participant{}, false
+	}
+	return room, pt, true
+}
+
+// stageSlotAvailable reports whether targetSlot is a free dialog slot within the
+// configured cap (FR-3.3, FR-9.1). The dialog's slots are 1-based, so 0 is out
+// of range rather than "the first slot".
+func stageSlotAvailable(pt Participant, targetSlot byte, maxStagedItems int) bool {
+	if maxStagedItems <= 0 {
+		return false
+	}
+	if targetSlot < 1 || int(targetSlot) > maxStagedItems {
+		return false
+	}
+	if pt.HasTradeSlot(targetSlot) {
+		return false
+	}
+	return len(pt.Items()) < maxStagedItems
+}
+
+// stageableQuantity validates the client's requested quantity against what the
+// asset actually holds, net of what this room already claimed out of the same
+// slot. It returns the quantity to stage.
+func (p *ProcessorImpl) stageableQuantity(characterId character.Id, pt Participant, inventoryType inventory.Type, sourceSlot slot.Position, a inventorydata.Asset, quantity uint16) (asset.Quantity, bool) {
+	// The reserve command's wire quantity is int16, narrower than the uint16
+	// the client's PUT_ITEM decodes; anything above math.MaxInt16 would wrap
+	// negative and be widened by atlas-inventory into a near-4-billion hold.
+	if quantity == 0 || quantity > math.MaxInt16 {
+		p.l.Infof("Character [%d] staged quantity [%d], outside the reservable 1..%d range. Dropping.", characterId, quantity, math.MaxInt16)
+		return 0, false
+	}
+	want := asset.Quantity(quantity)
+	claimed := pt.StagedQuantityFrom(inventoryType, sourceSlot)
+	if claimed >= a.Quantity() || a.Quantity()-claimed < want {
+		p.l.Infof("Character [%d] staged [%d] of the asset in compartment [%d] slot [%d], which holds [%d] with [%d] already claimed. Dropping.", characterId, want, inventoryType, sourceSlot, a.Quantity(), claimed)
+		return 0, false
+	}
+	return want, true
+}
+
+// AddMeso assigns the caller's staged meso (FR-3.4, FR-4.8). Unlike PutItem, an
+// out-of-range amount is NOT silent: mode 16 is an assignment on the client, so
+// the client has already moved its own view and only an authoritative re-echo of
+// the last valid amount will snap it back (design §4.2).
+func (p *ProcessorImpl) AddMeso(txId uuid.UUID, characterId character.Id, amount int32) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
+		return p.addMeso(mb, txId, characterId, amount)
+	})
+}
+
+func (p *ProcessorImpl) addMeso(mb *message.Buffer, txId uuid.UUID, characterId character.Id, amount int32) error {
+	room, pt, ok := p.stageableRoom(characterId, "ADD_MESO")
+	if !ok {
+		return nil
+	}
+
+	// A negative amount is not a mis-click, it is a forged packet — the client's
+	// own input box cannot produce one. There is nothing to re-echo, because the
+	// client never rendered a value we would be correcting.
+	if amount < 0 {
+		p.l.Warnf("Character [%d] staged a negative meso amount [%d]; a negative cannot come from the client's input box. Dropping.", characterId, amount)
+		return nil
+	}
+
+	refused, err := p.mesoRefused(room, characterId, uint32(amount))
+	if err != nil {
+		return err
+	}
+	if refused {
+		return mb.Put(trademsg.EnvEventTopicStatus, mesoRefusedProvider(txId, room, characterId, pt.Position(), pt.MesoStaged()))
+	}
+
+	updated, err := p.reg.Update(p.t, room.Id(), func(cur Room) (Room, error) {
+		if cur.Frozen() {
+			return Room{}, ErrRoomFrozen
+		}
+		cp, found := cur.ParticipantFor(characterId)
+		if !found {
+			return Room{}, ErrRoomNotFound
+		}
+		return cur.WithParticipant(cp.Position(), func(v Participant) Participant {
+			return v.WithMesoStaged(uint32(amount))
+		}), nil
+	})
+	if err != nil {
+		p.l.WithError(err).Debugf("Character [%d]'s meso stage lost a race. Dropping.", characterId)
+		return nil
+	}
+
+	return mb.Put(trademsg.EnvEventTopicStatus, mesoStagedProvider(txId, updated, characterId, pt.Position(), uint32(amount)))
+}
+
+// mesoRefused reports whether the requested stage must be refused (FR-4.8). It
+// reads the staging character's meso FRESH — a value cached at room-creation
+// time would let a player stage meso they spent in the meantime — and, when a
+// counterparty is seated, checks that the delivered amount would not push that
+// counterparty over the meso ceiling.
+//
+// The counterparty check deliberately ignores the meso that side is itself
+// staging outward: netting it in would depend on a value the counterparty can
+// change afterwards, so this errs toward refusing, never toward accepting a
+// trade that overflows on delivery.
+func (p *ProcessorImpl) mesoRefused(room Room, characterId character.Id, amount uint32) (bool, error) {
+	if amount > maxStageableMeso {
+		p.l.Infof("Character [%d] staged [%d] meso, above the settleable ceiling of [%d]. Refusing.", characterId, amount, uint32(maxStageableMeso))
+		return true, nil
+	}
+
+	cm, err := p.cp.GetById(characterId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to read character [%d]'s meso. Refusing the stage rather than trusting the client's amount.", characterId)
+		return true, nil
+	}
+	if amount > cm.Meso() {
+		p.l.Infof("Character [%d] staged [%d] meso but holds [%d]. Refusing.", characterId, amount, cm.Meso())
+		return true, nil
+	}
+
+	other := counterpartyOf(room, characterId)
+	if other == 0 {
+		return false, nil
+	}
+	cfg := p.cfg.Get(p.l, p.ctx)
+	_, delivered := configuration.Tax(cfg, amount)
+	om, err := p.cp.GetById(other)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to read counterparty [%d]'s meso. Refusing character [%d]'s stage rather than risking an overflow on delivery.", other, characterId)
+		return true, nil
+	}
+	if uint64(om.Meso())+uint64(delivered) > maxStageableMeso {
+		p.l.Infof("Character [%d] staged [%d] meso, which would deliver [%d] to counterparty [%d] who already holds [%d]. Refusing.", characterId, amount, delivered, other, om.Meso())
+		return true, nil
+	}
+	return false, nil
+}
+
+// counterpartyOf returns the other seated participant, or 0 while the room is
+// still solo.
+func counterpartyOf(room Room, characterId character.Id) character.Id {
+	for _, pt := range room.Participants() {
+		if pt.CharacterId() != characterId {
+			return pt.CharacterId()
+		}
+	}
+	return 0
+}
+
+// RefreshReservations re-files every live room's reservations so none expires
+// under an open trade (design §5.3).
+//
+// atlas-inventory has no refresh primitive, and its AddReservation APPENDS
+// unconditionally
+// (services/atlas-inventory/atlas.com/inventory/compartment/reservation_registry.go:110-125),
+// so simply re-sending REQUEST_RESERVE would stack a second hold on the same
+// slot every tick until the character's own stack read as fully reserved. The
+// refresh is therefore CANCEL_RESERVATION followed by REQUEST_RESERVE under the
+// same handle. Both commands are keyed by character id, so they share a
+// partition and atlas-inventory processes them in that order.
+func (p *ProcessorImpl) RefreshReservations(txId uuid.UUID) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
+		return p.refreshReservations(mb)
+	})
+}
+
+func (p *ProcessorImpl) refreshReservations(mb *message.Buffer) error {
+	ttl := p.cfg.Get(p.l, p.ctx).ReservationTtl()
+	for _, room := range p.reg.All(p.t) {
+		// A settling room's assets are the settlement saga's business;
+		// re-filing under it would race the consume.
+		if room.State() == StateSettling {
+			continue
+		}
+		for _, pt := range room.Participants() {
+			for _, i := range pt.Items() {
+				if err := p.resp.CancelReservation(mb)(i.ReservationId(), pt.CharacterId(), i.InventoryType(), i.SourceSlot()); err != nil {
+					return err
+				}
+				if err := p.resp.RequestReserve(mb)(i.ReservationId(), pt.CharacterId(), i.InventoryType(), i.SourceSlot(), i.TemplateId(), i.Quantity(), ttl); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// RefreshReservations is the ticker entry point Task 20 drives: one pass over
+// the rooms of the tenant carried by ctx.
+func RefreshReservations(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) error {
+	return NewProcessor(l, ctx, db).RefreshReservations(uuid.New())
 }

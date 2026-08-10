@@ -47,6 +47,12 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleEnterRoom(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handlePutItem(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAddMeso(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -98,6 +104,32 @@ func handleDeclineInvite(db *gorm.DB) message.Handler[trademsg.Command[trademsg.
 		}
 		if err := p.DeclineInvite(c.TransactionId, c.CharacterId, room.OwnerId()); err != nil {
 			l.WithError(err).Errorf("Unable to decline character [%d]'s trade invite to [%d].", room.OwnerId(), c.CharacterId)
+		}
+	}
+}
+
+// handlePutItem stages one item. The body's InventoryType is the shared
+// inventory.Type (a SIGNED int8), so a wire byte above 127 has already arrived
+// here negative; it is handed to the processor as the raw byte it was, and the
+// processor's decode boundary rejects anything outside the five compartments.
+func handlePutItem(db *gorm.DB) message.Handler[trademsg.Command[trademsg.PutItemCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c trademsg.Command[trademsg.PutItemCommandBody]) {
+		if c.Type != trademsg.CommandTypePutItem {
+			return
+		}
+		if err := trade.NewProcessor(l, ctx, db).PutItem(c.TransactionId, c.CharacterId, byte(c.Body.InventoryType), c.Body.Slot, c.Body.Quantity, c.Body.TargetSlot); err != nil {
+			l.WithError(err).Errorf("Unable to stage an item for character [%d].", c.CharacterId)
+		}
+	}
+}
+
+func handleAddMeso(db *gorm.DB) message.Handler[trademsg.Command[trademsg.AddMesoCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c trademsg.Command[trademsg.AddMesoCommandBody]) {
+		if c.Type != trademsg.CommandTypeAddMeso {
+			return
+		}
+		if err := trade.NewProcessor(l, ctx, db).AddMeso(c.TransactionId, c.CharacterId, c.Body.Amount); err != nil {
+			l.WithError(err).Errorf("Unable to stage meso for character [%d].", c.CharacterId)
 		}
 	}
 }

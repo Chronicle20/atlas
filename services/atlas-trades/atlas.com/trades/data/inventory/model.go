@@ -1,0 +1,82 @@
+// Package inventory is the atlas-inventory REST client atlas-trades stages
+// through. It reads one compartment at a time and answers the single question
+// PUT_ITEM asks: what asset is sitting in this (inventoryType, slot), and is it
+// flagged untradeable?
+//
+// The asset projection is deliberately narrow — id, slot, templateId, quantity
+// and flag. Equipment statistics are irrelevant to staging: the settlement saga
+// looks the asset up again by slot at expansion time
+// (libs/atlas-saga/payloads.go TradeSettlementItem), so nothing downstream
+// depends on a stat snapshot taken here.
+package inventory
+
+import (
+	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+)
+
+// Asset is one item occupying a compartment slot.
+type Asset struct {
+	id         asset.Id
+	slot       slot.Position
+	templateId item.Id
+	quantity   asset.Quantity
+	flag       uint16
+}
+
+func (a Asset) Id() asset.Id { return a.id }
+
+func (a Asset) Slot() slot.Position { return a.slot }
+
+func (a Asset) TemplateId() item.Id { return a.templateId }
+
+func (a Asset) Quantity() asset.Quantity { return a.quantity }
+
+// Flag is the asset's raw flag bitfield. Interpret it through
+// libs/atlas-constants/asset's Flag constants rather than by literal.
+func (a Asset) Flag() uint16 { return a.flag }
+
+// NewAsset builds one asset view. Asset is a value type with no mutable state,
+// so it needs no builder.
+func NewAsset(id asset.Id, s slot.Position, templateId item.Id, quantity asset.Quantity, flag uint16) Asset {
+	return Asset{id: id, slot: s, templateId: templateId, quantity: quantity, flag: flag}
+}
+
+// Model is one inventory compartment and the assets it holds.
+type Model struct {
+	id            uuid.UUID
+	inventoryType inventory.Type
+	capacity      uint32
+	assets        []Asset
+}
+
+func (m Model) Id() uuid.UUID { return m.id }
+
+func (m Model) Type() inventory.Type { return m.inventoryType }
+
+func (m Model) Capacity() uint32 { return m.capacity }
+
+// Assets returns a copy of the asset list, so a caller cannot write through the
+// returned slice into the compartment's state.
+func (m Model) Assets() []Asset {
+	if m.assets == nil {
+		return nil
+	}
+	out := make([]Asset, len(m.assets))
+	copy(out, m.assets)
+	return out
+}
+
+// FindBySlot returns the asset occupying the given slot position.
+func (m Model) FindBySlot(s slot.Position) (Asset, bool) {
+	for _, a := range m.assets {
+		if a.slot == s {
+			return a, true
+		}
+	}
+	return Asset{}, false
+}

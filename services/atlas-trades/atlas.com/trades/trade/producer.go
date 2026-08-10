@@ -95,6 +95,43 @@ func participantEnteredProvider(txId uuid.UUID, r Room, characterId character.Id
 	})
 }
 
+// itemStagedProvider announces one staged item. The body names the staging SIDE
+// by position rather than by character: atlas-channel converts that to each
+// recipient's own recipient-relative side byte before writing the packet, so
+// this event is broadcast-shaped and needs no per-recipient variant.
+func itemStagedProvider(txId uuid.UUID, r Room, characterId character.Id, position byte, i StagedItem) model.Provider[[]kafka.Message] {
+	return roomEventProvider(txId, r, characterId, trademsg.StatusTypeItemStaged, trademsg.ItemStagedEventBody{
+		Position:      position,
+		TradeSlot:     i.TradeSlot(),
+		InventoryType: i.InventoryType(),
+		SourceSlot:    i.SourceSlot(),
+		AssetId:       i.AssetId(),
+		TemplateId:    i.TemplateId(),
+		Quantity:      i.Quantity(),
+	})
+}
+
+// mesoStagedProvider announces the participant's staged meso total. Mode 16 is
+// an ASSIGNMENT on the client (design §1.6), so the amount is always the
+// absolute staged total and never a delta.
+func mesoStagedProvider(txId uuid.UUID, r Room, characterId character.Id, position byte, amount uint32) model.Provider[[]kafka.Message] {
+	return roomEventProvider(txId, r, characterId, trademsg.StatusTypeMesoStaged, trademsg.MesoStagedEventBody{
+		Position: position,
+		Amount:   amount,
+	})
+}
+
+// mesoRefusedProvider drives the authoritative re-echo (FR-4.8, design §4.2):
+// the client already moved its own view to the amount it asked for, and because
+// mode 16 assigns rather than accumulates, re-sending the LAST VALID amount is
+// what snaps that view back.
+func mesoRefusedProvider(txId uuid.UUID, r Room, characterId character.Id, position byte, lastValid uint32) model.Provider[[]kafka.Message] {
+	return roomEventProvider(txId, r, characterId, trademsg.StatusTypeMesoRefused, trademsg.MesoRefusedEventBody{
+		Position:        position,
+		LastValidAmount: lastValid,
+	})
+}
+
 // cancelledProvider tears the room down on both clients, carrying the semantic
 // leaveReason KEY string the channel resolves to a per-version status byte.
 // characterId is the character whose action triggered the teardown.

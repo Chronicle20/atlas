@@ -49,6 +49,13 @@ const (
 //
 // tradeSlot is the 1..9 slot of the client's trade dialog — a wire-local
 // coordinate with no shared-constants equivalent, so it stays a byte.
+//
+// reservationId is the handle atlas-inventory filed the reservation under. The
+// reservation registry keys entries by (transactionId, characterId,
+// inventoryType, slot) and CANCEL_RESERVATION needs all four
+// (services/atlas-inventory/atlas.com/inventory/compartment/reservation_registry.go:110-153),
+// so the id has to travel with the staged item: without it every abandoned
+// stage would keep the owner's asset locked until the TTL expired.
 type StagedItem struct {
 	tradeSlot     byte
 	assetId       asset.Id
@@ -56,6 +63,7 @@ type StagedItem struct {
 	quantity      asset.Quantity
 	inventoryType inventory.Type
 	sourceSlot    slot.Position
+	reservationId uuid.UUID
 }
 
 func (s StagedItem) TradeSlot() byte               { return s.tradeSlot }
@@ -64,10 +72,11 @@ func (s StagedItem) TemplateId() item.Id           { return s.templateId }
 func (s StagedItem) Quantity() asset.Quantity      { return s.quantity }
 func (s StagedItem) InventoryType() inventory.Type { return s.inventoryType }
 func (s StagedItem) SourceSlot() slot.Position     { return s.sourceSlot }
+func (s StagedItem) ReservationId() uuid.UUID      { return s.reservationId }
 
 // NewStagedItem builds one staged item. StagedItem is a value type with no
 // mutable state, so it needs no builder.
-func NewStagedItem(tradeSlot byte, assetId asset.Id, templateId item.Id, quantity asset.Quantity, inventoryType inventory.Type, sourceSlot slot.Position) StagedItem {
+func NewStagedItem(tradeSlot byte, assetId asset.Id, templateId item.Id, quantity asset.Quantity, inventoryType inventory.Type, sourceSlot slot.Position, reservationId uuid.UUID) StagedItem {
 	return StagedItem{
 		tradeSlot:     tradeSlot,
 		assetId:       assetId,
@@ -75,6 +84,7 @@ func NewStagedItem(tradeSlot byte, assetId asset.Id, templateId item.Id, quantit
 		quantity:      quantity,
 		inventoryType: inventoryType,
 		sourceSlot:    sourceSlot,
+		reservationId: reservationId,
 	}
 }
 
@@ -134,6 +144,20 @@ func (p Participant) HasTradeSlot(tradeSlot byte) bool {
 		}
 	}
 	return false
+}
+
+// StagedQuantityFrom totals what this participant has already claimed out of one
+// inventory slot. Staging a partial stack twice from the same slot is legal, and
+// each claim files its own reservation, so the availability check has to net off
+// what THIS room already reserved before comparing against the asset's quantity.
+func (p Participant) StagedQuantityFrom(inventoryType inventory.Type, sourceSlot slot.Position) asset.Quantity {
+	var total asset.Quantity
+	for _, i := range p.items {
+		if i.inventoryType == inventoryType && i.sourceSlot == sourceSlot {
+			total += i.quantity
+		}
+	}
+	return total
 }
 
 // Room is a live trade room. It carries two ids (design §2.3): Id is the REST

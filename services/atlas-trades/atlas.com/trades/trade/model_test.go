@@ -181,8 +181,8 @@ func TestParticipantWithItemAndHasTradeSlot(t *testing.T) {
 		t.Error("HasTradeSlot(1) = true on a participant with no staged items")
 	}
 
-	one := owner.WithItem(NewStagedItem(1, 4001, 2000000, 3, inventory.TypeValueUse, 5))
-	two := one.WithItem(NewStagedItem(4, 4002, 1302000, 1, inventory.TypeValueEquip, -11))
+	one := owner.WithItem(NewStagedItem(1, 4001, 2000000, 3, inventory.TypeValueUse, 5, uuid.New()))
+	two := one.WithItem(NewStagedItem(4, 4002, 1302000, 1, inventory.TypeValueEquip, -11, uuid.New()))
 
 	if len(owner.Items()) != 0 {
 		t.Errorf("original participant gained %d items", len(owner.Items()))
@@ -219,10 +219,10 @@ func TestParticipantWithItemAndHasTradeSlot(t *testing.T) {
 func TestItemsIsNotWritableThroughTheGetter(t *testing.T) {
 	room := NewBuilder(miniroom.Trade, 100, "Owner", testField(t)).SetState(StateOpen).Build()
 	owner, _ := room.ParticipantFor(100)
-	owner = owner.WithItem(NewStagedItem(1, 4001, 2000000, 3, 2, 5))
+	owner = owner.WithItem(NewStagedItem(1, 4001, 2000000, 3, 2, 5, uuid.New()))
 
 	escaped := owner.Items()
-	escaped[0] = NewStagedItem(9, 0, 0, 0, 0, 0)
+	escaped[0] = NewStagedItem(9, 0, 0, 0, 0, 0, uuid.Nil)
 
 	if owner.Items()[0].TradeSlot() != 1 {
 		t.Error("writing through Items() mutated the participant")

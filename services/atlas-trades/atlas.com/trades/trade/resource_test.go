@@ -402,7 +402,7 @@ func TestRoomsRejectWrites(t *testing.T) {
 func TestTransformProjectsStagedItems(t *testing.T) {
 	room := NewBuilder(miniroom.Trade, 100, "Owner", restField(t)).Build().
 		WithParticipant(0, func(p Participant) Participant {
-			return p.WithMesoStaged(1_000).WithItem(NewStagedItem(3, 9001, 1302000, 1, 1, 7))
+			return p.WithMesoStaged(1_000).WithItem(NewStagedItem(3, 9001, 1302000, 1, 1, 7, uuid.New()))
 		})
 
 	rm, err := Transform(room)

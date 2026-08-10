@@ -28,6 +28,18 @@ const egg = {
     rareWeight: 0,
   },
 };
+const surpriseBox = {
+  id: "5910000",
+  type: "gachapons",
+  attributes: {
+    name: "Surprise Style Box",
+    kind: "cash-surprise",
+    npcIds: [],
+    commonWeight: 0,
+    uncommonWeight: 0,
+    rareWeight: 0,
+  },
+};
 
 const mocks = vi.hoisted(() => ({
   getPoolById: vi.fn(),
@@ -143,6 +155,49 @@ describe("RewardPoolDetailPage", () => {
     expect(screen.queryByText(/tier weights/i)).not.toBeInTheDocument();
     expect(screen.getByText("75.00%")).toBeInTheDocument();
     expect(screen.getByText("25.00%")).toBeInTheDocument();
+  });
+
+  it("cash-surprise: flat item table with Commodity column, plain header name, item icon (not egg-formatted)", async () => {
+    mocks.getPoolById.mockResolvedValue(surpriseBox);
+    mocks.getItems.mockResolvedValue([
+      {
+        id: "1",
+        type: "gachapon-items",
+        attributes: {
+          gachaponId: "5910000",
+          itemId: 5510000,
+          quantity: 1,
+          tier: "common",
+          weight: 100,
+          commodityId: 5300000,
+        },
+      },
+    ]);
+    mocks.getGlobalItems.mockResolvedValue([]);
+    const { container } = renderAt("5910000");
+    await waitFor(() =>
+      expect(screen.getByText("Surprise Style Box")).toBeInTheDocument(),
+    );
+    // Plain seeded name -- the egg-region formatting (e.g. "(Ellinia)") is
+    // an incubator-only convention (task-207 F1) and must not apply here,
+    // even though useItemName is globally mocked to return a truthy name.
+    expect(
+      screen.queryByText(/\(Ellinia\)|\(Victoria\)/),
+    ).not.toBeInTheDocument();
+    // No tier-weights/NPC cards -- cash-surprise uses the flat layout.
+    expect(screen.queryByText(/tier weights/i)).not.toBeInTheDocument();
+    // Flat table renders the Commodity column and its value.
+    expect(screen.getByText("Commodity")).toBeInTheDocument();
+    expect(screen.getByText("5300000")).toBeInTheDocument();
+    // Header icon resolves via the "item" source (pool id), not the
+    // gachapon NPC-icon branch (which would need npcIds populated). The
+    // header <img alt=""> is presentational (no accessible "img" role), so
+    // it's queried directly rather than via getByRole.
+    const headerImg = container.querySelector("img[width='32']");
+    expect(headerImg).toHaveAttribute(
+      "src",
+      expect.stringContaining("/item/5910000/icon.png"),
+    );
   });
 
   it("warns when a gachapon tier mixes weighted and zero-weight rows", async () => {

@@ -33,9 +33,35 @@ import { KindBadge } from "@/components/features/reward-pools/KindBadge";
 import { PoolFormDialog } from "@/components/features/reward-pools/PoolFormDialog";
 import { PoolItemDialog } from "@/components/features/reward-pools/PoolItemDialog";
 import { PoolItemsTable } from "@/components/features/reward-pools/PoolItemsTable";
+import { ICON_SOURCE } from "@/components/features/reward-pools/PoolNameCell";
 import { POOL_ITEM_TABLE_LAYOUT } from "@/lib/utils/reward-pool-chance";
+import type {
+  RewardPoolData,
+  RewardPoolKind,
+} from "@/types/models/reward-pool";
 import type { RewardPoolItemData } from "@/types/models/reward-pool-item";
 import type { Tenant } from "@/types/models/tenant";
+
+/**
+ * Header name formatting per kind, exhaustive over RewardPoolKind so a
+ * fourth kind is a compile error rather than silently falling into the
+ * "plain name" branch (task-207 F1). Only incubator pools resolve their
+ * name from the egg item's string table; every other kind uses the seeded
+ * pool name as-is.
+ */
+const HEADER_NAME_FORMATTER: Record<
+  RewardPoolKind,
+  (
+    attrs: RewardPoolData["attributes"],
+    eggName: string | undefined,
+    poolId: string,
+  ) => string
+> = {
+  incubator: (attrs, eggName, poolId) =>
+    formatIncubatorName(eggName ?? attrs.name, poolId),
+  "cash-surprise": (attrs) => attrs.name,
+  gachapon: (attrs) => attrs.name,
+};
 
 function NpcRow({ npcId, tenant }: { npcId: number; tenant: Tenant }) {
   const { data: npc } = useNPC(tenant, npcId);
@@ -111,8 +137,14 @@ export function RewardPoolDetailPage() {
   const globalItems = isFlatKind ? [] : (globalQuery.data ?? []);
   const tierTotal =
     attrs.commonWeight + attrs.uncommonWeight + attrs.rareWeight;
-  const eggIconUrl =
-    isIncubator && activeTenant
+  // Icon source is resolved via the same exhaustive Record PoolNameCell
+  // uses (task-207 F1) rather than a binary isIncubator check, so a
+  // cash-surprise pool gets its item icon instead of silently falling into
+  // the gachapon NPC-icon branch.
+  const iconSource = ICON_SOURCE[attrs.kind];
+  const firstNpcId = attrs.npcIds[0];
+  const iconUrl =
+    iconSource === "item" && activeTenant
       ? getAssetIconUrl(
           activeTenant.id,
           activeTenant.attributes.region,
@@ -121,33 +153,23 @@ export function RewardPoolDetailPage() {
           "item",
           parseInt(id, 10),
         )
-      : null;
-  const firstNpcId = attrs.npcIds[0];
-  const machineIconUrl =
-    !isIncubator && activeTenant && firstNpcId !== undefined
-      ? getAssetIconUrl(
-          activeTenant.id,
-          activeTenant.attributes.region,
-          activeTenant.attributes.majorVersion,
-          activeTenant.attributes.minorVersion,
-          "npc",
-          firstNpcId,
-        )
-      : null;
-  const headerName = isIncubator
-    ? formatIncubatorName(eggName ?? attrs.name, pool.id)
-    : attrs.name;
+      : iconSource === "npc" && activeTenant && firstNpcId !== undefined
+        ? getAssetIconUrl(
+            activeTenant.id,
+            activeTenant.attributes.region,
+            activeTenant.attributes.majorVersion,
+            activeTenant.attributes.minorVersion,
+            "npc",
+            firstNpcId,
+          )
+        : null;
+  const headerName = HEADER_NAME_FORMATTER[attrs.kind](attrs, eggName, pool.id);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-6 p-10 pb-6">
       <div className="shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {isIncubator && eggIconUrl && (
-            <img src={eggIconUrl} alt="" width={32} height={32} />
-          )}
-          {!isIncubator && machineIconUrl && (
-            <img src={machineIconUrl} alt="" width={32} height={32} />
-          )}
+          {iconUrl && <img src={iconUrl} alt="" width={32} height={32} />}
           <h2 className="text-2xl font-bold tracking-tight">{headerName}</h2>
           <KindBadge kind={attrs.kind} />
           <span className="text-muted-foreground font-mono">#{pool.id}</span>

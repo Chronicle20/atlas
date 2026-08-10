@@ -24,7 +24,7 @@ import type { RewardPoolData } from "@/types/models/reward-pool";
  * non-incubator kind, including a future new one, through the gachapon
  * NPC-icon branch — a new kind would silently get the wrong icon.
  */
-const ICON_SOURCE: Record<
+export const ICON_SOURCE: Record<
   RewardPoolData["attributes"]["kind"],
   "item" | "npc"
 > = {

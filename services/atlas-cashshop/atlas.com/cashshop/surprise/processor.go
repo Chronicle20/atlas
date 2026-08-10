@@ -203,8 +203,16 @@ func (p *ProcessorImpl) Open(mb *message.Buffer) func(transactionId uuid.UUID, a
 		// Step 5: the one transaction. opening.Insert MUST be first so a
 		// duplicate transactionId aborts before anything is consumed or
 		// granted (FR-4.4).
+		//
+		// Open is only ever reached via OpenAndEmit, which already wraps
+		// p.db in database.ExecuteTransaction before constructing this
+		// processor -- p.db here IS the tx. A second ExecuteTransaction
+		// wrapper would be a no-op (isTransaction(p.db) is true, so it would
+		// just call this closure directly), so the write below runs
+		// straight against p.db.WithContext(p.ctx) with no wrapper.
+		tx := p.db.WithContext(p.ctx)
 		var remaining uint32
-		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		txErr := func() error {
 			insertErr := opening.Insert(tx, p.t.Id(), transactionId, accountId, box.Id())
 			if errors.Is(insertErr, opening.ErrAlreadyOpened) {
 				// Success-without-effect: a Kafka redelivery of an
@@ -243,7 +251,7 @@ func (p *ProcessorImpl) Open(mb *message.Buffer) func(transactionId uuid.UUID, a
 
 			log.WithFields(logrus.Fields{"outcome": "OPENED", "box_remaining": remaining, "reward_asset_id": rewardAsset.Id(), "reward_count": ci.Count()}).Infof("Surprise box opened.")
 			return mb.Put(cashshop.EnvEventTopicStatus, cashshop2.SurpriseOpenedStatusEventProvider(characterId, ccm.Id(), cashId, remaining, rewardAsset.Id(), ci.ItemId(), ci.Count()))
-		})
+		}()
 		if txErr != nil {
 			log.WithError(txErr).WithField("outcome", "INTERNAL").Errorf("Unable to open surprise box.")
 			return txErr

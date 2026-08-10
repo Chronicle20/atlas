@@ -35,6 +35,18 @@ const { pools } = vi.hoisted(() => ({
         rareWeight: 0,
       },
     },
+    {
+      id: "5910000",
+      type: "gachapons",
+      attributes: {
+        name: "Surprise Style Box",
+        kind: "cash-surprise",
+        npcIds: [],
+        commonWeight: 0,
+        uncommonWeight: 0,
+        rareWeight: 0,
+      },
+    },
   ],
 }));
 vi.mock("@/services/api/reward-pools.service", () => ({
@@ -88,6 +100,22 @@ describe("RewardPoolsPage", () => {
     expect(screen.getByText("Pigmy Egg (Ellinia)")).toBeInTheDocument();
     expect(screen.getAllByText(/gachapon/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/incubator/i).length).toBeGreaterThan(0);
+  });
+
+  it("shows the cash-surprise pool on the All tab and its own tab", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText("Henesys")).toBeInTheDocument(),
+    );
+    expect(screen.getByText("Surprise Style Box")).toBeInTheDocument();
+    expect(
+      screen.getByRole("tab", { name: /cash surprise/i }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: /cash surprise/i }));
+    expect(screen.queryByText("Henesys")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pigmy Egg (Ellinia)")).not.toBeInTheDocument();
+    expect(screen.getByText("Surprise Style Box")).toBeInTheDocument();
   });
 
   it("renders a single refresh control next to the tabs", async () => {

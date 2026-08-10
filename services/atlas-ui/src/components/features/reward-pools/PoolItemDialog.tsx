@@ -37,13 +37,45 @@ import {
 import type { RewardPoolItemData } from "@/types/models/reward-pool-item";
 import type { GlobalRewardItemData } from "@/types/models/global-reward-item";
 
+type PoolItemDialogKind = "gachapon" | "incubator" | "cash-surprise" | "global";
+
 interface PoolItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  kind: "gachapon" | "incubator" | "cash-surprise" | "global";
+  kind: PoolItemDialogKind;
   poolId?: string;
   item?: RewardPoolItemData | GlobalRewardItemData;
 }
+
+// Per-kind form shape, selected via an exhaustive Record rather than the
+// weighted/needsCommodity boolean chain this replaces (task-207 F2): a
+// future fifth kind that's missing here is a compile error (a Record
+// literal missing a required key), not a silent fall-through into
+// tierItemSchema with the wrong validation.
+const FORM_CONFIG: Record<
+  PoolItemDialogKind,
+  {
+    schema:
+      | typeof tierItemSchema
+      | typeof weightItemSchema
+      | typeof cashSurpriseItemSchema;
+    weighted: boolean;
+    needsCommodity: boolean;
+  }
+> = {
+  gachapon: { schema: tierItemSchema, weighted: false, needsCommodity: false },
+  global: { schema: tierItemSchema, weighted: false, needsCommodity: false },
+  incubator: {
+    schema: weightItemSchema,
+    weighted: true,
+    needsCommodity: false,
+  },
+  "cash-surprise": {
+    schema: cashSurpriseItemSchema,
+    weighted: true,
+    needsCommodity: true,
+  },
+};
 
 export function PoolItemDialog({
   open,
@@ -53,13 +85,7 @@ export function PoolItemDialog({
   item,
 }: PoolItemDialogProps) {
   const isEdit = !!item;
-  const weighted = kind === "incubator" || kind === "cash-surprise";
-  const needsCommodity = kind === "cash-surprise";
-  const schema = needsCommodity
-    ? cashSurpriseItemSchema
-    : weighted
-      ? weightItemSchema
-      : tierItemSchema;
+  const { schema, weighted, needsCommodity } = FORM_CONFIG[kind];
 
   // Create mode leaves the numeric fields blank (keys omitted, so RHF starts
   // them as undefined); DefaultValues<T> makes that representable under

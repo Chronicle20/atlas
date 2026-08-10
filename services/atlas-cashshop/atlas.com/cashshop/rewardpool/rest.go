@@ -20,3 +20,16 @@ func (r *RewardRestModel) SetID(idStr string) error {
 	r.Id = idStr
 	return nil
 }
+
+// SetToOneReferenceID and SetToManyReferenceIDs are required by
+// jsonapi.Unmarshal for any type decoded through requests.PostRequest /
+// requests.GetRequest, even when the type declares no relationships — see
+// libs/atlas-rest/CLAUDE.md. RewardRestModel has no relationships to
+// populate, so these are no-ops (task-207 EXT-01).
+func (r *RewardRestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (r *RewardRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}

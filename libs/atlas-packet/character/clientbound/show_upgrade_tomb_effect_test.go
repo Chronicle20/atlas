@@ -16,8 +16,9 @@ import (
 // packet-audit:verify packet=character/clientbound/ShowUpgradeTombEffect version=gms_v79 ida=0x8d9fe6
 // packet-audit:verify packet=character/clientbound/ShowUpgradeTombEffect version=gms_v83 ida=0x983e40
 // packet-audit:verify packet=character/clientbound/ShowUpgradeTombEffect version=gms_v84 ida=0x9c4206
+// packet-audit:verify packet=character/clientbound/ShowUpgradeTombEffect version=gms_v87 ida=0xa098f2
 //
-// The remaining four versions (v87/v92/v95/jms_v185) carry the
+// The remaining three versions (v92/v95/jms_v185) carry the
 // identical wire layout per the IDA addresses in the doc comment above, but
 // their packet-audit:verify markers are deliberately deferred to their own
 // verification batches (task-210) — an unlinked marker with no evidence

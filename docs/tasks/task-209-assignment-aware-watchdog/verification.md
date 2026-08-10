@@ -165,7 +165,16 @@ counts local partition-reader rebuilds. See `libs/atlas-kafka/README.md`.
 
 ---
 
-## Bake result
+## Code review
 
-`docker buildx bake all-go-services` — result recorded below once the run
-completes.
+Two reviewer agents were dispatched in parallel per CLAUDE.md's pre-PR
+requirement. No frontend reviewer ran: the branch changes no TypeScript.
+
+- `plan-adherence-reviewer` → `audit.md`. **9/9 plan tasks done.** Confirmed
+  Task 1 was a byte-for-byte pure move (`git show e463478d8`), FR-3.2 holds, and
+  none of the four PRD §9 open items was silently implemented or dropped.
+- `backend-guidelines-reviewer` → `audit-backend.md`. **PASS**, no blocking
+  findings. One Minor (FILE-06): `manager.go` is a 662-line multi-responsibility
+  file — pre-existing, and this branch adds the new assignment/watchdog state to
+  it rather than splitting it out. Deliberately not addressed here; splitting it
+  would enlarge an otherwise tightly-scoped diff.

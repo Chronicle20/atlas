@@ -4,7 +4,7 @@
 //
 // Model is immutable: private fields, getters, and a With* transform per knob.
 // A Model's tax-tier table is ALWAYS valid — the only two ways to install one
-// (WithTaxTiers and, through it, FromTiers/Extract) run it through
+// (WithTaxTiers and, through it, Extract) run it through
 // ValidateTiers and fall back to the shipped defaults on rejection. Tax()
 // therefore does not need to defend against a rate outside [0, 1].
 package configuration
@@ -100,12 +100,6 @@ func (m Model) WithReservationTtl(ttl time.Duration) Model {
 func (m Model) WithAttestationTimeout(timeout time.Duration) Model {
 	m.attestationTimeout = timeout
 	return m
-}
-
-// FromTiers returns the default configuration carrying the given tax table,
-// falling back to the shipped table when it fails validation (FR-9.3).
-func FromTiers(tiers []Tier) Model {
-	return DefaultConfig().WithTaxTiers(tiers)
 }
 
 // defaultTiers returns a fresh copy of the shipped tax table (design §8). The

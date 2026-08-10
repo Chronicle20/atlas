@@ -100,6 +100,19 @@ func handleSagaTimeout(l logrus.FieldLogger, ctx context.Context, txId uuid.UUID
 		}).Info("saga already terminal, timeout emission skipped")
 		return
 	}
+	// Re-read after taking the guard. The snapshot above predates the
+	// Pending → Compensating transition, so a step whose success landed in that
+	// window is still Pending in it — and a reverse-walk driven from the stale
+	// copy skips that step's inverse for good, because the normal completion
+	// path already consumed the event and no late one will arrive. Everything
+	// below (the three walks and the Failed emission's failedStep) must read the
+	// post-guard copy. The saga is still cached — TryTransition just succeeded
+	// against it — but keep the snapshot if it raced away rather than aborting a
+	// compensation that is already committed to.
+	if fresh, ok := c.GetById(ctx, txId); ok {
+		s = fresh
+	}
+
 	reason := fmt.Sprintf("saga exceeded timeout of %s", timeout)
 	l.WithFields(logrus.Fields{
 		"transaction_id":  txId.String(),

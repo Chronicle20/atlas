@@ -1525,6 +1525,31 @@ func (p *ProcessorImpl) expandTradeSettlement(st Step[any]) ([]Step[any], error)
 
 	// 3. Meso, per side that staged any. Deduct the full staged amount from the
 	//    giver, credit the post-tax amount to the receiver.
+	//
+	//    ORDERING BOUND. Side 0's pair is appended before side 1's, so with both
+	//    sides staging meso the emitted order is deduct-A, credit-B, deduct-B,
+	//    credit-A: B is credited BEFORE being debited and transiently holds more
+	//    than the settlement's net result. That peak is bounded and does not trip
+	//    atlas-character's uint32 ceiling, but only just:
+	//
+	//      - atlas-trades' mesoSettleable (trade/settlement.go) refuses the
+	//        settlement unless each side's NET balance stays within
+	//        maxStageableMeso == math.MaxInt32 (trade/processor.go).
+	//        So  B_balance - B_staged + incoming <= MaxInt32.
+	//      - B's transient peak is B_balance + incoming, i.e. at most
+	//        MaxInt32 + B_staged, and B_staged is itself capped at MaxInt32.
+	//      - Peak <= 2*MaxInt32 = 4294967294.
+	//      - atlas-character rejects with ErrMesoOverflow only when the result
+	//        exceeds math.MaxUint32 == 4294967295 (character/processor.go
+	//        RequestChangeMeso).
+	//
+	//    The worst case therefore sits exactly ONE meso below the rejection
+	//    threshold. Reordering to deduct-A, deduct-B, credit-A, credit-B would
+	//    remove the transient peak entirely, but is NOT free: it moves both
+	//    debits ahead of both credits, changing which step a mid-saga failure
+	//    lands on and therefore which inverses the reverse-walk replays. Do not
+	//    change it without re-deriving the compensation traces in
+	//    trade_compensation_test.go.
 	for si, side := range payload.Sides {
 		if side.MesoStaged == 0 {
 			continue

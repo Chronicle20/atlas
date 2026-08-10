@@ -14,13 +14,16 @@ import (
 	"atlas-channel/session"
 	socketmodel "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
+	tradeproc "atlas-channel/trade"
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -177,6 +180,38 @@ var tradeMesoLimitConfigured = func(l logrus.FieldLogger, ctx context.Context) b
 	return atlaspacket.CodeConfigured(opts, "operations", interactioncb.CharacterInteractionModeTradeMesoLimit)
 }
 
+// tradeEnterErrorConfigured reports whether this tenant's CharacterInteraction
+// writer binds the given `enterError` KEY, i.e. whether the client version has
+// a mini-room enter-error arm for that refusal at all.
+//
+// The ENTER_RESULT mode itself is bound on every version, so the frame is
+// always dispatchable; it is the trailing REASON byte that is version-specific.
+// ResolveCode falls back to 99 on a miss — self-documented as "will likely
+// cause a client crash" — and the shipped tables are not uniform: gms_v92 and
+// gms_v12 bind no `enterError` table at all, and jms_185 binds only
+// TRADE_NOT_ALLOWED / TRADE_NOT_ALLOWED_2 (task-23 derived those two per-IDB
+// and correctly refused to guess the rest, because the JMS switch is
+// demonstrably non-positional). Every atlas-trades refusal key would therefore
+// write 99 on those tenants.
+//
+// Config stays the per-version authority (DOM-25): no version is named here,
+// and no table is back-filled by copying v83's — that inherited-copy habit is
+// what produced the gms_v48 +1 serverbound bug this branch fixed. A refusal
+// with no bound code is dropped, exactly as TRADE_MESO_LIMIT is; the player
+// sees no message rather than a crashed client.
+//
+// Package-level var so tests can exercise both the present and absent versions
+// without standing up a writer registry.
+var tradeEnterErrorConfigured = func(l logrus.FieldLogger, ctx context.Context, key interactioncb.CharacterInteractionEnterErrorMode) bool {
+	t := tenant.MustFromContext(ctx)
+	opts, ok := writer.TenantWriterOptions(t.Id(), interactioncb.CharacterInteractionWriter)
+	if !ok {
+		l.Warnf("Writer options for [%s] missing; enter error [%s] not sent.", interactioncb.CharacterInteractionWriter, key)
+		return false
+	}
+	return atlaspacket.CodeConfigured(opts, "enterError", key)
+}
+
 // announceToRoom sends the SAME body to every occupant. Bodies that carry a
 // recipient-relative field (the staged side byte, the leave slot) must not use
 // this — they build a per-recipient body instead.
@@ -214,6 +249,48 @@ var tradeStagedAssetResolver = func(l logrus.FieldLogger, ctx context.Context, s
 // errAssetNotFound reports a staged asset that is no longer in the stager's
 // compartment by the time the status event is handled.
 var errAssetNotFound = errors.New("staged asset not present in the stager's compartment")
+
+// tradeCancelRequester is the seam that asks atlas-trades to tear a room down.
+// CANCEL is the only teardown verb in the trade command contract, it is
+// idempotent (TeardownCharacter is a no-op for a character with no room —
+// kafka/consumer/trade/consumer.go in atlas-trades), and it releases every
+// staged item's reservation, so it is safe to send from a handler that may be
+// racing the room's own teardown. Package-level var so tests can record the
+// request without a broker.
+var tradeCancelRequester = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId charconst.Id) error {
+	return tradeproc.NewProcessor(l, ctx).Cancel(f, characterId)
+}
+
+// abortOnDisplayFailure tears the room down when atlas-channel cannot render a
+// piece of state that BOTH clients must see before they can consent.
+//
+// The trade dialog is the whole consent mechanism. atlas-trades' attestation
+// compares each client's confirm list to ITS OWN attest list
+// (settlement.go entriesMatch), never to the server's staged list, so a frame
+// that never reached either client cannot be caught at settle: the item is
+// staged, reserved and transferred while neither player ever saw it. A REST
+// hiccup reading the staged asset back, or resolving a participant's avatar,
+// must therefore not degrade to "settle anyway" — it must stop the trade.
+//
+// Cancelling is safe for the participant who has no dialog open yet (the
+// room-created / participant-entered failures): CMiniRoomBaseDlg::OnPacketBase
+// (v83 @0x65df4c) dispatches mode 10 LEAVE only through the live-dialog branch
+// and returns early when TSingleton<CUniqueModeless>::ms_pInstance is null, so
+// the resulting LEAVE is a no-op there rather than the CDisconnectException an
+// OnLeaveBase against an unpopulated avatar slot would raise.
+//
+// A retry alone would not be sufficient: a retry that still fails leaves the
+// same invisible-transfer window open.
+func abortOnDisplayFailure[E any](l logrus.FieldLogger, ctx context.Context, e trade2.StatusEvent[E], characterId charconst.Id, cause error, what string) {
+	l.WithError(cause).Errorf("Unable to render %s for trade room [%s]; cancelling the trade rather than settling state neither client can see.", what, e.RoomId)
+	if characterId == 0 {
+		return
+	}
+	f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+	if err := tradeCancelRequester(l, ctx, f, characterId); err != nil {
+		l.WithError(err).Errorf("Unable to cancel trade room [%s] after a display failure. The room may remain open until the participant changes map, channel or logs out.", e.RoomId)
+	}
+}
 
 // tradeRoomVisitorResolver is the seam that resolves a character into the
 // {slot, avatar, name} visitor entry the enter-result frame carries. Package-
@@ -253,7 +330,10 @@ func handleRoomCreatedEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 		l.Debugf("Trade room [%s] created by character [%d]. roomType [%d], position [%d].", e.RoomId, e.OwnerId, e.RoomType, e.Body.Position)
 		owner, err := tradeRoomVisitorResolver(l, ctx, e.Body.Position, e.OwnerId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to resolve owner [%d] for trade room [%s].", e.OwnerId, e.RoomId)
+			// No dialog was drawn, but atlas-trades has already seated the owner:
+			// they can neither create another room (ErrOwnerHasRoom) nor enter a
+			// mini-game, and they have no dialog to close, so CANCEL never comes.
+			abortOnDisplayFailure(l, ctx, e, e.OwnerId, err, fmt.Sprintf("owner [%d]'s enter-result", e.OwnerId))
 			return
 		}
 		room := interactionpkt.NewTradeRoom(interactionpkt.RoomType(e.RoomType), e.Body.Position, []interactionpkt.Visitor{owner})
@@ -275,12 +355,15 @@ func handleParticipantEnteredEvent(sc server.Model, wp writer.Producer) func(l l
 		l.Debugf("Character [%d] entered trade room [%s] at position [%d].", e.Body.CharacterId, e.RoomId, e.Body.Position)
 		owner, err := tradeRoomVisitorResolver(l, ctx, ownerPosition, e.OwnerId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to resolve owner [%d] for trade room [%s].", e.OwnerId, e.RoomId)
+			// The entrant is seated in atlas-trades but gets no dialog, and the
+			// owner's already-open dialog never learns of them — a room neither
+			// side can act on. Tear it down instead of leaving it soft-locked.
+			abortOnDisplayFailure(l, ctx, e, e.Body.CharacterId, err, fmt.Sprintf("owner [%d]'s entry in the enter-result", e.OwnerId))
 			return
 		}
 		visitor, err := tradeRoomVisitorResolver(l, ctx, e.Body.Position, e.Body.CharacterId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to resolve visitor [%d] for trade room [%s].", e.Body.CharacterId, e.RoomId)
+			abortOnDisplayFailure(l, ctx, e, e.Body.CharacterId, err, fmt.Sprintf("visitor [%d]'s entry in the enter-result", e.Body.CharacterId))
 			return
 		}
 		room := interactionpkt.NewTradeRoom(interactionpkt.RoomType(e.RoomType), e.Body.Position, []interactionpkt.Visitor{owner, visitor})
@@ -339,7 +422,11 @@ func handleItemStagedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 		l.Debugf("Character [%d] staged item [%d] in trade room [%s]. position [%d], tradeSlot [%d].", e.CharacterId, e.Body.TemplateId, e.RoomId, e.Body.Position, e.Body.TradeSlot)
 		a, err := tradeStagedAssetResolver(l, ctx, e.CharacterId, e.Body)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to resolve staged asset [%d] for character [%d] in trade room [%s].", e.Body.AssetId, e.CharacterId, e.RoomId)
+			// Neither dialog shows the item, yet atlas-trades has it staged and
+			// reserved and settle will transfer it. errAssetNotFound is caught
+			// again at settle by stagedAssetsIntact; a TRANSIENT compartment
+			// failure is not, so both branches abort here.
+			abortOnDisplayFailure(l, ctx, e, e.CharacterId, err, fmt.Sprintf("staged asset [%d] for character [%d]", e.Body.AssetId, e.CharacterId))
 			return
 		}
 		for _, id := range roomOccupants(e) {
@@ -483,6 +570,10 @@ func handleErrorEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLo
 			return
 		}
 		l.Debugf("Trade error for character [%d]. code [%s].", e.CharacterId, e.Body.Code)
+		if !tradeEnterErrorConfigured(l, ctx, e.Body.Code) {
+			l.Infof("Enter error [%s] is not bound in this tenant's enterError table; refusal not sent to character [%d].", e.Body.Code, e.CharacterId)
+			return
+		}
 		announceTo(l, ctx, sc, wp, e.CharacterId, interactioncb.CharacterInteractionEnterResultErrorBody(e.Body.Code))
 	}
 }

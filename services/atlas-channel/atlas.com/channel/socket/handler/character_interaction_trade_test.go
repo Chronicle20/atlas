@@ -10,6 +10,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	interaction2 "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/serverbound"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
@@ -302,5 +303,58 @@ func TestTransactionEntriesForwardsEveryPair(t *testing.T) {
 	}
 	if entries[0].Data != 7 || entries[0].Crc != 8 {
 		t.Errorf("entries[0]: got %+v, want {7 8}", entries[0])
+	}
+}
+
+// --- the refusal's per-version gate (enterError) -------------------------------
+
+// TestRefuseWithEnterErrorSkipsAnUnboundKey pins the crash-sentinel guard.
+// CharacterInteractionEnterResultErrorBody resolves the refusal byte through
+// ResolveCode(..., "enterError", key), which returns 99 on a miss — self
+// documented in libs/atlas-packet/resolve.go as "will likely cause a client
+// crash". The shipped templates make that reachable for trade: gms_v92 and
+// gms_v12 bind no enterError table at all and jms_185 binds only two keys, so
+// on those tenants every (or nearly every) trade refusal would have written 99.
+// A refusal with no bound code must be dropped, not sent.
+func TestRefuseWithEnterErrorSkipsAnUnboundKey(t *testing.T) {
+	orig := interactionEnterErrorConfigured
+	defer func() { interactionEnterErrorConfigured = orig }()
+
+	var asked string
+	interactionEnterErrorConfigured = func(_ logrus.FieldLogger, _ context.Context, key interactioncb.CharacterInteractionEnterErrorMode) bool {
+		asked = key
+		return false
+	}
+
+	announced := 0
+	refuseWithEnterError(testLogger(), context.Background(), 100,
+		interactioncb.CharacterInteractionEnterErrorModeOtherRequests,
+		func() { announced++ },
+	)
+	if announced != 0 {
+		t.Errorf("announces: got %d, want 0 — an unbound key must not reach ResolveCode's 99 sentinel", announced)
+	}
+	if asked != interactioncb.CharacterInteractionEnterErrorModeOtherRequests {
+		t.Errorf("gate consulted for key %q, want %q", asked, interactioncb.CharacterInteractionEnterErrorModeOtherRequests)
+	}
+}
+
+// TestRefuseWithEnterErrorSendsABoundKey is the other half: the gate must not
+// swallow the refusal on a version that DOES bind the key (every gms template
+// except v12/v92), or a colliding create would be silently ignored everywhere.
+func TestRefuseWithEnterErrorSendsABoundKey(t *testing.T) {
+	orig := interactionEnterErrorConfigured
+	defer func() { interactionEnterErrorConfigured = orig }()
+	interactionEnterErrorConfigured = func(logrus.FieldLogger, context.Context, interactioncb.CharacterInteractionEnterErrorMode) bool {
+		return true
+	}
+
+	announced := 0
+	refuseWithEnterError(testLogger(), context.Background(), 100,
+		interactioncb.CharacterInteractionEnterErrorModeOtherRequests,
+		func() { announced++ },
+	)
+	if announced != 1 {
+		t.Errorf("announces: got %d, want 1", announced)
 	}
 }

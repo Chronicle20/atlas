@@ -5,6 +5,7 @@ import (
 	"atlas-channel/server"
 	"atlas-channel/socket/writer"
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -15,6 +16,7 @@ import (
 
 	channelconst "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	atlaspacket "github.com/Chronicle20/atlas/libs/atlas-packet"
 	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
@@ -54,10 +56,24 @@ var testLeaveReason = map[string]interface{}{
 	"TRADE_CRC_FAILED":    float64(13),
 }
 
+// testEnterError is the enterError table for the six refusal keys atlas-trades
+// emits (services/atlas-trades/.../trade/processor.go), at the gms_v83 bytes.
+// It is deliberately a SUBSET of the 22-key shipped table: the point is that
+// the consumer looks each key up rather than assuming one exists.
+var testEnterError = map[string]interface{}{
+	"ROOM_CLOSED":       float64(1),
+	"OTHER_REQUESTS":    float64(3),
+	"NOT_WHEN_DEAD":     float64(4),
+	"UNABLE":            float64(6),
+	"TRADE_NOT_ALLOWED": float64(7),
+	"NOT_SAME_MAP":      float64(9),
+}
+
 // testOptions is the full writer option set a captured body is encoded with.
 var testOptions = map[string]interface{}{
 	"operations":  testOperations,
 	"leaveReason": testLeaveReason,
+	"enterError":  testEnterError,
 }
 
 // announceCall captures one invocation of the tradeAnnouncer seam: which
@@ -128,6 +144,7 @@ func handleAndCaptureWith(t *testing.T, d eventDispatch, opts map[string]interfa
 
 	l, _ := testlog.NewNullLogger()
 	var recorded []announceCall
+	cancelled = nil
 	orig := tradeAnnouncer
 	tradeAnnouncer = func(_ logrus.FieldLogger, _ context.Context, _ server.Model, _ writer.Producer, cid charconst.Id, body packet.Encode) {
 		recorded = append(recorded, announceCall{characterId: cid, bytes: body(l, ctx)(opts)})
@@ -140,9 +157,33 @@ func handleAndCaptureWith(t *testing.T, d eventDispatch, opts map[string]interfa
 	}
 	defer func() { tradeMesoLimitConfigured = origGate }()
 
+	origEnterGate := tradeEnterErrorConfigured
+	tradeEnterErrorConfigured = func(_ logrus.FieldLogger, _ context.Context, key interactioncb.CharacterInteractionEnterErrorMode) bool {
+		return atlaspacket.CodeConfigured(opts, "enterError", key)
+	}
+	defer func() { tradeEnterErrorConfigured = origEnterGate }()
+
+	origCancel := tradeCancelRequester
+	tradeCancelRequester = func(_ logrus.FieldLogger, _ context.Context, f field.Model, cid charconst.Id) error {
+		cancelled = append(cancelled, cancelCall{characterId: cid, field: f})
+		return nil
+	}
+	defer func() { tradeCancelRequester = origCancel }()
+
 	d(sc)(l, ctx)
 	return recorded
 }
+
+// cancelCall captures one invocation of the tradeCancelRequester seam.
+type cancelCall struct {
+	characterId charconst.Id
+	field       field.Model
+}
+
+// cancelled records the CANCEL commands the handler under test asked
+// atlas-trades for. Reset by handleAndCaptureWith on every run; the package's
+// tests are not parallel.
+var cancelled []cancelCall
 
 // baseEvent fills the envelope fields every handler's guard reads, plus the
 // room identity. Body is supplied by each event constructor.
@@ -639,5 +680,207 @@ func TestStatusTypeIsCheckedBeforeTheBodyIsActedOn(t *testing.T) {
 	})
 	if len(announced) != 0 {
 		t.Errorf("the settled handler acted on a CANCELLED event: %d writes", len(announced))
+	}
+}
+
+// --- FIX 1: the enterError crash sentinel -------------------------------------
+
+// errorEvent is an ERROR status addressed at c, carrying an enterError KEY.
+func errorEvent(c characterId, code string) eventDispatch {
+	e := baseEvent(ownerId(0), visitorId(0), charconst.Id(c), trade2.StatusTypeError, trade2.ErrorEventBody{Code: code})
+	return func(sc server.Model) func(logrus.FieldLogger, context.Context) {
+		return func(l logrus.FieldLogger, ctx context.Context) { handleErrorEvent(sc, nil)(l, ctx, e) }
+	}
+}
+
+// TestErrorEventSendsARefusalWhoseCodeIsBound is the positive half: on a tenant
+// whose enterError table binds the key, the refusal goes out with the table's
+// byte.
+func TestErrorEventSendsARefusalWhoseCodeIsBound(t *testing.T) {
+	announced := handleAndCapture(t, errorEvent(characterId(100), "OTHER_REQUESTS"))
+	cs := callsTo(announced, 100)
+	if len(cs) != 1 {
+		t.Fatalf("expected one enter-result frame, got %d", len(cs))
+	}
+	// The frame is mode + a zero pad + the refusal code
+	// (InteractionEnterResultError.Encode), both bytes tenant-resolved.
+	if got, want := cs[0].bytes[0], byte(5); got != want {
+		t.Errorf("mode byte: got %d, want ENTER_RESULT %d", got, want)
+	}
+	if got, want := cs[0].bytes[2], byte(3); got != want {
+		t.Errorf("refusal byte: got %d, want the table's OTHER_REQUESTS %d", got, want)
+	}
+}
+
+// TestErrorEventSkipsARefusalWhoseCodeIsUnbound pins the crash-sentinel guard
+// against the SHIPPED tables. template_gms_92_1.json and template_gms_12_1.json
+// bind no `enterError` property at all, and template_jms_185_1.json binds only
+// TRADE_NOT_ALLOWED / TRADE_NOT_ALLOWED_2 — while all three DO bind
+// operations.ENTER_RESULT, so the frame dispatches and only the payload byte is
+// garbage. atlas-trades emits six keys (ROOM_CLOSED, OTHER_REQUESTS,
+// NOT_WHEN_DEAD, UNABLE, TRADE_NOT_ALLOWED, NOT_SAME_MAP), so without the gate
+// every trade refusal on a v92 tenant, and five of six on jms, would write
+// ResolveCode's 99 sentinel — documented in libs/atlas-packet/resolve.go as
+// "will likely cause a client crash".
+func TestErrorEventSkipsARefusalWhoseCodeIsUnbound(t *testing.T) {
+	// A tenant with the mode bound but NO enterError table — the gms_v92 shape.
+	opts := map[string]interface{}{"operations": testOperations, "leaveReason": testLeaveReason}
+	for _, code := range []string{"ROOM_CLOSED", "OTHER_REQUESTS", "NOT_WHEN_DEAD", "UNABLE", "TRADE_NOT_ALLOWED", "NOT_SAME_MAP"} {
+		t.Run(code, func(t *testing.T) {
+			announced := handleAndCaptureWith(t, errorEvent(characterId(100), code), opts)
+			if got := len(announced); got != 0 {
+				t.Fatalf("frames sent: got %d, want 0 — an unbound key must not reach the 99 sentinel (bytes %v)", got, announced[0].bytes)
+			}
+		})
+	}
+}
+
+// TestErrorEventStillSendsTheKeysJmsDoesBind pins that the gate is per-KEY and
+// not per-tenant: jms_185 binds TRADE_NOT_ALLOWED, and that refusal must still
+// reach the client there.
+func TestErrorEventStillSendsTheKeysJmsDoesBind(t *testing.T) {
+	jmsEnterError := map[string]interface{}{
+		"TRADE_NOT_ALLOWED":   float64(7),
+		"TRADE_NOT_ALLOWED_2": float64(20),
+	}
+	opts := map[string]interface{}{"operations": testOperations, "leaveReason": testLeaveReason, "enterError": jmsEnterError}
+
+	if got := len(handleAndCaptureWith(t, errorEvent(characterId(100), "TRADE_NOT_ALLOWED"), opts)); got != 1 {
+		t.Errorf("TRADE_NOT_ALLOWED frames: got %d, want 1", got)
+	}
+	if got := len(handleAndCaptureWith(t, errorEvent(characterId(100), "NOT_SAME_MAP"), opts)); got != 0 {
+		t.Errorf("NOT_SAME_MAP frames: got %d, want 0 — jms binds no code for it", got)
+	}
+}
+
+// --- FIX 2 / FIX 4: a display failure must not leave the room live ------------
+
+// errDisplay is the transient REST failure the resolver seams raise.
+var errDisplay = errors.New("compartment service unavailable")
+
+// failingItemStagedEvent is itemStagedEvent with the staged-asset read failing
+// TRANSIENTLY (not errAssetNotFound), which is the branch settle's
+// stagedAssetsIntact does NOT catch.
+func failingItemStagedEvent(o ownerId, v visitorId) eventDispatch {
+	e := baseEvent(o, v, charconst.Id(o), trade2.StatusTypeItemStaged, trade2.ItemStagedEventBody{
+		Position:   ownerPosition,
+		TradeSlot:  testTradeSlot,
+		AssetId:    1,
+		TemplateId: 2000000,
+		Quantity:   50,
+	})
+	return func(sc server.Model) func(logrus.FieldLogger, context.Context) {
+		return func(l logrus.FieldLogger, ctx context.Context) {
+			orig := tradeStagedAssetResolver
+			tradeStagedAssetResolver = func(logrus.FieldLogger, context.Context, charconst.Id, trade2.ItemStagedEventBody) (packetmodel.Asset, error) {
+				return packetmodel.Asset{}, errDisplay
+			}
+			defer func() { tradeStagedAssetResolver = orig }()
+			handleItemStagedEvent(sc, nil)(l, ctx, e)
+		}
+	}
+}
+
+// withFailingVisitors is withStubVisitors' negative twin.
+func withFailingVisitors(d func(sc server.Model) func(logrus.FieldLogger, context.Context)) eventDispatch {
+	return func(sc server.Model) func(logrus.FieldLogger, context.Context) {
+		return func(l logrus.FieldLogger, ctx context.Context) {
+			orig := tradeRoomVisitorResolver
+			tradeRoomVisitorResolver = func(logrus.FieldLogger, context.Context, byte, charconst.Id) (interactionpkt.Visitor, error) {
+				return interactionpkt.Visitor{}, errDisplay
+			}
+			defer func() { tradeRoomVisitorResolver = orig }()
+			d(sc)(l, ctx)
+		}
+	}
+}
+
+func failingRoomCreatedEvent(o ownerId) eventDispatch {
+	e := baseEvent(o, visitorId(0), charconst.Id(o), trade2.StatusTypeRoomCreated, trade2.RoomCreatedEventBody{Position: ownerPosition})
+	return withFailingVisitors(func(sc server.Model) func(logrus.FieldLogger, context.Context) {
+		return func(l logrus.FieldLogger, ctx context.Context) { handleRoomCreatedEvent(sc, nil)(l, ctx, e) }
+	})
+}
+
+func failingParticipantEnteredEvent(o ownerId, v visitorId) eventDispatch {
+	e := baseEvent(o, v, charconst.Id(v), trade2.StatusTypeParticipantEntered, trade2.ParticipantEnteredEventBody{
+		CharacterId: charconst.Id(v),
+		Name:        "Partner",
+		Position:    visitorPosition,
+	})
+	return withFailingVisitors(func(sc server.Model) func(logrus.FieldLogger, context.Context) {
+		return func(l logrus.FieldLogger, ctx context.Context) {
+			handleParticipantEnteredEvent(sc, nil)(l, ctx, e)
+		}
+	})
+}
+
+// TestStagedItemDisplayFailureCancelsTheTrade pins the invisible-transfer hole.
+// atlas-trades has the item staged and RESERVED and settle will transfer it;
+// entriesMatch (atlas-trades trade/settlement.go) compares each client's
+// confirm list to its OWN attest list, never to the server's staged list, so
+// attestation cannot catch an item neither dialog ever showed. Logging and
+// returning would let both players confirm a trade whose visible contents omit
+// an item: the giver loses it, the receiver gains it, neither having seen it.
+func TestStagedItemDisplayFailureCancelsTheTrade(t *testing.T) {
+	announced := handleAndCapture(t, failingItemStagedEvent(ownerId(100), visitorId(200)))
+	if got := len(announced); got != 0 {
+		t.Errorf("frames sent: got %d, want 0 — the asset could not be encoded", got)
+	}
+	if len(cancelled) != 1 {
+		t.Fatalf("CANCEL commands: got %d, want 1 — a display failure must stop the trade, not settle it invisibly", len(cancelled))
+	}
+	if cancelled[0].characterId != 100 {
+		t.Errorf("CANCEL addressed character %d, want the stager 100", cancelled[0].characterId)
+	}
+}
+
+// TestRoomCreatedDisplayFailureCancelsTheRoom pins the soft-lock. atlas-trades
+// has already seated the owner, so without a teardown they can neither create
+// another room (ErrOwnerHasRoom) nor enter a mini-game, and they have no dialog
+// to close, so no CANCEL ever comes from the client. It self-heals only on map
+// change, channel change or logout.
+func TestRoomCreatedDisplayFailureCancelsTheRoom(t *testing.T) {
+	announced := handleAndCapture(t, failingRoomCreatedEvent(ownerId(100)))
+	if got := len(announced); got != 0 {
+		t.Errorf("frames sent: got %d, want 0", got)
+	}
+	if len(cancelled) != 1 {
+		t.Fatalf("CANCEL commands: got %d, want 1", len(cancelled))
+	}
+	if cancelled[0].characterId != 100 {
+		t.Errorf("CANCEL addressed character %d, want the owner 100", cancelled[0].characterId)
+	}
+}
+
+// TestParticipantEnteredDisplayFailureCancelsTheRoom is the same shape for the
+// entrant: seated server-side, no dialog either side can act on.
+func TestParticipantEnteredDisplayFailureCancelsTheRoom(t *testing.T) {
+	announced := handleAndCapture(t, failingParticipantEnteredEvent(ownerId(100), visitorId(200)))
+	if got := len(announced); got != 0 {
+		t.Errorf("frames sent: got %d, want 0", got)
+	}
+	if len(cancelled) != 1 {
+		t.Fatalf("CANCEL commands: got %d, want 1", len(cancelled))
+	}
+	if cancelled[0].characterId != 200 {
+		t.Errorf("CANCEL addressed character %d, want the entrant 200", cancelled[0].characterId)
+	}
+}
+
+// TestASuccessfulDisplayCancelsNothing is the mutation guard for all three:
+// the happy path must not tear rooms down.
+func TestASuccessfulDisplayCancelsNothing(t *testing.T) {
+	for name, d := range map[string]eventDispatch{
+		"item staged":         itemStagedEvent(ownerId(100), visitorId(200), position(ownerPosition)),
+		"room created":        roomCreatedEvent(ownerId(100)),
+		"participant entered": participantEnteredEvent(ownerId(100), visitorId(200)),
+	} {
+		t.Run(name, func(t *testing.T) {
+			handleAndCapture(t, d)
+			if len(cancelled) != 0 {
+				t.Errorf("CANCEL commands: got %d, want 0", len(cancelled))
+			}
+		})
 	}
 }

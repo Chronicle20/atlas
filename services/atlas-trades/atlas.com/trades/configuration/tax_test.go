@@ -143,7 +143,7 @@ func TestInvalidTierTableFallsBackToDefaults(t *testing.T) {
 			if err := ValidateTiers(tiers); err == nil {
 				t.Fatal("ValidateTiers accepted an invalid table")
 			}
-			m := FromTiers(tiers) // applies the fallback
+			m := DefaultConfig().WithTaxTiers(tiers) // applies the fallback
 			if len(m.TaxTiers()) != len(DefaultConfig().TaxTiers()) {
 				t.Errorf("tier count: got %d, want the default table's %d", len(m.TaxTiers()), len(DefaultConfig().TaxTiers()))
 			}
@@ -151,13 +151,13 @@ func TestInvalidTierTableFallsBackToDefaults(t *testing.T) {
 	}
 }
 
-// TestValidTierTableIsAccepted pins the other half of FromTiers: a
+// TestValidTierTableIsAccepted pins the other half of WithTaxTiers: a
 // well-formed table must actually be adopted, not quietly replaced by the
-// defaults. Without this, FromTiers returning DefaultConfig() unconditionally
-// would still pass the fallback test above.
+// defaults. Without this, WithTaxTiers falling back unconditionally would
+// still pass the fallback test above.
 func TestValidTierTableIsAccepted(t *testing.T) {
 	tiers := []Tier{{Threshold: 1_000_000, Rate: 0.5}, {Threshold: 1_000, Rate: 0.1}}
-	m := FromTiers(tiers)
+	m := DefaultConfig().WithTaxTiers(tiers)
 	if len(m.TaxTiers()) != 2 {
 		t.Fatalf("tier count: got %d, want 2", len(m.TaxTiers()))
 	}
@@ -196,8 +196,7 @@ func TestTaxTiersGetterReturnsACopy(t *testing.T) {
 // meso tax collection tenant-wide.
 func TestEmptyTierTableFallsBackToDefaults(t *testing.T) {
 	cases := map[string]Model{
-		"FromTiers(nil)":              FromTiers(nil),
-		"FromTiers(empty)":            FromTiers([]Tier{}),
+		"WithTaxTiers(nil)":           DefaultConfig().WithTaxTiers(nil),
 		"WithTaxTiers(empty)":         DefaultConfig().WithTaxTiers([]Tier{}),
 		"Extract with no wire tiers":  Extract(RestModel{TaxEnabled: true}),
 		"Extract with an empty array": Extract(RestModel{TaxEnabled: true, TaxTiers: []TierRestModel{}}),

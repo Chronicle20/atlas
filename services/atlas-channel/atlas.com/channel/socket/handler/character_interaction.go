@@ -17,9 +17,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	atlaspacket "github.com/Chronicle20/atlas/libs/atlas-packet"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	interaction2 "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type CharacterInteractionMode string
@@ -677,19 +679,55 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 // A collision replies OTHER_REQUESTS — the mini-room enter error the reference
 // client shows for "you are already doing something else" (FR-1.2). The code
 // itself is resolved per version from the tenant `enterError` table by
-// CharacterInteractionEnterResultErrorBody; nothing here names a byte.
+// CharacterInteractionEnterResultErrorBody; nothing here names a byte. When the
+// tenant's table does not bind the key the refusal is DROPPED rather than sent:
+// ResolveCode's miss path writes sentinel 99, which no client has an arm for
+// (see tradeEnterErrorConfigured in kafka/consumer/trade for the full
+// rationale, and the shipped tables that make this reachable).
 func createTradeRoom(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, roomType byte) bool {
 	return func(s session.Model, roomType byte) bool {
 		return tradeRoomCreate(l, s.CharacterId(),
 			func(characterId uint32) bool { return characterOccupiesAnyMiniRoom(l, ctx, characterId) },
 			func() {
-				_ = session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(interactioncb.CharacterInteractionEnterErrorModeOtherRequests))(s)
+				refuseWithEnterError(l, ctx, s.CharacterId(), interactioncb.CharacterInteractionEnterErrorModeOtherRequests, func() {
+					_ = session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(interactioncb.CharacterInteractionEnterErrorModeOtherRequests))(s)
+				})
 			},
 			func() error {
 				return trade.NewProcessor(l, ctx).CreateRoom(s.Field(), characterconst.Id(s.CharacterId()), roomType)
 			},
 		)
 	}
+}
+
+// refuseWithEnterError writes a mini-room enter-error refusal, or drops it when
+// this tenant's client version binds no code for that key. Split out from the
+// closure that owns the live socket write so the decision is testable, mirroring
+// tradeRoomCreate: the injected announce is the real Announce at the one
+// production call site.
+func refuseWithEnterError(l logrus.FieldLogger, ctx context.Context, characterId uint32, key interactioncb.CharacterInteractionEnterErrorMode, announce func()) {
+	if !interactionEnterErrorConfigured(l, ctx, key) {
+		l.Infof("Enter error [%s] is not bound in this tenant's enterError table; refusal not sent to character [%d].", key, characterId)
+		return
+	}
+	announce()
+}
+
+// interactionEnterErrorConfigured reports whether this tenant's
+// CharacterInteraction writer binds the given `enterError` KEY. It is the
+// handler-side twin of kafka/consumer/trade's tradeEnterErrorConfigured, which
+// carries the full rationale: the ENTER_RESULT mode is bound everywhere, but
+// the trailing reason byte is not, and ResolveCode's miss path writes the 99
+// crash sentinel. Package-level var so tests can drive both the bound and
+// unbound version without a live writer registry.
+var interactionEnterErrorConfigured = func(l logrus.FieldLogger, ctx context.Context, key interactioncb.CharacterInteractionEnterErrorMode) bool {
+	t := tenant.MustFromContext(ctx)
+	opts, ok := writer.TenantWriterOptions(t.Id(), interactioncb.CharacterInteractionWriter)
+	if !ok {
+		l.Warnf("Writer options for [%s] missing; enter error [%s] not sent.", interactioncb.CharacterInteractionWriter, key)
+		return false
+	}
+	return atlaspacket.CodeConfigured(opts, "enterError", key)
 }
 
 // tradeRoomCreate is createTradeRoom's decision, with its three collaborators

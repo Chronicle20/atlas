@@ -616,6 +616,9 @@ func (p *ProcessorImpl) emitUnwind(mb *message.Buffer, room Room) error {
 	if len(payload.Items) == 0 && len(payload.Mesos) == 0 {
 		return nil
 	}
+	if err := p.clearRefundedMesos(room.Id(), payload.Mesos); err != nil {
+		return err
+	}
 	return p.sgp.Unwind(mb)(payload.TransactionId, payload)
 }
 
@@ -1000,6 +1003,9 @@ func (p *ProcessorImpl) unwindRecord(mb *message.Buffer, s settlement.Model) err
 	if len(payload.Items) == 0 && len(payload.Mesos) == 0 {
 		return nil
 	}
+	if err := p.clearRefundedMesos(s.RoomId(), payload.Mesos); err != nil {
+		return err
+	}
 	return p.sgp.Unwind(mb)(payload.TransactionId, payload)
 }
 
@@ -1090,6 +1096,186 @@ func Reconcile(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) error {
 		return fmt.Errorf("settlement reconciliation failed for %d tenant(s)", failures)
 	}
 	return nil
+}
+
+// ReconcileAtBoot runs the two startup passes in the one order that is safe:
+// settlements first, then stranded escrow (design §5A.9).
+//
+// The ordering is mandatory because a settlement still in flight legitimately
+// owns escrow rows — its own release or unwind will consume them — so sweeping
+// escrow first would hand the giver back an item the settlement then also
+// delivers to the receiver, minting it.
+//
+// The exclusion set is captured BEFORE the settlement pass, not after. Reconcile
+// deletes each record as it resolves it, so reading the unresolved set
+// afterwards would return nothing and the sweep would treat rows belonging to a
+// just-resolved settlement — whose release saga is still in flight, moments
+// behind us in the same process — as stranded. Those are precisely the rows a
+// double delivery would come from.
+func ReconcileAtBoot(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) error {
+	inFlight, err := settlement.Unresolved(ctx, db)
+	if err != nil {
+		return err
+	}
+	owned := make(map[uuid.UUID]struct{}, len(inFlight))
+	for _, s := range inFlight {
+		owned[s.RoomId()] = struct{}{}
+	}
+
+	rerr := Reconcile(l, ctx, db)
+	if eerr := ReconcileEscrow(l, ctx, db, owned); eerr != nil {
+		if rerr != nil {
+			return fmt.Errorf("%w; and escrow reconciliation failed: %w", rerr, eerr)
+		}
+		return eerr
+	}
+	return rerr
+}
+
+// ReconcileEscrow returns every escrowed item and meso whose trade cannot
+// possibly still be running (design §5A.9).
+//
+// At boot that is nearly all of them: the room registry is in memory, so a
+// restart loses every live room, and an escrow row with no room is an asset
+// nobody can reach — the player's item, held by a trade that no longer exists.
+// Rows whose room is named in `owned` are skipped: a settlement still holds
+// them.
+//
+// It runs with NO tenant in context and restores each row's own tenant, the same
+// shape as Reconcile. A failure for one tenant does not stop the others.
+func ReconcileEscrow(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, owned map[uuid.UUID]struct{}) error {
+	items, err := escrow.AllItems(db)
+	if err != nil {
+		return err
+	}
+	mesos, err := escrow.AllMesos(db)
+	if err != nil {
+		return err
+	}
+	if len(items) == 0 && len(mesos) == 0 {
+		return nil
+	}
+
+	// Grouped by (tenant, room): one unwind saga per stranded room, so a room
+	// that held several items produces one saga rather than one per item.
+	type roomKey struct {
+		tenantId uuid.UUID
+		roomId   uuid.UUID
+	}
+	rooms := make(map[roomKey]*strandedRoom)
+	claim := func(k roomKey, t func() (tenant.Model, error)) *strandedRoom {
+		if _, skip := owned[k.roomId]; skip {
+			return nil
+		}
+		if r, ok := rooms[k]; ok {
+			return r
+		}
+		tm, terr := t()
+		if terr != nil {
+			l.WithError(terr).Errorf("Unable to restore tenant [%s] for escrow reconciliation. Its stranded rows are left for the next boot.", k.tenantId.String())
+			return nil
+		}
+		r := &strandedRoom{tenant: tm, roomId: k.roomId}
+		rooms[k] = r
+		return r
+	}
+
+	for _, i := range items {
+		if r := claim(roomKey{i.TenantId(), i.RoomId()}, i.Tenant); r != nil {
+			r.items = append(r.items, i)
+		}
+	}
+	for _, m := range mesos {
+		if m.Amount() == 0 {
+			continue
+		}
+		if r := claim(roomKey{m.TenantId(), m.RoomId()}, m.Tenant); r != nil {
+			r.mesos = append(r.mesos, m)
+		}
+	}
+
+	var failures int
+	for _, r := range rooms {
+		l.Warnf("Trade room [%s] left [%d] item(s) and [%d] meso row(s) in escrow with no room to claim them. Returning them to their owners.", r.roomId.String(), len(r.items), len(r.mesos))
+		p := NewProcessor(l, tenant.WithContext(ctx, r.tenant), db).(*ProcessorImpl)
+		if uerr := p.emit(func(txp *ProcessorImpl, mb *message.Buffer) error {
+			return txp.unwindStranded(mb, r)
+		}); uerr != nil {
+			l.WithError(uerr).Errorf("Unable to return the escrow of trade room [%s]. The rows are durable and are retried at the next boot.", r.roomId.String())
+			failures++
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("escrow reconciliation failed for %d room(s)", failures)
+	}
+	return nil
+}
+
+// clearRefundedMesos zeroes the escrowed total of every meso row an unwind is
+// about to refund.
+//
+// Somebody has to, because the unwind saga does not: expandTradeUnwind releases
+// each ITEM (which deletes its custody row) but a meso leg is a bare
+// award_mesos, so without this the row survives its own refund and the next
+// sweep — a second teardown, or the boot pass — refunds it again.
+//
+// The row is ZEROED rather than deleted, and that is load-bearing: a stake still
+// in flight resolves against this row by its pending_stake_id, and deleting it
+// would strand a debit the player has already been charged with no record left
+// to refund from (see resolveMesoStake's room-gone branch).
+func (p *ProcessorImpl) clearRefundedMesos(roomId uuid.UUID, mesos []sharedsaga.TradeUnwindMeso) error {
+	ep := escrow.NewProcessor(p.l, p.ctx, p.db)
+	for _, m := range mesos {
+		if err := ep.UpsertMeso(roomId, m.CharacterId, 0); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// strandedRoom is one dead room's escrow, grouped for a single unwind.
+type strandedRoom struct {
+	tenant tenant.Model
+	roomId uuid.UUID
+	items  []escrow.ItemModel
+	mesos  []escrow.MesoModel
+}
+
+// unwindStranded submits the return for one dead room.
+//
+// The meso legs need a world and channel to render their stat update, and the
+// room that would have supplied them is gone, so each owner's CURRENT field is
+// read instead. An owner who cannot be located is SKIPPED rather than defaulted
+// to world 0 — a refund announced onto the wrong channel is worse than one that
+// waits for the next boot, because the row is deleted either way.
+func (p *ProcessorImpl) unwindStranded(mb *message.Buffer, r *strandedRoom) error {
+	payload := sharedsaga.TradeUnwindPayload{TransactionId: uuid.New()}
+	for _, i := range r.items {
+		payload.Items = append(payload.Items, sharedsaga.TradeUnwindItem{
+			OwnerId: i.OwnerId(),
+			Item:    escrowItemPayload(i),
+		})
+	}
+	for _, m := range r.mesos {
+		f, ferr := p.locp.FieldOf(m.OwnerId())
+		if ferr != nil {
+			p.l.WithError(ferr).Errorf("Unable to locate character [%d] to refund [%d] escrowed meso from dead trade room [%s]. Left for the next boot.", m.OwnerId(), m.Amount(), r.roomId.String())
+			continue
+		}
+		payload.Mesos = append(payload.Mesos, sharedsaga.TradeUnwindMeso{
+			CharacterId: m.OwnerId(),
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			Amount:      m.Amount(),
+		})
+	}
+	if len(payload.Items) == 0 && len(payload.Mesos) == 0 {
+		return nil
+	}
+	if err := p.clearRefundedMesos(r.roomId, payload.Mesos); err != nil {
+		return err
+	}
+	return p.sgp.Unwind(mb)(payload.TransactionId, payload)
 }
 
 // ReconcileSettlements completes this tenant's unfinished settlements by asking

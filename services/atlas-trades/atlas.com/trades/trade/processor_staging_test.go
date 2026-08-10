@@ -552,10 +552,21 @@ func TestPutItemRejectsOccupiedOrOutOfRangeSlot(t *testing.T) {
 	}
 }
 
-// TestPutItemDropsSilentlyOnRestrictionFailure pins design §7: the reference
-// client has no put-item-time error for "untradeable", so the empty slot IS the
-// feedback. No clientbound update, no error event, and nothing escrowed.
-func TestPutItemDropsSilentlyOnRestrictionFailure(t *testing.T) {
+// TestRestrictionRefusalEmitsItemRefused pins BOTH halves of design §7 + §5A.6,
+// which pull in opposite directions and must both hold.
+//
+// SILENT: the reference client has no put-item-time error for "untradeable", so
+// the empty trade slot IS the feedback. No ITEM_STAGED, no ERROR, nothing
+// escrowed — a visible error here would be a packet the reference server does
+// not send.
+//
+// BUT NOT NOTHING: the client armed m_bExclRequestSent when it sent PUT_ITEM and
+// CanSendExclRequest refuses every later exclusive request until a packet clears
+// it. ITEM_REFUSED is that packet, and atlas-channel renders it as the bare
+// unlock and nothing else. This test asserted only the silent half until the
+// escrow amendment, which is why a player who tried to trade an untradeable item
+// wedged their own dialog for the rest of the session.
+func TestRestrictionRefusalEmitsItemRefused(t *testing.T) {
 	untradeable := inventorydata.NewAsset(stagingAssetId, stagingSourceSlot, stagingTemplateId, 100, uint16(asset.FlagUntradeable))
 	tradeBlocked := inventorydata.NewAsset(stagingAssetId, stagingSourceSlot, stagingTemplateId, 100, 0)
 	equipped := inventorydata.NewAsset(stagingAssetId, -11, stagingTemplateId, 1, 0)
@@ -591,6 +602,94 @@ func TestPutItemDropsSilentlyOnRestrictionFailure(t *testing.T) {
 			assertNoStageSubmitted(t, e)
 			if got := len(stagedItemsOf(t, p, 100)); got != 0 {
 				t.Errorf("staged items: got %d, want 0", got)
+			}
+
+			refusals := statusEvents[trademsg.ItemRefusedEventBody](t, e, trademsg.StatusTypeItemRefused)
+			if len(refusals) != 1 {
+				t.Fatalf("ITEM_REFUSED events: got %d, want 1 — a silent drop leaves the client locked", len(refusals))
+			}
+			// Addressed to the stager alone: the counterparty was never told the
+			// item existed, so it has nothing to correct.
+			if refusals[0].CharacterId != 100 {
+				t.Errorf("refusal addressed to character %d, want 100", refusals[0].CharacterId)
+			}
+		})
+	}
+}
+
+// TestFreezeRuleRefusalEmitsItemRefused is the §3.2 half of the same obligation.
+//
+// Staging is frozen from the first CONFIRM, and the reference client blocks it
+// locally, so reaching the server means a modified client (FR-3.6). The stage is
+// still refused rather than honoured — but it is answered, because even a
+// modified client is holding a lock that only the server can release, and a
+// wedged dialog is not the intended punishment for sending a stale packet.
+func TestFreezeRuleRefusalEmitsItemRefused(t *testing.T) {
+	p, e := testStagedRoom(t)
+	if err := p.Confirm(uuid.New(), 100, nil); err != nil {
+		t.Fatalf("confirm: %v", err)
+	}
+	// The harness already staged and announced items, so the staging assertions
+	// below are DELTAS against that baseline. Only the refusal count is absolute,
+	// because nothing before this point refuses anything.
+	beforeItems := len(stagedItemsOf(t, p, 100))
+	beforeStaged := len(statusEvents[trademsg.ItemStagedEventBody](t, e, trademsg.StatusTypeItemStaged))
+	beforeSagas := len(stageSagas(t, e))
+
+	if err := p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), stagingSourceSlot, 1, 2); err != nil {
+		t.Fatalf("put item: %v", err)
+	}
+
+	if got := len(stagedItemsOf(t, p, 100)); got != beforeItems {
+		t.Errorf("staged items: got %d, want the pre-confirm %d — a frozen room must not accept a stage", got, beforeItems)
+	}
+	if got := len(statusEvents[trademsg.ItemStagedEventBody](t, e, trademsg.StatusTypeItemStaged)); got != beforeStaged {
+		t.Errorf("ITEM_STAGED events: got %d, want the pre-confirm %d", got, beforeStaged)
+	}
+	if got := len(stageSagas(t, e)); got != beforeSagas {
+		t.Errorf("transfer_to_trade sagas: got %d, want the pre-confirm %d", got, beforeSagas)
+	}
+	if got := len(statusEvents[trademsg.ItemRefusedEventBody](t, e, trademsg.StatusTypeItemRefused)); got != 1 {
+		t.Fatalf("ITEM_REFUSED events: got %d, want 1", got)
+	}
+}
+
+// TestEveryPutItemRefusalPathAnswersTheClient sweeps the remaining refusal
+// branches in one place.
+//
+// It exists because the defect this task fixes was not one missing emit but a
+// CLASS of them: eleven branches that logged "Dropping." and returned nil. A
+// per-branch test would have been written for whichever branch someone happened
+// to think of, so this asserts the invariant itself — no branch of PUT_ITEM
+// leaves the client without an answer.
+func TestEveryPutItemRefusalPathAnswersTheClient(t *testing.T) {
+	for name, put := range map[string]func(p *ProcessorImpl) error{
+		"trade slot out of range": func(p *ProcessorImpl) error {
+			return p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), stagingSourceSlot, 1, 0)
+		},
+		"trade slot already occupied": func(p *ProcessorImpl) error {
+			if err := p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), stagingSourceSlot, 1, 1); err != nil {
+				return err
+			}
+			return p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), stagingSourceSlot, 1, 1)
+		},
+		"unstageable inventory byte": func(p *ProcessorImpl) error {
+			return p.PutItem(uuid.New(), 100, 200, stagingSourceSlot, 1, 1)
+		},
+		"quantity zero": func(p *ProcessorImpl) error {
+			return p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), stagingSourceSlot, 0, 1)
+		},
+		"quantity above the stack": func(p *ProcessorImpl) error {
+			return p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), stagingSourceSlot, 5_000, 1)
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			p, e := testOpenRoom(t)
+			if err := put(p); err != nil {
+				t.Fatalf("put item: %v", err)
+			}
+			if got := len(statusEvents[trademsg.ItemRefusedEventBody](t, e, trademsg.StatusTypeItemRefused)); got != 1 {
+				t.Fatalf("ITEM_REFUSED events: got %d, want 1 — this branch leaves the client locked", got)
 			}
 		})
 	}
@@ -1181,16 +1280,32 @@ func TestAddMesoAllowsADeliverableAmountToTheCounterparty(t *testing.T) {
 }
 
 // TestAddMesoRejectsNegative pins the NFR: every client value is untrusted. A
-// negative cannot come from the input box, so there is nothing to re-echo — the
-// command is simply dropped.
+// negative cannot come from the input box, so no meso moves.
+//
+// It DOES get the re-echo, though, and that is the point of the test since the
+// escrow amendment. PutMoney armed m_bExclRequestSent on send, and only a server
+// packet clears it, so returning nothing here would leave a forged packet able
+// to wedge its own dialog for the rest of the session (design §5A.6). This test
+// previously asserted the opposite — that nothing was emitted — which is how the
+// wedge reached a live client.
 func TestAddMesoRejectsNegative(t *testing.T) {
 	p, e := testOpenRoomWithMeso(t, 100, 5_000_000)
 	if err := p.AddMeso(uuid.New(), 100, -1); err != nil {
 		t.Fatalf("add meso: %v", err)
 	}
 	assertNoEventOfType(t, e, trademsg.StatusTypeMesoStaged)
-	assertNoEventOfType(t, e, trademsg.StatusTypeMesoRefused)
 	assertNoSagaOfAction(t, e, sharedsaga.AwardMesos)
+
+	refusals := statusEvents[trademsg.MesoRefusedEventBody](t, e, trademsg.StatusTypeMesoRefused)
+	if len(refusals) != 1 {
+		t.Fatalf("MESO_REFUSED events: got %d, want 1", len(refusals))
+	}
+	if refusals[0].CharacterId != 100 {
+		t.Errorf("refusal addressed to character %d, want 100", refusals[0].CharacterId)
+	}
+	if refusals[0].Body.LastValidAmount != 0 {
+		t.Errorf("lastValidAmount: got %d, want 0 — the re-echo must carry what is actually staked", refusals[0].Body.LastValidAmount)
+	}
 	if got := mesoStagedBy(t, p, 100); got != 0 {
 		t.Errorf("mesoStaged: got %d, want 0", got)
 	}

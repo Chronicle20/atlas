@@ -137,8 +137,8 @@ func main() {
 	// record it cannot resolve is simply left for the next boot or for the live
 	// status event.
 	routine.Go(l, rt.Context(), func(ctx context.Context) {
-		if err := trade.Reconcile(l, ctx, db); err != nil {
-			l.WithError(err).Error("Unable to reconcile in-flight trade settlements. Unresolved settlements remain durable and will be retried.")
+		if err := trade.ReconcileAtBoot(l, ctx, db); err != nil {
+			l.WithError(err).Error("Unable to reconcile in-flight trade settlements and stranded escrow. Both are durable and are retried at the next boot.")
 		}
 	})
 

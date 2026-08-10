@@ -854,16 +854,39 @@ func (p *ProcessorImpl) PutItem(txId uuid.UUID, characterId character.Id, invent
 	})
 }
 
+// refuseStage answers a stage that will not happen.
+//
+// EVERY refusal in putItem goes through here, and none of them may simply
+// return nil. The stage stays player-visibly silent — the trade slot is left
+// empty, which is the feedback §7 specifies — but the client armed
+// CWvsContext::m_bExclRequestSent when it sent PUT_ITEM and
+// CWvsContext::CanSendExclRequest refuses every later exclusive request,
+// including ADD_MESO, until a packet clears it. A silent return therefore wedges
+// the dialog for the rest of the session. That is the defect this whole task
+// exists to fix, and it is reachable through each of these branches, not only
+// through a failed saga (design §5A.6).
+//
+// It is addressed to the STAGING character alone: nothing was ever announced, so
+// the counterparty has nothing to correct.
+func (p *ProcessorImpl) refuseStage(mb *message.Buffer, txId uuid.UUID, room Room, characterId character.Id, position byte, targetSlot byte) error {
+	if room.Id() == uuid.Nil {
+		// No room to address the refusal to. See stageableRoom: the reference
+		// client cannot reach this, and a modified one wedges only itself.
+		return nil
+	}
+	return mb.Put(trademsg.EnvEventTopicStatus, itemRefusedProvider(txId, room, characterId, position, targetSlot))
+}
+
 func (p *ProcessorImpl) putItem(mb *message.Buffer, txId uuid.UUID, characterId character.Id, inventoryType byte, sourceSlot slot.Position, quantity uint16, targetSlot byte) error {
 	room, pt, ok := p.stageableRoom(characterId, "PUT_ITEM")
 	if !ok {
-		return nil
+		return p.refuseStage(mb, txId, room, characterId, pt.Position(), targetSlot)
 	}
 
 	cfg := p.cfg.Get(p.l, p.ctx)
 	if !stageSlotAvailable(pt, targetSlot, cfg.MaxStagedItems()) {
 		p.l.Debugf("Character [%d] staged into trade slot [%d], which is out of the 1..%d range or already occupied. Dropping.", characterId, targetSlot, cfg.MaxStagedItems())
-		return nil
+		return p.refuseStage(mb, txId, room, characterId, pt.Position(), targetSlot)
 	}
 
 	// Decoded here because the reads below need the typed compartment.
@@ -874,23 +897,23 @@ func (p *ProcessorImpl) putItem(mb *message.Buffer, txId uuid.UUID, characterId 
 	it, ok := stageableInventoryType(inventoryType)
 	if !ok {
 		p.l.Infof("Character [%d] staged from compartment byte [%d], which is not a stageable inventory. Dropping.", characterId, inventoryType)
-		return nil
+		return p.refuseStage(mb, txId, room, characterId, pt.Position(), targetSlot)
 	}
 
 	a, err := p.invp.AssetInSlot(characterId, it, sourceSlot)
 	if err != nil {
 		p.l.WithError(err).Infof("Unable to read the asset character [%d] staged from compartment [%d] slot [%d]. Dropping.", characterId, it, sourceSlot)
-		return nil
+		return p.refuseStage(mb, txId, room, characterId, pt.Position(), targetSlot)
 	}
 
 	if err = checkRestrictions(assetView{Flags: a.Flag(), SourceSlot: a.Slot()}, p.itemData(it, a.TemplateId()), inventoryType); err != nil {
 		p.l.WithError(err).Infof("Refusing to stage item [%d] for character [%d].", a.TemplateId(), characterId)
-		return nil
+		return p.refuseStage(mb, txId, room, characterId, pt.Position(), targetSlot)
 	}
 
 	staged, ok := p.stageableQuantity(characterId, pt, it, sourceSlot, a, quantity)
 	if !ok {
-		return nil
+		return p.refuseStage(mb, txId, room, characterId, pt.Position(), targetSlot)
 	}
 
 	// The escrow row id is minted BEFORE the registry swap so the staged item
@@ -932,7 +955,7 @@ func (p *ProcessorImpl) putItem(mb *message.Buffer, txId uuid.UUID, characterId 
 	})
 	if err != nil {
 		p.l.WithError(err).Debugf("Character [%d]'s stage into trade slot [%d] lost a race. Dropping.", characterId, targetSlot)
-		return nil
+		return p.refuseStage(mb, txId, room, characterId, pt.Position(), targetSlot)
 	}
 
 	// NO ITEM_STAGED here. The item is pending: it holds its dialog slot against
@@ -1123,20 +1146,34 @@ func (p *ProcessorImpl) itemData(inventoryType inventory.Type, templateId item.I
 // is a DEBUG-level drop (the command simply arrived late), while a frozen room
 // is a WARN: the reference client blocks staging locally once either side has
 // confirmed, so reaching the server means a modified client (FR-3.6).
+//
+// A REFUSAL STILL RETURNS THE ROOM when one was found, and the participant when
+// the caller is seated in it. That is not a convenience — it is what lets the
+// caller answer. A refused stage is player-visibly silent by design (§7), but
+// the client armed m_bExclRequestSent on send and stays locked until a packet
+// clears it, so a refusal that returns nothing addressable wedges the dialog for
+// the rest of the session (§5A.6). Callers MUST check the bool, not the zero
+// value of the Room.
+//
+// The one genuinely unanswerable case is the first: a character in no room has
+// no room-scoped event to carry the unlock, and no field to address one to. It
+// is also the only case the reference client cannot produce — it will not send a
+// staging opcode with no dialog open — so the exposure is a modified client
+// wedging itself.
 func (p *ProcessorImpl) stageableRoom(characterId character.Id, what string) (Room, Participant, bool) {
 	room, ok := p.reg.GetByMember(p.t, characterId)
 	if !ok {
 		p.l.Debugf("Character [%d] issued %s without a trade room. Dropping.", characterId, what)
 		return Room{}, Participant{}, false
 	}
+	pt, seated := room.ParticipantFor(characterId)
 	if room.Frozen() {
 		p.l.Warnf("Character [%d] issued %s against a frozen trade room [%s]; staging after confirm indicates a modified client. Dropping.", characterId, what, room.Id().String())
-		return Room{}, Participant{}, false
+		return room, pt, false
 	}
-	pt, ok := room.ParticipantFor(characterId)
-	if !ok {
+	if !seated {
 		p.l.Debugf("Character [%d] issued %s but is not seated in room [%s]. Dropping.", characterId, what, room.Id().String())
-		return Room{}, Participant{}, false
+		return room, Participant{}, false
 	}
 	return room, pt, true
 }
@@ -1187,18 +1224,34 @@ func (p *ProcessorImpl) AddMeso(txId uuid.UUID, characterId character.Id, amount
 	})
 }
 
+// refuseMeso answers a meso stage that will not happen, with the authoritative
+// re-echo of the last valid amount.
+//
+// Same obligation as refuseStage, reached through the other opcode: PutMoney
+// arms m_bExclRequestSent too, so a silent return locks the dialog. Here the
+// re-echo is doing double duty — it snaps the client's view back (mode 16
+// assigns, so the client already moved) AND carries the unlock.
+func (p *ProcessorImpl) refuseMeso(mb *message.Buffer, txId uuid.UUID, room Room, characterId character.Id, pt Participant) error {
+	if room.Id() == uuid.Nil {
+		return nil
+	}
+	return mb.Put(trademsg.EnvEventTopicStatus, mesoRefusedProvider(txId, room, characterId, pt.Position(), pt.MesoStaged()))
+}
+
 func (p *ProcessorImpl) addMeso(mb *message.Buffer, txId uuid.UUID, characterId character.Id, amount int32) error {
 	room, pt, ok := p.stageableRoom(characterId, "ADD_MESO")
 	if !ok {
-		return nil
+		return p.refuseMeso(mb, txId, room, characterId, pt)
 	}
 
-	// A negative amount is not a mis-click, it is a forged packet — the client's
-	// own input box cannot produce one. There is nothing to re-echo, because the
-	// client never rendered a value we would be correcting.
+	// A negative amount is a forged packet — the client's own input box cannot
+	// produce one — so there is no rendered value to correct. The re-echo goes
+	// out anyway, carrying the last VALID amount: it is the only thing that
+	// clears the lock PutMoney armed on send (design §5A.6), and re-stating the
+	// truth to a client that lied costs nothing.
 	if amount < 0 {
 		p.l.Warnf("Character [%d] staged a negative meso amount [%d]; a negative cannot come from the client's input box. Dropping.", characterId, amount)
-		return nil
+		return p.refuseMeso(mb, txId, room, characterId, pt)
 	}
 
 	// A stake already in flight is not refused, it is superseded: the client can
@@ -1261,7 +1314,7 @@ func (p *ProcessorImpl) addMeso(mb *message.Buffer, txId uuid.UUID, characterId 
 	})
 	if err != nil {
 		p.l.WithError(err).Debugf("Character [%d]'s meso stage lost a race. Dropping.", characterId)
-		return nil
+		return p.refuseMeso(mb, txId, room, characterId, pt)
 	}
 
 	// Negative debits the staking player, positive refunds them. ShowEffect is

@@ -13,7 +13,6 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	kafkaMessage "github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -52,10 +51,9 @@ func handleAcceptCommand(db *gorm.DB) kafkaMessage.Handler[compartment.Command[c
 		}
 
 		// Guarded: ACCEPT creates a durable storage asset and Kafka delivery is
-		// at-least-once (task-208).
-		err := database.ApplyOnce(l, ctx, db, c.Body.TransactionId, compartment.CommandAccept, c.Body, func(tx *gorm.DB) error {
-			return storage.NewProcessor(l, ctx, tx).AcceptAndEmit(c.WorldId, c.AccountId, c.CharacterId, c.Body)
-		})
+		// at-least-once (task-208). The claim lives in the processor so it can
+		// cover the DB write without enclosing the direct Kafka emit.
+		err := storage.NewProcessor(l, ctx, db).AcceptOnceAndEmit(c.WorldId, c.AccountId, c.CharacterId, c.Body)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to accept item for account [%d] world [%d] transaction [%s].", c.AccountId, c.WorldId, c.Body.TransactionId)
 			return
@@ -73,19 +71,20 @@ func handleReleaseCommand(db *gorm.DB) kafkaMessage.Handler[compartment.Command[
 			return
 		}
 
-		// Get the asset before release to know its inventory type
+		// Read the asset up front only to learn its inventory type for the
+		// projection refresh below. A missing row means the release already
+		// happened — the ordinary shape of an at-least-once redelivery, not an
+		// error (task-208).
 		assetModel, err := asset.GetById(db.WithContext(ctx))(uint32(c.Body.AssetId))
 		if err != nil {
-			l.WithError(err).Errorf("Unable to get asset [%d] before release", c.Body.AssetId)
+			l.Infof("Asset [%d] is already gone for transaction [%s]; treating RELEASE as already applied.", c.Body.AssetId, c.Body.TransactionId)
 			return
 		}
 		inventoryType := assetModel.InventoryType()
 
 		// Guarded: a redelivered RELEASE must not release the asset twice
-		// (task-208).
-		err = database.ApplyOnce(l, ctx, db, c.Body.TransactionId, compartment.CommandRelease, c.Body, func(tx *gorm.DB) error {
-			return storage.NewProcessor(l, ctx, tx).ReleaseAndEmit(c.WorldId, c.AccountId, c.CharacterId, c.Body)
-		})
+		// (task-208). Claim lives in the processor — see AcceptOnceAndEmit.
+		err = storage.NewProcessor(l, ctx, db).ReleaseOnceAndEmit(c.WorldId, c.AccountId, c.CharacterId, c.Body)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to release asset [%d] for account [%d] world [%d] transaction [%s].", c.Body.AssetId, c.AccountId, c.WorldId, c.Body.TransactionId)
 			return

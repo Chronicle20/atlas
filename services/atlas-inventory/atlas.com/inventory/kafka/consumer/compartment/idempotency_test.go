@@ -127,6 +127,51 @@ func TestAcceptCommandRedeliveryDoesNotDuplicateTheAsset(t *testing.T) {
 	require.Equal(t, int64(1), countAssets(t, db, ctx), "redelivery must not create a second asset")
 }
 
+// A redelivered RELEASE must not delete a second time. The first release frees
+// the asset; without a guard the replay re-runs the whole release path.
+func TestReleaseCommandRedeliveryIsAppliedOnce(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	db := acceptTestDB(t, l)
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+
+	const characterId = uint32(12)
+	seedEquipCompartment(t, db, ctx, characterId)
+
+	// Land one asset so there is something to release.
+	handleAcceptCommand(db)(l, ctx, acceptCommand(uuid.New(), characterId))
+	require.Equal(t, int64(1), countAssets(t, db, ctx))
+
+	var seeded asset.Entity
+	require.NoError(t, db.WithContext(ctx).First(&seeded).Error)
+
+	releaseTid := uuid.New()
+	cmd := compartment2.Command[compartment2.ReleaseCommandBody]{
+		TransactionId: releaseTid,
+		CharacterId:   characterId,
+		InventoryType: byte(inventory.TypeValueEquip),
+		Type:          compartment2.CommandRelease,
+		Body: compartment2.ReleaseCommandBody{
+			TransactionId: releaseTid,
+			AssetId:       seeded.Id,
+		},
+	}
+
+	handle := handleReleaseCommand(db)
+	handle(l, ctx, cmd)
+	require.Equal(t, int64(0), countAssets(t, db, ctx), "first release must free the asset")
+
+	// The replay must be a no-op rather than a second trip through release.
+	handle(l, ctx, cmd)
+	require.Equal(t, int64(0), countAssets(t, db, ctx))
+
+	var claims int64
+	require.NoError(t, db.WithContext(ctx).Model(&database.IdempotencyEntity{}).
+		Where("operation = ?", compartment2.CommandRelease).Count(&claims).Error)
+	require.Equal(t, int64(1), claims, "the replay must not create a second claim")
+}
+
 // Distinct withdrawals must still both land — the guard keys on the command's
 // identity, not merely on "an accept already happened".
 func TestDistinctAcceptCommandsBothApply(t *testing.T) {

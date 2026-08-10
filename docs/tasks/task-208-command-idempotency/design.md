@@ -138,7 +138,8 @@ No producer for this topic exists anywhere in the repo, so there is nothing to
 derive an identity from yet. Guarding it correctly requires adding a transaction
 id at the producer, which does not exist to change.
 
-Wrapping happens at the consumer-handler boundary, so no processor API changes:
+For atlas-inventory and atlas-cashshop, wrapping happens at the consumer-handler
+boundary, so no processor API changes:
 
 ```go
 _ = database.ApplyOnce(l, ctx, db, transactionId, compartment2.CommandAccept, c.Body,
@@ -149,8 +150,34 @@ _ = database.ApplyOnce(l, ctx, db, transactionId, compartment2.CommandAccept, c.
 
 A duplicate logs at Info and returns nil — the message is acked, not retried.
 
-Kafka emission still happens outside the DB transaction (unchanged behavior); a
-duplicate delivery therefore re-announces nothing, because `fn` never runs.
+A duplicate delivery re-announces nothing, because `fn` never runs.
+
+**atlas-storage is different, and the difference matters.** It has no
+`atlas-outbox` dependency: `AcceptAndEmit`/`ReleaseAndEmit` publish straight to
+Kafka via `producer.ProviderImpl`, a blocking write that retries with backoff
+(worst case tens of seconds). Wrapping those at the handler boundary would put
+that network call inside the claim transaction, so a broker hiccup would pin a
+pooled postgres connection — and the event would fire before the commit was
+guaranteed. So atlas-storage instead grows `AcceptOnceAndEmit` /
+`ReleaseOnceAndEmit` on its processor: the claim covers only the DB write, and
+emission stays exactly where it was, outside the transaction.
+
+The same restructure fixes a second wart. `handleReleaseCommand` read the source
+asset *before* the guard, so a redelivery (asset already gone) failed the lookup
+and logged an Error before ever reaching the claim — the double-release was
+prevented by accident. The read now happens inside the claim; the handler's
+remaining pre-read exists only to learn the inventory type for the projection
+refresh, and treats "already gone" as an ordinary duplicate at Info level.
+
+### Key composition
+
+The hash covers the **whole command envelope**, not just the body. Several
+bodies (`AcceptCommandBody`, `ReleaseCommandBody`) carry neither the character
+nor the account even though the envelope does, so hashing the body alone would
+let two structurally distinct commands sharing one saga transaction collide on a
+single key — and the loser would be silently dropped. atlas-storage, whose
+processor never sees the envelope, hashes an explicit
+`acceptClaim`/`releaseClaim` struct carrying world, account, character and body.
 
 ## Known trade-off: lock ordering
 

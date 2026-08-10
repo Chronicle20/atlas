@@ -48,7 +48,7 @@ func handleAcceptCommand(db *gorm.DB) message.Handler[compartment.Command[compar
 		}
 		// Guarded: ACCEPT creates a durable cash-shop asset and Kafka delivery
 		// is at-least-once (task-208).
-		_ = database.ApplyOnce(l, ctx, db, c.Body.TransactionId, compartment.CommandAccept, c.Body, func(tx *gorm.DB) error {
+		_ = database.ApplyOnce(l, ctx, db, c.Body.TransactionId, compartment.CommandAccept, c, func(tx *gorm.DB) error {
 			return compartment2.NewProcessor(l, ctx, tx).AcceptAndEmit(c.AccountId, c.CharacterId, c.Body.CompartmentId, compartment2.CompartmentType(c.CompartmentType), c.Body.CashId, c.Body.TemplateId, c.Body.Quantity, c.Body.CommodityId, c.Body.PurchasedBy, c.Body.Flag, c.Body.TransactionId)
 		})
 	}
@@ -61,7 +61,7 @@ func handleReleaseCommand(db *gorm.DB) message.Handler[compartment.Command[compa
 		}
 		// Guarded: RELEASE deletes the asset and emits the event the withdrawal
 		// saga advances on; a redelivery must not release twice (task-208).
-		_ = database.ApplyOnce(l, ctx, db, c.Body.TransactionId, compartment.CommandRelease, c.Body, func(tx *gorm.DB) error {
+		_ = database.ApplyOnce(l, ctx, db, c.Body.TransactionId, compartment.CommandRelease, c, func(tx *gorm.DB) error {
 			return compartment2.NewProcessor(l, ctx, tx).ReleaseAndEmit(c.AccountId, c.CharacterId, c.Body.CompartmentId, compartment2.CompartmentType(c.CompartmentType), c.Body.AssetId, c.Body.TransactionId, c.Body.CashId, c.Body.TemplateId)
 		})
 	}

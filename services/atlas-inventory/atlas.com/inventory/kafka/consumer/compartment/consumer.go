@@ -222,7 +222,7 @@ func handleCreateAssetCommand(db *gorm.DB) message.Handler[compartment2.Command[
 		}
 		// Guarded: this command creates a durable asset, and Kafka delivery is
 		// at-least-once (task-208).
-		_ = database.ApplyOnce(l, ctx, db, c.TransactionId, compartment2.CommandCreateAsset, c.Body, func(tx *gorm.DB) error {
+		_ = database.ApplyOnce(l, ctx, db, c.TransactionId, compartment2.CommandCreateAsset, c, func(tx *gorm.DB) error {
 			return compartment.NewProcessor(l, ctx, tx).CreateAssetAndEmit(c.TransactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.TemplateId, c.Body.Quantity, c.Body.Expiration, c.Body.OwnerId, c.Body.Flag, c.Body.Rechargeable, c.Body.UseAverageStats)
 		})
 	}
@@ -302,7 +302,7 @@ func handleAcceptCommand(db *gorm.DB) message.Handler[compartment2.Command[compa
 			Build()
 		// Guarded: a redelivered ACCEPT used to create a second asset row —
 		// the cash-shop withdrawal dupe in task-208.
-		_ = database.ApplyOnce(l, ctx, db, transactionId, compartment2.CommandAccept, c.Body, func(tx *gorm.DB) error {
+		_ = database.ApplyOnce(l, ctx, db, transactionId, compartment2.CommandAccept, c, func(tx *gorm.DB) error {
 			return compartment.NewProcessor(l, ctx, tx).AcceptAndEmit(transactionId, c.CharacterId, inventory.Type(c.InventoryType), m)
 		})
 	}
@@ -321,7 +321,7 @@ func handleReleaseCommand(db *gorm.DB) message.Handler[compartment2.Command[comp
 		}
 		// Guarded: RELEASE deletes an asset and emits the event the saga
 		// advances on; a redelivery must not release twice (task-208).
-		_ = database.ApplyOnce(l, ctx, db, transactionId, compartment2.CommandRelease, c.Body, func(tx *gorm.DB) error {
+		_ = database.ApplyOnce(l, ctx, db, transactionId, compartment2.CommandRelease, c, func(tx *gorm.DB) error {
 			return compartment.NewProcessor(l, ctx, tx).ReleaseAndEmit(transactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.AssetId, c.Body.Quantity)
 		})
 	}

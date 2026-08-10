@@ -18,12 +18,47 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
+
+// init burns otel's internal one-time delegate to a real no-op provider
+// before any test in this package runs. otel's global TracerProvider starts
+// as an internal placeholder that forwards to whatever concrete provider is
+// passed to the FIRST-ever otel.SetTracerProvider call in the process — and
+// that wiring happens exactly once (go.opentelemetry.io/otel/internal/global
+// state.go's delegateTraceOnce), permanently, even across later
+// otel.SetTracerProvider calls that pass the placeholder itself back in. If
+// that first call happened to be a test installing a MockTracerProvider,
+// naively capturing the placeholder as "prev" and later calling
+// otel.SetTracerProvider(prev) would NOT undo it — the placeholder would
+// keep silently forwarding to the leaked mock forever. Performing that first
+// burn here, to a genuine no-op provider, makes every subsequent
+// installMockTracerProvider call operate on a concrete, honestly-restorable
+// provider.
+func init() {
+	otel.SetTracerProvider(noop.NewTracerProvider())
+}
+
+// installMockTracerProvider installs tp as the global otel tracer provider
+// for the duration of t and restores whatever provider was previously
+// installed once t completes. otel.SetTracerProvider mutates process-global
+// state; without a restore, a MockTracerProvider installed by one test in
+// this package leaks forward into every later test in the same binary
+// (including offsets_test.go's container bring-up under -tags integration,
+// which panics on the leaked MockSpan's incomplete SetAttributes).
+func installMockTracerProvider(t *testing.T, tp trace.TracerProvider) {
+	t.Helper()
+	prev := otel.GetTracerProvider()
+	otel.SetTracerProvider(tp)
+	t.Cleanup(func() {
+		otel.SetTracerProvider(prev)
+	})
+}
 
 type MockSpan struct {
 	trace.Span
@@ -111,7 +146,7 @@ func TestGracefulShutdown(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
 
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	msgCh := make(chan kafka.Message, 1)
 
@@ -160,7 +195,7 @@ func TestSpanPropagation(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
 
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
 	ictx, ispan := otel.GetTracerProvider().Tracer("atlas-kafka").Start(context.Background(), "test-span")
@@ -262,7 +297,7 @@ func TestCommitAfterHandlerCompletes(t *testing.T) {
 
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	reader := &ChannelMockReader{msgCh: make(chan kafka.Message, 1)}
 
@@ -312,7 +347,7 @@ func TestHandlerErrorPreventsCommit(t *testing.T) {
 
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	reader := &ChannelMockReader{msgCh: make(chan kafka.Message, 1)}
 
@@ -355,7 +390,7 @@ func TestHandlerPanicPreventsCommit(t *testing.T) {
 
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	reader := &ChannelMockReader{msgCh: make(chan kafka.Message, 2)}
 
@@ -505,7 +540,7 @@ func TestRecreatesReaderOnEOF(t *testing.T) {
 
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	// First reader: returns EOF immediately. Second reader: delivers one message
 	// and then blocks on ctx.
@@ -557,7 +592,7 @@ func TestContextCancelDoesNotRecreate(t *testing.T) {
 
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	// One reader is provided. If the outer loop misbehaves and asks for a
 	// second reader after ctx-cancel, readerFactory will Fatal the test.
@@ -585,7 +620,7 @@ func TestRetryExhaustionRecreatesReader(t *testing.T) {
 
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	// r1: returns a transient error on every fetch. Inner retry (3 attempts)
 	// exhausts, outer loop closes r1 and requests r2.
@@ -631,7 +666,7 @@ func TestMultipleHandlersAllCompleteBeforeCommit(t *testing.T) {
 
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	reader := &ChannelMockReader{msgCh: make(chan kafka.Message, 1)}
 
@@ -692,7 +727,7 @@ func TestFetchTimeoutTicksWithoutRecreate(t *testing.T) {
 
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	// Empty scriptedReader always blocks on ctx — every FetchMessage call
 	// returns DeadlineExceeded when the per-call deadline fires.
@@ -751,7 +786,7 @@ func TestFetchTimeoutEscalatesAfterMaxToWedge(t *testing.T) {
 	// test's handler-invocation sync point — by design (PRD §4.5).
 	l, hook := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	// r1: empty — every FetchMessage hits the deadline. After 3 ticks
 	// runFetchLoop returns errFetchWedged, the outer loop closes r1 and
@@ -893,7 +928,7 @@ func TestFetchTimeoutResetsOnSuccessfulFetch(t *testing.T) {
 
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	r := &alternatingReader{}
 	rp := consumer.ConfigReaderProducer(readerFactory(t, r))
@@ -998,7 +1033,7 @@ func TestConsumer_DefaultIsSerial(t *testing.T) {
 	consumer.ResetInstance()
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	reader := &controlledReader{msgCh: make(chan kafka.Message, 3)}
 	reader.msgCh <- makeMsg(0, "msg0")
@@ -1067,7 +1102,7 @@ func TestConsumer_MaxInFlight_RunsConcurrently(t *testing.T) {
 	consumer.ResetInstance()
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	const n = 4
 	reader := &controlledReader{msgCh: make(chan kafka.Message, n)}
@@ -1145,7 +1180,7 @@ func TestConsumer_MaxInFlight_PrefixCommitOrdering(t *testing.T) {
 	consumer.ResetInstance()
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	// Release channels: each handler blocks until its release is closed.
 	releaseM1 := make(chan struct{})
@@ -1232,7 +1267,7 @@ func TestConsumer_MaxInFlight_FailedMessageBlocksCursor(t *testing.T) {
 	consumer.ResetInstance()
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	reader := &controlledReader{msgCh: make(chan kafka.Message, 3)}
 	reader.msgCh <- makeMsg(0, "M1")
@@ -1290,7 +1325,7 @@ func TestConsumer_MaxInFlight_BackPressure(t *testing.T) {
 	consumer.ResetInstance()
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	const maxInFlight = 2
 	const maxQueue = 4 * maxInFlight // 8

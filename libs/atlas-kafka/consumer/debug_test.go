@@ -12,7 +12,6 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
-	"go.opentelemetry.io/otel"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 )
@@ -92,7 +91,7 @@ func TestDebugHandler_PopulatedConsumer(t *testing.T) {
 
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	reader := &ChannelMockReader{msgCh: make(chan kafka.Message, 1)}
 

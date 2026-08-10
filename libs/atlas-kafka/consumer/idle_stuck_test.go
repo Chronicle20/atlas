@@ -10,7 +10,6 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
-	"go.opentelemetry.io/otel"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 )
@@ -70,7 +69,7 @@ func TestIdleTickNeverWedges(t *testing.T) {
 	l, hook := test.NewNullLogger()
 	l.SetLevel(logrus.DebugLevel)
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	r1 := &statsStubReader{deltas: []kafka.ReaderStats{{Fetches: 3}}}
 	rp := consumer.ConfigReaderProducer(readerFactory(t, r1))
@@ -131,7 +130,7 @@ func TestNoProgressTicksEscalateToWedge(t *testing.T) {
 	consumer.ResetInstance()
 	l, hook := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	r1 := &statsStubReader{} // permanent zero delta: stuck
 	r2 := &statsStubReader{deltas: []kafka.ReaderStats{{Fetches: 1}}}
@@ -196,7 +195,7 @@ func TestIdleTickResetsNoProgressCount(t *testing.T) {
 	consumer.ResetInstance()
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	r1 := &statsStubReader{deltas: []kafka.ReaderStats{{}, {Fetches: 1}}} // stuck, idle, stuck, idle...
 	rp := consumer.ConfigReaderProducer(readerFactory(t, r1))

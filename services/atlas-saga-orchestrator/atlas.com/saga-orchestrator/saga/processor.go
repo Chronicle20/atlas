@@ -1480,7 +1480,17 @@ func (p *ProcessorImpl) expandTradeSettlement(st Step[any]) ([]Step[any], error)
 			if assetId != uint32(it.AssetId) {
 				return nil, fmt.Errorf("asset at slot [%d] for character [%d] is instance [%d], expected staged instance [%d]", it.SourceSlot, side.CharacterId, assetId, it.AssetId)
 			}
-			sides[si] = append(sides[si], resolved{item: it, assetId: assetId, snapshot: assetDataFromCompartmentAsset(found)})
+			// The snapshot is of the whole SOURCE STACK, but the accept RECREATES
+			// the asset from it, so AssetData.Quantity is what the recipient is
+			// awarded. A partial stage (1 of a 200 stack) would otherwise release
+			// 1 from the giver and mint 200 for the receiver. The staged quantity
+			// is authoritative — it is what the release below takes, what the
+			// reservation holds, and what the client was shown. Every other field
+			// stays as snapshotted, so cash ownership, expiry and rolled stats
+			// still survive the transfer (FR-10.3).
+			snapshot := assetDataFromCompartmentAsset(found)
+			snapshot.Quantity = uint32(it.Quantity)
+			sides[si] = append(sides[si], resolved{item: it, assetId: assetId, snapshot: snapshot})
 		}
 	}
 

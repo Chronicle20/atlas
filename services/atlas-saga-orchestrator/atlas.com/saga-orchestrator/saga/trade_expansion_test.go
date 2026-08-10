@@ -252,6 +252,87 @@ func TestExpandTradeSettlementSnapshotsBeforeRelease(t *testing.T) {
 	}
 }
 
+// TestExpandTradeSettlementAcceptsOnlyTheStagedQuantity pins the partial-stack
+// case the shared fixture cannot reach: it stages whole stacks, so the source
+// asset's quantity and the staged quantity coincide and a snapshot that carried
+// the SOURCE stack would look correct.
+//
+// The accept RECREATES the asset from AssetData, so AssetData.Quantity is what
+// the recipient is awarded. Staging 1 of a 200 stack must release 1 and award
+// 1 — awarding the snapshot's 200 mints 199 items out of nothing.
+func TestExpandTradeSettlementAcceptsOnlyTheStagedQuantity(t *testing.T) {
+	p := testProcessorWithCompartments(t, []testAsset{
+		{CharacterId: 100, InventoryType: 2, Slot: 2, TemplateId: 2000005, Quantity: 200, Id: "2"},
+	})
+	payload := TradeSettlementPayload{
+		TransactionId: uuid.MustParse("22222222-2222-2222-2222-222222222222"),
+		RoomType:      3,
+		Sides: [2]TradeSettlementSide{
+			{
+				CharacterId: 100,
+				Items:       []TradeSettlementItem{{InventoryType: 2, SourceSlot: 2, AssetId: 2, TemplateId: 2000005, Quantity: 1}},
+			},
+			{CharacterId: 200},
+		},
+	}
+
+	steps, err := p.expandTradeSettlement(NewStep[any]("trade_settlement", Pending, TradeSettlement, payload))
+	require.NoError(t, err)
+
+	releases, accepts := 0, 0
+	for _, s := range steps {
+		switch s.Action() {
+		case ReleaseFromCharacter:
+			pl, ok := s.Payload().(ReleaseFromCharacterPayload)
+			require.True(t, ok, "release step payload must be ReleaseFromCharacterPayload, got %T", s.Payload())
+			require.Equal(t, uint32(1), pl.Quantity, "release must take only the staged quantity")
+			releases++
+		case AcceptToCharacter:
+			pl, ok := s.Payload().(AcceptToCharacterPayload)
+			require.True(t, ok, "accept step payload must be AcceptToCharacterPayload, got %T", s.Payload())
+			require.Equal(t, uint32(200), pl.CharacterId, "the staged item must cross to the other side")
+			require.Equal(t, uint32(1), pl.AssetData.Quantity, "accept must award the STAGED quantity, not the source stack")
+			accepts++
+		}
+	}
+	require.Equal(t, 1, releases)
+	require.Equal(t, 1, accepts)
+}
+
+// TestExpandTradeSettlementKeepsTheSnapshotsNonQuantityFields pins that
+// overriding the quantity does not disturb the rest of the snapshot — the whole
+// point of snapshotting is that cash ownership, expiry and rolled stats survive
+// the transfer (FR-10.3).
+func TestExpandTradeSettlementKeepsTheSnapshotsNonQuantityFields(t *testing.T) {
+	p := testProcessorWithCompartments(t, []testAsset{
+		{CharacterId: 100, InventoryType: 2, Slot: 2, TemplateId: 2000005, Quantity: 200, Id: "2"},
+	})
+	payload := TradeSettlementPayload{
+		TransactionId: uuid.MustParse("33333333-3333-3333-3333-333333333333"),
+		RoomType:      3,
+		Sides: [2]TradeSettlementSide{
+			{
+				CharacterId: 100,
+				Items:       []TradeSettlementItem{{InventoryType: 2, SourceSlot: 2, AssetId: 2, TemplateId: 2000005, Quantity: 1}},
+			},
+			{CharacterId: 200},
+		},
+	}
+
+	steps, err := p.expandTradeSettlement(NewStep[any]("trade_settlement", Pending, TradeSettlement, payload))
+	require.NoError(t, err)
+
+	for _, s := range steps {
+		if s.Action() != AcceptToCharacter {
+			continue
+		}
+		pl, ok := s.Payload().(AcceptToCharacterPayload)
+		require.True(t, ok, "accept step payload must be AcceptToCharacterPayload, got %T", s.Payload())
+		require.Equal(t, "Chronicle", pl.AssetData.Owner)
+		require.Equal(t, uint32(2000005), pl.TemplateId)
+	}
+}
+
 // TestExpandTradeSettlementMesoIsAsymmetric pins design §6.5: the giver is
 // deducted the FULL staged amount and the receiver credited the POST-TAX
 // amount, so the tax is destroyed rather than moved.

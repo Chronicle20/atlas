@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/invite"
 	trade2 "atlas-channel/kafka/message/trade"
 	"atlas-channel/merchant"
 	"atlas-channel/minigame"
@@ -16,6 +17,7 @@ import (
 	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	inviteconst "github.com/Chronicle20/atlas/libs/atlas-constants/invite"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	atlaspacket "github.com/Chronicle20/atlas/libs/atlas-packet"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
@@ -162,16 +164,35 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			// The same send covers game rooms and shops, so both processors are
 			// notified; each service drops joins for rooms it does not own.
 			//
-			// Trade is deliberately NOT in this fan-out. A trade room renders no
-			// field balloon, so nothing here can legitimately name one, and
-			// atlas-trades seats the invitee from the invite-accept path
-			// (kafka/consumer/invite/consumer.go:57-71) rather than from a serial
-			// the sender chose. Forwarding VISIT as an ENTER_ROOM would let any
-			// character walk into a pending trade by guessing its handle — which
-			// is the owner's character id (design §2.3).
+			// VISIT is ALSO how a trade invite is accepted. Trade has no dedicated
+			// accept operation — clicking "accept" on the invite dialog sends this
+			// same mode 4 with serialNumber = the invite's referenceId, which for
+			// trade is the room handle (= the owner's character id, design §2.3).
+			// It is resolved FIRST, and consumed: atlas-mini-games owns no such
+			// room and would answer ENTER_ERROR ROOM_CLOSED — "the room is already
+			// closed" on a trade the server knows is open.
+			//
+			// The serial is still not trusted. It is turned into an invite ACCEPT,
+			// not an ENTER_ROOM, so atlas-invites admits only the character its
+			// outstanding invite named (Accept resolves the invite by
+			// (actorId, type, referenceId)), and atlas-trades re-checks the same
+			// ticket in its own admission gate before seating anyone. Routing the
+			// accept through atlas-invites — rather than straight to atlas-trades —
+			// is also what retires the offer: an invite left outstanding would
+			// later expire and emit REJECTED, tearing down the live trade.
 			sp := &interaction2.OperationVisitGame{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] is visiting. serialNumber [%d], hasPassword [%t].", s.CharacterId(), sp.SerialNumber(), sp.HasPassword())
+			if tradeInviteAccept(l, s.CharacterId(), sp.SerialNumber(),
+				func(ownerId uint32) (bool, error) {
+					return trade.NewProcessor(l, ctx).InGame(characterconst.Id(ownerId))
+				},
+				func() error {
+					return invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), string(inviteconst.TypeTrade), sp.SerialNumber())
+				},
+			) {
+				return
+			}
 			_ = minigame.NewProcessor(l, ctx).Visit(s.Field(), s.CharacterId(), sp.SerialNumber(), sp.Password())
 			ownerCharacterId := sp.SerialNumber()
 			mp := merchant.NewProcessor(l, ctx)
@@ -747,6 +768,34 @@ func tradeRoomCreate(l logrus.FieldLogger, characterId uint32, occupied func(uin
 	if err := create(); err != nil {
 		l.WithError(err).Errorf("Unable to open a trade room for character [%d].", characterId)
 		return false
+	}
+	return true
+}
+
+// tradeInviteAccept is the VISIT arm's trade decision, with its two
+// collaborators injected: whether the serial names a character seated in a
+// trade room, and how to emit the accept. It reports whether the visit was
+// CONSUMED — a true answer means the caller must not fan the same serial out to
+// the mini-game and shop arms.
+//
+// A failed emit still consumes the visit: the serial demonstrably names a trade
+// room, and handing it on would answer a real trade accept with a mini-game
+// ROOM_CLOSED. A failed probe does NOT consume it — atlas-trades being briefly
+// unreadable must not swallow a legitimate balloon join, and must not fire an
+// accept for an invite that may not exist. This is the same best-effort posture
+// anyMiniRoomOccupied takes.
+func tradeInviteAccept(l logrus.FieldLogger, characterId uint32, serialNumber uint32, ownerHasRoom func(uint32) (bool, error), accept func() error) bool {
+	inRoom, err := ownerHasRoom(serialNumber)
+	if err != nil {
+		l.WithError(err).Warnf("Unable to ask atlas-trades whether character [%d] holds a trade room; treating character [%d]'s visit as a mini-room join.", serialNumber, characterId)
+		return false
+	}
+	if !inRoom {
+		return false
+	}
+	l.Debugf("Character [%d] is accepting a trade invite from character [%d].", characterId, serialNumber)
+	if err = accept(); err != nil {
+		l.WithError(err).Errorf("Unable to accept character [%d]'s trade invite from character [%d].", characterId, serialNumber)
 	}
 	return true
 }

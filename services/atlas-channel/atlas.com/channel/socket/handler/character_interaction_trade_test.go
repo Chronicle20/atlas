@@ -159,6 +159,80 @@ func TestTradeRoomCreateReportsAFailedEmit(t *testing.T) {
 	}
 }
 
+// --- the VISIT arm's trade-accept decision -------------------------------------
+
+// TestTradeInviteAcceptForwardsWhenTheSerialOwnsATradeRoom pins the accept path
+// the reference client actually uses: there is no dedicated trade-accept
+// operation, so clicking "accept" on the invite sends mini-room VISIT (mode 4)
+// with serialNumber = the invite's referenceId, which for trade is the room
+// handle (= the owner's character id, design §2.3). The visit must be turned
+// into an invite ACCEPT — the ONLY producer of the ACCEPTED status atlas-trades
+// seats an invitee on — and must be consumed, not fanned out further.
+func TestTradeInviteAcceptForwardsWhenTheSerialOwnsATradeRoom(t *testing.T) {
+	var asked uint32
+	accepted := 0
+	consumed := tradeInviteAccept(testLogger(), 2, 1,
+		func(ownerId uint32) (bool, error) { asked = ownerId; return true, nil },
+		func() error { accepted++; return nil },
+	)
+	if !consumed {
+		t.Error("consumed: got false, want true")
+	}
+	if asked != 1 {
+		t.Errorf("room ownership probed for character: got %d, want 1", asked)
+	}
+	if accepted != 1 {
+		t.Errorf("accepts emitted: got %d, want 1", accepted)
+	}
+}
+
+// TestTradeInviteAcceptConsumesTheVisitEvenWhenTheEmitFails pins that a failed
+// produce still consumes the visit. Falling through would hand the serial to
+// atlas-mini-games, which owns no such room and answers ENTER_ERROR
+// ROOM_CLOSED — "the room is already closed" on a trade the server knows is
+// open.
+func TestTradeInviteAcceptConsumesTheVisitEvenWhenTheEmitFails(t *testing.T) {
+	if !tradeInviteAccept(testLogger(), 2, 1,
+		func(uint32) (bool, error) { return true, nil },
+		func() error { return errors.New("kafka down") },
+	) {
+		t.Error("consumed: got false, want true")
+	}
+}
+
+// TestTradeInviteAcceptDeclinesAVisitThatNamesNoTradeRoom pins the other half:
+// the balloon double-click join for a game room or shop must keep reaching the
+// mini-game and merchant fan-out, and must not emit a trade accept.
+func TestTradeInviteAcceptDeclinesAVisitThatNamesNoTradeRoom(t *testing.T) {
+	accepted := 0
+	if tradeInviteAccept(testLogger(), 2, 1,
+		func(uint32) (bool, error) { return false, nil },
+		func() error { accepted++; return nil },
+	) {
+		t.Error("consumed: got true, want false")
+	}
+	if accepted != 0 {
+		t.Errorf("accepts emitted: got %d, want 0", accepted)
+	}
+}
+
+// TestTradeInviteAcceptFallsThroughWhenTheProbeFails pins the same BEST-EFFORT
+// posture the occupancy check takes: a transient atlas-trades read failure must
+// not swallow a legitimate mini-game join, and must not emit an accept for an
+// invite that may not exist.
+func TestTradeInviteAcceptFallsThroughWhenTheProbeFails(t *testing.T) {
+	accepted := 0
+	if tradeInviteAccept(testLogger(), 2, 1,
+		func(uint32) (bool, error) { return false, errors.New("boom") },
+		func() error { accepted++; return nil },
+	) {
+		t.Error("consumed: got true, want false")
+	}
+	if accepted != 0 {
+		t.Errorf("accepts emitted: got %d, want 0", accepted)
+	}
+}
+
 // --- the inventory-type decode boundary --------------------------------------
 
 // tradePutItemBytes builds a TRADE_PUT_ITEM body in the client's field order

@@ -40,6 +40,25 @@ operations:
   - { key: CHAT,            modes: { gms_v48: 6,  gms_v61: 6,  gms_v72: 6,  gms_v79: 6,  gms_v83: 6,  gms_v84: 6,  gms_v87: 6,  gms_v95: 6,  jms_v185: 6  } }
   - { key: CHAT_THING,      modes: { gms_v48: 8,  gms_v61: 8,  gms_v72: 8,  gms_v79: 8,  gms_v83: 8,  gms_v84: 8,  gms_v87: 8,  gms_v95: 8,  jms_v185: 8  } }
   - { key: LEAVE,           modes: { gms_v48: 10, gms_v61: 10, gms_v72: 10, gms_v79: 10, gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 10 } }
+  # Trade-room clientbound arms — the sub-dialog modes CMiniRoomBaseDlg::OnPacketBase
+  # forwards into CTradingRoomDlg::OnPacket. Every byte read off that version's own
+  # switch (task-205 §1, docs/tasks/task-205-player-trade/version-matrix.md):
+  #   v48 @0x5e6a84 · v61 @0x68b335 · v72 @0x6fdc9d · v79 @0x735775 · v83 @0x7c1f6d
+  #   v84 @0x7e80b3 · v87 @0x815624 · v92 @0x744ec0 · v95 @0x7649a0 · jms @0x845d95
+  # The block is NOT a uniform shift: v48 starts at 13, v61/v72 at 14, v79..v95 at
+  # 15, jms at 13, and the meso-limit arm sits at +3 on v48..v79 but +6 on v83+.
+  # TRADE_MESO_LIMIT is version-ABSENT on jms_v185 — its dispatcher @0x845d95 has
+  # exactly three cases (13/14/15) — so that column is omitted, not guessed.
+  # gms_v92 is deliberately absent from every row in this file: `packet-audit
+  # operations --check` treats a version column as all-or-nothing (any key with a
+  # gms_v92 mode makes every OTHER key already in template_gms_92_1.json an EXTRA),
+  # and the rest of the v92 writer table is the hand-set, non-IDA-verified set
+  # described in docs/tasks/task-133-miniroom-minigames/seed-unverified-notes.md.
+  # The v92 trade bytes above ARE routed in that template.
+  - { key: TRADE_PUT_ITEM,   modes: { gms_v48: 13, gms_v61: 14, gms_v72: 14, gms_v79: 15, gms_v83: 15, gms_v84: 15, gms_v87: 15, gms_v95: 15, jms_v185: 13 } }
+  - { key: TRADE_ADD_MESO,   modes: { gms_v48: 14, gms_v61: 15, gms_v72: 15, gms_v79: 16, gms_v83: 16, gms_v84: 16, gms_v87: 16, gms_v95: 16, jms_v185: 14 } }
+  - { key: TRADE_CONFIRM,    modes: { gms_v48: 15, gms_v61: 16, gms_v72: 16, gms_v79: 17, gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v95: 17, jms_v185: 15 } }
+  - { key: TRADE_MESO_LIMIT, modes: { gms_v48: 18, gms_v61: 19, gms_v72: 19, gms_v79: 20, gms_v83: 21, gms_v84: 21, gms_v87: 21, gms_v95: 21 } }
   # UPDATE_MERCHANT / PERSONAL_STORE_ITEM_SOLD legacy sub-mode values are taken
   # from each legacy seed template's existing CharacterInteraction writer table
   # (v48 22/23, v61 23/24, v72 23/24, v79 24/25) — the hired-merchant sub-mode

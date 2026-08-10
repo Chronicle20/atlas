@@ -79,6 +79,10 @@ So the boundary sits exactly where `tradeCrcPresent`
 and **jms_v185 DOES have `TRANSACTION`** — at mode **0x12 (18)**, not 0x14, the
 same −2 shift the jms trade block carries elsewhere.
 
+> **Closed by Task 23.** Both corrections are applied; see the amendments section
+> at the end of this file for what Task 23 changed and why one recommendation in
+> §4 was overturned on fresh evidence.
+>
 > **Open item for Task 23.** `docs/packets/dispatchers/character_interaction_handle.yaml`
 > currently records `TRANSACTION` with `modes: { gms_v83: 20, gms_v84: 20, gms_v87: 20, gms_v95: 20 }`
 > and its header comment claims TRANSACTION is "server-driven, no client send" and
@@ -229,3 +233,109 @@ absence: no whole-`.text` scan for the byte signature was run. It does not block
 anything in this task (the v92 cash room's three receive arms are all located)
 and it is not a `TRANSACTION` sender either way, since v92's `TRANSACTION` is
 `CTradingRoomDlg::OnTrade @0x744440`.
+
+---
+
+## 6. Task 23 amendments (templates pass)
+
+Task 23 re-derived every byte it wrote rather than copying this file, and three
+things changed. All addresses below were decompiled in the version's own IDB
+during the Task 23 pass.
+
+### 6.1 gms_v48's SERVERBOUND trade block was wrong by +1 — corrected
+
+`character_interaction_handle.yaml` and `template_gms_48_1.json` carried
+`TRADE_PUT_ITEM=14 / TRADE_ADD_MESO=15 / TRADE_CONFIRM=16` for gms_v48. Those
+values were never IDA-derived — task-127 §1 lists the v48 seven-mode table as
+pre-existing template content. The v48 send sites say 13/14/15:
+
+| sender | evidence |
+|---|---|
+| `CTradingRoomDlg::PutItem` @0x5E7F74 | `COutPacket(93)` · `Encode1(0xD)` · slot · 2×`Encode2` · count |
+| `CTradingRoomDlg::PutMoney` @0x5E819A | `COutPacket(93)` · `Encode1(0xE)` · `Encode4(amount)`; 1,000,000 gate + SP 3626 |
+| `CTradingRoomDlg::Trade` @0x5E836C | `COutPacket(93)` · `Encode1(0xF)`; SP 397 YesNo |
+| `CTradingRoomDlg::SetRet` @0x5E69EA | `COutPacket(93)` · `Encode1(0xA)` — EXIT=10 |
+
+which agrees with v48's own receive switch @0x5e6a84 (cases 13/14/15/18, §1). A
+client sending mode 13 into a server routing 14 = a silently mis-dispatched
+put-item on every v48 trade. Fixed in both files.
+
+Also observed and **not** changed (non-trade, out of this task's scope):
+`EXIT=10` exists on gms_v48 (`@0x5E69EA`) but is absent from the v48 handler
+table and from the yaml's EXIT row.
+
+### 6.2 `CASH_TRADE_OPEN` is n-a on jms_v185 — §4's recommendation overturned
+
+§4 concluded the jms template's missing `CASH_TRADE_OPEN` was a wiring gap
+because `CCashTradingRoomDlg` exists on jms. That inference does not hold: the
+`CASH_TRADE_OPEN` handler key is the **mode-14 SSN2 request**
+(`interaction/serverbound.OperationCashTradeOpen`), and jms has no such request.
+
+- jms `CMiniRoomBaseDlg::OnPacketBase` @0x6da198 dispatches 2/3/5 (no room) and
+  3/4/6/9/10/default (in room). There is no mode-14 arm; gms_v83..v95 and gms_v92
+  send mode 14 into `OnCheckSSN2Static`.
+- The jms IDB has no `OnCheckSSN2Static` function at all.
+- jms opens the cash trading room through `CField::SendInviteTradingRoomMsg`
+  @0x56c859: `COutPacket(0x7C)` `Encode1(0)` **CREATE**, `Encode1(6)` roomType 6,
+  `Encode4(0)`, `Encode4(targetId)`, then `Encode1(2)` **INVITE**. That is exactly
+  the fallback path gms_v92's `OnCheckSSN2Static` @0x62b990 takes for `nProc==0`.
+
+So the class exists, its serverbound OPEN request does not. `CASH_TRADE_OPEN`
+stays omitted for jms_v185, and the yaml's original "folds into CREATE/VISIT"
+note is correct. jms `SendInviteResult` @0x6da8e6 and `SendCashInviteResult`
+@0x6da99e are byte-identical (decline 3 / accept 4) — the cash room reuses the
+plain room's invite modes.
+
+### 6.3 gms_v92's serverbound trade block — fully derived
+
+| key | mode | evidence (`COutPacket(0x8D)` throughout) |
+|---|---|---|
+| CREATE | 0 | `CField::SendInviteTradingRoomMsg` @0x528eb0 `Encode1(0)`+roomType 3 |
+| INVITE | 2 | same function, second packet `Encode1(2)`+`Encode4(targetId)` |
+| INVITE_DECLINE | 3 | `CMiniRoomBaseDlg::SendInviteResult` @0x62b740, `nErrCode != 0` arm |
+| VISIT | 4 | same function, `nErrCode == 0` arm |
+| CASH_TRADE_OPEN | 14 | `CMiniRoomBaseDlg::OnCheckSSN2Static` @0x62b990 `Encode1(14)` |
+| TRADE_PUT_ITEM | 15 | `CTradingRoomDlg::PutItem` @0x7446f0 `Encode1(15)` |
+| TRADE_ADD_MESO | 16 | `CTradingRoomDlg::PutMoney` @0x744970 `Encode1(16)`; 1,000,000 gate + SP 4051 |
+| TRADE_CONFIRM | 17 | `CTradingRoomDlg::Trade` @0x744bd0, inline `= 17` + {itemId, crc} list |
+| TRANSACTION | 20 | `CTradingRoomDlg::OnTrade` @0x744440, inline `= 20` + {itemId, crc} list |
+
+These are routed in `template_gms_92_1.json` but are **not** added to the two
+dispatcher yamls: `packet-audit operations --check` treats a version column as
+all-or-nothing (one gms_v92 mode turns every other v92 template key into an
+`EXTRA`), and the rest of the v92 tables are the hand-set, non-IDA-verified set
+from task-133. Both yaml headers record this explicitly.
+
+### 6.4 `inviteResult` — derived on all ten, uniform
+
+`CMiniRoomBaseDlg::OnInviteResultStatic` decodes one byte and branches
+1/2/3/4 on every version; arm 1 reads **no** name, arms 2–4 `DecodeStr` one.
+`CANNOT_FIND_CHARACTER = 1` and `BUSY = 2` everywhere:
+
+| version | function | arm-1 SP | arm-2 SP |
+|---|---|---|---|
+| gms_v48  | @0x54607d (via `OnPacketBase` @0x5459c4) | 355 | 387 |
+| gms_v61  | @0x5bf352 (via `OnPacketBase` @0x5bec69 case 3) | 382 | 417 |
+| gms_v72  | @0x60e952 | 368 | 405 |
+| gms_v79  | @0x62d5dd | 368 | 405 |
+| gms_v83  | @0x65e848 | SP_366 | SP_403 |
+| gms_v84  | @0x6746b1 (via `OnPacketBase` @0x673db5) | 369 | 406 |
+| gms_v87  | @0x698b61 | 376 | 413 |
+| gms_v92  | @0x62c020 | 379 | 418 |
+| gms_v95  | @0x637d70 | 0x17B (379) | 0x1A2 (418) |
+| jms_v185 | @0x6daa56 | 0x194 (404) | 0x1B5 (437) |
+
+Naming note: in the gms_v72 and gms_v79 IDBs the symbols `OnInviteResultStatic`
+and `OnLeaveBase` sit on functions whose bodies are the opposite shape (the
+address above is the invite-result body in both). The names were left alone —
+only one half of each pair was verified this pass.
+
+### 6.5 jms `enterError`
+
+The jms template had no `enterError` table at all. Its enter-error switch is
+`CMiniRoomBaseDlg::OnEnterResultStatic` @0x6da234, and it carries the same
+present/absent code set as gms (1–7, 9–22, 24, plus a jms-only 25) with the same
+tell: **case 7 and case 20 resolve the SAME StringPool id (0x1B2)**, exactly the
+gms `TRADE_NOT_ALLOWED` / `TRADE_NOT_ALLOWED_2` pairing. Only those two keys were
+written; the remaining arms are positionally suggestive but their strings were not
+read, so they are left underived rather than mapped by position.

@@ -325,3 +325,133 @@ func TestTradeStepAssetIdRejectsUnparseableIds(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, uint32(55), id)
 }
+
+// ---------------------------------------------------------------------------
+// Late-success absorption (fix round 2).
+//
+// The reverse-walk only reverses steps that are Completed when it runs. A
+// settlement that times out with a step IN FLIGHT therefore leaves that step
+// unreversed — and when its success event lands afterwards, the effect is real.
+// For accept_to_character that is a DUPLICATE (the walk already re-granted the
+// asset to its owner); for release_from_character it is silent LOSS. Both must
+// route through CompensateLateStep to a registered inverse.
+// ---------------------------------------------------------------------------
+
+// TestLateSuccessfulAcceptDestroysTheDuplicate pins the dupe shape: the walk
+// re-granted asset 55 to A, then B's accept lands late. B's copy must be
+// destroyed or the item exists twice.
+func TestLateSuccessfulAcceptDestroysTheDuplicate(t *testing.T) {
+	h := newTradeRollbackHarness(t)
+	txId := uuid.New()
+	// accept_to_character_200_55 is still Pending when the timeout walk runs.
+	s := stageTradeSaga(t, h, txId, tradeSettlementSagaBuilder(txId,
+		Completed, Completed,
+		Pending, Pending,
+		Pending, Pending,
+	))
+
+	h.compensator.DispatchTradeTransactionRollbacks(s)
+	require.Len(t, *h.regrants, 2, "the walk re-grants both owners")
+	require.Empty(t, *h.destroys)
+
+	// Now the in-flight accept succeeds, after the saga went terminal.
+	lateStep, ok := s.StepAt(2)
+	require.True(t, ok)
+	require.Equal(t, "accept_to_character_200_55", lateStep.StepId())
+
+	compensated, err := h.compensator.CompensateLateStep(s, lateStep)
+	require.NoError(t, err)
+	require.True(t, compensated, "a late accept in a trade saga must have a registered inverse")
+
+	require.Len(t, *h.destroys, 1)
+	require.Equal(t, tradeDestroyCall{CharacterId: tradeCharB, TemplateId: tradeTemplateA, Quantity: 5, RemoveAll: false}, (*h.destroys)[0])
+}
+
+// TestLateSuccessfulReleaseRegrantsTheItem pins the loss shape: the walk skipped
+// B's still-pending release, then it succeeds late and soft-deletes B's item
+// with nothing to restore it.
+func TestLateSuccessfulReleaseRegrantsTheItem(t *testing.T) {
+	h := newTradeRollbackHarness(t)
+	txId := uuid.New()
+	s := stageTradeSaga(t, h, txId, tradeSettlementSagaBuilder(txId,
+		Completed, Pending, // B's release still in flight
+		Pending, Pending,
+		Pending, Pending,
+	))
+
+	h.compensator.DispatchTradeTransactionRollbacks(s)
+	require.Len(t, *h.regrants, 1, "only A's completed release is reversed by the walk")
+
+	lateStep, ok := s.StepAt(1)
+	require.True(t, ok)
+	require.Equal(t, "release_from_character_200_77", lateStep.StepId())
+
+	compensated, err := h.compensator.CompensateLateStep(s, lateStep)
+	require.NoError(t, err)
+	require.True(t, compensated, "a late release in a trade saga must have a registered inverse")
+
+	require.Len(t, *h.regrants, 2)
+	late := (*h.regrants)[1]
+	require.Equal(t, tradeCharB, late.CharacterId, "B gets its own item back")
+	require.Equal(t, tradeTemplateB, late.TemplateId)
+	require.Equal(t, tradeTypeB, late.InventoryType)
+	require.Equal(t, uint16(17), late.AssetData.WeaponAttack, "the paired accept's snapshot must restore the equip stats")
+}
+
+// TestLateSuccessDoesNotDoubleCompensateAWalkedStep pins that the late path and
+// the reverse-walk share one claim: a step the walk already reversed cannot be
+// reversed again when its (duplicate) success event arrives.
+func TestLateSuccessDoesNotDoubleCompensateAWalkedStep(t *testing.T) {
+	h := newTradeRollbackHarness(t)
+	txId := uuid.New()
+	s := stageTradeSaga(t, h, txId, tradeSettlementSagaBuilder(txId,
+		Completed, Completed,
+		Completed, Failed,
+		Pending, Pending,
+	))
+
+	h.compensator.DispatchTradeTransactionRollbacks(s)
+	destroysAfterWalk := len(*h.destroys)
+	require.Equal(t, 1, destroysAfterWalk)
+
+	walked, ok := s.StepAt(2) // accept_to_character_200_55, already reversed
+	require.True(t, ok)
+	compensated, err := h.compensator.CompensateLateStep(s, walked)
+	require.NoError(t, err)
+	require.False(t, compensated, "the walk already claimed this step's inverse")
+	require.Len(t, *h.destroys, destroysAfterWalk, "no second destroy may be dispatched")
+}
+
+// TestLateCompensableRegistrationIsTradeScoped pins the blast radius: the two
+// newly registered actions must NOT become late-compensable for any other saga
+// type that routes through the same absorb path.
+func TestLateCompensableRegistrationIsTradeScoped(t *testing.T) {
+	txId := uuid.New()
+	build := func(sagaType Type) Saga {
+		s, err := NewBuilder().
+			SetTransactionId(txId).
+			SetSagaType(sagaType).
+			SetInitiatedBy("scope-test").
+			AddStep("release_from_character", Completed, ReleaseFromCharacter, ReleaseFromCharacterPayload{CharacterId: tradeCharA}).
+			Build()
+		require.NoError(t, err)
+		return s
+	}
+
+	for _, other := range []Type{StorageOperation, MtsOperation, InventoryTransaction, NoteSend} {
+		require.Falsef(t, isLateCompensable(build(other), ReleaseFromCharacter),
+			"%s must keep its pre-task-205 absorb behaviour for release_from_character", other)
+		require.Falsef(t, isLateCompensable(build(other), AcceptToCharacter),
+			"%s must keep its pre-task-205 absorb behaviour for accept_to_character", other)
+	}
+
+	trade := build(TradeTransaction)
+	require.True(t, isLateCompensable(trade, ReleaseFromCharacter))
+	require.True(t, isLateCompensable(trade, AcceptToCharacter))
+
+	// The base set is unchanged for every saga type, trade included.
+	for _, a := range []Action{AwardMesos, AwardAsset, DestroyAsset} {
+		require.True(t, isLateCompensable(trade, a))
+		require.True(t, isLateCompensable(build(StorageOperation), a))
+	}
+}

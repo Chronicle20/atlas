@@ -1884,21 +1884,7 @@ func (c *CompensatorImpl) compensateTradeTransaction(s Saga, failedStep Step[any
 // Error rather than risking a duplicate — the same at-most-once posture
 // CompensateLateStep takes.
 func (c *CompensatorImpl) DispatchTradeTransactionRollbacks(s Saga) {
-	// Index every accept step's snapshot by asset id, whatever its status: a
-	// release may need the snapshot even when its paired accept never ran.
-	snapshots := make(map[uint32]AcceptToCharacterPayload)
-	for _, step := range s.Steps() {
-		if step.Action() != AcceptToCharacter {
-			continue
-		}
-		assetId, ok := tradeStepAssetId(step.StepId())
-		if !ok {
-			continue
-		}
-		if p, ok := step.Payload().(AcceptToCharacterPayload); ok {
-			snapshots[assetId] = p
-		}
-	}
+	snapshots := tradeAcceptSnapshots(s)
 
 	steps := s.Steps()
 	for i := len(steps) - 1; i >= 0; i-- {
@@ -1999,6 +1985,35 @@ func (c *CompensatorImpl) claimTradeRollback(s Saga, step Step[any]) bool {
 		return false
 	}
 	return true
+}
+
+// tradeAcceptSnapshots indexes every accept step's AssetData snapshot by the
+// asset id its step id carries, WHATEVER the step's status. Status-blind is
+// deliberate: a release whose paired accept never ran still needs that accept's
+// snapshot to be re-granted, which is what makes failure-after-only-the-first-
+// release come out right. The key cannot collide across participants —
+// asset.Entity.Id is a table-wide autoIncrement primary key.
+func tradeAcceptSnapshots(s Saga) map[uint32]AcceptToCharacterPayload {
+	snapshots := make(map[uint32]AcceptToCharacterPayload)
+	for _, step := range s.Steps() {
+		if step.Action() != AcceptToCharacter {
+			continue
+		}
+		assetId, ok := tradeStepAssetId(step.StepId())
+		if !ok {
+			continue
+		}
+		if p, ok := step.Payload().(AcceptToCharacterPayload); ok {
+			snapshots[assetId] = p
+		}
+	}
+	return snapshots
+}
+
+// tradeAcceptSnapshot is the single-asset lookup used by the late-success path.
+func tradeAcceptSnapshot(s Saga, assetId uint32) (AcceptToCharacterPayload, bool) {
+	snapshot, ok := tradeAcceptSnapshots(s)[assetId]
+	return snapshot, ok
 }
 
 // tradeStepAssetId parses the asset id expandTradeSettlement appends to the
@@ -2104,6 +2119,38 @@ var lateCompensableActions = map[Action]struct{}{
 	MtsMoveListingToHolding: {},
 }
 
+// tradeLateCompensableActions extends lateCompensableActions for TradeTransaction
+// ONLY (task-205). These two actions are shared with the storage, cash-shop and
+// MTS flows, so they are deliberately NOT added to the global map: registering
+// them there would silently give every one of those saga types a re-grant /
+// destroy it does not have today, and the ReleaseFromCharacter inverse below
+// depends on the trade-specific step-id pairing that those flows do not produce.
+//
+// Why trade needs them at all: the settlement reverse-walk skips a step that is
+// not yet Completed, so a settlement that times out with an accept IN FLIGHT
+// re-grants the item to its owner and then the ACCEPTED event lands — the
+// recipient keeps a copy and the owner has one too. Without a late inverse that
+// is item DUPLICATION. Symmetrically a late-successful release is silent LOSS.
+// This is the same class MTS closed by registering its three custody actions.
+var tradeLateCompensableActions = map[Action]struct{}{
+	AcceptToCharacter:    {},
+	ReleaseFromCharacter: {},
+}
+
+// isLateCompensable reports whether a late-successful step has a registered
+// inverse. The base set applies to every saga; the trade extension applies only
+// to TradeTransaction, so no other saga type's absorb behaviour changes.
+func isLateCompensable(s Saga, action Action) bool {
+	if _, ok := lateCompensableActions[action]; ok {
+		return true
+	}
+	if s.SagaType() == TradeTransaction {
+		_, ok := tradeLateCompensableActions[action]
+		return ok
+	}
+	return false
+}
+
 func (c *CompensatorImpl) CompensateLateStep(s Saga, step Step[any]) (bool, error) {
 	fields := logrus.Fields{
 		"transaction_id": s.TransactionId().String(),
@@ -2113,7 +2160,7 @@ func (c *CompensatorImpl) CompensateLateStep(s Saga, step Step[any]) (bool, erro
 		"tenant_id":      c.t.Id().String(),
 	}
 
-	if _, ok := lateCompensableActions[step.Action()]; !ok {
+	if !isLateCompensable(s, step.Action()) {
 		fields["reason"] = "late_effect_unrecoverable"
 		c.l.WithFields(fields).Warn("Late-successful step has no registered inverse; its effect is orphaned.")
 		return false, nil
@@ -2263,6 +2310,41 @@ func (c *CompensatorImpl) dispatchLateInverse(s Saga, step Step[any]) error {
 		}
 		ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 		return c.charP.AwardMesosAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.CharacterId, "SYSTEM", -payload.Amount, false)
+	case AcceptToCharacter:
+		// TradeTransaction only — isLateCompensable gates the other saga types
+		// out. Re-asserted here so a future registration in the global map
+		// cannot silently give another flow trade's semantics.
+		if s.SagaType() != TradeTransaction {
+			return fmt.Errorf("late AcceptToCharacter compensation is registered for trade settlements only, got saga type %s", s.SagaType())
+		}
+		payload, ok := step.Payload().(AcceptToCharacterPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late AcceptToCharacter compensation")
+		}
+		qty := payload.AssetData.Quantity
+		if qty == 0 {
+			qty = 1
+		}
+		// The reverse-walk already re-granted this asset to its owner, so the
+		// copy this late accept created in the recipient's inventory is the
+		// duplicate and must go.
+		return c.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, false)
+	case ReleaseFromCharacter:
+		if s.SagaType() != TradeTransaction {
+			return fmt.Errorf("late ReleaseFromCharacter compensation is registered for trade settlements only, got saga type %s", s.SagaType())
+		}
+		payload, ok := step.Payload().(ReleaseFromCharacterPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late ReleaseFromCharacter compensation")
+		}
+		// The reverse-walk skipped this step (it was not Completed then), so
+		// nothing re-granted the item this late release soft-deleted. Restore it
+		// from the snapshot on the paired accept step.
+		snapshot, ok := tradeAcceptSnapshot(s, payload.AssetId)
+		if !ok {
+			return fmt.Errorf("late ReleaseFromCharacter compensation: no paired accept snapshot for asset [%d]", payload.AssetId)
+		}
+		return c.compP.RequestAcceptAsset(s.TransactionId(), payload.CharacterId, payload.InventoryType, snapshot.TemplateId, snapshot.AssetData)
 	case AwardCurrency:
 		payload, ok := step.Payload().(AwardCurrencyPayload)
 		if !ok {

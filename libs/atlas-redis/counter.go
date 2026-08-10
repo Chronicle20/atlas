@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -39,6 +40,19 @@ if redis.call("exists", KEYS[1]) == 0 then
 end
 local v = redis.call("decrby", KEYS[1], ARGV[2])
 redis.call("pexpire", KEYS[1], ARGV[3])
+return v`)
+
+// incrWithTTLScript increments a counter and sets its TTL only when the key is
+// being created. A plain INCR leaves a new key with no expiry, which makes a
+// rate-limit window permanent; refreshing the TTL on EVERY increment instead
+// turns a fixed window into a sliding one an attacker can keep alive forever.
+// Setting it exactly once, at creation, is the fixed-window semantics callers
+// expect.
+var incrWithTTLScript = goredis.NewScript(`
+local v = redis.call("incr", KEYS[1])
+if v == 1 then
+	redis.call("pexpire", KEYS[1], ARGV[1])
+end
 return v`)
 
 // TenantCounter is a tenant-scoped int64 counter with a TTL-bounded
@@ -91,6 +105,30 @@ func (c *TenantCounter) InitIfMissingAndDecrBy(ctx context.Context, t tenant.Mod
 	v, err := initIfMissingAndDecrByScript.Run(ctx, c.client, []string{c.entityKey(t, key)}, initial, delta, ttl.Milliseconds()).Int64()
 	if err != nil {
 		return 0, fmt.Errorf("redis init-if-missing-and-decr: %w", err)
+	}
+	return v, nil
+}
+
+// IncrWithTTL increments the counter by one and returns the new value. The TTL
+// is applied only when the counter is created, giving a fixed window that
+// starts at the first increment.
+func (c *TenantCounter) IncrWithTTL(ctx context.Context, t tenant.Model, key string, ttl time.Duration) (int64, error) {
+	v, err := incrWithTTLScript.Run(ctx, c.client, []string{c.entityKey(t, key)}, ttl.Milliseconds()).Int64()
+	if err != nil {
+		return 0, fmt.Errorf("redis incr-with-ttl: %w", err)
+	}
+	return v, nil
+}
+
+// Get returns the counter's current value, or 0 when the key is absent. It
+// never creates or mutates the key.
+func (c *TenantCounter) Get(ctx context.Context, t tenant.Model, key string) (int64, error) {
+	v, err := c.client.Get(ctx, c.entityKey(t, key)).Int64()
+	if errors.Is(err, goredis.Nil) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, fmt.Errorf("redis get counter: %w", err)
 	}
 	return v, nil
 }

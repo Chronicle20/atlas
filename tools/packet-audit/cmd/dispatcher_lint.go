@@ -363,7 +363,8 @@ func collectDispatcherViolations(cfg dispatcherLintConfig, arms []dispatcherArm)
 // dispatcherYamlFamily is the minimal shape of a docs/packets/dispatchers/*.yaml
 // mode-table file — just enough to read which dispatcher family it defines.
 type dispatcherYamlFamily struct {
-	FName string `yaml:"fname"`
+	FName     string `yaml:"fname"`
+	Direction string `yaml:"direction"`
 }
 
 // caseLabelFamilies scans run.go for every base FName that has at least one
@@ -433,6 +434,30 @@ func checkFamilyCap(cfg dispatcherLintConfig) ([]violation, error) {
 		var d dispatcherYamlFamily
 		if err := yaml.Unmarshal(raw, &d); err != nil {
 			return nil, fmt.Errorf("parsing dispatcher family %s: %w", p, err)
+		}
+		// SERVERBOUND files are out of scope for the family cap. Mode-prefix
+		// capping (docs/packets/evidence/families.yaml, consumed by matrix
+		// grade.go) is defined over the CLIENT's READ order: one opcode whose
+		// leading `switch(Decode1())` fans out to N sub-handlers that each read
+		// a DIFFERENT body, so a byte fixture proves only the one arm it
+		// exercises. A serverbound docs/packets/dispatchers/*.yaml is not that
+		// shape — it is the source of truth for a HANDLER's
+		// `options.operations` ROUTING table, i.e. the mode byte Atlas must map
+		// to a handler key. The modes are written by N INDEPENDENT client call
+		// sites (cash_shop_operation_handle.yaml documents this explicitly:
+		// "The client has NO single cash-shop request builder... The 'mode
+		// switch' is a SERVER-side construct"), and each one already has its
+		// own discrete struct carrying its own `packet-audit:fname` marker
+		// (libs/atlas-packet/cash/serverbound/shop_operation_*.go — 17 of them,
+		// matching the 25 distinct FNames the ServerBound registry lists for
+		// CASHSHOP_OPERATION). There is no client demultiplexer to cap, and
+		// capping anyway would be actively harmful: grade.go applies
+		// `in.Families[baseFName(ref.FName)]` unconditionally per-op, so a
+		// families.yaml entry would demote already byte-fixture-verified cells
+		// from ✅ back to 🧩. The baseline is legacy-only and deliberately
+		// empty. Clientbound files keep the full guard.
+		if strings.EqualFold(d.Direction, "serverbound") {
+			continue
 		}
 		if d.FName == "" {
 			out = append(out, violation{

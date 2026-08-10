@@ -2937,6 +2937,23 @@
   ida:
     address: 4610484
   note: 'v72 COutPacket(219) verified via global COutPacket-ctor harvest @0x4659b4; Δ-2 vs v79 op 221 (deep (pet/summon/mob/npc/reactor/minigame/cashshop) Δ-2).'
+- op: COUPON_CODE
+  direction: serverbound
+  opcode: 220
+  fname: CCashShop::OnStatusCoupon
+  packet: cash/serverbound/CouponCode
+  provenance: manual
+  note: >-
+    task-206: the previous registry absence (and the matrix n-a) was
+    "nobody looked", not client-absence. CCashShop::OnStatusCoupon @ 0x4698d8
+    builds COutPacket(0xDC) at 0x46997e (push 0DCh @ 0x469976 =
+    CASHSHOP_OPERATION 219 + 1) and sends it at 0x4699e7. Body is three
+    EncodeStr and no Encode1: EncodeStr(characterId) @ 0x46999b,
+    EncodeStr(couponCode) @ 0x4699b4, then EncodeStr(third) @ 0x4699d8
+    guarded on characterId being non-empty (dead, characterId is never
+    populated) — the same shape as gms_v83. Empty codes are filtered client
+    side ("Please enter the coupon code." @ 0xa5aa6c, DoModal @ 0x469964).
+    See docs/tasks/task-206-cash-shop-coupon-codes/derivation.md.
 - op: ENTER_MTS
   direction: serverbound
   opcode: 154

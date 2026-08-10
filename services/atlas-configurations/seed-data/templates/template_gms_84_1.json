@@ -1862,11 +1862,11 @@
             "ENABLE_EQUIP_SLOT": 9,
             "MOVE_FROM_CASH_INVENTORY": 13,
             "MOVE_TO_CASH_INVENTORY": 14,
-            "BUY_NORMAL": 20,
             "REBATE_LOCKER_ITEM": 26,
             "BUY_COUPLE": 29,
             "BUY_PACKAGE": 30,
             "BUY_OTHER_PACKAGE": 31,
+            "BUY_NORMAL": 32,
             "APPLY_WISHLIST": 33,
             "BUY_FRIENDSHIP": 35,
             "GET_PURCHASE_RECORD": 40,
@@ -1874,6 +1874,15 @@
             "BUY_WORLD_TRANSFER": 49
           }
         },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xEC",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCouponCodeHandle",
+        "fname": "CCashShop::OnStatusCoupon",
         "services": [
           "channel"
         ]
@@ -2428,15 +2437,15 @@
         "fname": "CWvsContext::OnClaimResult",
         "options": {
           "operations": {
-            "SUCCESS": "0x02",
-            "REPORTED_NOTICE": "0x03",
-            "TRY_AGAIN": "0x41",
-            "RECHECK_NAME": "0x42",
-            "NOT_ENOUGH_MESOS": "0x43",
-            "CANNOT_CONNECT": "0x44",
-            "EXCEEDED": "0x45",
-            "TIME_WINDOW": "0x47",
-            "FALSE_REPORT_CITED": "0x48"
+            "SUCCESS": 2,
+            "REPORTED_NOTICE": 3,
+            "TRY_AGAIN": 65,
+            "RECHECK_NAME": 66,
+            "NOT_ENOUGH_MESOS": 67,
+            "CANNOT_CONNECT": 68,
+            "EXCEEDED": 69,
+            "TIME_WINDOW": 71,
+            "FALSE_REPORT_CITED": 72
           }
         },
         "services": [
@@ -2520,11 +2529,11 @@
         "fname": "CWvsContext::OnSueCharacterResult",
         "options": {
           "operations": {
-            "SUCCESS": "0x00",
-            "UNABLE_TO_LOCATE": "0x01",
-            "DAILY_LIMIT": "0x02",
-            "REPORTED_NOTICE": "0x03",
-            "GENERIC_FAILURE": "0x04"
+            "SUCCESS": 0,
+            "UNABLE_TO_LOCATE": 1,
+            "DAILY_LIMIT": 2,
+            "REPORTED_NOTICE": 3,
+            "GENERIC_FAILURE": 4
           }
         },
         "services": [
@@ -4704,6 +4713,61 @@
             "GACHAPON_COPY_FAILED": 168,
             "CHANGE_MAPLE_POINT_SUCCESS": 169,
             "CHANGE_MAPLE_POINT_FAILED": 170
+          },
+          "errors": {
+            "REQUEST_TIMED_OUT": 172,
+            "NOT_ENOUGH_CASH": 174,
+            "CANNOT_GIFT_WHEN_UNDERAGE": 175,
+            "EXCEEDED_GIFT_LIMIT": 176,
+            "CANNOT_GIFT_TO_OWN_ACCOUNT": 177,
+            "INCORRECT_NAME": 178,
+            "CANNOT_GIFT_GENDER_RESTRICTION": 179,
+            "CANNOT_GIFT_RECIPIENT_INVENTORY_FULL": 180,
+            "EXCEEDED_CASH_ITEM_LIMIT": 181,
+            "INCORRECT_NAME_OR_GENDER_RESTRICTION": 182,
+            "INVALID_COUPON_CODE": 185,
+            "COUPON_EXPIRED": 187,
+            "COUPON_ALREADY_USED": 188,
+            "COUPON_INTERNET_CAFE_RESTRICTION": 189,
+            "INTERNET_CAFE_COUPON_ALREADY_USED": 190,
+            "INTERNET_CAFE_COUPON_EXPIRED": 191,
+            "COUPON_NOT_REGISTERED": 192,
+            "COUPON_GENDER_RESTRICTION": 193,
+            "COUPON_CANNOT_BE_GIFTED": 194,
+            "COUPON_ONLY_FOR_MAPLE_STORY": 195,
+            "INVENTORY_FULL": 196,
+            "NOT_AVAILABLE_FOR_PURCHASE": 197,
+            "CANNOT_GIFT_INVALID_NAME_OR_GENDER": 198,
+            "CHECK_NAME_OF_RECEIVER": 199,
+            "NOT_AVAILABLE_FOR_PURCHASE_AT_HOUR": 200,
+            "OUT_OF_STOCK": 201,
+            "EXCEEDED_SPENDING_LIMIT": 202,
+            "NOT_ENOUGH_MESOS": 203,
+            "CASH_SHOP_NOT_AVAILABLE_DURING_BETA": 204,
+            "INVALID_BIRTHDAY": 205,
+            "ONLY_AVAILABLE_TO_USERS_BUYING": 208,
+            "ALREADY_APPLIED": 209,
+            "DAILY_PURCHASE_LIMIT": 214,
+            "COUPON_USAGE_LIMIT": 217,
+            "COUPON_SYSTEM_AVAILABLE_SOON": 219,
+            "FIFTEEN_DAY_LIMIT": 220,
+            "NOT_ENOUGH_GIFT_TOKENS": 221,
+            "CANNOT_SEND_TECHNICAL_DIFFICULTIES": 222,
+            "CANNOT_GIFT_ACCOUNT_AGE": 223,
+            "CANNOT_GIFT_PREVIOUS_INFRACTIONS": 224,
+            "CANNOT_GIFT_AT_THIS_TIME": 225,
+            "CANNOT_GIFT_LIMIT": 226,
+            "CANNOT_GIFT_TECHNICAL_DIFFICULTIES": 227,
+            "CANNOT_TRANSFER_UNDER_LEVEL_TWENTY": 228,
+            "CANNOT_TRANSFER_TO_SAME_WORLD": 229,
+            "CANNOT_TRANSFER_TO_NEW_WORLD": 230,
+            "CANNOT_TRANSFER_OUT": 231,
+            "CANNOT_TRANSFER_NO_EMPTY_SLOTS": 232,
+            "EVENT_ENDED_OR_CANT_BE_FREELY_TESTED": 233,
+            "CANNOT_BE_PURCHASED_WITH_MAPLE_POINTS": 239,
+            "PLEASE_TRY_AGAIN": 240,
+            "CANNOT_BE_PURCHASED_WHEN_UNDER_SEVEN": 241,
+            "CANNOT_BE_RECEIVED_WHEN_UNDER_SEVEN": 242
           }
         },
         "services": [
@@ -8061,6 +8125,12 @@
           "hours": 4
         }
       ]
+    },
+    "coupons": {
+      "rateLimit": {
+        "attempts": 10,
+        "windowSeconds": 3600
+      }
     }
   }
 }

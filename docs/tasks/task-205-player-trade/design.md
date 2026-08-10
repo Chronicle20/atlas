@@ -279,6 +279,10 @@ with no clientbound response.
 atlas-mini-games already consumes character status for exactly this purpose;
 atlas-trades mirrors that consumer.
 
+> **Amended by §5A.8.** Every row in this table now unwinds escrow before the
+> room is discarded — items back to their owners, escrowed meso refunded — and
+> the `LEAVE` is emitted after that unwind reports terminal.
+
 **Cancel loses to settlement (FR-6.5):** once the room enters `SETTLING`, cancel
 triggers are recorded and ignored; the saga's terminal status produces the
 client's `LEAVE`.
@@ -463,6 +467,258 @@ instead of contradicting it.
 
 ---
 
+## 5A. Amendment — escrow at staging (supersedes §5.2–§5.4)
+
+> **Status.** Written after the first live test of the implemented branch.
+> §5.1's analysis of `release_from_character` stands and is still the reason
+> §5.2 Option C was rejected. What changed is that Option A turned out to be
+> **wire-incompatible with the reference client**, which §5 never checked. This
+> section supersedes §5.2, §5.3 and §5.4; the superseded text is retained
+> because its reasoning explains the shape of what replaces it.
+
+### 5A.1 Why reserve-at-staging cannot work
+
+Three facts about the GMS v83 client (`MapleStory_dump.exe.i64`), each read from
+the binary, not inferred:
+
+1. **The client does not remove the staged item locally.** `CDraggableItem::PutItem`
+   @`0x4f3ef4` runs the client-side trade restrictions (sealed / cash / quest /
+   trade-block / account-sharable) and then calls straight into
+   `CTradingRoomDlg::PutItem`. It never touches `CharacterData`. Under §5.3
+   nothing leaves the compartment either, so a staged item renders in **both**
+   the inventory window and the trade window. Same for meso: `PutMoney`
+   @`0x7c37ca` only sends, and the meso counter renders from `CharacterData`.
+
+2. **Staging arms the client's exclusive-request lock.** Both
+   `CTradingRoomDlg::PutItem` @`0x7c359f` and `PutMoney` @`0x7c37ca` set
+   `m_bExclRequestSent = 1` and stamp `get_update_time()` immediately after
+   `SendPacket`, and both refuse to run unless `CWvsContext::CanSendExclRequest`
+   @`0x485bf7` passes:
+
+   ```c
+   return !this[2089]                                  // m_bExclRequestSent
+       && (a3 || _ZtlSecureFuse<short>(…) > 0)          // hp > 0
+       && get_update_time() - this[2090] >= a2;         // ≥ 500 ms
+   ```
+
+3. **Only a server packet clears it.** `CWvsContext::OnInventoryOperation`
+   @`0xa1ead9` opens with `if (CInPacket::Decode1(iPacket)) { …[96] = 0; …[100] = get_update_time(); }`;
+   `CWvsContext::OnStatChanged` carries the same leading bool; and
+   `CWvsContext::OnGameStageChanged` @`0xa0400e` clears it on every `SET_FIELD`.
+   There is no client-side timeout that releases it.
+
+Under §5.3 the server mutates neither inventory nor meso at stage time, so it
+emits none of those three. The lock therefore latches on the first stage and
+never clears: every subsequent `PUT_ITEM` and `PUT_MONEY` is dropped **inside
+the client**, before a packet is written. `CTradingRoomDlg::Trade` @`0x7c39a0`
+is *not* gated, which is why Confirm keeps working and the failure presents as
+"the mesos button stopped responding" rather than as a frozen dialog.
+
+This is not a defect in the implementation of §5.3 — it is §5.3 being
+unimplementable against this client without inventing a compensating unlock
+packet that the reference server never sends.
+
+### 5A.2 Decision
+
+**Escrow at staging.** Adopt §5.2's Option B, implemented not as an ad-hoc table
+but as a first-class custody destination in the accept/release family the
+codebase already uses for every other custody transfer:
+
+| Domain | accept | release | custody store |
+|---|---|---|---|
+| character | `accept_to_character` | `release_from_character` | atlas-inventory compartments |
+| storage | `accept_to_storage` | `release_from_storage` | atlas-storage |
+| cash shop | `accept_to_cash_shop` | `release_from_cash_shop` | atlas-cashshop |
+| MTS | `accept_to_mts_listing` | `release_from_mts_holding` | atlas-mts `holdings` |
+| **trade (new)** | **`accept_to_trade`** | **`release_from_trade`** | **atlas-trades `trade_escrow_items`** |
+
+The decisive property is the one §5.1 said Option C lacked: a custody row
+**names its owner**, so returning it never requires knowing which saga created
+it.
+
+### 5A.3 The escrow store
+
+A new `escrow` package in atlas-trades, modelled on
+`services/atlas-mts/atlas.com/mts/holding/entity.go` for the item table and on
+atlas-trades' own `settlement/entity.go` for the reconciliation fields:
+
+- **`trade_escrow_items`** — surrogate UUID PK; `(tenant_id, id)` unique;
+  `room_id`, `owner_id`, `trade_slot`, `source_inventory_type`,
+  `source_slot`, `template_id`, `quantity`, and the item snapshot as **explicit
+  name-keyed stat columns, not a JSON blob** (COPY/restore column-order safety,
+  the reason `holding` is shaped that way). Index `(tenant_id, room_id)` for the
+  unwind and `(tenant_id, owner_id)` for recovery.
+- **`trade_escrow_mesos`** — one row per `(room_id, owner_id)` carrying the
+  debited `amount`. Separate table rather than a `kind` discriminator: the two
+  have nothing in common but the room.
+
+Both tables carry `TenantRegion` / `TenantMajor` / `TenantMinor` alongside
+`TenantId`, for the reason `settlement.Entry` already documents: startup
+reconciliation runs with no tenant in context and has to rebuild each row's
+tenant to scope the commands that follow.
+
+### 5A.4 Staging an item
+
+1. atlas-trades validates §7's restrictions and the target slot — unchanged.
+2. It submits a `transfer_to_trade` composite, expanded by the orchestrator into
+   `release_from_character` → `accept_to_trade`, following
+   `expandTransferToStorage` (`saga/processor.go:1270`) exactly. Compensation is
+   orchestrator-native: a failed accept unwinds the release.
+3. atlas-inventory deletes the asset and publishes; atlas-channel's asset
+   consumer answers with `NewChangeBatch(false, NewRemoveEntry(…))`
+   (`kafka/consumer/asset/consumer.go:428,506`). `silent=false` writes the
+   leading bool as **true**, so the same packet that removes the item from the
+   client's inventory clears `m_bExclRequestSent`.
+4. atlas-trades' custody consumer writes the escrow row, marks the room slot
+   staged and emits `ITEM_STAGED`, which becomes the mode-15 broadcast to both
+   sides — unchanged from §4.2.
+
+**No new clientbound code is required for the unlock.** It is a consequence of
+the mutation being real. This is the single strongest argument for the
+amendment: §5.3 needed a packet the reference server does not send; §5A needs
+none.
+
+### 5A.5 Staging meso
+
+Mode 16 is an **assignment**, not an accumulation (§1.6), so the server works in
+deltas against what is already escrowed:
+
+```
+delta = requested_total − escrowed_total
+delta > 0 → award_mesos(owner, −delta), upsert the escrow meso row
+delta < 0 → award_mesos(owner, +(−delta)), decrement or delete the row
+delta = 0 → re-echo only
+```
+
+Validation against a fresh character read is unchanged (§7, FR-4.8), and so is
+the refusal response (authoritative re-echo plus `TRADE_MESO_LIMIT` where the
+version has the arm). `atlas-character`'s `statChangedProvider`
+(`character/producer.go:238`) already hard-sets `ExclRequestSent: true` and the
+meso paths already publish `stat.TypeMeso` (`character/processor.go:851,877,906`),
+so — exactly as with items — the real debit both drops the client's meso counter
+and clears the lock.
+
+### 5A.6 Every refusal must still unlock
+
+§7 specifies a **silent drop** for FR-4.1–4.4: no clientbound update, the empty
+slot is the feedback. With the lock armed on send, a silent drop now wedges the
+dialog permanently. The same applies to §3.2's freeze rule, FR-4.8's meso
+refusal, and any stage whose saga fails.
+
+Every refusal path therefore emits, to the acting character only, a
+`STAT_CHANGED` carrying `exclRequestSent = true` and an **empty** update list —
+an unlock with no stat payload. The slot still stays empty, so the player-visible
+feedback is unchanged; only the lock is released.
+
+This is written by **atlas-channel**, not atlas-trades: §2.2's rule that
+atlas-trades never writes a packet is preserved. atlas-channel's trade status
+consumer gains the emission, reusing the shape of
+`socket/handler/enable_actions.go`. atlas-trades gains one new status type,
+`ITEM_REFUSED`, symmetric with the existing `MESO_REFUSED`; the consumer's
+`MESO_REFUSED` arm gains the same unlock.
+
+### 5A.7 Settlement (supersedes §6.3's step list)
+
+The debit already happened at stage time, so settlement no longer releases from
+characters and no longer issues negative `award_mesos`:
+
+```
+for each escrowed item of A:  release_from_trade(escrowId)
+for each escrowed item of B:  release_from_trade(escrowId)
+for each escrowed item of A:  accept_to_character(B, snapshot)
+for each escrowed item of B:  accept_to_character(A, snapshot)
+if A.meso > 0:                award_mesos(B, +A.meso − tax(A.meso))
+if B.meso > 0:                award_mesos(A, +B.meso − tax(B.meso))
+```
+
+§6.3's ordering rule survives verbatim — all releases precede all accepts, so a
+slot freed by an outgoing item is available to an incoming one. §6.5's tax
+semantics survive too: the difference is destroyed by crediting the receiver
+less than was escrowed, rather than by an asymmetric pair of `award_mesos`.
+
+`trade_settlement` stays a composite and atlas-trades still enumerates no
+concrete steps; only the expander's output changes.
+
+§6.1's pre-check 3 ("every reservation is still live and matches the staged
+quantity") becomes "every escrow row is still present and matches". The failure
+class it guarded against — the staged item consumed elsewhere between stage and
+settle, the one axis on which §5.3's table conceded to Option B — cannot occur
+once the asset is physically in escrow.
+
+### 5A.8 Teardown, cancel and the return path
+
+Every trigger in §3.3 now unwinds escrow before the room is discarded: for each
+item row `release_from_trade` → `accept_to_character(owner_id)`, and for each
+meso row `award_mesos(owner_id, +amount)`. The unwind is idempotent and
+compare-and-set on the room id, matching the teardown discipline already in
+place.
+
+`LEAVE` is emitted after the unwind reports terminal, for the reason §6.4 gives
+for `SETTLED`: the client renders its own numbers from its own character data.
+
+**A return can legitimately fail.** If the owner's inventory filled while the
+trade was open, `accept_to_character` fails and the saga compensates, leaving
+the row in escrow. Nothing is lost — the row is durable and still names its
+owner — but the process is alive, so startup recovery will not catch it. A
+retry ticker re-attempts every escrow row whose room no longer exists, at the
+same cadence the reservation-refresh ticker used to run. This ticker replaces
+that one rather than adding to the service's moving parts.
+
+### 5A.9 Crash recovery — now implementable
+
+§5.1's objection was that a released asset belongs to a saga transaction with no
+recoverable owner. An escrow row names its owner, so recovery is mechanical:
+
+On startup, after the existing settlement reconciler has drained
+`settlement.Entry` (a settlement still in flight may legitimately consume escrow
+rows, so this ordering is mandatory), read every remaining escrow row across
+every tenant and return it. Rooms are process-local (§9) and die with the
+process, so **every surviving row is orphaned by definition** — there is no
+room-reconstruction step and no partial-state reasoning. The PRD's crash-recovery
+NFR, which §5.1 correctly called unimplementable as specified, is satisfied.
+
+### 5A.10 What this removes
+
+- `services/atlas-trades/atlas.com/trades/compartment/` — the reserve/cancel
+  command producer.
+- The reservation-refresh ticker (§5.3's TTL/3 refresh), replaced by §5A.8's
+  stuck-escrow retry ticker.
+- `trade.reservationTtlSeconds` from the tenant config (§8).
+
+Task 7's `expiry` parameter on `RequestReserve` **stays**. It landed repo-wide
+with the existing 30 s supplied at every prior call site, it is a correct
+generalisation independent of trade, and reverting it would be pure churn.
+
+FR-3.5 (a staged item cannot be un-staged) is unaffected and, if anything,
+better justified: the item is genuinely gone.
+
+### 5A.11 The cost, stated plainly
+
+Staging becomes an asynchronous saga round trip instead of one reservation call,
+which the PRD's 200 ms p99 staging NFR did not anticipate. The mitigation is
+structural rather than a workaround: `m_bExclRequestSent` **is** the client's
+own in-flight indicator, and it clears exactly when the resulting
+`INVENTORY_OPERATION` or `STAT_CHANGED` lands. A slow stage therefore delays the
+unlock instead of corrupting state, which is the client's native semantics for
+every other exclusive request (item use, skill use, portal).
+
+The NFR is restated as: **the unlock must reach the client within 1 s p99**, and
+a stage that has not resolved within `trade.stageTimeoutSeconds` (new config
+key, default 5) emits the bare unlock of §5A.6 and drops the stage. Without that
+bound, a saga that never terminates locks the dialog for the rest of the
+session.
+
+### 5A.12 Risks introduced
+
+| Risk | Assessment |
+|---|---|
+| Double unlock (real packet + bare unlock race) | Harmless. Clearing an already-clear flag is a no-op; the 500 ms floor is unaffected. |
+| Return fails on a full inventory | Covered by §5A.8's retry ticker. Durable row, named owner, no loss. |
+| Escrow row leaks if the retry ticker and startup recovery both miss it | The row is visible in the REST surface (§9) and is a bounded, auditable leak, not a lost asset. |
+| Item genuinely gone while the trade is open | Intended, and what the client already renders. Any external process that reads a character's inventory mid-trade sees the true state. |
+
+---
+
 ## 6. Settlement
 
 ### 6.1 Pre-checks (FR-4.9)
@@ -474,6 +730,7 @@ Run in atlas-trades, before any saga is submitted, against fresh reads:
 2. Each side's meso, after `+incoming_post_tax − outgoing`, is within
    `[0, mesoCap]`.
 3. Every reservation is still live and matches the staged quantity.
+   *(§5A.7: now "every escrow row is still present and matches".)*
 4. Where the version carries CRC entries (§4.4), each attested
    `{itemId, crc}` matches the staged assets.
 
@@ -527,6 +784,11 @@ covers a client that does not reply.
 > `trade/settlement.go`.
 
 ### 6.3 Saga shape
+
+> **Superseded by §5A.7.** The step list below assumes the items are still in
+> their owners' compartments at settlement time. Under escrow-at-staging they
+> are not: releases come from escrow, and the meso debit has already happened.
+> The ordering rule and the tax semantics are unchanged.
 
 One saga per settlement, submitted with a single `transactionId` that is also
 the ledger's idempotency key (FR-5.7). Steps, in order:
@@ -608,6 +870,12 @@ drop": the reference client has no mini-room error for "this item cannot be
 traded" at put-item time, and the empty slot is the feedback. The rejection is
 logged server-side with the item id and the failing rule.
 
+> **Amended by §5A.6.** "Silent" now means *no visible response*, not *no
+> packet*. Because the client arms `m_bExclRequestSent` on send, every refusal
+> path must still return the bare unlock (`STAT_CHANGED`, `exclRequestSent =
+> true`, empty update list) or the dialog wedges. The empty slot remains the
+> only player-visible feedback.
+
 ---
 
 ## 8. Tenant configuration (FR-9)
@@ -633,6 +901,10 @@ precedent (`services/atlas-tenants/atlas.com/tenants/configuration/resource.go:8
   "attestationTimeoutSeconds": 5
 }
 ```
+
+> **Amended by §5A.10 / §5A.11.** `reservationTtlSeconds` is removed — nothing
+> is reserved. `stageTimeoutSeconds` (default 5) is added: a stage whose escrow
+> saga has not resolved within it is dropped with the bare unlock of §5A.6.
 
 Absent config → shipped defaults, logged once at INFO (FR-9.2). Never a crash,
 never a silent disable.
@@ -786,7 +1058,19 @@ merchant / personal-store / mini-game keys with per-family verification.
 ### 11.5 `RequestReserve`'s TTL is hard-coded
 
 `services/atlas-inventory/atlas.com/inventory/compartment/processor.go:783`
-pins 30 s for every caller. Parameterised as part of §5.3.
+pins 30 s for every caller. Parameterised as part of §5.3. Retained by §5A.10
+even though trade no longer reserves.
+
+### 11.6 The trade window's report button is inert in the client
+
+Reported during testing alongside the §5A.1 lock defect, and **not a server
+bug**. `CTradingRoomDlg::OnCreate` @`0x7c23d0` creates `UI/Basic.img/BtClaim`
+as control id **1005**. The dialog's only button-notify sink is `sub_7C2A71`
+@`0x7c2a71` (its sole xref is the vtable slot at `0xb37468`), whose switch
+handles 1002 (Trade), 1003 (PutMoney), 1004 (chat send), 1 and 2 — there is no
+`case 1005`. Scanning `0x7c1c76`–`0x7c3d60`, the immediate `0x3ED` occurs
+exactly once: the `push 3EDh` in `OnCreate`. No server change can affect it.
+Out of scope for task-205.
 
 ---
 

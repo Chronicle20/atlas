@@ -10,7 +10,6 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
-	"go.opentelemetry.io/otel"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 )
@@ -38,7 +37,7 @@ func TestSnapshotPhaseTimings(t *testing.T) {
 	consumer.ResetInstance()
 	l, _ := test.NewNullLogger()
 	wg := &sync.WaitGroup{}
-	otel.SetTracerProvider(&MockTracerProvider{})
+	installMockTracerProvider(t, &MockTracerProvider{})
 
 	r1 := &scriptedReader{script: []scriptedFetch{{err: io.EOF}}}
 	r2 := &scriptedReader{script: []scriptedFetch{{msg: kafka.Message{Value: []byte("timed")}}}}
@@ -47,7 +46,7 @@ func TestSnapshotPhaseTimings(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer wg.Wait()
 
-	cm := consumer.GetManager(rp)
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
 	c := consumer.NewConfig([]string{""}, "timing-consumer", "timing-topic", "test-group")
 	cm.AddConsumer(l, ctx, wg)(c)
 

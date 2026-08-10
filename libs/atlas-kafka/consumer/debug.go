@@ -70,6 +70,11 @@ type debugAttributes struct {
 	NoProgressTicks     int       `json:"noProgressTicks"`
 	LastNoProgressAt    time.Time `json:"lastNoProgressAt"`
 
+	AssignedPartitions []int     `json:"assignedPartitions"`
+	GenerationID       int32     `json:"generationId"`
+	LastAssignmentAt   time.Time `json:"lastAssignmentAt"`
+	Engine             string    `json:"engine"`
+
 	TimeToFirstFetchNs    time.Duration `json:"timeToFirstFetchNs"`
 	LastFetchDurationNs   time.Duration `json:"lastFetchDurationNs"`
 	MaxFetchDurationNs    time.Duration `json:"maxFetchDurationNs"`
@@ -96,6 +101,11 @@ func snapshotToAttributes(s Snapshot) debugAttributes {
 		LastIdleTickAt:      s.LastIdleTickAt,
 		NoProgressTicks:     s.NoProgressTicks,
 		LastNoProgressAt:    s.LastNoProgressAt,
+
+		AssignedPartitions: s.AssignedPartitions,
+		GenerationID:       s.GenerationID,
+		LastAssignmentAt:   s.LastAssignmentAt,
+		Engine:             s.Engine,
 
 		TimeToFirstFetchNs:    s.TimeToFirstFetch,
 		LastFetchDurationNs:   s.LastFetchDuration,

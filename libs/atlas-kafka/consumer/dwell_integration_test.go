@@ -18,6 +18,8 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 	tckafka "github.com/testcontainers/testcontainers-go/modules/kafka"
+	"go.opentelemetry.io/otel"
+	noopTrace "go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -36,8 +38,29 @@ import (
 
 const dwellActiveTopic = "dwell.active"
 
+// dwellEngines is the engine matrix the dwell scenarios run against. The
+// legacy engine is retained for one release (FR-5.1), so its coverage must
+// not lapse while it is still a supported rollback target.
+var dwellEngines = []consumer.EngineName{consumer.EngineConsumerGroup, consumer.EngineReader}
+
 func startDwellKafka(t *testing.T) []string {
 	t.Helper()
+	// Defensive reset: several unit tests in this package (debug_test.go,
+	// manager_test.go, idle_stuck_test.go, timing_test.go) install a
+	// package-scoped MockTracerProvider via otel.SetTracerProvider and never
+	// restore it. otel.SetTracerProvider is GLOBAL process state, so if any
+	// such unit test ran earlier in the same `go test` binary, it leaks
+	// forward. testcontainers' Docker client is instrumented with
+	// otelhttp.Transport, and its first-ever call runs inside a
+	// process-lifetime sync.Once (ExtractDockerHost) — so whichever test
+	// happens to trigger it first pays the cost of whatever tracer provider
+	// is currently installed. A leaked MockTracerProvider's incomplete
+	// MockSpan panics on the otelhttp.Transport's SetAttributes call. None of
+	// the dwell scenarios exercise span propagation (TestSpanPropagation
+	// owns that), so resetting to the SDK no-op provider here is safe and
+	// removes the ordering dependency on unrelated unit tests.
+	otel.SetTracerProvider(noopTrace.NewTracerProvider())
+
 	ctx := context.Background()
 	kc, err := tckafka.Run(ctx, "confluentinc/cp-kafka:7.6.0", tckafka.WithClusterID("atlas-dwell"))
 	require.NoError(t, err)
@@ -213,19 +236,24 @@ func dwellSetup(t *testing.T, brokers []string, idleCount int, otherCount int,
 // S1 — steady state: full modeled fan-out, healthy consumers, production
 // defaults. Asserts the PRD §8 target.
 func TestDwellS1_SteadyStateLatency(t *testing.T) {
-	brokers := startDwellKafka(t)
-	cm, rec, cancel, wg := dwellSetup(t, brokers, 15, 4, nil)
-	defer func() { cancel(); wg.Wait() }()
+	for _, engine := range dwellEngines {
+		engine := engine
+		t.Run(string(engine), func(t *testing.T) {
+			brokers := startDwellKafka(t)
+			cm, rec, cancel, wg := dwellSetup(t, brokers, 15, 4, []consumer.ManagerConfig{consumer.ConfigEngine(engine)})
+			defer func() { cancel(); wg.Wait() }()
 
-	const n = 100
-	publishStamped(t, brokers, dwellActiveTopic, n, 100*time.Millisecond)
-	require.Eventually(t, func() bool { return rec.count() >= n },
-		60*time.Second, 100*time.Millisecond, "not all messages delivered")
+			const n = 100
+			publishStamped(t, brokers, dwellActiveTopic, n, 100*time.Millisecond)
+			require.Eventually(t, func() bool { return rec.count() >= n },
+				60*time.Second, 100*time.Millisecond, "not all messages delivered")
 
-	p99 := rec.p99()
-	t.Logf("S1: p99=%v max=%v over %d messages", p99, rec.max(), rec.count())
-	dumpSnapshots(t, cm)
-	require.Less(t, p99, time.Second, "S1: steady-state p99 publish→handler latency must be < 1s (PRD §8)")
+			p99 := rec.p99()
+			t.Logf("S1: p99=%v max=%v over %d messages", p99, rec.max(), rec.count())
+			dumpSnapshots(t, cm)
+			require.Less(t, p99, time.Second, "S1: steady-state p99 publish→handler latency must be < 1s (PRD §8)")
+		})
+	}
 }
 
 // S2 — idle-tick churn (H1). Short fetchTimeout + low threshold on the 15
@@ -235,53 +263,58 @@ func TestDwellS1_SteadyStateLatency(t *testing.T) {
 // member — reproducing the live dwell. Post-fix these deadlines are idle
 // ticks: zero self-recreates, latency stays at the S1 bound.
 func TestDwellS2_IdleTickChurn(t *testing.T) {
-	brokers := startDwellKafka(t)
-	cm, rec, cancel, wg := dwellSetup(t, brokers, 15, 0, nil,
-		consumer.SetFetchTimeout(2*time.Second),
-		consumer.SetMaxConsecutiveTimeouts(2),
-		// maxWait must stay well under fetchTimeout so an idle reader completes
-		// >=1 fetch long-poll per deadline tick (its Fetches delta is the
-		// idle-vs-stuck progress signal); mirrors the production 10s<<1m ratio.
-		consumer.SetMaxWait(200*time.Millisecond),
-	)
-	defer func() { cancel(); wg.Wait() }()
+	for _, engine := range dwellEngines {
+		engine := engine
+		t.Run(string(engine), func(t *testing.T) {
+			brokers := startDwellKafka(t)
+			cm, rec, cancel, wg := dwellSetup(t, brokers, 15, 0, []consumer.ManagerConfig{consumer.ConfigEngine(engine)},
+				consumer.SetFetchTimeout(2*time.Second),
+				consumer.SetMaxConsecutiveTimeouts(2),
+				// maxWait must stay well under fetchTimeout so an idle reader completes
+				// >=1 fetch long-poll per deadline tick (its Fetches delta is the
+				// idle-vs-stuck progress signal); mirrors the production 10s<<1m ratio.
+				consumer.SetMaxWait(200*time.Millisecond),
+			)
+			defer func() { cancel(); wg.Wait() }()
 
-	// The initial group-join for this ~16-member group takes several seconds;
-	// with the compressed 2s fetchTimeout, an idle reader that is still
-	// rebalancing during join makes no fetch progress across >1 tick and
-	// self-wedges ONCE before the group settles. Production never hits this
-	// (its 1m fetchTimeout dwarfs join time). Exclude that startup transient
-	// the same way dwellSetup excludes warm-up latency: let recreates
-	// stabilize post-join, then assert NO NEW recreate occurs in steady state.
-	baselineRecreates := 0
-	require.Eventually(t, func() bool {
-		cur := totalRecreates(cm)
-		stable := cur == baselineRecreates
-		baselineRecreates = cur
-		return stable
-	}, 30*time.Second, time.Second, "S2: recreate count never stabilized after group join")
+			// The initial group-join for this ~16-member group takes several seconds;
+			// with the compressed 2s fetchTimeout, an idle reader that is still
+			// rebalancing during join makes no fetch progress across >1 tick and
+			// self-wedges ONCE before the group settles. Production never hits this
+			// (its 1m fetchTimeout dwarfs join time). Exclude that startup transient
+			// the same way dwellSetup excludes warm-up latency: let recreates
+			// stabilize post-join, then assert NO NEW recreate occurs in steady state.
+			baselineRecreates := 0
+			require.Eventually(t, func() bool {
+				cur := totalRecreates(cm)
+				stable := cur == baselineRecreates
+				baselineRecreates = cur
+				return stable
+			}, 30*time.Second, time.Second, "S2: recreate count never stabilized after group join")
 
-	const n = 30
-	publishStamped(t, brokers, dwellActiveTopic, n, time.Second)
-	require.Eventually(t, func() bool { return rec.count() >= n },
-		120*time.Second, 100*time.Millisecond, "not all messages delivered")
+			const n = 30
+			publishStamped(t, brokers, dwellActiveTopic, n, time.Second)
+			require.Eventually(t, func() bool { return rec.count() >= n },
+				120*time.Second, 100*time.Millisecond, "not all messages delivered")
 
-	p99 := rec.p99()
-	t.Logf("S2: p99=%v max=%v recreates=%d", p99, rec.max(), totalRecreates(cm))
-	dumpSnapshots(t, cm)
-	require.Equal(t, baselineRecreates, totalRecreates(cm),
-		"S2: no reader may self-recreate on idle deadline ticks in steady state (design §3-A)")
-	// Prove the deadline ticks actually fired and were classified idle —
-	// otherwise a too-long fetchTimeout would make this test vacuous.
-	tickedIdle := 0
-	for _, c := range cm.Consumers() {
-		if c.Snapshot().IdleTicks > 0 {
-			tickedIdle++
-		}
+			p99 := rec.p99()
+			t.Logf("S2: p99=%v max=%v recreates=%d", p99, rec.max(), totalRecreates(cm))
+			dumpSnapshots(t, cm)
+			require.Equal(t, baselineRecreates, totalRecreates(cm),
+				"S2: no reader may self-recreate on idle deadline ticks in steady state (design §3-A)")
+			// Prove the deadline ticks actually fired and were classified idle —
+			// otherwise a too-long fetchTimeout would make this test vacuous.
+			tickedIdle := 0
+			for _, c := range cm.Consumers() {
+				if c.Snapshot().IdleTicks > 0 {
+					tickedIdle++
+				}
+			}
+			require.GreaterOrEqual(t, tickedIdle, 10,
+				"S2: expected most idle consumers to have recorded idle ticks (fetchTimeout=2s over a 30s window)")
+			require.Less(t, p99, time.Second, "S2: churn-free p99 must be < 1s (PRD §8)")
+		})
 	}
-	require.GreaterOrEqual(t, tickedIdle, 10,
-		"S2: expected most idle consumers to have recorded idle ticks (fetchTimeout=2s over a 30s window)")
-	require.Less(t, p99, time.Second, "S2: churn-free p99 must be < 1s (PRD §8)")
 }
 
 // forceErrReader wraps a real reader; the test arms a one-shot injected
@@ -319,63 +352,87 @@ func (r *forceErrReader) Stats() kafka.ReaderStats {
 // forces one recreate mid-stream; delivery must resume with the recreate
 // dwell bounded by the join+backoff budget (design §4.1: ≤ 10s).
 func TestDwellS3_ForcedRecreateBounded(t *testing.T) {
-	brokers := startDwellKafka(t)
-	var arm atomic.Bool
-	rp := consumer.ConfigReaderProducer(func(cfg kafka.ReaderConfig) consumer.KafkaReader {
-		inner := kafka.NewReader(cfg)
-		if cfg.Topic == dwellActiveTopic {
-			return &forceErrReader{inner: inner, arm: &arm}
-		}
-		return inner
-	})
-	cm, rec, cancel, wg := dwellSetup(t, brokers, 5, 0, []consumer.ManagerConfig{rp})
-	defer func() { cancel(); wg.Wait() }()
+	for _, engine := range dwellEngines {
+		engine := engine
+		t.Run(string(engine), func(t *testing.T) {
+			brokers := startDwellKafka(t)
+			// forceErrReader is injected through both ConfigReaderProducer
+			// (consulted by the legacy engine) and ConfigPartitionReaderProducer
+			// (consulted by the consumergroup engine's partition readers) so the
+			// scenario is engine-agnostic.
+			var arm atomic.Bool
+			wrap := func(cfg kafka.ReaderConfig, inner consumer.KafkaReader) consumer.KafkaReader {
+				if cfg.Topic == dwellActiveTopic {
+					return &forceErrReader{inner: inner, arm: &arm}
+				}
+				return inner
+			}
+			cfgs := []consumer.ManagerConfig{
+				consumer.ConfigEngine(engine),
+				consumer.ConfigReaderProducer(func(cfg kafka.ReaderConfig) consumer.KafkaReader {
+					return wrap(cfg, kafka.NewReader(cfg))
+				}),
+				consumer.ConfigPartitionReaderProducer(func(cfg kafka.ReaderConfig, offset int64) consumer.KafkaReader {
+					r := kafka.NewReader(cfg)
+					_ = r.SetOffset(offset)
+					return wrap(cfg, r)
+				}),
+			}
+			cm, rec, cancel, wg := dwellSetup(t, brokers, 5, 0, cfgs)
+			defer func() { cancel(); wg.Wait() }()
 
-	// Healthy stretch first.
-	publishStamped(t, brokers, dwellActiveTopic, 10, 100*time.Millisecond)
-	require.Eventually(t, func() bool { return rec.count() >= 10 },
-		30*time.Second, 100*time.Millisecond, "pre-recreate messages not delivered")
-	rec.reset()
+			// Healthy stretch first.
+			publishStamped(t, brokers, dwellActiveTopic, 10, 100*time.Millisecond)
+			require.Eventually(t, func() bool { return rec.count() >= 10 },
+				30*time.Second, 100*time.Millisecond, "pre-recreate messages not delivered")
+			rec.reset()
 
-	// Inject the failure, then keep publishing across the recreate window.
-	arm.Store(true)
-	publishStamped(t, brokers, dwellActiveTopic, 20, 250*time.Millisecond)
-	require.Eventually(t, func() bool { return rec.count() >= 20 },
-		60*time.Second, 100*time.Millisecond, "messages lost across recreate")
+			// Inject the failure, then keep publishing across the recreate window.
+			arm.Store(true)
+			publishStamped(t, brokers, dwellActiveTopic, 20, 250*time.Millisecond)
+			require.Eventually(t, func() bool { return rec.count() >= 20 },
+				60*time.Second, 100*time.Millisecond, "messages lost across recreate")
 
-	maxDwell := rec.max()
-	active := snapshotForTopic(t, cm, dwellActiveTopic)
-	t.Logf("S3: max dwell across recreate=%v recreates=%d timeToFirstFetch=%v totalBackoff=%v",
-		maxDwell, active.RecreateCount, active.TimeToFirstFetch, active.TotalBackoff)
-	dumpSnapshots(t, cm)
-	require.GreaterOrEqual(t, active.RecreateCount, 1, "S3: injected error must have forced a recreate")
-	require.LessOrEqual(t, maxDwell, 10*time.Second, "S3: recreate dwell must be bounded (design §4.1)")
+			maxDwell := rec.max()
+			active := snapshotForTopic(t, cm, dwellActiveTopic)
+			t.Logf("S3: max dwell across recreate=%v recreates=%d timeToFirstFetch=%v totalBackoff=%v",
+				maxDwell, active.RecreateCount, active.TimeToFirstFetch, active.TotalBackoff)
+			dumpSnapshots(t, cm)
+			require.GreaterOrEqual(t, active.RecreateCount, 1, "S3: injected error must have forced a recreate")
+			require.LessOrEqual(t, maxDwell, 10*time.Second, "S3: recreate dwell must be bounded (design §4.1)")
+		})
+	}
 }
 
 // S4 — control (H3): deadline ticks at 2s cadence on a small healthy group.
 // Post-fix, ticks alone add no dwell and cause no recreates — closing PRD
 // §9 Q2 with measurement rather than only the kafka-go source citation.
 func TestDwellS4_TickControl(t *testing.T) {
-	brokers := startDwellKafka(t)
-	cm, rec, cancel, wg := dwellSetup(t, brokers, 2, 0, nil,
-		consumer.SetFetchTimeout(2*time.Second),
-		// maxWait must stay well under fetchTimeout so an idle reader completes
-		// >=1 fetch long-poll per deadline tick (its Fetches delta is the
-		// idle-vs-stuck progress signal); mirrors the production 10s<<1m ratio.
-		consumer.SetMaxWait(200*time.Millisecond),
-	)
-	defer func() { cancel(); wg.Wait() }()
+	for _, engine := range dwellEngines {
+		engine := engine
+		t.Run(string(engine), func(t *testing.T) {
+			brokers := startDwellKafka(t)
+			cm, rec, cancel, wg := dwellSetup(t, brokers, 2, 0, []consumer.ManagerConfig{consumer.ConfigEngine(engine)},
+				consumer.SetFetchTimeout(2*time.Second),
+				// maxWait must stay well under fetchTimeout so an idle reader completes
+				// >=1 fetch long-poll per deadline tick (its Fetches delta is the
+				// idle-vs-stuck progress signal); mirrors the production 10s<<1m ratio.
+				consumer.SetMaxWait(200*time.Millisecond),
+			)
+			defer func() { cancel(); wg.Wait() }()
 
-	const n = 30
-	publishStamped(t, brokers, dwellActiveTopic, n, 500*time.Millisecond)
-	require.Eventually(t, func() bool { return rec.count() >= n },
-		60*time.Second, 100*time.Millisecond, "not all messages delivered")
+			const n = 30
+			publishStamped(t, brokers, dwellActiveTopic, n, 500*time.Millisecond)
+			require.Eventually(t, func() bool { return rec.count() >= n },
+				60*time.Second, 100*time.Millisecond, "not all messages delivered")
 
-	p99 := rec.p99()
-	t.Logf("S4: p99=%v max=%v recreates=%d", p99, rec.max(), totalRecreates(cm))
-	dumpSnapshots(t, cm)
-	require.Zero(t, totalRecreates(cm), "S4: ticks alone must not recreate")
-	require.Less(t, p99, time.Second, "S4: ticks alone must add no dwell")
+			p99 := rec.p99()
+			t.Logf("S4: p99=%v max=%v recreates=%d", p99, rec.max(), totalRecreates(cm))
+			dumpSnapshots(t, cm)
+			require.Zero(t, totalRecreates(cm), "S4: ticks alone must not recreate")
+			require.Less(t, p99, time.Second, "S4: ticks alone must add no dwell")
+		})
+	}
 }
 
 // S5 — MaxWait A/B (H2): an idle group reader at maxWait=50ms vs 10s. With
@@ -408,4 +465,218 @@ func TestDwellS5_MaxWaitIdleFetchRate(t *testing.T) {
 	slow := measure("s5.idle.b", 10*time.Second)
 	t.Logf("S5: idle fetch attempts in 30s — maxWait=50ms: %d; maxWait=10s: %d", fast, slow)
 	require.Greater(t, fast, slow, "S5: shorter MaxWait must issue more idle fetch requests")
+}
+
+// publishDwellMessages writes n messages, starting at startIndex, with
+// unique deterministic values (not timestamp-stamped) so
+// TestCrossEngineOffsetRoundTrip can distinguish individual messages by
+// content across two separate consumer runs and across two separate publish
+// batches.
+func publishDwellMessages(t *testing.T, brokers []string, topic string, startIndex, n int) {
+	t.Helper()
+	w := &kafka.Writer{
+		Addr:         kafka.TCP(brokers...),
+		Topic:        topic,
+		Balancer:     &kafka.LeastBytes{},
+		BatchTimeout: 10 * time.Millisecond,
+		RequiredAcks: kafka.RequireAll,
+	}
+	defer func() { _ = w.Close() }()
+	msgs := make([]kafka.Message, 0, n)
+	for i := 0; i < n; i++ {
+		idx := startIndex + i
+		msgs = append(msgs, kafka.Message{
+			Key:   []byte(fmt.Sprintf("k%d", idx)),
+			Value: []byte(fmt.Sprintf("rt-msg-%d", idx)),
+		})
+	}
+	require.NoError(t, w.WriteMessages(context.Background(), msgs...))
+}
+
+// TestDwellS6_MembersExceedPartitions reproduces the exact atlas-main
+// topology behind the incident: a single-partition topic with TWO group
+// members (services run replicas: 2 against 237 single-partition topics), so
+// one member is permanently unassigned. On the legacy engine that member
+// recreates itself every maxConsecutiveTimeouts×fetchTimeout, and each
+// recreate rejoins the group and stalls every other topic in it. On the
+// consumergroup engine it must sit healthy-idle: zero recreates across the
+// whole window, with the assigned member still delivering.
+func TestDwellS6_MembersExceedPartitions(t *testing.T) {
+	brokers := startDwellKafka(t)
+	const topic = "dwell.s6.single"
+	const groupID = "S6 Service"
+	createDwellTopics(t, brokers, []string{topic})
+
+	l, hook := test.NewNullLogger()
+	l.SetLevel(logrus.DebugLevel)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Compressed ticks: a full wedge cycle is 2×200ms, so a 6s window covers
+	// ~15 cycles — well past the point the legacy engine would have recreated.
+	const fetchTimeout = 200 * time.Millisecond
+	const maxConsecutive = 2
+
+	var delivered atomic.Int64
+
+	// Two independent Managers stand in for two pods in the same group.
+	// ResetInstance between them is what makes GetManager hand back a second,
+	// separate Manager rather than the memoized singleton.
+	managers := make([]*consumer.Manager, 0, 2)
+	wgs := make([]*sync.WaitGroup, 0, 2)
+	for i := 0; i < 2; i++ {
+		consumer.ResetInstance()
+		cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineConsumerGroup))
+		wg := &sync.WaitGroup{}
+		// AddConsumerAndRegister takes no decorators; use AddConsumer (which
+		// does) then RegisterHandler, the same shape dwellSetup uses.
+		cm.AddConsumer(l, ctx, wg)(
+			consumer.NewConfig(brokers, fmt.Sprintf("s6-member-%d", i), topic, groupID),
+			consumer.SetFetchTimeout(fetchTimeout),
+			consumer.SetMaxConsecutiveTimeouts(maxConsecutive),
+			// maxWait must stay well under fetchTimeout so an ASSIGNED idle
+			// reader completes >=1 fetch long-poll per deadline tick.
+			consumer.SetMaxWait(50*time.Millisecond),
+		)
+		_, err := cm.RegisterHandler(topic, func(_ logrus.FieldLogger, _ context.Context, _ kafka.Message) (bool, error) {
+			delivered.Add(1)
+			return true, nil
+		})
+		require.NoError(t, err)
+		managers = append(managers, cm)
+		wgs = append(wgs, wg)
+	}
+	defer func() {
+		cancel()
+		for _, wg := range wgs {
+			wg.Wait()
+		}
+	}()
+
+	// Let both members join and the balancer settle.
+	time.Sleep(3 * time.Second)
+
+	publishStamped(t, brokers, topic, 5, 100*time.Millisecond)
+	require.Eventually(t, func() bool { return delivered.Load() >= 5 },
+		20*time.Second, 100*time.Millisecond,
+		"the assigned member stopped delivering")
+
+	// Dwell past several would-be wedge cycles.
+	time.Sleep(6 * time.Second)
+
+	totalRecreates := 0
+	unassignedSeen := false
+	for _, cm := range managers {
+		for _, c := range cm.Consumers() {
+			s := c.Snapshot()
+			totalRecreates += s.RecreateCount
+			if len(s.AssignedPartitions) == 0 {
+				unassignedSeen = true
+			}
+		}
+	}
+
+	require.True(t, unassignedSeen,
+		"no member ended up unassigned; the scenario did not reproduce members > partitions")
+	require.Zero(t, totalRecreates,
+		"an unassigned member recreated itself — this is the rebalance churn task-209 removes")
+
+	for _, e := range hook.AllEntries() {
+		require.NotContains(t, e.Message, "wedged",
+			"an unassigned member logged a wedge warning (FR-2.5)")
+		require.NotContains(t, e.Message, "stall suspect",
+			"an unassigned member logged a stall-suspect warning (FR-2.5)")
+	}
+}
+
+// TestCrossEngineOffsetRoundTrip is FR-5.3 made executable: consume half the
+// messages on one engine, stop, resume the same group on the other engine,
+// and assert the second run sees exactly the remainder — no replay, no gap.
+// Run in both directions, because a rollback must be safe both ways.
+//
+// The two halves are published as two SEPARATE batches (5, then another 5
+// after the first run stops) rather than all 10 upfront. Publishing all 10
+// upfront would leave the first run racing an unbounded, unpaced local
+// broker: nothing stops its otherwise-serial fetch loop from continuing past
+// message 5 and committing into the second half before the test observes
+// len(seen)>=5 and cancels — that observed-then-cancel race is exactly what
+// made an early version of this test flaky (it isn't guarding a real gap;
+// it's an artifact of how fast a local single-broker container replies).
+// Splitting the publish means the topic is genuinely exhausted at offset 5
+// when the first run's reader catches up — there is nothing further to
+// overrun into — so the split is deterministic by construction, not by
+// timing luck.
+func TestCrossEngineOffsetRoundTrip(t *testing.T) {
+	directions := []struct {
+		name   string
+		first  consumer.EngineName
+		second consumer.EngineName
+	}{
+		{"consumergroup-then-reader", consumer.EngineConsumerGroup, consumer.EngineReader},
+		{"reader-then-consumergroup", consumer.EngineReader, consumer.EngineConsumerGroup},
+	}
+
+	for _, d := range directions {
+		d := d
+		t.Run(d.name, func(t *testing.T) {
+			brokers := startDwellKafka(t)
+			topic := "dwell.roundtrip." + d.name
+			groupID := "RoundTrip " + d.name
+			createDwellTopics(t, brokers, []string{topic})
+
+			l, _ := test.NewNullLogger()
+
+			run := func(engine consumer.EngineName, want int) []string {
+				var mu sync.Mutex
+				var seen []string
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+
+				consumer.ResetInstance()
+				cm := consumer.GetManager(consumer.ConfigEngine(engine))
+				wg := &sync.WaitGroup{}
+				_, err := cm.AddConsumerAndRegister(l, ctx, wg)(
+					consumer.NewConfig(brokers, "roundtrip", topic, groupID),
+					func(_ logrus.FieldLogger, _ context.Context, msg kafka.Message) (bool, error) {
+						mu.Lock()
+						defer mu.Unlock()
+						if len(seen) < want {
+							seen = append(seen, string(msg.Value))
+						}
+						return true, nil
+					},
+				)
+				require.NoError(t, err)
+
+				require.Eventually(t, func() bool {
+					mu.Lock()
+					defer mu.Unlock()
+					return len(seen) >= want
+				}, 30*time.Second, 100*time.Millisecond, "engine %s did not deliver %d messages", engine, want)
+
+				// Give the commit for the last handled message time to land
+				// before tearing the consumer down.
+				time.Sleep(2 * time.Second)
+				cancel()
+				wg.Wait()
+
+				mu.Lock()
+				defer mu.Unlock()
+				return append([]string(nil), seen...)
+			}
+
+			publishDwellMessages(t, brokers, topic, 0, 5)
+			firstHalf := run(d.first, 5)
+
+			publishDwellMessages(t, brokers, topic, 5, 5)
+			secondHalf := run(d.second, 5)
+
+			require.Len(t, firstHalf, 5)
+			require.Len(t, secondHalf, 5)
+			for _, v := range secondHalf {
+				require.NotContains(t, firstHalf, v,
+					"engine %s replayed a message engine %s already committed", d.second, d.first)
+			}
+		})
+	}
 }

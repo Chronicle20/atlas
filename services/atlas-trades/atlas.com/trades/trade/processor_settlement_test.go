@@ -427,6 +427,82 @@ func TestExpireAttestationDoesNothingOnceSettling(t *testing.T) {
 	}
 }
 
+// realWindowCrc is the CRC list the reference client ACTUALLY sends with
+// TRADE_CONFIRM once both sides have staged. CTradingRoomDlg::Trade @0x7c39a0
+// walks BOTH dialog arrays (members 113 and 114), so the confirm carries every
+// item in the window; CTradingRoomDlg::OnTrade @0x7c20bc walks member 114 only,
+// so the attestation carries just the counterparty's. testStagedRoom stages
+// stagingTemplateId on both sides and CItemInfo::GetItemCRC keys on the
+// TEMPLATE, so the window's two pairs are identical.
+func realWindowCrc() []trademsg.CrcEntry {
+	return []trademsg.CrcEntry{
+		{Data: uint32(stagingTemplateId), Crc: 0x1234ABCD},
+		{Data: uint32(stagingTemplateId), Crc: 0x1234ABCD},
+	}
+}
+
+// TestAttestationIsTheCounterpartyContributionNotTheWholeWindow is the
+// regression test for the item-for-item trade. Both sides stage, so each
+// client's confirm carries two pairs and its attestation carries one. Comparing
+// the two lists directly refused every real two-sided trade with
+// TRADE_CRC_FAILED -- the client's "the game file has been damaged" notice.
+//
+// It went unnoticed because a one-sided trade leaves the giver's attestation
+// empty (which is lenient) and the receiver's window holding a single item,
+// making the two lists coincidentally equal.
+func TestAttestationIsTheCounterpartyContributionNotTheWholeWindow(t *testing.T) {
+	p, e := testStagedRoom(t)
+	confirmBoth(t, p, realWindowCrc(), realWindowCrc())
+
+	if err := p.Attest(uuid.New(), 100, confirmCrc()); err != nil {
+		t.Fatalf("owner attest: %v", err)
+	}
+	if err := p.Attest(uuid.New(), 200, confirmCrc()); err != nil {
+		t.Fatalf("visitor attest: %v", err)
+	}
+
+	if got := len(collectSagas(t, e)); got != 1 {
+		t.Fatalf("sagas submitted: got %d, want 1 — a faithful two-sided attestation must settle", got)
+	}
+}
+
+// TestAttestationWithAnUnconfirmedCrcIsRefused pins that relaxing the length
+// comparison did not relax the tamper check: a pair this side never reported at
+// confirm time is still a mismatch, which is the case the check exists for.
+func TestAttestationWithAnUnconfirmedCrcIsRefused(t *testing.T) {
+	p, e := testStagedRoom(t)
+	confirmBoth(t, p, realWindowCrc(), realWindowCrc())
+
+	if err := p.Attest(uuid.New(), 100, []trademsg.CrcEntry{{Data: uint32(stagingTemplateId), Crc: 0xDEADBEEF}}); err != nil {
+		t.Fatalf("owner attest: %v", err)
+	}
+	if err := p.Attest(uuid.New(), 200, confirmCrc()); err != nil {
+		t.Fatalf("visitor attest: %v", err)
+	}
+
+	assertCancelledWithReason(t, e, ReasonTradeCrcFailed)
+	assertNoSagaSubmitted(t, e)
+}
+
+// TestAttestationNamingMoreItemsThanTheCounterpartyStagedIsRefused pins the
+// count half: the attestation must name exactly what the counterparty staged,
+// so a client claiming to receive two items when one was staged is refused even
+// though every pair it names is one it confirmed.
+func TestAttestationNamingMoreItemsThanTheCounterpartyStagedIsRefused(t *testing.T) {
+	p, e := testStagedRoom(t)
+	confirmBoth(t, p, realWindowCrc(), realWindowCrc())
+
+	if err := p.Attest(uuid.New(), 100, realWindowCrc()); err != nil {
+		t.Fatalf("owner attest: %v", err)
+	}
+	if err := p.Attest(uuid.New(), 200, confirmCrc()); err != nil {
+		t.Fatalf("visitor attest: %v", err)
+	}
+
+	assertCancelledWithReason(t, e, ReasonTradeCrcFailed)
+	assertNoSagaSubmitted(t, e)
+}
+
 // TestCrcMismatchTearsDownWithStatusThirteen pins design §6.1 check 4.
 func TestCrcMismatchTearsDownWithStatusThirteen(t *testing.T) {
 	p, e := testConfirmedRoomWithCrc(t)

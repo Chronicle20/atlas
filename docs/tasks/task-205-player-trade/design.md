@@ -505,6 +505,27 @@ client auto-reply `0x14` without its owner ever pressing Trade (§1.2), which
 would let one side drive the other's attestation. The 5-second deadline (§3.1)
 covers a client that does not reply.
 
+> **Correction (post-implementation, verified on the GMS v83 client).** §1.5
+> describes both messages as carrying "the client's own CRC list". They do not
+> carry the *same* list, and the check must not compare them to each other:
+>
+> - `CTradingRoomDlg::Trade` @`0x7c39a0` (0x11) walks **both** dialog arrays —
+>   member 113 (own staged items) and member 114 (the counterparty's) — so the
+>   confirm carries **every item in the window**, interleaved per trade slot.
+> - `CTradingRoomDlg::OnTrade` @`0x7c20bc` (0x14) walks **member 114 only**, so
+>   the attestation carries **just the counterparty's items** — what this
+>   character is about to receive.
+>
+> Comparing the two lists refuses every trade in which both sides stage an item
+> (confirm has n+m pairs, attestation m), which the client reports as
+> `SP_5566` "the game file has been damaged". A one-sided trade hid it: the
+> giver's attestation is empty and the receiver's window holds a single item, so
+> the lists coincidentally matched. §6.1 check 4 therefore validates the
+> attestation against the **counterparty's staged contribution** — template-id
+> multiset — plus containment in this side's own confirm list, which is what
+> preserves the CRC-tamper detection. See `attestationMatches` in
+> `trade/settlement.go`.
+
 ### 6.3 Saga shape
 
 One saga per settlement, submitted with a single `transactionId` that is also

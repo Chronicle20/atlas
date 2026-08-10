@@ -11,7 +11,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 	"sync"
 	"time"
 
@@ -22,6 +21,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -593,10 +593,10 @@ func (p *ProcessorImpl) preCheck(cache *compartmentCache, ordered []Participant,
 		}
 	}
 
-	// (4) The attestation matches the confirm.
-	for _, side := range ordered {
-		if !entriesMatch(side.ConfirmEntries(), side.AttestEntries()) {
-			p.l.Warnf("Character [%d]'s TRANSACTION CRC list does not match the list it sent with TRADE_CONFIRM.", side.CharacterId())
+	// (4) The attestation matches what the counterparty staged.
+	for i, side := range ordered {
+		if !attestationMatches(side, ordered[1-i].Items()) {
+			p.l.Warnf("Character [%d]'s TRANSACTION CRC list does not attest the items character [%d] staged.", side.CharacterId(), ordered[1-i].CharacterId())
 			return ReasonTradeCrcFailed, false
 		}
 	}
@@ -755,46 +755,76 @@ func (p *ProcessorImpl) stagedAssetsIntact(cache *compartmentCache, side Partici
 	return "", true
 }
 
-// entriesMatch reports whether the attestation reproduces the confirm's CRC
-// list.
+// attestationMatches reports whether side's TRANSACTION CRC list attests the
+// items `incoming` — the counterparty's staged contribution.
 //
-// An EMPTY attestation always matches. That is not laxity: the CRC list is
-// absent from the wire entirely on GMS <= v79 (the serverbound tradeCrcPresent
-// gate, design §4.4), and the timeout path settles with no attestation at all —
-// in both cases there is nothing to compare, and refusing would break every
-// legacy version and every slow client. A client that wants to skip the check
-// can only do so by sending nothing, which is indistinguishable from not
-// replying, which the deadline already settles.
+// THE CONFIRM AND THE ATTESTATION ARE NOT THE SAME LIST. Verified against the
+// GMS v83 client:
 //
-// The comparison is order-insensitive. The client builds the list by walking
-// its dialog slots, so a reordering is not evidence of tampering; a changed or
-// missing pair is.
-func entriesMatch(confirmed []trademsg.CrcEntry, attested []trademsg.CrcEntry) bool {
+//   - CTradingRoomDlg::Trade @0x7c39a0 (0x11 TRADE_CONFIRM) walks BOTH dialog
+//     arrays — member 113 (this character's own staged items) and member 114
+//     (the counterparty's) — so the confirm carries EVERY item in the window,
+//     interleaved per trade slot.
+//   - CTradingRoomDlg::OnTrade @0x7c20bc (0x14 TRANSACTION) walks member 114
+//     ONLY, so the attestation carries just the items this character is about
+//     to RECEIVE.
+//
+// Comparing the two directly refuses every trade in which both sides stage an
+// item: the confirm holds n+m pairs and the attestation m. A one-sided trade
+// hid it — the giver's attestation is empty (lenient, below) and the receiver's
+// window holds a single item, so the two lists coincidentally matched.
+//
+// So the attestation is checked against the counterparty's contribution on two
+// axes, both of which the server knows independently of the client:
+//
+//   - its `data` values must be exactly the counterparty's staged template ids,
+//     compared as a MULTISET — CItemInfo::GetItemCRC keys on the template, so
+//     two staged stacks of the same item legitimately produce two identical
+//     pairs and a set would silently accept one; and
+//   - every attested pair must also appear in this side's OWN confirm list,
+//     which is what still catches a client reporting one CRC for an item at
+//     confirm time and a different one at attestation time.
+//
+// An EMPTY attestation always matches, unchanged. That is not laxity: the CRC
+// list is absent from the wire entirely on GMS <= v79 (the serverbound
+// tradeCrcPresent gate, design §4.4), and the timeout path settles with no
+// attestation at all — in both cases there is nothing to compare, and refusing
+// would break every legacy version and every slow client. A client that wants
+// to skip the check can only do so by sending nothing, which is
+// indistinguishable from not replying, which the deadline already settles.
+//
+// Order is not significant on either axis: the client builds both lists by
+// walking its dialog slots, so a reordering is not evidence of tampering.
+func attestationMatches(side Participant, incoming []StagedItem) bool {
+	attested := side.AttestEntries()
 	if len(attested) == 0 {
 		return true
 	}
-	if len(attested) != len(confirmed) {
+	if len(attested) != len(incoming) {
 		return false
 	}
-	a := sortedEntries(confirmed)
-	b := sortedEntries(attested)
-	for i := range a {
-		if a[i] != b[i] {
+
+	confirmed := make(map[trademsg.CrcEntry]int, len(attested))
+	for _, e := range side.ConfirmEntries() {
+		confirmed[e]++
+	}
+	wanted := make(map[item.Id]int, len(incoming))
+	for _, it := range incoming {
+		wanted[it.TemplateId()]++
+	}
+
+	for _, e := range attested {
+		if confirmed[e] == 0 {
 			return false
 		}
+		confirmed[e]--
+		id := item.Id(e.Data)
+		if wanted[id] == 0 {
+			return false
+		}
+		wanted[id]--
 	}
 	return true
-}
-
-func sortedEntries(in []trademsg.CrcEntry) []trademsg.CrcEntry {
-	out := copyEntries(in)
-	sort.Slice(out, func(i, j int) bool {
-		if out[i].Data != out[j].Data {
-			return out[i].Data < out[j].Data
-		}
-		return out[i].Crc < out[j].Crc
-	})
-	return out
 }
 
 // --- terminal saga status ------------------------------------------------------

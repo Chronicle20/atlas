@@ -1992,7 +1992,30 @@
         "fname": "CCashShop::RequestCashPurchaseRecord",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "operations": {
+            "BUY": 3,
+            "GIFT": 4,
+            "SET_WISHLIST": 5,
+            "INCREASE_INVENTORY": 6,
+            "INCREASE_STORAGE": 7,
+            "INCREASE_CHARACTER_SLOT": 8,
+            "ENABLE_EQUIP_SLOT": 10,
+            "MOVE_FROM_CASH_INVENTORY": 14,
+            "MOVE_TO_CASH_INVENTORY": 15,
+            "REBATE_LOCKER_ITEM": 28,
+            "BUY_COUPLE": 31,
+            "BUY_PACKAGE": 32,
+            "BUY_OTHER_PACKAGE": 33,
+            "BUY_NORMAL": 34,
+            "APPLY_WISHLIST": 35,
+            "BUY_FRIENDSHIP": 37,
+            "GET_PURCHASE_RECORD": 44,
+            "BUY_NAME_CHANGE": 50,
+            "BUY_WORLD_TRANSFER": 53
+          }
+        }
       },
       {
         "opCode": "0x114",

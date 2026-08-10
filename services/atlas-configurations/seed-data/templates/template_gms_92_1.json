@@ -1362,7 +1362,30 @@
         "fname": "CCashShop::RequestCashPurchaseRecord",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "operations": {
+            "BUY": 3,
+            "GIFT": 4,
+            "SET_WISHLIST": 5,
+            "INCREASE_INVENTORY": 6,
+            "INCREASE_STORAGE": 7,
+            "INCREASE_CHARACTER_SLOT": 8,
+            "ENABLE_EQUIP_SLOT": 10,
+            "MOVE_FROM_CASH_INVENTORY": 14,
+            "MOVE_TO_CASH_INVENTORY": 15,
+            "REBATE_LOCKER_ITEM": 27,
+            "BUY_COUPLE": 30,
+            "BUY_PACKAGE": 31,
+            "BUY_OTHER_PACKAGE": 32,
+            "BUY_NORMAL": 33,
+            "APPLY_WISHLIST": 34,
+            "BUY_FRIENDSHIP": 36,
+            "GET_PURCHASE_RECORD": 43,
+            "BUY_NAME_CHANGE": 49,
+            "BUY_WORLD_TRANSFER": 52
+          }
+        }
       },
       {
         "opCode": "0x10D",

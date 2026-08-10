@@ -17,15 +17,15 @@
 # ALL-OR-NOTHING: expectedTable reports every template key absent from this
 # file as EXTRA, but only once a version has at least one declared key. A
 # version listed here must therefore be enumerated COMPLETELY. gms_v92 and
-# gms_v95 are deliberately absent until their enumerations are finished
-# (derivation.md marks v92 INCOMPLETE and three v95 sites unresolved); the four
-# legacy versions and jms_v185 have not been enumerated at all.
+# gms_v95 were completed in task-206 Task 29 (all 25 candidate send sites read
+# and attributed on each); the four legacy versions and jms_v185 have not been
+# enumerated at all and are deliberately absent.
 #
-# Unnamed arms are omitted rather than guessed: gms_v84 mode 72 and gms_v87
-# mode 74 are real sends whose Atlas key is unknown (derivation.md). Omitting
-# them is safe — they are absent from the templates too — but it does mean this
-# file is not yet a complete description of the CLIENT, only of the arms Atlas
-# handles.
+# Unnamed arms are omitted rather than guessed: gms_v84 mode 72, gms_v87 mode
+# 74, gms_v92 mode 75 and gms_v95 mode 76 are real sends whose Atlas key is
+# unknown (derivation.md). Omitting them is safe — they are absent from the
+# templates too — but it does mean this file is not yet a complete description
+# of the CLIENT, only of the arms Atlas handles.
 
 handler: CashShopOperationHandle
 validator: LoggedInValidator
@@ -35,44 +35,44 @@ op: CASHSHOP_OPERATION
 direction: serverbound
 operations:
   - key: BUY
-    modes: { gms_v83: 3, gms_v84: 3, gms_v87: 3 }
+    modes: { gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v92: 3, gms_v95: 3 }
   - key: GIFT
-    modes: { gms_v83: 4, gms_v84: 4, gms_v87: 4 }
+    modes: { gms_v83: 4, gms_v84: 4, gms_v87: 4, gms_v92: 4, gms_v95: 4 }
   - key: SET_WISHLIST
-    modes: { gms_v83: 5, gms_v84: 5, gms_v87: 5 }
+    modes: { gms_v83: 5, gms_v84: 5, gms_v87: 5, gms_v92: 5, gms_v95: 5 }
   - key: INCREASE_INVENTORY
-    modes: { gms_v83: 6, gms_v84: 6, gms_v87: 6 }
+    modes: { gms_v83: 6, gms_v84: 6, gms_v87: 6, gms_v92: 6, gms_v95: 6 }
   - key: INCREASE_STORAGE
-    modes: { gms_v83: 7, gms_v84: 7, gms_v87: 7 }
+    modes: { gms_v83: 7, gms_v84: 7, gms_v87: 7, gms_v92: 7, gms_v95: 7 }
   - key: INCREASE_CHARACTER_SLOT
-    modes: { gms_v83: 8, gms_v84: 8, gms_v87: 8 }
+    modes: { gms_v83: 8, gms_v84: 8, gms_v87: 8, gms_v92: 8, gms_v95: 8 }
   - key: ENABLE_EQUIP_SLOT
-    modes: { gms_v83: 9, gms_v84: 9, gms_v87: 9 }
+    modes: { gms_v83: 9, gms_v84: 9, gms_v87: 9, gms_v92: 10, gms_v95: 10 }
   - key: MOVE_FROM_CASH_INVENTORY
-    modes: { gms_v83: 13, gms_v84: 13, gms_v87: 13 }
+    modes: { gms_v83: 13, gms_v84: 13, gms_v87: 13, gms_v92: 14, gms_v95: 14 }
   - key: MOVE_TO_CASH_INVENTORY
-    modes: { gms_v83: 14, gms_v84: 14, gms_v87: 14 }
+    modes: { gms_v83: 14, gms_v84: 14, gms_v87: 14, gms_v92: 15, gms_v95: 15 }
   - key: REBATE_LOCKER_ITEM
-    modes: { gms_v83: 26, gms_v84: 26, gms_v87: 26 }
+    modes: { gms_v83: 26, gms_v84: 26, gms_v87: 26, gms_v92: 27, gms_v95: 28 }
   - key: BUY_COUPLE
-    modes: { gms_v83: 29, gms_v84: 29, gms_v87: 29 }
+    modes: { gms_v83: 29, gms_v84: 29, gms_v87: 29, gms_v92: 30, gms_v95: 31 }
   - key: BUY_PACKAGE
-    modes: { gms_v83: 30, gms_v84: 30, gms_v87: 30 }
+    modes: { gms_v83: 30, gms_v84: 30, gms_v87: 30, gms_v92: 31, gms_v95: 32 }
   - key: BUY_OTHER_PACKAGE
-    modes: { gms_v83: 31, gms_v84: 31, gms_v87: 31 }
+    modes: { gms_v83: 31, gms_v84: 31, gms_v87: 31, gms_v92: 32, gms_v95: 33 }
   # 32 == 0x20. The v83/v84 templates carried 20 — a hex-read-as-decimal
   # transcription error. CCashShop::OnBuyNormal pushes 20h at 0x46e7ab (v83),
   # 0x471234 (v84), 0x478ec3 (v87).
   - key: BUY_NORMAL
-    modes: { gms_v83: 32, gms_v84: 32, gms_v87: 32 }
+    modes: { gms_v83: 32, gms_v84: 32, gms_v87: 32, gms_v92: 33, gms_v95: 34 }
   - key: APPLY_WISHLIST
-    modes: { gms_v83: 33, gms_v84: 33, gms_v87: 33 }
+    modes: { gms_v83: 33, gms_v84: 33, gms_v87: 33, gms_v92: 34, gms_v95: 35 }
   - key: BUY_FRIENDSHIP
-    modes: { gms_v83: 35, gms_v84: 35, gms_v87: 35 }
+    modes: { gms_v83: 35, gms_v84: 35, gms_v87: 35, gms_v92: 36, gms_v95: 37 }
   # v87 shifts the last three by +2.
   - key: GET_PURCHASE_RECORD
-    modes: { gms_v83: 40, gms_v84: 40, gms_v87: 42 }
+    modes: { gms_v83: 40, gms_v84: 40, gms_v87: 42, gms_v92: 43, gms_v95: 44 }
   - key: BUY_NAME_CHANGE
-    modes: { gms_v83: 46, gms_v84: 46, gms_v87: 48 }
+    modes: { gms_v83: 46, gms_v84: 46, gms_v87: 48, gms_v92: 49, gms_v95: 50 }
   - key: BUY_WORLD_TRANSFER
-    modes: { gms_v83: 49, gms_v84: 49, gms_v87: 51 }
+    modes: { gms_v83: 49, gms_v84: 49, gms_v87: 51, gms_v92: 52, gms_v95: 53 }

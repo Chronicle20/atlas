@@ -785,35 +785,99 @@ was removed. Empty-code rejection with the literal
 
 **Row-count self-check:** 2 `EncodeStr` sites → 2 rows. ✅
 
-### Serverbound `operations` — INCOMPLETE (explicit gap)
+### Serverbound `operations` (CashShopOperationHandle)
 
 26 `68 0C 01 00 00` hits fall in the `CCashShop` region
 `0x47ece3`-`0x48e809`. One of them (`0x487206`) is **not** a packet site (no
 `COutPacket` ctor follows; the bytes at `0x48720b` are
-`mov ecx, offset dword_C39830` and a run of colour constants), leaving 25
-candidate send sites. Mode bytes read at 19 of them:
+`mov ecx, offset dword_C39830` and a run of colour constants), leaving **25
+candidate send sites — all 25 now decompiled, read and attributed** (task-206
+Task 29; this supersedes the earlier "INCOMPLETE (explicit gap)" note).
 
-`0x47ece3` → 43 · `0x47f38a` → 14 · `0x47f558` → 15 · `0x47f7cc` → 34 ·
-`0x47f976` → 52 · `0x4802f0` → 5 · `0x481d16` → 3 · `0x481fbf` → 27 ·
-`0x484185` → 4 · `0x4846f6` → 49 · `0x48a034` → 6 · `0x48a29d` → 7 ·
-`0x48a4fe` → 8 · `0x48a8db` → 10 · `0x48b07a` → 3 · `0x48bb93` → 33 ·
-`0x48d45e` → 30 · `0x48dec8` → 36 · `0x48e809` → 75; plus the
-GiftWishItem-equivalent @ `0x48e48c`, which selects among **4 / 36 / 30**
-(`mov esi,4` @ `0x48e4a0`, `mov esi,24h` @ `0x48e4b1`, `mov esi,1Eh` @
-`0x48e4c9`), and the OnBuySlotInc-equivalent @ `0x48db6a`, which computes
-**6 or 7** (`setne cl; add cl,6` @ `0x48db8e`-`0x48db91`).
+CASHSHOP_OPERATION on gms_v92 is opcode **268 / `0x10C`**; every ctor cited
+below is `COutPacket::COutPacket(&pkt, 0x10Cu)`.
 
-**Why this is not written as a key → mode table.** Unlike v83/v84/v87/v95, the
-v92 IDB has **no names on the request-builder functions** (`func_query`
-`CashShop` returns only the `On*Res*` receive handlers plus four senders), so
-each mode byte cannot be attributed to a *key* without decompiling every
-sender. Three sites (`0x4805a2`, `0x48b7af`, `0x48c56e`, `0x48cead`) push
-their mode through a register later in the function and were not resolved.
-Emitting a key→mode table from mode bytes alone would be a guess. **This
-sub-section is therefore NOT complete and must be finished before Task 5
-writes the v92 column of `cash_shop_operation_handle.yaml`.** What remains:
-decompile (and name) the 25 v92 sender functions, which is ~25 small
-decompiles in session `acdfccff`.
+**Naming.** The v92 IDB carried no symbol on any of these request builders
+except three (`SendBuyAvatarPacket`, `SendGiftsPacket`,
+`OnGiftMateInfoResult`), so each of the other 22 was decompiled and then
+`rename`d in session `acdfccff` before its mode byte could be attributed to a
+key. Five helpers were named alongside them, each from the identical
+call-position in the v95 IDB where the symbol survives:
+`is_friendship_equip_item` (`0x479770`), `is_couple_equip_item` (`0x4795f0`),
+`is_cash_package_item` (`0x4795c0`),
+`CCashShop::GetUsableCommodityIndexBySN` (`0x47ee20`) and
+`CCashShop::FindWishList` (`0x47f5d0`). The three `is_*_item` predicates are
+load-bearing evidence, not cosmetics: they are what distinguishes the
+friendship / couple / package arms of `GiftWishItem` from each other without
+appealing to the mode numbering.
+
+#### Per-site table — 25 sites
+
+| # | Site | Function (`*` = renamed this pass) | Ctor | Mode | Mode written at | Key |
+|---|---|---|---|---|---|---|
+| 1 | `0x47ece3` | `CCashShop::RequestCashPurchaseRecord`* | `0x47ecec` | 43 | `Encode1` @ `0x47ecff` | GET_PURCHASE_RECORD |
+| 2 | `0x47f38a` | `CCashShop::OnMoveCashItemLtoS`* | `0x47f393` | 14 | `Encode1` @ `0x47f3a3` | MOVE_FROM_CASH_INVENTORY |
+| 3 | `0x47f558` | `CCashShop::OnMoveCashItemStoL`* | `0x47f561` | 15 | `Encode1` @ `0x47f575` | MOVE_TO_CASH_INVENTORY |
+| 4 | `0x47f7cc` | `CCashShop::ApplyWishListEvent`* | `0x47f7d5` | 34 | `Encode1` @ `0x47f7e8` | APPLY_WISHLIST |
+| 5 | `0x47f976` | `CCashShop::SendBuyTransferWorldItemPacket`* | `0x47f97f` | 52 | `Encode1` @ `0x47f992` | BUY_WORLD_TRANSFER |
+| 6 | `0x4802f0` | `CCashShop::OnSetWish`* | `0x4802f9` | 5 | `Encode1` @ `0x480308` | SET_WISHLIST |
+| 7 | `0x4805a2` | `CCashShop::OnRemoveWish`* | `0x4805b3` | 5 | inlined byte store `*(buf+len) = 5` @ `0x4805ff` | SET_WISHLIST |
+| 8 | `0x481d16` | `CCashShop::SendBuyAvatarPacket` (pre-named) | `0x481d1f` | 3 | `Encode1` @ `0x481d32` | BUY |
+| 9 | `0x481fbf` | `CCashShop::OnRebateLockerItem`* | `0x481fc8` | 27 | `Encode1` @ `0x481fd8` | REBATE_LOCKER_ITEM |
+| 10 | `0x484185` | `CCashShop::SendGiftsPacket` (pre-named) | `0x484196` | 4 | `Encode1` @ `0x4841a6` | GIFT |
+| 11 | `0x4846f6` | `CCashShop::SendBuyNameChangeItemPacket`* | `0x484707` | 49 | `Encode1` @ `0x484717` | BUY_NAME_CHANGE |
+| 12 | `0x48a034` | `CCashShop::OnExItemSlot`* | `0x48a03d` | 6 | `Encode1` @ `0x48a04d` | INCREASE_INVENTORY |
+| 13 | `0x48a29d` | `CCashShop::OnIncTrunkCount`* | `0x48a2a6` | 7 | `Encode1` @ `0x48a2b6` | INCREASE_STORAGE |
+| 14 | `0x48a4fe` | `CCashShop::OnIncCharacterSlotCount`* | `0x48a507` | 8 | `Encode1` @ `0x48a517` | INCREASE_CHARACTER_SLOT |
+| 15 | `0x48a8db` | `CCashShop::OnEnableEquipSlotExt`* | `0x48a8e4` | 10 | `Encode1` @ `0x48a8f7` | ENABLE_EQUIP_SLOT |
+| 16 | `0x48b07a` | `CCashShop::OnBuy`* | `0x48b083` | 3 | `push 3` @ `0x48b088` → `Encode1` @ `0x48b093` | BUY |
+| 17 | `0x48b7af` | `CCashShop::OnBuyPackage`* | `0x48b7b8` | 31 | inlined byte store `*(buf+len) = 31` @ `0x48b807` | BUY_PACKAGE |
+| 18 | `0x48bb93` | `CCashShop::OnBuyNormal`* | `0x48bb9c` | 33 | `Encode1` @ `0x48bbac` | BUY_NORMAL |
+| 19 | `0x48c56e` | `CCashShop::OnGiftMateInfoResult` (pre-named) | `0x48c57b` | 4 **or** 32 | one `Encode1` @ `0x48c958`; its operand is set to 32 @ `0x48c7e1` (the `is_cash_package_item` path) or to 4 @ `0x48c956` (plain gift) | GIFT / BUY_OTHER_PACKAGE |
+| 20 | `0x48cead` | `CCashShop::OnGiftPackage`* | `0x48ceb6` | 32 | inlined byte store `*(buf+len) = 32` @ `0x48cff3` | BUY_OTHER_PACKAGE |
+| 21 | `0x48d45e` | `CCashShop::OnBuyCouple`* | `0x48d467` | 30 | `Encode1` @ `0x48d477` | BUY_COUPLE |
+| 22 | `0x48db6a` | `CCashShop::OnBuySlotInc`* | `0x48db73` | 6 **or** 7 | `Encode1` @ `0x48dba2` of the computed `(pred(itemId) != 0) + 6` (`setne`/`add` @ `0x48db8e`-`0x48db91`) | INCREASE_INVENTORY / INCREASE_STORAGE |
+| 23 | `0x48dec8` | `CCashShop::OnBuyFriendship`* | `0x48ded1` | 36 | `Encode1` @ `0x48dee1` | BUY_FRIENDSHIP |
+| 24 | `0x48e48c` | `CCashShop::GiftWishItem`* | `0x48e495` | 4 / 36 / 30 / 32 | one `Encode1` of `esi` @ `0x48e4e3`; `mov esi,4` @ `0x48e4a0`, `mov esi,24h` @ `0x48e4b1` (`is_friendship_equip_item`), `mov esi,1Eh` @ `0x48e4c5` (`is_couple_equip_item`), `mov esi,20h` @ `0x48e4d9` (`is_cash_package_item`) | GIFT / BUY_FRIENDSHIP / BUY_COUPLE / BUY_OTHER_PACKAGE |
+| 25 | `0x48e809` | `CCashShop::OnCashGachaponCopy`* | `0x48e812` | 75 | `Encode1` @ `0x48e822` | *(no Atlas key)* |
+
+**Correction to the earlier pass.** `GiftWishItem` was previously recorded as
+selecting among **three** values (4 / 36 / 30). It selects among **four** — the
+`is_cash_package_item` branch at `0x48e4d9` sets `20h` (32). The v95
+`GiftWishItem` has the same fourth branch (`mov esi,21h` @ `0x4924d9`, guarded
+by the symbol-bearing `?is_cash_package_item@@YAHJ@Z`), which is what pins
+BUY_OTHER_PACKAGE on both versions without argument by analogy.
+
+#### Key → mode
+
+| Key | Mode | Evidence |
+|---|---|---|
+| BUY | 3 | `CCashShop::SendBuyAvatarPacket` ctor @ `0x481d1f`, `Encode1(3)` @ `0x481d32`; `CCashShop::OnBuy` ctor @ `0x48b083`, `push 3` @ `0x48b088` → `Encode1` @ `0x48b093` |
+| GIFT | 4 | `CCashShop::SendGiftsPacket` ctor @ `0x484196`, `Encode1(4)` @ `0x4841a6`; `GiftWishItem` `mov esi,4` @ `0x48e4a0`; `OnGiftMateInfoResult` non-package arm `4` @ `0x48c956` |
+| SET_WISHLIST | 5 | `CCashShop::OnSetWish` ctor @ `0x4802f9`, `Encode1(5)` @ `0x480308`; `CCashShop::OnRemoveWish` ctor @ `0x4805b3`, inlined store `5` @ `0x4805ff` |
+| INCREASE_INVENTORY | 6 | `CCashShop::OnExItemSlot` ctor @ `0x48a03d`, `Encode1(6)` @ `0x48a04d`; `OnBuySlotInc` computed arm @ `0x48dba2` (→ 6 when the trunk predicate `0x4796f0` is false) |
+| INCREASE_STORAGE | 7 | `CCashShop::OnIncTrunkCount` ctor @ `0x48a2a6`, `Encode1(7)` @ `0x48a2b6`; `OnBuySlotInc` computed arm @ `0x48dba2` (→ 7 otherwise) |
+| INCREASE_CHARACTER_SLOT | 8 | `CCashShop::OnIncCharacterSlotCount` ctor @ `0x48a507`, `Encode1(8)` @ `0x48a517` |
+| ENABLE_EQUIP_SLOT | **10** | `CCashShop::OnEnableEquipSlotExt` ctor @ `0x48a8e4`, `Encode1(0Ah)` @ `0x48a8f7` — shifted from 9 |
+| MOVE_FROM_CASH_INVENTORY | **14** | `CCashShop::OnMoveCashItemLtoS` ctor @ `0x47f393`, `Encode1(0Eh)` @ `0x47f3a3` — shifted from 13 |
+| MOVE_TO_CASH_INVENTORY | **15** | `CCashShop::OnMoveCashItemStoL` ctor @ `0x47f561`, `Encode1(0Fh)` @ `0x47f575` — shifted from 14 |
+| REBATE_LOCKER_ITEM | **27** | `CCashShop::OnRebateLockerItem` ctor @ `0x481fc8`, `Encode1(1Bh)` @ `0x481fd8` — shifted from 26 |
+| BUY_COUPLE | **30** | `CCashShop::OnBuyCouple` ctor @ `0x48d467`, `Encode1(1Eh)` @ `0x48d477`; `GiftWishItem` `mov esi,1Eh` @ `0x48e4c5` on the `is_couple_equip_item` (`0x4795f0`) branch — shifted from 29 |
+| BUY_PACKAGE | **31** | `CCashShop::OnBuyPackage` ctor @ `0x48b7b8`, inlined store `31` @ `0x48b807` — shifted from 30 |
+| BUY_OTHER_PACKAGE | **32** | `CCashShop::OnGiftPackage` ctor @ `0x48ceb6`, inlined store `32` @ `0x48cff3`; `GiftWishItem` `mov esi,20h` @ `0x48e4d9` on the `is_cash_package_item` (`0x4795c0`) branch; `OnGiftMateInfoResult` package arm `32` @ `0x48c7e1` — shifted from 31 |
+| BUY_NORMAL | **33** | `CCashShop::OnBuyNormal` ctor @ `0x48bb9c`, `Encode1(21h)` @ `0x48bbac` — shifted from 32 |
+| APPLY_WISHLIST | **34** | `CCashShop::ApplyWishListEvent` ctor @ `0x47f7d5`, `Encode1(22h)` @ `0x47f7e8` — shifted from 33 |
+| BUY_FRIENDSHIP | **36** | `CCashShop::OnBuyFriendship` ctor @ `0x48ded1`, `Encode1(24h)` @ `0x48dee1`; `GiftWishItem` `mov esi,24h` @ `0x48e4b1` on the `is_friendship_equip_item` (`0x479770`) branch — shifted from 35 |
+| GET_PURCHASE_RECORD | **43** | `CCashShop::RequestCashPurchaseRecord` ctor @ `0x47ecec`, `Encode1(2Bh)` @ `0x47ecff` — shifted from 40 |
+| BUY_NAME_CHANGE | **49** | `CCashShop::SendBuyNameChangeItemPacket` ctor @ `0x484707`, `Encode1(31h)` @ `0x484717` — shifted from 46 |
+| BUY_WORLD_TRANSFER | **52** | `CCashShop::SendBuyTransferWorldItemPacket` ctor @ `0x47f97f`, `Encode1(34h)` @ `0x47f992` — shifted from 49 |
+| *(no Atlas key)* | **75** | `CCashShop::OnCashGachaponCopy` ctor @ `0x48e812`, `Encode1(4Bh)` @ `0x48e822`. Same arm family as gms_v95's mode 76. **Key unknown / unverified — OMITTED from `cash_shop_operation_handle.yaml`.** |
+
+**Row-count self-check:** 25 candidate sites, **25 read** → 20 distinct mode
+bytes, 19 of which carry an Atlas key (mode 75 does not). 22 sites emit a
+single mode; `OnGiftMateInfoResult` emits 2, `OnBuySlotInc` 2 and
+`GiftWishItem` 4, so 22 + 3 = 25 sites. The 19 Atlas-mapped keys are exactly
+the 19 that v83/v84/v87 carry — no key gained, none lost. ✅
 
 ### gms_v92 clientbound arm table
 
@@ -992,8 +1056,8 @@ below is new to the template.
 | Key | Mode | Evidence |
 |---|---|---|
 | BUY | 3 | `CCashShop::SendBuyAvatarPacket` ctor @ `0x485796`, `push 3` @ `0x4857a6`; `CCashShop::OnBuy` ctor @ `0x48ec48`, `push 3` @ `0x48ec56` |
-| GIFT | 4 | `CCashShop::SendGiftsPacket` ctor @ `0x487dd5`, `push 4` @ `0x487df1`; `CCashShop::GiftWishItem` `mov esi,4` @ `0x4924a1` |
-| SET_WISHLIST | 5 | `CCashShop::OnSetWish` ctor @ `0x4838d0`, `push 5` @ `0x4838df` |
+| GIFT | 4 | `CCashShop::SendGiftsPacket` ctor @ `0x487dd5`, `push 4` @ `0x487df1`; `CCashShop::GiftWishItem` `mov esi,4` @ `0x4924a0`; `CCashShop::OnGiftMateInfoResult` ctor @ `0x4901b7`, non-package arm sets the `Encode1` operand to `4` @ `0x490596` (single `Encode1` @ `0x490598`) |
+| SET_WISHLIST | 5 | `CCashShop::OnSetWish` ctor @ `0x4838d0`, `push 5` @ `0x4838df`; `CCashShop::OnRemoveWish` ctor @ `0x483b93`, inlined byte store `*(buf+len) = 5` @ `0x483bdf` |
 | INCREASE_INVENTORY | 6 | `CCashShop::OnExItemSlot` ctor @ `0x48dbb8`, `push 6` @ `0x48dbc6`; `CCashShop::OnBuySlotInc` computed arm @ `0x491a47` |
 | INCREASE_STORAGE | 7 | `CCashShop::OnIncTrunkCount` ctor @ `0x48de1d`, `push 7` @ `0x48de2b` |
 | INCREASE_CHARACTER_SLOT | 8 | `CCashShop::OnIncCharacterSlotCount` ctor @ `0x48e07e`, `push 8` @ `0x48e08c` |
@@ -1001,8 +1065,9 @@ below is new to the template.
 | MOVE_FROM_CASH_INVENTORY | **14** | `CCashShop::OnMoveCashItemLtoS` ctor @ `0x482a8a`, `push 0Eh` @ `0x482a98` — shifted from 13 |
 | MOVE_TO_CASH_INVENTORY | **15** | `CCashShop::OnMoveCashItemStoL` ctor @ `0x482c58`, `push 0Fh` @ `0x482c6b` — shifted from 14 |
 | REBATE_LOCKER_ITEM | **28** | `CCashShop::OnRebateLockerItem` ctor @ `0x485a9a`, `push 1Ch` @ `0x485aa8` — shifted from 26 |
-| BUY_COUPLE | **31** | `CCashShop::OnBuyCouple` ctor @ `0x4910b1`, `push 1Fh` @ `0x4910bf`; `CCashShop::GiftWishItem` `mov esi,1Fh` @ `0x4924c9` |
+| BUY_COUPLE | **31** | `CCashShop::OnBuyCouple` ctor @ `0x4910b1`, `push 1Fh` @ `0x4910bf`; `CCashShop::GiftWishItem` `mov esi,1Fh` @ `0x4924c5` on the `?is_couple_equip_item@@YAHJ@Z` branch |
 | BUY_PACKAGE | **32** | `CCashShop::OnBuyPackage` ctor @ `0x48f478`, `push 20h` @ `0x48f486` |
+| BUY_OTHER_PACKAGE | **33** | `CCashShop::OnGiftPackage` ctor @ `0x490ae1`, inlined byte store `*(buf+len) = 33` @ `0x490b74`; `CCashShop::GiftWishItem` `mov esi,21h` @ `0x4924d9` on the `?is_cash_package_item@@YAHJ@Z` branch; `CCashShop::OnGiftMateInfoResult` package arm sets the `Encode1` operand to `33` @ `0x490421` — shifted from 31 |
 | BUY_NORMAL | **34** | `CCashShop::OnBuyNormal` ctor @ `0x48f753`, `push 22h` @ `0x48f761` |
 | APPLY_WISHLIST | **35** | `CCashShop::ApplyWishListEvent` ctor @ `0x482ecc`, `push 23h` @ `0x482eda` |
 | BUY_FRIENDSHIP | **37** | `CCashShop::OnBuyFriendship` ctor @ `0x491e50`, `push 25h` @ `0x491e5e`; `CCashShop::GiftWishItem` `mov esi,25h` @ `0x4924b1` |
@@ -1011,17 +1076,24 @@ below is new to the template.
 | BUY_WORLD_TRANSFER | **53** | `CCashShop::SendBuyTransferWorldItemPacket` ctor @ `0x482f56`, `push 35h` @ `0x482f64` |
 | *(no Atlas key)* | **76** | `CCashShop::OnCashGachaponCopy` ctor @ `0x492849`, `push 4Ch` @ `0x492857`. Same arm family as v84's mode 72 / v87's mode 74; here the IDB names the sender, so this one *is* gachapon-copy, not the locker-cap arm — treat v84/72 and v87/74 as still-unnamed. |
 
-**Unresolved v95 sites (3).** `0x483b82` (`CCashShop::OnRemoveWish`),
-`0x4901aa` (`CCashShop::OnGiftMateInfoResult`) and `0x490ad8`
-(`CCashShop::OnGiftPackage`) push their mode through a register further into
-the function and were not read this pass. By structural analogy with v83/v87
-they are `SET_WISHLIST`, `GIFT` and `BUY_OTHER_PACKAGE` respectively, but
-**that is an inference, not a decompile, and no mode byte is asserted for
-them here.** Finish these three before Task 5 writes the v95 column.
+**The three previously-unresolved v95 sites — now decompiled** (task-206 Task
+29). Each pushes its mode through a register further into the function, so the
+byte-search pass could not read it. All three were decompiled in session
+`79906a1e` and the ACTUAL byte read:
 
-**Row-count self-check:** 25 candidate sites, 22 read, 3 unresolved → 19 rows
-with a mode byte + 3 named gaps. Not yet equal to the site count; this section
-is therefore **not** certified complete.
+| Site | Function | Ctor | Mode byte read | Where | Key | vs. the earlier inference |
+|---|---|---|---|---|---|---|
+| `0x483b82` | `CCashShop::OnRemoveWish` | `0x483b93` | **5** | inlined byte store `*(buf+len) = 5` @ `0x483bdf` | SET_WISHLIST | matches |
+| `0x4901aa` | `CCashShop::OnGiftMateInfoResult` | `0x4901b7` | **4 or 33** | single `Encode1` @ `0x490598`; operand set to `33` @ `0x490421` (`is_cash_package_item` path) or `4` @ `0x490596` | GIFT **and** BUY_OTHER_PACKAGE | partially contradicts — the site is dual-mode, not GIFT-only |
+| `0x490ad8` | `CCashShop::OnGiftPackage` | `0x490ae1` | **33** | inlined byte store `*(buf+len) = 33` @ `0x490b74` | BUY_OTHER_PACKAGE | matches |
+
+The BUY_OTHER_PACKAGE value is corroborated a third time inside
+`CCashShop::GiftWishItem`, whose fourth arm sets `mov esi,21h` @ `0x4924d9`
+under the symbol-bearing `?is_cash_package_item@@YAHJ@Z` call — so the value
+rests on a named predicate, not on the +2 shift pattern.
+
+**Row-count self-check:** 25 candidate sites, **25 read** → 20 distinct mode
+bytes, 19 of which carry an Atlas key (mode 76 does not). ✅
 
 ---
 

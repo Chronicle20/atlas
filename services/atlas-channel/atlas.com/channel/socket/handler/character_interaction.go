@@ -2,15 +2,20 @@ package handler
 
 import (
 	"atlas-channel/character"
+	trade2 "atlas-channel/kafka/message/trade"
 	"atlas-channel/merchant"
 	"atlas-channel/minigame"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
+	"atlas-channel/trade"
 	"context"
 
 	"github.com/sirupsen/logrus"
 
+	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	interaction2 "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/serverbound"
@@ -84,6 +89,7 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			}
 			if roomType == model.TradeMiniRoomType {
 				l.Debugf("Character [%d] has created a trade-room. roomType [%d], title [%s], private [%t].", s.CharacterId(), roomType, sp.Title(), sp.Private())
+				createTradeRoom(l, ctx, wp)(s, byte(roomType))
 				return
 			}
 			if roomType == model.PersonalShopMiniRoomType || roomType == model.MerchantShopMiniRoomType {
@@ -129,6 +135,7 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			}
 			if roomType == model.CashTradeMiniRoomType {
 				l.Debugf("Character [%d] has created a store. roomType [%d], private [%t].", s.CharacterId(), roomType, sp.Private())
+				createTradeRoom(l, ctx, wp)(s, byte(roomType))
 			}
 			return
 		}
@@ -136,12 +143,14 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			sp := &interaction2.OperationInvite{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] is sending character [%d] a trade invite.", s.CharacterId(), sp.TargetCharacterId())
+			_ = trade.NewProcessor(l, ctx).Invite(s.Field(), characterconst.Id(s.CharacterId()), characterconst.Id(sp.TargetCharacterId()))
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeInviteDecline) {
 			sp := &interaction2.OperationInviteDecline{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] is declining trade invite. serialNumber [%d], errorCode [%d].", s.CharacterId(), sp.SerialNumber(), sp.ErrorCode())
+			_ = trade.NewProcessor(l, ctx).DeclineInvite(s.Field(), characterconst.Id(s.CharacterId()), sp.SerialNumber(), sp.ErrorCode())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeVisit) {
@@ -150,6 +159,14 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			// trailing zero byte (CUserLocal::HandleLButtonDblClk, ida-notes §G4).
 			// The same send covers game rooms and shops, so both processors are
 			// notified; each service drops joins for rooms it does not own.
+			//
+			// Trade is deliberately NOT in this fan-out. A trade room renders no
+			// field balloon, so nothing here can legitimately name one, and
+			// atlas-trades seats the invitee from the invite-accept path
+			// (kafka/consumer/invite/consumer.go:57-71) rather than from a serial
+			// the sender chose. Forwarding VISIT as an ENTER_ROOM would let any
+			// character walk into a pending trade by guessing its handle — which
+			// is the owner's character id (design §2.3).
 			sp := &interaction2.OperationVisitGame{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] is visiting. serialNumber [%d], hasPassword [%t].", s.CharacterId(), sp.SerialNumber(), sp.HasPassword())
@@ -183,9 +200,10 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			sp := &interaction2.OperationChat{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] is sending chat [%s].", s.CharacterId(), sp.Message())
-			// Chat covers game rooms and shops; each service drops chat from
-			// characters that are not members of one of its rooms.
+			// Chat covers game rooms, shops and trade rooms; each service drops
+			// chat from characters that are not members of one of its rooms.
 			_ = minigame.NewProcessor(l, ctx).Chat(s.Field(), s.CharacterId(), sp.Message())
+			_ = trade.NewProcessor(l, ctx).Chat(s.Field(), characterconst.Id(s.CharacterId()), sp.Message())
 			mp := merchant.NewProcessor(l, ctx)
 			visiting, err := mp.GetVisitingShop(s.CharacterId())
 			if err != nil {
@@ -197,9 +215,10 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeExit) {
 			l.Debugf("Character [%d] has stopped character interaction.", s.CharacterId())
-			// Exit covers game rooms and shops; each service drops exits from
-			// characters that are not members of one of its rooms.
+			// Exit covers game rooms, shops and trade rooms; each service drops
+			// exits from characters that are not members of one of its rooms.
 			_ = minigame.NewProcessor(l, ctx).Leave(s.Field(), s.CharacterId())
+			_ = trade.NewProcessor(l, ctx).Cancel(s.Field(), characterconst.Id(s.CharacterId()))
 			mp := merchant.NewProcessor(l, ctx)
 			visiting, err := mp.GetVisitingShop(s.CharacterId())
 			if err != nil {
@@ -243,10 +262,20 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			roomType := model.MiniRoomType(sp.RoomType())
 			if nProc == 0 && roomType == model.CashTradeMiniRoomType {
 				l.Debugf("Character [%d] has opened cash trade. nProc [%d], roomType [%d], targetCharacterId [%d].", s.CharacterId(), nProc, roomType, sp.TargetCharacterId())
+				// The cash-trade open carries its invitee inline, so it is a CREATE
+				// and an INVITE in one send — unlike roomType 3, where the client
+				// sends mode 0 then mode 2. Both commands are keyed by the acting
+				// character, so atlas-trades sees the room before the invite.
+				if !createTradeRoom(l, ctx, wp)(s, byte(roomType)) {
+					return
+				}
+				_ = trade.NewProcessor(l, ctx).Invite(s.Field(), characterconst.Id(s.CharacterId()), characterconst.Id(sp.TargetCharacterId()))
 				return
 			}
 			if nProc == 4 && roomType == model.CashTradeMiniRoomType {
 				l.Debugf("Character [%d] has opened cash trade. nProc [%d], roomType [%d], spw [%d], dwSN [%d], unk2 [%d].", s.CharacterId(), nProc, roomType, sp.Spw(), sp.DwSN(), sp.Unk2())
+				// dwSN is the room handle the invite carried (design §2.3).
+				_ = trade.NewProcessor(l, ctx).EnterRoom(s.Field(), characterconst.Id(s.CharacterId()), sp.DwSN())
 				return
 			}
 			if nProc == 4 && roomType == model.MerchantShopMiniRoomType {
@@ -277,12 +306,19 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			sp := &interaction2.OperationTradePutItem{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] attempting to put [%d] item(s) from inventory compartment [%d] slot [%d] up for trade. target [%d].", s.CharacterId(), sp.Quantity(), sp.InventoryType(), sp.Slot(), sp.TargetSlot())
+			it, ok := tradeInventoryType(sp.InventoryType())
+			if !ok {
+				l.Warnf("Character [%d] attempted to stage from inventory compartment [%d], which is not a compartment.", s.CharacterId(), sp.InventoryType())
+				return
+			}
+			_ = trade.NewProcessor(l, ctx).PutItem(s.Field(), characterconst.Id(s.CharacterId()), it, slot.Position(sp.Slot()), sp.Quantity(), sp.TargetSlot())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeTradeAddMeso) {
 			sp := &interaction2.OperationTradeAddMeso{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] attempting to put [%d] meso up for trade.", s.CharacterId(), sp.Amount())
+			_ = trade.NewProcessor(l, ctx).AddMeso(s.Field(), characterconst.Id(s.CharacterId()), sp.Amount())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeTradeConfirm) {
@@ -291,6 +327,7 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			for _, e := range sp.Entries() {
 				l.Debugf("Character [%d] confirmed trade includes [%d]. crc [%d].", s.CharacterId(), e.Data(), e.Crc())
 			}
+			_ = trade.NewProcessor(l, ctx).Confirm(s.Field(), characterconst.Id(s.CharacterId()), tradeConfirmEntries(sp.Entries()))
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeTransaction) {
@@ -299,6 +336,7 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			for _, e := range sp.Entries() {
 				l.Debugf("Character [%d] transaction includes [%d]. crc [%d].", s.CharacterId(), e.Data(), e.Crc())
 			}
+			_ = trade.NewProcessor(l, ctx).Transaction(s.Field(), characterconst.Id(s.CharacterId()), transactionEntries(sp.Entries()))
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModePersonalStorePutItem) {
@@ -629,6 +667,114 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		}
 		l.Warnf("Character [%d] issued a unhandled character interaction [%d].", s.CharacterId(), mode)
 	}
+}
+
+// createTradeRoom runs the cross-family occupancy check and, when the character
+// is free, forwards CREATE_ROOM to atlas-trades. It reports whether the command
+// was sent, so a caller with follow-up work (the cash-trade open, which invites
+// in the same send) can abandon it.
+//
+// A collision replies OTHER_REQUESTS — the mini-room enter error the reference
+// client shows for "you are already doing something else" (FR-1.2). The code
+// itself is resolved per version from the tenant `enterError` table by
+// CharacterInteractionEnterResultErrorBody; nothing here names a byte.
+func createTradeRoom(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, roomType byte) bool {
+	return func(s session.Model, roomType byte) bool {
+		if characterOccupiesAnyMiniRoom(l, ctx, s.CharacterId()) {
+			_ = session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(interactioncb.CharacterInteractionEnterErrorModeOtherRequests))(s)
+			return false
+		}
+		if err := trade.NewProcessor(l, ctx).CreateRoom(s.Field(), characterconst.Id(s.CharacterId()), roomType); err != nil {
+			l.WithError(err).Errorf("Unable to open a trade room for character [%d].", s.CharacterId())
+			return false
+		}
+		return true
+	}
+}
+
+// miniRoomOccupancyProbe is one family's answer to "is this character already
+// in a mini-room?". The three registries live in three services (atlas-trades,
+// atlas-mini-games, atlas-merchant) with no shared occupancy store, and this
+// design does not introduce one.
+type miniRoomOccupancyProbe struct {
+	family string
+	probe  func() (bool, error)
+}
+
+// characterOccupiesAnyMiniRoom asks all three families whether the character is
+// already seated somewhere. atlas-channel is the only component holding all
+// three views, which is why the cross-family check lives here (design §2.1).
+func characterOccupiesAnyMiniRoom(l logrus.FieldLogger, ctx context.Context, characterId uint32) bool {
+	return anyMiniRoomOccupied(l, characterId, []miniRoomOccupancyProbe{
+		{family: "mini-game", probe: func() (bool, error) {
+			return minigame.NewProcessor(l, ctx).InGame(characterId)
+		}},
+		{family: "merchant", probe: func() (bool, error) {
+			// GetVisitingShop reports "not visiting" as an error, so a transport
+			// failure is indistinguishable from absence here — the same reading
+			// every other merchant arm in this file makes.
+			_, err := merchant.NewProcessor(l, ctx).GetVisitingShop(characterId)
+			return err == nil, nil
+		}},
+		{family: "trade", probe: func() (bool, error) {
+			return trade.NewProcessor(l, ctx).InGame(characterconst.Id(characterId))
+		}},
+	})
+}
+
+// anyMiniRoomOccupied reports whether any probe found the character seated.
+// The check is BEST EFFORT by design: a probe that fails is logged and treated
+// as "not occupied" rather than blocking the player out of a room on a
+// transient read error, and races are resolved by whichever room the client
+// actually ends up in — each service still enforces its own single-room
+// invariant authoritatively (design §2.1).
+func anyMiniRoomOccupied(l logrus.FieldLogger, characterId uint32, probes []miniRoomOccupancyProbe) bool {
+	for _, p := range probes {
+		occupied, err := p.probe()
+		if err != nil {
+			l.WithError(err).Warnf("Unable to check %s occupancy for character [%d]; treating them as free.", p.family, characterId)
+			continue
+		}
+		if occupied {
+			return true
+		}
+	}
+	return false
+}
+
+// tradeInventoryType narrows the wire's UNSIGNED compartment byte to the shared
+// SIGNED int8 inventory.Type, rejecting anything that is not one of the five
+// compartments. Without the range check a byte above 127 arrives in
+// atlas-trades as a negative compartment.
+func tradeInventoryType(b byte) (inventory.Type, bool) {
+	for _, t := range inventory.Types {
+		if byte(t) == b {
+			return t, true
+		}
+	}
+	return 0, false
+}
+
+// tradeConfirmEntries carries the TRADE_CONFIRM attestation payload across to
+// the command. The list is legitimately EMPTY on the versions whose
+// TRADE_CONFIRM has no CRC block (tradeCrcPresent), so an empty result is a
+// faithful forward, not a dropped field.
+func tradeConfirmEntries(es []interaction2.TradeConfirmEntry) []trade2.CrcEntry {
+	entries := make([]trade2.CrcEntry, 0, len(es))
+	for _, e := range es {
+		entries = append(entries, trade2.CrcEntry{Data: e.Data(), Crc: e.Crc()})
+	}
+	return entries
+}
+
+// transactionEntries is the TRANSACTION half of tradeConfirmEntries. The two
+// payloads carry the same {data, crc} pairs but through distinct codec types.
+func transactionEntries(es []interaction2.TransactionEntry) []trade2.CrcEntry {
+	entries := make([]trade2.CrcEntry, 0, len(es))
+	for _, e := range es {
+		entries = append(entries, trade2.CrcEntry{Data: e.Data(), Crc: e.Crc()})
+	}
+	return entries
 }
 
 // pickShopByState returns the first shop in the given state.

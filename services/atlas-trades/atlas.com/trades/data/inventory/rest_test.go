@@ -101,6 +101,29 @@ func TestFindBySlotMissesAnEmptySlot(t *testing.T) {
 	}
 }
 
+// TestFindByIdResolvesAcrossSlots pins the lookup the staging path depends on
+// to survive an inventory rearrangement: asset id is stable, slot is not.
+func TestFindByIdResolvesAcrossSlots(t *testing.T) {
+	var rm RestModel
+	if err := jsonapi.Unmarshal([]byte(compartmentDocument), &rm); err != nil {
+		t.Fatalf("unmarshal compartment: %v", err)
+	}
+	m, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	a, ok := m.FindById(7002)
+	if !ok {
+		t.Fatal("FindById(7002) missed the asset")
+	}
+	if a.Slot() != -11 {
+		t.Errorf("slot: got %d, want -11", a.Slot())
+	}
+	if _, ok = m.FindById(9999); ok {
+		t.Error("FindById(9999) reported an asset that is not in the compartment")
+	}
+}
+
 // TestAssetsIsNotWritableThroughTheGetter pins that a caller cannot reach into
 // the compartment's asset list through the returned slice.
 func TestAssetsIsNotWritableThroughTheGetter(t *testing.T) {

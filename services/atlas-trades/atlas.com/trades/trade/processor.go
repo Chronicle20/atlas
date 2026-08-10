@@ -93,9 +93,12 @@ type locationProvider interface {
 	FieldOf(characterId character.Id) (field.Model, error)
 }
 
-// inventoryProvider reads the asset a PUT_ITEM addresses.
+// inventoryProvider reads the asset a PUT_ITEM addresses, and re-reads a whole
+// compartment when a staged item's recorded slot has to be re-resolved against
+// the asset's stable id (see resolveStagedSlot).
 type inventoryProvider interface {
 	AssetInSlot(characterId character.Id, inventoryType inventory.Type, sourceSlot slot.Position) (inventorydata.Asset, error)
+	GetCompartment(characterId character.Id, inventoryType inventory.Type) (inventorydata.Model, error)
 }
 
 // itemDataProvider reads the WZ tradeBlock flag of an item template (FR-4.2).
@@ -589,15 +592,61 @@ func (p *ProcessorImpl) teardownCharacter(mb *message.Buffer, txId uuid.UUID, ch
 // The cancel is a fire-and-forget command: atlas-inventory treats an unknown
 // reservation as a no-op, so cancelling one that already expired is harmless,
 // and cancelling twice is harmless for the same reason.
+//
+// The slot is RE-RESOLVED rather than taken from the staged item; see
+// resolveStagedSlot for why a recorded slot cannot be trusted.
 func (p *ProcessorImpl) releaseStagedReservations(mb *message.Buffer, room Room) error {
 	for _, pt := range room.Participants() {
 		for _, i := range pt.Items() {
-			if err := p.resp.CancelReservation(mb)(i.ReservationId(), pt.CharacterId(), i.InventoryType(), i.SourceSlot()); err != nil {
+			if err := p.resp.CancelReservation(mb)(i.ReservationId(), pt.CharacterId(), i.InventoryType(), p.resolveStagedSlot(pt.CharacterId(), i)); err != nil {
 				return err
 			}
 		}
 	}
 	return nil
+}
+
+// resolveStagedSlot returns the slot a staged item's asset CURRENTLY occupies.
+//
+// A staged item's recorded sourceSlot goes stale under ordinary play. Nothing
+// stops a player rearranging their inventory while the trade dialog is open:
+// atlas-channel's move handler has no mini-room gate
+// (services/atlas-channel/atlas.com/channel/socket/handler/character_inventory_move.go:17-59),
+// and atlas-inventory permits a plain swap of a reserved slot, re-keying the
+// hold to the destination
+// (services/atlas-inventory/atlas.com/inventory/compartment/processor.go:490-507).
+// Only MERGE is reservation-guarded (canMergeAssets rule 4, :592-593).
+//
+// The reservation registry keys holds by (characterId, inventoryType, SLOT), so
+// a cancel aimed at the vacated slot silently no-ops while the real hold lives
+// on at the new slot until its TTL — and a refresh aimed there would file a
+// fresh 300s hold on whatever item was swapped in. Asset ID is the only stable
+// handle, so the slot is re-derived from it.
+//
+// Reacting to atlas-inventory's asset MOVED event instead would NOT close this:
+// a swap relays the destination asset through temporarySlot() (math.MinInt16),
+// and UpdateSlot suppresses any transition touching it
+// (services/atlas-inventory/atlas.com/inventory/asset/processor.go:250-252), so
+// an item swapped INTO the staged slot moves the staged asset out without
+// emitting anything that names it.
+//
+// A failed read or a vanished asset falls back to the recorded slot: cancelling
+// the wrong slot is a no-op, whereas cancelling nothing guarantees the leak.
+func (p *ProcessorImpl) resolveStagedSlot(characterId character.Id, i StagedItem) slot.Position {
+	c, err := p.invp.GetCompartment(characterId, i.InventoryType())
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to re-resolve the slot of staged asset [%d] for character [%d]; falling back to the staged slot [%d].", i.AssetId(), characterId, i.SourceSlot())
+		return i.SourceSlot()
+	}
+	a, ok := c.FindById(i.AssetId())
+	if !ok {
+		p.l.Warnf("Staged asset [%d] is no longer in character [%d]'s compartment [%d]; falling back to the staged slot [%d].", i.AssetId(), characterId, i.InventoryType(), i.SourceSlot())
+		return i.SourceSlot()
+	}
+	if a.Slot() != i.SourceSlot() {
+		p.l.Infof("Staged asset [%d] moved from slot [%d] to [%d] in character [%d]'s inventory since it was staged.", i.AssetId(), i.SourceSlot(), a.Slot(), characterId)
+	}
+	return a.Slot()
 }
 
 // PutItem stages one item into the caller's side of the dialog (FR-3.1..FR-3.3,
@@ -622,6 +671,11 @@ func (p *ProcessorImpl) putItem(mb *message.Buffer, txId uuid.UUID, characterId 
 		return nil
 	}
 
+	// Decoded here because the reads below need the typed compartment.
+	// checkRestrictions decodes the same byte again and its failure branch is
+	// therefore unreachable from this path; that redundancy is deliberate, so
+	// checkRestrictions stays safe to call from a site that has NOT already
+	// validated the byte, and stays testable as the boundary in its own right.
 	it, ok := stageableInventoryType(inventoryType)
 	if !ok {
 		p.l.Infof("Character [%d] staged from compartment byte [%d], which is not a stageable inventory. Dropping.", characterId, inventoryType)
@@ -645,9 +699,20 @@ func (p *ProcessorImpl) putItem(mb *message.Buffer, txId uuid.UUID, characterId 
 	}
 
 	// The reservation handle is minted BEFORE the registry swap so the staged
-	// item can carry it; the command that files it is buffered afterwards, in
-	// the same outbox batch, so a room mutation and its reservation publish or
-	// roll back together.
+	// item can carry it; the command that files it is buffered afterwards.
+	//
+	// The swap and the command are NOT atomic with each other, and deliberately
+	// so. The registry is in-memory and is not rolled back by the enclosing
+	// transaction (see emit's doc comment), so if the outbox insert fails the
+	// item is staged with no hold behind it. That exposure is self-healing: the
+	// refresh ticker re-issues REQUEST_RESERVE for every staged item it finds,
+	// so the missing hold is filed on the next tick.
+	//
+	// Buffering the reserve BEFORE the swap would trade that for a strictly
+	// worse failure: a stage that then lost the compare-and-set race would leave
+	// a reserve command already in the batch — an orphaned hold that no staged
+	// item references and therefore nothing ever cancels. A buffer has no
+	// un-put, so the ordering below is the one that fails safe.
 	reservationId := uuid.New()
 	stagedItem := NewStagedItem(targetSlot, a.Id(), a.TemplateId(), staged, it, sourceSlot, reservationId)
 
@@ -877,12 +942,22 @@ func (p *ProcessorImpl) RefreshReservations(txId uuid.UUID) error {
 
 func (p *ProcessorImpl) refreshReservations(mb *message.Buffer) error {
 	ttl := p.cfg.Get(p.l, p.ctx).ReservationTtl()
-	for _, room := range p.reg.All(p.t) {
+	for _, snapshot := range p.reg.All(p.t) {
 		// A settling room's assets are the settlement saga's business;
 		// re-filing under it would race the consume.
-		if room.State() == StateSettling {
+		if snapshot.State() == StateSettling {
 			continue
 		}
+
+		// The staged slots are re-resolved by asset id (resolveStagedSlot) and
+		// written back, so a player who rearranged their inventory mid-trade
+		// does not leave the hold stranded at the vacated slot — and so the
+		// slot the settlement payload is built from stays true.
+		room, ok := p.correctStagedSlots(snapshot)
+		if !ok {
+			continue
+		}
+
 		for _, pt := range room.Participants() {
 			for _, i := range pt.Items() {
 				if err := p.resp.CancelReservation(mb)(i.ReservationId(), pt.CharacterId(), i.InventoryType(), i.SourceSlot()); err != nil {
@@ -895,6 +970,44 @@ func (p *ProcessorImpl) refreshReservations(mb *message.Buffer) error {
 		}
 	}
 	return nil
+}
+
+// correctStagedSlots re-resolves every staged item's slot against its asset id
+// and writes the corrections back, returning the room to refresh from.
+//
+// It doubles as the LIVENESS re-check the refresh needs. reg.All returns a
+// snapshot, and a concurrent teardown emits its cancels from a different
+// transaction: if teardown wins the race, refreshing from the snapshot would
+// re-file a 300s hold on a room that no longer exists, and nothing would ever
+// cancel it. Registry.Update fails with ErrRoomNotFound once the room is gone,
+// which is the signal to skip it — so the check and the correction are the same
+// atomic step rather than a check that could itself go stale.
+//
+// The REST reads happen BEFORE Update, never inside it: the closure runs under
+// the registry write lock and must stay pure.
+func (p *ProcessorImpl) correctStagedSlots(snapshot Room) (Room, bool) {
+	corrections := make(map[uuid.UUID]slot.Position)
+	for _, pt := range snapshot.Participants() {
+		for _, i := range pt.Items() {
+			if resolved := p.resolveStagedSlot(pt.CharacterId(), i); resolved != i.SourceSlot() {
+				corrections[i.ReservationId()] = resolved
+			}
+		}
+	}
+
+	room, err := p.reg.Update(p.t, snapshot.Id(), func(cur Room) (Room, error) {
+		if len(corrections) == 0 {
+			return cur, nil
+		}
+		return cur.WithEachParticipant(func(v Participant) Participant {
+			return v.WithRelocatedItems(corrections)
+		}), nil
+	})
+	if err != nil {
+		p.l.WithError(err).Debugf("Skipping the reservation refresh of trade room [%s]: it is no longer live.", snapshot.Id().String())
+		return Room{}, false
+	}
+	return room, true
 }
 
 // RefreshReservations is the ticker entry point Task 20 drives: one pass over

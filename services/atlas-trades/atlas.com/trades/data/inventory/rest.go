@@ -139,10 +139,5 @@ func Extract(rm RestModel) (Model, error) {
 		}
 		assets = append(assets, ea)
 	}
-	return Model{
-		id:            rm.Id,
-		inventoryType: rm.InventoryType,
-		capacity:      rm.Capacity,
-		assets:        assets,
-	}, nil
+	return NewModel(rm.Id, rm.InventoryType, rm.Capacity, assets), nil
 }

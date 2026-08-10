@@ -21,8 +21,8 @@ var (
 	errItemDataUnknown  = errors.New("trade: item data could not be read")
 )
 
-// assetView and itemDataView are the two inputs a restriction check needs,
-// decoupled from the REST models so the rules are testable without a server.
+// assetView is the inventory-side input a restriction check needs, decoupled
+// from the REST models so the rules are testable without a server.
 type assetView struct {
 	// Flags is the asset's raw flag bitfield, read through
 	// libs/atlas-constants/asset's Flag constants.
@@ -37,6 +37,8 @@ type assetView struct {
 	SourceSlot slot.Position
 }
 
+// itemDataView is the atlas-data side of the same pair: what the WZ item record
+// says about tradeability, and whether it could be read at all.
 type itemDataView struct {
 	TradeBlock bool
 	// Unreadable is true when the atlas-data lookup FAILED. A failure is a

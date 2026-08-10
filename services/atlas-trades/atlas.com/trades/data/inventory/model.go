@@ -54,6 +54,14 @@ type Model struct {
 	assets        []Asset
 }
 
+// NewModel builds one compartment view. Model is a value type with no mutable
+// state, so it needs no builder; Extract is its production caller.
+func NewModel(id uuid.UUID, inventoryType inventory.Type, capacity uint32, assets []Asset) Model {
+	out := make([]Asset, len(assets))
+	copy(out, assets)
+	return Model{id: id, inventoryType: inventoryType, capacity: capacity, assets: out}
+}
+
 func (m Model) Id() uuid.UUID { return m.id }
 
 func (m Model) Type() inventory.Type { return m.inventoryType }
@@ -75,6 +83,21 @@ func (m Model) Assets() []Asset {
 func (m Model) FindBySlot(s slot.Position) (Asset, bool) {
 	for _, a := range m.assets {
 		if a.slot == s {
+			return a, true
+		}
+	}
+	return Asset{}, false
+}
+
+// FindById returns the asset with the given id, wherever it currently sits.
+//
+// Asset id is the only STABLE handle on an item: a slot position is not, because
+// atlas-inventory lets a player swap a reserved slot and re-keys the reservation
+// to the destination (compartment/processor.go:490-507, SwapReservation). Callers
+// that recorded a slot earlier must re-resolve through this before acting on it.
+func (m Model) FindById(id asset.Id) (Asset, bool) {
+	for _, a := range m.assets {
+		if a.id == id {
 			return a, true
 		}
 	}

@@ -7,6 +7,7 @@ import (
 	trademsg "atlas-trades/kafka/message/trade"
 	"encoding/json"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -32,6 +33,11 @@ type assetKey struct {
 type fakeInventory struct {
 	assets map[assetKey]inventorydata.Asset
 	err    error
+	// onGetCompartment fires on each compartment read. The refresh does its
+	// reads between snapshotting the registry and taking the write lock, so
+	// this is the seam a test uses to land a concurrent teardown in exactly
+	// that window.
+	onGetCompartment func()
 }
 
 func (f *fakeInventory) AssetInSlot(characterId character.Id, inventoryType inventory.Type, sourceSlot slot.Position) (inventorydata.Asset, error) {
@@ -43,6 +49,38 @@ func (f *fakeInventory) AssetInSlot(characterId character.Id, inventoryType inve
 		return inventorydata.Asset{}, inventorydata.ErrAssetNotFound
 	}
 	return a, nil
+}
+
+// GetCompartment projects the fake's flat asset map into the compartment the
+// caller asked for. Each asset's slot comes from the map KEY, not from the
+// stored Asset, so a test can relocate an item exactly as an inventory swap
+// would — by re-keying it — and the returned compartment reports the new slot.
+func (f *fakeInventory) GetCompartment(characterId character.Id, inventoryType inventory.Type) (inventorydata.Model, error) {
+	if f.onGetCompartment != nil {
+		f.onGetCompartment()
+	}
+	if f.err != nil {
+		return inventorydata.Model{}, f.err
+	}
+	assets := make([]inventorydata.Asset, 0)
+	for k, a := range f.assets {
+		if k.characterId != characterId || k.inventoryType != inventoryType {
+			continue
+		}
+		assets = append(assets, inventorydata.NewAsset(a.Id(), k.sourceSlot, a.TemplateId(), a.Quantity(), a.Flag()))
+	}
+	return inventorydata.NewModel(uuid.New(), inventoryType, 24, assets), nil
+}
+
+// relocate moves an asset to another slot the way an atlas-inventory swap
+// would: the asset keeps its id, and only its key changes.
+func (f *fakeInventory) relocate(characterId character.Id, inventoryType inventory.Type, from slot.Position, to slot.Position) {
+	a, ok := f.assets[assetKey{characterId, inventoryType, from}]
+	if !ok {
+		return
+	}
+	delete(f.assets, assetKey{characterId, inventoryType, from})
+	f.assets[assetKey{characterId, inventoryType, to}] = a
 }
 
 type fakeItemData struct {
@@ -768,6 +806,143 @@ func TestRefreshReservationsSkipsASettlingRoom(t *testing.T) {
 	assertNoCompartmentCommandOfType(t, e, compartmentmsg.CommandCancelReservation)
 	if got := len(compartmentCommands[compartmentmsg.RequestReserveCommandBody](t, e, compartmentmsg.CommandRequestReserve)); got != 1 {
 		t.Errorf("REQUEST_RESERVE commands: got %d, want only the original stage's", got)
+	}
+}
+
+// --- a staged item that moves in the owner's inventory ------------------------
+
+// TestTeardownCancelsAtTheAssetsCurrentSlotAfterAMove pins the leak an inventory
+// rearrangement would otherwise cause. Nothing gates an inventory move while the
+// trade dialog is open (atlas-channel's move handler has no mini-room check),
+// and atlas-inventory re-keys a reserved slot's hold to the destination on a
+// swap. A cancel aimed at the slot the item was staged FROM would therefore
+// no-op while the real hold lived on until its TTL.
+func TestTeardownCancelsAtTheAssetsCurrentSlotAfterAMove(t *testing.T) {
+	p, e := testOpenRoom(t)
+	if err := p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), stagingSourceSlot, 5, 1); err != nil {
+		t.Fatalf("put item: %v", err)
+	}
+	// The player drags the staged stack from slot 1 to slot 8.
+	p.invp.(*fakeInventory).relocate(100, inventory.TypeValueUse, stagingSourceSlot, 8)
+
+	if err := p.TeardownCharacter(uuid.New(), 100, ReasonTradeCancelled); err != nil {
+		t.Fatalf("teardown: %v", err)
+	}
+
+	cancels := compartmentCommands[compartmentmsg.CancelReservationCommandBody](t, e, compartmentmsg.CommandCancelReservation)
+	if len(cancels) != 1 {
+		t.Fatalf("CANCEL_RESERVATION commands: got %d, want 1", len(cancels))
+	}
+	if cancels[0].Body.Slot != 8 {
+		t.Errorf("cancel slot: got %d, want the asset's CURRENT slot 8 — cancelling the vacated slot %d leaks the real hold", cancels[0].Body.Slot, stagingSourceSlot)
+	}
+}
+
+// TestRefreshFollowsTheAssetAndDoesNotPoisonTheVacatedSlot pins the other half:
+// a refresh aimed at the vacated slot would both miss the real hold AND file a
+// fresh 300s hold on whatever item was swapped in.
+func TestRefreshFollowsTheAssetAndDoesNotPoisonTheVacatedSlot(t *testing.T) {
+	p, e := testOpenRoom(t)
+	if err := p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), stagingSourceSlot, 5, 1); err != nil {
+		t.Fatalf("put item: %v", err)
+	}
+	p.invp.(*fakeInventory).relocate(100, inventory.TypeValueUse, stagingSourceSlot, 8)
+
+	if err := p.RefreshReservations(uuid.New()); err != nil {
+		t.Fatalf("refresh: %v", err)
+	}
+
+	cancels := compartmentCommands[compartmentmsg.CancelReservationCommandBody](t, e, compartmentmsg.CommandCancelReservation)
+	if len(cancels) != 1 {
+		t.Fatalf("CANCEL_RESERVATION commands: got %d, want 1", len(cancels))
+	}
+	if cancels[0].Body.Slot != 8 {
+		t.Errorf("refresh cancel slot: got %d, want 8", cancels[0].Body.Slot)
+	}
+
+	reserves := compartmentCommands[compartmentmsg.RequestReserveCommandBody](t, e, compartmentmsg.CommandRequestReserve)
+	if len(reserves) != 2 {
+		t.Fatalf("REQUEST_RESERVE commands: got %d, want 2", len(reserves))
+	}
+	if got := reserves[1].Body.Items[0].Source; got != 8 {
+		t.Errorf("refresh reserve slot: got %d, want 8 — re-reserving the vacated slot %d poisons whatever item now occupies it", got, stagingSourceSlot)
+	}
+}
+
+// TestRefreshWritesTheCorrectedSlotBackToTheStagedItem pins that the correction
+// is durable, not per-emit. The settlement payload Task 19 builds resolves the
+// asset by StagedItem.SourceSlot, so a slot left stale in the registry becomes a
+// wrong-asset settlement.
+func TestRefreshWritesTheCorrectedSlotBackToTheStagedItem(t *testing.T) {
+	p, _ := testOpenRoom(t)
+	if err := p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), stagingSourceSlot, 5, 1); err != nil {
+		t.Fatalf("put item: %v", err)
+	}
+	p.invp.(*fakeInventory).relocate(100, inventory.TypeValueUse, stagingSourceSlot, 8)
+
+	if err := p.RefreshReservations(uuid.New()); err != nil {
+		t.Fatalf("refresh: %v", err)
+	}
+
+	items := stagedItemsOf(t, p, 100)
+	if len(items) != 1 {
+		t.Fatalf("staged items: got %d, want 1", len(items))
+	}
+	if items[0].SourceSlot() != 8 {
+		t.Errorf("staged sourceSlot: got %d, want the corrected 8", items[0].SourceSlot())
+	}
+	if items[0].AssetId() != stagingAssetId {
+		t.Errorf("staged assetId: got %d, want the unchanged %d — a relocation is a correction, not a re-stage", items[0].AssetId(), stagingAssetId)
+	}
+}
+
+// TestResolveStagedSlotFallsBackWhenTheCompartmentCannotBeRead pins that an
+// unreadable inventory still cancels at the recorded slot. Cancelling the wrong
+// slot is a no-op; cancelling nothing guarantees the leak.
+func TestResolveStagedSlotFallsBackWhenTheCompartmentCannotBeRead(t *testing.T) {
+	p, e := testOpenRoom(t)
+	if err := p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), stagingSourceSlot, 5, 1); err != nil {
+		t.Fatalf("put item: %v", err)
+	}
+	p.invp = &fakeInventory{err: errors.New("atlas-inventory unreachable")}
+
+	if err := p.TeardownCharacter(uuid.New(), 100, ReasonTradeCancelled); err != nil {
+		t.Fatalf("teardown: %v", err)
+	}
+	cancels := compartmentCommands[compartmentmsg.CancelReservationCommandBody](t, e, compartmentmsg.CommandCancelReservation)
+	if len(cancels) != 1 {
+		t.Fatalf("CANCEL_RESERVATION commands: got %d, want 1", len(cancels))
+	}
+	if cancels[0].Body.Slot != int16(stagingSourceSlot) {
+		t.Errorf("cancel slot: got %d, want the recorded fallback %d", cancels[0].Body.Slot, stagingSourceSlot)
+	}
+}
+
+// TestRefreshSkipsARoomTornDownConcurrently pins the liveness re-check.
+// reg.All returns a snapshot and teardown emits from a different transaction, so
+// without the re-check a refresh could re-file a 300s hold on a room that no
+// longer exists — and nothing would ever cancel it.
+func TestRefreshSkipsARoomTornDownConcurrently(t *testing.T) {
+	p, e := testOpenRoom(t)
+	if err := p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), stagingSourceSlot, 5, 1); err != nil {
+		t.Fatalf("put item: %v", err)
+	}
+	room, _ := p.RoomForCharacter(100)
+
+	// Land the concurrent teardown in the real window: after the refresh has
+	// snapshotted the registry, while it is doing its slot reads, before it
+	// takes the write lock. Removing the room BEFORE the call would only prove
+	// reg.All skips it, which is not the race being pinned.
+	var once sync.Once
+	p.invp.(*fakeInventory).onGetCompartment = func() {
+		once.Do(func() { p.reg.Remove(p.t, room.Id()) })
+	}
+
+	if err := p.RefreshReservations(uuid.New()); err != nil {
+		t.Fatalf("refresh: %v", err)
+	}
+	if got := len(compartmentCommands[compartmentmsg.RequestReserveCommandBody](t, e, compartmentmsg.CommandRequestReserve)); got != 1 {
+		t.Errorf("REQUEST_RESERVE commands: got %d, want only the original stage's — the refresh re-filed a hold on a dead room", got)
 	}
 }
 

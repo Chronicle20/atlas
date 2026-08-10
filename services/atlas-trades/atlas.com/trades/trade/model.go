@@ -146,6 +146,28 @@ func (p Participant) HasTradeSlot(tradeSlot byte) bool {
 	return false
 }
 
+// WithRelocatedItems returns a copy whose staged items carry the corrected
+// source slots given, keyed by reservation id. A staged item whose reservation
+// is absent from the map is left untouched.
+//
+// Relocation is a correction, not a re-stage: the asset is the same asset, it
+// simply moved within the owner's inventory after it was staged (see the
+// processor's resolveStagedSlot).
+func (p Participant) WithRelocatedItems(slots map[uuid.UUID]slot.Position) Participant {
+	if len(slots) == 0 || len(p.items) == 0 {
+		return p
+	}
+	c := p
+	c.items = make([]StagedItem, len(p.items))
+	copy(c.items, p.items)
+	for i := range c.items {
+		if s, ok := slots[c.items[i].reservationId]; ok {
+			c.items[i].sourceSlot = s
+		}
+	}
+	return c
+}
+
 // StagedQuantityFrom totals what this participant has already claimed out of one
 // inventory slot. Staging a partial stack twice from the same slot is legal, and
 // each claim files its own reservation, so the availability check has to net off
@@ -262,6 +284,19 @@ func (r Room) WithVisitor(characterId character.Id, name string) Room {
 	c.participants = append(c.participants, Participant{
 		characterId: characterId, name: name, position: 1, items: []StagedItem{},
 	})
+	return c
+}
+
+// WithEachParticipant returns a copy of r with fn applied to EVERY participant.
+// It allocates a fresh participant slice, so it is safe to call on a Room
+// obtained from the registry.
+func (r Room) WithEachParticipant(fn func(Participant) Participant) Room {
+	c := r
+	c.participants = make([]Participant, len(r.participants))
+	copy(c.participants, r.participants)
+	for i := range c.participants {
+		c.participants[i] = fn(c.participants[i])
+	}
 	return c
 }
 

@@ -166,12 +166,19 @@ than trusting the caller.
 
 Any failure is a catch failure, not an error.
 
-**FR-3.4 — HP gate.** `mobHP` gates the attempt. Observed values across the 13
-items are 30, 40, 100, or absent, which is consistent with a percentage of max
-HP rather than an absolute value — but the client never performs this check, so
-it cannot be derived from the IDB. **The design phase must settle the exact
-comparison** (percentage vs. absolute, `<` vs. `<=`) and record the source it
-settled it from. An absent `mobHP` means no HP gate.
+**FR-3.4 — HP gate.** `mobHP` gates the attempt and is interpreted as a
+**percentage of the monster's maximum HP**. The attempt passes when
+`hp <= maxHp * mobHP / 100`, evaluated so that integer truncation cannot make a
+full-HP monster catchable at `mobHP` values below 100. An absent or zero
+`mobHP` means no HP gate.
+
+This is a decision, not a derivation: the client never performs the check, so
+it cannot be read from the IDB. It rests on the observed value set across the
+13 items — 30, 40, 100, or absent — where 100 is only meaningful as "any HP"
+under a percentage reading and would be an implausible absolute threshold for
+the monsters involved. Record it as an assumption in `design.md`; if live
+testing shows catches succeeding or failing at the wrong HP, this is the first
+thing to revisit.
 
 **FR-3.5 — Probability.** `bridleProp` is the base success percentage and
 `bridlePropChg` its multiplier; only `02270002` carries them
@@ -349,9 +356,9 @@ them.
 
 ## 9. Open Questions
 
-1. **`mobHP` semantics** (FR-3.4) — percentage of max HP or absolute? The
-   client does not check, so this needs a non-IDB source. Values 30/40/100
-   favor percentage.
+1. ~~**`mobHP` semantics**~~ — resolved: percentage of max HP (FR-3.4). Held as
+   a stated assumption, not a derivation; first suspect if live catch behaviour
+   is wrong at the HP boundary.
 2. **`bridlePropChg` semantics** (FR-3.5) — what does the 1.2 multiply? Only
    one item uses it, so the cost of getting it wrong is contained.
 3. **Response packet selection** (FR-4.1) — does `bridleMsgType` choose between

@@ -1256,6 +1256,7 @@
   direction: clientbound
   opcode: 177
   fname: CUserRemote::OnShowUpgradeTombEffect
+  packet: character/clientbound/ShowUpgradeTombEffect
   provenance: ida-discovered
   ida:
     address: 8896582
@@ -2215,6 +2216,15 @@
   ida:
     address: 9553263
   note: 'v72 COutPacket(50) verified via global COutPacket-ctor harvest @0x91c56f; Δ+1 vs v79 op 49 (mid/field/social Δ+1).'
+- op: USE_DEATHITEM
+  direction: serverbound
+  opcode: 52
+  fname: CUserLocal::RequestUpgradeTombEffect
+  packet: character/serverbound/UseDeathItem
+  provenance: ida-discovered
+  ida:
+    address: 8812116
+  note: 'v72 CUserLocal::RequestUpgradeTombEffect @0x867654 builds COutPacket(52) and encodes itemId/x/y; renamed from sub_867654 during task-210. (task-210)'
 - op: MOB_BANISH_PLAYER
   direction: serverbound
   opcode: 55

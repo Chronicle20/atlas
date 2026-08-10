@@ -81,11 +81,12 @@ func (m Model) Award(currency uint32, amount uint32) Model {
 	newCredit := m.credit
 	newPoints := m.points
 	newPrepaid := m.prepaid
-	if currency == 1 {
+	switch currency {
+	case 1:
 		newCredit = add(newCredit)
-	} else if currency == 2 {
+	case 2:
 		newPoints = add(newPoints)
-	} else {
+	default:
 		newPrepaid = add(newPrepaid)
 	}
 

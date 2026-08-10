@@ -47,7 +47,7 @@ func assertUniqueIndex(t *testing.T, db *sql.DB, table, indexName string, wantCo
 
 	rows, err := db.Query("PRAGMA index_list(" + table + ")")
 	require.NoError(t, err)
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	found := false
 	unique := false
@@ -67,7 +67,7 @@ func assertUniqueIndex(t *testing.T, db *sql.DB, table, indexName string, wantCo
 
 	colRows, err := db.Query("PRAGMA index_info(" + indexName + ")")
 	require.NoError(t, err)
-	defer colRows.Close()
+	defer func() { _ = colRows.Close() }()
 
 	var gotCols []string
 	for colRows.Next() {

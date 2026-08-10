@@ -98,7 +98,7 @@ func do(t *testing.T, srv *httptest.Server, tm tenant.Model, method, path string
 
 	resp, err := srv.Client().Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(resp.Body)
 	require.NoError(t, err)

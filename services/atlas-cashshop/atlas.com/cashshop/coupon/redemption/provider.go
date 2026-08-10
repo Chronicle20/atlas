@@ -31,17 +31,8 @@ func byAccountIdPagedProvider(t tenant.Model, accountId uint32, page model.Page)
 	}
 }
 
-// countByCouponIdProvider counts a coupon's redemptions without loading them —
-// the admin list shows the number, not the rows.
-func countByCouponIdProvider(t tenant.Model, couponId uuid.UUID) database.EntityProvider[int64] {
-	return func(db *gorm.DB) model.Provider[int64] {
-		var count int64
-		err := db.Model(&Entity{}).
-			Where("tenant_id = ? AND coupon_id = ?", t.Id(), couponId).
-			Count(&count).Error
-		if err != nil {
-			return model.ErrorProvider[int64](err)
-		}
-		return model.FixedProvider(count)
-	}
-}
+// A per-coupon redemption COUNT deliberately has no provider here. The count is
+// materialized on the coupon row itself (coupon.Model.redemptionCount, owned by
+// reserveUse's atomic increment) and served straight from it by
+// coupon.RestModel.RedemptionCount. Counting the redemption table instead would
+// be a second, racier source of the same number.

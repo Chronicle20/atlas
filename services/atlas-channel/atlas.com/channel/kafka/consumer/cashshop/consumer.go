@@ -202,7 +202,6 @@ func handleStatusEventCouponRedeemed(sc server.Model, wp writer.Producer) messag
 			}
 			return nil
 		})
-		return
 	}
 }
 
@@ -223,7 +222,6 @@ func handleStatusEventCouponFailed(sc server.Model, wp writer.Producer) message.
 
 		op := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopUseCouponFailedBody(e.Body.Error))
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, op)
-		return
 	}
 }
 

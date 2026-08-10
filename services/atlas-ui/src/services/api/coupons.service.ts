@@ -159,7 +159,8 @@ export interface GenerateCouponBatchInput {
 }
 
 /** Either audit route: by coupon (GET /coupons/{id}/redemptions) or by account (GET /coupon-redemptions?filter[accountId]=). */
-export type CouponRedemptionQuery = { couponId: string } | { accountId: number };
+export type CouponRedemptionQuery =
+  { couponId: string } | { accountId: number };
 
 /**
  * Thrown by `remove` on a 409 — either a duplicate normalized code (not
@@ -261,10 +262,7 @@ export const couponsService = {
     } catch (error) {
       if (isConflict(error)) {
         throw new CouponConflictError(
-          errorMessage(
-            error,
-            "coupon has redemptions and cannot be deleted",
-          ),
+          errorMessage(error, "coupon has redemptions and cannot be deleted"),
         );
       }
       throw error;

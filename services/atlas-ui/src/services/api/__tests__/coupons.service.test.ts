@@ -22,7 +22,10 @@ import {
   type Coupon,
 } from "@/services/api/coupons.service";
 
-function makeCoupon(id: string, overrides?: Partial<Coupon["attributes"]>): Coupon {
+function makeCoupon(
+  id: string,
+  overrides?: Partial<Coupon["attributes"]>,
+): Coupon {
   return {
     id,
     attributes: {
@@ -92,7 +95,10 @@ describe("couponsService.update", () => {
 
     await couponsService.update("1", { active: true });
 
-    const [, body] = patchMock.mock.calls[0] as [string, { data: { attributes: object } }];
+    const [, body] = patchMock.mock.calls[0] as [
+      string,
+      { data: { attributes: object } },
+    ];
     expect(body.data.attributes).not.toHaveProperty("description");
     expect(body.data.attributes).not.toHaveProperty("expiresAt");
   });

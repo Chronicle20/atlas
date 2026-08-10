@@ -10,7 +10,10 @@ import {
 import { couponsService } from "@/services/api/coupons.service";
 
 function emptyPage() {
-  return { data: [], meta: { total: 0, page: { number: 1, size: 20, last: 1 } } };
+  return {
+    data: [],
+    meta: { total: 0, page: { number: 1, size: 20, last: 1 } },
+  };
 }
 
 vi.mock("@/services/api/coupons.service", () => ({
@@ -41,29 +44,33 @@ describe("coupon list hooks — tenant-readiness gate", () => {
   });
 
   it("useCoupons fetches once a tenant is active", async () => {
-    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const { result } = renderHook(
-      () => useCoupons({ number: 1, size: 20 }),
-      { wrapper: wrapper(qc) },
-    );
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { result } = renderHook(() => useCoupons({ number: 1, size: 20 }), {
+      wrapper: wrapper(qc),
+    });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(couponsService.list).toHaveBeenCalled();
   });
 
   it("useCoupons does not fire without an active tenant", async () => {
     activeTenant = null;
-    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const { result } = renderHook(
-      () => useCoupons({ number: 1, size: 20 }),
-      { wrapper: wrapper(qc) },
-    );
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { result } = renderHook(() => useCoupons({ number: 1, size: 20 }), {
+      wrapper: wrapper(qc),
+    });
     expect(result.current.fetchStatus).toBe("idle");
     expect(couponsService.list).not.toHaveBeenCalled();
   });
 
   it("useCouponBatches does not fire without an active tenant", async () => {
     activeTenant = null;
-    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     renderHook(() => useCouponBatches({ number: 1, size: 20 }), {
       wrapper: wrapper(qc),
     });
@@ -72,10 +79,11 @@ describe("coupon list hooks — tenant-readiness gate", () => {
 
   it("useCouponRedemptions does not fire without an active tenant", async () => {
     activeTenant = null;
-    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     renderHook(
-      () =>
-        useCouponRedemptions({ couponId: "c1" }, { number: 1, size: 20 }),
+      () => useCouponRedemptions({ couponId: "c1" }, { number: 1, size: 20 }),
       { wrapper: wrapper(qc) },
     );
     expect(couponsService.listRedemptions).not.toHaveBeenCalled();

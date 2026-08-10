@@ -297,3 +297,56 @@ func TestRunPartitionCommitFailureDoesNotAdvance(t *testing.T) {
 	cancel()
 	<-done
 }
+
+// TestQuiesceAbandonsAfterDrainTimeout exercises the drain-timeout-exceeded
+// branch of quiesce directly: a handler that never finishes must not block
+// quiesce past drainTimeout, and the abandonment must be logged (task-209
+// review finding 1). drainTimeout is temporarily overridden to a small value
+// so the test is fast; production code never reassigns it, so the default
+// stays exactly 5s. The wait for "quiesce returned" and "drain-timeout
+// warning logged" is channel/poll-based, not a sleep used as the pass/fail
+// gate — the only sleep-shaped thing here is the drainTimeout override
+// itself, which IS the condition under test.
+func TestQuiesceAbandonsAfterDrainTimeout(t *testing.T) {
+	l, hook := silentLogger()
+
+	orig := drainTimeout
+	drainTimeout = 30 * time.Millisecond
+	defer func() { drainTimeout = orig }()
+
+	c := newTestConsumer()
+	c.topic = "t"
+
+	var wg sync.WaitGroup
+	stuck := make(chan struct{})
+	wg.Add(1)
+	tl, _ := silentLogger()
+	routine.Go(tl, context.Background(), func(_ context.Context) {
+		defer wg.Done()
+		<-stuck // deliberately never closed until the test is done asserting
+	})
+
+	cur := newCursor()
+	commit := func(int64) error { return nil }
+
+	done := make(chan struct{})
+	routine.Go(tl, context.Background(), func(_ context.Context) {
+		c.quiesce(l, &wg, cur, commit)
+		close(done)
+	})
+
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("quiesce did not return within the drain timeout; the abandoned-handler path is not bounded")
+	}
+
+	if !hasLogContaining(hook, "Drain timeout") {
+		t.Fatal("no drain-timeout warning logged for the abandoned handler")
+	}
+
+	// Release the stuck handler so its goroutine (and the quiesce waiter
+	// still blocked on wg.Wait()) can exit before the test ends.
+	close(stuck)
+	wg.Wait()
+}

@@ -20,7 +20,11 @@ import (
 // Handlers still running at the deadline are abandoned uncommitted and are
 // redelivered in the next generation: at-least-once, erring toward
 // duplication rather than loss (risks.md R1).
-const drainTimeout = 5 * time.Second
+//
+// A package-level var (not a const) so tests can drive the drain-timeout-
+// exceeded branch of quiesce deterministically without waiting 5s; production
+// code never reassigns it, so the default stays exactly 5s.
+var drainTimeout = 5 * time.Second
 
 // runPartition owns one assigned partition for the lifetime of one
 // generation: create a positioned reader → fetch/handle/commit → on any
@@ -43,13 +47,20 @@ func (c *Consumer) runPartition(l logrus.FieldLogger, ctx context.Context, gctx 
 
 	st := c.partitionStateFor(pa.ID)
 	cur := newCursor()
-	var inflight sync.WaitGroup
 
 	commit := func(offset int64) error {
 		return gen.CommitOffsets(map[string]map[int]int64{
 			c.topic: {pa.ID: offset},
 		})
 	}
+
+	// wg tracks the in-flight handler(s) of the CURRENT attempt only. It is
+	// reassigned to a fresh WaitGroup on every reader rebuild
+	// (runPartitionFetchLoop allocates its own) so a straggler left behind by
+	// a timed-out quiesce can never observe a later attempt's wg.Add — the
+	// stdlib's documented-unsafe "Add concurrent with Wait" pattern, which
+	// panics (task-209 review finding 2).
+	wg := &sync.WaitGroup{}
 
 	offset := pa.Offset
 	for attempt := 0; ; attempt++ {
@@ -65,7 +76,8 @@ func (c *Consumer) runPartition(l logrus.FieldLogger, ctx context.Context, gctx 
 			pl.Infof("Rebuilt partition reader for topic [%s] partition %d from offset %d (attempt %d).", c.topic, pa.ID, offset, attempt)
 		}
 
-		err := c.runPartitionFetchLoop(pl, pctx, pa.ID, rd, cur, &inflight, commit)
+		var err error
+		wg, err = c.runPartitionFetchLoop(pl, pctx, pa.ID, rd, cur, commit)
 		if cerr := rd.Close(); cerr != nil {
 			pl.WithError(cerr).Debugf("Error closing partition reader during rebuild.")
 		}
@@ -80,7 +92,7 @@ func (c *Consumer) runPartition(l logrus.FieldLogger, ctx context.Context, gctx 
 		// Let in-flight handlers finish and commit what they can before
 		// choosing a resume offset, so the rebuilt reader re-reads only
 		// genuinely uncommitted messages.
-		c.quiesce(pl, &inflight, cur, commit)
+		c.quiesce(pl, wg, cur, commit)
 		offset = cur.resumeOffset(pa.Offset)
 		cur.reset()
 
@@ -92,7 +104,7 @@ func (c *Consumer) runPartition(l logrus.FieldLogger, ctx context.Context, gctx 
 		}
 	}
 
-	c.quiesce(pl, &inflight, cur, commit)
+	c.quiesce(pl, wg, cur, commit)
 	pl.Debugf("Partition loop for topic [%s] partition %d stopped.", c.topic, pa.ID)
 }
 
@@ -103,7 +115,27 @@ func (c *Consumer) runPartition(l logrus.FieldLogger, ctx context.Context, gctx 
 // errFetchWedged. The only substitutions are that offsets commit through the
 // generation-scoped cursor rather than reader.CommitMessages, and that the
 // loop's cancel signal is pctx (process OR generation).
-func (c *Consumer) runPartitionFetchLoop(l logrus.FieldLogger, pctx context.Context, partition int, rd KafkaReader, cur *cursor, wg *sync.WaitGroup, commit func(offset int64) error) error {
+//
+// It owns a fresh *sync.WaitGroup for the lifetime of THIS attempt only and
+// returns it to the caller, who quiesces against it. A partition-lifetime
+// WaitGroup would let a straggler abandoned by one attempt's quiesce timeout
+// still be outstanding when a later attempt's wg.Add fires — the stdlib's
+// documented-unsafe "Add concurrent with Wait" race, which panics
+// (task-209 review finding 2).
+//
+// Both the serial (maxInFlight<=1) and parallel branches run the handler
+// through wg/routine.Go, so quiesce has something to bound in either
+// configuration (task-209 review finding 1: the serial path used to call
+// processMessage synchronously, inline in this loop, which meant a hung
+// handler blocked this function from ever returning — quiesce was
+// unreachable and the generation's Start function never returned). The
+// serial branch stays serial: the loop does not fetch the next message until
+// the current handler's completion is observed (or pctx is cancelled), so at
+// most one handler is ever in flight; only the *blocking structure* changed,
+// making a stuck handler abandonable at the drain deadline instead of
+// wedging the loop forever.
+func (c *Consumer) runPartitionFetchLoop(l logrus.FieldLogger, pctx context.Context, partition int, rd KafkaReader, cur *cursor, commit func(offset int64) error) (*sync.WaitGroup, error) {
+	wg := &sync.WaitGroup{}
 	maxQueue := 4 * c.maxInFlight
 	var sem chan struct{}
 	if c.maxInFlight > 1 {
@@ -112,7 +144,7 @@ func (c *Consumer) runPartitionFetchLoop(l logrus.FieldLogger, pctx context.Cont
 
 	for {
 		if pctx.Err() != nil {
-			return pctx.Err()
+			return wg, pctx.Err()
 		}
 
 		// Back-pressure: stop fetching when the queue is full (the head is
@@ -120,7 +152,7 @@ func (c *Consumer) runPartitionFetchLoop(l logrus.FieldLogger, pctx context.Cont
 		if c.maxInFlight > 1 && cur.len() >= maxQueue {
 			select {
 			case <-pctx.Done():
-				return pctx.Err()
+				return wg, pctx.Err()
 			case <-time.After(c.fetchTimeout):
 			}
 			c.tryAdvance(l, cur, commit)
@@ -135,34 +167,50 @@ func (c *Consumer) runPartitionFetchLoop(l logrus.FieldLogger, pctx context.Cont
 
 		if err != nil {
 			if pctx.Err() != nil || errors.Is(err, context.Canceled) {
-				return err
+				return wg, err
 			}
 			if errors.Is(err, context.DeadlineExceeded) {
 				if werr := c.handleFetchDeadline(l, rd, partition); werr != nil {
-					return werr
+					return wg, werr
 				}
 				c.tryAdvance(l, cur, commit)
 				continue
 			}
-			return err
+			return wg, err
 		}
 
 		c.recordFetch(partition)
 		l.Debugf("Message received %s.", string(msg.Value))
 
 		in := cur.track(msg.Offset)
+		m := msg
 
 		if c.maxInFlight <= 1 {
-			handlerStart := time.Now()
-			ok := c.processMessage(l, pctx, msg)
-			c.recordHandlerDuration(time.Since(handlerStart))
-			in.mark(ok)
-			c.tryAdvance(l, cur, commit)
+			// Bounded-serial: run the handler on its own goroutine (tracked
+			// by wg, so quiesce can abandon it at the drain deadline), but
+			// don't advance to the next fetch until it finishes or pctx is
+			// cancelled — exactly one handler in flight at a time, same as
+			// the synchronous call this replaces.
+			handlerDone := make(chan struct{})
+			wg.Add(1)
+			routine.Go(l, pctx, func(hctx context.Context) {
+				defer wg.Done()
+				defer close(handlerDone)
+				handlerStart := time.Now()
+				ok := c.processMessage(l, hctx, m)
+				c.recordHandlerDuration(time.Since(handlerStart))
+				in.mark(ok)
+				c.tryAdvance(l, cur, commit)
+			})
+			select {
+			case <-handlerDone:
+			case <-pctx.Done():
+				return wg, pctx.Err()
+			}
 			continue
 		}
 
 		sem <- struct{}{}
-		m := msg
 		tracked := in
 		wg.Add(1)
 		routine.Go(l, pctx, func(hctx context.Context) {

@@ -44,7 +44,7 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 		}
 
 		reader := c.rp(c.readerConfig)
-		c.onReaderCreated(attempt)
+		c.onReaderCreated(legacyPartition, attempt)
 		if attempt == 0 {
 			l.Infof("Start consuming topic.")
 		} else {
@@ -111,7 +111,7 @@ func (c *Consumer) runFetchLoopSerial(l logrus.FieldLogger, ctx context.Context,
 				return err
 			}
 			if errors.Is(err, context.DeadlineExceeded) {
-				if werr := c.handleFetchDeadline(l, reader); werr != nil {
+				if werr := c.handleFetchDeadline(l, reader, legacyPartition); werr != nil {
 					return werr
 				}
 				continue
@@ -119,7 +119,7 @@ func (c *Consumer) runFetchLoopSerial(l logrus.FieldLogger, ctx context.Context,
 			return err
 		}
 
-		c.recordFetch()
+		c.recordFetch(legacyPartition)
 		l.Debugf("Message received %s.", string(msg.Value))
 		handlerStart := time.Now()
 		ok := c.processMessage(l, ctx, msg)
@@ -205,7 +205,7 @@ func (c *Consumer) runFetchLoopParallel(l logrus.FieldLogger, ctx context.Contex
 				return err
 			}
 			if errors.Is(err, context.DeadlineExceeded) {
-				if werr := c.handleFetchDeadline(l, reader); werr != nil {
+				if werr := c.handleFetchDeadline(l, reader, legacyPartition); werr != nil {
 					return werr
 				}
 				// In-flight goroutines may have completed; try to advance.
@@ -215,7 +215,7 @@ func (c *Consumer) runFetchLoopParallel(l logrus.FieldLogger, ctx context.Contex
 			return err
 		}
 
-		c.recordFetch()
+		c.recordFetch(legacyPartition)
 		l.Debugf("Message received %s.", string(msg.Value))
 
 		pm := &pending{msg: msg}

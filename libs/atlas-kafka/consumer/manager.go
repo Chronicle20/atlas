@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -257,17 +258,21 @@ type Consumer struct {
 	startOffset            int64
 
 	// Observable state — protected by mu.
-	aliveSince          time.Time
-	lastFetchAt         time.Time
-	lastErrorAt         time.Time
-	lastError           string
-	recreateCount       int
-	consecutiveTimeouts int
-	lastTimeoutAt       time.Time
-	idleTicks           int
-	lastIdleTickAt      time.Time
-	noProgressTicks     int
-	lastNoProgressAt    time.Time
+	aliveSince    time.Time
+	lastErrorAt   time.Time
+	lastError     string
+	recreateCount int
+
+	// Watchdog counters live per assigned partition. The legacy engine has
+	// no partition of its own and uses the legacyPartition key, so its
+	// single-entry map aggregates in Snapshot to exactly the scalars this
+	// replaced (task-209 design §7).
+	partitions map[int]*partitionState
+
+	// Assignment state — meaningful on the consumergroup engine only.
+	assignedPartitions []int
+	generationID       int32
+	lastAssignmentAt   time.Time
 
 	// Phase-timing attribution — protected by mu. Durations are monotonic
 	// deltas around existing call sites; they exist so a dwell can be
@@ -283,17 +288,91 @@ type Consumer struct {
 	totalBackoff        time.Duration
 }
 
+// legacyPartition is the partitionState key used by the legacy *kafka.Reader
+// engine, which never sees a partition id of its own. Real partition ids are
+// non-negative, so -1 can never collide.
+const legacyPartition = -1
+
+// partitionState holds the liveness-watchdog counters for one partition. A
+// scalar would let a healthy partition's resets mask a sibling partition's
+// wedge; keying by partition is why the wedge stays detectable on a
+// multi-partition topic.
+type partitionState struct {
+	consecutiveTimeouts int
+	lastTimeoutAt       time.Time
+	idleTicks           int
+	lastIdleTickAt      time.Time
+	noProgressTicks     int
+	lastNoProgressAt    time.Time
+	lastFetchAt         time.Time
+	backoff             *fetchBackoff
+}
+
+func newPartitionState() *partitionState {
+	return &partitionState{backoff: newFetchBackoff()}
+}
+
+// partitionStateFor returns the state for partition, creating it on first use.
+func (c *Consumer) partitionStateFor(partition int) *partitionState {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.partitionStateLocked(partition)
+}
+
+func (c *Consumer) partitionStateLocked(partition int) *partitionState {
+	if c.partitions == nil {
+		c.partitions = make(map[int]*partitionState)
+	}
+	st, ok := c.partitions[partition]
+	if !ok {
+		st = newPartitionState()
+		c.partitions[partition] = st
+	}
+	return st
+}
+
+// onAssignment records the generation's assignment for this consumer's topic.
+// State for partitions the consumer no longer holds is dropped, so a
+// partition that comes back after a gap starts with clean no-progress
+// counters (FR-2.4); state for partitions retained across the generation is
+// preserved so operators keep the accumulated tick history.
+func (c *Consumer) onAssignment(genID int32, partitions []int) {
+	sorted := append([]int(nil), partitions...)
+	sort.Ints(sorted)
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.generationID = genID
+	c.lastAssignmentAt = time.Now()
+	c.assignedPartitions = sorted
+
+	next := make(map[int]*partitionState, len(sorted))
+	for _, p := range sorted {
+		if st, ok := c.partitions[p]; ok {
+			next[p] = st
+		} else {
+			next[p] = newPartitionState()
+		}
+	}
+	c.partitions = next
+}
+
 // Snapshot is a point-in-time view of a Consumer's observable state, suitable
 // for JSON serialization by the debug route.
 type Snapshot struct {
-	Name                string
-	Topic               string
-	GroupID             string
-	Brokers             []string
-	AliveSince          time.Time
-	LastFetchAt         time.Time
-	LastErrorAt         time.Time
-	LastError           string
+	Name        string
+	Topic       string
+	GroupID     string
+	Brokers     []string
+	AliveSince  time.Time
+	LastFetchAt time.Time
+	LastErrorAt time.Time
+	LastError   string
+	// RecreateCount counts reader rebuilds. On the legacy engine each rebuild
+	// is a consumer-group REJOIN (it rebalances every member of the group);
+	// on the consumergroup engine it is a local partition-reader rebuild with
+	// no broker-visible group effect. Do not compare the number across a
+	// KAFKA_CONSUMER_ENGINE rollback.
 	RecreateCount       int
 	HandlerCount        int
 	LastTimeoutAt       time.Time
@@ -302,6 +381,12 @@ type Snapshot struct {
 	LastIdleTickAt      time.Time
 	NoProgressTicks     int
 	LastNoProgressAt    time.Time
+	// AssignedPartitions is the sorted partition list this consumer holds in
+	// the current generation. Always non-nil; empty means healthy-idle (or
+	// the legacy engine, which does not observe assignment).
+	AssignedPartitions  []int
+	GenerationID        int32
+	LastAssignmentAt    time.Time
 	TimeToFirstFetch    time.Duration
 	LastFetchDuration   time.Duration
 	MaxFetchDuration    time.Duration
@@ -314,24 +399,53 @@ type Snapshot struct {
 func (c *Consumer) Snapshot() Snapshot {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	brokers := append([]string(nil), c.brokers...)
+
+	var (
+		consecutive      int
+		idleTicks        int
+		noProgressTicks  int
+		lastTimeoutAt    time.Time
+		lastIdleTickAt   time.Time
+		lastNoProgressAt time.Time
+		lastFetchAt      time.Time
+	)
+	latest := func(dst *time.Time, v time.Time) {
+		if v.After(*dst) {
+			*dst = v
+		}
+	}
+	for _, st := range c.partitions {
+		if st.consecutiveTimeouts > consecutive {
+			consecutive = st.consecutiveTimeouts
+		}
+		idleTicks += st.idleTicks
+		noProgressTicks += st.noProgressTicks
+		latest(&lastTimeoutAt, st.lastTimeoutAt)
+		latest(&lastIdleTickAt, st.lastIdleTickAt)
+		latest(&lastNoProgressAt, st.lastNoProgressAt)
+		latest(&lastFetchAt, st.lastFetchAt)
+	}
+
 	return Snapshot{
 		Name:                c.name,
 		Topic:               c.topic,
 		GroupID:             c.groupId,
-		Brokers:             brokers,
+		Brokers:             append([]string(nil), c.brokers...),
 		AliveSince:          c.aliveSince,
-		LastFetchAt:         c.lastFetchAt,
+		LastFetchAt:         lastFetchAt,
 		LastErrorAt:         c.lastErrorAt,
 		LastError:           c.lastError,
 		RecreateCount:       c.recreateCount,
 		HandlerCount:        len(c.handlers),
-		LastTimeoutAt:       c.lastTimeoutAt,
-		ConsecutiveTimeouts: c.consecutiveTimeouts,
-		IdleTicks:           c.idleTicks,
-		LastIdleTickAt:      c.lastIdleTickAt,
-		NoProgressTicks:     c.noProgressTicks,
-		LastNoProgressAt:    c.lastNoProgressAt,
+		LastTimeoutAt:       lastTimeoutAt,
+		ConsecutiveTimeouts: consecutive,
+		IdleTicks:           idleTicks,
+		LastIdleTickAt:      lastIdleTickAt,
+		NoProgressTicks:     noProgressTicks,
+		LastNoProgressAt:    lastNoProgressAt,
+		AssignedPartitions:  append([]int{}, c.assignedPartitions...),
+		GenerationID:        c.generationID,
+		LastAssignmentAt:    c.lastAssignmentAt,
 		TimeToFirstFetch:    c.timeToFirstFetch,
 		LastFetchDuration:   c.lastFetchDuration,
 		MaxFetchDuration:    c.maxFetchDuration,
@@ -341,27 +455,30 @@ func (c *Consumer) Snapshot() Snapshot {
 	}
 }
 
-func (c *Consumer) onReaderCreated(attempt int) {
+func (c *Consumer) onReaderCreated(partition int, attempt int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.aliveSince = time.Now()
-	c.readerCreatedAt = time.Now()
+	now := time.Now()
+	c.aliveSince = now
+	c.readerCreatedAt = now
 	c.awaitingFirstFetch = true
 	if attempt > 0 {
 		c.recreateCount++
 		c.lastError = ""
-		c.consecutiveTimeouts = 0
-		c.lastTimeoutAt = time.Time{}
+		st := c.partitionStateLocked(partition)
+		st.consecutiveTimeouts = 0
+		st.lastTimeoutAt = time.Time{}
 	}
 }
 
-func (c *Consumer) recordFetch() {
+func (c *Consumer) recordFetch(partition int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	now := time.Now()
-	c.lastFetchAt = now
 	c.lastError = ""
-	c.consecutiveTimeouts = 0
+	st := c.partitionStateLocked(partition)
+	st.lastFetchAt = now
+	st.consecutiveTimeouts = 0
 	if c.awaitingFirstFetch {
 		c.timeToFirstFetch = now.Sub(c.readerCreatedAt)
 		c.awaitingFirstFetch = false
@@ -371,26 +488,28 @@ func (c *Consumer) recordFetch() {
 // recordIdleTick marks one deadline expiration on a reader that is still
 // making fetch attempts. Idle is healthy: it resets the no-progress
 // escalation counter and touches no error state.
-func (c *Consumer) recordIdleTick() {
+func (c *Consumer) recordIdleTick(partition int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.idleTicks++
-	c.lastIdleTickAt = time.Now()
-	c.consecutiveTimeouts = 0
+	st := c.partitionStateLocked(partition)
+	st.idleTicks++
+	st.lastIdleTickAt = time.Now()
+	st.consecutiveTimeouts = 0
 }
 
 // recordNoProgressTick marks one deadline expiration with zero reader
 // progress — a stall suspect. Returns the new consecutive count so callers
 // can branch on the threshold without a second mutex acquisition.
-func (c *Consumer) recordNoProgressTick() int {
+func (c *Consumer) recordNoProgressTick(partition int) int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	now := time.Now()
-	c.lastTimeoutAt = now
-	c.lastNoProgressAt = now
-	c.noProgressTicks++
-	c.consecutiveTimeouts++
-	return c.consecutiveTimeouts
+	st := c.partitionStateLocked(partition)
+	st.lastTimeoutAt = now
+	st.lastNoProgressAt = now
+	st.noProgressTicks++
+	st.consecutiveTimeouts++
+	return st.consecutiveTimeouts
 }
 
 func (c *Consumer) recordError(err error) {
@@ -431,13 +550,17 @@ func (c *Consumer) recordBackoff(d time.Duration) {
 // (reader made progress — normal on a no-traffic topic) or a no-progress
 // tick (stall suspect). Returns errFetchWedged once consecutive no-progress
 // ticks reach the threshold, nil otherwise.
-func (c *Consumer) handleFetchDeadline(l logrus.FieldLogger, reader KafkaReader) error {
+//
+// On the consumergroup engine this is only ever reached from a reader that
+// HOLDS a partition assignment, which is what makes FR-2.5 structural: an
+// unassigned consumer has no partition loop and so cannot emit these warns.
+func (c *Consumer) handleFetchDeadline(l logrus.FieldLogger, reader KafkaReader, partition int) error {
 	if readerMadeProgress(reader) {
-		c.recordIdleTick()
+		c.recordIdleTick(partition)
 		l.Debugf("Fetch deadline expired on idle topic [%s]; reader healthy, continuing.", c.topic)
 		return nil
 	}
-	consecutive := c.recordNoProgressTick()
+	consecutive := c.recordNoProgressTick(partition)
 	if consecutive >= c.maxConsecutiveTimeouts {
 		l.Warnf("FetchMessage wedged: %d consecutive no-progress ticks on topic [%s] (group [%s]); forcing reader recreate.",
 			consecutive, c.topic, c.groupId)

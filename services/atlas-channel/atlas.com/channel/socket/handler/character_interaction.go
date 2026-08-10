@@ -275,7 +275,7 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			if nProc == 4 && roomType == model.CashTradeMiniRoomType {
 				l.Debugf("Character [%d] has opened cash trade. nProc [%d], roomType [%d], spw [%d], dwSN [%d], unk2 [%d].", s.CharacterId(), nProc, roomType, sp.Spw(), sp.DwSN(), sp.Unk2())
 				// dwSN is the room handle the invite carried (design §2.3).
-				_ = trade.NewProcessor(l, ctx).EnterRoom(s.Field(), characterconst.Id(s.CharacterId()), sp.DwSN())
+				_ = trade.NewProcessor(l, ctx).EnterRoom(s.Field(), characterconst.Id(s.CharacterId()), sp.DwSN(), byte(roomType))
 				return
 			}
 			if nProc == 4 && roomType == model.MerchantShopMiniRoomType {
@@ -680,16 +680,37 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 // CharacterInteractionEnterResultErrorBody; nothing here names a byte.
 func createTradeRoom(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, roomType byte) bool {
 	return func(s session.Model, roomType byte) bool {
-		if characterOccupiesAnyMiniRoom(l, ctx, s.CharacterId()) {
-			_ = session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(interactioncb.CharacterInteractionEnterErrorModeOtherRequests))(s)
-			return false
-		}
-		if err := trade.NewProcessor(l, ctx).CreateRoom(s.Field(), characterconst.Id(s.CharacterId()), roomType); err != nil {
-			l.WithError(err).Errorf("Unable to open a trade room for character [%d].", s.CharacterId())
-			return false
-		}
-		return true
+		return tradeRoomCreate(l, s.CharacterId(),
+			func(characterId uint32) bool { return characterOccupiesAnyMiniRoom(l, ctx, characterId) },
+			func() {
+				_ = session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(interactioncb.CharacterInteractionEnterErrorModeOtherRequests))(s)
+			},
+			func() error {
+				return trade.NewProcessor(l, ctx).CreateRoom(s.Field(), characterconst.Id(s.CharacterId()), roomType)
+			},
+		)
 	}
+}
+
+// tradeRoomCreate is createTradeRoom's decision, with its three collaborators
+// injected: whether the character is already in a mini-room, how to refuse, and
+// how to emit. Splitting it out is what makes the decision testable — the real
+// collaborators are a REST fan-out, a live socket write and a Kafka produce.
+//
+// It reports whether CREATE_ROOM was emitted. A false answer means the caller
+// must abandon any follow-up (the cash-trade open's INVITE), because there is
+// no room for it to address.
+func tradeRoomCreate(l logrus.FieldLogger, characterId uint32, occupied func(uint32) bool, refuse func(), create func() error) bool {
+	if occupied(characterId) {
+		l.Debugf("Character [%d] is already in a mini-room; refusing the trade room.", characterId)
+		refuse()
+		return false
+	}
+	if err := create(); err != nil {
+		l.WithError(err).Errorf("Unable to open a trade room for character [%d].", characterId)
+		return false
+	}
+	return true
 }
 
 // miniRoomOccupancyProbe is one family's answer to "is this character already

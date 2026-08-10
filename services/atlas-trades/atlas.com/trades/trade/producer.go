@@ -191,6 +191,14 @@ func cancelledProvider(txId uuid.UUID, r Room, characterId character.Id, reason 
 	return roomEventProvider(txId, r, characterId, trademsg.StatusTypeCancelled, trademsg.CancelledEventBody{Reason: reason})
 }
 
+// chatProvider relays one room chat line. The event addresses the whole room
+// (OwnerId and VisitorId both ride the envelope), and Body.Position names which
+// side spoke so atlas-channel can render the speaker's name prefix; CharacterId
+// is the speaker.
+func chatProvider(txId uuid.UUID, r Room, characterId character.Id, position byte, message string) model.Provider[[]kafka.Message] {
+	return roomEventProvider(txId, r, characterId, trademsg.StatusTypeChat, trademsg.ChatEventBody{Position: position, Message: message})
+}
+
 // inviteCommandProvider issues the COMMAND_TOPIC_INVITE CREATE that hands the
 // offer to atlas-invites. The referenceId is the room's uint32 wire handle:
 // invite.Id is a uint32 (libs/atlas-constants/invite/constants.go:3), so the

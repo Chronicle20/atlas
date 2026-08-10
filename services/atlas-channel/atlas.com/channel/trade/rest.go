@@ -6,15 +6,12 @@ import (
 
 // RestModel is atlas-channel's projection of atlas-trades' room resource
 // (services/atlas-trades/atlas.com/trades/trade/rest.go, resource type
-// "rooms"). It is deliberately PARTIAL: atlas-channel reads this endpoint only
+// "rooms"). It is deliberately MINIMAL: atlas-channel reads this endpoint only
 // to answer "is this character already seated in a trade room?" for the
-// cross-family occupancy check (task-205 design §2.1), so the participants
-// array and its staged items are not mirrored. JSON:API ignores the members
-// that are not declared here.
+// cross-family occupancy check (task-205 design §2.1), which needs nothing but
+// the room's identity. JSON:API ignores the members that are not declared here.
 type RestModel struct {
-	Id       string `json:"-"`
-	RoomType byte   `json:"roomType"`
-	State    string `json:"state"`
+	Id string `json:"-"`
 }
 
 func (r RestModel) GetName() string {
@@ -35,9 +32,5 @@ func Extract(rm RestModel) (Model, error) {
 	if err != nil {
 		return Model{}, err
 	}
-	return Model{
-		id:       id,
-		roomType: rm.RoomType,
-		state:    rm.State,
-	}, nil
+	return Model{id: id}, nil
 }

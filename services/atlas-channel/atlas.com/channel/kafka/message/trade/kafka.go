@@ -74,8 +74,14 @@ type DeclineInviteCommandBody struct {
 	ErrorCode    byte   `json:"errorCode"`
 }
 
+// EnterRoomCommandBody names the room by its wire handle AND the room type the
+// caller believes it is entering. The handle is the owner's character id
+// (design §2.3) and therefore public, so it is not on its own an admission
+// ticket: atlas-trades additionally requires the enterer to be the character
+// the room's outstanding invite named, and the room's kind to match RoomType.
 type EnterRoomCommandBody struct {
-	Handle uint32 `json:"handle"`
+	Handle   uint32 `json:"handle"`
+	RoomType byte   `json:"roomType"`
 }
 
 // PutItemCommandBody mirrors the serverbound OperationTradePutItem decode.

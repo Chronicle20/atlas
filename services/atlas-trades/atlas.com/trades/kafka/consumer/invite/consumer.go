@@ -64,7 +64,7 @@ func handleAccepted(db *gorm.DB) message.Handler[invitemsg.StatusEvent[invitemsg
 			l.Errorf("Character [%d] accepted trade invite [%d], but its room is gone.", e.Body.TargetId, e.ReferenceId)
 			return
 		}
-		if err := p.EnterRoom(e.TransactionId, room.Field(), e.Body.TargetId, uint32(e.ReferenceId)); err != nil {
+		if err := p.EnterRoom(e.TransactionId, room.Field(), e.Body.TargetId, uint32(e.ReferenceId), room.RoomType()); err != nil {
 			l.WithError(err).Errorf("Unable to seat character [%d] in trade room [%d].", e.Body.TargetId, e.ReferenceId)
 		}
 	}

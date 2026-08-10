@@ -53,9 +53,10 @@ func DeclineInviteCommandProvider(transactionId uuid.UUID, f field.Model, charac
 	})
 }
 
-func EnterRoomCommandProvider(transactionId uuid.UUID, f field.Model, characterId character.Id, handle uint32) model.Provider[[]kafka.Message] {
+func EnterRoomCommandProvider(transactionId uuid.UUID, f field.Model, characterId character.Id, handle uint32, roomType byte) model.Provider[[]kafka.Message] {
 	return commandProvider(transactionId, f, characterId, trade2.CommandTypeEnterRoom, trade2.EnterRoomCommandBody{
-		Handle: handle,
+		Handle:   handle,
+		RoomType: roomType,
 	})
 }
 

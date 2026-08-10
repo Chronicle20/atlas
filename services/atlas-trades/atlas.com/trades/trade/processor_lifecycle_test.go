@@ -565,7 +565,7 @@ func TestInviteRejectedWithoutARoom(t *testing.T) {
 func TestInviteRejectedOnAPairedRoom(t *testing.T) {
 	p, e := testPendingRoom(t)
 	room, _ := p.RoomForCharacter(100)
-	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle()); err != nil {
+	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle(), room.RoomType()); err != nil {
 		t.Fatalf("enter: %v", err)
 	}
 	if err := p.Invite(uuid.New(), testField(t), 100, 300); err != nil {
@@ -583,7 +583,7 @@ func TestInviteRejectedOnAPairedRoom(t *testing.T) {
 func TestInviteRejectedForTheVisitor(t *testing.T) {
 	p, e := testPendingRoom(t)
 	room, _ := p.RoomForCharacter(100)
-	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle()); err != nil {
+	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle(), room.RoomType()); err != nil {
 		t.Fatalf("enter: %v", err)
 	}
 	if err := p.Invite(uuid.New(), testField(t), 200, 300); err != nil {
@@ -714,7 +714,7 @@ func TestDeclineForAnUnknownOriginatorIsANoOp(t *testing.T) {
 func TestEnterRoomSeatsVisitorAtPositionOne(t *testing.T) {
 	p, e := testPendingRoom(t)
 	room, _ := p.RoomForCharacter(100)
-	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle()); err != nil {
+	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle(), room.RoomType()); err != nil {
 		t.Fatalf("enter: %v", err)
 	}
 	room, ok := p.RoomForCharacter(200)
@@ -744,41 +744,115 @@ func TestEnterRoomSeatsVisitorAtPositionOne(t *testing.T) {
 	}
 }
 
-// TestEnterRoomRejectsAThirdCharacter pins that a paired room is closed.
+// TestEnterRoomRefusesACharacterTheInviteDidNotName drives the hijack through
+// the FULL ladder, with every REST gate open and the attacker standing in the
+// same map as the room: the only thing stopping them is the admission ticket.
+// The wire handle is the owner's character id (design §2.3), so possession of
+// it proves nothing.
+func TestEnterRoomRefusesACharacterTheInviteDidNotName(t *testing.T) {
+	p, e := testPendingRoom(t)
+	room, _ := p.RoomForCharacter(100)
+
+	if err := p.EnterRoom(uuid.New(), testField(t), 300, room.Handle(), room.RoomType()); err != nil {
+		t.Fatalf("enter: %v", err)
+	}
+
+	assertErrorEvent(t, e, errRoomClosed)
+	if _, ok := p.RoomForCharacter(300); ok {
+		t.Error("an uninvited character was seated in the room")
+	}
+	// And the character the invite DID name is still able to take their seat.
+	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle(), room.RoomType()); err != nil {
+		t.Fatalf("invitee enter: %v", err)
+	}
+	seated, ok := p.RoomForCharacter(200)
+	if !ok {
+		t.Fatal("the invited character was not seated after the refused hijack")
+	}
+	if seated.State() != StateOpen {
+		t.Errorf("state: got %s, want %s", seated.State(), StateOpen)
+	}
+}
+
+// TestEnterRoomRefusesAMismatchedRoomType pins the second half of the gate: a
+// cash-trade enter must not seat anyone in a plain trade room, even when the
+// enterer is the invited character.
+func TestEnterRoomRefusesAMismatchedRoomType(t *testing.T) {
+	p, e := testPendingRoom(t)
+	room, _ := p.RoomForCharacter(100)
+
+	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle(), miniroom.CashTrade); err != nil {
+		t.Fatalf("enter: %v", err)
+	}
+
+	assertErrorEvent(t, e, errRoomClosed)
+	if _, ok := p.RoomForCharacter(200); ok {
+		t.Error("a mismatched room type still seated the enterer")
+	}
+}
+
+// TestReInvitingMovesTheTicket pins that a re-issued invite after a decline
+// hands the seat to the NEW target and takes it from the old one — the ticket
+// is the room's current invite, not a growing allow-list.
+func TestReInvitingMovesTheTicket(t *testing.T) {
+	p, _ := testPendingRoom(t)
+	room, _ := p.RoomForCharacter(100)
+
+	if err := p.Invite(uuid.New(), testField(t), 100, 300); err != nil {
+		t.Fatalf("re-invite: %v", err)
+	}
+
+	cur, ok := p.RoomById(room.Id())
+	if !ok {
+		t.Fatal("the room is gone after a re-invite")
+	}
+	if !cur.Admits(300) {
+		t.Error("the re-invited character was not admitted")
+	}
+	if cur.Admits(200) {
+		t.Error("the previously invited character kept their ticket")
+	}
+}
+
+// TestEnterRoomRejectsAThirdCharacter pins that a paired room is closed. The
+// third character is refused by the admission gate before the paired check is
+// even reached — seating spends the invite ticket — so the code is ROOM_CLOSED,
+// the same answer an unknown handle gets.
 func TestEnterRoomRejectsAThirdCharacter(t *testing.T) {
 	p, e := testPendingRoom(t)
 	room, _ := p.RoomForCharacter(100)
-	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle()); err != nil {
+	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle(), room.RoomType()); err != nil {
 		t.Fatalf("first enter: %v", err)
 	}
-	if err := p.EnterRoom(uuid.New(), testField(t), 300, room.Handle()); err != nil {
+	if err := p.EnterRoom(uuid.New(), testField(t), 300, room.Handle(), room.RoomType()); err != nil {
 		t.Fatalf("second enter: %v", err)
 	}
-	assertErrorEvent(t, e, errOtherRequests)
+	assertErrorEvent(t, e, errRoomClosed)
 	if _, ok := p.RoomForCharacter(300); ok {
 		t.Error("a third character was seated in a paired room")
 	}
 }
 
 // TestEnterRoomRejectsASoloRoom pins the rejected transition OPEN_SOLO ->
-// ENTER: a room whose owner never invited anyone admits nobody.
+// ENTER: a room whose owner never invited anyone admits nobody. With no invite
+// there is no ticket, so the refusal is ROOM_CLOSED.
 func TestEnterRoomRejectsASoloRoom(t *testing.T) {
 	p, e := testProcessor(t)
 	if err := p.CreateRoom(uuid.New(), testField(t), 100, miniroom.Trade); err != nil {
 		t.Fatalf("create: %v", err)
 	}
 	room, _ := p.RoomForCharacter(100)
-	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle()); err != nil {
+	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle(), room.RoomType()); err != nil {
 		t.Fatalf("enter: %v", err)
 	}
-	assertErrorEvent(t, e, errOtherRequests)
+	assertErrorEvent(t, e, errRoomClosed)
 }
 
 // TestEnterRoomRejectsAnUnknownHandle pins that an accept for a room that is
 // already gone reports ROOM_CLOSED rather than silently dropping.
 func TestEnterRoomRejectsAnUnknownHandle(t *testing.T) {
 	p, e := testProcessor(t)
-	if err := p.EnterRoom(uuid.New(), testField(t), 200, 4242); err != nil {
+	if err := p.EnterRoom(uuid.New(), testField(t), 200, 4242, miniroom.Trade); err != nil {
 		t.Fatalf("enter: %v", err)
 	}
 	assertErrorEvent(t, e, errRoomClosed)
@@ -793,7 +867,7 @@ func TestEnterRoomRejectsDeadCharacter(t *testing.T) {
 		200: {Id: 200, Name: "Guest", Hp: 0, Level: 30},
 	}}
 	room, _ := p.RoomForCharacter(100)
-	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle()); err != nil {
+	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle(), room.RoomType()); err != nil {
 		t.Fatalf("enter: %v", err)
 	}
 	assertErrorEvent(t, e, errNotWhenDead)
@@ -815,7 +889,7 @@ func TestEnterRoomRejectsBelowMinLevel(t *testing.T) {
 		t.Fatalf("invite: %v", err)
 	}
 	room, _ := p.RoomForCharacter(100)
-	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle()); err != nil {
+	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle(), room.RoomType()); err != nil {
 		t.Fatalf("enter: %v", err)
 	}
 	assertErrorEvent(t, e, errUnable)
@@ -836,7 +910,7 @@ func TestEnterRoomRejectsADifferentField(t *testing.T) {
 		100: room.Field(),
 		200: elsewhere,
 	}}
-	if err := p.EnterRoom(uuid.New(), room.Field(), 200, room.Handle()); err != nil {
+	if err := p.EnterRoom(uuid.New(), room.Field(), 200, room.Handle(), room.RoomType()); err != nil {
 		t.Fatalf("enter: %v", err)
 	}
 	assertErrorEvent(t, e, errNotSameMap)
@@ -851,7 +925,7 @@ func TestEnterRoomRefusesWhenTheEnterersLocationCannotBeRead(t *testing.T) {
 	p, e := testPendingRoom(t)
 	room, _ := p.RoomForCharacter(100)
 	p.locp = &fakeLocations{err: errors.New("atlas-maps unreachable")}
-	if err := p.EnterRoom(uuid.New(), room.Field(), 200, room.Handle()); err != nil {
+	if err := p.EnterRoom(uuid.New(), room.Field(), 200, room.Handle(), room.RoomType()); err != nil {
 		t.Fatalf("enter: %v", err)
 	}
 	assertErrorEvent(t, e, errUnable)
@@ -868,7 +942,7 @@ func TestEnterRoomRejectsACharacterAlreadyInAnotherRoom(t *testing.T) {
 		t.Fatalf("create the visitor's own room: %v", err)
 	}
 	room, _ := p.RoomForCharacter(100)
-	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle()); err != nil {
+	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle(), room.RoomType()); err != nil {
 		t.Fatalf("enter: %v", err)
 	}
 	assertErrorEvent(t, e, errOtherRequests)
@@ -884,7 +958,7 @@ func TestEnterRoomRejectsACharacterAlreadyInAnotherRoom(t *testing.T) {
 func TestTeardownCharacterRemovesTheRoomAndCancelsBothSides(t *testing.T) {
 	p, e := testPendingRoom(t)
 	room, _ := p.RoomForCharacter(100)
-	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle()); err != nil {
+	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle(), room.RoomType()); err != nil {
 		t.Fatalf("enter: %v", err)
 	}
 	if err := p.TeardownCharacter(uuid.New(), 200, ReasonTradeDifferentMap); err != nil {
@@ -912,7 +986,7 @@ func TestTeardownCharacterRemovesTheRoomAndCancelsBothSides(t *testing.T) {
 func TestTeardownCharacterLosesToSettlement(t *testing.T) {
 	p, e := testPendingRoom(t)
 	room, _ := p.RoomForCharacter(100)
-	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle()); err != nil {
+	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle(), room.RoomType()); err != nil {
 		t.Fatalf("enter: %v", err)
 	}
 	room, _ = p.RoomForCharacter(100)

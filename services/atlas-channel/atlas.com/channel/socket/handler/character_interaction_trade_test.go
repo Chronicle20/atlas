@@ -88,6 +88,76 @@ func TestAnyMiniRoomOccupiedWithNoHits(t *testing.T) {
 	}
 }
 
+// --- the CREATE arms' decision ------------------------------------------------
+
+// TestTradeRoomCreateRefusesWhenTheCharacterIsAlreadyInAMiniRoom pins FR-1.2's
+// reply path: a cross-family collision announces the enter error and emits
+// NOTHING. The announced code is resolved from the tenant enterError table by
+// CharacterInteractionEnterResultErrorBody, so the refusal names no byte here.
+func TestTradeRoomCreateRefusesWhenTheCharacterIsAlreadyInAMiniRoom(t *testing.T) {
+	refused := 0
+	created := 0
+	ok := tradeRoomCreate(testLogger(), 100,
+		func(uint32) bool { return true },
+		func() { refused++ },
+		func() error { created++; return nil },
+	)
+	if ok {
+		t.Error("created: got true, want false")
+	}
+	if refused != 1 {
+		t.Errorf("refusals announced: got %d, want 1", refused)
+	}
+	if created != 0 {
+		t.Errorf("commands emitted: got %d, want 0", created)
+	}
+}
+
+// TestTradeRoomCreateEmitsForAFreeCharacter pins the common case, and that the
+// occupancy probe is asked about the ACTING character.
+func TestTradeRoomCreateEmitsForAFreeCharacter(t *testing.T) {
+	var asked uint32
+	refused := 0
+	created := 0
+	ok := tradeRoomCreate(testLogger(), 100,
+		func(characterId uint32) bool { asked = characterId; return false },
+		func() { refused++ },
+		func() error { created++; return nil },
+	)
+	if !ok {
+		t.Error("created: got false, want true")
+	}
+	if asked != 100 {
+		t.Errorf("occupancy probed for character: got %d, want 100", asked)
+	}
+	if created != 1 {
+		t.Errorf("commands emitted: got %d, want 1", created)
+	}
+	if refused != 0 {
+		t.Errorf("refusals announced: got %d, want 0", refused)
+	}
+}
+
+// TestTradeRoomCreateReportsAFailedEmit pins the branch the cash-trade open
+// (nProc 0) keys on: it sends CREATE_ROOM then INVITE, and an invite for a room
+// that was never created would address nothing. A failed emit must therefore
+// answer false, and must not also announce a refusal — the client was not
+// refused, the server failed.
+func TestTradeRoomCreateReportsAFailedEmit(t *testing.T) {
+	refused := 0
+	ok := tradeRoomCreate(testLogger(), 100,
+		func(uint32) bool { return false },
+		func() { refused++ },
+		func() error { return errors.New("kafka down") },
+	)
+	if ok {
+		t.Error("created: got true, want false")
+	}
+	if refused != 0 {
+		t.Errorf("refusals announced: got %d, want 0", refused)
+	}
+}
+
 // --- the inventory-type decode boundary --------------------------------------
 
 // tradePutItemBytes builds a TRADE_PUT_ITEM body in the client's field order

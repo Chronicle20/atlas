@@ -61,8 +61,11 @@ func (p *Processor) DeclineInvite(f field.Model, characterId character.Id, seria
 	return producer.ProviderImpl(p.l)(p.ctx)(trade2.EnvCommandTopic)(DeclineInviteCommandProvider(uuid.New(), f, characterId, serialNumber, errorCode))
 }
 
-func (p *Processor) EnterRoom(f field.Model, characterId character.Id, handle uint32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(trade2.EnvCommandTopic)(EnterRoomCommandProvider(uuid.New(), f, characterId, handle))
+// EnterRoom names the room by the handle the client sent and the room type its
+// dialog claimed. Neither is trusted: atlas-trades admits only the character
+// its outstanding invite named, and only into a room of the claimed kind.
+func (p *Processor) EnterRoom(f field.Model, characterId character.Id, handle uint32, roomType byte) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(trade2.EnvCommandTopic)(EnterRoomCommandProvider(uuid.New(), f, characterId, handle, roomType))
 }
 
 // PutItem takes an already-validated inventory.Type: the wire field is an

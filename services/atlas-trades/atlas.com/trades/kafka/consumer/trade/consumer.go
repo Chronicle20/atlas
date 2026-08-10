@@ -59,6 +59,12 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleTransaction(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCancel(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChat(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -175,8 +181,39 @@ func handleEnterRoom(db *gorm.DB) message.Handler[trademsg.Command[trademsg.Ente
 			return
 		}
 		f := fieldFromCommand(c)
-		if err := trade.NewProcessor(l, ctx, db).EnterRoom(c.TransactionId, f, c.CharacterId, c.Body.Handle); err != nil {
+		if err := trade.NewProcessor(l, ctx, db).EnterRoom(c.TransactionId, f, c.CharacterId, c.Body.Handle, c.Body.RoomType); err != nil {
 			l.WithError(err).Errorf("Unable to seat character [%d] in trade room [%d].", c.CharacterId, c.Body.Handle)
+		}
+	}
+}
+
+// handleCancel is the client closing its trade dialog — the serverbound EXIT
+// mode, which atlas-channel fans out to every mini-room family. It is the ONLY
+// teardown trigger that fires while the player stays logged in on the same map:
+// the character and session consumers cover LOGOUT, MAP_CHANGED,
+// CHANNEL_CHANGED and SESSION_DESTROYED, none of which a dialog close produces.
+// TeardownCharacter is a no-op for a character with no room, so the
+// unconditional fan-out costs nothing.
+func handleCancel(db *gorm.DB) message.Handler[trademsg.Command[trademsg.CancelCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c trademsg.Command[trademsg.CancelCommandBody]) {
+		if c.Type != trademsg.CommandTypeCancel {
+			return
+		}
+		if err := trade.NewProcessor(l, ctx, db).TeardownCharacter(c.TransactionId, c.CharacterId, trade.ReasonTradeCancelled); err != nil {
+			l.WithError(err).Errorf("Unable to cancel character [%d]'s trade.", c.CharacterId)
+		}
+	}
+}
+
+// handleChat relays a trade-room chat line. Like CANCEL it arrives for every
+// mini-room family, and the processor drops a speaker who is not in a room.
+func handleChat(db *gorm.DB) message.Handler[trademsg.Command[trademsg.ChatCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c trademsg.Command[trademsg.ChatCommandBody]) {
+		if c.Type != trademsg.CommandTypeChat {
+			return
+		}
+		if err := trade.NewProcessor(l, ctx, db).Chat(c.TransactionId, c.CharacterId, c.Body.Message); err != nil {
+			l.WithError(err).Errorf("Unable to relay character [%d]'s trade chat.", c.CharacterId)
 		}
 	}
 }

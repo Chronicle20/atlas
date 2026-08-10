@@ -174,8 +174,10 @@ type Processor interface {
 	InviteRejected(txId uuid.UUID, characterId character.Id, originatorId character.Id) error
 
 	// EnterRoom seats characterId in the room owning the given wire handle
-	// (FR-1.5, FR-2.4).
-	EnterRoom(txId uuid.UUID, f field.Model, characterId character.Id, handle uint32) error
+	// (FR-1.5, FR-2.4). It admits ONLY the character the room's outstanding
+	// invite named, and only when roomType matches the room's own kind — the
+	// handle is public, so it is not on its own an admission ticket.
+	EnterRoom(txId uuid.UUID, f field.Model, characterId character.Id, handle uint32, roomType byte) error
 
 	// PutItem stages one item into the caller's side of the trade dialog
 	// (FR-3.1..FR-3.3). inventoryType, sourceSlot, quantity and targetSlot are
@@ -183,6 +185,10 @@ type Processor interface {
 	// untrusted and validated here. A refused stage is SILENT to the client —
 	// see checkRestrictions.
 	PutItem(txId uuid.UUID, characterId character.Id, inventoryType byte, sourceSlot slot.Position, quantity uint16, targetSlot byte) error
+
+	// Chat relays one line of trade-room chat to both sides (FR-8.1). The room
+	// is resolved from the speaker's membership; a non-member is a silent no-op.
+	Chat(txId uuid.UUID, characterId character.Id, text string) error
 
 	// AddMeso sets the caller's staged meso to the ABSOLUTE amount their input
 	// box carried (design §1.6). Signed because the serverbound codec is an
@@ -431,7 +437,10 @@ func (p *ProcessorImpl) invite(mb *message.Buffer, txId uuid.UUID, f field.Model
 		if !invitableState(cur.State()) {
 			return Room{}, ErrRoomFrozen
 		}
-		return cur.WithState(StatePendingInvite), nil
+		// The target is recorded as the room's admission ticket in the SAME
+		// compare-and-set as the state move: ENTER_ROOM admits only this
+		// character, and the wire handle alone must never be enough.
+		return cur.WithState(StatePendingInvite).WithInvited(targetCharacterId), nil
 	})
 	if err != nil {
 		return mb.Put(trademsg.EnvEventTopicStatus, roomErrorProvider(txId, room, characterId, registryErrorCode(err)))
@@ -542,15 +551,37 @@ func (p *ProcessorImpl) declineInvite(mb *message.Buffer, txId uuid.UUID, charac
 //
 // f addresses the ROOM-IS-GONE error only: with no room there is no field to
 // take one from, so the caller's is the only one available.
-func (p *ProcessorImpl) EnterRoom(txId uuid.UUID, f field.Model, characterId character.Id, handle uint32) error {
+//
+// roomType is the kind of room the CALLER believes it is entering — the client
+// dialog's own room type on the CASH_TRADE_OPEN path, the room's own on the
+// invite-accept path. A mismatch means the request is not for this room.
+func (p *ProcessorImpl) EnterRoom(txId uuid.UUID, f field.Model, characterId character.Id, handle uint32, roomType byte) error {
 	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
-		return p.enterRoom(mb, txId, f, characterId, handle)
+		return p.enterRoom(mb, txId, f, characterId, handle, roomType)
 	})
 }
 
-func (p *ProcessorImpl) enterRoom(mb *message.Buffer, txId uuid.UUID, f field.Model, characterId character.Id, handle uint32) error {
+func (p *ProcessorImpl) enterRoom(mb *message.Buffer, txId uuid.UUID, f field.Model, characterId character.Id, handle uint32, roomType byte) error {
 	room, ok := p.reg.GetByHandle(p.t, handle)
 	if !ok {
+		return mb.Put(trademsg.EnvEventTopicStatus, errorProvider(txId, f, 0, characterId, errRoomClosed))
+	}
+	// THE ADMISSION GATE. The handle is the owner's character id (design §2.3)
+	// and therefore public, so possession of it proves nothing: only the
+	// character the owner's outstanding INVITE named may be seated. Without
+	// this, anyone in the map could send handle = victimCharacterId and take
+	// the invitee's seat before the invite was answered.
+	//
+	// The refusal is ROOM_CLOSED — the same answer an unknown handle gets — so
+	// probing cannot distinguish "no such room" from "not your room".
+	if !room.Admits(characterId) {
+		p.l.Warnf("Character [%d] tried to enter trade room [%d], which they were not invited to.", characterId, handle)
+		return mb.Put(trademsg.EnvEventTopicStatus, errorProvider(txId, f, 0, characterId, errRoomClosed))
+	}
+	// The room the handle resolved to must be the kind the caller asked for: a
+	// cash-trade enter must not seat anyone in a plain trade room.
+	if room.RoomType() != roomType {
+		p.l.Warnf("Character [%d] tried to enter trade room [%d] as roomType [%d], but it is roomType [%d].", characterId, handle, roomType, room.RoomType())
 		return mb.Put(trademsg.EnvEventTopicStatus, errorProvider(txId, f, 0, characterId, errRoomClosed))
 	}
 	// Already seated somewhere — including in THIS room, which a duplicate
@@ -604,6 +635,12 @@ func (p *ProcessorImpl) enterRoom(mb *message.Buffer, txId uuid.UUID, f field.Mo
 		if cur.VisitorId() != 0 {
 			return Room{}, ErrRoomFull
 		}
+		// Re-check the ticket under the write lock: the ladder above ran on a
+		// snapshot, and a re-issued INVITE between then and here would have
+		// moved the ticket to someone else.
+		if !cur.Admits(characterId) {
+			return Room{}, ErrRoomFrozen
+		}
 		return cur.WithVisitor(characterId, cm.Name()).WithState(StateOpen), nil
 	})
 	if err != nil {
@@ -611,6 +648,36 @@ func (p *ProcessorImpl) enterRoom(mb *message.Buffer, txId uuid.UUID, f field.Mo
 	}
 
 	return mb.Put(trademsg.EnvEventTopicStatus, participantEnteredProvider(txId, updated, characterId, cm.Name()))
+}
+
+// Chat relays one line of trade-room chat to both sides (FR-8.1). The room is
+// resolved from the SPEAKER's membership rather than from any id the client
+// sent, so a character who is not in a trade room cannot address one — the
+// serverbound CHAT mode fans out to every mini-room family in atlas-channel, so
+// most of the traffic arriving here belongs to a mini-game or a shop and is
+// silently dropped.
+//
+// Chat is legal in every non-terminal state, including while settling: it
+// mutates nothing and the client's dialog is still open.
+func (p *ProcessorImpl) Chat(txId uuid.UUID, characterId character.Id, text string) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
+		return p.chat(mb, txId, characterId, text)
+	})
+}
+
+func (p *ProcessorImpl) chat(mb *message.Buffer, txId uuid.UUID, characterId character.Id, text string) error {
+	if text == "" {
+		return nil
+	}
+	room, ok := p.reg.GetByMember(p.t, characterId)
+	if !ok {
+		return nil
+	}
+	speaker, ok := room.ParticipantFor(characterId)
+	if !ok {
+		return nil
+	}
+	return mb.Put(trademsg.EnvEventTopicStatus, chatProvider(txId, room, characterId, speaker.Position(), text))
 }
 
 // TeardownCharacter removes the room the character occupies and tells both sides

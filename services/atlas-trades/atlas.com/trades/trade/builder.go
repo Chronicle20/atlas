@@ -17,6 +17,7 @@ type Builder struct {
 	roomType     byte
 	f            field.Model
 	state        State
+	invitedId    character.Id
 	participants []Participant
 	createdAt    time.Time
 }
@@ -46,6 +47,10 @@ func (b *Builder) SetState(s State) *Builder { b.state = s; return b }
 
 func (b *Builder) SetCreatedAt(t time.Time) *Builder { b.createdAt = t; return b }
 
+// SetInvited records the character an outstanding invite names — the only
+// character ENTER_ROOM will seat (Room.Admits).
+func (b *Builder) SetInvited(characterId character.Id) *Builder { b.invitedId = characterId; return b }
+
 // SetVisitor seats the invited character at position 1.
 func (b *Builder) SetVisitor(characterId character.Id, name string) *Builder {
 	b.participants = append(b.participants, Participant{
@@ -65,6 +70,7 @@ func (b *Builder) Build() Room {
 		roomType:     b.roomType,
 		f:            b.f,
 		state:        b.state,
+		invitedId:    b.invitedId,
 		participants: participants,
 		createdAt:    b.createdAt,
 	}

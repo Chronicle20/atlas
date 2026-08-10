@@ -157,7 +157,7 @@ func newStagingProcessor(t *testing.T, cfg configuration.Model, characters ...te
 		t.Fatalf("invite: %v", err)
 	}
 	room, _ := p.RoomForCharacter(100)
-	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle()); err != nil {
+	if err := p.EnterRoom(uuid.New(), testField(t), 200, room.Handle(), room.RoomType()); err != nil {
 		t.Fatalf("enter: %v", err)
 	}
 	return p, e

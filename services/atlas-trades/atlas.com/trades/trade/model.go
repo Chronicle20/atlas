@@ -267,6 +267,12 @@ func (p Participant) StagedQuantityFrom(inventoryType inventory.Type, sourceSlot
 // consumer has for finding the room a terminal saga status belongs to — the
 // FAILED body's characterId names the failed expanded step's character, which
 // is not a role and may be either participant.
+// invitedId is the character the owner's outstanding INVITE named, recorded at
+// the OPEN_SOLO -> PENDING_INVITE transition. It is the ADMISSION TICKET: the
+// wire handle is the owner's character id and therefore public, so without a
+// recorded target any character in the same map could seat themselves in a
+// stranger's pending trade by naming the handle. Zero while the room has no
+// outstanding invite.
 type Room struct {
 	id           uuid.UUID
 	handle       uint32
@@ -274,6 +280,7 @@ type Room struct {
 	f            field.Model
 	state        State
 	settlementId uuid.UUID
+	invitedId    character.Id
 	participants []Participant
 	createdAt    time.Time
 }
@@ -285,6 +292,17 @@ func (r Room) Field() field.Model      { return r.f }
 func (r Room) State() State            { return r.state }
 func (r Room) SettlementId() uuid.UUID { return r.settlementId }
 func (r Room) CreatedAt() time.Time    { return r.createdAt }
+
+// InvitedId returns the character the outstanding invite named, or 0 when the
+// room has none. Only that character may be seated by ENTER_ROOM.
+func (r Room) InvitedId() character.Id { return r.invitedId }
+
+// Admits reports whether characterId may be seated as this room's visitor. It
+// is deliberately the ONLY predicate that answers that question, so the invite
+// ticket cannot be bypassed by a caller that re-derives seating rules.
+func (r Room) Admits(characterId character.Id) bool {
+	return r.invitedId != 0 && r.invitedId == characterId
+}
 
 // Participants returns a copy of the participant list, so a caller cannot
 // write through the returned slice into the room's state.
@@ -349,6 +367,15 @@ func (r Room) WithState(s State) Room {
 	return c
 }
 
+// WithInvited returns a copy of r whose outstanding invite names characterId.
+// A re-issued invite after a decline overwrites the previous target, so the
+// declined character loses their ticket.
+func (r Room) WithInvited(characterId character.Id) Room {
+	c := r
+	c.invitedId = characterId
+	return c
+}
+
 // WithSettlementId returns a copy of r carrying the settlement saga's
 // transaction id.
 func (r Room) WithSettlementId(id uuid.UUID) Room {
@@ -405,8 +432,12 @@ func (r Room) OrderedParticipants() []Participant {
 // transform appends unconditionally, so seating a visitor twice would produce
 // two position-1 participants. It allocates a fresh participant slice, so it is
 // safe to call on a Room obtained from the registry.
+//
+// Seating SPENDS the invite ticket: invitedId is cleared, so a room that has
+// its visitor no longer names an outstanding invite.
 func (r Room) WithVisitor(characterId character.Id, name string) Room {
 	c := r
+	c.invitedId = 0
 	c.participants = make([]Participant, len(r.participants), len(r.participants)+1)
 	copy(c.participants, r.participants)
 	c.participants = append(c.participants, Participant{

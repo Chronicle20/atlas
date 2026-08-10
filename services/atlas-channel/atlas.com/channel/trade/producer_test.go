@@ -3,6 +3,7 @@ package trade
 import (
 	trade2 "atlas-channel/kafka/message/trade"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -86,7 +87,7 @@ func TestEveryCommandIsKeyedByTheActingCharacter(t *testing.T) {
 		"createRoom":    CreateRoomCommandProvider(uuid.New(), testField(), testCharacterId, 3),
 		"invite":        InviteCommandProvider(uuid.New(), testField(), testCharacterId, testTargetId),
 		"declineInvite": DeclineInviteCommandProvider(uuid.New(), testField(), testCharacterId, 7, 1),
-		"enterRoom":     EnterRoomCommandProvider(uuid.New(), testField(), testCharacterId, 7),
+		"enterRoom":     EnterRoomCommandProvider(uuid.New(), testField(), testCharacterId, 7, 3),
 		"putItem":       PutItemCommandProvider(uuid.New(), testField(), testCharacterId, inventory.TypeValueUse, 5, 100, 3),
 		"addMeso":       AddMesoCommandProvider(uuid.New(), testField(), testCharacterId, 10),
 		"confirm":       ConfirmCommandProvider(uuid.New(), testField(), testCharacterId, nil),
@@ -133,15 +134,19 @@ func TestDeclineInviteCommandCarriesTheSerialAndErrorCode(t *testing.T) {
 	}
 }
 
-// TestEnterRoomCommandCarriesTheHandle pins the wire handle, which is what
-// atlas-trades looks the room up by.
-func TestEnterRoomCommandCarriesTheHandle(t *testing.T) {
-	c, _ := decodeOne[trade2.EnterRoomCommandBody](t, EnterRoomCommandProvider(uuid.New(), testField(), testCharacterId, 9999))
+// TestEnterRoomCommandCarriesTheHandleAndClaimedRoomType pins both halves of
+// what atlas-trades checks: the handle it looks the room up by, and the room
+// type the client's dialog claimed, which must match the room it found.
+func TestEnterRoomCommandCarriesTheHandleAndClaimedRoomType(t *testing.T) {
+	c, _ := decodeOne[trade2.EnterRoomCommandBody](t, EnterRoomCommandProvider(uuid.New(), testField(), testCharacterId, 9999, 6))
 	if c.Type != trade2.CommandTypeEnterRoom {
 		t.Errorf("type: got %s, want %s", c.Type, trade2.CommandTypeEnterRoom)
 	}
 	if c.Body.Handle != 9999 {
 		t.Errorf("handle: got %d, want 9999", c.Body.Handle)
+	}
+	if c.Body.RoomType != 6 {
+		t.Errorf("roomType: got %d, want 6", c.Body.RoomType)
 	}
 }
 
@@ -205,16 +210,23 @@ func TestConfirmCommandForwardsTheCrcEntries(t *testing.T) {
 	}
 }
 
-// TestConfirmCommandSurvivesAnEmptyCrcList pins the GMS <= v79 shape: those
-// versions' TRADE_CONFIRM carries no CRC block (tradeCrcPresent), so an empty
-// list is a faithful forward rather than a dropped field.
-func TestConfirmCommandSurvivesAnEmptyCrcList(t *testing.T) {
-	c, _ := decodeOne[trade2.ConfirmCommandBody](t, ConfirmCommandProvider(uuid.New(), testField(), testCharacterId, []trade2.CrcEntry{}))
+// TestConfirmCommandWithAnEmptyCrcListIsStillATypedConfirm pins the GMS <= v79
+// shape: those versions' TRADE_CONFIRM carries no CRC block (tradeCrcPresent),
+// so the command still has to arrive — correctly typed, with an entries member
+// present and empty — rather than being suppressed for having nothing to say.
+func TestConfirmCommandWithAnEmptyCrcListIsStillATypedConfirm(t *testing.T) {
+	c, raw := decodeOne[trade2.ConfirmCommandBody](t, ConfirmCommandProvider(uuid.New(), testField(), testCharacterId, []trade2.CrcEntry{}))
 	if c.Type != trade2.CommandTypeConfirm {
 		t.Errorf("type: got %s, want %s", c.Type, trade2.CommandTypeConfirm)
 	}
+	if c.CharacterId != testCharacterId {
+		t.Errorf("characterId: got %d, want %d", c.CharacterId, testCharacterId)
+	}
 	if len(c.Body.Entries) != 0 {
 		t.Errorf("entries: got %d, want 0", len(c.Body.Entries))
+	}
+	if !strings.Contains(string(raw.Value), `"entries":[]`) {
+		t.Errorf("wire body: got %s, want an empty entries array", string(raw.Value))
 	}
 }
 

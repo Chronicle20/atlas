@@ -19,16 +19,24 @@ var testCatchRoll func(chance uint32) (bool, error)
 // bridleProp, clamped to 100 (design assumption A-2). Both values are
 // server-side WZ data the client never reads, so no IDB can settle this; a
 // per-attempt escalation was rejected because it would need per-(character,
-// monster) state nothing else in the codebase keeps. A zero bridleProp means
-// the item is deterministic once species and HP pass (FR-3.5).
-func effectiveCatchChance(prop uint32, chg float64) uint32 {
+// monster) state nothing else in the codebase keeps.
+//
+// gated reports whether a roll applies at all: prop == 0 means the item is
+// deterministic once species and HP pass (FR-3.5) and the caller must NOT
+// roll. When gated is true, chance is the computed percentage and MAY itself
+// be 0 (e.g. a low prop multiplied by a small 0<chg<1) — that is a real,
+// near-zero chance that must still go through rollCatch and therefore
+// ordinarily lose, not a second "no gate" signal. Conflating "no gate" with
+// "computed a 0% chance" would invert a near-zero chance into a guaranteed
+// catch, which is why this returns two values instead of overloading 0.
+func effectiveCatchChance(prop uint32, chg float64) (chance uint32, gated bool) {
 	if prop == 0 {
-		return 0
+		return 0, false
 	}
 	if chg <= 0 {
-		return minChance(prop)
+		return minChance(prop), true
 	}
-	return minChance(uint32(math.Round(float64(prop) * chg)))
+	return minChance(uint32(math.Round(float64(prop) * chg))), true
 }
 
 func minChance(v uint32) uint32 {
@@ -114,7 +122,7 @@ func (p *ProcessorImpl) Catch(uniqueId uint32, characterId uint32, itemId uint32
 		p.emitCatchFailure(m, characterId, itemId, CatchCauseHpTooHigh)
 		return
 	}
-	if chance := effectiveCatchChance(ci.BridleProp(), ci.BridlePropChg()); chance > 0 {
+	if chance, gated := effectiveCatchChance(ci.BridleProp(), ci.BridlePropChg()); gated {
 		won, rerr := rollCatch(chance)
 		if rerr != nil {
 			p.l.WithError(rerr).Errorf("CATCH: roll failed for item [%d]; dropping (fail-closed).", itemId)

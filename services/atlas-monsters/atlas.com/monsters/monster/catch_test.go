@@ -177,6 +177,49 @@ func TestCatch_RollFailed(t *testing.T) {
 	}
 }
 
+// TestCatch_RollFailed_ComputedZeroChance — prop != 0 but chg is small enough
+// that math.Round(prop*chg) rounds to 0 (a real, near-zero chance). This must
+// still take the roll path and fail, not be mistaken for the prop==0
+// "no gate, deterministic pass" case (review finding: effectiveCatchChance's
+// old uint32-only return overloaded 0 to mean both things).
+func TestCatch_RollFailed_ComputedZeroChance(t *testing.T) {
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	GetMonsterRegistry().Clear(context.Background())
+	defer withCatchItem(t, consumable.NewModelBuilder().
+		SetId(2270003).SetMonsterId(9300158).SetCreate(4031869).SetBridleProp(1).SetBridlePropChg(0.2).Build(), nil)()
+
+	rolled := false
+	prevRoll := testCatchRoll
+	testCatchRoll = func(chance uint32) (bool, error) {
+		rolled = true
+		if chance != 0 {
+			t.Errorf("effective chance = %d, want 0 (round(1 * 0.2))", chance)
+		}
+		return false, nil
+	}
+	defer func() { testCatchRoll = prevRoll }()
+
+	uniqueId := spawnCatchable(t, ten, 9300158, 100, 100)
+	p, events := newRecordingProcessorWithBodies(t, ten)
+	p.Catch(uniqueId, 42, 2270003)
+
+	if !rolled {
+		t.Fatal("expected the roll to be taken for a computed-zero chance, not skipped as a deterministic pass")
+	}
+	if got := eventTypes(events); len(got) != 2 ||
+		got[0] != EventMonsterCatchResolved || got[1] != EventMonsterStatusCatchFailed {
+		t.Fatalf("event order = %v, want [CATCH_RESOLVED CATCH_FAILED]", eventTypes(events))
+	}
+	var body catchResolvedBody
+	_ = json.Unmarshal((*events)[0].Body, &body)
+	if body.Success || body.Cause != CatchCauseRollFailed {
+		t.Fatalf("CATCH_RESOLVED body = %+v, want success=false cause=ROLL_FAILED", body)
+	}
+	if _, err := GetMonsterRegistry().GetMonster(ten, uniqueId); err != nil {
+		t.Error("monster removed on a computed-zero-chance roll failure")
+	}
+}
+
 // TestCatch_MonsterGone — a redelivered command whose monster is already gone
 // emits CATCH_RESOLVED(false, UNRESOLVED) so the reservation is cancelled, and
 // CATCH_FAILED(UNRESOLVED) so the client unlocks. It grants nothing.

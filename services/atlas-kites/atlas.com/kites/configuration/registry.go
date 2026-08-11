@@ -2,10 +2,13 @@ package configuration
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 // fetcher resolves a tenant's kite configuration. The default fetcher hits
@@ -75,7 +78,18 @@ func (r *Registry) GetTenantConfig(l logrus.FieldLogger, ctx context.Context, te
 
 	cfg, err := r.fetch(l, ctx, tenantId)
 	if err != nil {
-		l.WithError(err).Warnf("Failed to fetch kite config for tenant %s, using defaults", tenantId.String())
+		// A genuine 404 means the tenant simply hasn't provisioned
+		// kite-configs yet -- expected and routine, so it's logged at Info.
+		// Anything else (connection refused, 5xx, decode failure) is a real
+		// atlas-tenants problem masquerading as tenant-defaulting, so it's
+		// logged at Warn to stay visible. The fallback behaviour itself is
+		// unchanged either way: an un-provisioned tenant must still work on
+		// compiled defaults.
+		if errors.Is(err, requests.ErrNotFound) {
+			l.Infof("Tenant %s has not provisioned kite-configs, using defaults", tenantId.String())
+		} else {
+			l.WithError(err).Warnf("Failed to fetch kite config for tenant %s, using defaults", tenantId.String())
+		}
 		cfg = DefaultConfig()
 	}
 	r.cache[tenantId] = cfg

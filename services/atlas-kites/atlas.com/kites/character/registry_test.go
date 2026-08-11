@@ -41,7 +41,10 @@ func TestRegistryGetInMapEmpty(t *testing.T) {
 	st := sampleTenant()
 	key := sampleMapKey(st, 0, 1, 100000000)
 
-	result := getRegistry().GetInMap(ctx, key)
+	result, err := getRegistry().GetInMap(ctx, key)
+	if err != nil {
+		t.Fatalf("GetInMap: %v", err)
+	}
 	if len(result) != 0 {
 		t.Errorf("Expected empty slice, got %v", result)
 	}
@@ -54,9 +57,12 @@ func TestRegistryAddCharacter(t *testing.T) {
 	key := sampleMapKey(st, 0, 1, 100000000)
 	characterId := uint32(12345)
 
-	getRegistry().AddCharacter(ctx, key, characterId)
+	_ = getRegistry().AddCharacter(ctx, key, characterId)
 
-	result := getRegistry().GetInMap(ctx, key)
+	result, err := getRegistry().GetInMap(ctx, key)
+	if err != nil {
+		t.Fatalf("GetInMap: %v", err)
+	}
 	if len(result) != 1 {
 		t.Fatalf("Expected 1 character, got %d", len(result))
 	}
@@ -72,10 +78,13 @@ func TestRegistryAddCharacterDuplicate(t *testing.T) {
 	key := sampleMapKey(st, 0, 1, 100000000)
 	characterId := uint32(12345)
 
-	getRegistry().AddCharacter(ctx, key, characterId)
-	getRegistry().AddCharacter(ctx, key, characterId)
+	_ = getRegistry().AddCharacter(ctx, key, characterId)
+	_ = getRegistry().AddCharacter(ctx, key, characterId)
 
-	result := getRegistry().GetInMap(ctx, key)
+	result, err := getRegistry().GetInMap(ctx, key)
+	if err != nil {
+		t.Fatalf("GetInMap: %v", err)
+	}
 	if len(result) != 1 {
 		t.Errorf("Expected 1 character (no duplicates), got %d", len(result))
 	}
@@ -87,11 +96,14 @@ func TestRegistryAddMultipleCharacters(t *testing.T) {
 	st := sampleTenant()
 	key := sampleMapKey(st, 0, 1, 100000000)
 
-	getRegistry().AddCharacter(ctx, key, 1)
-	getRegistry().AddCharacter(ctx, key, 2)
-	getRegistry().AddCharacter(ctx, key, 3)
+	_ = getRegistry().AddCharacter(ctx, key, 1)
+	_ = getRegistry().AddCharacter(ctx, key, 2)
+	_ = getRegistry().AddCharacter(ctx, key, 3)
 
-	result := getRegistry().GetInMap(ctx, key)
+	result, err := getRegistry().GetInMap(ctx, key)
+	if err != nil {
+		t.Fatalf("GetInMap: %v", err)
+	}
 	if len(result) != 3 {
 		t.Errorf("Expected 3 characters, got %d", len(result))
 	}
@@ -104,10 +116,13 @@ func TestRegistryRemoveCharacter(t *testing.T) {
 	key := sampleMapKey(st, 0, 1, 100000000)
 	characterId := uint32(12345)
 
-	getRegistry().AddCharacter(ctx, key, characterId)
-	getRegistry().RemoveCharacter(ctx, key, characterId)
+	_ = getRegistry().AddCharacter(ctx, key, characterId)
+	_ = getRegistry().RemoveCharacter(ctx, key, characterId)
 
-	result := getRegistry().GetInMap(ctx, key)
+	result, err := getRegistry().GetInMap(ctx, key)
+	if err != nil {
+		t.Fatalf("GetInMap: %v", err)
+	}
 	if len(result) != 0 {
 		t.Errorf("Expected empty slice after removal, got %v", result)
 	}
@@ -119,7 +134,7 @@ func TestRegistryRemoveCharacterNotExists(t *testing.T) {
 	st := sampleTenant()
 	key := sampleMapKey(st, 0, 1, 100000000)
 
-	getRegistry().RemoveCharacter(ctx, key, 99999)
+	_ = getRegistry().RemoveCharacter(ctx, key, 99999)
 }
 
 func TestRegistryRemoveCharacterPreservesOthers(t *testing.T) {
@@ -128,12 +143,15 @@ func TestRegistryRemoveCharacterPreservesOthers(t *testing.T) {
 	st := sampleTenant()
 	key := sampleMapKey(st, 0, 1, 100000000)
 
-	getRegistry().AddCharacter(ctx, key, 1)
-	getRegistry().AddCharacter(ctx, key, 2)
-	getRegistry().AddCharacter(ctx, key, 3)
-	getRegistry().RemoveCharacter(ctx, key, 2)
+	_ = getRegistry().AddCharacter(ctx, key, 1)
+	_ = getRegistry().AddCharacter(ctx, key, 2)
+	_ = getRegistry().AddCharacter(ctx, key, 3)
+	_ = getRegistry().RemoveCharacter(ctx, key, 2)
 
-	result := getRegistry().GetInMap(ctx, key)
+	result, err := getRegistry().GetInMap(ctx, key)
+	if err != nil {
+		t.Fatalf("GetInMap: %v", err)
+	}
 	if len(result) != 2 {
 		t.Fatalf("Expected 2 characters, got %d", len(result))
 	}
@@ -159,11 +177,17 @@ func TestRegistryTenantIsolation(t *testing.T) {
 	key1 := sampleMapKey(tenant1, 0, 1, 100000000)
 	key2 := sampleMapKey(tenant2, 0, 1, 100000000)
 
-	getRegistry().AddCharacter(ctx, key1, 1)
-	getRegistry().AddCharacter(ctx, key2, 2)
+	_ = getRegistry().AddCharacter(ctx, key1, 1)
+	_ = getRegistry().AddCharacter(ctx, key2, 2)
 
-	result1 := getRegistry().GetInMap(ctx, key1)
-	result2 := getRegistry().GetInMap(ctx, key2)
+	result1, err := getRegistry().GetInMap(ctx, key1)
+	if err != nil {
+		t.Fatalf("GetInMap: %v", err)
+	}
+	result2, err := getRegistry().GetInMap(ctx, key2)
+	if err != nil {
+		t.Fatalf("GetInMap: %v", err)
+	}
 
 	if len(result1) != 1 || result1[0] != 1 {
 		t.Errorf("Tenant1 expected [1], got %v", result1)
@@ -172,8 +196,11 @@ func TestRegistryTenantIsolation(t *testing.T) {
 		t.Errorf("Tenant2 expected [2], got %v", result2)
 	}
 
-	getRegistry().RemoveCharacter(ctx, key1, 1)
-	result2After := getRegistry().GetInMap(ctx, key2)
+	_ = getRegistry().RemoveCharacter(ctx, key1, 1)
+	result2After, err := getRegistry().GetInMap(ctx, key2)
+	if err != nil {
+		t.Fatalf("GetInMap: %v", err)
+	}
 	if len(result2After) != 1 {
 		t.Error("Tenant2 data should not be affected by tenant1 removal")
 	}
@@ -187,11 +214,17 @@ func TestRegistryMapIsolation(t *testing.T) {
 	key1 := sampleMapKey(st, 0, 1, 100000000)
 	key2 := sampleMapKey(st, 0, 1, 200000000)
 
-	getRegistry().AddCharacter(ctx, key1, 1)
-	getRegistry().AddCharacter(ctx, key2, 2)
+	_ = getRegistry().AddCharacter(ctx, key1, 1)
+	_ = getRegistry().AddCharacter(ctx, key2, 2)
 
-	result1 := getRegistry().GetInMap(ctx, key1)
-	result2 := getRegistry().GetInMap(ctx, key2)
+	result1, err := getRegistry().GetInMap(ctx, key1)
+	if err != nil {
+		t.Fatalf("GetInMap: %v", err)
+	}
+	result2, err := getRegistry().GetInMap(ctx, key2)
+	if err != nil {
+		t.Fatalf("GetInMap: %v", err)
+	}
 
 	if len(result1) != 1 || result1[0] != 1 {
 		t.Errorf("Map1 expected [1], got %v", result1)
@@ -215,9 +248,9 @@ func TestRegistryConcurrent(t *testing.T) {
 		go func(id int) {
 			defer wg.Done()
 			characterId := uint32(id)
-			getRegistry().AddCharacter(ctx, key, characterId)
-			getRegistry().GetInMap(ctx, key)
-			getRegistry().RemoveCharacter(ctx, key, characterId)
+			_ = getRegistry().AddCharacter(ctx, key, characterId)
+			_, _ = getRegistry().GetInMap(ctx, key)
+			_ = getRegistry().RemoveCharacter(ctx, key, characterId)
 		}(i)
 	}
 

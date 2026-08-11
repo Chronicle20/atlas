@@ -36,8 +36,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) InMapProvider(f field.Model) model.Provider[[]uint32] {
-	cids := getRegistry().GetInMap(p.ctx, MapKey{Tenant: p.t, Field: f})
-	return model.FixedProvider(cids)
+	return func() ([]uint32, error) {
+		return getRegistry().GetInMap(p.ctx, MapKey{Tenant: p.t, Field: f})
+	}
 }
 
 func (p *ProcessorImpl) GetCharactersInMap(f field.Model) ([]uint32, error) {
@@ -45,11 +46,15 @@ func (p *ProcessorImpl) GetCharactersInMap(f field.Model) ([]uint32, error) {
 }
 
 func (p *ProcessorImpl) Enter(f field.Model, characterId uint32) {
-	getRegistry().AddCharacter(p.ctx, MapKey{Tenant: p.t, Field: f}, characterId)
+	if err := getRegistry().AddCharacter(p.ctx, MapKey{Tenant: p.t, Field: f}, characterId); err != nil {
+		p.l.WithError(err).Errorf("Unable to add character [%d] to field character index.", characterId)
+	}
 }
 
 func (p *ProcessorImpl) Exit(f field.Model, characterId uint32) {
-	getRegistry().RemoveCharacter(p.ctx, MapKey{Tenant: p.t, Field: f}, characterId)
+	if err := getRegistry().RemoveCharacter(p.ctx, MapKey{Tenant: p.t, Field: f}, characterId); err != nil {
+		p.l.WithError(err).Errorf("Unable to remove character [%d] from field character index.", characterId)
+	}
 }
 
 func (p *ProcessorImpl) TransitionMap(of field.Model, nf field.Model, characterId uint32) {

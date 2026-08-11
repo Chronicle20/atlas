@@ -25,6 +25,20 @@ func (r *RestModel) SetID(id string) error {
 	return nil
 }
 
+// SetToOneReferenceID and SetToManyReferenceIDs are required by
+// api2go/jsonapi's UnmarshalToOneRelations/UnmarshalToManyRelations
+// interfaces even though kite-configs has no relationships of its own --
+// without them, any response body carrying a `relationships` block fails
+// decode with "does not implement UnmarshalToManyRelations" instead of a
+// clean fetch error (libs/atlas-rest/CLAUDE.md; the task-037 bug class).
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
 // Extract converts the fetched RestModel into the immutable domain Model,
 // substituting the default for any knob left at its zero value.
 func Extract(r RestModel) Model {

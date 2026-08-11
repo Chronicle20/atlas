@@ -29,18 +29,23 @@ func getRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) AddCharacter(ctx context.Context, key MapKey, characterId uint32) {
-	_ = r.sets.Add(ctx, key.Tenant, key.Field, strconv.FormatUint(uint64(characterId), 10))
+func (r *Registry) AddCharacter(ctx context.Context, key MapKey, characterId uint32) error {
+	return r.sets.Add(ctx, key.Tenant, key.Field, strconv.FormatUint(uint64(characterId), 10))
 }
 
-func (r *Registry) RemoveCharacter(ctx context.Context, key MapKey, characterId uint32) {
-	_ = r.sets.Remove(ctx, key.Tenant, key.Field, strconv.FormatUint(uint64(characterId), 10))
+func (r *Registry) RemoveCharacter(ctx context.Context, key MapKey, characterId uint32) error {
+	return r.sets.Remove(ctx, key.Tenant, key.Field, strconv.FormatUint(uint64(characterId), 10))
 }
 
-func (r *Registry) GetInMap(ctx context.Context, key MapKey) []uint32 {
+// GetInMap returns every characterId currently indexed under key. A Redis
+// failure is propagated rather than coerced to an empty slice -- callers
+// (kite.ProcessorImpl.InMapModelProvider in particular) rely on this to fail
+// the per-map MaxPerMap cap check loudly instead of under-counting on a
+// Redis blip.
+func (r *Registry) GetInMap(ctx context.Context, key MapKey) ([]uint32, error) {
 	members, err := r.sets.Members(ctx, key.Tenant, key.Field)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	result := make([]uint32, 0, len(members))
 	for _, m := range members {
@@ -50,5 +55,5 @@ func (r *Registry) GetInMap(ctx context.Context, key MapKey) []uint32 {
 		}
 		result = append(result, uint32(v))
 	}
-	return result
+	return result, nil
 }

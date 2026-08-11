@@ -22,6 +22,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
+	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
@@ -174,7 +175,7 @@ type fakeEscrow struct {
 	mutex sync.Mutex
 	// items is insertion-ordered, matching ItemsByRoom's created-at ordering.
 	items []escrow.ItemModel
-	mesos map[mesoOwner]uint32
+	mesos map[mesoOwner]int64
 	// claimed holds the rows some return path has already taken. It reproduces
 	// the real returning_at column rather than the whole row lifecycle, because
 	// that column is the only thing standing between the teardown path and the
@@ -184,7 +185,7 @@ type fakeEscrow struct {
 }
 
 func newFakeEscrow() *fakeEscrow {
-	return &fakeEscrow{mesos: make(map[mesoOwner]uint32), claimed: make(map[uuid.UUID]struct{})}
+	return &fakeEscrow{mesos: make(map[mesoOwner]int64), claimed: make(map[uuid.UUID]struct{})}
 }
 
 // withTx returns the same fake. It holds no database handle to rebind, and
@@ -251,7 +252,7 @@ func (f *fakeEscrow) MesosByRoom(roomId uuid.UUID) ([]escrow.MesoModel, error) {
 	return out, nil
 }
 
-func (f *fakeEscrow) MesoByOwner(roomId uuid.UUID, ownerId character.Id) (uint32, bool, error) {
+func (f *fakeEscrow) MesoByOwner(roomId uuid.UUID, ownerId character.Id) (int64, bool, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 	if f.err != nil {
@@ -302,9 +303,11 @@ func (f *fakeEscrow) release(escrowId uuid.UUID) {
 	}
 }
 
-// setMeso records a participant's COMMITTED escrowed meso total, which is what
-// a completed award_mesos leaves behind.
-func (f *fakeEscrow) setMeso(roomId uuid.UUID, ownerId character.Id, amount uint32) {
+// setMeso records a participant's COMMITTED escrowed meso total in the FAKE
+// only. It is the fake half of commitEscrowedMeso and has no other caller by
+// design: the delta arithmetic reads the real store, so seeding just this one
+// describes a state that cannot occur and quietly stops testing the netting.
+func (f *fakeEscrow) setMeso(roomId uuid.UUID, ownerId character.Id, amount int64) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 	f.mesos[mesoOwner{roomId: roomId, ownerId: ownerId}] = amount
@@ -1050,7 +1053,7 @@ func TestStageSucceededForAnOrphanedEscrowRowReturnsTheItem(t *testing.T) {
 // The sign is the other half: a negative award_mesos debits the staking player.
 func TestAddMesoStagesTheDeltaAgainstEscrowNotTheRoom(t *testing.T) {
 	for name, tc := range map[string]struct {
-		escrowed uint32
+		escrowed int64
 		request  int32
 		want     int32
 	}{
@@ -1062,7 +1065,7 @@ func TestAddMesoStagesTheDeltaAgainstEscrowNotTheRoom(t *testing.T) {
 			p, e := testOpenRoomWithMeso(t, 100, 5_000_000)
 			room, _ := p.RoomForCharacter(100)
 			if tc.escrowed > 0 {
-				escrowOf(t, p).setMeso(room.Id(), 100, tc.escrowed)
+				commitEscrowedMeso(t, p, room.Id(), 100, tc.escrowed)
 			}
 
 			if err := p.AddMeso(uuid.New(), 100, tc.request); err != nil {
@@ -1113,7 +1116,7 @@ func pendingMesoOf(t *testing.T, p *ProcessorImpl, characterId character.Id) uin
 func TestAddMesoOfTheEscrowedAmountReEchoesWithoutMovingMeso(t *testing.T) {
 	p, e := testOpenRoomWithMeso(t, 100, 5_000_000)
 	room, _ := p.RoomForCharacter(100)
-	escrowOf(t, p).setMeso(room.Id(), 100, 1_000_000)
+	commitEscrowedMeso(t, p, room.Id(), 100, 1_000_000)
 
 	if err := p.AddMeso(uuid.New(), 100, 1_000_000); err != nil {
 		t.Fatalf("add meso: %v", err)
@@ -1194,7 +1197,7 @@ func TestMesoStageFailedReEchoesTheLastValidAmount(t *testing.T) {
 	if _, err := p.MesoStageSucceeded(uuid.New(), first); err != nil {
 		t.Fatalf("first stake succeeded: %v", err)
 	}
-	escrowOf(t, p).setMeso(room.Id(), 100, 400_000)
+	commitEscrowedMeso(t, p, room.Id(), 100, 400_000)
 
 	// The second stake is debited and then fails.
 	if err := p.AddMeso(uuid.New(), 100, 2_000_000); err != nil {
@@ -1229,7 +1232,7 @@ func TestMesoStageFailedReEchoesTheLastValidAmount(t *testing.T) {
 // from, and the REAL escrow row the stake bookkeeping arms and resolves against.
 // Production has one store; the harness fakes only the reads, so a test that set
 // just one of them would be describing a state that cannot occur.
-func commitEscrowedMeso(t *testing.T, p *ProcessorImpl, roomId uuid.UUID, ownerId character.Id, amount uint32) {
+func commitEscrowedMeso(t *testing.T, p *ProcessorImpl, roomId uuid.UUID, ownerId character.Id, amount int64) {
 	t.Helper()
 	escrowOf(t, p).setMeso(roomId, ownerId, amount)
 	if err := escrow.UpsertMeso(p.db, p.t)(roomId, ownerId, amount); err != nil {
@@ -1259,7 +1262,7 @@ func TestAnOrphanedStakeRefundsOnlyTheDeltaTheSagaMoved(t *testing.T) {
 
 	p, e := testOpenRoomWithMeso(t, 100, 5_000_000)
 	room, _ := p.RoomForCharacter(100)
-	commitEscrowedMeso(t, p, room.Id(), 100, committed)
+	commitEscrowedMeso(t, p, room.Id(), 100, int64(committed))
 
 	if err := p.AddMeso(uuid.New(), 100, retyped); err != nil {
 		t.Fatalf("add meso: %v", err)
@@ -1352,7 +1355,7 @@ func TestACompletedMesoStagingCycleLeavesNoEscrowRow(t *testing.T) {
 	}
 	// The committed total, mirrored onto the fake the teardown reads its unwind
 	// payload from. Production has one store; the harness fakes only the reads.
-	escrowOf(t, p).setMeso(room.Id(), 100, 1_000_000)
+	commitEscrowedMeso(t, p, room.Id(), 100, 1_000_000)
 
 	if got := mesoRowsIn(t, p.db); got != 1 {
 		t.Fatalf("escrow meso rows with a live stage: got %d, want the one row holding the escrow", got)
@@ -1375,7 +1378,7 @@ func TestACompletedMesoStagingCycleLeavesNoEscrowRow(t *testing.T) {
 // conditional delete is built around, and then the delete it eventually allows.
 //
 // A teardown that zeroes a row whose stake is STILL IN FLIGHT must leave the row
-// standing: the terminal status resolves against it by pending_stake_id alone,
+// standing: the terminal status resolves against it through the stake's own row,
 // and deleting it strands a debit the player has already been charged. Once that
 // status arrives and its refund is submitted the row records nothing, and only
 // then does it go.
@@ -1388,7 +1391,7 @@ func TestATeardownKeepsARefundedRowUntilItsStakeResolves(t *testing.T) {
 
 	p, e := testOpenRoomWithMeso(t, 100, 5_000_000)
 	room, _ := p.RoomForCharacter(100)
-	commitEscrowedMeso(t, p, room.Id(), 100, committed)
+	commitEscrowedMeso(t, p, room.Id(), 100, int64(committed))
 
 	if err := p.AddMeso(uuid.New(), 100, retyped); err != nil {
 		t.Fatalf("add meso: %v", err)
@@ -1410,8 +1413,12 @@ func TestATeardownKeepsARefundedRowUntilItsStakeResolves(t *testing.T) {
 	if row.Amount() != 0 {
 		t.Errorf("refunded row amount: got %d, want 0", row.Amount())
 	}
-	if row.PendingStakeId() != stakeId {
-		t.Errorf("pending stake id: got %s, want the armed %s", row.PendingStakeId(), stakeId)
+	stakeRows, err := escrow.MesoStakesByOwner(p.db, p.t.Id())(room.Id(), 100)
+	if err != nil {
+		t.Fatalf("MesoStakesByOwner: %v", err)
+	}
+	if len(stakeRows) != 1 || stakeRows[0].Id() != stakeId {
+		t.Errorf("outstanding stakes: got %+v, want just the armed %s", stakeRows, stakeId)
 	}
 
 	if _, err := p.MesoStageSucceeded(uuid.New(), stakeId); err != nil {
@@ -1465,7 +1472,7 @@ func TestAnOrphanedStakeLeavesNothingForTheNextBootToRefund(t *testing.T) {
 
 	p, e := testOpenRoomWithMeso(t, 100, 5_000_000)
 	room, _ := p.RoomForCharacter(100)
-	commitEscrowedMeso(t, p, room.Id(), 100, committed)
+	commitEscrowedMeso(t, p, room.Id(), 100, int64(committed))
 
 	if err := p.AddMeso(uuid.New(), 100, retyped); err != nil {
 		t.Fatalf("add meso: %v", err)
@@ -1587,7 +1594,7 @@ func TestAddMesoRefusedReEchoesTheLastValidAmount(t *testing.T) {
 	if _, err := p.MesoStageSucceeded(uuid.New(), first); err != nil {
 		t.Fatalf("first stake succeeded: %v", err)
 	}
-	escrowOf(t, p).setMeso(room.Id(), 100, 1_000_000)
+	commitEscrowedMeso(t, p, room.Id(), 100, 1_000_000)
 
 	if err := p.AddMeso(uuid.New(), 100, 9_999_999); err != nil { // more than the character holds
 		t.Fatalf("second add meso: %v", err)
@@ -1707,7 +1714,11 @@ func TestAddMesoRefusesWhenTheCharacterCannotBeRead(t *testing.T) {
 // player has already staked.
 func TestAddMesoRefusesWhenTheEscrowedTotalCannotBeRead(t *testing.T) {
 	p, e := testOpenRoomWithMeso(t, 100, 5_000_000)
-	escrowOf(t, p).err = errors.New("escrow store unreachable")
+	// Injected at the REAL store, not into the fake. The netting read
+	// deliberately bypasses the fake-able seam so that it cannot diverge from
+	// the arms, so an error planted in the fake would never reach it and this
+	// test would pass while guarding nothing.
+	databasetest.FailReadsOn(t, p.db, "trade_escrow_mesos")
 
 	if err := p.AddMeso(uuid.New(), 100, 1_000); err != nil {
 		t.Fatalf("add meso: %v", err)
@@ -1745,7 +1756,7 @@ func TestTeardownUnwindsEveryEscrowedItemAndMesoInOneSaga(t *testing.T) {
 
 	ownerEscrow := stageOne(t, p, 100, stagingSourceSlot, 5, 1)
 	visitorEscrow := stageOne(t, p, 200, 2, 7, 1)
-	escrowOf(t, p).setMeso(room.Id(), 100, 250_000)
+	commitEscrowedMeso(t, p, room.Id(), 100, 250_000)
 
 	if err := p.TeardownCharacter(uuid.New(), 100, ReasonTradeCancelled); err != nil {
 		t.Fatalf("teardown: %v", err)
@@ -1996,3 +2007,71 @@ var (
 	_ itemDataProvider  = (*fakeItemData)(nil)
 	_ escrowStore       = (*fakeEscrow)(nil)
 )
+
+// TestRetypingTheMesoBoxMidSagaConservesMeso is the reported destruction bug,
+// driven end to end through the exact sequence a player produces.
+//
+// The client permits it: CTradingRoomDlg::PutMoney arms CWvsContext's excl
+// latch on send, but the debit's own STAT_CHANGED clears that latch before the
+// trade-level MESO_STAGED lands, so a player who retypes the box faster than a
+// saga round trip has two award_mesos in flight at once.
+//
+// The invariant is arithmetic and total: the sum of what the sagas debited must
+// equal what escrow ends up holding. Netting the second stake against committed
+// escrow alone made the second saga debit the full 200000 on top of the first
+// 100000 while escrow settled at 200000 — 100000 destroyed, with no error
+// anywhere.
+func TestRetypingTheMesoBoxMidSagaConservesMeso(t *testing.T) {
+	const (
+		firstTyped  = int32(100_000)
+		secondTyped = int32(200_000)
+	)
+
+	p, e := testOpenRoomWithMeso(t, 100, 5_000_000)
+	room, _ := p.RoomForCharacter(100)
+
+	if err := p.AddMeso(uuid.New(), 100, firstTyped); err != nil {
+		t.Fatalf("first add meso: %v", err)
+	}
+	// Deliberately NOT resolving the first stake before the second is staged.
+	if err := p.AddMeso(uuid.New(), 100, secondTyped); err != nil {
+		t.Fatalf("second add meso: %v", err)
+	}
+
+	stakes := sagasWithAction(t, e, sharedsaga.AwardMesos)
+	if len(stakes) != 2 {
+		t.Fatalf("award_mesos sagas: got %d, want 2 — the retype must submit its own movement", len(stakes))
+	}
+
+	// award_mesos amounts are signed from the PLAYER's side: a stake debits, so
+	// the amounts are negative and their sum is what left the player's pocket.
+	var debited int64
+	for _, s := range stakes {
+		debited -= int64(awardMesosPayloadOf(t, s).Amount)
+	}
+	if debited != int64(secondTyped) {
+		t.Errorf("the two stakes debited %d in total, but the player only ever typed %d — netting the retype against committed escrow alone double-debits", debited, secondTyped)
+	}
+
+	// Both debits landed, so both terminal statuses must be honoured.
+	for _, s := range stakes {
+		claimed, err := p.MesoStageSucceeded(uuid.New(), s.TransactionId)
+		if err != nil {
+			t.Fatalf("resolve stake %s: %v", s.TransactionId, err)
+		}
+		if !claimed {
+			t.Fatalf("stake %s was not claimed; its debit already moved real meso and nothing else will account for it", s.TransactionId)
+		}
+	}
+
+	held, _, err := escrow.MesoByOwner(p.db, p.t.Id())(room.Id(), 100)
+	if err != nil {
+		t.Fatalf("MesoByOwner: %v", err)
+	}
+	if held != debited {
+		t.Errorf("conservation broken: the player was debited %d but escrow holds %d (%d meso unaccounted for)", debited, held, debited-held)
+	}
+	if held != int64(secondTyped) {
+		t.Errorf("escrow holds %d, want the %d the player last typed", held, secondTyped)
+	}
+}

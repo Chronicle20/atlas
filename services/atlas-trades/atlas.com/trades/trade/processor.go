@@ -148,7 +148,7 @@ type escrowStore interface {
 	ItemById(escrowId uuid.UUID) (escrow.ItemModel, bool, error)
 	ItemsByRoom(roomId uuid.UUID) ([]escrow.ItemModel, error)
 	MesosByRoom(roomId uuid.UUID) ([]escrow.MesoModel, error)
-	MesoByOwner(roomId uuid.UUID, ownerId character.Id) (uint32, bool, error)
+	MesoByOwner(roomId uuid.UUID, ownerId character.Id) (int64, bool, error)
 
 	// ClaimForReturn is the one WRITE on this seam, and it is here rather than on
 	// a separate escrow processor because every caller that reads rows in order
@@ -204,7 +204,7 @@ func (e escrowReader) MesosByRoom(roomId uuid.UUID) ([]escrow.MesoModel, error) 
 	return escrow.MesosByRoom(e.db, e.t.Id())(roomId)
 }
 
-func (e escrowReader) MesoByOwner(roomId uuid.UUID, ownerId character.Id) (uint32, bool, error) {
+func (e escrowReader) MesoByOwner(roomId uuid.UUID, ownerId character.Id) (int64, bool, error) {
 	return escrow.MesoByOwner(e.db, e.t.Id())(roomId, ownerId)
 }
 
@@ -1298,17 +1298,28 @@ func (p *ProcessorImpl) addMeso(mb *message.Buffer, txId uuid.UUID, characterId 
 	}
 
 	// Mode 16 assigns rather than accumulates (design §1.6), so the movement is
-	// the DELTA against what is already escrowed — and it is the ESCROW ROW, not
-	// the room, that is authoritative: the room's mesoStaged only advances once
-	// a stake settles, so reading it here would re-debit a stake still in
-	// flight (design §5A.5).
-	escrowed, _, err := p.esc.MesoByOwner(room.Id(), characterId)
+	// the DELTA against what this participant has already moved toward the
+	// trade — and it is the ESCROW ROW, not the room, that is authoritative:
+	// the room's mesoStaged only advances once a stake settles, so reading it
+	// here would re-debit a stake still in flight (design §5A.5).
+	//
+	// "Already moved" is committed PLUS every delta still in flight, which is
+	// the item column's StagedQuantityFrom rule applied to a balance. Netting
+	// against the committed figure alone was the destruction bug: a player who
+	// retypes the box before the first saga resolves gets the second delta
+	// computed as if the first had never happened, both sagas debit in full,
+	// and the difference is destroyed.
+	// Read through the SAME escrow processor that arms the stake below, not the
+	// fake-able escrowStore seam. Arming and netting have to see one store: a
+	// test double that answered this read while the arms went elsewhere would
+	// report nothing in flight and silently restore the very bug this nets out.
+	staked, err := escrow.NewProcessor(p.l, p.ctx, p.db).EffectiveMesoByOwner(room.Id(), characterId)
 	if err != nil {
-		p.l.WithError(err).Errorf("Unable to read character [%d]'s escrowed meso. Refusing the stage rather than risking a double debit.", characterId)
+		p.l.WithError(err).Errorf("Unable to read character [%d]'s staked meso. Refusing the stage rather than risking a double debit.", characterId)
 		return mb.Put(trademsg.EnvEventTopicStatus, mesoRefusedProvider(txId, room, characterId, pt.Position(), pt.MesoStaged()))
 	}
 
-	delta := int64(amount) - int64(escrowed)
+	delta := int64(amount) - staked
 	if delta == 0 {
 		// Nothing moves, but the client still armed its lock on send, so the
 		// re-echo is not optional (design §5A.6). MESO_STAGED carries it.
@@ -1399,11 +1410,11 @@ func (p *ProcessorImpl) resolveMesoStake(mb *message.Buffer, txId uuid.UUID, sta
 		// stake apart from an item stage or a settlement.
 		return false, nil
 	}
-	amount := row.PendingAmount()
+	amount := row.Amount()
 
-	// The DURABLE row decides first, and its compare-and-set is what makes a
-	// redelivered or superseded terminal status inert. Only then does the room
-	// follow; if there is no room left, the escrow is still consistent.
+	// The DURABLE row decides first, and its claim is what makes a redelivered
+	// terminal status inert. Only then does the room follow; if there is no room
+	// left, the escrow is still consistent.
 	var matched bool
 	if settled {
 		matched, err = ep.CommitMesoStake(row.RoomId(), row.OwnerId(), stakeId)
@@ -1424,15 +1435,18 @@ func (p *ProcessorImpl) resolveMesoStake(mb *message.Buffer, txId uuid.UUID, sta
 		// refunded the COMMITTED escrow, which did not include this stake — so if
 		// the debit landed, this is the only chance to give it back.
 		if !settled {
-			// AbandonMesoStake wrote nothing into Amount, so the row is fully
-			// resolved exactly when there was nothing committed left to refund.
-			return true, p.discardResolvedMeso(ep, row)
+			// Abandoning moved nothing into Amount, so there is nothing extra to
+			// hand back and nothing extra to discharge.
+			return true, p.discardOrphanedMeso(ep, row, 0)
 		}
 		p.l.Warnf("Meso stake [%s] of [%d] settled into a trade room [%s] that is already gone. Refunding character [%d].", stakeId.String(), amount, row.RoomId().String(), row.OwnerId())
 		if err = p.refundOrphanedStake(mb, row); err != nil {
 			return true, err
 		}
-		return true, p.discardResolvedMeso(ep, row)
+		// The commit above added this stake's delta to a row whose custody is
+		// over, and the refund has just handed that delta back — so the row must
+		// be discharged of exactly it.
+		return true, p.discardOrphanedMeso(ep, row, row.Delta())
 	}
 
 	pt, found := room.ParticipantFor(row.OwnerId())
@@ -1472,13 +1486,13 @@ func (p *ProcessorImpl) resolveMesoStake(mb *message.Buffer, txId uuid.UUID, sta
 // stake: the committed part was already returned by the teardown's own unwind,
 // and refunding the total on top of it would mint meso.
 //
-// That delta is read off the row, where ArmMesoStake recorded it, rather than
+// That delta is read off the stake, where ArmMesoStake recorded it, rather than
 // re-derived from the row's committed Amount. Re-deriving it was the bug: the
 // teardown that orphaned this stake also ZEROED Amount (clearRefundedMesos), so
 // the subtraction meant to net out the already-refunded part netted out nothing
 // and the whole stake went back on top of it.
-func (p *ProcessorImpl) refundOrphanedStake(mb *message.Buffer, row escrow.MesoModel) error {
-	delta := int64(row.PendingDelta())
+func (p *ProcessorImpl) refundOrphanedStake(mb *message.Buffer, row escrow.MesoStakeModel) error {
+	delta := int64(row.Delta())
 	if delta <= 0 {
 		// The stake was a REDUCTION, so its saga credited the player already.
 		// Nothing is owed.
@@ -1504,35 +1518,40 @@ func (p *ProcessorImpl) refundOrphanedStake(mb *message.Buffer, row escrow.MesoM
 	})
 }
 
-// discardResolvedMeso retires the escrow row an ORPHANED stake just resolved
-// against — the row whose room is already gone — once nothing it records is
-// outstanding.
+// discardOrphanedMeso discharges the escrow row an ORPHANED stake just resolved
+// against — the row whose room is already gone — of the amount that stake put
+// there, and retires the row once nothing it records is outstanding.
 //
-// It is what stops a second refund. CommitMesoStake assigns the stake's absolute
-// total into Amount unconditionally, which is right while a room still holds the
-// custody that total describes and stale the moment none does: the teardown that
-// orphaned the stake already returned the committed part and refundOrphanedStake
-// has just returned the delta, so the figure left on the row is escrow nobody
-// holds. The next boot's ReconcileEscrow reads exactly that figure as a stranded
-// asset and hands it back AGAIN.
+// It is what stops a second refund. The commit added this stake's delta to
+// Amount, which is right while a room still holds the custody that figure
+// describes and stale the moment none does: the teardown that orphaned the
+// stake already returned the committed part and refundOrphanedStake has just
+// returned the delta, so what the commit left behind is escrow nobody holds.
+// The next boot's ReconcileEscrow would read exactly that figure as a stranded
+// asset and hand it back AGAIN.
 //
-// row is the state read BEFORE the compare-and-set, so row.Amount() is what was
-// still committed when the stake resolved. A non-zero one is left completely
-// alone: that is a room whose process died before any teardown refunded it, the
-// committed part is genuinely still owed, and the boot sweep is the only thing
-// that will ever pay it.
+// refunded is the amount to discharge — this stake's delta on the settled path,
+// and zero on the abandoned path, where nothing was added in the first place.
 //
-// Zeroed and then conditionally deleted rather than deleted outright, because the
-// two are not the same guarantee. The delete refuses to touch a row carrying a
-// pending stake (DeleteResolvedMeso), so a stage that armed one against this row
-// keeps it — and for that row the zero is still what keeps the stale total out of
-// the next sweep.
-func (p *ProcessorImpl) discardResolvedMeso(ep escrow.Processor, row escrow.MesoModel) error {
-	if row.Amount() != 0 {
-		return nil
-	}
-	if err := ep.UpsertMeso(row.RoomId(), row.OwnerId(), 0); err != nil {
-		return err
+// The subtraction is RELATIVE and applied by the database, never an assignment
+// of a total computed here. That is the whole correction over the version this
+// replaces, which decided from a committed figure read BEFORE the
+// compare-and-set and then assigned: under READ COMMITTED — the isolation this
+// fleet actually runs at, verified against the live cluster — a sibling stake
+// committing or a teardown zeroing in that window made the decision wrong, and
+// the assignment then clobbered whichever write had landed in between. Relative
+// arithmetic composes with both.
+//
+// Discharged and then conditionally deleted rather than deleted outright,
+// because the two are not the same guarantee. The delete refuses to touch a row
+// with any stake still outstanding (DeleteResolvedMeso), so a row whose sibling
+// stake is still in flight survives — and for that row the discharge is still
+// what keeps a stale total out of the next sweep.
+func (p *ProcessorImpl) discardOrphanedMeso(ep escrow.Processor, row escrow.MesoStakeModel, refunded int32) error {
+	if refunded != 0 {
+		if err := ep.DischargeMeso(row.RoomId(), row.OwnerId(), refunded); err != nil {
+			return err
+		}
 	}
 	_, err := ep.DeleteResolvedMeso(row.RoomId(), row.OwnerId())
 	return err

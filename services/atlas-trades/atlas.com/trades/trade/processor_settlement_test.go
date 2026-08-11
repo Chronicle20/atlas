@@ -126,7 +126,7 @@ func testConfirmedRoomWithMeso(t *testing.T, characterId character.Id, amount ui
 		t.Fatalf("meso stake succeeded: %v", err)
 	}
 	room, _ := p.RoomForCharacter(characterId)
-	escrowOf(t, p).setMeso(room.Id(), characterId, amount)
+	commitEscrowedMeso(t, p, room.Id(), characterId, int64(amount))
 	if got := mesoStagedBy(t, p, characterId); got != amount {
 		t.Fatalf("staged meso: got %d, want %d", got, amount)
 	}
@@ -1701,8 +1701,12 @@ func TestSettlementSuccessKeepsARowWhoseStakeIsStillInFlight(t *testing.T) {
 	if rows[0].Amount() != 0 {
 		t.Errorf("settled row amount: got %d, want 0 — the settlement delivered it", rows[0].Amount())
 	}
-	if rows[0].PendingStakeId() != stakeId {
-		t.Errorf("pending stake id: got %s, want the armed %s", rows[0].PendingStakeId(), stakeId)
+	stakes, err := escrow.MesoStakesByOwner(p.db, p.t.Id())(roomId, 100)
+	if err != nil {
+		t.Fatalf("MesoStakesByOwner: %v", err)
+	}
+	if len(stakes) != 1 || stakes[0].Id() != stakeId {
+		t.Errorf("outstanding stakes: got %+v, want just the armed %s", stakes, stakeId)
 	}
 
 	// And the stake still resolves. Its room is gone, so the debit it moved has

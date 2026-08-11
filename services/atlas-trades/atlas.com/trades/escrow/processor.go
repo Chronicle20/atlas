@@ -38,18 +38,31 @@ type Processor interface {
 	// therefore emit no ack: escrowed meso moves through award_mesos, whose own
 	// events drive the saga. These only maintain the durable record that makes a
 	// refund possible.
-	UpsertMeso(roomId uuid.UUID, ownerId character.Id, amount uint32) error
+	UpsertMeso(roomId uuid.UUID, ownerId character.Id, amount int64) error
 	DeleteMeso(roomId uuid.UUID, ownerId character.Id) error
+
+	// DischargeMeso subtracts an amount whose custody has just ended.
+	DischargeMeso(roomId uuid.UUID, ownerId character.Id, amount int32) error
 	DeleteResolvedMeso(roomId uuid.UUID, ownerId character.Id) (bool, error)
 
 	// ArmMesoStake, CommitMesoStake, AbandonMesoStake, and MesoStakeById are
 	// likewise NOT saga steps and emit no ack — they exist purely to make an
 	// in-flight award_mesos debit durable against room teardown (see
-	// MesoEntity's doc comment), not to drive the orchestrator.
+	// MesoStakeEntity's doc comment), not to drive the orchestrator.
+	//
+	// More than one stake can be outstanding for a participant at once, and each
+	// resolves independently: commit adds its own delta, abandon adds nothing.
 	ArmMesoStake(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID, amount uint32, delta int32) error
 	CommitMesoStake(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID) (bool, error)
 	AbandonMesoStake(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID) (bool, error)
-	MesoStakeById(stakeId uuid.UUID) (MesoModel, bool, error)
+	MesoStakeById(stakeId uuid.UUID) (MesoStakeModel, bool, error)
+
+	// EffectiveMesoByOwner is committed plus in-flight — the figure a new stage
+	// nets its delta against. InFlightMesoDelta is the in-flight half alone,
+	// and is what settlement checks to refuse settling against custody whose
+	// outcome is still unknown.
+	EffectiveMesoByOwner(roomId uuid.UUID, ownerId character.Id) (int64, error)
+	InFlightMesoDelta(roomId uuid.UUID, ownerId character.Id) (int64, error)
 }
 
 type ProcessorImpl struct {
@@ -118,12 +131,16 @@ func (p *ProcessorImpl) ClaimItemForReturn(escrowId uuid.UUID) (bool, error) {
 	return ClaimItemForReturn(p.db, p.t.Id())(escrowId)
 }
 
-func (p *ProcessorImpl) UpsertMeso(roomId uuid.UUID, ownerId character.Id, amount uint32) error {
+func (p *ProcessorImpl) UpsertMeso(roomId uuid.UUID, ownerId character.Id, amount int64) error {
 	return UpsertMeso(p.db, p.t)(roomId, ownerId, amount)
 }
 
 func (p *ProcessorImpl) DeleteMeso(roomId uuid.UUID, ownerId character.Id) error {
 	return DeleteMeso(p.db, p.t.Id())(roomId, ownerId)
+}
+
+func (p *ProcessorImpl) DischargeMeso(roomId uuid.UUID, ownerId character.Id, amount int32) error {
+	return DischargeMeso(p.db, p.t.Id())(roomId, ownerId, amount)
 }
 
 func (p *ProcessorImpl) DeleteResolvedMeso(roomId uuid.UUID, ownerId character.Id) (bool, error) {
@@ -142,6 +159,14 @@ func (p *ProcessorImpl) AbandonMesoStake(roomId uuid.UUID, ownerId character.Id,
 	return AbandonMesoStake(p.db, p.t.Id())(roomId, ownerId, stakeId)
 }
 
-func (p *ProcessorImpl) MesoStakeById(stakeId uuid.UUID) (MesoModel, bool, error) {
+func (p *ProcessorImpl) MesoStakeById(stakeId uuid.UUID) (MesoStakeModel, bool, error) {
 	return MesoStakeById(p.db)(stakeId)
+}
+
+func (p *ProcessorImpl) EffectiveMesoByOwner(roomId uuid.UUID, ownerId character.Id) (int64, error) {
+	return EffectiveMesoByOwner(p.db, p.t.Id())(roomId, ownerId)
+}
+
+func (p *ProcessorImpl) InFlightMesoDelta(roomId uuid.UUID, ownerId character.Id) (int64, error) {
+	return InFlightMesoDelta(p.db, p.t.Id())(roomId, ownerId)
 }

@@ -35,8 +35,9 @@ import (
 // matching the ledger's and settlement's reasoning: a rename that missed one
 // would still compile.
 const (
-	itemTable = "trade_escrow_items"
-	mesoTable = "trade_escrow_mesos"
+	itemTable      = "trade_escrow_items"
+	mesoTable      = "trade_escrow_mesos"
+	mesoStakeTable = "trade_escrow_meso_stakes"
 )
 
 // ItemEntity is one staged asset held in trade custody.
@@ -166,30 +167,21 @@ func (ItemEntity) TableName() string { return itemTable }
 // against this figure and the row is REPLACED on each stage — see UpsertMeso.
 // A row that accumulated would refund more than was ever debited.
 //
-// PendingStakeId / PendingAmount durably record an IN-FLIGHT award_mesos debit
-// between the moment the saga is submitted and the moment its terminal status
-// is applied. Staging used to keep that bookkeeping only in the room's
-// in-memory state; if the room was torn down while the saga was still running,
-// its terminal status arrived with nowhere to land — the debit had already
-// happened, but no durable record named the amount it should commit into
-// Amount, so the meso was silently lost. Recording the pending stake in the
-// row itself (rather than the room) means a terminal status can always resolve
-// against the row by stakeId alone, room or no room — see ArmMesoStake,
-// CommitMesoStake, AbandonMesoStake, and MesoStakeById.
+// IN-FLIGHT debits are NOT recorded here. They live one-per-row in
+// MesoStakeEntity, because more than one can be outstanding at a time and a
+// single slot on this row silently dropped all but the newest — see that
+// type's doc comment for why the client permits the overlap and what the slot
+// destroyed.
 //
-// PendingStakeId is uuid.Nil when no stake is in flight; that is the "none"
-// sentinel rather than a nullable column, so the compare-and-set in
-// CommitMesoStake/AbandonMesoStake is a single ordinary equality check.
+// The invariant tying the two tables together, and the one every operation in
+// this package is written to preserve:
 //
-// PendingDelta is the SIGNED movement the in-flight award_mesos actually
-// submitted — the stake minus whatever was escrowed when it was armed — and it
-// is persisted rather than re-derived because Amount is not stable across the
-// stake's lifetime: a teardown ZEROES Amount while deliberately leaving the
-// stake armed (see the trade package's clearRefundedMesos). A refund that
-// re-derived the delta from Amount at resolution time therefore refunded the
-// whole stake on top of the teardown's own refund of the committed part, minting
-// the committed amount. It is signed because a stake that LOWERS the box is a
-// credit, and its width matches the award_mesos payload's own Amount.
+//	Amount == the sum of the deltas award_mesos ACTUALLY MOVED
+//
+// Amount therefore advances only when a stake's terminal status confirms its
+// delta landed, never by assignment from a stake's absolute target. What the
+// player currently has typed into the box is the derived figure
+// `Amount + SUM(stake deltas)`, not a stored one (see EffectiveMesoByOwner).
 type MesoEntity struct {
 	Id           uuid.UUID `gorm:"column:id;type:uuid;primaryKey;uniqueIndex:idx_trade_escrow_mesos_tenant_id,priority:2"`
 	TenantId     uuid.UUID `gorm:"column:tenant_id;type:uuid;not null;uniqueIndex:idx_trade_escrow_mesos_tenant_id,priority:1;uniqueIndex:idx_trade_escrow_mesos_room_owner,priority:1"`
@@ -200,17 +192,83 @@ type MesoEntity struct {
 	RoomId  uuid.UUID    `gorm:"column:room_id;type:uuid;not null;uniqueIndex:idx_trade_escrow_mesos_room_owner,priority:2"`
 	OwnerId character.Id `gorm:"column:owner_id;not null;uniqueIndex:idx_trade_escrow_mesos_room_owner,priority:3"`
 
-	Amount uint32 `gorm:"column:amount;not null"`
-
-	PendingStakeId uuid.UUID `gorm:"column:pending_stake_id;type:uuid"`
-	PendingAmount  uint32    `gorm:"column:pending_amount;not null;default:0"`
-	PendingDelta   int32     `gorm:"column:pending_delta;not null;default:0"`
+	// Amount is SIGNED, and wider than the meso values it accumulates, because
+	// it is a running sum of signed deltas rather than a directly-assigned
+	// total. Stakes resolve in whatever order their terminal statuses arrive,
+	// which need not be the order they were armed: a player who types 1000 and
+	// then 500 arms +1000 and -500, and if the reduction's status lands first
+	// the committed total passes through -500 on its way to 500. That
+	// intermediate is legitimate and transient. Held unsigned it underflowed.
+	//
+	// Consumers that pay out against this figure (the refund and settlement
+	// paths) treat any non-positive value as nothing owed, which is correct on
+	// its own terms: a negative total means more reduction has been confirmed
+	// than increase so far, and there is nothing yet to hand back.
+	Amount int64 `gorm:"column:amount;not null"`
 
 	CreatedAt time.Time `gorm:"column:created_at"`
 	UpdatedAt time.Time `gorm:"column:updated_at"`
 }
 
 func (MesoEntity) TableName() string { return mesoTable }
+
+// MesoStakeEntity is ONE in-flight award_mesos debit against a participant's
+// escrow row — durable between the moment the saga is submitted and the moment
+// its terminal status is applied.
+//
+// It is durable rather than in-memory on the room for the original reason the
+// pending slot was: if the room is torn down while the saga is still running,
+// the terminal status arrives with nowhere to land, the debit has already
+// happened, and nothing names the amount it should commit — so the meso is
+// silently lost. A status can always resolve by stakeId alone, room or no room.
+//
+// It is a TABLE rather than the three pending_* columns it replaces because
+// **more than one stake can be outstanding at once, and each one moved real
+// meso.** The client permits the overlap: CTradingRoomDlg::PutMoney arms
+// CWvsContext's excl latch on send, but the debit's own STAT_CHANGED clears it
+// before the trade-level MESO_STAGED lands, so a player retyping the box faster
+// than a saga round trip submits a second stake while the first is in flight.
+// With a single slot the second arm OVERWROTE the first, and the first's
+// terminal status then matched no row and was discarded as "superseded" — while
+// its debit had already left the player's pocket. That is meso destroyed on
+// success, and (had the first failed after being superseded) meso minted on
+// failure. Each stake now resolves independently against its own row, so
+// Amount accumulates exactly the deltas that moved.
+//
+// Delta is the SIGNED movement this stake submitted — the target minus
+// committed-plus-already-in-flight at arm time — and it is persisted rather
+// than re-derived because Amount is not stable across the stake's lifetime: a
+// teardown ZEROES Amount while deliberately leaving stakes armed (see the trade
+// package's clearRefundedMesos). A refund that re-derived the delta from Amount
+// at resolution time refunded the whole stake on top of the teardown's own
+// refund of the committed part, minting it. It is signed because a stake that
+// LOWERS the box is a credit, and its width matches the award_mesos payload's
+// own Amount.
+//
+// Amount here is the ABSOLUTE total the player typed for this stake. It is not
+// load-bearing for conservation — only Delta is — but it is what the room
+// re-echoes and what makes a stranded row readable by a human.
+//
+// Id is the stakeId the saga was submitted with, and it is the primary key
+// rather than a surrogate: resolution looks the stake up by exactly that value,
+// and a surrogate would allow two rows to claim one stake.
+type MesoStakeEntity struct {
+	Id           uuid.UUID `gorm:"column:id;type:uuid;primaryKey"`
+	TenantId     uuid.UUID `gorm:"column:tenant_id;type:uuid;not null;index:idx_trade_escrow_meso_stakes_room_owner,priority:1"`
+	TenantRegion string    `gorm:"column:tenant_region;type:varchar(32);not null;default:''"`
+	TenantMajor  uint16    `gorm:"column:tenant_major;not null;default:0"`
+	TenantMinor  uint16    `gorm:"column:tenant_minor;not null;default:0"`
+
+	RoomId  uuid.UUID    `gorm:"column:room_id;type:uuid;not null;index:idx_trade_escrow_meso_stakes_room_owner,priority:2"`
+	OwnerId character.Id `gorm:"column:owner_id;not null;index:idx_trade_escrow_meso_stakes_room_owner,priority:3"`
+
+	Amount uint32 `gorm:"column:amount;not null;default:0"`
+	Delta  int32  `gorm:"column:delta;not null;default:0"`
+
+	CreatedAt time.Time `gorm:"column:created_at"`
+}
+
+func (MesoStakeEntity) TableName() string { return mesoStakeTable }
 
 // staleItemColumns are columns an earlier shape of ItemEntity created that
 // nothing writes any more: ring_id was never sourced (no asset projection
@@ -223,12 +281,30 @@ func (MesoEntity) TableName() string { return mesoTable }
 // database that had already been migrated to the old shape.
 var staleItemColumns = []string{"ring_id", "item_level", "item_exp", "vicious_count"}
 
-// Migration creates both tables. Fresh tables, no backfill.
+// staleMesoColumns are the single in-flight-stake slot that MesoStakeEntity
+// replaced. They are dropped for the same hard reason as staleItemColumns —
+// pending_amount and pending_delta were created NOT NULL, so an INSERT that no
+// longer names them is rejected outright on any database already migrated to
+// the old shape.
+var staleMesoColumns = []string{"pending_stake_id", "pending_amount", "pending_delta"}
+
+// Migration creates the three tables and retires the meso row's old
+// single-stake slot.
+//
+// The slot is BACKFILLED into trade_escrow_meso_stakes before it is dropped,
+// not simply discarded. A row carrying a pending stake at migration time
+// describes meso that has already left a player's pocket and has no other
+// record anywhere; dropping the columns would strand it with nothing to resolve
+// against and nothing for the boot sweep to find. At most one stake per row can
+// exist to migrate, since one slot is all the old shape could hold.
 func Migration(db *gorm.DB) error {
-	if err := db.AutoMigrate(&ItemEntity{}, &MesoEntity{}); err != nil {
+	if err := db.AutoMigrate(&ItemEntity{}, &MesoEntity{}, &MesoStakeEntity{}); err != nil {
 		return err
 	}
 	m := db.Migrator()
+	if err := backfillMesoStakes(db); err != nil {
+		return err
+	}
 	for _, c := range staleItemColumns {
 		if !m.HasColumn(&ItemEntity{}, c) {
 			continue
@@ -237,5 +313,37 @@ func Migration(db *gorm.DB) error {
 			return err
 		}
 	}
+	for _, c := range staleMesoColumns {
+		if !m.HasColumn(&MesoEntity{}, c) {
+			continue
+		}
+		if err := m.DropColumn(&MesoEntity{}, c); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+// backfillMesoStakes lifts any stake still armed in the old slot into its own
+// row. It is a no-op on a fresh database, where the columns never existed.
+//
+// The INSERT selects only rows whose slot is genuinely occupied — the old shape
+// used uuid.Nil rather than NULL as its "no stake" sentinel, so both have to be
+// excluded. ON CONFLICT DO NOTHING makes a re-run inert, which matters because
+// Migration runs on every boot and the drop below may not have been reached if
+// an earlier attempt failed partway.
+func backfillMesoStakes(db *gorm.DB) error {
+	m := db.Migrator()
+	for _, c := range staleMesoColumns {
+		if !m.HasColumn(&MesoEntity{}, c) {
+			return nil
+		}
+	}
+	return db.Exec(`
+		INSERT INTO `+mesoStakeTable+` (id, tenant_id, tenant_region, tenant_major, tenant_minor, room_id, owner_id, amount, delta, created_at)
+		SELECT pending_stake_id, tenant_id, tenant_region, tenant_major, tenant_minor, room_id, owner_id, pending_amount, pending_delta, ?
+		FROM `+mesoTable+`
+		WHERE pending_stake_id IS NOT NULL AND pending_stake_id <> ?
+		ON CONFLICT (id) DO NOTHING`,
+		time.Now(), uuid.Nil).Error
 }

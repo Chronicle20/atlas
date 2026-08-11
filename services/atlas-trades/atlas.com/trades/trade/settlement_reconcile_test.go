@@ -84,7 +84,7 @@ func seedEscrowItem(t *testing.T, db *gorm.DB, tm tenant.Model, roomId uuid.UUID
 }
 
 // seedEscrowMeso writes one committed escrow meso row.
-func seedEscrowMeso(t *testing.T, db *gorm.DB, tm tenant.Model, roomId uuid.UUID, ownerId character.Id, amount uint32) {
+func seedEscrowMeso(t *testing.T, db *gorm.DB, tm tenant.Model, roomId uuid.UUID, ownerId character.Id, amount int64) {
 	t.Helper()
 	if err := escrow.UpsertMeso(db, tm)(roomId, ownerId, amount); err != nil {
 		t.Fatalf("seed escrow meso: %v", err)
@@ -597,18 +597,22 @@ func TestUnwindZeroesARefundedMesoRowAndKeepsItsPendingStake(t *testing.T) {
 	if row.Amount() != 0 {
 		t.Errorf("refunded row amount: got %d, want 0", row.Amount())
 	}
-	if row.PendingStakeId() != stakeId {
-		t.Errorf("pending stake id: got %s, want the armed %s", row.PendingStakeId(), stakeId)
+	stakes, err := escrow.MesoStakesByOwner(db, tm.Id())(roomId, 200)
+	if err != nil {
+		t.Fatalf("MesoStakesByOwner: %v", err)
 	}
-	if row.PendingAmount() != 900 {
-		t.Errorf("pending amount: got %d, want 900", row.PendingAmount())
+	if len(stakes) != 1 || stakes[0].Id() != stakeId {
+		t.Fatalf("outstanding stakes: got %+v, want just the armed %s", stakes, stakeId)
+	}
+	if stakes[0].Amount() != 900 {
+		t.Errorf("stake amount: got %d, want 900", stakes[0].Amount())
 	}
 	// The armed DELTA has to survive the zeroing too. It is the only surviving
 	// record of what the in-flight saga actually moved: Amount is now 0, so a
 	// refund derived from it would hand back the whole stake on top of the 5000
 	// this unwind just returned.
-	if row.PendingDelta() != -4_100 {
-		t.Errorf("pending delta: got %d, want the armed -4100", row.PendingDelta())
+	if stakes[0].Delta() != -4_100 {
+		t.Errorf("stake delta: got %d, want the armed -4100", stakes[0].Delta())
 	}
 }
 

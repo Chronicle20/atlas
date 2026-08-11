@@ -643,14 +643,17 @@ func (p *ProcessorImpl) emitUnwind(mb *message.Buffer, room Room) error {
 		})
 	}
 	for _, m := range mesos {
-		if m.Amount() == 0 {
+		// Non-positive means nothing is owed: a zero row holds no custody, and a
+		// negative one means more reduction has been confirmed than increase so
+		// far (see MesoEntity on why the confirmed total is signed).
+		if m.Amount() <= 0 {
 			continue
 		}
 		payload.Mesos = append(payload.Mesos, sharedsaga.TradeUnwindMeso{
 			CharacterId: m.OwnerId(),
 			WorldId:     room.Field().WorldId(),
 			ChannelId:   room.Field().ChannelId(),
-			Amount:      m.Amount(),
+			Amount:      uint32(m.Amount()),
 		})
 	}
 	if len(payload.Items) == 0 && len(payload.Mesos) == 0 {
@@ -1058,14 +1061,17 @@ func (p *ProcessorImpl) unwindRecord(mb *message.Buffer, s settlement.Model) err
 		})
 	}
 	for _, m := range mesos {
-		if m.Amount() == 0 {
+		// Non-positive means nothing is owed: a zero row holds no custody, and a
+		// negative one means more reduction has been confirmed than increase so
+		// far (see MesoEntity on why the confirmed total is signed).
+		if m.Amount() <= 0 {
 			continue
 		}
 		payload.Mesos = append(payload.Mesos, sharedsaga.TradeUnwindMeso{
 			CharacterId: m.OwnerId(),
 			WorldId:     s.Field().WorldId(),
 			ChannelId:   s.Field().ChannelId(),
-			Amount:      m.Amount(),
+			Amount:      uint32(m.Amount()),
 		})
 	}
 	if len(payload.Items) == 0 && len(payload.Mesos) == 0 {
@@ -1254,7 +1260,10 @@ func ReconcileEscrow(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, own
 		}
 	}
 	for _, m := range mesos {
-		if m.Amount() == 0 {
+		// Non-positive means nothing is owed: a zero row holds no custody, and a
+		// negative one means more reduction has been confirmed than increase so
+		// far (see MesoEntity on why the confirmed total is signed).
+		if m.Amount() <= 0 {
 			continue
 		}
 		if r := claim(roomKey{m.TenantId(), m.RoomId()}, m.Tenant); r != nil {
@@ -1403,7 +1412,7 @@ func (p *ProcessorImpl) unwindStranded(mb *message.Buffer, r *strandedRoom) erro
 			CharacterId: m.OwnerId(),
 			WorldId:     f.WorldId(),
 			ChannelId:   f.ChannelId(),
-			Amount:      m.Amount(),
+			Amount:      uint32(m.Amount()),
 		})
 	}
 	if len(payload.Items) == 0 && len(payload.Mesos) == 0 {

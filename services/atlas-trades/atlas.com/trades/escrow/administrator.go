@@ -11,6 +11,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -162,14 +163,17 @@ func RemoveItem(db *gorm.DB, tenantId uuid.UUID) func(id uuid.UUID) error {
 	}
 }
 
-// UpsertMeso records a participant's ABSOLUTE escrowed meso total for a room.
+// UpsertMeso ASSIGNS a participant's confirmed escrowed meso total for a room.
 //
-// REPLACE, never accumulate. Clientbound mode 16 assigns rather than adds
-// (design §1.6), so atlas-trades debits the delta between the requested total
-// and this figure; a row that summed would be refunded more than was ever
-// debited, minting meso on cancel.
-func UpsertMeso(db *gorm.DB, t tenant.Model) func(roomId uuid.UUID, ownerId character.Id, amount uint32) error {
-	return func(roomId uuid.UUID, ownerId character.Id, amount uint32) error {
+// It is the blunt setter, used by teardown paths that know the whole custody is
+// over (see the trade package's clearRefundedMesos, which zeroes a refunded row
+// while deliberately leaving its stakes armed). Ordinary staging never calls it:
+// a confirmed stake advances the total by ADDING its own delta inside
+// CommitMesoStake, which is what lets several stakes resolve in any order
+// without clobbering each other. Assigning from a figure read a moment earlier
+// would lose whichever sibling committed in between.
+func UpsertMeso(db *gorm.DB, t tenant.Model) func(roomId uuid.UUID, ownerId character.Id, amount int64) error {
+	return func(roomId uuid.UUID, ownerId character.Id, amount int64) error {
 		now := time.Now()
 		e := MesoEntity{
 			Id:           uuid.New(),
@@ -193,92 +197,149 @@ func UpsertMeso(db *gorm.DB, t tenant.Model) func(roomId uuid.UUID, ownerId char
 // ArmMesoStake records an in-flight award_mesos debit against a participant's
 // escrow row BEFORE the saga that performs it is submitted, so a terminal
 // status that arrives after the room is gone still has somewhere durable to
-// resolve against (see MesoEntity's doc comment).
+// resolve against (see MesoStakeEntity's doc comment).
 //
-// It creates the row (Amount 0) if this is the participant's first stake in
-// the room. If a stake is already armed, it is OVERWRITTEN rather than
-// rejected: the player retyping the stake box submits a fresh saga before the
-// prior one necessarily finished, and the newer stake is authoritative — the
-// prior stakeId's eventual terminal status must become a no-op, which is
-// exactly what CommitMesoStake/AbandonMesoStake's compare-and-set gives it
-// once PendingStakeId has moved on.
+// It creates the owning meso row (Amount 0) if this is the participant's first
+// stake in the room, then inserts the stake as a row of its own. A stake
+// already in flight is left ALONE rather than overwritten: its debit moved real
+// meso, so it still has to resolve on its own terms. Both stakes are
+// outstanding together and each commits its own delta — which is what makes the
+// arithmetic conserve when a player retypes the box mid-saga.
 //
-// delta is the signed movement the saga is about to submit — the stake minus
-// what is escrowed RIGHT NOW — and it is recorded here rather than recomputed
-// when the stake resolves, because Amount can legitimately move underneath a
-// still-armed stake (see MesoEntity).
+// delta is the signed movement the saga is about to submit — the target minus
+// committed PLUS whatever is already in flight — and it is recorded here rather
+// than recomputed when the stake resolves, because Amount is not stable across
+// the stake's lifetime (see MesoStakeEntity).
+//
+// The two writes share one transaction: a stake row whose owning meso row was
+// never created would be resolvable but not readable by the sweep that has to
+// find stranded custody.
 func ArmMesoStake(db *gorm.DB, t tenant.Model) func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID, amount uint32, delta int32) error {
 	return func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID, amount uint32, delta int32) error {
 		now := time.Now()
-		e := MesoEntity{
-			Id:             uuid.New(),
-			TenantId:       t.Id(),
-			TenantRegion:   t.Region(),
-			TenantMajor:    t.MajorVersion(),
-			TenantMinor:    t.MinorVersion(),
-			RoomId:         roomId,
-			OwnerId:        ownerId,
-			Amount:         0,
-			PendingStakeId: stakeId,
-			PendingAmount:  amount,
-			PendingDelta:   delta,
-			CreatedAt:      now,
-			UpdatedAt:      now,
-		}
-		return db.Clauses(clause.OnConflict{
-			Columns: []clause.Column{{Name: "tenant_id"}, {Name: "room_id"}, {Name: "owner_id"}},
-			DoUpdates: clause.Assignments(map[string]interface{}{
-				"pending_stake_id": stakeId,
-				"pending_amount":   amount,
-				"pending_delta":    delta,
-				"updated_at":       now,
-			}),
-		}).Create(&e).Error
+		return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+			owner := MesoEntity{
+				Id:           uuid.New(),
+				TenantId:     t.Id(),
+				TenantRegion: t.Region(),
+				TenantMajor:  t.MajorVersion(),
+				TenantMinor:  t.MinorVersion(),
+				RoomId:       roomId,
+				OwnerId:      ownerId,
+				Amount:       0,
+				CreatedAt:    now,
+				UpdatedAt:    now,
+			}
+			// DoNothing, not an assignment: the owning row's Amount is the
+			// committed total and arming a stake must never disturb it.
+			if err := tx.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "tenant_id"}, {Name: "room_id"}, {Name: "owner_id"}},
+				DoNothing: true,
+			}).Create(&owner).Error; err != nil {
+				return err
+			}
+			return tx.Create(&MesoStakeEntity{
+				Id:           stakeId,
+				TenantId:     t.Id(),
+				TenantRegion: t.Region(),
+				TenantMajor:  t.MajorVersion(),
+				TenantMinor:  t.MinorVersion(),
+				RoomId:       roomId,
+				OwnerId:      ownerId,
+				Amount:       amount,
+				Delta:        delta,
+				CreatedAt:    now,
+			}).Error
+		})
 	}
 }
 
-// CommitMesoStake resolves an in-flight stake into the committed escrow total
-// — the durable counterpart of the room applying an award_mesos COMPLETED
-// status.
+// CommitMesoStake folds a resolved stake's delta into the committed escrow
+// total — the durable counterpart of the room applying an award_mesos COMPLETED
+// status. It reports whether this call is the one that claimed the stake.
 //
-// The match on PendingStakeId happens INSIDE the UPDATE's WHERE clause, not as
-// a separate read-then-write, so two concurrent deliveries of the same (or a
-// stale) terminal status cannot both observe "still armed" and both commit:
-// only the delivery whose UPDATE actually matches a row moves Amount, and it
-// clears PendingStakeId in the same statement so a second delivery finds
-// nothing to match. This is also what makes a stale stakeId — one a later
-// ArmMesoStake already superseded — a silent no-op instead of double-applying
-// a debit the player no longer intends.
+// The DELETE of the stake row IS the compare-and-set, and it is what makes the
+// operation idempotent: two concurrent or redelivered terminal statuses race to
+// delete one row, exactly one gets RowsAffected 1, and only that one adds the
+// delta. The loser sees no row and reports false. Nothing here reads the stake
+// first and acts on it afterwards — under READ COMMITTED (the isolation this
+// fleet runs at, verified against the live cluster) a read-then-write pair
+// would let both deliveries observe "still armed" and both commit the debit.
+//
+// Amount is advanced by `amount + delta` as a SQL expression rather than by
+// assigning a figure computed in Go, for the same reason: the committed total
+// can move underneath this statement — a concurrent sibling stake committing
+// its own delta, or a teardown zeroing the row — and a read-modify-write would
+// clobber whichever landed in between. Addition of one's own delta is the only
+// form that composes with the others.
+//
+// A stake row that no longer exists is not an error. It means some other
+// delivery already resolved it, which is the ordinary shape of an
+// at-least-once terminal status.
 func CommitMesoStake(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID) (bool, error) {
 	return func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID) (bool, error) {
-		res := db.Model(&MesoEntity{}).
-			Where("tenant_id = ? AND room_id = ? AND owner_id = ? AND pending_stake_id = ?", tenantId, roomId, ownerId, stakeId).
-			Updates(map[string]interface{}{
-				"amount":           gorm.Expr("pending_amount"),
-				"pending_stake_id": uuid.Nil,
-				"pending_amount":   0,
-				"pending_delta":    0,
-				"updated_at":       time.Now(),
-			})
+		claimed := false
+		err := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+			var stake MesoStakeEntity
+			if err := tx.Clauses(clause.Returning{}).
+				Where("id = ? AND tenant_id = ? AND room_id = ? AND owner_id = ?", stakeId, tenantId, roomId, ownerId).
+				Delete(&stake).Error; err != nil {
+				return err
+			}
+			if stake.Id == uuid.Nil {
+				return nil
+			}
+			claimed = true
+			// A stake whose delta is zero still has to be claimed — the delete
+			// above did that — but it moves nothing, so skip the UPDATE.
+			if stake.Delta == 0 {
+				return nil
+			}
+			return tx.Model(&MesoEntity{}).
+				Where("tenant_id = ? AND room_id = ? AND owner_id = ?", tenantId, roomId, ownerId).
+				Updates(map[string]interface{}{
+					"amount":     gorm.Expr("amount + ?", stake.Delta),
+					"updated_at": time.Now(),
+				}).Error
+		})
+		return claimed, err
+	}
+}
+
+// AbandonMesoStake discards an in-flight stake WITHOUT moving Amount — the
+// durable counterpart of the room applying an award_mesos FAILED or CANCELLED
+// status.
+//
+// Amount is untouched because a failed stake's delta never moved: the saga's
+// own compensator returned it. Committing it here would credit escrow nobody
+// paid for. Same single-statement claim as CommitMesoStake, for the same
+// reason: a stale or redelivered terminal status must be inert.
+func AbandonMesoStake(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID) (bool, error) {
+	return func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID) (bool, error) {
+		res := db.Where("id = ? AND tenant_id = ? AND room_id = ? AND owner_id = ?", stakeId, tenantId, roomId, ownerId).
+			Delete(&MesoStakeEntity{})
 		return res.RowsAffected > 0, res.Error
 	}
 }
 
-// AbandonMesoStake clears an in-flight stake WITHOUT committing it into
-// Amount — the durable counterpart of the room applying an award_mesos FAILED
-// or CANCELLED status. Same single-UPDATE compare-and-set as CommitMesoStake,
-// for the same reason: a stale or redelivered terminal status must be inert.
-func AbandonMesoStake(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID) (bool, error) {
-	return func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID) (bool, error) {
-		res := db.Model(&MesoEntity{}).
-			Where("tenant_id = ? AND room_id = ? AND owner_id = ? AND pending_stake_id = ?", tenantId, roomId, ownerId, stakeId).
+// DischargeMeso SUBTRACTS an amount from a participant's confirmed escrowed
+// total — used when custody of that amount has demonstrably ended, i.e. it has
+// just been handed back to the player by an unwind.
+//
+// Relative, and applied by the database, for the reason CommitMesoStake gives:
+// the total can move underneath this statement, and an assignment computed from
+// a figure read beforehand would clobber whichever concurrent write landed in
+// between. There is deliberately no floor — Amount is signed and a transient
+// negative is legitimate (see MesoEntity) — so clamping here would silently
+// swallow the very arithmetic error this is meant to keep honest.
+func DischargeMeso(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, ownerId character.Id, amount int32) error {
+	return func(roomId uuid.UUID, ownerId character.Id, amount int32) error {
+		return db.Model(&MesoEntity{}).
+			Where("tenant_id = ? AND room_id = ? AND owner_id = ?", tenantId, roomId, ownerId).
 			Updates(map[string]interface{}{
-				"pending_stake_id": uuid.Nil,
-				"pending_amount":   0,
-				"pending_delta":    0,
-				"updated_at":       time.Now(),
-			})
-		return res.RowsAffected > 0, res.Error
+				"amount":     gorm.Expr("amount - ?", amount),
+				"updated_at": time.Now(),
+			}).Error
 	}
 }
 
@@ -288,11 +349,24 @@ func AbandonMesoStake(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, ow
 // Meso rows are HARD deleted: there is no compensating restore for them because
 // the refund is itself an award_mesos, which the saga compensator reverses on
 // its own terms.
+//
+// Any in-flight stakes go with the row, in the same transaction. A stake left
+// behind by a deleted owner row is unresolvable — its commit would add a delta
+// to a row that no longer exists — and invisible to the boot sweep, which walks
+// owner rows. Callers that mean to keep stakes alive across a teardown zero the
+// row with UpsertMeso instead (see the trade package's clearRefundedMesos);
+// this call means the custody itself is over.
 func DeleteMeso(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, ownerId character.Id) error {
 	return func(roomId uuid.UUID, ownerId character.Id) error {
-		return db.Unscoped().
-			Where("tenant_id = ? AND room_id = ? AND owner_id = ?", tenantId, roomId, ownerId).
-			Delete(&MesoEntity{}).Error
+		return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+			if err := tx.Where("tenant_id = ? AND room_id = ? AND owner_id = ?", tenantId, roomId, ownerId).
+				Delete(&MesoStakeEntity{}).Error; err != nil {
+				return err
+			}
+			return tx.Unscoped().
+				Where("tenant_id = ? AND room_id = ? AND owner_id = ?", tenantId, roomId, ownerId).
+				Delete(&MesoEntity{}).Error
+		})
 	}
 }
 
@@ -321,7 +395,14 @@ func DeleteMeso(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, ownerId 
 // soft-delete column and there is nothing to compensate.
 func DeleteResolvedMeso(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, ownerId character.Id) (bool, error) {
 	return func(roomId uuid.UUID, ownerId character.Id) (bool, error) {
-		res := db.Where("tenant_id = ? AND room_id = ? AND owner_id = ? AND amount = 0 AND pending_stake_id = ?", tenantId, roomId, ownerId, uuid.Nil).
+		// "No stake in flight" is now a NOT EXISTS against the stake table
+		// rather than a sentinel comparison, but it remains INSIDE the DELETE's
+		// WHERE clause for the reason above: a stage arming a stake races every
+		// caller here, and a read-then-delete would drop the row that stage
+		// depends on.
+		res := db.Where(`tenant_id = ? AND room_id = ? AND owner_id = ? AND amount = 0
+			AND NOT EXISTS (SELECT 1 FROM `+mesoStakeTable+` s WHERE s.tenant_id = `+mesoTable+`.tenant_id AND s.room_id = `+mesoTable+`.room_id AND s.owner_id = `+mesoTable+`.owner_id)`,
+			tenantId, roomId, ownerId).
 			Delete(&MesoEntity{})
 		return res.RowsAffected > 0, res.Error
 	}

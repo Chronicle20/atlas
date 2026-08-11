@@ -72,7 +72,10 @@ func (m ItemModel) Tenant() (tenant.Model, error) {
 }
 
 // MesoModel is one participant's escrowed meso for one room. Amount is the
-// ABSOLUTE escrowed total (design §5A.5).
+// CONFIRMED escrowed total — the sum of the stake deltas award_mesos actually
+// moved — and is signed and transiently negative for the reason MesoEntity
+// gives. What the player currently has typed is Amount plus the deltas still in
+// flight (EffectiveMesoByOwner), not this figure alone.
 type MesoModel struct {
 	id      uuid.UUID
 	roomId  uuid.UUID
@@ -83,31 +86,56 @@ type MesoModel struct {
 	tenantMajor  uint16
 	tenantMinor  uint16
 
-	amount uint32
-
-	pendingStakeId uuid.UUID
-	pendingAmount  uint32
-	pendingDelta   int32
+	amount int64
 
 	createdAt time.Time
 }
 
-func (m MesoModel) Id() uuid.UUID             { return m.id }
-func (m MesoModel) RoomId() uuid.UUID         { return m.roomId }
-func (m MesoModel) OwnerId() character.Id     { return m.ownerId }
-func (m MesoModel) TenantId() uuid.UUID       { return m.tenantId }
-func (m MesoModel) Amount() uint32            { return m.amount }
-func (m MesoModel) PendingStakeId() uuid.UUID { return m.pendingStakeId }
-func (m MesoModel) PendingAmount() uint32     { return m.pendingAmount }
-func (m MesoModel) CreatedAt() time.Time      { return m.createdAt }
-
-// PendingDelta is the signed movement the in-flight stake submitted. It is the
-// only safe basis for refunding an orphaned stake, because Amount is zeroed out
-// from under a still-armed stake by an ordinary teardown (see MesoEntity).
-func (m MesoModel) PendingDelta() int32 { return m.pendingDelta }
+func (m MesoModel) Id() uuid.UUID         { return m.id }
+func (m MesoModel) RoomId() uuid.UUID     { return m.roomId }
+func (m MesoModel) OwnerId() character.Id { return m.ownerId }
+func (m MesoModel) TenantId() uuid.UUID   { return m.tenantId }
+func (m MesoModel) Amount() int64         { return m.amount }
+func (m MesoModel) CreatedAt() time.Time  { return m.createdAt }
 
 // Tenant rebuilds the tenant this row belongs to. See ItemModel.Tenant.
 func (m MesoModel) Tenant() (tenant.Model, error) {
+	return tenant.Create(m.tenantId, m.tenantRegion, m.tenantMajor, m.tenantMinor)
+}
+
+// MesoStakeModel is one in-flight award_mesos debit. See MesoStakeEntity.
+type MesoStakeModel struct {
+	id      uuid.UUID
+	roomId  uuid.UUID
+	ownerId character.Id
+
+	tenantId     uuid.UUID
+	tenantRegion string
+	tenantMajor  uint16
+	tenantMinor  uint16
+
+	amount uint32
+	delta  int32
+
+	createdAt time.Time
+}
+
+func (m MesoStakeModel) Id() uuid.UUID         { return m.id }
+func (m MesoStakeModel) RoomId() uuid.UUID     { return m.roomId }
+func (m MesoStakeModel) OwnerId() character.Id { return m.ownerId }
+func (m MesoStakeModel) TenantId() uuid.UUID   { return m.tenantId }
+
+// Amount is the absolute total the player typed for this stake.
+func (m MesoStakeModel) Amount() uint32 { return m.amount }
+
+// Delta is the signed movement this stake submitted. It is the only safe basis
+// for refunding an orphaned stake, because the committed Amount is zeroed out
+// from under a still-armed stake by an ordinary teardown (see MesoStakeEntity).
+func (m MesoStakeModel) Delta() int32         { return m.delta }
+func (m MesoStakeModel) CreatedAt() time.Time { return m.createdAt }
+
+// Tenant rebuilds the tenant this stake belongs to. See ItemModel.Tenant.
+func (m MesoStakeModel) Tenant() (tenant.Model, error) {
 	return tenant.Create(m.tenantId, m.tenantRegion, m.tenantMajor, m.tenantMinor)
 }
 
@@ -166,17 +194,30 @@ func MakeItem(e ItemEntity) (ItemModel, error) {
 // MakeMeso maps a row back onto its immutable model.
 func MakeMeso(e MesoEntity) (MesoModel, error) {
 	return MesoModel{
-		id:             e.Id,
-		roomId:         e.RoomId,
-		ownerId:        e.OwnerId,
-		tenantId:       e.TenantId,
-		tenantRegion:   e.TenantRegion,
-		tenantMajor:    e.TenantMajor,
-		tenantMinor:    e.TenantMinor,
-		amount:         e.Amount,
-		pendingStakeId: e.PendingStakeId,
-		pendingAmount:  e.PendingAmount,
-		pendingDelta:   e.PendingDelta,
-		createdAt:      e.CreatedAt,
+		id:           e.Id,
+		roomId:       e.RoomId,
+		ownerId:      e.OwnerId,
+		tenantId:     e.TenantId,
+		tenantRegion: e.TenantRegion,
+		tenantMajor:  e.TenantMajor,
+		tenantMinor:  e.TenantMinor,
+		amount:       e.Amount,
+		createdAt:    e.CreatedAt,
+	}, nil
+}
+
+// MakeMesoStake maps an in-flight stake row back onto its immutable model.
+func MakeMesoStake(e MesoStakeEntity) (MesoStakeModel, error) {
+	return MesoStakeModel{
+		id:           e.Id,
+		roomId:       e.RoomId,
+		ownerId:      e.OwnerId,
+		tenantId:     e.TenantId,
+		tenantRegion: e.TenantRegion,
+		tenantMajor:  e.TenantMajor,
+		tenantMinor:  e.TenantMinor,
+		amount:       e.Amount,
+		delta:        e.Delta,
+		createdAt:    e.CreatedAt,
 	}, nil
 }

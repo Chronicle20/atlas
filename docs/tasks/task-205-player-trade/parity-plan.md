@@ -1,6 +1,7 @@
 # Task-205 follow-on — meso custody parity
 
-**Status:** prerequisites P1 and P2 settled (see below); Tasks 1–7 not started.
+**Status:** prerequisites P1 and P2 settled; **Task 1 done** (and with it the
+pre-CAS half of Task 2); Tasks 2–7 outstanding.
 Written 2026-08-11 as a handoff from the session that produced commits
 `a3279ee73`..`0bf941fc5`.
 
@@ -128,7 +129,7 @@ not optional:
 
 ## Tasks
 
-### Task 1 — Defence A: net the in-flight stake before submitting a new one ✅ *confirmed*
+### Task 1 — Defence A: net the in-flight stake before submitting a new one ✅ *confirmed* — **DONE**
 
 **The defect.** `addMeso` derives its delta from `escrow.MesoByOwner`, which
 returns only the committed `Amount` column
@@ -144,30 +145,76 @@ Debited 300, escrow says 200, **100 destroyed**.
 `Participant.PendingMesoTxId()` and `PendingMesoAmount()` exist for exactly this
 and have **no production callers** — confirmed by grep.
 
-**The fix.** The delta must be against *committed + in flight*, the way
-`StagedQuantityFrom` nets already-staged quantity for items. Decide deliberately
-between two shapes and record the choice:
-- net against `Amount + PendingDelta`, letting stakes compose; or
-- refuse a second stage while one is in flight (simpler, but re-echoes a stale
-  number over what the player just typed — the reason supersession was chosen
-  originally; see the comment in `addMeso`).
+**The fix — DONE.** Chosen shape: **compose, and resolve every stake
+independently.** Recorded here because the alternative (refuse while one is in
+flight) was live and rejected: it re-echoes a stale number over what the player
+just typed, which is why supersession was chosen originally.
 
-Whichever is chosen, the superseded stake's debit must be accounted for, never
-silently dropped.
+The decisive arithmetic: if each stake resolves on its own — success adds its
+own delta, failure adds nothing — then the committed total is always the sum of
+the deltas that actually moved, and conservation holds with no "superseded"
+special case at all. The defect was never supersession as such; it was that
+resolution keyed on a SINGLE slot, so a superseded stake's success was dropped
+though its debit had moved real meso.
 
-**Tests.** Two stages in flight conserve meso exactly; the superseded stake's
-status is not silently dropped; the fast-retype sequence above balances.
-Mutation-verify by restoring the committed-only delta.
+That makes the pending slot a child table. Implemented as:
+
+- `trade_escrow_meso_stakes` — one row per in-flight stake, replacing
+  `pending_stake_id`/`pending_amount`/`pending_delta`. The migration BACKFILLS
+  any armed slot into it before dropping the columns; dropping them outright
+  would strand a debit that has already left a player's pocket.
+- `CommitMesoStake` claims by DELETEing the stake row and adds `delta` to the
+  committed total as a SQL expression. The delete IS the compare-and-set, so
+  redeliveries are inert; the relative add is what lets siblings resolve in any
+  order without clobbering each other. **P1 forced this**: under READ COMMITTED
+  a read-then-assign loses whichever sibling committed in the window.
+- `EffectiveMesoByOwner` (committed + Σ in-flight deltas) is what `addMeso` nets
+  against — the meso twin of `StagedQuantityFrom`.
+- The committed column is now **signed and widened**. Stakes resolve in status
+  order, not arm order, so a player who types 1000 then 500 arms +1000 and −500,
+  and if the reduction lands first the total passes through −500 legitimately.
+  Held unsigned it underflowed. Refund paths treat non-positive as nothing owed.
+- `discardResolvedMeso` → `discardOrphanedMeso`, which discharges by a RELATIVE
+  subtraction instead of deciding from a pre-CAS read and assigning. That is
+  **Task 2's pre-CAS misclassification, fixed here** because the signature had
+  to change anyway and leaving a known-broken guard was not an option.
+
+**Seam note, worth carrying forward.** The netting read deliberately goes
+through the same real escrow processor that arms the stake, NOT the fake-able
+`escrowStore` seam. Arming already bypassed that seam, so a fake answering the
+read would have reported nothing in flight and silently restored the bug — a
+green test proving nothing. For the same reason the six test call sites that
+seeded committed escrow into the fake alone now seed both stores, and
+`databasetest.FailReadsOn` (new, the counterpart of `FailWritesOn`) injects the
+unreadable-escrow failure at the real store.
+
+**Tests — all mutation-verified** (guard removed → named test fails with a
+message stating the consequence → restored → green):
+- `TestConcurrentMesoStakesConserve`, `TestSupersededMesoStakeFailureDoesNotMint`
+  (escrow layer: conserves on success, does not mint on superseded failure).
+- `TestRetypingTheMesoBoxMidSagaConservesMeso` (end to end). Mutation: reverting
+  to the committed-only delta yields "the two stakes debited 300000 in total,
+  but the player only ever typed 200000".
+- `TestAddMesoRefusesWhenTheEscrowedTotalCannotBeRead` (re-pointed at the real
+  store).
+- `TestMigrationLiftsAnArmedStakeOutOfTheOldSlot`. Mutation: dropping the
+  backfill yields "the armed stake was dropped with the columns; the player's
+  debit is stranded".
+- `TestArmMesoStakeSupersedesPriorStake` was **deleted and replaced**. It pinned
+  the defect as a contract — asserting the superseded stake's commit must report
+  false. Its replacement is `TestArmMesoStakeKeepsPriorStakeOutstanding`.
 
 ### Task 2 — Defence B: a durable claim latch for meso rows
 
+**Partly done by Task 1.** The `discardResolvedMeso` half is fixed: it is now
+`discardOrphanedMeso` and discharges by relative subtraction rather than
+deciding from a pre-CAS read and assigning, and `CommitMesoStake` no longer
+assigns at all. What REMAINS is the first half below — the two return paths
+racing one row with no arbitration.
+
 **The defect (relayed, unconfirmed).** The boot sweep and the orphaned-stake
 refund both act on the same meso row with no arbitration; the item twin claims
-on both paths via `returning_at`. Also: `discardResolvedMeso` decides from a
-**pre-CAS** `row.Amount()` while `CommitMesoStake` assigns
-`amount = pending_amount` unconditionally, so a teardown zeroing in that window
-makes the guard misclassify and leave a stale non-zero row for the next boot to
-refund again.
+on both paths via `returning_at`.
 
 **The fix.** Give the meso row the same latch discipline the item row has, and
 make every decision that ends meso custody read its inputs from the same

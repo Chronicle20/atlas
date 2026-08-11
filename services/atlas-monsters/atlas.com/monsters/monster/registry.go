@@ -565,6 +565,41 @@ func (r *Registry) RemoveMonster(ctx context.Context, t tenant.Model, uniqueId u
 	return m, nil
 }
 
+// ClaimMonster removes a monster and reports whether THIS caller was the one
+// that removed it. Unlike RemoveMonster (Get-then-Del with the Del reply
+// discarded), the delete is the claim: exactly one of N concurrent callers can
+// observe ok=true, so exactly one catch attempt on a given monster can succeed.
+// A missing monster and a lost race are both (Model{}, false, nil) — neither is
+// an error, and neither should emit anything.
+//
+// The map-index removal and id release run ONLY for the winner, so a loser
+// cannot recycle an id the winner still owns.
+func (r *Registry) ClaimMonster(ctx context.Context, t tenant.Model, uniqueId uint32) (Model, bool, error) {
+	sm, err := r.reg.Get(ctx, monsterSuffix(t, uniqueId))
+	if errors.Is(err, atlasredis.ErrNotFound) {
+		return Model{}, false, nil
+	}
+	if err != nil {
+		return Model{}, false, err
+	}
+	_, m, err := fromStored(sm)
+	if err != nil {
+		return Model{}, false, err
+	}
+
+	claimed, err := r.reg.RemoveExisting(ctx, monsterSuffix(t, uniqueId))
+	if err != nil {
+		return Model{}, false, err
+	}
+	if !claimed {
+		return Model{}, false, nil
+	}
+
+	_ = r.mapIdx.Remove(ctx, mapIndexSuffixFromModel(t, m), strconv.FormatUint(uint64(uniqueId), 10))
+	GetIdAllocator().Release(ctx, t, uniqueId)
+	return m, true, nil
+}
+
 func (r *Registry) ApplyStatusEffect(t tenant.Model, uniqueId uint32, effect StatusEffect) (Model, error) {
 	return r.atomicUpdate(context.Background(), t, uniqueId, func(m Model) Model {
 		return m.ApplyStatus(effect)

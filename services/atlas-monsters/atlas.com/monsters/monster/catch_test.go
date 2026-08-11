@@ -10,13 +10,79 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
+
+// TestCatch_ClaimError — ClaimMonster itself errors (e.g. a Redis fault)
+// after every validation check has passed. This is the same class of
+// post-reservation internal failure as the catch-item lookup and roll-error
+// branches (plan amendment, round 3): atlas-consumables has already reserved
+// the item and the channel is waiting to unlock, so this must report
+// UNRESOLVED rather than drop silently. Forced by handing Catch an
+// already-cancelled context: GetMonster and the test-seamed consumable
+// lookup don't consult p.ctx, so only the ClaimMonster call is affected.
+func TestCatch_ClaimError(t *testing.T) {
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	GetMonsterRegistry().Clear(context.Background())
+	defer withCatchItem(t, consumable.NewModelBuilder().
+		SetId(2270000).SetMonsterId(9300101).SetCreate(1902000).Build(), nil)()
+
+	uniqueId := spawnCatchable(t, ten, 9300101, 100, 100)
+
+	cancelledCtx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	var events []emittedBody
+	p := &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: cancelledCtx,
+		t:   ten,
+		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
+			msgs, err := provider()
+			if err != nil {
+				t.Fatalf("provider error: %v", err)
+			}
+			for _, m := range msgs {
+				var env struct {
+					Type string          `json:"type"`
+					Body json.RawMessage `json:"body"`
+				}
+				if err := json.Unmarshal(m.Value, &env); err != nil {
+					t.Fatalf("decode emitted: %v", err)
+				}
+				events = append(events, emittedBody{Topic: topic, Type: env.Type, Body: env.Body})
+			}
+			return nil
+		},
+	}
+	p.Catch(uniqueId, 42, 2270000)
+
+	if got := eventTypes(&events); len(got) != 2 ||
+		got[0] != EventMonsterCatchResolved || got[1] != EventMonsterStatusCatchFailed {
+		t.Fatalf("event order = %v, want [CATCH_RESOLVED CATCH_FAILED]", got)
+	}
+	var body catchResolvedBody
+	_ = json.Unmarshal(events[0].Body, &body)
+	if body.Success || body.Cause != CatchCauseUnresolved {
+		t.Fatalf("CATCH_RESOLVED body = %+v, want success=false cause=UNRESOLVED", body)
+	}
+	for _, e := range events {
+		if e.Type == EventMonsterStatusCaught || e.Type == EventMonsterStatusDestroyed {
+			t.Fatalf("unexpected %s emitted on a claim error", e.Type)
+		}
+	}
+	if _, err := GetMonsterRegistry().GetMonster(ten, uniqueId); err != nil {
+		t.Error("monster removed despite a claim error")
+	}
+}
 
 // withCatchItem installs the test-only consumable lookup and returns a cleanup.
 func withCatchItem(t *testing.T, m consumable.Model, err error) func() {

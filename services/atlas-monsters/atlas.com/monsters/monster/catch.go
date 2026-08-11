@@ -75,26 +75,36 @@ func catchHpGatePasses(hp uint32, maxHp uint32, mobHP uint32) bool {
 	return uint64(hp)*100 <= uint64(maxHp)*uint64(mobHP)
 }
 
-// Catch resolves a bridle (catch-item) capture attempt. It is fail-closed and
-// authoritative: atlas-consumables validated the ITEM, but every monster-state
-// check happens here, exactly as Kill re-checks alive+boss rather than trusting
-// the caller.
+// Catch resolves a bridle (catch-item) capture attempt. atlas-consumables
+// validated the ITEM and reserved it before publishing the command; every
+// monster-state check happens here, exactly as Kill re-checks alive+boss
+// rather than trusting the caller. Unlike Kill, though, Catch is NOT allowed
+// to silently drop once that reservation exists: every exit reached after the
+// initial monster lookup emits either a success triple or a failure pair, so
+// atlas-consumables can always resolve the reservation and the channel can
+// always unlock the client (plan amendments, rounds 2-3 — this deliberately
+// supersedes the brief's Kill-style "data lookup failed: nothing at all"
+// silent-drop text, which assumed no reservation was in flight).
 //
 // Emission contract:
 //   - success: CATCH_RESOLVED(true) -> CAUGHT -> DESTROYED. The economic
 //     outcome goes first so it is the first thing attempted after the claim.
-//   - a check failed: CATCH_RESOLVED(false, cause) + CATCH_FAILED(cause).
-//     Nothing is removed and no KILLED/DESTROYED fires — a catch awards no
-//     experience, rolls no drops, and emits no death events (FR-3.6).
-//   - monster gone, claim lost, catch-item lookup failed, or the roll itself
-//     errored: CATCH_RESOLVED(false, UNRESOLVED) + CATCH_FAILED(UNRESOLVED).
-//     By the time any of these run, atlas-consumables has already reserved the
-//     item and the channel is waiting to unlock the client, so none of them can
-//     be a silent drop (deviates from the Kill fail-closed model the brief
-//     copied from — approved plan amendment, round 2): the resolved event is
-//     what cancels the caller's reservation, and the channel renders no
-//     failure packet for UNRESOLVED, only the unlock. A redelivery is harmless
-//     because the caller's once-handler has already deregistered.
+//   - a validation check failed (species mismatch, HP gate, lost roll):
+//     CATCH_RESOLVED(false, cause) + CATCH_FAILED(cause). Nothing is removed
+//     and no KILLED/DESTROYED fires — a catch awards no experience, rolls no
+//     drops, and emits no death events (FR-3.6).
+//   - monster gone, claim lost, catch-item lookup failed, or the roll or the
+//     claim itself errored: CATCH_RESOLVED(false, UNRESOLVED) +
+//     CATCH_FAILED(UNRESOLVED). The resolved event is what cancels the
+//     caller's reservation, and the channel renders no failure packet for
+//     UNRESOLVED, only the unlock. A redelivery is harmless because the
+//     caller's once-handler has already deregistered.
+//   - there is no remaining silent-drop exit: every return statement in this
+//     function, including the very first (monster not found or already
+//     dead), goes through emitCatchUnresolved/emitCatchFailure or the
+//     success triple before returning. atlas-consumables cannot receive a
+//     CATCH command whose reservation is never resolved one way or the
+//     other.
 func (p *ProcessorImpl) Catch(uniqueId uint32, characterId uint32, itemId uint32) {
 	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
 	if err != nil || !m.Alive() {
@@ -142,7 +152,8 @@ func (p *ProcessorImpl) Catch(uniqueId uint32, characterId uint32, itemId uint32
 
 	claimed, ok, cerr := GetMonsterRegistry().ClaimMonster(p.ctx, p.t, uniqueId)
 	if cerr != nil {
-		p.l.WithError(cerr).Errorf("CATCH: claim failed for monster [%d]; dropping (fail-closed).", uniqueId)
+		p.l.WithError(cerr).Errorf("CATCH: claim errored for monster [%d]; reporting unresolved for character [%d].", uniqueId, characterId)
+		p.emitCatchFailure(m, characterId, itemId, CatchCauseUnresolved)
 		return
 	}
 	if !ok {

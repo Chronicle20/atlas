@@ -11,6 +11,7 @@ import (
 	"atlas-channel/socket/writer"
 	"atlas-channel/trade"
 	"context"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -147,7 +148,19 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			sp := &interaction2.OperationInvite{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] is sending character [%d] a trade invite.", s.CharacterId(), sp.TargetCharacterId())
-			_ = trade.NewProcessor(l, ctx).Invite(s.Field(), characterconst.Id(s.CharacterId()), characterconst.Id(sp.TargetCharacterId()))
+			// The mode-0 create that this invite belongs to is a SEPARATE packet
+			// handled on a SEPARATE goroutine, and it produces its command only
+			// after three REST occupancy probes. Without this the invite can reach
+			// COMMAND_TOPIC_TRADE first and atlas-trades refuses it UNABLE — see
+			// trade.CreateLatch for the observed failure.
+			tp := trade.NewProcessor(l, ctx)
+			orderInviteAfterCreate(l, s.CharacterId(),
+				func() (bool, error) { return tp.InGame(characterconst.Id(s.CharacterId())) },
+				func() bool {
+					return trade.GetCreateLatch().AwaitSettled(tenant.MustFromContext(ctx), characterconst.Id(s.CharacterId()), tradeCreateArriveWindow, tradeCreateSettleTimeout)
+				},
+			)
+			_ = tp.Invite(s.Field(), characterconst.Id(s.CharacterId()), characterconst.Id(sp.TargetCharacterId()))
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeInviteDecline) {
@@ -707,6 +720,11 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 // rationale, and the shipped tables that make this reachable).
 func createTradeRoom(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, roomType byte) bool {
 	return func(s session.Model, roomType byte) bool {
+		// Armed BEFORE the occupancy probes, not around the produce alone: the
+		// probes are the latency that lets a same-breath invite overtake the
+		// create, so the gate has to be closed for the whole of it.
+		release := trade.GetCreateLatch().Begin(tenant.MustFromContext(ctx), characterconst.Id(s.CharacterId()))
+		defer release()
 		return tradeRoomCreate(l, s.CharacterId(),
 			func(characterId uint32) bool { return characterOccupiesAnyMiniRoom(l, ctx, characterId) },
 			func() {
@@ -770,6 +788,42 @@ func tradeRoomCreate(l logrus.FieldLogger, characterId uint32, occupied func(uin
 		return false
 	}
 	return true
+}
+
+// The two bounds orderInviteAfterCreate waits within. The arrive window covers
+// the goroutine-per-packet dispatch reaching the invite before the create; it
+// is paid only by an invite whose sender holds no room, which today is already
+// a refusal. The settle timeout covers a create wedged in its REST probes —
+// generous, because the alternative to waiting is a guaranteed UNABLE.
+const (
+	tradeCreateArriveWindow  = 250 * time.Millisecond
+	tradeCreateSettleTimeout = 3 * time.Second
+)
+
+// orderInviteAfterCreate holds a trade INVITE until the CREATE_ROOM it belongs
+// to has been produced, with its two collaborators injected: whether the sender
+// already holds a room, and how to wait on an in-flight create.
+//
+// The room check comes first and is what keeps the common cases free: a sender
+// who already holds a room has, by definition, had its CREATE_ROOM consumed by
+// atlas-trades, so there is nothing left to order against and the invite goes
+// immediately. Only an invite with no room behind it — the racing open, and the
+// genuinely roomless invite — reaches the wait.
+//
+// A failed probe waits rather than skipping. atlas-trades being briefly
+// unreadable is not evidence that no create is in flight, and the cost of
+// waiting when we did not need to is a bounded delay; the cost of not waiting
+// when we did is the refusal this whole path exists to prevent.
+func orderInviteAfterCreate(l logrus.FieldLogger, characterId uint32, hasRoom func() (bool, error), awaitCreate func() bool) {
+	inRoom, err := hasRoom()
+	if err != nil {
+		l.WithError(err).Warnf("Unable to ask atlas-trades whether character [%d] holds a trade room; waiting for a create before inviting.", characterId)
+	} else if inRoom {
+		return
+	}
+	if !awaitCreate() {
+		l.Debugf("Character [%d] sent a trade invite with no room and no create in flight; forwarding it for atlas-trades to refuse.", characterId)
+	}
 }
 
 // tradeInviteAccept is the VISIT arm's trade decision, with its two

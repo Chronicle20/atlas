@@ -432,3 +432,61 @@ func TestRefuseWithEnterErrorSendsABoundKey(t *testing.T) {
 		t.Errorf("announces: got %d, want 1", announced)
 	}
 }
+
+// --- the invite arm's ordering decision (the UNABLE race) ---------------------
+
+// TestOrderInviteAfterCreateWaitsWhenTheSenderHoldsNoRoom is the defect: for
+// roomType 3 the client opens a trade in two sends, atlas-socket dispatches one
+// goroutine per packet, and the create arm produces its command only after
+// three REST occupancy probes. An invite that does not wait reaches
+// COMMAND_TOPIC_TRADE first and atlas-trades refuses it UNABLE.
+func TestOrderInviteAfterCreateWaitsWhenTheSenderHoldsNoRoom(t *testing.T) {
+	waited := 0
+	orderInviteAfterCreate(testLogger(), 2,
+		func() (bool, error) { return false, nil },
+		func() bool { waited++; return true },
+	)
+	if waited != 1 {
+		t.Errorf("waits on the in-flight create: got %d, want 1", waited)
+	}
+}
+
+// TestOrderInviteAfterCreateSkipsTheWaitForAnExistingRoom pins that the fix
+// costs nothing on the path it does not govern: a sender who already holds a
+// room has had its CREATE_ROOM consumed, so a re-invite must not be delayed by
+// the arrive window.
+func TestOrderInviteAfterCreateSkipsTheWaitForAnExistingRoom(t *testing.T) {
+	waited := 0
+	orderInviteAfterCreate(testLogger(), 2,
+		func() (bool, error) { return true, nil },
+		func() bool { waited++; return true },
+	)
+	if waited != 0 {
+		t.Errorf("waits on the in-flight create: got %d, want 0", waited)
+	}
+}
+
+// TestOrderInviteAfterCreateWaitsWhenTheProbeFails pins the posture: an
+// unreadable atlas-trades is not evidence that no create is in flight, and the
+// cost of waiting needlessly is a bounded delay against a guaranteed refusal.
+func TestOrderInviteAfterCreateWaitsWhenTheProbeFails(t *testing.T) {
+	waited := 0
+	orderInviteAfterCreate(testLogger(), 2,
+		func() (bool, error) { return false, errors.New("trades down") },
+		func() bool { waited++; return true },
+	)
+	if waited != 1 {
+		t.Errorf("waits on the in-flight create: got %d, want 1", waited)
+	}
+}
+
+// TestOrderInviteAfterCreateForwardsAnInviteWithNoCreateBehindIt pins that the
+// wait is advisory, not a gate: a client that sends mode 2 with no mode 0 still
+// has its invite forwarded, so atlas-trades issues the refusal rather than
+// atlas-channel silently dropping it.
+func TestOrderInviteAfterCreateForwardsAnInviteWithNoCreateBehindIt(t *testing.T) {
+	orderInviteAfterCreate(testLogger(), 2,
+		func() (bool, error) { return false, nil },
+		func() bool { return false },
+	)
+}

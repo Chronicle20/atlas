@@ -1149,6 +1149,47 @@ handles 1002 (Trade), 1003 (PutMoney), 1004 (chat send), 1 and 2 — there is no
 exactly once: the `push 3EDh` in `OnCreate`. No server change can affect it.
 Out of scope for task-205.
 
+### 11.7 The invite could overtake the create it belongs to
+
+Reported during testing as "trades work one way but not the other": the same
+pair of characters traded fine when A opened the trade and refused with the
+mini-room `UNABLE` error when B did.
+
+It is not directional. For `roomType 3` the client opens a trade in **two**
+sends — mode 0 (create) then mode 2 (invite) — and `libs/atlas-socket`'s read
+loop dispatches **one goroutine per inbound packet**
+(`libs/atlas-socket/server.go`, the `routine.Go(... handle ...)` in the frame
+loop). Nothing serialises the two. The create arm runs three sequential REST
+occupancy probes (`/characters/{id}/games`, `/characters/{id}/visiting`,
+`/trades/rooms?filter[characterId]=`) before producing `CREATE_ROOM`; the
+invite arm produced immediately. Both commands are keyed by the acting
+character on `COMMAND_TOPIC_TRADE`, so **consume order is produce order** — and
+a client whose two sends are closer together than the probe latency has its
+invite arrive at atlas-trades first, against a character with no room.
+
+The live evidence was the sender's inter-packet gap and nothing else:
+
+| actor | mode 0 → mode 2 gap | outcome |
+|---|---|---|
+| A | 49–60 ms | `CREATE_ROOM` produced first — works |
+| B | 1–2 ms | `INVITE` produced first — `UNABLE` |
+
+In the failing run atlas-trades received `INVITE` 54 ms *before* the
+`CREATE_ROOM` that preceded it on the wire.
+
+Fixed in atlas-channel, where the ordering is broken, by `trade.CreateLatch`:
+the create arm arms a per-(tenant, character) latch before its probes and
+releases it once `CREATE_ROOM` has been produced or refused, and the invite arm
+waits on it. The wait is skipped entirely for a sender who already holds a room
+— by definition its create has already been consumed — so a re-invite pays only
+one REST probe. Because the invite's goroutine can reach the latch before the
+create's goroutine has armed it, the wait also tolerates a not-yet-armed create
+for a bounded arrive window rather than testing "is it armed right now".
+
+The wait is advisory: an invite with no create behind it is forwarded after the
+window so atlas-trades still issues the refusal, rather than atlas-channel
+silently dropping it.
+
 ---
 
 ## 12. Cross-cutting requirements

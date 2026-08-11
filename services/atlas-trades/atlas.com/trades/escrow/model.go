@@ -166,8 +166,8 @@ func (m MesoRefundModel) TenantId() uuid.UUID      { return m.tenantId }
 // Amount is what the unwind took, and therefore exactly what has to go back if
 // it fails. It is signed for the same reason the committed total is, though a
 // claim only ever takes a positive figure.
-func (m MesoRefundModel) Amount() int64          { return m.amount }
-func (m MesoRefundModel) CreatedAt() time.Time   { return m.createdAt }
+func (m MesoRefundModel) Amount() int64        { return m.amount }
+func (m MesoRefundModel) CreatedAt() time.Time { return m.createdAt }
 
 // Tenant rebuilds the tenant this record belongs to. See ItemModel.Tenant.
 func (m MesoRefundModel) Tenant() (tenant.Model, error) {

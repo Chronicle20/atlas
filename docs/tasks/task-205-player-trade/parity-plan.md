@@ -331,9 +331,21 @@ bespoke step-failure compensator; `reverseWalkSagaTypes` covers four.** The
 seven uncovered — `PetEvolution`, `ItemTagUse`, `SealingLockUse`,
 `IncubatorUse`, `PointReset`, `NoteSend`, `SkillBookUse` — each have the
 identical unrolled-timeout bug this task exists to close, since every saga gets
-the same 30s backstop. All seven already have a pure `Dispatch…Rollbacks` half
-written (`compensator.go:1230, 1324, 1428, 1559, 1658`), so wiring them in is
-small. See the status header for how that was resolved.
+the same 30s backstop. All seven already had a pure `Dispatch…Rollbacks` half
+written (`compensator.go:1230, 1324, 1428, 1559, 1658`), so **all seven were
+wired in** rather than deferred — a decision put to the user, who chose to fix
+them now rather than ship a trade PR alongside seven live instances of the class
+it exists to close.
+
+The guard was also strengthened, because the review exposed a second gap: a test
+that ITERATES `reverseWalkSagaTypes` can only catch a type present in the list
+but missing from the switch. A type nobody listed is invisible to it — which is
+exactly how the seven survived. `noReverseWalkSagaTypes` now names the five
+types that deliberately have no whole-saga walk, `allSagaTypes` names all
+sixteen, and `TestEverySagaTypeIsClassified` fails when the three disagree. So
+adding a saga type without deciding its timeout behaviour now fails a test
+instead of silently destroying value on the backstop. Both layers are
+mutation-verified.
 
 The per-site results for the `TradeStaging` question:
 

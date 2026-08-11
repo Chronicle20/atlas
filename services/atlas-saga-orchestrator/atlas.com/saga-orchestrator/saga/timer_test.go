@@ -155,3 +155,41 @@ func TestTradeStagingTimeoutDispatchesItsReverseWalk(t *testing.T) {
 		t.Fatal("a staging saga that times out between release_from_character and accept_to_trade rolls back nothing: compartment -1, escrow +0, item destroyed")
 	}
 }
+
+// TestEverySagaTypeIsClassified closes the hole that let seven saga types carry
+// the unrolled-timeout defect unnoticed.
+//
+// TestEverySagaTypeWithAReverseWalkIsDispatchedOnTimeout iterates
+// reverseWalkSagaTypes, so it can only catch a type that is IN the list but
+// missing from the switch. A type nobody put in the list is invisible to it —
+// which is exactly what happened: the list originally held only the four types
+// the trade work touched, while seven others had a bespoke step-failure
+// compensator and no timeout arm at all.
+//
+// This asserts the two classification lists together account for every known
+// type, so adding a saga type without deciding whether it needs a reverse walk
+// fails here rather than silently destroying value on a 30s backstop.
+func TestEverySagaTypeIsClassified(t *testing.T) {
+	classified := make(map[Type]int, len(allSagaTypes))
+	for _, st := range reverseWalkSagaTypes {
+		classified[st]++
+	}
+	for _, st := range noReverseWalkSagaTypes {
+		classified[st]++
+	}
+
+	for _, st := range allSagaTypes {
+		switch classified[st] {
+		case 0:
+			t.Errorf("saga type %q is in neither reverseWalkSagaTypes nor noReverseWalkSagaTypes; if it has a bespoke compensator it will roll back NOTHING on the 30s timeout backstop", st)
+		case 1:
+			// classified exactly once, which is the requirement
+		default:
+			t.Errorf("saga type %q is in both classification lists; the timeout behaviour it gets is whichever the switch happens to match", st)
+		}
+		delete(classified, st)
+	}
+	for st := range classified {
+		t.Errorf("saga type %q is classified but absent from allSagaTypes, so nothing checks its dispatch arm", st)
+	}
+}

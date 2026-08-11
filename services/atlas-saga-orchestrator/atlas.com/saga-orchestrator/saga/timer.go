@@ -160,11 +160,50 @@ func handleSagaTimeout(l logrus.FieldLogger, ctx context.Context, txId uuid.UUID
 // bespoke compensator, because that is what "this type has inverses worth
 // walking" means. Anything with an entry there and no entry here destroys value
 // on timeout while looking correct on step failure.
+// The list is EVERY type CompensateFailedStep routes to a bespoke compensator.
+// It was originally only the four the trade work touched, which left the other
+// seven carrying the identical defect this exists to close — found by the
+// plan-adherence review, not by the guard below, because a type omitted from
+// the list is invisible to a test that iterates the list.
 var reverseWalkSagaTypes = []Type{
 	CharacterCreation,
 	MtsOperation,
 	TradeTransaction,
 	TradeStaging,
+	PetEvolution,
+	ItemTagUse,
+	SealingLockUse,
+	IncubatorUse,
+	PointReset,
+	NoteSend,
+	SkillBookUse,
+}
+
+// noReverseWalkSagaTypes are the saga types that deliberately have NO reverse
+// walk, each because its steps are individually compensated by the per-action
+// switch in CompensateFailedStep rather than by a bespoke whole-saga walk.
+//
+// It exists so that reverseWalkSagaTypes and this list TOGETHER account for
+// every known saga type, which is what lets TestEverySagaTypeIsClassified fail
+// when a new type is added and neither list is updated. Iterating
+// reverseWalkSagaTypes alone could never catch that: a type nobody listed is
+// invisible to a test that walks the list. That is precisely how the seven
+// types above went unnoticed until a review asked the question directly.
+var noReverseWalkSagaTypes = []Type{
+	InventoryTransaction,
+	QuestReward,
+	StorageOperation,
+	CharacterRespawn,
+	GachaponTransaction,
+}
+
+// allSagaTypes is every type the orchestrator knows, kept beside the two
+// classification lists so adding one here without classifying it fails a test.
+var allSagaTypes = []Type{
+	InventoryTransaction, QuestReward, TradeTransaction, TradeStaging,
+	CharacterCreation, StorageOperation, CharacterRespawn, GachaponTransaction,
+	PetEvolution, ItemTagUse, SealingLockUse, IncubatorUse, PointReset,
+	MtsOperation, NoteSend, SkillBookUse,
 }
 
 // dispatchTimeoutRollbacks fires the reverse walk for a timed-out saga and
@@ -193,6 +232,18 @@ func dispatchTimeoutRollbacks(l logrus.FieldLogger, ctx context.Context, s Saga)
 		// release from the compartment completed, the accept into escrow did
 		// not, and nothing puts it back.
 		c.DispatchTradeStagingRollbacks(s)
+	case PetEvolution:
+		c.DispatchPetEvolutionRollbacks(s)
+	case ItemTagUse, SealingLockUse, IncubatorUse:
+		// The three share one compensator, exactly as CompensateFailedStep
+		// routes them.
+		c.DispatchCashItemUseRollbacks(s)
+	case PointReset:
+		c.DispatchPointResetRollbacks(s)
+	case NoteSend:
+		c.DispatchNoteSendRollbacks(s)
+	case SkillBookUse:
+		c.DispatchSkillBookUseRollbacks(s)
 	default:
 		return false
 	}

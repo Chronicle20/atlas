@@ -22,6 +22,7 @@ const KiteSpawnWriter = "SpawnKite"
 // The banner's appearance is selected by templateId alone, which is the sole
 // argument to CItemInfo::GetItemProp further down the same function. There is
 // no kite-type field on the wire.
+// packet-audit:fname CMessageBoxPool::OnMessageBoxEnterField
 type KiteSpawn struct {
 	id         uint32
 	templateId uint32

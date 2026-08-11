@@ -88,7 +88,7 @@ func (p *ProcessorImpl) RequestCatchMonster(f field.Model, characterId uint32, s
 
 	compTopic, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
 	validator := once.ReservationValidator(transactionId, uint32(itemId))
-	handler := compartment.Consume(ConsumeCatch(f, monsterUniqueId, characterId, itemId))
+	handler := compartment.Consume(ConsumeCatch(f, monsterUniqueId, characterId, itemId, transactionId, slot))
 	if _, err = consumer.GetManager().RegisterHandler(compTopic, message.AdaptHandler(message.OneTimeConfig(validator, handler))); err != nil {
 		return p.catchError(characterId, itemId, consumable.CatchCauseInvalidItem, err)
 	}
@@ -100,11 +100,27 @@ func (p *ProcessorImpl) RequestCatchMonster(f field.Model, characterId uint32, s
 }
 
 // ConsumeCatch fires on RESERVED: the item is now held, so the monster-state
-// decision can be handed to atlas-monsters, which is authoritative.
-func ConsumeCatch(f field.Model, monsterUniqueId uint32, characterId uint32, itemId item2.Id) ItemConsumer {
+// decision can be handed to atlas-monsters, which is authoritative. If the
+// CATCH command cannot even be produced (broker unavailable, serialization
+// error), the reservation must not be left dangling: no CATCH_RESOLVED will
+// ever arrive to drive catchResolutionHandler, so the once-handler registered
+// in RequestCatchMonster would sit forever and the client would never unlock.
+// Cancel via the same ConsumeError path every other ItemConsumer in this file
+// uses (ConsumeBare, ConsumeMonsterCard, ConsumeStandard) rather than a new
+// mechanism; ConsumeError's generic ERROR event is what drives the
+// unrecognized-cause fallback unlock on the channel side.
+//
+// This is distinct from the failure path catchResolutionHandler already
+// covers: this only fires when the command never made it to atlas-monsters at
+// all, so there is exactly one cancel here, never both.
+func ConsumeCatch(f field.Model, monsterUniqueId uint32, characterId uint32, itemId item2.Id, transactionId uuid.UUID, slot int16) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
-			return monster.NewProcessor(l, ctx).RequestCatch(f, monsterUniqueId, characterId, uint32(itemId))
+			p := NewProcessor(l, ctx)
+			if err := monster.NewProcessor(l, ctx).RequestCatch(f, monsterUniqueId, characterId, uint32(itemId)); err != nil {
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+			return nil
 		}
 	}
 }

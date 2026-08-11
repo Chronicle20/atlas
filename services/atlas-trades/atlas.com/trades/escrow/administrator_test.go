@@ -175,7 +175,7 @@ func TestRestoreItemUndoesADelete(t *testing.T) {
 	if err := DeleteItem(db, te.Id())(m.Id()); err != nil {
 		t.Fatalf("DeleteItem: %v", err)
 	}
-	if err := RestoreItem(db, te.Id())(m.Id()); err != nil {
+	if err := RestoreItem(db, te.Id())(m.Id(), uuid.New()); err != nil {
 		t.Fatalf("RestoreItem: %v", err)
 	}
 
@@ -203,7 +203,7 @@ func TestRemoveItemHardDeletes(t *testing.T) {
 	if err := RemoveItem(db, te.Id())(m.Id()); err != nil {
 		t.Fatalf("RemoveItem: %v", err)
 	}
-	if err := RestoreItem(db, te.Id())(m.Id()); err != nil {
+	if err := RestoreItem(db, te.Id())(m.Id(), uuid.New()); err != nil {
 		t.Fatalf("RestoreItem after a hard delete must be a no-op, got: %v", err)
 	}
 
@@ -1011,7 +1011,12 @@ func TestRestoreItemReleasesTheReturnClaim(t *testing.T) {
 	if err := CreateItem(db, te)(m); err != nil {
 		t.Fatalf("CreateItem: %v", err)
 	}
-	won, err := ClaimItemForReturn(db, te.Id())(m.Id(), uuid.New())
+	// The unwind's saga id. The claim and the restore carry the SAME value in
+	// the real flow, because it is that unwind's own reverse walk asking — which
+	// is exactly what tells this case apart from a stale restore sent by a
+	// different saga (see RestoreItem).
+	unwindTxId := uuid.New()
+	won, err := ClaimItemForReturn(db, te.Id())(m.Id(), unwindTxId)
 	if err != nil {
 		t.Fatalf("ClaimItemForReturn: %v", err)
 	}
@@ -1022,7 +1027,7 @@ func TestRestoreItemReleasesTheReturnClaim(t *testing.T) {
 	if err := DeleteItem(db, te.Id())(m.Id()); err != nil {
 		t.Fatalf("DeleteItem: %v", err)
 	}
-	if err := RestoreItem(db, te.Id())(m.Id()); err != nil {
+	if err := RestoreItem(db, te.Id())(m.Id(), unwindTxId); err != nil {
 		t.Fatalf("RestoreItem: %v", err)
 	}
 
@@ -1274,5 +1279,87 @@ func TestReleaseItemReturnClaimsUnlatchesOnlyItsOwnTransaction(t *testing.T) {
 	// The other unwind's row is untouched, so its item cannot be granted twice.
 	if ok, err := ClaimItemForReturn(db, te.Id())(healthy.Id(), uuid.New()); err != nil || ok {
 		t.Errorf("a row claimed by a DIFFERENT unwind was released (ok=%v err=%v); that unwind's item would be granted twice", ok, err)
+	}
+}
+
+// TestRestoreItemCannotResurrectAReturnedRow fences the compensating restore
+// against at-least-once redelivery.
+//
+// The sequence is reachable and needs no race beyond Kafka's own guarantee:
+//
+//  1. a settlement fails, and its reverse walk emits RESTORE_TRADE_ESCROW for
+//     row X, putting X back into custody;
+//  2. the failed settlement's unwind then CLAIMS X, releases it, and the owner
+//     is granted the item;
+//  3. the restore from step 1 is redelivered.
+//
+// Unfenced, step 3 un-soft-deletes X and clears its claim, leaving a live,
+// unclaimed row for an item the owner is already holding — and the next boot
+// sweep hands it over a second time.
+//
+// The existing doc comment argued this was impossible. Its reasoning covers
+// only the ordering WITHIN one reverse walk (an accept that succeeded is never
+// followed by a restore of its own release) and says nothing about a redelivery
+// arriving after a DIFFERENT saga's release, which is this case.
+func TestRestoreItemCannotResurrectAReturnedRow(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	roomId := uuid.New()
+	m := testItem(roomId, character.Id(100), 1)
+	if err := CreateItem(db, te)(m); err != nil {
+		t.Fatalf("CreateItem: %v", err)
+	}
+
+	// The unwind claims the row and releases it; the owner now holds the item.
+	if ok, err := ClaimItemForReturn(db, te.Id())(m.Id(), uuid.New()); err != nil || !ok {
+		t.Fatalf("claim for return: ok=%v err=%v", ok, err)
+	}
+	if err := DeleteItem(db, te.Id())(m.Id()); err != nil {
+		t.Fatalf("DeleteItem: %v", err)
+	}
+
+	// The stale restore lands.
+	if err := RestoreItem(db, te.Id())(m.Id(), uuid.New()); err != nil {
+		t.Fatalf("RestoreItem: %v", err)
+	}
+
+	rows, err := ItemsByRoom(db, te.Id())(roomId)
+	if err != nil {
+		t.Fatalf("ItemsByRoom: %v", err)
+	}
+	if len(rows) != 0 {
+		t.Fatalf("a redelivered restore resurrected a row whose item was already returned; the next boot sweep grants it again (got %d live rows)", len(rows))
+	}
+}
+
+// TestRestoreItemStillUndoesAnUnclaimedRelease is the other half, and the
+// reason the fence keys on the return claim rather than on the soft delete.
+//
+// A settlement's release is NOT a claim for return — only the unwind paths
+// claim — so a settlement reverse walk restoring its own release must still
+// work. Fencing on "was soft-deleted" would have broken exactly that.
+func TestRestoreItemStillUndoesAnUnclaimedRelease(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	roomId := uuid.New()
+	m := testItem(roomId, character.Id(100), 1)
+	if err := CreateItem(db, te)(m); err != nil {
+		t.Fatalf("CreateItem: %v", err)
+	}
+	if err := DeleteItem(db, te.Id())(m.Id()); err != nil {
+		t.Fatalf("DeleteItem: %v", err)
+	}
+	if err := RestoreItem(db, te.Id())(m.Id(), uuid.New()); err != nil {
+		t.Fatalf("RestoreItem: %v", err)
+	}
+
+	rows, err := ItemsByRoom(db, te.Id())(roomId)
+	if err != nil {
+		t.Fatalf("ItemsByRoom: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("a settlement reverse walk could not restore its own release; the item is lost (got %d live rows)", len(rows))
 	}
 }

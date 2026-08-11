@@ -115,7 +115,7 @@ func (p *ProcessorImpl) Release(transactionId uuid.UUID, escrowId uuid.UUID) err
 
 func (p *ProcessorImpl) Restore(transactionId uuid.UUID, escrowId uuid.UUID) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		if err := RestoreItem(p.db, p.t.Id())(escrowId); err != nil {
+		if err := RestoreItem(p.db, p.t.Id())(escrowId, transactionId); err != nil {
 			p.l.WithError(err).Errorf("Unable to restore trade escrow row [%s].", escrowId)
 			return mb.Put(custodymsg.EnvStatusEventTopic, errorStatusProvider(transactionId, escrowId, err.Error()))
 		}

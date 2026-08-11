@@ -1128,6 +1128,11 @@ func (p *ProcessorImpl) returnOrphanedStage(mb *message.Buffer, escrowId uuid.UU
 	// this row from the moment the custody consumer writes it — well before the
 	// stage's terminal status gets here — and both paths would otherwise submit
 	// a trade_unwind for it (see escrow.ClaimItemForReturn).
+	// One id for the claim and the saga it submits below. They must be the same
+	// value: the claim is what a FAILED unwind is recovered by
+	// (escrow.ReleaseItemReturnClaims) and what fences a stale restore
+	// (escrow.RestoreItem), and both look the row up by the SAGA's transaction
+	// id. A claim stamped with anything else is unreachable from either.
 	unwindTxId := uuid.New()
 	won, err := p.esc.ClaimForReturn(escrowId, unwindTxId)
 	if err != nil {
@@ -1143,9 +1148,8 @@ func (p *ProcessorImpl) returnOrphanedStage(mb *message.Buffer, escrowId uuid.UU
 	// No field lookup: an item return accepts to the owner's compartment, which
 	// atlas-inventory addresses by character id alone. Only the meso legs of an
 	// unwind need a world and channel, and this one has none.
-	txId := uuid.New()
-	return true, p.sgp.Unwind(mb)(txId, sharedsaga.TradeUnwindPayload{
-		TransactionId: txId,
+	return true, p.sgp.Unwind(mb)(unwindTxId, sharedsaga.TradeUnwindPayload{
+		TransactionId: unwindTxId,
 		Items: []sharedsaga.TradeUnwindItem{{
 			OwnerId: row.OwnerId(),
 			Item:    escrowItemPayload(row),

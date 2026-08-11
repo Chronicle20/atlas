@@ -1,7 +1,8 @@
 # Task-205 follow-on — meso custody parity
 
-**Status:** prerequisites P1 and P2 settled; **Tasks 1–5 done** — all three
-structural defences now exist on the meso side. Tasks 6–7 outstanding.
+**Status:** prerequisites P1 and P2 settled; **Tasks 1–6 done** — all three
+structural defences now exist on the meso side. Task 7 (re-audit + full gate)
+outstanding.
 
 Written 2026-08-11 as a handoff from the session that produced commits
 `a3279ee73`..`0bf941fc5`.
@@ -387,7 +388,7 @@ already zeroed. So:
 scoping, and widening it to the tenant releases 2 rows instead of 1, which would
 grant another unwind's item twice.
 
-### Task 6 — fence `RestoreItem` against redelivery
+### Task 6 — fence `RestoreItem` against redelivery — **DONE**
 
 **The defect (relayed, unconfirmed).** `RestoreItem` clears `deleted_at` and
 `returning_at` for whatever row bears the id, with no fencing token. A
@@ -399,8 +400,39 @@ argues this is impossible, but its reasoning covers only the reverse walk's own
 ordering, not a redelivery racing a different saga's release —
 **treat that comment as suspect, not as evidence.**
 
-**Tests.** A redelivered restore after a completed release is inert.
-Mutation-verify.
+**Confirmed, and the doc comment WAS wrong.** Its argument covered only the
+ordering within one reverse walk. The reachable sequence needs nothing beyond
+Kafka's own at-least-once guarantee: a failed settlement's reverse walk emits
+RESTORE for row X; the failed settlement's unwind then claims X, releases it,
+and the owner is granted the item; the restore is redelivered and resurrects X
+live and unclaimed for the next boot sweep to grant again.
+
+**The fix — DONE, and the first fence attempt was wrong.** Fencing on "the row
+is claimed" broke a legitimate case that an existing test correctly pinned: an
+unwind whose release completed and whose accept then FAILED must be restored,
+and that row is claimed too. Both cases carry a claim, so the claim alone cannot
+separate them.
+
+The discriminator is WHOSE claim it is. `RestoreItem` now takes the restoring
+saga's transaction id — which the command already carried — and restores only
+when the row is unclaimed or claimed by that same saga:
+
+- unwind's own reverse walk → ids match → restores, unlatched. Correct: the item
+  was never granted.
+- stale restore from a different saga → ids differ → inert.
+- settlement's own release → unclaimed → restores. Unaffected, which is why the
+  fence could not key on "was soft-deleted".
+
+**A latent defect surfaced while doing this**, introduced by Task 5:
+`returnOrphanedStage` stamped its claim with one id and submitted the unwind
+with a different one, so neither the Task 5 recovery nor this fence could ever
+find that claim. Both now use a single value.
+
+**Tests.** `TestRestoreItemCannotResurrectAReturnedRow` and
+`TestRestoreItemStillUndoesAnUnclaimedRelease`, plus the pre-existing
+`TestRestoreItemReleasesTheReturnClaim`, which was corrected to share the saga
+id as the real flow does. Mutation-verified: dropping the fence resurrects the
+returned row.
 
 ### Task 7 — re-run both audits, then the full gate
 

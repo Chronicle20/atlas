@@ -229,22 +229,49 @@ func DiscardMesoRefunds(db *gorm.DB, tenantId uuid.UUID) func(txId uuid.UUID) (i
 // release. Restoring a row that was never deleted, or that was HARD deleted, is
 // a no-op.
 //
-// It also RELEASES the return claim, in the same statement. A restore means the
-// return demonstrably did not happen — the orchestrator's reverse walk put the
-// item back into custody because a later step of that unwind failed — so the row
-// is once again an asset nobody is returning. Leaving it latched would make the
-// boot sweep, which is the retry of last resort for exactly this case, skip it
-// forever: the player's item, gone, with no error anywhere. Clearing it cannot
-// resurrect the duplicate this claim exists to prevent, because the duplicate
-// requires an accept that succeeded, and an accept that succeeded is never
-// followed by a restore of its own release (the reverse walk removes the granted
-// item first — see the orchestrator's compensator).
-func RestoreItem(db *gorm.DB, tenantId uuid.UUID) func(id uuid.UUID) error {
-	return func(id uuid.UUID) error {
+// It is FENCED on the return claim: a row some unwind has claimed is NOT
+// restored.
+//
+// An earlier version of this function restored whatever row bore the id, and
+// argued that a duplicate was impossible because an accept that succeeded is
+// never followed by a restore of its own release. That reasoning covers only
+// the ordering WITHIN one reverse walk. It says nothing about a REDELIVERY
+// arriving after a different saga's release, which is reachable on Kafka's own
+// at-least-once guarantee alone:
+//
+//  1. a settlement fails and its reverse walk emits RESTORE_TRADE_ESCROW for a
+//     row, putting it back into custody;
+//  2. the failed settlement's unwind claims that row, releases it, and the
+//     owner is granted the item;
+//  3. the restore from step 1 is redelivered.
+//
+// Unfenced, step 3 un-soft-deleted the row and cleared its claim, leaving a
+// live unclaimed row for an item the owner already holds — and the next boot
+// sweep handed it over a second time. CreateItem has carried an
+// OnConflict…DoNothing guard for exactly this posture since it was written;
+// restore had none.
+//
+// The token is the RESTORING saga's own transaction id, not merely the presence
+// of a claim, because a claim alone cannot tell the two cases apart — both have
+// one:
+//
+//   - an unwind whose release completed and whose accept then FAILED must be
+//     restored, and it is that same unwind's reverse walk asking, so the ids
+//     match. The item was never granted and the row has to come back, unlatched,
+//     or every later sweep skips it and the item is lost outright.
+//   - a stale restore from a DIFFERENT saga must be refused, and there the ids
+//     differ.
+//
+// An unclaimed row (returning_tx_id NULL) always restores: a settlement's
+// release is not a claim for return — only the unwind paths claim — so a
+// settlement reverse walk restoring its own release is unaffected. Fencing on
+// "was soft-deleted" instead would have broken exactly that.
+func RestoreItem(db *gorm.DB, tenantId uuid.UUID) func(id uuid.UUID, txId uuid.UUID) error {
+	return func(id uuid.UUID, txId uuid.UUID) error {
 		return db.Unscoped().
 			Model(&ItemEntity{}).
-			Where("tenant_id = ? AND id = ?", tenantId, id).
-			Updates(map[string]interface{}{"deleted_at": nil, "returning_at": nil}).Error
+			Where("tenant_id = ? AND id = ? AND (returning_tx_id IS NULL OR returning_tx_id = ?)", tenantId, id, txId).
+			Updates(map[string]interface{}{"deleted_at": nil, "returning_at": nil, "returning_tx_id": nil}).Error
 	}
 }
 

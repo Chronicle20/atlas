@@ -28,6 +28,7 @@ import (
 	incubatorconsumer "atlas-channel/kafka/consumer/incubator"
 	"atlas-channel/kafka/consumer/instance_transport"
 	"atlas-channel/kafka/consumer/invite"
+	kiteconsumer "atlas-channel/kafka/consumer/kite"
 	"atlas-channel/kafka/consumer/macro"
 	_map "atlas-channel/kafka/consumer/map"
 	megaphoneConsumer "atlas-channel/kafka/consumer/megaphone"
@@ -234,6 +235,7 @@ func main() {
 	macro.InitConsumers(l)(cmf)(consumerGroupId)
 	buff.InitConsumers(l)(cmf)(consumerGroupId)
 	chalkboard.InitConsumers(l)(cmf)(consumerGroupId)
+	kiteconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	messenger.InitConsumers(l)(cmf)(consumerGroupId)
 	teleportrockConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	pet.InitConsumers(l)(cmf)(consumerGroupId)
@@ -502,6 +504,9 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(chalkboard.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(kiteconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(messenger.InitHandlers(fl)(sc)(wp)(rh)); err != nil {

@@ -7,12 +7,20 @@ import (
 
 	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
 
 type CharacterInteractionMode = string
 
 type CharacterInteractionEnterErrorMode = string
+
+// CharacterInteractionInviteResultMode is the semantic key for a mini-room
+// invite refusal (mode 3, CMiniRoomBaseDlg::OnInviteResultStatic), resolved to
+// a numeric byte via the tenant "inviteResult" writer table (DOM-25). The
+// client decodes one byte and branches on it, so the code is a client-facing
+// wire value and must never be a Go literal.
+type CharacterInteractionInviteResultMode = string
 
 // CharacterInteractionMiniGameResultType is the semantic key for a mini-game
 // RESULT (mode 62) outcome, resolved to a numeric byte via the tenant
@@ -49,6 +57,26 @@ const (
 	// (CEntrustedShopDlg::OnPacket sub_51870D cases 0x2E/0x2F).
 	CharacterInteractionModeMerchantViewVisitList CharacterInteractionMode = "MERCHANT_VIEW_VISIT_LIST" // 46
 	CharacterInteractionModeMerchantViewBlackList CharacterInteractionMode = "MERCHANT_VIEW_BLACK_LIST" // 47
+
+	// Trade-family arms, CTradingRoomDlg's mode dispatcher (v83 sub_7C1F6D
+	// @0x7c1f6d). Bytes are per-version and resolved from the tenant
+	// "operations" table — the v83 values in these comments are documentation,
+	// never a default (DOM-25).
+	CharacterInteractionModeTradePutItem   CharacterInteractionMode = "TRADE_PUT_ITEM"   // 15
+	CharacterInteractionModeTradeAddMeso   CharacterInteractionMode = "TRADE_ADD_MESO"   // 16
+	CharacterInteractionModeTradeConfirm   CharacterInteractionMode = "TRADE_CONFIRM"    // 17
+	CharacterInteractionModeTradeMesoLimit CharacterInteractionMode = "TRADE_MESO_LIMIT" // 21
+
+	// Invite-result keys resolved via the tenant "inviteResult" writer table.
+	// GMS v83 CMiniRoomBaseDlg::OnInviteResultStatic (@0x65E848) decodes one
+	// byte and branches: 1 -> SP_366 "Unable to find the character" (no name
+	// follows); 2 -> SP_403 "%s is doing something else right now";
+	// 3 -> SP_404 "%s have denied invitation"; 4 -> SP_405 "%s is currently not
+	// accepting any invitation". 0 renders nothing. Only the two refusals
+	// atlas-trades can currently produce are keyed here; the v83 bytes in these
+	// comments are documentation, never a default (DOM-25).
+	CharacterInteractionInviteResultCannotFindCharacter CharacterInteractionInviteResultMode = "CANNOT_FIND_CHARACTER" // 1
+	CharacterInteractionInviteResultBusy                CharacterInteractionInviteResultMode = "BUSY"                  // 2
 
 	CharacterInteractionEnterErrorModeRoomClosed                CharacterInteractionEnterErrorMode = "ROOM_CLOSED"                   // 1
 	CharacterInteractionEnterErrorModeFull                      CharacterInteractionEnterErrorMode = "FULL"                          // 2
@@ -110,10 +138,32 @@ func CharacterInteractionInviteBody(roomType byte, name string, dwSN uint32) fun
 	})
 }
 
+// CharacterInteractionInviteResultBody is the raw-byte entry point: it resolves
+// the mode from the tenant "operations" table but takes the result code as a
+// caller-supplied byte. Prefer CharacterInteractionInviteResultKeyBody, which
+// resolves the code too — a caller that has only a semantic refusal reason must
+// not invent its numeric value (DOM-25). Retained for a caller that already
+// holds a code from a non-tenant source; it has no callers today.
 func CharacterInteractionInviteResultBody(result byte, message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeInviteResult, func(mode byte) packet.Encoder {
 		return NewInteractionInviteResult(mode, result, message)
 	})
+}
+
+// CharacterInteractionInviteResultKeyBody refuses a mini-room invite by its
+// semantic KEY, resolving BOTH wire bytes from tenant tables: the mode from
+// "operations"/INVITE_RESULT and the refusal code from "inviteResult"/resultKey.
+// resultKey is one of the CharacterInteractionInviteResult* keys. message is the
+// name the client interpolates into the refusal string; the
+// CANNOT_FIND_CHARACTER arm reads no name, so an empty string is correct there.
+func CharacterInteractionInviteResultKeyBody(resultKey CharacterInteractionInviteResultMode, message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CharacterInteractionModeInviteResult)
+			result := atlas_packet.ResolveCode(l, options, "inviteResult", resultKey)
+			return NewInteractionInviteResult(mode, result, message).Encode(l, ctx)(options)
+		}
+	}
 }
 
 func CharacterInteractionChatBody(slot byte, message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
@@ -176,6 +226,22 @@ const (
 	CharacterInteractionLeaveReasonMiniGameClosed   = "MINIGAME_CLOSED"   // 3 owner tore the room down
 	CharacterInteractionLeaveReasonMiniGameLeft     = "MINIGAME_LEFT"     // 4 visitor left voluntarily
 	CharacterInteractionLeaveReasonMiniGameExpelled = "MINIGAME_EXPELLED" // 5 visitor expelled by owner
+
+	// Trade leave-status keys, resolved via the same "leaveReason" tenant
+	// table. CTradingRoomDlg::OnLeave (v83 vtable off_B37448 slot +76 ->
+	// 0x7C221D) reads one status byte and branches: 2 SP_406 "Trade cancelled
+	// by the other character"; 7 success (SP_408 with the meso figure the
+	// client computes from its OWN CharacterData, else SP_407); 8 SP_409
+	// "Trade unsuccessful"; 9 SP_410 "...items which you cannot carry";
+	// 12 SP_411 "...the other person's on a different map"; 13 SP_5566 CRC
+	// mismatch. Distinct keys so the trade path never depends on another
+	// family's numeric values (DOM-25).
+	CharacterInteractionLeaveReasonTradeCancelled    = "TRADE_CANCELLED"     // 2
+	CharacterInteractionLeaveReasonTradeSuccess      = "TRADE_SUCCESS"       // 7
+	CharacterInteractionLeaveReasonTradeFailed       = "TRADE_FAILED"        // 8
+	CharacterInteractionLeaveReasonTradeCannotCarry  = "TRADE_CANNOT_CARRY"  // 9
+	CharacterInteractionLeaveReasonTradeDifferentMap = "TRADE_DIFFERENT_MAP" // 12
+	CharacterInteractionLeaveReasonTradeCrcFailed    = "TRADE_CRC_FAILED"    // 13
 )
 
 // CharacterInteractionLeaveReasonBody sends a LEAVE whose status byte is resolved
@@ -195,6 +261,41 @@ func CharacterInteractionLeaveReasonBody(slot byte, reason string) func(logrus.F
 func CharacterInteractionUpdateMerchantBody(meso uint32, items []interaction.RoomShopItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeUpdateMerchant, func(mode byte) packet.Encoder {
 		return NewInteractionUpdateMerchant(mode, meso, items)
+	})
+}
+
+// CharacterInteractionTradePutItemBody announces one staged item to a trade
+// room occupant. side is recipient-relative (0 = the receiving client's own
+// side, 1 = the counterparty); tradeSlot is 1..9.
+func CharacterInteractionTradePutItemBody(side byte, tradeSlot byte, a model.Asset) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeTradePutItem, func(mode byte) packet.Encoder {
+		return NewInteractionTradePutItem(mode, side, tradeSlot, a)
+	})
+}
+
+// CharacterInteractionTradeAddMesoBody announces a side's staged meso total.
+// The amount is ABSOLUTE, not a delta — see InteractionTradeAddMeso.
+func CharacterInteractionTradeAddMesoBody(side byte, amount uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeTradeAddMeso, func(mode byte) packet.Encoder {
+		return NewInteractionTradeAddMeso(mode, side, amount)
+	})
+}
+
+// CharacterInteractionTradeConfirmBody prompts a client for its CRC
+// attestation. Send only after BOTH sides have confirmed (design §6.2).
+func CharacterInteractionTradeConfirmBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeTradeConfirm, func(mode byte) packet.Encoder {
+		return NewInteractionTradeConfirm(mode)
+	})
+}
+
+// CharacterInteractionTradeMesoLimitBody tells a client its meso stage was
+// refused. Absent from the cash trade room on every version; pair it with an
+// authoritative CharacterInteractionTradeAddMesoBody re-echo so the correction
+// lands even where this arm does not exist.
+func CharacterInteractionTradeMesoLimitBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeTradeMesoLimit, func(mode byte) packet.Encoder {
+		return NewInteractionTradeMesoLimit(mode)
 	})
 }
 

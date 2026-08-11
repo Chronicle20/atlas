@@ -430,3 +430,16 @@ spec:
           env:
             - name: DB_NAME
               value: "atlas-tenants-PLACEHOLDER_ATLAS_ENV"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-trades
+spec:
+  template:
+    spec:
+      containers:
+        - name: trades
+          env:
+            - name: DB_NAME
+              value: "atlas-trades-PLACEHOLDER_ATLAS_ENV"

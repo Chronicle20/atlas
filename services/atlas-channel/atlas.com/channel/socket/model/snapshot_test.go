@@ -155,6 +155,7 @@ func TestAssetSnapshotRoundTrip_Stackable(t *testing.T) {
 		SetQuantity(99).
 		SetFlag(0x10).
 		SetRechargeable(500).
+		SetOwner("Chronicle").
 		Build()
 	if err != nil {
 		t.Fatalf("asset build: %v", err)
@@ -183,6 +184,12 @@ func TestAssetSnapshotRoundTrip_Stackable(t *testing.T) {
 	}
 	if out.Rechargeable() != a.Rechargeable() {
 		t.Errorf("Rechargeable() = %d, want %d", out.Rechargeable(), a.Rechargeable())
+	}
+	// The owner tag is part of the rendered item block on every version, so a
+	// snapshot that dropped it would show an owned item as unowned everywhere it
+	// is rendered from a snapshot — the trade dialog included.
+	if out.Owner() != a.Owner() {
+		t.Errorf("Owner() = %q, want %q", out.Owner(), a.Owner())
 	}
 }
 

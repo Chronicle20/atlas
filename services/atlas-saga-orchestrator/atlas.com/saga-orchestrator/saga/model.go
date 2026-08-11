@@ -33,6 +33,7 @@ const (
 	InventoryTransaction = sharedsaga.InventoryTransaction
 	QuestReward          = sharedsaga.QuestReward
 	TradeTransaction     = sharedsaga.TradeTransaction
+	TradeStaging         = sharedsaga.TradeStaging
 	CharacterCreation    = sharedsaga.CharacterCreation
 	StorageOperation     = sharedsaga.StorageOperation
 	CharacterRespawn     = sharedsaga.CharacterRespawn
@@ -136,6 +137,19 @@ const (
 	ReleaseFromCharacter = sharedsaga.ReleaseFromCharacter
 	AcceptToCharacter    = sharedsaga.AcceptToCharacter
 	ReleaseFromStorage   = sharedsaga.ReleaseFromStorage
+
+	// Trade actions (task-205). trade_settlement is a COMPOSITE expanded by
+	// expandTradeSettlement into release_from_character / accept_to_character /
+	// award_mesos steps.
+	TradeSettlement = sharedsaga.TradeSettlement
+	TradeUnwind     = sharedsaga.TradeUnwind
+
+	// Trade escrow custody (task-205 amendment, design §5A). transfer_to_trade
+	// is a COMPOSITE expanded by expandTransferToTrade into
+	// release_from_character + accept_to_trade.
+	TransferToTrade  = sharedsaga.TransferToTrade
+	AcceptToTrade    = sharedsaga.AcceptToTrade
+	ReleaseFromTrade = sharedsaga.ReleaseFromTrade
 
 	// Cash shop actions
 	TransferToCashShop   = sharedsaga.TransferToCashShop
@@ -274,6 +288,16 @@ type (
 	MtsBidEscrowPayload                 = sharedsaga.MtsBidEscrowPayload
 	ReleaseFromCharacterPayload         = sharedsaga.ReleaseFromCharacterPayload
 	ReleaseFromStoragePayload           = sharedsaga.ReleaseFromStoragePayload
+	TradeSettlementPayload              = sharedsaga.TradeSettlementPayload
+	TradeSettlementSide                 = sharedsaga.TradeSettlementSide
+	TradeSettlementItem                 = sharedsaga.TradeSettlementItem
+	TradeEscrowItem                     = sharedsaga.TradeEscrowItem
+	TradeUnwindPayload                  = sharedsaga.TradeUnwindPayload
+	TradeUnwindItem                     = sharedsaga.TradeUnwindItem
+	TradeUnwindMeso                     = sharedsaga.TradeUnwindMeso
+	TransferToTradePayload              = sharedsaga.TransferToTradePayload
+	AcceptToTradePayload                = sharedsaga.AcceptToTradePayload
+	ReleaseFromTradePayload             = sharedsaga.ReleaseFromTradePayload
 	RequestGuildNamePayload             = sharedsaga.RequestGuildNamePayload
 	RequestGuildEmblemPayload           = sharedsaga.RequestGuildEmblemPayload
 	RequestGuildDisbandPayload          = sharedsaga.RequestGuildDisbandPayload
@@ -1314,6 +1338,36 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ReleaseFromStorage:
 		var payload ReleaseFromStoragePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case TradeSettlement:
+		var payload TradeSettlementPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case TradeUnwind:
+		var payload TradeUnwindPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case TransferToTrade:
+		var payload TransferToTradePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case AcceptToTrade:
+		var payload AcceptToTradePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ReleaseFromTrade:
+		var payload ReleaseFromTradePayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

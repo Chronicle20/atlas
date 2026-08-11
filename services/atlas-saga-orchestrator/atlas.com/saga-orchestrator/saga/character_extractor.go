@@ -74,6 +74,26 @@ func ExtractCharacterId(step Step[any]) uint32 {
 		return p.CharacterId
 	case ReleaseFromStoragePayload:
 		return p.CharacterId
+	case TradeSettlementPayload:
+		// A trade names TWO participants and this function can only surface one.
+		// Sides[0] is picked for determinism ONLY — side order carries no role
+		// meaning, so this is "a participant", never "the giver". Consumers that
+		// must reach both participants (atlas-trades' LEAVE 8 notification) key
+		// off the saga's transactionId, which is the trade ledger's idempotency
+		// key, not off this field.
+		return uint32(p.Sides[0].CharacterId)
+	case TransferToTradePayload:
+		return p.CharacterId
+	case AcceptToTradePayload:
+		// The escrow row's owner IS the staging character: an accept_to_trade
+		// only ever follows that character's own release_from_character.
+		//
+		// ReleaseFromTradePayload has deliberately no case: it carries the
+		// escrow row id alone (the row holds the owner), so there is nothing to
+		// extract. It returns 0 = "unconstrained", which is correct — a release
+		// is never routed through ForCharacter. Same posture as
+		// ReleaseFromMtsHoldingPayload.
+		return p.OwnerId
 	case SelectGachaponRewardPayload:
 		return p.CharacterId
 	case EmitGachaponWinPayload:

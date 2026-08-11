@@ -1,0 +1,22 @@
+package inventory
+
+import (
+	"fmt"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+)
+
+const (
+	Resource = "characters/%d/inventory/compartments"
+	ByType   = Resource + "?type=%d"
+)
+
+func getBaseRequest() string {
+	return requests.RootUrl("INVENTORY")
+}
+
+func requestByType(characterId character.Id, inventoryType inventory.Type) requests.Request[RestModel] {
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByType, characterId, inventoryType))
+}

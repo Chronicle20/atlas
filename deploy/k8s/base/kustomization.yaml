@@ -66,6 +66,7 @@ resources:
   - atlas-storage.yaml
   - atlas-summons.yaml
   - atlas-tenants.yaml
+  - atlas-trades.yaml
   - atlas-transports.yaml
   - atlas-ui.yaml
   - atlas-world.yaml

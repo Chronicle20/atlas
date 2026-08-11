@@ -310,7 +310,7 @@ func (p *ProcessorImpl) RequestItemConsume(c channel.Model, characterId uint32, 
 
 	_, err := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
 
-	err = p.cpp.RequestReserve(transactionId, characterId, it, []compartment.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: quantity}})
+	err = p.cpp.RequestReserve(transactionId, characterId, it, 30*time.Second, []compartment.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: quantity}})
 	if err != nil {
 		return err
 	}
@@ -344,7 +344,7 @@ func (p *ProcessorImpl) RequestFeed(worldId world.Id, characterId uint32, slot i
 		return err
 	}
 
-	return p.cpp.RequestReserve(transactionId, characterId, it, []compartment.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: 1}})
+	return p.cpp.RequestReserve(transactionId, characterId, it, 30*time.Second, []compartment.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: 1}})
 }
 
 // ConsumeFeed commits the reserved revitalizer and, on success, emits the
@@ -753,7 +753,7 @@ func (p *ProcessorImpl) RequestScroll(characterId uint32, scrollSlot int16, equi
 	handler := compartment.Consume(ConsumeScroll(transactionId, characterId, scrollItem, equipSlot, whiteScrollItem, legendarySpirit))
 	_, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
 
-	err = cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueUse, reserves)
+	err = cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueUse, 30*time.Second, reserves)
 	if err != nil {
 		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, err)
 	}
@@ -1118,7 +1118,7 @@ func (p *ProcessorImpl) RequestItemReward(characterId uint32, itemId item2.Id, s
 		return p.rewardError(characterId, err)
 	}
 
-	err = p.cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueUse, []compartment.Reserves{{Slot: source, ItemId: uint32(itemId), Quantity: 1}})
+	err = p.cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueUse, 30*time.Second, []compartment.Reserves{{Slot: source, ItemId: uint32(itemId), Quantity: 1}})
 	if err != nil {
 		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, source, err)
 	}
@@ -1398,7 +1398,7 @@ func (p *ProcessorImpl) RequestViciousHammer(characterId uint32, hammerSlot int1
 	handler := compartment.Consume(ConsumeViciousHammer(transactionId, characterId, hammer, equipSlot))
 	_, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
 
-	err = p.cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueCash, []compartment.Reserves{{
+	err = p.cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueCash, 30*time.Second, []compartment.Reserves{{
 		Slot:     hammerSlot,
 		ItemId:   hammer.TemplateId(),
 		Quantity: 1,

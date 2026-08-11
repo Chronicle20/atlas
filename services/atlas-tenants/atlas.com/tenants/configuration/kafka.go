@@ -25,6 +25,9 @@ const (
 	EventTypeMtsConfigCreated     = "MTS_CONFIG_CREATED"
 	EventTypeMtsConfigUpdated     = "MTS_CONFIG_UPDATED"
 	EventTypeMtsConfigDeleted     = "MTS_CONFIG_DELETED"
+	EventTypeTradeConfigCreated   = "TRADE_CONFIG_CREATED"
+	EventTypeTradeConfigUpdated   = "TRADE_CONFIG_UPDATED"
+	EventTypeTradeConfigDeleted   = "TRADE_CONFIG_DELETED"
 	EventTypeRankingsCreated      = "RANKINGS_CREATED"
 	EventTypeRankingsUpdated      = "RANKINGS_UPDATED"
 	EventTypeRankingsDeleted      = "RANKINGS_DELETED"
@@ -72,6 +75,18 @@ func CreateMtsConfigStatusEventProvider(tenantId uuid.UUID, eventType string, co
 		TenantId:     tenantId,
 		Type:         eventType,
 		ResourceType: "mts-config",
+		ResourceId:   configId,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// CreateTradeConfigStatusEventProvider creates a provider for trade config status events
+func CreateTradeConfigStatusEventProvider(tenantId uuid.UUID, eventType string, configId string) model.Provider[[]kafka.Message] {
+	key := []byte(tenantId.String())
+	value := ConfigurationStatusEvent{
+		TenantId:     tenantId,
+		Type:         eventType,
+		ResourceType: "trade-config",
 		ResourceId:   configId,
 	}
 	return producer.SingleMessageProvider(key, value)

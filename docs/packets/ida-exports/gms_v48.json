@@ -3,6 +3,67 @@
   "md5": "",
   "generated_at": "2026-07-03T15:48:41Z",
   "functions": {
+    "CTradingRoomDlg::OnPutItem": {
+      "address": "0x5e6ace",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (13 TRADE_PUT_ITEM; CTradingRoomDlg::OnPacket @0x5e6a84 dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "side (recipient-relative room side; indexes this[side + N] item grid)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "tradeSlot (1..9 within that side's grid)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "asset (GW_ItemSlotBase::Decode; model.Asset substruct)"
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnPutMoney": {
+      "address": "0x5e6ba5",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (14 TRADE_ADD_MESO; CTradingRoomDlg::OnPacket @0x5e6a84 dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "side (recipient-relative room side)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "amount (ASSIGNED: this[side + N] = Decode4(), not accumulated)"
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnTrade#TradeConfirm": {
+      "address": "0x5e6bd3",
+      "direction": "clientbound",
+      "note": "Clientbound receive arm of CTradingRoomDlg::OnTrade. Same function as the serverbound TRANSACTION sender (interaction/serverbound/InteractionOperationTransaction), which is keyed on the un-suffixed CTradingRoomDlg::OnTrade; the #TradeConfirm suffix separates the two wire shapes (this arm is bodyless; the send carries count + {itemId, crc} pairs).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (15 TRADE_CONFIRM; CTradingRoomDlg::OnPacket @0x5e6a84 dispatch byte). The arm reads NO body."
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnMesoLimitRefused": {
+      "address": "0x5e6be7",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (18 TRADE_MESO_LIMIT; CTradingRoomDlg::OnPacket @0x5e6a84 dispatch byte). The arm reads NO body."
+        }
+      ]
+    },
     "CCashShop::OnCashItemResult#LOAD_WISH_FAILED": {
       "address": "0x453d71",
       "direction": "clientbound",

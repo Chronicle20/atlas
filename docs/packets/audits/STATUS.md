@@ -4,18 +4,18 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `34d2910f1875ffcf55a226a8f9e63484bf352351395b77f86c5e7aa5d9ea0589`
+Tool: `12f92d086aafeb40755fcc4e310193e0a0ae2d8fbfc0582a506bc843332510ae`
 
-- export gms_v48: `414865a74e4c7480d12a82d94114438a90b21c3b7fcb69e007baa4e00caca2d2`
-- export gms_v61: `e5175ce83d43a32fc545996e11d501ddca9412daefb935dfa9d6f84333ae8bdc`
-- export gms_v72: `0ec3228a921a1aa8db483b2bcad6c5053304bbaaf829a84371c49b745b001183`
-- export gms_v79: `f0075f14f41f704ecb53afd9c4c19b663d54672acebf640086911acb2efaea80`
-- export gms_v83: `cffc893fdc8bb810392b84267745cf7165f6c68d917282075ed5650072c0c434`
-- export gms_v84: `c1342ea01ff9909a75151ac8014da6b1438070d153f9158e503e538ef8b95fb5`
-- export gms_v87: `13851732c72e0c86cb8031c223eb6f28ae08975da315d212c768dfb032ffa98a`
-- export gms_v92: `cedc1d4d1dac621e9027df6541694f00f0e8302ad9de479fd07df2eb279f9184`
-- export gms_v95: `ed8075509b752051cf7b3f782d0f255f9aee4631863d0bf94739b7408d3f1f5c`
-- export jms_v185: `84915eaeefc08d5310d34f44f0b84d93822d1acf8c55a1519085f512a56e47ce`
+- export gms_v48: `2a9d92fbe9e27a3ae8025c482be3864ef9e6da7de729c36d4dfbc311e245f7f9`
+- export gms_v61: `642b7f9f0bb33456c8d882625543f90830cd2c1565449ffb67df10e7d37a61e2`
+- export gms_v72: `2ebfe70492d84f87d76d7dfb375c7033bdc93d9a4d7ea8b76bd80d3fe4c77478`
+- export gms_v79: `2fcb5744dd69678b2690fc74e7c8cf469c36a7f3752e5d7b5f4b1a818688d786`
+- export gms_v83: `aaea55fcad35222747c8634a99807dbddca9dbea3d8f4182fa6fd1f8994ebe3c`
+- export gms_v84: `46a3f305eb23272b06b1ff0fb07745328d6312b244e3b89b3825846f7eead4ae`
+- export gms_v87: `ca8d3f38ad0e956c1dacd3c612c80e5fc18cb9603a1513abd0854be11ea9885f`
+- export gms_v92: `b0f48112b34842b792a42157d8b69602beb38f6017fd57e9b40dd87a2b618dec`
+- export gms_v95: `1618af226714d668e5a0480964cbdbaaf408a11dd188e1cda6128cb3761d9146`
+- export jms_v185: `63f979775389a873f0e27ee4f99fadf16ccb5390a5be288a128c21febde53d81`
 
 ## Clientbound
 
@@ -946,6 +946,10 @@ Tool: `34d2910f1875ffcf55a226a8f9e63484bf352351395b77f86c5e7aa5d9ea0589`
 | guild/serverbound/GuildSetNotice (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildSetTitleNames (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildWithdraw (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
+| interaction/clientbound/InteractionInteractionTradeAddMeso (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| interaction/clientbound/InteractionInteractionTradeConfirm (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| interaction/clientbound/InteractionInteractionTradeMesoLimit (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ⬜ |
+| interaction/clientbound/InteractionInteractionTradePutItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/clientbound/InteractionInteractionUpdateMerchant (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationChat (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationFieldAddToBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
@@ -968,7 +972,7 @@ Tool: `34d2910f1875ffcf55a226a8f9e63484bf352351395b77f86c5e7aa5d9ea0589`
 | interaction/serverbound/InteractionOperationTradeAddMeso (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationTradeConfirm (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationTradePutItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
-| interaction/serverbound/InteractionOperationTransaction (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
+| interaction/serverbound/InteractionOperationTransaction (T1) |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | inventory/serverbound/InventoryMove (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/AuthLoginFailed |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/AuthPermanentBan |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -1052,16 +1056,16 @@ Tool: `34d2910f1875ffcf55a226a8f9e63484bf352351395b77f86c5e7aa5d9ea0589`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 198 | 0 | 19 | 194 | 605 | 0 | 48.2% |
-| v61 | 260 | 0 | 58 | 235 | 463 | 0 | 47.0% |
-| v72 | 276 | 0 | 71 | 250 | 419 | 0 | 46.2% |
-| v79 | 321 | 0 | 70 | 247 | 378 | 0 | 50.3% |
-| v83 | 440 | 0 | 0 | 347 | 229 | 0 | 55.9% |
-| v84 | 414 | 0 | 0 | 354 | 248 | 0 | 53.9% |
-| v87 | 448 | 0 | 0 | 377 | 191 | 0 | 54.3% |
-| v92 | 13 | 0 | 152 | 709 | 142 | 0 | 1.5% |
-| v95 | 473 | 0 | 0 | 436 | 107 | 0 | 52.0% |
-| JMS185 | 423 | 0 | 0 | 396 | 197 | 0 | 51.6% |
+| v48 | 201 | 0 | 19 | 194 | 606 | 0 | 48.6% |
+| v61 | 263 | 0 | 58 | 235 | 464 | 0 | 47.3% |
+| v72 | 279 | 0 | 71 | 250 | 420 | 0 | 46.5% |
+| v79 | 324 | 0 | 70 | 247 | 379 | 0 | 50.5% |
+| v83 | 444 | 0 | 0 | 347 | 229 | 0 | 56.1% |
+| v84 | 418 | 0 | 0 | 354 | 248 | 0 | 54.1% |
+| v87 | 452 | 0 | 0 | 377 | 191 | 0 | 54.5% |
+| v92 | 18 | 0 | 152 | 708 | 142 | 0 | 2.1% |
+| v95 | 477 | 0 | 0 | 436 | 107 | 0 | 52.2% |
+| JMS185 | 426 | 0 | 0 | 396 | 198 | 0 | 51.8% |
 
 ## Conflicts
 

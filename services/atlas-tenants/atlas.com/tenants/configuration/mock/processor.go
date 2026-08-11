@@ -50,6 +50,18 @@ type ProcessorMock struct {
 	MtsConfigByIdProviderFunc  func(tenantID uuid.UUID, configID string) model.Provider[map[string]interface{}]
 	AllMtsConfigsProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
 
+	// Trade config operations
+	CreateTradeConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(config map[string]interface{}) (configuration.Model, error)
+	CreateTradeConfigAndEmitFunc func(tenantID uuid.UUID, config map[string]interface{}) (configuration.Model, error)
+	UpdateTradeConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) func(config map[string]interface{}) (configuration.Model, error)
+	UpdateTradeConfigAndEmitFunc func(tenantID uuid.UUID, configID string, config map[string]interface{}) (configuration.Model, error)
+	DeleteTradeConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) error
+	DeleteTradeConfigAndEmitFunc func(tenantID uuid.UUID, configID string) error
+	GetTradeConfigByIdFunc       func(tenantID uuid.UUID, configID string) (map[string]interface{}, error)
+	GetAllTradeConfigsFunc       func(tenantID uuid.UUID) ([]map[string]interface{}, error)
+	TradeConfigByIdProviderFunc  func(tenantID uuid.UUID, configID string) model.Provider[map[string]interface{}]
+	AllTradeConfigsProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
+
 	// Rankings operations
 	CreateRankingsFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(rankings map[string]interface{}) (configuration.Model, error)
 	CreateRankingsAndEmitFunc func(tenantID uuid.UUID, rankings map[string]interface{}) (configuration.Model, error)
@@ -71,8 +83,9 @@ type ProcessorMock struct {
 	KiteConfigProviderFunc      func(tenantID uuid.UUID) model.Provider[map[string]interface{}]
 
 	// Seed operations
-	SeedRpsRewardsFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
-	SeedMtsConfigsFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedRpsRewardsFunc   func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedMtsConfigsFunc   func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedTradeConfigsFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
 
 	// Vessel operations
 	CreateVesselFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(vessel map[string]interface{}) (configuration.Model, error)
@@ -491,6 +504,104 @@ func (m *ProcessorMock) AllMtsConfigsProvider(tenantID uuid.UUID) model.Provider
 	}
 }
 
+// CreateTradeConfig is a mock implementation
+func (m *ProcessorMock) CreateTradeConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(config map[string]interface{}) (configuration.Model, error) {
+	if m.CreateTradeConfigFunc != nil {
+		return m.CreateTradeConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(config map[string]interface{}) (configuration.Model, error) {
+		return func(config map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// CreateTradeConfigAndEmit is a mock implementation
+func (m *ProcessorMock) CreateTradeConfigAndEmit(tenantID uuid.UUID, config map[string]interface{}) (configuration.Model, error) {
+	if m.CreateTradeConfigAndEmitFunc != nil {
+		return m.CreateTradeConfigAndEmitFunc(tenantID, config)
+	}
+	return configuration.Model{}, nil
+}
+
+// UpdateTradeConfig is a mock implementation
+func (m *ProcessorMock) UpdateTradeConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) func(config map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateTradeConfigFunc != nil {
+		return m.UpdateTradeConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(configID string) func(config map[string]interface{}) (configuration.Model, error) {
+		return func(configID string) func(config map[string]interface{}) (configuration.Model, error) {
+			return func(config map[string]interface{}) (configuration.Model, error) {
+				return configuration.Model{}, nil
+			}
+		}
+	}
+}
+
+// UpdateTradeConfigAndEmit is a mock implementation
+func (m *ProcessorMock) UpdateTradeConfigAndEmit(tenantID uuid.UUID, configID string, config map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateTradeConfigAndEmitFunc != nil {
+		return m.UpdateTradeConfigAndEmitFunc(tenantID, configID, config)
+	}
+	return configuration.Model{}, nil
+}
+
+// DeleteTradeConfig is a mock implementation
+func (m *ProcessorMock) DeleteTradeConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) error {
+	if m.DeleteTradeConfigFunc != nil {
+		return m.DeleteTradeConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(configID string) error {
+		return func(configID string) error {
+			return nil
+		}
+	}
+}
+
+// DeleteTradeConfigAndEmit is a mock implementation
+func (m *ProcessorMock) DeleteTradeConfigAndEmit(tenantID uuid.UUID, configID string) error {
+	if m.DeleteTradeConfigAndEmitFunc != nil {
+		return m.DeleteTradeConfigAndEmitFunc(tenantID, configID)
+	}
+	return nil
+}
+
+// GetTradeConfigById is a mock implementation
+func (m *ProcessorMock) GetTradeConfigById(tenantID uuid.UUID, configID string) (map[string]interface{}, error) {
+	if m.GetTradeConfigByIdFunc != nil {
+		return m.GetTradeConfigByIdFunc(tenantID, configID)
+	}
+	return map[string]interface{}{}, nil
+}
+
+// GetAllTradeConfigs is a mock implementation
+func (m *ProcessorMock) GetAllTradeConfigs(tenantID uuid.UUID) ([]map[string]interface{}, error) {
+	if m.GetAllTradeConfigsFunc != nil {
+		return m.GetAllTradeConfigsFunc(tenantID)
+	}
+	return []map[string]interface{}{}, nil
+}
+
+// TradeConfigByIdProvider is a mock implementation
+func (m *ProcessorMock) TradeConfigByIdProvider(tenantID uuid.UUID, configID string) model.Provider[map[string]interface{}] {
+	if m.TradeConfigByIdProviderFunc != nil {
+		return m.TradeConfigByIdProviderFunc(tenantID, configID)
+	}
+	return func() (map[string]interface{}, error) {
+		return map[string]interface{}{}, nil
+	}
+}
+
+// AllTradeConfigsProvider is a mock implementation
+func (m *ProcessorMock) AllTradeConfigsProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}] {
+	if m.AllTradeConfigsProviderFunc != nil {
+		return m.AllTradeConfigsProviderFunc(tenantID)
+	}
+	return func() ([]map[string]interface{}, error) {
+		return []map[string]interface{}{}, nil
+	}
+}
+
 // SeedRpsRewards is a mock implementation
 func (m *ProcessorMock) SeedRpsRewards(tenantID uuid.UUID) (configuration.SeedResult, error) {
 	if m.SeedRpsRewardsFunc != nil {
@@ -601,6 +712,14 @@ func (m *ProcessorMock) AllRpsRewardsProvider(tenantID uuid.UUID) model.Provider
 func (m *ProcessorMock) SeedMtsConfigs(tenantID uuid.UUID) (configuration.SeedResult, error) {
 	if m.SeedMtsConfigsFunc != nil {
 		return m.SeedMtsConfigsFunc(tenantID)
+	}
+	return configuration.SeedResult{}, nil
+}
+
+// SeedTradeConfigs is a mock implementation
+func (m *ProcessorMock) SeedTradeConfigs(tenantID uuid.UUID) (configuration.SeedResult, error) {
+	if m.SeedTradeConfigsFunc != nil {
+		return m.SeedTradeConfigsFunc(tenantID)
 	}
 	return configuration.SeedResult{}, nil
 }

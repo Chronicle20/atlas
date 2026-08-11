@@ -501,6 +501,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-trades",
+      "type": "go-service",
+      "path": "services/atlas-trades",
+      "module_path": "services/atlas-trades/atlas.com/trades",
+      "docker_image": "ghcr.io/chronicle20/atlas-trades/atlas-trades",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-transports",
       "type": "go-service",
       "path": "services/atlas-transports",

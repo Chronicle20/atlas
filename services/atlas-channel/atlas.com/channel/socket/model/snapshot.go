@@ -24,6 +24,7 @@ func NewAssetSnapshot(a asset.Model) sharedsaga.AssetSnapshot {
 		CashId:         a.CashId(),
 		Quantity:       a.Quantity(),
 		Flag:           a.Flag(),
+		Owner:          a.Owner(),
 		Rechargeable:   a.Rechargeable(),
 		Strength:       a.Strength(),
 		Dexterity:      a.Dexterity(),
@@ -61,6 +62,7 @@ func NewAssetSnapshot(a asset.Model) sharedsaga.AssetSnapshot {
 // below — reading them beforehand would always observe the zero value.
 func NewAssetFromSnapshot(s sharedsaga.AssetSnapshot) packetmodel.Asset {
 	base := packetmodel.NewAsset(true, s.Slot, s.TemplateId, s.Expiration)
+	base = base.SetOwner(s.Owner)
 
 	t, _ := inventory.TypeFromItemId(item.Id(s.TemplateId))
 	isEquip := t == inventory.TypeValueEquip

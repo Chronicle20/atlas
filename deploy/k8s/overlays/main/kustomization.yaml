@@ -117,6 +117,8 @@ configMapGenerator:
       - COMMAND_TOPIC_SYSTEM_MESSAGE=COMMAND_TOPIC_SYSTEM_MESSAGE-main
       - COMMAND_TOPIC_TAMING_MOB_FOOD=COMMAND_TOPIC_TAMING_MOB_FOOD-main
       - COMMAND_TOPIC_TELEPORT_ROCK=COMMAND_TOPIC_TELEPORT_ROCK-main
+      - COMMAND_TOPIC_TRADE=COMMAND_TOPIC_TRADE-main
+      - COMMAND_TOPIC_TRADE_CUSTODY=COMMAND_TOPIC_TRADE_CUSTODY-main
       - COMMAND_TOPIC_UNEQUIP_ITEM=COMMAND_TOPIC_UNEQUIP_ITEM-main
       - COMMAND_TOPIC_WALLET=COMMAND_TOPIC_WALLET-main
       - COMMAND_TOPIC_WORLD_BROADCAST=COMMAND_TOPIC_WORLD_BROADCAST-main
@@ -198,6 +200,8 @@ configMapGenerator:
       - EVENT_TOPIC_SUMMON_STATUS=EVENT_TOPIC_SUMMON_STATUS-main
       - EVENT_TOPIC_TAMING_MOB_FOOD=EVENT_TOPIC_TAMING_MOB_FOOD-main
       - EVENT_TOPIC_TELEPORT_ROCK_STATUS=EVENT_TOPIC_TELEPORT_ROCK_STATUS-main
+      - EVENT_TOPIC_TRADE_CUSTODY_STATUS=EVENT_TOPIC_TRADE_CUSTODY_STATUS-main
+      - EVENT_TOPIC_TRADE_STATUS=EVENT_TOPIC_TRADE_STATUS-main
       - EVENT_TOPIC_TRANSPORT_STATUS=EVENT_TOPIC_TRANSPORT_STATUS-main
       - EVENT_TOPIC_WALLET_STATUS=EVENT_TOPIC_WALLET_STATUS-main
       - EVENT_TOPIC_WISHLIST_STATUS=EVENT_TOPIC_WISHLIST_STATUS-main
@@ -328,11 +332,13 @@ images:
     newTag: main-eca4715
   - name: ghcr.io/chronicle20/atlas-tenants/atlas-tenants
     newTag: main-eca4715
+  - name: ghcr.io/chronicle20/atlas-trades/atlas-trades
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-transports/atlas-transports
     newTag: main-eca4715
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
     newTag: main-eca4715
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-87a920a
+    newTag: main-0c8ed63
 commonLabels:
   atlas.env: main

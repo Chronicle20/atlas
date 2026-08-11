@@ -58,8 +58,9 @@ comment at the top of the main kustomization) — do not add it there.
 | 4.3 | `kustomization.yaml` → `configMapGenerator` topic literals | **Generator-owned.** Regenerate the `KEY=KEY-PLACEHOLDER_ATLAS_ENV` block with `deploy/k8s/overlays/pr/scripts/gen-topic-config.sh` and paste its output into the atlas-env generator — do not hand-edit individual literals. |
 | 4.4 | `patches/db-name-suffix.yaml` | **Generator-owned** (`# Do not edit by hand` header). Re-run `deploy/k8s/overlays/pr/scripts/gen-db-name-suffix.sh`; it emits `DB_NAME: "atlas-<db>-PLACEHOLDER_ATLAS_ENV"` from the base manifest. |
 | 4.5 | `patches/consumer-group-env.yaml` | **Generator-owned** (`# Do not edit by hand` header). Re-run `deploy/k8s/overlays/pr/scripts/gen-consumer-group-patch.sh`; it derives the `KAFKA_CONSUMER_GROUP` value from the `consumerGroupId` literal in the service's `main.go` (PR envs inject it, unlike main). |
+| 4.6 | `dev/cluster-infra-coordination/atlas-pr-cleanup-env.example.yaml` | **Generator-owned.** Re-run `deploy/k8s/overlays/pr/scripts/gen-cleanup-env.sh`; it derives `ATLAS_SERVICES` from services.json and `ATLAS_DB_NAMES` from 4.1. Not deployed from this repo, but `pr-validation.yml` regenerates it and **hard-fails the PR** when the committed copy is stale. |
 
-Unlike the **main** overlay (§3), whose patches are all hand-maintained, three
+Unlike the **main** overlay (§3), whose patches are all hand-maintained, four
 PR-overlay pieces are script-generated. Editing them by hand works until the
 next generator run silently reverts you — always re-run the generator.
 
@@ -68,7 +69,7 @@ next generator run silently reverts you — always re-run the generator.
 | # | File | What to add |
 |---|---|---|
 | 5.1 | `deploy/shared/routes.conf` | nginx location block(s), alphabetically placed, bare container name (`http://atlas-<svc>:8080`). |
-| 5.2 | regenerate | Run `./deploy/scripts/sync-k8s-ingress-routes.sh` to rebuild `deploy/k8s/ingress.yaml`. Commit both. |
+| 5.2 | regenerate | Run `tools/gen-routes.sh` to rebuild `deploy/k8s/base/routes.conf.template.generated` from the shared source. Commit both. (`deploy/scripts/sync-k8s-ingress-routes.sh` is dead — it targets a `deploy/k8s/ingress.yaml` that no longer exists.) `deploy/shared/test/routes_nginxt.sh` drift-checks the pair, but it is docker-based and **operator-run — nothing in CI invokes it** (see `deploy/shared/test/README.md`), so a stale generated file will not fail the PR. Run it yourself. |
 
 ## 6. Databases
 

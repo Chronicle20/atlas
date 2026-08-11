@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionTradeConfirm
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CTradingRoomDlg::OnTrade#TradeConfirm
+    address: "0x7358c4"
+    decompile_sha256: 4068adaad44f28dcdb890c002a8ee4822010a6723b73917fa20609b39895a0af
+verifies:
+    - libs/atlas-packet/interaction/clientbound/interaction_trade_test.go#TestInteractionTradeConfirmByteOutput

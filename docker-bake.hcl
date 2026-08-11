@@ -94,6 +94,7 @@ go_services = [
   "atlas-storage",
   "atlas-summons",
   "atlas-tenants",
+  "atlas-trades",
   "atlas-transports",
   "atlas-world",
 ]

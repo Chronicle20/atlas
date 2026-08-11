@@ -12,7 +12,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-func requestReserveCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reserves []Reserves) model.Provider[[]kafka.Message] {
+func requestReserveCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, reserves []Reserves) model.Provider[[]kafka.Message] {
 	items := make([]compartment.ItemBody, 0)
 	for _, res := range reserves {
 		items = append(items, compartment.ItemBody{
@@ -29,6 +29,7 @@ func requestReserveCommandProvider(transactionId uuid.UUID, characterId uint32, 
 		Type:          compartment.CommandRequestReserve,
 		Body: compartment.RequestReserveCommandBody{
 			TransactionId: transactionId,
+			ExpirySeconds: uint32(expiry.Seconds()),
 			Items:         items,
 		},
 	}

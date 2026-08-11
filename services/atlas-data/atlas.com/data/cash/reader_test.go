@@ -23,6 +23,7 @@ const testXML = `
       </canvas>
       <int name="slotMax" value="200"/>
       <int name="cash" value="1"/>
+      <int name="tradeBlock" value="1"/>
     </imgdir>
     <imgdir name="spec">
       <int name="inc" value="100"/>
@@ -569,6 +570,48 @@ func TestReader(t *testing.T) {
 	}
 	if spec != 5000066 {
 		t.Fatalf("rmm.Spec[SpecTypeIndexZero].Spec = %d, want 5000066", spec)
+	}
+}
+
+// TestCashReaderSurfacesTradeBlock pins PRD FR-4.2: tradeBlock must be
+// readable for every item family a trade can stage, not just consumable and
+// setup. A missing flag must never be read as "tradeable".
+func TestCashReaderSurfacesTradeBlock(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rm, ok := rmm[strconv.Itoa(5240000)]
+	if !ok {
+		t.Fatalf("rmm[5240000] does not exist.")
+	}
+	if !rm.TradeBlock {
+		t.Error("tradeBlock: got false, want true (fixture sets tradeBlock=1)")
+	}
+}
+
+// TestCashReaderTradeBlockDefaultsFalse pins PRD FR-4.2: a missing
+// tradeBlock node must never be read as "tradeable". 5240001 has no
+// tradeBlock node.
+func TestCashReaderTradeBlockDefaultsFalse(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rm, ok := rmm[strconv.Itoa(5240001)]
+	if !ok {
+		t.Fatalf("rmm[5240001] does not exist.")
+	}
+	if rm.TradeBlock {
+		t.Error("tradeBlock: got true, want false when the WZ node is absent")
 	}
 }
 

@@ -17,8 +17,40 @@
 #     is symbol-stripped, not absent (twin-proof + button-id map, see
 #     interaction-legacy-audit.md §7/§7.1).
 #   jms_v185: NON-uniform shift - INVITE_DECLINE d0, trade block d-2,
-#     store/merchant/mini-game d-3. CASH_TRADE_OPEN (folds into CREATE/VISIT/OPEN)
-#     and TRANSACTION (server-driven, no client send) are n-a on jms - both omitted.
+#     store/merchant/mini-game d-3. CASH_TRADE_OPEN folds into CREATE/VISIT and is
+#     n-a on jms (see below); TRANSACTION IS present on jms at 18 (task-205).
+#
+# task-205 corrections to this file (all re-derived on the version's own IDB):
+#   * gms_v48 trade block was 14/15/16 - WRONG by +1. It was inherited from the
+#     seed template, never IDA-derived (task-127 §1 lists it as pre-existing).
+#     The v48 senders are CTradingRoomDlg::PutItem @0x5E7F74 `COutPacket(93)` +
+#     `Encode1(0xD)`, PutMoney @0x5E819A `Encode1(0xE)` (with the 1,000,000-meso
+#     gate and the SP 3626 notice), Trade @0x5E836C `Encode1(0xF)` - 13/14/15,
+#     matching v48's own receive switch @0x5e6a84 (cases 13/14/15/18).
+#   * TRANSACTION gains jms_v185: 18 - CTradingRoomDlg::OnTrade @0x845ed5 builds
+#     `COutPacket(124)` + `Encode1(0x12)` + count + {itemId, crc} list. The old
+#     "server-driven, no client send" note was wrong for jms.
+#   * CASH_TRADE_OPEN stays absent for jms_v185. The mode-14 SSN2 request does not
+#     exist there: jms `CMiniRoomBaseDlg::OnPacketBase` @0x6da198 dispatches only
+#     2/3/5 (no room) and 3/4/6/9/10 (in room) - no mode-14 arm - and the IDB has
+#     no `OnCheckSSN2Static`. jms opens the cash room through
+#     `CField::SendInviteTradingRoomMsg` @0x56c859, which sends CREATE(0) with
+#     roomType 6 followed by INVITE(2) - exactly the fallback shape gms_v92's
+#     `OnCheckSSN2Static` @0x62b990 takes when no SSN2 check is required. This
+#     supersedes task-205 version-matrix.md §4's recommendation to wire it: the
+#     CCashTradingRoomDlg CLASS exists on jms, its serverbound open REQUEST does not.
+#   * gms_v92 is deliberately absent from every `modes` map here even though its
+#     bytes are now known, because `packet-audit operations --check` treats a
+#     version column as all-or-nothing: adding one gms_v92 mode makes every other
+#     key already in template_gms_92_1.json an EXTRA, and the v92 MEMORY_GAME /
+#     CREATE / VISIT / CHAT / EXIT rows are not IDA-verified in this file. The
+#     values ARE routed in template_gms_92_1.json, each derived this session:
+#     CREATE 0 + INVITE 2 (`CField::SendInviteTradingRoomMsg` @0x528eb0),
+#     INVITE_DECLINE 3 + VISIT 4 (`CMiniRoomBaseDlg::SendInviteResult` @0x62b740),
+#     CASH_TRADE_OPEN 14 (`OnCheckSSN2Static` @0x62b990 `Encode1(14)`),
+#     TRADE_PUT_ITEM 15 (`CTradingRoomDlg::PutItem` @0x7446f0),
+#     TRADE_ADD_MESO 16 (`PutMoney` @0x744970), TRADE_CONFIRM 17 (`Trade` @0x744bd0),
+#     TRANSACTION 20 (`CTradingRoomDlg::OnTrade` @0x744440) - all `COutPacket(0x8D)`.
 
 handler: CharacterInteractionHandle
 fname: CMiniRoomBaseDlg::OnPacketBase
@@ -28,16 +60,25 @@ opcodes: { gms_v61: "0x6F", gms_v72: "0x79", gms_v79: "0x78", gms_v83: "0x7B", g
 operations:
   - { key: CREATE,                             modes: { gms_v48: 0, gms_v61: 0, gms_v72: 0, gms_v79: 0, gms_v83: 0, gms_v84: 0, gms_v87: 0, gms_v95: 0, jms_v185: 0 } }
   - { key: INVITE,                             modes: { gms_v48: 2, gms_v61: 2, gms_v72: 2, gms_v79: 2, gms_v83: 2, gms_v84: 2, gms_v87: 2, gms_v95: 2, jms_v185: 2 } }
-  - { key: INVITE_DECLINE,                     modes: { gms_v79: 3, gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v95: 3, jms_v185: 3 } }
+  # INVITE_DECLINE is NOT a v79+ feature - `CMiniRoomBaseDlg::SendInviteResult`
+  # exists on v48/v61/v72 too and sends the same mode 3 on the decline arm
+  # (v48 @0x545FCD `COutPacket(93)`, v61 @0x5BF2A2 `COutPacket(111)`,
+  # v72 @0x60E8A4 `COutPacket(121)` - each = that template's handler opCode
+  # 0x5D/0x6F/0x79 - then `Encode1(3u)` + `Encode4(dwSN)` + `Encode1(nErrCode)`;
+  # the accept arm of the same function is `Encode1(4u)` = VISIT, already routed).
+  # Without the key, `isCharacterInteraction` logs "Code [INVITE_DECLINE] not
+  # configured for use" and drops the decline, so the inviter is never told and
+  # the invite dangles (task-205 Task 23 fix round).
+  - { key: INVITE_DECLINE,                     modes: { gms_v48: 3, gms_v61: 3, gms_v72: 3, gms_v79: 3, gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v95: 3, jms_v185: 3 } }
   - { key: VISIT,                              modes: { gms_v48: 4, gms_v61: 4, gms_v72: 4, gms_v79: 4, gms_v83: 4, gms_v84: 4, gms_v87: 4, gms_v95: 4, jms_v185: 4 } }
   - { key: CHAT,                               modes: { gms_v48: 6, gms_v61: 6, gms_v72: 6, gms_v79: 6, gms_v83: 6, gms_v84: 6, gms_v87: 6, gms_v95: 6, jms_v185: 6 } }
   - { key: EXIT,                               modes: { gms_v61: 10, gms_v72: 10, gms_v79: 10, gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 10 } }
   - { key: OPEN,                               modes: { gms_v61: 11, gms_v72: 11, gms_v79: 11, gms_v83: 11, gms_v84: 11, gms_v87: 11, gms_v95: 11, jms_v185: 11 } }
   - { key: CASH_TRADE_OPEN,                    modes: { gms_v79: 14, gms_v83: 14, gms_v84: 14, gms_v87: 14, gms_v95: 14 } }
-  - { key: TRADE_PUT_ITEM,                     modes: { gms_v48: 14, gms_v61: 14, gms_v72: 14, gms_v79: 15, gms_v83: 15, gms_v84: 15, gms_v87: 15, gms_v95: 15, jms_v185: 13 } }
-  - { key: TRADE_ADD_MESO,                     modes: { gms_v48: 15, gms_v61: 15, gms_v72: 15, gms_v79: 16, gms_v83: 16, gms_v84: 16, gms_v87: 16, gms_v95: 16, jms_v185: 14 } }
-  - { key: TRADE_CONFIRM,                      modes: { gms_v48: 16, gms_v61: 16, gms_v72: 16, gms_v79: 17, gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v95: 17, jms_v185: 15 } }
-  - { key: TRANSACTION,                        modes: { gms_v83: 20, gms_v84: 20, gms_v87: 20, gms_v95: 20 } }
+  - { key: TRADE_PUT_ITEM,                     modes: { gms_v48: 13, gms_v61: 14, gms_v72: 14, gms_v79: 15, gms_v83: 15, gms_v84: 15, gms_v87: 15, gms_v95: 15, jms_v185: 13 } }
+  - { key: TRADE_ADD_MESO,                     modes: { gms_v48: 14, gms_v61: 15, gms_v72: 15, gms_v79: 16, gms_v83: 16, gms_v84: 16, gms_v87: 16, gms_v95: 16, jms_v185: 14 } }
+  - { key: TRADE_CONFIRM,                      modes: { gms_v48: 15, gms_v61: 16, gms_v72: 16, gms_v79: 17, gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v95: 17, jms_v185: 15 } }
+  - { key: TRANSACTION,                        modes: { gms_v83: 20, gms_v84: 20, gms_v87: 20, gms_v95: 20, jms_v185: 18 } }
   - { key: PERSONAL_STORE_PUT_ITEM,            modes: { gms_v61: 20, gms_v72: 20, gms_v79: 21, gms_v83: 22, gms_v84: 22, gms_v87: 22, gms_v95: 22, jms_v185: 19 } }
   - { key: PERSONAL_STORE_BUY,                 modes: { gms_v61: 21, gms_v72: 21, gms_v79: 22, gms_v83: 23, gms_v84: 23, gms_v87: 23, gms_v95: 23, jms_v185: 20 } }
   - { key: PERSONAL_STORE_REMOVE_ITEM,         modes: { gms_v61: 25, gms_v72: 25, gms_v79: 26, gms_v83: 27, gms_v84: 27, gms_v87: 27, gms_v95: 27, jms_v185: 24 } }

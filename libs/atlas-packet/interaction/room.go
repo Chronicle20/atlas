@@ -49,12 +49,13 @@ type RoomSoldItem struct {
 	BuyerName string
 }
 
-// Room models the shop-family EnterResultSuccess bodies (personal shop /
-// hired merchant). Game rooms (Omok / Match Cards) are NOT modelled here:
-// their room-enter blob has a different layout (yourSlot byte after capacity;
-// avatars and 20-byte records in two SEPARATE 0xFF-terminated lists) and
-// lives in clientbound.InteractionMiniGameRoom (IDA-derived; ida-notes.md §G5
-// "Room-enter blob — FULL RESOLUTION").
+// Room models the shop-family (personal shop / hired merchant) and trade-family
+// (trade / cash trade) EnterResultSuccess bodies. The trade family adds no tail
+// after the base frame (see NewTradeRoom). Game rooms (Omok / Match Cards) are
+// NOT modelled here: their room-enter blob has a different layout (yourSlot byte
+// after capacity; avatars and 20-byte records in two SEPARATE 0xFF-terminated
+// lists) and lives in clientbound.InteractionMiniGameRoom (IDA-derived;
+// ida-notes.md §G5 "Room-enter blob — FULL RESOLUTION").
 type Room struct {
 	roomType     RoomType
 	capacity     byte
@@ -113,6 +114,26 @@ func NewMerchantShopRoom(position byte, visitors []Visitor, messages []RoomMessa
 		maxItemCount: maxItemCount,
 		meso:         meso,
 		items:        items,
+	}
+}
+
+// NewTradeRoom builds a trade (roomType 3) or cash-trade (roomType 6)
+// enter-result room. position is the recipient's position in the room —
+// 0 = owner, 1 = the invited character — landing in the
+// CMiniRoomBaseDlg::OnEnterResultBase second header byte (v83 @0x65ec6b ->
+// *(this+0xC8)).
+//
+// CTradingRoomDlg's enter-result tail virtual (vtable+72; v83 off_B37448+0x48
+// -> nullsub_94 @0x48314D) is EMPTY, so the trade room's body is exactly the
+// base frame — roomType, capacity(2), position, {slot, avatar, name} visitors,
+// 0xFF. Nothing follows. Room.Encode's switch therefore has no trade arm by
+// design, not by omission (task-205 design.md §1.3, §4.1).
+func NewTradeRoom(roomType RoomType, position byte, visitors []Visitor) Room {
+	return Room{
+		roomType: roomType,
+		capacity: 2,
+		position: position,
+		visitors: visitors,
 	}
 }
 

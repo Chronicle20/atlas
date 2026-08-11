@@ -640,9 +640,16 @@
         "options": {
           "operations": {
             "CREATE": 0,
+            "INVITE": 2,
+            "INVITE_DECLINE": 3,
             "VISIT": 4,
             "CHAT": 6,
             "EXIT": 10,
+            "CASH_TRADE_OPEN": 14,
+            "TRADE_PUT_ITEM": 15,
+            "TRADE_ADD_MESO": 16,
+            "TRADE_CONFIRM": 17,
+            "TRANSACTION": 20,
             "MEMORY_GAME_ASK_TIE": 50,
             "MEMORY_GAME_TIE_ANSWER": 51,
             "MEMORY_GAME_FORFEIT": 52,
@@ -2691,6 +2698,10 @@
             "ENTER": 4,
             "ENTER_RESULT": 5,
             "LEAVE": 10,
+            "TRADE_PUT_ITEM": 15,
+            "TRADE_ADD_MESO": 16,
+            "TRADE_CONFIRM": 17,
+            "TRADE_MESO_LIMIT": 21,
             "UPDATE_MERCHANT": 25,
             "MEMORY_GAME_ASK_TIE": 50,
             "MEMORY_GAME_TIE_ANSWER": 51,
@@ -2703,6 +2714,18 @@
             "MEMORY_GAME_SKIP": 63,
             "MEMORY_GAME_MOVE_STONE": 64,
             "MEMORY_GAME_FIP_CARD": 68
+          },
+          "inviteResult": {
+            "CANNOT_FIND_CHARACTER": 1,
+            "BUSY": 2
+          },
+          "leaveReason": {
+            "TRADE_CANCELLED": 2,
+            "TRADE_SUCCESS": 7,
+            "TRADE_FAILED": 8,
+            "TRADE_CANNOT_CARRY": 9,
+            "TRADE_DIFFERENT_MAP": 12,
+            "TRADE_CRC_FAILED": 13
           }
         },
         "services": [

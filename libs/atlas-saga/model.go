@@ -14,25 +14,33 @@ const (
 	InventoryTransaction Type = "inventory_transaction"
 	QuestReward          Type = "quest_reward"
 	TradeTransaction     Type = "trade_transaction"
-	CharacterCreation    Type = "character_creation"
-	StorageOperation     Type = "storage_operation"
-	CashShopOperation    Type = "cash_shop_operation"
-	CharacterRespawn     Type = "character_respawn"
-	GachaponTransaction  Type = "gachapon_transaction"
-	MtsOperation         Type = "mts_operation"
-	FieldEffectUse       Type = "field_effect_use"
-	TeleportRockUse      Type = "teleport_rock_use"
-	QuestStart           Type = "quest_start"
-	QuestComplete        Type = "quest_complete"
-	QuestRestoreItem     Type = "quest_restore_item"
-	PetEvolution         Type = "pet_evolution"
-	NoteSend             Type = "note_send"
-	SkillBookUse         Type = "skill_book_use"
-	ItemTagUse           Type = "item_tag_use"
-	SealingLockUse       Type = "sealing_lock_use"
-	IncubatorUse         Type = "incubator_use"
-	PointReset           Type = "point_reset"
-	MegaphoneUse         Type = "megaphone_use"
+	// TradeStaging is one item moving into trade escrow (transfer_to_trade).
+	// It is deliberately NOT TradeTransaction: a settlement is a two-party swap
+	// whose reverse-walk pairs releases with accepts by asset id, while a stage
+	// is the single-item release+accept shape MtsOperation already models. Reusing
+	// TradeTransaction would send a staging failure through the swap's
+	// pairing logic, find no paired accept, and silently skip the re-grant —
+	// destroying the item (task-205 design §5A.4).
+	TradeStaging        Type = "trade_staging"
+	CharacterCreation   Type = "character_creation"
+	StorageOperation    Type = "storage_operation"
+	CashShopOperation   Type = "cash_shop_operation"
+	CharacterRespawn    Type = "character_respawn"
+	GachaponTransaction Type = "gachapon_transaction"
+	MtsOperation        Type = "mts_operation"
+	FieldEffectUse      Type = "field_effect_use"
+	TeleportRockUse     Type = "teleport_rock_use"
+	QuestStart          Type = "quest_start"
+	QuestComplete       Type = "quest_complete"
+	QuestRestoreItem    Type = "quest_restore_item"
+	PetEvolution        Type = "pet_evolution"
+	NoteSend            Type = "note_send"
+	SkillBookUse        Type = "skill_book_use"
+	ItemTagUse          Type = "item_tag_use"
+	SealingLockUse      Type = "sealing_lock_use"
+	IncubatorUse        Type = "incubator_use"
+	PointReset          Type = "point_reset"
+	MegaphoneUse        Type = "megaphone_use"
 )
 
 // Status represents the status of a saga step
@@ -129,6 +137,28 @@ const (
 	ReleaseFromCharacter Action = "release_from_character"
 	AcceptToCharacter    Action = "accept_to_character"
 	ReleaseFromStorage   Action = "release_from_storage"
+
+	// Trade actions (task-205). trade_settlement is a COMPOSITE: the
+	// orchestrator expands it into release_from_character / accept_to_character /
+	// award_mesos steps (see expandTradeSettlement). atlas-trades never
+	// enumerates concrete saga steps itself. The saga type is the pre-existing
+	// TradeTransaction.
+	TradeSettlement Action = "trade_settlement"
+
+	// TradeUnwind is the teardown twin of TradeSettlement: a COMPOSITE that
+	// returns an abandoned trade's escrow to the people it came from.
+	TradeUnwind Action = "trade_unwind"
+
+	// Trade escrow custody (task-205, design §5A.2). transfer_to_trade is a
+	// COMPOSITE expanded into release_from_character + accept_to_trade, the
+	// same shape as transfer_to_mts; accept_to_trade and release_from_trade are
+	// the atomic custody steps dispatched to atlas-trades. A staged item leaves
+	// the owner's compartment at STAGE time — the inventory delta that results
+	// is what clears the client's m_bExclRequestSent, which nothing else in the
+	// trade flow does (design §5A.1).
+	TransferToTrade  Action = "transfer_to_trade"
+	AcceptToTrade    Action = "accept_to_trade"
+	ReleaseFromTrade Action = "release_from_trade"
 
 	// Cash shop actions
 	TransferToCashShop   Action = "transfer_to_cash_shop"

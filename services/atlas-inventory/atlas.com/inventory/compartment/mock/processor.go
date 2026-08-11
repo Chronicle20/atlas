@@ -39,8 +39,8 @@ type ProcessorMock struct {
 	IncreaseCapacityFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, amount uint32) error
 	DropAndEmitFunc                   func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, f field.Model, x int16, y int16, source int16, quantity int16) error
 	DropFunc                          func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, f field.Model, x int16, y int16, source int16, quantity int16) error
-	RequestReserveAndEmitFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []compartment.ReservationRequest) error
-	RequestReserveFunc                func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []compartment.ReservationRequest) error
+	RequestReserveAndEmitFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, reservationRequests []compartment.ReservationRequest) error
+	RequestReserveFunc                func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, reservationRequests []compartment.ReservationRequest) error
 	CancelReservationAndEmitFunc      func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error
 	CancelReservationFunc             func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error
 	ConsumeAssetAndEmitFunc           func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error
@@ -259,18 +259,18 @@ func (m *ProcessorMock) Drop(mb *message.Buffer) func(transactionId uuid.UUID, c
 	}
 }
 
-func (m *ProcessorMock) RequestReserveAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []compartment.ReservationRequest) error {
+func (m *ProcessorMock) RequestReserveAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, reservationRequests []compartment.ReservationRequest) error {
 	if m.RequestReserveAndEmitFunc != nil {
-		return m.RequestReserveAndEmitFunc(transactionId, characterId, inventoryType, reservationRequests)
+		return m.RequestReserveAndEmitFunc(transactionId, characterId, inventoryType, expiry, reservationRequests)
 	}
 	return nil
 }
 
-func (m *ProcessorMock) RequestReserve(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []compartment.ReservationRequest) error {
+func (m *ProcessorMock) RequestReserve(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, reservationRequests []compartment.ReservationRequest) error {
 	if m.RequestReserveFunc != nil {
 		return m.RequestReserveFunc(mb)
 	}
-	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []compartment.ReservationRequest) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, reservationRequests []compartment.ReservationRequest) error {
 		return nil
 	}
 }

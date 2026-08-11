@@ -1033,3 +1033,204 @@ func TestCreateNoteStepUnmarshal(t *testing.T) {
 		t.Errorf("payload round-trip mismatch: %+v", p)
 	}
 }
+
+// TestUnmarshalTradeSettlement pins that a trade_settlement step round-trips
+// through the shared lib's payload unmarshaller into the CONCRETE payload type.
+// Forgetting the switch case in Step[T].UnmarshalJSON is silent, not loud: the
+// action falls through to the generic `default:` arm (unmarshal.go:600-608),
+// which decodes into map[string]any and assigns it via any(payload).(T) — an
+// assertion that always succeeds because Saga.Steps is []Step[any]. So the step
+// still unmarshals without error and still carries the field values, just
+// untyped. This test catches that only because it asserts the concrete
+// TradeSettlementPayload type: a map[string]any fails that assertion.
+func TestUnmarshalTradeSettlement(t *testing.T) {
+	raw := []byte(`{
+	  "transactionId": "11111111-1111-1111-1111-111111111111",
+	  "sagaType": "trade_transaction",
+	  "initiatedBy": "atlas-trades",
+	  "steps": [{
+	    "stepId": "trade_settlement",
+	    "status": "pending",
+	    "action": "trade_settlement",
+	    "payload": {
+	      "transactionId": "11111111-1111-1111-1111-111111111111",
+	      "worldId": 1,
+	      "channelId": 1,
+	      "roomType": 3,
+	      "sides": [
+	        {"characterId": 100, "mesoStaged": 10000000, "mesoTax": 400000, "mesoDelivered": 9600000,
+	         "items": [{"inventoryType": 2, "sourceSlot": 1, "assetId": 55, "templateId": 2000000, "quantity": 5}]},
+	        {"characterId": 200, "mesoStaged": 0, "mesoTax": 0, "mesoDelivered": 0, "items": []}
+	      ]
+	    }
+	  }]
+	}`)
+
+	var s Saga
+	if err := json.Unmarshal(raw, &s); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(s.Steps) != 1 {
+		t.Fatalf("steps: got %d, want 1", len(s.Steps))
+	}
+	p, ok := s.Steps[0].Payload.(TradeSettlementPayload)
+	if !ok {
+		t.Fatalf("payload type: got %T, want TradeSettlementPayload", s.Steps[0].Payload)
+	}
+	if p.Sides[0].MesoDelivered != 9_600_000 {
+		t.Errorf("side 0 mesoDelivered: got %d, want 9600000", p.Sides[0].MesoDelivered)
+	}
+	if len(p.Sides[0].Items) != 1 || p.Sides[0].Items[0].AssetId != 55 {
+		t.Errorf("side 0 items: got %+v", p.Sides[0].Items)
+	}
+}
+
+// TestUnmarshalAcceptToTradeStep pins the task-205 escrow-at-staging custody
+// accept (design §5A.2). The failure this guards against is a payload
+// registered in unmarshal.go under the wrong action string: the step then
+// decodes into the zero value of some other payload type and the escrow row is
+// written with an empty snapshot.
+func TestUnmarshalAcceptToTradeStep(t *testing.T) {
+	raw := `{
+		"stepId": "accept_to_trade-1",
+		"status": "pending",
+		"action": "accept_to_trade",
+		"payload": {
+			"transactionId": "11111111-1111-1111-1111-111111111111",
+			"escrowId": "22222222-2222-2222-2222-222222222222",
+			"roomId": "33333333-3333-3333-3333-333333333333",
+			"ownerId": 100,
+			"tradeSlot": 3,
+			"sourceInventoryType": 2,
+			"assetId": 55,
+			"snapshot": {
+				"slot": 7,
+				"templateId": 2000000,
+				"quantity": 42,
+				"strength": 11,
+				"flag": 8,
+				"owner": "Chronicle",
+				"cashId": 4815162342,
+				"petId": 909,
+				"expiration": "2031-04-05T06:07:08Z"
+			}
+		},
+		"createdAt": "2026-08-10T00:00:00Z",
+		"updatedAt": "2026-08-10T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != AcceptToTrade {
+		t.Fatalf("expected action AcceptToTrade, got %q", step.Action)
+	}
+	p, ok := step.Payload.(AcceptToTradePayload)
+	if !ok {
+		t.Fatalf("expected AcceptToTradePayload, got %T", step.Payload)
+	}
+	if p.OwnerId != 100 {
+		t.Errorf("ownerId: expected 100, got %d", p.OwnerId)
+	}
+	if p.TradeSlot != 3 {
+		t.Errorf("tradeSlot: expected 3, got %d", p.TradeSlot)
+	}
+	if p.Snapshot.TemplateId != 2000000 {
+		t.Errorf("templateId: expected 2000000, got %d", p.Snapshot.TemplateId)
+	}
+	if p.Snapshot.Quantity != 42 {
+		t.Errorf("quantity: expected 42, got %d", p.Snapshot.Quantity)
+	}
+	if p.Snapshot.Strength != 11 {
+		t.Errorf("strength: expected 11, got %d", p.Snapshot.Strength)
+	}
+	if p.Snapshot.Owner != "Chronicle" {
+		t.Errorf("owner: expected Chronicle, got %q", p.Snapshot.Owner)
+	}
+	// The cash serial, the pet id and the expiry decode too. They are asserted
+	// because a step is REHYDRATED from this JSON after a restart: a tag that
+	// stopped decoding would resume the saga with an item stripped of its
+	// identity, and the re-grant would silently hand back a lesser item.
+	if p.Snapshot.CashId != 4815162342 {
+		t.Errorf("cashId: expected 4815162342, got %d", p.Snapshot.CashId)
+	}
+	if p.Snapshot.PetId != 909 {
+		t.Errorf("petId: expected 909, got %d", p.Snapshot.PetId)
+	}
+	if p.Snapshot.Expiration.IsZero() {
+		t.Error("expiration: expected the encoded timestamp, got the zero time")
+	}
+}
+
+// TestUnmarshalReleaseFromTradeStep pins the custody release. Like
+// ReleaseFromMtsHoldingPayload it carries only the row id — the escrow row
+// holds everything else, so a release cannot disagree with the accept.
+func TestUnmarshalReleaseFromTradeStep(t *testing.T) {
+	raw := `{
+		"stepId": "release_from_trade-1",
+		"status": "pending",
+		"action": "release_from_trade",
+		"payload": {
+			"transactionId": "11111111-1111-1111-1111-111111111111",
+			"escrowId": "22222222-2222-2222-2222-222222222222"
+		},
+		"createdAt": "2026-08-10T00:00:00Z",
+		"updatedAt": "2026-08-10T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != ReleaseFromTrade {
+		t.Fatalf("expected action ReleaseFromTrade, got %q", step.Action)
+	}
+	p, ok := step.Payload.(ReleaseFromTradePayload)
+	if !ok {
+		t.Fatalf("expected ReleaseFromTradePayload, got %T", step.Payload)
+	}
+	if p.EscrowId.String() != "22222222-2222-2222-2222-222222222222" {
+		t.Errorf("escrowId: got %s", p.EscrowId)
+	}
+}
+
+// TestUnmarshalTransferToTradeStep pins the composite atlas-trades submits.
+func TestUnmarshalTransferToTradeStep(t *testing.T) {
+	raw := `{
+		"stepId": "transfer_to_trade-1",
+		"status": "pending",
+		"action": "transfer_to_trade",
+		"payload": {
+			"transactionId": "11111111-1111-1111-1111-111111111111",
+			"escrowId": "22222222-2222-2222-2222-222222222222",
+			"roomId": "33333333-3333-3333-3333-333333333333",
+			"characterId": 100,
+			"tradeSlot": 1,
+			"sourceInventoryType": 2,
+			"sourceSlot": 7,
+			"assetId": 55,
+			"quantity": 3
+		},
+		"createdAt": "2026-08-10T00:00:00Z",
+		"updatedAt": "2026-08-10T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != TransferToTrade {
+		t.Fatalf("expected action TransferToTrade, got %q", step.Action)
+	}
+	p, ok := step.Payload.(TransferToTradePayload)
+	if !ok {
+		t.Fatalf("expected TransferToTradePayload, got %T", step.Payload)
+	}
+	if p.AssetId != 55 {
+		t.Errorf("assetId: expected 55, got %d", p.AssetId)
+	}
+	if p.Quantity != 3 {
+		t.Errorf("quantity: expected 3, got %d", p.Quantity)
+	}
+}

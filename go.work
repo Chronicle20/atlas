@@ -84,6 +84,7 @@ use (
 	./services/atlas-storage/atlas.com/storage
 	./services/atlas-summons/atlas.com/summons
 	./services/atlas-tenants/atlas.com/tenants
+	./services/atlas-trades/atlas.com/trades
 	./services/atlas-transports/atlas.com/transports
 	./services/atlas-world/atlas.com/world
 	./tools/catalog-lint

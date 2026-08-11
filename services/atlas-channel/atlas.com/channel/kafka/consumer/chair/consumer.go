@@ -75,7 +75,7 @@ func handleStatusEventUsed(sc server.Model, wp writer.Producer) message.Handler[
 				l.WithError(err).Errorf("Unable to show [%d] using chair [%d] to those in map [%d].", e.Body.CharacterId, e.ChairId, e.MapId)
 			}
 
-			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, enableActions(l)(ctx)(wp))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.EnableActions(l)(ctx)(wp))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, e.Body.CharacterId)
 			}
@@ -127,20 +127,12 @@ func handleStatusEventError(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, enableActions(l)(ctx)(wp))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.EnableActions(l)(ctx)(wp))
 		l.Warnf("Internal issue performing character [%d] sit action.", e.Body.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, e.Body.CharacterId)
 		}
 		return
-	}
-}
-
-func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
-	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
-		return func(wp writer.Producer) func(s session.Model) error {
-			return session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)
-		}
 	}
 }
 

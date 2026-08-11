@@ -1113,3 +1113,61 @@ func TestCompensateLateStep_SkillBookUse_DestroyAssetFromSlot_NoTemplateIdAbsorb
 	freshStep, _ := fresh.StepAt(0)
 	assert.False(t, freshStep.LateCompensated())
 }
+
+// TestStagingReverseWalkReversesItsMesoDebit closes the meso half of the
+// staging reverse walk.
+//
+// A meso stage is a TradeStaging saga whose ONLY step is award_mesos: the debit
+// that moves the player's meso into escrow. The walk reversed AcceptToTrade and
+// ReleaseFromCharacter — the item shape — but had no AwardMesos arm, so a
+// staging saga carrying a completed debit reverse-walked nothing and the debit
+// stood with no escrow behind it. That is the meso twin of the item
+// destruction this walk exists to prevent.
+func TestStagingReverseWalkReversesItsMesoDebit(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), te)
+
+	const (
+		stagingCharId  = uint32(77001)
+		stagingWorldId = world.Id(0)
+		stagingChannel = channel.Id(1)
+	)
+
+	var awarded []int32
+	charP := &charmock.ProcessorMock{
+		AwardMesosAndEmitFunc: func(_ uuid.UUID, _ channel.Model, _ uint32, _ uint32, _ string, amount int32, _ bool) error {
+			awarded = append(awarded, amount)
+			return nil
+		},
+	}
+
+	s, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(TradeStaging).
+		SetInitiatedBy("staging-meso-reversal-test").
+		AddStep("stage_meso", Completed, AwardMesos, AwardMesosPayload{
+			CharacterId: stagingCharId,
+			WorldId:     stagingWorldId,
+			ChannelId:   stagingChannel,
+			ActorId:     stagingCharId,
+			ActorType:   "SYSTEM",
+			Amount:      -5_000,
+		}).
+		Build()
+	if err != nil {
+		t.Fatalf("build saga: %v", err)
+	}
+	_ = GetCache().Put(ctx, s)
+
+	c := NewCompensator(logger, ctx).WithCharacterProcessor(charP)
+	c.DispatchTradeStagingRollbacks(s)
+
+	if len(awarded) != 1 {
+		t.Fatalf("the staging reverse walk issued %d meso reversals, want 1; the debit stands with no escrow behind it", len(awarded))
+	}
+	if awarded[0] != 5_000 {
+		t.Errorf("reversal amount: got %d, want +5000 negating the -5000 debit", awarded[0])
+	}
+}

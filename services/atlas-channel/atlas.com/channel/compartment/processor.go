@@ -3,6 +3,7 @@ package compartment
 import (
 	"atlas-channel/kafka/message/compartment"
 	"context"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
@@ -24,7 +25,7 @@ type Processor interface {
 	Drop(f field.Model, characterId uint32, inventoryType inventory.Type, source int16, quantity int16, x int16, y int16) error
 	Merge(characterId uint32, inventoryType inventory.Type, updateTime uint32) error
 	Sort(characterId uint32, inventoryType inventory.Type, updateTime uint32) error
-	RequestReserve(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, items []compartment.ItemBody) error
+	RequestReserve(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, items []compartment.ItemBody) error
 	Consume(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error
 }
 
@@ -76,8 +77,8 @@ func (p *ProcessorImpl) Sort(characterId uint32, inventoryType inventory.Type, u
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(SortCommandProvider(characterId, inventoryType))
 }
 
-func (p *ProcessorImpl) RequestReserve(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, items []compartment.ItemBody) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestReserveCommandProvider(transactionId, characterId, inventoryType, items))
+func (p *ProcessorImpl) RequestReserve(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, items []compartment.ItemBody) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestReserveCommandProvider(transactionId, characterId, inventoryType, expiry, items))
 }
 
 func (p *ProcessorImpl) Consume(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {

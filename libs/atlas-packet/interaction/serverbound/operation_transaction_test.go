@@ -9,11 +9,6 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-// packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=gms_v95 ida=0x49e180
-// packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=gms_v87 ida=0x494dcb
-// packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=gms_v83 ida=0x485dcd
-// packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=jms_v185 ida=0x499b67
-// packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=gms_v84 ida=0x489210
 func TestOperationTransactionRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -43,38 +38,86 @@ func TestOperationTransactionRoundTrip(t *testing.T) {
 	}
 }
 
-// TestOperationTransactionBytes pins the version gate. GMS v79
-// CCashTradingRoomDlg::Trade@0x47e5f5 emits ONLY the miniroom mode byte (0x11)
-// with no entry list — the cash-trade transaction body is bodyless. From GMS
-// v83 onward (@0x485dcd, fixture-verified) the client appends Encode1(count) +
-// per-entry Encode4(data)+Encode4(crc). Gate: tradeCrcPresent.
-// packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=gms_v79 ida=0x47e5f5
-func TestOperationTransactionBytes(t *testing.T) {
+// TestOperationTransactionByteOutput pins the TRANSACTION body against the ONE
+// function that actually sends it on each version: CTradingRoomDlg::OnTrade,
+// the mode-17 clientbound receive handler, which replies automatically with the
+// client's own {itemId, itemCRC} attestation list. It is NOT a user action and
+// it is NOT CCashTradingRoomDlg::Trade — that function is the cash room's Trade
+// BUTTON handler and encodes TRADE_CONFIRM (mode 0x11), verified on gms_v83
+// @0x485dcd and gms_v95 @0x49e180 (task-205 design.md 1.5, 11.1;
+// docs/tasks/task-205-player-trade/version-matrix.md).
+//
+// Derived read/write order, identical on every version below (IDA-verified per
+// version, addresses in the markers):
+//
+//	COutPacket(<opcode>)        opcode is the PLAYER_INTERACTION serverbound op
+//	Encode1(<mode>)             0x14 on GMS v83+, 0x12 on jms_v185 — the
+//	                            dispatcher mode byte, not part of this body
+//	Encode1(count)              number of {itemId, crc} entries
+//	repeat count times:
+//	  Encode4(itemId)           TSecType<long>::GetData of the staged slot
+//	  Encode4(itemCRC)          CItemInfo::GetItemCRC(itemId)
+//
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=gms_v83 ida=0x7c20bc
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=gms_v84 ida=0x7e8202
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=gms_v87 ida=0x815773
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=gms_v92 ida=0x744440
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=gms_v95 ida=0x763f20
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=jms_v185 ida=0x845ed5
+func TestOperationTransactionByteOutput(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	input := OperationTransaction{entries: []TransactionEntry{{data: 100, crc: 200}, {data: 300, crc: 400}}}
 
-	// v79: bodyless
-	got79 := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 79, 1))(nil))
-	if got79 != "" {
-		t.Errorf("v79 bytes: got %s, want (empty)", got79)
-	}
+	// count(02) | itemId(64000000) crc(c8000000) | itemId(2c010000) crc(90010000)
+	const want = "0264000000c80000002c01000090010000"
 
-	// v83: count(02) | data(LE) crc(LE) | data(LE) crc(LE)
-	got83 := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 83, 1))(nil))
-	want83 := "0264000000c80000002c01000090010000"
-	if got83 != want83 {
-		t.Errorf("v83 bytes: got %s, want %s", got83, want83)
+	for _, c := range []struct {
+		name   string
+		region string
+		major  uint16
+	}{
+		{"gms_v83", "GMS", 83},
+		{"gms_v84", "GMS", 84},
+		{"gms_v87", "GMS", 87},
+		{"gms_v92", "GMS", 92},
+		{"gms_v95", "GMS", 95},
+		{"jms_v185", "JMS", 185},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			got := hex.EncodeToString(input.Encode(l, pt.CreateContext(c.region, c.major, 1))(nil))
+			if got != want {
+				t.Errorf("%s bytes: got %s, want %s", c.name, got, want)
+			}
+		})
 	}
 }
 
-// TestOperationTransactionV72Bytes pins the GMS v72 legacy body: bodyless.
-// IDA v72 CCashTradingRoomDlg::Trade: the cash trade-room confirm inherits the base CTradingRoomDlg::Trade path (sub_6FF5BF) in v72 — Encode1(mode) only, no entry list (tradeCrcPresent gate false). Bodyless, == v79.
-// packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=gms_v72 ida=0x6ff5bf
-func TestOperationTransactionV72Bytes(t *testing.T) {
+// TestOperationTransactionAbsentOnLegacy pins the version boundary from the
+// other side. On gms_v48/v61/v72/v79 the mode-17 (mode-15 on v48, mode-16 on
+// v72) confirm receive handler is BODYLESS AND SILENT — it flips a local
+// confirm flag and repaints, and constructs no COutPacket at all, so no
+// TRANSACTION packet exists on those clients. Full-switch enumeration and
+// decompiles: v48 CTradingRoomDlg::OnTrade @0x5e6bd3, v72 @0x6fddec,
+// v79 @0x7358c4 (see version-matrix.md). Those matrix cells are therefore n-a,
+// recorded in each version's docs/packets/audits/<v>/_unimplemented.json — this
+// test only guards the codec against silently growing a legacy body.
+func TestOperationTransactionAbsentOnLegacy(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	input := OperationTransaction{entries: []TransactionEntry{{data: 100, crc: 200}}}
-	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
-	if got != "" {
-		t.Errorf("v72 bytes: got %s, want (empty)", got)
+	for _, c := range []struct {
+		name  string
+		major uint16
+	}{
+		{"gms_v48", 48},
+		{"gms_v61", 61},
+		{"gms_v72", 72},
+		{"gms_v79", 79},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", c.major, 1))(nil))
+			if got != "" {
+				t.Errorf("%s bytes: got %s, want (empty)", c.name, got)
+			}
+		})
 	}
 }

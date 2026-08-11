@@ -1273,6 +1273,7 @@
   direction: clientbound
   opcode: 181
   fname: CUserRemote::OnShowUpgradeTombEffect
+  packet: character/clientbound/ShowUpgradeTombEffect
   provenance: ida-discovered
   ida:
     address: 9211210
@@ -2768,6 +2769,15 @@
   ida:
     address: 9889222
   note: 'COutPacket(49)+Enc4(emotion); v83 FACE_EXPRESSION=0x33=51 (d-2).'
+- op: USE_DEATHITEM
+  direction: serverbound
+  opcode: 51
+  fname: CUserLocal::RequestUpgradeTombEffect
+  packet: character/serverbound/UseDeathItem
+  provenance: ida-discovered
+  ida:
+    address: 9121776
+  note: 'v79 CUserLocal::RequestUpgradeTombEffect @0x8b2ff0 builds COutPacket(51) and encodes itemId/x/y; renamed from sub_8b2ff0 during task-210. (task-210)'
 - op: USE_TELEPORT_ROCK
   direction: serverbound
   opcode: 82

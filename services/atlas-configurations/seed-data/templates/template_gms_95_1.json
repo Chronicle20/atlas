@@ -512,6 +512,15 @@
         ]
       },
       {
+        "opCode": "0x3A",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterUseDeathItemHandle",
+        "fname": "CUserLocal::RequestUpgradeTombEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x3D",
         "validator": "LoggedInValidator",
         "handler": "MobBanishPlayer",
@@ -3350,6 +3359,14 @@
         ]
       },
       {
+        "opCode": "0xDD",
+        "writer": "CharacterShowUpgradeTombEffect",
+        "fname": "CUserRemote::OnShowUpgradeTombEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xDE",
         "writer": "CharacterShowChair",
         "fname": "CUserRemote::OnSetActivePortableChair",
@@ -3367,7 +3384,7 @@
       },
       {
         "opCode": "0xE0",
-        "writer": "CharacterEffect",
+        "writer": "CharacterEffectForeign",
         "fname": "CUser::OnEffect",
         "options": {
           "operations": {

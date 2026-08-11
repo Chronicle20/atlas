@@ -7834,6 +7834,29 @@
         }
       ]
     },
+    "CUserRemote::OnShowUpgradeTombEffect": {
+      "address": "0x9c4206",
+      "direction": "clientbound",
+      "notes": "gms_v84 CUserPool::OnUserRemotePacket@0x9b2518 case 199 (0xC7) dispatches CUserRemote::OnShowUpgradeTombEffect (sub_9c4206, decompile-confirmed live GMS_v84.1_U_DEVM IDB). Wire byte-identical to v83: characterId consumed by the dispatcher's leading Decode4@0x9b2522 before the opcode switch, then the leaf reads itemId/x/y and forwards to CUser::ShowUpgradeTombEffect@0x97297c.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (dispatcher-prefix pattern — consumed by CUserPool::OnUserRemotePacket Decode4 before OnShowUpgradeTombEffect)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "x"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y"
+        }
+      ]
+    },
     "CUserRemote::OnSkillCancel": {
       "address": "0x9c0dd3",
       "direction": "clientbound",
@@ -22508,6 +22531,25 @@
           "op": "Decode4",
           "comment": "",
           "guard": "result && result && !*(_DWORD *)(v3 + 12) && dword_C49BA8(v8, v9, Src)"
+        }
+      ]
+    },
+    "CUserLocal::RequestUpgradeTombEffect": {
+      "address": "0x999277",
+      "direction": "serverbound",
+      "notes": "gms_v84 CUserLocal::RequestUpgradeTombEffect (sub_999277, decompile-confirmed live GMS_v84.1_U_DEVM IDB): COutPacket::COutPacket(&pkt, 53)@0x99929d matches the registry opcode 53. Wire byte-identical to v83: itemId hard-coded 0x541370 (5510000)@0x9992af, then x@0x9992b8, y@0x9992c3, then the local self-play call CUser::ShowUpgradeTombEffect(5510000, x, y)@0x9992de confirms the same three values.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "itemId — hard-coded 0x541370 (5510000)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "x"
+        },
+        {
+          "op": "Encode4",
+          "comment": "y"
         }
       ]
     },

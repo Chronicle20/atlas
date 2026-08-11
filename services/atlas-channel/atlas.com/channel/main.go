@@ -676,6 +676,7 @@ func produceWriters() []string {
 		charcb.CharacterKeyMapWriter,
 		buddy2.BuddyOperationWriter,
 		charcb.CharacterExpressionWriter,
+		charcb.CharacterShowUpgradeTombEffectWriter,
 		npccb.NpcConversationWriter,
 		guildcb.GuildOperationWriter,
 		guildcb.GuildEmblemChangedWriter,
@@ -880,6 +881,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[charsb.CharacterKeyMapChangeHandle] = handler.CharacterKeyMapChangeHandleFunc
 	handlerMap[buddy2.BuddyOperationHandle] = handler.BuddyOperationHandleFunc
 	handlerMap[charsb.CharacterExpressionHandle] = handler.CharacterExpressionHandleFunc
+	handlerMap[charsb.CharacterUseDeathItemHandle] = handler.CharacterUseDeathItemHandleFunc
 	handlerMap[npcsb.NPCStartConversationHandle] = handler.NPCStartConversationHandleFunc
 	handlerMap[npcsb.NPCContinueConversationHandle] = handler.NPCContinueConversationHandleFunc
 	handlerMap[guildsb.GuildOperationHandle] = handler.GuildOperationHandleFunc

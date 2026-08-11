@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character"
 	skill2 "atlas-channel/character/skill"
 	consumer2 "atlas-channel/kafka/consumer"
+	consumable2 "atlas-channel/kafka/message/consumable"
 	monster2 "atlas-channel/kafka/message/monster"
 	"atlas-channel/listener"
 	_map "atlas-channel/map"
@@ -27,8 +28,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
+	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
@@ -111,6 +114,16 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMpChanged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCaught(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCatchFailed(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -712,5 +725,91 @@ func handleStatusEventMpChanged(sc server.Model, wp writer.Producer) message.Han
 		default:
 			l.Debugf("MP_CHANGED: ignoring unknown reason [%s] for monster [%d].", e.Body.Reason, e.UniqueId)
 		}
+	}
+}
+
+// bridleFailReason maps an internal catch-failure cause onto the client's wire
+// reason byte and reports whether to send the packet at all. The wire value is
+// resolved HERE, in the rendering service — the domain services emit semantic
+// causes only (DOM-25).
+func bridleFailReason(cause string) (byte, bool) {
+	switch cause {
+	case consumable2.CatchCauseUseDelay:
+		return 1, true
+	case monster2.CatchCauseUnresolved:
+		return 0, false
+	default:
+		return 0, true
+	}
+}
+
+// handleStatusEventCaught renders a successful capture: the two effect packets
+// go to everyone in the map (both always fire — bridleMsgType selects neither;
+// neither CMob::OnCatchEffect nor CMob::OnEffectByItem reads it off the wire),
+// then the acting character alone is unlocked. result = 1 selects the "captured"
+// animation (CAnimationDisplayer::Effect_Catch @0x438eb6 loads StringPool 3687
+// for non-zero, 3688 for zero).
+//
+// These MUST reach the client before the sibling DESTROYED event: the client
+// resolves the mob via CMobPool::OnMobPacket -> GetMob and silently drops the
+// packet once the mob is gone. Both events are keyed by MapId on the same topic,
+// so the ordering is a partition guarantee.
+func handleStatusEventCaught(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventCaughtBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventCaughtBody]) {
+		if e.Type != monster2.EventStatusCaught {
+			return
+		}
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		f := sc.Field(e.MapId, e.Instance)
+		if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
+			if aerr := session.Announce(l)(ctx)(wp)(monsterpkt.CatchMonsterWriter)(writer.CatchMonsterBody(e.UniqueId, 1, 1))(s); aerr != nil {
+				return aerr
+			}
+			return session.Announce(l)(ctx)(wp)(monsterpkt.CatchMonsterWithItemWriter)(writer.CatchMonsterWithItemBody(e.UniqueId, int32(e.Body.ItemId), 1))(s)
+		}); err != nil {
+			l.WithError(err).Errorf("Unable to announce the capture of monster [%d] in map [%d].", e.UniqueId, e.MapId)
+		}
+
+		// Emitted from its own statement so a failed effect broadcast can never
+		// leave the client wedged.
+		if err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)); err != nil {
+			l.WithError(err).Errorf("Unable to unlock character [%d] after a successful catch.", e.Body.CharacterId)
+		}
+	}
+}
+
+// handleStatusEventCatchFailed renders a failed capture to the acting character
+// only. The fail packet is optional — gms_v48 has no OnBridleMobCatchFail
+// handler at all (its writer is simply not routed, and the writer registry
+// reports it unconfigured) and UNRESOLVED deliberately renders nothing — but the
+// unlock is not, so it is emitted from its own statement.
+func handleStatusEventCatchFailed(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventCatchFailedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventCatchFailedBody]) {
+		if e.Type != monster2.EventStatusCatchFailed {
+			return
+		}
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+		AnnounceCatchFailure(l, ctx, sc, wp, e.Body.CharacterId, e.Body.ItemId, e.Body.Cause)
+	}
+}
+
+// AnnounceCatchFailure is shared by the monster-side and consumable-side
+// failure paths (kafka/consumer/consumable) so both render identically and
+// both always unlock. Exported to avoid an import cycle: the consumable
+// consumer cannot depend on this package's unexported helpers.
+func AnnounceCatchFailure(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32, itemId uint32, cause string) {
+	sp := session.NewProcessor(l, ctx)
+	if reason, send := bridleFailReason(cause); send {
+		if err := sp.IfPresentByCharacterId(sc.Channel())(characterId, session.Announce(l)(ctx)(wp)(charpkt.BridleMobCatchFailWriter)(writer.BridleMobCatchFailBody(reason, int32(itemId), 0))); err != nil {
+			l.WithError(err).Debugf("Unable to write [%s] for character [%d]; continuing to the unlock.", charpkt.BridleMobCatchFailWriter, characterId)
+		}
+	}
+	if err := sp.IfPresentByCharacterId(sc.Channel())(characterId, session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)); err != nil {
+		l.WithError(err).Errorf("Unable to unlock character [%d] after a failed catch.", characterId)
 	}
 }

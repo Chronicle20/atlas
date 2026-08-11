@@ -118,6 +118,18 @@ const (
 	EventStatusAggroChanged     = "AGGRO_CHANGED"
 	EventStatusNextSkillDecided = "NEXT_SKILL_DECIDED"
 	EventStatusMpChanged        = "MP_CHANGED"
+	EventStatusCaught           = "CAUGHT"
+	EventStatusCatchFailed      = "CATCH_FAILED"
+
+	// CatchCauseSpeciesMismatch / CatchCauseHpTooHigh / CatchCauseRollFailed /
+	// CatchCauseUnresolved are the internal failure causes atlas-monsters emits
+	// on CATCH_FAILED. The mapping onto the client's wire reason byte is owned
+	// here in atlas-channel (DOM-25) -- see bridleFailReason in
+	// kafka/consumer/monster/consumer.go.
+	CatchCauseSpeciesMismatch = "SPECIES_MISMATCH"
+	CatchCauseHpTooHigh       = "HP_TOO_HIGH"
+	CatchCauseRollFailed      = "ROLL_FAILED"
+	CatchCauseUnresolved      = "UNRESOLVED"
 
 	DamageSourceCharacterAttack = "CHARACTER_ATTACK"
 	DamageSourceMonsterAttack   = "MONSTER_ATTACK"
@@ -246,4 +258,20 @@ type StatusEventMpChangedBody struct {
 	Reason         string `json:"reason"`
 	Amount         uint32 `json:"amount"`
 	MonsterMpAfter uint32 `json:"monsterMpAfter"`
+}
+
+// StatusEventCaughtBody carries the successful outcome of a bridle
+// (taming-item) capture attempt.
+type StatusEventCaughtBody struct {
+	CharacterId uint32 `json:"characterId"`
+	ItemId      uint32 `json:"itemId"`
+}
+
+// StatusEventCatchFailedBody carries a failed bridle capture attempt. Cause
+// is one of the Catch cause constants above; the wire-reason mapping is
+// resolved in atlas-channel, never emitted by atlas-monsters (DOM-25).
+type StatusEventCatchFailedBody struct {
+	CharacterId uint32 `json:"characterId"`
+	ItemId      uint32 `json:"itemId"`
+	Cause       string `json:"cause"`
 }

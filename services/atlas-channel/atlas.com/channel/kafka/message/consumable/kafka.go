@@ -85,10 +85,19 @@ const (
 
 	EventTypeRewardEffect = "REWARD_EFFECT"
 	EventTypeRewardWon    = "REWARD_WON"
+	EventTypeCatchFailed  = "CATCH_FAILED"
 
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
 	ErrorTypeInventoryFull    = "INVENTORY_FULL"
 	ErrorTypeVegaInvalid      = "VEGA_INVALID"
+
+	// CatchCauseUseDelay / CatchCauseInventoryFull / CatchCauseInvalidItem are
+	// the pre-reservation bridle-capture failure causes atlas-consumables
+	// emits. The wire-reason mapping is resolved in atlas-channel (DOM-25) --
+	// see bridleFailReason in kafka/consumer/monster/consumer.go.
+	CatchCauseUseDelay      = "USE_DELAY"
+	CatchCauseInventoryFull = "INVENTORY_FULL"
+	CatchCauseInvalidItem   = "INVALID_ITEM"
 )
 
 type Event[E any] struct {
@@ -135,4 +144,12 @@ type VegaScrollBody struct {
 type ViciousHammerBody struct {
 	Success bool   `json:"success"`
 	Reason  string `json:"reason"`
+}
+
+// CatchFailedBody carries a bridle capture attempt rejected before the
+// reservation reached atlas-monsters (delay gate, inventory full, invalid
+// item). Cause is one of the CatchCause* constants above.
+type CatchFailedBody struct {
+	ItemId uint32 `json:"itemId"`
+	Cause  string `json:"cause"`
 }

@@ -164,6 +164,35 @@ func killedStatusEventProvider(m Model, killerId uint32, boss bool, damageSummar
 	})
 }
 
+// catchResolvedEventProvider keys on the character, not the map: the dedicated
+// catch topic exists for atlas-consumables, whose ordering concern is
+// per-character reservation handling.
+func catchResolvedEventProvider(m Model, characterId uint32, itemId uint32, success bool, cause string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := statusEventFromField(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterCatchResolved, catchResolvedBody{
+		CharacterId: characterId,
+		ItemId:      itemId,
+		Success:     success,
+		Cause:       cause,
+	})
+	return producer.SingleMessageProvider(key, &value)
+}
+
+func caughtStatusEventProvider(m Model, characterId uint32, itemId uint32) model.Provider[[]kafka.Message] {
+	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusCaught, statusEventCaughtBody{
+		CharacterId: characterId,
+		ItemId:      itemId,
+	})
+}
+
+func catchFailedStatusEventProvider(m Model, characterId uint32, itemId uint32, cause string) model.Provider[[]kafka.Message] {
+	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusCatchFailed, statusEventCatchFailedBody{
+		CharacterId: characterId,
+		ItemId:      itemId,
+		Cause:       cause,
+	})
+}
+
 // nextSkillDecidedStatusEventProvider partitions on uniqueId so per-monster
 // decision events stay ordered for atlas-channel's inbox writes.
 func nextSkillDecidedStatusEventProvider(m Model, d nextSkillDecision) model.Provider[[]kafka.Message] {

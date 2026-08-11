@@ -64,6 +64,7 @@ type Processor interface {
 	RepickAndEmit(uniqueId uint32, reason RepickReason) error
 	DrainMp(f field.Model, uniqueId uint32, characterId uint32, skillId uint32, requestedAmount uint32) error
 	Kill(uniqueId uint32, characterId uint32)
+	Catch(uniqueId uint32, characterId uint32, itemId uint32)
 }
 
 // emitter publishes a kafka message provider to a topic. ProcessorImpl uses

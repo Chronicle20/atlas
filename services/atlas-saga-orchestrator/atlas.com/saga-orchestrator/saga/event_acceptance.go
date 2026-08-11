@@ -67,6 +67,12 @@ const (
 	EventKindMtsCustodyMoved    EventKind = "mts.custody_moved"
 	EventKindMtsCustodyError    EventKind = "mts.custody_error"
 
+	// Trade escrow custody (atlas-trades custody acks on
+	// EVENT_TOPIC_TRADE_CUSTODY_STATUS, task-205 design §5A.2).
+	EventKindTradeCustodyAccepted EventKind = "trade.custody_accepted"
+	EventKindTradeCustodyReleased EventKind = "trade.custody_released"
+	EventKindTradeCustodyError    EventKind = "trade.custody_error"
+
 	// Compartment (character inventory).
 	EventKindCompartmentCreated        EventKind = "compartment.created"
 	EventKindCompartmentCreationFailed EventKind = "compartment.creation_failed"
@@ -169,6 +175,13 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.ReleaseFromCharacter: {EventKindCompartmentReleased, EventKindCompartmentError},
 	sharedsaga.AcceptToCharacter:    {EventKindCompartmentAccepted, EventKindCompartmentError},
 	sharedsaga.ReleaseFromStorage:   {EventKindStorageCompartmentReleased, EventKindStorageCompartmentError},
+
+	// Trade (task-205).
+	sharedsaga.TradeSettlement:  {}, // composite: expanded into release_from_trade×N + accept_to_character×N + award_mesos
+	sharedsaga.TradeUnwind:      {}, // composite: expanded into release_from_trade×N + accept_to_character×N + award_mesos
+	sharedsaga.TransferToTrade:  {}, // composite: expanded into release_from_character + accept_to_trade
+	sharedsaga.AcceptToTrade:    {EventKindTradeCustodyAccepted, EventKindTradeCustodyError},
+	sharedsaga.ReleaseFromTrade: {EventKindTradeCustodyReleased, EventKindTradeCustodyError},
 
 	// Cash shop.
 	sharedsaga.TransferToCashShop:   {}, // composite
@@ -358,6 +371,11 @@ var outcomeTable = map[EventKind]EventOutcome{
 	EventKindMtsCustodyReleased: OutcomeSuccess,
 	EventKindMtsCustodyMoved:    OutcomeSuccess,
 	EventKindMtsCustodyError:    OutcomeFailure,
+
+	// Trade escrow custody.
+	EventKindTradeCustodyAccepted: OutcomeSuccess,
+	EventKindTradeCustodyReleased: OutcomeSuccess,
+	EventKindTradeCustodyError:    OutcomeFailure,
 
 	// Compartment (character inventory).
 	EventKindCompartmentCreated:        OutcomeSuccess,

@@ -44,6 +44,7 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			m.UnitPrice = i.GetDouble("unitPrice", 0)
 			m.SlotMax = uint32(i.GetIntegerWithDefault("slotMax", 100))
 			m.TimeLimited = i.GetBool("timeLimited", false)
+			m.TradeBlock = i.GetBool("tradeBlock", false)
 
 			// Parse replace attributes if present
 			if replaceNode, err := i.ChildByName("replace"); err == nil && replaceNode != nil {

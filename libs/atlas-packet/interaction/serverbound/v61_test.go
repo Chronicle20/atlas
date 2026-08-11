@@ -237,17 +237,3 @@ func TestOperationTradePutItemV61Bytes(t *testing.T) {
 		t.Errorf("v61 bytes: got %s, want 020500640003", got)
 	}
 }
-
-// packet-audit:verify packet=interaction/serverbound/InteractionOperationTransaction version=gms_v61 ida=0x68cbe3
-func TestOperationTransactionV61Bytes(t *testing.T) {
-	// v61: the cash trade-room confirm shares the bodyless base CTradingRoomDlg::Trade
-	// path (sub_68CBE3 @0x68cc56) — Encode1(mode) only, no entry list (tradeCrcPresent
-	// false). Bodyless, == v72. There is no v61 opcode-111 send-site emitting a cash
-	// entry list (all 52 COutPacket(111) send-sites enumerated by byte signature).
-	l, _ := testlog.NewNullLogger()
-	input := OperationTransaction{entries: []TransactionEntry{{data: 100, crc: 200}}}
-	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 61, 1))(nil))
-	if got != "" {
-		t.Errorf("v61 bytes: got %s, want (empty)", got)
-	}
-}

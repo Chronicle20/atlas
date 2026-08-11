@@ -1,10 +1,10 @@
 {
   "WriterName": "InteractionOperationTransaction",
-  "IDAName": "CCashTradingRoomDlg::Trade",
-  "Address": "0x49e180",
+  "IDAName": "CTradingRoomDlg::OnTrade",
+  "Address": "0x763f20",
   "Variant": "GMS/v95",
-  "BranchDepth": 0,
-  "AtlasFile": "../../libs/atlas-packet/interaction/serverbound/operation_transaction.go",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_transaction.go",
   "Rows": [
     {
       "Index": 0,

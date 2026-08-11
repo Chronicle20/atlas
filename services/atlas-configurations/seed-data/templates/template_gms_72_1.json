@@ -881,6 +881,7 @@
           "operations": {
             "CREATE": 0,
             "INVITE": 2,
+            "INVITE_DECLINE": 3,
             "VISIT": 4,
             "CHAT": 6,
             "EXIT": 10,
@@ -4082,6 +4083,10 @@
             "CHAT": 6,
             "CHAT_THING": 8,
             "LEAVE": 10,
+            "TRADE_PUT_ITEM": 14,
+            "TRADE_ADD_MESO": 15,
+            "TRADE_CONFIRM": 16,
+            "TRADE_MESO_LIMIT": 19,
             "UPDATE_MERCHANT": 23,
             "MEMORY_GAME_ASK_TIE": 44,
             "MEMORY_GAME_TIE_ANSWER": 45,
@@ -4121,6 +4126,10 @@
             "INCORRECT_PASSWORD": 22,
             "ITEM_EXPIRED": 24
           },
+          "inviteResult": {
+            "CANNOT_FIND_CHARACTER": 1,
+            "BUSY": 2
+          },
           "resultType": {
             "WIN": 0,
             "TIE": 1,
@@ -4132,11 +4141,16 @@
           },
           "leaveReason": {
             "CANNOT_ESTABLISH_HERE": 1,
+            "TRADE_CANCELLED": 2,
             "SHOP_CLOSED": 3,
             "USER_BANNED": 5,
             "MINIGAME_CLOSED": 3,
             "MINIGAME_LEFT": 4,
             "MINIGAME_EXPELLED": 5,
+            "TRADE_SUCCESS": 6,
+            "TRADE_FAILED": 7,
+            "TRADE_CANNOT_CARRY": 8,
+            "TRADE_DIFFERENT_MAP": 9,
             "OUT_OF_STOCK": 10,
             "BANNED_TIME_LIMIT": 11
           }

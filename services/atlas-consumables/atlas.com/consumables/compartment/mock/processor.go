@@ -10,7 +10,7 @@ import (
 )
 
 type ProcessorMock struct {
-	RequestReserveFunc        func(transactionId uuid.UUID, characterId uint32, it inventory.Type, reserves []compartment.Reserves) error
+	RequestReserveFunc        func(transactionId uuid.UUID, characterId uint32, it inventory.Type, expiry time.Duration, reserves []compartment.Reserves) error
 	ConsumeItemFunc           func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error
 	DestroyItemFunc           func(characterId uint32, inventoryType inventory.Type, slot int16) error
 	CancelItemReservationFunc func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error
@@ -19,9 +19,9 @@ type ProcessorMock struct {
 
 var _ compartment.Processor = (*ProcessorMock)(nil)
 
-func (m *ProcessorMock) RequestReserve(transactionId uuid.UUID, characterId uint32, it inventory.Type, reserves []compartment.Reserves) error {
+func (m *ProcessorMock) RequestReserve(transactionId uuid.UUID, characterId uint32, it inventory.Type, expiry time.Duration, reserves []compartment.Reserves) error {
 	if m.RequestReserveFunc != nil {
-		return m.RequestReserveFunc(transactionId, characterId, it, reserves)
+		return m.RequestReserveFunc(transactionId, characterId, it, expiry, reserves)
 	}
 	return nil
 }

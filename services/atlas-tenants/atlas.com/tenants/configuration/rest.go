@@ -376,6 +376,213 @@ func CreateSingleMtsConfigJsonData(config map[string]interface{}) (json.RawMessa
 	return CreateMtsConfigJsonData([]map[string]interface{}{config})
 }
 
+// TradeTaxTierRestModel is one meso-tax band inside a TradeConfigRestModel's
+// taxTiers array. The JSON keys must match what atlas-trades decodes in
+// services/atlas-trades/atlas.com/trades/configuration/rest.go (TierRestModel).
+type TradeTaxTierRestModel struct {
+	Threshold uint32  `json:"threshold"`
+	Rate      float64 `json:"rate"`
+}
+
+// TradeConfigRestModel is the JSON:API resource for the per-tenant
+// player-to-player trade configuration. The attribute JSON keys must match what
+// atlas-trades decodes in
+// services/atlas-trades/atlas.com/trades/configuration/rest.go (RestModel).
+// EVERY knob is optional, because PATCH decodes into this whole struct and
+// ExtractTradeConfig writes the whole attributes object back. A non-optional
+// field would arrive at its Go zero value on a request that never mentioned it
+// and silently overwrite the stored setting — that is how a PATCH of one knob
+// wipes the rest.
+//
+// nil (or, for TaxTiers, empty) means "the request did not mention this knob":
+// ExtractTradeConfig omits the key entirely, and UpdateTradeConfig's attribute
+// merge carries the stored value forward. An explicit zero value is a non-nil
+// pointer and IS transmitted and stored — api2go marshals via encoding/json
+// (api2go@v1.0.4/jsonapi/marshal.go), whose omitempty omits only a nil pointer,
+// never a pointer to false or 0. So `minTradeLevel: 0` and `taxEnabled: false`
+// both survive the round trip and win over the stored value.
+//
+// TaxTiers is a slice, where omitempty cannot distinguish nil from empty — but
+// an empty tax table is meaningless (atlas-trades substitutes the shipped table
+// for one anyway, see WithTaxTiers), so collapsing both to "not mentioned" is
+// the correct reading.
+type TradeConfigRestModel struct {
+	Id                        string                  `json:"-"`
+	TaxEnabled                *bool                   `json:"taxEnabled,omitempty"`
+	TaxTiers                  []TradeTaxTierRestModel `json:"taxTiers,omitempty"`
+	MaxStagedItems            *int                    `json:"maxStagedItems,omitempty"`
+	MinTradeLevel             *int                    `json:"minTradeLevel,omitempty"`
+	AttestationTimeoutSeconds *int                    `json:"attestationTimeoutSeconds,omitempty"`
+}
+
+// GetID returns the resource ID
+func (m TradeConfigRestModel) GetID() string {
+	return m.Id
+}
+
+// SetID sets the resource ID
+func (m *TradeConfigRestModel) SetID(id string) error {
+	m.Id = id
+	return nil
+}
+
+// GetName returns the resource name
+func (m TradeConfigRestModel) GetName() string {
+	return "trade-configs"
+}
+
+// TransformTradeConfig converts a map[string]interface{} to a
+// TradeConfigRestModel.
+//
+// taxTiers is an array of objects rather than a scalar, so it decodes as
+// []interface{} of map[string]interface{} with float64 numbers — its arm below
+// differs from the `attributes["x"].(float64)` pattern the scalar knobs use.
+func TransformTradeConfig(data map[string]interface{}) (TradeConfigRestModel, error) {
+	id, _ := data["id"].(string)
+
+	attributes, ok := data["attributes"].(map[string]interface{})
+	if !ok {
+		attributes = make(map[string]interface{})
+	}
+
+	// Absent stays nil so a PATCH that never mentioned the knob cannot flip it.
+	var taxEnabled *bool
+	if val, ok := attributes["taxEnabled"].(bool); ok {
+		taxEnabled = &val
+	}
+
+	var taxTiers []TradeTaxTierRestModel
+	if raw, ok := attributes["taxTiers"].([]interface{}); ok {
+		taxTiers = make([]TradeTaxTierRestModel, 0, len(raw))
+		for _, entry := range raw {
+			tier, ok := entry.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			threshold := uint32(0)
+			if val, ok := tier["threshold"].(float64); ok {
+				threshold = uint32(val)
+			}
+			rate := float64(0)
+			if val, ok := tier["rate"].(float64); ok {
+				rate = val
+			}
+			taxTiers = append(taxTiers, TradeTaxTierRestModel{Threshold: threshold, Rate: rate})
+		}
+	}
+
+	return TradeConfigRestModel{
+		Id:                        id,
+		TaxEnabled:                taxEnabled,
+		TaxTiers:                  taxTiers,
+		MaxStagedItems:            optionalInt(attributes, "maxStagedItems"),
+		MinTradeLevel:             optionalInt(attributes, "minTradeLevel"),
+		AttestationTimeoutSeconds: optionalInt(attributes, "attestationTimeoutSeconds"),
+	}, nil
+}
+
+// optionalInt reads a JSON number attribute into a *int, leaving it nil when the
+// attribute is absent. Absent must stay distinguishable from an explicit 0:
+// minTradeLevel's default IS zero, so a wiped value would otherwise be
+// indistinguishable from an operator intentionally clearing the level gate.
+func optionalInt(attributes map[string]interface{}, key string) *int {
+	val, ok := attributes[key].(float64)
+	if !ok {
+		return nil
+	}
+	out := int(val)
+	return &out
+}
+
+// ExtractTradeConfig converts a TradeConfigRestModel to a map[string]interface{}.
+//
+// An attribute the caller left unset is OMITTED from the returned map rather
+// than written at its Go zero value, so UpdateTradeConfig's merge carries the
+// stored value forward. Writing every key unconditionally is what let a PATCH
+// naming one knob reset all the others.
+func ExtractTradeConfig(m TradeConfigRestModel) (map[string]interface{}, error) {
+	attributes := make(map[string]interface{}, 5)
+
+	if m.TaxEnabled != nil {
+		attributes["taxEnabled"] = *m.TaxEnabled
+	}
+	// An empty table is never a meaningful instruction, so treat it as "not
+	// mentioned" and keep whatever tiers are stored.
+	if len(m.TaxTiers) > 0 {
+		tiers := make([]map[string]interface{}, 0, len(m.TaxTiers))
+		for _, t := range m.TaxTiers {
+			tiers = append(tiers, map[string]interface{}{
+				"threshold": t.Threshold,
+				"rate":      t.Rate,
+			})
+		}
+		attributes["taxTiers"] = tiers
+	}
+	if m.MaxStagedItems != nil {
+		attributes["maxStagedItems"] = *m.MaxStagedItems
+	}
+	if m.MinTradeLevel != nil {
+		attributes["minTradeLevel"] = *m.MinTradeLevel
+	}
+	if m.AttestationTimeoutSeconds != nil {
+		attributes["attestationTimeoutSeconds"] = *m.AttestationTimeoutSeconds
+	}
+
+	return map[string]interface{}{
+		"type":       "trade-configs",
+		"id":         m.Id,
+		"attributes": attributes,
+	}, nil
+}
+
+// mergeTradeConfigAttributes returns a copy of incoming whose attributes carry
+// every attribute the stored config had but that incoming omitted. Attributes
+// present in incoming always win, including an explicit false or zero.
+//
+// This only protects a knob if ExtractTradeConfig actually omits its key when
+// the caller did not set it — the merge cannot rescue a key that arrives
+// written at its zero value. The two halves are a pair: every field of
+// TradeConfigRestModel is optional, and ExtractTradeConfig omits each unset one.
+func mergeTradeConfigAttributes(existing map[string]interface{}, incoming map[string]interface{}) map[string]interface{} {
+	existingAttributes, ok := existing["attributes"].(map[string]interface{})
+	if !ok {
+		return incoming
+	}
+
+	incomingAttributes, ok := incoming["attributes"].(map[string]interface{})
+	if !ok {
+		incomingAttributes = make(map[string]interface{})
+	}
+
+	merged := make(map[string]interface{}, len(existingAttributes)+len(incomingAttributes))
+	for k, v := range existingAttributes {
+		merged[k] = v
+	}
+	for k, v := range incomingAttributes {
+		merged[k] = v
+	}
+
+	out := make(map[string]interface{}, len(incoming))
+	for k, v := range incoming {
+		out[k] = v
+	}
+	out["attributes"] = merged
+	return out
+}
+
+// CreateTradeConfigJsonData creates a JSON:API compliant data structure for trade configs
+func CreateTradeConfigJsonData(configs []map[string]interface{}) (json.RawMessage, error) {
+	data := map[string]interface{}{
+		"data": configs,
+	}
+	return json.Marshal(data)
+}
+
+// CreateSingleTradeConfigJsonData creates a JSON:API compliant data structure for a single trade config
+func CreateSingleTradeConfigJsonData(config map[string]interface{}) (json.RawMessage, error) {
+	return CreateTradeConfigJsonData([]map[string]interface{}{config})
+}
+
 // InstanceRouteRestModel is the JSON:API resource for instance routes
 type InstanceRouteRestModel struct {
 	Id string `json:"-"`

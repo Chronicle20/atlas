@@ -143,3 +143,34 @@ entries:
       EncodeBuffer 8) — the request path is real and reaches the server, but
       no client-side result handler exists to receive a reply, which is
       exactly the family-inconsistent n-a this evidence file exists to prove.
+  - op: USE_DEATHITEM
+    version: gms_v48
+    evidence: >
+      The Wheel of Destiny item id 5510000 appears nowhere in
+      GMS_v48_1_DEVM.exe: an exhaustive immediate-operand scan over all
+      1,198,699 instructions in the image returned zero hits, so no
+      CUIRevive/CUserLocal path can construct the request (the client
+      hard-codes the id at the send site on every version that has the op).
+      No CUserLocal::RequestUpgradeTombEffect and no CUIRevive wheel branch
+      exist. (task-210)
+  - op: USE_DEATHITEM
+    version: gms_v61
+    evidence: >
+      Same positive-absence proof as gms_v48, over GMS_v61.1_U_DEVM.exe:
+      exhaustive immediate-operand scan of all 1,615,793 instructions found
+      zero references to 5510000, so the hard-coded send site cannot exist.
+      (task-210)
+  - op: SHOW_UPGRADE_TOMB_EFFECT
+    version: gms_v48
+    evidence: >
+      Receive side absent for the same reason as the send side: 5510000 does
+      not occur anywhere in GMS_v48_1_DEVM.exe (1,198,699 instructions
+      scanned, zero hits) and CUserRemote has no OnShowUpgradeTombEffect arm
+      in the CUserPool remote-packet dispatcher. (task-210)
+  - op: SHOW_UPGRADE_TOMB_EFFECT
+    version: gms_v61
+    evidence: >
+      Same positive-absence proof over GMS_v61.1_U_DEVM.exe: 1,615,793
+      instructions scanned, zero references to 5510000, and no
+      CUserRemote::OnShowUpgradeTombEffect arm in the remote-packet
+      dispatcher. (task-210)

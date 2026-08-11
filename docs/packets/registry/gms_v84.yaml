@@ -1328,6 +1328,7 @@
   direction: clientbound
   opcode: 199
   fname: CUserRemote::OnShowUpgradeTombEffect
+  packet: character/clientbound/ShowUpgradeTombEffect
   provenance: ida-discovered
   ida:
     address: 10240518
@@ -2717,6 +2718,7 @@
   direction: serverbound
   opcode: 53
   fname: CUserLocal::RequestUpgradeTombEffect
+  packet: character/serverbound/UseDeathItem
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: UNNAMED_R74

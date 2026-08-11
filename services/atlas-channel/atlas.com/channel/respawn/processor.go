@@ -1,33 +1,39 @@
 package respawn
 
 import (
+	"atlas-channel/asset"
 	"atlas-channel/character"
 	map_ "atlas-channel/data/map"
 	channelInventory "atlas-channel/inventory"
 	"atlas-channel/saga"
+	"atlas-channel/session"
+	"atlas-channel/socket/writer"
 	"context"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	inventoryConst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
+	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 )
 
 // Processor interface defines operations for character respawn
 type Processor interface {
-	// Respawn handles character death and respawn logic
-	Respawn(ch channel.Model, characterId uint32, currentMapId _map.Id) error
+	// Respawn handles character death and respawn logic. useDeathItem is the
+	// client's Change.Premium() byte — 1 from the revive dialog's OK button,
+	// 0 from Cancel. A Cancel must not spend the player's wheel.
+	Respawn(f field.Model, characterId uint32, useDeathItem bool) error
 }
 
 // ProcessorImpl implements the Processor interface
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
+	wp  writer.Producer
 	cp  character.Processor
 	ip  channelInventory.Processor
 	mp  map_.Processor
@@ -35,10 +41,11 @@ type ProcessorImpl struct {
 }
 
 // NewProcessor creates a new respawn processor
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) Processor {
 	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
+		wp:  wp,
 		cp:  character.NewProcessor(l, ctx),
 		ip:  channelInventory.NewProcessor(l, ctx),
 		mp:  map_.NewProcessor(l, ctx),
@@ -49,93 +56,123 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 // Respawn handles character death and respawn logic
-func (p *ProcessorImpl) Respawn(ch channel.Model, characterId uint32, currentMapId _map.Id) error {
-	p.l.Debugf("Processing respawn for character [%d] on map [%d].", characterId, currentMapId)
+func (p *ProcessorImpl) Respawn(f field.Model, characterId uint32, useDeathItem bool) error {
+	currentMapId := f.MapId()
+	p.l.Debugf("Processing respawn for character [%d] on map [%d]. useDeathItem [%t].", characterId, currentMapId, useDeathItem)
 
-	// Get character data
 	c, err := p.cp.GetById()(characterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get character [%d] for respawn.", characterId)
 		return err
 	}
-
-	// Get inventory data
 	inv, err := p.ip.GetByCharacterId(characterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get inventory for character [%d].", characterId)
 		return err
 	}
-
-	// Get map data for return map and field limits
 	mapData, err := p.mp.GetById(currentMapId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get map [%d] data for respawn.", currentMapId)
 		return err
 	}
 
-	// Check for Wheel of Fortune in Cash inventory
-	hasWheelOfFortune := false
-	if a, found := inv.Cash().FindFirstByItemId(uint32(item.WheelOfFortuneId)); found && a != nil {
-		hasWheelOfFortune = true
+	rp := planRespawn(c, inv, mapFactsOf(mapData), currentMapId, useDeathItem)
+	if err = p.createRespawnSaga(f, characterId, rp); err != nil {
+		return err
 	}
-
-	// Check for protective items
-	protectiveItem, _ := p.findProtectiveItem(inv)
-
-	// Calculate experience loss
-	expLoss := p.calculateExpLoss(c, mapData, protectiveItem != nil)
-
-	// Determine target map
-	targetMapId := currentMapId
-	if !hasWheelOfFortune {
-		targetMapId = mapData.ReturnMapId()
-	}
-
-	// Create respawn saga
-	return p.createRespawnSaga(ch, characterId, targetMapId, hasWheelOfFortune, protectiveItem, expLoss)
+	// A failed broadcast is logged, never fatal — the revive has already been
+	// committed to the saga at this point.
+	p.announceProtectOnDie(f, characterId, rp.Protective)
+	p.announceUpgradeTombItemUse(f, characterId, rp.Wheel)
+	return nil
 }
 
-// findProtectiveItem searches for a death protection item in the inventory
-// Returns the item and which inventory type it was found in
-func (p *ProcessorImpl) findProtectiveItem(inv channelInventory.Model) (*uint32, inventoryConst.Type) {
-	// Check Cash inventory for Safety Charm
-	if a, found := inv.Cash().FindFirstByItemId(uint32(item.SafetyCharmId)); found && a != nil {
-		templateId := a.TemplateId()
-		return &templateId, inventoryConst.TypeValueCash
+// announceUpgradeTombItemUse tells the reviving player they spent a Wheel of
+// Destiny and how many are left. The v83 client's CUser::OnEffect mode-21 arm
+// (@0x9387d0) reads one byte and CHATLOG_ADDs
+// SP_5241 "You have used 1 Wheel of Destiny in order to revive at the current
+// map. (%d left)" — a first-person chat line, so it is sent to the owner only.
+// CUserPool::OnUserRemotePacket routes the foreign variant into the very same
+// arm on the remote user object, which would put that first-person sentence in
+// every bystander's chat log; no foreign broadcast is emitted.
+func (p *ProcessorImpl) announceUpgradeTombItemUse(f field.Model, characterId uint32, a *asset.Model) {
+	if a == nil {
+		return
 	}
+	remaining := usesRemaining(a)
 
-	// Check ETC inventory for Easter Basket
-	if a, found := inv.ETC().FindFirstByItemId(uint32(item.EasterBasketId)); found && a != nil {
-		templateId := a.TemplateId()
-		return &templateId, inventoryConst.TypeValueETC
+	p.l.Debugf("Character [%d] consumed a wheel of destiny [%d]: [%d] uses remaining.", characterId, a.TemplateId(), remaining)
+
+	err := session.NewProcessor(p.l, p.ctx).IfPresentByCharacterId(f.Channel())(characterId,
+		session.Announce(p.l)(p.ctx)(p.wp)(charcb.CharacterEffectWriter)(
+			charpkt.CharacterUpgradeTombItemUseEffectBody(remaining)))
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to announce wheel of destiny use to character [%d].", characterId)
 	}
+}
 
-	// Check ETC inventory for ProtectOnDeath
-	if a, found := inv.ETC().FindFirstByItemId(uint32(item.ProtectOnDeathId)); found && a != nil {
-		templateId := a.TemplateId()
-		return &templateId, inventoryConst.TypeValueETC
+// announceProtectOnDie tells the dying player that a death protection item
+// absorbed the experience loss, and how many uses are left. The mode byte is
+// resolved from the tenant's CharacterEffect writer options
+// (PROTECT_ON_DIE_ITEM_USE) rather than hard-coded.
+//
+// Owner only, same reasoning as announceUpgradeTombItemUse: the mode-6 arm of
+// CUser::OnEffect (@0x937e8d) has no visual — it only CHATLOG_ADDs the
+// first-person SP_2966 "The EXP did not drop after using the Safety Charm
+// once. (%d days, %d times left)", and CUserPool::OnUserRemotePacket routes
+// the foreign variant into that same arm on the remote user object. A
+// bystander would therefore see nothing but someone else's sentence in their
+// own chat log. PRD FR-5.1 asked for the foreign broadcast on the assumption
+// it rendered something over the dying character; the client says it does not,
+// so it is deliberately not sent.
+func (p *ProcessorImpl) announceProtectOnDie(f field.Model, characterId uint32, a *asset.Model) {
+	if a == nil {
+		return
 	}
+	templateId := a.TemplateId()
+	safetyCharm := item.IsSafetyCharm(item.Id(templateId))
+	remaining := usesRemaining(a)
+	days := expirationDays(a.Expiration(), time.Now())
 
-	return nil, 0
+	p.l.Debugf("Character [%d] consumed death protection item [%d]: [%d] uses remaining, [%d] days, safetyCharm [%t].", characterId, templateId, remaining, days, safetyCharm)
+
+	err := session.NewProcessor(p.l, p.ctx).IfPresentByCharacterId(f.Channel())(characterId,
+		session.Announce(p.l)(p.ctx)(p.wp)(charcb.CharacterEffectWriter)(
+			charpkt.CharacterProtectOnDieItemUseEffectBody(safetyCharm, remaining, days, templateId)))
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to announce protect-on-die effect to character [%d].", characterId)
+	}
+}
+
+// findProtectiveItem returns the death-protection asset that suppresses the
+// experience loss, or nil. Cash Safety Charm first, then the two ETC items.
+func findProtectiveItem(inv channelInventory.Model) *asset.Model {
+	if a, found := inv.Cash().FindFirstByItemId(uint32(item.SafetyCharmId)); found && a != nil && a.Quantity() >= 1 {
+		return a
+	}
+	if a, found := inv.ETC().FindFirstByItemId(uint32(item.EasterBasketId)); found && a != nil && a.Quantity() >= 1 {
+		return a
+	}
+	if a, found := inv.ETC().FindFirstByItemId(uint32(item.ProtectOnDeathId)); found && a != nil && a.Quantity() >= 1 {
+		return a
+	}
+	return nil
 }
 
 // calculateExpLoss calculates the experience loss on death
-func (p *ProcessorImpl) calculateExpLoss(c character.Model, mapData map_.Model, hasProtection bool) uint32 {
+func calculateExpLoss(c character.Model, mf mapFacts, hasProtection bool) uint32 {
 	// Beginners don't lose experience
 	if job.IsBeginner(c.JobId()) {
-		p.l.Debugf("Character [%d] is a beginner, no experience loss.", c.Id())
 		return 0
 	}
 
 	// Map with NoExpLossOnDeath field limit
-	if mapData.NoExpLossOnDeath() {
-		p.l.Debugf("Map has no exp loss field limit, no experience loss for character [%d].", c.Id())
+	if mf.NoExpLossOnDeath {
 		return 0
 	}
 
 	// Has protective item
 	if hasProtection {
-		p.l.Debugf("Character [%d] has protective item, no experience loss.", c.Id())
 		return 0
 	}
 
@@ -147,128 +184,27 @@ func (p *ProcessorImpl) calculateExpLoss(c character.Model, mapData map_.Model, 
 	}
 
 	var lossPercentage float64
-	if mapData.Town() {
+	if mf.Town {
 		// Town = 1% loss
 		lossPercentage = 0.01
-		p.l.Debugf("Character [%d] dying in town, 1%% experience loss.", c.Id())
 	} else if c.Luck() < 50 {
 		// Non-town with luck < 50 = 10% loss
 		lossPercentage = 0.10
-		p.l.Debugf("Character [%d] with luck [%d] < 50, 10%% experience loss.", c.Id(), c.Luck())
 	} else {
 		// Non-town with luck >= 50 = 5% loss
 		lossPercentage = 0.05
-		p.l.Debugf("Character [%d] with luck [%d] >= 50, 5%% experience loss.", c.Id(), c.Luck())
 	}
 
 	loss := uint32(float64(currentExp) * lossPercentage)
-	p.l.Debugf("Character [%d] will lose [%d] experience.", c.Id(), loss)
 	return loss
 }
 
 // createRespawnSaga creates and submits the respawn saga
-func (p *ProcessorImpl) createRespawnSaga(ch channel.Model, characterId uint32, targetMapId _map.Id, useWheelOfFortune bool, protectiveItemId *uint32, expLoss uint32) error {
+func (p *ProcessorImpl) createRespawnSaga(f field.Model, characterId uint32, rp respawnPlan) error {
 	transactionId := uuid.New()
 	now := time.Now()
-	steps := make([]saga.Step, 0)
+	steps := respawnSagaSteps(f, characterId, rp, now)
 
-	// Step: Consume Wheel of Fortune if used
-	if useWheelOfFortune {
-		steps = append(steps, saga.Step{
-			StepId: "consume_wheel_of_fortune",
-			Status: saga.Pending,
-			Action: saga.DestroyAsset,
-			Payload: saga.DestroyAssetPayload{
-				CharacterId: characterId,
-				TemplateId:  uint32(item.WheelOfFortuneId),
-				Quantity:    1,
-				RemoveAll:   false,
-			},
-			CreatedAt: now,
-			UpdatedAt: now,
-		})
-	}
-
-	// Step: Consume protective item if used
-	if protectiveItemId != nil {
-		steps = append(steps, saga.Step{
-			StepId: "consume_protective_item",
-			Status: saga.Pending,
-			Action: saga.DestroyAsset,
-			Payload: saga.DestroyAssetPayload{
-				CharacterId: characterId,
-				TemplateId:  *protectiveItemId,
-				Quantity:    1,
-				RemoveAll:   false,
-			},
-			CreatedAt: now,
-			UpdatedAt: now,
-		})
-	}
-
-	// Step: Set HP to 50
-	steps = append(steps, saga.Step{
-		StepId: "set_hp",
-		Status: saga.Pending,
-		Action: saga.SetHP,
-		Payload: saga.SetHPPayload{
-			CharacterId: characterId,
-			WorldId:     ch.WorldId(),
-			ChannelId:   ch.Id(),
-			Amount:      50,
-		},
-		CreatedAt: now,
-		UpdatedAt: now,
-	})
-
-	// Step: Deduct experience if applicable
-	if expLoss > 0 {
-		steps = append(steps, saga.Step{
-			StepId: "deduct_experience",
-			Status: saga.Pending,
-			Action: saga.DeductExperience,
-			Payload: saga.DeductExperiencePayload{
-				CharacterId: characterId,
-				WorldId:     ch.WorldId(),
-				ChannelId:   ch.Id(),
-				Amount:      expLoss,
-			},
-			CreatedAt: now,
-			UpdatedAt: now,
-		})
-	}
-
-	// Step: Cancel all buffs
-	steps = append(steps, saga.Step{
-		StepId: "cancel_all_buffs",
-		Status: saga.Pending,
-		Action: saga.CancelAllBuffs,
-		Payload: saga.CancelAllBuffsPayload{
-			CharacterId: characterId,
-			WorldId:     ch.WorldId(),
-			ChannelId:   ch.Id(),
-		},
-		CreatedAt: now,
-		UpdatedAt: now,
-	})
-
-	// Step: Warp to target map (spawn point)
-	steps = append(steps, saga.Step{
-		StepId: "warp_to_spawn",
-		Status: saga.Pending,
-		Action: saga.WarpToPortal,
-		Payload: saga.WarpToPortalPayload{
-			CharacterId: characterId,
-			WorldId:     ch.WorldId(),
-			ChannelId:   ch.Id(),
-			MapId:       targetMapId,
-			PortalId:    0, // 0 = spawn point
-		},
-		CreatedAt: now,
-		UpdatedAt: now,
-	})
-
-	// Create and submit the saga
 	s := saga.Saga{
 		TransactionId: transactionId,
 		SagaType:      saga.CharacterRespawn,

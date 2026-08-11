@@ -126,11 +126,14 @@ func TestEverySagaTypeWithAReverseWalkIsDispatchedOnTimeout(t *testing.T) {
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	ctx := tenant.WithContext(context.Background(), te)
 
+	// Deliberately no ResetCache/Put. The saga carries no completed steps, so
+	// every dispatch arm's reverse walk is a no-op loop and the routing decision
+	// is all that is exercised. Touching the shared cache here would race the
+	// timers other tests in this package leave in flight — which -race catches
+	// only in a full-package run, not when this test is run alone.
 	for _, st := range reverseWalkSagaTypes {
 		t.Run(string(st), func(t *testing.T) {
-			ResetCache()
 			s, _ := NewBuilder().SetSagaType(st).SetInitiatedBy("test").Build()
-			_ = GetCache().Put(ctx, s)
 			if !dispatchTimeoutRollbacks(logger, ctx, s) {
 				t.Fatalf("a timed-out %s saga dispatches no reverse walk; its completed steps stand and whatever they moved is destroyed", st)
 			}
@@ -141,13 +144,12 @@ func TestEverySagaTypeWithAReverseWalkIsDispatchedOnTimeout(t *testing.T) {
 // TestTradeStagingTimeoutDispatchesItsReverseWalk names the specific defect, so
 // a regression reads as what it is rather than as a table row.
 func TestTradeStagingTimeoutDispatchesItsReverseWalk(t *testing.T) {
-	ResetCache()
 	logger, _ := test.NewNullLogger()
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	ctx := tenant.WithContext(context.Background(), te)
 
+	// See the table test above on why the shared cache is left alone.
 	s, _ := NewBuilder().SetSagaType(TradeStaging).SetInitiatedBy("test").Build()
-	_ = GetCache().Put(ctx, s)
 
 	if !dispatchTimeoutRollbacks(logger, ctx, s) {
 		t.Fatal("a staging saga that times out between release_from_character and accept_to_trade rolls back nothing: compartment -1, escrow +0, item destroyed")

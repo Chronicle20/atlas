@@ -1,11 +1,12 @@
 package reward
 
 type Builder struct {
-	itemId     uint32
-	quantity   uint32
-	tier       string
-	weight     uint32
-	gachaponId string
+	itemId      uint32
+	quantity    uint32
+	tier        string
+	weight      uint32
+	gachaponId  string
+	commodityId uint32
 }
 
 func NewBuilder(gachaponId string) *Builder {
@@ -32,12 +33,18 @@ func (b *Builder) SetWeight(weight uint32) *Builder {
 	return b
 }
 
+func (b *Builder) SetCommodityId(commodityId uint32) *Builder {
+	b.commodityId = commodityId
+	return b
+}
+
 func (b *Builder) Build() Model {
 	return Model{
-		itemId:     b.itemId,
-		quantity:   b.quantity,
-		tier:       b.tier,
-		weight:     b.weight,
-		gachaponId: b.gachaponId,
+		itemId:      b.itemId,
+		quantity:    b.quantity,
+		tier:        b.tier,
+		weight:      b.weight,
+		gachaponId:  b.gachaponId,
+		commodityId: b.commodityId,
 	}
 }

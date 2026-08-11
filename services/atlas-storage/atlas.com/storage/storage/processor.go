@@ -40,8 +40,10 @@ type Processor interface {
 	DepositRollback(body message.DepositRollbackBody) error
 	Accept(worldId world.Id, accountId uint32, body compartment.AcceptCommandBody) (uint32, int16, error)
 	AcceptAndEmit(worldId world.Id, accountId uint32, characterId uint32, body compartment.AcceptCommandBody) error
+	AcceptOnceAndEmit(worldId world.Id, accountId uint32, characterId uint32, body compartment.AcceptCommandBody) error
 	Release(body compartment.ReleaseCommandBody) error
 	ReleaseAndEmit(worldId world.Id, accountId uint32, characterId uint32, body compartment.ReleaseCommandBody) error
+	ReleaseOnceAndEmit(worldId world.Id, accountId uint32, characterId uint32, body compartment.ReleaseCommandBody) error
 	MergeAndSort(worldId world.Id, accountId uint32) error
 	ArrangeAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32) error
 	EmitProjectionCreatedEvent(characterId uint32, accountId uint32, ch channel.Model, npcId uint32) error
@@ -352,6 +354,99 @@ func (p *ProcessorImpl) AcceptAndEmit(worldId world.Id, accountId uint32, charac
 	invType := inventoryTypeFromTemplateId(body.TemplateId)
 
 	return p.emitCompartmentAcceptedEvent(worldId, accountId, characterId, body.TransactionId, assetId, slot, invType)
+}
+
+// AcceptOnceAndEmit is AcceptAndEmit with an idempotency claim around the
+// durable write, so an at-least-once redelivery cannot create a second asset
+// (task-208).
+//
+// The claim transaction covers ONLY the DB work. Unlike atlas-inventory and
+// atlas-cashshop — which enqueue their events as outbox rows in the same
+// transaction — atlas-storage publishes straight to Kafka via
+// producer.ProviderImpl, a blocking write that retries with backoff. Holding a
+// pooled postgres connection open across that call would turn a broker hiccup
+// into connection-pool exhaustion, so emission stays outside the transaction,
+// exactly where it was before the claim existed.
+func (p *ProcessorImpl) AcceptOnceAndEmit(worldId world.Id, accountId uint32, characterId uint32, body compartment.AcceptCommandBody) error {
+	var assetId uint32
+	var slot int16
+
+	err := database.Once(p.ctx, p.db, idempotencyKey(p.l, body.TransactionId, compartment.CommandAccept, acceptClaim{WorldId: worldId, AccountId: accountId, CharacterId: characterId, Body: body}), compartment.CommandAccept, func(tx *gorm.DB) error {
+		var ierr error
+		assetId, slot, ierr = p.WithTransaction(tx).Accept(worldId, accountId, body)
+		return ierr
+	})
+	if errors.Is(err, database.ErrDuplicate) {
+		p.l.Infof("Skipping duplicate [%s] delivery for transaction [%s]; already applied.", compartment.CommandAccept, body.TransactionId)
+		return nil
+	}
+	if err != nil {
+		_ = p.emitCompartmentErrorEvent(worldId, accountId, characterId, body.TransactionId, "ACCEPT_FAILED", err.Error())
+		return err
+	}
+
+	invType := inventoryTypeFromTemplateId(body.TemplateId)
+	return p.emitCompartmentAcceptedEvent(worldId, accountId, characterId, body.TransactionId, assetId, slot, invType)
+}
+
+// ReleaseOnceAndEmit is ReleaseAndEmit with an idempotency claim around the
+// durable write. See AcceptOnceAndEmit for why emission stays outside the
+// transaction.
+//
+// The source asset is read INSIDE the claim: on a redelivery the row is already
+// gone, and reading first would fail the lookup and report an error for what is
+// really a duplicate.
+func (p *ProcessorImpl) ReleaseOnceAndEmit(worldId world.Id, accountId uint32, characterId uint32, body compartment.ReleaseCommandBody) error {
+	var invType byte
+
+	err := database.Once(p.ctx, p.db, idempotencyKey(p.l, body.TransactionId, compartment.CommandRelease, releaseClaim{WorldId: worldId, AccountId: accountId, CharacterId: characterId, Body: body}), compartment.CommandRelease, func(tx *gorm.DB) error {
+		a, ierr := asset.GetById(tx.WithContext(p.ctx))(uint32(body.AssetId))
+		if ierr != nil {
+			return ierr
+		}
+		invType = inventoryTypeFromTemplateId(a.TemplateId())
+		return p.WithTransaction(tx).Release(body)
+	})
+	if errors.Is(err, database.ErrDuplicate) {
+		p.l.Infof("Skipping duplicate [%s] delivery for transaction [%s]; already applied.", compartment.CommandRelease, body.TransactionId)
+		return nil
+	}
+	if err != nil {
+		_ = p.emitCompartmentErrorEvent(worldId, accountId, characterId, body.TransactionId, "RELEASE_FAILED", err.Error())
+		return err
+	}
+
+	return p.emitCompartmentReleasedEvent(worldId, accountId, characterId, body.TransactionId, body.AssetId, invType)
+}
+
+// acceptClaim/releaseClaim widen the hashed identity beyond the command body:
+// the body alone carries neither the account nor the character, so two
+// structurally distinct commands sharing one saga transaction could otherwise
+// collide on a single key.
+type acceptClaim struct {
+	WorldId     world.Id                      `json:"worldId"`
+	AccountId   uint32                        `json:"accountId"`
+	CharacterId uint32                        `json:"characterId"`
+	Body        compartment.AcceptCommandBody `json:"body"`
+}
+
+type releaseClaim struct {
+	WorldId     world.Id                       `json:"worldId"`
+	AccountId   uint32                         `json:"accountId"`
+	CharacterId uint32                         `json:"characterId"`
+	Body        compartment.ReleaseCommandBody `json:"body"`
+}
+
+// idempotencyKey derives the claim key, falling back to a per-delivery unique
+// value if derivation fails. A unique fallback means the work still runs (an
+// unguarded apply, as before task-208) rather than being silently dropped.
+func idempotencyKey(l logrus.FieldLogger, transactionId uuid.UUID, operation string, payload any) string {
+	key, err := database.Key(transactionId, operation, payload)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to derive idempotency key for [%s] in transaction [%s]; applying unguarded.", operation, transactionId)
+		return uuid.NewString()
+	}
+	return key
 }
 
 func (p *ProcessorImpl) Release(body compartment.ReleaseCommandBody) error {

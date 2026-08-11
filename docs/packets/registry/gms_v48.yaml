@@ -775,13 +775,13 @@
   provenance: ida-discovered
   ida:
     address: 4535510
-- op: CASHSHOP_CASH_ITEM_GACHAPON_RESULT
-  direction: clientbound
-  opcode: 257
-  fname: CCashShop::OnCashItemGachaponResult
-  provenance: ida-discovered
-  ida:
-    address: 4535510
+# task-207: opcode 257's fname CCashShop::OnCashItemGachaponResult was a
+# mis-attribution. v48's handler at 0x4536b9 is a verified 3-line
+# stub — CInPacket::Decode1(a2) written straight into a CWvsContext flag byte
+# — not a gachapon result (design.md §1.1; feature-na-evidence.yaml carries
+# the full proof). Row removed so the cell grades n-a rather than a false
+# ❌; StateNA derives solely from registry absence
+# (internal/matrix/grade.go), not from feature-na-evidence.yaml alone.
 - op: CASHSHOP_CHECK_NAME_CHANGE
   direction: clientbound
   opcode: 258

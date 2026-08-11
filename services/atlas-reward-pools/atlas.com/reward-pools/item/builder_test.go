@@ -1,9 +1,13 @@
 package item_test
 
 import (
+	"atlas-reward-pools/gachapon"
 	"atlas-reward-pools/item"
 	"atlas-reward-pools/test"
+	"errors"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestBuilderValidation(t *testing.T) {
@@ -80,5 +84,57 @@ func TestBuilderWeight(t *testing.T) {
 				t.Errorf("Expected Weight() = %d, got %d", tt.wantWeight, m.Weight())
 			}
 		})
+	}
+}
+
+func TestBuilderCashSurpriseRequiresCommodityId(t *testing.T) {
+	_, err := item.NewBuilder(uuid.New(), 1).
+		SetGachaponId("5222000").
+		SetKind(gachapon.KindCashSurprise).
+		SetItemId(5222001).
+		SetQuantity(1).
+		SetTier("common").
+		SetWeight(10).
+		Build()
+	if !errors.Is(err, item.ErrCommodityIdRequired) {
+		t.Fatalf("err = %v, want ErrCommodityIdRequired — a cash-surprise entry without a commodity cannot be granted", err)
+	}
+}
+
+func TestBuilderCashSurpriseAcceptsCommodityId(t *testing.T) {
+	m, err := item.NewBuilder(uuid.New(), 1).
+		SetGachaponId("5222000").
+		SetKind(gachapon.KindCashSurprise).
+		SetItemId(5222001).
+		SetQuantity(1).
+		SetTier("common").
+		SetWeight(10).
+		SetCommodityId(40000).
+		Build()
+	if err != nil {
+		t.Fatalf("build failed: %v", err)
+	}
+	if m.CommodityId() != 40000 {
+		t.Fatalf("commodityId = %d, want 40000", m.CommodityId())
+	}
+}
+
+// Existing kinds must be untouched: a gachapon or incubator entry with no
+// commodity id still builds, and reads 0.
+func TestBuilderOtherKindsDoNotRequireCommodityId(t *testing.T) {
+	for _, kind := range []string{gachapon.KindGachapon, gachapon.KindIncubator, ""} {
+		m, err := item.NewBuilder(uuid.New(), 1).
+			SetGachaponId("9000000").
+			SetKind(kind).
+			SetItemId(2000000).
+			SetQuantity(1).
+			SetTier("common").
+			Build()
+		if err != nil {
+			t.Fatalf("kind %q: build failed: %v", kind, err)
+		}
+		if m.CommodityId() != 0 {
+			t.Fatalf("kind %q: commodityId = %d, want 0", kind, m.CommodityId())
+		}
 	}
 }

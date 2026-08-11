@@ -27,9 +27,10 @@ type Processor interface {
 	// sibling of GetByGachaponIdAndTier.
 	GetByGachaponIdAndTierPaged(gachaponId string, tier string, page model.Page) model.Provider[model.Paged[Model]]
 	Create(m Model) error
-	// Update rewrites an item's itemId/quantity/tier/weight in place. The
-	// owning gachapon is never re-parented.
-	Update(id uint32, itemId uint32, quantity uint32, tier string, weight uint32) error
+	// Update rewrites an item's itemId/quantity/tier/weight/commodityId in
+	// place. commodityId is 0 for gachapon and incubator entries. The owning
+	// gachapon is never re-parented.
+	Update(id uint32, itemId uint32, quantity uint32, tier string, weight uint32, commodityId uint32) error
 	Delete(id uint32) error
 	Count() (int64, *time.Time, error)
 }
@@ -68,11 +69,11 @@ func (p *ProcessorImpl) Create(m Model) error {
 	return CreateItem(p.db.WithContext(p.ctx), m)
 }
 
-func (p *ProcessorImpl) Update(id uint32, itemId uint32, quantity uint32, tier string, weight uint32) error {
+func (p *ProcessorImpl) Update(id uint32, itemId uint32, quantity uint32, tier string, weight uint32, commodityId uint32) error {
 	if !isValidTier(tier) {
 		return ErrInvalidTier
 	}
-	return UpdateItem(p.db.WithContext(p.ctx), id, itemId, quantity, tier, weight)
+	return UpdateItem(p.db.WithContext(p.ctx), id, itemId, quantity, tier, weight, commodityId)
 }
 
 func (p *ProcessorImpl) Delete(id uint32) error {

@@ -77,6 +77,7 @@ describe("rewardPoolsService", () => {
       quantity: 1,
       tier: "common",
       weight: 50,
+      commodityId: 0,
     });
     expect(api.post).toHaveBeenCalledWith("/api/gachapons/4170001/items", {
       data: {
@@ -86,6 +87,7 @@ describe("rewardPoolsService", () => {
           quantity: 1,
           tier: "common",
           weight: 50,
+          commodityId: 0,
         },
       },
     });
@@ -95,6 +97,7 @@ describe("rewardPoolsService", () => {
       quantity: 2,
       tier: "common",
       weight: 75,
+      commodityId: 0,
     });
     expect(api.patch).toHaveBeenCalledWith("/api/gachapons/4170001/items/12", {
       data: {
@@ -105,6 +108,7 @@ describe("rewardPoolsService", () => {
           quantity: 2,
           tier: "common",
           weight: 75,
+          commodityId: 0,
         },
       },
     });

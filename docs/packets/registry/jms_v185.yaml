@@ -1864,6 +1864,7 @@
   direction: clientbound
   opcode: 365
   fname: CCashShop::OnCashItemGachaponResult
+  packet: cash/clientbound/CashItemGachaponResult
   provenance: csv-import
 - op: IDA_0X16E
   direction: clientbound
@@ -2952,6 +2953,15 @@
   opcode: 167
   fname: CCashShop::SendChangeMaplePoint
   provenance: csv-import
+- op: CASH_ITEM_GACHAPON_BUTTON
+  direction: serverbound
+  opcode: 167
+  fname: CUICashItemGachapon::OnButtonClicked
+  packet: cash/serverbound/CashItemGachaponButton
+  provenance: ida-discovered
+  ida:
+    address: 10937097
+  note: 'opcode 167 has two senders in this build: CCashShop::SendChangeMaplePoint (0x4851be) and CUICashItemGachapon::OnButtonClicked (0xa6e309), indistinguishable on the wire (task-207).'
 - op: OP_BOARD_HAS_NEW
   direction: serverbound
   opcode: 168

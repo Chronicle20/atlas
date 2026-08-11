@@ -451,7 +451,7 @@ func (p *ProcessorImpl) Buy(mb *message.Buffer) func(characterId uint32) func(sl
 					return err
 				}
 				p.l.Debugf("Character [%d] bought rechargeable item [%d] with quantity [%d].", characterId, itemTemplateId, slotQuantity)
-				return nil
+				return mb.Put(shops.EnvStatusEventTopic, okEventProvider(characterId))
 			}
 
 			if cm.MesoPrice() > 0 {
@@ -478,7 +478,7 @@ func (p *ProcessorImpl) Buy(mb *message.Buffer) func(characterId uint32) func(sl
 					return err
 				}
 				p.l.Debugf("Character [%d] bought item [%d].", characterId, itemTemplateId)
-				return nil
+				return mb.Put(shops.EnvStatusEventTopic, okEventProvider(characterId))
 			}
 
 			return p.buyWithTokens(mb)(c, cm, itemTemplateId, quantity)
@@ -571,7 +571,7 @@ func (p *ProcessorImpl) Sell(mb *message.Buffer) func(characterId uint32) func(s
 			}
 
 			p.l.Debugf("Character [%d] sold [%d] item [%d] from slot [%d].", characterId, quantity, itemTemplateId, slot)
-			return nil
+			return mb.Put(shops.EnvStatusEventTopic, okEventProvider(characterId))
 		}
 	}
 }
@@ -635,7 +635,7 @@ func (p *ProcessorImpl) Recharge(mb *message.Buffer) func(characterId uint32) fu
 			slotMax := uint16(cm.SlotMax()) + addSlotMax
 			if rim.Quantity() >= uint32(slotMax) {
 				p.l.Warnf("Character [%d] attempting to recharge item [%d] in slot [%d] that does not need recharging.", characterId, rim.TemplateId(), slot)
-				return nil
+				return mb.Put(shops.EnvStatusEventTopic, okEventProvider(characterId))
 			}
 			price := math.Ceil(cm.UnitPrice() * float64(uint32(slotMax)-rim.Quantity()))
 			if c.Meso() < uint32(price) {
@@ -652,7 +652,7 @@ func (p *ProcessorImpl) Recharge(mb *message.Buffer) func(characterId uint32) fu
 			}
 
 			p.l.Debugf("Character [%d] recharged item [%d] in slot [%d] with [%d] quantity.", characterId, rim.TemplateId(), slot, quantityToAdd)
-			return nil
+			return mb.Put(shops.EnvStatusEventTopic, okEventProvider(characterId))
 		}
 	}
 }

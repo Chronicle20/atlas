@@ -453,3 +453,54 @@ Creates pets via an external pet service. Used during purchase flows when the pu
 
 #### Processor
 - `Create`: Creates a pet for a character via REST, given owner character ID, template ID, and name
+
+---
+
+## Surprise (task-207)
+
+### Responsibility
+Orchestrates opening a Cash Shop Surprise box: resolves and validates the box asset, checks locker capacity, rolls a reward from the box's configured reward pool (via the Reward Pool REST client), resolves the reward's commodity, then commits a single database transaction that inserts the openings ledger row, consumes (or decrements) the box, and grants the reward asset.
+
+### Open Sequence
+1. **Resolve** — look up the character's job-typed compartment (Explorer/Cygnus/Legend, same mapping as Purchase), then find the box asset within it by `cashId`. Ownership is enforced structurally: the compartment is looked up by `accountId`, so an asset belonging to another account is simply absent from the scanned set — `BOX_NOT_FOUND` covers both "no such box" and "not yours." The resolved template ID must be one of the tenant's configured Surprise-box template IDs (`NOT_A_SURPRISE_BOX` otherwise).
+2. **Capacity** — `HasRoomForSwap(assetCount, capacity, boxQuantity)` decides whether the locker can absorb the swap. It checks the PEAK slot count, not the net: when the box's stack quantity is > 1, the box row survives the decrement so the reward needs its own free slot (`assetCount < capacity`); when the stack is exactly 1, the box row is released so the grant is slot-neutral and an exactly-full locker is fine (`assetCount <= capacity`). Fails closed as `LOCKER_FULL`.
+3. **Roll** — mutates nothing. `rewardpool.Processor.SelectReward(boxTemplateId)` calls atlas-reward-pools and classifies `404` as `POOL_MISSING` and `409` as `POOL_EMPTY` (see Reward Pool (REST Client) below). This step's statelessness is the reason the whole flow needs no saga: ordering (roll, *then* consume+grant) makes partial application structurally impossible — a failed roll can never leave a half-consumed box.
+4. **Resolve commodity** — the rolled reward's `commodityId` must be non-zero (`COMMODITY_MISSING` otherwise: a zero commodity carries no price/period basis to derive an expiration from), then the commodity is fetched from atlas-data via the existing Commodity (REST Client).
+5. **Commit** — the only transactional step. `opening.Insert` runs FIRST so a duplicate `transactionId` (a Kafka redelivery) aborts before anything is consumed or granted. Then the box is either decremented (`UpdateQuantity`) or released (`Release`, when quantity reaches 0), and the reward asset is created (`asset.Create`) in the same transaction. All writes rebuild their processors against the transaction handle rather than `p.db`, so nothing escapes the transaction (mirrors the `cashshop.Purchase` precedent).
+
+Rejections found during steps 1–4 (nothing mutated yet) emit `SURPRISE_FAILED` directly on the Kafka producer path and are swallowed (the command handler returns nil) — retrying the identical command would fail identically, and the client has already been told. A genuine failure inside the transaction (step 5) is propagated as a real error with no event fired.
+
+### Openings Ledger (Idempotency)
+- One row per successfully committed open, table `cash_surprise_openings`, primary key `(tenant_id, transaction_id)`.
+- `transactionId` is minted by atlas-channel per click and is the idempotency key: a Kafka redelivery replays the same id and is rejected by the primary-key constraint; a genuine second click gets a new id.
+- Detection is by constraint violation, not a read-then-write check — a SELECT-then-INSERT has a race window where two concurrent redeliveries both observe "not present" and both insert. `isDuplicateKeyError` recognizes the violation under both drivers this service runs against: Postgres SQLSTATE `23505` in production, sqlite extended codes `1555`/`2067` in tests.
+- A redelivery of an already-committed transaction (`ErrAlreadyOpened`) is treated as success-without-effect: no further state changes, no event — the original open already told the client.
+
+### Capacity Rule
+`HasRoomForSwap(assetCount, capacity, boxQuantity uint32) bool` — see Open Sequence step 2. An over-capacity locker (`assetCount > capacity`, possible through data drift) is rejected in both branches: the neutral case (stack quantity 1) permits equality, not excess.
+
+### Invariants
+- `OPEN_SURPRISE` command carries `transactionId` (idempotency key), `accountId`, and `cashId` (the box's cash locker identity) — the server resolves and re-validates both the box and its ownership; the edge does not own the locker.
+- Reward pool for a box template id is looked up in atlas-reward-pools by pool id == box template id (`cash-surprise` kind pools).
+- A reward pool configured to award another Surprise box (recursive box) is honored by configuration, not blocked in code — logged loudly so an operator notices, since it produces an infinite box.
+- Closed set of `SURPRISE_FAILED` reasons: `BOX_NOT_FOUND`, `NOT_A_SURPRISE_BOX`, `LOCKER_FULL`, `POOL_EMPTY`, `POOL_MISSING`, `COMMODITY_MISSING`, `INTERNAL`. The reason never reaches the client — the FAILED arm of the client packet has an empty body and no error-code field; the reason exists for logs/operators only.
+
+### Dependency: Reward Pool (REST Client)
+
+#### Responsibility
+Selects a reward from an atlas-reward-pools `cash-surprise`-kind pool for a given box template ID.
+
+#### Core Models
+- `Model`: `itemId` (uint32), `quantity` (uint32), `commodityId` (uint32) — the rolled reward.
+
+#### Invariants
+- `ErrPoolMissing`: no `cash-surprise` pool configured for the box template id (atlas-reward-pools responds 404).
+- `ErrPoolEmpty`: the pool exists but has no eligible entries (atlas-reward-pools responds 409, `requests.ErrConflict`).
+- Any other error (e.g. transport failure) is returned unclassified rather than misreported as a configuration fault, so an infrastructure outage isn't logged as if an operator misconfigured a pool.
+
+#### Processors
+- `SelectReward(boxTemplateId)`: POSTs to atlas-reward-pools' gachapon-rewards select endpoint for the pool whose id equals `boxTemplateId`, decodes `itemId`/`quantity`/`commodityId`.
+
+### Kafka
+- Command: `OPEN_SURPRISE` on `COMMAND_TOPIC_CASH_SHOP` (see `services/atlas-cashshop/docs/kafka.md`).
+- Status events on `EVENT_TOPIC_CASH_SHOP_STATUS`: `SURPRISE_OPENED` (success) and `SURPRISE_FAILED` (rejection). `SURPRISE_OPENED` carries `boxRemaining` (the box's quantity AFTER the decrement — the client removes the locker row when it reaches 0) and the granted `rewardAssetId`/`rewardTemplateId`/`rewardCount` (`rewardCount` comes from the commodity catalog, not the pool entry).

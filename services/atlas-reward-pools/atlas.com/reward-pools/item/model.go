@@ -3,13 +3,14 @@ package item
 import "github.com/google/uuid"
 
 type Model struct {
-	tenantId   uuid.UUID
-	id         uint32
-	gachaponId string
-	itemId     uint32
-	quantity   uint32
-	tier       string
-	weight     uint32
+	tenantId    uuid.UUID
+	id          uint32
+	gachaponId  string
+	itemId      uint32
+	quantity    uint32
+	tier        string
+	weight      uint32
+	commodityId uint32
 }
 
 func (m Model) TenantId() uuid.UUID {
@@ -41,4 +42,11 @@ func (m Model) Tier() string {
 // read 0; the existing tier-based roll does not consume this value.
 func (m Model) Weight() uint32 {
 	return m.weight
+}
+
+// CommodityId is the cash shop commodity (serial number) awarded by a
+// cash-surprise pool entry; 0 for gachapon and incubator entries, which use
+// ItemId instead.
+func (m Model) CommodityId() uint32 {
+	return m.commodityId
 }

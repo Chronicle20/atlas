@@ -1,11 +1,17 @@
 /**
- * Picks the SERIAL NUMBER a CASH_ITEM coupon reward grants.
+ * Picks a cash-shop COMMODITY — for a CASH_ITEM coupon reward, and for a
+ * cash-surprise reward-pool entry.
  *
- * A coupon names its cash-item reward by commodity serial number, but an
- * operator thinks in item names — so this searches items by name (or id) and
- * translates the chosen item to one of its cash-shop commodities, whose id IS
- * the serial number (atlas-data commodity/reader.go reads it from the `SN`
- * node).
+ * Both name their reward by commodity serial number, but an operator thinks in
+ * item names — so this searches items by name (or id) and translates the chosen
+ * item to one of its cash-shop commodities, whose id IS the serial number
+ * (atlas-data commodity/reader.go reads it from the `SN` node).
+ *
+ * onChange hands back the WHOLE commodity row, not just its id: a cash-surprise
+ * entry stores the granted item id and count alongside the serial, and those
+ * must be the commodity's own (atlas-cashshop surprise/processor.go grants
+ * `ci.ItemId()` × `ci.Count()`, ignoring whatever the entry claims). Callers
+ * that only need the serial take `.id`.
  *
  * Only items that ACTUALLY HAVE a commodity are offered. Most items don't: a
  * sword or a red potion has no serial, so picking one used to leave the field
@@ -18,8 +24,9 @@
  * a genuinely ambiguous item — several serials differing in bundle count,
  * price or rental period — asks the operator for a second click.
  *
- * The field's value stays a string, like every other reward-row field —
- * `rewardRowSchema` is what turns it into a number.
+ * The value stays a string — that is how a reward row holds it
+ * (`rewardRowSchema` is what turns it into a number); numeric callers pass
+ * `String(serial)`.
  */
 
 import { useMemo, useState } from "react";
@@ -31,18 +38,20 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ItemSearchResults } from "@/components/features/items/item-search/ItemSearchResults";
-import { useItemSearch } from "@/components/features/items/item-search/useItemSearch";
 import { useCommodityCatalog } from "@/lib/hooks/api/useItemCommodities";
 import { useItemName } from "@/lib/hooks/api/useItemStrings";
 import type { ItemCashShopCommodity } from "@/types/models/npc";
+import { ItemSearchResults } from "./ItemSearchResults";
+import { useItemSearch } from "./useItemSearch";
 
 export interface CashItemPickerProps {
   /** The serial number as the form holds it — a string, possibly blank. */
   value: string;
-  onChange: (serialNumber: string) => void;
+  onChange: (commodity: ItemCashShopCommodity) => void;
   /** Ties the trigger to the caller's <Label>. */
   id: string;
+  /** Trigger label rendered when nothing is chosen. */
+  placeholder?: string;
 }
 
 /** "×2 · 3700 NX · 90 days" — the facts that distinguish one serial from another. */
@@ -53,7 +62,12 @@ function describeCommodity(commodity: ItemCashShopCommodity): string {
   return parts.join(" · ");
 }
 
-export function CashItemPicker({ value, onChange, id }: CashItemPickerProps) {
+export function CashItemPicker({
+  value,
+  onChange,
+  id,
+  placeholder = "Choose a cash item…",
+}: CashItemPickerProps) {
   const [open, setOpen] = useState(false);
   // Set only when the chosen item has SEVERAL serials and one must be picked.
   const [ambiguousItemId, setAmbiguousItemId] = useState<number | null>(null);
@@ -91,8 +105,8 @@ export function CashItemPicker({ value, onChange, id }: CashItemPickerProps) {
     search.reset();
   };
 
-  const pick = (serialNumber: string) => {
-    onChange(serialNumber);
+  const pick = (commodity: ItemCashShopCommodity) => {
+    onChange(commodity);
     close();
   };
 
@@ -101,14 +115,14 @@ export function CashItemPicker({ value, onChange, id }: CashItemPickerProps) {
     const commodities = catalog?.byItemId.get(itemId) ?? [];
     const only = commodities.length === 1 ? commodities[0] : undefined;
     if (only) {
-      pick(only.id);
+      pick(only);
       return;
     }
     setAmbiguousItemId(itemId);
   };
 
   const triggerLabel = () => {
-    if (!value) return "Choose a cash item…";
+    if (!value) return placeholder;
     if (selectedName.data) return `${selectedName.data} (${value})`;
     if (catalog && !selected) return `Serial ${value} — not in the cash shop`;
     return `Serial ${value}`;
@@ -177,11 +191,11 @@ export function CashItemPicker({ value, onChange, id }: CashItemPickerProps) {
                   role="option"
                   aria-selected={commodity.id === value}
                   tabIndex={0}
-                  onClick={() => pick(commodity.id)}
+                  onClick={() => pick(commodity)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      pick(commodity.id);
+                      pick(commodity);
                     }
                   }}
                   className="flex cursor-pointer items-center justify-between gap-2 rounded px-2 py-1 hover:bg-accent focus-visible:bg-accent"
@@ -206,7 +220,7 @@ export function CashItemPicker({ value, onChange, id }: CashItemPickerProps) {
             {typedSerial && (
               <button
                 type="button"
-                onClick={() => pick(typedSerial.id)}
+                onClick={() => pick(typedSerial)}
                 className="mt-2 w-full cursor-pointer rounded px-2 py-1 text-left text-sm hover:bg-accent focus-visible:bg-accent"
               >
                 Use serial {typedSerial.id} ({describeCommodity(typedSerial)})

@@ -13,6 +13,7 @@ import (
 	"atlas-cashshop/kafka/consumer/character"
 	itemConsumer "atlas-cashshop/kafka/consumer/item"
 	walletConsumer "atlas-cashshop/kafka/consumer/wallet"
+	"atlas-cashshop/surprise/opening"
 	"atlas-cashshop/wallet"
 	"atlas-cashshop/wishlist"
 	"context"
@@ -58,7 +59,11 @@ func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, coupon.Migration, batch.Migration, redemption.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, opening.Migration, coupon.Migration, batch.Migration, redemption.Migration, outboxlib.Migration, database.IdempotencyMigration))
+
+	// ACCEPT/RELEASE claim an idempotency key so an at-least-once redelivery
+	// cannot duplicate or double-release a cash asset (task-208).
+	database.StartIdempotencySweeper(l, rt.Context(), db, database.DefaultIdempotencyRetention, database.DefaultIdempotencySweep)
 
 	// The coupon redemption rate limiter counts failed attempts per account in
 	// Redis. It fails open, so a Redis outage degrades brute-force braking

@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CashItemPicker } from "@/components/features/coupons/CashItemPicker";
+import { CashItemPicker } from "@/components/features/items/item-search/CashItemPicker";
 import {
   CURRENCY_VALUES,
   emptyRewardRow,
@@ -143,7 +143,9 @@ export function RewardRowsField({
                   <CashItemPicker
                     id={`${rowId}-serial`}
                     value={row.serialNumber}
-                    onChange={(serialNumber) => patch(index, { serialNumber })}
+                    onChange={(commodity) =>
+                      patch(index, { serialNumber: commodity.id })
+                    }
                   />
                 </div>
                 <div className="space-y-1">

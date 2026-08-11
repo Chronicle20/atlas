@@ -1,0 +1,12 @@
+packet: cash/clientbound/CashItemGachaponResult
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemGachaponResult
+    address: "0x495820"
+    decompile_sha256: 62688f46b0769a15277d40155d8dcfd0c7210cd2d01e734d256db0d138027d3e
+verifies:
+    - libs/atlas-packet/cash/clientbound/item_gachapon_result_test.go#TestCashItemGachaponSuccessEncodePerVersion
+    - libs/atlas-packet/cash/clientbound/item_gachapon_result_test.go#TestCashItemGachaponFailedEncodePerVersion
+    - libs/atlas-packet/cash/clientbound/item_gachapon_result_test.go#TestCashItemGachaponSuccessRoundTrip

@@ -4,6 +4,8 @@ import {
   incubatorPoolSchema,
   tierItemSchema,
   weightItemSchema,
+  cashSurprisePoolSchema,
+  cashSurpriseItemSchema,
 } from "../reward-pools.schema";
 
 describe("gachaponPoolSchema", () => {
@@ -45,6 +47,72 @@ describe("incubatorPoolSchema", () => {
         eggItemId: 0,
         name: "X",
         successNpcId: 1,
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("cashSurprisePoolSchema", () => {
+  it("accepts a valid pool", () => {
+    expect(
+      cashSurprisePoolSchema.safeParse({
+        boxItemId: 5222000,
+        name: "Surprise Box",
+      }).success,
+    ).toBe(true);
+  });
+  it("requires a positive box item id", () => {
+    expect(
+      cashSurprisePoolSchema.safeParse({ boxItemId: 0, name: "X" }).success,
+    ).toBe(false);
+    expect(
+      cashSurprisePoolSchema.safeParse({ boxItemId: -1, name: "X" }).success,
+    ).toBe(false);
+  });
+  it("requires a non-empty name", () => {
+    expect(
+      cashSurprisePoolSchema.safeParse({ boxItemId: 5222000, name: "" })
+        .success,
+    ).toBe(false);
+  });
+});
+
+describe("cashSurpriseItemSchema", () => {
+  it("accepts a valid entry", () => {
+    expect(
+      cashSurpriseItemSchema.safeParse({
+        itemId: 2000000,
+        quantity: 1,
+        weight: 50,
+        commodityId: 100200300,
+      }).success,
+    ).toBe(true);
+  });
+  it("requires a positive, non-zero commodityId", () => {
+    expect(
+      cashSurpriseItemSchema.safeParse({
+        itemId: 2000000,
+        quantity: 1,
+        weight: 50,
+        commodityId: 0,
+      }).success,
+    ).toBe(false);
+    expect(
+      cashSurpriseItemSchema.safeParse({
+        itemId: 2000000,
+        quantity: 1,
+        weight: 50,
+        commodityId: -1,
+      }).success,
+    ).toBe(false);
+  });
+  it("requires weight >= 1", () => {
+    expect(
+      cashSurpriseItemSchema.safeParse({
+        itemId: 2000000,
+        quantity: 1,
+        weight: 0,
+        commodityId: 100200300,
       }).success,
     ).toBe(false);
   });

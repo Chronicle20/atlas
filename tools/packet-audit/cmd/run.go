@@ -2438,6 +2438,24 @@ func candidatesFromFName(fname string) []candidate {
 	// a SEPARATE dispatcher from OnCashItemResult.
 	case "CCashShop::OnQueryCashResult":
 		return []candidate{{name: "QueryResult", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Cash Shop Surprise — the STANDALONE CASHSHOP_CASH_ITEM_GACHAPON_RESULT
+	// opcode (task-207), routed by CCashShop::OnPacket (NOT the
+	// OnCashItemResult mode dispatcher). SUCCESS/FAILED are a runtime mode
+	// branch inside one function, not a switch-case, so there is a single
+	// bare-fname candidate rather than "#SUCCESS"/"#FAILED" synthetic arms.
+	case "CCashShop::OnCashItemGachaponResult":
+		// reportName override: the struct is CashItemGachaponResult* (already
+		// carrying the "Cash" prefix, unlike the pkg-stripped convention), so
+		// the default qualifiedWriterName(pkg,name) would double it to
+		// "CashCashItemGachaponResult" and split from the existing
+		// packet=cash/clientbound/CashItemGachaponResult markers/evidence.
+		return []candidate{{name: "CashItemGachaponResult", dir: csvpkg.DirClientbound, pkg: "cash", reportName: "CashItemGachaponResult"}}
+	// Cash Shop Surprise "Open" button send (task-207). CUICashItemGachapon
+	// is a top-level UI dialog, not a CCashShop sub-dispatcher arm.
+	// reportName override: see the CCashShop::OnCashItemGachaponResult case
+	// above — the struct is CashItemGachaponButton (already "Cash"-prefixed).
+	case "CUICashItemGachapon::OnButtonClicked":
+		return []candidate{{name: "CashItemGachaponButton", dir: csvpkg.DirServerbound, pkg: "cash", reportName: "CashItemGachaponButton"}}
 	// Vega's Spell result dialog — single mode byte (task-130 §2.2). v83 opcode
 	// 0x166 via CUIVega::OnPacket; v95 0x1AD.
 	case "CUIVega::OnVegaResult":

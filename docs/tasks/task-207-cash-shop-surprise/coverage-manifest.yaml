@@ -1,0 +1,55 @@
+# coverage-manifest — task-207 (Cash Shop Surprise)
+#
+# Declares the op x version coverage this branch touches for the gachapon
+# open button / result packet pair, per docs/packets/PROCESS.md's
+# coverage-manifest schema, so packet-completeness-critic can diff this
+# against the branch's actual git + matrix delta at review time.
+#
+# Written retroactively, at the pre-PR review step, after the completeness
+# critic flagged its absence and had to substitute plan.md/context.md/the
+# ledger as the claim set.
+
+ops:
+  - cash/serverbound/CashItemGachaponButton
+  - cash/clientbound/CashItemGachaponResult
+
+reclassified:
+  # CASHSHOP_CASH_GACHAPON_OPEN_RESULT alias row: gms_v83 corrected to n-a
+  # (was previously miscategorized against this row). gms_v84/gms_v87/
+  # gms_v92/gms_v95 are deliberately LEFT unmet -- a documented coverage
+  # decision made this branch, not an oversight.
+  - CASHSHOP_CASH_GACHAPON_OPEN_RESULT      # gms_v83: -> n-a (corrected)
+
+versions:
+  - gms_v48
+  - gms_v61
+  - gms_v72
+  - gms_v79
+  - gms_v83
+  - gms_v84
+  - gms_v87
+  - gms_v92
+  - gms_v95
+  - jms_v185
+
+fields:
+  - "cash/serverbound/CashItemGachaponButton: verified on gms_v79, gms_v83,
+     gms_v84, gms_v87, gms_v92, gms_v95, jms_v185."
+
+  - "cash/clientbound/CashItemGachaponResult: verified on gms_v83, gms_v84,
+     gms_v87, gms_v92, gms_v95, jms_v185."
+
+  - "n-a, with proof: gms_v48, gms_v61, gms_v72 -- both directions (the
+     gachapon feature does not exist on these legacy versions). Additionally
+     gms_v79 clientbound (CashItemGachaponResult) is n-a on its own: gms_v79
+     serverbound (CashItemGachaponButton) IS verified, but the client-bound
+     result path is absent on this version -- the two directions do not share
+     an n-a/verified status on gms_v79."
+
+  - "CASHSHOP_CASH_GACHAPON_OPEN_RESULT alias row: gms_v83 corrected to n-a
+     (previously miscategorized against this row); gms_v84/gms_v87/gms_v92/
+     gms_v95 deliberately left as an unmet (not-yet-verified) coverage
+     decision, recorded here so it reads as a documented decision rather than
+     a silent gap on the next audit pass."
+
+out_of_scope: []

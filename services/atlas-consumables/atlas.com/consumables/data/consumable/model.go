@@ -210,6 +210,50 @@ func (m Model) Rewards() []RewardModel {
 	return m.rewards
 }
 
+// Create is the item id a successful use produces — for a catch item, the
+// reward granted in the caught monster's place.
+func (m Model) Create() uint32 {
+	return m.create
+}
+
+// MonsterId is the mob template a catch item targets (WZ info/mob).
+func (m Model) MonsterId() uint32 {
+	return m.monsterId
+}
+
+// MonsterHp is the catch HP gate (WZ info/mobHP), interpreted as a PERCENTAGE
+// of the target's max HP (task-212 assumption A-1). Zero means no gate.
+func (m Model) MonsterHp() uint32 {
+	return m.monsterHp
+}
+
+// BridleMsgType selects the CLIENT-side "no monster found" message and is never
+// read off the wire by either catch response packet (task-212 design §6.3).
+func (m Model) BridleMsgType() uint32 {
+	return m.bridleMsgType
+}
+
+// BridleProp is the base catch success percentage. Zero means deterministic
+// once the species and HP gates pass.
+func (m Model) BridleProp() uint32 {
+	return m.bridleProp
+}
+
+// BridlePropChg multiplies BridleProp once, statelessly (assumption A-2).
+func (m Model) BridlePropChg() float64 {
+	return m.bridlePropChg
+}
+
+// UseDelay is the per-item cooldown in milliseconds (WZ info/useDelay).
+func (m Model) UseDelay() uint32 {
+	return m.useDelay
+}
+
+// DelayMsg is what BRIDLE_MOB_CATCH_FAIL reason 1 renders.
+func (m Model) DelayMsg() string {
+	return m.delayMsg
+}
+
 type RewardModel struct {
 	itemId   uint32
 	count    uint32

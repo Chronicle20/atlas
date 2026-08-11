@@ -23,8 +23,10 @@ const UseCatchItemHandle = "MonsterCatchItemUseHandle"
 //   - monsterUniqueId : uint32 — the hit mob's field object id
 //
 // IDA basis: CWvsContext::SendBridleItemUseRequest — gms_v48 @0x70e0c5,
-// gms_v61 @0x832005, gms_v72 @0x90457d, gms_v79 @0x9558e5, gms_v95 @0x9e08c0.
-// No version-gated divergence was observed, so this codec carries NO
+// gms_v61 @0x832005, gms_v72 @0x90457d, gms_v79 @0x9558e5, gms_v83 @0xa09bdf,
+// gms_v84 @0xa53fc1 (renamed live from sub_A53FC1; task-212), gms_v87
+// @0xa9f48b, gms_v92 @0x9b5830, gms_v95 @0x9e08c0, jms_v185 @0xaee887. No
+// version-gated divergence was observed, so this codec carries NO
 // MajorAtLeast gate; introduce one only if a remaining IDB proves otherwise.
 //
 // The client sets ExclRequest immediately after the COutPacket ctor on every

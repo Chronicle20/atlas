@@ -1,6 +1,6 @@
 # MonsterCatchMonster (← `CMob::OnCatchEffect`)
 
-- **IDA:** 
+- **IDA:** 0x5511f4
 - **Atlas file:** `libs/atlas-packet/monster/clientbound/catch_monster.go`
 - **Variant:** GMS/v48
 - **Branch depth:** 1
@@ -11,7 +11,7 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | int32 | byte `result byte (sub_54E7D3)` | ❌ | width mismatch |
 | 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 

@@ -5858,7 +5858,7 @@
       ]
     },
     "CMob::OnCatchEffect": {
-      "address": "0x630C30",
+      "address": "0x630c30",
       "direction": "clientbound",
       "notes": "Unnamed in the v92 IDB as 'CMob::OnCatchEffect'; resolved via the registry's fname_alts citation (docs/packets/registry/gms_v92.yaml, op CATCH_MONSTER, provenance: manual): IDA v92 CMobPool::OnMobPacket (0x64A6C0) case 0x123 dispatches to sub_630C30 (0x630C30). Decompiled directly for this export (task-27): a single CInPacket::Decode1 read.",
       "calls": [
@@ -12979,6 +12979,29 @@
         {
           "op": "EncodeBuffer",
           "comment": "cashId: 8 bytes LARGE_INTEGER (int64), the cash serial (m_liItemSN)"
+        }
+      ]
+    },
+    "CWvsContext::SendBridleItemUseRequest": {
+      "address": "0x9b5830",
+      "direction": "serverbound",
+      "note": "USE_CATCH_ITEM (task-212). CWvsContext::SendBridleItemUseRequest: update_time(Encode4), nPOS(Encode2), nItemID(Encode4), then the FindHitMobInRect-derived hit-mob object id (Encode4). Body is byte-identical to gms_v48/v61/v72/v79/v95's already-pinned layout; resolved via idb_open/func_query/decompile (idb_list session, matched by binary name) since the mangled symbol was already present (v83/v87/v92/jms_185) or renamed live to it (v84).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hit-mob object id (FindHitMobInRect)"
         }
       ]
     }

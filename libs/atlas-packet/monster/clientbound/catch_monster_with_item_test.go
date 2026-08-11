@@ -90,3 +90,23 @@ func TestCatchMonsterWithItemBytesV79(t *testing.T) {
 		t.Errorf("v79 catchMonsterWithItem bytes:\n got % x\nwant % x", got, want)
 	}
 }
+
+// TestCatchMonsterWithItemBytesV72 pins the v72 cell (fixture promotion,
+// design.md §3). CMobPool::OnMobPacket @0x62560d Decode4 @0x625617 -> GetMob,
+// then dispatches to CMob::OnEffectByItem @0x61cbcc: Decode4 (itemId) +
+// Decode1 (result) — same shape as v79/v61, byte-identical.
+//
+// packet-audit:verify packet=monster/clientbound/MonsterCatchMonsterWithItem version=gms_v72 ida=0x61cbcc
+func TestCatchMonsterWithItemBytesV72(t *testing.T) {
+	input := NewCatchMonsterWithItem(0x07654321, 2270008, 0x01)
+	ctx := pt.CreateContext("GMS", 72, 1)
+	want := []byte{
+		0x21, 0x43, 0x65, 0x07, // uniqueId int32 LE (pool Decode4 @0x625617)
+		0x38, 0xa3, 0x22, 0x00, // itemId   int32 LE (Decode4 @0x61cbcc)
+		0x01, // result   byte  (Decode1 @0x61cbcc)
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 catchMonsterWithItem bytes:\n got % x\nwant % x", got, want)
+	}
+}

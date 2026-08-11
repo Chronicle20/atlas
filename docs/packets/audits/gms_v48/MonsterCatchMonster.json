@@ -1,7 +1,7 @@
 {
   "WriterName": "MonsterCatchMonster",
   "IDAName": "CMob::OnCatchEffect",
-  "Address": "",
+  "Address": "0x5511f4",
   "Variant": "GMS/v48",
   "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/monster/clientbound/catch_monster.go",
@@ -10,10 +10,10 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "result byte (sub_54E7D3)",
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 1,

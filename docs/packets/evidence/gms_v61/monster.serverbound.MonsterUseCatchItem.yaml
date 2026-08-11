@@ -1,0 +1,10 @@
+packet: monster/serverbound/MonsterUseCatchItem
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendBridleItemUseRequest
+    address: "0x832005"
+    decompile_sha256: fcfe13c06939bf6a684baed382525f10760e2e12b1299babf68e5f6ce6b75a4b
+verifies:
+    - libs/atlas-packet/monster/serverbound/use_catch_item_test.go#TestUseCatchItemBytes

@@ -8326,6 +8326,29 @@
         }
       ]
     },
+    "CUserRemote::OnShowUpgradeTombEffect": {
+      "address": "0xa57a4e",
+      "direction": "clientbound",
+      "notes": "JMS CUserRemote::OnShowUpgradeTombEffect@0xa57a4e. Dispatcher CUserPool::OnUserRemotePacket@0xa44246 consumes characterId via Decode4 before switch(nType), case 0xC9. Identical to GMS v72-v95.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId — consumed by dispatcher"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "x"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y"
+        }
+      ]
+    },
     "CWvsContext::OnGatherItemResult": {
       "address": "0xb05482",
       "direction": "clientbound",
@@ -9007,6 +9030,25 @@
       "address": "0x903e24",
       "direction": "",
       "calls": null
+    },
+    "CUserLocal::RequestUpgradeTombEffect": {
+      "address": "0xa25fc9",
+      "direction": "serverbound",
+      "notes": "JMS CUserLocal::RequestUpgradeTombEffect@0xa25fc9. Wire: COutPacket(0x2D)+Encode4(itemId hard-coded 5510000/0x541370)+Encode4(x)+Encode4(y). Identical to GMS v72-v95.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "itemId — hard-coded 5510000 (0x541370) by the client"
+        },
+        {
+          "op": "Encode4",
+          "comment": "x — m_ptRevive.x"
+        },
+        {
+          "op": "Encode4",
+          "comment": "y — m_ptRevive.y"
+        }
+      ]
     },
     "CUserLocal::SendBanMapByMobRequest": {
       "address": "0xa28621",

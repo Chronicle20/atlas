@@ -23,14 +23,7 @@ import (
 // packet-audit:verify packet=character/serverbound/UseDeathItem version=gms_v87 ida=0x9dd673
 // packet-audit:verify packet=character/serverbound/UseDeathItem version=gms_v92 ida=0x8ee9f0
 // packet-audit:verify packet=character/serverbound/UseDeathItem version=gms_v95 ida=0x908320
-//
-// The remaining version (jms_v185) carries the
-// identical wire layout per the IDA addresses in the doc comment above, but
-// its packet-audit:verify marker is deliberately deferred to its own
-// verification batch (task-210) — an unlinked marker with no evidence
-// record/audit report fails `packet-audit matrix --check` as an orphan
-// marker (VERIFYING_A_PACKET.md §8). Each batch adds its own marker line
-// alongside its evidence pin.
+// packet-audit:verify packet=character/serverbound/UseDeathItem version=jms_v185 ida=0xa25fc9
 func TestUseDeathItemByteOutput(t *testing.T) {
 	variants := []struct {
 		name   string

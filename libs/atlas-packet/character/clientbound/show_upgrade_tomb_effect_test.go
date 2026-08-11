@@ -19,14 +19,7 @@ import (
 // packet-audit:verify packet=character/clientbound/ShowUpgradeTombEffect version=gms_v87 ida=0xa098f2
 // packet-audit:verify packet=character/clientbound/ShowUpgradeTombEffect version=gms_v92 ida=0x9307e0
 // packet-audit:verify packet=character/clientbound/ShowUpgradeTombEffect version=gms_v95 ida=0x954090
-//
-// The remaining version (jms_v185) carries the
-// identical wire layout per the IDA addresses in the doc comment above, but
-// its packet-audit:verify marker is deliberately deferred to its own
-// verification batch (task-210) — an unlinked marker with no evidence
-// record/audit report fails `packet-audit matrix --check` as an orphan
-// marker (VERIFYING_A_PACKET.md §8). Each batch adds its own marker line
-// alongside its evidence pin.
+// packet-audit:verify packet=character/clientbound/ShowUpgradeTombEffect version=jms_v185 ida=0xa57a4e
 func TestShowUpgradeTombEffectByteOutput(t *testing.T) {
 	variants := []struct {
 		name   string

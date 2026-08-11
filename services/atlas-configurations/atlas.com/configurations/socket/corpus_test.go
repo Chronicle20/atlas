@@ -60,7 +60,7 @@ func TestValidate_AcceptsEverySeedTemplate(t *testing.T) {
 			}
 		}
 	}
-	if total != 3075 {
-		t.Errorf("corpus size = %d entries, want 3075 (3052 before task-206, plus task-206's 10 CashShopCouponCodeHandle bindings — every template but gms_12 — plus task-207's 7 CashItemGachaponHandle handlers and 6 CashItemGachaponResult writers)", total)
+	if total != 3105 {
+		t.Errorf("corpus size = %d entries, want 3105 (3052 before task-206, plus task-206's 10 CashShopCouponCodeHandle bindings — every template but gms_12 — plus task-207's 7 CashItemGachaponHandle handlers and 6 CashItemGachaponResult writers, plus task-211's 30 kite writer bindings — SpawnKite, SpawnKiteError and DestroyKite on every template but gms_12)", total)
 	}
 }

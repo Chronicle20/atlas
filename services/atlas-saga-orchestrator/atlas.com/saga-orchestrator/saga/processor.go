@@ -1429,6 +1429,7 @@ func (p *ProcessorImpl) expandWithdrawFromStorage(st Step[any]) ([]Step[any], er
 // else in the trade flow clears it, so an expansion that accepted first (or
 // skipped the release) would leave the trade dialog permanently unable to stage
 // anything more — the defect this whole amendment exists to fix (design §5A.1).
+// Pinned by TestExpandTransferToTradeOrdersReleaseBeforeAccept.
 //
 // The snapshot is read here rather than carried on the composite, matching
 // expandTransferToMts: a snapshot minted at submission time could disagree with
@@ -1525,9 +1526,20 @@ func (p *ProcessorImpl) expandTransferToTrade(st Step[any]) ([]Step[any], error)
 // reserve-based expander needed — an escrowed asset cannot be moved, merged,
 // dropped or swapped for another instance.
 //
-// Step order still matters: ALL releases precede ALL accepts, so a slot freed by
-// an outgoing item is available to an incoming one, and a failure in either
+// Step order still matters, and it is a CONTRACT rather than a convenience: ALL
+// releases precede ALL accepts. The shallow reasons are that a slot freed by an
+// outgoing item is available to an incoming one, and that a failure in either
 // side's release compensates before anything has been created.
+//
+// The load-bearing reason is the escrow-row invariant: an escrow row's existence
+// means NOBODY holds the item yet. That is what makes it safe for teardown, for
+// a failed settlement, and for the boot sweep (which returns every
+// trade_escrow_items row whose trade no longer exists) to return any row they
+// find without checking anything else. release_from_trade deletes the custody
+// row; accept_to_character grants the item. Inverting the two loops below opens
+// a window where the row exists while the item is already in an inventory, and
+// every one of those return paths becomes an item duplicator. Pinned by
+// TestExpandTradeSettlementOrdersReleasesBeforeAccepts.
 //
 // Meso is CREDIT-ONLY. The staged amount was debited when it was staged
 // (design §5A.5); the tax is destroyed by crediting the receiver less than was
@@ -1623,6 +1635,14 @@ func (p *ProcessorImpl) expandTradeSettlement(st Step[any]) ([]Step[any], error)
 // delivery is not — but folding them together would have put an "is this a
 // refund?" branch inside the expander, which is exactly the kind of conditional
 // that silently taxes a refund one release later.
+//
+// It inherits expandTradeSettlement's ordering contract in full: ALL
+// release_from_trade steps precede ALL accept_to_character steps, because an
+// escrow row's existence is what every return path — this one included — treats
+// as proof that nobody holds the item yet. Granting before deleting the custody
+// row would let this unwind race the teardown path and the boot sweep against
+// itself and duplicate the item. Pinned by
+// TestExpandTradeUnwindOrdersReleasesBeforeAccepts.
 func (p *ProcessorImpl) expandTradeUnwind(st Step[any]) ([]Step[any], error) {
 	payload, ok := st.Payload().(TradeUnwindPayload)
 	if !ok {

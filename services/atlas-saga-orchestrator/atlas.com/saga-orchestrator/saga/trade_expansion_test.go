@@ -95,25 +95,81 @@ func actionsOf(steps []Step[any]) []Action {
 	return out
 }
 
-// TestExpandTradeSettlementOrdersReleasesBeforeAccepts pins design §6.3's
-// surviving ordering rule: every release precedes every accept, so a slot freed
-// by an outgoing item is available to an incoming one and a failure in either
-// release compensates before anything has been created.
-func TestExpandTradeSettlementOrdersReleasesBeforeAccepts(t *testing.T) {
-	steps := expandSettlement(t, tradeSettlementFixture())
+// escrowRowOrderingConsequence is the failure text shared by the settlement and
+// unwind ordering assertions. It states the CONSEQUENCE rather than the
+// mismatch, because the only realistic way to break this ordering is to swap two
+// adjacent `for` loops in the expander — a change that looks inert and that
+// every other test in this package survives.
+const escrowRowOrderingConsequence = "" +
+	"WHY THIS ORDER IS NOT YOURS TO CHOOSE:\n" +
+	"Every path that returns escrowed items to their owners — room teardown, a failed\n" +
+	"settlement, and the boot sweep that returns every trade_escrow_items row whose\n" +
+	"trade no longer exists — relies on ONE invariant: an escrow row's existence means\n" +
+	"nobody holds the item yet. release_from_trade DELETES the custody row;\n" +
+	"accept_to_character GRANTS the item to a character. Emitting an accept before a\n" +
+	"release opens a window in which the row still exists while the item is already in\n" +
+	"someone's inventory, so any return path firing in that window hands out a SECOND\n" +
+	"copy. Every one of those return paths becomes an item duplicator.\n" +
+	"Keep all release_from_trade steps ahead of all accept_to_character steps."
 
-	lastRelease, firstAccept := -1, -1
-	for i, a := range actionsOf(steps) {
-		if a == ReleaseFromTrade {
-			lastRelease = i
-		}
-		if a == AcceptToCharacter && firstAccept == -1 {
-			firstAccept = i
+// requireEveryBeforeEvery asserts the full cross-product: the index of EVERY
+// step whose action is `earlier` is less than the index of EVERY step whose
+// action is `later`.
+//
+// The cross-product, not the boundary pair, because a multi-item expansion has
+// several of each and a single misplaced entry in the middle must not be able to
+// hide behind its neighbours. Both sets are required non-empty so a fixture that
+// stopped emitting one of the two actions fails loudly instead of passing
+// vacuously.
+func requireEveryBeforeEvery(t *testing.T, steps []Step[any], earlier Action, later Action, consequence string) {
+	t.Helper()
+
+	earlierIdx := make([]int, 0, len(steps))
+	laterIdx := make([]int, 0, len(steps))
+	for i, s := range steps {
+		switch s.Action() {
+		case earlier:
+			earlierIdx = append(earlierIdx, i)
+		case later:
+			laterIdx = append(laterIdx, i)
 		}
 	}
-	require.NotEqual(t, -1, lastRelease, "no release emitted")
-	require.NotEqual(t, -1, firstAccept, "no accept emitted")
-	require.Less(t, lastRelease, firstAccept, "an accept was emitted before the last release")
+	require.NotEmptyf(t, earlierIdx, "fixture emitted no %s steps, so the ordering assertion would pass vacuously", earlier)
+	require.NotEmptyf(t, laterIdx, "fixture emitted no %s steps, so the ordering assertion would pass vacuously", later)
+
+	for _, e := range earlierIdx {
+		for _, l := range laterIdx {
+			require.Lessf(t, e, l,
+				"ORDERING CONTRACT VIOLATED: %s at index %d must precede %s at index %d.\nemitted order: %v\n\n%s",
+				earlier, e, later, l, actionsOf(steps), consequence)
+		}
+	}
+}
+
+// twoItemPerSideSettlementFixture is the canonical fixture with a second item on
+// each side, so the ordering assertion has a real cross-product (4 releases × 4
+// accepts) rather than the degenerate 1×1 that a single-item-per-side fixture
+// would give it.
+func twoItemPerSideSettlementFixture() TradeSettlementPayload {
+	payload := tradeSettlementFixture()
+	payload.Sides[0].Items = append(payload.Sides[0].Items, escrowItem(uuid.New(), 56, 2000001, 3, 2))
+	payload.Sides[1].Items = append(payload.Sides[1].Items, escrowItem(uuid.New(), 78, 1302001, 1, 1))
+	return payload
+}
+
+// TestExpandTradeSettlementOrdersReleasesBeforeAccepts pins design §6.3's
+// surviving ordering rule as a CONTRACT rather than an emergent property of the
+// order of two `for` loops: every release_from_trade precedes every
+// accept_to_character.
+//
+// Two reasons stack on it. The narrow one is slot availability and clean
+// compensation — a slot freed by an outgoing item is available to an incoming
+// one, and a failure in either release compensates before anything has been
+// created. The load-bearing one is the escrow-row invariant every return path
+// depends on; see escrowRowOrderingConsequence.
+func TestExpandTradeSettlementOrdersReleasesBeforeAccepts(t *testing.T) {
+	steps := expandSettlement(t, twoItemPerSideSettlementFixture())
+	requireEveryBeforeEvery(t, steps, ReleaseFromTrade, AcceptToCharacter, escrowRowOrderingConsequence)
 }
 
 // TestExpandTradeSettlementReleasesFromEscrowNotFromCharacters is the
@@ -344,22 +400,19 @@ func TestExpandTradeUnwindRefundsTheFullEscrowedMeso(t *testing.T) {
 	require.Equal(t, int32(10_000_000), refunds[0].Amount, "the refund is the FULL escrowed amount, untaxed")
 }
 
-// TestExpandTradeUnwindOrdersReleasesBeforeAccepts mirrors the settlement rule.
+// TestExpandTradeUnwindOrdersReleasesBeforeAccepts mirrors the settlement rule,
+// and matters here more than anywhere: unwind IS one of the return paths the
+// escrow-row invariant protects. An unwind that granted before it deleted the
+// custody row would race the boot sweep and the teardown path against itself.
 func TestExpandTradeUnwindOrdersReleasesBeforeAccepts(t *testing.T) {
-	steps := expandUnwind(t, tradeUnwindFixture())
+	payload := tradeUnwindFixture()
+	payload.Items = append(payload.Items,
+		TradeUnwindItem{OwnerId: 100, Item: escrowItem(uuid.New(), 56, 2000001, 3, 2)},
+		TradeUnwindItem{OwnerId: 200, Item: escrowItem(uuid.New(), 78, 1302001, 1, 1)},
+	)
 
-	lastRelease, firstAccept := -1, -1
-	for i, a := range actionsOf(steps) {
-		if a == ReleaseFromTrade {
-			lastRelease = i
-		}
-		if a == AcceptToCharacter && firstAccept == -1 {
-			firstAccept = i
-		}
-	}
-	require.NotEqual(t, -1, lastRelease)
-	require.NotEqual(t, -1, firstAccept)
-	require.Less(t, lastRelease, firstAccept)
+	steps := expandUnwind(t, payload)
+	requireEveryBeforeEvery(t, steps, ReleaseFromTrade, AcceptToCharacter, escrowRowOrderingConsequence)
 }
 
 // TestExpandTradeUnwindSkipsZeroRefunds pins that a participant who staged no

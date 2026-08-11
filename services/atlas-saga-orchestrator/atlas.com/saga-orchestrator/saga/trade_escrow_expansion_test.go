@@ -85,6 +85,53 @@ func TestExpandTransferToTradeReleasesThenAccepts(t *testing.T) {
 	require.Equal(t, "Chronicle", acc.Snapshot.Owner)
 }
 
+// exclRequestOrderingConsequence is the failure text for the staging composite's
+// ordering assertion. Its consequence is a different one to the settlement and
+// unwind expanders': staging is where the client's input lock gets cleared.
+const exclRequestOrderingConsequence = "" +
+	"WHY THIS ORDER IS NOT YOURS TO CHOOSE:\n" +
+	"release_from_character is what makes atlas-inventory publish the asset deletion\n" +
+	"that atlas-channel turns into an INVENTORY_OPERATION, whose leading\n" +
+	"exclRequestSent bool is the ONLY thing in the trade flow that clears the v83\n" +
+	"client's m_bExclRequestSent lock (see the TransferToTrade action in\n" +
+	"libs/atlas-saga/model.go; design §5A.1). An expansion that accepted into escrow\n" +
+	"first would leave the trade dialog permanently unable to stage anything more —\n" +
+	"the exact defect this slice exists to fix — and would additionally hold an escrow\n" +
+	"row for an asset still sitting in the owner's compartment.\n" +
+	"Keep release_from_character ahead of accept_to_trade."
+
+// TestExpandTransferToTradeOrdersReleaseBeforeAccept pins the staging order as a
+// contract on the ACTIONS, independent of the positional assertions in
+// TestExpandTransferToTradeReleasesThenAccepts above — those read steps[0] and
+// steps[1] to check payload contents, and would keep passing with their indices
+// swapped if someone updated them to match a reordered expander.
+func TestExpandTransferToTradeOrdersReleaseBeforeAccept(t *testing.T) {
+	const templateId = uint32(1302000)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(inventoryCompartmentDoc("42", templateId)))
+	}))
+	defer srv.Close()
+	t.Setenv("INVENTORY_SERVICE_URL", srv.URL+"/")
+
+	st := NewStep[any]("transfer_to_trade-1", Pending, TransferToTrade, TransferToTradePayload{
+		TransactionId:       uuid.New(),
+		EscrowId:            uuid.New(),
+		RoomId:              uuid.New(),
+		CharacterId:         1001,
+		SourceInventoryType: 1,
+		AssetId:             42,
+		Quantity:            1,
+	})
+
+	p := newTestExpansionProcessor(t)
+	steps, err := p.expandTransferToTrade(st)
+	require.NoError(t, err)
+
+	requireEveryBeforeEvery(t, steps, ReleaseFromCharacter, AcceptToTrade, exclRequestOrderingConsequence)
+}
+
 // TestExpandTransferToTradeCarriesCashAndPetState pins the fields the bespoke
 // stat list this replaced omitted: expiry, cash serial, rechargeable count, the
 // item-level triple and the pet id.

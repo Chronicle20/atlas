@@ -283,8 +283,12 @@ func TestCatch_ConcurrentAttempts_OneCaught(t *testing.T) {
 	}
 }
 
-// TestCatch_LookupFailure — fail-closed, exactly like Kill's boss lookup: a data
-// error drops the command entirely rather than reporting a catch failure.
+// TestCatch_LookupFailure — a catch-item data lookup error reports UNRESOLVED
+// rather than dropping the command silently: by the time this runs,
+// atlas-consumables has already reserved the item and the channel is waiting
+// to unlock the client, so a silent drop would leave both stuck (plan
+// amendment, round 2 — this deviates from the brief's Kill-style fail-closed
+// silent drop, which had no reservation to unwind).
 func TestCatch_LookupFailure(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	GetMonsterRegistry().Clear(context.Background())
@@ -294,8 +298,14 @@ func TestCatch_LookupFailure(t *testing.T) {
 	p, events := newRecordingProcessorWithBodies(t, ten)
 	p.Catch(uniqueId, 42, 2270000)
 
-	if len(*events) != 0 {
-		t.Fatalf("expected no events on a data lookup failure, got %v", eventTypes(events))
+	if got := eventTypes(events); len(got) != 2 ||
+		got[0] != EventMonsterCatchResolved || got[1] != EventMonsterStatusCatchFailed {
+		t.Fatalf("event order = %v, want [CATCH_RESOLVED CATCH_FAILED]", eventTypes(events))
+	}
+	var body catchResolvedBody
+	_ = json.Unmarshal((*events)[0].Body, &body)
+	if body.Success || body.Cause != CatchCauseUnresolved {
+		t.Fatalf("CATCH_RESOLVED body = %+v, want success=false cause=UNRESOLVED", body)
 	}
 	if _, err := GetMonsterRegistry().GetMonster(ten, uniqueId); err != nil {
 		t.Error("monster removed despite a data lookup failure")

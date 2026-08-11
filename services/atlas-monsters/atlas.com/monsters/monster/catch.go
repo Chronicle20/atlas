@@ -86,12 +86,15 @@ func catchHpGatePasses(hp uint32, maxHp uint32, mobHP uint32) bool {
 //   - a check failed: CATCH_RESOLVED(false, cause) + CATCH_FAILED(cause).
 //     Nothing is removed and no KILLED/DESTROYED fires — a catch awards no
 //     experience, rolls no drops, and emits no death events (FR-3.6).
-//   - monster gone or claim lost: CATCH_RESOLVED(false, UNRESOLVED) +
-//     CATCH_FAILED(UNRESOLVED). The resolved event is what cancels the caller's
-//     reservation; the channel renders no failure packet for UNRESOLVED, only
-//     the unlock. A redelivery is harmless because the caller's once-handler has
-//     already deregistered.
-//   - data lookup failed: nothing at all (fail-closed).
+//   - monster gone, claim lost, catch-item lookup failed, or the roll itself
+//     errored: CATCH_RESOLVED(false, UNRESOLVED) + CATCH_FAILED(UNRESOLVED).
+//     By the time any of these run, atlas-consumables has already reserved the
+//     item and the channel is waiting to unlock the client, so none of them can
+//     be a silent drop (deviates from the Kill fail-closed model the brief
+//     copied from — approved plan amendment, round 2): the resolved event is
+//     what cancels the caller's reservation, and the channel renders no
+//     failure packet for UNRESOLVED, only the unlock. A redelivery is harmless
+//     because the caller's once-handler has already deregistered.
 func (p *ProcessorImpl) Catch(uniqueId uint32, characterId uint32, itemId uint32) {
 	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
 	if err != nil || !m.Alive() {
@@ -108,7 +111,8 @@ func (p *ProcessorImpl) Catch(uniqueId uint32, characterId uint32, itemId uint32
 		ci, ciErr = consumable.NewProcessor(p.l, p.ctx).GetById(itemId)
 	}
 	if ciErr != nil {
-		p.l.WithError(ciErr).Errorf("CATCH: catch-item [%d] lookup failed; dropping (fail-closed).", itemId)
+		p.l.WithError(ciErr).Errorf("CATCH: catch-item [%d] lookup failed; reporting unresolved for character [%d].", itemId, characterId)
+		p.emitCatchFailure(m, characterId, itemId, CatchCauseUnresolved)
 		return
 	}
 
@@ -125,7 +129,8 @@ func (p *ProcessorImpl) Catch(uniqueId uint32, characterId uint32, itemId uint32
 	if chance, gated := effectiveCatchChance(ci.BridleProp(), ci.BridlePropChg()); gated {
 		won, rerr := rollCatch(chance)
 		if rerr != nil {
-			p.l.WithError(rerr).Errorf("CATCH: roll failed for item [%d]; dropping (fail-closed).", itemId)
+			p.l.WithError(rerr).Errorf("CATCH: roll errored for item [%d]; reporting unresolved for character [%d].", itemId, characterId)
+			p.emitCatchFailure(m, characterId, itemId, CatchCauseUnresolved)
 			return
 		}
 		if !won {

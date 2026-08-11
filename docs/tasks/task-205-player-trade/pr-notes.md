@@ -1,8 +1,95 @@
 # task-205 player trade — PR notes
 
-Residuals, deploy steps and known gaps carried out of the 24-task implementation.
-Everything here was found by review, adjudicated, and deliberately left in this
-state — none of it is an oversight.
+What this branch ships, the one design decision that was reversed mid-flight,
+and the residuals a reviewer should know were adjudicated rather than missed.
+
+Authoritative background: `design.md` §5A (the escrow amendment, with its
+"Amended during implementation" blocks) and the "Slice 7 as built" table at the
+end of `plan.md`. Nothing here contradicts either; this is the reviewer's
+summary of both.
+
+## The headline: staged assets are ESCROWED, not reserved
+
+The branch was built to §5.3's **reserve-at-staging** model — the staged item
+stays in its owner's compartment under an atlas-inventory reservation, and the
+swap happens at settlement. The first live test showed that model is
+wire-incompatible with the reference client, and §5A replaced it.
+
+Why it cannot work (design §5A.1, all read from the GMS v83 binary):
+`CTradingRoomDlg::PutItem` @`0x7c359f` and `::PutMoney` @`0x7c37ca` both set
+`m_bExclRequestSent = 1` immediately after `SendPacket`, and
+`CWvsContext::CanSendExclRequest` @`0x485bf7` then refuses every later exclusive
+request. Only three server packets clear that flag — the leading
+`exclRequestSent` bool of `STAT_CHANGED` or `INVENTORY_OPERATION`, or a
+`SET_FIELD`. Reserve-at-staging mutates neither inventory nor meso, so it emits
+none of the three: the lock latched on the first stage and never cleared. The
+reported symptom was "the mesos button stopped working after I put an item in".
+
+What replaced it (design §5A.2–§5A.5):
+
+- A staged item **genuinely leaves** its owner's compartment, into a new
+  first-class custody destination in the accept/release family the fleet already
+  uses for storage, cash shop and MTS: `accept_to_trade` / `release_from_trade`,
+  backed by atlas-trades' own `trade_escrow_items` / `trade_escrow_mesos`.
+- Staging is therefore a saga (`transfer_to_trade`), not a reservation call. The
+  resulting real `INVENTORY_OPERATION` is what clears the client's lock — **no
+  new clientbound packet was needed for the unlock**, which is the strongest
+  argument for the amendment.
+- `ITEM_STAGED` is emitted from the **staging saga's terminal status**, not from
+  the custody consumer, so confirmation and refusal are one signal on one topic
+  in one order. Between the swap and that status the item is *pending*: it holds
+  its dialog slot but is announced to nobody.
+- Escrowed **meso** is armed as a pending stake on the row *before* its
+  `award_mesos` is submitted, and committed by a compare-and-set on the stake id
+  when that saga completes. The naive ordering loses money: a teardown between
+  the debit and the record destroys the only record of meso the player has
+  already been charged.
+- Settlement no longer releases from characters or issues negative
+  `award_mesos`; the debit already happened. It is
+  `release_from_trade` × n → `accept_to_character` × n → the two delivery
+  `award_mesos`, tax destroyed by crediting the receiver less than was escrowed.
+
+What this **removed** (design §5A.10): the `compartment` reserve/cancel command
+producer, the reservation-refresh ticker, and `trade.reservationTtlSeconds` from
+the tenant config. The planned stuck-escrow retry ticker was **not built** — the
+orphan it would have swept announces itself through its own completing saga
+(`returnOrphanedStage` / `refundOrphanedStake`). Net: the service ends this
+change with one *fewer* background loop than it started with.
+
+## Every refusal answers, or the dialog wedges
+
+Design §5A.6. With the lock armed on send, a silent drop is no longer free.
+atlas-channel's trade consumer now writes an empty `STAT_CHANGED` with
+`exclRequestSent = true` — no stat payload, no trade packet — to the acting
+character alone, on both the new `ITEM_REFUSED` and the existing `MESO_REFUSED`.
+The slot still stays empty, so the player-visible behaviour is unchanged; only
+the lock is released. atlas-trades still writes no packets (§2.2 preserved).
+
+## Startup recovery is now implementable
+
+Design §5A.9. `ReconcileAtBoot` runs two passes in a mandatory order:
+settlements first (`Reconcile`), then stranded escrow (`ReconcileEscrow`). Rooms
+are process-local, so every escrow row that survives a restart is orphaned by
+definition and is returned to the owner the row names — one `trade_unwind` per
+room, not per row.
+
+Two things in that path are load-bearing and easy to get wrong:
+
+- **The exclusion set is captured BEFORE the settlement pass.** `Reconcile`
+  deletes each record as it resolves it, so reading the unresolved set
+  afterwards returns nothing and the sweep would treat rows belonging to a
+  just-resolved settlement — whose release saga is still in flight, moments
+  behind in the same process — as stranded. That is the double-delivery.
+- **A refunded meso row is ZEROED, not deleted.** The unwind saga refunds meso
+  through a bare `award_mesos` that deletes nothing, so a surviving non-zero row
+  would be refunded again by the next sweep; and a stake still in flight
+  resolves against that row by its `pending_stake_id`, so deleting it would
+  strand a debit the player has already been charged.
+
+Both are pinned by tests in `trade/settlement_reconcile_test.go`, which drives
+the boot path against a real database and httptest-backed atlas-maps and
+atlas-saga-orchestrator roots — the only way to reach the ordering, since only a
+real terminal answer makes `Reconcile` delete a record mid-run.
 
 ## Deploy steps (do these or the deploy breaks)
 
@@ -38,44 +125,46 @@ state — none of it is an oversight.
   those tables needs a `CMiniRoomBaseDlg` enter-result pass plus a StringPool read —
   deliberately not filled by copying v83, since that inherited-copy habit is what
   produced the gms_v48 opcode bug this branch fixed.
+- **Staging is now an async round trip.** A stage that is slow delays the client's
+  unlock rather than corrupting state — `m_bExclRequestSent` *is* the client's own
+  in-flight indicator, and that is its native behaviour for every other exclusive
+  request. The PRD's 200 ms staging NFR is restated as "the unlock must reach the
+  client within 1 s p99" (design §5A.11). A stage that never resolves is bounded by
+  the **orchestrator's** saga timeout, whose `SAGA_FAILED` becomes `ITEM_REFUSED`;
+  deliberately no second, service-local deadline.
 
-## Failure-path residuals (all require a failed or timed-out settlement)
+## Failure-path residuals
 
-- **The un-accept inverse is not instance-precise.** `RequestDestroyItem` destroys
-  the *first slot matching the templateId* — systematically the recipient's
-  pre-existing item, not the just-received one. For equips the count is conserved
-  but the stats are not: the giver is restored from the snapshot while the
-  recipient's own (possibly better-scrolled) instance is destroyed with nothing to
-  restore it. Exact for stackables. Closing it requires atlas-inventory to return
-  the created asset id on the compartment `ACCEPTED` event.
-- **A recipient who consumes or moves the received item before a timeout-triggered
-  walk** causes `RequestDestroyItem` to log "item not found" while the re-grant
-  still fires — a dupe. Not closable from the orchestrator; the same shape exists
-  in MTS today.
-- **A meso-credit rollback can silently fail.** `RequestChangeMeso` returns `nil`
-  after emitting `NOT_ENOUGH_MESO`, so if the recipient spends credited meso inside
-  the compensation window the giver is still re-credited and the recipient keeps
-  it. Narrow: one saga step, and the newest-first walk undoes meso first.
+- **A return can legitimately fail.** If the owner's inventory filled while the
+  trade was open, `accept_to_character` fails and the saga compensates, leaving the
+  row in escrow. Nothing is lost — the row is durable, still names its owner, is
+  visible in the REST surface, and is retried by the next boot sweep — but the
+  window lasts until the player makes room or the pod restarts. A ticker was
+  considered and rejected (design §5A.8): a background loop re-attempting a saga on
+  a cadence with no natural period, for a case the player can clear themselves.
+- **The un-accept inverse is not instance-precise.** The compensation for a failed
+  `accept_to_character` destroys the *first slot matching the templateId*
+  (`saga/compensator.go:661`) — systematically the recipient's pre-existing item,
+  not the just-received one. For equips the count is conserved but the stats are
+  not. Exact for stackables. Closing it requires atlas-inventory to return the
+  created asset id on the compartment `ACCEPTED` event. Same shape as MTS today.
+- **A meso refund dispatched during a reverse walk is best-effort.** The walk
+  logs and continues when the inverse `award_mesos` fails to dispatch
+  (`saga/compensator.go:1260`) rather than aborting the chain, which is correct —
+  aborting would strand the remaining inverses — but it means one leg can fail
+  while the rest of the compensation lands.
 - **The display-failure abort is best-effort.** When a staged item cannot be
-  rendered, the trade is cancelled rather than settled invisibly — but the cancel
-  is a no-op once the room reaches `SETTLING`, and a failed produce is log-only.
-  Both windows need the display failure *and* both confirms inside one Kafka round
-  trip.
-- **A restart with rooms in a non-settling state** has no counterpart to the
-  settlement reconciler: nothing emits `CANCELLED` for live rooms at shutdown, so
-  both clients keep a dead dialog and both sides' reservations strand for the
-  remaining TTL. `Reconcile` covers `SETTLING` only, by design.
+  rendered, atlas-channel cancels the trade rather than settling state neither
+  client can see; the cancel is a no-op once the room reaches `SETTLING`, and a
+  failed cancel is log-only ("the room may remain open until the participant
+  changes map, channel or logs out").
+- **A restart with rooms in a non-settling state emits no `CANCELLED`.** The
+  escrow *is* returned by the boot sweep, so nothing is lost — but nothing tells
+  the two clients their room is gone, so both keep a dead dialog until they change
+  map, channel or log out. `Reconcile` covers `SETTLING` only, by design.
 
 ## Accepted design limitations
 
-- **Nothing consumes atlas-inventory's reserve *failure*.** There is no
-  `RESERVE_COMMAND_FAILED` in its status contract and the consumer discards the
-  error, so closing this is a public contract change touching every reserve
-  producer. Mitigated: settlement's pre-check re-reads the compartment, so an item
-  that moved or vanished fails the trade rather than transferring wrongly.
-- **Every refresh opens a brief no-hold window** between `CANCEL_RESERVATION` and
-  `REQUEST_RESERVE` — atlas-inventory has no `RENEW` primitive. Worst case is a
-  clean `LEAVE 8`.
 - **Cross-family occupancy is best-effort**, checked in atlas-channel. No shared
   occupancy store exists across atlas-trades / atlas-mini-games / atlas-merchant.
 - **Serverbound `PLAYER_INTERACTION` remains ❌** in the coverage matrix (PRD
@@ -85,6 +174,8 @@ state — none of it is an oversight.
   All ten of its cells are byte-identical to the merge base.
 - **Reconciliation is not leadership-gated.** Safe at `replicas: 1`, and the
   record-delete arbiter is correct under concurrency regardless.
+- **FR-3.5 (a staged item cannot be un-staged) is unaffected** and, if anything,
+  better justified under escrow: the item is genuinely gone.
 
 ## Pre-existing issues found but not fixed here
 
@@ -98,6 +189,16 @@ state — none of it is an oversight.
 - The routes drift check (`deploy/shared/test/routes_nginxt.sh`) is operator-run and
   invoked by nothing in CI.
 - `gms_v48` is missing `EXIT: 10` from its interaction handler table (non-trade).
+
+## One defect worth a reviewer's attention
+
+`escrowStore` reads must be rebound onto `emit`'s transaction
+(`ProcessorImpl.withTx`). A reader left on the root handle takes a *second*
+pooled connection to answer a question asked from inside a transaction — a
+deterministic deadlock at pool size 1 and a latent one in production whenever the
+pool is exhausted — and it reads outside the transaction, so a command could miss
+its own earlier write. Found and fixed while wiring up the escrow store; it is
+invisible in normal operation.
 
 ## Matrix movement
 

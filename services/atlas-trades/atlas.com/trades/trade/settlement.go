@@ -186,10 +186,10 @@ func (p *ProcessorImpl) Confirm(txId uuid.UUID, characterId character.Id, entrie
 	// Armed REGARDLESS OF err, because the registry swap to AWAITING_ATTESTATION
 	// is in-memory and a rolled-back transaction does not undo it (see emit).
 	// A room left in that state with no deadline is wedged for good: no mode 17
-	// ever reaches the clients, so no attestation can arrive, nothing else
-	// settles it, and RefreshReservations keeps both sides' holds alive
-	// indefinitely. confirm therefore reports the room to arm as soon as the
-	// swap lands, before it buffers anything.
+	// ever reaches the clients, so no attestation can arrive and nothing else
+	// settles it, leaving both sides' staged assets in escrow until some other
+	// teardown trigger fires or the process restarts. confirm therefore reports
+	// the room to arm as soon as the swap lands, before it buffers anything.
 	if arm != uuid.Nil {
 		p.armAttestationDeadline(arm)
 	}

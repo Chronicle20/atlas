@@ -84,7 +84,32 @@ func (p *ProcessorImpl) Respawn(f field.Model, characterId uint32, useDeathItem 
 	// A failed broadcast is logged, never fatal — the revive has already been
 	// committed to the saga at this point.
 	p.announceProtectOnDie(f, characterId, rp.Protective)
+	p.announceUpgradeTombItemUse(f, characterId, rp.Wheel)
 	return nil
+}
+
+// announceUpgradeTombItemUse tells the reviving player they spent a Wheel of
+// Destiny and how many are left. The v83 client's CUser::OnEffect mode-21 arm
+// (@0x9387d0) reads one byte and CHATLOG_ADDs
+// SP_5241 "You have used 1 Wheel of Destiny in order to revive at the current
+// map. (%d left)" — a first-person chat line, so it is sent to the owner only.
+// CUserPool::OnUserRemotePacket routes the foreign variant into the very same
+// arm on the remote user object, which would put that first-person sentence in
+// every bystander's chat log; no foreign broadcast is emitted.
+func (p *ProcessorImpl) announceUpgradeTombItemUse(f field.Model, characterId uint32, a *asset.Model) {
+	if a == nil {
+		return
+	}
+	remaining := usesRemaining(a)
+
+	p.l.Debugf("Character [%d] consumed a wheel of destiny [%d]: [%d] uses remaining.", characterId, a.TemplateId(), remaining)
+
+	err := session.NewProcessor(p.l, p.ctx).IfPresentByCharacterId(f.Channel())(characterId,
+		session.Announce(p.l)(p.ctx)(p.wp)(charcb.CharacterEffectWriter)(
+			charpkt.CharacterUpgradeTombItemUseEffectBody(remaining)))
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to announce wheel of destiny use to character [%d].", characterId)
+	}
 }
 
 // announceProtectOnDie tells the dying player (and the map) that a death

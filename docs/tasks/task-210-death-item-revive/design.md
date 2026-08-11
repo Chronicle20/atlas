@@ -297,13 +297,35 @@ existed.
 
 Recorded after execution, against the state of the branch at PR time.
 
-- **OQ-3 remains open.** `expirationDays` sources `days` from
-  `asset.Expiration()` as designed, and the code comment at
-  `services/atlas-channel/atlas.com/channel/respawn/plan.go` states both that
-  the semantic is unproven and how to correct it: if the live message renders
-  the two bytes transposed, swap them there and update this note. Nothing in
-  execution moved this either way — it needs a live client, not more static
-  analysis.
+- **OQ-3 CLOSED — the field mapping is correct as implemented.** Re-read of the
+  whole v83 `CUser::OnEffect` (@0x9377d9) rather than the mode-6 entry alone
+  settles it without a live client. The arm reads `safetyCharm` (`v215`), then
+  byte2 into `v54`, then byte3 into `v214`, and on `safetyCharm != 0` calls
+  `ZXString<char>::Format(&iPacket, SP_2966_THE_EXP_DID_NOT_DROP_AFTER_USING_THE_SAFETY_CHARM_ONCE_%D_DAYS_%D_TIMES_LEFT, v214, v54)`.
+  The named string pins the argument order: byte3 → "days", byte2 → "times
+  left". That is exactly `EffectProtectOnDie{usesRemaining, days}`, so
+  `expirationDays` feeding byte3 from `asset.Expiration()` is right and no swap
+  is needed. Live confirmation from testing is consistent: a single
+  non-expiring Safety Charm rendered "(0 days / 0 times left)" — quantity 1
+  minus the consumed one is 0 uses, and a zero `Expiration()` is 0 days.
+- **The same read also closed a gap the PRD never listed: mode 21.**
+  `CUser::OnEffect` case 21 (@0x9387d0) reads one byte and CHATLOG_ADDs
+  SP_5241 "You have used 1 Wheel of Destiny in order to revive at the current
+  map. (%d left)". `CharacterUpgradeTombItemUseEffectBody` already existed in
+  `libs/atlas-packet/character/effect_body.go:306` with no emitter — the exact
+  situation `EffectProtectOnDie` was in before this task — and every one of the
+  eight templates already carries `UPGRADE_TOMB_ITEM_USE` in the
+  `CharacterEffect` operations table, so no template change was needed. The
+  channel now announces it to the reviving player from the shared revive
+  outcome. Owner only: `CUserPool::OnUserRemotePacket` (@0x9724f9) routes the
+  foreign effect into the *same* `CUser::OnEffect` arm on the remote user
+  object, so broadcasting mode 21 would print that first-person sentence in
+  every bystander's chat log.
+- **What "the foreign effect" looks like, for test purposes.** Because of that
+  same routing, foreign `CHARACTER_EFFECT` mode 6 produces a chat-log line in
+  the observer's window — not a visual over the dying character. Only
+  `SHOW_UPGRADE_TOMB_EFFECT` (`CUserRemote::OnShowUpgradeTombEffect` @0x983e40 →
+  `CUser::ShowUpgradeTombEffect`) draws anything on screen.
 - **OQ-5 remains a deliberate, documented gap.** Unchanged from above; no
   field-type model was added.
 - **Two template defects were fixed that the PRD did not contain**, both found

@@ -73,13 +73,13 @@ func usesRemaining(a *asset.Model) byte {
 }
 
 // expirationDays is the whole days left before the asset expires, 0 when no
-// expiration is set or it has already passed. This feeds the second byte of
-// EffectProtectOnDie. The v83 client (CUser::OnEffect mode-6 arm @0x937e81)
-// reads safetyCharm then two bytes and formats StringPool string 0x0B96 from
-// both; which of the two the message calls "days" lives in String.wz, not the
-// binary, so this sourcing is the defensible reading of the field name and not
-// a verified one. See design.md OQ-3 — if the live message renders the two
-// values transposed, the fix is to swap them here and update that note.
+// expiration is set or it has already passed. This feeds the third byte of
+// EffectProtectOnDie, and the mapping is verified: the v83 client's
+// CUser::OnEffect mode-6 arm (@0x937e8d) reads safetyCharm, then byte2 into
+// v54, then byte3 into v214, and formats
+// SP_2966 "The EXP did not drop after using the Safety Charm once. (%d days,
+// %d times left)" as Format(fmt, v214, v54) — byte3 is "days", byte2 is
+// "times left". Design OQ-3 is closed by that read order.
 func expirationDays(expiration time.Time, now time.Time) byte {
 	if expiration.IsZero() {
 		return 0

@@ -20,6 +20,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -28,7 +29,12 @@ import (
 // Duplicated from kite/processor_test.go's recorder (~25 lines) rather than
 // promoted to an exported test-only seam on the kite package -- an earlier
 // task in this plan had an exported test-only seam rejected in review as the
-// anti-pattern the project's *_testhelpers.go ban exists to prevent.
+// anti-pattern the project's *_testhelpers.go ban exists to prevent. Used
+// only to seed the kite under test via kite.NewProcessorWithProvider; what
+// the consumer handler itself emits is captured separately, via
+// producertest.InstallCapturing (see below), because the handler builds its
+// Processor with kite.NewProcessor -- the real singleton producer.Manager --
+// not an injected producer.Provider.
 type recorder struct {
 	mu   sync.Mutex
 	msgs map[string][]kafka.Message
@@ -55,51 +61,6 @@ func (r *recorder) provider() producer.Provider {
 	}
 }
 
-func (r *recorder) reset() {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.msgs = make(map[string][]kafka.Message)
-}
-
-func (r *recorder) messages(topic string) []kafka.Message {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	return r.msgs[topic]
-}
-
-// writerFactory lets recorder double as the process-wide producer.Manager's
-// WriterFactory. handleStatusEventMapChanged and friends build their
-// kite.Processor via kite.NewProcessor, which resolves the real singleton
-// producer rather than accepting an injected producer.Provider -- unlike
-// kite/processor_test.go, where every Processor under test is built through
-// the NewProcessorWithProvider seam. Capturing what the consumer emits
-// therefore requires intercepting one layer down, at the Manager/Writer
-// level, installed via producer.ConfigWriterFactory. The env-var token and
-// the resolved topic name coincide in tests (topic.EnvProvider falls back to
-// the raw token when the env var is unset), so both capture paths land in
-// the same r.msgs map under the same key.
-func (r *recorder) writerFactory() producer.WriterFactory {
-	return func(topicName string) producer.Writer {
-		return &recorderWriter{rec: r, topic: topicName}
-	}
-}
-
-type recorderWriter struct {
-	rec   *recorder
-	topic string
-}
-
-func (w *recorderWriter) Topic() string { return w.topic }
-
-func (w *recorderWriter) WriteMessages(_ context.Context, msgs ...kafka.Message) error {
-	w.rec.mu.Lock()
-	defer w.rec.mu.Unlock()
-	w.rec.msgs[w.topic] = append(w.rec.msgs[w.topic], msgs...)
-	return nil
-}
-
-func (w *recorderWriter) Close() error { return nil }
-
 func setup(t *testing.T) context.Context {
 	t.Helper()
 	s := miniredis.RunT(t)
@@ -120,19 +81,22 @@ func nullLogger() logrus.FieldLogger {
 }
 
 // A map change must destroy the kite against the OLD field, instance included.
-// Capturing `of` before the index transition is what keeps the DESTROYED event
-// from fanning out to the map the character just walked into.
+// Capturing `of` before the index transition is what keeps the character-in-
+// field index update from racing the destroy -- the DESTROYED event's own
+// fan-out target is unaffected by this ordering, since Destroy reads the
+// kite's field off the stored Model, independent of the index.
 func TestMapChangedDestroysAgainstOldFieldWithInstance(t *testing.T) {
 	ctx := setup(t)
 	l := nullLogger()
-	rec := newRecorder() // same recording producer.Provider as kite/processor_test.go
 
 	// handleStatusEventMapChanged's DestroyAndEmit call builds its Processor
-	// via kite.NewProcessor, i.e. the real singleton producer.Manager -- so
-	// rec must also be installed as that Manager's WriterFactory to observe
-	// what the handler (as opposed to the seed call below) actually emits.
-	producer.ResetInstance()
-	producer.GetManager(producer.ConfigWriterFactory(rec.writerFactory()))
+	// via kite.NewProcessor, i.e. the real singleton producer.Manager, so
+	// observing what it emits needs the shared producertest.Capture seam
+	// installed on that Manager (the same seam atlas-consumables' food
+	// consumer test uses) rather than the recorder below, which only seeds.
+	capture := producertest.InstallCapturing()
+
+	rec := newRecorder() // same recording producer.Provider as kite/processor_test.go
 
 	oldInst := uuid.New()
 	newInst := uuid.New()
@@ -142,7 +106,6 @@ func TestMapChangedDestroysAgainstOldFieldWithInstance(t *testing.T) {
 		CreateAndEmit(of, 42, kiteMsg.CreateCommandBody{Name: "Player", TemplateId: 5080000, Message: "hi", X: 320, Y: -140}); err != nil {
 		t.Fatalf("seed kite: %v", err)
 	}
-	rec.reset()
 
 	handleStatusEventMapChanged(l, ctx, character2.StatusEvent[character2.StatusEventMapChangedBody]{
 		WorldId:     0,
@@ -161,7 +124,7 @@ func TestMapChangedDestroysAgainstOldFieldWithInstance(t *testing.T) {
 		t.Error("kite survived the owner's map change")
 	}
 
-	msgs := rec.messages(kiteMsg.EnvEventTopicStatus)
+	msgs := capture.Messages(kiteMsg.EnvEventTopicStatus)
 	if len(msgs) != 1 {
 		t.Fatalf("emitted %d status events, want 1 (DESTROYED)", len(msgs))
 	}

@@ -52,6 +52,11 @@ func handleDestroyCommand(l logrus.FieldLogger, ctx context.Context, c kiteMsg.C
 	if c.Type != kiteMsg.CommandKiteDestroy {
 		return
 	}
+	// The Task 6 contract defines only the two teardown reasons
+	// (OWNER_LEFT, OWNER_LOGGED_OUT); no producer for this DESTROY command
+	// exists yet anywhere in the plan, so there is no real cause to report.
+	// OWNER_LEFT is the closest available value -- revisit this once an
+	// actual command producer (e.g. a player-initiated pickup) is wired.
 	if _, err := kite.NewProcessor(l, ctx).DestroyAndEmit(c.CharacterId, kiteMsg.DestroyReasonOwnerLeft); err != nil {
 		l.WithError(err).Debugf("Unable to destroy kite for character [%d].", c.CharacterId)
 	}

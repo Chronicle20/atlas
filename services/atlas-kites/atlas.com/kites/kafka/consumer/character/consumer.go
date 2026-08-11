@@ -73,9 +73,12 @@ func handleStatusEventMapChanged(l logrus.FieldLogger, ctx context.Context, e ch
 	if e.Type != character2.EventCharacterStatusTypeMapChanged {
 		return
 	}
-	// `of` is captured BEFORE the index transition: the DESTROYED event is
-	// keyed and fanned out on the kite's own field, and the kite is on the map
-	// the character is leaving.
+	// `of` is captured BEFORE the index transition purely so the
+	// character-in-field index update reflects the departing map; it has no
+	// bearing on where DESTROYED fans out. DestroyAndEmit takes no field at
+	// all -- Destroy reads the kite's own field off the stored Model, so the
+	// event is keyed and fanned out on the map the kite was actually placed
+	// in regardless of this handler's ordering.
 	of := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.OldMapId).SetInstance(e.Body.OldInstance).Build()
 	nf := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.TargetMapId).SetInstance(e.Body.TargetInstance).Build()
 	character.NewProcessor(l, ctx).TransitionMap(of, nf, e.CharacterId)

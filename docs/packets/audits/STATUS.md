@@ -4,18 +4,18 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `073638b795efe516aa0554d76bfebf58254d24c72b8eccedb2ae706cf2e082c0`
+Tool: `34d2910f1875ffcf55a226a8f9e63484bf352351395b77f86c5e7aa5d9ea0589`
 
-- export gms_v48: `2a9d92fbe9e27a3ae8025c482be3864ef9e6da7de729c36d4dfbc311e245f7f9`
-- export gms_v61: `642b7f9f0bb33456c8d882625543f90830cd2c1565449ffb67df10e7d37a61e2`
-- export gms_v72: `395713c15ddfb2f14c3d54ff1144b301202cc21b5fffe36e690f74ec03f476d9`
-- export gms_v79: `a13de8485fb0a18fcf98cd8b2abac79eba951e1e400828d1a9defca4247d4a4d`
-- export gms_v83: `152403f0751e5b024cb418600fe066ea7ea781991f9021a696e5a838b4091aef`
-- export gms_v84: `31154c5286b45e15598dae44cd06d53dce40bf6f6d150f339013fe0b521af410`
-- export gms_v87: `6c12ddf3d1d5b2773f4ae0321f974602594de3b8841ea3b212cde36a210308a4`
-- export gms_v92: `8ad4c000afa2cfc738704e6e269a9034e3e4c3cbd02aed4c8ee61f736b2f32bd`
-- export gms_v95: `2ab3b17ec6cb2dd0cf79894d3ece12c9d5fab35f2a9ae38c33f8f5d1fa4b9b50`
-- export jms_v185: `00d17f2de6642a54e0aab7aa13ae6d9419a7dff9c028d216019671aec0089a88`
+- export gms_v48: `414865a74e4c7480d12a82d94114438a90b21c3b7fcb69e007baa4e00caca2d2`
+- export gms_v61: `e5175ce83d43a32fc545996e11d501ddca9412daefb935dfa9d6f84333ae8bdc`
+- export gms_v72: `0ec3228a921a1aa8db483b2bcad6c5053304bbaaf829a84371c49b745b001183`
+- export gms_v79: `f0075f14f41f704ecb53afd9c4c19b663d54672acebf640086911acb2efaea80`
+- export gms_v83: `cffc893fdc8bb810392b84267745cf7165f6c68d917282075ed5650072c0c434`
+- export gms_v84: `c1342ea01ff9909a75151ac8014da6b1438070d153f9158e503e538ef8b95fb5`
+- export gms_v87: `13851732c72e0c86cb8031c223eb6f28ae08975da315d212c768dfb032ffa98a`
+- export gms_v92: `cedc1d4d1dac621e9027df6541694f00f0e8302ad9de479fd07df2eb279f9184`
+- export gms_v95: `ed8075509b752051cf7b3f782d0f255f9aee4631863d0bf94739b7408d3f1f5c`
+- export jms_v185: `84915eaeefc08d5310d34f44f0b84d93822d1acf8c55a1519085f512a56e47ce`
 
 ## Clientbound
 
@@ -296,7 +296,7 @@ Tool: `073638b795efe516aa0554d76bfebf58254d24c72b8eccedb2ae706cf2e082c0`
 | IDA_0X0AC | CField::OnStalkResult | field/clientbound/FieldStalkResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0AC | ✅ |  | ⬜ |
 | RANDOM_EMOTION | CUser::OnRandomEmotion |  |  | ⬜ | 0x0AC | ❌ | 0x0CD | ❌ | 0x0D3 | ❌ | 0x0E2 | ❌ | 0x0E7 | ❌ | 0x0F0 | ❌ | 0x104 | ❌ | 0x102 | ❌ |  | ⬜ |
 | COOLDOWN | CUserLocal::OnSkillCooltimeSet | character/clientbound/CharacterSkillCooldown (T1) |  | ⬜ | 0x0AD | 🟡ᶠ | 0x0CE | 🟡ᶠ | 0x0D4 | 🟡ᶠ | 0x0EA | ✅ | 0x0F0 | ✅ | 0x0FA | ✅ | 0x112 | 🟡ᶠ | 0x114 | ✅ | 0x0FB | ✅ |
-| SHOW_UPGRADE_TOMB_EFFECT | CUserRemote::OnShowUpgradeTombEffect |  |  | ⬜ |  | ⬜ | 0x0B1 | ❌ | 0x0B5 | ❌ | 0x0C3 | ❌ | 0x0C7 | ❌ | 0x0D0 | ❌ | 0x0DF | ❌ | 0x0DD | ❌ | 0x0C9 | ❌ |
+| SHOW_UPGRADE_TOMB_EFFECT | CUserRemote::OnShowUpgradeTombEffect | character/clientbound/ShowUpgradeTombEffect (T1) |  | ⬜ |  | ⬜ | 0x0B1 | ✅ | 0x0B5 | ✅ | 0x0C3 | ✅ | 0x0C7 | ✅ | 0x0D0 | ✅ | 0x0DF | ✅ | 0x0DD | ✅ | 0x0C9 | ✅ |
 | SPAWN_NPC | CNpcPool::OnNpcEnterField | npc/clientbound/NpcSpawn (T1) | 0x0B1 | ✅ | 0x0C2 | 🟡ᶠ | 0x0E3 | 🟡ᶠ | 0x0EB | 🟡ᶠ | 0x101 | ✅ | 0x108 | ✅ | 0x112 | ✅ | 0x12F | ❌ | 0x137 | ✅ | 0x116 | ✅ |
 | MOVE_MONSTER | CMob::OnMove | monster/clientbound/MonsterMovement (T1) |  | ⬜ | 0x0B2 | ✅ | 0x0D3 | ✅ | 0x0D9 | ✅ | 0x0EF | ✅ | 0x0F5 | ✅ | 0x0FF | ✅ | 0x117 | ❌ | 0x11F | ✅ | 0x100 | ✅ |
 | REMOVE_NPC | CNpcPool::OnNpcLeaveField |  | 0x0B2 | ❌ | 0x0C3 | ❌ | 0x0E4 | ❌ | 0x0EC | ❌ | 0x102 | ❌ | 0x109 | ❌ | 0x113 | ❌ | 0x130 | ❌ | 0x138 | ❌ | 0x117 | ❌ |
@@ -574,9 +574,9 @@ Tool: `073638b795efe516aa0554d76bfebf58254d24c72b8eccedb2ae706cf2e082c0`
 | MOVING_SHOOT_ATTACK_PREPARE | CUserLocal::TryDoingSmoothingMovingShootAttackPrepare |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x033 | ❌ |  | ⬜ |
 | MOB_BANISH_PLAYER | CUserLocal::SendBanMapByMobRequest | character/serverbound/CharacterMobBanishPlayer (T1) |  | ⬜ | 0x034 | 🟡ᶠ | 0x037 | 🟡ᶠ | 0x036 | 🟡ᶠ | 0x038 | ✅ | 0x038 | ✅ | 0x03B | ✅ | 0x03E | ❌ | 0x03D | ✅ | 0x030 | ✅ |
 | STORAGE | CTrunkDlg::SendGetItemRequest; CTrunkDlg::SendGetMoneyRequest; CTrunkDlg::SendPacket; CTrunkDlg::SendPutItemRequest; CTrunkDlg::SendPutMoneyRequest; CTrunkDlg::SendSortItemRequest; CTrunkDlg::SetRet; sub_57E987; sub_5832D1; sub_603341; sub_73B5B6 |  | 0x034 | ❌ | 0x03D | ❌ | 0x03D | ❌ | 0x03C | ❌ | 0x03E | ❌ | 0x03E | ❌ | 0x041 | ❌ | 0x044 | ❌ | 0x043 | ❌ | 0x036 | ❌ |
+| USE_DEATHITEM | CUserLocal::RequestUpgradeTombEffect | character/serverbound/UseDeathItem (T1) |  | ⬜ |  | ⬜ | 0x034 | ✅ | 0x033 | ✅ | 0x035 | ✅ | 0x035 | ✅ | 0x038 | ✅ | 0x03B | ✅ | 0x03A | ✅ | 0x02D | ✅ |
 | USE_ITEMEFFECT | CWvsContext::SendActiveEffectItemChange |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x034 | ❌ | 0x034 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x039 | ❌ | 0x02C | ❌ |
 | MONSTER_BOOK_COVER | CUserLocal::SetMonsterBookCover | character/serverbound/monsterbook/CharacterCover (T1) |  | ⬜ | 0x035 | ✅ | 0x038 | ✅ | 0x037 | ✅ | 0x039 | ✅ | 0x039 | ✅ | 0x03C | ✅ | 0x03F | ❌ | 0x03E | ✅ | 0x031 | ✅ |
-| USE_DEATHITEM | CUserLocal::RequestUpgradeTombEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x035 | ❌ | 0x035 | ❌ | 0x038 | ❌ | 0x03B | ❌ | 0x03A | ❌ | 0x02D | ❌ |
 | UNNAMED_R74 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x036 | ❌ | 0x036 | ❌ | 0x039 | ❌ | 0x03C | ❌ | 0x03B | ❌ | 0x02E | ❌ |
 | ITEM_MOVE | CWvsContext::SendChangeSlotPositionRequest; sub_70D8DE; sub_831C83 | inventory/serverbound/InventoryMove (T1) | 0x037 | ✅ | 0x046 | ❌ | 0x046 | 🟡ᶠ | 0x045 | 🟡ᶠ | 0x047 | ❌ | 0x047 | ❌ | 0x04A | ✅ | 0x04E | 🟡ᶠ | 0x04D | ✅ | 0x03F | ✅ |
 | UNNAMED_R75 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03D | ❌ | 0x03C | ❌ | 0x02F | ❌ |
@@ -946,10 +946,6 @@ Tool: `073638b795efe516aa0554d76bfebf58254d24c72b8eccedb2ae706cf2e082c0`
 | guild/serverbound/GuildSetNotice (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildSetTitleNames (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildWithdraw (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
-| interaction/clientbound/InteractionInteractionTradeAddMeso (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| interaction/clientbound/InteractionInteractionTradeConfirm (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| interaction/clientbound/InteractionInteractionTradeMesoLimit (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ⬜ |
-| interaction/clientbound/InteractionInteractionTradePutItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/clientbound/InteractionInteractionUpdateMerchant (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationChat (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationFieldAddToBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
@@ -972,7 +968,7 @@ Tool: `073638b795efe516aa0554d76bfebf58254d24c72b8eccedb2ae706cf2e082c0`
 | interaction/serverbound/InteractionOperationTradeAddMeso (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationTradeConfirm (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationTradePutItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
-| interaction/serverbound/InteractionOperationTransaction (T1) |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| interaction/serverbound/InteractionOperationTransaction (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | inventory/serverbound/InventoryMove (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/AuthLoginFailed |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/AuthPermanentBan |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -1056,16 +1052,16 @@ Tool: `073638b795efe516aa0554d76bfebf58254d24c72b8eccedb2ae706cf2e082c0`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 201 | 0 | 19 | 194 | 606 | 0 | 48.6% |
-| v61 | 263 | 0 | 58 | 235 | 464 | 0 | 47.3% |
-| v72 | 277 | 0 | 71 | 251 | 421 | 0 | 46.2% |
-| v79 | 322 | 0 | 70 | 248 | 380 | 0 | 50.3% |
-| v83 | 442 | 0 | 0 | 349 | 229 | 0 | 55.9% |
-| v84 | 416 | 0 | 0 | 356 | 248 | 0 | 53.9% |
-| v87 | 450 | 0 | 0 | 379 | 191 | 0 | 54.3% |
-| v92 | 16 | 0 | 152 | 710 | 142 | 0 | 1.8% |
-| v95 | 475 | 0 | 0 | 438 | 107 | 0 | 52.0% |
-| JMS185 | 424 | 0 | 0 | 398 | 198 | 0 | 51.6% |
+| v48 | 198 | 0 | 19 | 194 | 605 | 0 | 48.2% |
+| v61 | 260 | 0 | 58 | 235 | 463 | 0 | 47.0% |
+| v72 | 276 | 0 | 71 | 250 | 419 | 0 | 46.2% |
+| v79 | 321 | 0 | 70 | 247 | 378 | 0 | 50.3% |
+| v83 | 440 | 0 | 0 | 347 | 229 | 0 | 55.9% |
+| v84 | 414 | 0 | 0 | 354 | 248 | 0 | 53.9% |
+| v87 | 448 | 0 | 0 | 377 | 191 | 0 | 54.3% |
+| v92 | 13 | 0 | 152 | 709 | 142 | 0 | 1.5% |
+| v95 | 473 | 0 | 0 | 436 | 107 | 0 | 52.0% |
+| JMS185 | 423 | 0 | 0 | 396 | 197 | 0 | 51.6% |
 
 ## Conflicts
 

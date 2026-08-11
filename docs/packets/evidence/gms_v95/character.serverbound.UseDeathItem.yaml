@@ -1,0 +1,10 @@
+packet: character/serverbound/UseDeathItem
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::RequestUpgradeTombEffect
+    address: "0x908320"
+    decompile_sha256: 21f07544f51cad66cfdf9fd7854d9fd11b9b0eb6f509a34eec62ed8e17779216
+verifies:
+  - libs/atlas-packet/character/serverbound/use_death_item_test.go#TestUseDeathItemByteOutput

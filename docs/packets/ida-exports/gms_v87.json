@@ -2672,6 +2672,28 @@
         }
       ]
     },
+    "CUserRemote::OnShowUpgradeTombEffect": {
+      "address": "0xa098f2",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (read by CUserPool dispatcher before OnShowUpgradeTombEffect, case 0xD0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "x"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y"
+        }
+      ]
+    },
     "CWvsContext::OnTemporaryStatReset": {
       "address": "0xab7dc1",
       "direction": "clientbound",
@@ -9206,6 +9228,24 @@
       "address": "0x8d93c3",
       "direction": "",
       "calls": null
+    },
+    "CUserLocal::RequestUpgradeTombEffect": {
+      "address": "0x9dd673",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "itemId — hard-coded 5510000 (0x541370)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "x"
+        },
+        {
+          "op": "Encode4",
+          "comment": "y"
+        }
+      ]
     },
     "CUserLocal::SendBanMapByMobRequest": {
       "address": "0x9df571",

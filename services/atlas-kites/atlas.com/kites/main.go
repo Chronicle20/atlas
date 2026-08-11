@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-kites/kite"
 	"os"
 
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
@@ -49,6 +50,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
+		AddRouteInitializer(kite.InitResource(GetServer())).
 		Run()
 
 	rt.Wait()

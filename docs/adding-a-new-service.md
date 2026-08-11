@@ -79,6 +79,30 @@ next generator run silently reverts you — always re-run the generator.
 | 6.2 | `tools/db-bootstrap.sh` | Add the **unsuffixed** DB name to the hand-edited `DBS` list (local/dev bootstrap). |
 | 6.3 | PR envs | Nothing beyond 4.1 — create and drop are derived from `ATLAS_DB_NAMES`. |
 
+## 6b. GHCR package visibility (one-time, manual, out-of-repo)
+
+The first `docker buildx bake` push of `ghcr.io/chronicle20/atlas-<svc>/atlas-<svc>`
+**creates the GHCR package as private.** Every existing atlas package is
+public, and the cluster pulls **anonymously** — no `imagePullSecrets` on any
+Deployment. So the new service is the only one that cannot be pulled:
+
+```
+Failed to pull image "ghcr.io/chronicle20/atlas-<svc>/atlas-<svc>:pr-<N>-<sha>":
+  failed to authorize: failed to fetch anonymous token: … 401 Unauthorized
+```
+
+CI is green and the image genuinely exists — the pod still sits in
+`ImagePullBackOff` forever. Fix: after the first successful build, set the
+package to **Public** (GitHub → Packages → `atlas-<svc>/atlas-<svc>` → Package
+settings → Change visibility), then delete the stuck pod so the kubelet retries.
+
+Verify anonymously — 200 means public, 401 means still private:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' \
+  'https://ghcr.io/token?scope=repository%3Achronicle20%2Fatlas-<svc>%2Fatlas-<svc>%3Apull&service=ghcr.io'
+```
+
 ## 7. Socket services only
 
 A new socket-exposing service (or a new client version) needs LB port rows in
@@ -147,6 +171,8 @@ docker manifest inspect ghcr.io/chronicle20/atlas-<svc>/atlas-<svc>:main-<sha>
 docker buildx bake atlas-<svc>
 ```
 
-And the one manual step no tool can check: **create `atlas-<db>-main` on
+And the two manual steps no tool can check: **create `atlas-<db>-main` on
 postgres.home** (section 6.1) before merging — the pods crash-loop on
-SQLSTATE 3D000 until it exists.
+SQLSTATE 3D000 until it exists — and **flip the new GHCR package to public**
+(section 6b) after the first image push, or the pod sits in `ImagePullBackOff`
+against a 401 while CI reports a clean build.

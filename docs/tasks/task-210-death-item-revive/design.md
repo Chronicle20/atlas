@@ -330,6 +330,22 @@ Recorded after execution, against the state of the branch at PR time.
   `packet-audit matrix --check` was already failing as orphan markers at the
   base commit. Markers are now added per version as that version's cell is
   actually verified.
+- **§6's broadcast-level assertions did not land as written.** The Unit B bullet
+  called for asserting "exactly one foreign broadcast, correct
+  `characterId`/`itemId`/`x`/`y`, and no announce to the owner's own session,"
+  and the Unit C bullet called for asserting the owner's `EffectProtectOnDie`
+  and other sessions' `EffectProtectOnDieForeign` announces. What shipped
+  instead is table-driven tests over the pure predicates
+  (`canShowTombEffect` in `socket/handler/use_death_item_test.go`,
+  `planRespawn`/`usesRemaining`/`expirationDays` in `respawn/plan_test.go`) —
+  the session/broadcast plumbing itself is untested. `context.md` §3
+  pre-adjudicated the mocking difficulty for `planRespawn` specifically; it
+  does not cover these broadcast-call assertions, so this is a real delta
+  between design and branch, not a pre-agreed reduction in scope. The
+  owner-exclusion invariant for Unit B (§1.3 OQ-4: no echo to the sender) is
+  therefore currently structural — one `ForOtherSessionsInMap` call site in
+  `socket/handler/use_death_item.go` and no owner-directed `session.Announce`
+  call anywhere in the file — rather than test-enforced.
 - **Tooling note for future packet work, not a defect of this branch:** the
   packet-audit harvest tool's `-ida-database` flag does not work against the
   live ida-pro-mcp server, and its fallback silently harvests whichever image

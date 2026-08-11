@@ -40,6 +40,11 @@ func CharacterUseDeathItemHandleFunc(l logrus.FieldLogger, ctx context.Context, 
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
+		if !item.IsWheelOfFortune(item.Id(p.ItemId())) {
+			l.Warnf("Character [%d] requested a death item tomb effect for item [%d] which is not the Wheel of Destiny. Ignoring.", s.CharacterId(), p.ItemId())
+			return
+		}
+
 		c, err := character.NewProcessor(l, ctx).GetById()(s.CharacterId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get character [%d] for death item tomb effect.", s.CharacterId())

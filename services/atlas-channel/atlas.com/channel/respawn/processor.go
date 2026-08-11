@@ -5,7 +5,6 @@ import (
 	"atlas-channel/character"
 	map_ "atlas-channel/data/map"
 	channelInventory "atlas-channel/inventory"
-	channelMap "atlas-channel/map"
 	"atlas-channel/saga"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -112,10 +111,20 @@ func (p *ProcessorImpl) announceUpgradeTombItemUse(f field.Model, characterId ui
 	}
 }
 
-// announceProtectOnDie tells the dying player (and the map) that a death
-// protection item absorbed the experience loss, and how many uses are left.
-// The mode byte is resolved from the tenant's CharacterEffect writer options
+// announceProtectOnDie tells the dying player that a death protection item
+// absorbed the experience loss, and how many uses are left. The mode byte is
+// resolved from the tenant's CharacterEffect writer options
 // (PROTECT_ON_DIE_ITEM_USE) rather than hard-coded.
+//
+// Owner only, same reasoning as announceUpgradeTombItemUse: the mode-6 arm of
+// CUser::OnEffect (@0x937e8d) has no visual — it only CHATLOG_ADDs the
+// first-person SP_2966 "The EXP did not drop after using the Safety Charm
+// once. (%d days, %d times left)", and CUserPool::OnUserRemotePacket routes
+// the foreign variant into that same arm on the remote user object. A
+// bystander would therefore see nothing but someone else's sentence in their
+// own chat log. PRD FR-5.1 asked for the foreign broadcast on the assumption
+// it rendered something over the dying character; the client says it does not,
+// so it is deliberately not sent.
 func (p *ProcessorImpl) announceProtectOnDie(f field.Model, characterId uint32, a *asset.Model) {
 	if a == nil {
 		return
@@ -132,13 +141,6 @@ func (p *ProcessorImpl) announceProtectOnDie(f field.Model, characterId uint32, 
 			charpkt.CharacterProtectOnDieItemUseEffectBody(safetyCharm, remaining, days, templateId)))
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to announce protect-on-die effect to character [%d].", characterId)
-	}
-
-	err = channelMap.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId,
-		session.Announce(p.l)(p.ctx)(p.wp)(charcb.CharacterEffectForeignWriter)(
-			charpkt.CharacterProtectOnDieItemUseEffectForeignBody(characterId, safetyCharm, remaining, days, templateId)))
-	if err != nil {
-		p.l.WithError(err).Errorf("Unable to broadcast protect-on-die effect for character [%d].", characterId)
 	}
 }
 

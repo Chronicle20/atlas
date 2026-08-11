@@ -321,11 +321,23 @@ Recorded after execution, against the state of the branch at PR time.
   foreign effect into the *same* `CUser::OnEffect` arm on the remote user
   object, so broadcasting mode 21 would print that first-person sentence in
   every bystander's chat log.
-- **What "the foreign effect" looks like, for test purposes.** Because of that
-  same routing, foreign `CHARACTER_EFFECT` mode 6 produces a chat-log line in
-  the observer's window — not a visual over the dying character. Only
+- **FR-5.1's foreign broadcast is deliberately NOT implemented.** The PRD asked
+  for `EffectProtectOnDieForeign` to the rest of the map on the assumption that
+  it rendered something over the dying character. It does not: because
+  `CUserPool::OnUserRemotePacket` routes the foreign effect into the same
+  `CUser::OnEffect` arm on the remote user object, mode 6 on a bystander's
+  client only CHATLOG_ADDs the first-person SP_2966 sentence into that
+  bystander's own chat log — someone else's "The EXP did not drop after using
+  the Safety Charm once…" with no visual and no attribution. That is noise, not
+  an effect, so only the owner announcement is sent. Same call for mode 21.
+  `CharacterProtectOnDieItemUseEffectForeignBody` and
+  `CharacterUpgradeTombItemUseEffectForeignBody` remain in `libs/atlas-packet`
+  (codecs are protocol surface, not policy) with no emitter.
+- **The only on-screen foreign feedback is the tomb effect.**
   `SHOW_UPGRADE_TOMB_EFFECT` (`CUserRemote::OnShowUpgradeTombEffect` @0x983e40 →
-  `CUser::ShowUpgradeTombEffect`) draws anything on screen.
+  `CUser::ShowUpgradeTombEffect`) is the one packet in this task that draws
+  anything over another player, and it is broadcast from
+  `CharacterUseDeathItemHandleFunc` as designed.
 - **OQ-5 remains a deliberate, documented gap.** Unchanged from above; no
   field-type model was added.
 - **Two template defects were fixed that the PRD did not contain**, both found

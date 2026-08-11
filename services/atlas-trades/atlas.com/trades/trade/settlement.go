@@ -932,17 +932,20 @@ func (p *ProcessorImpl) SettlementFailed(txId uuid.UUID, settlementId uuid.UUID,
 //     has re-read the same row rather than written a second one — whereas
 //     writing after the claim would make the audit record conditional on
 //     winning a race it has no business depending on.
-//  2. The RECORD is deleted, and its rows-affected decides the winner. Two
+//  2. The ESCROW MESO is discharged, on SUCCESS ONLY, and still BEFORE the
+//     arbiter — see dischargeSettledMesos for what a row that outlives the
+//     record costs.
+//  3. The RECORD is deleted, and its rows-affected decides the winner. Two
 //     concurrent deliveries serialise on that delete, so exactly one proceeds
 //     to emit.
-//  3. The ROOM, if this process still has one, is removed.
-//  4. The ESCROW is unwound, on FAILURE ONLY. A failed settlement has been
+//  4. The ROOM, if this process still has one, is removed.
+//  5. The ESCROW is unwound, on FAILURE ONLY. A failed settlement has been
 //     compensated by the orchestrator, which restored every custody row it had
 //     released — so the items are back in escrow with no trade left to deliver
 //     them, and somebody has to hand them back. On success the expanded
-//     release_from_trade steps already emptied the escrow, and unwinding would
-//     be a second delivery of assets that are no longer there.
-//  5. The client-visible outcome is emitted, built entirely from the record.
+//     release_from_trade steps already emptied the escrow of ITEMS, and
+//     unwinding would be a second delivery of assets that are no longer there.
+//  6. The client-visible outcome is emitted, built entirely from the record.
 func (p *ProcessorImpl) completeSettlement(mb *message.Buffer, txId uuid.UUID, settlementId uuid.UUID, success bool, reason string) error {
 	sp := settlement.NewProcessor(p.l, p.ctx, p.db)
 	s, err := sp.GetByTransactionId(settlementId)
@@ -961,6 +964,23 @@ func (p *ProcessorImpl) completeSettlement(mb *message.Buffer, txId uuid.UUID, s
 			return rerr
 		}
 		entryId = entry.Id()
+
+		// BEFORE the arbiter, deliberately. The settlement record is the only
+		// thing keeping this room out of the boot sweep — ReconcileAtBoot builds
+		// its `owned` exclusion set from the unresolved records — so discharging
+		// AFTER sp.Resolve would open a window in which the row exists with no
+		// record shielding it. A crash inside that window leaves a room-less,
+		// non-zero row, and the next boot refunds the giver a stake they have
+		// already handed over and the receiver has already been paid. Running
+		// first closes the window entirely: the row can only outlive the record
+		// if it was never discharged, and it cannot be.
+		//
+		// A delivery that goes on to LOSE the arbitration has merely repeated a
+		// discharge that is idempotent by construction — zeroing a row already at
+		// zero, and deleting one already deleted.
+		if derr := p.dischargeSettledMesos(s.RoomId()); derr != nil {
+			return derr
+		}
 	}
 
 	won, err := sp.Resolve(settlementId)
@@ -1280,12 +1300,60 @@ func ReconcileEscrow(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, own
 // decides whether a stake is in flight, and a stage arming one concurrently keeps
 // its row.
 func (p *ProcessorImpl) clearRefundedMesos(roomId uuid.UUID, mesos []sharedsaga.TradeUnwindMeso) error {
-	ep := escrow.NewProcessor(p.l, p.ctx, p.db)
+	owners := make([]character.Id, 0, len(mesos))
 	for _, m := range mesos {
-		if err := ep.UpsertMeso(roomId, m.CharacterId, 0); err != nil {
+		owners = append(owners, m.CharacterId)
+	}
+	return p.retireEscrowMesos(roomId, owners)
+}
+
+// dischargeSettledMesos retires the room's escrow meso rows once its settlement
+// has SUCCEEDED. It is the meso counterpart of the release_from_trade steps the
+// expanded settlement saga already emits for every ITEM.
+//
+// Without it a successful trade MINTS meso. expandTradeSettlement's meso leg is
+// a bare award_mesos CREDIT to the receiver; no step removes or zeroes the
+// giver's escrow row. The row therefore survives the trade, and the moment
+// sp.Resolve deletes the settlement record nothing names its room any more — so
+// the next boot's ReconcileEscrow finds a room-less row carrying the full
+// MesoStaged, misses ReconcileAtBoot's `owned` exclusion set, and refunds the
+// giver a stake they have already handed over and the receiver has already been
+// paid. That fires on EVERY successful settlement that staged meso, not on a
+// race.
+//
+// It is driven from the DURABLE record's room id rather than a live room, for
+// the same reason unwindRecord is: a restart between submission and the terminal
+// status leaves no room at all, and the discharge still has to happen.
+//
+// The rows are read fresh rather than replayed off the record's MesoStaged
+// figures, so a row a concurrent path already retired contributes nothing.
+func (p *ProcessorImpl) dischargeSettledMesos(roomId uuid.UUID) error {
+	mesos, err := p.esc.MesosByRoom(roomId)
+	if err != nil {
+		return err
+	}
+	owners := make([]character.Id, 0, len(mesos))
+	for _, m := range mesos {
+		owners = append(owners, m.OwnerId())
+	}
+	return p.retireEscrowMesos(roomId, owners)
+}
+
+// retireEscrowMesos is the zero-then-conditionally-delete both discharge paths
+// share. It is one function rather than two because the guarantee is the same
+// either way — the escrow this room recorded is settled, by refund or by
+// delivery — and only the way its owners are named differs.
+//
+// The conditional delete is the load-bearing half: DeleteResolvedMeso refuses a
+// row still carrying a pending stake, so the zeroing above it is what keeps a
+// stale total out of the next sweep for exactly the rows that must survive.
+func (p *ProcessorImpl) retireEscrowMesos(roomId uuid.UUID, owners []character.Id) error {
+	ep := escrow.NewProcessor(p.l, p.ctx, p.db)
+	for _, o := range owners {
+		if err := ep.UpsertMeso(roomId, o, 0); err != nil {
 			return err
 		}
-		if _, err := ep.DeleteResolvedMeso(roomId, m.CharacterId); err != nil {
+		if _, err := ep.DeleteResolvedMeso(roomId, o); err != nil {
 			return err
 		}
 	}

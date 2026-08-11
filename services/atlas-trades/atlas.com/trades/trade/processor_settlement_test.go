@@ -4,11 +4,13 @@ import (
 	"atlas-trades/configuration"
 	inventorydata "atlas-trades/data/inventory"
 	sagadata "atlas-trades/data/saga"
+	"atlas-trades/escrow"
 	"atlas-trades/kafka/message"
 	sagamsg "atlas-trades/kafka/message/saga"
 	trademsg "atlas-trades/kafka/message/trade"
 	"atlas-trades/ledger"
 	"atlas-trades/settlement"
+	"context"
 	"encoding/json"
 	"errors"
 	"sync"
@@ -1513,3 +1515,237 @@ func TestExpireAttestationFailingToSubmitDoesNotWedgeTheRoom(t *testing.T) {
 
 // compile-time assurance the settlement fake satisfies the seam it stands in for.
 var _ sagaSubmitter = (*failingSagaSubmitter)(nil)
+
+// --- the escrow meso a settled trade leaves behind ------------------------------
+//
+// The custody rows read below are the REAL ones. The escrowStore is faked in this
+// harness, but the meso half of staging is not injected at all — addMeso and
+// resolveMesoStake build an escrow.Processor over the command's own transaction —
+// so a room that staged meso has genuine rows in this database, which is exactly
+// what a boot sweep would find.
+
+// escrowMesoRowsOf reads the room's committed escrow meso rows straight out of
+// the database, bypassing the faked read seam.
+func escrowMesoRowsOf(t *testing.T, p *ProcessorImpl, roomId uuid.UUID) []escrow.MesoModel {
+	t.Helper()
+	rows, err := escrow.MesosByRoom(p.db, p.t.Id())(roomId)
+	if err != nil {
+		t.Fatalf("read escrow meso rows: %v", err)
+	}
+	return rows
+}
+
+// testSettlingRoomWithMeso is testConfirmedRoomWithMeso driven through both
+// attestations, so its settlement saga is in flight and only the terminal status
+// is missing.
+func testSettlingRoomWithMeso(t *testing.T, characterId character.Id, amount uint32) (*ProcessorImpl, *emitted) {
+	t.Helper()
+	p, e := testConfirmedRoomWithMeso(t, characterId, amount)
+	for _, id := range []character.Id{100, 200} {
+		if err := p.Attest(uuid.New(), id, nil); err != nil {
+			t.Fatalf("attest for %d: %v", id, err)
+		}
+	}
+	return p, e
+}
+
+// bootSweep runs ReconcileEscrow exactly as ReconcileAtBoot would: the exclusion
+// set is built from the settlement records that are still unresolved, so a room
+// whose settlement has completed is deliberately NOT shielded from the sweep.
+func bootSweep(t *testing.T, p *ProcessorImpl) {
+	t.Helper()
+	ctx := context.Background()
+	inFlight, err := settlement.Unresolved(ctx, p.db)
+	if err != nil {
+		t.Fatalf("read unresolved settlements: %v", err)
+	}
+	owned := make(map[uuid.UUID]struct{}, len(inFlight))
+	for _, s := range inFlight {
+		owned[s.RoomId()] = struct{}{}
+	}
+	if err := ReconcileEscrow(reconcileLogger(), ctx, p.db, owned); err != nil {
+		t.Fatalf("boot escrow sweep: %v", err)
+	}
+}
+
+// TestSettlementSuccessDischargesTheEscrowedMeso pins the meso counterpart of the
+// release_from_trade steps the expanded settlement saga emits for every item.
+//
+// The saga's meso leg is a bare award_mesos CREDIT to the receiver; nothing in it
+// touches the giver's escrow row. A row that survives its own settlement is meso
+// the boot sweep will hand back to a player who has already given it away.
+func TestSettlementSuccessDischargesTheEscrowedMeso(t *testing.T) {
+	const staked = uint32(5000)
+	p, _ := testSettlingRoomWithMeso(t, 100, staked)
+	room, _ := p.RoomForCharacter(100)
+	roomId := room.Id()
+
+	if err := p.SettlementSucceeded(uuid.New(), room.SettlementId()); err != nil {
+		t.Fatalf("settle: %v", err)
+	}
+
+	for _, r := range escrowMesoRowsOf(t, p, roomId) {
+		t.Errorf("a settled trade left [%d] meso in escrow for character [%d]; the next boot sweep refunds it to a giver who has already paid, minting %d meso", r.Amount(), r.OwnerId(), r.Amount())
+	}
+}
+
+// TestBootSweepAfterASuccessfulSettlementRefundsNothing states the same defect as
+// the behaviour it actually caused. The settlement record is gone by then — it is
+// what the sweep's exclusion set is built from — so nothing but an empty escrow
+// stands between a settled room and a second payout.
+func TestBootSweepAfterASuccessfulSettlementRefundsNothing(t *testing.T) {
+	const staked = uint32(5000)
+	// The sweep resolves each owner's CURRENT field over REST before it can
+	// refund them. Without this an unreachable owner would be SKIPPED, and the
+	// test would pass on a service outage rather than on the discharge.
+	serveLocations(t, map[character.Id][2]byte{100: {1, 1}, 200: {1, 1}})
+
+	p, e := testSettlingRoomWithMeso(t, 100, staked)
+	room, _ := p.RoomForCharacter(100)
+
+	if err := p.SettlementSucceeded(uuid.New(), room.SettlementId()); err != nil {
+		t.Fatalf("settle: %v", err)
+	}
+	bootSweep(t, p)
+
+	for _, u := range unwindSagas(t, e) {
+		for _, m := range unwindPayloadOf(t, u).Mesos {
+			t.Errorf("the boot sweep refunded [%d] meso to character [%d] after a SUCCESSFUL settlement", m.Amount, m.CharacterId)
+		}
+	}
+}
+
+// TestSettledMesoIsConservedAcrossTheBootSweep is the whole invariant in one
+// place: over stage → settle → boot sweep the giver parts with exactly what they
+// staked and gets nothing back, and the receiver is credited exactly what the
+// settlement said it would deliver. The difference is the tax, which is burned.
+func TestSettledMesoIsConservedAcrossTheBootSweep(t *testing.T) {
+	const staked = uint32(5000)
+	serveLocations(t, map[character.Id][2]byte{100: {1, 1}, 200: {1, 1}})
+
+	p, e := testSettlingRoomWithMeso(t, 100, staked)
+	room, _ := p.RoomForCharacter(100)
+
+	sagas := settlementSagas(t, e)
+	if len(sagas) != 1 {
+		t.Fatalf("trade_settlement sagas: got %d, want 1", len(sagas))
+	}
+	payload := settlementPayloadOf(t, sagas[0])
+	if payload.Sides[0].CharacterId != 100 {
+		t.Fatalf("settlement side 0: got character %d, want the giver 100", payload.Sides[0].CharacterId)
+	}
+	delivered := payload.Sides[0].MesoDelivered
+	if delivered == 0 || delivered > staked {
+		t.Fatalf("delivered meso: got %d, want a non-zero amount no larger than the staked %d", delivered, staked)
+	}
+
+	if err := p.SettlementSucceeded(uuid.New(), room.SettlementId()); err != nil {
+		t.Fatalf("settle: %v", err)
+	}
+	bootSweep(t, p)
+
+	// The stake's own award_mesos legs are what actually moved the giver's meso.
+	var debited int32
+	for _, s := range sagasWithAction(t, e, sharedsaga.AwardMesos) {
+		a := awardMesosPayloadOf(t, s)
+		if a.CharacterId != uint32(100) {
+			t.Errorf("award_mesos for character %d; only the giver stakes here", a.CharacterId)
+			continue
+		}
+		debited += a.Amount
+	}
+	if debited != -int32(staked) {
+		t.Errorf("net meso moved by the giver's stakes: got %d, want %d", debited, -int32(staked))
+	}
+
+	var refunded uint32
+	for _, u := range unwindSagas(t, e) {
+		for _, m := range unwindPayloadOf(t, u).Mesos {
+			refunded += m.Amount
+		}
+	}
+	if refunded != 0 {
+		t.Errorf("meso refunded to the giver after a successful trade: got %d, want 0 — the trade delivered %d and the giver was debited %d", refunded, delivered, staked)
+	}
+}
+
+// TestSettlementSuccessKeepsARowWhoseStakeIsStillInFlight is the guard on the
+// discharge, and it is the reason the row is ZEROED before it is conditionally
+// deleted rather than deleted outright.
+//
+// The stake armed here is one whose award_mesos was still in flight when the
+// settlement completed — armed before the confirm froze staging, terminal status
+// not yet delivered. Its debit has landed on the player and the trade did not
+// carry it, so the row is the only record from which it can be handed back.
+func TestSettlementSuccessKeepsARowWhoseStakeIsStillInFlight(t *testing.T) {
+	const staked = uint32(5000)
+	const inFlightTotal = uint32(9000)
+	const inFlightDelta = int32(4000)
+
+	p, e := testSettlingRoomWithMeso(t, 100, staked)
+	room, _ := p.RoomForCharacter(100)
+	roomId := room.Id()
+	stakeId := uuid.New()
+	if err := escrow.ArmMesoStake(p.db, p.t)(roomId, 100, stakeId, inFlightTotal, inFlightDelta); err != nil {
+		t.Fatalf("arm the in-flight stake: %v", err)
+	}
+
+	if err := p.SettlementSucceeded(uuid.New(), room.SettlementId()); err != nil {
+		t.Fatalf("settle: %v", err)
+	}
+
+	rows := escrowMesoRowsOf(t, p, roomId)
+	if len(rows) != 1 {
+		t.Fatalf("escrow meso rows after settlement: got %d, want the one carrying the in-flight stake", len(rows))
+	}
+	if rows[0].Amount() != 0 {
+		t.Errorf("settled row amount: got %d, want 0 — the settlement delivered it", rows[0].Amount())
+	}
+	if rows[0].PendingStakeId() != stakeId {
+		t.Errorf("pending stake id: got %s, want the armed %s", rows[0].PendingStakeId(), stakeId)
+	}
+
+	// And the stake still resolves. Its room is gone, so the debit it moved has
+	// nowhere to go but back to the player it was taken from.
+	if _, err := p.MesoStageSucceeded(uuid.New(), stakeId); err != nil {
+		t.Fatalf("resolve the in-flight stake: %v", err)
+	}
+	unwinds := unwindSagas(t, e)
+	if len(unwinds) != 1 {
+		t.Fatalf("trade_unwind sagas: got %d, want 1 refunding the orphaned stake", len(unwinds))
+	}
+	mesos := unwindPayloadOf(t, unwinds[0]).Mesos
+	if len(mesos) != 1 || mesos[0].CharacterId != 100 || mesos[0].Amount != uint32(inFlightDelta) {
+		t.Fatalf("orphaned stake refund: got %+v, want %d back to character 100", mesos, inFlightDelta)
+	}
+	if rows := escrowMesoRowsOf(t, p, roomId); len(rows) != 0 {
+		t.Errorf("escrow meso rows after the stake resolved: got %d, want 0", len(rows))
+	}
+}
+
+// TestSettlementFailureStillRefundsTheEscrowedMeso pins the other side of the
+// asymmetry the discharge introduces. Only SUCCESS discharges; a failed
+// settlement has been compensated, the meso is still escrowed with no trade left
+// to deliver it, and it must go home.
+func TestSettlementFailureStillRefundsTheEscrowedMeso(t *testing.T) {
+	const staked = uint32(5000)
+	p, e := testSettlingRoomWithMeso(t, 100, staked)
+	room, _ := p.RoomForCharacter(100)
+	roomId := room.Id()
+
+	if err := p.SettlementFailed(uuid.New(), room.SettlementId(), "ACCEPT_FAILED"); err != nil {
+		t.Fatalf("fail: %v", err)
+	}
+
+	unwinds := unwindSagas(t, e)
+	if len(unwinds) != 1 {
+		t.Fatalf("trade_unwind sagas: got %d, want 1", len(unwinds))
+	}
+	mesos := unwindPayloadOf(t, unwinds[0]).Mesos
+	if len(mesos) != 1 || mesos[0].CharacterId != 100 || mesos[0].Amount != staked {
+		t.Fatalf("refund after a failed settlement: got %+v, want the staked %d back to character 100", mesos, staked)
+	}
+	if rows := escrowMesoRowsOf(t, p, roomId); len(rows) != 0 {
+		t.Errorf("escrow meso rows after a refunded failure: got %d, want 0", len(rows))
+	}
+}

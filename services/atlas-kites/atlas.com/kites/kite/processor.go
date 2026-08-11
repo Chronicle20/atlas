@@ -7,7 +7,6 @@ import (
 	kiteMsg "atlas-kites/kafka/message/kite"
 	"context"
 	"errors"
-	"io"
 	"time"
 
 	"github.com/google/uuid"
@@ -46,12 +45,20 @@ type Processor interface {
 	GetInMap(f field.Model) ([]Model, error)
 }
 
+// configProvider resolves a tenant's kite placement policy. Threaded through
+// ProcessorImpl instead of calling configuration.GetRegistry() directly so
+// tests can override it without mutating any package-level singleton --
+// configuration.Registry has no test-only exported surface, and it should
+// not grow one just for this.
+type configProvider func(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UUID) configuration.Model
+
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	t   tenant.Model
 	p   producer.Provider
 	r   *Registry
+	cfg configProvider
 }
 
 // NewProcessor constructs the canonical Processor wired to the singleton
@@ -61,24 +68,26 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 // NewProcessorWithProvider constructs a Processor with an injected
-// producer.Provider. This is the test seam: tests supply a recording
-// provider so Create/Destroy's emitted events can be asserted without a
-// live Kafka broker. A nil logger (as tests pass) is replaced with a
-// discard-output logger rather than left nil, since a nil FieldLogger
-// interface panics on every method call, including the refusal-path logging
-// in Create.
+// producer.Provider, resolving tenant config from the real configuration
+// registry. This is the test seam for the producer side: tests supply a
+// recording provider so Create/Destroy's emitted events can be asserted
+// without a live Kafka broker.
 func NewProcessorWithProvider(l logrus.FieldLogger, ctx context.Context, p producer.Provider) Processor {
-	if l == nil {
-		dl := logrus.New()
-		dl.SetOutput(io.Discard)
-		l = dl
-	}
+	return newProcessorWithConfig(l, ctx, p, configuration.GetRegistry().GetTenantConfig)
+}
+
+// newProcessorWithConfig is the full test seam: it additionally overrides
+// config resolution, so tests can force a specific policy (e.g. maxPerMap: 1
+// for the per-map-cap concurrency test) without touching the
+// configuration package's process-wide singleton.
+func newProcessorWithConfig(l logrus.FieldLogger, ctx context.Context, p producer.Provider, cfg configProvider) Processor {
 	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		t:   tenant.MustFromContext(ctx),
 		p:   p,
 		r:   getRegistry(),
+		cfg: cfg,
 	}
 }
 
@@ -96,7 +105,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 // placing on the same full-but-for-one map land on different partitions.
 func (p *ProcessorImpl) Create(mb *message.Buffer) func(f field.Model, characterId uint32, cmd kiteMsg.CreateCommandBody) (Model, error) {
 	return func(f field.Model, characterId uint32, cmd kiteMsg.CreateCommandBody) (Model, error) {
-		cfg := configuration.GetRegistry().GetTenantConfig(p.l, p.ctx, p.t.Id())
+		cfg := p.cfg(p.l, p.ctx, p.t.Id())
 
 		refuse := func(reason string, err error) (Model, error) {
 			p.l.WithFields(logrus.Fields{
@@ -274,17 +283,43 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) (Model, error) {
 }
 
 // InMapModelProvider composes the character index for f with kite ownership:
-// it filters the characters currently in the field down to the ones that own
-// a kite, then maps them through GetByCharacterId. This is exactly
-// chalkboard/resource.go:71-92's InMapProvider+FilteredProvider composition,
-// not a second index -- the kite registry is keyed by characterId already.
+// it walks the characters currently in the field, keeps the ones that own a
+// kite, and reads each through GetByCharacterId. This is the same
+// character-index x kite-ownership composition as
+// chalkboard/resource.go:71-92, not a second index -- the kite registry is
+// keyed by characterId already.
+//
+// It is a hand-rolled loop rather than model.FilteredProvider +
+// model.SliceMap because Filter's shape (func(M) bool, no error return)
+// cannot propagate a real Registry.Exists failure -- it can only be coerced
+// to true or false. Coercing a Redis error to "no kite" would silently
+// under-count this field for the per-map cap in Create, letting placements
+// past MaxPerMap on a Redis blip. Every error here is returned to the
+// caller instead, so a Redis failure fails GetInMap/Create loudly rather
+// than being swallowed into a wrong count.
 func (p *ProcessorImpl) InMapModelProvider(f field.Model) model.Provider[[]Model] {
-	cip := character.NewProcessor(p.l, p.ctx).InMapProvider(f)
-	fcip := model.FilteredProvider(cip, model.Filters[uint32](func(cid uint32) bool {
-		exists, err := p.r.Exists(p.ctx, cid)
-		return err == nil && exists
-	}))
-	return model.SliceMap[uint32, Model](p.GetByCharacterId)(fcip)(model.ParallelMap())
+	return func() ([]Model, error) {
+		cids, err := character.NewProcessor(p.l, p.ctx).InMapProvider(f)()
+		if err != nil {
+			return nil, err
+		}
+		ms := make([]Model, 0, len(cids))
+		for _, cid := range cids {
+			exists, err := p.r.Exists(p.ctx, cid)
+			if err != nil {
+				return nil, err
+			}
+			if !exists {
+				continue
+			}
+			m, err := p.GetByCharacterId(cid)
+			if err != nil {
+				return nil, err
+			}
+			ms = append(ms, m)
+		}
+		return ms, nil
+	}
 }
 
 // GetInMap returns every kite currently placed in field f.

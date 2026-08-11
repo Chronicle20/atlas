@@ -44,28 +44,6 @@ func newRegistryWithFetcher(f fetcher) *Registry {
 	}
 }
 
-// SetFetcherForTest overrides the process-wide singleton's fetch function,
-// bypassing the atlas-tenants HTTP round trip entirely. Exported for
-// cross-package tests -- atlas-kites/kite's processor tests need config
-// resolution without a live HTTP server, and its per-map-cap concurrency
-// test needs to force a specific policy knob (maxPerMap: 1) -- rather than
-// inventing a second config-loading path. Returns a restore function; the
-// existing per-tenant cache is untouched, which is safe because every test
-// resolves a fresh tenant.Create(uuid.New(), ...) so no two tests share a
-// cache entry.
-func SetFetcherForTest(f func(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UUID) (Model, error)) func() {
-	r := GetRegistry()
-	r.mu.Lock()
-	old := r.fetch
-	r.fetch = f
-	r.mu.Unlock()
-	return func() {
-		r.mu.Lock()
-		r.fetch = old
-		r.mu.Unlock()
-	}
-}
-
 // defaultFetcher fetches a tenant's configuration from atlas-tenants and folds
 // it into the domain Model.
 func defaultFetcher(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UUID) (Model, error) {

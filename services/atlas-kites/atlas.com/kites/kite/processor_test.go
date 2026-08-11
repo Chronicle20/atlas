@@ -19,18 +19,26 @@ import (
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
-// testConfig installs a fetcher that returns m for every tenant, bypassing
-// the atlas-tenants HTTP round trip that configuration.GetRegistry() would
-// otherwise attempt (slow and unreachable in a unit test). Restored via
-// t.Cleanup so tests never leak their config into one another; safe to run
-// unrestored between tests anyway, since every test resolves a fresh
-// tenant.Create(uuid.New(), ...) and the registry caches per tenant id.
-func testConfig(t *testing.T, m configuration.Model) {
-	t.Helper()
-	restore := configuration.SetFetcherForTest(func(logrus.FieldLogger, context.Context, uuid.UUID) (configuration.Model, error) {
-		return m, nil
+// discardLogger returns a real logrus.FieldLogger whose output is captured
+// (and discarded) rather than nil. NewProcessorWithProvider is production
+// code and must not special-case a nil logger -- passing an actual logger
+// here means Create's refusal/contention logging runs for real in every
+// test, the same as it would in production.
+func discardLogger() logrus.FieldLogger {
+	l, _ := logrustest.NewNullLogger()
+	return l
+}
+
+// testProcessor builds a Processor against ctx's tenant with rec as the
+// producer.Provider and cfg as the fixed tenant config, bypassing the real
+// configuration.GetRegistry() (which would otherwise attempt a live
+// atlas-tenants HTTP call). It uses the package-internal
+// newProcessorWithConfig seam directly -- no exported, process-wide
+// singleton mutator is added to the configuration package for this.
+func testProcessor(ctx context.Context, rec *recorder, cfg configuration.Model) Processor {
+	return newProcessorWithConfig(discardLogger(), ctx, rec.provider(), func(logrus.FieldLogger, context.Context, uuid.UUID) configuration.Model {
+		return cfg
 	})
-	t.Cleanup(restore)
 }
 
 // recorder is a producer.Provider that captures emitted messages per topic.
@@ -72,11 +80,10 @@ func body() kiteMsg.CreateCommandBody {
 
 func TestCreateSucceedsAndEmitsCreated(t *testing.T) {
 	testRegistry(t)
-	testConfig(t, configuration.DefaultConfig())
 	ctx, _ := testContext(t)
 	rec := newRecorder()
 
-	m, err := NewProcessorWithProvider(nil, ctx, rec.provider()).CreateAndEmit(testField(), 42, body())
+	m, err := testProcessor(ctx, rec, configuration.DefaultConfig()).CreateAndEmit(testField(), 42, body())
 	if err != nil {
 		t.Fatalf("CreateAndEmit: %v", err)
 	}
@@ -93,10 +100,9 @@ func TestCreateSucceedsAndEmitsCreated(t *testing.T) {
 
 func TestCreateRejectsSecondKiteForSameCharacter(t *testing.T) {
 	testRegistry(t)
-	testConfig(t, configuration.DefaultConfig())
 	ctx, _ := testContext(t)
 	rec := newRecorder()
-	p := NewProcessorWithProvider(nil, ctx, rec.provider())
+	p := testProcessor(ctx, rec, configuration.DefaultConfig())
 
 	if _, err := p.CreateAndEmit(testField(), 42, body()); err != nil {
 		t.Fatalf("first create: %v", err)
@@ -113,12 +119,11 @@ func TestCreateRejectsSecondKiteForSameCharacter(t *testing.T) {
 
 func TestCreateRejectsBlockedMap(t *testing.T) {
 	testRegistry(t)
-	testConfig(t, configuration.DefaultConfig())
 	ctx, _ := testContext(t)
 	rec := newRecorder()
 
 	fm := fieldWithMap(910000000)
-	_, err := NewProcessorWithProvider(nil, ctx, rec.provider()).CreateAndEmit(fm, 42, body())
+	_, err := testProcessor(ctx, rec, configuration.DefaultConfig()).CreateAndEmit(fm, 42, body())
 	if !errors.Is(err, ErrMapForbidden) {
 		t.Fatalf("err = %v, want ErrMapForbidden", err)
 	}
@@ -129,13 +134,12 @@ func TestCreateRejectsBlockedMap(t *testing.T) {
 
 func TestCreateRejectsOverlongMessage(t *testing.T) {
 	testRegistry(t)
-	testConfig(t, configuration.DefaultConfig())
 	ctx, _ := testContext(t)
 	rec := newRecorder()
 
 	b := body()
 	b.Message = string(make([]byte, 183))
-	_, err := NewProcessorWithProvider(nil, ctx, rec.provider()).CreateAndEmit(testField(), 42, b)
+	_, err := testProcessor(ctx, rec, configuration.DefaultConfig()).CreateAndEmit(testField(), 42, b)
 	if !errors.Is(err, ErrMessageTooLong) {
 		t.Fatalf("err = %v, want ErrMessageTooLong", err)
 	}
@@ -143,12 +147,11 @@ func TestCreateRejectsOverlongMessage(t *testing.T) {
 
 func TestCreateRollsBackRegistryWhenEmitFails(t *testing.T) {
 	testRegistry(t)
-	testConfig(t, configuration.DefaultConfig())
 	ctx, _ := testContext(t)
 	rec := newRecorder()
 	rec.fail = true
 
-	if _, err := NewProcessorWithProvider(nil, ctx, rec.provider()).CreateAndEmit(testField(), 42, body()); err == nil {
+	if _, err := testProcessor(ctx, rec, configuration.DefaultConfig()).CreateAndEmit(testField(), 42, body()); err == nil {
 		t.Fatal("CreateAndEmit should fail when the emit fails")
 	}
 	if ok, _ := getRegistry().Exists(ctx, 42); ok {
@@ -158,10 +161,9 @@ func TestCreateRollsBackRegistryWhenEmitFails(t *testing.T) {
 
 func TestDestroyRemovesAndEmits(t *testing.T) {
 	testRegistry(t)
-	testConfig(t, configuration.DefaultConfig())
 	ctx, _ := testContext(t)
 	rec := newRecorder()
-	p := NewProcessorWithProvider(nil, ctx, rec.provider())
+	p := testProcessor(ctx, rec, configuration.DefaultConfig())
 
 	if _, err := p.CreateAndEmit(testField(), 42, body()); err != nil {
 		t.Fatalf("create: %v", err)
@@ -189,10 +191,9 @@ func TestDestroyRemovesAndEmits(t *testing.T) {
 func TestConcurrentCreateEnforcesPerMapCapAcrossCharacters(t *testing.T) {
 	testRegistry(t)
 	ctx, _ := testContext(t)
-	testConfig(t, configuration.Extract(configuration.RestModel{MaxPerMap: 1}))
 
 	f := testField()
-	l, _ := logrustest.NewNullLogger()
+	l := discardLogger()
 
 	// Both characters must already be tracked as "in the field" for
 	// InMapModelProvider's character-index x kite-ownership composition to
@@ -202,7 +203,9 @@ func TestConcurrentCreateEnforcesPerMapCapAcrossCharacters(t *testing.T) {
 	cp.Enter(f, 43)
 
 	rec := newRecorder()
-	p := NewProcessorWithProvider(l, ctx, rec.provider())
+	p := newProcessorWithConfig(l, ctx, rec.provider(), func(logrus.FieldLogger, context.Context, uuid.UUID) configuration.Model {
+		return configuration.Extract(configuration.RestModel{MaxPerMap: 1})
+	})
 
 	type outcome struct {
 		characterId uint32

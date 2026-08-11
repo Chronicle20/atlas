@@ -293,6 +293,52 @@ existed.
   needs a field-type model Atlas does not have. Honouring `premium` (C1) makes
   the client's gate effective in practice. Recorded as a known, bounded gap.
 
+### Post-implementation
+
+Recorded after execution, against the state of the branch at PR time.
+
+- **OQ-3 remains open.** `expirationDays` sources `days` from
+  `asset.Expiration()` as designed, and the code comment at
+  `services/atlas-channel/atlas.com/channel/respawn/plan.go` states both that
+  the semantic is unproven and how to correct it: if the live message renders
+  the two bytes transposed, swap them there and update this note. Nothing in
+  execution moved this either way — it needs a live client, not more static
+  analysis.
+- **OQ-5 remains a deliberate, documented gap.** Unchanged from above; no
+  field-type model was added.
+- **Two template defects were fixed that the PRD did not contain**, both found
+  during planning rather than by the client:
+  - `template_gms_95_1.json` and `template_jms_185_1.json` each bound the
+    writer name `CharacterEffect` **twice**, at two distinct opcodes (v95 `0xE0`
+    and `0xE9`; jms185 `0xCC` and `0xD5`). `RegisterTenantWriterOptions` keys
+    its table by writer *name*, so one silently won and the other's options were
+    lost. The lower opcode — identified as the foreign arm by the registry — is
+    now named `CharacterEffectForeign`, matching every other v61+ template.
+    Without this, Unit C's foreign broadcast could not resolve a writer on two
+    of the eight versions. The duplicate-binding guard does not catch this: it
+    only bans the same name at the *same* opcode.
+  - `template_gms_92_1.json` was missing **both** `CUser::OnEffect` writers.
+    They were added with an `operations` mode table derived from the v92 binary
+    itself (`CUser::OnEffect` @`0x8e5510`), not copied from a neighbour —
+    necessarily, since v87 and v95 disagree (`PROTECT_ON_DIE_ITEM_USE` = 6 vs
+    8). v92's value is **6**. Only that index is load-bearing for this feature;
+    the rest of the 26-arm table was derived in the same pass but only a sample
+    was independently re-verified.
+- **A third defect surfaced during execution, in this task's own earlier work:**
+  the two codec test files initially shipped `packet-audit:verify` markers for
+  all eight versions *before* any cell had been verified, which
+  `packet-audit matrix --check` was already failing as orphan markers at the
+  base commit. Markers are now added per version as that version's cell is
+  actually verified.
+- **Tooling note for future packet work, not a defect of this branch:** the
+  packet-audit harvest tool's `-ida-database` flag does not work against the
+  live ida-pro-mcp server, and its fallback silently harvests whichever image
+  the server considers active — which returned v72 provenance regardless of the
+  requested target in every batch. Each version's export entries were therefore
+  hand-constructed from direct `decompile(addr, database=<session>)` calls after
+  proving the image with `survey_binary`. Left unfixed here as out of scope; a
+  harvest trusted blindly would produce a silently false verification.
+
 ---
 
 ## 5. Registry, template, and matrix work

@@ -1,9 +1,6 @@
 package consumable
 
 import (
-	"context"
-	"errors"
-	"sync"
 	"testing"
 
 	consumable3 "atlas-consumables/data/consumable"
@@ -12,7 +9,6 @@ import (
 	monsterMsg "atlas-consumables/kafka/message/monster"
 
 	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -20,8 +16,6 @@ import (
 	item2 "github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 )
 
 // TestValidateCatchItem is the pre-reserve gate: only class-227 items with a
@@ -74,52 +68,23 @@ func TestCatchOutcomeDecision(t *testing.T) {
 	}
 }
 
-// stubWriter is a minimal producer.Writer used only by
-// TestConsumeCatchCancelsReservationWhenCommandProduceFails to force one
-// specific topic's produce to fail while every other topic still records
-// what was written, so the test can assert on the cancellation side-effects.
-type stubWriter struct {
-	topicName string
-	fail      bool
-	mu        *sync.Mutex
-	store     map[string][]kafka.Message
-}
-
-func (w stubWriter) Topic() string { return w.topicName }
-
-func (w stubWriter) WriteMessages(_ context.Context, msgs ...kafka.Message) error {
-	if w.fail {
-		return errors.New("produce failed: broker unavailable")
-	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	w.store[w.topicName] = append(w.store[w.topicName], msgs...)
-	return nil
-}
-
-func (w stubWriter) Close() error { return nil }
-
 // TestConsumeCatchCancelsReservationWhenCommandProduceFails proves the
 // reservation-leak fix: if the CATCH command itself cannot be produced (the
 // scenario here — broker unavailable), no CATCH_RESOLVED will ever arrive to
 // drive catchResolutionHandler, so ConsumeCatch must cancel the reservation
 // itself rather than leaving it to dangle forever with the client never
-// unlocked.
+// unlocked. Failure is injected on the shared package-level `emitted` Capture
+// (installed once in TestMain) via FailTopic, not a service-local stub
+// writer — every other test in this package keeps using the same singleton.
 func TestConsumeCatchCancelsReservationWhenCommandProduceFails(t *testing.T) {
 	tid := uuid.New()
 	ctx := cardTenantCtx(t, tid)
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
 
-	var mu sync.Mutex
-	store := map[string][]kafka.Message{}
-	producer.ResetInstance()
-	producer.GetManager(producer.ConfigWriterFactory(func(topicName string) producer.Writer {
-		return stubWriter{topicName: topicName, fail: topicName == monsterMsg.EnvCommandTopic, mu: &mu, store: store}
-	}))
-	t.Cleanup(func() {
-		emitted = producertest.InstallCapturing()
-	})
+	emitted.Reset()
+	emitted.FailTopic(monsterMsg.EnvCommandTopic, true)
+	defer emitted.FailTopic(monsterMsg.EnvCommandTopic, false)
 
 	const characterId = uint32(77)
 	const monsterUniqueId = uint32(555)
@@ -134,19 +99,19 @@ func TestConsumeCatchCancelsReservationWhenCommandProduceFails(t *testing.T) {
 	}
 
 	// The CATCH command itself must never have landed (the produce failed).
-	if got := len(store[monsterMsg.EnvCommandTopic]); got != 0 {
+	if got := len(emitted.Messages(monsterMsg.EnvCommandTopic)); got != 0 {
 		t.Fatalf("expected 0 CATCH commands recorded, got %d", got)
 	}
 
 	// The reservation must be cancelled — otherwise the item stays reserved
 	// forever with no CATCH_RESOLVED ever coming to release it.
-	if got := len(store[compartmentmsg.EnvCommandTopic]); got != 1 {
+	if got := len(emitted.Messages(compartmentmsg.EnvCommandTopic)); got != 1 {
 		t.Fatalf("expected 1 compartment command (the cancellation), got %d", got)
 	}
 
 	// The client must be unlocked via the same generic ERROR event every
 	// other ItemConsumer's ConsumeError call uses.
-	msgs := store[consumablemsg.EnvEventTopic]
+	msgs := emitted.Messages(consumablemsg.EnvEventTopic)
 	if len(msgs) != 1 {
 		t.Fatalf("expected 1 consumable event (the unlock), got %d", len(msgs))
 	}

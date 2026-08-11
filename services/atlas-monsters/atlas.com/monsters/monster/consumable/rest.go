@@ -27,6 +27,16 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+// SetToOneReferenceID is a no-op required by api2go's interface.
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+// SetToManyReferenceIDs is a no-op required by api2go's interface.
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:            rm.Id,

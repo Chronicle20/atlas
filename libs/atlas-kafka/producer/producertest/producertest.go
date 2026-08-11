@@ -20,12 +20,19 @@ package producertest
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/segmentio/kafka-go"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 )
+
+// ErrSimulatedProduceFailure is returned by a CapturingWriter whose topic was
+// marked failing via Capture.FailTopic — used to test a caller's handling of
+// an unproduceable message (e.g. a broker outage) without a service-local
+// stub writer.
+var ErrSimulatedProduceFailure = errors.New("producertest: simulated produce failure")
 
 // NoopWriter implements producer.Writer by discarding every message.
 type NoopWriter struct {
@@ -51,6 +58,7 @@ type CapturingWriter struct {
 	TopicName string
 	mu        sync.Mutex
 	msgs      []kafka.Message
+	fail      bool
 }
 
 func (w *CapturingWriter) Topic() string { return w.TopicName }
@@ -58,6 +66,9 @@ func (w *CapturingWriter) Topic() string { return w.TopicName }
 func (w *CapturingWriter) WriteMessages(_ context.Context, msgs ...kafka.Message) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	if w.fail {
+		return ErrSimulatedProduceFailure
+	}
 	w.msgs = append(w.msgs, msgs...)
 	return nil
 }
@@ -97,13 +108,48 @@ func (c *Capture) Messages(topicName string) []kafka.Message {
 	return nil
 }
 
-// Reset drops every recorded writer. Call it at the top of each test so one
-// test's emissions are not visible to the next — the manager singleton itself
-// is installed once per package from TestMain and must not be reset per test.
+// Reset clears every recorded message (and any FailTopic marker) so one
+// test's emissions are not visible to the next. Call it at the top of each
+// test — the manager singleton itself is installed once per package from
+// TestMain and must not be reset per test.
+//
+// Reset clears each existing CapturingWriter's state IN PLACE rather than
+// replacing the writer objects: producer.Manager caches one Writer per topic
+// for the lifetime of the singleton (only producer.ResetInstance clears
+// that cache), so a topic already touched by an earlier test already has a
+// Manager-cached reference to its *CapturingWriter. Discarding and
+// recreating that object here would silently orphan it — later writes would
+// keep landing on the Manager's stale reference while this Capture's map
+// pointed at a new, empty one, so Messages() would read back nothing for a
+// topic that in fact received messages.
 func (c *Capture) Reset() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.writers = map[string]*CapturingWriter{}
+	for _, w := range c.writers {
+		w.mu.Lock()
+		w.msgs = nil
+		w.fail = false
+		w.mu.Unlock()
+	}
+}
+
+// FailTopic marks (or clears) a topic's writer as failing: WriteMessages
+// returns ErrSimulatedProduceFailure instead of recording, without disturbing
+// any other topic's writer. Used to test produce-failure handling (e.g. a
+// broker outage on one specific topic) via the shared Capture rather than a
+// service-local stub writer. The marker persists until cleared or the next
+// Reset.
+func (c *Capture) FailTopic(topicName string, fail bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	w, ok := c.writers[topicName]
+	if !ok {
+		w = &CapturingWriter{TopicName: topicName}
+		c.writers[topicName] = w
+	}
+	w.mu.Lock()
+	w.fail = fail
+	w.mu.Unlock()
 }
 
 func (c *Capture) writer(topicName string) producer.Writer {

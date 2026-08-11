@@ -1,7 +1,8 @@
 # Task-205 follow-on — meso custody parity
 
-**Status:** not started. Written 2026-08-11 as a handoff from the session that
-produced commits `a3279ee73`..`0bf941fc5`.
+**Status:** prerequisites P1 and P2 settled (see below); Tasks 1–7 not started.
+Written 2026-08-11 as a handoff from the session that produced commits
+`a3279ee73`..`0bf941fc5`.
 
 **Read first:** `custody-symmetry-matrix.md` and `conservation-audit.md` in this
 folder. They are the evidence for everything below and were produced by two
@@ -46,19 +47,61 @@ gone**, rather than patching each symptom.
 Both audits flagged these as UNVERIFIED and both gate real decisions. Settle
 them **before** designing the fixes; the answers change what Task 2 has to do.
 
-- **P1 — the transaction isolation level `libs/atlas-database` opens with.**
-  Gates the size of the read-then-CAS windows in the meso paths. If it is
-  READ COMMITTED, several windows in the audits are real; under SERIALIZABLE
-  some collapse. Check `libs/atlas-database` and the live Postgres
-  (`SHOW default_transaction_isolation`), and record the answer here.
-- **P2 — does the v83 client's `TRADE_CONFIRM` pass `CanSendExclRequest`?**
-  Gates whether a meso stake can still be in flight when a room reaches
-  CONFIRM, i.e. whether Task 3's window is reachable from an unmodified client.
-  This needs an IDA read of `CTradingRoomDlg`, not reasoning. Note the server
-  has no guard either way, so Task 3 is worth doing regardless — but the answer
-  decides whether it is BLOCKING or defence-in-depth.
+**Both are now settled (2026-08-11). Neither answer lets any task shrink.**
 
-Record both answers in this file before starting Task 2.
+### P1 — transaction isolation: **READ COMMITTED** ✅
+
+Live Postgres is **18.4**; `SHOW default_transaction_isolation` returns
+`read committed`. Nothing in the repo overrides it:
+
+- `libs/atlas-database/transaction.go:13` — `ExecuteTransaction` calls
+  `db.Transaction(fn)` with **no** `*sql.TxOptions`, so GORM passes the driver
+  default through.
+- `DSNBuilder.Build()` (`libs/atlas-database/connection.go:55`) emits only
+  `host/user/password/dbname/port/sslmode/TimeZone` — no `options=` clause.
+- A tree-wide grep for `TxOptions`, `LevelSerializable`, `Serializable`, and
+  `default_transaction_isolation` matches nothing outside this document.
+
+**Consequence:** every read-then-CAS window the audits flagged in the meso
+paths is real. Task 2 does **not** get to collapse any of them — each decision
+that ends meso custody must read its inputs in the same statement that acts on
+them (single-statement CAS or an explicit row lock), not in a prior `SELECT`.
+This applies directly to the `discardResolvedMeso` pre-CAS `row.Amount()`
+misclassification.
+
+### P2 — `TRADE_CONFIRM` is **not** excl-gated ✅ — Task 3 is BLOCKING
+
+Read from the v83 IDB (`GMS/v83_Me/MapleStory_dump.exe.i64`). All three trade
+sends use serverbound opcode **123 (0x7B)** and differ only in the mode byte:
+
+| Mode | Function | `CanSendExclRequest`? | Arms the excl latch? |
+|---|---|---|---|
+| `0x0F` put item | `CTradingRoomDlg::PutItem` @ `0x7c359f` | **yes** — early-returns 0 | yes |
+| `0x10` put money | `CTradingRoomDlg::PutMoney` @ `0x7c37ca` | **yes** — whole body is inside it | yes |
+| `0x11` confirm | `CTradingRoomDlg::Trade` @ `0x7c39a0` | **no — absent entirely** | no |
+
+`CWvsContext::CanSendExclRequest` @ `0x485bf7` is
+`!this[2089] && (…) && get_update_time() - this[2090] >= a2`; both staging
+functions set exactly those two fields immediately after `SendPacket`
+(`v24[2089] = 1; v13[2090] = get_update_time()`). So they are genuine excl
+requests. `Trade` builds its packet, sends it, and touches neither field — it
+is gated only by the `SP_413_ARE_YOU_SURE_YOU_WANT_TO_TRADE` confirmation
+dialog.
+
+**Consequence:** the client's excl latch serializes staging against *staging*,
+but imposes **no ordering at all between staging and confirm**. An unmodified
+v83 client can send `TRADE_CONFIRM` with a meso stake still in flight — the
+player only has to click through a modal. Task 3's window is reachable in
+normal play, so **Task 3 is BLOCKING, not defence-in-depth.**
+
+Two secondary results worth carrying into the tasks:
+
+- The item and meso staging paths have **identical** client-side gating. The
+  asymmetry this whole pass is fixing is therefore purely server-side; no
+  proposed fix can be justified by "the client protects the item column."
+- P2 independently corroborates Task 1's mechanism. `PutMoney` arms the latch
+  and the debit's own response clears it, which is exactly what lets a second
+  `PutMoney` supersede the first.
 
 ---
 
@@ -128,15 +171,21 @@ refund again.
 
 **The fix.** Give the meso row the same latch discipline the item row has, and
 make every decision that ends meso custody read its inputs from the same
-statement that acts on them. P1's answer determines how wide these windows are.
+statement that acts on them. **P1 settled this as READ COMMITTED, so every one
+of these windows is real** — no read-then-act pair may be left unfenced on the
+grounds that isolation closes it.
 
 **Tests.** Two paths racing one row refund exactly once; the pre-CAS
 misclassification is unreachable. Mutation-verify both.
 
-### Task 3 — Defence C: a settlement-time custody check for meso
+### Task 3 — Defence C: a settlement-time custody check for meso — **BLOCKING** (P2)
 
-**The defect (relayed, unconfirmed).** Nothing gates CONFIRM or `settle` on a
-pending meso stake. `settlementPayload` uses `pt.MesoStaged()`, which only
+**Reachability confirmed by P2:** the v83 client applies no excl gate to
+`TRADE_CONFIRM`, so a stake genuinely can be in flight at CONFIRM. This is not
+defence-in-depth.
+
+**The defect (trace relayed, unconfirmed).** Nothing gates CONFIRM or `settle`
+on a pending meso stake. `settlementPayload` uses `pt.MesoStaged()`, which only
 advances when a stake resolves, then `dischargeSettledMesos` zeroes the row.
 A reduction in flight delivers more than the giver still has staked (**mints**);
 a raise resolving after the room is SETTLING is **destroyed**. Which one occurs

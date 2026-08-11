@@ -197,3 +197,78 @@ All six blocking findings were fixed on this branch before PR:
 
 All three affected modules (`services/atlas-monsters/atlas.com/monsters`, `services/atlas-consumables/atlas.com/consumables`, `libs/atlas-kafka`) plus their downstream consumers (`services/atlas-channel/atlas.com/channel`, `services/atlas-configurations/atlas.com/configurations`) were rebuilt, vetted, tested (`-race`), guard-checked, linted, and re-baked (`docker buildx bake atlas-monsters atlas-consumables atlas-channel`) after these fixes — all gates PASS. Updated **Overall: READY** (was NEEDS-WORK).
 
+
+---
+
+## Controller addendum (execution coordinator)
+
+### Confirmation of the Task 10 plan amendment
+
+The plan-adherence reviewer could not independently verify the approval claimed by
+`fa1f342cf` / `9e643af49` / `9eff5ea6a`. Confirming here: **the amendment was
+explicitly approved by the task owner during execution.** The question put to them
+was whether a catch-item *data lookup failure* should keep the plan's
+`Processor.Kill`-style silent drop or report `UNRESOLVED`; they chose
+`UNRESOLVED`. The reasoning: unlike `Kill`, a catch has an outstanding
+atlas-consumables reservation and a client awaiting unlock, so a silent drop
+leaves both a dangling reservation and a wedged client — precisely the failure the
+`UNRESOLVED` cause was introduced to prevent on the monster-gone path.
+
+That ruling resolved a *class*, not a single instance. The same silent-drop shape
+appeared in three ladder branches, all inherited from the `Kill` model:
+
+| Branch | Commit |
+|---|---|
+| catch-item data lookup failure | `9e643af49` |
+| roll error | `9e643af49` |
+| `ClaimMonster` Redis error | `9eff5ea6a` |
+
+All three now emit `CATCH_RESOLVED(false, UNRESOLVED)` + `CATCH_FAILED(UNRESOLVED)`.
+`fa1f342cf` is unrelated to the amendment: it fixes a latent inversion where
+`effectiveCatchChance` overloaded a `0` return to mean both "no gate, deterministic
+pass" and "computed a 0% chance", which turned a near-impossible catch into a
+guaranteed one.
+
+**Post-condition now verified by review:** every exit of `Catch` emits either the
+success triple or a failure pair. No silent-drop path remains, so exactly one
+`CATCH_RESOLVED` is produced per `CATCH` command.
+
+### Deferred minor findings (accepted, not fixed on this branch)
+
+None are load-bearing; each is recorded so it is not silently discarded.
+
+1. **Once-handler leak on reserve failure** — if `RequestReserve` fails *after* the
+   once-handlers are registered, those handlers leak until process restart. This
+   mirrors an existing gap in `RequestItemReward`
+   (`consumable/processor.go:310-318`); the catch flow doubles the exposure rather
+   than introducing it. A shared fix would close both.
+2. **DOM-21 nit** — `kafka/message/consumable/kafka.go` uses raw `uint32` for
+   `ItemId` where sibling bodies on the same topic use `item.Id`. The atlas-monsters
+   consumable client likewise uses bare `uint32`, consistent with its sibling
+   `monster/information` package.
+3. **Registry `note:` omission** — the new `USE_CATCH_ITEM` entries on v48/v72/v79
+   omit the `note:` field that neighbouring entries carry to document derivation.
+4. **`producertest` lacks direct unit tests** — the shared capture helper is covered
+   only transitively through consuming services' tests.
+
+### Scope beyond the plan (landed deliberately, flagged for the PR reviewer)
+
+Correcting the v61 packet registry exposed a pre-existing mislabel chain and a
+handler slot-shift that `USE_CATCH_ITEM` could not be routed around. All values
+below were verified by decompiling `GMS_v61.1_U_DEVM.exe` and confirmed with the
+task owner:
+
+| v61 opcode | Was | Now | Evidence |
+|---|---|---|---|
+| 66 (`0x42`) | *(no handler route at all)* | `ITEM_MOVE` / `CharacterInventoryMoveHandle` | `COutPacket(66)` + E4/E1/E2/E2/E2 |
+| 70 (`0x46`) | `ITEM_MOVE` | `USE_SUMMON_BAG` / `CharacterItemUseSummonBagHandle` | `SendMobSummonItemUseRequest`, `COutPacket(70)` + E4/E2/E4 |
+| 74 (`0x4A`) | `USE_SUMMON_BAG` | `USE_CATCH_ITEM` / `MonsterCatchItemUseHandle` | `SendBridleItemUseRequest`, `COutPacket(74)` + E4/E2/E4/E4, `itemId/10000==227` guard |
+
+Consequence worth noting at merge: **this branch also repairs v61 inventory-move and
+summon-bag routing**, which the PRD never scoped. `sub_8315F8` was named
+`CWvsContext__SendChangeSlotPositionRequest` in the v61 IDB as part of this work.
+
+Separately, `gms_v92.yaml` opcode 292/`0x124` was renamed from the stale CSV
+placeholder `SHOW_MAGNET` to `CATCH_MONSTER_WITH_ITEM`, applying the same task-092
+Stage-4 correction already made to v83, v87, and jms_v185; v92 had been missed
+because its `fname` was empty at the time.

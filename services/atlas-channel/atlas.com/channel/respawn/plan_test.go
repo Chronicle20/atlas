@@ -263,6 +263,40 @@ func TestRespawnSagaStepOrdering(t *testing.T) {
 	}
 }
 
+// set_hp must be the LAST step: WarpToPortal advances on character.map_changed
+// (services/atlas-saga-orchestrator/.../saga/event_acceptance.go), so ordering
+// the HP restore after the warp keeps the character at 0 HP — and therefore
+// untargetable-and-already-dead — until the field change has actually landed.
+// With set_hp first the player stands revived at their death position for the
+// duration of the warp round-trip and can be killed a second time.
+func TestHpRestoredAfterWarp(t *testing.T) {
+	f := field.NewBuilder(world.Id(0), channel.Id(1), currentMap).Build()
+	inv := buildInventory(map[uint32]uint32{uint32(item.WheelOfFortuneId): 3})
+	rp := planRespawn(buildCharacter(1000), inv, ordinaryField, currentMap, true)
+
+	steps := respawnSagaSteps(f, characterId, rp, time.Now())
+
+	ids := stepIds(steps)
+	setHp, warp := -1, -1
+	for i, id := range ids {
+		switch id {
+		case "set_hp":
+			setHp = i
+		case "warp_to_spawn":
+			warp = i
+		}
+	}
+	if setHp == -1 || warp == -1 {
+		t.Fatalf("expected both a set_hp and a warp step, got %v", ids)
+	}
+	if setHp < warp {
+		t.Errorf("set_hp must follow warp_to_spawn, got %v", ids)
+	}
+	if setHp != len(ids)-1 {
+		t.Errorf("set_hp must be the final step, got %v", ids)
+	}
+}
+
 // FR-2.3: one death consumes exactly one charge even when the client sends
 // both USE_DEATHITEM and MAP_CHANGE. USE_DEATHITEM is handled by
 // CharacterUseDeathItemHandleFunc, which builds no saga and consumes nothing,

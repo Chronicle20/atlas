@@ -115,9 +115,18 @@ func planRespawn(c character.Model, inv channelInventory.Model, mf mapFacts, cur
 }
 
 // respawnSagaSteps builds the ordered step list for a death. Order is
-// load-bearing: both consume steps precede warp_to_spawn, so a failed
-// decrement aborts the saga before the character is moved and cannot grant a
-// free in-map respawn.
+// load-bearing at both ends:
+//
+//   - both consume steps precede warp_to_spawn, so a failed decrement aborts
+//     the saga before the character is moved and cannot grant a free in-map
+//     respawn;
+//   - set_hp comes last, after warp_to_spawn. WarpToPortal only advances on
+//     character.map_changed (atlas-saga-orchestrator saga/event_acceptance.go),
+//     so restoring HP afterwards keeps the character dead until the field
+//     change has actually landed. With set_hp first the player stood revived
+//     at their death position — inside the mobs that just killed them — for
+//     the whole warp round-trip, and could die a second time before the
+//     transition completed.
 func respawnSagaSteps(f field.Model, characterId uint32, rp respawnPlan, now time.Time) []saga.Step {
 	steps := make([]saga.Step, 0)
 
@@ -152,21 +161,6 @@ func respawnSagaSteps(f field.Model, characterId uint32, rp respawnPlan, now tim
 			UpdatedAt: now,
 		})
 	}
-
-	// Step: Set HP to 50
-	steps = append(steps, saga.Step{
-		StepId: "set_hp",
-		Status: saga.Pending,
-		Action: saga.SetHP,
-		Payload: saga.SetHPPayload{
-			CharacterId: characterId,
-			WorldId:     f.WorldId(),
-			ChannelId:   f.ChannelId(),
-			Amount:      50,
-		},
-		CreatedAt: now,
-		UpdatedAt: now,
-	})
 
 	// Step: Deduct experience if applicable
 	if rp.ExpLoss > 0 {
@@ -210,6 +204,21 @@ func respawnSagaSteps(f field.Model, characterId uint32, rp respawnPlan, now tim
 			ChannelId:   f.ChannelId(),
 			MapId:       rp.TargetMapId,
 			PortalId:    0, // 0 = spawn point
+		},
+		CreatedAt: now,
+		UpdatedAt: now,
+	})
+
+	// Step: Restore HP — last, after the field change has landed.
+	steps = append(steps, saga.Step{
+		StepId: "set_hp",
+		Status: saga.Pending,
+		Action: saga.SetHP,
+		Payload: saga.SetHPPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			Amount:      50,
 		},
 		CreatedAt: now,
 		UpdatedAt: now,

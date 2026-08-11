@@ -716,7 +716,7 @@ Handles character death and respawn logic. Orchestrates experience loss calculat
 - Wheel of Fortune keeps character in current map on death only when the client's `useDeathItem` (Change.Premium() != 0, i.e. the revive dialog's OK button) is true AND the character holds a wheel with at least one charge remaining; otherwise warps to map's returnMapId
 
 ### Processors
-- `Processor` (interface) - Respawn(f, characterId, useDeathItem) orchestrates death penalty via saga with conditional steps: consume_wheel_of_fortune (if useDeathItem and a usable wheel is present), consume_protective_item (if present), set_hp (always, sets HP to 50), deduct_experience (if loss > 0), cancel_all_buffs (always), warp_to_spawn (always, portalId 0); after the saga is created, announces the protect-on-die effect (CharacterEffect to the dying player, CharacterEffectForeign to the rest of the map) when a death-protection item was spent
+- `Processor` (interface) - Respawn(f, characterId, useDeathItem) orchestrates death penalty via saga with conditional steps: consume_wheel_of_fortune (if useDeathItem and a usable wheel is present), consume_protective_item (if present), deduct_experience (if loss > 0), cancel_all_buffs (always), warp_to_spawn (always, portalId 0), set_hp (always, sets HP to 50, ordered last so the character stays dead until character.map_changed acknowledges the warp); after the saga is created, announces the protect-on-die effect (CharacterEffect to the dying player, CharacterEffectForeign to the rest of the map) when a death-protection item was spent
 
 ---
 

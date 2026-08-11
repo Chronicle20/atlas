@@ -1325,9 +1325,39 @@ func (p *ProcessorImpl) addMeso(mb *message.Buffer, txId uuid.UUID, characterId 
 	// fake-able escrowStore seam. Arming and netting have to see one store: a
 	// test double that answered this read while the arms went elsewhere would
 	// report nothing in flight and silently restore the very bug this nets out.
-	staked, err := escrow.NewProcessor(p.l, p.ctx, p.db).EffectiveMesoByOwner(room.Id(), characterId)
+	ep := escrow.NewProcessor(p.l, p.ctx, p.db)
+	inFlight, err := ep.InFlightMesoDelta(room.Id(), characterId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to read character [%d]'s in-flight meso. Refusing the stage rather than risking a double debit.", characterId)
+		return mb.Put(trademsg.EnvEventTopicStatus, mesoRefusedProvider(txId, room, characterId, pt.Position(), pt.MesoStaged()))
+	}
+	staked, err := ep.EffectiveMesoByOwner(room.Id(), characterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to read character [%d]'s staked meso. Refusing the stage rather than risking a double debit.", characterId)
+		return mb.Put(trademsg.EnvEventTopicStatus, mesoRefusedProvider(txId, room, characterId, pt.Position(), pt.MesoStaged()))
+	}
+
+	// A NEGATIVE delta is a PAYOUT — award_mesos carries -delta, so it credits
+	// the player's wallet — and a payout may only be netted against custody that
+	// has actually landed.
+	//
+	// Composition is what makes a retype conserve, but it treats in-flight
+	// deltas as though they will land, and for a payout that is a loan against a
+	// debit that may never happen: stake 1000, retype to 200 before the raise
+	// resolves, and the -800 credits 800 immediately. If the 1000 debit then
+	// fails — an ordinary outcome, since atlas-character re-checks the live
+	// balance at execution time and rejects if the player spent in the meantime
+	// — the player is 800 up having been debited nothing, and nothing claws it
+	// back: escrow's books land at -800, which every consumer correctly reads as
+	// "nothing owed", so the settlement gate can refuse to deliver the trade but
+	// cannot recall money already in the wallet.
+	//
+	// Raises are deliberately still allowed to compose. If an earlier debit
+	// fails, later debits still took only what they took, and the committed
+	// total still equals the sum that landed — no payout was ever made against
+	// the unconfirmed part.
+	if inFlight != 0 && int64(amount) < staked {
+		p.l.Infof("Character [%d] lowered their meso stake to [%d] while [%d] was still in flight. Refusing rather than crediting against a debit that has not landed.", characterId, amount, inFlight)
 		return mb.Put(trademsg.EnvEventTopicStatus, mesoRefusedProvider(txId, room, characterId, pt.Position(), pt.MesoStaged()))
 	}
 

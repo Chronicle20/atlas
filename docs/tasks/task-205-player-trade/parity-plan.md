@@ -1,8 +1,8 @@
 # Task-205 follow-on — meso custody parity
 
-**Status:** prerequisites P1 and P2 settled; **Tasks 1–6 done** — all three
-structural defences now exist on the meso side. Task 7 (re-audit + full gate)
-outstanding.
+**Status:** COMPLETE. Prerequisites P1 and P2 settled; Tasks 1–7 done. Both
+audits re-run independently: symmetry 0 BLOCKING, conservation 1 BLOCKING (F-8)
+which is fixed and mutation-verified. Full gate green.
 
 Written 2026-08-11 as a handoff from the session that produced commits
 `a3279ee73`..`0bf941fc5`.
@@ -434,10 +434,65 @@ find that claim. Both now use a single value.
 id as the real flow does. Mutation-verified: dropping the fence resurrects the
 returned row.
 
-### Task 7 — re-run both audits, then the full gate
+### Task 7 — re-run both audits, then the full gate — **DONE**
 
-Re-run the symmetry matrix and the conservation audit against the result, as
-fresh read-only passes. A BLOCKING finding means the pass is not done.
+Both re-run as fresh read-only passes against HEAD, by agents that did not write
+the code. Reports: `custody-symmetry-rerun.md`, `conservation-rerun.md`.
+
+**Symmetry: 0 BLOCKING.** All three defences confirmed present on both columns,
+and every meso read-then-act pair traced to a single statement or a locked
+transaction.
+
+**Conservation: 1 BLOCKING (F-8), now fixed.** Composition nets against
+committed PLUS in flight, but a NEGATIVE delta is a payout — `award_mesos`
+carries `-delta` — so lowering the box while a raise was in flight credited the
+player against a debit that had not landed:
+
+    stake 1000  -> delta +1000, debit submitted, unresolved
+    retype 200  -> delta  -800, CREDIT of 800 submitted
+    the debit FAILS -> player is 800 up, debited nothing
+
+Nothing recalls it. Escrow lands at -800, which every consumer correctly reads
+as "nothing owed", so Task 3's gate can refuse to DELIVER but cannot claw back
+money already in the wallet. **This was a hole in Task 1's chosen shape, missed
+while implementing it and found only by the independent pass.**
+
+Fixed by refusing a PAYOUT while anything is in flight. Raises still compose
+deliberately: if an earlier debit fails, later debits took only what they took,
+so the committed total still equals what landed, and no payout was ever made
+against the unconfirmed part. Only the narrow lower-mid-saga case serialises.
+Test: `TestLoweringTheMesoBoxNeverPaysOutAgainstAnUnconfirmedStake`,
+mutation-verified.
+
+**Symmetry NON-BLOCKING, also fixed:** `DispatchTradeStagingRollbacks` had no
+`AwardMesos` arm, so a MESO staging saga — whose only step is the debit —
+reverse-walked nothing and the debit stood with no escrow behind it. The same
+class as Task 4, and the inverse already existed verbatim on the late-completion
+path. Test: `TestStagingReverseWalkReversesItsMesoDebit`, mutation-verified.
+
+**Two observations recorded, not actioned:**
+
+1. `trade_unwind` runs under `SagaType TradeTransaction`, not a type of its own,
+   so the orchestrator ALREADY reverse-walks its failed steps before
+   `SAGA_FAILED` reaches `UnwindFailed`. Both delivery orderings were traced and
+   converge correctly. Task 5 above reads as though `UnwindFailed` were the sole
+   recovery mechanism; it is the atlas-trades half of two, and a future reader
+   should not assume it reverses currency by itself.
+2. A row left persistently negative with no stakes outstanding would never be
+   retired (`DeleteResolvedMeso` requires exactly 0). With F-8 fixed this should
+   be unreachable, and leaving such a row visible is the right behaviour for a
+   state that would indicate a bug — so the condition is deliberately NOT
+   widened to `<= 0`, which would silently discard a real debt.
+
+**One item the auditor flagged UNVERIFIED, carried forward honestly rather than
+closed:** whether a Kafka producer-level failure when dispatching the
+orchestrator's negated `AwardMesos` reversal (logged and skipped, not retried)
+could combine with atlas-trades' `RestoreMesoRefunds` to mint. It was not
+asserted as a defect and is not proven safe either.
+
+**Full gate, all green:** `go build` / `go vet` / `go test -race` across all 13
+changed modules; `docker buildx bake atlas-trades` (required — the branch moved
+its `go.mod`); all nine applicable repo guards; `tools/lint.sh`.
 
 Then the standard gate: `go build` / `go vet` / `go test -race -timeout 240s`
 in `libs/atlas-saga`, `atlas-trades`, `atlas-saga-orchestrator`, `atlas-channel`,

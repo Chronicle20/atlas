@@ -2470,6 +2470,29 @@ func (c *CompensatorImpl) DispatchTradeStagingRollbacks(s Saga) {
 			continue
 		}
 		switch step.Action() {
+		case AwardMesos:
+			// The MESO staging saga's only step. Without this arm a staging
+			// saga carrying a completed award_mesos reverse-walked nothing, so
+			// the debit stood with no escrow behind it — the meso twin of the
+			// item destruction this walk exists to prevent. The late-completion
+			// path (absorbLateTerminal) already carries this inverse verbatim;
+			// only the reverse walk was missing it.
+			payload, ok := step.Payload().(AwardMesosPayload)
+			if !ok {
+				continue
+			}
+			if !c.claimTradeRollback(s, step) {
+				continue
+			}
+			ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+			if err := c.charP.AwardMesosAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.CharacterId, "SYSTEM", -payload.Amount, false); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"character_id":   payload.CharacterId,
+					"amount":         payload.Amount,
+				}).Error("Reverse-walk: staging AwardMesos reversal dispatch failed; continuing chain.")
+			}
 		case AcceptToTrade:
 			payload, ok := step.Payload().(AcceptToTradePayload)
 			if !ok {

@@ -2075,3 +2075,44 @@ func TestRetypingTheMesoBoxMidSagaConservesMeso(t *testing.T) {
 		t.Errorf("escrow holds %d, want the %d the player last typed", held, secondTyped)
 	}
 }
+
+// TestLoweringTheMesoBoxNeverPaysOutAgainstAnUnconfirmedStake is the mint that
+// composition opened, and the reason a PAYOUT may not be netted against money
+// that has not landed.
+//
+// Composition nets a new stake against committed PLUS in flight, which is what
+// makes a retype conserve. But a stake's movement is submitted immediately, and
+// a NEGATIVE delta is a credit to the player's wallet (award_mesos carries
+// -delta). So lowering the box while a raise is still in flight pays real meso
+// out on the strength of a debit that has not happened yet:
+//
+//	stake 1000  -> delta +1000, debit 1000 submitted, unresolved
+//	retype 200  -> delta  -800 against (0 + 1000), CREDIT 800 submitted
+//	the debit FAILS (an ordinary outcome: atlas-character re-checks the live
+//	balance at execution time and rejects if the player spent in the meantime)
+//
+// The player is now 800 up having been debited nothing. Escrow's own books land
+// at -800, which every consumer correctly reads as "nothing owed", so the
+// settlement gate can refuse to deliver the trade but cannot claw back a credit
+// that already reached the wallet.
+//
+// Raises do NOT have this problem and are deliberately left composing: if an
+// earlier debit fails, later debits still only took what they took, and the
+// committed total still equals the sum that landed.
+func TestLoweringTheMesoBoxNeverPaysOutAgainstAnUnconfirmedStake(t *testing.T) {
+	p, e := testOpenRoomWithMeso(t, 100, 5_000_000)
+
+	if err := p.AddMeso(uuid.New(), 100, 1_000); err != nil {
+		t.Fatalf("raise: %v", err)
+	}
+	// Retyped DOWN before the raise resolved.
+	if err := p.AddMeso(uuid.New(), 100, 200); err != nil {
+		t.Fatalf("lower: %v", err)
+	}
+
+	for _, s := range sagasWithAction(t, e, sharedsaga.AwardMesos) {
+		if got := awardMesosPayloadOf(t, s).Amount; got > 0 {
+			t.Fatalf("a credit of %d was submitted while a debit was still in flight; if that debit fails the player keeps it and nothing ever claws it back", got)
+		}
+	}
+}

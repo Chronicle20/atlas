@@ -107,3 +107,49 @@ func TestTimerRegistry_ZeroDurationNoOp(t *testing.T) {
 	SagaTimers().Schedule(logger, te, txId, 0)
 	assert.False(t, SagaTimers().Has(txId))
 }
+
+// TestEverySagaTypeWithAReverseWalkIsDispatchedOnTimeout guards the class of
+// bug that TradeStaging fell into, rather than that one instance.
+//
+// Timeout routing and step-failure routing are two separate enumerations of the
+// saga types. A type registered in one and not the other still behaves
+// correctly on step failure — which is what gets exercised in development — and
+// destroys value only on the 30s backstop, which does not. TradeStaging was
+// exactly that: its release_from_character completed, its accept_to_trade
+// stalled, and nothing rolled back, so the compartment lost an item that escrow
+// never received.
+//
+// So the assertion is not "TradeStaging is handled" but "every type that has a
+// bespoke compensator is handled", which fails for the NEXT type added too.
+func TestEverySagaTypeWithAReverseWalkIsDispatchedOnTimeout(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), te)
+
+	for _, st := range reverseWalkSagaTypes {
+		t.Run(string(st), func(t *testing.T) {
+			ResetCache()
+			s, _ := NewBuilder().SetSagaType(st).SetInitiatedBy("test").Build()
+			_ = GetCache().Put(ctx, s)
+			if !dispatchTimeoutRollbacks(logger, ctx, s) {
+				t.Fatalf("a timed-out %s saga dispatches no reverse walk; its completed steps stand and whatever they moved is destroyed", st)
+			}
+		})
+	}
+}
+
+// TestTradeStagingTimeoutDispatchesItsReverseWalk names the specific defect, so
+// a regression reads as what it is rather than as a table row.
+func TestTradeStagingTimeoutDispatchesItsReverseWalk(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), te)
+
+	s, _ := NewBuilder().SetSagaType(TradeStaging).SetInitiatedBy("test").Build()
+	_ = GetCache().Put(ctx, s)
+
+	if !dispatchTimeoutRollbacks(logger, ctx, s) {
+		t.Fatal("a staging saga that times out between release_from_character and accept_to_trade rolls back nothing: compartment -1, escrow +0, item destroyed")
+	}
+}

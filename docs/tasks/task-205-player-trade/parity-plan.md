@@ -1,7 +1,7 @@
 # Task-205 follow-on — meso custody parity
 
-**Status:** prerequisites P1 and P2 settled; **Tasks 1, 2 and 3 done** — all
-three structural defences now exist on the meso side. Tasks 4–7 outstanding.
+**Status:** prerequisites P1 and P2 settled; **Tasks 1–4 done** — all three
+structural defences now exist on the meso side. Tasks 5–7 outstanding.
 
 Written 2026-08-11 as a handoff from the session that produced commits
 `a3279ee73`..`0bf941fc5`.
@@ -294,7 +294,7 @@ rather than deleted: the gate makes its state unreachable through the normal
 flow, but it still pins the DISCHARGE behaviour for a stake that outlives its
 room by another route, which the orphan path depends on.
 
-### Task 4 — register `TradeStaging` in the timeout reverse-walk ✅ *confirmed*
+### Task 4 — register `TradeStaging` in the timeout reverse-walk ✅ *confirmed* — **DONE**
 
 **The defect.** `saga/timer.go` dispatches its rollback for exactly three saga
 types — `CharacterCreation`, `MtsOperation`, `TradeTransaction`. Both staging
@@ -312,8 +312,30 @@ must be registered everywhere saga types are enumerated. **Grep for every
 `SagaType()` comparison in the orchestrator** and check each one, rather than
 fixing only `timer.go`.
 
-**Tests.** A timed-out staging saga rolls back and the asset returns.
-Mutation-verify by removing the registration.
+**The fix — DONE, and not by adding a fourth `if`.** The chain of independent
+`if s.SagaType() == …` statements IS the defect shape: it is an enumeration
+with no way to notice an omission. It is now one `switch` in
+`dispatchTimeoutRollbacks`, driven by a named `reverseWalkSagaTypes` list that
+the test reads too. `DispatchTradeStagingRollbacks` already existed — the
+timeout path simply never called it.
+
+**Every `SagaType()` comparison in the orchestrator was checked**, per the trap
+note. Results:
+
+| Site | Handles `TradeStaging`? | Verdict |
+|---|---|---|
+| `saga/timer.go` | **no → FIXED** | the defect |
+| `saga/compensator.go:305` | yes | step-failure path, already correct |
+| `saga/error_mapper.go:13` | no → falls to `ErrorCodeUnknown` | **left alone deliberately**: `compensateTradeStaging` already emits `ErrorCodeUnknown` explicitly, so the two agree, and the code is diagnostic detail on the FAILED event, never a branch the client sees |
+| `saga/producer.go:28,34,105,184` | n/a | enrich the emitted event with type-specific ids; nothing at risk for staging |
+| `saga/processor.go:814` | n/a | `CharacterCreation && Completed` only |
+| `saga/compensator.go:252-320, 2114, 2284, 2303` | yes at 305 | the rest are other types' bespoke arms |
+
+**Tests.** `TestTradeStagingTimeoutDispatchesItsReverseWalk` names the defect,
+and `TestEverySagaTypeWithAReverseWalkIsDispatchedOnTimeout` guards the CLASS —
+it iterates `reverseWalkSagaTypes`, so it fails for the next type added to the
+compensator and forgotten here. Mutation-verified: dropping the `TradeStaging`
+arm fails both, with "compartment -1, escrow +0, item destroyed".
 
 ### Task 5 — route a failed `trade_unwind`
 

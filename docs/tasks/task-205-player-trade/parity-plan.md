@@ -1,7 +1,7 @@
 # Task-205 follow-on — meso custody parity
 
-**Status:** prerequisites P1 and P2 settled; **Tasks 1–4 done** — all three
-structural defences now exist on the meso side. Tasks 5–7 outstanding.
+**Status:** prerequisites P1 and P2 settled; **Tasks 1–5 done** — all three
+structural defences now exist on the meso side. Tasks 6–7 outstanding.
 
 Written 2026-08-11 as a handoff from the session that produced commits
 `a3279ee73`..`0bf941fc5`.
@@ -337,7 +337,7 @@ it iterates `reverseWalkSagaTypes`, so it fails for the next type added to the
 compensator and forgotten here. Mutation-verified: dropping the `TradeStaging`
 arm fails both, with "compartment -1, escrow +0, item destroyed".
 
-### Task 5 — route a failed `trade_unwind`
+### Task 5 — route a failed `trade_unwind` — **DONE**
 
 **The defect (relayed, unconfirmed).** A `trade_unwind` transaction id owns none
 of the three id spaces the saga-status consumer probes, so `SAGA_FAILED` for an
@@ -347,12 +347,45 @@ permanently and invisible to every future boot sweep**. Meso was already zeroed
 in the same transaction that submitted the unwind, so it is **destroyed with no
 record**.
 
-**The fix.** Route it. Consider whether "discharge before the return is
-confirmed" is the right posture at all, or whether both columns should discharge
-only on the unwind's terminal success — that is the deeper question this finding
-raises, and it may subsume Task 2.
+**Confirmed.** `completeSettlement` treats an id that names no settlement record
+as already-resolved and returns nil (`trade/settlement.go`), so the failure was
+swallowed with a debug line. There is also no `TradeUnwind` arm in the
+orchestrator's compensator, so it falls to `compensateStorageOperation`, which
+performs no rollback.
 
-**Tests.** A failed unwind leaves both columns recoverable. Mutation-verify.
+**The open question was put to the user and answered: keep
+discharge-before-confirm, and make the failure routable.** The alternative —
+discharging only on the unwind's terminal success, which would have subsumed
+Task 2 by turning the meso claim into a latch — was presented and not chosen.
+
+**The fix — DONE.** The blocker was that nothing recorded WHAT an unwind
+claimed: `returning_at` was a bare timestamp, and after Task 2 the meso is
+already zeroed. So:
+
+- `ItemEntity.ReturningTxId` names the unwind holding each latch, and
+  `ClaimItemForReturn` stamps it. The unwind's id is now minted BEFORE anything
+  is claimed, at all three sites.
+- `MesoRefundEntity` (`trade_escrow_meso_refunds`) durably records what an
+  unwind took from each participant, written in the same transaction that takes
+  it. It has to carry the AMOUNT, not just the claim, because the meso claim is
+  destructive — once submitted, nothing else names the figure that was owed.
+- `UnwindFailed` releases that transaction's latches and adds back its recorded
+  amounts (relative, so a stake committing meanwhile is not clobbered; the row
+  is re-created if the retire removed it). It re-submits nothing: the point is
+  to return custody to a state the ordinary paths can act on.
+- `UnwindSucceeded` discards the records. Without it they accumulate, and a
+  redelivered FAILED event — which at-least-once permits — would restore meso
+  already paid out, minting it.
+- A fourth probe in the saga-status consumer, **ordered before the settlement
+  probe**, because that one swallows unknown ids and would make an unwind look
+  handled.
+
+**Tests, all mutation-verified.**
+`TestAFailedUnwindLeavesBothColumnsRecoverable` (including the redelivery),
+`TestASucceededUnwindDiscardsItsRefundRecords`, and
+`TestReleaseItemReturnClaimsUnlatchesOnlyItsOwnTransaction` — the last pins the
+scoping, and widening it to the tenant releases 2 rows instead of 1, which would
+grant another unwind's item twice.
 
 ### Task 6 — fence `RestoreItem` against redelivery
 

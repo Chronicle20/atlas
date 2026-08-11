@@ -635,10 +635,10 @@ func escrowItemPayload(r escrow.ItemModel) sharedsaga.TradeEscrowItem {
 // the only thing that decides between them — nothing downstream dedupes, so a
 // row returned twice is granted to its owner twice (see
 // escrow.ClaimItemForReturn).
-func (p *ProcessorImpl) claimItemsForReturn(items []escrow.ItemModel) ([]escrow.ItemModel, error) {
+func (p *ProcessorImpl) claimItemsForReturn(txId uuid.UUID, items []escrow.ItemModel) ([]escrow.ItemModel, error) {
 	won := make([]escrow.ItemModel, 0, len(items))
 	for _, r := range items {
-		ok, err := p.esc.ClaimForReturn(r.Id())
+		ok, err := p.esc.ClaimForReturn(r.Id(), txId)
 		if err != nil {
 			return nil, err
 		}
@@ -687,12 +687,17 @@ func (p *ProcessorImpl) emitUnwind(mb *message.Buffer, room Room) error {
 	if len(items) == 0 && len(mesos) == 0 {
 		return nil
 	}
-	items, err = p.claimItemsForReturn(items)
+	// The unwind's id is minted BEFORE anything is claimed, because every claim
+	// is stamped with it: that is what lets a FAILED unwind release exactly the
+	// rows and restore exactly the amounts it took (see
+	// escrow.ReleaseItemReturnClaims and escrow.RestoreMesoRefunds).
+	unwindTxId := uuid.New()
+	items, err = p.claimItemsForReturn(unwindTxId, items)
 	if err != nil {
 		return err
 	}
 
-	payload := sharedsaga.TradeUnwindPayload{TransactionId: uuid.New()}
+	payload := sharedsaga.TradeUnwindPayload{TransactionId: unwindTxId}
 	for _, r := range items {
 		payload.Items = append(payload.Items, sharedsaga.TradeUnwindItem{
 			OwnerId: r.OwnerId(),
@@ -711,6 +716,11 @@ func (p *ProcessorImpl) emitUnwind(mb *message.Buffer, room Room) error {
 		}
 		if !claimed {
 			continue
+		}
+		// See unwindStranded: the claim is destructive, so what it took is
+		// recorded against this unwind in the same transaction.
+		if err = ep.RecordMesoRefund(unwindTxId, roomId, m.OwnerId(), amount); err != nil {
+			return err
 		}
 		payload.Mesos = append(payload.Mesos, sharedsaga.TradeUnwindMeso{
 			CharacterId: m.OwnerId(),
@@ -1113,12 +1123,17 @@ func (p *ProcessorImpl) unwindRecord(mb *message.Buffer, s settlement.Model) err
 	if len(items) == 0 && len(mesos) == 0 {
 		return nil
 	}
-	items, err = p.claimItemsForReturn(items)
+	// The unwind's id is minted BEFORE anything is claimed, because every claim
+	// is stamped with it: that is what lets a FAILED unwind release exactly the
+	// rows and restore exactly the amounts it took (see
+	// escrow.ReleaseItemReturnClaims and escrow.RestoreMesoRefunds).
+	unwindTxId := uuid.New()
+	items, err = p.claimItemsForReturn(unwindTxId, items)
 	if err != nil {
 		return err
 	}
 
-	payload := sharedsaga.TradeUnwindPayload{TransactionId: uuid.New()}
+	payload := sharedsaga.TradeUnwindPayload{TransactionId: unwindTxId}
 	for _, r := range items {
 		payload.Items = append(payload.Items, sharedsaga.TradeUnwindItem{
 			OwnerId: r.OwnerId(),
@@ -1137,6 +1152,11 @@ func (p *ProcessorImpl) unwindRecord(mb *message.Buffer, s settlement.Model) err
 		}
 		if !claimed {
 			continue
+		}
+		// See unwindStranded: the claim is destructive, so what it took is
+		// recorded against this unwind in the same transaction.
+		if err = ep.RecordMesoRefund(unwindTxId, roomId, m.OwnerId(), amount); err != nil {
+			return err
 		}
 		payload.Mesos = append(payload.Mesos, sharedsaga.TradeUnwindMeso{
 			CharacterId: m.OwnerId(),
@@ -1462,12 +1482,13 @@ func (p *ProcessorImpl) unwindStranded(mb *message.Buffer, r *strandedRoom) erro
 	// owner the item twice. The claim is the only durable record of that, which
 	// is why it is a column rather than in-memory state: this sweep runs at boot,
 	// with every room already lost.
-	items, err := p.claimItemsForReturn(r.items)
+	unwindTxId := uuid.New()
+	items, err := p.claimItemsForReturn(unwindTxId, r.items)
 	if err != nil {
 		return err
 	}
 
-	payload := sharedsaga.TradeUnwindPayload{TransactionId: uuid.New()}
+	payload := sharedsaga.TradeUnwindPayload{TransactionId: unwindTxId}
 	for _, i := range items {
 		payload.Items = append(payload.Items, sharedsaga.TradeUnwindItem{
 			OwnerId: i.OwnerId(),
@@ -1493,6 +1514,13 @@ func (p *ProcessorImpl) unwindStranded(mb *message.Buffer, r *strandedRoom) erro
 		}
 		if !claimed {
 			continue
+		}
+		// Durably name what this unwind took, in the same transaction that took
+		// it. The claim is destructive — it zeroes the row — so without this a
+		// failed unwind would destroy the meso with nothing left to restore it
+		// from.
+		if rerr := ep.RecordMesoRefund(unwindTxId, r.roomId, m.OwnerId(), amount); rerr != nil {
+			return rerr
 		}
 		payload.Mesos = append(payload.Mesos, sharedsaga.TradeUnwindMeso{
 			CharacterId: m.OwnerId(),
@@ -1628,4 +1656,66 @@ func stagedItemCount(room Room) int {
 		n += len(pt.Items())
 	}
 	return n
+}
+
+// UnwindFailed recovers from a trade_unwind that FAILED, and reports whether
+// this transaction was an unwind at all.
+//
+// It exists because an unwind owns none of the id spaces the saga-status
+// consumer probes — it is not a stage, not a meso stake, not a settlement — so
+// its FAILED event fell through every one of them and was swallowed with a
+// debug line. Nothing noticed, and the cost was total on both columns:
+//
+//   - ITEMS stayed latched by their return claim, which clears only on a
+//     completed release. The boot sweep skips a latched row by design, so the
+//     item sat intact in custody, owned by nobody and invisible to every path
+//     that could have returned it.
+//   - MESO was already zeroed, because claiming IS taking (ClaimMesoForReturn).
+//     The row read zero, the refund never landed, and no record anywhere said
+//     it had been owed.
+//
+// Recovery is therefore the exact inverse of what the claim did: release the
+// item latches this transaction placed, and add back the amounts it recorded.
+// Both are scoped to the transaction — rows another unwind is legitimately
+// returning keep their claims — and both consume what they act on, so a
+// redelivered failure is inert.
+//
+// Nothing is re-submitted here. The point is to put custody back into a state
+// the ordinary paths can act on: the next teardown or boot sweep finds
+// unlatched rows and a non-zero balance, and returns them.
+func (p *ProcessorImpl) UnwindFailed(txId uuid.UUID, reason string) (bool, error) {
+	ep := escrow.NewProcessor(p.l, p.ctx, p.db)
+
+	released, err := ep.ReleaseItemReturnClaims(txId)
+	if err != nil {
+		return false, err
+	}
+	restored, err := ep.RestoreMesoRefunds(txId)
+	if err != nil {
+		return false, err
+	}
+	if released == 0 && restored == 0 {
+		return false, nil
+	}
+
+	p.l.Warnf("Trade unwind [%s] failed: [%s]. Released [%d] latched escrow item(s) and restored [%d] meso refund(s); the next sweep will return them.", txId.String(), reason, released, restored)
+	return true, nil
+}
+
+// UnwindSucceeded discards the refund records of a completed trade_unwind and
+// reports whether this transaction was an unwind.
+//
+// The meso reached the player, so there is nothing left to put back. Without
+// this the records accumulate forever and a later redelivery of the FAILED
+// event — which at-least-once delivery permits — would restore meso that has
+// already been paid out, minting it.
+//
+// The item latches are deliberately NOT cleared: a completed unwind released
+// those rows, and a released row is gone from the default scope entirely.
+func (p *ProcessorImpl) UnwindSucceeded(txId uuid.UUID) (bool, error) {
+	discarded, err := escrow.NewProcessor(p.l, p.ctx, p.db).DiscardMesoRefunds(txId)
+	if err != nil {
+		return false, err
+	}
+	return discarded > 0, nil
 }

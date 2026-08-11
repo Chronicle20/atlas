@@ -35,9 +35,10 @@ import (
 // matching the ledger's and settlement's reasoning: a rename that missed one
 // would still compile.
 const (
-	itemTable      = "trade_escrow_items"
-	mesoTable      = "trade_escrow_mesos"
-	mesoStakeTable = "trade_escrow_meso_stakes"
+	itemTable       = "trade_escrow_items"
+	mesoTable       = "trade_escrow_mesos"
+	mesoStakeTable  = "trade_escrow_meso_stakes"
+	mesoRefundTable = "trade_escrow_meso_refunds"
 )
 
 // ItemEntity is one staged asset held in trade custody.
@@ -149,6 +150,19 @@ type ItemEntity struct {
 	// is a real compare-and-set rather than a comparison against a zero time
 	// that a claim could legitimately write.
 	ReturningAt *time.Time `gorm:"column:returning_at"`
+
+	// ReturningTxId names the trade_unwind that holds the claim above, and it
+	// exists so a FAILED unwind can release exactly the rows it took.
+	//
+	// A bare returning_at timestamp said that some path was returning the row
+	// but not which one, so an unwind that failed left every row it had claimed
+	// latched forever: the latch clears only on a completed release, and the
+	// boot sweep skips a latched row by design. The item was intact in custody
+	// and invisible to everything that could have returned it.
+	//
+	// Nullable for the same reason ReturningAt is: unclaimed must be SQL NULL so
+	// the claim's `IS NULL` predicate is a real compare-and-set.
+	ReturningTxId *uuid.UUID `gorm:"column:returning_tx_id;type:uuid;index"`
 
 	CreatedAt time.Time      `gorm:"column:created_at"`
 	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at;index"`
@@ -270,6 +284,40 @@ type MesoStakeEntity struct {
 
 func (MesoStakeEntity) TableName() string { return mesoStakeTable }
 
+// MesoRefundEntity records what one trade_unwind TOOK from a participant's
+// escrowed meso, so a failed unwind can put it back.
+//
+// It is the meso counterpart of ItemEntity.ReturningTxId, and it has to carry
+// the amount rather than just the claim because the claim is destructive:
+// ClaimMesoForReturn zeroes the row as the act of taking it, so once the unwind
+// is submitted nothing else names the figure that was owed. A failed unwind
+// without this record destroyed the meso outright, with the row reading zero
+// and no error anywhere.
+//
+// Written in the SAME transaction that claims and submits, so the record cannot
+// outlive a claim that rolled back, nor a claim outlive its record.
+//
+// Rows are removed when the unwind reaches a terminal state — restored on
+// failure, discarded on success — so the table holds only refunds actually in
+// flight.
+type MesoRefundEntity struct {
+	Id            uuid.UUID `gorm:"column:id;type:uuid;primaryKey"`
+	TransactionId uuid.UUID `gorm:"column:transaction_id;type:uuid;not null;index"`
+
+	TenantId     uuid.UUID `gorm:"column:tenant_id;type:uuid;not null"`
+	TenantRegion string    `gorm:"column:tenant_region;type:varchar(32);not null;default:''"`
+	TenantMajor  uint16    `gorm:"column:tenant_major;not null;default:0"`
+	TenantMinor  uint16    `gorm:"column:tenant_minor;not null;default:0"`
+
+	RoomId  uuid.UUID    `gorm:"column:room_id;type:uuid;not null"`
+	OwnerId character.Id `gorm:"column:owner_id;not null"`
+	Amount  int64        `gorm:"column:amount;not null"`
+
+	CreatedAt time.Time `gorm:"column:created_at"`
+}
+
+func (MesoRefundEntity) TableName() string { return mesoRefundTable }
+
 // staleItemColumns are columns an earlier shape of ItemEntity created that
 // nothing writes any more: ring_id was never sourced (no asset projection
 // anywhere in the fleet carries a ring id), and item_level / item_exp /
@@ -298,7 +346,7 @@ var staleMesoColumns = []string{"pending_stake_id", "pending_amount", "pending_d
 // against and nothing for the boot sweep to find. At most one stake per row can
 // exist to migrate, since one slot is all the old shape could hold.
 func Migration(db *gorm.DB) error {
-	if err := db.AutoMigrate(&ItemEntity{}, &MesoEntity{}, &MesoStakeEntity{}); err != nil {
+	if err := db.AutoMigrate(&ItemEntity{}, &MesoEntity{}, &MesoStakeEntity{}, &MesoRefundEntity{}); err != nil {
 		return err
 	}
 	m := db.Migrator()

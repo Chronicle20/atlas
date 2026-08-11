@@ -875,7 +875,7 @@ func TestClaimItemForReturnIsWonByExactlyOneCaller(t *testing.T) {
 		go func(i int) {
 			defer done.Done()
 			start.Wait()
-			results[i], errs[i] = ClaimItemForReturn(db, te.Id())(m.Id())
+			results[i], errs[i] = ClaimItemForReturn(db, te.Id())(m.Id(), uuid.New())
 		}(i)
 	}
 	start.Done()
@@ -909,7 +909,7 @@ func TestClaimItemForReturnSurvivesTheProcess(t *testing.T) {
 	if err := CreateItem(db, te)(m); err != nil {
 		t.Fatalf("CreateItem: %v", err)
 	}
-	won, err := ClaimItemForReturn(db, te.Id())(m.Id())
+	won, err := ClaimItemForReturn(db, te.Id())(m.Id(), uuid.New())
 	if err != nil {
 		t.Fatalf("first claim: %v", err)
 	}
@@ -924,7 +924,7 @@ func TestClaimItemForReturnSurvivesTheProcess(t *testing.T) {
 	if len(rows) != 1 {
 		t.Fatalf("AllItems: got %d rows, want the still-live claimed row", len(rows))
 	}
-	again, err := ClaimItemForReturn(db, te.Id())(m.Id())
+	again, err := ClaimItemForReturn(db, te.Id())(m.Id(), uuid.New())
 	if err != nil {
 		t.Fatalf("second claim: %v", err)
 	}
@@ -950,14 +950,14 @@ func TestClaimItemForReturnIsTenantScoped(t *testing.T) {
 		t.Fatalf("CreateItem: %v", err)
 	}
 
-	won, err := ClaimItemForReturn(db, other.Id())(m.Id())
+	won, err := ClaimItemForReturn(db, other.Id())(m.Id(), uuid.New())
 	if err != nil {
 		t.Fatalf("foreign claim: %v", err)
 	}
 	if won {
 		t.Fatal("a foreign tenant claimed the row")
 	}
-	won, err = ClaimItemForReturn(db, te.Id())(m.Id())
+	won, err = ClaimItemForReturn(db, te.Id())(m.Id(), uuid.New())
 	if err != nil {
 		t.Fatalf("owning claim: %v", err)
 	}
@@ -982,7 +982,7 @@ func TestClaimItemForReturnRefusesAReleasedRow(t *testing.T) {
 		t.Fatalf("DeleteItem: %v", err)
 	}
 
-	won, err := ClaimItemForReturn(db, te.Id())(m.Id())
+	won, err := ClaimItemForReturn(db, te.Id())(m.Id(), uuid.New())
 	if err != nil {
 		t.Fatalf("ClaimItemForReturn: %v", err)
 	}
@@ -1011,7 +1011,7 @@ func TestRestoreItemReleasesTheReturnClaim(t *testing.T) {
 	if err := CreateItem(db, te)(m); err != nil {
 		t.Fatalf("CreateItem: %v", err)
 	}
-	won, err := ClaimItemForReturn(db, te.Id())(m.Id())
+	won, err := ClaimItemForReturn(db, te.Id())(m.Id(), uuid.New())
 	if err != nil {
 		t.Fatalf("ClaimItemForReturn: %v", err)
 	}
@@ -1033,7 +1033,7 @@ func TestRestoreItemReleasesTheReturnClaim(t *testing.T) {
 	if len(got) != 1 {
 		t.Fatalf("expected the restored row back, got %d rows", len(got))
 	}
-	reclaimed, err := ClaimItemForReturn(db, te.Id())(m.Id())
+	reclaimed, err := ClaimItemForReturn(db, te.Id())(m.Id(), uuid.New())
 	if err != nil {
 		t.Fatalf("re-claim: %v", err)
 	}
@@ -1223,5 +1223,56 @@ func TestClaimMesoForReturnIgnoresANonPositiveRow(t *testing.T) {
 				t.Errorf("claimed %d (%v) from a %s row, want nothing", got, ok, tc.name)
 			}
 		})
+	}
+}
+
+// TestReleaseItemReturnClaimsUnlatchesOnlyItsOwnTransaction pins the item half
+// of failed-unwind recovery.
+//
+// A latched row is invisible to everything that could return it: the latch
+// clears only on a completed release, and the boot sweep skips a latched row by
+// design. So an unwind that fails must hand its rows back, or the item sits
+// intact in custody owned by nobody.
+//
+// Scoped to the transaction, because a row another unwind is legitimately
+// returning must keep its claim — releasing those would hand the same item to
+// two unwinds and grant it twice.
+func TestReleaseItemReturnClaimsUnlatchesOnlyItsOwnTransaction(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	roomId := uuid.New()
+	failing := testItem(roomId, character.Id(100), 1)
+	healthy := testItem(roomId, character.Id(200), 2)
+	for _, m := range []ItemModel{failing, healthy} {
+		if err := CreateItem(db, te)(m); err != nil {
+			t.Fatalf("CreateItem: %v", err)
+		}
+	}
+
+	failedTx, otherTx := uuid.New(), uuid.New()
+	if ok, err := ClaimItemForReturn(db, te.Id())(failing.Id(), failedTx); err != nil || !ok {
+		t.Fatalf("claim failing row: ok=%v err=%v", ok, err)
+	}
+	if ok, err := ClaimItemForReturn(db, te.Id())(healthy.Id(), otherTx); err != nil || !ok {
+		t.Fatalf("claim healthy row: ok=%v err=%v", ok, err)
+	}
+
+	released, err := ReleaseItemReturnClaims(db, te.Id())(failedTx)
+	if err != nil {
+		t.Fatalf("ReleaseItemReturnClaims: %v", err)
+	}
+	if released != 1 {
+		t.Fatalf("released %d rows, want exactly the 1 the failed unwind claimed", released)
+	}
+
+	// The released row is claimable again — which is what "recoverable" means:
+	// the next teardown or boot sweep can take it.
+	if ok, err := ClaimItemForReturn(db, te.Id())(failing.Id(), uuid.New()); err != nil || !ok {
+		t.Errorf("the released row could not be re-claimed (ok=%v err=%v); it is stranded in custody with nothing able to return it", ok, err)
+	}
+	// The other unwind's row is untouched, so its item cannot be granted twice.
+	if ok, err := ClaimItemForReturn(db, te.Id())(healthy.Id(), uuid.New()); err != nil || ok {
+		t.Errorf("a row claimed by a DIFFERENT unwind was released (ok=%v err=%v); that unwind's item would be granted twice", ok, err)
 	}
 }

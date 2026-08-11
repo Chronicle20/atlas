@@ -1807,3 +1807,106 @@ func TestSettlementRefusesWhileAMesoStakeIsInFlight(t *testing.T) {
 		})
 	}
 }
+
+// TestAFailedUnwindLeavesBothColumnsRecoverable is the swallowed-failure
+// defect, driven end to end.
+//
+// A trade_unwind owns none of the id spaces the saga-status consumer probes —
+// it is not a stage, not a meso stake, not a settlement — so its FAILED event
+// fell through all three. The settlement probe treats an id that names no
+// record as already-resolved and returns nil, so the failure was swallowed with
+// a debug line and nothing noticed.
+//
+// The cost was total on both columns. Items stayed latched by their return
+// claim, which clears only on a completed release, and the boot sweep skips a
+// latched row by design — so the item sat intact in custody, owned by nobody
+// and invisible to every path that could return it. Meso was worse: claiming IS
+// taking, so the row already read zero and no record anywhere said it had been
+// owed.
+func TestAFailedUnwindLeavesBothColumnsRecoverable(t *testing.T) {
+	const staked = uint32(4_000)
+
+	p, e := testConfirmedRoomWithMeso(t, 100, staked)
+	room, _ := p.RoomForCharacter(100)
+	roomId := room.Id()
+
+	// Tear the room down so its escrow is unwound.
+	if err := p.TeardownCharacter(uuid.New(), 200, ReasonTradeCancelled); err != nil {
+		t.Fatalf("teardown: %v", err)
+	}
+	unwinds := unwindSagas(t, e)
+	if len(unwinds) != 1 {
+		t.Fatalf("trade_unwind sagas: got %d, want 1", len(unwinds))
+	}
+	unwindTxId := unwinds[0].TransactionId
+
+	// The claim is destructive, so at this point the meso is already gone from
+	// the row. That is the state the failure has to be recovered from.
+	if held, _, err := escrow.MesoByOwner(p.db, p.t.Id())(roomId, 100); err != nil || held != 0 {
+		t.Fatalf("after the claim the row holds %d (err %v), want 0", held, err)
+	}
+
+	claimed, err := p.UnwindFailed(unwindTxId, "AWARD_MESOS_FAILED")
+	if err != nil {
+		t.Fatalf("UnwindFailed: %v", err)
+	}
+	if !claimed {
+		t.Fatal("the failed unwind was not recognised as an unwind; it falls through to the settlement probe, which swallows an unknown id, and the meso is destroyed with no record")
+	}
+
+	held, found, err := escrow.MesoByOwner(p.db, p.t.Id())(roomId, 100)
+	if err != nil {
+		t.Fatalf("MesoByOwner: %v", err)
+	}
+	if !found || held != int64(staked) {
+		t.Errorf("after recovery the row holds %d (found %v), want the %d the failed unwind took back", held, found, staked)
+	}
+
+	// And it is recoverable exactly once: a redelivered failure must not
+	// restore the meso a second time.
+	if _, err := p.UnwindFailed(unwindTxId, "AWARD_MESOS_FAILED"); err != nil {
+		t.Fatalf("redelivered UnwindFailed: %v", err)
+	}
+	held, _, err = escrow.MesoByOwner(p.db, p.t.Id())(roomId, 100)
+	if err != nil {
+		t.Fatalf("MesoByOwner: %v", err)
+	}
+	if held != int64(staked) {
+		t.Errorf("a redelivered failure restored the meso again: row holds %d, want %d", held, staked)
+	}
+}
+
+// TestASucceededUnwindDiscardsItsRefundRecords pins the other terminal state.
+// The meso reached the player, so a later redelivery of the FAILED event — which
+// at-least-once delivery permits — must find nothing to restore, or it mints.
+func TestASucceededUnwindDiscardsItsRefundRecords(t *testing.T) {
+	const staked = uint32(4_000)
+
+	p, e := testConfirmedRoomWithMeso(t, 100, staked)
+	room, _ := p.RoomForCharacter(100)
+	roomId := room.Id()
+
+	if err := p.TeardownCharacter(uuid.New(), 200, ReasonTradeCancelled); err != nil {
+		t.Fatalf("teardown: %v", err)
+	}
+	unwindTxId := unwindSagas(t, e)[0].TransactionId
+
+	claimed, err := p.UnwindSucceeded(unwindTxId)
+	if err != nil {
+		t.Fatalf("UnwindSucceeded: %v", err)
+	}
+	if !claimed {
+		t.Fatal("a completed unwind left its refund records behind; a redelivered failure would restore meso that has already been paid out")
+	}
+
+	if _, err := p.UnwindFailed(unwindTxId, "redelivered after success"); err != nil {
+		t.Fatalf("UnwindFailed after success: %v", err)
+	}
+	held, _, err := escrow.MesoByOwner(p.db, p.t.Id())(roomId, 100)
+	if err != nil {
+		t.Fatalf("MesoByOwner: %v", err)
+	}
+	if held != 0 {
+		t.Errorf("a failure redelivered after the unwind succeeded restored %d meso that was already paid out", held)
+	}
+}

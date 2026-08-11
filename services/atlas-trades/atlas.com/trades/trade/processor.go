@@ -156,7 +156,7 @@ type escrowStore interface {
 	// It reports whether THIS caller won the exclusive right to submit the
 	// trade_unwind for the row; see escrow.ClaimItemForReturn for why the
 	// alternative — read, decide, then write — hands the owner the item twice.
-	ClaimForReturn(escrowId uuid.UUID) (bool, error)
+	ClaimForReturn(escrowId uuid.UUID, txId uuid.UUID) (bool, error)
 
 	// withTx rebinds the reads onto a transaction.
 	//
@@ -208,8 +208,8 @@ func (e escrowReader) MesoByOwner(roomId uuid.UUID, ownerId character.Id) (int64
 	return escrow.MesoByOwner(e.db, e.t.Id())(roomId, ownerId)
 }
 
-func (e escrowReader) ClaimForReturn(escrowId uuid.UUID) (bool, error) {
-	return escrow.ClaimItemForReturn(e.db, e.t.Id())(escrowId)
+func (e escrowReader) ClaimForReturn(escrowId uuid.UUID, txId uuid.UUID) (bool, error) {
+	return escrow.ClaimItemForReturn(e.db, e.t.Id())(escrowId, txId)
 }
 
 // configProvider resolves the request tenant's trade configuration.
@@ -301,6 +301,13 @@ type Processor interface {
 	// LEAVE 8. No ledger row is written (FR-7.3). Keyed by settlement id for
 	// the same reason as SettlementSucceeded.
 	SettlementFailed(txId uuid.UUID, settlementId uuid.UUID, reason string) error
+
+	// UnwindFailed and UnwindSucceeded are the trade_unwind's own id space. It
+	// owns none of the other three, so without these its terminal status falls
+	// through every probe and is swallowed — see UnwindFailed for what that
+	// costs both custody columns.
+	UnwindFailed(txId uuid.UUID, reason string) (bool, error)
+	UnwindSucceeded(txId uuid.UUID) (bool, error)
 
 	// ReconcileSettlements completes this tenant's settlements whose terminal
 	// status was never seen — the trades a restart would otherwise lose.
@@ -1121,7 +1128,8 @@ func (p *ProcessorImpl) returnOrphanedStage(mb *message.Buffer, escrowId uuid.UU
 	// this row from the moment the custody consumer writes it — well before the
 	// stage's terminal status gets here — and both paths would otherwise submit
 	// a trade_unwind for it (see escrow.ClaimItemForReturn).
-	won, err := p.esc.ClaimForReturn(escrowId)
+	unwindTxId := uuid.New()
+	won, err := p.esc.ClaimForReturn(escrowId, unwindTxId)
 	if err != nil {
 		return false, err
 	}

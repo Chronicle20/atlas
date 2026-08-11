@@ -99,6 +99,15 @@ func handleSagaCompleted(db *gorm.DB) message.Handler[sagamsg.StatusEvent[sagams
 			return
 		}
 
+		claimed, err = p.UnwindSucceeded(e.TransactionId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to discard the refund records of trade unwind [%s].", e.TransactionId.String())
+			return
+		}
+		if claimed {
+			return
+		}
+
 		if err := p.SettlementSucceeded(uuid.New(), e.TransactionId); err != nil {
 			l.WithError(err).Errorf("Unable to record the settlement of transaction [%s].", e.TransactionId.String())
 		}
@@ -106,7 +115,8 @@ func handleSagaCompleted(db *gorm.DB) message.Handler[sagamsg.StatusEvent[sagams
 }
 
 // handleSagaFailed is handleSagaCompleted's twin: same ownership routing, the
-// failing outcome of each. A failed settlement closes both dialogs with LEAVE 8
+// failing outcome of each. Four id spaces are probed in order, and the order
+// matters at the end — see the unwind probe. A failed settlement closes both dialogs with LEAVE 8
 // (design §3.3); a failed stage or stake refuses only the acting player, because
 // the counterparty was never told either existed.
 func handleSagaFailed(db *gorm.DB) message.Handler[sagamsg.StatusEvent[sagamsg.StatusEventFailedBody]] {
@@ -132,6 +142,19 @@ func handleSagaFailed(db *gorm.DB) message.Handler[sagamsg.StatusEvent[sagamsg.S
 		claimed, err = p.MesoStageFailed(uuid.New(), e.TransactionId, reason)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to abandon the trade meso stake of transaction [%s].", e.TransactionId.String())
+			return
+		}
+		if claimed {
+			return
+		}
+
+		// The unwind probe must come BEFORE the settlement one. A settlement id
+		// that names no record is treated as already-resolved and swallowed
+		// with a debug line, so an unwind reaching that arm would look handled
+		// while its items stayed latched and its meso stayed destroyed.
+		claimed, err = p.UnwindFailed(e.TransactionId, reason)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to recover the escrow claimed by failed trade unwind [%s].", e.TransactionId.String())
 			return
 		}
 		if claimed {

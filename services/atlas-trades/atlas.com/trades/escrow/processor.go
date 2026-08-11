@@ -32,7 +32,7 @@ type Processor interface {
 	// reason UpsertMeso does not: it is a plain DB compare-and-set that decides
 	// which of the two return paths may submit a trade_unwind for a row (see
 	// ClaimItemForReturn), not a custody command the orchestrator is waiting on.
-	ClaimItemForReturn(escrowId uuid.UUID) (bool, error)
+	ClaimItemForReturn(escrowId uuid.UUID, txId uuid.UUID) (bool, error)
 
 	// UpsertMeso, DeleteMeso and DeleteResolvedMeso are NOT saga steps and
 	// therefore emit no ack: escrowed meso moves through award_mesos, whose own
@@ -48,6 +48,11 @@ type Processor interface {
 	// comment for why a plain read-then-refund paid the player twice.
 	DischargeMeso(roomId uuid.UUID, ownerId character.Id, amount int32) error
 	ClaimMesoForReturn(roomId uuid.UUID, ownerId character.Id) (int64, bool, error)
+
+	ReleaseItemReturnClaims(txId uuid.UUID) (int64, error)
+	RecordMesoRefund(txId uuid.UUID, roomId uuid.UUID, ownerId character.Id, amount int64) error
+	RestoreMesoRefunds(txId uuid.UUID) (int, error)
+	DiscardMesoRefunds(txId uuid.UUID) (int64, error)
 	DeleteResolvedMeso(roomId uuid.UUID, ownerId character.Id) (bool, error)
 
 	// ArmMesoStake, CommitMesoStake, AbandonMesoStake, and MesoStakeById are
@@ -132,8 +137,29 @@ func (p *ProcessorImpl) Remove(transactionId uuid.UUID, escrowId uuid.UUID) erro
 	})
 }
 
-func (p *ProcessorImpl) ClaimItemForReturn(escrowId uuid.UUID) (bool, error) {
-	return ClaimItemForReturn(p.db, p.t.Id())(escrowId)
+func (p *ProcessorImpl) ClaimItemForReturn(escrowId uuid.UUID, txId uuid.UUID) (bool, error) {
+	return ClaimItemForReturn(p.db, p.t.Id())(escrowId, txId)
+}
+
+// ReleaseItemReturnClaims, RecordMesoRefund, RestoreMesoRefunds and
+// DiscardMesoRefunds are the failed-unwind recovery set. A trade_unwind owns
+// none of the id spaces the saga-status consumer probes, so its FAILED event
+// used to fall through every one of them and be swallowed — leaving items
+// latched forever and meso destroyed, because the claim had already zeroed it.
+func (p *ProcessorImpl) ReleaseItemReturnClaims(txId uuid.UUID) (int64, error) {
+	return ReleaseItemReturnClaims(p.db, p.t.Id())(txId)
+}
+
+func (p *ProcessorImpl) RecordMesoRefund(txId uuid.UUID, roomId uuid.UUID, ownerId character.Id, amount int64) error {
+	return RecordMesoRefund(p.db, p.t)(txId, roomId, ownerId, amount)
+}
+
+func (p *ProcessorImpl) RestoreMesoRefunds(txId uuid.UUID) (int, error) {
+	return RestoreMesoRefunds(p.db, p.t.Id())(txId)
+}
+
+func (p *ProcessorImpl) DiscardMesoRefunds(txId uuid.UUID) (int64, error) {
+	return DiscardMesoRefunds(p.db, p.t.Id())(txId)
 }
 
 func (p *ProcessorImpl) UpsertMeso(roomId uuid.UUID, ownerId character.Id, amount int64) error {

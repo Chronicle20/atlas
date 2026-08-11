@@ -119,13 +119,109 @@ func DeleteItem(db *gorm.DB, tenantId uuid.UUID) func(id uuid.UUID) error {
 // A row that is already soft-deleted cannot be claimed: the default scope
 // excludes it, which is correct — its item has left custody and there is nothing
 // left to return.
-func ClaimItemForReturn(db *gorm.DB, tenantId uuid.UUID) func(id uuid.UUID) (bool, error) {
-	return func(id uuid.UUID) (bool, error) {
+func ClaimItemForReturn(db *gorm.DB, tenantId uuid.UUID) func(id uuid.UUID, txId uuid.UUID) (bool, error) {
+	return func(id uuid.UUID, txId uuid.UUID) (bool, error) {
 		now := time.Now()
 		res := db.Model(&ItemEntity{}).
 			Where("tenant_id = ? AND id = ? AND returning_at IS NULL", tenantId, id).
-			Update("returning_at", now)
+			Updates(map[string]interface{}{"returning_at": now, "returning_tx_id": txId})
 		return res.RowsAffected > 0, res.Error
+	}
+}
+
+// ReleaseItemReturnClaims un-latches every row one trade_unwind claimed, so a
+// FAILED unwind hands its rows back to whatever tries next instead of stranding
+// them.
+//
+// Without it a failed unwind left its rows latched forever: the latch clears
+// only on a completed release, and the boot sweep skips a latched row by design
+// — so the item sat intact in custody, owned by nobody, invisible to every path
+// that could have returned it.
+//
+// Scoped to the transaction, never a blanket clear: rows another unwind is
+// legitimately returning must keep their claims.
+func ReleaseItemReturnClaims(db *gorm.DB, tenantId uuid.UUID) func(txId uuid.UUID) (int64, error) {
+	return func(txId uuid.UUID) (int64, error) {
+		res := db.Model(&ItemEntity{}).
+			Where("tenant_id = ? AND returning_tx_id = ?", tenantId, txId).
+			Updates(map[string]interface{}{"returning_at": nil, "returning_tx_id": nil})
+		return res.RowsAffected, res.Error
+	}
+}
+
+// RecordMesoRefund durably names what one trade_unwind is taking from a
+// participant, in the transaction that takes it. See MesoRefundEntity.
+func RecordMesoRefund(db *gorm.DB, t tenant.Model) func(txId uuid.UUID, roomId uuid.UUID, ownerId character.Id, amount int64) error {
+	return func(txId uuid.UUID, roomId uuid.UUID, ownerId character.Id, amount int64) error {
+		return db.Create(&MesoRefundEntity{
+			Id:            uuid.New(),
+			TransactionId: txId,
+			TenantId:      t.Id(),
+			TenantRegion:  t.Region(),
+			TenantMajor:   t.MajorVersion(),
+			TenantMinor:   t.MinorVersion(),
+			RoomId:        roomId,
+			OwnerId:       ownerId,
+			Amount:        amount,
+			CreatedAt:     time.Now(),
+		}).Error
+	}
+}
+
+// RestoreMesoRefunds puts back everything one FAILED trade_unwind took, and
+// reports how many participants it restored.
+//
+// The escrow row is re-created if the retire already removed it — a claim that
+// emptied a row typically retires it in the same pass — because the amount has
+// to land somewhere the boot sweep will find. The add is RELATIVE, so a stake
+// that committed in the meantime is not clobbered.
+//
+// The records are consumed in the same transaction, making a redelivered
+// failure inert: the second pass finds nothing to restore.
+func RestoreMesoRefunds(db *gorm.DB, tenantId uuid.UUID) func(txId uuid.UUID) (int, error) {
+	return func(txId uuid.UUID) (int, error) {
+		restored := 0
+		err := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+			var rows []MesoRefundEntity
+			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+				Where("tenant_id = ? AND transaction_id = ?", tenantId, txId).
+				Find(&rows).Error; err != nil {
+				return err
+			}
+			if len(rows) == 0 {
+				return nil
+			}
+			for _, r := range rows {
+				e := MesoEntity{
+					Id: uuid.New(), TenantId: r.TenantId, TenantRegion: r.TenantRegion,
+					TenantMajor: r.TenantMajor, TenantMinor: r.TenantMinor,
+					RoomId: r.RoomId, OwnerId: r.OwnerId, Amount: r.Amount,
+					CreatedAt: time.Now(), UpdatedAt: time.Now(),
+				}
+				if err := tx.Clauses(clause.OnConflict{
+					Columns:   []clause.Column{{Name: "tenant_id"}, {Name: "room_id"}, {Name: "owner_id"}},
+					DoUpdates: clause.Assignments(map[string]interface{}{"amount": gorm.Expr(mesoTable+".amount + ?", r.Amount), "updated_at": time.Now()}),
+				}).Create(&e).Error; err != nil {
+					return err
+				}
+			}
+			if err := tx.Where("tenant_id = ? AND transaction_id = ?", tenantId, txId).
+				Delete(&MesoRefundEntity{}).Error; err != nil {
+				return err
+			}
+			restored = len(rows)
+			return nil
+		})
+		return restored, err
+	}
+}
+
+// DiscardMesoRefunds drops the records of a SUCCEEDED trade_unwind: the meso
+// reached the player, so there is nothing left to put back.
+func DiscardMesoRefunds(db *gorm.DB, tenantId uuid.UUID) func(txId uuid.UUID) (int64, error) {
+	return func(txId uuid.UUID) (int64, error) {
+		res := db.Where("tenant_id = ? AND transaction_id = ?", tenantId, txId).Delete(&MesoRefundEntity{})
+		return res.RowsAffected, res.Error
 	}
 }
 

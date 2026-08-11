@@ -306,7 +306,7 @@ func TestReconcileEscrowSkipsARowAlreadyClaimedForReturn(t *testing.T) {
 	claimedId := seedEscrowItem(t, db, tm, roomId, 100, 1)
 	strandedId := seedEscrowItem(t, db, tm, roomId, 100, 2)
 
-	won, err := escrow.ClaimItemForReturn(db, tm.Id())(claimedId)
+	won, err := escrow.ClaimItemForReturn(db, tm.Id())(claimedId, uuid.New())
 	if err != nil {
 		t.Fatalf("claim: %v", err)
 	}
@@ -339,7 +339,7 @@ func TestReconcileEscrowSubmitsNothingWhenEveryRowIsClaimed(t *testing.T) {
 	roomId := uuid.New()
 	for slot := byte(1); slot <= 2; slot++ {
 		id := seedEscrowItem(t, db, tm, roomId, 100, slot)
-		won, err := escrow.ClaimItemForReturn(db, tm.Id())(id)
+		won, err := escrow.ClaimItemForReturn(db, tm.Id())(id, uuid.New())
 		if err != nil {
 			t.Fatalf("claim: %v", err)
 		}

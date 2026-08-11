@@ -265,7 +265,7 @@ func (f *fakeEscrow) MesoByOwner(roomId uuid.UUID, ownerId character.Id) (int64,
 // ClaimForReturn is the fake's compare-and-set. Like the real UPDATE it is one
 // indivisible step under the store's own lock, so a caller cannot observe
 // "unclaimed" and then lose the row to somebody else before it acts.
-func (f *fakeEscrow) ClaimForReturn(escrowId uuid.UUID) (bool, error) {
+func (f *fakeEscrow) ClaimForReturn(escrowId uuid.UUID, _ uuid.UUID) (bool, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 	if f.err != nil {

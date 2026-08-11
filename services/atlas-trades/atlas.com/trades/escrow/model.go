@@ -87,6 +87,7 @@ type MesoModel struct {
 
 	pendingStakeId uuid.UUID
 	pendingAmount  uint32
+	pendingDelta   int32
 
 	createdAt time.Time
 }
@@ -99,6 +100,11 @@ func (m MesoModel) Amount() uint32            { return m.amount }
 func (m MesoModel) PendingStakeId() uuid.UUID { return m.pendingStakeId }
 func (m MesoModel) PendingAmount() uint32     { return m.pendingAmount }
 func (m MesoModel) CreatedAt() time.Time      { return m.createdAt }
+
+// PendingDelta is the signed movement the in-flight stake submitted. It is the
+// only safe basis for refunding an orphaned stake, because Amount is zeroed out
+// from under a still-armed stake by an ordinary teardown (see MesoEntity).
+func (m MesoModel) PendingDelta() int32 { return m.pendingDelta }
 
 // Tenant rebuilds the tenant this row belongs to. See ItemModel.Tenant.
 func (m MesoModel) Tenant() (tenant.Model, error) {
@@ -170,6 +176,7 @@ func MakeMeso(e MesoEntity) (MesoModel, error) {
 		amount:         e.Amount,
 		pendingStakeId: e.PendingStakeId,
 		pendingAmount:  e.PendingAmount,
+		pendingDelta:   e.PendingDelta,
 		createdAt:      e.CreatedAt,
 	}, nil
 }

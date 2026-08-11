@@ -38,7 +38,7 @@ type Processor interface {
 	// likewise NOT saga steps and emit no ack — they exist purely to make an
 	// in-flight award_mesos debit durable against room teardown (see
 	// MesoEntity's doc comment), not to drive the orchestrator.
-	ArmMesoStake(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID, amount uint32) error
+	ArmMesoStake(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID, amount uint32, delta int32) error
 	CommitMesoStake(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID) (bool, error)
 	AbandonMesoStake(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID) (bool, error)
 	MesoStakeById(stakeId uuid.UUID) (MesoModel, bool, error)
@@ -114,8 +114,8 @@ func (p *ProcessorImpl) DeleteMeso(roomId uuid.UUID, ownerId character.Id) error
 	return DeleteMeso(p.db, p.t.Id())(roomId, ownerId)
 }
 
-func (p *ProcessorImpl) ArmMesoStake(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID, amount uint32) error {
-	return ArmMesoStake(p.db, p.t)(roomId, ownerId, stakeId, amount)
+func (p *ProcessorImpl) ArmMesoStake(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID, amount uint32, delta int32) error {
+	return ArmMesoStake(p.db, p.t)(roomId, ownerId, stakeId, amount, delta)
 }
 
 func (p *ProcessorImpl) CommitMesoStake(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID) (bool, error) {

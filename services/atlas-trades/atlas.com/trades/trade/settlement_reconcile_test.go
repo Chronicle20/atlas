@@ -504,9 +504,10 @@ func TestUnwindZeroesARefundedMesoRowAndKeepsItsPendingStake(t *testing.T) {
 	tm := reconcileTenant(t, "only")
 	roomId := uuid.New()
 	stakeId := uuid.New()
-	// A committed total of 5000 with a second stake of 900 still in flight —
-	// the state a restart can genuinely catch a staging player in.
-	if err := escrow.ArmMesoStake(db, tm)(roomId, 200, stakeId, 900); err != nil {
+	// A committed total of 5000 with a retype down to 900 still in flight — the
+	// state a restart can genuinely catch a staging player in. The armed stake
+	// therefore moves -4100.
+	if err := escrow.ArmMesoStake(db, tm)(roomId, 200, stakeId, 900, -4_100); err != nil {
 		t.Fatalf("arm stake: %v", err)
 	}
 	seedEscrowMeso(t, db, tm, roomId, 200, 5000)
@@ -531,6 +532,13 @@ func TestUnwindZeroesARefundedMesoRowAndKeepsItsPendingStake(t *testing.T) {
 	}
 	if row.PendingAmount() != 900 {
 		t.Errorf("pending amount: got %d, want 900", row.PendingAmount())
+	}
+	// The armed DELTA has to survive the zeroing too. It is the only surviving
+	// record of what the in-flight saga actually moved: Amount is now 0, so a
+	// refund derived from it would hand back the whole stake on top of the 5000
+	// this unwind just returned.
+	if row.PendingDelta() != -4_100 {
+		t.Errorf("pending delta: got %d, want the armed -4100", row.PendingDelta())
 	}
 }
 

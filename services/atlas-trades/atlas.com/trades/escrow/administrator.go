@@ -159,8 +159,13 @@ func UpsertMeso(db *gorm.DB, t tenant.Model) func(roomId uuid.UUID, ownerId char
 // prior stakeId's eventual terminal status must become a no-op, which is
 // exactly what CommitMesoStake/AbandonMesoStake's compare-and-set gives it
 // once PendingStakeId has moved on.
-func ArmMesoStake(db *gorm.DB, t tenant.Model) func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID, amount uint32) error {
-	return func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID, amount uint32) error {
+//
+// delta is the signed movement the saga is about to submit — the stake minus
+// what is escrowed RIGHT NOW — and it is recorded here rather than recomputed
+// when the stake resolves, because Amount can legitimately move underneath a
+// still-armed stake (see MesoEntity).
+func ArmMesoStake(db *gorm.DB, t tenant.Model) func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID, amount uint32, delta int32) error {
+	return func(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID, amount uint32, delta int32) error {
 		now := time.Now()
 		e := MesoEntity{
 			Id:             uuid.New(),
@@ -173,6 +178,7 @@ func ArmMesoStake(db *gorm.DB, t tenant.Model) func(roomId uuid.UUID, ownerId ch
 			Amount:         0,
 			PendingStakeId: stakeId,
 			PendingAmount:  amount,
+			PendingDelta:   delta,
 			CreatedAt:      now,
 			UpdatedAt:      now,
 		}
@@ -181,6 +187,7 @@ func ArmMesoStake(db *gorm.DB, t tenant.Model) func(roomId uuid.UUID, ownerId ch
 			DoUpdates: clause.Assignments(map[string]interface{}{
 				"pending_stake_id": stakeId,
 				"pending_amount":   amount,
+				"pending_delta":    delta,
 				"updated_at":       now,
 			}),
 		}).Create(&e).Error
@@ -207,6 +214,7 @@ func CommitMesoStake(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, own
 				"amount":           gorm.Expr("pending_amount"),
 				"pending_stake_id": uuid.Nil,
 				"pending_amount":   0,
+				"pending_delta":    0,
 				"updated_at":       time.Now(),
 			})
 		return res.RowsAffected > 0, res.Error
@@ -224,6 +232,7 @@ func AbandonMesoStake(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, ow
 			Updates(map[string]interface{}{
 				"pending_stake_id": uuid.Nil,
 				"pending_amount":   0,
+				"pending_delta":    0,
 				"updated_at":       time.Now(),
 			})
 		return res.RowsAffected > 0, res.Error

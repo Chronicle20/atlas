@@ -344,7 +344,7 @@ func TestArmThenCommitMesoStake(t *testing.T) {
 	ownerId := character.Id(100)
 	stakeId := uuid.New()
 
-	if err := ArmMesoStake(db, te)(roomId, ownerId, stakeId, 1_000); err != nil {
+	if err := ArmMesoStake(db, te)(roomId, ownerId, stakeId, 1_000, 1_000); err != nil {
 		t.Fatalf("ArmMesoStake: %v", err)
 	}
 
@@ -380,6 +380,11 @@ func TestArmThenCommitMesoStake(t *testing.T) {
 	if mesos[0].PendingAmount() != 0 {
 		t.Errorf("expected PendingAmount cleared, got %d", mesos[0].PendingAmount())
 	}
+	// The delta clears in the same statement. A stale one left behind would be
+	// refunded by a later orphan sweep against a stake that already committed.
+	if mesos[0].PendingDelta() != 0 {
+		t.Errorf("expected PendingDelta cleared, got %d", mesos[0].PendingDelta())
+	}
 }
 
 // TestCommitMesoStakeMismatchedIdIsNoOp pins the compare-and-set contract: a
@@ -395,7 +400,7 @@ func TestCommitMesoStakeMismatchedIdIsNoOp(t *testing.T) {
 	stakeId := uuid.New()
 	otherStakeId := uuid.New()
 
-	if err := ArmMesoStake(db, te)(roomId, ownerId, stakeId, 1_000); err != nil {
+	if err := ArmMesoStake(db, te)(roomId, ownerId, stakeId, 1_000, 1_000); err != nil {
 		t.Fatalf("ArmMesoStake: %v", err)
 	}
 
@@ -431,7 +436,7 @@ func TestCommitMesoStakeTwiceOnlyAppliesOnce(t *testing.T) {
 	ownerId := character.Id(100)
 	stakeId := uuid.New()
 
-	if err := ArmMesoStake(db, te)(roomId, ownerId, stakeId, 1_000); err != nil {
+	if err := ArmMesoStake(db, te)(roomId, ownerId, stakeId, 1_000, 1_000); err != nil {
 		t.Fatalf("ArmMesoStake: %v", err)
 	}
 
@@ -472,10 +477,10 @@ func TestArmMesoStakeSupersedesPriorStake(t *testing.T) {
 	firstStakeId := uuid.New()
 	secondStakeId := uuid.New()
 
-	if err := ArmMesoStake(db, te)(roomId, ownerId, firstStakeId, 1_000); err != nil {
+	if err := ArmMesoStake(db, te)(roomId, ownerId, firstStakeId, 1_000, 1_000); err != nil {
 		t.Fatalf("first ArmMesoStake: %v", err)
 	}
-	if err := ArmMesoStake(db, te)(roomId, ownerId, secondStakeId, 1_500); err != nil {
+	if err := ArmMesoStake(db, te)(roomId, ownerId, secondStakeId, 1_500, 1_500); err != nil {
 		t.Fatalf("second ArmMesoStake: %v", err)
 	}
 
@@ -523,7 +528,8 @@ func TestAbandonMesoStakeClearsWithoutCommitting(t *testing.T) {
 	if err := UpsertMeso(db, te)(roomId, ownerId, 500); err != nil {
 		t.Fatalf("UpsertMeso: %v", err)
 	}
-	if err := ArmMesoStake(db, te)(roomId, ownerId, stakeId, 1_000); err != nil {
+	// 1000 staked against 500 already escrowed: the saga moves 500.
+	if err := ArmMesoStake(db, te)(roomId, ownerId, stakeId, 1_000, 500); err != nil {
 		t.Fatalf("ArmMesoStake: %v", err)
 	}
 
@@ -556,6 +562,9 @@ func TestAbandonMesoStakeClearsWithoutCommitting(t *testing.T) {
 	if mesos[0].PendingAmount() != 0 {
 		t.Errorf("expected PendingAmount cleared, got %d", mesos[0].PendingAmount())
 	}
+	if mesos[0].PendingDelta() != 0 {
+		t.Errorf("expected PendingDelta cleared, got %d", mesos[0].PendingDelta())
+	}
 }
 
 // TestMesoStakeById pins the un-tenant-scoped lookup that lets a terminal
@@ -569,7 +578,7 @@ func TestMesoStakeById(t *testing.T) {
 	ownerId := character.Id(100)
 	stakeId := uuid.New()
 
-	if err := ArmMesoStake(db, te)(roomId, ownerId, stakeId, 1_000); err != nil {
+	if err := ArmMesoStake(db, te)(roomId, ownerId, stakeId, 1_000, 1_000); err != nil {
 		t.Fatalf("ArmMesoStake: %v", err)
 	}
 
@@ -588,6 +597,11 @@ func TestMesoStakeById(t *testing.T) {
 	}
 	if got.PendingAmount() != 1_000 {
 		t.Errorf("expected PendingAmount 1000, got %d", got.PendingAmount())
+	}
+	// The armed delta rides the same lookup: it is what an orphaned stake is
+	// refunded by, and nothing else on the row can reproduce it afterwards.
+	if got.PendingDelta() != 1_000 {
+		t.Errorf("expected PendingDelta 1000, got %d", got.PendingDelta())
 	}
 
 	if _, found, err := MesoStakeById(db)(uuid.New()); err != nil {

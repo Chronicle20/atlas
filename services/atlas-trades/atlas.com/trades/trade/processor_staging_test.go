@@ -1201,6 +1201,162 @@ func TestMesoStageFailedReEchoesTheLastValidAmount(t *testing.T) {
 	}
 }
 
+// commitEscrowedMeso puts a COMMITTED escrow total in front of both readers the
+// meso path uses: the fake custody store the processor reads deltas and unwinds
+// from, and the REAL escrow row the stake bookkeeping arms and resolves against.
+// Production has one store; the harness fakes only the reads, so a test that set
+// just one of them would be describing a state that cannot occur.
+func commitEscrowedMeso(t *testing.T, p *ProcessorImpl, roomId uuid.UUID, ownerId character.Id, amount uint32) {
+	t.Helper()
+	escrowOf(t, p).setMeso(roomId, ownerId, amount)
+	if err := escrow.UpsertMeso(p.db, p.t)(roomId, ownerId, amount); err != nil {
+		t.Fatalf("seed committed escrow meso: %v", err)
+	}
+}
+
+// TestAnOrphanedStakeRefundsOnlyTheDeltaTheSagaMoved drives the meso-minting
+// sequence end to end, no restart required:
+//
+//  1. character 100 has 1000000 committed in escrow;
+//  2. they retype the box to 1500000, so an award_mesos of -500000 goes out and
+//     they have now been debited 1500000 in total;
+//  3. the counterparty leaves. The teardown refunds the COMMITTED 1000000 and
+//     zeroes the row's Amount while deliberately leaving the stake armed;
+//  4. the stake's saga completes with no room left to apply it to.
+//
+// The refund owed at step 4 is the 500000 the saga actually moved. Deriving it
+// from the row's Amount at that point instead — which step 3 zeroed — refunds
+// the whole 1500000, handing back 2500000 against a debit of 1500000.
+func TestAnOrphanedStakeRefundsOnlyTheDeltaTheSagaMoved(t *testing.T) {
+	const (
+		committed = uint32(1_000_000)
+		retyped   = int32(1_500_000)
+		moved     = uint32(500_000)
+	)
+
+	p, e := testOpenRoomWithMeso(t, 100, 5_000_000)
+	room, _ := p.RoomForCharacter(100)
+	commitEscrowedMeso(t, p, room.Id(), 100, committed)
+
+	if err := p.AddMeso(uuid.New(), 100, retyped); err != nil {
+		t.Fatalf("add meso: %v", err)
+	}
+	stakes := sagasWithAction(t, e, sharedsaga.AwardMesos)
+	if len(stakes) != 1 {
+		t.Fatalf("award_mesos sagas: got %d, want 1", len(stakes))
+	}
+	if got := awardMesosPayloadOf(t, stakes[0]).Amount; got != -int32(moved) {
+		t.Fatalf("the stake debited %d, want -%d — the rest of this test is about refunding exactly what it moved", got, moved)
+	}
+	stakeId := stakes[0].TransactionId
+
+	// The counterparty walks out while the debit is still in flight.
+	if err := p.TeardownCharacter(uuid.New(), 200, ReasonTradeCancelled); err != nil {
+		t.Fatalf("teardown: %v", err)
+	}
+	unwinds := unwindSagas(t, e)
+	if len(unwinds) != 1 {
+		t.Fatalf("trade_unwind sagas after the teardown: got %d, want 1", len(unwinds))
+	}
+	teardown := unwindPayloadOf(t, unwinds[0])
+	if len(teardown.Mesos) != 1 || teardown.Mesos[0].Amount != committed {
+		t.Fatalf("the teardown refunded %+v, want the committed %d", teardown.Mesos, committed)
+	}
+
+	claimed, err := p.MesoStageSucceeded(uuid.New(), stakeId)
+	if err != nil {
+		t.Fatalf("meso stage succeeded: %v", err)
+	}
+	if !claimed {
+		t.Fatal("the orphaned stake's terminal status was not claimed; nothing would ever refund it")
+	}
+
+	unwinds = unwindSagas(t, e)
+	if len(unwinds) != 2 {
+		t.Fatalf("trade_unwind sagas after the stake settled: got %d, want 2 (the teardown's and the orphan refund)", len(unwinds))
+	}
+	refund := unwindPayloadOf(t, unwinds[1])
+	if len(refund.Mesos) != 1 || len(refund.Items) != 0 {
+		t.Fatalf("orphan refund payload: got %+v, want exactly one meso leg", refund)
+	}
+	leg := refund.Mesos[0]
+	if leg.CharacterId != 100 {
+		t.Errorf("orphan refund addressed to character %d, want 100", leg.CharacterId)
+	}
+	if leg.Amount != moved {
+		t.Errorf("orphan refund: got %d, want the %d the saga moved — the player was debited %d and has now been handed back %d, minting %d",
+			leg.Amount, moved, uint32(retyped), committed+leg.Amount, int64(committed)+int64(leg.Amount)-int64(retyped))
+	}
+}
+
+// TestAnOrphanedStakeThatLoweredTheBoxRefundsNothing is the other sign. A retype
+// DOWNWARD submits a credit, so the player is already whole the moment it
+// completes; a refund on top of it would mint the difference a second way.
+func TestAnOrphanedStakeThatLoweredTheBoxRefundsNothing(t *testing.T) {
+	p, e := testOpenRoomWithMeso(t, 100, 5_000_000)
+	room, _ := p.RoomForCharacter(100)
+	commitEscrowedMeso(t, p, room.Id(), 100, 1_000_000)
+
+	if err := p.AddMeso(uuid.New(), 100, 400_000); err != nil {
+		t.Fatalf("add meso: %v", err)
+	}
+	stakes := sagasWithAction(t, e, sharedsaga.AwardMesos)
+	if len(stakes) != 1 {
+		t.Fatalf("award_mesos sagas: got %d, want 1", len(stakes))
+	}
+	if got := awardMesosPayloadOf(t, stakes[0]).Amount; got != 600_000 {
+		t.Fatalf("the stake moved %d, want a credit of 600000", got)
+	}
+
+	if err := p.TeardownCharacter(uuid.New(), 200, ReasonTradeCancelled); err != nil {
+		t.Fatalf("teardown: %v", err)
+	}
+	if _, err := p.MesoStageSucceeded(uuid.New(), stakes[0].TransactionId); err != nil {
+		t.Fatalf("meso stage succeeded: %v", err)
+	}
+
+	unwinds := unwindSagas(t, e)
+	if len(unwinds) != 1 {
+		t.Fatalf("trade_unwind sagas: got %d, want only the teardown's 1 — a lowering stake is owed nothing", len(unwinds))
+	}
+}
+
+// TestAnOrphanedFirstStakeRefundsItsWholeAmount guards the fix from over-reach.
+// With nothing committed yet there is no teardown refund to net against, so the
+// whole stake IS the delta and all of it must come back.
+func TestAnOrphanedFirstStakeRefundsItsWholeAmount(t *testing.T) {
+	p, e := testOpenRoomWithMeso(t, 100, 5_000_000)
+
+	if err := p.AddMeso(uuid.New(), 100, 750_000); err != nil {
+		t.Fatalf("add meso: %v", err)
+	}
+	stakes := sagasWithAction(t, e, sharedsaga.AwardMesos)
+	if len(stakes) != 1 {
+		t.Fatalf("award_mesos sagas: got %d, want 1", len(stakes))
+	}
+
+	// Nothing is committed, so this teardown submits no unwind of its own and
+	// never touches the row — the stake is orphaned with its arm-time state
+	// completely intact.
+	if err := p.TeardownCharacter(uuid.New(), 200, ReasonTradeCancelled); err != nil {
+		t.Fatalf("teardown: %v", err)
+	}
+	assertNoUnwindSubmitted(t, e)
+
+	if _, err := p.MesoStageSucceeded(uuid.New(), stakes[0].TransactionId); err != nil {
+		t.Fatalf("meso stage succeeded: %v", err)
+	}
+
+	unwinds := unwindSagas(t, e)
+	if len(unwinds) != 1 {
+		t.Fatalf("trade_unwind sagas: got %d, want 1", len(unwinds))
+	}
+	refund := unwindPayloadOf(t, unwinds[0])
+	if len(refund.Mesos) != 1 || refund.Mesos[0].CharacterId != 100 || refund.Mesos[0].Amount != 750_000 {
+		t.Errorf("orphan refund: got %+v, want the whole 750000 back to character 100", refund.Mesos)
+	}
+}
+
 // TestAddMesoRefusedReEchoesTheLastValidAmount pins FR-4.8 / design §4.2 on the
 // VALIDATION path: an amount the character does not hold is refused before any
 // debit is attempted, and the re-echo carries what is still legitimately staged.

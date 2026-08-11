@@ -152,6 +152,16 @@ func (ItemEntity) TableName() string { return itemTable }
 // PendingStakeId is uuid.Nil when no stake is in flight; that is the "none"
 // sentinel rather than a nullable column, so the compare-and-set in
 // CommitMesoStake/AbandonMesoStake is a single ordinary equality check.
+//
+// PendingDelta is the SIGNED movement the in-flight award_mesos actually
+// submitted — the stake minus whatever was escrowed when it was armed — and it
+// is persisted rather than re-derived because Amount is not stable across the
+// stake's lifetime: a teardown ZEROES Amount while deliberately leaving the
+// stake armed (see the trade package's clearRefundedMesos). A refund that
+// re-derived the delta from Amount at resolution time therefore refunded the
+// whole stake on top of the teardown's own refund of the committed part, minting
+// the committed amount. It is signed because a stake that LOWERS the box is a
+// credit, and its width matches the award_mesos payload's own Amount.
 type MesoEntity struct {
 	Id           uuid.UUID `gorm:"column:id;type:uuid;primaryKey;uniqueIndex:idx_trade_escrow_mesos_tenant_id,priority:2"`
 	TenantId     uuid.UUID `gorm:"column:tenant_id;type:uuid;not null;uniqueIndex:idx_trade_escrow_mesos_tenant_id,priority:1;uniqueIndex:idx_trade_escrow_mesos_room_owner,priority:1"`
@@ -166,6 +176,7 @@ type MesoEntity struct {
 
 	PendingStakeId uuid.UUID `gorm:"column:pending_stake_id;type:uuid"`
 	PendingAmount  uint32    `gorm:"column:pending_amount;not null;default:0"`
+	PendingDelta   int32     `gorm:"column:pending_delta;not null;default:0"`
 
 	CreatedAt time.Time `gorm:"column:created_at"`
 	UpdatedAt time.Time `gorm:"column:updated_at"`

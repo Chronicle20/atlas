@@ -1294,8 +1294,13 @@ func (p *ProcessorImpl) addMeso(mb *message.Buffer, txId uuid.UUID, characterId 
 	// this stake, and the meso would be silently kept by the house. The durable
 	// arm means the terminal status can still resolve it with no room at all
 	// (see resolveMesoStake's room-gone branch).
+	//
+	// The DELTA is armed alongside the stake, not re-derived when it resolves: an
+	// ordinary teardown zeroes the row's committed Amount while leaving the stake
+	// armed, so by resolution time the figure the delta was computed against is
+	// gone.
 	stakeId := uuid.New()
-	if err = escrow.NewProcessor(p.l, p.ctx, p.db).ArmMesoStake(room.Id(), characterId, stakeId, uint32(amount)); err != nil {
+	if err = escrow.NewProcessor(p.l, p.ctx, p.db).ArmMesoStake(room.Id(), characterId, stakeId, uint32(amount), int32(delta)); err != nil {
 		p.l.WithError(err).Errorf("Unable to arm character [%d]'s meso stake. Refusing rather than debiting meso nothing would record.", characterId)
 		return mb.Put(trademsg.EnvEventTopicStatus, mesoRefusedProvider(txId, room, characterId, pt.Position(), pt.MesoStaged()))
 	}
@@ -1392,7 +1397,7 @@ func (p *ProcessorImpl) resolveMesoStake(mb *message.Buffer, txId uuid.UUID, sta
 			return true, nil
 		}
 		p.l.Warnf("Meso stake [%s] of [%d] settled into a trade room [%s] that is already gone. Refunding character [%d].", stakeId.String(), amount, row.RoomId().String(), row.OwnerId())
-		return true, p.refundOrphanedStake(mb, row, amount)
+		return true, p.refundOrphanedStake(mb, row)
 	}
 
 	pt, found := room.ParticipantFor(row.OwnerId())
@@ -1428,11 +1433,17 @@ func (p *ProcessorImpl) resolveMesoStake(mb *message.Buffer, txId uuid.UUID, sta
 // refundOrphanedStake hands back a stake whose debit landed after its room was
 // already torn down, as a one-meso trade_unwind.
 //
-// The delta is what has to be refunded, not the absolute stake: the committed
-// part was already returned by the teardown's own unwind, and refunding the
-// total on top of it would mint meso.
-func (p *ProcessorImpl) refundOrphanedStake(mb *message.Buffer, row escrow.MesoModel, amount uint32) error {
-	delta := int64(amount) - int64(row.Amount())
+// What has to be refunded is the DELTA the saga actually moved, not the absolute
+// stake: the committed part was already returned by the teardown's own unwind,
+// and refunding the total on top of it would mint meso.
+//
+// That delta is read off the row, where ArmMesoStake recorded it, rather than
+// re-derived from the row's committed Amount. Re-deriving it was the bug: the
+// teardown that orphaned this stake also ZEROED Amount (clearRefundedMesos), so
+// the subtraction meant to net out the already-refunded part netted out nothing
+// and the whole stake went back on top of it.
+func (p *ProcessorImpl) refundOrphanedStake(mb *message.Buffer, row escrow.MesoModel) error {
+	delta := int64(row.PendingDelta())
 	if delta <= 0 {
 		// The stake was a REDUCTION, so its saga credited the player already.
 		// Nothing is owed.

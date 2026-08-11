@@ -1,6 +1,9 @@
 package main
 
 import (
+	character2 "atlas-kites/character"
+	"atlas-kites/kafka/consumer/character"
+	kiteconsumer "atlas-kites/kafka/consumer/kite"
 	"atlas-kites/kite"
 	"os"
 
@@ -9,6 +12,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
@@ -39,6 +43,20 @@ func GetServer() Server {
 func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
+
+	rc := atlas.Connect(l)
+	kite.InitRegistry(rc)
+	character2.InitRegistry(rc)
+
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
+	character.InitConsumers(l)(cmf)(consumerGroupId)
+	kiteconsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := character.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := kiteconsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 

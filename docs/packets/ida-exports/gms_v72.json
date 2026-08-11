@@ -10280,15 +10280,15 @@
       "direction": "serverbound",
       "calls": [
         {
-          "op": "Decode4",
+          "op": "Encode4",
           "comment": "itemId (COutPacket::Encode4(0x541370) — hard-coded 5510000)"
         },
         {
-          "op": "Decode4",
+          "op": "Encode4",
           "comment": "x (v2 — m_ptRevive.x)"
         },
         {
-          "op": "Decode4",
+          "op": "Encode4",
           "comment": "y (v6 — m_ptRevive.y)"
         }
       ]

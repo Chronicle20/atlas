@@ -5,6 +5,6 @@ category: TIER1-FIXTURE
 ida:
     function: CUserLocal::RequestUpgradeTombEffect
     address: "0x867654"
-    decompile_sha256: 2eb3b52509bf8dfc0686aed51afdcbdd97057eef643e0b1262bc09dd3825ace9
+    decompile_sha256: 1c81050f130c97113c083ba58a0789b48528f05f280569a7a5094f8bec01ac8b
 verifies:
   - libs/atlas-packet/character/serverbound/use_death_item_test.go#TestUseDeathItemByteOutput

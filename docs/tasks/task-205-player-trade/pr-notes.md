@@ -101,6 +101,14 @@ real terminal answer makes `Reconcile` delete a record mid-run.
   pin it; this matches the `atlas-mini-games` precedent (`99650b7ed`).
 - **atlas-data must be re-ingested** before `tradeBlock` reads true — the flag is
   surfaced by the readers this branch changed, but existing ingested rows predate it.
+- **Any database that ran this branch BEFORE `a3279ee73` needs
+  `ALTER TABLE trade_settlement_items DROP COLUMN reservation_id`.** The escrow
+  amendment renamed `ItemRow.ReservationId` to `EscrowId`; GORM `AutoMigrate`
+  adds the new column but never drops the old one, so the stale
+  `reservation_id uuid NOT NULL` survives and every settlement INSERT fails with
+  SQLSTATE 23502 — the trade unwinds instead of settling, with no client-visible
+  reason. Only affects long-lived ephemeral/PR databases; `atlas-trades-main`
+  is created fresh and is not exposed.
 - `TRADES_SERVICE_URL` is unregistered, so `requests.RootUrl("TRADES")` falls back
   to `BASE_SERVICE_URL`. Consistent with `MINI_GAMES` today, but it should be an
   explicit decision rather than an inherited default.

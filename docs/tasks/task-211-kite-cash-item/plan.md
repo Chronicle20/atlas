@@ -44,7 +44,7 @@ The sixth field is a Y coordinate, not a type discriminator. Both int16s feed on
 **Interfaces:**
 - Produces: `clientbound.NewKiteSpawn(id uint32, templateId uint32, message string, name string, x int16, y int16) KiteSpawn` — the 6th parameter is now named `y`. Task 16 calls it.
 
-- [ ] **Step 1: Capture the pre-change byte output as the guard**
+- [x] **Step 1: Capture the pre-change byte output as the guard**
 
 Run from the worktree root:
 
@@ -54,7 +54,7 @@ cd libs/atlas-packet && go test ./field/clientbound/ -run 'TestKiteSpawn' -v 2>&
 
 Expected: PASS for `TestKiteSpawn` and `TestKiteSpawnBytesV48`. These are the tests that must still pass byte-identically after the rename — that is the whole proof of FR-2.3.
 
-- [ ] **Step 2: Rename the field, constructor parameter, and both codec bodies**
+- [x] **Step 2: Rename the field, constructor parameter, and both codec bodies**
 
 Replace the struct/constructor/codec block in `libs/atlas-packet/field/clientbound/kite_spawn.go` (lines 15-55) with:
 
@@ -112,7 +112,7 @@ func (m *KiteSpawn) Decode(_ logrus.FieldLogger, _ context.Context) func(r *requ
 }
 ```
 
-- [ ] **Step 3: Fix the two stale comments in the v48 fixture**
+- [x] **Step 3: Fix the two stale comments in the v48 fixture**
 
 In `libs/atlas-packet/field/clientbound/kite_v48_test.go`, change line 19 from
 
@@ -140,7 +140,7 @@ to
 
 The `NewKiteSpawn(0x01020304, 5000, "hi", "bob", 300, 2)` call is positional and needs no change.
 
-- [ ] **Step 4: Run the packet tests — bytes must be unchanged**
+- [x] **Step 4: Run the packet tests — bytes must be unchanged**
 
 ```bash
 cd libs/atlas-packet && go test ./field/clientbound/ -run 'TestKiteSpawn' -v
@@ -148,7 +148,7 @@ cd libs/atlas-packet && go test ./field/clientbound/ -run 'TestKiteSpawn' -v
 
 Expected: PASS, same as Step 1. If `TestKiteSpawnBytesV48` fails the rename was not byte-neutral — stop and revert.
 
-- [ ] **Step 5: Correct the four stale audit-JSON comments**
+- [x] **Step 5: Correct the four stale audit-JSON comments**
 
 These are the four records that mislabel row 5. Edit each file's `Rows[5].IDAComment` string, changing nothing else (no reformatting — these files are compared byte-wise by the audit tooling).
 
@@ -161,7 +161,7 @@ These are the four records that mislabel row 5. Edit each file's `Rows[5].IDACom
 
 The v48/v61/v72/v79/v84/v92 records have an empty row-5 comment and need no edit.
 
-- [ ] **Step 6: Regenerate the matrix and prove it is a no-op**
+- [x] **Step 6: Regenerate the matrix and prove it is a no-op**
 
 ```bash
 go run ./tools/packet-audit matrix
@@ -171,7 +171,7 @@ git diff --exit-code docs/packets/audits/status.json docs/packets/audits/STATUS.
 
 Expected: `exit=0` and `diff-exit=0`. A rename changes no decompile hash, so the evidence records under `docs/packets/evidence/*/field.clientbound.FieldKiteSpawn.yaml` need **no** re-pin and the row must stay `✅ 🟡ᶠ 🟡ᶠ 🟡ᶠ ✅ ✅ ✅ 🟡ᶠ ✅ ✅` (`STATUS.md:332`). A non-empty diff means something other than the rename moved — investigate before continuing.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add libs/atlas-packet/field/clientbound/kite_spawn.go \
@@ -196,7 +196,7 @@ The leading byte is a **suppress-animation flag**, not a selector between two an
 **Interfaces:**
 - Produces: `clientbound.KiteDestroyAnimated KiteDestroyAnimationType = 0` and `clientbound.KiteDestroySilent KiteDestroyAnimationType = 1`. Task 15 uses `KiteDestroyAnimated`.
 
-- [ ] **Step 1: Replace the constant block**
+- [x] **Step 1: Replace the constant block**
 
 In `libs/atlas-packet/field/clientbound/kite_destroy.go`, replace lines 15-20:
 
@@ -228,7 +228,7 @@ const (
 )
 ```
 
-- [ ] **Step 2: Update the one reference in the round-trip test**
+- [x] **Step 2: Update the one reference in the round-trip test**
 
 In `libs/atlas-packet/field/clientbound/kite_destroy_test.go` line 15, change
 
@@ -242,7 +242,7 @@ to
 	input := NewKiteDestroy(1, KiteDestroySilent)
 ```
 
-- [ ] **Step 3: Run the tests**
+- [x] **Step 3: Run the tests**
 
 ```bash
 cd libs/atlas-packet && go test ./field/clientbound/ -run 'TestKiteDestroy' -v
@@ -250,7 +250,7 @@ cd libs/atlas-packet && go test ./field/clientbound/ -run 'TestKiteDestroy' -v
 
 Expected: PASS. `TestKiteDestroyBytesV48` (which passes a literal `1`) is untouched and must still produce `01 04 03 02 01`.
 
-- [ ] **Step 4: Confirm no other references exist**
+- [x] **Step 4: Confirm no other references exist**
 
 ```bash
 grep -rn "KiteDestroyAnimationType1\|KiteDestroyAnimationType2" --include='*.go' .
@@ -258,7 +258,7 @@ grep -rn "KiteDestroyAnimationType1\|KiteDestroyAnimationType2" --include='*.go'
 
 Expected: no output.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add libs/atlas-packet/field/clientbound/kite_destroy.go \
@@ -280,7 +280,7 @@ The type-18 arm of `CWvsContext::SendConsumeCashItemUseRequest` (gms_v95 `0x9eb3
 - Consumes: `serverbound.UpdateTimeFirst(t tenant.Model) bool` (`item_use.go:21`).
 - Produces: `serverbound.NewItemUseKite(updateTimeFirst bool) *ItemUseKite`; methods `Message() string`, `UpdateTime() uint32`, `Operation() string`, `String() string`, `Encode`, `Decode`. Task 14 calls `NewItemUseKite` and `Message()`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `libs/atlas-packet/cash/serverbound/item_use_kite_test.go`.
 
@@ -373,7 +373,7 @@ func TestItemUseKiteBytesLeadingUpdateTime(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 cd libs/atlas-packet && go test ./cash/serverbound/ -run 'ItemUseKite' 2>&1 | head -20
@@ -381,7 +381,7 @@ cd libs/atlas-packet && go test ./cash/serverbound/ -run 'ItemUseKite' 2>&1 | he
 
 Expected: FAIL — `undefined: ItemUseKite`, `undefined: NewItemUseKite`.
 
-- [ ] **Step 3: Write the codec**
+- [x] **Step 3: Write the codec**
 
 Create `libs/atlas-packet/cash/serverbound/item_use_kite.go`:
 
@@ -454,7 +454,7 @@ func (m *ItemUseKite) Decode(_ logrus.FieldLogger, _ context.Context) func(r *re
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 cd libs/atlas-packet && go test ./cash/serverbound/ -run 'ItemUseKite' -v
@@ -462,7 +462,7 @@ cd libs/atlas-packet && go test ./cash/serverbound/ -run 'ItemUseKite' -v
 
 Expected: PASS on all four tests.
 
-- [ ] **Step 5: Full module gate**
+- [x] **Step 5: Full module gate**
 
 ```bash
 cd libs/atlas-packet && go test -race ./... && go vet ./... && go build ./...
@@ -470,7 +470,7 @@ cd libs/atlas-packet && go test -race ./... && go vet ./... && go build ./...
 
 Expected: all clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add libs/atlas-packet/cash/serverbound/item_use_kite.go \
@@ -504,7 +504,7 @@ All thirty target opcodes were verified free during planning — no existing wri
 **Interfaces:**
 - Consumes: writer names `SpawnKiteError`, `SpawnKite`, `DestroyKite` — the values of `clientbound.KiteErrorWriter`, `KiteSpawnWriter`, `KiteDestroyWriter` (`kite_error.go:12`, `kite_spawn.go:13`, `kite_destroy.go:13`). They are already listed in `produceWriters()` at `services/atlas-channel/atlas.com/channel/main.go:724-726`.
 
-- [ ] **Step 1: Confirm the starting state is empty**
+- [x] **Step 1: Confirm the starting state is empty**
 
 ```bash
 grep -ric kite services/atlas-configurations/seed-data/templates/
@@ -512,7 +512,7 @@ grep -ric kite services/atlas-configurations/seed-data/templates/
 
 Expected: `0` for every file.
 
-- [ ] **Step 2: Insert three writer entries per template**
+- [x] **Step 2: Insert three writer entries per template**
 
 For each template, insert the three objects into the `writers` array at the position given below, preserving the file's exact 6-space object indent / 8-space key indent (copy the shape of the neighbouring `DropDestroy` entry). Use per-file `Edit` operations — do **not** round-trip the JSON through a formatter, which would reflow the whole file.
 
@@ -566,7 +566,7 @@ Per-template opcodes and insertion anchors:
 | `SpawnKiteError` `"0x10E"` + `SpawnKite` `"0x10F"` | `0x10B` NPCAction | `0x110` SpawnHiredMerchant |
 | `DestroyKite` `"0x117"` | `0x114` DropDestroy | `0x118` AffectedAreaCreated |
 
-- [ ] **Step 3: Verify all ten templates parse and carry exactly three bindings**
+- [x] **Step 3: Verify all ten templates parse and carry exactly three bindings**
 
 ```bash
 python3 - <<'EOF'
@@ -613,7 +613,7 @@ EOF
 
 Expected: `OK`.
 
-- [ ] **Step 4: Run the three template guards**
+- [x] **Step 4: Run the three template guards**
 
 ```bash
 tools/template-opcode-order-guard.sh; echo "order=$?"
@@ -623,7 +623,7 @@ tools/template-movement-types-guard.sh; echo "move=$?"
 
 Expected: `order=0 dup=0 move=0`.
 
-- [ ] **Step 5: Confirm no new handler entry was needed**
+- [x] **Step 5: Confirm no new handler entry was needed**
 
 ```bash
 grep -c CharacterCashItemUseHandle services/atlas-configurations/seed-data/templates/template_gms_{48,61,72,79,83,84,87,92,95}_1.json \
@@ -632,7 +632,7 @@ grep -c CharacterCashItemUseHandle services/atlas-configurations/seed-data/templ
 
 Expected: `1` for each of the ten. The type-18 sub-body rides this existing binding; no handler entry is added (design ADR-8).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-configurations/seed-data/templates/
@@ -657,7 +657,7 @@ Shape: the **`rankings` pattern** — one config per tenant, `GET`/`POST`/`PATCH
 **Interfaces:**
 - Produces: `GET /tenants/{tenantId}/configurations/kite-configs` returning a JSON:API document of type `kite-configs` with attributes `maxPerMap` (int), `maxMessageLength` (int), `blockedMapPrefixes` (array of uint32). Task 8's `atlas-kites/configuration` package consumes exactly these three attribute names.
 
-- [ ] **Step 1: Read the rankings resource end to end**
+- [x] **Step 1: Read the rankings resource end to end**
 
 Read these four spans before writing anything — the plan below deliberately mirrors them rather than inventing a shape:
 
@@ -668,7 +668,7 @@ sed -n '1553,1715p' services/atlas-tenants/atlas.com/tenants/configuration/proce
 sed -n '1028,1180p' services/atlas-tenants/atlas.com/tenants/configuration/resource.go
 ```
 
-- [ ] **Step 2: Write the failing REST-model test**
+- [x] **Step 2: Write the failing REST-model test**
 
 Append to `services/atlas-tenants/atlas.com/tenants/configuration/rest_test.go`:
 
@@ -707,7 +707,7 @@ func TestKiteConfigTransformExtractRoundTrip(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: Run it to verify it fails**
+- [x] **Step 3: Run it to verify it fails**
 
 ```bash
 cd services/atlas-tenants/atlas.com/tenants && go test ./configuration/ -run TestKiteConfig -v 2>&1 | head -20
@@ -715,7 +715,7 @@ cd services/atlas-tenants/atlas.com/tenants && go test ./configuration/ -run Tes
 
 Expected: FAIL — `undefined: TransformKiteConfig`.
 
-- [ ] **Step 4: Add the REST model and transforms**
+- [x] **Step 4: Add the REST model and transforms**
 
 Append to `services/atlas-tenants/atlas.com/tenants/configuration/rest.go`:
 
@@ -812,7 +812,7 @@ func CreateSingleKiteConfigJsonData(cfg map[string]interface{}) (json.RawMessage
 }
 ```
 
-- [ ] **Step 5: Run the model test to verify it passes**
+- [x] **Step 5: Run the model test to verify it passes**
 
 ```bash
 cd services/atlas-tenants/atlas.com/tenants && go test ./configuration/ -run TestKiteConfig -v
@@ -820,7 +820,7 @@ cd services/atlas-tenants/atlas.com/tenants && go test ./configuration/ -run Tes
 
 Expected: PASS.
 
-- [ ] **Step 6: Add the provider, processor methods, handlers, and routes**
+- [x] **Step 6: Add the provider, processor methods, handlers, and routes**
 
 Mirror the rankings implementations read in Step 1, substituting the resource name `"kite-configs"` for `"rankings"` and `KiteConfig` for `Rankings` throughout:
 
@@ -838,7 +838,7 @@ Mirror the rankings implementations read in Step 1, substituting the resource na
 			r.HandleFunc("/tenants/{tenantId}/configurations/kite-configs", registerHandler("delete_kite_config", DeleteKiteConfigHandler(db))).Methods(http.MethodDelete)
 ```
 
-- [ ] **Step 7: Write and run a handler test**
+- [x] **Step 7: Write and run a handler test**
 
 Append to `services/atlas-tenants/atlas.com/tenants/configuration/rankings_handler_test.go` (which already has the httptest scaffolding for a singleton config resource) a `TestGetKiteConfigHandlerNotFound` and `TestCreateThenGetKiteConfigHandler` pair, mirroring the existing rankings handler tests exactly and asserting the JSON:API `type` is `kite-configs`.
 
@@ -848,7 +848,7 @@ cd services/atlas-tenants/atlas.com/tenants && go test ./configuration/ -run 'Ki
 
 Expected: PASS.
 
-- [ ] **Step 8: Module gate**
+- [x] **Step 8: Module gate**
 
 ```bash
 cd services/atlas-tenants/atlas.com/tenants && go test -race ./... && go vet ./... && go build ./...
@@ -856,11 +856,11 @@ cd services/atlas-tenants/atlas.com/tenants && go test -race ./... && go vet ./.
 
 Expected: all clean.
 
-- [ ] **Step 9: Document the resource**
+- [x] **Step 9: Document the resource**
 
 Add a `kite-configs` section to `services/atlas-tenants/docs/rest.md` beside the `mts-configs`/`rankings` entries, listing the four routes and the three attributes with their meanings and defaults (`maxPerMap` 10, `maxMessageLength` 182, `blockedMapPrefixes` `[91]`).
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add services/atlas-tenants/
@@ -886,7 +886,7 @@ A buildable skeleton: module, Kafka message contracts, buffer, consumer config, 
 **Interfaces:**
 - Produces: `kite.EnvCommandTopic = "COMMAND_TOPIC_KITE"`, `kite.EnvEventTopicStatus = "EVENT_TOPIC_KITE_STATUS"`, the `Command[E]`/`StatusEvent[E]` envelopes and every body type. Tasks 9, 11, 13, 15 all reference these names; the `atlas-channel` mirror in Task 13 must match field-for-field.
 
-- [ ] **Step 1: Copy the chalkboards module skeleton**
+- [x] **Step 1: Copy the chalkboards module skeleton**
 
 ```bash
 mkdir -p services/atlas-kites/atlas.com/kites/{kite,character,configuration,rest,kafka/message/kite,kafka/message/character,kafka/consumer/kite,kafka/consumer/character}
@@ -898,7 +898,7 @@ cp services/atlas-chalkboards/atlas.com/chalkboards/kafka/consumer/consumer.go s
 
 Then edit `services/atlas-kites/atlas.com/kites/go.mod` line 1 to `module atlas-kites` and change every `replace` target's relative depth check — the path depth is identical to chalkboards (`services/<svc>/atlas.com/<name>` → `../../../../libs/...`), so the `replace` block copies unchanged. `rest/handler.go`, `kafka/message/message.go`, and `kafka/consumer/consumer.go` have no `atlas-chalkboards` imports and copy verbatim.
 
-- [ ] **Step 2: Write the kite Kafka contracts**
+- [x] **Step 2: Write the kite Kafka contracts**
 
 Create `services/atlas-kites/atlas.com/kites/kafka/message/kite/kafka.go`:
 
@@ -1009,7 +1009,7 @@ type CreationFailedStatusEventBody struct {
 }
 ```
 
-- [ ] **Step 3: Copy the character status contract**
+- [x] **Step 3: Copy the character status contract**
 
 ```bash
 cp services/atlas-chalkboards/atlas.com/chalkboards/kafka/message/character/kafka.go \
@@ -1018,12 +1018,12 @@ cp services/atlas-chalkboards/atlas.com/chalkboards/kafka/message/character/kafk
 
 This file has no service-local imports and copies verbatim. It already carries `Instance` on all four bodies (`StatusEventLoginBody.Instance`, `StatusEventLogoutBody.Instance`, `StatusEventMapChangedBody.OldInstance`/`TargetInstance`, `ChangeChannelEventLoginBody.Instance`) — Task 11 must actually use them, unlike the chalkboards consumer.
 
-- [ ] **Step 4: Write a `main.go` that boots**
+- [x] **Step 4: Write a `main.go` that boots**
 
 Create `services/atlas-kites/atlas.com/kites/main.go` modelled on
 `services/atlas-chalkboards/atlas.com/chalkboards/main.go`, with `serviceName = "atlas-kites"`, `consumerGroupId = consumergroup.Resolve("Kite Service")`, and — for now — no registry init, no consumers, and no route initializer beyond the debug/readiness mounts. Tasks 7–11 fill these in.
 
-- [ ] **Step 5: Register the module in the workspace**
+- [x] **Step 5: Register the module in the workspace**
 
 Add to `go.work` in the `use()` block, keeping the list's existing ordering:
 
@@ -1031,7 +1031,7 @@ Add to `go.work` in the `use()` block, keeping the list's existing ordering:
 	./services/atlas-kites/atlas.com/kites
 ```
 
-- [ ] **Step 6: Build**
+- [x] **Step 6: Build**
 
 ```bash
 go work sync
@@ -1040,7 +1040,7 @@ cd services/atlas-kites/atlas.com/kites && go build ./... && go vet ./...
 
 Expected: clean. Prune any `go.mod` requirement the skeleton does not yet use with `go mod tidy` if the build complains.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add go.work go.work.sum services/atlas-kites/
@@ -1070,7 +1070,7 @@ State layout per design ADR-2: the kite registry is keyed on `characterId` (safe
   - `kite.InitRegistry(client *goredis.Client)`; registry methods `Get(ctx, characterId) (Model, bool)`, `Put(ctx, Model) error`, `Remove(ctx, characterId) error`, `Exists(ctx, characterId) (bool, error)`, `NextId(ctx) (uint32, error)`, `AcquireFieldLock(ctx, f field.Model) (bool, error)`, `ReleaseFieldLock(ctx, f field.Model) error`
   - `character.InitRegistry(client *goredis.Client)`; `character.NewProcessor(l, ctx)` with `InMapProvider(f field.Model) model.Provider[[]uint32]`, `Enter`, `Exit`, `TransitionMap`, `TransitionChannel`
 
-- [ ] **Step 1: Write the failing registry test**
+- [x] **Step 1: Write the failing registry test**
 
 Create `services/atlas-kites/atlas.com/kites/kite/registry_test.go`, following the miniredis pattern already used at `services/atlas-chalkboards/atlas.com/chalkboards/chalkboard/registry_test.go`:
 
@@ -1187,7 +1187,7 @@ func TestRegistryFieldLockIsExclusive(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 ```bash
 cd services/atlas-kites/atlas.com/kites && go test ./kite/ 2>&1 | head -20
@@ -1195,7 +1195,7 @@ cd services/atlas-kites/atlas.com/kites && go test ./kite/ 2>&1 | head -20
 
 Expected: FAIL — `undefined: InitRegistry`, `undefined: NewBuilder`.
 
-- [ ] **Step 3: Write the model and builder**
+- [x] **Step 3: Write the model and builder**
 
 Create `services/atlas-kites/atlas.com/kites/kite/model.go`:
 
@@ -1301,7 +1301,7 @@ func (b *Builder) Build() Model {
 }
 ```
 
-- [ ] **Step 4: Write the registry**
+- [x] **Step 4: Write the registry**
 
 Create `services/atlas-kites/atlas.com/kites/kite/registry.go`. `TenantRegistry` JSON-serialises its value, so the stored type is an exported-field DTO, not the private-field `Model`.
 
@@ -1443,7 +1443,7 @@ func (r *Registry) ReleaseFieldLock(ctx context.Context, f field.Model) error {
 }
 ```
 
-- [ ] **Step 5: Run the kite registry tests**
+- [x] **Step 5: Run the kite registry tests**
 
 ```bash
 cd services/atlas-kites/atlas.com/kites && go test ./kite/ -v
@@ -1451,7 +1451,7 @@ cd services/atlas-kites/atlas.com/kites && go test ./kite/ -v
 
 Expected: PASS on all three.
 
-- [ ] **Step 6: Write the character-in-field index**
+- [x] **Step 6: Write the character-in-field index**
 
 Copy the three chalkboards files and apply the **instance fix**:
 
@@ -1498,7 +1498,7 @@ func TestInMapIsInstanceScoped(t *testing.T) {
 
 If `GetCharactersInMapOrNil` does not exist on the copied processor, use `GetCharactersInMap` and ignore its error — do not add a helper that only a test uses.
 
-- [ ] **Step 7: Run the character tests**
+- [x] **Step 7: Run the character tests**
 
 ```bash
 cd services/atlas-kites/atlas.com/kites && go test -race ./... && go vet ./...
@@ -1506,7 +1506,7 @@ cd services/atlas-kites/atlas.com/kites && go test -race ./... && go vet ./...
 
 Expected: clean.
 
-- [ ] **Step 8: Redis guard**
+- [x] **Step 8: Redis guard**
 
 ```bash
 tools/redis-key-guard.sh; echo "exit=$?"
@@ -1514,7 +1514,7 @@ tools/redis-key-guard.sh; echo "exit=$?"
 
 Expected: `exit=0`. Every keyed command above goes through `libs/atlas-redis`; a raw `client.Get`/`client.Set` in this package is a guard failure.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add services/atlas-kites/
@@ -1538,7 +1538,7 @@ Consumes the `kite-configs` resource built in Task 5, on the `mts-configs` consu
 - Consumes: `GET {TENANTS}/tenants/{tenantId}/configurations/kite-configs` with attributes `maxPerMap`, `maxMessageLength`, `blockedMapPrefixes` (Task 5).
 - Produces: `configuration.Model` with `MaxPerMap() int`, `MaxMessageLength() int`, `BlockedMapPrefixes() []uint32`, `IsMapBlocked(mapId _map.Id) bool`; `configuration.DefaultConfig() Model`; `configuration.GetRegistry().GetTenantConfig(l, ctx, tenantId uuid.UUID) Model`. Task 9 calls `GetTenantConfig` and `IsMapBlocked`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-kites/atlas.com/kites/configuration/rest_test.go`:
 
@@ -1594,7 +1594,7 @@ func TestIsMapBlockedMirrorsClientArithmetic(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 ```bash
 cd services/atlas-kites/atlas.com/kites && go test ./configuration/ 2>&1 | head -20
@@ -1602,7 +1602,7 @@ cd services/atlas-kites/atlas.com/kites && go test ./configuration/ 2>&1 | head 
 
 Expected: FAIL — `undefined: Extract`, `undefined: RestModel`, `undefined: DefaultConfig`.
 
-- [ ] **Step 3: Write the model**
+- [x] **Step 3: Write the model**
 
 Create `services/atlas-kites/atlas.com/kites/configuration/model.go`:
 
@@ -1655,11 +1655,11 @@ func DefaultConfig() Model {
 }
 ```
 
-- [ ] **Step 4: Write the REST model, request, and registry**
+- [x] **Step 4: Write the REST model, request, and registry**
 
 Create `configuration/rest.go` (`RestModel` with `Id string json:"-"`, `MaxPerMap int json:"maxPerMap"`, `MaxMessageLength int json:"maxMessageLength"`, `BlockedMapPrefixes []uint32 json:"blockedMapPrefixes"`; `GetName()` returns `"kite-configs"`; `Extract(RestModel) Model` folding each zero/empty knob to `DefaultConfig()`'s value), `configuration/requests.go` (`requestForTenant(tenantId uuid.UUID) requests.Request[RestModel]` building `%stenants/%s/configurations/kite-configs` off `requests.RootUrl("TENANTS")`), and `configuration/registry.go` — all three copied structurally from `services/atlas-channel/atlas.com/channel/mts/configuration/`, substituting the resource name and knob set.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 ```bash
 cd services/atlas-kites/atlas.com/kites && go test ./configuration/ -v
@@ -1667,7 +1667,7 @@ cd services/atlas-kites/atlas.com/kites && go test ./configuration/ -v
 
 Expected: PASS on all three tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-kites/atlas.com/kites/configuration/
@@ -1714,7 +1714,7 @@ var (
 )
 ```
 
-- [ ] **Step 1: Write the failing processor tests**
+- [x] **Step 1: Write the failing processor tests**
 
 Create `services/atlas-kites/atlas.com/kites/kite/processor_test.go`. Use a recording `producer.Provider` seam (the `NewProcessorWithProvider` constructor exists for exactly this) and miniredis, per the mist-processor precedent.
 
@@ -1880,7 +1880,7 @@ func fieldWithMap(mapId _map.Id) field.Model {
 }
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 ```bash
 cd services/atlas-kites/atlas.com/kites && go test ./kite/ -run 'TestCreate|TestDestroy' 2>&1 | head -20
@@ -1888,7 +1888,7 @@ cd services/atlas-kites/atlas.com/kites && go test ./kite/ -run 'TestCreate|Test
 
 Expected: FAIL — `undefined: NewProcessorWithProvider`, `undefined: ErrAlreadyPlaced`.
 
-- [ ] **Step 3: Write the producer**
+- [x] **Step 3: Write the producer**
 
 Create `services/atlas-kites/atlas.com/kites/kite/producer.go` with three providers, all keyed on `producer.CreateKey(int(f.MapId()))` for per-map ordering:
 
@@ -1900,7 +1900,7 @@ func creationFailedStatusEventProvider(transactionId uuid.UUID, f field.Model, c
 
 Each fills `kiteMsg.StatusEvent[...]{TransactionId, WorldId, ChannelId, MapId, Instance, CharacterId, Type, Body}` from the field and model, mirroring `services/atlas-chalkboards/atlas.com/chalkboards/chalkboard/producer.go:14-42`.
 
-- [ ] **Step 4: Write the processor**
+- [x] **Step 4: Write the processor**
 
 Create `services/atlas-kites/atlas.com/kites/kite/processor.go`. `Create`'s ordering is fixed by design §4.2 and must not be reordered — the cheap, character-local checks run before the field lock is taken:
 
@@ -2036,7 +2036,7 @@ func (p *ProcessorImpl) CreateAndEmit(f field.Model, characterId uint32, cmd kit
 
 `InMapModelProvider(f)` composes `character.NewProcessor(p.l, p.ctx).InMapProvider(f)` with a filter that keeps only character ids owning a kite, then maps them through `GetByCharacterId` — exactly `chalkboard/resource.go:71-92`.
 
-- [ ] **Step 5: Run the processor tests**
+- [x] **Step 5: Run the processor tests**
 
 ```bash
 cd services/atlas-kites/atlas.com/kites && go test ./kite/ -race -v
@@ -2044,7 +2044,7 @@ cd services/atlas-kites/atlas.com/kites && go test ./kite/ -race -v
 
 Expected: PASS on all six new tests plus the three from Task 7.
 
-- [ ] **Step 6: Add the concurrency test**
+- [x] **Step 6: Add the concurrency test**
 
 Append to `processor_test.go` a test that runs two goroutines creating kites for two *different* characters against a config with `maxPerMap: 1`, and asserts exactly one succeeds and one returns `ErrMapFull`. Spawn them with `routine.Go` — a bare `go` statement fails `tools/goroutine-guard.sh`.
 
@@ -2054,7 +2054,7 @@ cd services/atlas-kites/atlas.com/kites && go test ./kite/ -race -run TestConcur
 
 Expected: PASS on every one of the 20 runs. A flake here means the lock is not covering the count→insert window.
 
-- [ ] **Step 7: Guards**
+- [x] **Step 7: Guards**
 
 ```bash
 tools/redis-key-guard.sh; echo "redis=$?"
@@ -2063,7 +2063,7 @@ tools/goroutine-guard.sh; echo "routine=$?"
 
 Expected: both `0`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add services/atlas-kites/atlas.com/kites/kite/
@@ -2089,11 +2089,11 @@ Serves the map-entry replay. Path-segment form (not the PRD's flat `?worldId=` f
   - `kite.RestModel` with `GetName() == "kites"` and JSON fields `characterId`, `name`, `templateId`, `message`, `x`, `y`, `worldId`, `channelId`, `mapId`, `instanceId`, `createdAt`. Task 13's `atlas-channel` `kite.RestModel` must mirror these names exactly.
   - `kite.InitResource(si jsonapi.ServerInformation) server.RouteInitializer`
 
-- [ ] **Step 1: Write the failing pagination test**
+- [x] **Step 1: Write the failing pagination test**
 
 Create `services/atlas-kites/atlas.com/kites/kite/resource_paginate_test.go`, modelled on `services/atlas-chalkboards/atlas.com/chalkboards/chalkboard/resource_paginate_test.go`: seed 5 kites for 5 characters all in one field, request `page[size]=2`, and assert three pages of 2/2/1 with **stable ordering by kite id** and no duplicates across pages.
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 ```bash
 cd services/atlas-kites/atlas.com/kites && go test ./kite/ -run Paginate 2>&1 | head -20
@@ -2101,15 +2101,15 @@ cd services/atlas-kites/atlas.com/kites && go test ./kite/ -run Paginate 2>&1 | 
 
 Expected: FAIL — `undefined: InitResource`.
 
-- [ ] **Step 3: Write the REST model**
+- [x] **Step 3: Write the REST model**
 
 Create `services/atlas-kites/atlas.com/kites/kite/rest.go` with `RestModel` (`Id uint32 json:"-"` holding the **kite wire id**, not the character id — design ADR-3 is explicit that chalkboards conflates the two and kites must not), `GetName()`/`GetID()`/`SetID()`, and `Transform(m Model) (RestModel, error)`.
 
-- [ ] **Step 4: Write the resource**
+- [x] **Step 4: Write the resource**
 
 Create `services/atlas-kites/atlas.com/kites/kite/resource.go`, copying the structure of `chalkboard/resource.go:23-108` with two changes: sort by **kite id** (via `GetByCharacterId` on the paged character ids, then sort the resulting models) before `paginate.Slice`, so the page boundary is stable; and register the routes under `/kites`.
 
-- [ ] **Step 5: Run the test**
+- [x] **Step 5: Run the test**
 
 ```bash
 cd services/atlas-kites/atlas.com/kites && go test ./kite/ -race -v
@@ -2117,7 +2117,7 @@ cd services/atlas-kites/atlas.com/kites && go test ./kite/ -race -v
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-kites/atlas.com/kites/
@@ -2140,7 +2140,7 @@ Two consumers: the kite command topic, and the existing character status topic f
 - Consumes: `kite.NewProcessor` (Task 9), `character.NewProcessor` (Task 7), the contracts from Task 6.
 - Produces: `kiteconsumer.InitConsumers(l)(cmf)(groupId)` / `InitHandlers(l)(rf) error`, and the same pair in the character consumer package. `main.go` calls both.
 
-- [ ] **Step 1: Write the failing teardown test**
+- [x] **Step 1: Write the failing teardown test**
 
 Create `services/atlas-kites/atlas.com/kites/kafka/consumer/character/consumer_test.go` asserting the two behaviours the chalkboards consumer gets wrong or omits:
 
@@ -2281,7 +2281,7 @@ func TestLoginIndexesWithInstance(t *testing.T) {
 
 The `recorder` helper is the one written in Task 9's `kite/processor_test.go`. Promote it to a small shared test helper in the `kite` package (exported as `kite.NewTestRecorder()`) or duplicate the ~25 lines here — do **not** create a `*_testhelpers.go` file, which this project bans. Add `reset()` and `messages(topic string) []kafka.Message` to it while promoting; Task 9's tests keep using `count()`.
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 ```bash
 cd services/atlas-kites/atlas.com/kites && go test ./kafka/consumer/character/ 2>&1 | head -20
@@ -2289,7 +2289,7 @@ cd services/atlas-kites/atlas.com/kites && go test ./kafka/consumer/character/ 2
 
 Expected: FAIL — the package has no handlers yet.
 
-- [ ] **Step 3: Write the character status consumer**
+- [x] **Step 3: Write the character status consumer**
 
 Create `services/atlas-kites/atlas.com/kites/kafka/consumer/character/consumer.go` on the shape of `services/atlas-chalkboards/atlas.com/chalkboards/kafka/consumer/character/consumer.go`, with the instance threaded through every field construction:
 
@@ -2347,15 +2347,15 @@ func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, 
 
 `DestroyAndEmit` on a character with no kite returns a not-found error; that is the common case and is logged at `Debug`, never `Error`.
 
-- [ ] **Step 4: Write the kite command consumer**
+- [x] **Step 4: Write the kite command consumer**
 
 Create `services/atlas-kites/atlas.com/kites/kafka/consumer/kite/consumer.go` on the shape of `services/atlas-chalkboards/.../kafka/consumer/chalkboard/consumer.go`: `InitConsumers` registers `consumer2.NewConfig(l)("kite_command")(kiteMsg.EnvCommandTopic)(consumerGroupId)` with the span + tenant header parsers; `InitHandlers` registers `handleCreateCommand` and `handleDestroyCommand`. Each rebuilds the field **with** `SetInstance(c.Instance)` and delegates to the processor.
 
-- [ ] **Step 5: Wire `main.go`**
+- [x] **Step 5: Wire `main.go`**
 
 Fill in the `main.go` stub from Task 6: `kite.InitRegistry(rc)` and `character2.InitRegistry(rc)` after `atlas.Connect(l)`; `character.InitConsumers` and `kiteconsumer.InitConsumers`; both `InitHandlers` calls guarded by `l.Fatal` on error; the `kite.InitResource(GetServer())` route initializer from Task 10.
 
-- [ ] **Step 6: Run the full module gate**
+- [x] **Step 6: Run the full module gate**
 
 ```bash
 cd services/atlas-kites/atlas.com/kites && go test -race ./... && go vet ./... && go build ./...
@@ -2363,7 +2363,7 @@ cd services/atlas-kites/atlas.com/kites && go test -race ./... && go vet ./... &
 
 Expected: all clean.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-kites/
@@ -2395,7 +2395,7 @@ PRD §7 "confirm during design" item.
 
 (`go.work` was already updated in Task 6.)
 
-- [ ] **Step 1: Build & CI**
+- [x] **Step 1: Build & CI**
 
 Add to `.github/config/services.json` `services[]`, matching the chalkboards entry shape:
 
@@ -2412,7 +2412,7 @@ Add to `.github/config/services.json` `services[]`, matching the chalkboards ent
 
 Add `"atlas-kites",` to the `go_services` list in `docker-bake.hcl`, keeping the existing ordering.
 
-- [ ] **Step 2: Kubernetes base**
+- [x] **Step 2: Kubernetes base**
 
 Create `deploy/k8s/base/atlas-kites.yaml` by copying `deploy/k8s/base/atlas-chalkboards.yaml` and substituting `atlas-kites` / container name `kites`. No `namespace:` (overlays set it), no `DB_NAME` (Redis-only), `replicas: 2`.
 
@@ -2425,7 +2425,7 @@ Add the two new topic keys to `deploy/k8s/base/env-configmap.yaml`, each at its 
   EVENT_TOPIC_KITE_STATUS: "EVENT_TOPIC_KITE_STATUS"
 ```
 
-- [ ] **Step 3: Main overlay**
+- [x] **Step 3: Main overlay**
 
 In `deploy/k8s/overlays/main/kustomization.yaml`:
 
@@ -2468,7 +2468,7 @@ Do **not** add `KAFKA_CONSUMER_GROUP` on main (see the comment at the top of tha
 
 In `deploy/k8s/overlays/main/patches/atlas-env-env.yaml`, append an `ATLAS_ENV: "main"` patch document targeting deployment `atlas-kites` / container `kites`, copying the chalkboards document at `:96-101`.
 
-- [ ] **Step 4: PR overlay**
+- [x] **Step 4: PR overlay**
 
 In `deploy/k8s/overlays/pr/kustomization.yaml`, add the `images:` entry (same shape as Step 3). Do **not** add an `ATLAS_DB_NAMES` entry — `atlas-kites` has no database.
 
@@ -2482,7 +2482,7 @@ deploy/k8s/overlays/pr/scripts/gen-consumer-group-patch.sh
 
 Paste `gen-topic-config.sh`'s output into the PR overlay's `atlas-env` generator block; the other two write their files directly. Editing these by hand works until the next generator run silently reverts you.
 
-- [ ] **Step 5: Ingress**
+- [x] **Step 5: Ingress**
 
 Add two nginx location blocks to `deploy/shared/routes.conf`, alphabetically placed, mirroring the chalkboards pair at `:170-177`:
 
@@ -2504,7 +2504,7 @@ Copy the body of the chalkboards blocks verbatim apart from the upstream. Then r
 ./deploy/scripts/sync-k8s-ingress-routes.sh
 ```
 
-- [ ] **Step 6: Run the registration guard**
+- [x] **Step 6: Run the registration guard**
 
 ```bash
 tools/service-registration-guard.sh; echo "exit=$?"
@@ -2512,7 +2512,7 @@ tools/service-registration-guard.sh; echo "exit=$?"
 
 Expected: `exit=0`.
 
-- [ ] **Step 7: Verify what the guard cannot check**
+- [x] **Step 7: Verify what the guard cannot check**
 
 The guard enforces *parity* of keys already present — not that the correct *new* topic keys exist. Check by hand:
 
@@ -2527,7 +2527,7 @@ kubectl kustomize deploy/k8s/overlays/pr > /dev/null; echo "pr-render=$?"
 
 A missing topic var does not crash — `libs/atlas-kafka/topic/provider.go` falls back to the bare token with only a warn log, and the two sides then talk on different topics.
 
-- [ ] **Step 8: Build the image**
+- [x] **Step 8: Build the image**
 
 ```bash
 docker buildx bake atlas-kites
@@ -2535,7 +2535,7 @@ docker buildx bake atlas-kites
 
 Expected: success. `go build` against `go.work` cannot catch a missing `COPY libs/...` in the shared Dockerfile — only the bake can. `atlas-kites` introduces no new shared lib, so no `Dockerfile` edit is expected; if the bake fails on a missing lib, that is the signal.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add .github/config/services.json docker-bake.hcl deploy/
@@ -2574,11 +2574,11 @@ Replaces the dead `channel/kite/model.go` — zero importers (`grep -rn "channel
   ```
   Task 14 calls `AttemptUse`; Task 16 calls `ForEachInMap`.
 
-- [ ] **Step 1: Mirror the Kafka contract**
+- [x] **Step 1: Mirror the Kafka contract**
 
 Create `services/atlas-channel/atlas.com/channel/kafka/message/kite/kafka.go` as a **field-for-field copy** of `services/atlas-kites/atlas.com/kites/kafka/message/kite/kafka.go` (Task 6), with `package kite`. This duplication is the established convention across the repo (`kafka/message/chalkboard` exists on both sides); the two files must not drift.
 
-- [ ] **Step 2: Write the failing drain test**
+- [x] **Step 2: Write the failing drain test**
 
 Create `services/atlas-channel/atlas.com/channel/kite/processor_drain_test.go`, modelled directly on `services/atlas-channel/atlas.com/channel/chalkboard/processor_drain_test.go`. It must assert two things:
 
@@ -2609,7 +2609,7 @@ func TestInMapModelProviderRequestsInstanceScopedPath(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: Run to verify it fails**
+- [x] **Step 3: Run to verify it fails**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./kite/ 2>&1 | head -20
@@ -2617,7 +2617,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./kite/ 2>&1 | head -20
 
 Expected: FAIL — `undefined: NewProcessor`.
 
-- [ ] **Step 4: Rewrite the model and add the builder**
+- [x] **Step 4: Rewrite the model and add the builder**
 
 Replace the whole of `services/atlas-channel/atlas.com/channel/kite/model.go`:
 
@@ -2649,7 +2649,7 @@ func (m Model) Y() int16            { return m.y }
 
 Add `builder.go` with `NewBuilder(id uint32, characterId uint32) *Builder` and `SetName`/`SetTemplateId`/`SetMessage`/`SetPosition`/`Build`, so tests construct models through the Builder pattern rather than a test-only constructor.
 
-- [ ] **Step 5: Write rest.go, requests.go, processor.go, producer.go**
+- [x] **Step 5: Write rest.go, requests.go, processor.go, producer.go**
 
 - `rest.go`: `RestModel` mirroring Task 10's field names exactly, plus `Extract(rm RestModel) (Model, error)`.
 - `requests.go`:
@@ -2670,7 +2670,7 @@ func inMapUrl(f field.Model) string {
 - `processor.go`: `InMapModelProvider` via `requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inMapUrl(f), 250, Extract, model.Filters[Model]())`; `ForEachInMap` via `model.ForEachSlice(p.InMapModelProvider(f), o, model.ParallelExecute())`; `AttemptUse` producing the `CREATE` command.
 - `producer.go`: `CreateCommandProvider` keyed `producer.CreateKey(int(characterId))` — per-character ordering, matching `chalkboard/producer.go:14`.
 
-- [ ] **Step 6: Run the drain tests**
+- [x] **Step 6: Run the drain tests**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./kite/ -race -v
@@ -2678,7 +2678,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./kite/ -race -v
 
 Expected: PASS on both.
 
-- [ ] **Step 7: Rewrite the domain doc entry**
+- [x] **Step 7: Rewrite the domain doc entry**
 
 Replace `services/atlas-channel/docs/domain.md:793-803` — the "Model-only domain" Kite section — with the real package:
 
@@ -2700,7 +2700,7 @@ commands.
   AttemptUse(...) emits COMMAND_TOPIC_KITE CREATE keyed on characterId
 ```
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kite/ \
@@ -2722,7 +2722,7 @@ The arm that has never existed: `GetCashSlotItemType` already maps classificatio
 **Interfaces:**
 - Consumes: `cashsb.NewItemUseKite` (Task 3), `kite.NewProcessor(...).AttemptUse` (Task 13), `character2.NewProcessor(...).GetById` (existing).
 
-- [ ] **Step 1: Write the failing handler test**
+- [x] **Step 1: Write the failing handler test**
 
 Create `services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use_kite_test.go`. Inject the `cashItemInSlotFunc` package var (the established test seam, per its comment at `:653-655`) and a recording producer, then assert that a type-18 use emits **exactly one** `CREATE` command whose `x`, `y`, and `name` come from the character record and **not** from the packet (the packet does not carry them):
 
@@ -2830,7 +2830,7 @@ func TestKiteUseDoesNotConsumeTheItem(t *testing.T) {
 
 `testChannelContext`, `seedSession`, `newCommandRecorder`, and `encodeItemUsePrefix` are the fixtures the neighbouring handler tests in this package already use — read `services/atlas-channel/atlas.com/channel/socket/handler/` for the existing names and reuse them rather than adding parallel helpers. If a needed fixture genuinely does not exist, build the session through the project Builder pattern; do **not** add a `*_testhelpers.go` file.
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run Kite 2>&1 | head -20
@@ -2838,7 +2838,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run Ki
 
 Expected: FAIL — no `CREATE` command emitted (the use currently falls through to the warn).
 
-- [ ] **Step 3: Add the type constant**
+- [x] **Step 3: Add the type constant**
 
 In the `CashSlotItemType` const block (`character_cash_item_use.go:617-648`), add beside `CashSlotItemTypeChalkboard`:
 
@@ -2846,7 +2846,7 @@ In the `CashSlotItemType` const block (`character_cash_item_use.go:617-648`), ad
 	CashSlotItemTypeKite          = CashSlotItemType(18)
 ```
 
-- [ ] **Step 4: Add the arm**
+- [x] **Step 4: Add the arm**
 
 Insert immediately after the `CashSlotItemTypeChalkboard` arm (`:93-98`):
 
@@ -2884,7 +2884,7 @@ Insert immediately after the `CashSlotItemTypeChalkboard` arm (`:93-98`):
 
 Add `"atlas-channel/kite"` to the import block. Ownership is already verified before this point by the shared `cashItemInSlotFunc` check at `:53-57` that gates the whole handler (FR-4.2).
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -race -run Kite -v
@@ -2892,7 +2892,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -race -
 
 Expected: PASS on both.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/
@@ -2913,7 +2913,7 @@ git commit -m "feat(atlas-channel): handle cash slot item type 18 (kite)"
 - Consumes: `kiteMsg.EnvEventTopicStatus` and the three bodies (Task 13's mirror), `fieldcb.KiteSpawnWriter`/`KiteDestroyWriter`/`KiteErrorWriter`, `clientbound.KiteDestroyAnimated` (Task 2).
 - Produces: `kiteconsumer.InitConsumers(l)(cmf)(groupId)` and `kiteconsumer.InitHandlers(l)(sc)(wp)(rh)`.
 
-- [ ] **Step 1: Write the consumer**
+- [x] **Step 1: Write the consumer**
 
 Create `services/atlas-channel/atlas.com/channel/kafka/consumer/kite/consumer.go`, structured exactly like `kafka/consumer/chalkboard/consumer.go` — `consumer.SetStartOffset(kafka.LastOffset)`, and an `sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId)` guard as the first thing in every handler.
 
@@ -2978,7 +2978,7 @@ func handleCreationFailedEvent(sc server.Model, wp writer.Producer) message.Hand
 }
 ```
 
-- [ ] **Step 2: Wire it into `main.go`**
+- [x] **Step 2: Wire it into `main.go`**
 
 Add `kite.InitConsumers(l)(cmf)(consumerGroupId)` beside the chalkboard call at `:236`, and the handler registration beside the chalkboard one at `:504`:
 
@@ -2990,7 +2990,7 @@ Add `kite.InitConsumers(l)(cmf)(consumerGroupId)` beside the chalkboard call at 
 
 Import the package as `kiteconsumer "atlas-channel/kafka/consumer/kite"` to avoid colliding with the `atlas-channel/kite` client package imported by the handler.
 
-- [ ] **Step 3: Verify the writers are already registered**
+- [x] **Step 3: Verify the writers are already registered**
 
 ```bash
 sed -n '718,730p' services/atlas-channel/atlas.com/channel/main.go
@@ -2998,7 +2998,7 @@ sed -n '718,730p' services/atlas-channel/atlas.com/channel/main.go
 
 Expected: `fieldcb.KiteSpawnWriter`, `fieldcb.KiteErrorWriter`, `fieldcb.KiteDestroyWriter` already present at `:724-726`. FR-7.6 is verify-only — **make no change here**.
 
-- [ ] **Step 4: Build**
+- [x] **Step 4: Build**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go build ./... && go vet ./...
@@ -3006,7 +3006,7 @@ cd services/atlas-channel/atlas.com/channel && go build ./... && go vet ./...
 
 Expected: clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/consumer/kite/ \
@@ -3026,7 +3026,7 @@ The other half of the feature: a character entering a map must see every kite al
 **Interfaces:**
 - Consumes: `kite.NewProcessor(...).ForEachInMap` (Task 13), `fieldcb.NewKiteSpawn` (Task 1).
 
-- [ ] **Step 1: Add the replay pass**
+- [x] **Step 1: Add the replay pass**
 
 Insert after the chalkboard block (`:264-268`), keeping it in its own `routine.Go` so a failure cannot affect the rest of the map-enter fan-out:
 
@@ -3038,7 +3038,7 @@ Insert after the chalkboard block (`:264-268`), keeping it in its own `routine.G
 		})
 ```
 
-- [ ] **Step 2: Add the operator**
+- [x] **Step 2: Add the operator**
 
 Insert beside `spawnChalkboardsForSession` (`:800-810`):
 
@@ -3063,7 +3063,7 @@ func spawnKitesForSession(l logrus.FieldLogger) func(ctx context.Context) func(w
 
 **Review point, not an assumption:** confirm by reading the final operator that it captures nothing mutable. Parallel `ForEachInMap` operators sharing state is a known hazard on this codebase.
 
-- [ ] **Step 3: Build and run the channel module gate**
+- [x] **Step 3: Build and run the channel module gate**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go build ./... && go vet ./... && go test -race ./...
@@ -3071,7 +3071,7 @@ cd services/atlas-channel/atlas.com/channel && go build ./... && go vet ./... &&
 
 Expected: all clean.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go
@@ -3084,7 +3084,7 @@ git commit -m "feat(atlas-channel): replay kites to characters entering a map"
 
 Nothing here is optional and nothing here may be reported from memory. Run each command, read its actual output, and paste the real result into the completion report. A skipped gate reported as passing is a false "verified".
 
-- [ ] **Step 1: Per-module Go gates**
+- [x] **Step 1: Per-module Go gates**
 
 ```bash
 for m in libs/atlas-packet services/atlas-kites/atlas.com/kites \
@@ -3096,7 +3096,7 @@ done
 
 Expected: no `FAILED:` lines.
 
-- [ ] **Step 2: Docker bakes for every service whose `go.mod` was touched**
+- [x] **Step 2: Docker bakes for every service whose `go.mod` was touched**
 
 ```bash
 docker buildx bake atlas-kites
@@ -3106,7 +3106,7 @@ docker buildx bake atlas-tenants
 
 Expected: all three succeed. `go build` against the workspace will **not** catch a missing `COPY libs/...` in the shared root `Dockerfile` — only the bake will, and each CI round-trip to discover it wastes a cycle.
 
-- [ ] **Step 3: Repo guards**
+- [x] **Step 3: Repo guards**
 
 ```bash
 tools/service-registration-guard.sh;      echo "svc-reg=$?"
@@ -3121,7 +3121,7 @@ tools/skill-job-id-guard.sh;              echo "skill-job=$?"
 
 Expected: every one `=0`.
 
-- [ ] **Step 4: Lint**
+- [x] **Step 4: Lint**
 
 ```bash
 tools/lint.sh            # fix mode — rewrites in place
@@ -3130,7 +3130,7 @@ tools/lint.sh --check; echo "lint=$?"
 
 Expected: `lint=0`. This needs nvm 22 on PATH or the atlas-ui leg false-fails; if another worktree is running golangci-lint concurrently you may hit lock contention — rerun rather than treating it as a finding.
 
-- [ ] **Step 5: Packet matrix is unchanged**
+- [x] **Step 5: Packet matrix is unchanged**
 
 ```bash
 go run ./tools/packet-audit matrix
@@ -3141,7 +3141,7 @@ grep -n 'SPAWN_KITE ' docs/packets/audits/STATUS.md
 
 Expected: `matrix=0`, `diff=0`, and the `SPAWN_KITE` row still reading `✅ 🟡ᶠ 🟡ᶠ 🟡ᶠ ✅ ✅ ✅ 🟡ᶠ ✅ ✅`. Both renames are byte-neutral and change no decompile hash, so no evidence re-pin is warranted and any status movement means something else shifted.
 
-- [ ] **Step 6: Acceptance-criteria spot checks**
+- [x] **Step 6: Acceptance-criteria spot checks**
 
 ```bash
 # Kite bindings present in exactly ten templates, absent from v12.
@@ -3162,11 +3162,11 @@ grep -rn atlas-kites .github/config/services.json docker-bake.hcl go.work \
 #   expect: >= 5
 ```
 
-- [ ] **Step 7: Code review before PR**
+- [x] **Step 7: Code review before PR**
 
 Run `superpowers:requesting-code-review`. Go files changed in four modules, so it dispatches `plan-adherence-reviewer` and `backend-guidelines-reviewer`; no atlas-ui TypeScript changed, so the frontend reviewer is not needed. Pin the reviewer subagents to Sonnet. Findings land in `docs/tasks/task-211-kite-cash-item/audit.md`. Do not open a PR before this step — it is not optional even when the plan looks complete.
 
-- [ ] **Step 8: Commit any fixes and report**
+- [x] **Step 8: Commit any fixes and report**
 
 ```bash
 git add -A && git commit -m "chore(task-211): verification sweep fixes"

@@ -18,11 +18,12 @@ import (
 // packet-audit:verify packet=character/clientbound/ShowUpgradeTombEffect version=gms_v84 ida=0x9c4206
 // packet-audit:verify packet=character/clientbound/ShowUpgradeTombEffect version=gms_v87 ida=0xa098f2
 // packet-audit:verify packet=character/clientbound/ShowUpgradeTombEffect version=gms_v92 ida=0x9307e0
+// packet-audit:verify packet=character/clientbound/ShowUpgradeTombEffect version=gms_v95 ida=0x954090
 //
-// The remaining two versions (v95/jms_v185) carry the
+// The remaining version (jms_v185) carries the
 // identical wire layout per the IDA addresses in the doc comment above, but
-// their packet-audit:verify markers are deliberately deferred to their own
-// verification batches (task-210) — an unlinked marker with no evidence
+// its packet-audit:verify marker is deliberately deferred to its own
+// verification batch (task-210) — an unlinked marker with no evidence
 // record/audit report fails `packet-audit matrix --check` as an orphan
 // marker (VERIFYING_A_PACKET.md §8). Each batch adds its own marker line
 // alongside its evidence pin.

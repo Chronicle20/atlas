@@ -6,6 +6,7 @@ import (
 	"atlas-trades/escrow"
 	"atlas-trades/kafka/message"
 	trademsg "atlas-trades/kafka/message/trade"
+	"context"
 	"errors"
 	"sort"
 	"sync"
@@ -1308,6 +1309,200 @@ func TestAnOrphanedStakeRefundsOnlyTheDeltaTheSagaMoved(t *testing.T) {
 	if leg.Amount != moved {
 		t.Errorf("orphan refund: got %d, want the %d the saga moved — the player was debited %d and has now been handed back %d, minting %d",
 			leg.Amount, moved, uint32(retyped), committed+leg.Amount, int64(committed)+int64(leg.Amount)-int64(retyped))
+	}
+}
+
+// mesoRowsIn counts every escrow meso row in the database, across rooms and
+// tenants — the figure AllMesos hands the boot sweep, and therefore the one that
+// must not grow with lifetime trade volume.
+func mesoRowsIn(t *testing.T, db *gorm.DB) int {
+	t.Helper()
+	rows, err := escrow.AllMesos(db)
+	if err != nil {
+		t.Fatalf("read escrow mesos: %v", err)
+	}
+	return len(rows)
+}
+
+// TestACompletedMesoStagingCycleLeavesNoEscrowRow pins that custody rows are
+// RETIRED, not merely emptied.
+//
+// A meso row exists to record that the service is holding a player's meso. The
+// stage creates one, the teardown refunds what it holds — and at that point it
+// records nothing anybody can act on. Left behind it is read again by every
+// future boot: AllMesos is an unfiltered scan of the whole table, so a row per
+// meso trade ever made is a startup cost that grows without bound.
+func TestACompletedMesoStagingCycleLeavesNoEscrowRow(t *testing.T) {
+	p, e := testOpenRoomWithMeso(t, 100, 5_000_000)
+	room, _ := p.RoomForCharacter(100)
+
+	if got := mesoRowsIn(t, p.db); got != 0 {
+		t.Fatalf("escrow meso rows before the trade: got %d, want 0", got)
+	}
+
+	if err := p.AddMeso(uuid.New(), 100, 1_000_000); err != nil {
+		t.Fatalf("add meso: %v", err)
+	}
+	stakes := sagasWithAction(t, e, sharedsaga.AwardMesos)
+	if len(stakes) != 1 {
+		t.Fatalf("award_mesos sagas: got %d, want 1", len(stakes))
+	}
+	if _, err := p.MesoStageSucceeded(uuid.New(), stakes[0].TransactionId); err != nil {
+		t.Fatalf("meso stage succeeded: %v", err)
+	}
+	// The committed total, mirrored onto the fake the teardown reads its unwind
+	// payload from. Production has one store; the harness fakes only the reads.
+	escrowOf(t, p).setMeso(room.Id(), 100, 1_000_000)
+
+	if got := mesoRowsIn(t, p.db); got != 1 {
+		t.Fatalf("escrow meso rows with a live stage: got %d, want the one row holding the escrow", got)
+	}
+
+	if err := p.TeardownCharacter(uuid.New(), 200, ReasonTradeCancelled); err != nil {
+		t.Fatalf("teardown: %v", err)
+	}
+	unwinds := unwindSagas(t, e)
+	if len(unwinds) != 1 || len(unwindPayloadOf(t, unwinds[0]).Mesos) != 1 {
+		t.Fatalf("trade_unwind sagas: got %+v, want one refunding the staged meso", unwinds)
+	}
+
+	if got := mesoRowsIn(t, p.db); got != 0 {
+		t.Errorf("escrow meso rows after the trade: got %d, want 0 — a resolved row survived its own trade, and one per meso trade ever made is read by every later boot", got)
+	}
+}
+
+// TestATeardownKeepsARefundedRowUntilItsStakeResolves pins the exception the
+// conditional delete is built around, and then the delete it eventually allows.
+//
+// A teardown that zeroes a row whose stake is STILL IN FLIGHT must leave the row
+// standing: the terminal status resolves against it by pending_stake_id alone,
+// and deleting it strands a debit the player has already been charged. Once that
+// status arrives and its refund is submitted the row records nothing, and only
+// then does it go.
+func TestATeardownKeepsARefundedRowUntilItsStakeResolves(t *testing.T) {
+	const (
+		committed = uint32(1_000_000)
+		retyped   = int32(1_500_000)
+		moved     = uint32(500_000)
+	)
+
+	p, e := testOpenRoomWithMeso(t, 100, 5_000_000)
+	room, _ := p.RoomForCharacter(100)
+	commitEscrowedMeso(t, p, room.Id(), 100, committed)
+
+	if err := p.AddMeso(uuid.New(), 100, retyped); err != nil {
+		t.Fatalf("add meso: %v", err)
+	}
+	stakes := sagasWithAction(t, e, sharedsaga.AwardMesos)
+	if len(stakes) != 1 {
+		t.Fatalf("award_mesos sagas: got %d, want 1", len(stakes))
+	}
+	stakeId := stakes[0].TransactionId
+
+	if err := p.TeardownCharacter(uuid.New(), 200, ReasonTradeCancelled); err != nil {
+		t.Fatalf("teardown: %v", err)
+	}
+
+	row, ok := mesoRow(t, p.db, p.t, room.Id(), 100)
+	if !ok {
+		t.Fatal("the refunded row was deleted while its stake was still in flight; the debit already taken from the player has nothing left to resolve against")
+	}
+	if row.Amount() != 0 {
+		t.Errorf("refunded row amount: got %d, want 0", row.Amount())
+	}
+	if row.PendingStakeId() != stakeId {
+		t.Errorf("pending stake id: got %s, want the armed %s", row.PendingStakeId(), stakeId)
+	}
+
+	if _, err := p.MesoStageSucceeded(uuid.New(), stakeId); err != nil {
+		t.Fatalf("meso stage succeeded: %v", err)
+	}
+
+	// The stake still resolves correctly: the delta the saga moved comes back on
+	// top of the teardown's refund of the committed part.
+	unwinds := unwindSagas(t, e)
+	if len(unwinds) != 2 {
+		t.Fatalf("trade_unwind sagas: got %d, want 2 (the teardown's and the orphan refund)", len(unwinds))
+	}
+	refund := unwindPayloadOf(t, unwinds[1]).Mesos
+	if len(refund) != 1 || refund[0].CharacterId != 100 || refund[0].Amount != moved {
+		t.Fatalf("orphan refund: got %+v, want %d back to character 100", refund, moved)
+	}
+
+	if got := mesoRowsIn(t, p.db); got != 0 {
+		t.Errorf("escrow meso rows once the stake resolved: got %d, want 0 — nothing is escrowed and no stake is pending", got)
+	}
+}
+
+// TestAnOrphanedStakeLeavesNothingForTheNextBootToRefund is the double refund the
+// retirement prevents, driven end to end through the sequence that produces it:
+//
+//  1. character 100 has 1000000 committed in escrow;
+//  2. they retype the box to 1500000, so an award_mesos of -500000 goes out and
+//     they have now been debited 1500000 in total;
+//  3. the counterparty leaves. The teardown refunds the committed 1000000 and
+//     zeroes the row, deliberately leaving the stake armed;
+//  4. the stake's saga completes with no room left. CommitMesoStake assigns its
+//     absolute total — 1500000 — into a row that holds nothing, and the delta of
+//     500000 is refunded. The player is now whole: 1000000 + 500000 = 1500000.
+//
+// The stale 1500000 left on the row is what the next boot reads. ReconcileEscrow
+// cannot tell a stranded asset from bookkeeping nobody cleared, so it refunds the
+// figure a second time — 3000000 handed back against a debit of 1500000.
+func TestAnOrphanedStakeLeavesNothingForTheNextBootToRefund(t *testing.T) {
+	const (
+		committed = uint32(1_000_000)
+		retyped   = int32(1_500_000)
+		debited   = uint32(1_500_000)
+	)
+
+	// The boot sweep builds its own processor and resolves each owner's field
+	// over REST, so the location service has to be real for it — unlike the
+	// staging processor, which is handed a fake. Without it the sweep would fail
+	// to locate character 100 and submit nothing for reasons that have nothing to
+	// do with the row.
+	serveLocations(t, map[character.Id][2]byte{100: {1, 1}})
+
+	p, e := testOpenRoomWithMeso(t, 100, 5_000_000)
+	room, _ := p.RoomForCharacter(100)
+	commitEscrowedMeso(t, p, room.Id(), 100, committed)
+
+	if err := p.AddMeso(uuid.New(), 100, retyped); err != nil {
+		t.Fatalf("add meso: %v", err)
+	}
+	stakes := sagasWithAction(t, e, sharedsaga.AwardMesos)
+	if len(stakes) != 1 {
+		t.Fatalf("award_mesos sagas: got %d, want 1", len(stakes))
+	}
+	if err := p.TeardownCharacter(uuid.New(), 200, ReasonTradeCancelled); err != nil {
+		t.Fatalf("teardown: %v", err)
+	}
+	if _, err := p.MesoStageSucceeded(uuid.New(), stakes[0].TransactionId); err != nil {
+		t.Fatalf("meso stage succeeded: %v", err)
+	}
+	beforeBoot := len(unwindSagas(t, e))
+
+	// The restart.
+	if err := ReconcileEscrow(reconcileLogger(), context.Background(), p.db, nil); err != nil {
+		t.Fatalf("reconcile escrow: %v", err)
+	}
+
+	unwinds := unwindSagas(t, e)
+	if len(unwinds) != beforeBoot {
+		swept := unwindPayloadOf(t, unwinds[len(unwinds)-1]).Mesos
+		t.Errorf("the boot sweep submitted %d further unwind(s) for a room whose escrow is settled: %+v", len(unwinds)-beforeBoot, swept)
+	}
+
+	var refunded uint32
+	for _, u := range unwinds {
+		for _, m := range unwindPayloadOf(t, u).Mesos {
+			if m.CharacterId == 100 {
+				refunded += m.Amount
+			}
+		}
+	}
+	if refunded != debited {
+		t.Errorf("character 100 was debited %d and handed back %d, minting %d", debited, refunded, int64(refunded)-int64(debited))
 	}
 }
 

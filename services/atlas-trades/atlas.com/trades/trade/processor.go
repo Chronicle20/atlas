@@ -1424,10 +1424,15 @@ func (p *ProcessorImpl) resolveMesoStake(mb *message.Buffer, txId uuid.UUID, sta
 		// refunded the COMMITTED escrow, which did not include this stake — so if
 		// the debit landed, this is the only chance to give it back.
 		if !settled {
-			return true, nil
+			// AbandonMesoStake wrote nothing into Amount, so the row is fully
+			// resolved exactly when there was nothing committed left to refund.
+			return true, p.discardResolvedMeso(ep, row)
 		}
 		p.l.Warnf("Meso stake [%s] of [%d] settled into a trade room [%s] that is already gone. Refunding character [%d].", stakeId.String(), amount, row.RoomId().String(), row.OwnerId())
-		return true, p.refundOrphanedStake(mb, row)
+		if err = p.refundOrphanedStake(mb, row); err != nil {
+			return true, err
+		}
+		return true, p.discardResolvedMeso(ep, row)
 	}
 
 	pt, found := room.ParticipantFor(row.OwnerId())
@@ -1497,6 +1502,40 @@ func (p *ProcessorImpl) refundOrphanedStake(mb *message.Buffer, row escrow.MesoM
 			Amount:      uint32(delta),
 		}},
 	})
+}
+
+// discardResolvedMeso retires the escrow row an ORPHANED stake just resolved
+// against — the row whose room is already gone — once nothing it records is
+// outstanding.
+//
+// It is what stops a second refund. CommitMesoStake assigns the stake's absolute
+// total into Amount unconditionally, which is right while a room still holds the
+// custody that total describes and stale the moment none does: the teardown that
+// orphaned the stake already returned the committed part and refundOrphanedStake
+// has just returned the delta, so the figure left on the row is escrow nobody
+// holds. The next boot's ReconcileEscrow reads exactly that figure as a stranded
+// asset and hands it back AGAIN.
+//
+// row is the state read BEFORE the compare-and-set, so row.Amount() is what was
+// still committed when the stake resolved. A non-zero one is left completely
+// alone: that is a room whose process died before any teardown refunded it, the
+// committed part is genuinely still owed, and the boot sweep is the only thing
+// that will ever pay it.
+//
+// Zeroed and then conditionally deleted rather than deleted outright, because the
+// two are not the same guarantee. The delete refuses to touch a row carrying a
+// pending stake (DeleteResolvedMeso), so a stage that armed one against this row
+// keeps it — and for that row the zero is still what keeps the stale total out of
+// the next sweep.
+func (p *ProcessorImpl) discardResolvedMeso(ep escrow.Processor, row escrow.MesoModel) error {
+	if row.Amount() != 0 {
+		return nil
+	}
+	if err := ep.UpsertMeso(row.RoomId(), row.OwnerId(), 0); err != nil {
+		return err
+	}
+	_, err := ep.DeleteResolvedMeso(row.RoomId(), row.OwnerId())
+	return err
 }
 
 // mesoRefused reports whether the requested stage must be refused (FR-4.8). It

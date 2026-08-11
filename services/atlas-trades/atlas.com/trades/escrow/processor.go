@@ -34,11 +34,13 @@ type Processor interface {
 	// ClaimItemForReturn), not a custody command the orchestrator is waiting on.
 	ClaimItemForReturn(escrowId uuid.UUID) (bool, error)
 
-	// UpsertMeso and DeleteMeso are NOT saga steps and therefore emit no ack:
-	// escrowed meso moves through award_mesos, whose own events drive the saga.
-	// These only maintain the durable record that makes a refund possible.
+	// UpsertMeso, DeleteMeso and DeleteResolvedMeso are NOT saga steps and
+	// therefore emit no ack: escrowed meso moves through award_mesos, whose own
+	// events drive the saga. These only maintain the durable record that makes a
+	// refund possible.
 	UpsertMeso(roomId uuid.UUID, ownerId character.Id, amount uint32) error
 	DeleteMeso(roomId uuid.UUID, ownerId character.Id) error
+	DeleteResolvedMeso(roomId uuid.UUID, ownerId character.Id) (bool, error)
 
 	// ArmMesoStake, CommitMesoStake, AbandonMesoStake, and MesoStakeById are
 	// likewise NOT saga steps and emit no ack — they exist purely to make an
@@ -122,6 +124,10 @@ func (p *ProcessorImpl) UpsertMeso(roomId uuid.UUID, ownerId character.Id, amoun
 
 func (p *ProcessorImpl) DeleteMeso(roomId uuid.UUID, ownerId character.Id) error {
 	return DeleteMeso(p.db, p.t.Id())(roomId, ownerId)
+}
+
+func (p *ProcessorImpl) DeleteResolvedMeso(roomId uuid.UUID, ownerId character.Id) (bool, error) {
+	return DeleteResolvedMeso(p.db, p.t.Id())(roomId, ownerId)
 }
 
 func (p *ProcessorImpl) ArmMesoStake(roomId uuid.UUID, ownerId character.Id, stakeId uuid.UUID, amount uint32, delta int32) error {

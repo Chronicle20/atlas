@@ -638,6 +638,215 @@ func TestDeleteMesoIsIdempotent(t *testing.T) {
 	}
 }
 
+// TestDeleteResolvedMesoRemovesAFullyResolvedRow pins the housekeeping half of
+// the conditional delete. A row at zero with no stake in flight records no
+// custody at all: nothing will read it again, and AllMesos — which every boot
+// sweep runs unfiltered over the whole table — would pay for it forever.
+func TestDeleteResolvedMesoRemovesAFullyResolvedRow(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	roomId := uuid.New()
+	ownerId := character.Id(100)
+	// The state a refunded room leaves behind: the unwind returned the meso and
+	// zeroed the total.
+	if err := UpsertMeso(db, te)(roomId, ownerId, 0); err != nil {
+		t.Fatalf("UpsertMeso: %v", err)
+	}
+
+	deleted, err := DeleteResolvedMeso(db, te.Id())(roomId, ownerId)
+	if err != nil {
+		t.Fatalf("DeleteResolvedMeso: %v", err)
+	}
+	if !deleted {
+		t.Fatal("a fully-resolved row was not deleted; every later boot sweep re-reads it")
+	}
+
+	rows, err := AllMesos(db)
+	if err != nil {
+		t.Fatalf("AllMesos: %v", err)
+	}
+	if len(rows) != 0 {
+		t.Fatalf("meso rows after the delete: got %d, want 0", len(rows))
+	}
+
+	// The retry is a no-op rather than an error: the callers run inside a
+	// transaction that can be replayed by a Kafka redelivery.
+	again, err := DeleteResolvedMeso(db, te.Id())(roomId, ownerId)
+	if err != nil {
+		t.Fatalf("second DeleteResolvedMeso: %v", err)
+	}
+	if again {
+		t.Error("the second delete claimed to have removed a row that was already gone")
+	}
+}
+
+// TestDeleteResolvedMesoRefusesARowWithAPendingStake is the regression guard the
+// delete exists under. A zeroed row whose stake is still in flight is NOT
+// resolved: the terminal status resolves against it by pending_stake_id alone,
+// and removing it strands a debit the player has already been charged.
+func TestDeleteResolvedMesoRefusesARowWithAPendingStake(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	roomId := uuid.New()
+	ownerId := character.Id(100)
+	stakeId := uuid.New()
+	// A teardown zeroed the committed total and deliberately left the stake armed.
+	if err := ArmMesoStake(db, te)(roomId, ownerId, stakeId, 900, -4_100); err != nil {
+		t.Fatalf("ArmMesoStake: %v", err)
+	}
+
+	deleted, err := DeleteResolvedMeso(db, te.Id())(roomId, ownerId)
+	if err != nil {
+		t.Fatalf("DeleteResolvedMeso: %v", err)
+	}
+	if deleted {
+		t.Fatal("a row with a stake in flight was deleted; the stake's terminal status has nothing left to resolve against")
+	}
+	if _, found, err := MesoStakeById(db)(stakeId); err != nil {
+		t.Fatalf("MesoStakeById: %v", err)
+	} else if !found {
+		t.Fatal("the armed stake is no longer findable by its id")
+	}
+}
+
+// TestDeleteResolvedMesoRefusesARowStillHoldingEscrow pins the other half of the
+// predicate. A non-zero total is meso the service is still holding for its owner,
+// and deleting the row would destroy the only record it can be refunded from.
+func TestDeleteResolvedMesoRefusesARowStillHoldingEscrow(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	roomId := uuid.New()
+	ownerId := character.Id(100)
+	if err := UpsertMeso(db, te)(roomId, ownerId, 5_000); err != nil {
+		t.Fatalf("UpsertMeso: %v", err)
+	}
+
+	deleted, err := DeleteResolvedMeso(db, te.Id())(roomId, ownerId)
+	if err != nil {
+		t.Fatalf("DeleteResolvedMeso: %v", err)
+	}
+	if deleted {
+		t.Fatal("a row still holding 5000 escrowed meso was deleted; nothing is left to refund the owner from")
+	}
+	got, found := mesoOf(t, db, te, roomId, ownerId)
+	if !found || got.Amount() != 5_000 {
+		t.Fatalf("row after the refused delete: found=%v amount=%d, want 5000", found, got.Amount())
+	}
+}
+
+// TestDeleteResolvedMesoIsTenantScoped pins that one tenant cannot retire
+// another's row. Escrow rows are swept per-tenant at boot, so a cross-tenant
+// delete would destroy custody in a database nobody is left to refund from.
+func TestDeleteResolvedMesoIsTenantScoped(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+	other, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create: %v", err)
+	}
+
+	roomId := uuid.New()
+	ownerId := character.Id(100)
+	if err := UpsertMeso(db, te)(roomId, ownerId, 0); err != nil {
+		t.Fatalf("UpsertMeso: %v", err)
+	}
+
+	deleted, err := DeleteResolvedMeso(db, other.Id())(roomId, ownerId)
+	if err != nil {
+		t.Fatalf("foreign DeleteResolvedMeso: %v", err)
+	}
+	if deleted {
+		t.Fatal("a foreign tenant deleted the row")
+	}
+	if _, found := mesoOf(t, db, te, roomId, ownerId); !found {
+		t.Fatal("the owning tenant's row is gone")
+	}
+}
+
+// TestArmingAStakeConcurrentlyWithADeleteKeepsTheStakesRow pins why the two
+// conditions live in the DELETE's WHERE clause rather than in a read the caller
+// made first.
+//
+// The two callers are real and independent: a teardown retiring a row it has just
+// refunded, and a stage arming a fresh stake against the same (room, owner). A
+// read-then-delete lets the teardown observe "resolved", the stage arm, and the
+// teardown then delete the row the stage is relying on — the player is debited
+// with nothing durable left to resolve or refund the debit.
+//
+// The invariant is stated as the thing that must never happen: whichever order
+// the two land in, a stake that was armed is still findable by its id. If the
+// delete wins the row goes and ArmMesoStake — an upsert — re-creates it; if the
+// arm wins the delete matches nothing.
+//
+// The test database is single-connection sqlite, so what is exercised is the
+// predicate rather than Postgres row locking. That is the same thing production
+// relies on: the decision is in the statement, not in an earlier read.
+func TestArmingAStakeConcurrentlyWithADeleteKeepsTheStakesRow(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	roomId := uuid.New()
+	ownerId := character.Id(100)
+	stakeId := uuid.New()
+	if err := UpsertMeso(db, te)(roomId, ownerId, 0); err != nil {
+		t.Fatalf("UpsertMeso: %v", err)
+	}
+
+	var start sync.WaitGroup
+	start.Add(1)
+	var done sync.WaitGroup
+	var deleteErr, armErr error
+	done.Add(2)
+	go func() {
+		defer done.Done()
+		start.Wait()
+		_, deleteErr = DeleteResolvedMeso(db, te.Id())(roomId, ownerId)
+	}()
+	go func() {
+		defer done.Done()
+		start.Wait()
+		armErr = ArmMesoStake(db, te)(roomId, ownerId, stakeId, 900, 900)
+	}()
+	start.Done()
+	done.Wait()
+
+	if deleteErr != nil {
+		t.Fatalf("DeleteResolvedMeso: %v", deleteErr)
+	}
+	if armErr != nil {
+		t.Fatalf("ArmMesoStake: %v", armErr)
+	}
+
+	got, found, err := MesoStakeById(db)(stakeId)
+	if err != nil {
+		t.Fatalf("MesoStakeById: %v", err)
+	}
+	if !found {
+		t.Fatal("the armed stake lost its row to a concurrent delete; its terminal status has nothing to resolve against and the player's debit is stranded")
+	}
+	if got.PendingAmount() != 900 || got.PendingDelta() != 900 {
+		t.Errorf("surviving stake: got amount %d delta %d, want 900/900", got.PendingAmount(), got.PendingDelta())
+	}
+}
+
+// mesoOf reads back one participant's escrow meso row.
+func mesoOf(t *testing.T, db *gorm.DB, te tenant.Model, roomId uuid.UUID, ownerId character.Id) (MesoModel, bool) {
+	t.Helper()
+	rows, err := MesosByRoom(db, te.Id())(roomId)
+	if err != nil {
+		t.Fatalf("MesosByRoom: %v", err)
+	}
+	for _, r := range rows {
+		if r.OwnerId() == ownerId {
+			return r, true
+		}
+	}
+	return MesoModel{}, false
+}
+
 // TestClaimItemForReturnIsWonByExactlyOneCaller pins the compare-and-set that
 // stops one escrow row being returned twice.
 //

@@ -295,3 +295,34 @@ func DeleteMeso(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, ownerId 
 			Delete(&MesoEntity{}).Error
 	}
 }
+
+// DeleteResolvedMeso removes a participant's escrow meso row ONLY IF it is fully
+// resolved — nothing escrowed and no stake in flight — and reports whether a row
+// actually went.
+//
+// A meso row exists to record custody. Once Amount is zero and PendingStakeId is
+// the none sentinel it records none: no unwind will read it, no terminal status
+// will resolve against it, and every later boot sweep pays to read it again
+// (AllMesos is unfiltered, so that cost grows with lifetime trade volume). Worse,
+// a row left behind carrying a STALE non-zero total is read by the boot sweep as
+// a stranded asset and refunded a second time, so retiring the row is a
+// correctness rule and not only a housekeeping one.
+//
+// Both halves of "resolved" are tested INSIDE the DELETE's WHERE clause rather
+// than by a read the caller made first, for the same reason CommitMesoStake's
+// compare-and-set is: a stage that arms a fresh stake against this row races
+// every caller here, and a read-then-delete would drop the row the arming stage
+// is relying on — stranding a debit the player has already been charged. Under
+// the statement, an arm that lands first simply makes the delete match nothing,
+// and an arm that lands second re-creates the row it needs (ArmMesoStake is an
+// upsert).
+//
+// The delete is unconditionally HARD, like DeleteMeso: MesoEntity carries no
+// soft-delete column and there is nothing to compensate.
+func DeleteResolvedMeso(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, ownerId character.Id) (bool, error) {
+	return func(roomId uuid.UUID, ownerId character.Id) (bool, error) {
+		res := db.Where("tenant_id = ? AND room_id = ? AND owner_id = ? AND amount = 0 AND pending_stake_id = ?", tenantId, roomId, ownerId, uuid.Nil).
+			Delete(&MesoEntity{})
+		return res.RowsAffected > 0, res.Error
+	}
+}

@@ -1271,10 +1271,21 @@ func ReconcileEscrow(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, own
 // in flight resolves against this row by its pending_stake_id, and deleting it
 // would strand a debit the player has already been charged with no record left
 // to refund from (see resolveMesoStake's room-gone branch).
+//
+// A row with NO stake in flight is then retired outright, because zero is all it
+// will ever say again: the refund has been submitted, no terminal status will
+// come looking for it, and every later boot sweep would pay to read a row that
+// can only be skipped. The delete is conditional on both halves of that
+// (DeleteResolvedMeso), so it is the statement — not the zeroing above it — that
+// decides whether a stake is in flight, and a stage arming one concurrently keeps
+// its row.
 func (p *ProcessorImpl) clearRefundedMesos(roomId uuid.UUID, mesos []sharedsaga.TradeUnwindMeso) error {
 	ep := escrow.NewProcessor(p.l, p.ctx, p.db)
 	for _, m := range mesos {
 		if err := ep.UpsertMeso(roomId, m.CharacterId, 0); err != nil {
+			return err
+		}
+		if _, err := ep.DeleteResolvedMeso(roomId, m.CharacterId); err != nil {
 			return err
 		}
 	}

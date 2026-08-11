@@ -28,6 +28,7 @@ This service maintains a Redis-backed registry of active monster instances acros
 | MAPS | atlas-maps REST API base URL |
 | EVENT_TOPIC_MAP_STATUS | Kafka topic for map status events (consumed) |
 | EVENT_TOPIC_MONSTER_STATUS | Kafka topic for monster status events (produced) |
+| EVENT_TOPIC_MONSTER_CATCH | Kafka topic for bridle (catch-item) capture outcomes (produced) |
 | EVENT_TOPIC_DATA | Kafka topic for atlas-data cache-invalidation events (consumed) |
 | COMMAND_TOPIC_MONSTER | Kafka topic for monster commands (consumed) |
 | COMMAND_TOPIC_MONSTER_MOVEMENT | Kafka topic for monster movement commands (consumed) |

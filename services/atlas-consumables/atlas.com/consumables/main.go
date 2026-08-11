@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-consumables/catchdelay"
 	assetconsumer "atlas-consumables/kafka/consumer/asset"
 	"atlas-consumables/kafka/consumer/character"
 	"atlas-consumables/kafka/consumer/compartment"
@@ -30,6 +31,7 @@ func main() {
 
 	rc := atlas.Connect(l)
 	mapCharacter.InitRegistry(rc)
+	catchdelay.InitRegistry(rc)
 
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)

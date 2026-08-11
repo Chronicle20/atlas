@@ -80,6 +80,7 @@ type Processor interface {
 	RequestItemReward(characterId uint32, itemId item2.Id, source int16) error
 	RequestViciousHammer(characterId uint32, hammerSlot int16, equipSlot int16) error
 	RequestSkillBookUse(f field.Model, characterId uint32, slot int16, itemId item2.Id) error
+	RequestCatchMonster(f field.Model, characterId uint32, slot int16, itemId item2.Id, monsterUniqueId uint32) error
 }
 
 type ProcessorImpl struct {

@@ -141,6 +141,23 @@ func RewardWonEventProvider(characterId character.Id, boxItemId uint32, itemId u
 	return producer.SingleMessageProvider(key, value)
 }
 
+// CatchFailedEventProvider builds the CATCH_FAILED event emitted when a bridle
+// (catch-item) request is rejected pre-reserve. Cause is a semantic string
+// (CatchCauseUseDelay / CatchCauseInventoryFull / CatchCauseInvalidItem) —
+// atlas-channel resolves it to the client's wire reason byte (DOM-25).
+func CatchFailedEventProvider(characterId character.Id, itemId uint32, cause string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &consumable.Event[consumable.CatchFailedBody]{
+		CharacterId: characterId,
+		Type:        consumable.EventTypeCatchFailed,
+		Body: consumable.CatchFailedBody{
+			ItemId: itemId,
+			Cause:  cause,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 // SkillBookResultEventProvider builds the SKILL_BOOK_RESULT event (task-125),
 // keyed by characterId. Emitted exactly once per skill-book request: on
 // validation rejection (canUse=false, immediately) or on the saga's terminal

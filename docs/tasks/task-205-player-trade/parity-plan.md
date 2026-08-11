@@ -1,7 +1,8 @@
 # Task-205 follow-on — meso custody parity
 
-**Status:** prerequisites P1 and P2 settled; **Task 1 done** (and with it the
-pre-CAS half of Task 2); Tasks 2–7 outstanding.
+**Status:** prerequisites P1 and P2 settled; **Tasks 1 and 2 done**; Tasks 3–7
+outstanding. Task 3 is BLOCKING — see P2.
+
 Written 2026-08-11 as a handoff from the session that produced commits
 `a3279ee73`..`0bf941fc5`.
 
@@ -204,26 +205,56 @@ message stating the consequence → restored → green):
   the defect as a contract — asserting the superseded stake's commit must report
   false. Its replacement is `TestArmMesoStakeKeepsPriorStakeOutstanding`.
 
-### Task 2 — Defence B: a durable claim latch for meso rows
+### Task 2 — Defence B: a durable claim latch for meso rows — **DONE**
 
-**Partly done by Task 1.** The `discardResolvedMeso` half is fixed: it is now
-`discardOrphanedMeso` and discharges by relative subtraction rather than
+Both halves are now closed. The `discardResolvedMeso` half went with Task 1: it
+is `discardOrphanedMeso` and discharges by relative subtraction rather than
 deciding from a pre-CAS read and assigning, and `CommitMesoStake` no longer
-assigns at all. What REMAINS is the first half below — the two return paths
-racing one row with no arbitration.
+assigns at all. The second half — the two return paths racing one row — is
+below.
 
-**The defect (relayed, unconfirmed).** The boot sweep and the orphaned-stake
+**The defect (relayed; the racing-paths trace confirmed by reading all three
+unwind call sites).** The boot sweep and the orphaned-stake
 refund both act on the same meso row with no arbitration; the item twin claims
 on both paths via `returning_at`.
 
-**The fix.** Give the meso row the same latch discipline the item row has, and
-make every decision that ends meso custody read its inputs from the same
-statement that acts on them. **P1 settled this as READ COMMITTED, so every one
-of these windows is real** — no read-then-act pair may be left unfenced on the
-grounds that isolation closes it.
+**The fix — DONE.** `ClaimMesoForReturn` is the meso twin of
+`ClaimItemForReturn`: it takes the participant's whole escrowed total and
+reports what THIS caller won, zero if another path got there first. All three
+unwind paths (`emitUnwind`, `unwindRecord`, `unwindStranded`) now CLAIM instead
+of reading a total and zeroing afterwards.
 
-**Tests.** Two paths racing one row refund exactly once; the pre-CAS
-misclassification is unreachable. Mutation-verify both.
+Two implementation notes that were not free choices:
+
+- **It is a row lock, not `RETURNING`.** An UPDATE's `RETURNING` yields the row
+  as it stands AFTER the assignment — the zero — not the amount taken. So the
+  claim does `SELECT … FOR UPDATE` and zeroes inside the same transaction; a
+  competitor blocks on the lock and then reads the zero. **P1 settled the
+  isolation as READ COMMITTED, so this window was real** and no read-then-act
+  pair could be left unfenced on the grounds that isolation closes it.
+- **In `unwindStranded` the field lookup happens BEFORE the claim.** Claiming
+  zeroes the row, so a `FieldOf` failure after it would drop the only record
+  that the meso is owed. Leaving the row unclaimed hands it to the next sweep
+  intact.
+
+`clearRefundedMesos` became `retireClaimedMesos` and **no longer zeroes** — the
+claim already did, under the lock. Re-assigning zero afterwards was worse than
+redundant: a sibling stake committing its delta in between would have had that
+delta silently clobbered. Only the conditional `DeleteResolvedMeso` remains.
+
+**Tests.** `TestClaimMesoForReturnIsExclusive` (mutation-verified: drop the
+zeroing and the second claim takes 5000 again, "the player would be refunded
+twice") and `TestClaimMesoForReturnIgnoresANonPositiveRow`.
+
+**Honest limit on the verification, stated rather than papered over.** The
+double refund needs two transactions interleaving a read and a write.
+`databasetest.NewInMemoryTenantDB` caps sqlite at `MaxOpenConns(1)`, so
+transactions cannot interleave there and a concurrency test could not fail
+against the bug — which by this plan's own rule makes it not a test of it. The
+guarantee is therefore pinned at the level where it is genuinely decidable: the
+claim is exclusive, proven by two sequential claims. The interleaving itself is
+closed by the row lock, which is a Postgres behaviour this harness cannot
+exercise.
 
 ### Task 3 — Defence C: a settlement-time custody check for meso — **BLOCKING** (P2)
 

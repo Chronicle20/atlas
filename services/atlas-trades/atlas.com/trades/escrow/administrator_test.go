@@ -1143,3 +1143,85 @@ func TestSupersededMesoStakeFailureDoesNotMint(t *testing.T) {
 		t.Errorf("only 500 was actually debited; escrow holds %d — %d meso minted", got, int64(got)-500)
 	}
 }
+
+// TestClaimMesoForReturnIsExclusive is the meso twin of
+// TestClaimItemForReturn's contract, and it exists because meso had no
+// arbitration at all.
+//
+// Two independent paths can each decide to refund one participant's escrowed
+// meso: a room teardown reading MesosByRoom, and the boot/ticker sweep reading
+// AllMesos. Both build an unwind from the total they read and only afterwards
+// zero the row, so under READ COMMITTED — the isolation this fleet runs at —
+// both can read the same 5000 and both submit a refund for it. Nothing
+// downstream dedupes them: a meso unwind leg is a bare award_mesos credit.
+//
+// The claim collapses read-and-take into ONE statement, so the amount is
+// handed to exactly one caller.
+func TestClaimMesoForReturnIsExclusive(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	roomId := uuid.New()
+	ownerId := character.Id(100)
+	if err := UpsertMeso(db, te)(roomId, ownerId, 5_000); err != nil {
+		t.Fatalf("UpsertMeso: %v", err)
+	}
+
+	got, ok, err := ClaimMesoForReturn(db, te.Id())(roomId, ownerId)
+	if err != nil {
+		t.Fatalf("first ClaimMesoForReturn: %v", err)
+	}
+	if !ok || got != 5_000 {
+		t.Fatalf("first claim: got %d (claimed %v), want the whole 5000", got, ok)
+	}
+
+	// The second path arrives and must come away with nothing to refund.
+	got, ok, err = ClaimMesoForReturn(db, te.Id())(roomId, ownerId)
+	if err != nil {
+		t.Fatalf("second ClaimMesoForReturn: %v", err)
+	}
+	if ok || got != 0 {
+		t.Fatalf("second claim took %d (claimed %v); the player would be refunded twice", got, ok)
+	}
+
+	// The row itself survives the claim — a stake still in flight resolves
+	// against it — but records nothing.
+	held, found, err := MesoByOwner(db, te.Id())(roomId, ownerId)
+	if err != nil {
+		t.Fatalf("MesoByOwner: %v", err)
+	}
+	if !found || held != 0 {
+		t.Errorf("after the claim the row holds %d (found %v), want 0 and still present", held, found)
+	}
+}
+
+// TestClaimMesoForReturnIgnoresANonPositiveRow pins that there is nothing to
+// claim when nothing is owed. A zero row holds no custody, and a negative one
+// means more reduction has been confirmed than increase so far.
+func TestClaimMesoForReturnIgnoresANonPositiveRow(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	roomId := uuid.New()
+	for _, tc := range []struct {
+		name    string
+		balance int64
+		owner   character.Id
+	}{
+		{"zero", 0, 100},
+		{"negative", -500, 200},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := UpsertMeso(db, te)(roomId, tc.owner, tc.balance); err != nil {
+				t.Fatalf("UpsertMeso: %v", err)
+			}
+			got, ok, err := ClaimMesoForReturn(db, te.Id())(roomId, tc.owner)
+			if err != nil {
+				t.Fatalf("ClaimMesoForReturn: %v", err)
+			}
+			if ok || got != 0 {
+				t.Errorf("claimed %d (%v) from a %s row, want nothing", got, ok, tc.name)
+			}
+		})
+	}
+}

@@ -42,7 +42,12 @@ type Processor interface {
 	DeleteMeso(roomId uuid.UUID, ownerId character.Id) error
 
 	// DischargeMeso subtracts an amount whose custody has just ended.
+	//
+	// ClaimMesoForReturn is the arbitration between the two paths that can each
+	// decide to refund one row; it is not a saga step either. See its doc
+	// comment for why a plain read-then-refund paid the player twice.
 	DischargeMeso(roomId uuid.UUID, ownerId character.Id, amount int32) error
+	ClaimMesoForReturn(roomId uuid.UUID, ownerId character.Id) (int64, bool, error)
 	DeleteResolvedMeso(roomId uuid.UUID, ownerId character.Id) (bool, error)
 
 	// ArmMesoStake, CommitMesoStake, AbandonMesoStake, and MesoStakeById are
@@ -141,6 +146,10 @@ func (p *ProcessorImpl) DeleteMeso(roomId uuid.UUID, ownerId character.Id) error
 
 func (p *ProcessorImpl) DischargeMeso(roomId uuid.UUID, ownerId character.Id, amount int32) error {
 	return DischargeMeso(p.db, p.t.Id())(roomId, ownerId, amount)
+}
+
+func (p *ProcessorImpl) ClaimMesoForReturn(roomId uuid.UUID, ownerId character.Id) (int64, bool, error) {
+	return ClaimMesoForReturn(p.db, p.t.Id())(roomId, ownerId)
 }
 
 func (p *ProcessorImpl) DeleteResolvedMeso(roomId uuid.UUID, ownerId character.Id) (bool, error) {

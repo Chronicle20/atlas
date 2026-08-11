@@ -1,6 +1,7 @@
 package escrow
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -319,6 +320,66 @@ func AbandonMesoStake(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, ow
 		res := db.Where("id = ? AND tenant_id = ? AND room_id = ? AND owner_id = ?", stakeId, tenantId, roomId, ownerId).
 			Delete(&MesoStakeEntity{})
 		return res.RowsAffected > 0, res.Error
+	}
+}
+
+// ClaimMesoForReturn takes a participant's whole escrowed total for refund and
+// reports what THIS caller won, zero if another path got there first. It is the
+// meso twin of ClaimItemForReturn.
+//
+// Two independent paths can each decide to refund one row: a room teardown
+// reading MesosByRoom, and the boot/ticker sweep reading AllMesos. Both used to
+// build their unwind from a total they had READ and only zero the row
+// afterwards, so under READ COMMITTED both could read the same total and both
+// submit a refund for it. Nothing downstream dedupes them — a meso unwind leg is
+// a bare award_mesos credit, with no custody row to be already gone — so the
+// player was paid twice.
+//
+// Read-and-take is therefore made indivisible by taking an exclusive ROW LOCK
+// on the SELECT (`FOR UPDATE`) and zeroing inside the same transaction. A
+// competitor's claim blocks on the lock until this transaction commits, and
+// then reads the zero — so the amount is handed to exactly one caller. A
+// RETURNING clause cannot do this on its own: an UPDATE returns the row as it
+// stands AFTER the assignment, which is the zero, not the amount taken.
+//
+// The caller must submit the refund in the same transaction that claims, which
+// every caller does by running inside emit's — otherwise a crash between the two
+// loses the claimed meso with no record that it was ever owed.
+//
+// The row SURVIVES, zeroed, rather than being deleted: a stake still in flight
+// resolves against it, and deleting it would strand a debit the player has
+// already been charged. Retiring it is DeleteResolvedMeso's job, conditional on
+// there being no stake left.
+//
+// A non-positive row yields nothing. Zero holds no custody, and negative means
+// more reduction has been confirmed than increase so far (see MesoEntity).
+func ClaimMesoForReturn(db *gorm.DB, tenantId uuid.UUID) func(roomId uuid.UUID, ownerId character.Id) (int64, bool, error) {
+	return func(roomId uuid.UUID, ownerId character.Id) (int64, bool, error) {
+		var claimed int64
+		err := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+			var e MesoEntity
+			err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+				Where("tenant_id = ? AND room_id = ? AND owner_id = ?", tenantId, roomId, ownerId).
+				First(&e).Error
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return nil
+				}
+				return err
+			}
+			if e.Amount <= 0 {
+				return nil
+			}
+			res := tx.Model(&MesoEntity{}).
+				Where("tenant_id = ? AND room_id = ? AND owner_id = ?", tenantId, roomId, ownerId).
+				Updates(map[string]interface{}{"amount": 0, "updated_at": time.Now()})
+			if res.Error != nil {
+				return res.Error
+			}
+			claimed = e.Amount
+			return nil
+		})
+		return claimed, claimed > 0, err
 	}
 }
 

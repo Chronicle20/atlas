@@ -619,6 +619,8 @@ func (p *ProcessorImpl) claimItemsForReturn(items []escrow.ItemModel) ([]escrow.
 // Most cancelled trades are empty, and a saga per empty teardown would be pure
 // noise.
 func (p *ProcessorImpl) emitUnwind(mb *message.Buffer, room Room) error {
+	roomId := room.Id()
+	ep := escrow.NewProcessor(p.l, p.ctx, p.db)
 	items, err := p.esc.ItemsByRoom(room.Id())
 	if err != nil {
 		return err
@@ -643,23 +645,29 @@ func (p *ProcessorImpl) emitUnwind(mb *message.Buffer, room Room) error {
 		})
 	}
 	for _, m := range mesos {
-		// Non-positive means nothing is owed: a zero row holds no custody, and a
-		// negative one means more reduction has been confirmed than increase so
-		// far (see MesoEntity on why the confirmed total is signed).
-		if m.Amount() <= 0 {
+		// CLAIM rather than read. Two paths can each decide to refund this row
+		// — a teardown here and the boot/ticker sweep — and building the
+		// payload from a figure merely read let both submit a refund for the
+		// same total under READ COMMITTED. The claim zeroes and takes it in one
+		// locked step, so at most one of them carries it.
+		amount, claimed, err := ep.ClaimMesoForReturn(roomId, m.OwnerId())
+		if err != nil {
+			return err
+		}
+		if !claimed {
 			continue
 		}
 		payload.Mesos = append(payload.Mesos, sharedsaga.TradeUnwindMeso{
 			CharacterId: m.OwnerId(),
 			WorldId:     room.Field().WorldId(),
 			ChannelId:   room.Field().ChannelId(),
-			Amount:      uint32(m.Amount()),
+			Amount:      uint32(amount),
 		})
 	}
 	if len(payload.Items) == 0 && len(payload.Mesos) == 0 {
 		return nil
 	}
-	if err := p.clearRefundedMesos(room.Id(), payload.Mesos); err != nil {
+	if err := p.retireClaimedMesos(roomId, payload.Mesos); err != nil {
 		return err
 	}
 	return p.sgp.Unwind(mb)(payload.TransactionId, payload)
@@ -1037,6 +1045,8 @@ func (p *ProcessorImpl) completeSettlement(mb *message.Buffer, txId uuid.UUID, s
 // emitUnwind claims: a row another return path already took must not be handed
 // back a second time.
 func (p *ProcessorImpl) unwindRecord(mb *message.Buffer, s settlement.Model) error {
+	roomId := s.RoomId()
+	ep := escrow.NewProcessor(p.l, p.ctx, p.db)
 	items, err := p.esc.ItemsByRoom(s.RoomId())
 	if err != nil {
 		return err
@@ -1061,23 +1071,29 @@ func (p *ProcessorImpl) unwindRecord(mb *message.Buffer, s settlement.Model) err
 		})
 	}
 	for _, m := range mesos {
-		// Non-positive means nothing is owed: a zero row holds no custody, and a
-		// negative one means more reduction has been confirmed than increase so
-		// far (see MesoEntity on why the confirmed total is signed).
-		if m.Amount() <= 0 {
+		// CLAIM rather than read. Two paths can each decide to refund this row
+		// — a teardown here and the boot/ticker sweep — and building the
+		// payload from a figure merely read let both submit a refund for the
+		// same total under READ COMMITTED. The claim zeroes and takes it in one
+		// locked step, so at most one of them carries it.
+		amount, claimed, err := ep.ClaimMesoForReturn(roomId, m.OwnerId())
+		if err != nil {
+			return err
+		}
+		if !claimed {
 			continue
 		}
 		payload.Mesos = append(payload.Mesos, sharedsaga.TradeUnwindMeso{
 			CharacterId: m.OwnerId(),
 			WorldId:     s.Field().WorldId(),
 			ChannelId:   s.Field().ChannelId(),
-			Amount:      uint32(m.Amount()),
+			Amount:      uint32(amount),
 		})
 	}
 	if len(payload.Items) == 0 && len(payload.Mesos) == 0 {
 		return nil
 	}
-	if err := p.clearRefundedMesos(s.RoomId(), payload.Mesos); err != nil {
+	if err := p.retireClaimedMesos(roomId, payload.Mesos); err != nil {
 		return err
 	}
 	return p.sgp.Unwind(mb)(payload.TransactionId, payload)
@@ -1288,32 +1304,33 @@ func ReconcileEscrow(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, own
 	return nil
 }
 
-// clearRefundedMesos zeroes the escrowed total of every meso row an unwind is
-// about to refund.
+// retireClaimedMesos removes the rows an unwind has just CLAIMED and is about
+// to refund, where nothing is left outstanding on them.
 //
-// Somebody has to, because the unwind saga does not: expandTradeUnwind releases
-// each ITEM (which deletes its custody row) but a meso leg is a bare
+// Somebody has to retire them, because the unwind saga does not: expandTradeUnwind
+// releases each ITEM (which deletes its custody row) but a meso leg is a bare
 // award_mesos, so without this the row survives its own refund and the next
-// sweep — a second teardown, or the boot pass — refunds it again.
+// sweep — a second teardown, or the boot pass — reads it again.
 //
-// The row is ZEROED rather than deleted, and that is load-bearing: a stake still
-// in flight resolves against this row by its pending_stake_id, and deleting it
-// would strand a debit the player has already been charged with no record left
-// to refund from (see resolveMesoStake's room-gone branch).
+// It does NOT zero, because ClaimMesoForReturn already did, under a row lock, as
+// the very act of taking the amount. Re-assigning zero here would be worse than
+// redundant: a sibling stake committing its delta between the claim and this
+// call would have that delta silently clobbered.
 //
-// A row with NO stake in flight is then retired outright, because zero is all it
-// will ever say again: the refund has been submitted, no terminal status will
-// come looking for it, and every later boot sweep would pay to read a row that
-// can only be skipped. The delete is conditional on both halves of that
-// (DeleteResolvedMeso), so it is the statement — not the zeroing above it — that
-// decides whether a stake is in flight, and a stage arming one concurrently keeps
-// its row.
-func (p *ProcessorImpl) clearRefundedMesos(roomId uuid.UUID, mesos []sharedsaga.TradeUnwindMeso) error {
-	owners := make([]character.Id, 0, len(mesos))
+// The delete is CONDITIONAL (DeleteResolvedMeso) and that is load-bearing: a
+// stake still in flight resolves against this row, and deleting it would strand
+// a debit the player has already been charged with no record left to refund from
+// (see resolveMesoStake's room-gone branch). Because the condition lives inside
+// the DELETE's own WHERE clause, a stage arming a stake concurrently keeps its
+// row.
+func (p *ProcessorImpl) retireClaimedMesos(roomId uuid.UUID, mesos []sharedsaga.TradeUnwindMeso) error {
+	ep := escrow.NewProcessor(p.l, p.ctx, p.db)
 	for _, m := range mesos {
-		owners = append(owners, m.CharacterId)
+		if _, err := ep.DeleteResolvedMeso(roomId, m.CharacterId); err != nil {
+			return err
+		}
 	}
-	return p.retireEscrowMesos(roomId, owners)
+	return nil
 }
 
 // dischargeSettledMesos retires the room's escrow meso rows once its settlement
@@ -1402,23 +1419,37 @@ func (p *ProcessorImpl) unwindStranded(mb *message.Buffer, r *strandedRoom) erro
 			Item:    escrowItemPayload(i),
 		})
 	}
+	ep := escrow.NewProcessor(p.l, p.ctx, p.db)
 	for _, m := range r.mesos {
+		// The field is resolved BEFORE the claim, and the order is
+		// load-bearing: claiming zeroes the row, so a lookup that failed after
+		// it would drop the only record that this meso is owed. Leaving the row
+		// unclaimed hands it to the next sweep intact.
 		f, ferr := p.locp.FieldOf(m.OwnerId())
 		if ferr != nil {
 			p.l.WithError(ferr).Errorf("Unable to locate character [%d] to refund [%d] escrowed meso from dead trade room [%s]. Left for the next boot.", m.OwnerId(), m.Amount(), r.roomId.String())
+			continue
+		}
+		// See unwindRoom: claim rather than read, so a teardown racing this
+		// sweep cannot refund the same total twice.
+		amount, claimed, cerr := ep.ClaimMesoForReturn(r.roomId, m.OwnerId())
+		if cerr != nil {
+			return cerr
+		}
+		if !claimed {
 			continue
 		}
 		payload.Mesos = append(payload.Mesos, sharedsaga.TradeUnwindMeso{
 			CharacterId: m.OwnerId(),
 			WorldId:     f.WorldId(),
 			ChannelId:   f.ChannelId(),
-			Amount:      uint32(m.Amount()),
+			Amount:      uint32(amount),
 		})
 	}
 	if len(payload.Items) == 0 && len(payload.Mesos) == 0 {
 		return nil
 	}
-	if err := p.clearRefundedMesos(r.roomId, payload.Mesos); err != nil {
+	if err := p.retireClaimedMesos(r.roomId, payload.Mesos); err != nil {
 		return err
 	}
 	return p.sgp.Unwind(mb)(payload.TransactionId, payload)

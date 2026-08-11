@@ -20,6 +20,7 @@ const (
 	CommandRequestVegaScroll    = "REQUEST_VEGA_SCROLL"
 	CommandRequestViciousHammer = "REQUEST_VICIOUS_HAMMER"
 	CommandRequestSkillBookUse  = "REQUEST_SKILL_BOOK_USE"
+	CommandRequestCatchMonster  = "REQUEST_CATCH_MONSTER"
 )
 
 type Command[E any] struct {
@@ -66,6 +67,12 @@ type RequestVegaScrollBody struct {
 type RequestViciousHammerBody struct {
 	HammerSlot slot.Position `json:"hammerSlot"`
 	EquipSlot  slot.Position `json:"equipSlot"`
+}
+
+type RequestCatchMonsterBody struct {
+	Source          slot.Position `json:"source"`
+	ItemId          item.Id       `json:"itemId"`
+	MonsterUniqueId uint32        `json:"monsterUniqueId"`
 }
 
 const (

@@ -122,3 +122,62 @@ func (p *ProcessorImpl) catchError(characterId uint32, itemId item2.Id, cause st
 	}
 	return errors.New(cause)
 }
+
+// catchDecision is the pure branch the resolution handler takes. Keeping it
+// pure is what makes the commit/cancel contract testable without Kafka.
+type catchDecision struct {
+	commit bool
+	grant  bool
+	cancel bool
+}
+
+func catchOutcome(success bool) catchDecision {
+	if success {
+		return catchDecision{commit: true, grant: true}
+	}
+	return catchDecision{cancel: true}
+}
+
+// catchResolvedValidator matches only this attempt's CATCH_RESOLVED event.
+// Correlation is by (characterId, itemId) captured at reserve time rather than a
+// transaction id on the wire, so the CATCH command body stays minimal (FR-3.7).
+func catchResolvedValidator(characterId uint32, itemId item2.Id) message.Validator[monsterMsg.Event[monsterMsg.CatchResolvedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monsterMsg.Event[monsterMsg.CatchResolvedBody]) bool {
+		return e.Type == monsterMsg.EventMonsterCatchResolved &&
+			e.Body.CharacterId == characterId &&
+			e.Body.ItemId == uint32(itemId)
+	}
+}
+
+// catchResolutionHandler commits or cancels the reservation opened by
+// RequestCatchMonster. On success it grants the create item through the same
+// once-handler pair the reward-box flow uses, so a post-reserve creation failure
+// cancels correctly. On failure it cancels and the item is untouched (FR-3.9) —
+// and it emits NO consumable error event, because atlas-channel already renders
+// the failure from the monster CATCH_FAILED event and two unlock packets would
+// be sent otherwise.
+func catchResolutionHandler(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id, createItemId uint32) message.Handler[monsterMsg.Event[monsterMsg.CatchResolvedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monsterMsg.Event[monsterMsg.CatchResolvedBody]) {
+		p := NewProcessor(l, ctx).(*ProcessorImpl)
+		d := catchOutcome(e.Body.Success)
+
+		if d.cancel {
+			if cErr := p.cpp.CancelItemReservation(characterId, inventory2.TypeValueUse, transactionId, slot); cErr != nil {
+				l.WithError(cErr).Errorf("Unable to cancel catch reservation for character [%d] (transaction [%s]).", characterId, transactionId.String())
+			}
+			l.Debugf("Character [%d] catch failed (cause [%s]); item [%d] preserved.", characterId, e.Body.Cause, itemId)
+			return
+		}
+
+		if d.commit {
+			if cErr := p.cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot); cErr != nil {
+				l.WithError(cErr).Errorf("Catch succeeded but the item consume failed for character [%d] (transaction [%s]); needs ops intervention.", characterId, transactionId.String())
+			}
+		}
+		if d.grant {
+			if cErr := p.cpp.RequestCreateItem(transactionId, characterId, createItemId, 1, time.Time{}); cErr != nil {
+				l.WithError(cErr).Errorf("Catch succeeded but granting reward item [%d] failed for character [%d].", createItemId, characterId)
+			}
+		}
+	}
+}

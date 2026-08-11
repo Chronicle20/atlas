@@ -29,3 +29,28 @@ func TestValidateCatchItem(t *testing.T) {
 		})
 	}
 }
+
+// TestCatchOutcomeDecision pins the two-way branch the resolution handler takes,
+// separated from its Kafka plumbing so it is testable without a broker:
+// success commits the reservation and grants the create item; failure cancels
+// the reservation and grants nothing (FR-3.8, FR-3.9).
+func TestCatchOutcomeDecision(t *testing.T) {
+	cases := []struct {
+		name       string
+		success    bool
+		wantCommit bool
+		wantGrant  bool
+		wantCancel bool
+	}{
+		{"a successful catch", true, true, true, false},
+		{"a failed catch", false, false, false, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := catchOutcome(tc.success)
+			if d.commit != tc.wantCommit || d.grant != tc.wantGrant || d.cancel != tc.wantCancel {
+				t.Fatalf("catchOutcome(%t) = %+v", tc.success, d)
+			}
+		})
+	}
+}

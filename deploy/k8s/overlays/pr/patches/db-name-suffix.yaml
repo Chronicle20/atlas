@@ -122,19 +122,6 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: atlas-reward-pools
-spec:
-  template:
-    spec:
-      containers:
-        - name: gachapons
-          env:
-            - name: DB_NAME
-              value: "atlas-reward-pools-PLACEHOLDER_ATLAS_ENV"
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
   name: atlas-guilds
 spec:
   template:
@@ -378,6 +365,19 @@ spec:
           env:
             - name: DB_NAME
               value: "atlas-reactor-actions-PLACEHOLDER_ATLAS_ENV"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-reward-pools
+spec:
+  template:
+    spec:
+      containers:
+        - name: gachapons
+          env:
+            - name: DB_NAME
+              value: "atlas-reward-pools-PLACEHOLDER_ATLAS_ENV"
 ---
 apiVersion: apps/v1
 kind: Deployment

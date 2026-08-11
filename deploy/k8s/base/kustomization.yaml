@@ -30,6 +30,7 @@ resources:
   - atlas-kafka-precreate.yaml
   - atlas-invites.yaml
   - atlas-keys.yaml
+  - atlas-kites.yaml
   - atlas-login.yaml
   - atlas-map-actions.yaml
   - atlas-maps.yaml

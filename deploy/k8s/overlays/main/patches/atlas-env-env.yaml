@@ -340,6 +340,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-kites
+spec:
+  template:
+    spec:
+      containers:
+        - name: kites
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-login
 spec:
   template:

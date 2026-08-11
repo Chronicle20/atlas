@@ -214,6 +214,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-kites",
+      "type": "go-service",
+      "path": "services/atlas-kites",
+      "module_path": "services/atlas-kites/atlas.com/kites",
+      "docker_image": "ghcr.io/chronicle20/atlas-kites/atlas-kites",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-login",
       "type": "go-service",
       "path": "services/atlas-login",

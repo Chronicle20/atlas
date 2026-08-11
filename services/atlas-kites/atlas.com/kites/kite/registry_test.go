@@ -1,6 +1,7 @@
 package kite
 
 import (
+	"atlas-kites/character"
 	"context"
 	"testing"
 	"time"
@@ -10,8 +11,13 @@ import (
 	goredis "github.com/redis/go-redis/v9"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
+
+func fieldWithMap(mapId _map.Id) field.Model {
+	return field.NewBuilder(0, 1, mapId).SetInstance(uuid.Nil).Build()
+}
 
 func testContext(t *testing.T) (context.Context, tenant.Model) {
 	t.Helper()
@@ -25,7 +31,12 @@ func testContext(t *testing.T) (context.Context, tenant.Model) {
 func testRegistry(t *testing.T) {
 	t.Helper()
 	s := miniredis.RunT(t)
-	InitRegistry(goredis.NewClient(&goredis.Options{Addr: s.Addr()}))
+	client := goredis.NewClient(&goredis.Options{Addr: s.Addr()})
+	InitRegistry(client)
+	// InMapModelProvider composes the character index with kite ownership, so
+	// every test that exercises Create/GetInMap needs the character registry
+	// initialised too, sharing the same miniredis instance.
+	character.InitRegistry(client)
 }
 
 func testField() field.Model {

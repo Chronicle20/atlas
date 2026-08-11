@@ -1673,10 +1673,14 @@ func TestSettledMesoIsConservedAcrossTheBootSweep(t *testing.T) {
 // discharge, and it is the reason the row is ZEROED before it is conditionally
 // deleted rather than deleted outright.
 //
-// The stake armed here is one whose award_mesos was still in flight when the
-// settlement completed — armed before the confirm froze staging, terminal status
-// not yet delivered. Its debit has landed on the player and the trade did not
-// carry it, so the row is the only record from which it can be handed back.
+// The stake is armed DIRECTLY against a room that is already settling, which is
+// no longer reachable through the normal flow: settlementPayload now refuses to
+// settle a side with anything in flight (see
+// TestSettlementRefusesWhileAMesoStakeIsInFlight). It is kept as a defensive
+// test of the DISCHARGE, which must still hold for any stake that outlives its
+// room by another route — the orphan path resolves against exactly this row.
+// Its debit has landed on the player and the trade did not carry it, so the row
+// is the only record from which it can be handed back.
 func TestSettlementSuccessKeepsARowWhoseStakeIsStillInFlight(t *testing.T) {
 	const staked = uint32(5000)
 	const inFlightTotal = uint32(9000)
@@ -1751,5 +1755,55 @@ func TestSettlementFailureStillRefundsTheEscrowedMeso(t *testing.T) {
 	}
 	if rows := escrowMesoRowsOf(t, p, roomId); len(rows) != 0 {
 		t.Errorf("escrow meso rows after a refunded failure: got %d, want 0", len(rows))
+	}
+}
+
+// TestSettlementRefusesWhileAMesoStakeIsInFlight is Defence C for the meso
+// column: the settle-time check that the custody row still says what the room
+// is about to deliver on its behalf.
+//
+// The room's mesoStaged only advances when a stake RESOLVES, so a stake still
+// in flight makes the room disagree with custody. Which way it goes is pure
+// timing: a reduction in flight means the giver holds less than the room
+// believes and delivering the room's figure MINTS the difference; a raise in
+// flight means the debit lands after the room has settled and discharged, and
+// the difference is DESTROYED.
+//
+// An unmodified v83 client can reach this state. CTradingRoomDlg::Trade sends
+// TRADE_CONFIRM without a CanSendExclRequest gate, so nothing orders the confirm
+// after the staging round trip it raced.
+//
+// The item column has always been protected here — settlementPayload errors on
+// a staged item with no escrow row. This is the same guarantee for a balance.
+func TestSettlementRefusesWhileAMesoStakeIsInFlight(t *testing.T) {
+	const staked = uint32(5_000)
+
+	for name, delta := range map[string]int32{
+		"a reduction in flight would mint":     -1_500,
+		"a raise in flight would be destroyed": 1_500,
+	} {
+		t.Run(name, func(t *testing.T) {
+			p, e := testConfirmedRoomWithMeso(t, 100, staked)
+			room, _ := p.RoomForCharacter(100)
+
+			// Armed after the confirm, before attestation resolves it — the
+			// window the client leaves open.
+			if err := escrow.ArmMesoStake(p.db, p.t)(room.Id(), 100, uuid.New(), staked, delta); err != nil {
+				t.Fatalf("arm the in-flight stake: %v", err)
+			}
+
+			for _, id := range []character.Id{100, 200} {
+				if err := p.Attest(uuid.New(), id, nil); err != nil {
+					// Refusing by returning an error here is a legitimate
+					// outcome too; what must not happen is a settlement saga
+					// carrying the room's stale figure.
+					t.Logf("attest for %d refused: %v", id, err)
+				}
+			}
+
+			if got := sagasWithAction(t, e, sharedsaga.TradeSettlement); len(got) != 0 {
+				t.Fatalf("a settlement saga was submitted with %d meso still in flight; it would deliver %d against custody that is still moving", delta, staked)
+			}
+		})
 	}
 }

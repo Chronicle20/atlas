@@ -523,11 +523,32 @@ type mesoSplit struct {
 // the row was removed under a settlement that is already committing, and
 // dropping it silently would settle the trade minus one item — the giver loses
 // it and the receiver never gets it.
+//
+// The MESO check is the same guarantee for a balance, and it is why the room's
+// figure is not trusted on its own. pt.MesoStaged() only advances when a stake
+// RESOLVES, so a stake still in flight makes the room disagree with custody in
+// whichever direction the stake was moving:
+//
+//   - a reduction in flight means the giver still has less escrowed than the
+//     room believes, and delivering the room's figure MINTS the difference;
+//   - a raise in flight means the debit lands after the room has been settled
+//     and discharged, and the difference is DESTROYED.
+//
+// Which one happens is pure timing. An unmodified client can reach here in that
+// state — CTradingRoomDlg::Trade sends TRADE_CONFIRM with no CanSendExclRequest
+// gate, so nothing orders a confirm after the staging round trip it raced.
+//
+// The check lives HERE rather than at CONFIRM deliberately. That same client
+// sets its own confirmed flag and disables its trade buttons before sending, and
+// no server packet re-enables them, so refusing the confirm would wedge the
+// dialog. Failing the settlement instead unwinds it, and both sides get
+// everything back — the same outcome the item branch below already produces.
 func (p *ProcessorImpl) settlementPayload(settlementId uuid.UUID, room Room) (sharedsaga.TradeSettlementPayload, error) {
 	rows, err := p.esc.ItemsByRoom(room.Id())
 	if err != nil {
 		return sharedsaga.TradeSettlementPayload{}, err
 	}
+	ep := escrow.NewProcessor(p.l, p.ctx, p.db)
 	byEscrow := make(map[uuid.UUID]escrow.ItemModel, len(rows))
 	for _, r := range rows {
 		byEscrow[r.Id()] = r
@@ -540,6 +561,9 @@ func (p *ProcessorImpl) settlementPayload(settlementId uuid.UUID, room Room) (sh
 		RoomType:      room.RoomType(),
 	}
 	for i, pt := range room.OrderedParticipants() {
+		if err = p.assertMesoCustodyAgrees(ep, room.Id(), pt); err != nil {
+			return sharedsaga.TradeSettlementPayload{}, err
+		}
 		side := sharedsaga.TradeSettlementSide{
 			CharacterId:   pt.CharacterId(),
 			MesoStaged:    pt.MesoStaged(),
@@ -556,6 +580,37 @@ func (p *ProcessorImpl) settlementPayload(settlementId uuid.UUID, room Room) (sh
 		payload.Sides[i] = side
 	}
 	return payload, nil
+}
+
+// assertMesoCustodyAgrees refuses to settle a side whose meso custody does not
+// match what the room is about to deliver on its behalf.
+//
+// Two conditions, and both are about the same thing — the room's figure being a
+// mirror rather than the truth:
+//
+//   - nothing may still be IN FLIGHT, because an unresolved stake means the
+//     committed total is still moving;
+//   - the committed total must EQUAL what the room thinks is staged, which
+//     catches any other way the two could have diverged.
+//
+// Erroring is the point. The caller turns it into a failed settlement, which
+// unwinds and returns everything, rather than delivering a figure nobody holds.
+func (p *ProcessorImpl) assertMesoCustodyAgrees(ep escrow.Processor, roomId uuid.UUID, pt Participant) error {
+	inFlight, err := ep.InFlightMesoDelta(roomId, pt.CharacterId())
+	if err != nil {
+		return err
+	}
+	if inFlight != 0 {
+		return fmt.Errorf("character %d has a meso stake of %d still in flight; settling now would deliver a figure their escrow does not hold", pt.CharacterId(), inFlight)
+	}
+	committed, _, err := escrow.MesoByOwner(p.db, p.t.Id())(roomId, pt.CharacterId())
+	if err != nil {
+		return err
+	}
+	if committed != int64(pt.MesoStaged()) {
+		return fmt.Errorf("character %d has %d meso escrowed but the room is settling %d on their behalf", pt.CharacterId(), committed, pt.MesoStaged())
+	}
+	return nil
 }
 
 // escrowItemPayload projects one custody row onto the saga's item view. It is

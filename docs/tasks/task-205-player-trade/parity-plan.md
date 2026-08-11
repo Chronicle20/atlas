@@ -1,7 +1,7 @@
 # Task-205 follow-on — meso custody parity
 
-**Status:** prerequisites P1 and P2 settled; **Tasks 1 and 2 done**; Tasks 3–7
-outstanding. Task 3 is BLOCKING — see P2.
+**Status:** prerequisites P1 and P2 settled; **Tasks 1, 2 and 3 done** — all
+three structural defences now exist on the meso side. Tasks 4–7 outstanding.
 
 Written 2026-08-11 as a handoff from the session that produced commits
 `a3279ee73`..`0bf941fc5`.
@@ -256,7 +256,7 @@ claim is exclusive, proven by two sequential claims. The interleaving itself is
 closed by the row lock, which is a Postgres behaviour this harness cannot
 exercise.
 
-### Task 3 — Defence C: a settlement-time custody check for meso — **BLOCKING** (P2)
+### Task 3 — Defence C: a settlement-time custody check for meso — **BLOCKING** (P2) — **DONE**
 
 **Reachability confirmed by P2:** the v83 client applies no excl gate to
 `TRADE_CONFIRM`, so a stake genuinely can be in flight at CONFIRM. This is not
@@ -270,12 +270,29 @@ a raise resolving after the room is SETTLING is **destroyed**. Which one occurs
 is timing. The item twin is protected: `settlementPayload` errors when a staged
 item has no escrow row.
 
-**The fix.** The meso equivalent — settlement must fail rather than settle
-against a stake whose outcome is unknown. Gate at CONFIRM, at `settle`, or both;
-decide and justify.
+**The fix — DONE.** `assertMesoCustodyAgrees`, called from `settlementPayload`
+per side, refuses to build a payload when either (a) anything is still in
+flight, or (b) the committed total disagrees with what the room is about to
+deliver. The caller turns the error into a failed settlement, which unwinds and
+returns everything — the same outcome the item branch already produces.
 
-**Tests.** Settlement with a stake in flight does not mint or destroy, in both
-orderings. Mutation-verify.
+**Gated at `settle`, NOT at CONFIRM, and the reason is in the client.**
+`CTradingRoomDlg::Trade` sets its own confirmed flag (`v1[111] = 1`) and
+disables both trade buttons BEFORE it sends, and no server packet re-enables
+them short of leaving the room. Refusing the confirm would therefore wedge the
+dialog. Failing the settlement is recoverable and symmetric with items.
+
+**Tests.** `TestSettlementRefusesWhileAMesoStakeIsInFlight`, table-driven over
+both directions. Mutation-verified — with the gate removed, both cases report a
+settlement saga submitted while custody was still moving:
+
+    a settlement saga was submitted with -1500 meso still in flight …
+    a settlement saga was submitted with  1500 meso still in flight …
+
+`TestSettlementSuccessKeepsARowWhoseStakeIsStillInFlight` was re-documented
+rather than deleted: the gate makes its state unreachable through the normal
+flow, but it still pins the DISCHARGE behaviour for a stake that outlives its
+room by another route, which the orphan path depends on.
 
 ### Task 4 — register `TradeStaging` in the timeout reverse-walk ✅ *confirmed*
 

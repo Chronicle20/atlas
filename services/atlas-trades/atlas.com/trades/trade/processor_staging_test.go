@@ -4,6 +4,7 @@ import (
 	"atlas-trades/configuration"
 	inventorydata "atlas-trades/data/inventory"
 	"atlas-trades/escrow"
+	"atlas-trades/kafka/message"
 	trademsg "atlas-trades/kafka/message/trade"
 	"errors"
 	"sort"
@@ -173,11 +174,16 @@ type fakeEscrow struct {
 	// items is insertion-ordered, matching ItemsByRoom's created-at ordering.
 	items []escrow.ItemModel
 	mesos map[mesoOwner]uint32
-	err   error
+	// claimed holds the rows some return path has already taken. It reproduces
+	// the real returning_at column rather than the whole row lifecycle, because
+	// that column is the only thing standing between the teardown path and the
+	// orphaned-stage path both returning one row.
+	claimed map[uuid.UUID]struct{}
+	err     error
 }
 
 func newFakeEscrow() *fakeEscrow {
-	return &fakeEscrow{mesos: make(map[mesoOwner]uint32)}
+	return &fakeEscrow{mesos: make(map[mesoOwner]uint32), claimed: make(map[uuid.UUID]struct{})}
 }
 
 // withTx returns the same fake. It holds no database handle to rebind, and
@@ -252,6 +258,22 @@ func (f *fakeEscrow) MesoByOwner(roomId uuid.UUID, ownerId character.Id) (uint32
 	}
 	amount, ok := f.mesos[mesoOwner{roomId: roomId, ownerId: ownerId}]
 	return amount, ok, nil
+}
+
+// ClaimForReturn is the fake's compare-and-set. Like the real UPDATE it is one
+// indivisible step under the store's own lock, so a caller cannot observe
+// "unclaimed" and then lose the row to somebody else before it acts.
+func (f *fakeEscrow) ClaimForReturn(escrowId uuid.UUID) (bool, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+	if f.err != nil {
+		return false, f.err
+	}
+	if _, taken := f.claimed[escrowId]; taken {
+		return false, nil
+	}
+	f.claimed[escrowId] = struct{}{}
+	return true, nil
 }
 
 // accept writes the custody row a completed transfer_to_trade would have
@@ -1595,15 +1617,25 @@ func TestTeardownOfAnEmptyRoomSubmitsNoSaga(t *testing.T) {
 }
 
 // TestTeardownUnwindsWhatIsEscrowedNotWhatTheDialogShows pins that the unwind
-// reads the CUSTODY STORE rather than the room. The two legitimately disagree
-// while a stage is in flight: a pending item holds a dialog slot but has no row
-// yet, and returning it would hand the player an item that never left their
-// inventory. Its own staging saga resolves it instead (see
+// reads the CUSTODY STORE rather than the room.
+//
+// The disagreement it pins is one-directional and specific: a stage whose
+// accept_to_trade has not yet written its row holds a dialog slot with nothing
+// behind it, and returning that would hand the player an item that never left
+// their inventory. Its own staging saga resolves it instead (see
 // TestStageSucceededForAnOrphanedEscrowRowReturnsTheItem).
+//
+// The converse does NOT hold, and reading this test as though it did is what
+// produced the duplicate-return defect: an item's dialog-side `pending` flag is
+// cleared only when the stage's saga status reaches atlas-trades, many hops
+// AFTER the custody consumer wrote its row, so a pending item usually does have
+// a row. That window is what the return claim covers — see
+// TestTeardownThenLateStageStatusReturnsTheItemOnce.
 func TestTeardownUnwindsWhatIsEscrowedNotWhatTheDialogShows(t *testing.T) {
 	p, e := testOpenRoom(t)
 	stageOne(t, p, 100, stagingSourceSlot, 5, 1)
-	// A second stage that is still in flight: a dialog slot, but no escrow row.
+	// A second stage whose accept_to_trade has not landed: a dialog slot, and
+	// deliberately no escrow row behind it.
 	if err := p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), 2, 1, 2); err != nil {
 		t.Fatalf("pending put item: %v", err)
 	}
@@ -1622,6 +1654,126 @@ func TestTeardownUnwindsWhatIsEscrowedNotWhatTheDialogShows(t *testing.T) {
 	if got := len(unwindPayloadOf(t, unwinds[0]).Items); got != 1 {
 		t.Errorf("unwind items: got %d, want only the ESCROWED one (1)", got)
 	}
+}
+
+// unwoundEscrowIds returns every escrow id that appears in ANY trade_unwind the
+// service submitted, in submission order and WITH duplicates. Counting across
+// submissions is the point: a row returned by two different sagas is granted to
+// its owner twice, and each saga on its own looks perfectly well-formed.
+func unwoundEscrowIds(t *testing.T, e *emitted) []uuid.UUID {
+	t.Helper()
+	var out []uuid.UUID
+	for _, s := range unwindSagas(t, e) {
+		for _, i := range unwindPayloadOf(t, s).Items {
+			out = append(out, i.Item.EscrowId)
+		}
+	}
+	return out
+}
+
+// assertReturnedExactlyOnce requires the escrow row to appear in exactly one
+// unwind item across every submission.
+func assertReturnedExactlyOnce(t *testing.T, e *emitted, escrowId uuid.UUID) {
+	t.Helper()
+	n := 0
+	for _, id := range unwoundEscrowIds(t, e) {
+		if id == escrowId {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Fatalf("trade_unwind submissions carrying escrow row [%s]: got %d, want exactly 1 — every submission ends in its own accept_to_character, so %d means the owner is handed the item %d times", escrowId, n, n, n)
+	}
+}
+
+// TestTeardownThenLateStageStatusReturnsTheItemOnce pins the duplicate-return
+// defect in its natural order.
+//
+// The row is written by the custody consumer as soon as accept_to_trade lands;
+// atlas-trades only learns the stage succeeded several hops later, when the
+// saga's terminal status arrives. Throughout that window the item is escrowed
+// AND still `pending` on the dialog side. A teardown in that window reads
+// ItemsByRoom — which has no pending filter — and unwinds the row; the terminal
+// status then arrives, finds no room to claim it, and unwinds it again. Both
+// sagas run accept_to_character, and nothing downstream can tell them apart:
+// each mints its own transaction id, and the duplicate release_from_trade is
+// silently fine because a no-match delete is success.
+//
+// Only the escrow row's return claim stands between that sequence and a
+// duplicated item.
+func TestTeardownThenLateStageStatusReturnsTheItemOnce(t *testing.T) {
+	p, e := testOpenRoom(t)
+	if err := p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), stagingSourceSlot, 5, 1); err != nil {
+		t.Fatalf("put item: %v", err)
+	}
+	room, _ := p.RoomForCharacter(100)
+	i := pendingItemIn(t, p, 100, 1)
+
+	// accept_to_trade landed: the row exists. The stage is still pending on the
+	// dialog side, because its terminal status has not reached atlas-trades.
+	escrowOf(t, p).accept(room.Id(), 100, i)
+
+	// The counterparty leaves. The teardown unwinds what is escrowed right now,
+	// which includes this row.
+	if err := p.TeardownCharacter(uuid.New(), 200, ReasonTradeCancelled); err != nil {
+		t.Fatalf("teardown: %v", err)
+	}
+
+	// The stage's terminal status finally arrives. Its room is gone.
+	claimed, err := p.StageSucceeded(uuid.New(), i.EscrowId())
+	if err != nil {
+		t.Fatalf("stage succeeded: %v", err)
+	}
+	if !claimed {
+		t.Fatal("the late stage status was not recognised as a stage; the caller would go on to treat it as a settlement's")
+	}
+
+	assertReturnedExactlyOnce(t, e, i.EscrowId())
+}
+
+// TestLateStageStatusThenTeardownReturnsTheItemOnce pins the same row under the
+// opposite interleaving.
+//
+// It is reachable because the room registry is in-memory and NOT transactional:
+// teardownRoom removes the room first (claimRoom) and only then reads the escrow
+// to unwind it, so a stage's terminal status delivered in between finds no room,
+// takes the orphan path, and claims the row before the teardown that removed the
+// room ever looks at it. The test drives teardownRoom's own two halves in that
+// order rather than approximating them.
+func TestLateStageStatusThenTeardownReturnsTheItemOnce(t *testing.T) {
+	p, e := testOpenRoom(t)
+	if err := p.PutItem(uuid.New(), 100, byte(inventory.TypeValueUse), stagingSourceSlot, 5, 1); err != nil {
+		t.Fatalf("put item: %v", err)
+	}
+	room, _ := p.RoomForCharacter(100)
+	i := pendingItemIn(t, p, 100, 1)
+	escrowOf(t, p).accept(room.Id(), 100, i)
+
+	// The teardown's first half: the room is claimed and removed from the
+	// registry. Its unwind has not read the escrow yet.
+	claimedRoom, ok := p.claimRoom(room, notSettling)
+	if !ok {
+		t.Fatal("the teardown lost its own room claim")
+	}
+
+	// The stage's terminal status lands in that gap: no room, so the orphan path
+	// claims the row and returns it.
+	staged, err := p.StageSucceeded(uuid.New(), i.EscrowId())
+	if err != nil {
+		t.Fatalf("stage succeeded: %v", err)
+	}
+	if !staged {
+		t.Fatal("the late stage status was not recognised as a stage")
+	}
+
+	// The teardown's second half now runs and must find nothing left to return.
+	if err := p.emit(func(txp *ProcessorImpl, mb *message.Buffer) error {
+		return txp.emitUnwind(mb, claimedRoom.room)
+	}); err != nil {
+		t.Fatalf("emit unwind: %v", err)
+	}
+
+	assertReturnedExactlyOnce(t, e, i.EscrowId())
 }
 
 // TestTeardownOfASettlingRoomUnwindsNothing pins FR-6.5 on the custody side: a

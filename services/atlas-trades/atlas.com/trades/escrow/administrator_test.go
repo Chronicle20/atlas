@@ -1,6 +1,7 @@
 package escrow
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -634,5 +635,208 @@ func TestDeleteMesoIsIdempotent(t *testing.T) {
 	}
 	if len(got) != 0 {
 		t.Fatalf("expected 0 meso rows, got %d", len(got))
+	}
+}
+
+// TestClaimItemForReturnIsWonByExactlyOneCaller pins the compare-and-set that
+// stops one escrow row being returned twice.
+//
+// The two callers are real and independent: a room teardown returns everything
+// ItemsByRoom yields for the room, and an orphaned stage's terminal status
+// returns the single row ItemById yields for it. Nothing downstream can tell the
+// two submissions apart — each unwind mints its own transaction id,
+// accept_to_character grants unconditionally, and DeleteItem treats the second
+// release as success — so the item is granted twice unless exactly one of them
+// is allowed to submit.
+//
+// The two claims run concurrently. The test database is single-connection
+// sqlite, so what actually gets exercised is the CAS predicate rather than
+// Postgres row locking: the loser is the caller whose UPDATE finds the column
+// already stamped and therefore matches no row. That is the same thing the
+// production statement relies on — the decision lives in the WHERE clause, not
+// in a read the caller made earlier.
+func TestClaimItemForReturnIsWonByExactlyOneCaller(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	m := testItem(uuid.New(), character.Id(100), 1)
+	if err := CreateItem(db, te)(m); err != nil {
+		t.Fatalf("CreateItem: %v", err)
+	}
+
+	var start sync.WaitGroup
+	start.Add(1)
+	var done sync.WaitGroup
+	results := make([]bool, 2)
+	errs := make([]error, 2)
+	for i := range results {
+		done.Add(1)
+		go func(i int) {
+			defer done.Done()
+			start.Wait()
+			results[i], errs[i] = ClaimItemForReturn(db, te.Id())(m.Id())
+		}(i)
+	}
+	start.Done()
+	done.Wait()
+
+	for i, err := range errs {
+		if err != nil {
+			t.Fatalf("claim %d: %v", i, err)
+		}
+	}
+	winners := 0
+	for _, won := range results {
+		if won {
+			winners++
+		}
+	}
+	if winners != 1 {
+		t.Fatalf("claims that won: got %d, want exactly 1 — %d submissions of trade_unwind means the owner receives the item %d times", winners, winners, winners)
+	}
+}
+
+// TestClaimItemForReturnSurvivesTheProcess pins that the claim is a COLUMN and
+// not in-memory state. The boot sweep re-reads every surviving row through
+// AllItems, and a row whose unwind is already in flight must lose the claim
+// there too — a fresh handle onto the same database stands in for the restart.
+func TestClaimItemForReturnSurvivesTheProcess(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	m := testItem(uuid.New(), character.Id(100), 1)
+	if err := CreateItem(db, te)(m); err != nil {
+		t.Fatalf("CreateItem: %v", err)
+	}
+	won, err := ClaimItemForReturn(db, te.Id())(m.Id())
+	if err != nil {
+		t.Fatalf("first claim: %v", err)
+	}
+	if !won {
+		t.Fatal("the first claim on an unclaimed row must win")
+	}
+
+	rows, err := AllItems(db)
+	if err != nil {
+		t.Fatalf("AllItems: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("AllItems: got %d rows, want the still-live claimed row", len(rows))
+	}
+	again, err := ClaimItemForReturn(db, te.Id())(m.Id())
+	if err != nil {
+		t.Fatalf("second claim: %v", err)
+	}
+	if again {
+		t.Fatal("a claimed row was claimed a second time; a boot sweep would return an item whose unwind is already in flight")
+	}
+}
+
+// TestClaimItemForReturnIsTenantScoped pins that one tenant cannot latch
+// another's row. The claim is the gate on returning an asset, so a cross-tenant
+// claim would silently strand a character's item in a database they cannot be
+// swept from.
+func TestClaimItemForReturnIsTenantScoped(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+	other, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create: %v", err)
+	}
+
+	m := testItem(uuid.New(), character.Id(100), 1)
+	if err := CreateItem(db, te)(m); err != nil {
+		t.Fatalf("CreateItem: %v", err)
+	}
+
+	won, err := ClaimItemForReturn(db, other.Id())(m.Id())
+	if err != nil {
+		t.Fatalf("foreign claim: %v", err)
+	}
+	if won {
+		t.Fatal("a foreign tenant claimed the row")
+	}
+	won, err = ClaimItemForReturn(db, te.Id())(m.Id())
+	if err != nil {
+		t.Fatalf("owning claim: %v", err)
+	}
+	if !won {
+		t.Fatal("the owning tenant lost a claim no one else could have taken")
+	}
+}
+
+// TestClaimItemForReturnRefusesAReleasedRow pins that a row whose item has
+// already LEFT custody cannot be claimed. There is nothing left to return, and
+// letting a caller latch it would only make the eventual compensating restore
+// look like a row somebody is already returning.
+func TestClaimItemForReturnRefusesAReleasedRow(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	m := testItem(uuid.New(), character.Id(100), 1)
+	if err := CreateItem(db, te)(m); err != nil {
+		t.Fatalf("CreateItem: %v", err)
+	}
+	if err := DeleteItem(db, te.Id())(m.Id()); err != nil {
+		t.Fatalf("DeleteItem: %v", err)
+	}
+
+	won, err := ClaimItemForReturn(db, te.Id())(m.Id())
+	if err != nil {
+		t.Fatalf("ClaimItemForReturn: %v", err)
+	}
+	if won {
+		t.Fatal("a released row was claimed for return; its item is no longer in custody")
+	}
+}
+
+// TestRestoreItemReleasesTheReturnClaim pins the compensation path on a row that
+// WAS claimed and whose unwind then failed — the reachable combination, not a
+// hypothetical one: the claiming teardown submits release_from_trade followed by
+// accept_to_character, and an accept that fails sends the orchestrator's reverse
+// walk back through RestoreTradeEscrow (saga/compensator.go
+// DispatchTradeTransactionRollbacks).
+//
+// The restore must do two things. It must bring the row back, or the item is
+// lost outright. And it must UNLATCH it, because the return demonstrably did not
+// happen: a row left latched is skipped by every later sweep, which is the one
+// retry this case has.
+func TestRestoreItemReleasesTheReturnClaim(t *testing.T) {
+	db := testDb(t)
+	te := testTenant(t)
+
+	roomId := uuid.New()
+	m := testItem(roomId, character.Id(100), 1)
+	if err := CreateItem(db, te)(m); err != nil {
+		t.Fatalf("CreateItem: %v", err)
+	}
+	won, err := ClaimItemForReturn(db, te.Id())(m.Id())
+	if err != nil {
+		t.Fatalf("ClaimItemForReturn: %v", err)
+	}
+	if !won {
+		t.Fatal("the first claim on an unclaimed row must win")
+	}
+	// release_from_trade completed; accept_to_character then failed.
+	if err := DeleteItem(db, te.Id())(m.Id()); err != nil {
+		t.Fatalf("DeleteItem: %v", err)
+	}
+	if err := RestoreItem(db, te.Id())(m.Id()); err != nil {
+		t.Fatalf("RestoreItem: %v", err)
+	}
+
+	got, err := ItemsByRoom(db, te.Id())(roomId)
+	if err != nil {
+		t.Fatalf("ItemsByRoom: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("expected the restored row back, got %d rows", len(got))
+	}
+	reclaimed, err := ClaimItemForReturn(db, te.Id())(m.Id())
+	if err != nil {
+		t.Fatalf("re-claim: %v", err)
+	}
+	if !reclaimed {
+		t.Fatal("a restored row is still latched; every later sweep would skip it and the item would be stranded with no error anywhere")
 	}
 }

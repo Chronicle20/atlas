@@ -570,18 +570,54 @@ func escrowItemPayload(r escrow.ItemModel) sharedsaga.TradeEscrowItem {
 	}
 }
 
+// claimItemsForReturn narrows a set of escrow rows to the ones THIS caller has
+// won the exclusive right to return.
+//
+// Every path that submits a trade_unwind goes through it, because the paths are
+// not mutually exclusive: a teardown and an orphaned stage's terminal status can
+// both be looking at the same row, and a failed settlement's unwind and the boot
+// sweep can both be looking at rows a previous pass already took. The claim is
+// the only thing that decides between them — nothing downstream dedupes, so a
+// row returned twice is granted to its owner twice (see
+// escrow.ClaimItemForReturn).
+func (p *ProcessorImpl) claimItemsForReturn(items []escrow.ItemModel) ([]escrow.ItemModel, error) {
+	won := make([]escrow.ItemModel, 0, len(items))
+	for _, r := range items {
+		ok, err := p.esc.ClaimForReturn(r.Id())
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			p.l.Debugf("Trade escrow row [%s] is already being returned by another path. Leaving it out of this unwind.", r.Id().String())
+			continue
+		}
+		won = append(won, r)
+	}
+	return won, nil
+}
+
 // emitUnwind returns every escrowed asset and meso in a room to the people it
 // came from (design §5A.8).
 //
 // It reads the ESCROW, never the room, because the room and the escrow can
-// legitimately disagree: an item still pending has a dialog slot but no row yet,
-// and an item whose row exists after the room was claimed has a row but no slot.
-// Returning what is actually escrowed is right in both directions — a pending
-// item's own staging saga resolves it (see stageSucceeded), and a row with no
-// slot is exactly what would otherwise be stranded.
+// legitimately disagree in both directions: a stage whose accept_to_trade has
+// not yet written its row has a dialog slot but nothing to return, and a row
+// whose stage completed after the room was claimed has no slot but is exactly
+// what would otherwise be stranded. Returning what is actually escrowed is right
+// for both.
 //
-// A room with nothing escrowed submits nothing. Most cancelled trades are empty,
-// and a saga per empty teardown would be pure noise.
+// What the escrow row does NOT tell us is whether somebody else is already
+// returning it. A row is written by the custody consumer the moment
+// accept_to_trade lands, which is many hops before atlas-trades hears the stage
+// succeeded and clears the item's dialog-side `pending` flag; ItemsByRoom has no
+// pending filter, so for that whole window this teardown and the stage's own
+// late status (returnOrphanedStage) both see the row and both would submit an
+// unwind for it. Hence the claim: only the rows this call wins go into the
+// payload.
+//
+// A room with nothing escrowed — or nothing left unclaimed — submits nothing.
+// Most cancelled trades are empty, and a saga per empty teardown would be pure
+// noise.
 func (p *ProcessorImpl) emitUnwind(mb *message.Buffer, room Room) error {
 	items, err := p.esc.ItemsByRoom(room.Id())
 	if err != nil {
@@ -593,6 +629,10 @@ func (p *ProcessorImpl) emitUnwind(mb *message.Buffer, room Room) error {
 	}
 	if len(items) == 0 && len(mesos) == 0 {
 		return nil
+	}
+	items, err = p.claimItemsForReturn(items)
+	if err != nil {
+		return err
 	}
 
 	payload := sharedsaga.TradeUnwindPayload{TransactionId: uuid.New()}
@@ -969,6 +1009,10 @@ func (p *ProcessorImpl) completeSettlement(mb *message.Buffer, txId uuid.UUID, s
 // now, after the orchestrator's compensation decided which rows it managed to
 // restore. Refunding the snapshot would hand back items whose restore failed —
 // creating them out of nothing.
+//
+// Each row is CLAIMED before it goes into the payload, for the same reason
+// emitUnwind claims: a row another return path already took must not be handed
+// back a second time.
 func (p *ProcessorImpl) unwindRecord(mb *message.Buffer, s settlement.Model) error {
 	items, err := p.esc.ItemsByRoom(s.RoomId())
 	if err != nil {
@@ -980,6 +1024,10 @@ func (p *ProcessorImpl) unwindRecord(mb *message.Buffer, s settlement.Model) err
 	}
 	if len(items) == 0 && len(mesos) == 0 {
 		return nil
+	}
+	items, err = p.claimItemsForReturn(items)
+	if err != nil {
+		return err
 	}
 
 	payload := sharedsaga.TradeUnwindPayload{TransactionId: uuid.New()}
@@ -1249,8 +1297,18 @@ type strandedRoom struct {
 // to world 0 — a refund announced onto the wrong channel is worse than one that
 // waits for the next boot, because the row is deleted either way.
 func (p *ProcessorImpl) unwindStranded(mb *message.Buffer, r *strandedRoom) error {
+	// A row already claimed by a return that is in flight is NOT stranded, it is
+	// merely unfinished, and sweeping it into a second unwind would grant its
+	// owner the item twice. The claim is the only durable record of that, which
+	// is why it is a column rather than in-memory state: this sweep runs at boot,
+	// with every room already lost.
+	items, err := p.claimItemsForReturn(r.items)
+	if err != nil {
+		return err
+	}
+
 	payload := sharedsaga.TradeUnwindPayload{TransactionId: uuid.New()}
-	for _, i := range r.items {
+	for _, i := range items {
 		payload.Items = append(payload.Items, sharedsaga.TradeUnwindItem{
 			OwnerId: i.OwnerId(),
 			Item:    escrowItemPayload(i),

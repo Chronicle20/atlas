@@ -28,6 +28,12 @@ type Processor interface {
 	Restore(transactionId uuid.UUID, escrowId uuid.UUID) error
 	Remove(transactionId uuid.UUID, escrowId uuid.UUID) error
 
+	// ClaimItemForReturn is NOT a saga step and emits no ack, for the same
+	// reason UpsertMeso does not: it is a plain DB compare-and-set that decides
+	// which of the two return paths may submit a trade_unwind for a row (see
+	// ClaimItemForReturn), not a custody command the orchestrator is waiting on.
+	ClaimItemForReturn(escrowId uuid.UUID) (bool, error)
+
 	// UpsertMeso and DeleteMeso are NOT saga steps and therefore emit no ack:
 	// escrowed meso moves through award_mesos, whose own events drive the saga.
 	// These only maintain the durable record that makes a refund possible.
@@ -104,6 +110,10 @@ func (p *ProcessorImpl) Remove(transactionId uuid.UUID, escrowId uuid.UUID) erro
 		}
 		return mb.Put(custodymsg.EnvStatusEventTopic, removedStatusProvider(transactionId, escrowId))
 	})
+}
+
+func (p *ProcessorImpl) ClaimItemForReturn(escrowId uuid.UUID) (bool, error) {
+	return ClaimItemForReturn(p.db, p.t.Id())(escrowId)
 }
 
 func (p *ProcessorImpl) UpsertMeso(roomId uuid.UUID, ownerId character.Id, amount uint32) error {

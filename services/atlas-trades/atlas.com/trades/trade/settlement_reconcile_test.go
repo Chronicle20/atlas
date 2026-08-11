@@ -286,6 +286,76 @@ func TestReconcileEscrowReturnsAStrandedRowToItsOwner(t *testing.T) {
 	}
 }
 
+// TestReconcileEscrowSkipsARowAlreadyClaimedForReturn pins that the boot sweep
+// respects the return claim.
+//
+// A row can be latched before a restart and still be sitting in the table
+// afterwards: the claiming unwind commits with the row, and its
+// release_from_trade lands whenever the orchestrator gets to it. The sweep sees
+// only "a row with no room", which is indistinguishable from genuinely stranded
+// — so without the claim it submits a second trade_unwind, and the owner is
+// handed the item twice. The claim is a column precisely so it survives the
+// restart this sweep exists for.
+//
+// The second row is the control: latching one row must not silence the sweep for
+// the rest of the room.
+func TestReconcileEscrowSkipsARowAlreadyClaimedForReturn(t *testing.T) {
+	db := reconcileDb(t)
+	tm := reconcileTenant(t, "only")
+	roomId := uuid.New()
+	claimedId := seedEscrowItem(t, db, tm, roomId, 100, 1)
+	strandedId := seedEscrowItem(t, db, tm, roomId, 100, 2)
+
+	won, err := escrow.ClaimItemForReturn(db, tm.Id())(claimedId)
+	if err != nil {
+		t.Fatalf("claim: %v", err)
+	}
+	if !won {
+		t.Fatal("the pre-restart claim on an unclaimed row must win")
+	}
+
+	if err := ReconcileEscrow(reconcileLogger(), context.Background(), db, nil); err != nil {
+		t.Fatalf("reconcile escrow: %v", err)
+	}
+
+	payloads := unwindPayloads(t, db)
+	if len(payloads) != 1 {
+		t.Fatalf("unwind sagas: got %d, want 1", len(payloads))
+	}
+	if len(payloads[0].Items) != 1 {
+		t.Fatalf("unwind items: got %d, want only the unclaimed row", len(payloads[0].Items))
+	}
+	if payloads[0].Items[0].Item.EscrowId != strandedId {
+		t.Errorf("unwound row: got %s, want the unclaimed %s — the claimed row's return is already in flight", payloads[0].Items[0].Item.EscrowId, strandedId)
+	}
+}
+
+// TestReconcileEscrowSubmitsNothingWhenEveryRowIsClaimed pins the empty-payload
+// guard on the sweep's path: a room whose rows were all taken by somebody else
+// must submit no saga at all rather than an unwind with no legs.
+func TestReconcileEscrowSubmitsNothingWhenEveryRowIsClaimed(t *testing.T) {
+	db := reconcileDb(t)
+	tm := reconcileTenant(t, "only")
+	roomId := uuid.New()
+	for slot := byte(1); slot <= 2; slot++ {
+		id := seedEscrowItem(t, db, tm, roomId, 100, slot)
+		won, err := escrow.ClaimItemForReturn(db, tm.Id())(id)
+		if err != nil {
+			t.Fatalf("claim: %v", err)
+		}
+		if !won {
+			t.Fatalf("claim on unclaimed row %s must win", id)
+		}
+	}
+
+	if err := ReconcileEscrow(reconcileLogger(), context.Background(), db, nil); err != nil {
+		t.Fatalf("reconcile escrow: %v", err)
+	}
+	if payloads := unwindPayloads(t, db); len(payloads) != 0 {
+		t.Errorf("unwind sagas: got %d, want 0", len(payloads))
+	}
+}
+
 // TestReconcileEscrowSubmitsOneUnwindPerRoom pins the grouping. A room that held
 // several rows produces ONE saga: the orchestrator expands a composite, so one
 // saga per row would multiply the round trips by the size of the trade window

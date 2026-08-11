@@ -95,15 +95,58 @@ func DeleteItem(db *gorm.DB, tenantId uuid.UUID) func(id uuid.UUID) error {
 	}
 }
 
+// ClaimItemForReturn claims the exclusive right to submit a trade_unwind for one
+// escrow row, and reports whether THIS caller won it.
+//
+// The compare-and-set happens INSIDE the UPDATE's WHERE clause — decided by
+// RowsAffected, never by a read followed by a write — for the same reason
+// CommitMesoStake works that way: the two callers that can each decide to return
+// a row (a room teardown reading ItemsByRoom, and an orphaned stage's terminal
+// status reading ItemById) run in different transactions with no ordering
+// between them, so a read-then-write would let both observe "unclaimed" and both
+// submit. The item would then be granted to its owner twice — the meso twin has
+// never had that bug precisely because its stake is consumed by the statement
+// that acts on it.
+//
+// The claim is a COLUMN, so it survives a restart: the boot sweep re-reads every
+// surviving row, and a row whose unwind is already in flight must not be swept
+// into a second one. Claim and submission commit together (the caller runs both
+// inside emit's transaction with the outbox), so a crash before the commit
+// leaves the row unclaimed and fully retryable.
+//
+// A row that is already soft-deleted cannot be claimed: the default scope
+// excludes it, which is correct — its item has left custody and there is nothing
+// left to return.
+func ClaimItemForReturn(db *gorm.DB, tenantId uuid.UUID) func(id uuid.UUID) (bool, error) {
+	return func(id uuid.UUID) (bool, error) {
+		now := time.Now()
+		res := db.Model(&ItemEntity{}).
+			Where("tenant_id = ? AND id = ? AND returning_at IS NULL", tenantId, id).
+			Update("returning_at", now)
+		return res.RowsAffected > 0, res.Error
+	}
+}
+
 // RestoreItem un-soft-deletes one escrow row — the compensating inverse of a
 // release. Restoring a row that was never deleted, or that was HARD deleted, is
 // a no-op.
+//
+// It also RELEASES the return claim, in the same statement. A restore means the
+// return demonstrably did not happen — the orchestrator's reverse walk put the
+// item back into custody because a later step of that unwind failed — so the row
+// is once again an asset nobody is returning. Leaving it latched would make the
+// boot sweep, which is the retry of last resort for exactly this case, skip it
+// forever: the player's item, gone, with no error anywhere. Clearing it cannot
+// resurrect the duplicate this claim exists to prevent, because the duplicate
+// requires an accept that succeeded, and an accept that succeeded is never
+// followed by a restore of its own release (the reverse walk removes the granted
+// item first — see the orchestrator's compensator).
 func RestoreItem(db *gorm.DB, tenantId uuid.UUID) func(id uuid.UUID) error {
 	return func(id uuid.UUID) error {
 		return db.Unscoped().
 			Model(&ItemEntity{}).
 			Where("tenant_id = ? AND id = ?", tenantId, id).
-			Update("deleted_at", nil).Error
+			Updates(map[string]interface{}{"deleted_at": nil, "returning_at": nil}).Error
 	}
 }
 

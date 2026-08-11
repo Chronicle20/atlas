@@ -121,6 +121,34 @@ type ItemEntity struct {
 	Closeness uint16 `gorm:"column:closeness;not null;default:0"`
 	Fullness  byte   `gorm:"column:fullness;not null;default:0"`
 
+	// ReturningAt is the row's SINGLE-CLAIMANT latch for the return path, and it
+	// is the item twin of MesoEntity.PendingStakeId.
+	//
+	// Two independent code paths can each decide to return the same row: a
+	// teardown reads ItemsByRoom and unwinds everything escrowed for the room,
+	// while a stage's saga-completed status that finds no dialog slot reads
+	// ItemById and unwinds that one row (trade/settlement.go emitUnwind,
+	// trade/processor.go returnOrphanedStage). Both are reachable for one row at
+	// the same time, because the row is written by the custody consumer long
+	// before atlas-trades learns the stage succeeded. Nothing downstream dedupes
+	// them: accept_to_character grants unconditionally, DeleteItem treats a
+	// no-match as success, and each unwind mints its own transaction id. Two
+	// submissions therefore granted the item twice. ClaimItemForReturn stamps
+	// this column in the same UPDATE that decides whether the caller may submit,
+	// so exactly one of them can.
+	//
+	// It is a column of its own rather than a reuse of DeletedAt because the two
+	// answer different questions: DeletedAt means "the item has LEFT custody"
+	// (release_from_trade), and reusing it would both hide the row from ItemById
+	// — making returnOrphanedStage report "this was never a stage" and mis-route
+	// the caller — and make an in-flight claim indistinguishable from a
+	// completed release to the compensating restore.
+	//
+	// A pointer, so "unclaimed" is SQL NULL and the claim's `IS NULL` predicate
+	// is a real compare-and-set rather than a comparison against a zero time
+	// that a claim could legitimately write.
+	ReturningAt *time.Time `gorm:"column:returning_at"`
+
 	CreatedAt time.Time      `gorm:"column:created_at"`
 	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }

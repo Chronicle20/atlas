@@ -150,6 +150,14 @@ type escrowStore interface {
 	MesosByRoom(roomId uuid.UUID) ([]escrow.MesoModel, error)
 	MesoByOwner(roomId uuid.UUID, ownerId character.Id) (uint32, bool, error)
 
+	// ClaimForReturn is the one WRITE on this seam, and it is here rather than on
+	// a separate escrow processor because every caller that reads rows in order
+	// to return them must claim them through the same handle it read them with.
+	// It reports whether THIS caller won the exclusive right to submit the
+	// trade_unwind for the row; see escrow.ClaimItemForReturn for why the
+	// alternative — read, decide, then write — hands the owner the item twice.
+	ClaimForReturn(escrowId uuid.UUID) (bool, error)
+
 	// withTx rebinds the reads onto a transaction.
 	//
 	// This is not a convenience. Every escrow read in this package happens inside
@@ -198,6 +206,10 @@ func (e escrowReader) MesosByRoom(roomId uuid.UUID) ([]escrow.MesoModel, error) 
 
 func (e escrowReader) MesoByOwner(roomId uuid.UUID, ownerId character.Id) (uint32, bool, error) {
 	return escrow.MesoByOwner(e.db, e.t.Id())(roomId, ownerId)
+}
+
+func (e escrowReader) ClaimForReturn(escrowId uuid.UUID) (bool, error) {
+	return escrow.ClaimItemForReturn(e.db, e.t.Id())(escrowId)
 }
 
 // configProvider resolves the request tenant's trade configuration.
@@ -1084,13 +1096,17 @@ func (p *ProcessorImpl) stageFailed(mb *message.Buffer, txId uuid.UUID, escrowId
 // already gone.
 //
 // This is the item twin of refundOrphanedStake, and it exists because a teardown
-// unwinds what is escrowed AT THAT MOMENT: a stage still in flight has no row to
-// find, so the teardown cannot include it and the row appears seconds later with
-// nothing referencing it. Without this the item is stranded in the custody table
-// permanently — the player's item, gone, with no error anywhere.
+// unwinds what is escrowed AT THAT MOMENT: a stage whose accept_to_trade has not
+// yet written its row leaves the teardown nothing to find, and the row appears
+// afterwards with nothing referencing it. Without this the item is stranded in
+// the custody table permanently — the player's item, gone, with no error
+// anywhere.
 //
 // It reports false when the row does not exist, which is what tells the caller
-// this transaction id was never a stage.
+// this transaction id was never a stage. A row that exists but was already
+// CLAIMED by the teardown's own unwind reports TRUE with nothing submitted: this
+// was a stage — so the caller must not go on treating the status as a
+// settlement's — but its return is already in flight.
 func (p *ProcessorImpl) returnOrphanedStage(mb *message.Buffer, escrowId uuid.UUID) (bool, error) {
 	row, found, err := p.esc.ItemById(escrowId)
 	if err != nil {
@@ -1098,6 +1114,20 @@ func (p *ProcessorImpl) returnOrphanedStage(mb *message.Buffer, escrowId uuid.UU
 	}
 	if !found {
 		return false, nil
+	}
+
+	// The claim, not the read, is what makes this path exclusive. The teardown
+	// that removed the room reads ItemsByRoom with no pending filter, so it sees
+	// this row from the moment the custody consumer writes it — well before the
+	// stage's terminal status gets here — and both paths would otherwise submit
+	// a trade_unwind for it (see escrow.ClaimItemForReturn).
+	won, err := p.esc.ClaimForReturn(escrowId)
+	if err != nil {
+		return false, err
+	}
+	if !won {
+		p.l.Debugf("Orphaned trade escrow row [%s] is already being returned by another path. Ignoring this one.", escrowId.String())
+		return true, nil
 	}
 
 	p.l.Warnf("Trade escrow row [%s] was accepted after its room [%s] ended. Returning item [%d] to character [%d].", escrowId.String(), row.RoomId().String(), row.TemplateId(), row.OwnerId())

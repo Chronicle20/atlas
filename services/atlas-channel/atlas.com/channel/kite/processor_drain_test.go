@@ -42,10 +42,8 @@ func kitesDoc(from, to int, total, number, size, last int) string {
 		if b.Len() > 0 {
 			b.WriteString(",")
 		}
-		b.WriteString(fmt.Sprintf(
-			`{"id":"%d","type":"kites","attributes":{"characterId":%d,"name":"n","templateId":5390000,"message":"hi","x":0,"y":0}}`,
-			id, id,
-		))
+		fmt.Fprintf(&b, `{"id":"%d","type":"kites","attributes":{"characterId":%d,"name":"n","templateId":5390000,"message":"hi","x":0,"y":0}}`,
+			id, id)
 	}
 	return fmt.Sprintf(
 		`{"data":[%s],"meta":{"total":%d,"page":{"number":%d,"size":%d,"last":%d}}}`,

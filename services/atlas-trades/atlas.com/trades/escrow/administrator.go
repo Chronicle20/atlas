@@ -13,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -182,25 +183,33 @@ func RestoreMesoRefunds(db *gorm.DB, tenantId uuid.UUID) func(txId uuid.UUID) (i
 	return func(txId uuid.UUID) (int, error) {
 		restored := 0
 		err := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
-			var rows []MesoRefundEntity
+			var entities []MesoRefundEntity
 			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 				Where("tenant_id = ? AND transaction_id = ?", tenantId, txId).
-				Find(&rows).Error; err != nil {
+				Find(&entities).Error; err != nil {
 				return err
 			}
-			if len(rows) == 0 {
+			if len(entities) == 0 {
 				return nil
 			}
-			for _, r := range rows {
+			refunds, err := model.SliceMap(MakeMesoRefund)(model.FixedProvider(entities))(model.ParallelMap())()
+			if err != nil {
+				return err
+			}
+			for _, r := range refunds {
+				te, terr := r.Tenant()
+				if terr != nil {
+					return terr
+				}
 				e := MesoEntity{
-					Id: uuid.New(), TenantId: r.TenantId, TenantRegion: r.TenantRegion,
-					TenantMajor: r.TenantMajor, TenantMinor: r.TenantMinor,
-					RoomId: r.RoomId, OwnerId: r.OwnerId, Amount: r.Amount,
+					Id: uuid.New(), TenantId: te.Id(), TenantRegion: te.Region(),
+					TenantMajor: te.MajorVersion(), TenantMinor: te.MinorVersion(),
+					RoomId: r.RoomId(), OwnerId: r.OwnerId(), Amount: r.Amount(),
 					CreatedAt: time.Now(), UpdatedAt: time.Now(),
 				}
 				if err := tx.Clauses(clause.OnConflict{
 					Columns:   []clause.Column{{Name: "tenant_id"}, {Name: "room_id"}, {Name: "owner_id"}},
-					DoUpdates: clause.Assignments(map[string]interface{}{"amount": gorm.Expr(mesoTable+".amount + ?", r.Amount), "updated_at": time.Now()}),
+					DoUpdates: clause.Assignments(map[string]interface{}{"amount": gorm.Expr(mesoTable+".amount + ?", r.Amount()), "updated_at": time.Now()}),
 				}).Create(&e).Error; err != nil {
 					return err
 				}
@@ -209,7 +218,7 @@ func RestoreMesoRefunds(db *gorm.DB, tenantId uuid.UUID) func(txId uuid.UUID) (i
 				Delete(&MesoRefundEntity{}).Error; err != nil {
 				return err
 			}
-			restored = len(rows)
+			restored = len(refunds)
 			return nil
 		})
 		return restored, err

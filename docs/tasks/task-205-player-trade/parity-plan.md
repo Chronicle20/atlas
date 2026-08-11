@@ -320,8 +320,22 @@ with no way to notice an omission. It is now one `switch` in
 the test reads too. `DispatchTradeStagingRollbacks` already existed — the
 timeout path simply never called it.
 
-**Every `SagaType()` comparison in the orchestrator was checked**, per the trap
-note. Results:
+**Every `SagaType()` comparison was checked FOR WHETHER IT HANDLES
+`TradeStaging`** — which is narrower than an earlier draft of this section
+claimed, and the difference matters. Asking "does this site handle
+`TradeStaging`" is not the same as asking "which OTHER types have a bespoke
+reverse walk but no timeout arm", and only the first question was asked.
+
+The plan-adherence review asked the second one. **Eleven saga types have a
+bespoke step-failure compensator; `reverseWalkSagaTypes` covers four.** The
+seven uncovered — `PetEvolution`, `ItemTagUse`, `SealingLockUse`,
+`IncubatorUse`, `PointReset`, `NoteSend`, `SkillBookUse` — each have the
+identical unrolled-timeout bug this task exists to close, since every saga gets
+the same 30s backstop. All seven already have a pure `Dispatch…Rollbacks` half
+written (`compensator.go:1230, 1324, 1428, 1559, 1658`), so wiring them in is
+small. See the status header for how that was resolved.
+
+The per-site results for the `TradeStaging` question:
 
 | Site | Handles `TradeStaging`? | Verdict |
 |---|---|---|

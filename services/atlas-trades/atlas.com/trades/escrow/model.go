@@ -139,6 +139,41 @@ func (m MesoStakeModel) Tenant() (tenant.Model, error) {
 	return tenant.Create(m.tenantId, m.tenantRegion, m.tenantMajor, m.tenantMinor)
 }
 
+// MesoRefundModel is one participant's share of what a single trade_unwind took
+// from escrow, held so a FAILED unwind can put it back. See MesoRefundEntity.
+type MesoRefundModel struct {
+	id            uuid.UUID
+	transactionId uuid.UUID
+	roomId        uuid.UUID
+	ownerId       character.Id
+
+	tenantId     uuid.UUID
+	tenantRegion string
+	tenantMajor  uint16
+	tenantMinor  uint16
+
+	amount int64
+
+	createdAt time.Time
+}
+
+func (m MesoRefundModel) Id() uuid.UUID            { return m.id }
+func (m MesoRefundModel) TransactionId() uuid.UUID { return m.transactionId }
+func (m MesoRefundModel) RoomId() uuid.UUID        { return m.roomId }
+func (m MesoRefundModel) OwnerId() character.Id    { return m.ownerId }
+func (m MesoRefundModel) TenantId() uuid.UUID      { return m.tenantId }
+
+// Amount is what the unwind took, and therefore exactly what has to go back if
+// it fails. It is signed for the same reason the committed total is, though a
+// claim only ever takes a positive figure.
+func (m MesoRefundModel) Amount() int64          { return m.amount }
+func (m MesoRefundModel) CreatedAt() time.Time   { return m.createdAt }
+
+// Tenant rebuilds the tenant this record belongs to. See ItemModel.Tenant.
+func (m MesoRefundModel) Tenant() (tenant.Model, error) {
+	return tenant.Create(m.tenantId, m.tenantRegion, m.tenantMajor, m.tenantMinor)
+}
+
 // MakeItem maps a row back onto its immutable model.
 func MakeItem(e ItemEntity) (ItemModel, error) {
 	return ItemModel{
@@ -219,5 +254,21 @@ func MakeMesoStake(e MesoStakeEntity) (MesoStakeModel, error) {
 		amount:       e.Amount,
 		delta:        e.Delta,
 		createdAt:    e.CreatedAt,
+	}, nil
+}
+
+// MakeMesoRefund maps an in-flight refund record back onto its immutable model.
+func MakeMesoRefund(e MesoRefundEntity) (MesoRefundModel, error) {
+	return MesoRefundModel{
+		id:            e.Id,
+		transactionId: e.TransactionId,
+		roomId:        e.RoomId,
+		ownerId:       e.OwnerId,
+		tenantId:      e.TenantId,
+		tenantRegion:  e.TenantRegion,
+		tenantMajor:   e.TenantMajor,
+		tenantMinor:   e.TenantMinor,
+		amount:        e.Amount,
+		createdAt:     e.CreatedAt,
 	}, nil
 }

@@ -60,7 +60,7 @@ func TestValidate_AcceptsEverySeedTemplate(t *testing.T) {
 			}
 		}
 	}
-	if total != 3090 {
-		t.Errorf("corpus size = %d entries, want 3090 (3085 before task-212 task 6, plus task 6's 5 clientbound catch writer routes: gms_48_1 CatchMonster (0xAC) + CatchMonsterWithItem (0xAD), gms_92_1 BridleMobCatchFail (0x53) + CatchMonster (0x123) + CatchMonsterWithItem (0x124))", total)
+	if total != 3108 {
+		t.Errorf("corpus size = %d entries, want 3108 (3093 on main — 3052 before task-206, plus task-206's 10 CashShopCouponCodeHandle bindings, task-207's 7 CashItemGachaponHandle handlers and 6 CashItemGachaponResult writers, and task-210's 16 template bindings plus 2 v92 writers — plus task-212's 15 catch bindings)", total)
 	}
 }

@@ -400,6 +400,15 @@
         ]
       },
       {
+        "opCode": "0x34",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterUseDeathItemHandle",
+        "fname": "CUserLocal::RequestUpgradeTombEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x37",
         "validator": "LoggedInValidator",
         "handler": "MobBanishPlayer",
@@ -3306,6 +3315,14 @@
         "opCode": "0xAF",
         "writer": "CharacterExpression",
         "fname": "CUser::OnEmotion",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xB1",
+        "writer": "CharacterShowUpgradeTombEffect",
+        "fname": "CUserRemote::OnShowUpgradeTombEffect",
         "services": [
           "channel"
         ]

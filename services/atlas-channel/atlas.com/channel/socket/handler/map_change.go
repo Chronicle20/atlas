@@ -19,7 +19,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
 
-func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		p := fieldsb.Change{}
 		p.Decode(l, ctx)(r, readerOptions)
@@ -53,7 +53,7 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 		}
 		if c.Hp() == 0 {
 			l.Debugf("Character [%d] attempting to revive.", s.CharacterId())
-			err = respawn.NewProcessor(l, ctx).Respawn(s.Field().Channel(), s.CharacterId(), s.MapId())
+			err = respawn.NewProcessor(l, ctx, wp).Respawn(s.Field(), s.CharacterId(), p.Premium() != 0)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to process respawn for character [%d].", s.CharacterId())
 			}

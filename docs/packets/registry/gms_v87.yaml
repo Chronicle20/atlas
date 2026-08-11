@@ -1087,6 +1087,7 @@
   direction: clientbound
   opcode: 208
   fname: CUserRemote::OnShowUpgradeTombEffect
+  packet: character/clientbound/ShowUpgradeTombEffect
   provenance: csv-import
 - op: SHOW_CHAIR
   direction: clientbound
@@ -2208,6 +2209,7 @@
   direction: serverbound
   opcode: 56
   fname: CUserLocal::RequestUpgradeTombEffect
+  packet: character/serverbound/UseDeathItem
   provenance: csv-import
 - op: UNNAMED_R74
   direction: serverbound

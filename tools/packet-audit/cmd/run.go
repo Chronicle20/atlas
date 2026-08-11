@@ -345,6 +345,19 @@ func candidatesFromFName(fname string) []candidate {
 	case "CUserRemote::OnAvatarModified":
 		// Struct is CharacterAppearanceUpdate.
 		return []candidate{{name: "CharacterAppearanceUpdate", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::RequestUpgradeTombEffect":
+		// Serverbound USE_DEATHITEM. Sent by CUIRevive::OnCreate at the death
+		// dialog; struct is UseDeathItem (character/serverbound): itemId u32 +
+		// x i32 + y i32. task-210. No pkg hint: "UseDeathItem" is unique across
+		// libs/atlas-packet/serverbound sub-domains (unlike SkillPrepare*, which
+		// collide and need the pkg-restricted walk / qualified report name).
+		return []candidate{{name: "UseDeathItem", dir: csvpkg.DirServerbound}}
+	case "CUserRemote::OnShowUpgradeTombEffect":
+		// Clientbound SHOW_UPGRADE_TOMB_EFFECT broadcast to bystanders. Struct is
+		// ShowUpgradeTombEffect (character/clientbound): characterId u32 (consumed
+		// by CUserPool::OnUserRemotePacket before the switch) + itemId u32 + x i32
+		// + y i32. task-210. No pkg hint: name is unique, see above.
+		return []candidate{{name: "ShowUpgradeTombEffect", dir: csvpkg.DirClientbound}}
 	// --- Character misc-state bucket ---
 	case "CUserRemote::OnSetActivePortableChair":
 		// Struct is CharacterChairShow; writer = "CharacterShowChair".

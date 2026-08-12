@@ -791,6 +791,7 @@ func produceWriters() []string {
 		fieldcb.FieldTransportStateWriter,
 		storagecb.StorageOperationWriter,
 		charcb.CharacterHintWriter,
+		charcb.ShowComboWriter,
 		reactorcb.ReactorHitWriter,
 		npccb.GuideTalkWriter,
 		questcb.ScriptProgressWriter,
@@ -911,6 +912,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterUseSkillHandle] = handler.CharacterUseSkillHandleFunc
 	handlerMap[handler.CharacterSkillPrepareHandle] = handler.CharacterSkillPrepareHandleFunc
 	handlerMap[charsb.CharacterBuffCancelHandle] = handler.CharacterBuffCancelHandleFunc
+	handlerMap[charsb.AranComboCounterHandle] = handler.AranComboCounterHandleFunc
 	handlerMap[charsb.CancelDebuffHandle] = handler.CancelDebuffHandleFunc
 	handlerMap[cashsb.CharacterCashItemUseHandle] = handler.CharacterCashItemUseHandleFunc
 	handlerMap[fieldsb.ItemUpgradeUpdateHandle] = handler.ItemUpgradeUpdateHandleFunc

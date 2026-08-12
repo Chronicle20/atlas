@@ -212,6 +212,25 @@ func TestMagnetRegionFacingLeftMirrors(t *testing.T) {
 	}
 }
 
+// TestMagnetRegionNearInt16BoundaryStaysNormalized pins the fix for a
+// truncation bug: narrowing the int32 bounds math straight to int16 can wrap
+// (rather than saturate) for a caster near the int16 edge, even though the
+// near/far swap already ordered the int32 values correctly before
+// narrowing. The returned tuple must stay normalized (x1 <= x2, y1 <= y2)
+// regardless — MagnetRegion documents that invariant unconditionally, not
+// only for casters far from the boundary.
+func TestMagnetRegionNearInt16BoundaryStaysNormalized(t *testing.T) {
+	for _, facingLeft := range []bool{false, true} {
+		x1, y1, x2, y2 := MagnetRegion(32000, 500, facingLeft, 1000)
+		if x1 > x2 {
+			t.Fatalf("facingLeft=%v: x bounds not normalized: x1=%d > x2=%d", facingLeft, x1, x2)
+		}
+		if y1 > y2 {
+			t.Fatalf("facingLeft=%v: y bounds not normalized: y1=%d > y2=%d", facingLeft, y1, y2)
+		}
+	}
+}
+
 func TestExceedsMobCapRejectsWholeCast(t *testing.T) {
 	l := logrus.New()
 	if !ExceedsMobCap(l, "test_over_cap", 1, 1121001, 30, 3, []uint32{1, 2, 3, 4}) {

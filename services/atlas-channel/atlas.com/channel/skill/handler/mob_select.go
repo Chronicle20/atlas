@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"math"
+
 	"github.com/sirupsen/logrus"
 
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
@@ -136,9 +138,31 @@ const (
 	magnetBodyMargin   = 60
 )
 
+// clampToInt16 saturates v into the int16 range before narrowing. Narrowing
+// an out-of-range int32 straight to int16 wraps instead of saturating, which
+// silently breaks ordering (e.g. a value just above math.MaxInt16 wraps to a
+// large negative int16) — exactly the failure mode MagnetRegion's normalized
+// tuple must not exhibit.
+func clampToInt16(v int32) int16 {
+	if v > math.MaxInt16 {
+		return math.MaxInt16
+	}
+	if v < math.MinInt16 {
+		return math.MinInt16
+	}
+	return int16(v)
+}
+
 // MagnetRegion returns the axis-aligned bounding box of the client's Monster
 // Magnet target trapezoid, as (x1, y1, x2, y2). skillRange is the effect's WZ
 // `range` attribute. The tuple is normalized (x1 <= x2, y1 <= y2).
+//
+// All bounds math happens in int32 and is clamped to the int16 range before
+// narrowing (clampToInt16), not narrowed directly — a caster near the int16
+// edge can otherwise wrap during narrowing even though the pre-narrowing
+// near/far swap already ordered the int32 values correctly. Real maps are not
+// known to place a caster this close to ±32768, but the function must hold
+// its documented normalization invariant for every input regardless.
 //
 // Monster Magnet carries no lt/rb in WZ, so calculateBoundingBox is not
 // applicable to it — see docs/tasks/task-215-monster-magnet/design.md section 3.
@@ -153,13 +177,13 @@ func MagnetRegion(casterX, casterY int16, facingLeft bool, skillRange int32) (x1
 	if near > far {
 		near, far = far, near
 	}
-	x1 = int16(near - magnetBodyMargin)
-	x2 = int16(far + magnetBodyMargin)
+	x1 = clampToInt16(near - magnetBodyMargin)
+	x2 = clampToInt16(far + magnetBodyMargin)
 
 	halfHeight := skillRange/magnetSlopeDivisor + magnetBodyMargin
 	yc := int32(casterY) - magnetYAnchor
-	y1 = int16(yc - halfHeight)
-	y2 = int16(yc + halfHeight)
+	y1 = clampToInt16(yc - halfHeight)
+	y2 = clampToInt16(yc + halfHeight)
 	return
 }
 

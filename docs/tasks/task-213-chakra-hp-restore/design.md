@@ -535,6 +535,22 @@ Adding the two handler entries engages `tools/template-opcode-order-guard.sh`
 `tools/template-movement-types-guard.sh`. The opcode for each version comes from the
 registry/matrix, not from a neighbouring template.
 
+**Plan-phase correction — GMS 12 is NOT edited.** Verified in the task-213
+worktree at plan time: `template_gms_12_1.json` has 24 handlers total, ending
+at `0xB1 SummonDamageHandle`, and it has no `CharacterUseSkillHandle`, so the
+second half of Chakra's two-packet flow (`USE_SKILL`) has nowhere to land on
+that column regardless of whether the prepare handler is bound. Its writer
+list contains no `CharacterSkillPrepareForeign` — that writer exists only on
+`template_gms_92_1.json`, not on GMS 12 as this section originally stated.
+There is no `docs/packets/registry/gms_v12.yaml` and no
+`docs/packets/ida-exports/gms_v12.json` — GMS 12 has no IDB at all (§1) —
+so there is no authority for a `SKILL_EFFECT` opcode on that column, and
+copying a neighbour's would be a fabricated wire value. GMS 12 is therefore
+recorded as out of reach for this feature per PRD FR-9.4: Chakra is inert on
+that column (prepare packet unrouted, `USE_SKILL` unhandled) and needs no Go
+change to stay inert, since the `USE_SKILL` gate already rejects on a missing
+recovery window. Only `template_gms_92_1.json` was edited for this task.
+
 ### 6.4 Randomised heal
 
 Rejected — see §3.4. `ChakraRecovery` takes no RNG parameter, so re-introducing

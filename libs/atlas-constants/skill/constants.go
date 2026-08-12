@@ -2041,6 +2041,11 @@ var LegendBlessOfNymphSkill = Skill{
 	buff: true,
 }
 
+var LegendComboAbilitySkill = Skill{
+	id:   LegendComboAbilityId,
+	buff: true,
+}
+
 var AranStage1ComboAbilitySkill = Skill{
 	id:   AranStage1ComboAbilityId,
 	buff: true,
@@ -2829,6 +2834,7 @@ var Skills = map[Id]Skill{
 	LegendInvincibleId:                          LegendInvincibleSkill,
 	LegendBerserkId:                             LegendBerserkSkill,
 	LegendBlessOfNymphId:                        LegendBlessOfNymphSkill,
+	LegendComboAbilityId:                        LegendComboAbilitySkill,
 	AranStage1ComboAbilityId:                    AranStage1ComboAbilitySkill,
 	AranStage1CombatStepId:                      AranStage1CombatStepSkill,
 	AranStage1DoubleSwingId:                     AranStage1DoubleSwingSkill,
@@ -3388,6 +3394,7 @@ const (
 	LegendInvincibleId                          = Id(20001010)
 	LegendBerserkId                             = Id(20001011)
 	LegendBlessOfNymphId                        = Id(20000012)
+	LegendComboAbilityId                        = Id(20000017)
 	AranStage1ComboAbilityId                    = Id(21000000)
 	AranStage1CombatStepId                      = Id(21001001)
 	AranStage1DoubleSwingId                     = Id(21000002)

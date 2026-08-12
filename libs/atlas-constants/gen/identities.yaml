@@ -1870,6 +1870,10 @@
   domain: skill
   canonicalToken: 20000012
   displayName: Legend Bless Of Nymph
+- name: LegendComboAbility
+  domain: skill
+  canonicalToken: 20000017
+  displayName: Legend Combo Ability
 - name: LegendThreeSnails
   domain: skill
   canonicalToken: 20001000

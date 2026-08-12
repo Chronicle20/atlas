@@ -239,10 +239,10 @@ func TestPeriodicTickDragonBloodFailsClosedOnHpError(t *testing.T) {
 	assert.Equal(t, float64(1), after-before, "expected one degradation observation for the failed HP read")
 }
 
-// TestPeriodicTickHpReadIsMemoizedPerPass (FR-3.6): a character with two
-// floor-sensitive rows reads HP once. Today DRAGON_BLOOD is the only floor row,
-// so the bound is asserted as "at most one read per affected character per
-// pass" across two passes.
+// TestPeriodicTickHpReadIsMemoizedPerPass (FR-3.6): a character with multiple
+// periodic rows, one floor-sensitive, reads HP exactly once during a single
+// pass. Today DRAGON_BLOOD is the only floor-sensitive row, so the bound is
+// asserted as "at most one read per affected character per pass".
 func TestPeriodicTickHpReadIsMemoizedPerPass(t *testing.T) {
 	setupTestRegistry(t)
 	emitted.Reset()

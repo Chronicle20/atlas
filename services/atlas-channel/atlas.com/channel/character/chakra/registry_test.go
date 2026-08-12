@@ -1,11 +1,13 @@
 package chakra
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -159,4 +161,47 @@ func TestConcurrentAccess(t *testing.T) {
 		go func() { defer wg.Done(); r.Sweep(time.Now()) }()
 	}
 	wg.Wait()
+}
+
+// TestStartSweeperIsIdempotent pins the fix for the fan-out bug found in
+// review: every atlas-channel socket listener calls StartSweeper on the same
+// process-wide registry, so without a guard each one would spawn its own
+// ticker against the same singleton. sweeperOnce must make only the first
+// caller actually spawn the loop, regardless of how many callers race to
+// start it — asserted here by overriding spawnSweeper (the seam StartSweeper
+// delegates to) with a counter instead of merely checking StartSweeper
+// doesn't panic.
+func TestStartSweeperIsIdempotent(t *testing.T) {
+	origSpawn := spawnSweeper
+	t.Cleanup(func() { spawnSweeper = origSpawn })
+
+	var mu sync.Mutex
+	spawnCount := 0
+	spawnSweeper = func(_ *Registry, _ logrus.FieldLogger, _ context.Context) {
+		mu.Lock()
+		spawnCount++
+		mu.Unlock()
+	}
+
+	r := newRegistry()
+	l := logrus.New()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	const callers = 8
+	var wg sync.WaitGroup
+	wg.Add(callers)
+	for i := 0; i < callers; i++ {
+		go func() {
+			defer wg.Done()
+			r.StartSweeper(l, ctx)
+		}()
+	}
+	wg.Wait()
+
+	mu.Lock()
+	defer mu.Unlock()
+	if spawnCount != 1 {
+		t.Fatalf("StartSweeper called by %d concurrent listeners spawned the sweeper %d times, want exactly 1", callers, spawnCount)
+	}
 }

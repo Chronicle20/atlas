@@ -47,8 +47,9 @@ type Entry struct {
 }
 
 type Registry struct {
-	mutex   sync.RWMutex
-	entries map[Key]Entry
+	mutex       sync.RWMutex
+	entries     map[Key]Entry
+	sweeperOnce sync.Once
 }
 
 var (
@@ -120,9 +121,12 @@ func (r *Registry) Sweep(now time.Time) int {
 	return n
 }
 
-// StartSweeper runs the eviction loop until ctx is done. Spawned via
-// routine.Go per tools/goroutine-guard.sh.
-func (r *Registry) StartSweeper(l logrus.FieldLogger, ctx context.Context) {
+// spawnSweeper starts the ticker loop that backs StartSweeper. Factored into
+// an overridable var so TestStartSweeperIsIdempotent can count how many
+// times the loop is actually spawned, mirroring the loadCaster/changeHP
+// seam idiom in skill/handler/chakra. The ticker body itself is unchanged
+// from the pre-guard version.
+var spawnSweeper = func(r *Registry, l logrus.FieldLogger, ctx context.Context) {
 	routine.Go(l, ctx, func(c context.Context) {
 		ticker := time.NewTicker(sweepInterval)
 		defer ticker.Stop()
@@ -136,5 +140,25 @@ func (r *Registry) StartSweeper(l logrus.FieldLogger, ctx context.Context) {
 				}
 			}
 		}
+	})
+}
+
+// StartSweeper starts the process-wide eviction loop, once, no matter how
+// many callers invoke it. The registry is a process-wide singleton
+// (GetRegistry), but every atlas-channel socket listener currently calls
+// StartSweeper from its own startup path (one per live (tenantId, worldId,
+// channelId) listener) — without the sweeperOnce guard, each listener would
+// spawn its own 30 s ticker against the same singleton, each taking the
+// registry's write lock (mutex.Lock in Sweep) and contending with the
+// Start/Get/Clear hot paths. Only the FIRST caller's (l, ctx) pair wins: the
+// surviving sweeper is bound to the first caller's context, so it keeps
+// running until that specific listener's context is cancelled, not
+// necessarily until every listener that called StartSweeper has stopped.
+// Correctness does not depend on any particular caller's context outliving
+// the process — Get applies lazy expiry regardless of whether the sweeper
+// has run at all (see TTL and Sweep above).
+func (r *Registry) StartSweeper(l logrus.FieldLogger, ctx context.Context) {
+	r.sweeperOnce.Do(func() {
+		spawnSweeper(r, l, ctx)
 	})
 }

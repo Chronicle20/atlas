@@ -565,3 +565,22 @@ damage-range display, not a hang. See `docs/tasks/task-190-disease-duration-canc
   `CANCEL_DEBUFF` (`investigation.md:172-184`) — the two must never be routed by a hard-coded
   `0x63` constant; always resolve per-tenant from the version-specific template/registry
   entry, the same way task-190's `CancelDebuffHandle` routing does.
+
+## task-219 follow-up: cash WZ re-ingest for morph-coupon `spec/morph`/`spec/hp`
+
+Deferred from task-219 (transformation/morph coupons). `atlas-data`'s `cash/reader.go` now
+materialises `spec/morph`/`spec/hp` for `Cash/0530.img.xml` items, and `atlas-consumables`'
+`ConsumeMorphCoupon` applies them, but the reader change only takes effect for **newly
+ingested** WZ data. Every tenant whose cash WZ was ingested before this change still serves
+`Cash/0530` items with those spec fields absent from the stored data. Until the re-ingest
+below runs for a given tenant, using a morph coupon there consumes the item and applies
+nothing — the "both absent" row of the design's error table — so this note is meant to make
+that first bug report self-answering rather than a mystery.
+
+- [ ] **Re-ingest cash WZ for every provisioned tenant** so `spec/morph`/`spec/hp` populate
+  from the existing `Cash/0530.img.xml` source data (no WZ content change needed, only a
+  re-parse via the existing ingest path).
+- [ ] **Verify per tenant** with a live `GET /data/{tenantId}/cash-items/5300000` and confirm
+  the response's `spec` contains `morph: 1`, `hp: 50`, `time: 600000` (the PRD's worked
+  example item). Repeat across provisioned tenants — this is the PRD §10 acceptance criterion
+  this follow-up exists to close out operationally.

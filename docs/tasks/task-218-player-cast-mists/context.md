@@ -179,3 +179,35 @@ tools/lint.sh --check
    in this task reads those fields. Fixing needs a re-ingest plus an
    atlas-data REST pod restart, and belongs to whichever task next depends on
    them.
+
+### 8.1 Task 16 verification sweep (2026-08-12) — no in-game confirmation performed
+
+The full mechanical gate list (Steps 1–5 of the Task 16 brief) was run this
+session and is clean:
+
+- Seed template registration re-check: `AffectedAreaCreated` 11/11,
+  `AffectedAreaRemoved` 11/11, 11 templates total.
+- `go test -race ./...` + `go vet ./...`, clean in
+  `libs/atlas-constants`, `libs/atlas-constants/gen` (`go run . -check` →
+  `OK: … are up to date`), `services/atlas-maps/atlas.com/maps`, and
+  `services/atlas-channel/atlas.com/channel`; `go build ./...` clean in both
+  services.
+- Guards clean (exit 0, no violations): `redis-key-guard.sh`,
+  `goroutine-guard.sh`, `buff-duration-guard.sh`, `skill-job-id-guard.sh`,
+  `trade-contract-mirror-guard.sh`, `mist-contract-mirror-guard.sh`.
+- `tools/lint.sh --check`: 0 issues on every Go target; the only failing
+  target is `ui:node-version` (shell has node v24, guard wants v22) — a
+  pre-existing environment false-fail unrelated to this branch (no atlas-ui
+  TypeScript changed in task-218).
+- `docker buildx bake atlas-maps atlas-channel`: both images built and
+  exported successfully.
+
+None of this substitutes for a live cast. **Items 1–3 above remain OPEN** —
+no in-game confirmation was performed in this session:
+
+1. Recovery Aura `x` absolute-vs-percentage — still undetermined, still
+   implemented as absolute.
+2. USE_SKILL handler registration for Smokescreen and Recovery Aura — still
+   unconfirmed by a live cast; only the WZ-shape argument-from-absence stands.
+3. Live v95 `dotInterval`/`dotTime` staleness — still unaddressed; out of
+   this task's scope per item 3 above.

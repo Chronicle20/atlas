@@ -93,7 +93,7 @@ func (p *ProcessorImpl) RequestCatchMonster(f field.Model, characterId uint32, s
 		return p.catchError(characterId, itemId, consumable.CatchCauseInvalidItem, err)
 	}
 
-	if err = p.cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueUse, []compartment.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: 1}}); err != nil {
+	if err = p.cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueUse, 30*time.Second, []compartment.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: 1}}); err != nil {
 		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 	}
 	return nil

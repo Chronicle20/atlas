@@ -3795,3 +3795,69 @@ func TestLevelPathPopulatesCommonKeys(t *testing.T) {
 		t.Fatalf("ItemConsume = %d, want 2000000", ef.ItemConsume)
 	}
 }
+
+// TestReader_AranComboAbility_StatupUsesEffectX pins the ARAN_COMBO statup
+// amount to the skill effect's x. The previous hardcoded 100 had no
+// provenance in WZ (Combo Ability's node carries only hs/x/y/z/weapon/
+// invisible) or in the client, and the stat is a damage-calculation input
+// decoded as a SIGNED SHORT -- not the combo count, which SHOW_COMBO carries
+// (task-217 design.md §2.3).
+func TestReader_AranComboAbility_StatupUsesEffectX(t *testing.T) {
+	tests := []struct {
+		name    string
+		imgdir  string
+		skillId string
+		x       int32
+	}{
+		{"aran combo ability level 1", "2100.img", "21000000", 1},
+		{"aran combo ability level 20", "2100.img", "21000000", 20},
+		{"legend combo ability", "2000.img", "20000017", 10},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			l, _ := test.NewNullLogger()
+			tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			ctx := tenant.WithContext(context.Background(), tn)
+
+			xmlData := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="%s">
+  <imgdir name="skill">
+    <imgdir name="%s">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="x" value="%d"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`, tc.imgdir, tc.skillId, tc.x)
+
+			d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+			if err != nil {
+				t.Fatal(err)
+			}
+			rms := model.FixedProvider(d.Models)
+			rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+			if err != nil {
+				t.Fatal(err)
+			}
+			rm, ok := rmm[tc.skillId]
+			if !ok {
+				t.Fatalf("rmm[%s] does not exist.", tc.skillId)
+			}
+			if len(rm.Effects) != 1 {
+				t.Fatalf("len(rm.Effects) = %d, want 1", len(rm.Effects))
+			}
+			su, ok := findStatup(rm.Effects[0].Statups, string(character.TemporaryStatTypeAranCombo))
+			if !ok {
+				t.Fatalf("expected an ARAN_COMBO statup for skill %s, got none in %+v", tc.skillId, rm.Effects[0].Statups)
+			}
+			if su.Amount != tc.x {
+				t.Fatalf("ARAN_COMBO statup Amount = %d, want %d", su.Amount, tc.x)
+			}
+		})
+	}
+}

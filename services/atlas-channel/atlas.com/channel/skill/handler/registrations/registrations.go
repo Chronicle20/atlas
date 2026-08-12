@@ -4,14 +4,15 @@
 package registrations
 
 import (
-	_ "atlas-channel/skill/handler/dispel"       // Priest Dispel party cure — task-163
-	_ "atlas-channel/skill/handler/echoofhero"   // Echo of Hero map-wide — task-162
-	_ "atlas-channel/skill/handler/heal"         // Cleric Heal — task 045
-	_ "atlas-channel/skill/handler/healdispel"   // SuperGM Heal + Dispel — task-156
-	_ "atlas-channel/skill/handler/hide"         // SuperGM Hide — task-156
-	_ "atlas-channel/skill/handler/mprecovery"   // Brawler MP Recovery — task-151
-	_ "atlas-channel/skill/handler/mysticdoor"   // Priest Mystic Door — task-093
-	_ "atlas-channel/skill/handler/poisonmist"   // Fire/Poison Mage Poison Mist — task-200
-	_ "atlas-channel/skill/handler/resurrection" // Bishop/GM/SuperGM Resurrection — task-111
-	_ "atlas-channel/skill/handler/timeleap"     // Buccaneer Time Leap — task-155
+	_ "atlas-channel/skill/handler/dispel"        // Priest Dispel party cure — task-163
+	_ "atlas-channel/skill/handler/echoofhero"    // Echo of Hero map-wide — task-162
+	_ "atlas-channel/skill/handler/heal"          // Cleric Heal — task 045
+	_ "atlas-channel/skill/handler/healdispel"    // SuperGM Heal + Dispel — task-156
+	_ "atlas-channel/skill/handler/hide"          // SuperGM Hide — task-156
+	_ "atlas-channel/skill/handler/monstermagnet" // Hero/Paladin/DarkKnight Monster Magnet — task-215
+	_ "atlas-channel/skill/handler/mprecovery"    // Brawler MP Recovery — task-151
+	_ "atlas-channel/skill/handler/mysticdoor"    // Priest Mystic Door — task-093
+	_ "atlas-channel/skill/handler/poisonmist"    // Fire/Poison Mage Poison Mist — task-200
+	_ "atlas-channel/skill/handler/resurrection"  // Bishop/GM/SuperGM Resurrection — task-111
+	_ "atlas-channel/skill/handler/timeleap"      // Buccaneer Time Leap — task-155
 )

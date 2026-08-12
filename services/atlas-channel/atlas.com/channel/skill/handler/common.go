@@ -223,16 +223,7 @@ func applyToMobs(l logrus.FieldLogger, ctx context.Context, f field.Model, chara
 	// FR-4.3 — mobCount cap. Reject the entire cast if the client claims more
 	// targets than the skill's WZ definition permits. This runs before any
 	// atlas-monsters round-trip; an over-cap cast produces zero emit calls.
-	if uint32(len(mobIds)) > mobCap {
-		l.WithFields(logrus.Fields{
-			"event":            "monster_buff_anomaly_over_cap",
-			"character_id":     characterId,
-			"skill_id":         uint32(sid),
-			"skill_level":      slvl,
-			"mob_count_cap":    mobCap,
-			"client_mob_count": len(mobIds),
-			"client_mob_ids":   mobIds,
-		}).Warn("client_target_count_exceeds_skill_cap")
+	if ExceedsMobCap(l, "monster_buff_anomaly_over_cap", characterId, sid, slvl, mobCap, mobIds) {
 		return
 	}
 
@@ -287,7 +278,7 @@ func applyToMobs(l logrus.FieldLogger, ctx context.Context, f field.Model, chara
 		}
 		mobsInRectCount = len(serverMobIds)
 
-		applied, anomaly = intersectMobIds(mobIds, serverMobIds)
+		applied, anomaly = IntersectMobIds(mobIds, serverMobIds)
 
 		if len(anomaly) > 0 {
 			l.WithFields(logrus.Fields{

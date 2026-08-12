@@ -40,6 +40,7 @@ type Model struct {
 	x                    int16
 	y                    int16
 	mobCount             uint32
+	rangeValue           int32
 	moneyCon             uint32
 	cooldown             uint32
 	morphId              uint32
@@ -162,6 +163,15 @@ func (m Model) DotTime() int32 {
 // skill (e.g., Priest Doom's 6-mob target ceiling). Zero means "no cap".
 func (m Model) MobCount() uint32 {
 	return m.mobCount
+}
+
+// Range returns the skill's WZ `range` attribute in map pixels. For Monster
+// Magnet (which carries no lt/rb) this is the only WZ input to the server-side
+// target region: the client selects candidates through
+// CMobPool::CheckMobInTrapezoid out to this distance. Zero means the attribute
+// is absent, in which case range-based selection must fall back to cap-only.
+func (m Model) Range() int32 {
+	return m.rangeValue
 }
 
 // Prop returns the proc-chance attribute (0.0–1.0). Used by passives like

@@ -30,6 +30,8 @@ type Processor interface {
 	CancelStatus(f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId uint32, sourceSkillId uint32, sourceSkillClass string) error
 	DrainMp(f field.Model, monsterId uint32, characterId uint32, skillId uint32, amount uint32) error
 	Kill(f field.Model, monsterId uint32, characterId uint32) error
+	ClearAggro(f field.Model, monsterId uint32) error
+	ForceControl(f field.Model, monsterId uint32, characterId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -145,4 +147,18 @@ func (p *ProcessorImpl) DrainMp(f field.Model, monsterId uint32, characterId uin
 func (p *ProcessorImpl) Kill(f field.Model, monsterId uint32, characterId uint32) error {
 	p.l.Debugf("Requesting Mortal Blow kill of monster [%d] for character [%d].", monsterId, characterId)
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(KillCommandProvider(f, monsterId, characterId))
+}
+
+// ClearAggro asks atlas-monsters to fully wipe the monster's damage-aggro
+// table. Orthogonal to ForceControl — either may be issued without the other.
+func (p *ProcessorImpl) ClearAggro(f field.Model, monsterId uint32) error {
+	p.l.Debugf("Clearing aggro for monster [%d].", monsterId)
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(ClearAggroCommandProvider(f, monsterId))
+}
+
+// ForceControl asks atlas-monsters to hand control of the monster to
+// characterId with the aggro flag set, bypassing the picker election.
+func (p *ProcessorImpl) ForceControl(f field.Model, monsterId uint32, characterId uint32) error {
+	p.l.Debugf("Forcing control of monster [%d] to character [%d].", monsterId, characterId)
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(ForceControlCommandProvider(f, monsterId, characterId))
 }

@@ -23,6 +23,8 @@ type ProcessorMock struct {
 	CancelStatusFunc           func(f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId uint32, sourceSkillId uint32, sourceSkillClass string) error
 	DrainMpFunc                func(f field.Model, monsterId uint32, characterId uint32, skillId uint32, amount uint32) error
 	KillFunc                   func(f field.Model, monsterId uint32, characterId uint32) error
+	ClearAggroFunc             func(f field.Model, monsterId uint32) error
+	ForceControlFunc           func(f field.Model, monsterId uint32, characterId uint32) error
 }
 
 var _ monster.Processor = (*ProcessorMock)(nil)
@@ -128,6 +130,20 @@ func (m *ProcessorMock) DrainMp(f field.Model, monsterId uint32, characterId uin
 func (m *ProcessorMock) Kill(f field.Model, monsterId uint32, characterId uint32) error {
 	if m.KillFunc != nil {
 		return m.KillFunc(f, monsterId, characterId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) ClearAggro(f field.Model, monsterId uint32) error {
+	if m.ClearAggroFunc != nil {
+		return m.ClearAggroFunc(f, monsterId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) ForceControl(f field.Model, monsterId uint32, characterId uint32) error {
+	if m.ForceControlFunc != nil {
+		return m.ForceControlFunc(f, monsterId, characterId)
 	}
 	return nil
 }

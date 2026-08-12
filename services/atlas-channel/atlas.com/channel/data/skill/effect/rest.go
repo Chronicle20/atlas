@@ -41,6 +41,7 @@ type RestModel struct {
 	X                 int16   `json:"x"`
 	Y                 int16   `json:"y"`
 	MobCount          uint32  `json:"mobCount"`
+	Range             int32   `json:"range"`
 	MoneyConsume      uint32  `json:"moneyConsume"`
 	Cooldown          uint32  `json:"cooldown"`
 	MorphId           uint32  `json:"morphId"`
@@ -120,6 +121,7 @@ func Extract(rm RestModel) (Model, error) {
 		x:                    rm.X,
 		y:                    rm.Y,
 		mobCount:             rm.MobCount,
+		rangeValue:           rm.Range,
 		moneyCon:             rm.MoneyConsume,
 		cooldown:             rm.Cooldown,
 		morphId:              rm.MorphId,

@@ -18,6 +18,8 @@ const (
 	CommandTypeUseBasicAttack = "USE_BASIC_ATTACK"
 	CommandTypeDrainMp        = "DRAIN_MP"
 	CommandTypeKill           = "KILL"
+	CommandTypeClearAggro     = "CLEAR_AGGRO"
+	CommandTypeForceControl   = "FORCE_CONTROL"
 )
 
 type DamageFriendlyCommandBody struct {
@@ -99,6 +101,25 @@ type DrainMpCommandBody struct {
 // byte-typed skillId in sibling bodies (useSkillCommandBody) and log a
 // spurious unmarshal error per proc. Keep this body minimal.
 type KillCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
+// ClearAggroCommandBody asks atlas-monsters to fully wipe a monster's
+// accumulated damage-aggro table — every character's entry, not a decay toward
+// the aggro floor. Deliberately EMPTY (FR-4.3): the command is orthogonal and
+// carries nothing magnet-specific, and an empty body cannot collide with a
+// sibling body's field types on this shared, fan-to-every-handler topic.
+type ClearAggroCommandBody struct{}
+
+// ForceControlCommandBody asks atlas-monsters to hand a monster's controller to
+// a named character, bypassing the normal picker election, and to set the
+// controller-has-aggro flag so the resulting START_CONTROL drives
+// writer.StartControlMonsterBody(m, true).
+//
+// characterId is the only field, and `characterId uint32` already appears with
+// that exact name and type in DamageCommandBody, KillCommandBody and the
+// catch body, so it introduces no unmarshal collision on the shared topic.
+type ForceControlCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 }
 

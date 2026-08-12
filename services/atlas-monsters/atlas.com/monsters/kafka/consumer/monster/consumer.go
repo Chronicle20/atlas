@@ -57,6 +57,12 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCatchCommand))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleClearAggroCommand))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleForceControlCommand))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyStatusFieldCommand))); err != nil {
 			return err
 		}
@@ -193,6 +199,28 @@ func handleCatchCommand(l logrus.FieldLogger, ctx context.Context, c command[cat
 
 	p := monster.NewProcessor(l, ctx)
 	p.Catch(c.MonsterId, c.Body.CharacterId, c.Body.ItemId)
+}
+
+func handleClearAggroCommand(l logrus.FieldLogger, ctx context.Context, c command[clearAggroCommandBody]) {
+	if c.Type != CommandTypeClearAggro {
+		return
+	}
+
+	p := monster.NewProcessor(l, ctx)
+	if err := p.ClearAggro(c.MonsterId); err != nil {
+		l.WithError(err).Errorf("CLEAR_AGGRO failed for monster [%d].", c.MonsterId)
+	}
+}
+
+func handleForceControlCommand(l logrus.FieldLogger, ctx context.Context, c command[forceControlCommandBody]) {
+	if c.Type != CommandTypeForceControl {
+		return
+	}
+
+	p := monster.NewProcessor(l, ctx)
+	if err := p.ForceControl(c.MonsterId, c.Body.CharacterId); err != nil {
+		l.WithError(err).Errorf("FORCE_CONTROL failed for monster [%d] character [%d].", c.MonsterId, c.Body.CharacterId)
+	}
 }
 
 func handleAddPuppetCommand(l logrus.FieldLogger, ctx context.Context, c addPuppetCommand) {

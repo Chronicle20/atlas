@@ -183,6 +183,54 @@ func TestKeydown_v48HideVsV72Corkscrew(t *testing.T) {
 	}
 }
 
+// TestIsChakraCast is the direct predicate test for isChakraCast, modelled
+// on TestKeydown_v48HideVsV72Corkscrew's tenant-context construction. It
+// exists because the four startChakraRecoveryWith* tests only exercise the
+// gate through a fake chakraPrepareDeps and never call isChakraCast itself —
+// they would all stay green even if isChakraCast's Resolve/IsIdentity chain
+// silently returned false for the correct wire id.
+//
+// Chakra's wire id (4211001) is identity-STABLE across every generated
+// version table in libs/atlas-constants/skill (verified by grep over
+// version_gms_*_gen.go and version_jms_185_1_gen.go: every table maps
+// `4211001: ChiefBanditChakra` and `ChiefBanditChakra: 4211001`), unlike the
+// keydown test's wire 5101004 which means two different skills depending on
+// version. So this test proves the resolver path is exercised (not
+// hardcoded) by running the SAME wire id through two independently
+// generated version tables (v48 and v83) rather than by expecting a
+// semantic flip.
+func TestIsChakraCast(t *testing.T) {
+	const chakraWireId = uint32(skill.ChiefBanditChakraId) // 4211001
+	// FighterFinalAttackAxe (1100003) is a real, resolvable, non-Chakra skill
+	// id -- verified present in the generated version tables (used as the
+	// "not a keydown skill" fixture above).
+	const otherSkillWireId = uint32(skill.FighterFinalAttackAxeId)
+	// Garbage: not present in any generated version table's wire→Identity map.
+	const garbageWireId = uint32(999999999)
+
+	ctx48 := testTenantCtx(t, "GMS", 48, 1)
+	if !isChakraCast(ctx48, chakraWireId) {
+		t.Fatal("v48 wire 4211001 (ChiefBanditChakra) MUST resolve as a Chakra cast")
+	}
+	if isChakraCast(ctx48, otherSkillWireId) {
+		t.Fatal("v48 wire 1100003 (FighterFinalAttackAxe) must NOT resolve as a Chakra cast")
+	}
+	if isChakraCast(ctx48, garbageWireId) {
+		t.Fatal("v48 unresolvable wire id must NOT resolve as a Chakra cast")
+	}
+
+	ctx83 := testTenantCtx(t, "GMS", 83, 1)
+	if !isChakraCast(ctx83, chakraWireId) {
+		t.Fatal("v83 wire 4211001 (ChiefBanditChakra) MUST resolve as a Chakra cast")
+	}
+	if isChakraCast(ctx83, otherSkillWireId) {
+		t.Fatal("v83 wire 1100003 (FighterFinalAttackAxe) must NOT resolve as a Chakra cast")
+	}
+	if isChakraCast(ctx83, garbageWireId) {
+		t.Fatal("v83 unresolvable wire id must NOT resolve as a Chakra cast")
+	}
+}
+
 // TestStartChakraRecoveryGate pins PRD FR-1.1/FR-1.2/FR-1.4: below 50% of
 // EFFECTIVE max HP the window opens; at or above it nothing happens at all —
 // no window, no MP, no cooldown (the client sends no USE_SKILL, and even a

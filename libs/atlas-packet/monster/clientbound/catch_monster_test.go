@@ -15,20 +15,23 @@ import (
 func TestCatchMonster(t *testing.T) {
 	input := NewCatchMonster(0x07654321, 0x42, 0x01)
 
-	// Golden bytes (v83 baseline). CMob::OnCatchEffect @0x66d6b9:
-	//   v3 = Decode1(a1) -> ShowCatchEffect(this, v3) — single byte, no success.
+	// Golden bytes (v83 baseline). CMobPool::OnMobPacket @0x67936d reads the
+	// mob object id (Decode4) -> GetMob BEFORE dispatching; CMob::OnCatchEffect
+	// @0x66d6b9 then reads v3 = Decode1(a1) -> ShowCatchEffect(this, v3).
 	got := input.Encode(nil, pt.CreateContext("GMS", 83, 1))(nil)
 	want := []byte{
+		0x21, 0x43, 0x65, 0x07, // uniqueId int32 LE (pool Decode4 @0x67936d)
 		0x42, // result byte (Decode1 @0x66d6b9)
 	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("CatchMonster v83 layout mismatch\n got % x\nwant % x", got, want)
 	}
 
-	// Golden bytes (v95). CMob::OnCatchEffect @0x63cd00:
-	//   v3 = Decode1; v4 = Decode1; ShowCatchEffect(this, v3, v4!=0?0x10E:0) — two bytes.
+	// Golden bytes (v95). CMobPool::OnMobPacket @0x6570b0 Decode4 -> GetMob,
+	// then CMob::OnCatchEffect @0x63cd00: v3 = Decode1; v4 = Decode1.
 	gotV95 := input.Encode(nil, pt.CreateContext("GMS", 95, 0))(nil)
 	wantV95 := []byte{
+		0x21, 0x43, 0x65, 0x07, // uniqueId int32 LE (pool Decode4 @0x6570b0)
 		0x42, // result  byte (Decode1 @0x63cd00)
 		0x01, // success byte (Decode1 @0x63cd00)
 	}
@@ -52,8 +55,8 @@ func TestCatchMonster(t *testing.T) {
 //	Decode1 @0x63c6b0 — result byte (-> sub_637DEC / ShowCatchEffect); no success byte.
 //
 // So the v79 wire is [uniqueId int32][result byte]. The leading uniqueId is the
-// universal CMobPool::OnMobPacket prefix (see legacyMobPoolPrefix); it is written
-// for the pre-v83 legacy range and gated off for v83+ (frozen per campaign).
+// universal CMobPool::OnMobPacket prefix, written unconditionally on every
+// version (task-212 F-1).
 //
 // packet-audit:verify packet=monster/clientbound/MonsterCatchMonster version=gms_v79 ida=0x63c6a9
 func TestCatchMonsterBytesV79(t *testing.T) {
@@ -77,7 +80,8 @@ func TestCatchMonsterBytesV79(t *testing.T) {
 //	Decode1 @0x61c946 — result byte (-> sub_6186D8); no success byte.
 //
 // Wire = [uniqueId int32][result byte]; leading uniqueId is the universal
-// OnMobPacket prefix (legacyMobPoolPrefix). Byte-identical to v79.
+// OnMobPacket prefix, written unconditionally on every version. Byte-identical
+// to v79.
 //
 // packet-audit:verify packet=monster/clientbound/MonsterCatchMonster version=gms_v72 ida=0x61c93f
 func TestCatchMonsterBytesV72(t *testing.T) {
@@ -90,5 +94,41 @@ func TestCatchMonsterBytesV72(t *testing.T) {
 	got := input.Encode(nil, ctx)(nil)
 	if !bytes.Equal(got, want) {
 		t.Errorf("v72 catchMonster bytes:\n got % x\nwant % x", got, want)
+	}
+}
+
+// TestCatchMonsterBytesV92 pins the v92 wire against CMobPool::OnMobPacket
+// @0x64a6c0 (Decode4 -> GetMob) dispatching case 291 to sub_630C30 @0x630c30,
+// which reads a single Decode1 — the v83 shape, NOT the two-byte v95 one.
+//
+// packet-audit:verify packet=monster/clientbound/MonsterCatchMonster version=gms_v92 ida=0x630c30
+func TestCatchMonsterBytesV92(t *testing.T) {
+	input := NewCatchMonster(0x07654321, 0x42, 0x01)
+	ctx := pt.CreateContext("GMS", 92, 1)
+	want := []byte{
+		0x21, 0x43, 0x65, 0x07, // uniqueId int32 LE (pool Decode4 @0x64a6c0)
+		0x42, // result byte (Decode1 @0x630c30)
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v92 catchMonster bytes:\n got % x\nwant % x", got, want)
+	}
+}
+
+// TestCatchMonsterBytesV48 pins the v48 wire. CMobPool::OnMobPacket @0x559390
+// reads the mob object id (Decode4) -> GetMob, then dispatches case 172 to
+// sub_5511F4, which reads one Decode1 (the result byte). No success byte.
+//
+// packet-audit:verify packet=monster/clientbound/MonsterCatchMonster version=gms_v48 ida=0x5511f4
+func TestCatchMonsterBytesV48(t *testing.T) {
+	input := NewCatchMonster(0x07654321, 0x42, 0x01)
+	ctx := pt.CreateContext("GMS", 48, 1)
+	want := []byte{
+		0x21, 0x43, 0x65, 0x07, // uniqueId int32 LE (pool Decode4 @0x559390)
+		0x42, // result byte (Decode1, sub_5511F4)
+	}
+	got := input.Encode(nil, ctx)(nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v48 catchMonster bytes:\n got % x\nwant % x", got, want)
 	}
 }

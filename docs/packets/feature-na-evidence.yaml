@@ -143,6 +143,21 @@ entries:
       EncodeBuffer 8) — the request path is real and reaches the server, but
       no client-side result handler exists to receive a reply, which is
       exactly the family-inconsistent n-a this evidence file exists to prove.
+  - op: BRIDLE_MOB_CATCH_FAIL
+    version: gms_v48
+    evidence: >
+      gms_v48 has no BRIDLE_MOB_CATCH_FAIL receive handler. CWvsContext::OnPacket
+      @0x70d215 is a complete compiled switch over cases 25-70 with no bridle-fail
+      arm; the four unnamed arms were individually decompiled and ruled out —
+      sub_72025D (case 58, a delegating stub), sub_713202 (case 62), sub_721481
+      (case 68, a two-byte + optional-string notice) and sub_7215EA (case 70, the
+      same shape). The v48 IDB is symbol-rich across CWvsContext (mangled MSVC
+      names throughout) and CWvsContext::SendBridleItemUseRequest @0x70e0c5 IS
+      named, while OnBridleMobCatchFail is absent from the class entirely. v61
+      has it (@0x8307f3, named), so this is a v48-only absence: v48 sends catch
+      requests but has no server-driven failure notice. The sibling clientbound
+      catch packets DO exist on v48 (CATCH_MONSTER 0x0AC, CATCH_MONSTER_WITH_ITEM
+      0x0AD via CMobPool::OnMobPacket @0x559390 cases 172/173). (task-212)
   - op: USE_DEATHITEM
     version: gms_v48
     evidence: >

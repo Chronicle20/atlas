@@ -51,6 +51,14 @@ Compartment status events for transaction handling. Consumed via dynamically reg
 | RESERVED | Item reservation confirmed |
 | RESERVATION_CANCELLED | Item reservation cancelled |
 
+### EVENT_TOPIC_MONSTER_CATCH
+
+Dedicated, low-volume monster catch-outcome topic owned by atlas-monsters. Consumed via a dynamically registered one-time handler correlated by `(characterId, itemId)`, one per in-flight catch attempt.
+
+| Event | Description |
+|-------|-------------|
+| CATCH_RESOLVED | Bridle (catch-item) capture attempt resolved (success or failure) |
+
 ## Topics Produced
 
 ### EVENT_TOPIC_CONSUMABLE_STATUS
@@ -64,6 +72,7 @@ Consumable status events.
 | VEGA_SCROLL | Vega's Spell scroll usage result |
 | EFFECT_APPLIED | Consumable effect applied |
 | VICIOUS_HAMMER | Vicious hammer usage result |
+| CATCH_FAILED | Pre-reserve bridle (catch-item) rejection (use-delay, inventory full, or invalid item) |
 
 ### EVENT_TOPIC_TAMING_MOB_FOOD
 
@@ -119,6 +128,14 @@ Pet commands.
 | Command | Description |
 |---------|-------------|
 | AWARD_FULLNESS | Increase pet fullness |
+
+### COMMAND_TOPIC_MONSTER
+
+Monster commands. Shared topic owned by atlas-monsters; this service produces only `CATCH`.
+
+| Command | Description |
+|---------|-------------|
+| CATCH | Resolve a bridle (catch-item) capture attempt against a monster |
 
 ## Message Types
 
@@ -650,6 +667,62 @@ Flat struct (no envelope wrapper) on `COMMAND_TOPIC_ITEM_CONSUMED_ON_PICKUP`.
   }
 }
 ```
+
+### CATCH Command (produced)
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "monsterId": 0,
+  "type": "CATCH",
+  "body": {
+    "characterId": 0,
+    "itemId": 0
+  }
+}
+```
+
+Produced on `COMMAND_TOPIC_MONSTER` (atlas-monsters' shared command envelope) once the catch item's reservation is confirmed by `RESERVED`. `monsterId` carries the mob's unique (field object) id.
+
+### CATCH_RESOLVED Event (consumed)
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "uniqueId": 0,
+  "monsterId": 0,
+  "type": "CATCH_RESOLVED",
+  "body": {
+    "characterId": 0,
+    "itemId": 0,
+    "success": true,
+    "cause": ""
+  }
+}
+```
+
+Consumed from `EVENT_TOPIC_MONSTER_CATCH` via a one-time handler correlated by `(characterId, itemId)`. `success: true` commits the reservation and grants the reward item; `success: false` cancels the reservation and leaves the catch item untouched. `cause` is populated on failure (`SPECIES_MISMATCH`, `HP_TOO_HIGH`, `ROLL_FAILED`, or the internal-only `UNRESOLVED`).
+
+### CATCH_FAILED Event (produced)
+
+```json
+{
+  "characterId": 0,
+  "type": "CATCH_FAILED",
+  "body": {
+    "itemId": 0,
+    "cause": "USE_DELAY"
+  }
+}
+```
+
+Emitted on `EVENT_TOPIC_CONSUMABLE_STATUS` when a catch request is rejected before the item is reserved. `cause` is one of `USE_DELAY`, `INVENTORY_FULL`, or `INVALID_ITEM`.
 
 ## Transaction Semantics
 

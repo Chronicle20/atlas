@@ -1,6 +1,6 @@
 # MonsterCatchMonster (← `CMob::OnCatchEffect`)
 
-- **IDA:** 0x630C30
+- **IDA:** 0x630c30
 - **Atlas file:** `libs/atlas-packet/monster/clientbound/catch_monster.go`
 - **Variant:** GMS/v92
 - **Branch depth:** 1

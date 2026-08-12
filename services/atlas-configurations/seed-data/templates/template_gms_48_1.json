@@ -518,6 +518,15 @@
         ]
       },
       {
+        "opCode": "0x3F",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterCatchItemUseHandle",
+        "fname": "CWvsContext::SendBridleItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x40",
         "validator": "LoggedInValidator",
         "handler": "CharacterSkillBookUseHandle",
@@ -2772,6 +2781,22 @@
       {
         "opCode": "0xAA",
         "writer": "MonsterSpecialEffectBySkill",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xAC",
+        "writer": "CatchMonster",
+        "fname": "CMob::OnCatchEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xAD",
+        "writer": "CatchMonsterWithItem",
+        "fname": "CMob::OnEffectByItem",
         "services": [
           "channel"
         ]

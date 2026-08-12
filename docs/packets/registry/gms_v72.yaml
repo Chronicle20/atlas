@@ -2367,6 +2367,13 @@
   ida:
     address: 9457634
   note: 'v72 COutPacket(78) verified via global COutPacket-ctor harvest @0x904fe2; Δ+1 vs v79 op 77 (mid/field/social Δ+1).'
+- op: USE_CATCH_ITEM
+  direction: serverbound
+  opcode: 80
+  fname: CWvsContext::SendBridleItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 9454973
 - op: USE_SKILL_BOOK
   direction: serverbound
   opcode: 81

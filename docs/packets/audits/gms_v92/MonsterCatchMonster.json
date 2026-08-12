@@ -1,7 +1,7 @@
 {
   "WriterName": "MonsterCatchMonster",
   "IDAName": "CMob::OnCatchEffect",
-  "Address": "0x630C30",
+  "Address": "0x630c30",
   "Variant": "GMS/v92",
   "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/monster/clientbound/catch_monster.go",

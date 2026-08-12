@@ -22,6 +22,7 @@ const (
 	CommandCancelConsumableEffect = "CANCEL_CONSUMABLE_EFFECT"
 	CommandRequestItemReward      = "REQUEST_ITEM_REWARD"
 	CommandRequestViciousHammer   = "REQUEST_VICIOUS_HAMMER"
+	CommandRequestCatchMonster    = "REQUEST_CATCH_MONSTER"
 )
 
 type Command[E any] struct {
@@ -81,6 +82,15 @@ type RequestViciousHammerBody struct {
 	EquipSlot  slot.Position `json:"equipSlot"`
 }
 
+// RequestCatchMonsterBody carries a bridle (catch-item) use. monsterUniqueId is
+// the field object id the client's FindHitMobInRect selected — the server
+// revalidates species, HP and the roll in atlas-monsters regardless.
+type RequestCatchMonsterBody struct {
+	Source          slot.Position `json:"source"`
+	ItemId          item.Id       `json:"itemId"`
+	MonsterUniqueId uint32        `json:"monsterUniqueId"`
+}
+
 // ApplyConsumableEffectBody is the body for applying consumable effects without consuming from inventory
 // Used for NPC-initiated buffs (e.g., NPC blessings)
 type ApplyConsumableEffectBody struct {
@@ -103,11 +113,19 @@ const (
 	EventTypeRewardWon       = "REWARD_WON"
 	EventTypeViciousHammer   = "VICIOUS_HAMMER"
 	EventTypeSkillBookResult = "SKILL_BOOK_RESULT"
+	EventTypeCatchFailed     = "CATCH_FAILED"
 
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
 	ErrorTypePetCannotLearn   = "PET_CANNOT_LEARN"
 	ErrorTypeInventoryFull    = "INVENTORY_FULL"
 	ErrorTypeVegaInvalid      = "VEGA_INVALID"
+
+	// Catch failure causes reported by atlas-consumables' pre-reserve gates.
+	// The wire byte is NOT chosen here — atlas-channel maps cause to reason
+	// (DOM-25), because 0/1 is a client-interpreted value.
+	CatchCauseUseDelay      = "USE_DELAY"
+	CatchCauseInventoryFull = "INVENTORY_FULL"
+	CatchCauseInvalidItem   = "INVALID_ITEM"
 )
 
 type Event[E any] struct {
@@ -171,4 +189,11 @@ type RewardWonBody struct {
 	BoxItemId uint32 `json:"boxItemId"`
 	ItemId    uint32 `json:"itemId"`
 	Message   string `json:"message"`
+}
+
+// CatchFailedBody reports a pre-reserve catch rejection. Cause is one of the
+// CatchCause* constants above.
+type CatchFailedBody struct {
+	ItemId uint32 `json:"itemId"`
+	Cause  string `json:"cause"`
 }

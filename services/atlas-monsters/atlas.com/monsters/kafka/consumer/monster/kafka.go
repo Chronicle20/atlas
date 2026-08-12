@@ -25,6 +25,7 @@ const (
 	CommandTypeAddPuppet         = "ADD_PUPPET"
 	CommandTypeRemovePuppet      = "REMOVE_PUPPET"
 	CommandTypeKill              = "KILL"
+	CommandTypeCatch             = "CATCH"
 
 	EnvCommandTopicMovement = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 )
@@ -114,6 +115,18 @@ type drainMpCommandBody struct {
 // (useSkillCommandBody) and log a spurious unmarshal error per proc.
 type killCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
+}
+
+// catchCommandBody asks the processor to remove a monster as a bridle
+// (catch-item) capture. Deliberately minimal: every handler on this shared
+// command topic json-unmarshals every message, so a field name whose type
+// disagrees with a sibling body produces one spurious unmarshal error per
+// message. characterId and itemId are both uint32 and both already appear with
+// that type in sibling bodies (damageCommandBody.CharacterId,
+// drainMpCommandBody.SkillId).
+type catchCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+	ItemId      uint32 `json:"itemId"`
 }
 
 // addPuppetCommand registers a player's puppet in a field so the monster

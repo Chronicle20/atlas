@@ -344,6 +344,23 @@ Clears a previously registered puppet. Emitted by atlas-summons on puppet despaw
 }
 ```
 
+#### CATCH
+
+Asks the processor to resolve a bridle (catch-item) capture attempt against a monster. Emitted by atlas-consumables when a character uses a catch item.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "monsterId": 0,
+  "type": "CATCH",
+  "body": {
+    "characterId": 0,
+    "itemId": 0
+  }
+}
+```
+
 ### COMMAND_TOPIC_MONSTER_MOVEMENT
 
 Monster movement commands.
@@ -713,6 +730,77 @@ Emitted whenever a monster's MP is mutated (skill cast, basic attack, MP-Eater d
 ```
 
 `reason`: "MP_EATER", "SKILL_CAST", "BASIC_ATTACK", or "RECOVERY". `amount` is the requested/applied amount (for MP_EATER, the full requested amount regardless of clamping); `monsterMpAfter` is the monster's MP after the change.
+
+#### CAUGHT
+
+Emitted immediately BEFORE `DESTROYED` when a bridle (catch-item) capture attempt succeeds. Presentation-only — the economic outcome (item reservation commit/cancel) is published separately on `EVENT_TOPIC_MONSTER_CATCH`, not here.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "uniqueId": 0,
+  "monsterId": 0,
+  "type": "CAUGHT",
+  "body": {
+    "characterId": 0,
+    "itemId": 0
+  }
+}
+```
+
+#### CATCH_FAILED
+
+Emitted when a bridle (catch-item) capture attempt fails.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "uniqueId": 0,
+  "monsterId": 0,
+  "type": "CATCH_FAILED",
+  "body": {
+    "characterId": 0,
+    "itemId": 0,
+    "cause": "SPECIES_MISMATCH"
+  }
+}
+```
+
+`cause`: "SPECIES_MISMATCH", "HP_TOO_HIGH", or "ROLL_FAILED". A fourth internal cause, "UNRESOLVED" (the attempt lost a race — monster already gone, or another catcher claimed it first), renders no failure packet on the channel side, only the unlock.
+
+### EVENT_TOPIC_MONSTER_CATCH
+
+Dedicated, low-volume topic carrying the economic outcome of a bridle (catch-item) capture attempt. Consumed by atlas-consumables to commit or cancel the item reservation. Deliberately kept off the high-volume `EVENT_TOPIC_MONSTER_STATUS` topic, whose every handler unmarshals every message.
+
+**Message Type:**
+
+#### CATCH_RESOLVED
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "uniqueId": 0,
+  "monsterId": 0,
+  "type": "CATCH_RESOLVED",
+  "body": {
+    "characterId": 0,
+    "itemId": 0,
+    "success": true,
+    "cause": "SPECIES_MISMATCH"
+  }
+}
+```
+
+`success`: whether the capture succeeded. `cause` is populated (see `CATCH_FAILED` above, including the internal-only "UNRESOLVED") when `success` is `false`; empty otherwise.
 
 ### COMMAND_TOPIC_MIST
 

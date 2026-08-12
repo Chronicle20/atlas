@@ -1,11 +1,13 @@
 package main
 
 import (
+	"atlas-consumables/catchdelay"
 	assetconsumer "atlas-consumables/kafka/consumer/asset"
 	"atlas-consumables/kafka/consumer/character"
 	"atlas-consumables/kafka/consumer/compartment"
 	"atlas-consumables/kafka/consumer/consumable"
 	"atlas-consumables/kafka/consumer/food"
+	monsterconsumer "atlas-consumables/kafka/consumer/monster"
 	pickupconsumer "atlas-consumables/kafka/consumer/pickup"
 	sagaconsumer "atlas-consumables/kafka/consumer/saga"
 	mapCharacter "atlas-consumables/map/character"
@@ -30,6 +32,7 @@ func main() {
 
 	rc := atlas.Connect(l)
 	mapCharacter.InitRegistry(rc)
+	catchdelay.InitRegistry(rc)
 
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)
@@ -39,6 +42,7 @@ func main() {
 	food.InitConsumers(l)(cmf)(consumerGroupId)
 	pickupconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	sagaconsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	monsterconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := character.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}

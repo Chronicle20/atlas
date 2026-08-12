@@ -52,11 +52,16 @@ type PeriodicEntry struct {
 //
 // Results are sorted by (CharacterId, StatType) so a tick pass emits in a
 // stable order.
-func (r *Registry) GetPeriodicEntries(ctx context.Context) []PeriodicEntry {
+//
+// A Redis scan failure is returned to the caller rather than swallowed: an
+// empty tick pass must stay distinguishable from a failed one, so the ticker
+// (which owns a logger) can log the failure instead of ticking silently
+// zero times.
+func (r *Registry) GetPeriodicEntries(ctx context.Context) ([]PeriodicEntry, error) {
 	t := tenant.MustFromContext(ctx)
 	vals, err := r.characters.GetAllValues(ctx, t)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	best := make(map[TickKey]PeriodicEntry)
@@ -95,7 +100,7 @@ func (r *Registry) GetPeriodicEntries(ctx context.Context) []PeriodicEntry {
 		}
 		return results[i].StatType < results[j].StatType
 	})
-	return results
+	return results, nil
 }
 
 // GetPeriodicTick reports when this effect last ticked for this character.

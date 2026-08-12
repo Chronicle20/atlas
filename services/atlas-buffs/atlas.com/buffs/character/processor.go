@@ -14,6 +14,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -296,7 +297,17 @@ const maxTickMagnitude = int32(32767)
 // on the CHANGE_HP command — an atlas-character contract change, out of scope
 // for task-214 (design.md §3.5).
 func (p *ProcessorImpl) ProcessPeriodicTicks() error {
-	entries := GetRegistry().GetPeriodicEntries(p.ctx)
+	entries, err := GetRegistry().GetPeriodicEntries(p.ctx)
+	if err != nil {
+		// A scan failure degrades to "no ticks this pass, try again next
+		// interval" rather than propagating: the ticker must not crash on a
+		// transient Redis blip, and the next 1s pass self-heals. Logged here
+		// (not returned) so this failure reads distinctly from a genuine
+		// message-emit error below, which the outer tenant loop does treat
+		// as pass-level failure.
+		p.l.WithError(err).Warn("Periodic tick scan failed; skipping this tick pass.")
+		return nil
+	}
 	now := p.now()
 	hpCache := make(map[uint32]hpLookup)
 
@@ -371,7 +382,7 @@ func (p *ProcessorImpl) hpFor(cache map[uint32]hpLookup, characterId uint32) (ui
 	}
 	hp, err := p.getCharacterHp(characterId)
 	if err != nil {
-		p.l.WithError(err).Warnf("Unable to read HP for character [%d]; skipping floor-sensitive periodic tick.", characterId)
+		degrade.Observe(p.l, "buffs.periodic.character_hp", characterId, err)
 		cache[characterId] = hpLookup{}
 		return 0, false
 	}

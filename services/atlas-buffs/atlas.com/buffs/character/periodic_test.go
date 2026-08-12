@@ -16,7 +16,9 @@ func TestGetPeriodicEntriesEmptyRegistry(t *testing.T) {
 	setupTestRegistry(t)
 	ctx := setupTestContext(t, setupTestTenant(t))
 
-	assert.Empty(t, GetRegistry().GetPeriodicEntries(ctx))
+	entries, err := GetRegistry().GetPeriodicEntries(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
 }
 
 // TestGetPeriodicEntriesIgnoresNonPeriodicStats: a buff made entirely of flat
@@ -29,7 +31,9 @@ func TestGetPeriodicEntriesIgnoresNonPeriodicStats(t *testing.T) {
 		[]stat.Model{stat.NewStat("WEAPON_ATTACK", 30)}, false, false)
 	require.NoError(t, err)
 
-	assert.Empty(t, GetRegistry().GetPeriodicEntries(ctx))
+	entries, err := GetRegistry().GetPeriodicEntries(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
 }
 
 // TestGetPeriodicEntriesYieldsEveryPeriodicStatOnOneBuff: the pre-task-214 scan
@@ -47,7 +51,8 @@ func TestGetPeriodicEntriesYieldsEveryPeriodicStatOnOneBuff(t *testing.T) {
 		}, false, false)
 	require.NoError(t, err)
 
-	entries := GetRegistry().GetPeriodicEntries(ctx)
+	entries, err := GetRegistry().GetPeriodicEntries(ctx)
+	require.NoError(t, err)
 	require.Len(t, entries, 2)
 	// Sorted by (characterId, statType).
 	assert.Equal(t, "DRAGON_BLOOD", entries[0].StatType)
@@ -72,7 +77,8 @@ func TestGetPeriodicEntriesDedupesByMaxAmount(t *testing.T) {
 		[]stat.Model{stat.NewStat("POISON", 25)}, false, false)
 	require.NoError(t, err)
 
-	entries := GetRegistry().GetPeriodicEntries(ctx)
+	entries, err := GetRegistry().GetPeriodicEntries(ctx)
+	require.NoError(t, err)
 	require.Len(t, entries, 1)
 	assert.Equal(t, int32(25), entries[0].Amount)
 }
@@ -89,7 +95,9 @@ func TestGetPeriodicEntriesSkipsExpiredBuffs(t *testing.T) {
 	require.NoError(t, err)
 	time.Sleep(10 * time.Millisecond)
 
-	assert.Empty(t, GetRegistry().GetPeriodicEntries(ctx))
+	entries, err := GetRegistry().GetPeriodicEntries(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
 }
 
 func TestPeriodicTickStoreRoundTrip(t *testing.T) {

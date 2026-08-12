@@ -10,6 +10,7 @@ import (
 
 	character2 "atlas-buffs/kafka/message/character"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,6 +18,30 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
+
+// counterValue reads a labeled counter from the default gatherer (0 when the
+// series does not exist yet). Same shape as atlas-login's
+// character/processor_test.go helper.
+func counterValue(t *testing.T, name, labelName, labelValue string) float64 {
+	t.Helper()
+	mfs, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		t.Fatalf("gather: %v", err)
+	}
+	for _, mf := range mfs {
+		if mf.GetName() != name {
+			continue
+		}
+		for _, m := range mf.GetMetric() {
+			for _, lp := range m.GetLabel() {
+				if lp.GetName() == labelName && lp.GetValue() == labelValue {
+					return m.GetCounter().GetValue()
+				}
+			}
+		}
+	}
+	return 0
+}
 
 // tickProcessor builds a ProcessorImpl with a frozen clock and a stubbed HP
 // read. Same-package struct literal, mirroring berserk/processor_test.go's
@@ -192,7 +217,10 @@ func TestPeriodicTickDragonBloodFloorsAtOne(t *testing.T) {
 	}
 }
 
-// TestPeriodicTickDragonBloodFailsClosedOnHpError (design D5).
+// TestPeriodicTickDragonBloodFailsClosedOnHpError (design D5). A failed HP
+// read must also be observed via degrade.Observe — logged and counted —
+// so a sustained CHARACTERS outage that silently disables the HP floor
+// leaves a metric signal, not just a skipped tick.
 func TestPeriodicTickDragonBloodFailsClosedOnHpError(t *testing.T) {
 	setupTestRegistry(t)
 	emitted.Reset()
@@ -201,9 +229,14 @@ func TestPeriodicTickDragonBloodFailsClosedOnHpError(t *testing.T) {
 	calls := 0
 	p := tickProcessor(ctx, &now, 0, errors.New("boom"), &calls)
 
+	before := counterValue(t, "atlas_enrichment_degraded_total", "component", "buffs.periodic.character_hp")
+
 	applyBuff(t, ctx, 100, 1311008, stat.NewStat("DRAGON_BLOOD", 48))
 	require.NoError(t, p.ProcessPeriodicTicks(), "a failed HP read is not a pass failure")
 	assert.Empty(t, changeHPAmounts(t), "never emit an unclamped drain")
+
+	after := counterValue(t, "atlas_enrichment_degraded_total", "component", "buffs.periodic.character_hp")
+	assert.Equal(t, float64(1), after-before, "expected one degradation observation for the failed HP read")
 }
 
 // TestPeriodicTickHpReadIsMemoizedPerPass (FR-3.6): a character with two

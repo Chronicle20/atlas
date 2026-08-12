@@ -54,11 +54,36 @@ func TestIncrementClampsAtCap(t *testing.T) {
 	tn := testTenant(t)
 	now := time.Unix(1000, 0)
 	m.SetEligibility(tn, 7, testField(), testEligibility(), now)
-	m.setCountForTest(tn, 7, ComboCap)
+
+	// Reach the cap through the real exported path -- no test-only backdoor.
+	for i := int32(0); i < ComboCap; i++ {
+		m.Increment(tn, 7, testField(), DefaultIdleWindow, now)
+	}
 
 	count, seeded := m.Increment(tn, 7, testField(), DefaultIdleWindow, now)
 	if count != ComboCap || seeded {
 		t.Fatalf("at cap: want (%d,false), got (%d,%v)", ComboCap, count, seeded)
+	}
+
+	// A capped entry must still refresh LastHit on every hit: a player still
+	// landing hits at the cap must not decay mid-combat. There is no
+	// exported read path for LastHit outside the package, so assert this
+	// behaviorally via ExpireIdle: refresh the hit far later, then confirm a
+	// sweep that lands well within the NEW lastHit's window -- but well past
+	// where the OLD lastHit's window would have expired it -- does not
+	// expire the entry.
+	later := now.Add(time.Minute)
+	count, seeded = m.Increment(tn, 7, testField(), DefaultIdleWindow, later)
+	if count != ComboCap || seeded {
+		t.Fatalf("refreshing hit at cap: want (%d,false), got (%d,%v)", ComboCap, count, seeded)
+	}
+
+	sweepAt := later.Add(DefaultIdleWindow / 2)
+	if sweepAt.Sub(now) <= DefaultIdleWindow {
+		t.Fatalf("test setup invalid: sweepAt is not past the un-refreshed window, assertion below would be vacuous")
+	}
+	if got := m.ExpireIdle(sweepAt); len(got) != 0 {
+		t.Fatalf("capped entry with a refreshed LastHit must not expire: got %d expiries", len(got))
 	}
 }
 

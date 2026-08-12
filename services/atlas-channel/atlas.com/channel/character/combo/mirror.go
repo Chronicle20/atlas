@@ -205,14 +205,3 @@ func (m *Mirror) ExpireIdle(now time.Time) []Expired {
 	}
 	return out
 }
-
-// setCountForTest seeds a count directly so cap behaviour is testable without
-// 99999 calls to Increment.
-func (m *Mirror) setCountForTest(t tenant.Model, characterId uint32, count int32) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	b := m.bucketFor(t)
-	e := b.entries[characterId]
-	e.count = count
-	b.entries[characterId] = e
-}

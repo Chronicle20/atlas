@@ -20,6 +20,7 @@ const ShowComboWriter = "ShowCombo"
 // WITHOUT releasing its digit layers, so a 0 leaves stale digits on screen
 // rather than clearing them. The client clears its own HUD on its idle timer
 // (design.md §2.5, §5.3).
+// packet-audit:fname CUserLocal::OnIncComboResponse
 type ShowCombo struct {
 	count uint32
 }

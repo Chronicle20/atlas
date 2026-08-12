@@ -15,6 +15,7 @@ const AranComboCounterHandle = "AranComboCounterHandle"
 // owning Combo Ability. The body is empty on every in-scope version (v83,
 // v84, v87, v92, v95, jms185 -- design.md §2.1), so there is nothing here to
 // trust: every gate is re-derived server-side.
+// packet-audit:fname CUserLocal::RequestIncCombo
 type AranComboCounterRequest struct{}
 
 func (m AranComboCounterRequest) Operation() string {

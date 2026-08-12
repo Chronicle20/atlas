@@ -72,7 +72,7 @@ func main() {
 		tasks.Register(l, rt.Context())(tasks.NewExpiration(l, 10000))
 	})
 	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(tasks.NewPoisonTick(l, 1000))
+		tasks.Register(l, rt.Context())(tasks.NewPeriodicTick(l, 1000))
 	})
 	routine.Go(l, rt.Context(), func(_ context.Context) {
 		tasks.Register(l, rt.Context())(tasks.NewBerserkTick(l, 1000))

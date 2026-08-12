@@ -4141,6 +4141,30 @@
         ]
       },
       {
+        "opCode": "0x10E",
+        "writer": "SpawnKiteError",
+        "fname": "CMessageBoxPool::OnCreateFailed",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x10F",
+        "writer": "SpawnKite",
+        "fname": "CMessageBoxPool::OnMessageBoxEnterField",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x110",
+        "writer": "DestroyKite",
+        "fname": "CMessageBoxPool::OnMessageBoxLeaveField",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x111",
         "writer": "AffectedAreaCreated",
         "fname": "CAffectedAreaPool::OnAffectedAreaCreated",

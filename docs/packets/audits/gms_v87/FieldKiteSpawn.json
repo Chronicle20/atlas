@@ -56,7 +56,7 @@
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
-      "IDAComment": "nType (kite type, +32 @0x694f30)",
+      "IDAComment": "ptMessageBox.y (spawn y, +32 @0x694f30)",
       "Verdict": 0,
       "Note": ""
     }

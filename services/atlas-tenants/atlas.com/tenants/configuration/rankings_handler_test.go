@@ -186,3 +186,151 @@ func TestRankingsHandlerWireRoundTrip(t *testing.T) {
 		t.Fatalf("get response is missing the literal resource type; body=%s", getRaw.String())
 	}
 }
+
+// TestGetKiteConfigHandlerNotFound asserts GET on a tenant with no
+// kite-configs configuration yet returns 404, mirroring the rankings
+// not-found behavior (GetKiteConfigHandler maps gorm.ErrRecordNotFound to
+// http.StatusNotFound).
+func TestGetKiteConfigHandlerNotFound(t *testing.T) {
+	srv, db := rankingsHandlerTestDB(t)
+	tenantId := uuid.New()
+	if err := db.Create(&tenants.Entity{
+		ID:           tenantId,
+		Name:         "kite-config-not-found",
+		Region:       "GMS",
+		MajorVersion: 83,
+		MinorVersion: 1,
+	}).Error; err != nil {
+		t.Fatalf("seed tenant: %v", err)
+	}
+	kiteConfigURL := fmt.Sprintf("%s/tenants/%s/configurations/kite-configs", srv.URL, tenantId)
+
+	resp := doRankingsRequest(t, http.MethodGet, kiteConfigURL, nil)
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("get status = %d, want 404", resp.StatusCode)
+	}
+}
+
+// TestCreateThenGetKiteConfigHandler drives the kite-configs configuration
+// resource through its actual HTTP handlers (CreateKiteConfigHandler,
+// GetKiteConfigHandler) and the real JSON:API codec, mirroring
+// TestRankingsHandlerWireRoundTrip. It POSTs maxPerMap=10,
+// maxMessageLength=182, blockedMapPrefixes=[91] (the documented defaults, as
+// distinctive non-zero values) and asserts the literal JSON:API type
+// "kite-configs" and attribute names/values appear in both the create and
+// get responses.
+func TestCreateThenGetKiteConfigHandler(t *testing.T) {
+	srv, db := rankingsHandlerTestDB(t)
+	tenantId := uuid.New()
+	if err := db.Create(&tenants.Entity{
+		ID:           tenantId,
+		Name:         "kite-config-round-trip",
+		Region:       "GMS",
+		MajorVersion: 83,
+		MinorVersion: 1,
+	}).Error; err != nil {
+		t.Fatalf("seed tenant: %v", err)
+	}
+	kiteConfigURL := fmt.Sprintf("%s/tenants/%s/configurations/kite-configs", srv.URL, tenantId)
+
+	envelope := map[string]interface{}{
+		"data": map[string]interface{}{
+			"type": "kite-configs",
+			"attributes": map[string]interface{}{
+				"maxPerMap":          10,
+				"maxMessageLength":   182,
+				"blockedMapPrefixes": []int{91},
+			},
+		},
+	}
+	postBody, err := json.Marshal(envelope)
+	if err != nil {
+		t.Fatalf("marshal post body: %v", err)
+	}
+
+	postResp := doRankingsRequest(t, http.MethodPost, kiteConfigURL, postBody)
+	defer func() { _ = postResp.Body.Close() }()
+	if postResp.StatusCode != http.StatusCreated {
+		t.Fatalf("create status = %d, want 201", postResp.StatusCode)
+	}
+
+	var postDoc struct {
+		Data struct {
+			Type       string `json:"type"`
+			Id         string `json:"id"`
+			Attributes struct {
+				MaxPerMap          int      `json:"maxPerMap"`
+				MaxMessageLength   int      `json:"maxMessageLength"`
+				BlockedMapPrefixes []uint32 `json:"blockedMapPrefixes"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	postRaw := new(bytes.Buffer)
+	if _, err := postRaw.ReadFrom(postResp.Body); err != nil {
+		t.Fatalf("read create body: %v", err)
+	}
+	if err := json.Unmarshal(postRaw.Bytes(), &postDoc); err != nil {
+		t.Fatalf("decode create body: %v, body=%s", err, postRaw.String())
+	}
+
+	if postDoc.Data.Type != "kite-configs" {
+		t.Fatalf("create data.type = %q, want %q", postDoc.Data.Type, "kite-configs")
+	}
+	if postDoc.Data.Id == "" {
+		t.Fatal("create did not assign an id")
+	}
+	if postDoc.Data.Attributes.MaxPerMap != 10 {
+		t.Fatalf("create data.attributes.maxPerMap = %d, want 10", postDoc.Data.Attributes.MaxPerMap)
+	}
+	if postDoc.Data.Attributes.MaxMessageLength != 182 {
+		t.Fatalf("create data.attributes.maxMessageLength = %d, want 182", postDoc.Data.Attributes.MaxMessageLength)
+	}
+	if len(postDoc.Data.Attributes.BlockedMapPrefixes) != 1 || postDoc.Data.Attributes.BlockedMapPrefixes[0] != 91 {
+		t.Fatalf("create data.attributes.blockedMapPrefixes = %v, want [91]", postDoc.Data.Attributes.BlockedMapPrefixes)
+	}
+	if !strings.Contains(postRaw.String(), `"maxPerMap":10`) {
+		t.Fatalf("create response is missing the literal attribute name/value; body=%s", postRaw.String())
+	}
+
+	getResp := doRankingsRequest(t, http.MethodGet, kiteConfigURL, nil)
+	defer func() { _ = getResp.Body.Close() }()
+	if getResp.StatusCode != http.StatusOK {
+		t.Fatalf("get status = %d, want 200", getResp.StatusCode)
+	}
+
+	getRaw := new(bytes.Buffer)
+	if _, err := getRaw.ReadFrom(getResp.Body); err != nil {
+		t.Fatalf("read get body: %v", err)
+	}
+
+	var getDoc struct {
+		Data struct {
+			Type       string `json:"type"`
+			Attributes struct {
+				MaxPerMap          int      `json:"maxPerMap"`
+				MaxMessageLength   int      `json:"maxMessageLength"`
+				BlockedMapPrefixes []uint32 `json:"blockedMapPrefixes"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(getRaw.Bytes(), &getDoc); err != nil {
+		t.Fatalf("decode get body: %v, body=%s", err, getRaw.String())
+	}
+
+	if getDoc.Data.Type != "kite-configs" {
+		t.Fatalf("get data.type = %q, want %q", getDoc.Data.Type, "kite-configs")
+	}
+	if getDoc.Data.Attributes.MaxPerMap != 10 {
+		t.Fatalf("get data.attributes.maxPerMap = %d, want 10", getDoc.Data.Attributes.MaxPerMap)
+	}
+	if getDoc.Data.Attributes.MaxMessageLength != 182 {
+		t.Fatalf("get data.attributes.maxMessageLength = %d, want 182", getDoc.Data.Attributes.MaxMessageLength)
+	}
+	if len(getDoc.Data.Attributes.BlockedMapPrefixes) != 1 || getDoc.Data.Attributes.BlockedMapPrefixes[0] != 91 {
+		t.Fatalf("get data.attributes.blockedMapPrefixes = %v, want [91]", getDoc.Data.Attributes.BlockedMapPrefixes)
+	}
+	if !strings.Contains(getRaw.String(), `"type":"kite-configs"`) {
+		t.Fatalf("get response is missing the literal resource type; body=%s", getRaw.String())
+	}
+}

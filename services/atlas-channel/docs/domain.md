@@ -793,13 +793,18 @@ Provides active weather state for a field.
 ## Kite
 
 ### Responsibility
-Represents kite/balloon display items in the game world.
+Client-side view of kites (cash item category 508 message boxes) owned by
+atlas-kites: drains the in-map list for map-entry replay and issues placement
+commands.
 
 ### Core Models
-- `Model` - Contains id (uint32), templateId (uint32), message (string), name (string), x (int16), y (int16), ft (int16, accessed via Type() getter)
+- `Model` - id (uint32, the wire id), characterId (uint32), name (string),
+  templateId (uint32), message (string), x (int16), y (int16)
 
 ### Processors
-None. Model-only domain.
+- `Processor` - InMapModelProvider(f) / ForEachInMap(f, o) drain the paginated
+  `.../maps/{mapId}/instances/{instanceId}/kites` list (KITES service);
+  AttemptUse(...) emits COMMAND_TOPIC_KITE CREATE keyed on characterId
 
 ---
 

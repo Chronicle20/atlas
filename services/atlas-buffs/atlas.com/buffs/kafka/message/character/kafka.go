@@ -158,6 +158,12 @@ type StatUpdatedStatusEventBody struct {
 
 const (
 	EventStatusTypeBerserk = "BERSERK"
+
+	// EventStatusTypePeriodicEffect is one visual pulse of a periodic buff
+	// effect (task-214). Emitted alongside -- never instead of -- the tick's
+	// CHANGE_HP command, and only for periodic-effect rows whose source skill
+	// actually has a `special` WZ node to draw (see periodic.Effect.SpecialEffect).
+	EventStatusTypePeriodicEffect = "PERIODIC_EFFECT"
 )
 
 // BerserkStatusEventBody is one broadcast tick of Dark Knight Berserk aura
@@ -173,6 +179,19 @@ type BerserkStatusEventBody struct {
 	CharacterLevel byte       `json:"characterLevel"`
 	SkillLevel     byte       `json:"skillLevel"`
 	Active         bool       `json:"active"`
+}
+
+// PeriodicEffectStatusEventBody is one visual pulse for one periodic tick.
+// SkillId is the buff's source skill; the client's SKILL_SPECIAL user effect
+// carries nothing else, so no level rides along. ChannelId is in the body for
+// the same reason as BerserkStatusEventBody's: this topic's envelope has no
+// channel, and atlas-channel needs it for the sc.Is(tenant, world, channel)
+// guard. StatType is carried for logging/diagnosis only -- the channel does
+// not branch on it.
+type PeriodicEffectStatusEventBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	SkillId   uint32     `json:"skillId"`
+	StatType  string     `json:"statType"`
 }
 
 const (

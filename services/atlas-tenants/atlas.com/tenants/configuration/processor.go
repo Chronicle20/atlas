@@ -170,6 +170,24 @@ type Processor interface {
 	// RankingsProvider returns a provider for the rankings configuration
 	RankingsProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}]
 
+	// Kite config operations
+	// CreateKiteConfig creates (or replaces) the tenant's kite-configs configuration
+	CreateKiteConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error)
+	// CreateKiteConfigAndEmit creates the kite-configs configuration and emits events
+	CreateKiteConfigAndEmit(tenantId uuid.UUID, cfg map[string]interface{}) (Model, error)
+	// UpdateKiteConfig updates the existing kite-configs configuration
+	UpdateKiteConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error)
+	// UpdateKiteConfigAndEmit updates the kite-configs configuration and emits events
+	UpdateKiteConfigAndEmit(tenantId uuid.UUID, cfg map[string]interface{}) (Model, error)
+	// DeleteKiteConfig deletes the kite-configs configuration
+	DeleteKiteConfig(mb *message.Buffer) func(tenantId uuid.UUID) error
+	// DeleteKiteConfigAndEmit deletes the kite-configs configuration and emits events
+	DeleteKiteConfigAndEmit(tenantId uuid.UUID) error
+	// GetKiteConfig gets the kite-configs configuration for a tenant
+	GetKiteConfig(tenantId uuid.UUID) (map[string]interface{}, error)
+	// KiteConfigProvider returns a provider for the kite-configs configuration
+	KiteConfigProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}]
+
 	// Seed operations
 	// SeedRpsRewards clears existing rps-rewards for a tenant and loads them from seed files
 	SeedRpsRewards(tenantId uuid.UUID) (SeedResult, error)
@@ -2026,4 +2044,163 @@ func (p *ProcessorImpl) GetRankings(tenantId uuid.UUID) (map[string]interface{},
 // RankingsProvider returns a provider for the rankings configuration
 func (p *ProcessorImpl) RankingsProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}] {
 	return GetRankingsProvider(tenantId)(p.db)
+}
+
+// CreateKiteConfig creates (or replaces) the tenant's kite-configs configuration
+func (p *ProcessorImpl) CreateKiteConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error) {
+		return func(cfg map[string]interface{}) (Model, error) {
+			kiteConfigId := ""
+			if id, ok := cfg["id"].(string); ok {
+				kiteConfigId = id
+			}
+
+			resourceData, err := CreateSingleKiteConfigJsonData(cfg)
+			if err != nil {
+				return Model{}, err
+			}
+
+			existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "kite-configs")(p.db)
+			existing, err := existingProvider()
+			if err == nil {
+				existing.ResourceData = resourceData
+				if err := UpdateConfiguration(p.db, existing); err != nil {
+					return Model{}, err
+				}
+				m, err := Make(existing)
+				if err != nil {
+					return Model{}, err
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreateKiteConfigStatusEventProvider(tenantId, EventTypeKiteConfigUpdated, kiteConfigId)); err != nil {
+					return Model{}, err
+				}
+				return m, nil
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
+				entity := Entity{
+					ID:           uuid.New(),
+					TenantId:     tenantId,
+					ResourceName: "kite-configs",
+					ResourceData: resourceData,
+				}
+				if err := CreateConfiguration(p.db, entity); err != nil {
+					return Model{}, err
+				}
+				m, err := Make(entity)
+				if err != nil {
+					return Model{}, err
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreateKiteConfigStatusEventProvider(tenantId, EventTypeKiteConfigCreated, kiteConfigId)); err != nil {
+					return Model{}, err
+				}
+				return m, nil
+			}
+			return Model{}, err
+		}
+	}
+}
+
+// CreateKiteConfigAndEmit creates the kite-configs configuration and emits events
+func (p *ProcessorImpl) CreateKiteConfigAndEmit(tenantId uuid.UUID, cfg map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, ctx, tx).CreateKiteConfig(mb)(tenantId)(cfg)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
+}
+
+// UpdateKiteConfig updates the existing kite-configs configuration
+func (p *ProcessorImpl) UpdateKiteConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error) {
+		return func(cfg map[string]interface{}) (Model, error) {
+			existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "kite-configs")(p.db)
+			existing, err := existingProvider()
+			if err != nil {
+				return Model{}, err
+			}
+
+			kiteConfigId := ""
+			if id, ok := cfg["id"].(string); ok {
+				kiteConfigId = id
+			}
+
+			resourceData, err := CreateSingleKiteConfigJsonData(cfg)
+			if err != nil {
+				return Model{}, err
+			}
+			existing.ResourceData = resourceData
+			if err := UpdateConfiguration(p.db, existing); err != nil {
+				return Model{}, err
+			}
+			m, err := Make(existing)
+			if err != nil {
+				return Model{}, err
+			}
+			if err := mb.Put(EventTopicConfigurationStatus, CreateKiteConfigStatusEventProvider(tenantId, EventTypeKiteConfigUpdated, kiteConfigId)); err != nil {
+				return Model{}, err
+			}
+			return m, nil
+		}
+	}
+}
+
+// UpdateKiteConfigAndEmit updates the kite-configs configuration and emits events
+func (p *ProcessorImpl) UpdateKiteConfigAndEmit(tenantId uuid.UUID, cfg map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, ctx, tx).UpdateKiteConfig(mb)(tenantId)(cfg)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
+}
+
+// DeleteKiteConfig deletes the kite-configs configuration
+func (p *ProcessorImpl) DeleteKiteConfig(mb *message.Buffer) func(tenantId uuid.UUID) error {
+	return func(tenantId uuid.UUID) error {
+		if _, err := DeleteConfigurationByResourceName(p.db, tenantId, "kite-configs"); err != nil {
+			return err
+		}
+		return mb.Put(EventTopicConfigurationStatus, CreateKiteConfigStatusEventProvider(tenantId, EventTypeKiteConfigDeleted, ""))
+	}
+}
+
+// DeleteKiteConfigAndEmit deletes the kite-configs configuration and emits events
+func (p *ProcessorImpl) DeleteKiteConfigAndEmit(tenantId uuid.UUID) error {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return err
+	}
+	return database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) error {
+			return NewProcessor(p.l, ctx, tx).DeleteKiteConfig(mb)(tenantId)
+		})
+	})
+}
+
+// GetKiteConfig gets the kite-configs configuration for a tenant
+func (p *ProcessorImpl) GetKiteConfig(tenantId uuid.UUID) (map[string]interface{}, error) {
+	return p.KiteConfigProvider(tenantId)()
+}
+
+// KiteConfigProvider returns a provider for the kite-configs configuration
+func (p *ProcessorImpl) KiteConfigProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}] {
+	return GetKiteConfigProvider(tenantId)(p.db)
 }

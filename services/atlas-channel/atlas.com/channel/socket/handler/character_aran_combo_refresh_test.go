@@ -3,7 +3,6 @@ package handler
 import (
 	"atlas-channel/asset"
 	"atlas-channel/character"
-	"atlas-channel/data/skill/effect"
 	"atlas-channel/equipment"
 	"context"
 	"testing"
@@ -51,11 +50,6 @@ func aranTestCharacter(t *testing.T, id uint32, jobId job.Id, skillId skill3.Id,
 		MustBuild()
 }
 
-// aranTestEffectLookup delegates to the existing comboTestEffect helper.
-func aranTestEffectLookup(t *testing.T, x int16) func(uint32, byte) (effect.Model, error) {
-	return func(uint32, byte) (effect.Model, error) { return comboTestEffect(t, x, 0), nil }
-}
-
 // An eligible Aran's gate result lands in the mirror when the attack pipeline
 // runs, so the ARAN_COMBO_COUNTER packets that follow cost zero REST calls.
 func TestAranComboRefreshCachesEligibility(t *testing.T) {
@@ -64,7 +58,7 @@ func TestAranComboRefreshCachesEligibility(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tn)
 	c := aranTestCharacter(t, 21, job.AranStage1Id, skill3.AranStage1ComboAbilityId, 5, aranTestPolearmId)
 
-	aranComboRefreshEligibility(l, ctx, comboTestField(), c, aranTestEffectLookup(t, 5))
+	aranComboRefreshEligibility(l, ctx, comboTestField(), c, comboTestEffectLookup(t, 5))
 
 	el, ok := chskill.GetMirror().Eligibility(tn, 21, time.Now(), time.Minute)
 	if !ok {
@@ -84,10 +78,10 @@ func TestAranComboRefreshClearsIneligible(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tn)
 
 	eligible := aranTestCharacter(t, 22, job.AranStage1Id, skill3.AranStage1ComboAbilityId, 5, aranTestPolearmId)
-	aranComboRefreshEligibility(l, ctx, comboTestField(), eligible, aranTestEffectLookup(t, 5))
+	aranComboRefreshEligibility(l, ctx, comboTestField(), eligible, comboTestEffectLookup(t, 5))
 
 	swapped := aranTestCharacter(t, 22, job.AranStage1Id, skill3.AranStage1ComboAbilityId, 5, aranTestSwordId)
-	aranComboRefreshEligibility(l, ctx, comboTestField(), swapped, aranTestEffectLookup(t, 5))
+	aranComboRefreshEligibility(l, ctx, comboTestField(), swapped, comboTestEffectLookup(t, 5))
 
 	if _, ok := chskill.GetMirror().Eligibility(tn, 22, time.Now(), time.Minute); ok {
 		t.Error("swapping to a non-polearm must clear the cached eligibility")
@@ -101,8 +95,8 @@ func TestAranComboRefreshDoesNotIncrement(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tn)
 	c := aranTestCharacter(t, 23, job.AranStage1Id, skill3.AranStage1ComboAbilityId, 5, aranTestPolearmId)
 
-	aranComboRefreshEligibility(l, ctx, comboTestField(), c, aranTestEffectLookup(t, 5))
-	aranComboRefreshEligibility(l, ctx, comboTestField(), c, aranTestEffectLookup(t, 5))
+	aranComboRefreshEligibility(l, ctx, comboTestField(), c, comboTestEffectLookup(t, 5))
+	aranComboRefreshEligibility(l, ctx, comboTestField(), c, comboTestEffectLookup(t, 5))
 
 	count, seeded := chskill.GetMirror().Increment(tn, 23, comboTestField(), chskill.DefaultIdleWindow, time.Now())
 	if count != 1 || !seeded {

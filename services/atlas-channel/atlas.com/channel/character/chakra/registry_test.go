@@ -122,6 +122,27 @@ func TestSweepEvictsOnlyExpired(t *testing.T) {
 	}
 }
 
+// TestClearIsIdempotentAcrossInterruptSources pins PRD FR-5.1/FR-5.5: the
+// move, map-change and session-destroy paths all call Clear, and only the
+// first one to arrive reports an interrupt — so the log line is emitted once
+// and a second caller is a harmless no-op.
+func TestClearIsIdempotentAcrossInterruptSources(t *testing.T) {
+	r := newRegistry()
+	tn := testTenant(t)
+	r.Start(tn, 42, 1, 99, 68, time.Now())
+
+	first := r.Clear(tn, 42)  // movement
+	second := r.Clear(tn, 42) // map change arriving after
+	third := r.Clear(tn, 42)  // session destroy
+
+	if !first {
+		t.Fatal("the first interrupt did not report an open window")
+	}
+	if second || third {
+		t.Fatal("a follow-up interrupt reported an open window")
+	}
+}
+
 // TestConcurrentAccess is the -race guard: the registry is written by the
 // prepare path and read/cleared by the damage, move and use paths plus the
 // sweeper, all concurrently.

@@ -21,9 +21,9 @@ import (
 var ErrNotFound = errors.New("not found")
 
 type Registry struct {
-	characters  *atlas.TenantRegistry[uint32, Model]
-	poisonTicks *atlas.TenantRegistry[uint32, time.Time]
-	tenants     *atlas.Set
+	characters    *atlas.TenantRegistry[uint32, Model]
+	periodicTicks *atlas.TenantRegistry[TickKey, time.Time]
+	tenants       *atlas.Set
 }
 
 var registry *Registry
@@ -33,8 +33,8 @@ func InitRegistry(client *goredis.Client) {
 		characters: atlas.NewTenantRegistry[uint32, Model](client, "buffs", func(k uint32) string {
 			return strconv.FormatUint(uint64(k), 10)
 		}),
-		poisonTicks: atlas.NewTenantRegistry[uint32, time.Time](client, "buffs-poison", func(k uint32) string {
-			return strconv.FormatUint(uint64(k), 10)
+		periodicTicks: atlas.NewTenantRegistry[TickKey, time.Time](client, "buffs-tick", func(k TickKey) string {
+			return strconv.FormatUint(uint64(k.CharacterId), 10) + ":" + k.StatType
 		}),
 		tenants: atlas.NewSet(client, "buffs:_tenants"),
 	}
@@ -72,11 +72,9 @@ func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channe
 
 	m, err := r.characters.Get(ctx, t, characterId)
 	if errors.Is(err, atlas.ErrNotFound) {
-		m = Model{
-			worldId:     worldId,
-			channelId:   channelId,
-			characterId: characterId,
-			buffs:       make(map[string]buff.Model),
+		m, err = NewBuilder(worldId, channelId, characterId).Build()
+		if err != nil {
+			return nil, err
 		}
 	} else if err != nil {
 		return nil, err
@@ -289,132 +287,120 @@ func (r *Registry) HasImmunity(ctx context.Context, characterId uint32) bool {
 	return hasImmunityBuff(m)
 }
 
-type PoisonTickEntry struct {
-	Tenant      tenant.Model
-	WorldId     world.Id
-	ChannelId   channel.Id
-	CharacterId uint32
-	Amount      int32
-}
-
-func (r *Registry) GetPoisonCharacters(ctx context.Context) []PoisonTickEntry {
-	t := tenant.MustFromContext(ctx)
-	vals, err := r.characters.GetAllValues(ctx, t)
-	if err != nil {
-		return nil
-	}
-
-	var results []PoisonTickEntry
-	for _, m := range vals {
-		for _, b := range m.buffs {
-			if b.Expired() {
-				continue
-			}
-			for _, c := range b.Changes() {
-				if c.Type() == "POISON" {
-					results = append(results, PoisonTickEntry{
-						Tenant:      t,
-						WorldId:     m.worldId,
-						ChannelId:   m.channelId,
-						CharacterId: m.characterId,
-						Amount:      c.Amount(),
-					})
-					break
-				}
-			}
-		}
-	}
-	return results
-}
-
-func (r *Registry) GetLastPoisonTick(ctx context.Context, characterId uint32) (time.Time, bool) {
-	t := tenant.MustFromContext(ctx)
-	tick, err := r.poisonTicks.Get(ctx, t, characterId)
-	if err != nil {
-		return time.Time{}, false
-	}
-	return tick, true
-}
-
-func (r *Registry) UpdatePoisonTick(ctx context.Context, characterId uint32, at time.Time) {
-	t := tenant.MustFromContext(ctx)
-	_ = r.poisonTicks.Put(ctx, t, characterId, at)
-}
-
-func (r *Registry) ClearPoisonTick(ctx context.Context, characterId uint32) {
-	t := tenant.MustFromContext(ctx)
-	_ = r.poisonTicks.Remove(ctx, t, characterId)
+// StatValueUpdate is one UPDATE_STAT_VALUE request. Collected into a struct
+// rather than passed positionally because the accumulator-upsert fields
+// (task-216) push the argument list past readability.
+type StatValueUpdate struct {
+	SourceId  int32
+	StatType  string
+	Operation string
+	Amount    int32
+	Cap       int32
+	// CreateIfMissing turns INCREMENT into an upsert: when the character has
+	// no buff for SourceId, one is created with NoExpiry carrying a single
+	// StatType change of min(Amount, Cap). Opt-in, so every pre-existing
+	// caller (Combo orbs, Enrage consume) keeps the missing-buff no-op.
+	// Ignored for SET — SET replaces a value, it does not accumulate one.
+	CreateIfMissing bool
+	// Level is the source skill level stamped on a buff created by
+	// CreateIfMissing. Ignored otherwise.
+	Level byte
 }
 
 // UpdateStatValue changes the amount of one stat on the character's active
-// buff for sourceId. INCREMENT adds amount clamped to capValue (no-op when
-// already at/above cap); SET replaces the amount outright. Returns the
-// updated buff and true when a mutation was stored; (Model{}, false, nil)
-// when the buff is missing/expired, lacks the stat, the operation is
-// unknown, or the value would not change. Only whole-source
-// (non-accumulate) buffs are addressed via srcKey — accumulate-mode
-// per-stat buffs are out of scope for value updates. Defensive floors keep
-// the value from ever exceeding cap or dropping below 1. Same
-// get-modify-put shape as Cancel, serialized per character by the command
-// topic's characterId partition key.
-func (r *Registry) UpdateStatValue(ctx context.Context, characterId uint32, sourceId int32, statType string, operation string, amount int32, capValue int32) (buff.Model, bool, error) {
+// buff for u.SourceId. INCREMENT adds u.Amount clamped to u.Cap (no-op when
+// already at/above cap); SET replaces the amount outright. With
+// u.CreateIfMissing an INCREMENT against a missing buff creates a NoExpiry
+// buff instead of no-opping.
+//
+// Returns (buff, changed, created, error). changed is true whenever a
+// mutation was stored; created is true only for the CreateIfMissing path, so
+// the processor can emit APPLIED rather than STAT_UPDATED. Returns
+// (Model{}, false, false, nil) when the buff is missing/expired without
+// CreateIfMissing, lacks the stat, the operation is unknown, or the value
+// would not change. Only whole-source (non-accumulate) buffs are addressed
+// via srcKey. Same get-modify-put shape as Cancel, serialized per character
+// by the command topic's characterId partition key.
+func (r *Registry) UpdateStatValue(ctx context.Context, worldId world.Id, channelId channel.Id, characterId uint32, u StatValueUpdate) (buff.Model, bool, bool, error) {
 	t := tenant.MustFromContext(ctx)
+
+	canCreate := u.CreateIfMissing && u.Operation == character2.StatOperationIncrement && u.Amount > 0
 
 	m, err := r.characters.Get(ctx, t, characterId)
 	if errors.Is(err, atlas.ErrNotFound) {
-		return buff.Model{}, false, nil
-	}
-	if err != nil {
-		return buff.Model{}, false, err
+		if !canCreate {
+			return buff.Model{}, false, false, nil
+		}
+		m, err = NewBuilder(worldId, channelId, characterId).Build()
+		if err != nil {
+			return buff.Model{}, false, false, err
+		}
+	} else if err != nil {
+		return buff.Model{}, false, false, err
 	}
 
-	b, ok := m.buffs[srcKey(sourceId)]
+	b, ok := m.buffs[srcKey(u.SourceId)]
 	if !ok || b.Expired() {
-		return buff.Model{}, false, nil
+		if !canCreate {
+			return buff.Model{}, false, false, nil
+		}
+		initial := u.Amount
+		if u.Cap > 0 && initial > u.Cap {
+			initial = u.Cap
+		}
+		created, cerr := buff.NewNoExpiryBuff(u.SourceId, u.Level, []stat.Model{stat.NewStat(u.StatType, initial)})
+		if cerr != nil {
+			return buff.Model{}, false, false, cerr
+		}
+		m.buffs[srcKey(u.SourceId)] = created
+		if perr := r.characters.Put(ctx, t, characterId, m); perr != nil {
+			return buff.Model{}, false, false, perr
+		}
+		return created, true, true, nil
 	}
 
 	var current int32
 	found := false
 	for _, c := range b.Changes() {
-		if c.Type() == statType {
+		if c.Type() == u.StatType {
 			current = c.Amount()
 			found = true
 			break
 		}
 	}
 	if !found {
-		return buff.Model{}, false, nil
+		return buff.Model{}, false, false, nil
 	}
 
 	var next int32
-	switch operation {
+	switch u.Operation {
 	case character2.StatOperationIncrement:
-		if amount <= 0 || current >= capValue {
-			return buff.Model{}, false, nil
+		if u.Amount <= 0 || current >= u.Cap {
+			return buff.Model{}, false, false, nil
 		}
-		next = current + amount
-		if next > capValue {
-			next = capValue
+		next = current + u.Amount
+		if next > u.Cap {
+			next = u.Cap
 		}
 	case character2.StatOperationSet:
-		if amount < 1 {
-			return buff.Model{}, false, nil
+		if u.Amount < 1 {
+			return buff.Model{}, false, false, nil
 		}
-		next = amount
+		next = u.Amount
 	default:
-		return buff.Model{}, false, nil
+		return buff.Model{}, false, false, nil
 	}
 	if next == current {
-		return buff.Model{}, false, nil
+		return buff.Model{}, false, false, nil
 	}
 
-	updated, ok := b.WithStatAmount(statType, next)
+	updated, ok := b.WithStatAmount(u.StatType, next)
 	if !ok {
-		return buff.Model{}, false, nil
+		return buff.Model{}, false, false, nil
 	}
-	m.buffs[srcKey(sourceId)] = updated
+	m.buffs[srcKey(u.SourceId)] = updated
 	if err := r.characters.Put(ctx, t, characterId, m); err != nil {
-		return buff.Model{}, false, err
+		return buff.Model{}, false, false, err
 	}
-	return updated, true, nil
+	return updated, true, false, nil
 }

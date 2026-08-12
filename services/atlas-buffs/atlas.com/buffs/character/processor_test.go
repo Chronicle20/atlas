@@ -258,7 +258,8 @@ func TestProcessor_UpdateStatValue_Increment(t *testing.T) {
 	changes := []stat.Model{stat.NewStat("COMBO", 1)}
 	_ = processor.Apply(world.Id(0), channel.Id(0), 1000, 1000, 1111002, byte(20), int32(150000), changes, false, false)
 
-	_ = processor.UpdateStatValue(world.Id(0), 1000, 1111002, "COMBO", character2.StatOperationIncrement, 2, 6)
+	_ = processor.UpdateStatValue(world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{SourceId: 1111002, StatType: "COMBO", Operation: character2.StatOperationIncrement, Amount: 2, Cap: 6})
 
 	m, err := GetRegistry().Get(ctx, 1000)
 	assert.NoError(t, err)
@@ -272,7 +273,8 @@ func TestProcessor_UpdateStatValue_UnknownOperationIsNoOp(t *testing.T) {
 	changes := []stat.Model{stat.NewStat("COMBO", 1)}
 	_ = processor.Apply(world.Id(0), channel.Id(0), 1000, 1000, 1111002, byte(20), int32(150000), changes, false, false)
 
-	err := processor.UpdateStatValue(world.Id(0), 1000, 1111002, "COMBO", "MULTIPLY", 2, 6)
+	err := processor.UpdateStatValue(world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{SourceId: 1111002, StatType: "COMBO", Operation: "MULTIPLY", Amount: 2, Cap: 6})
 	assert.NoError(t, err, "unknown operation is a logged no-op, not an error")
 
 	m, err := GetRegistry().Get(ctx, 1000)
@@ -283,8 +285,41 @@ func TestProcessor_UpdateStatValue_UnknownOperationIsNoOp(t *testing.T) {
 
 func TestProcessor_UpdateStatValue_MissingBuffIsNoOp(t *testing.T) {
 	processor, _, _ := setupProcessorTest(t)
-	err := processor.UpdateStatValue(world.Id(0), 1000, 1111002, "COMBO", character2.StatOperationIncrement, 1, 6)
+	err := processor.UpdateStatValue(world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{SourceId: 1111002, StatType: "COMBO", Operation: character2.StatOperationIncrement, Amount: 1, Cap: 6})
 	assert.NoError(t, err, "missing buff is a logged no-op, not an error")
+}
+
+// A CreateIfMissing increment against a character with no buffs at all
+// stores a NoExpiry buff — the first Energy Charge hit of the cycle.
+func TestProcessor_UpdateStatValue_CreateIfMissingStoresBuff(t *testing.T) {
+	processor, _, ctx := setupProcessorTest(t)
+
+	err := processor.UpdateStatValue(world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{
+			SourceId: 5110001, StatType: "ENERGY_CHARGE",
+			Operation: character2.StatOperationIncrement,
+			Amount:    102, Cap: 10000, CreateIfMissing: true, Level: 20,
+		})
+	assert.NoError(t, err)
+
+	m, err := GetRegistry().Get(ctx, 1000)
+	assert.NoError(t, err)
+	b := m.Buffs()[srcKey(5110001)]
+	assert.True(t, b.NoExpiry())
+	assert.Equal(t, int32(102), b.Changes()[0].Amount())
+}
+
+// Without CreateIfMissing a missing buff stays a logged no-op (Combo).
+func TestProcessor_UpdateStatValue_MissingBuffWithoutCreateStoresNothing(t *testing.T) {
+	processor, _, ctx := setupProcessorTest(t)
+
+	err := processor.UpdateStatValue(world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{SourceId: 1111002, StatType: "COMBO", Operation: character2.StatOperationIncrement, Amount: 1, Cap: 6})
+	assert.NoError(t, err)
+
+	_, err = GetRegistry().Get(ctx, 1000)
+	assert.ErrorIs(t, err, ErrNotFound)
 }
 
 // TestProcessor_ExpireForCharacter_PrunesLapsedBuff — the CANCEL_DEBUFF

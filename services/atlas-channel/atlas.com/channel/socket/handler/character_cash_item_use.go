@@ -6,6 +6,7 @@ import (
 	"atlas-channel/consumable"
 	cashData "atlas-channel/data/cash"
 	"atlas-channel/incubator"
+	"atlas-channel/kite"
 	"atlas-channel/pet"
 	"atlas-channel/saga"
 	"atlas-channel/session"
@@ -94,6 +95,35 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			sp := cashsb.NewItemUseChalkboard(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
 			_ = chalkboard.NewProcessor(l, ctx).AttemptUse(s.Field(), s.CharacterId(), sp.Message())
+			return
+		}
+		if it == CashSlotItemTypeKite {
+			sp := cashsb.NewItemUseKite(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+
+			// The sub-body is the message alone — the client sends no
+			// coordinates for a kite (case-18 arm of
+			// CWvsContext::SendConsumeCashItemUseRequest performs exactly one
+			// EncodeStr). Position and owner name therefore come from
+			// server-side character state, the same source
+			// skill/handler/mysticdoor uses.
+			c, err := character2.NewProcessor(l, ctx).GetById()(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Debugf("Unable to resolve character [%d] for kite placement.", s.CharacterId())
+				return
+			}
+
+			// No item is consumed (FR-4.1): no saga.DestroyAsset step and no
+			// inventory mutation, so this is a direct command. Placement is
+			// gated by the per-character cap in atlas-kites instead.
+			//
+			// No EnableActions either: the client's kite dialog is modal
+			// (CDialog::DoModal @0x9ed0d9) and unlocks itself, and the sibling
+			// chalkboard use arm sends none. Unlocking here would only widen
+			// the client's duplicate-request gate.
+			if err = kite.NewProcessor(l, ctx).AttemptUse(s.Field(), s.CharacterId(), c.Name(), uint32(itemId), sp.Message(), c.X(), c.Y()); err != nil {
+				l.WithError(err).Debugf("Unable to request kite placement for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		if it == CashSlotItemTypeFieldEffect {
@@ -621,6 +651,7 @@ const (
 	CashSlotItemTypePetConsumable = CashSlotItemType(30)
 	CashSlotItemTypePetSkill      = CashSlotItemType(28)
 	CashSlotItemTypeChalkboard    = CashSlotItemType(32)
+	CashSlotItemTypeKite          = CashSlotItemType(18)
 	CashSlotItemTypeItemTag       = CashSlotItemType(25)
 	CashSlotItemTypeSeal          = CashSlotItemType(26)
 	CashSlotItemTypeIncubator     = CashSlotItemType(27)

@@ -1370,6 +1370,141 @@ func DeleteRankingsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.
 	}
 }
 
+// GetKiteConfigHandler handles GET /tenants/{tenantId}/configurations/kite-configs
+func GetKiteConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+
+				cfg, err := processor.GetKiteConfig(tenantId)
+				if err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					d.Logger().WithError(err).Error("Failed to get kite-configs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				rm, err := TransformKiteConfig(cfg)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to transform kite-configs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[KiteConfigRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// CreateKiteConfigHandler handles POST /tenants/{tenantId}/configurations/kite-configs
+func CreateKiteConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model KiteConfigRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model KiteConfigRestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				cfg, err := ExtractKiteConfig(model)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to extract kite-configs data")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				if _, err = processor.CreateKiteConfigAndEmit(tenantId, cfg); err != nil {
+					d.Logger().WithError(err).Error("Failed to create kite-configs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				created, err := processor.GetKiteConfig(tenantId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to get created kite-configs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				rm, err := TransformKiteConfig(created)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to transform kite-configs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				w.WriteHeader(http.StatusCreated)
+				server.MarshalResponse[KiteConfigRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// UpdateKiteConfigHandler handles PATCH /tenants/{tenantId}/configurations/kite-configs
+func UpdateKiteConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model KiteConfigRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model KiteConfigRestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				cfg, err := ExtractKiteConfig(model)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to extract kite-configs data")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				if _, err = processor.UpdateKiteConfigAndEmit(tenantId, cfg); err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					d.Logger().WithError(err).Error("Failed to update kite-configs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				updated, err := processor.GetKiteConfig(tenantId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to get updated kite-configs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				rm, err := TransformKiteConfig(updated)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to transform kite-configs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[KiteConfigRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// DeleteKiteConfigHandler handles DELETE /tenants/{tenantId}/configurations/kite-configs
+func DeleteKiteConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				if err := processor.DeleteKiteConfigAndEmit(tenantId); err != nil {
+					d.Logger().WithError(err).Error("Failed to delete kite-configs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+			}
+		})
+	}
+}
+
 // SeedRpsRewardsHandler handles POST /tenants/{tenantId}/configurations/rps-rewards/seed
 func SeedRpsRewardsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
@@ -1403,6 +1538,7 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			registerMtsConfigInputHandler := rest.RegisterInputHandler[MtsConfigRestModel](l)(si)
 			registerTradeConfigInputHandler := rest.RegisterInputHandler[TradeConfigRestModel](l)(si)
 			registerRankingsInputHandler := rest.RegisterInputHandler[RankingsRestModel](l)(si)
+			registerKiteConfigInputHandler := rest.RegisterInputHandler[KiteConfigRestModel](l)(si)
 
 			// Route endpoints
 			//
@@ -1475,6 +1611,13 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			r.HandleFunc("/tenants/{tenantId}/configurations/rankings", registerRankingsInputHandler("create_rankings_config", CreateRankingsHandler(db))).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/rankings", registerRankingsInputHandler("update_rankings_config", UpdateRankingsHandler(db))).Methods(http.MethodPatch)
 			r.HandleFunc("/tenants/{tenantId}/configurations/rankings", registerHandler("delete_rankings_config", DeleteRankingsHandler(db))).Methods(http.MethodDelete)
+
+			// Kite config endpoints — one config per tenant (rankings shape:
+			// no /seed endpoint, no id-addressed sub-resource).
+			r.HandleFunc("/tenants/{tenantId}/configurations/kite-configs", registerHandler("get_kite_config", GetKiteConfigHandler(db))).Methods(http.MethodGet)
+			r.HandleFunc("/tenants/{tenantId}/configurations/kite-configs", registerKiteConfigInputHandler("create_kite_config", CreateKiteConfigHandler(db))).Methods(http.MethodPost)
+			r.HandleFunc("/tenants/{tenantId}/configurations/kite-configs", registerKiteConfigInputHandler("update_kite_config", UpdateKiteConfigHandler(db))).Methods(http.MethodPatch)
+			r.HandleFunc("/tenants/{tenantId}/configurations/kite-configs", registerHandler("delete_kite_config", DeleteKiteConfigHandler(db))).Methods(http.MethodDelete)
 		}
 	}
 }

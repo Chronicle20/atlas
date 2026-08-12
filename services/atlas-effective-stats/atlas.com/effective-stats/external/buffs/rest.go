@@ -7,8 +7,11 @@ import (
 
 // BuffRestModel represents a buff from atlas-buffs service
 type BuffRestModel struct {
-	Id        string          `json:"-"`
-	SourceId  int32           `json:"sourceId"`
+	Id       string `json:"-"`
+	SourceId int32  `json:"sourceId"`
+	// Level is the source skill level. Needed to resolve level-dependent
+	// payoffs from skill effect data (task-216: Energy Charge's `pad`).
+	Level     byte            `json:"level"`
 	Duration  int32           `json:"duration"`
 	Changes   []StatRestModel `json:"changes"`
 	CreatedAt time.Time       `json:"createdAt"`

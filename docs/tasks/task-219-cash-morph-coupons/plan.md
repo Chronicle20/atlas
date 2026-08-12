@@ -85,7 +85,7 @@ Tasks 1, 2, 3 are mutually independent. Task 4 → 5 → 6 are sequential. Task 
 - Consumes: `cashsb.UpdateTimeFirst(t tenant.Model) bool` from `item_use.go:21-23` — `(GMS && major >= 87) || JMS`.
 - Produces: `NewItemUseMorphCoupon(updateTimeFirst bool) *ItemUseMorphCoupon`; methods `UpdateTime() uint32`, `Operation() string`, `String() string`, `Encode(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte`, `Decode(logrus.FieldLogger, context.Context) func(*request.Reader, map[string]interface{})`. Task 7 calls `NewItemUseMorphCoupon` and `UpdateTime`.
 
-- [ ] **Step 1: Write the failing round-trip test**
+- [x] **Step 1: Write the failing round-trip test**
 
 Create `libs/atlas-packet/cash/serverbound/item_use_morph_coupon_test.go`. This mirrors `item_use_pet_consumable_test.go` exactly — the same wire shape, verified independently for this arm.
 
@@ -146,14 +146,14 @@ func TestItemUseMorphCouponEncodedLength(t *testing.T) {
 
 Note: `pt.Encode(t, ctx, encodeFn)` is the helper in `libs/atlas-packet/test/` that runs an `Encode` closure under a tenant context with a null logger and returns the bytes. Confirm its exact name and signature by reading that package before writing this test; if it differs, adapt the call (the assertion is what matters) or drop the third test and keep the two round-trips.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd libs/atlas-packet && go test ./cash/serverbound/ -run ItemUseMorphCoupon -v
 ```
 Expected: FAIL — `undefined: ItemUseMorphCoupon`, `undefined: NewItemUseMorphCoupon`.
 
-- [ ] **Step 3: Write the codec**
+- [x] **Step 3: Write the codec**
 
 Create `libs/atlas-packet/cash/serverbound/item_use_morph_coupon.go`:
 
@@ -226,7 +226,7 @@ func (m *ItemUseMorphCoupon) Decode(_ logrus.FieldLogger, _ context.Context) fun
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd libs/atlas-packet && go test -race ./cash/serverbound/ -run ItemUseMorphCoupon -v
@@ -234,7 +234,7 @@ cd libs/atlas-packet && go vet ./... && go build ./...
 ```
 Expected: PASS for every `pt.Variants` entry; vet and build clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)" && tools/lint.sh
@@ -255,7 +255,7 @@ git commit -m "feat(task-219): add ItemUseMorphCoupon serverbound sub-body codec
 - Consumes: `xml.Node.GetIntegerWithDefault(name string, def int32) int32`; `Read(l) func(model.Provider[xml.Node]) model.Provider[[]RestModel]`; the test helpers already in `reader_test.go` — `Identity[M any]`, `model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)`, and `test.NewNullLogger()` from `logrus/hooks/test`.
 - Produces: `cash.SpecTypeMorph = SpecType("morph")`, `cash.SpecTypeHp = SpecType("hp")`, both keys populated in `RestModel.Spec` when non-zero. Task 3 mirrors these string values verbatim.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `services/atlas-data/atlas.com/data/cash/reader_test.go`. The XML fixture is the real `Item.wz/Cash/0530.img.xml` shape, trimmed of canvas nodes (verified in two local corpora during planning: three items, `hp` 50, `time` 600000, `morph` 1/2/3, no `morphRandom`).
 
@@ -384,14 +384,14 @@ func TestReaderMorphHpAdditiveOnly(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go test ./cash/ -run 'TestReaderMorphCoupons|TestReaderMorphHpAdditiveOnly' -v
 ```
 Expected: FAIL — `undefined: SpecTypeMorph`, `undefined: SpecTypeHp`.
 
-- [ ] **Step 3: Add the two constants**
+- [x] **Step 3: Add the two constants**
 
 In `services/atlas-data/atlas.com/data/cash/rest.go`, replace the `SpecTypeTime` line inside the `const` block with:
 
@@ -406,7 +406,7 @@ In `services/atlas-data/atlas.com/data/cash/rest.go`, replace the `SpecTypeTime`
 
 The `SpecTypeTime` comment is corrected in the same edit: it currently reads "Duration in minutes from spec node", which is wrong for 0530 (600000 = ten minutes in milliseconds) and would mislead the next reader into scaling it. The reader passes the raw WZ value through either way, so this is a comment-only fix with no behaviour change.
 
-- [ ] **Step 4: Add the two parses**
+- [x] **Step 4: Add the two parses**
 
 In `services/atlas-data/atlas.com/data/cash/reader.go`, immediately after the existing `time` parse (currently lines 136-138), inside the same `if err == nil && s != nil` block:
 
@@ -421,7 +421,7 @@ In `services/atlas-data/atlas.com/data/cash/reader.go`, immediately after the ex
 			}
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go test -race ./cash/ -v
@@ -429,7 +429,7 @@ cd services/atlas-data/atlas.com/data && go vet ./... && go build ./...
 ```
 Expected: the two new tests PASS; every pre-existing cash test (`TestReader`, `TestReaderExpCoupons`, `TestReaderDropCoupons`, `TestReaderPetSkills`, `TestReaderProtectTime`, the resource tests) still PASSES.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)" && tools/lint.sh
@@ -451,7 +451,7 @@ git commit -m "feat(task-219): parse cash spec/morph and spec/hp in atlas-data"
 
 **Why three, not two:** PRD FR-3.1 names only `morph` and `hp`, but `atlas-consumables`' cash `SpecType` set has no `SpecTypeTime` at all (unlike atlas-data's), and FR-3.6 requires reading the duration from `time`. Adding `SpecTypeTime` is a strict superset of FR-3.1, called out here so it is not read as scope creep. The atlas-data-only keys `rate`, `expR`, `drpR` are deliberately **not** mirrored — nothing on this path consumes them.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-consumables/atlas.com/consumables/cash/rest_test.go`:
 
@@ -536,14 +536,14 @@ func TestGetSpecAbsentKey(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd services/atlas-consumables/atlas.com/consumables && go test ./cash/ -v
 ```
 Expected: FAIL — `undefined: SpecTypeMorph`, `undefined: SpecTypeHp`, `undefined: SpecTypeTime`.
 
-- [ ] **Step 3: Add the three constants**
+- [x] **Step 3: Add the three constants**
 
 In `services/atlas-consumables/atlas.com/consumables/cash/rest.go`, inside the existing `const` block, after `SpecTypeIndexNine`:
 
@@ -557,14 +557,14 @@ In `services/atlas-consumables/atlas.com/consumables/cash/rest.go`, inside the e
 	SpecTypeTime  = SpecType("time")
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd services/atlas-consumables/atlas.com/consumables && go test -race ./cash/ -v
 ```
 Expected: PASS (all three tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)" && tools/lint.sh
@@ -589,7 +589,7 @@ git commit -m "feat(task-219): mirror cash morph/hp/time spec keys in atlas-cons
 
   Task 5 calls `computeMorphCouponPlan`; Task 6 calls `routesToMorphCoupon`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `services/atlas-consumables/atlas.com/consumables/consumable/morph_coupon_test.go`:
 
@@ -762,14 +762,14 @@ func TestMorphCouponNotStandardConsumer(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 cd services/atlas-consumables/atlas.com/consumables && go test ./consumable/ -run 'MorphCoupon' -v
 ```
 Expected: FAIL — `undefined: computeMorphCouponPlan`, `undefined: routesToMorphCoupon`.
 
-- [ ] **Step 3: Write the planner and predicate**
+- [x] **Step 3: Write the planner and predicate**
 
 Create `services/atlas-consumables/atlas.com/consumables/consumable/morph_coupon.go`:
 
@@ -838,14 +838,14 @@ func routesToMorphCoupon(itemId item2.Id) bool {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 cd services/atlas-consumables/atlas.com/consumables && go test -race ./consumable/ -run 'MorphCoupon' -v
 ```
 Expected: PASS — every table row, both predicate tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)" && tools/lint.sh
@@ -874,7 +874,7 @@ git commit -m "feat(task-219): add pure morph-coupon effect planner and routing 
 
 **Design note (correction 3 above):** the consumer is split in two. `consumeMorphCoupon` takes a `morphCouponDeps` struct and holds all the logic; the exported `ConsumeMorphCoupon` binds the real processors and calls it. `morphCouponDeps` is production code used by the production wrapper — not a test hook — and it is what makes FR-3.3/FR-3.4/FR-3.6/FR-3.8 real assertions rather than prose. No package-level mutable seam is introduced.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `services/atlas-consumables/atlas.com/consumables/consumable/morph_coupon_test.go`. Add these imports to the existing import block:
 
@@ -1146,14 +1146,14 @@ func TestConsumeMorphCouponBindsRealProcessors(t *testing.T) {
 
 If a mock import path or `ProcessorMock` field name differs from the above, read the mock package and adapt the wiring — the assertions are what matter. All five were confirmed to exist during planning with these exact `<Method>Func` field names.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 cd services/atlas-consumables/atlas.com/consumables && go test ./consumable/ -run 'ConsumeMorphCoupon' -v
 ```
 Expected: FAIL — `undefined: morphCouponDeps`, `undefined: consumeMorphCoupon`, `undefined: ConsumeMorphCoupon`.
 
-- [ ] **Step 3: Write the consumer**
+- [x] **Step 3: Write the consumer**
 
 Append to `services/atlas-consumables/atlas.com/consumables/consumable/morph_coupon.go`, and extend its import block with:
 
@@ -1262,7 +1262,7 @@ func ConsumeMorphCoupon(transactionId uuid.UUID, characterId uint32, slot int16,
 
 Add `"github.com/Chronicle20/atlas/libs/atlas-constants/field"` to the import block for the `field.Model` in the `model.Submit` closure.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 cd services/atlas-consumables/atlas.com/consumables && go test -race ./consumable/ -run 'MorphCoupon' -v
@@ -1270,14 +1270,14 @@ cd services/atlas-consumables/atlas.com/consumables && go vet ./...
 ```
 Expected: PASS for all seven `ConsumeMorphCoupon*` tests plus the Task 4 tests; vet clean.
 
-- [ ] **Step 5: Verify the duration guard**
+- [x] **Step 5: Verify the duration guard**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)" && tools/buff-duration-guard.sh
 ```
 Expected: exit 0. This is the guard that exists because the millisecond contract has been flipped three times in prose — do not skip it, and never silence it with `//buffdurationguard:allow`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)" && tools/lint.sh
@@ -1299,7 +1299,7 @@ git commit -m "feat(task-219): add ConsumeMorphCoupon cash-compartment consumer"
 
 **Placement matters.** The branch must go *before* the reward-table fallback at `processor.go:288` (`else if ci, derr := p.cdp.GetById(...)`). That fallback queries the *consumable* data resource; for a cash item the lookup fails, so it would fall through to `ConsumeBare` — which consumes the coupon and applies nothing. Putting the new branch ahead of it is what prevents a silent no-op consume. Insert it directly after the `ClassificationConsumableMonsterCard` branch.
 
-- [ ] **Step 1: Confirm the routing tests currently pass on the predicate but the router is unwired**
+- [x] **Step 1: Confirm the routing tests currently pass on the predicate but the router is unwired**
 
 ```bash
 cd services/atlas-consumables/atlas.com/consumables && go test ./consumable/ -run 'TestRoutesToMorphCoupon|TestMorphCouponNotStandardConsumer' -v
@@ -1307,7 +1307,7 @@ grep -n "routesToMorphCoupon" consumable/processor.go
 ```
 Expected: both tests PASS (they exercise the predicate from Task 4); the grep prints nothing — the router does not use it yet.
 
-- [ ] **Step 2: Add the routing branch**
+- [x] **Step 2: Add the routing branch**
 
 In `services/atlas-consumables/atlas.com/consumables/consumable/processor.go`, insert immediately after the `ClassificationConsumableMonsterCard` branch and before the `else if ci, derr := p.cdp.GetById(...)` reward-table fallback:
 
@@ -1322,7 +1322,7 @@ In `services/atlas-consumables/atlas.com/consumables/consumable/processor.go`, i
 		itemConsumer = ConsumeMorphCoupon(transactionId, characterId, slot, itemId)
 ```
 
-- [ ] **Step 3: Add a test pinning the branch order**
+- [x] **Step 3: Add a test pinning the branch order**
 
 Append to `morph_coupon_test.go`:
 
@@ -1354,7 +1354,7 @@ func TestMorphCouponRoutedBeforeRewardFallback(t *testing.T) {
 
 Add `"bytes"` and `"os"` to the test file's import block.
 
-- [ ] **Step 4: Run the full package suite**
+- [x] **Step 4: Run the full package suite**
 
 ```bash
 cd services/atlas-consumables/atlas.com/consumables && go test -race ./... 2>&1 | tail -30
@@ -1362,7 +1362,7 @@ cd services/atlas-consumables/atlas.com/consumables && go vet ./... && go build 
 ```
 Expected: all PASS, vet and build clean. Pay attention to `TestUsesStandardConsumer` — it must still pass unchanged, confirming 530 was not added there.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)" && tools/lint.sh
@@ -1382,7 +1382,7 @@ git commit -m "feat(task-219): route transformation coupons to ConsumeMorphCoupo
 - Consumes: `cashsb.NewItemUseMorphCoupon(updateTimeFirst bool)` and `UpdateTime()` (Task 1); `cashsb.UpdateTimeFirst(t)`; the in-scope locals `category`, `updateTimeFirst`, `updateTime`, `itemId`, `source`, `s`; `consumable.NewProcessor(l, ctx).RequestItemConsume(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, quantity int16, updateTime uint32) error` (`atlas-channel/consumable/processor.go:43`); the existing test helpers `installCashItemInSlotSeam`, `newCashItemUseTestSession`, `cashItemUsePrefix`, `mustTenant`.
 - Produces: `var requestItemConsumeFunc` — a package-level test seam, following the `cashItemInSlotFunc` / `useRockFunc` precedent already in this package.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use_test.go`:
 
@@ -1581,14 +1581,14 @@ func TestCharacterCashItemUseHandleFunc_MorphCouponMismatchedSlotNotInvoked(t *t
 
 Add to the test file's import block whatever is not already present: `"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"`, `cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"`. `context`, `uuid`, `logrus`, `channel`, `field`, `item`, `_map`, `world`, `request`, `tenant` and `session` are already imported there.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run 'MorphCoupon' -v
 ```
 Expected: FAIL — `undefined: requestItemConsumeFunc`. (After the seam exists but before the arm, the invocation tests fail on a call count of 0 while the two negative tests pass — that is the correct intermediate state.)
 
-- [ ] **Step 3: Add the test seam**
+- [x] **Step 3: Add the test seam**
 
 In `services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use.go`, immediately after the `cashItemInSlotFunc` block (~line 692):
 
@@ -1604,7 +1604,7 @@ var requestItemConsumeFunc = func(l logrus.FieldLogger, ctx context.Context, f f
 
 Add `"github.com/Chronicle20/atlas/libs/atlas-constants/field"` to the import block. The alias `field` is free — the packet-side imports are already aliased `fieldpkt` and `fieldcb`.
 
-- [ ] **Step 4: Add the arm**
+- [x] **Step 4: Add the arm**
 
 In the same file, insert at line 640 — after the megaphone/avatar-megaphone block's closing `}` (line 639) and before the terminal `l.Warnf` (line 641):
 
@@ -1639,7 +1639,7 @@ In the same file, insert at line 640 — after the megaphone/avatar-megaphone bl
 
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test -race ./socket/handler/ -run 'MorphCoupon' -v
@@ -1648,14 +1648,14 @@ cd services/atlas-channel/atlas.com/channel && go vet ./... && go build ./...
 ```
 Expected: all five new tests PASS; every pre-existing handler test still PASSES (in particular the four teleport-rock/megaphone arm tests, which share the seam helpers); vet and build clean.
 
-- [ ] **Step 6: Confirm the terminal warn no longer fires for 530**
+- [x] **Step 6: Confirm the terminal warn no longer fires for 530**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run 'MorphCouponInvokesConsume' -v 2>&1 | grep -i "attempting to use cash item" || echo "OK: terminal warn not reached for classification 530"
 ```
 Expected: `OK: …`. If the warn text appears, the arm was placed after the warn or the classification gate is wrong.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)" && tools/lint.sh
@@ -1673,7 +1673,7 @@ git commit -m "feat(task-219): route classification 530 to the consume path in a
 **Interfaces:**
 - Consumes: everything above. Produces no code.
 
-- [ ] **Step 1: Run every module's tests, vet and build**
+- [x] **Step 1: Run every module's tests, vet and build**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -1684,7 +1684,7 @@ done
 ```
 Expected: no `FAILED:` line, no vet or build diagnostics, every package `ok` or `no test files`.
 
-- [ ] **Step 2: Run the repo-root guards**
+- [x] **Step 2: Run the repo-root guards**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -1702,14 +1702,14 @@ git diff --stat main...HEAD -- services/atlas-configurations/seed-data/templates
 ```
 Expected: empty output.
 
-- [ ] **Step 3: Confirm no `go.mod` was touched, so no bake is required**
+- [x] **Step 3: Confirm no `go.mod` was touched, so no bake is required**
 
 ```bash
 git diff --name-only main...HEAD -- '*go.mod' '*go.sum'
 ```
 Expected: empty. If anything prints, `docker buildx bake atlas-<svc>` from the worktree root becomes **mandatory** for each affected service (CLAUDE.md item 4).
 
-- [ ] **Step 4: Audit the diff for the global constraints**
+- [x] **Step 4: Audit the diff for the global constraints**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -1726,13 +1726,13 @@ git diff main...HEAD | grep -nE '^\+.*(TODO|FIXME|XXX|HACK)' || echo "OK: no TOD
 ```
 Expected: five `OK:` lines. `5300000`/`5300002` inside *test* fixtures are item ids, not the classification, and are fine — the `530` grep should only surface those; read each hit rather than accepting the count.
 
-- [ ] **Step 5: Update the backlog doc**
+- [x] **Step 5: Update the backlog doc**
 
 Read `docs/research/missing-features/items-and-consumables.md` around line 38, then edit the "Wholly missing #7 / Transformation-morph coupons" row to record: implemented in `task-219`; the effect fires wherever the tenant's cash WZ carries `Cash/0530` items with `spec/morph`; **inert on `gms_12`**, whose `template_gms_12_1.json` does not register `CharacterCashItemUseHandle` at all (a pre-existing gap for the entire cash-item-use family, not a regression from this task); and **inert for any tenant whose cash WZ was ingested before this change**, because the reader change materialises `morph`/`hp` only for newly ingested data.
 
 Match the file's existing row/table format — read it before writing, don't impose a new shape.
 
-- [ ] **Step 6: File the operational re-ingest follow-up**
+- [x] **Step 6: File the operational re-ingest follow-up**
 
 The last PRD acceptance criterion asks for a follow-up item covering the operational re-ingest plus a live `GET /cash-items/5300000` check per tenant. Add it to the repo's tracking doc — locate it first, per CLAUDE.md ("use Glob or Grep to find the file rather than assuming a path"):
 
@@ -1742,7 +1742,7 @@ cd "$(git rev-parse --show-toplevel)" && ls docs/TODO.md docs/tasks/README.md 2>
 
 Record: re-ingest cash WZ for every provisioned tenant, then verify `GET /data/{tenantId}/cash-items/5300000` returns `spec` containing `morph: 1`, `hp: 50`, `time: 600000`. Until that runs, a coupon use consumes the item and applies nothing (the "both absent" row of the error table) — note this explicitly so the first bug report against it is self-answering.
 
-- [ ] **Step 7: Verify the worktree is the right one and commit**
+- [x] **Step 7: Verify the worktree is the right one and commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -1753,11 +1753,11 @@ git add docs/
 git commit -m "docs(task-219): retire morph-coupon backlog entry; file re-ingest follow-up"
 ```
 
-- [ ] **Step 8: Walk the PRD §10 acceptance criteria and tick each one**
+- [x] **Step 8: Walk the PRD §10 acceptance criteria and tick each one**
 
 Open `prd.md` §10 and check off each box against real evidence — the test name that pins it, or the command output that proves it. The exclusive-request-lock criterion (FR-4.3) is satisfied by design §1.2's IDA evidence plus the "no EnableActions" grep in Step 4; the type-byte-collision criterion is satisfied by `TestCharacterCashItemUseHandleFunc_MorphCouponTypeByteCollisions` **as corrected** — record the PRD's factual error about pre-95 gachapon in the same edit rather than ticking a box whose premise is wrong. Commit the ticked PRD.
 
-- [ ] **Step 9: Code review before PR**
+- [x] **Step 9: Code review before PR**
 
 Run the code-review step — do not skip it even though the plan looks complete (CLAUDE.md). Go files changed in three services, no TypeScript, so `superpowers:requesting-code-review` should dispatch `plan-adherence-reviewer` and `backend-guidelines-reviewer` (not the frontend one). Pin the reviewer subagents to Sonnet. Findings land in `docs/tasks/task-219-cash-morph-coupons/audit.md`. Ensure the subagents run **inside this worktree** and the tree is clean afterwards.
 

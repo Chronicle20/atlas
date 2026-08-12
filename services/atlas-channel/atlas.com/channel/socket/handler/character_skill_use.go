@@ -168,7 +168,12 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		// consume the combo orbs (reset the COMBO stat to 1) via the delta
 		// command atlas-buffs owns.
 		if consumeEnrageOrbs {
-			if cerr := buff.NewProcessor(l, ctx).UpdateStatValue(s.Field(), s.CharacterId(), enrageComboSource, string(charconst.TemporaryStatTypeCombo), buff2.StatOperationSet, 1, 0); cerr != nil {
+			if cerr := buff.NewProcessor(l, ctx).UpdateStatValue(s.Field(), s.CharacterId(), buff.StatValueUpdate{
+				SourceId:  enrageComboSource,
+				StatType:  string(charconst.TemporaryStatTypeCombo),
+				Operation: buff2.StatOperationSet,
+				Amount:    1,
+			}); cerr != nil {
 				l.WithError(cerr).Errorf("Enrage: failed to consume combo orbs for character [%d].", s.CharacterId())
 			}
 		}

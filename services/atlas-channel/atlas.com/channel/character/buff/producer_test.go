@@ -103,3 +103,39 @@ func TestExpireCommandProvider(t *testing.T) {
 		t.Errorf("CharacterId = %d, want 42", cmd.CharacterId)
 	}
 }
+
+// TestUpdateStatValueCommandProviderCarriesUpsertFields pins the two fields
+// task-216 added to the mirrored command body. The struct is duplicated across
+// two Go modules, so a field that exists on one side and not the other fails no
+// build — it decodes into a zero value at runtime, silently.
+func TestUpdateStatValueCommandProviderCarriesUpsertFields(t *testing.T) {
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).Build()
+
+	msgs, err := UpdateStatValueCommandProvider(f, 1000, StatValueUpdate{
+		SourceId: 5110001, StatType: "ENERGY_CHARGE", Operation: buffmsg.StatOperationIncrement,
+		Amount: 204, Cap: 10000, CreateIfMissing: true, Level: 20,
+	})()
+	if err != nil {
+		t.Fatalf("provider: %v", err)
+	}
+	if len(msgs) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(msgs))
+	}
+
+	var cmd buffmsg.Command[buffmsg.UpdateStatValueCommandBody]
+	if err := json.Unmarshal(msgs[0].Value, &cmd); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if cmd.Type != buffmsg.CommandTypeUpdateStatValue {
+		t.Fatalf("type: got %q want %q", cmd.Type, buffmsg.CommandTypeUpdateStatValue)
+	}
+	if !cmd.Body.CreateIfMissing {
+		t.Fatal("createIfMissing must survive the round trip")
+	}
+	if cmd.Body.Level != 20 {
+		t.Fatalf("level: got %d want 20", cmd.Body.Level)
+	}
+	if cmd.Body.Amount != 204 || cmd.Body.Cap != 10000 {
+		t.Fatalf("amount/cap: got %d/%d want 204/10000", cmd.Body.Amount, cmd.Body.Cap)
+	}
+}

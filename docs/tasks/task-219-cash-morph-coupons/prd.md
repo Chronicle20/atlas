@@ -107,9 +107,13 @@ Requirements that follow:
   updateTime and nothing else, following the shape of the existing per-type codecs in
   `libs/atlas-packet/cash/serverbound/`. It MUST read nothing when `UpdateTimeFirst(t)` is true. A
   round-trip encode/decode test MUST pin both variants.
-- **FR-1.3**: The type byte MUST NOT be used to select this arm. Pre-95, `ClassificationGachaponCoupon`
-  also maps to 40 and `ClassificationPetEvolution` maps to 41
-  (`character_cash_item_use.go:896-901`, `:936-942`), so the arm MUST gate on
+- **FR-1.3**: The type byte MUST NOT be used to select this arm. The collision is cross-version, not
+  within one tenant: on GMS >= 95, `ClassificationGachaponCoupon` maps to 40 — the same byte
+  classification 530 (transformation) uses pre-95 — and pre-95, `ClassificationPetEvolution` maps to
+  41 — the same byte transformation uses on GMS >= 95
+  (`character_cash_item_use.go:933-938`, `:974-979`; **corrected during task-8's PRD walk from this
+  PRD's original, backwards "pre-95 gachapon" claim** — verified against source, not IDA, at
+  task-8 time), so the arm MUST gate on
   `item.ClassificationTransformationCoupon` (`libs/atlas-constants/item/constants.go:97`), exactly as
   the existing Vicious Hammer / teleport rock arms gate on classification. No raw `530` literal.
 
@@ -289,37 +293,72 @@ Resolved during the spec interview, recorded here so design does not relitigate:
 
 ## 10. Acceptance Criteria
 
-- [ ] `atlas-data`'s cash reader parses `spec/morph` and `spec/hp`; unit tests pin morph 1/2/3, hp 50,
-      time 600000 for `5300000`/`5300001`/`5300002` shaped fixtures (FR-2.3).
-- [ ] An existing non-0530 cash fixture (0521 EXP coupon or 0519 pet-skill pouch) produces byte-identical
-      reader output before and after the change (FR-2.4).
-- [ ] The `atlas-consumables` cash REST model round-trips `morph` and `hp` (FR-3.1), pinned by a JSON
-      test.
-- [ ] Using a `Cash/0530` coupon decrements exactly one coupon from the **Cash** compartment (not the Use
-      compartment), pinned by a unit test asserting `inventory2.TypeValueCash` (FR-3.4).
-- [ ] Using a coupon issues a `TemporaryStatTypeMorph` statup with amount = the item's `morph` value,
+- [x] `atlas-data`'s cash reader parses `spec/morph` and `spec/hp`; unit tests pin morph 1/2/3, hp 50,
+      time 600000 for `5300000`/`5300001`/`5300002` shaped fixtures (FR-2.3). —
+      `services/atlas-data/atlas.com/data/cash/reader.go` + `TestReaderMorphCoupons`
+      (`cash/reader_test.go:970`).
+- [x] An existing non-0530 cash fixture (0521 EXP coupon or 0519 pet-skill pouch) produces byte-identical
+      reader output before and after the change (FR-2.4). — `TestReaderMorphHpAdditiveOnly`
+      (`cash/reader_test.go:1023`), asserting `SpecTypeMorph`/`SpecTypeHp` stay absent on a 0521 EXP
+      coupon fixture.
+- [x] The `atlas-consumables` cash REST model round-trips `morph` and `hp` (FR-3.1), pinned by a JSON
+      test. — `TestRestModelSpecRoundTripsMorphKeys` (`consumables/cash/rest_test.go:14`) and
+      `TestSpecTypeWireValues` (`:53`).
+- [x] Using a `Cash/0530` coupon decrements exactly one coupon from the **Cash** compartment (not the Use
+      compartment), pinned by a unit test asserting `inventory2.TypeValueCash` (FR-3.4). —
+      `TestConsumeMorphCouponSuccess` (`consumable/morph_coupon_test.go:263`, assertion at `:282`).
+- [x] Using a coupon issues a `TemporaryStatTypeMorph` statup with amount = the item's `morph` value,
       source = `-itemId`, duration = the item's `time` value in **milliseconds, unscaled** (FR-3.5,
-      FR-3.6).
-- [ ] Using a coupon issues an HP change of the item's `hp` value in the same operation (FR-3.5).
-- [ ] A 530 item whose `morph` is absent/zero applies no morph but still consumes and still heals; a 530
-      item whose `hp` is absent/zero applies no HP change but still morphs (FR-3.7).
-- [ ] Using a second coupon while morphed issues a second apply unconditionally — no rejection, no
-      "already morphed" branch (FR-3.8).
-- [ ] A cash-data fetch failure leaves the coupon in inventory (reservation released via `ConsumeError`),
-      pinned by a test (FR-3.3).
-- [ ] Classification 530 no longer reaches the terminal warn at `character_cash_item_use.go:640`;
+      FR-3.6). — same test, `:296-308` (`sourceId`, `duration = 600000`, `statups[0]`).
+- [x] Using a coupon issues an HP change of the item's `hp` value in the same operation (FR-3.5). —
+      same test, `:290` (`hpChanges[0].amount == 50`).
+- [x] A 530 item whose `morph` is absent/zero applies no morph but still consumes and still heals; a 530
+      item whose `hp` is absent/zero applies no HP change but still morphs (FR-3.7). —
+      `TestConsumeMorphCouponZeroSpecs` (`consumable/morph_coupon_test.go:358`).
+- [x] Using a second coupon while morphed issues a second apply unconditionally — no rejection, no
+      "already morphed" branch (FR-3.8). — `TestConsumeMorphCouponReuseWhileMorphedApplies`
+      (`consumable/morph_coupon_test.go:397`).
+- [x] A cash-data fetch failure leaves the coupon in inventory (reservation released via `ConsumeError`),
+      pinned by a test (FR-3.3). — `TestConsumeMorphCouponCashFetchFailureKeepsCoupon`
+      (`consumable/morph_coupon_test.go:319`).
+- [x] Classification 530 no longer reaches the terminal warn at `character_cash_item_use.go:640`;
       a handler test asserts the arm is entered for `5300000` and **not** entered for a
-      `ClassificationGachaponCoupon` id that shares type byte 40 pre-95 (FR-1.3).
-- [ ] The sub-body codec round-trips: nothing consumed when `UpdateTimeFirst(t)` is true, exactly one
-      trailing `int32` consumed when it is false (FR-1.2).
-- [ ] The exclusive-request lock question (FR-4.3) is resolved with cited evidence — either "response X
+      `ClassificationGachaponCoupon` id that shares type byte 40 on GMS >= 95 (corrected — this
+      PRD originally said "pre-95"; source (`character_cash_item_use.go:933-938`) shows gachapon
+      maps to 40 on GMS >= 95, colliding with transformation's pre-95 byte 40) (FR-1.3). —
+      `TestCharacterCashItemUseHandleFunc_MorphCouponInvokesConsume`
+      (`character_cash_item_use_test.go:371`) for the entry case;
+      `TestCharacterCashItemUseHandleFunc_MorphCouponTypeByteCollisions` (`:456`, table rows at
+      `:464-465`) for both collision non-entries, as corrected above.
+- [x] The sub-body codec round-trips: nothing consumed when `UpdateTimeFirst(t)` is true, exactly one
+      trailing `int32` consumed when it is false (FR-1.2). —
+      `TestItemUseMorphCouponUpdateTimeFirstRoundTrip` and
+      `TestItemUseMorphCouponNoUpdateTimeFirstRoundTrip`
+      (`libs/atlas-packet/cash/serverbound/item_use_morph_coupon_test.go:12,28`).
+- [x] The exclusive-request lock question (FR-4.3) is resolved with cited evidence — either "response X
       already clears it" with the file/IDA reference, or an explicit success-path unlock with a test —
-      and is not left as a prose assumption.
-- [ ] The diff contains no region or major-version literal in any of the three services (FR-1.3, §8), and
-      no raw `530` numeric literal outside `libs/atlas-constants`.
-- [ ] No seed template is modified; gms_12's non-registration is recorded as a documented no-op.
-- [ ] `go test -race ./...`, `go vet ./...`, `go build ./...` clean in `atlas-data`, `atlas-consumables`,
+      and is not left as a prose assumption. — design.md §1.2 plus the landed code comment at
+      `character_cash_item_use.go:654-659`: the non-silent `INVENTORY_OPERATION` emitted by the
+      consume commit already clears the client's exclusive-request lock
+      (`CWvsContext::OnInventoryOperation @0xa1ead9`, gated on the packet's leading `bOnExclRequest`
+      byte, IDA-verified), so no explicit unlock is emitted. Corroborated at task-8 time by the
+      "no EnableActions" grep over `services libs` (Step 4 of the task-8 brief) finding zero real
+      `EnableActions` calls added — only this design-decision comment and its counterpart at `:121`.
+- [x] The diff contains no region or major-version literal in any of the three services (FR-1.3, §8), and
+      no raw `530` numeric literal outside `libs/atlas-constants`. — task-8 Step 4 greps: `MajorVersion()`/
+      `Region() ==` restricted to `services libs`: no hits; the `\b530\b` hits restricted to `services
+      libs` are all inside comments or `GetClassification(...) == 530` test assertions, none a raw
+      classification-selection literal.
+- [x] No seed template is modified; gms_12's non-registration is recorded as a documented no-op. —
+      `git diff --stat main...HEAD -- services/atlas-configurations/seed-data/templates/` is empty;
+      the no-op is recorded in `docs/research/missing-features/items-and-consumables.md`
+      (Present-but-partial #6) and `docs/TODO.md` (task-219 follow-up section).
+- [x] `go test -race ./...`, `go vet ./...`, `go build ./...` clean in `atlas-data`, `atlas-consumables`,
       `atlas-channel`, `libs/atlas-packet`; `tools/lint.sh --check`, `tools/redis-key-guard.sh`,
-      `tools/goroutine-guard.sh`, `tools/buff-duration-guard.sh` clean from the repo root.
-- [ ] A follow-up item is filed for the operational re-ingest + live `GET /cash-items/5300000`
-      verification on each tenant, referencing §6.
+      `tools/goroutine-guard.sh`, `tools/buff-duration-guard.sh` clean from the repo root. — full sweep
+      output in `task-8-report.md`; all clean except `tools/lint.sh --check`'s `ui:node-version` target,
+      which fails for a known, pre-existing, unrelated environment reason (node v24 present, v22
+      required) — all Go fmt/lint targets (86/86) report "0 issues.".
+- [x] A follow-up item is filed for the operational re-ingest + live `GET /cash-items/5300000`
+      verification on each tenant, referencing §6. — `docs/TODO.md`, "task-219 follow-up: cash WZ
+      re-ingest for morph-coupon `spec/morph`/`spec/hp`".

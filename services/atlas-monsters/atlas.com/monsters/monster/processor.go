@@ -65,6 +65,8 @@ type Processor interface {
 	DrainMp(f field.Model, uniqueId uint32, characterId uint32, skillId uint32, requestedAmount uint32) error
 	Kill(uniqueId uint32, characterId uint32)
 	Catch(uniqueId uint32, characterId uint32, itemId uint32)
+	ClearAggro(uniqueId uint32) error
+	ForceControl(uniqueId uint32, characterId uint32) error
 }
 
 // emitter publishes a kafka message provider to a topic. ProcessorImpl uses
@@ -383,8 +385,18 @@ func (p *ProcessorImpl) FindNextController(idp model.Provider[[]uint32]) model.O
 	}
 }
 
-// StartControl starts a character controlling a monster
+// StartControl starts a character controlling a monster.
 func (p *ProcessorImpl) StartControl(uniqueId uint32, controllerId uint32) (Model, error) {
+	return p.startControl(uniqueId, controllerId, false)
+}
+
+// startControl is the shared control-transfer core. forceAggro additionally
+// marks the new controller as holding aggro in the same atomic transition, so
+// the emitted START_CONTROL drives StartControlMonsterBody(m, true) on the
+// channel side. The stop-then-start sequencing, the START_CONTROL emission and
+// the RepickReasonControlChange semantics below are unchanged from before the
+// split — no caller writes controller state directly.
+func (p *ProcessorImpl) startControl(uniqueId uint32, controllerId uint32, forceAggro bool) (Model, error) {
 	m, err := p.GetById(uniqueId)
 	if err != nil {
 		return Model{}, err
@@ -397,7 +409,11 @@ func (p *ProcessorImpl) StartControl(uniqueId uint32, controllerId uint32) (Mode
 		}
 	}
 
-	m, err = GetMonsterRegistry().ControlMonster(p.t, uniqueId, controllerId)
+	if forceAggro {
+		m, err = GetMonsterRegistry().ControlMonsterWithAggro(p.t, uniqueId, controllerId)
+	} else {
+		m, err = GetMonsterRegistry().ControlMonster(p.t, uniqueId, controllerId)
+	}
 	if err == nil {
 		_ = p.emit(EnvEventTopicMonsterStatus, startControlStatusEventProvider(m))
 		// FR-2.3 parity: a controller-change must not start a fresh skill
@@ -407,6 +423,10 @@ func (p *ProcessorImpl) StartControl(uniqueId uint32, controllerId uint32) (Mode
 		// channel inbox serves the prediction into MoveMonsterAck and the
 		// client animates 12 simultaneous casts). Mirrors postExecute's
 		// ControllerHasAggro gate in UseSkill.
+		//
+		// A forced handover deliberately satisfies this gate: the mobs were
+		// just aggroed onto the caster, and the fan-out is bounded by the
+		// skill's WZ mobCount (<= 7), unlike the map-entry storm above.
 		if !m.ControllerHasAggro() {
 			p.l.Debugf("Controller-change picker: monster [%d] new controller [%d] has no aggro; skipping re-pick.", uniqueId, controllerId)
 		} else if rerr := p.RepickAndEmit(uniqueId, RepickReasonControlChange); rerr != nil {
@@ -1754,4 +1774,75 @@ func Teardown(l logrus.FieldLogger) func() {
 			l.WithError(err).Errorf("Error destroying all monsters on teardown.")
 		}
 	}
+}
+
+// ClearAggro fully wipes the monster's damage-aggro table. Idempotent: wiping
+// an already-empty table emits nothing and returns nil (FR-4.5). A command
+// naming a monster that no longer exists is logged and dropped, not retried
+// into an error loop (FR-4.6).
+func (p *ProcessorImpl) ClearAggro(uniqueId uint32) error {
+	summary, err := GetMonsterRegistry().ClearDamageEntries(p.t, uniqueId)
+	if err != nil {
+		if errors.Is(err, errMonsterNotFound) {
+			p.l.Debugf("CLEAR_AGGRO for monster [%d]: monster no longer exists; dropping.", uniqueId)
+			return nil
+		}
+		return err
+	}
+	if summary.AggroFlippedOff {
+		_ = p.emit(EnvEventTopicMonsterStatus,
+			aggroChangedStatusEventProvider(summary.Monster, summary.ControllerCharacterId, false))
+	}
+	return nil
+}
+
+// ForceControl hands the monster's controller to characterId with the aggro
+// flag set, bypassing the picker election. Every rejection path is a logged
+// drop returning nil, never an error: these commands arrive from a client-driven
+// cast and a stale target must not wedge the consumer.
+func (p *ProcessorImpl) ForceControl(uniqueId uint32, characterId uint32) error {
+	m, err := p.GetById(uniqueId)
+	if err != nil {
+		p.l.Debugf("FORCE_CONTROL for monster [%d]: monster no longer exists; dropping.", uniqueId)
+		return nil
+	}
+
+	// FR-5.4 — forcing control to the current controller must not emit a
+	// redundant stop/start pair on every client in the field.
+	if m.ControlCharacterId() == characterId {
+		p.l.Debugf("FORCE_CONTROL for monster [%d]: character [%d] already controls it; no-op.", uniqueId, characterId)
+		return nil
+	}
+
+	ids, err := p.inFieldFn(m.Field())
+	if err != nil {
+		p.l.WithError(err).Debugf("FORCE_CONTROL for monster [%d]: unable to list characters in field [%s]; dropping.", uniqueId, m.Field().Id())
+		return nil
+	}
+	present := false
+	for _, id := range ids {
+		if id == characterId {
+			present = true
+			break
+		}
+	}
+	if !present {
+		p.l.Debugf("FORCE_CONTROL for monster [%d]: character [%d] is not in field [%s]; dropping.", uniqueId, characterId, m.Field().Id())
+		return nil
+	}
+
+	// A GM-hidden character must not be granted control: RelinquishControlOnHide
+	// actively strips control from hidden characters, so granting it here would
+	// produce an immediate flap.
+	if hiddenIds, herr := p.hiddenFn(); herr == nil {
+		if _, isHidden := hiddenIds[characterId]; isHidden {
+			p.l.Debugf("FORCE_CONTROL for monster [%d]: character [%d] is GM-hidden; dropping.", uniqueId, characterId)
+			return nil
+		}
+	}
+
+	if _, serr := p.startControl(uniqueId, characterId, true); serr != nil {
+		p.l.WithError(serr).Warnf("FORCE_CONTROL for monster [%d] to character [%d] failed.", uniqueId, characterId)
+	}
+	return nil
 }

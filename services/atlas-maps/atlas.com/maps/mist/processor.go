@@ -117,7 +117,7 @@ func (p *ProcessorImpl) Create(body mistKafka.CreateCommandBody) (Mist, error) {
 		// AffectedAreaTypeFor. Leaving it at the zero value marks the mist as
 		// a MOB disease cloud, which makes the client damage any player
 		// standing in it, including the caster of a player-cast mist.
-		SetType(AffectedAreaTypeFor(body.OwnerType)).
+		SetType(AffectedAreaTypeFor(body.OwnerType, effectKind)).
 		SetKinds(targetKind, effectKind).
 		Build()
 

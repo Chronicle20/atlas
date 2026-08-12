@@ -1,6 +1,7 @@
 package mist
 
 import (
+	mistKafka "atlas-maps/kafka/message/mist"
 	"time"
 
 	"github.com/google/uuid"
@@ -138,21 +139,32 @@ func (m Mist) Type() int32 {
 const (
 	AffectedAreaTypeMobSkill  = int32(0)
 	AffectedAreaTypeUserSkill = int32(1)
+	// AffectedAreaTypeSmoke is 2 because the client's smoke lookup keys on it:
+	// CAffectedAreaPool::IsSmokeAreaByPoint (v95 @0x434f40) rejects any area
+	// whose nType != 2, and v83 CAffectedAreaPool::Update (@0x43109f) gates the
+	// fade-out animation on the same value. A Smokescreen mist sent as 1 is
+	// invisible to the client's own protection check.
+	AffectedAreaTypeSmoke = int32(2)
 )
 
-// AffectedAreaTypeFor maps a mist's owner to its nType. A monster-owned mist
-// IS a mob disease cloud and must stay 0 -- that is what makes the client
-// apply it to players standing in it (the pre-task-200 AREA_POISON behaviour,
-// which must not change). A character-owned mist is a user skill area.
+// AffectedAreaTypeFor maps a mist's owner and effect to its nType. A
+// monster-owned mist IS a mob disease cloud and must stay 0 -- that is what
+// makes the client apply it to players standing in it (the pre-task-200
+// AREA_POISON behaviour, which must not change). A character-owned
+// PROTECTION mist is Smoke Screen (2); every other character-owned mist is a
+// generic user skill area (1).
 //
-// Derived from ownerType rather than carried on COMMAND_TOPIC_MIST on purpose:
-// nType is a client wire detail, and no producer should have to know the
-// client's value table to create a mist.
-func AffectedAreaTypeFor(ownerType string) int32 {
-	if ownerType == OwnerTypeCharacter {
-		return AffectedAreaTypeUserSkill
+// Derived here rather than carried on COMMAND_TOPIC_MIST on purpose: nType is
+// a client wire detail, and no producer should have to know the client's
+// value table to create a mist.
+func AffectedAreaTypeFor(ownerType string, effectKind string) int32 {
+	if ownerType != OwnerTypeCharacter {
+		return AffectedAreaTypeMobSkill
 	}
-	return AffectedAreaTypeMobSkill
+	if effectKind == mistKafka.EffectKindProtection {
+		return AffectedAreaTypeSmoke
+	}
+	return AffectedAreaTypeUserSkill
 }
 
 // Mist owner types, as carried on COMMAND_TOPIC_MIST CreateCommandBody.

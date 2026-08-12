@@ -147,3 +147,36 @@ func TestMist_RecoveryMp_RoundTripsThroughBuilder(t *testing.T) {
 	require.Equal(t, int32(80), m.RecoveryMp())
 	require.Empty(t, m.PartyMemberIds())
 }
+
+// FR-3.4: all four outcomes, in one table. Sending 0 for a character-owned
+// mist bills the caster an uninitialised nDamage (the live 1,434,803-damage
+// self-hit task-200 diagnosed), and sending anything but 2 for Smokescreen
+// makes the client's IsSmokeAreaByPoint lookup miss it entirely.
+func TestAffectedAreaTypeFor_AllOutcomes(t *testing.T) {
+	tests := []struct {
+		name       string
+		ownerType  string
+		effectKind string
+		want       int32
+	}{
+		{"monster-owned disease cloud stays 0", OwnerTypeMonster, mistKafka.EffectKindDisease, AffectedAreaTypeMobSkill},
+		{"monster-owned with empty kind stays 0", OwnerTypeMonster, "", AffectedAreaTypeMobSkill},
+		{"monster-owned protection is still a mob area", OwnerTypeMonster, mistKafka.EffectKindProtection, AffectedAreaTypeMobSkill},
+		{"character-owned protection is smoke", OwnerTypeCharacter, mistKafka.EffectKindProtection, AffectedAreaTypeSmoke},
+		{"character-owned dot is a user skill area", OwnerTypeCharacter, mistKafka.EffectKindDamageOverTime, AffectedAreaTypeUserSkill},
+		{"character-owned recovery is a user skill area", OwnerTypeCharacter, mistKafka.EffectKindRecovery, AffectedAreaTypeUserSkill},
+		{"character-owned disease is a user skill area", OwnerTypeCharacter, mistKafka.EffectKindDisease, AffectedAreaTypeUserSkill},
+		{"character-owned empty kind is a user skill area", OwnerTypeCharacter, "", AffectedAreaTypeUserSkill},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, AffectedAreaTypeFor(tc.ownerType, tc.effectKind))
+		})
+	}
+}
+
+// The smoke value is 2 and nothing else; pinned so a future refactor cannot
+// renumber it away from what the client reads.
+func TestAffectedAreaTypeSmoke_IsTwo(t *testing.T) {
+	require.Equal(t, int32(2), AffectedAreaTypeSmoke)
+}

@@ -295,6 +295,32 @@ never triggers it — so it costs nothing in fidelity and closes the crafted-cli
 where a player kites through the window collecting a free heal and a damage reduction.
 The v95 silence is silence, not a denial, and is recorded as such.
 
+#### 3.7.1 Addendum — "an authentic client never triggers it" was wrong
+
+Live testing on `atlas-pr-1326` (2026-08-12, GMS 83.1) falsified the claim that the
+movement interrupt is inert against an authentic client. `IsImmovable` stops the player
+from *walking*; it does not stop the client from *sending a MOVE packet*. Two of every
+three legitimate casts died:
+
+```
+19:36:35.576  Chakra recovery window opened ... hp [3070] of [30000]
+19:36:35.707  Chakra recovery window for character [1] interrupted by movement   (+131 ms)
+19:36:36.890  Character [1] sent Chakra USE_SKILL with no open recovery window; rejecting
+```
+
+The caster had sent no MOVE for the preceding 19 s (previous one at `19:36:16.325`), so
+this is the client emitting a path of its own accord, not the player walking. Across six
+casts the interrupt fired at +103, +131, +186, +366, +389 and +409 ms; the casts that
+healed were simply the ones no MOVE happened to land in. Symptom: animation plays,
+nothing else happens.
+
+**Revision:** the interrupt gates on **displacement**, not on packet arrival —
+`movement.Displaces` folds the path with the same folder the movement processor uses to
+publish the authoritative position, and cancels only when the path ends somewhere other
+than it started. A self-flush lands where it began and passes; a walk, jump-and-land or
+teleport does not. The anti-kiting guard is unchanged in substance: kiting is
+displacement by definition.
+
 ---
 
 ## 4. WZ data (OQ-6, FR-6.2, FR-6.3)

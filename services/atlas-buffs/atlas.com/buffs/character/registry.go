@@ -72,11 +72,9 @@ func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channe
 
 	m, err := r.characters.Get(ctx, t, characterId)
 	if errors.Is(err, atlas.ErrNotFound) {
-		m = Model{
-			worldId:     worldId,
-			channelId:   channelId,
-			characterId: characterId,
-			buffs:       make(map[string]buff.Model),
+		m, err = NewBuilder(worldId, channelId, characterId).Build()
+		if err != nil {
+			return nil, err
 		}
 	} else if err != nil {
 		return nil, err
@@ -390,11 +388,9 @@ func (r *Registry) UpdateStatValue(ctx context.Context, worldId world.Id, channe
 		if !canCreate {
 			return buff.Model{}, false, false, nil
 		}
-		m = Model{
-			worldId:     worldId,
-			channelId:   channelId,
-			characterId: characterId,
-			buffs:       make(map[string]buff.Model),
+		m, err = NewBuilder(worldId, channelId, characterId).Build()
+		if err != nil {
+			return buff.Model{}, false, false, err
 		}
 	} else if err != nil {
 		return buff.Model{}, false, false, err

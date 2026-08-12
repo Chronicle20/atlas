@@ -19,8 +19,9 @@ import (
 
 // energyChargedValue is the ENERGY_CHARGE charged-state sentinel emitted by
 // atlas-channel. It is a state marker, not a bar reading, and nothing may
-// treat it as a magnitude. (task-216 FR-3.1)
-const energyChargedValue = int32(15000)
+// treat it as a magnitude. (task-216 FR-3.1) Shared with the emitting service
+// via libs/atlas-constants so the two cannot drift.
+const energyChargedValue = charconst.EnergyChargedValue
 
 // IsInitialized checks if a character has been initialized
 func IsInitialized(ctx context.Context, characterId uint32) bool {

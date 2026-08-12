@@ -469,12 +469,12 @@ func mergeBeacon(bs []buff.Model, e buff.BeaconEntry) []buff.Model {
 }
 
 const (
-	// energyChargeCapValue and energyChargedValue mirror the constants in
-	// socket/handler/character_attack_energy_charge.go. Re-declared rather
-	// than imported: the consumer must not depend on the socket handler
-	// package. 15000 is a charged-state SENTINEL, not a bar reading.
-	energyChargeCapValue = int32(10000)
-	energyChargedValue   = int32(15000)
+	// Sourced from libs/atlas-constants rather than re-declared, so the
+	// consumer agrees with the socket handler's accumulation ceiling without
+	// depending on the socket handler package. The charged value is a SENTINEL,
+	// not a bar reading.
+	energyChargeCapValue = charconst.EnergyChargeCap
+	energyChargedValue   = charconst.EnergyChargedValue
 )
 
 // energyChargeChange returns the event's ENERGY_CHARGE stat change, if any.

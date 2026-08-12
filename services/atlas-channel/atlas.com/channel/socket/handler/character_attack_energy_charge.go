@@ -26,12 +26,13 @@ const (
 	// one emit of 102 x mobs so the attack path costs at most one Kafka
 	// message (NFR-1).
 	energyChargeGainPerMob = int32(102)
-	// energyChargeCap is the accumulation ceiling. Reaching it promotes the
-	// character to the charged state.
-	energyChargeCap = int32(10000)
-	// energyChargedValue is the charged-state SENTINEL, not a bar reading.
-	// Nothing may treat it as "150% full" (FR-3.1).
-	energyChargedValue = int32(15000)
+	// energyChargeCap is the accumulation ceiling; energyChargedValue is the
+	// charged-state SENTINEL, not a bar reading — nothing may treat it as
+	// "150% full" (FR-3.1). Both are shared, so the accumulation ceiling here
+	// cannot drift from the promotion in the buff consumer or the stat payoff
+	// in atlas-effective-stats.
+	energyChargeCap    = constants.EnergyChargeCap
+	energyChargedValue = constants.EnergyChargedValue
 )
 
 // energyLine is the Energy Charge skill line a character owns: the tenant's

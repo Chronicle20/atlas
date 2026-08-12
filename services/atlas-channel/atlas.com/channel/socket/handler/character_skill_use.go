@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
+	"atlas-channel/character/chakra"
 	skill2 "atlas-channel/character/skill"
 	skill3 "atlas-channel/data/skill"
 	buff2 "atlas-channel/kafka/message/buff"
@@ -108,6 +109,21 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
 		castId, castIdOk := set.Skill.Resolve(skill.Id(sui.SkillId()))
 
+		// Chakra: reject before handler.UseSkill so a cast with no open
+		// recovery window spends no MP and applies no cooldown, following
+		// the Enrage precedent below (UseSkill charges both before it
+		// dispatches to the per-skill registry — skill/handler/common.go).
+		if castIdOk && skill.IsIdentity(castId, skill.ChiefBanditChakra) {
+			_, hasWindow := chakra.GetRegistry().Get(t, s.CharacterId(), time.Now())
+			if chakraUseBlocked(hasWindow) {
+				l.Debugf("Character [%d] sent Chakra USE_SKILL with no open recovery window (never prepared, or interrupted); rejecting.", s.CharacterId())
+				if aerr := enableActions(l)(ctx)(wp)(s); aerr != nil {
+					l.WithError(aerr).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, s.CharacterId())
+				}
+				return
+			}
+		}
+
 		// Enrage (Hero) requires and consumes the caster's combo orbs. Gate the
 		// cast here — before the buff applies — on the caster being at their orb
 		// cap ("max combo orbs"), reading the live count from atlas-buffs. A cast
@@ -201,4 +217,15 @@ func skillLevelOf(skills []skill2.Model, id skill.Id) byte {
 // battleship: a generic cast-time cooldown gate is out of scope here.
 func battleshipCastBlocked(skillId uint32, cooldownExpiresAt time.Time, now time.Time) bool {
 	return skill.Id(skillId) == skill.CorsairBattleshipId && now.Before(cooldownExpiresAt)
+}
+
+// chakraUseBlocked reports whether a Chakra USE_SKILL must be rejected.
+//
+// The only condition is "no open recovery window": either the client never
+// sent the prepare packet, or the window was interrupted by damage,
+// movement, a map change or the TTL. There is deliberately no second HP
+// check — the client has none (design §3.2) and PRD FR-1.3 requires the
+// 50% threshold be evaluated at activation only.
+func chakraUseBlocked(hasWindow bool) bool {
+	return !hasWindow
 }

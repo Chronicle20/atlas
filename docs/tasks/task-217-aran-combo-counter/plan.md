@@ -70,7 +70,7 @@ Copied verbatim from `design.md` / `prd.md`. Every task's requirements implicitl
 - Consumes: nothing.
 - Produces: `serverbound.AranComboCounterHandle` (string const, value `"AranComboCounterHandle"`) and `serverbound.AranComboCounterRequest` (zero-field struct with `Operation() string`, `String() string`, `Encode(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte`, `Decode(logrus.FieldLogger, context.Context) func(*request.Reader, map[string]interface{})` — `Decode` has a pointer receiver, matching `ChalkboardClose`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `libs/atlas-packet/character/serverbound/aran_combo_counter_test.go`:
 
@@ -131,7 +131,7 @@ func TestAranComboCounterEmptyBody(t *testing.T) {
 
 Before running, confirm `pt.CreateContext`'s parameter types match the call above by reading an existing sibling test (e.g. `chalkboard_close_test.go`, which calls `pt.CreateContext("GMS", 79, 1)`); if the helper takes different integer widths, adjust the struct field types in the table to match — do not change the helper.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd libs/atlas-packet && go test ./character/serverbound/ -run AranComboCounter -v
@@ -139,7 +139,7 @@ cd libs/atlas-packet && go test ./character/serverbound/ -run AranComboCounter -
 
 Expected: FAIL — `undefined: AranComboCounterRequest`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `libs/atlas-packet/character/serverbound/aran_combo_counter.go`:
 
@@ -183,7 +183,7 @@ func (m *AranComboCounterRequest) Decode(_ logrus.FieldLogger, _ context.Context
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd libs/atlas-packet && go test ./character/serverbound/ -run AranComboCounter -v
@@ -191,7 +191,7 @@ cd libs/atlas-packet && go test ./character/serverbound/ -run AranComboCounter -
 
 Expected: PASS for both tests, every subtest.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add libs/atlas-packet/character/serverbound/aran_combo_counter.go libs/atlas-packet/character/serverbound/aran_combo_counter_test.go
@@ -210,7 +210,7 @@ git commit -m "feat(task-217): ARAN_COMBO_COUNTER serverbound codec"
 - Consumes: nothing.
 - Produces: `clientbound.ShowComboWriter` (string const, value `"ShowCombo"` — the name the seed templates bind), `clientbound.NewShowCombo(count uint32) ShowCombo`, accessor `Count() uint32`, plus `Operation()`, `String()`, `Encode`, `Decode` (pointer receiver on `Decode`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `libs/atlas-packet/character/clientbound/show_combo_test.go`:
 
@@ -280,7 +280,7 @@ func TestShowComboByteFixture(t *testing.T) {
 
 Adjust the struct-literal integer widths only if `pt.CreateContext`'s signature differs (see Task 1 Step 1).
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd libs/atlas-packet && go test ./character/clientbound/ -run ShowCombo -v
@@ -288,7 +288,7 @@ cd libs/atlas-packet && go test ./character/clientbound/ -run ShowCombo -v
 
 Expected: FAIL — `undefined: NewShowCombo`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `libs/atlas-packet/character/clientbound/show_combo.go`. Read a sibling clientbound file (e.g. `hint.go`) first to confirm the writer/reader helper names in this module (`response.NewWriter`, `w.WriteInt32`/`WriteUint32`, and the reader accessor used by other `Decode` implementations) and use whichever the module actually exposes for a 4-byte little-endian value:
 
@@ -344,7 +344,7 @@ func (m *ShowCombo) Decode(_ logrus.FieldLogger, _ context.Context) func(r *requ
 
 If `response.Writer` names its 4-byte method differently (e.g. `WriteInt32(int32)`) or `request.Reader` names its 4-byte read differently (e.g. `ReadInt32()`), use the module's actual names and cast at the boundary — the wire must remain 4 bytes little-endian.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd libs/atlas-packet && go test ./character/clientbound/ -run ShowCombo -v
@@ -352,7 +352,7 @@ cd libs/atlas-packet && go test ./character/clientbound/ -run ShowCombo -v
 
 Expected: PASS for both tests, every subtest.
 
-- [ ] **Step 5: Full module check and commit**
+- [x] **Step 5: Full module check and commit**
 
 ```bash
 cd libs/atlas-packet && go test -race ./... && go vet ./...
@@ -375,7 +375,7 @@ The Legend branch is real: `20000017` is present in the WZ snapshots for gms 79/
 - Consumes: nothing.
 - Produces: `skill.LegendComboAbilityId` (typed `skill.Id`, value `20000017`) and identity `skill.LegendComboAbility`. Later tasks compare `s.Id() == skill.LegendComboAbilityId` directly — permitted, since neither combo id is on `tools/skill-job-id-guard.sh`'s divergent list (design.md §2.7).
 
-- [ ] **Step 1: Add the identity to the generator source**
+- [x] **Step 1: Add the identity to the generator source**
 
 In `libs/atlas-constants/gen/identities.yaml`, add an entry in the `2000xxxx` (Legend) block, keeping the file's existing numeric ordering — insert it at the position where `20000017` sorts among its neighbours:
 
@@ -386,7 +386,7 @@ In `libs/atlas-constants/gen/identities.yaml`, add an entry in the `2000xxxx` (L
   displayName: Legend Combo Ability
 ```
 
-- [ ] **Step 2: Add the wire constant and Skill value**
+- [x] **Step 2: Add the wire constant and Skill value**
 
 In `libs/atlas-constants/skill/constants.go`, add the id constant beside the other Legend ids (the `LegendBlessOfNymphId` neighbourhood), the `Skill` value beside `LegendBlessOfNymphSkill` (~line 2038), and the registry row beside the `AranStage1ComboAbilityId:` row (~line 2832). Follow `AranStage1ComboAbilitySkill` exactly — Combo Ability is a buff:
 
@@ -410,7 +410,7 @@ LegendComboAbilityId: LegendComboAbilitySkill,
 
 Match the surrounding alignment/gofmt style; `tools/lint.sh` will rewrite it if not.
 
-- [ ] **Step 3: Regenerate the identity tables**
+- [x] **Step 3: Regenerate the identity tables**
 
 ```bash
 cd libs/atlas-constants/gen && go run .
@@ -418,7 +418,7 @@ cd libs/atlas-constants/gen && go run .
 
 Expected: `identities_gen.go` and the per-version `version_*_gen.go` files are rewritten. `LegendComboAbility` must appear in the six in-scope version tables (it is in their WZ snapshots).
 
-- [ ] **Step 4: Verify generation is complete and non-stale**
+- [x] **Step 4: Verify generation is complete and non-stale**
 
 ```bash
 cd libs/atlas-constants/gen && go run . -check
@@ -428,7 +428,7 @@ grep -n "LegendComboAbility" skill/identities_gen.go skill/version_gms_83_1_gen.
 
 Expected: `-check` exits 0; tests pass (the drift test in `gen/drift_test.go` and `audit_validate_test.go` must stay green); the grep shows `LegendComboAbility Identity = 20000017` and the per-version mapping rows.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add libs/atlas-constants/gen/identities.yaml libs/atlas-constants/skill/
@@ -449,7 +449,7 @@ git commit -m "feat(task-217): add Legend Combo Ability (20000017) skill identit
 - Consumes: `skill.LegendComboAbilityId` from Task 3.
 - Produces: nothing consumed by later tasks.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `services/atlas-data/atlas.com/data/skill/reader_test.go`, following the XML-driven shape of the existing `TestReader_SuperGmHolySymbol_V48Wire_ClassifiesAsHolySymbol` (~line 3264) — same imports, same `Read` → `CollectToMap` → `findStatup` chain. The Combo Ability branch sits in the function-level `else if` chain, not inside the `e.OverTime()` block, so a bare `level/x` node is enough to reach it:
 
@@ -523,7 +523,7 @@ func TestReader_AranComboAbility_StatupUsesEffectX(t *testing.T) {
 
 Add `fmt` to the file's imports if it is not already there.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go test ./skill/ -run AranCombo -v
@@ -531,7 +531,7 @@ cd services/atlas-data/atlas.com/data && go test ./skill/ -run AranCombo -v
 
 Expected: FAIL — the Aran level-1 case gets `100`, want `1`; the Legend case finds no `ARAN_COMBO` statup at all (`20000017` is not in the branch yet).
 
-- [ ] **Step 3: Change the reader**
+- [x] **Step 3: Change the reader**
 
 In `services/atlas-data/atlas.com/data/skill/reader.go`, replace the Combo Ability branch so it matches its siblings and covers the Legend variant:
 
@@ -546,7 +546,7 @@ In `services/atlas-data/atlas.com/data/skill/reader.go`, replace the Combo Abili
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeAranCombo, int32(e.X()))
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go test -race ./... && go vet ./...
@@ -554,7 +554,7 @@ cd services/atlas-data/atlas.com/data && go test -race ./... && go vet ./...
 
 Expected: PASS, including all three new subtests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-data/atlas.com/data/skill/
@@ -588,7 +588,7 @@ The mirror stores the `tenant.Model` alongside each tenant's bucket because the 
   - `type Expired struct{}` with accessors `Tenant() tenant.Model`, `CharacterId() uint32`, `Field() field.Model`, `ComboId() skill.Id`
   - `func (m *Mirror) ExpireIdle(now time.Time) []Expired` — zeroes the count of every entry with `Count() > 0 && now.Sub(LastHit()) > Window()` and returns what it zeroed
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/character/combo/mirror_test.go`:
 
@@ -767,7 +767,7 @@ func TestConcurrentAccess(t *testing.T) {
 
 Confirm `tenant.Create`'s signature and `field.NewBuilder`'s argument types against a sibling test (e.g. `character/buff/beacon_test.go`) before running, and adjust the helpers to match.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./character/combo/ -v
@@ -775,7 +775,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./character/combo/ -v
 
 Expected: FAIL — the package does not exist.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `services/atlas-channel/atlas.com/channel/character/combo/mirror.go`:
 
@@ -1000,7 +1000,7 @@ func (m *Mirror) setCountForTest(t tenant.Model, characterId uint32, count int32
 }
 ```
 
-- [ ] **Step 4: Run tests and guards to verify they pass**
+- [x] **Step 4: Run tests and guards to verify they pass**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test -race ./character/combo/ -v && go vet ./character/combo/
@@ -1009,7 +1009,7 @@ cd ../../../.. && tools/goroutine-guard.sh && tools/redis-key-guard.sh
 
 Expected: all subtests PASS under `-race`; both guards exit 0.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/character/combo/
@@ -1034,7 +1034,7 @@ The gate set is exactly the client's (design.md §2.4, §3.5): Combo Ability own
 
 > Import direction note: `combo` imports `atlas-channel/character` and `atlas-channel/data/skill/effect`. `atlas-channel/character` must not import `combo`. Before writing, run `grep -rn "atlas-channel/character/combo" services/atlas-channel/atlas.com/channel/character/*.go` and confirm it is empty; if a cycle appears, move `Evaluate` into the handler package instead and keep only `ComboAbilityId` here.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/character/combo/eligibility_test.go`. The construction below uses the real project constructors: `character.NewModelBuilder().…MustBuild()`, `skill.Extract(skill.RestModel{...})`, `effect.Extract(effect.RestModel{X: …})`, `equipment.NewModel()` + `Set`, and `asset.NewBuilder(compartmentId, templateId)` — the same helpers `socket/handler/character_attack_combo_test.go:113-143` uses:
 
@@ -1173,7 +1173,7 @@ func TestEvaluateEffectLookupFailure(t *testing.T) {
 
 Before running, confirm these names against the repo and substitute real neighbours if any differs: `job.AranStage2Id` / `AranStage3Id` / `AranStage4Id` / `WarriorId` and `skill.AranStage1DoubleSwingId` (`grep -n` in `libs/atlas-constants/{job,skill}/constants.go`); the equipment slot key (`equipment.Model.Get` takes an `inventory/slot.Type` — check whether the weapon slot's `Type` constant is exported as e.g. `slottype.TypeWeapon` rather than the literal `"weapon"`, and prefer the constant); and `asset.NewBuilder(...).Build()`'s return (if it returns a pointer, drop the `&`).
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./character/combo/ -run "ComboAbilityId|Evaluate" -v
@@ -1181,7 +1181,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./character/combo/ -run "
 
 Expected: FAIL — `undefined: ComboAbilityId`, `undefined: Evaluate`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `services/atlas-channel/atlas.com/channel/character/combo/eligibility.go`:
 
@@ -1249,7 +1249,7 @@ func Evaluate(c character.Model, getEffect func(skillId uint32, level byte) (eff
 
 If `c.Skills()` elements expose the skill id under a different accessor name, or `Equipment().Get` returns a differently-shaped slot, match `equippedWeapon` in `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_projectile.go:191-197` — it is the canonical reader for the equipped weapon.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test -race ./character/combo/ -v && go vet ./character/combo/
@@ -1257,7 +1257,7 @@ cd services/atlas-channel/atlas.com/channel && go test -race ./character/combo/ 
 
 Expected: PASS, every subtest — including all seven gate cases and the effect-failure case.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/character/combo/
@@ -1279,7 +1279,7 @@ The hot path: one mutex-guarded map read/write plus one socket write in steady s
 - Consumes: `serverbound.AranComboCounterHandle`, `serverbound.AranComboCounterRequest` (Task 1); `clientbound.ShowComboWriter`, `clientbound.NewShowCombo` (Task 2); `combo.GetMirror`, `combo.Evaluate`, `combo.DefaultIdleWindow`, `combo.NewEligibility` (Tasks 5–6).
 - Produces: `handler.AranComboCounterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{})`, and the unexported seam `aranComboDeps` used by the test.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/socket/handler/character_aran_combo_test.go`. Model the dependency-seam style on `character_attack_combo_test.go` (read it first for the deps/spy conventions used in this package):
 
@@ -1413,7 +1413,7 @@ Write `comboTestTenant` (a fresh `tenant.Create(uuid.New(), "GMS", 83, 1)` per c
 
 The cap case above exercises the clamp indirectly through repeated increments; the exhaustive clamp-at-99999 assertion lives in Task 5's `TestIncrementClampsAtCap`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run AranCombo -v
@@ -1421,7 +1421,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run Ar
 
 Expected: FAIL — `undefined: idleWindowFromOptions`, `undefined: aranComboAdvance`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `services/atlas-channel/atlas.com/channel/socket/handler/character_aran_combo.go`:
 
@@ -1582,7 +1582,7 @@ func AranComboCounterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wr
 
 Add the `field` import (`github.com/Chronicle20/atlas/libs/atlas-constants/field`).
 
-- [ ] **Step 4: Wire the handler and writer in `main.go`**
+- [x] **Step 4: Wire the handler and writer in `main.go`**
 
 In `services/atlas-channel/atlas.com/channel/main.go`:
 
@@ -1596,7 +1596,7 @@ handlerMap[charsb.AranComboCounterHandle] = handler.AranComboCounterHandleFunc
 charcb.ShowComboWriter,
 ```
 
-- [ ] **Step 5: Run tests and build to verify they pass**
+- [x] **Step 5: Run tests and build to verify they pass**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go build ./... && go test -race ./socket/handler/ -run AranCombo -v && go vet ./...
@@ -1604,7 +1604,7 @@ cd services/atlas-channel/atlas.com/channel && go build ./... && go test -race .
 
 Expected: build clean; all `AranCombo` subtests PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_aran_combo.go services/atlas-channel/atlas.com/channel/socket/handler/character_aran_combo_test.go services/atlas-channel/atlas.com/channel/main.go
@@ -1625,7 +1625,7 @@ The melee attack pipeline already fetches the character with **both** `Inventory
 - Consumes: `combo.Evaluate`, `combo.GetMirror` (Tasks 5–6).
 - Produces: `func aranComboRefreshEligibility(l logrus.FieldLogger, ctx context.Context, f field.Model, c character.Model, getEffect func(skillId uint32, level byte) (effect.Model, error))`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/socket/handler/character_aran_combo_refresh_test.go`:
 
@@ -1705,7 +1705,7 @@ func TestAranComboRefreshDoesNotIncrement(t *testing.T) {
 
 Add to this file the local helpers it needs: `aranTestCharacter(t, id, jobId, skillId, level, weaponTemplateId)` (same body as Task 6's `buildCharacter`, plus `SetId(id)`), `aranTestEffectLookup(t, x)` (delegating to the existing `comboTestEffect` at `character_attack_combo_test.go:136`), and the constants `aranTestPolearmId = uint32(1442000)` / `aranTestSwordId = uint32(1302000)`. `comboTestTenant` and `comboTestField` come from Task 7's test file, in the same package. Each test uses a distinct character id so the process-wide mirror singleton cannot leak state between them.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run AranComboRefresh -v
@@ -1713,7 +1713,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run Ar
 
 Expected: FAIL — `undefined: aranComboRefreshEligibility`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Add to `services/atlas-channel/atlas.com/channel/socket/handler/character_aran_combo.go`:
 
@@ -1740,7 +1740,7 @@ func aranComboRefreshEligibility(l logrus.FieldLogger, ctx context.Context, f fi
 
 Add the `field` and `effect` imports.
 
-- [ ] **Step 4: Hook it into the attack pipeline**
+- [x] **Step 4: Hook it into the attack pipeline**
 
 In `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go`, immediately after the existing `comboOrbTryUpdate` call inside the `ai.AttackType() == packetmodel.AttackTypeMelee` block (~line 981):
 
@@ -1757,7 +1757,7 @@ In `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_com
 
 Confirm the `skill2` import alias in this file matches `character_attack_combo.go`'s (`skill2 "atlas-channel/data/skill"`); if `character_attack_common.go` uses a different alias for the same package, use its alias.
 
-- [ ] **Step 5: Run tests and build to verify they pass**
+- [x] **Step 5: Run tests and build to verify they pass**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go build ./... && go test -race ./socket/handler/ -v 2>&1 | tail -20 && go vet ./...
@@ -1765,7 +1765,7 @@ cd services/atlas-channel/atlas.com/channel && go build ./... && go test -race .
 
 Expected: build clean; the whole handler package's tests PASS (the pre-existing attack tests must stay green).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/
@@ -1790,7 +1790,7 @@ Three inputs converge on "drop the mirror entry" (design.md §3.4). The client's
 
 **Design decision, fixed here:** the predicate takes **no job id**. `character_buff_cancel.go` runs for *every* buff cancel and does not fetch the character, so requiring the job would add a REST call to a hot, unrelated path. Instead the predicate matches either Combo Ability id. This is safe: a character can only hold one of them (they belong to disjoint job branches), so the id itself identifies the branch. There is exactly one predicate — do not add a second, job-aware variant.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/socket/handler/character_aran_combo_reset_test.go`:
 
@@ -1846,7 +1846,7 @@ func TestAranComboClearOnCancel(t *testing.T) {
 
 Verify `skill3.AranStage4ComboBarrierId` exists (`grep -n AranStage4ComboBarrierId libs/atlas-constants/skill/constants.go`) and substitute another Aran buff id if not.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run AranComboClearOnCancel -v
@@ -1854,7 +1854,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run Ar
 
 Expected: FAIL — `undefined: aranComboClearOnCancel`.
 
-- [ ] **Step 3: Implement the cancel branch**
+- [x] **Step 3: Implement the cancel branch**
 
 Add to `services/atlas-channel/atlas.com/channel/socket/handler/character_aran_combo.go`:
 
@@ -1889,7 +1889,7 @@ Wire it in `character_buff_cancel.go` immediately after the existing `_ = buff.N
 
 Use the file's existing alias for `libs/atlas-constants/skill` (it currently imports it as `skill`); if so, write `skill.Id(p.SkillId())` and name the constants `skill.AranStage1ComboAbilityId` / `skill.LegendComboAbilityId` in both the predicate and the call, keeping one alias throughout. Adjust the cast to whatever `BuffCancelRequest.SkillId()` returns.
 
-- [ ] **Step 4: Implement the session-destroy and map-change clears**
+- [x] **Step 4: Implement the session-destroy and map-change clears**
 
 In `services/atlas-channel/atlas.com/channel/session/processor.go`, beside the existing `clearBattleshipOnDestroy` call in `Destroy`:
 
@@ -1926,7 +1926,7 @@ Use the event's actual character-id accessor (read the surrounding lines — it 
 
 Before writing either, check for an import cycle: `grep -rn "atlas-channel/session" services/atlas-channel/atlas.com/channel/character/combo/`. It must be empty — `combo` must not import `session`.
 
-- [ ] **Step 5: Run tests and build to verify they pass**
+- [x] **Step 5: Run tests and build to verify they pass**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go build ./... && go test -race ./... 2>&1 | tail -30 && go vet ./...
@@ -1934,7 +1934,7 @@ cd services/atlas-channel/atlas.com/channel && go build ./... && go test -race .
 
 Expected: build clean; the whole module's tests PASS, including the pre-existing `session` battleship-hook tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/
@@ -1956,7 +1956,7 @@ A 1 Hz task that walks the mirror — never a session or tenant scan, so an empt
 - Consumes: `Mirror.ExpireIdle` (Task 5).
 - Produces: `func NewDecayTick(l logrus.FieldLogger, ctx context.Context, interval time.Duration) *DecayTick` with `Run()` and `SleepTime() time.Duration`, and the testable seam `func processExpiries(l logrus.FieldLogger, ctx context.Context, expired []Expired, cancel func(l logrus.FieldLogger, ctx context.Context, e Expired) error) int`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/character/combo/task_test.go`:
 
@@ -2023,7 +2023,7 @@ func TestDecayTickSleepTime(t *testing.T) {
 
 Add the missing imports (`github.com/sirupsen/logrus/hooks/test`, the skill constants package) and reuse `testTenant`/`testField` from `mirror_test.go`. Confirm the null-logger helper this repo uses by grepping an existing test that needs a logger (`grep -rn "NewNullLogger" services/atlas-channel/atlas.com/channel | head -3`) and match it.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./character/combo/ -run "Expiries|DecayTick" -v
@@ -2031,7 +2031,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./character/combo/ -run "
 
 Expected: FAIL — `undefined: processExpiries`, `undefined: NewDecayTick`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `services/atlas-channel/atlas.com/channel/character/combo/task.go`:
 
@@ -2110,7 +2110,7 @@ func processExpiries(l logrus.FieldLogger, ctx context.Context, expired []Expire
 }
 ```
 
-- [ ] **Step 4: Register the tick in `main.go`**
+- [x] **Step 4: Register the tick in `main.go`**
 
 Beside the existing heartbeat registration at `services/atlas-channel/atlas.com/channel/main.go:326`, following that line's exact `tasks.Register` shape:
 
@@ -2120,7 +2120,7 @@ Beside the existing heartbeat registration at `services/atlas-channel/atlas.com/
 
 Add the `atlas-channel/character/combo` import. `tasks.Register` already spawns through `routine.Go`, so no bare `go` statement is introduced.
 
-- [ ] **Step 5: Run tests, build, and guards to verify they pass**
+- [x] **Step 5: Run tests, build, and guards to verify they pass**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go build ./... && go test -race ./character/combo/ -v && go vet ./...
@@ -2129,7 +2129,7 @@ cd ../../../.. && tools/goroutine-guard.sh && tools/redis-key-guard.sh && tools/
 
 Expected: build clean; all combo tests PASS; all three guards exit 0.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/character/combo/ services/atlas-channel/atlas.com/channel/main.go
@@ -2154,7 +2154,7 @@ One handler entry and one writer entry per template, each at its **sorted `opCod
 - Consumes: the handler name `"AranComboCounterHandle"` (Task 1) and the writer name `"ShowCombo"` (Task 2). **These strings must match the Go constants exactly** — a mismatch is a silent drop, not a build error.
 - Produces: routed opcodes for the six in-scope versions.
 
-- [ ] **Step 1: Add the entries, per file, at their sorted positions**
+- [x] **Step 1: Add the entries, per file, at their sorted positions**
 
 Edit each file individually (per the project's shell conventions — no batch patch loop). Values per version:
 
@@ -2199,7 +2199,7 @@ Writer entry (v83 shown), inserted into `socket.writers` at its sorted position:
 
 Match each file's existing indentation and key ordering exactly. Confirm the `validator` name `LoggedInValidator` exists in that template (`grep -c LoggedInValidator <file>`) — an unknown or empty validator silently drops the handler.
 
-- [ ] **Step 2: Verify JSON validity and sorted insertion**
+- [x] **Step 2: Verify JSON validity and sorted insertion**
 
 ```bash
 cd services/atlas-configurations/seed-data/templates
@@ -2213,7 +2213,7 @@ grep -n "idleResetMs" template_gms_95_1.json
 
 Expected: six `ok` lines; every count is exactly `1`; the v95 grep shows `5000`.
 
-- [ ] **Step 3: Run the template guards**
+- [x] **Step 3: Run the template guards**
 
 ```bash
 cd ../../../.. && tools/template-opcode-order-guard.sh && tools/template-duplicate-binding-guard.sh && tools/template-movement-types-guard.sh
@@ -2221,7 +2221,7 @@ cd ../../../.. && tools/template-opcode-order-guard.sh && tools/template-duplica
 
 Expected: all three exit 0. A non-zero opcode-order guard means an entry landed out of sorted position — move it, do not adjust the guard.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add services/atlas-configurations/seed-data/templates/
@@ -2238,19 +2238,19 @@ git commit -m "feat(task-217): route ARAN_COMBO_COUNTER and SHOW_COMBO in six te
 
 **Interfaces:** none.
 
-- [ ] **Step 1: Resolve the v92 session by binary name**
+- [x] **Step 1: Resolve the v92 session by binary name**
 
 Use `mcp__ida-pro__idb_list` and select the row whose binary name is `GMS_v92_1_DEVM`. Pass that value as the `database` parameter to every subsequent call — port-based `select_instance` is dead.
 
-- [ ] **Step 2: Confirm the function before renaming**
+- [x] **Step 2: Confirm the function before renaming**
 
 Use `mcp__ida-pro__decompile` on `0x8ef840` with that `database`. Confirm it is the guard + `COutPacket(186)` + `SendPacket` shape described in design.md §2.1. If the address does not decompile to that shape, **stop and report** — do not rename a function you have not confirmed.
 
-- [ ] **Step 3: Rename and save**
+- [x] **Step 3: Rename and save**
 
 Use `mcp__ida-pro__rename` to set `0x8ef840` to `CUserLocal__RequestIncCombo_send_0xBA`, then `mcp__ida-pro__idb_save`.
 
-- [ ] **Step 4: Verify the rename stuck**
+- [x] **Step 4: Verify the rename stuck**
 
 Use `mcp__ida-pro__func_query` with `name_regex` `RequestIncCombo` against the v92 database. Expected: the renamed function is returned at `0x8ef840`.
 
@@ -2275,7 +2275,7 @@ The design already did the derivation work; the IDA addresses in the fixture mar
 
 **Files:** `libs/atlas-packet/character/{serverbound,clientbound}/*_test.go`, `docs/packets/audits/status.json`, `docs/packets/audits/STATUS.md`, and the evidence records the procedure writes.
 
-- [ ] **Step 1: Read the procedure**
+- [x] **Step 1: Read the procedure**
 
 ```bash
 cat docs/packets/audits/VERIFYING_A_PACKET.md
@@ -2283,15 +2283,15 @@ cat docs/packets/audits/VERIFYING_A_PACKET.md
 
 Follow it exactly. Do not restate or shortcut it.
 
-- [ ] **Step 2: Verify the six serverbound cells**
+- [x] **Step 2: Verify the six serverbound cells**
 
 Run `/verify-packet` once per cell for `character/serverbound/AranComboCounter` × {gms_v83, gms_v84, gms_v87, gms_v92, gms_v95, jms_v185}, or dispatch `packet-verifier` per cell. Each must promote `ARAN_COMBO_COUNTER` from `❌` to `✅` in that version's column.
 
-- [ ] **Step 3: Verify the six clientbound cells**
+- [x] **Step 3: Verify the six clientbound cells**
 
 Same, for `character/clientbound/ShowCombo` × the same six versions.
 
-- [ ] **Step 4: Confirm every cell promoted**
+- [x] **Step 4: Confirm every cell promoted**
 
 ```bash
 grep -n "ARAN_COMBO_COUNTER\|SHOW_COMBO" docs/packets/audits/STATUS.md
@@ -2299,7 +2299,7 @@ grep -n "ARAN_COMBO_COUNTER\|SHOW_COMBO" docs/packets/audits/STATUS.md
 
 Expected: the `ARAN_COMBO_COUNTER` row shows `✅` under v83/v84/v87/v92/v95/jms185 (v12/v48/v61/v72/v79 stay `⬜`/`n-a`); the `SHOW_COMBO` row shows `✅` under the same six and keeps its `❌` at v79 (the op exists there but `ARAN_COMBO_COUNTER` is `n-a`, so nothing can drive it — design.md §2.2). If any cell did not promote, report it as a failure with the verifier's output; do not hand-edit `STATUS.md`.
 
-- [ ] **Step 5: Commit whatever the procedure did not already commit**
+- [x] **Step 5: Commit whatever the procedure did not already commit**
 
 ```bash
 git status --short
@@ -2317,7 +2317,7 @@ git commit -m "verify(task-217): promote ARAN_COMBO_COUNTER and SHOW_COMBO acros
 
 **Interfaces:** none.
 
-- [ ] **Step 1: Update the tracking docs**
+- [x] **Step 1: Update the tracking docs**
 
 ```bash
 ls docs/TODO.md && grep -n -i "aran\|combo" docs/TODO.md | head -20
@@ -2328,7 +2328,7 @@ Update the Aran combo entry in `docs/TODO.md` to the landed state, following the
 
 Also record, in the `docs/TODO.md` entry, that combo *consumption* (Combo Smash `21100004`, Combo Fenrir `21110004`, Combo Tempest `21120006`) remains out of scope — it overlaps the attack-pipeline surface and the client's own `ClearCombo` already keeps the two counts from drifting (design.md §5.5).
 
-- [ ] **Step 2: Run the full module verification**
+- [x] **Step 2: Run the full module verification**
 
 ```bash
 for m in libs/atlas-packet libs/atlas-constants services/atlas-channel/atlas.com/channel services/atlas-data/atlas.com/data; do
@@ -2339,7 +2339,7 @@ done
 
 Expected: every module builds, vets, and tests clean. Quote the actual output — a failure here is a failure, not a rounding error.
 
-- [ ] **Step 3: Run every guard**
+- [x] **Step 3: Run every guard**
 
 ```bash
 tools/redis-key-guard.sh
@@ -2356,7 +2356,7 @@ Expected: all exit 0. `tools/lint.sh --check` needs nvm on PATH — if it false-
 
 `tools/service-registration-guard.sh` is **not** required: no service was added and none of `services.json`, `deploy/k8s`, `docker-bake.hcl`, `go.work`, or `tools/db-bootstrap.sh` changed. Confirm with `git diff --name-only main... | grep -E "services.json|deploy/k8s|docker-bake.hcl|go.work|db-bootstrap"` returning nothing; run the guard if it returns anything.
 
-- [ ] **Step 4: Bake every service whose `go.mod` moved**
+- [x] **Step 4: Bake every service whose `go.mod` moved**
 
 ```bash
 git diff --name-only main... | grep "go.mod\|go.sum"
@@ -2372,14 +2372,14 @@ docker buildx bake atlas-configurations
 
 Bake only the services whose `go.mod` actually moved. If none did, state that plainly and skip.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add docs/
 git commit -m "docs(task-217): record landed Aran combo counter state"
 ```
 
-- [ ] **Step 6: Code review before the PR**
+- [x] **Step 6: Code review before the PR**
 
 Run `superpowers:requesting-code-review` — it dispatches `plan-adherence-reviewer` and `backend-guidelines-reviewer` (Go changed; no atlas-ui changes, so no frontend reviewer). Findings go to `docs/tasks/task-217-aran-combo-counter/audit.md`. Pin the review subagents to Sonnet/Haiku per the project's model-cost preference. Address the findings before opening the PR — this step is not optional.
 

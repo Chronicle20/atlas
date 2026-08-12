@@ -26,6 +26,26 @@ func init() {
 	channelhandler.Register(skill2.ChiefBanditChakra, Apply)
 }
 
+// loadCaster returns the caster record Apply reads Luck/Hp/MaxHp from.
+// Overridable so Apply's orchestration (window lookup, fallback, clamp,
+// ChangeHP dispatch) can be unit-tested without a live character service,
+// mirroring skill/handler/mprecovery's loadCaster/changeHP/changeMP seams.
+var loadCaster = func(l logrus.FieldLogger, ctx context.Context, characterId uint32) (character.Model, error) {
+	return character.NewProcessor(l, ctx).GetById()(characterId)
+}
+
+// loadEffectiveStats returns the caster's live LUK/MaxHp from
+// atlas-effective-stats. Overridable for the same reason as loadCaster.
+var loadEffectiveStats = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId uint32) (effective_stats.RestModel, error) {
+	return effective_stats.NewProcessor(l, ctx).GetByCharacterId(f.WorldId(), f.ChannelId(), characterId)
+}
+
+// changeHP emits the HP-change command to atlas-character. Overridable for
+// the same reason as loadCaster.
+var changeHP = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId uint32, amount int16) error {
+	return character.NewProcessor(l, ctx).ChangeHP(f, characterId, amount)
+}
+
 // healDelta computes the HP Chakra restores on this completion, clamped to
 // the caster's missing HP.
 //
@@ -84,8 +104,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 			// failed lookup cannot leave a stale damage factor behind.
 			defer reg.Clear(t, characterId)
 
-			cp := character.NewProcessor(l, ctx)
-			c, err := cp.GetById()(characterId)
+			c, err := loadCaster(l, ctx, characterId)
 			if err != nil {
 				l.WithError(err).Errorf("Chakra: failed to load caster [%d]; no heal applied.", characterId)
 				return nil
@@ -93,7 +112,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 
 			luck := uint32(c.Luck())
 			maxHp := c.MaxHp()
-			stats, sErr := effective_stats.NewProcessor(l, ctx).GetByCharacterId(f.WorldId(), f.ChannelId(), characterId)
+			stats, sErr := loadEffectiveStats(l, ctx, f, characterId)
 			if sErr != nil {
 				l.WithError(sErr).Warnf("Chakra: effective stats unavailable for caster [%d]; falling back to base LUK and base max hp.", characterId)
 			} else {
@@ -107,7 +126,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				return nil
 			}
 
-			if hpErr := cp.ChangeHP(f, characterId, delta); hpErr != nil {
+			if hpErr := changeHP(l, ctx, f, characterId, delta); hpErr != nil {
 				l.WithError(hpErr).Errorf("Chakra: ChangeHP failed for caster [%d].", characterId)
 				return nil
 			}

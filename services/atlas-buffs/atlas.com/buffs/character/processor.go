@@ -25,7 +25,7 @@ type Processor interface {
 	Cancel(worldId world.Id, characterId uint32, sourceId int32) error
 	CancelAll(worldId world.Id, characterId uint32) error
 	CancelByStatTypes(worldId world.Id, characterId uint32, types []string) error
-	UpdateStatValue(worldId world.Id, characterId uint32, sourceId int32, statType string, operation string, amount int32, capValue int32) error
+	UpdateStatValue(worldId world.Id, channelId channel.Id, characterId uint32, u StatValueUpdate) error
 	ExpireBuffs() error
 	ExpireForCharacter(worldId world.Id, characterId uint32) error
 	ProcessPeriodicTicks() error
@@ -184,24 +184,30 @@ func (p *ProcessorImpl) CancelByStatTypes(worldId world.Id, characterId uint32, 
 	return nil
 }
 
-// UpdateStatValue applies a stat-value mutation to an existing buff and, when
-// the value actually changed, emits a STAT_UPDATED status event carrying the
-// buff's original createdAt/expiresAt (so the channel re-broadcasts the
-// remaining duration). Missing/expired buff and at-cap increments are Debug
-// no-ops — the buff can lapse between the channel's attack and this command.
-func (p *ProcessorImpl) UpdateStatValue(worldId world.Id, characterId uint32, sourceId int32, statType string, operation string, amount int32, capValue int32) error {
-	if operation != character2.StatOperationIncrement && operation != character2.StatOperationSet {
-		p.l.Warnf("Unknown stat value operation [%s] for character [%d] buff [%d]; ignoring.", operation, characterId, sourceId)
+// UpdateStatValue applies a stat-value mutation to an existing buff — or, with
+// u.CreateIfMissing, creates the buff — and emits the matching status event: a
+// created buff announces APPLIED (it is a new buff, carrying its own
+// createdAt/expiresAt and noExpiry flag), a mutated one announces STAT_UPDATED
+// with the buff's ORIGINAL timestamps (so the channel re-broadcasts the
+// remaining duration and never extends the buff). Missing/expired buff without
+// CreateIfMissing, and at-cap increments, stay Debug no-ops — the buff can
+// lapse between the channel's attack and this command.
+func (p *ProcessorImpl) UpdateStatValue(worldId world.Id, channelId channel.Id, characterId uint32, u StatValueUpdate) error {
+	if u.Operation != character2.StatOperationIncrement && u.Operation != character2.StatOperationSet {
+		p.l.Warnf("Unknown stat value operation [%s] for character [%d] buff [%d]; ignoring.", u.Operation, characterId, u.SourceId)
 		return nil
 	}
 	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
-		updated, changed, err := GetRegistry().UpdateStatValue(p.ctx, characterId, sourceId, statType, operation, amount, capValue)
+		updated, changed, created, err := GetRegistry().UpdateStatValue(p.ctx, worldId, channelId, characterId, u)
 		if err != nil {
 			return err
 		}
 		if !changed {
-			p.l.Debugf("No stat value change for character [%d] buff [%d] stat [%s].", characterId, sourceId, statType)
+			p.l.Debugf("No stat value change for character [%d] buff [%d] stat [%s].", characterId, u.SourceId, u.StatType)
 			return nil
+		}
+		if created {
+			return buf.Put(character2.EnvEventStatusTopic, appliedStatusEventProvider(worldId, characterId, characterId, updated.SourceId(), updated.Level(), updated.Duration(), updated.Changes(), updated.CreatedAt(), updated.ExpiresAt(), updated.NoExpiry()))
 		}
 		return buf.Put(character2.EnvEventStatusTopic, statUpdatedStatusEventProvider(worldId, characterId, updated.SourceId(), updated.Level(), updated.Duration(), updated.Changes(), updated.CreatedAt(), updated.ExpiresAt()))
 	})

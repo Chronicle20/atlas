@@ -2,10 +2,12 @@ package buff
 
 import (
 	"atlas-channel/battleship"
+	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/character/buff/stat"
 	npc2 "atlas-channel/data/npc"
 	dataskill "atlas-channel/data/skill"
+	"atlas-channel/data/skill/effect/statup"
 	consumer2 "atlas-channel/kafka/consumer"
 	buff2 "atlas-channel/kafka/message/buff"
 	"atlas-channel/listener"
@@ -158,6 +160,10 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 				buff.GetBeaconMirror().Set(t, e.CharacterId, buff.NewBeaconEntry(e.Body.SourceId, e.Body.Level, bc.Amount))
 			}
 
+			if ec, ok := energyChargeChange(e.Body.Changes); ok {
+				energyChargeReact(l, ctx, sc, wp, e.CharacterId, e.Body.SourceId, e.Body.Level, ec)
+			}
+
 			bs := make([]buff.Model, 0)
 			changes := make([]stat.Model, 0)
 			for _, cm := range e.Body.Changes {
@@ -209,6 +215,10 @@ func handleStatusEventStatUpdated(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
+		if ec, ok := energyChargeChange(e.Body.Changes); ok {
+			energyChargeReact(l, ctx, sc, wp, e.CharacterId, e.Body.SourceId, e.Body.Level, ec)
+		}
+
 		// StatUpdatedStatusEventBody carries no NoExpiry field (task-167 FR-2
 		// scoped the flag to APPLY/APPLIED/EXPIRED only) — this transient
 		// re-broadcast buff is display-only (see CharacterBuffGiveBody, which
@@ -241,6 +251,10 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 
 			if _, ok := beaconChange(e.Body.Changes); ok {
 				buff.GetBeaconMirror().Clear(t, e.CharacterId)
+			}
+
+			if _, ok := energyChargeChange(e.Body.Changes); ok {
+				buff.GetEnergyMirror().Clear(t, e.CharacterId)
 			}
 
 			ebs := make([]buff.Model, 0)
@@ -487,6 +501,83 @@ func mergeBeacon(bs []buff.Model, e buff.BeaconEntry) []buff.Model {
 	return append(bs, buff.NewBuff(e.SourceId(), e.Level(), 0,
 		[]stat.Model{stat.NewStat(string(charconst.TemporaryStatTypeHomingBeacon), e.MobId())},
 		time.Now(), time.Time{}, true))
+}
+
+const (
+	// Sourced from libs/atlas-constants rather than re-declared, so the
+	// consumer agrees with the socket handler's accumulation ceiling without
+	// depending on the socket handler package. The charged value is a SENTINEL,
+	// not a bar reading.
+	energyChargeCapValue = charconst.EnergyChargeCap
+	energyChargedValue   = charconst.EnergyChargedValue
+)
+
+// energyChargeChange returns the event's ENERGY_CHARGE stat change, if any.
+func energyChargeChange(changes []buff2.StatChange) (buff2.StatChange, bool) {
+	for _, c := range changes {
+		if c.Type == string(charconst.TemporaryStatTypeEnergyCharge) {
+			return c, true
+		}
+	}
+	return buff2.StatChange{}, false
+}
+
+// energyChargeShouldPromote reports whether a bar reading is the one that
+// tops the accumulation cap and therefore triggers the charged state.
+func energyChargeShouldPromote(amount int32) bool {
+	return amount == energyChargeCapValue
+}
+
+// energyChargeReact is the whole Energy Charge reaction to one buff-status
+// event carrying an ENERGY_CHARGE change: refresh the pod-local mirror the
+// cast gate reads, announce the skill-use effect to the owner and the map,
+// and — when the bar just topped out — promote to the charged state.
+//
+// Announcing the effect HERE rather than at the attack site is what keeps it
+// honest: atlas-buffs emits a status event only when the value actually
+// changed, so a hit against a full bar produces no packet.
+func energyChargeReact(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32, sourceId int32, level byte, c buff2.StatChange) {
+	t := tenant.MustFromContext(ctx)
+	buff.GetEnergyMirror().Set(t, characterId, c.Amount)
+
+	_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(characterId, func(s session.Model) error {
+		cp := character.NewProcessor(l, ctx)
+		ch, cerr := cp.GetById()(characterId)
+		if cerr != nil {
+			l.WithError(cerr).Errorf("Energy Charge: unable to read character [%d] for the skill-use effect.", characterId)
+		} else {
+			if aerr := socketHandler.AnnounceSkillUse(l)(ctx)(wp)(uint32(sourceId), ch.Level(), level)(s); aerr != nil {
+				l.WithError(aerr).Errorf("Energy Charge: skill-use effect write failed for character [%d].", characterId)
+			}
+			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), characterId,
+				socketHandler.AnnounceForeignSkillUse(l)(ctx)(wp)(characterId, uint32(sourceId), ch.Level(), level))
+		}
+
+		if !energyChargeShouldPromote(c.Amount) {
+			return nil
+		}
+
+		// The charged window's length is the Energy Charge effect's `time` at
+		// the character's skill level (31s at L1, 40s at L20 for 5110001; the
+		// Cygnus table differs, which is why the level travels with the event
+		// rather than being assumed). Duration() ALREADY returns milliseconds
+		// and ApplyCommandBody.Duration is milliseconds — no scaling here.
+		// tools/buff-duration-guard.sh fails CI on a seconds-valued emitter.
+		se, eerr := dataskill.NewProcessor(l, ctx).GetEffect(uint32(sourceId), level)
+		if eerr != nil {
+			l.WithError(eerr).Errorf("Energy Charge: effect lookup failed for character [%d] skill [%d] level [%d]; the bar stays full but uncharged.", characterId, sourceId, level)
+			return nil
+		}
+
+		// The charged APPLY REPLACES the accumulating buff in place: both
+		// phases share srcKey(sourceId) in atlas-buffs, so there is never a
+		// moment with two Energy Charge buffs.
+		if perr := buff.NewProcessor(l, ctx).Apply(s.Field(), characterId, sourceId, level, se.Duration(),
+			[]statup.Model{statup.NewModel(string(charconst.TemporaryStatTypeEnergyCharge), energyChargedValue)})(characterId); perr != nil {
+			l.WithError(perr).Errorf("Energy Charge: charged APPLY emit failed for character [%d].", characterId)
+		}
+		return nil
+	})
 }
 
 // isBattleshipRide reports whether a buff status event is the battleship

@@ -149,7 +149,13 @@ func comboOrbProductionDeps(l logrus.FieldLogger, ctx context.Context, f field.M
 	return comboOrbDeps{
 		getEffect: skill2.NewProcessor(l, ctx).GetEffect,
 		emitUpdate: func(sourceId int32, operation string, amount int32, capValue int32) error {
-			return bp.UpdateStatValue(f, characterId, sourceId, string(constants.TemporaryStatTypeCombo), operation, amount, capValue)
+			return bp.UpdateStatValue(f, characterId, buff.StatValueUpdate{
+				SourceId:  sourceId,
+				StatType:  string(constants.TemporaryStatTypeCombo),
+				Operation: operation,
+				Amount:    amount,
+				Cap:       capValue,
+			})
 		},
 		roll: rand.Float64,
 	}

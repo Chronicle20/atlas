@@ -1,16 +1,16 @@
 {
-  "toolSha": "12f92d086aafeb40755fcc4e310193e0a0ae2d8fbfc0582a506bc843332510ae",
+  "toolSha": "aaea6c38e788ea7abf7779030022cf92aa0c03f8c9d743308ff64b013d6295b5",
   "exportHashes": {
-    "gms_v48": "2a9d92fbe9e27a3ae8025c482be3864ef9e6da7de729c36d4dfbc311e245f7f9",
-    "gms_v61": "642b7f9f0bb33456c8d882625543f90830cd2c1565449ffb67df10e7d37a61e2",
-    "gms_v72": "2ebfe70492d84f87d76d7dfb375c7033bdc93d9a4d7ea8b76bd80d3fe4c77478",
-    "gms_v79": "2fcb5744dd69678b2690fc74e7c8cf469c36a7f3752e5d7b5f4b1a818688d786",
-    "gms_v83": "aaea55fcad35222747c8634a99807dbddca9dbea3d8f4182fa6fd1f8994ebe3c",
-    "gms_v84": "46a3f305eb23272b06b1ff0fb07745328d6312b244e3b89b3825846f7eead4ae",
-    "gms_v87": "ca8d3f38ad0e956c1dacd3c612c80e5fc18cb9603a1513abd0854be11ea9885f",
-    "gms_v92": "b0f48112b34842b792a42157d8b69602beb38f6017fd57e9b40dd87a2b618dec",
-    "gms_v95": "1618af226714d668e5a0480964cbdbaaf408a11dd188e1cda6128cb3761d9146",
-    "jms_v185": "63f979775389a873f0e27ee4f99fadf16ccb5390a5be288a128c21febde53d81"
+    "gms_v48": "59a1fa209a3202a733d73a7d5104ed541906c7c006e2aa7f1cefed7f2a4342a1",
+    "gms_v61": "d589e6b13a9c58bb3bfeaf234f01c42d5695cc54ef3957eb628a02d6042152b3",
+    "gms_v72": "4189e1f4ac661033cba983e87c29923ad2b7de949f3396611e71b574f38f35de",
+    "gms_v79": "87f07e503dcb18d536c9dfd12823ce42176db76e668d2eb31f72e1c621185752",
+    "gms_v83": "13f6290c583bff9306393059d91ece2d399b55622751717b011c5e625f471378",
+    "gms_v84": "d5c07382a1a0a90fb6930f475eaf45deda9b1f790a27548ccebb0529a096ff49",
+    "gms_v87": "43b001d1d9b15d5cfa23bcfe39ceec6d8c6bab6b07c41471bbd3ef7441880b18",
+    "gms_v92": "a4a5a4acf4d73a43705445ea46dcd70934937b89a38addefe1e45b486f20d128",
+    "gms_v95": "0883cc1d4e973f011fc0166fdb3537f512e3513e8c0d36be46619e8a9a25bdd3",
+    "jms_v185": "9cf0dce720afc0ba2fb2ae7dbb179c432b599ea41575c7db40c418ecee5b020d"
   },
   "rows": [
     {
@@ -7800,8 +7800,7 @@
       "tier1": true,
       "fnames": [
         "CWvsContext::SendChangeSlotPositionRequest",
-        "sub_70D8DE",
-        "sub_831C83"
+        "sub_70D8DE"
       ],
       "cells": {
         "gms_v48": {
@@ -7810,8 +7809,8 @@
         },
         "gms_v61": {
           "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 70
+          "note": "tier-1 without fixture; verdict ❌",
+          "opcode": 66
         },
         "gms_v72": {
           "state": "partial",
@@ -9054,6 +9053,58 @@
     },
     {
       "kind": "op",
+      "op": "USE_CATCH_ITEM",
+      "packet": "monster/serverbound/MonsterUseCatchItem",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CWvsContext::SendBridleItemUseRequest"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 63
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 74
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 80
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 79
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 81
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 81
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 84
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 88
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 87
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 73
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "EXPEDITION_RESULT",
       "direction": "clientbound",
       "tier1": false,
@@ -10289,6 +10340,67 @@
     },
     {
       "kind": "op",
+      "op": "USE_SUMMON_BAG",
+      "direction": "serverbound",
+      "tier1": false,
+      "fnames": [
+        "CWvsContext::SendMobSummonItemUseRequest",
+        "sub_955499"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 70
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 74
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 73
+        },
+        "gms_v83": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 75
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 75
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 78
+        },
+        "gms_v92": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 82
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 81
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 67
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "CANCEL_BUFF",
       "packet": "character/serverbound/BuffCancelRequest",
       "direction": "serverbound",
@@ -10908,68 +11020,6 @@
     },
     {
       "kind": "op",
-      "op": "USE_SUMMON_BAG",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CWvsContext::SendMobSummonItemUseRequest",
-        "sub_832005",
-        "sub_955499"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 74
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 74
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 73
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 75
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 75
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 78
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 82
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 81
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 67
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "MINIGAME_PACHINKO_UPDATE_DAMA",
       "direction": "clientbound",
       "tier1": false,
@@ -11097,18 +11147,15 @@
           "opcode": -1
         },
         "gms_v61": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 76
         },
         "gms_v72": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 76
         },
         "gms_v79": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 76
         },
         "gms_v83": {
@@ -12473,63 +12520,6 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 97
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "USE_CATCH_ITEM",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CWvsContext::SendBridleItemUseRequest"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 81
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 81
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 84
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 88
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 87
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 73
         }
       }
     },
@@ -27522,6 +27512,62 @@
     },
     {
       "kind": "op",
+      "op": "CATCH_MONSTER",
+      "packet": "monster/clientbound/MonsterCatchMonster",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CMob::OnCatchEffect",
+        "CMob::ShowCatchEffect",
+        "sub_5511F4",
+        "sub_630C30",
+        "sub_6EAE5F"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 172
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 190
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 223
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 229
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 251
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 257
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 267
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 291
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 299
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 268
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "IDA_0X0AC",
       "packet": "field/clientbound/FieldStalkResult",
       "direction": "clientbound",
@@ -27628,6 +27674,59 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "CATCH_MONSTER_WITH_ITEM",
+      "packet": "monster/clientbound/MonsterCatchMonsterWithItem",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CMob::OnEffectByItem",
+        "sub_551481"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 173
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 191
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 224
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 230
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 252
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 258
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 268
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 292
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 300
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 269
         }
       }
     },
@@ -29657,62 +29756,6 @@
     },
     {
       "kind": "op",
-      "op": "CATCH_MONSTER",
-      "packet": "monster/clientbound/MonsterCatchMonster",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CMob::OnCatchEffect",
-        "CMob::ShowCatchEffect",
-        "sub_630C30",
-        "sub_6EAE5F"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "verified",
-          "opcode": 190
-        },
-        "gms_v72": {
-          "state": "verified",
-          "opcode": 223
-        },
-        "gms_v79": {
-          "state": "verified",
-          "opcode": 229
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 251
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 257
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 267
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
-          "opcode": 291
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 299
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 268
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "TESLA_TRIANGLE",
       "direction": "clientbound",
       "tier1": false,
@@ -29761,61 +29804,6 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "CATCH_MONSTER_WITH_ITEM",
-      "packet": "monster/clientbound/MonsterCatchMonsterWithItem",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CMob::OnEffectByItem"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 191
-        },
-        "gms_v72": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 224
-        },
-        "gms_v79": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 230
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 252
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 258
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 268
-        },
-        "gms_v92": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 300
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 269
         }
       }
     },
@@ -40928,59 +40916,6 @@
     },
     {
       "kind": "op",
-      "op": "SHOW_MAGNET",
-      "packet": "monster/clientbound/MonsterCatchMonsterWithItem",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CMob::OnEffectByItem"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v92": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 292
-        },
-        "gms_v95": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "TOURNAMENT",
       "packet": "field/clientbound/FieldTournament",
       "direction": "clientbound",
@@ -51558,63 +51493,6 @@
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "sub-struct",
-      "packet": "inventory/serverbound/InventoryMove",
-      "tier1": true,
-      "cells": {
-        "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": -1
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
           "opcode": -1
         }
       }

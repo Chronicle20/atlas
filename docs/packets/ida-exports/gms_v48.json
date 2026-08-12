@@ -5323,13 +5323,13 @@
       ]
     },
     "CMob::OnCatchEffect": {
-      "address": "",
+      "address": "0x5511f4",
       "direction": "clientbound",
-      "unresolved": true,
+      "note": "Unnamed in the v48 IDB as sub_5511F4 until task-212; CMobPool::OnMobPacket (0x559390) case 172 (0x0AC) dispatches here. Reads a single Decode1 (-> sub_54E7D3), no trailing success byte (design.md F-1/F-4). Canonical fname CMob::OnCatchEffect kept as best-effort label per precedent (gms_v92.yaml CATCH_MONSTER); unnamed function recorded in the registry as fname_alts: sub_5511F4.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "result byte (sub_54E7D3)"
         }
       ]
     },
@@ -5382,13 +5382,13 @@
       ]
     },
     "CMob::OnEffectByItem": {
-      "address": "",
+      "address": "0x551481",
       "direction": "clientbound",
-      "unresolved": true,
+      "note": "Unnamed in the v48 IDB as sub_551481 until task-212; CMobPool::OnMobPacket (0x559390) case 173 (0x0AD) dispatches here. Reads a single Decode4 (-> sub_54E82D) ONLY \u2014 no trailing result byte, one field shorter than every later version's OnEffectByItem (design.md F-2). Canonical fname CMob::OnEffectByItem kept as best-effort label per precedent; unnamed function recorded in the registry as fname_alts: sub_551481.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": "itemId (sub_54E82D)"
         }
       ]
     },
@@ -21470,6 +21470,29 @@
       "address": "0x71b126",
       "direction": "serverbound",
       "calls": []
+    },
+    "CWvsContext::SendBridleItemUseRequest": {
+      "address": "0x70e0c5",
+      "direction": "serverbound",
+      "note": "USE_CATCH_ITEM (task-212). CWvsContext::SendBridleItemUseRequest: update_time(Encode4), nPOS(Encode2), nItemID(Encode4), then the FindHitMobInRect-derived hit-mob object id (Encode4). Address per design.md/plan.md task-212 citation; confirmed via live decompile (idb_open/decompile) showing the item-class-227 gate and the GetBridleItem-equivalent lookup feeding COutPacket at the registry's USE_CATCH_ITEM opcode for this version.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hit-mob object id (FindHitMobInRect)"
+        }
+      ]
     }
   }
 }

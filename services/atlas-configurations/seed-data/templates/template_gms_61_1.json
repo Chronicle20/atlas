@@ -520,6 +520,15 @@
         ]
       },
       {
+        "opCode": "0x42",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInventoryMoveHandle",
+        "fname": "CWvsContext::SendChangeSlotPositionRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x43",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemUseHandle",
@@ -549,8 +558,8 @@
       {
         "opCode": "0x46",
         "validator": "LoggedInValidator",
-        "handler": "CharacterInventoryMoveHandle",
-        "fname": "sub_831C83",
+        "handler": "CharacterItemUseSummonBagHandle",
+        "fname": "CWvsContext::SendMobSummonItemUseRequest",
         "services": [
           "channel"
         ]
@@ -585,8 +594,8 @@
       {
         "opCode": "0x4A",
         "validator": "LoggedInValidator",
-        "handler": "CharacterItemUseSummonBagHandle",
-        "fname": "sub_832005",
+        "handler": "MonsterCatchItemUseHandle",
+        "fname": "CWvsContext::SendBridleItemUseRequest",
         "services": [
           "channel"
         ]

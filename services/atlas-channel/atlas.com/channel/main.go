@@ -847,6 +847,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[summonsb.SummonDamageHandle] = handler.SummonDamageHandleFunc
 	handlerMap[monstersb.MobCrcKeyChangedReplyHandle] = handler.MobCrcKeyChangedReplyHandleFunc
 	handlerMap[monstersb.MobDropPickupRequestHandle] = handler.MobDropPickupRequestHandleFunc
+	handlerMap[monstersb.UseCatchItemHandle] = handler.MonsterCatchItemUseHandleFunc
 	handlerMap[monstersb.FieldDamageMobHandle] = handler.FieldDamageMobHandleFunc
 	handlerMap[monstersb.MobDamageMobHandle] = handler.MobDamageMobHandleFunc
 	handlerMap[monstersb.MonsterBombHandle] = handler.MonsterBombHandleFunc

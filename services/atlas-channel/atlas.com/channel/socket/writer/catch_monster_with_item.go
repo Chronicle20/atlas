@@ -10,13 +10,13 @@ import (
 )
 
 // CatchMonsterWithItemBody encodes the clientbound CATCH_MONSTER_WITH_ITEM
-// packet, which plays a capture-by-item effect on a targeted mob. No emitter
-// wires this writer yet; it is an intentional seam (the codec + route exist so
-// the feature can be turned on without a follow-up packet-plumbing pass).
-func CatchMonsterWithItemBody(itemId int32, result byte) packet.Encode {
+// packet, which plays a capture-by-item effect on a targeted mob. The leading
+// uniqueId is consumed by CMobPool::OnMobPacket before dispatch, so the mob
+// must still exist client-side when this arrives (task-212 design §4.2).
+func CatchMonsterWithItemBody(uniqueId uint32, itemId int32, result byte) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			return monsterpkt.NewCatchMonsterWithItem(itemId, result).Encode(l, ctx)(options)
+			return monsterpkt.NewCatchMonsterWithItem(uniqueId, itemId, result).Encode(l, ctx)(options)
 		}
 	}
 }

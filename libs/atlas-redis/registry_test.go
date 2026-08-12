@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -865,5 +866,68 @@ func TestRegistry_UpdateWithTTL_NotFound(t *testing.T) {
 	_, err := r.UpdateWithTTL(ctx, "missing", time.Hour, func(v string) string { return v })
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("got %v, want ErrNotFound", err)
+	}
+}
+
+// TestRemoveExisting_ExactlyOneWinner is the exclusivity contract: N goroutines
+// racing to delete the same key must see exactly one true. Redis DEL returns the
+// number of keys removed, so the winner is decided server-side.
+func TestRemoveExisting_ExactlyOneWinner(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("miniredis: %v", err)
+	}
+	defer mr.Close()
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+
+	r := NewRegistry[string, string](client, "claim-test", func(s string) string { return s })
+	ctx := context.Background()
+	if err := r.Put(ctx, "k", "v"); err != nil {
+		t.Fatalf("put: %v", err)
+	}
+
+	const racers = 16
+	var wg sync.WaitGroup
+	results := make([]bool, racers)
+	wg.Add(racers)
+	for i := 0; i < racers; i++ {
+		go func(i int) {
+			defer wg.Done()
+			ok, rerr := r.RemoveExisting(ctx, "k")
+			if rerr != nil {
+				t.Errorf("racer %d: %v", i, rerr)
+			}
+			results[i] = ok
+		}(i)
+	}
+	wg.Wait()
+
+	won := 0
+	for _, ok := range results {
+		if ok {
+			won++
+		}
+	}
+	if won != 1 {
+		t.Fatalf("RemoveExisting winners = %d, want exactly 1", won)
+	}
+}
+
+// TestRemoveExisting_MissingKey reports false without error.
+func TestRemoveExisting_MissingKey(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("miniredis: %v", err)
+	}
+	defer mr.Close()
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+
+	r := NewRegistry[string, string](client, "claim-test", func(s string) string { return s })
+	ok, err := r.RemoveExisting(context.Background(), "absent")
+	if err != nil {
+		t.Fatalf("RemoveExisting: %v", err)
+	}
+	if ok {
+		t.Fatal("RemoveExisting on a missing key = true, want false")
 	}
 }

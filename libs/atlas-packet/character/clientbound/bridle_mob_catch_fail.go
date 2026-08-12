@@ -17,16 +17,19 @@ const BridleMobCatchFailWriter = "BridleMobCatchFail"
 // bridle (taming-item) capture attempt failed, so the client shows the right
 // chat-log reason message.
 //
-// Byte layout (IDA-verified, identical across all 5 versions — Decode1 + 2×Decode4):
+// Byte layout (IDA-verified, identical across all 8 versions that carry this
+// receive handler — Decode1 + 2×Decode4):
 //   - reason : byte  — the failure-reason selector (0 = too strong, 1 = on
 //     cooldown). Decode1, drives the StringPool message branch.
 //   - itemId : int32 — the bridle item id, looked up via GetBridleItem (Decode4).
 //   - unused : int32 — a trailing Decode4 the client reads but discards.
 //
-// IDA basis: CWvsContext::OnBridleMobCatchFail — v83 @0xa0800e (`v15 =
-// Decode1(a1); v1 = Decode4(a1); Decode4(a1); GetBridleItem(v1)`), v84
-// @0xa522fc, v87 @0xa9d692, v95 @0x9d9a80, jms @0xaec5ed — every version reads
-// one Decode1 then two Decode4 (the second Decode4's value is never stored).
+// IDA basis: CWvsContext::OnBridleMobCatchFail — v61 @0x8307f3, v72
+// @0x902b46, v79 @0x953dc2, v83 @0xa0800e (`v15 = Decode1(a1); v1 =
+// Decode4(a1); Decode4(a1); GetBridleItem(v1)`), v84 @0xa522fc, v87
+// @0xa9d692, v95 @0x9d9a80, jms @0xaec5ed — every version reads one Decode1
+// then two Decode4 (the second Decode4's value is never stored). v48 has no
+// receive handler at all (F-3; affirmed n-a, see feature-na-evidence.yaml).
 //
 // packet-audit:fname CWvsContext::OnBridleMobCatchFail
 type BridleMobCatchFail struct {

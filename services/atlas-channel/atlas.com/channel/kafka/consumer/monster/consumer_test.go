@@ -1,6 +1,7 @@
 package monster
 
 import (
+	consumable2 "atlas-channel/kafka/message/consumable"
 	monster2 "atlas-channel/kafka/message/monster"
 	"atlas-channel/monster"
 	"atlas-channel/server"
@@ -627,5 +628,36 @@ func TestShouldEchoDamagePacket(t *testing.T) {
 		if got := shouldEchoDamagePacket(tt.source); got != tt.want {
 			t.Errorf("shouldEchoDamagePacket(%q) = %v, want %v", tt.source, got, tt.want)
 		}
+	}
+}
+
+// TestBridleFailReason maps internal causes onto the only two values the client
+// understands. CWvsContext::OnBridleMobCatchFail @0x9d9a80 branches on exactly
+// two: 0 renders string 0x110E, 1 renders the item's delayMsg (falling back to
+// 0x110F), and ANY other value renders nothing at all. Reason 1 is reserved for
+// the not-yet/try-again case, which is why useDelay is server-enforced.
+// UNRESOLVED sends no packet: the request was legitimate and lost a race, so the
+// client should simply unlock.
+func TestBridleFailReason(t *testing.T) {
+	cases := []struct {
+		cause      string
+		wantReason byte
+		wantSend   bool
+	}{
+		{monster2.CatchCauseSpeciesMismatch, 0, true},
+		{monster2.CatchCauseHpTooHigh, 0, true},
+		{monster2.CatchCauseRollFailed, 0, true},
+		{consumable2.CatchCauseInventoryFull, 0, true},
+		{consumable2.CatchCauseInvalidItem, 0, true},
+		{consumable2.CatchCauseUseDelay, 1, true},
+		{monster2.CatchCauseUnresolved, 0, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.cause, func(t *testing.T) {
+			reason, send := bridleFailReason(tc.cause)
+			if reason != tc.wantReason || send != tc.wantSend {
+				t.Fatalf("bridleFailReason(%q) = (%d, %t), want (%d, %t)", tc.cause, reason, send, tc.wantReason, tc.wantSend)
+			}
+		})
 	}
 }

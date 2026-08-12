@@ -64,6 +64,21 @@ func (r *Registry[K, V]) Remove(ctx context.Context, key K) error {
 	return r.client.Del(ctx, rk).Err()
 }
 
+// RemoveExisting deletes the key and reports whether it existed. Redis DEL is
+// atomic and returns the number of keys removed, so under concurrency exactly
+// one caller observes true — the primitive callers need when a removal must
+// also be an exclusive claim (e.g. one monster, one catcher). Remove is
+// deliberately left alone: its callers do not need the verdict and changing its
+// signature would churn every one of them.
+func (r *Registry[K, V]) RemoveExisting(ctx context.Context, key K) (bool, error) {
+	rk := namespacedKey(r.namespace, r.keyFn(key))
+	n, err := r.client.Del(ctx, rk).Result()
+	if err != nil {
+		return false, fmt.Errorf("redis del: %w", err)
+	}
+	return n == 1, nil
+}
+
 // updateMaxRetries bounds the optimistic-lock retry loop in Update. Set high
 // enough to absorb contention from N concurrent writers hammering the same key
 // (each lost race only burns one retry; expected per-op retries scale roughly

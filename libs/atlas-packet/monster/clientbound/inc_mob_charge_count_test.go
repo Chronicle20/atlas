@@ -16,11 +16,14 @@ import (
 func TestIncMobChargeCount(t *testing.T) {
 	input := NewIncMobChargeCount(0x07654321, 0x0011AABB, 0x00000001)
 
-	// Golden bytes (v83 baseline). CMob::OnIncMobChargeCount @0x6710fc:
+	// Golden bytes (v83 baseline). CMobPool::OnMobPacket (Decode4 -> GetMob,
+	// universal — task-212 F-1) prefixes uniqueId; CMob::OnIncMobChargeCount
+	// @0x6710fc then reads:
 	//   m_nMobChargeCount = Decode4 -> chargeCount int32 LE
 	//   m_bAttackReady    = Decode4 -> attackReady int32 LE
 	got := input.Encode(nil, pt.CreateContext("GMS", 83, 1))(nil)
 	want := []byte{
+		0x21, 0x43, 0x65, 0x07, // uniqueId int32 LE (pool Decode4, universal — task-212 F-1)
 		0xBB, 0xAA, 0x11, 0x00, // chargeCount int32 LE = 0x0011AABB
 		0x01, 0x00, 0x00, 0x00, // attackReady int32 LE = 1
 	}
@@ -46,8 +49,8 @@ func TestIncMobChargeCount(t *testing.T) {
 //	Decode4 @0x640097 — m_bAttackReady    (attackReady int32)
 //
 // So the v79 wire is [uniqueId int32][chargeCount int32][attackReady int32]. The
-// leading uniqueId is the universal CMobPool::OnMobPacket prefix (see
-// legacyMobPoolPrefix); written for the pre-v83 legacy range, gated off for v83+.
+// leading uniqueId is the universal CMobPool::OnMobPacket prefix, written
+// unconditionally on every version (task-212 F-1).
 //
 // packet-audit:verify packet=monster/clientbound/MonsterIncMobChargeCount version=gms_v79 ida=0x640081
 func TestIncMobChargeCountBytesV79(t *testing.T) {

@@ -60,7 +60,7 @@ func TestValidate_AcceptsEverySeedTemplate(t *testing.T) {
 			}
 		}
 	}
-	if total != 3093 {
-		t.Errorf("corpus size = %d entries, want 3093 (3052 before task-206, plus task-206's 10 CashShopCouponCodeHandle bindings — every template but gms_12 — plus task-207's 7 CashItemGachaponHandle handlers and 6 CashItemGachaponResult writers — plus task-210's 16 template bindings (CharacterUseDeathItemHandle handler and CharacterShowUpgradeTombEffect writer in 8 templates) and 2 v92 writers (CharacterEffect and CharacterEffectForeign))", total)
+	if total != 3108 {
+		t.Errorf("corpus size = %d entries, want 3108 (3093 on main — 3052 before task-206, plus task-206's 10 CashShopCouponCodeHandle bindings, task-207's 7 CashItemGachaponHandle handlers and 6 CashItemGachaponResult writers, and task-210's 16 template bindings plus 2 v92 writers — plus task-212's 15 catch bindings)", total)
 	}
 }

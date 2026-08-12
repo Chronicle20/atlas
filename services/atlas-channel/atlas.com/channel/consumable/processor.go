@@ -22,6 +22,7 @@ type Processor interface {
 	RequestVegaScrollUse(f field.Model, characterId character.Id, vegaItemId item.Id, vegaSlot slot.Position, scrollSlot slot.Position, equipSlot slot.Position) error
 	RequestViciousHammerUse(f field.Model, characterId character.Id, hammerSlot slot.Position, equipSlot slot.Position) error
 	RequestSkillBookUse(f field.Model, characterId character.Id, slot slot.Position, itemId item.Id, updateTime uint32) error
+	RequestCatchMonster(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, monsterUniqueId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -81,4 +82,9 @@ func (p *ProcessorImpl) RequestViciousHammerUse(f field.Model, characterId chara
 func (p *ProcessorImpl) RequestSkillBookUse(f field.Model, characterId character.Id, slot slot.Position, itemId item.Id, updateTime uint32) error {
 	p.l.Debugf("Character [%d] using skill book [%d] from slot [%d]. updateTime [%d]", characterId, itemId, slot, updateTime)
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestSkillBookUseCommandProvider(f, characterId, slot, itemId))
+}
+
+func (p *ProcessorImpl) RequestCatchMonster(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, monsterUniqueId uint32) error {
+	p.l.Debugf("Character [%d] using catch item [%d] from slot [%d] on monster [%d].", characterId, itemId, source, monsterUniqueId)
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestCatchMonsterCommandProvider(f, characterId, source, itemId, monsterUniqueId))
 }

@@ -38,6 +38,7 @@ const (
 	ClassificationConsumablePetFood        = Classification(212)
 	ClassificationConsumableTransformation = Classification(221)
 	ClassificationRevitalizer              = Classification(226)
+	ClassificationConsumableCatchItem      = Classification(227)
 	ClassificationConsumableSkillBook      = Classification(228)
 	ClassificationConsumableMasteryBook    = Classification(229)
 	ClassificationConsumableStoreSearch    = Classification(231)

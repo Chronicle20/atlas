@@ -1439,3 +1439,46 @@ func TestFromStoredCollapsesLegacyDamageEntries(t *testing.T) {
 		}
 	}
 }
+
+// TestClaimMonster_ExactlyOneWinner — two concurrent catches on one monster
+// must produce exactly one claim, and the loser must not see a model. This is
+// the NFR-Race-safety guarantee that RemoveMonster (Get-then-Del, reply
+// discarded) cannot provide.
+func TestClaimMonster_ExactlyOneWinner(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300101, 0, 0, 0, 5, 0, 500, 100)
+
+	const racers = 8
+	var wg sync.WaitGroup
+	claimed := make([]bool, racers)
+	wg.Add(racers)
+	for i := 0; i < racers; i++ {
+		go func(i int) {
+			defer wg.Done()
+			_, ok, err := r.ClaimMonster(ctx, ten, m.UniqueId())
+			if err != nil {
+				t.Errorf("racer %d: %v", i, err)
+			}
+			claimed[i] = ok
+		}(i)
+	}
+	wg.Wait()
+
+	won := 0
+	for _, ok := range claimed {
+		if ok {
+			won++
+		}
+	}
+	if won != 1 {
+		t.Fatalf("ClaimMonster winners = %d, want exactly 1", won)
+	}
+	if _, err := r.GetMonster(ten, m.UniqueId()); err == nil {
+		t.Error("monster still present after a successful claim")
+	}
+}

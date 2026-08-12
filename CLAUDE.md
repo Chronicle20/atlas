@@ -94,6 +94,15 @@ For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the b
     runtime, silently. The guard diffs the two files from their `package`
     clause onward; only the leading doc comment, which names the mirror
     direction, may differ.
+14. **`tools/mist-contract-mirror-guard.sh` clean from the repo root** whenever
+    either copy of the mist Kafka contract changed. atlas-maps owns
+    `kafka/message/mist/kafka.go`; atlas-channel carries a mirror, and the two
+    live in separate Go modules, so a field name or json tag changed in one and
+    not the other fails no build — it decodes into a zero-valued body at
+    runtime, silently: a mist with no bounds, no lifetime, or no recovery
+    magnitude and no party scope (task-218). The guard diffs the two files from
+    their `package` clause onward; only the leading doc comment, which names the
+    mirror direction, may differ.
 
 ## Code Patterns
 

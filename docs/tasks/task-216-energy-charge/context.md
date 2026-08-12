@@ -232,10 +232,43 @@ the suite rather than repeating the claim.** v92 is already ❌ on all three row
 independently of this task; it is out of scope, and the reason (pre-existing
 ❌; task-216 changes a value, not a wire shape) is what Task 11 Step 2 records.
 
-> **Fill in after Task 11 Step 1 runs.** Replace this note with the observed
-> result: whether the pre-existing atlas-packet fixtures stayed green, and the
-> per-version out-of-scope statement. Do not claim a promotion that did not
-> happen.
+### Observed result (Task 11 Step 1, run on the task branch)
+
+`grep -rn "ENERGY_CHARGE" libs/atlas-packet/ | grep -i test` returns four hits,
+all in `libs/atlas-packet/model/character_temporary_stat_test.go` and all added
+by this task: `TestCTSEnergyChargePre95PopulatedBlock` (`:931`) with its two
+assertions (`:968`, `:991`) and `TestCTSDashSpeedStaysZeroed` (`:1011`). No
+pre-existing fixture pins an `ENERGY_CHARGE` base block, so no verified matrix
+cell asserted the zeros Task 1 replaced.
+
+`cd libs/atlas-packet && go test ./...` is fully green — every package reports
+`ok` or `no test files`, zero `FAIL` lines. The pre-existing `GIVE_BUFF` /
+`GIVE_FOREIGN_BUFF` / `CANCEL_BUFF` fixtures stayed green across the whole
+supported set, confirming the claim above by execution rather than assertion.
+
+**No matrix cell moved, and none is claimed to have moved.** Task 1 changes a
+*value* inside an already-verified wire shape (the base block's `nOption` /
+`rOption` pair, previously emitted as zeros for this stat); it adds no field,
+removes none, and shifts no offset. `docs/packets/audits/STATUS.md` is therefore
+unchanged by this task.
+
+Per-version outcome for the §5 supported set:
+
+| Version | `GIVE_BUFF` | `GIVE_FOREIGN_BUFF` | `CANCEL_BUFF` | Task-216 status |
+|---|---|---|---|---|
+| gms_v48 | ✅ | ⬜ | ✅ | n-a — Pirates postdate v48 (§5); no ENERGY_CHARGE traffic |
+| gms_v61 | ✅ | ✅ | ✅ | in scope, covered by the new v61 fixture; cell already ✅, unchanged |
+| gms_v72 | ✅ | ✅ | ✅ | in scope; cell already ✅, unchanged |
+| gms_v79 | ✅ | ✅ | ✅ | in scope; cell already ✅, unchanged |
+| gms_v83 | ✅ | ✅ | ✅ | in scope, the version the bar-reads-`nOption` finding was derived on; cell already ✅, unchanged |
+| gms_v84 | ✅ | ✅ | ✅ | in scope; cell already ✅, unchanged |
+| gms_v87 | ✅ | ✅ | ✅ | in scope; cell already ✅, unchanged |
+| gms_v92 | ❌ | ❌ | ❌ | **out of scope** — the row was already ❌ on all three ops before this task; task-216 makes no wire-shape change, only a value change, so there is nothing here to promote or regress |
+| gms_v95 | ✅ | ✅ | ✅ | in scope; cell already ✅, unchanged |
+| jms_v185 | ✅ | ✅ | ✅ | in scope; cell already ✅, unchanged |
+
+The v48 `GIVE_FOREIGN_BUFF` ⬜ is likewise untouched: it was unimplemented before
+this task and remains so, and v48 carries no Energy Charge skill to encode.
 
 ---
 

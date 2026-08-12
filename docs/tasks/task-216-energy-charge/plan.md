@@ -53,7 +53,7 @@ The `ENERGY_CHARGE` two-state base block is currently written with `nOption`/`rO
 - Consumes: nothing from other tasks.
 - Produces: no Go API change. `CharacterTemporaryStat.Encode` now emits `nOption = stat value`, `rOption = stat sourceId` for `character.TemporaryStatTypeEnergyCharge`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `libs/atlas-packet/model/character_temporary_stat_test.go`. Fixture values: bar `4998` = `0x1386` → LE `86 13 00 00`; skill `5110001` = `0x004DF8F1` → LE `F1 F8 4D 00`.
 
@@ -160,12 +160,12 @@ func TestCTSDashSpeedStaysZeroed(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd libs/atlas-packet && go test ./model/ -run 'TestCTSEnergyCharge|TestCTSDashSpeedStaysZeroed' -v`
 Expected: the three `TestCTSEnergyCharge*` populated-block assertions FAIL with "populated ENERGY_CHARGE head … missing" (the round-trip and the DASH_SPEED test pass already — they are regression guards).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `libs/atlas-packet/model/character_temporary_stat.go`, replace the `default:` arm of the switch inside `getBaseTemporaryStats`:
 
@@ -191,17 +191,17 @@ In `libs/atlas-packet/model/character_temporary_stat.go`, replace the `default:`
 
 Note `continue` targets the enclosing `for` loop over `twoStateBaseStats(t)` — that is intentional and correct.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd libs/atlas-packet && go test ./model/ -run 'TestCTS' -v`
 Expected: PASS, including every pre-existing `TestCTS*` fixture (they must not move — the block shape is unchanged).
 
-- [ ] **Step 5: Full module verification**
+- [x] **Step 5: Full module verification**
 
 Run: `cd libs/atlas-packet && go test -race ./... && go vet ./...`
 Expected: PASS / no output.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add libs/atlas-packet/model/character_temporary_stat.go libs/atlas-packet/model/character_temporary_stat_test.go
@@ -227,7 +227,7 @@ The semantics stay skill-agnostic — "accumulator upsert" is the same family as
   - `(*Registry).UpdateStatValue(ctx context.Context, worldId world.Id, channelId channel.Id, characterId uint32, u StatValueUpdate) (buff.Model, bool /*changed*/, bool /*created*/, error)`
   - `character.UpdateStatValueCommandBody` gains `CreateIfMissing bool \`json:"createIfMissing"\`` and `Level byte \`json:"level"\``.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 First, mechanically update the four existing `TestRegistry_UpdateStatValue_*` tests and `TestRegistry_UpdateStatValue_NoOps` to the new signature. Example of the shape (apply the same transformation to each call site):
 
@@ -358,12 +358,12 @@ func TestRegistry_UpdateStatValue_ChargedSentinelBlocksGain(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd services/atlas-buffs/atlas.com/buffs && go test ./character/ -run TestRegistry_UpdateStatValue`
 Expected: FAIL to compile — "undefined: StatValueUpdate" and "too many arguments".
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `services/atlas-buffs/atlas.com/buffs/character/registry.go`, add the struct above `UpdateStatValue` and rewrite the method:
 
@@ -515,12 +515,12 @@ type UpdateStatValueCommandBody struct {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd services/atlas-buffs/atlas.com/buffs && go build ./... && go test ./character/ -run TestRegistry_UpdateStatValue -v`
 Expected: PASS for every subtest. (The processor still calls the old signature, so `go build ./...` will fail at `processor.go` — that is Task 3. If you want a green build at this checkpoint, do Steps 3 of Task 2 and Task 3 back-to-back before committing.)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-buffs/atlas.com/buffs/character/registry.go \
@@ -544,7 +544,7 @@ The processor is the only place that knows which status event to publish. A crea
 - Consumes: `character.StatValueUpdate` and the 4-value `Registry.UpdateStatValue` return from Task 2.
 - Produces: `Processor.UpdateStatValue(worldId world.Id, channelId channel.Id, characterId uint32, u StatValueUpdate) error`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Update the three existing tests to the new signature, e.g.:
 
@@ -589,12 +589,12 @@ func TestProcessor_UpdateStatValue_MissingBuffWithoutCreateStoresNothing(t *test
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd services/atlas-buffs/atlas.com/buffs && go test ./character/ -run TestProcessor_UpdateStatValue`
 Expected: FAIL to compile — the processor still takes the old positional arguments.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `services/atlas-buffs/atlas.com/buffs/character/processor.go`, change the interface line and the method:
 
@@ -658,12 +658,12 @@ func handleUpdateStatValue(l logrus.FieldLogger, ctx context.Context, c characte
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd services/atlas-buffs/atlas.com/buffs && go build ./... && go test -race ./... && go vet ./...`
 Expected: PASS everywhere.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-buffs/atlas.com/buffs/character/processor.go \
@@ -692,7 +692,7 @@ atlas-buffs owns the command body; the channel carries a mirror. Both fields mus
   - `buff.Processor.UpdateStatValue(f field.Model, characterId uint32, u StatValueUpdate) error`
   - `buff.UpdateStatValueCommandProvider(f field.Model, characterId uint32, u StatValueUpdate) model.Provider[[]kafka.Message]`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `services/atlas-channel/atlas.com/channel/character/buff/producer_test.go`:
 
@@ -736,12 +736,12 @@ func TestUpdateStatValueCommandProviderCarriesUpsertFields(t *testing.T) {
 
 Match the import aliases and the `field.NewBuilder(...)` invocation already used in `producer_test.go`; add `encoding/json` if absent.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./character/buff/ -run TestUpdateStatValueCommandProviderCarriesUpsertFields`
 Expected: FAIL to compile — "undefined: StatValueUpdate".
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `kafka/message/buff/kafka.go` — mirror the body exactly as atlas-buffs declares it:
 
@@ -844,12 +844,12 @@ func (p *ProcessorImpl) UpdateStatValue(f field.Model, characterId uint32, u Sta
 			}); cerr != nil {
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./character/buff/... ./socket/handler/... `
 Expected: PASS, including every pre-existing Combo test (the deps signature did not move).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/message/buff/kafka.go \
@@ -879,7 +879,7 @@ The Energy Blast cast gate must not do REST on the attack path. `BeaconMirror` (
   - `(*EnergyMirror).Clear(t tenant.Model, characterId uint32)`
   - package-level `energyMirror` / `energyMirrorOnce` so tests can reset the singleton (same idiom as `beaconMirror` / `beaconMirrorOnce`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/character/buff/energy_test.go`:
 
@@ -951,12 +951,12 @@ func TestEnergyMirrorTenantIsolation(t *testing.T) {
 
 `newTestTenant` already exists in `beacon_test.go` in the same package — reuse it, do not redeclare it.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./character/buff/ -run TestEnergyMirror`
 Expected: FAIL to compile — "undefined: GetEnergyMirror".
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `services/atlas-channel/atlas.com/channel/character/buff/energy.go`:
 
@@ -1034,12 +1034,12 @@ func (m *EnergyMirror) Get(t tenant.Model, characterId uint32) (int32, bool) {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test -race ./character/buff/ -run TestEnergyMirror -v`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/character/buff/energy.go \
@@ -1070,7 +1070,7 @@ All the decision logic lives in pure functions plus one deps struct, mirroring `
   - `energyChargeTryUpdate(l logrus.FieldLogger, set skill3.Set, c character.Model, ai packetmodel.AttackInfo, deps energyChargeDeps)`
   - constants `energyChargeGainPerMob = int32(102)`, `energyChargeCap = int32(10000)`, `energyChargedValue = int32(15000)`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_energy_charge_test.go`:
 
@@ -1304,12 +1304,12 @@ func TestEnergyChargeTryUpdate(t *testing.T) {
 
 The three helpers use the same constructors `character_attack_combo_test.go:113-134` already uses (`skill.Extract` / `character.NewModelBuilder()` / `packetmodel.NewAttackInfo` + `AddDamageInfo`), so no new test scaffolding is introduced. `constants.For(region, major, minor)` returns the version-aware constant set whose `.Skill` field is the `skill3.Set` — the same expression `character_attack_common.go:757` uses.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run 'TestEnergyCharge|TestIsEnergyBlast'`
 Expected: FAIL to compile — "undefined: energyChargeLine".
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_energy_charge.go`:
 
@@ -1469,12 +1469,12 @@ func energyChargeTryUpdate(l logrus.FieldLogger, set skill3.Set, c character.Mod
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run 'TestEnergyCharge|TestIsEnergyBlast' -v`
 Expected: PASS for every subtest.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_energy_charge.go \
@@ -1496,7 +1496,7 @@ The call site sits beside `comboOrbTryUpdate`, with a wider gate: melee **or** e
 - Consumes: `energyChargeQualifies`, `energyChargeTryUpdate`, `energyChargeProductionDeps` (Task 6); `attackId`/`attackIdOk` and `set`, already resolved at `character_attack_common.go:756`.
 - Produces: nothing new.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `character_attack_energy_charge_test.go`:
 
@@ -1518,12 +1518,12 @@ func TestEnergyChargeIsNotAnAttackCastHandler(t *testing.T) {
 
 Import the same `handler` package alias `character_attack_common.go` uses for `LookupAttackCast` (see its imports; the registry lives in the channel's `skill/handler` package). Match the exact `LookupAttackCast` signature there — `character_attack_common.go:730` calls `handler.LookupAttackCast(castId)` and the id argument type must match.
 
-- [ ] **Step 2: Run the test to verify it passes immediately**
+- [x] **Step 2: Run the test to verify it passes immediately**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run TestEnergyChargeIsNotAnAttackCastHandler -v`
 Expected: PASS. This is a regression guard, not a red-then-green cycle — it pins an invariant the design proved already holds. If it FAILS, stop: something registers Energy Charge as an attack cast and FR-7 needs real code after all.
 
-- [ ] **Step 3: Implement the call site**
+- [x] **Step 3: Implement the call site**
 
 In `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go`, immediately after the existing combo block at `:980-982`:
 
@@ -1553,12 +1553,12 @@ In `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_com
 
 Confirm the field name for the skill set on the value returned by `constants.For(...)` (the surrounding code already uses `set.Skill.Resolve` at `:757`), and use the same expression.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go build ./... && go test -race ./socket/handler/`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go \
@@ -1583,7 +1583,7 @@ The gate **fails open** on an unknown bar (no mirror entry — fresh channel, po
 - Consumes: `buff.GetEnergyMirror()` (Task 5), `isEnergyBlast` / `energyChargedValue` (Task 6).
 - Produces: `energyBlastPermitted(t tenant.Model, characterId uint32, attackId skill3.Identity, attackIdOk bool) (bool, int32)` and `energyReannounceAuthoritative(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model)`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `character_attack_energy_charge_test.go`:
 
@@ -1641,12 +1641,12 @@ func TestEnergyBlastPermitted(t *testing.T) {
 
 Add two helpers in the test file: `energyTestResetMirror()` resetting the `buff` package singleton is not possible from `handler` (the reset vars are package-private to `buff`), so instead have `energyTestResetMirror()` clear the entries it sets via `buff.GetEnergyMirror().Clear(...)` at the start of each subtest, and `energyTestTenant(t)` build a tenant with `tenant.Create(uuid.New(), "GMS", 83, 1)`. Keep character ids distinct per subtest if that reads more cleanly.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run TestEnergyBlastPermitted`
 Expected: FAIL to compile — "undefined: energyBlastPermitted".
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Append to `character_attack_energy_charge.go` (add `atlas-channel/session`, `atlas-channel/socket/writer`, `charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"` and `tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"` to the imports):
 
@@ -1735,12 +1735,12 @@ Then wire the gate into `processAttack`, immediately after the battleship gate i
 
 `t`, `attackId`, and `attackIdOk` are all already in scope from `:756-758`.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go build ./... && go test -race ./socket/handler/ -run 'TestEnergy' -v`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_energy_charge.go \
@@ -1769,7 +1769,7 @@ The owner/foreign `GIVE_BUFF` broadcast and the `EXPIRED` cancel pair already ex
 - Consumes: `buff.GetEnergyMirror()` (Task 5); `energyChargedValue`/`energyChargeCap` — **re-declare these as consumer-local constants rather than importing them**, because `socket/handler` already imports this package's siblings and the channel avoids that direction of dependency. Name them `energyChargeCapValue` and `energyChargedValue` in the consumer package and comment that they mirror `socket/handler`'s.
 - Produces: `energyChargeChange(changes []buff2.StatChange) (buff2.StatChange, bool)`, `energyChargeShouldPromote(amount int32) bool`, and `energyChargeReact(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32, sourceId int32, level byte, c buff2.StatChange)`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `services/atlas-channel/atlas.com/channel/kafka/consumer/buff/energy_test.go`:
 
@@ -1826,12 +1826,12 @@ func TestEnergyChargeShouldPromote(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./kafka/consumer/buff/ -run TestEnergyCharge`
 Expected: FAIL to compile — "undefined: energyChargeChange".
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add to `services/atlas-channel/atlas.com/channel/kafka/consumer/buff/consumer.go`, near `beaconChange`/`isBattleshipRide`:
 
@@ -1944,12 +1944,12 @@ Then call it from the three handlers:
 
 Note the charged `APPLY` carries `ENERGY_CHARGE = 15000` and no other statup: the weapon-attack payoff is resolved server-side in atlas-effective-stats (Task 10), deliberately NOT sent as a `PAD` statup, because a `PAD` statup is a CTS bit and would light up a weapon-attack buff icon that neither Cosmic nor the real client shows for Energy Charge.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go build ./... && go test -race ./kafka/consumer/buff/ -v`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/consumer/buff/consumer.go \
@@ -1974,7 +1974,7 @@ Verified `pad` values for `5110001` (design.md §1.3): 0 at levels 1–3, 11 at 
 - Consumes: `buffs.BuffRestModel` (widened here), `skilldata.RestModel.GetEffectForLevel`, `stat.NewBonus`, `stat.TypeWeaponAttack`.
 - Produces: `energyChargeBonus(source string, sourceId int32, level byte, amount int32, effectFor func(skillId uint32, level byte) (*skilldata.EffectModel, error)) []stat.Bonus`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-effective-stats/atlas.com/effective-stats/character/energy_charge_test.go`:
 
@@ -2039,12 +2039,12 @@ func TestEnergyChargeBonus(t *testing.T) {
 
 Check `stat.Bonus`'s accessor names in `stat/model.go` and adjust `bs[0].Type()`/`bs[0].Amount()` to match.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd services/atlas-effective-stats/atlas.com/effective-stats && go test ./character/ -run TestEnergyChargeBonus`
 Expected: FAIL to compile — "undefined: energyChargeBonus".
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 First widen `external/buffs/rest.go` — a pure widening of an existing payload; atlas-buffs already serves `level` (`services/atlas-buffs/atlas.com/buffs/buff/rest.go:13`):
 
@@ -2132,12 +2132,12 @@ And in `fetchBuffBonuses`, ahead of the generic dispatch:
 
 Add the `charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"` import (or, if that library is not already a dependency of this module, use the literal `"ENERGY_CHARGE"` with a comment naming `libs/atlas-constants/character/temporary_stat.go:116` as its source — do NOT add a new module dependency, per Global Constraints).
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd services/atlas-effective-stats/atlas.com/effective-stats && go build ./... && go test -race ./... && go vet ./...`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-effective-stats/atlas.com/effective-stats/external/buffs/rest.go \
@@ -2164,7 +2164,7 @@ No existing fixture pins an `ENERGY_CHARGE` base block, so no verified cell asse
 
 **Interfaces:** none.
 
-- [ ] **Step 1: Confirm no verified cell asserted the zeros**
+- [x] **Step 1: Confirm no verified cell asserted the zeros**
 
 Run:
 ```bash
@@ -2173,11 +2173,11 @@ cd libs/atlas-packet && go test ./... 2>&1 | tail -20
 ```
 Expected: the grep shows only the new task-216 fixtures plus pre-existing comments about the two-state group's mask shifts; the full atlas-packet suite is green. If any pre-existing fixture fails, STOP — a verified cell DID assert the zeros, and the change needs per-version re-derivation before it can land.
 
-- [ ] **Step 2: Record the AC-9 outcome**
+- [x] **Step 2: Record the AC-9 outcome**
 
 Append a short "AC-9 — ENERGY_CHARGE encoding coverage" section to `docs/tasks/task-216-energy-charge/context.md` stating, per version in the §7.4 supported set (gms_v61 through jms_v185), whether the `GIVE_BUFF` / `GIVE_FOREIGN_BUFF` / `CANCEL_BUFF` cell is verified today and, where it is not (v92 on all three rows), that it is **out of scope with the reason "the row was already ❌ before this task; task-216 makes no wire-shape change, only a value change"**. Do not claim a promotion that did not happen.
 
-- [ ] **Step 3: Run every guard from the repo root**
+- [x] **Step 3: Run every guard from the repo root**
 
 Run:
 ```bash
@@ -2191,7 +2191,7 @@ Expected: all exit 0. `tools/lint.sh` (no flags) rewrites files in place — run
 
 No template, opcode, docker-bake, k8s, or `services.json` change was made, so `tools/template-*-guard.sh`, `tools/service-registration-guard.sh`, and `tools/trade-contract-mirror-guard.sh` are not applicable.
 
-- [ ] **Step 4: Run the full per-module verification**
+- [x] **Step 4: Run the full per-module verification**
 
 Run:
 ```bash
@@ -2205,12 +2205,12 @@ done
 ```
 Expected: no `FAILED:` lines. `libs/atlas-constants` was not modified, so it needs no pass.
 
-- [ ] **Step 5: Confirm no `go.mod` moved**
+- [x] **Step 5: Confirm no `go.mod` moved**
 
 Run: `git diff --name-only main... | grep -E 'go\.(mod|sum)$' || echo "no module changes"`
 Expected: `no module changes`. If any `go.mod` DID change, `docker buildx bake atlas-<svc>` becomes mandatory for that service (CLAUDE.md item 4) — run it before claiming the branch is done.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add docs/tasks/task-216-energy-charge/context.md

@@ -5,6 +5,8 @@ import (
 	"atlas-channel/character/buff"
 	"atlas-channel/character/skill"
 	buff2 "atlas-channel/kafka/message/buff"
+	"atlas-channel/session"
+	"atlas-channel/socket/writer"
 	"context"
 
 	"github.com/sirupsen/logrus"
@@ -12,7 +14,9 @@ import (
 	constants "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill3 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const (
@@ -150,4 +154,65 @@ func energyChargeTryUpdate(l logrus.FieldLogger, set skill3.Set, c character.Mod
 	if err := deps.emitUpsert(int32(line.skillId), line.level, amount, energyChargeCap); err != nil {
 		l.WithError(err).Errorf("Energy Charge: gain emit failed for character [%d] energy line [%d].", c.Id(), line.skillId)
 	}
+}
+
+// energyBlastPermitted gates Energy Blast on the caster being charged. Energy
+// Blast is an ATTACK skill (WZ: damage/mobCount/lt/rb, no time), so it never
+// reaches CharacterUseSkillHandleFunc — the gate belongs beside
+// battleshipAttackPermitted in processAttack, and the rejection stays soft
+// (return false, never destroy the session).
+//
+// Reads the pod-local mirror: zero I/O on the permitted path. Returns the
+// mirrored bar alongside the verdict so the caller can log it and re-announce.
+//
+// Fails OPEN on a missing mirror entry. A miss means "unknown" — a fresh
+// channel or a restarted pod, not an empty bar — and an unknown must never eat
+// a legitimate cast. A KNOWN zero, by contrast, is a real reading and is
+// rejected.
+//
+// This is a deliberate divergence from Cosmic, which performs no server-side
+// charge check at all; no client-side gate was found in the v83 IDB either
+// (design.md OQ-3). The fail-open plus the re-announce below bound the damage
+// to "one cast allowed that Cosmic would also have allowed".
+func energyBlastPermitted(t tenant.Model, characterId uint32, attackId skill3.Identity, attackIdOk bool) (bool, int32) {
+	if !isEnergyBlast(attackId, attackIdOk) {
+		return true, 0
+	}
+	v, ok := buff.GetEnergyMirror().Get(t, characterId)
+	if !ok {
+		return true, 0
+	}
+	return v == energyChargedValue, v
+}
+
+// energyReannounceAuthoritative re-sends the caster's true ENERGY_CHARGE bar
+// after a rejected Energy Blast, so a client whose bar drifted (a dropped
+// STAT_UPDATED, a reconnect before the buff replayed) resynchronises instead
+// of losing the skill with no feedback (design.md OQ-1 resolution (b)).
+//
+// This is the ONE REST call the gate is allowed, and only on a rejection —
+// the permitted path stays I/O-free. Failures are logged and swallowed: the
+// rejection itself already happened.
+func energyReannounceAuthoritative(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model) {
+	bs, err := buff.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
+	if err != nil {
+		l.WithError(err).Errorf("Energy Charge: unable to read authoritative bar for character [%d] after a rejected cast.", s.CharacterId())
+		return
+	}
+	t := tenant.MustFromContext(ctx)
+	for _, b := range bs {
+		for _, c := range b.Changes() {
+			if c.Type() != string(constants.TemporaryStatTypeEnergyCharge) {
+				continue
+			}
+			buff.GetEnergyMirror().Set(t, s.CharacterId(), c.Amount())
+			if aerr := session.Announce(l)(ctx)(wp)(charpkt.CharacterBuffGiveWriter)(writer.CharacterBuffGiveBody([]buff.Model{b}))(s); aerr != nil {
+				l.WithError(aerr).Errorf("Energy Charge: bar re-announce failed for character [%d].", s.CharacterId())
+			}
+			return
+		}
+	}
+	// No ENERGY_CHARGE buff upstream at all: the mirror was stale. Clear it so
+	// the next cast fails open rather than being rejected forever.
+	buff.GetEnergyMirror().Clear(t, s.CharacterId())
 }

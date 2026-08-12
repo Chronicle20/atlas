@@ -2,16 +2,19 @@ package handler
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/character/buff"
 	"atlas-channel/character/skill"
 	"atlas-channel/skill/handler"
 	"errors"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	skill3 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // energyTestSet returns the version-aware constant set for one GMS major.
@@ -237,4 +240,79 @@ func TestEnergyChargeIsNotAnAttackCastHandler(t *testing.T) {
 			t.Fatalf("skill [%d] must not be registered as an attack-cast handler; its own touch damage would refresh the charged window", id)
 		}
 	}
+}
+
+// energyTestResetMirror clears the given tenant/character entries from the
+// buff package's process-wide EnergyMirror singleton. The singleton's reset
+// vars are package-private to buff, so from package handler the only way to
+// force a clean slate is to Clear the exact entries a subtest is about to
+// set — callers pass distinct character ids per subtest so ordering never
+// matters.
+func energyTestResetMirror(tn tenant.Model, characterIds ...uint32) {
+	for _, characterId := range characterIds {
+		buff.GetEnergyMirror().Clear(tn, characterId)
+	}
+}
+
+// energyTestTenant builds a fresh tenant.Model for one test.
+func energyTestTenant(t *testing.T) tenant.Model {
+	t.Helper()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create: %v", err)
+	}
+	return tn
+}
+
+func TestEnergyBlastPermitted(t *testing.T) {
+	tn := energyTestTenant(t)
+	v83 := energyTestSet(83)
+	blast, _ := v83.Resolve(skill3.MarauderEnergyBlastId)
+	shockwave, _ := v83.Resolve(skill3.MarauderShockwaveId)
+
+	t.Run("non-blast always permitted", func(t *testing.T) {
+		energyTestResetMirror(tn, 100)
+		ok, _ := energyBlastPermitted(tn, 100, shockwave, true)
+		if !ok {
+			t.Fatal("a skill outside the blast pair must never be gated")
+		}
+	})
+
+	t.Run("charged permitted", func(t *testing.T) {
+		energyTestResetMirror(tn, 101)
+		buff.GetEnergyMirror().Set(tn, 101, 15000)
+		ok, _ := energyBlastPermitted(tn, 101, blast, true)
+		if !ok {
+			t.Fatal("a charged caster must be permitted")
+		}
+	})
+
+	t.Run("below full rejected and reports the bar", func(t *testing.T) {
+		energyTestResetMirror(tn, 102)
+		buff.GetEnergyMirror().Set(tn, 102, 4998)
+		ok, v := energyBlastPermitted(tn, 102, blast, true)
+		if ok {
+			t.Fatal("a partial bar must be rejected")
+		}
+		if v != 4998 {
+			t.Fatalf("rejection must report the mirrored bar: got %d want 4998", v)
+		}
+	})
+
+	t.Run("empty bar rejected", func(t *testing.T) {
+		energyTestResetMirror(tn, 103)
+		buff.GetEnergyMirror().Set(tn, 103, 0)
+		if ok, _ := energyBlastPermitted(tn, 103, blast, true); ok {
+			t.Fatal("a known-empty bar must be rejected")
+		}
+	})
+
+	// Fail open: an unknown bar (fresh channel, pod restart) must never eat a
+	// legitimate cast (design.md §4.4).
+	t.Run("unknown bar permitted", func(t *testing.T) {
+		energyTestResetMirror(tn, 104)
+		if ok, _ := energyBlastPermitted(tn, 104, blast, true); !ok {
+			t.Fatal("an unknown bar must fail open")
+		}
+	})
 }

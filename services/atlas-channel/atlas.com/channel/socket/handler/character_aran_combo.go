@@ -5,6 +5,7 @@ import (
 	"atlas-channel/character/buff"
 	"atlas-channel/character/combo"
 	skill2 "atlas-channel/data/skill"
+	"atlas-channel/data/skill/effect"
 	"atlas-channel/data/skill/effect/statup"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -150,4 +151,23 @@ func AranComboCounterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wr
 		p.Decode(l, ctx)(r, readerOptions)
 		aranComboAdvance(l, aranComboProductionDeps(l, ctx, wp, s), tenant.MustFromContext(ctx), s.CharacterId(), s.Field(), readerOptions)
 	}
+}
+
+// aranComboRefreshEligibility caches the Aran combo gate result off the back
+// of a melee attack the server already paid to fetch (character +
+// InventoryDecorator + SkillModelDecorator), so the ARAN_COMBO_COUNTER
+// packets that follow -- one per damaging hit -- cost zero REST calls
+// (task-217 NFR-1, design.md §3.5).
+//
+// An ineligible character is cleared rather than cached, so unequipping a
+// polearm cannot leave a stale-eligible entry behind for a modified client.
+func aranComboRefreshEligibility(l logrus.FieldLogger, ctx context.Context, f field.Model, c character.Model, getEffect func(skillId uint32, level byte) (effect.Model, error)) {
+	t := tenant.MustFromContext(ctx)
+	el, gate, ok := combo.Evaluate(c, getEffect)
+	if !ok {
+		l.Debugf("Aran combo: character [%d] not combo-eligible at gate [%s]; clearing.", c.Id(), gate)
+		combo.GetMirror().Clear(t, c.Id())
+		return
+	}
+	combo.GetMirror().SetEligibility(t, c.Id(), f, el, time.Now())
 }

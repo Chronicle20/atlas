@@ -979,6 +979,11 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// so combo skill levels are already in hand.
 					if ai.AttackType() == packetmodel.AttackTypeMelee {
 						comboOrbTryUpdate(l, c, ai, comboOrbProductionDeps(l, ctx, s.Field(), s.CharacterId()))
+						// Aran combo eligibility rides the same fetch: the
+						// client sends ARAN_COMBO_COUNTER from CMob::OnHit at
+						// melee-hit frequency, and this keeps that path free
+						// of REST (task-217 design.md §3.5).
+						aranComboRefreshEligibility(l, ctx, s.Field(), c, skill2.NewProcessor(l, ctx).GetEffect)
 					}
 
 					// Dragon Knight Sacrifice trades the caster's HP for the hit:

@@ -366,6 +366,18 @@ func (p *ProcessorImpl) ProcessPeriodicTicks() error {
 				return err
 			}
 
+			// The visual pulse rides WITH the resource change, not instead of
+			// it, and only for rows whose source skill has an animation the
+			// client will actually draw (periodic.Effect.SpecialEffect). A
+			// non-positive SourceId means the buff was stored without a source
+			// skill; there is nothing to name in the effect packet, so skip the
+			// pulse rather than emit skill id 0.
+			if eff.SpecialEffect() && entry.SourceId > 0 {
+				if err := buf.Put(character2.EnvEventStatusTopic, periodicEffectStatusEventProvider(entry.WorldId, entry.ChannelId, entry.CharacterId, uint32(entry.SourceId), entry.StatType)); err != nil {
+					return err
+				}
+			}
+
 			GetRegistry().UpdatePeriodicTick(p.ctx, key, now)
 		}
 		return nil

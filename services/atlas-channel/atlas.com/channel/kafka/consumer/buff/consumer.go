@@ -78,6 +78,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventPeriodicEffect(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -412,6 +417,36 @@ func handleStatusEventBerserk(sc server.Model, wp writer.Producer) message.Handl
 			}
 
 			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), socketHandler.AnnounceForeignBerserkEffect(l)(ctx)(wp)(e.CharacterId, e.Body.SkillId, e.Body.CharacterLevel, e.Body.SkillLevel, e.Body.Active))
+			return nil
+		})
+	}
+}
+
+// handleStatusEventPeriodicEffect translates one periodic-buff tick into the
+// own + foreign SKILL_SPECIAL user effects, so a drain like Dragon Blood
+// visibly pulses on the caster and to everyone watching (task-214).
+//
+// Stateless, same shape as handleStatusEventBerserk: atlas-buffs owns the
+// cadence, so there is no map-enter hook and no state to reconcile. No session
+// means the character transferred or logged out between emit and consume --
+// the next tick self-corrects. Emitting nothing is always safe here: the pulse
+// is cosmetic, and the tick's HP change travels on its own command.
+func handleStatusEventPeriodicEffect(sc server.Model, wp writer.Producer) message.Handler[buff2.StatusEvent[buff2.PeriodicEffectStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e buff2.StatusEvent[buff2.PeriodicEffectStatusEventBody]) {
+		if e.Type != buff2.EventStatusTypePeriodicEffect {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.Body.ChannelId) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+			if err := socketHandler.AnnounceSkillSpecialEffect(l)(ctx)(wp)(e.Body.SkillId)(s); err != nil {
+				l.WithError(err).Errorf("Unable to write periodic [%s] effect for character [%d].", e.Body.StatType, e.CharacterId)
+			}
+
+			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), socketHandler.AnnounceForeignSkillSpecialEffect(l)(ctx)(wp)(e.CharacterId, e.Body.SkillId))
 			return nil
 		})
 	}

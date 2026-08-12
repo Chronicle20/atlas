@@ -37,6 +37,10 @@ type PeriodicEntry struct {
 	CharacterId uint32
 	StatType    string
 	Amount      int32
+	// SourceId is the skill id the owning buff was applied under. Carried so a
+	// row flagged SpecialEffect can name the skill whose animation to pulse;
+	// the SKILL_SPECIAL user effect is keyed by skill id alone.
+	SourceId int32
 }
 
 // GetPeriodicEntries does ONE traversal of the tenant's stored characters and
@@ -85,6 +89,7 @@ func (r *Registry) GetPeriodicEntries(ctx context.Context) ([]PeriodicEntry, err
 					CharacterId: m.characterId,
 					StatType:    c.Type(),
 					Amount:      c.Amount(),
+					SourceId:    b.SourceId(),
 				}
 			}
 		}

@@ -132,6 +132,10 @@ type StatUpdatedStatusEventBody struct {
 
 const (
 	EventStatusTypeBerserk = "BERSERK"
+
+	// EventStatusTypePeriodicEffect mirrors atlas-buffs' periodic visual pulse
+	// (task-214).
+	EventStatusTypePeriodicEffect = "PERIODIC_EFFECT"
 )
 
 // BerserkStatusEventBody mirrors atlas-buffs' berserk broadcast tick
@@ -145,4 +149,15 @@ type BerserkStatusEventBody struct {
 	CharacterLevel byte       `json:"characterLevel"`
 	SkillLevel     byte       `json:"skillLevel"`
 	Active         bool       `json:"active"`
+}
+
+// PeriodicEffectStatusEventBody mirrors atlas-buffs' periodic visual pulse
+// (task-214). One event per periodic tick whose source skill has a `special`
+// WZ node; becomes the SKILL_SPECIAL user effect on the caster's own session
+// plus the foreign variant for everyone else on their map. StatType is
+// diagnostic only -- this consumer does not branch on it.
+type PeriodicEffectStatusEventBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	SkillId   uint32     `json:"skillId"`
+	StatType  string     `json:"statType"`
 }

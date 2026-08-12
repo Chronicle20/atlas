@@ -35,11 +35,12 @@ const (
 // accessors so the table cannot be mutated by a caller (project immutable-model
 // convention).
 type Effect struct {
-	statType  character.TemporaryStatType
-	interval  time.Duration
-	resource  Resource
-	direction Direction
-	floor     bool
+	statType      character.TemporaryStatType
+	interval      time.Duration
+	resource      Resource
+	direction     Direction
+	floor         bool
+	specialEffect bool
 }
 
 // StatType is the temporary-stat type stored on the buff change this row keys off.
@@ -58,3 +59,27 @@ func (e Effect) Direction() Direction { return e.direction }
 // it reach 0. atlas-character emits a DIED status event whenever an adjusted HP
 // lands on 0, so a self-inflicted drain that must not kill sets this true.
 func (e Effect) Floor() bool { return e.floor }
+
+// SpecialEffect reports whether each tick should also broadcast the skill's
+// SKILL_SPECIAL user effect, so the caster and everyone on their map see the
+// skill animation pulse alongside the resource change.
+//
+// This is a per-row property because it depends on the SOURCE SKILL'S WZ DATA,
+// not on the stat type being periodic. GMS v83 Skill.wz was surveyed directly:
+// 340 skills carry an `effect` node, 57 an `affected` node, 37 a `special`
+// node. The client's CUser::OnEffect case 5 (SKILL_SPECIAL) routes to
+// CUser::ShowSkillSpecialEffect, which reads SKILLENTRY::GetSpecialUOL -- the
+// `special` node -- and returns without drawing when that node is absent.
+//
+//	DRAGON_BLOOD (1311008)  has `special`  -> true; the pulse renders.
+//	RECOVERY     (0001001)  has neither `special` nor `affected`, only the
+//	                        `effect` (cast) node -> false. Broadcasting any
+//	                        user effect for it would draw nothing at best, or
+//	                        replay the cast animation every 5s at worst.
+//	POISON                  is a mob debuff with no caster skill to pulse.
+//
+// Sending SKILL_AFFECTED instead would render nothing for either: the
+// `affected` set is party/target buffs (Rage 1101006, Iron Will 1301006,
+// Hyper Body 1301007, Maple Warrior 1121000/1221000/1321000) -- the animation
+// a RECIPIENT plays -- and neither 1311008 nor 0001001 is in it.
+func (e Effect) SpecialEffect() bool { return e.specialEffect }

@@ -420,3 +420,109 @@ func TestPeriodicTickRestartsAfterRecast(t *testing.T) {
 	require.NoError(t, p.ProcessPeriodicTicks())
 	assert.Equal(t, []int16{-48}, changeHPAmounts(t), "cleared throttle means the re-cast ticks at once")
 }
+
+// periodicEffectEvents decodes every PERIODIC_EFFECT status event captured so
+// far, in order.
+func periodicEffectEvents(t *testing.T) []character2.StatusEvent[character2.PeriodicEffectStatusEventBody] {
+	t.Helper()
+	var out []character2.StatusEvent[character2.PeriodicEffectStatusEventBody]
+	for _, m := range emitted.Messages(character2.EnvEventStatusTopic) {
+		var e character2.StatusEvent[character2.PeriodicEffectStatusEventBody]
+		require.NoError(t, json.Unmarshal(m.Value, &e))
+		if e.Type != character2.EventStatusTypePeriodicEffect {
+			continue
+		}
+		out = append(out, e)
+	}
+	return out
+}
+
+// TestPeriodicTickDragonBloodEmitsEffectPulse pins the visual pulse that rides
+// with each Dragon Blood drain: one PERIODIC_EFFECT naming the source skill,
+// on the same cadence as the HP change, never instead of it.
+func TestPeriodicTickDragonBloodEmitsEffectPulse(t *testing.T) {
+	setupTestRegistry(t)
+	emitted.Reset()
+	ctx := setupTestContext(t, setupTestTenant(t))
+	now := time.Now()
+	calls := 0
+	p := tickProcessor(ctx, &now, 500, nil, &calls)
+
+	applyBuff(t, ctx, 100, 1311008, stat.NewStat("DRAGON_BLOOD", 20))
+	require.NoError(t, p.ProcessPeriodicTicks())
+
+	evts := periodicEffectEvents(t)
+	require.Len(t, evts, 1)
+	assert.Equal(t, uint32(100), evts[0].CharacterId)
+	assert.Equal(t, world.Id(0), evts[0].WorldId)
+	assert.Equal(t, channel.Id(1), evts[0].Body.ChannelId)
+	assert.Equal(t, uint32(1311008), evts[0].Body.SkillId, "pulse names the source skill")
+	assert.Equal(t, "DRAGON_BLOOD", evts[0].Body.StatType)
+	assert.Equal(t, []int16{-20}, changeHPAmounts(t), "the HP change still travels on its own command")
+
+	// Throttled with the row, not on a schedule of its own.
+	now = now.Add(2 * time.Second)
+	require.NoError(t, p.ProcessPeriodicTicks())
+	assert.Len(t, periodicEffectEvents(t), 1, "no pulse inside the 4s interval")
+
+	now = now.Add(2 * time.Second)
+	require.NoError(t, p.ProcessPeriodicTicks())
+	assert.Len(t, periodicEffectEvents(t), 2, "pulses again at 4s")
+}
+
+// TestPeriodicTickNoEffectPulseWithoutSpecialNode pins the negative case: rows
+// whose source skill has no `special` WZ node to draw emit no pulse. POISON is
+// a mob debuff with no caster skill; RECOVERY (0001001) carries only an
+// `effect` (cast) node, so a pulse would render nothing.
+func TestPeriodicTickNoEffectPulseWithoutSpecialNode(t *testing.T) {
+	setupTestRegistry(t)
+	emitted.Reset()
+	ctx := setupTestContext(t, setupTestTenant(t))
+	now := time.Now()
+	calls := 0
+	p := tickProcessor(ctx, &now, 500, nil, &calls)
+
+	applyBuff(t, ctx, 100, 2111003, stat.NewStat("POISON", 25))
+	applyBuff(t, ctx, 101, 1001, stat.NewStat("RECOVERY", 4))
+	require.NoError(t, p.ProcessPeriodicTicks())
+
+	require.Len(t, changeHPAmounts(t), 2, "both rows still tick their resource change")
+	assert.Empty(t, periodicEffectEvents(t), "neither row pulses")
+}
+
+// TestPeriodicTickNoEffectPulseWithoutSourceId guards the degenerate buff: a
+// stored buff with no source skill has nothing to name, so the pulse is
+// skipped rather than emitted as skill id 0 (which the client would fail to
+// resolve).
+func TestPeriodicTickNoEffectPulseWithoutSourceId(t *testing.T) {
+	setupTestRegistry(t)
+	emitted.Reset()
+	ctx := setupTestContext(t, setupTestTenant(t))
+	now := time.Now()
+	calls := 0
+	p := tickProcessor(ctx, &now, 500, nil, &calls)
+
+	applyBuff(t, ctx, 100, 0, stat.NewStat("DRAGON_BLOOD", 20))
+	require.NoError(t, p.ProcessPeriodicTicks())
+
+	assert.Equal(t, []int16{-20}, changeHPAmounts(t), "the drain still applies")
+	assert.Empty(t, periodicEffectEvents(t), "but nothing is pulsed")
+}
+
+// TestPeriodicTickSuppressedTickPulsesNothing pins that the pulse follows the
+// emit decision, not the scan: a Dragon Blood tick suppressed by the HP floor
+// emits neither a resource change nor a visual.
+func TestPeriodicTickSuppressedTickPulsesNothing(t *testing.T) {
+	setupTestRegistry(t)
+	emitted.Reset()
+	ctx := setupTestContext(t, setupTestTenant(t))
+	now := time.Now()
+	calls := 0
+	p := tickProcessor(ctx, &now, 1, nil, &calls)
+
+	applyBuff(t, ctx, 100, 1311008, stat.NewStat("DRAGON_BLOOD", 20))
+	require.NoError(t, p.ProcessPeriodicTicks())
+
+	assert.Empty(t, changeHPAmounts(t), "already at 1 HP, so no drain")
+	assert.Empty(t, periodicEffectEvents(t), "and no pulse for a tick that did not happen")
+}

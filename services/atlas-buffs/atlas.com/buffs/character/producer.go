@@ -55,6 +55,25 @@ func changeHPCommandProvider(worldId world.Id, channelId channel.Id, characterId
 	return producer.SingleMessageProvider(key, value)
 }
 
+// periodicEffectStatusEventProvider announces one visual pulse for a periodic
+// tick. Keyed by characterId, same as the CHANGE_HP command it rides beside,
+// so a character's pulse and resource change stay ordered relative to each
+// other.
+func periodicEffectStatusEventProvider(worldId world.Id, channelId channel.Id, characterId uint32, skillId uint32, statType string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.PeriodicEffectStatusEventBody]{
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        character2.EventStatusTypePeriodicEffect,
+		Body: character2.PeriodicEffectStatusEventBody{
+			ChannelId: channelId,
+			SkillId:   skillId,
+			StatType:  statType,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func expiredStatusEventProvider(worldId world.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time, noExpiry bool) model.Provider[[]kafka.Message] {
 	statups := make([]character2.StatChange, 0)
 	for _, su := range changes {

@@ -25,25 +25,28 @@ import (
 // (FR-1.2) — no tick-path code compares a stat type to a literal.
 var effects = map[character.TemporaryStatType]Effect{
 	character.TemporaryStatTypePoison: {
-		statType:  character.TemporaryStatTypePoison,
-		interval:  time.Second,
-		resource:  ResourceHP,
-		direction: Drain,
-		floor:     false,
+		statType:      character.TemporaryStatTypePoison,
+		interval:      time.Second,
+		resource:      ResourceHP,
+		direction:     Drain,
+		floor:         false,
+		specialEffect: false,
 	},
 	character.TemporaryStatTypeDragonBlood: {
-		statType:  character.TemporaryStatTypeDragonBlood,
-		interval:  4 * time.Second,
-		resource:  ResourceHP,
-		direction: Drain,
-		floor:     true,
+		statType:      character.TemporaryStatTypeDragonBlood,
+		interval:      4 * time.Second,
+		resource:      ResourceHP,
+		direction:     Drain,
+		floor:         true,
+		specialEffect: true,
 	},
 	character.TemporaryStatTypeRecovery: {
-		statType:  character.TemporaryStatTypeRecovery,
-		interval:  5 * time.Second,
-		resource:  ResourceHP,
-		direction: Restore,
-		floor:     false,
+		statType:      character.TemporaryStatTypeRecovery,
+		interval:      5 * time.Second,
+		resource:      ResourceHP,
+		direction:     Restore,
+		floor:         false,
+		specialEffect: false,
 	},
 }
 

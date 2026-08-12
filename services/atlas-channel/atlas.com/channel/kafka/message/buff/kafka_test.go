@@ -88,3 +88,35 @@ func TestStatUpdatedStatusEventBody_RoundTrip(t *testing.T) {
 		t.Fatalf("round-trip mismatch: %+v vs %+v", got, in)
 	}
 }
+
+// canonicalPeriodicEffectBody is the exact JSON atlas-buffs emits for a
+// PERIODIC_EFFECT status event body (task-214). The identical literal is
+// asserted in the owner contract
+// (services/atlas-buffs/atlas.com/buffs/kafka/message/character/kafka_test.go);
+// the two live in separate Go modules, so a field or tag renamed on one side
+// and not the other fails no build — it decodes into a zero-valued body at
+// runtime and the pulse silently stops.
+const canonicalPeriodicEffectBody = `{"channelId":3,"skillId":1311008,"statType":"DRAGON_BLOOD"}`
+
+func TestPeriodicEffectStatusEventBody_CanonicalJSON(t *testing.T) {
+	b, err := json.Marshal(PeriodicEffectStatusEventBody{
+		ChannelId: 3,
+		SkillId:   1311008,
+		StatType:  "DRAGON_BLOOD",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, canonicalPeriodicEffectBody, string(b))
+}
+
+func TestPeriodicEffectStatusEventDecode(t *testing.T) {
+	const periodicEventJSON = `{"worldId":1,"characterId":42,"type":"PERIODIC_EFFECT","body":{"channelId":3,"skillId":1311008,"statType":"DRAGON_BLOOD"}}`
+	var e StatusEvent[PeriodicEffectStatusEventBody]
+	assert.NoError(t, json.Unmarshal([]byte(periodicEventJSON), &e))
+
+	assert.Equal(t, world.Id(1), e.WorldId)
+	assert.Equal(t, uint32(42), e.CharacterId)
+	assert.Equal(t, EventStatusTypePeriodicEffect, e.Type)
+	assert.Equal(t, channel.Id(3), e.Body.ChannelId)
+	assert.Equal(t, uint32(1311008), e.Body.SkillId)
+	assert.Equal(t, "DRAGON_BLOOD", e.Body.StatType)
+}

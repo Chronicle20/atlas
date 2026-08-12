@@ -29,15 +29,6 @@ func init() {
 	channelhandler.RegisterAttackCast(skill2.FirePoisonMagicianPoisonMist, Apply)
 }
 
-// The cast-time constants are owned by mistcast, where their full rationale
-// lives (the P > T damage-window invariant, and reject-don't-clamp). Kept
-// visible here because this package's tests -- the regression bar for the
-// whole mist family -- assert against them by these names.
-const (
-	PlayerMistTickIntervalMs = mistcast.PlayerMistTickIntervalMs
-	MaxPlayerMistDurationMs  = mistcast.MaxPlayerMistDurationMs
-)
-
 // loadCaster / emitCreate are this handler's copies of the mistcast seams.
 // Package-level vars so tests can record instead of calling the character
 // service and Kafka.

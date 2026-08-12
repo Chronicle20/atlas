@@ -35,7 +35,9 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
-// SetToManyReferenceIDs is a no-op required by api2go's interface.
-func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
-	return nil
-}
+// SetToOneReferenceID and SetToManyReferenceIDs are required by api2go
+// (jsonapi.Unmarshal) if the upstream response ever carries a
+// `relationships` block, even when this client doesn't care about the
+// relationship payload. See libs/atlas-rest/CLAUDE.md.
+func (r *RestModel) SetToOneReferenceID(_, _ string) error            { return nil }
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }

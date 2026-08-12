@@ -585,9 +585,11 @@ func TestRegistry_UpdateStatValue_Increment(t *testing.T) {
 	ctx := setupTestContext(t, setupTestTenant(t))
 	setupComboBuff(t, ctx, 1000, 1111002)
 
-	updated, changed, err := GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationIncrement, 1, 6)
+	updated, changed, created, err := GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{SourceId: 1111002, StatType: "COMBO", Operation: character2.StatOperationIncrement, Amount: 1, Cap: 6})
 	assert.NoError(t, err)
 	assert.True(t, changed)
+	assert.False(t, created)
 	assert.Equal(t, int32(2), comboAmount(t, ctx, 1000, 1111002))
 
 	var got int32
@@ -605,7 +607,8 @@ func TestRegistry_UpdateStatValue_IncrementClampsAtCap(t *testing.T) {
 	setupComboBuff(t, ctx, 1000, 1111002)
 
 	// 1 -> +2 (double orb) with cap 2 must land exactly on the cap, not past it.
-	_, changed, err := GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationIncrement, 2, 2)
+	_, changed, _, err := GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{SourceId: 1111002, StatType: "COMBO", Operation: character2.StatOperationIncrement, Amount: 2, Cap: 2})
 	assert.NoError(t, err)
 	assert.True(t, changed)
 	assert.Equal(t, int32(2), comboAmount(t, ctx, 1000, 1111002))
@@ -616,12 +619,14 @@ func TestRegistry_UpdateStatValue_NoChangeAtCap(t *testing.T) {
 	ctx := setupTestContext(t, setupTestTenant(t))
 	setupComboBuff(t, ctx, 1000, 1111002)
 
-	_, changed, err := GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationIncrement, 1, 6)
+	_, changed, _, err := GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{SourceId: 1111002, StatType: "COMBO", Operation: character2.StatOperationIncrement, Amount: 1, Cap: 6})
 	assert.NoError(t, err)
 	assert.True(t, changed) // 1 -> 2
 
 	// drive to cap 2, then verify at-cap increment is a no-op
-	_, changed, err = GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationIncrement, 5, 2)
+	_, changed, _, err = GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{SourceId: 1111002, StatType: "COMBO", Operation: character2.StatOperationIncrement, Amount: 5, Cap: 2})
 	assert.NoError(t, err)
 	assert.False(t, changed, "already at/above cap must be a no-op")
 	assert.Equal(t, int32(2), comboAmount(t, ctx, 1000, 1111002))
@@ -632,12 +637,15 @@ func TestRegistry_UpdateStatValue_SetResets(t *testing.T) {
 	ctx := setupTestContext(t, setupTestTenant(t))
 	setupComboBuff(t, ctx, 1000, 1111002)
 
-	_, _, _ = GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationIncrement, 4, 6)
+	_, _, _, _ = GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{SourceId: 1111002, StatType: "COMBO", Operation: character2.StatOperationIncrement, Amount: 4, Cap: 6})
 	assert.Equal(t, int32(5), comboAmount(t, ctx, 1000, 1111002))
 
-	_, changed, err := GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationSet, 1, 0)
+	_, changed, created, err := GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{SourceId: 1111002, StatType: "COMBO", Operation: character2.StatOperationSet, Amount: 1, Cap: 0})
 	assert.NoError(t, err)
 	assert.True(t, changed)
+	assert.False(t, created)
 	assert.Equal(t, int32(1), comboAmount(t, ctx, 1000, 1111002))
 }
 
@@ -646,9 +654,11 @@ func TestRegistry_UpdateStatValue_SetSameValueNoOp(t *testing.T) {
 	ctx := setupTestContext(t, setupTestTenant(t))
 	setupComboBuff(t, ctx, 1000, 1111002)
 
-	_, changed, err := GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationSet, 1, 0)
+	_, changed, created, err := GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{SourceId: 1111002, StatType: "COMBO", Operation: character2.StatOperationSet, Amount: 1, Cap: 0})
 	assert.NoError(t, err)
 	assert.False(t, changed, "SET to the current value must be a no-op")
+	assert.False(t, created)
 }
 
 func TestRegistry_UpdateStatValue_NoOps(t *testing.T) {
@@ -673,9 +683,11 @@ func TestRegistry_UpdateStatValue_NoOps(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, changed, err := GetRegistry().UpdateStatValue(ctx, tc.characterId, tc.sourceId, tc.statType, tc.operation, tc.amount, 6)
+			_, changed, created, err := GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), tc.characterId,
+				StatValueUpdate{SourceId: tc.sourceId, StatType: tc.statType, Operation: tc.operation, Amount: tc.amount, Cap: 6})
 			assert.NoError(t, err)
 			assert.False(t, changed)
+			assert.False(t, created)
 		})
 	}
 	assert.Equal(t, int32(1), comboAmount(t, ctx, 1000, 1111002), "no-op paths must not mutate the value")
@@ -690,9 +702,11 @@ func TestRegistry_UpdateStatValue_ExpiredBuffNoOp(t *testing.T) {
 	assert.NoError(t, err)
 	time.Sleep(5 * time.Millisecond) // duration is 1ms; let it lapse
 
-	_, changed, err := GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationIncrement, 1, 6)
+	_, changed, created, err := GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{SourceId: 1111002, StatType: "COMBO", Operation: character2.StatOperationIncrement, Amount: 1, Cap: 6})
 	assert.NoError(t, err)
 	assert.False(t, changed, "expired buff must be a no-op")
+	assert.False(t, created)
 }
 
 func TestRegistry_UpdateStatValue_PreservesTimestamps(t *testing.T) {
@@ -704,11 +718,128 @@ func TestRegistry_UpdateStatValue_PreservesTimestamps(t *testing.T) {
 	assert.NoError(t, err)
 	orig := before.Buffs()[srcKey(1111002)]
 
-	updated, changed, err := GetRegistry().UpdateStatValue(ctx, 1000, 1111002, "COMBO", character2.StatOperationIncrement, 1, 6)
+	updated, changed, created, err := GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{SourceId: 1111002, StatType: "COMBO", Operation: character2.StatOperationIncrement, Amount: 1, Cap: 6})
 	assert.NoError(t, err)
 	assert.True(t, changed)
+	assert.False(t, created)
 	assert.True(t, updated.CreatedAt().Equal(orig.CreatedAt()), "createdAt must be unchanged")
 	assert.True(t, updated.ExpiresAt().Equal(orig.ExpiresAt()), "expiresAt must be unchanged (buff must not extend)")
+}
+
+// TestRegistry_UpdateStatValue_CreateIfMissingCreatesNoExpiryBuff is the
+// Energy Charge accumulation entry point: the very first qualifying hit
+// arrives with no buff at all, and the channel cannot check for one without
+// a REST read on the attack path (task-216 design.md §4.2).
+func TestRegistry_UpdateStatValue_CreateIfMissingCreatesNoExpiryBuff(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
+
+	updated, changed, created, err := GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{
+			SourceId: 5110001, StatType: "ENERGY_CHARGE",
+			Operation: character2.StatOperationIncrement,
+			Amount:    102, Cap: 10000, CreateIfMissing: true, Level: 20,
+		})
+
+	assert.NoError(t, err)
+	assert.True(t, changed)
+	assert.True(t, created)
+	assert.True(t, updated.NoExpiry())
+	assert.Equal(t, byte(20), updated.Level())
+	assert.Len(t, updated.Changes(), 1)
+	assert.Equal(t, "ENERGY_CHARGE", updated.Changes()[0].Type())
+	assert.Equal(t, int32(102), updated.Changes()[0].Amount())
+}
+
+// A create whose Amount already exceeds Cap stores the clamped value, so the
+// created buff can never start out above the accumulation ceiling.
+func TestRegistry_UpdateStatValue_CreateIfMissingClampsToCap(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
+
+	updated, _, created, err := GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{
+			SourceId: 5110001, StatType: "ENERGY_CHARGE",
+			Operation: character2.StatOperationIncrement,
+			Amount:    99999, Cap: 10000, CreateIfMissing: true, Level: 20,
+		})
+
+	assert.NoError(t, err)
+	assert.True(t, created)
+	assert.Equal(t, int32(10000), updated.Changes()[0].Amount())
+}
+
+// The second hit increments the buff the first hit created, and reports
+// created=false so the processor emits STAT_UPDATED rather than APPLIED.
+func TestRegistry_UpdateStatValue_CreateIfMissingThenIncrements(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
+
+	u := StatValueUpdate{
+		SourceId: 5110001, StatType: "ENERGY_CHARGE",
+		Operation: character2.StatOperationIncrement,
+		Amount:    102, Cap: 10000, CreateIfMissing: true, Level: 20,
+	}
+	_, _, _, _ = GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000, u)
+	updated, changed, created, err := GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000, u)
+
+	assert.NoError(t, err)
+	assert.True(t, changed)
+	assert.False(t, created)
+	assert.Equal(t, int32(204), updated.Changes()[0].Amount())
+}
+
+// CreateIfMissing is opt-in: without it a missing buff stays the no-op Combo
+// depends on. This is the Combo regression guard.
+func TestRegistry_UpdateStatValue_MissingBuffWithoutCreateIsNoOp(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
+
+	_, changed, created, err := GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{SourceId: 1111002, StatType: "COMBO", Operation: character2.StatOperationIncrement, Amount: 1, Cap: 6})
+
+	assert.NoError(t, err)
+	assert.False(t, changed)
+	assert.False(t, created)
+}
+
+// CreateIfMissing only makes sense for INCREMENT; SET must not conjure a buff.
+func TestRegistry_UpdateStatValue_CreateIfMissingIgnoredForSet(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
+
+	_, changed, created, err := GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{SourceId: 5110001, StatType: "ENERGY_CHARGE", Operation: character2.StatOperationSet, Amount: 15000, CreateIfMissing: true, Level: 20})
+
+	assert.NoError(t, err)
+	assert.False(t, changed)
+	assert.False(t, created)
+}
+
+// At the 15000 charged sentinel every further gain is a no-op, because the
+// value is already at/above the 10000 accumulation cap. FR-2.5 is structural,
+// not a guard.
+func TestRegistry_UpdateStatValue_ChargedSentinelBlocksGain(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
+
+	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), 1000, 5110001, 20, 31000,
+		[]stat.Model{stat.NewStat("ENERGY_CHARGE", 15000)}, false, false)
+	assert.NoError(t, err)
+
+	_, changed, created, err := GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000,
+		StatValueUpdate{SourceId: 5110001, StatType: "ENERGY_CHARGE", Operation: character2.StatOperationIncrement, Amount: 102, Cap: 10000, CreateIfMissing: true, Level: 20})
+
+	assert.NoError(t, err)
+	assert.False(t, changed)
+	assert.False(t, created)
 }
 
 func TestRegistry_ApplyNoExpiry(t *testing.T) {

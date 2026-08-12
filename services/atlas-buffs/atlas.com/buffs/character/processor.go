@@ -117,6 +117,7 @@ func (p *ProcessorImpl) Cancel(worldId world.Id, characterId uint32, sourceId in
 	for _, b := range cancelled {
 		sets = append(sets, b.Changes())
 	}
+	GetRegistry().ClearPeriodicTicksFor(p.ctx, characterId, sets...)
 	markBerserkDirtyOnMaxHpChange(p.l, p.ctx, characterId, sets...)
 	return nil
 }
@@ -141,6 +142,7 @@ func (p *ProcessorImpl) CancelAll(worldId world.Id, characterId uint32) error {
 	for _, b := range buffs {
 		sets = append(sets, b.Changes())
 	}
+	GetRegistry().ClearPeriodicTicksFor(p.ctx, characterId, sets...)
 	markBerserkDirtyOnMaxHpChange(p.l, p.ctx, characterId, sets...)
 	return nil
 }
@@ -177,6 +179,7 @@ func (p *ProcessorImpl) CancelByStatTypes(worldId world.Id, characterId uint32, 
 	for _, b := range cancelled {
 		sets = append(sets, b.Changes())
 	}
+	GetRegistry().ClearPeriodicTicksFor(p.ctx, characterId, sets...)
 	markBerserkDirtyOnMaxHpChange(p.l, p.ctx, characterId, sets...)
 	return nil
 }
@@ -244,6 +247,7 @@ func (p *ProcessorImpl) expireInto(buf *message.Buffer, worldId world.Id, charac
 		for _, eb := range ebs {
 			sets = append(sets, eb.Changes())
 		}
+		GetRegistry().ClearPeriodicTicksFor(p.ctx, characterId, sets...)
 		markBerserkDirtyOnMaxHpChange(p.l, p.ctx, characterId, sets...)
 	}
 	return nil

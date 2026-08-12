@@ -299,3 +299,91 @@ func TestPeriodicTickIsTenantScoped(t *testing.T) {
 	require.NoError(t, pB.ProcessPeriodicTicks())
 	assert.ElementsMatch(t, []int16{-25, -11}, changeHPAmounts(t))
 }
+
+// TestPeriodicTickClearedOnRemoval covers FR-6.1/FR-6.2: every removal path
+// drops the (character, statType) throttle entry. ClearPoisonTick's
+// zero-caller state must not recur.
+func TestPeriodicTickClearedOnRemoval(t *testing.T) {
+	const characterId = uint32(100)
+	const sourceId = int32(1311008)
+	key := TickKey{CharacterId: characterId, StatType: "DRAGON_BLOOD"}
+
+	tests := []struct {
+		name   string
+		remove func(t *testing.T, p *ProcessorImpl)
+	}{
+		{"cancel", func(t *testing.T, p *ProcessorImpl) {
+			require.NoError(t, p.Cancel(world.Id(0), characterId, sourceId))
+		}},
+		{"cancel all", func(t *testing.T, p *ProcessorImpl) {
+			require.NoError(t, p.CancelAll(world.Id(0), characterId))
+		}},
+		{"cancel by stat types", func(t *testing.T, p *ProcessorImpl) {
+			require.NoError(t, p.CancelByStatTypes(world.Id(0), characterId, []string{"DRAGON_BLOOD"}))
+		}},
+		{"expire for character", func(t *testing.T, p *ProcessorImpl) {
+			require.NoError(t, p.ExpireForCharacter(world.Id(0), characterId))
+		}},
+		{"expire buffs sweep", func(t *testing.T, p *ProcessorImpl) {
+			require.NoError(t, p.ExpireBuffs())
+		}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			setupTestRegistry(t)
+			emitted.Reset()
+			ctx := setupTestContext(t, setupTestTenant(t))
+			now := time.Now()
+			calls := 0
+			p := tickProcessor(ctx, &now, 500, nil, &calls)
+
+			// The expiry cases need a buff that has already lapsed; the cancel
+			// cases need a live one. Duration is MILLISECONDS and must be > 0,
+			// so "lapsed" is 1ms plus a sleep — Expired() reads the real clock.
+			expiring := tc.name == "expire for character" || tc.name == "expire buffs sweep"
+			duration := int32(600000)
+			if expiring {
+				duration = 1
+			}
+			_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(1), characterId, sourceId, 1, duration,
+				[]stat.Model{stat.NewStat("DRAGON_BLOOD", 48)}, false, false)
+			require.NoError(t, err)
+			if expiring {
+				time.Sleep(10 * time.Millisecond)
+			}
+
+			GetRegistry().UpdatePeriodicTick(ctx, key, now)
+			_, ok := GetRegistry().GetPeriodicTick(ctx, key)
+			require.True(t, ok, "precondition: throttle entry exists")
+
+			tc.remove(t, p)
+
+			_, ok = GetRegistry().GetPeriodicTick(ctx, key)
+			assert.False(t, ok, "removal path must clear the throttle entry")
+		})
+	}
+}
+
+// TestPeriodicTickRestartsAfterRecast: with the throttle cleared on cancel, a
+// re-cast ticks immediately instead of waiting out the old schedule.
+func TestPeriodicTickRestartsAfterRecast(t *testing.T) {
+	setupTestRegistry(t)
+	emitted.Reset()
+	ctx := setupTestContext(t, setupTestTenant(t))
+	now := time.Now()
+	calls := 0
+	p := tickProcessor(ctx, &now, 500, nil, &calls)
+
+	applyBuff(t, ctx, 100, 1311008, stat.NewStat("DRAGON_BLOOD", 48))
+	require.NoError(t, p.ProcessPeriodicTicks())
+	require.Equal(t, []int16{-48}, changeHPAmounts(t))
+
+	require.NoError(t, p.Cancel(world.Id(0), 100, 1311008))
+	emitted.Reset()
+
+	now = now.Add(time.Second) // well inside the 4s interval
+	applyBuff(t, ctx, 100, 1311008, stat.NewStat("DRAGON_BLOOD", 48))
+	require.NoError(t, p.ProcessPeriodicTicks())
+	assert.Equal(t, []int16{-48}, changeHPAmounts(t), "cleared throttle means the re-cast ticks at once")
+}

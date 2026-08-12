@@ -14,6 +14,7 @@ import (
 	_ "atlas-channel/skill/handler/mysticdoor"   // Priest Mystic Door — task-093
 	_ "atlas-channel/skill/handler/poisonbomb"   // Night Walker Poison Bomb — task-218
 	_ "atlas-channel/skill/handler/poisonmist"   // Fire/Poison Mage Poison Mist — task-200
+	_ "atlas-channel/skill/handler/recoveryaura" // Evan Recovery Aura — task-218
 	_ "atlas-channel/skill/handler/resurrection" // Bishop/GM/SuperGM Resurrection — task-111
 	_ "atlas-channel/skill/handler/smokescreen"  // Shadower Smokescreen — task-218
 	_ "atlas-channel/skill/handler/timeleap"     // Buccaneer Time Leap — task-155

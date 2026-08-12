@@ -205,3 +205,47 @@ func TestStartSweeperIsIdempotent(t *testing.T) {
 		t.Fatalf("StartSweeper called by %d concurrent listeners spawned the sweeper %d times, want exactly 1", callers, spawnCount)
 	}
 }
+
+// TestStartSweeperOutlivesCallerContext pins the fix for the review finding
+// that the sweeper was bound to the first caller's per-listener context: a
+// tenant/listener teardown (a supported platform capability) must not stop
+// the process-wide sweeper for every other tenant still writing to the
+// singleton registry. StartSweeper must detach the context it hands to
+// spawnSweeper from the caller's cancelation before the caller's context is
+// cancelled, not merely happen to still be running afterward.
+func TestStartSweeperOutlivesCallerContext(t *testing.T) {
+	origSpawn := spawnSweeper
+	t.Cleanup(func() { spawnSweeper = origSpawn })
+
+	var mu sync.Mutex
+	var spawnedCtx context.Context
+	spawnSweeper = func(_ *Registry, _ logrus.FieldLogger, c context.Context) {
+		mu.Lock()
+		spawnedCtx = c
+		mu.Unlock()
+	}
+
+	r := newRegistry()
+	l := logrus.New()
+	ctx, cancel := context.WithCancel(context.Background())
+
+	r.StartSweeper(l, ctx)
+
+	// Simulate the caller's listener tearing down immediately after
+	// starting the sweeper.
+	cancel()
+
+	mu.Lock()
+	defer mu.Unlock()
+	if spawnedCtx == nil {
+		t.Fatal("spawnSweeper was never called")
+	}
+	select {
+	case <-spawnedCtx.Done():
+		t.Fatal("sweeper context was cancelled when the caller's context was cancelled, want a detached context that survives caller teardown")
+	default:
+	}
+	if err := spawnedCtx.Err(); err != nil {
+		t.Fatalf("spawnedCtx.Err() = %v, want nil", err)
+	}
+}

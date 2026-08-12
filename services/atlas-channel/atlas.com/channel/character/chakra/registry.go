@@ -150,15 +150,19 @@ var spawnSweeper = func(r *Registry, l logrus.FieldLogger, ctx context.Context) 
 // channelId) listener) — without the sweeperOnce guard, each listener would
 // spawn its own 30 s ticker against the same singleton, each taking the
 // registry's write lock (mutex.Lock in Sweep) and contending with the
-// Start/Get/Clear hot paths. Only the FIRST caller's (l, ctx) pair wins: the
-// surviving sweeper is bound to the first caller's context, so it keeps
-// running until that specific listener's context is cancelled, not
-// necessarily until every listener that called StartSweeper has stopped.
-// Correctness does not depend on any particular caller's context outliving
-// the process — Get applies lazy expiry regardless of whether the sweeper
-// has run at all (see TTL and Sweep above).
+// Start/Get/Clear hot paths. Only the FIRST caller wins the guard, but the
+// surviving sweeper is detached from that caller's cancelation
+// (context.WithoutCancel) before it is handed to routine.Go: tenant/listener
+// churn is a supported platform capability, and a sweeper bound to one
+// listener's lifetime would stop for the whole process the moment that
+// specific listener tears down, while the singleton registry kept accepting
+// writes from every other tenant. The sweeper therefore lives for the
+// process lifetime, independent of which listener happened to win the
+// sync.Once race or how long that listener stays up. Correctness does not
+// depend on the sweeper running at all — Get applies lazy expiry regardless
+// (see TTL and Sweep above); the sweeper only bounds memory.
 func (r *Registry) StartSweeper(l logrus.FieldLogger, ctx context.Context) {
 	r.sweeperOnce.Do(func() {
-		spawnSweeper(r, l, ctx)
+		spawnSweeper(r, l, context.WithoutCancel(ctx))
 	})
 }

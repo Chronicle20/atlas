@@ -33,7 +33,9 @@ func recoveryMist(t *testing.T, f field.Model, party []uint32) mist.Mist {
 
 // decodeChangeMp returns the (characterId, amount) pairs the tick emitted on
 // COMMAND_TOPIC_CHARACTER, so the test asserts the wire shape rather than an
-// internal call.
+// internal call. Also asserts the transactionId is populated (non-nil) on
+// every message, since a zero-valued transactionId drops correlation in
+// atlas-character's consumer without failing any build.
 func decodeChangeMp(t *testing.T, rec *recordingProducer) []struct {
 	CharacterId uint32
 	Amount      int16
@@ -45,14 +47,16 @@ func decodeChangeMp(t *testing.T, rec *recordingProducer) []struct {
 	}
 	for _, m := range rec.MessagesOn(EnvCommandTopicCharacter) {
 		var env struct {
-			CharacterId uint32 `json:"characterId"`
-			Type        string `json:"type"`
-			Body        struct {
+			TransactionId uuid.UUID `json:"transactionId"`
+			CharacterId   uint32    `json:"characterId"`
+			Type          string    `json:"type"`
+			Body          struct {
 				Amount int16 `json:"amount"`
 			} `json:"body"`
 		}
 		require.NoError(t, json.Unmarshal(m.Value, &env))
 		require.Equal(t, "CHANGE_MP", env.Type)
+		require.NotEqual(t, uuid.Nil, env.TransactionId, "transactionId must be populated")
 		out = append(out, struct {
 			CharacterId uint32
 			Amount      int16
@@ -111,6 +115,42 @@ func TestTickRecovery_SkipsDeadCharacter(t *testing.T) {
 	got := decodeChangeMp(t, rec)
 	require.Len(t, got, 1)
 	require.Equal(t, uint32(1001), got[0].CharacterId)
+}
+
+// A RECOVERY mist with a magnitude >= 32768 would silently wrap to a
+// negative int16 (a heal becoming a drain) if narrowed unchecked. tickRecovery
+// must reject it outright -- warn and emit nothing -- rather than clamp or
+// wrap. Processor.Create validates the CREATE command, but nothing
+// re-validates a mist built directly (a test, or a future producer), so the
+// guard lives in the tick itself (FR-2.5-style defence in depth).
+func TestTickRecovery_RejectsOutOfRangeMagnitude(t *testing.T) {
+	reg := mist.NewTestRegistry()
+	rec := newRecordingProducer()
+	f := field.NewBuilder(0, 0, 100000000).Build()
+	tt := mkTickTenant()
+
+	party := []uint32{1001}
+	m := mist.NewBuilder(uuid.New(), f).
+		SetOwner(mist.OwnerTypeCharacter, party[0]).
+		SetOrigin(100, 100).
+		SetBounds(-100, -100, 100, 100).
+		SetKinds(mistKafka.TargetKindCharacter, mistKafka.EffectKindRecovery).
+		SetRecovery(32768, party).
+		SetDuration(30 * time.Second).
+		SetTickInterval(3 * time.Second).
+		Build()
+	require.NoError(t, reg.Add(tt, m))
+
+	mt := newTestMistTick(t, reg, rec, func(context.Context, uint32) (int16, int16, uint16, error) {
+		return 100, 100, 500, nil
+	})
+	mt.charsInField = func(tenant.Model, field.Model) []uint32 { return []uint32{1001} }
+	hook := attachLogHook(t, mt)
+
+	mt.runOnce(context.Background())
+
+	require.Empty(t, rec.AllMessages())
+	require.Contains(t, lastMessage(hook), "out-of-range")
 }
 
 // FR-2.5 defence in depth: Processor.Create already rejects unknown kinds, so

@@ -5,6 +5,7 @@ import (
 	"atlas-maps/mist"
 	"atlas-maps/monster"
 	"context"
+	"math"
 	"strconv"
 	"sync"
 	"time"
@@ -239,13 +240,18 @@ func applyStatusCommandProvider(m mist.Mist, monsterUniqueId uint32) model.Provi
 }
 
 // characterCommand is the COMMAND_TOPIC_CHARACTER envelope, mirrored from
-// atlas-channel's kafka/message/character/kafka.go Command[E]. Verified
-// key-for-key against that file: {worldId, characterId, type, body}.
+// atlas-character's owning contract
+// (services/atlas-character/atlas.com/character/kafka/message/character/kafka.go
+// Command[E]): {transactionId, worldId, characterId, type, body}.
+// TransactionId is threaded by atlas-character's consumer into
+// ChangeMPAndEmit and onward into the emitted CharacterStatus event, so a
+// zero-valued id here would drop correlation, not just the field.
 type characterCommand[E any] struct {
-	WorldId     world.Id `json:"worldId"`
-	CharacterId uint32   `json:"characterId"`
-	Type        string   `json:"type"`
-	Body        E        `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       world.Id  `json:"worldId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 // changeMpBody mirrors atlas-channel's character.ChangeMPCommandBody. Amount
@@ -261,15 +267,22 @@ type changeMpBody struct {
 // changeMpCommandProvider builds one CHANGE_MP command for a character being
 // healed by a RECOVERY mist. Keyed on the character id so it lands on the
 // same partition as every other command for that character.
-func changeMpCommandProvider(m mist.Mist, characterId uint32) model.Provider[[]kafka.Message] {
+func changeMpCommandProvider(m mist.Mist, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
 	key := kafkaProducer.CreateKey(int(characterId))
 	value := &characterCommand[changeMpBody]{
-		WorldId:     m.Field().WorldId(),
-		CharacterId: characterId,
-		Type:        "CHANGE_MP",
+		// Freshly generated per emit -- atlas-maps has no inbound
+		// transaction to thread here (the mist tick is timer-driven, not
+		// request-driven), matching the idiom other atlas-maps producers use
+		// for commands with no caller-supplied id (e.g.
+		// tasks/weather.go's WeatherEndEventProvider, map/producer.go's
+		// enterMapProvider).
+		TransactionId: uuid.New(),
+		WorldId:       m.Field().WorldId(),
+		CharacterId:   characterId,
+		Type:          "CHANGE_MP",
 		Body: changeMpBody{
 			ChannelId: m.Field().ChannelId(),
-			Amount:    int16(m.RecoveryMp()),
+			Amount:    amount,
 		},
 	}
 	return kafkaProducer.SingleMessageProvider(key, value)
@@ -475,6 +488,20 @@ func (r *MistTick) tickRecovery(ctx context.Context, prov producer.Provider, t t
 		r.l.Warnf("MistTick: recovery mist [%s] has no magnitude; nothing to restore.", m.Id())
 		return
 	}
+	// changeMpBody.Amount is int16 (mirrors atlas-channel/atlas-character's
+	// ChangeMPCommandBody.Amount). RecoveryMp is int32, so a magnitude at or
+	// above 32768 would silently wrap to a negative int16 -- a heal becomes
+	// a drain. Reject rather than clamp: a value this large signals a bad
+	// mist definition upstream (Processor.Create validates the CREATE
+	// command, but nothing re-validates a mist built directly, e.g. in a
+	// test), and clamping to 32767 would still be an absurd single-tick
+	// heal that no design ever intended. Same early-return idiom as the
+	// zero-magnitude guard above.
+	if m.RecoveryMp() > math.MaxInt16 {
+		r.l.Warnf("MistTick: recovery mist [%s] has out-of-range magnitude [%d]; nothing to restore.", m.Id(), m.RecoveryMp())
+		return
+	}
+	amount := int16(m.RecoveryMp())
 	members := r.charsInField(t, m.Field())
 	if len(members) == 0 {
 		return
@@ -496,7 +523,7 @@ func (r *MistTick) tickRecovery(ctx context.Context, prov producer.Provider, t t
 			if !m.Contains(x, y) {
 				continue
 			}
-			if err := buf.Put(EnvCommandTopicCharacter, changeMpCommandProvider(m, cid)); err != nil {
+			if err := buf.Put(EnvCommandTopicCharacter, changeMpCommandProvider(m, cid, amount)); err != nil {
 				return err
 			}
 			healed++

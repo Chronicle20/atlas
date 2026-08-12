@@ -21,9 +21,10 @@ import (
 var ErrNotFound = errors.New("not found")
 
 type Registry struct {
-	characters  *atlas.TenantRegistry[uint32, Model]
-	poisonTicks *atlas.TenantRegistry[uint32, time.Time]
-	tenants     *atlas.Set
+	characters    *atlas.TenantRegistry[uint32, Model]
+	poisonTicks   *atlas.TenantRegistry[uint32, time.Time]
+	periodicTicks *atlas.TenantRegistry[TickKey, time.Time]
+	tenants       *atlas.Set
 }
 
 var registry *Registry
@@ -35,6 +36,9 @@ func InitRegistry(client *goredis.Client) {
 		}),
 		poisonTicks: atlas.NewTenantRegistry[uint32, time.Time](client, "buffs-poison", func(k uint32) string {
 			return strconv.FormatUint(uint64(k), 10)
+		}),
+		periodicTicks: atlas.NewTenantRegistry[TickKey, time.Time](client, "buffs-tick", func(k TickKey) string {
+			return strconv.FormatUint(uint64(k.CharacterId), 10) + ":" + k.StatType
 		}),
 		tenants: atlas.NewSet(client, "buffs:_tenants"),
 	}

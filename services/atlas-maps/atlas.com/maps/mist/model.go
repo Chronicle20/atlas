@@ -37,6 +37,8 @@ type Mist struct {
 	tickInterval     time.Duration
 	targetKind       string
 	effectKind       string
+	recoveryMp       int32
+	partyMemberIds   []uint32
 	elemAttr         int32
 	skillDelay       int16
 	createdAt        time.Time
@@ -217,6 +219,34 @@ func (m Mist) EffectKind() string {
 	return m.effectKind
 }
 
+// RecoveryMp returns the per-tick MP a RECOVERY mist restores. 0 for every
+// other effect kind.
+func (m Mist) RecoveryMp() int32 {
+	return m.recoveryMp
+}
+
+// PartyMemberIds returns the cast-time party snapshot a RECOVERY mist heals.
+// A copy is returned: the tick fans out across goroutines (tasks.processTenant),
+// so callers must not share this slice's backing array.
+func (m Mist) PartyMemberIds() []uint32 {
+	if len(m.partyMemberIds) == 0 {
+		return nil
+	}
+	return append([]uint32(nil), m.partyMemberIds...)
+}
+
+// InPartySnapshot reports whether the character is in this mist's cast-time
+// party snapshot. Always false for a mist with no snapshot, which is the
+// correct answer for every non-RECOVERY kind.
+func (m Mist) InPartySnapshot(characterId uint32) bool {
+	for _, id := range m.partyMemberIds {
+		if id == characterId {
+			return true
+		}
+	}
+	return false
+}
+
 // ElemAttr returns the AffectedAreaCreated `nElemAttr` wire value. The client
 // stores it raw at AFFECTEDAREA+0x30 (v83 @0x431b3b, v95 @0x437fd9) and never
 // reads it on any rendering path -- it takes the skill's element from its own
@@ -315,6 +345,8 @@ type Builder struct {
 	tickInterval     time.Duration
 	targetKind       string
 	effectKind       string
+	recoveryMp       int32
+	partyMemberIds   []uint32
 	elemAttr         int32
 	skillDelay       int16
 	createdAt        time.Time
@@ -389,6 +421,15 @@ func (b *Builder) SetKinds(targetKind, effectKind string) *Builder {
 	return b
 }
 
+// SetRecovery sets the RECOVERY magnitude and its cast-time party snapshot.
+// Grouped rather than split because the pair is meaningless apart: a
+// magnitude with no scope would heal the whole map.
+func (b *Builder) SetRecovery(mp int32, partyMemberIds []uint32) *Builder {
+	b.recoveryMp = mp
+	b.partyMemberIds = append([]uint32(nil), partyMemberIds...)
+	return b
+}
+
 // SetRender sets the client-render wire values carried on MIST_CREATED. Both
 // are 0 for every mist Atlas creates; see the getters for why.
 func (b *Builder) SetRender(elemAttr int32, skillDelay int16) *Builder {
@@ -433,6 +474,8 @@ func (b *Builder) Build() Mist {
 		tickInterval:     b.tickInterval,
 		targetKind:       b.targetKind,
 		effectKind:       b.effectKind,
+		recoveryMp:       b.recoveryMp,
+		partyMemberIds:   b.partyMemberIds,
 		elemAttr:         b.elemAttr,
 		skillDelay:       b.skillDelay,
 		createdAt:        b.createdAt,

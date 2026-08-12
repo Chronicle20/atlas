@@ -121,3 +121,29 @@ func TestMist_Rect_AgreesWithContains(t *testing.T) {
 		t.Fatal("Contains returned true outside the Rect bounds")
 	}
 }
+
+// PartyMemberIds must hand back a copy: the tick fans out across goroutines
+// (processTenant), and a shared backing array is exactly the mutable state
+// that parallelism punishes.
+func TestMist_PartyMemberIds_IsDefensiveCopy(t *testing.T) {
+	ids := []uint32{1, 2, 3}
+	m := NewBuilder(uuid.New(), mkField(t)).
+		SetRecovery(38, ids).
+		Build()
+
+	got := m.PartyMemberIds()
+	require.Equal(t, []uint32{1, 2, 3}, got)
+
+	got[0] = 99
+	ids[1] = 88
+	require.Equal(t, []uint32{1, 2, 3}, m.PartyMemberIds())
+}
+
+func TestMist_RecoveryMp_RoundTripsThroughBuilder(t *testing.T) {
+	m := NewBuilder(uuid.New(), mkField(t)).
+		SetRecovery(80, nil).
+		Build()
+
+	require.Equal(t, int32(80), m.RecoveryMp())
+	require.Empty(t, m.PartyMemberIds())
+}

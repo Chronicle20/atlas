@@ -253,3 +253,81 @@ func TestClampInt16(t *testing.T) {
 		t.Fatal("identity failed")
 	}
 }
+
+// TestChakraFactor pins design §3.1: the client rewrites the raw damage by
+// the caster's Chakra level `x` percent, with a <= 1 -> 1 floor, and does so
+// with NO gate on the attack source. On GMS 12/48 x is 200..112 so the term
+// AMPLIFIES; on GMS 61+ x is 99..70 so it REDUCES; on GMS 95 x is 96..60.
+// The WZ data carries the direction — there is deliberately no version gate.
+func TestChakraFactor(t *testing.T) {
+	tests := []struct {
+		name      string
+		raw       int32
+		chakraPct int32
+		wantHp    int32
+	}{
+		{"no window", 500, 0, 500},
+		{"v48 L1 x=200 amplifies", 500, 200, 1000},
+		{"v48 L30 x=112 amplifies", 500, 112, 560},
+		{"v83 L1 x=99 reduces", 500, 99, 495},
+		{"v83 L30 x=70 reduces", 500, 70, 350},
+		{"v95 L10 x=60 reduces", 500, 60, 300},
+		{"floor at one", 1, 60, 1},
+		{"floor applies to the product not the input", 2, 50, 1},
+		{"rounding truncates", 7, 70, 4},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := computeMitigation(mitigationInput{rawDamage: tc.raw, chakraPct: tc.chakraPct}, mobInfo{})
+			if got.hpLoss != tc.wantHp {
+				t.Fatalf("hpLoss = %d, want %d", got.hpLoss, tc.wantHp)
+			}
+		})
+	}
+}
+
+// TestChakraFactorAppliedBeforeEveryOtherTerm pins design §3.3 / PRD FR-4.3:
+// in CUserLocal::SetDamaged the Chakra branch writes back to the same stack
+// slot that carries the damage, and every task-157 term reads that slot
+// afterwards. Applying it after Achilles would produce different numbers.
+func TestChakraFactorAppliedBeforeEveryOtherTerm(t *testing.T) {
+	in := mitigationInput{
+		rawDamage:            1000,
+		chakraPct:            200,
+		achillesPermille:     200,
+		comboBarrierPermille: 100,
+		magicGuardPct:        50,
+		currentMP:            5000,
+		mobSourced:           true,
+	}
+	got := computeMitigation(in, mobInfo{})
+
+	// Same chain, with the Chakra factor already folded into rawDamage and
+	// the term disabled — the result must be identical.
+	pre := in
+	pre.rawDamage = 2000
+	pre.chakraPct = 0
+	want := computeMitigation(pre, mobInfo{})
+
+	if got.hpLoss != want.hpLoss || got.mpLoss != want.mpLoss {
+		t.Fatalf("(hpLoss,mpLoss) = (%d,%d), want (%d,%d) — Chakra must be applied to raw damage before every other term",
+			got.hpLoss, got.mpLoss, want.hpLoss, want.mpLoss)
+	}
+	if got.breakdown.achillesReduce == want.breakdown.achillesReduce && got.breakdown.achillesReduce == 0 {
+		t.Fatal("test is not exercising Achilles")
+	}
+}
+
+// TestChakraBreakdownReportsPostFactorDamage pins the observability
+// requirement: without the post-factor value in the breakdown, "Chakra did
+// nothing" is undiagnosable from logs.
+func TestChakraBreakdownReportsPostFactorDamage(t *testing.T) {
+	got := computeMitigation(mitigationInput{rawDamage: 500, chakraPct: 200}, mobInfo{})
+	if got.breakdown.chakraAmplified != 1000 {
+		t.Fatalf("breakdown.chakraAmplified = %d, want 1000", got.breakdown.chakraAmplified)
+	}
+	none := computeMitigation(mitigationInput{rawDamage: 500}, mobInfo{})
+	if none.breakdown.chakraAmplified != 0 {
+		t.Fatalf("breakdown.chakraAmplified = %d with no window, want 0", none.breakdown.chakraAmplified)
+	}
+}

@@ -36,6 +36,7 @@ import (
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
 	"atlas-saga-orchestrator/system_message"
+	tradesvc "atlas-saga-orchestrator/trade"
 	"atlas-saga-orchestrator/transport"
 	"atlas-saga-orchestrator/validation"
 	"context"
@@ -70,6 +71,7 @@ type Handler interface {
 	WithPortalBlockingProcessor(portalBlocking.Processor) Handler
 	WithCashshopProcessor(cashshop.Processor) Handler
 	WithMtsProcessor(mts.Processor) Handler
+	WithTradeProcessor(tradesvc.Processor) Handler
 	WithSystemMessageProcessor(system_message.Processor) Handler
 	WithQuestProcessor(quest.Processor) Handler
 	WithStorageProcessor(storage.Processor) Handler
@@ -132,6 +134,8 @@ type Handler interface {
 	handleReleaseFromCashShop(s Saga, st Step[any]) error
 	handleAcceptToMtsListing(s Saga, st Step[any]) error
 	handleReleaseFromMtsHolding(s Saga, st Step[any]) error
+	handleAcceptToTrade(s Saga, st Step[any]) error
+	handleReleaseFromTrade(s Saga, st Step[any]) error
 	handleMtsMoveListingToHolding(s Saga, st Step[any]) error
 	handleMtsBidEscrow(s Saga, st Step[any]) error
 	handlePlayPortalSound(s Saga, st Step[any]) error
@@ -192,6 +196,7 @@ type HandlerImpl struct {
 	portalBlockingP portalBlocking.Processor
 	cashshopP       cashshop.Processor
 	mtsP            mts.Processor
+	tradeP          tradesvc.Processor
 	systemMessageP  system_message.Processor
 	questP          quest.Processor
 	storageP        storage.Processor
@@ -226,6 +231,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		portalBlockingP: portalBlocking.NewProcessor(l, ctx),
 		cashshopP:       cashshop.NewProcessor(l, ctx),
 		mtsP:            mts.NewProcessor(l, ctx),
+		tradeP:          tradesvc.NewProcessor(l, ctx),
 		systemMessageP:  system_message.NewProcessor(l, ctx),
 		questP:          quest.NewProcessor(l, ctx),
 		storageP:        storage.NewProcessor(l, ctx),
@@ -493,6 +499,15 @@ func (h *HandlerImpl) WithMtsProcessor(mtsP mts.Processor) Handler {
 	// never drop a field as HandlerImpl grows — the same pattern the compensator uses.
 	c := *h
 	c.mtsP = mtsP
+	return &c
+}
+
+// WithTradeProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
+func (h *HandlerImpl) WithTradeProcessor(tradeP tradesvc.Processor) Handler {
+	c := *h
+	c.tradeP = tradeP
 	return &c
 }
 
@@ -849,6 +864,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleAcceptToMtsListing, true
 	case ReleaseFromMtsHolding:
 		return h.handleReleaseFromMtsHolding, true
+	case AcceptToTrade:
+		return h.handleAcceptToTrade, true
+	case ReleaseFromTrade:
+		return h.handleReleaseFromTrade, true
 	case MtsMoveListingToHolding:
 		return h.handleMtsMoveListingToHolding, true
 	case MtsBidEscrow:
@@ -2095,6 +2114,62 @@ func (h *HandlerImpl) handleReleaseFromMtsHolding(s Saga, st Step[any]) error {
 	err := h.mtsP.ReleaseFromMtsHoldingAndEmit(payload.TransactionId, payload.HoldingId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to release MTS holding.")
+		return err
+	}
+
+	return nil
+}
+
+// handleAcceptToTrade dispatches ACCEPT_TO_TRADE, the custody step that creates
+// atlas-trades' escrow row for an item that has just left its owner's
+// compartment (task-205 design §5A.4).
+//
+// It is the trade limb of the accept/release custody family and reads exactly
+// like handleAcceptToMtsListing. Without it the expansion of transfer_to_trade
+// produced a step no handler claimed, GetHandler returned false, and every
+// staging saga died on "unknown action type" — the same gap the MTS composites
+// hit, noted on isExpandableAction.
+func (h *HandlerImpl) handleAcceptToTrade(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(AcceptToTradePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.Debugf("Accepting item template [%d] to trade escrow [%s] for owner [%d]",
+		payload.Snapshot.TemplateId, payload.EscrowId, payload.OwnerId)
+
+	err := h.tradeP.AcceptToTradeAndEmit(payload.TransactionId, tradesvc.AcceptToTradeParams{
+		EscrowId:            payload.EscrowId,
+		RoomId:              payload.RoomId,
+		OwnerId:             payload.OwnerId,
+		TradeSlot:           payload.TradeSlot,
+		SourceInventoryType: payload.SourceInventoryType,
+		AssetId:             payload.AssetId,
+		Snapshot:            payload.Snapshot,
+	})
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to accept item to trade escrow.")
+		return err
+	}
+
+	return nil
+}
+
+// handleReleaseFromTrade dispatches RELEASE_FROM_TRADE, which soft-deletes the
+// escrow row once its item has been handed to whoever the settlement or unwind
+// says it belongs to. The row holds the snapshot, so the command carries only
+// its id — a release can never disagree with the accept that created it.
+func (h *HandlerImpl) handleReleaseFromTrade(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ReleaseFromTradePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.Debugf("Releasing trade escrow [%s]", payload.EscrowId)
+
+	err := h.tradeP.ReleaseFromTradeAndEmit(payload.TransactionId, payload.EscrowId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to release trade escrow.")
 		return err
 	}
 

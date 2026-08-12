@@ -1,0 +1,67 @@
+// Package invite carries the COMMAND_TOPIC_INVITE / EVENT_TOPIC_INVITE_STATUS
+// envelopes used to offer a trade to the target character. Mirrors
+// services/atlas-invites/atlas.com/invites/kafka/message/invite/kafka.go;
+// struct names, field names and json tags must match that file exactly.
+package invite
+
+import (
+	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/invite"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+)
+
+const (
+	EnvCommandTopic = "COMMAND_TOPIC_INVITE"
+
+	EnvEventStatusTopic = "EVENT_TOPIC_INVITE_STATUS"
+)
+
+type Command[E any] struct {
+	TransactionId uuid.UUID          `json:"transactionId"`
+	WorldId       world.Id           `json:"worldId"`
+	InviteType    invite.Type        `json:"inviteType"`
+	Type          invite.CommandType `json:"type"`
+	Body          E                  `json:"body"`
+}
+
+type CreateCommandBody struct {
+	OriginatorId character.Id `json:"originatorId"`
+	TargetId     character.Id `json:"targetId"`
+	ReferenceId  invite.Id    `json:"referenceId"`
+}
+
+type AcceptCommandBody struct {
+	TargetId    character.Id `json:"targetId"`
+	ReferenceId invite.Id    `json:"referenceId"`
+}
+
+type RejectCommandBody struct {
+	TargetId     character.Id `json:"targetId"`
+	OriginatorId character.Id `json:"originatorId"`
+}
+
+type StatusEvent[E any] struct {
+	TransactionId uuid.UUID         `json:"transactionId"`
+	WorldId       world.Id          `json:"worldId"`
+	InviteType    invite.Type       `json:"inviteType"`
+	ReferenceId   invite.Id         `json:"referenceId"`
+	Type          invite.StatusType `json:"type"`
+	Body          E                 `json:"body"`
+}
+
+type CreatedEventBody struct {
+	OriginatorId character.Id `json:"originatorId"`
+	TargetId     character.Id `json:"targetId"`
+}
+
+type AcceptedEventBody struct {
+	OriginatorId character.Id `json:"originatorId"`
+	TargetId     character.Id `json:"targetId"`
+}
+
+type RejectedEventBody struct {
+	OriginatorId character.Id `json:"originatorId"`
+	TargetId     character.Id `json:"targetId"`
+}

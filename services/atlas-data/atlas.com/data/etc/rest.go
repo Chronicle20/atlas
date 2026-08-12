@@ -10,6 +10,7 @@ type RestModel struct {
 	UnitPrice      float64 `json:"unitPrice"`
 	SlotMax        uint32  `json:"slotMax"`
 	TimeLimited    bool    `json:"timeLimited"`
+	TradeBlock     bool    `json:"tradeBlock"`
 	ReplaceItemId  uint32  `json:"replaceItemId,omitempty"`
 	ReplaceMessage string  `json:"replaceMessage,omitempty"`
 }

@@ -53,3 +53,7 @@ func ParseRpsRewardId(l logrus.FieldLogger, next func(string) http.HandlerFunc) 
 func ParseMtsConfigId(l logrus.FieldLogger, next func(string) http.HandlerFunc) http.HandlerFunc {
 	return server.ParseStringId(l, "mtsConfigId", next)
 }
+
+func ParseTradeConfigId(l logrus.FieldLogger, next func(string) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseStringId(l, "tradeConfigId", next)
+}

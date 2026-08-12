@@ -1,9 +1,9 @@
-# InteractionOperationTransaction (← `CCashTradingRoomDlg::Trade`)
+# InteractionOperationTransaction (← `CTradingRoomDlg::OnTrade`)
 
-- **IDA:** 0x49e180
-- **Atlas file:** `../../libs/atlas-packet/interaction/serverbound/operation_transaction.go`
+- **IDA:** 0x763f20
+- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_transaction.go`
 - **Variant:** GMS/v95
-- **Branch depth:** 0
+- **Branch depth:** 1
 - **Verdict:** ✅
 
 ## Wire-level diff

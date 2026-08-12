@@ -58,8 +58,12 @@ type Processor interface {
 	IncreaseCapacity(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, amount uint32) error
 	DropAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, f field.Model, x int16, y int16, source int16, quantity int16) error
 	Drop(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, f field.Model, x int16, y int16, source int16, quantity int16) error
-	RequestReserveAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest) error
-	RequestReserve(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest) error
+	// RequestReserveAndEmit holds `expiry` worth of claim on the requested slots.
+	// The caller owns the TTL: 30s for a drop/attack reservation, a full trade
+	// window (default 300s, refreshed on a ticker) for atlas-trades. It was
+	// hard-coded at 30s before task-205.
+	RequestReserveAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, reservationRequests []ReservationRequest) error
+	RequestReserve(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, reservationRequests []ReservationRequest) error
 	CancelReservationAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error
 	CancelReservation(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error
 	ConsumeAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error
@@ -749,14 +753,14 @@ func (p *ProcessorImpl) Drop(mb *message.Buffer) func(transactionId uuid.UUID, c
 	}
 }
 
-func (p *ProcessorImpl) RequestReserveAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest) error {
+func (p *ProcessorImpl) RequestReserveAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, reservationRequests []ReservationRequest) error {
 	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.RequestReserve(buf)(transactionId, characterId, inventoryType, reservationRequests)
+		return p.RequestReserve(buf)(transactionId, characterId, inventoryType, expiry, reservationRequests)
 	})
 }
 
-func (p *ProcessorImpl) RequestReserve(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest) error {
-	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest) error {
+func (p *ProcessorImpl) RequestReserve(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, reservationRequests []ReservationRequest) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, reservationRequests []ReservationRequest) error {
 		p.l.Debugf("Character [%d] attempting to reserve [%d] inventory [%d] reservation [%s].", characterId, len(reservationRequests), inventoryType, transactionId.String())
 		invLock := LockRegistry().Get(characterId, inventoryType)
 		invLock.Lock()
@@ -780,11 +784,15 @@ func (p *ProcessorImpl) RequestReserve(mb *message.Buffer) func(transactionId uu
 				if a.Quantity()-currentReservedQty < uint32(request.Quantity) {
 					return errors.New("cannot reserve more than what is owned")
 				}
-				_, err = GetReservationRegistry().AddReservation(p.t, transactionId, characterId, inventoryType, request.Slot, request.ItemId, uint32(request.Quantity), time.Second*time.Duration(30))
+				_, err = GetReservationRegistry().AddReservation(p.t, transactionId, characterId, inventoryType, request.Slot, request.ItemId, uint32(request.Quantity), expiry)
 				if err != nil {
 					return err
 				}
-				return mb.Put(compartment.EnvEventTopicStatus, ReservedEventStatusProvider(transactionId, c.Id(), characterId, request.ItemId, request.Slot, uint32(request.Quantity)))
+				// Emit per request. Before task-205 this was `return mb.Put(...)`,
+				// which silently dropped every request after the first.
+				if err = mb.Put(compartment.EnvEventTopicStatus, ReservedEventStatusProvider(transactionId, c.Id(), characterId, request.ItemId, request.Slot, uint32(request.Quantity))); err != nil {
+					return err
+				}
 			}
 			return nil
 		})

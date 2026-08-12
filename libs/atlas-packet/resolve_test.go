@@ -239,3 +239,29 @@ func TestResolveValueMisses(t *testing.T) {
 		})
 	}
 }
+
+// TestCodeConfigured pins the arm-presence predicate that lets a caller skip a
+// write for a dispatcher arm the client version does not have, instead of
+// sending ResolveCode's 99 sentinel. Note the zero-valued case: a mode byte of
+// 0 is a legitimate arm, so presence must be decided by key membership and
+// never by the value being non-zero.
+func TestCodeConfigured(t *testing.T) {
+	options := map[string]interface{}{
+		"operations": map[string]interface{}{
+			"LEVEL_UP":  float64(0),
+			"SKILL_USE": float64(1),
+			"AS_STRING": "0x15",
+		},
+		"notAMap": float64(3),
+	}
+
+	assert.True(t, CodeConfigured(options, "operations", "SKILL_USE"))
+	assert.True(t, CodeConfigured(options, "operations", "LEVEL_UP"), "a zero mode byte is still a configured arm")
+	assert.True(t, CodeConfigured(options, "operations", "AS_STRING"), "presence is key membership, independent of value type")
+
+	assert.False(t, CodeConfigured(options, "operations", "MISSING"))
+	assert.False(t, CodeConfigured(options, "missingProperty", "SKILL_USE"))
+	assert.False(t, CodeConfigured(options, "notAMap", "SKILL_USE"))
+	assert.False(t, CodeConfigured(map[string]interface{}{}, "operations", "SKILL_USE"))
+	assert.False(t, CodeConfigured(nil, "operations", "SKILL_USE"))
+}

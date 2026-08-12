@@ -1,0 +1,21 @@
+{
+  "WriterName": "InteractionInteractionTradeMesoLimit",
+  "IDAName": "CTradingRoomDlg::OnMesoLimitRefused",
+  "Address": "0x7358d8",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/interaction/clientbound/interaction_trade.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (20 TRADE_MESO_LIMIT; CTradingRoomDlg::OnPacket @0x735775 dispatch byte). The arm reads NO body.",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

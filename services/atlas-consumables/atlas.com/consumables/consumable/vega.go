@@ -10,6 +10,7 @@ import (
 	once "atlas-consumables/kafka/once/compartment"
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
@@ -151,7 +152,7 @@ func (p *ProcessorImpl) RequestVegaScroll(characterId uint32, vegaSlot int16, ve
 		return p.VegaScrollError(characterId, transactionId, nil, err)
 	}
 
-	err = cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueCash, []compartment.Reserves{{
+	err = cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueCash, 30*time.Second, []compartment.Reserves{{
 		Slot:     vegaSlot,
 		ItemId:   vegaItem.TemplateId(),
 		Quantity: 1,
@@ -173,7 +174,7 @@ func ReserveVegaScrollStage(transactionId uuid.UUID, characterId uint32, vegaIte
 			p := NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
 			l.Debugf("Character [%d] vega reservation confirmed (transaction [%s]); reserving scroll in slot [%d].", characterId, transactionId.String(), scrollItem.Slot())
-			err := cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueUse, []compartment.Reserves{{
+			err := cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueUse, 30*time.Second, []compartment.Reserves{{
 				Slot:     scrollItem.Slot(),
 				ItemId:   scrollItem.TemplateId(),
 				Quantity: 1,

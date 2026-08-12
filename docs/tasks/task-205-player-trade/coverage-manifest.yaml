@@ -1,0 +1,65 @@
+# Coverage manifest for task-205 (player-to-player trade), Task 6.
+#
+# Declares every op x version cell this task claims, so `packet-completeness-critic`
+# can diff it against the branch's git + matrix delta.
+#
+# NOTE ON PACKET IDS: the plan brief spelled the clientbound ops as
+# `interaction/clientbound/InteractionTradePutItem`. The packet-audit tooling
+# derives a packet id as `<family-dir>/<direction>/<Title(family)+StructName>`
+# (`qualifiedWriterName`), so the struct `InteractionTradePutItem` in family
+# `interaction` is addressed as `interaction/clientbound/InteractionInteractionTradePutItem`
+# — the same double-prefix the already-verified sibling
+# `interaction/clientbound/InteractionInteractionUpdateMerchant` carries. The
+# tool-correct ids are used below; they name the same four codecs.
+task: task-205-player-trade
+#
+# COVERAGE TOPOLOGY (controller ruling, Task 6 fix round): the four clientbound
+# arms are keyed on their OWN base fnames (CTradingRoomDlg::OnPutItem /
+# ::OnPutMoney / ::OnTrade#TradeConfirm / ::OnMesoLimitRefused), giving each an
+# independent sub-struct row. The alternative — the mini-game
+# CMiniRoomBaseDlg::OnPacketBase#Arm form — makes baseFName equal the
+# PLAYER_INTERACTION clientbound registry fname, so matrix.Build consumes the
+# arms into that op row, which grades worst-of-all and is ✅ on 8/10 versions
+# today; any unfinished cell would have degraded a currently-green cell.
+ops:
+  - interaction/clientbound/InteractionInteractionTradePutItem
+  - interaction/clientbound/InteractionInteractionTradeAddMeso
+  - interaction/clientbound/InteractionInteractionTradeConfirm
+  - interaction/clientbound/InteractionInteractionTradeMesoLimit
+  # Trade-room ENTER_RESULT variant — reuses the existing
+  # InteractionEnterResultSuccess codec + interaction.Room via NewTradeRoom
+  # (design 1.3: CTradingRoomDlg's vtable+72 tail is a nullsub, so the body is
+  # exactly the CMiniRoomBaseDlg::OnEnterResultBase frame). No new codec, and
+  # therefore no new matrix row: the cell it lives in is the
+  # PLAYER_INTERACTION clientbound op row.
+  - interaction/clientbound/InteractionInteractionEnterResultSuccess
+  # Trade LEAVE statuses (2/7/8/9/12/13) — new tenant `leaveReason` keys only,
+  # carried by the existing InteractionLeave codec. Same note as above.
+  - interaction/clientbound/InteractionInteractionLeave
+  # fname correction: CCashTradingRoomDlg::Trade -> CTradingRoomDlg::OnTrade.
+  - interaction/serverbound/InteractionOperationTransaction
+fields:
+  # Carve-out for the two ops above that add NO codec and therefore have no row
+  # of their own: InteractionInteractionEnterResultSuccess (trade-room
+  # ENTER_RESULT) and InteractionInteractionLeave (the six trade leaveReason
+  # keys). Both fold into the shared PLAYER_INTERACTION clientbound row, which
+  # grades worst-of-all across its whole candidate set. That row's gms_v48 and
+  # gms_v92 cells are ❌ and stay ❌ — they were already ❌ at merge-base
+  # (1e0a321), for unrelated enterError-table gaps recorded in
+  # version-matrix.md lines 373-374, and nothing on this branch touches them.
+  # This task therefore claims the OTHER EIGHT versions for these two ops, not
+  # all ten; it neither delivers nor regresses v48/v92. Verified: the row's ten
+  # cells are byte-identical before and after the branch.
+  - "interaction/clientbound/InteractionInteractionEnterResultSuccess: gms_v48 + gms_v92 not claimed (shared row pre-existing ❌)"
+  - "interaction/clientbound/InteractionInteractionLeave: gms_v48 + gms_v92 not claimed (shared row pre-existing ❌)"
+versions:
+  - gms_v48
+  - gms_v61
+  - gms_v72
+  - gms_v79
+  - gms_v83
+  - gms_v84
+  - gms_v87
+  - gms_v92
+  - gms_v95
+  - jms_v185

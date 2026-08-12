@@ -1,0 +1,21 @@
+{
+  "WriterName": "InteractionInteractionTradeConfirm",
+  "IDAName": "CTradingRoomDlg::OnTrade#TradeConfirm",
+  "Address": "0x7e8202",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/interaction/clientbound/interaction_trade.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (17 TRADE_CONFIRM; CTradingRoomDlg::OnPacket @0x7e80b3 dispatch byte). The arm reads NO body.",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

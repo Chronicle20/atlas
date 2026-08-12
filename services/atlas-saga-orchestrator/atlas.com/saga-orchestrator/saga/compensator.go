@@ -11,6 +11,7 @@ import (
 	sagaMsg "atlas-saga-orchestrator/kafka/message/saga"
 	"atlas-saga-orchestrator/mts"
 	"atlas-saga-orchestrator/skill"
+	"atlas-saga-orchestrator/trade"
 	"atlas-saga-orchestrator/validation"
 	"context"
 	"errors"
@@ -37,6 +38,7 @@ type Compensator interface {
 	WithInviteProcessor(invite.Processor) Compensator
 	WithCashshopProcessor(cashshop.Processor) Compensator
 	WithMtsProcessor(mts.Processor) Compensator
+	WithTradeProcessor(trade.Processor) Compensator
 
 	CompensateFailedStep(s Saga) error
 	compensateEquipAsset(s Saga, failedStep Step[any]) error
@@ -55,6 +57,18 @@ type Compensator interface {
 	compensateMtsOperation(s Saga, failedStep Step[any]) error
 	compensateNoteSend(s Saga, failedStep Step[any]) error
 	compensateSkillBookUse(s Saga, failedStep Step[any]) error
+	compensateTradeTransaction(s Saga, failedStep Step[any]) error
+
+	// DispatchTradeTransactionRollbacks reverse-walks the completed steps of a
+	// trade_settlement saga (task-205) and dispatches the inverse for each:
+	// AwardMesos → negated re-credit/debit, AcceptToCharacter → DestroyItem,
+	// ReleaseFromCharacter → AcceptToCharacter (re-grant from the paired
+	// accept's snapshot). Without it a settlement that fails partway leaves a
+	// HALF-SWAP — one side's goods moved, the other's destroyed. Each inverse is
+	// claimed once via the per-step lateCompensated marker, so a repeat walk
+	// cannot double-credit. No lifecycle transitions, no Failed emission, no
+	// cache eviction — callers handle those.
+	DispatchTradeTransactionRollbacks(s Saga)
 
 	// DispatchMtsOperationRollbacks reverse-walks the completed steps of an MTS
 	// saga (TransferToMts / WithdrawFromMts / MtsSettlePurchase) and dispatches the
@@ -64,6 +78,12 @@ type Compensator interface {
 	// No lifecycle transitions, no Failed emission, no cache eviction — callers
 	// handle those. This is the dupe-safety core (design §4.1).
 	DispatchMtsOperationRollbacks(s Saga)
+
+	// DispatchTradeStagingRollbacks reverse-walks the completed steps of a
+	// trade-STAGING saga (transfer_to_trade). Exported for the same reason the
+	// two above are: the tests drive it directly, avoiding the EmitSagaFailed
+	// Kafka path.
+	DispatchTradeStagingRollbacks(s Saga)
 
 	// DispatchCharacterCreationRollbacks is the dispatch half of the reverse-walk
 	// compensator. It fires the inverse commands (DestroyItem / DeleteSkill /
@@ -129,6 +149,7 @@ type CompensatorImpl struct {
 	inviteP   invite.Processor
 	cashshopP cashshop.Processor
 	mtsP      mts.Processor
+	tradeP    trade.Processor
 }
 
 func NewCompensator(l logrus.FieldLogger, ctx context.Context) Compensator {
@@ -144,6 +165,7 @@ func NewCompensator(l logrus.FieldLogger, ctx context.Context) Compensator {
 		inviteP:   invite.NewProcessor(l, ctx),
 		cashshopP: cashshop.NewProcessor(l, ctx),
 		mtsP:      mts.NewProcessor(l, ctx),
+		tradeP:    trade.NewProcessor(l, ctx),
 	}
 }
 
@@ -202,6 +224,12 @@ func (c *CompensatorImpl) WithMtsProcessor(mtsP mts.Processor) Compensator {
 	return n
 }
 
+func (c *CompensatorImpl) WithTradeProcessor(tradeP trade.Processor) Compensator {
+	n := c.copy()
+	n.tradeP = tradeP
+	return n
+}
+
 // CompensateFailedStep handles compensation for failed steps
 func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	// Find the failed step
@@ -256,6 +284,26 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	// failed step.
 	if s.SagaType() == MtsOperation {
 		return c.compensateMtsOperation(s, failedStep)
+	}
+
+	// Trade reverse-walk (task-205). A settlement is a two-party swap: without a
+	// reverse-walk a failure partway through leaves a HALF-SWAP — release A,
+	// release B, accept→B, then accept→A fails means A's item is soft-deleted
+	// and B holds both. The per-action switch below routes those steps to
+	// compensateStorageOperation, which by its own contract performs NO
+	// rollback, so the trade arm must be taken ahead of it.
+	if s.SagaType() == TradeTransaction {
+		return c.compensateTradeTransaction(s, failedStep)
+	}
+
+	// Trade-staging reverse-walk (task-205 amendment, design §5A.4). Staging is
+	// the single-item release+accept shape, so it mirrors the MTS arm above
+	// rather than the two-party swap arm: a failed accept_to_trade must re-grant
+	// the already-released asset, or the player's item is destroyed by staging
+	// it. Must be taken ahead of the per-action switch, which routes
+	// ReleaseFromCharacter to compensateStorageOperation — a no-rollback path.
+	if s.SagaType() == TradeStaging {
+		return c.compensateTradeStaging(s, failedStep)
 	}
 
 	// Note-send reverse-walk: a failed create_note must refund the
@@ -1773,6 +1821,185 @@ func (c *CompensatorImpl) DispatchMtsOperationRollbacks(s Saga) {
 	}
 }
 
+// compensateTradeTransaction is the trade_settlement reverse-walk compensator
+// (task-205). A settlement moves goods in BOTH directions, so unlike the
+// storage flows it can fail in a state where value has already changed hands:
+// release A, release B, accept→B, accept→A fails leaves A's item soft-deleted
+// and B holding both. compensateStorageOperation — where the per-action switch
+// would otherwise route these steps — explicitly performs no rollback, so this
+// arm is taken ahead of it in CompensateFailedStep.
+//
+// Mirrors compensateMtsOperation: dispatch the reverse-walk, then transition
+// Compensating → Failed so the timeout backstop and this path cannot both emit.
+func (c *CompensatorImpl) compensateTradeTransaction(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Trade saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchTradeTransactionRollbacks(s)
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; reverse-walk emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("Trade settlement failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailed(c.l, c.ctx, s, DetermineErrorCode(s, failedStep), reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after trade compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Trade reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// DispatchTradeTransactionRollbacks reverse-walks the saga's COMPLETED steps and
+// dispatches the inverse of each. This is the pure "dispatch" half — no
+// lifecycle transitions, no event emission, no cache eviction. Callers own
+// those. An error dispatching one inverse does not abort the chain.
+//
+// The walk is driven entirely by the recorded step list and each step's own
+// payload; nothing is re-derived from the trade_settlement composite (which the
+// expansion already replaced). Because it runs newest-first, accepts are undone
+// before the matching releases are re-granted — the reverse of the forward
+// order, so the recipient's copy is destroyed before the owner's is restored.
+//
+// Inverses:
+//   - AwardMesos → AwardMesos with -Amount. The giver's negative deduction
+//     re-credits and the receiver's positive credit debits, so the pair nets to
+//     zero and the destroyed tax is never re-minted.
+//   - AcceptToCharacter → RequestDestroyItem(templateId, quantity). The asset
+//     the accept created has an id the orchestrator never learns —
+//     compartment.AcceptedEventBody carries only a transactionId
+//     (kafka/message/compartment/kafka.go) — so template+quantity is the only
+//     available inverse. For stackables it is exact. For an equip it removes AN
+//     instance of that template, which for a recipient who already owned one
+//     could pick the wrong instance; the item COUNT is still conserved, and the
+//     alternative is permanent loss.
+//   - ReleaseFromTrade → RestoreTradeEscrow, un-soft-deleting the custody row.
+//     Under escrow-at-staging (design §5A.7) a settlement releases from ESCROW,
+//     not from a character, so the inverse is a custody restore rather than a
+//     re-grant: the item goes back to being escrowed, and whichever teardown
+//     follows returns it to its owner from there. That is strictly safer than
+//     re-granting here, because it cannot race the accept that may already have
+//     delivered the same item to the counterparty.
+//
+// Idempotency: each step's inverse is claimed via claimLateCompensation before
+// dispatch — the same per-step, optimistic-version marker the late-success path
+// uses. A second run of the walk (or a late-success delivery for the same step)
+// finds the marker set and dispatches nothing, so no leg can double-credit. A
+// claim that ERRORS (saga already evicted, version-conflict retries exhausted)
+// means once-only cannot be guaranteed, so the inverse is skipped and logged at
+// Error rather than risking a duplicate — the same at-most-once posture
+// CompensateLateStep takes.
+func (c *CompensatorImpl) DispatchTradeTransactionRollbacks(s Saga) {
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		switch step.Action() {
+		case AwardMesos:
+			payload, ok := step.Payload().(AwardMesosPayload)
+			if !ok {
+				continue
+			}
+			if !c.claimTradeRollback(s, step) {
+				continue
+			}
+			ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+			if err := c.charP.AwardMesosAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.CharacterId, "SYSTEM", -payload.Amount, false); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"character_id":   payload.CharacterId,
+					"amount":         payload.Amount,
+				}).Error("Reverse-walk: trade AwardMesos reversal dispatch failed; continuing chain.")
+			}
+		case AcceptToCharacter:
+			payload, ok := step.Payload().(AcceptToCharacterPayload)
+			if !ok {
+				continue
+			}
+			qty := payload.AssetData.Quantity
+			if qty == 0 {
+				qty = 1
+			}
+			if !c.claimTradeRollback(s, step) {
+				continue
+			}
+			if err := c.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, false); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"character_id":   payload.CharacterId,
+					"template_id":    payload.TemplateId,
+				}).Error("Reverse-walk: trade AcceptToCharacter → DestroyItem dispatch failed; continuing chain.")
+			}
+		case ReleaseFromTrade:
+			payload, ok := step.Payload().(ReleaseFromTradePayload)
+			if !ok {
+				continue
+			}
+			if !c.claimTradeRollback(s, step) {
+				continue
+			}
+			if err := c.tradeP.RestoreTradeEscrowAndEmit(s.TransactionId(), payload.EscrowId); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"escrow_id":      payload.EscrowId.String(),
+				}).Error("Reverse-walk: trade ReleaseFromTrade → RestoreTradeEscrow dispatch failed; continuing chain.")
+			}
+		}
+	}
+}
+
+// claimTradeRollback takes the once-only claim for one step's inverse. Returns
+// false when the inverse was already dispatched (duplicate walk or a late
+// success that already compensated) or when the claim could not be established
+// at all — in both cases the caller must NOT dispatch.
+func (c *CompensatorImpl) claimTradeRollback(s Saga, step Step[any]) bool {
+	claimed, err := c.claimLateCompensation(s.TransactionId(), step.StepId())
+	if err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"step_id":        step.StepId(),
+			"step_action":    step.Action(),
+			"tenant_id":      c.t.Id().String(),
+			"reason":         "trade_rollback_claim_failed",
+		}).Error("Reverse-walk: could not claim trade rollback; skipping inverse to preserve at-most-once.")
+		return false
+	}
+	if !claimed {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"step_id":        step.StepId(),
+			"step_action":    step.Action(),
+		}).Debug("Reverse-walk: trade rollback already claimed; inverse skipped.")
+		return false
+	}
+	return true
+}
+
 // assetDataFromMtsListingSnapshot reconstructs an inventory AssetData from the
 // item snapshot carried on an AcceptToMtsListing step, so a TransferToMts
 // compensation re-grants the released item with its original equip stats intact.
@@ -1860,6 +2087,37 @@ var lateCompensableActions = map[Action]struct{}{
 	MtsMoveListingToHolding: {},
 }
 
+// tradeLateCompensableActions extends lateCompensableActions for TradeTransaction
+// ONLY (task-205). These two actions are shared with the storage, cash-shop and
+// MTS flows, so they are deliberately NOT added to the global map: registering
+// them there would silently give every one of those saga types a destroy /
+// custody-restore it does not have today.
+//
+// Why trade needs them at all: the settlement reverse-walk skips a step that is
+// not yet Completed, so a settlement that times out with an accept IN FLIGHT
+// re-grants the item to its owner and then the ACCEPTED event lands — the
+// recipient keeps a copy and the owner has one too. Without a late inverse that
+// is item DUPLICATION. Symmetrically a late-successful release is silent LOSS.
+// This is the same class MTS closed by registering its three custody actions.
+var tradeLateCompensableActions = map[Action]struct{}{
+	AcceptToCharacter: {},
+	ReleaseFromTrade:  {},
+}
+
+// isLateCompensable reports whether a late-successful step has a registered
+// inverse. The base set applies to every saga; the trade extension applies only
+// to TradeTransaction, so no other saga type's absorb behaviour changes.
+func isLateCompensable(s Saga, action Action) bool {
+	if _, ok := lateCompensableActions[action]; ok {
+		return true
+	}
+	if s.SagaType() == TradeTransaction {
+		_, ok := tradeLateCompensableActions[action]
+		return ok
+	}
+	return false
+}
+
 func (c *CompensatorImpl) CompensateLateStep(s Saga, step Step[any]) (bool, error) {
 	fields := logrus.Fields{
 		"transaction_id": s.TransactionId().String(),
@@ -1869,7 +2127,7 @@ func (c *CompensatorImpl) CompensateLateStep(s Saga, step Step[any]) (bool, erro
 		"tenant_id":      c.t.Id().String(),
 	}
 
-	if _, ok := lateCompensableActions[step.Action()]; !ok {
+	if !isLateCompensable(s, step.Action()) {
 		fields["reason"] = "late_effect_unrecoverable"
 		c.l.WithFields(fields).Warn("Late-successful step has no registered inverse; its effect is orphaned.")
 		return false, nil
@@ -2019,6 +2277,41 @@ func (c *CompensatorImpl) dispatchLateInverse(s Saga, step Step[any]) error {
 		}
 		ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 		return c.charP.AwardMesosAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.CharacterId, "SYSTEM", -payload.Amount, false)
+	case AcceptToCharacter:
+		// TradeTransaction only — isLateCompensable gates the other saga types
+		// out. Re-asserted here so a future registration in the global map
+		// cannot silently give another flow trade's semantics.
+		if s.SagaType() != TradeTransaction {
+			return fmt.Errorf("late AcceptToCharacter compensation is registered for trade settlements only, got saga type %s", s.SagaType())
+		}
+		payload, ok := step.Payload().(AcceptToCharacterPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late AcceptToCharacter compensation")
+		}
+		qty := payload.AssetData.Quantity
+		if qty == 0 {
+			qty = 1
+		}
+		// The reverse-walk already re-granted this asset to its owner, so the
+		// copy this late accept created in the recipient's inventory is the
+		// duplicate and must go.
+		return c.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, false)
+	case ReleaseFromTrade:
+		// Both the settlement and the teardown unwind run as TradeTransaction —
+		// they are two outcomes of one trade lifecycle and need the same set of
+		// inverses, so DispatchTradeTransactionRollbacks covers both.
+		if s.SagaType() != TradeTransaction {
+			return fmt.Errorf("late ReleaseFromTrade compensation is registered for trade sagas only, got saga type %s", s.SagaType())
+		}
+		payload, ok := step.Payload().(ReleaseFromTradePayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late ReleaseFromTrade compensation")
+		}
+		// The reverse-walk skipped this step (it was not Completed then), so
+		// nothing has undone the custody release. Un-soft-delete the row: the
+		// item goes back to being escrowed, and the teardown that follows
+		// returns it to its owner from there.
+		return c.tradeP.RestoreTradeEscrowAndEmit(s.TransactionId(), payload.EscrowId)
 	case AwardCurrency:
 		payload, ok := step.Payload().(AwardCurrencyPayload)
 		if !ok {
@@ -2094,4 +2387,152 @@ func (c *CompensatorImpl) dispatchLateInverse(s Saga, step Step[any]) error {
 		return c.mtsP.RestoreListingFromHoldingAndEmit(s.TransactionId(), payload.ListingId, payload.BuyerId)
 	}
 	return fmt.Errorf("no late inverse registered for action %s", step.Action())
+}
+
+// compensateTradeStaging reverse-walks a failed transfer_to_trade (task-205
+// design §5A.4).
+//
+// The saga is two steps — release_from_character then accept_to_trade — and the
+// dangerous ordering is the one that succeeds halfway: the asset has left the
+// player's compartment and no escrow row exists to return it from. Without this
+// walk the item is simply gone, which is a strictly worse outcome than the
+// reserve-at-staging model this amendment replaced.
+//
+// Inverses:
+//   - ReleaseFromCharacter → RequestAcceptAsset, re-granting to the original
+//     owner using the snapshot carried on the AcceptToTrade step so scrolled
+//     stats, cash ownership and expiry survive. This mirrors the MTS arm; the
+//     snapshot is found by action rather than by an asset-id-suffixed step id
+//     because a staging saga stages exactly one asset.
+//   - AcceptToTrade → RemoveTradeEscrow, hard-deleting a row whose paired
+//     release later failed. Without it a settlement or unwind would deliver an
+//     item the owner still holds, minting a duplicate.
+//
+// Idempotency is the same claimLateCompensation marker the other reverse-walks
+// take: a second walk, or a late success for a step already inverted, dispatches
+// nothing.
+func (c *CompensatorImpl) compensateTradeStaging(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Trade staging saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchTradeStagingRollbacks(s)
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; reverse-walk emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("Trade staging failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailed(c.l, c.ctx, s, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after trade staging compensation.")
+		return err
+	}
+	return nil
+}
+
+// DispatchTradeStagingRollbacks issues the inverse of every completed step of a
+// failing trade-staging saga, newest first. See compensateTradeStaging for the
+// per-action contract.
+func (c *CompensatorImpl) DispatchTradeStagingRollbacks(s Saga) {
+	// Locate the AcceptToTrade snapshot (if any) so a ReleaseFromCharacter
+	// inverse can re-grant with the original equip stats.
+	var escrowSnapshot *AcceptToTradePayload
+	for _, step := range s.Steps() {
+		if step.Action() != AcceptToTrade {
+			continue
+		}
+		if p, ok := step.Payload().(AcceptToTradePayload); ok {
+			pc := p
+			escrowSnapshot = &pc
+			break
+		}
+	}
+
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		switch step.Action() {
+		case AwardMesos:
+			// The MESO staging saga's only step. Without this arm a staging
+			// saga carrying a completed award_mesos reverse-walked nothing, so
+			// the debit stood with no escrow behind it — the meso twin of the
+			// item destruction this walk exists to prevent. The late-completion
+			// path (absorbLateTerminal) already carries this inverse verbatim;
+			// only the reverse walk was missing it.
+			payload, ok := step.Payload().(AwardMesosPayload)
+			if !ok {
+				continue
+			}
+			if !c.claimTradeRollback(s, step) {
+				continue
+			}
+			ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+			if err := c.charP.AwardMesosAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.CharacterId, "SYSTEM", -payload.Amount, false); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"character_id":   payload.CharacterId,
+					"amount":         payload.Amount,
+				}).Error("Reverse-walk: staging AwardMesos reversal dispatch failed; continuing chain.")
+			}
+		case AcceptToTrade:
+			payload, ok := step.Payload().(AcceptToTradePayload)
+			if !ok {
+				continue
+			}
+			if !c.claimTradeRollback(s, step) {
+				continue
+			}
+			if err := c.tradeP.RemoveTradeEscrowAndEmit(s.TransactionId(), payload.EscrowId); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"escrow_id":      payload.EscrowId.String(),
+				}).Error("Reverse-walk: AcceptToTrade → RemoveTradeEscrow dispatch failed; continuing chain.")
+			}
+		case ReleaseFromCharacter:
+			payload, ok := step.Payload().(ReleaseFromCharacterPayload)
+			if !ok {
+				continue
+			}
+			if escrowSnapshot == nil {
+				c.l.WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"character_id":   payload.CharacterId,
+				}).Error("Reverse-walk: staging ReleaseFromCharacter has no AcceptToTrade snapshot to re-grant; skipping.")
+				continue
+			}
+			if !c.claimTradeRollback(s, step) {
+				continue
+			}
+			assetData := assetDataFromSnapshot(escrowSnapshot.Snapshot)
+			if err := c.compP.RequestAcceptAsset(s.TransactionId(), payload.CharacterId, payload.InventoryType, escrowSnapshot.Snapshot.TemplateId, assetData); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"character_id":   payload.CharacterId,
+					"template_id":    escrowSnapshot.Snapshot.TemplateId,
+				}).Error("Reverse-walk: staging ReleaseFromCharacter → AcceptToCharacter re-grant dispatch failed; continuing chain.")
+			}
+		}
+	}
 }

@@ -184,6 +184,11 @@
    "fname": "CWvsContext::OnPartyResult",
    "case": 71,
    "reason": "partial implementation — sub-op not built (task-081 non-eq lever 2026-06-10)"
+  },
+  {
+   "fname": "CTradingRoomDlg::OnMesoLimitRefused",
+   "packet": "interaction/clientbound/InteractionInteractionTradeMesoLimit",
+   "reason": "TRADE_MESO_LIMIT (the clientbound meso-daily-limit refusal arm) is version-absent in jms_v185. CTradingRoomDlg::OnPacket @0x845d95 is a complete switch with exactly THREE cases \u2014 13 -> OnPutItem @0x845dd0, 14 -> OnPutMoney @0x845ea7, 15 -> OnTrade @0x845ed5 \u2014 and no default arm; there is no fourth case for the GMS mode-21 (v48 18 / v61,v72 19 / v79 20) meso-limit handler. This is a full switch-case enumeration of the decompiled dispatcher, not a failed name search. Corroborating: no cash trading room on ANY version has the arm either (every CCashTradingRoomDlg::OnPacket switch has exactly three cases, jms @0x496fa8 included), so a three-case trade dispatcher is a known shape. Where the arm is absent, meso rejection degrades to the authoritative TRADE_ADD_MESO re-echo \u2014 mode 16 is an ASSIGNMENT (jms @0x845ea7: (&this[4].IGObj::__vftable)[v3] = Decode4()), so re-sending the last valid amount snaps the client's view back (task-205 design.md 4.2). The sibling arms TRADE_PUT_ITEM / TRADE_ADD_MESO / TRADE_CONFIRM are all verified on jms_v185, which is why this absence is recorded rather than assumed. See docs/tasks/task-205-player-trade/version-matrix.md."
   }
  ]
 }

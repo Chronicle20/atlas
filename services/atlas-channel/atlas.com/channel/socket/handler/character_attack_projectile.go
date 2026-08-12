@@ -10,6 +10,7 @@ import (
 	once "atlas-channel/kafka/once/compartment"
 	"context"
 	"sort"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -169,7 +170,7 @@ func (p *ProjectileProcessorImpl) Emit(characterId uint32, plan *ProjectilePlan)
 			continue
 		}
 		reserves := []compartmentMsg.ItemBody{{Source: draw.Slot, ItemId: draw.ItemId, Quantity: draw.Quantity}}
-		if rerr := p.cpp.RequestReserve(txId, characterId, plan.InventoryType, reserves); rerr != nil {
+		if rerr := p.cpp.RequestReserve(txId, characterId, plan.InventoryType, 30*time.Second, reserves); rerr != nil {
 			p.l.WithError(rerr).WithField("characterId", characterId).WithField("slot", draw.Slot).
 				Errorf("Unable to emit projectile reservation request.")
 		}

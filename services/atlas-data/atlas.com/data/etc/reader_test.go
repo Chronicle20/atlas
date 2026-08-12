@@ -61,6 +61,36 @@ func TestReader(t *testing.T) {
 	}
 }
 
+// TestEtcReaderSurfacesTradeBlock pins PRD FR-4.2: tradeBlock must be
+// readable for every item family a trade can stage, not just consumable and
+// setup. A missing flag must never be read as "tradeable".
+func TestEtcReaderSurfacesTradeBlock(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	res, err := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res[0].TradeBlock {
+		t.Error("tradeBlock: got false, want true (fixture sets tradeBlock=1)")
+	}
+}
+
+// TestEtcReaderTradeBlockDefaultsFalse pins PRD FR-4.2: a missing tradeBlock
+// node must never be read as "tradeable". The second fixture item has no
+// tradeBlock node.
+func TestEtcReaderTradeBlockDefaultsFalse(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	res, err := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res[1].TradeBlock {
+		t.Error("tradeBlock: got true, want false when the WZ node is absent")
+	}
+}
+
 const testXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <imgdir name="0400.img">
   <imgdir name="04000000">
@@ -73,6 +103,7 @@ const testXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       </canvas>
       <int name="price" value="3"/>
       <int name="slotMax" value="200"/>
+      <int name="tradeBlock" value="1"/>
     </imgdir>
   </imgdir>
   <imgdir name="04000001">

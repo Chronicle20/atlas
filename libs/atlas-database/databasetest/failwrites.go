@@ -44,3 +44,26 @@ func FailWritesOn(t *testing.T, db *gorm.DB, table string, verbs ...WriteVerb) {
 		}
 	}
 }
+
+// FailReadsOn is the read counterpart of FailWritesOn: every SELECT against the
+// named table fails.
+//
+// It exists so a guard of the form "this read failed, so refuse rather than act
+// on a figure I do not have" can be tested against the REAL store. The
+// alternative — an error injected into a hand-written fake — only proves the
+// fake refuses, and it stops proving anything at all the moment production
+// reads through a different handle than the fake is wired to.
+//
+// Registered on both the query and row pipelines, because GORM routes Find and
+// First through the former while Scan of an aggregate goes through the latter.
+// Raw .Exec(...) statements bypass GORM callbacks and are not intercepted.
+func FailReadsOn(t *testing.T, db *gorm.DB, table string) {
+	t.Helper()
+	fail := func(d *gorm.DB) {
+		if d.Statement != nil && d.Statement.Table == table {
+			_ = d.AddError(fmt.Errorf("databasetest: injected failure reading from %q", table))
+		}
+	}
+	require.NoError(t, db.Callback().Query().Before("gorm:query").Register("databasetest:fail_query_"+table, fail))
+	require.NoError(t, db.Callback().Row().Before("gorm:row").Register("databasetest:fail_row_"+table, fail))
+}

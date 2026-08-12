@@ -31,6 +31,11 @@
    "fname": "CWvsContext::SendConsumeCashItemUseRequest",
    "packet": "cash/serverbound/CashItemUsePetSkill",
    "reason": "task-139 cash-item-use-pet-skill coverage sweep (IDA session 90e36cb0, GMS_v72). CWvsContext::SendConsumeCashItemUseRequest @0x904fe2 dispatches a switch on get_consume_cash_item_type(itemId). Type 28 has NO unique arm at all: the compiler-generated comment at every jump-into-default site (0x905083 'ja def_905089', and 13 more jmp/jz/jnz sites at 0x9052ce, 0x9071ac, 0x9071ca, 0x9071de, 0x9071f2, 0x907331, 0x9073d1, 0x9073e2, 0x90756d, 0x9076bd, 0x908fa4, 0x9090cc, 0x909173) explicitly lists 'jumptable 00905089 default case, cases 28,35,36,38,39,41,43-45,54-59,62'. Item type 28 (if any item ever resolves to it) is handled identically to every other unassigned type — the shared default path, no dedicated code, no Encode call, no pet reference. Positive absence."
+  },
+  {
+   "fname": "CTradingRoomDlg::OnTrade",
+   "packet": "interaction/serverbound/InteractionOperationTransaction",
+   "reason": "TRANSACTION (serverbound PLAYER_INTERACTION CRC-attestation reply) is version-absent in gms_v72. The v72 confirm arm is mode 16, CTradingRoomDlg::OnTrade @0x6fddec, reached from the full switch of CTradingRoomDlg::OnPacket @0x6fdc9d (cases 14 put-item / 15 put-money / 16 confirm / 19 meso-limit, no others). Its disassembly is four instructions total \u2014 `push 0; mov dword ptr [ecx+1B8h], 1; call CWnd::InvalidateRect; retn 4` \u2014 so no COutPacket is constructed and no attestation is sent. Matches tradeCrcPresent (libs/atlas-packet/interaction/serverbound/version_gate.go) and the IDA-verified TRANSACTION mode table in docs/packets/dispatchers/character_interaction_handle.yaml (gms_v83/v84/v87/v95 only). No cash trading room exists on v72: the mini-room factory CMiniRoomBaseDlg::MiniRoomFactory sub_60E13D @0x60e13d enumerates exactly five room types (Omok/MemoryGame/TradingRoom/PersonalShop/EntrustedShop) and returns 0 by default. The stale audit report that named CCashTradingRoomDlg::Trade (a verified-shaped record for a function that is a DIFFERENT packet) is deleted together with this disposition, so it cannot read as live evidence contradicting the n-a cell. See docs/tasks/task-205-player-trade/version-matrix.md."
   }
  ]
 }

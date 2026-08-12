@@ -1,0 +1,48 @@
+{
+  "WriterName": "InteractionInteractionTradePutItem",
+  "IDAName": "CTradingRoomDlg::OnPutItem",
+  "Address": "0x81566e",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/interaction/clientbound/interaction_trade.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (15 TRADE_PUT_ITEM; CTradingRoomDlg::OnPacket @0x815624 dispatch byte)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "side (recipient-relative room side; indexes this[side + N] item grid)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "tradeSlot (1..9 within that side's grid)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 5,
+      "IDAComment": "asset (GW_ItemSlotBase::Decode; model.Asset substruct)",
+      "Verdict": 3,
+      "Note": "opaque type: model.Asset — register boundary (see opaque registry)"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": false
+}

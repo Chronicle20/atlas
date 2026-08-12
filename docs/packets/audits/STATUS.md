@@ -6,16 +6,16 @@
 
 Tool: `14306c20943c85b6c8143ffabaf128419c3b83f76bb6b14e6edc420fa8fc1d05`
 
-- export gms_v48: `4fbcc2b51ec913c2fe98401d3e7405228fba6db930ae69eeb42022255f6bd84c`
-- export gms_v61: `92fa3114e1ee970a6b657fcdc28d08f408936dfe83019578d1ea04ccf2100715`
-- export gms_v72: `df5f97b98f4ab5aa7e6429a7443e9008aae33bcc0c7e4898804f1dd02d663cd7`
-- export gms_v79: `45ebeca0ce28d4dd97e86f0240aff07832e30e4075f0380e268350bc49c37d81`
-- export gms_v83: `a5c48ad57b743e177dc8c1d6112a78ae380046ced07308e4fce81abe4a97c903`
-- export gms_v84: `7e7df50f6931bba9336e90ea4e513523dd2be6472425cc25c7d3f194e347fe82`
-- export gms_v87: `7c3b3667b5209ae73a60e66d282e9e13d8bb6de2aad1f0b748035b2475680a77`
-- export gms_v92: `f87df11b61b66746edce1b5d3a4d7864790bb36fa0764c2bc3df77bbba05d0c7`
-- export gms_v95: `1dd57f4b9f7b945b3e42cd4e1fa99f6b858a7caeda70eea2e863dba361afda96`
-- export jms_v185: `77ada6f11498a87db5bd82e20eb5a3b61fecfb7455b4cc58defd7b6cea29762e`
+- export gms_v48: `59a1fa209a3202a733d73a7d5104ed541906c7c006e2aa7f1cefed7f2a4342a1`
+- export gms_v61: `d589e6b13a9c58bb3bfeaf234f01c42d5695cc54ef3957eb628a02d6042152b3`
+- export gms_v72: `4189e1f4ac661033cba983e87c29923ad2b7de949f3396611e71b574f38f35de`
+- export gms_v79: `87f07e503dcb18d536c9dfd12823ce42176db76e668d2eb31f72e1c621185752`
+- export gms_v83: `13f6290c583bff9306393059d91ece2d399b55622751717b011c5e625f471378`
+- export gms_v84: `d5c07382a1a0a90fb6930f475eaf45deda9b1f790a27548ccebb0529a096ff49`
+- export gms_v87: `43b001d1d9b15d5cfa23bcfe39ceec6d8c6bab6b07c41471bbd3ef7441880b18`
+- export gms_v92: `a4a5a4acf4d73a43705445ea46dcd70934937b89a38addefe1e45b486f20d128`
+- export gms_v95: `0883cc1d4e973f011fc0166fdb3537f512e3513e8c0d36be46619e8a9a25bdd3`
+- export jms_v185: `9cf0dce720afc0ba2fb2ae7dbb179c432b599ea41575c7db40c418ecee5b020d`
 
 ## Clientbound
 
@@ -945,6 +945,10 @@ Tool: `14306c20943c85b6c8143ffabaf128419c3b83f76bb6b14e6edc420fa8fc1d05`
 | guild/serverbound/GuildSetNotice (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildSetTitleNames (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
 | guild/serverbound/GuildWithdraw (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
+| interaction/clientbound/InteractionInteractionTradeAddMeso (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| interaction/clientbound/InteractionInteractionTradeConfirm (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| interaction/clientbound/InteractionInteractionTradeMesoLimit (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ⬜ |
+| interaction/clientbound/InteractionInteractionTradePutItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | interaction/clientbound/InteractionInteractionUpdateMerchant (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationChat (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationFieldAddToBlackList (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
@@ -967,7 +971,7 @@ Tool: `14306c20943c85b6c8143ffabaf128419c3b83f76bb6b14e6edc420fa8fc1d05`
 | interaction/serverbound/InteractionOperationTradeAddMeso (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationTradeConfirm (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | interaction/serverbound/InteractionOperationTradePutItem (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
-| interaction/serverbound/InteractionOperationTransaction (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
+| interaction/serverbound/InteractionOperationTransaction (T1) |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | login/clientbound/AuthLoginFailed |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/AuthPermanentBan |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | login/clientbound/AuthSuccess (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -1050,16 +1054,16 @@ Tool: `14306c20943c85b6c8143ffabaf128419c3b83f76bb6b14e6edc420fa8fc1d05`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 201 | 0 | 19 | 193 | 601 | 0 | 48.7% |
-| v61 | 263 | 0 | 56 | 234 | 461 | 0 | 47.6% |
-| v72 | 279 | 0 | 69 | 249 | 417 | 0 | 46.7% |
-| v79 | 324 | 0 | 68 | 246 | 376 | 0 | 50.8% |
-| v83 | 441 | 0 | 0 | 345 | 228 | 0 | 56.1% |
-| v84 | 415 | 0 | 0 | 352 | 247 | 0 | 54.1% |
-| v87 | 449 | 0 | 0 | 375 | 190 | 0 | 54.5% |
-| v92 | 16 | 0 | 151 | 706 | 141 | 0 | 1.8% |
-| v95 | 474 | 0 | 0 | 434 | 106 | 0 | 52.2% |
-| JMS185 | 424 | 0 | 0 | 394 | 196 | 0 | 51.8% |
+| v48 | 204 | 0 | 19 | 193 | 602 | 0 | 49.0% |
+| v61 | 266 | 0 | 56 | 234 | 462 | 0 | 47.8% |
+| v72 | 282 | 0 | 69 | 249 | 418 | 0 | 47.0% |
+| v79 | 327 | 0 | 68 | 246 | 377 | 0 | 51.0% |
+| v83 | 445 | 0 | 0 | 345 | 228 | 0 | 56.3% |
+| v84 | 419 | 0 | 0 | 352 | 247 | 0 | 54.3% |
+| v87 | 453 | 0 | 0 | 375 | 190 | 0 | 54.7% |
+| v92 | 21 | 0 | 151 | 705 | 141 | 0 | 2.4% |
+| v95 | 478 | 0 | 0 | 434 | 106 | 0 | 52.4% |
+| JMS185 | 427 | 0 | 0 | 394 | 197 | 0 | 52.0% |
 
 ## Conflicts
 

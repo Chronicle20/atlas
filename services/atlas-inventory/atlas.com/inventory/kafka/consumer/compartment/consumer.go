@@ -7,6 +7,7 @@ import (
 	compartment2 "atlas-inventory/kafka/message/compartment"
 	"context"
 	"math"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -166,7 +167,11 @@ func handleRequestReserveItemCommand(db *gorm.DB) message.Handler[compartment2.C
 		if transactionId == uuid.Nil {
 			transactionId = c.Body.TransactionId
 		}
-		_ = compartment.NewProcessor(l, ctx, db).RequestReserveAndEmit(transactionId, c.CharacterId, inventory.Type(c.InventoryType), reserves)
+		expiry := 30 * time.Second
+		if c.Body.ExpirySeconds > 0 {
+			expiry = time.Duration(c.Body.ExpirySeconds) * time.Second
+		}
+		_ = compartment.NewProcessor(l, ctx, db).RequestReserveAndEmit(transactionId, c.CharacterId, inventory.Type(c.InventoryType), expiry, reserves)
 	}
 }
 

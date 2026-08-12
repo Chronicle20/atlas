@@ -59,6 +59,7 @@ import (
 	summonConsumer "atlas-channel/kafka/consumer/summon"
 	"atlas-channel/kafka/consumer/system_message"
 	teleportrockConsumer "atlas-channel/kafka/consumer/teleportrock"
+	tradeConsumer "atlas-channel/kafka/consumer/trade"
 	walletConsumer "atlas-channel/kafka/consumer/wallet"
 	worldbroadcastConsumer "atlas-channel/kafka/consumer/worldbroadcast"
 	"atlas-channel/listener"
@@ -256,6 +257,7 @@ func main() {
 	incubatorconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	merchantConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	minigameConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	tradeConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mountConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	megaphoneConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	worldbroadcastConsumer.InitConsumers(l)(cmf)(consumerGroupId)
@@ -565,6 +567,9 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(minigameConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(tradeConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(mountConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {

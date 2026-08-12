@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
@@ -74,7 +76,7 @@ func TestHasEffectBbox(t *testing.T) {
 }
 
 func TestIntersectMobIds_AllInRect(t *testing.T) {
-	applied, anomaly := intersectMobIds([]uint32{1, 2, 3}, []uint32{1, 2, 3})
+	applied, anomaly := IntersectMobIds([]uint32{1, 2, 3}, []uint32{1, 2, 3})
 	if !reflect.DeepEqual(applied, []uint32{1, 2, 3}) {
 		t.Errorf("applied = %v, want [1 2 3]", applied)
 	}
@@ -86,7 +88,7 @@ func TestIntersectMobIds_AllInRect(t *testing.T) {
 func TestIntersectMobIds_ClientOrderPreserved(t *testing.T) {
 	// client lists 5,3,1 in this order; server returns 1,3,5 (different order).
 	// Result must follow client order.
-	applied, anomaly := intersectMobIds([]uint32{5, 3, 1}, []uint32{1, 3, 5})
+	applied, anomaly := IntersectMobIds([]uint32{5, 3, 1}, []uint32{1, 3, 5})
 	if !reflect.DeepEqual(applied, []uint32{5, 3, 1}) {
 		t.Errorf("applied = %v, want [5 3 1]", applied)
 	}
@@ -97,7 +99,7 @@ func TestIntersectMobIds_ClientOrderPreserved(t *testing.T) {
 
 func TestIntersectMobIds_AnomalySubset(t *testing.T) {
 	// client lists 1,2,3,99 — server returned 1,2,3. Mob 99 is anomaly.
-	applied, anomaly := intersectMobIds([]uint32{1, 2, 3, 99}, []uint32{1, 2, 3})
+	applied, anomaly := IntersectMobIds([]uint32{1, 2, 3, 99}, []uint32{1, 2, 3})
 	if !reflect.DeepEqual(applied, []uint32{1, 2, 3}) {
 		t.Errorf("applied = %v, want [1 2 3]", applied)
 	}
@@ -109,7 +111,7 @@ func TestIntersectMobIds_AnomalySubset(t *testing.T) {
 func TestIntersectMobIds_ServerOnlyDropped(t *testing.T) {
 	// server returned 1,2,3 — client only sent 1. The other two are NOT
 	// applied (we trust client's omission as "did not target").
-	applied, anomaly := intersectMobIds([]uint32{1}, []uint32{1, 2, 3})
+	applied, anomaly := IntersectMobIds([]uint32{1}, []uint32{1, 2, 3})
 	if !reflect.DeepEqual(applied, []uint32{1}) {
 		t.Errorf("applied = %v, want [1]", applied)
 	}
@@ -119,7 +121,7 @@ func TestIntersectMobIds_ServerOnlyDropped(t *testing.T) {
 }
 
 func TestIntersectMobIds_EmptyClient(t *testing.T) {
-	applied, anomaly := intersectMobIds(nil, []uint32{1, 2})
+	applied, anomaly := IntersectMobIds(nil, []uint32{1, 2})
 	if len(applied) != 0 || len(anomaly) != 0 {
 		t.Errorf("applied=%v, anomaly=%v, want both empty", applied, anomaly)
 	}
@@ -170,5 +172,52 @@ func TestPropAppliesTo_CarveOutHonored(t *testing.T) {
 	}
 	if !propAppliesTo(id, propBranchApply) {
 		t.Errorf("propAppliesTo(synthetic, apply) = false, want true (apply not carved out)")
+	}
+}
+
+// TestMagnetRegionFacingRight pins the AABB of the client's trapezoid for a
+// right-facing caster. The client walks x from casterX+50 out to casterX+range
+// with half-height |dx|/4 about casterY-28 (CMobPool::CheckMobInTrapezoid,
+// gms_83 @0x679084).
+func TestMagnetRegionFacingRight(t *testing.T) {
+	x1, y1, x2, y2 := MagnetRegion(1000, 500, false, 450)
+	if x1 >= x2 {
+		t.Fatalf("x bounds not ordered: %d..%d", x1, x2)
+	}
+	if x1 > 1000+50 {
+		t.Fatalf("x1 = %d; the near edge must not exclude mobs at casterX+50", x1)
+	}
+	if x2 < 1000+450 {
+		t.Fatalf("x2 = %d; the far edge must reach casterX+range (1450)", x2)
+	}
+	if y1 >= y2 {
+		t.Fatalf("y bounds not ordered: %d..%d", y1, y2)
+	}
+	if y2 < 500-28+450/4 {
+		t.Fatalf("y2 = %d; the box must cover the wedge's max half-height (%d)", y2, 500-28+450/4)
+	}
+}
+
+func TestMagnetRegionFacingLeftMirrors(t *testing.T) {
+	rx1, _, rx2, _ := MagnetRegion(1000, 500, false, 450)
+	lx1, _, lx2, _ := MagnetRegion(1000, 500, true, 450)
+	if lx1 >= lx2 {
+		t.Fatalf("facing left: x bounds not ordered: %d..%d", lx1, lx2)
+	}
+	if (rx2 - rx1) != (lx2 - lx1) {
+		t.Fatalf("mirrored widths differ: right=%d left=%d", rx2-rx1, lx2-lx1)
+	}
+	if lx1 > 1000-450 {
+		t.Fatalf("facing left: x1 = %d must reach casterX-range (550)", lx1)
+	}
+}
+
+func TestExceedsMobCapRejectsWholeCast(t *testing.T) {
+	l := logrus.New()
+	if !ExceedsMobCap(l, "test_over_cap", 1, 1121001, 30, 3, []uint32{1, 2, 3, 4}) {
+		t.Fatal("4 claimed targets against a cap of 3 must exceed the cap")
+	}
+	if ExceedsMobCap(l, "test_over_cap", 1, 1121001, 30, 3, []uint32{1, 2, 3}) {
+		t.Fatal("3 claimed targets against a cap of 3 must not exceed the cap")
 	}
 }

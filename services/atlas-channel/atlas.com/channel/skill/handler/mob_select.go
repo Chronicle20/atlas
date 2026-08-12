@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"github.com/sirupsen/logrus"
+
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
@@ -40,13 +42,13 @@ func hasEffectBbox(lt, rb point.Model) bool {
 	return lt.X() != 0 || lt.Y() != 0 || rb.X() != 0 || rb.Y() != 0
 }
 
-// intersectMobIds partitions client mob ids into "applied" (also present in
+// IntersectMobIds partitions client mob ids into "applied" (also present in
 // server) and "anomaly" (client-only) lists. Server-only ids are dropped per
 // FR-4.1: the client's omission is treated as authoritative for "did not
 // target". Result preserves client order (FR-4.4) so wire traces remain
 // readable. Both returned slices are nil if the corresponding bucket is
 // empty (callers checking len() observe the same behavior either way).
-func intersectMobIds(client, server []uint32) (applied, anomaly []uint32) {
+func IntersectMobIds(client, server []uint32) (applied, anomaly []uint32) {
 	if len(client) == 0 {
 		return nil, nil
 	}
@@ -111,5 +113,74 @@ func propAppliesTo(skillId skill2.Id, branch propBranch) bool {
 			return v
 		}
 	}
+	return true
+}
+
+// magnetNearOffset, magnetYAnchor and magnetSlopeDivisor reproduce the
+// arguments the client passes to CMobPool::CheckMobInTrapezoid from
+// CUserLocal::TryDoingMonsterMagnet (gms_83 @0x679084): the wedge starts at
+// casterX ± 50, is centred on casterY - 28, and opens with half-height |dx|/4.
+//
+// magnetBodyMargin pads the resulting box. The client intersects each mob's
+// BODY RECT against the wedge; atlas-monsters' GetInMapRect only exposes the
+// mob's anchor point, so reproducing the wedge exactly against a point would
+// reject legitimate grabs of tall mobs near the edge. The margin stands in for
+// the unmodelled body rect. This makes the server region a strict superset of
+// the client's, which is the correct posture for an anti-cheat gate: it still
+// rejects a target on the other side of the map or beyond `range`, and it never
+// fights sub-pixel geometry.
+const (
+	magnetNearOffset   = 50
+	magnetYAnchor      = 28
+	magnetSlopeDivisor = 4
+	magnetBodyMargin   = 60
+)
+
+// MagnetRegion returns the axis-aligned bounding box of the client's Monster
+// Magnet target trapezoid, as (x1, y1, x2, y2). skillRange is the effect's WZ
+// `range` attribute. The tuple is normalized (x1 <= x2, y1 <= y2).
+//
+// Monster Magnet carries no lt/rb in WZ, so calculateBoundingBox is not
+// applicable to it — see docs/tasks/task-215-monster-magnet/design.md section 3.
+func MagnetRegion(casterX, casterY int16, facingLeft bool, skillRange int32) (x1, y1, x2, y2 int16) {
+	sign := int32(1)
+	if facingLeft {
+		sign = -1
+	}
+	cx := int32(casterX)
+	near := cx + sign*magnetNearOffset
+	far := cx + sign*skillRange
+	if near > far {
+		near, far = far, near
+	}
+	x1 = int16(near - magnetBodyMargin)
+	x2 = int16(far + magnetBodyMargin)
+
+	halfHeight := skillRange/magnetSlopeDivisor + magnetBodyMargin
+	yc := int32(casterY) - magnetYAnchor
+	y1 = int16(yc - halfHeight)
+	y2 = int16(yc + halfHeight)
+	return
+}
+
+// ExceedsMobCap reports whether the client claimed more targets than the
+// skill's WZ mobCount permits, logging the over-cap anomaly under the caller's
+// `event` discriminator. Extracted from applyToMobs (FR-2.6) so every
+// client-target-set consumer enforces the identical reject-the-whole-cast
+// policy with the identical log field vocabulary, which is what lets the
+// existing monster_buff_anomaly_* dashboards pick both up.
+func ExceedsMobCap(l logrus.FieldLogger, event string, characterId uint32, sid skill2.Id, slvl uint32, mobCap uint32, mobIds []uint32) bool {
+	if uint32(len(mobIds)) <= mobCap {
+		return false
+	}
+	l.WithFields(logrus.Fields{
+		"event":            event,
+		"character_id":     characterId,
+		"skill_id":         uint32(sid),
+		"skill_level":      slvl,
+		"mob_count_cap":    mobCap,
+		"client_mob_count": len(mobIds),
+		"client_mob_ids":   mobIds,
+	}).Warn("client_target_count_exceeds_skill_cap")
 	return true
 }

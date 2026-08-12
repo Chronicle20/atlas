@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/character"
 	"atlas-channel/character/skill"
+	"atlas-channel/skill/handler"
 	"errors"
 	"testing"
 
@@ -222,4 +223,18 @@ func TestEnergyChargeTryUpdate(t *testing.T) {
 		deps := energyChargeDeps{emitUpsert: func(int32, byte, int32, int32) error { return errors.New("kafka down") }}
 		energyChargeTryUpdate(l, v83, marauder, energyTestAttack(packetmodel.AttackTypeMelee, 0, 3), deps)
 	})
+}
+
+// AC-12 / FR-7.1: Energy Charge must never be registered as an attack-cast
+// handler. Atlas's attack path applies no skill statups of its own — the only
+// per-skill hook it consults is the LookupAttackCast registry — so registering
+// Energy Charge there would reintroduce exactly the bug Cosmic patched: the
+// aura's own touch damage perpetually refreshing the charged window
+// (AbstractDealDamageHandler.java:183-184).
+func TestEnergyChargeIsNotAnAttackCastHandler(t *testing.T) {
+	for _, id := range []skill3.Identity{skill3.MarauderEnergyCharge, skill3.ThunderBreakerStage2EnergyCharge} {
+		if _, ok := handler.LookupAttackCast(id); ok {
+			t.Fatalf("skill [%d] must not be registered as an attack-cast handler; its own touch damage would refresh the charged window", id)
+		}
+	}
 }

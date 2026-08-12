@@ -4,6 +4,7 @@ import (
 	"atlas-maps/mist"
 	"context"
 	"encoding/json"
+	"io"
 	"sync"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
@@ -54,9 +56,48 @@ func (m *recordingProducer) Messages(topic string) []kafka.Message {
 	return append([]kafka.Message(nil), m.messages[topic]...)
 }
 
+// MessagesOn is an alias for Messages(topic), named to read naturally at
+// call sites like rec.MessagesOn(EnvCommandTopicCharacter).
+func (m *recordingProducer) MessagesOn(topic string) []kafka.Message {
+	return m.Messages(topic)
+}
+
+// AllMessages returns every message recorded across all topics, for
+// assertions that nothing at all was emitted.
+func (m *recordingProducer) AllMessages() []kafka.Message {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []kafka.Message
+	for _, msgs := range m.messages {
+		out = append(out, msgs...)
+	}
+	return out
+}
+
 func mkTickTenant() tenant.Model {
 	t, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	return t
+}
+
+// attachLogHook wires a logrus test hook into mt's logger so a test can
+// assert on the last logged message (e.g. an unknown-effect-kind warning).
+func attachLogHook(t *testing.T, mt *MistTick) *test.Hook {
+	t.Helper()
+	logger := logrus.New()
+	logger.SetOutput(io.Discard)
+	hook := test.NewLocal(logger)
+	mt.l = logger
+	return hook
+}
+
+// lastMessage returns the message of the most recently logged entry, or
+// empty string if nothing was logged.
+func lastMessage(hook *test.Hook) string {
+	entry := hook.LastEntry()
+	if entry == nil {
+		return ""
+	}
+	return entry.Message
 }
 
 func newTestMistTick(t *testing.T, reg *mist.Registry, rec *recordingProducer, charLookup CharacterLookup) *MistTick {

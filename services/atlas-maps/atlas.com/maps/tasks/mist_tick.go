@@ -101,6 +101,11 @@ const EnvCommandTopicCharacterBuff = "COMMAND_TOPIC_CHARACTER_BUFF"
 // topic-name only -- no shared library import).
 const EnvCommandTopicMonster = "COMMAND_TOPIC_MONSTER"
 
+// EnvCommandTopicCharacter is the Kafka topic where CHANGE_MP commands are
+// published. Mirrors atlas-channel's value (services communicate via
+// topic-name only -- no shared library import).
+const EnvCommandTopicCharacter = "COMMAND_TOPIC_CHARACTER"
+
 // CharacterLookup resolves a character's current world coordinates and HP.
 // Injected as a seam so MistTick can be unit-tested without standing up the
 // atlas-character REST client. HP travels with position because the recovery
@@ -228,6 +233,43 @@ func applyStatusCommandProvider(m mist.Mist, monsterUniqueId uint32) model.Provi
 			// monsterDotTickIntervalMs, NOT m.TickInterval() -- see that
 			// constant's doc comment for why the two must stay decoupled.
 			TickInterval: monsterDotTickIntervalMs,
+		},
+	}
+	return kafkaProducer.SingleMessageProvider(key, value)
+}
+
+// characterCommand is the COMMAND_TOPIC_CHARACTER envelope, mirrored from
+// atlas-channel's kafka/message/character/kafka.go Command[E]. Verified
+// key-for-key against that file: {worldId, characterId, type, body}.
+type characterCommand[E any] struct {
+	WorldId     world.Id `json:"worldId"`
+	CharacterId uint32   `json:"characterId"`
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
+}
+
+// changeMpBody mirrors atlas-channel's character.ChangeMPCommandBody. Amount
+// is a signed delta; atlas-character clamps the result into [0, maxMP]
+// (services/atlas-character/.../character/processor.go ChangeMP ->
+// enforceBounds), so no clamp is duplicated here. It does NOT check HP --
+// that is why tickRecovery skips dead characters itself.
+type changeMpBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	Amount    int16      `json:"amount"`
+}
+
+// changeMpCommandProvider builds one CHANGE_MP command for a character being
+// healed by a RECOVERY mist. Keyed on the character id so it lands on the
+// same partition as every other command for that character.
+func changeMpCommandProvider(m mist.Mist, characterId uint32) model.Provider[[]kafka.Message] {
+	key := kafkaProducer.CreateKey(int(characterId))
+	value := &characterCommand[changeMpBody]{
+		WorldId:     m.Field().WorldId(),
+		CharacterId: characterId,
+		Type:        "CHANGE_MP",
+		Body: changeMpBody{
+			ChannelId: m.Field().ChannelId(),
+			Amount:    int16(m.RecoveryMp()),
 		},
 	}
 	return kafkaProducer.SingleMessageProvider(key, value)
@@ -363,7 +405,21 @@ func (r *MistTick) tickOneMist(ctx context.Context, prov producer.Provider, t te
 	default:
 		// Empty target kind normalizes to CHARACTER in mist.Create; the
 		// default arm also covers any mist built directly by a test.
-		r.tickCharacters(ctx, prov, t, m)
+		switch m.EffectKind() {
+		case mistKafka.EffectKindRecovery:
+			r.tickRecovery(ctx, prov, t, m)
+		case mistKafka.EffectKindProtection:
+			// Deliberate no-op. A PROTECTION mist is created with
+			// tickInterval 0, so ShouldTick already returned false above and
+			// this arm is unreachable today. It exists so a future non-zero
+			// interval cannot fall through to the DISEASE default and start
+			// diseasing everyone standing in a smoke cloud. The protection
+			// itself is evaluated in atlas-channel on the damage path.
+		case mistKafka.EffectKindDisease, "":
+			r.tickCharacters(ctx, prov, t, m)
+		default:
+			r.l.Warnf("MistTick: mist [%s] has unknown effectKind [%s]; no effect applied.", m.Id(), m.EffectKind())
+		}
 	}
 	// Called exactly once per mist per tick, on every path through the
 	// switch above -- including tickMonsters' rect-lookup-error path, which
@@ -399,6 +455,57 @@ func (r *MistTick) tickCharacters(ctx context.Context, prov producer.Provider, t
 	})
 	if emitErr != nil {
 		r.l.WithError(emitErr).Errorf("MistTick: failed to emit apply-disease for mist [%s].", m.Id())
+	}
+}
+
+// tickRecovery restores MP to every character in the mist's cast-time party
+// snapshot who is alive and standing inside the rectangle.
+//
+// Party scoping is the snapshot carried on the CREATE command rather than a
+// live lookup: atlas-maps has no party client, and giving it one would add a
+// service edge for a rule nothing client-side evaluates. The cost is a
+// staleness window bounded by the mist's 30s lifetime.
+//
+// The magnitude is NOT clamped here: atlas-character's ChangeMP already
+// clamps into [0, maxMP] against effective max MP, and re-clamping would
+// need a second REST call per character per tick to fetch a value that
+// service already owns. It does not check HP, so the liveness gate is here.
+func (r *MistTick) tickRecovery(ctx context.Context, prov producer.Provider, t tenant.Model, m mist.Mist) {
+	if m.RecoveryMp() <= 0 {
+		r.l.Warnf("MistTick: recovery mist [%s] has no magnitude; nothing to restore.", m.Id())
+		return
+	}
+	members := r.charsInField(t, m.Field())
+	if len(members) == 0 {
+		return
+	}
+	emitErr := message.Emit(prov)(func(buf *message.Buffer) error {
+		healed := 0
+		for _, cid := range members {
+			if !m.InPartySnapshot(cid) {
+				continue
+			}
+			x, y, hp, err := r.charLookup(ctx, cid)
+			if err != nil {
+				r.l.WithError(err).Debugf("MistTick: character fetch failed for [%d].", cid)
+				continue
+			}
+			if hp == 0 {
+				continue
+			}
+			if !m.Contains(x, y) {
+				continue
+			}
+			if err := buf.Put(EnvCommandTopicCharacter, changeMpCommandProvider(m, cid)); err != nil {
+				return err
+			}
+			healed++
+		}
+		r.l.Debugf("MistTick: recovery mist [%s] restored %d MP to %d of %d characters in field.", m.Id(), m.RecoveryMp(), healed, len(members))
+		return nil
+	})
+	if emitErr != nil {
+		r.l.WithError(emitErr).Errorf("MistTick: failed to emit change-mp for mist [%s].", m.Id())
 	}
 }
 

@@ -3,8 +3,10 @@ package consumable
 import (
 	"atlas-consumables/cash"
 	"atlas-consumables/character/buff/stat"
+	"bytes"
 	"context"
 	"errors"
+	"os"
 	"reflect"
 	"testing"
 
@@ -419,5 +421,29 @@ func TestConsumeMorphCouponReuseWhileMorphedApplies(t *testing.T) {
 func TestConsumeMorphCouponBindsRealProcessors(t *testing.T) {
 	if ConsumeMorphCoupon(uuid.New(), 555, 3, 5300000) == nil {
 		t.Fatal("ConsumeMorphCoupon returned a nil ItemConsumer")
+	}
+}
+
+// TestMorphCouponRoutedBeforeRewardFallback guards the branch ORDER in
+// RequestItemConsume. The reward-table fallback queries the consumable data
+// resource, which has no cash items, so a 530 item reaching it falls through to
+// ConsumeBare — the coupon is destroyed and nothing is applied. A source check
+// is the honest test here: the routing chain is a private if/else inside a
+// method that opens a Kafka reservation, so it has no seam to observe.
+func TestMorphCouponRoutedBeforeRewardFallback(t *testing.T) {
+	src, err := os.ReadFile("processor.go")
+	if err != nil {
+		t.Fatalf("read processor.go: %v", err)
+	}
+	morphAt := bytes.Index(src, []byte("routesToMorphCoupon(itemId)"))
+	if morphAt < 0 {
+		t.Fatal("RequestItemConsume has no routesToMorphCoupon branch")
+	}
+	fallbackAt := bytes.Index(src, []byte("validateRewardTable(ci.Rewards())"))
+	if fallbackAt < 0 {
+		t.Fatal("could not locate the reward-table fallback branch")
+	}
+	if morphAt > fallbackAt {
+		t.Error("the morph-coupon branch must precede the reward-table fallback, or 530 items fall through to ConsumeBare")
 	}
 }

@@ -1083,13 +1083,29 @@ func (p *ProcessorImpl) RequestDistributeSp(transactionId uuid.UUID, characterId
 		})
 	})
 	if txErr != nil {
+		// Logged, not just returned: every caller of this method discards the
+		// error (the Kafka consumer and the channel handler both `_ =` it) and
+		// nothing is written back to the client, so a rejected distribution --
+		// "not enough sp" being the common one -- is otherwise indistinguishable
+		// from a dropped packet. Without this line the only way to tell why a
+		// skill did not level is to read the character row by hand.
+		p.l.WithError(txErr).Errorf("Unable to distribute [%d] sp to skill [%d] for character [%d].", amount, skillId, characterId)
 		return txErr
 	}
 
+	// The SP has already been debited by the transaction above; if the skill
+	// create/update fails the character is left short the SP with nothing to
+	// show for it, which is exactly the state worth a loud log.
 	if val := c.GetSkill(skillId); val.Id() != skillId {
-		_ = skill2.NewProcessor(p.l, p.ctx).RequestCreate(characterId, skillId, byte(amount), 0, time.Time{})
+		if err := skill2.NewProcessor(p.l, p.ctx).RequestCreate(characterId, skillId, byte(amount), 0, time.Time{}); err != nil {
+			p.l.WithError(err).Errorf("Unable to create skill [%d] for character [%d] after debiting [%d] sp.", skillId, characterId, amount)
+			return err
+		}
 	} else {
-		_ = skill2.NewProcessor(p.l, p.ctx).RequestUpdate(characterId, skillId, val.Level()+byte(amount), val.MasterLevel(), val.Expiration())
+		if err := skill2.NewProcessor(p.l, p.ctx).RequestUpdate(characterId, skillId, val.Level()+byte(amount), val.MasterLevel(), val.Expiration()); err != nil {
+			p.l.WithError(err).Errorf("Unable to update skill [%d] for character [%d] after debiting [%d] sp.", skillId, characterId, amount)
+			return err
+		}
 	}
 	return nil
 }

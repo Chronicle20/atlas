@@ -21,9 +21,9 @@ import (
 var ErrNotFound = errors.New("not found")
 
 type Registry struct {
-	characters  *atlas.TenantRegistry[uint32, Model]
-	poisonTicks *atlas.TenantRegistry[uint32, time.Time]
-	tenants     *atlas.Set
+	characters    *atlas.TenantRegistry[uint32, Model]
+	periodicTicks *atlas.TenantRegistry[TickKey, time.Time]
+	tenants       *atlas.Set
 }
 
 var registry *Registry
@@ -33,8 +33,8 @@ func InitRegistry(client *goredis.Client) {
 		characters: atlas.NewTenantRegistry[uint32, Model](client, "buffs", func(k uint32) string {
 			return strconv.FormatUint(uint64(k), 10)
 		}),
-		poisonTicks: atlas.NewTenantRegistry[uint32, time.Time](client, "buffs-poison", func(k uint32) string {
-			return strconv.FormatUint(uint64(k), 10)
+		periodicTicks: atlas.NewTenantRegistry[TickKey, time.Time](client, "buffs-tick", func(k TickKey) string {
+			return strconv.FormatUint(uint64(k.CharacterId), 10) + ":" + k.StatType
 		}),
 		tenants: atlas.NewSet(client, "buffs:_tenants"),
 	}
@@ -287,63 +287,6 @@ func (r *Registry) HasImmunity(ctx context.Context, characterId uint32) bool {
 		return false
 	}
 	return hasImmunityBuff(m)
-}
-
-type PoisonTickEntry struct {
-	Tenant      tenant.Model
-	WorldId     world.Id
-	ChannelId   channel.Id
-	CharacterId uint32
-	Amount      int32
-}
-
-func (r *Registry) GetPoisonCharacters(ctx context.Context) []PoisonTickEntry {
-	t := tenant.MustFromContext(ctx)
-	vals, err := r.characters.GetAllValues(ctx, t)
-	if err != nil {
-		return nil
-	}
-
-	var results []PoisonTickEntry
-	for _, m := range vals {
-		for _, b := range m.buffs {
-			if b.Expired() {
-				continue
-			}
-			for _, c := range b.Changes() {
-				if c.Type() == "POISON" {
-					results = append(results, PoisonTickEntry{
-						Tenant:      t,
-						WorldId:     m.worldId,
-						ChannelId:   m.channelId,
-						CharacterId: m.characterId,
-						Amount:      c.Amount(),
-					})
-					break
-				}
-			}
-		}
-	}
-	return results
-}
-
-func (r *Registry) GetLastPoisonTick(ctx context.Context, characterId uint32) (time.Time, bool) {
-	t := tenant.MustFromContext(ctx)
-	tick, err := r.poisonTicks.Get(ctx, t, characterId)
-	if err != nil {
-		return time.Time{}, false
-	}
-	return tick, true
-}
-
-func (r *Registry) UpdatePoisonTick(ctx context.Context, characterId uint32, at time.Time) {
-	t := tenant.MustFromContext(ctx)
-	_ = r.poisonTicks.Put(ctx, t, characterId, at)
-}
-
-func (r *Registry) ClearPoisonTick(ctx context.Context, characterId uint32) {
-	t := tenant.MustFromContext(ctx)
-	_ = r.poisonTicks.Remove(ctx, t, characterId)
 }
 
 // UpdateStatValue changes the amount of one stat on the character's active

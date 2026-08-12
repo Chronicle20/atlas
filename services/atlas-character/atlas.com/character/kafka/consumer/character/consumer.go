@@ -241,7 +241,9 @@ func handleRequestDistributeSp(db *gorm.DB) message.Handler[character2.Command[c
 		if c.Type != character2.CommandRequestDistributeSp {
 			return
 		}
-		_ = character.NewProcessor(l, ctx, db).RequestDistributeSp(c.TransactionId, c.CharacterId, c.Body.SkillId, c.Body.Amount)
+		if err := character.NewProcessor(l, ctx, db).RequestDistributeSp(c.TransactionId, c.CharacterId, c.Body.SkillId, c.Body.Amount); err != nil {
+			l.WithError(err).Errorf("Unable to distribute sp to skill [%d] for character [%d].", c.Body.SkillId, c.CharacterId)
+		}
 	}
 }
 

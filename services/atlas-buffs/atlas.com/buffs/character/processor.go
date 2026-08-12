@@ -2,8 +2,10 @@ package character
 
 import (
 	"atlas-buffs/buff/stat"
+	extchar "atlas-buffs/external/character"
 	"atlas-buffs/kafka/message"
 	character2 "atlas-buffs/kafka/message/character"
+	"atlas-buffs/periodic"
 	"context"
 	"errors"
 	"time"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -25,19 +28,32 @@ type Processor interface {
 	UpdateStatValue(worldId world.Id, characterId uint32, sourceId int32, statType string, operation string, amount int32, capValue int32) error
 	ExpireBuffs() error
 	ExpireForCharacter(worldId world.Id, characterId uint32) error
-	ProcessPoisonTicks() error
+	ProcessPeriodicTicks() error
 }
 
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
+	// now and getCharacterHp are injected so the periodic tick pass is
+	// deterministic under test (same shape as berserk.ProcessorImpl).
+	now            func() time.Time
+	getCharacterHp func(characterId uint32) (uint16, error)
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
-	return &ProcessorImpl{
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
+		now: time.Now,
 	}
+	p.getCharacterHp = func(characterId uint32) (uint16, error) {
+		rm, err := extchar.RequestById(characterId)(l, ctx)
+		if err != nil {
+			return 0, err
+		}
+		return rm.Hp, nil
+	}
+	return p
 }
 
 var _ Processor = (*ProcessorImpl)(nil)
@@ -101,6 +117,7 @@ func (p *ProcessorImpl) Cancel(worldId world.Id, characterId uint32, sourceId in
 	for _, b := range cancelled {
 		sets = append(sets, b.Changes())
 	}
+	GetRegistry().ClearPeriodicTicksFor(p.ctx, characterId, sets...)
 	markBerserkDirtyOnMaxHpChange(p.l, p.ctx, characterId, sets...)
 	return nil
 }
@@ -125,6 +142,7 @@ func (p *ProcessorImpl) CancelAll(worldId world.Id, characterId uint32) error {
 	for _, b := range buffs {
 		sets = append(sets, b.Changes())
 	}
+	GetRegistry().ClearPeriodicTicksFor(p.ctx, characterId, sets...)
 	markBerserkDirtyOnMaxHpChange(p.l, p.ctx, characterId, sets...)
 	return nil
 }
@@ -161,6 +179,7 @@ func (p *ProcessorImpl) CancelByStatTypes(worldId world.Id, characterId uint32, 
 	for _, b := range cancelled {
 		sets = append(sets, b.Changes())
 	}
+	GetRegistry().ClearPeriodicTicksFor(p.ctx, characterId, sets...)
 	markBerserkDirtyOnMaxHpChange(p.l, p.ctx, characterId, sets...)
 	return nil
 }
@@ -228,6 +247,7 @@ func (p *ProcessorImpl) expireInto(buf *message.Buffer, worldId world.Id, charac
 		for _, eb := range ebs {
 			sets = append(sets, eb.Changes())
 		}
+		GetRegistry().ClearPeriodicTicksFor(p.ctx, characterId, sets...)
 		markBerserkDirtyOnMaxHpChange(p.l, p.ctx, characterId, sets...)
 	}
 	return nil
@@ -250,35 +270,142 @@ func ExpireBuffs(l logrus.FieldLogger, ctx context.Context) error {
 	return nil
 }
 
-func (p *ProcessorImpl) ProcessPoisonTicks() error {
-	entries := GetRegistry().GetPoisonCharacters(p.ctx)
-	now := time.Now()
+// hpLookup memoizes one character's HP read for the duration of a single tick
+// pass, including the failure outcome — a character whose HP could not be read
+// is not retried within the same pass (FR-3.6).
+type hpLookup struct {
+	hp uint16
+	ok bool
+}
+
+// maxTickMagnitude clamps a per-tick magnitude before the int16 conversion the
+// CHANGE_HP command body requires. No real WZ value approaches it; the clamp
+// exists so a corrupt stored amount degrades to a large tick instead of
+// wrapping sign and turning a drain into a heal.
+const maxTickMagnitude = int32(32767)
+
+// ProcessPeriodicTicks is one tick pass for one tenant. It scans once
+// (GetPeriodicEntries), then for each due (character, statType) emits the
+// resource change the periodic-effect table prescribes. A row is due when it
+// has never ticked or when now - lastTick >= the row's interval, so one 1s
+// driving task honors every row's own cadence (FR-2.3).
+//
+// The throttle read and the store update straddle buf.Put, exactly as the
+// pre-task-214 poison path did: a crash between the two re-ticks on the next
+// pass, a crash before Put skips a tick. Both are one-interval errors on a
+// non-idempotent HP mutation. Making this exactly-once needs an idempotency key
+// on the CHANGE_HP command — an atlas-character contract change, out of scope
+// for task-214 (design.md §3.5).
+func (p *ProcessorImpl) ProcessPeriodicTicks() error {
+	entries, err := GetRegistry().GetPeriodicEntries(p.ctx)
+	if err != nil {
+		// A scan failure degrades to "no ticks this pass, try again next
+		// interval" rather than propagating: the ticker must not crash on a
+		// transient Redis blip, and the next 1s pass self-heals. Logged here
+		// (not returned) so this failure reads distinctly from a genuine
+		// message-emit error below, which the outer tenant loop does treat
+		// as pass-level failure.
+		p.l.WithError(err).Warn("Periodic tick scan failed; skipping this tick pass.")
+		return nil
+	}
+	now := p.now()
+	hpCache := make(map[uint32]hpLookup)
 
 	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
 		for _, entry := range entries {
-			lastTick, hasTicked := GetRegistry().GetLastPoisonTick(p.ctx, entry.CharacterId)
-			if hasTicked && now.Sub(lastTick) < time.Second {
+			eff, ok := periodic.Lookup(entry.StatType)
+			if !ok {
 				continue
 			}
 
-			amount := int16(-entry.Amount)
-			if amount >= 0 {
+			key := TickKey{CharacterId: entry.CharacterId, StatType: entry.StatType}
+			if last, ticked := GetRegistry().GetPeriodicTick(p.ctx, key); ticked && now.Sub(last) < eff.Interval() {
 				continue
 			}
 
-			p.l.Debugf("Poison tick for character [%d], damage [%d].", entry.CharacterId, -amount)
+			// A non-positive stored magnitude is skipped, preserving the
+			// pre-task-214 poison guard generically (FR-1.5).
+			magnitude := entry.Amount
+			if magnitude <= 0 {
+				continue
+			}
+			if magnitude > maxTickMagnitude {
+				magnitude = maxTickMagnitude
+			}
+
+			// One arm per resource. The default is a guard, not a stub: it is
+			// unreachable with today's rows, and its job is to make a future MP
+			// row fail loudly at the first tick instead of silently emitting
+			// nothing.
+			switch eff.Resource() {
+			case periodic.ResourceHP:
+			default:
+				p.l.Errorf("Periodic effect [%s] targets unmapped resource [%s]; no command emitted.", entry.StatType, eff.Resource())
+				continue
+			}
+
+			amount := int16(eff.Direction()) * int16(magnitude)
+
+			if eff.Floor() && amount < 0 {
+				hp, ok := p.hpFor(hpCache, entry.CharacterId)
+				if !ok {
+					continue
+				}
+				if hp <= 1 {
+					p.l.Debugf("Periodic tick [%s] for character [%d] suppressed: already at [%d] HP.", entry.StatType, entry.CharacterId, hp)
+					continue
+				}
+				if int32(hp)+int32(amount) < 1 {
+					amount = -int16(hp - 1)
+				}
+			}
+
+			p.l.Debugf("Periodic tick [%s] for character [%d], amount [%d].", entry.StatType, entry.CharacterId, amount)
 
 			if err := buf.Put(character2.EnvCommandTopicCharacter, changeHPCommandProvider(entry.WorldId, entry.ChannelId, entry.CharacterId, amount)); err != nil {
 				return err
 			}
 
-			GetRegistry().UpdatePoisonTick(p.ctx, entry.CharacterId, now)
+			// The visual pulse rides WITH the resource change, not instead of
+			// it, and only for rows whose source skill has an animation the
+			// client will actually draw (periodic.Effect.SpecialEffect). A
+			// non-positive SourceId means the buff was stored without a source
+			// skill; there is nothing to name in the effect packet, so skip the
+			// pulse rather than emit skill id 0.
+			if eff.SpecialEffect() && entry.SourceId > 0 {
+				if err := buf.Put(character2.EnvEventStatusTopic, periodicEffectStatusEventProvider(entry.WorldId, entry.ChannelId, entry.CharacterId, uint32(entry.SourceId), entry.StatType)); err != nil {
+					return err
+				}
+			}
+
+			GetRegistry().UpdatePeriodicTick(p.ctx, key, now)
 		}
 		return nil
 	})
 }
 
-func ProcessPoisonTicks(l logrus.FieldLogger, ctx context.Context) error {
+// hpFor reads a character's current HP at most once per tick pass. A read
+// failure is cached as a miss and logged: the caller skips the tick rather than
+// emitting an unclamped drain, because one missed 4s tick is invisible and one
+// unintended DIED is not (design D5).
+func (p *ProcessorImpl) hpFor(cache map[uint32]hpLookup, characterId uint32) (uint16, bool) {
+	if c, seen := cache[characterId]; seen {
+		return c.hp, c.ok
+	}
+	hp, err := p.getCharacterHp(characterId)
+	if err != nil {
+		degrade.Observe(p.l, "buffs.periodic.character_hp", characterId, err)
+		cache[characterId] = hpLookup{}
+		return 0, false
+	}
+	cache[characterId] = hpLookup{hp: hp, ok: true}
+	return hp, true
+}
+
+// ProcessPeriodicTicks fans one tick pass out per tenant (FR-2.5): tenant work
+// runs under tenant.WithContext in a routine.Go goroutine, same shape as the
+// expiration and berserk sweeps.
+func ProcessPeriodicTicks(l logrus.FieldLogger, ctx context.Context) error {
 	ts, err := GetRegistry().GetTenants(ctx)
 	if err != nil {
 		return err
@@ -287,8 +414,8 @@ func ProcessPoisonTicks(l logrus.FieldLogger, ctx context.Context) error {
 	for _, t := range ts {
 		routine.Go(l, ctx, func(_ context.Context) {
 			tctx := tenant.WithContext(ctx, t)
-			if err := NewProcessor(l, tctx).ProcessPoisonTicks(); err != nil {
-				l.WithError(err).Error("Failed to process poison ticks for tenant.")
+			if err := NewProcessor(l, tctx).ProcessPeriodicTicks(); err != nil {
+				l.WithError(err).Error("Failed to process periodic ticks for tenant.")
 			}
 		})
 	}

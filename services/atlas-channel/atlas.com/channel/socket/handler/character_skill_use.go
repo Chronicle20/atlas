@@ -173,9 +173,9 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			}
 		}
 
-		session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(s.CharacterId(), AnnounceSkillUse(l)(ctx)(wp)(sui.SkillId(), c.Level(), sui.SkillLevel()))
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(s.CharacterId(), AnnounceDirectedSkillUse(l)(ctx)(wp)(sui.SkillId(), c.Level(), sui.SkillLevel(), sui.Direction()))
 
-		_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), AnnounceForeignSkillUse(l)(ctx)(wp)(s.CharacterId(), sui.SkillId(), c.Level(), sui.SkillLevel()))
+		_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), AnnounceForeignDirectedSkillUse(l)(ctx)(wp)(s.CharacterId(), sui.SkillId(), c.Level(), sui.SkillLevel(), sui.Direction()))
 
 		err = enableActions(l)(ctx)(wp)(s)
 		if err != nil {

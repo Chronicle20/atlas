@@ -101,10 +101,12 @@ const EnvCommandTopicCharacterBuff = "COMMAND_TOPIC_CHARACTER_BUFF"
 // topic-name only -- no shared library import).
 const EnvCommandTopicMonster = "COMMAND_TOPIC_MONSTER"
 
-// PositionLookup resolves a character's current world coordinates. Injected
-// as a seam so MistTick can be unit-tested without standing up the
-// atlas-character REST client.
-type PositionLookup func(ctx context.Context, characterId uint32) (x int16, y int16, err error)
+// CharacterLookup resolves a character's current world coordinates and HP.
+// Injected as a seam so MistTick can be unit-tested without standing up the
+// atlas-character REST client. HP travels with position because the recovery
+// tick must skip dead characters (FR-5.3) and one REST call already carries
+// both.
+type CharacterLookup func(ctx context.Context, characterId uint32) (x int16, y int16, hp uint16, err error)
 
 // buffCommand is the Kafka envelope mirrored from atlas-monsters'
 // disease.go. Defined locally to avoid a cross-service import.
@@ -237,7 +239,7 @@ func applyStatusCommandProvider(m mist.Mist, monsterUniqueId uint32) model.Provi
 type MistTick struct {
 	l                logrus.FieldLogger
 	interval         int
-	posLookup        PositionLookup
+	charLookup       CharacterLookup
 	registry         *mist.Registry
 	producerProvider func(ctx context.Context) producer.Provider
 	processorFactory func(l logrus.FieldLogger, ctx context.Context, p producer.Provider, r *mist.Registry) mist.Processor
@@ -246,15 +248,15 @@ type MistTick struct {
 }
 
 // NewMistTick constructs a MistTick wired to the singleton mist registry
-// and the standard producer provider. The supplied posLookup is the seam
-// for fetching character world coordinates (atlas-character REST in
+// and the standard producer provider. The supplied charLookup is the seam
+// for fetching character world coordinates and HP (atlas-character REST in
 // production, fakes in tests).
-func NewMistTick(l logrus.FieldLogger, interval int, posLookup PositionLookup) *MistTick {
+func NewMistTick(l logrus.FieldLogger, interval int, charLookup CharacterLookup) *MistTick {
 	return &MistTick{
-		l:         l,
-		interval:  interval,
-		posLookup: posLookup,
-		registry:  mist.GetRegistry(),
+		l:          l,
+		interval:   interval,
+		charLookup: charLookup,
+		registry:   mist.GetRegistry(),
 		producerProvider: func(ctx context.Context) producer.Provider {
 			return producer.ProviderImpl(l)(ctx)
 		},
@@ -381,7 +383,7 @@ func (r *MistTick) tickCharacters(ctx context.Context, prov producer.Provider, t
 	}
 	emitErr := message.Emit(prov)(func(buf *message.Buffer) error {
 		for _, cid := range members {
-			x, y, err := r.posLookup(ctx, cid)
+			x, y, _, err := r.charLookup(ctx, cid)
 			if err != nil {
 				r.l.WithError(err).Debugf("MistTick: position fetch failed for character [%d].", cid)
 				continue

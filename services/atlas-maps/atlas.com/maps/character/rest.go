@@ -6,11 +6,13 @@ import (
 
 // RestModel is the minimal projection of the atlas-character JSON:API
 // resource needed by atlas-maps. atlas-character exposes many more
-// attributes; only the fields we consume (position) are declared here.
+// attributes; only the fields we consume (position, and HP for the
+// liveness check on the Recovery Aura tick) are declared here.
 type RestModel struct {
 	Id uint32 `json:"-"`
 	X  int16  `json:"x"`
 	Y  int16  `json:"y"`
+	Hp uint16 `json:"hp"`
 }
 
 // GetName returns the JSON:API resource type. Must match atlas-character.

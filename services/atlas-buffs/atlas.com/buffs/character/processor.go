@@ -27,7 +27,6 @@ type Processor interface {
 	UpdateStatValue(worldId world.Id, characterId uint32, sourceId int32, statType string, operation string, amount int32, capValue int32) error
 	ExpireBuffs() error
 	ExpireForCharacter(worldId world.Id, characterId uint32) error
-	ProcessPoisonTicks() error
 	ProcessPeriodicTicks() error
 }
 
@@ -270,34 +269,6 @@ func ExpireBuffs(l logrus.FieldLogger, ctx context.Context) error {
 	return nil
 }
 
-func (p *ProcessorImpl) ProcessPoisonTicks() error {
-	entries := GetRegistry().GetPoisonCharacters(p.ctx)
-	now := time.Now()
-
-	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
-		for _, entry := range entries {
-			lastTick, hasTicked := GetRegistry().GetLastPoisonTick(p.ctx, entry.CharacterId)
-			if hasTicked && now.Sub(lastTick) < time.Second {
-				continue
-			}
-
-			amount := int16(-entry.Amount)
-			if amount >= 0 {
-				continue
-			}
-
-			p.l.Debugf("Poison tick for character [%d], damage [%d].", entry.CharacterId, -amount)
-
-			if err := buf.Put(character2.EnvCommandTopicCharacter, changeHPCommandProvider(entry.WorldId, entry.ChannelId, entry.CharacterId, amount)); err != nil {
-				return err
-			}
-
-			GetRegistry().UpdatePoisonTick(p.ctx, entry.CharacterId, now)
-		}
-		return nil
-	})
-}
-
 // hpLookup memoizes one character's HP read for the duration of a single tick
 // pass, including the failure outcome — a character whose HP could not be read
 // is not retried within the same pass (FR-3.6).
@@ -422,23 +393,6 @@ func ProcessPeriodicTicks(l logrus.FieldLogger, ctx context.Context) error {
 			tctx := tenant.WithContext(ctx, t)
 			if err := NewProcessor(l, tctx).ProcessPeriodicTicks(); err != nil {
 				l.WithError(err).Error("Failed to process periodic ticks for tenant.")
-			}
-		})
-	}
-	return nil
-}
-
-func ProcessPoisonTicks(l logrus.FieldLogger, ctx context.Context) error {
-	ts, err := GetRegistry().GetTenants(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, t := range ts {
-		routine.Go(l, ctx, func(_ context.Context) {
-			tctx := tenant.WithContext(ctx, t)
-			if err := NewProcessor(l, tctx).ProcessPoisonTicks(); err != nil {
-				l.WithError(err).Error("Failed to process poison ticks for tenant.")
 			}
 		})
 	}

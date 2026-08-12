@@ -301,8 +301,8 @@ func TestPeriodicTickIsTenantScoped(t *testing.T) {
 }
 
 // TestPeriodicTickClearedOnRemoval covers FR-6.1/FR-6.2: every removal path
-// drops the (character, statType) throttle entry. ClearPoisonTick's
-// zero-caller state must not recur.
+// drops the (character, statType) throttle entry. The predecessor poison
+// throttle's zero-caller state must not recur.
 func TestPeriodicTickClearedOnRemoval(t *testing.T) {
 	const characterId = uint32(100)
 	const sourceId = int32(1311008)

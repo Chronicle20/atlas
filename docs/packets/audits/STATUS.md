@@ -10,12 +10,12 @@ Tool: `aaea6c38e788ea7abf7779030022cf92aa0c03f8c9d743308ff64b013d6295b5`
 - export gms_v61: `d589e6b13a9c58bb3bfeaf234f01c42d5695cc54ef3957eb628a02d6042152b3`
 - export gms_v72: `4189e1f4ac661033cba983e87c29923ad2b7de949f3396611e71b574f38f35de`
 - export gms_v79: `87f07e503dcb18d536c9dfd12823ce42176db76e668d2eb31f72e1c621185752`
-- export gms_v83: `13f6290c583bff9306393059d91ece2d399b55622751717b011c5e625f471378`
-- export gms_v84: `d5c07382a1a0a90fb6930f475eaf45deda9b1f790a27548ccebb0529a096ff49`
-- export gms_v87: `43b001d1d9b15d5cfa23bcfe39ceec6d8c6bab6b07c41471bbd3ef7441880b18`
-- export gms_v92: `a4a5a4acf4d73a43705445ea46dcd70934937b89a38addefe1e45b486f20d128`
-- export gms_v95: `0883cc1d4e973f011fc0166fdb3537f512e3513e8c0d36be46619e8a9a25bdd3`
-- export jms_v185: `9cf0dce720afc0ba2fb2ae7dbb179c432b599ea41575c7db40c418ecee5b020d`
+- export gms_v83: `9cd6b47ebdb40d54b0358dc7227c985002145c7dc88e27e95175cb0207736bdb`
+- export gms_v84: `621cfa32bb7f86b729136b5c30cfdee02bbed10a2e00d2f5a88d03edeec4a76d`
+- export gms_v87: `b3298f99a86c3b7c391563abd8f7d6346d7683b39e2a7b02478a1e23cbd6c8bb`
+- export gms_v92: `40ba7a1118430cd74154fbf601fd9210e55cc61995a4ac73f290bb881634d012`
+- export gms_v95: `67cc150ed60812f7fd87bdd727371358184dd01880542d2225088b8a3945636f`
+- export jms_v185: `86593392498422c216d41791815924dac6642caea385f2e75b490659cc6769a7`
 
 ## Clientbound
 
@@ -349,7 +349,7 @@ Tool: `aaea6c38e788ea7abf7779030022cf92aa0c03f8c9d743308ff64b013d6295b5`
 | TALK_GUIDE | CUserLocal::OnTutorMsg | npc/clientbound/NpcGuideTalkIdx (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D1 | ✅ | 0x0E0 | ✅ | 0x0E5 | ✅ | 0x0EE | ✅ | 0x102 | ❌ | 0x100 | ✅ | 0x0EA | ✅ |
 | MESO_BAG_MESSAGE | CUserLocal::OnRandomMesobag_Succeeded |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D2 | ❌ |  | ⬜ | 0x0DD | ❌ | 0x0F0 | ❌ | 0x0EE | ❌ |  | ⬜ |
 | REACTOR_HIT | CReactorPool::OnReactorChangeState | reactor/clientbound/ReactorHit | 0x0D2 | ✅ | 0x0D6 | 🟡ᵈ | 0x0F7 | 🟡ᵈ | 0x0FF | 🟡ᵈ | 0x115 | ✅ | 0x11C | ✅ | 0x126 | ✅ | 0x146 | 🟡ᵈ | 0x14E | ✅ | 0x12D | ✅ |
-| SHOW_COMBO | CUserLocal::OnIncComboResponse |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D2 | ❌ | 0x0E1 | ❌ | 0x0E6 | ❌ | 0x0EF | ❌ | 0x103 | ❌ | 0x101 | ❌ | 0x0EB | ❌ |
+| SHOW_COMBO | CUserLocal::OnIncComboResponse | character/clientbound/CharacterShowCombo (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D2 | ❌ | 0x0E1 | ✅ | 0x0E6 | ✅ | 0x0EF | ✅ | 0x103 | ✅ | 0x101 | ✅ | 0x0EB | ✅ |
 | IDA_0X0D4 | CUser::OnEmotion | character/clientbound/CharacterExpression (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D4 | ✅ |
 | REACTOR_SPAWN | CReactorPool::OnReactorEnterField | reactor/clientbound/ReactorSpawn | 0x0D4 | 🟡ᵖ | 0x0D8 | ❌ | 0x0F9 | ❌ | 0x101 | ❌ | 0x117 | ✅ | 0x11E | ✅ | 0x128 | ✅ | 0x148 | 🟡ᵈ | 0x150 | ✅ | 0x12F | ✅ |
 | REACTOR_DESTROY | CReactorPool::OnReactorLeaveField | reactor/clientbound/ReactorDestroy | 0x0D5 | ✅ | 0x0D9 | 🟡ᵈ | 0x0FA | 🟡ᵈ | 0x102 | 🟡ᵈ | 0x118 | ✅ | 0x11F | ✅ | 0x129 | ✅ | 0x149 | 🟡ᵈ | 0x151 | ✅ | 0x130 | ✅ |
@@ -723,7 +723,7 @@ Tool: `aaea6c38e788ea7abf7779030022cf92aa0c03f8c9d743308ff64b013d6295b5`
 | COUPON_CODE | CCashShop::OnStatusCoupon |  | 0x0A1 | ✅ | 0x0C5 | ✅ | 0x0DC | ✅ | 0x0DE | ✅ | 0x0E6 | ✅ | 0x0EC | ✅ | 0x0F3 | ✅ | 0x10D | ✅ | 0x114 | ✅ | 0x0F6 | ✅ |
 | MOB_DAMAGE_MOB | CMob::SetDamagedByMob | monster/serverbound/MonsterMobDamageMob (T1) |  | ⬜ | 0x0A1 | ✅ | 0x0B8 | ✅ | 0x0BA | ✅ | 0x0C2 | ✅ | 0x0C7 | ✅ | 0x0CE | ✅ | 0x0E2 | ❌ | 0x0E9 | ✅ | 0x0C8 | ✅ |
 | CLICK_GUIDE | CUserLocal::HandleLButtonDblClk |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A2 | ❌ |  | ⬜ | 0x0AC | ❌ | 0x0B9 | ❌ | 0x0BC | ❌ | 0x09C | ❌ |
-| ARAN_COMBO_COUNTER | CUserLocal::RequestIncCombo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A3 | ❌ | 0x0A9 | ❌ | 0x0AD | ❌ | 0x0BA | ❌ | 0x0BD | ❌ | 0x09D | ❌ |
+| ARAN_COMBO_COUNTER | CUserLocal::RequestIncCombo | character/serverbound/CharacterAranComboCounterRequest (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A3 | ✅ | 0x0A9 | ✅ | 0x0AD | ✅ | 0x0BA | ✅ | 0x0BD | ✅ | 0x09D | ✅ |
 | JMS_CONSUME_ITEM |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A3 | ❌ |
 | NPC_ACTION | CNpc::GenerateMovePath | npc/serverbound/NpcActionRequest (T1) |  | ⬜ | 0x0A4 | ✅ | 0x0BB | ✅ | 0x0BD | ✅ | 0x0C5 | ❌ | 0x0CB | ✅ | 0x0D2 | ❌ | 0x0EA | ❌ | 0x0F1 | ✅ | 0x0D0 | ✅ |
 | FIND_FRIEND | CUIFindFriend::SendMyInfoRequest; CUIFindFriend::SendSearchRequest; CUIFindFriendDetail::SetDetailInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0A6 | ❌ | 0x0A6 | ❌ | 0x0B1 | ❌ | 0x0BF | ❌ | 0x0C2 | ❌ |  | ⬜ |
@@ -864,6 +864,7 @@ Tool: `aaea6c38e788ea7abf7779030022cf92aa0c03f8c9d743308ff64b013d6295b5`
 | channel/serverbound/ChannelChangeRequest |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChairPortable (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChalkboardClose (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| character/serverbound/CharacterAranComboCounterRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |
 | character/serverbound/ExpressionRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
 | character/serverbound/KeyMapChange (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/Move (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ✅ |
@@ -1054,16 +1055,16 @@ Tool: `aaea6c38e788ea7abf7779030022cf92aa0c03f8c9d743308ff64b013d6295b5`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 204 | 0 | 19 | 193 | 602 | 0 | 49.0% |
-| v61 | 266 | 0 | 56 | 234 | 462 | 0 | 47.8% |
-| v72 | 282 | 0 | 69 | 249 | 418 | 0 | 47.0% |
-| v79 | 327 | 0 | 68 | 246 | 377 | 0 | 51.0% |
-| v83 | 445 | 0 | 0 | 345 | 228 | 0 | 56.3% |
-| v84 | 419 | 0 | 0 | 352 | 247 | 0 | 54.3% |
-| v87 | 453 | 0 | 0 | 375 | 190 | 0 | 54.7% |
-| v92 | 21 | 0 | 151 | 705 | 141 | 0 | 2.4% |
-| v95 | 478 | 0 | 0 | 434 | 106 | 0 | 52.4% |
-| JMS185 | 427 | 0 | 0 | 394 | 197 | 0 | 52.0% |
+| v48 | 204 | 0 | 19 | 194 | 602 | 0 | 48.9% |
+| v61 | 266 | 0 | 56 | 235 | 462 | 0 | 47.8% |
+| v72 | 282 | 0 | 69 | 250 | 418 | 0 | 46.9% |
+| v79 | 327 | 0 | 68 | 247 | 377 | 0 | 50.9% |
+| v83 | 447 | 0 | 0 | 344 | 228 | 0 | 56.5% |
+| v84 | 422 | 0 | 0 | 350 | 247 | 0 | 54.7% |
+| v87 | 455 | 0 | 0 | 374 | 190 | 0 | 54.9% |
+| v92 | 24 | 0 | 151 | 703 | 141 | 0 | 2.7% |
+| v95 | 480 | 0 | 0 | 433 | 106 | 0 | 52.6% |
+| JMS185 | 429 | 0 | 0 | 393 | 197 | 0 | 52.2% |
 
 ## Conflicts
 

@@ -1,0 +1,11 @@
+packet: character/clientbound/CharacterShowCombo
+direction: clientbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::OnIncComboResponse
+    address: "0x8fe8e0"
+    decompile_sha256: 1701f4ac521edd7015abd8deb0d721aa5a875ca2932268d71b1a1e4d6c330507
+verifies:
+    - libs/atlas-packet/character/clientbound/show_combo_test.go#TestShowComboRoundTrip
+    - libs/atlas-packet/character/clientbound/show_combo_test.go#TestShowComboByteFixture

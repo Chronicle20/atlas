@@ -6,12 +6,22 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-// packet-audit:verify packet=character/clientbound/ShowCombo version=gms_v83 ida=0x95086b
-// packet-audit:verify packet=character/clientbound/ShowCombo version=gms_v84 ida=0x988698
-// packet-audit:verify packet=character/clientbound/ShowCombo version=gms_v87 ida=0x9cbcd4
-// packet-audit:verify packet=character/clientbound/ShowCombo version=gms_v92 ida=0x913a68
-// packet-audit:verify packet=character/clientbound/ShowCombo version=gms_v95 ida=0x934238
-// packet-audit:verify packet=character/clientbound/ShowCombo version=jms_v185 ida=0xa1208d
+// packet-audit:verify packet=character/clientbound/CharacterShowCombo version=gms_v83 ida=0x9602cb
+// packet-audit:verify packet=character/clientbound/CharacterShowCombo version=gms_v84 ida=0x99f31e
+// packet-audit:verify packet=character/clientbound/CharacterShowCombo version=gms_v87 ida=0x9e3794
+// packet-audit:verify packet=character/clientbound/CharacterShowCombo version=gms_v92 ida=0x8fe8e0
+// packet-audit:verify packet=character/clientbound/CharacterShowCombo version=gms_v95 ida=0x91a970
+// packet-audit:verify packet=character/clientbound/CharacterShowCombo version=jms_v185 ida=0xa2d40d
+//
+// NOTE: these addresses are CUserLocal::OnIncComboResponse's own function
+// entry (the handler that does the Decode4 + DrawCombo), not the OnPacket
+// dispatcher's jump-table call site. design.md §2.2 cites the dispatcher
+// call-site address per version (0x95086b/0x988698/0x9cbcd4/0x913a68/
+// 0x934238/0xa1208d) to document the opcode-to-handler binding; the marker
+// here must match the address the evidence record and audit report resolve
+// via the registry fname (CUserLocal::OnIncComboResponse), which is the
+// handler's own entry (task-217, VERIFYING_A_PACKET.md "orphan marker"
+// failure mode: fix the address to match, never weaken the check).
 func TestShowComboRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

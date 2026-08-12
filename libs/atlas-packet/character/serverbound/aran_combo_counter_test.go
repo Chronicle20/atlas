@@ -6,12 +6,12 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-// packet-audit:verify packet=character/serverbound/AranComboCounter version=gms_v83 ida=0x9602f3
-// packet-audit:verify packet=character/serverbound/AranComboCounter version=gms_v84 ida=0x99f346
-// packet-audit:verify packet=character/serverbound/AranComboCounter version=gms_v87 ida=0x9e37bc
-// packet-audit:verify packet=character/serverbound/AranComboCounter version=gms_v92 ida=0x8ef840
-// packet-audit:verify packet=character/serverbound/AranComboCounter version=gms_v95 ida=0x909070
-// packet-audit:verify packet=character/serverbound/AranComboCounter version=jms_v185 ida=0xa2d435
+// packet-audit:verify packet=character/serverbound/CharacterAranComboCounterRequest version=gms_v83 ida=0x9602f3
+// packet-audit:verify packet=character/serverbound/CharacterAranComboCounterRequest version=gms_v84 ida=0x99f346
+// packet-audit:verify packet=character/serverbound/CharacterAranComboCounterRequest version=gms_v87 ida=0x9e37bc
+// packet-audit:verify packet=character/serverbound/CharacterAranComboCounterRequest version=gms_v92 ida=0x8ef840
+// packet-audit:verify packet=character/serverbound/CharacterAranComboCounterRequest version=gms_v95 ida=0x909070
+// packet-audit:verify packet=character/serverbound/CharacterAranComboCounterRequest version=jms_v185 ida=0xa2d435
 func TestAranComboCounterRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

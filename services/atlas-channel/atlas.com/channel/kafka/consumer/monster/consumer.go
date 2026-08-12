@@ -743,14 +743,36 @@ func bridleFailReason(cause string) (byte, bool) {
 	}
 }
 
-// handleStatusEventCaught renders a successful capture: the two effect packets
-// go to everyone in the map (both always fire — bridleMsgType selects neither;
-// neither CMob::OnCatchEffect nor CMob::OnEffectByItem reads it off the wire),
-// then the acting character alone is unlocked. result = 1 selects the "captured"
-// animation (CAnimationDisplayer::Effect_Catch @0x438eb6 loads StringPool 3687
-// for non-zero, 3688 for zero).
+// handleStatusEventCaught renders a successful capture to everyone in the map,
+// then unlocks the acting character alone.
 //
-// These MUST reach the client before the sibling DESTROYED event: the client
+// ONE effect packet, not two. The client has two independent renderers for a
+// capture and neither reads bridleMsgType off the wire, so the server chooses:
+//
+//   - CATCH_MONSTER_WITH_ITEM (CMob::OnEffectByItem @v83 0x66d997) plays the
+//     item-keyed animation, Effect/ItemEff.img/<itemId> via
+//     CAnimationDisplayer::Effect_ByItem @0x438b36, at the mob's y-2, and plays
+//     the item's sound. This is the one an item-initiated catch wants — it is
+//     the render observed in the reference client footage.
+//   - CATCH_MONSTER (CMob::OnCatchEffect @v83 0x66d6b9) plays a generic
+//     capture image out of Effect/BasicEff.img (Effect_Catch @0x438eb6:
+//     StringPool 3687 when result != 0, 3688 when 0) at the mob's y-15.
+//
+// Sending both, as this handler originally did, stacked two animations on one
+// capture. The generic one is dropped here, and it is very likely not a capture
+// render at all: ShowCatchEffect has a second, purely client-side caller in
+// CMob::OnHit (v83 0x668b83, call at 0x668e22), reached only when the hitting
+// skill is 1121001/1221001/1321001 — Hero/Paladin/DarkKnight Monster Magnet —
+// with its argument being (grab result == 3). So Effect_Catch is the
+// Monster-Magnet grab succeeded/failed image, which the client plays for itself
+// on the magnet path; CATCH_MONSTER is the server-driven entry to that same
+// renderer, not a bridle-capture effect.
+//
+// The CatchMonster codec and its template routes are deliberately retained: it
+// is a real protocol element with no sender today, and re-adding it is one
+// announce.
+//
+// This MUST reach the client before the sibling DESTROYED event: the client
 // resolves the mob via CMobPool::OnMobPacket -> GetMob and silently drops the
 // packet once the mob is gone. Both events are keyed by MapId on the same topic,
 // so the ordering is a partition guarantee.
@@ -764,12 +786,9 @@ func handleStatusEventCaught(sc server.Model, wp writer.Producer) message.Handle
 		}
 
 		f := sc.Field(e.MapId, e.Instance)
-		if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
-			if aerr := session.Announce(l)(ctx)(wp)(monsterpkt.CatchMonsterWriter)(writer.CatchMonsterBody(e.UniqueId, 1, 1))(s); aerr != nil {
-				return aerr
-			}
-			return session.Announce(l)(ctx)(wp)(monsterpkt.CatchMonsterWithItemWriter)(writer.CatchMonsterWithItemBody(e.UniqueId, int32(e.Body.ItemId), 1))(s)
-		}); err != nil {
+		if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f,
+			session.Announce(l)(ctx)(wp)(monsterpkt.CatchMonsterWithItemWriter)(writer.CatchMonsterWithItemBody(e.UniqueId, int32(e.Body.ItemId), 1)),
+		); err != nil {
 			l.WithError(err).Errorf("Unable to announce the capture of monster [%d] in map [%d].", e.UniqueId, e.MapId)
 		}
 

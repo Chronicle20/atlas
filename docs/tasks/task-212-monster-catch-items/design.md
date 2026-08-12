@@ -454,7 +454,34 @@ The roll uses `crypto/rand` via the same helper shape as `rollReward`
 (`consumable/reward.go:14`); items without `bridleProp` are deterministic
 successes once species and HP pass (FR-3.5).
 
-### 6.3 Response packet selection (PRD Q3) — both always fire
+### 6.3 Response packet selection (PRD Q3) — only `CATCH_MONSTER_WITH_ITEM` fires
+
+> **Amended after live testing (item 2270000 → mob 9300101, gms_83_1, PR-1306
+> ephemeral env).** Sending both packets stacked two capture animations on one
+> catch: `Effect_Catch` (generic, `Effect/BasicEff.img`, mob `y-15`) and
+> `Effect_ByItem` (item-keyed, `Effect/ItemEff.img/<itemId>`, mob `y-2`, plus
+> the item sound). The item-keyed render is the one seen in reference client
+> footage, so the success path now sends **only** `CATCH_MONSTER_WITH_ITEM`.
+> The `CATCH_MONSTER` codec, writer and template routes are retained — the
+> packet is real and the client decodes it; it simply has no emitter. Nothing
+> in any IDB establishes that the server must send both, so this remains a
+> decision rather than a derivation, and reversing it is one `Announce` call
+> in `handleStatusEventCaught`.
+>
+> A follow-up xref pass supports the choice: `CMob::ShowCatchEffect` (the
+> `Effect_Catch` renderer) has a **second caller** that is entirely
+> client-side — `CMob::OnHit` @v83 `0x668b83`, call at `0x668e22`, taken only
+> when the hitting skill is `1121001`/`1221001`/`1321001` (Hero / Paladin /
+> Dark Knight **Monster Magnet**, per `libs/atlas-constants/skill`), passing
+> `(grab result == 3)` as the image selector. `Effect_ByItem` and
+> `ShowEffectByItem`, by contrast, have exactly one caller each, the packet
+> arm. So `Effect_Catch` reads as the Monster-Magnet grab succeeded/failed
+> image and `CATCH_MONSTER` as the server-driven entry to that same renderer —
+> a different mechanic from a bridle capture.
+
+The original both-always-fire analysis, still valid as to *why* neither packet
+is selected by `bridleMsgType`, follows.
+
 
 `bridleMsgType` does **not** select between them. Neither
 `CMob::OnCatchEffect` nor `CMob::OnEffectByItem` reads it from the wire — both
@@ -465,8 +492,9 @@ message when `FindHitMobInRect` comes up empty.
 The two packets render different things: `OnCatchEffect` plays the generic
 capture animation at the mob position (`Effect_Catch`, F-4), and
 `OnEffectByItem` plays the item-keyed effect (`ShowEffectByItem` reads the
-mob's `x`/`y` and the item id). A successful catch sends both, in that order.
-Neither is sent on failure.
+mob's `x`/`y` and the item id). ~~A successful catch sends both, in that
+order.~~ A successful catch sends only `OnEffectByItem`'s packet (see the
+amendment above). Neither is sent on failure.
 
 `result` is `1` on both (F-4: a two-way image selector, not a status code).
 

@@ -100,7 +100,7 @@ modern (gms_61…gms_95, jms_185)        legacy (gms_48 only)
   direction  : byte
 ```
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `libs/atlas-packet/model/skill_usage_info_magnet_test.go`:
 
@@ -355,7 +355,7 @@ func TestMagnetBuilderSetters(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/libs/atlas-packet" && go test ./model/ -run Magnet -v
@@ -363,7 +363,7 @@ cd "$(git rev-parse --show-toplevel)/libs/atlas-packet" && go test ./model/ -run
 
 Expected: FAIL to compile — `undefined: MagnetGrab`, `undefined: NewMagnetGrab`, `m.MagnetGrabs undefined`, `m.Direction undefined`, `SetMagnetGrabs`/`SetDirection` undefined.
 
-- [ ] **Step 3: Add the `MagnetGrab` value type and the new fields**
+- [x] **Step 3: Add the `MagnetGrab` value type and the new fields**
 
 In `libs/atlas-packet/model/skill_usage_info.go`, extend the struct (add the two fields at the end of the existing field list):
 
@@ -438,7 +438,7 @@ func (b *SkillUsageInfoBuilder) SetDirection(v bool) *SkillUsageInfoBuilder {
 }
 ```
 
-- [ ] **Step 4: Add the identity predicate, the version gate, and the decode branch**
+- [x] **Step 4: Add the identity predicate, the version gate, and the decode branch**
 
 Add the import `"github.com/Chronicle20/atlas/libs/atlas-constants/constants"` to the file's import block. (`constants` imports only `skill` and `job`; no cycle.)
 
@@ -553,7 +553,7 @@ Insert the branch in `Decode`, immediately after `m.skillLevel = r.ReadByte()` a
 		}
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/libs/atlas-packet" && go test ./model/ -run Magnet -v
@@ -561,7 +561,7 @@ cd "$(git rev-parse --show-toplevel)/libs/atlas-packet" && go test ./model/ -run
 
 Expected: PASS, all eight tests.
 
-- [ ] **Step 6: Run the full module suite for regressions**
+- [x] **Step 6: Run the full module suite for regressions**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/libs/atlas-packet" && go test -race ./... && go vet ./...
@@ -569,7 +569,7 @@ cd "$(git rev-parse --show-toplevel)/libs/atlas-packet" && go test -race ./... &
 
 Expected: PASS. The pre-existing `skill_usage_info_test.go` cases (Dispel on gms_61, etc.) must be unaffected.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -597,7 +597,7 @@ The branch is first and returns, so no other skill's decode changes."
 
 Monster Magnet carries no `lt`/`rb` in WZ (design §3 — verified against the local extracted `Skill.wz/{112,122,132}.img.xml`), so `hasEffectBbox` returns false for it and the existing rect path can never fire. It carries `range` (200 at level 1 → 450 at level 30), which atlas-data already serves (`services/atlas-data/atlas.com/data/skill/effect/rest.go:78`) and atlas-channel currently discards.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/data/skill/effect/rest_range_test.go`:
 
@@ -633,7 +633,7 @@ func TestExtractRangeAbsentIsZero(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" && go test ./data/skill/effect/ -run Range -v
@@ -641,7 +641,7 @@ cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" &
 
 Expected: FAIL to compile — `unknown field Range in struct literal of type RestModel`.
 
-- [ ] **Step 3: Add the field, the mapping, and the getter**
+- [x] **Step 3: Add the field, the mapping, and the getter**
 
 In `rest.go`, add the field alongside `MobCount` (keep the existing json-tag style and alignment):
 
@@ -676,7 +676,7 @@ func (m Model) Range() int32 {
 
 > The private field is `rangeValue`, not `range` — `range` is a Go keyword.
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" && go test ./data/skill/effect/ -run Range -v
@@ -684,7 +684,7 @@ cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" &
 
 Expected: PASS, both tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -715,7 +715,7 @@ no lt/rb, so range is the only WZ input to its server-side target region."
 
 **Both contract copies are edited in this one task and land in one commit.** They are separate Go modules with no mirror guard; a divergent `Type` string or json tag fails no build and silently decodes into a zero-valued body.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/monster/producer_magnet_test.go`:
 
@@ -813,7 +813,7 @@ func TestMonsterCommandsShareMonsterKey(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" && \
@@ -822,7 +822,7 @@ cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" &
 
 Expected: FAIL to compile — `undefined: ClearAggroCommandProvider`, `undefined: monster2.CommandTypeClearAggro`, etc.
 
-- [ ] **Step 3: Add the producer-side contract**
+- [x] **Step 3: Add the producer-side contract**
 
 In `services/atlas-channel/atlas.com/channel/kafka/message/monster/kafka.go`, extend the const block:
 
@@ -855,7 +855,7 @@ type ForceControlCommandBody struct {
 }
 ```
 
-- [ ] **Step 4: Add the matching consumer-side contract (same commit)**
+- [x] **Step 4: Add the matching consumer-side contract (same commit)**
 
 In `services/atlas-monsters/atlas.com/monsters/kafka/consumer/monster/kafka.go`, extend the const block (note this file's Go names are unexported by convention, but the **string values must match the producer's exactly**):
 
@@ -883,7 +883,7 @@ type forceControlCommandBody struct {
 }
 ```
 
-- [ ] **Step 5: Add the two providers**
+- [x] **Step 5: Add the two providers**
 
 In `services/atlas-channel/atlas.com/channel/monster/producer.go`, append:
 
@@ -924,7 +924,7 @@ func ForceControlCommandProvider(f field.Model, monsterId uint32, characterId ui
 }
 ```
 
-- [ ] **Step 6: Add the two processor methods**
+- [x] **Step 6: Add the two processor methods**
 
 In `services/atlas-channel/atlas.com/channel/monster/processor.go`, add to the `Processor` interface after `Kill`:
 
@@ -951,7 +951,7 @@ func (p *ProcessorImpl) ForceControl(f field.Model, monsterId uint32, characterI
 }
 ```
 
-- [ ] **Step 7: Extend the mock processor**
+- [x] **Step 7: Extend the mock processor**
 
 In `services/atlas-channel/atlas.com/channel/monster/mock/processor.go`, add two fields to the `ProcessorMock` struct after `KillFunc` (`:25`), keeping the file's column alignment:
 
@@ -978,7 +978,7 @@ func (m *ProcessorMock) ForceControl(f field.Model, monsterId uint32, characterI
 }
 ```
 
-- [ ] **Step 8: Run the tests to verify they pass**
+- [x] **Step 8: Run the tests to verify they pass**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" && go test ./monster/... -v && go build ./...
@@ -987,7 +987,7 @@ cd "$(git rev-parse --show-toplevel)/services/atlas-monsters/atlas.com/monsters"
 
 Expected: PASS and both builds clean.
 
-- [ ] **Step 9: Verify the two contract copies agree**
+- [x] **Step 9: Verify the two contract copies agree**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -1001,7 +1001,7 @@ grep -n 'json:"characterId"' \
 
 Expected: `"CLEAR_AGGRO"` and `"FORCE_CONTROL"` appear once in each file with identical string literals, and the two force-control bodies both carry `json:"characterId"`.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -1037,7 +1037,7 @@ because every handler on this topic unmarshals every message."
   - `func (r *Registry) ControlMonsterWithAggro(tenant tenant.Model, uniqueId uint32, characterId uint32) (Model, error)`
   - On `Processor`: `ClearAggro(uniqueId uint32) error`, `ForceControl(uniqueId uint32, characterId uint32) error`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 The harness below is the one this package already uses: `newTestTenant(t)` (`cooldown_test.go:28`), `testField()` (`model_test.go:15`), and `recordingProcessor(ctx, tm, &emitted)` (`control_assignment_test.go:17`), which builds a `ProcessorImpl` whose `emit` hook counts `EnvEventTopicMonsterStatus` emissions. Note that `recordingProcessor` leaves `inFieldFn` and `hiddenFn` nil, so the force-control tests set them explicitly — `ForceControl` calls both.
 
@@ -1368,7 +1368,7 @@ func TestStartControlStillDefaultsAggroOff(t *testing.T) {
 
 > If any helper signature above does not match the current source (`recordingProcessor`, `newTestTenant`, `testField`, `ApplyDamage`, `Clear`), use the real one — do not add a `*_testhelpers.go` file and do not change the production signature to fit the test.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/services/atlas-monsters/atlas.com/monsters" && \
@@ -1377,7 +1377,7 @@ cd "$(git rev-parse --show-toplevel)/services/atlas-monsters/atlas.com/monsters"
 
 Expected: FAIL to compile — `ClearAggro`, `ForceControl`, `ClearDamageEntries`, `ControlMonsterWithAggro`, `ControlWithAggro` all undefined.
 
-- [ ] **Step 3: Add `Model.ControlWithAggro`**
+- [x] **Step 3: Add `Model.ControlWithAggro`**
 
 In `monster/model.go`, next to `Control`:
 
@@ -1394,7 +1394,7 @@ func (m Model) ControlWithAggro(characterId uint32) Model {
 }
 ```
 
-- [ ] **Step 4: Add the registry operations**
+- [x] **Step 4: Add the registry operations**
 
 In `monster/registry.go`, next to `DecaySummary` / `DecayDamageEntries`:
 
@@ -1473,7 +1473,7 @@ func (r *Registry) ControlMonsterWithAggro(tenant tenant.Model, uniqueId uint32,
 
 > Before settling on `cur.DamageEntries = nil`, check how `fromStored`/`toStored` round-trip that field. If a `nil` slice decodes differently from an empty one in the stored form, use the empty-slice form instead. The "full wipe" test from Step 1 catches either mistake.
 
-- [ ] **Step 5: Split `startControl` and add the two processor methods**
+- [x] **Step 5: Split `startControl` and add the two processor methods**
 
 In `monster/processor.go`, add to the `Processor` interface after `Catch`:
 
@@ -1612,7 +1612,7 @@ func (p *ProcessorImpl) ForceControl(uniqueId uint32, characterId uint32) error 
 }
 ```
 
-- [ ] **Step 6: Register the two consumer handlers**
+- [x] **Step 6: Register the two consumer handlers**
 
 In `kafka/consumer/monster/consumer.go`, add two registrations inside `InitHandlers` after the `handleCatchCommand` block:
 
@@ -1651,7 +1651,7 @@ func handleForceControlCommand(l logrus.FieldLogger, ctx context.Context, c comm
 }
 ```
 
-- [ ] **Step 7: Run the tests to verify they pass**
+- [x] **Step 7: Run the tests to verify they pass**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/services/atlas-monsters/atlas.com/monsters" && \
@@ -1660,7 +1660,7 @@ cd "$(git rev-parse --show-toplevel)/services/atlas-monsters/atlas.com/monsters"
 
 Expected: PASS, all eleven cases (four in `clear_aggro_test.go`, seven in `force_control_test.go`).
 
-- [ ] **Step 8: Run the full module suite**
+- [x] **Step 8: Run the full module suite**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/services/atlas-monsters/atlas.com/monsters" && \
@@ -1669,7 +1669,7 @@ cd "$(git rev-parse --show-toplevel)/services/atlas-monsters/atlas.com/monsters"
 
 Expected: PASS. The `startControl` split must leave every existing control/picker test green.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -1697,7 +1697,7 @@ forceAggro split rather than writing controller state directly."
 >
 > **Do NOT write a `packet-audit:verify` marker in this file. Do NOT pin an evidence record. Do NOT edit `status.json` or `STATUS.md`.** If the user has since decided otherwise, that decision changes this task's scope substantially — stop and re-plan rather than improvising.
 
-- [ ] **Step 1: Write the ten fixtures**
+- [x] **Step 1: Write the ten fixtures**
 
 Create `libs/atlas-packet/model/skill_usage_info_magnet_versions_test.go`. It reuses `decodeMagnetBody`, `modernMagnetBody` and `legacyMagnetBody` from Task 1's test file (same package).
 
@@ -1889,7 +1889,7 @@ func TestMagnetByteLayoutPerVersion(t *testing.T) {
 
 > The `wantLeft` values alternate across rows purely to exercise both direction states on the modern branch; they are test inputs, not per-version facts. The `legacy` column is the per-version fact.
 
-- [ ] **Step 2: Run the fixtures**
+- [x] **Step 2: Run the fixtures**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/libs/atlas-packet" && go test ./model/ -run TestMagnetByteLayoutPerVersion -v
@@ -1897,7 +1897,7 @@ cd "$(git rev-parse --show-toplevel)/libs/atlas-packet" && go test ./model/ -run
 
 Expected: PASS, ten subtests.
 
-- [ ] **Step 3: Verify no marker was written and the matrix is untouched**
+- [x] **Step 3: Verify no marker was written and the matrix is untouched**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -1908,7 +1908,7 @@ git status --short docs/packets/
 
 Expected: no marker under `libs/atlas-packet/model/`; `matrix --check` exits 0; `git status` reports nothing under `docs/packets/`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -1942,7 +1942,7 @@ other unverified fnames. See docs/tasks/task-215-monster-magnet/context.md."
 
 Geometry (design §4.2/§3.1). The client selects candidates through `CMobPool::CheckMobInTrapezoid` (gms_83 `0x679084`) with `xStart = casterX ± 50`, `xEnd = casterX ± range`, `y = casterY - 28`, slope 4 — a wedge whose half-height grows as `|dx|/4`. The server computes the **axis-aligned bounding box** of that wedge, not the wedge itself, because the client tests each mob's **body rect** while atlas-monsters exposes only the mob's anchor point.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 First, extend `mob_select_test.go` with the geometry and cap cases, and update its five existing `intersectMobIds(...)` call sites to `IntersectMobIds(...)`. Add `"github.com/sirupsen/logrus"` to that file's imports.
 
@@ -2317,7 +2317,7 @@ func TestMagnetRegisteredOnAllThreeIdentities(t *testing.T) {
 
 Two assertions are structural rather than behavioural — Task 9 Steps 5 and 6 check them with grep rather than contorting a unit test: that `CATCH_MONSTER_WITH_ITEM` is never referenced from the magnet path (FR-3.3), and that the fan-out uses `ForOtherSessionsInMap` so the caster is excluded.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" && \
@@ -2327,7 +2327,7 @@ cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" &
 
 Expected: FAIL to compile — `MagnetRegion`, `ExceedsMobCap` undefined; the `monstermagnet` package does not exist.
 
-- [ ] **Step 3: Add the geometry and the two extracted helpers**
+- [x] **Step 3: Add the geometry and the two extracted helpers**
 
 In `skill/handler/mob_select.go`, rename `intersectMobIds` → `IntersectMobIds` (keeping its existing doc comment verbatim), update the single production call site at `common.go:290`, add `"github.com/sirupsen/logrus"` to the imports, and append:
 
@@ -2413,7 +2413,7 @@ In `common.go`, replace the inline cap block at `:226-237` with the helper (pres
 	}
 ```
 
-- [ ] **Step 4: Write the handler**
+- [x] **Step 4: Write the handler**
 
 Create `skill/handler/monstermagnet/monstermagnet.go`:
 
@@ -2650,7 +2650,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" && go test ./skill/handler/... -v
@@ -2658,7 +2658,7 @@ cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" &
 
 Expected: PASS — the three new geometry/cap tests, all ten `monstermagnet` cases, and every pre-existing `skill/handler` test (the `IntersectMobIds` rename and the `ExceedsMobCap` extraction must leave `common_apply_to_mobs_test.go` green).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -2686,7 +2686,7 @@ body rect GetInMapRect does not expose."
 
 The `monstermagnet` package registers itself in `init()`, but nothing imports it — so without this task the handler is compiled and never installed, and a magnet cast falls through `UseSkill`'s dispatcher doing nothing, which is exactly the pre-task-215 behaviour. That silent-failure mode is why this task carries its own test.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `registrations_magnet_test.go`:
 
@@ -2719,7 +2719,7 @@ func TestMonsterMagnetHandlersRegistered(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" && go test ./skill/handler/registrations/ -v
@@ -2727,7 +2727,7 @@ cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" &
 
 Expected: FAIL — `no Handler registered for identity [...]` for all three.
 
-- [ ] **Step 3: Add the blank import**
+- [x] **Step 3: Add the blank import**
 
 In `registrations.go`, insert in the existing alphabetically-sorted block (between `mprecovery` and `mysticdoor`):
 
@@ -2735,7 +2735,7 @@ In `registrations.go`, insert in the existing alphabetically-sorted block (betwe
 	_ "atlas-channel/skill/handler/monstermagnet" // Hero/Paladin/DarkKnight Monster Magnet — task-215
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" && go test ./skill/handler/registrations/ -v
@@ -2743,7 +2743,7 @@ cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" &
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -2770,7 +2770,7 @@ The per-cast self + foreign SKILL_USE broadcast already fires once per cast for 
 
 > **FR-6 is inert on gms_48.** `template_gms_48_1.json` binds **no** `CharacterEffect` writer at all (its only effect writers are `FieldEffect`, `FieldEffectWeather`, `MonsterSpecialEffectBySkill`), so both SKILL_USE broadcasts are already dropped on that version for every skill. That is a pre-existing gap, not one this task creates, and v48 sends no direction byte anyway. Do **not** try to fix it here — adding the route needs the v48 clientbound opcode derived plus a v48 `operations` mode table, which is a separate packet-audit pass.
 
-- [ ] **Step 1: Write the test that pins the codec contract**
+- [x] **Step 1: Write the test that pins the codec contract**
 
 Create `effects_direction_test.go`:
 
@@ -2818,7 +2818,7 @@ func TestSkillUseEffectCarriesMagnetDirection(t *testing.T) {
 
 > If `CharacterSkillUseEffectBody` needs an `operations` mode table in `opts` to resolve the effect mode, build one the way an existing `character/clientbound` effect test in this repo already does, rather than inventing a new fixture shape.
 
-- [ ] **Step 2: Run the test**
+- [x] **Step 2: Run the test**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" && \
@@ -2827,7 +2827,7 @@ cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" &
 
 Expected: **PASS** — this exercises the already-complete codec, and it is here to pin that contract before the announce functions start depending on it. If it FAILS, the codec is not doing what design §1 claims; stop and re-derive before continuing.
 
-- [ ] **Step 3: Add the directed announce functions**
+- [x] **Step 3: Add the directed announce functions**
 
 Append to `socket/handler/effects.go`:
 
@@ -2863,7 +2863,7 @@ func AnnounceForeignDirectedSkillUse(l logrus.FieldLogger) func(ctx context.Cont
 }
 ```
 
-- [ ] **Step 4: Call the directed variants**
+- [x] **Step 4: Call the directed variants**
 
 In `character_skill_use.go`, replace lines 176 and 178:
 
@@ -2873,7 +2873,7 @@ In `character_skill_use.go`, replace lines 176 and 178:
 			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), AnnounceForeignDirectedSkillUse(l)(ctx)(wp)(s.CharacterId(), sui.SkillId(), c.Level(), sui.SkillLevel(), sui.Direction()))
 ```
 
-- [ ] **Step 5: Verify the plain variants still have callers**
+- [x] **Step 5: Verify the plain variants still have callers**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" && \
@@ -2882,7 +2882,7 @@ cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" &
 
 Expected: the four pre-existing call sites (`heal`, `healdispel`, `resurrection`, the monster consumer) still reference them — they must be untouched by this task.
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" && go test -race ./socket/... && go build ./...
@@ -2890,7 +2890,7 @@ cd "$(git rev-parse --show-toplevel)/services/atlas-channel/atlas.com/channel" &
 
 Expected: PASS and a clean build.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -2908,7 +2908,7 @@ the plain announce variants' four other call sites are untouched."
 
 **Files:** none modified (verification only, plus any fixes it surfaces).
 
-- [ ] **Step 1: Run every module's tests, vet, and build**
+- [x] **Step 1: Run every module's tests, vet, and build**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -2922,7 +2922,7 @@ done
 
 Expected: all three clean. Investigate and fix anything that is not — do not proceed with a known failure.
 
-- [ ] **Step 2: Run the repo-root guards**
+- [x] **Step 2: Run the repo-root guards**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -2936,7 +2936,7 @@ tools/lint.sh --check
 
 Expected: every guard exits 0. If `tools/lint.sh` rewrote anything, commit the formatting separately. If `--check` false-fails on the atlas-ui half, run `nvm use 22` and retry — that is a known environment issue, not a code problem.
 
-- [ ] **Step 3: Confirm the packet matrix is untouched**
+- [x] **Step 3: Confirm the packet matrix is untouched**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -2947,7 +2947,7 @@ git diff --stat main -- docs/packets/
 
 Expected: `matrix --check` exits 0; both `git` commands print nothing.
 
-- [ ] **Step 4: Confirm the assumed-unchanged surfaces really are unchanged**
+- [x] **Step 4: Confirm the assumed-unchanged surfaces really are unchanged**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -2956,7 +2956,7 @@ git diff --stat main -- '**/go.mod' '**/go.sum' services/atlas-configurations/se
 
 Expected: empty. A non-empty result means the plan's scope assumption broke — a `go.mod` change requires `docker buildx bake atlas-channel` / `atlas-monsters`, and a template change requires `tools/template-opcode-order-guard.sh`, `tools/template-duplicate-binding-guard.sh` and `tools/template-movement-types-guard.sh`. Run whichever applies and report the deviation.
 
-- [ ] **Step 5: Confirm `CATCH_MONSTER_WITH_ITEM` is not on the magnet path (FR-3.3)**
+- [x] **Step 5: Confirm `CATCH_MONSTER_WITH_ITEM` is not on the magnet path (FR-3.3)**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -2967,7 +2967,7 @@ grep -rn "CatchMonsterWithItem" services/atlas-channel/atlas.com/channel/skill/ 
 
 Expected: `OK`.
 
-- [ ] **Step 6: Confirm the grab-effect fan-out excludes the caster**
+- [x] **Step 6: Confirm the grab-effect fan-out excludes the caster**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -2977,7 +2977,7 @@ grep -n "ForOtherSessionsInMap\|ForEachSessionInMap\|ForSessionsInMap" \
 
 Expected: exactly one match, `ForOtherSessionsInMap`. Any all-sessions variant would double-render the animation on the caster's own screen.
 
-- [ ] **Step 7: Confirm the keydown relay regression path is untouched (design §7.4)**
+- [x] **Step 7: Confirm the keydown relay regression path is untouched (design §7.4)**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -2989,15 +2989,15 @@ git diff --stat main -- \
 
 Expected: empty. The prepare/keyup relay already covers all three magnet identities and must not have been touched.
 
-- [ ] **Step 8: Run the code review**
+- [x] **Step 8: Run the code review**
 
 Invoke `superpowers:requesting-code-review`. Go files changed in three modules and no atlas-ui TypeScript changed, so it should dispatch `plan-adherence-reviewer` and `backend-guidelines-reviewer` (not the frontend reviewer). Pin the reviewer subagents to Sonnet or Haiku, not an expensive model. Findings land in `docs/tasks/task-215-monster-magnet/audit.md`.
 
 Verify the reviewers ran inside this worktree and left no stray edits in the main repo — run `git status --short` in both the worktree and the main checkout.
 
-- [ ] **Step 9: Address the review findings, then re-run Steps 1–3**
+- [x] **Step 9: Address the review findings, then re-run Steps 1–3**
 
-- [ ] **Step 10: Commit the audit**
+- [x] **Step 10: Commit the audit**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"

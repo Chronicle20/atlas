@@ -790,6 +790,22 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 							return nil
 						}
 
+						// Energy Blast requires a full energy bar (task-216
+						// FR-6). Same soft-rejection posture as the battleship
+						// gate — before any cost, damage, or broadcast, and
+						// returning nil rather than destroying the session.
+						// The bar is NOT consumed by a successful cast; only
+						// the charged window's own timer resets it.
+						if permitted, bar := energyBlastPermitted(t, s.CharacterId(), attackId, attackIdOk); !permitted {
+							l.WithFields(logrus.Fields{
+								"character_id": s.CharacterId(),
+								"skill_id":     ai.SkillId(),
+								"energy_bar":   bar,
+							}).Debug("energy_blast_rejected_not_charged")
+							energyReannounceAuthoritative(l, ctx, wp, s)
+							return nil
+						}
+
 						se, err = skill2.NewProcessor(l, ctx).GetEffect(ai.SkillId(), sk.Level())
 						if err != nil {
 							return err
@@ -979,6 +995,24 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// so combo skill levels are already in hand.
 					if ai.AttackType() == packetmodel.AttackTypeMelee {
 						comboOrbTryUpdate(l, c, ai, comboOrbProductionDeps(l, ctx, s.Field(), s.CharacterId()))
+					}
+
+					// Energy Charge bar gain (task-216). Wider gate than Combo:
+					// every close-range attack, the Energy Charge aura's own
+					// touch damage (AttackTypeEnergy), and — on the ranged path
+					// only — Thunder Breaker Shark Wave. Fire-and-forget beside
+					// the combo emit: at most one Kafka message, zero REST, and
+					// no branch can fail the attack (NFR-1 / NFR-2). The
+					// character was fetched with SkillModelDecorator, so the
+					// energy skill level is already in hand.
+					//
+					// Note there is deliberately NO "don't refresh Energy Charge
+					// on its own touch damage" guard here (Cosmic's
+					// AbstractDealDamageHandler.java:183-184). Atlas's attack
+					// path applies no skill statups at all, so the aura cannot
+					// refresh itself — see TestEnergyChargeIsNotAnAttackCastHandler.
+					if energyChargeQualifies(ai.AttackType(), attackId, attackIdOk) {
+						energyChargeTryUpdate(l, set.Skill, c, ai, energyChargeProductionDeps(l, ctx, s.Field(), s.CharacterId()))
 					}
 
 					// Dragon Knight Sacrifice trades the caster's HP for the hit:

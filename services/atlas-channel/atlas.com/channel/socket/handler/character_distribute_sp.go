@@ -17,6 +17,8 @@ func CharacterDistributeSpHandleFunc(l logrus.FieldLogger, ctx context.Context, 
 		p := character2.DistributeSp{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
-		_ = character.NewProcessor(l, ctx).RequestDistributeSp(s.Field(), s.CharacterId(), p.UpdateTime(), p.SkillId(), 1)
+		if err := character.NewProcessor(l, ctx).RequestDistributeSp(s.Field(), s.CharacterId(), p.UpdateTime(), p.SkillId(), 1); err != nil {
+			l.WithError(err).Errorf("Unable to request sp distribution to skill [%d] for character [%d].", p.SkillId(), s.CharacterId())
+		}
 	}
 }

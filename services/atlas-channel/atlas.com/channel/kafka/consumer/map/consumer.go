@@ -13,6 +13,7 @@ import (
 	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
 	_map3 "atlas-channel/kafka/message/map"
+	"atlas-channel/kite"
 	"atlas-channel/listener"
 	_map "atlas-channel/map"
 	"atlas-channel/merchant"
@@ -264,6 +265,12 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 		routine.Go(l, ctx, func(_ context.Context) {
 			if err := chalkboard.NewProcessor(l, ctx).ForEachInMap(f, spawnChalkboardsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn chalkboards for character [%d].", s.CharacterId())
+			}
+		})
+
+		routine.Go(l, ctx, func(_ context.Context) {
+			if err := kite.NewProcessor(l, ctx).ForEachInMap(f, spawnKitesForSession(l)(ctx)(wp)(s)); err != nil {
+				l.WithError(err).Debugf("SpawnForSelf: unable to spawn kites for character [%d].", s.CharacterId())
 			}
 		})
 
@@ -803,6 +810,23 @@ func spawnChalkboardsForSession(l logrus.FieldLogger) func(ctx context.Context) 
 			return func(s session.Model) model.Operator[chalkboard.Model] {
 				return func(c chalkboard.Model) error {
 					return session.Announce(l)(ctx)(wp)(charpkt.ChalkboardUseWriter)(charpkt.NewChalkboardUse(c.Id(), c.Message()).Encode)(s)
+				}
+			}
+		}
+	}
+}
+
+// spawnKitesForSession renders one already-placed kite to a character entering
+// the map. ForEachInMap runs under model.ParallelExecute(), so this operator
+// must hold no shared mutable state: it closes over only s and wp and builds a
+// fresh KiteSpawn per model.
+func spawnKitesForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[kite.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[kite.Model] {
+		return func(wp writer.Producer) func(s session.Model) model.Operator[kite.Model] {
+			return func(s session.Model) model.Operator[kite.Model] {
+				return func(k kite.Model) error {
+					return session.Announce(l)(ctx)(wp)(fieldcb.KiteSpawnWriter)(
+						fieldcb.NewKiteSpawn(k.Id(), k.TemplateId(), k.Message(), k.Name(), k.X(), k.Y()).Encode)(s)
 				}
 			}
 		}

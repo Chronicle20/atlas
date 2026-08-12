@@ -16,7 +16,7 @@ import (
 
 // TestKiteSpawnBytesV48 — CMessageBoxPool::OnMessageBoxEnterField @0x5432f7 reads
 // Decode4(id), Decode4(templateId), DecodeStr(message), DecodeStr(name),
-// Decode2(x), Decode2(kiteType).
+// Decode2(x), Decode2(y).
 //
 // packet-audit:verify packet=field/clientbound/FieldKiteSpawn version=gms_v48 ida=0x5432f7
 func TestKiteSpawnBytesV48(t *testing.T) {
@@ -28,7 +28,7 @@ func TestKiteSpawnBytesV48(t *testing.T) {
 		0x02, 0x00, 'h', 'i', // message    — DecodeStr
 		0x03, 0x00, 'b', 'o', 'b', // name       — DecodeStr
 		0x2C, 0x01, // x = 300    — Decode2
-		0x02, 0x00, // kiteType   — Decode2
+		0x02, 0x00, // y          — Decode2
 	}
 	if !bytes.Equal(got, want) {
 		t.Errorf("v48 kite spawn:\n got % x\nwant % x", got, want)

@@ -248,3 +248,36 @@ func toFloat64Attributes(attributes map[string]interface{}) map[string]interface
 	}
 	return out
 }
+
+func TestKiteConfigTransformExtractRoundTrip(t *testing.T) {
+	data := map[string]interface{}{
+		"id":                 "kite-configs",
+		"maxPerMap":          float64(10),
+		"maxMessageLength":   float64(182),
+		"blockedMapPrefixes": []interface{}{float64(91)},
+	}
+	rm, err := TransformKiteConfig(data)
+	if err != nil {
+		t.Fatalf("TransformKiteConfig: %v", err)
+	}
+	if rm.MaxPerMap != 10 {
+		t.Errorf("MaxPerMap = %d, want 10", rm.MaxPerMap)
+	}
+	if rm.MaxMessageLength != 182 {
+		t.Errorf("MaxMessageLength = %d, want 182", rm.MaxMessageLength)
+	}
+	if len(rm.BlockedMapPrefixes) != 1 || rm.BlockedMapPrefixes[0] != 91 {
+		t.Errorf("BlockedMapPrefixes = %v, want [91]", rm.BlockedMapPrefixes)
+	}
+	if rm.GetName() != "kite-configs" {
+		t.Errorf("GetName() = %s, want kite-configs", rm.GetName())
+	}
+
+	out, err := ExtractKiteConfig(rm)
+	if err != nil {
+		t.Fatalf("ExtractKiteConfig: %v", err)
+	}
+	if out["maxPerMap"] != 10 {
+		t.Errorf("round-trip maxPerMap = %v, want 10", out["maxPerMap"])
+	}
+}

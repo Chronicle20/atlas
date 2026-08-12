@@ -1,0 +1,61 @@
+{
+  "service": "atlas-buffs",
+  "path": "services/atlas-buffs/atlas.com/buffs",
+  "date": "2026-08-12",
+  "build": "pass",
+  "testsPassed": 13,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "periodic",
+      "type": "support",
+      "checks": [
+        { "id": "immutable-model", "name": "Effect has unexported fields + accessors", "status": "pass", "evidence": "periodic/model.go:37-60" },
+        { "id": "DOM-21", "name": "Types sourced from libs/atlas-constants", "status": "pass", "evidence": "periodic/table.go:26-48, libs/atlas-constants/character/temporary_stat.go:24,29,40" },
+        { "id": "FILE-01/02/06", "name": "No package-named catch-all", "status": "pass", "evidence": "periodic/model.go, periodic/table.go each single-purpose" },
+        { "id": "test-quality", "name": "Table-driven tests, no testhelpers file", "status": "pass", "evidence": "periodic/table_test.go:16-45" }
+      ]
+    },
+    {
+      "name": "character",
+      "type": "domain",
+      "checks": [
+        { "id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "character/processor.go:42" },
+        { "id": "FILE-01", "name": "ProcessPeriodicTicks method in processor.go", "status": "pass", "evidence": "character/processor.go:298-380" },
+        { "id": "int16-arith-magnitude", "name": "Direction*magnitude int16 conversion safe", "status": "pass", "evidence": "character/processor.go:284,321-323,336" },
+        { "id": "int16-arith-floor", "name": "-int16(hp-1) floor clamp safe from overflow", "status": "pass", "evidence": "character/processor.go:338-350; proven via maxTickMagnitude bound chained through the branch guard" },
+        { "id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "character/processor.go:262,392" },
+        { "id": "DOM-28", "name": "No silent degradation on enrichment failure", "status": "fail", "evidence": "character/processor.go:368-380 (hpFor) logs Warn but never calls degrade.Observe / increments atlas_enrichment_degraded_total" },
+        { "id": "error-handling-GetPeriodicEntries", "name": "Redis read error handling", "status": "warn", "evidence": "character/periodic.go:55-60 returns nil with zero logging on Redis error" },
+        { "id": "error-handling-tick-store-writes", "name": "UpdatePeriodicTick/ClearPeriodicTick error discard", "status": "pass", "evidence": "character/periodic.go:112-121, self-healing throttle store, TTL-bounded (PeriodicTickTTL=5m, :21)" },
+        { "id": "concurrency-fanout", "name": "Per-tenant routine.Go fan-out, no shared mutable state", "status": "pass", "evidence": "character/processor.go:385-400" },
+        { "id": "redis-key-ttl", "name": "periodicTicks TenantRegistry key/TTL", "status": "pass", "evidence": "character/registry.go:36-38, character/periodic.go:114" }
+      ]
+    },
+    {
+      "name": "tasks",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-06", "name": "No package-named catch-all", "status": "pass", "evidence": "tasks/periodic.go single-purpose" },
+        { "id": "dead-code-removal", "name": "Old poison path fully removed", "status": "pass", "evidence": "tasks/poison.go, tasks/poison_test.go deleted; grep for PoisonTick/poisonTicks finds nothing; main.go:74, berserk/processor.go:265 updated" },
+        { "id": "DOM-24", "name": "Kafka producer stub / no unstubbed emit", "status": "pass", "evidence": "tasks/periodic_test.go:29-36, no tenants registered so no emit path exercised" }
+      ]
+    },
+    {
+      "name": "character-test-infra",
+      "type": "support",
+      "checks": [
+        { "id": "DOM-24", "name": "Shared producertest.Capture, no per-test t.Cleanup(producer.ResetInstance)", "status": "pass", "evidence": "character/testmain_test.go:18-21; emitted.Reset() called per-test throughout periodic_processor_test.go" },
+        { "id": "test-parallelism", "name": "No t.Parallel() in changed test files", "status": "pass", "evidence": "grep -rn t.Parallel character/*_test.go tasks/*_test.go periodic/*_test.go -> no matches" },
+        { "id": "DOM-20", "name": "Table-driven tests, same-package struct literal setup", "status": "pass", "evidence": "character/periodic_processor_test.go:24-36,167-193,306-366" }
+      ]
+    }
+  ],
+  "blocking": [
+    "DOM-28: character/processor.go:368-380 (hpFor) degrades silently on HP-fetch failure — logs Warn but never calls degrade.Observe / increments atlas_enrichment_degraded_total"
+  ],
+  "nonBlocking": [
+    "character/periodic.go:55-60 (GetPeriodicEntries) returns nil on Redis read error with zero logging; add a Warn log for observability (self-healing, not gating)"
+  ]
+}

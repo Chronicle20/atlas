@@ -106,3 +106,24 @@ func TestStatUpdatedStatusEventBody_RoundTrip(t *testing.T) {
 		t.Fatalf("round-trip mismatch: %+v vs %+v", got, in)
 	}
 }
+
+// canonicalPeriodicEffectBody is the exact JSON the PERIODIC_EFFECT status
+// event body must serialize to. The identical literal is asserted in the
+// atlas-channel mirror (services/atlas-channel/atlas.com/channel/kafka/message/buff/kafka_test.go)
+// so the two re-declared contracts stay byte-identical on the wire. atlas-buffs
+// owns this contract; atlas-channel only consumes it.
+const canonicalPeriodicEffectBody = `{"channelId":3,"skillId":1311008,"statType":"DRAGON_BLOOD"}`
+
+func TestPeriodicEffectStatusEventBody_CanonicalJSON(t *testing.T) {
+	b, err := json.Marshal(PeriodicEffectStatusEventBody{
+		ChannelId: 3,
+		SkillId:   1311008,
+		StatType:  "DRAGON_BLOOD",
+	})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if string(b) != canonicalPeriodicEffectBody {
+		t.Fatalf("canonical mismatch.\n got: %s\nwant: %s", b, canonicalPeriodicEffectBody)
+	}
+}

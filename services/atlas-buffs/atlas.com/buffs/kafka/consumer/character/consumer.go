@@ -105,7 +105,16 @@ func handleUpdateStatValue(l logrus.FieldLogger, ctx context.Context, c characte
 		return
 	}
 
-	if err := character.NewProcessor(l, ctx).UpdateStatValue(c.WorldId, c.CharacterId, c.Body.SourceId, c.Body.StatType, c.Body.Operation, c.Body.Amount, c.Body.Cap); err != nil {
+	u := character.StatValueUpdate{
+		SourceId:        c.Body.SourceId,
+		StatType:        c.Body.StatType,
+		Operation:       c.Body.Operation,
+		Amount:          c.Body.Amount,
+		Cap:             c.Body.Cap,
+		CreateIfMissing: c.Body.CreateIfMissing,
+		Level:           c.Body.Level,
+	}
+	if err := character.NewProcessor(l, ctx).UpdateStatValue(c.WorldId, c.ChannelId, c.CharacterId, u); err != nil {
 		l.WithError(err).Errorf("Unable to update stat value on buff [%d] for character [%d].", c.Body.SourceId, c.CharacterId)
 	}
 }

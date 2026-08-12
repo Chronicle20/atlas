@@ -4157,6 +4157,22 @@
         ]
       },
       {
+        "opCode": "0x10E",
+        "writer": "SpawnKiteError",
+        "fname": "CMessageBoxPool::OnCreateFailed",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x10F",
+        "writer": "SpawnKite",
+        "fname": "CMessageBoxPool::OnMessageBoxEnterField",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x110",
         "writer": "SpawnHiredMerchant",
         "fname": "CEmployeePool::OnEmployeeEnterField",
@@ -4192,6 +4208,14 @@
         "opCode": "0x114",
         "writer": "DropDestroy",
         "fname": "CDropPool::OnDropLeaveField",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x117",
+        "writer": "DestroyKite",
+        "fname": "CMessageBoxPool::OnMessageBoxLeaveField",
         "services": [
           "channel"
         ]

@@ -584,3 +584,24 @@ that first bug report self-answering rather than a mystery.
   the response's `spec` contains `morph: 1`, `hp: 50`, `time: 600000` (the PRD's worked
   example item). Repeat across provisioned tenants — this is the PRD §10 acceptance criterion
   this follow-up exists to close out operationally.
+
+## task-219 follow-up: `ConsumeCashPetFood` compartment-type inconsistency (investigation, not a confirmed bug)
+
+Side-observation from task-219's final whole-branch code review, unrelated to the morph-coupon
+(0530) feature itself. `services/atlas-consumables/atlas.com/consumables/consumable/processor.go`,
+in `ConsumeCashPetFood` (item family 0524 pet food — unambiguously a Cash-compartment item): the
+first `ConsumeError` call correctly passes `inventory2.TypeValueCash`, but the `AwardFullness`
+error path and the final `ConsumeItem`/`ConsumeError` pair (lines 601, 604, 606 as of this branch)
+pass `inventory2.TypeValueUse` instead. Whether this causes actual item loss/duplication at
+runtime, or `ConsumeItem`'s type parameter is unused on that code path, is **unverified** —
+investigate before proposing a fix. See design §7.3 and the plan's Self-Review "Known limitation
+carried forward, not fixed" note in `docs/tasks/task-219-cash-morph-coupons/design.md` and
+`docs/tasks/task-219-cash-morph-coupons/plan.md` for the fuller reasoning.
+
+- [ ] **Determine runtime impact** — trace whether `compartment.Processor.ConsumeItem`'s
+  compartment-type argument is actually load-bearing (does passing `TypeValueUse` for a Cash
+  item risk consuming from/erroring against the wrong compartment?) before deciding this needs
+  a fix.
+- [ ] **If confirmed as a defect, fix the three `TypeValueUse` call sites in `ConsumeCashPetFood`
+  to `TypeValueCash`**, matching the function's own first `ConsumeError` call and the pattern
+  `ConsumeMorphCoupon` (task-219) follows.

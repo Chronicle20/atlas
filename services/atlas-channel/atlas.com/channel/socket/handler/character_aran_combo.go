@@ -16,6 +16,7 @@ import (
 
 	constants "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	charsb "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
@@ -170,4 +171,21 @@ func aranComboRefreshEligibility(l logrus.FieldLogger, ctx context.Context, f fi
 		return
 	}
 	combo.GetMirror().SetEligibility(t, c.Id(), f, el, time.Now())
+}
+
+// aranComboClearOnCancel resets the server's combo when the client cancels
+// the Combo Ability buff. The client's ClearCombo -- fired by its own idle
+// timer AND by DoActiveSkill when a combo-consuming skill spends the count --
+// calls SendSkillCancelRequest for the Combo Ability id, so this single
+// branch keeps the two counters from ever drifting (task-217 design.md §3.4).
+// It matches either Combo Ability id rather than selecting by job: this path
+// runs for EVERY buff cancel and does not fetch the character, and a
+// character can only ever hold one of the two ids (disjoint job branches), so
+// the id alone identifies the branch.
+func aranComboClearOnCancel(ctx context.Context, characterId uint32, cancelledSkillId skill.Id) bool {
+	if cancelledSkillId != skill.AranStage1ComboAbilityId && cancelledSkillId != skill.LegendComboAbilityId {
+		return false
+	}
+	combo.GetMirror().Clear(tenant.MustFromContext(ctx), characterId)
+	return true
 }

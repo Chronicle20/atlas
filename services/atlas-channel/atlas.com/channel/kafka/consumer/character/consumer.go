@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/character/combo"
 	consumer2 "atlas-channel/kafka/consumer"
 	mapconsumer "atlas-channel/kafka/consumer/map"
 	character2 "atlas-channel/kafka/message/character"
@@ -232,6 +233,11 @@ func handleStatusEventMapChanged(sc server.Model, wp writer.Producer) func(l log
 		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.Body.ChannelId) {
 			return
 		}
+
+		// A map change ends the combat that built the combo; leaving the
+		// count alive would resurrect a counter in the new map (task-217
+		// design.md §3.4).
+		combo.GetMirror().Clear(tenant.MustFromContext(ctx), event.CharacterId)
 
 		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(event.CharacterId, warpCharacter(l)(ctx)(wp)(event))
 	}

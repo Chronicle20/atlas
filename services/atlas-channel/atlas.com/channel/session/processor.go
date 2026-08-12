@@ -3,6 +3,7 @@ package session
 import (
 	"atlas-channel/account/session"
 	"atlas-channel/battleship"
+	"atlas-channel/character/combo"
 	session2 "atlas-channel/kafka/message/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -411,6 +412,10 @@ func (p *ProcessorImpl) Destroy(s Model) error {
 	// timeout, and channel change all funnel here (FR-5.1).
 	clearBattleshipOnDestroy(p.l, p.ctx, s.CharacterId())
 
+	// The Aran combo counter cannot outlive the session: logout, disconnect,
+	// timeout, and channel change all funnel here (task-217 design.md §3.4).
+	clearAranComboOnDestroy(p.ctx, s.CharacterId())
+
 	// Emit logout and destroyed events BEFORE closing the socket so a
 	// crash-safe ordering exists: a downstream consumer that sees the
 	// destroyed event can no longer race with the socket-close path
@@ -444,6 +449,16 @@ var newBattleshipProcessor = battleship.NewProcessor
 func clearBattleshipOnDestroy(l logrus.FieldLogger, ctx context.Context, characterId uint32) {
 	if characterId != 0 {
 		newBattleshipProcessor(l, ctx).Clear(characterId)
+	}
+}
+
+// clearAranComboOnDestroy drops any live Aran combo state for a destroyed
+// session's character. Extracted from Destroy so the invariant is unit
+// testable without exercising Destroy's Kafka emit path, mirroring
+// clearBattleshipOnDestroy.
+func clearAranComboOnDestroy(ctx context.Context, characterId uint32) {
+	if characterId != 0 {
+		combo.GetMirror().Clear(tenant.MustFromContext(ctx), characterId)
 	}
 }
 

@@ -104,10 +104,15 @@ func TestExpireCommandProvider(t *testing.T) {
 	}
 }
 
-// TestUpdateStatValueCommandProviderCarriesUpsertFields pins the two fields
-// task-216 added to the mirrored command body. The struct is duplicated across
-// two Go modules, so a field that exists on one side and not the other fails no
-// build — it decodes into a zero value at runtime, silently.
+// TestUpdateStatValueCommandProviderCarriesUpsertFields proves the channel-side
+// provider puts the two fields task-216 added — createIfMissing and level — on
+// the wire with the expected json tags and values, surviving a marshal/unmarshal
+// round trip through this package's own Command[UpdateStatValueCommandBody].
+// It does NOT enforce cross-module parity with atlas-buffs' owning declaration
+// (services/atlas-buffs/atlas.com/buffs/kafka/message/character/kafka.go) — the
+// two structs live in separate Go modules and are kept in sync by hand; a field
+// name or json tag drifting between them fails no build and decodes into a zero
+// value at runtime undetected by this test.
 func TestUpdateStatValueCommandProviderCarriesUpsertFields(t *testing.T) {
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).Build()
 

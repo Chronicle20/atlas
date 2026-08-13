@@ -3,11 +3,15 @@ package handler
 import (
 	"atlas-channel/character/buff"
 	"atlas-channel/character/buff/stat"
+	"errors"
 	"math"
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
@@ -117,6 +121,135 @@ func TestComboDrainHealAmount(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := comboDrainHealAmount(tc.totalDamage, tc.percent); got != tc.want {
 				t.Fatalf("comboDrainHealAmount(%d, %d) = %d, want %d", tc.totalDamage, tc.percent, got, tc.want)
+			}
+		})
+	}
+}
+
+// recordingChangeHP captures every emission comboDrainTryProc makes and can
+// simulate a downstream failure.
+type recordingChangeHP struct {
+	calls []int16
+	err   error
+}
+
+func (r *recordingChangeHP) fn(_ field.Model, _ uint32, amount int16) error {
+	r.calls = append(r.calls, amount)
+	return r.err
+}
+
+// countingBuffs serves a fixed buff slice (or error) and counts invocations.
+type countingBuffs struct {
+	buffs []buff.Model
+	err   error
+	calls int
+}
+
+func (c *countingBuffs) fn(_ uint32) ([]buff.Model, error) {
+	c.calls++
+	return c.buffs, c.err
+}
+
+func TestComboDrainTryProc(t *testing.T) {
+	l := logrus.New()
+	f := testField(100000000)
+
+	tests := []struct {
+		name      string
+		buffs     []buff.Model
+		buffErr   error
+		ai        packetmodel.AttackInfo
+		changeErr error
+		wantCalls []int16
+	}{
+		{
+			name:      "buff present single monster",
+			buffs:     []buff.Model{comboDrainBuffWithAmount(5)},
+			ai:        attackWithDamages(packetmodel.AttackTypeMelee, []uint32{1000}),
+			wantCalls: []int16{50},
+		},
+		{
+			// Pins the anti-Cosmic-quirk AC: one heal from the plain total
+			// (6000 * 10 / 100 = 600), never per-monster running totals.
+			name:      "buff present multi monster multi line - one call on plain total",
+			buffs:     []buff.Model{comboDrainBuffWithAmount(10)},
+			ai:        attackWithDamages(packetmodel.AttackTypeMelee, []uint32{1000, 2000}, []uint32{3000}),
+			wantCalls: []int16{600},
+		},
+		{
+			name:      "buff absent",
+			buffs:     []buff.Model{},
+			ai:        attackWithDamages(packetmodel.AttackTypeMelee, []uint32{1000}),
+			wantCalls: nil,
+		},
+		{
+			name:      "buff fetch error",
+			buffErr:   errors.New("buffs down"),
+			ai:        attackWithDamages(packetmodel.AttackTypeMelee, []uint32{1000}),
+			wantCalls: nil,
+		},
+		{
+			name:      "expired buff only",
+			buffs:     []buff.Model{expiredComboDrainBuffWithAmount(5)},
+			ai:        attackWithDamages(packetmodel.AttackTypeMelee, []uint32{1000}),
+			wantCalls: nil,
+		},
+		{
+			name:      "zero total damage",
+			buffs:     []buff.Model{comboDrainBuffWithAmount(5)},
+			ai:        attackWithDamages(packetmodel.AttackTypeMelee, []uint32{0}),
+			wantCalls: nil,
+		},
+		{
+			name:      "heal truncates to zero",
+			buffs:     []buff.Model{comboDrainBuffWithAmount(1)},
+			ai:        attackWithDamages(packetmodel.AttackTypeMelee, []uint32{99}),
+			wantCalls: nil,
+		},
+		{
+			name:      "changeHP error swallowed - no panic no retry",
+			buffs:     []buff.Model{comboDrainBuffWithAmount(5)},
+			ai:        attackWithDamages(packetmodel.AttackTypeMelee, []uint32{1000}),
+			changeErr: errors.New("kafka down"),
+			wantCalls: []int16{50},
+		},
+		// Attack-type blindness (melee/ranged/magic/energy AC): the proc has
+		// no type filter by construction; these pin that none creeps in.
+		// Energy is the touch handler's type (character_attack_touch.go).
+		{
+			name:      "ranged attack heals",
+			buffs:     []buff.Model{comboDrainBuffWithAmount(5)},
+			ai:        attackWithDamages(packetmodel.AttackTypeRanged, []uint32{1000}),
+			wantCalls: []int16{50},
+		},
+		{
+			name:      "magic attack heals",
+			buffs:     []buff.Model{comboDrainBuffWithAmount(5)},
+			ai:        attackWithDamages(packetmodel.AttackTypeMagic, []uint32{1000}),
+			wantCalls: []int16{50},
+		},
+		{
+			name:      "energy (touch) attack heals",
+			buffs:     []buff.Model{comboDrainBuffWithAmount(5)},
+			ai:        attackWithDamages(packetmodel.AttackTypeEnergy, []uint32{1000}),
+			wantCalls: []int16{50},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := &recordingChangeHP{err: tc.changeErr}
+			cb := &countingBuffs{buffs: tc.buffs, err: tc.buffErr}
+			comboDrainTryProc(l, cb.fn, rec.fn, f, 42, tc.ai)
+			if cb.calls > 1 {
+				t.Fatalf("getBuffs called %d times, want at most 1", cb.calls)
+			}
+			if len(rec.calls) != len(tc.wantCalls) {
+				t.Fatalf("changeHP called %d times (%v), want %d (%v)", len(rec.calls), rec.calls, len(tc.wantCalls), tc.wantCalls)
+			}
+			for i := range tc.wantCalls {
+				if rec.calls[i] != tc.wantCalls[i] {
+					t.Fatalf("changeHP call %d amount = %d, want %d", i, rec.calls[i], tc.wantCalls[i])
+				}
 			}
 		})
 	}

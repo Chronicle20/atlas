@@ -2,6 +2,7 @@ package model
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"testing"
@@ -192,5 +193,63 @@ func TestUnconfiguredMovementCodeLogsOnceWithFrame(t *testing.T) {
 	}
 	if !strings.Contains(errs[0], "misalignment") {
 		t.Errorf("error must say what an out-of-range code actually means: %q", errs[0])
+	}
+}
+
+// liveV87MonsterMoveFrame is a real GMS v87 monster-move packet captured in the
+// field (atlas-pr-1329, 2026-08-13) by logUnconfiguredMovementCode, from the
+// flood the server was warning would crash the client. It is the whole frame
+// including the 2-byte opcode; the movement path begins partway in.
+//
+// Its element run is six NORMAL fragments of 18 bytes each. 18 == 1 type +
+// 10 coords + 4 XOffset/YOffset + 3 tail. Decoding NORMAL as 14 bytes (no
+// offsets) makes every second element start 4 bytes early, land on coordinate
+// data, and report an out-of-range type — which is exactly what the field log
+// showed: failures on elements 2, 4 and 6 at an exact 18-byte stride.
+const liveV87MonsterMoveFrame = "c80067420f002f0000ff0000000000000000000000000001000000ccddff00ccddff00b561bdbad1fe6efd0600c5fe6efd9cff00000900d1fe6efd03730000b6fe6efd9cff00000d00bffe6efd039b0000b1fe6efd000000000d00b6fe6efd025a0000c5fe6efd640000000d00b6fe6efd02f50000edfe6efd640000000900e3fe6efd02900100f5fe6efd640000000e00edfe6efd024b0000b1fe6efdf5fe6efd0000000000000000"
+
+// TestMovementV87NormalElementCarriesOffsets pins the GMS v87 boundary for the
+// per-element XOffset/YOffset pair against that captured frame.
+//
+// The gate used to be v88+, shared with Movement's StartVx/StartVy on the
+// assumption that one client rework introduced both. v87 has the element
+// offsets but NOT the start velocities, so the shared gate desynced every v87
+// movement packet.
+func TestMovementV87NormalElementCarriesOffsets(t *testing.T) {
+	raw, err := hex.DecodeString(liveV87MonsterMoveFrame)
+	if err != nil {
+		t.Fatalf("bad fixture: %v", err)
+	}
+	// The path starts after the MovementRequest head; locate it the same way
+	// the real decode does rather than hard-coding, so the test stays honest if
+	// the head changes: the head is fixed-width here (both variable-length
+	// arrays are empty in this capture).
+	const pathStart = 2 + 4 + 2 + 1 + 1 + 4 + 4 + 4 + 1 + 4 + 4 + 4 + 4
+
+	ctx := test.CreateContext("GMS", 87, 1)
+	options := movementTypesV84()
+
+	req := request.Request(raw[pathStart:])
+	reader := request.NewRequestReader(&req, 0)
+	l, hook := testlog.NewNullLogger()
+	out := &Movement{}
+	out.Decode(l, ctx)(&reader, options)
+
+	for _, e := range hook.AllEntries() {
+		if e.Level == logrus.ErrorLevel {
+			t.Fatalf("v87 movement must decode without misalignment errors, got: %s", e.Message)
+		}
+	}
+	if len(out.Elements) != 6 {
+		t.Fatalf("decoded %d elements, want 6", len(out.Elements))
+	}
+	for i, el := range out.Elements {
+		if _, ok := el.(*NormalElement); !ok {
+			t.Errorf("element %d decoded as %T, want *NormalElement", i+1, el)
+		}
+	}
+	// 6 x 18-byte elements after the 5-byte movement header.
+	if got, want := reader.Position(), 5+6*18; got != want {
+		t.Errorf("consumed %d bytes of the path, want %d (6 x 18 + header)", got, want)
 	}
 }

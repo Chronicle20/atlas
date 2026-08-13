@@ -24,6 +24,47 @@ type MovementCodec interface {
 	packet.Codec
 	EncodeType(w *response.Writer)
 }
+
+// gmsMovementElementOffsets reports whether a NORMAL movement fragment carries
+// the trailing XOffset/YOffset pair. GMS v87+, and every non-GMS region.
+//
+// This was previously v88+, sharing a boundary with Movement's StartVx/StartVy
+// on the assumption that one client rework introduced both. It did not, and the
+// conflation cost the whole "Code [253/254/255] not configured for use in
+// movement" flood on v87 — thousands per minute, with the server's own log
+// warning it would crash the client (task-218 field reports #3/#5).
+//
+// The two fields have DIFFERENT boundaries:
+//
+//   - StartVx/StartVy: v87 CMovePath::Encode @0x6c70fe writes Encode2(x),
+//     Encode2(y), Encode1(count) and nothing else, so v87 does NOT have them.
+//     That gate correctly stays at 88 (see Movement.Decode).
+//   - XOffset/YOffset: v87 writes them per element. v83 @0x68a563 and v84
+//     @0x6a0fd0 have no such read/write at all; v87 @0x6c70fe (Encode) and
+//     @0x6c6e86 (Decode) both carry the pair.
+//
+// Confirmed empirically as well as by disassembly, which is what settled it:
+// eight distinct live v87 monster-move frames captured by
+// logUnconfiguredMovementCode were replayed against both element-size models.
+// With the pair present all 8 parse cleanly end-to-end as all-NORMAL elements;
+// without it, 1 of 8 parses and that one only coincidentally. The failure
+// signature in the field was every EVEN element failing at an exact 18-byte
+// stride: 18 == 1 type + 10 coords + 4 offsets + 3 tail, i.e. the decoder read
+// 14 for a real 18-byte element and then consumed the 4-byte remainder as a
+// phantom element, re-syncing on every second one.
+//
+// CAVEAT, deliberately recorded rather than hidden: in the client this pair is
+// gated on CClientOptMan::GetOpt(..., 2) — a RUNTIME option, not a version. A
+// server cannot observe it, so a version gate is the best available
+// approximation and matches what every client Atlas serves actually does. The
+// same option also gates three extra Decode4 (a move-rand seed) in
+// CMobPool::OnMobChangeController @0x6b52c3, which Atlas does NOT send; that
+// packet nonetheless works in the field, so the option's exact scope is not
+// fully understood. Do not "fix" the control packet to match without evidence.
+func gmsMovementElementOffsets(t tenant.Model) bool {
+	return !t.IsRegion("GMS") || t.MajorAtLeast(87)
+}
+
 type Movement struct {
 	StartX int16
 	StartY int16
@@ -162,10 +203,10 @@ func (m *NormalElement) Decode(l logrus.FieldLogger, ctx context.Context) func(r
 		if isMovementName(l)(m.ElemType, options, "FALL_DOWN") {
 			m.FhFallStart = r.ReadInt16()
 		}
-		// XOffset/YOffset are v88+ on NORMAL elements (delta §3.1.8). This decode
-		// MUST match the encode boundary (>87 == MajorAtLeast(88)) exactly, or Atlas
-		// corrupts its own movement packets. v84..87 read 5 Int16 like v83.
-		if !t.IsRegion("GMS") || t.MajorAtLeast(88) {
+		// XOffset/YOffset on NORMAL elements — see gmsMovementElementOffsets.
+		// MUST stay textually identical to Encode or Atlas corrupts its own
+		// movement packets.
+		if gmsMovementElementOffsets(t) {
 			m.XOffset = r.ReadInt16()
 			m.YOffset = r.ReadInt16()
 		}
@@ -263,9 +304,8 @@ func (m *NormalElement) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 		if isMovementName(l)(m.ElemType, options, "FALL_DOWN") {
 			w.WriteInt16(m.FhFallStart)
 		}
-		// XOffset/YOffset are v88+ on NORMAL elements (delta §3.1.8). Paired with the
-		// Decode boundary (MajorAtLeast(88)); the two MUST stay textually identical.
-		if !t.IsRegion("GMS") || t.MajorAtLeast(88) {
+		// Paired with the Decode boundary; the two MUST stay textually identical.
+		if gmsMovementElementOffsets(t) {
 			w.WriteInt16(m.XOffset)
 			w.WriteInt16(m.YOffset)
 		}

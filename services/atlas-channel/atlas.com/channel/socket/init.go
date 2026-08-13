@@ -4,6 +4,7 @@ import (
 	"atlas-channel/channel"
 	"atlas-channel/character/chakra"
 	"atlas-channel/character/statreset"
+	"atlas-channel/remotemerchant"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/shopscanner"
@@ -62,6 +63,11 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 							// entry per character ever seen by this pod
 							// (PRD FR-5.5, FR-2.2).
 							chakra.GetRegistry().Clear(t, s.CharacterId())
+							// Channel change and disconnect both destroy the
+							// session; without this the pending-unlock map
+							// leaks one entry per character ever seen by this
+							// pod (task-221).
+							remotemerchant.GetRegistry().ClearCharacter(t, s.CharacterId())
 							return nil
 						})
 						sp.DestroyByIdWithSpan(sessionId)

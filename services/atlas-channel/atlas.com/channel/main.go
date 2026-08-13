@@ -466,7 +466,7 @@ func buildListener(
 		if err := register(conversation.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
-		if err := register(shop.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+		if err := register(shop.InitHandlers(fl)(tctx)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(member.InitHandlers(fl)(sc)(wp)(rh)); err != nil {

@@ -15,7 +15,7 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 - export gms_v87: `93fb9c3ae02138e4700055a01bd18dca2e01e99da35a1a6040144033ff720fb0`
 - export gms_v92: `27c6556186055104c0e60669a00d680a8829afac8220637c6acf3ee1fdda1bb8`
 - export gms_v95: `15a261c32c0148ed341a1fa75bbce3c7993f475d402d2f74192c3a08361f16cc`
-- export jms_v185: `86593392498422c216d41791815924dac6642caea385f2e75b490659cc6769a7`
+- export jms_v185: `2f3aad96b6a41972897eee96ad55e5aeb24b5225abe85326483b011dddcdd3ee`
 
 ## Clientbound
 
@@ -306,10 +306,10 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT | CUser::OnHitByUser; CUser::ShowItemHyperUpgradeEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B3 | ❌ | 0x0B9 | ❌ | 0x0BB | ❌ |  | ⬜ |
 | SPAWN_NPC_REQUEST_CONTROLLER | CNpcPool::OnNpcChangeController | npc/clientbound/NpcSpawnRequestController (T1) | 0x0B3 | ✅ | 0x0C4 | 🟡ᶠ | 0x0E5 | 🟡ᶠ | 0x0ED | 🟡ᶠ | 0x103 | ✅ | 0x10A | ✅ | 0x114 | ✅ | 0x131 | ❌ | 0x139 | ✅ | 0x118 | ✅ |
 | APPLY_MONSTER_STATUS | CMob::OnStatSet | monster/clientbound/MonsterStatSet (T1) |  | ⬜ | 0x0B5 | ✅ | 0x0D6 | ✅ | 0x0DC | ✅ | 0x0F2 | ✅ | 0x0F8 | ✅ | 0x102 | ✅ | 0x11A | 🟡ᶠ | 0x122 | ✅ | 0x103 | ✅ |
-| SPAWN_DRAGON | CDragon::OnCreated |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B5 | ✅ | 0x0B9 | ✅ | 0x0C2 | ✅ | 0x0D1 | ✅ | 0x0CE | ✅ | 0x0BB | ❌ |
+| SPAWN_DRAGON | CDragon::OnCreated |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B5 | ✅ | 0x0B9 | ✅ | 0x0C2 | ✅ | 0x0D1 | ✅ | 0x0CE | ✅ | 0x0BB | ✅ |
 | CANCEL_MONSTER_STATUS | CMob::OnStatReset | monster/clientbound/MonsterStatReset (T1) |  | ⬜ | 0x0B6 | ✅ | 0x0D7 | ✅ | 0x0DD | ✅ | 0x0F3 | ✅ | 0x0F9 | ✅ | 0x103 | ✅ | 0x11B | 🟡ᶠ | 0x123 | ✅ | 0x104 | ✅ |
-| MOVE_DRAGON | CDragon::OnMove |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B6 | ✅ | 0x0BA | ✅ | 0x0C3 | ✅ | 0x0D2 | ✅ | 0x0CF | ✅ | 0x0BC | ❌ |
-| REMOVE_DRAGON | CUser::OnDragonPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B7 | ✅ | 0x0BB | ✅ | 0x0C4 | ✅ | 0x0D3 | ✅ | 0x0D0 | ✅ | 0x0BD | ❌ |
+| MOVE_DRAGON | CDragon::OnMove |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B6 | ✅ | 0x0BA | ✅ | 0x0C3 | ✅ | 0x0D2 | ✅ | 0x0CF | ✅ | 0x0BC | ✅ |
+| REMOVE_DRAGON | CUser::OnDragonPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B7 | ✅ | 0x0BB | ✅ | 0x0C4 | ✅ | 0x0D3 | ✅ | 0x0D0 | ✅ | 0x0BD | ✅ |
 | RESET_MONSTER_ANIMATION | CMob::OnSuspendReset | monster/clientbound/MonsterResetMonsterAnimation (T1) |  | ⬜ | 0x0B7 | 🟡ᶠ | 0x0D8 | 🟡ᶠ | 0x0DE | 🟡ᶠ | 0x0F4 | ✅ | 0x0FA | ✅ | 0x104 | ✅ | 0x11C | 🟡ᶠ | 0x124 | ✅ | 0x105 | ✅ |
 | DAMAGE_MONSTER | CMob::OnDamaged | monster/clientbound/MonsterDamage (T1) |  | ⬜ | 0x0B9 | ✅ | 0x0DA | ✅ | 0x0E0 | ✅ | 0x0F6 | ✅ | 0x0FC | ✅ | 0x106 | ✅ | 0x11E | ❌ | 0x126 | ✅ | 0x107 | ✅ |
 | MONSTER_SPECIAL_EFFECT_BY_SKILL | CMob::OnSpecialEffectBySkill; sub_647790 | monster/clientbound/MonsterMonsterSpecialEffectBySkill (T1) |  | ⬜ | 0x0BA | ✅ | 0x0DB | ✅ | 0x0E1 | ✅ | 0x0F7 | ✅ | 0x0FD | ✅ | 0x107 | ✅ | 0x11F | ❌ | 0x127 | ✅ | 0x108 | ✅ |
@@ -738,7 +738,7 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 | UNNAMED_R279 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B2 | ❌ | 0x0C3 | ❌ | 0x0C6 | ❌ |  | ⬜ |
 | UNNAMED_R296 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B3 | ❌ |  | ⬜ | 0x0BF | ❌ | 0x0D1 | ❌ | 0x0D4 | ❌ | 0x0B7 | ❌ |
 | UNNAMED_R297 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B4 | ❌ |  | ⬜ | 0x0C0 | ❌ | 0x0D2 | ❌ | 0x0D5 | ❌ | 0x0B8 | ❌ |
-| MOVE_DRAGON | CVecCtrlDragon::EndUpdateActive |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B5 | ✅ | 0x0BA | ✅ | 0x0C1 | ✅ | 0x0D3 | ✅ | 0x0D6 | ✅ | 0x0B9 | ❌ |
+| MOVE_DRAGON | CVecCtrlDragon::EndUpdateActive |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B5 | ✅ | 0x0BA | ✅ | 0x0C1 | ✅ | 0x0D3 | ✅ | 0x0D6 | ✅ | 0x0B9 | ✅ |
 | UNNAMED_R299 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B6 | ❌ |  | ⬜ | 0x0C2 | ❌ | 0x0D4 | ❌ | 0x0D7 | ❌ | 0x0BA | ❌ |
 | CHANGE_QUICKSLOT | CQuickslotKeyMappedMan::SaveQuickslotKeyMap; CQuickslotKeyMappedMan__SaveQuickslotKeyMap_send_0xBC |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B7 | ❌ | 0x0BC | ❌ | 0x0C3 | ❌ | 0x0D5 | ❌ | 0x0D8 | ❌ | 0x0BB | ❌ |
 | MONSTER_CARNIVAL | CUIMonsterCarnival::RequestSend; sub_6F0D5F | monster/carnival/serverbound/MonsterCarnival (T1) |  | ⬜ | 0x0B7 | ❌ | 0x0D0 | ❌ | 0x0D2 | 🟡ᶠ | 0x0DA | ✅ | 0x0E0 | ✅ | 0x0E7 | ✅ | 0x0FF | ❌ | 0x106 | ✅ | 0x0E5 | ✅ |
@@ -1064,7 +1064,7 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 | v87 | 459 | 0 | 0 | 370 | 190 | 0 | 55.4% |
 | v92 | 28 | 0 | 151 | 699 | 141 | 0 | 3.2% |
 | v95 | 484 | 0 | 0 | 429 | 106 | 0 | 53.0% |
-| JMS185 | 429 | 0 | 0 | 393 | 197 | 0 | 52.2% |
+| JMS185 | 433 | 0 | 0 | 389 | 197 | 0 | 52.7% |
 
 ## Conflicts
 

@@ -1,0 +1,10 @@
+packet: dragon/clientbound/DragonMove
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CDragon::OnMove
+    address: "0x52f94f"
+    decompile_sha256: 2cca61bdfea07ebccb9c0893498ab85dd516b0fdb699a66aa4dde76762d243de
+verifies:
+    - libs/atlas-packet/dragon/clientbound/move_test.go#TestDragonMoveBytes_jms185

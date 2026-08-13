@@ -96,6 +96,26 @@ func TestDragonMoveBytes_v92(t *testing.T) {
 	}
 }
 
+// JMS185: CDragon::OnMove @0x52f94f (MapleStory_dump_SCY.exe.i64 JMS185,
+// session b6864e54) is a single delegating call:
+// CMovePath::OnMovePacket(*(this+55)!=0 ? *(this+55)-12+580 : 580, iPacket,
+// 0) — same shape as v83/v84/v87/v92/v95 (only the fallback constant differs
+// per version's struct layout; the wire shape is unaffected). Reached via
+// CUser::OnDragonPacket @0x9f822f's nType==0xBC (188) branch (gated on an
+// existing CDragon), itself routed by CUserPool::OnUserCommonPacket
+// @0xa440d7's range test `v5>=187 && v5<=189` @0xa44200.
+//
+// packet-audit:verify packet=dragon/clientbound/DragonMove version=jms_v185 ida=0x52f94f
+func TestDragonMoveBytes_jms185(t *testing.T) {
+	blob := []byte{0x0A, 0x00, 0x14, 0x00, 0x01, 0xFF}
+	got := test.Encode(t, test.CreateContext("JMS", 185, 1), NewDragonMove(4242, blob).Encode, nil)
+
+	want := append([]byte{0x92, 0x10, 0x00, 0x00}, blob...)
+	if !bytes.Equal(got, want) {
+		t.Fatalf("jms_v185 move bytes = % X, want % X", got, want)
+	}
+}
+
 func TestDragonMoveRoundTrip(t *testing.T) {
 	var out DragonMove
 	test.RoundTrip(t, test.CreateContext("GMS", 95, 1),

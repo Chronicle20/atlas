@@ -4603,7 +4603,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId \u2014 consumed by dispatcher"
+          "comment": "characterId — consumed by dispatcher"
         },
         {
           "op": "Decode2",
@@ -14975,6 +14975,69 @@
         {
           "op": "Decode4",
           "comment": "hit-mob object id (FindHitMobInRect)"
+        }
+      ]
+    },
+    "CDragon::OnCreated": {
+      "address": "0x52edd3",
+      "direction": "clientbound",
+      "notes": "SPAWN_DRAGON body. CDragon::OnCreated@0x52edd3 (MapleStory_dump_SCY.exe JMS v185.1, session b6864e54), reached via CUser::OnDragonPacket@0x9f822f's nType==0xBB (187) branch, itself routed by CUserPool::OnUserCommonPacket@0xa440d7's range test v5>=187 && v5<=189 @0xa44200 (call @0xa44206; ownerCharacterId Decode4'd upstream @0xa440e6). Reads, in order: Decode4 (this[61])@0x52edf1/0x52edfd, Decode4 (this[58])@0x52ee05/0x52ee13, Decode1 stance (via sub_417710 into this[37])@0x52ee27/0x52ee3e, Decode2 <read, discarded -- return value never assigned>@0x52ee44, Decode2 jobId (this[71])@0x52ee4e/0x52ee5e. 13-byte body -- JMS185 DOES carry jobId, matching the (GMS && MajorAtLeast(84)) || JMS gate in spawnHasJobId. Matches the committed DragonSpawn codec, byte-identical to the already-verified v84/v87/v92/v95 shape. Match (task-225).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "x -> this[61] @0x52edf1/0x52edfd"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y -> this[58] @0x52ee05/0x52ee13"
+        },
+        {
+          "op": "Decode1",
+          "comment": "stance -> via sub_417710 into this[37] @0x52ee27/0x52ee3e"
+        },
+        {
+          "op": "Decode2",
+          "comment": "read and discarded -- return value never assigned @0x52ee44"
+        },
+        {
+          "op": "Decode2",
+          "comment": "jobId -> this[71] @0x52ee4e/0x52ee5e"
+        }
+      ]
+    },
+    "CDragon::OnMove": {
+      "address": "0x52f94f",
+      "direction": "clientbound",
+      "notes": "MOVE_DRAGON body. CDragon::OnMove@0x52f94f (MapleStory_dump_SCY.exe JMS v185.1, session b6864e54) is a single delegating call: CMovePath::OnMovePacket(*(this+55)!=0 ? *(this+55)-12+580 : 580, iPacket, 0) -- identical shape to v83/v84/v87/v92/v95's CDragon::OnMove. Reached via CUser::OnDragonPacket@0x9f822f's nType==0xBC (188) branch (gated on an existing CDragon). The whole remaining body is the opaque CMovePath blob. Matches the committed DragonMove codec exactly. Match (task-225).",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "opaque CMovePath blob @0x52f94f",
+          "ref": "CMovePath::OnMovePacket"
+        }
+      ]
+    },
+    "CUser::OnDragonPacket": {
+      "address": "0x9f822f",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 189
+        }
+      ],
+      "notes": "REMOVE_DRAGON body. CUser::OnDragonPacket@0x9f822f (MapleStory_dump_SCY.exe JMS v185.1, session b6864e54) handles only nType==0xBB (187, spawn, CDragon::OnCreated@0x52edd3) and v7&&nType==0xBC (188, move, CDragon::OnMove@0x52f94f). THERE IS NO CASE FOR 0xBD (189, REMOVE_DRAGON) -- the outer dispatcher CUserPool::OnUserCommonPacket@0xa440d7 routes the range v5>=187 && v5<=189 into this function (test @0xa44200, call @0xa44206), so 189 enters and falls through both branches with zero effect: no field is read, no dragon state changes. Same routed-but-unhandled shape already recorded for gms_v83/v84/v87/v92/v95 (model note: docs/packets/registry/gms_v84.yaml:1254). Sending REMOVE_DRAGON is correct and harmless; the client silently discards it. Match (task-225).",
+      "calls": []
+    },
+    "CVecCtrlDragon::EndUpdateActive": {
+      "address": "0xa91786",
+      "direction": "serverbound",
+      "notes": "MOVE_DRAGON (serverbound) send site. CVecCtrlDragon::EndUpdateActive@0xa91786 (MapleStory_dump_SCY.exe JMS v185.1, session b6864e54): if CMovePath::IsTimeForFlush(this+580,0,0)@0xa917a2, builds COutPacket(0xB9=185)@0xa917b3 then CMovePath::Flush(this+580,&pkt,0,0)@0xa917c3 and sends via CClientSocket::SendPacket@0xa917d6. There is NO leading identity field -- same shape as every other verified version (v83/v84/v87/v92/v95). Opcode 185 confirmed from the COutPacket construction site itself, matching the registry opcode (185) for serverbound MOVE_DRAGON on jms_v185. Atlas dragon/serverbound.Move.Decode reads only ReadBytes(Available()) for the whole opaque CMovePath blob. Match (task-225).",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "opaque CMovePath blob, opcode 185 @0xa917b3/0xa917c3",
+          "ref": "CMovePath::Flush"
         }
       ]
     }

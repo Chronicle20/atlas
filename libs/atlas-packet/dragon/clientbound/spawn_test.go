@@ -122,6 +122,28 @@ func TestDragonSpawnBytesV92(t *testing.T) {
 	}
 }
 
+// JMS185: CDragon::OnCreated @0x52edd3 (MapleStory_dump_SCY.exe.i64 JMS185,
+// session b6864e54), reached via CUser::OnDragonPacket @0x9f822f's
+// nType==0xBB (187) branch, itself routed by
+// CUserPool::OnUserCommonPacket @0xa440d7's range test `v5>=187 && v5<=189`
+// @0xa44200. Reads, in order: Decode4 (this[61]) @0x52edf1/0x52edfd, Decode4
+// (this[58]) @0x52ee05/0x52ee13, Decode1 stance (via sub_417710 into
+// this[37]) @0x52ee27/0x52ee3e, Decode2 <read, return value never assigned —
+// discarded> @0x52ee44, Decode2 jobId (this[71]) @0x52ee4e/0x52ee5e. 13-byte
+// body — JMS185 DOES carry jobId, confirming the (GMS && MajorAtLeast(84)) ||
+// JMS gate in spawnHasJobId. Byte-identical to the already-verified
+// v84/v87/v92/v95 shape.
+//
+// packet-audit:verify packet=dragon/clientbound/DragonSpawn version=jms_v185 ida=0x52edd3
+func TestDragonSpawnBytesJMS185(t *testing.T) {
+	in := NewDragonSpawn(4242, 100, -200, 3, 2214)
+	ctx := test.CreateContext("JMS", 185, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, dragonSpawnBody) {
+		t.Fatalf("jms_v185 spawn bytes = % X, want % X", got, dragonSpawnBody)
+	}
+}
+
 // jobId is present on v84/v87/v92/v95/JMS185 (13 bytes) and absent on v83
 // (11 bytes) — see spawnHasJobId in spawn.go for the IDA grounding. If any
 // column ever diverges from this split, this table is where it shows up

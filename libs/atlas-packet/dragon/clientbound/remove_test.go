@@ -100,6 +100,27 @@ func TestDragonRemoveBytes_v92(t *testing.T) {
 	}
 }
 
+// JMS185: CUser::OnDragonPacket @0x9f822f (MapleStory_dump_SCY.exe.i64
+// JMS185, session b6864e54) handles only nType==0xBB (187, spawn ->
+// CDragon::OnCreated @0x52edd3) and v7&&nType==0xBC (188, move ->
+// CDragon::OnMove @0x52f94f) — THERE IS NO CASE FOR 0xBD (189,
+// REMOVE_DRAGON). The outer dispatcher CUserPool::OnUserCommonPacket
+// @0xa440d7 routes the range `v5>=187 && v5<=189` @0xa44200 into
+// OnDragonPacket (call @0xa44206), so 189 enters the function and falls
+// through both branches unhandled — no field is read, no dragon state
+// changes. Same routed-but-unhandled shape as every other verified version
+// (docs/packets/registry/gms_v84.yaml:1254). See
+// docs/packets/registry/jms_v185.yaml's REMOVE_DRAGON note for the full
+// decompile citation.
+//
+// packet-audit:verify packet=dragon/clientbound/DragonRemove version=jms_v185 ida=0x9f822f
+func TestDragonRemoveBytes_jms185(t *testing.T) {
+	got := test.Encode(t, test.CreateContext("JMS", 185, 1), NewDragonRemove(4242).Encode, nil)
+	if !bytes.Equal(got, []byte{0x92, 0x10, 0x00, 0x00}) {
+		t.Fatalf("jms_v185 remove bytes = % X, want 92 10 00 00", got)
+	}
+}
+
 func TestDragonRemoveRoundTrip(t *testing.T) {
 	var out DragonRemove
 	test.RoundTrip(t, test.CreateContext("GMS", 95, 1), NewDragonRemove(4242).Encode, out.Decode, nil)

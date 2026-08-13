@@ -3,7 +3,11 @@ package character
 import (
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func TestIsEvanJob(t *testing.T) {
@@ -65,5 +69,54 @@ func TestEvanExtendedSPv84(t *testing.T) {
 	pt.RoundTrip(t, ctx, evan.Encode, out.Decode, nil)
 	if out.Stats.JobId != 2001 {
 		t.Errorf("roundtrip jobId: got %d, want 2001", out.Stats.JobId)
+	}
+}
+
+// TestEvanSkillMasterLevelLength reproduces the task-218 field report: the
+// preset Evan (job 2218, full 31-skill chain) closed the client with error 38
+// on entering the world, while a level-1 Evan — same job branch, zero skills —
+// logged in fine.
+//
+// The trailing master-level int is per-SKILL. The client asks
+// is_skill_need_master_level(nSkillID), which for Evan selects only growths
+// 9-10 (jobs 2217/2218) plus 22111001 / 22141002 / 22140000. The server was
+// gating on job.IsFourthJob, true for the whole 2214-2218 band, so it wrote the
+// int for skills the client does not read it for AND skipped it for 22111001,
+// which the client does. Every mismatch shifts the remainder of
+// GW_CharacterData by 4 bytes — hence "fine with no skills, error 38 with
+// skills".
+//
+// Asserted as a byte length rather than a flag so the test fails for the same
+// reason the client did.
+func TestEvanSkillMasterLevelLength(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+
+	// Representative slice of the preset's chain, one per growth band.
+	cd := CharacterData{Skills: []SkillEntry{
+		{Id: 22001001, Level: 20}, // job 2200 — no master level
+		{Id: 22111001, Level: 20}, // job 2211 — EXCEPTION, needs one
+		{Id: 22131000, Level: 20}, // job 2213 — no
+		{Id: 22141001, Level: 20}, // job 2214 — no (old gate wrongly wrote it)
+		{Id: 22161003, Level: 15}, // job 2216 — no (Recovery Aura)
+		{Id: 22171000, Level: 30}, // job 2217 — YES, growth 9
+		{Id: 22181000, Level: 30}, // job 2218 — YES, growth 10
+	}}
+
+	// GMS v87: count(2) + 7 x (id 4 + level 4 + expiration 8) + cooldownCount(2)
+	// = 2 + 112 + 2 = 116, plus 4 bytes for each skill that carries a master
+	// level. Exactly three do: 22111001, 22171000, 22181000.
+	const base = 2 + 7*(4+4+8) + 2
+	w := response.NewWriter(l)
+	cd.encodeSkills(w, tenant.MustFromContext(pt.CreateContext("GMS", 87, 1)))
+	if got, want := len(w.Bytes()), base+3*4; got != want {
+		t.Errorf("GMS v87 encodeSkills = %d bytes, want %d (exactly 3 of 7 Evan skills carry a master level)", got, want)
+	}
+
+	// JMS v185 has no exception list (@0x47d2a8), so 22111001 drops out and
+	// only the two growth-9/10 skills carry it.
+	wj := response.NewWriter(l)
+	cd.encodeSkills(wj, tenant.MustFromContext(pt.CreateContext("JMS", 185, 1)))
+	if got, want := len(wj.Bytes()), base+2*4; got != want {
+		t.Errorf("JMS v185 encodeSkills = %d bytes, want %d (no Evan exception list on JMS)", got, want)
 	}
 }

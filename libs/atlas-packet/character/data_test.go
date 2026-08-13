@@ -12,6 +12,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -254,8 +255,10 @@ func TestCharacterDataWithSkillsRoundTrip(t *testing.T) {
 					Timestamp: 94354848000000000,
 				},
 				Skills: []SkillEntry{
-					{Id: 2101001, Level: 20, Expiration: -1, FourthJob: false},
-					{Id: 2121006, Level: 30, Expiration: -1, FourthJob: true, MasterLevel: 30},
+					// 2101001 -> job 210 (2nd job): no master level.
+					// 2121006 -> job 212 (4th job): carries one.
+					{Id: 2101001, Level: 20, Expiration: -1},
+					{Id: 2121006, Level: 30, Expiration: -1, MasterLevel: 30},
 				},
 			}
 			output := CharacterData{}
@@ -267,10 +270,12 @@ func TestCharacterDataWithSkillsRoundTrip(t *testing.T) {
 				if s.Id != input.Skills[i].Id {
 					t.Errorf("skill[%d] id: got %v, want %v", i, s.Id, input.Skills[i].Id)
 				}
-				if s.FourthJob != input.Skills[i].FourthJob {
-					t.Errorf("skill[%d] fourthJob: got %v, want %v", i, s.FourthJob, input.Skills[i].FourthJob)
+				// NeedsMasterLevel is derived from the id on both sides, so it
+				// must agree without being carried on the wire.
+				if s.NeedsMasterLevel != skill.NeedsMasterLevel(skill.Id(input.Skills[i].Id), true) {
+					t.Errorf("skill[%d] needsMasterLevel: got %v, want %v", i, s.NeedsMasterLevel, skill.NeedsMasterLevel(skill.Id(input.Skills[i].Id), true))
 				}
-				if s.FourthJob && s.MasterLevel != input.Skills[i].MasterLevel {
+				if s.NeedsMasterLevel && s.MasterLevel != input.Skills[i].MasterLevel {
 					t.Errorf("skill[%d] masterLevel: got %v, want %v", i, s.MasterLevel, input.Skills[i].MasterLevel)
 				}
 			}

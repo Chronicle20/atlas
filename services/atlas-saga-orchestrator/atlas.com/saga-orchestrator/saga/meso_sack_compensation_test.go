@@ -156,3 +156,34 @@ func TestMesoSackFailedEventCarriesRealCharacterIdAndErrorCode(t *testing.T) {
 	assert.Equal(t, "MESO_OVERFLOW", got[0].ErrorCode)
 	assert.Equal(t, "award_mesos", got[0].FailedStep)
 }
+
+// timer.go's own doc comment records the defect this pins: a saga type routed
+// to a bespoke compensator by CompensateFailedStep but missing from the timeout
+// lists rolls back NOTHING when it times out. For meso_sack_use that means a
+// consumed sack, no mesos, and no refund.
+func TestMesoSackUseIsClassifiedForTimeout(t *testing.T) {
+	var inAll, inReverse bool
+	for _, ty := range allSagaTypes {
+		if ty == MesoSackUse {
+			inAll = true
+		}
+	}
+	for _, ty := range reverseWalkSagaTypes {
+		if ty == MesoSackUse {
+			inReverse = true
+		}
+	}
+	assert.True(t, inAll, "MesoSackUse must appear in allSagaTypes")
+	assert.True(t, inReverse, "MesoSackUse must appear in reverseWalkSagaTypes")
+}
+
+// And the switch must actually have an arm — a type in the list with no case
+// falls to default and returns false, dispatching no inverse.
+func TestMesoSackTimeoutDispatchesRefund(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+
+	s := newMesoSackSaga(t, uuid.New(), Completed)
+	if !dispatchTimeoutRollbacks(logger, testTenantContext(), s) {
+		t.Fatal("dispatchTimeoutRollbacks returned false: meso_sack_use has no timeout arm")
+	}
+}

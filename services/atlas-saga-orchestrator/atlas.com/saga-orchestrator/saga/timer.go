@@ -177,6 +177,7 @@ var reverseWalkSagaTypes = []Type{
 	PointReset,
 	NoteSend,
 	SkillBookUse,
+	MesoSackUse,
 }
 
 // noReverseWalkSagaTypes are the saga types that deliberately have NO reverse
@@ -203,7 +204,7 @@ var allSagaTypes = []Type{
 	InventoryTransaction, QuestReward, TradeTransaction, TradeStaging,
 	CharacterCreation, StorageOperation, CharacterRespawn, GachaponTransaction,
 	PetEvolution, ItemTagUse, SealingLockUse, IncubatorUse, PointReset,
-	MtsOperation, NoteSend, SkillBookUse,
+	MtsOperation, NoteSend, SkillBookUse, MesoSackUse,
 }
 
 // dispatchTimeoutRollbacks fires the reverse walk for a timed-out saga and
@@ -244,6 +245,10 @@ func dispatchTimeoutRollbacks(l logrus.FieldLogger, ctx context.Context, s Saga)
 		c.DispatchNoteSendRollbacks(s)
 	case SkillBookUse:
 		c.DispatchSkillBookUseRollbacks(s)
+	case MesoSackUse:
+		// Without this a timed-out sack use is pure loss: consume_meso_sack
+		// completed, award_mesos never landed, and nothing puts the sack back.
+		c.DispatchMesoSackRollbacks(s)
 	default:
 		return false
 	}

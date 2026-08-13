@@ -18,6 +18,14 @@ const (
 	SpecTypeIndexSeven = SpecType("7")
 	SpecTypeIndexEight = SpecType("8")
 	SpecTypeIndexNine  = SpecType("9")
+
+	// Transformation-coupon properties (0530.img), mirroring atlas-data's
+	// cash SpecType set (services/atlas-data/atlas.com/data/cash/rest.go).
+	// `time` is the buff duration in MILLISECONDS, the unit atlas-buffs
+	// expects — nothing on this path may rescale it.
+	SpecTypeMorph = SpecType("morph")
+	SpecTypeHp    = SpecType("hp")
+	SpecTypeTime  = SpecType("time")
 )
 
 var SpecTypeIndexes = []SpecType{SpecTypeIndexZero, SpecTypeIndexOne, SpecTypeIndexTwo, SpecTypeIndexThree, SpecTypeIndexFour, SpecTypeIndexFive, SpecTypeIndexSix, SpecTypeIndexSeven, SpecTypeIndexEight, SpecTypeIndexNine}

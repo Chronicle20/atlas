@@ -552,6 +552,15 @@
         ]
       },
       {
+        "opCode": "0x68",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillPrepareHandle",
+        "fname": "CUserLocal::DoActiveSkill_Prepare",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x6A",
         "validator": "LoggedInValidator",
         "handler": "FameChangeHandle",

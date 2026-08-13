@@ -66,6 +66,65 @@ func AnnounceForeignBerserkEffect(l logrus.FieldLogger) func(ctx context.Context
 	}
 }
 
+// AnnounceDirectedSkillUse is AnnounceSkillUse with the caster's facing bit
+// threaded through. The packet encoder writes it as a trailing byte only for
+// the three Monster Magnet skill ids (effect_body.go derives that gate from the
+// skill id), so passing it for any other skill encodes nothing.
+//
+// Same shape and rationale as AnnounceBerserkEffect above: the plain
+// AnnounceSkillUse keeps its signature so its other call sites are untouched.
+func AnnounceDirectedSkillUse(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(skillId uint32, characterLevel byte, skillLevel byte, left bool) model2.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32, characterLevel byte, skillLevel byte, left bool) model2.Operator[session.Model] {
+		return func(wp writer.Producer) func(skillId uint32, characterLevel byte, skillLevel byte, left bool) model2.Operator[session.Model] {
+			return func(skillId uint32, characterLevel byte, skillLevel byte, left bool) model2.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(charcb.CharacterEffectWriter)(charpkt.CharacterSkillUseEffectBody(skillId, characterLevel, skillLevel, false, false, left))
+			}
+		}
+	}
+}
+
+// AnnounceForeignDirectedSkillUse is the same broadcast targeted at the other
+// sessions on the caster's map — the ones that actually need the direction,
+// since they do not render the cast locally.
+func AnnounceForeignDirectedSkillUse(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, skillId uint32, characterLevel byte, skillLevel byte, left bool) model2.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, skillId uint32, characterLevel byte, skillLevel byte, left bool) model2.Operator[session.Model] {
+		return func(wp writer.Producer) func(characterId uint32, skillId uint32, characterLevel byte, skillLevel byte, left bool) model2.Operator[session.Model] {
+			return func(characterId uint32, skillId uint32, characterLevel byte, skillLevel byte, left bool) model2.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(charcb.CharacterEffectForeignWriter)(charpkt.CharacterSkillUseEffectForeignBody(characterId, skillId, characterLevel, skillLevel, false, false, left))
+			}
+		}
+	}
+}
+
+// AnnounceSkillSpecialEffect is the self-facing CharacterEffect broadcast for
+// a skill's SKILL_SPECIAL animation. The body carries the skill id and nothing
+// else: the v83 client's CUser::OnEffect case 5 decodes one 4-byte skill id,
+// resolves the SKILLENTRY, and hands it to CUser::ShowSkillSpecialEffect,
+// which draws SKILLENTRY::GetSpecialUOL -- the skill's `special` WZ node.
+// A skill without that node draws nothing, so callers must only send this for
+// skills known to have one.
+func AnnounceSkillSpecialEffect(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(skillId uint32) model2.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32) model2.Operator[session.Model] {
+		return func(wp writer.Producer) func(skillId uint32) model2.Operator[session.Model] {
+			return func(skillId uint32) model2.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(charcb.CharacterEffectWriter)(charpkt.CharacterSkillSpecialEffectBody(skillId))
+			}
+		}
+	}
+}
+
+// AnnounceForeignSkillSpecialEffect is the same broadcast targeted at other
+// sessions on the caster's map.
+func AnnounceForeignSkillSpecialEffect(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, skillId uint32) model2.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, skillId uint32) model2.Operator[session.Model] {
+		return func(wp writer.Producer) func(characterId uint32, skillId uint32) model2.Operator[session.Model] {
+			return func(characterId uint32, skillId uint32) model2.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(charcb.CharacterEffectForeignWriter)(charpkt.CharacterSkillSpecialEffectForeignBody(characterId, skillId))
+			}
+		}
+	}
+}
+
 // AnnounceForeignSkillPrepare broadcasts a keydown-skill prepare packet to all
 // other sessions on the caster's map. Foreign-only: the caster renders its own aura.
 func AnnounceForeignSkillPrepare(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, info packetmodel.SkillPrepareInfo) model2.Operator[session.Model] {

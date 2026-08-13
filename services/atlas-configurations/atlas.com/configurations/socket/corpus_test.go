@@ -60,7 +60,7 @@ func TestValidate_AcceptsEverySeedTemplate(t *testing.T) {
 			}
 		}
 	}
-	if total != 3150 {
-		t.Errorf("corpus size = %d entries, want 3150 (3052 before task-206, plus task-206's 10 CashShopCouponCodeHandle bindings — every template but gms_12 — plus task-207's 7 CashItemGachaponHandle handlers and 6 CashItemGachaponResult writers — plus task-210's 16 template bindings (CharacterUseDeathItemHandle handler and CharacterShowUpgradeTombEffect writer in 8 templates) and 2 v92 writers (CharacterEffect and CharacterEffectForeign) — plus task-212's 15 catch bindings — plus task-211's 30 kite writer bindings (SpawnKite, SpawnKiteError and DestroyKite on every template but gms_12) — plus task-217's 12 Aran combo bindings (AranComboCounterHandle handler and ShowCombo writer on gms_83/84/87/92/95 and jms_185))", total)
+	if total != 3151 {
+		t.Errorf("corpus size = %d entries, want 3151 (3052 before task-206, plus task-206's 10 CashShopCouponCodeHandle bindings — every template but gms_12 — plus task-207's 7 CashItemGachaponHandle handlers and 6 CashItemGachaponResult writers — plus task-210's 16 template bindings (CharacterUseDeathItemHandle handler and CharacterShowUpgradeTombEffect writer in 8 templates) and 2 v92 writers (CharacterEffect and CharacterEffectForeign) — plus task-212's 15 catch bindings — plus task-211's 30 kite writer bindings (SpawnKite, SpawnKiteError and DestroyKite on every template but gms_12) — plus task-213's 1 gms_92 CharacterSkillPrepareHandle binding, the only template that lacked it — plus task-217's 12 Aran combo bindings (AranComboCounterHandle handler and ShowCombo writer on gms_83/84/87/92/95 and jms_185))", total)
 	}
 }

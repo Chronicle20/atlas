@@ -587,7 +587,7 @@ and jms v185 — all twelve matrix cells (`ARAN_COMBO_COUNTER` serverbound +
   Combo Fenrir (`21110004`), and Combo Tempest (`21120006`) still don't spend
   the count — that overlaps task-166's attack-pipeline surface (there is
   already a `// TODO ComboTempest` at
-  `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:1051`)
+  `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:1090`)
   and would duplicate work in the same functions. Left un-observable as drift
   because the client's own `ClearCombo`/`DoActiveSkill` path clears its combo
   and sends the cancel on skill use, which resets the server mirror to match
@@ -602,3 +602,43 @@ and jms v185 — all twelve matrix cells (`ARAN_COMBO_COUNTER` serverbound +
   be applied to the corpus files directly and is recorded here instead — apply
   it to `skills-and-buffs.md` §7 and `new-jobs-and-version-delta.md` §5 the
   next time that corpus is checked into a worktree that has it.
+
+## task-219 follow-up: cash WZ re-ingest for morph-coupon `spec/morph`/`spec/hp`
+
+Deferred from task-219 (transformation/morph coupons). `atlas-data`'s `cash/reader.go` now
+materialises `spec/morph`/`spec/hp` for `Cash/0530.img.xml` items, and `atlas-consumables`'
+`ConsumeMorphCoupon` applies them, but the reader change only takes effect for **newly
+ingested** WZ data. Every tenant whose cash WZ was ingested before this change still serves
+`Cash/0530` items with those spec fields absent from the stored data. Until the re-ingest
+below runs for a given tenant, using a morph coupon there consumes the item and applies
+nothing — the "both absent" row of the design's error table — so this note is meant to make
+that first bug report self-answering rather than a mystery.
+
+- [ ] **Re-ingest cash WZ for every provisioned tenant** so `spec/morph`/`spec/hp` populate
+  from the existing `Cash/0530.img.xml` source data (no WZ content change needed, only a
+  re-parse via the existing ingest path).
+- [ ] **Verify per tenant** with a live `GET /data/{tenantId}/cash-items/5300000` and confirm
+  the response's `spec` contains `morph: 1`, `hp: 50`, `time: 600000` (the PRD's worked
+  example item). Repeat across provisioned tenants — this is the PRD §10 acceptance criterion
+  this follow-up exists to close out operationally.
+
+## task-219 follow-up: `ConsumeCashPetFood` compartment-type inconsistency (investigation, not a confirmed bug)
+
+Side-observation from task-219's final whole-branch code review, unrelated to the morph-coupon
+(0530) feature itself. `services/atlas-consumables/atlas.com/consumables/consumable/processor.go`,
+in `ConsumeCashPetFood` (item family 0524 pet food — unambiguously a Cash-compartment item): the
+first `ConsumeError` call correctly passes `inventory2.TypeValueCash`, but the `AwardFullness`
+error path and the final `ConsumeItem`/`ConsumeError` pair (lines 601, 604, 606 as of this branch)
+pass `inventory2.TypeValueUse` instead. Whether this causes actual item loss/duplication at
+runtime, or `ConsumeItem`'s type parameter is unused on that code path, is **unverified** —
+investigate before proposing a fix. See design §7.3 and the plan's Self-Review "Known limitation
+carried forward, not fixed" note in `docs/tasks/task-219-cash-morph-coupons/design.md` and
+`docs/tasks/task-219-cash-morph-coupons/plan.md` for the fuller reasoning.
+
+- [ ] **Determine runtime impact** — trace whether `compartment.Processor.ConsumeItem`'s
+  compartment-type argument is actually load-bearing (does passing `TypeValueUse` for a Cash
+  item risk consuming from/erroring against the wrong compartment?) before deciding this needs
+  a fix.
+- [ ] **If confirmed as a defect, fix the three `TypeValueUse` call sites in `ConsumeCashPetFood`
+  to `TypeValueCash`**, matching the function's own first `ConsumeError` call and the pattern
+  `ConsumeMorphCoupon` (task-219) follows.

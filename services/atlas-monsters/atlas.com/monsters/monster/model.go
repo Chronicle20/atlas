@@ -181,6 +181,17 @@ func (m Model) ClearControl() Model {
 		Build()
 }
 
+// ControlWithAggro assigns the controller AND marks the controller as holding
+// aggro in one value transition. Control() sets only controlCharacterId, which
+// would leave the flag false after a CLEAR_AGGRO wipe and make the resulting
+// START_CONTROL write StartControlMonsterBody(m, false).
+func (m Model) ControlWithAggro(characterId uint32) Model {
+	return Clone(m).
+		SetControlCharacterId(characterId).
+		SetControllerHasAggro(true).
+		Build()
+}
+
 func (m Model) Damage(characterId uint32, damage uint32) Model {
 	actualDamage := m.Hp() - uint32(math.Max(float64(m.Hp())-float64(damage), 0))
 

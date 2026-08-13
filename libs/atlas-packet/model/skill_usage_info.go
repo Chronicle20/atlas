@@ -5,6 +5,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -20,7 +21,31 @@ type SkillUsageInfo struct {
 	affectedPartyMemberBitmap uint8
 	affectedMobIds            []uint32
 	delay                     uint16
+	magnetGrabs               []MagnetGrab
+	direction                 bool
 }
+
+// MagnetGrab is one entry of the Monster Magnet grab table: the CMob object
+// id the client picked up and whether it reports the grab as successful.
+//
+// Immutable value type (FR-1.6). objectId 0 is a LEGITIMATE wire value, not a
+// sentinel: the client's encode loop walks its whole candidate array, and
+// slots whose CanGoThrough/CanWalkThrough probe failed were released earlier in
+// the same function, leaving a null ZRef whose id reads 0 (gms_83
+// CUserLocal::TryDoingMonsterMagnet @0x96C215). Dropping such entries is the
+// server-side validator's job, not the decoder's.
+type MagnetGrab struct {
+	objectId uint32
+	grabbed  bool
+}
+
+func NewMagnetGrab(objectId uint32, grabbed bool) MagnetGrab {
+	return MagnetGrab{objectId: objectId, grabbed: grabbed}
+}
+
+func (m MagnetGrab) ObjectId() uint32 { return m.objectId }
+
+func (m MagnetGrab) Grabbed() bool { return m.grabbed }
 
 func (m *SkillUsageInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
@@ -28,6 +53,16 @@ func (m *SkillUsageInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(
 		m.updateTime = r.ReadUint32()
 		m.skillId = r.ReadUint32()
 		m.skillLevel = r.ReadByte()
+		// Monster Magnet is delivered on this same opcode but its body is
+		// written by a DIFFERENT client function (CUserLocal::TryDoingMonsterMagnet)
+		// than every other skill here (CUserLocal::SendSkillUseRequest), and it
+		// diverges immediately after skillLevel. Consume it and return: the
+		// magnet shares no suffix with the arms below, and an early return makes
+		// the mutual exclusion structural rather than list-maintained (FR-1.3).
+		if isMonsterMagnet(t, m.skillId) {
+			m.decodeMagnet(r, legacyMagnetLayout(t))
+			return
+		}
 		// gms_48 (CUserLocal::SendSkillUseRequest @0x6AFA91) and gms_61 (@0x7BA213)
 		// have NO is_antirepeat_buff_skill gate at all in SendSkillUseRequest — the
 		// function goes straight from Encode1(nSLV) to the 4121006/bitmap/mob-count
@@ -87,6 +122,21 @@ func (m *SkillUsageInfo) Delay() uint16 {
 	return m.delay
 }
 
+// MagnetGrabs returns the Monster Magnet grab table. Empty for every other
+// skill. On gms_48 the client's leading caster entry has already been
+// discarded and every remaining entry is marked grabbed (that version sends no
+// per-entry result).
+func (m *SkillUsageInfo) MagnetGrabs() []MagnetGrab {
+	return m.magnetGrabs
+}
+
+// Direction is the caster's facing bit (CUserLocal.stance & 1; true = facing
+// left) as sent on the Monster Magnet body. Always false on gms_48, which
+// sends no direction byte, and for every non-magnet skill.
+func (m *SkillUsageInfo) Direction() bool {
+	return m.direction
+}
+
 // SkillUsageInfoBuilder fluently constructs SkillUsageInfo values for
 // callers that don't go through Decode (today: tests). The wire decoder
 // remains the canonical production path.
@@ -140,6 +190,16 @@ func (b *SkillUsageInfoBuilder) SetAffectedMobIds(v []uint32) *SkillUsageInfoBui
 
 func (b *SkillUsageInfoBuilder) SetDelay(v uint16) *SkillUsageInfoBuilder {
 	b.info.delay = v
+	return b
+}
+
+func (b *SkillUsageInfoBuilder) SetMagnetGrabs(v []MagnetGrab) *SkillUsageInfoBuilder {
+	b.info.magnetGrabs = v
+	return b
+}
+
+func (b *SkillUsageInfoBuilder) SetDirection(v bool) *SkillUsageInfoBuilder {
+	b.info.direction = v
 	return b
 }
 
@@ -327,4 +387,95 @@ func isAntiRepeatBuffSkill(skillId skill.Id) bool {
 		skill.EvanStage9MapleWarriorId,
 		skill.EvanStage10BlessingOfTheOnyxId,
 	)
+}
+
+// magnetEntrySizeModern is the on-wire size of one gms_61+/jms grab entry:
+// objectId uint32 + grabbed byte. magnetEntrySizeLegacy is the gms_48 entry:
+// objectId uint32, no result byte.
+const (
+	magnetEntrySizeModern = 5
+	magnetEntrySizeLegacy = 4
+)
+
+// isMonsterMagnet resolves the incoming wire id through the tenant's version
+// set and reports whether it is one of the three Monster Magnet identities
+// (FR-1.1). Identity-keyed rather than a raw skill.Is compare against
+// 1121001/1221001/1321001 (task-187): the wire id happens to be stable across
+// every provisioned version for these three, but the resolver is the contract
+// this file's remaining raw-id lists exist to be migrated onto, and a raw
+// compare here would be the wrong precedent for the next branch added.
+func isMonsterMagnet(t tenant.Model, skillId uint32) bool {
+	set := constants.For(t.Region(), t.MajorVersion(), t.MinorVersion())
+	id, ok := set.Skill.Resolve(skill.Id(skillId))
+	if !ok {
+		return false
+	}
+	return skill.IsIdentity(id,
+		skill.HeroMonsterMagnet,
+		skill.PaladinMonsterMagnet,
+		skill.DarkKnightMonsterMagnet,
+	)
+}
+
+// legacyMagnetLayout reports whether this tenant's client sends the gms_48
+// magnet body (byte count, no per-entry result, trailing delay short, no
+// direction byte, leading caster-id entry) rather than the modern one.
+//
+// The split is gms_48 vs EVERYTHING else — deliberately NARROWER than the
+// isAntiRepeatBuffSkill gate above, which splits at gms_72. Do not harmonise
+// the two. Verified by decompiling CUserLocal::TryDoingMonsterMagnet per
+// version: gms_48 @0x6AD842 (COutPacket ctor `push 46h` @0x6ADABC; entryCount
+// Encode1 @0x6ADB02; per-entry Encode4 @0x6ADB1B; delay Encode2 @0x6ADB29; the
+// caster's own object id is inserted at index 0 by ZArray<ulong>::InsertBefore
+// @0x6AD977-0x6AD987 BEFORE the mob loop @0x6ADA89-0x6ADA99, both reading
+// offset +0x654), versus the modern shape at gms_61 @0x7B9684, gms_72
+// @0x876605, gms_79 @0x8C3117, gms_83 @0x96C215, gms_84 @0x9ABDB7, gms_87
+// @0x9F086F, gms_92 @0x91F2A0, gms_95 @0x940570 and jms_185 @0xA3C61C — all of
+// which Encode4 the grab count, Encode4/Encode1 per entry, and Encode1 the
+// direction with NO trailing delay. jms takes the modern branch.
+func legacyMagnetLayout(t tenant.Model) bool {
+	return t.IsRegion("GMS") && !t.MajorAtLeast(61)
+}
+
+// decodeMagnet consumes the Monster Magnet body. It is a REPLACEMENT body, not
+// an additive suffix of the common prefix the other arms share, which is why
+// Decode returns immediately after calling it.
+//
+// The per-entry loops are bounded by the bytes actually available as well as by
+// the client-supplied count: the shared reader returns zero WITHOUT advancing
+// pos once exhausted (atlas-socket/request/reader.go), so an unbounded loop
+// over a hostile 0xFFFFFFFF count would spin ~4 billion times on the channel's
+// packet-handling goroutine producing nothing.
+func (m *SkillUsageInfo) decodeMagnet(r *request.Reader, legacy bool) {
+	if legacy {
+		entryCount := int(r.ReadByte())
+		if maxEntries := r.Available() / magnetEntrySizeLegacy; entryCount > maxEntries {
+			entryCount = maxEntries
+		}
+		m.magnetGrabs = make([]MagnetGrab, 0, entryCount)
+		for i := range entryCount {
+			objectId := r.ReadUint32()
+			// entry[0] is the CASTER's own object id, not a monster.
+			if i == 0 {
+				continue
+			}
+			m.magnetGrabs = append(m.magnetGrabs, NewMagnetGrab(objectId, true))
+		}
+		m.delay = r.ReadUint16()
+		return
+	}
+
+	grabCount := int(r.ReadUint32())
+	if maxEntries := r.Available() / magnetEntrySizeModern; grabCount > maxEntries {
+		grabCount = maxEntries
+	}
+	m.magnetGrabs = make([]MagnetGrab, 0, grabCount)
+	for range grabCount {
+		objectId := r.ReadUint32()
+		// gms_83 @0x96C215 encodes `COutPacket::Encode1(v65, *v40 == 3)` — a
+		// BOOL, not an enum. The 3 is the client's own prop-roll sentinel.
+		grabbed := r.ReadByte() != 0
+		m.magnetGrabs = append(m.magnetGrabs, NewMagnetGrab(objectId, grabbed))
+	}
+	m.direction = r.ReadByte() != 0
 }

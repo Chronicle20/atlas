@@ -49,6 +49,18 @@ type mitigationInput struct {
 	achillesPermille int32 // Achilles or Aran High Defense x, job-selected
 	manaReflectPct   int32
 
+	// chakraPct is the WZ `x` of the caster's active Chakra recovery window
+	// (0 = no window). CUserLocal::SetDamaged rewrites the raw damage by
+	// this factor before every other term reads it (design §3.3), so it is
+	// applied first, and it is deliberately NOT gated on the attack source —
+	// there is no attackIdx, mob-sourced or magic/physical test around the
+	// client's branch.
+	//
+	// x > 100 amplifies (GMS 12/48: 200..112); x < 100 reduces (GMS 61+:
+	// 99..70; GMS 95: 96..60). The WZ data carries the direction, so there
+	// is no version gate here and adding one would be the bug (design §4.2).
+	chakraPct int32
+
 	// Version gates, resolved from the tenant by the orchestrator.
 	// Post-merge legacy verification (design §3) confirmed all three gates
 	// hold across every column v48..jms with NO code change: the pre-BB
@@ -86,6 +98,7 @@ type reflectIntent struct {
 }
 
 type mitigationBreakdown struct {
+	chakraAmplified    int32
 	achillesReduce     int32
 	comboBarrierReduce int32
 	magicShieldReduce  int32
@@ -134,6 +147,16 @@ func computeMitigation(in mitigationInput, mob mobInfo) mitigationResult {
 	raw := in.rawDamage
 	if raw <= 0 {
 		return r
+	}
+
+	if in.chakraPct > 0 {
+		raw = raw * in.chakraPct / 100
+		// The client's floor is `<= 1 -> 1`, deliberately not `< 1`, and it
+		// applies to the multiplied value rather than the original.
+		if raw <= 1 {
+			raw = 1
+		}
+		r.breakdown.chakraAmplified = raw
 	}
 
 	var achillesReduce int32
@@ -215,6 +238,7 @@ func computeMitigation(in mitigationInput, mob mobInfo) mitigationResult {
 	r.mpLoss = mpLoss
 	r.mesoCost = mesoCost
 	r.breakdown = mitigationBreakdown{
+		chakraAmplified:    r.breakdown.chakraAmplified,
 		achillesReduce:     achillesReduce,
 		comboBarrierReduce: comboBarrierReduce,
 		magicShieldReduce:  magicShieldReduce,

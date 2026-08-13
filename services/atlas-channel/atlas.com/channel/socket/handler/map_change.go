@@ -5,6 +5,7 @@ import (
 	"atlas-channel/cashshop"
 	"atlas-channel/channel"
 	"atlas-channel/character"
+	"atlas-channel/character/chakra"
 	"atlas-channel/portal"
 	"atlas-channel/respawn"
 	"atlas-channel/session"
@@ -17,6 +18,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	fieldsb "github.com/Chronicle20/atlas/libs/atlas-packet/field/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -24,6 +26,11 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 		p := fieldsb.Change{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+
+		// A map change ends any pending Chakra recovery (PRD FR-5.5).
+		if chakra.GetRegistry().Clear(tenant.MustFromContext(ctx), s.CharacterId()) {
+			l.Debugf("Chakra recovery window for character [%d] cleared by map change.", s.CharacterId())
+		}
 
 		if p.CashShopReturn() {
 			l.Debugf("Character [%d] returning from cash shop.", s.CharacterId())

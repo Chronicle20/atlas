@@ -14,7 +14,14 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 )
+
+// energyChargedValue is the ENERGY_CHARGE charged-state sentinel emitted by
+// atlas-channel. It is a state marker, not a bar reading, and nothing may
+// treat it as a magnitude. (task-216 FR-3.1) Shared with the emitting service
+// via libs/atlas-constants so the two cannot drift.
+const energyChargedValue = charconst.EnergyChargedValue
 
 // IsInitialized checks if a character has been initialized
 func IsInitialized(ctx context.Context, characterId uint32) bool {
@@ -181,9 +188,20 @@ func fetchBuffBonuses(l logrus.FieldLogger, ctx context.Context, characterId uin
 	}
 
 	bonuses := make([]stat.Bonus, 0)
+	effectFor := func(skillId uint32, level byte) (*skilldata.EffectModel, error) {
+		si, err := skilldata.RequestById(skillId)(l, ctx)
+		if err != nil {
+			return nil, err
+		}
+		return si.GetEffectForLevel(level), nil
+	}
 	for _, buff := range buffList {
 		source := fmt.Sprintf("buff:%d", buff.SourceId)
 		for _, change := range buff.Changes {
+			if change.Type == string(charconst.TemporaryStatTypeEnergyCharge) {
+				bonuses = append(bonuses, energyChargeBonus(source, buff.SourceId, buff.Level, change.Amount, effectFor)...)
+				continue
+			}
 			bs := stat.BonusesForBuffChange(source, change.Type, change.Amount)
 			if len(bs) == 0 {
 				l.Debugf("Unknown buff stat type: %s", change.Type)
@@ -195,6 +213,32 @@ func fetchBuffBonuses(l logrus.FieldLogger, ctx context.Context, characterId uin
 
 	l.Debugf("Fetched %d buff bonuses for character [%d].", len(bonuses), characterId)
 	return bonuses, nil
+}
+
+// energyChargeBonus turns a charged ENERGY_CHARGE buff into its weapon-attack
+// payoff (Cosmic Character.java:7676-7680, localwatk += ceffect.getWatk()).
+//
+// ENERGY_CHARGE is deliberately NOT routed through BonusesForBuffChange: the
+// stat's amount is the ENERGY BAR READING (0..15000), not an attack value, so
+// feeding it in directly would grant a five-digit weapon attack. The bonus is
+// resolved from the skill effect's `pad` at the buff's own level instead, and
+// only while the bar holds the 15000 charged sentinel.
+//
+// Level matters: 5110001 has pad 0 at L1-3, 11 at L4-5, 15 at L20, and the
+// Cygnus table (15100004) differs again — hence the per-buff lookup rather
+// than a constant.
+func energyChargeBonus(source string, sourceId int32, level byte, amount int32, effectFor func(skillId uint32, level byte) (*skilldata.EffectModel, error)) []stat.Bonus {
+	if amount != energyChargedValue {
+		return nil
+	}
+	effect, err := effectFor(uint32(sourceId), level)
+	if err != nil || effect == nil {
+		return nil
+	}
+	if effect.WeaponAttack <= 0 {
+		return nil
+	}
+	return []stat.Bonus{stat.NewBonus(source, stat.TypeWeaponAttack, int32(effect.WeaponAttack))}
 }
 
 // fetchPassiveBonuses fetches passive skill bonuses from character skills

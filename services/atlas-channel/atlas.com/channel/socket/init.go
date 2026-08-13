@@ -2,6 +2,7 @@ package socket
 
 import (
 	"atlas-channel/channel"
+	"atlas-channel/character/chakra"
 	"atlas-channel/character/statreset"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -24,6 +25,8 @@ const idleThreshold = 30 * time.Second
 
 func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, sc server.Model, ipAddress string, port int) {
 	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, sc server.Model, ipAddress string, port int) {
+		chakra.GetRegistry().StartSweeper(l, ctx)
+
 		routine.Go(l, ctx, func(_ context.Context) {
 			l.Infof("Creating channel socket service for [%s] on port [%d].", sc.String(), port)
 
@@ -54,6 +57,11 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 							// Without this the throttle map leaks one entry per
 							// character ever seen by this pod (task-190).
 							statreset.GetRegistry().ClearCharacter(t, s.CharacterId())
+							// Channel change and disconnect both destroy the
+							// session; without this the window map leaks one
+							// entry per character ever seen by this pod
+							// (PRD FR-5.5, FR-2.2).
+							chakra.GetRegistry().Clear(t, s.CharacterId())
 							return nil
 						})
 						sp.DestroyByIdWithSpan(sessionId)

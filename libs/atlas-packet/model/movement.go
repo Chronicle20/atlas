@@ -69,6 +69,14 @@ func (m *Movement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *req
 			var elem MovementCodec
 			elemType := r.ReadByte()
 
+			// One resolution per element, purely to decide whether to report a
+			// misalignment. The dispatch below re-asks per candidate kind, which
+			// is cheap and keeps the existing structure; what must NOT happen is
+			// the lookup logging on every one of those asks.
+			if _, _, ok := resolveMovementPathAttr(elemType, options); !ok {
+				logUnconfiguredMovementCode(l, r, elemType, i, numElems)
+			}
+
 			if isMovementType(l)(elemType, options, TypeNormal) {
 				elem = &NormalElement{Element{ElemType: elemType, StartX: m.StartX, StartY: m.StartY}}
 			} else if isMovementType(l)(elemType, options, TypeTeleport) {
@@ -318,34 +326,74 @@ func (m *StatChangeElement) Encode(l logrus.FieldLogger, _ context.Context) func
 	}
 }
 
-func movementPathAttrFromOptions(l logrus.FieldLogger) func(attr byte, options map[string]interface{}) (string, string) {
+// movementPathAttrFromOptions resolves a movement fragment's type code against
+// the tenant's configured `types` table, reporting whether the lookup succeeded.
+//
+// It deliberately does NOT log. Decode asks this question up to six times per
+// element (once per candidate element kind) plus once more for the FALL_DOWN
+// name check, so logging here turned ONE unconfigured code into six or seven
+// identical lines and buried the only fact worth having — the bytes. Decode now
+// resolves once per element and calls logUnconfiguredMovementCode on failure.
+func movementPathAttrFromOptions(_ logrus.FieldLogger) func(attr byte, options map[string]interface{}) (string, string) {
 	return func(attr byte, options map[string]interface{}) (string, string) {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["types"]; !ok {
-			l.Errorf("Code [%d] not configured for use in movement. Defaulting to 99 which will likely cause a client crash.", attr)
-			return "NOT_FOUND", "DEFAULT"
-		}
-
-		var codes []interface{}
-		if codes, ok = genericCodes.([]interface{}); !ok {
-			l.Errorf("Code [%d] not configured for use in movement. Defaulting to 99 which will likely cause a client crash.", attr)
-			return "NOT_FOUND", "DEFAULT"
-		}
-
-		if len(codes) == 0 || attr < 0 || attr >= byte(len(codes)) {
-			l.Errorf("Code [%d] not configured for use in movement. Defaulting to 99 which will likely cause a client crash.", attr)
-			return "NOT_FOUND", "DEFAULT"
-		}
-
-		var theType map[string]interface{}
-		if theType, ok = codes[attr].(map[string]interface{}); !ok {
-			l.Errorf("Code [%d] not configured for use in movement. Defaulting to 99 which will likely cause a client crash.", attr)
-			return "NOT_FOUND", "DEFAULT"
-		}
-
-		return theType["Name"].(string), theType["Type"].(string)
+		name, kind, _ := resolveMovementPathAttr(attr, options)
+		return name, kind
 	}
+}
+
+func resolveMovementPathAttr(attr byte, options map[string]interface{}) (string, string, bool) {
+	genericCodes, ok := options["types"]
+	if !ok {
+		return "NOT_FOUND", "DEFAULT", false
+	}
+
+	codes, ok := genericCodes.([]interface{})
+	if !ok {
+		return "NOT_FOUND", "DEFAULT", false
+	}
+
+	if len(codes) == 0 || int(attr) >= len(codes) {
+		return "NOT_FOUND", "DEFAULT", false
+	}
+
+	theType, ok := codes[attr].(map[string]interface{})
+	if !ok {
+		return "NOT_FOUND", "DEFAULT", false
+	}
+
+	return theType["Name"].(string), theType["Type"].(string), true
+}
+
+// movementDiagnosticDumpLimit caps the hex dump below. A movement packet is a
+// few hundred bytes at most; the cap only guards against an absurd frame.
+const movementDiagnosticDumpLimit = 512
+
+// logUnconfiguredMovementCode reports a movement fragment whose type code is not
+// in the tenant's table, WITH the bytes needed to diagnose it.
+//
+// A code outside the table is almost never a genuinely unknown fragment type —
+// the client only emits codes it has arms for. It means the reader is no longer
+// on a fragment boundary, i.e. some earlier field was decoded at the wrong
+// width for this client version. Diagnosing that needs the frame, the offset
+// the reader had reached, and which element of how many failed; without them
+// the message says only that something drifted, which is what made the GMS v87
+// occurrence (task-218 field reports #3/#5) unactionable for so long.
+func logUnconfiguredMovementCode(l logrus.FieldLogger, r *request.Reader, attr byte, index byte, count byte) {
+	buf := r.GetBuffer()
+	truncated := ""
+	if len(buf) > movementDiagnosticDumpLimit {
+		buf = buf[:movementDiagnosticDumpLimit]
+		truncated = " (truncated)"
+	}
+	l.WithFields(logrus.Fields{
+		"movement.code":          attr,
+		"movement.elementIndex":  index,
+		"movement.elementCount":  count,
+		"movement.readerOffset":  r.Position(),
+		"movement.bytesRemained": r.Available(),
+	}).Errorf("Code [%d] not configured for use in movement (element %d of %d, reader at offset %d). "+
+		"This is a decode misalignment, not an unknown fragment type: the client only sends codes it has arms for. "+
+		"Frame%s: %x", attr, index+1, count, r.Position(), truncated, buf)
 }
 
 func isMovementType(l logrus.FieldLogger) func(reference byte, options map[string]interface{}, movementType string) bool {

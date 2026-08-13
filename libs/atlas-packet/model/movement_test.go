@@ -2,6 +2,9 @@ package model
 
 import (
 	"bytes"
+	"fmt"
+	testlog "github.com/sirupsen/logrus/hooks/test"
+	"strings"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -139,5 +142,55 @@ func TestMovementHeaderRoundTrip(t *testing.T) {
 				t.Errorf("start velocity = (%d,%d), want (%d,%d)", out.StartVx, out.StartVy, v.wantVx, v.wantVy)
 			}
 		})
+	}
+}
+
+// TestUnconfiguredMovementCodeLogsOnceWithFrame pins the diagnostic contract for
+// a movement fragment whose type code is missing from the tenant's table.
+//
+// Two things were wrong with the old behaviour, and both cost real triage time
+// on the GMS v87 occurrence (task-218 field reports #3/#5). The lookup logged
+// from inside itself, and Decode asks it once per candidate element kind, so a
+// single bad code produced six identical lines — which read as six problems and
+// inflated the apparent rate by 6x. And the line carried only the code, so it
+// could not distinguish "the client sent a fragment type we do not model" from
+// "the reader is off a fragment boundary", which is what it actually means.
+//
+// The contract now: exactly ONE error per bad element, carrying the frame bytes
+// and the reader offset.
+func TestUnconfiguredMovementCodeLogsOnceWithFrame(t *testing.T) {
+	ctx := test.CreateContext("GMS", 87, 1)
+	// A types table with a single entry, so code 200 cannot resolve.
+	options := map[string]interface{}{
+		"types": []interface{}{
+			map[string]interface{}{"Name": "NORMAL", "Type": "NORMAL"},
+		},
+	}
+
+	l, hook := testlog.NewNullLogger()
+	// startX, startY, one element, type code 200, then a short tail.
+	raw := []byte{0x0A, 0x00, 0x14, 0x00, 0x01, 200, 0x01, 0x02, 0x03}
+	req := request.Request(raw)
+	reader := request.NewRequestReader(&req, 0)
+	(&Movement{}).Decode(l, ctx)(&reader, options)
+
+	var errs []string
+	for _, e := range hook.AllEntries() {
+		if e.Level == logrus.ErrorLevel {
+			errs = append(errs, e.Message)
+		}
+	}
+	if len(errs) != 1 {
+		t.Fatalf("got %d error lines for one unconfigured code, want exactly 1: %v", len(errs), errs)
+	}
+	if !strings.Contains(errs[0], "Code [200]") {
+		t.Errorf("error must name the offending code: %q", errs[0])
+	}
+	// The frame is the whole point — without it the report is unactionable.
+	if !strings.Contains(errs[0], fmt.Sprintf("%x", raw)) {
+		t.Errorf("error must carry the raw frame for diagnosis: %q", errs[0])
+	}
+	if !strings.Contains(errs[0], "misalignment") {
+		t.Errorf("error must say what an out-of-range code actually means: %q", errs[0])
 	}
 }

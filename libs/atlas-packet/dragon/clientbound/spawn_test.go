@@ -27,6 +27,7 @@ var dragonSpawnBody = []byte{
 	0xA6, 0x08,
 }
 
+// packet-audit:verify packet=dragon/clientbound/DragonSpawn version=gms_v95 ida=0x50dc90
 func TestDragonSpawnBytes(t *testing.T) {
 	in := NewDragonSpawn(4242, 100, -200, 3, 2214)
 	ctx := test.CreateContext("GMS", 95, 1)

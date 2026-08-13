@@ -14,6 +14,8 @@ import (
 // COutPacket(op) then CMovePath::Flush(...) and NOTHING else. There is no
 // leading identity field — unlike CVecCtrlSummoned::EndUpdateActive, which
 // writes Encode4 summonId first.
+//
+// packet-audit:verify packet=dragon/serverbound/Move version=gms_v95 ida=0x996570
 func TestServerboundMoveHasNoLeadingIdentityField(t *testing.T) {
 	ctx := test.CreateContext("GMS", 95, 1)
 	l, _ := testlog.NewNullLogger()

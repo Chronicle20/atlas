@@ -1,0 +1,26 @@
+packet: dragon/clientbound/DragonRemove
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CUser::OnDragonPacket
+    address: "0x8e5c00"
+    decompile_sha256: 30cf155f80ba0975e98dfc223c9a3b3bb6b6459c487e9c2895d6b1bd48f9c9e4
+verifies:
+    - libs/atlas-packet/dragon/clientbound/remove_test.go#TestDragonRemoveIsOwnerIdOnly
+notes: >-
+    CUser::OnDragonPacket @0x8e5c00 (GMS v95.0) switches on nType: 206 -> spawn,
+    207 -> move, and NOTHING ELSE. The outer dispatcher
+    CUserPool::OnUserCommonPacket @0x94cdb0 routes opcodes 206..208 into this
+    function via the range test `(v6-206)<=2` @0x94cf14, so 208 (REMOVE_DRAGON)
+    enters the function and falls through both branches unhandled: no field is
+    read, no dragon state changes. This is a routed-but-unhandled dispatch, not
+    an absent one — the opcode is deliverable, the client just silently
+    discards it. Same shape independently confirmed for v84 at
+    docs/packets/registry/gms_v84.yaml:1254. The only client-side dragon
+    teardown (per an xref sweep on ZRef<CDragon>::_ReleaseRaw @0x8decb0, four
+    callers) is CUser destruction (owner leaving the field), not this opcode.
+    The verified fixture proves the DragonRemove codec's wire shape (empty
+    body beyond the upstream-consumed ownerCharacterId) AND documents the
+    absence of a handler arm so this cell is not later reopened as an
+    incomplete verification.

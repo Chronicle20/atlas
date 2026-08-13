@@ -16,3 +16,7 @@ families:
   cash_item_gachapon:
     - CASH_ITEM_GACHAPON_BUTTON
     - CASHSHOP_CASH_ITEM_GACHAPON_RESULT
+  dragon:
+    - SPAWN_DRAGON
+    - MOVE_DRAGON
+    - REMOVE_DRAGON

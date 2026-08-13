@@ -9,6 +9,8 @@ import (
 
 // MOVE_DRAGON is int ownerCharacterId + the raw CMovePath blob. The blob already
 // begins with the start position, so it must NOT be written separately.
+//
+// packet-audit:verify packet=dragon/clientbound/DragonMove version=gms_v95 ida=0x50ad30
 func TestDragonMoveIsOwnerIdPlusOpaqueBlob(t *testing.T) {
 	blob := []byte{0x0A, 0x00, 0x14, 0x00, 0x01, 0xFF}
 	got := test.Encode(t, test.CreateContext("GMS", 95, 1), NewDragonMove(4242, blob).Encode, nil)

@@ -633,6 +633,15 @@
         ]
       },
       {
+        "opCode": "0x79",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillMacroHandle",
+        "fname": "CMacroSysMan::FlushToSvr",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x7D",
         "validator": "LoggedInValidator",
         "handler": "SueCharacter",
@@ -2017,6 +2026,14 @@
         "opCode": "0x80",
         "writer": "ScriptProgress",
         "fname": "CWvsContext::OnScriptProgressMessage",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x8B",
+        "writer": "CharacterSkillMacro",
+        "fname": "CWvsContext::OnMacroSysDataInit",
         "services": [
           "channel"
         ]

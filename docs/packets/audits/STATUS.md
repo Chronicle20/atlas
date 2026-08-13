@@ -7,7 +7,7 @@
 Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 
 - export gms_v48: `59a1fa209a3202a733d73a7d5104ed541906c7c006e2aa7f1cefed7f2a4342a1`
-- export gms_v61: `ffc9cfe9ae0e716e499a3bb8f36d3547d94057ec755ab851e28cbe461ecdbec8`
+- export gms_v61: `0532e86e0ce45f5c898626409c98e28c8a1804d42c28406fcac1b5c379b71be0`
 - export gms_v72: `01445ed400a216f7f219cc2831653cb421c26c43fd50676b11510550fa1a94af`
 - export gms_v79: `a956db8ff64a8df29fbf11e19b158d3191dec51bb246ffd0848a721ea43409df`
 - export gms_v83: `9cfa0c4f248d94baf255babc9b95417e59806be4cbd96e0b98951be03c74352e`
@@ -174,7 +174,7 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 | SESSION_VALUE | CWvsContext::OnSessionValue |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05A | ❌ | 0x05C | ❌ | 0x05C | ❌ | 0x05E | ❌ | 0x05D | ❌ | 0x061 | ❌ |
 | SUCCESS_IN_USE_GACHAPON_BOX | CWvsContext::OnSuccessInUsegachaponBox |  |  | ⬜ | 0x05A | ❌ | 0x06D | ❌ | 0x06F | ❌ | 0x075 | ❌ | 0x078 | ❌ | 0x078 | ❌ | 0x07A | ❌ | 0x079 | ❌ | 0x075 | ❌ |
 | FAMILY_JOIN_REQUEST_RESULT | CWvsContext::OnFamilyJoinRequestResult |  |  | ⬜ |  | ⬜ | 0x05B | ❌ | 0x05C | ❌ | 0x062 | ❌ | 0x065 | ❌ | 0x065 | ❌ | 0x067 | ❌ | 0x066 | ❌ | 0x069 | ❌ |
-| MACRO_SYS_DATA_INIT | CWvsContext::OnMacroSysDataInit |  |  | ⬜ | 0x05B | ❌ | 0x071 | ❌ | 0x075 | ❌ | 0x07C | ❌ | 0x07F | ❌ | 0x084 | ❌ | 0x08B | ❌ | 0x08C | ❌ | 0x07A | ❌ |
+| MACRO_SYS_DATA_INIT | CWvsContext::OnMacroSysDataInit | character/clientbound/CharacterSkillMacro (T1) |  | ⬜ | 0x05B | ❌ | 0x071 | ❌ | 0x075 | ❌ | 0x07C | ❌ | 0x07F | ❌ | 0x084 | ❌ | 0x08B | ❌ | 0x08C | ❌ | 0x07A | ❌ |
 | FAMILY_JOIN_ACCEPTED | CWvsContext::OnFamilyJoinAccepted |  |  | ⬜ |  | ⬜ | 0x05C | ❌ | 0x05D | ❌ | 0x063 | ❌ | 0x066 | ❌ | 0x066 | ❌ | 0x068 | ❌ | 0x067 | ❌ | 0x06A | ❌ |
 | IDA_0X05C | sub_AEC8D7 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05C | ❌ |
 | SET_FIELD | CStage::OnSetField | field/clientbound/FieldSetField (T1) |  | ⬜ | 0x05C | ✅ | 0x072 | ✅ | 0x076 | ✅ | 0x07D | ✅ | 0x080 | ✅ | 0x085 | ✅ | 0x08C | ❌ | 0x08D | ✅ | 0x07B | ✅ |
@@ -636,7 +636,7 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 | BUDDYLIST_MODIFY | CField::SendAcceptFriendMsg; CField::SendDeleteFriendMsg; CField::SendSetFriendMsg; CWvsContext::LoadFriend | buddy/serverbound/BuddyOperationAccept (T1) | 0x064 | ✅ | 0x076 | 🟡ᶠ | 0x080 | 🟡ᶠ | 0x07F | 🟡ᶠ | 0x082 | ✅ | 0x086 | ✅ | 0x08A | ✅ | 0x096 | 🟡ᶠ | 0x099 | ✅ | 0x085 | ✅ |
 | USER_CHANGE_STAT_REQUEST_BY_ITEM | CWvsContext::SendStatChangeRequestByItemOption |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x064 | ❌ | 0x065 | ❌ |  | ⬜ |
 | NOTE_ACTION | CCashShop::OnCashItemResLoadGiftDone; CMemoListDlg::SetRet; CWvsContext::OnMemoNotify_Receive | note/serverbound/NoteOperationDiscard (T1) | 0x065 | ✅ | 0x077 | ✅ | 0x081 | ✅ | 0x080 | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x097 | ❌ | 0x09A | ✅ | 0x086 | ✅ |
-| SKILL_MACRO | CMacroSysMan::FlushToSvr; sub_59746C |  |  | ⬜ | 0x065 | ❌ | 0x06D | ❌ | 0x06C | ❌ | 0x06E | ❌ | 0x06E | ❌ | 0x071 | ❌ | 0x079 | ❌ | 0x07A | ❌ | 0x069 | ❌ |
+| SKILL_MACRO | CMacroSysMan::FlushToSvr; sub_59746C | character/serverbound/CharacterSkillMacroHandle (T1) |  | ⬜ | 0x065 | ❌ | 0x06D | ❌ | 0x06C | ❌ | 0x06E | ❌ | 0x06E | ❌ | 0x071 | ❌ | 0x079 | ❌ | 0x07A | ❌ | 0x069 | ❌ |
 | USE_INNER_PORTAL | CUserLocal::TryRegisterTeleport |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x065 | ❌ | 0x065 | ❌ | 0x068 | ❌ | 0x070 | ❌ | 0x071 | ❌ | 0x060 | ❌ |
 | USE_SHOP_SCANNER_ITEM | CWvsContext::SendShopScannerItemUseRequest | merchant/serverbound/ShopScannerItemUse (T1) |  | ⬜ |  | ⬜ | 0x066 | ✅ | 0x065 | ✅ | 0x053 | ✅ | 0x053 | ❌ |  | ⬜ | 0x05A | ❌ | 0x05A | ✅ |  | ⬜ |
 | ANTI_MACRO_ITEM_USE | CWvsContext::SendAntiMacroItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x067 | ❌ | 0x067 | ❌ | 0x06A | ❌ | 0x072 | ❌ | 0x073 | ❌ | 0x062 | ❌ |

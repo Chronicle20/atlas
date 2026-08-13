@@ -2,7 +2,7 @@
   "toolSha": "5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395",
   "exportHashes": {
     "gms_v48": "59a1fa209a3202a733d73a7d5104ed541906c7c006e2aa7f1cefed7f2a4342a1",
-    "gms_v61": "ffc9cfe9ae0e716e499a3bb8f36d3547d94057ec755ab851e28cbe461ecdbec8",
+    "gms_v61": "0532e86e0ce45f5c898626409c98e28c8a1804d42c28406fcac1b5c379b71be0",
     "gms_v72": "01445ed400a216f7f219cc2831653cb421c26c43fd50676b11510550fa1a94af",
     "gms_v79": "a956db8ff64a8df29fbf11e19b158d3191dec51bb246ffd0848a721ea43409df",
     "gms_v83": "9cfa0c4f248d94baf255babc9b95417e59806be4cbd96e0b98951be03c74352e",
@@ -14876,8 +14876,9 @@
     {
       "kind": "op",
       "op": "MACRO_SYS_DATA_INIT",
+      "packet": "character/clientbound/CharacterSkillMacro",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CWvsContext::OnMacroSysDataInit"
       ],
@@ -14888,47 +14889,47 @@
         },
         "gms_v61": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 91
         },
         "gms_v72": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 113
         },
         "gms_v79": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 117
         },
         "gms_v83": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 124
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 127
         },
         "gms_v87": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 132
         },
         "gms_v92": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 139
         },
         "gms_v95": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 140
         },
         "jms_v185": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 122
         }
       }
@@ -17094,8 +17095,9 @@
     {
       "kind": "op",
       "op": "SKILL_MACRO",
+      "packet": "character/serverbound/CharacterSkillMacroHandle",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CMacroSysMan::FlushToSvr",
         "sub_59746C"
@@ -17107,47 +17109,47 @@
         },
         "gms_v61": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 101
         },
         "gms_v72": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 109
         },
         "gms_v79": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 108
         },
         "gms_v83": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 110
         },
         "gms_v84": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 110
         },
         "gms_v87": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 113
         },
         "gms_v92": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 121
         },
         "gms_v95": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 122
         },
         "jms_v185": {
           "state": "incomplete",
-          "note": "no audit report",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": 105
         }
       }

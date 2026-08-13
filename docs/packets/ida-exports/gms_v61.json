@@ -18878,6 +18878,51 @@
           "comment": ""
         }
       ]
+    },
+    "CMacroSysMan::FlushToSvr": {
+      "address": "0x59746c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "task-226 Step 0 harvest (v61 send-chain gap, na-recheck.md): CMacroSysMan::FlushToSvr forwards its COutPacket arg wholesale to MACROSYSDATA::Encode with no direct COutPacket::EncodeN(...) call of its own, so the alias-seed regex never fires inside this function. Hand-spliced after verifying the call by decompile (COutPacket::COutPacket(&pkt, 101); sub_4B7928(pkt); CClientSocket::SendPacket(...); ZArray::RemoveAll(...)).",
+          "ref": "MACROSYSDATA::Encode"
+        }
+      ]
+    },
+    "MACROSYSDATA::Encode": {
+      "address": "0x4b7928",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v3 > 0",
+          "ref": "sub_4B7884"
+        }
+      ]
+    },
+    "sub_4B7884": {
+      "address": "0x4b7884",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
     }
   }
 }

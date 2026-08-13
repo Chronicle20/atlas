@@ -705,6 +705,15 @@
         ]
       },
       {
+        "opCode": "0x69",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillMacroHandle",
+        "fname": "CMacroSysMan::FlushToSvr",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x6B",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemUseLotteryHandle",

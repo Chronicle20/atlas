@@ -689,6 +689,15 @@
         ]
       },
       {
+        "opCode": "0x9C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterKeyMapChangeHandle",
+        "fname": "CFuncKeyMappedMan::SaveFuncKeyMap",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xB0",
         "validator": "LoggedInValidator",
         "handler": "GuildBBSHandle",

@@ -895,6 +895,15 @@
         ]
       },
       {
+        "opCode": "0x8A",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterKeyMapChangeHandle",
+        "fname": "CFuncKeyMappedMan::SaveFuncKeyMap",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x08B",
         "validator": "LoggedInValidator",
         "handler": "RPSActionHandle",

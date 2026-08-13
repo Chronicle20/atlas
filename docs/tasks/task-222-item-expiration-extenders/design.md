@@ -72,30 +72,47 @@ switch bound in `CWvsContext::SendConsumeCashItemUseRequest`:
 
 **GMS v84 and GMS v92 checked 2026-08-13 — a different, weaker evidentiary
 tier than the rows above.** `get_cashslot_item_type` remains unnamed in both
-IDBs, and unlike v48/v61 the `add eax, -12` / `cmp eax, <range>` bounds-check
-idiom does not appear anywhere in either function (`insn_query` scanned both
-in full for an `add`/`sub`/`lea` with a ±12 immediate: zero matches). What
-was actually shown is (a) a case-61 arm exists and is reachable in
-`SendConsumeCashItemUseRequest`'s own dispatch table (i.e. the family is
-present, as expected inside the pre-95 band), and (b) that arm's instruction
-shape — a single `Encode2` of the target-slot argument — is identical to
-v83's confirmed case-61 arm (§1.2). That establishes reachability and
-packet-shape consistency for value 61; it is **not** a direct observation
-that the classifier maps item-id prefix 550 to 61 in these two versions,
-because the classifier itself was never located. It is corroborating
-evidence for the pre-existing assumption, at the tier the plan's Task 15
-brief sanctioned as sufficient given the bounded risk (this confirms a
-pre-existing mapping, not new code, and Task 14's resolver mirrors the
-existing branch's condition exactly) — not a decompiled classifier result
-like the rows above it.
+IDBs, so — same as v48/v61 — the mapping is settled from the dispatch switch
+bound in `CWvsContext::SendConsumeCashItemUseRequest`, using the exact same
+`add eax, -12` / `cmp eax, <range>` idiom used for v48/v61 (IDA renders the
+`-12` immediate as the unsigned hex form `0FFFFFFF4h`, not as a signed
+literal — that form is what the disassembly below actually shows). Unlike
+v48/v61, where the bounds check excludes type 61 and is therefore conclusive
+in the negative direction, for v84/v92 the bounds check *includes* type 61 —
+which only establishes that the case-61 arm is reachable, the same
+information the jump-table-arm evidence below independently shows. What was
+actually shown is (a) the bounds check is present and covers type 61 (i.e.
+the family is present, as expected inside the pre-95 band), (b) a case-61
+arm exists and is reachable in `SendConsumeCashItemUseRequest`'s own dispatch
+table, and (c) that arm's instruction shape — a single `Encode2` of the
+target-slot argument — is identical to v83's confirmed case-61 arm (§1.2).
+That establishes reachability and packet-shape consistency for value 61; it
+is **not** a direct observation that the classifier maps item-id prefix 550
+to 61 in these two versions, because the classifier itself was never
+located — the bounds check bounds the *dispatch* switch inside
+`SendConsumeCashItemUseRequest`, not the *classification* switch inside
+`get_cashslot_item_type`, and the two are different functions. It is
+corroborating evidence for the pre-existing assumption, at the tier the
+plan's Task 15 brief sanctioned as sufficient given the bounded risk (this
+confirms a pre-existing mapping, not new code, and Task 14's resolver
+mirrors the existing branch's condition exactly) — not a decompiled
+classifier result like the rows above it.
 
 (Session resolved via `idb_list` by filename, per project convention.)
 
 - **v84** (`GMS_v84.1_U_DEVM.i64`, session `5881cf84`):
-  `SendConsumeCashItemUseRequest` @ `0xa54a2f`. Dispatch jumps via
-  `jmp ds:jpt_A54ADD[eax*4]` at `0xa54add`. The IDA-recognized case-61 arm is
-  merged with case 25 — comment `jumptable 00A54ADD cases 25,61` — at
-  `0xa56ecd`:
+  `SendConsumeCashItemUseRequest` @ `0xa54a2f`. Bounds check:
+  ```
+  0xa54ac9  add   eax, 0FFFFFFF4h   ; switch 61 cases  (i.e. add eax, -12)
+  0xa54acc  cmp   eax, 3Ch
+  0xa54ad0  ja    def_A54ADD        ; jumptable 00A54ADD default case
+  ```
+  `cmp eax, 3Ch` (60) with `ja` to default → valid offsets `0..60`, covered
+  type range **12..72**. Case 61 (offset `61-12=49`) is inside that range —
+  reachable, not excluded (contrast v48/v61, where 61 fell outside their
+  ranges). Dispatch jumps via `jmp ds:jpt_A54ADD[eax*4]` at `0xa54add`. The
+  IDA-recognized case-61 arm is merged with case 25 — comment
+  `jumptable 00A54ADD cases 25,61` — at `0xa56ecd`:
   ```
   0xa56ecd  push  [ebp+arg_8]      ; jumptable 00A54ADD cases 25,61
   0xa56ed0  lea   ecx, [ebp+var_38]
@@ -104,30 +121,38 @@ like the rows above it.
   ```
   Byte-for-byte the same shape as v83's `0xa0cae0` arm (§1.2): one
   `Encode2` of the `nEPOS` argument, nothing else. Shows the case-61 arm is
-  reachable and shaped identically to v83's confirmed arm — treated as `61`
-  on that basis.
+  in-range, reachable, and shaped identically to v83's confirmed arm —
+  treated as `61` on that basis.
 - **v92** (`GMS_v92_1_DEVM.exe.i64`, session `acdfccff`):
-  `SendConsumeCashItemUseRequest` @ `0x9bfe10`. Dispatch jumps via
-  `jmp ds:jpt_9BFF39[eax*4]` at `0x9bff39`. Case 61 is a standalone arm here
-  (not merged with 25) — comment `jumptable 009BFF39 case 61` — at
-  `0x9bff40`:
+  `SendConsumeCashItemUseRequest` @ `0x9bfe10`. Bounds check:
+  ```
+  0x9bff23  add   eax, 0FFFFFFF4h   ; switch 62 cases  (i.e. add eax, -12)
+  0x9bff29  cmp   eax, 3Dh
+  0x9bff2c  ja    def_9BFF39        ; jumptable 009BFF39 default case
+  ```
+  `cmp eax, 3Dh` (61) with `ja` to default → valid offsets `0..61`, covered
+  type range **12..73** — one wider than v84's. Case 61 (offset `49`) is
+  inside that range. Dispatch jumps via `jmp ds:jpt_9BFF39[eax*4]` at
+  `0x9bff39`. Case 61 is a standalone arm here (not merged with 25) —
+  comment `jumptable 009BFF39 case 61` — at `0x9bff40`:
   ```
   0x9bff40  mov   ecx, [esp+234h+arg_8]   ; jumptable 009BFF39 case 61
   0x9bff47  push  ecx
   0x9bff48  lea   ecx, [esp+238h+var_204]
   0x9bff4c  call  COutPacket::Encode2
   ```
-  Same shape: one `Encode2` of the target-slot argument. Same basis: reachable
-  arm, shape-matched to v83 — treated as `61`.
+  Same shape: one `Encode2` of the target-slot argument. Same basis: in-range
+  bounds check, reachable arm, shape-matched to v83 — treated as `61`.
 
-Both dispatch arms exist, are reachable, and are shape-identical to v83's
-confirmed arm — consistent with `61` and with the pre-95 band every other
-decompiled version in it agrees on. No stop condition triggered (a stop would
-require finding the arm *absent* or shaped differently, which would mean
-`GetCashSlotItemType`'s existing 550 branch needed a version arm — neither
-happened). No version arm added to `GetCashSlotItemType`. The residual gap —
-the classifier itself not being located — is accepted per the brief's
-bounded-risk framing, not resolved.
+Both bounds checks include type 61, and both dispatch arms exist, are
+reachable, and are shape-identical to v83's confirmed arm — consistent with
+`61` and with the pre-95 band every other decompiled version in it agrees
+on. No stop condition triggered (a stop would require finding the arm
+*outside* the covered range or *absent* or shaped differently, which would
+mean `GetCashSlotItemType`'s existing 550 branch needed a version arm —
+none of that happened). No version arm added to `GetCashSlotItemType`. The
+residual gap — the classifier itself not being located — is accepted per the
+brief's bounded-risk framing, not resolved.
 
 **Value 61 is overloaded across the version boundary.** At GMS ≥ 95,
 `61` is the *megaphone* arm (`case 507`, `otherCategory == 7` →

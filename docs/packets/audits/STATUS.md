@@ -636,6 +636,7 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 | BUDDYLIST_MODIFY | CField::SendAcceptFriendMsg; CField::SendDeleteFriendMsg; CField::SendSetFriendMsg; CWvsContext::LoadFriend | buddy/serverbound/BuddyOperationAccept (T1) | 0x064 | ✅ | 0x076 | 🟡ᶠ | 0x080 | 🟡ᶠ | 0x07F | 🟡ᶠ | 0x082 | ✅ | 0x086 | ✅ | 0x08A | ✅ | 0x096 | 🟡ᶠ | 0x099 | ✅ | 0x085 | ✅ |
 | USER_CHANGE_STAT_REQUEST_BY_ITEM | CWvsContext::SendStatChangeRequestByItemOption |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x064 | ❌ | 0x065 | ❌ |  | ⬜ |
 | NOTE_ACTION | CCashShop::OnCashItemResLoadGiftDone; CMemoListDlg::SetRet; CWvsContext::OnMemoNotify_Receive | note/serverbound/NoteOperationDiscard (T1) | 0x065 | ✅ | 0x077 | ✅ | 0x081 | ✅ | 0x080 | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x097 | ❌ | 0x09A | ✅ | 0x086 | ✅ |
+| SKILL_MACRO | CMacroSysMan::FlushToSvr; sub_59746C; sub_6022DB |  |  | ⬜ | 0x065 | ❌ | 0x06D | ❌ | 0x06C | ❌ | 0x06E | ❌ | 0x06E | ❌ | 0x071 | ❌ | 0x079 | ❌ | 0x07A | ❌ | 0x069 | ❌ |
 | USE_INNER_PORTAL | CUserLocal::TryRegisterTeleport |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x065 | ❌ | 0x065 | ❌ | 0x068 | ❌ | 0x070 | ❌ | 0x071 | ❌ | 0x060 | ❌ |
 | USE_SHOP_SCANNER_ITEM | CWvsContext::SendShopScannerItemUseRequest | merchant/serverbound/ShopScannerItemUse (T1) |  | ⬜ |  | ⬜ | 0x066 | ✅ | 0x065 | ✅ | 0x053 | ✅ | 0x053 | ❌ |  | ⬜ | 0x05A | ❌ | 0x05A | ✅ |  | ⬜ |
 | ANTI_MACRO_ITEM_USE | CWvsContext::SendAntiMacroItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x067 | ❌ | 0x067 | ❌ | 0x06A | ❌ | 0x072 | ❌ | 0x073 | ❌ | 0x062 | ❌ |
@@ -647,7 +648,6 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 | USER_CALC_DAMAGE_STAT_SET_REQUEST | CWvsContext::CheckDarkForce; CWvsContext::CheckDragonFury; CWvsContext::OnTemporaryStatReset; CWvsContext::OnTemporaryStatSet | character/clientbound/BuffCancel (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06C | ✅ | 0x06C | ✅ | 0x06F | ✅ | 0x077 | ❌ | 0x078 | ✅ | 0x067 | ✅ |
 | WEDDING_TALK | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) | 0x06C | ✅ | 0x080 | ✅ | 0x08A | ✅ | 0x089 | ✅ | 0x08C | ✅ | 0x090 | ✅ | 0x094 | ✅ | 0x0A1 | ❌ | 0x0A4 | ✅ |  | ⬜ |
 | GRENADE_EFFECT | CUserLocal::ThrowGrenade |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06D | ❌ | 0x06D | ❌ | 0x070 | ❌ | 0x078 | ❌ | 0x079 | ❌ | 0x068 | ❌ |
-| SKILL_MACRO | CMacroSysMan::FlushToSvr; sub_6022DB |  |  | ⬜ |  | ⬜ | 0x06D | ❌ | 0x06C | ❌ | 0x06E | ❌ | 0x06E | ❌ | 0x071 | ❌ | 0x079 | ❌ | 0x07A | ❌ | 0x069 | ❌ |
 | CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap | character/serverbound/KeyMapChange (T1) | 0x06E | ✅ | 0x07B | ✅ | 0x085 | ✅ | 0x084 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x09C | ❌ | 0x09F | ✅ | 0x08A | ✅ |
 | LOTTERY_ITEM_USE_REQUEST | CWvsContext::SendLotteryItemUseRequest | inventory/serverbound/InventoryLotteryItemUse (T1) |  | ⬜ |  | ⬜ | 0x06F | ✅ | 0x06E | ✅ | 0x070 | ✅ | 0x070 | ✅ | 0x073 | ✅ | 0x07B | 🟡ᶠ | 0x07C | ✅ | 0x06B | ✅ |
 | NPC_ITEM_USE_REQUEST | CWvsContext::SendSelectNpcItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06F | ❌ | 0x06F | ❌ | 0x072 | ❌ | 0x07A | ❌ | 0x07B | ❌ | 0x06A | ❌ |
@@ -1056,7 +1056,7 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 204 | 0 | 19 | 194 | 602 | 0 | 48.9% |
-| v61 | 266 | 0 | 56 | 235 | 462 | 0 | 47.8% |
+| v61 | 266 | 0 | 56 | 236 | 461 | 0 | 47.7% |
 | v72 | 282 | 0 | 69 | 250 | 418 | 0 | 46.9% |
 | v79 | 327 | 0 | 68 | 247 | 377 | 0 | 50.9% |
 | v83 | 447 | 0 | 0 | 344 | 228 | 0 | 56.5% |

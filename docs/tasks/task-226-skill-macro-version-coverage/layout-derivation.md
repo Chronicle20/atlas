@@ -63,7 +63,7 @@ re-confirmed here by decompile on gms_v83; see "Top-level delegation" below).
 - **Capacity: 5** — a compile-time constant, identical on every populated
   version. Quoted from `MACROSYSDATA::Decode`, one line per version (the
   clamp immediately following the `Decode1` count read):
-  - gms_v61 (`0x4b796d`, receive-only): `if ( (unsigned int)v3 > 5 ) v3 = 5;`
+  - gms_v61 (`0x4b796d`, decode side): `if ( (unsigned int)v3 > 5 ) v3 = 5;` — matching encode-side clamp now confirmed at `0x4b7928` (task-226 FR-2.2): `if ( v3 > 5 ) v3 = 5;`
   - gms_v72 (`0x4d36b4`): `if ( (unsigned int)v1 > 5 ) v1 = 5;`
   - gms_v79 (`0x4db984`): `if ( (unsigned int)v1 > 5 ) v1 = 5;`
   - gms_v83 (`0x4e77b0`): `if ( v3 > 5 ) v3 = 5;`
@@ -95,7 +95,7 @@ session ids in `harvest-log.md`'s "IDA sessions" table.
 | version | fn (clientbound, addr) | fn (serverbound, addr) | count | name | shout | skillId1..3 |
 |---|---|---|---|---|---|---|
 | gms_v48 | NOT FOUND | NOT FOUND | — no row; both functions absent from the binary (binary-wide `func_query`/`find_regex` zero hits, no registry entries — see harvest-log.md "v48 / v61: absence, searched not assumed"). Task 4 owns the n-a decision. |
-| gms_v61 | `CWvsContext::OnMacroSysDataInit` `0x849bce` → `CMacroSysMan::SetMacro` `0x59744b` → `MACROSYSDATA::Decode` `0x4b796d` → `SINGLEMACRO::Decode` `0x4b78d5` | **send side not located** (see harvest-log.md; this task did not attempt the `COutPacket` ctor xref enumeration Task 4 will need) | `Decode1`, cap 5 (`0x4b796d`: `if ((unsigned int)v3 > 5) v3 = 5;`) | `DecodeStr` (`0x4b78d5`: `CInPacket::DecodeStr(a2, &v6)`) | `Decode1` raw store (`0x4b78d5`: `*(_DWORD *)(this + 25) = (unsigned __int8)CInPacket::Decode1(a2);`) — INVERTED per the cross-version generalization above; no independent v61 `IsShoutMacro`/`bMute` confirmation (not named/found in this IDB), relying on the identical decode shape | 3× `Decode4` (`0x4b78d5`, `do{...Decode4...}while(v4)` loop, `v4=3` init) |
+| gms_v61 | `CWvsContext::OnMacroSysDataInit` `0x849bce` → `CMacroSysMan::SetMacro` `0x59744b` → `MACROSYSDATA::Decode` `0x4b796d` → `SINGLEMACRO::Decode` `0x4b78d5` | `CMacroSysMan::FlushToSvr` `0x59746c` (renamed from `sub_59746C`, task-226 FR-2.2) → `MACROSYSDATA::Encode` `0x4b7928` (renamed from `sub_4B7928`) → `SINGLEMACRO::Encode` `0x4b7884` (renamed from `sub_4B7884`); COutPacket(101) | `Decode1`, cap 5 (`0x4b796d`: `if ((unsigned int)v3 > 5) v3 = 5;`); encode side `0x4b7928`: `Encode1(a2, v3)` where `v3` is clamped `if (v3 > 5) v3 = 5;` | `DecodeStr` (`0x4b78d5`: `CInPacket::DecodeStr(a2, &v6)`) / `EncodeStr` (`0x4b7884`: `COutPacket::EncodeStr(a2, v5[0])`) | `Decode1` raw store (`0x4b78d5`: `*(_DWORD *)(this + 25) = (unsigned __int8)CInPacket::Decode1(a2);`) / `Encode1(a2, *(unsigned int *)((char *)v2 + 25) != 0)` (`0x4b7884`) — same raw-store/`!=0` shape as every other populated version; INVERTED per the cross-version generalization above (now independently confirmed on v61's own encode side, not just the decode shape) | 3× `Decode4` (`0x4b78d5`, `do{...Decode4...}while(v4)` loop, `v4=3` init) / 3× `Encode4` (`0x4b7884`, `do{... COutPacket::Encode4 ...}while(v3)` loop, `v3=3` init) |
 | gms_v72 | `CWvsContext::OnMacroSysDataInit` `0x92126b` → `CMacroSysMan::SetMacro` `0x5e39bf` → `MACROSYSDATA::Decode` `0x4d36b4` → `SINGLEMACRO::Decode` `0x4d361c` | `CMacroSysMan::FlushToSvr` `0x5e39e0` → `MACROSYSDATA::Encode` `0x4d366f` → `SINGLEMACRO::Encode` `0x4d35cb` | `Decode1`, cap 5 (`0x4d36b4`: `if ((unsigned int)v1 > 5) v1 = 5;`) | `DecodeStr`/`EncodeStr` | `Decode1`/`Encode1`, same raw-store/`!=0` shape (`0x4d361c`: `*(_DWORD *)((char *)this + 25) = (unsigned __int8)CInPacket::Decode1(a2);`; `0x4d35cb`: `COutPacket::Encode1(a2, *(unsigned int *)((char *)v2 + 25) != 0);`) | 3× `Decode4`/`Encode4` |
 | gms_v79 | `CWvsContext::OnMacroSysDataInit` `0x97311a` → `CMacroSysMan::SetMacro` `0x6022ba` → `MACROSYSDATA::Decode` `0x4db984` → `SINGLEMACRO::Decode` `0x4db8ec` | `CMacroSysMan::FlushToSvr` `0x6022db` → `MACROSYSDATA::Encode` `0x4db93f` → `SINGLEMACRO::Encode` `0x4db89b` | `Decode1`, cap 5 (`0x4db984`) | `DecodeStr`/`EncodeStr` | `Decode1`/`Encode1`, same shape (`0x4db8ec`, `0x4db89b`) | 3× `Decode4`/`Encode4` |
 | gms_v83 | `CWvsContext::OnMacroSysDataInit` `0xa290f8` → `CMacroSysMan::SetMacro` `0x6318f8` → `MACROSYSDATA::Decode` `0x4e77b0` → `SINGLEMACRO::Decode` `0x4e7718` | `CMacroSysMan::FlushToSvr` `0x631919` → `MACROSYSDATA::Encode` `0x4e776b` → `SINGLEMACRO::Encode` `0x4e76c7` | `Decode1`, cap 5 (`0x4e77b0`: `if (v3 > 5) v3 = 5;`) | `DecodeStr`/`EncodeStr` | `Decode1`/`Encode1`, shape as quoted in Verdicts §1 | 3× `Decode4`/`Encode4` (`do{...}while(v3)`, `v3=3` init) |
@@ -122,9 +122,9 @@ from the prior log.
 ## Divergences requiring a gate
 
 **No divergence found across gms_v61..jms_v185; the layout is uniform and
-the codec carries no version gate.** Every populated version (nine of ten —
-gms_v61 receive-only, the other eight both directions) has byte-identical
-wire shape:
+the codec carries no version gate.** Every populated version (all nine, both
+directions — gms_v61's send side located and confirmed task-226 FR-2.2) has
+byte-identical wire shape:
 
 ```
 count:     Decode1 (byte), clamped client-side to a hardcoded 5
@@ -154,8 +154,9 @@ instead of the length-capped `lstrcpynA`, but the *wire* read is
 ## Unresolved
 
 None. Every field in every populated version's row above is backed by a
-quoted decompiled line at a re-verified address. gms_v48's absence and
-gms_v61's missing send side are not "unresolved" fields — they are
-confirmed absences (see harvest-log.md's binary-wide search evidence),
-explicitly out of this task's scope to further pursue (v48 → Task 4's n-a
-call; v61 send-site enumeration → Task 4's stated next step).
+quoted decompiled line at a re-verified address. gms_v48's absence is a
+confirmed absence (see harvest-log.md's binary-wide search evidence and
+Task 4's na-recheck.md); v61's send side, previously missing, was located
+and confirmed by Task 4 (na-recheck.md, feature-na-evidence.yaml supersedes
+the prior "NOT FOUND" framing) — gms_v61 is now a fully-populated row, in
+scope for Tasks 6-12 like every other populated version.

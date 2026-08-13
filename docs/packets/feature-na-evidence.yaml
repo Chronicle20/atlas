@@ -189,3 +189,49 @@ entries:
       instructions scanned, zero references to 5510000, and no
       CUserRemote::OnShowUpgradeTombEffect arm in the remote-packet
       dispatcher. (task-210)
+  - op: SKILL_MACRO
+    version: gms_v48
+    evidence: >
+      task-226 FR-2.1, live-IDB re-confirmed on session 93cc947e
+      (GMS_v48_1_DEVM.exe). Anchored on invariants, not names, per
+      VERIFYING_A_PACKET.md step 2: the `COutPacket::COutPacket(&pkt,int)`
+      ctor (`??0COutPacket@@QAE@J@Z`, 0x57b77e) has exactly 317 code xrefs in
+      this binary (`xref_query` direction=to, paginated in batches of 10,
+      total confirmed 317, no truncation) — every one of the 317 call sites
+      was enumerated. All named callers were read from their symbol (no
+      CMacroSysMan-class or macro-shaped named sender exists — the only
+      FuncKeyMappedMan sender, SaveFuncKeyMap @0x4e5fae, is the unrelated
+      CHANGE_KEYMAP op). Every unnamed (`sub_XXXXXX`) caller — 44 in total —
+      was individually decompiled: none matches the confirmed send shape
+      (`Encode1(count clamped <=5)` followed by a per-entry loop of
+      `EncodeStr(name)+Encode1(shout)+3x Encode4(skillId)`); the four largest
+      unnamed candidates (sub_69CC07 opcode 41, sub_6A0528 opcode 36,
+      sub_6A228C opcode 37, sub_6A3AC7 opcode 38) are all skill-attack senders
+      unrelated to macros. No `CMacroSysMan`, `MACROSYSDATA`, or
+      `SINGLEMACRO` symbol exists anywhere in the binary (`func_query
+      name_regex` whole-image, 0 hits) and no `macro` string exists
+      (`find_regex`, whole-image, 0 hits). Mandatory sibling cross-check: the
+      receive side (`CWvsContext::OnMacroSysDataInit`) is likewise absent —
+      `CWvsContext::OnPacket` (0x70d215) is a fully-named compiled switch
+      over cases 25-70 (default: return) with no macro-data-init arm and no
+      unresolved case; every case 25-70 present dispatches to a symbol whose
+      name and body were confirmed unrelated to macros. Both directions are
+      absent together, consistent with v48 (the oldest binary in the corpus)
+      predating the skill-macro feature entirely.
+  - op: MACRO_SYS_DATA_INIT
+    version: gms_v48
+    evidence: >
+      task-226 FR-2.1, live-IDB re-confirmed on session 93cc947e
+      (GMS_v48_1_DEVM.exe). `CWvsContext::OnPacket` (0x70d215) is a fully
+      compiled, fully-named switch over cases 25-70 (default: return) — every
+      case dispatches to a real named handler (`OnInventoryOperation` through
+      `sub_7215EA`/case 70), and none decodes a macro list (`Decode1(count
+      clamped<=5)` + per-entry `DecodeStr+Decode1+3xDecode4` loop). No case
+      in the switch is a gap that could hide an unnamed macro-init handler.
+      `func_query name_regex "MacroSysMan|OnMacroSysDataInit|MACROSYSDATA|
+      SINGLEMACRO"` over the whole image returns 0 hits. Mandatory sibling
+      cross-check: the send side (`CMacroSysMan::FlushToSvr`) is likewise
+      absent from all 317 `COutPacket::COutPacket` call sites in this binary
+      (see the SKILL_MACRO x gms_v48 entry above for the full enumeration).
+      Both directions absent together; v48 (the oldest binary in the corpus)
+      predates the skill-macro feature entirely.

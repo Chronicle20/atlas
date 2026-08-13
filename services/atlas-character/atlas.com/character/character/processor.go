@@ -838,6 +838,9 @@ func (p *ProcessorImpl) RequestChangeMeso(transactionId uuid.UUID, characterId u
 		}
 		if amount > 0 && uint32(amount) > (math.MaxUint32-c.Meso()) {
 			p.l.Errorf("Transaction for character [%d] would result in a uint32 overflow. Rejecting transaction.", characterId)
+			rejectEmit = func() error {
+				return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(mesoOverflowErrorStatusEventProvider(transactionId, characterId, c.WorldId(), amount))
+			}
 			return ErrMesoOverflow
 		}
 
@@ -854,6 +857,13 @@ func (p *ProcessorImpl) RequestChangeMeso(transactionId uuid.UUID, characterId u
 	if errors.Is(txErr, ErrNotEnoughMeso) && rejectEmit != nil {
 		_ = rejectEmit()
 		return nil
+	}
+	// Deliberate asymmetry with the NOT_ENOUGH_MESO path above: overflow keeps
+	// returning the error so the REST/command caller still logs a failure. The
+	// emission is additive — the saga is driven by the event either way. Do not
+	// "harmonise" these two into one branch.
+	if errors.Is(txErr, ErrMesoOverflow) && rejectEmit != nil {
+		_ = rejectEmit()
 	}
 	return txErr
 }

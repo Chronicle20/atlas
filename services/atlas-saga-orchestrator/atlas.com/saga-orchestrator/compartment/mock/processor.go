@@ -21,6 +21,7 @@ type ProcessorMock struct {
 	RequestDestroyItemFromSlotFunc func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error
 	RequestSetOwnerFunc            func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, owner string) error
 	RequestApplyLockFunc           func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error
+	RequestApplyKarmaFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, scissorsKarma int32, clear bool) error
 }
 
 // RequestCreateItem is a mock implementation of the compartment.Processor.RequestCreateItem method
@@ -107,6 +108,14 @@ func (m *ProcessorMock) RequestSetOwner(transactionId uuid.UUID, characterId uin
 func (m *ProcessorMock) RequestApplyLock(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error {
 	if m.RequestApplyLockFunc != nil {
 		return m.RequestApplyLockFunc(transactionId, characterId, inventoryType, slot, expiration)
+	}
+	return nil
+}
+
+// RequestApplyKarma is a mock implementation of the compartment.Processor.RequestApplyKarma method
+func (m *ProcessorMock) RequestApplyKarma(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, scissorsKarma int32, clear bool) error {
+	if m.RequestApplyKarmaFunc != nil {
+		return m.RequestApplyKarmaFunc(transactionId, characterId, inventoryType, slot, scissorsKarma, clear)
 	}
 	return nil
 }

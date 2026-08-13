@@ -108,7 +108,7 @@ type Compensator interface {
 	DispatchNoteSendRollbacks(s Saga)
 
 	// DispatchCashItemUseRollbacks reverse-walks the completed steps of a
-	// cash-item-use saga (ItemTagUse/SealingLockUse/IncubatorUse), re-creating
+	// cash-item-use saga (ItemTagUse/SealingLockUse/IncubatorUse/KarmaScissorsUse), re-creating
 	// every consumed item (DestroyAsset/DestroyAssetFromSlot → CreateItem) and
 	// destroying every awarded result (AwardAsset → DestroyItem). No lifecycle
 	// transitions, no Failed emission, no cache eviction — callers handle those.
@@ -270,10 +270,11 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	}
 
 	// Cash-item-use reverse-walk (Task 10). A failed item_tag_use /
-	// sealing_lock_use / incubator_use must refund the already-completed
-	// consume steps (the tagged/sealed/incubated item) and undo any awarded
-	// result rather than only compensating the failed step.
-	if s.SagaType() == ItemTagUse || s.SagaType() == SealingLockUse || s.SagaType() == IncubatorUse {
+	// sealing_lock_use / incubator_use / karma_scissors_use must refund the
+	// already-completed consume steps (the tagged/sealed/incubated item, or the
+	// destroyed scissors) and undo any awarded result or applied mark rather
+	// than only compensating the failed step.
+	if s.SagaType() == ItemTagUse || s.SagaType() == SealingLockUse || s.SagaType() == IncubatorUse || s.SagaType() == KarmaScissorsUse {
 		return c.compensateCashItemUse(s, failedStep)
 	}
 
@@ -1376,7 +1377,8 @@ func (c *CompensatorImpl) DispatchSkillBookUseRollbacks(s Saga) {
 }
 
 // compensateCashItemUse is the reverse-walk compensator for cash-item-use
-// sagas (ItemTagUse/SealingLockUse/IncubatorUse — Task 10). On a failed step
+// sagas (ItemTagUse/SealingLockUse/IncubatorUse/KarmaScissorsUse — Task 10).
+// On a failed step
 // (e.g. the terminal incubator_result emit) it walks the saga's completed
 // steps in reverse, re-creating consumed items and destroying awarded
 // results, emits exactly one StatusEventTypeFailed, cancels the Phase-4
@@ -1441,6 +1443,7 @@ func (c *CompensatorImpl) compensateCashItemUse(s Saga, failedStep Step[any]) er
 //   - AwardAsset (a granted result, e.g. the incubator's produced item)  →
 //     DestroyItem (mirrors DispatchCharacterCreationRollbacks's AwardAsset
 //     inverse).
+//   - ApplyAssetKarma (target marked one-trade-enabled) → RequestApplyKarma(clear=true).
 //
 // An error refunding one step does not abort the chain.
 func (c *CompensatorImpl) DispatchCashItemUseRollbacks(s Saga) {
@@ -1494,6 +1497,14 @@ func (c *CompensatorImpl) DispatchCashItemUseRollbacks(s Saga) {
 						"step_id":        step.StepId(),
 						"template_id":    payload.Item.TemplateId,
 					}).Error("Reverse-walk: AwardAsset -> DestroyItem dispatch failed; continuing chain.")
+				}
+			}
+		case ApplyAssetKarma:
+			// Inverse of a completed mark: clear it. A saga that failed after the
+			// mark was applied must not leave a free trade behind (FR-6.6).
+			if payload, ok := step.Payload().(ApplyAssetKarmaPayload); ok {
+				if err := c.compP.RequestApplyKarma(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.ScissorsKarma, true); err != nil {
+					c.l.WithError(err).Errorf("Unable to clear the karma mark for character [%d] in inventory [%d] slot [%d] during compensation.", payload.CharacterId, payload.InventoryType, payload.Slot)
 				}
 			}
 		}

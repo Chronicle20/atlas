@@ -42,6 +42,7 @@ type Processor interface {
 	RequestReleaseAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error
 	RequestSetOwner(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, owner string) error
 	RequestApplyLock(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error
+	RequestApplyKarma(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, scissorsKarma int32, clear bool) error
 }
 
 type ProcessorImpl struct {
@@ -129,4 +130,8 @@ func (p *ProcessorImpl) RequestSetOwner(transactionId uuid.UUID, characterId uin
 
 func (p *ProcessorImpl) RequestApplyLock(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestApplyLockCommandProvider(transactionId, characterId, inventoryType, slot, expiration))
+}
+
+func (p *ProcessorImpl) RequestApplyKarma(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, scissorsKarma int32, clear bool) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestApplyKarmaCommandProvider(transactionId, characterId, inventoryType, slot, scissorsKarma, clear))
 }

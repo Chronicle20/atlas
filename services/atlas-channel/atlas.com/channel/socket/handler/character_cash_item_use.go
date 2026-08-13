@@ -20,6 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
@@ -647,6 +648,34 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 
+		// Transformation (morph) coupons, classification 530. Gated on
+		// CLASSIFICATION, never on the cash-slot type byte `it`: those bytes
+		// collide across versions (GetCashSlotItemType maps 530 -> 41 on
+		// GMS >= 95 and 40 otherwise, while 522 gachapon takes 40 on GMS >= 95
+		// and 538 pet evolution takes 41 on GMS < 95), so a type-keyed arm
+		// would change meaning at a version bump.
+		//
+		// The sub-body is empty apart from the trailing updateTime on the
+		// versions that trail it (IDA-verified: the case-40 arm of
+		// CWvsContext::SendConsumeCashItemUseRequest @0xa0caf0-0xa0cb37 on GMS
+		// v83 contains no Encode* call).
+		//
+		// No EnableActions: the effect does not warp, and the non-silent
+		// INVENTORY_OPERATION emitted by the consume commit already clears the
+		// client's exclusive-request lock — CWvsContext::OnInventoryOperation
+		// @0xa1ead9 clears the same dword pair OnGameStageChanged does, gated
+		// on the packet's leading bOnExclRequest byte, which
+		// inventory/clientbound/change_batch.go writes as !silent.
+		if category == item.ClassificationTransformationCoupon {
+			sp := cashsb.NewItemUseMorphCoupon(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			if !updateTimeFirst {
+				updateTime = sp.UpdateTime()
+			}
+			_ = requestItemConsumeFunc(l, ctx, s.Field(), character.Id(s.CharacterId()), itemId, source, 1, updateTime)
+			return
+		}
+
 		l.Warnf("Character [%d] attempting to use cash item [%d] in slot [%d] of type [%d]. updateTime [%d].", s.CharacterId(), itemId, source, it, updateTime)
 	}
 }
@@ -702,6 +731,14 @@ var cashItemInSlotFunc = func(l logrus.FieldLogger, ctx context.Context, charact
 		return 0, err
 	}
 	return uint32(a.TemplateId()), nil
+}
+
+// requestItemConsumeFunc is a test seam over the atlas-consumables consume
+// command emit (package-var injection precedent: cashItemInSlotFunc above,
+// useRockFunc in teleport_rock_use.go). Handler tests must not require a live
+// Kafka broker to assert which arm a request reached.
+var requestItemConsumeFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId character.Id, itemId item.Id, source slot.Position, quantity int16, updateTime uint32) error {
+	return consumable.NewProcessor(l, ctx).RequestItemConsume(f, characterId, itemId, source, quantity, updateTime)
 }
 
 const (

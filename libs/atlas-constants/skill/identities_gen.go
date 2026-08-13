@@ -509,6 +509,7 @@ const (
 	ThunderBreakerStage3Spark                 Identity = 15111006
 	ThunderBreakerStage3SharkWave             Identity = 15111007
 	LegendBlessOfNymph                        Identity = 20000012
+	LegendComboAbility                        Identity = 20000017
 	LegendThreeSnails                         Identity = 20001000
 	LegendRecovery                            Identity = 20001001
 	LegendNimbleFeet                          Identity = 20001002
@@ -1106,6 +1107,7 @@ var identityNames = map[Identity]string{
 	ThunderBreakerStage3Spark:                 "Thunder Breaker Stage3 Spark",
 	ThunderBreakerStage3SharkWave:             "Thunder Breaker Stage3 Shark Wave",
 	LegendBlessOfNymph:                        "Legend Bless Of Nymph",
+	LegendComboAbility:                        "Legend Combo Ability",
 	LegendThreeSnails:                         "Legend Three Snails",
 	LegendRecovery:                            "Legend Recovery",
 	LegendNimbleFeet:                          "Legend Nimble Feet",

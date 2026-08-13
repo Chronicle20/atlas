@@ -3,6 +3,21 @@
   "md5": "2e692f3ab5078e04138d264f8ea1e668",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CUserLocal::RequestIncCombo": {
+      "address": "0x9e37bc",
+      "direction": "serverbound",
+      "calls": null
+    },
+    "CUserLocal::OnIncComboResponse": {
+      "address": "0x9e3794",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "count (CUserLocal::OnIncComboResponse: Decode4 store to the m_nCombo mirror, then get_update_time() timestamp, then DrawCombo(this); task-217, design.md \u00a72.2)"
+        }
+      ]
+    },
     "CTradingRoomDlg::OnPutItem": {
       "address": "0x81566e",
       "direction": "clientbound",

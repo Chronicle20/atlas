@@ -3652,10 +3652,11 @@
   direction: serverbound
   opcode: 169
   fname: CUserLocal::RequestIncCombo
+  packet: character/serverbound/CharacterAranComboCounterRequest
   provenance: ida-discovered
   ida:
     address: 10089286
-  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). RequestIncCombo @0x99f346 pushes COutPacket(169)=0xa9 (no body, m_bHoldCombo guard); body == v95 RequestIncCombo @0x909070 COutPacket(189)=0xbd (-20). v84 fn renamed+idb_saved. Prior 0xa3 stale (freed for NEW_YEAR_CARD_REQUEST).'
+  note: 'task-100 cluster-H: v84 serverbound 0x82-0xA6 reshift, READ from v84 IDB COutPacket send-site (GMS_v84.1_U_DEVM). RequestIncCombo @0x99f346 pushes COutPacket(169)=0xa9 (no body, m_bHoldCombo guard); body == v95 RequestIncCombo @0x909070 COutPacket(189)=0xbd (-20). v84 fn renamed+idb_saved. Prior 0xa3 stale (freed for NEW_YEAR_CARD_REQUEST). task-217: v84 IDB names this function CUserLocal__RequestIncCombo_send_0xA9, not the canonical fname above, so report-gen keys its audit report under that literal export name; packet: routes grading straight to the marker+evidence byte-fixture instead of an FName-matched report lookup.'
 - op: MOB_CRC_KEY_CHANGED_REPLY
   direction: serverbound
   opcode: 170

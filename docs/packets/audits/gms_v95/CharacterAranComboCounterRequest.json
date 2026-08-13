@@ -1,0 +1,11 @@
+{
+  "WriterName": "CharacterAranComboCounterRequest",
+  "IDAName": "CUserLocal::RequestIncCombo",
+  "Address": "0x909070",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/aran_combo_counter.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

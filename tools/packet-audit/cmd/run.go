@@ -326,6 +326,18 @@ func candidatesFromFName(fname string) []candidate {
 	case "CUserLocal::OnSkillCooltimeSet":
 		// Struct is CharacterSkillCooldown.
 		return []candidate{{name: "CharacterSkillCooldown", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::RequestIncCombo", "CUserLocal__RequestIncCombo_send_0xA9", "CUserLocal__RequestIncCombo_send_0xBA":
+		// Aran combo-counter request (task-217). m_bHoldCombo guard +
+		// COutPacket(op) + SendPacket, zero Encode calls on every version.
+		// The registry's primary fname is the canonical CUserLocal::RequestIncCombo
+		// on all six versions, but the v84/v92 IDBs carry synthetic per-version
+		// rename suffixes (task-100 cluster-H / task-217 Task 12) — both literal
+		// export keys are handled here so report-gen resolves on those versions.
+		return []candidate{{name: "AranComboCounterRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "CUserLocal::OnIncComboResponse":
+		// Aran combo-counter echo (task-217). Decode4(count) -> m_nCombo,
+		// get_update_time(), DrawCombo(this). Struct is ShowCombo.
+		return []candidate{{name: "ShowCombo", pkg: "character", dir: csvpkg.DirClientbound}}
 	case "CUserRemote::OnSkillPrepare":
 		// Foreign skill-prepare relay. Struct is SkillPrepareForeign
 		// (character/clientbound; writer = "CharacterSkillPrepareForeign").

@@ -16,3 +16,6 @@ families:
   cash_item_gachapon:
     - CASH_ITEM_GACHAPON_BUTTON
     - CASHSHOP_CASH_ITEM_GACHAPON_RESULT
+  skill_macro:
+    - SKILL_MACRO
+    - MACRO_SYS_DATA_INIT

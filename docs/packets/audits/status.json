@@ -14888,48 +14888,39 @@
           "opcode": -1
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 91
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 113
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 117
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 124
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 127
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 132
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 139
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 140
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 122
         }
       }
@@ -17108,48 +17099,39 @@
           "opcode": -1
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 101
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 109
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 108
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 110
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 110
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 113
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 121
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 122
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "byte-test marker present but no fresh evidence record",
+          "state": "verified",
           "opcode": 105
         }
       }

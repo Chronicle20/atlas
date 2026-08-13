@@ -16,9 +16,10 @@ import (
 func RequestDistributeApCommandProvider(f field.Model, characterId uint32, distributions []character.DistributePair) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character.Command[character.RequestDistributeApCommandBody]{
-		CharacterId: characterId,
-		WorldId:     f.WorldId(),
-		Type:        character.CommandRequestDistributeAp,
+		TransactionId: uuid.New(),
+		CharacterId:   characterId,
+		WorldId:       f.WorldId(),
+		Type:          character.CommandRequestDistributeAp,
 		Body: character.RequestDistributeApCommandBody{
 			Distributions: distributions,
 		},
@@ -29,9 +30,10 @@ func RequestDistributeApCommandProvider(f field.Model, characterId uint32, distr
 func RequestDistributeSpCommandProvider(f field.Model, characterId uint32, skillId uint32, amount int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character.Command[character.RequestDistributeSpCommandBody]{
-		CharacterId: characterId,
-		WorldId:     f.WorldId(),
-		Type:        character.CommandRequestDistributeSp,
+		TransactionId: uuid.New(),
+		CharacterId:   characterId,
+		WorldId:       f.WorldId(),
+		Type:          character.CommandRequestDistributeSp,
 		Body: character.RequestDistributeSpCommandBody{
 			SkillId: skillId,
 			Amount:  amount,
@@ -43,9 +45,10 @@ func RequestDistributeSpCommandProvider(f field.Model, characterId uint32, skill
 func RequestDropMesoCommandProvider(f field.Model, characterId uint32, amount uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character.Command[character.RequestDropMesoCommandBody]{
-		CharacterId: characterId,
-		WorldId:     f.WorldId(),
-		Type:        character.CommandRequestDropMeso,
+		TransactionId: uuid.New(),
+		CharacterId:   characterId,
+		WorldId:       f.WorldId(),
+		Type:          character.CommandRequestDropMeso,
 		Body: character.RequestDropMesoCommandBody{
 			ChannelId: f.ChannelId(),
 			MapId:     f.MapId(),
@@ -58,9 +61,10 @@ func RequestDropMesoCommandProvider(f field.Model, characterId uint32, amount ui
 func RequestChangeMesoCommandProvider(f field.Model, characterId uint32, actorId uint32, actorType string, amount int32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character.Command[character.RequestChangeMesoBody]{
-		CharacterId: characterId,
-		WorldId:     f.WorldId(),
-		Type:        character.CommandRequestChangeMeso,
+		TransactionId: uuid.New(),
+		CharacterId:   characterId,
+		WorldId:       f.WorldId(),
+		Type:          character.CommandRequestChangeMeso,
 		Body: character.RequestChangeMesoBody{
 			ActorId:   actorId,
 			ActorType: actorType,
@@ -73,9 +77,10 @@ func RequestChangeMesoCommandProvider(f field.Model, characterId uint32, actorId
 func ChangeHPCommandProvider(f field.Model, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character.Command[character.ChangeHPCommandBody]{
-		CharacterId: characterId,
-		WorldId:     f.WorldId(),
-		Type:        character.CommandChangeHP,
+		TransactionId: uuid.New(),
+		CharacterId:   characterId,
+		WorldId:       f.WorldId(),
+		Type:          character.CommandChangeHP,
 		Body: character.ChangeHPCommandBody{
 			ChannelId: f.ChannelId(),
 			Amount:    amount,
@@ -87,9 +92,10 @@ func ChangeHPCommandProvider(f field.Model, characterId uint32, amount int16) mo
 func SetHPCommandProvider(f field.Model, characterId uint32, amount uint16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character.Command[character.SetHPCommandBody]{
-		CharacterId: characterId,
-		WorldId:     f.WorldId(),
-		Type:        character.CommandSetHP,
+		TransactionId: uuid.New(),
+		CharacterId:   characterId,
+		WorldId:       f.WorldId(),
+		Type:          character.CommandSetHP,
 		Body: character.SetHPCommandBody{
 			ChannelId: f.ChannelId(),
 			Amount:    amount,
@@ -101,9 +107,10 @@ func SetHPCommandProvider(f field.Model, characterId uint32, amount uint16) mode
 func ChangeMPCommandProvider(f field.Model, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character.Command[character.ChangeMPCommandBody]{
-		CharacterId: characterId,
-		WorldId:     f.WorldId(),
-		Type:        character.CommandChangeMP,
+		TransactionId: uuid.New(),
+		CharacterId:   characterId,
+		WorldId:       f.WorldId(),
+		Type:          character.CommandChangeMP,
 		Body: character.ChangeMPCommandBody{
 			ChannelId: f.ChannelId(),
 			Amount:    amount,
@@ -127,9 +134,10 @@ func ChannelChangeRequestProvider(transactionId uuid.UUID, characterId uint32, w
 func AwardExperienceCommandProvider(f field.Model, characterId uint32, distributions []character.ExperienceDistributions, showEffect bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character.Command[character.AwardExperienceCommandBody]{
-		CharacterId: characterId,
-		WorldId:     f.WorldId(),
-		Type:        character.CommandAwardExperience,
+		TransactionId: uuid.New(),
+		CharacterId:   characterId,
+		WorldId:       f.WorldId(),
+		Type:          character.CommandAwardExperience,
 		Body: character.AwardExperienceCommandBody{
 			ChannelId:     f.ChannelId(),
 			Distributions: distributions,

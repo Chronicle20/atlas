@@ -9,10 +9,12 @@ import (
 // Processor is atlas-maps' read-only client for atlas-character. Only the
 // minimum surface needed by MistTickTask is exposed.
 type Processor interface {
-	// Position returns the (x, y) world coordinates of the character with
-	// the given id. Errors propagate from the underlying REST call (e.g.
+	// Snapshot returns the (x, y) world coordinates and current HP of the
+	// character with the given id. HP is carried alongside position so the
+	// mist tick can skip dead characters without a second REST call.
+	// Errors propagate from the underlying REST call (e.g.
 	// requests.ErrNotFound when the character does not exist).
-	Position(characterId uint32) (int16, int16, error)
+	Snapshot(characterId uint32) (int16, int16, uint16, error)
 }
 
 type ProcessorImpl struct {
@@ -27,11 +29,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 var _ Processor = (*ProcessorImpl)(nil)
 
-// Position fetches the character resource and projects (x, y) out of it.
-func (p *ProcessorImpl) Position(characterId uint32) (int16, int16, error) {
+// Snapshot fetches the character resource and projects (x, y, hp) out of it.
+func (p *ProcessorImpl) Snapshot(characterId uint32) (int16, int16, uint16, error) {
 	rm, err := requestById(characterId)(p.l, p.ctx)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, 0, err
 	}
-	return rm.X, rm.Y, nil
+	return rm.X, rm.Y, rm.Hp, nil
 }

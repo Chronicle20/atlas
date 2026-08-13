@@ -1,6 +1,7 @@
 package mist
 
 import (
+	mistKafka "atlas-maps/kafka/message/mist"
 	"time"
 
 	"github.com/google/uuid"
@@ -37,6 +38,8 @@ type Mist struct {
 	tickInterval     time.Duration
 	targetKind       string
 	effectKind       string
+	recoveryMp       int32
+	partyMemberIds   []uint32
 	elemAttr         int32
 	skillDelay       int16
 	createdAt        time.Time
@@ -136,21 +139,32 @@ func (m Mist) Type() int32 {
 const (
 	AffectedAreaTypeMobSkill  = int32(0)
 	AffectedAreaTypeUserSkill = int32(1)
+	// AffectedAreaTypeSmoke is 2 because the client's smoke lookup keys on it:
+	// CAffectedAreaPool::IsSmokeAreaByPoint (v95 @0x434f40) rejects any area
+	// whose nType != 2, and v83 CAffectedAreaPool::Update (@0x43109f) gates the
+	// fade-out animation on the same value. A Smokescreen mist sent as 1 is
+	// invisible to the client's own protection check.
+	AffectedAreaTypeSmoke = int32(2)
 )
 
-// AffectedAreaTypeFor maps a mist's owner to its nType. A monster-owned mist
-// IS a mob disease cloud and must stay 0 -- that is what makes the client
-// apply it to players standing in it (the pre-task-200 AREA_POISON behaviour,
-// which must not change). A character-owned mist is a user skill area.
+// AffectedAreaTypeFor maps a mist's owner and effect to its nType. A
+// monster-owned mist IS a mob disease cloud and must stay 0 -- that is what
+// makes the client apply it to players standing in it (the pre-task-200
+// AREA_POISON behaviour, which must not change). A character-owned
+// PROTECTION mist is Smoke Screen (2); every other character-owned mist is a
+// generic user skill area (1).
 //
-// Derived from ownerType rather than carried on COMMAND_TOPIC_MIST on purpose:
-// nType is a client wire detail, and no producer should have to know the
-// client's value table to create a mist.
-func AffectedAreaTypeFor(ownerType string) int32 {
-	if ownerType == OwnerTypeCharacter {
-		return AffectedAreaTypeUserSkill
+// Derived here rather than carried on COMMAND_TOPIC_MIST on purpose: nType is
+// a client wire detail, and no producer should have to know the client's
+// value table to create a mist.
+func AffectedAreaTypeFor(ownerType string, effectKind string) int32 {
+	if ownerType != OwnerTypeCharacter {
+		return AffectedAreaTypeMobSkill
 	}
-	return AffectedAreaTypeMobSkill
+	if effectKind == mistKafka.EffectKindProtection {
+		return AffectedAreaTypeSmoke
+	}
+	return AffectedAreaTypeUserSkill
 }
 
 // Mist owner types, as carried on COMMAND_TOPIC_MIST CreateCommandBody.
@@ -215,6 +229,34 @@ func (m Mist) TargetKind() string {
 // DAMAGE_OVER_TIME. Never empty on a mist built through Processor.Create.
 func (m Mist) EffectKind() string {
 	return m.effectKind
+}
+
+// RecoveryMp returns the per-tick MP a RECOVERY mist restores. 0 for every
+// other effect kind.
+func (m Mist) RecoveryMp() int32 {
+	return m.recoveryMp
+}
+
+// PartyMemberIds returns the cast-time party snapshot a RECOVERY mist heals.
+// A copy is returned: the tick fans out across goroutines (tasks.processTenant),
+// so callers must not share this slice's backing array.
+func (m Mist) PartyMemberIds() []uint32 {
+	if len(m.partyMemberIds) == 0 {
+		return nil
+	}
+	return append([]uint32(nil), m.partyMemberIds...)
+}
+
+// InPartySnapshot reports whether the character is in this mist's cast-time
+// party snapshot. Always false for a mist with no snapshot, which is the
+// correct answer for every non-RECOVERY kind.
+func (m Mist) InPartySnapshot(characterId uint32) bool {
+	for _, id := range m.partyMemberIds {
+		if id == characterId {
+			return true
+		}
+	}
+	return false
 }
 
 // ElemAttr returns the AffectedAreaCreated `nElemAttr` wire value. The client
@@ -291,152 +333,4 @@ func (m Mist) ShouldTick() bool {
 func (m Mist) WithLastTick(t time.Time) Mist {
 	m.lastTick = t
 	return m
-}
-
-// Builder constructs a Mist value via fluent setters.
-type Builder struct {
-	id               uuid.UUID
-	f                field.Model
-	ownerType        string
-	ownerId          uint32
-	sourceSkillId    uint32
-	sourceSkillLevel uint32
-	mistType         int32
-	originX          int16
-	originY          int16
-	ltX              int16
-	ltY              int16
-	rbX              int16
-	rbY              int16
-	disease          string
-	diseaseValue     int32
-	diseaseDuration  time.Duration
-	duration         time.Duration
-	tickInterval     time.Duration
-	targetKind       string
-	effectKind       string
-	elemAttr         int32
-	skillDelay       int16
-	createdAt        time.Time
-	expiresAt        time.Time
-	lastTick         time.Time
-}
-
-// NewBuilder constructs a Builder anchored to the given mist id and field.
-// lastTick is initialized far enough in the past that the first ShouldTick
-// call (after a SetTickInterval) returns true.
-func NewBuilder(id uuid.UUID, f field.Model) *Builder {
-	now := time.Now()
-	return &Builder{
-		id:        id,
-		f:         f,
-		createdAt: now,
-		expiresAt: now,
-		// Set lastTick far in the past so the first tick fires immediately.
-		lastTick: now.Add(-24 * time.Hour),
-	}
-}
-
-// SetOwner sets the owner type and id.
-func (b *Builder) SetOwner(ownerType string, ownerId uint32) *Builder {
-	b.ownerType = ownerType
-	b.ownerId = ownerId
-	return b
-}
-
-// SetSource sets the skill id and level responsible for the mist.
-func (b *Builder) SetSource(skillId, skillLevel uint32) *Builder {
-	b.sourceSkillId = skillId
-	b.sourceSkillLevel = skillLevel
-	return b
-}
-
-// SetType sets the mist/affected-area type discriminator. Defaults to 0 if unset.
-func (b *Builder) SetType(t int32) *Builder {
-	b.mistType = t
-	return b
-}
-
-// SetOrigin sets the world-space anchor coordinates.
-func (b *Builder) SetOrigin(x, y int16) *Builder {
-	b.originX = x
-	b.originY = y
-	return b
-}
-
-// SetBounds sets the left-top and right-bottom offsets relative to the origin.
-func (b *Builder) SetBounds(ltX, ltY, rbX, rbY int16) *Builder {
-	b.ltX = ltX
-	b.ltY = ltY
-	b.rbX = rbX
-	b.rbY = rbY
-	return b
-}
-
-// SetDisease sets the disease name, magnitude, and per-target duration.
-func (b *Builder) SetDisease(disease string, value int32, duration time.Duration) *Builder {
-	b.disease = disease
-	b.diseaseValue = value
-	b.diseaseDuration = duration
-	return b
-}
-
-// SetKinds sets the target and effect descriptors. Grouped rather than split
-// into two single-field setters because the pair is meaningless apart.
-func (b *Builder) SetKinds(targetKind, effectKind string) *Builder {
-	b.targetKind = targetKind
-	b.effectKind = effectKind
-	return b
-}
-
-// SetRender sets the client-render wire values carried on MIST_CREATED. Both
-// are 0 for every mist Atlas creates; see the getters for why.
-func (b *Builder) SetRender(elemAttr int32, skillDelay int16) *Builder {
-	b.elemAttr = elemAttr
-	b.skillDelay = skillDelay
-	return b
-}
-
-// SetDuration sets the total mist lifetime and recomputes expiresAt from createdAt.
-func (b *Builder) SetDuration(d time.Duration) *Builder {
-	b.duration = d
-	b.expiresAt = b.createdAt.Add(d)
-	return b
-}
-
-// SetTickInterval sets the per-tick interval for disease application.
-func (b *Builder) SetTickInterval(d time.Duration) *Builder {
-	b.tickInterval = d
-	return b
-}
-
-// Build returns a value-immutable Mist.
-func (b *Builder) Build() Mist {
-	return Mist{
-		id:               b.id,
-		f:                b.f,
-		ownerType:        b.ownerType,
-		ownerId:          b.ownerId,
-		sourceSkillId:    b.sourceSkillId,
-		sourceSkillLevel: b.sourceSkillLevel,
-		mistType:         b.mistType,
-		originX:          b.originX,
-		originY:          b.originY,
-		ltX:              b.ltX,
-		ltY:              b.ltY,
-		rbX:              b.rbX,
-		rbY:              b.rbY,
-		disease:          b.disease,
-		diseaseValue:     b.diseaseValue,
-		diseaseDuration:  b.diseaseDuration,
-		duration:         b.duration,
-		tickInterval:     b.tickInterval,
-		targetKind:       b.targetKind,
-		effectKind:       b.effectKind,
-		elemAttr:         b.elemAttr,
-		skillDelay:       b.skillDelay,
-		createdAt:        b.createdAt,
-		expiresAt:        b.expiresAt,
-		lastTick:         b.lastTick,
-	}
 }

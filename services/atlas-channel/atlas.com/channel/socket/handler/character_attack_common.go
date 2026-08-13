@@ -27,6 +27,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 	skill3 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
@@ -726,14 +727,48 @@ func attackCastTryApply(
 	wireSkillId skill3.Id,
 	skillLevel byte,
 	e effect.Model,
+	castOrigin *point.Model,
 ) {
 	h, ok := handler.LookupAttackCast(castId)
 	if !ok {
 		return
 	}
-	if err := h(l)(ctx)(wp, f, characterId, wireSkillId, skillLevel, e); err != nil {
+	if err := h(l)(ctx)(wp, f, characterId, wireSkillId, skillLevel, e, castOrigin); err != nil {
 		l.WithError(err).Errorf("Attack-cast handler for skill [%d] failed for character [%d].", wireSkillId, characterId)
 	}
+}
+
+// attackCastOrigin is the world point an ATTACK-delivered cast should anchor at.
+//
+// An attack packet always carries a better answer than the server can look up,
+// and the two cases differ:
+//
+//   - A thrown-grenade skill carries where the BOMB landed, a function of how
+//     long the attack key was held. The client has already drawn the explosion
+//     there, so anchoring anywhere else visibly disagrees with it (task-218
+//     field report #4: Poison Bomb's mist sat at the caster's feet no matter how
+//     far the bomb flew).
+//   - Every other attack carries the caster's own position at the moment of the
+//     attack. That beats reading it back from atlas-character, which is updated
+//     asynchronously over Kafka (movement.ProcessorImpl.ForCharacter emits
+//     COMMAND_CHARACTER_MOVEMENT from a detached goroutine), so a REST read
+//     taken while handling this attack can observe a PRE-MOVE position and
+//     anchor the effect where the caster used to be (field report #2).
+//
+// Never nil for an attack-delivered cast, so the caster REST lookup is reserved
+// for the USE_SKILL-delivered mists, which have no packet-supplied position.
+//
+// The grenade case is gated on the skill rather than on a non-zero value:
+// AttackInfo.Decode only fills those fields for the grenade arm, and (0,0) is a
+// legal coordinate, so a value-based test would both miss a legitimate origin
+// and invent one for every other attack.
+func attackCastOrigin(ai packetmodel.AttackInfo) *point.Model {
+	x, y := int16(ai.CharacterX()), int16(ai.CharacterY())
+	if skill3.IsGrenadeSkill(skill3.Id(ai.SkillId())) {
+		x, y = int16(ai.GrenadeX()), int16(ai.GrenadeY())
+	}
+	p := point.NewModel(point.X(x), point.Y(y))
+	return &p
 }
 
 // resolveAttackSkill finds the owned skill backing an attack's wire skill id,
@@ -1085,7 +1120,7 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// resolved Identity) because handlers put it on the wire for
 					// the client to match against its own WZ.
 					if attackIdOk && ai.SkillId() > 0 {
-						attackCastTryApply(l, ctx, wp, s.Field(), s.CharacterId(), attackId, skill3.Id(ai.SkillId()), sk.Level(), se)
+						attackCastTryApply(l, ctx, wp, s.Field(), s.CharacterId(), attackId, skill3.Id(ai.SkillId()), sk.Level(), se, attackCastOrigin(ai))
 					}
 
 					// TODO apply attack effect (heal, mp consumption, dispel, cure all, combo reset, etc)

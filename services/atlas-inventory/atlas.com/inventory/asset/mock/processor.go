@@ -3,6 +3,7 @@ package mock
 import (
 	"atlas-inventory/asset"
 	"atlas-inventory/data/consumable"
+	"atlas-inventory/data/tradeability"
 	"atlas-inventory/kafka/message"
 	"time"
 
@@ -35,6 +36,8 @@ type ProcessorMock struct {
 	UpdateOwnerFunc                  func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model, owner string) error
 	ApplyLockFunc                    func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model, expiration time.Time) error
 	ClearLockFunc                    func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model) error
+	ApplyKarmaFunc                   func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model, scissorsKarma int32, d tradeability.Model) error
+	ClearKarmaFunc                   func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model) error
 	DeleteAndEmitFunc                func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32) error
 	CreateFunc                       func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, opts asset.CreateOptions) (asset.Model, error)
 	CreateFromModelFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, m asset.Model) (asset.Model, error)
@@ -224,6 +227,28 @@ func (m *ProcessorMock) ApplyLock(mb *message.Buffer) func(transactionId uuid.UU
 func (m *ProcessorMock) ClearLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model) error {
 	if m.ClearLockFunc != nil {
 		return m.ClearLockFunc(mb)
+	}
+	return func(transactionId uuid.UUID, characterId uint32) func(a asset.Model) error {
+		return func(a asset.Model) error {
+			return nil
+		}
+	}
+}
+
+func (m *ProcessorMock) ApplyKarma(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model, scissorsKarma int32, d tradeability.Model) error {
+	if m.ApplyKarmaFunc != nil {
+		return m.ApplyKarmaFunc(mb)
+	}
+	return func(transactionId uuid.UUID, characterId uint32) func(a asset.Model, scissorsKarma int32, d tradeability.Model) error {
+		return func(a asset.Model, scissorsKarma int32, d tradeability.Model) error {
+			return nil
+		}
+	}
+}
+
+func (m *ProcessorMock) ClearKarma(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model) error {
+	if m.ClearKarmaFunc != nil {
+		return m.ClearKarmaFunc(mb)
 	}
 	return func(transactionId uuid.UUID, characterId uint32) func(a asset.Model) error {
 		return func(a asset.Model) error {

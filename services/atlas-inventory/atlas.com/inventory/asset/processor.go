@@ -5,6 +5,7 @@ import (
 	"atlas-inventory/data/equipment/statistics"
 	"atlas-inventory/data/etc"
 	"atlas-inventory/data/setup"
+	"atlas-inventory/data/tradeability"
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/asset"
 	"atlas-inventory/pet"
@@ -52,6 +53,8 @@ type Processor interface {
 	UpdateOwner(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model, owner string) error
 	ApplyLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model, expiration time.Time) error
 	ClearLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model) error
+	ApplyKarma(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model, scissorsKarma int32, d tradeability.Model) error
+	ClearKarma(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model) error
 	DeleteAndEmit(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32) error
 	Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, opts CreateOptions) (Model, error)
 	CreateFromModel(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, m Model) (Model, error)
@@ -349,6 +352,73 @@ func (p *ProcessorImpl) ClearLock(mb *message.Buffer) func(transactionId uuid.UU
 		return func(a Model) error {
 			updated := Clone(a).RemoveFlag(af.FlagLock).SetExpiration(time.Time{}).Build()
 			if err := updateFlagAndExpiration(p.db.WithContext(p.ctx), a.Id(), updated.Flag(), time.Time{}); err != nil {
+				return err
+			}
+			return mb.Put(asset.EnvEventTopicStatus, UpdatedEventStatusProvider(transactionId, characterId, updated))
+		}
+	}
+}
+
+// ApplyKarma sets the slot-class-correct karma mark on an asset in place,
+// emitting the existing UPDATED status event. atlas-inventory owns the asset, so
+// it re-asserts every gate the channel arm applied — the channel's checks are
+// advisory across a service boundary and a crafted command reaches this consumer
+// regardless (FR-6.4).
+//
+// Gates, in the client's own order (CUIKarmaDlg::PutItem, gms_v95 @0x7D7BA0):
+//
+//	0c pet class      -> KarmaFlagFor reports no bit; the pet karma bit is 0x01,
+//	                     which is FlagLock in Atlas's shared flag column.
+//	1  FlagLock       -> GW_ItemSlot*::IsProtectedItem
+//	2  eligibility    -> KarmaEligible(scissorsKarma, d.TradeAvailable())
+//	3  already marked -> GW_ItemSlot*::IsPossibleTradingItem. THIS IS THE
+//	                     IDEMPOTENCY GUARANTEE (FR-6.7): a redelivered command
+//	                     finds the bit set and refuses rather than letting a
+//	                     second scissors be consumed against a marked item.
+//	4  already tradeable -> server-only; karma exists to unlock an UNTRADEABLE
+//	                     item, and "untradeable" here is the same pair of
+//	                     conditions atlas-trades enforces.
+func (p *ProcessorImpl) ApplyKarma(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model, scissorsKarma int32, d tradeability.Model) error {
+	return func(transactionId uuid.UUID, characterId uint32) func(a Model, scissorsKarma int32, d tradeability.Model) error {
+		return func(a Model, scissorsKarma int32, d tradeability.Model) error {
+			f, ok := af.KarmaFlagFor(a.TemplateId())
+			if !ok {
+				return errors.New("karma does not apply to a pet-class asset")
+			}
+			if a.Locked() {
+				return errors.New("asset is protected by a sealing lock")
+			}
+			if !af.KarmaEligible(scissorsKarma, d.TradeAvailable()) {
+				return errors.New("asset is not applicable to this scissors' karma type")
+			}
+			if af.HasFlag(a.Flag(), f) {
+				return errors.New("asset is already karma-marked")
+			}
+			if !af.HasFlag(a.Flag(), af.FlagUntradeable) && !af.HasFlag(a.Flag(), af.FlagMergeUntradeable) && !d.TradeBlock() {
+				return errors.New("asset is already tradeable")
+			}
+			updated := Clone(a).AddFlag(f).Build()
+			if err := updateFlag(p.db.WithContext(p.ctx), a.Id(), updated.Flag()); err != nil {
+				return err
+			}
+			return mb.Put(asset.EnvEventTopicStatus, UpdatedEventStatusProvider(transactionId, characterId, updated))
+		}
+	}
+}
+
+// ClearKarma removes the karma mark in place. It runs NO gates: it is the
+// compensation path for a saga that failed after the mark was applied (FR-6.6),
+// and a compensation that can be refused is not a compensation. Clearing an
+// already-clear bit is a no-op write plus one UPDATED event.
+func (p *ProcessorImpl) ClearKarma(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model) error {
+	return func(transactionId uuid.UUID, characterId uint32) func(a Model) error {
+		return func(a Model) error {
+			f, ok := af.KarmaFlagFor(a.TemplateId())
+			if !ok {
+				return nil
+			}
+			updated := Clone(a).RemoveFlag(f).Build()
+			if err := updateFlag(p.db.WithContext(p.ctx), a.Id(), updated.Flag()); err != nil {
 				return err
 			}
 			return mb.Put(asset.EnvEventTopicStatus, UpdatedEventStatusProvider(transactionId, characterId, updated))

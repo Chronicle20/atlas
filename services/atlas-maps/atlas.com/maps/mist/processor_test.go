@@ -297,3 +297,84 @@ func TestProcessor_Create_DerivesAffectedAreaTypeFromOwner(t *testing.T) {
 		})
 	}
 }
+
+// FR-2.5: an unrecognised kind must be REJECTED, not silently normalised to
+// DISEASE -- a mist that applies the wrong effect to the wrong targets is
+// worse than no mist.
+func TestCreate_UnknownEffectKind_RejectedAndNoMist(t *testing.T) {
+	tt := mkRegTenant()
+	rec := newRecordingProducer()
+	p, _ := newTestMistProcessor(t, tt, rec)
+
+	_, err := p.Create(mistKafka.CreateCommandBody{
+		WorldId: 0, ChannelId: 0, MapId: 100000000, Instance: uuid.Nil,
+		OwnerType:  OwnerTypeCharacter,
+		OwnerId:    1001,
+		TargetKind: mistKafka.TargetKindCharacter,
+		EffectKind: "TELEPORT_EVERYONE",
+		Duration:   30000,
+	})
+
+	require.ErrorIs(t, err, ErrUnknownKind)
+	require.Empty(t, p.r.AllByTenant(tt))
+	require.Empty(t, rec.Messages(mistKafka.EnvEventTopic))
+}
+
+func TestCreate_UnknownTargetKind_RejectedAndNoMist(t *testing.T) {
+	tt := mkRegTenant()
+	rec := newRecordingProducer()
+	p, _ := newTestMistProcessor(t, tt, rec)
+
+	_, err := p.Create(mistKafka.CreateCommandBody{
+		WorldId: 0, ChannelId: 0, MapId: 100000000, Instance: uuid.Nil,
+		OwnerType:  OwnerTypeCharacter,
+		TargetKind: "NPC",
+		EffectKind: mistKafka.EffectKindDisease,
+		Duration:   30000,
+	})
+
+	require.ErrorIs(t, err, ErrUnknownKind)
+	require.Empty(t, p.r.AllByTenant(tt))
+}
+
+// FR-2.3: the pre-task-200 atlas-monsters AREA_POISON producer sends neither
+// kind. That must keep working, unchanged.
+func TestCreate_EmptyKinds_NormalizeToCharacterDisease(t *testing.T) {
+	tt := mkRegTenant()
+	rec := newRecordingProducer()
+	p, _ := newTestMistProcessor(t, tt, rec)
+
+	m, err := p.Create(mistKafka.CreateCommandBody{
+		WorldId: 0, ChannelId: 0, MapId: 100000000, Instance: uuid.Nil,
+		OwnerType: OwnerTypeMonster,
+		Duration:  30000,
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, mistKafka.TargetKindCharacter, m.TargetKind())
+	require.Equal(t, mistKafka.EffectKindDisease, m.EffectKind())
+}
+
+// The recovery magnitude and the party snapshot must survive the command ->
+// model hop; a dropped setter heals nobody and fails silently.
+func TestCreate_CarriesRecoveryFields(t *testing.T) {
+	tt := mkRegTenant()
+	rec := newRecordingProducer()
+	p, _ := newTestMistProcessor(t, tt, rec)
+
+	m, err := p.Create(mistKafka.CreateCommandBody{
+		WorldId: 0, ChannelId: 0, MapId: 100000000, Instance: uuid.Nil,
+		OwnerType:      OwnerTypeCharacter,
+		OwnerId:        1001,
+		TargetKind:     mistKafka.TargetKindCharacter,
+		EffectKind:     mistKafka.EffectKindRecovery,
+		RecoveryMp:     38,
+		PartyMemberIds: []uint32{1001, 1002},
+		Duration:       30000,
+		TickIntervalMs: 3000,
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, int32(38), m.RecoveryMp())
+	require.Equal(t, []uint32{1001, 1002}, m.PartyMemberIds())
+}

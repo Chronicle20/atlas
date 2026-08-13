@@ -1,15 +1,18 @@
 # wzsnapshot provenance (task-187 Task 3)
 
-Drain timestamp: 2026-07-30T12:37Z (kubectl context `bee`, namespace
-`atlas-main`, service `atlas-data`, pod `atlas-data-697ff4787d-mpjp2`, one of
+Drain timestamp: 2026-08-12T18:02Z (kubectl context `bee`, namespace
+`atlas-main`, service `atlas-data`, pod `atlas-data-fc5f98fd9-czg6l`, one of
 four running replicas -- any replica serves any tenant via header-based
 tenant resolution, so the specific pod name is incidental).
 
 ## Method
 
-Tenant IDs are the ones already discovered and recorded by task-187 Task 1
-(`docs/tasks/task-187-version-aware-id-semantics/audit/README.md`); reused
-directly here, not re-discovered.
+Tenant IDs were re-listed live via `GET /api/tenants` for this re-drain
+(task-218 FR-0 Step 1), rather than reused verbatim from task-187 Task 1
+(`docs/tasks/task-187-version-aware-id-semantics/audit/README.md`) --
+tenant ids can change on reprovision. All 10 ids returned by this listing
+were identical to the ones task-187 recorded; the table below is therefore
+unchanged from the prior drain.
 
 **Skill list endpoint (`GET /api/data/skills`) is unavailable in this
 baseline** -- probed with several parameter shapes
@@ -19,6 +22,31 @@ documented fallback, **all 10 live-tenant snapshots use the jobs-union
 method**: drain `GET /api/data/jobs?page[size]=200` for the tenant, take the
 job `id` field of every row as the job id-set, and take the union of every
 row's `attributes.skills` array as the skill id-set.
+
+## Re-drain 2026-08 (task-218 FR-0)
+
+Re-drained with `tools/wzsnapshot-drain.sh` piped into
+`gen/wzsnapshot/cmd/mksnapshot`, which canonicalizes (sort + de-duplicate)
+and recomputes the pinned `hash` — so a re-drain is reproducible rather than
+a hand edit.
+
+**Method is unchanged** (`GET /api/data/skills` still returns HTTP 400 in
+this baseline; the jobs-union fallback is still required). Only the DATA is
+fresh. The 2026-07-30 drain predated the Evan job documents being populated
+(the `Skill.wz/Dragon/` subdirectory defect), so the union contained zero
+`22xxxxxx` skills and every Evan wire id was unbound on every version.
+`GET /api/data/jobs/2216/skills` now returns
+`[22160000, 22161001, 22161002, 22161003]` on GMS 84/92/95 and JMS 185, and
+empty on GMS 48/83 — agreeing exactly with the per-skill availability sweep
+in `docs/tasks/task-218-player-cast-mists/design.md` §1.1.
+
+The re-drain necessarily pulls in every other skill the jobs-union now
+surfaces that it did not in July; that is inherent to regenerating the
+snapshot wholesale. The acceptance gate is therefore that the regenerated
+binding diff is ADDITIVE ONLY (no previously-bound wire id changed its
+identity), not that the diff is small — task-187's divergence semantics and
+the ban list behind `tools/skill-job-id-guard.sh` both depend on those
+bindings.
 
 `page[size]=200` returned every job in a single page for all 10 tenants
 (`meta.page.last == 1` in every drain -- largest tenant, gms_92/gms_95, has

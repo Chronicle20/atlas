@@ -453,3 +453,39 @@ func TestStatusMessageJMSCounterNotice(t *testing.T) {
 		})
 	}
 }
+
+// TestIncreaseExperienceTrailingPairBoundary pins the GMS v87 boundary for the
+// IncEXP message's final partyEXPRingEXP + cakePieEventBonus pair.
+//
+// It was gated >= 95, so a v87 client — which reads SIX trailing Decode4 after
+// partyBonusEventRate, not four — got a packet 8 bytes short, read past the end
+// and closed with error 38. Counting the trailing Decode4s in each client's
+// CWvsContext::OnMessage case-3 arm: v83 @0xa21ac5 four, v84 @0xa6cfd7 four,
+// v87 @0xab9234 six, v95 six.
+//
+// This was only reachable once monsters could die: before the v87 magic-attack
+// decode fix nothing was ever killed, so no EXP message was ever sent.
+func TestIncreaseExperienceTrailingPairBoundary(t *testing.T) {
+	enc := func(region string, major uint16) int {
+		ctx := test.CreateContext(region, major, 1)
+		m := NewStatusMessageIncreaseExperience(3, true, 295, false, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+		return len(test.Encode(t, ctx, m.Encode, nil))
+	}
+
+	v83, v84 := enc("GMS", 83), enc("GMS", 84)
+	if v84 != v83 {
+		t.Errorf("v84 IncEXP (%d) must equal v83 (%d): both read four trailing ints", v84, v83)
+	}
+	// v87 adds exactly the 8-byte pair.
+	v87 := enc("GMS", 87)
+	if v87 != v83+8 {
+		t.Errorf("v87 IncEXP (%d) must be v83 (%d) + 8 (partyEXPRingEXP + cakePieEventBonus); short here is the error-38 disconnect", v87, v83)
+	}
+	if v95 := enc("GMS", 95); v95 != v87 {
+		t.Errorf("v95 IncEXP (%d) must equal v87 (%d)", v95, v87)
+	}
+	if jms := enc("JMS", 185); jms != v87 {
+		t.Errorf("JMS v185 IncEXP (%d) must equal v87 (%d)", jms, v87)
+	}
+}

@@ -183,7 +183,12 @@ func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 						} else if update == stat.TypeAvailableAP {
 							value = int64(c.Ap())
 						} else if update == stat.TypeAvailableSP {
-							value = int64(c.Sp()[0])
+							// Bounds-checked: an empty sp table would otherwise
+							// panic this consumer. Index 0 (not the Evan growth
+							// book) is preserved as the existing behaviour.
+							if sps := c.Sp(); len(sps) > 0 {
+								value = int64(sps[0])
+							}
 						} else if update == stat.TypeExperience {
 							value = int64(c.Experience())
 						} else if update == stat.TypeFame {

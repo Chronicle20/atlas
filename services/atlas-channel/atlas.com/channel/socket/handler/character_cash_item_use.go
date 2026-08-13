@@ -505,6 +505,13 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		// so megaphone/avatar-megaphone routing must branch on classification
 		// before any cash-slot-type sub-switch, never the other way around.
 		category := item.GetClassification(itemId)
+		// Classification-FIRST, same reason as the megaphone branch below: the
+		// cash-slot type byte collides (37 is also the wedding-ticket bucket,
+		// 59/60 are also triple-megaphone buckets — GetCashSlotItemType).
+		if category == item.ClassificationRemoteMerchant {
+			handleRemoteMerchantUse(l, ctx, wp)(s, t, itemId, source, it)
+			return
+		}
 		if category == item.ClassificationMegaphones || category == item.ClassificationAvatarMegaphone {
 			// Legacy GMS (v48/61/72/79, MajorVersion < 83) item-loss guard.
 			// task-123 legacy-phase-1 (.superpowers/sdd/legacy-megaphone-protocol.md)

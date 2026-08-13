@@ -49,7 +49,14 @@ func installCashItemInSlotSeam(t *testing.T, matchSlot int16, matchTemplateId ui
 // also returns the ctx since the cash handler resolves the tenant from it).
 func newCashItemUseTestSession(t *testing.T, characterId uint32) (session.Model, context.Context, func()) {
 	t.Helper()
-	ten := mustTenant(t, "GMS", 83, 1)
+	return newCashItemUseTestSessionForVersion(t, characterId, "GMS", 83)
+}
+
+// newCashItemUseTestSessionForVersion is newCashItemUseTestSession with the
+// tenant version parameterised, for the remote-merchant version-gate tests.
+func newCashItemUseTestSessionForVersion(t *testing.T, characterId uint32, region string, major uint16) (session.Model, context.Context, func()) {
+	t.Helper()
+	ten := mustTenant(t, region, major, 1)
 	ctx := tenant.WithContext(context.Background(), ten)
 
 	sessionId := uuid.New()

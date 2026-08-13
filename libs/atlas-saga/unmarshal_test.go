@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
 func TestUnmarshalRebalanceAPStep(t *testing.T) {
@@ -1232,5 +1234,26 @@ func TestUnmarshalTransferToTradeStep(t *testing.T) {
 	}
 	if p.Quantity != 3 {
 		t.Errorf("quantity: expected 3, got %d", p.Quantity)
+	}
+}
+
+func TestUnmarshalStep_OpenNpcShop(t *testing.T) {
+	raw := []byte(`{
+		"stepId": "open_npc_shop",
+		"status": "pending",
+		"action": "open_npc_shop",
+		"payload": {"characterId": 1234, "worldId": 0, "channelId": 1, "npcTemplateId": 9090000}
+	}`)
+
+	var s Step[any]
+	if err := json.Unmarshal(raw, &s); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	p, ok := s.Payload.(OpenNpcShopPayload)
+	if !ok {
+		t.Fatalf("payload type = %T, want OpenNpcShopPayload", s.Payload)
+	}
+	if p.CharacterId != 1234 || p.NpcTemplateId != 9090000 || p.ChannelId != channel.Id(1) {
+		t.Errorf("payload = %+v", p)
 	}
 }

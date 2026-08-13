@@ -501,6 +501,18 @@ type ShowStoragePayload struct {
 	AccountId   uint32     `json:"accountId"`   // AccountId that owns the storage
 }
 
+// OpenNpcShopPayload represents the payload required to open an NPC's shop for
+// a character. Unlike ShowStorage this step is NOT self-completing: it waits
+// for the npc-shop status topic to report ENTERED or ENTER_ERROR, which is what
+// lets a following destroy step consume the cash item only once the shop
+// actually opened (task-221 FR-4.3).
+type OpenNpcShopPayload struct {
+	CharacterId   uint32     `json:"characterId"`   // CharacterId the shop is opened for
+	WorldId       world.Id   `json:"worldId"`       // WorldId associated with the action
+	ChannelId     channel.Id `json:"channelId"`     // ChannelId associated with the action
+	NpcTemplateId uint32     `json:"npcTemplateId"` // NPC template whose shop to open
+}
+
 // DepositToStoragePayload represents the payload required to deposit an item to account storage.
 type DepositToStoragePayload struct {
 	CharacterId   uint32    `json:"characterId"`   // CharacterId initiating the deposit

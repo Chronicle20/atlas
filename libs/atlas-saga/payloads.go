@@ -1101,6 +1101,29 @@ type ApplyAssetLockPayload struct {
 	Expiration    time.Time `json:"expiration"`    // Expiration time to apply to the asset
 }
 
+// ApplyAssetKarmaPayload represents the payload required to apply (or, on the
+// compensation path, clear) the one-free-trade karma mark on an asset in a
+// specific inventory slot.
+//
+// There is no Clear field here and no near-duplicate ClearAssetKarma action:
+// the saga surface stays one entry wide, and compensation dispatches the
+// inventory command directly with its own clear discriminator (see
+// atlas-saga-orchestrator's DispatchCashItemUseRollbacks). Keeping the
+// acceptance table one entry wide is the point.
+type ApplyAssetKarmaPayload struct {
+	CharacterId   uint32 `json:"characterId"`   // CharacterId associated with the action
+	InventoryType byte   `json:"inventoryType"` // Type of inventory (1=equip, 2=use, 3=setup, 4=etc, 5=cash)
+	Slot          int16  `json:"slot"`          // Slot of the asset to mark (must be >= 0; equipped items are refused upstream)
+	// ScissorsKarma is the SCISSORS' OWN WZ info/karma type, carried so the
+	// owning service can re-run the EQUALITY half of the eligibility predicate
+	// without knowing which scissors were used. 0 means untyped scissors (the
+	// gms_v83 model), under which the predicate reduces to "is the target
+	// karma-applicable at all". Omitting it would silently weaken the v87+
+	// equality model to the v83 non-zero model at atlas-inventory, which is the
+	// authority — so it must travel with the action.
+	ScissorsKarma int32 `json:"scissorsKarma"`
+}
+
 // IncubatorResultPayload represents the payload required to deliver the result of an incubator use to a character.
 type IncubatorResultPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action

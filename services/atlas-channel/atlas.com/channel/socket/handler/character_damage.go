@@ -4,6 +4,7 @@ import (
 	"atlas-channel/battleship"
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
+	"atlas-channel/character/chakra"
 	skill2 "atlas-channel/character/skill"
 	monsterdata "atlas-channel/data/monster"
 	dataskill "atlas-channel/data/skill"
@@ -14,6 +15,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"math"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -41,6 +43,8 @@ type damageMitigationDeps struct {
 	changeMP           func(f field.Model, characterId uint32, amount int16) error
 	requestChangeMeso  func(f field.Model, characterId uint32, actorId uint32, actorType string, amount int32) error
 	damageMonster      func(f field.Model, monsterId uint32, characterId uint32, damages []uint32, attackType byte) error
+	getChakra          func(characterId uint32) (chakra.Entry, bool)
+	clearChakra        func(characterId uint32) bool
 }
 
 func CharacterDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -93,6 +97,12 @@ func CharacterDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			changeMP:           cp.ChangeMP,
 			requestChangeMeso:  cp.RequestChangeMeso,
 			damageMonster:      mp.Damage,
+			getChakra: func(characterId uint32) (chakra.Entry, bool) {
+				return chakra.GetRegistry().Get(t, characterId, time.Now())
+			},
+			clearChakra: func(characterId uint32) bool {
+				return chakra.GetRegistry().Clear(t, characterId)
+			},
 		}
 		processDamageTaken(l, t, s.Field(), p, c, deps)
 	}
@@ -200,6 +210,19 @@ func processDamageTaken(
 		l.Warnf("Character [%d] in map [%d] sent out-of-bounds damage [%d] (mob template [%d], attackIdx [%d]). Clamped to [%d].", characterId, f.MapId(), p.Damage(), p.MonsterTemplateId(), p.AttackIdx(), raw)
 	}
 
+	// Chakra recovery window: the level's WZ `x` rewrites the raw damage
+	// before every other mitigation term (design §3.3). The lookup is an
+	// in-process RWMutex read — no cross-service call on the per-hit path
+	// (PRD FR-2.4 / NFR hot-path cost).
+	var chakraPct int32
+	chakraActive := false
+	if deps.getChakra != nil {
+		if entry, ok := deps.getChakra(characterId); ok {
+			chakraActive = true
+			chakraPct = int32(entry.X)
+		}
+	}
+
 	mobSourced := p.AttackIdx() >= packetmodel.DamageTypePhysical
 
 	var a buffAmounts
@@ -304,13 +327,15 @@ func processDamageTaken(
 		magicShieldOnReducedDamage: t.MajorVersion() >= 87,
 		pgCapDivisor:               pgCapDivisor,
 		pgFixedDamageOverride:      (t.Region() == "GMS" && t.MajorVersion() >= 95) || t.Region() == "JMS",
+		chakraPct:                  chakraPct,
 	}
 
 	result := computeMitigation(in, mob)
-	l.Debugf("Character [%d] damage [%d] mitigated to hp [%d] mp [%d] meso [%d] reflect [%d] (achilles [%d], comboBarrier [%d], magicShield [%d], magicGuard [%d], mesoGuard [%d], powerGuard [%d]).",
+	l.Debugf("Character [%d] damage [%d] mitigated to hp [%d] mp [%d] meso [%d] reflect [%d] (achilles [%d], comboBarrier [%d], magicShield [%d], magicGuard [%d], mesoGuard [%d], powerGuard [%d], chakra [%d]).",
 		characterId, raw, result.hpLoss, result.mpLoss, result.mesoCost, result.reflect.amount,
 		result.breakdown.achillesReduce, result.breakdown.comboBarrierReduce, result.breakdown.magicShieldReduce,
-		result.breakdown.magicGuardAbsorbed, result.breakdown.mesoGuarded, result.breakdown.powerGuardReflect)
+		result.breakdown.magicGuardAbsorbed, result.breakdown.mesoGuarded, result.breakdown.powerGuardReflect,
+		result.breakdown.chakraAmplified)
 
 	_ = deps.changeHP(f, characterId, -clampInt16(result.hpLoss))
 	if result.mpLoss > 0 {
@@ -321,6 +346,17 @@ func processDamageTaken(
 	}
 	if result.reflect.amount > 0 {
 		_ = deps.damageMonster(f, p.MonsterId(), characterId, []uint32{result.reflect.amount}, result.reflect.attackType)
+	}
+
+	// A hit cancels the pending heal (PRD FR-5.2). Ordering is deliberate:
+	// the factor is applied and the damage lands FIRST, so the interrupting
+	// hit itself carries the increased damage (PRD FR-4.5). MP is not
+	// refunded — nothing was spent, because the generic cost block only runs
+	// when the USE_SKILL packet arrives (design §2).
+	if chakraActive && deps.clearChakra != nil {
+		if deps.clearChakra(characterId) {
+			l.Debugf("Chakra recovery window for character [%d] interrupted by damage; pending heal cancelled.", characterId)
+		}
 	}
 }
 

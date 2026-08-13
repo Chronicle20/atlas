@@ -464,3 +464,56 @@ func TestStatsAccumulatorSummary(t *testing.T) {
 		t.Fatal("failures > 0 did not escalate the summary to ERROR")
 	}
 }
+
+// TestChakraCommonExpansion pins the GMS 95 Chakra shape (task-213 design
+// §4.2): 4211001 ships a `common` node with maxLevel 10 and the linear rules
+// mpCon = 40+10L, x = 100-4L, y = 100+20L. A regression in the expansion
+// engine that dropped `x` would leave the damage factor at 0, which the
+// damage path treats as "no window" rather than "zero damage" — silent, and
+// exactly the failure this pin exists to catch.
+func TestChakraCommonExpansion(t *testing.T) {
+	common := xml.Node{
+		Name: "common",
+		IntegerNodes: []xml.IntegerNode{
+			{Name: "maxLevel", Value: "10"},
+		},
+		StringNodes: []xml.StringNode{
+			{Name: "mpCon", Value: "40+10*x"},
+			{Name: "x", Value: "100-4*x"},
+			{Name: "y", Value: "100+20*x"},
+			{Name: "time", Value: "1"},
+		},
+	}
+	l, _, ctx := commonTestContext(t)
+	tn := tenant.MustFromContext(ctx)
+	nodes, maxLevel, failures := synthesizeCommonNodes(l, tn, 421, 4211001, &common)
+	if maxLevel != 10 {
+		t.Fatalf("maxLevel = %d, want 10", maxLevel)
+	}
+	if failures != 0 {
+		t.Fatalf("failures = %d, want 0", failures)
+	}
+	if len(nodes) != 10 {
+		t.Fatalf("len(nodes) = %d, want 10", len(nodes))
+	}
+
+	want := map[string]map[string]string{
+		"1":  {"mpCon": "50", "x": "96", "y": "120"},
+		"10": {"mpCon": "140", "x": "60", "y": "300"},
+	}
+	for _, n := range nodes {
+		exp, ok := want[n.Name]
+		if !ok {
+			continue
+		}
+		got := map[string]string{}
+		for _, in := range n.IntegerNodes {
+			got[in.Name] = in.Value
+		}
+		for k, v := range exp {
+			if got[k] != v {
+				t.Fatalf("level %s: %s = %q, want %q", n.Name, k, got[k], v)
+			}
+		}
+	}
+}

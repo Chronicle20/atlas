@@ -54,7 +54,7 @@ func handleEnterCommand(db *gorm.DB) message.Handler[shop2.Command[shop2.Command
 		if e.Type != shop2.CommandShopEnter {
 			return
 		}
-		err := shops.NewProcessor(l, ctx, db).EnterAndEmit(e.CharacterId, e.Body.NpcTemplateId)
+		err := shops.NewProcessor(l, ctx, db).EnterAndEmit(e.TransactionId, e.CharacterId, e.Body.NpcTemplateId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process shop enter for character [%d] at NPC [%d].", e.CharacterId, e.Body.NpcTemplateId)
 		}

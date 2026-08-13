@@ -47,8 +47,8 @@ type Processor interface {
 	RemoveCommodity(id uuid.UUID) error
 	DeleteAllCommoditiesByNpcId(npcId uint32) error
 	DeleteAllShops() error
-	EnterAndEmit(characterId uint32, npcId uint32) error
-	Enter(mb *message.Buffer) func(characterId uint32) func(npcId uint32) error
+	EnterAndEmit(transactionId uuid.UUID, characterId uint32, npcId uint32) error
+	Enter(mb *message.Buffer) func(transactionId uuid.UUID) func(characterId uint32) func(npcId uint32) error
 	ExitAndEmit(characterId uint32) error
 	Exit(mb *message.Buffer) func(characterId uint32) error
 	BuyAndEmit(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error
@@ -268,21 +268,25 @@ func (p *ProcessorImpl) UpdateShop(npcId uint32, recharger bool, commodities []c
 	return shop, nil
 }
 
-func (p *ProcessorImpl) EnterAndEmit(characterId uint32, npcId uint32) error {
-	return message.Emit(p.kp)(model.Flip(model.Flip(p.Enter)(characterId))(npcId))
+func (p *ProcessorImpl) EnterAndEmit(transactionId uuid.UUID, characterId uint32, npcId uint32) error {
+	return message.Emit(p.kp)(func(mb *message.Buffer) error {
+		return p.Enter(mb)(transactionId)(characterId)(npcId)
+	})
 }
 
-func (p *ProcessorImpl) Enter(mb *message.Buffer) func(characterId uint32) func(npcId uint32) error {
-	return func(characterId uint32) func(npcId uint32) error {
-		return func(npcId uint32) error {
-			p.l.Debugf("Character [%d] attempting to enter shop [%d].", characterId, npcId)
-			_, err := p.GetByNpcId(p.CommodityDecorator)(npcId)
-			if err != nil {
-				p.l.WithError(err).Errorf("Cannot locate shop [%d] character [%d] is attempting to enter.", npcId, characterId)
-				return err
+func (p *ProcessorImpl) Enter(mb *message.Buffer) func(transactionId uuid.UUID) func(characterId uint32) func(npcId uint32) error {
+	return func(transactionId uuid.UUID) func(characterId uint32) func(npcId uint32) error {
+		return func(characterId uint32) func(npcId uint32) error {
+			return func(npcId uint32) error {
+				p.l.Debugf("Character [%d] attempting to enter shop [%d].", characterId, npcId)
+				_, err := p.GetByNpcId(p.CommodityDecorator)(npcId)
+				if err != nil {
+					p.l.WithError(err).Errorf("Cannot locate shop [%d] character [%d] is attempting to enter.", npcId, characterId)
+					return err
+				}
+				GetRegistry().AddCharacter(p.ctx, characterId, npcId)
+				return mb.Put(shops.EnvStatusEventTopic, enteredEventProvider(transactionId, characterId, npcId))
 			}
-			GetRegistry().AddCharacter(p.ctx, characterId, npcId)
-			return mb.Put(shops.EnvStatusEventTopic, enteredEventProvider(characterId, npcId))
 		}
 	}
 }

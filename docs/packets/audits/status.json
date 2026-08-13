@@ -5,7 +5,7 @@
     "gms_v61": "d589e6b13a9c58bb3bfeaf234f01c42d5695cc54ef3957eb628a02d6042152b3",
     "gms_v72": "4189e1f4ac661033cba983e87c29923ad2b7de949f3396611e71b574f38f35de",
     "gms_v79": "87f07e503dcb18d536c9dfd12823ce42176db76e668d2eb31f72e1c621185752",
-    "gms_v83": "584bb0ac3506ebf3deac6d41e6c0d428c95468825488c644b57cda01e9e954c7",
+    "gms_v83": "dfedc5527e65c061c02d11e9015870904f9f625a90931a87d1cf365f1cb934d2",
     "gms_v84": "621cfa32bb7f86b729136b5c30cfdee02bbed10a2e00d2f5a88d03edeec4a76d",
     "gms_v87": "b3298f99a86c3b7c391563abd8f7d6346d7683b39e2a7b02478a1e23cbd6c8bb",
     "gms_v92": "40ba7a1118430cd74154fbf601fd9210e55cc61995a4ac73f290bb881634d012",
@@ -28789,8 +28789,7 @@
           "opcode": -1
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 181
         },
         "gms_v84": {

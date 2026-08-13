@@ -10,7 +10,7 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 - export gms_v61: `d589e6b13a9c58bb3bfeaf234f01c42d5695cc54ef3957eb628a02d6042152b3`
 - export gms_v72: `4189e1f4ac661033cba983e87c29923ad2b7de949f3396611e71b574f38f35de`
 - export gms_v79: `87f07e503dcb18d536c9dfd12823ce42176db76e668d2eb31f72e1c621185752`
-- export gms_v83: `584bb0ac3506ebf3deac6d41e6c0d428c95468825488c644b57cda01e9e954c7`
+- export gms_v83: `dfedc5527e65c061c02d11e9015870904f9f625a90931a87d1cf365f1cb934d2`
 - export gms_v84: `621cfa32bb7f86b729136b5c30cfdee02bbed10a2e00d2f5a88d03edeec4a76d`
 - export gms_v87: `b3298f99a86c3b7c391563abd8f7d6346d7683b39e2a7b02478a1e23cbd6c8bb`
 - export gms_v92: `40ba7a1118430cd74154fbf601fd9210e55cc61995a4ac73f290bb881634d012`
@@ -306,7 +306,7 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT | CUser::OnHitByUser; CUser::ShowItemHyperUpgradeEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B3 | ❌ | 0x0B9 | ❌ | 0x0BB | ❌ |  | ⬜ |
 | SPAWN_NPC_REQUEST_CONTROLLER | CNpcPool::OnNpcChangeController | npc/clientbound/NpcSpawnRequestController (T1) | 0x0B3 | ✅ | 0x0C4 | 🟡ᶠ | 0x0E5 | 🟡ᶠ | 0x0ED | 🟡ᶠ | 0x103 | ✅ | 0x10A | ✅ | 0x114 | ✅ | 0x131 | ❌ | 0x139 | ✅ | 0x118 | ✅ |
 | APPLY_MONSTER_STATUS | CMob::OnStatSet | monster/clientbound/MonsterStatSet (T1) |  | ⬜ | 0x0B5 | ✅ | 0x0D6 | ✅ | 0x0DC | ✅ | 0x0F2 | ✅ | 0x0F8 | ✅ | 0x102 | ✅ | 0x11A | 🟡ᶠ | 0x122 | ✅ | 0x103 | ✅ |
-| SPAWN_DRAGON | CDragon::OnCreated |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B5 | ❌ | 0x0B9 | ❌ | 0x0C2 | ❌ | 0x0D1 | ❌ | 0x0CE | ✅ | 0x0BB | ❌ |
+| SPAWN_DRAGON | CDragon::OnCreated |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B5 | ✅ | 0x0B9 | ❌ | 0x0C2 | ❌ | 0x0D1 | ❌ | 0x0CE | ✅ | 0x0BB | ❌ |
 | CANCEL_MONSTER_STATUS | CMob::OnStatReset | monster/clientbound/MonsterStatReset (T1) |  | ⬜ | 0x0B6 | ✅ | 0x0D7 | ✅ | 0x0DD | ✅ | 0x0F3 | ✅ | 0x0F9 | ✅ | 0x103 | ✅ | 0x11B | 🟡ᶠ | 0x123 | ✅ | 0x104 | ✅ |
 | MOVE_DRAGON | CDragon::OnMove |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B6 | ✅ | 0x0BA | ❌ | 0x0C3 | ❌ | 0x0D2 | ❌ | 0x0CF | ✅ | 0x0BC | ❌ |
 | REMOVE_DRAGON | CUser::OnDragonPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B7 | ✅ | 0x0BB | ❌ | 0x0C4 | ❌ | 0x0D3 | ❌ | 0x0D0 | ✅ | 0x0BD | ❌ |
@@ -1059,7 +1059,7 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 | v61 | 266 | 0 | 56 | 235 | 462 | 0 | 47.8% |
 | v72 | 282 | 0 | 69 | 250 | 418 | 0 | 46.9% |
 | v79 | 327 | 0 | 68 | 247 | 377 | 0 | 50.9% |
-| v83 | 450 | 0 | 0 | 341 | 228 | 0 | 56.9% |
+| v83 | 451 | 0 | 0 | 340 | 228 | 0 | 57.0% |
 | v84 | 422 | 0 | 0 | 350 | 247 | 0 | 54.7% |
 | v87 | 455 | 0 | 0 | 374 | 190 | 0 | 54.9% |
 | v92 | 24 | 0 | 151 | 703 | 141 | 0 | 2.7% |

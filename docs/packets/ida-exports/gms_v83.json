@@ -15761,6 +15761,29 @@
           "ref": "CMovePath::Flush"
         }
       ]
+    },
+    "CDragon::OnCreated": {
+      "address": "0x4fe502",
+      "direction": "clientbound",
+      "notes": "SPAWN_DRAGON body. CDragon::OnCreated@0x4fe502 (GMS v83, renamed from sub_4FE502 during task-225 verification): the owner CUser* (a2) and CInPacket* (a3) are passed in by the caller. Body reads, in order: Decode4 x (0x4fe529, this[58]) + Decode4 y (0x4fe534, this[59]) + Decode1 stance (0x4fe554, secured via _ZtlSecureTear<long> into this[37]) + Decode2 <read, discarded -- return value never assigned> (0x4fe570). The read sequence stops there -- there is no trailing jobId Decode2 (contrast GMS v95's CDragon::OnCreated@0x50dc90, which reads a fifth Decode2 into m_nJobCode). Matches the domain: Evan's job table (2200-2218) does not exist before GMS v84, so v83's CDragon has no job code to receive. Atlas DragonSpawn.Decode (gated by spawnHasJobId) reads: ownerCharacterId (upstream, consumed by CUserPool::OnUserCommonPacket before dispatch) + x(int32) + y(int32) + stance(byte) + discarded short, and on v83 stops there (11 bytes). Match (task-225).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "x -> this[58] @0x4fe529"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y -> this[59] @0x4fe534"
+        },
+        {
+          "op": "Decode1",
+          "comment": "stance -> _ZtlSecureTear<long> into this[37] @0x4fe554/0x4fe56a"
+        },
+        {
+          "op": "Decode2",
+          "comment": "read and discarded -- return value never assigned @0x4fe570; no further reads (no jobId on v83)"
+        }
+      ]
     }
   }
 }

@@ -1841,9 +1841,9 @@
 - op: OPEN_NPC_SHOP
   direction: clientbound
   opcode: 356
-  fname: CShopDlg::OnPacket
+  fname: CShopDlg::SetShopDlg
   provenance: csv-import
-  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): handler is a body-mode demuxer, curated OUT of the dispatcher set (its internal switch is a sub-mode byte, not the top-level opcode). See Adjudications in discover_gms_v92.md.'
+  note: 'fname corrected task-221 task-16: the gms_v92 discover-ops pass (task-26) left this at the generic CShopDlg::OnPacket placeholder (curated OUT of the dispatcher set pending IDA confirmation). CShopDlg::SetShopDlg@0x6df6c0 IDA-confirmed (see docs/packets/evidence/gms_v92/npc.clientbound.NpcShopList.yaml): CInPacket::Decode4 npcTemplateId, Decode2 count, then per-commodity Decode4 itemId/mesoPrice, Decode1 discountRate, 4x Decode4 (tokenTemplateId/tokenPrice/period/levelLimit), (rechargeable ? DecodeBuffer(8) unitPrice : Decode2 quantity), Decode2 slotMax — matches npc/clientbound/NpcShopList (task-95/v87 CShopDlg::SetShopDlg@0x79e4d0 precedent, plus the v92-only tokenTemplateId field verified against the v87 IDB, see shop_list.go).'
 - op: CONFIRM_SHOP_TRANSACTION
   direction: clientbound
   opcode: 357
@@ -2473,6 +2473,7 @@
   direction: serverbound
   opcode: 67
   fname: CShopDlg::SetRet
+  packet: npc/serverbound/NpcShop
   fname_alts:
     - CShopDlg::SendRechargeRequest
     - CShopDlg::SendSellRequest

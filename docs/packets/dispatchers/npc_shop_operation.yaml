@@ -5,16 +5,32 @@
 # level-requirement arms + a conditional Decode1+DecodeStr "with reason" arm).
 # Low modes are version-stable; the with-reason string arm shifts.
 #
-# IDA-verified: gms_v79 (0x6d6eb9), gms_v83 (template, matches 13342 baseline),
-# gms_v87 (0x7a290d), gms_v95 (0x6eb7d0), jms_v185 (0x7cb04e). gms_v84 = gms_v83
-# (template identical; shop did not shift in v84, unlike cash).
+# IDA-verified: gms_v48 (0x5b7a38), gms_v79 (0x6d6eb9), gms_v83 (template,
+# matches 13342 baseline), gms_v87 (0x7a290d), gms_v92 (0x6e0390), gms_v95
+# (0x6eb7d0), jms_v185 (0x7cb04e). gms_v84 = gms_v83 (template identical; shop
+# did not shift in v84, unlike cash).
 #
 # GENERIC_ERROR_WITH_REASON: mode 17 in v83/v84/v87 (mode 17 reads a flag byte
 # then conditionally a string — both plain GENERIC_ERROR and the with-reason
-# variant share mode 17, distinguished by the flag). v95 SPLITS them: plain
-# notice stays 17, the flag+string arm moves to 19 (v95 inserted notice modes
-# 17/18). jms has NO Decode1+DecodeStr arm at all → the with-reason mode is
-# version-absent there and intentionally omitted (do not guess).
+# variant share mode 17, distinguished by the flag). v92/v95 SPLIT them (v92's
+# CShopDlg::OnPacket@0x6e0390 is case-for-case structurally identical to v95's):
+# plain notice stays 17, the flag+string arm moves to 19 (v92/v95 inserted
+# notice modes 17/18). jms has NO Decode1+DecodeStr arm at all → the
+# with-reason mode is version-absent there and intentionally omitted (do not
+# guess).
+#
+# gms_v48 (CShopDlg::OnPacket @0x5b7a38, nType==230; task-221 task-16): the
+# Decode1(mode) result is tested via a subtraction chain rather than a literal
+# switch in the decompiler's rendering (docs/tasks/task-221-miumiu-travel-store/
+# gms48-shop-operations.md derives each mode case-by-case against the
+# known-good v83 table). GENERIC_ERROR and GENERIC_ERROR_WITH_REASON share
+# mode 14 (Decode1(mode)+Decode1(hasReason)[+DecodeStr]) — the same shape v83
+# places at mode 17. There is NO Decode4-driven numeric-level arm anywhere in
+# the 227-instruction function, so OVER_LEVEL_REQUIREMENT/
+# UNDER_LEVEL_REQUIREMENT are VERSION-ABSENT in v48 (intentionally omitted,
+# same as v72/v79). TRADE_LIMIT (mode 16) shares the default-notice bucket
+# rather than having a distinct case — bound per the v61/v72/v79 precedent
+# (see gms48-shop-operations.md's round-2 correction).
 #
 # gms_v79 (CShopDlg::OnPacket @0x6d6eb9, op 284): the whole switch reads only
 # Decode1(mode) plus, at the ONLY data-bearing arm (mode 14), Decode1(flag) +
@@ -30,16 +46,16 @@ fname: CShopDlg::OnPacket
 op: CONFIRM_SHOP_TRANSACTION
 direction: clientbound
 operations:
-  - { key: OK,                        modes: { gms_v72: 0, gms_v79: 0,  gms_v83: 0,  gms_v84: 0,  gms_v87: 0,  gms_v95: 0,  jms_v185: 0 } }
-  - { key: OUT_OF_STOCK,              modes: { gms_v72: 1, gms_v79: 1,  gms_v83: 1,  gms_v84: 1,  gms_v87: 1,  gms_v95: 1,  jms_v185: 1 } }
-  - { key: NOT_ENOUGH_MONEY,         modes: { gms_v72: 2, gms_v79: 2,  gms_v83: 2,  gms_v84: 2,  gms_v87: 2,  gms_v95: 2,  jms_v185: 2 } }
-  - { key: INVENTORY_FULL,           modes: { gms_v72: 3, gms_v79: 3,  gms_v83: 3,  gms_v84: 3,  gms_v87: 3,  gms_v95: 3,  jms_v185: 3 } }
-  - { key: OUT_OF_STOCK_2,           modes: { gms_v72: 5, gms_v79: 5,  gms_v83: 5,  gms_v84: 5,  gms_v87: 5,  gms_v95: 5,  jms_v185: 5 } }
-  - { key: OUT_OF_STOCK_3,           modes: { gms_v72: 9, gms_v79: 9,  gms_v83: 9,  gms_v84: 9,  gms_v87: 9,  gms_v95: 9,  jms_v185: 9 } }
-  - { key: NOT_ENOUGH_MONEY_2,       modes: { gms_v72: 10, gms_v79: 10, gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 10 } }
-  - { key: NEED_MORE_ITEMS,          modes: { gms_v72: 13, gms_v79: 13, gms_v83: 13, gms_v84: 13, gms_v87: 13, gms_v95: 13, jms_v185: 13 } }
-  - { key: OVER_LEVEL_REQUIREMENT,   modes: { gms_v83: 14, gms_v84: 14, gms_v87: 14, gms_v95: 14, jms_v185: 14 } }
-  - { key: UNDER_LEVEL_REQUIREMENT,  modes: { gms_v83: 15, gms_v84: 15, gms_v87: 15, gms_v95: 15, jms_v185: 15 } }
-  - { key: TRADE_LIMIT,              modes: { gms_v72: 16, gms_v79: 16, gms_v83: 16, gms_v84: 16, gms_v87: 16, gms_v95: 16, jms_v185: 16 } }
-  - { key: GENERIC_ERROR,            modes: { gms_v72: 14, gms_v79: 14, gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v95: 17, jms_v185: 17 } }
-  - { key: GENERIC_ERROR_WITH_REASON, modes: { gms_v72: 14, gms_v79: 14, gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v95: 19 } }
+  - { key: OK,                        modes: { gms_v48: 0, gms_v72: 0, gms_v79: 0,  gms_v83: 0,  gms_v84: 0,  gms_v87: 0,  gms_v92: 0,  gms_v95: 0,  jms_v185: 0 } }
+  - { key: OUT_OF_STOCK,              modes: { gms_v48: 1, gms_v72: 1, gms_v79: 1,  gms_v83: 1,  gms_v84: 1,  gms_v87: 1,  gms_v92: 1,  gms_v95: 1,  jms_v185: 1 } }
+  - { key: NOT_ENOUGH_MONEY,         modes: { gms_v48: 2, gms_v72: 2, gms_v79: 2,  gms_v83: 2,  gms_v84: 2,  gms_v87: 2,  gms_v92: 2,  gms_v95: 2,  jms_v185: 2 } }
+  - { key: INVENTORY_FULL,           modes: { gms_v48: 3, gms_v72: 3, gms_v79: 3,  gms_v83: 3,  gms_v84: 3,  gms_v87: 3,  gms_v92: 3,  gms_v95: 3,  jms_v185: 3 } }
+  - { key: OUT_OF_STOCK_2,           modes: { gms_v48: 5, gms_v72: 5, gms_v79: 5,  gms_v83: 5,  gms_v84: 5,  gms_v87: 5,  gms_v92: 5,  gms_v95: 5,  jms_v185: 5 } }
+  - { key: OUT_OF_STOCK_3,           modes: { gms_v48: 9, gms_v72: 9, gms_v79: 9,  gms_v83: 9,  gms_v84: 9,  gms_v87: 9,  gms_v92: 9,  gms_v95: 9,  jms_v185: 9 } }
+  - { key: NOT_ENOUGH_MONEY_2,       modes: { gms_v48: 10, gms_v72: 10, gms_v79: 10, gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v92: 10, gms_v95: 10, jms_v185: 10 } }
+  - { key: NEED_MORE_ITEMS,          modes: { gms_v48: 13, gms_v72: 13, gms_v79: 13, gms_v83: 13, gms_v84: 13, gms_v87: 13, gms_v92: 13, gms_v95: 13, jms_v185: 13 } }
+  - { key: OVER_LEVEL_REQUIREMENT,   modes: { gms_v83: 14, gms_v84: 14, gms_v87: 14, gms_v92: 14, gms_v95: 14, jms_v185: 14 } }
+  - { key: UNDER_LEVEL_REQUIREMENT,  modes: { gms_v83: 15, gms_v84: 15, gms_v87: 15, gms_v92: 15, gms_v95: 15, jms_v185: 15 } }
+  - { key: TRADE_LIMIT,              modes: { gms_v48: 16, gms_v72: 16, gms_v79: 16, gms_v83: 16, gms_v84: 16, gms_v87: 16, gms_v92: 16, gms_v95: 16, jms_v185: 16 } }
+  - { key: GENERIC_ERROR,            modes: { gms_v48: 14, gms_v72: 14, gms_v79: 14, gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v92: 17, gms_v95: 17, jms_v185: 17 } }
+  - { key: GENERIC_ERROR_WITH_REASON, modes: { gms_v48: 14, gms_v72: 14, gms_v79: 14, gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v92: 19, gms_v95: 19 } }

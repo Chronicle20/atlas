@@ -478,6 +478,11 @@ location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/summons(
   proxy_pass http://$u$request_uri;
 }
 
+location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/dragons(/.*)?$ {
+  set $u "atlas-dragons.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/monsters/[^/]+/drops(/.*)?$ {
   set $u "atlas-drop-information.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
@@ -500,6 +505,11 @@ location ~ ^/api/monsters(/.*)?$ {
 
 location ~ ^/api/summons(/.*)?$ {
   set $u "atlas-summons.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/dragons(/.*)?$ {
+  set $u "atlas-dragons.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 

@@ -65,6 +65,7 @@ configMapGenerator:
       - COMMAND_TOPIC_CONSUMABLE=COMMAND_TOPIC_CONSUMABLE-main
       - COMMAND_TOPIC_DATA=COMMAND_TOPIC_DATA-main
       - COMMAND_TOPIC_DOOR=COMMAND_TOPIC_DOOR-main
+      - COMMAND_TOPIC_DRAGON=COMMAND_TOPIC_DRAGON-main
       - COMMAND_TOPIC_DROP=COMMAND_TOPIC_DROP-main
       - COMMAND_TOPIC_DROP_ITEM=COMMAND_TOPIC_DROP_ITEM-main
       - COMMAND_TOPIC_EQUIP_ITEM=COMMAND_TOPIC_EQUIP_ITEM-main
@@ -147,6 +148,7 @@ configMapGenerator:
       - EVENT_TOPIC_CONVERSATION_REWARD_NOTICE=EVENT_TOPIC_CONVERSATION_REWARD_NOTICE-main
       - EVENT_TOPIC_DATA=EVENT_TOPIC_DATA-main
       - EVENT_TOPIC_DOOR_STATUS=EVENT_TOPIC_DOOR_STATUS-main
+      - EVENT_TOPIC_DRAGON_STATUS=EVENT_TOPIC_DRAGON_STATUS-main
       - EVENT_TOPIC_DROP_STATUS=EVENT_TOPIC_DROP_STATUS-main
       - EVENT_TOPIC_EQUIP_CHANGED=EVENT_TOPIC_EQUIP_CHANGED-main
       - EVENT_TOPIC_EXPRESSION=EVENT_TOPIC_EXPRESSION-main
@@ -239,6 +241,8 @@ images:
     newTag: main-8ab1df2
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
     newTag: main-1afb9d9
+  - name: ghcr.io/chronicle20/atlas-dragons/atlas-dragons
+    newTag: main-8ab1df2
   - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information
     newTag: main-b454e2a
   - name: ghcr.io/chronicle20/atlas-drops/atlas-drops

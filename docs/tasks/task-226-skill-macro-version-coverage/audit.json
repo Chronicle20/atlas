@@ -1,0 +1,63 @@
+{
+  "service": "atlas-packet+atlas-channel (task-226 diff scope)",
+  "path": "libs/atlas-packet/character/{clientbound,serverbound}/skill_macro.go; services/atlas-channel/atlas.com/channel/{main.go,socket/handler/character_skill_macro.go,kafka/consumer/session/consumer.go,kafka/consumer/macro/consumer.go}; tools/packet-audit/cmd/run.go; services/atlas-configurations/atlas.com/configurations/socket/corpus_test.go",
+  "date": "2026-08-13",
+  "build": "skipped-per-instruction",
+  "testsPassed": null,
+  "testsFailed": null,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "character/clientbound.SkillMacro",
+      "type": "support (pure wire codec, no model.go)",
+      "checks": [
+        {"id": "IMMUTABLE-01", "name": "private fields + constructor + getters", "status": "pass", "evidence": "libs/atlas-packet/character/clientbound/skill_macro.go:18-34,54-62"},
+        {"id": "DOM-21", "name": "no reinvented domain type; uses skill.Id", "status": "pass", "evidence": "libs/atlas-packet/character/clientbound/skill_macro.go:9,21-23"},
+        {"id": "VERSION-GATE", "name": "no raw MajorVersion() > N", "status": "pass", "evidence": "grep MajorVersion over clientbound/skill_macro.go: zero matches"},
+        {"id": "SHOUT-SYM", "name": "shout inversion present on encode", "status": "pass", "evidence": "libs/atlas-packet/character/clientbound/skill_macro.go:77 w.WriteBool(!e.shout)"},
+        {"id": "FILE-06", "name": "no catch-all file bundling >=2 responsibilities", "status": "pass", "evidence": "libs/atlas-packet/character/clientbound/skill_macro.go holds one packet struct + Encode + Decode only, matching sibling files"}
+      ]
+    },
+    {
+      "name": "character/serverbound.SkillMacro",
+      "type": "support (pure wire codec, no model.go)",
+      "checks": [
+        {"id": "IMMUTABLE-01", "name": "private fields + constructor + getters", "status": "pass", "evidence": "libs/atlas-packet/character/serverbound/skill_macro.go:24-40,60-68"},
+        {"id": "DOM-21", "name": "no reinvented domain type; uses skill.Id", "status": "pass", "evidence": "libs/atlas-packet/character/serverbound/skill_macro.go:9,27-29"},
+        {"id": "VERSION-GATE", "name": "no raw MajorVersion() > N", "status": "pass", "evidence": "grep MajorVersion over serverbound/skill_macro.go: zero matches"},
+        {"id": "SEC-BOUND", "name": "wire count clamped to maxMacroCount before alloc/loop", "status": "pass", "evidence": "libs/atlas-packet/character/serverbound/skill_macro.go:94-99 (read count, clamp, then make(), then loop)"},
+        {"id": "SEC-EOF", "name": "truncated packet handled safely (no crash)", "status": "pass", "evidence": "libs/atlas-socket/request/reader.go:32-37,47-52,98-102 bounds-checked reads return zero value on exhaustion"},
+        {"id": "SHOUT-SYM", "name": "shout inversion present on decode (production path)", "status": "pass", "evidence": "libs/atlas-packet/character/serverbound/skill_macro.go:102 shout := !r.ReadBool()"},
+        {"id": "FILE-06", "name": "no catch-all file bundling >=2 responsibilities", "status": "pass", "evidence": "libs/atlas-packet/character/serverbound/skill_macro.go holds one packet struct + Encode + Decode only, matching sibling files"}
+      ]
+    },
+    {
+      "name": "atlas-channel wiring (handler + consumers + main.go)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-13/14", "name": "handler calls processor only, no direct provider/entity call", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/socket/handler/character_skill_macro.go:26 macro.NewProcessor(l, ctx).Update(...)"},
+        {"id": "DOM-15", "name": "no direct db.Create/Save/Delete in handler", "status": "pass", "evidence": "grep over character_skill_macro.go: zero matches"},
+        {"id": "DOM-12", "name": "no os.Getenv in handler/consumers", "status": "pass", "evidence": "grep os.Getenv over character_skill_macro.go, consumer/session/consumer.go, consumer/macro/consumer.go: zero matches"},
+        {"id": "WIRING", "name": "consumers re-pointed at clientbound codec (model.Macros absorbed)", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/kafka/consumer/session/consumer.go:366-371; kafka/consumer/macro/consumer.go:79-84"},
+        {"id": "WIRING-MAIN", "name": "main.go registers writer/handler by direction", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/main.go:729,942"}
+      ]
+    },
+    {
+      "name": "tools/packet-audit/cmd/run.go (shared tooling)",
+      "type": "shared-tooling (not DOM/FILE-numbered)",
+      "checks": [
+        {"id": "TOOLING-SCOPE", "name": "dedup key change is additive, does not collide prior keys", "status": "pass", "evidence": "tools/packet-audit/cmd/run.go selectCandidates: key gains appended ::dir suffix, cannot merge previously-distinct pkg::name keys; only affects the SkillMacro pkg+name collision the task discovered"},
+        {"id": "TOOLING-CASES", "name": "new candidatesFromFName cases correctly directioned", "status": "pass", "evidence": "tools/packet-audit/cmd/run.go: CWvsContext::OnMacroSysDataInit -> DirClientbound; CMacroSysMan::FlushToSvr -> DirServerbound with reportName override, matching SummonMoveHandle precedent"}
+      ]
+    },
+    {
+      "name": "services/atlas-configurations corpus_test.go",
+      "type": "support (test constant)",
+      "checks": [
+        {"id": "CORPUS-CONSISTENCY", "name": "asserted total matches actual template bindings", "status": "pass", "evidence": "corpus_test.go asserts 3157 (+3 net); grep confirms 9/9 templates carry CharacterSkillMacroHandle and CharacterSkillMacro bindings"}
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": []
+}

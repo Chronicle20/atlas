@@ -17,12 +17,10 @@ import (
 )
 
 // retainingCache wraps the real saga cache and swallows Remove, so a saga
-// that a compensator terminates (meso_sack_use has no compensator branch yet
-// — that lands in Task 6, so a failed award_mesos falls through to the
-// generic compensateStorageOperation path, which removes the saga from the
-// cache as its very first step) stays inspectable afterward. This is a
-// test-only interception of the existing saga.Cache seam (SetCache), not a
-// new production API.
+// that a compensator terminates (compensateMesoSackUse removes the saga from
+// the cache as one of its first steps, once it wins the Compensating→Failed
+// transition) stays inspectable afterward. This is a test-only interception
+// of the existing saga.Cache seam (SetCache), not a new production API.
 type retainingCache struct {
 	saga.Cache
 }
@@ -35,11 +33,13 @@ func (r retainingCache) Remove(ctx context.Context, transactionId uuid.UUID) boo
 // Body.Error on the floor, so the meso_sack_use compensator had no way to tell
 // a ceiling rejection from any other failure and would have rendered the
 // generic message. It must thread the code onto the step's result map, exactly
-// as handleCharacterApTransferErrorEvent already does.
+// as handleCharacterApTransferErrorEvent already does; compensateMesoSackUse
+// (saga/compensator.go) then reads that code via mesoSackErrorCode to render
+// a meso-ceiling message instead of the generic failure.
 //
-// The handler call cascades synchronously into compensation (no MesoSackUse
-// compensator branch exists yet), which would otherwise remove the saga from
-// the cache before this test can inspect it — hence retainingCache above.
+// The handler call cascades synchronously into compensation, which removes
+// the saga from the cache before this test can inspect it — hence
+// retainingCache above.
 func TestHandleCharacterMesoErrorEventThreadsErrorCode(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	te, err := tenant.Create(uuid.New(), "GMS", 83, 1)

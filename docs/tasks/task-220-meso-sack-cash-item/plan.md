@@ -33,7 +33,7 @@
 - Consumes: nothing from earlier tasks.
 - Produces: `cash.RestModel.Meso uint32`, serialized as `"meso"` with `omitempty`, on the `cash_items` JSON:API resource.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `services/atlas-data/atlas.com/data/cash/reader_test.go`:
 
@@ -122,12 +122,12 @@ func TestReaderMesoNotFoldedIntoSpec(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd services/atlas-data/atlas.com/data && go test ./cash/ -run 'TestReaderMeso' -v`
 Expected: FAIL — `rm.Meso undefined (type RestModel has no field or method Meso)` (compile error).
 
-- [ ] **Step 3: Add the field**
+- [x] **Step 3: Add the field**
 
 In `services/atlas-data/atlas.com/data/cash/rest.go`, add `Meso` to `RestModel` immediately after `ProtectTime`:
 
@@ -147,7 +147,7 @@ type RestModel struct {
 }
 ```
 
-- [ ] **Step 4: Parse the node**
+- [x] **Step 4: Parse the node**
 
 In `services/atlas-data/atlas.com/data/cash/reader.go`, immediately after the `m.ProtectTime = ...` line:
 
@@ -162,17 +162,17 @@ In `services/atlas-data/atlas.com/data/cash/reader.go`, immediately after the `m
 
 (The exact indentation must match the surrounding block — the assignments sit inside the `for _, cxml := range exml.ChildNodes` loop.)
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cd services/atlas-data/atlas.com/data && go test ./cash/ -run 'TestReaderMeso' -v`
 Expected: PASS (both tests).
 
-- [ ] **Step 6: Run the full module test + vet**
+- [x] **Step 6: Run the full module test + vet**
 
 Run: `cd services/atlas-data/atlas.com/data && go test -race ./... && go vet ./...`
 Expected: all PASS, vet silent.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-data/atlas.com/data/cash/rest.go \
@@ -193,7 +193,7 @@ git commit -m "feat(task-220): parse cash info/meso into a first-class Meso fiel
 - Consumes: the `"meso"` JSON attribute produced by Task 1.
 - Produces: `cash.RestModel.Meso uint32`, reachable from the handler as `cashData.NewProcessor(l, ctx).GetById(itemId)` → `cd.Meso`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/data/cash/rest_test.go`:
 
@@ -232,12 +232,12 @@ func TestRestModelMesoAbsentIsZero(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./data/cash/ -v`
 Expected: FAIL — `rm.Meso undefined`.
 
-- [ ] **Step 3: Add the field**
+- [x] **Step 3: Add the field**
 
 In `services/atlas-channel/atlas.com/channel/data/cash/rest.go`:
 
@@ -253,12 +253,12 @@ type RestModel struct {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./data/cash/ -v`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/data/cash/rest.go \
@@ -285,7 +285,7 @@ git commit -m "feat(task-220): carry meso on the channel cash view model"
   - `saga.ErrorCodeMesoOverflow = "MESO_OVERFLOW"` in `atlas-channel/kafka/message/saga`
 - Later tasks rely on all four names.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/kafka/message/saga/kafka_test.go`:
 
@@ -313,12 +313,12 @@ func TestErrorCodeMesoOverflowString(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./kafka/message/saga/ -v`
 Expected: FAIL — `undefined: SagaTypeMesoSackUse`.
 
-- [ ] **Step 3: Add the shared saga type**
+- [x] **Step 3: Add the shared saga type**
 
 In `libs/atlas-saga/model.go`, in the `Type` const block, after `MegaphoneUse`:
 
@@ -329,7 +329,7 @@ In `libs/atlas-saga/model.go`, in the `Type` const block, after `MegaphoneUse`:
 )
 ```
 
-- [ ] **Step 4: Re-export it in both services**
+- [x] **Step 4: Re-export it in both services**
 
 In `services/atlas-channel/atlas.com/channel/saga/model.go`, in the saga-types section of the re-export const block, after `NoteSend`:
 
@@ -347,7 +347,7 @@ In `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/model.go`,
 
 (Match the existing alignment in each file — `gofumpt` via `tools/lint.sh` will re-align if it differs.)
 
-- [ ] **Step 5: Add the channel message constants**
+- [x] **Step 5: Add the channel message constants**
 
 In `services/atlas-channel/atlas.com/channel/kafka/message/saga/kafka.go`, in the const block that already holds `ErrorCodeNotEnoughMesos` / `SagaTypePointReset`:
 
@@ -370,12 +370,12 @@ and, beside the other saga-type strings:
 	SagaTypeMesoSackUse      = "meso_sack_use"
 ```
 
-- [ ] **Step 6: Run the test to verify it passes**
+- [x] **Step 6: Run the test to verify it passes**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./kafka/message/saga/ -v`
 Expected: PASS (both tests).
 
-- [ ] **Step 7: Build all three modules**
+- [x] **Step 7: Build all three modules**
 
 Run:
 ```bash
@@ -385,7 +385,7 @@ cd ../../../atlas-saga-orchestrator/atlas.com/saga-orchestrator && go build ./..
 ```
 Expected: clean.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add libs/atlas-saga/model.go \
@@ -410,7 +410,7 @@ git commit -m "feat(task-220): add meso_sack_use saga type and MESO_OVERFLOW err
 - Consumes: nothing from earlier tasks.
 - Produces: `character2.StatusEventErrorTypeMesoOverflow = "MESO_OVERFLOW"`, and a `StatusEvent[StatusEventMesoErrorBody]` with `Type: ERROR`, `Body.Error: "MESO_OVERFLOW"`, `Body.Amount: <requested amount>` emitted to `EnvEventTopicCharacterStatus` on the overflow rejection. `RequestChangeMeso` still returns `ErrMesoOverflow` (unchanged — reject, never clamp).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-character/atlas.com/character/character/meso_overflow_test.go`:
 
@@ -475,12 +475,12 @@ func TestRequestChangeMeso_OverflowEmitsMesoOverflowErrorEvent(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd services/atlas-character/atlas.com/character && go test ./character/ -run TestRequestChangeMeso_OverflowEmits -v`
 Expected: FAIL — `undefined: character2.StatusEventErrorTypeMesoOverflow`.
 
-- [ ] **Step 3: Add the error-type constant**
+- [x] **Step 3: Add the error-type constant**
 
 In `services/atlas-character/atlas.com/character/kafka/message/character/kafka.go`, beside `StatusEventErrorTypeNotEnoughMeso`:
 
@@ -492,7 +492,7 @@ In `services/atlas-character/atlas.com/character/kafka/message/character/kafka.g
 	StatusEventErrorTypeMesoOverflow = "MESO_OVERFLOW"
 ```
 
-- [ ] **Step 4: Add the provider**
+- [x] **Step 4: Add the provider**
 
 In `services/atlas-character/atlas.com/character/character/producer.go`, directly below `notEnoughMesoErrorStatusEventProvider`:
 
@@ -513,7 +513,7 @@ func mesoOverflowErrorStatusEventProvider(transactionId uuid.UUID, characterId u
 }
 ```
 
-- [ ] **Step 5: Emit on the overflow path**
+- [x] **Step 5: Emit on the overflow path**
 
 In `services/atlas-character/atlas.com/character/character/processor.go`, inside `RequestChangeMeso`, replace the overflow guard body:
 
@@ -544,17 +544,17 @@ and, after the transaction closure, extend the post-rollback emission block:
 	return txErr
 ```
 
-- [ ] **Step 6: Run the test to verify it passes**
+- [x] **Step 6: Run the test to verify it passes**
 
 Run: `cd services/atlas-character/atlas.com/character && go test ./character/ -run TestRequestChangeMeso -v`
 Expected: PASS, including the pre-existing `TestRequestChangeMeso_OverflowReturnsError` and `TestRequestChangeMeso_NotEnoughMesoEmitsNoOutboxRowsAndReturnsNil`.
 
-- [ ] **Step 7: Run the full module test + vet**
+- [x] **Step 7: Run the full module test + vet**
 
 Run: `cd services/atlas-character/atlas.com/character && go test -race ./... && go vet ./...`
 Expected: all PASS, vet silent.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add services/atlas-character/atlas.com/character/kafka/message/character/kafka.go \
@@ -577,7 +577,7 @@ git commit -m "feat(task-220): emit MESO_OVERFLOW error event on the meso ceilin
 
 **Verified, no change needed:** the acceptance table already maps `AwardMesos → {MesoChanged, MesoError}` (`saga/event_acceptance.go:132`) with `EventKindCharacterMesoError → OutcomeFailure` (`saga/event_acceptance.go:327`), so the new saga's `award_mesos` step is already covered (PRD FR-7.2). Do not edit `event_acceptance.go`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/kafka/consumer/character/meso_error_result_test.go`:
 
@@ -648,12 +648,12 @@ func TestHandleCharacterMesoErrorEventThreadsErrorCode(t *testing.T) {
 
 > **If any helper name in this test does not exist** (`saga.GetCache().Put`, `Saga.StepAt`, `saga.NewBuilder().AddStep`), read `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/point_reset_compensation_test.go` and `saga/accept_event_test.go` and use the exact seeding idiom they use — do not invent one. `AddStep`, `StepAt`, `Result()`, `NewBuilder()` and `MesoSackUse` are all confirmed to exist; only the cache-seeding call should need checking.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test -tags=test ./kafka/consumer/character/ -run TestHandleCharacterMesoErrorEventThreadsErrorCode -v`
 Expected: FAIL — `step.Result()` is nil (the handler calls `StepCompleted`, which stores no result).
 
-- [ ] **Step 3: Thread the code**
+- [x] **Step 3: Thread the code**
 
 In `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/kafka/consumer/character/consumer.go`, in `handleCharacterMesoErrorEvent`, replace the final line:
 
@@ -666,12 +666,12 @@ In `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/kafka/consumer/
 	_ = p.StepCompletedWithResult(e.TransactionId, false, map[string]any{"errorCode": e.Body.Error})
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test -tags=test ./kafka/consumer/character/ -run TestHandleCharacterMesoErrorEventThreadsErrorCode -v`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/kafka/consumer/character/consumer.go \
@@ -698,7 +698,7 @@ git commit -m "feat(task-220): thread the meso error code onto the failed step r
 
 **Why `EmitSagaFailed` gains an arm rather than the compensator calling `EmitSagaFailedByIds` directly (design §5.2 refinement):** `EmitSagaFailed` populates `characterId` from `ExtractCharacterCreationIds`, which returns `0` for any saga without a `CreateCharacter` step (`saga/producer.go:138-152`). The channel resolves the session by that id, so `0` means the player gets silence *and* stays input-locked. `compensateNoteSend` works around this by calling `EmitSagaFailedByIds` directly — but the **timeout** path (`saga/timer.go:142`) calls `EmitSagaFailed`, so a compensator-local workaround leaves timed-out sacks unnotified. Putting the arm in `EmitSagaFailed` — exactly where the `MtsOperation` arm already lives — fixes both entry points at once.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/meso_sack_compensation_test.go`:
 
@@ -856,12 +856,12 @@ func TestMesoSackFailedEventCarriesRealCharacterIdAndErrorCode(t *testing.T) {
 
 > **Two helper calls to confirm before writing:** `Step[any].WithResult(...)` and `GetCache().Put(ctx, s)`. If either does not exist under that name, read `saga/model.go` / `saga/cache.go` and use the real one; if a step's result cannot be set from outside, seed the saga through the cache and drive `StepCompletedWithResult` instead (the idiom `saga/late_event_integration_test.go` uses). Do not fabricate an API.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test -tags=test ./saga/ -run TestMesoSack -v`
 Expected: FAIL — `DispatchMesoSackRollbacks` / `compensateMesoSackUse` undefined.
 
-- [ ] **Step 3: Declare both on the `Compensator` interface**
+- [x] **Step 3: Declare both on the `Compensator` interface**
 
 In `saga/compensator.go`, add to the unexported-compensator list (after `compensatePointReset`):
 
@@ -882,7 +882,7 @@ and after the `DispatchPointResetRollbacks` declaration:
 	DispatchMesoSackRollbacks(s Saga)
 ```
 
-- [ ] **Step 4: Add the dispatch arm**
+- [x] **Step 4: Add the dispatch arm**
 
 In `CompensateFailedStep`, immediately after the `PointReset` arm:
 
@@ -897,7 +897,7 @@ In `CompensateFailedStep`, immediately after the `PointReset` arm:
 	}
 ```
 
-- [ ] **Step 5: Implement the compensator**
+- [x] **Step 5: Implement the compensator**
 
 Append after `DispatchPointResetRollbacks` in `saga/compensator.go`:
 
@@ -1014,7 +1014,7 @@ func (c *CompensatorImpl) DispatchMesoSackRollbacks(s Saga) {
 }
 ```
 
-- [ ] **Step 6: Give `EmitSagaFailed` a meso-sack arm**
+- [x] **Step 6: Give `EmitSagaFailed` a meso-sack arm**
 
 In `saga/producer.go`, inside `EmitSagaFailed`, immediately after the `MtsOperation` arm:
 
@@ -1029,12 +1029,12 @@ In `saga/producer.go`, inside `EmitSagaFailed`, immediately after the `MtsOperat
 	}
 ```
 
-- [ ] **Step 7: Run the tests to verify they pass**
+- [x] **Step 7: Run the tests to verify they pass**
 
 Run: `cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test -tags=test ./saga/ -run TestMesoSack -v`
 Expected: PASS (all three).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/compensator.go \
@@ -1056,12 +1056,12 @@ git commit -m "feat(task-220): meso_sack_use compensator refunds the sack and em
 
 **Why this task exists (not in design.md):** `saga/timer.go` maintains `reverseWalkSagaTypes`, `noReverseWalkSagaTypes`, `allSagaTypes` and a `dispatchTimeoutRollbacks` switch. Its own doc comment records the exact bug this prevents: a type routed to a bespoke compensator by `CompensateFailedStep` but absent from these lists rolls back **nothing** on timeout — the sack is consumed, the mesos never arrive, and no compensation runs. `TestEverySagaTypeIsClassified` will also fail once `MesoSackUse` exists and neither list names it.
 
-- [ ] **Step 1: Run the existing classification test to see it fail**
+- [x] **Step 1: Run the existing classification test to see it fail**
 
 Run: `cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test ./saga/ -run TestEverySagaTypeIsClassified -v`
 Expected: this may already PASS if the test only iterates `allSagaTypes`. Record the actual result before proceeding — if it passes, Step 2's new assertion is what makes the gap visible.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 Append to `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/meso_sack_compensation_test.go`:
 
@@ -1109,12 +1109,12 @@ func TestMesoSackTimeoutDispatchesRefund(t *testing.T) {
 
 > `dispatchTimeoutRollbacks` builds its own `NewCompensator(l, ctx)` with no compartment processor, so this test asserts only that the arm is reached (the return value), not the refund call count — that is already covered by `TestMesoSackCompensationRefundsSack`. Keep the `compP`/`count` locals out if the compiler flags them as unused; the assertion that matters is the `true` return.
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test -tags=test ./saga/ -run 'TestMesoSackUseIsClassified|TestMesoSackTimeoutDispatches' -v`
 Expected: FAIL — `MesoSackUse must appear in allSagaTypes`, and `dispatchTimeoutRollbacks returned false`.
 
-- [ ] **Step 4: Classify the type**
+- [x] **Step 4: Classify the type**
 
 In `saga/timer.go`, add `MesoSackUse` to `reverseWalkSagaTypes` (after `SkillBookUse`):
 
@@ -1136,7 +1136,7 @@ var allSagaTypes = []Type{
 }
 ```
 
-- [ ] **Step 5: Add the timeout dispatch arm**
+- [x] **Step 5: Add the timeout dispatch arm**
 
 In `dispatchTimeoutRollbacks`, after the `SkillBookUse` case:
 
@@ -1149,12 +1149,12 @@ In `dispatchTimeoutRollbacks`, after the `SkillBookUse` case:
 		c.DispatchMesoSackRollbacks(s)
 ```
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test -tags=test ./saga/ -run 'TestMesoSack|TestEverySagaTypeIsClassified' -v`
 Expected: PASS.
 
-- [ ] **Step 7: Run the full module test suite, both tag sets**
+- [x] **Step 7: Run the full module test suite, both tag sets**
 
 Run:
 ```bash
@@ -1163,7 +1163,7 @@ cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && \
 ```
 Expected: all PASS, vet silent.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/timer.go \
@@ -1188,7 +1188,7 @@ git commit -m "feat(task-220): classify meso_sack_use for the saga timeout rever
   - `handleMesoSackUse(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, itemId item.Id)`
   - `cashItemDataFunc` — package-var test seam for the cash-data lookup
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use_meso_sack_test.go`:
 
@@ -1365,12 +1365,12 @@ func TestCurrencySackTypeIsNineteenOnEveryVersion(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run 'MesoSack|CurrencySack' -v`
 Expected: FAIL — `undefined: cashItemDataFunc`, `undefined: buildMesoSackUseSaga`, `undefined: handleMesoSackUse`, `undefined: CashSlotItemTypeCurrencySack`.
 
-- [ ] **Step 3: Add the constant and use it**
+- [x] **Step 3: Add the constant and use it**
 
 In `character_cash_item_use.go`, add to the `CashSlotItemType` const block (keep it with the other named types, before the point-reset comment block):
 
@@ -1392,7 +1392,7 @@ and replace the classification-520 return in `GetCashSlotItemType`:
 		}
 ```
 
-- [ ] **Step 4: Add the dispatch arm**
+- [x] **Step 4: Add the dispatch arm**
 
 In `CharacterCashItemUseHandleFunc`, immediately after the point-reset arm and before the vicious-hammer arm:
 
@@ -1407,7 +1407,7 @@ In `CharacterCashItemUseHandleFunc`, immediately after the point-reset arm and b
 		}
 ```
 
-- [ ] **Step 5: Create the arm**
+- [x] **Step 5: Create the arm**
 
 Create `services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use_meso_sack.go`:
 
@@ -1530,12 +1530,12 @@ func handleMesoSackUse(l logrus.FieldLogger, ctx context.Context, wp writer.Prod
 }
 ```
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run 'MesoSack|CurrencySack' -v`
 Expected: PASS (all four).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use.go \
@@ -1556,7 +1556,7 @@ git commit -m "feat(task-220): implement the cash-slot type 19 meso sack branch"
 - Consumes: `saga.SagaTypeMesoSackUse`, `saga.ErrorCodeMesoOverflow` (Task 3); the saga-failed event's `Body.CharacterId` (now non-zero thanks to Task 6) and `Body.ErrorCode` (Task 5).
 - Produces: `mesoSackFailureMessage(errorCode string) string`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `services/atlas-channel/atlas.com/channel/kafka/consumer/saga/consumer_test.go`:
 
@@ -1582,12 +1582,12 @@ func TestMesoSackFailureMessage(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./kafka/consumer/saga/ -run TestMesoSackFailureMessage -v`
 Expected: FAIL — `undefined: mesoSackFailureMessage`.
 
-- [ ] **Step 3: Add the mapper**
+- [x] **Step 3: Add the mapper**
 
 In `services/atlas-channel/atlas.com/channel/kafka/consumer/saga/consumer.go`, beside `getStorageErrorBodyProducer`:
 
@@ -1604,7 +1604,7 @@ func mesoSackFailureMessage(errorCode string) string {
 }
 ```
 
-- [ ] **Step 4: Add the failure arm**
+- [x] **Step 4: Add the failure arm**
 
 In `handleFailedEvent`, immediately after the `SagaTypePointReset` arm:
 
@@ -1627,17 +1627,17 @@ In `handleFailedEvent`, immediately after the `SagaTypePointReset` arm:
 		}
 ```
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [x] **Step 5: Run the test to verify it passes**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./kafka/consumer/saga/ -v`
 Expected: PASS (the new test and the four pre-existing ones).
 
-- [ ] **Step 6: Run the full module test + vet + build**
+- [x] **Step 6: Run the full module test + vet + build**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test -race ./... && go vet ./... && go build ./...`
 Expected: all PASS, vet silent, build clean.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/consumer/saga/consumer.go \
@@ -1656,7 +1656,7 @@ git commit -m "feat(task-220): render the meso-sack failure message and unlock t
 - Consumes: everything above.
 - Produces: a committed rollout/verification record.
 
-- [ ] **Step 1: Run every changed module's tests and vet**
+- [x] **Step 1: Run every changed module's tests and vet**
 
 Run from the worktree root:
 ```bash
@@ -1671,7 +1671,7 @@ done
 ```
 Expected: every module clean.
 
-- [ ] **Step 2: Run the tag-gated tests**
+- [x] **Step 2: Run the tag-gated tests**
 
 Run:
 ```bash
@@ -1679,7 +1679,7 @@ cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test -tags
 ```
 Expected: PASS. (`go test -race ./...` alone does not compile the `//go:build test` files, so Tasks 5–7's tests only run here.)
 
-- [ ] **Step 3: Run the repo guards**
+- [x] **Step 3: Run the repo guards**
 
 Run from the worktree root:
 ```bash
@@ -1693,7 +1693,7 @@ Expected: all exit 0. If `tools/lint.sh --check` reports formatting diffs, run `
 
 The template guards (`template-opcode-order`, `template-duplicate-binding`, `template-movement-types`), `service-registration-guard.sh`, `trade-contract-mirror-guard.sh` and `docker buildx bake` are **not** required: no template, no `services.json`/`deploy/k8s`/`docker-bake.hcl`/`go.work`, no trade contract, and no `go.mod` changed. Confirm that with `git diff --name-only main...HEAD` before skipping them.
 
-- [ ] **Step 4: Write the rollout record**
+- [x] **Step 4: Write the rollout record**
 
 Create `docs/tasks/task-220-meso-sack-cash-item/rollout.md`:
 
@@ -1760,14 +1760,14 @@ Point sacks; these must show no `meso` and must reject).
   fail-closed guard covers it either way. The table above resolves it.
 ```
 
-- [ ] **Step 5: Commit the rollout record**
+- [x] **Step 5: Commit the rollout record**
 
 ```bash
 git add docs/tasks/task-220-meso-sack-cash-item/rollout.md
 git commit -m "docs(task-220): rollout and per-tenant re-ingest verification record"
 ```
 
-- [ ] **Step 6: Run code review before opening the PR**
+- [x] **Step 6: Run code review before opening the PR**
 
 Invoke `superpowers:requesting-code-review`. Go files changed in four services plus one shared lib, so it dispatches `plan-adherence-reviewer` and `backend-guidelines-reviewer` (no `atlas-ui` change → no frontend reviewer). Findings land in `docs/tasks/task-220-meso-sack-cash-item/audit.md`. Address them before the PR — do not skip this step even though the plan looks complete.
 

@@ -96,6 +96,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyLockCommand(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyKarmaCommand(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -399,6 +402,29 @@ func handleApplyLockCommand(db *gorm.DB) message.Handler[compartment2.Command[co
 		)
 		if err != nil {
 			l.WithError(err).Errorf("Failed to apply lock to asset in slot [%d] for character [%d].", c.Body.Slot, c.CharacterId)
+		}
+	}
+}
+
+func handleApplyKarmaCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.ApplyKarmaCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.ApplyKarmaCommandBody]) {
+		if c.Type != compartment2.CommandApplyKarma {
+			return
+		}
+
+		l.Debugf("Received APPLY_KARMA command for character [%d], slot [%d], clear [%t].",
+			c.CharacterId, c.Body.Slot, c.Body.Clear)
+
+		err := compartment.NewProcessor(l, ctx, db).ApplyAssetKarmaAndEmit(
+			c.TransactionId,
+			c.CharacterId,
+			inventory.Type(c.InventoryType),
+			c.Body.Slot,
+			c.Body.ScissorsKarma,
+			c.Body.Clear,
+		)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to apply karma to asset in slot [%d] for character [%d].", c.Body.Slot, c.CharacterId)
 		}
 	}
 }

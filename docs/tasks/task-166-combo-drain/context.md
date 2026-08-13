@@ -5,6 +5,8 @@ Companion to: `plan.md` (implementation plan), `design.md` (approved design),
 `prd.md` (requirements)
 Revised: 2026-08-07 — branch rebased onto `main` @ `e0f5bd01d`; all references
 re-derived; approach changed B → C; version scope added.
+Revised: 2026-08-13 — `main` merged into the branch (`f1b4e4046`); every line
+number below re-derived against the merge. No decision changed.
 
 ## What this task is
 
@@ -29,19 +31,19 @@ The implementation is version-blind on purpose: a version without Aran cannot
 produce a `COMBO_DRAIN` statup, so the gate never fires. Full table + evidence
 in PRD §4A and design §6.
 
-## Key files (line numbers verified against `main` @ `e0f5bd01d`)
+## Key files (line numbers verified against the `main` merge `f1b4e4046`)
 
 | File | Role |
 |---|---|
-| `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go` | `processAttack` — new memoized `loadBuffs` closure before `pp.Plan` (~line 802); `Plan` call site :805; Pick Pocket call site :836-842; proc call replaces `// TODO Combo Drain` at :991. `cp` (`character.Processor`, :706) and `s` (session) already in scope. `loadEffectiveStats` at :816-827 is the memoization idiom to mirror. |
-| `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_projectile.go` | `ProjectileProcessor.Plan` (:44 interface, :65 method) gains a `getBuffs` func param; internal `bp buff.Processor` field (:52, :60) and the fetch at :98 replaced by the injected loader. `hasBuff` (:198) / `computeCount` untouched. |
+| `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go` | `processAttack` — new memoized `loadBuffs` closure before `pp := NewProjectileProcessor` (:888); `Plan` call site :889; Pick Pocket call site :919-925; proc call replaces `// TODO Combo Drain` at :1117. `cp` (`character.Processor`, :777) and `s` (session) already in scope. `loadEffectiveStats` at :898-912 is the memoization idiom to mirror. |
+| `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_projectile.go` | `ProjectileProcessor.Plan` (:45 interface, :66 method) gains a `getBuffs` func param; internal `bp buff.Processor` field (:53, :61) and the fetch at :99 replaced by the injected loader. `hasBuff` (:199) / `computeCount` untouched. |
 | `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_combo_drain.go` | NEW — pure helpers `buffStatAmount`, `attackTotalDamage`, `comboDrainHealAmount` + orchestrator `comboDrainTryProc` (+ optionally `newAttackBuffLoader`). Style mirrors `drainHealAmount`/`drainTryHeal` (:519, :607 in common.go). |
 | `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_combo_drain_test.go` | NEW — table-driven tests, production constructors only. |
 | `services/atlas-channel/atlas.com/channel/character/buff/model.go:63` | `buff.NewBuff(sourceId, level, duration, changes, createdAt, expiresAt, noExpiry)` — **seven** args. `Expired()`, `Changes() []stat.Model`. |
 | `services/atlas-channel/atlas.com/channel/character/buff/stat/model.go:16` | `stat.NewStat(statType string, amount int32)`; `Type() string`, `Amount() int32`. |
 | `services/atlas-channel/atlas.com/channel/character/processor.go` | `ChangeHP(f field.Model, characterId uint32, amount int16) error` — emits the Kafka command; atlas-character owns max-HP clamping. |
 | `libs/atlas-constants/character/temporary_stat.go:75` | `TemporaryStatTypeComboDrain = "COMBO_DRAIN"` — the gate stat. |
-| `libs/atlas-packet/model/character_temporary_stat.go:155` | `COMBO_DRAIN` bit, registered unconditionally ahead of the first version-gated slot (bit 82) — encodes on every version. |
+| `libs/atlas-packet/model/character_temporary_stat.go:163` | `COMBO_DRAIN` bit, registered unconditionally ahead of the first version-gated slot (bit 82, `:186`) — encodes on every version. |
 | `libs/atlas-packet/model/attack_info.go` | `AttackInfo.DamageInfo()`, `AttackType{Melee,Ranged,Magic,Energy}`; `DamageInfo.Damages() []uint32`. |
 | `services/atlas-data/atlas.com/data/skill/reader.go:407-408` | Emits the `COMBO_DRAIN` statup with amount = effect `x`, from the tenant's WZ. Version-blind. |
 | `libs/atlas-constants/gen/wzsnapshot/*.json` | Per-version skill/job availability (`PROVENANCE.md` for method) — the source of the §4A table. |
@@ -71,8 +73,10 @@ uses `charconst` for `libs/atlas-constants/character` and `skill3` for
   it is a PRD change, not a design change.
 - **No version branch** (FR-5): no `MajorVersion`/`MajorAtLeast`/`IsRegion` in
   the diff, no template edit, no matrix cell promoted. Precedent:
-  `character_attack_combo.go:37`/`:167` gates Aran combo orbs on learned
-  skills, not version.
+  `character_attack_combo.go:37`/`:173` gates Aran combo orbs on learned
+  skills, not version; and task-217's Aran combo counter
+  (`character_aran_combo.go`) resolved its one version-varying value as tenant
+  config (`idleResetMs`) rather than a major-version branch.
 - **One heal per attack** from the plain total over all monsters and hit lines
   — Cosmic's per-monster running-total over-heal is explicitly NOT replicated.
 - **Overflow discipline**: sum in `uint64`; early-saturate when
@@ -98,8 +102,12 @@ uses `charconst` for `libs/atlas-constants/character` and `skill3` for
   constructor in the earlier plan was stale.
 - **`processAttack` grew several siblings** since v1: `drainTryHeal`,
   `pickPocketResolveState`/`pickPocketTryProc`, `beaconTryApply`,
-  `mortalBlowTryProc`, Sacrifice, `comboOrbTryUpdate`. The TODO block moved
-  from line 420 to 991.
+  `mortalBlowTryProc`, Sacrifice, `comboOrbTryUpdate`, and — after the
+  2026-08-13 merge — `aranComboRefreshEligibility` (task-217),
+  `energyChargeTryUpdate` (task-216) and `attackCastTryApply`. The TODO block
+  moved from line 420 to 991 to 1117. **None of the post-v2 additions reads
+  buffs in the attack path**, so the one-read ceiling is still set by the
+  projectile gate and Pick Pocket alone.
 - **`21100005` is not in `docs/tasks/task-187-version-aware-id-semantics/audit/divergences.csv`**,
   so it is not a version-divergent id — but this feature compares no skill id
   anyway, so `tools/skill-job-id-guard.sh` is not engaged either way.

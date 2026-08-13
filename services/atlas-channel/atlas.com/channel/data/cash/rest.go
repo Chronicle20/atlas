@@ -9,6 +9,9 @@ type RestModel struct {
 	StateChangeItem uint32 `json:"stateChangeItem"`
 	BgmPath         string `json:"bgmPath"`
 	ProtectTime     uint32 `json:"protectTime"`
+	// Npc is the WZ info/npc value served by atlas-data: the NPC template a
+	// remote-merchant cash item (classification 545) opens. 0 when none.
+	Npc uint32 `json:"npc"`
 }
 
 func (r RestModel) GetName() string {

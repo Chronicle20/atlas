@@ -5,7 +5,11 @@ import (
 	"atlas-dragons/world"
 	"os"
 
+	characterevt "atlas-dragons/kafka/consumer/character"
+	dragoncmd "atlas-dragons/kafka/consumer/dragon"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
@@ -13,6 +17,8 @@ import (
 )
 
 const serviceName = "atlas-dragons"
+
+var consumerGroupId = consumergroup.Resolve("Dragon Registry Service")
 
 type Server struct {
 	baseUrl string
@@ -40,6 +46,19 @@ func main() {
 
 	rc := atlas.Connect(l)
 	dragon.InitRegistry(rc)
+
+	// Kafka consumers: the COMMAND_TOPIC_DRAGON command consumer (CREATE / DESTROY
+	// / MOVE) and the character-status lifecycle cascade (login / logout /
+	// map-change / channel-change / job-change destroy).
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
+	dragoncmd.InitConsumers(l)(cmf)(consumerGroupId)
+	characterevt.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := dragoncmd.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register dragon command handlers.")
+	}
+	if err := characterevt.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register character status handlers.")
+	}
 
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 

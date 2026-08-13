@@ -1711,19 +1711,6 @@ func (p *ProcessorImpl) expandTradeUnwind(st Step[any]) ([]Step[any], error) {
 	return steps, nil
 }
 
-// assetDataFromSnapshot rebuilds an inventory AssetData from an escrow snapshot,
-// so a delivery, a refund or a staging rollback restores the asset rather than a
-// bare template (FR-10.3).
-//
-// Expiration, CashId, Rechargeable and PetId are as load-bearing as the equip
-// stats: a cash item without its serial is a different item to the client, a pet
-// without its id is an empty shell, and a timed item without its expiry becomes
-// permanent. The bespoke stat list this replaced carried none of the four, and
-// cash items and pets are stageable (atlas-trades trade/restriction.go), so the
-// loss was reachable by any player.
-//
-// Quantity comes from the snapshot, which holds the STAGED quantity — a partial
-// stage of 1 out of 200 escrowed 1, and must deliver 1.
 // clearKarmaFromSnapshot masks the one-free-trade karma mark off a snapshot at
 // the moment a TRANSFER OF OWNERSHIP re-materialises the asset for its new owner
 // (task-223 FR-7.4). The grant is "1 time of trading has been enabled" — the
@@ -1749,6 +1736,19 @@ func clearKarmaFromSnapshot(s AssetSnapshot) AssetSnapshot {
 	return s
 }
 
+// assetDataFromSnapshot rebuilds an inventory AssetData from an escrow snapshot,
+// so a delivery, a refund or a staging rollback restores the asset rather than a
+// bare template (FR-10.3).
+//
+// Expiration, CashId, Rechargeable and PetId are as load-bearing as the equip
+// stats: a cash item without its serial is a different item to the client, a pet
+// without its id is an empty shell, and a timed item without its expiry becomes
+// permanent. The bespoke stat list this replaced carried none of the four, and
+// cash items and pets are stageable (atlas-trades trade/restriction.go), so the
+// loss was reachable by any player.
+//
+// Quantity comes from the snapshot, which holds the STAGED quantity — a partial
+// stage of 1 out of 200 escrowed 1, and must deliver 1.
 func assetDataFromSnapshot(s AssetSnapshot) asset2.AssetData {
 	return asset2.AssetData{
 		Expiration:     s.Expiration,

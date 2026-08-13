@@ -486,6 +486,15 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 
+		if it == CashSlotItemTypeCurrencySack {
+			// No sub-body: the classification-520 arm of
+			// CWvsContext::SendConsumeCashItemUseRequest encodes nothing beyond
+			// the common header on all ten versions (design §3, per-version
+			// addresses). Nothing to decode off r.
+			handleMesoSackUse(l, ctx, wp)(s, itemId)
+			return
+		}
+
 		if it == viciousHammerCashSlotItemType(t) {
 			sp := cashsb.NewItemUseViciousHammer()
 			sp.Decode(l, ctx)(r, readerOptions)
@@ -658,6 +667,12 @@ const (
 	CashSlotItemTypeSealTimed     = CashSlotItemType(64)
 	CashSlotItemTypeSealTimedV95  = CashSlotItemType(65)
 	CashSlotItemTypeCube          = CashSlotItemType(74)
+	// CashSlotItemTypeCurrencySack is classification 520 (meso sacks). Atlas
+	// returns 19 on EVERY version even though the v48 client's own table says
+	// 17 and v61's says 18: the type is derived from the server-resolved
+	// template id and never rides the wire, and no other classification maps to
+	// 19 here. Do NOT version-gate this (design §3.1(a)).
+	CashSlotItemTypeCurrencySack = CashSlotItemType(19)
 
 	// GetCashSlotItemType's ClassificationPointReset branch (above) routes by
 	// itemId%10==1: AP Reset (5050000) and SP Reset tiers 2-4 (5050002-5050004)
@@ -717,6 +732,9 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 		category := item.GetClassification(itemId)
 		if category == item.ClassificationPet {
 			return CashSlotItemType(8)
+		}
+		if category == item.ClassificationCurrencySack {
+			return CashSlotItemTypeCurrencySack
 		}
 		if category == 501 {
 			return CashSlotItemType(9)

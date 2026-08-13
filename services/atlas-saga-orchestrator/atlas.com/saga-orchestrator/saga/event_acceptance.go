@@ -107,6 +107,10 @@ const (
 	// Note.
 	EventKindNoteCreated      EventKind = "note.created"
 	EventKindNoteCreateFailed EventKind = "note.create_failed"
+
+	// NPC shop (atlas-npc-shops acks on EVENT_TOPIC_NPC_SHOP_STATUS, task-221).
+	EventKindNpcShopEntered EventKind = "npcshop.entered"
+	EventKindNpcShopError   EventKind = "npcshop.error"
 )
 
 // acceptanceTable maps each saga.Action to the set of EventKinds that can
@@ -166,7 +170,10 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.CancelConsumableEffect: {},
 
 	// Storage.
-	sharedsaga.ShowStorage:          {},
+	sharedsaga.ShowStorage: {},
+	// Unlike ShowStorage this is NOT self-completing: the item is consumed by a
+	// following step, so the shop must be confirmed open first (task-221 FR-4.3).
+	sharedsaga.OpenNpcShop:          {EventKindNpcShopEntered, EventKindNpcShopError},
 	sharedsaga.DepositToStorage:     {EventKindCompartmentAccepted, EventKindCompartmentError},
 	sharedsaga.UpdateStorageMesos:   {EventKindStorageMesosUpdated, EventKindStorageError},
 	sharedsaga.TransferToStorage:    {}, // composite: expanded into sub-steps before dispatch
@@ -411,6 +418,10 @@ var outcomeTable = map[EventKind]EventOutcome{
 	// Note.
 	EventKindNoteCreated:      OutcomeSuccess,
 	EventKindNoteCreateFailed: OutcomeFailure,
+
+	// NPC shop.
+	EventKindNpcShopEntered: OutcomeSuccess,
+	EventKindNpcShopError:   OutcomeFailure,
 }
 
 // EventOutcomeOf returns the outcome classification for kind.

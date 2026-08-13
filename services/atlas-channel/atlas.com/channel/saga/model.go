@@ -28,6 +28,7 @@ type (
 	FieldEffectWeatherPayload    = sharedsaga.FieldEffectWeatherPayload
 	SetAssetOwnerPayload         = sharedsaga.SetAssetOwnerPayload
 	ApplyAssetLockPayload        = sharedsaga.ApplyAssetLockPayload
+	ApplyAssetKarmaPayload       = sharedsaga.ApplyAssetKarmaPayload
 	IncubatorResultPayload       = sharedsaga.IncubatorResultPayload
 	DestroyAssetFromSlotPayload  = sharedsaga.DestroyAssetFromSlotPayload
 	CreateNotePayload            = sharedsaga.CreateNotePayload
@@ -61,6 +62,7 @@ const (
 	TeleportRockUse      = sharedsaga.TeleportRockUse
 	ItemTagUse           = sharedsaga.ItemTagUse
 	SealingLockUse       = sharedsaga.SealingLockUse
+	KarmaScissorsUse     = sharedsaga.KarmaScissorsUse
 	IncubatorUse         = sharedsaga.IncubatorUse
 	PointReset           = sharedsaga.PointReset
 	MegaphoneUse         = sharedsaga.MegaphoneUse
@@ -95,6 +97,7 @@ const (
 	ApplyConsumableEffect = sharedsaga.ApplyConsumableEffect
 	SetAssetOwner         = sharedsaga.SetAssetOwner
 	ApplyAssetLock        = sharedsaga.ApplyAssetLock
+	ApplyAssetKarma       = sharedsaga.ApplyAssetKarma
 	IncubatorResult       = sharedsaga.IncubatorResult
 	DestroyAssetFromSlot  = sharedsaga.DestroyAssetFromSlot
 	TransferAP            = sharedsaga.TransferAP

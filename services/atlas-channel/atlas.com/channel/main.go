@@ -4,6 +4,7 @@ import (
 	"atlas-channel/account"
 	"atlas-channel/battleship"
 	channel3 "atlas-channel/channel"
+	"atlas-channel/character/combo"
 	"atlas-channel/configuration/projection"
 	account2 "atlas-channel/kafka/consumer/account"
 	"atlas-channel/kafka/consumer/asset"
@@ -324,6 +325,10 @@ func main() {
 
 	routine.Go(l, rt.Context(), func(_ context.Context) {
 		tasks.Register(l, rt.Context())(channel3.NewHeartbeat(l, rt.Context(), time.Second*10))
+	})
+
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(combo.NewDecayTick(l, rt.Context(), time.Second))
 	})
 
 	rt.TeardownFunc(session.Teardown(l))
@@ -791,6 +796,7 @@ func produceWriters() []string {
 		fieldcb.FieldTransportStateWriter,
 		storagecb.StorageOperationWriter,
 		charcb.CharacterHintWriter,
+		charcb.ShowComboWriter,
 		reactorcb.ReactorHitWriter,
 		npccb.GuideTalkWriter,
 		questcb.ScriptProgressWriter,
@@ -911,6 +917,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterUseSkillHandle] = handler.CharacterUseSkillHandleFunc
 	handlerMap[handler.CharacterSkillPrepareHandle] = handler.CharacterSkillPrepareHandleFunc
 	handlerMap[charsb.CharacterBuffCancelHandle] = handler.CharacterBuffCancelHandleFunc
+	handlerMap[charsb.AranComboCounterHandle] = handler.AranComboCounterHandleFunc
 	handlerMap[charsb.CancelDebuffHandle] = handler.CancelDebuffHandleFunc
 	handlerMap[cashsb.CharacterCashItemUseHandle] = handler.CharacterCashItemUseHandleFunc
 	handlerMap[fieldsb.ItemUpgradeUpdateHandle] = handler.ItemUpgradeUpdateHandleFunc

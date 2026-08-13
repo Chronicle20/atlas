@@ -2,6 +2,7 @@ package shop
 
 import (
 	"atlas-merchant/data/portal"
+	asset2 "atlas-merchant/kafka/message/asset"
 	"context"
 	"errors"
 	"math"
@@ -130,10 +131,41 @@ func IsListableItem(itemId uint32, flag uint16) error {
 		return ErrCashItem
 	}
 
-	if asset.HasFlag(flag, asset.FlagUntradeable) {
+	// A karma mark (Scissors of Karma, task-223) buys exactly one transfer, and a
+	// hired-merchant SALE is one — so a marked item lists, and the mark is
+	// consumed when the buyer's asset is built (see the buy path in
+	// processor.go). Listing-only semantics would let a player launder one mark
+	// into unlimited transfers by re-listing. ErrPetItem and ErrCashItem above
+	// are untouched: they are not tradeability rules.
+	//
+	// The bit is slot-class dependent — 0x02 on an EQUIP is FlagSpikes, so a
+	// spiked untradeable equip must still be refused. KarmaFlagFor is the only
+	// thing that may pick it.
+	karmaMarked := false
+	if f, ok := asset.KarmaFlagFor(itemId); ok {
+		karmaMarked = asset.HasFlag(flag, f)
+	}
+	if !karmaMarked && asset.HasFlag(flag, asset.FlagUntradeable) {
 		return ErrUntradeableItem
 	}
 	return nil
+}
+
+// clearKarmaFromAssetData masks the karma mark off the snapshot used to build
+// the BUYER's asset. Same rationale as the trade path (atlas-saga-orchestrator's
+// clearKarmaFromSnapshot): the clear and the transfer are the same write, so
+// there is no window in which the delivered item still carries a free trade.
+//
+// Applied ONLY where ownership changes hands. The three "return the item to its
+// owner" paths — shop closure, listing removal, Frederick retrieval — pass the
+// snapshot through untouched, exactly as a cancelled trade does.
+func clearKarmaFromAssetData(itemId uint32, ad asset2.AssetData) asset2.AssetData {
+	f, ok := asset.KarmaFlagFor(itemId)
+	if !ok {
+		return ad
+	}
+	ad.Flag = asset.ClearFlag(ad.Flag, f)
+	return ad
 }
 
 func manhattanDistance(x1, y1, x2, y2 int16) int {

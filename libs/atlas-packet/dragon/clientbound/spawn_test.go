@@ -58,6 +58,27 @@ func TestDragonSpawnBytesV83(t *testing.T) {
 	}
 }
 
+// v84: CDragon::OnCreated (renamed from sub_506F85 during this verification)
+// @0x506f85 (GMS_v84.1_U_DEVM.i64, session 5881cf84), reached via
+// CUser::OnDragonPacket (renamed from sub_9704B9) @0x9704b9's case 185
+// (0xB9) branch. Reads, in order: Decode4 x (this[58] @0x506fac), Decode4 y
+// (this[59] @0x506fb7), Decode1 stance (secured into this[37] @0x506fd7/
+// 0x506fed), Decode2 <read, discarded — return value never assigned>
+// @0x506ff3, then Decode2 jobId (this[63] @0x506ffb/0x50700c). 13 bytes —
+// v84 is the first version with jobId (Evan's job table 2200-2218 first
+// exists at v84), so this is byte-identical to the already-verified v95
+// shape.
+//
+// packet-audit:verify packet=dragon/clientbound/DragonSpawn version=gms_v84 ida=0x506f85
+func TestDragonSpawnBytesV84(t *testing.T) {
+	in := NewDragonSpawn(4242, 100, -200, 3, 2214)
+	ctx := test.CreateContext("GMS", 84, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, dragonSpawnBody) {
+		t.Fatalf("v84 spawn bytes = % X, want % X", got, dragonSpawnBody)
+	}
+}
+
 // jobId is present on v84/v87/v92/v95/JMS185 (13 bytes) and absent on v83
 // (11 bytes) — see spawnHasJobId in spawn.go for the IDA grounding. If any
 // column ever diverges from this split, this table is where it shows up

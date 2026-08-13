@@ -41,6 +41,24 @@ func TestDragonMoveBytes_v83(t *testing.T) {
 	}
 }
 
+// v84: CDragon::OnMove (renamed from sub_507AC6 during this verification)
+// @0x507ac6 (GMS_v84.1_U_DEVM.i64, session 5881cf84) is a single delegating
+// call: CMovePath::OnMovePacket(this[55]!=0 ? this[55]-12+428 : 428, a2) —
+// identical shape to v83/v95. Reached via CUser::OnDragonPacket (renamed
+// from sub_9704B9) @0x9704b9's case 186 (0xBA) branch (gated on
+// this[2074]).
+//
+// packet-audit:verify packet=dragon/clientbound/DragonMove version=gms_v84 ida=0x507ac6
+func TestDragonMoveBytes_v84(t *testing.T) {
+	blob := []byte{0x0A, 0x00, 0x14, 0x00, 0x01, 0xFF}
+	got := test.Encode(t, test.CreateContext("GMS", 84, 1), NewDragonMove(4242, blob).Encode, nil)
+
+	want := append([]byte{0x92, 0x10, 0x00, 0x00}, blob...)
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v84 move bytes = % X, want % X", got, want)
+	}
+}
+
 func TestDragonMoveRoundTrip(t *testing.T) {
 	var out DragonMove
 	test.RoundTrip(t, test.CreateContext("GMS", 95, 1),

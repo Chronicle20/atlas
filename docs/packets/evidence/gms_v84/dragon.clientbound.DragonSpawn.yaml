@@ -1,0 +1,10 @@
+packet: dragon/clientbound/DragonSpawn
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CDragon::OnCreated
+    address: "0x506f85"
+    decompile_sha256: 03137d2f1da42ea94b7607188aaa53519f831b8bedcce21a03b79805b16eb380
+verifies:
+    - libs/atlas-packet/dragon/clientbound/spawn_test.go#TestDragonSpawnBytesV84

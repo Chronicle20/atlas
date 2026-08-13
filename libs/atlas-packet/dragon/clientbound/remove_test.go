@@ -42,6 +42,24 @@ func TestDragonRemoveBytes_v83(t *testing.T) {
 	}
 }
 
+// v84: CUser::OnDragonPacket (renamed from sub_9704B9 during this
+// verification) @0x9704b9 (GMS_v84.1_U_DEVM.i64, session 5881cf84) handles
+// only a2==185 (spawn, CDragon::OnCreated) and this[2074]&&a2==186 (move,
+// CDragon::OnMove) — there is no case for 187 (REMOVE_DRAGON). The outer
+// dispatcher CUserPool::OnUserCommonPacket @0x9b2443 routes the range
+// v6>=185 && v6<=187 into this function (@0x9b2443/0x9b244b), so 187 enters
+// and falls through both branches unhandled — same routed-but-unhandled
+// shape as v83 and v95. See docs/packets/registry/gms_v84.yaml:1254 (already
+// recorded prior to this verification) for the full decompile citation.
+//
+// packet-audit:verify packet=dragon/clientbound/DragonRemove version=gms_v84 ida=0x9704b9
+func TestDragonRemoveBytes_v84(t *testing.T) {
+	got := test.Encode(t, test.CreateContext("GMS", 84, 1), NewDragonRemove(4242).Encode, nil)
+	if !bytes.Equal(got, []byte{0x92, 0x10, 0x00, 0x00}) {
+		t.Fatalf("v84 remove bytes = % X, want 92 10 00 00", got)
+	}
+}
+
 func TestDragonRemoveRoundTrip(t *testing.T) {
 	var out DragonRemove
 	test.RoundTrip(t, test.CreateContext("GMS", 95, 1), NewDragonRemove(4242).Encode, out.Decode, nil)

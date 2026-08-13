@@ -7936,7 +7936,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId (dispatcher-prefix pattern — consumed by CUserPool::OnUserRemotePacket Decode4 before OnShowUpgradeTombEffect)"
+          "comment": "characterId (dispatcher-prefix pattern \u2014 consumed by CUserPool::OnUserRemotePacket Decode4 before OnShowUpgradeTombEffect)"
         },
         {
           "op": "Decode4",
@@ -22636,7 +22636,7 @@
       "calls": [
         {
           "op": "Encode4",
-          "comment": "itemId — hard-coded 0x541370 (5510000)"
+          "comment": "itemId \u2014 hard-coded 0x541370 (5510000)"
         },
         {
           "op": "Encode4",
@@ -28897,6 +28897,69 @@
         {
           "op": "Decode4",
           "comment": "hit-mob object id (FindHitMobInRect)"
+        }
+      ]
+    },
+    "CDragon::OnCreated": {
+      "address": "0x506f85",
+      "direction": "clientbound",
+      "notes": "SPAWN_DRAGON body. CDragon::OnCreated@0x506f85 (GMS v84.1, renamed from sub_506F85 during task-225 verification), reached via CUser::OnDragonPacket@0x9704b9's case 185 (0xB9) branch. Reads, in order: Decode4 x (this[58]@0x506fac), Decode4 y (this[59]@0x506fb7), Decode1 stance (secured into this[37]@0x506fd7/0x506fed), Decode2 <read, discarded -- return value never assigned>@0x506ff3, Decode2 jobId (this[63]@0x506ffb/0x50700c). 13-byte body -- v84 is the first version whose CDragon carries jobId (Evan's job table 2200-2218 first exists at v84; contrast v83's CDragon::OnCreated@0x4fe502, which stops after the discarded short). Matches the committed DragonSpawn codec's spawnHasJobId(true) branch, byte-identical to the already-verified v95 shape. Match (task-225).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "x -> this[58] @0x506fac"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y -> this[59] @0x506fb7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "stance -> secured into this[37] @0x506fd7/0x506fed"
+        },
+        {
+          "op": "Decode2",
+          "comment": "read and discarded -- return value never assigned @0x506ff3"
+        },
+        {
+          "op": "Decode2",
+          "comment": "jobId -> this[63] @0x506ffb/0x50700c"
+        }
+      ]
+    },
+    "CDragon::OnMove": {
+      "address": "0x507ac6",
+      "direction": "clientbound",
+      "notes": "MOVE_DRAGON body. CDragon::OnMove@0x507ac6 (GMS v84.1, renamed from sub_507AC6 during task-225 verification) is a single delegating call: CMovePath::OnMovePacket(this[55]!=0 ? this[55]-12+428 : 428, a2) -- identical shape to v83's CDragon::OnMove@0x4fef90 and v95's. Reached via CUser::OnDragonPacket@0x9704b9's case 186 (0xBA) branch (gated on this[2074]). The whole remaining body is the opaque CMovePath blob. Matches the committed DragonMove codec exactly (task-225).",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "opaque CMovePath blob @0x507ac6",
+          "ref": "CMovePath::OnMovePacket"
+        }
+      ]
+    },
+    "CUser::OnDragonPacket": {
+      "address": "0x9704b9",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 187
+        }
+      ],
+      "notes": "REMOVE_DRAGON body. CUser::OnDragonPacket@0x9704b9 (GMS v84.1, renamed from sub_9704B9 during task-225 verification) handles only a2==185 (spawn, CDragon::OnCreated@0x506f85) and this[2074]&&a2==186 (move, CDragon::OnMove@0x507ac6). THERE IS NO CASE FOR 187 (0xBB, REMOVE_DRAGON) -- the outer dispatcher CUserPool::OnUserCommonPacket@0x9b2443 routes the range v6>=185 && v6<=187 into this function (test @0x9b2428/0x9b244b), so 187 enters and falls through both branches with zero effect: no field is read, no dragon state changes. Same routed-but-unhandled shape already recorded for v83 (docs/packets/registry/gms_v83.yaml) and v95 (docs/packets/registry/gms_v95.yaml), and previously noted for v84 itself at docs/packets/registry/gms_v84.yaml:1254 prior to this live-decompile confirmation. Sending REMOVE_DRAGON is correct and harmless; the client silently discards it. Match (task-225).",
+      "calls": []
+    },
+    "CVecCtrlDragon::EndUpdateActive": {
+      "address": "0x9ff057",
+      "direction": "serverbound",
+      "notes": "MOVE_DRAGON (serverbound) send site. CVecCtrlDragon::EndUpdateActive@0x9ff057 (GMS v84.1, renamed from CVecCtrlDragon__EndUpdateActive_send_0xBA during task-225 verification -- the raw discover-ops symbol was canonicalized to the clean name used by gms_v83/v87/v92/v95/jms_v185): if sub_6A1502(0)@0x9ff06f, builds COutPacket(186=0xBA)@0x9ff080 then CMovePath::Flush(v1,v3,0,0)@0x9ff093 and sends via CClientSocket::SendPacket@0x9ff0a6. There is NO leading identity field -- same shape as v83's CVecCtrlDragon::EndUpdateActive@0x9b7b9c (COutPacket 0xB5=181) and v95's (COutPacket 214). Opcode 186 confirmed from the COutPacket construction site itself, matching the registry opcode (186) for serverbound MOVE_DRAGON on v84. Atlas dragon/serverbound.Move.Decode reads only ReadBytes(Available()) for the whole opaque CMovePath blob. Match (task-225).",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "opaque CMovePath blob, opcode 186 @0x9ff080/0x9ff093",
+          "ref": "CMovePath::Flush"
         }
       ]
     }

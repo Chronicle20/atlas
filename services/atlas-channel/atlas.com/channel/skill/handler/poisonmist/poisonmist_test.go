@@ -79,7 +79,7 @@ func run(t *testing.T, e effect.Model) (*[]mistmsg.CreateCommandBody, *test.Hook
 	// The WIRE skill id is passed, not the resolved Identity: 2111003 on all
 	// eleven provisioned versions, and the handler forwards it verbatim
 	// because the client compares it against its own WZ.
-	err := Apply(l)(context.Background())(nil, testField(), testCharId, skill2.Id(testSkillId), testLevel, e)
+	err := Apply(l)(context.Background())(nil, testField(), testCharId, skill2.Id(testSkillId), testLevel, e, nil)
 	require.NoError(t, err)
 	return emitted, hook
 }
@@ -158,7 +158,7 @@ func TestApply_ImplausibleLifetime_Rejected(t *testing.T) {
 func TestApply_CasterLoadFailure_EmitsNothingAndReturnsNil(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	emitted := harness(t, errors.New("character service down"))
-	err := Apply(l)(context.Background())(nil, testField(), testCharId, skill2.Id(testSkillId), testLevel, stubEffect(4000, -110, -82, 110, 83))
+	err := Apply(l)(context.Background())(nil, testField(), testCharId, skill2.Id(testSkillId), testLevel, stubEffect(4000, -110, -82, 110, 83), nil)
 	require.NoError(t, err)
 	require.Empty(t, *emitted)
 }

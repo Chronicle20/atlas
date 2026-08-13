@@ -9,6 +9,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 )
 
 // sampleAttackInfo builds a representative client->server attack request. skillId
@@ -127,6 +128,138 @@ func TestAttackInfoVersionBoundary(t *testing.T) {
 	}
 	if v95 := enc(95, AttackTypeMelee); len(v95) != len(v84)+9 {
 		t.Errorf("v95 melee (%d) must be v84 (%d) + 9 bytes (skillLevel + anotherCrc + per-type int)", len(v95), len(v84))
+	}
+}
+
+// TestAttackInfoMagicVersionBoundary pins the MAGIC attack's own version
+// boundaries, which TestAttackInfoVersionBoundary above does not exercise --
+// it only encodes AttackTypeMelee, which is precisely why two magic-only gate
+// errors survived in the codec.
+//
+// Both were found by reading each client's magic sender (CUserLocal::
+// TryDoingMagicAttack) from its COutPacket ctor; the per-version Encode
+// addresses are recorded on gmsMagicSecondaryDrBlock / gmsMagicTrailingWord.
+//
+//   - The secondary dr-block (6x uint32 = 24 bytes) was gated >= 95 but is
+//     present from v84. v84/v87/v92 therefore decoded 24 bytes short from
+//     skillDataCrc onward, so the per-mob loop read garbage monster ids and
+//     every magic attack dealt zero damage.
+//   - The magic trailing word (1x uint32) was gated >= 95 but is present from
+//     v92, leaving v92 a further 4 bytes short.
+//
+// Deltas rather than one absolute number per version, so the test states the
+// structural claim ("v87 magic == v84 magic") instead of restating the codec.
+func TestAttackInfoMagicVersionBoundary(t *testing.T) {
+	enc := func(major uint16) []byte {
+		ctx := pt.CreateContext("GMS", major, 1)
+		ai := sampleAttackInfo(AttackTypeMagic)
+		return pt.Encode(t, ctx, ai.Encode, nil)
+	}
+
+	v83, v84 := enc(83), enc(84)
+	// 24 primary dr-block + 24 secondary dr-block.
+	if len(v84) != len(v83)+48 {
+		t.Errorf("v84 magic (%d) must be v83 (%d) + 48 bytes (primary dr-block 24 + secondary dr-block 24)", len(v84), len(v83))
+	}
+	// v84..v91 magic are structurally identical; v87 is the version the field
+	// report came from, so it is named explicitly rather than folded into a loop.
+	if v87 := enc(87); len(v87) != len(v84) {
+		t.Errorf("v87 magic (%d) must equal v84 (%d): no magic structure change between them", len(v87), len(v84))
+	}
+	for _, major := range []uint16{85, 86, 91} {
+		if got := enc(major); len(got) != len(v84) {
+			t.Errorf("v%d magic (%d) must equal v84 (%d)", major, len(got), len(v84))
+		}
+	}
+	// v92 adds the trailing word only.
+	v92 := enc(92)
+	if len(v92) != len(v84)+4 {
+		t.Errorf("v92 magic (%d) must be v84 (%d) + 4 bytes (magic trailing word)", len(v92), len(v84))
+	}
+	// v95 adds skillLevel(1) + anotherCrc(4) on top of v92; the trailing word
+	// is already counted there, so the step is 5, not 9 as it is for melee.
+	if v95 := enc(95); len(v95) != len(v92)+5 {
+		t.Errorf("v95 magic (%d) must be v92 (%d) + 5 bytes (skillLevel + anotherCrc)", len(v95), len(v92))
+	}
+}
+
+// TestAttackInfoMagicV87DecodeAlignment is the assertion that actually fails
+// for the bug the field report hit. The round-trip tests cannot catch it:
+// Encode and Decode shared the same wrong gate, so they agreed with each other
+// and disagreed only with the client.
+//
+// It hand-builds a v87 magic attack in the client's field order (per the IDA
+// read recorded on gmsMagicSecondaryDrBlock) and asserts the decoder lands on
+// the right monster id. With the secondary dr-block unread, the per-mob loop
+// starts 24 bytes early and monsterId decodes out of the dr words -- exactly
+// the out-of-range ids atlas-monsters logged as "Unable to get monster [N]".
+func TestAttackInfoMagicV87DecodeAlignment(t *testing.T) {
+	const (
+		wantMonsterId = uint32(1000021) // a real live mob id from the field report
+		wantDamage    = uint32(4242)
+	)
+	ctx := pt.CreateContext("GMS", 87, 1)
+
+	l, _ := testlog.NewNullLogger()
+	// The project's own writer, so this pins FIELD ORDER and WIDTHS -- what the
+	// IDA read establishes -- without also re-deriving byte order.
+	w := response.NewWriter(l)
+	w.WriteByte(0x00)      // fieldKey
+	w.WriteInt(0x11111111) // dr0
+	w.WriteInt(0x22222222) // dr1
+	w.WriteByte(0x11)      // hits=1 (low nibble), mob count=1 (high nibble)
+	w.WriteInt(0x33333333) // dr2
+	w.WriteInt(0x44444444) // dr3
+	w.WriteInt(0)          // skillId 0 -> no keydown field
+	w.WriteInt(0x55555555) // randomDr
+	w.WriteInt(0x66666666) // crc32
+	w.WriteInt(0x77777777) // 2dr0   <- the block the >=95 gate skipped
+	w.WriteInt(0x88888888) // 2dr1
+	w.WriteInt(0x99999999) // 2dr2
+	w.WriteInt(0xAAAAAAAA) // 2dr3
+	w.WriteInt(0xBBBBBBBB) // 2rnd
+	w.WriteInt(0xCCCCCCCC) // 2crc
+	w.WriteInt(0xDDDDDDDD) // skillDataCrc
+	w.WriteInt(0xEEEEEEEE) // skillDataCrc2
+	w.WriteByte(0x00)      // mask1
+	w.WriteShort(0x0005)   // mask2
+	w.WriteByte(0x01)      // attackActionType
+	w.WriteByte(0x04)      // attackSpeed
+	w.WriteInt(0x0000BEEF) // attackTime
+	// no magic trailing word at v87
+	w.WriteInt(wantMonsterId) // --- DamageInfo ---
+	w.WriteByte(0x07)         // hitAction
+	w.WriteByte(0x00)         // forceAction
+	w.WriteByte(0x00)         // frameIdx
+	w.WriteByte(0x00)         // calcDamageStatIndex
+	w.WriteShort(0)           // hitPositionX
+	w.WriteShort(0)           // hitPositionY
+	w.WriteShort(0)           // previousPositionX
+	w.WriteShort(0)           // previousPositionY
+	w.WriteShort(0)           // delay
+	w.WriteInt(wantDamage)    // one damage line (hits nibble = 1)
+	w.WriteInt(0)             // per-mob crc (GMS v61+)
+	w.WriteShort(100)         // characterX
+	w.WriteShort(200)         // characterY
+	w.WriteByte(0x00)         // dragon = false
+
+	req := request.Request(w.Bytes())
+	reader := request.NewRequestReader(&req, 0)
+	got := NewAttackInfo(AttackTypeMagic)
+	got.Decode(l, ctx)(&reader, nil)
+
+	dis := got.DamageInfo()
+	if len(dis) != 1 {
+		t.Fatalf("decoded %d damage entries, want 1 — per-mob loop misaligned", len(dis))
+	}
+	if dis[0].MonsterId() != wantMonsterId {
+		t.Fatalf("monsterId = %d, want %d — decode is misaligned against the v87 client (this is the no-damage bug)", dis[0].MonsterId(), wantMonsterId)
+	}
+	if d := dis[0].Damages(); len(d) != 1 || d[0] != wantDamage {
+		t.Fatalf("damages = %v, want [%d]", d, wantDamage)
+	}
+	if reader.Available() > 0 {
+		t.Fatalf("%d unconsumed bytes after decode — v87 magic layout is wrong", reader.Available())
 	}
 }
 

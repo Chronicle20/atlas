@@ -12,6 +12,8 @@ import (
 	"atlas-channel/mist"
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
+
 	mistmsg "atlas-channel/kafka/message/mist"
 
 	"github.com/sirupsen/logrus"
@@ -82,6 +84,19 @@ type Params struct {
 	RecoveryMp int32
 	// PartyMemberIds scopes a RECOVERY mist; nil otherwise.
 	PartyMemberIds []uint32
+	// Origin overrides where the mist is anchored. Nil means "at the caster",
+	// which is correct for every mist the caster plants at their own feet.
+	//
+	// A thrown mist is the exception: Poison Bomb's cloud belongs at the point
+	// the BOMB landed, which the client already told us on the attack packet
+	// (AttackInfo.GrenadeX/GrenadeY) and has already drawn the explosion at.
+	// Anchoring it at the caster instead put the cloud a full throw-distance
+	// away from the visual, and since the throw distance scales with how long
+	// the attack key was held, the error grew with the hold (task-218 field
+	// report #4).
+	//
+	// Pointer, not a zero value: (0,0) is a legal map coordinate.
+	Origin *point.Model
 }
 
 // Seams are the two external effects a cast performs. Each handler keeps its
@@ -144,10 +159,20 @@ func Cast(
 		return nil
 	}
 
-	x, y, err := s.LoadCaster(l, ctx, characterId)
-	if err != nil {
-		l.WithError(err).Errorf("%s: failed to load caster [%d]; no mist created.", p.SkillName, characterId)
-		return nil
+	// A packet-supplied origin wins over the caster's position, and when one is
+	// present the caster lookup is skipped entirely -- there is nothing left to
+	// ask atlas-character for, and a failed lookup must not sink a cast whose
+	// anchor the client already fixed.
+	var x, y int16
+	if p.Origin != nil {
+		x, y = int16(p.Origin.X()), int16(p.Origin.Y())
+	} else {
+		var err error
+		x, y, err = s.LoadCaster(l, ctx, characterId)
+		if err != nil {
+			l.WithError(err).Errorf("%s: failed to load caster [%d]; no mist created.", p.SkillName, characterId)
+			return nil
+		}
 	}
 
 	body := mistmsg.CreateCommandBody{

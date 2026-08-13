@@ -46,7 +46,7 @@ func TestApply_EmitsMonsterDotMistWithWireSkillId(t *testing.T) {
 	e := stubEffect(40000, -200, -250, 200, 30)
 	f := field.NewBuilder(0, 0, 100000000).Build()
 
-	require.NoError(t, Apply(l)(context.Background())(nil, f, 1001, skill2.Id(12111005), 30, e))
+	require.NoError(t, Apply(l)(context.Background())(nil, f, 1001, skill2.Id(12111005), 30, e, nil))
 
 	require.Len(t, emitted, 1)
 	b := emitted[0]
@@ -81,7 +81,7 @@ func TestApply_ShortestRealLifetimeIsAccepted(t *testing.T) {
 	e := stubEffect(4000, -200, -250, 200, 30)
 	f := field.NewBuilder(0, 0, 100000000).Build()
 
-	require.NoError(t, Apply(l)(context.Background())(nil, f, 1001, skill2.Id(12111005), 1, e))
+	require.NoError(t, Apply(l)(context.Background())(nil, f, 1001, skill2.Id(12111005), 1, e, nil))
 	require.Len(t, emitted, 1)
 }
 

@@ -15,6 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
@@ -50,6 +51,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 	skillId skill2.Id,
 	skillLevel byte,
 	e effect.Model,
+	castOrigin *point.Model,
 ) error {
 	return func(ctx context.Context) func(
 		wp writer.Producer,
@@ -58,6 +60,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 		skillId skill2.Id,
 		skillLevel byte,
 		e effect.Model,
+		castOrigin *point.Model,
 	) error {
 		return func(
 			_ writer.Producer,
@@ -66,6 +69,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 			skillId skill2.Id,
 			skillLevel byte,
 			e effect.Model,
+			_ *point.Model,
 		) error {
 			return mistcast.Cast(l, ctx, f, characterId, skillId, skillLevel, e,
 				mistcast.Params{

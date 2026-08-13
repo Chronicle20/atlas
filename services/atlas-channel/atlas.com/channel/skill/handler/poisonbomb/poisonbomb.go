@@ -9,6 +9,8 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
+
 	mistmsg "atlas-channel/kafka/message/mist"
 	channelhandler "atlas-channel/skill/handler"
 
@@ -46,6 +48,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 	skillId skill2.Id,
 	skillLevel byte,
 	e effect.Model,
+	castOrigin *point.Model,
 ) error {
 	return func(ctx context.Context) func(
 		wp writer.Producer,
@@ -54,6 +57,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 		skillId skill2.Id,
 		skillLevel byte,
 		e effect.Model,
+		castOrigin *point.Model,
 	) error {
 		return func(
 			_ writer.Producer,
@@ -62,6 +66,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 			skillId skill2.Id,
 			skillLevel byte,
 			e effect.Model,
+			castOrigin *point.Model,
 		) error {
 			return mistcast.Cast(l, ctx, f, characterId, skillId, skillLevel, e,
 				mistcast.Params{
@@ -70,6 +75,11 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 					EffectKind: mistmsg.EffectKindDamageOverTime,
 					Disease:    "POISON",
 					TickMs:     mistcast.PlayerMistTickIntervalMs,
+					// Poison Bomb is THROWN: the cloud belongs where the bomb
+					// landed, which the attack packet carries and processAttack
+					// passes down here. Nil (no grenade block) falls back to the
+					// caster's feet.
+					Origin: castOrigin,
 				},
 				mistcast.Seams{LoadCaster: loadCaster, EmitCreate: emitCreate})
 		}

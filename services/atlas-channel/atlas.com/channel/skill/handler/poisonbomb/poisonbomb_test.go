@@ -4,6 +4,7 @@ import (
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/skill/handler/mistcast"
 	"context"
+	"errors"
 	"testing"
 
 	mistmsg "atlas-channel/kafka/message/mist"
@@ -14,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
@@ -46,7 +48,7 @@ func TestApply_EmitsMonsterDotMistWithWireSkillId(t *testing.T) {
 	e := stubEffect(40000, -100, -82, 100, 83)
 	f := field.NewBuilder(0, 0, 100000000).Build()
 
-	require.NoError(t, Apply(l)(context.Background())(nil, f, 1001, skill2.Id(14111006), 30, e))
+	require.NoError(t, Apply(l)(context.Background())(nil, f, 1001, skill2.Id(14111006), 30, e, nil))
 
 	require.Len(t, emitted, 1)
 	b := emitted[0]
@@ -80,7 +82,7 @@ func TestApply_ShortestRealLifetimeIsAccepted(t *testing.T) {
 	e := stubEffect(4000, -100, -82, 100, 83)
 	f := field.NewBuilder(0, 0, 100000000).Build()
 
-	require.NoError(t, Apply(l)(context.Background())(nil, f, 1001, skill2.Id(14111006), 1, e))
+	require.NoError(t, Apply(l)(context.Background())(nil, f, 1001, skill2.Id(14111006), 1, e, nil))
 	require.Len(t, emitted, 1)
 }
 
@@ -96,4 +98,69 @@ func stubEffect(duration int32, ltX, ltY, rbX, rbY int16) effect.Model {
 		panic(err)
 	}
 	return m
+}
+
+// TestApply_AnchorsMistAtGrenadeLandingPoint is the regression for the
+// task-218 field report: the mist appeared at the caster's feet regardless of
+// how far the bomb was thrown.
+//
+// Poison Bomb is a keydown skill — the longer the key is held, the further the
+// throw — and the client sends the landing point on the attack packet
+// (AttackInfo.GrenadeX/GrenadeY) after drawing the explosion there. The cast
+// must anchor the cloud on that point, NOT on the caster, or the DoT rectangle
+// sits a whole throw-distance away from what the player sees.
+//
+// loadCaster is deliberately rigged to fail: with a packet-supplied origin
+// there is nothing to look up, and a cast whose anchor the client already
+// fixed must not be sunk by an unrelated character-service error.
+func TestApply_AnchorsMistAtGrenadeLandingPoint(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	var emitted []mistmsg.CreateCommandBody
+
+	origLoad, origEmit := loadCaster, emitCreate
+	t.Cleanup(func() { loadCaster, emitCreate = origLoad, origEmit })
+	loadCaster = func(logrus.FieldLogger, context.Context, uint32) (int16, int16, error) {
+		return 300, 120, errors.New("character service unavailable")
+	}
+	emitCreate = func(_ logrus.FieldLogger, _ context.Context, body mistmsg.CreateCommandBody) error {
+		emitted = append(emitted, body)
+		return nil
+	}
+
+	e := stubEffect(40000, -100, -82, 100, 83)
+	f := field.NewBuilder(0, 0, 100000000).Build()
+	landing := point.NewModel(point.X(-540), point.Y(421))
+
+	require.NoError(t, Apply(l)(context.Background())(nil, f, 1001, skill2.Id(14111006), 30, e, &landing))
+
+	require.Len(t, emitted, 1)
+	require.EqualValues(t, -540, emitted[0].OriginX, "mist must be anchored where the bomb landed, not at the caster")
+	require.EqualValues(t, 421, emitted[0].OriginY, "mist must be anchored where the bomb landed, not at the caster")
+}
+
+// TestApply_FallsBackToCasterWithoutGrenadeOrigin pins the other half of the
+// contract: a nil origin (no grenade block on the packet) still plants the
+// mist at the caster, so the fix cannot regress the non-thrown path.
+func TestApply_FallsBackToCasterWithoutGrenadeOrigin(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	var emitted []mistmsg.CreateCommandBody
+
+	origLoad, origEmit := loadCaster, emitCreate
+	t.Cleanup(func() { loadCaster, emitCreate = origLoad, origEmit })
+	loadCaster = func(logrus.FieldLogger, context.Context, uint32) (int16, int16, error) {
+		return 300, 120, nil
+	}
+	emitCreate = func(_ logrus.FieldLogger, _ context.Context, body mistmsg.CreateCommandBody) error {
+		emitted = append(emitted, body)
+		return nil
+	}
+
+	e := stubEffect(40000, -100, -82, 100, 83)
+	f := field.NewBuilder(0, 0, 100000000).Build()
+
+	require.NoError(t, Apply(l)(context.Background())(nil, f, 1001, skill2.Id(14111006), 30, e, nil))
+
+	require.Len(t, emitted, 1)
+	require.EqualValues(t, 300, emitted[0].OriginX)
+	require.EqualValues(t, 120, emitted[0].OriginY)
 }

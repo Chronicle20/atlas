@@ -13,6 +13,7 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
@@ -31,6 +32,7 @@ type attackCastCall struct {
 	wireSkillId skill2.Id
 	skillLevel  byte
 	duration    int32
+	castOrigin  *point.Model
 }
 
 // registerAttackCastSpy installs a recording handler under id and removes it
@@ -41,19 +43,20 @@ func registerAttackCastSpy(t *testing.T, id skill2.Identity, retErr error) *[]at
 	calls := make([]attackCastCall, 0)
 	channelhandler.RegisterAttackCast(id, func(_ logrus.FieldLogger) func(_ context.Context) func(
 		wp writer.Producer, f field.Model, characterId uint32,
-		skillId skill2.Id, skillLevel byte, e effect.Model,
+		skillId skill2.Id, skillLevel byte, e effect.Model, castOrigin *point.Model,
 	) error {
 		return func(_ context.Context) func(
-			writer.Producer, field.Model, uint32, skill2.Id, byte, effect.Model,
+			writer.Producer, field.Model, uint32, skill2.Id, byte, effect.Model, *point.Model,
 		) error {
 			return func(_ writer.Producer, _ field.Model, characterId uint32,
-				skillId skill2.Id, skillLevel byte, e effect.Model,
+				skillId skill2.Id, skillLevel byte, e effect.Model, castOrigin *point.Model,
 			) error {
 				calls = append(calls, attackCastCall{
 					characterId: characterId,
 					wireSkillId: skillId,
 					skillLevel:  skillLevel,
 					duration:    e.Duration(),
+					castOrigin:  castOrigin,
 				})
 				return retErr
 			}
@@ -85,7 +88,7 @@ func TestAttackCastTryApply_Registered_InvokesHandler(t *testing.T) {
 
 	l, _ := test.NewNullLogger()
 	attackCastTryApply(l, context.Background(), nil, attackCastTestField(), 1001, id,
-		skill2.Id(2111003), 7, attackCastTestEffect(t, 4000))
+		skill2.Id(2111003), 7, attackCastTestEffect(t, 4000), nil)
 
 	if len(*calls) != 1 {
 		t.Fatalf("handler invoked %d times, want 1", len(*calls))
@@ -115,7 +118,7 @@ func TestAttackCastTryApply_Registered_InvokesHandler(t *testing.T) {
 func TestAttackCastTryApply_Unregistered_NoOp(t *testing.T) {
 	l, hook := test.NewNullLogger()
 	attackCastTryApply(l, context.Background(), nil, attackCastTestField(), 1001,
-		skill2.Identity(900900902), skill2.Id(2001005), 1, attackCastTestEffect(t, 0))
+		skill2.Identity(900900902), skill2.Id(2001005), 1, attackCastTestEffect(t, 0), nil)
 
 	if n := len(hook.AllEntries()); n != 0 {
 		t.Fatalf("unregistered identity logged %d entries, want 0: %v", n, hook.AllEntries())
@@ -131,7 +134,7 @@ func TestAttackCastTryApply_HandlerError_SwallowedAndLogged(t *testing.T) {
 
 	l, hook := test.NewNullLogger()
 	attackCastTryApply(l, context.Background(), nil, attackCastTestField(), 1001, id,
-		skill2.Id(2111003), 1, attackCastTestEffect(t, 4000))
+		skill2.Id(2111003), 1, attackCastTestEffect(t, 4000), nil)
 
 	if len(*calls) != 1 {
 		t.Fatalf("handler invoked %d times, want 1", len(*calls))

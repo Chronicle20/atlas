@@ -27,6 +27,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 	skill3 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
@@ -726,14 +727,37 @@ func attackCastTryApply(
 	wireSkillId skill3.Id,
 	skillLevel byte,
 	e effect.Model,
+	castOrigin *point.Model,
 ) {
 	h, ok := handler.LookupAttackCast(castId)
 	if !ok {
 		return
 	}
-	if err := h(l)(ctx)(wp, f, characterId, wireSkillId, skillLevel, e); err != nil {
+	if err := h(l)(ctx)(wp, f, characterId, wireSkillId, skillLevel, e, castOrigin); err != nil {
 		l.WithError(err).Errorf("Attack-cast handler for skill [%d] failed for character [%d].", wireSkillId, characterId)
 	}
+}
+
+// attackCastOrigin extracts the world point the attack packet nominated for a
+// cast-time effect, or nil when the packet carries none.
+//
+// Only the thrown-grenade skills carry one. Their trailing coordinate pair is
+// where the BOMB landed -- a function of how long the attack key was held --
+// and it is the point the client has already drawn the explosion at, so an
+// effect the server anchors anywhere else visibly disagrees with the client
+// (task-218 field report #4: Poison Bomb's mist appeared at the caster's feet
+// no matter how far the bomb was thrown).
+//
+// Gated on the skill, not on a non-zero value: AttackInfo.Decode only fills
+// the grenade fields for the grenade arm, and (0,0) is a legal coordinate, so
+// a value-based test would both miss a legitimate origin and invent one for
+// every non-grenade attack.
+func attackCastOrigin(ai packetmodel.AttackInfo) *point.Model {
+	if !skill3.IsGrenadeSkill(skill3.Id(ai.SkillId())) {
+		return nil
+	}
+	p := point.NewModel(point.X(int16(ai.GrenadeX())), point.Y(int16(ai.GrenadeY())))
+	return &p
 }
 
 // resolveAttackSkill finds the owned skill backing an attack's wire skill id,
@@ -1085,7 +1109,7 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// resolved Identity) because handlers put it on the wire for
 					// the client to match against its own WZ.
 					if attackIdOk && ai.SkillId() > 0 {
-						attackCastTryApply(l, ctx, wp, s.Field(), s.CharacterId(), attackId, skill3.Id(ai.SkillId()), sk.Level(), se)
+						attackCastTryApply(l, ctx, wp, s.Field(), s.CharacterId(), attackId, skill3.Id(ai.SkillId()), sk.Level(), se, attackCastOrigin(ai))
 					}
 
 					// TODO apply attack effect (heal, mp consumption, dispel, cure all, combo reset, etc)

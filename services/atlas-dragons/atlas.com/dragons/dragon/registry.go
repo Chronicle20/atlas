@@ -177,6 +177,12 @@ func (r *Registry) GetInField(ctx context.Context, t tenant.Model, f field.Model
 	return out, nil
 }
 
+// Update applies fn to the stored dragon and persists the result. fn must not
+// change the dragon's Field(): unlike Put, Update does not compare the old and
+// new Field() and does not migrate the field-index membership, so a field
+// change made here would leave the dragon indexed under its stale field and
+// permanently invisible to GetInField for the new one. A field change must go
+// through Remove followed by Put, never Update.
 func (r *Registry) Update(ctx context.Context, t tenant.Model, characterId uint32, fn func(Model) Model) (Model, error) {
 	s, err := r.reg.Update(ctx, storeSuffix(t, characterId), func(cur storedDragon) storedDragon {
 		_, m, derr := fromStored(cur)

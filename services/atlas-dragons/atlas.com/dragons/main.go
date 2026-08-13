@@ -1,6 +1,8 @@
 package main
 
 import (
+	"atlas-dragons/dragon"
+	"atlas-dragons/world"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -37,7 +39,7 @@ func main() {
 	l := rt.Logger()
 
 	rc := atlas.Connect(l)
-	_ = rc
+	dragon.InitRegistry(rc)
 
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
@@ -48,6 +50,8 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
+		AddRouteInitializer(dragon.InitResource(GetServer())).
+		AddRouteInitializer(world.InitResource(GetServer())).
 		Run()
 
 	rt.Wait()

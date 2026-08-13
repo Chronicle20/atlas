@@ -24,18 +24,37 @@ call site's containing function was inspected:
   symbol; none is `CMacroSysMan`-class. The only `FuncKeyMappedMan` sender
   present is `SaveFuncKeyMap` (`0x4e5fae`) — the unrelated `CHANGE_KEYMAP`
   op, not a macro list.
-- Every unnamed (`sub_XXXXXX`) caller — **44 in total** — was individually
+- Every unnamed (`sub_XXXXXX`) caller — **47 in total** — was individually
   decompiled and checked against the confirmed send shape (`Encode1(count
   clamped <= 5)` then a per-entry loop of
   `EncodeStr(name)+Encode1(shout)+3x Encode4(skillId)`, established on
   gms_v72/v79/v83/v84/v87/v92/v95/jms_v185 and re-confirmed on gms_v61
-  below). None matches. The four largest unnamed candidates —
-  `sub_69CC07` (opcode 41, quest-portal/UI dispatch), `sub_6A0528` (opcode
-  36, melee-attack `CLOSE_RANGE_ATTACK`-family sender), `sub_6A228C`
-  (opcode 37, ranged-attack sender), `sub_6A3AC7` (opcode 38, magic-attack
-  sender) — are all large skill-attack senders unrelated to macros, verified
-  by reading their full decompile and the literal opcode each pushes into
-  its `COutPacket` ctor.
+  below). None matches. The 47 was re-derived mechanically, not by hand
+  recount: the full 317-entry xref list was written to a scratch file as
+  one `addr name` line per distinct caller function (282 distinct functions
+  after deduplicating repeat call sites into the same caller — e.g.
+  `OnCheckPinCodeResult` is called 4 times, `OnConnect` twice, etc.), then
+  `grep -c ' sub_'` counted the unnamed ones — 47. An earlier hand-count of
+  44 during the first pass had silently skipped three real candidates
+  (`sub_44A54A`, `sub_59B031`, `sub_712FB5`); this re-derivation caught
+  the gap and all three were subsequently decompiled too (see below) — none
+  matches the send shape either, so the CONFIRMED-NA verdict is unaffected,
+  but the search-extent number in the first draft of this file and of
+  `feature-na-evidence.yaml` was wrong and both are now corrected to 47.
+  The four largest unnamed candidates — `sub_69CC07` (opcode 41,
+  quest-portal/UI dispatch), `sub_6A0528` (opcode 36, melee-attack
+  `CLOSE_RANGE_ATTACK`-family sender), `sub_6A228C` (opcode 37,
+  ranged-attack sender), `sub_6A3AC7` (opcode 38, magic-attack sender) —
+  are all large skill-attack senders unrelated to macros, verified by
+  reading their full decompile and the literal opcode each pushes into its
+  `COutPacket` ctor. The three previously-missed candidates: `sub_44A54A`
+  (opcode 160, cash-shop item-locker deduction —
+  `Encode1(0x16)+Encode4+EncodeBuffer(8)`, a fixed 8-byte buffer, not a
+  count-clamped per-entry loop), `sub_59B031` (opcode 85, quest-item
+  drop-selection dialog — `Encode1(0)+Encode2+Encode4+EncodeBuffer`, no
+  count clamp or per-entry string/bool/3×uint32 loop), `sub_712FB5`
+  (opcode 105 — `Encode1(9)+Encode2(count)` then an `EncodeStr`-only loop,
+  no shout byte or skillId fields) — none matches either.
 
 No candidate anywhere in the 317-site enumeration constructs a packet with
 `Encode1(count<=5)` followed by a string+bool+3×uint32 per-entry loop.
@@ -130,20 +149,26 @@ match) — no positive pressure from that direction either.
 
 **Step 2 (invariant search).** `CWvsContext::OnPacket` (`0x70d215`) is the
 receive-side dispatcher this op would need a case in. It is a **fully
-compiled, fully-named switch** over cases 25 through 70 (`default: return`)
-— every single case dispatches to a real, named handler (`OnInventoryOperation`
-… `OnGivePopularityResult` … `OnPartyResult` … through `sub_7215EA` at case
-70), each individually legible by name and, for the four unnamed stub cases
-(58, 62, 68, 70), by decompiled body — none decodes a macro list (`Decode1`
-count clamped to 5, then a `DecodeStr`+`Decode1`+3×`Decode4` per-entry loop).
-There is no unresolved/default case in the 25-70 range that could hide an
-unnamed macro-init handler, and no case number in that range is unaccounted
-for by a real handler. `func_query name_regex
+compiled switch with 43 explicit case labels** across the opcode range
+25-70 — re-counted directly from the decompile's `case N:` lines, not
+estimated from the range width: 25,26,...,44 (20 contiguous labels),
+46,47 (2), 49,50,51 (3), 53,54,...,70 (18 contiguous) = 20+2+3+18 = **43**.
+The range 25-70 spans 46 integers; the **3 unlisted case numbers — 45, 48,
+52 — carry no case label at all** and fall through to `default: return`, a
+no-op. So no case in the range, labelled or not, can reach a macro-decode
+handler: the 43 labelled cases each dispatch to a real, named handler
+(`OnInventoryOperation` … `OnGivePopularityResult` … `OnPartyResult` …
+through `sub_7215EA` at case 70), each individually legible by name and,
+for the four unnamed stub cases (58, 62, 68, 70), by decompiled body — none
+decodes a macro list (`Decode1` count clamped to 5, then a
+`DecodeStr`+`Decode1`+3×`Decode4` per-entry loop) — and the 3 gaps do
+nothing at all. `func_query name_regex
 "MacroSysMan|OnMacroSysDataInit|MACROSYSDATA|SINGLEMACRO"` over the whole
 image returns 0 hits.
 
 **Verdict:** absence is bilateral, exhaustively bounded on the receive side
-by the fully-enumerated compiled switch (not a name search) and on the send
+by the fully-enumerated compiled switch (43 labelled cases + 3 confirmed
+no-op gaps = the complete 25-70 range, not a name search) and on the send
 side by the 317-site ctor-xref enumeration above. Consistent with v48
 predating the skill-macro feature entirely. Evidence recorded in
 `feature-na-evidence.yaml`.
@@ -152,9 +177,9 @@ predating the skill-macro feature entirely. Evidence recorded in
 
 | cell | verdict | search extent |
 |---|---|---|
-| `SKILL_MACRO` × `gms_v48` | CONFIRMED-NA | all 317 `COutPacket::COutPacket(long)` call sites scanned (317/317 named-or-decompiled); 0 macro-shaped matches |
+| `SKILL_MACRO` × `gms_v48` | CONFIRMED-NA | all 317 `COutPacket::COutPacket(long)` call sites scanned (317/317 named-or-decompiled, 47 unnamed); 0 macro-shaped matches |
 | `SKILL_MACRO` × `gms_v61` | CORRECTED | send site located at `CMacroSysMan::FlushToSvr` (`0x59746c`), opcode 101, within the 391-site `COutPacket`-ctor xref enumeration |
-| `MACRO_SYS_DATA_INIT` × `gms_v48` | CONFIRMED-NA | `CWvsContext::OnPacket`'s full compiled switch (cases 25-70, 46 cases) exhaustively enumerated; 0 macro-shaped matches |
+| `MACRO_SYS_DATA_INIT` × `gms_v48` | CONFIRMED-NA | `CWvsContext::OnPacket`'s full compiled switch re-counted: 43 explicit case labels across the 25-70 range, 3 gaps (45, 48, 52) confirmed no-op `default:`; exhaustively enumerated; 0 macro-shaped matches |
 
 Downstream: `SKILL_MACRO` × `gms_v61` is corrected into scope for Tasks
 6-12 (template binding, fixture, verification) exactly like any other

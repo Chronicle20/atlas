@@ -76,6 +76,8 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			}
 			m.SlotMax = uint32(i.GetIntegerWithDefault("slotMax", 0))
 			m.ProtectTime = uint32(i.GetIntegerWithDefault("protectTime", 0))
+			m.AddTime = uint32(i.GetIntegerWithDefault("addTime", 0))
+			m.MaxDays = uint32(i.GetIntegerWithDefault("maxDays", 0))
 			m.TradeBlock = i.GetBool("tradeBlock", false)
 			m.StateChangeItem = uint32(i.GetIntegerWithDefault("stateChangeItem", 0))
 			if i.GetIntegerWithDefault("isBgmOrEffect", 0) == 1 {

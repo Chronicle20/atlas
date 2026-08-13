@@ -35,9 +35,18 @@ type TimeWindow struct {
 }
 
 type RestModel struct {
-	Id              uint32             `json:"-"`
-	SlotMax         uint32             `json:"slotMax"`
-	ProtectTime     uint32             `json:"protectTime,omitempty"`
+	Id          uint32 `json:"-"`
+	SlotMax     uint32 `json:"slotMax"`
+	ProtectTime uint32 `json:"protectTime,omitempty"`
+	// AddTime is info/addTime in SECONDS — the expiration grant of an
+	// item-expiration extender (Magical Sandglass, classification 550). The
+	// client multiplies it by 10^7 into FILETIME 100ns units
+	// (CDraggableItem::ModifyEquipItem, gms_v83 @0x4F4BB7), which is what
+	// fixes the unit as seconds.
+	AddTime uint32 `json:"addTime,omitempty"`
+	// MaxDays is info/maxDays in DAYS — the ceiling, anchored to now, past
+	// which an extender may not push a target's expiration.
+	MaxDays         uint32             `json:"maxDays,omitempty"`
 	StateChangeItem uint32             `json:"stateChangeItem,omitempty"`
 	BgmPath         string             `json:"bgmPath,omitempty"`
 	Spec            map[SpecType]int32 `json:"spec"`

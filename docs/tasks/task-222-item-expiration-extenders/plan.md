@@ -60,7 +60,7 @@ These apply to **every** task below.
 - Consumes: nothing.
 - Produces: `cash.RestModel.AddTime uint32` (json `addTime,omitempty`) and `cash.RestModel.MaxDays uint32` (json `maxDays,omitempty`). Task 13 mirrors these on the channel model; Task 6 mirrors them on the atlas-inventory client.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `services/atlas-data/atlas.com/data/cash/reader_test.go`. The five ids and values are the v83 extract from `Item.wz/Cash/0550.img.xml` recorded in prd.md §4; `05500009` is the absent-field default case (it exists only in this fixture, not in v83 WZ).
 
@@ -146,7 +146,7 @@ func TestReaderSandglassAddTimeAndMaxDays(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go test ./cash/ -run TestReaderSandglassAddTimeAndMaxDays -v
@@ -154,7 +154,7 @@ cd services/atlas-data/atlas.com/data && go test ./cash/ -run TestReaderSandglas
 
 Expected: FAIL — compile error, `rm.AddTime undefined (type RestModel has no field or method AddTime)`.
 
-- [ ] **Step 3: Add the two REST fields**
+- [x] **Step 3: Add the two REST fields**
 
 In `services/atlas-data/atlas.com/data/cash/rest.go`, inside `type RestModel struct`, add after the `ProtectTime` line:
 
@@ -170,7 +170,7 @@ In `services/atlas-data/atlas.com/data/cash/rest.go`, inside `type RestModel str
 	MaxDays uint32 `json:"maxDays,omitempty"`
 ```
 
-- [ ] **Step 4: Parse the two fields**
+- [x] **Step 4: Parse the two fields**
 
 In `services/atlas-data/atlas.com/data/cash/reader.go`, immediately after the existing `m.ProtectTime = ...` line:
 
@@ -179,7 +179,7 @@ In `services/atlas-data/atlas.com/data/cash/reader.go`, immediately after the ex
 			m.MaxDays = uint32(i.GetIntegerWithDefault("maxDays", 0))
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go test -race ./cash/... && go vet ./...
@@ -187,7 +187,7 @@ cd services/atlas-data/atlas.com/data && go test -race ./cash/... && go vet ./..
 
 Expected: PASS, vet clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-data/atlas.com/data/cash/
@@ -209,7 +209,7 @@ The client reads `info/notExtend` off the **target equip** and refuses the exten
 - Consumes: nothing.
 - Produces: `equipment.RestModel.NotExtend bool` (json `notExtend`). Task 13 mirrors it on the channel model.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `services/atlas-data/atlas.com/data/equipment/reader_test.go`:
 
@@ -268,7 +268,7 @@ func TestReaderNotExtend(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go test ./equipment/ -run TestReaderNotExtend -v
@@ -276,7 +276,7 @@ cd services/atlas-data/atlas.com/data && go test ./equipment/ -run TestReaderNot
 
 Expected: FAIL — compile error, `rm.NotExtend undefined`.
 
-- [ ] **Step 3: Add the REST field**
+- [x] **Step 3: Add the REST field**
 
 In `services/atlas-data/atlas.com/data/equipment/rest.go`, in `type RestModel struct`, immediately after the `TradeBlock bool \`json:"tradeBlock"\`` line:
 
@@ -288,7 +288,7 @@ In `services/atlas-data/atlas.com/data/equipment/rest.go`, in `type RestModel st
 	NotExtend      bool            `json:"notExtend"`
 ```
 
-- [ ] **Step 4: Parse the field**
+- [x] **Step 4: Parse the field**
 
 In `services/atlas-data/atlas.com/data/equipment/reader.go`, inside the struct literal, immediately after the `TradeBlock: info.GetBool("tradeBlock", false),` line:
 
@@ -296,7 +296,7 @@ In `services/atlas-data/atlas.com/data/equipment/reader.go`, inside the struct l
 			NotExtend:      info.GetBool("notExtend", false),
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-data/atlas.com/data && go test -race ./equipment/... && go vet ./...
@@ -304,7 +304,7 @@ cd services/atlas-data/atlas.com/data && go test -race ./equipment/... && go vet
 
 Expected: PASS, vet clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-data/atlas.com/data/equipment/
@@ -326,7 +326,7 @@ git commit -m "feat(task-222): parse equipment notExtend in atlas-data"
 - Consumes: nothing.
 - Produces: `item.ClassificationExpirationExtender` — an `item.Classification` whose value is 550. Task 14 compares `item.GetClassification(itemId)` against it.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `libs/atlas-constants/item/constants_test.go` (create the file with `package item` and `import "testing"` if it does not exist):
 
@@ -341,7 +341,7 @@ func TestClassificationExpirationExtender(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd libs/atlas-constants && go test ./item/ -run TestClassificationExpirationExtender -v
@@ -349,7 +349,7 @@ cd libs/atlas-constants && go test ./item/ -run TestClassificationExpirationExte
 
 Expected: FAIL — `undefined: ClassificationExpirationExtender`.
 
-- [ ] **Step 3: Define the constant**
+- [x] **Step 3: Define the constant**
 
 In `libs/atlas-constants/item/constants.go`, between the `ClassificationRemoteStore` and `ClassificationViciousHammer` lines (the block is in ascending numeric order):
 
@@ -357,7 +357,7 @@ In `libs/atlas-constants/item/constants.go`, between the `ClassificationRemoteSt
 	ClassificationExpirationExtender       = Classification(550)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 ```bash
 cd libs/atlas-constants && go test -race ./item/ -run TestClassificationExpirationExtender -v
@@ -365,7 +365,7 @@ cd libs/atlas-constants && go test -race ./item/ -run TestClassificationExpirati
 
 Expected: PASS.
 
-- [ ] **Step 5: Replace the bare literal in the classifier**
+- [x] **Step 5: Replace the bare literal in the classifier**
 
 In `services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use.go`, change line 1034 from `if category == 550 {` to:
 
@@ -375,7 +375,7 @@ In `services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_
 
 Leave the branch body unchanged — it already returns 62 on GMS >= 95 and 61 otherwise, which is the IDA-verified mapping (design §1.1).
 
-- [ ] **Step 6: Run tests and vet**
+- [x] **Step 6: Run tests and vet**
 
 ```bash
 cd libs/atlas-constants && go test -race ./... && go vet ./...
@@ -384,7 +384,7 @@ cd ../../services/atlas-channel/atlas.com/channel && go build ./... && go test -
 
 Expected: all PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add libs/atlas-constants/item/ services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use.go
@@ -408,14 +408,14 @@ The rename is self-contained: the only non-test reference is `character_cash_ite
 - Consumes: nothing.
 - Produces: `serverbound.ItemUseTargetSlot` with constructor `NewItemUseTargetSlot(updateTimeFirst bool) *ItemUseTargetSlot`, getters `Slot() int16` / `UpdateTime() uint32` / `Operation() string`, and `Encode`/`Decode` with the existing signatures. Task 14 calls `cashsb.NewItemUseTargetSlot(updateTimeFirst)` and reads `sp.Slot()`.
 
-- [ ] **Step 1: Rename both files with git**
+- [x] **Step 1: Rename both files with git**
 
 ```bash
 git mv libs/atlas-packet/cash/serverbound/item_use_item_tag.go libs/atlas-packet/cash/serverbound/item_use_target_slot.go
 git mv libs/atlas-packet/cash/serverbound/item_use_item_tag_test.go libs/atlas-packet/cash/serverbound/item_use_target_slot_test.go
 ```
 
-- [ ] **Step 2: Rewrite the codec file**
+- [x] **Step 2: Rewrite the codec file**
 
 Replace the entire contents of `libs/atlas-packet/cash/serverbound/item_use_target_slot.go` with:
 
@@ -477,7 +477,7 @@ func (m *ItemUseTargetSlot) Decode(_ logrus.FieldLogger, _ context.Context) func
 }
 ```
 
-- [ ] **Step 3: Rewrite the test file, adding the equipped-slot case**
+- [x] **Step 3: Rewrite the test file, adding the equipped-slot case**
 
 Replace the entire contents of `libs/atlas-packet/cash/serverbound/item_use_target_slot_test.go` with:
 
@@ -540,7 +540,7 @@ func TestItemUseTargetSlotEquippedSlotBytes(t *testing.T) {
 }
 ```
 
-- [ ] **Step 4: Update the one non-test call site**
+- [x] **Step 4: Update the one non-test call site**
 
 In `services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use.go:203`, change:
 
@@ -554,7 +554,7 @@ to:
 			sp := cashsb.NewItemUseTargetSlot(updateTimeFirst)
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 cd libs/atlas-packet && go test -race ./cash/... && go vet ./...
@@ -569,7 +569,7 @@ grep -rn "ItemUseItemTag" --include="*.go" . && echo "STALE REFERENCE" || echo "
 
 Expected: tests PASS, build clean, the grep prints `clean`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add libs/atlas-packet/cash/serverbound/ services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use.go
@@ -595,7 +595,7 @@ git commit -m "refactor(task-222): rename ItemUseItemTag to ItemUseTargetSlot"
 
   Tasks 11, 12, and 14 all reference these exact names.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `libs/atlas-saga/unmarshal_test.go` (match the surrounding style of `TestUnmarshalApplyAssetLockStep` at `:799`):
 
@@ -637,7 +637,7 @@ func TestExpirationExtenderUseSagaTypeValue(t *testing.T) {
 
 If `unmarshal_test.go` does not already import `time`, add it to the import block.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd libs/atlas-saga && go test ./... -run "TestUnmarshalExtendAssetExpirationStep|TestExpirationExtenderUseSagaTypeValue" -v
@@ -645,7 +645,7 @@ cd libs/atlas-saga && go test ./... -run "TestUnmarshalExtendAssetExpirationStep
 
 Expected: FAIL — `undefined: ExtendAssetExpirationPayload`, `undefined: ExpirationExtenderUse`.
 
-- [ ] **Step 3: Add the saga type**
+- [x] **Step 3: Add the saga type**
 
 In `libs/atlas-saga/model.go`, in the `Type` const block, immediately after the `IncubatorUse` line:
 
@@ -653,7 +653,7 @@ In `libs/atlas-saga/model.go`, in the `Type` const block, immediately after the 
 	ExpirationExtenderUse Type = "expiration_extender_use"
 ```
 
-- [ ] **Step 4: Add the action**
+- [x] **Step 4: Add the action**
 
 In `libs/atlas-saga/model.go`, in the `Action` const block, in the "Item tag / sealing lock / incubator actions" group, immediately after the `ApplyAssetLock` line:
 
@@ -665,7 +665,7 @@ In `libs/atlas-saga/model.go`, in the `Action` const block, in the "Item tag / s
 	ExtendAssetExpiration Action = "extend_asset_expiration"
 ```
 
-- [ ] **Step 5: Add the payload**
+- [x] **Step 5: Add the payload**
 
 In `libs/atlas-saga/payloads.go`, immediately after the `ApplyAssetLockPayload` struct:
 
@@ -686,7 +686,7 @@ type ExtendAssetExpirationPayload struct {
 }
 ```
 
-- [ ] **Step 6: Add the unmarshal arm**
+- [x] **Step 6: Add the unmarshal arm**
 
 In `libs/atlas-saga/unmarshal.go`, immediately after the `case ApplyAssetLock:` block:
 
@@ -699,7 +699,7 @@ In `libs/atlas-saga/unmarshal.go`, immediately after the `case ApplyAssetLock:` 
 		s.Payload = any(payload).(T)
 ```
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 ```bash
 cd libs/atlas-saga && go test -race ./... && go vet ./...
@@ -707,7 +707,7 @@ cd libs/atlas-saga && go test -race ./... && go vet ./...
 
 Expected: PASS, vet clean.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add libs/atlas-saga/
@@ -739,7 +739,7 @@ Two independent additions that the next two tasks both need: the Kafka command c
   - `cash.NewModelBuilder(id uint32)` with `SetAddTime` / `SetMaxDays` / `Build`
   - `mock.ProcessorMock` with field `GetByIdFunc func(itemId uint32) (cash.Model, error)`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-inventory/atlas.com/inventory/data/cash/processor_test.go`, modelled on `data/consumable/processor_drain_test.go`:
 
@@ -786,7 +786,7 @@ func TestGetByIdReadsAddTimeAndMaxDays(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-inventory/atlas.com/inventory && go test ./data/cash/ -v
@@ -794,7 +794,7 @@ cd services/atlas-inventory/atlas.com/inventory && go test ./data/cash/ -v
 
 Expected: FAIL — the package does not exist.
 
-- [ ] **Step 3: Create the REST model**
+- [x] **Step 3: Create the REST model**
 
 `services/atlas-inventory/atlas.com/inventory/data/cash/rest.go`:
 
@@ -846,7 +846,7 @@ func Extract(rm RestModel) (Model, error) {
 }
 ```
 
-- [ ] **Step 4: Create the domain model and its builder**
+- [x] **Step 4: Create the domain model and its builder**
 
 `services/atlas-inventory/atlas.com/inventory/data/cash/model.go`:
 
@@ -890,7 +890,7 @@ func (b *ModelBuilder) Build() Model {
 }
 ```
 
-- [ ] **Step 5: Create the request and processor**
+- [x] **Step 5: Create the request and processor**
 
 `services/atlas-inventory/atlas.com/inventory/data/cash/requests.go`:
 
@@ -949,7 +949,7 @@ func (p *ProcessorImpl) GetById(itemId uint32) (Model, error) {
 }
 ```
 
-- [ ] **Step 6: Create the mock**
+- [x] **Step 6: Create the mock**
 
 `services/atlas-inventory/atlas.com/inventory/data/cash/mock/processor.go`:
 
@@ -975,7 +975,7 @@ func (m *ProcessorMock) GetById(itemId uint32) (cash.Model, error) {
 }
 ```
 
-- [ ] **Step 7: Add the Kafka command contract**
+- [x] **Step 7: Add the Kafka command contract**
 
 In `services/atlas-inventory/atlas.com/inventory/kafka/message/compartment/kafka.go`, in the command-type const block immediately after `CommandApplyLock`:
 
@@ -999,7 +999,7 @@ type ExtendExpirationCommandBody struct {
 }
 ```
 
-- [ ] **Step 8: Run tests to verify they pass**
+- [x] **Step 8: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-inventory/atlas.com/inventory && go test -race ./data/cash/... ./kafka/... && go build ./... && go vet ./...
@@ -1007,7 +1007,7 @@ cd services/atlas-inventory/atlas.com/inventory && go test -race ./data/cash/...
 
 Expected: PASS, build and vet clean.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add services/atlas-inventory/atlas.com/inventory/data/cash/ services/atlas-inventory/atlas.com/inventory/kafka/message/compartment/kafka.go
@@ -1036,7 +1036,7 @@ The flag-preservation invariant lives here. `ApplyLock` (`asset/processor.go:329
 - when `expiration.Equal(a.Expiration())` — redelivery: skip the DB write but STILL emit `UPDATED`, so the saga step completes instead of timing out
 - otherwise write the expiration through `updateFlagAndExpiration` with `a.Flag()` passed through **unchanged**, and emit `UPDATED`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `services/atlas-inventory/atlas.com/inventory/asset/processor_test.go`. Read that file and `change_template_test.go` in the same package first and reuse whatever harness they already use for a `*gorm.DB`, a tenant context, and a seeded asset — do not introduce a parallel one. The names `testDatabase` / `testContext` / `seedAsset` below are placeholders for whatever those helpers are actually called; substitute them.
 
@@ -1131,7 +1131,7 @@ func TestExtendExpirationRedeliveryIsIdempotent(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-inventory/atlas.com/inventory && go test ./asset/ -run TestExtendExpiration -v
@@ -1139,7 +1139,7 @@ cd services/atlas-inventory/atlas.com/inventory && go test ./asset/ -run TestExt
 
 Expected: FAIL — `p.ExtendExpiration undefined`.
 
-- [ ] **Step 3: Add the method to the interface**
+- [x] **Step 3: Add the method to the interface**
 
 In `services/atlas-inventory/atlas.com/inventory/asset/processor.go`, in `type Processor interface`, immediately after the `ApplyLock` line:
 
@@ -1147,7 +1147,7 @@ In `services/atlas-inventory/atlas.com/inventory/asset/processor.go`, in `type P
 	ExtendExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model, expiration time.Time) error
 ```
 
-- [ ] **Step 4: Implement it**
+- [x] **Step 4: Implement it**
 
 In the same file, immediately after the `ClearLock` implementation:
 
@@ -1188,7 +1188,7 @@ func (p *ProcessorImpl) ExtendExpiration(mb *message.Buffer) func(transactionId 
 }
 ```
 
-- [ ] **Step 5: Add the mock method**
+- [x] **Step 5: Add the mock method**
 
 In `services/atlas-inventory/atlas.com/inventory/asset/mock/processor.go`, add a field beside the existing `ApplyLockFunc`:
 
@@ -1210,7 +1210,7 @@ func (m *ProcessorMock) ExtendExpiration(mb *message.Buffer) func(transactionId 
 }
 ```
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-inventory/atlas.com/inventory && go test -race ./asset/... && go build ./... && go vet ./...
@@ -1218,7 +1218,7 @@ cd services/atlas-inventory/atlas.com/inventory && go test -race ./asset/... && 
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-inventory/atlas.com/inventory/asset/
@@ -1229,7 +1229,19 @@ git commit -m "feat(task-222): add flag-preserving asset ExtendExpiration"
 
 ### Task 8: atlas-inventory compartment `ExtendAssetExpiration` with server-side cap re-validation
 
-This is the trust boundary (PRD FR-4.3, design D2). The channel computes the expiration; this service re-derives `cap = now + maxDays*24h` from the extender's own cash data and clamps the incoming value to it. A forged command carrying an expiration years out is bounded here, not trusted.
+This is the trust boundary (PRD FR-4.3, design D2). The channel computes the expiration; this service re-derives `cap = now + maxDays*24h` from the extender's own cash data and **rejects** an incoming value that exceeds it. A forged command carrying an expiration years out is refused here, not trusted.
+
+> **Correction (applied during execution).** This task originally described
+> *clamping* the incoming value to the server cap, which contradicted the
+> Global Constraint at the top of this plan (**D1 = reject over-cap, never
+> clamp-and-consume**). The contradiction was escalated and the human ruled
+> that **D1 governs: reject, never clamp — no `min()` anywhere in this
+> feature.** The prose, the code snippet, and the test below have been
+> corrected to match the implementation that shipped. Rejecting is safe
+> because the sandglass is already destroyed by saga step 1, and the
+> orchestrator's compensator refunds it by `TemplateId` when a step fails —
+> so a rejected extension returns the item in full rather than burning it
+> for a partial grant.
 
 **Files:**
 - Modify: `services/atlas-inventory/atlas.com/inventory/compartment/processor.go` (struct and `NewProcessor` near the top, the `Processor` interface at `:37-60`, and the implementation after `ApplyAssetLock` at `:1052-1076`)
@@ -1245,12 +1257,12 @@ This is the trust boundary (PRD FR-4.3, design D2). The channel computes the exp
 
   Task 9 calls `ExtendAssetExpirationAndEmit`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `services/atlas-inventory/atlas.com/inventory/compartment/processor_test.go`, using the file's existing database/context harness. `testDatabase` / `testContext` / `seedEquipCompartmentWithAsset` are placeholders — substitute the file's real helpers, and if no compartment-with-asset seeder exists, add one alongside the existing seeding helpers in that file.
 
 ```go
-func TestExtendAssetExpirationClampsToServerDerivedCap(t *testing.T) {
+func TestExtendAssetExpirationRejectsOverCap(t *testing.T) {
 	db := testDatabase(t)
 	l, _ := test.NewNullLogger()
 	ctx := testContext(t)
@@ -1276,12 +1288,13 @@ func TestExtendAssetExpirationClampsToServerDerivedCap(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ceiling := time.Now().UTC().Add(30 * 24 * time.Hour)
-	if got.Expiration().After(ceiling.Add(time.Minute)) {
-		t.Errorf("Expiration = %v, want clamped to about %v", got.Expiration(), ceiling)
+	// D1: an over-cap request is REJECTED, never clamped-and-consumed. The
+	// call must error and the asset must be left exactly as it was.
+	if err == nil {
+		t.Fatal("ExtendAssetExpiration = nil error, want rejection for an over-cap request")
 	}
-	if !got.Expiration().After(base) {
-		t.Errorf("Expiration = %v, want later than the original %v", got.Expiration(), base)
+	if !got.Expiration().Equal(base) {
+		t.Errorf("Expiration = %v, want unchanged at %v", got.Expiration(), base)
 	}
 }
 
@@ -1344,7 +1357,7 @@ func TestExtendAssetExpirationRejectsZeroMaxDays(t *testing.T) {
 
 Import `"atlas-inventory/data/cash"` and `cashmock "atlas-inventory/data/cash/mock"`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-inventory/atlas.com/inventory && go test ./compartment/ -run TestExtendAssetExpiration -v
@@ -1352,7 +1365,7 @@ cd services/atlas-inventory/atlas.com/inventory && go test ./compartment/ -run T
 
 Expected: FAIL — `WithCashProcessor undefined`.
 
-- [ ] **Step 3: Add the cash processor to the struct and constructor**
+- [x] **Step 3: Add the cash processor to the struct and constructor**
 
 In `services/atlas-inventory/atlas.com/inventory/compartment/processor.go`, add the field to `type ProcessorImpl struct`:
 
@@ -1368,7 +1381,7 @@ initialise it in `NewProcessor`:
 
 and add `"atlas-inventory/data/cash"` to the import block.
 
-- [ ] **Step 4: Add the interface entries and the seam**
+- [x] **Step 4: Add the interface entries and the seam**
 
 In `type Processor interface`, immediately after the `WithAssetProcessor` line:
 
@@ -1393,7 +1406,7 @@ func (p *ProcessorImpl) WithCashProcessor(cp cash.Processor) *ProcessorImpl {
 }
 ```
 
-- [ ] **Step 5: Implement the processor methods**
+- [x] **Step 5: Implement the processor methods**
 
 Immediately after `ApplyAssetLock` in the same file:
 
@@ -1406,8 +1419,8 @@ func (p *ProcessorImpl) ExtendAssetExpirationAndEmit(transactionId uuid.UUID, ch
 	})
 }
 
-// ExtendAssetExpiration extends a time-limited asset's expiration, clamping
-// the requested value to a cap this service re-derives itself.
+// ExtendAssetExpiration extends a time-limited asset's expiration, rejecting
+// a requested value that exceeds a cap this service re-derives itself.
 //
 // The channel computes the expiration, but the channel is NOT a trust
 // boundary: a forged COMMAND_TOPIC_COMPARTMENT message could otherwise set an
@@ -1430,8 +1443,8 @@ func (p *ProcessorImpl) ExtendAssetExpiration(mb *message.Buffer) func(transacti
 		}
 		serverCap := time.Now().Add(time.Duration(cd.MaxDays()) * 24 * time.Hour)
 		if expiration.After(serverCap) {
-			p.l.Warnf("Character [%d] requested expiration [%s] beyond the server-derived cap [%s] for extender [%d]; clamping.", characterId, expiration, serverCap, extenderTemplateId)
-			expiration = serverCap
+			p.l.Warnf("Character [%d] requested expiration [%s] beyond the server-derived cap [%s] for extender [%d]; rejecting.", characterId, expiration, serverCap, extenderTemplateId)
+			return errors.New("requested expiration exceeds the extender's server-derived cap")
 		}
 
 		invLock := LockRegistry().Get(characterId, inventoryType)
@@ -1460,7 +1473,7 @@ func (p *ProcessorImpl) ExtendAssetExpiration(mb *message.Buffer) func(transacti
 
 Add `"errors"` to the import block if it is not already there.
 
-- [ ] **Step 6: Add the mock methods**
+- [x] **Step 6: Add the mock methods**
 
 In `services/atlas-inventory/atlas.com/inventory/compartment/mock/processor.go`, add three fields to the `ProcessorMock` struct — beside `WithAssetProcessorFunc` (`:20`) and `ApplyAssetLockFunc` (`:56`) respectively:
 
@@ -1502,7 +1515,7 @@ func (m *ProcessorMock) ExtendAssetExpiration(mb *message.Buffer) func(transacti
 
 Add `"atlas-inventory/data/cash"` to the mock file's import block.
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-inventory/atlas.com/inventory && go test -race ./compartment/... ./asset/... && go build ./... && go vet ./...
@@ -1510,7 +1523,7 @@ cd services/atlas-inventory/atlas.com/inventory && go test -race ./compartment/.
 
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add services/atlas-inventory/atlas.com/inventory/compartment/
@@ -1529,7 +1542,7 @@ git commit -m "feat(task-222): add compartment ExtendAssetExpiration with server
 - Consumes: `compartment2.CommandExtendExpiration`, `compartment2.ExtendExpirationCommandBody` (Task 6); `compartment.Processor.ExtendAssetExpirationAndEmit` (Task 8).
 - Produces: nothing consumed by later tasks.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create or append to `services/atlas-inventory/atlas.com/inventory/kafka/consumer/compartment/consumer_test.go`. Substitute the package's real tenant-context helper for `testContext`; if none exists, build the context inline with `tenant.Create` + `tenant.WithContext` as the other consumer tests in this service do.
 
@@ -1552,7 +1565,7 @@ func TestHandleExtendExpirationCommandIgnoresOtherTypes(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-inventory/atlas.com/inventory && go test ./kafka/consumer/compartment/ -run TestHandleExtendExpirationCommand -v
@@ -1560,7 +1573,7 @@ cd services/atlas-inventory/atlas.com/inventory && go test ./kafka/consumer/comp
 
 Expected: FAIL — `undefined: handleExtendExpirationCommand`.
 
-- [ ] **Step 3: Write the handler**
+- [x] **Step 3: Write the handler**
 
 In `services/atlas-inventory/atlas.com/inventory/kafka/consumer/compartment/consumer.go`, immediately after `handleApplyLockCommand`:
 
@@ -1589,7 +1602,7 @@ func handleExtendExpirationCommand(db *gorm.DB) message.Handler[compartment2.Com
 }
 ```
 
-- [ ] **Step 4: Register it**
+- [x] **Step 4: Register it**
 
 In the same file, immediately after the `handleApplyLockCommand` registration at `:96`:
 
@@ -1601,7 +1614,7 @@ In the same file, immediately after the `handleApplyLockCommand` registration at
 
 Read the surrounding registration lines first and match their exact error-handling shape — the block at `:96` is the template.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-inventory/atlas.com/inventory && go test -race ./... && go build ./... && go vet ./...
@@ -1609,7 +1622,7 @@ cd services/atlas-inventory/atlas.com/inventory && go test -race ./... && go bui
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-inventory/atlas.com/inventory/kafka/consumer/compartment/
@@ -1633,7 +1646,7 @@ atlas-saga-orchestrator carries its own copy of the compartment command contract
 - Consumes: the atlas-inventory json tags from Task 6 — `slot`, `expiration`, `extenderTemplateId`, command type string `EXTEND_EXPIRATION`.
 - Produces: `compartment.Processor.RequestExtendExpiration(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time, extenderTemplateId uint32) error`. Task 11's step handler calls it.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/kafka/message/compartment/kafka_test.go`:
 
@@ -1662,7 +1675,7 @@ func TestExtendExpirationCommandBodyWireShape(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test ./kafka/message/compartment/ -run TestExtendExpirationCommandBodyWireShape -v
@@ -1670,7 +1683,7 @@ cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test ./kaf
 
 Expected: FAIL — `undefined: ExtendExpirationCommandBody`.
 
-- [ ] **Step 3: Mirror the contract**
+- [x] **Step 3: Mirror the contract**
 
 In `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/kafka/message/compartment/kafka.go`, add to the command-type const block immediately after `CommandApplyLock`:
 
@@ -1692,7 +1705,7 @@ type ExtendExpirationCommandBody struct {
 }
 ```
 
-- [ ] **Step 4: Add the producer**
+- [x] **Step 4: Add the producer**
 
 In `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/compartment/producer.go`, immediately after `RequestApplyLockCommandProvider`:
 
@@ -1714,7 +1727,7 @@ func RequestExtendExpirationCommandProvider(transactionId uuid.UUID, characterId
 }
 ```
 
-- [ ] **Step 5: Add the processor method**
+- [x] **Step 5: Add the processor method**
 
 In `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/compartment/processor.go`, add to the `Processor` interface immediately after `RequestApplyLock`:
 
@@ -1730,7 +1743,7 @@ func (p *ProcessorImpl) RequestExtendExpiration(transactionId uuid.UUID, charact
 }
 ```
 
-- [ ] **Step 6: Add the mock method**
+- [x] **Step 6: Add the mock method**
 
 In `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/compartment/mock/processor.go`, add beside `RequestApplyLockFunc`:
 
@@ -1748,7 +1761,7 @@ func (m *ProcessorMock) RequestExtendExpiration(transactionId uuid.UUID, charact
 }
 ```
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test -race ./kafka/... ./compartment/... && go build ./... && go vet ./...
@@ -1756,7 +1769,7 @@ cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test -race
 
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/kafka/message/compartment/ services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/compartment/
@@ -1779,7 +1792,7 @@ git commit -m "feat(task-222): mirror EXTEND_EXPIRATION contract and producer in
 
 Note: `event_acceptance_test.go` carries a coverage test that fails when an action is missing from `acceptanceTable`, so Step 5 is not optional bookkeeping — it is load-bearing.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/handler_test.go`. Read the existing tests at `:1371` first and construct `HandlerImpl`, the saga, and the step exactly the way they do — if the file builds a handler through a constructor rather than a struct literal, follow that.
 
@@ -1839,7 +1852,7 @@ func TestExtendAssetExpirationIsAcceptanceMapped(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test ./saga/ -run "TestHandleExtendAssetExpiration|TestExtendAssetExpirationIsAcceptanceMapped" -v
@@ -1847,7 +1860,7 @@ cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test ./sag
 
 Expected: FAIL — `undefined: ExtendAssetExpirationPayload`.
 
-- [ ] **Step 3: Add the aliases**
+- [x] **Step 3: Add the aliases**
 
 In `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/model.go`:
 
@@ -1880,7 +1893,7 @@ In `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/model.go`:
 		s.Payload = any(payload).(T)
 ```
 
-- [ ] **Step 4: Add the step handler and dispatch entry**
+- [x] **Step 4: Add the step handler and dispatch entry**
 
 In `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/handler.go`, add to the action switch immediately after the `case ApplyAssetLock:` arm (`:949-950`):
 
@@ -1907,7 +1920,7 @@ func (h *HandlerImpl) handleExtendAssetExpiration(s Saga, st Step[any]) error {
 }
 ```
 
-- [ ] **Step 5: Add the acceptance-table entry**
+- [x] **Step 5: Add the acceptance-table entry**
 
 In `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/event_acceptance.go`, in the "Asset actions" group immediately after the `sharedsaga.ApplyAssetLock` line:
 
@@ -1917,7 +1930,7 @@ In `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/event_acce
 
 A missing entry default-denies every event in `StepAcceptsEvent`, so the step would never complete and the saga would sit until timeout.
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test -race ./saga/... && go build ./... && go vet ./...
@@ -1925,7 +1938,7 @@ cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test -race
 
 Expected: PASS — including the pre-existing acceptance-coverage test in `event_acceptance_test.go`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/
@@ -1949,7 +1962,7 @@ Design §9 names this the single highest-risk omission in the change: a saga typ
 - Consumes: `ExpirationExtenderUse` (Task 11).
 - Produces: nothing consumed by later tasks.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/compensator_test.go`. Read the existing cash-item-use compensation test at `:213` and construct the compensator, saga, and steps exactly the way it does — replace `NewCompensatorWith(cp)` below with whatever seam that test already uses to inject a mock compartment processor.
 
@@ -2014,7 +2027,7 @@ func TestExpirationExtenderUseIsTimerClassified(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test ./saga/ -run "TestExpirationExtenderUse" -v
@@ -2022,7 +2035,7 @@ cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test ./sag
 
 Expected: FAIL — `TestExpirationExtenderUseIsTimerClassified` reports both missing lists. The pre-existing `TestEverySagaTypeIsClassified` may also fail once the type is added to only one list, which is the intended safety net.
 
-- [ ] **Step 3: Register in `reverseWalkSagaTypes`**
+- [x] **Step 3: Register in `reverseWalkSagaTypes`**
 
 In `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/timer.go`, in `reverseWalkSagaTypes`, immediately after `IncubatorUse`:
 
@@ -2030,7 +2043,7 @@ In `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/timer.go`,
 	ExpirationExtenderUse,
 ```
 
-- [ ] **Step 4: Register in `allSagaTypes`**
+- [x] **Step 4: Register in `allSagaTypes`**
 
 In the same file, in `allSagaTypes`, extend the line containing `PetEvolution, ItemTagUse, SealingLockUse, IncubatorUse, PointReset,` so it reads:
 
@@ -2038,7 +2051,7 @@ In the same file, in `allSagaTypes`, extend the line containing `PetEvolution, I
 	PetEvolution, ItemTagUse, SealingLockUse, IncubatorUse, ExpirationExtenderUse, PointReset,
 ```
 
-- [ ] **Step 5: Register in the timeout dispatch switch**
+- [x] **Step 5: Register in the timeout dispatch switch**
 
 In the same file, change the `case ItemTagUse, SealingLockUse, IncubatorUse:` arm (`:237`) to:
 
@@ -2049,7 +2062,7 @@ In the same file, change the `case ItemTagUse, SealingLockUse, IncubatorUse:` ar
 		c.DispatchCashItemUseRollbacks(s)
 ```
 
-- [ ] **Step 6: Register in the compensator branch**
+- [x] **Step 6: Register in the compensator branch**
 
 In `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/compensator.go:267`, change:
 
@@ -2065,7 +2078,7 @@ to:
 
 Also update the comment immediately above it (`:263-266`) to name `expiration_extender_use` alongside the other three.
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test -race ./... && go vet ./...
@@ -2073,7 +2086,7 @@ cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test -race
 
 Expected: PASS — including `TestEverySagaTypeIsClassified`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/
@@ -2094,7 +2107,7 @@ git commit -m "feat(task-222): register ExpirationExtenderUse in timer and compe
 - Consumes: json tags `addTime`, `maxDays` (Task 1) and `notExtend` (Task 2).
 - Produces: `cash.RestModel.AddTime uint32` / `.MaxDays uint32`; `equipment.Model.NotExtend() bool`. Task 14 reads both.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `services/atlas-channel/atlas.com/channel/data/equipment/processor_test.go`, matching that file's existing httptest harness and its way of building a tenant context (`testContext` below is a placeholder for whatever it already uses):
 
@@ -2118,7 +2131,7 @@ func TestGetByIdReadsNotExtend(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./data/equipment/ -run TestGetByIdReadsNotExtend -v
@@ -2126,7 +2139,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./data/equipment/ -run Te
 
 Expected: FAIL — `m.NotExtend undefined`.
 
-- [ ] **Step 3: Mirror `notExtend` on the equipment model**
+- [x] **Step 3: Mirror `notExtend` on the equipment model**
 
 In `services/atlas-channel/atlas.com/channel/data/equipment/rest.go`, add the field to `RestModel`:
 
@@ -2166,7 +2179,7 @@ func (m Model) NotExtend() bool {
 }
 ```
 
-- [ ] **Step 4: Mirror `addTime` / `maxDays` on the cash model**
+- [x] **Step 4: Mirror `addTime` / `maxDays` on the cash model**
 
 In `services/atlas-channel/atlas.com/channel/data/cash/rest.go`, add to `RestModel` after `ProtectTime`:
 
@@ -2177,7 +2190,7 @@ In `services/atlas-channel/atlas.com/channel/data/cash/rest.go`, add to `RestMod
 	MaxDays         uint32 `json:"maxDays"`
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test -race ./data/... && go build ./... && go vet ./...
@@ -2185,7 +2198,7 @@ cd services/atlas-channel/atlas.com/channel && go test -race ./data/... && go bu
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/data/
@@ -2210,7 +2223,7 @@ The gates and the formula go in a **pure** function so they are table-testable w
 - Consumes: `item.ClassificationExpirationExtender` (Task 3); `cashsb.NewItemUseTargetSlot` (Task 4); `saga.ExpirationExtenderUse` / `saga.ExtendAssetExpiration` / `saga.ExtendAssetExpirationPayload` (Task 5); `cashData.RestModel.AddTime`/`.MaxDays` and `equipment.Model.NotExtend()` (Task 13); `asset.Model.Expiration()/.Locked()/.CashId()/.TemplateId()`.
 - Produces: nothing consumed by later tasks.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use_expiration_extender_test.go`:
 
@@ -2389,7 +2402,7 @@ func TestEvaluateExpirationExtension(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run "TestExpirationExtender|TestEvaluateExpirationExtension" -v
@@ -2397,7 +2410,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run "T
 
 Expected: FAIL — `undefined: expirationExtenderCashSlotItemType`, `undefined: evaluateExpirationExtension`.
 
-- [ ] **Step 3: Add the two type constants**
+- [x] **Step 3: Add the two type constants**
 
 In `services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use.go`, in the `CashSlotItemType` const block beside `CashSlotItemTypeViciousHammer` / `CashSlotItemTypeViciousHammerV95`:
 
@@ -2406,7 +2419,7 @@ In `services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_
 	CashSlotItemTypeExpirationExtenderV95 = CashSlotItemType(62) // GMS >= 95
 ```
 
-- [ ] **Step 4: Create the resolver and the pure evaluator**
+- [x] **Step 4: Create the resolver and the pure evaluator**
 
 Create `services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use_expiration_extender.go`:
 
@@ -2468,8 +2481,10 @@ type extensionOutcome struct {
 //
 // An over-cap use is REJECTED, never clamped-and-consumed: the client shows
 // "You cannot extend the effective date beyond %d days" and sends nothing, so
-// clamping would only ever run for a forged packet — and burning a player's
+// this gate only ever fires for a forged packet — and burning a player's
 // extender for a partial grant the client refused is a visible loss.
+// atlas-inventory rejects an over-cap command server-side too, and the
+// orchestrator's compensator refunds the already-destroyed extender.
 func evaluateExpirationExtension(now time.Time, target extensionTarget, addTime uint32, maxDays uint32) extensionOutcome {
 	if target.Expiration.IsZero() {
 		return extensionOutcome{Reason: "target is permanent and has no time limit to extend"}
@@ -2495,7 +2510,7 @@ func evaluateExpirationExtension(now time.Time, target extensionTarget, addTime 
 }
 ```
 
-- [ ] **Step 5: Run the pure tests to verify they pass**
+- [x] **Step 5: Run the pure tests to verify they pass**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test -race ./socket/handler/ -run "TestExpirationExtender|TestEvaluateExpirationExtension" -v
@@ -2503,7 +2518,7 @@ cd services/atlas-channel/atlas.com/channel && go test -race ./socket/handler/ -
 
 Expected: PASS, all sub-cases.
 
-- [ ] **Step 6: Add the saga aliases**
+- [x] **Step 6: Add the saga aliases**
 
 In `services/atlas-channel/atlas.com/channel/saga/model.go`, add each of these to the alias block that already holds its neighbour (`Type`, `Action`, payload types respectively):
 
@@ -2519,7 +2534,7 @@ In `services/atlas-channel/atlas.com/channel/saga/model.go`, add each of these t
 	ExtendAssetExpirationPayload = sharedsaga.ExtendAssetExpirationPayload
 ```
 
-- [ ] **Step 7: Wire the handler arm**
+- [x] **Step 7: Wire the handler arm**
 
 In `services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use.go`, immediately after the sealing-lock arm's closing `}` (currently line 331, right before `if it == CashSlotItemTypeIncubator {`):
 
@@ -2607,7 +2622,7 @@ In `services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_
 
 Add `equipmentData "atlas-channel/data/equipment"` to the file's import block (the file already aliases `cashData "atlas-channel/data/cash"` at `:7`).
 
-- [ ] **Step 8: Run tests to verify they pass**
+- [x] **Step 8: Run tests to verify they pass**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go build ./... && go test -race ./... && go vet ./...
@@ -2615,7 +2630,7 @@ cd services/atlas-channel/atlas.com/channel && go build ./... && go test -race .
 
 Expected: build clean, all tests PASS, vet clean.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/ services/atlas-channel/atlas.com/channel/saga/model.go
@@ -2635,17 +2650,17 @@ Two pieces of due diligence, then the CLAUDE.md build gates. Every command runs 
 **Files:**
 - Modify: `docs/tasks/task-222-item-expiration-extenders/design.md` (§1.1 and §6 — record the v84/v92 findings)
 
-- [ ] **Step 1: Confirm the v84 and v92 mapping in IDA**
+- [x] **Step 1: Confirm the v84 and v92 mapping in IDA**
 
 Resolve the session from `idb_list` by binary **name** and pass it as the `database` parameter — port-based selection is dead. Locate `get_cashslot_item_type` by its `switch (nItemID / 10000)` shape, or settle it from the dispatch switch bound in `CWvsContext::SendConsumeCashItemUseRequest` the way design §1.1 settled v48/v61 (`add eax, -12` / `cmp eax, <range>` bounds the covered type range).
 
 Record for each of v84 and v92: the IDB name, the function address, and the `case 550` result. If either turns out **not** to be 61, stop and report — `GetCashSlotItemType`'s existing 550 branch would then be wrong for that version and needs a version arm, which is a change to pre-existing behaviour and needs sign-off.
 
-- [ ] **Step 2: Update the design's evidence table**
+- [x] **Step 2: Update the design's evidence table**
 
 Replace the two `assumed yes / 61 (unverified)` rows in design.md §6 and the "Not verified: GMS v84 and GMS v92" paragraph in §1.1 with the actual findings and their addresses. If a version could not be settled, say so plainly — do not record a guess as verified.
 
-- [ ] **Step 3: Confirm no template gap**
+- [x] **Step 3: Confirm no template gap**
 
 ```bash
 grep -l "CharacterCashItemUseHandle" services/atlas-configurations/seed-data/templates/*.json
@@ -2653,7 +2668,7 @@ grep -l "CharacterCashItemUseHandle" services/atlas-configurations/seed-data/tem
 
 Expected: every in-scope GMS/JMS template that has the family (v72 and up, plus JMS) appears. v48 and v61 have no arm for the family, so their absence is expected and is not a gap. If an in-scope version is missing the registration, record it in design.md §6 as a finding; any template edit must then satisfy `tools/template-opcode-order-guard.sh` and `tools/template-duplicate-binding-guard.sh`.
 
-- [ ] **Step 4: Per-module test and vet sweep**
+- [x] **Step 4: Per-module test and vet sweep**
 
 ```bash
 for m in libs/atlas-constants libs/atlas-packet libs/atlas-saga \
@@ -2668,7 +2683,7 @@ done
 
 Expected: every module builds, tests PASS, vet clean; no `FAILED:` line.
 
-- [ ] **Step 5: Repo guards**
+- [x] **Step 5: Repo guards**
 
 ```bash
 tools/redis-key-guard.sh
@@ -2682,7 +2697,7 @@ Expected: all exit 0. If `tools/lint.sh --check` reports formatting drift, run `
 
 The template guards are only required if Step 3 produced a template edit.
 
-- [ ] **Step 6: Docker bake for every service whose `go.mod` was touched**
+- [x] **Step 6: Docker bake for every service whose `go.mod` was touched**
 
 Adding `atlas-inventory/data/cash` does not move a `go.mod`, but confirm rather than assume:
 
@@ -2698,19 +2713,21 @@ docker buildx bake atlas-data atlas-channel atlas-inventory atlas-saga-orchestra
 
 If the `git diff` named any other service, bake its target too. Expected: every target builds.
 
-- [ ] **Step 7: Live verification**
+- [ ] **Step 7: Live verification** — NOT PERFORMED. No running server or game
+client was available in the implementation environment, so this step is
+knowingly unmet and is declared as such in the PR rather than marked done.
 
 Not inferrable, and required by the PRD's acceptance criteria. On a v83 tenant: equip a time-limited item, drag a 7-day Magical Sandglass (5500001) onto it, and confirm from the client that the tooltip shows the new expiration **without a relog** and that exactly one sandglass was consumed. Then confirm a rejection path leaves the sandglass in place — drag it onto a permanent equip and check the channel log for the warn line naming the reason.
 
 Record the result. If the live check cannot be run in this environment, say so explicitly in the PR rather than marking the criterion met.
 
-- [ ] **Step 8: Commit the evidence updates**
+- [x] **Step 8: Commit the evidence updates**
 
 ```bash
 git add docs/tasks/task-222-item-expiration-extenders/design.md
 git commit -m "docs(task-222): record v84/v92 slot-item-type confirmation and template audit"
 ```
 
-- [ ] **Step 9: Code review before the PR**
+- [x] **Step 9: Code review before the PR**
 
 Run `superpowers:requesting-code-review`. It dispatches `plan-adherence-reviewer` and `backend-guidelines-reviewer` (no frontend files changed). Pin the reviewer subagents to a cheaper model per the project's cost preference. Findings land in `docs/tasks/task-222-item-expiration-extenders/audit.md`. Do not open the PR before this step completes.

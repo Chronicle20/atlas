@@ -8,6 +8,16 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
+// ProcessorMock is the injectable double for the tradeability reader. Following
+// the Atlas mock convention (cf. atlas-trades data/item/mock), each Func field
+// defaults to a zero-valued SUCCESS when left unset.
+//
+// Be deliberate about that here. A zero-valued tradeability.Model means
+// "tradeable, no karma type" with a nil error — which is exactly the permissive
+// default the real Processor refuses to produce. A consumer test that leaves
+// GetFunc unset does not exercise a refusal; it exercises the tradeable path,
+// silently. Set GetFunc explicitly in every karma test, including the ones whose
+// subject is a gate that fires before the lookup is reached.
 type ProcessorMock struct {
 	ByIdProviderFunc func(inventoryType inventory.Type, templateId item.Id) model.Provider[tradeability.Model]
 	GetFunc          func(inventoryType inventory.Type, templateId item.Id) (tradeability.Model, error)

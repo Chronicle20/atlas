@@ -279,11 +279,26 @@ func (p *ProcessorImpl) Enter(mb *message.Buffer) func(transactionId uuid.UUID) 
 		return func(characterId uint32) func(npcId uint32) error {
 			return func(npcId uint32) error {
 				p.l.Debugf("Character [%d] attempting to enter shop [%d].", characterId, npcId)
+
+				// The shop must exist. Reporting this on the topic rather than
+				// returning it is what lets a saga step fail (and a remote
+				// merchant item survive) instead of hanging until the saga
+				// timer expires — task-221 design delta D3.
 				_, err := p.GetByNpcId(p.CommodityDecorator)(npcId)
 				if err != nil {
 					p.l.WithError(err).Errorf("Cannot locate shop [%d] character [%d] is attempting to enter.", npcId, characterId)
-					return err
+					return mb.Put(shops.EnvStatusEventTopic, enterErrorEventProvider(transactionId, characterId, npcId, shops.EnterErrorShopNotFound))
 				}
+
+				// One exclusive dialog at a time. AddCharacter overwrites, so
+				// without this guard a second ENTER silently re-enters and a
+				// remote-merchant saga would consume the item for a shop the
+				// player is already standing in (PRD FR-2.3, delta D4).
+				if existing, inShop := GetRegistry().GetShop(p.ctx, characterId); inShop {
+					p.l.Warnf("Character [%d] attempted to enter shop [%d] while already in shop [%d]; rejecting.", characterId, npcId, existing)
+					return mb.Put(shops.EnvStatusEventTopic, enterErrorEventProvider(transactionId, characterId, npcId, shops.EnterErrorAlreadyInShop))
+				}
+
 				GetRegistry().AddCharacter(p.ctx, characterId, npcId)
 				return mb.Put(shops.EnvStatusEventTopic, enteredEventProvider(transactionId, characterId, npcId))
 			}

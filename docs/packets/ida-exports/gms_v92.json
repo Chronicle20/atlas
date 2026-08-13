@@ -13141,6 +13141,69 @@
           "comment": "hit-mob object id (FindHitMobInRect)"
         }
       ]
+    },
+    "CDragon::OnCreated": {
+      "address": "0x5084c0",
+      "direction": "clientbound",
+      "notes": "SPAWN_DRAGON body. CDragon::OnCreated@0x5084c0 (GMS_v92_1_DEVM.exe.i64, session acdfccff), reached via CUser::OnDragonPacket@0x8ce880's a2==209 branch, itself routed by CUserPool::OnUserCommonPacket@0x929750's range test (unsigned int)(v6 - 209) <= 2 @0x9298b9. Reads, in order: Decode4 x @0x5084f9, Decode4 y @0x50850c, Decode1 stance @0x508547 (secured via _ZtlSecureTear into this+37/this[37]), Decode2 <read, discarded -- return value never assigned> @0x508564, Decode2 jobId (this+71/this[71]) @0x508573. 13-byte body, byte-identical to the already-verified v84/v87/v95 shape. v92 CONFIRMS the spawnHasJobId gate boundary (GMS MajorAtLeast(84)): v92 carries jobId. Match (task-225).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "x @0x5084f9"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y @0x50850c"
+        },
+        {
+          "op": "Decode1",
+          "comment": "stance -> secured into this+37 via _ZtlSecureTear @0x508547/0x50855e"
+        },
+        {
+          "op": "Decode2",
+          "comment": "read and discarded -- return value never assigned @0x508564"
+        },
+        {
+          "op": "Decode2",
+          "comment": "jobId -> this+71 @0x508573"
+        }
+      ]
+    },
+    "CDragon::OnMove": {
+      "address": "0x505560",
+      "direction": "clientbound",
+      "notes": "MOVE_DRAGON body. CDragon::OnMove@0x505560 (GMS_v92_1_DEVM.exe.i64, session acdfccff) is a single delegating call: CMovePath::OnMovePacket(this[55]!=0 ? this[55]-12+580 : 580, a2, 0) -- identical shape to v83/v84/v87/v95's CDragon::OnMove (only the per-version fallback constant differs; the wire shape is unaffected). Reached via CUser::OnDragonPacket@0x8ce880's a2==210 branch (gated on this[2792]). The whole remaining body is the opaque CMovePath blob. Matches the committed DragonMove codec exactly. Match (task-225).",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "opaque CMovePath blob @0x505560",
+          "ref": "CMovePath::OnMovePacket"
+        }
+      ]
+    },
+    "CUser::OnDragonPacket": {
+      "address": "0x8ce880",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 211
+        }
+      ],
+      "notes": "REMOVE_DRAGON body. CUser::OnDragonPacket@0x8ce880 (GMS_v92_1_DEVM.exe.i64, session acdfccff, renamed from sub_8CE880 during this verification) handles only a2==209 (spawn, CDragon::OnCreated@0x5084c0) and this[2792]&&a2==210 (move, CDragon::OnMove@0x505560). THERE IS NO CASE FOR 211 (REMOVE_DRAGON) -- the outer dispatcher CUserPool::OnUserCommonPacket@0x929750 routes the range (unsigned int)(v6 - 209) <= 2 into this function (test @0x9298b9, call @0x9298bf), so 211 enters and falls through both branches with zero effect: no field is read, no dragon state changes. Same routed-but-unhandled shape already recorded for v83/v84/v87/v95 (docs/packets/registry/gms_v84.yaml:1254). Sending REMOVE_DRAGON is correct and harmless; the client silently discards it. Match (task-225).",
+      "calls": []
+    },
+    "CVecCtrlDragon::EndUpdateActive": {
+      "address": "0x96f190",
+      "direction": "serverbound",
+      "notes": "MOVE_DRAGON (serverbound) send site. CVecCtrlDragon::EndUpdateActive@0x96f190 (GMS_v92_1_DEVM.exe.i64, session acdfccff): if sub_659CB0(0,0), builds COutPacket(211=0xD3)@0x96f1d2 then CMovePath::Flush(v1,&v3,0,0)@0x96f1ea and sends via CClientSocket::SendPacket@0x96f1fe. There is NO leading identity field -- same shape as v83/v84/v87/v95's CVecCtrlDragon::EndUpdateActive. Opcode 211 confirmed from the COutPacket construction site itself, matching the registry opcode (211) for serverbound MOVE_DRAGON on v92. Match (task-225).",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "opaque CMovePath blob, opcode 211 @0x96f1d2/0x96f1ea",
+          "ref": "CMovePath::Flush"
+        }
+      ]
     }
   }
 }

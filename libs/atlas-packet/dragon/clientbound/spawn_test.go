@@ -101,6 +101,27 @@ func TestDragonSpawnBytesV87(t *testing.T) {
 	}
 }
 
+// v92: CDragon::OnCreated @0x5084c0 (GMS_v92_1_DEVM.exe.i64, session
+// acdfccff), reached via CUser::OnDragonPacket (renamed from sub_8CE880
+// during this verification) @0x8ce880's a2==209 branch, itself routed by
+// CUserPool::OnUserCommonPacket @0x929750's range test
+// `(unsigned int)(v6 - 209) <= 2` @0x9298b9. Reads, in order: Decode4 x
+// @0x5084f9, Decode4 y @0x50850c, Decode1 stance @0x508547 (secured via
+// _ZtlSecureTear into this[37]), Decode2 <read, return value discarded — no
+// store> @0x508564, Decode2 jobId (this[71]) @0x508573. 13-byte body —
+// v92 confirms the spawnHasJobId gate boundary: v92 (>=84) DOES carry
+// jobId, matching v84/v87/v95.
+//
+// packet-audit:verify packet=dragon/clientbound/DragonSpawn version=gms_v92 ida=0x5084c0
+func TestDragonSpawnBytesV92(t *testing.T) {
+	in := NewDragonSpawn(4242, 100, -200, 3, 2214)
+	ctx := test.CreateContext("GMS", 92, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, dragonSpawnBody) {
+		t.Fatalf("v92 spawn bytes = % X, want % X", got, dragonSpawnBody)
+	}
+}
+
 // jobId is present on v84/v87/v92/v95/JMS185 (13 bytes) and absent on v83
 // (11 bytes) — see spawnHasJobId in spawn.go for the IDA grounding. If any
 // column ever diverges from this split, this table is where it shows up

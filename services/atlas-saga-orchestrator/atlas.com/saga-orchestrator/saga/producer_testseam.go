@@ -26,6 +26,14 @@ func SetEmitSagaFailedForTest(fn func(logrus.FieldLogger, context.Context, uuid.
 	return prev
 }
 
+// SetEmitNpcShopExitForTest swaps the underlying EXIT-emission function and
+// returns the previous one for restoration. Compiled only with -tags=test.
+func SetEmitNpcShopExitForTest(fn func(logrus.FieldLogger, context.Context, uuid.UUID, uint32) error) func(logrus.FieldLogger, context.Context, uuid.UUID, uint32) error {
+	prev := emitNpcShopExitFn
+	emitNpcShopExitFn = fn
+	return prev
+}
+
 // SetEmitMtsSagaFailedForTest swaps the underlying MTS Failed-emission function
 // (which carries characterId + MtsKind) and returns the previous one for
 // restoration. Compiled only with -tags=test.

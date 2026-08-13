@@ -387,6 +387,19 @@ func NpcShopExitCommandProvider(transactionId uuid.UUID, characterId uint32) mod
 	return producer.SingleMessageProvider(key, value)
 }
 
+// EmitNpcShopExit emits the EXIT compensation command for an open_npc_shop
+// step. Indirected through a package var so compensator tests can observe it
+// without a broker (same seam shape as emitConversationRewardNoticeFn).
+func EmitNpcShopExit(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32) error {
+	return emitNpcShopExitFn(l, ctx, transactionId, characterId)
+}
+
+var emitNpcShopExitFn = emitNpcShopExitImpl
+
+func emitNpcShopExitImpl(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32) error {
+	return producer.ProviderImpl(l)(ctx)(npcshop.EnvCommandTopic)(NpcShopExitCommandProvider(transactionId, characterId))
+}
+
 // MegaphoneBroadcastEventProvider builds the megaphone.BroadcastEvent for the
 // stateless megaphone tiers (MEGAPHONE/SUPER/ITEM/TRIPLE). Keyed by WorldId
 // for single-partition ordering per world (D1).

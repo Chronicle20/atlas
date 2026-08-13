@@ -917,6 +917,89 @@ func TestReaderPetSkills(t *testing.T) {
 	}
 }
 
+// testMesoSackXML mirrors the real GMS 83.1 Item.wz/Cash/0520.img node set:
+// icon/iconRaw/meso/cash only — no slotMax, no spec, no tradeBlock. 05200003
+// carries an explicit meso of 0 and 05200004 omits the node entirely; both
+// must land on Meso == 0 so the handler's fail-closed guard trips (FR-1.2).
+const testMesoSackXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="0520.img">
+  <imgdir name="05200000">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="meso" value="1000000"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05200001">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="meso" value="5000000"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05200002">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="meso" value="10000000"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05200003">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="meso" value="0"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05200004">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="maplepoint" value="10000"/>
+    </imgdir>
+  </imgdir>
+</imgdir>
+`
+
+func TestReaderMesoSacks(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testMesoSackXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		id   int
+		want uint32
+	}{
+		{5200000, 1000000},
+		{5200001, 5000000},
+		{5200002, 10000000},
+		{5200003, 0}, // explicit zero
+		{5200004, 0}, // node absent (Maple Point sack)
+	}
+	for _, tc := range cases {
+		rm, ok := rmm[strconv.Itoa(tc.id)]
+		if !ok {
+			t.Fatalf("cash item %d missing from read result", tc.id)
+		}
+		if rm.Meso != tc.want {
+			t.Errorf("Meso(%d) = %d, want %d", tc.id, rm.Meso, tc.want)
+		}
+	}
+}
+
+// The award amount is a first-class field, not an effect: folding it into Spec
+// would feed it to the consumable pipeline. Spec must gain no "meso" key.
+func TestReaderMesoNotFoldedIntoSpec(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testMesoSackXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, present := rmm[strconv.Itoa(5200000)].Spec[SpecType("meso")]; present {
+		t.Fatal(`Spec gained a "meso" key; the award amount must stay a first-class field`)
+	}
+}
+
 // testMorphCouponXML mirrors Item.wz/Cash/0530.img.xml (transformation coupons,
 // classification 530), trimmed of canvas nodes. Values verified against two
 // independent local WZ corpora: every item carries spec/hp 50 and

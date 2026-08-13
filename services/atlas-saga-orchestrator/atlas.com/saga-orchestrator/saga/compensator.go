@@ -54,6 +54,7 @@ type Compensator interface {
 	compensatePetEvolution(s Saga, failedStep Step[any]) error
 	compensateCashItemUse(s Saga, failedStep Step[any]) error
 	compensatePointReset(s Saga, failedStep Step[any]) error
+	compensateMesoSackUse(s Saga, failedStep Step[any]) error
 	compensateMtsOperation(s Saga, failedStep Step[any]) error
 	compensateNoteSend(s Saga, failedStep Step[any]) error
 	compensateSkillBookUse(s Saga, failedStep Step[any]) error
@@ -118,6 +119,14 @@ type Compensator interface {
 	// (DestroyAsset → CreateItem). No lifecycle transitions, no Failed emission,
 	// no cache eviction — callers handle those.
 	DispatchPointResetRollbacks(s Saga)
+
+	// DispatchMesoSackRollbacks reverse-walks the completed steps of a
+	// meso_sack_use saga and refunds the consumed sack (DestroyAsset →
+	// CreateItem). The failed award_mesos step committed nothing
+	// (RequestChangeMeso rejects inside its own transaction) and has no
+	// inverse. No lifecycle transitions, no Failed emission, no cache
+	// eviction — callers handle those.
+	DispatchMesoSackRollbacks(s Saga)
 
 	// DispatchSkillBookUseRollbacks reverse-walks the completed steps of a
 	// skill_book_use saga and re-awards the destroyed book (task-125). Pure
@@ -275,6 +284,15 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	// specific pink text (Task 14).
 	if s.SagaType() == PointReset {
 		return c.compensatePointReset(s, failedStep)
+	}
+
+	// Meso-sack reverse-walk. Destroy-first, like point_reset: invert the
+	// completed consume_meso_sack via re-award, then emit the saga-failed event
+	// carrying the character id (EmitSagaFailed's meso-sack arm) and the
+	// threaded error code, so atlas-channel can render the ceiling message and
+	// release the client's exclusive-request gate.
+	if s.SagaType() == MesoSackUse {
+		return c.compensateMesoSackUse(s, failedStep)
 	}
 
 	// MTS reverse-walk (task-102 §4.1 — the dupe-safety core). A failed
@@ -1577,6 +1595,117 @@ func (c *CompensatorImpl) DispatchPointResetRollbacks(s Saga) {
 					"step_id":        step.StepId(),
 					"template_id":    payload.TemplateId,
 				}).Error("Reverse-walk: DestroyAsset → CreateItem dispatch failed; continuing chain.")
+			}
+		}
+	}
+}
+
+// compensateMesoSackUse is the meso_sack_use reverse-walk compensator: on a
+// failed award_mesos it refunds the already-consumed sack and emits exactly one
+// StatusEventTypeFailed carrying atlas-character's machine-readable error code
+// (threaded off the failed step's result map by handleCharacterMesoErrorEvent).
+// TryTransition(Compensating → Failed) guards against a double-emit where the
+// timeout backstop already emitted Failed.
+func (c *CompensatorImpl) compensateMesoSackUse(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("MesoSackUse saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchMesoSackRollbacks(s)
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; meso-sack emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	errorCode := mesoSackErrorCode(failedStep)
+	reason := fmt.Sprintf("Meso sack use failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailed(c.l, c.ctx, s, errorCode, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after meso-sack compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Meso-sack reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// mesoSackErrorCode reads the machine-readable code atlas-character supplied
+// (MESO_OVERFLOW / NOT_ENOUGH_MESO) off the failed step's result map. A
+// destroy-step failure or a timeout has no such map, so the channel renders the
+// generic message rather than falsely claiming a meso ceiling.
+func mesoSackErrorCode(failedStep Step[any]) string {
+	if res := failedStep.Result(); res != nil {
+		if v, ok := res["errorCode"].(string); ok && v != "" {
+			return v
+		}
+	}
+	return sagaMsg.ErrorCodeUnknown
+}
+
+// mesoSackCharacterId resolves the character to notify. The AwardMesos payload
+// is present on every meso_sack_use saga by construction; the DestroyAsset
+// payload is the belt-and-braces fallback (same shape as compensateNoteSend).
+func mesoSackCharacterId(s Saga) uint32 {
+	for _, step := range s.Steps() {
+		if step.Action() == AwardMesos {
+			if id := ExtractCharacterId(step); id != 0 {
+				return id
+			}
+		}
+	}
+	for _, step := range s.Steps() {
+		if id := ExtractCharacterId(step); id != 0 {
+			return id
+		}
+	}
+	return 0
+}
+
+// DispatchMesoSackRollbacks reverse-walks the saga's completed steps and
+// refunds the consumed sack (DestroyAsset → RequestCreateItem). Pure dispatch
+// half — no lifecycle transitions, no event emission, no cache eviction. Only
+// Completed destroy steps are inverted; the failed award step committed nothing
+// and has no inverse. The refund lands in the first free CASH slot, matching
+// every other refund path — DestroyAsset is template-keyed, not slot-keyed.
+// An error refunding one step does not abort the walk.
+func (c *CompensatorImpl) DispatchMesoSackRollbacks(s Saga) {
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		if step.Action() != DestroyAsset {
+			continue
+		}
+		if payload, ok := step.Payload().(DestroyAssetPayload); ok {
+			qty := payload.Quantity
+			if qty == 0 {
+				qty = 1
+			}
+			if err := c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{}); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"template_id":    payload.TemplateId,
+				}).Error("Reverse-walk: meso sack DestroyAsset → CreateItem dispatch failed; continuing chain.")
 			}
 		}
 	}

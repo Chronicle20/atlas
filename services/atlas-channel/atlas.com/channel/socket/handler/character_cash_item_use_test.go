@@ -50,13 +50,21 @@ func installCashItemInSlotSeam(t *testing.T, matchSlot int16, matchTemplateId ui
 // false, matching the raw payload shapes below — same pattern as
 // newTeleportRockUseTestSession in teleport_rock_use_test.go, but this one
 // also returns the ctx since the cash handler resolves the tenant from it).
+//
+// The session is backed by discardConn (declared in character_damage_test.go)
+// rather than a nil conn: session.Model.announceEncrypted writes straight to
+// s.con, and the meso-sack reject path (task-220) exercises that chain via
+// session.Announce for its enable-actions unlock. A nil conn would panic the
+// first caller that reaches it; discardConn is a harmless no-op sink, so this
+// is behaviorally neutral for every existing caller of this helper that never
+// reached that chain.
 func newCashItemUseTestSession(t *testing.T, characterId uint32) (session.Model, context.Context, func()) {
 	t.Helper()
 	ten := mustTenant(t, "GMS", 83, 1)
 	ctx := tenant.WithContext(context.Background(), ten)
 
 	sessionId := uuid.New()
-	s := session.NewSession(sessionId, ten, 0, nil)
+	s := session.NewSession(sessionId, ten, 0, discardConn{})
 	session.AddSessionToRegistry(ten.Id(), s)
 
 	sp := session.NewProcessor(logrus.New(), ctx)

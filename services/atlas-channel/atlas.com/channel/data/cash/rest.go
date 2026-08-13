@@ -9,6 +9,9 @@ type RestModel struct {
 	StateChangeItem uint32 `json:"stateChangeItem"`
 	BgmPath         string `json:"bgmPath"`
 	ProtectTime     uint32 `json:"protectTime"`
+	// Meso is the 0520 meso-sack award amount (atlas-data info/meso). Absent
+	// or 0 means "no payout" and the type-19 handler rejects the use.
+	Meso uint32 `json:"meso"`
 }
 
 func (r RestModel) GetName() string {

@@ -41,6 +41,7 @@ const (
 	IncubatorUse        Type = "incubator_use"
 	PointReset          Type = "point_reset"
 	MegaphoneUse        Type = "megaphone_use"
+	MesoSackUse         Type = "meso_sack_use"
 )
 
 // Status represents the status of a saga step

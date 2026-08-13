@@ -43,6 +43,7 @@ type RestModel struct {
 	Id              uint32             `json:"-"`
 	SlotMax         uint32             `json:"slotMax"`
 	ProtectTime     uint32             `json:"protectTime,omitempty"`
+	Meso            uint32             `json:"meso,omitempty"` // 0520 meso sacks: info/meso award amount
 	StateChangeItem uint32             `json:"stateChangeItem,omitempty"`
 	BgmPath         string             `json:"bgmPath,omitempty"`
 	Spec            map[SpecType]int32 `json:"spec"`

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	cashData "atlas-channel/data/cash"
 	"atlas-channel/remotemerchant"
 	"atlas-channel/saga"
 	"atlas-channel/session"
@@ -16,13 +15,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
-
-// cashItemDataFunc is a test seam for the atlas-data cash-item read
-// (package-var injection precedent: cashItemInSlotFunc in
-// character_cash_item_use.go).
-var cashItemDataFunc = func(l logrus.FieldLogger, ctx context.Context, itemId uint32) (cashData.RestModel, error) {
-	return cashData.NewProcessor(l, ctx).GetById(itemId)
-}
 
 // remoteMerchantSagaCreateFunc is a test seam for saga creation.
 var remoteMerchantSagaCreateFunc = func(l logrus.FieldLogger, ctx context.Context, s saga.Saga) error {

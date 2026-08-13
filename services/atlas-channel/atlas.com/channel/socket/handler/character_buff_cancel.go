@@ -26,6 +26,12 @@ func CharacterBuffCancelHandleFunc(l logrus.FieldLogger, ctx context.Context, wp
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		_ = buff.NewProcessor(l, ctx).Cancel(s.Field(), s.CharacterId(), p.SkillId())
 
+		// The Aran combo counter resets whenever the client cancels Combo
+		// Ability: the client's own 3s/5s idle timer AND every
+		// combo-consuming skill route through ClearCombo ->
+		// SendSkillCancelRequest (task-217 design.md §3.4).
+		aranComboClearOnCancel(ctx, s.CharacterId(), skill.Id(p.SkillId()))
+
 		skillId := uint32(p.SkillId())
 
 		// Resolve the cancelled wire skill id to its version-blind Identity

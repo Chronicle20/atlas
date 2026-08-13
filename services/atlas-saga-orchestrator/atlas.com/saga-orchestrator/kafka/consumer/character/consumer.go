@@ -180,7 +180,12 @@ func handleCharacterMesoErrorEvent(l logrus.FieldLogger, ctx context.Context, e 
 		"world_id":       e.WorldId,
 	}).Error("Character meso operation error occurred, marking saga step as failed")
 
-	_ = p.StepCompleted(e.TransactionId, false)
+	// Thread the machine-readable code onto the step result so a bespoke
+	// compensator (meso_sack_use) can render specific client feedback instead of
+	// a generic failure. Backward compatible: every existing consumer of this
+	// step ignores the result map, and NOT_ENOUGH_MESO behaviour is otherwise
+	// byte-identical.
+	_ = p.StepCompletedWithResult(e.TransactionId, false, map[string]any{"errorCode": e.Body.Error})
 }
 
 // handleCharacterApTransferErrorEvent marks a point_reset transfer_ap step

@@ -242,6 +242,10 @@ const (
 
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
+	// StatusEventErrorTypeMesoOverflow rejects an award that would exceed the
+	// uint32 meso ceiling. Shares StatusEventMesoErrorBody with NOT_ENOUGH_MESO
+	// so the orchestrator's existing meso-error handler accepts it unchanged.
+	StatusEventErrorTypeMesoOverflow = "MESO_OVERFLOW"
 
 	// StatusEventErrorType* point-reset (AP transfer) rejection codes. See
 	// StatusEventApTransferErrorBody / TRANSFER_AP (task-126).

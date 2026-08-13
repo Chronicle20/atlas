@@ -3,6 +3,23 @@
   "md5": "bdef16653b92eefca2361fd5668cc509",
   "generated_at": "2026-08-05T00:00:00Z",
   "functions": {
+    "CUserLocal__RequestIncCombo_send_0xBA": {
+      "address": "0x8ef840",
+      "direction": "serverbound",
+      "note": "v92 synthetic rename (task-217 Task 12, idb_save'd). Registry primary fname is the canonical CUserLocal::RequestIncCombo (task-217); candidatesFromFName carries a case for this literal IDB symbol too.",
+      "calls": null
+    },
+    "CUserLocal::OnIncComboResponse": {
+      "address": "0x8fe8e0",
+      "direction": "clientbound",
+      "note": "Hex-Rays decompile of 0x8fe8e0 fails (\"Decompilation failed at 0x8fe8e0 (address: 0x8fe8ff)\" on `call sub_8FBD50`). Hand-traced from disasm instead (task-217): push esi; mov esi,ecx; mov ecx,[esp+4+arg_0]; call CInPacket::Decode4 /*0x8fe8e7*/; mov [esi+4358h],eax /*0x8fe8ec*/; call sub_936E80 /*0x8fe8f2*/ (get_update_time analogue); mov ecx,esi; mov [esi+435Ch],eax /*0x8fe8f9*/; call sub_8FBD50 /*0x8fe8ff*/ (DrawCombo analogue, unnamed in this IDB); pop esi; retn 4. Exactly one CInPacket read (Decode4) in the whole function body; the two helper calls are opaque non-packet subs (neither takes the CInPacket*).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "count (CUserLocal::OnIncComboResponse: Decode4 store to the m_nCombo mirror, then get_update_time() timestamp, then DrawCombo(this); task-217, design.md \u00a72.2)"
+        }
+      ]
+    },
     "CTradingRoomDlg::OnPutItem": {
       "address": "0x743f80",
       "direction": "clientbound",

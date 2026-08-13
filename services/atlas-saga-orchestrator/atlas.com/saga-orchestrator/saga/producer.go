@@ -186,6 +186,14 @@ func EmitSagaFailed(l logrus.FieldLogger, ctx context.Context, s Saga, errorCode
 		characterId, kind := extractMtsFailureTarget(s)
 		return EmitMtsSagaFailed(l, ctx, s.TransactionId(), string(s.SagaType()), characterId, errorCode, reason, failedStep, kind)
 	}
+	// A meso_sack_use saga carries no CharacterCreation ids either. Without this
+	// arm the FAILED event has characterId 0, the channel's session lookup
+	// misses, and the player gets no message AND stays behind the client's
+	// exclusive-request gate. Covers both entry points — the compensator and the
+	// timeout backstop in timer.go, which also calls EmitSagaFailed.
+	if s.SagaType() == MesoSackUse {
+		return EmitSagaFailedByIds(l, ctx, s.TransactionId(), string(s.SagaType()), 0, mesoSackCharacterId(s), errorCode, reason, failedStep)
+	}
 	accountId, characterId := ExtractCharacterCreationIds(s)
 	return EmitSagaFailedByIds(l, ctx, s.TransactionId(), string(s.SagaType()), accountId, characterId, errorCode, reason, failedStep)
 }

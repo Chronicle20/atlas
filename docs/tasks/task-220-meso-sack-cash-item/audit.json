@@ -1,0 +1,52 @@
+{
+  "backendGuidelinesAudit": {
+    "service": "task-220-meso-sack-cash-item (atlas-data, atlas-channel, atlas-character, atlas-saga-orchestrator, libs/atlas-saga)",
+    "path": ".",
+    "date": "2026-08-13",
+    "build": "pass",
+    "testsPassed": 5,
+    "testsFailed": 0,
+    "overallStatus": "pass",
+    "modules": [
+      {
+        "name": "services/atlas-data/atlas.com/data",
+        "build": "pass",
+        "test": "pass"
+      },
+      {
+        "name": "services/atlas-channel/atlas.com/channel",
+        "build": "pass",
+        "test": "pass"
+      },
+      {
+        "name": "services/atlas-character/atlas.com/character",
+        "build": "pass",
+        "test": "pass"
+      },
+      {
+        "name": "services/atlas-saga-orchestrator/atlas.com/saga-orchestrator",
+        "build": "pass",
+        "test": "pass",
+        "notes": "verified both `go test ./...` and `go test -tags=test ./...`"
+      },
+      {
+        "name": "libs/atlas-saga",
+        "build": "pass",
+        "test": "pass"
+      }
+    ],
+    "checks": [
+      { "id": "DOM-21", "name": "shared-constant duplication (classification 520, cash-slot type 19)", "status": "pass", "evidence": "libs/atlas-constants/item/constants.go:89 (ClassificationCurrencySack, pre-existing, reused not redeclared); character_cash_item_use.go:670-675 (CashSlotItemTypeCurrencySack=19 is a local wire-dispatch enum with no atlas-constants equivalent)" },
+      { "id": "int-width-safety", "name": "uint32 WZ meso -> int32 AwardMesosPayload.Amount conversion", "status": "pass", "evidence": "character_cash_item_use_meso_sack.go: zero-guard + math.MaxInt32 ceiling guard both precede the int32(cd.Meso) cast; RequestChangeMeso's existing negative/uint32-overflow guards compose with no gap" },
+      { "id": "security-payout-source", "name": "payout resolved server-side from validated template id", "status": "pass", "evidence": "character_cash_item_use.go:54-56 validates client itemId against cashItemInSlotFunc before any downstream use; handleMesoSackUse resolves amount via atlas-data lookup keyed on that validated id; wire carries no amount field" },
+      { "id": "emission-ordering", "name": "RequestChangeMeso Kafka emission never fires before/outside a committed tx", "status": "pass", "evidence": "processor.go:850-855 (success path uses outbox pattern inside tx); processor.go:857-858,865-867 (rejectEmit invoked only after ExecuteTransaction returns)" },
+      { "id": "DOM-24", "name": "Kafka producer stubbed in emitting tests", "status": "pass", "evidence": "meso_overflow_test.go:24-25 (producertest.InstallCapturing + Cleanup(InstallNoop)); saga/testmain_test.go and kafka/consumer/character/testmain_test.go both install producertest.InstallNoop() in TestMain" },
+      { "id": "test-helper-pattern", "name": "no new *_testhelpers.go file", "status": "pass", "evidence": "meso_overflow_test.go reuses existing helpers from meso_outbox_test.go/processor_test.go/rest_test.go" },
+      { "id": "FILE-06", "name": "no package-named catch-all file", "status": "pass", "evidence": "character_cash_item_use_meso_sack.go mirrors sibling character_cash_item_use_point_reset.go shape" }
+    ],
+    "blocking": [],
+    "nonBlocking": [
+      "Stale doc comment in services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/kafka/consumer/character/meso_error_result_test.go:24-31 claims no MesoSackUse compensator branch exists; compensateMesoSackUse landed later in the same branch (commit 82078d127) and the comment was not updated."
+    ]
+  }
+}

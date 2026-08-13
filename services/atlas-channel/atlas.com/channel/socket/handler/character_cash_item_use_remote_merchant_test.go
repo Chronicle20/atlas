@@ -56,8 +56,8 @@ func newRemoteMerchantRejectionTestSession(t *testing.T, characterId uint32, reg
 
 var _ writer.Producer = remoteMerchantNoopWP
 
-// installCashItemDataSeam swaps the atlas-data cash-item read.
-func installCashItemDataSeam(t *testing.T, m cash.RestModel, err error) func() {
+// installRemoteMerchantCashItemDataSeam swaps the atlas-data cash-item read.
+func installRemoteMerchantCashItemDataSeam(t *testing.T, m cash.RestModel, err error) func() {
 	t.Helper()
 	orig := cashItemDataFunc
 	cashItemDataFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (cash.RestModel, error) {
@@ -124,7 +124,7 @@ func TestHandleRemoteMerchantUse_HappyPathRegistersAndCreatesSaga(t *testing.T) 
 
 	restoreSlot := installCashItemInSlotSeam(t, srcSlot, itemId)
 	defer restoreSlot()
-	restoreData := installCashItemDataSeam(t, cash.RestModel{Id: itemId, Npc: 9090000}, nil)
+	restoreData := installRemoteMerchantCashItemDataSeam(t, cash.RestModel{Id: itemId, Npc: 9090000}, nil)
 	defer restoreData()
 	sagas, restoreSaga := installRemoteMerchantSagaSeam(t)
 	defer restoreSaga()
@@ -173,7 +173,7 @@ func TestHandleRemoteMerchantUse_DisabledVersionDoesNotCreateSaga(t *testing.T) 
 	const itemId = uint32(5450000)
 	restoreSlot := installCashItemInSlotSeam(t, 3, itemId)
 	defer restoreSlot()
-	restoreData := installCashItemDataSeam(t, cash.RestModel{Id: itemId, Npc: 9090000}, nil)
+	restoreData := installRemoteMerchantCashItemDataSeam(t, cash.RestModel{Id: itemId, Npc: 9090000}, nil)
 	defer restoreData()
 	sagas, restoreSaga := installRemoteMerchantSagaSeam(t)
 	defer restoreSaga()
@@ -215,7 +215,7 @@ func TestHandleRemoteMerchantUse_DataErrorDoesNotCreateSaga(t *testing.T) {
 	const itemId = uint32(5450000)
 	restoreSlot := installCashItemInSlotSeam(t, 3, itemId)
 	defer restoreSlot()
-	restoreData := installCashItemDataSeam(t, cash.RestModel{}, errors.New("boom"))
+	restoreData := installRemoteMerchantCashItemDataSeam(t, cash.RestModel{}, errors.New("boom"))
 	defer restoreData()
 	sagas, restoreSaga := installRemoteMerchantSagaSeam(t)
 	defer restoreSaga()
@@ -236,7 +236,7 @@ func TestHandleRemoteMerchantUse_ZeroNpcDoesNotCreateSaga(t *testing.T) {
 	const itemId = uint32(5450000)
 	restoreSlot := installCashItemInSlotSeam(t, 3, itemId)
 	defer restoreSlot()
-	restoreData := installCashItemDataSeam(t, cash.RestModel{Id: itemId, Npc: 0}, nil)
+	restoreData := installRemoteMerchantCashItemDataSeam(t, cash.RestModel{Id: itemId, Npc: 0}, nil)
 	defer restoreData()
 	sagas, restoreSaga := installRemoteMerchantSagaSeam(t)
 	defer restoreSaga()

@@ -41,6 +41,7 @@ const (
 	IncubatorUse        Type = "incubator_use"
 	PointReset          Type = "point_reset"
 	MegaphoneUse        Type = "megaphone_use"
+	MesoSackUse         Type = "meso_sack_use"
 	// RemoteMerchant is the classification-545 cash item flow: open an NPC's
 	// shop from anywhere, then consume the item — never the other way round
 	// (task-221).

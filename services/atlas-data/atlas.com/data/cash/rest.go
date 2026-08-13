@@ -22,7 +22,12 @@ const (
 	SpecTypeRate = SpecType("rate") // Rate multiplier from info node (e.g., 2 for 2x)
 	SpecTypeExpR = SpecType("expR") // EXP rate value from spec node
 	SpecTypeDrpR = SpecType("drpR") // Drop rate value from spec node
-	SpecTypeTime = SpecType("time") // Duration in minutes from spec node
+	SpecTypeTime = SpecType("time") // Duration from spec node; raw WZ units (0530 morph coupons: milliseconds)
+	// Transformation-coupon properties (0530.img): the Morph.wz creature id and
+	// the flat HP heal. Both are omit-when-zero in the reader, so downstream
+	// "absent or zero" collapses to a single `ok && val > 0` test.
+	SpecTypeMorph = SpecType("morph")
+	SpecTypeHp    = SpecType("hp")
 )
 
 var SpecTypeIndexes = []SpecType{SpecTypeIndexZero, SpecTypeIndexOne, SpecTypeIndexTwo, SpecTypeIndexThree, SpecTypeIndexFour, SpecTypeIndexFive, SpecTypeIndexSix, SpecTypeIndexSeven, SpecTypeIndexEight, SpecTypeIndexNine}
@@ -38,6 +43,7 @@ type RestModel struct {
 	Id              uint32 `json:"-"`
 	SlotMax         uint32 `json:"slotMax"`
 	ProtectTime     uint32 `json:"protectTime,omitempty"`
+	Meso            uint32 `json:"meso,omitempty"` // 0520 meso sacks: info/meso award amount
 	StateChangeItem uint32 `json:"stateChangeItem,omitempty"`
 	// Npc is the WZ info/npc value: the NPC template a remote-merchant cash
 	// item (classification 545) opens. 0 when the item targets no NPC.

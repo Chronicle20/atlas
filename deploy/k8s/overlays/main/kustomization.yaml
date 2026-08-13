@@ -226,17 +226,17 @@ images:
   - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
     newTag: main-c126cb7
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
-    newTag: main-c5b4815
+    newTag: main-6496b9c
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
     newTag: main-c126cb7
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
     newTag: main-c126cb7
   - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
-    newTag: main-c126cb7
+    newTag: main-6496b9c
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
     newTag: main-c126cb7
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
-    newTag: main-c126cb7
+    newTag: main-6496b9c
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
     newTag: main-c126cb7
   - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information

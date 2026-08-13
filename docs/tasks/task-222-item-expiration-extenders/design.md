@@ -56,6 +56,8 @@ is a port of it. Case 550:
 | JMS v185 | `MapleStory_dump_SCY.exe` | `0x49a1ee` | `39` |
 | GMS v48 | `GMS_v48_1_DEVM.exe` | *(classifier unnamed)* | **no arm** |
 | GMS v61 | `GMS_v61.1_U_DEVM.exe` | *(classifier unnamed)* | **no arm** |
+| GMS v84 | `GMS_v84.1_U_DEVM.i64` | `SendConsumeCashItemUseRequest` @ `0xa54a2f` | `61` |
+| GMS v92 | `GMS_v92_1_DEVM.exe.i64` | `SendConsumeCashItemUseRequest` @ `0x9bfe10` | `61` |
 
 v48 / v61 are settled without decompiling their classifier, from the dispatch
 switch bound in `CWvsContext::SendConsumeCashItemUseRequest`:
@@ -64,11 +66,40 @@ switch bound in `CWvsContext::SendConsumeCashItemUseRequest`:
   12–47. Type 61 is out of range.
 - v61 `0x832aec`: `add eax, -12` / `cmp eax, 28h` → types 12–52. Out of range.
 
-Not verified: **GMS v84 and GMS v92** — `get_cashslot_item_type` is unnamed in
-both IDBs. They sit inside the `< 95` band that v72/v79/v83/v87 all agree on
-(61), and the classifier body is byte-for-byte the same shape across those
-four. Treated as 61; the plan carries a task to confirm by the same
-jump-table method used for v48/v61 before the branch lands.
+**GMS v84 and GMS v92 confirmed 2026-08-13.** `get_cashslot_item_type` is
+still unnamed in both IDBs (the compiler inlined its classification into the
+call site rather than the value being visible as a separate `switch
+(nItemID / 10000)`), so — same as v48/v61 — the mapping is settled from the
+dispatch switch bound in `CWvsContext::SendConsumeCashItemUseRequest`
+(session resolved via `idb_list` by filename, per project convention):
+
+- **v84** (`GMS_v84.1_U_DEVM.i64`, session `5881cf84`):
+  `SendConsumeCashItemUseRequest` @ `0xa54a2f`, jump table `jpt_A54ADD`
+  @ `0xa54ad0`. The IDA-recognized case-61 arm is merged with case 25 —
+  comment `jumptable 00A54ADD cases 25,61` — at `0xa56ecd`:
+  ```
+  0xa56ecd  push  [ebp+arg_8]      ; jumptable 00A54ADD cases 25,61
+  0xa56ed0  lea   ecx, [ebp+var_38]
+  0xa56ed3  call  COutPacket::Encode2
+  0xa56ed8  jmp   loc_A54CE8       ; <send>
+  ```
+  Byte-for-byte the same shape as v83's `0xa0cae0` arm (§1.2): one
+  `Encode2` of the `nEPOS` argument, nothing else. Confirms **`61`**.
+- **v92** (`GMS_v92_1_DEVM.exe.i64`, session `acdfccff`):
+  `SendConsumeCashItemUseRequest` @ `0x9bfe10`, jump table `jpt_9BFF39`
+  @ (bound near `0x9bff39`). Case 61 is a standalone arm — comment
+  `jumptable 009BFF39 case 61` — at `0x9bff40`:
+  ```
+  0x9bff40  mov   ecx, [esp+234h+arg_8]   ; jumptable 009BFF39 case 61
+  0x9bff47  push  ecx
+  0x9bff48  lea   ecx, [esp+238h+var_204]
+  0x9bff4c  call  COutPacket::Encode2
+  ```
+  Same shape: one `Encode2` of the target-slot argument. Confirms **`61`**.
+
+Both results are `61`, matching the pre-95 band and the value already carried
+in Atlas's `GetCashSlotItemType`. No stop condition triggered; no version
+arm needed for `GetCashSlotItemType`'s existing 550 branch.
 
 **Value 61 is overloaded across the version boundary.** At GMS ≥ 95,
 `61` is the *megaphone* arm (`case 507`, `otherCategory == 7` →
@@ -472,18 +503,22 @@ command would stack under the at-least-once delivery this cluster has
 | gms_v72 | yes | 61 | covered by the pre-95 resolver branch |
 | gms_v79 | yes | 61 | covered |
 | gms_v83 | yes | 61 | covered |
-| gms_v84 | assumed yes | 61 (unverified) | confirm in the plan's first task |
+| gms_v84 | yes | 61 (confirmed 2026-08-13, §1.1) | covered by the pre-95 resolver branch |
 | gms_v87 | yes | 61 | covered |
-| gms_v92 | assumed yes | 61 (unverified) | confirm in the plan's first task |
+| gms_v92 | yes | 61 (confirmed 2026-08-13, §1.1) | covered by the pre-95 resolver branch |
 | gms_v95 | yes | 62 | covered by the ≥95 resolver branch |
 | jms_v185 | yes | 39 on the wire; Atlas computes 61 | covered — Atlas derives the type from the item id, it does not read it (§1.4) |
 
 No socket-config template edits. `CASH_ITEM_USE` is an existing registered
 handler and this task adds no opcode — the arm lives inside the existing
-dispatcher. If the plan's template audit finds a version missing the
-`CASH_ITEM_USE` registration, that is recorded as a finding and any edit must
-satisfy `template-opcode-order-guard.sh` and
-`template-duplicate-binding-guard.sh`.
+dispatcher. Confirmed 2026-08-13 via
+`grep -l "CharacterCashItemUseHandle" services/atlas-configurations/seed-data/templates/*.json`
+— all ten in-scope templates (`gms_48_1`, `gms_61_1`, `gms_72_1`, `gms_79_1`,
+`gms_83_1`, `gms_84_1`, `gms_87_1`, `gms_92_1`, `gms_95_1`, `jms_185_1`)
+already carry the `CharacterCashItemUseHandle` binding — including v48/v61,
+which have the shared `CASH_ITEM_USE` opcode registered even though their
+client has no case-61 arm for this specific classification. No template
+edit is needed and no gap was found.
 
 Per-version `addTime` / `maxDays` values are **data**, read at runtime from
 `atlas-data` per tenant. No code branches on them, so no per-version value

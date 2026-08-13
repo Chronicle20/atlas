@@ -79,3 +79,12 @@ func TestViciousHammerClassification(t *testing.T) {
 		t.Errorf("GetClassification(5570000) = %d, want ClassificationViciousHammer (557)", GetClassification(Id(5570000)))
 	}
 }
+
+func TestClassificationExpirationExtender(t *testing.T) {
+	if ClassificationExpirationExtender != Classification(550) {
+		t.Fatalf("ClassificationExpirationExtender = %d, want 550", ClassificationExpirationExtender)
+	}
+	if got := GetClassification(Id(5500001)); got != ClassificationExpirationExtender {
+		t.Fatalf("GetClassification(5500001) = %d, want %d", got, ClassificationExpirationExtender)
+	}
+}

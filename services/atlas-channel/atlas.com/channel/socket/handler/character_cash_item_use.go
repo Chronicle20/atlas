@@ -1031,7 +1031,7 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 				return CashSlotItemType(58)
 			}
 		}
-		if category == 550 {
+		if category == item.ClassificationExpirationExtender {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 				return CashSlotItemType(62)
 			} else {

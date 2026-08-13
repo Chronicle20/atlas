@@ -106,6 +106,7 @@ const (
 	ClassificationRemoteMerchant           = Classification(545)
 	ClassificationPetMultiConsumable       = Classification(546)
 	ClassificationRemoteStore              = Classification(547)
+	ClassificationExpirationExtender       = Classification(550)
 	ClassificationViciousHammer            = Classification(557)
 
 	WeaponTypeOneHandedSword = WeaponType(0)

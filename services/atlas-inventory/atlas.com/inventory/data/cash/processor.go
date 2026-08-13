@@ -2,6 +2,7 @@ package cash
 
 import (
 	"context"
+	"errors"
 
 	"github.com/sirupsen/logrus"
 
@@ -24,5 +25,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(itemId uint32) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(itemId), Extract)()
+	m, err := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(itemId), Extract)()
+	if err != nil {
+		if errors.Is(err, requests.ErrNotFound) {
+			p.l.WithError(err).Warnf("Extender template [%d] not found in cash data; refusing to extend expiration.", itemId)
+		} else {
+			p.l.WithError(err).Errorf("Unable to retrieve cash data for extender template [%d].", itemId)
+		}
+		return Model{}, err
+	}
+	return m, nil
 }

@@ -64,8 +64,8 @@ func TestApplyAssetKarmaMarksAnUntradeableEquip(t *testing.T) {
 	if !af.HasFlag(a.Flag(), af.FlagKarmaEquip) {
 		t.Fatal("expected the EQUIP karma bit (0x10) to be set")
 	}
-	if af.HasFlag(a.Flag(), af.FlagKarmaUse) && !af.HasFlag(a.Flag(), af.FlagSpikes) {
-		t.Fatal("the BUNDLE karma bit (0x02 = FlagSpikes on an equip) was written; wrong bit")
+	if af.HasFlag(a.Flag(), af.FlagSpikes) {
+		t.Fatal("the BUNDLE karma bit (0x02) was written; on an equip that bit is FlagSpikes")
 	}
 	if !af.HasFlag(a.Flag(), af.FlagUntradeable) {
 		t.Fatal("FlagUntradeable was disturbed")

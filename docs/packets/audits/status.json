@@ -17098,8 +17098,7 @@
       "tier1": false,
       "fnames": [
         "CMacroSysMan::FlushToSvr",
-        "sub_59746C",
-        "sub_6022DB"
+        "sub_59746C"
       ],
       "cells": {
         "gms_v48": {

@@ -56,8 +56,12 @@ is a port of it. Case 550:
 | JMS v185 | `MapleStory_dump_SCY.exe` | `0x49a1ee` | `39` |
 | GMS v48 | `GMS_v48_1_DEVM.exe` | *(classifier unnamed)* | **no arm** |
 | GMS v61 | `GMS_v61.1_U_DEVM.exe` | *(classifier unnamed)* | **no arm** |
-| GMS v84 | `GMS_v84.1_U_DEVM.i64` | `SendConsumeCashItemUseRequest` @ `0xa54a2f` | `61` |
-| GMS v92 | `GMS_v92_1_DEVM.exe.i64` | `SendConsumeCashItemUseRequest` @ `0x9bfe10` | `61` |
+| GMS v84 | `GMS_v84.1_U_DEVM.i64` | `SendConsumeCashItemUseRequest` @ `0xa54a2f` | `61` † |
+| GMS v92 | `GMS_v92_1_DEVM.exe.i64` | `SendConsumeCashItemUseRequest` @ `0x9bfe10` | `61` † |
+
+† v84/v92 are corroborated, not directly observed — see the paragraph below
+the table. The v72–v87/v95/JMS rows above are a direct decompile of
+`get_cashslot_item_type`'s `case 550` arm; v84/v92 are not.
 
 v48 / v61 are settled without decompiling their classifier, from the dispatch
 switch bound in `CWvsContext::SendConsumeCashItemUseRequest`:
@@ -66,17 +70,32 @@ switch bound in `CWvsContext::SendConsumeCashItemUseRequest`:
   12–47. Type 61 is out of range.
 - v61 `0x832aec`: `add eax, -12` / `cmp eax, 28h` → types 12–52. Out of range.
 
-**GMS v84 and GMS v92 confirmed 2026-08-13.** `get_cashslot_item_type` is
-still unnamed in both IDBs (the compiler inlined its classification into the
-call site rather than the value being visible as a separate `switch
-(nItemID / 10000)`), so — same as v48/v61 — the mapping is settled from the
-dispatch switch bound in `CWvsContext::SendConsumeCashItemUseRequest`
-(session resolved via `idb_list` by filename, per project convention):
+**GMS v84 and GMS v92 checked 2026-08-13 — a different, weaker evidentiary
+tier than the rows above.** `get_cashslot_item_type` remains unnamed in both
+IDBs, and unlike v48/v61 the `add eax, -12` / `cmp eax, <range>` bounds-check
+idiom does not appear anywhere in either function (`insn_query` scanned both
+in full for an `add`/`sub`/`lea` with a ±12 immediate: zero matches). What
+was actually shown is (a) a case-61 arm exists and is reachable in
+`SendConsumeCashItemUseRequest`'s own dispatch table (i.e. the family is
+present, as expected inside the pre-95 band), and (b) that arm's instruction
+shape — a single `Encode2` of the target-slot argument — is identical to
+v83's confirmed case-61 arm (§1.2). That establishes reachability and
+packet-shape consistency for value 61; it is **not** a direct observation
+that the classifier maps item-id prefix 550 to 61 in these two versions,
+because the classifier itself was never located. It is corroborating
+evidence for the pre-existing assumption, at the tier the plan's Task 15
+brief sanctioned as sufficient given the bounded risk (this confirms a
+pre-existing mapping, not new code, and Task 14's resolver mirrors the
+existing branch's condition exactly) — not a decompiled classifier result
+like the rows above it.
+
+(Session resolved via `idb_list` by filename, per project convention.)
 
 - **v84** (`GMS_v84.1_U_DEVM.i64`, session `5881cf84`):
-  `SendConsumeCashItemUseRequest` @ `0xa54a2f`, jump table `jpt_A54ADD`
-  @ `0xa54ad0`. The IDA-recognized case-61 arm is merged with case 25 —
-  comment `jumptable 00A54ADD cases 25,61` — at `0xa56ecd`:
+  `SendConsumeCashItemUseRequest` @ `0xa54a2f`. Dispatch jumps via
+  `jmp ds:jpt_A54ADD[eax*4]` at `0xa54add`. The IDA-recognized case-61 arm is
+  merged with case 25 — comment `jumptable 00A54ADD cases 25,61` — at
+  `0xa56ecd`:
   ```
   0xa56ecd  push  [ebp+arg_8]      ; jumptable 00A54ADD cases 25,61
   0xa56ed0  lea   ecx, [ebp+var_38]
@@ -84,22 +103,31 @@ dispatch switch bound in `CWvsContext::SendConsumeCashItemUseRequest`
   0xa56ed8  jmp   loc_A54CE8       ; <send>
   ```
   Byte-for-byte the same shape as v83's `0xa0cae0` arm (§1.2): one
-  `Encode2` of the `nEPOS` argument, nothing else. Confirms **`61`**.
+  `Encode2` of the `nEPOS` argument, nothing else. Shows the case-61 arm is
+  reachable and shaped identically to v83's confirmed arm — treated as `61`
+  on that basis.
 - **v92** (`GMS_v92_1_DEVM.exe.i64`, session `acdfccff`):
-  `SendConsumeCashItemUseRequest` @ `0x9bfe10`, jump table `jpt_9BFF39`
-  @ (bound near `0x9bff39`). Case 61 is a standalone arm — comment
-  `jumptable 009BFF39 case 61` — at `0x9bff40`:
+  `SendConsumeCashItemUseRequest` @ `0x9bfe10`. Dispatch jumps via
+  `jmp ds:jpt_9BFF39[eax*4]` at `0x9bff39`. Case 61 is a standalone arm here
+  (not merged with 25) — comment `jumptable 009BFF39 case 61` — at
+  `0x9bff40`:
   ```
   0x9bff40  mov   ecx, [esp+234h+arg_8]   ; jumptable 009BFF39 case 61
   0x9bff47  push  ecx
   0x9bff48  lea   ecx, [esp+238h+var_204]
   0x9bff4c  call  COutPacket::Encode2
   ```
-  Same shape: one `Encode2` of the target-slot argument. Confirms **`61`**.
+  Same shape: one `Encode2` of the target-slot argument. Same basis: reachable
+  arm, shape-matched to v83 — treated as `61`.
 
-Both results are `61`, matching the pre-95 band and the value already carried
-in Atlas's `GetCashSlotItemType`. No stop condition triggered; no version
-arm needed for `GetCashSlotItemType`'s existing 550 branch.
+Both dispatch arms exist, are reachable, and are shape-identical to v83's
+confirmed arm — consistent with `61` and with the pre-95 band every other
+decompiled version in it agrees on. No stop condition triggered (a stop would
+require finding the arm *absent* or shaped differently, which would mean
+`GetCashSlotItemType`'s existing 550 branch needed a version arm — neither
+happened). No version arm added to `GetCashSlotItemType`. The residual gap —
+the classifier itself not being located — is accepted per the brief's
+bounded-risk framing, not resolved.
 
 **Value 61 is overloaded across the version boundary.** At GMS ≥ 95,
 `61` is the *megaphone* arm (`case 507`, `otherCategory == 7` →
@@ -503,11 +531,17 @@ command would stack under the at-least-once delivery this cluster has
 | gms_v72 | yes | 61 | covered by the pre-95 resolver branch |
 | gms_v79 | yes | 61 | covered |
 | gms_v83 | yes | 61 | covered |
-| gms_v84 | yes | 61 (confirmed 2026-08-13, §1.1) | covered by the pre-95 resolver branch |
+| gms_v84 | yes | 61 (dispatch-arm corroborated 2026-08-13 †, §1.1) | covered by the pre-95 resolver branch |
 | gms_v87 | yes | 61 | covered |
-| gms_v92 | yes | 61 (confirmed 2026-08-13, §1.1) | covered by the pre-95 resolver branch |
+| gms_v92 | yes | 61 (dispatch-arm corroborated 2026-08-13 †, §1.1) | covered by the pre-95 resolver branch |
 | gms_v95 | yes | 62 | covered by the ≥95 resolver branch |
 | jms_v185 | yes | 39 on the wire; Atlas computes 61 | covered — Atlas derives the type from the item id, it does not read it (§1.4) |
+
+† Not a direct classifier decompile like the other rows. §1.1 located a
+reachable case-61 arm in `SendConsumeCashItemUseRequest`'s dispatch table,
+shape-matched to v83's confirmed arm, but `get_cashslot_item_type` itself was
+never located in either IDB — see §1.1 for the full evidentiary-tier
+distinction.
 
 No socket-config template edits. `CASH_ITEM_USE` is an existing registered
 handler and this task adds no opcode — the arm lives inside the existing

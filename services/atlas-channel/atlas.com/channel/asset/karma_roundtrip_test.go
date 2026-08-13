@@ -49,4 +49,9 @@ func TestKarmaUsedLeavesSpikesAlone(t *testing.T) {
 	if plain.Spikes() {
 		t.Fatal("Spikes() = true after karma-marking an unspiked equip; the wrong bit was written")
 	}
+
+	cleared := Clone(spiked).SetKarmaUsed(false).MustBuild()
+	if !cleared.Spikes() {
+		t.Fatal("clearing karma on a spiked equip cleared FlagSpikes")
+	}
 }

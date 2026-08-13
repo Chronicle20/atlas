@@ -28,5 +28,5 @@ func (r *RestModel) SetID(strId string) error {
 }
 
 func Extract(m RestModel) (Model, error) {
-	return Model{id: m.Id, jobId: m.JobId, x: m.X, y: m.Y, stance: m.Stance}, nil
+	return NewBuilder(m.Id).SetJobId(m.JobId).SetX(m.X).SetY(m.Y).SetStance(m.Stance).Build(), nil
 }

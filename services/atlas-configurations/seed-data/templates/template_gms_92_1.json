@@ -448,6 +448,23 @@
         ]
       },
       {
+        "opCode": "0x43",
+        "validator": "LoggedInValidator",
+        "handler": "NPCShopHandle",
+        "fname": "CShopDlg::SetRet",
+        "options": {
+          "operations": {
+            "BUY": 0,
+            "SELL": 1,
+            "RECHARGE": 2,
+            "LEAVE": 3
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x49",
         "validator": "LoggedInValidator",
         "handler": "OwlActionHandle",
@@ -2683,6 +2700,39 @@
         "opCode": "0x15E",
         "writer": "AriantScore",
         "fname": "CField_Witchtower::OnScoreUpdate",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x164",
+        "writer": "NPCShop",
+        "fname": "CShopDlg::SetShopDlg",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x165",
+        "writer": "NPCShopOperation",
+        "fname": "CShopDlg::OnPacket",
+        "options": {
+          "operations": {
+            "OK": 0,
+            "OUT_OF_STOCK": 1,
+            "NOT_ENOUGH_MONEY": 2,
+            "INVENTORY_FULL": 3,
+            "OUT_OF_STOCK_2": 5,
+            "OUT_OF_STOCK_3": 9,
+            "NOT_ENOUGH_MONEY_2": 10,
+            "NEED_MORE_ITEMS": 13,
+            "OVER_LEVEL_REQUIREMENT": 14,
+            "UNDER_LEVEL_REQUIREMENT": 15,
+            "TRADE_LIMIT": 16,
+            "GENERIC_ERROR": 17,
+            "GENERIC_ERROR_WITH_REASON": 19
+          }
+        },
         "services": [
           "channel"
         ]

@@ -5,6 +5,7 @@ import (
 	character2 "atlas-channel/character"
 	"atlas-channel/consumable"
 	cashData "atlas-channel/data/cash"
+	equipmentData "atlas-channel/data/equipment"
 	"atlas-channel/incubator"
 	"atlas-channel/kite"
 	"atlas-channel/pet"
@@ -321,6 +322,85 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 							InventoryType: byte(invType),
 							Slot:          targetSlot,
 							Expiration:    expiration,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+				},
+			})
+			return
+		}
+		if it == expirationExtenderCashSlotItemType(t) {
+			// Sub-body: a bare int16 equip position, shared verbatim with the
+			// Item Tag arm (the client uses one jump-table target for both --
+			// gms_v83 SendConsumeCashItemUseRequest @0xA0CAE0, "cases 25,61").
+			// No inventory type is on the wire: the client hard-codes EQUIP
+			// (CharacterData::GetItem(charData, 1, -hitTestResult)), so the
+			// compartment is EQUIP unconditionally and the slot is negative.
+			sp := cashsb.NewItemUseTargetSlot(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			targetSlot := sp.Slot()
+
+			target, err := character2.NewProcessor(l, ctx).GetItemInSlot(s.CharacterId(), inventory.TypeValueEquip, targetSlot)()
+			if err != nil {
+				l.Warnf("Character [%d] attempted to use expiration extender [%d] on empty equip slot [%d].", s.CharacterId(), itemId, targetSlot)
+				return
+			}
+
+			cd, err := cashData.NewProcessor(l, ctx).GetById(uint32(itemId))
+			if err != nil {
+				l.WithError(err).Warnf("Character [%d] unable to resolve cash item data for expiration extender [%d].", s.CharacterId(), itemId)
+				return
+			}
+
+			ed, err := equipmentData.NewProcessor(l, ctx).GetById(target.TemplateId())
+			if err != nil {
+				l.WithError(err).Warnf("Character [%d] unable to resolve equipment data for extender target [%d] in slot [%d].", s.CharacterId(), target.TemplateId(), targetSlot)
+				return
+			}
+
+			outcome := evaluateExpirationExtension(time.Now(), extensionTarget{
+				Expiration: target.Expiration(),
+				Locked:     target.Locked(),
+				CashId:     target.CashId(),
+				NotExtend:  ed.NotExtend(),
+			}, cd.AddTime, cd.MaxDays)
+			if outcome.Reason != "" {
+				l.Warnf("Character [%d] expiration extender [%d] rejected on equip slot [%d] target [%d]: %s.", s.CharacterId(), itemId, targetSlot, target.TemplateId(), outcome.Reason)
+				return
+			}
+
+			// No EnableActions: this arm mutates inventory without warping,
+			// matching the sealing-lock and kite arms.
+			transactionId := uuid.New()
+			now := time.Now()
+			_ = saga.NewProcessor(l, ctx).Create(saga.Saga{
+				TransactionId: transactionId,
+				SagaType:      saga.ExpirationExtenderUse,
+				InitiatedBy:   "CASH_ITEM_USE",
+				Steps: []saga.Step{
+					{
+						StepId: "consume_expiration_extender",
+						Status: saga.Pending,
+						Action: saga.DestroyAsset,
+						Payload: saga.DestroyAssetPayload{
+							CharacterId: s.CharacterId(),
+							TemplateId:  uint32(itemId),
+							Quantity:    1,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+					{
+						StepId: "extend_asset_expiration",
+						Status: saga.Pending,
+						Action: saga.ExtendAssetExpiration,
+						Payload: saga.ExtendAssetExpirationPayload{
+							CharacterId:        s.CharacterId(),
+							InventoryType:      byte(inventory.TypeValueEquip),
+							Slot:               targetSlot,
+							Expiration:         outcome.Expiration,
+							ExtenderTemplateId: uint32(itemId),
 						},
 						CreatedAt: now,
 						UpdatedAt: now,
@@ -665,12 +745,14 @@ const (
 	// type 24. The type byte therefore CANNOT distinguish AP-vs-SP — the labels
 	// below name only which numeric bucket each is. The arm matches on either
 	// bucket and then dispatches by item id (design §2.4), never by this type.
-	CashSlotItemTypePointResetShared = CashSlotItemType(23) // AP Reset + SP Reset tiers 2-4
-	CashSlotItemTypePointResetTier1  = CashSlotItemType(24) // SP Reset tier 1 only
-	CashSlotItemTypeVegasSpellPre95  = CashSlotItemType(68)
-	CashSlotItemTypeVegasSpell95     = CashSlotItemType(71)
-	CashSlotItemTypeViciousHammer    = CashSlotItemType(66) // GMS < 95
-	CashSlotItemTypeViciousHammerV95 = CashSlotItemType(67) // GMS >= 95
+	CashSlotItemTypePointResetShared      = CashSlotItemType(23) // AP Reset + SP Reset tiers 2-4
+	CashSlotItemTypePointResetTier1       = CashSlotItemType(24) // SP Reset tier 1 only
+	CashSlotItemTypeVegasSpellPre95       = CashSlotItemType(68)
+	CashSlotItemTypeVegasSpell95          = CashSlotItemType(71)
+	CashSlotItemTypeViciousHammer         = CashSlotItemType(66) // GMS < 95
+	CashSlotItemTypeViciousHammerV95      = CashSlotItemType(67) // GMS >= 95
+	CashSlotItemTypeExpirationExtender    = CashSlotItemType(61) // GMS < 95, JMS
+	CashSlotItemTypeExpirationExtenderV95 = CashSlotItemType(62) // GMS >= 95
 	// CashSlotItemTypeTeleportRock (enum 12) is shared with some megaphones
 	// (GetCashSlotItemType's ClassificationMegaphones branch, otherCategory==1)
 	// — the handler gates on item.ClassificationTeleportRock (504) before

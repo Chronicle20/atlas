@@ -123,14 +123,55 @@ was just unnamed.
 
 `CMacroSysMan::FlushToSvr` (the SEND side) was NOT located, matching the
 pre-existing finding in `docs/packets/registry/discover_gms_v61.md` ("v61
-SKILL_MACRO send-site not located... likely client-only or inlined"). This
-task's own search: whole-binary `func_query name_regex` for
-`MacroSysMan|SetMacro|MACROSYSDATA|SINGLEMACRO` returns exactly the four
-symbols in the confirmed clientbound chain and nothing else — no unnamed
-`CMacroSysMan`-class candidate remains reachable from `OnMacroSysDataInit`'s
-2-level call graph, and there is no known opcode to byte-signature-search
-for (v61 has no `SKILL_MACRO` registry entry to confirm against). Recorded
-`NOT FOUND — see Task 4`, consistent with the prior audit.
+SKILL_MACRO send-site not located... likely client-only or inlined"). The
+conclusion (`NOT FOUND — see Task 4`) stands, but the evidence backing it is
+**weaker than a binary-wide search** and must be read precisely, not as
+proof of absence:
+
+- The whole-binary `func_query name_regex
+  "MacroSysMan|SetMacro|MACROSYSDATA|SINGLEMACRO"` returns exactly **3**
+  symbols: `CMacroSysMan::SetMacro` (`0x59744b`), `MACROSYSDATA::Decode`
+  (`0x4b796d`), `SINGLEMACRO::Decode` (`0x4b78d5`) — the three confirmed
+  clientbound-chain helpers. `CWvsContext::OnMacroSysDataInit` itself is
+  **not** matched by this pattern (its name contains neither
+  `MacroSysMan`/`SetMacro`/`MACROSYSDATA`/`SINGLEMACRO`), so "four symbols"
+  in an earlier draft of this log was simply wrong; the correct count is
+  three, all clientbound.
+- That regex search only enumerates **named** symbols. It says nothing about
+  an unnamed `CMacroSysMan`-class function elsewhere in the binary — which is
+  exactly the shape every renamed `FlushToSvr` in the other nine versions
+  started in (`sub_XXXXXX`, unnamed, until this task located and renamed it).
+  A zero-hit name search is not evidence a send site is absent; it only shows
+  no send site happens to already be named.
+- The byte-signature technique from VERIFYING_A_PACKET.md §10
+  (`6A <op> 8D ...` at the send-site opcode push) — the ONE method in this
+  task's toolkit that can locate an *unnamed* sender — was **not applicable**
+  to v61: it requires a known target opcode, and v61 has no `SKILL_MACRO`
+  registry entry to read one from (confirmed above: `docs/packets/registry/
+  gms_v61.yaml` carries no `SKILL_MACRO` op at all). No opcode-driven search
+  was attempted or possible.
+- The only structural check performed — decompiling
+  `CWvsContext::OnMacroSysDataInit` two calls deep and confirming neither
+  call constructs a `COutPacket` — bounds the **receive** path only. A
+  UI-triggered send function (v61's macro-editor "save" button, per the
+  discover doc's own "client-only or inlined" hypothesis) has no reason to
+  appear anywhere in the receive handler's call graph, so this check does
+  not, and was never claimed to, bound the send side.
+
+**What would actually settle this** (Task 4 Step 2's mandated technique):
+enumerate every `COutPacket::COutPacket(&pkt, N)` call site in the v61
+binary via `xrefs_to` on the `COutPacket(int)` ctor (as this task did
+successfully to disambiguate the v72/v79 fname bug — see above), then
+shape-match each candidate's body against the known
+`FlushToSvr`/`MACROSYSDATA::Encode` pattern (construct packet → delegate to
+a struct's `Encode` → `CClientSocket::SendPacket` → `ZArray::RemoveAll`) to
+find an unnamed sender regardless of its pushed opcode. This task did not run
+that enumeration for v61 (hundreds of call sites, no per-candidate opcode to
+pre-filter on, unlike v72/79/84/92 where a known opcode narrowed the search
+to 1-2 byte-pattern hits) — it is left to Task 4, explicitly, as the
+concrete next step rather than a vague "keep looking."
+
+Recorded `NOT FOUND — see Task 4`.
 
 ## Tool limitation found: constructed-then-delegated Send/Receive functions parse as `calls: null`
 

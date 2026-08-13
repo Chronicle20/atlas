@@ -228,6 +228,17 @@ func handleEnterErrorStatusEvent(sc server.Model, wp writer.Producer) message.Ha
 // in the tenant rather than just the (world, channel) the goroutine happened
 // to be started from, so it doesn't matter which listener key's InitHandlers
 // call wins the race to start it.
+//
+// The claim is released, not permanent: each (tenant, world, channel) key
+// gets its own ctx from listener.Registry.Add, and Drain cancels just that
+// one key's ctx on an ordinary channel-scale-down — the tenant's other keys
+// stay live (listener/registry.go Drain, configuration/projection/apply.go
+// OpDrain). If the key that won the claim above is the one that drains, its
+// goroutine's ctx.Done() fires and it must give up the claim so a still-live
+// (or future) key for the same tenant can start a replacement sweeper.
+// Without this release, a routine channel drain — not tenant teardown —
+// would silently disable the sweep for the tenant's remaining listeners
+// forever (task-221 code review, round 3).
 var (
 	remoteMerchantSweepStarted   = make(map[uuid.UUID]bool)
 	remoteMerchantSweepStartedMu sync.Mutex
@@ -235,8 +246,10 @@ var (
 
 // startRemoteMerchantSweep evicts pending unlocks whose status event never
 // arrived and unlocks those clients, so a dropped event cannot leave a
-// character permanently locked (task-221 design §2.3). It is a no-op after
-// the first call for a given tenant (see remoteMerchantSweepStarted above).
+// character permanently locked (task-221 design §2.3). It is a no-op if a
+// sweep is already running for this tenant (see remoteMerchantSweepStarted
+// above); when the running sweep's own ctx is cancelled it releases its
+// claim so a later call for the same tenant can start a replacement.
 func startRemoteMerchantSweep(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) {
 	t := tenant.MustFromContext(ctx)
 
@@ -249,6 +262,17 @@ func startRemoteMerchantSweep(l logrus.FieldLogger, ctx context.Context, wp writ
 	remoteMerchantSweepStartedMu.Unlock()
 
 	routine.Go(l, ctx, func(c context.Context) {
+		// Release this tenant's claim on the way out, however the loop below
+		// exits, so the next InitHandlers call for this tenant — on this key
+		// restarting, or any of the tenant's other still-live keys — can
+		// start a fresh sweeper instead of finding the guard permanently
+		// latched by a goroutine that no longer exists.
+		defer func() {
+			remoteMerchantSweepStartedMu.Lock()
+			delete(remoteMerchantSweepStarted, t.Id())
+			remoteMerchantSweepStartedMu.Unlock()
+		}()
+
 		ticker := time.NewTicker(remotemerchant.TTL)
 		defer ticker.Stop()
 		for {

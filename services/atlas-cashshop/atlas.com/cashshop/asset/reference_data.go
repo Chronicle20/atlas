@@ -32,26 +32,33 @@ type EquipableReferenceData struct {
 	expiration     time.Time
 }
 
-func (e EquipableReferenceData) GetStrength() uint16       { return e.strength }
-func (e EquipableReferenceData) GetDexterity() uint16      { return e.dexterity }
-func (e EquipableReferenceData) GetIntelligence() uint16   { return e.intelligence }
-func (e EquipableReferenceData) GetLuck() uint16           { return e.luck }
-func (e EquipableReferenceData) GetHP() uint16             { return e.hp }
-func (e EquipableReferenceData) GetMP() uint16             { return e.mp }
-func (e EquipableReferenceData) GetWeaponAttack() uint16   { return e.weaponAttack }
-func (e EquipableReferenceData) GetMagicAttack() uint16    { return e.magicAttack }
-func (e EquipableReferenceData) GetWeaponDefense() uint16  { return e.weaponDefense }
-func (e EquipableReferenceData) GetMagicDefense() uint16   { return e.magicDefense }
-func (e EquipableReferenceData) GetAccuracy() uint16       { return e.accuracy }
-func (e EquipableReferenceData) GetAvoidability() uint16   { return e.avoidability }
-func (e EquipableReferenceData) GetHands() uint16          { return e.hands }
-func (e EquipableReferenceData) GetSpeed() uint16          { return e.speed }
-func (e EquipableReferenceData) GetJump() uint16           { return e.jump }
-func (e EquipableReferenceData) GetSlots() uint16          { return e.slots }
-func (e EquipableReferenceData) GetOwnerId() uint32        { return e.ownerId }
-func (e EquipableReferenceData) IsLocked() bool            { return af.HasFlag(e.flag, af.FlagLock) }
-func (e EquipableReferenceData) HasSpikes() bool           { return af.HasFlag(e.flag, af.FlagSpikes) }
-func (e EquipableReferenceData) IsKarmaUsed() bool         { return af.HasFlag(e.flag, af.FlagKarmaUse) }
+func (e EquipableReferenceData) GetStrength() uint16      { return e.strength }
+func (e EquipableReferenceData) GetDexterity() uint16     { return e.dexterity }
+func (e EquipableReferenceData) GetIntelligence() uint16  { return e.intelligence }
+func (e EquipableReferenceData) GetLuck() uint16          { return e.luck }
+func (e EquipableReferenceData) GetHP() uint16            { return e.hp }
+func (e EquipableReferenceData) GetMP() uint16            { return e.mp }
+func (e EquipableReferenceData) GetWeaponAttack() uint16  { return e.weaponAttack }
+func (e EquipableReferenceData) GetMagicAttack() uint16   { return e.magicAttack }
+func (e EquipableReferenceData) GetWeaponDefense() uint16 { return e.weaponDefense }
+func (e EquipableReferenceData) GetMagicDefense() uint16  { return e.magicDefense }
+func (e EquipableReferenceData) GetAccuracy() uint16      { return e.accuracy }
+func (e EquipableReferenceData) GetAvoidability() uint16  { return e.avoidability }
+func (e EquipableReferenceData) GetHands() uint16         { return e.hands }
+func (e EquipableReferenceData) GetSpeed() uint16         { return e.speed }
+func (e EquipableReferenceData) GetJump() uint16          { return e.jump }
+func (e EquipableReferenceData) GetSlots() uint16         { return e.slots }
+func (e EquipableReferenceData) GetOwnerId() uint32       { return e.ownerId }
+func (e EquipableReferenceData) IsLocked() bool           { return af.HasFlag(e.flag, af.FlagLock) }
+func (e EquipableReferenceData) HasSpikes() bool          { return af.HasFlag(e.flag, af.FlagSpikes) }
+
+// IsKarmaUsed reads the EQUIP karma bit (0x10) unconditionally. Unlike the six
+// asset models, EquipableReferenceData carries no template id — it is the
+// equip-shaped reference block hanging off an asset that holds the id — but it
+// is equip-class BY TYPE, so the bit is fixed rather than resolved. The setter
+// (SetKarmaUsed) already writes FlagKarmaEquip; before task-223 this getter read
+// FlagKarmaUse (0x02, the BUNDLE bit) and the pair never round-tripped.
+func (e EquipableReferenceData) IsKarmaUsed() bool         { return af.HasFlag(e.flag, af.FlagKarmaEquip) }
 func (e EquipableReferenceData) IsCold() bool              { return af.HasFlag(e.flag, af.FlagCold) }
 func (e EquipableReferenceData) CanBeTraded() bool         { return !af.HasFlag(e.flag, af.FlagUntradeable) }
 func (e EquipableReferenceData) GetLevelType() byte        { return e.levelType }
@@ -370,8 +377,10 @@ func (e CashEquipableReferenceData) GetSlots() uint16         { return e.slots }
 func (e CashEquipableReferenceData) GetOwnerId() uint32       { return e.ownerId }
 func (e CashEquipableReferenceData) IsLocked() bool           { return af.HasFlag(e.flag, af.FlagLock) }
 func (e CashEquipableReferenceData) HasSpikes() bool          { return af.HasFlag(e.flag, af.FlagSpikes) }
-func (e CashEquipableReferenceData) IsKarmaUsed() bool        { return af.HasFlag(e.flag, af.FlagKarmaUse) }
-func (e CashEquipableReferenceData) IsCold() bool             { return af.HasFlag(e.flag, af.FlagCold) }
+
+// See EquipableReferenceData.IsKarmaUsed: equip-class by type, so the bit is fixed.
+func (e CashEquipableReferenceData) IsKarmaUsed() bool { return af.HasFlag(e.flag, af.FlagKarmaEquip) }
+func (e CashEquipableReferenceData) IsCold() bool      { return af.HasFlag(e.flag, af.FlagCold) }
 func (e CashEquipableReferenceData) CanBeTraded() bool {
 	return !af.HasFlag(e.flag, af.FlagUntradeable)
 }

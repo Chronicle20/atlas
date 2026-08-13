@@ -11,8 +11,10 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
@@ -60,7 +62,7 @@ func InitHandlers(l logrus.FieldLogger) func(ctx context.Context) func(sc server
 					}
 					handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 
-					startRemoteMerchantSweep(l, ctx, sc, wp)
+					startRemoteMerchantSweep(l, ctx, wp)
 
 					return handles, nil
 				}
@@ -213,10 +215,39 @@ func handleEnterErrorStatusEvent(sc server.Model, wp writer.Producer) message.Ha
 	}
 }
 
+// remoteMerchantSweepStarted deduplicates the sweep goroutine per tenant.
+// InitHandlers runs once per (tenant, world, channel) listener key
+// (buildListener's AddBody, invoked by listener.Registry.Add — see
+// listener/registry.go and configuration/projection/apply.go), so a tenant
+// with W worlds x C channels would otherwise spin up W*C independent tickers
+// all polling the same package-level remotemerchant.Registry: harmless once
+// Sweep is tenant-scoped, but wasteful, and the same root gap that produced
+// the round-2 code review's cross-tenant entry-theft finding. One sweep
+// goroutine per tenant is sufficient — Sweep(t, now) already scopes eviction
+// to that tenant, and findSessionByCharacterId below searches every session
+// in the tenant rather than just the (world, channel) the goroutine happened
+// to be started from, so it doesn't matter which listener key's InitHandlers
+// call wins the race to start it.
+var (
+	remoteMerchantSweepStarted   = make(map[uuid.UUID]bool)
+	remoteMerchantSweepStartedMu sync.Mutex
+)
+
 // startRemoteMerchantSweep evicts pending unlocks whose status event never
 // arrived and unlocks those clients, so a dropped event cannot leave a
-// character permanently locked (task-221 design §2.3).
-func startRemoteMerchantSweep(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer) {
+// character permanently locked (task-221 design §2.3). It is a no-op after
+// the first call for a given tenant (see remoteMerchantSweepStarted above).
+func startRemoteMerchantSweep(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) {
+	t := tenant.MustFromContext(ctx)
+
+	remoteMerchantSweepStartedMu.Lock()
+	if remoteMerchantSweepStarted[t.Id()] {
+		remoteMerchantSweepStartedMu.Unlock()
+		return
+	}
+	remoteMerchantSweepStarted[t.Id()] = true
+	remoteMerchantSweepStartedMu.Unlock()
+
 	routine.Go(l, ctx, func(c context.Context) {
 		ticker := time.NewTicker(remotemerchant.TTL)
 		defer ticker.Stop()
@@ -225,12 +256,9 @@ func startRemoteMerchantSweep(l logrus.FieldLogger, ctx context.Context, sc serv
 			case <-c.Done():
 				return
 			case now := <-ticker.C:
-				for _, ex := range remotemerchant.GetRegistry().Sweep(now) {
-					if !ex.Tenant.Is(sc.Tenant()) {
-						continue
-					}
-					s, err := session.NewProcessor(l, c).GetByCharacterId(sc.Channel())(ex.CharacterId)
-					if err != nil {
+				for _, ex := range remotemerchant.GetRegistry().Sweep(t, now) {
+					s, ok := findSessionByCharacterId(l, c, ex.CharacterId)
+					if !ok {
 						continue
 					}
 					l.WithFields(logrus.Fields{
@@ -242,4 +270,23 @@ func startRemoteMerchantSweep(l logrus.FieldLogger, ctx context.Context, sc serv
 			}
 		}
 	})
+}
+
+// findSessionByCharacterId resolves a character's session anywhere in the
+// tenant, not just on the (world, channel) the sweep goroutine happened to
+// start from. A character's remote-merchant registry entry carries no
+// world/channel — only tenant + characterId — so the goroutine that wins the
+// per-tenant dedup race in startRemoteMerchantSweep must be able to find a
+// session on any of the tenant's channels.
+func findSessionByCharacterId(l logrus.FieldLogger, ctx context.Context, characterId uint32) (session.Model, bool) {
+	all, err := session.NewProcessor(l, ctx).AllInTenantProvider()
+	if err != nil {
+		return session.Model{}, false
+	}
+	for _, s := range all {
+		if s.CharacterId() == characterId {
+			return s, true
+		}
+	}
+	return session.Model{}, false
 }

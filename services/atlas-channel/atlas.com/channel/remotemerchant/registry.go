@@ -99,14 +99,27 @@ func (r *Registry) ClearCharacter(t tenant.Model, characterId uint32) {
 	delete(r.pending, Key{Tenant: t, CharacterId: characterId})
 }
 
-// Sweep removes and returns every entry older than TTL. The caller sends
-// EnableActions for each so a lost status event cannot leave a character
-// permanently locked.
-func (r *Registry) Sweep(now time.Time) []Expired {
+// Sweep removes and returns every entry older than TTL belonging to t. The
+// caller sends EnableActions for each so a lost status event cannot leave a
+// character permanently locked.
+//
+// Sweep is scoped to a single tenant deliberately: atlas-channel starts one
+// sweep goroutine per (tenant, world, channel) listener key, and on a pod
+// serving more than one tenant every one of those goroutines shares this same
+// Registry. An unscoped Sweep is destructive — the first goroutine to fire
+// would remove and claim every tenant's expired entries, and every other
+// tenant's sweeper would see nothing to unlock for entries that were, in
+// truth, never delivered to anyone (task-221 code review, round 2). Scoping
+// the removal to t inside the lock means a tenant's entries can only ever be
+// consumed by that tenant's own sweep.
+func (r *Registry) Sweep(t tenant.Model, now time.Time) []Expired {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	var out []Expired
 	for k, e := range r.pending {
+		if !k.Tenant.Is(t) {
+			continue
+		}
 		if now.Sub(e.At) >= TTL {
 			out = append(out, Expired{Tenant: k.Tenant, CharacterId: k.CharacterId, Entry: e})
 			delete(r.pending, k)

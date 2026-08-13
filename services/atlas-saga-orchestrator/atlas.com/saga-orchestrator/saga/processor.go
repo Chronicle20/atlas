@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
+	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -1595,7 +1596,7 @@ func (p *ProcessorImpl) expandTradeSettlement(st Step[any]) ([]Step[any], error)
 					CharacterId:   uint32(recipient),
 					InventoryType: byte(it.InventoryType),
 					TemplateId:    it.Snapshot.TemplateId,
-					AssetData:     assetDataFromSnapshot(it.Snapshot),
+					AssetData:     assetDataFromSnapshot(clearKarmaFromSnapshot(it.Snapshot)),
 				},
 			))
 		}
@@ -1680,7 +1681,10 @@ func (p *ProcessorImpl) expandTradeUnwind(st Step[any]) ([]Step[any], error) {
 				CharacterId:   uint32(ui.OwnerId),
 				InventoryType: byte(ui.Item.InventoryType),
 				TemplateId:    ui.Item.Snapshot.TemplateId,
-				AssetData:     assetDataFromSnapshot(ui.Item.Snapshot),
+				// NOT clearKarmaFromSnapshot: an unwound trade is not a transfer
+				// of ownership, so a staged-then-cancelled item keeps its mark
+				// (task-223 FR-7.6).
+				AssetData: assetDataFromSnapshot(ui.Item.Snapshot),
 			},
 		))
 	}
@@ -1720,6 +1724,31 @@ func (p *ProcessorImpl) expandTradeUnwind(st Step[any]) ([]Step[any], error) {
 //
 // Quantity comes from the snapshot, which holds the STAGED quantity — a partial
 // stage of 1 out of 200 escrowed 1, and must deliver 1.
+// clearKarmaFromSnapshot masks the one-free-trade karma mark off a snapshot at
+// the moment a TRANSFER OF OWNERSHIP re-materialises the asset for its new owner
+// (task-223 FR-7.4). The grant is "1 time of trading has been enabled" — the
+// unit consumed is a transfer, so the item must arrive untradeable.
+//
+// Doing it HERE, in the snapshot, rather than as a follow-up mutation on the
+// delivered item, is what makes FR-7.5 structural: the clear and the transfer
+// are the same write, and there is no window in which a delivered item still
+// carries a free trade.
+//
+// It is applied to the SETTLEMENT expansion only. The UNWIND expansion replays
+// the same snapshot unmasked, so a staged-then-cancelled trade keeps its mark
+// (FR-7.6) with no extra code and no risk of the two paths diverging.
+//
+// A pet is skipped entirely: KarmaFlagFor reports no bit for the pet class, and
+// the client's pet karma bit is 0x01, which is FlagLock everywhere else.
+func clearKarmaFromSnapshot(s AssetSnapshot) AssetSnapshot {
+	f, ok := af.KarmaFlagFor(s.TemplateId)
+	if !ok {
+		return s
+	}
+	s.Flag = af.ClearFlag(s.Flag, f)
+	return s
+}
+
 func assetDataFromSnapshot(s AssetSnapshot) asset2.AssetData {
 	return asset2.AssetData{
 		Expiration:     s.Expiration,

@@ -200,7 +200,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			}
 		}
 		if it == CashSlotItemTypeItemTag {
-			sp := cashsb.NewItemUseItemTag(updateTimeFirst)
+			sp := cashsb.NewItemUseTargetSlot(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
 			targetSlot := sp.Slot()
 			if targetSlot >= 0 {

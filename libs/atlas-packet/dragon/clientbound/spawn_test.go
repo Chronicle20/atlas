@@ -79,6 +79,28 @@ func TestDragonSpawnBytesV84(t *testing.T) {
 	}
 }
 
+// v87: CDragon::OnCreated @0x5200ed (GMSv87_4GB.exe.i64, session d51ecbd3),
+// reached via CUser::OnDragonPacket @0x9b3880's a2==0xC2 (194) branch, itself
+// routed by CUserPool::OnUserCommonPacket @0x9f7387's range test
+// `v6>=0xC2 && v6<=0xC4` @0x9f7430. Reads, in order: Decode4 (stored at
+// this+61) @0x52010b, Decode4 (stored at this+58) @0x52011f, Decode1 stance
+// @0x520141 (through sub_4172B3 into this+37), Decode2 <read, return value
+// discarded — no store> @0x52015e, Decode2 jobId (this+71) @0x520178. 13-byte
+// body — the two Decode4 calls store to offsets in reverse order versus v84's
+// (this[58] then this[59]) but the WIRE READ ORDER is identical: Decode4,
+// Decode4, Decode1, Decode2(discarded), Decode2(jobId). v87 confirms the
+// spawnHasJobId gate boundary: v87 (>=84) DOES carry jobId, matching v84/v95.
+//
+// packet-audit:verify packet=dragon/clientbound/DragonSpawn version=gms_v87 ida=0x5200ed
+func TestDragonSpawnBytesV87(t *testing.T) {
+	in := NewDragonSpawn(4242, 100, -200, 3, 2214)
+	ctx := test.CreateContext("GMS", 87, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, dragonSpawnBody) {
+		t.Fatalf("v87 spawn bytes = % X, want % X", got, dragonSpawnBody)
+	}
+}
+
 // jobId is present on v84/v87/v92/v95/JMS185 (13 bytes) and absent on v83
 // (11 bytes) — see spawnHasJobId in spawn.go for the IDA grounding. If any
 // column ever diverges from this split, this table is where it shows up

@@ -60,6 +60,25 @@ func TestDragonRemoveBytes_v84(t *testing.T) {
 	}
 }
 
+// v87: CUser::OnDragonPacket @0x9b3880 (GMSv87_4GB.exe.i64, session d51ecbd3)
+// handles only a2==0xC2 (194, spawn -> CDragon::OnCreated @0x5200ed) and
+// this[2203]&&a2==0xC3 (195, move -> CDragon::OnMove @0x520c71) — THERE IS NO
+// CASE FOR 0xC4 (196, REMOVE_DRAGON). The outer dispatcher
+// CUserPool::OnUserCommonPacket @0x9f7387 routes the range
+// `v6>=0xC2 && v6<=0xC4` @0x9f7430 into OnDragonPacket (call @0x9f7438), so
+// 196 enters the function and falls through both branches unhandled — no
+// field is read, no dragon state changes. Same routed-but-unhandled shape as
+// v83/v84/v95 (docs/packets/registry/gms_v84.yaml:1254). Sending
+// REMOVE_DRAGON is correct and harmless; the client silently discards it.
+//
+// packet-audit:verify packet=dragon/clientbound/DragonRemove version=gms_v87 ida=0x9b3880
+func TestDragonRemoveBytes_v87(t *testing.T) {
+	got := test.Encode(t, test.CreateContext("GMS", 87, 1), NewDragonRemove(4242).Encode, nil)
+	if !bytes.Equal(got, []byte{0x92, 0x10, 0x00, 0x00}) {
+		t.Fatalf("v87 remove bytes = % X, want 92 10 00 00", got)
+	}
+}
+
 func TestDragonRemoveRoundTrip(t *testing.T) {
 	var out DragonRemove
 	test.RoundTrip(t, test.CreateContext("GMS", 95, 1), NewDragonRemove(4242).Encode, out.Decode, nil)

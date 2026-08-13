@@ -59,6 +59,24 @@ func TestDragonMoveBytes_v84(t *testing.T) {
 	}
 }
 
+// v87: CDragon::OnMove @0x520c71 (GMSv87_4GB.exe.i64, session d51ecbd3) is a
+// single delegating call: CMovePath::OnMovePacket(*(this+55)!=0 ?
+// *(this+55)-12+572 : 572, a2) — same shape as v83/v84/v95 (only the fallback
+// constant differs per version's struct layout; the wire shape is
+// unaffected). Reached via CUser::OnDragonPacket @0x9b3880's a2==0xC3 (195)
+// branch (gated on this[2203]).
+//
+// packet-audit:verify packet=dragon/clientbound/DragonMove version=gms_v87 ida=0x520c71
+func TestDragonMoveBytes_v87(t *testing.T) {
+	blob := []byte{0x0A, 0x00, 0x14, 0x00, 0x01, 0xFF}
+	got := test.Encode(t, test.CreateContext("GMS", 87, 1), NewDragonMove(4242, blob).Encode, nil)
+
+	want := append([]byte{0x92, 0x10, 0x00, 0x00}, blob...)
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v87 move bytes = % X, want % X", got, want)
+	}
+}
+
 func TestDragonMoveRoundTrip(t *testing.T) {
 	var out DragonMove
 	test.RoundTrip(t, test.CreateContext("GMS", 95, 1),

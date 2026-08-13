@@ -102,6 +102,35 @@ func TestServerboundMoveHasNoLeadingIdentityField_v84(t *testing.T) {
 	}
 }
 
+// v87 send site: CVecCtrlDragon::EndUpdateActive @0xa46fae (GMSv87_4GB.exe.i64,
+// session d51ecbd3) writes COutPacket(0xC1=193) then CMovePath::Flush(...) and
+// NOTHING else — no leading identity field, same shape as v83/v84/v95.
+//
+// packet-audit:verify packet=dragon/serverbound/Move version=gms_v87 ida=0xa46fae
+func TestServerboundMoveHasNoLeadingIdentityField_v87(t *testing.T) {
+	ctx := test.CreateContext("GMS", 87, 1)
+	l, _ := testlog.NewNullLogger()
+
+	blob := []byte{0x64, 0x00, 0x38, 0xFF, 0x01, 0x00, 0x07}
+	req := request.Request(blob)
+	reader := request.NewRequestReader(&req, 0)
+
+	var m Move
+	m.Decode(l, ctx)(&reader, nil)
+
+	if !bytes.Equal(m.RawMovement(), blob) {
+		t.Fatalf("v87 rawMovement must be the WHOLE body, got % X", m.RawMovement())
+	}
+	if m.StartX() != 100 || m.StartY() != -200 {
+		t.Fatalf("v87 start position = %d,%d, want 100,-200", m.StartX(), m.StartY())
+	}
+
+	got := test.Encode(t, ctx, m.Encode, nil)
+	if !bytes.Equal(got, blob) {
+		t.Fatalf("v87 encode must be byte-faithful, got % X, want % X", got, blob)
+	}
+}
+
 // The layout is uniform across all six applicable versions.
 func TestServerboundMoveIdenticalAcrossVersions(t *testing.T) {
 	blob := []byte{0x64, 0x00, 0x38, 0xFF, 0x01, 0x00, 0x07}

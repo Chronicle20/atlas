@@ -466,8 +466,14 @@ func getEffect(t tenant.Model, skillId skill.Id, overTime bool, node xml.Node) e
 		ms[monster.StatusFreeze] = 1
 	} else if skill.Is(skillId, skill.EvanStage8PhantomImprintId) {
 		ms[monster.StatusPhantomImprint] = uint32(e.X())
-	} else if skill.Is(skillId, skill.AranStage1ComboAbilityId) {
-		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeAranCombo, 100)
+	} else if skill.Is(skillId, skill.AranStage1ComboAbilityId, skill.LegendComboAbilityId) {
+		// ARAN_COMBO is a damage-calculation input decoded by the client as a
+		// signed short (SecondaryStat::DecodeForLocal), NOT the combo count --
+		// the count is delivered by SHOW_COMBO and never touches this stat
+		// (task-217 design.md §2.3). Combo Ability's WZ node carries no field
+		// whose value is 100; x is the level-scaled magnitude, matching every
+		// sibling Aran statup below.
+		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeAranCombo, int32(e.X()))
 	} else if skill.Is(skillId, skill.AranStage4ComboBarrierId) {
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeComboBarrier, int32(e.X()))
 	} else if skill.Is(skillId, skill.AranStage2ComboDrainId) {

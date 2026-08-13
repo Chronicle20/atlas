@@ -3,6 +3,22 @@
   "md5": "",
   "generated_at": "2026-06-13T12:51:12Z",
   "functions": {
+    "CUserLocal__RequestIncCombo_send_0xA9": {
+      "address": "0x99f346",
+      "direction": "serverbound",
+      "note": "v84 synthetic per-version rename (task-100 cluster-H reshift). Registry primary fname is the canonical CUserLocal::RequestIncCombo on every version (task-217); candidatesFromFName carries a case for this literal IDB symbol too.",
+      "calls": null
+    },
+    "CUserLocal::OnIncComboResponse": {
+      "address": "0x99f31e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "count (CUserLocal::OnIncComboResponse: Decode4 store to the m_nCombo mirror, then get_update_time() timestamp, then DrawCombo(this); task-217, design.md \u00a72.2)"
+        }
+      ]
+    },
     "CTradingRoomDlg::OnPutItem": {
       "address": "0x7e80fd",
       "direction": "clientbound",

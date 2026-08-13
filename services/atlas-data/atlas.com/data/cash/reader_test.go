@@ -916,3 +916,126 @@ func TestReaderPetSkills(t *testing.T) {
 		}
 	}
 }
+
+// testMorphCouponXML mirrors Item.wz/Cash/0530.img.xml (transformation coupons,
+// classification 530), trimmed of canvas nodes. Values verified against two
+// independent local WZ corpora: every item carries spec/hp 50 and
+// spec/time 600000, with spec/morph 1, 2, 3 respectively, and no morphRandom.
+const testMorphCouponXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="0530.img">
+  <imgdir name="05300000">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="price" value="100"/>
+      <int name="slotMax" value="200"/>
+      <int name="tradeBlock" value="1"/>
+    </imgdir>
+    <imgdir name="spec">
+      <int name="hp" value="50"/>
+      <int name="time" value="600000"/>
+      <int name="morph" value="1"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05300001">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="price" value="100"/>
+      <int name="slotMax" value="200"/>
+      <int name="tradeBlock" value="1"/>
+    </imgdir>
+    <imgdir name="spec">
+      <int name="hp" value="50"/>
+      <int name="time" value="600000"/>
+      <int name="morph" value="2"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05300002">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="price" value="100"/>
+      <int name="slotMax" value="200"/>
+      <int name="tradeBlock" value="1"/>
+    </imgdir>
+    <imgdir name="spec">
+      <int name="hp" value="50"/>
+      <int name="time" value="600000"/>
+      <int name="morph" value="3"/>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+// TestReaderMorphCoupons pins FR-2.3: all three 0530 items surface morph, hp and
+// time. Before this task the reader dropped morph and hp entirely, so the coupon
+// was inert no matter what the downstream services did.
+func TestReaderMorphCoupons(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testMorphCouponXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rmm) != 3 {
+		t.Fatalf("len(rmm) = %d, want 3", len(rmm))
+	}
+
+	for id, wantMorph := range map[int]int32{5300000: 1, 5300001: 2, 5300002: 3} {
+		rm, ok := rmm[strconv.Itoa(id)]
+		if !ok {
+			t.Fatalf("rmm[%d] does not exist", id)
+		}
+		if rm.SlotMax != 200 {
+			t.Errorf("[%d] SlotMax = %d, want 200", id, rm.SlotMax)
+		}
+		if !rm.TradeBlock {
+			t.Errorf("[%d] TradeBlock = false, want true", id)
+		}
+		morph, ok := rm.Spec[SpecTypeMorph]
+		if !ok {
+			t.Fatalf("[%d] Spec[SpecTypeMorph] does not exist", id)
+		}
+		if morph != wantMorph {
+			t.Errorf("[%d] Spec[SpecTypeMorph] = %d, want %d", id, morph, wantMorph)
+		}
+		hp, ok := rm.Spec[SpecTypeHp]
+		if !ok {
+			t.Fatalf("[%d] Spec[SpecTypeHp] does not exist", id)
+		}
+		if hp != 50 {
+			t.Errorf("[%d] Spec[SpecTypeHp] = %d, want 50", id, hp)
+		}
+		specTime, ok := rm.Spec[SpecTypeTime]
+		if !ok {
+			t.Fatalf("[%d] Spec[SpecTypeTime] does not exist", id)
+		}
+		// 600000 is the raw WZ value in MILLISECONDS. atlas-buffs' duration
+		// contract is milliseconds, so nothing on this path may rescale it.
+		if specTime != 600000 {
+			t.Errorf("[%d] Spec[SpecTypeTime] = %d, want 600000", id, specTime)
+		}
+	}
+}
+
+// TestReaderMorphHpAdditiveOnly pins FR-2.4: the two new keys are omit-when-zero,
+// so a non-0530 cash item's parse output gains nothing. 5211000 is a 0521 EXP
+// coupon, already covered end-to-end by TestReaderExpCoupons; this asserts the
+// only thing that could have regressed — spurious keys.
+func TestReaderMorphHpAdditiveOnly(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testExpCouponXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for id := range rmm {
+		rm := rmm[id]
+		if v, ok := rm.Spec[SpecTypeMorph]; ok {
+			t.Errorf("[%s] Spec[SpecTypeMorph] = %d, want absent on a 0521 EXP coupon", id, v)
+		}
+		if v, ok := rm.Spec[SpecTypeHp]; ok {
+			t.Errorf("[%s] Spec[SpecTypeHp] = %d, want absent on a 0521 EXP coupon", id, v)
+		}
+	}
+}

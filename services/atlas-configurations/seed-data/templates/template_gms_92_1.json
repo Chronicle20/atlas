@@ -707,6 +707,18 @@
         ]
       },
       {
+        "opCode": "0x0BA",
+        "validator": "LoggedInValidator",
+        "handler": "AranComboCounterHandle",
+        "fname": "CUserLocal::RequestIncCombo",
+        "options": {
+          "idleResetMs": 3000
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xC4",
         "validator": "LoggedInValidator",
         "handler": "PetMovementHandle",
@@ -2384,6 +2396,14 @@
         "opCode": "0x100",
         "writer": "UiDisable",
         "fname": "CUserLocal::OnSetStandAloneMode",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x103",
+        "writer": "ShowCombo",
+        "fname": "CUserLocal::OnIncComboResponse",
         "services": [
           "channel"
         ]

@@ -1038,6 +1038,18 @@
         ]
       },
       {
+        "opCode": "0x0AD",
+        "validator": "LoggedInValidator",
+        "handler": "AranComboCounterHandle",
+        "fname": "CUserLocal::RequestIncCombo",
+        "options": {
+          "idleResetMs": 3000
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xAE",
         "validator": "LoggedInValidator",
         "handler": "MobCrcKeyChangedReply",
@@ -3397,6 +3409,14 @@
         "opCode": "0xEE",
         "writer": "GuideTalk",
         "fname": "CUserLocal::OnTutorMsg",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x0EF",
+        "writer": "ShowCombo",
+        "fname": "CUserLocal::OnIncComboResponse",
         "services": [
           "channel"
         ]

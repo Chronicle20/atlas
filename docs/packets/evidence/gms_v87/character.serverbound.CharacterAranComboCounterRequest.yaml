@@ -1,0 +1,11 @@
+packet: character/serverbound/CharacterAranComboCounterRequest
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::RequestIncCombo
+    address: "0x9e37bc"
+    decompile_sha256: 64e243fd6e06e419d0657faa75eac2c2070aeee24630b41084ce3f2219ac69f3
+verifies:
+    - libs/atlas-packet/character/serverbound/aran_combo_counter_test.go#TestAranComboCounterRoundTrip
+    - libs/atlas-packet/character/serverbound/aran_combo_counter_test.go#TestAranComboCounterEmptyBody

@@ -21,6 +21,7 @@ type ProcessorMock struct {
 	RequestDestroyItemFromSlotFunc func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error
 	RequestSetOwnerFunc            func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, owner string) error
 	RequestApplyLockFunc           func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error
+	RequestExtendExpirationFunc    func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time, extenderTemplateId uint32) error
 }
 
 // RequestCreateItem is a mock implementation of the compartment.Processor.RequestCreateItem method
@@ -107,6 +108,14 @@ func (m *ProcessorMock) RequestSetOwner(transactionId uuid.UUID, characterId uin
 func (m *ProcessorMock) RequestApplyLock(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error {
 	if m.RequestApplyLockFunc != nil {
 		return m.RequestApplyLockFunc(transactionId, characterId, inventoryType, slot, expiration)
+	}
+	return nil
+}
+
+// RequestExtendExpiration is a mock implementation of the compartment.Processor.RequestExtendExpiration method
+func (m *ProcessorMock) RequestExtendExpiration(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time, extenderTemplateId uint32) error {
+	if m.RequestExtendExpirationFunc != nil {
+		return m.RequestExtendExpirationFunc(transactionId, characterId, inventoryType, slot, expiration, extenderTemplateId)
 	}
 	return nil
 }

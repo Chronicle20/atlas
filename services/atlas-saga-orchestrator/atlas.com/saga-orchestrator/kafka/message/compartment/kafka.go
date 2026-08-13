@@ -30,6 +30,7 @@ const (
 	CommandRelease            = "RELEASE"
 	CommandSetOwner           = "SET_OWNER"
 	CommandApplyLock          = "APPLY_LOCK"
+	CommandExtendExpiration   = "EXTEND_EXPIRATION"
 	CommandTypeCreate         = "CREATE"
 	CommandTypeDelete         = "DELETE"
 	CommandTypeEquip          = "EQUIP"
@@ -161,6 +162,16 @@ type SetOwnerCommandBody struct {
 type ApplyLockCommandBody struct {
 	Slot       int16     `json:"slot"`
 	Expiration time.Time `json:"expiration"`
+}
+
+// ExtendExpirationCommandBody MIRRORS
+// services/atlas-inventory/atlas.com/inventory/kafka/message/compartment/kafka.go.
+// The two live in separate Go modules; keep the field names and json tags
+// identical or the body decodes zero-valued at runtime with no build error.
+type ExtendExpirationCommandBody struct {
+	Slot               int16     `json:"slot"`
+	Expiration         time.Time `json:"expiration"`
+	ExtenderTemplateId uint32    `json:"extenderTemplateId"`
 }
 
 const (

@@ -1,11 +1,15 @@
 # Combo Drain (Aran) — Product Requirements Document
 
-Version: v2
+Version: v3
 Status: Draft
 Created: 2026-07-10
-Revised: 2026-08-07 — rebased onto `main`; all code references re-derived
+Revised: 2026-08-07 (v2) — rebased onto `main`; all code references re-derived
 against current `main`; version scope expanded to every supported client
 version (§4A, FR-5, §10).
+Revised: 2026-08-13 (v3) — merged `main` into the task branch; all code
+references re-derived again; §1.2 records the sibling Aran/attack-path features
+that landed in the window (task-216 Energy Charge, task-217 Aran Combo Counter)
+and what they do — and do not — change for this task.
 ---
 
 ## 1. Overview
@@ -19,7 +23,7 @@ value (`services/atlas-data/atlas.com/data/skill/reader.go:407-408`), and the
 buff is applied/rendered like any other. What is missing is the attack-side
 effect: the damage handler in atlas-channel never checks for the active buff,
 so the heal never happens. The gap is marked by `// TODO Combo Drain` at
-`services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:991`.
+`services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:1117`.
 
 Reference behavior is Cosmic `AbstractDealDamageHandler.java:421-431`: when
 `BuffStat.COMBO_DRAIN` is present, the attacker is healed
@@ -51,6 +55,39 @@ bookkeeping (`comboOrbTryUpdate`). Three consequences for this PRD:
   NFR in §8.
 - `buff.NewBuff` gained a seventh parameter (`noExpiry bool`).
 
+## 1.2 What changed since v2 of this PRD (2026-08-13 `main` merge)
+
+Two further Aran/attack-path features landed in `main` and are now merged into
+this branch. Neither changes any requirement below, but both touch the same
+function and both bear on the one-buff-read NFR, so they are recorded here
+explicitly rather than left for the implementer to rediscover:
+
+- **task-217 — Aran Combo Counter** (`character_aran_combo.go`, new). The
+  combo *count* now lives in a channel-local mirror (`character/combo`), seeded
+  by a `ARAN_COMBO` no-expiry buff and advanced by the client's
+  `ARAN_COMBO_COUNTER` packet. `processAttack` calls
+  `aranComboRefreshEligibility` on the melee path
+  (`character_attack_common.go:1032`) to cache the gate result off the character
+  fetch it already paid for. **It performs no buff REST read**, so the one-read
+  ceiling in §8 is unaffected. This is a *different* Aran mechanic from Combo
+  Drain — the counter is the combo-orb/Combo Ability chain; Combo Drain is a
+  self-buff percentage heal — and the two share no state. It does confirm this
+  PRD's version posture, though: task-217 resolved its one genuinely
+  version-varying value (the 3000 ms vs 5000 ms client idle window) as *tenant
+  configuration* (`idleResetMs`), not a compiled major-version branch.
+- **task-216 — Energy Charge** (`character_attack_energy_charge.go`, new).
+  `processAttack` calls `energyChargeTryUpdate` at
+  `character_attack_common.go:1050`; its production deps emit a buff
+  `UpdateStatValue` with `CreateIfMissing`, deliberately so the attack path
+  needs no buff read. The one REST read in that file
+  (`energyReannounceAuthoritative:198`) fires only on a *rejected* Energy Blast
+  cast, which returns before reaching the TODO block. Ceiling unaffected.
+
+So the buff-read inventory for `processAttack` is unchanged from v2: the
+projectile consumption gate and Pick Pocket, both gate-before-fetch. Line
+numbers moved (the TODO block is at `:1117`, was `:991`); all references in
+this PRD and in `design.md` / `plan.md` were re-derived against the merge.
+
 ## 2. Goals
 
 Primary goals:
@@ -63,8 +100,12 @@ Primary goals:
   attack pipeline's existing broadcast/damage/proc ordering.
 
 Non-goals:
-- Combo-orb consumption or any Aran combo-counter mechanics (buff-activation
-  side; already implemented separately as `comboOrbTryUpdate`).
+- Combo-orb consumption or any Aran combo-counter mechanics. Both already
+  landed separately: combo orbs as `comboOrbTryUpdate`
+  (`character_attack_combo.go:172`), and the combo *counter* as task-217
+  (`character_aran_combo.go`, the `ARAN_COMBO_COUNTER` handler plus the
+  `character/combo` mirror). Combo Drain shares no state with either — its
+  gate is the `COMBO_DRAIN` temporary stat alone (FR-1).
 - Any of the sibling TODOs in the same block (Flame Thrower, Snow Charge,
   Hamstring, Slow, Blind, charges, Three Snails, Heavens Hammer, ComboTempest,
   BodyPressure).
@@ -260,7 +301,10 @@ No schema or entity changes. All required data already exists:
   the surrounding handler already does; no tenant-specific and no
   version-specific literals.
 - **Performance:** at most **one** buff REST read per attack, total, across
-  every consumer in `processAttack`. Today melee and magic attacks that are not
+  every consumer in `processAttack`. The two consumers are the projectile
+  consumption gate and Pick Pocket; the post-damage effects added since v2
+  (Aran combo eligibility, Energy Charge) read no buffs at all (§1.2), so the
+  inventory is complete. Today melee and magic attacks that are not
   Pick-Pocket-whitelisted perform zero buff reads, so an unshared
   implementation would add a read to the hot path for every such attack; a
   per-attack memoized loader (mirroring the existing `loadEffectiveStats`

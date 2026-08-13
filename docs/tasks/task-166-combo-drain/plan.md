@@ -6,6 +6,17 @@ Revised 2026-08-07: rebased onto `main` (254 commits); every line reference
 re-derived; architecture changed from design Approach B to Approach C; Task 4
 (version-scope verification) added.
 
+Revised 2026-08-13: merged `main` into the task branch; every line reference
+re-derived again (see the table below). No task, step, code block, or test
+case changed — the merge added post-damage effects around the TODO block
+(task-216 Energy Charge, task-217 Aran Combo Counter) but none of them reads
+buffs, so Approach C and the one-read ceiling stand exactly as written
+(design §2, PRD §1.2). Re-confirmed against the merged tree: `buff.NewBuff` is
+still 7-arg, `stat.NewStat` unchanged, `buffWithStat`/`expiredBuffWithStat`/
+`testField` still the taken names, `ProjectileProcessor.Plan` still has exactly
+one call site and no test caller, and the per-version applicability tables
+(Task 4 Step 3) still reproduce byte-for-byte.
+
 **Goal:** Make the `COMBO_DRAIN` buff (Aran skill 21100005) actually heal the
 attacker `x`% of each accepted attack's total damage, replacing the
 `// TODO Combo Drain` in atlas-channel's attack pipeline — correct on every
@@ -57,21 +68,22 @@ templates, or schema — on any of the eleven supported versions.
   (`.worktrees/task-166-combo-drain`). The Go module root is
   `services/atlas-channel/atlas.com/channel` — run go commands from there.
 
-### Line references (re-derived against `main` @ `e0f5bd01d`)
+### Line references (re-derived against the `main` merge `f1b4e4046`)
 
 | What | Where |
 |---|---|
-| `// TODO Combo Drain` | `character_attack_common.go:991` |
-| `cp := character.NewProcessor(l, ctx)` | `character_attack_common.go:706` |
-| `pp.Plan(c, ai, se)` call site | `character_attack_common.go:805` |
-| `loadEffectiveStats` memoization idiom to mirror | `character_attack_common.go:816-827` |
-| `pickPocketResolveState(...)` call site | `character_attack_common.go:836-842` |
+| `// TODO Combo Drain` | `character_attack_common.go:1117` |
+| `cp := character.NewProcessor(l, ctx)` | `character_attack_common.go:777` |
+| `pp := NewProjectileProcessor(l, ctx)` | `character_attack_common.go:888` |
+| `pp.Plan(c, ai, se)` call site | `character_attack_common.go:889` |
+| `loadEffectiveStats` memoization idiom to mirror | `character_attack_common.go:898-912` |
+| `pickPocketResolveState(...)` call site | `character_attack_common.go:919-925` |
 | `pickPocketResolveState` definition | `character_attack_common.go:276-282` |
-| `ProjectileProcessor` interface | `character_attack_projectile.go:44-47` |
-| `ProjectileProcessorImpl` struct + ctor | `character_attack_projectile.go:49-63` |
-| `Plan` method signature | `character_attack_projectile.go:65` |
-| internal buff fetch to delete | `character_attack_projectile.go:98-106` |
-| `hasBuff` (matching rules to mirror) | `character_attack_projectile.go:198` |
+| `ProjectileProcessor` interface | `character_attack_projectile.go:45-48` |
+| `ProjectileProcessorImpl` struct + ctor | `character_attack_projectile.go:50-64` |
+| `Plan` method signature | `character_attack_projectile.go:66` |
+| internal buff fetch to delete | `character_attack_projectile.go:99-107` |
+| `hasBuff` (matching rules to mirror) | `character_attack_projectile.go:199` |
 | `buffWithStat` / `expiredBuffWithStat` (names taken) | `character_attack_projectile_test.go:58,63` |
 | `testField` (reuse as-is) | `mystic_door_enter_test.go:30` |
 | `buff.NewBuff` (7 args) | `character/buff/model.go:63` |
@@ -588,7 +600,7 @@ If a test appears, update it mechanically in this task.
 
 In `character_attack_projectile.go`:
 
-(a) Interface (currently line 44):
+(a) Interface (currently line 45):
 
 ```go
 type ProjectileProcessor interface {
@@ -616,14 +628,14 @@ func NewProjectileProcessor(l logrus.FieldLogger, ctx context.Context) Projectil
 }
 ```
 
-(c) Update the method signature (line 65) and swap the fetch — the fetch stays
+(c) Update the method signature (line 66) and swap the fetch — the fetch stays
 where it is, behind the same gates; only its source changes:
 
 ```go
 func (p *ProjectileProcessorImpl) Plan(c character.Model, ai packetmodel.AttackInfo, se effect.Model, getBuffs func(characterId uint32) ([]buff.Model, error)) (*ProjectilePlan, bool) {
 ```
 
-and at line 98:
+and at line 99:
 
 ```go
 	buffs, err := getBuffs(c.Id())
@@ -636,7 +648,7 @@ Leave the surrounding warn block, `projectileConsumptionSkipped` and
 - [ ] **Step 2: Add the memoized loader in `processAttack`**
 
 In `character_attack_common.go`, immediately before the `pp := NewProjectileProcessor(l, ctx)`
-block (currently line 802-805), insert:
+block (currently line 888-889), insert:
 
 ```go
 					// One buff snapshot per attack, shared by the projectile
@@ -668,13 +680,13 @@ block (currently line 802-805), insert:
 
 - [ ] **Step 3: Point both existing consumers at the loader**
 
-`Plan` call site (currently line 805):
+`Plan` call site (currently line 889):
 
 ```go
 					projectilePlan, hasProjectilePlan := pp.Plan(c, ai, se, loadBuffs)
 ```
 
-Pick Pocket call site (currently line 837) — replace
+Pick Pocket call site (currently line 919-925) — replace
 `buff.NewProcessor(l, ctx).GetByCharacterId` with `loadBuffs`:
 
 ```go
@@ -692,8 +704,9 @@ No signature change for `pickPocketResolveState` — it already takes a
 
 - [ ] **Step 4: Replace the TODO line with the proc call**
 
-In the post-broadcast TODO block (currently line 991), replace exactly this one
-line:
+In the post-broadcast TODO block (currently line 1117 — after Sacrifice, the
+attack-cast dispatcher, Homing Beacon, combo orbs, Aran combo eligibility and
+Energy Charge), replace exactly this one line:
 
 ```go
 					// TODO Combo Drain

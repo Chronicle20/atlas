@@ -5,13 +5,17 @@ Status: Approved PRD (v2) → design phase
 Created: 2026-07-10
 Revised: 2026-08-07 — rebased onto `main`; approach decision re-taken against
 the current `processAttack` (B → C); version dimension added (§6).
+Revised: 2026-08-13 — merged `main`; every line reference re-derived; §2
+extended with the post-damage effects that landed in the window (task-216
+Energy Charge, task-217 Aran Combo Counter) and why neither changes the
+one-read ceiling or Approach C. Approach decision unchanged.
 
 ## 1. Problem Recap
 
 The `COMBO_DRAIN` buff (Aran skill 21100005) applies correctly, but the attack
 pipeline never consults it, so the heal never fires. The gap is the
 `// TODO Combo Drain` at
-`services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:991`.
+`services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:1117`.
 Required behavior (PRD): once per accepted attack, heal the attacker
 `totalDamage * x / 100` HP, where `x` is the buff statup amount, clamped to
 `math.MaxInt16`, emitted through the existing `character.Processor.ChangeHP`
@@ -27,20 +31,29 @@ It now has two, plus a third buff-adjacent emitter:
 
 | Consumer | Location | Fetch behavior |
 |---|---|---|
-| Projectile consumption gate | `character_attack_projectile.go:98`, inside `Plan` | Fetches **only** for ranged attacks that clear the Spirit-Javelin / non-consuming / weapon gates |
-| Pick Pocket | `character_attack_common.go:276` `pickPocketResolveState`, called at `:836` | Whitelist gate first; fetches **only** for whitelisted skill ids |
-| Aran combo orbs | `character_attack_combo.go:147` `comboOrbProductionDeps` | Does **not** fetch — delegates "is the buff active" to atlas-buffs via `UpdateStatValue` |
+| Projectile consumption gate | `character_attack_projectile.go:99`, inside `Plan` | Fetches **only** for ranged attacks that clear the Spirit-Javelin / non-consuming / weapon gates |
+| Pick Pocket | `character_attack_common.go:276` `pickPocketResolveState`, called at `:919` | Whitelist gate first; fetches **only** for whitelisted skill ids |
+| Aran combo orbs | `character_attack_combo.go:147` `comboOrbProductionDeps`, called at `:1027` | Does **not** fetch — delegates "is the buff active" to atlas-buffs via `UpdateStatValue` |
+| Aran combo counter (task-217) | `character_aran_combo.go:165` `aranComboRefreshEligibility`, called at `:1032` | Does **not** fetch — evaluates the gate off the character fetch `processAttack` already paid for and caches it in the `character/combo` mirror |
+| Energy Charge (task-216) | `character_attack_energy_charge.go:120` `energyChargeProductionDeps`, called at `:1050` | Does **not** fetch — `UpdateStatValue` with `CreateIfMissing` is exactly what keeps the attack path read-free. Its one `GetByCharacterId` (`:198`) is on the *rejected* Energy Blast path, which returns before the TODO block |
 
 So today a melee or magic attack with a non-whitelisted skill performs **zero**
-buff reads. There is also an established per-attack memoization idiom in the
-same function: `loadEffectiveStats` (`character_attack_common.go:816-827`), a
-closure with a `loaded` flag, shared by the venom apply and by `drainTryHeal`.
+buff reads — and the three post-damage effects added since v1 kept it that way,
+so the ceiling this design has to respect is still set by the two gate-first
+consumers above. There is also an established per-attack memoization idiom in
+the same function: `loadEffectiveStats` (`character_attack_common.go:898-912`),
+a closure with a `loaded` flag, shared by the venom apply and by `drainTryHeal`.
 
-Two further facts that invalidate v1 details:
+Three further facts that invalidate v1 details:
 
 - `buff.NewBuff` now takes seven arguments (`…, expiresAt time.Time, noExpiry bool`).
-- The TODO block moved from line 420 to line 991, and now sits after Sacrifice,
-  Homing Beacon and combo-orb bookkeeping.
+- The TODO block moved from line 420 to line 1117, and now sits after Sacrifice,
+  Homing Beacon, combo-orb bookkeeping, Aran combo eligibility, Energy Charge
+  and the per-skill attack-cast dispatcher.
+- `isDrainSkill` (`character_attack_common.go:89`) already carries the comment
+  "Aran Combo Drain is buff-driven and excluded" — the drain-family heal that
+  landed alongside it deliberately left this task's gap open rather than
+  folding Combo Drain into a skill-id switch. That is the same call FR-3 makes.
 
 ## 3. Approaches Considered
 
@@ -118,8 +131,8 @@ is the correct moment for "was the buff active when the attack landed".
 
 ### 4.1 The loader (in `processAttack`)
 
-Placed immediately before `pp.Plan` (currently `character_attack_common.go:804`),
-so every consumer below can take it:
+Placed immediately before `pp := NewProjectileProcessor` (currently
+`character_attack_common.go:888`), so every consumer below can take it:
 
 ```go
 // One buff snapshot per attack, shared by the projectile consumption
@@ -182,7 +195,7 @@ so no projectile test edits are needed — re-verify this before assuming it.
 
 ### 4.3 Pick Pocket change
 
-One argument at the call site (`character_attack_common.go:837`):
+One argument at the call site (`character_attack_common.go:919-925`):
 `buff.NewProcessor(l, ctx).GetByCharacterId` → `loadBuffs`. No signature
 change, no behavior change — it already accepts a `getBuffs` function and still
 calls it only for whitelisted skills.
@@ -237,7 +250,7 @@ Taking the loader rather than a slice keeps the "at most one read, and only if
 someone needs it" property in one place and makes the proc directly testable
 against a counting fake (PRD AC "at most one buff REST read per attack").
 
-### 4.5 Call site (replaces the line-991 TODO)
+### 4.5 Call site (replaces the line-1117 TODO)
 
 In `processAttack`, at the TODO block (post-broadcast, after the projectile
 `Emit` and the sibling post-damage effects):
@@ -246,7 +259,7 @@ In `processAttack`, at the TODO block (post-broadcast, after the projectile
 comboDrainTryProc(l, loadBuffs, cp.ChangeHP, s.Field(), s.CharacterId(), ai)
 ```
 
-`cp` is the `character.Processor` constructed at `character_attack_common.go:706`;
+`cp` is the `character.Processor` constructed at `character_attack_common.go:777`;
 `ChangeHP` emits the Kafka command and atlas-character owns max-HP clamping
 downstream. Ordering satisfies FR-3: after all per-monster damage processing
 (`ai.DamageInfo()` is final), and independent of broadcast success. Exactly one
@@ -309,24 +322,37 @@ rather than an omission:
   atlas-data, so a per-version difference in the level→`x` curve is honored
   with no code change and no hard-coded value.
 - The `COMBO_DRAIN` bit is allocated unconditionally for every version —
-  `libs/atlas-packet/model/character_temporary_stat.go:155`, inside the
-  contiguous pre-SoulStone block that precedes the first version-gated slot at
-  bit 82 — so the buff already encodes and decodes correctly everywhere.
+  `libs/atlas-packet/model/character_temporary_stat.go:163`, inside the
+  contiguous pre-SoulStone block that precedes the first version-gated slot
+  (`TemporaryStatTypeFlying`, bit 82, behind the `post87` gate at `:186`) — so
+  the buff already encodes and decodes correctly everywhere. Re-verified after
+  the 2026-08-13 merge.
 - No skill-id comparison is introduced, so `tools/skill-job-id-guard.sh` is not
   engaged; independently, `21100005` has no row in
   `docs/tasks/task-187-version-aware-id-semantics/audit/divergences.csv`.
-- Precedent: the Aran combo-orb handler in the same package gates on the
+- Precedent 1: the Aran combo-orb handler in the same package gates on the
   character's learned skills, not on version
-  (`character_attack_combo.go:37` `comboSkillIds`, called at `:167`), and its only version note
-  is a comment recording that the id it compares is version-stable per the
-  task-187 audit.
+  (`character_attack_combo.go:37` `comboSkillIds`, called at `:173`), and its
+  only version note is a comment recording that the id it compares is
+  version-stable per the task-187 audit.
+- Precedent 2 (task-217, Aran Combo Counter): it faced a genuinely
+  version-varying value — the client's own `ClearCombo` idle timer is 3000 ms
+  on v83/v84/v87/v92/jms185 and 5000 ms on v95 — and still refused a compiled
+  major-version branch, resolving it as tenant handler configuration
+  (`idleResetMs`, `character_aran_combo.go:38` `idleWindowFromOptions`). Combo
+  Drain has no such value at all: its one variable, the percent, already
+  arrives from the tenant's WZ via the buff statup. So the bar this design has
+  to clear for "no version branch" is lower than one an adjacent Aran feature
+  already cleared.
 
 A `MajorVersion`/`MajorAtLeast`/`IsRegion` check appearing in this diff should
 be treated as a defect (PRD FR-5, NFR).
 
 ### 6.2 Per-version applicability
 
-Reproduced from PRD §4A; each cell is backed by a checked-in artifact.
+Reproduced from PRD §4A; each cell is backed by a checked-in artifact. Both
+columns were re-derived from the repo after the 2026-08-13 `main` merge (the
+two commands in plan.md Task 4 Step 3) and are unchanged.
 
 | Tenant template | Aran `21100005` present | Attack handlers routed | Combo Drain scope |
 |---|---|---|---|
@@ -396,8 +422,10 @@ existing production constructors (`packetmodel.NewAttackInfo` /
 `NewDamageInfo` builders, `buff.NewBuff` — **seven** arguments now,
 `stat.NewStat`) — no `*_testhelpers.go`, per project rule. Package-level names
 already taken: `buffWithStat`/`expiredBuffWithStat`
-(`character_attack_projectile_test.go:58,63`) and `testField`
-(`mystic_door_enter_test.go:30`, reuse as-is).
+(`character_attack_projectile_test.go:58,63` — both fixed-amount, hence the new
+amount-parameterized helpers) and `testField`
+(`mystic_door_enter_test.go:30`, reuse as-is). All three re-confirmed present
+after the 2026-08-13 merge.
 
 Pure-helper tests:
 
@@ -456,7 +484,9 @@ the AC that the diff contains no version branch and touches no template.
 
 ## 9. Out of Scope
 
-Combo-orb mechanics (already landed as `comboOrbTryUpdate`), the sibling TODOs
+Combo-orb mechanics (already landed as `comboOrbTryUpdate`), the Aran combo
+counter and its `character/combo` mirror (already landed as task-217), Energy
+Charge (task-216), the sibling TODOs
 remaining in the same block (Flame Thrower, Snow Charge, Hamstring, Slow,
 Blind, Paladin/White Knight charges, Three Snails, Heavens Hammer,
 ComboTempest, BodyPressure), packet/writer changes, Cosmic's running-total

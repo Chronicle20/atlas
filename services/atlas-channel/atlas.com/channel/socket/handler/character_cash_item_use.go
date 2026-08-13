@@ -258,10 +258,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			})
 			return
 		}
-		sealTimed := CashSlotItemTypeSealTimed
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			sealTimed = CashSlotItemTypeSealTimedV95
-		}
+		sealTimed := sealTimedCashSlotItemType(t)
 		if it == CashSlotItemTypeSeal || it == sealTimed {
 			sp := cashsb.NewItemUseSeal(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
@@ -764,6 +761,18 @@ func viciousHammerCashSlotItemType(t tenant.Model) CashSlotItemType {
 		return CashSlotItemTypeViciousHammerV95
 	}
 	return CashSlotItemTypeViciousHammer
+}
+
+// sealTimedCashSlotItemType returns the version-scoped CashSlotItemType for the
+// Sealing Lock (timed). Extracted from the handler arm so that
+// karma_slot_type_test.go's disjointness guard can assert against the SAME code
+// the runtime executes — a test that re-derives this rule would keep passing
+// against a stale copy if the real threshold ever moved.
+func sealTimedCashSlotItemType(t tenant.Model) CashSlotItemType {
+	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		return CashSlotItemTypeSealTimedV95
+	}
+	return CashSlotItemTypeSealTimed
 }
 
 // karmaScissorsCashSlotItemType returns the version-scoped CashSlotItemType for

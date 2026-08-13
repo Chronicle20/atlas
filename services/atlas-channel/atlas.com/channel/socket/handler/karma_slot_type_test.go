@@ -57,10 +57,7 @@ func TestKarmaAndSealResolversAreDisjoint(t *testing.T) {
 	for _, v := range testTenantVariants(t) {
 		t.Run(v.name, func(t *testing.T) {
 			karma := karmaScissorsCashSlotItemType(v.tenant)
-			seal := CashSlotItemTypeSealTimed
-			if v.tenant.Region() == "GMS" && v.tenant.MajorVersion() >= 95 {
-				seal = CashSlotItemTypeSealTimedV95
-			}
+			seal := sealTimedCashSlotItemType(v.tenant)
 			if karma == seal {
 				t.Fatalf("karma and seal cash-slot types collide at %s: both %d", v.name, karma)
 			}

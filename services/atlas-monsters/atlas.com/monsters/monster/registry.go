@@ -415,6 +415,15 @@ func (r *Registry) ControlMonster(tenant tenant.Model, uniqueId uint32, characte
 	})
 }
 
+// ControlMonsterWithAggro assigns the controller and sets the aggro flag in one
+// atomic transition. Used by the forced-control path so the resulting
+// START_CONTROL event carries controllerHasAggro = true.
+func (r *Registry) ControlMonsterWithAggro(tenant tenant.Model, uniqueId uint32, characterId uint32) (Model, error) {
+	return r.atomicUpdate(context.Background(), tenant, uniqueId, func(m Model) Model {
+		return m.ControlWithAggro(characterId)
+	})
+}
+
 func (r *Registry) ClearControl(tenant tenant.Model, uniqueId uint32) (Model, error) {
 	return r.atomicUpdate(context.Background(), tenant, uniqueId, func(m Model) Model {
 		return m.ClearControl()
@@ -745,6 +754,69 @@ func (r *Registry) DecayDamageEntries(t tenant.Model, uniqueId uint32, nowMs int
 		return DecaySummary{}, err
 	}
 	return DecaySummary{
+		Monster:               m,
+		ControllerCharacterId: controllerCharacterId,
+		AggroFlippedOff:       aggroFlippedOff,
+	}, nil
+}
+
+// ClearSummary is returned by ClearDamageEntries. It mirrors DecaySummary
+// field-for-field so callers of both converge on the same emit decision.
+type ClearSummary struct {
+	Monster               Model
+	ControllerCharacterId uint32
+	AggroFlippedOff       bool
+}
+
+// ClearDamageEntries atomically wipes EVERY damage entry on the monster and
+// flips controllerHasAggro false when the monster had aggro. This is a full
+// wipe, not a decay toward AggroDecayFloor (FR-4.2).
+//
+// It deliberately converges on the same state DecayDamageEntries reaches when
+// its entry list empties, which is what makes the interaction with the decay
+// sweep and the controller picker correct (FR-4.4): the sweep's next tick sees
+// an empty list and does nothing, and the picker's ControllerHasAggro gate
+// behaves identically to a naturally-decayed monster. The controller itself is
+// NOT cleared — losing aggro is not losing control.
+//
+// Sets cur.DamageEntries to a non-nil empty slice (matching the `kept` slice
+// DecayDamageEntries produces via make([]storedDamageEntry, 0, n) when it
+// prunes everything) rather than nil, so the two operations serialize to the
+// identical stored representation.
+//
+// Written against storedMonster via reg.Update rather than atomicUpdate for the
+// same reason DecayDamageEntries is: Model exposes no builder path that clears
+// the damage-entry slice. aggroFlippedOff and controllerCharacterId derive
+// purely from cur, so the captured values reflect the final successful
+// invocation under optimistic-lock retry.
+func (r *Registry) ClearDamageEntries(t tenant.Model, uniqueId uint32) (ClearSummary, error) {
+	ctx := context.Background()
+
+	var aggroFlippedOff bool
+	var controllerCharacterId uint32
+	sm, err := r.reg.Update(ctx, monsterSuffix(t, uniqueId), func(cur storedMonster) storedMonster {
+		aggroFlippedOff = false
+
+		cur.DamageEntries = make([]storedDamageEntry, 0, len(cur.DamageEntries))
+		if cur.ControllerHasAggro {
+			cur.ControllerHasAggro = false
+			aggroFlippedOff = true
+		}
+
+		controllerCharacterId = cur.ControlCharacterId
+		return cur
+	})
+	if errors.Is(err, atlasredis.ErrNotFound) {
+		return ClearSummary{}, errMonsterNotFound
+	}
+	if err != nil {
+		return ClearSummary{}, err
+	}
+	_, m, err := fromStored(sm)
+	if err != nil {
+		return ClearSummary{}, err
+	}
+	return ClearSummary{
 		Monster:               m,
 		ControllerCharacterId: controllerCharacterId,
 		AggroFlippedOff:       aggroFlippedOff,

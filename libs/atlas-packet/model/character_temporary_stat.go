@@ -1394,6 +1394,20 @@ func (m *CharacterTemporaryStat) getBaseTemporaryStats(t tenant.Model) []packet.
 				},
 			})
 		default: // twoStateDynamic
+			// ENERGY_CHARGE's nOption IS the client's energy-bar reading:
+			// GMS v83 sub_7F9BAD computes the fill as this[364]/this[365],
+			// where this[364] is the block's first int32 (task-216
+			// design.md §1.1). rOption carries the source skill id, matching
+			// every other populated two-state block.
+			//
+			// The group's other dynamic members (DASH_SPEED, DASH_JUMP,
+			// UNDEAD) keep the zeroed block deliberately: no evidence was
+			// gathered for what their clients read, and their matrix cells
+			// are already verified against the zeros.
+			if bs.name == character.TemporaryStatTypeEnergyCharge {
+				list = append(list, NewCharacterTemporaryStatBaseWithOptions(true, s.Value(), s.SourceId(), narrow)) // 15 (14 on GMS v61)
+				continue
+			}
 			list = append(list, NewCharacterTemporaryStatBase(true, narrow)) // dynamic, 15 (14 on GMS v61)
 		}
 	}

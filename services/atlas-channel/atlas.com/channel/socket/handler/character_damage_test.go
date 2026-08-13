@@ -5,6 +5,7 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/character/buff/stat"
+	"atlas-channel/character/chakra"
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/monster"
 	"atlas-channel/session"
@@ -414,6 +415,55 @@ func TestProcessDamageTakenManaReflectionEmitsReflect(t *testing.T) {
 	}
 	if len(em.hp) != 1 || em.hp[0] != -1000 {
 		t.Fatalf("hp=%v, want [-1000] (Mana Reflection does not self-mitigate)", em.hp)
+	}
+}
+
+// TestDamageAppliesChakraFactorAndInterrupts pins PRD FR-4.5 / FR-5.2: the
+// interrupting hit itself takes the Chakra factor, and the window is closed
+// afterwards so the pending heal cannot fire.
+func TestDamageAppliesChakraFactorAndInterrupts(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tm := testTenantModel(t, "GMS", 83)
+	em := &emissions{}
+	cleared := false
+	deps := fakeDeps(em, nil, nil, effect.Model{}, monster.Model{}, monsterdata.Model{})
+	deps.getChakra = func(uint32) (chakra.Entry, bool) {
+		return chakra.Entry{SkillLevel: 1, X: 200, Y: 9, StartedAt: time.Now()}, true
+	}
+	deps.clearChakra = func(uint32) bool { cleared = true; return true }
+
+	p := damagePacket(t, tm, packetmodel.DamageTypePhysical, 500, false)
+	c := testCharacter(t, job.Id(100), 100, 0, nil)
+	processDamageTaken(l, tm, damageTestField(), p, c, deps)
+
+	if len(em.hp) != 1 || em.hp[0] != -1000 {
+		t.Fatalf("hp=%v, want [-1000] (500 raw x 200%%)", em.hp)
+	}
+	if !cleared {
+		t.Fatal("Chakra window was not cleared by the damaging hit")
+	}
+}
+
+// TestDamageWithoutChakraWindowDoesNotInterrupt pins that the interrupt is
+// only attempted when a window is actually open.
+func TestDamageWithoutChakraWindowDoesNotInterrupt(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tm := testTenantModel(t, "GMS", 83)
+	em := &emissions{}
+	cleared := false
+	deps := fakeDeps(em, nil, nil, effect.Model{}, monster.Model{}, monsterdata.Model{})
+	deps.getChakra = func(uint32) (chakra.Entry, bool) { return chakra.Entry{}, false }
+	deps.clearChakra = func(uint32) bool { cleared = true; return true }
+
+	p := damagePacket(t, tm, packetmodel.DamageTypePhysical, 500, false)
+	c := testCharacter(t, job.Id(100), 100, 0, nil)
+	processDamageTaken(l, tm, damageTestField(), p, c, deps)
+
+	if len(em.hp) != 1 || em.hp[0] != -500 {
+		t.Fatalf("hp=%v, want [-500] (unfactored)", em.hp)
+	}
+	if cleared {
+		t.Fatal("clearChakra was called with no window open")
 	}
 }
 

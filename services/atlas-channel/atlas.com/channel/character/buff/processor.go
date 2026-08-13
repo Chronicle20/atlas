@@ -22,7 +22,7 @@ type Processor interface {
 	Apply(f field.Model, fromId uint32, sourceId int32, level byte, duration int32, statups []statup.Model) model.Operator[uint32]
 	ApplyNoExpiry(f field.Model, fromId uint32, sourceId int32, level byte, statups []statup.Model) model.Operator[uint32]
 	Cancel(f field.Model, characterId uint32, sourceId int32) error
-	UpdateStatValue(f field.Model, characterId uint32, sourceId int32, statType string, operation string, amount int32, capValue int32) error
+	UpdateStatValue(f field.Model, characterId uint32, u StatValueUpdate) error
 	CancelByTypes(f field.Model, characterId uint32, types []string) error
 	Expire(f field.Model, characterId uint32) error
 }
@@ -90,9 +90,9 @@ func (p *ProcessorImpl) Cancel(f field.Model, characterId uint32, sourceId int32
 	return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(CancelCommandProvider(f, characterId, sourceId))
 }
 
-func (p *ProcessorImpl) UpdateStatValue(f field.Model, characterId uint32, sourceId int32, statType string, operation string, amount int32, capValue int32) error {
-	p.l.Debugf("Character [%d] updating stat [%s] on buff [%d]: %s %d (cap %d).", characterId, statType, sourceId, operation, amount, capValue)
-	return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(UpdateStatValueCommandProvider(f, characterId, sourceId, statType, operation, amount, capValue))
+func (p *ProcessorImpl) UpdateStatValue(f field.Model, characterId uint32, u StatValueUpdate) error {
+	p.l.Debugf("Character [%d] updating stat [%s] on buff [%d]: %s %d (cap %d, createIfMissing %t).", characterId, u.StatType, u.SourceId, u.Operation, u.Amount, u.Cap, u.CreateIfMissing)
+	return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(UpdateStatValueCommandProvider(f, characterId, u))
 }
 
 func (p *ProcessorImpl) CancelByTypes(f field.Model, characterId uint32, types []string) error {

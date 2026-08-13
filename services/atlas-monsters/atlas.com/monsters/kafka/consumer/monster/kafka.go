@@ -26,6 +26,8 @@ const (
 	CommandTypeRemovePuppet      = "REMOVE_PUPPET"
 	CommandTypeKill              = "KILL"
 	CommandTypeCatch             = "CATCH"
+	CommandTypeClearAggro        = "CLEAR_AGGRO"
+	CommandTypeForceControl      = "FORCE_CONTROL"
 
 	EnvCommandTopicMovement = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 )
@@ -127,6 +129,20 @@ type killCommandBody struct {
 type catchCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 	ItemId      uint32 `json:"itemId"`
+}
+
+// clearAggroCommandBody asks the processor to fully wipe a monster's
+// damage-aggro table. Deliberately empty: the command carries nothing
+// caller-specific, and an empty body cannot collide with a sibling body's field
+// types on this shared, fan-to-every-handler topic. Mirrors
+// atlas-channel's monster2.ClearAggroCommandBody — edit both together.
+type clearAggroCommandBody struct{}
+
+// forceControlCommandBody asks the processor to hand control of a monster to a
+// named character with the aggro flag set, bypassing the picker. Mirrors
+// atlas-channel's monster2.ForceControlCommandBody — edit both together.
+type forceControlCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
 }
 
 // addPuppetCommand registers a player's puppet in a field so the monster

@@ -928,6 +928,107 @@ func TestForeignReadOrderNamesOnlyRealStats(t *testing.T) {
 	}
 }
 
+// TestCTSEnergyChargePre95PopulatedBlock pins the ENERGY_CHARGE base block's
+// two leading int32s. The client reads nOption as the energy-bar reading:
+// GMS v83 IDB sub_7F9BAD computes fill = this[364] / this[365] * bar width,
+// where this[364] is the first field of the received two-state entry
+// (design.md §1.1). A zeroed nOption renders an empty bar no matter what the
+// buff actually holds.
+func TestCTSEnergyChargePre95PopulatedBlock(t *testing.T) {
+	pre95 := []struct {
+		name   string
+		region string
+		major  uint16
+	}{
+		{"GMS v72", "GMS", 72},
+		{"GMS v79", "GMS", 79},
+		{"GMS v83", "GMS", 83},
+		{"GMS v84", "GMS", 84},
+		{"GMS v87", "GMS", 87},
+		{"GMS v92", "GMS", 92},
+		{"GMS v95", "GMS", 95},
+		{"JMS v185", "JMS", 185},
+	}
+	for _, v := range pre95 {
+		t.Run(v.name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.region, v.major, 1)
+			tn, _ := tenant.Create([16]byte{}, v.region, v.major, 1)
+			input := NewCharacterTemporaryStat()
+			input.AddStat(nil)(tn)(string(character.TemporaryStatTypeEnergyCharge), 5110001, 4998, 1, time.Time{})
+
+			got := input.Encode(nil, ctx)(nil)
+
+			// 16 mask + 2 leading defense bytes + one 15-byte dynamic base block.
+			if len(got) != 16+2+15 {
+				t.Fatalf("energy charge packet length: got %d want %d", len(got), 16+2+15)
+			}
+			// nOption=4998 then rOption=5110001 as consecutive LE int32s.
+			head := []byte{0x86, 0x13, 0x00, 0x00, 0xF1, 0xF8, 0x4D, 0x00}
+			if !bytes.Contains(got, head) {
+				t.Fatalf("populated ENERGY_CHARGE head (nOption=4998,rOption=5110001) missing; got % x", got)
+			}
+		})
+	}
+}
+
+// TestCTSEnergyChargeV61PopulatedBlock covers GMS v61's narrower base block
+// (14 bytes: the third field is a bare Decode4, not the bool-prefixed
+// 5-byte time pair). Only the block width differs; the two leading int32s
+// are in the same place.
+func TestCTSEnergyChargeV61PopulatedBlock(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 61, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypeEnergyCharge), 5110001, 4998, 1, time.Time{})
+
+	got := input.Encode(nil, ctx)(nil)
+
+	if len(got) != 16+2+14 {
+		t.Fatalf("v61 energy charge packet length: got %d want %d", len(got), 16+2+14)
+	}
+	head := []byte{0x86, 0x13, 0x00, 0x00, 0xF1, 0xF8, 0x4D, 0x00}
+	if !bytes.Contains(got, head) {
+		t.Fatalf("v61 populated ENERGY_CHARGE head missing; got % x", got)
+	}
+}
+
+// TestCTSEnergyChargeRoundTrip guards encode/decode symmetry: the decoder is
+// shape-only, so a populated block must still be consumed byte-for-byte.
+func TestCTSEnergyChargeRoundTrip(t *testing.T) {
+	for _, v := range []struct {
+		region string
+		major  uint16
+	}{{"GMS", 61}, {"GMS", 83}, {"GMS", 95}, {"JMS", 185}} {
+		ctx := pt.CreateContext(v.region, v.major, 1)
+		tn, _ := tenant.Create([16]byte{}, v.region, v.major, 1)
+		input := NewCharacterTemporaryStat()
+		input.AddStat(nil)(tn)(string(character.TemporaryStatTypeEnergyCharge), 5110001, 4998, 1, time.Time{})
+		output := NewCharacterTemporaryStat()
+		pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	}
+}
+
+// TestCTSDashSpeedStaysZeroed is the negative half of the ENERGY_CHARGE fix:
+// the other twoStateDynamic members (DASH_SPEED, DASH_JUMP, UNDEAD) keep the
+// zeroed block, because no evidence was gathered for what their clients read
+// and this task must not make an unverified wire change to a verified cell
+// (design.md §1.1).
+func TestCTSDashSpeedStaysZeroed(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypeDashSpeed), 5110001, 4998, 1, time.Time{})
+
+	got := input.Encode(nil, ctx)(nil)
+
+	block := got[18:]
+	for i := 0; i < 8; i++ {
+		if block[i] != 0x00 {
+			t.Fatalf("DASH_SPEED base block must stay zeroed; got % x", block)
+		}
+	}
+}
+
 // TestCTSServerOnlyStatsSkippedSilently proves PUPPET/SUMMON never reach the
 // wire and never log at ERROR (task-164 FR-1/FR-3, acceptance (a)). Both the
 // self and foreign encodes of a CTS holding only server-only stats must be

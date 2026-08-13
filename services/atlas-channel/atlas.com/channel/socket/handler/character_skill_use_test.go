@@ -28,3 +28,23 @@ func TestBattleshipCastBlocked(t *testing.T) {
 		})
 	}
 }
+
+// TestChakraUseBlocked pins PRD FR-1.4 / FR-5.4: a USE_SKILL for Chakra is
+// honoured only when a recovery window is open. No window means the cast was
+// never prepared (a crafted client skipping the prepare packet) or was
+// interrupted — either way it is rejected BEFORE handler.UseSkill, so no MP
+// is charged and no cooldown is applied.
+//
+// Deliberately NOT re-checking HP here: the client has no post-gate HP
+// re-check (design §3.2) and PRD FR-1.3 requires the threshold be evaluated
+// at activation only, so external healing mid-window must not cancel the
+// heal. The window-presence check already closes the crafted-client hole a
+// second HP check would have covered, and closes it more tightly.
+func TestChakraUseBlocked(t *testing.T) {
+	if chakraUseBlocked(true) {
+		t.Fatal("an open recovery window must not block the cast")
+	}
+	if !chakraUseBlocked(false) {
+		t.Fatal("a missing recovery window must block the cast")
+	}
+}

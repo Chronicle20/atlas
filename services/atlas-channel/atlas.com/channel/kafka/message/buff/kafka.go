@@ -80,6 +80,14 @@ type UpdateStatValueCommandBody struct {
 	Operation string `json:"operation"`
 	Amount    int32  `json:"amount"`
 	Cap       int32  `json:"cap"`
+	// CreateIfMissing turns INCREMENT into an accumulator upsert: with no buff
+	// for SourceId, atlas-buffs creates one with NoExpiry carrying a single
+	// StatType change of min(Amount, Cap) and emits APPLIED. Opt-in.
+	// (task-216 design.md §4.2)
+	CreateIfMissing bool `json:"createIfMissing,omitempty"`
+	// Level is the source skill level stamped on a buff created by
+	// CreateIfMissing. Ignored otherwise.
+	Level byte `json:"level,omitempty"`
 }
 
 const (

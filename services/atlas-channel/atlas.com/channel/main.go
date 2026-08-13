@@ -20,6 +20,7 @@ import (
 	"atlas-channel/kafka/consumer/consumable"
 	"atlas-channel/kafka/consumer/conversation_reward_notice"
 	doorConsumer "atlas-channel/kafka/consumer/door"
+	dragonConsumer "atlas-channel/kafka/consumer/dragon"
 	"atlas-channel/kafka/consumer/drop"
 	"atlas-channel/kafka/consumer/expression"
 	"atlas-channel/kafka/consumer/fame"
@@ -224,6 +225,7 @@ func main() {
 	message.InitConsumers(l)(cmf)(consumerGroupId)
 	monster.InitConsumers(l)(cmf)(consumerGroupId)
 	summonConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	dragonConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mbconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mistConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	doorConsumer.InitConsumers(l)(cmf)(consumerGroupId)
@@ -459,6 +461,9 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(summonConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(dragonConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(mbconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {

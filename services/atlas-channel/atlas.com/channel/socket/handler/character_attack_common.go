@@ -883,10 +883,19 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						}
 					}
 
+					// One buff snapshot per attack, shared by the projectile
+					// consumption gate, Pick Pocket, and post-damage
+					// buff-driven effects (Combo Drain). Fetched at most once
+					// and only when a consumer actually needs it; a lookup
+					// failure is cached as "no buffs active" for every
+					// consumer and never aborts the attack. Mirrors
+					// loadEffectiveStats below.
+					loadBuffs := newAttackBuffLoader(l, buff.NewProcessor(l, ctx).GetByCharacterId)
+
 					// Compute projectile consumption plan before broadcasting so planner
 					// errors surface before visible side effects. Emission happens post-broadcast.
 					pp := NewProjectileProcessor(l, ctx)
-					projectilePlan, hasProjectilePlan := pp.Plan(c, ai, se)
+					projectilePlan, hasProjectilePlan := pp.Plan(c, ai, se, loadBuffs)
 
 					mp := monster.NewProcessor(l, ctx)
 					mirror := monster.GetStatusMirror()
@@ -918,7 +927,7 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					dp := drop.NewProcessor(l, ctx)
 					ppState := pickPocketResolveState(
 						l,
-						buff.NewProcessor(l, ctx).GetByCharacterId,
+						loadBuffs,
 						skill2.NewProcessor(l, ctx).GetEffect,
 						ai.SkillId(),
 						s.CharacterId(),
@@ -1114,7 +1123,7 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// TODO Slow
 					// TODO Blind
 					// TODO Paladin / White Knight charges
-					// TODO Combo Drain
+					comboDrainTryProc(l, loadBuffs, cp.ChangeHP, s.Field(), s.CharacterId(), ai)
 					// TODO Three Snails consumption
 					// TODO Heavens Hammer
 					// TODO ComboTempest

@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character/buff"
 	"atlas-channel/character/buff/stat"
 	"errors"
+	"io"
 	"math"
 	"testing"
 	"time"
@@ -253,4 +254,60 @@ func TestComboDrainTryProc(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestNewAttackBuffLoader pins the one-fetch-per-attack AC on the loader
+// shape shared by processAttack's projectile gate, Pick Pocket, and Combo
+// Drain: the underlying fetch runs at most once per loader instance, and a
+// failed first fetch is cached as "no buffs" (nil, nil) rather than retried.
+func TestNewAttackBuffLoader(t *testing.T) {
+	t.Run("memoizes a successful fetch across repeated calls", func(t *testing.T) {
+		l := logrus.New()
+		l.SetOutput(io.Discard)
+		want := []buff.Model{comboDrainBuffWithAmount(5)}
+		cb := &countingBuffs{buffs: want}
+		load := newAttackBuffLoader(l, cb.fn)
+
+		for i := 0; i < 3; i++ {
+			got, err := load(42)
+			if err != nil {
+				t.Fatalf("call %d: unexpected error %v", i, err)
+			}
+			if len(got) != len(want) {
+				t.Fatalf("call %d: got %d buffs, want %d", i, len(got), len(want))
+			}
+		}
+		if cb.calls != 1 {
+			t.Fatalf("underlying fetch called %d times, want exactly 1", cb.calls)
+		}
+	})
+
+	t.Run("caches a failed fetch as no-buffs without re-fetching", func(t *testing.T) {
+		l := logrus.New()
+		l.SetOutput(io.Discard)
+		fetchErr := errors.New("buff service unavailable")
+		cb := &countingBuffs{err: fetchErr}
+		load := newAttackBuffLoader(l, cb.fn)
+
+		got, err := load(42)
+		if err != fetchErr {
+			t.Fatalf("first call err = %v, want %v", err, fetchErr)
+		}
+		if got != nil {
+			t.Fatalf("first call buffs = %v, want nil", got)
+		}
+
+		for i := 0; i < 2; i++ {
+			got, err := load(42)
+			if err != nil {
+				t.Fatalf("subsequent call %d: err = %v, want nil (cached failure)", i, err)
+			}
+			if got != nil {
+				t.Fatalf("subsequent call %d: buffs = %v, want nil", i, got)
+			}
+		}
+		if cb.calls != 1 {
+			t.Fatalf("underlying fetch called %d times, want exactly 1 (no retry after failure)", cb.calls)
+		}
+	})
 }

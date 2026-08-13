@@ -61,6 +61,32 @@ func comboDrainHealAmount(totalDamage uint64, percent int32) int16 {
 	return int16(heal)
 }
 
+// newAttackBuffLoader returns a per-attack memoized buff loader: fetch is
+// invoked at most once, on the first call, regardless of how many consumers
+// (projectile consumption gate, Pick Pocket, Combo Drain) call the returned
+// closure. A failed first fetch is logged once here and cached as "no buffs
+// active" (nil, nil) for every subsequent call — callers see the error only
+// on that first call and must apply their own degraded posture; the loader
+// never re-fetches after either a success or a failure.
+func newAttackBuffLoader(l logrus.FieldLogger, fetch func(characterId uint32) ([]buff.Model, error)) func(characterId uint32) ([]buff.Model, error) {
+	var buffs []buff.Model
+	loaded := false
+	return func(characterId uint32) ([]buff.Model, error) {
+		if loaded {
+			return buffs, nil
+		}
+		loaded = true
+		bs, err := fetch(characterId)
+		if err != nil {
+			l.WithError(err).Warnf("Unable to load buffs for character [%d] attack; assuming none active.", characterId)
+			buffs = nil
+			return nil, err
+		}
+		buffs = bs
+		return buffs, nil
+	}
+}
+
 // comboDrainTryProc evaluates Combo Drain for one accepted attack and emits
 // at most one ChangeHP via the injected changeHP: once per attack, computed
 // from the plain damage total across all monsters and hit lines (no

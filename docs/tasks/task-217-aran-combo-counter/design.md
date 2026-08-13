@@ -559,3 +559,62 @@ Guards, all from the repo root: `redis-key-guard`, `goroutine-guard`,
 | FR-6.2 – FR-6.4 | §3.6, §6 |
 | NFR-2 – NFR-7 | §3.3, §3.4, §4, §7 |
 | Open questions 1–9 | Closed in §2.1, §2.2, §2.1, §2.3, §2.6, §2.5, §2.9, §2.7, §2.8 |
+
+---
+
+## §9. Post-landing: the hidden combo variant disconnect
+
+Found while testing the landed feature on the PR environment. The combo counter
+itself was correct — it reached 7 and the client rendered every step — but the
+session was destroyed on the next attack.
+
+Channel log, session `4a43d7f1`, 113 ms:
+
+```
+13:26:51.834  Aran combo: character [1] count [7].
+13:26:52.003  Character [1] is attempting a melee attack.
+13:26:52.015  ERROR Character [1] attempting to attack with skill [21120009] which they do not own.
+13:26:52.015  Destroying session.
+13:26:52.116  Connection ended.
+```
+
+`21120009` is `AranStage4OverswingDoubleSwingId` — one of the four Aran hidden
+combo variants the codebase already enumerates in
+`libs/atlas-constants/skill/point_reset.go`:
+
+| variant | parent |
+| --- | --- |
+| 21110007 / 21110008 (Full Swing Double/Triple Swing) | 21110002 Full Swing |
+| 21120009 / 21120010 (Over Swing Double/Triple Swing) | 21120002 Over Swing |
+
+They are never in the skill book: no SP is spent on them, they are excluded from
+SP reset, and the Aran preset seeded by this task deliberately ships only the 26
+non-hidden skills. The client sends the variant's id in the attack packet once
+the combo count escalates the swing, so `processAttack`'s ownership gate — which
+destroys the session for any unowned attack id — killed a legitimate Aran.
+
+The gate is pre-existing on `main`. This task made it reachable: before the Aran
+preset there was no way to hold Over Swing on any environment.
+
+**Fix.** `resolveAttackSkill` (character_attack_common.go) resolves a hidden
+variant through `skill.AranHiddenComboParent` and backs the attack with the
+parent's `Model`, so the variant runs at the parent's level. An unowned parent
+is still a destroy: the client can only produce the variant by escalating a
+swing it already has, so that case is the same forged-attack signal the gate
+exists to catch.
+
+The variant's own id stays on the wire for the effect fetch. Verified against
+live atlas-data (gms 83.1) — each variant carries its own per-level effect table
+at the same maxLevel as its parent, so the parent's level always indexes a valid
+row:
+
+| skill | maxLevel | effect rows |
+| --- | --- | --- |
+| 21110002 Full Swing | 20 | 20 |
+| 21110007 / 21110008 | 20 | 20 |
+| 21120002 Over Swing | 30 | 30 |
+| 21120009 / 21120010 | 30 | 30 |
+
+Not verified: the exact combo count at which the client swaps in the two- and
+three-swing variants. The fix does not depend on it — any combo count that
+produces the variant id is handled — but it is unconfirmed in the IDB.

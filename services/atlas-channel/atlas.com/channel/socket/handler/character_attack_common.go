@@ -736,6 +736,39 @@ func attackCastTryApply(
 	}
 }
 
+// resolveAttackSkill finds the owned skill backing an attack's wire skill id,
+// reporting false when the character may not attack with it at all.
+//
+// The direct case is ownership. The indirect case is Aran's hidden combo
+// variants (Full Swing / Over Swing at two and three swings): the client sends
+// the variant's id once the combo count escalates the swing, but the variant is
+// never in the skill book -- no SP is spent on it and it is excluded from SP
+// reset. Its level lives on the parent, so the parent's Model is what backs the
+// attack, and an unowned parent is still a rejection: the client can only
+// produce the variant by escalating a swing it already has.
+//
+// The variant's own id stays on the wire for every downstream lookup that needs
+// it (the effect fetch keys on ai.SkillId(), and WZ carries a per-level effect
+// table for the variant at the same maxLevel as its parent).
+func resolveAttackSkill(skills []skill.Model, wireId skill3.Id) (skill.Model, bool) {
+	find := func(id skill3.Id) (skill.Model, bool) {
+		for _, sk := range skills {
+			if sk.Id() == id {
+				return sk, true
+			}
+		}
+		return skill.Model{}, false
+	}
+
+	if sk, ok := find(wireId); ok {
+		return sk, true
+	}
+	if parentId, ok := skill3.AranHiddenComboParent(wireId); ok {
+		return find(parentId)
+	}
+	return skill.Model{}, false
+}
+
 func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
@@ -764,12 +797,9 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 
 					if ai.SkillId() > 0 {
 						// Process skill
-						for _, tsk := range c.Skills() {
-							if tsk.Id() == skill3.Id(ai.SkillId()) {
-								sk = tsk
-							}
-						}
-						if sk.Id() == 0 {
+						var owned bool
+						sk, owned = resolveAttackSkill(c.Skills(), skill3.Id(ai.SkillId()))
+						if !owned {
 							l.Errorf("Character [%d] attempting to attack with skill [%d] which they do not own.", s.CharacterId(), ai.SkillId())
 							return session.NewProcessor(l, ctx).Destroy(s)
 						}

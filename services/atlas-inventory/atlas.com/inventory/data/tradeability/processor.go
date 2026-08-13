@@ -2,6 +2,7 @@ package tradeability
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -49,5 +50,21 @@ func (p *ProcessorImpl) ByIdProvider(inventoryType inventory.Type, templateId it
 }
 
 func (p *ProcessorImpl) Get(inventoryType inventory.Type, templateId item.Id) (Model, error) {
-	return p.ByIdProvider(inventoryType, templateId)()
+	m, err := p.ByIdProvider(inventoryType, templateId)()
+	if err != nil {
+		// Diagnosis only: both arms still refuse (return the error). A 404
+		// means atlas-data has no entry for this template id in this
+		// compartment's resource; anything else (transport failure, decode
+		// failure, 5xx) means atlas-data itself could not be reached or
+		// answered. Karma gates must refuse on either — this distinction
+		// exists only so an operator reading logs can tell "unreachable"
+		// from "no data" without re-deriving it from the raw error text.
+		if errors.Is(err, requests.ErrNotFound) {
+			p.l.WithError(err).Warnf("tradeability: no atlas-data entry for inventory type [%d] template [%d] (404).", inventoryType, templateId)
+		} else {
+			p.l.WithError(err).Errorf("tradeability: atlas-data lookup failed for inventory type [%d] template [%d] (non-404).", inventoryType, templateId)
+		}
+		return Model{}, err
+	}
+	return m, nil
 }

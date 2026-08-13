@@ -136,6 +136,15 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 				if time := s.GetIntegerWithDefault(string(SpecTypeTime), 0); time != 0 {
 					m.Spec[SpecTypeTime] = time
 				}
+
+				// Transformation coupons (0530.img): the Morph.wz creature id and the
+				// flat HP heal. Omit-when-zero, matching expR/drpR/time above.
+				if morph := s.GetIntegerWithDefault(string(SpecTypeMorph), 0); morph != 0 {
+					m.Spec[SpecTypeMorph] = morph
+				}
+				if hp := s.GetIntegerWithDefault(string(SpecTypeHp), 0); hp != 0 {
+					m.Spec[SpecTypeHp] = hp
+				}
 			}
 
 			res = append(res, m)

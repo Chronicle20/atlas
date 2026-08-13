@@ -9,10 +9,13 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -334,5 +337,196 @@ func TestCharacterCashItemUseHandleFuncSymbol(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), ten)
 	if got := CharacterCashItemUseHandleFunc(logrus.New(), ctx, nil); got == nil {
 		t.Fatal("nil closure")
+	}
+}
+
+// morphCouponCall records one forwarded consume request.
+type morphCouponCall struct {
+	itemId     item.Id
+	source     slot.Position
+	quantity   int16
+	updateTime uint32
+}
+
+// installRequestItemConsumeSeam swaps requestItemConsumeFunc for the test
+// (precedent: installUseRockSeam, installCashItemInSlotSeam) so no Kafka broker
+// is needed.
+func installRequestItemConsumeSeam(t *testing.T) (*[]morphCouponCall, func()) {
+	t.Helper()
+	calls := make([]morphCouponCall, 0)
+	orig := requestItemConsumeFunc
+	requestItemConsumeFunc = func(_ logrus.FieldLogger, _ context.Context, _ field.Model, _ character.Id, itemId item.Id, source slot.Position, quantity int16, updateTime uint32) error {
+		calls = append(calls, morphCouponCall{itemId, source, quantity, updateTime})
+		return nil
+	}
+	return &calls, func() { requestItemConsumeFunc = orig }
+}
+
+const cashMorphSlot = int16(3)
+
+// TestCharacterCashItemUseHandleFunc_MorphCouponInvokesConsume: a v83 5300000
+// request reaches the new arm and forwards the consume command with the trailing
+// updateTime decoded (FR-4.1, FR-1.2). Before this task it fell through to the
+// terminal warn and nothing happened at all.
+func TestCharacterCashItemUseHandleFunc_MorphCouponInvokesConsume(t *testing.T) {
+	const itemId = uint32(5300000)
+	if item.GetClassification(item.Id(itemId)) != item.ClassificationTransformationCoupon {
+		t.Fatalf("fixture invalid: GetClassification(%d) = %d, want 530", itemId, item.GetClassification(item.Id(itemId)))
+	}
+	restoreSlot := installCashItemInSlotSeam(t, cashMorphSlot, itemId)
+	defer restoreSlot()
+	calls, restoreConsume := installRequestItemConsumeSeam(t)
+	defer restoreConsume()
+
+	s, ctx, cleanup := newCashItemUseTestSession(t, 555)
+	defer cleanup()
+
+	// v83 trails updateTime in the sub-body (cashsb.UpdateTimeFirst false).
+	raw := append(cashItemUsePrefix(cashMorphSlot, itemId),
+		0x2A, 0x00, 0x00, 0x00, // updateTime = 42
+	)
+	req := request.Request(raw)
+	reader := request.NewRequestReader(&req, 0)
+
+	CharacterCashItemUseHandleFunc(logrus.New(), ctx, nil)(s, &reader, map[string]interface{}{})
+
+	if len(*calls) != 1 {
+		t.Fatalf("RequestItemConsume call count = %d, want 1", len(*calls))
+	}
+	c := (*calls)[0]
+	if c.itemId != item.Id(itemId) {
+		t.Errorf("itemId = %d, want %d", c.itemId, itemId)
+	}
+	if c.source != slot.Position(cashMorphSlot) {
+		t.Errorf("source = %d, want %d", c.source, cashMorphSlot)
+	}
+	if c.quantity != 1 {
+		t.Errorf("quantity = %d, want 1", c.quantity)
+	}
+	if c.updateTime != 42 {
+		t.Errorf("updateTime = %d, want 42 (decoded from the trailing sub-body int32)", c.updateTime)
+	}
+}
+
+// TestCharacterCashItemUseHandleFunc_MorphCouponV95NoSubBody: on GMS v95 the
+// common ItemUse header already carried updateTime, so the sub-body reads
+// nothing and the header value is forwarded (FR-1.2's leading half).
+func TestCharacterCashItemUseHandleFunc_MorphCouponV95NoSubBody(t *testing.T) {
+	const itemId = uint32(5300000)
+	restoreSlot := installCashItemInSlotSeam(t, cashMorphSlot, itemId)
+	defer restoreSlot()
+	calls, restoreConsume := installRequestItemConsumeSeam(t)
+	defer restoreConsume()
+
+	ten := mustTenant(t, "GMS", 95, 1)
+	ctx := tenant.WithContext(context.Background(), ten)
+	sessionId := uuid.New()
+	sess := session.NewSession(sessionId, ten, 0, nil)
+	session.AddSessionToRegistry(ten.Id(), sess)
+	defer session.ClearRegistryForTenant(ten.Id())
+	sp := session.NewProcessor(logrus.New(), ctx)
+	sp.SetCharacterId(sessionId, 555)
+	s := sp.SetField(sessionId, field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).Build())
+
+	// Leading updateTime, then the ItemUse prefix. No trailing bytes.
+	raw := append([]byte{0x2A, 0x00, 0x00, 0x00}, cashItemUsePrefix(cashMorphSlot, itemId)...)
+	req := request.Request(raw)
+	reader := request.NewRequestReader(&req, 0)
+
+	CharacterCashItemUseHandleFunc(logrus.New(), ctx, nil)(s, &reader, map[string]interface{}{})
+
+	if len(*calls) != 1 {
+		t.Fatalf("RequestItemConsume call count = %d, want 1", len(*calls))
+	}
+	if (*calls)[0].updateTime != 42 {
+		t.Errorf("updateTime = %d, want 42 (from the leading header, not a sub-body read)", (*calls)[0].updateTime)
+	}
+}
+
+// TestCharacterCashItemUseHandleFunc_MorphCouponTypeByteCollisions pins FR-1.3.
+//
+// The cash-slot type bytes collide ACROSS versions, not within one tenant
+// (GetCashSlotItemType, character_cash_item_use.go): classification 522
+// gachapon -> 40 on GMS >= 95; classification 530 transformation -> 40 on
+// GMS < 95 and 41 on GMS >= 95; classification 538 pet evolution -> 41 on
+// GMS < 95. So byte 40 means "transformation" on v83 and "gachapon" on v95,
+// and byte 41 means "pet evolution" on v83 and "transformation" on v95. A
+// type-byte-keyed arm would silently swap meaning at a version bump; the arm
+// gates on classification instead, and neither collider may enter it.
+func TestCharacterCashItemUseHandleFunc_MorphCouponTypeByteCollisions(t *testing.T) {
+	tests := []struct {
+		name     string
+		region   string
+		major    uint16
+		itemId   uint32
+		wantType CashSlotItemType
+	}{
+		{"v95 gachapon coupon shares byte 40 with v83 transformation", "GMS", 95, 5220000, CashSlotItemType(40)},
+		{"v83 pet evolution shares byte 41 with v95 transformation", "GMS", 83, 5380000, CashSlotItemType(41)},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ten := mustTenant(t, tc.region, tc.major, 1)
+			ctx := tenant.WithContext(context.Background(), ten)
+			// Confirm the collision is real under this tenant, so the test is
+			// exercising the disambiguation rather than a vacuous case.
+			if got := GetCashSlotItemType(ten)(item.Id(tc.itemId)); got != tc.wantType {
+				t.Fatalf("fixture invalid: GetCashSlotItemType(%d) = %d, want %d", tc.itemId, got, tc.wantType)
+			}
+			if item.GetClassification(item.Id(tc.itemId)) == item.ClassificationTransformationCoupon {
+				t.Fatalf("fixture invalid: %d is classification 530", tc.itemId)
+			}
+
+			restoreSlot := installCashItemInSlotSeam(t, cashMorphSlot, tc.itemId)
+			defer restoreSlot()
+			calls, restoreConsume := installRequestItemConsumeSeam(t)
+			defer restoreConsume()
+
+			sessionId := uuid.New()
+			sess := session.NewSession(sessionId, ten, 0, nil)
+			session.AddSessionToRegistry(ten.Id(), sess)
+			defer session.ClearRegistryForTenant(ten.Id())
+			sp := session.NewProcessor(logrus.New(), ctx)
+			sp.SetCharacterId(sessionId, 555)
+			s := sp.SetField(sessionId, field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).Build())
+
+			raw := append(cashItemUsePrefix(cashMorphSlot, tc.itemId), 0x2A, 0x00, 0x00, 0x00)
+			if cashsb.UpdateTimeFirst(ten) {
+				raw = append([]byte{0x2A, 0x00, 0x00, 0x00}, cashItemUsePrefix(cashMorphSlot, tc.itemId)...)
+			}
+			req := request.Request(raw)
+			reader := request.NewRequestReader(&req, 0)
+
+			CharacterCashItemUseHandleFunc(logrus.New(), ctx, nil)(s, &reader, map[string]interface{}{})
+
+			if len(*calls) != 0 {
+				t.Errorf("RequestItemConsume call count = %d, want 0 — classification %d must not enter the morph-coupon arm", len(*calls), item.GetClassification(item.Id(tc.itemId)))
+			}
+		})
+	}
+}
+
+// TestCharacterCashItemUseHandleFunc_MorphCouponMismatchedSlotNotInvoked: the
+// arm inherits the ownership check by position (FR-4.2), and a mismatch must
+// send nothing — no consume, and no unlock, exactly as every neighbouring arm.
+func TestCharacterCashItemUseHandleFunc_MorphCouponMismatchedSlotNotInvoked(t *testing.T) {
+	const itemId = uint32(5300000)
+	// The seam reports a different template id for this slot.
+	restoreSlot := installCashItemInSlotSeam(t, cashMorphSlot, 5300002)
+	defer restoreSlot()
+	calls, restoreConsume := installRequestItemConsumeSeam(t)
+	defer restoreConsume()
+
+	s, ctx, cleanup := newCashItemUseTestSession(t, 555)
+	defer cleanup()
+
+	raw := append(cashItemUsePrefix(cashMorphSlot, itemId), 0x2A, 0x00, 0x00, 0x00)
+	req := request.Request(raw)
+	reader := request.NewRequestReader(&req, 0)
+
+	CharacterCashItemUseHandleFunc(logrus.New(), ctx, nil)(s, &reader, map[string]interface{}{})
+
+	if len(*calls) != 0 {
+		t.Errorf("RequestItemConsume call count = %d, want 0 on a template-id mismatch", len(*calls))
 	}
 }

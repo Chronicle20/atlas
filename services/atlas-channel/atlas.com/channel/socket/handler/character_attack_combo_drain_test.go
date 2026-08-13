@@ -170,8 +170,9 @@ func TestComboDrainTryProc(t *testing.T) {
 			wantCalls: []int16{50},
 		},
 		{
-			// Pins the anti-Cosmic-quirk AC: one heal from the plain total
-			// (6000 * 10 / 100 = 600), never per-monster running totals.
+			// Pins the once-per-attack AC: one heal from the plain
+			// total (6000 * 10 / 100 = 600), never per-monster
+			// running totals.
 			name:      "buff present multi monster multi line - one call on plain total",
 			buffs:     []buff.Model{comboDrainBuffWithAmount(10)},
 			ai:        attackWithDamages(packetmodel.AttackTypeMelee, []uint32{1000, 2000}, []uint32{3000}),

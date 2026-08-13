@@ -385,12 +385,12 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			// a tenant's WZ carries it and is unusable when it does not.
 			cd, err := karmaCashDataProcessorFunc(l, ctx).GetById(uint32(itemId))
 			if err != nil {
-				refuse("Character [%d] used karma scissors [%d] but its cash item data could not be read; refusing rather than assuming an untyped scissors.", s.CharacterId(), itemId)
+				refuse("Character [%d] used karma scissors [%d] but its cash item data could not be read; refusing rather than assuming an untyped scissors. Target item [%d] in inventory [%d] slot [%d].", s.CharacterId(), itemId, target.TemplateId(), invType, targetSlot)
 				return
 			}
 			td, err := karmaTradeabilityProcessorFunc(l, ctx).Get(invType, item.Id(target.TemplateId()))
 			if err != nil {
-				refuse("Character [%d] used karma scissors [%d] on item [%d] whose item data could not be read; refusing rather than assuming eligibility.", s.CharacterId(), itemId, target.TemplateId())
+				refuse("Character [%d] used karma scissors [%d] on item [%d] whose item data could not be read; refusing rather than assuming eligibility. Inventory [%d] slot [%d].", s.CharacterId(), itemId, target.TemplateId(), invType, targetSlot)
 				return
 			}
 			if !af.KarmaEligible(cd.Karma, td.TradeAvailable()) {

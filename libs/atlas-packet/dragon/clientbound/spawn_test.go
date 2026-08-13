@@ -27,6 +27,17 @@ var dragonSpawnBody = []byte{
 	0xA6, 0x08,
 }
 
+// dragonSpawnBodyV83 is the GMS v83 wire: identical up through the discarded
+// short, but CDragon::OnCreated (@0x4fe502) reads no jobId — the read
+// sequence stops there. 11 bytes total (vs 13 on versions that carry jobId).
+var dragonSpawnBodyV83 = []byte{
+	0x92, 0x10, 0x00, 0x00,
+	0x64, 0x00, 0x00, 0x00,
+	0x38, 0xFF, 0xFF, 0xFF,
+	0x03,
+	0x00, 0x00,
+}
+
 // packet-audit:verify packet=dragon/clientbound/DragonSpawn version=gms_v95 ida=0x50dc90
 func TestDragonSpawnBytes(t *testing.T) {
 	in := NewDragonSpawn(4242, 100, -200, 3, 2214)
@@ -37,15 +48,25 @@ func TestDragonSpawnBytes(t *testing.T) {
 	}
 }
 
-// The layout is uniform across all six applicable versions (verified in both
-// client size classes: 0x330 = v83/v87/JMS185, 0x464 = v92/v95). If any column
-// ever diverges, this table is where it shows up first.
+// packet-audit:verify packet=dragon/clientbound/DragonSpawn version=gms_v83 ida=0x4fe502
+func TestDragonSpawnBytesV83(t *testing.T) {
+	in := NewDragonSpawn(4242, 100, -200, 3, 2214)
+	ctx := test.CreateContext("GMS", 83, 1)
+	got := test.Encode(t, ctx, in.Encode, nil)
+	if !bytes.Equal(got, dragonSpawnBodyV83) {
+		t.Fatalf("spawn bytes = % X, want % X", got, dragonSpawnBodyV83)
+	}
+}
+
+// jobId is present on v84/v87/v92/v95/JMS185 (13 bytes) and absent on v83
+// (11 bytes) — see spawnHasJobId in spawn.go for the IDA grounding. If any
+// column ever diverges from this split, this table is where it shows up
+// first.
 func TestDragonSpawnBytesIdenticalAcrossVersions(t *testing.T) {
-	versions := []struct {
+	versionsWithJobId := []struct {
 		region string
 		major  uint16
 	}{
-		{"GMS", 83},
 		{"GMS", 84},
 		{"GMS", 87},
 		{"GMS", 92},
@@ -53,11 +74,16 @@ func TestDragonSpawnBytesIdenticalAcrossVersions(t *testing.T) {
 		{"JMS", 185},
 	}
 	in := NewDragonSpawn(4242, 100, -200, 3, 2214)
-	for _, v := range versions {
+	for _, v := range versionsWithJobId {
 		got := test.Encode(t, test.CreateContext(v.region, v.major, 1), in.Encode, nil)
 		if !bytes.Equal(got, dragonSpawnBody) {
 			t.Errorf("%s v%d: bytes = % X, want % X", v.region, v.major, got, dragonSpawnBody)
 		}
+	}
+
+	got := test.Encode(t, test.CreateContext("GMS", 83, 1), in.Encode, nil)
+	if !bytes.Equal(got, dragonSpawnBodyV83) {
+		t.Errorf("GMS v83: bytes = % X, want % X", got, dragonSpawnBodyV83)
 	}
 }
 
@@ -67,6 +93,20 @@ func TestDragonSpawnRoundTrip(t *testing.T) {
 	in := NewDragonSpawn(4242, 100, -200, 3, 2214)
 	var out DragonSpawn
 	test.RoundTrip(t, test.CreateContext("GMS", 95, 1), in.Encode, out.Decode, nil)
+}
+
+// RoundTrip on v83 proves the decoder consumes the entire 11-byte body (through
+// the discarded short) with nothing left over — no trailing jobId read.
+func TestDragonSpawnRoundTripV83(t *testing.T) {
+	in := NewDragonSpawn(4242, 100, -200, 3, 2214)
+	var out DragonSpawn
+	test.RoundTrip(t, test.CreateContext("GMS", 83, 1), in.Encode, out.Decode, nil)
+	if out.OwnerCharacterId() != 4242 || out.X() != 100 || out.Y() != -200 || out.Stance() != 3 {
+		t.Fatalf("v83 round-trip mismatch: %+v", out)
+	}
+	if out.JobId() != 0 {
+		t.Fatalf("v83 round-trip should not populate jobId (absent on the wire), got %d", out.JobId())
+	}
 }
 
 func TestDragonSpawnDecodeRecoversEveryField(t *testing.T) {

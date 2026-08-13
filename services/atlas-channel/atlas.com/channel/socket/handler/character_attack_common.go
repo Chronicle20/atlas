@@ -738,25 +738,36 @@ func attackCastTryApply(
 	}
 }
 
-// attackCastOrigin extracts the world point the attack packet nominated for a
-// cast-time effect, or nil when the packet carries none.
+// attackCastOrigin is the world point an ATTACK-delivered cast should anchor at.
 //
-// Only the thrown-grenade skills carry one. Their trailing coordinate pair is
-// where the BOMB landed -- a function of how long the attack key was held --
-// and it is the point the client has already drawn the explosion at, so an
-// effect the server anchors anywhere else visibly disagrees with the client
-// (task-218 field report #4: Poison Bomb's mist appeared at the caster's feet
-// no matter how far the bomb was thrown).
+// An attack packet always carries a better answer than the server can look up,
+// and the two cases differ:
 //
-// Gated on the skill, not on a non-zero value: AttackInfo.Decode only fills
-// the grenade fields for the grenade arm, and (0,0) is a legal coordinate, so
-// a value-based test would both miss a legitimate origin and invent one for
-// every non-grenade attack.
+//   - A thrown-grenade skill carries where the BOMB landed, a function of how
+//     long the attack key was held. The client has already drawn the explosion
+//     there, so anchoring anywhere else visibly disagrees with it (task-218
+//     field report #4: Poison Bomb's mist sat at the caster's feet no matter how
+//     far the bomb flew).
+//   - Every other attack carries the caster's own position at the moment of the
+//     attack. That beats reading it back from atlas-character, which is updated
+//     asynchronously over Kafka (movement.ProcessorImpl.ForCharacter emits
+//     COMMAND_CHARACTER_MOVEMENT from a detached goroutine), so a REST read
+//     taken while handling this attack can observe a PRE-MOVE position and
+//     anchor the effect where the caster used to be (field report #2).
+//
+// Never nil for an attack-delivered cast, so the caster REST lookup is reserved
+// for the USE_SKILL-delivered mists, which have no packet-supplied position.
+//
+// The grenade case is gated on the skill rather than on a non-zero value:
+// AttackInfo.Decode only fills those fields for the grenade arm, and (0,0) is a
+// legal coordinate, so a value-based test would both miss a legitimate origin
+// and invent one for every other attack.
 func attackCastOrigin(ai packetmodel.AttackInfo) *point.Model {
-	if !skill3.IsGrenadeSkill(skill3.Id(ai.SkillId())) {
-		return nil
+	x, y := int16(ai.CharacterX()), int16(ai.CharacterY())
+	if skill3.IsGrenadeSkill(skill3.Id(ai.SkillId())) {
+		x, y = int16(ai.GrenadeX()), int16(ai.GrenadeY())
 	}
-	p := point.NewModel(point.X(int16(ai.GrenadeX())), point.Y(int16(ai.GrenadeY())))
+	p := point.NewModel(point.X(x), point.Y(y))
 	return &p
 }
 

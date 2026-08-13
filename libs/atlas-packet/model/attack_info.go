@@ -581,6 +581,27 @@ func (m *AttackInfo) BulletY() uint16 {
 	return m.bulletY
 }
 
+// CharacterX / CharacterY report the caster's own position as the client
+// recorded it AT THE MOMENT OF THE ATTACK, from the trailing coordinate pair
+// every attack carries.
+//
+// This is the authoritative anchor for anything the server places at the
+// caster's feet. The alternative -- reading the position back from
+// atlas-character -- is asynchronous: the client's MOVE packet reaches that
+// service over Kafka (atlas-channel movement.ProcessorImpl.ForCharacter emits
+// COMMAND_CHARACTER_MOVEMENT from a detached goroutine), so a REST read taken
+// while handling the attack can easily observe a pre-move position. Anchoring a
+// mist that way put it where the caster had been on an earlier cast (task-218
+// field report #2: "cast it once, don't see the effect; cast again and it shows
+// up where I cast it previously").
+func (m *AttackInfo) CharacterX() uint16 {
+	return m.characterX
+}
+
+func (m *AttackInfo) CharacterY() uint16 {
+	return m.characterY
+}
+
 // GrenadeX / GrenadeY report the landing point of a thrown-grenade attack --
 // the trailing coordinate pair the client appends for the grenade skills (see
 // Decode's skill.IsGrenadeSkill arm). It is the point the BOMB lands
@@ -663,6 +684,14 @@ func (m *AttackInfo) SetKeydown(keydown uint32) *AttackInfo {
 func (m *AttackInfo) SetBulletPosition(bulletX uint16, bulletY uint16) *AttackInfo {
 	m.bulletX = bulletX
 	m.bulletY = bulletY
+	return m
+}
+
+// SetCharacterPosition sets the caster's own position, the trailing coordinate
+// pair every attack carries.
+func (m *AttackInfo) SetCharacterPosition(characterX uint16, characterY uint16) *AttackInfo {
+	m.characterX = characterX
+	m.characterY = characterY
 	return m
 }
 

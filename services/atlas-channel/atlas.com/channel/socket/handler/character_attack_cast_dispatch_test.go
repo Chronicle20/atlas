@@ -15,6 +15,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
 // These tests pin the attack-packet cast dispatcher (task-200). The defect
@@ -142,4 +143,47 @@ func TestAttackCastTryApply_HandlerError_SwallowedAndLogged(t *testing.T) {
 	if len(hook.AllEntries()) == 0 {
 		t.Fatal("handler error was swallowed silently; want a logged entry")
 	}
+}
+
+// TestAttackCastOriginPrefersThePacket pins where an ATTACK-delivered cast
+// anchors. Both halves are field-report regressions (task-218).
+//
+// #4: a thrown-grenade skill must use the bomb's landing point, not the
+// caster's feet — the throw distance scales with how long the key was held, so
+// anchoring at the caster puts the cloud a whole throw away from the explosion
+// the client already drew.
+//
+// #2: every other attack must use the caster position the PACKET carries, not a
+// read-back from atlas-character. That service is updated asynchronously over
+// Kafka (movement.ProcessorImpl.ForCharacter emits from a detached goroutine),
+// so a lookup during this attack can return a pre-move position and anchor the
+// cloud where the caster used to be.
+func TestAttackCastOriginPrefersThePacket(t *testing.T) {
+	t.Run("grenade skill uses the landing point", func(t *testing.T) {
+		ai := packetmodel.NewAttackInfo(packetmodel.AttackTypeMelee)
+		ai.SetSkillId(uint32(skill2.NightWalkerStage3PoisonBombId))
+		gx, gy := int16(-540), int16(421)
+		ai.SetGrenadePosition(uint16(gx), uint16(gy))
+		got := attackCastOrigin(*ai)
+		if got == nil {
+			t.Fatal("grenade attack must supply an origin")
+		}
+		if int16(got.X()) != -540 || int16(got.Y()) != 421 {
+			t.Errorf("origin = (%d,%d), want the grenade landing point (-540,421)", int16(got.X()), int16(got.Y()))
+		}
+	})
+
+	t.Run("non-grenade skill uses the packet caster position", func(t *testing.T) {
+		ai := packetmodel.NewAttackInfo(packetmodel.AttackTypeMagic)
+		ai.SetSkillId(uint32(skill2.BlazeWizardStage3FlameGearId))
+		cx, cy := int16(-96), int16(422)
+		ai.SetCharacterPosition(uint16(cx), uint16(cy))
+		got := attackCastOrigin(*ai)
+		if got == nil {
+			t.Fatal("attack-delivered cast must supply an origin so the async caster lookup is never used")
+		}
+		if int16(got.X()) != -96 || int16(got.Y()) != 422 {
+			t.Errorf("origin = (%d,%d), want the packet caster position (-96,422)", int16(got.X()), int16(got.Y()))
+		}
+	})
 }

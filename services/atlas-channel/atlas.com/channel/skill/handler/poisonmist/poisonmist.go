@@ -70,7 +70,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 			skillId skill2.Id,
 			skillLevel byte,
 			e effect.Model,
-			_ *point.Model,
+			castOrigin *point.Model,
 		) error {
 			return mistcast.Cast(l, ctx, f, characterId, skillId, skillLevel, e,
 				mistcast.Params{
@@ -82,6 +82,10 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 					EffectKind: mistmsg.EffectKindDamageOverTime,
 					Disease:    "POISON",
 					TickMs:     mistcast.PlayerMistTickIntervalMs,
+					// The attack packet's own caster position. Reading it back
+					// from atlas-character instead is asynchronous and anchored
+					// the cloud where the caster used to be (task-218 #2).
+					Origin: castOrigin,
 				},
 				mistcast.Seams{LoadCaster: loadCaster, EmitCreate: emitCreate})
 		}

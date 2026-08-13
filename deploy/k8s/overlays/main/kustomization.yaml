@@ -226,7 +226,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
     newTag: main-dd233f7
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
-    newTag: main-dd233f7
+    newTag: main-41c562a
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
     newTag: main-dd233f7
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory

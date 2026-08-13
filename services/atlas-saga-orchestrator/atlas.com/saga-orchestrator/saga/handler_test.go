@@ -1525,3 +1525,76 @@ func TestHandleCreateNote(t *testing.T) {
 		})
 	}
 }
+
+// TestHandleExtendAssetExpirationIssuesCommand verifies handleExtendAssetExpiration
+// passes the step payload's slot, absolute expiration, and ExtenderTemplateId
+// through unchanged to compartment.Processor.RequestExtendExpiration (Task 10).
+// Per the feature's over-cap ruling, the orchestrator must not clamp or
+// second-guess ExtenderTemplateId; it only relays it for atlas-inventory to
+// re-derive and enforce.
+func TestHandleExtendAssetExpirationIssuesCommand(t *testing.T) {
+	var gotSlot int16
+	var gotExpiration time.Time
+	var gotExtender uint32
+	var gotInvType byte
+
+	compP := &mock2.ProcessorMock{
+		RequestExtendExpirationFunc: func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time, extenderTemplateId uint32) error {
+			gotInvType = inventoryType
+			gotSlot = slot
+			gotExpiration = expiration
+			gotExtender = extenderTemplateId
+			return nil
+		},
+	}
+
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	want := time.Date(2026, 9, 12, 0, 0, 0, 0, time.UTC)
+	payload := ExtendAssetExpirationPayload{
+		CharacterId:        12345,
+		InventoryType:      1,
+		Slot:               -11,
+		Expiration:         want,
+		ExtenderTemplateId: 5500001,
+	}
+
+	s, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(ExpirationExtenderUse).
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	step := NewStep[any]("extend-asset-expiration", Pending, ExtendAssetExpiration, payload)
+
+	err = NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleExtendAssetExpiration(s, step)
+	assert.NoError(t, err)
+
+	assert.Equal(t, byte(1), gotInvType)
+	assert.Equal(t, int16(-11), gotSlot)
+	assert.True(t, gotExpiration.Equal(want), "expiration = %v, want %v", gotExpiration, want)
+	assert.Equal(t, uint32(5500001), gotExtender)
+}
+
+// TestHandleExtendAssetExpiration_InvalidPayload verifies the invalid-payload guard.
+func TestHandleExtendAssetExpiration_InvalidPayload(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	_, ctx := setupContext()
+
+	s, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(ExpirationExtenderUse).
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	step := NewStep[any]("extend-asset-expiration", Pending, ExtendAssetExpiration, "invalid-payload-type")
+
+	err = NewHandler(logger, ctx).handleExtendAssetExpiration(s, step)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
+}

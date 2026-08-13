@@ -7770,6 +7770,195 @@
             }
           ]
         }
+      },
+      {
+        "id": "3f618206-51d5-46e5-9d75-e8d214071370",
+        "attributes": {
+          "name": "Aran \u2014 4th job",
+          "description": "Full 4th-job Aran \u2014 branch skills maxed; Reverse Diesra polearm + Reverse Taragon set.",
+          "tags": [
+            "4th-job",
+            "warrior",
+            "legend"
+          ],
+          "jobId": 2112,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": {
+            "str": 1018,
+            "dex": 4,
+            "int": 4,
+            "luk": 4,
+            "hp": 30000,
+            "mp": 6000
+          },
+          "defaultName": "AdminAran",
+          "equipment": [
+            {
+              "templateId": 1442067,
+              "useAverageStats": true
+            },
+            {
+              "templateId": 1052160,
+              "useAverageStats": true
+            },
+            {
+              "templateId": 1002357,
+              "useAverageStats": true
+            },
+            {
+              "templateId": 1102041,
+              "useAverageStats": true
+            },
+            {
+              "templateId": 1122059,
+              "useAverageStats": true
+            },
+            {
+              "templateId": 1072344,
+              "useAverageStats": true
+            },
+            {
+              "templateId": 1082223,
+              "useAverageStats": true
+            },
+            {
+              "templateId": 1032031,
+              "useAverageStats": true
+            },
+            {
+              "templateId": 1012098,
+              "useAverageStats": true
+            }
+          ],
+          "inventory": [
+            {
+              "templateId": 2000004,
+              "quantity": 200
+            },
+            {
+              "templateId": 2000005,
+              "quantity": 200
+            },
+            {
+              "templateId": 2030019,
+              "quantity": 50
+            }
+          ],
+          "skills": [
+            {
+              "skillId": 21000000,
+              "level": 10
+            },
+            {
+              "skillId": 21000002,
+              "level": 20
+            },
+            {
+              "skillId": 21001001,
+              "level": 15
+            },
+            {
+              "skillId": 21001003,
+              "level": 20
+            },
+            {
+              "skillId": 21100000,
+              "level": 20
+            },
+            {
+              "skillId": 21100001,
+              "level": 20
+            },
+            {
+              "skillId": 21100002,
+              "level": 30
+            },
+            {
+              "skillId": 21100004,
+              "level": 20
+            },
+            {
+              "skillId": 21100005,
+              "level": 20
+            },
+            {
+              "skillId": 21101003,
+              "level": 20
+            },
+            {
+              "skillId": 21110000,
+              "level": 20
+            },
+            {
+              "skillId": 21110002,
+              "level": 20
+            },
+            {
+              "skillId": 21110003,
+              "level": 30
+            },
+            {
+              "skillId": 21110004,
+              "level": 30
+            },
+            {
+              "skillId": 21110006,
+              "level": 20
+            },
+            {
+              "skillId": 21111001,
+              "level": 20
+            },
+            {
+              "skillId": 21111005,
+              "level": 20
+            },
+            {
+              "skillId": 21120001,
+              "level": 30
+            },
+            {
+              "skillId": 21120002,
+              "level": 30
+            },
+            {
+              "skillId": 21120004,
+              "level": 30
+            },
+            {
+              "skillId": 21120005,
+              "level": 30
+            },
+            {
+              "skillId": 21120006,
+              "level": 30
+            },
+            {
+              "skillId": 21120007,
+              "level": 30
+            },
+            {
+              "skillId": 21121000,
+              "level": 30
+            },
+            {
+              "skillId": 21121003,
+              "level": 30
+            },
+            {
+              "skillId": 21121008,
+              "level": 5
+            }
+          ]
+        }
       }
     ]
   },

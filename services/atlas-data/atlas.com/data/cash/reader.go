@@ -82,6 +82,8 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			// this is an award amount.
 			m.Meso = uint32(i.GetIntegerWithDefault("meso", 0))
 			m.TradeBlock = i.GetBool("tradeBlock", false)
+			m.TradeAvailable = i.GetIntegerWithDefault("tradeAvailable", 0)
+			m.Karma = i.GetIntegerWithDefault("karma", 0)
 			m.StateChangeItem = uint32(i.GetIntegerWithDefault("stateChangeItem", 0))
 			if i.GetIntegerWithDefault("isBgmOrEffect", 0) == 1 {
 				m.BgmPath = i.GetString("bgmPath", "")

@@ -112,6 +112,7 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			Price:          uint32(info.GetIntegerWithDefault("price", 0)),
 			TimeLimited:    info.GetBool("timeLimited", false),
 			TradeBlock:     info.GetBool("tradeBlock", false),
+			TradeAvailable: info.GetIntegerWithDefault("tradeAvailable", 0),
 			ReplaceItemId:  replaceItemId,
 			ReplaceMessage: replaceMessage,
 			BonusExp:       bonusExpTiers,

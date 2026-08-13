@@ -3,11 +3,11 @@ package model
 import (
 	"bytes"
 	"fmt"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 	"strings"
 	"testing"
 
 	"github.com/sirupsen/logrus"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"

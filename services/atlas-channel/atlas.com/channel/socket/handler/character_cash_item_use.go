@@ -683,19 +683,21 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 type CashSlotItemType uint32
 
 const (
-	CashSlotItemTypeFieldEffect   = CashSlotItemType(16)
-	CashSlotItemTypeNote          = CashSlotItemType(21)
-	CashSlotItemTypeStoreSearch   = CashSlotItemType(29)
-	CashSlotItemTypePetConsumable = CashSlotItemType(30)
-	CashSlotItemTypePetSkill      = CashSlotItemType(28)
-	CashSlotItemTypeChalkboard    = CashSlotItemType(32)
-	CashSlotItemTypeKite          = CashSlotItemType(18)
-	CashSlotItemTypeItemTag       = CashSlotItemType(25)
-	CashSlotItemTypeSeal          = CashSlotItemType(26)
-	CashSlotItemTypeIncubator     = CashSlotItemType(27)
-	CashSlotItemTypeSealTimed     = CashSlotItemType(64)
-	CashSlotItemTypeSealTimedV95  = CashSlotItemType(65)
-	CashSlotItemTypeCube          = CashSlotItemType(74)
+	CashSlotItemTypeFieldEffect      = CashSlotItemType(16)
+	CashSlotItemTypeNote             = CashSlotItemType(21)
+	CashSlotItemTypeStoreSearch      = CashSlotItemType(29)
+	CashSlotItemTypePetConsumable    = CashSlotItemType(30)
+	CashSlotItemTypePetSkill         = CashSlotItemType(28)
+	CashSlotItemTypeChalkboard       = CashSlotItemType(32)
+	CashSlotItemTypeKite             = CashSlotItemType(18)
+	CashSlotItemTypeItemTag          = CashSlotItemType(25)
+	CashSlotItemTypeSeal             = CashSlotItemType(26)
+	CashSlotItemTypeIncubator        = CashSlotItemType(27)
+	CashSlotItemTypeSealTimed        = CashSlotItemType(64)
+	CashSlotItemTypeSealTimedV95     = CashSlotItemType(65)
+	CashSlotItemTypeKarmaScissors    = CashSlotItemType(63) // GMS < 95, and JMS
+	CashSlotItemTypeKarmaScissorsV95 = CashSlotItemType(64) // GMS >= 95
+	CashSlotItemTypeCube             = CashSlotItemType(74)
 	// CashSlotItemTypeCurrencySack is classification 520 (meso sacks). Atlas
 	// returns 19 on EVERY version even though the v48 client's own table says
 	// 17 and v61's says 18: the type is derived from the server-resolved
@@ -762,6 +764,22 @@ func viciousHammerCashSlotItemType(t tenant.Model) CashSlotItemType {
 		return CashSlotItemTypeViciousHammerV95
 	}
 	return CashSlotItemTypeViciousHammer
+}
+
+// karmaScissorsCashSlotItemType returns the version-scoped CashSlotItemType for
+// the Scissors of Karma (classification 552).
+//
+// A bare constant compare is FORBIDDEN here: pre-95, CashSlotItemTypeSealTimed
+// is also 64. The karma and seal arms are disjoint at runtime today only because
+// the seal arm recomputes itself to 65 on GMS >= 95 (:261-265) — a coincidence
+// that a version-scoped resolver on both sides turns into a structural property.
+// karma_slot_type_test.go asserts the two never collide on any configured
+// version.
+func karmaScissorsCashSlotItemType(t tenant.Model) CashSlotItemType {
+	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		return CashSlotItemTypeKarmaScissorsV95
+	}
+	return CashSlotItemTypeKarmaScissors
 }
 
 func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
@@ -1100,12 +1118,8 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 				return CashSlotItemType(62)
 			}
 		}
-		if category == 552 {
-			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-				return CashSlotItemType(64)
-			} else {
-				return CashSlotItemType(63)
-			}
+		if category == item.ClassificationKarmaScissors {
+			return karmaScissorsCashSlotItemType(t)
 		}
 		if category == 553 {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {

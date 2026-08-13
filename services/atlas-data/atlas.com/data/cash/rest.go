@@ -35,16 +35,19 @@ type TimeWindow struct {
 }
 
 type RestModel struct {
-	Id              uint32             `json:"-"`
-	SlotMax         uint32             `json:"slotMax"`
-	ProtectTime     uint32             `json:"protectTime,omitempty"`
-	StateChangeItem uint32             `json:"stateChangeItem,omitempty"`
-	BgmPath         string             `json:"bgmPath,omitempty"`
-	Spec            map[SpecType]int32 `json:"spec"`
-	TimeWindows     []TimeWindow       `json:"timeWindows,omitempty"` // Active time windows from info/time
-	PetSkills       []string           `json:"petSkills,omitempty"`
-	PetSkillAdd     bool               `json:"petSkillAdd,omitempty"`
-	TradeBlock      bool               `json:"tradeBlock"`
+	Id              uint32 `json:"-"`
+	SlotMax         uint32 `json:"slotMax"`
+	ProtectTime     uint32 `json:"protectTime,omitempty"`
+	StateChangeItem uint32 `json:"stateChangeItem,omitempty"`
+	// Npc is the WZ info/npc value: the NPC template a remote-merchant cash
+	// item (classification 545) opens. 0 when the item targets no NPC.
+	Npc         uint32             `json:"npc,omitempty"`
+	BgmPath     string             `json:"bgmPath,omitempty"`
+	Spec        map[SpecType]int32 `json:"spec"`
+	TimeWindows []TimeWindow       `json:"timeWindows,omitempty"` // Active time windows from info/time
+	PetSkills   []string           `json:"petSkills,omitempty"`
+	PetSkillAdd bool               `json:"petSkillAdd,omitempty"`
+	TradeBlock  bool               `json:"tradeBlock"`
 }
 
 func (r RestModel) GetName() string {

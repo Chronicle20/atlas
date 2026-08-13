@@ -78,6 +78,9 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			m.ProtectTime = uint32(i.GetIntegerWithDefault("protectTime", 0))
 			m.TradeBlock = i.GetBool("tradeBlock", false)
 			m.StateChangeItem = uint32(i.GetIntegerWithDefault("stateChangeItem", 0))
+			// info/npc — the shop NPC a remote-merchant item (0545.img) opens.
+			// Mirrors consumable/reader.go's identical read.
+			m.Npc = uint32(i.GetIntegerWithDefault("npc", 0))
 			if i.GetIntegerWithDefault("isBgmOrEffect", 0) == 1 {
 				m.BgmPath = i.GetString("bgmPath", "")
 			}

@@ -342,21 +342,41 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			sp.Decode(l, ctx)(r, readerOptions)
 			targetSlot := sp.Slot()
 
+			// Every rejection below MUST unlock the client before returning.
+			// CWvsContext::SendConsumeCashItemUseRequest is the sole caller of
+			// SetExclRequestSent (gms_v83 @0xa0ea6f -> @0xa0ebbc), so the excl
+			// lock is already armed by the time this arm runs; it mutates
+			// nothing and does not warp, so only an explicit EnableActions
+			// clears it, and the client has no timeout.
 			target, err := character2.NewProcessor(l, ctx).GetItemInSlot(s.CharacterId(), inventory.TypeValueEquip, targetSlot)()
 			if err != nil {
+				// Reachable only by double-clicking the extender in the CASH
+				// tab: CDraggableItem::OnDoubleClicked (gms_v83 @0x4efd25)
+				// falls through get_cashslot_item_type 61 into the
+				// get_consume_cash_item_type allow-list (@0x4863d5) and sends
+				// the request with a hard-coded nEPOS of 0 and an empty string
+				// (@0x4f05a6), having asked the player for no target at all.
+				// The supported flow is the drag-drop one --
+				// CDraggableItem::ModifyEquipItem (@0x4f4bb7), which hit-tests
+				// the target and runs the client's own confirm/reject dialogs
+				// -- so tell the player that rather than leaving a dead click.
 				l.Warnf("Character [%d] attempted to use expiration extender [%d] on empty equip slot [%d].", s.CharacterId(), itemId, targetSlot)
+				_ = session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePopUpBody("Drag the item onto the equipment you want to extend."))(s)
+				_ = enableActions(l)(ctx)(wp)(s)
 				return
 			}
 
 			cd, err := cashData.NewProcessor(l, ctx).GetById(uint32(itemId))
 			if err != nil {
 				l.WithError(err).Warnf("Character [%d] unable to resolve cash item data for expiration extender [%d].", s.CharacterId(), itemId)
+				_ = enableActions(l)(ctx)(wp)(s)
 				return
 			}
 
 			ed, err := equipmentData.NewProcessor(l, ctx).GetById(target.TemplateId())
 			if err != nil {
 				l.WithError(err).Warnf("Character [%d] unable to resolve equipment data for extender target [%d] in slot [%d].", s.CharacterId(), target.TemplateId(), targetSlot)
+				_ = enableActions(l)(ctx)(wp)(s)
 				return
 			}
 
@@ -368,11 +388,13 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			}, cd.AddTime, cd.MaxDays)
 			if outcome.Reason != "" {
 				l.Warnf("Character [%d] expiration extender [%d] rejected on equip slot [%d] target [%d]: %s.", s.CharacterId(), itemId, targetSlot, target.TemplateId(), outcome.Reason)
+				_ = enableActions(l)(ctx)(wp)(s)
 				return
 			}
 
-			// No EnableActions: this arm mutates inventory without warping,
-			// matching the sealing-lock and kite arms.
+			// No EnableActions on the accepted path: this arm mutates inventory
+			// without warping, and the non-silent inventory change carries the
+			// unlock itself, matching the sealing-lock and kite arms.
 			transactionId := uuid.New()
 			now := time.Now()
 			_ = saga.NewProcessor(l, ctx).Create(saga.Saga{

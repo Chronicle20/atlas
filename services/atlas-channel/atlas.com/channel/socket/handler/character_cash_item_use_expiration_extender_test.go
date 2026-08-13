@@ -1,11 +1,16 @@
 package handler
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
+	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -168,5 +173,62 @@ func TestEvaluateExpirationExtension(t *testing.T) {
 				t.Errorf("Expiration = %v, want %v", got.Expiration, c.wantNewTime)
 			}
 		})
+	}
+}
+
+// Double-clicking the extender in the CASH tab is a client dead-end, not a
+// use: CDraggableItem::OnDoubleClicked (gms_v83 @0x4efd25) falls through
+// get_cashslot_item_type 61 into the get_consume_cash_item_type allow-list
+// (@0x4863d5) and reaches the send @0x4f05a6 with a hard-coded nEPOS of 0 --
+// it never hit-tests a target. The supported flow is the drag-drop one,
+// CDraggableItem::ModifyEquipItem (@0x4f4bb7).
+//
+// SendConsumeCashItemUseRequest is the sole caller of SetExclRequestSent
+// (@0xa0ea6f -> @0xa0ebbc), so the excl lock is already armed when the packet
+// arrives. This arm consumes and mutates nothing on rejection, so if it
+// returns silently the client is wedged for the rest of the session -- there
+// is no client-side timeout. It must announce the hint plus the
+// enable-actions unlock, and issue no saga.
+func TestExpirationExtenderEmptyTargetUnlocksAndConsumesNothing(t *testing.T) {
+	const characterId = uint32(4242)
+	const itemId = uint32(5500001)
+	const sourceSlot = int16(3)
+
+	// Resolve GetItemInSlot(EQUIP, 0) to a 404 so the arm takes its
+	// empty-slot branch, exactly as it does live for the nEPOS-0 request.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/api/")
+
+	restoreSlot := installCashItemInSlotSeam(t, sourceSlot, itemId)
+	defer restoreSlot()
+	captured, restoreProducer := installCapturingProducer()
+	defer restoreProducer()
+
+	s, ctx, cleanup := newCashItemUseTestSession(t, characterId)
+	defer cleanup()
+
+	raw := append(cashItemUsePrefix(sourceSlot, itemId),
+		0x00, 0x00, // nEPOS = 0, the double-click sentinel
+		0x00, 0x00, 0x00, 0x00, // trailing updateTime (GMS v83)
+	)
+	req := request.Request(raw)
+	reader := request.NewRequestReader(&req, 0)
+
+	rec := &gaugeProducerRecorder{}
+	CharacterCashItemUseHandleFunc(logrus.New(), ctx, rec.producer())(s, &reader, map[string]interface{}{})
+
+	for topic, msgs := range *captured {
+		if len(msgs) != 0 {
+			t.Errorf("emitted %d commands on %q, want 0 — nothing may be consumed", len(msgs), topic)
+		}
+	}
+	if rec.calls != 2 {
+		t.Fatalf("announced %d packets, want 2 (the hint and the enable-actions unlock)", rec.calls)
+	}
+	if rec.lastName != statpkt.StatChangedWriter {
+		t.Errorf("last announce = %q, want %q — the unlock must be the final packet", rec.lastName, statpkt.StatChangedWriter)
 	}
 }

@@ -3288,7 +3288,13 @@
   direction: serverbound
   opcode: 186
   fname: CUserLocal::RequestIncCombo
+  packet: character/serverbound/CharacterAranComboCounterRequest
   provenance: csv-import
+  note: 'task-217: v92 IDB names this function CUserLocal__RequestIncCombo_send_0xBA
+    (Task 12 rename @0x8ef840), not the canonical fname above, so report-gen
+    generates its audit report under that literal export key. packet: routes
+    grading straight to the marker+evidence byte-fixture (same pattern as
+    field/clientbound/SetItc et al.) instead of an FName-matched report lookup.'
 - op: MOB_CRC_KEY_CHANGED_REPLY
   direction: serverbound
   opcode: 187

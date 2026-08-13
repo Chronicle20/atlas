@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/character/combo"
 	consumer2 "atlas-channel/kafka/consumer"
 	mapconsumer "atlas-channel/kafka/consumer/map"
 	character2 "atlas-channel/kafka/message/character"
@@ -233,8 +234,23 @@ func handleStatusEventMapChanged(sc server.Model, wp writer.Producer) func(l log
 			return
 		}
 
+		// A map change ends the combat that built the combo; leaving the
+		// count alive would resurrect a counter in the new map (task-217
+		// design.md §3.4).
+		clearAranComboOnMapChange(ctx, event.CharacterId)
+
 		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(event.CharacterId, warpCharacter(l)(ctx)(wp)(event))
 	}
+}
+
+// clearAranComboOnMapChange drops any live Aran combo state for a character
+// that just changed maps. Extracted from handleStatusEventMapChanged so this
+// invariant is unit testable without exercising the consumer's event path
+// (which requires a server.Model -- unexported-fields, constructed only
+// inside the server package -- and a live session), mirroring
+// clearAranComboOnDestroy in session/processor.go.
+func clearAranComboOnMapChange(ctx context.Context, characterId uint32) {
+	combo.GetMirror().Clear(tenant.MustFromContext(ctx), characterId)
 }
 
 func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event character2.StatusEvent[character2.StatusEventMapChangedBody]) model.Operator[session.Model] {

@@ -44,6 +44,7 @@ const (
 	IncubatorUse          = sharedsaga.IncubatorUse
 	ExpirationExtenderUse = sharedsaga.ExpirationExtenderUse
 	PointReset            = sharedsaga.PointReset
+	MesoSackUse           = sharedsaga.MesoSackUse
 	MtsOperation          = sharedsaga.MtsOperation
 	NoteSend              = sharedsaga.NoteSend
 	SkillBookUse          = sharedsaga.SkillBookUse

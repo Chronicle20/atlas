@@ -78,6 +78,11 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			m.ProtectTime = uint32(i.GetIntegerWithDefault("protectTime", 0))
 			m.AddTime = uint32(i.GetIntegerWithDefault("addTime", 0))
 			m.MaxDays = uint32(i.GetIntegerWithDefault("maxDays", 0))
+			// 0520 meso sacks: the flat award amount. Absent node => 0, which the
+			// channel handler treats as "reject, consume nothing" (FR-1.2/FR-2.4).
+			// Deliberately NOT a Spec entry — Spec is the consumable effect map and
+			// this is an award amount.
+			m.Meso = uint32(i.GetIntegerWithDefault("meso", 0))
 			m.TradeBlock = i.GetBool("tradeBlock", false)
 			m.StateChangeItem = uint32(i.GetIntegerWithDefault("stateChangeItem", 0))
 			if i.GetIntegerWithDefault("isBgmOrEffect", 0) == 1 {
@@ -137,6 +142,15 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 				}
 				if time := s.GetIntegerWithDefault(string(SpecTypeTime), 0); time != 0 {
 					m.Spec[SpecTypeTime] = time
+				}
+
+				// Transformation coupons (0530.img): the Morph.wz creature id and the
+				// flat HP heal. Omit-when-zero, matching expR/drpR/time above.
+				if morph := s.GetIntegerWithDefault(string(SpecTypeMorph), 0); morph != 0 {
+					m.Spec[SpecTypeMorph] = morph
+				}
+				if hp := s.GetIntegerWithDefault(string(SpecTypeHp), 0); hp != 0 {
+					m.Spec[SpecTypeHp] = hp
 				}
 			}
 

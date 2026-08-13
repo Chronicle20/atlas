@@ -285,6 +285,14 @@ func (p *ProcessorImpl) RequestItemConsume(c channel.Model, characterId uint32, 
 		itemConsumer = ConsumePetSkillPouch(transactionId, characterId, slot, itemId, petId)
 	} else if item2.GetClassification(itemId) == item2.ClassificationConsumableMonsterCard {
 		itemConsumer = ConsumeMonsterCard(transactionId, characterId, slot, itemId, it)
+	} else if routesToMorphCoupon(itemId) {
+		// Transformation (morph) coupon, classification 530, CASH compartment.
+		// Must precede the reward-table fallback below: that fallback queries the
+		// *consumable* data resource, which has no cash items, so a 530 item would
+		// fall through to ConsumeBare and be destroyed with no effect applied.
+		// Deliberately NOT in usesStandardConsumer — ConsumeStandard hard-codes
+		// inventory2.TypeValueUse and fetches from the same consumable resource.
+		itemConsumer = ConsumeMorphCoupon(transactionId, characterId, slot, itemId)
 	} else if ci, derr := p.cdp.GetById(uint32(itemId)); derr == nil && validateRewardTable(ci.Rewards()) == nil {
 		// Reward-box (random reward) item arriving through the generic
 		// item-use request. This is the path taken on client versions that

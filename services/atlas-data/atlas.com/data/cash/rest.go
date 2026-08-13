@@ -22,7 +22,12 @@ const (
 	SpecTypeRate = SpecType("rate") // Rate multiplier from info node (e.g., 2 for 2x)
 	SpecTypeExpR = SpecType("expR") // EXP rate value from spec node
 	SpecTypeDrpR = SpecType("drpR") // Drop rate value from spec node
-	SpecTypeTime = SpecType("time") // Duration in minutes from spec node
+	SpecTypeTime = SpecType("time") // Duration from spec node; raw WZ units (0530 morph coupons: milliseconds)
+	// Transformation-coupon properties (0530.img): the Morph.wz creature id and
+	// the flat HP heal. Both are omit-when-zero in the reader, so downstream
+	// "absent or zero" collapses to a single `ok && val > 0` test.
+	SpecTypeMorph = SpecType("morph")
+	SpecTypeHp    = SpecType("hp")
 )
 
 var SpecTypeIndexes = []SpecType{SpecTypeIndexZero, SpecTypeIndexOne, SpecTypeIndexTwo, SpecTypeIndexThree, SpecTypeIndexFour, SpecTypeIndexFive, SpecTypeIndexSix, SpecTypeIndexSeven, SpecTypeIndexEight, SpecTypeIndexNine}
@@ -47,6 +52,7 @@ type RestModel struct {
 	// MaxDays is info/maxDays in DAYS — the ceiling, anchored to now, past
 	// which an extender may not push a target's expiration.
 	MaxDays         uint32             `json:"maxDays,omitempty"`
+	Meso            uint32             `json:"meso,omitempty"` // 0520 meso sacks: info/meso award amount
 	StateChangeItem uint32             `json:"stateChangeItem,omitempty"`
 	BgmPath         string             `json:"bgmPath,omitempty"`
 	Spec            map[SpecType]int32 `json:"spec"`

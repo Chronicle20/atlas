@@ -19,6 +19,9 @@ type RestModel struct {
 	// which an extender may not push a target's expiration. Mirrors
 	// atlas-data's cash resource.
 	MaxDays uint32 `json:"maxDays,omitempty"`
+	// Meso is the 0520 meso-sack award amount (atlas-data info/meso). Absent
+	// or 0 means "no payout" and the type-19 handler rejects the use.
+	Meso uint32 `json:"meso"`
 }
 
 func (r RestModel) GetName() string {

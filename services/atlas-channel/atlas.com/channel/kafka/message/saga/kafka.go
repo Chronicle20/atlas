@@ -16,6 +16,9 @@ const (
 	ErrorCodeInventoryFull  = "INVENTORY_FULL"
 	ErrorCodeStorageFull    = "STORAGE_FULL"
 	ErrorCodeUnknown        = "UNKNOWN"
+	// ErrorCodeMesoOverflow is atlas-character's StatusEventErrorTypeMesoOverflow,
+	// threaded onto the saga-failed event by the orchestrator's meso-error handler.
+	ErrorCodeMesoOverflow = "MESO_OVERFLOW"
 )
 
 // Saga type constants
@@ -25,6 +28,7 @@ const (
 	SagaTypePointReset       = "point_reset"
 	SagaTypeMtsOperation     = "mts_operation"
 	SagaTypeNoteSend         = "note_send"
+	SagaTypeMesoSackUse      = "meso_sack_use"
 )
 
 // MtsTakeHomeResultKind is the Results["kind"] marker the orchestrator sets on a

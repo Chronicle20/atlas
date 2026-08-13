@@ -51,6 +51,7 @@ type Processor interface {
 	ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error
 	UpdateOwner(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model, owner string) error
 	ApplyLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model, expiration time.Time) error
+	ExtendExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model, expiration time.Time) error
 	ClearLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model) error
 	DeleteAndEmit(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32) error
 	Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, opts CreateOptions) (Model, error)
@@ -334,6 +335,41 @@ func (p *ProcessorImpl) ApplyLock(mb *message.Buffer) func(transactionId uuid.UU
 			}
 			updated := Clone(a).AddFlag(af.FlagLock).SetExpiration(expiration).Build()
 			if err := updateFlagAndExpiration(p.db.WithContext(p.ctx), a.Id(), updated.Flag(), expiration); err != nil {
+				return err
+			}
+			return mb.Put(asset.EnvEventTopicStatus, UpdatedEventStatusProvider(transactionId, characterId, updated))
+		}
+	}
+}
+
+// ExtendExpiration sets the expiration on a genuinely time-limited asset in
+// place WITHOUT touching its flags, emitting the existing UPDATED status
+// event. It is the deliberate mirror of ApplyLock, never a reuse of it:
+// ApplyLock unconditionally adds FlagLock and rejects an unlocked asset
+// carrying a non-zero expiration, which is exactly the shape this method
+// exists to mutate.
+//
+// The expiration is absolute. A redelivered command carrying the value the
+// asset already holds skips the write but still emits UPDATED, so the saga
+// step completes rather than timing out — that, plus set-to-absolute, is what
+// keeps at-least-once delivery from stacking a second extension.
+func (p *ProcessorImpl) ExtendExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model, expiration time.Time) error {
+	return func(transactionId uuid.UUID, characterId uint32) func(a Model, expiration time.Time) error {
+		return func(a Model, expiration time.Time) error {
+			if a.Locked() {
+				return errors.New("asset expiration is a lock window, not a time limit")
+			}
+			if a.Expiration().IsZero() {
+				return errors.New("asset is permanent and has no expiration to extend")
+			}
+			if expiration.Before(a.Expiration()) {
+				return errors.New("expiration must not move backwards")
+			}
+			if expiration.Equal(a.Expiration()) {
+				return mb.Put(asset.EnvEventTopicStatus, UpdatedEventStatusProvider(transactionId, characterId, a))
+			}
+			updated := Clone(a).SetExpiration(expiration).Build()
+			if err := updateFlagAndExpiration(p.db.WithContext(p.ctx), a.Id(), a.Flag(), expiration); err != nil {
 				return err
 			}
 			return mb.Put(asset.EnvEventTopicStatus, UpdatedEventStatusProvider(transactionId, characterId, updated))

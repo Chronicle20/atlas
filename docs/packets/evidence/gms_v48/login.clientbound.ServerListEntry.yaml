@@ -1,0 +1,10 @@
+packet: login/clientbound/ServerListEntry
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnWorldInformation
+    address: "0x50120a"
+    decompile_sha256: b1401e3a5ddfc5fe790f9ec1b27806559332338c217aa3da833a7a48733c2a8d
+verifies:
+    - libs/atlas-packet/login/clientbound/server_list_entry_v48_test.go#TestServerListEntryBytesV48

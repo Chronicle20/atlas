@@ -4,103 +4,149 @@
   "minorVersion": 1,
   "usesPin": false,
   "socket": {
-    "handlers": [{
+    "handlers": [
+      {
         "opCode": "0x01",
         "validator": "NoOpValidator",
         "handler": "LoginHandle",
-        "services": ["login"]
+        "fname": "CLogin::SendCheckPasswordPacket",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x02",
         "validator": "LoggedInValidator",
         "handler": "CharacterListWorldHandle",
-        "services": ["login"]
+        "fname": "sub_4FFFC4",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x03",
         "validator": "LoggedInValidator",
         "handler": "WorldSelectHandle",
-        "services": ["login"]
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x05",
         "validator": "LoggedInValidator",
         "handler": "SetGenderHandle",
-        "services": ["login"]
+        "fname": "CLogin::SendSetGenderPacket",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x06",
         "validator": "LoggedInValidator",
         "handler": "AfterLoginHandle",
-        "services": ["login"]
+        "fname": "sub_503956",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x07",
         "validator": "LoggedInValidator",
         "handler": "RegisterPinHandle",
-        "services": ["login"]
+        "fname": "sub_503956",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x08",
         "validator": "LoggedInValidator",
         "handler": "ServerListRequestHandle",
-        "services": ["login"]
+        "fname": "sub_503956",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x09",
         "validator": "LoggedInValidator",
         "handler": "CharacterSelectedHandle",
-        "services": ["login"]
+        "fname": "sub_500174",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x0A",
         "validator": "NoOpValidator",
         "handler": "CharacterLoggedInHandle",
-        "services": ["channel"]
+        "fname": "CClientSocket::OnConnect",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x0B",
         "validator": "LoggedInValidator",
         "handler": "CharacterCheckNameHandle",
-        "services": ["login"]
+        "fname": "CLogin::SendCheckDuplicateIDPacket",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x0C",
         "validator": "LoggedInValidator",
         "handler": "CreateCharacterHandle",
-        "services": ["login"]
+        "fname": "CLogin::SendNewCharPacket",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x0D",
         "validator": "LoggedInValidator",
         "handler": "DeleteCharacterHandle",
-        "services": ["login"]
+        "fname": "CLogin::SendDeleteCharPacket",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x13",
         "validator": "LoggedInValidator",
         "handler": "MapChangeHandle",
-        "services": ["channel"]
+        "fname": "CField::SendTransferFieldRequest",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x14",
         "validator": "LoggedInValidator",
         "handler": "ChannelChangeHandle",
-        "services": ["channel"]
+        "fname": "sub_4C5886",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x15",
         "validator": "LoggedInValidator",
         "handler": "CashShopEntryHandle",
-        "services": ["channel"]
+        "fname": "sub_70BD0D",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x16",
         "validator": "LoggedInValidator",
         "handler": "CharacterMoveHandle",
-        "services": ["channel"],
+        "fname": "sub_6E9923",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -137,33 +183,46 @@
               "Type": "STAT_CHANGE"
             }
           ]
-        }
+        },
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x1D",
         "validator": "LoggedInValidator",
         "handler": "CharacterChatGeneralHandle",
-        "services": ["channel"]
+        "fname": "CField::SendChatMsg",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x25",
         "validator": "LoggedInValidator",
         "handler": "CharacterInventoryMoveHandle",
-        "services": ["channel"]
+        "fname": "sub_70D8DE",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x35",
         "validator": "LoggedInValidator",
         "handler": "CharacterInfoRequestHandle",
-        "services": ["channel"]
+        "fname": "CWvsContext::SendCharacterInfoRequest",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x58",
         "validator": "LoggedInValidator",
         "handler": "MonsterMovementHandle",
-        "services": ["channel"],
+        "fname": "sub_550383",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -200,15 +259,19 @@
               "Type": "STAT_CHANGE"
             }
           ]
-        }
+        },
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x5D",
         "validator": "LoggedInValidator",
         "handler": "NPCActionHandle",
-        "services": ["channel"],
+        "fname": "CNpc::GenerateMovePath",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -245,15 +308,19 @@
               "Type": "STAT_CHANGE"
             }
           ]
-        }
+        },
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0xAF",
         "validator": "LoggedInValidator",
         "handler": "SummonMoveHandle",
-        "services": ["channel"],
+        "fname": "sub_6E7CF8",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -290,40 +357,59 @@
               "Type": "STAT_CHANGE"
             }
           ]
-        }
+        },
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0xB0",
         "validator": "LoggedInValidator",
         "handler": "SummonAttackHandle",
-        "services": ["channel"]
+        "fname": "sub_5D9424",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0xB1",
         "validator": "LoggedInValidator",
         "handler": "SummonDamageHandle",
-        "services": ["channel"]
+        "fname": "sub_5DA381",
+        "services": [
+          "channel"
+        ]
       }
     ],
-    "writers": [{
+    "writers": [
+      {
         "opCode": "0x01",
         "writer": "AuthSuccess",
-        "services": ["login"]
+        "fname": "sub_500931",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x01",
         "writer": "AuthTemporaryBan",
-        "services": ["login"]
+        "fname": "sub_500931",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x01",
         "writer": "AuthPermanentBan",
-        "services": ["login"]
+        "fname": "sub_500931",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x01",
         "writer": "AuthLoginFailed",
-        "services": ["login"],
+        "fname": "sub_500931",
         "options": {
           "failedReasonCodes": {
             "BANNED": 2,
@@ -346,29 +432,37 @@
             "MAPLE_EUROPE_NOTICE": 25,
             "FULL_CLIENT_NOTICE": 27
           }
-        }
+        },
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x02",
         "writer": "ServerLoad",
-        "services": ["login"],
         "options": {
           "codes": {
             "OK": 0,
             "HIGH_POPULATION": 1,
             "OVER_POPULATED": 2
           }
-        }
+        },
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x03",
         "writer": "SetAccountResult",
-        "services": ["login"]
+        "fname": "sub_5037D5",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x06",
         "writer": "PinOperation",
-        "services": ["login"],
+        "fname": "sub_503956",
         "options": {
           "modes": {
             "OK": 0,
@@ -378,38 +472,53 @@
             "ENTER_PIN": 4,
             "ALREADY_LOGGED_IN": 7
           }
-        }
+        },
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x07",
         "writer": "PinUpdate",
-        "services": ["login"],
+        "fname": "sub_503C92",
         "options": {
           "modes": {
             "OK": 0,
             "ERROR": 1
           }
-        }
+        },
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x08",
         "writer": "ServerListEntry",
-        "services": ["login"]
+        "fname": "sub_50120A",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x08",
         "writer": "ServerListEnd",
-        "services": ["login"]
+        "fname": "sub_50120A",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x09",
         "writer": "CharacterList",
-        "services": ["login"]
+        "fname": "sub_5013ED",
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x0A",
         "writer": "ServerIP",
-        "services": ["login"],
+        "fname": "sub_502B70",
         "options": {
           "codes": {
             "OK": 0,
@@ -435,12 +544,15 @@
             "THIRTY_DAY_UNVERIFIED": 25,
             "PC_ROOM_PREMIUM": 27
           }
-        }
+        },
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x0B",
         "writer": "CharacterNameResponse",
-        "services": ["login"],
+        "fname": "CLogin::OnCheckDuplicatedIDResult",
         "options": {
           "codes": {
             "OK": 0,
@@ -448,12 +560,15 @@
             "NOT_ALLOWED": 2,
             "SYSTEM_ERROR": 3
           }
-        }
+        },
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x0C",
         "writer": "AddCharacterEntry",
-        "services": ["login"],
+        "fname": "CLogin::OnCreateNewCharacterResult",
         "options": {
           "codes": {
             "OK": 0,
@@ -462,12 +577,15 @@
             "CANNOT_USE_NAME": 30,
             "UNKNOWN_ERROR": 99
           }
-        }
+        },
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x0D",
         "writer": "DeleteCharacterResponse",
-        "services": ["login"],
+        "fname": "CLogin::OnDeleteCharacterResult",
         "options": {
           "codes": {
             "OK": 0,
@@ -480,59 +598,90 @@
             "CANNOT_DELETE_WHEN_ENGAGED": 24,
             "CANNOT_DELETE_WITH_FAMILY": 29
           }
-        }
+        },
+        "services": [
+          "login"
+        ]
       },
       {
         "opCode": "0x0E",
         "writer": "ChannelChange",
-        "services": ["channel"]
+        "fname": "CClientSocket::OnMigrateCommand",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x14",
         "writer": "CharacterInventoryChange",
-        "services": ["channel"]
+        "fname": "CWvsContext::OnInventoryOperation",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x16",
         "writer": "StatChanged",
-        "services": ["channel"]
+        "fname": "CWvsContext::OnStatChanged",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x22",
         "writer": "CharacterInfo",
-        "services": ["channel"]
+        "fname": "CWvsContext::OnCharacterInfo",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x29",
         "writer": "SetField",
-        "services": ["channel"]
+        "fname": "CStage::OnSetField",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x2A",
         "writer": "CashShopOpen",
-        "services": ["channel"]
+        "fname": "CStage::OnSetCashShop",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x3F",
         "writer": "CharacterSpawn",
-        "services": ["channel"]
+        "fname": "sub_6B277B",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x40",
         "writer": "CharacterDespawn",
-        "services": ["channel"]
+        "fname": "CUserPool::OnUserLeaveField",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x41",
         "writer": "CharacterChatGeneral",
-        "services": ["channel"]
+        "fname": "CUser::OnChat",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x55",
         "writer": "CharacterMovement",
-        "services": ["channel"],
+        "fname": "CUserRemote::OnMove",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -569,34 +718,50 @@
               "Type": "STAT_CHANGE"
             }
           ]
-        }
+        },
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x5D",
         "writer": "CharacterAppearanceUpdate",
-        "services": ["channel"]
+        "fname": "CUserRemote::OnAvatarModified",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x6D",
         "writer": "SpawnMonster",
-        "services": ["channel"]
+        "fname": "CMobPool::OnMobEnterField",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x6E",
         "writer": "DestroyMonster",
-        "services": ["channel"]
+        "fname": "CMobPool::OnMobLeaveField",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x6F",
         "writer": "ControlMonster",
-        "services": ["channel"]
+        "fname": "CMobPool::OnMobChangeController",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x71",
         "writer": "MoveMonster",
-        "services": ["channel"],
+        "fname": "CMob::OnMove",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -633,35 +798,48 @@
               "Type": "STAT_CHANGE"
             }
           ]
-        }
+        },
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x72",
         "writer": "MoveMonsterAck",
-        "services": ["channel"]
+        "fname": "CMob::OnCtrlAck",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x7E",
         "writer": "SpawnNPC",
-        "services": ["channel"]
+        "fname": "CNpcPool::OnNpcEnterField",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x80",
         "writer": "SpawnNPCRequestController",
-        "services": ["channel"],
+        "fname": "CNpcPool::OnNpcChangeController",
         "options": {
           "operations": {
             "GRANT": 1,
             "REVOKE": 0
           }
-        }
+        },
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0x82",
         "writer": "NPCAction",
-        "services": ["channel"],
+        "fname": "CNpc::OnMove",
         "options": {
-          "types": [{
+          "types": [
+            {
               "Name": "NORMAL",
               "Type": "NORMAL"
             },
@@ -698,83 +876,202 @@
               "Type": "STAT_CHANGE"
             }
           ]
-        }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x8F",
+        "writer": "AffectedAreaCreated",
+        "fname": "CAffectedAreaPool::OnAffectedAreaCreated",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x90",
+        "writer": "AffectedAreaRemoved",
+        "fname": "CAffectedAreaPool::OnAffectedAreaRemoved",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0xAF",
         "writer": "SummonSpawn",
-        "services": ["channel"]
+        "fname": "CSummonedPool::OnCreated",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0xB0",
         "writer": "SummonRemove",
-        "services": ["channel"]
+        "fname": "CSummonedPool::OnRemoved",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0xB1",
         "writer": "SummonMove",
-        "services": ["channel"]
+        "fname": "CSummonedPool::OnMove",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0xB2",
         "writer": "SummonAttack",
-        "services": ["channel"]
+        "fname": "CSummonedPool::OnAttack",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0xB3",
         "writer": "SummonSkill",
-        "services": ["channel"]
+        "fname": "CSummonedPool::OnSkill",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0xB4",
         "writer": "SummonDamage",
-        "services": ["channel"]
+        "fname": "CSummonedPool::OnHit",
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0xBD",
         "writer": "CashShopCashQueryResult",
-        "services": ["channel"]
+        "services": [
+          "channel"
+        ]
       },
       {
         "opCode": "0xBE",
         "writer": "CashShopOperation",
-        "services": ["channel"]
+        "fname": "CCashShop::OnCashItemResult",
+        "services": [
+          "channel"
+        ]
       }
     ]
   },
   "characters": {
-    "templates": [{
-      "jobIndex": 1,
-      "subJobIndex": 0,
-      "mapId": 10000,
-      "gender": 0,
-      "faces": [20000, 20001, 20002],
-      "hairs": [30030, 30020, 30000],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1040002, 1040006, 1040010],
-      "bottoms": [1060002, 1060006],
-      "shoes": [1072001, 1072005, 1072037, 1072038],
-      "weapons": [1302000, 1322005, 1312004],
-      "items": [4161001]
-    }, {
-      "jobIndex": 1,
-      "subJobIndex": 0,
-      "mapId": 10000,
-      "gender": 1,
-      "faces": [21000, 21001, 21002],
-      "hairs": [31000, 31040, 31050],
-      "hairColors": [0, 2, 3, 7],
-      "skinColors": [0, 1, 2, 3],
-      "tops": [1041002, 1041006, 1041010, 1041011],
-      "bottoms": [1061002, 1061008],
-      "shoes": [1072001, 1072005, 1072037, 1072038],
-      "weapons": [1302000, 1322005, 1312004],
-      "items": [4161001]
-    }],
+    "templates": [
+      {
+        "jobIndex": 1,
+        "subJobIndex": 0,
+        "mapId": 10000,
+        "gender": 0,
+        "faces": [
+          20000,
+          20001,
+          20002
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1040002,
+          1040006,
+          1040010
+        ],
+        "bottoms": [
+          1060002,
+          1060006
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161001
+        ]
+      },
+      {
+        "jobIndex": 1,
+        "subJobIndex": 0,
+        "mapId": 10000,
+        "gender": 1,
+        "faces": [
+          21000,
+          21001,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1041002,
+          1041006,
+          1041010,
+          1041011
+        ],
+        "bottoms": [
+          1061002,
+          1061008
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161001
+        ]
+      }
+    ],
     "presets": []
   },
-  "worlds": [{
+  "worlds": [
+    {
       "name": "Scania",
       "flag": "Nothing",
       "serverMessage": "Welcome to Scania!",
@@ -811,10 +1108,30 @@
   "cashShop": {
     "commodities": {
       "hourlyExpirations": [
-        {"templateId": 5211060, "hours": 2},
-        {"templateId": 5211048, "hours": 4},
-        {"templateId": 5360042, "hours": 4}
+        {
+          "templateId": 5211060,
+          "hours": 2
+        },
+        {
+          "templateId": 5211048,
+          "hours": 4
+        },
+        {
+          "templateId": 5360042,
+          "hours": 4
+        }
       ]
+    },
+    "surprise": {
+      "boxTemplateIds": [
+        5222000
+      ]
+    },
+    "coupons": {
+      "rateLimit": {
+        "attempts": 10,
+        "windowSeconds": 3600
+      }
     }
   }
 }

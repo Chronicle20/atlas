@@ -302,7 +302,7 @@ func (p *ProcessorImpl) create(mb *message.Buffer, txId uuid.UUID, f field.Model
 	if err != nil {
 		return err
 	}
-	if fieldLimit&0x80 != 0 {
+	if _map.NoMiniRoom(fieldLimit) {
 		return mb.Put(minigame.EnvEventTopicStatus, createErrorProvider(txId, f, characterId, errCannotStartGameHere))
 	}
 

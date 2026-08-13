@@ -29,6 +29,7 @@ Paginated array of Gachapon resources.
 | CommonWeight | uint32 | commonWeight |
 | UncommonWeight | uint32 | uncommonWeight |
 | RareWeight | uint32 | rareWeight |
+| Kind | string | kind — one of `gachapon` (default), `incubator`, `cash-surprise` |
 
 Resource type: `gachapons`
 
@@ -93,6 +94,7 @@ JSON:API Gachapon resource.
 | CommonWeight | uint32 | commonWeight | yes |
 | UncommonWeight | uint32 | uncommonWeight | yes |
 | RareWeight | uint32 | rareWeight | yes |
+| Kind | string | kind | no — defaults to `gachapon` |
 
 Resource type: `gachapons`
 
@@ -203,6 +205,8 @@ Paginated array of GachaponItem resources.
 | ItemId | uint32 | itemId |
 | Quantity | uint32 | quantity |
 | Tier | string | tier |
+| Weight | uint32 | weight |
+| CommodityId | uint32 | commodityId |
 
 Resource type: `gachapon-items`
 
@@ -235,6 +239,8 @@ JSON:API GachaponItem resource.
 | ItemId | uint32 | itemId | yes |
 | Quantity | uint32 | quantity | yes |
 | Tier | string | tier | yes |
+| Weight | uint32 | weight | no |
+| CommodityId | uint32 | commodityId | required for a `cash-surprise`-kind parent pool; otherwise no |
 
 Resource type: `gachapon-items`
 
@@ -384,7 +390,13 @@ None.
 
 ### POST /gachapons/{gachaponId}/rewards/select
 
-Selects a random reward from a gachapon using weighted tier selection.
+Selects a random reward from a gachapon. `gachapon`-kind pools (the default)
+use weighted tier selection, merging the shared global pool for the tier
+rolled. `incubator`/`cash-surprise`-kind pools roll the whole pool
+flat-weighted by `item.Weight` instead, never merging the global pool. For a
+`cash-surprise`-kind pool, `gachaponId` is the cash shop box **template id**
+(e.g. `5222000`), exactly as an `incubator` pool's `gachaponId` is the egg
+item id.
 
 #### Parameters
 
@@ -406,7 +418,9 @@ Single GachaponReward resource.
 | ItemId | uint32 | itemId |
 | Quantity | uint32 | quantity |
 | Tier | string | tier |
+| Weight | uint32 | weight |
 | GachaponId | string | gachaponId |
+| CommodityId | uint32 | commodityId |
 
 Resource type: `gachapon-rewards`
 
@@ -416,7 +430,9 @@ Resource type: `gachapon-rewards`
 |--------|-----------|
 | 200 OK | Reward selected |
 | 400 Bad Request | Invalid gachaponId |
-| 500 Internal Server Error | Gachapon not found, empty pool, or selection error |
+| 404 Not Found | No pool matches gachaponId |
+| 409 Conflict | Pool exists but has no eligible entries (`reward.ErrEmptyPool`) |
+| 500 Internal Server Error | Database or transformation error |
 
 ---
 

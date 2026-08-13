@@ -3,6 +3,122 @@
   "md5": "2e692f3ab5078e04138d264f8ea1e668",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CUserLocal::RequestIncCombo": {
+      "address": "0x9e37bc",
+      "direction": "serverbound",
+      "calls": null
+    },
+    "CUserLocal::OnIncComboResponse": {
+      "address": "0x9e3794",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "count (CUserLocal::OnIncComboResponse: Decode4 store to the m_nCombo mirror, then get_update_time() timestamp, then DrawCombo(this); task-217, design.md \u00a72.2)"
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnPutItem": {
+      "address": "0x81566e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (15 TRADE_PUT_ITEM; CTradingRoomDlg::OnPacket @0x815624 dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "side (recipient-relative room side; indexes this[side + N] item grid)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "tradeSlot (1..9 within that side's grid)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "asset (GW_ItemSlotBase::Decode; model.Asset substruct)"
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnPutMoney": {
+      "address": "0x815745",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (16 TRADE_ADD_MESO; CTradingRoomDlg::OnPacket @0x815624 dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "side (recipient-relative room side)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "amount (ASSIGNED: this[side + N] = Decode4(), not accumulated)"
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnTrade#TradeConfirm": {
+      "address": "0x815773",
+      "direction": "clientbound",
+      "note": "Clientbound receive arm of CTradingRoomDlg::OnTrade. Same function as the serverbound TRANSACTION sender (interaction/serverbound/InteractionOperationTransaction), which is keyed on the un-suffixed CTradingRoomDlg::OnTrade; the #TradeConfirm suffix separates the two wire shapes (this arm is bodyless; the send carries count + {itemId, crc} pairs).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (17 TRADE_CONFIRM; CTradingRoomDlg::OnPacket @0x815624 dispatch byte). The arm reads NO body."
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnMesoLimitRefused": {
+      "address": "0x815877",
+      "direction": "clientbound",
+      "note": "This version's IDB spells the arm CTradingRoomDlg::OnExceedLimit; the v83 MSVC symbol CTradingRoomDlg::OnMesoLimitRefused is held as the stable export key across versions. Same arm, same (bodyless) shape.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (21 TRADE_MESO_LIMIT; CTradingRoomDlg::OnPacket @0x815624 dispatch byte). The arm reads NO body."
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnTrade": {
+      "address": "0x815773",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "count (number of crc entries)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "data/itemId (per-entry first)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "crc (per-entry second)"
+        }
+      ]
+    },
+    "CCashShop::OnStatusCoupon": {
+      "address": "0x47b9d4",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*(this + 7) && sub_47BB2C(&v16) == 1 && v4"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*(this + 7) && sub_47BB2C(&v16) == 1 && v4"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*(this + 7) && sub_47BB2C(&v16) == 1 && v4 && v15"
+        }
+      ]
+    },
     "CUser::OnMiniRoomBalloon#Remove": {
       "address": "0x9b337d",
       "direction": "clientbound",
@@ -2568,6 +2684,28 @@
         {
           "op": "Decode2",
           "comment": "tDelay"
+        }
+      ]
+    },
+    "CUserRemote::OnShowUpgradeTombEffect": {
+      "address": "0xa098f2",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (read by CUserPool dispatcher before OnShowUpgradeTombEffect, case 0xD0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "x"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y"
         }
       ]
     },
@@ -9106,6 +9244,24 @@
       "direction": "",
       "calls": null
     },
+    "CUserLocal::RequestUpgradeTombEffect": {
+      "address": "0x9dd673",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "itemId — hard-coded 5510000 (0x541370)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "x"
+        },
+        {
+          "op": "Encode4",
+          "comment": "y"
+        }
+      ]
+    },
     "CUserLocal::SendBanMapByMobRequest": {
       "address": "0x9df571",
       "direction": "",
@@ -15343,10 +15499,181 @@
         }
       ]
     },
+    "CWvsContext::OnClaimResult": {
+      "address": "0xabf4fe",
+      "direction": "clientbound",
+      "notes": "already named in the shipped v87 IDB; byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table (0xa9d011), case 0x2D call-site @0xa9d172. Decode1(mode) @0xabf513 is the only unconditional read; mode==2 is the sole value that reads further (hasRemaining, remaining). Every other reachable mode (3, 0x41-0x45, 0x47, 0x48) renders a StringPool notice from the mode byte alone; unlisted modes (0, 1, 0x46, ...) fall through to an early return. Opcode 0x2D confirmed identical to v83/v84 -- the STATUS.md pre-filled v87 column value of 0x02E was stale/wrong. Byte-identical to the v72/v79/v83/v84 twins.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte @0xabf513"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasRemaining (v8) @0xabf592, mode==2 only",
+          "guard": "mode == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "remaining int32 @0xabf59c, mode==2 only",
+          "guard": "mode == 2"
+        }
+      ]
+    },
+    "CWvsContext::OnSetClaimSvrAvailableTime": {
+      "address": "0xabf7a5",
+      "direction": "clientbound",
+      "notes": "already named in the shipped v87 IDB; byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table (0xa9d011), case 0x2E call-site @0xa9d17f. Two unconditional Decode1 reads, no branches. Opcode 0x2E confirmed identical to v83/v84 -- the STATUS.md pre-filled v87 column value of 0x02F was stale/wrong. Byte-identical to the v72/v79/v83/v84 twins.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "openHour @0xabf7b6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "closeHour @0xabf7b8"
+        }
+      ]
+    },
+    "CWvsContext::OnClaimSvrStatusChanged": {
+      "address": "0xabf7ce",
+      "direction": "clientbound",
+      "notes": "already named in the shipped v87 IDB; byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table (0xa9d011), case 0x2F call-site @0xa9d18c. Single Decode1 != 0 read, no branches. Opcode 0x2F confirmed identical to v83/v84 -- the STATUS.md pre-filled v87 column value of 0x030 was stale/wrong. Byte-identical to the v72/v79/v83/v84 twins.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "connected != 0 @0xabf7e0"
+        }
+      ]
+    },
+    "CWvsContext::OnSueCharacterResult": {
+      "address": "0xac13af",
+      "direction": "clientbound",
+      "notes": "already named in the shipped v87 IDB; byte-verified 2026-08-05 (task-145 Task 24) via CWvsContext::OnPacket's opcode dispatch table (0xa9d011), case 0x37 call-site @0xa9d165. Decode1(result) @0xac13c0 is the only read; a five-way branch (0/1/2/3/else) purely picks a StringPool notice id for a CHATLOG_ADD render, no further packet reads. Opcode 0x37 confirmed identical to v83/v84 -- the STATUS.md pre-filled v87 column value of 0x038 was stale/wrong. Byte-identical to the v61/v72/v79/v83/v84 twins.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "result byte @0xac13c0"
+        }
+      ]
+    },
+    "CWvsContext::SendClaimRequest": {
+      "address": "0xabee09",
+      "direction": "serverbound",
+      "notes": "already named in the shipped v87 IDB (size 0x6bf, matching the v83/v84 twins); byte-verified 2026-08-05 (task-145 Task 24) via a direct decompile of 0xabee09. COutPacket::COutPacket(&a3, 0x6D) at 0xabf29e matches the registry opcode (109/0x6D) and matches STATUS.md's pre-filled v87 column value of 0x06D (this serverbound opcode was NOT stale, unlike the four clientbound siblings above). Encode order identical to the v72/v79/v83/v84/v95 twins.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "bChatClaim (a2[0]; also gates the trailing chatLog string below) @0xabf2ad"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "targetName @0xabf2c6"
+        },
+        {
+          "op": "Encode1",
+          "comment": "reasonType (v53[0]) @0xabf2d1"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "description @0xabf2ea"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "chatLog (only when bChatClaim) @0xabf362",
+          "guard": "a2[0]"
+        }
+      ]
+    },
     "CWvsContext::CheckTemporaryStatDuration": {
       "address": "0xab7fd7",
       "direction": "serverbound",
       "calls": []
+    },
+    "CCashShop::OnCashItemGachaponResult": {
+      "address": "0x487f5a",
+      "direction": "clientbound",
+      "note": "CASHSHOP_CASH_ITEM_GACHAPON_RESULT (task-207). mode(Decode1) unconditional. SUCCESS (mode=244): sn:DecodeBuffer(8, LARGE_INTEGER int64, matched against m_aCashItemInfo[i].liSN) + remain:Decode4 (int32 new quantity) + newItem:DecodeBuffer(0x37=55, GW_CashItemInfo, UNCONDITIONAL) + delegate to CUICashItemGachapon::OnCashItemGachaponResult for itemId/count/jackpot. FAILED (mode=243): no further reads, StringPool notice only.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "sn: 8 bytes LARGE_INTEGER (int64)",
+          "guard": "mode == 244"
+        },
+        {
+          "op": "Decode4",
+          "comment": "remain (int32, new box quantity)",
+          "guard": "mode == 244"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "newItem: 55 bytes GW_CashItemInfo blob, unconditional within SUCCESS arm",
+          "guard": "mode == 244"
+        },
+        {
+          "op": "Delegate",
+          "comment": "trailing itemId/count/jackpot read by the UI class, not CCashShop",
+          "guard": "mode == 244",
+          "ref": "CUICashItemGachapon::OnCashItemGachaponResult"
+        }
+      ]
+    },
+    "CUICashItemGachapon::OnCashItemGachaponResult": {
+      "address": "0xa216e1",
+      "direction": "clientbound",
+      "note": "CUICashItemGachapon::OnCashItemGachaponResult (task-207) \u2014 reads the trailing itemId/count/jackpot fields of CASHSHOP_CASH_ITEM_GACHAPON_RESULT's SUCCESS arm, delegated to by CCashShop::OnCashItemGachaponResult.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId (int32, rewarded template id)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count (byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "jackpot (byte, selects CashGachaponJackpot vs CashGachaponNormal sfx)"
+        }
+      ]
+    },
+    "CUICashItemGachapon::OnButtonClicked": {
+      "address": "0xa215f6",
+      "direction": "serverbound",
+      "note": "CUICashItemGachapon::OnButtonClicked (task-207) \u2014 nId==2000 (Open button): COutPacket(<op>) + EncodeBuffer(&m_liItemSN, 8), no other fields.",
+      "calls": [
+        {
+          "op": "EncodeBuffer",
+          "comment": "cashId: 8 bytes LARGE_INTEGER (int64), the cash serial (m_liItemSN)"
+        }
+      ]
+    },
+    "CWvsContext::SendBridleItemUseRequest": {
+      "address": "0xa9f48b",
+      "direction": "serverbound",
+      "note": "USE_CATCH_ITEM (task-212). CWvsContext::SendBridleItemUseRequest: update_time(Encode4), nPOS(Encode2), nItemID(Encode4), then the FindHitMobInRect-derived hit-mob object id (Encode4). Body is byte-identical to gms_v48/v61/v72/v79/v95's already-pinned layout; resolved via idb_open/func_query/decompile (idb_list session, matched by binary name) since the mangled symbol was already present (v83/v87/v92/jms_185) or renamed live to it (v84).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hit-mob object id (FindHitMobInRect)"
+        }
+      ]
     }
   }
 }

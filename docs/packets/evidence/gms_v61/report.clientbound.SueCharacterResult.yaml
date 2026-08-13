@@ -1,0 +1,10 @@
+packet: report/clientbound/SueCharacterResult
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnSueCharacterResult
+    address: "0x84a04e"
+    decompile_sha256: 73adb5d40325d6e39db9c283d8692854bdc7f0033e460178dc4a4bcf5c9ec937
+verifies:
+    - libs/atlas-packet/report/clientbound/sue_character_result_test.go#TestSueCharacterResultByteOutputV61

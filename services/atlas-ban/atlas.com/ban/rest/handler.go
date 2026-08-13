@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -122,5 +123,20 @@ func ParseAccountId(l logrus.FieldLogger, next AccountIdHandler) http.HandlerFun
 			return
 		}
 		next(uint32(value))(w, r)
+	}
+}
+
+type ReportIdHandler func(id uuid.UUID) http.HandlerFunc
+
+func ParseReportId(l logrus.FieldLogger, next ReportIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		id, err := uuid.Parse(vars["reportId"])
+		if err != nil {
+			l.WithError(err).Errorln("Error parsing reportId as uuid")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(id)(w, r)
 	}
 }

@@ -97,3 +97,17 @@ If `template-movement-types-guard.sh` fails, fix the reported handler's
 `options.types` array in the reported template — either add the missing
 table, correct the typo'd `Type`, or make it byte-identical to the other move
 handlers' tables in that same template.
+
+## Character presets must carry ids
+
+Every entry in a seed template's `characters.presets` array must have a
+non-empty `id`. The preset validator assigns a UUID only to presets that lack
+one (`templates/characters/preset/validator.go`), and it runs on the PATCH
+path - so an id-less preset in a seed file means the stored row diverges from
+the file the moment the template is edited through the UI, and the "Differs
+from image" badge (task-201) lights up for a reason unrelated to what the
+operator changed.
+
+Not machine-checked: the consequence is a spuriously-lit badge on one
+template, not a gameplay failure. As of task-201, all eleven shipped templates
+satisfy it - six carry presets, all with ids; five carry none.

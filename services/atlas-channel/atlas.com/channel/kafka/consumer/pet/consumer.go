@@ -89,6 +89,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleFlagChanged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -111,7 +116,7 @@ func handleSpawned(sc server.Model, wp writer.Producer) message.Handler[pet2.Sta
 			return
 		}
 
-		p := pet.NewModelBuilder(e.PetId, 0, e.Body.TemplateId, e.Body.Name).
+		p := pet.NewModelBuilder(e.PetId, e.Body.CashId, e.Body.TemplateId, e.Body.Name).
 			SetOwnerID(e.OwnerId).
 			SetSlot(e.Body.Slot).
 			SetLevel(e.Body.Level).
@@ -135,11 +140,11 @@ func announceSpawn(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, s.CharacterId())
 					}
-					err = session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))(s)
+					err = session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), p.SerialNumber(), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet spawned to character.")
 					}
-					err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh()))))
+					err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), p.SerialNumber(), p.X(), p.Y(), p.Stance(), uint16(p.Fh()))))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet spawned to other characters.")
 					}
@@ -295,8 +300,12 @@ func handleFullnessChanged(sc server.Model, wp writer.Producer) message.Handler[
 			}
 
 			return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), func(os session.Model) error {
+				// Amount is signed and relative: positive means the pet GAINED
+				// fullness (it was fed), negative means hunger decay. Only a
+				// gain gets the eat-reaction packet — atlas-pets owns that sign
+				// convention (pet.EvaluateHunger / pet.AwardFullness).
 				if e.Body.Amount > 0 {
-					err := session.Announce(l)(ctx)(wp)(petpkt.PetCommandResponseWriter)(petpkt.NewPetFoodResponse(p.OwnerId(), p.Slot(), 0, true, false).Encode)(os)
+					err := session.Announce(l)(ctx)(wp)(petpkt.PetCommandResponseWriter)(petpkt.NewPetFoodResponse(p.OwnerId(), p.Slot(), true, false).Encode)(os)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to issue pet [%d] response to food.", p.Id())
 					}
@@ -437,7 +446,24 @@ func handleExcludeChanged(sc server.Model, wp writer.Producer) message.Handler[p
 			for i, e := range p.Excludes() {
 				excludeIds[i] = e.ItemId()
 			}
-			return session.Announce(l)(ctx)(wp)(petpkt.PetExcludeResponseWriter)(petpkt.NewPetExcludeResponse(p.OwnerId(), p.Slot(), uint64(p.Id()), excludeIds).Encode)(s)
+			return session.Announce(l)(ctx)(wp)(petpkt.PetExcludeResponseWriter)(petpkt.NewPetExcludeResponse(p.OwnerId(), p.Slot(), p.SerialNumber(), excludeIds).Encode)(s)
 		})
+	}
+}
+
+func handleFlagChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.FlagChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.FlagChangedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeFlagChanged {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		// Re-announce the pet's cash asset so the client's GW_ItemSlotPet
+		// usPetSkill short refreshes — there is no dedicated skill packet.
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.OwnerId, announcePetStatUpdate(l)(ctx)(wp)(e.PetId, e.OwnerId))
 	}
 }

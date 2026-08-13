@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldKiteError
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CMessageBoxPool::OnCreateFailed
+    address: "0x5432ce"
+    decompile_sha256: 79d9f289c25360aa37a1194fe3194b9c4fc9ad26cdca65b40d4fcef1b6ad5187
+verifies:
+    - libs/atlas-packet/field/clientbound/kite_v48_test.go#TestKiteErrorBytesV48

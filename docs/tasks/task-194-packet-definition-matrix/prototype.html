@@ -1,0 +1,699 @@
+<title>Packet Matrix — Design</title>
+
+<style>
+  :root {
+    --bg: hsl(218 27% 94%); --surface: hsl(0 0% 100%); --surface-2: hsl(220 14.3% 95.9%);
+    --fg: hsl(220 16% 22%); --fg-muted: hsl(220 8.9% 46.1%);
+    --border: hsl(219 28% 88%); --border-strong: hsl(219 20% 78%);
+    --accent: hsl(38 78% 42%); --accent-bg: hsl(43 74% 92%);
+    --st-defined-fg: hsl(142 60% 26%); --st-defined-bg: hsl(142 45% 87%);
+    --st-unsup-fg: hsl(220 9% 52%);    --st-unsup-bg: hsl(220 14% 91%);
+    --st-mod-fg: hsl(28 82% 34%);      --st-mod-bg: hsl(38 90% 88%);
+    --st-only-fg: hsl(258 55% 44%);    --st-only-bg: hsl(258 70% 93%);
+    --st-miss-fg: hsl(0 62% 42%);      --st-miss-bg: hsl(0 70% 94%);
+    --radius: 6px;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: hsl(220 16% 18%); --surface: hsl(220 16% 22%); --surface-2: hsl(215 27.9% 16.9%);
+      --fg: hsl(210 20% 98%); --fg-muted: hsl(217.9 10.6% 64.9%);
+      --border: hsl(215 20% 30%); --border-strong: hsl(215 18% 38%);
+      --accent: hsl(43 74% 62%); --accent-bg: hsl(43 40% 18%);
+      --st-defined-fg: hsl(140 55% 76%); --st-defined-bg: hsl(142 32% 24%);
+      --st-unsup-fg: hsl(217 10% 55%);   --st-unsup-bg: hsl(215 18% 22%);
+      --st-mod-fg: hsl(40 90% 72%);      --st-mod-bg: hsl(35 40% 24%);
+      --st-only-fg: hsl(258 80% 82%);    --st-only-bg: hsl(258 30% 28%);
+      --st-miss-fg: hsl(0 75% 76%);      --st-miss-bg: hsl(0 32% 27%);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: hsl(218 27% 94%); --surface: hsl(0 0% 100%); --surface-2: hsl(220 14.3% 95.9%);
+    --fg: hsl(220 16% 22%); --fg-muted: hsl(220 8.9% 46.1%);
+    --border: hsl(219 28% 88%); --border-strong: hsl(219 20% 78%);
+    --accent: hsl(38 78% 42%); --accent-bg: hsl(43 74% 92%);
+    --st-defined-fg: hsl(142 60% 26%); --st-defined-bg: hsl(142 45% 87%);
+    --st-unsup-fg: hsl(220 9% 52%);    --st-unsup-bg: hsl(220 14% 91%);
+    --st-mod-fg: hsl(28 82% 34%);      --st-mod-bg: hsl(38 90% 88%);
+    --st-only-fg: hsl(258 55% 44%);    --st-only-bg: hsl(258 70% 93%);
+    --st-miss-fg: hsl(0 62% 42%);      --st-miss-bg: hsl(0 70% 94%);
+  }
+  :root[data-theme="dark"] {
+    --bg: hsl(220 16% 18%); --surface: hsl(220 16% 22%); --surface-2: hsl(215 27.9% 16.9%);
+    --fg: hsl(210 20% 98%); --fg-muted: hsl(217.9 10.6% 64.9%);
+    --border: hsl(215 20% 30%); --border-strong: hsl(215 18% 38%);
+    --accent: hsl(43 74% 62%); --accent-bg: hsl(43 40% 18%);
+    --st-defined-fg: hsl(140 55% 76%); --st-defined-bg: hsl(142 32% 24%);
+    --st-unsup-fg: hsl(217 10% 55%);   --st-unsup-bg: hsl(215 18% 22%);
+    --st-mod-fg: hsl(40 90% 72%);      --st-mod-bg: hsl(35 40% 24%);
+    --st-only-fg: hsl(258 80% 82%);    --st-only-bg: hsl(258 30% 28%);
+    --st-miss-fg: hsl(0 75% 76%);      --st-miss-bg: hsl(0 32% 27%);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  .page { max-width: 1400px; margin: 0 auto; padding: 48px 24px 96px; display: flex; flex-direction: column; gap: 42px; }
+
+  .masthead { display: flex; flex-direction: column; gap: 12px; max-width: 68ch; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: 34px; line-height: 1.15; margin: 0; text-wrap: balance; letter-spacing: -.02em; }
+  h2 { font-size: 22px; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+  h3 { font-size: 15px; margin: 0; letter-spacing: -.005em; }
+  .lede { color: var(--fg-muted); margin: 0; }
+  .prose { display: flex; flex-direction: column; gap: 10px; }
+  .prose p { margin: 0; max-width: 74ch; }
+  .sec { display: flex; flex-direction: column; gap: 16px; }
+  .rule { height: 1px; background: var(--border); border: 0; margin: 0; }
+  code { font-family: var(--mono); font-size: .88em; background: var(--surface-2); padding: 1px 5px; border-radius: 3px; }
+
+  .frame { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface); box-shadow: 0 1px 2px rgb(0 0 0 / .06), 0 8px 24px rgb(0 0 0 / .06); }
+  .frame-crumb { display: flex; align-items: center; gap: 8px; padding: 9px 14px; border-bottom: 1px solid var(--border); background: var(--surface-2); font-size: 12px; color: var(--fg-muted); }
+  .frame-crumb .sep { opacity: .45; }
+  .frame-crumb .here { color: var(--fg); }
+  .frame-body { display: flex; min-height: 0; }
+  .frame-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .vnav { width: 176px; flex-shrink: 0; border-right: 1px solid var(--border); padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; background: var(--surface); }
+  .vnav a { font-size: 13px; color: var(--fg-muted); text-decoration: none; padding: 6px 10px; border-radius: var(--radius); }
+  .vnav a.on { background: var(--surface-2); color: var(--fg); font-weight: 500; }
+
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+  .toolbar .spacer { flex: 1 1 auto; }
+  .seg { display: flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .seg button { font: inherit; font-size: 12px; padding: 5px 12px; background: var(--surface); color: var(--fg-muted); border: 0; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button.on { background: var(--surface-2); color: var(--fg); font-weight: 500; }
+  .ctl { font: inherit; font-size: 12px; padding: 5px 10px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--fg-muted); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .ctl:hover { color: var(--fg); border-color: var(--border-strong); }
+  .ctl.primary { background: var(--fg); color: var(--surface); border-color: var(--fg); font-weight: 500; }
+  .ctl.on { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+  .ctl .caret { opacity: .5; font-size: 9px; }
+  .search { flex: 0 1 220px; font: inherit; font-size: 12px; padding: 5px 10px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface-2); color: var(--fg); }
+  .chipset { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 14px 12px; }
+  .fchip { font-size: 11px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border); color: var(--fg-muted); background: var(--surface-2); display: inline-flex; align-items: center; gap: 6px; }
+  .fchip.on { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+  .gridwrap { overflow: auto; max-height: 430px; }
+  table.grid { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12px; }
+  table.grid th, table.grid td { border-bottom: 1px solid var(--border); padding: 0; white-space: nowrap; }
+  table.grid thead th { position: sticky; top: 0; z-index: 20; background: var(--surface-2); color: var(--fg-muted); font-weight: 500; font-size: 11px; text-align: center; padding: 7px 10px 6px; border-bottom: 1px solid var(--border-strong); }
+  table.grid thead th .vlabel { display: block; color: var(--fg); font-family: var(--mono); font-size: 11px; }
+  table.grid thead th .vkind { display: block; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; opacity: .7; margin-top: 1px; }
+  /* the sorting baseline is marked in place, not given its own column */
+  table.grid thead th.baseline { background: var(--accent-bg); box-shadow: inset 0 3px 0 var(--accent); }
+  table.grid thead th.baseline .vlabel { color: var(--accent); font-weight: 600; }
+  table.grid thead th.baseline .vkind { color: var(--accent); opacity: 1; }
+  table.grid tbody td.baselinecol { box-shadow: inset 1px 0 0 var(--accent), inset -1px 0 0 var(--accent); }
+
+  th.frz, td.frz { position: sticky; left: 0; z-index: 10; background: var(--surface); text-align: left; border-right: 1px solid var(--border-strong); }
+  thead th.frz { z-index: 30; background: var(--surface-2); }
+  td.frz .dname { font-family: var(--mono); font-size: 12px; padding: 6px 12px; display: block; overflow: hidden; text-overflow: ellipsis; max-width: 268px; }
+  td.meta span { display: block; padding: 6px 10px; font-family: var(--mono); font-size: 11px; color: var(--fg-muted); overflow: hidden; text-overflow: ellipsis; max-width: 250px; }
+  td.meta span.none { opacity: .4; font-style: italic; }
+  td.opt span { display: block; padding: 6px 10px; font-family: var(--mono); font-size: 11px; color: var(--fg-muted); }
+  td.opt span.diverge { color: var(--st-mod-fg); }
+  td.opt span.none { opacity: .35; }
+  tr.row:hover td { background: var(--surface-2); }
+  tr.row.sel td, tr.row.sel td.frz { background: var(--accent-bg); }
+  tr.row { cursor: pointer; }
+  /* the clicked cell scopes the drawer's actions to that template */
+  td.cellsel { box-shadow: inset 0 0 0 2px var(--accent); }
+
+  .cell { display: block; text-align: center; padding: 6px 10px; font-family: var(--mono); font-size: 11.5px; font-variant-numeric: tabular-nums; position: relative; }
+  .cell.defined { color: var(--st-defined-fg); background: var(--st-defined-bg); }
+  .cell.unsup   { color: var(--st-unsup-fg); background: var(--st-unsup-bg); font-style: italic; }
+  .cell.undef   { color: transparent; }
+  .cell.undef::after { content: "·"; color: var(--fg-muted); opacity: .35; }
+  .cell.mod     { color: var(--st-mod-fg); background: var(--st-mod-bg); box-shadow: inset 2px 0 0 var(--st-mod-fg); }
+  .cell.only    { color: var(--st-only-fg); background: var(--st-only-bg); box-shadow: inset 2px 0 0 var(--st-only-fg); }
+  .cell.miss    { color: var(--st-miss-fg); background: var(--st-miss-bg); font-size: 9px; }
+  .cell .mk { font-size: 10px; margin-left: 3px; font-weight: 700; }
+  .cell .mk.hollow { color: var(--st-miss-fg); }
+  .cell .mk.dot    { color: var(--st-mod-fg); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 10px 14px; border-top: 1px solid var(--border); font-size: 11px; color: var(--fg-muted); background: var(--surface-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 20px; height: 12px; border-radius: 3px; display: inline-block; }
+
+  .drawer { border-top: 1px solid var(--border-strong); background: var(--surface-2); padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .drawer-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .drawer-head .dn { font-family: var(--mono); font-size: 14px; font-weight: 600; }
+  .dtabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); }
+  .dtabs button { font: inherit; font-size: 12px; padding: 6px 14px; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--fg-muted); cursor: pointer; }
+  .dtabs button.on { color: var(--fg); border-bottom-color: var(--accent); font-weight: 500; }
+  .kv { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .kv > div { background: var(--surface); padding: 8px 10px; display: flex; flex-direction: column; gap: 1px; }
+  .kv .k2 { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-muted); }
+  .kv .v2 { font-family: var(--mono); font-size: 12px; }
+  .actionrail { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  /* nested options matrix */
+  .optwrap { overflow: auto; max-height: 300px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+  table.opt { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 11px; }
+  table.opt th, table.opt td { border-bottom: 1px solid var(--border); padding: 0; white-space: nowrap; }
+  table.opt thead th { position: sticky; top: 0; z-index: 5; background: var(--surface-2); color: var(--fg-muted); font-weight: 500; font-size: 10px; padding: 6px 8px; text-align: center; border-bottom: 1px solid var(--border-strong); }
+  table.opt thead th.baseline { background: var(--accent-bg); color: var(--accent); }
+  table.opt td.ix { position: sticky; left: 0; background: var(--surface); font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--fg-muted); padding: 4px 10px; text-align: right; border-right: 1px solid var(--border-strong); z-index: 4; }
+  table.opt td span { display: block; padding: 4px 8px; font-family: var(--mono); font-size: 10.5px; text-align: center; }
+  table.opt td span.same  { color: var(--fg-muted); }
+  table.opt td span.diff  { color: var(--st-mod-fg); background: var(--st-mod-bg); }
+  table.opt td span.gone  { color: var(--st-miss-fg); background: var(--st-miss-bg); font-size: 9px; }
+  table.opt td span.blank { color: var(--fg-muted); opacity: .3; }
+
+  .callout { border: 1px solid var(--accent); border-radius: var(--radius); background: var(--accent-bg); padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .callout h2, .callout h3 { color: var(--accent); }
+  .callout p { margin: 0; font-size: 14px; max-width: 82ch; }
+  .callout code { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+  .rules { display: flex; flex-direction: column; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .rules > div { background: var(--surface); padding: 13px 16px; display: grid; grid-template-columns: 130px 1fr; gap: 14px; align-items: start; }
+  .rules .lbl { font-family: var(--mono); font-size: 11px; color: var(--accent); padding-top: 2px; }
+  .rules p { margin: 0; font-size: 13.5px; color: var(--fg-muted); max-width: 80ch; }
+
+  @media (max-width: 720px) {
+    .vnav { display: none; } h1 { font-size: 27px; }
+    .rules > div { grid-template-columns: 1fr; gap: 5px; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <div class="eyebrow">Atlas · Deployment · design</div>
+    <h1>Packet Matrix — Pivot Grid</h1>
+    <p class="lede">Templates only, one frozen identity column, the sorting baseline marked in place, and options surfaced as a first-class dimension. Every opcode, option shape and FName below is read from the seed templates and the audit registry.</p>
+  </header>
+
+  <!-- ============ MATRIX ============ -->
+  <section class="sec">
+    <div class="prose">
+      <h2>The matrix</h2>
+      <p>Rows are definitions keyed by implementation name; columns are Templates in version order. <strong>The baseline is not a separate column</strong> — the template driving row order is marked in place, amber-capped and outlined, so you can see the sort key without spending 90px of frozen width on a duplicate.</p>
+      <p>Only <span style="font-family:var(--mono)">FName</span> is carried as derived metadata. It is joined from <code>docs/packets/registry/&lt;version&gt;.yaml</code> on <code>(direction, opcode)</code> and stored nowhere.</p>
+    </div>
+
+    <div class="frame">
+      <div class="frame-crumb"><span>Home</span><span class="sep">/</span><span>Deployment</span><span class="sep">/</span><span class="here">Packet Matrix</span></div>
+      <div class="toolbar">
+        <div class="seg"><button class="on" id="tabH">Handlers</button><button id="tabW">Writers</button></div>
+        <input class="search" placeholder="Search name, FName or opcode…" aria-label="Search definitions">
+        <button class="ctl">Templates <span style="font-family:var(--mono);opacity:.6">11</span> <span class="caret">▾</span></button>
+        <button class="ctl">Baseline: <span style="font-family:var(--mono)">GMS v95.1</span> <span class="caret">▾</span></button>
+        <div class="spacer"></div>
+        <button class="ctl on" id="metaToggle">FName ✓</button>
+        <button class="ctl">Differences only</button>
+      </div>
+      <div class="chipset">
+        <span class="fchip on">State: Defined, Undefined <span style="opacity:.55">×</span></span>
+        <span class="fchip">Region: GMS <span style="opacity:.55">×</span></span>
+        <span class="fchip" style="opacity:.6">+ Has options</span>
+        <span class="fchip" style="opacity:.6">+ Options not supplied</span>
+        <span class="fchip" style="opacity:.6">+ Service</span>
+      </div>
+      <div class="gridwrap" id="grid"></div>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--st-defined-bg);border:1px solid var(--st-defined-fg)"></i> Defined</span>
+        <span><i class="sw" style="background:var(--st-unsup-bg);border:1px solid var(--st-unsup-fg)"></i> Unsupported (audited)</span>
+        <span><i class="sw" style="border:1px dashed var(--border-strong)"></i> Undefined</span>
+        <span><b style="color:var(--st-miss-fg)">⌀</b> options not supplied here, supplied elsewhere</span>
+        <span style="margin-left:auto;opacity:.8"><span id="rowcount">141</span> rows · click a row for detail</span>
+      </div>
+      <div class="drawer" id="drawer"></div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ============ OPTIONS ============ -->
+  <section class="sec">
+    <div class="prose">
+      <h2>How options surface</h2>
+      <p>Options are the reason the current page is 215 stacked cards of chip clouds. They are also structurally two different things, and the matrix has to handle both: <strong>maps</strong> keyed by name (<code>operations</code>, <code>failedReasonCodes</code>, <code>codes</code>) where the value is the wire number, and <strong>ordered lists</strong> (<code>types</code>) where the <em>array index</em> is the wire value and the name is not even unique — <code>CharacterMovement</code> at v95 carries <code>UNKNOWN</code> at six separate indices.</p>
+    </div>
+
+    <div class="rules">
+      <div>
+        <span class="lbl">Not in the row</span>
+        <p>No per-row options summary. Options <em>should</em> differ between versions — v12.1 supports nine movement types and v95.1 supports thirty-three, and a column that shouts about it on every row is noise you learn to ignore. Divergence is the expected state and gets no ink.</p>
+      </div>
+      <div>
+        <span class="lbl">In the cell</span>
+        <p>Exactly one marker. <b style="color:var(--st-miss-fg)">⌀</b> means this template supplies <em>no</em> options for a definition that a sibling template does supply them for. That is not version drift, it is an omission — the failure mode that silently breaks decoding — and it is the only options state that earns a mark in the grid.</p>
+      </div>
+      <div>
+        <span class="lbl">In the drawer</span>
+        <p>A second matrix, nested. Rows become option entries — array index for lists, key name for maps — and the columns stay the same templates. Diffing <code>types</code> becomes reading down a column, and an entry that shifts index between versions shows up as a diagonal. This is where you go when you actually want to compare, rather than being told to.</p>
+      </div>
+    </div>
+
+    <div class="frame">
+      <div class="frame-crumb"><span>Home</span><span class="sep">/</span><span>Deployment</span><span class="sep">/</span><span class="here">Packet Matrix · Writers</span></div>
+      <div class="toolbar">
+        <div class="seg"><button>Handlers</button><button class="on">Writers</button></div>
+        <input class="search" placeholder="Search…" value="movement" aria-label="Search">
+        <button class="ctl">Templates <span style="font-family:var(--mono);opacity:.6">11</span> <span class="caret">▾</span></button>
+        <button class="ctl">Baseline: <span style="font-family:var(--mono)">GMS v95.1</span> <span class="caret">▾</span></button>
+        <div class="spacer"></div>
+        <button class="ctl on">Options not supplied ✓</button>
+      </div>
+      <div class="gridwrap" id="gridW" style="max-height:none"></div>
+      <div class="drawer">
+        <div class="drawer-head">
+          <span class="dn">CharacterMovement</span>
+          <span class="fchip">Writer</span>
+          <span class="fchip" style="font-family:var(--mono)">CUserPool::OnUserMove</span>
+          <div style="flex:1"></div>
+          <button class="ctl">Edit in GMS v95.1…</button>
+        </div>
+        <div class="dtabs"><button>Fields</button><button class="on">Options · types</button><button>Services</button></div>
+        <div class="optwrap" id="optGrid"></div>
+        <div class="actionrail">
+          <button class="ctl">Copy options from GMS v87.1…</button>
+          <button class="ctl">Edit options…</button>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--st-mod-bg);border:1px solid var(--st-mod-fg)"></i> Differs from baseline at this index</span>
+        <span><i class="sw" style="background:var(--st-miss-bg);border:1px solid var(--st-miss-fg)"></i> Index absent, or no options at all</span>
+        <span style="margin-left:auto;opacity:.8">Array index is the wire value — position is the identity, not the name</span>
+      </div>
+    </div>
+
+    <div class="callout">
+      <h3>What this immediately surfaces</h3>
+      <p>Reading the <code>CharacterMovement</code> row above: v12.1 carries 9 movement types, v61–v83 carry 23, v84 adds <code>FLYING_BLOCK</code> at index 23, v87 adds a 25th, jms185 carries 33 — and <strong>v92.1 and v95.1 carry none at all</strong>. <code>PetMovement</code> is empty at v87.1, v95.1 and jms185 while v61–v84 all populate it.</p>
+      <p>Whether those empties are intentional needs checking against the codecs — but an empty <code>types</code> array is the same shape as the confirmed v79 monster-movement defect, where moves never decoded and mobs fell through the floor. Today that state is invisible; it is fourteen scroll-screens into a stacked-card form. Here it is two red marks on the baseline column of the page you already had open, which is the clearest argument for building this thing.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ============ PER-OBJECT ============ -->
+  <section class="sec">
+    <div class="prose">
+      <h2>Per-object pages — where ancestry lives</h2>
+      <p>No tenant columns in the matrix. Tenant-versus-ancestor comparison belongs on the Tenant's own Socket Handlers and Socket Writers pages, which render the same grid locked to two columns: the tenant and its inferred ancestor Template. Same search, sort, filters, drawer and dialogs; the mode switch, column picker and baseline selector are simply not there.</p>
+    </div>
+    <div class="frame">
+      <div class="frame-crumb"><span>Home</span><span class="sep">/</span><span>Tenants</span><span class="sep">/</span><span>GMS v83 · nightly</span><span class="sep">/</span><span class="here">Socket Handlers</span></div>
+      <div class="frame-body">
+        <nav class="vnav">
+          <a href="#">Global Properties</a>
+          <a href="#">Character Templates</a>
+          <a href="#">Character Presets</a>
+          <a href="#" class="on">Socket Handlers</a>
+          <a href="#">Socket Writers</a>
+          <a href="#">Worlds</a>
+          <a href="#">MTS Configuration</a>
+        </nav>
+        <div class="frame-main">
+          <div class="toolbar">
+            <input class="search" placeholder="Search name, FName or opcode…" aria-label="Search">
+            <button class="ctl">State <span class="caret">▾</span></button>
+            <button class="ctl">Validator <span class="caret">▾</span></button>
+            <button class="ctl">vs ancestor <span style="font-family:var(--mono);color:var(--st-mod-fg)">5</span> <span class="caret">▾</span></button>
+            <div class="spacer"></div>
+            <button class="ctl">Copy missing from ancestor…</button>
+            <button class="ctl primary">Add definition</button>
+          </div>
+          <div class="gridwrap" id="gridOne" style="max-height:300px"></div>
+          <div class="legend">
+            <span><i class="sw" style="background:var(--st-defined-bg);border:1px solid var(--st-defined-fg)"></i> Same as template</span>
+            <span><i class="sw" style="background:var(--st-mod-bg);border:1px solid var(--st-mod-fg)"></i> Modified</span>
+            <span><i class="sw" style="background:var(--st-only-bg);border:1px solid var(--st-only-fg)"></i> Tenant-only</span>
+            <span><i class="sw" style="background:var(--st-miss-bg);border:1px solid var(--st-miss-fg)"></i> Missing from tenant</span>
+            <span><i class="sw" style="background:var(--st-unsup-bg);border:1px solid var(--st-unsup-fg)"></i> Unsupported in tenant</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section class="sec">
+    <div class="prose">
+      <h2>Cell scope, and the no-ancestor case</h2>
+    </div>
+    <div class="rules">
+      <div>
+        <span class="lbl">Cell scope</span>
+        <p>Clicking a <em>cell</em> rather than the name scopes the drawer to that template — the outline follows your click and every action relabels: <strong>Edit in v87.1</strong>, <strong>Mark unsupported in v87.1</strong>. <strong>Open in GMS v87.1 ↗</strong> is the §13 deep link: it navigates to that template's Socket Handlers or Writers page with the grid filtered to this definition and the row already selected, so you land on the thing you were looking at rather than at the top of 141 rows. It disables where the definition is Undefined, since there is nothing to open. Click the definition name instead of a cell and the scope stays on the baseline.</p>
+      </div>
+      <div>
+        <span class="lbl">No ancestor</span>
+        <p>Settled: if a Tenant's Region + Major + Minor matches no Template, the page drops to a single column and the ancestry features simply are not there — no manual template substitution, no empty comparison column. It is not expected to happen.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var COLS = [
+    { key: "gms_12_1",  label: "v12.1"  }, { key: "gms_48_1",  label: "v48.1" },
+    { key: "gms_61_1",  label: "v61.1"  }, { key: "gms_72_1",  label: "v72.1" },
+    { key: "gms_79_1",  label: "v79.1"  }, { key: "gms_83_1",  label: "v83.1" },
+    { key: "gms_84_1",  label: "v84.1"  }, { key: "gms_87_1",  label: "v87.1" },
+    { key: "gms_92_1",  label: "v92.1"  }, { key: "gms_95_1",  label: "v95.1" },
+    { key: "jms_185_1", label: "jms185" }
+  ];
+  var BASE = "gms_95_1";
+  var idx = {}; COLS.forEach(function (c, i) { idx[c.key] = i; });
+
+  var HANDLERS = [
+    ["LoginHandle","0x01","0x01","0x01","0x01","0x01","0x01","0x01","0x01","0x01","0x01","0x01"],
+    ["CharacterListWorldHandle","0x02","0x04","0x05","0x05","0x05","0x05","0x05","0x05","0x05","0x05","0x04"],
+    ["ServerStatusHandle",null,"0x05","0x06","0x06","0x06","0x06","0x06","0x06","0x06","0x06",null],
+    ["AcceptTosHandle",null,"0x06","0x07","0x07","0x07","0x07","0x07","0x07","0x07","0x07",null],
+    ["SetGenderHandle","0x05","0x07","0x08","0x08","0x08","0x08","0x08","0x08","0x08","0x08",null],
+    ["AfterLoginHandle","0x06","0x08","0x09","0x09","0x09","0x09","0x09","0x09","0x09","0x09",null],
+    ["RegisterPinHandle","0x07","0x09","0x0A","0x0A","0x0A","0x0A","0x0A","0x0A","0x0A","0x0A",null],
+    ["ServerListRequestHandle","0x08","0x0A","0x0B","0x0B","0x0B","0x0B","0x0B","0x0B","0x0B","0x0B","0x03"],
+    ["CharacterViewAllHandle",null,"0x0C","0x0D","0x0D","0x0D","0x0D","0x0D","0x0D","0x0D","0x0D","0x0A"],
+    ["CharacterViewAllSelectedHandle",null,"0x0D","0x0E","0x0E","0x0E","0x0E","0x0E","0x0E","0x0E","0x0E",null],
+    ["CharacterViewAllPongHandle",null,"0x0E","0x0F","0x0F","0x0F","0x0F","0x0F","0x0F","0x0F","0x0F",null],
+    ["CharacterSelectedHandle","0x09","0x0F","0x13","0x13","0x13","0x13","0x13","0x13","0x13","0x13","0x06"],
+    ["CharacterLoggedInHandle","0x0A","0x10","0x14","0x14","0x14","0x14","0x14","0x14","0x14","0x14","0x07"],
+    ["CharacterCheckNameHandle","0x0B","0x11","0x15","0x15","0x15","0x15","0x15","0x15","0x15","0x15","0x08"],
+    ["CreateCharacterHandle","0x0C","0x15","0x16","0x16","0x16","0x16","0x16","0x16","0x16","0x16","0x0B"],
+    ["DeleteCharacterHandle","0x0D","0x16","0x17","0x18","0x17","0x17","0x17","0x17","0x17","0x18","0x0D"],
+    ["StartErrorHandle",null,"0x18","0x19","0x1A","0x19","0x19","0x19",null,null,"0x1A","0x0F"],
+    ["RegisterPicHandle",null,null,null,null,null,"0x1D","0x1D","0x1D","0x1D","0x1C","0x13"],
+    ["CharacterSelectedPicHandle",null,null,null,null,null,"0x1E","0x1E","0x1E","0x1E","0x1D","0x14"],
+    ["ClientStartHandle",null,null,null,null,null,"0x23","0x23","0x23","0x23","0x23","0x18"],
+    ["NoOpHandler",null,null,null,null,null,"0x24","0x24","0x24","0x24","0x24",null],
+    ["ChannelChangeHandle","0x14","0x1F","0x24","0x26","0x25","0x27","0x27","0x29","0x2C","0x2A","0x1E"],
+    ["CharacterMoveHandle",null,"0x1A","0x1B","0x1C","0x1B","0x1D","0x1D","0x1F","0x22","0x20","0x15"],
+    ["CharacterChairInteractionHandle",null,"0x22","0x27","0x29","0x28","0x2A","0x2A","0x2C",null,"0x2D","0x21"],
+    ["CharacterChairPortableHandle",null,"0x23","0x28","0x2A","0x29","0x2B","0x2B","0x2D",null,"0x2E","0x22"]
+  ];
+
+  var WRITERS = [
+    ["AuthLoginFailed","0x01","0x01","0x00","0x00","0x00","0x00","0x00","0x00","0x00","0x00","0x00"],
+    ["ServerLoad","0x02",null,null,null,null,null,null,null,null,null,null],
+    ["CharacterMovement","0x55",null,"0x8D","0xA7","0xAB","0xB9","0xBD","0xC6","0xD5","0xD2","0xBF"],
+    ["PetActivated",null,null,"0x7F","0x99","0x9D","0xA8","0xAB","0xB4",null,"0xC6","0xAD"],
+    ["PetMovement",null,null,"0x81","0x9B","0x9F","0xAA","0xAE","0xB7",null,"0xC9","0xB0"],
+    ["CashShopOperation","0xBE","0x100","0xFF","0x123","0x12F","0x145","0x14C","0x156","0x178","0x180","0x164"]
+  ];
+
+  // Option shapes, read from the seed templates. null = definition absent.
+  var SHAPES = {
+    AuthLoginFailed:   ["failedReasonCodes:19","failedReasonCodes:19","failedReasonCodes:19","failedReasonCodes:19","failedReasonCodes:19","failedReasonCodes:19","failedReasonCodes:19","failedReasonCodes:19","failedReasonCodes:19","failedReasonCodes:19","failedReasonCodes:15"],
+    ServerLoad:        ["codes:3",null,null,null,null,null,null,null,null,null,null],
+    CharacterMovement: ["types:9",null,"types:23","types:23","types:23","types:23","types:24","types:25","empty","empty","types:33"],
+    PetActivated:      [null,null,"operations:5","operations:5","operations:5","operations:5","operations:5","operations:5",null,"operations:5","operations:5"],
+    PetMovement:       [null,null,"types:23","types:23","types:23","types:23","types:24","empty",null,"empty","empty"],
+    CashShopOperation: ["empty","operations:40","operations:44","operations:46","operations:48","operations:48","operations:54","operations:55","operations:57","operations:57","operations:61"],
+    CharacterMoveHandle: [null,"types:9","types:23","types:23","types:23","types:23","types:24","types:25","empty","empty","types:33"]
+  };
+
+  var FNAME = {
+    LoginHandle: "CLogin::SendCheckPasswordPacket",
+    CharacterListWorldHandle: "CLogin::SendLoginPacket",
+    ServerStatusHandle: "CLogin::SendCheckUserLimitPacket",
+    AcceptTosHandle: "CLogin::OnAcceptLicense",
+    SetGenderHandle: "CLogin::SendSetGenderPacket",
+    AfterLoginHandle: "CLogin::OnSetAccountResult",
+    RegisterPinHandle: "CLogin::OnCheckPinCodeResult",
+    ServerListRequestHandle: "CLogin::OnCheckPinCodeResult",
+    CharacterViewAllHandle: "CLogin::SendViewAllCharPacket",
+    CharacterViewAllSelectedHandle: "CLogin::SendSelectCharPacketByVAC",
+    CharacterViewAllPongHandle: "CLogin::MakeVACDlg",
+    CharacterSelectedHandle: "CLogin::SendSelectCharPacket",
+    CharacterLoggedInHandle: "CClientSocket::OnConnect",
+    CharacterCheckNameHandle: "CLogin::SendCheckDuplicateIDPacket",
+    CreateCharacterHandle: "CLogin::SendNewCharPacket",
+    DeleteCharacterHandle: "CLogin::SendDeleteCharPacket",
+    StartErrorHandle: "CClientSocket::OnConnect",
+    RegisterPicHandle: "CLogin::SendSelectCharPacket",
+    CharacterSelectedPicHandle: "CLogin::SendSelectCharPacket",
+    ClientStartHandle: null,
+    NoOpHandler: "CWvsApp::SendBackupPacket",
+    ChannelChangeHandle: "CField::SendTransferChannelRequest",
+    CharacterMoveHandle: "CUserLocal::SendMovePacket",
+    CharacterChairInteractionHandle: "CUserLocal::HandleXKeyDown",
+    CharacterChairPortableHandle: "CWvsContext::SendSitOnPortableChairRequest",
+    GuestLoginHandle: "CLogin::SendGuestLoginPacket",
+    AuthLoginFailed: "CLogin::OnCheckPasswordResult",
+    ServerLoad: "CLogin::OnWorldInformation",
+    CharacterMovement: "CUserPool::OnUserMove",
+    PetActivated: "CUserPool::OnPetActivated",
+    PetMovement: "CUserPool::OnPetMove",
+    CashShopOperation: "CCashShop::OnCashItemResult"
+  };
+
+  var UNSUPPORTED = {
+    ServerStatusHandle: ["jms_185_1","gms_12_1"],
+    AcceptTosHandle: ["jms_185_1"],
+    SetGenderHandle: ["jms_185_1"],
+    NoOpHandler: ["jms_185_1"],
+    StartErrorHandle: ["gms_87_1","gms_92_1"],
+    ServerLoad: ["gms_83_1","gms_87_1","gms_95_1"]
+  };
+
+  // Real CharacterMovement `types` arrays, per template.
+  var TYPES = {
+    gms_12_1: ["NORMAL","JUMP","IMPACT","IMMEDIATE","TELEPORT","HANG_ON_BACK","UNKNOWN","ASSAULTER","STAT_CHANGE"],
+    gms_48_1: null,
+    gms_61_1: ["NORMAL","JUMP","IMPACT","IMMEDIATE","TELEPORT","HANG_ON_BACK","UNKNOWN","ASSAULTER","ASSASSINATION","RUSH","STAT_CHANGE","SIT_DOWN","UNKNOWN","UNKNOWN","START_FALL_DOWN","FALL_DOWN","START_WINGS","WINGS","ARAN_ADJUST","MOB_TOSS","DASH_SLIDE","UNKNOWN","UNKNOWN"],
+    gms_84_1: ["NORMAL","JUMP","IMPACT","IMMEDIATE","TELEPORT","HANG_ON_BACK","UNKNOWN","ASSAULTER","ASSASSINATION","RUSH","STAT_CHANGE","SIT_DOWN","UNKNOWN","UNKNOWN","START_FALL_DOWN","FALL_DOWN","START_WINGS","WINGS","ARAN_ADJUST","MOB_TOSS","DASH_SLIDE","UNKNOWN","UNKNOWN","FLYING_BLOCK"],
+    gms_87_1: ["NORMAL","JUMP","IMPACT","IMMEDIATE","TELEPORT","HANG_ON_BACK","UNKNOWN","ASSAULTER","ASSASSINATION","RUSH","STAT_CHANGE","SIT_DOWN","UNKNOWN","UNKNOWN","START_FALL_DOWN","FALL_DOWN","START_WINGS","WINGS","ARAN_ADJUST","MOB_TOSS","DASH_SLIDE","UNKNOWN","UNKNOWN","FLYING_BLOCK","UNKNOWN"],
+    gms_92_1: [],
+    gms_95_1: [],
+    jms_185_1: ["NORMAL","JUMP","IMPACT","IMMEDIATE","TELEPORT","HANG_ON_BACK","UNKNOWN","ASSAULTER","ASSASSINATION","RUSH","STAT_CHANGE","SIT_DOWN","UNKNOWN","UNKNOWN","START_FALL_DOWN","FALL_DOWN","START_WINGS","WINGS","ARAN_ADJUST","MOB_TOSS","DASH_SLIDE","UNKNOWN","UNKNOWN","UNKNOWN","FLYING_BLOCK","UNKNOWN","UNKNOWN","UNKNOWN","UNKNOWN","UNKNOWN","UNKNOWN","MOB_ATK_RUSH","MOB_ATK_RUSH_STOP"]
+  };
+  TYPES.gms_72_1 = TYPES.gms_61_1; TYPES.gms_79_1 = TYPES.gms_61_1; TYPES.gms_83_1 = TYPES.gms_61_1;
+
+  function shapeOf(name, i) { var s = SHAPES[name]; return s ? s[i] : undefined; }
+
+  function optSummary(name) {
+    var s = SHAPES[name];
+    if (!s) return { text: "—", cls: "none" };
+    var seen = [], anyReal = false;
+    s.forEach(function (v) {
+      if (v === null || v === undefined) return;
+      anyReal = true;
+      if (seen.indexOf(v) === -1) seen.push(v);
+    });
+    if (!anyReal) return { text: "—", cls: "none" };
+    if (seen.length === 1) {
+      var p = seen[0].split(":");
+      return { text: seen[0] === "empty" ? "none set" : p[0] + " ×" + p[1], cls: "" };
+    }
+    var key = seen.map(function (v) { return v.split(":")[0]; }).filter(function (v) { return v !== "empty"; })[0] || "options";
+    return { text: key + " · " + seen.length + " shapes", cls: "diverge" };
+  }
+
+  // Structural divergence between versions is expected — v12.1 movement is not
+  // v95.1 movement. The only thing worth marking is options that were never
+  // supplied here while a sibling template supplies them.
+  function marker(name, i) {
+    var s = SHAPES[name];
+    if (!s) return "";
+    var mine = s[i];
+    if (mine === null || mine === undefined) return "";
+    var others = s.filter(function (v, j) { return j !== i && v !== null && v !== undefined; });
+    if (mine === "empty" && others.some(function (v) { return v !== "empty"; })) {
+      return '<span class="mk hollow" title="options not supplied here, supplied elsewhere">⌀</span>';
+    }
+    return "";
+  }
+
+  function build(mount, rows, o) {
+    o = o || {};
+    var cols = o.cols || COLS;
+    var showMeta = o.meta !== false;
+
+    var h = '<table class="grid"><thead><tr>';
+    h += '<th class="frz" style="text-align:left;padding-left:12px">Definition</th>';
+    if (showMeta) h += '<th style="text-align:left">FName</th>';
+    cols.forEach(function (c) {
+      var isBase = !o.noBaseline && c.key === (o.base || BASE);
+      h += '<th class="' + (isBase ? "baseline" : "") + '"><span class="vlabel">' + c.label + '</span>' +
+           '<span class="vkind">' + (isBase ? "baseline ↓" : (c.kind || "template")) + '</span></th>';
+    });
+    h += '</tr></thead><tbody>';
+
+    rows.forEach(function (r) {
+      var name = r[0];
+      var sel = o.selected === name;
+      h += '<tr class="row' + (sel ? " sel" : "") + '" tabindex="0" data-name="' + name + '">';
+      h += '<td class="frz"><span class="dname" title="' + name + '">' + name + '</span></td>';
+      if (showMeta) {
+        var f = FNAME[name];
+        h += '<td class="meta"><span' + (f ? '' : ' class="none"') + '>' + (f || "no registry") + '</span></td>';
+      }
+      cols.forEach(function (c) {
+        var isBase = !o.noBaseline && c.key === (o.base || BASE);
+        var i = idx[c.key];
+        var state, text = "";
+        if (c.tenant) {
+          var t = o.tenant;
+          if (t.unsup.indexOf(name) !== -1) { state = "unsup"; text = "n/a"; }
+          else if (t.only[name]) { state = "only"; text = t.only[name]; }
+          else if (t.modified[name]) { state = "mod"; text = t.modified[name]; }
+          else if (t.missing.indexOf(name) !== -1) { state = "miss"; text = "missing"; }
+          else { var av = r[idx[o.ancestor] + 1]; state = av ? "defined" : "undef"; text = av || ""; }
+        } else {
+          var u = UNSUPPORTED[name];
+          if (u && u.indexOf(c.key) !== -1) { state = "unsup"; text = "n/a"; }
+          else { var v = r[i + 1]; state = v ? "defined" : "undef"; text = v || ""; }
+        }
+        var mk = (state === "defined" && !c.tenant) ? marker(name, i) : "";
+        h += '<td class="' + (isBase ? "baselinecol" : "") + '" data-col="' + c.key + '" data-collabel="' + c.label + '">' +
+             '<span class="cell ' + state + '">' + text + mk + '</span></td>';
+      });
+      h += '</tr>';
+    });
+    h += '</tbody></table>';
+    mount.innerHTML = h;
+
+    Array.prototype.forEach.call(mount.querySelectorAll("tr.row"), function (tr) {
+      tr.addEventListener("click", function (ev) {
+        Array.prototype.forEach.call(mount.querySelectorAll("tr.row"), function (x) { x.classList.remove("sel"); });
+        Array.prototype.forEach.call(mount.querySelectorAll("td.cellsel"), function (x) { x.classList.remove("cellsel"); });
+        tr.classList.add("sel");
+        // Clicking a cell scopes the drawer's actions to that template;
+        // clicking the name column leaves the scope on the baseline.
+        var td = ev.target.closest ? ev.target.closest("td[data-col]") : null;
+        if (td) td.classList.add("cellsel");
+        if (o.onSelect) {
+          o.onSelect(tr.getAttribute("data-name"),
+                     td ? td.getAttribute("data-col") : null,
+                     td ? td.getAttribute("data-collabel") : null);
+        }
+      });
+    });
+  }
+
+  /* ---- main grid, with Handlers / Writers tabs ---- */
+  var grid = document.getElementById("grid");
+  var drawer = document.getElementById("drawer");
+  var rowcount = document.getElementById("rowcount");
+  var metaOn = true, mode = "H", selected = "ChannelChangeHandle";
+  var scopeKey = BASE, scopeLabel = "v95.1";
+
+  function currentRows() { return mode === "H" ? HANDLERS : WRITERS; }
+
+  function renderDrawer(name) {
+    var rows = currentRows();
+    var r = null;
+    rows.forEach(function (x) { if (x[0] === name) r = x; });
+    if (!r) { drawer.innerHTML = ""; return; }
+    var defined = !!r[idx[scopeKey] + 1];
+    var h = '<div class="drawer-head"><span class="dn">' + name + '</span>';
+    h += '<span class="fchip">' + (mode === "H" ? "Handler" : "Writer") + '</span>';
+    if (FNAME[name]) h += '<span class="fchip" style="font-family:var(--mono)">' + FNAME[name] + '</span>';
+    h += '<span class="fchip on">scope: GMS ' + scopeLabel + '</span>';
+    h += '<div style="flex:1"></div>';
+    h += '<button class="ctl"' + (defined ? "" : " disabled style=\"opacity:.45\"") + '>Open in GMS ' + scopeLabel + ' ↗</button></div>';
+    h += '<div class="dtabs"><button class="on">Fields</button><button>Options</button><button>Services</button></div>';
+    h += '<div class="kv">';
+    COLS.forEach(function (c) {
+      var v = r[idx[c.key] + 1];
+      var u = UNSUPPORTED[name];
+      var isUn = u && u.indexOf(c.key) !== -1;
+      var shp = shapeOf(name, idx[c.key]);
+      var extra = shp && shp !== "empty" ? " · " + shp.replace(":", " ×") : (shp === "empty" ? ' · <span style="color:var(--st-miss-fg)">no options</span>' : "");
+      h += '<div><span class="k2">GMS ' + c.label + '</span><span class="v2">' +
+           (isUn ? '<span style="color:var(--st-unsup-fg);font-style:italic">unsupported</span>' :
+            (v ? v + extra : '<span style="opacity:.4">undefined</span>')) + '</span></div>';
+    });
+    h += '</div><div class="actionrail">';
+    h += '<button class="ctl">Edit in ' + scopeLabel + '…</button>';
+    h += '<button class="ctl">Copy into ' + scopeLabel + ' from…</button>';
+    h += '<button class="ctl">Mark unsupported in ' + scopeLabel + '…</button>';
+    h += '<button class="ctl">Delete from ' + scopeLabel + '…</button>';
+    h += '</div>';
+    drawer.innerHTML = h;
+  }
+
+  function render() {
+    build(grid, currentRows(), {
+      selected: selected, meta: metaOn,
+      onSelect: function (n, colKey, colLabel) {
+        selected = n;
+        if (colKey) { scopeKey = colKey; scopeLabel = colLabel; }
+        renderDrawer(n);
+      }
+    });
+    renderDrawer(selected);
+    rowcount.textContent = mode === "H" ? "141" : "259";
+  }
+
+  document.getElementById("tabH").addEventListener("click", function () {
+    mode = "H"; selected = "ChannelChangeHandle";
+    this.classList.add("on"); document.getElementById("tabW").classList.remove("on"); render();
+  });
+  document.getElementById("tabW").addEventListener("click", function () {
+    mode = "W"; selected = "CharacterMovement";
+    this.classList.add("on"); document.getElementById("tabH").classList.remove("on"); render();
+  });
+  var metaBtn = document.getElementById("metaToggle");
+  metaBtn.addEventListener("click", function () {
+    metaOn = !metaOn;
+    metaBtn.classList.toggle("on", metaOn);
+    metaBtn.textContent = metaOn ? "FName ✓" : "FName";
+    render();
+  });
+  render();
+
+  /* ---- writers grid for the options section ---- */
+  var gridW = document.getElementById("gridW");
+  if (gridW) build(gridW, WRITERS, { selected: "CharacterMovement" });
+
+  /* ---- nested options matrix ---- */
+  var optGrid = document.getElementById("optGrid");
+  if (optGrid) {
+    var maxLen = 0;
+    COLS.forEach(function (c) { var t = TYPES[c.key]; if (t && t.length > maxLen) maxLen = t.length; });
+    var baseArr = TYPES[BASE] || [];
+
+    var h = '<table class="opt"><thead><tr><th style="text-align:right">idx</th>';
+    COLS.forEach(function (c) {
+      h += '<th class="' + (c.key === BASE ? "baseline" : "") + '">' + c.label + '</th>';
+    });
+    h += '</tr></thead><tbody>';
+
+    for (var i = 0; i < maxLen; i++) {
+      h += '<tr><td class="ix">' + i + '</td>';
+      COLS.forEach(function (c) {
+        var arr = TYPES[c.key];
+        if (arr === null || arr === undefined) { h += '<td><span class="blank">—</span></td>'; return; }
+        if (arr.length === 0) { h += '<td><span class="gone">no options</span></td>'; return; }
+        var v = arr[i];
+        if (v === undefined) { h += '<td><span class="gone">absent</span></td>'; return; }
+        var same = baseArr.length ? (baseArr[i] === v) : false;
+        h += '<td><span class="' + (same ? "same" : "diff") + '">' + v + '</span></td>';
+      });
+      h += '</tr>';
+    }
+    h += '</tbody></table>';
+    optGrid.innerHTML = h;
+  }
+
+  /* ---- per-object page ---- */
+  var gridOne = document.getElementById("gridOne");
+  if (gridOne) {
+    build(gridOne, HANDLERS, {
+      noBaseline: true,
+      ancestor: "gms_83_1",
+      cols: [
+        { key: "t_nightly", label: "nightly", kind: "this tenant", tenant: true },
+        { key: "gms_83_1",  label: "v83.1",   kind: "ancestor" }
+      ],
+      tenant: {
+        modified: { ChannelChangeHandle: "0x27", CharacterLoggedInHandle: "0x14", CharacterMoveHandle: "0x1D" },
+        only:     { CharacterChairPortableHandle: "0x2B" },
+        missing:  ["RegisterPicHandle","ClientStartHandle"],
+        unsup:    ["StartErrorHandle"]
+      }
+    });
+  }
+})();
+</script>

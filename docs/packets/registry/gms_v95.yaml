@@ -229,17 +229,54 @@
   direction: clientbound
   opcode: 44
   fname: CWvsContext::OnClaimResult
-  provenance: csv-import
+  packet: report/clientbound/ClaimResultSuccess
+  provenance: ida-discovered
+  ida:
+    address: 0x9fa7d0
+  note: >-
+    task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnClaimResult
+    @0x9fa7d0 (GMS_v95.0_U_DEVM.exe.i64, session 79906a1e), resolved via the
+    opcode dispatch table CWvsContext::OnPacket @0x9e5830 case 44, call-site
+    @0x9e599e. Opcode 0x2C (44) matches STATUS.md's pre-filled v95 column
+    value. Decode1(mode) @0x9fa819 reads the mode byte. mode==2 is the only
+    value that reads further: Decode1(hasRemaining) @0x9fa839,
+    Decode4(remaining) @0x9fa843. Every other reachable mode (3, 0x41-0x45,
+    0x47, 0x48) is a bare mode byte with no further reads -- identical branch
+    structure to the v72/v79/v83/v84/v87/v92 twins already verified.
+    Byte-identical, no version branch needed.
 - op: CLAIM_AVAILABLE_TIME
   direction: clientbound
   opcode: 45
   fname: CWvsContext::OnSetClaimSvrAvailableTime
-  provenance: csv-import
+  packet: report/clientbound/ClaimAvailableTime
+  provenance: ida-discovered
+  ida:
+    address: 0x9f1620
+  note: >-
+    task-145 Task 24 (2026-08-05): live decompile of
+    CWvsContext::OnSetClaimSvrAvailableTime @0x9f1620
+    (GMS_v95.0_U_DEVM.exe.i64, session 79906a1e), resolved via the opcode
+    dispatch table CWvsContext::OnPacket @0x9e5830 case 45, call-site
+    @0x9e59ab. Opcode 0x2D (45) matches STATUS.md's pre-filled v95 column
+    value. Decode1(openHour) @0x9f1632, Decode1(closeHour) @0x9f1634 -- no
+    branches, 2 bytes total. Byte-identical to the v72/v79/v83/v84/v87/v92
+    twins.
 - op: CLAIM_STATUS_CHANGED
   direction: clientbound
   opcode: 46
   fname: CWvsContext::OnClaimSvrStatusChanged
-  provenance: csv-import
+  packet: report/clientbound/ClaimSvrStatusChanged
+  provenance: ida-discovered
+  ida:
+    address: 0x9f1650
+  note: >-
+    task-145 Task 24 (2026-08-05): live decompile of
+    CWvsContext::OnClaimSvrStatusChanged @0x9f1650 (GMS_v95.0_U_DEVM.exe.i64,
+    session 79906a1e), resolved via the opcode dispatch table
+    CWvsContext::OnPacket @0x9e5830 case 46, call-site @0x9e59b8. Opcode 0x2E
+    (46) matches STATUS.md's pre-filled v95 column value. Single
+    Decode1(connected) != 0 @0x9f1663 -- 1 byte total. Byte-identical to the
+    v72/v79/v83/v84/v87/v92 twins.
 - op: SET_TAMING_MOB_INFO
   direction: clientbound
   opcode: 47
@@ -279,7 +316,19 @@
   direction: clientbound
   opcode: 55
   fname: CWvsContext::OnSueCharacterResult
-  provenance: csv-import
+  packet: report/clientbound/SueCharacterResult
+  provenance: ida-discovered
+  ida:
+    address: 0x9fae10
+  note: >-
+    task-145 Task 24 (2026-08-05): live decompile of
+    CWvsContext::OnSueCharacterResult @0x9fae10 (GMS_v95.0_U_DEVM.exe.i64,
+    session 79906a1e), resolved via the opcode dispatch table
+    CWvsContext::OnPacket @0x9e5830 case 55, call-site @0x9e5991. Opcode 0x37
+    (55) matches STATUS.md's pre-filled v95 column value. Decode1(result)
+    @0x9fae39 is the only read; a five-way branch (0/1/2/3/else) purely picks
+    a StringPool notice id (0xBE6-0xBEA) for a CHATLOG_ADD render, no further
+    packet reads. Byte-identical to the v61/v72/v79/v83/v84/v87/v92 twins.
 - op: TRADE_MONEY_LIMIT
   direction: clientbound
   opcode: 57
@@ -1081,6 +1130,7 @@
   direction: clientbound
   opcode: 221
   fname: CUserRemote::OnShowUpgradeTombEffect
+  packet: character/clientbound/ShowUpgradeTombEffect
   provenance: csv-import
 - op: SHOW_CHAIR
   direction: clientbound
@@ -1936,6 +1986,7 @@
   direction: clientbound
   opcode: 392
   fname: CCashShop::OnCashItemGachaponResult
+  packet: cash/clientbound/CashItemGachaponResult
   provenance: csv-import
 - op: CASHSHOP_CASH_GACHAPON_OPEN_RESULT
   direction: clientbound
@@ -2371,6 +2422,7 @@
   direction: serverbound
   opcode: 58
   fname: CUserLocal::RequestUpgradeTombEffect
+  packet: character/serverbound/UseDeathItem
   provenance: csv-import
 - op: UNNAMED_R74
   direction: serverbound
@@ -2742,7 +2794,21 @@
   direction: serverbound
   opcode: 118
   fname: CWvsContext::SendClaimRequest
-  provenance: csv-import
+  packet: report/serverbound/ClaimRequest
+  provenance: ida-discovered
+  ida:
+    address: 0xa05fb0
+  note: >-
+    task-145 Task 24 (2026-08-05): live decompile of
+    CWvsContext::SendClaimRequest @0xa05fb0 (GMS_v95.0_U_DEVM.exe.i64,
+    session 79906a1e). COutPacket::COutPacket(&oPacket, 118) @0xa065dc
+    confirms opcode 118/0x76 -- matches this row (and STATUS.md's pre-filled
+    v95 column value of 0x076). Encode order: Encode1(bChatClaim) @0xa065ee,
+    EncodeStr(targetName) @0xa0660d, Encode1(reasonType) @0xa0661b,
+    EncodeStr(description) @0xa0663a, guarded EncodeStr(chatLog) @0xa066f5
+    gated on the same bChatClaim value. Identical encode order to the
+    v72/v79/v83/v84/v87/v92 twins already verified -- no version branch
+    needed.
 - op: QUEST_ACTION
   direction: serverbound
   opcode: 119
@@ -3243,6 +3309,7 @@
   direction: serverbound
   opcode: 185
   fname: CUICashItemGachapon::OnButtonClicked
+  packet: cash/serverbound/CashItemGachaponButton
   provenance: csv-import
 - op: CASH_GACHAPON_BUTTON
   direction: serverbound
@@ -3740,6 +3807,7 @@
   direction: serverbound
   opcode: 276
   fname: CCashShop::OnStatusCoupon
+  packet: cash/serverbound/CouponCode
   provenance: csv-import
 - op: UNNAMED_R387
   direction: serverbound

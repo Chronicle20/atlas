@@ -219,17 +219,45 @@
   direction: clientbound
   opcode: 45
   fname: CWvsContext::OnClaimResult
-  provenance: csv-import
+  packet: report/clientbound/ClaimResultSuccess
+  provenance: ida-discovered
+  ida:
+    address: 0xa27891
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnClaimResult
+    @0xa27891 (v83_Me MapleStory_dump.exe.i64, session 41f13e0d), resolved via the
+    opcode dispatch table CWvsContext::OnPacket case 0x2D @0xa07b5c. Decode1(mode)
+    @0xa278a6 reads the mode byte. mode==2 is the only value that reads further:
+    Decode1(hasRemaining) @0xa27925, Decode4(remaining) @0xa2792f. Every other
+    reachable mode (3, 0x41-0x45, 0x47, 0x48) is a bare mode byte with no further
+    reads (ClaimResultNotice); unlisted modes (0, 1, 0x46, ...) fall through to an
+    early return with no display -- identical branch structure to the v72/v79
+    twins already verified. Byte-identical, no version branch needed.'
 - op: CLAIM_AVAILABLE_TIME
   direction: clientbound
   opcode: 46
   fname: CWvsContext::OnSetClaimSvrAvailableTime
-  provenance: csv-import
+  packet: report/clientbound/ClaimAvailableTime
+  provenance: ida-discovered
+  ida:
+    address: 0xa27b38
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnSetClaimSvrAvailableTime
+    @0xa27b38 (v83_Me MapleStory_dump.exe.i64, session 41f13e0d), resolved via the
+    opcode dispatch table CWvsContext::OnPacket case 0x2E @0xa07b69. Decode1(openHour)
+    @0xa27b49, Decode1(closeHour) @0xa27b4b -- no branches, 2 bytes total. Byte-identical
+    to the v72/v79 twins.'
 - op: CLAIM_STATUS_CHANGED
   direction: clientbound
   opcode: 47
   fname: CWvsContext::OnClaimSvrStatusChanged
-  provenance: csv-import
+  packet: report/clientbound/ClaimSvrStatusChanged
+  provenance: ida-discovered
+  ida:
+    address: 0xa27b61
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnClaimSvrStatusChanged
+    @0xa27b61 (v83_Me MapleStory_dump.exe.i64, session 41f13e0d), resolved via the
+    opcode dispatch table CWvsContext::OnPacket case 0x2F @0xa07b76. Single
+    Decode1(connected) != 0 @0xa27b73 -- 1 byte total. Byte-identical to the
+    v72/v79 twins.'
 - op: SET_TAMING_MOB_INFO
   direction: clientbound
   opcode: 48
@@ -264,7 +292,16 @@
   direction: clientbound
   opcode: 55
   fname: CWvsContext::OnSueCharacterResult
-  provenance: csv-import
+  packet: report/clientbound/SueCharacterResult
+  provenance: ida-discovered
+  ida:
+    address: 0xa29739
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnSueCharacterResult
+    @0xa29739 (v83_Me MapleStory_dump.exe.i64, session 41f13e0d), resolved via the
+    opcode dispatch table CWvsContext::OnPacket case 0x37 @0xa07b4f. Decode1(result)
+    @0xa2974a reads a single result byte; a five-way branch (0/1/2/3/else) purely
+    picks a StringPool notice id for a CHATLOG_ADD render -- no further reads.
+    1 byte total, byte-identical to the v61/v72/v79 twins.'
 - op: TRADE_MONEY_LIMIT
   direction: clientbound
   opcode: 57
@@ -967,6 +1004,7 @@
   direction: clientbound
   opcode: 195
   fname: CUserRemote::OnShowUpgradeTombEffect
+  packet: character/clientbound/ShowUpgradeTombEffect
   provenance: csv-import
 - op: SHOW_CHAIR
   direction: clientbound
@@ -1639,12 +1677,22 @@
   direction: clientbound
   opcode: 333
   fname: CCashShop::OnCashItemGachaponResult
+  packet: cash/clientbound/CashItemGachaponResult
   provenance: csv-import
-- op: CASHSHOP_CASH_GACHAPON_OPEN_RESULT
-  direction: clientbound
-  opcode: 334
-  fname: CCashShop::OnCashItemGachaponResult
-  provenance: csv-import
+# task-207: opcode 334 (0x14E) has NO v83 entry. The prior csv-import guess
+# (CASHSHOP_CASH_GACHAPON_OPEN_RESULT, fname CCashShop::OnCashItemGachaponResult,
+# copying the alias pairing seen on v84/v87/v92/v95) was wrong: CCashShop::OnPacket
+# (0x478e2b) is a plain opcode switch with cases 0x143-0x14D only
+# (OnChargeParamResult through OnCashItemGachaponResult) and a bare
+# `default: return` — there is no case 0x14E at all, so this opcode has no
+# handler on v83. Unlike v84/v87/v92/v95, v83's CASHSHOP_CASH_ITEM_GACHAPON_RESULT
+# dispatcher case is NOT duplicated onto an adjacent opcode; v83 has no alias
+# for this op. The entry is deleted rather than kept with a fabricated fname;
+# n-a evidence for CASHSHOP_CASH_GACHAPON_OPEN_RESULT × gms_v83 is not filed in
+# feature-na-evidence.yaml because that op is not declared in
+# feature-families.yaml (it is the OPEN_RESULT alias row, not the same
+# registry op as CASHSHOP_CASH_ITEM_GACHAPON_RESULT), so matrix --check's
+# n-a-consistency gate does not require it.
 - op: KEYMAP
   direction: clientbound
   opcode: 335
@@ -2028,6 +2076,7 @@
   direction: serverbound
   opcode: 53
   fname: CUserLocal::RequestUpgradeTombEffect
+  packet: character/serverbound/UseDeathItem
   provenance: csv-import
 - op: UNNAMED_R74
   direction: serverbound
@@ -2366,7 +2415,22 @@
   direction: serverbound
   opcode: 106
   fname: CWvsContext::SendClaimRequest
-  provenance: csv-import
+  packet: report/serverbound/ClaimRequest
+  provenance: ida-discovered
+  ida:
+    address: 0xa2719c
+  note: 'task-145 Task 23 (2026-08-05): send-site was unnamed in the shipped v83_Me IDB (csv-import row). Named via structural match: xrefs_to(0xa2719c) resolves to exactly three direct callers -- CUIStatusBar::SendClaim (fn 0x8d4a22, call site 0x8d4a50), CUserLocal::HandleRButtonClk case 7 (fn 0x95009a, call site 0x950477 -- the preceding 0x950470 is a distinct call to TSingleton<CWvsContext>::GetInstance, not to SendClaimRequest), and unnamed sub_84EF23 (fn 0x84ef23, call site 0x84effc, itself called from unnamed sub_84E607 at call site 0x84e61f). size 0x6bf, identical to the already-named v72@0x91f2b4 / v79@0x9711ff twins. COutPacket::COutPacket(&pkt, 0x6A) at 0xa27631 confirms opcode 106/0x06A; encode order (byte, string, byte, string, conditional string) matches v95 exactly, so the codec needs no version branch.
+
+    task-145 Task 24 (2026-08-05): independently re-decompiled 0xa2719c this pass
+    (v83_Me MapleStory_dump.exe.i64, session 41f13e0d) rather than trusting the
+    Task-23 note blindly -- confirms COutPacket::COutPacket(&v45, 0x6A) @0xa27631,
+    COutPacket::Encode1(bChatClaim) @0xa27640, EncodeStr(targetName) @0xa27659,
+    Encode1(reasonType) @0xa27664, EncodeStr(description) @0xa2767d, and a guarded
+    EncodeStr(chatLog) @0xa276f5 gated on the same bChatClaim byte (*a2, set to 1
+    for the DoModal==1000 branch, 0 for ==1001) that fed the first Encode1 --
+    every field/address confirmed exactly. Added the `packet:` link to
+    report/serverbound/ClaimRequest. Confirmed routed in template_gms_83_1.json
+    (opCode 0x6A, handler ClaimRequest).'
 - op: QUEST_ACTION
   direction: serverbound
   opcode: 107
@@ -2801,11 +2865,15 @@
   opcode: 160
   fname: CUINewYearCardSenderDlg::_SendNewYearCard
   provenance: csv-import
+# IDA-derived: CUICashItemGachapon::OnButtonClicked send site 0x99a9a7 (task-207)
 - op: CASH_ITEM_GACHAPON_BUTTON
   direction: serverbound
   opcode: 161
   fname: CUICashItemGachapon::OnButtonClicked
-  provenance: csv-import
+  packet: cash/serverbound/CashItemGachaponButton
+  provenance: ida-discovered
+  ida:
+    address: 10070439
 - op: CLICK_GUIDE
   direction: serverbound
   opcode: 162
@@ -3177,6 +3245,7 @@
   direction: serverbound
   opcode: 230
   fname: CCashShop::OnStatusCoupon
+  packet: cash/serverbound/CouponCode
   provenance: csv-import
 - op: UNNAMED_R387
   direction: serverbound

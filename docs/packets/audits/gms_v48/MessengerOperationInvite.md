@@ -1,14 +1,15 @@
 # MessengerOperationInvite (← `CUIMessenger::SendInviteMsg`)
 
-- **IDA:** 
+- **IDA:** 0x61d8b8
 - **Atlas file:** `libs/atlas-packet/messenger/serverbound/operation_invite.go`
 - **Variant:** GMS/v48
 - **Branch depth:** 0
-- **Verdict:** 🚫
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | string | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | byte | byte `sub-op = 3 (INVITE)` | ✅ |  |
+| 1 | string | string `target character name` | ✅ |  |
 

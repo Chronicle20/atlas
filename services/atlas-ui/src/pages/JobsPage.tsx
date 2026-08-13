@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Briefcase } from "lucide-react";
 import { useTenant } from "@/context/tenant-context";
-import { useJobs } from "@/lib/hooks/api/useJobs";
+import { useJobGraph } from "@/lib/hooks/api/useJobGraph";
 import { useJobSkills } from "@/lib/hooks/api/useJobSkills";
 import { useJobSkillDefinitions } from "@/lib/hooks/api/useJobSkillDefinitions";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -13,7 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { JOB_GRAPH } from "@/lib/jobs/job-advancement-tree";
+import { jobNodeName, rootOf } from "@/lib/jobs/job-graph";
 import {
   branchEntryOf,
   visibleRailGroups,
@@ -34,19 +34,16 @@ export function JobsPage() {
   const { activeTenant } = useTenant();
   const isWide = useMediaQuery("(min-width: 1150px)");
 
-  const jobsQuery = useJobs(activeTenant);
-  // The tenant's actual job set, from GET /api/data/jobs. Empty while the query
-  // is pending — which is why every consumer below is gated on isSuccess rather
-  // than on the set being non-empty. TenantProvider calls queryClient.clear()
-  // on every tenant switch, so "pending with an empty set" is the state right
-  // after a switch, not an error.
-  const available = useMemo<ReadonlySet<number>>(
-    () => new Set((jobsQuery.data?.jobs ?? []).map((j) => Number(j.id))),
-    [jobsQuery.data],
-  );
+  // The tenant version's job graph: release availability ∩ WZ presence, with
+  // version-correct names and parent edges (FR-4.1/4.2/4.3). Empty while
+  // either query is pending — which is why every consumer below is gated on
+  // isSuccess rather than on the graph being non-empty. TenantProvider calls
+  // queryClient.clear() on every tenant switch, so "pending with an empty
+  // graph" is the state right after a switch, not an error.
+  const { graph, isSuccess, isPending, isError } = useJobGraph();
   const groups = useMemo(
-    () => (jobsQuery.isSuccess ? visibleRailGroups(available) : []),
-    [jobsQuery.isSuccess, available],
+    () => (isSuccess ? visibleRailGroups(graph) : []),
+    [isSuccess, graph],
   );
   const defaultJobId = groups[0]?.entries[0]?.id ?? 100;
 
@@ -54,34 +51,35 @@ export function JobsPage() {
   const jobIdValid =
     parsedJobId !== null &&
     Number.isInteger(parsedJobId) &&
-    JOB_GRAPH[parsedJobId] !== undefined &&
-    jobsQuery.isSuccess &&
-    available.has(parsedJobId);
-  // While the job set is pending the current jobId is retained: redirecting on
-  // an unknown set would bounce a valid /jobs/112 to /jobs on every tenant
+    isSuccess &&
+    graph.has(parsedJobId);
+  // While the graph is pending the current jobId is retained: redirecting on
+  // an unknown graph would bounce a valid /jobs/112 to /jobs on every tenant
   // switch (design D10).
   const jobId = jobIdValid
     ? parsedJobId
-    : jobsQuery.isSuccess
+    : isSuccess
       ? defaultJobId
       : (parsedJobId ?? defaultJobId);
 
   // FR-1.2 / FR-7.3: an unknown or tenant-absent jobId normalizes to /jobs with
   // replace, so Back doesn't bounce. Gated on isSuccess so a pending or failed
-  // job-set query never triggers it.
+  // graph query never triggers it.
   useEffect(() => {
-    if (
-      activeTenant &&
-      jobsQuery.isSuccess &&
-      parsedJobId !== null &&
-      !jobIdValid
-    ) {
+    if (activeTenant && isSuccess && parsedJobId !== null && !jobIdValid) {
       navigate("/jobs", { replace: true });
     }
-  }, [activeTenant, jobsQuery.isSuccess, parsedJobId, jobIdValid, navigate]);
+  }, [activeTenant, isSuccess, parsedJobId, jobIdValid, navigate]);
 
-  const entry = branchEntryOf(jobId);
-  const jobName = JOB_GRAPH[jobId]?.name ?? `Job ${jobId}`;
+  const railEntry = branchEntryOf(graph, jobId);
+  const entry = useMemo(() => {
+    for (const g of groups) {
+      const match = g.entries.find((e) => e.identity === railEntry.identity);
+      if (match) return match;
+    }
+    return { ...railEntry, id: rootOf(graph, jobId), name: "", count: 0 };
+  }, [groups, railEntry, graph, jobId]);
+  const jobName = jobNodeName(graph, jobId);
 
   const skillsQuery = useJobSkills(activeTenant, jobId);
   const skillIds = useMemo(() => skillsQuery.data ?? [], [skillsQuery.data]);
@@ -92,9 +90,7 @@ export function JobsPage() {
   } = useJobSkillDefinitions(activeTenant, skillIds);
 
   const loading =
-    jobsQuery.isPending ||
-    skillsQuery.isLoading ||
-    (skillIds.length > 0 && defsLoading);
+    isPending || skillsQuery.isLoading || (skillIds.length > 0 && defsLoading);
 
   const skillParam = searchParams.get("skill");
   const selectedSkillId = skillParam !== null ? Number(skillParam) : null;
@@ -139,7 +135,7 @@ export function JobsPage() {
             Select a tenant to browse its jobs and skills.
           </CardContent>
         </Card>
-      ) : jobsQuery.isError ? (
+      ) : isError ? (
         <Card>
           <CardContent
             data-testid="jobs-load-error"
@@ -162,7 +158,7 @@ export function JobsPage() {
             groups={groups}
             selectedEntryId={entry.id}
             onSelect={selectJob}
-            isPending={jobsQuery.isPending}
+            isPending={isPending}
           />
 
           <Card className="flex min-h-0 flex-col">
@@ -171,8 +167,8 @@ export function JobsPage() {
             </CardHeader>
             <div className="flex-none border-b px-4 pb-3.5">
               <AdvancementFlow
+                graph={graph}
                 entryId={entry.id}
-                available={available}
                 selectedJobId={jobId}
                 accent={entry.accent}
                 onSelect={selectJob}

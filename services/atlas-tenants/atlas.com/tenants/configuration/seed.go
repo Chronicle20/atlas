@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	defaultRpsRewardsPath = "/configurations/rps-rewards"
-	defaultMtsConfigsPath = "/configurations/mts-configs"
+	defaultRpsRewardsPath   = "/configurations/rps-rewards"
+	defaultMtsConfigsPath   = "/configurations/mts-configs"
+	defaultTradeConfigsPath = "/configurations/trade-configs"
 )
 
 // SeedResult represents the result of a seed operation
@@ -47,6 +48,23 @@ func getMtsConfigsPath() string {
 // and parses them into map[string]interface{} structs.
 func LoadMtsConfigFiles() ([]map[string]interface{}, []error) {
 	return loadSeedFiles(getMtsConfigsPath())
+}
+
+// getTradeConfigsPath returns the path to the trade configs seed directory.
+func getTradeConfigsPath() string {
+	if path := os.Getenv("TRADE_CONFIGS_SEED_PATH"); path != "" {
+		return path
+	}
+	return defaultTradeConfigsPath
+}
+
+// LoadTradeConfigFiles reads all JSON files from the trade configs seed
+// directory and parses them into map[string]interface{} structs. The directory
+// ships in the image (services/atlas-tenants/configurations/trade-configs →
+// /configurations/trade-configs), so unlike mts-configs this loader has a
+// directory to read.
+func LoadTradeConfigFiles() ([]map[string]interface{}, []error) {
+	return loadSeedFiles(getTradeConfigsPath())
 }
 
 // loadSeedFiles reads all JSON files from the given directory and parses them.

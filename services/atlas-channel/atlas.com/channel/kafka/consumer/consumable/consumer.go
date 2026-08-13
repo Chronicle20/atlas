@@ -2,6 +2,7 @@ package consumable
 
 import (
 	consumer2 "atlas-channel/kafka/consumer"
+	monsterconsumer "atlas-channel/kafka/consumer/monster"
 	consumable2 "atlas-channel/kafka/message/consumable"
 	"atlas-channel/listener"
 	_map "atlas-channel/map"
@@ -75,6 +76,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleViciousHammerConsumableEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleCatchFailedEvent(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -293,5 +299,25 @@ func handleViciousHammerConsumableEvent(sc server.Model, wp writer.Producer) mes
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process vicious hammer event for character [%d].", e.CharacterId)
 		}
+	}
+}
+
+// handleCatchFailedEvent renders a bridle-capture failure rejected before the
+// request reached atlas-monsters (delay gate, inventory full, invalid item).
+// It shares the wire-reason mapping and unlock idiom with the monster-side
+// CATCH_FAILED handler via monsterconsumer.AnnounceCatchFailure so the two
+// paths render identically.
+func handleCatchFailedEvent(sc server.Model, wp writer.Producer) message.Handler[consumable2.Event[consumable2.CatchFailedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e consumable2.Event[consumable2.CatchFailedBody]) {
+		if e.Type != consumable2.EventTypeCatchFailed {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		monsterconsumer.AnnounceCatchFailure(l, ctx, sc, wp, uint32(e.CharacterId), e.Body.ItemId, e.Body.Cause)
 	}
 }

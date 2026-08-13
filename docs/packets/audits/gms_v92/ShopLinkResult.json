@@ -1,0 +1,21 @@
+{
+  "WriterName": "ShopLinkResult",
+  "IDAName": "CWvsContext::OnShopLinkResult",
+  "Address": "0x9c5360",
+  "Variant": "GMS/v92",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/merchant/clientbound/shop_link_result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "resolved address/decompile but zero recognized Decode/Encode calls found; see notes",
+      "Verdict": 4,
+      "Note": "IDA read-order unresolved: resolved address/decompile but zero recognized Decode/Encode calls found; see notes"
+    }
+  ],
+  "Verdict": 4,
+  "FlatInvalid": false
+}

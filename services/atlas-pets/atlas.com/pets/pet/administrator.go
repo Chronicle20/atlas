@@ -108,6 +108,24 @@ func updateOnEvolve(db *gorm.DB) func(petId uint32, templateId uint32, expiratio
 	}
 }
 
+func updateFlag(db *gorm.DB) func(petId uint32, flag uint16) error {
+	return func(petId uint32, flag uint16) error {
+		result := db.Model(&Entity{}).
+			Where("id = ?", petId).
+			Update("flag", flag)
+
+		if result.Error != nil {
+			return result.Error
+		}
+
+		if result.RowsAffected == 0 {
+			return errors.New("no entity found or flag is already set to the given value")
+		}
+
+		return nil
+	}
+}
+
 func updateFullness(db *gorm.DB) func(petId uint32, fullness byte) error {
 	return func(petId uint32, fullness byte) error {
 		result := db.Model(&Entity{}).

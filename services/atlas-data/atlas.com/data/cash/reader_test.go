@@ -23,6 +23,7 @@ const testXML = `
       </canvas>
       <int name="slotMax" value="200"/>
       <int name="cash" value="1"/>
+      <int name="tradeBlock" value="1"/>
     </imgdir>
     <imgdir name="spec">
       <int name="inc" value="100"/>
@@ -572,6 +573,48 @@ func TestReader(t *testing.T) {
 	}
 }
 
+// TestCashReaderSurfacesTradeBlock pins PRD FR-4.2: tradeBlock must be
+// readable for every item family a trade can stage, not just consumable and
+// setup. A missing flag must never be read as "tradeable".
+func TestCashReaderSurfacesTradeBlock(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rm, ok := rmm[strconv.Itoa(5240000)]
+	if !ok {
+		t.Fatalf("rmm[5240000] does not exist.")
+	}
+	if !rm.TradeBlock {
+		t.Error("tradeBlock: got false, want true (fixture sets tradeBlock=1)")
+	}
+}
+
+// TestCashReaderTradeBlockDefaultsFalse pins PRD FR-4.2: a missing
+// tradeBlock node must never be read as "tradeable". 5240001 has no
+// tradeBlock node.
+func TestCashReaderTradeBlockDefaultsFalse(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rm, ok := rmm[strconv.Itoa(5240001)]
+	if !ok {
+		t.Fatalf("rmm[5240001] does not exist.")
+	}
+	if rm.TradeBlock {
+		t.Error("tradeBlock: got true, want false when the WZ node is absent")
+	}
+}
+
 func TestReaderExpCoupons(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
@@ -809,5 +852,273 @@ func TestReaderProtectTime(t *testing.T) {
 	}
 	if got := rmm[strconv.Itoa(5061001)].ProtectTime; got != 30 {
 		t.Fatalf("ProtectTime(5061001) = %d, want 30", got)
+	}
+}
+
+const testPetSkillXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="0519.img">
+  <imgdir name="05190001">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="consumeHP" value="1"/>
+      <int name="add" value="1"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05190006">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="consumeMP" value="1"/>
+      <int name="add" value="1"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05191001">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="consumeHP" value="1"/>
+      <int name="add" value="0"/>
+    </imgdir>
+  </imgdir>
+</imgdir>
+`
+
+func TestReaderPetSkills(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testPetSkillXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rmm) != 3 {
+		t.Fatalf("len(rmm) = %d, want 3", len(rmm))
+	}
+
+	cases := []struct {
+		id     string
+		skills []string
+		add    bool
+	}{
+		{"5190001", []string{"consumeHP"}, true},
+		{"5190006", []string{"consumeMP"}, true},
+		{"5191001", []string{"consumeHP"}, false},
+	}
+	for _, c := range cases {
+		rm, ok := rmm[c.id]
+		if !ok {
+			t.Fatalf("rmm[%s] does not exist", c.id)
+		}
+		if len(rm.PetSkills) != len(c.skills) || rm.PetSkills[0] != c.skills[0] {
+			t.Errorf("[%s] PetSkills = %v, want %v", c.id, rm.PetSkills, c.skills)
+		}
+		if rm.PetSkillAdd != c.add {
+			t.Errorf("[%s] PetSkillAdd = %t, want %t", c.id, rm.PetSkillAdd, c.add)
+		}
+	}
+}
+
+// testMesoSackXML mirrors the real GMS 83.1 Item.wz/Cash/0520.img node set:
+// icon/iconRaw/meso/cash only — no slotMax, no spec, no tradeBlock. 05200003
+// carries an explicit meso of 0 and 05200004 omits the node entirely; both
+// must land on Meso == 0 so the handler's fail-closed guard trips (FR-1.2).
+const testMesoSackXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="0520.img">
+  <imgdir name="05200000">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="meso" value="1000000"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05200001">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="meso" value="5000000"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05200002">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="meso" value="10000000"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05200003">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="meso" value="0"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05200004">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="maplepoint" value="10000"/>
+    </imgdir>
+  </imgdir>
+</imgdir>
+`
+
+func TestReaderMesoSacks(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testMesoSackXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		id   int
+		want uint32
+	}{
+		{5200000, 1000000},
+		{5200001, 5000000},
+		{5200002, 10000000},
+		{5200003, 0}, // explicit zero
+		{5200004, 0}, // node absent (Maple Point sack)
+	}
+	for _, tc := range cases {
+		rm, ok := rmm[strconv.Itoa(tc.id)]
+		if !ok {
+			t.Fatalf("cash item %d missing from read result", tc.id)
+		}
+		if rm.Meso != tc.want {
+			t.Errorf("Meso(%d) = %d, want %d", tc.id, rm.Meso, tc.want)
+		}
+	}
+}
+
+// The award amount is a first-class field, not an effect: folding it into Spec
+// would feed it to the consumable pipeline. Spec must gain no "meso" key.
+func TestReaderMesoNotFoldedIntoSpec(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testMesoSackXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, present := rmm[strconv.Itoa(5200000)].Spec[SpecType("meso")]; present {
+		t.Fatal(`Spec gained a "meso" key; the award amount must stay a first-class field`)
+	}
+}
+
+// testMorphCouponXML mirrors Item.wz/Cash/0530.img.xml (transformation coupons,
+// classification 530), trimmed of canvas nodes. Values verified against two
+// independent local WZ corpora: every item carries spec/hp 50 and
+// spec/time 600000, with spec/morph 1, 2, 3 respectively, and no morphRandom.
+const testMorphCouponXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="0530.img">
+  <imgdir name="05300000">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="price" value="100"/>
+      <int name="slotMax" value="200"/>
+      <int name="tradeBlock" value="1"/>
+    </imgdir>
+    <imgdir name="spec">
+      <int name="hp" value="50"/>
+      <int name="time" value="600000"/>
+      <int name="morph" value="1"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05300001">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="price" value="100"/>
+      <int name="slotMax" value="200"/>
+      <int name="tradeBlock" value="1"/>
+    </imgdir>
+    <imgdir name="spec">
+      <int name="hp" value="50"/>
+      <int name="time" value="600000"/>
+      <int name="morph" value="2"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05300002">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="price" value="100"/>
+      <int name="slotMax" value="200"/>
+      <int name="tradeBlock" value="1"/>
+    </imgdir>
+    <imgdir name="spec">
+      <int name="hp" value="50"/>
+      <int name="time" value="600000"/>
+      <int name="morph" value="3"/>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+// TestReaderMorphCoupons pins FR-2.3: all three 0530 items surface morph, hp and
+// time. Before this task the reader dropped morph and hp entirely, so the coupon
+// was inert no matter what the downstream services did.
+func TestReaderMorphCoupons(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testMorphCouponXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rmm) != 3 {
+		t.Fatalf("len(rmm) = %d, want 3", len(rmm))
+	}
+
+	for id, wantMorph := range map[int]int32{5300000: 1, 5300001: 2, 5300002: 3} {
+		rm, ok := rmm[strconv.Itoa(id)]
+		if !ok {
+			t.Fatalf("rmm[%d] does not exist", id)
+		}
+		if rm.SlotMax != 200 {
+			t.Errorf("[%d] SlotMax = %d, want 200", id, rm.SlotMax)
+		}
+		if !rm.TradeBlock {
+			t.Errorf("[%d] TradeBlock = false, want true", id)
+		}
+		morph, ok := rm.Spec[SpecTypeMorph]
+		if !ok {
+			t.Fatalf("[%d] Spec[SpecTypeMorph] does not exist", id)
+		}
+		if morph != wantMorph {
+			t.Errorf("[%d] Spec[SpecTypeMorph] = %d, want %d", id, morph, wantMorph)
+		}
+		hp, ok := rm.Spec[SpecTypeHp]
+		if !ok {
+			t.Fatalf("[%d] Spec[SpecTypeHp] does not exist", id)
+		}
+		if hp != 50 {
+			t.Errorf("[%d] Spec[SpecTypeHp] = %d, want 50", id, hp)
+		}
+		specTime, ok := rm.Spec[SpecTypeTime]
+		if !ok {
+			t.Fatalf("[%d] Spec[SpecTypeTime] does not exist", id)
+		}
+		// 600000 is the raw WZ value in MILLISECONDS. atlas-buffs' duration
+		// contract is milliseconds, so nothing on this path may rescale it.
+		if specTime != 600000 {
+			t.Errorf("[%d] Spec[SpecTypeTime] = %d, want 600000", id, specTime)
+		}
+	}
+}
+
+// TestReaderMorphHpAdditiveOnly pins FR-2.4: the two new keys are omit-when-zero,
+// so a non-0530 cash item's parse output gains nothing. 5211000 is a 0521 EXP
+// coupon, already covered end-to-end by TestReaderExpCoupons; this asserts the
+// only thing that could have regressed — spurious keys.
+func TestReaderMorphHpAdditiveOnly(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testExpCouponXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for id := range rmm {
+		rm := rmm[id]
+		if v, ok := rm.Spec[SpecTypeMorph]; ok {
+			t.Errorf("[%s] Spec[SpecTypeMorph] = %d, want absent on a 0521 EXP coupon", id, v)
+		}
+		if v, ok := rm.Spec[SpecTypeHp]; ok {
+			t.Errorf("[%s] Spec[SpecTypeHp] = %d, want absent on a 0521 EXP coupon", id, v)
+		}
 	}
 }

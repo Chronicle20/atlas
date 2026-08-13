@@ -87,3 +87,23 @@ func TestExtractResultCharacterId(t *testing.T) {
 		})
 	}
 }
+
+// A meso_sack_use saga can fail three ways: the ceiling rejection, a destroy
+// failure, and a timeout. Only the first may claim the meso limit as the reason
+// — saying "you cannot hold any more mesos" after a timeout would be a lie.
+func TestMesoSackFailureMessage(t *testing.T) {
+	cases := []struct {
+		code string
+		want string
+	}{
+		{saga.ErrorCodeMesoOverflow, "You cannot hold any more mesos."},
+		{saga.ErrorCodeUnknown, "You are unable to use this item right now."},
+		{"SAGA_TIMEOUT", "You are unable to use this item right now."},
+		{"", "You are unable to use this item right now."},
+	}
+	for _, tc := range cases {
+		if got := mesoSackFailureMessage(tc.code); got != tc.want {
+			t.Errorf("mesoSackFailureMessage(%q) = %q, want %q", tc.code, got, tc.want)
+		}
+	}
+}

@@ -1,0 +1,82 @@
+{
+  "service": "task-139-pet-auto-pot-validation (multi-module: libs/atlas-constants, libs/atlas-packet, atlas-data, atlas-pets, atlas-consumables, atlas-channel, atlas-configurations)",
+  "path": "services/atlas-channel/atlas.com/channel; services/atlas-pets/atlas.com/pets; services/atlas-consumables/atlas.com/consumables; services/atlas-data/atlas.com/data; libs/atlas-constants; libs/atlas-packet",
+  "date": "2026-07-26",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "services/atlas-channel/atlas.com/channel/data/consumable",
+      "type": "support (new REST client)",
+      "checks": [
+        { "id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "data/consumable/processor.go:11-27" },
+        { "id": "FILE-02", "name": "RestModel + Extract + JSON:API methods in rest.go", "status": "pass", "evidence": "data/consumable/rest.go:11-31" },
+        { "id": "FILE-03", "name": "Request funcs in requests.go", "status": "pass", "evidence": "data/consumable/requests.go:11-19" },
+        { "id": "FILE-05", "name": "Domain Model in model.go", "status": "fail", "evidence": "data/consumable/rest.go:39-55 defines Model inline; no model.go exists. Sibling data/item/model.go and data/map/model.go separate it." },
+        { "id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "processor.go/requests.go/rest.go only" },
+        { "id": "EXT-01", "name": "RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "data/consumable/rest.go:11-31 has no relationship methods; sibling data/map/rest.go:75-81 does" },
+        { "id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "no test file in services/atlas-channel/atlas.com/channel/data/consumable/" },
+        { "id": "EXT-03", "name": "404 vs other failures distinguished", "status": "pass", "evidence": "data/consumable/processor.go:26-28 is a pure pass-through, no misclassification" },
+        { "id": "EXT-04", "name": "URL via RootUrl, not hardcoded", "status": "pass", "evidence": "data/consumable/requests.go:15-17 requests.RootUrl(\"DATA\")" }
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel/data/equipment",
+      "type": "support (new REST client)",
+      "checks": [
+        { "id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "data/equipment/processor.go:11-27" },
+        { "id": "FILE-02", "name": "RestModel + Extract + JSON:API methods in rest.go", "status": "pass", "evidence": "data/equipment/rest.go:5-15" },
+        { "id": "FILE-03", "name": "Request funcs in requests.go", "status": "pass", "evidence": "data/equipment/requests.go:11-19" },
+        { "id": "FILE-05", "name": "Domain Model in model.go", "status": "fail", "evidence": "data/equipment/rest.go:26-33 defines Model inline; no model.go exists" },
+        { "id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "processor.go/requests.go/rest.go only" },
+        { "id": "EXT-01", "name": "RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "data/equipment/rest.go:5-15 has no relationship methods" },
+        { "id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "no test file in services/atlas-channel/atlas.com/channel/data/equipment/" },
+        { "id": "EXT-03", "name": "404 vs other failures distinguished", "status": "pass", "evidence": "pure pass-through, no misclassification" },
+        { "id": "EXT-04", "name": "URL via RootUrl, not hardcoded", "status": "pass", "evidence": "data/equipment/requests.go:15-17 requests.RootUrl(\"DATA\")" }
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel/socket/handler (pet_item_use.go)",
+      "type": "support (socket packet handler)",
+      "checks": [
+        { "id": "DOM-25", "name": "Client wire values config-resolved, never hardcoded", "status": "pass", "evidence": "libs/atlas-packet/model/asset.go:4642-4658 resolvePetSkillWireMask via ResolveCode16; unconfigured bits encode absent" },
+        { "id": "DOM-26", "name": "No bare go statements", "status": "pass", "evidence": "grep over changed non-test .go files: zero matches; model.Submit uses pre-existing errgroup-backed helper" },
+        { "id": "concurrency", "name": "No data races in model.NewGroup/Submit pattern", "status": "pass", "evidence": "pet_item_use.go:6046-6076 each goroutine writes a disjoint variable pair; pg.Wait() is the happens-before barrier; go test -race clean" },
+        { "id": "fail-closed", "name": "Every fetch failure/unconfigured gate/oversized petId rejects, never forwards", "status": "pass", "evidence": "pet_item_use.go:6022-6032,6079-6182" },
+        { "id": "DOM-28", "name": "No silent degradation in fetch-and-degrade paths", "status": "fail", "evidence": "pet_item_use.go:233 (compartment fetch) and 245-248 (per-equip GetById) swallow errors with no log, no metric; degrade package exists and is used elsewhere in this same branch (atlas-consumables/consumable/processor.go) but not applied here" }
+      ]
+    },
+    {
+      "name": "cross-service Kafka contracts (SET_SKILL / FLAG_CHANGED / RequestItemConsumeBody.PetId)",
+      "type": "contract check",
+      "checks": [
+        { "id": "kafka-contract", "name": "Producer/consumer name+type agreement", "status": "pass", "evidence": "atlas-consumables kafka/message/pet/kafka.go PetId uint32 fixed to match atlas-pets; FlagChangedStatusEventBody{Slot int8, Flag uint16} matches on both sides; RequestItemConsumeBody.PetId uint64 matches atlas-channel producer and atlas-consumables consumer" }
+      ]
+    },
+    {
+      "name": "libs/atlas-constants (pet/skill, item classification)",
+      "type": "shared library",
+      "checks": [
+        { "id": "DOM-21", "name": "Shared atlas-constants used, not redeclared", "status": "pass", "evidence": "item/constants.go:87 ClassificationPetSkill=519; pet/skill/constants.go new canonical bit package consumed via petskill.Has/Apply/BitFor; equip-family petAbilityKeys exception documented at data/equipment/reader.go:4977-4980" }
+      ]
+    },
+    {
+      "name": "services/atlas-pets/atlas.com/pets/pet (pre-existing domain, extended)",
+      "type": "domain",
+      "checks": [
+        { "id": "FILE-01", "name": "SetSkill/SetSkillAndEmit in processor.go", "status": "pass", "evidence": "pet/processor.go:8403-8446 (diff)" },
+        { "id": "FILE-05", "name": "updateFlag write in administrator.go", "status": "pass", "evidence": "pet/administrator.go:8257-8273 (diff)" },
+        { "id": "mock-sync", "name": "mock/processor.go updated for new interface methods", "status": "pass", "evidence": "pet/mock/processor.go:8300-8342 (diff)" }
+      ]
+    }
+  ],
+  "blocking": [
+    "EXT-01: services/atlas-channel/atlas.com/channel/data/consumable/rest.go and data/equipment/rest.go RestModel missing SetToOneReferenceID/SetToManyReferenceIDs",
+    "EXT-02: no httptest-backed integration test for data/consumable or data/equipment",
+    "FILE-05: Model struct placed in rest.go instead of model.go for data/consumable and data/equipment (diverges from sibling data/item, data/map)",
+    "DOM-28: resolveSkillSources in pet_item_use.go (lines 233, 245-248) silently drops fetch errors with no log/metric; unused existing degrade pattern"
+  ],
+  "nonBlocking": []
+}

@@ -2,12 +2,39 @@ package atlas_packet
 
 import (
 	"context"
+	"math"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
+
+// CodeConfigured reports whether options[property][key] is present, without
+// resolving it and without logging. It is the quiet companion to ResolveCode,
+// for the case where an ABSENT key is a legitimate, expected state rather than
+// a misconfiguration: a dispatcher arm that a given client version simply does
+// not have (the tenant template is the per-version authority — DOM-25, so
+// "not in the operations table" IS "not on this version", and no version
+// number is hard-coded anywhere).
+//
+// Callers must skip the write when this returns false. Sending anyway routes
+// through ResolveCode's 99 sentinel, which the client has no arm for.
+// ResolveCode/ResolveValue stay loud because for them a miss is a real
+// misconfiguration; this predicate exists so a by-design absence does not have
+// to be logged as an error on every occurrence.
+func CodeConfigured(options map[string]interface{}, property string, key string) bool {
+	genericCodes, ok := options[property]
+	if !ok {
+		return false
+	}
+	codes, ok := genericCodes.(map[string]interface{})
+	if !ok {
+		return false
+	}
+	_, ok = codes[key]
+	return ok
+}
 
 // WithResolvedCode resolves a byte code from options at encode time and delegates to the factory-produced encoder.
 // This eliminates the need for service-layer wrapper functions that only resolve a code and delegate.
@@ -92,6 +119,50 @@ func ResolveName(l logrus.FieldLogger, options map[string]interface{}, property 
 		}
 	}
 	return "", false
+}
+
+// ResolveCode16 looks up an optional uint16 code from the runtime options map.
+// Unlike ResolveCode — which returns a loud 99 default because a missing mode
+// byte is a fatal misconfiguration — a miss here is soft: the caller decides
+// what absence means. Used for sparse bit tables (e.g. the petSkill usPetSkill
+// table) where an unverified bit must encode as absent, never a guessed value.
+func ResolveCode16(l logrus.FieldLogger, options map[string]interface{}, property string, key string) (uint16, bool) {
+	genericCodes, ok := options[property]
+	if !ok {
+		l.Debugf("Property [%s] missing from options when resolving code [%s].", property, key)
+		return 0, false
+	}
+
+	codes, ok := genericCodes.(map[string]interface{})
+	if !ok {
+		l.Debugf("Property [%s] is not a map when resolving code [%s].", property, key)
+		return 0, false
+	}
+
+	raw, ok := codes[key]
+	if !ok {
+		l.Debugf("Code [%s] not configured in property [%s].", key, property)
+		return 0, false
+	}
+
+	switch v := raw.(type) {
+	case float64:
+		if v < 0 || v > math.MaxUint16 {
+			l.Debugf("Code [%s] in property [%s] has out-of-range value %.0f (valid range 0-%d).", key, property, v, math.MaxUint16)
+			return 0, false
+		}
+		return uint16(v), true
+	case string:
+		n, err := strconv.ParseUint(v, 0, 16)
+		if err != nil {
+			l.WithError(err).Debugf("Code [%s] in property [%s] has unparseable value [%q].", key, property, v)
+			return 0, false
+		}
+		return uint16(n), true
+	default:
+		l.Debugf("Code [%s] in property [%s] has unsupported type %T.", key, property, raw)
+		return 0, false
+	}
 }
 
 // ResolveValue looks up a uint32 wire value from the runtime options map.

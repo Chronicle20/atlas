@@ -1,14 +1,15 @@
 # MessengerOperationAnswerInvite (← `CUIMessenger::OnCreate`)
 
-- **IDA:** 
+- **IDA:** 0x61a701
 - **Atlas file:** `libs/atlas-packet/messenger/serverbound/operation_answer_invite.go`
 - **Variant:** GMS/v48
 - **Branch depth:** 0
-- **Verdict:** 🚫
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | byte | byte `op (0)` | ✅ |  |
+| 1 | int32 | int32 `messengerId` | ✅ |  |
 

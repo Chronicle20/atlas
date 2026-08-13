@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -45,12 +46,32 @@ func GetRouteHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.Han
 	})
 }
 
+// wantsSchedule reports whether the JSON:API `include` parameter asks for the
+// route's trip schedule. The list endpoint attaches a day's worth of trip rows
+// (~96 per route on a 15-minute cycle) only on request; consumers that read
+// only route attributes - the board, atlas-channel's IsBoatInMap sweep,
+// atlas-query-aggregator - get a document a fraction of the size. The detail
+// endpoint always attaches the schedule.
+func wantsSchedule(include string) bool {
+	for _, name := range strings.Split(include, ",") {
+		if strings.TrimSpace(name) == "schedule" {
+			return true
+		}
+	}
+	return false
+}
+
 // GetAllRoutesHandler returns a handler for the GET /transports/routes endpoint
 // Supports optional filter[startMapId] query parameter for filtering by start map
 func GetAllRoutesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
 		startMapIdFilter := query.Get("filter[startMapId]")
+
+		transformer := TransformSummary
+		if wantsSchedule(query.Get("include")) {
+			transformer = Transform
+		}
 
 		page, perr := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
 		if perr != nil {
@@ -79,7 +100,7 @@ func GetAllRoutesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http
 				rm = []RestModel{}
 			} else {
 				// Transform single route to REST model and wrap in array
-				restModel, transformErr := Transform(route)
+				restModel, transformErr := transformer(route)
 				if transformErr != nil {
 					d.Logger().WithError(transformErr).Errorf("Error transforming route for start map %d", mapId)
 					w.WriteHeader(http.StatusInternalServerError)
@@ -92,7 +113,7 @@ func GetAllRoutesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http
 			// unpaged (UpdateRoutes and AddTenant rely on it for the
 			// complete tenant route set); materialize -> stable-sort by
 			// the unique route id -> paginate.Slice here instead.
-			rm, err = model.SliceMap(Transform)(NewProcessor(d.Logger(), d.Context()).AllRoutesProvider())(model.ParallelMap())()
+			rm, err = model.SliceMap(transformer)(NewProcessor(d.Logger(), d.Context()).AllRoutesProvider())(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorln("Error retrieving routes")
 				w.WriteHeader(http.StatusInternalServerError)

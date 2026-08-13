@@ -1,0 +1,103 @@
+{
+  "service": "atlas-packet",
+  "path": "libs/atlas-packet",
+  "date": "2026-08-06",
+  "scopeCommit": "780040742",
+  "build": "pass",
+  "testsPassed": null,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "note": "libs/atlas-packet is a shared wire-codec library, not a DDD domain service; DOM-01..20/FILE-*/SUB-*/EXT-*/SCAFFOLD-* checklists are not applicable (no processor.go/resource.go/entity.go/REST surface). Only codec-relevant checks were run, per the audit brief.",
+  "domains": [
+    {
+      "name": "libs/atlas-packet/model (CharacterTemporaryStat foreign codec)",
+      "type": "support",
+      "checks": [
+        {
+          "id": "DOM-21",
+          "name": "No duplication of atlas-constants types",
+          "status": "pass",
+          "evidence": "character_temporary_stat.go:12 imports character.TemporaryStatType from libs/atlas-constants; no new type/const declarations in the diff."
+        },
+        {
+          "id": "ENC-DEC-SYM-1",
+          "name": "Every new writer has an exact mirroring reader",
+          "status": "pass",
+          "evidence": "character_temporary_stat.go:324-329 (MobSkillReasonForeignValueWriter) mirrors :368-372 (Reader); :336-342 (ValueMobSkillReasonForeignValueWriter) mirrors :374-379 (Reader). Pinned by TestCTSForeignDiseaseCarriesMobSkillKey and TestCTSForeignPoisonCarriesValueThenMobSkillKey against literal IDA-derived bytes."
+        },
+        {
+          "id": "ENC-DEC-SYM-2",
+          "name": "Old ValueSourceLevelForeignValueWriter/Reader cleanly removed",
+          "status": "pass",
+          "evidence": "git show 780040742 shows deletion; repo-wide grep for ValueSourceLevelForeignValue returns zero hits post-diff."
+        },
+        {
+          "id": "ENC-DEC-SYM-3",
+          "name": "EncodeForeign/DecodeForeign iterate in the same order including legacyGmsMask and baseStatNames branches",
+          "status": "pass",
+          "evidence": "character_temporary_stat.go:1073-1109 (EncodeForeign) and :1272-1301 (DecodeForeign) both call sortForeign(keys) before branching on legacyGmsMask; both filter via the same package-level baseStatNames map (:1081, :1280). sortForeign tie-break by unique Shift() (:1046-1054) rules out sort.Slice instability."
+        },
+        {
+          "id": "ORDER-FALLBACK",
+          "name": "foreignRank fallback (unnamed stats sort last by shift) is safe",
+          "status": "pass",
+          "evidence": "TestForeignReadOrderCoversEveryValueCarryingStat (character_temporary_stat_test.go) proves every non-named, non-base stat writes 0 bytes for all 12 pt.Variants, so the fallback tail never carries live bytes."
+        },
+        {
+          "id": "ORDER-COVERAGE",
+          "name": "Guard test version coverage vs. the canonical 9-version matrix",
+          "status": "pass",
+          "evidence": "pt.Variants (libs/atlas-packet/test/context.go:18-41) is a superset of the 9 canonical matrix versions in docs/packets/PROCESS.md:38-39, plus legacy v28/v48 (legacyGmsMask path) and extras v86/v92. GMS v12 (template exists) is absent from both the matrix and pt.Variants but is a pre-existing, unrelated gap."
+        },
+        {
+          "id": "INIT-HAZARD",
+          "name": "foreignReadOrderIndex init-order / mutability",
+          "status": "pass",
+          "evidence": "character_temporary_stat.go:1065-1071, IIFE depends on foreignReadOrder (:991); Go dependency-orders package var init regardless of source order. Single write site (init), read-only thereafter."
+        },
+        {
+          "id": "EXPORT-CONVENTION",
+          "name": "New writer/reader export-ness matches file convention",
+          "status": "pass",
+          "evidence": "All *ForeignValueWriter/*ForeignValueReader funcs in the file are exported (character_temporary_stat.go:276-379); new funcs follow suit. New helpers sortForeign/foreignRank are unexported, matching legacyGmsMask/writeMask/isGmsV61 convention."
+        },
+        {
+          "id": "TEST-QUALITY-1",
+          "name": "New tests pin real wire bytes, not tautologies",
+          "status": "pass",
+          "evidence": "TestCTSForeignDiseaseCarriesMobSkillKey, TestCTSForeignPoisonCarriesValueThenMobSkillKey, TestCTSForeignOrderMatchesClientReadOrder assert literal byte sequences derived from IDA evidence, not encoder-vs-itself."
+        },
+        {
+          "id": "TEST-QUALITY-2",
+          "name": "Round-trip tests' scope is honestly bounded",
+          "status": "pass",
+          "evidence": "pt.RoundTrip (libs/atlas-packet/test/roundtrip.go:22-34) only proves encode/decode self-consistency; investigation.md section 5 explicitly discloses the live two-client verification was not performed."
+        },
+        {
+          "id": "BEHAVIOR-SCOPE",
+          "name": "Non-disease stat ordering change disclosed, not silent",
+          "status": "pass",
+          "evidence": "sortForeign applies to all non-base foreign-value-carrying stats (character_temporary_stat.go:1079-1086), not just diseases; commit message's 'any two value-carrying stats' framing and investigation.md section 3's full-sequence verification table cover this breadth explicitly."
+        },
+        {
+          "id": "SCOPE-DEFERRAL",
+          "name": "Pre-existing non-disease mismatches correctly deferred, not silently dropped",
+          "status": "pass",
+          "evidence": "investigation.md section 6 and docs/TODO.md (new atlas-packet section) both document ShadowPartner truncation, BanMap on gms_v48, v95 Mechanic/DarkAura/BlueAura/YellowAura NoOp mismatch, and gms_v61 missing Confuse branch."
+        },
+        {
+          "id": "REGISTRY-CONSISTENCY",
+          "name": "Disease-writer reassignment covers exactly the 9 documented diseases",
+          "status": "pass",
+          "evidence": "character_temporary_stat.go:98-101,116-117,133,145 reassign Stun/Seal/Darkness/Poison/Weaken/Curse/Seduce/Confuse; Slow explicitly kept NoOp with rationale at :118-125; Undead stays a base/two-state stat, never reaching the foreign per-stat writer path."
+        }
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "4 pre-existing non-disease foreign-codec mismatches disclosed in investigation.md section 6 / docs/TODO.md remain open for a future task (ShadowPartner truncation, BanMap gms_v48, v95 Mechanic/DarkAura/BlueAura/YellowAura, gms_v61 Confuse).",
+    "GMS v12 seed template exists but is absent from both the 9-version coverage matrix and pt.Variants -- pre-existing, unrelated to this commit.",
+    "Live two-client verification from the original issue's repro was not performed; substituted with literal-byte + IDA cross-reference tests, explicitly disclosed as an open item in investigation.md section 5."
+  ]
+}

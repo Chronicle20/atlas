@@ -3,6 +3,8 @@ direction: serverbound
 version: gms_v87
 category: TIER1-FIXTURE
 ida:
-    function: CCashTradingRoomDlg::Trade
-    address: "0x494dcb"
-    decompile_sha256: 19a62993e1897584307028b8f84855c64ffce6be69c9bff93f8ce9a34749e9a6
+    function: CTradingRoomDlg::OnTrade
+    address: "0x815773"
+    decompile_sha256: ae6adad5dbb0607868c3282b9d9e9ded2b5eaca6a19b59f20bf87454a7232673
+verifies:
+    - libs/atlas-packet/interaction/serverbound/operation_transaction_test.go#TestOperationTransactionByteOutput

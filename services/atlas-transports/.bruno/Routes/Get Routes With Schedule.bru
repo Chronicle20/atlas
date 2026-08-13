@@ -1,0 +1,15 @@
+meta {
+  name: Get Routes With Schedule
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/transports/routes?include=schedule
+  body: none
+  auth: inherit
+}
+
+params:query {
+  include: schedule
+}

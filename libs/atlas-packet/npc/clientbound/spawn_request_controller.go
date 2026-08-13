@@ -35,7 +35,7 @@ func (m SpawnRequestController) String() string {
 	return fmt.Sprintf("id [%d], template [%d], miniMap [%t]", m.id, m.template, m.miniMap)
 }
 
-func (m SpawnRequestController) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m SpawnRequestController) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.flag)
@@ -51,12 +51,21 @@ func (m SpawnRequestController) Encode(l logrus.FieldLogger, _ context.Context) 
 		w.WriteShort(m.fh)
 		w.WriteInt16(m.rx0)
 		w.WriteInt16(m.rx1)
-		w.WriteBool(m.miniMap)
+		// Same trailing byte, same boundary, same delegate as NpcSpawn: v48
+		// CNpcPool::OnNpcChangeController @0x56d617 reads Decode1(flag) then
+		// Decode4(id), and on the local-npc arm CNpcPool::SetLocalNpc @0x56d267
+		// reads Decode4(template) and hands off to CNpc::Init (sub_566A30
+		// @0x566a30) - the very function NpcSpawn delegates to, which stops after
+		// rx1. v83 @0x6d9a83, v87 @0x7170c8 and v95 @0x679730 read ten fields;
+		// v48 reads nine.
+		if hasEnabledFlag(ctx) {
+			w.WriteBool(m.miniMap)
+		}
 		return w.Bytes()
 	}
 }
 
-func (m *SpawnRequestController) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *SpawnRequestController) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.flag = r.ReadByte()
 		m.id = r.ReadUint32()
@@ -72,6 +81,8 @@ func (m *SpawnRequestController) Decode(_ logrus.FieldLogger, _ context.Context)
 		m.fh = r.ReadUint16()
 		m.rx0 = r.ReadInt16()
 		m.rx1 = r.ReadInt16()
-		m.miniMap = r.ReadBool()
+		if hasEnabledFlag(ctx) {
+			m.miniMap = r.ReadBool()
+		}
 	}
 }

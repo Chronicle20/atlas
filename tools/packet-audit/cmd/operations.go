@@ -16,22 +16,28 @@ import (
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/matrix"
 )
 
-// operations validates (and generates) the tenant template `operations` mode
-// tables against the IDA-verified per-version dispatcher enumerations in
-// docs/packets/dispatchers/*.yaml — the SOURCE OF TRUTH for each writer's
-// string→mode map. Keeping the templates in sync means a mode byte that drifts
-// from the client's actual switch (→ ResolveCode returns 99 → client crash) is
-// caught in CI, not at runtime.
+// operations validates (and generates) the tenant template `operations` and
+// `errors` mode tables against the IDA-verified per-version dispatcher
+// enumerations in docs/packets/dispatchers/*.yaml — the SOURCE OF TRUTH for
+// each writer's string→mode map. Keeping the templates in sync means a mode
+// byte that drifts from the client's actual switch (→ ResolveCode returns 99
+// → client crash) is caught in CI, not at runtime.
 //
-//   default   — generate: write each writer's options.operations from the YAML.
+//   default   — generate: write each writer's options.operations and
+//               options.errors from the YAML.
 //   --check   — exit 1 on drift (template != YAML), a missing table (YAML covers
-//               the version but the writer lacks operations), or extra/stale
+//               the version but the writer lacks the table), or extra/stale
 //               keys. A writer absent from a template is reported, not failed.
 
 type operationsOpts struct {
 	DispatchersDir string
 	TemplatesDir   string
 	Check          bool
+}
+
+type opEntry struct {
+	Key   string         `yaml:"key"`
+	Modes map[string]int `yaml:"modes"`
 }
 
 type dispatcherDoc struct {
@@ -46,12 +52,37 @@ type dispatcherDoc struct {
 	// Opcodes optionally supplies the per-version opCode (e.g. "0x14B").
 	// When a template LACKS this entry entirely but the YAML provides the
 	// version's opcode, `operations` generate ADDS the entry (opCode +
-	// writer/handler + operations); `--check` flags its absence as missing.
-	Opcodes    map[string]string `yaml:"opcodes"`
-	Operations []struct {
-		Key   string         `yaml:"key"`
-		Modes map[string]int `yaml:"modes"`
-	} `yaml:"operations"`
+	// writer/handler + tables); `--check` flags its absence as missing.
+	Opcodes map[string]string `yaml:"opcodes"`
+	// Validator is the socket-config validator name for a generated HANDLER
+	// entry. BuildHandlerMap (libs/atlas-opcodes/producer.go) looks this name
+	// up and silently `continue`s past the handler when it is missing or
+	// unknown, so a generated entry without it never routes. Required for any
+	// doc that declares `opcodes` for a handler.
+	Validator string `yaml:"validator"`
+	// Services restricts the generated entry to specific services. Empty means
+	// "all services" (libs/atlas-opcodes/config.go appliesToService), which is
+	// safe but unconventional — every hand-written entry names its service.
+	Services   []string  `yaml:"services"`
+	Operations []opEntry `yaml:"operations"`
+	// Errors is a second, structurally identical table generated into
+	// options.errors. It backs ResolveCode(l, options, "errors", key) — the
+	// reason byte of every *_FAILED arm. Hand-maintaining it recreates
+	// exactly the drift that left three templates' operations tables empty.
+	Errors []opEntry `yaml:"errors"`
+}
+
+// tables enumerates the option tables this doc drives, in emit order.
+func (d dispatcherDoc) tables() []optionTable {
+	return []optionTable{
+		{name: "operations", entries: d.Operations},
+		{name: "errors", entries: d.Errors},
+	}
+}
+
+type optionTable struct {
+	name    string
+	entries []opEntry
 }
 
 // arrayKey / entryKey / targetName resolve which socket array and entry key
@@ -115,45 +146,58 @@ func operationsRun(o operationsOpts, stdout, stderr io.Writer) int {
 		changed := false
 		for _, doc := range docs {
 			name := doc.targetName()
-			expected := expectedTable(doc, vk)
+			tables := doc.tables()
+			total := 0
+			for _, tb := range tables {
+				total += len(expectedFor(tb.entries, vk))
+			}
 			entries := entriesOf(root, doc.arrayKey())
 			w := findEntryNode(entries, doc.entryKey(), name)
 			if w == nil {
-				if len(expected) == 0 {
-					continue
-				}
 				oc, hasOC := doc.Opcodes[vk]
+				// An opcode-less doc with no tables has nothing to wire for
+				// this version — skip silently. An opcode-less doc WITH
+				// tables is worth flagging as absent. A doc that declares
+				// this version's opcode always gets wired, even with no
+				// operations/errors tables (e.g. a plain handler entry that
+				// only needs opCode/validator/services to route).
 				if !hasOC {
-					absent = append(absent, fmt.Sprintf("%s: %s %q not in template (cannot populate %d ops; add an opcodes entry to the YAML to wire it)", vk, doc.entryKey(), name, len(expected)))
+					if total == 0 {
+						continue
+					}
+					absent = append(absent, fmt.Sprintf("%s: %s %q not in template (cannot populate %d ops; add an opcodes entry to the YAML to wire it)", vk, doc.entryKey(), name, total))
 					continue
 				}
 				if o.Check {
 					missing = append(missing, fmt.Sprintf("%s %s: entry absent (should be wired at %s)", vk, name, oc))
 					continue
 				}
-				if addEntry(root, doc, oc, expected) {
+				if addEntry(root, doc, vk, oc) {
 					changed = true
 				}
 				continue
 			}
-			if len(expected) == 0 {
-				continue
-			}
-			got := operationsOf(w)
-			for k, want := range expected {
-				if gv, ok := got[k]; !ok {
-					missing = append(missing, fmt.Sprintf("%s %s: key %q missing (want %d)", vk, name, k, want))
-				} else if gv != want {
-					drift = append(drift, fmt.Sprintf("%s %s: key %q is %d, want %d", vk, name, k, gv, want))
+			for _, tb := range tables {
+				expected := expectedFor(tb.entries, vk)
+				if len(expected) == 0 {
+					continue
 				}
-			}
-			for k := range got {
-				if _, ok := expected[k]; !ok {
-					extra = append(extra, fmt.Sprintf("%s %s: key %q in template but not in enumeration", vk, name, k))
+				got := tableOf(w, tb.name)
+				for k, want := range expected {
+					if gv, ok := got[k]; !ok {
+						missing = append(missing, fmt.Sprintf("%s %s: %s key %q missing (want %d)", vk, name, tb.name, k, want))
+					} else if gv != want {
+						drift = append(drift, fmt.Sprintf("%s %s: %s key %q is %d, want %d", vk, name, tb.name, k, gv, want))
+					}
 				}
-			}
-			if !o.Check && setOperations(w, doc, expected) {
-				changed = true
+				for k := range got {
+					if _, ok := expected[k]; !ok {
+						extra = append(extra, fmt.Sprintf("%s %s: %s key %q in template but not in enumeration", vk, name, tb.name, k))
+					}
+				}
+				if !o.Check && setTable(w, tb.name, tb.entries, expected) {
+					changed = true
+				}
 			}
 		}
 		if !o.Check && changed {
@@ -224,9 +268,9 @@ func loadDispatcherDocs(dir string) ([]dispatcherDoc, error) {
 	return out, nil
 }
 
-func expectedTable(d dispatcherDoc, version string) map[string]int {
+func expectedFor(entries []opEntry, version string) map[string]int {
 	m := map[string]int{}
-	for _, op := range d.Operations {
+	for _, op := range entries {
 		if v, ok := op.Modes[version]; ok {
 			m[op.Key] = v
 		}
@@ -408,50 +452,13 @@ func arrayNode(root *node, arrayKey string) *node {
 	return w
 }
 
-// buildOperationsNode builds a fresh, dirty operations object node in YAML order.
-func buildOperationsNode(doc dispatcherDoc, expected map[string]int) *node {
-	ops := &node{kind: 'o', obj: map[string]*node{}, dirty: true}
-	for _, op := range doc.Operations {
-		v, ok := expected[op.Key]
-		if !ok {
-			continue
-		}
-		ops.keys = append(ops.keys, op.Key)
-		ops.obj[op.Key] = &node{kind: 's', raw: json.RawMessage(strconv.Itoa(v))}
-	}
-	return ops
-}
-
-// addWriter appends a new writer entry {opCode, writer, options:{operations}} to
-// socket.writers. Returns true on success.
-func addEntry(root *node, doc dispatcherDoc, opcode string, expected map[string]int) bool {
-	arr := arrayNode(root, doc.arrayKey())
-	if arr == nil {
-		return false
-	}
-	entryKey := doc.entryKey()
-	ocBytes, _ := json.Marshal(opcode)
-	wnBytes, _ := json.Marshal(doc.targetName())
-	opts := &node{kind: 'o', obj: map[string]*node{}, dirty: true}
-	opts.keys = []string{"operations"}
-	opts.obj["operations"] = buildOperationsNode(doc, expected)
-	w := &node{kind: 'o', dirty: true, obj: map[string]*node{
-		"opCode":  {kind: 's', raw: ocBytes},
-		entryKey:  {kind: 's', raw: wnBytes},
-		"options": opts,
-	}, keys: []string{"opCode", entryKey, "options"}}
-	arr.arr = append(arr.arr, w)
-	arr.dirty = true
-	return true
-}
-
-func operationsOf(w *node) map[string]int {
+func tableOf(w *node, table string) map[string]int {
 	out := map[string]int{}
 	opts := w.obj["options"]
 	if opts == nil || opts.kind != 'o' {
 		return out
 	}
-	ops := opts.obj["operations"]
+	ops := opts.obj[table]
 	if ops == nil || ops.kind != 'o' {
 		return out
 	}
@@ -477,9 +484,22 @@ func operationsOf(w *node) map[string]int {
 	return out
 }
 
-// setOperations writes the writer's options.operations in YAML declaration
-// order. Returns true if anything changed.
-func setOperations(w *node, doc dispatcherDoc, expected map[string]int) bool {
+func buildTableNode(entries []opEntry, expected map[string]int) *node {
+	ops := &node{kind: 'o', obj: map[string]*node{}, dirty: true}
+	for _, op := range entries {
+		v, ok := expected[op.Key]
+		if !ok {
+			continue
+		}
+		ops.keys = append(ops.keys, op.Key)
+		ops.obj[op.Key] = &node{kind: 's', raw: json.RawMessage(strconv.Itoa(v))}
+	}
+	return ops
+}
+
+// setTable writes the entry's options.<table> in YAML declaration order.
+// Returns true if anything changed.
+func setTable(w *node, table string, entries []opEntry, expected map[string]int) bool {
 	before := nodeBytes(w)
 	opts := w.obj["options"]
 	if opts == nil || opts.kind != 'o' {
@@ -487,11 +507,105 @@ func setOperations(w *node, doc dispatcherDoc, expected map[string]int) bool {
 		w.keys = append(w.keys, "options")
 		w.obj["options"] = opts
 	}
-	if _, ok := opts.obj["operations"]; !ok {
-		opts.keys = append(opts.keys, "operations")
+	if _, ok := opts.obj[table]; !ok {
+		opts.keys = append(opts.keys, table)
 	}
-	opts.obj["operations"] = buildOperationsNode(doc, expected)
+	opts.obj[table] = buildTableNode(entries, expected)
 	return !bytes.Equal(before, nodeBytes(w))
+}
+
+// addEntry inserts a new entry {opCode, validator, writer/handler, fname,
+// options, services} into socket.writers/handlers at its ascending-opCode
+// position, seeding every non-empty table for this version. Returns true on
+// success.
+func addEntry(root *node, doc dispatcherDoc, version string, opcode string) bool {
+	arr := arrayNode(root, doc.arrayKey())
+	if arr == nil {
+		return false
+	}
+	entryKey := doc.entryKey()
+
+	w := &node{kind: 'o', dirty: true, obj: map[string]*node{}}
+	put := func(k string, v interface{}) {
+		b, _ := json.Marshal(v)
+		w.keys = append(w.keys, k)
+		w.obj[k] = &node{kind: 's', raw: b}
+	}
+	// Key order mirrors the hand-written entries: opCode, validator, handler,
+	// fname, options, services.
+	put("opCode", opcode)
+	if doc.Validator != "" {
+		put("validator", doc.Validator)
+	}
+	put(entryKey, doc.targetName())
+	if doc.FName != "" {
+		put("fname", doc.FName)
+	}
+
+	opts := &node{kind: 'o', obj: map[string]*node{}, dirty: true}
+	for _, tb := range doc.tables() {
+		expected := expectedFor(tb.entries, version)
+		if len(expected) == 0 {
+			continue
+		}
+		opts.keys = append(opts.keys, tb.name)
+		opts.obj[tb.name] = buildTableNode(tb.entries, expected)
+	}
+	if len(opts.keys) > 0 {
+		w.keys = append(w.keys, "options")
+		w.obj["options"] = opts
+	}
+	if len(doc.Services) > 0 {
+		svc := &node{kind: 'a', dirty: true}
+		for _, s := range doc.Services {
+			b, _ := json.Marshal(s)
+			svc.arr = append(svc.arr, &node{kind: 's', raw: b})
+		}
+		w.keys = append(w.keys, "services")
+		w.obj["services"] = svc
+	}
+
+	insertSorted(arr, w, opcode)
+	arr.dirty = true
+	return true
+}
+
+// insertSorted places e at the first index whose opCode is greater than e's,
+// keeping the array in the strictly-ascending order that
+// tools/template-opcode-order-guard.sh enforces. An entry with an unparseable
+// opCode is treated as "not greater" so a pre-existing malformed row cannot
+// push the insertion point earlier than it belongs.
+func insertSorted(arr *node, e *node, opcode string) {
+	want, err := strconv.ParseInt(opcode, 0, 32)
+	if err != nil {
+		arr.arr = append(arr.arr, e)
+		return
+	}
+	idx := len(arr.arr)
+	for i, cur := range arr.arr {
+		if cur.kind != 'o' {
+			continue
+		}
+		oc, ok := cur.obj["opCode"]
+		if !ok || oc.kind != 's' {
+			continue
+		}
+		var s string
+		if json.Unmarshal(oc.raw, &s) != nil {
+			continue
+		}
+		got, cerr := strconv.ParseInt(s, 0, 32)
+		if cerr != nil {
+			continue
+		}
+		if got > want {
+			idx = i
+			break
+		}
+	}
+	arr.arr = append(arr.arr, nil)
+	copy(arr.arr[idx+1:], arr.arr[idx:])
+	arr.arr[idx] = e
 }
 
 // nodeBytes is a deterministic compact serialization used only for change

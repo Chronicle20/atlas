@@ -42,41 +42,44 @@ func ParseJobId(filePath string) (uint32, error) {
 	return uint32(id), nil
 }
 
-func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
-	return func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
+func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[Derivation] {
+	return func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[Derivation] {
 		t := tenant.MustFromContext(ctx)
-		return func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
+		return func(np model.Provider[xml.Node]) model.Provider[Derivation] {
 			exml, err := np()
 			if err != nil {
-				return model.ErrorProvider[[]RestModel](err)
+				return model.ErrorProvider[Derivation](err)
 			}
 
 			jobId, err := ParseJobId(exml.Name)
 			if err != nil {
-				return model.ErrorProvider[[]RestModel](err)
+				return model.ErrorProvider[Derivation](err)
 			}
 			l.Debugf("Processing skills for job [%d].", jobId)
 
 			ssxml, err := exml.ChildByName("skill")
 			if err != nil {
-				return model.ErrorProvider[[]RestModel](err)
+				return model.ErrorProvider[Derivation](err)
 			}
 
 			ms := make([]RestModel, 0)
+			stats := Stats{}
 			for _, sxml := range ssxml.ChildNodes {
 				skillId, err := strconv.Atoi(sxml.Name)
 				if err != nil {
-					return model.ErrorProvider[[]RestModel](err)
+					return model.ErrorProvider[Derivation](err)
 				}
 				l.Debugf("Processing skill [%d] for job [%d].", skillId, jobId)
 
-				m, err := produceSkill(t, skill.Id(skillId), sxml)
+				m, s, err := produceSkill(l, t, jobId, skill.Id(skillId), sxml)
 				if err != nil {
-					return model.ErrorProvider[[]RestModel](err)
+					return model.ErrorProvider[Derivation](err)
 				}
+				stats.Add(s)
 				ms = append(ms, m)
 			}
-			return model.FixedProvider[[]RestModel](ms)
+			l.Debugf("Derived %d skills for job [%d].", stats.Processed, jobId)
+			return model.FixedProvider(Derivation{Models: ms, Stats: stats})
 		}
 	}
 }
@@ -103,7 +106,7 @@ func isSuperGmHealDispel(t tenant.Model, skillId skill.Id) bool {
 	return ok && id == skill.SuperGmHealDispel
 }
 
-func produceSkill(t tenant.Model, skillId skill.Id, xml xml.Node) (RestModel, error) {
+func produceSkill(l logrus.FieldLogger, t tenant.Model, jobId uint32, skillId skill.Id, xml xml.Node) (RestModel, Stats, error) {
 	element := readElement(xml)
 	action := false
 	buff := false
@@ -123,10 +126,29 @@ func produceSkill(t tenant.Model, skillId skill.Id, xml xml.Node) (RestModel, er
 
 	}
 
+	stats := Stats{Processed: 1}
 	es := make([]effect.RestModel, 0)
-	level, err := xml.ChildByName("level")
-	if err == nil {
+	maxLevel := uint8(0)
+
+	// FR-1.2: COMMON WINS UNCONDITIONALLY. When `common` is present the
+	// `level` subtree is not read at all. Detection is structural — never
+	// gated on region/major/minor (FR-1.4).
+	if common, err := xml.ChildByName("common"); err == nil {
+		var commonStats Stats
+		es, maxLevel, commonStats = expandCommon(l, t, jobId, skillId, buff, common)
+		stats.Add(commonStats)
+		stats.FromCommon = 1
+	} else if level, err := xml.ChildByName("level"); err == nil {
 		es = getEffects(t, skillId, buff, level.ChildNodes)
+		if n := len(es); n > 255 {
+			maxLevel = 255
+		} else {
+			maxLevel = uint8(n)
+		}
+		stats.FromLevel = 1
+	} else {
+		// FR-1.3: neither subtree. Zero effects, maxLevel 0, no panic.
+		stats.Neither = 1
 	}
 
 	name, desc := "", ""
@@ -134,13 +156,6 @@ func produceSkill(t tenant.Model, skillId skill.Id, xml xml.Node) (RestModel, er
 	if err == nil {
 		name = ss.Name()
 		desc = ss.Desc()
-	}
-
-	maxLevel := uint8(0)
-	if n := len(es); n > 255 {
-		maxLevel = 255
-	} else {
-		maxLevel = uint8(n)
 	}
 
 	m := RestModel{
@@ -154,7 +169,7 @@ func produceSkill(t tenant.Model, skillId skill.Id, xml xml.Node) (RestModel, er
 		Effects:       es,
 	}
 
-	return m, nil
+	return m, stats, nil
 }
 
 func getEffects(t tenant.Model, skillId skill.Id, buff bool, nodes []xml.Node) []effect.RestModel {
@@ -234,6 +249,20 @@ func getEffect(t tenant.Model, skillId skill.Id, overTime bool, node xml.Node) e
 	e.SetLT(point.NewModel(point.X(int16(ltX)), point.Y(int16(ltY)))).
 		SetRB(point.NewModel(point.X(int16(rbX)), point.Y(int16(rbY))))
 
+	// DoT fields. `dot` is a raw damage-per-tick integer, forwarded unscaled.
+	// `dotInterval` and `dotTime` are WZ SECONDS -- converted to milliseconds
+	// HERE, the single conversion point, matching the `time` treatment above
+	// (task-054). No downstream service may re-scale.
+	//
+	// Read here rather than in the `common`-key block below (task-192) because
+	// this is the ONLY site that may scale them: that block forwards its keys
+	// unscaled, and re-reading dot* there would silently undo the conversion.
+	// Both blocks live in the shared getEffect, so the `common` and `level`
+	// paths are covered either way. See task-200 design §2.1.
+	e.SetDot(node.GetIntegerWithDefault("dot", 0)).
+		SetDotInterval(node.GetIntegerWithDefault("dotInterval", 0) * 1000).
+		SetDotTime(node.GetIntegerWithDefault("dotTime", 0) * 1000)
+
 	e.SetX(int16(node.GetIntegerWithDefault("x", 0))).
 		SetY(int16(node.GetIntegerWithDefault("y", 0))).
 		SetDamage(uint32(node.GetIntegerWithDefault("damage", 100))).
@@ -245,6 +274,43 @@ func getEffect(t tenant.Model, skillId skill.Id, overTime bool, node xml.Node) e
 		SetItemConsume(uint32(node.GetIntegerWithDefault("itemCon", 0))).
 		SetItemConsumeNumber(uint32(node.GetIntegerWithDefault("itemConNo", 0))).
 		SetMoveTo(node.GetIntegerWithDefault("moveTo", -1))
+
+	// Skill.wz `common` keys (task-192). Read here, in the single shared
+	// getEffect, so they populate on BOTH the `common` and `level` paths
+	// (FR-6.1). Absent keys default to 0, matching the `level` path's rule
+	// for every key it does not find.
+	e.SetRange(node.GetIntegerWithDefault("range", 0)).
+		SetMastery(node.GetIntegerWithDefault("mastery", 0)).
+		SetZ(node.GetIntegerWithDefault("z", 0)).
+		SetCr(node.GetIntegerWithDefault("cr", 0)).
+		SetDamR(node.GetIntegerWithDefault("damR", 0)).
+		SetCriticaldamageMin(node.GetIntegerWithDefault("criticaldamageMin", 0)).
+		SetMHPRRate(uint16(node.GetIntegerWithDefault("mhpR", 0))).
+		SetV(node.GetIntegerWithDefault("v", 0)).
+		SetIgnoreMobpdpR(node.GetIntegerWithDefault("ignoreMobpdpR", 0)).
+		SetEpad(node.GetIntegerWithDefault("epad", 0)).
+		SetW(node.GetIntegerWithDefault("w", 0)).
+		SetU(node.GetIntegerWithDefault("u", 0)).
+		SetEpdd(node.GetIntegerWithDefault("epdd", 0)).
+		SetEmdd(node.GetIntegerWithDefault("emdd", 0)).
+		SetSelfDestruction(node.GetIntegerWithDefault("selfDestruction", 0)).
+		SetAsrR(node.GetIntegerWithDefault("asrR", 0)).
+		SetMMPRRate(uint16(node.GetIntegerWithDefault("mmpR", 0))).
+		SetT(node.GetIntegerWithDefault("t", 0)).
+		SetEr(node.GetIntegerWithDefault("er", 0)).
+		SetPddR(node.GetIntegerWithDefault("pddR", 0)).
+		SetTerR(node.GetIntegerWithDefault("terR", 0)).
+		SetMadX(node.GetIntegerWithDefault("madX", 0)).
+		SetSubProp(node.GetIntegerWithDefault("subProp", 0)).
+		SetEmhp(node.GetIntegerWithDefault("emhp", 0)).
+		SetCriticaldamageMax(node.GetIntegerWithDefault("criticaldamageMax", 0)).
+		SetExpR(node.GetIntegerWithDefault("expR", 0)).
+		SetEmmp(node.GetIntegerWithDefault("emmp", 0)).
+		SetConsumeItemId(node.GetIntegerWithDefault("itemConsume", 0)).
+		SetMddR(node.GetIntegerWithDefault("mddR", 0)).
+		SetSubTime(node.GetIntegerWithDefault("subTime", 0)).
+		SetPadX(node.GetIntegerWithDefault("padX", 0)).
+		SetMesoR(node.GetIntegerWithDefault("mesoR", 0))
 
 	ms := make(map[string]uint32)
 
@@ -400,8 +466,14 @@ func getEffect(t tenant.Model, skillId skill.Id, overTime bool, node xml.Node) e
 		ms[monster.StatusFreeze] = 1
 	} else if skill.Is(skillId, skill.EvanStage8PhantomImprintId) {
 		ms[monster.StatusPhantomImprint] = uint32(e.X())
-	} else if skill.Is(skillId, skill.AranStage1ComboAbilityId) {
-		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeAranCombo, 100)
+	} else if skill.Is(skillId, skill.AranStage1ComboAbilityId, skill.LegendComboAbilityId) {
+		// ARAN_COMBO is a damage-calculation input decoded by the client as a
+		// signed short (SecondaryStat::DecodeForLocal), NOT the combo count --
+		// the count is delivered by SHOW_COMBO and never touches this stat
+		// (task-217 design.md §2.3). Combo Ability's WZ node carries no field
+		// whose value is 100; x is the level-scaled magnitude, matching every
+		// sibling Aran statup below.
+		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeAranCombo, int32(e.X()))
 	} else if skill.Is(skillId, skill.AranStage4ComboBarrierId) {
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeComboBarrier, int32(e.X()))
 	} else if skill.Is(skillId, skill.AranStage2ComboDrainId) {
@@ -420,9 +492,14 @@ func getEffect(t tenant.Model, skillId skill.Id, overTime bool, node xml.Node) e
 	}
 
 	statups = produceBuffStatAmount(statups, character.TemporaryStatTypeMorph, int32(e.MorphId()))
-	return e.SetMonsterStatus(ms).
+	m := e.SetMonsterStatus(ms).
 		SetStatups(statups).
 		Build()
+	// Transform is a pure struct copy over an already-built Model; it never
+	// errors in practice (mirrors the no-op-error Transform convention used
+	// elsewhere, e.g. atlas-query-aggregator's transport.Transform).
+	rm, _ := effect.Transform(m)
+	return rm
 }
 
 func getMob(node xml.Node) uint32 {

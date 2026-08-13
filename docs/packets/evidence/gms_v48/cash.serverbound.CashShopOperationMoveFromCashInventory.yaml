@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashShopOperationMoveFromCashInventory
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnMoveCashItemLtoS
+    address: "0x44ec2c"
+    decompile_sha256: 32e9c033032e5e7731fb69db88bb75b4a36ecd77d4e08aab411943720b6f6d69
+verifies:
+    - libs/atlas-packet/cash/serverbound/v48_test.go#TestMoveFromCashInventoryBytesV48

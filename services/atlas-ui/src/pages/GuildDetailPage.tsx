@@ -8,7 +8,7 @@ import type { GuildMember, GuildTitle } from "@/types/models/guild";
 import type { DataTableColumnDef } from "@/components/data-table-features";
 import { useTenant } from "@/context/tenant-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getJobNameById } from "@/lib/jobs";
+import { useJobNameLookup } from "@/lib/hooks/api/useJobGraph";
 import {
   Tooltip,
   TooltipContent,
@@ -20,6 +20,7 @@ import { PageLoader, ErrorDisplay } from "@/components/common";
 export function GuildDetailPage() {
   const { id } = useParams();
   const { activeTenant } = useTenant();
+  const jobName = useJobNameLookup();
   const guildQuery = useGuild(activeTenant!, id ?? "");
   const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
 
@@ -114,7 +115,7 @@ export function GuildDetailPage() {
       <div className="flex-1">
         <DataTableWrapper
           data={guild.attributes.members}
-          columns={getMemberColumns(guild.attributes.titles)}
+          columns={getMemberColumns(guild.attributes.titles, jobName)}
           initialVisibilityState={[]}
           emptyState={{
             title: "No guild members found",
@@ -129,6 +130,7 @@ export function GuildDetailPage() {
 
 function getMemberColumns(
   titles: GuildTitle[],
+  jobName: (id: number) => string,
 ): DataTableColumnDef<GuildMember>[] {
   return [
     {
@@ -155,7 +157,7 @@ function getMemberColumns(
         const id = Number(value);
         let name = String(value);
         if (!isNaN(id)) {
-          name = getJobNameById(id) || String(value);
+          name = jobName(id);
         }
         return (
           <div className="flex flex-rows justify-start gap-2">

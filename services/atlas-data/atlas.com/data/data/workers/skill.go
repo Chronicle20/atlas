@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -47,7 +48,13 @@ func (Skill) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *min
 		defer func() { _ = mobskill.GetMobSkillStringRegistry().Clear(t) }()
 	}
 	// Register skills (per-job images) and the single MobSkill.img.
-	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Skill.wz"), skill.NewProcessor(l, ctx, db).RegisterSkill); err != nil {
+	// Accumulate the FR-7.3 run summary across every per-job image. Deferred
+	// so the summary is still emitted on a walk-level error (corrupt job
+	// image, I/O failure) — matching data/processor.go's WorkerSkill branch,
+	// which logs unconditionally regardless of err.
+	var skillStats skill.StatsAccumulator
+	defer skillStats.Log(l)
+	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Skill.wz"), skillStats.Wrap(skill.NewProcessor(l, ctx, db).RegisterSkill)); err != nil {
 		return err
 	}
 	if err := mobskill.NewProcessor(l, ctx, db).RegisterMobSkill(filepath.Join(root, "Skill.wz", "MobSkill.img.xml")); err != nil {
@@ -59,12 +66,11 @@ func (Skill) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *min
 	// serialized Skill.wz tree, so monolithic-archive tenants (GMS v12's
 	// all-in-one Data.wz) are handled by the runtime's sub-view with no
 	// monolith-specific code (FR-2.5).
-	jobDocs := 0
-	jobRegister := countingRegister(&jobDocs, job.NewProcessor(l, ctx, db).RegisterJob)
-	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Skill.wz"), jobRegister); err != nil {
+	var jobStats jobStats
+	defer jobStats.Log(l)
+	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Skill.wz"), jobStats.Wrap(job.NewProcessor(l, ctx, db).RegisterJob)); err != nil {
 		return err
 	}
-	logJobDocCount(l, jobDocs)
 
 	// Emit per-skill icons. Skill IDs live as SubProperty children of the
 	// "skill" SubProperty in each per-job .img.
@@ -110,28 +116,48 @@ func (Skill) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *min
 	return nil
 }
 
-// countingRegister adapts job.Processor.RegisterJob — which returns the number
-// of documents it wrote — to the RegisterFunc shape registerAllInDirectory
-// expects, accumulating the total into *total. A failing register contributes
-// nothing to the count.
-func countingRegister(total *int, rf func(path string) (int, error)) RegisterFunc {
+// jobStats accumulates the JOB pass's ingest summary across every image the
+// registration walk hands it (FR-1.4, task-202). Three counters, not one:
+// a numeric image that produces no document is EXPECTED at v0.84+ (the ten
+// Skill.wz/Dragon/ animation images, see job.Read's FR-1.1 branch) but a
+// silent "written=N" is exactly what let those images blank every Evan
+// document for months. skipped = numeric - written makes a recurrence
+// diagnosable from logs alone, without a WZ walk.
+//
+// Mirrors skill.StatsAccumulator's Wrap/Log shape so both passes in
+// Skill.Run read the same way.
+type jobStats struct {
+	images  int // every .img.xml handed to the register
+	numeric int // those whose basename parses as a job id
+	written int // JOB documents actually upserted
+}
+
+// Wrap adapts job.Processor.RegisterJob -- which returns the number of
+// documents it wrote -- to the RegisterFunc shape registerAllInDirectory
+// expects, accumulating into s. A failing register contributes to images
+// and numeric but never to written.
+func (s *jobStats) Wrap(rf func(path string) (int, error)) RegisterFunc {
 	return func(path string) error {
+		s.images++
+		if _, ok := imgID(strings.TrimSuffix(filepath.Base(path), ".xml")); ok {
+			s.numeric++
+		}
 		n, err := rf(path)
 		if err != nil {
 			return err
 		}
-		*total += n
+		s.written += n
 		return nil
 	}
 }
 
-// logJobDocCount emits the JOB-document ingest summary. A Skill.wz pass that
-// produced no JOB documents leaves /data/jobs empty for the tenant, so it
-// escalates to warn: silent success here is exactly the failure mode the
-// rejected transitional fallback would have hidden (PRD §8 Observability).
-func logJobDocCount(l logrus.FieldLogger, written int) {
-	l.Infof("job documents: written=%d", written)
-	if written == 0 {
+// Log emits the JOB-document ingest summary. A Skill.wz pass that produced
+// no JOB documents leaves /data/jobs empty for the tenant, so it escalates
+// to warn: silent success here is the failure mode the rejected transitional
+// fallback would have hidden (PRD §8 Observability).
+func (s *jobStats) Log(l logrus.FieldLogger) {
+	l.Infof("job documents: images=%d numeric=%d written=%d skipped=%d", s.images, s.numeric, s.written, s.numeric-s.written)
+	if s.written == 0 {
 		l.Warnf("Skill.wz ingest produced no JOB documents; /data/jobs will be empty for this tenant")
 	}
 }

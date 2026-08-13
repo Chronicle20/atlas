@@ -42,7 +42,13 @@ func (p *ProcessorImpl) GetAvailable() []RestModel {
 			p.l.Errorf("Available job identity [%d] has no wire binding for this tenant version; skipping.", id)
 			continue
 		}
-		ms = append(ms, RestModel{Id: uint16(wire), Name: set.Job.Name(id)})
+		m := RestModel{Id: uint16(wire), Name: set.Job.Name(id), Identity: uint16(id)}
+		if pw, ok := set.Job.ParentWire(id); ok {
+			// Copy into a local: &pw would alias the loop-scoped value.
+			parent := uint16(pw)
+			m.Parent = &parent
+		}
+		ms = append(ms, m)
 	}
 	return ms
 }

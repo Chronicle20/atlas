@@ -22,7 +22,8 @@ type Processor interface {
 	SpawnedByOwnerProvider(ownerId uint32) model.Provider[[]Model]
 	HungryByOwnerProvider(ownerId uint32) model.Provider[[]Model]
 	HungriestByOwnerProvider(ownerId uint32) model.Provider[Model]
-	AwardFullness(actorId uint32, petId uint64, amount byte) error
+	AwardFullness(actorId uint32, petId uint32, amount byte) error
+	SetSkill(actorId uint32, petId uint32, skill string, enabled bool) error
 }
 
 type ProcessorImpl struct {
@@ -105,6 +106,10 @@ func IsTemplateFilter(templateIds ...uint32) model.Filter[Model] {
 	}
 }
 
-func (p *ProcessorImpl) AwardFullness(actorId uint32, petId uint64, amount byte) error {
+func (p *ProcessorImpl) AwardFullness(actorId uint32, petId uint32, amount byte) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(pet2.EnvCommandTopic)(awardFullnessCommandProvider(actorId, petId, amount))
+}
+
+func (p *ProcessorImpl) SetSkill(actorId uint32, petId uint32, skill string, enabled bool) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(pet2.EnvCommandTopic)(setSkillCommandProvider(actorId, petId, skill, enabled))
 }

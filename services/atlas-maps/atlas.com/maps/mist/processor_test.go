@@ -194,3 +194,106 @@ func TestDestroyedEventProvider_BuildsDestroyedEvent(t *testing.T) {
 	require.Equal(t, mistKafka.ReasonExpired, event.Body.Reason)
 	require.Equal(t, id, event.MistId)
 }
+
+// TestProcessor_Create_EmptyKinds_NormalizeToCharacterDisease pins FR-2.3: the
+// existing atlas-monsters AREA_POISON producer omits the descriptors, and its
+// behavior must be unchanged.
+func TestProcessor_Create_EmptyKinds_NormalizeToCharacterDisease(t *testing.T) {
+	tt, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, _ := newTestMistProcessor(t, tt, newRecordingProducer())
+
+	m, err := p.Create(mistKafka.CreateCommandBody{
+		WorldId: 0, ChannelId: 0, MapId: 100000000, Instance: uuid.Nil,
+		OwnerType: "MONSTER", OwnerId: 7,
+		Duration: 5000, TickIntervalMs: 1000,
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if m.TargetKind() != mistKafka.TargetKindCharacter {
+		t.Fatalf("TargetKind = %q, want CHARACTER", m.TargetKind())
+	}
+	if m.EffectKind() != mistKafka.EffectKindDisease {
+		t.Fatalf("EffectKind = %q, want DISEASE", m.EffectKind())
+	}
+}
+
+// TestProcessor_Create_ExplicitKinds_RoundTrip pins the player-cast path.
+func TestProcessor_Create_ExplicitKinds_RoundTrip(t *testing.T) {
+	tt, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, _ := newTestMistProcessor(t, tt, newRecordingProducer())
+
+	m, err := p.Create(mistKafka.CreateCommandBody{
+		WorldId: 0, ChannelId: 0, MapId: 100000000, Instance: uuid.Nil,
+		OwnerType: "CHARACTER", OwnerId: 1001,
+		TargetKind: mistKafka.TargetKindMonster,
+		EffectKind: mistKafka.EffectKindDamageOverTime,
+		Duration:   4000, TickIntervalMs: 1000,
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if m.TargetKind() != mistKafka.TargetKindMonster || m.EffectKind() != mistKafka.EffectKindDamageOverTime {
+		t.Fatalf("kinds = (%q,%q), want (MONSTER,DAMAGE_OVER_TIME)", m.TargetKind(), m.EffectKind())
+	}
+}
+
+// TestProcessor_Create_DerivesAffectedAreaTypeFromOwner pins the wire value
+// that made Poison Mist kill its own caster (task-200 live test).
+//
+// AFFECTEDAREA::nType == 0 is the client's MOB-disease-cloud marker: v83
+// CAffectedAreaPool::GetAffectedAreaByPoint (sub_431783) selects an area for
+// the LOCAL USER iff `!nType && tCur >= tStart && PtInRect(rcArea, ptUser)`,
+// and CUserLocal::Update (@0x94b801) then hits the user for
+// `AFFECTEDAREA.nDamage * (100 - resist) / 100`. nDamage is written ONLY on
+// the mob-skill arms (nSkillID 130/131) of AffectedAreaAnimationCreated, never
+// on the 2111003 arm -- so a character-owned mist sent as nType 0 billed the
+// caster an uninitialized value (observed: 1434803, clamped to 999999, dead).
+//
+// Both arms are asserted. The MONSTER arm is not symmetry for its own sake: 0
+// is what makes the client apply a mob's cloud to players standing in it, and
+// that pre-task-200 AREA_POISON behaviour must not change.
+func TestProcessor_Create_DerivesAffectedAreaTypeFromOwner(t *testing.T) {
+	cases := []struct {
+		name      string
+		ownerType string
+		want      int32
+	}{
+		{"character-owned mist is a user skill area", "CHARACTER", AffectedAreaTypeUserSkill},
+		{"monster-owned mist stays a mob disease cloud", "MONSTER", AffectedAreaTypeMobSkill},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tt := mkRegTenant()
+			rec := newRecordingProducer()
+			p, _ := newTestMistProcessor(t, tt, rec)
+
+			m, err := p.Create(mistKafka.CreateCommandBody{
+				WorldId: 0, ChannelId: 0, MapId: 100000000, Instance: uuid.Nil,
+				OwnerType: tc.ownerType, OwnerId: 1,
+				OriginX: 100, OriginY: 200,
+				LtX: -50, LtY: -30, RbX: 50, RbY: 30,
+				Disease: "POISON", DiseaseDuration: 30000,
+				Duration: 10000, TickIntervalMs: 1000,
+				SourceSkillId: 2111003, SourceSkillLevel: 30,
+			})
+			require.NoError(t, err)
+			require.Equal(t, tc.want, m.Type())
+
+			// The value has to reach the wire, not just the registry entry --
+			// atlas-channel copies CreatedBody.Type straight into the
+			// AffectedAreaCreated packet's nType.
+			msgs := rec.Messages(mistKafka.EnvEventTopic)
+			require.Len(t, msgs, 1)
+			var event mistKafka.Event[mistKafka.CreatedBody]
+			require.NoError(t, json.Unmarshal(msgs[0].Value, &event))
+			require.Equal(t, tc.want, event.Body.Type)
+		})
+	}
+}

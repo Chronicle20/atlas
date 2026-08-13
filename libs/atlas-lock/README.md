@@ -25,6 +25,34 @@ go func() {
 }()
 ```
 
+## Lease keys are scoped by deployment
+
+The Redis key is `atlas:lock:<ATLAS_ENV>:<name>` — for example
+`atlas:lock:a628:monsters-sweep`. The `ATLAS_ENV` segment is read once in
+`New` and is not optional in practice:
+
+Every Atlas deployment shares one Redis (`REDIS_URL` is `redis.home:6379` in
+`atlas-main` and in every ephemeral `atlas-pr-NNNN` namespace, with no DB
+separation). Without the segment, a lease name like `monsters-sweep` is
+*global*: the permanent deployment acquires it at startup and holds it
+indefinitely, and every ephemeral namespace's pod loses the election forever
+— silently running none of its leader-gated work. This is not hypothetical;
+it was found in task-200 live testing, where an ephemeral namespace's
+`atlas-monsters` had never registered `StatusExpirationTask`, so monsters
+carried a POISON status whose damage never ticked.
+
+If `ATLAS_ENV` is unset the segment is the literal `unscoped`. That is a
+marker, not isolation — two deployments that both leave it unset still
+collide, and no key can separate them. Naming the bucket at least makes it
+visible in `redis-cli keys 'atlas:lock:*'`.
+
+**Rollout note.** Changing the key shape means old and new pods contend on
+different keys, so a rolling deploy briefly has two leaders (one per key
+shape) until the old replicas terminate. That is a one-time cost of this
+change and is within the at-least-once tolerance described below, but do not
+schedule a key-shape change alongside work that is sensitive to duplicate
+sweeps.
+
 ## Correctness boundary — single-Redis split-brain caveat
 
 This library uses a single Redis instance for the lease key. During a Redis

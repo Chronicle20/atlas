@@ -28,6 +28,12 @@ func runEvidence(args []string, stderr io.Writer) int {
 	category := fs.String("category", "", "evidence category (required)")
 	export := fs.String("export", "", "export JSON path (default: derived from version)")
 	dir := fs.String("evidence-dir", "docs/packets/evidence", "evidence ledger dir")
+	// Records carry a `verifies:` list naming the byte-fixture tests that stand on
+	// this citation. Without a flag for it, re-pinning a record (e.g. after a
+	// decompile-hash drift) silently dropped that link, and hand-editing it back
+	// is exactly what the tool-written-record rule forbids.
+	var verifies stringList
+	fs.Var(&verifies, "verifies", "test reference, e.g. path/to/foo_test.go#TestName (repeatable)")
 	if err := fs.Parse(args[1:]); err != nil {
 		return 3
 	}
@@ -54,7 +60,8 @@ func runEvidence(args []string, stderr io.Writer) int {
 	}
 	rec := evidence.Record{
 		Packet: *packet, Direction: dirOf, Version: *version, Category: *category,
-		IDA: evidence.IDACitation{Function: *ida, Address: addr, DecompileSHA256: hash},
+		IDA:      evidence.IDACitation{Function: *ida, Address: addr, DecompileSHA256: hash},
+		Verifies: verifies,
 	}
 	raw, err := yaml.Marshal(rec)
 	if err != nil {
@@ -97,4 +104,17 @@ func functionAddress(exportPath, fname string) (string, error) {
 		return "", fmt.Errorf("%s: function %q not in export", exportPath, fname)
 	}
 	return fn.Address, nil
+}
+
+// stringList collects a repeatable string flag.
+type stringList []string
+
+func (s *stringList) String() string { return strings.Join(*s, ",") }
+
+func (s *stringList) Set(v string) error {
+	if strings.TrimSpace(v) == "" {
+		return fmt.Errorf("empty value")
+	}
+	*s = append(*s, v)
+	return nil
 }

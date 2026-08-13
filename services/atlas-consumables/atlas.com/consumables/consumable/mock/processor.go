@@ -14,7 +14,7 @@ import (
 )
 
 type ProcessorMock struct {
-	RequestItemConsumeFunc     func(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) error
+	RequestItemConsumeFunc     func(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16, petId uint64) error
 	RequestFeedFunc            func(worldId world.Id, characterId uint32, slot int16, itemId item2.Id) error
 	ConsumeErrorFunc           func(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error
 	RequestScrollFunc          func(characterId uint32, scrollSlot int16, equipSlot int16, whiteScroll bool, legendarySpirit bool) error
@@ -28,13 +28,14 @@ type ProcessorMock struct {
 	RequestItemRewardFunc      func(characterId uint32, itemId item2.Id, source int16) error
 	RequestViciousHammerFunc   func(characterId uint32, hammerSlot int16, equipSlot int16) error
 	RequestSkillBookUseFunc    func(f field.Model, characterId uint32, slot int16, itemId item2.Id) error
+	RequestCatchMonsterFunc    func(f field.Model, characterId uint32, slot int16, itemId item2.Id, monsterUniqueId uint32) error
 }
 
 var _ consumable.Processor = (*ProcessorMock)(nil)
 
-func (m *ProcessorMock) RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
+func (m *ProcessorMock) RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16, petId uint64) error {
 	if m.RequestItemConsumeFunc != nil {
-		return m.RequestItemConsumeFunc(c, characterId, slot, itemId, quantity)
+		return m.RequestItemConsumeFunc(c, characterId, slot, itemId, quantity, petId)
 	}
 	return nil
 }
@@ -126,6 +127,13 @@ func (m *ProcessorMock) RequestItemReward(characterId uint32, itemId item2.Id, s
 func (m *ProcessorMock) RequestSkillBookUse(f field.Model, characterId uint32, slot int16, itemId item2.Id) error {
 	if m.RequestSkillBookUseFunc != nil {
 		return m.RequestSkillBookUseFunc(f, characterId, slot, itemId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) RequestCatchMonster(f field.Model, characterId uint32, slot int16, itemId item2.Id, monsterUniqueId uint32) error {
+	if m.RequestCatchMonsterFunc != nil {
+		return m.RequestCatchMonsterFunc(f, characterId, slot, itemId, monsterUniqueId)
 	}
 	return nil
 }

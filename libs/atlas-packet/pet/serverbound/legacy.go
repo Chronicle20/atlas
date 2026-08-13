@@ -4,10 +4,16 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-// hasLeadingPetId reports whether a client -> server pet action packet carries
+// HasLeadingPetId reports whether a client -> server pet action packet carries
 // the leading 8-byte pet identity (cash-item SN) before its body. Present on
 // GMS v61+ and all JMS; ABSENT on the oldest GMS build v48, which predates
 // multi-pet and identifies the (single) pet implicitly.
+//
+// Exported because atlas-channel's pet auto-pot handler needs the same
+// distinction to decide whether an absent (zero) petId means "this version has
+// no such field" or "the client sent a malformed one". Keeping that rule here,
+// next to the codecs it gates, avoids restating the version boundary in the
+// service.
 //
 // IDA-verified at v48 (GMS_v48_1_DEVM.exe, port 13337) across the whole pet
 // action cluster — every send-site opens COutPacket(op) and writes its body
@@ -20,6 +26,6 @@ import (
 //
 // The v61 twins all lead with EncodeBuffer(petId,8) (e.g. PET_COMMAND
 // @0x613d66, PET_CHAT @0x61456f), so the gate is "present iff not GMS<61".
-func hasLeadingPetId(t tenant.Model) bool {
+func HasLeadingPetId(t tenant.Model) bool {
 	return !(t.IsRegion("GMS") && !t.MajorAtLeast(61))
 }

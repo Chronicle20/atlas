@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character"
 	skill2 "atlas-channel/character/skill"
 	consumer2 "atlas-channel/kafka/consumer"
+	consumable2 "atlas-channel/kafka/message/consumable"
 	monster2 "atlas-channel/kafka/message/monster"
 	"atlas-channel/listener"
 	_map "atlas-channel/map"
@@ -27,9 +28,13 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
+	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -109,6 +114,16 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMpChanged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCaught(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCatchFailed(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -204,6 +219,25 @@ func destroyForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 	}
 }
 
+// shouldEchoDamagePacket reports whether a DAMAGED event needs the server to
+// send a MonsterDamage packet, i.e. whether the damage number has no
+// client-side rendering of its own.
+//
+//   - CHARACTER_ATTACK: no. Observers already render it from the attack
+//     broadcast (CharacterAttack*Writer,
+//     socket/handler/character_attack_common.go).
+//   - DAMAGE_OVER_TIME: no. The client runs a poison tick on its own timer and
+//     renders the number from the POISON magnitude carried in the monster
+//     temporary-stat packet (handleStatusEffectApplied), which atlas-monsters
+//     resolves to the real per-tick damage. Echoing here double-renders it.
+//   - HEAL: no. Emitted purely so the HP bar refreshes; it carries no damage.
+//   - MONSTER_ATTACK: yes. Nothing else renders it.
+//
+// The HP-bar packet, by contrast, is server-driven for every source.
+func shouldEchoDamagePacket(damageSource string) bool {
+	return damageSource == monster2.DamageSourceMonsterAttack
+}
+
 func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventDamagedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventDamagedBody]) {
 		if e.Type != monster2.EventStatusDamaged {
@@ -244,16 +278,10 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 				l.WithError(err).Errorf("Unable to announce monster [%d] health.", e.UniqueId)
 			}
 		})
-		// Only echo a MonsterDamage packet for damage sources that have no
-		// corresponding client-side attack broadcast. Player attacks are
-		// already rendered to observers by CharacterAttack*Writer in
-		// socket/handler/character_attack_common.go, so emitting here too
-		// would double-render the damage number.
-		if e.Body.DamageSource == monster2.DamageSourceMonsterAttack || e.Body.DamageSource == monster2.DamageSourceDamageOverTime {
+		if shouldEchoDamagePacket(e.Body.DamageSource) {
 			routine.Go(l, ctx, func(_ context.Context) {
 				err = _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
-					de := e.Body.DamageEntries[len(e.Body.DamageEntries)-1]
-					return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDamageWriter)(monsterpkt.NewMonsterDamage(m.UniqueId(), monsterpkt.MonsterDamageTypeUnk3, uint32(de.Damage), m.Hp(), m.MaxHp()).Encode)(s)
+					return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDamageWriter)(monsterpkt.NewMonsterDamage(m.UniqueId(), monsterpkt.MonsterDamageTypeUnk3, e.Body.Damage, m.Hp(), m.MaxHp()).Encode)(s)
 				})
 			})
 		}
@@ -301,17 +329,29 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 
 		monster.GetLiveMirror().UpdateAggro(tenant.MustFromContext(ctx), e.UniqueId, e.Body.ControllerHasAggro)
 
-		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
-		m := monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
-			SetControlCharacterId(e.Body.ActorId).
-			SetX(e.Body.X).SetY(e.Body.Y).
-			SetStance(e.Body.Stance).
-			SetFH(e.Body.FH).
-			SetTeam(e.Body.Team).
-			MustBuild()
-		sf := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterControlWriter)(writer.StartControlMonsterBody(m, e.Body.ControllerHasAggro))
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ActorId, sf)
+		// Prefer the authoritative model: the event envelope carries no status
+		// effects, and the Spawn/Control bodies both encode a temporary-stat
+		// block. That matters beyond cosmetics here — the map-enter fast path
+		// (map consumer spawnMonsterForSession) may already have sent a Spawn
+		// carrying real temporary stats, and CMob::SetTemporaryStat resets the
+		// block before decoding, so an envelope-derived Spawn would wipe them.
+		// Falling back to the envelope on a fetch failure still beats dropping
+		// the grant, which is the bug this whole path exists to fix.
+		m, err := monsterGetByIdFn(l, ctx, e.UniqueId)
 		if err != nil {
+			degrade.Observe(l, "channel.monster.control_grant_fetch", e.UniqueId, err)
+			l.WithError(err).Warnf("Unable to retrieve monster [%d] for control grant; falling back to the event envelope.", e.UniqueId)
+			f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+			m = monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
+				SetControlCharacterId(e.Body.ActorId).
+				SetX(e.Body.X).SetY(e.Body.Y).
+				SetStance(e.Body.Stance).
+				SetFH(e.Body.FH).
+				SetTeam(e.Body.Team).
+				MustBuild()
+		}
+
+		if err := controlGrantFn(l, ctx, sc, wp, m, e.Body.ControllerHasAggro, e.Body.ActorId); err != nil {
 			l.WithError(err).Errorf("Unable to start control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
 		}
 	}
@@ -375,6 +415,59 @@ const statusVenomKey = "VENOM"
 // broadcaster spy vars below).
 var monsterGetByIdFn = func(l logrus.FieldLogger, ctx context.Context, uniqueId uint32) (monster.Model, error) {
 	return monster.NewProcessor(l, ctx).GetById(uniqueId)
+}
+
+// controlGrantFn delivers controller ownership of one mob to one character as
+// Spawn-then-Control, in that order, on a single session.
+//
+// The ordering is load-bearing, not defensive. On v79 (CMobPool::SetLocalMob
+// 0x645ce1) and v83 (0x678308) a MonsterControl for an unknown mob is NOT
+// dropped: GetMob misses, and the client materializes the mob from the Control
+// body via CreateMob -> CMob::Init. A 0/1 stance then routes into
+// CMob::OnResolveMoveAction and null-derefs, and a control-first birth on a
+// slope lands the mob below the surface. Sending Spawn first makes that
+// impossible.
+//
+// The leading Spawn is safe when the client already has the mob:
+// CMobPool::OnMobEnterField (v83 0x67945a, v79 0x646e33) takes its GetMob-hit
+// branch, which sets m_bInViewSplit and calls CMob::SetTemporaryStat and
+// nothing else — no CMob::Init, no reposition, no SetActive, no
+// CMovePath::DiscardByInterrupt. Position, stance and in-flight movement are
+// untouched. SetTemporaryStat re-bases the mob's temp-stat block, which
+// SetLocalMob already does on every controller change anyway.
+//
+// A duplicate grant is possible: the map-enter fast path
+// (map consumer spawnMonsterForSession) and this handler can both fire for the
+// same mob and session when the controller assignment lands before the
+// channel's monster-list read. Each path is internally ordered, so the
+// Spawn-before-Control invariant still holds. The repeat Control is near-inert
+// on the client — SetLocalMob's GetMob hit branch runs SetTemporaryStat, then
+// CMob::SetActive(1), which self-guards on the already-active flag (v83
+// 0x6637ec). The one live effect is CMob::ChaseTarget, re-issued when the
+// control type exceeds 1, i.e. only for an aggro grant; it re-targets an
+// already-chasing mob rather than changing its state.
+//
+// Package-level seam so tests can assert grant delivery without standing up a
+// session; the ordering itself lives in spawnThenControlOperator.
+var controlGrantFn = func(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, m monster.Model, aggro bool, characterId uint32) error {
+	return session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(characterId, spawnThenControlOperator(l, ctx, wp, m, aggro))
+}
+
+// announceFn is the single-packet announce seam, held as a var so
+// spawnThenControlOperator's packet ordering is assertable in a unit test.
+var announceFn = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, writerName string, body packet.Encode, s session.Model) error {
+	return session.Announce(l)(ctx)(wp)(writerName)(body)(s)
+}
+
+// spawnThenControlOperator emits Spawn followed by Control on one session. The
+// order is the whole point — see controlGrantFn.
+func spawnThenControlOperator(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, m monster.Model, aggro bool) model2.Operator[session.Model] {
+	return func(s session.Model) error {
+		if err := announceFn(l, ctx, wp, monsterpkt.MonsterSpawnWriter, writer.SpawnMonsterBody(m, false), s); err != nil {
+			return err
+		}
+		return announceFn(l, ctx, wp, monsterpkt.MonsterControlWriter, writer.StartControlMonsterBody(m, aggro), s)
+	}
 }
 
 // monsterStatBroadcaster is the channel-side broadcast seam. The handlers
@@ -632,5 +725,110 @@ func handleStatusEventMpChanged(sc server.Model, wp writer.Producer) message.Han
 		default:
 			l.Debugf("MP_CHANGED: ignoring unknown reason [%s] for monster [%d].", e.Body.Reason, e.UniqueId)
 		}
+	}
+}
+
+// bridleFailReason maps an internal catch-failure cause onto the client's wire
+// reason byte and reports whether to send the packet at all. The wire value is
+// resolved HERE, in the rendering service — the domain services emit semantic
+// causes only (DOM-25).
+func bridleFailReason(cause string) (byte, bool) {
+	switch cause {
+	case consumable2.CatchCauseUseDelay:
+		return 1, true
+	case monster2.CatchCauseUnresolved:
+		return 0, false
+	default:
+		return 0, true
+	}
+}
+
+// handleStatusEventCaught renders a successful capture to everyone in the map,
+// then unlocks the acting character alone.
+//
+// ONE effect packet, not two. The client has two independent renderers for a
+// capture and neither reads bridleMsgType off the wire, so the server chooses:
+//
+//   - CATCH_MONSTER_WITH_ITEM (CMob::OnEffectByItem @v83 0x66d997) plays the
+//     item-keyed animation, Effect/ItemEff.img/<itemId> via
+//     CAnimationDisplayer::Effect_ByItem @0x438b36, at the mob's y-2, and plays
+//     the item's sound. This is the one an item-initiated catch wants — it is
+//     the render observed in the reference client footage.
+//   - CATCH_MONSTER (CMob::OnCatchEffect @v83 0x66d6b9) plays a generic
+//     capture image out of Effect/BasicEff.img (Effect_Catch @0x438eb6:
+//     StringPool 3687 when result != 0, 3688 when 0) at the mob's y-15.
+//
+// Sending both, as this handler originally did, stacked two animations on one
+// capture. The generic one is dropped here, and it is very likely not a capture
+// render at all: ShowCatchEffect has a second, purely client-side caller in
+// CMob::OnHit (v83 0x668b83, call at 0x668e22), reached only when the hitting
+// skill is 1121001/1221001/1321001 — Hero/Paladin/DarkKnight Monster Magnet —
+// with its argument being (grab result == 3). So Effect_Catch is the
+// Monster-Magnet grab succeeded/failed image, which the client plays for itself
+// on the magnet path; CATCH_MONSTER is the server-driven entry to that same
+// renderer, not a bridle-capture effect.
+//
+// The CatchMonster codec and its template routes are deliberately retained: it
+// is a real protocol element with no sender today, and re-adding it is one
+// announce.
+//
+// This MUST reach the client before the sibling DESTROYED event: the client
+// resolves the mob via CMobPool::OnMobPacket -> GetMob and silently drops the
+// packet once the mob is gone. Both events are keyed by MapId on the same topic,
+// so the ordering is a partition guarantee.
+func handleStatusEventCaught(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventCaughtBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventCaughtBody]) {
+		if e.Type != monster2.EventStatusCaught {
+			return
+		}
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		f := sc.Field(e.MapId, e.Instance)
+		if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f,
+			session.Announce(l)(ctx)(wp)(monsterpkt.CatchMonsterWithItemWriter)(writer.CatchMonsterWithItemBody(e.UniqueId, int32(e.Body.ItemId), 1)),
+		); err != nil {
+			l.WithError(err).Errorf("Unable to announce the capture of monster [%d] in map [%d].", e.UniqueId, e.MapId)
+		}
+
+		// Emitted from its own statement so a failed effect broadcast can never
+		// leave the client wedged.
+		if err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)); err != nil {
+			l.WithError(err).Errorf("Unable to unlock character [%d] after a successful catch.", e.Body.CharacterId)
+		}
+	}
+}
+
+// handleStatusEventCatchFailed renders a failed capture to the acting character
+// only. The fail packet is optional — gms_v48 has no OnBridleMobCatchFail
+// handler at all (its writer is simply not routed, and the writer registry
+// reports it unconfigured) and UNRESOLVED deliberately renders nothing — but the
+// unlock is not, so it is emitted from its own statement.
+func handleStatusEventCatchFailed(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventCatchFailedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventCatchFailedBody]) {
+		if e.Type != monster2.EventStatusCatchFailed {
+			return
+		}
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+		AnnounceCatchFailure(l, ctx, sc, wp, e.Body.CharacterId, e.Body.ItemId, e.Body.Cause)
+	}
+}
+
+// AnnounceCatchFailure is shared by the monster-side and consumable-side
+// failure paths (kafka/consumer/consumable) so both render identically and
+// both always unlock. Exported to avoid an import cycle: the consumable
+// consumer cannot depend on this package's unexported helpers.
+func AnnounceCatchFailure(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32, itemId uint32, cause string) {
+	sp := session.NewProcessor(l, ctx)
+	if reason, send := bridleFailReason(cause); send {
+		if err := sp.IfPresentByCharacterId(sc.Channel())(characterId, session.Announce(l)(ctx)(wp)(charpkt.BridleMobCatchFailWriter)(writer.BridleMobCatchFailBody(reason, int32(itemId), 0))); err != nil {
+			l.WithError(err).Debugf("Unable to write [%s] for character [%d]; continuing to the unlock.", charpkt.BridleMobCatchFailWriter, characterId)
+		}
+	}
+	if err := sp.IfPresentByCharacterId(sc.Channel())(characterId, session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)); err != nil {
+		l.WithError(err).Errorf("Unable to unlock character [%d] after a failed catch.", characterId)
 	}
 }

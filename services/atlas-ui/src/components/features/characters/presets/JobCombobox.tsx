@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { jobName } from "@/lib/jobs/job-advancement-tree";
+import { useJobNameLookup } from "@/lib/hooks/api/useJobGraph";
 import { usePresetJobOptions } from "@/lib/hooks/usePresetJobOptions";
 
 interface JobComboboxProps {
@@ -26,11 +26,12 @@ interface JobComboboxProps {
 export function JobCombobox({ value, onChange }: JobComboboxProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const jobs = usePresetJobOptions();
+  const { options: jobs, isPending, isError } = usePresetJobOptions();
+  const jobName = useJobNameLookup();
 
   // Prefer the version-correct name from the availability-gated options; an
   // id outside that set (still loading, or a manually-entered id the tenant
-  // hasn't released) falls back to the static advancement-graph name.
+  // hasn't released) falls back to the graph-derived name.
   const selectedName = jobs.find((j) => j.id === value)?.name ?? jobName(value);
 
   const term = search.trim().toLowerCase();
@@ -120,7 +121,11 @@ export function JobCombobox({ value, onChange }: JobComboboxProps) {
           )}
           {rows.length === 0 && manualId === undefined && (
             <li className="px-2 py-1 text-sm text-muted-foreground">
-              No matches.
+              {isPending
+                ? "Loading this tenant's job list…"
+                : isError
+                  ? "Couldn't load this tenant's job list."
+                  : "No matches."}
             </li>
           )}
         </ul>

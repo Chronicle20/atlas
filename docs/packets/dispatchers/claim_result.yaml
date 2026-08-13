@@ -1,0 +1,34 @@
+# ClaimResult — CWvsContext::OnClaimResult mode table. Mode sets identical in
+# v83 (0xa27891) and v95 (0x9fa7d0), IDA-verified (task-145
+# packet-findings.md §3). v72 (0x91f9a9) / v79 (0x9718f4) independently
+# decompiled during task-145 Task 18: byte-identical comparison chain
+# (67/2/3/65/66/68/69/71/72) to v83/v95, only the internal StringPool ids
+# differ (version-build-local, not wire values) — so the mode table is
+# version-stable across all six columns. gms_v92 (0x9cf310) also decompiled
+# during Task 18: compiler-emitted `switch(Decode1()-2)` with the same
+# 2/3/65/66/67/68/69/71/72 arms and the same 70 (0x46) gap. Only SUCCESS (2)
+# carries payload (byte hasRemaining, int32 remaining); all other modes are
+# bare notices. 70 (0x46) is a deliberate gap — no branch handles it in any
+# version (falls through to `return`, i.e. silently ignored).
+writer: ClaimResult
+fname: CWvsContext::OnClaimResult
+op: CLAIM_RESULT
+direction: clientbound
+opcodes:
+  gms_v72: "0x2A"
+  gms_v79: "0x2A"
+  gms_v83: "0x2D"
+  gms_v84: "0x2D"
+  gms_v87: "0x2D"
+  gms_v92: "0x2E"
+  gms_v95: "0x2C"
+operations:
+  - { key: SUCCESS,            modes: { gms_v72: 2,  gms_v79: 2,  gms_v83: 2,  gms_v84: 2,  gms_v87: 2,  gms_v92: 2,  gms_v95: 2 } }
+  - { key: REPORTED_NOTICE,    modes: { gms_v72: 3,  gms_v79: 3,  gms_v83: 3,  gms_v84: 3,  gms_v87: 3,  gms_v92: 3,  gms_v95: 3 } }
+  - { key: TRY_AGAIN,          modes: { gms_v72: 65, gms_v79: 65, gms_v83: 65, gms_v84: 65, gms_v87: 65, gms_v92: 65, gms_v95: 65 } }
+  - { key: RECHECK_NAME,       modes: { gms_v72: 66, gms_v79: 66, gms_v83: 66, gms_v84: 66, gms_v87: 66, gms_v92: 66, gms_v95: 66 } }
+  - { key: NOT_ENOUGH_MESOS,   modes: { gms_v72: 67, gms_v79: 67, gms_v83: 67, gms_v84: 67, gms_v87: 67, gms_v92: 67, gms_v95: 67 } }
+  - { key: CANNOT_CONNECT,     modes: { gms_v72: 68, gms_v79: 68, gms_v83: 68, gms_v84: 68, gms_v87: 68, gms_v92: 68, gms_v95: 68 } }
+  - { key: EXCEEDED,           modes: { gms_v72: 69, gms_v79: 69, gms_v83: 69, gms_v84: 69, gms_v87: 69, gms_v92: 69, gms_v95: 69 } }
+  - { key: TIME_WINDOW,        modes: { gms_v72: 71, gms_v79: 71, gms_v83: 71, gms_v84: 71, gms_v87: 71, gms_v92: 71, gms_v95: 71 } }
+  - { key: FALSE_REPORT_CITED, modes: { gms_v72: 72, gms_v79: 72, gms_v83: 72, gms_v84: 72, gms_v87: 72, gms_v92: 72, gms_v95: 72 } }

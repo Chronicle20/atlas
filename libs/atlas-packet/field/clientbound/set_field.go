@@ -50,7 +50,7 @@ func (m SetField) Encode(l logrus.FieldLogger, ctx context.Context) func(options
 			w.WriteShort(0) // decode opt
 		}
 		w.WriteInt(uint32(m.channelId))
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
 			w.WriteInt(0) // m_dwOldDriverID: GMS reads Decode4 after channelId (v95+); v83/v87 omit it (verified CStage::OnSetField v83 @0x776020 and v87 @0x7c429c — both read sNotifierMessage (Decode1) immediately after channelId, no Decode4 in between; field introduced between v87 and v95)
 		}
 		if t.Region() == "JMS" {
@@ -60,8 +60,18 @@ func (m SetField) Encode(l logrus.FieldLogger, ctx context.Context) func(options
 		w.WriteByte(1) // sNotifierMessage
 		w.WriteByte(1) // bCharacterData
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// nNotifierCheck was introduced BETWEEN v48 and v61 and is independent of the
+		// seed count, so the two are gated separately. IDA: v48 CStage::OnSetField
+		// @0x5c4616 reads Decode4(channelId) @0x659... then Decode1, Decode1 and goes
+		// STRAIGHT to the three seed Decode4s (fed to sub_5CD911/sub_5A49F8) — there is
+		// no Decode2 in between. v61 @0x659fd3 reads the same three, then Decode2
+		// @0x65a046 (nNotifierCheck, gating a DecodeStr list), then its three seeds
+		// @0x65a0ea/0x65a0f4/0x65a109. Writing the short to v48 desynced every
+		// subsequent byte, including the whole character payload.
+		if (t.IsRegion("GMS") && t.MajorAtLeast(61)) || t.Region() == "JMS" {
 			w.WriteShort(0) // nNotifierCheck
+		}
+		if (t.IsRegion("GMS") && t.MajorAtLeast(29)) || t.IsRegion("JMS") {
 			// 3 damage seeds
 			for i := 0; i < 3; i++ {
 				w.WriteInt(m.damageSeeds[i])
@@ -98,7 +108,7 @@ func (m *SetField) Decode(l logrus.FieldLogger, ctx context.Context) func(r *req
 			_ = r.ReadUint16() // decode opt
 		}
 		m.channelId = channel.Id(r.ReadUint32())
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if t.IsRegion("GMS") && t.MajorAtLeast(95) {
 			_ = r.ReadUint32() // m_dwOldDriverID (GMS v95+; v83 @0x776020 and v87 @0x7c429c omit it)
 		}
 		if t.Region() == "JMS" {
@@ -108,8 +118,12 @@ func (m *SetField) Decode(l logrus.FieldLogger, ctx context.Context) func(r *req
 		_ = r.ReadByte() // sNotifierMessage
 		_ = r.ReadByte() // bCharacterData
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// mirrors Encode: nNotifierCheck is gated separately from the seed count
+		// because it appears between v48 and v61 (see the Encode comment).
+		if (t.IsRegion("GMS") && t.MajorAtLeast(61)) || t.Region() == "JMS" {
 			_ = r.ReadUint16() // nNotifierCheck
+		}
+		if (t.IsRegion("GMS") && t.MajorAtLeast(29)) || t.IsRegion("JMS") {
 			m.damageSeeds = make([]uint32, 4)
 			for i := 0; i < 3; i++ {
 				m.damageSeeds[i] = r.ReadUint32()

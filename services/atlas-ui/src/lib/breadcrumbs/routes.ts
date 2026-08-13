@@ -4,7 +4,18 @@
  */
 
 import { type BreadcrumbSegment } from "./utils";
-import { getJobNameById } from "@/lib/jobs";
+
+/** A version-correct job-name resolver, supplied by the calling component. */
+export type JobNameResolver = (id: number) => string;
+
+/**
+ * Context a labelResolver may need but cannot fetch itself: the route table
+ * is a plain module-level array, not a component, so it cannot call hooks.
+ * useBreadcrumbs supplies this from useJobNameLookup().
+ */
+export interface BreadcrumbResolverContext {
+  jobName: JobNameResolver;
+}
 
 // Types for route configuration
 export interface RouteConfig {
@@ -27,7 +38,10 @@ export interface RouteConfig {
   /** Entity type for dynamic routes */
   entityType?: string;
   /** Custom label resolver function */
-  labelResolver?: (params: Record<string, string>) => string;
+  labelResolver?: (
+    params: Record<string, string>,
+    ctx: BreadcrumbResolverContext,
+  ) => string;
 }
 
 // Comprehensive route configuration for all application routes
@@ -165,9 +179,13 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     pattern: "/jobs/[id]",
     label: "Job Details",
     parent: "/jobs",
-    entityType: "job",
-    labelResolver: (params) =>
-      getJobNameById(Number(params.id)) ?? `Job ${params.id}`,
+    // Deliberately no `entityType`: job names come from the tenant's job
+    // graph via labelResolver, not from an async entity resolver. Declaring
+    // one would mark the crumb `dynamic` and the resolver lookup would miss,
+    // overwriting the label with "Unknown". The graph is version-correct —
+    // the static table this replaced named wire id 500 "Pirate" even on a
+    // v0.48 tenant, where it is Gm (task-202 FR-4.2).
+    labelResolver: (params, ctx) => ctx.jobName(Number(params.id)),
   },
 
   // Map routes
@@ -191,10 +209,86 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
 
   // Reactor routes
   {
+    pattern: "/reactors",
+    label: "Reactors",
+    parent: "/",
+  },
+  {
     pattern: "/reactors/[id]",
     label: "Reactor Details",
-    parent: "/",
+    parent: "/reactors",
     entityType: "reactor",
+  },
+
+  // Merchant routes
+  {
+    pattern: "/merchants",
+    label: "Merchants",
+    parent: "/",
+  },
+  {
+    pattern: "/merchants/[id]",
+    label: "Merchant Details",
+    parent: "/merchants",
+    entityType: "merchant",
+  },
+
+  // Marketplace routes
+  {
+    pattern: "/marketplace",
+    label: "Marketplace",
+    parent: "/",
+  },
+
+  // Ranking routes
+  {
+    pattern: "/rankings",
+    label: "Rankings",
+    parent: "/",
+  },
+
+  // Ban routes
+  {
+    pattern: "/bans",
+    label: "Bans",
+    parent: "/",
+  },
+  {
+    // Matches App.tsx's `/bans/:banId` — the param name differs but
+    // matchesPattern/extractParams key off position, not name.
+    pattern: "/bans/[id]",
+    label: "Ban Details",
+    parent: "/bans",
+    entityType: "ban",
+  },
+
+  // Login history routes
+  {
+    pattern: "/login-history",
+    label: "Login History",
+    parent: "/",
+  },
+
+  // Packet matrix routes
+  {
+    pattern: "/packet-matrix",
+    label: "Packet Matrix",
+    parent: "/",
+  },
+
+  // Coupon routes
+  {
+    pattern: "/coupons",
+    label: "Coupons",
+    parent: "/",
+  },
+  {
+    // Matches App.tsx's `/coupons/:couponId`. The label resolves to the
+    // coupon's own code (a coupon has no name), via the "coupon" resolver.
+    pattern: "/coupons/[id]",
+    label: "Coupon",
+    parent: "/coupons",
+    entityType: "coupon",
   },
 
   // Reward pool routes
@@ -207,6 +301,7 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     pattern: "/reward-pools/[id]",
     label: "Pool",
     parent: "/reward-pools",
+    entityType: "reward-pool",
   },
 
   // Setup routes
@@ -214,6 +309,21 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     pattern: "/setup",
     label: "Setup",
     parent: "/",
+  },
+
+  // Transport routes
+  {
+    pattern: "/transports",
+    label: "Transports",
+    parent: "/",
+  },
+  {
+    // Matches App.tsx's `/transports/routes/:routeId`. `parent` skips straight
+    // back to the board — there is no page at `/transports/routes`.
+    pattern: "/transports/routes/[id]",
+    label: "Route",
+    parent: "/transports",
+    entityType: "transport-route",
   },
 
   // Template routes
@@ -309,6 +419,18 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     label: "Presets",
     parent: "/tenants/[id]/character",
   },
+
+  // Report routes
+  {
+    pattern: "/reports",
+    label: "Reports",
+    parent: "/",
+  },
+  {
+    pattern: "/reports/[reportId]",
+    label: "Report Detail",
+    parent: "/reports",
+  },
 ];
 
 // Helper function to find route config by pathname
@@ -400,6 +522,7 @@ export function getRouteHierarchy(pathname: string): RouteConfig[] {
 // Get breadcrumb segments with route-specific configuration
 export function getBreadcrumbsFromRoute(
   pathname: string,
+  ctx: BreadcrumbResolverContext,
 ): Partial<BreadcrumbSegment>[] {
   const hierarchy = getRouteHierarchy(pathname);
   const params = findRouteConfig(pathname)
@@ -412,7 +535,9 @@ export function getBreadcrumbsFromRoute(
 
     const breadcrumb: Partial<BreadcrumbSegment> = {
       segment: config.pattern.split("/").pop() || "",
-      label: config.labelResolver ? config.labelResolver(params) : config.label,
+      label: config.labelResolver
+        ? config.labelResolver(params, ctx)
+        : config.label,
       href,
       dynamic: config.entityType !== undefined,
       isCurrentPage: isLast,
@@ -523,9 +648,23 @@ export const ROUTE_PATTERNS = {
   MAPS: "/maps",
   MAP_DETAIL: "/maps/[id]",
   MAP_PORTAL_DETAIL: "/maps/[id]/portals/[portalId]",
+  REACTORS: "/reactors",
   REACTOR_DETAIL: "/reactors/[id]",
+  MERCHANTS: "/merchants",
+  MERCHANT_DETAIL: "/merchants/[id]",
+  MARKETPLACE: "/marketplace",
+  RANKINGS: "/rankings",
+  BANS: "/bans",
+  BAN_DETAIL: "/bans/[id]",
+  LOGIN_HISTORY: "/login-history",
+  PACKET_MATRIX: "/packet-matrix",
+  COUPONS: "/coupons",
+  COUPON_DETAIL: "/coupons/[id]",
   REWARD_POOLS: "/reward-pools",
+  REWARD_POOL_DETAIL: "/reward-pools/[id]",
   SETUP: "/setup",
+  TRANSPORTS: "/transports",
+  TRANSPORT_ROUTE_DETAIL: "/transports/routes/[id]",
   TENANTS: "/tenants",
   TENANT_DETAIL: "/tenants/[id]",
   TENANT_PROPERTIES: "/tenants/[id]/properties",

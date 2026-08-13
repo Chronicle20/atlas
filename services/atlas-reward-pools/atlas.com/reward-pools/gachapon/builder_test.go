@@ -4,6 +4,8 @@ import (
 	"atlas-reward-pools/gachapon"
 	"atlas-reward-pools/test"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestBuilderKind(t *testing.T) {
@@ -70,5 +72,35 @@ func TestBuilderKind(t *testing.T) {
 				t.Errorf("Expected Kind() = %q, got %q", tt.wantKind, m.Kind())
 			}
 		})
+	}
+}
+
+func TestBuilderAcceptsCashSurpriseKind(t *testing.T) {
+	m, err := gachapon.NewBuilder(uuid.New(), "5222000").
+		SetName("Cash Shop Surprise").
+		SetKind(gachapon.KindCashSurprise).
+		Build()
+	if err != nil {
+		t.Fatalf("cash-surprise kind rejected: %v", err)
+	}
+	if m.Kind() != gachapon.KindCashSurprise {
+		t.Fatalf("kind = %q, want %q", m.Kind(), gachapon.KindCashSurprise)
+	}
+}
+
+func TestBuilderStillRejectsUnknownKind(t *testing.T) {
+	_, err := gachapon.NewBuilder(uuid.New(), "1").SetKind("mystery-box").Build()
+	if err == nil {
+		t.Fatal("unknown kind must be rejected — the union stays closed")
+	}
+}
+
+func TestDefaultKindUnchanged(t *testing.T) {
+	m, err := gachapon.NewBuilder(uuid.New(), "9000000").Build()
+	if err != nil {
+		t.Fatalf("default build failed: %v", err)
+	}
+	if m.Kind() != gachapon.KindGachapon {
+		t.Fatalf("DefaultKind regressed to %q — existing rows read this value", m.Kind())
 	}
 }

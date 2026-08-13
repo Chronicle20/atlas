@@ -280,23 +280,54 @@
   direction: clientbound
   opcode: 42
   fname: CWvsContext::OnClaimResult
+  packet: report/clientbound/ClaimResultSuccess
   provenance: ida-discovered
   ida:
     address: 9446856
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnClaimResult
+    @0x91f9a9 (GMS_v72.1_U_DEVM.exe.i64, session c8acae95), resolved via the
+    opcode dispatch table CWvsContext::OnPacket case 42 @0x90271c. Decode1(mode)
+    @0x91f9be. mode==2 (Decode1 hasRemaining @0x91fa3d, Decode4 remaining
+    @0x91fa47) is the only mode that reads beyond the mode byte --
+    ClaimResultSuccess. Every other reachable mode is a bare mode byte with no
+    further CInPacket reads -- ClaimResultNotice: 3->StringPool 3359 @0x91fa25,
+    0x41->3361 @0x91fa0f, 0x42->3362 @0x91f9f9, 0x43->3363 @0x91fb57,
+    0x44->3364 @0x91fc2b, 0x45->3365 @0x91fc17, 0x47->3370 @0x91fba2 (its own
+    CHATLOG_ADD+Notice arm), 0x48->3372 @0x91fb88. Mode 0x46 and every other
+    unlisted byte value fall through to an early return with no display (still
+    only the 1-byte mode already consumed by Decode1) -- matches the Atlas
+    modeset (3, 0x41-0x45, 0x47, 0x48) exactly. packet: links to
+    ClaimResultSuccess; ClaimResultNotice is covered by the same decompile pass
+    (see claim_result_test.go) but is not independently registry-linked since
+    the op row carries a single packet field.'
 - op: CLAIM_AVAILABLE_TIME
   direction: clientbound
   opcode: 43
   fname: CWvsContext::OnSetClaimSvrAvailableTime
+  packet: report/clientbound/ClaimAvailableTime
   provenance: ida-discovered
   ida:
     address: 9446856
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnSetClaimSvrAvailableTime
+    @0x91fc50 (GMS_v72.1_U_DEVM.exe.i64, session c8acae95), resolved via the
+    opcode dispatch table CWvsContext::OnPacket case 43 @0x902729. Decode1(a2)
+    @0x91fc61 -> openHour (v3, stored at this+11888), Decode1(a2) @0x91fc63 ->
+    closeHour (result, stored at this+11889). Byte-identical to the Atlas
+    ClaimAvailableTime codec (2 bytes, no version branch).'
 - op: CLAIM_STATUS_CHANGED
   direction: clientbound
   opcode: 44
   fname: CWvsContext::OnClaimSvrStatusChanged
+  packet: report/clientbound/ClaimSvrStatusChanged
   provenance: ida-discovered
   ida:
     address: 9446856
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnClaimSvrStatusChanged
+    @0x91fc79 (GMS_v72.1_U_DEVM.exe.i64, session c8acae95), resolved via the
+    opcode dispatch table CWvsContext::OnPacket case 44 @0x902736. Decode1(a2)
+    @0x91fc89, cast nonzero->bool, stored at this+11892 (m_bClaimSvrConnected).
+    Byte-identical to the Atlas ClaimSvrStatusChanged codec (1 byte, no version
+    branch).'
 - op: SET_TAMING_MOB_INFO
   direction: clientbound
   opcode: 45
@@ -360,6 +391,7 @@
   direction: clientbound
   opcode: 52
   fname: CWvsContext::OnSueCharacterResult
+  packet: report/clientbound/SueCharacterResult
   provenance: ida-discovered
   ida:
     address: 9446856
@@ -1224,6 +1256,7 @@
   direction: clientbound
   opcode: 177
   fname: CUserRemote::OnShowUpgradeTombEffect
+  packet: character/clientbound/ShowUpgradeTombEffect
   provenance: ida-discovered
   ida:
     address: 8896582
@@ -1835,14 +1868,13 @@
   ida:
     address: 4655917
   note: 'v72 CCashShop::OnPacket op 291 = OnCashItemResult (CASHSHOP_OPERATION); v79=303.'
-- op: CASHSHOP_CASH_ITEM_GACHAPON_RESULT
-  direction: clientbound
-  opcode: 292
-  fname: CCashShop::OnCashItemGachaponResult
-  provenance: ida-discovered
-  ida:
-    address: 4655917
-  note: 'v72-EXTRA cash op (no v79 equiv): CCashShop::OnCashItemGachaponResult.'
+# task-207: opcode 292's fname CCashShop::OnCashItemGachaponResult was a
+# mis-attribution. v72's handler at 0x470d24 is a verified 3-line
+# stub — CInPacket::Decode1(a2) written straight into a CWvsContext flag byte
+# — not a gachapon result (design.md §1.1; feature-na-evidence.yaml carries
+# the full proof). Row removed so the cell grades n-a rather than a false
+# ❌; StateNA derives solely from registry absence
+# (internal/matrix/grade.go), not from feature-na-evidence.yaml alone.
 - op: CASHSHOP_CHECK_NAME_CHANGE
   direction: clientbound
   opcode: 293
@@ -2184,6 +2216,15 @@
   ida:
     address: 9553263
   note: 'v72 COutPacket(50) verified via global COutPacket-ctor harvest @0x91c56f; Δ+1 vs v79 op 49 (mid/field/social Δ+1).'
+- op: USE_DEATHITEM
+  direction: serverbound
+  opcode: 52
+  fname: CUserLocal::RequestUpgradeTombEffect
+  packet: character/serverbound/UseDeathItem
+  provenance: ida-discovered
+  ida:
+    address: 8812116
+  note: 'v72 CUserLocal::RequestUpgradeTombEffect @0x867654 builds COutPacket(52) and encodes itemId/x/y; renamed from sub_867654 during task-210. (task-210)'
 - op: MOB_BANISH_PLAYER
   direction: serverbound
   opcode: 55
@@ -2326,6 +2367,13 @@
   ida:
     address: 9457634
   note: 'v72 COutPacket(78) verified via global COutPacket-ctor harvest @0x904fe2; Δ+1 vs v79 op 77 (mid/field/social Δ+1).'
+- op: USE_CATCH_ITEM
+  direction: serverbound
+  opcode: 80
+  fname: CWvsContext::SendBridleItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 9454973
 - op: USE_SKILL_BOOK
   direction: serverbound
   opcode: 81
@@ -2495,6 +2543,14 @@
   ida:
     address: 9560894
   note: 'task-124 v72 verify pass (live GMS_v72.1_U_DEVM.exe, port 13339): unnamed sub_91E33E @0x91e33e (renamed live to CWvsContext::SendMapTransferRequest this pass) — COutPacket::COutPacket(&v4,101) @0x91e350 (opcode 101, decimal 0x65); Encode1(a1=nType) @0x91e35f; Encode1(a3=flag/vip) @0x91e36a; guarded Encode4(a2=mapId) @0x91e37b when a1==0 (register sends no map id, delete sends nType=0+mapId) — matches v83/v61''s AddMap layout exactly (only the opcode differs: 101 here vs 94 on v61, 102 on v83). Callers traced via the teleport-rock saved-map-list dialog (constructor CWvsContext::RunMapTransferItem -> sub_76CC2B; button-click dispatcher sub_76D8CA switches on button id: 2000 -> sub_76DBC9 (register, calls SendMapTransferRequest(1,0,vip)), 2001 -> sub_76DDE5 (delete, calls SendMapTransferRequest(0,selectedMapId,vip)), 1/2 -> sub_76DEF6 (GO/close, sets the dialog''s modal result consumed by CWvsContext::RunMapTransferItem). Dialog constructor sub_76CE15 creates buttons 2000/2001/1/2 + CCtrlEdit(1000) + CCtrlScrollBar(3000), confirming this is the same unified map-transfer dialog (register/delete/name-input/saved-map list) as v61/v83.'
+- op: CLAIM_REQUEST
+  direction: serverbound
+  opcode: 105
+  fname: CWvsContext::SendClaimRequest
+  provenance: ida-discovered
+  ida:
+    address: 0x91f2b4
+  note: 'task-145 Task 23b (2026-08-05): registry correction -- the send-site was already named in the shipped v72 IDB (func_query name_regex confirmed ?SendClaimRequest@CWvsContext@@... @0x91f2b4, size 0x6bf, identical to the v79@0x9711ff and v83@0xa2719c twins) but the registry had zero CLAIM_REQUEST rows for this version, so STATUS.md rendered the cell n-a (empty) instead of unimplemented -- a false negative, not a real absence. Live decompile of 0x91f2b4 confirms COutPacket::COutPacket((COutPacket*)v48, 105) @0x91f749 (opcode 105 decimal / 0x69), followed by Encode1(v66=bChatClaim) @0x91f758, EncodeStr(targetName) @0x91f771, Encode1(v58=reasonType) @0x91f77c, EncodeStr(description) @0x91f795, and a guarded EncodeStr(chatLog) @0x91f80d gated on the same v66 (bChatClaim) that fed the first Encode1 -- the structural signature confirmed. CClientSocket::SendPacket @0x91f828. Byte-for-byte match to the v83/v95 shape; needs no version branch.'
 - op: QUEST_ACTION
   direction: serverbound
   opcode: 106
@@ -2897,6 +2953,23 @@
   ida:
     address: 4610484
   note: 'v72 COutPacket(219) verified via global COutPacket-ctor harvest @0x4659b4; Δ-2 vs v79 op 221 (deep (pet/summon/mob/npc/reactor/minigame/cashshop) Δ-2).'
+- op: COUPON_CODE
+  direction: serverbound
+  opcode: 220
+  fname: CCashShop::OnStatusCoupon
+  packet: cash/serverbound/CouponCode
+  provenance: manual
+  note: >-
+    task-206: the previous registry absence (and the matrix n-a) was
+    "nobody looked", not client-absence. CCashShop::OnStatusCoupon @ 0x4698d8
+    builds COutPacket(0xDC) at 0x46997e (push 0DCh @ 0x469976 =
+    CASHSHOP_OPERATION 219 + 1) and sends it at 0x4699e7. Body is three
+    EncodeStr and no Encode1: EncodeStr(characterId) @ 0x46999b,
+    EncodeStr(couponCode) @ 0x4699b4, then EncodeStr(third) @ 0x4699d8
+    guarded on characterId being non-empty (dead, characterId is never
+    populated) — the same shape as gms_v83. Empty codes are filtered client
+    side ("Please enter the coupon code." @ 0xa5aa6c, DoModal @ 0x469964).
+    See docs/tasks/task-206-cash-shop-coupon-codes/derivation.md.
 - op: ENTER_MTS
   direction: serverbound
   opcode: 154

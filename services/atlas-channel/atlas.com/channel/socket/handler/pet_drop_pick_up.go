@@ -20,7 +20,8 @@ func PetDropPickUpHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer
 		pk.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", pk.Operation(), pk.String())
 
-		p, err := pet.NewProcessor(l, ctx).GetById(uint32(pk.PetId()))
+		// pk.PetId() is the client's pet serial, not the Atlas pet id.
+		p, err := pet.NewProcessor(l, ctx).GetBySerialNumber(s.CharacterId(), pk.PetId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to find pet [%d]", pk.PetId())
 		}

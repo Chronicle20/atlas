@@ -25,8 +25,10 @@ type Processor interface {
 	RequestStorageIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error
 	RequestCharacterSlotIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error
 	RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32) error
+	RequestCouponRedemption(characterId uint32, code string) error
 	MoveFromCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte, slot int16) error
 	MoveToCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte) error
+	OpenSurprise(accountId uint32, characterId uint32, cashId int64) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -97,6 +99,14 @@ func (p *ProcessorImpl) RequestPurchase(characterId uint32, serialNumber uint32,
 	currency = resolvePurchaseCurrency(isPoints, currency)
 	p.l.Debugf("Character [%d] purchasing [%d] with currency [%d], zero [%d]", characterId, serialNumber, currency, zero)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPurchaseCommandProvider(characterId, serialNumber, currency))
+}
+
+// RequestCouponRedemption forwards an already-normalized coupon code to
+// atlas-cashshop. The code must NEVER be logged: it is a redeemable bearer
+// token, so only its length goes into the log line.
+func (p *ProcessorImpl) RequestCouponRedemption(characterId uint32, code string) error {
+	p.l.Debugf("Character [%d] submitting a coupon code of length [%d].", characterId, len(code))
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestCouponRedemptionCommandProvider(characterId, code))
 }
 
 // resolvePurchaseCurrency maps the buy packet's isPoints flag onto the wallet
@@ -201,4 +211,14 @@ func (p *ProcessorImpl) MoveToCashInventory(accountId uint32, characterId uint32
 
 	p.l.Debugf("Created transfer saga [%s] for character [%d] transferring cash item [%d] to cash shop.", transactionId.String(), characterId, serialNumber)
 	return nil
+}
+
+// OpenSurprise forwards a Cash Shop Surprise open request. The transaction
+// id is minted here, once per click: atlas-cashshop's openings ledger keys
+// idempotency on it, so a Kafka redelivery replays this id and is rejected
+// while a genuine second click gets a fresh one.
+func (p *ProcessorImpl) OpenSurprise(accountId uint32, characterId uint32, cashId int64) error {
+	transactionId := uuid.New()
+	p.l.Debugf("Character [%d] opening surprise box [%d]. Transaction [%s].", characterId, cashId, transactionId)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(OpenSurpriseCommandProvider(characterId, transactionId, accountId, cashId))
 }

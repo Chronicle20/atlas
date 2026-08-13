@@ -36,6 +36,19 @@ type MCPClient interface {
 	StructInfo(ctx context.Context, name string) (StructLayout, error)
 }
 
+// BinaryInfoProvider is an OPTIONAL capability a MCPClient implementation may
+// additionally support: reporting the underlying IDB's binary module name and
+// md5, for the export's top-level "binary"/"md5" provenance fields (the
+// evidence-freshness anchors the verification campaign keys on). It is
+// intentionally NOT folded into MCPClient — that would force every existing
+// unit-test fake across the package to grow a method it has no use for.
+// exportRun type-asserts the client against this interface and leaves
+// Binary/MD5 empty when the client doesn't implement it (unchanged prior
+// behaviour for fakes).
+type BinaryInfoProvider interface {
+	GetBinaryInfo(ctx context.Context) (name, md5 string, err error)
+}
+
 type MCPSource struct {
 	client MCPClient
 }

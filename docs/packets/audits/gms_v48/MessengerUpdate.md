@@ -1,29 +1,16 @@
 # MessengerUpdate (← `CUIMessenger::OnPacket#Update`)
 
-- **IDA:** 
+- **IDA:** 0x61d8b8
 - **Atlas file:** `libs/atlas-packet/messenger/clientbound/update.go`
 - **Variant:** GMS/v48
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 8 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 9 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 10 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 11 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 12 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 13 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 14 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 15 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `mode` | ✅ |  |
+| 1 | byte | byte `position` | ✅ |  |
+| 2 | bytes | bytes `AvatarLook::Decode (opaque block)` | ✅ |  |
 

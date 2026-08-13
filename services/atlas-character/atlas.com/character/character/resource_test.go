@@ -202,3 +202,79 @@ func TestGetCharactersByNamePaginates(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 }
+
+// TestGetCharacterDoesNotServeZeroValueOn200 pins the contract broken during
+// the 2026-08-07 shared-Postgres restart: handleGetCharacter only mapped
+// gorm.ErrRecordNotFound and let every other error fall through, marshalling
+// the zero-value model into a 200 response body of
+// {"data":{"type":"characters","id":"0","attributes":{…all zeros}}}.
+//
+// That body decodes without error in api2go, so atlas-channel accepted it as
+// a real character: 20 of 53 GET /characters/1 calls in the incident window
+// came back with id 0, jobId 0, no skills and no inventory, and the attack and
+// damage-taken pipelines then ran against character 0.
+//
+// A DB-level failure that is not ErrRecordNotFound must surface as an error
+// status, never as a 200 carrying a zero character.
+func TestGetCharacterDoesNotServeZeroValueOn200(t *testing.T) {
+	setupResourceTestRegistry(t)
+
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
+	tenantId := uuid.New()
+	seedResourceCharacter(t, db, tenantId, 1, 100, world.Id(0), "hero1")
+
+	srv := httptest.NewServer(setupCharacterResourceRouter(db))
+	defer srv.Close()
+
+	t.Run("ExistingCharacterIsServedWithItsId", func(t *testing.T) {
+		req := resourceRequestWithTenant(http.MethodGet, fmt.Sprintf("%s/characters/1", srv.URL), tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var doc jsonapi.Document
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&doc))
+		require.NotNil(t, doc.Data)
+		require.NotNil(t, doc.Data.DataObject)
+		assert.Equal(t, "1", doc.Data.DataObject.ID)
+	})
+
+	t.Run("MissingCharacterIsNotFound", func(t *testing.T) {
+		req := resourceRequestWithTenant(http.MethodGet, fmt.Sprintf("%s/characters/404404", srv.URL), tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
+
+	t.Run("DatabaseFailureIsNotA200ZeroCharacter", func(t *testing.T) {
+		// Close the pool underneath the handler: every query now fails with
+		// "sql: database is closed", which is emphatically not
+		// gorm.ErrRecordNotFound -- the exact shape of the incident.
+		sqlDB, err := db.DB()
+		require.NoError(t, err)
+		require.NoError(t, sqlDB.Close())
+
+		req := resourceRequestWithTenant(http.MethodGet, fmt.Sprintf("%s/characters/1", srv.URL), tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+
+		require.NotEqual(t, http.StatusOK, resp.StatusCode,
+			"a DB failure must not be answered with 200; that is how the zero-value character reached atlas-channel")
+		assert.GreaterOrEqual(t, resp.StatusCode, http.StatusInternalServerError)
+
+		// Belt and braces: whatever the body is, it must not be a decodable
+		// character resource with id "0".
+		var doc jsonapi.Document
+		if json.NewDecoder(resp.Body).Decode(&doc) == nil && doc.Data != nil && doc.Data.DataObject != nil {
+			assert.NotEqual(t, "0", doc.Data.DataObject.ID, "zero-value character served to callers")
+		}
+	})
+}

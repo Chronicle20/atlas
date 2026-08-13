@@ -7,4 +7,4 @@ ida:
     address: "0x61c93f"
     decompile_sha256: e721924d1511f954a1fabf6581ab905455e03bc4244063de2c39f55ee5b3d9c1
 verifies:
-  - libs/atlas-packet/monster/clientbound/catch_monster_test.go#TestCatchMonsterBytesV72
+    - libs/atlas-packet/monster/clientbound/catch_monster_test.go#TestCatchMonsterBytesV72

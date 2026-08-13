@@ -4,6 +4,7 @@ import "strconv"
 
 type RestModel struct {
 	Id         uint32 `json:"-"`
+	CashId     uint64 `json:"cashId"`
 	TemplateId uint32 `json:"templateId"`
 	Name       string `json:"name"`
 	OwnerId    uint32 `json:"ownerId"`
@@ -29,6 +30,7 @@ func (r *RestModel) SetID(strId string) error {
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
 		Id:         m.id,
+		CashId:     m.CashId(),
 		TemplateId: m.TemplateId(),
 		Name:       m.Name(),
 		OwnerId:    m.OwnerId(),
@@ -38,6 +40,7 @@ func Transform(m Model) (RestModel, error) {
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:         rm.Id,
+		cashId:     rm.CashId,
 		templateId: rm.TemplateId,
 		name:       rm.Name,
 		ownerId:    rm.OwnerId,

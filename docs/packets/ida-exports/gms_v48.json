@@ -3,6 +3,67 @@
   "md5": "",
   "generated_at": "2026-07-03T15:48:41Z",
   "functions": {
+    "CTradingRoomDlg::OnPutItem": {
+      "address": "0x5e6ace",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (13 TRADE_PUT_ITEM; CTradingRoomDlg::OnPacket @0x5e6a84 dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "side (recipient-relative room side; indexes this[side + N] item grid)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "tradeSlot (1..9 within that side's grid)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "asset (GW_ItemSlotBase::Decode; model.Asset substruct)"
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnPutMoney": {
+      "address": "0x5e6ba5",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (14 TRADE_ADD_MESO; CTradingRoomDlg::OnPacket @0x5e6a84 dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "side (recipient-relative room side)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "amount (ASSIGNED: this[side + N] = Decode4(), not accumulated)"
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnTrade#TradeConfirm": {
+      "address": "0x5e6bd3",
+      "direction": "clientbound",
+      "note": "Clientbound receive arm of CTradingRoomDlg::OnTrade. Same function as the serverbound TRANSACTION sender (interaction/serverbound/InteractionOperationTransaction), which is keyed on the un-suffixed CTradingRoomDlg::OnTrade; the #TradeConfirm suffix separates the two wire shapes (this arm is bodyless; the send carries count + {itemId, crc} pairs).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (15 TRADE_CONFIRM; CTradingRoomDlg::OnPacket @0x5e6a84 dispatch byte). The arm reads NO body."
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnMesoLimitRefused": {
+      "address": "0x5e6be7",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (18 TRADE_MESO_LIMIT; CTradingRoomDlg::OnPacket @0x5e6a84 dispatch byte). The arm reads NO body."
+        }
+      ]
+    },
     "CCashShop::OnCashItemResult#LOAD_WISH_FAILED": {
       "address": "0x453d71",
       "direction": "clientbound",
@@ -112,6 +173,45 @@
         {
           "op": "Decode1",
           "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnStatusCoupon": {
+      "address": "0x44d2e7",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v8) == 1",
+          "ref": "sub_41803C"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v8) == 1"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v8) == 1",
+          "ref": "sub_41803C"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v8) == 1"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v8) == 1 && v9",
+          "ref": "sub_41803C"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v8) == 1 && v9"
         }
       ]
     },
@@ -503,24 +603,50 @@
       ]
     },
     "CAffectedAreaPool::OnAffectedAreaCreated": {
-      "address": "",
+      "address": "0x421854",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": "dwId @0x421877"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nType @0x421881 - ONE byte on v48 (v61 @0x423edc widens this to Decode4)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "dwOwnerId @0x42188b"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nSkillID @0x421895 (compared against 130/131/2111003/4221006 in the skill branches @0x421954, 0x421961, 0x421968, 0x421970)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nSLV @0x42189f"
+        },
+        {
+          "op": "Decode2",
+          "comment": "phase @0x4218aa"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "rcArea, 16 bytes @0x4218bd"
+        },
+        {
+          "op": "Decode1",
+          "comment": "trailing +0x30 slot @0x4218c4 - ONE byte on v48 (v61 reads Decode4 into the same slot)"
         }
       ]
     },
     "CAffectedAreaPool::OnAffectedAreaRemoved": {
-      "address": "",
+      "address": "0x421e7f",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": "dwId @0x421e9a"
         }
       ]
     },
@@ -713,7 +839,7 @@
         },
         {
           "op": "Decode1",
-          "comment": "giftFlag — v48 has NO trailing giftIndex/giftSN (predates those fields)",
+          "comment": "giftFlag \u2014 v48 has NO trailing giftIndex/giftSN (predates those fields)",
           "guard": "sub_4A0A2B(v26) == 1 (task-137 notesend-verify2, disasm/decompile @0x453c3d)"
         }
       ]
@@ -1107,9 +1233,8 @@
       ]
     },
     "CCashShop::OnCheckDuplicatedIDResult": {
-      "address": "",
+      "address": "0x455a7f",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -1253,20 +1378,39 @@
       "calls": null
     },
     "CCashShop::SendGiftsPacket": {
-      "address": "",
+      "address": "0x44c2f4",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!*((_DWORD *)a1 + 6) && v29 >= 0 && sub_44B431(v16, v17, v18, v19, v20[0]) == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!*((_DWORD *)a1 + 6) && v29 >= 0 && sub_44B431(v16, v17, v18, v19, v20[0]) == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!*((_DWORD *)a1 + 6) && v29 >= 0 && sub_44B431(v16, v17, v18, v19, v20[0]) == 1"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)a1 + 6) && v29 >= 0 && sub_44B431(v16, v17, v18, v19, v20[0]) == 1"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)a1 + 6) && v29 >= 0 && sub_44B431(v16, v17, v18, v19, v20[0]) == 1"
         }
       ]
     },
     "CCashShop::TrySendQueryCashRequest": {
-      "address": "",
+      "address": "0x44f756",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -1397,24 +1541,88 @@
       ]
     },
     "CDropPool::OnDropEnterField": {
-      "address": "",
+      "address": "0x4aacf4",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CDropPool::OnDropLeaveField": {
-      "address": "",
+      "address": "0x4ab8fa",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!sub_4AD836(&v65, v73)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v2 == 4"
         }
       ]
     },
@@ -1441,9 +1649,8 @@
       ]
     },
     "CEmployeePool::OnEmployeeEnterField": {
-      "address": "",
+      "address": "0x4b3297",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -1452,9 +1659,8 @@
       ]
     },
     "CEmployeePool::OnEmployeeLeaveField": {
-      "address": "",
+      "address": "0x4b3334",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -1463,9 +1669,8 @@
       ]
     },
     "CEmployeePool::OnEmployeeMiniRoomBalloon": {
-      "address": "",
+      "address": "0x4b3392",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -1508,24 +1713,30 @@
       ]
     },
     "CField::AddBlackList": {
-      "address": "",
+      "address": "0x4cbd0e",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
         }
       ]
     },
     "CField::DeleteBlackList": {
-      "address": "",
+      "address": "0x4cbd88",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
         }
       ]
     },
@@ -1621,13 +1832,26 @@
       ]
     },
     "CField::OnBlowWeather": {
-      "address": "",
+      "address": "0x4c930a",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v3 && v23 < 0 && !v33"
+        },
+        {
           "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "comment": "decompilation failed; hand-trace",
+          "guard": "v3 && v23 < 0 && !v33"
         }
       ]
     },
@@ -1707,9 +1931,8 @@
       ]
     },
     "CField::OnDestroyClock": {
-      "address": "",
+      "address": "0x4c6aef",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -1718,9 +1941,8 @@
       ]
     },
     "CField::OnFieldEffect": {
-      "address": "",
+      "address": "0x4c7b59",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -1866,13 +2088,17 @@
       ]
     },
     "CField::OnPlayJukeBox": {
-      "address": "",
+      "address": "0x4c95f2",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "result == 18 && (int)this[6] >= 0"
         }
       ]
     },
@@ -2318,9 +2544,8 @@
       ]
     },
     "CField::SendChatMsgSlash": {
-      "address": "",
+      "address": "0x4c3e96",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -2369,9 +2594,8 @@
       ]
     },
     "CField::SendCreateNewPartyMsg": {
-      "address": "",
+      "address": "0x4c52cb",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -2410,13 +2634,28 @@
       ]
     },
     "CField::SendInviteTradingRoomMsg": {
-      "address": "",
+      "address": "0x4c5100",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
@@ -2664,9 +2903,8 @@
       ]
     },
     "CField::TryEnterTownPortal": {
-      "address": "",
+      "address": "0x4cb90a",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -3161,7 +3399,22 @@
     "CFuncKeyMappedMan::SaveFuncKeyMap": {
       "address": "0x4e5fae",
       "direction": "serverbound",
-      "calls": null
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v9 && v4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v9 && v4 && loop v4"
+        }
+      ]
     },
     "CHATLOG_ADD": {
       "address": "",
@@ -4015,9 +4268,8 @@
       ]
     },
     "CLogin::MakeVACDlg": {
-      "address": "",
+      "address": "0x50273f",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -4037,24 +4289,89 @@
       ]
     },
     "CLogin::OnCheckDuplicatedIDResult": {
-      "address": "",
+      "address": "0x5016db",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CLogin::OnCheckPasswordResult": {
-      "address": "",
+      "address": "0x500931",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 == 2"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v4 == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v29 <= 1u && v4 != 23"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v29 <= 1u && v4 != 23"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v29 <= 1u && v4 != 23"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v29 <= 1u && v4 != 23"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v29 <= 1u && v4 != 23"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v29 <= 1u && v4 != 23"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v29 <= 1u && v4 != 23"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v29 <= 1u && v4 != 23"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v29 <= 1u && v4 != 23"
         }
       ]
     },
@@ -4092,9 +4409,8 @@
       ]
     },
     "CLogin::OnCheckPinCodeResult": {
-      "address": "",
+      "address": "0x503956",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -4114,20 +4430,22 @@
       ]
     },
     "CLogin::OnCheckUserLimitResult": {
-      "address": "",
+      "address": "0x5011d6",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CLogin::OnConfirmEULAResult": {
-      "address": "",
+      "address": "0x5038f1",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -4136,13 +4454,168 @@
       ]
     },
     "CLogin::OnCreateNewCharacterResult": {
-      "address": "",
+      "address": "0x501973",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
@@ -4158,13 +4631,16 @@
       ]
     },
     "CLogin::OnDeleteCharacterResult": {
-      "address": "",
+      "address": "0x5017b6",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
@@ -4224,13 +4700,16 @@
       ]
     },
     "CLogin::OnSetAccountResult": {
-      "address": "",
+      "address": "0x5037d5",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
@@ -4246,9 +4725,8 @@
       ]
     },
     "CLogin::OnUpdatePinCodeResult": {
-      "address": "",
+      "address": "0x503c92",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -4257,9 +4735,8 @@
       ]
     },
     "CLogin::OnViewAllCharResult": {
-      "address": "",
+      "address": "0x50232d",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -4301,13 +4778,72 @@
       ]
     },
     "CLogin::OnWorldInformation": {
-      "address": "",
+      "address": "0x50120a",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 >= 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 >= 0"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 >= 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 >= 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4 >= 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 >= 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 >= 0"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 >= 0 && (_BYTE)result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 >= 0 && (_BYTE)result"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 >= 0 && (_BYTE)result"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 >= 0 && (_BYTE)result"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 >= 0 && (_BYTE)result"
         }
       ]
     },
@@ -4369,9 +4905,8 @@
       ]
     },
     "CLogin::SendCheckUserLimitPacket": {
-      "address": "",
+      "address": "0x50073b",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -4391,13 +4926,18 @@
       ]
     },
     "CLogin::SendLoginPacket": {
-      "address": "",
+      "address": "0x4fffc4",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 && result >= 0 && v8 && result && (unsigned int)a3 < *(_DWORD *)(result - 4)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 && result >= 0 && v8 && result && (unsigned int)a3 < *(_DWORD *)(result - 4)"
         }
       ]
     },
@@ -4543,31 +5083,40 @@
       ]
     },
     "CMemoryGameDlg::OnTieRequest": {
-      "address": "",
+      "address": "0x537d1c",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CMemoryGameDlg::SendTurnUpCard": {
-      "address": "",
+      "address": "0x53875d",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CMessageBoxPool::OnCreateFailed": {
-      "address": "",
+      "address": "0x5432ce",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -4576,24 +5125,51 @@
       ]
     },
     "CMessageBoxPool::OnMessageBoxEnterField": {
-      "address": "",
+      "address": "0x5432f7",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!sub_543E71(&v41, v33)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!sub_543E71(&v41, v33)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!sub_543E71(&v41, v33)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "!sub_543E71(&v41, v33)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "!sub_543E71(&v41, v33)"
         }
       ]
     },
     "CMessageBoxPool::OnMessageBoxLeaveField": {
-      "address": "",
+      "address": "0x5438de",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
@@ -4631,9 +5207,8 @@
       ]
     },
     "CMiniRoomBaseDlg::OnLeaveBase": {
-      "address": "",
+      "address": "0x54637c",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -4642,9 +5217,8 @@
       ]
     },
     "CMiniRoomBaseDlg::OnPacketBase": {
-      "address": "",
+      "address": "0x5459c4",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -4735,57 +5309,86 @@
       ]
     },
     "CMob::OnAffected": {
-      "address": "",
+      "address": "0x55114c",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
         }
       ]
     },
     "CMob::OnCatchEffect": {
-      "address": "",
+      "address": "0x5511f4",
       "direction": "clientbound",
-      "unresolved": true,
+      "note": "Unnamed in the v48 IDB as sub_5511F4 until task-212; CMobPool::OnMobPacket (0x559390) case 172 (0x0AC) dispatches here. Reads a single Decode1 (-> sub_54E7D3), no trailing success byte (design.md F-1/F-4). Canonical fname CMob::OnCatchEffect kept as best-effort label per precedent (gms_v92.yaml CATCH_MONSTER); unnamed function recorded in the registry as fname_alts: sub_5511F4.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "result byte (sub_54E7D3)"
         }
       ]
     },
     "CMob::OnCtrlAck": {
-      "address": "",
+      "address": "0x550d9e",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CMob::OnDamaged": {
-      "address": "",
+      "address": "0x551199",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
     "CMob::OnEffectByItem": {
-      "address": "",
+      "address": "0x551481",
       "direction": "clientbound",
-      "unresolved": true,
+      "note": "Unnamed in the v48 IDB as sub_551481 until task-212; CMobPool::OnMobPacket (0x559390) case 173 (0x0AD) dispatches here. Reads a single Decode4 (-> sub_54E82D) ONLY \u2014 no trailing result byte, one field shorter than every later version's OnEffectByItem (design.md F-2). Canonical fname CMob::OnEffectByItem kept as best-effort label per precedent; unnamed function recorded in the registry as fname_alts: sub_551481.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": "itemId (sub_54E82D)"
         }
       ]
     },
@@ -4834,20 +5437,26 @@
       ]
     },
     "CMob::OnMove": {
-      "address": "",
+      "address": "0x5509dd",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
     "CMob::OnSpecialEffectBySkill": {
-      "address": "",
+      "address": "0x5513d1",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -4856,31 +5465,400 @@
       ]
     },
     "CMob::OnStatReset": {
-      "address": "",
+      "address": "0x550f4c",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CMob::OnStatSet": {
-      "address": "",
+      "address": "0x550e64",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 1) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 1) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 1) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 2) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 2) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 2) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 4) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 4) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 4) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 8) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 8) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 8) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x10) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x10) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x10) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x20) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x20) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x20) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x40) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x40) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x40) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x80u) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x80u) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x80u) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x100) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x100) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x100) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x200) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x200) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x200) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x400) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x400) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x400) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x800) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x800) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x800) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x1000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x1000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x1000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x2000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x2000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x2000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x4000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x4000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x4000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x8000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x8000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x8000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x40000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x40000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x40000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x80000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x80000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x80000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x10000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x10000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x10000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x20000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x20000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x20000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x200000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x200000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x200000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x400000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x400000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x400000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x1000000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x1000000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x1000000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x2000000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x2000000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x2000000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CMob::OnSuspendReset": {
-      "address": "",
+      "address": "0x550fd7",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -4889,13 +5867,16 @@
       ]
     },
     "CMob::SendDropPickUpRequest": {
-      "address": "",
+      "address": "0x55220a",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
@@ -4922,9 +5903,8 @@
       ]
     },
     "CMob::TryFirstSelfDestruction": {
-      "address": "",
+      "address": "0x551f38",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -4944,13 +5924,789 @@
       ]
     },
     "CMobPool::OnMobChangeController": {
-      "address": "",
+      "address": "0x559710",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v7"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 1) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 1) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 1) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 2) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 2) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 2) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 4) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 4) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 4) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 8) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 8) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 8) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x10) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x10) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x10) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x20) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x20) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x20) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x40) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x40) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x40) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x80u) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x80u) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x80u) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x100) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x100) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x100) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x200) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x200) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x200) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x400) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x400) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x400) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x800) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x800) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x800) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x1000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x1000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x1000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x2000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x2000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x2000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x4000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x4000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x4000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x8000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x8000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x8000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x40000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x40000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x40000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x80000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x80000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x80000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x10000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x10000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x10000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x20000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x20000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x20000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x200000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x200000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x200000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x400000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x400000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x400000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x1000000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x1000000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x1000000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x2000000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x2000000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v7) && ((a2 & 0x2000000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 1) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 1) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 1) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 2) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 2) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 2) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 4) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 4) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 4) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 8) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 8) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 8) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x10) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x10) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x10) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x20) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x20) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x20) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x40) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x40) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x40) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x80u) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x80u) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x80u) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x100) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x100) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x100) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x200) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x200) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x200) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x400) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x400) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x400) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x800) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x800) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x800) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x1000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x1000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x1000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x2000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x2000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x2000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x4000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x4000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x4000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x8000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x8000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x8000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x40000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x40000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x40000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x80000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x80000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x80000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x10000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x10000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x10000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x20000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x20000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x20000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x200000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x200000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x200000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x400000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x400000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x400000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x1000000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x1000000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x1000000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x2000000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x2000000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x2000000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default>"
         }
       ]
     },
@@ -4966,35 +6722,822 @@
       ]
     },
     "CMobPool::OnMobEnterField": {
-      "address": "",
+      "address": "0x559445",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "Mob"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 1) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 1) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 1) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 2) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 2) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 2) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 4) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 4) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 4) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 8) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 8) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 8) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x10) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x10) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x10) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x20) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x20) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x20) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x40) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x40) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x40) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x80u) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x80u) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x80u) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x100) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x100) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x100) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x200) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x200) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x200) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x400) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x400) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x400) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x800) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x800) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x800) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x1000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x1000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x1000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x2000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x2000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x2000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x4000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x4000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x4000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x8000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x8000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x8000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x40000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x40000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x40000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x80000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x80000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x80000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x10000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x10000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x10000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x20000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x20000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x20000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x200000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x200000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x200000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x400000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x400000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x400000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x1000000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x1000000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x1000000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x2000000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x2000000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(Mob) && ((a2 & 0x2000000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 1) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 1) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 1) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 2) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 2) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 2) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 4) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 4) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 4) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 8) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 8) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 8) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x10) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x10) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x10) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x20) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x20) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x20) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x40) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x40) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x40) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x80u) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x80u) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x80u) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x100) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x100) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x100) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x200) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x200) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x200) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x400) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x400) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x400) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x800) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x800) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x800) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x1000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x1000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x1000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x2000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x2000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x2000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x4000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x4000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x4000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x8000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x8000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x8000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x40000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x40000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x40000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x80000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x80000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x80000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x10000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x10000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x10000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x20000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x20000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x20000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x200000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x200000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x200000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x400000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x400000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x400000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x1000000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x1000000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x1000000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x2000000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x2000000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(<default>) && ((a2 & 0x2000000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default>"
         }
       ]
     },
     "CMobPool::OnMobLeaveField": {
-      "address": "",
+      "address": "0x55957b",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
           "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "comment": "packet var passed to unresolved/indirect call; hand-trace",
+          "guard": "result && sub_549D34(v13) && sub_549D34(v8)"
         }
       ]
     },
     "CNpc::GenerateMovePath": {
-      "address": "",
+      "address": "0x5688e9",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
@@ -5010,13 +7553,16 @@
       ]
     },
     "CNpc::OnMove": {
-      "address": "",
+      "address": "0x5687e8",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
@@ -5043,31 +7589,88 @@
       ]
     },
     "CNpcPool::OnNpcChangeController": {
-      "address": "",
+      "address": "0x56d617",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
         }
       ]
     },
     "CNpcPool::OnNpcEnterField": {
-      "address": "",
+      "address": "0x56d527",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
         }
       ]
     },
     "CNpcPool::OnNpcLeaveField": {
-      "address": "",
+      "address": "0x56d5b9",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -5076,9 +7679,8 @@
       ]
     },
     "CNpcPool::SetLocalNpc": {
-      "address": "",
+      "address": "0x56d267",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -5087,24 +7689,34 @@
       ]
     },
     "COmokDlg::OnRetreatRequest": {
-      "address": "",
+      "address": "0x573b11",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "COmokDlg::PutStoneChecker": {
-      "address": "",
+      "address": "0x578388",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
@@ -5125,13 +7737,20 @@
       ]
     },
     "CPersonalShopDlg::BuyItem": {
-      "address": "",
+      "address": "0x58847f",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
         }
       ]
     },
@@ -5147,24 +7766,37 @@
       ]
     },
     "CPersonalShopDlg::DeliverBlackList": {
-      "address": "",
+      "address": "0x588d46",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "",
+          "guard": "this[97]"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "this[97]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "this[97] && <default>"
         }
       ]
     },
     "CPersonalShopDlg::MoveItemToInventory": {
-      "address": "",
+      "address": "0x588b4b",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
         }
       ]
     },
@@ -5180,20 +7812,29 @@
       ]
     },
     "CPersonalShopDlg::OnClickBanButton": {
-      "address": "",
+      "address": "0x588dfc",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v15 && CUtilDlg::YesNo(v6, v7, v8, v9, v10) == 6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v15 && CUtilDlg::YesNo(v6, v7, v8, v9, v10) == 6"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v15 && CUtilDlg::YesNo(v6, v7, v8, v9, v10) == 6"
         }
       ]
     },
     "CPersonalShopDlg::OnRefresh": {
-      "address": "",
+      "address": "0x587ff7",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -5202,13 +7843,38 @@
       ]
     },
     "CPersonalShopDlg::PutItem": {
-      "address": "",
+      "address": "0x58883f",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v37"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
@@ -5256,13 +7922,24 @@
       ]
     },
     "CPet::OnAction": {
-      "address": "",
+      "address": "0x58d9e0",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
@@ -5289,9 +7966,8 @@
       ]
     },
     "CPet::OnMove": {
-      "address": "",
+      "address": "0x58d9c2",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -5300,9 +7976,8 @@
       ]
     },
     "CPet::OnNameChanged": {
-      "address": "",
+      "address": "0x58da70",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -5376,42 +8051,103 @@
       ]
     },
     "CReactorPool::OnReactorChangeState": {
-      "address": "",
+      "address": "0x5a53c4",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result"
         }
       ]
     },
     "CReactorPool::OnReactorEnterField": {
-      "address": "",
+      "address": "0x5a54b4",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CReactorPool::OnReactorLeaveField": {
-      "address": "",
+      "address": "0x5a588b",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "sub_5A5F3E(&a2, v18)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "sub_5A5F3E(&a2, v18)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "sub_5A5F3E(&a2, v18)"
         }
       ]
     },
     "CScriptMan::OnAskAvatar": {
-      "address": "",
+      "address": "0x5b12e8",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -5453,9 +8189,8 @@
       ]
     },
     "CScriptMan::OnAskMembershopAvatar": {
-      "address": "",
+      "address": "0x5b1494",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -5475,9 +8210,8 @@
       ]
     },
     "CScriptMan::OnAskMenu": {
-      "address": "",
+      "address": "0x5b1195",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -5508,9 +8242,8 @@
       ]
     },
     "CScriptMan::OnAskNumber": {
-      "address": "",
+      "address": "0x5b1037",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -5530,9 +8263,8 @@
       ]
     },
     "CScriptMan::OnAskPet": {
-      "address": "",
+      "address": "0x5b1640",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -5596,9 +8328,8 @@
       ]
     },
     "CScriptMan::OnAskText": {
-      "address": "",
+      "address": "0x5b0e90",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -5629,9 +8360,8 @@
       ]
     },
     "CScriptMan::OnAskYesNo": {
-      "address": "",
+      "address": "0x5b0d5c",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -5651,9 +8381,8 @@
       ]
     },
     "CScriptMan::OnPacket": {
-      "address": "",
+      "address": "0x5b0ace",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -5662,9 +8391,8 @@
       ]
     },
     "CScriptMan::OnSay": {
-      "address": "",
+      "address": "0x5b0c11",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -5717,13 +8445,160 @@
       ]
     },
     "CScriptMan::OnScriptMessage": {
-      "address": "",
+      "address": "0x5b0ae4",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "switch == 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 0"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "switch == 1"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "switch == 2"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "switch == 3"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "switch == 3"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "switch == 3"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "switch == 3"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "switch == 4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "switch == 4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "switch == 4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "switch == 4"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "switch == 6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(switch == 6) && (v7)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "switch == 7"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 7"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(switch == 7) && (v7)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "switch == 8"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 8"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "(switch == 8) && ((int)v21 <= 0)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(switch == 8) && ((int)v21 <= 0)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "switch == 9"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 9"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 9"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "(switch == 9) && (v4 > 0)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(switch == 9) && (v4 > 0)"
         }
       ]
     },
@@ -5739,9 +8614,8 @@
       ]
     },
     "CSecurityClient::OnPacket": {
-      "address": "",
+      "address": "0x733b6b",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -5966,13 +8840,250 @@
       ]
     },
     "CStage::OnSetField": {
-      "address": "",
+      "address": "0x5c4616",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v4"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 1) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v4) && (++v123 > 5 && (_WORD)v117)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 4) != 0)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 4) != 0)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 4) != 0 && <default>)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v4) && ((v43 & m) != 0 && v44)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v4) && ((v43 & m) != 0 && v44)"
+        },
+        {
           "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "comment": "packet var passed to unresolved/indirect call; hand-trace",
+          "guard": "(v4) && ((v43 & m) != 0 && v44)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x100) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x100) != 0 && v48)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x100) != 0 && v48)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x100) != 0 && v48)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x8000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x8000) != 0 && v49)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x8000) != 0 && v49)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x200) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x200) != 0 && (_WORD)v51)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x200) != 0 && (_WORD)v51)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x4000) != 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x4000) != 0 && (_WORD)v53)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x4000) != 0 && (_WORD)v53)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x400) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x400) != 0 && v54)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x400) != 0 && v54)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x400) != 0 && v54)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x400) != 0 && v54)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x400) != 0 && v54)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x800) != 0)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x800) != 0 && v60)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x800) != 0)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x800) != 0 && v63)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x800) != 0)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x800) != 0 && v66)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x1000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v4) && ((v121 & 0x1000) != 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && v17"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && v17"
         }
       ]
     },
@@ -5988,9 +9099,8 @@
       ]
     },
     "CStage::OnSetITC": {
-      "address": "",
+      "address": "0x5c4d9c",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -6020,13 +9130,33 @@
       ]
     },
     "CSummonedPool::OnAttack": {
-      "address": "",
+      "address": "0x5dab34",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && v7 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result && v7 > 0 && v10"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && v7 > 0 && v10"
         }
       ]
     },
@@ -6053,9 +9183,8 @@
       ]
     },
     "CSummonedPool::OnMove": {
-      "address": "",
+      "address": "0x5dab13",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -6075,35 +9204,74 @@
       ]
     },
     "CSummonedPool::OnSkill": {
-      "address": "",
+      "address": "0x5db0c8",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v5 > -2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v5 > -2"
         }
       ]
     },
     "CTownPortalPool::OnTownPortalCreated": {
-      "address": "",
+      "address": "0x5e31b2",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "sub_5E41DC(&v95, v88)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "sub_5E41DC(&v95, v88)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default>"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default>"
         }
       ]
     },
     "CTownPortalPool::OnTownPortalRemoved": {
-      "address": "",
+      "address": "0x5e3b40",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
@@ -6320,13 +9488,48 @@
       ]
     },
     "CUIFadeYesNo::OnButtonClicked": {
-      "address": "",
+      "address": "0x4be880",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a2 == 2000 && switch == 4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a2 == 2000 && switch == 4"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a2 == 2000 && switch == 6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a2 == 2000 && switch == 6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a2 == 2000 && switch == 6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a2 == 2000 && switch == 8"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a2 == 2000 && switch == 8"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a2 == 2000 && switch == 8"
         }
       ]
     },
@@ -6474,9 +9677,8 @@
       ]
     },
     "CUIMessenger::OnAvatar": {
-      "address": "",
+      "address": "0x61df11",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -6485,9 +9687,8 @@
       ]
     },
     "CUIMessenger::OnBlocked": {
-      "address": "",
+      "address": "0x61da3f",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -6496,9 +9697,8 @@
       ]
     },
     "CUIMessenger::OnChat": {
-      "address": "",
+      "address": "0x61dc8c",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -6533,9 +9733,8 @@
       ]
     },
     "CUIMessenger::OnEnter": {
-      "address": "",
+      "address": "0x61b860",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -6544,9 +9743,8 @@
       ]
     },
     "CUIMessenger::OnInvite": {
-      "address": "",
+      "address": "0x61db2c",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -6555,9 +9753,8 @@
       ]
     },
     "CUIMessenger::OnInviteResult": {
-      "address": "",
+      "address": "0x61d94f",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -6566,9 +9763,8 @@
       ]
     },
     "CUIMessenger::OnLeave": {
-      "address": "",
+      "address": "0x61bb63",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -6577,9 +9773,8 @@
       ]
     },
     "CUIMessenger::OnMigrated": {
-      "address": "",
+      "address": "0x61df6c",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -6588,9 +9783,8 @@
       ]
     },
     "CUIMessenger::OnPacket": {
-      "address": "",
+      "address": "0x61d8b8",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -6759,9 +9953,8 @@
       ]
     },
     "CUIMessenger::OnSelfEnterResult": {
-      "address": "",
+      "address": "0x61ba71",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -6859,35 +10052,142 @@
       "calls": null
     },
     "CUser::OnADBoard": {
-      "address": "",
+      "address": "0x6915cd",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 && (unsigned __int8)CInPacket::Decode1(a2)"
+        },
+        {
           "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "comment": "delegate ref not found in callees; hand-trace",
+          "guard": "v4 && (unsigned __int8)CInPacket::Decode1(a2)"
         }
       ]
     },
     "CUser::OnChat": {
-      "address": "",
+      "address": "0x691384",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
         }
       ]
     },
     "CUser::OnEffect": {
-      "address": "",
+      "address": "0x6917a7",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "switch == 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 1 && v91 && v90 == 1320006"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 1 && v91 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "switch == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 3"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "switch == 3 && v28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "switch == 3 && v28"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "switch == 3"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "switch == 3"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "switch == 5"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "switch == 6 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "switch == 0xA"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "switch == 0xB"
         }
       ]
     },
@@ -6903,9 +10203,8 @@
       ]
     },
     "CUser::OnMiniRoomBalloon": {
-      "address": "",
+      "address": "0x692075",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -6914,9 +10213,8 @@
       ]
     },
     "CUser::OnPetPacket": {
-      "address": "",
+      "address": "0x69221b",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -6936,9 +10234,8 @@
       ]
     },
     "CUser::SetActiveEffectItem": {
-      "address": "",
+      "address": "0x694545",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -6947,9 +10244,8 @@
       ]
     },
     "CUser::SetConsumeItemEffect": {
-      "address": "",
+      "address": "0x693c27",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -6958,13 +10254,24 @@
       ]
     },
     "CUser::ShowItemUpgradeEffect": {
-      "address": "",
+      "address": "0x68f11d",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
@@ -6980,20 +10287,30 @@
       ]
     },
     "CUserLocal::DoActiveSkill_Prepare": {
-      "address": "",
+      "address": "0x6add4c",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CUserLocal::HandleLButtonClk": {
-      "address": "",
+      "address": "0x69f9ad",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -7002,9 +10319,8 @@
       ]
     },
     "CUserLocal::HandleUpKeyDown": {
-      "address": "",
+      "address": "0x69ec38",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -7013,9 +10329,8 @@
       ]
     },
     "CUserLocal::HandleXKeyDown": {
-      "address": "",
+      "address": "0x69f0c9",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -7287,13 +10602,48 @@
       ]
     },
     "CUserLocal::TryDoingBodyAttack": {
-      "address": "",
+      "address": "0x6a4e11",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
         }
       ]
     },
@@ -7353,20 +10703,323 @@
       ]
     },
     "CUserPool::OnUserEnterField": {
-      "address": "",
+      "address": "0x6b277b",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && (v15)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && (v15)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && (v15)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && (v15)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && (v15)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && (v15)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && (v15)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && (v23)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(!v6 && !result && v13 >= 1000 && v13 < 2000) && ((unsigned __int8)CInPacket::Decode1(v4))"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!v6 && !result && v13 >= 1000 && v13 < 2000"
         }
       ]
     },
     "CUserPool::OnUserLeaveField": {
-      "address": "",
+      "address": "0x6b2976",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -7375,9 +11028,8 @@
       ]
     },
     "CUserPool::OnUserRemotePacket": {
-      "address": "",
+      "address": "0x6b2ae4",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -7386,42 +11038,225 @@
       ]
     },
     "CUserRemote::OnAttack": {
-      "address": "",
+      "address": "0x6bca49",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v6 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v6 > 0 && v12"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v6 > 0 && v12 && v14"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v6 > 0 && v12 && v14 && v15"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v6 > 0 && v12 && loop v11 && v47 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
     "CUserRemote::OnAvatarModified": {
-      "address": "",
+      "address": "0x6bee0f",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v15 & 1) != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v15 & 1) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v15 & 1) != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v15 & 1) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v15 & 1) != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v15 & 1) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v15 & 1) != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v15 & 1) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v15 & 1) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v15 & 1) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v15 & 1) != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v15 & 2) != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v15 & 4) != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v6"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v6"
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v8"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v8"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v8"
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(_BYTE)result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(_BYTE)result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(_BYTE)result"
         }
       ]
     },
     "CUserRemote::OnGuildMarkChanged": {
-      "address": "",
+      "address": "0x6bf17b",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
     "CUserRemote::OnGuildNameChanged": {
-      "address": "",
+      "address": "0x6bf0c7",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -7430,20 +11265,87 @@
       ]
     },
     "CUserRemote::OnHit": {
-      "address": "",
+      "address": "0x6bea8d",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v20"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v20"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v20 && !Mob"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v20 && !Mob"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v20 && !Mob"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v20 && v23 && v27 >= v26"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v20 && v23 && v27 >= v26"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v20 && v23 && v27 >= v26"
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v37 == -1"
         }
       ]
     },
     "CUserRemote::OnMove": {
-      "address": "",
+      "address": "0x6b2c48",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -7463,20 +11365,22 @@
       ]
     },
     "CUserRemote::OnReceiveHP": {
-      "address": "",
+      "address": "0x6bf06c",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
     "CUserRemote::OnResetTemporaryStat": {
-      "address": "",
+      "address": "0x6bf027",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -7496,13 +11400,82 @@
       ]
     },
     "CUserRemote::OnSetTemporaryStat": {
-      "address": "",
+      "address": "0x6befe8",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "DecodeBuf",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v17 & 0x80) != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v17 & 0x200000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v17 & 0x400000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v17 & 0x20000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v17 & 0x100000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v17 & 0x80000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v17 & 0x40000000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(int)v17 < 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v17 & 0x40000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v17 & 0x40000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v17 & 0x200000000LL) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v17 & 0x8000000000LL) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v17 & 0x10000000000LL) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 221)"
         }
       ]
     },
@@ -7529,13 +11502,24 @@
       ]
     },
     "CUserRemote::OnSkillPrepare": {
-      "address": "",
+      "address": "0x6bce8e",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
@@ -7573,9 +11557,8 @@
       ]
     },
     "CVecCtrlUser::EndUpdateActive": {
-      "address": "",
+      "address": "0x6e9923",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -7792,9 +11775,8 @@
       ]
     },
     "CWvsContext::OnCashPetFoodResult": {
-      "address": "",
+      "address": "0x720293",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -7954,9 +11936,8 @@
       ]
     },
     "CWvsContext::OnClaimSvrStatusChanged": {
-      "address": "",
+      "address": "0x71f54e",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -7965,9 +11946,8 @@
       ]
     },
     "CWvsContext::OnClearAvatarMegaphone": {
-      "address": "",
+      "address": "0x721465",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -7996,9 +11976,8 @@
       ]
     },
     "CWvsContext::OnEntrustedShopCheckResult": {
-      "address": "",
+      "address": "0x71f72a",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -9507,9 +13486,8 @@
       ]
     },
     "CWvsContext::OnMarriageRequest": {
-      "address": "",
+      "address": "0x720928",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -9518,9 +13496,8 @@
       ]
     },
     "CWvsContext::OnMarriageResult": {
-      "address": "",
+      "address": "0x720a89",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -10560,9 +14537,8 @@
       ]
     },
     "CWvsContext::OnSetClaimSvrAvailableTime": {
-      "address": "",
+      "address": "0x71f525",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -10571,9 +14547,8 @@
       ]
     },
     "CWvsContext::OnSetGender": {
-      "address": "",
+      "address": "0x71ce49",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -10593,13 +14568,32 @@
       ]
     },
     "CWvsContext::OnSetTamingMobInfo": {
-      "address": "",
+      "address": "0x72032b",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v26"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v26"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v26"
         }
       ]
     },
@@ -10769,9 +14763,8 @@
       ]
     },
     "CWvsContext::OnTradeMoneyLimit": {
-      "address": "",
+      "address": "0x71ce62",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -10780,9 +14773,8 @@
       ]
     },
     "CWvsContext::OnWeddingGiftResult": {
-      "address": "",
+      "address": "0x721129",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -10802,9 +14794,8 @@
       ]
     },
     "CWvsContext::SendAbilityUpRequest": {
-      "address": "",
+      "address": "0x71cd00",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -10824,24 +14815,34 @@
       ]
     },
     "CWvsContext::SendActivatePetRequest": {
-      "address": "",
+      "address": "0x71d118",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && !result && v4 && result == 3 && v5 < 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result && !result && v4 && result == 3 && v5 < 0"
         }
       ]
     },
     "CWvsContext::SendCharacterInfoRequest": {
-      "address": "",
+      "address": "0x71d059",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a3 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a3 && result"
         }
       ]
     },
@@ -10895,13 +14896,18 @@
       ]
     },
     "CWvsContext::SendGivePopularityRequest": {
-      "address": "",
+      "address": "0x71cf3b",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": "",
+          "guard": "dword_80C894"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "dword_80C894"
         }
       ]
     },
@@ -10936,9 +14942,8 @@
       ]
     },
     "CWvsContext::SendMigrateToShopRequest": {
-      "address": "",
+      "address": "0x70bd0d",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -10947,20 +14952,29 @@
       ]
     },
     "CWvsContext::SendPetFoodItemUseRequest": {
-      "address": "",
+      "address": "0x70df2f",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result"
         }
       ]
     },
     "CWvsContext::SendSitOnPortableChairRequest": {
-      "address": "",
+      "address": "0x712894",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
           "op": "Unresolved",
@@ -11002,13 +15016,28 @@
       ]
     },
     "CWvsContext::SendStatChangeItemUseRequestByPetQ": {
-      "address": "",
+      "address": "0x70dc8d",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && result"
         }
       ]
     },
@@ -11035,13 +15064,33 @@
       ]
     },
     "CWvsContext::SendUpgradeItemUseRequest": {
-      "address": "",
+      "address": "0x70da60",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result"
         }
       ]
     },
@@ -15733,10 +19782,1717 @@
         }
       ]
     },
+    "CCashShop::OnCashItemNameChangeResBuyDone": {
+      "address": "0x455c5a",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "<default>",
+          "ref": "sub_5D7613"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResBuyDone": {
+      "address": "0x453e13",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "<default>",
+          "ref": "sub_5D7613"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResBuyFailed": {
+      "address": "0x453ecd",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResBuyNormalDone": {
+      "address": "0x4555bf",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v4 > 0"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResBuyNormalFailed": {
+      "address": "0x4556d3",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResBuyPackageDone": {
+      "address": "0x453f5a",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v3 > 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "(_WORD)v8",
+          "ref": "sub_5D75AF"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "<default>",
+          "ref": "sub_5D75AF"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_5D7613"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResBuyPackageFailed": {
+      "address": "0x4540da",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResCoupleDone": {
+      "address": "0x45573f",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_5D75AF"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "CHATLOG_ADD"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_5D7613"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResCoupleFailed": {
+      "address": "0x45586e",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResDestroyDone": {
+      "address": "0x4553e0",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResDestroyFailed": {
+      "address": "0x455483",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResExpireDone": {
+      "address": "0x455191",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResFriendShipDone": {
+      "address": "0x4558df",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_5D75AF"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "CHATLOG_ADD"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_5D7613"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResFriendShipFailed": {
+      "address": "0x455a0e",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResGiftCouponDone": {
+      "address": "0x45487a",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "CHATLOG_ADD"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v1 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResGiftDone": {
+      "address": "0x454cf3",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResGiftFailed": {
+      "address": "0x454def",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResGiftPackageDone": {
+      "address": "0x454153",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResGiftPackageFailed": {
+      "address": "0x45424e",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResIncCharacterSlotCountFailed": {
+      "address": "0x454fe9",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResIncSlotCountFailed": {
+      "address": "0x454f18",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResLoadWishDone": {
+      "address": "0x453d31",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResLoadWishFailed": {
+      "address": "0x453d71",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResMoveLtoSFailed": {
+      "address": "0x455172",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResMoveStoLFailed": {
+      "address": "0x4553c1",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResRebateDone": {
+      "address": "0x4554a2",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResRebateFailed": {
+      "address": "0x4555a0",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResSetWishDone": {
+      "address": "0x453d93",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResSetWishFailed": {
+      "address": "0x453df4",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResTransferWorldDone": {
+      "address": "0x455f15",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "<default>",
+          "ref": "sub_5D7613"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResTransferWorldFailed": {
+      "address": "0x455fe0",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResUseCouponDone": {
+      "address": "0x4542bf",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v61 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v51 > 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResUseCouponFailed": {
+      "address": "0x454cb9",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::DecodeAvatar": {
+      "address": "0x546897",
+      "direction": "",
+      "calls": null
+    },
+    "CMiniRoomBaseDlg::OnAvatar": {
+      "address": "0x546433",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnEnterBase": {
+      "address": "0x5462e3",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "CMiniRoomBaseDlg::DecodeAvatar"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CMob::GenerateMovePath": {
+      "address": "0x550383",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CScriptMan::OnAskPetAll": {
+      "address": "0x5b18b5",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "v4 > 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 > 0"
+        }
+      ]
+    },
+    "CUserRemote::OnMovingShootAttackPrepare": {
+      "address": "0x6bcff8",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CWishListGiveDlg::OnPacket": {
+      "address": "0x6f234d",
+      "direction": "",
+      "calls": null
+    },
+    "CWishListRecvDlg::OnPacket": {
+      "address": "0x6f3ca3",
+      "direction": "",
+      "calls": null
+    },
+    "MiniRoom_OnEnterResult_mode5": {
+      "address": "0x545a60",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "<default>"
+        }
+      ]
+    },
+    "MiniRoom_OnInviteResult_m3": {
+      "address": "0x54607d",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v3"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!v3",
+          "ref": "CHATLOG_ADD"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!v4"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!v4",
+          "ref": "CHATLOG_ADD"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "v4 == 1"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 == 1",
+          "ref": "CHATLOG_ADD"
+        }
+      ]
+    },
+    "MiniRoom_OnInvite_m2": {
+      "address": "0x545ea6",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v2 == 3",
+          "ref": "sub_41803C"
+        }
+      ]
+    },
+    "sub_402EE1": {
+      "address": "0x402ee1",
+      "direction": "",
+      "calls": null
+    },
+    "sub_40E88D": {
+      "address": "0x40e88d",
+      "direction": "",
+      "calls": null
+    },
+    "sub_49B813": {
+      "address": "0x49b813",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "sub_49CBEB": {
+      "address": "0x49cbeb",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        }
+      ]
+    },
+    "sub_49CC09": {
+      "address": "0x49cc09",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        }
+      ]
+    },
+    "sub_49D320": {
+      "address": "0x49d320",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v121 & 1) != 0"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_49B813"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "++v123 > 5 && (_WORD)v117"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v121 & 4) != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v121 & 4) != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v121 & 4) != 0 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v43 & m) != 0 && v44"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "(v43 & m) != 0 && v44",
+          "ref": "GW_ItemSlotBase::Decode"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v121 & 0x100) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v121 & 0x100) != 0 && v48"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v121 & 0x100) != 0 && v48"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v121 & 0x100) != 0 && v48"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v121 & 0x8000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v121 & 0x8000) != 0 && v49"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v121 & 0x8000) != 0 && v49"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v121 & 0x200) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v121 & 0x200) != 0 && (_WORD)v51"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "(v121 & 0x200) != 0 && (_WORD)v51"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "(v121 & 0x200) != 0 && (_WORD)v51",
+          "ref": "sub_49E94A"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v121 & 0x4000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v121 & 0x4000) != 0 && (_WORD)v53"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "(v121 & 0x4000) != 0 && (_WORD)v53"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v121 & 0x400) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v121 & 0x400) != 0 && v54"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v121 & 0x400) != 0 && v54"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v121 & 0x400) != 0 && v54"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v121 & 0x400) != 0 && v54"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v121 & 0x400) != 0 && v54"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v121 & 0x800) != 0"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "(v121 & 0x800) != 0 && v60",
+          "ref": "sub_49CBEB"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v121 & 0x800) != 0"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "(v121 & 0x800) != 0 && v63",
+          "ref": "sub_49CC09"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v121 & 0x800) != 0"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "(v121 & 0x800) != 0 && v66",
+          "ref": "sub_49CC27"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v121 & 0x1000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v121 & 0x1000) != 0"
+        }
+      ]
+    },
+    "sub_4B07CE": {
+      "address": "0x4b07ce",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "CHATLOG_ADD"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_4FAAFA"
+        }
+      ]
+    },
+    "sub_4B0AE5": {
+      "address": "0x4b0ae5",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "sub_4FAAFA": {
+      "address": "0x4faafa",
+      "direction": "",
+      "calls": null
+    },
+    "sub_549040": {
+      "address": "0x549040",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "sub_54E2D7": {
+      "address": "0x54e2d7",
+      "direction": "",
+      "calls": null
+    },
+    "sub_5531D5": {
+      "address": "0x5531d5",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_5CC826"
+        }
+      ]
+    },
+    "sub_5586F0": {
+      "address": "0x5586f0",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v7",
+          "ref": "sub_5531D5"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "<default>",
+          "ref": "sub_5531D5"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "<default>",
+          "ref": "sub_549040"
+        }
+      ]
+    },
+    "sub_566A30": {
+      "address": "0x566a30",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
+    },
+    "sub_5CBA1F": {
+      "address": "0x5cba1f",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeBuf",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v17 & 0x80) != 0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "(v17 & 0x200000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v17 & 0x400000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v17 & 0x20000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v17 & 0x100000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v17 & 0x80000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v17 & 0x40000000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(int)v17 < 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v17 & 0x40000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v17 & 0x40000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(v17 & 0x200000000LL) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v17 & 0x8000000000LL) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(v17 & 0x10000000000LL) != 0"
+        }
+      ]
+    },
+    "sub_5CC826": {
+      "address": "0x5cc826",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 1) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 1) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 1) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 2) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 2) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 2) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 4) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 4) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 4) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 8) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 8) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 8) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x10) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x10) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x10) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x20) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x20) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x20) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x40) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x40) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x40) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x80u) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x80u) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x80u) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x100) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x100) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x100) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x200) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x200) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x200) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x400) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x400) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x400) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x800) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x800) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x800) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x1000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x1000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x1000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x2000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x2000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x2000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x4000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x4000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x4000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x8000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x8000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x8000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x40000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x40000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x40000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x80000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x80000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x80000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x10000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x10000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x10000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x20000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x20000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x20000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x200000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x200000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x200000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x400000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x400000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x400000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x1000000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x1000000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x1000000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x2000000) != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(a2 & 0x2000000) != 0"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(a2 & 0x2000000) != 0"
+        }
+      ]
+    },
+    "sub_61B8E5": {
+      "address": "0x61b8e5",
+      "direction": "",
+      "calls": null
+    },
+    "sub_6D8943": {
+      "address": "0x6d8943",
+      "direction": "",
+      "calls": null
+    },
+    "CWvsContext::SendChangeSlotPositionRequest": {
+      "address": "0x70d8de",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result"
+        }
+      ]
+    },
+    "CCashShop::OnIncTrunkCount": {
+      "address": "0x44aad1",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CCashShop::OnMoveCashItemLtoS": {
+      "address": "0x44ec2c",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CCashShop::OnMoveCashItemStoL": {
+      "address": "0x44ee3a",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CCashShop::SendBuyNameChangeItemPacket": {
+      "address": "0x44f9a5",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_41803C"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "ref": "sub_41803C"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::SendBuyTransferWorldItemPacket": {
+      "address": "0x44fbfc",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
     "CWvsContext::CheckTemporaryStatDuration": {
       "address": "0x71b126",
       "direction": "serverbound",
       "calls": []
+    },
+    "CWvsContext::SendBridleItemUseRequest": {
+      "address": "0x70e0c5",
+      "direction": "serverbound",
+      "note": "USE_CATCH_ITEM (task-212). CWvsContext::SendBridleItemUseRequest: update_time(Encode4), nPOS(Encode2), nItemID(Encode4), then the FindHitMobInRect-derived hit-mob object id (Encode4). Address per design.md/plan.md task-212 citation; confirmed via live decompile (idb_open/decompile) showing the item-class-227 gate and the GetBridleItem-equivalent lookup feeding COutPacket at the registry's USE_CATCH_ITEM opcode for this version.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hit-mob object id (FindHitMobInRect)"
+        }
+      ]
     }
   }
 }

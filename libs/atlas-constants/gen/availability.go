@@ -48,12 +48,13 @@ const availabilityCSVPath = "../../../docs/tasks/task-187-version-aware-id-seman
 // relationship is what lets one range table serve both domains: a skill's
 // class is always its owning job's class.
 //
-// DualBlade, Mechanic, and Resistance (three of availability.csv's nine
-// release-tracked classes) have NO identity in the namespace at all (no
-// job/skill canonicalToken maps to them) -- classOf never returns those
-// labels; their availability.csv rows are inert for this generator (no
-// identity's Available() is ever gated by them). This is correct per the
-// task-5 brief: those classes never appear in the identity/Set model.
+// Mechanic and Resistance (two of availability.csv's nine release-tracked
+// classes) have NO identity in the namespace at all (no job/skill
+// canonicalToken maps to them) -- classOf never returns those labels; their
+// availability.csv rows are inert for this generator (no identity's
+// Available() is ever gated by them). DualBlade was a third such class until
+// task-204 added the 430-434 job identities and their 43xxxxx skills, at
+// which point its rows stopped being inert; see the DualBlade arm below.
 func classOf(domain string, canonicalToken uint64) string {
 	var t uint64
 	switch domain {
@@ -71,6 +72,33 @@ func classOf(domain string, canonicalToken uint64) string {
 		return "SuperGM"
 	case t >= 500 && t <= 599:
 		return "Pirate"
+	// DualBlade (task-204): the third Rogue branch, GMS v0.88. Jobs 430-434
+	// sit INSIDE the Explorer thief range, so this arm MUST stay ahead of
+	// any broader 4xx handling -- there is none today (Explorer jobs are
+	// classless/"stable"), and adding one later without keeping this arm
+	// first would silently un-gate Dual Blade at gms 12-87.
+	//
+	// Present-but-unreleased at gms 87: the WZ carries jobs 430-434 there
+	// but only 17 of the 26 skill images the released versions ship, and
+	// 4300000 has no WZ name (divergences.csv gms,87,1,job,430). Presence
+	// is not release -- availability.csv holds that line, exactly as it does
+	// for CygnusStage4 below.
+	case t >= 430 && t <= 434:
+		return "DualBlade"
+	// CygnusStage4 (task-202 FR-2.1): the five Cygnus 4th-job branches are
+	// PRESENT in every supported version's Skill.wz but their `skill` node is
+	// empty -- the tier was never released in the version range we support
+	// (docs/tasks/task-202-version-correct-job-hierarchy/investigation.md
+	// Finding 3, corroborated by a live GET /api/data/jobs/{id}/skills sweep
+	// across gms 79/83/84/87/92/95 and jms 185). Presence != release, so the
+	// identities stay in identities.yaml and Set.Resolve/Set.Wire keep
+	// answering for them; only Set.Available flips.
+	//
+	// Deliberately an explicit token list rather than arithmetic: the list is
+	// greppable and a sixth Cygnus branch must be added on purpose. This arm
+	// MUST stay above the 1000..1599 range arm below.
+	case t == 1112, t == 1212, t == 1312, t == 1412, t == 1512:
+		return "CygnusStage4"
 	case t >= 1000 && t <= 1599:
 		return "Cygnus"
 	case t == 2000 || (t >= 2100 && t <= 2199):

@@ -6,6 +6,8 @@ import (
 	"atlas-channel/consumable"
 	cashData "atlas-channel/data/cash"
 	"atlas-channel/incubator"
+	"atlas-channel/kite"
+	"atlas-channel/pet"
 	"atlas-channel/saga"
 	"atlas-channel/session"
 	"atlas-channel/shopscanner"
@@ -18,6 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
@@ -66,10 +69,62 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), itemId, source, 1, updateTime)
 			return
 		}
+		if it == CashSlotItemTypePetSkill {
+			// Case-28 sub-body carries a bare 8-byte petId and nothing else --
+			// update_time is already decoded once from the common ItemUse header
+			// above (jms_v185 IDA-verified, task-139 task-8/9; see
+			// libs/atlas-packet/cash/serverbound/item_use_pet_skill.go). There is
+			// no per-type trailing/leading updateTime to re-derive here.
+			sp := cashsb.NewItemUsePetSkill()
+			sp.Decode(l, ctx)(r, readerOptions)
+			// The wire value is the pet's CLIENT serial
+			// (GW_ItemSlotBase::liCashItemSN), not the Atlas pet id. Resolve it
+			// here, at the socket boundary, exactly as the other serverbound pet
+			// handlers do: atlas-consumables' ConsumePetSkillPouch keys on the
+			// Atlas pet id (it calls pet.GetById and range-checks against
+			// MaxUint32), so forwarding a 64-bit cash serial would fail every
+			// pouch use on a cash-purchased pet with ErrPetCannotLearn.
+			pm, perr := pet.NewProcessor(l, ctx).GetBySerialNumber(s.CharacterId(), sp.PetId())
+			if perr != nil {
+				l.WithError(perr).Debugf("Unable to resolve pet [%d] for character [%d] pet-skill pouch use.", sp.PetId(), s.CharacterId())
+				return
+			}
+			_ = consumable.NewProcessor(l, ctx).RequestItemConsumeWithPet(s.Field(), character.Id(s.CharacterId()), itemId, source, updateTime, uint64(pm.Id()))
+			return
+		}
 		if it == CashSlotItemTypeChalkboard {
 			sp := cashsb.NewItemUseChalkboard(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
 			_ = chalkboard.NewProcessor(l, ctx).AttemptUse(s.Field(), s.CharacterId(), sp.Message())
+			return
+		}
+		if it == CashSlotItemTypeKite {
+			sp := cashsb.NewItemUseKite(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+
+			// The sub-body is the message alone — the client sends no
+			// coordinates for a kite (case-18 arm of
+			// CWvsContext::SendConsumeCashItemUseRequest performs exactly one
+			// EncodeStr). Position and owner name therefore come from
+			// server-side character state, the same source
+			// skill/handler/mysticdoor uses.
+			c, err := character2.NewProcessor(l, ctx).GetById()(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Debugf("Unable to resolve character [%d] for kite placement.", s.CharacterId())
+				return
+			}
+
+			// No item is consumed (FR-4.1): no saga.DestroyAsset step and no
+			// inventory mutation, so this is a direct command. Placement is
+			// gated by the per-character cap in atlas-kites instead.
+			//
+			// No EnableActions either: the client's kite dialog is modal
+			// (CDialog::DoModal @0x9ed0d9) and unlocks itself, and the sibling
+			// chalkboard use arm sends none. Unlocking here would only widen
+			// the client's duplicate-request gate.
+			if err = kite.NewProcessor(l, ctx).AttemptUse(s.Field(), s.CharacterId(), c.Name(), uint32(itemId), sp.Message(), c.X(), c.Y()); err != nil {
+				l.WithError(err).Debugf("Unable to request kite placement for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		if it == CashSlotItemTypeFieldEffect {
@@ -432,6 +487,15 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 
+		if it == CashSlotItemTypeCurrencySack {
+			// No sub-body: the classification-520 arm of
+			// CWvsContext::SendConsumeCashItemUseRequest encodes nothing beyond
+			// the common header on all ten versions (design §3, per-version
+			// addresses). Nothing to decode off r.
+			handleMesoSackUse(l, ctx, wp)(s, itemId)
+			return
+		}
+
 		if it == viciousHammerCashSlotItemType(t) {
 			sp := cashsb.NewItemUseViciousHammer()
 			sp.Decode(l, ctx)(r, readerOptions)
@@ -584,6 +648,34 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 
+		// Transformation (morph) coupons, classification 530. Gated on
+		// CLASSIFICATION, never on the cash-slot type byte `it`: those bytes
+		// collide across versions (GetCashSlotItemType maps 530 -> 41 on
+		// GMS >= 95 and 40 otherwise, while 522 gachapon takes 40 on GMS >= 95
+		// and 538 pet evolution takes 41 on GMS < 95), so a type-keyed arm
+		// would change meaning at a version bump.
+		//
+		// The sub-body is empty apart from the trailing updateTime on the
+		// versions that trail it (IDA-verified: the case-40 arm of
+		// CWvsContext::SendConsumeCashItemUseRequest @0xa0caf0-0xa0cb37 on GMS
+		// v83 contains no Encode* call).
+		//
+		// No EnableActions: the effect does not warp, and the non-silent
+		// INVENTORY_OPERATION emitted by the consume commit already clears the
+		// client's exclusive-request lock — CWvsContext::OnInventoryOperation
+		// @0xa1ead9 clears the same dword pair OnGameStageChanged does, gated
+		// on the packet's leading bOnExclRequest byte, which
+		// inventory/clientbound/change_batch.go writes as !silent.
+		if category == item.ClassificationTransformationCoupon {
+			sp := cashsb.NewItemUseMorphCoupon(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			if !updateTimeFirst {
+				updateTime = sp.UpdateTime()
+			}
+			_ = requestItemConsumeFunc(l, ctx, s.Field(), character.Id(s.CharacterId()), itemId, source, 1, updateTime)
+			return
+		}
+
 		l.Warnf("Character [%d] attempting to use cash item [%d] in slot [%d] of type [%d]. updateTime [%d].", s.CharacterId(), itemId, source, it, updateTime)
 	}
 }
@@ -595,13 +687,21 @@ const (
 	CashSlotItemTypeNote          = CashSlotItemType(21)
 	CashSlotItemTypeStoreSearch   = CashSlotItemType(29)
 	CashSlotItemTypePetConsumable = CashSlotItemType(30)
+	CashSlotItemTypePetSkill      = CashSlotItemType(28)
 	CashSlotItemTypeChalkboard    = CashSlotItemType(32)
+	CashSlotItemTypeKite          = CashSlotItemType(18)
 	CashSlotItemTypeItemTag       = CashSlotItemType(25)
 	CashSlotItemTypeSeal          = CashSlotItemType(26)
 	CashSlotItemTypeIncubator     = CashSlotItemType(27)
 	CashSlotItemTypeSealTimed     = CashSlotItemType(64)
 	CashSlotItemTypeSealTimedV95  = CashSlotItemType(65)
 	CashSlotItemTypeCube          = CashSlotItemType(74)
+	// CashSlotItemTypeCurrencySack is classification 520 (meso sacks). Atlas
+	// returns 19 on EVERY version even though the v48 client's own table says
+	// 17 and v61's says 18: the type is derived from the server-resolved
+	// template id and never rides the wire, and no other classification maps to
+	// 19 here. Do NOT version-gate this (design §3.1(a)).
+	CashSlotItemTypeCurrencySack = CashSlotItemType(19)
 
 	// GetCashSlotItemType's ClassificationPointReset branch (above) routes by
 	// itemId%10==1: AP Reset (5050000) and SP Reset tiers 2-4 (5050002-5050004)
@@ -633,6 +733,14 @@ var cashItemInSlotFunc = func(l logrus.FieldLogger, ctx context.Context, charact
 	return uint32(a.TemplateId()), nil
 }
 
+// requestItemConsumeFunc is a test seam over the atlas-consumables consume
+// command emit (package-var injection precedent: cashItemInSlotFunc above,
+// useRockFunc in teleport_rock_use.go). Handler tests must not require a live
+// Kafka broker to assert which arm a request reached.
+var requestItemConsumeFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId character.Id, itemId item.Id, source slot.Position, quantity int16, updateTime uint32) error {
+	return consumable.NewProcessor(l, ctx).RequestItemConsume(f, characterId, itemId, source, quantity, updateTime)
+}
+
 const (
 	pigmyEggMinId item.Id = 4170000
 	pigmyEggMaxId item.Id = 4170009
@@ -661,6 +769,9 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 		category := item.GetClassification(itemId)
 		if category == item.ClassificationPet {
 			return CashSlotItemType(8)
+		}
+		if category == item.ClassificationCurrencySack {
+			return CashSlotItemTypeCurrencySack
 		}
 		if category == 501 {
 			return CashSlotItemType(9)
@@ -831,8 +942,8 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 		if category == 518 {
 			return CashSlotItemType(5)
 		}
-		if category == 519 {
-			return CashSlotItemType(28)
+		if category == item.ClassificationPetSkill {
+			return CashSlotItemTypePetSkill
 		}
 		if category == item.ClassificationCurrencySack {
 			return CashSlotItemType(19)

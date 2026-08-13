@@ -1,9 +1,11 @@
 package monster
 
 import (
+	consumable2 "atlas-channel/kafka/message/consumable"
 	monster2 "atlas-channel/kafka/message/monster"
 	"atlas-channel/monster"
 	"atlas-channel/server"
+	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
@@ -15,6 +17,8 @@ import (
 	channelconst "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -429,5 +433,231 @@ func TestHandleStatusEventDestroyedAndKilled_RemoveMirrorEntry(t *testing.T) {
 	handleStatusEventKilled(sc, nil)(logrus.New(), ctx, ke)
 	if _, ok := monster.GetLiveMirror().Lookup(tm, 7006); ok {
 		t.Fatalf("KILLED must evict the mirror entry")
+	}
+}
+
+// withRecordingControlGrant swaps the control-grant seam for a stub that
+// records what each grant delivered, so a test can assert Spawn-then-Control
+// ordering without standing up a session.
+type grantRecord struct {
+	characterId uint32
+	uniqueId    uint32
+	monsterId   uint32
+	aggro       bool
+}
+
+func withRecordingControlGrant(t *testing.T) (restore func(), grants *[]grantRecord) {
+	t.Helper()
+	var recorded []grantRecord
+	orig := controlGrantFn
+	controlGrantFn = func(_ logrus.FieldLogger, _ context.Context, _ server.Model, _ writer.Producer, m monster.Model, aggro bool, characterId uint32) error {
+		recorded = append(recorded, grantRecord{
+			characterId: characterId,
+			uniqueId:    m.UniqueId(),
+			monsterId:   m.MonsterId(),
+			aggro:       aggro,
+		})
+		return nil
+	}
+	return func() { controlGrantFn = orig }, &recorded
+}
+
+// TestHandleStatusEventStartControl_GrantsThroughSpawnThenControl is the
+// channel half of the frozen-monsters-on-re-entry regression.
+//
+// atlas-monsters now always emits StartControl for a map-enter assignment
+// (it used to assign the entering player silently and rely on the channel's
+// map-enter spawn, which races ahead of it and loses the grant entirely). That
+// only works if this handler actually delivers the grant, and delivers it as
+// Spawn-then-Control — a bare Control for a mob the client has not been told
+// about makes v79/v83 materialize the mob from the Control body.
+func TestHandleStatusEventStartControl_GrantsThroughSpawnThenControl(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	prev := monsterGetByIdFn
+	monsterGetByIdFn = func(_ logrus.FieldLogger, _ context.Context, uniqueId uint32) (monster.Model, error) {
+		return monster.NewModelBuilder(uniqueId, f, 100100).
+			SetControlCharacterId(42).
+			SetControllerHasAggro(true).
+			Build()
+	}
+	defer func() { monsterGetByIdFn = prev }()
+
+	restore, grants := withRecordingControlGrant(t)
+	defer restore()
+
+	e := monster2.StatusEvent[monster2.StatusEventStartControlBody]{
+		WorldId: 0, ChannelId: 1, MapId: 100000000, UniqueId: 7010,
+		MonsterId: 100100, Type: monster2.EventStatusStartControl,
+		Body: monster2.StatusEventStartControlBody{ActorId: 42, ControllerHasAggro: true},
+	}
+	handleStatusEventStartControl(sc, nil)(logrus.New(), ctx, e)
+
+	if len(*grants) != 1 {
+		t.Fatalf("START_CONTROL must deliver exactly one control grant; got %d", len(*grants))
+	}
+	g := (*grants)[0]
+	if g.characterId != 42 || g.uniqueId != 7010 || g.monsterId != 100100 || !g.aggro {
+		t.Fatalf("grant mismatch: %+v", g)
+	}
+}
+
+// TestHandleStatusEventStartControl_FetchFailureStillGrants pins the fallback:
+// a REST failure must degrade to the event envelope, not swallow the grant.
+// Dropping it would reproduce the original bug — controller assigned upstream,
+// client frozen forever, with nothing to retrigger the grant.
+func TestHandleStatusEventStartControl_FetchFailureStillGrants(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	prev := monsterGetByIdFn
+	monsterGetByIdFn = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (monster.Model, error) {
+		return monster.Model{}, errors.New("boom")
+	}
+	defer func() { monsterGetByIdFn = prev }()
+
+	restore, grants := withRecordingControlGrant(t)
+	defer restore()
+
+	e := monster2.StatusEvent[monster2.StatusEventStartControlBody]{
+		WorldId: 0, ChannelId: 1, MapId: 100000000, UniqueId: 7011,
+		MonsterId: 100100, Type: monster2.EventStatusStartControl,
+		Body: monster2.StatusEventStartControlBody{ActorId: 43},
+	}
+	handleStatusEventStartControl(sc, nil)(logrus.New(), ctx, e)
+
+	if len(*grants) != 1 {
+		t.Fatalf("a REST failure must still deliver the grant from the envelope; got %d grants", len(*grants))
+	}
+	if g := (*grants)[0]; g.characterId != 43 || g.uniqueId != 7011 || g.monsterId != 100100 {
+		t.Fatalf("fallback grant mismatch: %+v", g)
+	}
+}
+
+// TestSpawnThenControlOperator_EmitsSpawnBeforeControl pins the packet order
+// that keeps a control grant safe for a client that may not have the mob yet.
+//
+// A MonsterControl for an unknown mob is not dropped by the client:
+// CMobPool::SetLocalMob (v83 0x678308, v79 0x645ce1) misses on GetMob and
+// materializes the mob from the Control body via CreateMob -> CMob::Init,
+// which null-derefs on a 0/1 stance and mis-seats the mob on a slope. The
+// leading Spawn is harmless when the client already has the mob:
+// CMobPool::OnMobEnterField's GetMob-hit branch (v83 0x67945a, v79 0x646e33)
+// only sets m_bInViewSplit and re-applies temporary stats.
+func TestSpawnThenControlOperator_EmitsSpawnBeforeControl(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+
+	var order []string
+	orig := announceFn
+	announceFn = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, writerName string, _ packet.Encode, _ session.Model) error {
+		order = append(order, writerName)
+		return nil
+	}
+	defer func() { announceFn = orig }()
+
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	m := monster.NewModelBuilder(7020, f, 100100).SetControlCharacterId(42).MustBuild()
+
+	if err := spawnThenControlOperator(logrus.New(), ctx, nil, m, false)(session.Model{}); err != nil {
+		t.Fatalf("spawnThenControlOperator: %v", err)
+	}
+
+	want := []string{monsterpkt.MonsterSpawnWriter, monsterpkt.MonsterControlWriter}
+	if len(order) != len(want) {
+		t.Fatalf("want %d packets %v; got %d %v", len(want), want, len(order), order)
+	}
+	for i := range want {
+		if order[i] != want[i] {
+			t.Fatalf("packet order mismatch: want %v, got %v", want, order)
+		}
+	}
+}
+
+// TestSpawnThenControlOperator_SpawnFailureSuppressesControl guards the
+// ordering invariant under error: if Spawn could not be delivered, Control
+// must not go out on its own, or the client materializes the mob from the
+// Control body — the exact crash/fall-through the ordering exists to prevent.
+func TestSpawnThenControlOperator_SpawnFailureSuppressesControl(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+
+	var order []string
+	orig := announceFn
+	announceFn = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, writerName string, _ packet.Encode, _ session.Model) error {
+		order = append(order, writerName)
+		if writerName == monsterpkt.MonsterSpawnWriter {
+			return errors.New("spawn write failed")
+		}
+		return nil
+	}
+	defer func() { announceFn = orig }()
+
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	m := monster.NewModelBuilder(7021, f, 100100).SetControlCharacterId(42).MustBuild()
+
+	if err := spawnThenControlOperator(logrus.New(), ctx, nil, m, false)(session.Model{}); err == nil {
+		t.Fatalf("a failed Spawn must surface as an error")
+	}
+	if len(order) != 1 || order[0] != monsterpkt.MonsterSpawnWriter {
+		t.Fatalf("Control must not follow a failed Spawn; got %v", order)
+	}
+}
+
+// A DoT tick must NOT get a server-side MonsterDamage packet: the client
+// renders poison ticks itself from the POISON magnitude in the temporary-stat
+// packet. Echoing one here previously sent the monster's CUMULATIVE
+// per-character damage total (the last DamageEntries element) as if it were
+// the tick, which read as five-figure numbers on a 15,200 HP mob.
+func TestShouldEchoDamagePacket(t *testing.T) {
+	tests := []struct {
+		source string
+		want   bool
+	}{
+		{source: monster2.DamageSourceMonsterAttack, want: true},
+		{source: monster2.DamageSourceDamageOverTime, want: false},
+		{source: monster2.DamageSourceCharacterAttack, want: false},
+		{source: monster2.DamageSourceHeal, want: false},
+		{source: "", want: false},
+	}
+	for _, tt := range tests {
+		if got := shouldEchoDamagePacket(tt.source); got != tt.want {
+			t.Errorf("shouldEchoDamagePacket(%q) = %v, want %v", tt.source, got, tt.want)
+		}
+	}
+}
+
+// TestBridleFailReason maps internal causes onto the only two values the client
+// understands. CWvsContext::OnBridleMobCatchFail @0x9d9a80 branches on exactly
+// two: 0 renders string 0x110E, 1 renders the item's delayMsg (falling back to
+// 0x110F), and ANY other value renders nothing at all. Reason 1 is reserved for
+// the not-yet/try-again case, which is why useDelay is server-enforced.
+// UNRESOLVED sends no packet: the request was legitimate and lost a race, so the
+// client should simply unlock.
+func TestBridleFailReason(t *testing.T) {
+	cases := []struct {
+		cause      string
+		wantReason byte
+		wantSend   bool
+	}{
+		{monster2.CatchCauseSpeciesMismatch, 0, true},
+		{monster2.CatchCauseHpTooHigh, 0, true},
+		{monster2.CatchCauseRollFailed, 0, true},
+		{consumable2.CatchCauseInventoryFull, 0, true},
+		{consumable2.CatchCauseInvalidItem, 0, true},
+		{consumable2.CatchCauseUseDelay, 1, true},
+		{monster2.CatchCauseUnresolved, 0, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.cause, func(t *testing.T) {
+			reason, send := bridleFailReason(tc.cause)
+			if reason != tc.wantReason || send != tc.wantSend {
+				t.Fatalf("bridleFailReason(%q) = (%d, %t), want (%d, %t)", tc.cause, reason, send, tc.wantReason, tc.wantSend)
+			}
+		})
 	}
 }

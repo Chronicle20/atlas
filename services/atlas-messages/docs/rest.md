@@ -1,6 +1,44 @@
 # REST
 
-This service does not expose any REST endpoints. It consumes REST APIs from other services.
+This service exposes one endpoint, `GET /api/chat/history`. It **is** routed
+through nginx/ingress (`deploy/shared/routes.conf`) and is reachable at the
+ingress host **without authentication** — it exposes captured player chat,
+including whispers, to anything that can reach that host. This was an
+explicit, accepted risk (see
+`docs/tasks/task-145-player-reports/scope-amendment.md` Amendment 2) taken on
+the basis that API authentication is coming to the fleet generally; do not
+describe this endpoint as server-to-server only. It also consumes REST APIs
+from other services (see below).
+
+## Endpoints
+
+### GET /api/chat/history
+
+Returns recently captured chat lines authored by any of the given
+characters, merged and sorted ascending by timestamp. Backed by the
+`chat:recent` Redis buffer (see [Storage](storage.md)); consumed by
+atlas-ban to snapshot a transcript when a player report is created.
+
+**Parameters**
+
+| Name | Type | Location | Description |
+|------|------|----------|-------------|
+| characterIds | comma-separated uint32 list | query | Required. Character IDs whose recent lines to include. |
+
+A missing or malformed `characterIds` query parameter returns `400 Bad
+Request`.
+
+**Response Model**
+
+Resource type: `chat-messages`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| timestamp | int64 | Unix-milli capture time |
+| senderId | uint32 | Authoring character ID |
+| senderName | string | Authoring character name at capture time |
+| chatType | string | One of `GENERAL`, `BUDDY`, `PARTY`, `GUILD`, `ALLIANCE`, `WHISPER`, `MESSENGER` (pet echoes and system pink text are never captured) |
+| text | string | Chat line text |
 
 ## External API Consumption
 

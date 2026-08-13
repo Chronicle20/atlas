@@ -1,0 +1,10 @@
+packet: report/clientbound/ClaimAvailableTime
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnSetClaimSvrAvailableTime
+    address: "0x971b9b"
+    decompile_sha256: a1b1e4dc10f061222c0b2511f52107f62ed85c13ff5aa766c7ecc66d0fefc75c
+verifies:
+    - report/clientbound/claim_available_time_test.go#TestClaimAvailableTimeByteOutputV79

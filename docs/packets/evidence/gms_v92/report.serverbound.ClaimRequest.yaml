@@ -1,0 +1,10 @@
+packet: report/serverbound/ClaimRequest
+direction: serverbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendClaimRequest
+    address: "0x9d9c30"
+    decompile_sha256: 1f6d817817ae1fa4f0d4e1a13d2531888d20e57341e3adc0279cec70065de074
+verifies:
+    - report/serverbound/claim_request_test.go#TestClaimRequestByteOutputV92

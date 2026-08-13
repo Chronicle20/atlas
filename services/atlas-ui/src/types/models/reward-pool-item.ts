@@ -5,6 +5,7 @@ export interface RewardPoolItemAttributes {
   quantity: number;
   tier: string; // placeholder "common" on incubator items (roll ignores it)
   weight: number; // 0 on classic gachapon items
+  commodityId: number; // cash shop commodity (serial number); 0 on gachapon/incubator items
 }
 
 export interface RewardPoolItemData {

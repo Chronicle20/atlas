@@ -40,6 +40,7 @@ the root pipeline above:
 | `decompose` | Extend the baseline with live IDA reads for every exported entry. |
 | `triage` | Produce a divergent-entry worklist from the extended baseline. |
 | `registry` | `registry seed` — seed registry YAMLs from the ops CSVs. |
+| `seed-fname` | Backfill `fname` into the seed templates from the op registries. |
 | `matrix` | Build (and `--check`) the coverage matrix STATUS.md / status.json. |
 | `dispatcher-lint` | Enforce the dispatcher-family invariants INV-1..INV-5. |
 | `doc-freshness` | `doc-freshness --check` — assert PROCESS.md packet-process-facts match the tool's ground truth (CI-gated). |
@@ -84,3 +85,43 @@ roster (`--prior-export "" --pending <roster.md>`) and surgically merge exactly
 that entry with `--splice <FName>` (all other entries are preserved
 byte-for-byte). Pass `--force` only to deliberately regenerate the whole file.
 See `docs/packets/audits/VERIFYING_A_PACKET.md` §10.
+
+### `seed-fname`
+
+Backfills the optional `fname` field (the client-side function name) into the
+eleven configuration seed templates by joining each socket entry's opcode
+against `docs/packets/registry/<version>.yaml` — `handlers` against
+`serverbound`, `writers` against `clientbound`.
+
+```
+packet-audit seed-fname                      # dry run, prints coverage
+packet-audit seed-fname --write              # updates the seed templates
+packet-audit seed-fname --registry-dir DIR --template-dir DIR
+```
+
+`gms_92_1` and `gms_12_1` have no registry of their own; they resolve by
+implementation name against adjacent versions (v87 then v95, and v48 then v61
+respectively), which is valid because the implementation name is the definition
+identity within a direction. Entries that resolve to nothing are written without
+`fname` — the field is `omitempty`.
+
+Where one `(direction, opcode)` carries several distinct `fname` values, the
+lexicographically-first `op` name wins and the choice is logged to stderr.
+
+Re-run it after a version bring-up adds a registry. It refuses to rewrite any
+template carrying a JSON key it does not model, so a schema change is a hard
+stop rather than silent data loss.
+
+**`--write` normalizes formatting across the whole file, not just the lines it
+changes.** It writes via `json.MarshalIndent(doc, "", "  ")`, which reformats
+every array and object in the document to a uniform 2-space-indent,
+one-element-per-line style. The real seed templates predate this tool and
+carry several ad hoc conventions `MarshalIndent` does not reproduce — e.g.
+every `"services"` array hand-compacted onto one line, and two of the eleven
+files inlining an array's first `{` onto its opening `[` line. Semantic
+content (every key, value, and array element) is unaffected — only
+inter-token whitespace is — but this means **the first `--write` run against
+the real templates produces a large, mostly-cosmetic diff.** That tradeoff was
+deliberate: a simpler, more robust generator over a minimal diff. Every run
+after the first is a no-op, because `MarshalIndent`'s output is a
+deterministic function of the (by-then-already-normalized) document.

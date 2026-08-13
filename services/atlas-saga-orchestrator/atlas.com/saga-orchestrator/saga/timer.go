@@ -100,6 +100,19 @@ func handleSagaTimeout(l logrus.FieldLogger, ctx context.Context, txId uuid.UUID
 		}).Info("saga already terminal, timeout emission skipped")
 		return
 	}
+	// Re-read after taking the guard. The snapshot above predates the
+	// Pending → Compensating transition, so a step whose success landed in that
+	// window is still Pending in it — and a reverse-walk driven from the stale
+	// copy skips that step's inverse for good, because the normal completion
+	// path already consumed the event and no late one will arrive. Everything
+	// below (the three walks and the Failed emission's failedStep) must read the
+	// post-guard copy. The saga is still cached — TryTransition just succeeded
+	// against it — but keep the snapshot if it raced away rather than aborting a
+	// compensation that is already committed to.
+	if fresh, ok := c.GetById(ctx, txId); ok {
+		s = fresh
+	}
+
 	reason := fmt.Sprintf("saga exceeded timeout of %s", timeout)
 	l.WithFields(logrus.Fields{
 		"transaction_id":  txId.String(),
@@ -108,21 +121,7 @@ func handleSagaTimeout(l logrus.FieldLogger, ctx context.Context, txId uuid.UUID
 		"completed_steps": s.GetCompletedStepCount(),
 	}).Warn("saga timed out, dispatching compensation + emitting Failed")
 
-	// Dispatch the inverse commands for CharacterCreation sagas. Fire-and-forget;
-	// Phase-5 delete commands (atlas-character, atlas-skills) are idempotent on
-	// missing rows, so out-of-order arrival is safe.
-	if s.SagaType() == CharacterCreation {
-		NewCompensator(l, ctx).DispatchCharacterCreationRollbacks(s)
-	}
-
-	// Dispatch the MTS reverse-walk for a wedged MTS saga so a timed-out
-	// TransferToMts / WithdrawFromMts / MtsSettlePurchase still undoes its
-	// completed steps (re-credit/debit currency, re-grant item, restore holding)
-	// — the dupe-safety core (task-102 §4.1). Fire-and-forget; custody/wallet
-	// inverses are idempotent.
-	if s.SagaType() == MtsOperation {
-		NewCompensator(l, ctx).DispatchMtsOperationRollbacks(s)
-	}
+	dispatchTimeoutRollbacks(l, ctx, s)
 
 	// Finalize the lifecycle. If someone else already took Compensating → Failed
 	// (unlikely — stepCompleted(false) would have cancelled this timer), skip the
@@ -143,4 +142,115 @@ func handleSagaTimeout(l logrus.FieldLogger, ctx context.Context, txId uuid.UUID
 	if err := EmitSagaFailed(l, ctx, s, sagaMsg.ErrorCodeSagaTimeout, reason, failedStep); err != nil {
 		l.WithError(err).WithField("transaction_id", txId.String()).Error("failed to emit timeout saga-failed event")
 	}
+}
+
+// reverseWalkSagaTypes is the set of saga types whose timeout MUST dispatch a
+// reverse walk, and it is the single list that dispatchTimeoutRollbacks and its
+// test both read.
+//
+// It exists because the routing it replaced was a chain of independent `if`
+// statements, and TradeStaging was added to every other place saga types are
+// enumerated but not to that chain. The consequence was silent and total: a
+// staging saga whose release_from_character completed and whose accept_to_trade
+// then stalled past the 30s backstop rolled back NOTHING, so the compartment
+// was down one item, escrow held none, and the asset simply ceased to exist. No
+// race was needed — a slow consumer sufficed.
+//
+// A saga type belongs here exactly when CompensateFailedStep routes it to a
+// bespoke compensator, because that is what "this type has inverses worth
+// walking" means. Anything with an entry there and no entry here destroys value
+// on timeout while looking correct on step failure.
+// The list is EVERY type CompensateFailedStep routes to a bespoke compensator.
+// It was originally only the four the trade work touched, which left the other
+// seven carrying the identical defect this exists to close — found by the
+// plan-adherence review, not by the guard below, because a type omitted from
+// the list is invisible to a test that iterates the list.
+var reverseWalkSagaTypes = []Type{
+	CharacterCreation,
+	MtsOperation,
+	TradeTransaction,
+	TradeStaging,
+	PetEvolution,
+	ItemTagUse,
+	SealingLockUse,
+	IncubatorUse,
+	PointReset,
+	NoteSend,
+	SkillBookUse,
+	MesoSackUse,
+}
+
+// noReverseWalkSagaTypes are the saga types that deliberately have NO reverse
+// walk, each because its steps are individually compensated by the per-action
+// switch in CompensateFailedStep rather than by a bespoke whole-saga walk.
+//
+// It exists so that reverseWalkSagaTypes and this list TOGETHER account for
+// every known saga type, which is what lets TestEverySagaTypeIsClassified fail
+// when a new type is added and neither list is updated. Iterating
+// reverseWalkSagaTypes alone could never catch that: a type nobody listed is
+// invisible to a test that walks the list. That is precisely how the seven
+// types above went unnoticed until a review asked the question directly.
+var noReverseWalkSagaTypes = []Type{
+	InventoryTransaction,
+	QuestReward,
+	StorageOperation,
+	CharacterRespawn,
+	GachaponTransaction,
+}
+
+// allSagaTypes is every type the orchestrator knows, kept beside the two
+// classification lists so adding one here without classifying it fails a test.
+var allSagaTypes = []Type{
+	InventoryTransaction, QuestReward, TradeTransaction, TradeStaging,
+	CharacterCreation, StorageOperation, CharacterRespawn, GachaponTransaction,
+	PetEvolution, ItemTagUse, SealingLockUse, IncubatorUse, PointReset,
+	MtsOperation, NoteSend, SkillBookUse, MesoSackUse,
+}
+
+// dispatchTimeoutRollbacks fires the reverse walk for a timed-out saga and
+// reports whether the type had one.
+//
+// Fire-and-forget in every arm: the inverses are idempotent (the character
+// deletes tolerate missing rows) or claimed once per step via the
+// lateCompensated marker (the trade walks), so neither out-of-order arrival nor
+// an overlapping step-driven compensation can double-apply.
+func dispatchTimeoutRollbacks(l logrus.FieldLogger, ctx context.Context, s Saga) bool {
+	c := NewCompensator(l, ctx)
+	switch s.SagaType() {
+	case CharacterCreation:
+		c.DispatchCharacterCreationRollbacks(s)
+	case MtsOperation:
+		// Re-credit/debit currency, re-grant item, restore holding — the
+		// dupe-safety core (task-102 §4.1).
+		c.DispatchMtsOperationRollbacks(s)
+	case TradeTransaction:
+		// Without this a timed-out trade_settlement leaves a HALF-SWAP: the
+		// completed releases/accepts stand, so one side's goods moved and the
+		// other's are destroyed.
+		c.DispatchTradeTransactionRollbacks(s)
+	case TradeStaging:
+		// Without this a timed-out stage destroys the asset outright: the
+		// release from the compartment completed, the accept into escrow did
+		// not, and nothing puts it back.
+		c.DispatchTradeStagingRollbacks(s)
+	case PetEvolution:
+		c.DispatchPetEvolutionRollbacks(s)
+	case ItemTagUse, SealingLockUse, IncubatorUse:
+		// The three share one compensator, exactly as CompensateFailedStep
+		// routes them.
+		c.DispatchCashItemUseRollbacks(s)
+	case PointReset:
+		c.DispatchPointResetRollbacks(s)
+	case NoteSend:
+		c.DispatchNoteSendRollbacks(s)
+	case SkillBookUse:
+		c.DispatchSkillBookUseRollbacks(s)
+	case MesoSackUse:
+		// Without this a timed-out sack use is pure loss: consume_meso_sack
+		// completed, award_mesos never landed, and nothing puts the sack back.
+		c.DispatchMesoSackRollbacks(s)
+	default:
+		return false
+	}
+	return true
 }

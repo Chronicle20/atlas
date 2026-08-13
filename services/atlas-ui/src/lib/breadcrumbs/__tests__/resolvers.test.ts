@@ -14,6 +14,7 @@ import {
   isValidEntityType,
   EntityType,
 } from "../resolvers";
+import { BanType } from "@/types/models/ban";
 
 // Mock the services
 vi.mock("@/services/api", () => ({
@@ -28,12 +29,25 @@ vi.mock("@/services/api", () => ({
   },
   npcsService: {
     getNPCById: vi.fn(),
+    getNpcName: vi.fn(),
   },
   templatesService: {
     getById: vi.fn(),
   },
   tenantsService: {
     getTenantById: vi.fn(),
+  },
+  merchantsService: {
+    getShopById: vi.fn(),
+  },
+  bansService: {
+    getBanById: vi.fn(),
+  },
+}));
+
+vi.mock("@/services/api/coupons.service", () => ({
+  couponsService: {
+    getOne: vi.fn(),
   },
 }));
 
@@ -511,12 +525,11 @@ describe("Entity-Specific Resolution", () => {
 
   it("should resolve NPC names with fallback to ID", async () => {
     const { npcsService } = await import("@/services/api");
-    (npcsService.getNPCById as ReturnType<typeof vi.fn>).mockResolvedValue({
-      id: 101112,
-      hasShop: true,
-      hasConversation: false,
-      name: "Test NPC",
-    });
+    // The name comes from the WZ-backed /api/data/npcs/{id} record, not from
+    // the shop/conversation index that getNPCById returns.
+    (npcsService.getNpcName as ReturnType<typeof vi.fn>).mockResolvedValue(
+      "Test NPC",
+    );
 
     const result = await resolveEntityLabel(
       EntityType.NPC,
@@ -525,6 +538,87 @@ describe("Entity-Specific Resolution", () => {
     );
 
     expect(result.label).toBe("Test NPC");
+  });
+
+  it("should resolve merchant shops to their title", async () => {
+    const { merchantsService } = await import("@/services/api");
+    (
+      merchantsService.getShopById as ReturnType<typeof vi.fn>
+    ).mockResolvedValue({
+      id: "shop-1",
+      attributes: { title: "Cheap Scrolls" },
+    });
+
+    const result = await resolveEntityLabel(
+      EntityType.MERCHANT,
+      "shop-1",
+      mockTenant,
+    );
+
+    expect(result.label).toBe("Cheap Scrolls");
+  });
+
+  it("should fall back to 'Untitled Shop' for a blank merchant title", async () => {
+    const { merchantsService } = await import("@/services/api");
+    (
+      merchantsService.getShopById as ReturnType<typeof vi.fn>
+    ).mockResolvedValue({ id: "shop-2", attributes: { title: "" } });
+
+    const result = await resolveEntityLabel(
+      EntityType.MERCHANT,
+      "shop-2",
+      mockTenant,
+    );
+
+    expect(result.label).toBe("Untitled Shop");
+  });
+
+  it("should resolve bans to their type-qualified value", async () => {
+    const { bansService } = await import("@/services/api");
+    (bansService.getBanById as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "ban-1",
+      attributes: { banType: BanType.Account, value: "cheater123" },
+    });
+
+    const result = await resolveEntityLabel(
+      EntityType.BAN,
+      "ban-1",
+      mockTenant,
+    );
+
+    expect(result.label).toBe("Account: cheater123");
+  });
+
+  it("should fall back to the ban id when the banned value is empty", async () => {
+    const { bansService } = await import("@/services/api");
+    (bansService.getBanById as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "ban-2",
+      attributes: { banType: BanType.IP, value: "" },
+    });
+
+    const result = await resolveEntityLabel(
+      EntityType.BAN,
+      "ban-2",
+      mockTenant,
+    );
+
+    expect(result.label).toBe("Ban ban-2");
+  });
+
+  it("should resolve coupons to their code", async () => {
+    const { couponsService } = await import("@/services/api/coupons.service");
+    (couponsService.getOne as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "c-1",
+      attributes: { code: "SUMMER2026" },
+    });
+
+    const result = await resolveEntityLabel(
+      EntityType.COUPON,
+      "c-1",
+      mockTenant,
+    );
+
+    expect(result.label).toBe("SUMMER2026");
   });
 
   it("should resolve template names", async () => {

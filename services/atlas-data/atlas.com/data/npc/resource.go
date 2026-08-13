@@ -184,11 +184,7 @@ func handleGetNpcMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 				}
 
 				start := time.Now()
-				var rows []SpawnIndexEntity
-				qerr := db.WithContext(d.Context()).
-					Where("tenant_id = ? AND npc_id = ?", t.Id(), npcId).
-					Order("spawn_count DESC, map_id ASC").
-					Find(&rows).Error
+				rows, qerr := SpawnMapsFor(db, d.Context(), npcId)
 				if qerr != nil {
 					d.Logger().WithError(qerr).Errorf("Unable to retrieve NPC spawn maps for npcId=%d.", npcId)
 					server.WriteErrorResponse(d.Logger())(w)(qerr)

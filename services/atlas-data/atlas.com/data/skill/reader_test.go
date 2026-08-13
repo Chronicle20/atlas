@@ -2772,7 +2772,11 @@ func TestReader(t *testing.T) {
 	}
 	ctx := tenant.WithContext(context.Background(), tn)
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(testXML)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(testXML)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -2930,7 +2934,11 @@ func TestReader_LT_RB_Present(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -2978,7 +2986,11 @@ func TestReader_LT_RB_Absent(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3026,7 +3038,11 @@ func TestReader_PriestDoom_MapsDoomStatus(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3074,7 +3090,11 @@ func TestReader_TimeAttributeEmittedAsMilliseconds(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3116,7 +3136,11 @@ func TestReader_TimeMissing_DurationStaysSentinel(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3158,7 +3182,11 @@ func TestReader_FreezeDoublesDuration(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3202,7 +3230,11 @@ func TestReader_ShadowStars_EmitsNonzeroShadowClawPlaceholder(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3251,7 +3283,11 @@ func TestReader_SuperGmHolySymbol_V48Wire_ClassifiesAsHolySymbol(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3297,7 +3333,11 @@ func TestReader_SuperGmHolySymbol_V83Canonical_ClassifiesAsHolySymbol(t *testing
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3345,7 +3385,11 @@ func TestReader_PriestHolySymbol_StableSkill_Unchanged(t *testing.T) {
   </imgdir>
 </imgdir>`
 
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3406,7 +3450,11 @@ func TestReader_SuperGmHealDispel_V48Wire_ClassifiesAsCategory1(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tn)
 
 	xmlData := fmt.Sprintf(healDispelCategory1XML, "510", "5101000")
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3435,7 +3483,11 @@ func TestReader_SuperGmHealDispel_V83Canonical_ClassifiesAsCategory1(t *testing.
 	ctx := tenant.WithContext(context.Background(), tn)
 
 	xmlData := fmt.Sprintf(healDispelCategory1XML, "910", "9101000")
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3466,7 +3518,11 @@ func TestReader_ClericHeal_StableSkill_Unchanged(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tn)
 
 	xmlData := fmt.Sprintf(healDispelCategory1XML, "230", "2301002")
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rms := model.FixedProvider(d.Models)
 	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
@@ -3545,5 +3601,263 @@ func TestParseJobId(t *testing.T) {
 
 	if _, err := ParseJobId("112"); err == nil {
 		t.Fatal("ParseJobId(\"112\") expected error (missing .img suffix), got nil")
+	}
+}
+
+// TestReader_Dot_Present pins the DoT field reads and their unit contract:
+// `dot` is a raw damage-per-tick integer; `dotInterval` and `dotTime` are WZ
+// SECONDS converted to MILLISECONDS at the reader, matching the `time`
+// treatment (task-054). These nodes do not exist in any provisioned WZ corpus
+// (design §2.1) -- the parse is additive and forward-compatible.
+func TestReader_Dot_Present(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="200.img">
+  <imgdir name="skill">
+    <imgdir name="2111003">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="mpCon" value="21"/>
+          <int name="dot" value="105"/>
+          <int name="dotInterval" value="1"/>
+          <int name="dotTime" value="4"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](model.FixedProvider(d.Models), RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm, ok := rmm["2111003"]
+	if !ok {
+		t.Fatal("rmm[2111003] does not exist.")
+	}
+	ef := rm.Effects[0]
+	if ef.Dot != 105 {
+		t.Fatalf("ef.Dot = %d, want 105 (raw, unscaled)", ef.Dot)
+	}
+	if ef.DotInterval != 1000 {
+		t.Fatalf("ef.DotInterval = %d, want 1000 (1s -> ms)", ef.DotInterval)
+	}
+	if ef.DotTime != 4000 {
+		t.Fatalf("ef.DotTime = %d, want 4000 (4s -> ms)", ef.DotTime)
+	}
+}
+
+// TestReader_Dot_Absent asserts absent nodes default to 0 and do not change
+// the serialized shape for skills that carry no DoT (FR-1.3).
+func TestReader_Dot_Absent(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="200.img">
+  <imgdir name="skill">
+    <imgdir name="2111003">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="mpCon" value="21"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](model.FixedProvider(d.Models), RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ef := rmm["2111003"].Effects[0]
+	if ef.Dot != 0 || ef.DotInterval != 0 || ef.DotTime != 0 {
+		t.Fatalf("ef dot fields = (%d,%d,%d), want (0,0,0)", ef.Dot, ef.DotInterval, ef.DotTime)
+	}
+}
+
+// TestReader_Dot_ExplicitZero asserts an explicit zero-valued node stays zero
+// rather than being scaled into a non-zero ms value.
+func TestReader_Dot_ExplicitZero(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="200.img">
+  <imgdir name="skill">
+    <imgdir name="2111003">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="dot" value="0"/>
+          <int name="dotInterval" value="0"/>
+          <int name="dotTime" value="0"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](model.FixedProvider(d.Models), RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ef := rmm["2111003"].Effects[0]
+	if ef.Dot != 0 || ef.DotInterval != 0 || ef.DotTime != 0 {
+		t.Fatalf("ef dot fields = (%d,%d,%d), want (0,0,0)", ef.Dot, ef.DotInterval, ef.DotTime)
+	}
+}
+
+// TestLevelPathPopulatesCommonKeys pins FR-6.1 from the `level` side: the
+// keys added for `common` are read by the one shared getEffect, so a `level`
+// node that happens to carry them populates them too.
+func TestLevelPathPopulatesCommonKeys(t *testing.T) {
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="112.img">
+  <imgdir name="skill">
+    <imgdir name="1121000">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="mastery" value="40"/>
+          <int name="range" value="150"/>
+          <int name="dot" value="12"/>
+          <int name="dotInterval" value="2"/>
+          <int name="dotTime" value="8"/>
+          <int name="mhpR" value="5"/>
+          <int name="mmpR" value="6"/>
+          <int name="itemConsume" value="2331000"/>
+          <int name="itemCon" value="2000000"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 95, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	models := d.Models
+	if len(models) != 1 {
+		t.Fatalf("len(models) = %d, want 1", len(models))
+	}
+	ef := models[0].Effects[0]
+	if ef.Mastery != 40 {
+		t.Fatalf("Mastery = %d, want 40", ef.Mastery)
+	}
+	if ef.Range != 150 {
+		t.Fatalf("Range = %d, want 150", ef.Range)
+	}
+	// dotInterval/dotTime are WZ seconds scaled to milliseconds at the reader
+	// (task-200); `dot` is a raw magnitude and stays unscaled.
+	if ef.Dot != 12 || ef.DotInterval != 2000 || ef.DotTime != 8000 {
+		t.Fatalf("dot triple = (%d,%d,%d), want (12,2000,8000)", ef.Dot, ef.DotInterval, ef.DotTime)
+	}
+	if ef.MHPRRate != 5 || ef.MMPRRate != 6 {
+		t.Fatalf("(MHPRRate,MMPRRate) = (%d,%d), want (5,6)", ef.MHPRRate, ef.MMPRRate)
+	}
+	if ef.ConsumeItemId != 2331000 {
+		t.Fatalf("ConsumeItemId = %d, want 2331000", ef.ConsumeItemId)
+	}
+	if ef.ItemConsume != 2000000 {
+		t.Fatalf("ItemConsume = %d, want 2000000", ef.ItemConsume)
+	}
+}
+
+// TestReader_AranComboAbility_StatupUsesEffectX pins the ARAN_COMBO statup
+// amount to the skill effect's x. The previous hardcoded 100 had no
+// provenance in WZ (Combo Ability's node carries only hs/x/y/z/weapon/
+// invisible) or in the client, and the stat is a damage-calculation input
+// decoded as a SIGNED SHORT -- not the combo count, which SHOW_COMBO carries
+// (task-217 design.md §2.3).
+func TestReader_AranComboAbility_StatupUsesEffectX(t *testing.T) {
+	tests := []struct {
+		name    string
+		imgdir  string
+		skillId string
+		x       int32
+	}{
+		{"aran combo ability level 1", "2100.img", "21000000", 1},
+		{"aran combo ability level 20", "2100.img", "21000000", 20},
+		{"legend combo ability", "2000.img", "20000017", 10},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			l, _ := test.NewNullLogger()
+			tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			ctx := tenant.WithContext(context.Background(), tn)
+
+			xmlData := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="%s">
+  <imgdir name="skill">
+    <imgdir name="%s">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="x" value="%d"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`, tc.imgdir, tc.skillId, tc.x)
+
+			d, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))()
+			if err != nil {
+				t.Fatal(err)
+			}
+			rms := model.FixedProvider(d.Models)
+			rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+			if err != nil {
+				t.Fatal(err)
+			}
+			rm, ok := rmm[tc.skillId]
+			if !ok {
+				t.Fatalf("rmm[%s] does not exist.", tc.skillId)
+			}
+			if len(rm.Effects) != 1 {
+				t.Fatalf("len(rm.Effects) = %d, want 1", len(rm.Effects))
+			}
+			su, ok := findStatup(rm.Effects[0].Statups, string(character.TemporaryStatTypeAranCombo))
+			if !ok {
+				t.Fatalf("expected an ARAN_COMBO statup for skill %s, got none in %+v", tc.skillId, rm.Effects[0].Statups)
+			}
+			if su.Amount != tc.x {
+				t.Fatalf("ARAN_COMBO statup Amount = %d, want %d", su.Amount, tc.x)
+			}
+		})
 	}
 }

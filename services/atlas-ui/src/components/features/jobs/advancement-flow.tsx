@@ -1,16 +1,17 @@
 import { useMemo } from "react";
 import type { CSSProperties } from "react";
 import {
-  JOB_GRAPH,
   advancementChains,
+  jobNodeName,
   jobTreePath,
   tierLabel,
-} from "@/lib/jobs/job-advancement-tree";
+  type JobGraph,
+} from "@/lib/jobs/job-graph";
 import { cn } from "@/lib/utils";
 
 interface AdvancementFlowProps {
+  graph: JobGraph;
   entryId: number;
-  available: ReadonlySet<number>;
   selectedJobId: number;
   /** Branch accent token name, e.g. "--c-warrior". */
   accent: string;
@@ -18,15 +19,17 @@ interface AdvancementFlowProps {
 }
 
 function FlowChip({
+  graph,
   id,
   selected,
   onSelect,
 }: {
+  graph: JobGraph;
   id: number;
   selected: boolean;
   onSelect: (id: number) => void;
 }) {
-  const tier = tierLabel(id);
+  const tier = tierLabel(graph, id);
   return (
     <button
       type="button"
@@ -39,7 +42,7 @@ function FlowChip({
           : "bg-card hover:border-[hsl(var(--acc))]",
       )}
     >
-      {JOB_GRAPH[id]?.name ?? `Job ${id}`}
+      {jobNodeName(graph, id)}
       {tier ? (
         <span
           className={cn(
@@ -64,19 +67,19 @@ function FlowChip({
  * measurement code.
  */
 export function AdvancementFlow({
+  graph,
   entryId,
-  available,
   selectedJobId,
   accent,
   onSelect,
 }: AdvancementFlowProps) {
   const anchors = useMemo(
-    () => jobTreePath(entryId).map((e) => e.id),
-    [entryId],
+    () => jobTreePath(graph, entryId).map((n) => n.id),
+    [graph, entryId],
   );
   const chains = useMemo(
-    () => advancementChains(entryId, available),
-    [entryId, available],
+    () => advancementChains(graph, entryId),
+    [graph, entryId],
   );
   const rows = Math.max(chains.length, 1);
   const anchorCols = anchors.length;
@@ -100,6 +103,7 @@ export function AdvancementFlow({
           >
             {i > 0 ? sep : null}
             <FlowChip
+              graph={graph}
               id={id}
               selected={selectedJobId === id}
               onSelect={onSelect}
@@ -119,6 +123,7 @@ export function AdvancementFlow({
             >
               {sep}
               <FlowChip
+                graph={graph}
                 id={id}
                 selected={selectedJobId === id}
                 onSelect={onSelect}

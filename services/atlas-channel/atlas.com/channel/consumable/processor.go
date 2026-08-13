@@ -16,11 +16,13 @@ import (
 
 type Processor interface {
 	RequestItemConsume(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, quantity int16, updateTime uint32) error
+	RequestItemConsumeWithPet(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, updateTime uint32, petId uint64) error
 	RequestItemReward(f field.Model, characterId character.Id, itemId item.Id, source slot.Position) error
 	RequestScrollUse(f field.Model, characterId character.Id, scrollSlot slot.Position, equipSlot slot.Position, whiteScroll bool, legendarySpirit bool, updateTime uint32) error
 	RequestVegaScrollUse(f field.Model, characterId character.Id, vegaItemId item.Id, vegaSlot slot.Position, scrollSlot slot.Position, equipSlot slot.Position) error
 	RequestViciousHammerUse(f field.Model, characterId character.Id, hammerSlot slot.Position, equipSlot slot.Position) error
 	RequestSkillBookUse(f field.Model, characterId character.Id, slot slot.Position, itemId item.Id, updateTime uint32) error
+	RequestCatchMonster(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, monsterUniqueId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -48,6 +50,15 @@ func (p *ProcessorImpl) RequestItemConsume(f field.Model, characterId character.
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestItemConsumeCommandProvider(f, characterId, source, itemId, quantity))
 }
 
+// RequestItemConsumeWithPet is RequestItemConsume for consume paths that carry
+// a target pet (0519 pet skill pouches). The auto-pot path deliberately does
+// NOT use it: its pet validation happens at the socket handler and nothing
+// downstream needs the pet.
+func (p *ProcessorImpl) RequestItemConsumeWithPet(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, updateTime uint32, petId uint64) error {
+	p.l.Debugf("Character [%d] using pet skill item [%d] from slot [%d] on pet [%d]. updateTime [%d]", characterId, itemId, source, petId, updateTime)
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestItemConsumeWithPetCommandProvider(f, characterId, source, itemId, 1, petId))
+}
+
 func (p *ProcessorImpl) RequestItemReward(f field.Model, characterId character.Id, itemId item.Id, source slot.Position) error {
 	p.l.Debugf("Character [%d] using reward box [%d] from slot [%d].", characterId, itemId, source)
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestItemRewardCommandProvider(f, characterId, source, itemId))
@@ -71,4 +82,9 @@ func (p *ProcessorImpl) RequestViciousHammerUse(f field.Model, characterId chara
 func (p *ProcessorImpl) RequestSkillBookUse(f field.Model, characterId character.Id, slot slot.Position, itemId item.Id, updateTime uint32) error {
 	p.l.Debugf("Character [%d] using skill book [%d] from slot [%d]. updateTime [%d]", characterId, itemId, slot, updateTime)
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestSkillBookUseCommandProvider(f, characterId, slot, itemId))
+}
+
+func (p *ProcessorImpl) RequestCatchMonster(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, monsterUniqueId uint32) error {
+	p.l.Debugf("Character [%d] using catch item [%d] from slot [%d] on monster [%d].", characterId, itemId, source, monsterUniqueId)
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestCatchMonsterCommandProvider(f, characterId, source, itemId, monsterUniqueId))
 }

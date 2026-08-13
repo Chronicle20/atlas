@@ -1,10 +1,15 @@
 package item
 
 import (
+	"atlas-reward-pools/gachapon"
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -16,6 +21,7 @@ import (
 	"gorm.io/gorm"
 
 	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type testServerInformation struct{}
@@ -35,7 +41,11 @@ func setupItemRouter(db *gorm.DB) *mux.Router {
 }
 
 func requestWithTenant(method, url string, tenantId uuid.UUID) *http.Request {
-	req, err := http.NewRequest(method, url, nil)
+	return requestWithTenantBody(method, url, tenantId, nil)
+}
+
+func requestWithTenantBody(method, url string, tenantId uuid.UUID, body io.Reader) *http.Request {
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		panic(err)
 	}
@@ -45,6 +55,15 @@ func requestWithTenant(method, url string, tenantId uuid.UUID) *http.Request {
 	req.Header.Set("MAJOR_VERSION", "83")
 	req.Header.Set("MINOR_VERSION", "1")
 	return req
+}
+
+func seedGachaponPool(t *testing.T, db *gorm.DB, tenantId uuid.UUID, gachaponId string) {
+	t.Helper()
+	m, err := gachapon.NewBuilder(tenantId, gachaponId).
+		SetName(gachaponId).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, gachapon.CreateGachapon(db, m))
 }
 
 func seedGachaponItem(t *testing.T, db *gorm.DB, tenantId uuid.UUID, id uint32, gachaponId string, itemId uint32, tier string) {
@@ -57,6 +76,58 @@ func seedGachaponItem(t *testing.T, db *gorm.DB, tenantId uuid.UUID, id uint32, 
 		Build()
 	require.NoError(t, err)
 	require.NoError(t, CreateItem(db, m))
+}
+
+// TestCreateItemWithoutClientSuppliedId drives
+// POST /gachapons/{gachaponId}/items with the exact JSON:API creation payload
+// the UI sends: `data` carries a type and attributes but NO `id`, because the
+// row's id is server-generated. api2go's Unmarshal calls SetID(data.ID)
+// unconditionally, so an id-less create reaches SetID with "" — which must not
+// be treated as a malformed id.
+func TestCreateItemWithoutClientSuppliedId(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, Migration, gachapon.Migration)
+	tenantId := uuid.New()
+	// handleCreateItem validates the pool exists before inserting the row, so
+	// the pool has to be seeded even though this test is about the id-less
+	// payload.
+	seedGachaponPool(t, db, tenantId, "henesys")
+
+	srv := httptest.NewServer(setupItemRouter(db))
+	defer srv.Close()
+
+	body := `{"data":{"type":"gachapon-items","attributes":{"itemId":2000000,"quantity":1,"tier":"common","weight":50}}}`
+	url := fmt.Sprintf("%s/gachapons/henesys/items", srv.URL)
+	req := requestWithTenantBody(http.MethodPost, url, tenantId, strings.NewReader(body))
+
+	resp, err := (&http.Client{}).Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+
+	te, err := tenant.Create(tenantId, "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), te)
+
+	items, err := NewProcessor(logrus.New(), ctx, db).GetByGachaponId("henesys")()
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	assert.EqualValues(t, 2000000, items[0].ItemId())
+	assert.EqualValues(t, 50, items[0].Weight())
+}
+
+// TestSetIDAcceptsEmptyId pins the unmarshal-level contract directly: a
+// creation payload has no id, and RestModel must accept that rather than
+// failing the whole request.
+func TestSetIDAcceptsEmptyId(t *testing.T) {
+	var rm RestModel
+	require.NoError(t, rm.SetID(""))
+	assert.EqualValues(t, 0, rm.Id)
+
+	require.NoError(t, rm.SetID("7"))
+	assert.EqualValues(t, 7, rm.Id)
+
+	assert.Error(t, rm.SetID("not-a-number"), "a genuinely malformed id must still be rejected")
 }
 
 // TestGetItemsByGachaponIdPaginates drives GET /gachapons/{gachaponId}/items
@@ -143,4 +214,40 @@ func TestGetItemsByGachaponIdAndTierPaginates(t *testing.T) {
 		require.NotNil(t, doc.Meta)
 		assert.EqualValues(t, 2, doc.Meta["total"], "must exclude the rare-tier row")
 	})
+}
+
+// TestCreateItemForNonExistentGachaponIs404 drives
+// POST /gachapons/{gachaponId}/items through the real resource router for a
+// gachaponId that has no backing pool row. handleCreateItem must map the
+// resulting gorm.ErrRecordNotFound to 404, matching handleUpdateItem's
+// not-found handling, rather than falling through to a generic 500.
+func TestCreateItemForNonExistentGachaponIs404(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, Migration, gachapon.Migration)
+	tenantId := uuid.New()
+
+	srv := httptest.NewServer(setupItemRouter(db))
+	defer srv.Close()
+
+	body, err := jsonapi.Marshal(RestModel{
+		GachaponId: "no-such-gachapon",
+		ItemId:     2000000,
+		Quantity:   1,
+		Tier:       "common",
+	})
+	require.NoError(t, err)
+
+	url := fmt.Sprintf("%s/gachapons/no-such-gachapon/items", srv.URL)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("TENANT_ID", tenantId.String())
+	req.Header.Set("REGION", "GMS")
+	req.Header.Set("MAJOR_VERSION", "83")
+	req.Header.Set("MINOR_VERSION", "1")
+
+	resp, err := (&http.Client{}).Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }

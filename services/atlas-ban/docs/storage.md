@@ -32,6 +32,25 @@
 | failure_reason | string | NOT NULL, DEFAULT '' |
 | created_at | time.Time | GORM managed |
 
+### reports
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | uuid | PRIMARY KEY (surrogate, generated in Go at create time) |
+| tenant_id | uuid | NOT NULL, part of composite index idx_reports_tenant_status |
+| kind | string | NOT NULL (`sue` or `claim`) |
+| reporter_id | uint32 | NOT NULL |
+| reporter_name | string | NOT NULL |
+| accused_id | uint32 | NOT NULL |
+| accused_name | string | NOT NULL |
+| reason_type | byte | NOT NULL |
+| description | text | NOT NULL |
+| chat_log | text | nullable (nil for `sue` reports) |
+| server_transcript | jsonb | nullable marshaled `[]TranscriptLine` snapshot; nil when atlas-messages was unreachable at creation |
+| status | string | NOT NULL, DEFAULT 'open', part of composite index idx_reports_tenant_status |
+| created_at | time.Time | GORM managed |
+| updated_at | time.Time | GORM managed |
+
 ## Relationships
 
 None.
@@ -51,7 +70,13 @@ Primary key on `id` column (auto-generated).
 | idx_login_history_hwid | hwid |
 | idx_login_history_created_at | created_at |
 
+### reports
+
+| Index | Column |
+|-------|--------|
+| idx_reports_tenant_status | (tenant_id, status) composite, backs GetByTenant/GetByStatus filtering |
+
 ## Migration Rules
 
-- Migration is performed via GORM AutoMigrate on Entity structs for both bans and login_history tables
+- Migration is performed via GORM AutoMigrate on Entity structs for the bans, login_history, and reports tables
 - Schema changes are applied automatically on service startup

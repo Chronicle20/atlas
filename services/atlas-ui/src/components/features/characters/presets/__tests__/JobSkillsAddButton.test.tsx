@@ -2,7 +2,11 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { JOB_LIST, type JobEntry } from "@/lib/jobs/job-advancement-tree";
+import { FIXTURE_JOBS_SORTED } from "@/lib/jobs/__tests__/job-graph-fixtures";
+import type {
+  PresetJobOption,
+  PresetJobOptionsResult,
+} from "@/lib/hooks/usePresetJobOptions";
 
 const getSkillsByJobIdMock = vi.fn();
 vi.mock("@/services/api/jobs.service", () => ({
@@ -21,10 +25,15 @@ vi.mock("@/context/tenant-context", () => ({
 }));
 
 // Version-gated option list — mocked to a controlled set (see JobCombobox test).
-const optionsMock = vi.fn<() => JobEntry[]>();
+const optionsMock = vi.fn<() => PresetJobOptionsResult>();
 vi.mock("@/lib/hooks/usePresetJobOptions", () => ({
   usePresetJobOptions: () => optionsMock(),
 }));
+
+/** Shape a usePresetJobOptions success result from a plain option list. */
+function loaded(options: PresetJobOption[]): PresetJobOptionsResult {
+  return { options, isPending: false, isError: false };
+}
 
 import { JobSkillsAddButton } from "../JobSkillsAddButton";
 
@@ -43,7 +52,7 @@ function renderButton(
 
 beforeEach(() => {
   getSkillsByJobIdMock.mockReset();
-  optionsMock.mockReturnValue(JOB_LIST);
+  optionsMock.mockReturnValue(loaded(FIXTURE_JOBS_SORTED));
 });
 
 describe("JobSkillsAddButton", () => {
@@ -82,6 +91,59 @@ describe("JobSkillsAddButton", () => {
   });
 
   it("accepts a numeric id for a job not in the tenant's set", async () => {
+    getSkillsByJobIdMock.mockResolvedValue([90000]);
+    const onAddMany = vi.fn();
+    renderButton({ onAddMany });
+    await userEvent.click(screen.getByRole("button", { name: /job skills/i }));
+    await userEvent.type(
+      screen.getByPlaceholderText(/add all skills for a job/i),
+      "99999",
+    );
+    await userEvent.click(
+      await screen.findByRole("option", {
+        name: /add all skills for job 99999/i,
+      }),
+    );
+    await waitFor(() =>
+      expect(getSkillsByJobIdMock).toHaveBeenCalledWith(99999),
+    );
+    expect(onAddMany).toHaveBeenCalledWith([90000]);
+  });
+
+  it("shows a loading affordance, not 'No matches', while options are pending", async () => {
+    optionsMock.mockReturnValue({
+      options: [],
+      isPending: true,
+      isError: false,
+    });
+    renderButton();
+    await userEvent.click(screen.getByRole("button", { name: /job skills/i }));
+    expect(screen.queryByText(/no matches/i)).toBeNull();
+    expect(
+      screen.getByText(/loading this tenant's job list/i),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a load-failure message, not 'No matches', when availability errors", async () => {
+    optionsMock.mockReturnValue({
+      options: [],
+      isPending: false,
+      isError: true,
+    });
+    renderButton();
+    await userEvent.click(screen.getByRole("button", { name: /job skills/i }));
+    expect(screen.queryByText(/no matches/i)).toBeNull();
+    expect(
+      screen.getByText(/couldn't load this tenant's job list/i),
+    ).toBeInTheDocument();
+  });
+
+  it("still accepts manual numeric id entry while options are pending", async () => {
+    optionsMock.mockReturnValue({
+      options: [],
+      isPending: true,
+      isError: false,
+    });
     getSkillsByJobIdMock.mockResolvedValue([90000]);
     const onAddMany = vi.fn();
     renderButton({ onAddMany });

@@ -6,3 +6,5 @@ ida:
     function: CField::SendTransferFieldRequest
     address: "0x4c5733"
     decompile_sha256: 457194595e218acd9e7ed88b2e19ea8285fde075809dc839e8db9806031871b0
+verifies:
+    - libs/atlas-packet/field/serverbound/change_test.go#TestChangeByteOutputV48

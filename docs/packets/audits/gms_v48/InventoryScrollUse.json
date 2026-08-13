@@ -1,7 +1,7 @@
 {
   "WriterName": "InventoryScrollUse",
   "IDAName": "CWvsContext::SendUpgradeItemUseRequest",
-  "Address": "",
+  "Address": "0x70da60",
   "Variant": "GMS/v48",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/inventory/serverbound/scroll_use.go",
@@ -10,37 +10,37 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 3,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
+      "IDAOp": 1,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,
@@ -48,10 +48,10 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

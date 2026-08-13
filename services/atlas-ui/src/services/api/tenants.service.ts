@@ -5,6 +5,7 @@ import {
   type QueryOptions,
 } from "@/lib/api/query-params";
 import type { ApiSingleResponse } from "@/types/api/responses";
+import type { SocketConfig } from "@/types/models/socket";
 
 const BASIC_PATH = "/api/tenants";
 const CONFIG_PATH = "/api/configurations/tenants";
@@ -99,21 +100,7 @@ interface TenantConfigAttributes {
     npcId: number;
     impl: string;
   }[];
-  socket: {
-    handlers: {
-      opCode: string;
-      validator: string;
-      handler: string;
-      options: unknown;
-      services?: string[];
-    }[];
-    writers: {
-      opCode: string;
-      writer: string;
-      options: unknown;
-      services?: string[];
-    }[];
-  };
+  socket: SocketConfig;
   worlds: {
     name: string;
     flag: string;
@@ -131,6 +118,15 @@ interface TenantConfigAttributes {
         templateId: number;
         hours: number;
       }[];
+    };
+    /**
+     * Cash item template ids that open as a Cash Shop Surprise box. An empty
+     * or absent list is NOT "the feature is off" — atlas-cashshop falls back
+     * to the stock box 5222000 (configuration/registry.go
+     * GetSurpriseBoxTemplateIds), so readers must apply the same fallback.
+     */
+    surprise?: {
+      boxTemplateIds?: number[];
     };
   };
 }
@@ -186,6 +182,7 @@ function sortTenantConfig(config: TenantConfig): TenantConfig {
     attributes: {
       ...config.attributes,
       socket: {
+        ...config.attributes.socket,
         handlers: [...config.attributes.socket.handlers].sort(
           (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16),
         ),
@@ -273,6 +270,18 @@ export const tenantsService = {
       options,
     );
     return sortTenantConfig(config);
+  },
+
+  /**
+   * Sparse read of every tenant configuration, for the Packet Matrix's tenant
+   * columns. READ-ONLY - see templatesService.getSocketMatrix. Not routed
+   * through sortTenantConfig: that reorders handlers/writers for display,
+   * which the matrix does on its own, and skipping it here means the sparse
+   * response passes through untouched (including socket.unsupported).
+   */
+  async getSocketMatrix(options?: ServiceOptions): Promise<TenantConfig[]> {
+    const url = `${CONFIG_PATH}?fields[tenants]=region,majorVersion,minorVersion,socket`;
+    return api.getList<TenantConfig>(url, options);
   },
 
   async createTenantConfiguration(

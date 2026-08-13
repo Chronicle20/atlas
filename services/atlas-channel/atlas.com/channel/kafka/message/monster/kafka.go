@@ -18,6 +18,8 @@ const (
 	CommandTypeUseBasicAttack = "USE_BASIC_ATTACK"
 	CommandTypeDrainMp        = "DRAIN_MP"
 	CommandTypeKill           = "KILL"
+	CommandTypeClearAggro     = "CLEAR_AGGRO"
+	CommandTypeForceControl   = "FORCE_CONTROL"
 )
 
 type DamageFriendlyCommandBody struct {
@@ -102,6 +104,25 @@ type KillCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 }
 
+// ClearAggroCommandBody asks atlas-monsters to fully wipe a monster's
+// accumulated damage-aggro table — every character's entry, not a decay toward
+// the aggro floor. Deliberately EMPTY (FR-4.3): the command is orthogonal and
+// carries nothing magnet-specific, and an empty body cannot collide with a
+// sibling body's field types on this shared, fan-to-every-handler topic.
+type ClearAggroCommandBody struct{}
+
+// ForceControlCommandBody asks atlas-monsters to hand a monster's controller to
+// a named character, bypassing the normal picker election, and to set the
+// controller-has-aggro flag so the resulting START_CONTROL drives
+// writer.StartControlMonsterBody(m, true).
+//
+// characterId is the only field, and `characterId uint32` already appears with
+// that exact name and type in DamageCommandBody, KillCommandBody and the
+// catch body, so it introduces no unmarshal collision on the shared topic.
+type ForceControlCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
 const (
 	EnvEventTopicStatus = "EVENT_TOPIC_MONSTER_STATUS"
 
@@ -118,6 +139,18 @@ const (
 	EventStatusAggroChanged     = "AGGRO_CHANGED"
 	EventStatusNextSkillDecided = "NEXT_SKILL_DECIDED"
 	EventStatusMpChanged        = "MP_CHANGED"
+	EventStatusCaught           = "CAUGHT"
+	EventStatusCatchFailed      = "CATCH_FAILED"
+
+	// CatchCauseSpeciesMismatch / CatchCauseHpTooHigh / CatchCauseRollFailed /
+	// CatchCauseUnresolved are the internal failure causes atlas-monsters emits
+	// on CATCH_FAILED. The mapping onto the client's wire reason byte is owned
+	// here in atlas-channel (DOM-25) -- see bridleFailReason in
+	// kafka/consumer/monster/consumer.go.
+	CatchCauseSpeciesMismatch = "SPECIES_MISMATCH"
+	CatchCauseHpTooHigh       = "HP_TOO_HIGH"
+	CatchCauseRollFailed      = "ROLL_FAILED"
+	CatchCauseUnresolved      = "UNRESOLVED"
 
 	DamageSourceCharacterAttack = "CHARACTER_ATTACK"
 	DamageSourceMonsterAttack   = "MONSTER_ATTACK"
@@ -164,11 +197,16 @@ type StatusEventStopControlBody struct {
 }
 
 type StatusEventDamagedBody struct {
-	X             int16         `json:"x"`
-	Y             int16         `json:"y"`
-	ObserverId    uint32        `json:"observerId"`
-	ActorId       uint32        `json:"actorId"`
-	Boss          bool          `json:"boss"`
+	X          int16  `json:"x"`
+	Y          int16  `json:"y"`
+	ObserverId uint32 `json:"observerId"`
+	ActorId    uint32 `json:"actorId"`
+	Boss       bool   `json:"boss"`
+	// Damage is the amount THIS event applied. DamageEntries is the monster's
+	// running per-character total (kill credit / drop ownership) -- reading its
+	// last element as "the damage" reports a cumulative figure, which is what
+	// this field exists to prevent.
+	Damage        uint32        `json:"damage"`
 	DamageSource  string        `json:"damageSource"`
 	DamageEntries []DamageEntry `json:"damageEntries"`
 }
@@ -241,4 +279,20 @@ type StatusEventMpChangedBody struct {
 	Reason         string `json:"reason"`
 	Amount         uint32 `json:"amount"`
 	MonsterMpAfter uint32 `json:"monsterMpAfter"`
+}
+
+// StatusEventCaughtBody carries the successful outcome of a bridle
+// (taming-item) capture attempt.
+type StatusEventCaughtBody struct {
+	CharacterId uint32 `json:"characterId"`
+	ItemId      uint32 `json:"itemId"`
+}
+
+// StatusEventCatchFailedBody carries a failed bridle capture attempt. Cause
+// is one of the Catch cause constants above; the wire-reason mapping is
+// resolved in atlas-channel, never emitted by atlas-monsters (DOM-25).
+type StatusEventCatchFailedBody struct {
+	CharacterId uint32 `json:"characterId"`
+	ItemId      uint32 `json:"itemId"`
+	Cause       string `json:"cause"`
 }

@@ -1,0 +1,184 @@
+package monster
+
+import (
+	"atlas-monsters/monster/consumable"
+	"crypto/rand"
+	"math"
+	"math/big"
+)
+
+// testConsumableLookup is a test-only override for the catch-item data lookup,
+// mirroring testInformationLookup. Nil in production.
+var testConsumableLookup func(itemId uint32) (consumable.Model, error)
+
+// testCatchRoll is a test-only override for the probability roll. Nil in
+// production, where rollCatch uses crypto/rand.
+var testCatchRoll func(chance uint32) (bool, error)
+
+// effectiveCatchChance applies bridlePropChg as a ONE-SHOT multiplier on
+// bridleProp, clamped to 100 (design assumption A-2). Both values are
+// server-side WZ data the client never reads, so no IDB can settle this; a
+// per-attempt escalation was rejected because it would need per-(character,
+// monster) state nothing else in the codebase keeps.
+//
+// gated reports whether a roll applies at all: prop == 0 means the item is
+// deterministic once species and HP pass (FR-3.5) and the caller must NOT
+// roll. When gated is true, chance is the computed percentage and MAY itself
+// be 0 (e.g. a low prop multiplied by a small 0<chg<1) — that is a real,
+// near-zero chance that must still go through rollCatch and therefore
+// ordinarily lose, not a second "no gate" signal. Conflating "no gate" with
+// "computed a 0% chance" would invert a near-zero chance into a guaranteed
+// catch, which is why this returns two values instead of overloading 0.
+func effectiveCatchChance(prop uint32, chg float64) (chance uint32, gated bool) {
+	if prop == 0 {
+		return 0, false
+	}
+	if chg <= 0 {
+		return minChance(prop), true
+	}
+	return minChance(uint32(math.Round(float64(prop) * chg))), true
+}
+
+func minChance(v uint32) uint32 {
+	if v > 100 {
+		return 100
+	}
+	return v
+}
+
+// rollCatch draws [0,100) from a CSPRNG and reports whether it beat the chance,
+// the same shape rollReward uses in atlas-consumables.
+func rollCatch(chance uint32) (bool, error) {
+	if testCatchRoll != nil {
+		return testCatchRoll(chance)
+	}
+	if chance >= 100 {
+		return true, nil
+	}
+	n, err := rand.Int(rand.Reader, big.NewInt(100))
+	if err != nil {
+		return false, err
+	}
+	return uint32(n.Int64()) < chance, nil
+}
+
+// catchHpGatePasses reports whether the monster is weak enough. mobHP is a
+// PERCENTAGE of max HP (design assumption A-1 — the client never performs this
+// check, so it cannot be read from any IDB). The comparison is cross-multiplied
+// precisely so integer truncation cannot let a full-HP monster through at
+// mobHP < 100: hp <= maxHp * mobHP / 100 becomes hp * 100 <= maxHp * mobHP.
+// A zero mobHP means no gate.
+func catchHpGatePasses(hp uint32, maxHp uint32, mobHP uint32) bool {
+	if mobHP == 0 {
+		return true
+	}
+	return uint64(hp)*100 <= uint64(maxHp)*uint64(mobHP)
+}
+
+// Catch resolves a bridle (catch-item) capture attempt. atlas-consumables
+// validated the ITEM and reserved it before publishing the command; every
+// monster-state check happens here, exactly as Kill re-checks alive+boss
+// rather than trusting the caller. Unlike Kill, though, Catch is NOT allowed
+// to silently drop once that reservation exists: every exit reached after the
+// initial monster lookup emits either a success triple or a failure pair, so
+// atlas-consumables can always resolve the reservation and the channel can
+// always unlock the client (plan amendments, rounds 2-3 — this deliberately
+// supersedes the brief's Kill-style "data lookup failed: nothing at all"
+// silent-drop text, which assumed no reservation was in flight).
+//
+// Emission contract:
+//   - success: CATCH_RESOLVED(true) -> CAUGHT -> DESTROYED. The economic
+//     outcome goes first so it is the first thing attempted after the claim.
+//   - a validation check failed (species mismatch, HP gate, lost roll):
+//     CATCH_RESOLVED(false, cause) + CATCH_FAILED(cause). Nothing is removed
+//     and no KILLED/DESTROYED fires — a catch awards no experience, rolls no
+//     drops, and emits no death events (FR-3.6).
+//   - monster gone, claim lost, catch-item lookup failed, or the roll or the
+//     claim itself errored: CATCH_RESOLVED(false, UNRESOLVED) +
+//     CATCH_FAILED(UNRESOLVED). The resolved event is what cancels the
+//     caller's reservation, and the channel renders no failure packet for
+//     UNRESOLVED, only the unlock. A redelivery is harmless because the
+//     caller's once-handler has already deregistered.
+//   - there is no remaining silent-drop exit: every return statement in this
+//     function, including the very first (monster not found or already
+//     dead), goes through emitCatchUnresolved/emitCatchFailure or the
+//     success triple before returning. atlas-consumables cannot receive a
+//     CATCH command whose reservation is never resolved one way or the
+//     other.
+func (p *ProcessorImpl) Catch(uniqueId uint32, characterId uint32, itemId uint32) {
+	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
+	if err != nil || !m.Alive() {
+		p.l.Debugf("CATCH: monster [%d] not found or already dead; reporting unresolved for character [%d].", uniqueId, characterId)
+		p.emitCatchUnresolved(uniqueId, characterId, itemId)
+		return
+	}
+
+	var ci consumable.Model
+	var ciErr error
+	if testConsumableLookup != nil {
+		ci, ciErr = testConsumableLookup(itemId)
+	} else {
+		ci, ciErr = consumable.NewProcessor(p.l, p.ctx).GetById(itemId)
+	}
+	if ciErr != nil {
+		p.l.WithError(ciErr).Errorf("CATCH: catch-item [%d] lookup failed; reporting unresolved for character [%d].", itemId, characterId)
+		p.emitCatchFailure(m, characterId, itemId, CatchCauseUnresolved)
+		return
+	}
+
+	if m.MonsterId() != ci.MonsterId() {
+		p.l.Debugf("CATCH: item [%d] targets mob [%d] but monster [%d] is mob [%d].", itemId, ci.MonsterId(), uniqueId, m.MonsterId())
+		p.emitCatchFailure(m, characterId, itemId, CatchCauseSpeciesMismatch)
+		return
+	}
+	if !catchHpGatePasses(m.Hp(), m.MaxHp(), ci.MonsterHp()) {
+		p.l.Debugf("CATCH: monster [%d] hp [%d]/[%d] above the [%d]%% gate for item [%d].", uniqueId, m.Hp(), m.MaxHp(), ci.MonsterHp(), itemId)
+		p.emitCatchFailure(m, characterId, itemId, CatchCauseHpTooHigh)
+		return
+	}
+	if chance, gated := effectiveCatchChance(ci.BridleProp(), ci.BridlePropChg()); gated {
+		won, rerr := rollCatch(chance)
+		if rerr != nil {
+			p.l.WithError(rerr).Errorf("CATCH: roll errored for item [%d]; reporting unresolved for character [%d].", itemId, characterId)
+			p.emitCatchFailure(m, characterId, itemId, CatchCauseUnresolved)
+			return
+		}
+		if !won {
+			p.l.Debugf("CATCH: monster [%d] roll failed at [%d]%% for item [%d].", uniqueId, chance, itemId)
+			p.emitCatchFailure(m, characterId, itemId, CatchCauseRollFailed)
+			return
+		}
+	}
+
+	claimed, ok, cerr := GetMonsterRegistry().ClaimMonster(p.ctx, p.t, uniqueId)
+	if cerr != nil {
+		p.l.WithError(cerr).Errorf("CATCH: claim errored for monster [%d]; reporting unresolved for character [%d].", uniqueId, characterId)
+		p.emitCatchFailure(m, characterId, itemId, CatchCauseUnresolved)
+		return
+	}
+	if !ok {
+		p.l.Debugf("CATCH: monster [%d] claim lost by character [%d].", uniqueId, characterId)
+		p.emitCatchUnresolved(uniqueId, characterId, itemId)
+		return
+	}
+
+	GetDropTimerRegistry().Unregister(p.ctx, p.t, uniqueId)
+	GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, uniqueId)
+
+	_ = p.emit(EnvEventTopicMonsterCatch, catchResolvedEventProvider(claimed, characterId, itemId, true, ""))
+	_ = p.emit(EnvEventTopicMonsterStatus, caughtStatusEventProvider(claimed, characterId, itemId))
+	_ = p.emit(EnvEventTopicMonsterStatus, destroyedStatusEventProvider(claimed))
+}
+
+func (p *ProcessorImpl) emitCatchFailure(m Model, characterId uint32, itemId uint32, cause string) {
+	_ = p.emit(EnvEventTopicMonsterCatch, catchResolvedEventProvider(m, characterId, itemId, false, cause))
+	_ = p.emit(EnvEventTopicMonsterStatus, catchFailedStatusEventProvider(m, characterId, itemId, cause))
+}
+
+// emitCatchUnresolved reports a lost race. The monster model is gone, so the
+// events carry a bare field-less model built from the uniqueId alone; the
+// consumers key on characterId and itemId, not on the field.
+func (p *ProcessorImpl) emitCatchUnresolved(uniqueId uint32, characterId uint32, itemId uint32) {
+	m := Model{uniqueId: uniqueId}
+	p.emitCatchFailure(m, characterId, itemId, CatchCauseUnresolved)
+}

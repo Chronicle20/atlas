@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { PresetCard } from "../PresetCard";
 import { DEFAULT_PRESET_ATTRIBUTES } from "../presetEditorState";
+import { FIXTURE_JOB_TREE } from "@/lib/jobs/__tests__/job-graph-fixtures";
 
 vi.mock("@/context/tenant-context", () => ({
   useTenant: () => ({
@@ -11,6 +12,13 @@ vi.mock("@/context/tenant-context", () => ({
       attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
     },
   }),
+}));
+// The job badge's name comes from the tenant's job graph via
+// useJobNameLookup; mock it to the structural fixture rather than standing
+// up a QueryClientProvider for a component test that isn't about the graph.
+vi.mock("@/lib/hooks/api/useJobGraph", () => ({
+  useJobNameLookup: () => (id: number) =>
+    FIXTURE_JOB_TREE[id]?.name ?? `Job ${id}`,
 }));
 vi.mock("@/lib/hooks/useCharacterImage", () => ({
   useCharacterImage: () => ({

@@ -86,6 +86,36 @@ export interface InstanceRoutesSeedStatus {
   updatedAt: string | null;
 }
 
+export type IngestPhase =
+  "none" | "running" | "succeeded" | "failed" | "stuck" | "unknown";
+
+export type IngestWorkerState =
+  "pending" | "running" | "succeeded" | "failed" | "skipped";
+
+export interface IngestRunWorker {
+  name: string;
+  state: IngestWorkerState;
+  startedAt: string | null;
+  finishedAt: string | null;
+  error: string | null;
+}
+
+export interface IngestRun {
+  runId: string;
+  jobName: string;
+  scope: string;
+  region: string;
+  version: string;
+  tenant?: string;
+  phase: IngestPhase;
+  startedAt: string | null;
+  finishedAt: string | null;
+  reason: string | null;
+  workersTotal: number;
+  workersComplete: number;
+  workers: IngestRunWorker[];
+}
+
 // Shape returned by libs/atlas-seeder's GET /<prefix>/seed/status handler.
 // The handler emits a plain JSON object (not a JSON:API envelope), so we
 // read it directly. Per-service status objects (DropsSeedStatus, etc.)
@@ -255,6 +285,13 @@ class SeedService {
     );
   }
 
+  async getIngestRun(tenant: Tenant): Promise<IngestRun> {
+    return fetchJsonApi<IngestRun>(
+      "/api/data/process?scope=tenant",
+      tenantHeaders(tenant),
+    );
+  }
+
   // Canonical (deployment-wide) variants: no Tenant anywhere — headers are
   // synthesized from the explicit region/version selection. This is what lets
   // an operator publish canonical data for a version with no live tenant.
@@ -281,6 +318,15 @@ class SeedService {
   async getCanonicalDataStatus(sel: CanonicalSelection): Promise<DataStatus> {
     return fetchJsonApi<DataStatus>(
       "/api/data/status?scope=shared",
+      canonicalHeaders(sel),
+    );
+  }
+
+  // canonicalHeaders already bakes in X-Atlas-Operator: 1, which the shared
+  // scope requires — one construction path, no drift.
+  async getCanonicalIngestRun(sel: CanonicalSelection): Promise<IngestRun> {
+    return fetchJsonApi<IngestRun>(
+      "/api/data/process?scope=shared",
       canonicalHeaders(sel),
     );
   }

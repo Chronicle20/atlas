@@ -42,6 +42,7 @@ import {
   useRunDataProcessing,
   useWzInputStatus,
   useDataStatus,
+  useIngestRun,
   useDropsSeedStatus,
   useGachaponsSeedStatus,
   useNpcConversationsSeedStatus,
@@ -55,6 +56,7 @@ import {
   useInstanceRoutesSeedStatus,
 } from "@/lib/hooks/api/useSeed";
 import { SetupRow } from "@/components/features/setup/SetupRow";
+import { IngestProgressPanel } from "@/components/features/setup/IngestProgressPanel";
 import {
   formatCount,
   pluralize,
@@ -84,6 +86,7 @@ export function SetupPage() {
 
   const wzInput = useWzInputStatus();
   const dataStatus = useDataStatus();
+  const ingestRun = useIngestRun();
 
   const dropsSeed = useDropsSeedStatus();
   const gachaponsSeed = useGachaponsSeedStatus();
@@ -396,6 +399,11 @@ export function SetupPage() {
                 )}
               </Button>
             }
+          />
+
+          <IngestProgressPanel
+            run={ingestRun.data}
+            isError={ingestRun.isError}
           />
 
           {showRestoreRow && (

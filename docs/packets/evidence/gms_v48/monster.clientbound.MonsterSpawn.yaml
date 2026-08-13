@@ -1,0 +1,11 @@
+packet: monster/clientbound/MonsterSpawn
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CMobPool::OnMobEnterField
+    address: "0x559445"
+    decompile_sha256: 2bf9a370c19859ab77d1a14bf7ce7464156ad041558ab4050353645e17337463
+verifies:
+    - libs/atlas-packet/monster/clientbound/v48_test.go#TestMonsterSpawnBytesV48
+    - libs/atlas-packet/monster/clientbound/v48_test.go#TestMonsterSpawnTeamEffectItemBoundary

@@ -3,8 +3,10 @@ package redis
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -802,5 +804,130 @@ func TestCompositeKey(t *testing.T) {
 	expected := "world1:channel2:100000000"
 	if key != expected {
 		t.Fatalf("expected %s, got %s", expected, key)
+	}
+}
+
+func TestRegistry_UpdateWithTTL_RetainsTTL(t *testing.T) {
+	client, mr := setupTestRedis(t)
+	ctx := context.Background()
+
+	r := NewRegistry[string, string](client, "test", func(k string) string { return k })
+	if err := r.PutWithTTL(ctx, "key1", "value1", time.Hour); err != nil {
+		t.Fatalf("PutWithTTL failed: %v", err)
+	}
+
+	got, err := r.UpdateWithTTL(ctx, "key1", time.Hour, func(v string) string { return v + "-updated" })
+	if err != nil {
+		t.Fatalf("UpdateWithTTL failed: %v", err)
+	}
+	if got != "value1-updated" {
+		t.Fatalf("expected value1-updated, got %s", got)
+	}
+
+	stored, err := r.Get(ctx, "key1")
+	if err != nil {
+		t.Fatalf("Get failed: %v", err)
+	}
+	if stored != "value1-updated" {
+		t.Fatalf("stored value is %s, want value1-updated", stored)
+	}
+
+	// The whole point: SET without an expiry option clears the TTL, so an
+	// UpdateWithTTL that forgot to pass ttl would leave this at 0.
+	if ttl := mr.TTL(namespacedKey("test", "key1")); ttl <= 0 {
+		t.Fatalf("TTL after UpdateWithTTL is %v, want > 0", ttl)
+	}
+}
+
+// TestRegistry_Update_ClearsTTL pins the defect UpdateWithTTL exists to work
+// around. If a future refactor makes Update preserve TTLs this test fails
+// loudly rather than silently changing behaviour for every existing caller.
+func TestRegistry_Update_ClearsTTL(t *testing.T) {
+	client, mr := setupTestRedis(t)
+	ctx := context.Background()
+
+	r := NewRegistry[string, string](client, "test", func(k string) string { return k })
+	if err := r.PutWithTTL(ctx, "key1", "value1", time.Hour); err != nil {
+		t.Fatalf("PutWithTTL failed: %v", err)
+	}
+	if _, err := r.Update(ctx, "key1", func(v string) string { return v + "-updated" }); err != nil {
+		t.Fatalf("Update failed: %v", err)
+	}
+	if ttl := mr.TTL(namespacedKey("test", "key1")); ttl != 0 {
+		t.Fatalf("TTL after Update is %v, want 0 (Update clears TTLs)", ttl)
+	}
+}
+
+func TestRegistry_UpdateWithTTL_NotFound(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	ctx := context.Background()
+
+	r := NewRegistry[string, string](client, "test", func(k string) string { return k })
+	_, err := r.UpdateWithTTL(ctx, "missing", time.Hour, func(v string) string { return v })
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("got %v, want ErrNotFound", err)
+	}
+}
+
+// TestRemoveExisting_ExactlyOneWinner is the exclusivity contract: N goroutines
+// racing to delete the same key must see exactly one true. Redis DEL returns the
+// number of keys removed, so the winner is decided server-side.
+func TestRemoveExisting_ExactlyOneWinner(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("miniredis: %v", err)
+	}
+	defer mr.Close()
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+
+	r := NewRegistry[string, string](client, "claim-test", func(s string) string { return s })
+	ctx := context.Background()
+	if err := r.Put(ctx, "k", "v"); err != nil {
+		t.Fatalf("put: %v", err)
+	}
+
+	const racers = 16
+	var wg sync.WaitGroup
+	results := make([]bool, racers)
+	wg.Add(racers)
+	for i := 0; i < racers; i++ {
+		go func(i int) {
+			defer wg.Done()
+			ok, rerr := r.RemoveExisting(ctx, "k")
+			if rerr != nil {
+				t.Errorf("racer %d: %v", i, rerr)
+			}
+			results[i] = ok
+		}(i)
+	}
+	wg.Wait()
+
+	won := 0
+	for _, ok := range results {
+		if ok {
+			won++
+		}
+	}
+	if won != 1 {
+		t.Fatalf("RemoveExisting winners = %d, want exactly 1", won)
+	}
+}
+
+// TestRemoveExisting_MissingKey reports false without error.
+func TestRemoveExisting_MissingKey(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("miniredis: %v", err)
+	}
+	defer mr.Close()
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+
+	r := NewRegistry[string, string](client, "claim-test", func(s string) string { return s })
+	ok, err := r.RemoveExisting(context.Background(), "absent")
+	if err != nil {
+		t.Fatalf("RemoveExisting: %v", err)
+	}
+	if ok {
+		t.Fatal("RemoveExisting on a missing key = true, want false")
 	}
 }

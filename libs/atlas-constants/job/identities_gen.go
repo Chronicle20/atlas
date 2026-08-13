@@ -38,6 +38,11 @@ const (
 	Bandit                   Identity = 420
 	ChiefBandit              Identity = 421
 	Shadower                 Identity = 422
+	BladeRecruit             Identity = 430
+	BladeAcolyte             Identity = 431
+	BladeSpecialist          Identity = 432
+	BladeLord                Identity = 433
+	BladeMaster              Identity = 434
 	Pirate                   Identity = 500
 	Brawler                  Identity = 510
 	Marauder                 Identity = 511
@@ -123,6 +128,11 @@ var identityNames = map[Identity]string{
 	Bandit:                   "Bandit",
 	ChiefBandit:              "Chief Bandit",
 	Shadower:                 "Shadower",
+	BladeRecruit:             "Blade Recruit",
+	BladeAcolyte:             "Blade Acolyte",
+	BladeSpecialist:          "Blade Specialist",
+	BladeLord:                "Blade Lord",
+	BladeMaster:              "Blade Master",
 	Pirate:                   "Pirate",
 	Brawler:                  "Brawler",
 	Marauder:                 "Marauder",

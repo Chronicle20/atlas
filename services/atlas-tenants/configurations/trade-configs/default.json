@@ -1,0 +1,18 @@
+{
+  "id": "trade-configs",
+  "type": "trade-configs",
+  "attributes": {
+    "taxEnabled": true,
+    "taxTiers": [
+      { "threshold": 100000000, "rate": 0.060 },
+      { "threshold": 25000000, "rate": 0.050 },
+      { "threshold": 10000000, "rate": 0.040 },
+      { "threshold": 5000000, "rate": 0.030 },
+      { "threshold": 1000000, "rate": 0.018 },
+      { "threshold": 100000, "rate": 0.008 }
+    ],
+    "maxStagedItems": 9,
+    "minTradeLevel": 0,
+    "attestationTimeoutSeconds": 5
+  }
+}

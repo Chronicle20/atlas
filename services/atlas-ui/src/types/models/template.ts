@@ -1,6 +1,8 @@
 // Template domain model types
 // Re-exported from lib/templates.tsx to centralize type definitions
 
+import type { SocketConfig } from "@/types/models/socket";
+
 export interface CharacterTemplate {
   jobIndex: number;
   subJobIndex: number;
@@ -72,6 +74,20 @@ export interface TemplateAttributes {
   region: string;
   majorVersion: number;
   minorVersion: number;
+  /**
+   * SHA-256 of the seed file baked into the RUNNING image for this
+   * region/version. Empty string when no such file ships. Computed
+   * server-side; ignored on write.
+   */
+  shippedRevision?: string;
+  /** SHA-256 of the persisted template content. Computed server-side. */
+  storedRevision?: string;
+  /**
+   * True when shippedRevision is non-empty and differs from storedRevision.
+   * Advisory and image-relative (NFR-4) - during a rolling update two replicas
+   * may briefly disagree - so this is never an error state.
+   */
+  seedDrift?: boolean;
   usesPin: boolean;
   characters: {
     templates: CharacterTemplate[];
@@ -81,21 +97,7 @@ export interface TemplateAttributes {
     npcId: number;
     impl: string;
   }[];
-  socket: {
-    handlers: {
-      opCode: string;
-      validator: string;
-      handler: string;
-      options: unknown;
-      services?: string[];
-    }[];
-    writers: {
-      opCode: string;
-      writer: string;
-      options: unknown;
-      services?: string[];
-    }[];
-  };
+  socket: SocketConfig;
   worlds: {
     name: string;
     flag: string;
@@ -113,6 +115,10 @@ export interface TemplateAttributes {
         templateId: number;
         hours: number;
       }[];
+    };
+    /** Cash item template ids that open as a Cash Shop Surprise box. */
+    surprise?: {
+      boxTemplateIds?: number[];
     };
   };
 }

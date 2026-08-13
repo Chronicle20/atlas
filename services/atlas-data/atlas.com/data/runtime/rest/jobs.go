@@ -1,6 +1,8 @@
 package rest
 
 import (
+	"atlas-data/data/workers"
+	"atlas-data/ingestrun"
 	"context"
 	"fmt"
 	"math/rand"
@@ -8,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -31,31 +34,48 @@ const jobTemplateConfigMapName = "atlas-data-ingest-job-template"
 // definition of a batchv1.Job whose spec is copied into rendered Jobs.
 const jobTemplateConfigMapKey = "job.yaml"
 
-// ingestJobNamespace is the Redis namespace used for all ingest/job-lifecycle
-// keys. The full key shape is <keyPrefix>:data-ingest:<suffix> where
-// <keyPrefix> comes from libs/atlas-redis KeyPrefix() (env-aware, e.g.
-// "atlas" on main or "<env>:atlas" on a PR overlay).
-const ingestJobNamespace = "data-ingest"
-
-// newIngestJobRegistry returns an env-global Registry for ingest job keys.
-// The Registry uses an identity keyFn so callers supply the full suffix
-// ("scope:region:ver" or "scope:region:ver:updatedAt") directly.
-func newIngestJobRegistry(rdb *goredis.Client) *redis.Registry[string, string] {
-	return redis.NewRegistry[string, string](rdb, ingestJobNamespace, func(s string) string { return s })
+// IngestRegistries bundles the two Redis registries the /data/process handlers
+// read and write. They are constructed from the Redis client directly rather
+// than hanging off JobCreator, because the status handler must still serve the
+// stored run record when the Kubernetes client is unavailable and JobCreator
+// is therefore nil (PRD FR-4.5).
+type IngestRegistries struct {
+	// Job holds the job-name and :updatedAt heartbeat keys.
+	Job *redis.Registry[string, string]
+	// Run holds the per-run progress record.
+	Run *redis.Registry[string, ingestrun.Record]
 }
 
-// ingestJobKeySuffix returns the suffix portion of an ingest job key.
-// The full Redis key is <prefix>:data-ingest:<suffix>.
-func ingestJobKeySuffix(scope, region string, major, minor uint16) string {
-	return fmt.Sprintf("%s:%s:%d.%d", scope, region, major, minor)
+// NewIngestRegistries builds both ingest registries over one Redis client.
+// Returns nil for a nil client so callers can pass the result straight through.
+func NewIngestRegistries(rdb *goredis.Client) *IngestRegistries {
+	if rdb == nil {
+		return nil
+	}
+	return &IngestRegistries{Job: ingestrun.NewJobRegistry(rdb), Run: ingestrun.NewRunRegistry(rdb)}
 }
 
-// ingestJobKeySuffixFromLabels reconstructs the per-Job suffix from a Job's
-// labels. Returns "" if any required label is missing.
+// ingestJobKeySuffixFromLabels reconstructs the per-Job Redis key suffix from
+// a Job's labels. Returns "" if the suffix cannot be reconstructed.
+//
+// The Redis keys are built from the RAW scope ("tenants/<uuid>"), but the
+// Job's `scope` label went through sanitizeLabel, which maps '/' to '-'. The
+// raw tenant id survives unsanitized in the `tenant` label, so that is what we
+// rebuild from. Reading the `scope` label directly — as this did before
+// task-203 — produced "tenants-<uuid>:…" and silently missed the heartbeat for
+// every tenant-scope run.
 func ingestJobKeySuffixFromLabels(j *batchv1.Job) string {
-	scope, region, version := j.Labels["scope"], j.Labels["region"], j.Labels["version"]
-	if scope == "" || region == "" || version == "" {
+	scopeLabel, region, version := j.Labels["scope"], j.Labels["region"], j.Labels["version"]
+	if scopeLabel == "" || region == "" || version == "" {
 		return ""
+	}
+	scope := scopeLabel
+	if scopeLabel != "shared" {
+		tenantId := j.Labels["tenant"]
+		if tenantId == "" {
+			return ""
+		}
+		scope = "tenants/" + tenantId
 	}
 	return fmt.Sprintf("%s:%s:%s", scope, region, version)
 }
@@ -73,6 +93,9 @@ type JobCreator struct {
 	// Registry is the env-prefixed store for ingest job heartbeat keys.
 	// Nil means heartbeat publishing is disabled (compose / test paths).
 	Registry *redis.Registry[string, string]
+	// RunRegistry is the env-prefixed store for per-run progress records.
+	// Nil means run-record publishing is disabled (compose / test paths).
+	RunRegistry *redis.Registry[string, ingestrun.Record]
 	// ControllerImage is the container image the running atlas-data pod uses.
 	// Rendered Jobs inherit it so MODE=ingest binaries match the code that
 	// rendered them. Empty string falls back to the template's image (intended
@@ -120,15 +143,18 @@ func NewJobCreatorInClusterWithRedis(rdb *goredis.Client) (*JobCreator, error) {
 		// template's image untouched (sufficient for tests).
 		_ = ierr
 	}
-	var reg *redis.Registry[string, string]
-	if rdb != nil {
-		reg = newIngestJobRegistry(rdb)
+	regs := NewIngestRegistries(rdb)
+	var jobReg *redis.Registry[string, string]
+	var runReg *redis.Registry[string, ingestrun.Record]
+	if regs != nil {
+		jobReg, runReg = regs.Job, regs.Run
 	}
 	return &JobCreator{
 		K8s:             cs,
 		Namespace:       ns,
 		Template:        tmpl,
-		Registry:        reg,
+		Registry:        jobReg,
+		RunRegistry:     runReg,
 		ControllerImage: img,
 	}, nil
 }
@@ -198,22 +224,40 @@ func (j *JobCreator) Create(ctx context.Context, scope, region string, major, mi
 	if j.Template == nil {
 		return "", fmt.Errorf("job template unavailable")
 	}
-	job := renderJob(j.Template, j.Namespace, scope, region, major, minor, tenantId, traceparent, j.ControllerImage)
+	// The ingest pod has no supported way to learn its own Job name, so the
+	// run's identity is a value we mint here and inject as env. Every write
+	// from the pod is guarded on it, so an operator re-triggering an ingest
+	// while the previous pod is still alive cannot have the old pod stamp a
+	// terminal phase over the new run (design §3.1).
+	runId := uuid.NewString()
+	job := renderJob(j.Template, j.Namespace, scope, region, major, minor, tenantId, traceparent, j.ControllerImage, runId)
 	created, err := j.K8s.BatchV1().Jobs(j.Namespace).Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
 		return "", fmt.Errorf("create job: %w", err)
 	}
+	suffix := ingestrun.KeySuffix(scope, region, major, minor)
 	if j.Registry != nil {
-		suffix := ingestJobKeySuffix(scope, region, major, minor)
 		_ = j.Registry.PutWithTTL(ctx, suffix, created.Name, time.Hour)
-		_ = j.Registry.PutWithTTL(ctx, suffix+":updatedAt", time.Now().UTC().Format(time.RFC3339), time.Hour)
+		_ = j.Registry.PutWithTTL(ctx, suffix+ingestrun.HeartbeatKeySuffix, time.Now().UTC().Format(time.RFC3339), time.Hour)
+	}
+	if j.RunRegistry != nil {
+		// Initialise (or reset) the record here so a run that dies before the
+		// ingest pod's first write is still represented (PRD FR-3.2), and so
+		// startedAt is stamped by one clock — this pod's — for both the
+		// in-flight and terminal cases (design Q2).
+		rec := ingestrun.NewRecord(
+			runId, created.Name, scope, region,
+			fmt.Sprintf("%d.%d", major, minor), tenantId,
+			time.Now().UTC(), workers.RegisteredNames(),
+		)
+		_ = j.RunRegistry.PutWithTTL(ctx, suffix+ingestrun.RunKeySuffix, rec, ingestrun.RecordTTL)
 	}
 	return created.Name, nil
 }
 
 // renderJob produces a *batchv1.Job derived from template, scoped/labeled and
 // with the ingest-specific env vars injected into every container.
-func renderJob(template *batchv1.JobTemplateSpec, namespace, scope, region string, major, minor uint16, tenantId, traceparent, controllerImage string) *batchv1.Job {
+func renderJob(template *batchv1.JobTemplateSpec, namespace, scope, region string, major, minor uint16, tenantId, traceparent, controllerImage, runId string) *batchv1.Job {
 	var spec batchv1.JobSpec
 	if template != nil {
 		spec = *template.Spec.DeepCopy()
@@ -245,6 +289,9 @@ func renderJob(template *batchv1.JobTemplateSpec, namespace, scope, region strin
 	if traceparent != "" {
 		envs = append(envs, corev1.EnvVar{Name: "TRACEPARENT", Value: traceparent})
 	}
+	if runId != "" {
+		envs = append(envs, corev1.EnvVar{Name: "INGEST_RUN_ID", Value: runId})
+	}
 	// Inherit DB_NAME from the running atlas-data pod so ingest Jobs hit the
 	// same database. The Job template hardcodes DB_NAME="atlas-data" as a
 	// sensible default for single-env clusters, but PR overlays patch the
@@ -254,6 +301,16 @@ func renderJob(template *batchv1.JobTemplateSpec, namespace, scope, region strin
 	// last-wins, so appending overrides the template's default.
 	if v := os.Getenv("DB_NAME"); v != "" {
 		envs = append(envs, corev1.EnvVar{Name: "DB_NAME", Value: v})
+	}
+	// Inherit ATLAS_ENV for the same reason, and with more consequence:
+	// libs/atlas-redis derives its key prefix from it, so a Job pod without it
+	// namespaces every write as `atlas:...` while this pod reads
+	// `<env>:atlas:...`. The heartbeat then never refreshes (the Watchdog sees
+	// a Job frozen at its creation timestamp) and the run record never leaves
+	// all-pending, because both writers and the reader are addressing
+	// different keys in the same Redis.
+	if v := os.Getenv("ATLAS_ENV"); v != "" {
+		envs = append(envs, corev1.EnvVar{Name: "ATLAS_ENV", Value: v})
 	}
 
 	for i := range spec.Template.Spec.Containers {

@@ -103,8 +103,8 @@ func GetInstanceRouteStatusHandler(d *rest.HandlerDependency, c *rest.HandlerCon
 				return
 			}
 
-			ir := getInstanceRegistry()
-			instances := ir.GetInstancesByRoute(uuid.Nil, routeId)
+			p := NewProcessor(d.Logger(), d.Context())
+			instances := p.GetInstancesByRoute(routeId)
 
 			statuses := make([]InstanceStatusRestModel, 0)
 			for _, inst := range instances {

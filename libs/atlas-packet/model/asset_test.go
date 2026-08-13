@@ -310,6 +310,238 @@ func TestAssetOwnerEncodedStackable(t *testing.T) {
 	}
 }
 
+// TestAssetPetSerialNumber pins GW_ItemSlotBase::liCashItemSN for a pet. The
+// client matches the cash-shop locker entry on this value
+// (CCashShop::OnCashItemResMoveLtoSDone GMS v83 @0x47aee2 compares it against
+// GW_CashItemInfo::liSN) and binds the spawned pet to its inventory slot on it
+// (CPet::GetItemSlot @0x703af3). Emitting the Atlas pet id for a cash-purchased
+// pet is what left the withdrawn pet stuck in the locker UI.
+func TestAssetPetSerialNumber(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 83, 1)
+
+	// type(1) templateId(4) bool(1) => liCashItemSN occupies bytes [6,14).
+	const snOffset = 6
+	read := func(b []byte) uint64 {
+		var v uint64
+		for i := 7; i >= 0; i-- {
+			v = v<<8 | uint64(b[snOffset+i])
+		}
+		return v
+	}
+
+	const serial = uint64(8688106441904477350) // a real serial from the reported case
+	// The serial exceeds MaxUint32, so a pet id can never stand in for it: this
+	// also pins that it is not truncated on the way out.
+	purchased := NewAsset(true, 0, 5000012, time.Time{}).
+		SetCashId(int64(serial)).
+		SetPetInfo(1, "Mr. Roboto", 1, 100, 0).
+		SetPetSerialNumber(serial)
+	if got := purchased.PetSerialNumber(); got != serial {
+		t.Fatalf("PetSerialNumber() = %d, want %d", got, serial)
+	}
+	if got := read(purchased.Encode(l, ctx)(map[string]interface{}{})); got != serial {
+		t.Fatalf("encoded liCashItemSN = %d, want %d (not the pet id)", got, serial)
+	}
+
+	// No serial recorded (pet never came from the cash shop): fall back to the
+	// pet id so it stays addressable. There is no locker entry to match. The
+	// asset's own cashId must NOT be substituted — the pet record is the single
+	// source, and for such a pet it has no serial to give.
+	granted := NewAsset(true, 0, 5000012, time.Time{}).
+		SetCashId(999).
+		SetPetInfo(7, "Mr. Roboto", 1, 100, 0)
+	if got := granted.PetSerialNumber(); got != 7 {
+		t.Fatalf("PetSerialNumber() = %d, want the pet id 7", got)
+	}
+	if got := read(granted.Encode(l, ctx)(map[string]interface{}{})); got != 7 {
+		t.Fatalf("encoded liCashItemSN = %d, want 7", got)
+	}
+}
+
+// TestAssetPetCashItemDeadDate pins GW_ItemSlotPet::dateDead (the 8-byte
+// FILETIME at struct offset +89, GW_ItemSlotPet::RawDecode GMS v83 @0x4e4219).
+//
+// The client reads a pet as dried up iff
+// CompareFileTime(dateDead, 150842304000000000 /* 2079-01-01 */) >= 0
+// (GMS v83 sub_4E4044 @0x4E4044; CUIToolTip::GetPetDeadDate @0x8ebfde then
+// renders "The water of life has dried up"). CompareFileTime is unsigned, so
+// the MsTime zero sentinel (-1 = max FILETIME) is ABOVE the threshold and
+// reads as dead. Two invariants follow, and both are pinned here:
+//
+//  1. dateDead comes from the pet's own life clock (SetPetDeadDate), never
+//     from the cash item's Expiration.
+//  2. an unset dead date encodes as 0, not as the -1 sentinel.
+func TestAssetPetCashItemDeadDate(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 83, 1)
+
+	// type(1) templateId(4) bool(1) petId(8) dateExpire(8) name(13) level(1)
+	// closeness(2) fullness(1) => dateDead occupies bytes [39,47).
+	const deadDateOffset = 39
+	const permanentThreshold = int64(150842304000000000) // dword_AF30B0, 2079-01-01
+
+	read := func(b []byte) int64 {
+		var v int64
+		for i := 7; i >= 0; i-- {
+			v = v<<8 | int64(b[deadDateOffset+i])
+		}
+		return v
+	}
+
+	itemExpiration := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+	petDeath := time.Date(2026, 11, 6, 0, 7, 41, 0, time.UTC)
+
+	base := NewAsset(true, 0, 5000012, itemExpiration).
+		SetCashId(123).
+		SetPetInfo(42, "Mr. Roboto", 3, 100, 50)
+
+	// The sentinel this field must never emit. Pinned so the contrast below is
+	// self-evidencing: encoding MsTime(zero) here is exactly the regression.
+	if sentinel := MsTime(time.Time{}); uint64(sentinel) < uint64(permanentThreshold) {
+		t.Fatalf("MsTime zero sentinel = %d; expected it to exceed the dried-up threshold", sentinel)
+	}
+
+	// 1. No dead date recorded: must be 0 (alive), NOT the MsTime -1 sentinel.
+	unset := read(base.Encode(l, ctx)(map[string]interface{}{}))
+	if unset != 0 {
+		t.Fatalf("unset dateDead = %d, want 0", unset)
+	}
+	if unset >= permanentThreshold {
+		t.Fatalf("unset dateDead = %d reads as dried up (>= %d)", unset, permanentThreshold)
+	}
+
+	// 2. Recorded dead date wins, and it is the PET's date, not the item's.
+	dated := base.SetPetDeadDate(petDeath)
+	got := read(dated.Encode(l, ctx)(map[string]interface{}{}))
+	if got != MsTime(petDeath) {
+		t.Fatalf("dateDead = %d, want %d (pet life clock)", got, MsTime(petDeath))
+	}
+	if got == MsTime(itemExpiration) {
+		t.Fatal("dateDead must not be sourced from the cash item Expiration")
+	}
+	if got >= permanentThreshold {
+		t.Fatalf("dateDead = %d reads as dried up (>= %d)", got, permanentThreshold)
+	}
+}
+
+// TestAssetPetCashItemSkillMask pins the DOM-25 translation: the Atlas-canonical
+// petFlag mask must never reach the wire directly. It only encodes a wire bit
+// when the tenant's petSkill options table configures one for that semantic key.
+func TestAssetPetCashItemSkillMask(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 83, 1)
+	expiration := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	base := NewAsset(true, 0, 5000017, expiration).
+		SetCashId(123).
+		SetPetInfo(42, "Mr. Roboto", 3, 100, 50)
+
+	// Layout of encodePetCashItemInfo with zeroPosition=true:
+	// type(1) templateId(4) bool(1) petId(8) time(8) name(13) level(1)
+	// closeness(2) fullness(1) expiration(8) attribute(2) => skill short at offset 49.
+	const skillOffset = 49
+
+	zeroFlag := base.Encode(l, ctx)(map[string]interface{}{})
+
+	// 1. petFlag set but no petSkill table configured -> byte-identical to zero-flag encode.
+	flagged := base.SetPetFlag(2) // FlagConsumeHP (1<<1), Atlas-canonical
+	noTable := flagged.Encode(l, ctx)(map[string]interface{}{})
+	if !bytes.Equal(zeroFlag, noTable) {
+		t.Fatal("petFlag with no petSkill table must encode byte-identical to zero flag")
+	}
+
+	// 2. petFlag set with a configured table -> wire bit at the skill short.
+	withTable := flagged.Encode(l, ctx)(map[string]interface{}{
+		"petSkill": map[string]interface{}{"consumeHP": "0x20"},
+	})
+	if len(withTable) != len(zeroFlag) {
+		t.Fatalf("length changed: got %d, want %d", len(withTable), len(zeroFlag))
+	}
+	if withTable[skillOffset] != 0x20 || withTable[skillOffset+1] != 0x00 {
+		t.Errorf("skill short = %#x %#x, want 0x20 0x00", withTable[skillOffset], withTable[skillOffset+1])
+	}
+	// everything else unchanged
+	for i := range zeroFlag {
+		if i == skillOffset || i == skillOffset+1 {
+			continue
+		}
+		if withTable[i] != zeroFlag[i] {
+			t.Fatalf("byte %d changed: got %#x, want %#x", i, withTable[i], zeroFlag[i])
+		}
+	}
+
+	// 3. multiple flags OR together (autoSpeaking 1<<8 canonical -> 0x100 wire).
+	multiFlags := base.SetPetFlag(2 | 256) // FlagConsumeHP | FlagAutoSpeaking
+	multi := multiFlags.Encode(l, ctx)(map[string]interface{}{
+		"petSkill": map[string]interface{}{"consumeHP": "0x20", "autoSpeaking": "0x100"},
+	})
+	if multi[skillOffset] != 0x20 || multi[skillOffset+1] != 0x01 {
+		t.Errorf("multi skill short = %#x %#x, want 0x20 0x01", multi[skillOffset], multi[skillOffset+1])
+	}
+
+	if got := flagged.PetFlag(); got != 2 {
+		t.Errorf("PetFlag() = %d, want 2", got)
+	}
+}
+
+// TestAssetPetCashItemTrailerVersionGate pins the version-gated pet trailer
+// (GW_ItemSlotPet::RawDecode, IDA-verified): v48 (@0x49c77e) and v61
+// (@0x4b52f2) read neither remainLife nor the trailing attribute short, v72
+// adds remainLife only (@0x4d06dd), v79 (@0x4d84c4) and v83 (@0x4e4219) read
+// both. JMS is not a legacy client and keeps the full trailer. This is the
+// regression guard: every version except v48/v61/v72 must stay
+// byte-identical to today's always-full-trailer encode (57 bytes for this
+// fixture).
+func TestAssetPetCashItemTrailerVersionGate(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	expiration := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+	base := NewAsset(true, 0, 5000017, expiration).
+		SetCashId(123).
+		SetPetInfo(42, "Mr. Roboto", 3, 100, 50)
+
+	const wantV83Len = 57 // today's always-full-trailer length; pinned via a pre-change baseline run.
+
+	lengths := map[string]int{}
+	for _, v := range []struct {
+		name   string
+		region string
+		major  uint16
+	}{
+		{"v48", "GMS", 48},
+		{"v61", "GMS", 61},
+		{"v72", "GMS", 72},
+		{"v79", "GMS", 79},
+		{"v83", "GMS", 83},
+		{"v84", "GMS", 84},
+		{"v87", "GMS", 87},
+		{"v95", "GMS", 95},
+		{"jms", "JMS", 185},
+	} {
+		ctx := test.CreateContext(v.region, v.major, 1)
+		encoded := base.Encode(l, ctx)(map[string]interface{}{})
+		lengths[v.name] = len(encoded)
+	}
+
+	if lengths["v83"] != wantV83Len {
+		t.Fatalf("v83 length = %d, want %d (regression baseline)", lengths["v83"], wantV83Len)
+	}
+	if lengths["v48"] != wantV83Len-6 {
+		t.Errorf("v48 length = %d, want %d (6 bytes shorter than v83: no remainLife, no trailing attribute)", lengths["v48"], wantV83Len-6)
+	}
+	if lengths["v61"] != wantV83Len-6 {
+		t.Errorf("v61 length = %d, want %d (6 bytes shorter than v83: no remainLife, no trailing attribute)", lengths["v61"], wantV83Len-6)
+	}
+	if lengths["v72"] != wantV83Len-2 {
+		t.Errorf("v72 length = %d, want %d (2 bytes shorter than v83: remainLife present, no trailing attribute)", lengths["v72"], wantV83Len-2)
+	}
+	for _, name := range []string{"v79", "v84", "v87", "v95", "jms"} {
+		if lengths[name] != wantV83Len {
+			t.Errorf("%s length = %d, want %d (unchanged from today)", name, lengths[name], wantV83Len)
+		}
+	}
+}
+
 // Ensure Asset satisfies the Encode signature pattern used by writers.
 func TestAssetEncodeSignature(t *testing.T) {
 	l, _ := testlog.NewNullLogger()

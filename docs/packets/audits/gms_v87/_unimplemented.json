@@ -319,6 +319,11 @@
    "fname": "CWvsContext::OnPartyResult",
    "case": 40,
    "reason": "partial implementation — sub-op not built (task-081 non-eq lever 2026-06-10)"
+  },
+  {
+   "fname": "CWvsContext::SendConsumeCashItemUseRequest",
+   "packet": "cash/serverbound/CashItemUsePetSkill",
+   "reason": "task-139 cash-item-use-pet-skill coverage sweep (IDA session 81f32170, GMS_v87), re-deriving and confirming the final-review partial finding at the same address. CWvsContext::SendConsumeCashItemUseRequest @0xa9fef9 dispatches a switch on get_consume_cash_item_type(itemId). Type 28 has NO unique arm at all: the compiler-generated comment at the range-check (0xa9ffa8 'ja def_A9FFB5') and every other jump-into-default site (0xaa01fa, 0xaa138f, 0xaa2437, 0xaa2455, sampled) explicitly lists 'jumptable 00A9FFB5 default case, cases 28,35,36,38,39,41,43-45,54-59,62,67-69'. No dedicated code, no Encode call, no pet reference for type 28. Positive absence."
   }
  ]
 }

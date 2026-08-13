@@ -3,7 +3,7 @@
   "IDAName": "CCashShop::OnBuyNormal",
   "Address": "0x44cbb2",
   "Variant": "GMS/v48",
-  "BranchDepth": 0,
+  "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/cash/serverbound/shop_operation_buy_normal.go",
   "Rows": [
     {
@@ -17,39 +17,39 @@
     },
     {
       "Index": 1,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
-      "AtlasOp": 0,
+      "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 3,
-      "AtlasOp": 0,
+      "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 4,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     }
   ],
   "Verdict": 3,

@@ -120,7 +120,21 @@ func ExpireCommandProvider(f field.Model, characterId uint32) model.Provider[[]k
 	return producer.SingleMessageProvider(key, value)
 }
 
-func UpdateStatValueCommandProvider(f field.Model, characterId uint32, sourceId int32, statType string, operation string, amount int32, capValue int32) model.Provider[[]kafka.Message] {
+// StatValueUpdate is one UPDATE_STAT_VALUE request. Mirrors
+// atlas-buffs/character.StatValueUpdate; collected into a struct rather than
+// passed positionally because the accumulator-upsert fields (task-216) push
+// the argument list past readability.
+type StatValueUpdate struct {
+	SourceId        int32
+	StatType        string
+	Operation       string
+	Amount          int32
+	Cap             int32
+	CreateIfMissing bool
+	Level           byte
+}
+
+func UpdateStatValueCommandProvider(f field.Model, characterId uint32, u StatValueUpdate) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &buff.Command[buff.UpdateStatValueCommandBody]{
 		WorldId:     f.WorldId(),
@@ -130,11 +144,13 @@ func UpdateStatValueCommandProvider(f field.Model, characterId uint32, sourceId 
 		CharacterId: characterId,
 		Type:        buff.CommandTypeUpdateStatValue,
 		Body: buff.UpdateStatValueCommandBody{
-			SourceId:  sourceId,
-			StatType:  statType,
-			Operation: operation,
-			Amount:    amount,
-			Cap:       capValue,
+			SourceId:        u.SourceId,
+			StatType:        u.StatType,
+			Operation:       u.Operation,
+			Amount:          u.Amount,
+			Cap:             u.Cap,
+			CreateIfMissing: u.CreateIfMissing,
+			Level:           u.Level,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

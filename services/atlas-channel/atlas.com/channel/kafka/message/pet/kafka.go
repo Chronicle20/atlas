@@ -42,6 +42,7 @@ const (
 	StatusEventTypeLevelChanged     = "LEVEL_CHANGED"
 	StatusEventTypeSlotChanged      = "SLOT_CHANGED"
 	StatusEventTypeExcludeChanged   = "EXCLUDE_CHANGED"
+	StatusEventTypeFlagChanged      = "FLAG_CHANGED"
 )
 
 type StatusEvent[E any] struct {
@@ -66,6 +67,11 @@ type SpawnedStatusEventBody struct {
 	Y          int16  `json:"y"`
 	Stance     byte   `json:"stance"`
 	FH         int16  `json:"fh"`
+	// CashId is the pet's cash serial. atlas-channel needs it here because the
+	// SPAWNED event is the only input to the PetActivated packet, and that packet
+	// must carry the same serial the client sees in the pet's inventory slot --
+	// CPet::GetItemSlot (GMS v83 @0x703af3) binds the two by that value alone.
+	CashId uint64 `json:"cashId"`
 }
 
 type DespawnedStatusEventBody struct {
@@ -112,4 +118,9 @@ type SlotChangedStatusEventBody struct {
 
 type ExcludeChangedStatusEventBody struct {
 	Items []uint32 `json:"items"`
+}
+
+type FlagChangedStatusEventBody struct {
+	Slot int8   `json:"slot"`
+	Flag uint16 `json:"flag"`
 }

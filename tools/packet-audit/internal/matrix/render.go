@@ -14,7 +14,7 @@ var shortLabels = map[string]string{
 	"gms_v61": "v61",
 	"gms_v72": "v72",
 	"gms_v79": "v79",
-	"gms_v83": "v83", "gms_v84": "v84", "gms_v87": "v87",
+	"gms_v83": "v83", "gms_v84": "v84", "gms_v87": "v87", "gms_v92": "v92",
 	"gms_v95": "v95", "jms_v185": "JMS185",
 }
 

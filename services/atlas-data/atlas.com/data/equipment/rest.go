@@ -41,9 +41,11 @@ type RestModel struct {
 	Cash           bool            `json:"cash"`
 	Price          uint32          `json:"price"`
 	TimeLimited    bool            `json:"timeLimited"`
+	TradeBlock     bool            `json:"tradeBlock"`
 	ReplaceItemId  uint32          `json:"replaceItemId,omitempty"`
 	ReplaceMessage string          `json:"replaceMessage,omitempty"`
 	BonusExp       []BonusExpTier  `json:"bonusExp,omitempty"` // Time-based EXP bonus tiers
+	PetAbilities   []string        `json:"petAbilities,omitempty"`
 	EquipSlots     []SlotRestModel `json:"-"`
 }
 

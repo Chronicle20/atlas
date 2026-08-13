@@ -13,6 +13,7 @@ import (
 	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
 	_map3 "atlas-channel/kafka/message/map"
+	"atlas-channel/kite"
 	"atlas-channel/listener"
 	_map "atlas-channel/map"
 	"atlas-channel/merchant"
@@ -189,7 +190,7 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 				if k != s.CharacterId() {
 					for _, p := range v.Pets() {
 						if p.Slot() >= 0 {
-							if err := session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))(s); err != nil {
+							if err := session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), p.SerialNumber(), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))(s); err != nil {
 								l.WithError(err).Errorf("SpawnForSelf: unable to spawn character [%d] pet for [%d]", k, s.CharacterId())
 							}
 						}
@@ -213,7 +214,7 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 			}
 			for _, p := range self.Pets() {
 				if p.Slot() >= 0 {
-					if err := session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))(s); err != nil {
+					if err := session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), p.SerialNumber(), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))(s); err != nil {
 						l.WithError(err).Errorf("SpawnForSelf: unable to spawn own pet for character [%d].", s.CharacterId())
 					}
 				}
@@ -264,6 +265,12 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 		routine.Go(l, ctx, func(_ context.Context) {
 			if err := chalkboard.NewProcessor(l, ctx).ForEachInMap(f, spawnChalkboardsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn chalkboards for character [%d].", s.CharacterId())
+			}
+		})
+
+		routine.Go(l, ctx, func(_ context.Context) {
+			if err := kite.NewProcessor(l, ctx).ForEachInMap(f, spawnKitesForSession(l)(ctx)(wp)(s)); err != nil {
+				l.WithError(err).Debugf("SpawnForSelf: unable to spawn kites for character [%d].", s.CharacterId())
 			}
 		})
 
@@ -397,14 +404,14 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 					}
 					for _, p := range self.Pets() {
 						if p.Slot() >= 0 {
-							if err := session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(k, session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))); err != nil {
+							if err := session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(k, session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), p.SerialNumber(), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))); err != nil {
 								l.WithError(err).Errorf("enterMap: unable to spawn character [%d] pet for [%d]", s.CharacterId(), k)
 							}
 							excludeIds := make([]uint32, len(p.Excludes()))
 							for i, e := range p.Excludes() {
 								excludeIds[i] = e.ItemId()
 							}
-							if err := session.Announce(l)(ctx)(wp)(petpkt.PetExcludeResponseWriter)(petpkt.NewPetExcludeResponse(p.OwnerId(), p.Slot(), uint64(p.Id()), excludeIds).Encode)(s); err != nil {
+							if err := session.Announce(l)(ctx)(wp)(petpkt.PetExcludeResponseWriter)(petpkt.NewPetExcludeResponse(p.OwnerId(), p.Slot(), p.SerialNumber(), excludeIds).Encode)(s); err != nil {
 								l.WithError(err).Errorf("enterMap: unable to announce pet [%d] exclusion list to character [%d].", p.Id(), s.CharacterId())
 							}
 						}
@@ -649,13 +656,14 @@ func spawnNPCForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 // slope lands ~0.67px below the surface (fall-through) — and the later Spawn is
 // then a no-op (GetMob hits -> SetTemporaryStat only, never re-Init/reposition).
 //
-// That race is now prevented at the source: atlas-monsters' ControlOnEnter
-// assigns the *entering* player in-place WITHOUT emitting StartControl (see
-// monster/processor.go ControlOnEnter), so no early MonsterControl is produced
-// for a still-loading client. This function is the sole controller-grant for the
-// entering player, guaranteeing Spawn-then-Control. (An already-present player
-// that becomes controller on enter still gets a StartControl-driven packet — safe,
-// since that client already has the mob spawned.)
+// This is a fast path, not the authority. atlas-monsters emits StartControl for
+// every controller assignment, and the channel's START_CONTROL handler delivers
+// it as Spawn-then-Control (see kafka/consumer/monster.controlGrantFn), so the
+// ordering invariant holds no matter which of the two arrives first. This
+// function cannot be the sole grant: it runs off EVENT_TOPIC_CHARACTER_STATUS
+// while the assignment runs off EVENT_TOPIC_MAP_STATUS, and it routinely reads
+// the monster list before the controller has been assigned at all — which used
+// to leave a re-entering player's mobs assigned upstream but frozen on screen.
 func spawnMonsterForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
 		return func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
@@ -802,6 +810,23 @@ func spawnChalkboardsForSession(l logrus.FieldLogger) func(ctx context.Context) 
 			return func(s session.Model) model.Operator[chalkboard.Model] {
 				return func(c chalkboard.Model) error {
 					return session.Announce(l)(ctx)(wp)(charpkt.ChalkboardUseWriter)(charpkt.NewChalkboardUse(c.Id(), c.Message()).Encode)(s)
+				}
+			}
+		}
+	}
+}
+
+// spawnKitesForSession renders one already-placed kite to a character entering
+// the map. ForEachInMap runs under model.ParallelExecute(), so this operator
+// must hold no shared mutable state: it closes over only s and wp and builds a
+// fresh KiteSpawn per model.
+func spawnKitesForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[kite.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[kite.Model] {
+		return func(wp writer.Producer) func(s session.Model) model.Operator[kite.Model] {
+			return func(s session.Model) model.Operator[kite.Model] {
+				return func(k kite.Model) error {
+					return session.Announce(l)(ctx)(wp)(fieldcb.KiteSpawnWriter)(
+						fieldcb.NewKiteSpawn(k.Id(), k.TemplateId(), k.Message(), k.Name(), k.X(), k.Y()).Encode)(s)
 				}
 			}
 		}

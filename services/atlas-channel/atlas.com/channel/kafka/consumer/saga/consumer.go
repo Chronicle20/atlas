@@ -358,7 +358,35 @@ func handleFailedEvent(sc server.Model, wp writer.Producer) message.Handler[saga
 			}
 			return
 		}
+
+		// Meso-sack failures: the orchestrator's compensator has already refunded
+		// the sack. Tell the player why, then release the client's
+		// exclusive-request gate — this is the ONLY unlock on the failure path
+		// (the success path is unlocked by the award's STAT_CHANGED instead).
+		if e.Body.SagaType == saga.SagaTypeMesoSackUse {
+			msg := mesoSackFailureMessage(e.Body.ErrorCode)
+			err = session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePinkTextBody("", "", msg))(s)
+			if err != nil {
+				l.WithError(err).WithField("character_id", e.Body.CharacterId).Error("Failed to send meso-sack pink text.")
+			}
+			err = session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)(s)
+			if err != nil {
+				l.WithError(err).WithField("character_id", e.Body.CharacterId).Error("Failed to send enable-actions after meso-sack failure.")
+			}
+			return
+		}
 	}
+}
+
+// mesoSackFailureMessage maps a meso_sack_use saga's errorCode to the pink text
+// the player sees. Only MESO_OVERFLOW names the meso ceiling: the same saga can
+// also fail on the destroy step or by timeout (SAGA_TIMEOUT), and claiming a
+// ceiling then would be a lie.
+func mesoSackFailureMessage(errorCode string) string {
+	if errorCode == saga.ErrorCodeMesoOverflow {
+		return "You cannot hold any more mesos."
+	}
+	return "You are unable to use this item right now."
 }
 
 // getStorageErrorBodyProducer returns the appropriate BodyProducer for the given error code

@@ -155,6 +155,12 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 			}
 
 			var petId uint32
+			// petCashId is reserved before either row is written so the pet and
+			// the cash asset share one serial. The client keys that single value
+			// (GW_ItemSlotBase::liCashItemSN) for BOTH locker removal on withdraw
+			// and spawned-pet-to-inventory binding, so a pet whose two rows
+			// disagree gets stuck in the cash-shop locker UI forever.
+			var petCashId int64
 			if item.GetClassification(item.Id(ci.ItemId())) == item.ClassificationPet {
 				petData, pdErr := p.dataPetP.GetById(ci.ItemId())
 				petName := "Pet"
@@ -164,18 +170,32 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 					p.l.WithError(pdErr).Warnf("Unable to retrieve pet data for template [%d], using default name.", ci.ItemId())
 				}
 
-				pe, peErr := p.petP.Create(characterId, ci.ItemId(), petName)
+				petCashId, err = p.astP.NextCashId()
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to reserve a cash serial for character [%d] template [%d].", characterId, ci.ItemId())
+					_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))
+					return err
+				}
+
+				pe, peErr := p.petP.Create(characterId, uint64(petCashId), ci.ItemId(), petName)
 				if peErr != nil {
 					p.l.WithError(peErr).Errorf("Unable to create pet for character [%d] template [%d].", characterId, ci.ItemId())
 					_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))
 					return peErr
 				}
 				petId = pe.Id()
-				p.l.Debugf("Created pet [%d] for character [%d] with name [%s].", petId, characterId, petName)
+				p.l.Debugf("Created pet [%d] (cash serial [%d]) for character [%d] with name [%s].", petId, petCashId, characterId, petName)
 			}
 
-			// Create the flattened asset directly (no separate item creation)
-			am, err := p.astP.Create(mb)(ccm.Id(), ci.ItemId(), serialNumber, ci.Count(), petId, characterId)
+			// Create the flattened asset directly (no separate item creation).
+			// Pets must carry the serial reserved above; everything else gets a
+			// freshly generated one.
+			var am asset.Model
+			if petCashId != 0 {
+				am, err = p.astP.CreateWithCashId(mb)(ccm.Id(), petCashId, ci.ItemId(), serialNumber, ci.Count(), petId, characterId)
+			} else {
+				am, err = p.astP.Create(mb)(ccm.Id(), ci.ItemId(), serialNumber, ci.Count(), petId, characterId)
+			}
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create asset for character [%d].", characterId)
 				_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))

@@ -39,7 +39,7 @@ type ProcessorMock struct {
 	AddStepFunc                          func(transactionId uuid.UUID, step saga.Step[any]) error
 	AddStepAfterCurrentFunc              func(transactionId uuid.UUID, step saga.Step[any]) error
 	StepFunc                             func(transactionId uuid.UUID) error
-	AcceptEventFunc                      func(transactionId uuid.UUID, kind saga.EventKind) (saga.AcceptDecision, bool)
+	AcceptEventFunc                      func(transactionId uuid.UUID, kind saga.EventKind, opts ...saga.AcceptOption) (saga.AcceptDecision, bool)
 }
 
 // WithCharacterProcessor is a mock implementation
@@ -203,9 +203,9 @@ func (m *ProcessorMock) Step(transactionId uuid.UUID) error {
 }
 
 // AcceptEvent is a mock implementation
-func (m *ProcessorMock) AcceptEvent(transactionId uuid.UUID, kind saga.EventKind) (saga.AcceptDecision, bool) {
+func (m *ProcessorMock) AcceptEvent(transactionId uuid.UUID, kind saga.EventKind, opts ...saga.AcceptOption) (saga.AcceptDecision, bool) {
 	if m.AcceptEventFunc != nil {
-		return m.AcceptEventFunc(transactionId, kind)
+		return m.AcceptEventFunc(transactionId, kind, opts...)
 	}
 	return saga.AcceptDecision{}, false
 }

@@ -5,6 +5,7 @@ import (
 	"atlas-channel/cashshop"
 	"atlas-channel/channel"
 	"atlas-channel/character"
+	"atlas-channel/character/chakra"
 	"atlas-channel/portal"
 	"atlas-channel/respawn"
 	"atlas-channel/session"
@@ -17,13 +18,19 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	fieldsb "github.com/Chronicle20/atlas/libs/atlas-packet/field/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		p := fieldsb.Change{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+
+		// A map change ends any pending Chakra recovery (PRD FR-5.5).
+		if chakra.GetRegistry().Clear(tenant.MustFromContext(ctx), s.CharacterId()) {
+			l.Debugf("Chakra recovery window for character [%d] cleared by map change.", s.CharacterId())
+		}
 
 		if p.CashShopReturn() {
 			l.Debugf("Character [%d] returning from cash shop.", s.CharacterId())
@@ -53,7 +60,7 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 		}
 		if c.Hp() == 0 {
 			l.Debugf("Character [%d] attempting to revive.", s.CharacterId())
-			err = respawn.NewProcessor(l, ctx).Respawn(s.Field().Channel(), s.CharacterId(), s.MapId())
+			err = respawn.NewProcessor(l, ctx, wp).Respawn(s.Field(), s.CharacterId(), p.Premium() != 0)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to process respawn for character [%d].", s.CharacterId())
 			}

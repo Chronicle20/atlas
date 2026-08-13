@@ -1005,6 +1005,7 @@
   direction: clientbound
   opcode: 201
   fname: CUserRemote::OnShowUpgradeTombEffect
+  packet: character/clientbound/ShowUpgradeTombEffect
   provenance: csv-import
 - op: SHOW_CHAIR
   direction: clientbound
@@ -1864,6 +1865,7 @@
   direction: clientbound
   opcode: 365
   fname: CCashShop::OnCashItemGachaponResult
+  packet: cash/clientbound/CashItemGachaponResult
   provenance: csv-import
 - op: IDA_0X16E
   direction: clientbound
@@ -2151,6 +2153,7 @@
   direction: serverbound
   opcode: 45
   fname: CUserLocal::RequestUpgradeTombEffect
+  packet: character/serverbound/UseDeathItem
   provenance: csv-import
 - op: UNNAMED_R74
   direction: serverbound
@@ -2497,11 +2500,6 @@
   fname: CUIAntiMacro::SetRet
   fname_alts:
     - CUIAdminAntiMacro::SetRet
-  provenance: csv-import
-- op: CLAIM_REQUEST
-  direction: serverbound
-  opcode: 101
-  fname: CWvsContext::SendClaimRequest
   provenance: csv-import
 - op: QUEST_ACTION
   direction: serverbound
@@ -2957,6 +2955,15 @@
   opcode: 167
   fname: CCashShop::SendChangeMaplePoint
   provenance: csv-import
+- op: CASH_ITEM_GACHAPON_BUTTON
+  direction: serverbound
+  opcode: 167
+  fname: CUICashItemGachapon::OnButtonClicked
+  packet: cash/serverbound/CashItemGachaponButton
+  provenance: ida-discovered
+  ida:
+    address: 10937097
+  note: 'opcode 167 has two senders in this build: CCashShop::SendChangeMaplePoint (0x4851be) and CUICashItemGachapon::OnButtonClicked (0xa6e309), indistinguishable on the wire (task-207).'
 - op: OP_BOARD_HAS_NEW
   direction: serverbound
   opcode: 168
@@ -3379,7 +3386,20 @@
   direction: serverbound
   opcode: 246
   fname: CCashShop::OnStatusCoupon
-  provenance: csv-import
+  packet: cash/serverbound/CouponCode
+  provenance: manual
+  note: >-
+    task-206 IDA-confirmed 246 (value unchanged; provenance promoted from
+    csv-import, which had never been checked against the jms IDB). The jms v185
+    client builds the coupon packet with COutPacket(&oPacket, 0xF6) at 0x4825a4
+    inside CCashShop::OnStatusCoupon @ 0x482450. The other four 68 F6 00 00 00
+    byte hits are not packet ctors: 0x479519 is a CWnd::CreateWnd width argument
+    in CCashShop::Init, and 0x565f9b / 0x90f113 / 0xa7e6fc are outside the
+    CCashShop code region. 246 = CASHSHOP_OPERATION(245) + 1, matching every
+    other version's +1 relation. Body is NOT the GMS shape - it carries a
+    trailing Encode1(nType) between the coupon code and the optional third
+    string. Evidence:
+    docs/tasks/task-206-cash-shop-coupon-codes/derivation.md.
 - op: UNNAMED_R387
   direction: serverbound
   opcode: 247

@@ -26,6 +26,7 @@ var seedVersions = []struct {
 	{"gms_v83", "GMS:83", ""},
 	{"gms_v84", "GMS:83", "seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB."},
 	{"gms_v87", "GMS:87", ""},
+	{"gms_v92", "GMS:92", ""},
 	{"gms_v95", "GMS:95", ""},
 	{"jms_v185", "JMS:185", ""},
 }

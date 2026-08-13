@@ -322,6 +322,9 @@ A door is created, optionally re-slotted, and removed. Removal carries a reason:
 - `skill/handler/healdispel` registers an `Apply` handler for `SuperGmHealDispelId` (9101000), gated to the SuperGM job (910); a caster without that job is rejected with a warning log and no effect. For every character in the caster's map, it restores HP and MP to full and cancels the 11 disease debuffs (stun, poison, seal, darkness, weaken, curse, seduce, confuse, undead, slow, stop-portion) via a `CANCEL_BY_TYPES` buff command. The skill's WZ recovery fields are zero on every version, so "restore" means heal to the recipient's effective max (falling back to the recipient's base max when the effective-stats lookup fails or returns zero) rather than the flat+ratio Cleric Heal formula. No experience is ever awarded — this is a GM utility, not a combat heal. Per-recipient failures (HP change, MP change, dispel) are logged and skipped; the loop always continues to the remaining recipients and the self-announce still fires.
 - The self skill-use animation is always broadcast. The foreign skill-use animation is broadcast only when the caster is not GM-hidden; if the hidden-state lookup itself errors, the handler fails safe and treats the caster as hidden, suppressing the foreign broadcast rather than risking a position leak.
 
+### Priest Dispel skill handler
+- `skill/handler/dispel` registers an `Apply` handler for `skill2.PriestDispel`. Recipients are the caster plus the bitmap-selected in-map party members returned by `channelhandler.SelectPartyMembersInMap` — map-wide, no LT/RB rectangle. For each recipient the handler rolls the skill's prop (0.0-1.0, pre-normalized) independently; a recipient that fails the roll is skipped entirely, and a recipient that passes has exactly six temporary-stat types cancelled via a `CANCEL_BY_TYPES` buff command: curse, darkness, poison, seal, weaken, and slow. STUN, SEDUCE, and CONFUSE (and the other disease types SuperGM Heal + Dispel cures) are intentionally excluded — those are cure-all/purge semantics owned by `skill/handler/healdispel`, not Dispel's targeted cure set. Per-recipient cancel failures are logged and the cast continues to the remaining recipients; the handler always returns nil.
+
 ### SuperGM Hide skill handler
 - `skill/handler/hide` registers an `Apply` handler for `SuperGmHideId` (9101004), gated to the SuperGM job (910). It is a toggle read from the caster's current hide state: Hide ON applies a persistent `DARK_SIGHT` buff sourced from `SuperGmHideId` (duration set to the largest int32, since atlas-buffs rejects a non-positive duration; the canonical way to end it is casting the skill again) and despawns the caster from every other player in the map. Hide OFF cancels that buff and re-spawns the caster to every other player in the map.
 - The despawn/spawn broadcasts route through the map consumer's single character-spawn choke point (`kafka/consumer/map/consumer.go`): a GM-hidden character is refused a spawn to any other viewer there, so a player entering the map while the GM is hidden never sees them either. The reveal (Hide OFF) spawn deliberately bypasses that suppression check — the hide-buff CANCEL command it just produced is Kafka-mediated and eventually consistent, so a gated read could still observe the stale hidden buff and re-suppress the very spawn meant to un-hide the caster.
@@ -701,7 +704,7 @@ Handles entity movement processing for characters, NPCs, pets, and monsters. Fol
 ## Respawn
 
 ### Responsibility
-Handles character death and respawn logic. Orchestrates experience loss calculation, protective item detection, and multi-step saga creation for the respawn sequence.
+Handles character death and respawn logic. Orchestrates experience loss calculation, protective item detection, multi-step saga creation for the respawn sequence, and the protect-on-die effect announcement.
 
 ### Invariants
 - Beginners lose no experience on death
@@ -710,10 +713,10 @@ Handles character death and respawn logic. Orchestrates experience loss calculat
 - Experience loss in towns: 1% of current experience
 - Experience loss outside towns with luck < 50: 10%
 - Experience loss outside towns with luck >= 50: 5%
-- Wheel of Fortune keeps character in current map on death; otherwise warps to map's returnMapId
+- Wheel of Fortune keeps character in current map on death only when the client's `useDeathItem` (Change.Premium() != 0, i.e. the revive dialog's OK button) is true AND the character holds a wheel with at least one charge remaining; otherwise warps to map's returnMapId
 
 ### Processors
-- `Processor` (interface) - Respawn(ch, characterId, currentMapId) orchestrates death penalty via saga with conditional steps: consume_wheel_of_fortune (if used), consume_protective_item (if present), set_hp (always, sets HP to 50), deduct_experience (if loss > 0), cancel_all_buffs (always), warp_to_spawn (always, portalId 0)
+- `Processor` (interface) - Respawn(f, characterId, useDeathItem) orchestrates death penalty via saga with conditional steps: consume_wheel_of_fortune (if useDeathItem and a usable wheel is present), consume_protective_item (if present), deduct_experience (if loss > 0), cancel_all_buffs (always), warp_to_spawn (always, portalId 0), set_hp (always, sets HP to 50, ordered last so the character stays dead until character.map_changed acknowledges the warp); after the saga is created, announces the protect-on-die effect (CharacterEffect, owner only) when a death-protection item was spent, and the UPGRADE_TOMB_ITEM_USE effect (CharacterEffect, owner only) when a Wheel of Destiny was spent
 
 ---
 
@@ -790,13 +793,18 @@ Provides active weather state for a field.
 ## Kite
 
 ### Responsibility
-Represents kite/balloon display items in the game world.
+Client-side view of kites (cash item category 508 message boxes) owned by
+atlas-kites: drains the in-map list for map-entry replay and issues placement
+commands.
 
 ### Core Models
-- `Model` - Contains id (uint32), templateId (uint32), message (string), name (string), x (int16), y (int16), ft (int16, accessed via Type() getter)
+- `Model` - id (uint32, the wire id), characterId (uint32), name (string),
+  templateId (uint32), message (string), x (int16), y (int16)
 
 ### Processors
-None. Model-only domain.
+- `Processor` - InMapModelProvider(f) / ForEachInMap(f, o) drain the paginated
+  `.../maps/{mapId}/instances/{instanceId}/kites` list (KITES service);
+  AttemptUse(...) emits COMMAND_TOPIC_KITE CREATE keyed on characterId
 
 ---
 

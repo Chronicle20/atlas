@@ -11,13 +11,15 @@
       - --ref=$(GITSYNC_REF)
       - --root=$(GITSYNC_ROOT)
       - --period=$(GITSYNC_PERIOD)
+    # 14d peak is 220Mi against the old 256Mi limit -- only 14% headroom, the
+    # same shape that had alloy OOMKilling in the cluster repo.
     resources:
       requests:
         cpu: 50m
         memory: 64Mi
       limits:
         cpu: 200m
-        memory: 256Mi
+        memory: 384Mi
     volumeMounts:
       - name: seed-catalog
         mountPath: /git

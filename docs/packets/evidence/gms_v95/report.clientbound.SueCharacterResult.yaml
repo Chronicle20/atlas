@@ -1,0 +1,10 @@
+packet: report/clientbound/SueCharacterResult
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnSueCharacterResult
+    address: "0x9fae10"
+    decompile_sha256: 310eb98372a0481eb15563931ff317f93736622393024daba39fb8c579ac2c60
+verifies:
+    - report/clientbound/sue_character_result_test.go#TestSueCharacterResultByteOutputV95

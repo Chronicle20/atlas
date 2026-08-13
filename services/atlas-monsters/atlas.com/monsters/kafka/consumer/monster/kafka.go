@@ -25,6 +25,9 @@ const (
 	CommandTypeAddPuppet         = "ADD_PUPPET"
 	CommandTypeRemovePuppet      = "REMOVE_PUPPET"
 	CommandTypeKill              = "KILL"
+	CommandTypeCatch             = "CATCH"
+	CommandTypeClearAggro        = "CLEAR_AGGRO"
+	CommandTypeForceControl      = "FORCE_CONTROL"
 
 	EnvCommandTopicMovement = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 )
@@ -113,6 +116,32 @@ type drainMpCommandBody struct {
 // job-skill id would overflow the byte-typed skillId in sibling bodies
 // (useSkillCommandBody) and log a spurious unmarshal error per proc.
 type killCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
+// catchCommandBody asks the processor to remove a monster as a bridle
+// (catch-item) capture. Deliberately minimal: every handler on this shared
+// command topic json-unmarshals every message, so a field name whose type
+// disagrees with a sibling body produces one spurious unmarshal error per
+// message. characterId and itemId are both uint32 and both already appear with
+// that type in sibling bodies (damageCommandBody.CharacterId,
+// drainMpCommandBody.SkillId).
+type catchCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+	ItemId      uint32 `json:"itemId"`
+}
+
+// clearAggroCommandBody asks the processor to fully wipe a monster's
+// damage-aggro table. Deliberately empty: the command carries nothing
+// caller-specific, and an empty body cannot collide with a sibling body's field
+// types on this shared, fan-to-every-handler topic. Mirrors
+// atlas-channel's monster2.ClearAggroCommandBody — edit both together.
+type clearAggroCommandBody struct{}
+
+// forceControlCommandBody asks the processor to hand control of a monster to a
+// named character with the aggro flag set, bypassing the picker. Mirrors
+// atlas-channel's monster2.ForceControlCommandBody — edit both together.
+type forceControlCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 }
 

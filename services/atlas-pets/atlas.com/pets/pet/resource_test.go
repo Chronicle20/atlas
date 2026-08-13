@@ -52,3 +52,20 @@ func TestCreatePetLevel(t *testing.T) {
 		t.Fatalf("createPetLevel(99) = %d, want 1", got)
 	}
 }
+
+func TestCreatePetSlot(t *testing.T) {
+	// Creation NEVER confers a spawn slot. Slot is a plain int8, so an absent
+	// "slot" field decodes as 0 -- which means "spawned in the first pet
+	// position". Neither producer sends the field, so every pet was being
+	// created already spawned: the client saw a pet it never summoned and could
+	// not dismiss, and two purchases both landed in slot 0, a state Spawn itself
+	// cannot produce.
+	if got := createPetSlot(); got != SlotUnspawned {
+		t.Fatalf("createPetSlot() = %d, want %d (unspawned)", got, SlotUnspawned)
+	}
+	// Guard the constant itself: 0..2 are live pet positions, so anything in
+	// that range would mean "spawned".
+	if SlotUnspawned >= 0 {
+		t.Fatalf("SlotUnspawned = %d, must be negative to mean 'not out'", SlotUnspawned)
+	}
+}

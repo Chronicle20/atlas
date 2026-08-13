@@ -109,8 +109,14 @@ func TestMistCreated_BroadcastsAffectedAreaCreated(t *testing.T) {
 	if lastCreated.LtX() != -50 || lastCreated.LtY() != -60 || lastCreated.RbX() != 50 || lastCreated.RbY() != 60 {
 		t.Fatalf("AffectedAreaCreated bounds wrong: lt (%d,%d) rb (%d,%d)", lastCreated.LtX(), lastCreated.LtY(), lastCreated.RbX(), lastCreated.RbY())
 	}
-	if lastCreated.TEnd() != 8000 {
-		t.Fatalf("AffectedAreaCreated.TEnd: want 8000 (duration ms), got %d", lastCreated.TEnd())
+	// The duration is NOT carried on this packet. nElemAttr is not a time
+	// field, and skillDelay is a delay-before-drawing — putting the duration in
+	// either one hides or mis-renders the mist client-side.
+	if lastCreated.ElemAttr() != 0 {
+		t.Fatalf("AffectedAreaCreated.ElemAttr: want 0 (not a duration), got %d", lastCreated.ElemAttr())
+	}
+	if lastCreated.SkillDelay() != 0 {
+		t.Fatalf("AffectedAreaCreated.SkillDelay: want 0 (draw immediately), got %d", lastCreated.SkillDelay())
 	}
 	if lastCreated.SkillId() != 2121006 {
 		t.Fatalf("AffectedAreaCreated.SkillId: want 2121006, got %d", lastCreated.SkillId())
@@ -144,6 +150,116 @@ func TestMistCreated_WrongType_DoesNotBroadcast(t *testing.T) {
 
 	if *createdCalls != 0 {
 		t.Fatalf("wrong-type event: want 0 broadcasts, got %d", *createdCalls)
+	}
+}
+
+// TestMistCreated_SkillDelayIsNeverDerivedFromDuration is the regression guard
+// for the defect this branch shipped and then fixed: skillDelay was briefly set
+// to Duration/100 on the belief that it was the mist's client-side lifetime.
+// It is not — the client computes tStart = get_update_time() + 100*skillDelay
+// and refuses to DRAW the mist until then (v83 CAffectedAreaPool::Update
+// @0x431214), so a duration-derived skillDelay hides the mist for its entire
+// duration and it is removed at almost the same instant it first appears.
+// skillDelay must stay 0 no matter how long the mist lives.
+func TestMistCreated_SkillDelayIsNeverDerivedFromDuration(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	restore, _, lastCreated, _, _ := withRecordingBroadcasters(t)
+	defer restore()
+
+	h := handleMistCreated(sc, nil)
+	h(logrus.New(), ctx, mist2.Event[mist2.CreatedBody]{
+		Tenant:    tm.Id(),
+		WorldId:   sc.WorldId(),
+		ChannelId: sc.ChannelId(),
+		MapId:     100000000,
+		Instance:  uuid.Nil,
+		MistId:    uuid.New(),
+		Type:      mist2.EventTypeCreated,
+		Body: mist2.CreatedBody{
+			Duration: 1_000_000_000, // far beyond int16*100
+		},
+	})
+
+	if lastCreated.SkillDelay() != 0 {
+		t.Fatalf("AffectedAreaCreated.SkillDelay: want 0 for any duration (it is a draw delay, not a lifetime), got %d", lastCreated.SkillDelay())
+	}
+	if lastCreated.ElemAttr() != 0 {
+		t.Fatalf("AffectedAreaCreated.ElemAttr: want 0 for any duration, got %d", lastCreated.ElemAttr())
+	}
+}
+
+// TestMistCreated_UsesEventRenderValues asserts the broadcast packet takes
+// skillDelay and nElemAttr from the event rather than a channel-local constant
+// (task-200 FR-2.4) -- and that the resulting values are still 0, so the wire
+// bytes of every already-verified SPAWN_MIST fixture are unchanged (FR-5.5).
+func TestMistCreated_UsesEventRenderValues(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	restore, createdCalls, lastCreated, _, _ := withRecordingBroadcasters(t)
+	defer restore()
+
+	handleMistCreated(sc, nil)(logrus.New(), ctx, mist2.Event[mist2.CreatedBody]{
+		Tenant: tm.Id(), WorldId: 0, ChannelId: 1, MapId: 100000000,
+		Instance: uuid.Nil, MistId: uuid.New(), Type: mist2.EventTypeCreated,
+		Body: mist2.CreatedBody{
+			OwnerType: "CHARACTER", OwnerId: 1001,
+			SourceSkillId: 2111003, SourceSkillLevel: 1,
+			Type:    0,
+			OriginX: 500, OriginY: 300,
+			LtX: -110, LtY: -82, RbX: 110, RbY: 83,
+			Duration:   4000,
+			ElemAttr:   0,
+			SkillDelay: 0,
+		},
+	})
+
+	if *createdCalls != 1 {
+		t.Fatalf("createdCalls = %d, want 1", *createdCalls)
+	}
+	if lastCreated.SkillDelay() != 0 {
+		t.Fatalf("SkillDelay() = %d, want 0 (non-zero hides the mist)", lastCreated.SkillDelay())
+	}
+	if lastCreated.ElemAttr() != 0 {
+		t.Fatalf("ElemAttr() = %d, want 0", lastCreated.ElemAttr())
+	}
+	if lastCreated.NType() != 0 {
+		t.Fatalf("NType() = %d, want 0 (3 is the area-buff-ITEM arm)", lastCreated.NType())
+	}
+	if lastCreated.Phase() != 0 {
+		t.Fatalf("Phase() = %d, want 0", lastCreated.Phase())
+	}
+	if lastCreated.OwnerId() != 1001 {
+		t.Fatalf("OwnerId() = %d, want the casting character id 1001", lastCreated.OwnerId())
+	}
+}
+
+// TestMistCreated_NonZeroRenderValuesPropagate proves the values genuinely
+// come from the event and are not still hard-coded to 0 -- a test that only
+// ever asserts 0 would pass against the unchanged code.
+func TestMistCreated_NonZeroRenderValuesPropagate(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	restore, _, lastCreated, _, _ := withRecordingBroadcasters(t)
+	defer restore()
+
+	handleMistCreated(sc, nil)(logrus.New(), ctx, mist2.Event[mist2.CreatedBody]{
+		Tenant: tm.Id(), WorldId: 0, ChannelId: 1, MapId: 100000000,
+		Instance: uuid.Nil, MistId: uuid.New(), Type: mist2.EventTypeCreated,
+		Body: mist2.CreatedBody{ElemAttr: 7, SkillDelay: 3},
+	})
+
+	if lastCreated.ElemAttr() != 7 {
+		t.Fatalf("ElemAttr() = %d, want 7 (value must come from the event)", lastCreated.ElemAttr())
+	}
+	if lastCreated.SkillDelay() != 3 {
+		t.Fatalf("SkillDelay() = %d, want 3 (value must come from the event)", lastCreated.SkillDelay())
 	}
 }
 

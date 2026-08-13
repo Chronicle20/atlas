@@ -1870,6 +1870,10 @@
   domain: skill
   canonicalToken: 20000012
   displayName: Legend Bless Of Nymph
+- name: LegendComboAbility
+  domain: skill
+  canonicalToken: 20000017
+  displayName: Legend Combo Ability
 - name: LegendThreeSnails
   domain: skill
   canonicalToken: 20001000
@@ -2616,3 +2620,165 @@
   domain: skill
   canonicalToken: 1120012
   displayName: Combat Mastery
+# ---------------------------------------------------------------------------
+# Dual Blade (task-204). GMS introduced the third Rogue branch at v0.88, so
+# these identities have no v83 constant and the mechanical bootstrap never
+# surfaced them -- hand-added here exactly like the Big Bang block above.
+#
+# canonicalToken is the v0.92 wire id (the first RELEASED version), not a
+# v83-era one: the branch does not exist at v83. That is a deliberate
+# widening of the "canonical token == current v83 wire id" convention in
+# gen/identities.go's package doc -- the token's only contract is that it is
+# stable and unique within its domain, and the v92 ids satisfy both.
+#
+# Presence vs release: jobs 430-434 ARE present in gms 87's Skill.wz, but as
+# an incomplete stub (17 of the 26 skill images the released versions carry;
+# 4330001/4340001/4341000/4341002/4341003/4341004/4341006/4341007/4341008 are
+# all absent, and 4300000 has no WZ name). availability.csv already gates
+# that -- DualBlade is released=false at gms 87 and true at gms 92, gms 95
+# and jms 185 -- so the identities auto-bind at v87 but never become
+# Available there. Do not "fix" the v87 stub by flipping that row.
+#
+# Skill display names are the WZ names as served by atlas-data
+# GET /api/data/skills/{id} against the provisioned gms 92.1 tenant
+# (2026-08-09); job display names follow the repo's own job-naming
+# convention, as every other job identity's does -- no WZ image carries a
+# job name (String.wz has no Job.img; String.wz/Skill.img/<job>/bookName is
+# a skill-book title such as "Chief Bandit's Tricks", and the STRING worker
+# discards it), and "Blade" appears in none of the v92/v95/jms 185 client
+# binaries. BladeRecruit for 430 was already pinned by the pre-existing
+# `job.BladeRecruit` references in job/model.go and atlas-character-factory.
+- name: BladeRecruitKataraMastery
+  domain: skill
+  canonicalToken: 4300000
+  displayName: Katara Mastery
+- name: BladeRecruitTripleStab
+  domain: skill
+  canonicalToken: 4301001
+  displayName: Triple Stab
+- name: BladeRecruitKataraBooster
+  domain: skill
+  canonicalToken: 4301002
+  displayName: Katara Booster
+# 4310000 (Endure) is the pre-Big-Bang id; gms 95 drops it and adds 4310004
+# (Shadow Resistance) in its place -- the same rename shape as
+# AssassinEndure 4100002 -> AssassinShadowResistance 4100006 above, and
+# modelled the same way: two identities, each auto-binding only where its
+# wire id is actually present, with the relationship recorded as a
+# documentation row in divergences.csv.
+- name: BladeAcolyteEndure
+  domain: skill
+  canonicalToken: 4310000
+  displayName: Endure
+- name: BladeAcolyteShadowResistance
+  domain: skill
+  canonicalToken: 4310004
+  displayName: Shadow Resistance
+- name: BladeAcolyteSelfHaste
+  domain: skill
+  canonicalToken: 4311001
+  displayName: Self Haste
+- name: BladeAcolyteFatalBlow
+  domain: skill
+  canonicalToken: 4311002
+  displayName: Fatal Blow
+- name: BladeAcolyteSlashStorm
+  domain: skill
+  canonicalToken: 4311003
+  displayName: Slash Storm
+- name: BladeSpecialistTornadoSpin
+  domain: skill
+  canonicalToken: 4321000
+  displayName: Tornado Spin
+- name: BladeSpecialistTornadoSpinAttack
+  domain: skill
+  canonicalToken: 4321001
+  displayName: Tornado Spin (Attack)
+- name: BladeSpecialistFlashbang
+  domain: skill
+  canonicalToken: 4321002
+  displayName: Flashbang
+- name: BladeSpecialistFlashJump
+  domain: skill
+  canonicalToken: 4321003
+  displayName: Flash Jump
+- name: BladeLordAdvancedDarkSight
+  domain: skill
+  canonicalToken: 4330001
+  displayName: Advanced Dark Sight
+- name: BladeLordBloodyStorm
+  domain: skill
+  canonicalToken: 4331000
+  displayName: Bloody Storm
+- name: BladeLordMirrorImage
+  domain: skill
+  canonicalToken: 4331002
+  displayName: Mirror Image
+- name: BladeLordOwlSpirit
+  domain: skill
+  canonicalToken: 4331003
+  displayName: Owl Spirit
+- name: BladeLordUpperStab
+  domain: skill
+  canonicalToken: 4331004
+  displayName: Upper Stab
+- name: BladeLordFlyingAssaulter
+  domain: skill
+  canonicalToken: 4331005
+  displayName: Flying Assaulter
+- name: BladeMasterVenom
+  domain: skill
+  canonicalToken: 4340001
+  displayName: Venom
+- name: BladeMasterMapleWarrior
+  domain: skill
+  canonicalToken: 4341000
+  displayName: Maple Warrior
+- name: BladeMasterFinalCut
+  domain: skill
+  canonicalToken: 4341002
+  displayName: Final Cut
+- name: BladeMasterMonsterBomb
+  domain: skill
+  canonicalToken: 4341003
+  displayName: Monster Bomb
+- name: BladeMasterSuddenRaid
+  domain: skill
+  canonicalToken: 4341004
+  displayName: Sudden Raid
+- name: BladeMasterChainsOfHell
+  domain: skill
+  canonicalToken: 4341005
+  displayName: Chains of Hell
+- name: BladeMasterMirroredTarget
+  domain: skill
+  canonicalToken: 4341006
+  displayName: Mirrored Target
+- name: BladeMasterThorns
+  domain: skill
+  canonicalToken: 4341007
+  displayName: Thorns
+- name: BladeMasterHerosWill
+  domain: skill
+  canonicalToken: 4341008
+  displayName: Hero's Will
+- name: BladeRecruit
+  domain: job
+  canonicalToken: 430
+  displayName: Blade Recruit
+- name: BladeAcolyte
+  domain: job
+  canonicalToken: 431
+  displayName: Blade Acolyte
+- name: BladeSpecialist
+  domain: job
+  canonicalToken: 432
+  displayName: Blade Specialist
+- name: BladeLord
+  domain: job
+  canonicalToken: 433
+  displayName: Blade Lord
+- name: BladeMaster
+  domain: job
+  canonicalToken: 434
+  displayName: Blade Master

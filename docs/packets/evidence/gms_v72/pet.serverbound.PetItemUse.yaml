@@ -1,0 +1,10 @@
+packet: pet/serverbound/PetItemUse
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendStatChangeItemUseRequestByPetQ
+    address: "0x903f8b"
+    decompile_sha256: 21aa32e27c824634827e658844e202d02bcfb2b9300775b8ad760c0c1f87ccb8
+verifies:
+  - libs/atlas-packet/pet/serverbound/item_use_test.go#TestItemUseBytesV72

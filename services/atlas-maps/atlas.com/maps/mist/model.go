@@ -12,8 +12,10 @@ import (
 )
 
 // Mist represents an area-of-effect mist field placed on a map. It carries a
-// disease (status effect) that is applied to characters whose position falls
-// within its axis-aligned bounding box on each tick.
+// status effect that is applied on each tick to whatever its targetKind names
+// -- characters (the monster AREA_POISON path) or monsters (player-cast
+// mists). The disease* fields are the generic status name / magnitude /
+// per-target duration triple; the names are historical.
 type Mist struct {
 	id               uuid.UUID
 	f                field.Model
@@ -33,6 +35,10 @@ type Mist struct {
 	diseaseDuration  time.Duration
 	duration         time.Duration
 	tickInterval     time.Duration
+	targetKind       string
+	effectKind       string
+	elemAttr         int32
+	skillDelay       int16
 	createdAt        time.Time
 	expiresAt        time.Time
 	lastTick         time.Time
@@ -83,10 +89,75 @@ func (m Mist) SourceSkillLevel() uint32 {
 	return m.sourceSkillLevel
 }
 
-// Type returns the mist/affected-area type discriminator. Defaults to 0.
+// Type returns the mist/affected-area type discriminator (the client's
+// AFFECTEDAREA::nType, +0x4). Defaults to 0 -- see AffectedAreaTypeFor for why
+// that default is dangerous for a player-cast mist.
 func (m Mist) Type() int32 {
 	return m.mistType
 }
+
+// AFFECTEDAREA::nType wire values. The client has no enum symbol for this
+// field even in the PDB-backed GMS v95 IDB (AFFECTEDAREA::nType is a bare
+// `int`), so these names are ours; the VALUES are read from the client.
+//
+// Only three values are load-bearing. Everything the client does with nType:
+//
+//   - == 0  CAffectedAreaPool::GetAffectedAreaByPoint (v83 sub_431783
+//     @0x4317b6, v95 @0x434cc0 PDB-named) selects an area for the LOCAL USER
+//     iff `!nType && tCur >= tStart && PtInRect(rcArea, ptUser)`, and returns
+//     `nSLV | (nSkillID << 8)` -- a MOB-skill disease descriptor.
+//     CUserLocal::Update (v83 @0x94b7ba) calls it every frame and, on a hit,
+//     computes `AFFECTEDAREA.nDamage (+0x34) * (100 - resist) / 100`
+//     (@0x94b801) and damages the local user.
+//   - == 2  CAffectedAreaPool::IsSmokeAreaByPoint (v95 @0x434f40) -- Smoke
+//     Screen. v83 CAffectedAreaPool::Update (@0x43109f) also gates the
+//     fade-out animation on `nType == 2`.
+//   - == 3  CAffectedAreaPool::OnAffectedAreaCreated (v83 @0x431ade, v95
+//     @0x437ec0) routes to CItemInfo::GetAreaBuffItem -- an area-buff ITEM,
+//     not a skill.
+//
+// Nothing reads any other value: the per-skill construction path
+// (CAffectedAreaPool::AffectedAreaAnimationCreated, v95 @0x4372c0) dispatches
+// purely on nSkillID, and the user/party aura lookups
+// (GetAffectAreaByPoint @0x4350f0, GetAr01AreaPAD/MAD) filter on
+// nSkillID + dwOwnerID and ignore nType entirely.
+//
+// This is why a player-cast mist MUST NOT go out as 0. `nDamage` is written
+// ONLY on the mob-skill arms of AffectedAreaAnimationCreated
+// (`pa.p->nDamage = a[nSLV-1].nX` under `nSkillID == 130` / `== 131`); the
+// 2111003 (Poison Mist) arm never touches it, so the field holds whatever was
+// in the freshly-allocated AFFECTEDAREA. Sending nType 0 for Poison Mist made
+// the v83 client find the caster standing inside their own cloud and bill them
+// that uninitialized value -- observed live as a 1,434,803-damage self-hit
+// (clamped to 999999) roughly one second after every cast.
+//
+// AffectedAreaTypeUserSkill is 1 because 1 is inert: the only requirement the
+// client imposes is "not 0, not 2, not 3".
+const (
+	AffectedAreaTypeMobSkill  = int32(0)
+	AffectedAreaTypeUserSkill = int32(1)
+)
+
+// AffectedAreaTypeFor maps a mist's owner to its nType. A monster-owned mist
+// IS a mob disease cloud and must stay 0 -- that is what makes the client
+// apply it to players standing in it (the pre-task-200 AREA_POISON behaviour,
+// which must not change). A character-owned mist is a user skill area.
+//
+// Derived from ownerType rather than carried on COMMAND_TOPIC_MIST on purpose:
+// nType is a client wire detail, and no producer should have to know the
+// client's value table to create a mist.
+func AffectedAreaTypeFor(ownerType string) int32 {
+	if ownerType == OwnerTypeCharacter {
+		return AffectedAreaTypeUserSkill
+	}
+	return AffectedAreaTypeMobSkill
+}
+
+// Mist owner types, as carried on COMMAND_TOPIC_MIST CreateCommandBody.
+const (
+	OwnerTypeCharacter = "CHARACTER"
+	OwnerTypeMonster   = "MONSTER"
+)
 
 // OriginX returns the x coordinate of the mist's origin (anchor).
 func (m Mist) OriginX() int16 {
@@ -133,6 +204,36 @@ func (m Mist) DiseaseDuration() time.Duration {
 	return m.diseaseDuration
 }
 
+// TargetKind reports who this mist's per-tick effect applies to: CHARACTER or
+// MONSTER. Never empty on a mist built through Processor.Create, which
+// normalizes an absent value to CHARACTER.
+func (m Mist) TargetKind() string {
+	return m.targetKind
+}
+
+// EffectKind reports what this mist's per-tick effect does: DISEASE or
+// DAMAGE_OVER_TIME. Never empty on a mist built through Processor.Create.
+func (m Mist) EffectKind() string {
+	return m.effectKind
+}
+
+// ElemAttr returns the AffectedAreaCreated `nElemAttr` wire value. The client
+// stores it raw at AFFECTEDAREA+0x30 (v83 @0x431b3b, v95 @0x437fd9) and never
+// reads it on any rendering path -- it takes the skill's element from its own
+// Skill.wz. Atlas models no mist element, so this is 0 for every mist.
+func (m Mist) ElemAttr() int32 {
+	return m.elemAttr
+}
+
+// SkillDelay returns the AffectedAreaCreated `skillDelay` wire value: a
+// DRAW DELAY in units of 100 ms, not a lifetime. The client computes
+// tStart = get_update_time() + 100*skillDelay (v83 @0x431b50, v95 @0x437fa3)
+// and gates the mist's first draw on it, so any non-zero value hides the mist
+// for that long. Atlas has no per-mist cast delay to express: 0 = draw now.
+func (m Mist) SkillDelay() int16 {
+	return m.skillDelay
+}
+
 // Duration returns the total lifetime of this mist.
 func (m Mist) Duration() time.Duration {
 	return m.duration
@@ -158,13 +259,17 @@ func (m Mist) LastTick() time.Time {
 	return m.lastTick
 }
 
+// Rect returns the mist's absolute axis-aligned bounding box in world
+// coordinates: (x1, y1) top-left, (x2, y2) bottom-right. Bounds are inclusive,
+// matching Contains and the atlas-monsters in-rect endpoint.
+func (m Mist) Rect() (int16, int16, int16, int16) {
+	return m.originX + m.ltX, m.originY + m.ltY, m.originX + m.rbX, m.originY + m.rbY
+}
+
 // Contains reports whether the given world coordinates fall within the mist's
 // axis-aligned bounding box (inclusive of edges).
 func (m Mist) Contains(x, y int16) bool {
-	minX := m.originX + m.ltX
-	maxX := m.originX + m.rbX
-	minY := m.originY + m.ltY
-	maxY := m.originY + m.rbY
+	minX, minY, maxX, maxY := m.Rect()
 	return x >= minX && x <= maxX && y >= minY && y <= maxY
 }
 
@@ -208,6 +313,10 @@ type Builder struct {
 	diseaseDuration  time.Duration
 	duration         time.Duration
 	tickInterval     time.Duration
+	targetKind       string
+	effectKind       string
+	elemAttr         int32
+	skillDelay       int16
 	createdAt        time.Time
 	expiresAt        time.Time
 	lastTick         time.Time
@@ -272,6 +381,22 @@ func (b *Builder) SetDisease(disease string, value int32, duration time.Duration
 	return b
 }
 
+// SetKinds sets the target and effect descriptors. Grouped rather than split
+// into two single-field setters because the pair is meaningless apart.
+func (b *Builder) SetKinds(targetKind, effectKind string) *Builder {
+	b.targetKind = targetKind
+	b.effectKind = effectKind
+	return b
+}
+
+// SetRender sets the client-render wire values carried on MIST_CREATED. Both
+// are 0 for every mist Atlas creates; see the getters for why.
+func (b *Builder) SetRender(elemAttr int32, skillDelay int16) *Builder {
+	b.elemAttr = elemAttr
+	b.skillDelay = skillDelay
+	return b
+}
+
 // SetDuration sets the total mist lifetime and recomputes expiresAt from createdAt.
 func (b *Builder) SetDuration(d time.Duration) *Builder {
 	b.duration = d
@@ -306,6 +431,10 @@ func (b *Builder) Build() Mist {
 		diseaseDuration:  b.diseaseDuration,
 		duration:         b.duration,
 		tickInterval:     b.tickInterval,
+		targetKind:       b.targetKind,
+		effectKind:       b.effectKind,
+		elemAttr:         b.elemAttr,
+		skillDelay:       b.skillDelay,
 		createdAt:        b.createdAt,
 		expiresAt:        b.expiresAt,
 		lastTick:         b.lastTick,

@@ -74,6 +74,27 @@ func DeleteAllForTenant(tx *gorm.DB, tenantId uuid.UUID, entity interface{}) err
 // Search / SearchWithFilter / Count / CountWithFilter so all queries see the
 // same partition.
 func ResolveTenantId[E any](db *gorm.DB, ctx context.Context, _ QuerySpec[E]) (uuid.UUID, error) {
+	return ResolvePartitionTenantId[E](db, ctx)
+}
+
+// ResolvePartitionTenantId picks the tenant_id partition to read for the table
+// backing E: the active tenant when it has any rows of its own, otherwise the
+// version-scoped canonical id for its region and version.
+//
+// It generalises ResolveTenantId to every tenant-partitioned lookup table, not
+// just the *_search_index ones — the *_spawn_index tables are derived from MAP
+// documents during ingest and therefore land in whichever partition ingest ran
+// under, which is canonical for shared content (issue #1213).
+//
+// The probe MUST be made against E's own table: a tenant restored from a
+// baseline dump has its own `documents` and *_search_index rows while its
+// *_spawn_index rows are absent (they are not in baseline.DumpTables), so
+// probing any other table would resolve to the wrong partition.
+//
+// Callers MUST pass the result into a query that bypasses the automatic tenant
+// filter (database.WithoutTenantFilter); otherwise the GORM tenant callback
+// re-injects the request tenant and contradicts the resolved partition.
+func ResolvePartitionTenantId[E any](db *gorm.DB, ctx context.Context) (uuid.UUID, error) {
 	t := tenant.MustFromContext(ctx)
 	bypass := database.WithoutTenantFilter(ctx)
 

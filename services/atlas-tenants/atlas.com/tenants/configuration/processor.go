@@ -130,6 +130,28 @@ type Processor interface {
 	// AllMtsConfigsProvider returns a provider for all mts configs for a tenant
 	AllMtsConfigsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}]
 
+	// Trade config operations
+	// CreateTradeConfig creates a new trade config configuration
+	CreateTradeConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(config map[string]interface{}) (Model, error)
+	// CreateTradeConfigAndEmit creates a new trade config configuration and emits events
+	CreateTradeConfigAndEmit(tenantId uuid.UUID, config map[string]interface{}) (Model, error)
+	// UpdateTradeConfig updates an existing trade config configuration
+	UpdateTradeConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(configID string) func(config map[string]interface{}) (Model, error)
+	// UpdateTradeConfigAndEmit updates an existing trade config configuration and emits events
+	UpdateTradeConfigAndEmit(tenantId uuid.UUID, configID string, config map[string]interface{}) (Model, error)
+	// DeleteTradeConfig deletes a trade config configuration
+	DeleteTradeConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(configID string) error
+	// DeleteTradeConfigAndEmit deletes a trade config configuration and emits events
+	DeleteTradeConfigAndEmit(tenantId uuid.UUID, configID string) error
+	// GetTradeConfigById gets a trade config by ID
+	GetTradeConfigById(tenantId uuid.UUID, configID string) (map[string]interface{}, error)
+	// GetAllTradeConfigs gets all trade configs for a tenant
+	GetAllTradeConfigs(tenantId uuid.UUID) ([]map[string]interface{}, error)
+	// TradeConfigByIdProvider returns a provider for a trade config by ID
+	TradeConfigByIdProvider(tenantId uuid.UUID, configID string) model.Provider[map[string]interface{}]
+	// AllTradeConfigsProvider returns a provider for all trade configs for a tenant
+	AllTradeConfigsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}]
+
 	// Rankings operations
 	// CreateRankings creates (or replaces) the tenant's rankings configuration
 	CreateRankings(mb *message.Buffer) func(tenantId uuid.UUID) func(rankings map[string]interface{}) (Model, error)
@@ -148,11 +170,31 @@ type Processor interface {
 	// RankingsProvider returns a provider for the rankings configuration
 	RankingsProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}]
 
+	// Kite config operations
+	// CreateKiteConfig creates (or replaces) the tenant's kite-configs configuration
+	CreateKiteConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error)
+	// CreateKiteConfigAndEmit creates the kite-configs configuration and emits events
+	CreateKiteConfigAndEmit(tenantId uuid.UUID, cfg map[string]interface{}) (Model, error)
+	// UpdateKiteConfig updates the existing kite-configs configuration
+	UpdateKiteConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error)
+	// UpdateKiteConfigAndEmit updates the kite-configs configuration and emits events
+	UpdateKiteConfigAndEmit(tenantId uuid.UUID, cfg map[string]interface{}) (Model, error)
+	// DeleteKiteConfig deletes the kite-configs configuration
+	DeleteKiteConfig(mb *message.Buffer) func(tenantId uuid.UUID) error
+	// DeleteKiteConfigAndEmit deletes the kite-configs configuration and emits events
+	DeleteKiteConfigAndEmit(tenantId uuid.UUID) error
+	// GetKiteConfig gets the kite-configs configuration for a tenant
+	GetKiteConfig(tenantId uuid.UUID) (map[string]interface{}, error)
+	// KiteConfigProvider returns a provider for the kite-configs configuration
+	KiteConfigProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}]
+
 	// Seed operations
 	// SeedRpsRewards clears existing rps-rewards for a tenant and loads them from seed files
 	SeedRpsRewards(tenantId uuid.UUID) (SeedResult, error)
 	// SeedMtsConfigs clears existing mts configs for a tenant and loads them from seed files
 	SeedMtsConfigs(tenantId uuid.UUID) (SeedResult, error)
+	// SeedTradeConfigs clears existing trade configs for a tenant and loads them from seed files
+	SeedTradeConfigs(tenantId uuid.UUID) (SeedResult, error)
 }
 
 // ProcessorImpl implements the Processor interface
@@ -971,6 +1013,264 @@ func (p *ProcessorImpl) AllMtsConfigsProvider(tenantId uuid.UUID) model.Provider
 	return GetAllMtsConfigsProvider(tenantId)(p.db)
 }
 
+// CreateTradeConfig creates a new trade config configuration
+func (p *ProcessorImpl) CreateTradeConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(config map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(config map[string]interface{}) (Model, error) {
+		return func(config map[string]interface{}) (Model, error) {
+			// Check if configuration already exists
+			existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "trade-configs")(p.db)
+			existing, err := existingProvider()
+
+			var resourceData json.RawMessage
+
+			configID := ""
+			if id, ok := config["id"].(string); ok {
+				configID = id
+			}
+
+			if err == nil {
+				// Configuration exists, update it
+				var existingData map[string]interface{}
+				if err := json.Unmarshal(existing.ResourceData, &existingData); err != nil {
+					return Model{}, err
+				}
+
+				// Check if it's an array of resources
+				if resources, ok := existingData["data"].([]interface{}); ok {
+					// Add the new config to the array
+					resources = append(resources, config)
+					existingData["data"] = resources
+					resourceData, err = json.Marshal(existingData)
+					if err != nil {
+						return Model{}, err
+					}
+				} else {
+					// Create a new array with the existing resource and the new one
+					resourceData, err = CreateTradeConfigJsonData([]map[string]interface{}{config})
+					if err != nil {
+						return Model{}, err
+					}
+				}
+
+				existing.ResourceData = resourceData
+				if err := UpdateConfiguration(p.db, existing); err != nil {
+					return Model{}, err
+				}
+
+				m, err := Make(existing)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				if err := mb.Put(EventTopicConfigurationStatus, CreateTradeConfigStatusEventProvider(tenantId, EventTypeTradeConfigCreated, configID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
+				// Configuration doesn't exist, create it
+				resourceData, err = CreateSingleTradeConfigJsonData(config)
+				if err != nil {
+					return Model{}, err
+				}
+
+				entity := Entity{
+					ID:           uuid.New(),
+					TenantId:     tenantId,
+					ResourceName: "trade-configs",
+					ResourceData: resourceData,
+				}
+
+				if err := CreateConfiguration(p.db, entity); err != nil {
+					return Model{}, err
+				}
+
+				m, err := Make(entity)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				if err := mb.Put(EventTopicConfigurationStatus, CreateTradeConfigStatusEventProvider(tenantId, EventTypeTradeConfigCreated, configID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
+			} else {
+				// Other error
+				return Model{}, err
+			}
+		}
+	}
+}
+
+// CreateTradeConfigAndEmit creates a new trade config configuration and emits events
+func (p *ProcessorImpl) CreateTradeConfigAndEmit(tenantId uuid.UUID, config map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, ctx, tx).CreateTradeConfig(mb)(tenantId)(config)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
+}
+
+// UpdateTradeConfig updates an existing trade config configuration
+func (p *ProcessorImpl) UpdateTradeConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(configID string) func(config map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(configID string) func(config map[string]interface{}) (Model, error) {
+		return func(configID string) func(config map[string]interface{}) (Model, error) {
+			return func(config map[string]interface{}) (Model, error) {
+				// Check if configuration exists
+				existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "trade-configs")(p.db)
+				existing, err := existingProvider()
+				if err != nil {
+					return Model{}, err
+				}
+
+				var existingData map[string]interface{}
+				if err := json.Unmarshal(existing.ResourceData, &existingData); err != nil {
+					return Model{}, err
+				}
+
+				// Ensure the config ID matches
+				config["id"] = configID
+
+				// Attributes the PATCH omitted are carried over from the stored
+				// config rather than reset — see mergeTradeConfigAttributes. A
+				// plain overwrite here would let a PATCH of one knob silently
+				// disable the meso tax tenant-wide.
+				if resources, ok := existingData["data"].([]interface{}); ok {
+					found := false
+					for i, resource := range resources {
+						if resourceMap, ok := resource.(map[string]interface{}); ok {
+							if id, ok := resourceMap["id"].(string); ok && id == configID {
+								resources[i] = mergeTradeConfigAttributes(resourceMap, config)
+								found = true
+								break
+							}
+						}
+					}
+
+					if !found {
+						return Model{}, errors.New("trade config not found")
+					}
+
+					existingData["data"] = resources
+				} else if data, ok := existingData["data"].(map[string]interface{}); ok {
+					if id, ok := data["id"].(string); ok && id == configID {
+						existingData["data"] = mergeTradeConfigAttributes(data, config)
+					} else {
+						return Model{}, errors.New("trade config not found")
+					}
+				} else {
+					return Model{}, errors.New("invalid resource data format")
+				}
+
+				resourceData, err := json.Marshal(existingData)
+				if err != nil {
+					return Model{}, err
+				}
+
+				existing.ResourceData = resourceData
+				if err := UpdateConfiguration(p.db, existing); err != nil {
+					return Model{}, err
+				}
+
+				m, err := Make(existing)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				if err := mb.Put(EventTopicConfigurationStatus, CreateTradeConfigStatusEventProvider(tenantId, EventTypeTradeConfigUpdated, configID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
+			}
+		}
+	}
+}
+
+// UpdateTradeConfigAndEmit updates an existing trade config configuration and emits events
+func (p *ProcessorImpl) UpdateTradeConfigAndEmit(tenantId uuid.UUID, configID string, config map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, ctx, tx).UpdateTradeConfig(mb)(tenantId)(configID)(config)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
+}
+
+// DeleteTradeConfig deletes a trade config configuration
+func (p *ProcessorImpl) DeleteTradeConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(configID string) error {
+	return func(tenantId uuid.UUID) func(configID string) error {
+		return func(configID string) error {
+			if err := DeleteConfiguration(p.db, tenantId, "trade-configs", configID); err != nil {
+				return err
+			}
+
+			// Add event to message buffer
+			if err := mb.Put(EventTopicConfigurationStatus, CreateTradeConfigStatusEventProvider(tenantId, EventTypeTradeConfigDeleted, configID)); err != nil {
+				return err
+			}
+
+			return nil
+		}
+	}
+}
+
+// DeleteTradeConfigAndEmit deletes a trade config configuration and emits events
+func (p *ProcessorImpl) DeleteTradeConfigAndEmit(tenantId uuid.UUID, configID string) error {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return err
+	}
+	return database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) error {
+			return NewProcessor(p.l, ctx, tx).DeleteTradeConfig(mb)(tenantId)(configID)
+		})
+	})
+}
+
+// GetTradeConfigById gets a trade config by ID
+func (p *ProcessorImpl) GetTradeConfigById(tenantId uuid.UUID, configID string) (map[string]interface{}, error) {
+	return p.TradeConfigByIdProvider(tenantId, configID)()
+}
+
+// GetAllTradeConfigs gets all trade configs for a tenant
+func (p *ProcessorImpl) GetAllTradeConfigs(tenantId uuid.UUID) ([]map[string]interface{}, error) {
+	return p.AllTradeConfigsProvider(tenantId)()
+}
+
+// TradeConfigByIdProvider returns a provider for a trade config by ID
+func (p *ProcessorImpl) TradeConfigByIdProvider(tenantId uuid.UUID, configID string) model.Provider[map[string]interface{}] {
+	return GetTradeConfigByIdProvider(tenantId, configID)(p.db)
+}
+
+// AllTradeConfigsProvider returns a provider for all trade configs for a tenant
+func (p *ProcessorImpl) AllTradeConfigsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}] {
+	return GetAllTradeConfigsProvider(tenantId)(p.db)
+}
+
 // CreateInstanceRoute creates a new instance route configuration
 func (p *ProcessorImpl) CreateInstanceRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(route map[string]interface{}) (Model, error) {
 	return func(tenantId uuid.UUID) func(route map[string]interface{}) (Model, error) {
@@ -1549,6 +1849,44 @@ func (p *ProcessorImpl) SeedMtsConfigs(tenantId uuid.UUID) (SeedResult, error) {
 	return result, nil
 }
 
+// SeedTradeConfigs clears existing trade configs for a tenant and loads them from seed files
+func (p *ProcessorImpl) SeedTradeConfigs(tenantId uuid.UUID) (SeedResult, error) {
+	p.l.Infof("Seeding trade configs for tenant [%s]", tenantId)
+
+	result := SeedResult{}
+
+	// Delete all existing trade configs for this tenant
+	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantId, "trade-configs")
+	if err != nil {
+		return result, fmt.Errorf("failed to clear existing trade configs: %w", err)
+	}
+	result.DeletedCount = int(deletedCount)
+
+	// Load trade config files from the filesystem
+	configs, loadErrors := LoadTradeConfigFiles()
+	for _, err := range loadErrors {
+		result.Errors = append(result.Errors, err.Error())
+		result.FailedCount++
+	}
+
+	// Create each trade config
+	for _, config := range configs {
+		id, _ := config["id"].(string)
+		_, err := p.CreateTradeConfigAndEmit(tenantId, config)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", id, err))
+			result.FailedCount++
+			continue
+		}
+		result.CreatedCount++
+	}
+
+	p.l.Infof("Trade config seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
+		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
+
+	return result, nil
+}
+
 // CreateRankings creates (or replaces) the tenant's rankings configuration
 func (p *ProcessorImpl) CreateRankings(mb *message.Buffer) func(tenantId uuid.UUID) func(rankings map[string]interface{}) (Model, error) {
 	return func(tenantId uuid.UUID) func(rankings map[string]interface{}) (Model, error) {
@@ -1706,4 +2044,163 @@ func (p *ProcessorImpl) GetRankings(tenantId uuid.UUID) (map[string]interface{},
 // RankingsProvider returns a provider for the rankings configuration
 func (p *ProcessorImpl) RankingsProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}] {
 	return GetRankingsProvider(tenantId)(p.db)
+}
+
+// CreateKiteConfig creates (or replaces) the tenant's kite-configs configuration
+func (p *ProcessorImpl) CreateKiteConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error) {
+		return func(cfg map[string]interface{}) (Model, error) {
+			kiteConfigId := ""
+			if id, ok := cfg["id"].(string); ok {
+				kiteConfigId = id
+			}
+
+			resourceData, err := CreateSingleKiteConfigJsonData(cfg)
+			if err != nil {
+				return Model{}, err
+			}
+
+			existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "kite-configs")(p.db)
+			existing, err := existingProvider()
+			if err == nil {
+				existing.ResourceData = resourceData
+				if err := UpdateConfiguration(p.db, existing); err != nil {
+					return Model{}, err
+				}
+				m, err := Make(existing)
+				if err != nil {
+					return Model{}, err
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreateKiteConfigStatusEventProvider(tenantId, EventTypeKiteConfigUpdated, kiteConfigId)); err != nil {
+					return Model{}, err
+				}
+				return m, nil
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
+				entity := Entity{
+					ID:           uuid.New(),
+					TenantId:     tenantId,
+					ResourceName: "kite-configs",
+					ResourceData: resourceData,
+				}
+				if err := CreateConfiguration(p.db, entity); err != nil {
+					return Model{}, err
+				}
+				m, err := Make(entity)
+				if err != nil {
+					return Model{}, err
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreateKiteConfigStatusEventProvider(tenantId, EventTypeKiteConfigCreated, kiteConfigId)); err != nil {
+					return Model{}, err
+				}
+				return m, nil
+			}
+			return Model{}, err
+		}
+	}
+}
+
+// CreateKiteConfigAndEmit creates the kite-configs configuration and emits events
+func (p *ProcessorImpl) CreateKiteConfigAndEmit(tenantId uuid.UUID, cfg map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, ctx, tx).CreateKiteConfig(mb)(tenantId)(cfg)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
+}
+
+// UpdateKiteConfig updates the existing kite-configs configuration
+func (p *ProcessorImpl) UpdateKiteConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error) {
+		return func(cfg map[string]interface{}) (Model, error) {
+			existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "kite-configs")(p.db)
+			existing, err := existingProvider()
+			if err != nil {
+				return Model{}, err
+			}
+
+			kiteConfigId := ""
+			if id, ok := cfg["id"].(string); ok {
+				kiteConfigId = id
+			}
+
+			resourceData, err := CreateSingleKiteConfigJsonData(cfg)
+			if err != nil {
+				return Model{}, err
+			}
+			existing.ResourceData = resourceData
+			if err := UpdateConfiguration(p.db, existing); err != nil {
+				return Model{}, err
+			}
+			m, err := Make(existing)
+			if err != nil {
+				return Model{}, err
+			}
+			if err := mb.Put(EventTopicConfigurationStatus, CreateKiteConfigStatusEventProvider(tenantId, EventTypeKiteConfigUpdated, kiteConfigId)); err != nil {
+				return Model{}, err
+			}
+			return m, nil
+		}
+	}
+}
+
+// UpdateKiteConfigAndEmit updates the kite-configs configuration and emits events
+func (p *ProcessorImpl) UpdateKiteConfigAndEmit(tenantId uuid.UUID, cfg map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, ctx, tx).UpdateKiteConfig(mb)(tenantId)(cfg)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
+}
+
+// DeleteKiteConfig deletes the kite-configs configuration
+func (p *ProcessorImpl) DeleteKiteConfig(mb *message.Buffer) func(tenantId uuid.UUID) error {
+	return func(tenantId uuid.UUID) error {
+		if _, err := DeleteConfigurationByResourceName(p.db, tenantId, "kite-configs"); err != nil {
+			return err
+		}
+		return mb.Put(EventTopicConfigurationStatus, CreateKiteConfigStatusEventProvider(tenantId, EventTypeKiteConfigDeleted, ""))
+	}
+}
+
+// DeleteKiteConfigAndEmit deletes the kite-configs configuration and emits events
+func (p *ProcessorImpl) DeleteKiteConfigAndEmit(tenantId uuid.UUID) error {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return err
+	}
+	return database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) error {
+			return NewProcessor(p.l, ctx, tx).DeleteKiteConfig(mb)(tenantId)
+		})
+	})
+}
+
+// GetKiteConfig gets the kite-configs configuration for a tenant
+func (p *ProcessorImpl) GetKiteConfig(tenantId uuid.UUID) (map[string]interface{}, error) {
+	return p.KiteConfigProvider(tenantId)()
+}
+
+// KiteConfigProvider returns a provider for the kite-configs configuration
+func (p *ProcessorImpl) KiteConfigProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}] {
+	return GetKiteConfigProvider(tenantId)(p.db)
 }

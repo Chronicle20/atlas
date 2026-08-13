@@ -200,23 +200,18 @@ var available_gms_79_1 = map[Identity]struct{}{
 	DawnWarriorStage1:        {},
 	DawnWarriorStage2:        {},
 	DawnWarriorStage3:        {},
-	DawnWarriorStage4:        {},
 	BlazeWizardStage1:        {},
 	BlazeWizardStage2:        {},
 	BlazeWizardStage3:        {},
-	BlazeWizardStage4:        {},
 	WindArcherStage1:         {},
 	WindArcherStage2:         {},
 	WindArcherStage3:         {},
-	WindArcherStage4:         {},
 	NightWalkerStage1:        {},
 	NightWalkerStage2:        {},
 	NightWalkerStage3:        {},
-	NightWalkerStage4:        {},
 	ThunderBreakerStage1:     {},
 	ThunderBreakerStage2:     {},
 	ThunderBreakerStage3:     {},
-	ThunderBreakerStage4:     {},
 }
 
 var names_gms_79_1 = map[Identity]string{

@@ -16,3 +16,176 @@ entries:
       sub_70C29F (panel 0), not by a regular-rock item-use. Teleport-rock use on
       v48 rides the cash-item op (USE_CASH_ITEM); list-management (TROCK_ADD_MAP
       0x51) and result (MAP_TRANSFER_RESULT 0x23) are present. (task-124)
+  - op: CLAIM_REQUEST
+    version: jms_v185
+    evidence: >
+      jms_v185 has no CLAIM_REQUEST send-site anywhere in the binary, checked five
+      independent ways and confirmed genuinely exhaustive over every code path that
+      constructs/sends an outgoing packet: (1) name/UI search for SendClaimRequest,
+      CUIClaim, SendClaim — no hit (CUIMessenger/CUIStatusBar are both substantially
+      named with no SendClaim member); (2) exhaustive scan of all 35 `push 101`
+      (0x65) instructions in .text — none precedes the long-opcode COutPacket ctor;
+      (3) exhaustive scan of all 577 COutPacket::COutPacket(long) call sites
+      (the entire jms serverbound opcode space, not just opcode 101) — the 81 inside
+      CField::SendChatMsgSlash use only opcodes 0x83/0x78/0x89/0xdd/0x84/0xe1/0x29,
+      none matching claim's 2xEncode1+2-3xEncodeStr bChatClaim-gated shape;
+      (4) exhaustive scan of all 504 CClientSocket::SendPacket call sites (0 tail
+      calls) with all 35 unnamed (sub_XXXXXX) callers individually decompiled —
+      none matches; (5) mandatory sibling cross-check: the clientbound
+      OnClaimResult/OnSetClaimSvrAvailableTime/OnClaimSvrStatusChanged trio IS
+      live-routed from CWvsContext::OnPacket's compiled switch (cases 0x2A/0x2B/0x2C
+      @ 0xaebfe7) — confirming the receive side exists and is reachable — yet no
+      corresponding send-site was found anywhere. jms_185 ships the shared
+      receive-side network code for claim results but the client-side trigger
+      (the report/claim UI) was removed or never wired for this build; the send
+      op does not exist to verify. Method validated against gms_v92's known-good
+      SendClaimRequest (0x9d9c30) before being applied to jms. (task-145 §7.3,
+      task-24 disposition)
+  - op: CASHSHOP_CASH_ITEM_GACHAPON_RESULT
+    version: gms_v48
+    evidence: >
+      Three independent proofs (task-207, design.md §1.1/§1.6), live-IDB
+      re-confirmed on session 93cc947e: (1) no CUICashItemGachapon class
+      exists anywhere in the v48 binary (func_query name_regex
+      "CUICashItemGachapon|OnCashItemGachaponResult" over the whole image
+      returns only the CCashShop stub below — zero CUICashItemGachapon hits);
+      (2) the opcode's handler, CCashShop::OnCashItemGachaponResult
+      (0x4536b9), is a 3-line stub — `CInPacket::Decode1(a2)` written straight
+      into `*(g_pWvsContext + 8257)`, a CWvsContext flag byte, not a gachapon
+      reward read (no sn/remain/blob/itemId/count/jackpot fields); (3)
+      `GET /api/data/cash/items/5222000` against the live baseline returns 404
+      on gms_v48 (200 on v79+). Mandatory sibling cross-check: the serverbound
+      CASH_ITEM_GACHAPON_BUTTON send site is likewise absent from v48 (no
+      CUICashItemGachapon::OnButtonClicked anywhere) — both directions are
+      absent together, consistent with the feature not existing on this
+      client, not a one-sided gap.
+  - op: CASH_ITEM_GACHAPON_BUTTON
+    version: gms_v48
+    evidence: >
+      Same three proofs as the CASHSHOP_CASH_ITEM_GACHAPON_RESULT × gms_v48
+      entry above (task-207): no CUICashItemGachapon class in the binary, the
+      CCashShop::OnCashItemGachaponResult handler is a 3-line CWvsContext-flag
+      stub unrelated to the gachapon reward wire, and item 5222000 404s from
+      the live atlas-data baseline on this tenant. Mandatory sibling
+      cross-check: the clientbound result handler is the CWvsContext-flag stub
+      above, not a gachapon result — both sides absent together.
+  - op: CASHSHOP_CASH_ITEM_GACHAPON_RESULT
+    version: gms_v61
+    evidence: >
+      Three independent proofs (task-207, design.md §1.1/§1.6), live-IDB
+      re-confirmed on session 415bf585: (1) no CUICashItemGachapon class
+      exists anywhere in the v61 binary; (2) the opcode's handler,
+      CCashShop::OnCashItemGachaponResult (0x46128a), is a 3-line stub —
+      `CInPacket::Decode1(a2)` written into `*(g_pWvsContext + 8261)`, a
+      CWvsContext flag byte, not a gachapon reward read; (3)
+      `GET /api/data/cash/items/5222000` against the live baseline returns 404
+      on gms_v61. Mandatory sibling cross-check: the serverbound
+      CASH_ITEM_GACHAPON_BUTTON send site is likewise absent from v61 — both
+      directions are absent together.
+  - op: CASH_ITEM_GACHAPON_BUTTON
+    version: gms_v61
+    evidence: >
+      Same three proofs as the CASHSHOP_CASH_ITEM_GACHAPON_RESULT × gms_v61
+      entry above (task-207): no CUICashItemGachapon class in the binary, the
+      CCashShop::OnCashItemGachaponResult handler is a 3-line CWvsContext-flag
+      stub unrelated to the gachapon reward wire, and item 5222000 404s from
+      the live atlas-data baseline on this tenant. Mandatory sibling
+      cross-check: the clientbound result handler is the CWvsContext-flag stub
+      above, not a gachapon result — both sides absent together.
+  - op: CASHSHOP_CASH_ITEM_GACHAPON_RESULT
+    version: gms_v72
+    evidence: >
+      Three independent proofs (task-207, design.md §1.1/§1.6), live-IDB
+      re-confirmed on session c8acae95: (1) no CUICashItemGachapon class
+      exists anywhere in the v72 binary; (2) the opcode's handler,
+      CCashShop::OnCashItemGachaponResult (0x470d24), is a 3-line stub —
+      `CInPacket::Decode1(a2)` written into `*(g_pWvsContext + 8273)`, a
+      CWvsContext flag byte, not a gachapon reward read; (3)
+      `GET /api/data/cash/items/5222000` against the live baseline returns 404
+      on gms_v72. Mandatory sibling cross-check: the serverbound
+      CASH_ITEM_GACHAPON_BUTTON send site is likewise absent from v72 — both
+      directions are absent together.
+  - op: CASH_ITEM_GACHAPON_BUTTON
+    version: gms_v72
+    evidence: >
+      Same three proofs as the CASHSHOP_CASH_ITEM_GACHAPON_RESULT × gms_v72
+      entry above (task-207): no CUICashItemGachapon class in the binary, the
+      CCashShop::OnCashItemGachaponResult handler is a 3-line CWvsContext-flag
+      stub unrelated to the gachapon reward wire, and item 5222000 404s from
+      the live atlas-data baseline on this tenant. Mandatory sibling
+      cross-check: the clientbound result handler is the CWvsContext-flag stub
+      above, not a gachapon result — both sides absent together.
+  - op: CASHSHOP_CASH_ITEM_GACHAPON_RESULT
+    version: gms_v79
+    evidence: >
+      task-207 live-IDB re-confirmed on session 1438cecd: (1)
+      CCashShop::OnPacket (0x471da6) enumerates opcodes 301-309 with cases for
+      OnChargeParamResult/OnQueryCashResult/OnCashItemResult/
+      OnPurchaseExpChanged/OnCheckDuplicatedIDResult/
+      OnCheckNameChangePossibleResult/OnCheckTransferWorldPossibleResult/
+      OnCashShopGachaponStampResult (cases 301-306, 308, 309) — no
+      CashItemGachaponResult case anywhere, and no such function exists in the
+      binary at all (func_query over CCashShop/CUICashItemGachapon finds zero
+      OnCashItemGachaponResult hits, unlike v48/v61/v72's stub); (2)
+      CCashShop::OnCashItemResult (0x4720ed) enumerates 47 sub-modes
+      (0x3F-0x99) with no gachapon arm; (3) CUICashItemGachapon::Update
+      (0x8ef7ce) renders the reward from `*((_DWORD*)this + 39)`
+      (m_nSelectedItemID) via CItemInfo::GetItemName/GetItemIcon, gated by
+      CWvsContext::SetExclRequestSent — nothing else in the binary writes that
+      field, i.e. the client has no wire path that populates the reward it
+      would render. Scope caveat (verbatim, per playbook): the two cash-shop
+      dispatch tables (OnPacket's opcode switch and OnCashItemResult's mode
+      switch) are the complete set of CCashShop clientbound entry points, but
+      a result arriving through a wholly unrelated router was not
+      exhaustively excluded. Mandatory sibling cross-check: the serverbound
+      CASH_ITEM_GACHAPON_BUTTON send is verified live on v79
+      (CUICashItemGachapon::OnButtonClicked @ 0x8efda6, COutPacket(0x9F) +
+      EncodeBuffer 8) — the request path is real and reaches the server, but
+      no client-side result handler exists to receive a reply, which is
+      exactly the family-inconsistent n-a this evidence file exists to prove.
+  - op: BRIDLE_MOB_CATCH_FAIL
+    version: gms_v48
+    evidence: >
+      gms_v48 has no BRIDLE_MOB_CATCH_FAIL receive handler. CWvsContext::OnPacket
+      @0x70d215 is a complete compiled switch over cases 25-70 with no bridle-fail
+      arm; the four unnamed arms were individually decompiled and ruled out —
+      sub_72025D (case 58, a delegating stub), sub_713202 (case 62), sub_721481
+      (case 68, a two-byte + optional-string notice) and sub_7215EA (case 70, the
+      same shape). The v48 IDB is symbol-rich across CWvsContext (mangled MSVC
+      names throughout) and CWvsContext::SendBridleItemUseRequest @0x70e0c5 IS
+      named, while OnBridleMobCatchFail is absent from the class entirely. v61
+      has it (@0x8307f3, named), so this is a v48-only absence: v48 sends catch
+      requests but has no server-driven failure notice. The sibling clientbound
+      catch packets DO exist on v48 (CATCH_MONSTER 0x0AC, CATCH_MONSTER_WITH_ITEM
+      0x0AD via CMobPool::OnMobPacket @0x559390 cases 172/173). (task-212)
+  - op: USE_DEATHITEM
+    version: gms_v48
+    evidence: >
+      The Wheel of Destiny item id 5510000 appears nowhere in
+      GMS_v48_1_DEVM.exe: an exhaustive immediate-operand scan over all
+      1,198,699 instructions in the image returned zero hits, so no
+      CUIRevive/CUserLocal path can construct the request (the client
+      hard-codes the id at the send site on every version that has the op).
+      No CUserLocal::RequestUpgradeTombEffect and no CUIRevive wheel branch
+      exist. (task-210)
+  - op: USE_DEATHITEM
+    version: gms_v61
+    evidence: >
+      Same positive-absence proof as gms_v48, over GMS_v61.1_U_DEVM.exe:
+      exhaustive immediate-operand scan of all 1,615,793 instructions found
+      zero references to 5510000, so the hard-coded send site cannot exist.
+      (task-210)
+  - op: SHOW_UPGRADE_TOMB_EFFECT
+    version: gms_v48
+    evidence: >
+      Receive side absent for the same reason as the send side: 5510000 does
+      not occur anywhere in GMS_v48_1_DEVM.exe (1,198,699 instructions
+      scanned, zero hits) and CUserRemote has no OnShowUpgradeTombEffect arm
+      in the CUserPool remote-packet dispatcher. (task-210)
+  - op: SHOW_UPGRADE_TOMB_EFFECT
+    version: gms_v61
+    evidence: >
+      Same positive-absence proof over GMS_v61.1_U_DEVM.exe: 1,615,793
+      instructions scanned, zero references to 5510000, and no
+      CUserRemote::OnShowUpgradeTombEffect arm in the remote-packet
+      dispatcher. (task-210)

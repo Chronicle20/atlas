@@ -104,7 +104,7 @@ func TestPetMovementOperationString(t *testing.T) {
 // TestPetMovementBytesV48 pins the v48 MOVE_PET (sb op 113 / 0x71) send. IDA
 // GMS_v48_1_DEVM.exe @port 13337: sub_6E5BD6@0x6e5bff builds COutPacket(113)
 // then sub_5622DA (CMovePath::Flush) writes the raw movement blob — NO leading
-// EncodeBuffer(petId,8) (v48 single-pet; hasLeadingPetId(GMS,48)=false). Empty
+// EncodeBuffer(petId,8) (v48 single-pet; HasLeadingPetId(GMS,48)=false). Empty
 // model.Movement = StartX(2)+StartY(2)+count(1) = 5 zero bytes. v61 op138 carries petId.
 // packet-audit:verify packet=pet/serverbound/PetMovementRequest version=gms_v48 ida=0x6e5bd6
 func TestPetMovementBytesV48(t *testing.T) {

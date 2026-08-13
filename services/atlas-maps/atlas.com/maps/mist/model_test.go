@@ -7,6 +7,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
+	mistKafka "atlas-maps/kafka/message/mist"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
@@ -78,4 +80,44 @@ func TestMist_ShouldTick_RespectsLastTick(t *testing.T) {
 
 	updated := m.WithLastTick(time.Now())
 	require.False(t, updated.ShouldTick())
+}
+
+// TestMist_Kinds_RoundTrip asserts the target/effect descriptors survive the
+// builder (task-200 FR-2.5). mkField is the file's existing helper (line 13).
+func TestMist_Kinds_RoundTrip(t *testing.T) {
+	f := mkField(t)
+	m := NewBuilder(uuid.New(), f).
+		SetKinds(mistKafka.TargetKindMonster, mistKafka.EffectKindDamageOverTime).
+		Build()
+	if m.TargetKind() != "MONSTER" {
+		t.Fatalf("m.TargetKind() = %q, want MONSTER", m.TargetKind())
+	}
+	if m.EffectKind() != "DAMAGE_OVER_TIME" {
+		t.Fatalf("m.EffectKind() = %q, want DAMAGE_OVER_TIME", m.EffectKind())
+	}
+}
+
+// TestMist_Rect_AgreesWithContains pins Rect() against Contains() on the
+// boundary coordinates, so the two rectangle derivations cannot drift.
+func TestMist_Rect_AgreesWithContains(t *testing.T) {
+	f := mkField(t)
+	m := NewBuilder(uuid.New(), f).
+		SetOrigin(500, 300).
+		SetBounds(-110, -82, 110, 83).
+		Build()
+
+	x1, y1, x2, y2 := m.Rect()
+	if x1 != 390 || y1 != 218 || x2 != 610 || y2 != 383 {
+		t.Fatalf("m.Rect() = (%d,%d,%d,%d), want (390,218,610,383)", x1, y1, x2, y2)
+	}
+	// Every rect corner is inside (Contains is inclusive of edges).
+	for _, p := range [][2]int16{{x1, y1}, {x2, y2}, {x1, y2}, {x2, y1}} {
+		if !m.Contains(p[0], p[1]) {
+			t.Fatalf("m.Contains(%d,%d) = false, want true", p[0], p[1])
+		}
+	}
+	// One unit outside each edge is outside.
+	if m.Contains(x1-1, y1) || m.Contains(x2+1, y2) || m.Contains(x1, y1-1) || m.Contains(x2, y2+1) {
+		t.Fatal("Contains returned true outside the Rect bounds")
+	}
 }

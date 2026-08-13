@@ -20,6 +20,7 @@ const (
 	CommandRequestVegaScroll    = "REQUEST_VEGA_SCROLL"
 	CommandRequestViciousHammer = "REQUEST_VICIOUS_HAMMER"
 	CommandRequestSkillBookUse  = "REQUEST_SKILL_BOOK_USE"
+	CommandRequestCatchMonster  = "REQUEST_CATCH_MONSTER"
 )
 
 type Command[E any] struct {
@@ -36,6 +37,7 @@ type RequestItemConsumeBody struct {
 	Source   slot.Position `json:"source"`
 	ItemId   item.Id       `json:"itemId"`
 	Quantity int16         `json:"quantity"`
+	PetId    uint64        `json:"petId,omitempty"`
 }
 
 type RequestItemRewardBody struct {
@@ -67,6 +69,12 @@ type RequestViciousHammerBody struct {
 	EquipSlot  slot.Position `json:"equipSlot"`
 }
 
+type RequestCatchMonsterBody struct {
+	Source          slot.Position `json:"source"`
+	ItemId          item.Id       `json:"itemId"`
+	MonsterUniqueId uint32        `json:"monsterUniqueId"`
+}
+
 const (
 	EnvEventTopic            = "EVENT_TOPIC_CONSUMABLE_STATUS"
 	EventTypeError           = "ERROR"
@@ -77,10 +85,19 @@ const (
 
 	EventTypeRewardEffect = "REWARD_EFFECT"
 	EventTypeRewardWon    = "REWARD_WON"
+	EventTypeCatchFailed  = "CATCH_FAILED"
 
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
 	ErrorTypeInventoryFull    = "INVENTORY_FULL"
 	ErrorTypeVegaInvalid      = "VEGA_INVALID"
+
+	// CatchCauseUseDelay / CatchCauseInventoryFull / CatchCauseInvalidItem are
+	// the pre-reservation bridle-capture failure causes atlas-consumables
+	// emits. The wire-reason mapping is resolved in atlas-channel (DOM-25) --
+	// see bridleFailReason in kafka/consumer/monster/consumer.go.
+	CatchCauseUseDelay      = "USE_DELAY"
+	CatchCauseInventoryFull = "INVENTORY_FULL"
+	CatchCauseInvalidItem   = "INVALID_ITEM"
 )
 
 type Event[E any] struct {
@@ -127,4 +144,12 @@ type VegaScrollBody struct {
 type ViciousHammerBody struct {
 	Success bool   `json:"success"`
 	Reason  string `json:"reason"`
+}
+
+// CatchFailedBody carries a bridle capture attempt rejected before the
+// reservation reached atlas-monsters (delay gate, inventory full, invalid
+// item). Cause is one of the CatchCause* constants above.
+type CatchFailedBody struct {
+	ItemId uint32 `json:"itemId"`
+	Cause  string `json:"cause"`
 }

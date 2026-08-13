@@ -1,0 +1,10 @@
+packet: reactor/clientbound/ReactorHit
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CReactorPool::OnReactorChangeState
+    address: "0x5a53c4"
+    decompile_sha256: beab6b735508ce8bcb8e1a1085367ffce7e4dd4a8bd9927450769fb18282c36a
+verifies:
+    - libs/atlas-packet/reactor/clientbound/v48_test.go#TestReactorHitBytesV48

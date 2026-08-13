@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // packet-audit:verify packet=cash/serverbound/CashShopOperationIncreaseStorage version=gms_v95 ida=0x48dc70
@@ -21,7 +22,11 @@ func TestShopOperationIncreaseStorageItemRoundTrip(t *testing.T) {
 			if output.IsPoints() != input.IsPoints() {
 				t.Errorf("isPoints: got %v, want %v", output.IsPoints(), input.IsPoints())
 			}
-			if output.Currency() != input.Currency() {
+			// v48 does not carry the currency int (see hasIncStorageCurrency):
+			// CCashShop::OnIncTrunkCount @0x44aad1 encodes only mode, isPoints and
+			// the item flag. Asserting it on every variant pinned Atlas's own
+			// output rather than the client's send order.
+			if hasIncStorageCurrency(tenant.MustFromContext(ctx)) && output.Currency() != input.Currency() {
 				t.Errorf("currency: got %v, want %v", output.Currency(), input.Currency())
 			}
 			if output.Item() != input.Item() {
@@ -44,7 +49,11 @@ func TestShopOperationIncreaseStorageNoItemRoundTrip(t *testing.T) {
 			if output.IsPoints() != input.IsPoints() {
 				t.Errorf("isPoints: got %v, want %v", output.IsPoints(), input.IsPoints())
 			}
-			if output.Currency() != input.Currency() {
+			// v48 does not carry the currency int (see hasIncStorageCurrency):
+			// CCashShop::OnIncTrunkCount @0x44aad1 encodes only mode, isPoints and
+			// the item flag. Asserting it on every variant pinned Atlas's own
+			// output rather than the client's send order.
+			if hasIncStorageCurrency(tenant.MustFromContext(ctx)) && output.Currency() != input.Currency() {
 				t.Errorf("currency: got %v, want %v", output.Currency(), input.Currency())
 			}
 			if output.Item() != input.Item() {

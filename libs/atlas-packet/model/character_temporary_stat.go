@@ -95,10 +95,10 @@ func buildCharacterTemporaryStatRegistry(t tenant.Model) characterTemporaryStatR
 	newAndIncNonDiseased(character.TemporaryStatTypeHyperBodyMP)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeInvincible)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeSoulArrow)(NoOpForeignValueWriter, NoOpForeignValueReader)
-	newAndIncDiseased(character.TemporaryStatTypeStun)(ValueAsIntForeignValueWriter, IntForeignValueReader)
-	newAndIncDiseased(character.TemporaryStatTypePoison)(ValueSourceLevelForeignValueWriter, ValueSourceLevelForeignValueReader)
-	newAndIncDiseased(character.TemporaryStatTypeSeal)(ValueAsIntForeignValueWriter, IntForeignValueReader)
-	newAndIncDiseased(character.TemporaryStatTypeDarkness)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypeStun)(MobSkillReasonForeignValueWriter, MobSkillReasonForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypePoison)(ValueMobSkillReasonForeignValueWriter, ValueMobSkillReasonForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypeSeal)(MobSkillReasonForeignValueWriter, MobSkillReasonForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypeDarkness)(MobSkillReasonForeignValueWriter, MobSkillReasonForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeCombo)(ValueAsByteForeignValueWriter, ByteForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeWhiteKnightCharge)(ValueAsIntForeignValueWriter, IntForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeDragonBlood)(NoOpForeignValueWriter, NoOpForeignValueReader)
@@ -113,8 +113,16 @@ func buildCharacterTemporaryStatRegistry(t tenant.Model) characterTemporaryStatR
 	newAndIncNonDiseased(character.TemporaryStatTypePickPocket)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeMesoGuard)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeThaw)(NoOpForeignValueWriter, NoOpForeignValueReader)
-	newAndIncDiseased(character.TemporaryStatTypeWeaken)(ValueAsIntForeignValueWriter, IntForeignValueReader)
-	newAndIncDiseased(character.TemporaryStatTypeCurse)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypeWeaken)(MobSkillReasonForeignValueWriter, MobSkillReasonForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypeCurse)(MobSkillReasonForeignValueWriter, MobSkillReasonForeignValueReader)
+	// SLOW is mask-only on the foreign path, and must stay that way.
+	// SecondaryStat::DecodeForRemote has no CTS_Slow branch on ANY supported
+	// client — proven by xref on v83 (0xbeffc0) and v95 (0xc6c9a0), by table
+	// position on v87/v92, and by exhaustive block enumeration on
+	// v48/v61/v72/v79/v84. Slow's nOption/rOption therefore stay zero on an
+	// observer, UpdateAffectedSkillList never picks it up, and no remote
+	// animation is possible. Writing the mob-skill key here (as some servers
+	// do) would emit 4 bytes the client reads as nDefenseAtt/nDefenseState.
 	newAndIncDiseased(character.TemporaryStatTypeSlow)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeMorph)(ValueAsShortForeignValueWriter, ShortForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeRecovery)(NoOpForeignValueWriter, NoOpForeignValueReader)
@@ -122,7 +130,7 @@ func buildCharacterTemporaryStatRegistry(t tenant.Model) characterTemporaryStatR
 	newAndIncNonDiseased(character.TemporaryStatTypeStance)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeSharpEyes)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeManaReflection)(NoOpForeignValueWriter, NoOpForeignValueReader)
-	newAndIncDiseased(character.TemporaryStatTypeSeduce)(LevelSourceForeignValueWriter, LevelSourceForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypeSeduce)(MobSkillReasonForeignValueWriter, MobSkillReasonForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeShadowClaw)(ValueAsIntForeignValueWriter, IntForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeInfinity)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeHolyShield)(NoOpForeignValueWriter, NoOpForeignValueReader)
@@ -134,7 +142,7 @@ func buildCharacterTemporaryStatRegistry(t tenant.Model) characterTemporaryStatR
 	newAndIncNonDiseased(character.TemporaryStatTypeMesoUpByItem)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeGhostMorph)(ValueAsShortForeignValueWriter, ShortForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeBarrier)(ValueAsIntForeignValueWriter, IntForeignValueReader)
-	newAndIncDiseased(character.TemporaryStatTypeConfuse)(LevelSourceForeignValueWriter, LevelSourceForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypeConfuse)(MobSkillReasonForeignValueWriter, MobSkillReasonForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeItemUpByItem)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeRespectPImmune)(ValueAsIntForeignValueWriter, IntForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeRespectMImmune)(ValueAsIntForeignValueWriter, IntForeignValueReader)
@@ -295,11 +303,41 @@ func LevelSourceForeignValueWriter(v CharacterTemporaryStatValue) func(w *respon
 	}
 }
 
-func ValueSourceLevelForeignValueWriter(v CharacterTemporaryStatValue) func(w *response.Writer) {
+// MobSkillReasonForeignValueWriter writes a mob-applied disease's reason field
+// for the FOREIGN (observer) path: Short(mobSkillId) + Short(mobSkillLevel),
+// which the client consumes as a single Decode4 whose value is
+// mobSkillId | (level << 16).
+//
+// That composite is the animation key. CUser::UpdateAffectedSkillList (v83
+// @0x93e344) collects each present disease's reason — never its value — into
+// the affected-skill map, and CUser::ShowAffectedSkillAni (@0x932da6) splits it
+// back apart (`v8 = key >> 16` is the level; the low half indexes the MobSkill
+// table via sub_7632F2) to load MobSkill[id].level[lv].affected. Writing the
+// disease amount here, as the old ValueAsInt/LevelSource writers did, resolved
+// to no mob skill and rendered nothing. GMS v95's PDB names the targets
+// outright — rStun, rSeal, rDarkness, rWeakness, rCurse, rPoison, rAttract,
+// rReverseInput (SecondaryStat::DecodeForRemote @0x72b7b0).
+//
+// Field order mirrors the already-correct local path (Encode writes
+// Short(sourceId) + Short(level) for diseases). See
+// docs/tasks/task-195-foreign-disease-mobskill/investigation.md §1-2.
+func MobSkillReasonForeignValueWriter(v CharacterTemporaryStatValue) func(w *response.Writer) {
+	return func(w *response.Writer) {
+		w.WriteInt16(int16(v.SourceId()))
+		w.WriteInt16(int16(v.Level()))
+	}
+}
+
+// ValueMobSkillReasonForeignValueWriter is MobSkillReasonForeignValueWriter
+// prefixed with the stat value. POISON is the one disease whose foreign block
+// carries a value: the client reads Decode2 (nPoison, the per-tick damage) and
+// then Decode4 (rPoison, the mob-skill key) — two separate mask tests against
+// CTS_Poison, back to back.
+func ValueMobSkillReasonForeignValueWriter(v CharacterTemporaryStatValue) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		w.WriteInt16(int16(v.Value()))
-		w.WriteInt16(int16(v.Level()))
 		w.WriteInt16(int16(v.SourceId()))
+		w.WriteInt16(int16(v.Level()))
 	}
 }
 
@@ -327,11 +365,17 @@ func LevelSourceForeignValueReader(r *request.Reader, st CharacterTemporaryStatT
 	return CharacterTemporaryStatValue{statType: st, level: level, sourceId: sourceId}
 }
 
-func ValueSourceLevelForeignValueReader(r *request.Reader, st CharacterTemporaryStatType) CharacterTemporaryStatValue {
-	value := int32(r.ReadInt16())
-	level := byte(r.ReadInt16())
+func MobSkillReasonForeignValueReader(r *request.Reader, st CharacterTemporaryStatType) CharacterTemporaryStatValue {
 	sourceId := int32(r.ReadInt16())
-	return CharacterTemporaryStatValue{statType: st, value: value, level: level, sourceId: sourceId}
+	level := byte(r.ReadInt16())
+	return CharacterTemporaryStatValue{statType: st, sourceId: sourceId, level: level}
+}
+
+func ValueMobSkillReasonForeignValueReader(r *request.Reader, st CharacterTemporaryStatType) CharacterTemporaryStatValue {
+	value := int32(r.ReadInt16())
+	sourceId := int32(r.ReadInt16())
+	level := byte(r.ReadInt16())
+	return CharacterTemporaryStatValue{statType: st, value: value, sourceId: sourceId, level: level}
 }
 
 type CharacterTemporaryStatValue struct {
@@ -577,10 +621,28 @@ func (m *CharacterTemporaryStat) HasDisease() bool {
 	return false
 }
 
+// serverOnlyStatNames are temporary stats that exist only for server-side
+// lifecycle bookkeeping (Odin lineage). No supported client has a
+// SecondaryStat bit for them — IDA-verified across every version Atlas holds
+// a binary for (GMS v48/v61/v72/v79/v83/v84/v87/v92/v95, JMS v185), see
+// docs/tasks/task-164-summon-temp-stats/prd.md §1.1 — so they are never
+// encoded into any CTS mask or payload, on any tenant version. Summon
+// visibility for observers is carried by the summon object packets
+// (task-088/106), not by a buff. Adding a name here requires the same
+// IDA evidence trail.
+var serverOnlyStatNames = map[character.TemporaryStatType]bool{
+	character.TemporaryStatTypePuppet: true,
+	character.TemporaryStatTypeSummon: true,
+}
+
 func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Model) func(n string, sourceId int32, amount int32, level byte, expiresAt time.Time) {
 	return func(t tenant.Model) func(n string, sourceId int32, amount int32, level byte, expiresAt time.Time) {
 		return func(n string, sourceId int32, amount int32, level byte, expiresAt time.Time) {
 			name := character.TemporaryStatType(n)
+			if serverOnlyStatNames[name] {
+				l.Debugf("Skipping server-only temporary stat [%s]; it has no client wire representation.", name)
+				return
+			}
 			st, err := CharacterTemporaryStatTypeByName(t)(name)
 			if err != nil {
 				l.WithError(err).Errorf("Attempting to add buff [%s], but cannot find it.", name)
@@ -922,31 +984,127 @@ func legacyDurationUnits(expiresAt time.Time) int16 {
 	return int16(ms / 500)
 }
 
+// foreignReadOrder is SecondaryStat::DecodeForRemote's per-stat sequence, in the
+// order the client reads it.
+//
+// It is deliberately NOT the registry's shift order. The LOCAL decoder
+// (DecodeForLocal) walks the mask in bit order — v83 code positions ascend with
+// shift: Stun@0x782d9d < Poison@0x782ea2 < Combo@0x783157 < Weaken@0x783976 <
+// Slow@0x783b44 — which is why Encode can sort by shift. The REMOTE decoder is a
+// hand-written sequence that hoists Combo/WeaponCharge ahead of the diseases and
+// drops Poison in after Curse: Combo@0x7881b0 < Stun@0x788234 < Weaken@0x78830f
+// < Poison@0x7883a1. EncodeForeign used to sort by shift here too, so any two
+// value-carrying stats present at once had their payloads swapped — the common
+// case for diseases (SEAL+DARKNESS, POISON+WEAKEN, STUN+anything).
+//
+// The same relative order holds on every supported client; later versions only
+// append to the tail. Verified gms_v48 (sub_5CBA1F, 8-byte mask), v61
+// (@0x667c5f), v72 (@0x6cfe78), v79 (@0x701539), v83 (@0x788156), v84
+// (@0x7ac409), v87 (@0x7d8533), v92 (@0x711240), v95 (@0x72b7b0). One list
+// therefore serves all of them: a stat a version lacks never appears in its
+// mask, and a stat whose foreign shape is NoOp on a version contributes no
+// bytes. See docs/tasks/task-195-foreign-disease-mobskill/investigation.md §3.
+//
+// SLOW is absent on purpose — no client's remote decoder reads it (§4).
+var foreignReadOrder = []character.TemporaryStatType{
+	character.TemporaryStatTypeSpeed,             // Decode1
+	character.TemporaryStatTypeCombo,             // Decode1
+	character.TemporaryStatTypeWhiteKnightCharge, // Decode4
+	character.TemporaryStatTypeStun,              // Decode4 (disease reason)
+	character.TemporaryStatTypeDarkness,          // Decode4 (disease reason)
+	character.TemporaryStatTypeSeal,              // Decode4 (disease reason)
+	character.TemporaryStatTypeWeaken,            // Decode4 (disease reason)
+	character.TemporaryStatTypeCurse,             // Decode4 (disease reason)
+	character.TemporaryStatTypePoison,            // Decode2 value + Decode4 reason
+	character.TemporaryStatTypeShadowPartner,     // Decode4 on v87+, flag-only below
+	character.TemporaryStatTypeDarkSight,         // flag only
+	character.TemporaryStatTypeSoulArrow,         // flag only
+	character.TemporaryStatTypeMorph,             // Decode2
+	character.TemporaryStatTypeGhostMorph,        // Decode2
+	character.TemporaryStatTypeSeduce,            // Decode4 (disease reason)
+	character.TemporaryStatTypeShadowClaw,        // Decode4
+	character.TemporaryStatTypeBanMap,            // Decode4 (v61+; v48 reads none)
+	character.TemporaryStatTypeBarrier,           // Decode4
+	character.TemporaryStatTypeDojangShield,      // Decode4
+	character.TemporaryStatTypeConfuse,           // Decode4 (disease reason; absent on v61)
+	character.TemporaryStatTypeRespectPImmune,    // Decode4
+	character.TemporaryStatTypeRespectMImmune,    // Decode4
+	character.TemporaryStatTypeDefenseAttack,     // Decode4
+	character.TemporaryStatTypeDefenseState,      // Decode4
+	character.TemporaryStatTypeWindWalk,          // flag only
+	character.TemporaryStatTypeRepeatEffect,      // Decode4
+	character.TemporaryStatTypeStopPortion,       // Decode4
+	character.TemporaryStatTypeStopMotion,        // Decode4
+	character.TemporaryStatTypeFear,              // Decode4
+	character.TemporaryStatTypeMagicShield,       // Decode4
+	character.TemporaryStatTypeFlying,            // flag only
+	character.TemporaryStatTypeFrozen,            // Decode4
+	character.TemporaryStatTypeSuddenDeath,       // Decode4
+	character.TemporaryStatTypeFinalCut,          // Decode4
+	character.TemporaryStatTypeCyclone,           // Decode1
+	character.TemporaryStatTypeSneak,             // flag only
+	character.TemporaryStatTypeWildDamageUp,      // flag only
+	character.TemporaryStatTypeMechanic,          // Decode4 on v95 (registry NoOp — never originated)
+	character.TemporaryStatTypeDarkAura,          // Decode4 on v95 (registry NoOp — never originated)
+	character.TemporaryStatTypeBlueAura,          // Decode4 on v95 (registry NoOp — never originated)
+	character.TemporaryStatTypeYellowAura,        // Decode4 on v95 (registry NoOp — never originated)
+	character.TemporaryStatTypeBlessingArmor,     // flag only
+}
+
+// sortForeign orders stat types the way SecondaryStat::DecodeForRemote reads
+// them: foreignReadOrder first, then anything that sequence does not name, by
+// shift. EncodeForeign and DecodeForeign both use it, so the two stay in step.
+//
+// The shift-ordered tail is a safety net, not a wire contract. Every stat that
+// carries foreign bytes today is named in foreignReadOrder — pinned by
+// TestForeignReadOrderCoversEveryValueCarryingStat — so the tail only ever holds
+// NoOp stats, which contribute nothing. Keeping it means a future stat that
+// gains a foreign shape without being added to the list encodes in the wrong
+// place rather than vanishing, and the test says which one.
+func sortForeign(types []CharacterTemporaryStatType) {
+	sort.Slice(types, func(i, j int) bool {
+		ri, rj := foreignRank(types[i]), foreignRank(types[j])
+		if ri != rj {
+			return ri < rj
+		}
+		return types[i].Shift() < types[j].Shift()
+	})
+}
+
+// foreignRank is a stat's position in foreignReadOrder, or one past the end for
+// stats the client's remote sequence does not name — see sortForeign.
+func foreignRank(st CharacterTemporaryStatType) int {
+	if i, ok := foreignReadOrderIndex[st.name]; ok {
+		return i
+	}
+	return len(foreignReadOrder)
+}
+
+var foreignReadOrderIndex = func() map[character.TemporaryStatType]int {
+	m := make(map[character.TemporaryStatType]int, len(foreignReadOrder))
+	for i, n := range foreignReadOrder {
+		m[n] = i
+	}
+	return m
+}()
+
 func (m *CharacterTemporaryStat) EncodeForeign(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		m.EncodeMask(l, t, options)(w)
 
-		keys := make([]CharacterTemporaryStatType, 0)
+		keys := make([]CharacterTemporaryStatType, 0, len(m.stats))
 		for _, v := range m.stats {
 			if baseStatNames[v.statType.name] {
 				continue // TwoState/base stats are encoded only as base stats below
 			}
 			keys = append(keys, v.statType)
 		}
+		sortForeign(keys)
 
-		sort.Slice(keys, func(i, j int) bool {
-			return keys[i].Shift() < keys[j].Shift()
-		})
-
-		sortedValues := make([]CharacterTemporaryStatValue, 0)
-		for _, v := range keys {
-			sortedValues = append(sortedValues, m.stats[v.name])
-		}
-
-		for _, v := range sortedValues {
-			v.Write(w)
+		for _, k := range keys {
+			m.stats[k.name].Write(w)
 		}
 
 		if legacyGmsMask(t) {
@@ -1135,15 +1293,17 @@ func (m *CharacterTemporaryStat) DecodeForeign(l logrus.FieldLogger, ctx context
 		mask := m.DecodeMask(r, t)
 		reg := buildCharacterTemporaryStatRegistry(t)
 
+		keys := make([]CharacterTemporaryStatType, 0, len(reg.inOrder))
 		for _, st := range reg.inOrder {
-			if mask.And(st.mask).IsZero() {
+			if mask.And(st.mask).IsZero() || baseStatNames[st.name] {
 				continue
 			}
-			if baseStatNames[st.name] {
-				continue
-			}
-			v := st.foreignValueReader(r, st)
-			m.stats[st.name] = v
+			keys = append(keys, st)
+		}
+		sortForeign(keys)
+
+		for _, st := range keys {
+			m.stats[st.name] = st.foreignValueReader(r, st)
 		}
 
 		if legacyGmsMask(t) {
@@ -1234,6 +1394,20 @@ func (m *CharacterTemporaryStat) getBaseTemporaryStats(t tenant.Model) []packet.
 				},
 			})
 		default: // twoStateDynamic
+			// ENERGY_CHARGE's nOption IS the client's energy-bar reading:
+			// GMS v83 sub_7F9BAD computes the fill as this[364]/this[365],
+			// where this[364] is the block's first int32 (task-216
+			// design.md §1.1). rOption carries the source skill id, matching
+			// every other populated two-state block.
+			//
+			// The group's other dynamic members (DASH_SPEED, DASH_JUMP,
+			// UNDEAD) keep the zeroed block deliberately: no evidence was
+			// gathered for what their clients read, and their matrix cells
+			// are already verified against the zeros.
+			if bs.name == character.TemporaryStatTypeEnergyCharge {
+				list = append(list, NewCharacterTemporaryStatBaseWithOptions(true, s.Value(), s.SourceId(), narrow)) // 15 (14 on GMS v61)
+				continue
+			}
 			list = append(list, NewCharacterTemporaryStatBase(true, narrow)) // dynamic, 15 (14 on GMS v61)
 		}
 	}

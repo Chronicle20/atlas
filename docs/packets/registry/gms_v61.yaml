@@ -363,6 +363,7 @@
   direction: clientbound
   opcode: 52
   fname: CWvsContext::OnSueCharacterResult
+  packet: report/clientbound/SueCharacterResult
   provenance: ida-discovered
   ida:
     address: 8586219
@@ -1627,13 +1628,13 @@
   provenance: ida-discovered
   ida:
     address: 4591780
-- op: CASHSHOP_CASH_ITEM_GACHAPON_RESULT
-  direction: clientbound
-  opcode: 256
-  fname: CCashShop::OnCashItemGachaponResult
-  provenance: ida-discovered
-  ida:
-    address: 4591780
+# task-207: opcode 256's fname CCashShop::OnCashItemGachaponResult was a
+# mis-attribution. v61's handler at 0x46128a is a verified 3-line
+# stub — CInPacket::Decode1(a2) written straight into a CWvsContext flag byte
+# — not a gachapon result (design.md §1.1; feature-na-evidence.yaml carries
+# the full proof). Row removed so the cell grades n-a rather than a false
+# ❌; StateNA derives solely from registry absence
+# (internal/matrix/grade.go), not from feature-na-evidence.yaml alone.
 - op: CASHSHOP_CHECK_NAME_CHANGE
   direction: clientbound
   opcode: 257
@@ -2037,12 +2038,12 @@
   note: 'v61 send-site sub_8458EB @0x8458eb: COutPacket(82)+Encode4(updateTime)+Encode4(skillId); no GetRemoteUser = v72 DISTRIBUTE_SP (SendSkillUpRequest sub_91BEAD) twin. Caller sub_7201E6 = skill-window "+" validator (reads the selected SKILLENTRY *(v4+1007)/(+1011), computes skillId/10000 job class, validates SP caps with notices 3434/3435/3436, then sub_8458EB(ctx, skillId)). task-113 scramble fix: real v61 DISTRIBUTE_SP is op 82, NOT 89 (op89 = CHAR_INFO_REQUEST). op82 was mislabeled MESO_DROP.'
 - op: SPECIAL_MOVE
   direction: serverbound
-  opcode: 90
-  fname: sub_845C36
+  opcode: 83
+  fname: CUserLocal::SendSkillUseRequest
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_845C36. COutPacket(90), CWvsContext skill region; Δ0 vs v72.'
+    address: 8102419
+  note: 'v61 CUserLocal::SendSkillUseRequest @0x7BA213 builds COutPacket(83)=0x53, matching template_gms_61_1.json''s CharacterUseSkillHandle opCode 0x53. CORRECTED by task-163: the prior entry recorded opcode 90 / fname sub_845C36 / address 0x5FFE4F. That harvest was wrong on all three counts — sub_845C36 is CWvsContext::SendSkillResetItemUseRequest (a skill-reset ITEM use: COutPacket(90) then Encode4(updateTime) Encode2(slot) Encode1(flag)), not the skill-cast send site, and 0x5FFE4F is the COutPacket ctor rather than the function. See docs/tasks/task-163-priest-dispel-party/version-findings.md.'
 - op: CANCEL_DEBUFF
   direction: serverbound
   opcode: 91
@@ -2269,12 +2270,31 @@
   note: 'v61 send-site sub_8314D0 @0x8314d0: COutPacket(64)+Encode4(updateTime)+Encode1(compartmentType,guarded[1,5]) = SendGatherItemRequest twin; body == v72 [E4,E1]. CORRECTS prior mislabel op68/sub_831BB7 (a different item-id send).'
 - op: ITEM_MOVE
   direction: serverbound
-  opcode: 70
-  fname: sub_831C83
+  opcode: 66
+  fname: CWvsContext::SendChangeSlotPositionRequest
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_831C83 COutPacket(70), CWvsContext item region; Δ0 vs v72.'
+    address: 8590840
+  note: 'task-212 correction (v61 IDB session 415bf585, GMS_v61.1_U_DEVM.exe):
+    sub_8315F8@0x8315f8, renamed live to CWvsContext__SendChangeSlotPositionRequest
+    this pass; decompile emits COutPacket(66)+Encode4+Encode1+Encode2+Encode2+
+    Encode2 — the ITEM_MOVE / SendChangeSlotPositionRequest body shape. Real
+    ITEM_MOVE sender relocated here from opcode 70 (see USE_SUMMON_BAG note
+    below, which now correctly holds sub_831C83).'
+- op: USE_SUMMON_BAG
+  direction: serverbound
+  opcode: 70
+  fname: CWvsContext::SendMobSummonItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 8592515
+  note: 'task-212 correction (v61 IDB session 415bf585, GMS_v61.1_U_DEVM.exe):
+    sub_831C83@0x831c83 is named CWvsContext::SendMobSummonItemUseRequest;
+    decompile emits COutPacket(70)+Encode4(updateTime)+Encode1+Encode2 (no mob
+    id) — the real USE_SUMMON_BAG. Supersedes the prior send-site-harvest
+    ITEM_MOVE mislabel at this opcode (shared placeholder ctor-site address
+    0x5ffc4f = 6291023, not the function''s own address). The real ITEM_MOVE
+    sender is relocated to opcode 66 (see below).'
 - op: USE_ITEM
   direction: serverbound
   opcode: 67
@@ -2310,14 +2330,21 @@
   ida:
     address: 8592311
   note: 'v61 item-buff right-click cancel: CWndMan proc sub_4486B0 (v5==1 branch) calls sub_831BB7(-sourceId)@0x831bb7 = SendStatChangeItemCancelRequest: guard sub_4BDB9F(200,0); if sourceId/-10000==221 -> StringPool(4271) message; else COutPacket(68)+Encode4(sourceId). SINGLE Encode4. Prior registry op72/sub_831F44 was a mislabel (that is the IsRidingTamedMob 226xxxx MOUNT cancel, COutPacket(72)+[E4,E2,E4], a distinct packet). v61 item region shifted Δ-4 vs v72 (ITEM_SORT 64=v72 68-4; CANCEL 68=v72 72-4), so v72 CANCEL_ITEM_EFFECT=72 -> v61=68.'
-- op: USE_SUMMON_BAG
+- op: USE_CATCH_ITEM
   direction: serverbound
   opcode: 74
-  fname: sub_832005
+  fname: CWvsContext::SendBridleItemUseRequest
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_832005 COutPacket(74), CWvsContext item region; Δ0 vs v72.'
+    address: 8593413
+  note: 'task-212 correction (v61 IDB session 415bf585, GMS_v61.1_U_DEVM.exe):
+    sub_832005@0x832005 is named ?SendBridleItemUseRequest@CWvsContext@@;
+    decompile emits COutPacket(74)+Encode4(updateTime)+Encode2(pos)+
+    Encode4(itemId)+Encode4(mob uniqueId), guarded by itemId/10000==227 and
+    CMobPool::FindHitMobInRect — USE_CATCH_ITEM. Supersedes the prior
+    send-site-harvest USE_SUMMON_BAG mislabel at this opcode (shared
+    placeholder ctor-site address 0x5ffc4f = 6291023, not the function''s own
+    address).'
 - op: USE_SKILL_BOOK
   direction: serverbound
   opcode: 75
@@ -2656,6 +2683,23 @@
   ida:
     address: 4549752
   note: 'v61 op196: CCashShop cash-purchase family — all sub-ops COutPacket(196)+Encode1(sub-op)+body (OnBuy/OnBuyCouple/OnBuyFriendship/OnBuyPackage/OnEnableEquipSlotExt/SendGiftsPacket/OnSetWish all verified as sub-structs). Representative fname kept = CCashShop::RequestCashPurchaseRecord (v72 parity), but that purchase-record sub-op is v61-ABSENT — an exhaustive COutPacket(196) send-site sweep found no mode+single-serial sender; v61 mode 0x27 is a name-entry dialog, not a record query (see _unimplemented.json). v72 CASHSHOP_OPERATION=219 (Δ-23).'
+- op: COUPON_CODE
+  direction: serverbound
+  opcode: 197
+  fname: CCashShop::OnStatusCoupon
+  packet: cash/serverbound/CouponCode
+  provenance: manual
+  note: >-
+    task-206: the previous registry absence (and the matrix n-a) was
+    "nobody looked", not client-absence. CCashShop::OnStatusCoupon @ 0x45a6b5
+    builds COutPacket(0xC5) at 0x45a75b (push 0C5h @ 0x45a753 =
+    CASHSHOP_OPERATION 196 + 1) and sends it at 0x45a7c4. Body is three
+    EncodeStr and no Encode1: EncodeStr(characterId) @ 0x45a778,
+    EncodeStr(couponCode) @ 0x45a791, then EncodeStr(third) @ 0x45a7b5
+    guarded on characterId being non-empty (dead, characterId is never
+    populated) — the same shape as gms_v83. Empty codes are filtered client
+    side ("Please enter the coupon code." @ 0x9614e8, DoModal @ 0x45a741).
+    See docs/tasks/task-206-cash-shop-coupon-codes/derivation.md.
 - op: ENTER_MTS
   direction: serverbound
   opcode: 135

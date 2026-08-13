@@ -85,6 +85,11 @@ func TestNew_RejectsOutOfRangeOptions(t *testing.T) {
 	}
 }
 
+// testKey mirrors LeaderElection.keyPath for assertions. These tests never set
+// ATLAS_ENV, so every lease lands in the unscoped bucket; TestKeyPath_* below
+// pin the scoping behaviour itself.
+func testKey(name string) string { return keyPrefix + unscopedEnv + ":" + name }
+
 func TestNew_AcceptsValidConfig(t *testing.T) {
 	rc, _ := newTestClient(t)
 	le, err := New(rc, "monsters-sweep",
@@ -95,7 +100,7 @@ func TestNew_AcceptsValidConfig(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, le)
-	require.Equal(t, "atlas:lock:monsters-sweep", le.keyPath())
+	require.Equal(t, testKey("monsters-sweep"), le.keyPath())
 }
 
 func TestMetrics_AllCountersExist(t *testing.T) {
@@ -142,7 +147,7 @@ func TestRun_AcquireAndReleaseOnOuterCancel(t *testing.T) {
 
 	// Wait until lease is observed in miniredis.
 	require.Eventually(t, func() bool {
-		return mr.Exists("atlas:lock:release-test")
+		return mr.Exists(testKey("release-test"))
 	}, 2*time.Second, 25*time.Millisecond, "lease should be acquired")
 
 	cancel()
@@ -153,7 +158,7 @@ func TestRun_AcquireAndReleaseOnOuterCancel(t *testing.T) {
 	mu.Unlock()
 
 	// Lease should be gone (Released on shutdown).
-	require.False(t, mr.Exists("atlas:lock:release-test"), "lease released on shutdown")
+	require.False(t, mr.Exists(testKey("release-test")), "lease released on shutdown")
 }
 
 func TestRun_TwoCompetitors_OneAcquires(t *testing.T) {
@@ -226,7 +231,7 @@ func TestRun_RenewalExtendsLeasePastTTL(t *testing.T) {
 
 	// Wait for acquire.
 	require.Eventually(t, func() bool {
-		return mr.Exists("atlas:lock:renew-test")
+		return mr.Exists(testKey("renew-test"))
 	}, 2*time.Second, 25*time.Millisecond)
 
 	// Advance miniredis time past the original TTL — renewer should keep the
@@ -236,7 +241,7 @@ func TestRun_RenewalExtendsLeasePastTTL(t *testing.T) {
 	mr.FastForward(4 * time.Second)
 	time.Sleep(1500 * time.Millisecond)
 
-	require.True(t, mr.Exists("atlas:lock:renew-test"), "lease still held after > TTL elapsed")
+	require.True(t, mr.Exists(testKey("renew-test")), "lease still held after > TTL elapsed")
 
 	cancel()
 	require.NoError(t, <-done)
@@ -266,7 +271,7 @@ func TestRun_LeaseLossCancelsInnerCtx(t *testing.T) {
 
 	// Wait for acquire.
 	require.Eventually(t, func() bool {
-		return mr.Exists("atlas:lock:lose-test")
+		return mr.Exists(testKey("lose-test"))
 	}, 2*time.Second, 25*time.Millisecond)
 
 	// Force-expire the lease in miniredis. Next Refresh will return ErrNotObtained.
@@ -313,7 +318,7 @@ func TestRun_PanicInFn_RecoveredAndReleased(t *testing.T) {
 	}, 5*time.Second, 50*time.Millisecond, "panic counter recorded")
 
 	require.Eventually(t, func() bool {
-		return mr.Exists("atlas:lock:panic-test") || atomic.LoadInt32(&firstInvocation) >= 2
+		return mr.Exists(testKey("panic-test")) || atomic.LoadInt32(&firstInvocation) >= 2
 	}, 5*time.Second, 50*time.Millisecond, "either re-acquired by 2nd invocation or lease was released after panic")
 
 	cancel()
@@ -344,7 +349,7 @@ func TestRun_GracePeriodHonored(t *testing.T) {
 
 	<-fnStarted
 	require.Eventually(t, func() bool {
-		return mr.Exists("atlas:lock:grace-test")
+		return mr.Exists(testKey("grace-test"))
 	}, 2*time.Second, 25*time.Millisecond)
 
 	// Cancel; Run should return within gracePeriod + small slack, not 10s.
@@ -469,4 +474,80 @@ func TestRun_FailoverAfterGracefulRelease(t *testing.T) {
 
 	cancelB()
 	require.NoError(t, <-doneB)
+}
+
+// TestKeyPath_ScopedByEnv is the regression guard for the defect this scoping
+// was added for.
+//
+// The lease key used to be keyPrefix + name, with no deployment component.
+// Every Atlas deployment shares one Redis (REDIS_URL is redis.home:6379 in
+// atlas-main and in every ephemeral atlas-pr-NNNN namespace, no DB
+// separation), so "monsters-sweep" was a single global lease. The permanent
+// deployment acquired it at startup and held it, and every ephemeral
+// namespace's pod lost the election forever -- silently running NONE of its
+// leader-gated work. In atlas-pr-1255 that meant Poison Mist applied POISON
+// to monsters whose HP then never moved, because StatusExpirationTask had
+// never been registered.
+//
+// Distinct ATLAS_ENV values MUST produce distinct keys. That is the whole
+// property; the exact spelling is asserted too so a reformat of the key can't
+// quietly change what an already-running fleet contends on.
+func TestKeyPath_ScopedByEnv(t *testing.T) {
+	rc, _ := newTestClient(t)
+
+	t.Setenv(EnvVar, "a628")
+	pr, err := New(rc, "monsters-sweep")
+	require.NoError(t, err)
+	require.Equal(t, "atlas:lock:a628:monsters-sweep", pr.keyPath())
+
+	t.Setenv(EnvVar, "main")
+	main, err := New(rc, "monsters-sweep")
+	require.NoError(t, err)
+	require.Equal(t, "atlas:lock:main:monsters-sweep", main.keyPath())
+
+	require.NotEqual(t, pr.keyPath(), main.keyPath(),
+		"two deployments on a shared Redis must not contend on the same lease")
+}
+
+// TestKeyPath_UnsetEnvIsMarkedNotOmitted pins that a missing ATLAS_ENV yields a
+// visible "unscoped" segment rather than the old unsegmented key. Omitting the
+// segment would silently restore the collision AND make the two spellings
+// coexist during a rollout; naming the bucket makes it greppable in
+// `redis-cli keys atlas:lock:*`.
+func TestKeyPath_UnsetEnvIsMarkedNotOmitted(t *testing.T) {
+	rc, _ := newTestClient(t)
+
+	t.Setenv(EnvVar, "")
+	le, err := New(rc, "monsters-sweep")
+	require.NoError(t, err)
+	require.Equal(t, "atlas:lock:unscoped:monsters-sweep", le.keyPath())
+}
+
+// TestKeyPath_WhitespaceEnvTreatedAsUnset pins that a padded value (a trivially
+// easy thing to get out of a YAML block scalar) does not become part of the
+// key. " a628" and "a628" naming different leases would split one deployment's
+// fleet into two leaders.
+func TestKeyPath_WhitespaceEnvTreatedAsUnset(t *testing.T) {
+	rc, _ := newTestClient(t)
+
+	t.Setenv(EnvVar, "   ")
+	le, err := New(rc, "monsters-sweep")
+	require.NoError(t, err)
+	require.Equal(t, "atlas:lock:unscoped:monsters-sweep", le.keyPath())
+}
+
+// TestKeyPath_CapturedAtConstruction pins that the scope is read once in New.
+// Re-reading it per keyPath call would let an env mutation move the lease out
+// from under the renewer while fn still believed it was leader -- the renewer
+// would refresh a key nobody holds and the real lease would expire unnoticed.
+func TestKeyPath_CapturedAtConstruction(t *testing.T) {
+	rc, _ := newTestClient(t)
+
+	t.Setenv(EnvVar, "a628")
+	le, err := New(rc, "monsters-sweep")
+	require.NoError(t, err)
+
+	t.Setenv(EnvVar, "somethingelse")
+	require.Equal(t, "atlas:lock:a628:monsters-sweep", le.keyPath(),
+		"the key must not change under a running election")
 }

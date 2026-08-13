@@ -33,6 +33,9 @@ outputs:
   has-workflow-changes:
     description: 'Whether .github workflows changed'
     value: ${{ steps.detect.outputs.has_workflow_changes }}
+  deploy-only:
+    description: 'Whether every changed file lives under deploy/ (no Go, UI, template, or workflow source touched)'
+    value: ${{ steps.detect.outputs.deploy_only }}
   all-go-services:
     description: 'JSON array of all Go services (for full rebuilds)'
     value: ${{ steps.detect.outputs.all_go_services }}
@@ -131,6 +134,33 @@ runs:
           echo "shared Dockerfile/docker-bake.hcl changed - will trigger all builds"
         fi
 
+        # Deploy-only detection.
+        #
+        # True only when the diff is non-empty AND every changed path lives
+        # under deploy/. The canonical case is the automated
+        # "chore(images): bump main overlay to <sha>" PR, which rewrites
+        # deploy/k8s/overlays/main/kustomization.yaml plus the per-tenant
+        # deploy/seed/**/CATALOG_REVISION files and nothing else.
+        #
+        # Consumers use this to skip guards whose entire input surface is
+        # services/** or libs/** — they cannot change verdict when no file
+        # outside deploy/ moved. Guards that DO read deploy/ (gen-lb-ports
+        # reads deploy/k8s/base/versions.json; service-registration-guard
+        # reads deploy/k8s/overlays/main/kustomization.yaml) stay ungated.
+        #
+        # Fail safe on three counts: an empty or unreadable diff yields
+        # "false"; force-all yields "false" (an operator who explicitly
+        # asked for a full sweep gets one, even when the diff happens to
+        # be deploy-only); and consumers gate with `!= 'true'`, so any
+        # unexpected value runs the guard rather than skipping it.
+        DEPLOY_ONLY="false"
+        if [ "${{ inputs.force-all }}" = "true" ]; then
+          echo "force-all requested - deploy-only suppressed, full guard set will run"
+        elif [ -n "$CHANGED_FILES" ] && ! echo "$CHANGED_FILES" | grep -qv "^deploy/"; then
+          DEPLOY_ONLY="true"
+          echo "deploy-only change set - source-only guards will be skipped"
+        fi
+
         # Detect changed services
         while IFS= read -r file; do
           if [[ "$file" =~ ^services/([^/]+)/ ]]; then
@@ -193,6 +223,7 @@ runs:
         echo "has_ui_changes=$HAS_UI_CHANGES" >> $GITHUB_OUTPUT
         echo "has_go_workspace_changes=$HAS_GO_WORKSPACE_CHANGES" >> $GITHUB_OUTPUT
         echo "has_workflow_changes=$HAS_WORKFLOW_CHANGES" >> $GITHUB_OUTPUT
+        echo "deploy_only=$DEPLOY_ONLY" >> $GITHUB_OUTPUT
 
         # Summary
         echo ""
@@ -202,6 +233,7 @@ runs:
         echo "UI changes: $HAS_UI_CHANGES"
         echo "Go workspace changes: $HAS_GO_WORKSPACE_CHANGES"
         echo "Workflow changes: $HAS_WORKFLOW_CHANGES"
+        echo "Deploy-only: $DEPLOY_ONLY"
 
     - name: Set up Go
       uses: actions/setup-go@v5

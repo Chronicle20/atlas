@@ -24,6 +24,7 @@ type verifyServerboundOpts struct {
 	AuditsDir   string
 	IDAURL      string
 	IDAPort     int
+	IDADatabase string
 	Out         string
 }
 
@@ -38,7 +39,8 @@ func runVerifyServerbound(args []string, stderr io.Writer) int {
 	fs.StringVar(&opts.RegistryDir, "registry-dir", "docs/packets/registry", "directory containing <version>.yaml registry files")
 	fs.StringVar(&opts.AuditsDir, "audits-dir", "docs/packets/audits", "parent directory containing per-version audit report dirs")
 	fs.StringVar(&opts.IDAURL, "ida-url", "http://192.168.20.3:13337/mcp", "IDA-MCP HTTP endpoint")
-	fs.IntVar(&opts.IDAPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance)")
+	fs.IntVar(&opts.IDAPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance) — deprecated, use -ida-database")
+	fs.StringVar(&opts.IDADatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
 	fs.StringVar(&opts.Out, "out", "", "worklist markdown output path (default: docs/packets/registry/verify_serverbound_<version>.md)")
 
 	if err := fs.Parse(args); err != nil {
@@ -58,9 +60,12 @@ func runVerifyServerbound(args []string, stderr io.Writer) int {
 
 	hc := &http.Client{Timeout: 60 * time.Second}
 	var client idasrc.MCPClient
-	if opts.IDAPort != 0 {
+	switch {
+	case opts.IDADatabase != "":
+		client = idasrc.NewMCPHTTPClientWithDatabase(opts.IDAURL, hc, opts.IDADatabase)
+	case opts.IDAPort != 0:
 		client = idasrc.NewMCPHTTPClientWithInstance(opts.IDAURL, hc, opts.IDAPort)
-	} else {
+	default:
 		client = idasrc.NewMCPHTTPClient(opts.IDAURL, hc)
 	}
 	return verifyServerboundRun(opts, client, stderr)

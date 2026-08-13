@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldAffectedAreaCreated
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CAffectedAreaPool::OnAffectedAreaCreated
+    address: "0x4326ca"
+    decompile_sha256: b03b44429d047279014724e8e41f5c5acc0ab520d9a7e79e53050cf9a1ef191a
+verifies:
+    - libs/atlas-packet/field/clientbound/affected_area_test.go#TestAffectedAreaCreatedByteOutput

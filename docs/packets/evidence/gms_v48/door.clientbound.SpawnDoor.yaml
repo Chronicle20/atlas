@@ -1,0 +1,10 @@
+packet: door/clientbound/SpawnDoor
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CTownPortalPool::OnTownPortalCreated
+    address: "0x5e31b2"
+    decompile_sha256: b2a5afee0e2b7d478240846dca615cf6adf64aba43b32cb0e6c5a799a0f697d3
+verifies:
+    - libs/atlas-packet/door/clientbound/v48_test.go#TestSpawnDoorBytesV48

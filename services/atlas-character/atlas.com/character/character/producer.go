@@ -180,6 +180,21 @@ func notEnoughMesoErrorStatusEventProvider(transactionId uuid.UUID, characterId 
 	return producer.SingleMessageProvider(key, value)
 }
 
+func mesoOverflowErrorStatusEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, amount int32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatusEventMesoErrorBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		WorldId:       worldId,
+		Type:          character2.StatusEventTypeError,
+		Body: character2.StatusEventMesoErrorBody{
+			Error:  character2.StatusEventErrorTypeMesoOverflow,
+			Amount: amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func apTransferErrorStatusEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, errorType string, detail string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character2.StatusEvent[character2.StatusEventApTransferErrorBody]{

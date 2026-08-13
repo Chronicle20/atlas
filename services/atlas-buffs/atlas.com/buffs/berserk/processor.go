@@ -265,7 +265,7 @@ func (p *ProcessorImpl) reevaluate(m Model, now time.Time, buf *message.Buffer) 
 }
 
 // ProcessBerserkTicks fans out one ProcessTicks per tenant (ticker entry
-// point; same shape as character.ProcessPoisonTicks, character/processor.go).
+// point; same shape as character.ProcessPeriodicTicks, character/processor.go).
 func ProcessBerserkTicks(l logrus.FieldLogger, ctx context.Context) error {
 	ts, err := GetRegistry().GetTenants(ctx)
 	if err != nil {

@@ -35,6 +35,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestItemReward))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestCatchMonster))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestScroll))); err != nil {
 			return err
 		}
@@ -62,7 +65,7 @@ func handleRequestItemConsume(l logrus.FieldLogger, ctx context.Context, c consu
 		return
 	}
 	ch := channel.NewModel(c.WorldId, c.ChannelId)
-	err := consumable.NewProcessor(l, ctx).RequestItemConsume(ch, uint32(c.CharacterId), int16(c.Body.Source), c.Body.ItemId, c.Body.Quantity)
+	err := consumable.NewProcessor(l, ctx).RequestItemConsume(ch, uint32(c.CharacterId), int16(c.Body.Source), c.Body.ItemId, c.Body.Quantity, c.Body.PetId)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to consume item in slot [%d] as expected.", c.CharacterId, c.Body.Source)
 	}
@@ -75,6 +78,17 @@ func handleRequestItemReward(l logrus.FieldLogger, ctx context.Context, c consum
 	err := consumable.NewProcessor(l, ctx).RequestItemReward(uint32(c.CharacterId), c.Body.ItemId, int16(c.Body.Source))
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to use reward box in slot [%d].", c.CharacterId, c.Body.Source)
+	}
+}
+
+func handleRequestCatchMonster(l logrus.FieldLogger, ctx context.Context, c consumable2.Command[consumable2.RequestCatchMonsterBody]) {
+	if c.Type != consumable2.CommandRequestCatchMonster {
+		return
+	}
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	err := consumable.NewProcessor(l, ctx).RequestCatchMonster(f, uint32(c.CharacterId), int16(c.Body.Source), c.Body.ItemId, c.Body.MonsterUniqueId)
+	if err != nil {
+		l.WithError(err).Errorf("Character [%d] unable to use catch item in slot [%d].", c.CharacterId, c.Body.Source)
 	}
 }
 

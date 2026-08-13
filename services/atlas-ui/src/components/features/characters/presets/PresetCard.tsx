@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import type { MapleStoryCharacterData } from "@/types/models/maplestory";
 import { useCharacterImage } from "@/lib/hooks/useCharacterImage";
 import { useTenant } from "@/context/tenant-context";
-import { jobName } from "@/lib/jobs/job-advancement-tree";
+import { useJobNameLookup } from "@/lib/hooks/api/useJobGraph";
 import { buildPresetLoadout } from "./presetLoadout";
 import type { WorkingPreset } from "./presetEditorState";
 
@@ -25,6 +25,7 @@ export function PresetCard({
   onApply,
 }: PresetCardProps) {
   const { activeTenant } = useTenant();
+  const jobName = useJobNameLookup();
   const { attributes: attrs } = preset;
   const loadout = buildPresetLoadout(attrs);
 

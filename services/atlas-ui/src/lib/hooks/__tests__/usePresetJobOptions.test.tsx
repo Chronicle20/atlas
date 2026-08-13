@@ -14,7 +14,12 @@ import { usePresetJobOptions } from "@/lib/hooks/usePresetJobOptions";
 
 /** Shape a useJobAvailability success result from {id,name} rows. */
 function success(jobs: Array<{ id: number; name: string }>) {
-  return { isSuccess: true, data: { jobs } };
+  return {
+    isSuccess: true,
+    isPending: false,
+    isError: false,
+    data: { jobs },
+  };
 }
 
 beforeEach(() => useJobAvailabilityMock.mockReset());
@@ -25,8 +30,10 @@ describe("usePresetJobOptions", () => {
     // released Pirate identity at all.
     useJobAvailabilityMock.mockReturnValue(success([{ id: 500, name: "Gm" }]));
     const { result } = renderHook(() => usePresetJobOptions());
-    expect(result.current).toEqual([{ id: 500, name: "Gm" }]);
-    expect(result.current.map((j) => j.name)).not.toContain("Pirate");
+    expect(result.current.options).toEqual([{ id: 500, name: "Gm" }]);
+    expect(result.current.options.map((j) => j.name)).not.toContain("Pirate");
+    expect(result.current.isPending).toBe(false);
+    expect(result.current.isError).toBe(false);
   });
 
   it("v61-style availability without Pirate: Pirate is absent from options", () => {
@@ -38,21 +45,37 @@ describe("usePresetJobOptions", () => {
       ]),
     );
     const { result } = renderHook(() => usePresetJobOptions());
-    const names = result.current.map((j) => j.name);
+    const names = result.current.options.map((j) => j.name);
     expect(names).not.toContain("Pirate");
     expect(names).toContain("Warrior");
   });
 
-  it("returns the graceful fallback (full graph) while availability is unknown (pending), never empty", () => {
+  it("returns an empty options list plus isPending while availability is unknown, never a static fallback", () => {
     useJobAvailabilityMock.mockReturnValue({
       isSuccess: false,
+      isPending: true,
+      isError: false,
       data: undefined,
     });
     const { result } = renderHook(() => usePresetJobOptions());
-    expect(result.current.length).toBeGreaterThan(0);
-    // Permissive fallback: the backend validates the chosen id, and a picker
-    // must never be blank while availability is still loading.
-    const ids = result.current.map((j) => j.id);
-    expect(ids).toContain(2100);
+    // Pending means "unknown", not "empty" — but offering the static v83
+    // list here would show wrong names on a non-v83 tenant (task-202
+    // FR-4.2), so the picker gets an empty list plus explicit isPending for
+    // the caller to render its own pending affordance, instead of a
+    // plausible-looking wrong answer.
+    expect(result.current.options).toEqual([]);
+    expect(result.current.isPending).toBe(true);
+  });
+
+  it("returns an empty options list plus isError when availability fails", () => {
+    useJobAvailabilityMock.mockReturnValue({
+      isSuccess: false,
+      isPending: false,
+      isError: true,
+      data: undefined,
+    });
+    const { result } = renderHook(() => usePresetJobOptions());
+    expect(result.current.options).toEqual([]);
+    expect(result.current.isError).toBe(true);
   });
 });

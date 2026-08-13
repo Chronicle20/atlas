@@ -3,6 +3,7 @@ package consumable
 import (
 	"atlas-consumables/kafka/message/consumable"
 	foodmsg "atlas-consumables/kafka/message/food"
+	mbmsg "atlas-consumables/kafka/message/monsterbook"
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -86,6 +87,27 @@ func TamingMobFedEventProvider(worldId world.Id, characterId uint32, itemId uint
 	return producer.SingleMessageProvider(key, value)
 }
 
+// MonsterBookCardPickedUpCommandProvider builds the MONSTER_BOOK
+// CARD_PICKED_UP command emitted when a monster card (classification 238) is
+// consumed out of the USE inventory. Keyed by characterId so a character's card
+// registrations stay ordered. transactionId doubles as the eventId — the same
+// contract the drop-pickup relay in kafka/consumer/pickup uses, and what
+// atlas-monster-book dedupes card inserts on.
+func MonsterBookCardPickedUpCommandProvider(tenantId uuid.UUID, characterId uint32, transactionId uuid.UUID, cardId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &mbmsg.Command[mbmsg.CardPickedUpBody]{
+		TenantId:    tenantId,
+		CharacterId: characterId,
+		EventId:     transactionId,
+		Type:        mbmsg.CommandTypeCardPickedUp,
+		Body: mbmsg.CardPickedUpBody{
+			CardId: cardId,
+			Source: mbmsg.SourceItemUse,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func EffectAppliedEventProvider(characterId character.Id, itemId item.Id, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &consumable.Event[consumable.EffectAppliedBody]{
@@ -115,6 +137,23 @@ func RewardWonEventProvider(characterId character.Id, boxItemId uint32, itemId u
 		CharacterId: characterId,
 		Type:        consumable.EventTypeRewardWon,
 		Body:        consumable.RewardWonBody{BoxItemId: boxItemId, ItemId: itemId, Message: message},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// CatchFailedEventProvider builds the CATCH_FAILED event emitted when a bridle
+// (catch-item) request is rejected pre-reserve. Cause is a semantic string
+// (CatchCauseUseDelay / CatchCauseInventoryFull / CatchCauseInvalidItem) —
+// atlas-channel resolves it to the client's wire reason byte (DOM-25).
+func CatchFailedEventProvider(characterId character.Id, itemId uint32, cause string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &consumable.Event[consumable.CatchFailedBody]{
+		CharacterId: characterId,
+		Type:        consumable.EventTypeCatchFailed,
+		Body: consumable.CatchFailedBody{
+			ItemId: itemId,
+			Cause:  cause,
+		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

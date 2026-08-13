@@ -75,6 +75,17 @@ var affectedAreaRemovedBroadcaster = func(l logrus.FieldLogger, ctx context.Cont
 	}
 }
 
+// The `skillDelay` and `nElemAttr` wire values now travel on MIST_CREATED
+// (atlas-maps mist.Mist.SkillDelay() / .ElemAttr(), where the full IDB
+// rationale lives). Both are 0 for every mist Atlas creates today.
+//
+// mistPhase is the GMS v92+ `nPhase` wire value (AFFECTEDAREA+0x48, v95
+// @0x437fde). It is compared for equality only inside IsSmokeAreaByPoint /
+// GetAffectAreaByPoint, neither of which any Atlas mist can reach (task-200
+// design §3.3-3.4). Atlas does not model it; 0 matches the legacy versions,
+// which omit the field entirely.
+const mistPhase = int32(0)
+
 func handleMistCreated(sc server.Model, wp writer.Producer) message.Handler[mist2.Event[mist2.CreatedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e mist2.Event[mist2.CreatedBody]) {
 		if e.Type != mist2.EventTypeCreated {
@@ -90,12 +101,12 @@ func handleMistCreated(sc server.Model, wp writer.Producer) message.Handler[mist
 			e.Body.Type,
 			int32(e.Body.SourceSkillId),
 			byte(e.Body.SourceSkillLevel),
-			0, // phase (server default; B1.1b)
+			e.Body.SkillDelay,
 			e.Body.OriginX, e.Body.OriginY,
 			e.Body.LtX, e.Body.LtY,
 			e.Body.RbX, e.Body.RbY,
-			0,                      // tStart (server leaves 0)
-			int32(e.Body.Duration), // tEnd <- duration (ms)
+			e.Body.ElemAttr,
+			mistPhase,
 		)
 		affectedAreaCreatedBroadcaster(l, ctx, wp, f, body)
 	}

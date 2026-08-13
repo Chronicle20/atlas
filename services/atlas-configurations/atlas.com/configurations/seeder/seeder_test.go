@@ -1,13 +1,56 @@
 package seeder
 
 import (
+	"atlas-configurations/templates"
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
+
+// seederTestEntity mirrors templates.Entity with SQLite-compatible column
+// types, the same way templates/processor_test.go's testEntity does. The
+// templates package's own harness is unexported, so it is restated here.
+type seederTestEntity struct {
+	Id           uuid.UUID       `gorm:"type:text;primaryKey"`
+	Region       string          `gorm:"not null"`
+	MajorVersion uint16          `gorm:"not null"`
+	MinorVersion uint16          `gorm:"not null"`
+	Data         json.RawMessage `gorm:"type:text;not null"`
+}
+
+func (seederTestEntity) TableName() string {
+	return "templates"
+}
+
+func setupSeederTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	if err != nil {
+		t.Fatalf("failed to connect database: %v", err)
+	}
+	if err := db.AutoMigrate(&seederTestEntity{}); err != nil {
+		t.Fatalf("failed to migrate: %v", err)
+	}
+	return db
+}
+
+func readTemplateData(db *gorm.DB, id uuid.UUID) (string, error) {
+	var e seederTestEntity
+	if err := db.Where("id = ?", id).First(&e).Error; err != nil {
+		return "", err
+	}
+	return string(e.Data), nil
+}
 
 func TestDefaultConfig(t *testing.T) {
 	// Test with no environment variables set
@@ -45,163 +88,6 @@ func TestDefaultConfigWithEnvVars(t *testing.T) {
 	}
 }
 
-func TestDiscoverFiles(t *testing.T) {
-	l := logrus.New()
-	l.SetLevel(logrus.ErrorLevel) // Suppress logs during tests
-
-	s := &Seeder{
-		l:   l,
-		ctx: context.Background(),
-		config: Config{
-			SeedPath: "testdata",
-			Enabled:  true,
-		},
-	}
-
-	tests := []struct {
-		name          string
-		dir           string
-		expectedCount int
-		expectError   bool
-	}{
-		{
-			name:          "templates directory with json files",
-			dir:           "testdata/templates",
-			expectedCount: 3, // valid_template.json, invalid_json.json, missing_region.json
-			expectError:   false,
-		},
-		{
-			name:          "non-existent directory",
-			dir:           "testdata/nonexistent",
-			expectedCount: 0,
-			expectError:   false, // Should not error, just return empty
-		},
-		{
-			name:          "directory with non-json files",
-			dir:           "testdata",
-			expectedCount: 0, // not_json.txt should be ignored, subdirs are not files
-			expectError:   false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			files, err := s.discoverFiles(tt.dir)
-
-			if tt.expectError && err == nil {
-				t.Error("Expected error but got none")
-			}
-
-			if !tt.expectError && err != nil {
-				t.Errorf("Unexpected error: %v", err)
-			}
-
-			if len(files) != tt.expectedCount {
-				t.Errorf("Expected %d files, got %d: %v", tt.expectedCount, len(files), files)
-			}
-		})
-	}
-}
-
-func TestDiscoverFilesSorting(t *testing.T) {
-	l := logrus.New()
-	l.SetLevel(logrus.ErrorLevel)
-
-	s := &Seeder{
-		l:   l,
-		ctx: context.Background(),
-		config: Config{
-			SeedPath: "testdata",
-			Enabled:  true,
-		},
-	}
-
-	files, err := s.discoverFiles("testdata/templates")
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-
-	// Verify files are sorted
-	for i := 1; i < len(files); i++ {
-		if files[i-1] > files[i] {
-			t.Errorf("Files not sorted: %s should come before %s", files[i], files[i-1])
-		}
-	}
-}
-
-func TestExtractMetadata(t *testing.T) {
-	l := logrus.New()
-	l.SetLevel(logrus.ErrorLevel)
-
-	s := &Seeder{
-		l:   l,
-		ctx: context.Background(),
-	}
-
-	tests := []struct {
-		name        string
-		filePath    string
-		expectError bool
-		region      string
-		major       uint16
-		minor       uint16
-	}{
-		{
-			name:        "valid template",
-			filePath:    "testdata/templates/valid_template.json",
-			expectError: false,
-			region:      "TEST",
-			major:       1,
-			minor:       0,
-		},
-		{
-			name:        "invalid json",
-			filePath:    "testdata/templates/invalid_json.json",
-			expectError: true,
-		},
-		{
-			name:        "missing region",
-			filePath:    "testdata/templates/missing_region.json",
-			expectError: true,
-		},
-		{
-			name:        "non-existent file",
-			filePath:    "testdata/templates/does_not_exist.json",
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			meta, err := s.extractMetadata(tt.filePath)
-
-			if tt.expectError {
-				if err == nil {
-					t.Error("Expected error but got none")
-				}
-				return
-			}
-
-			if err != nil {
-				t.Errorf("Unexpected error: %v", err)
-				return
-			}
-
-			if meta.Region != tt.region {
-				t.Errorf("Expected region '%s', got '%s'", tt.region, meta.Region)
-			}
-
-			if meta.MajorVersion != tt.major {
-				t.Errorf("Expected majorVersion %d, got %d", tt.major, meta.MajorVersion)
-			}
-
-			if meta.MinorVersion != tt.minor {
-				t.Errorf("Expected minorVersion %d, got %d", tt.minor, meta.MinorVersion)
-			}
-		})
-	}
-}
-
 func TestRunWithSeedingDisabled(t *testing.T) {
 	l := logrus.New()
 	l.SetLevel(logrus.ErrorLevel)
@@ -222,119 +108,72 @@ func TestRunWithSeedingDisabled(t *testing.T) {
 	}
 }
 
-func TestDiscoverFilesOnlyJson(t *testing.T) {
+// THE regression guard (PRD acceptance criteria, FR-4.1/FR-4.2): boot-time
+// seeding is create-if-absent. Given an existing row and a seed file whose
+// content differs, the seeder must report "skipped" and leave the row
+// byte-identical. This is what protects "UI edits survive a redeploy" from
+// being quietly broken by a later change.
+func TestSeederSkipsExistingWithDifferentContent(t *testing.T) {
+	db := setupSeederTestDB(t)
 	l := logrus.New()
 	l.SetLevel(logrus.ErrorLevel)
+	ctx := context.Background()
 
-	s := &Seeder{
-		l:   l,
-		ctx: context.Background(),
+	catalog := templates.LoadCatalog(l, filepath.Join("testdata", "templates"))
+	entry, ok := catalog.Lookup("TEST", 1, 0)
+	if !ok {
+		t.Fatalf("TEST 1.0 fixture missing from testdata/templates")
 	}
 
-	files, err := s.discoverFiles("testdata/templates")
+	// Pre-create a row on the same key with DIFFERENT content.
+	p := templates.NewProcessor(l, ctx, db)
+	existing := entry.Model
+	existing.UsesPin = !existing.UsesPin
+	id, err := p.Create(existing)
 	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
+		t.Fatalf("Create: %v", err)
+	}
+	before, err := readTemplateData(db, id)
+	if err != nil {
+		t.Fatalf("read back: %v", err)
 	}
 
-	for _, f := range files {
-		if filepath.Ext(f) != ".json" {
-			t.Errorf("Non-JSON file discovered: %s", f)
-		}
+	s := NewSeeder(l, ctx, db, Config{SeedPath: "testdata", Enabled: true}, catalog)
+	result := s.seedTemplates()
+
+	if result.Skipped != 1 || result.Imported != 0 || result.Failed != 0 {
+		t.Fatalf("SeedResult = %+v, want {Imported:0 Skipped:1 Failed:0}", result)
+	}
+
+	after, err := readTemplateData(db, id)
+	if err != nil {
+		t.Fatalf("read back (after): %v", err)
+	}
+	if after != before {
+		t.Errorf("the seeder rewrote an existing row:\nbefore: %s\nafter:  %s", before, after)
 	}
 }
 
-// FR-2.3: template_gms_84_1.json must decode to (GMS, 84, 1) via the seeder's
-// extractMetadata path, and must be treated as distinct from (GMS, 83, 1).
-func TestExtractMetadataGmsV84(t *testing.T) {
+// A key with no existing row is imported.
+func TestSeederImportsMissingTemplate(t *testing.T) {
+	db := setupSeederTestDB(t)
 	l := logrus.New()
 	l.SetLevel(logrus.ErrorLevel)
+	ctx := context.Background()
 
-	s := &Seeder{
-		l:   l,
-		ctx: context.Background(),
+	catalog := templates.LoadCatalog(l, filepath.Join("testdata", "templates"))
+	s := NewSeeder(l, ctx, db, Config{SeedPath: "testdata", Enabled: true}, catalog)
+
+	result := s.seedTemplates()
+	if result.Imported != 1 || result.Skipped != 0 || result.Failed != 0 {
+		t.Fatalf("SeedResult = %+v, want {Imported:1 Skipped:0 Failed:0}", result)
 	}
 
-	// path is relative to the package directory (where go test runs)
-	const templatePath = "../../../seed-data/templates/template_gms_84_1.json"
-
-	meta, err := s.extractMetadata(templatePath)
+	got, err := templates.NewProcessor(l, ctx, db).GetByRegionAndVersion("TEST", 1, 0)
 	if err != nil {
-		t.Fatalf("extractMetadata(%q) unexpected error: %v", templatePath, err)
+		t.Fatalf("GetByRegionAndVersion: %v", err)
 	}
-
-	if meta.Region != "GMS" {
-		t.Errorf("Region: want GMS, got %q", meta.Region)
-	}
-	if meta.MajorVersion != 84 {
-		t.Errorf("MajorVersion: want 84, got %d", meta.MajorVersion)
-	}
-	if meta.MinorVersion != 1 {
-		t.Errorf("MinorVersion: want 1, got %d", meta.MinorVersion)
-	}
-}
-
-// FR-2.3: (GMS,84,1) and (GMS,83,1) must produce distinct identity tuples so
-// the seeder's existence check never treats one as a duplicate of the other.
-func TestGmsV84DistinctFromV83(t *testing.T) {
-	l := logrus.New()
-	l.SetLevel(logrus.ErrorLevel)
-
-	s := &Seeder{
-		l:   l,
-		ctx: context.Background(),
-	}
-
-	meta84, err := s.extractMetadata("../../../seed-data/templates/template_gms_84_1.json")
-	if err != nil {
-		t.Fatalf("extractMetadata(gms_84_1) unexpected error: %v", err)
-	}
-
-	meta83, err := s.extractMetadata("../../../seed-data/templates/template_gms_83_1.json")
-	if err != nil {
-		t.Fatalf("extractMetadata(gms_83_1) unexpected error: %v", err)
-	}
-
-	// The seeder's templateExists key is (region, majorVersion, minorVersion).
-	// Assert that the two templates differ on at least one component of that key.
-	same := meta84.Region == meta83.Region &&
-		meta84.MajorVersion == meta83.MajorVersion &&
-		meta84.MinorVersion == meta83.MinorVersion
-	if same {
-		t.Errorf("(GMS,84,1) and (GMS,83,1) have identical identity tuples — seeder would skip one")
-	}
-}
-
-// FR-2.3: the seed-data templates directory must contain both gms_83_1 and
-// gms_84_1 files, discoverable as separate entries.
-func TestSeedDataDiscoversBothV83AndV84(t *testing.T) {
-	l := logrus.New()
-	l.SetLevel(logrus.ErrorLevel)
-
-	s := &Seeder{
-		l:   l,
-		ctx: context.Background(),
-	}
-
-	files, err := s.discoverFiles("../../../seed-data/templates")
-	if err != nil {
-		t.Fatalf("discoverFiles unexpected error: %v", err)
-	}
-
-	has83, has84 := false, false
-	for _, f := range files {
-		base := filepath.Base(f)
-		if base == "template_gms_83_1.json" {
-			has83 = true
-		}
-		if base == "template_gms_84_1.json" {
-			has84 = true
-		}
-	}
-
-	if !has83 {
-		t.Error("seed-data/templates: template_gms_83_1.json not discovered")
-	}
-	if !has84 {
-		t.Error("seed-data/templates: template_gms_84_1.json not discovered")
+	if got.Region != "TEST" {
+		t.Errorf("Region = %q, want TEST", got.Region)
 	}
 }

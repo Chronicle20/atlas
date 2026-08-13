@@ -58,8 +58,9 @@ comment at the top of the main kustomization) — do not add it there.
 | 4.3 | `kustomization.yaml` → `configMapGenerator` topic literals | **Generator-owned.** Regenerate the `KEY=KEY-PLACEHOLDER_ATLAS_ENV` block with `deploy/k8s/overlays/pr/scripts/gen-topic-config.sh` and paste its output into the atlas-env generator — do not hand-edit individual literals. |
 | 4.4 | `patches/db-name-suffix.yaml` | **Generator-owned** (`# Do not edit by hand` header). Re-run `deploy/k8s/overlays/pr/scripts/gen-db-name-suffix.sh`; it emits `DB_NAME: "atlas-<db>-PLACEHOLDER_ATLAS_ENV"` from the base manifest. |
 | 4.5 | `patches/consumer-group-env.yaml` | **Generator-owned** (`# Do not edit by hand` header). Re-run `deploy/k8s/overlays/pr/scripts/gen-consumer-group-patch.sh`; it derives the `KAFKA_CONSUMER_GROUP` value from the `consumerGroupId` literal in the service's `main.go` (PR envs inject it, unlike main). |
+| 4.6 | `dev/cluster-infra-coordination/atlas-pr-cleanup-env.example.yaml` | **Generator-owned.** Re-run `deploy/k8s/overlays/pr/scripts/gen-cleanup-env.sh`; it derives `ATLAS_SERVICES` from services.json and `ATLAS_DB_NAMES` from 4.1. Not deployed from this repo, but `pr-validation.yml` regenerates it and **hard-fails the PR** when the committed copy is stale. |
 
-Unlike the **main** overlay (§3), whose patches are all hand-maintained, three
+Unlike the **main** overlay (§3), whose patches are all hand-maintained, four
 PR-overlay pieces are script-generated. Editing them by hand works until the
 next generator run silently reverts you — always re-run the generator.
 
@@ -68,7 +69,7 @@ next generator run silently reverts you — always re-run the generator.
 | # | File | What to add |
 |---|---|---|
 | 5.1 | `deploy/shared/routes.conf` | nginx location block(s), alphabetically placed, bare container name (`http://atlas-<svc>:8080`). |
-| 5.2 | regenerate | Run `./deploy/scripts/sync-k8s-ingress-routes.sh` to rebuild `deploy/k8s/ingress.yaml`. Commit both. |
+| 5.2 | regenerate | Run `tools/gen-routes.sh` to rebuild `deploy/k8s/base/routes.conf.template.generated` from the shared source. Commit both. (`deploy/scripts/sync-k8s-ingress-routes.sh` is dead — it targets a `deploy/k8s/ingress.yaml` that no longer exists.) `deploy/shared/test/routes_nginxt.sh` drift-checks the pair, but it is docker-based and **operator-run — nothing in CI invokes it** (see `deploy/shared/test/README.md`), so a stale generated file will not fail the PR. Run it yourself. |
 
 ## 6. Databases
 
@@ -77,6 +78,30 @@ next generator run silently reverts you — always re-run the generator.
 | 6.1 | postgres.home (main) | Create `atlas-<db>-main` **manually** — main has no wave-0 create job. Owner = the app role; `uuid-ossp` extension is inherited from `template1`. |
 | 6.2 | `tools/db-bootstrap.sh` | Add the **unsuffixed** DB name to the hand-edited `DBS` list (local/dev bootstrap). |
 | 6.3 | PR envs | Nothing beyond 4.1 — create and drop are derived from `ATLAS_DB_NAMES`. |
+
+## 6b. GHCR package visibility (one-time, manual, out-of-repo)
+
+The first `docker buildx bake` push of `ghcr.io/chronicle20/atlas-<svc>/atlas-<svc>`
+**creates the GHCR package as private.** Every existing atlas package is
+public, and the cluster pulls **anonymously** — no `imagePullSecrets` on any
+Deployment. So the new service is the only one that cannot be pulled:
+
+```
+Failed to pull image "ghcr.io/chronicle20/atlas-<svc>/atlas-<svc>:pr-<N>-<sha>":
+  failed to authorize: failed to fetch anonymous token: … 401 Unauthorized
+```
+
+CI is green and the image genuinely exists — the pod still sits in
+`ImagePullBackOff` forever. Fix: after the first successful build, set the
+package to **Public** (GitHub → Packages → `atlas-<svc>/atlas-<svc>` → Package
+settings → Change visibility), then delete the stuck pod so the kubelet retries.
+
+Verify anonymously — 200 means public, 401 means still private:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' \
+  'https://ghcr.io/token?scope=repository%3Achronicle20%2Fatlas-<svc>%2Fatlas-<svc>%3Apull&service=ghcr.io'
+```
 
 ## 7. Socket services only
 
@@ -146,6 +171,8 @@ docker manifest inspect ghcr.io/chronicle20/atlas-<svc>/atlas-<svc>:main-<sha>
 docker buildx bake atlas-<svc>
 ```
 
-And the one manual step no tool can check: **create `atlas-<db>-main` on
+And the two manual steps no tool can check: **create `atlas-<db>-main` on
 postgres.home** (section 6.1) before merging — the pods crash-loop on
-SQLSTATE 3D000 until it exists.
+SQLSTATE 3D000 until it exists — and **flip the new GHCR package to public**
+(section 6b) after the first image push, or the pod sits in `ImagePullBackOff`
+against a 401 while CI reports a clean build.

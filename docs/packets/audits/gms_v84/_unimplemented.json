@@ -1,0 +1,9 @@
+{
+ "entries": [
+  {
+   "fname": "CWvsContext::SendConsumeCashItemUseRequest",
+   "packet": "cash/serverbound/CashItemUsePetSkill",
+   "reason": "task-139 cash-item-use-pet-skill coverage sweep (IDA session 79511a2a, GMS_v84). CWvsContext::SendConsumeCashItemUseRequest @0xa54a2f dispatches a switch on get_consume_cash_item_type(itemId). Type 28 has NO unique arm at all: the compiler-generated comment at the range-check (0xa54ad0 'ja def_A54ADD') explicitly lists 'jumptable 00A54ADD default case, cases 28,35,36,38,39,41,43-45,54-59,62,67-69'. No dedicated code, no Encode call, no pet reference for type 28. Positive absence."
+  }
+ ]
+}

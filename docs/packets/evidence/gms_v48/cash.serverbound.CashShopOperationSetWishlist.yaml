@@ -6,3 +6,5 @@ ida:
     function: CCashShop::OnSetWish
     address: "0x44ce9b"
     decompile_sha256: bd49ab59ea12e8ee9ae276d75232c12f05719e3dd92bfe399cab3ebbe35fe71d
+verifies:
+    - libs/atlas-packet/cash/serverbound/v48_test.go#TestSetWishlistBytesV48

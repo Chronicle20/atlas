@@ -1,0 +1,18 @@
+# SpawnPortal (← `CWvsContext::OnTownPortal`)
+
+- **IDA:** 0x9c5a40
+- **Atlas file:** `libs/atlas-packet/door/clientbound/spawn_portal.go`
+- **Variant:** GMS/v92
+- **Branch depth:** 0
+- **Verdict:** ❌
+
+## Wire-level diff
+
+| # | Atlas writes | v? reads | Verdict | Note |
+|---|---|---|---|---|
+| 0 | int32 | int32 `` | ✅ |  |
+| 1 | int32 | int32 `` | ✅ |  |
+| 2 | int32 | int32 `` | ✅ |  |
+| 3 | byte | int16 `` | ❌ | atlas: short — missing trailing field |
+| 4 | byte | int16 `` | ❌ | atlas: short — missing trailing field |
+

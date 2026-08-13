@@ -70,7 +70,12 @@ func handleCharacterMapChangedEvent(l logrus.FieldLogger, ctx context.Context, e
 		return
 	}
 	p := saga.NewProcessor(l, ctx)
-	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterMapChanged); !ok {
+	// ForCharacter is passed only here. WarpPartyQuestMembersToMap fans N warps
+	// out under one transactionId, so a map_changed's characterId must match
+	// the character named by the current step's payload before it completes
+	// that step (task-184 FR-1.3).
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterMapChanged,
+		saga.ForCharacter(e.CharacterId)); !ok {
 		return
 	}
 	_ = p.StepCompleted(e.TransactionId, true)
@@ -175,7 +180,12 @@ func handleCharacterMesoErrorEvent(l logrus.FieldLogger, ctx context.Context, e 
 		"world_id":       e.WorldId,
 	}).Error("Character meso operation error occurred, marking saga step as failed")
 
-	_ = p.StepCompleted(e.TransactionId, false)
+	// Thread the machine-readable code onto the step result so a bespoke
+	// compensator (meso_sack_use) can render specific client feedback instead of
+	// a generic failure. Backward compatible: every existing consumer of this
+	// step ignores the result map, and NOT_ENOUGH_MESO behaviour is otherwise
+	// byte-identical.
+	_ = p.StepCompletedWithResult(e.TransactionId, false, map[string]any{"errorCode": e.Body.Error})
 }
 
 // handleCharacterApTransferErrorEvent marks a point_reset transfer_ap step

@@ -35,6 +35,7 @@ import {
   getBreadcrumbsFromRoute,
   type RouteConfig,
 } from "@/lib/breadcrumbs/routes";
+import { useJobNameLookup } from "@/lib/hooks/api/useJobGraph";
 
 // Hook configuration options
 export interface UseBreadcrumbsOptions {
@@ -133,6 +134,8 @@ export function useBreadcrumbs(
   const pathname = useLocation().pathname;
   const navigate = useNavigate();
   const { activeTenant } = useTenant();
+  const jobName = useJobNameLookup();
+  const resolverCtx = useMemo(() => ({ jobName }), [jobName]);
 
   // Destructure specific options to avoid dependency issues
   const { autoResolve, resolverOptions, enablePreloading } = opts;
@@ -150,7 +153,7 @@ export function useBreadcrumbs(
   const initialBreadcrumbs = useMemo(() => {
     try {
       // Try route-based parsing first for better accuracy
-      const routeBreadcrumbs = getBreadcrumbsFromRoute(pathname);
+      const routeBreadcrumbs = getBreadcrumbsFromRoute(pathname, resolverCtx);
       if (routeBreadcrumbs.length > 0) {
         return {
           success: true,
@@ -184,7 +187,7 @@ export function useBreadcrumbs(
             : new Error("Failed to parse breadcrumbs"),
       };
     }
-  }, [pathname]);
+  }, [pathname, resolverCtx]);
 
   // globalError is a pure mirror of initialBreadcrumbs.error — derive it
   // directly instead of syncing via an effect (see the `error:` field below).

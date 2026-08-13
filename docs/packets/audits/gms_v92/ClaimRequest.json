@@ -1,0 +1,57 @@
+{
+  "WriterName": "ClaimRequest",
+  "IDAName": "CWvsContext::SendClaimRequest",
+  "Address": "0x9d9c30",
+  "Variant": "GMS/v92",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/report/serverbound/claim_request.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bChatClaim (flag; also gates the trailing chatLog string below) @0x9da26e",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "sTargetCharacterName @0x9da28d",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nType @0x9da29b",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "sContext @0x9da2ba",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "chatLog (only when bChatClaim) @0x9da375",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

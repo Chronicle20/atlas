@@ -1,21 +1,35 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
-import { JOB_GRAPH } from "@/lib/jobs/job-advancement-tree";
+import { FIXTURE_JOBS_SORTED } from "@/lib/jobs/__tests__/job-graph-fixtures";
+import { buildJobGraph } from "@/lib/jobs/job-graph";
+import type { JobAvailabilityEntry } from "@/services/api/availability.service";
 import { BranchRail } from "@/components/features/jobs/branch-rail";
 import { visibleRailGroups } from "@/components/features/jobs/rail-groups";
 
+// The structural fixture source predates identity/wire-id divergence, so
+// identity === id here.
+const FULL_AVAILABILITY: JobAvailabilityEntry[] = FIXTURE_JOBS_SORTED.map(
+  (e) => ({
+    id: e.id,
+    name: e.name,
+    parent: e.parent,
+    identity: e.id,
+  }),
+);
+
 /** Everything except the Evan branch (introduced after this tenant's version). */
 const NO_EVAN: ReadonlySet<number> = new Set(
-  Object.values(JOB_GRAPH)
-    .map((e) => e.id)
-    .filter((id) => id !== 2001 && !(id >= 2200 && id <= 2218)),
+  FULL_AVAILABILITY.map((e) => e.id).filter(
+    (id) => id !== 2001 && !(id >= 2200 && id <= 2218),
+  ),
 );
+const NO_EVAN_GRAPH = buildJobGraph(FULL_AVAILABILITY, NO_EVAN);
 
 describe("BranchRail", () => {
   it("renders group labels, entry names, and subtree counts", () => {
     render(
       <BranchRail
-        groups={visibleRailGroups(NO_EVAN)}
+        groups={visibleRailGroups(NO_EVAN_GRAPH)}
         selectedEntryId={100}
         onSelect={() => {}}
       />,
@@ -36,7 +50,7 @@ describe("BranchRail", () => {
     const onSelect = vi.fn();
     render(
       <BranchRail
-        groups={visibleRailGroups(NO_EVAN)}
+        groups={visibleRailGroups(NO_EVAN_GRAPH)}
         selectedEntryId={100}
         onSelect={onSelect}
       />,
@@ -48,7 +62,7 @@ describe("BranchRail", () => {
   it("scopes the branch accent token per entry", () => {
     render(
       <BranchRail
-        groups={visibleRailGroups(NO_EVAN)}
+        groups={visibleRailGroups(NO_EVAN_GRAPH)}
         selectedEntryId={100}
         onSelect={() => {}}
       />,

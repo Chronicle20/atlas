@@ -11,6 +11,7 @@ Returns all scheduled routes for the tenant.
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | filter[startMapId] | query | uint32 | No | Filter routes by starting map ID |
+| include | query | string | No | Comma-separated relationship names. `schedule` attaches the day's trip rows; omitted by default (see note) |
 | page[number] | query | int | No | Page number (default 1) |
 | page[size] | query | int | No | Page size (default 50, max 250) |
 
@@ -20,7 +21,7 @@ Resource type: `routes`
 
 | Field | Type | Description |
 |-------|------|-------------|
-| id | uuid.UUID | Route identifier |
+| id | uuid.UUID | Route identifier (tenant-derived, stable across restarts and replicas) |
 | name | string | Route name |
 | startMapId | map.Id | Starting map ID |
 | stagingMapId | map.Id | Staging map ID |
@@ -28,7 +29,29 @@ Resource type: `routes`
 | destinationMapId | map.Id | Destination map ID |
 | observationMapId | map.Id | Observation map ID |
 | state | string | Current route state |
-| cycleInterval | time.Duration | Cycle interval |
+| cycleInterval | time.Duration | **Legacy.** Serialises as an integer nanosecond count. Superseded by `cycleIntervalSeconds` |
+| boardingWindowSeconds | uint32 | Boarding window, in seconds |
+| preDepartureSeconds | uint32 | Pre-departure hold, in seconds |
+| travelDurationSeconds | uint32 | Travel duration, in seconds |
+| cycleIntervalSeconds | uint32 | Cycle interval, in seconds |
+| nextTransitionAt | string | Absolute instant (RFC3339) of the next state change; empty when `out_of_service` |
+| nextState | string | The state the route moves to at `nextTransitionAt`; empty when `out_of_service` |
+
+**Schedule is opt-in.** `Transform` attaches a full day of trip rows (~96 per
+route on a 15-minute cycle), so a twelve-route list would carry ~1,000 included
+resources. The list endpoint therefore uses a summary transform by default and
+attaches the `schedule` relationship only when `include=schedule` is passed.
+The detail endpoint always attaches it. Sparse fieldsets cannot express this:
+api2go's `FilterSparseFields` rewrites each `included` entry's attributes and
+never removes an entry, and an empty field list is a 400.
+
+**Time semantics.** The day's schedule is computed once per reconcile and the
+1-second ticker only re-derives state from it, comparing *time of day* only.
+Trip-schedule timestamps therefore carry the computing day's date, and only
+their time-of-day component is meaningful. `nextTransitionAt` exists so clients
+never have to reconstruct that: it is the governing boundary projected onto the
+first instant after the server's `now`. `state` and `nextState`/`nextTransitionAt`
+come from a single evaluation on a single `now` and cannot disagree.
 
 **Relationships:**
 
@@ -62,7 +85,7 @@ Resource type: `routes`
 
 | Field | Type | Description |
 |-------|------|-------------|
-| id | uuid.UUID | Route identifier |
+| id | uuid.UUID | Route identifier (tenant-derived, stable across restarts and replicas) |
 | name | string | Route name |
 | startMapId | map.Id | Starting map ID |
 | stagingMapId | map.Id | Staging map ID |
@@ -70,7 +93,23 @@ Resource type: `routes`
 | destinationMapId | map.Id | Destination map ID |
 | observationMapId | map.Id | Observation map ID |
 | state | string | Current route state |
-| cycleInterval | time.Duration | Cycle interval |
+| cycleInterval | time.Duration | **Legacy.** Serialises as an integer nanosecond count. Superseded by `cycleIntervalSeconds` |
+| boardingWindowSeconds | uint32 | Boarding window, in seconds |
+| preDepartureSeconds | uint32 | Pre-departure hold, in seconds |
+| travelDurationSeconds | uint32 | Travel duration, in seconds |
+| cycleIntervalSeconds | uint32 | Cycle interval, in seconds |
+| nextTransitionAt | string | Absolute instant (RFC3339) of the next state change; empty when `out_of_service` |
+| nextState | string | The state the route moves to at `nextTransitionAt`; empty when `out_of_service` |
+
+**Time semantics.** The day's schedule is computed once per reconcile and the
+1-second ticker only re-derives state from it, comparing *time of day* only.
+Trip-schedule timestamps therefore carry the computing day's date, and only
+their time-of-day component is meaningful. `nextTransitionAt` exists so clients
+never have to reconstruct that: it is the governing boundary projected onto the
+first instant after the server's `now`. `state` and `nextState`/`nextTransitionAt`
+come from a single evaluation on a single `now` and cannot disagree.
+
+The schedule relationship is always attached on this endpoint.
 
 **Relationships:**
 
@@ -109,8 +148,10 @@ Resource type: `instance-routes`
 | transitMapIds | []map.Id | Transit map IDs |
 | destinationMapId | map.Id | Destination map ID |
 | capacity | uint32 | Maximum characters per instance |
-| boardingWindow | time.Duration | Boarding window duration |
-| travelDuration | time.Duration | Travel duration |
+| boardingWindow | time.Duration | **Legacy.** Integer nanosecond count. Superseded by `boardingWindowSeconds` |
+| travelDuration | time.Duration | **Legacy.** Integer nanosecond count. Superseded by `travelDurationSeconds` |
+| boardingWindowSeconds | uint32 | Boarding window, in seconds |
+| travelDurationSeconds | uint32 | Travel duration, in seconds |
 
 **Error Conditions:**
 
@@ -143,8 +184,10 @@ Resource type: `instance-routes`
 | transitMapIds | []map.Id | Transit map IDs |
 | destinationMapId | map.Id | Destination map ID |
 | capacity | uint32 | Maximum characters per instance |
-| boardingWindow | time.Duration | Boarding window duration |
-| travelDuration | time.Duration | Travel duration |
+| boardingWindow | time.Duration | **Legacy.** Integer nanosecond count. Superseded by `boardingWindowSeconds` |
+| travelDuration | time.Duration | **Legacy.** Integer nanosecond count. Superseded by `travelDurationSeconds` |
+| boardingWindowSeconds | uint32 | Boarding window, in seconds |
+| travelDurationSeconds | uint32 | Travel duration, in seconds |
 
 **Error Conditions:**
 
@@ -179,6 +222,11 @@ Resource type: `instance-status`
 | characters | int | Number of characters in instance |
 | boardingUntil | string | Boarding window expiry (RFC3339) |
 | arrivalAt | string | Arrival time (RFC3339) |
+| createdAt | string | Instance creation instant (RFC3339). The stuck-timeout sweep force-warps when `now - createdAt` exceeds the route's `MaxLifetime()` = `2 × (boardingWindow + travelDuration)` |
+
+**Tenant scoping.** Instances are stored in a per-route, tenant-keyed Redis set
+and are read back under the tenant the request carries. A tenant only ever sees
+its own instances.
 
 **Error Conditions:**
 
@@ -220,6 +268,10 @@ Resource type: `start-transport`
 ## Related Resource Types
 
 ### trip-schedule
+
+**Time semantics.** These four timestamps carry the date of the day the schedule
+was computed; only their time-of-day component is meaningful (see the Time
+semantics note under `GET /transports/routes` above).
 
 | Field | Type | Description |
 |-------|------|-------------|

@@ -50,3 +50,32 @@ func PurchaseStatusEventProvider(characterId uint32, templateId, price uint32, c
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func SurpriseOpenedStatusEventProvider(characterId uint32, compartmentId uuid.UUID, boxCashId int64, boxRemaining uint32, rewardAssetId uint32, rewardTemplateId uint32, rewardCount uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.StatusEvent[cashshop.SurpriseOpenedEventBody]{
+		CharacterId: characterId,
+		Type:        cashshop.StatusEventTypeSurpriseOpened,
+		Body: cashshop.SurpriseOpenedEventBody{
+			CompartmentId:    compartmentId,
+			BoxCashId:        boxCashId,
+			BoxRemaining:     boxRemaining,
+			RewardAssetId:    rewardAssetId,
+			RewardTemplateId: rewardTemplateId,
+			RewardCount:      rewardCount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func SurpriseFailedStatusEventProvider(characterId uint32, reason string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.StatusEvent[cashshop.SurpriseFailedEventBody]{
+		CharacterId: characterId,
+		Type:        cashshop.StatusEventTypeSurpriseFailed,
+		Body: cashshop.SurpriseFailedEventBody{
+			Reason: reason,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

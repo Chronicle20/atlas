@@ -18,6 +18,21 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
 )
 
+const (
+	// warpSagaTimeout bounds a portal warp saga. The default is 30s
+	// (orchestrator DefaultSagaTimeout); against a ~300ms observed end-to-end
+	// warp that is 100x, and it is how long a player whose warp did not land
+	// would stay frozen now that the outcome no longer unlocks them
+	// eagerly (task-184 FR-2.6). start_instance_transport deliberately keeps
+	// the 30s default — it does strictly more work.
+	warpSagaTimeout = 5 * time.Second
+
+	// pendingActionTTL bounds the registry entry backing a suppressed unlock.
+	// It must exceed warpSagaTimeout by a wide margin so handleStatusEventFailed
+	// can still find the entry when the timeout fires.
+	pendingActionTTL = 60 * time.Second
+)
+
 // OperationExecutor executes portal script operations
 type OperationExecutor struct {
 	l     logrus.FieldLogger
@@ -34,66 +49,52 @@ func NewOperationExecutor(l logrus.FieldLogger, ctx context.Context) *OperationE
 	}
 }
 
-// ExecuteOperation executes a single operation
-// portalId is the numeric ID of the current portal (for operations like block_portal)
+// newOperationExecutorWithSaga builds an executor over an injected saga
+// processor. Used by tests to observe dispatched sagas without touching Kafka.
+func newOperationExecutorWithSaga(l logrus.FieldLogger, ctx context.Context, sagaP portalsaga.Processor) *OperationExecutor {
+	return &OperationExecutor{l: l, ctx: ctx, sagaP: sagaP}
+}
+
+// ExecuteOperation executes a single operation.
+// portalId is the numeric ID of the current portal (for operations like block_portal).
+// Dispatch goes through opTable, which is also the classification authority for
+// whether an operation moves the character — see optable.go.
 func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, portalId uint32, op operation.Model) error {
 	e.l.Debugf("Executing operation [%s] for character [%d]", op.Type(), characterId)
 
-	switch op.Type() {
-	case "play_portal_sound":
-		return e.executePlayPortalSound(f, characterId, op)
-
-	case "warp":
-		return e.executeWarp(f, characterId, op)
-
-	case "drop_message":
-		return e.executeDropMessage(f, characterId, op)
-
-	case "show_hint":
-		return e.executeShowHint(f, characterId, op)
-
-	case "block_portal":
-		return e.executeBlockPortal(f, characterId, portalId, op)
-
-	case "create_skill":
-		return e.executeCreateSkill(characterId, op)
-
-	case "update_skill":
-		return e.executeUpdateSkill(characterId, op)
-
-	case "start_instance_transport":
-		return e.executeStartInstanceTransport(f, characterId, op)
-
-	case "apply_consumable_effect":
-		return e.executeApplyConsumableEffect(f, characterId, op)
-
-	case "cancel_consumable_effect":
-		return e.executeCancelConsumableEffect(f, characterId, op)
-
-	case "save_location":
-		return e.executeSaveLocation(f, characterId, portalId, op)
-
-	case "warp_to_saved_location":
-		return e.executeWarpToSavedLocation(f, characterId, op)
-
-	case "start_quest":
-		return e.executeStartQuest(f, characterId, op)
-
-	default:
+	def, ok := opTable[op.Type()]
+	if !ok {
 		e.l.Warnf("Unknown operation type [%s] for character [%d]", op.Type(), characterId)
 		return nil
 	}
+	return def.run(e, f, characterId, portalId, op)
 }
 
-// ExecuteOperations executes multiple operations
-// portalId is the numeric ID of the current portal (for operations like block_portal)
-func (e *OperationExecutor) ExecuteOperations(f field.Model, characterId uint32, portalId uint32, ops []operation.Model) error {
+// ExecuteOperations executes multiple operations in order, stopping at the
+// first error.
+//
+// portalId is the numeric ID of the current portal (for operations like
+// block_portal).
+//
+// movedCharacter reports whether at least one MOVING operation was
+// SUCCESSFULLY dispatched (its saga was created). The caller uses this to
+// decide whether the client is already going to be unlocked by the resulting
+// SET_FIELD — see consumer.go and task-184 prd.md §1.1.
+//
+// The distinction between "declared" and "successfully dispatched" is
+// load-bearing: a warp that failed before creating its saga has no saga to
+// fail and release the player, so the caller MUST still unlock them.
+func (e *OperationExecutor) ExecuteOperations(f field.Model, characterId uint32, portalId uint32, ops []operation.Model) (bool, error) {
+	movedCharacter := false
 	for _, op := range ops {
 		if err := e.ExecuteOperation(f, characterId, portalId, op); err != nil {
-			return err
+			return movedCharacter, err
+		}
+		if IsMovingOperation(op.Type()) {
+			movedCharacter = true
 		}
 	}
-	return nil
+	return movedCharacter, nil
 }
 
 // executePlayPortalSound sends a saga to play portal sound effect
@@ -144,9 +145,23 @@ func (e *OperationExecutor) executeWarp(f field.Model, characterId uint32, op op
 
 	e.l.Debugf("Warping character [%d] to map [%d] portal [%d/%s]", characterId, mapId, portalId, portalName)
 
+	// The transaction id is minted here so the pending action can be registered
+	// under it. If this warp is suppressed from unlocking the client
+	// (consumer.go, task-184 FR-2.3), this registration is what lets
+	// handleStatusEventFailed release the player when the warp does not land.
+	sagaId := uuid.New()
+	action.GetRegistry().AddWithTTL(e.l, e.ctx, sagaId, action.PendingAction{
+		CharacterId: characterId,
+		WorldId:     f.WorldId(),
+		ChannelId:   f.ChannelId(),
+		Kind:        action.KindWarp,
+	}, pendingActionTTL)
+
 	s := saga.NewBuilder().
+		SetTransactionId(sagaId).
 		SetSagaType(saga.InventoryTransaction).
 		SetInitiatedBy("portal-action-warp").
+		SetTimeout(warpSagaTimeout).
 		AddStep(
 			fmt.Sprintf("warp-%d", characterId),
 			saga.Pending,
@@ -448,11 +463,12 @@ func (e *OperationExecutor) executeStartInstanceTransport(f field.Model, charact
 	sagaId := uuid.New()
 
 	// Register pending action for saga failure handling
-	action.GetRegistry().Add(e.ctx, sagaId, action.PendingAction{
+	action.GetRegistry().Add(e.l, e.ctx, sagaId, action.PendingAction{
 		CharacterId:    characterId,
 		WorldId:        f.WorldId(),
 		ChannelId:      f.ChannelId(),
 		FailureMessage: failureMessage,
+		Kind:           action.KindTransport,
 	})
 
 	s := saga.NewBuilder().
@@ -570,9 +586,19 @@ func (e *OperationExecutor) executeWarpToSavedLocation(f field.Model, characterI
 
 	e.l.Debugf("Warping character [%d] to saved location [%s]", characterId, locationType)
 
+	sagaId := uuid.New()
+	action.GetRegistry().AddWithTTL(e.l, e.ctx, sagaId, action.PendingAction{
+		CharacterId: characterId,
+		WorldId:     f.WorldId(),
+		ChannelId:   f.ChannelId(),
+		Kind:        action.KindWarp,
+	}, pendingActionTTL)
+
 	s := saga.NewBuilder().
+		SetTransactionId(sagaId).
 		SetSagaType(saga.InventoryTransaction).
 		SetInitiatedBy("portal-action-warp-saved-location").
+		SetTimeout(warpSagaTimeout).
 		AddStep(
 			fmt.Sprintf("warp-saved-%d-%s", characterId, locationType),
 			saga.Pending,

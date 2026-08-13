@@ -111,9 +111,11 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			Cash:           info.GetBool("cash", false),
 			Price:          uint32(info.GetIntegerWithDefault("price", 0)),
 			TimeLimited:    info.GetBool("timeLimited", false),
+			TradeBlock:     info.GetBool("tradeBlock", false),
 			ReplaceItemId:  replaceItemId,
 			ReplaceMessage: replaceMessage,
 			BonusExp:       bonusExpTiers,
+			PetAbilities:   readPetAbilities(info),
 			EquipSlots:     srm,
 		}
 		return model.FixedProvider(m)
@@ -220,4 +222,21 @@ func getNameFromWz(wz string) string {
 	default:
 		return "PET_EQUIP"
 	}
+}
+
+// petAbilityKeys are the worn-pet-equip ability attributes the client ORs into
+// dwPetAbilityFlag (CPet::UpdatePetAbility). The equip family spells sweep as
+// sweepForDrop; the 0519 pouch family calls the same ability dropSweep.
+var petAbilityKeys = []string{"pickupMeso", "pickupItem", "pickupOthers", "sweepForDrop", "longRange", "consumeHP", "consumeMP", "ignorePickup"}
+
+// readPetAbilities extracts the truthy pet-ability attributes. They are
+// string-typed "0"/"1" in Character.wz/PetEquip; GetBool handles the fallback.
+func readPetAbilities(info *xml.Node) []string {
+	var res []string
+	for _, k := range petAbilityKeys {
+		if info.GetBool(k, false) {
+			res = append(res, k)
+		}
+	}
+	return res
 }

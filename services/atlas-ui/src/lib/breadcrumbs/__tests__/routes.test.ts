@@ -17,7 +17,15 @@ import {
   ROUTE_PATTERNS,
   ROUTE_CONFIGS,
   type RouteConfig,
+  type BreadcrumbResolverContext,
 } from "../routes";
+
+// Static job-name stub sufficient for the one route table entry that consumes
+// it (/jobs/[id]) — real resolution comes from the tenant's job graph via
+// useJobNameLookup, not exercised in these route-table-only tests.
+const testCtx: BreadcrumbResolverContext = {
+  jobName: (id) => (id === 100 ? "Warrior" : `Job ${id}`),
+};
 
 describe("Route Configuration", () => {
   describe("findRouteConfig", () => {
@@ -106,20 +114,23 @@ describe("Route Configuration", () => {
 
   describe("getBreadcrumbsFromRoute", () => {
     it("should generate breadcrumbs for static routes", () => {
-      const breadcrumbs = getBreadcrumbsFromRoute("/tenants");
+      const breadcrumbs = getBreadcrumbsFromRoute("/tenants", testCtx);
       expect(breadcrumbs.length).toBeGreaterThan(0);
       expect(breadcrumbs.some((b) => b.label === "Home")).toBe(true);
       expect(breadcrumbs.some((b) => b.label === "Tenants")).toBe(true);
     });
 
     it("should generate breadcrumbs for dynamic routes", () => {
-      const breadcrumbs = getBreadcrumbsFromRoute("/tenants/123");
+      const breadcrumbs = getBreadcrumbsFromRoute("/tenants/123", testCtx);
       expect(breadcrumbs.length).toBeGreaterThan(0);
       expect(breadcrumbs.some((b) => b.entityType === "tenant")).toBe(true);
     });
 
     it("should mark the last breadcrumb as current page", () => {
-      const breadcrumbs = getBreadcrumbsFromRoute("/tenants/123/properties");
+      const breadcrumbs = getBreadcrumbsFromRoute(
+        "/tenants/123/properties",
+        testCtx,
+      );
       const lastBreadcrumb = breadcrumbs[breadcrumbs.length - 1];
       expect(lastBreadcrumb!.isCurrentPage).toBe(true);
     });
@@ -127,6 +138,7 @@ describe("Route Configuration", () => {
     it("marks the grouping-only 'Character' node non-navigable (templates)", () => {
       const breadcrumbs = getBreadcrumbsFromRoute(
         "/templates/abc-123/character/presets",
+        testCtx,
       );
       const character = breadcrumbs.find((b) => b.label === "Character");
       expect(character).toBeDefined();
@@ -139,9 +151,76 @@ describe("Route Configuration", () => {
     it("marks the grouping-only 'Character' node non-navigable (tenants)", () => {
       const breadcrumbs = getBreadcrumbsFromRoute(
         "/tenants/abc-123/character/templates",
+        testCtx,
       );
       const character = breadcrumbs.find((b) => b.label === "Character");
       expect(character!.nonNavigable).toBe(true);
+    });
+
+    // A job crumb must stay static: there is no "job" entity resolver, so
+    // flagging it dynamic made useBreadcrumbs overwrite the resolved job name
+    // with the "Unknown" fallback.
+    it("resolves the job name statically and never marks it dynamic", () => {
+      const breadcrumbs = getBreadcrumbsFromRoute("/jobs/100", testCtx);
+      const job = breadcrumbs[breadcrumbs.length - 1];
+      expect(job!.label).toBe("Warrior");
+      expect(job!.dynamic).toBe(false);
+      expect(job!.entityType).toBeUndefined();
+    });
+
+    it("marks the reward pool detail crumb as a resolvable entity", () => {
+      const breadcrumbs = getBreadcrumbsFromRoute(
+        "/reward-pools/abc-123",
+        testCtx,
+      );
+      const pool = breadcrumbs[breadcrumbs.length - 1];
+      expect(pool!.entityType).toBe("reward-pool");
+      expect(pool!.entityId).toBe("abc-123");
+      expect(pool!.dynamic).toBe(true);
+    });
+
+    it.each([
+      ["/merchants/shop-1", "merchant", "shop-1"],
+      ["/bans/ban-1", "ban", "ban-1"],
+      ["/coupons/c-1", "coupon", "c-1"],
+    ])(
+      "marks %s as a resolvable entity crumb",
+      (pathname, entityType, entityId) => {
+        const breadcrumbs = getBreadcrumbsFromRoute(pathname, testCtx);
+        const detail = breadcrumbs[breadcrumbs.length - 1];
+        expect(detail!.entityType).toBe(entityType);
+        expect(detail!.entityId).toBe(entityId);
+        expect(detail!.dynamic).toBe(true);
+      },
+    );
+
+    it("hangs the reactor detail crumb off the reactor list, not Home", () => {
+      const breadcrumbs = getBreadcrumbsFromRoute("/reactors/42", testCtx);
+      expect(breadcrumbs.map((b) => b.label)).toEqual([
+        "Home",
+        "Reactors",
+        "Reactor Details",
+      ]);
+    });
+
+    // These pages rendered no breadcrumbs at all because they had no route
+    // config — BreadcrumbBar bails out when findRouteConfig returns null.
+    it.each([
+      ["/merchants", "Merchants"],
+      ["/merchants/shop-1", "Merchant Details"],
+      ["/marketplace", "Marketplace"],
+      ["/rankings", "Rankings"],
+      ["/reactors", "Reactors"],
+      ["/bans", "Bans"],
+      ["/bans/ban-1", "Ban Details"],
+      ["/login-history", "Login History"],
+      ["/packet-matrix", "Packet Matrix"],
+      ["/coupons", "Coupons"],
+      ["/coupons/c-1", "Coupon"],
+    ])("generates breadcrumbs for %s", (pathname, label) => {
+      const breadcrumbs = getBreadcrumbsFromRoute(pathname, testCtx);
+      expect(breadcrumbs[0]!.label).toBe("Home");
+      expect(breadcrumbs[breadcrumbs.length - 1]!.label).toBe(label);
     });
   });
 
@@ -297,7 +376,39 @@ describe("Route Configuration", () => {
       const detail = findRouteConfig("/jobs/110");
       expect(detail).toBeTruthy();
       expect(detail?.parent).toBe("/jobs");
-      expect(detail?.labelResolver?.({ id: "110" })).toBe("Fighter");
+      expect(
+        detail?.labelResolver?.({ id: "110" }, { jobName: () => "Fighter" }),
+      ).toBe("Fighter");
+    });
+  });
+
+  describe("Transports routes (task-198)", () => {
+    it("registers /transports and its route detail, so the shell renders a trail instead of nothing", () => {
+      // BreadcrumbBar renders null for a route with no config; an unregistered
+      // page is what forces a page-local back button.
+      expect(findRouteConfig("/transports")?.label).toBe("Transports");
+
+      const detail = findRouteConfig(
+        "/transports/routes/9f1a2b3c-0000-4000-8000-000000000000",
+      );
+      expect(detail).toBeTruthy();
+      expect(detail?.parent).toBe("/transports");
+      expect(detail?.entityType).toBe("transport-route");
+    });
+
+    it("builds a Home / Transports / <route> trail with the id carried for resolution", () => {
+      const crumbs = getBreadcrumbsFromRoute(
+        "/transports/routes/9f1a2b3c-0000-4000-8000-000000000000",
+        testCtx,
+      );
+
+      expect(crumbs.map((crumb) => crumb.href)).toEqual([
+        "/",
+        "/transports",
+        "/transports/routes/9f1a2b3c-0000-4000-8000-000000000000",
+      ]);
+      expect(crumbs[2]?.entityId).toBe("9f1a2b3c-0000-4000-8000-000000000000");
+      expect(crumbs[2]?.entityType).toBe("transport-route");
     });
   });
 });

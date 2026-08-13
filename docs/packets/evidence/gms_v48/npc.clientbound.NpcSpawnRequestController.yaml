@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcSpawnRequestController
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CNpcPool::OnNpcChangeController
+    address: "0x56d617"
+    decompile_sha256: 4319fb6bd99d9abaf0aa907b70fbc74399220e0aa47f9f110dd78264ae9df97e
+verifies:
+    - libs/atlas-packet/npc/clientbound/spawn_v48_test.go#TestNpcSpawnRequestControllerV48Boundary

@@ -65,6 +65,7 @@ const (
 	PointReset           = sharedsaga.PointReset
 	MegaphoneUse         = sharedsaga.MegaphoneUse
 	NoteSend             = sharedsaga.NoteSend
+	MesoSackUse          = sharedsaga.MesoSackUse
 
 	// Status constants
 	Pending   = sharedsaga.Pending

@@ -1,10 +1,10 @@
 import { TenantDetailLayout } from "@/components/features/tenants/TenantDetailLayout";
-import { HandlersForm } from "@/pages/tenants-handlers-form";
+import { DefinitionGridPage } from "@/components/features/socket/DefinitionGridPage";
 
 export function TenantsHandlersPage() {
   return (
     <TenantDetailLayout>
-      <HandlersForm />
+      <DefinitionGridPage kind="handler" scope="tenant" />
     </TenantDetailLayout>
   );
 }

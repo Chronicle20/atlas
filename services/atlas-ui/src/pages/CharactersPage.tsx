@@ -7,6 +7,7 @@ import { useAccounts } from "@/lib/hooks/api/useAccounts";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import { characterLocationKeys } from "@/lib/hooks/api/useCharacterLocation";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
+import { useJobNameLookup } from "@/lib/hooks/api/useJobGraph";
 import { CharacterPageSkeleton } from "@/components/common/skeletons/CharacterPageSkeleton";
 import { Pager } from "@/components/common/Pager";
 import { useSearchParams } from "react-router-dom";
@@ -15,6 +16,7 @@ const PAGE_SIZE = 50;
 
 export function CharactersPage() {
   const { activeTenant } = useTenant();
+  const jobName = useJobNameLookup();
   const [searchParams, setSearchParams] = useSearchParams();
   const pageNumber = Math.max(
     1,
@@ -60,6 +62,7 @@ export function CharactersPage() {
     tenantConfig,
     accountMap,
     onRefresh,
+    jobName,
   });
 
   const handlePageChange = (nextPage: number) => {

@@ -2,7 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { WorkingPreset, PresetFieldPath } from "./presetEditorState";
-import { jobName } from "@/lib/jobs/job-advancement-tree";
+import { useJobNameLookup } from "@/lib/hooks/api/useJobGraph";
 import { PresetActionsMenu } from "./PresetActionsMenu";
 import { IdentitySection } from "./IdentitySection";
 import { ClassAppearanceSection } from "./ClassAppearanceSection";
@@ -56,6 +56,7 @@ export function PresetEditor({
   onApply,
 }: PresetEditorProps) {
   const attrs = preset.attributes;
+  const jobName = useJobNameLookup();
 
   return (
     <div className="space-y-4">

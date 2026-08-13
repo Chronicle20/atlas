@@ -3,6 +3,7 @@ package cashshop
 import (
 	"atlas-channel/kafka/message/cashshop"
 
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -46,6 +47,22 @@ func RequestPurchaseCommandProvider(characterId uint32, serialNumber uint32, cur
 		Body: cashshop.RequestPurchaseCommandBody{
 			Currency:     currency,
 			SerialNumber: serialNumber,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// RequestCouponRedemptionCommandProvider carries the ALREADY-NORMALIZED coupon
+// code. The owning account is resolved service-side from CharacterId, and the
+// packet's targetCharacter field is deliberately not forwarded — targeted /
+// gift redemption is out of scope.
+func RequestCouponRedemptionCommandProvider(characterId uint32, code string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.RequestCouponRedemptionCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeRequestCouponRedemption,
+		Body: cashshop.RequestCouponRedemptionCommandBody{
+			Code: code,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -110,6 +127,20 @@ func RequestCharacterSlotIncreaseByItemCommandProvider(characterId uint32, curre
 		Body: cashshop.RequestCharacterSlotIncreaseByItemCommandBody{
 			Currency:     currency,
 			SerialNumber: serialNumber,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func OpenSurpriseCommandProvider(characterId uint32, transactionId uuid.UUID, accountId uint32, cashId int64) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.OpenSurpriseCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeOpenSurprise,
+		Body: cashshop.OpenSurpriseCommandBody{
+			TransactionId: transactionId,
+			AccountId:     accountId,
+			CashId:        cashId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

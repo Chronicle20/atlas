@@ -14,7 +14,8 @@ type ProcessorMock struct {
 	SpawnedByOwnerProviderFunc   func(ownerId uint32) model.Provider[[]pet.Model]
 	HungryByOwnerProviderFunc    func(ownerId uint32) model.Provider[[]pet.Model]
 	HungriestByOwnerProviderFunc func(ownerId uint32) model.Provider[pet.Model]
-	AwardFullnessFunc            func(actorId uint32, petId uint64, amount byte) error
+	AwardFullnessFunc            func(actorId uint32, petId uint32, amount byte) error
+	SetSkillFunc                 func(actorId uint32, petId uint32, skill string, enabled bool) error
 }
 
 var _ pet.Processor = (*ProcessorMock)(nil)
@@ -68,9 +69,16 @@ func (m *ProcessorMock) HungriestByOwnerProvider(ownerId uint32) model.Provider[
 	return model.FixedProvider(pet.Model{})
 }
 
-func (m *ProcessorMock) AwardFullness(actorId uint32, petId uint64, amount byte) error {
+func (m *ProcessorMock) AwardFullness(actorId uint32, petId uint32, amount byte) error {
 	if m.AwardFullnessFunc != nil {
 		return m.AwardFullnessFunc(actorId, petId, amount)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) SetSkill(actorId uint32, petId uint32, skill string, enabled bool) error {
+	if m.SetSkillFunc != nil {
+		return m.SetSkillFunc(actorId, petId, skill, enabled)
 	}
 	return nil
 }

@@ -111,6 +111,7 @@ describe("TemplatesCharacterPresetsPage", () => {
       {
         id: "tpl1",
         updates: {
+          ...template.attributes,
           characters: expect.objectContaining({
             templates,
             presets: [{ attributes: { name: "P" } }],

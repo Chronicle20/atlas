@@ -40,6 +40,7 @@ type Model struct {
 	x                    int16
 	y                    int16
 	mobCount             uint32
+	rangeValue           int32
 	moneyCon             uint32
 	cooldown             uint32
 	morphId              uint32
@@ -53,6 +54,9 @@ type Model struct {
 	damage               uint32
 	attackCount          uint32
 	fixDamage            int32
+	dot                  int32
+	dotInterval          int32
+	dotTime              int32
 	lt                   point.Model
 	rb                   point.Model
 	bulletCount          uint16
@@ -135,10 +139,39 @@ func (m Model) RB() point.Model {
 	return m.rb
 }
 
+// Dot returns the raw per-tick damage-over-time magnitude from WZ `dot`.
+// It is zero on every provisioned version -- the node does not exist in any
+// pre-v1.17 Skill.wz (task-200 design §2.1). Callers that need a DoT
+// magnitude must not assume this is populated.
+func (m Model) Dot() int32 {
+	return m.dot
+}
+
+// DotInterval returns the DoT tick interval in MILLISECONDS (atlas-data
+// converts from WZ seconds). Zero on every provisioned version.
+func (m Model) DotInterval() int32 {
+	return m.dotInterval
+}
+
+// DotTime returns the DoT lifetime in MILLISECONDS (atlas-data converts from
+// WZ seconds). Zero on every provisioned version.
+func (m Model) DotTime() int32 {
+	return m.dotTime
+}
+
 // MobCount returns the cap on monsters affected by an AoE monster-buff
 // skill (e.g., Priest Doom's 6-mob target ceiling). Zero means "no cap".
 func (m Model) MobCount() uint32 {
 	return m.mobCount
+}
+
+// Range returns the skill's WZ `range` attribute in map pixels. For Monster
+// Magnet (which carries no lt/rb) this is the only WZ input to the server-side
+// target region: the client selects candidates through
+// CMobPool::CheckMobInTrapezoid out to this distance. Zero means the attribute
+// is absent, in which case range-based selection must fall back to cap-only.
+func (m Model) Range() int32 {
+	return m.rangeValue
 }
 
 // Prop returns the proc-chance attribute (0.0–1.0). Used by passives like

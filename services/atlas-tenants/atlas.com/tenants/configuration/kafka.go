@@ -25,9 +25,15 @@ const (
 	EventTypeMtsConfigCreated     = "MTS_CONFIG_CREATED"
 	EventTypeMtsConfigUpdated     = "MTS_CONFIG_UPDATED"
 	EventTypeMtsConfigDeleted     = "MTS_CONFIG_DELETED"
+	EventTypeTradeConfigCreated   = "TRADE_CONFIG_CREATED"
+	EventTypeTradeConfigUpdated   = "TRADE_CONFIG_UPDATED"
+	EventTypeTradeConfigDeleted   = "TRADE_CONFIG_DELETED"
 	EventTypeRankingsCreated      = "RANKINGS_CREATED"
 	EventTypeRankingsUpdated      = "RANKINGS_UPDATED"
 	EventTypeRankingsDeleted      = "RANKINGS_DELETED"
+	EventTypeKiteConfigCreated    = "KITE_CONFIG_CREATED"
+	EventTypeKiteConfigUpdated    = "KITE_CONFIG_UPDATED"
+	EventTypeKiteConfigDeleted    = "KITE_CONFIG_DELETED"
 )
 
 // ConfigurationStatusEvent is a generic event for configuration status changes
@@ -74,6 +80,18 @@ func CreateMtsConfigStatusEventProvider(tenantId uuid.UUID, eventType string, co
 	return producer.SingleMessageProvider(key, value)
 }
 
+// CreateTradeConfigStatusEventProvider creates a provider for trade config status events
+func CreateTradeConfigStatusEventProvider(tenantId uuid.UUID, eventType string, configId string) model.Provider[[]kafka.Message] {
+	key := []byte(tenantId.String())
+	value := ConfigurationStatusEvent{
+		TenantId:     tenantId,
+		Type:         eventType,
+		ResourceType: "trade-config",
+		ResourceId:   configId,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 // CreateInstanceRouteStatusEventProvider creates a provider for instance route status events
 func CreateInstanceRouteStatusEventProvider(tenantId uuid.UUID, eventType string, instanceRouteId string) model.Provider[[]kafka.Message] {
 	key := []byte(tenantId.String())
@@ -94,6 +112,18 @@ func CreateRpsRewardStatusEventProvider(tenantId uuid.UUID, eventType string, rp
 		Type:         eventType,
 		ResourceType: "rps-reward",
 		ResourceId:   rpsRewardId,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// CreateKiteConfigStatusEventProvider creates a provider for kite-config status events
+func CreateKiteConfigStatusEventProvider(tenantId uuid.UUID, eventType string, kiteConfigId string) model.Provider[[]kafka.Message] {
+	key := []byte(tenantId.String())
+	value := ConfigurationStatusEvent{
+		TenantId:     tenantId,
+		Type:         eventType,
+		ResourceType: "kite-config",
+		ResourceId:   kiteConfigId,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

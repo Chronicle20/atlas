@@ -10,15 +10,20 @@ import (
 )
 
 type ProcessorMock struct {
-	WithValidatorFunc              func(v *preset.Validator) templates.Processor
-	ByRegionAndVersionProviderFunc func(region string, majorVersion uint16, minorVersion uint16) model.Provider[templates.RestModel]
-	ByIdProviderFunc               func(templateId uuid.UUID) model.Provider[templates.RestModel]
-	AllProviderFunc                func(page model.Page) model.Provider[model.Paged[templates.RestModel]]
-	GetByRegionAndVersionFunc      func(region string, majorVersion uint16, minorVersion uint16) (templates.RestModel, error)
-	GetByIdFunc                    func(templateId uuid.UUID) (templates.RestModel, error)
-	CreateFunc                     func(input templates.RestModel) (uuid.UUID, error)
-	UpdateByIdFunc                 func(templateId uuid.UUID, input templates.RestModel) error
-	DeleteByIdFunc                 func(templateId uuid.UUID) error
+	WithValidatorFunc                  func(v *preset.Validator) templates.Processor
+	WithCatalogFunc                    func(c templates.Catalog) templates.Processor
+	ByRegionAndVersionProviderFunc     func(region string, majorVersion uint16, minorVersion uint16) model.Provider[templates.RestModel]
+	ByIdProviderFunc                   func(templateId uuid.UUID) model.Provider[templates.RestModel]
+	AllProviderFunc                    func(page model.Page) model.Provider[model.Paged[templates.RestModel]]
+	ViewByRegionAndVersionProviderFunc func(region string, majorVersion uint16, minorVersion uint16) model.Provider[templates.ViewRestModel]
+	ViewByIdProviderFunc               func(templateId uuid.UUID) model.Provider[templates.ViewRestModel]
+	AllViewProviderFunc                func(page model.Page) model.Provider[model.Paged[templates.ViewRestModel]]
+	GetByRegionAndVersionFunc          func(region string, majorVersion uint16, minorVersion uint16) (templates.RestModel, error)
+	GetByIdFunc                        func(templateId uuid.UUID) (templates.RestModel, error)
+	CreateFunc                         func(input templates.RestModel) (uuid.UUID, error)
+	UpdateByIdFunc                     func(templateId uuid.UUID, input templates.RestModel) error
+	DeleteByIdFunc                     func(templateId uuid.UUID) error
+	ReseedByIdFunc                     func(templateId uuid.UUID) error
 }
 
 var _ templates.Processor = (*ProcessorMock)(nil)
@@ -28,6 +33,34 @@ func (m *ProcessorMock) WithValidator(v *preset.Validator) templates.Processor {
 		return m.WithValidatorFunc(v)
 	}
 	return m
+}
+
+func (m *ProcessorMock) WithCatalog(c templates.Catalog) templates.Processor {
+	if m.WithCatalogFunc != nil {
+		return m.WithCatalogFunc(c)
+	}
+	return m
+}
+
+func (m *ProcessorMock) ViewByRegionAndVersionProvider(region string, majorVersion uint16, minorVersion uint16) model.Provider[templates.ViewRestModel] {
+	if m.ViewByRegionAndVersionProviderFunc != nil {
+		return m.ViewByRegionAndVersionProviderFunc(region, majorVersion, minorVersion)
+	}
+	return model.FixedProvider(templates.ViewRestModel{})
+}
+
+func (m *ProcessorMock) ViewByIdProvider(templateId uuid.UUID) model.Provider[templates.ViewRestModel] {
+	if m.ViewByIdProviderFunc != nil {
+		return m.ViewByIdProviderFunc(templateId)
+	}
+	return model.FixedProvider(templates.ViewRestModel{})
+}
+
+func (m *ProcessorMock) AllViewProvider(page model.Page) model.Provider[model.Paged[templates.ViewRestModel]] {
+	if m.AllViewProviderFunc != nil {
+		return m.AllViewProviderFunc(page)
+	}
+	return model.FixedProvider(model.Paged[templates.ViewRestModel]{})
 }
 
 func (m *ProcessorMock) ByRegionAndVersionProvider(region string, majorVersion uint16, minorVersion uint16) model.Provider[templates.RestModel] {
@@ -82,6 +115,13 @@ func (m *ProcessorMock) UpdateById(templateId uuid.UUID, input templates.RestMod
 func (m *ProcessorMock) DeleteById(templateId uuid.UUID) error {
 	if m.DeleteByIdFunc != nil {
 		return m.DeleteByIdFunc(templateId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) ReseedById(templateId uuid.UUID) error {
+	if m.ReseedByIdFunc != nil {
+		return m.ReseedByIdFunc(templateId)
 	}
 	return nil
 }

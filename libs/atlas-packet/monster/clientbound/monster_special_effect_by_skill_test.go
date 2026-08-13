@@ -15,21 +15,26 @@ import (
 func TestMonsterSpecialEffectBySkill(t *testing.T) {
 	input := NewMonsterSpecialEffectBySkill(0x07654321, 0x002F1801, 0x0000A1B2, 0x0190)
 
-	// Golden bytes (v83 baseline). CMob::OnSpecialEffectBySkill @0x66d8e7 reads a
-	// single Decode4 (skillId); the special UOL is resolved client-side from the
-	// skill entry, so v83/v84/v87/jms carry only the one wire field.
+	// Golden bytes (v83 baseline). CMobPool::OnMobPacket (Decode4 -> GetMob,
+	// universal — task-212 F-1) prefixes uniqueId; CMob::OnSpecialEffectBySkill
+	// @0x66d8e7 then reads a single Decode4 (skillId); the special UOL is
+	// resolved client-side from the skill entry, so v83/v84/v87/jms carry only
+	// the one wire field after the prefix.
 	gotV83 := input.Encode(nil, pt.CreateContext("GMS", 83, 1))(nil)
 	wantV83 := []byte{
+		0x21, 0x43, 0x65, 0x07, // uniqueId int32 LE (pool Decode4, universal — task-212 F-1)
 		0x01, 0x18, 0x2F, 0x00, // skillId int32 LE = 0x002F1801 (Decode4 @0x66d8e7)
 	}
 	if !bytes.Equal(gotV83, wantV83) {
 		t.Fatalf("MonsterSpecialEffectBySkill v83 layout mismatch\n got % x\nwant % x", gotV83, wantV83)
 	}
 
-	// Golden bytes (v95). CMob::OnSpecialEffectBySkill @0x6540b0:
+	// Golden bytes (v95). CMobPool::OnMobPacket prefixes uniqueId, then
+	// CMob::OnSpecialEffectBySkill @0x6540b0:
 	//   v4 = Decode4 -> skillId; v6 = Decode4 -> characterId (GetUser); v7 = Decode2 -> delay (tDelay).
 	gotV95 := input.Encode(nil, pt.CreateContext("GMS", 95, 1))(nil)
 	wantV95 := []byte{
+		0x21, 0x43, 0x65, 0x07, // uniqueId int32 LE (pool Decode4, universal — task-212 F-1)
 		0x01, 0x18, 0x2F, 0x00, // skillId int32 LE = 0x002F1801 (Decode4 @0x6540b0)
 		0xB2, 0xA1, 0x00, 0x00, // characterId int32 LE = 0x0000A1B2 (Decode4 @0x6540b0)
 		0x90, 0x01, // delay uint16 LE = 0x0190 (Decode2 @0x6540b0)
@@ -56,8 +61,8 @@ func TestMonsterSpecialEffectBySkill(t *testing.T) {
 //	                    entry; no further wire reads). No characterId/delay (v95+).
 //
 // So the v79 wire is [uniqueId int32][skillId int32]. The leading uniqueId is the
-// universal CMobPool::OnMobPacket prefix (see legacyMobPoolPrefix); written for the
-// pre-v83 legacy range, gated off for v83+ (frozen per campaign).
+// universal CMobPool::OnMobPacket prefix, written unconditionally on every
+// version (task-212 F-1).
 //
 // packet-audit:verify packet=monster/clientbound/MonsterMonsterSpecialEffectBySkill version=gms_v79 ida=0x63c887
 func TestMonsterSpecialEffectBySkillBytesV79(t *testing.T) {
@@ -81,7 +86,9 @@ func TestMonsterSpecialEffectBySkillBytesV79(t *testing.T) {
 //
 //	Decode4 @0x61cb38 — skillId (no further wire reads; no characterId/delay).
 //
-// Wire = [uniqueId int32][skillId int32]. Byte-identical to v79.
+// Wire = [uniqueId int32][skillId int32]; leading uniqueId is the universal
+// OnMobPacket prefix, written unconditionally on every version. Byte-identical
+// to v79.
 //
 // packet-audit:verify packet=monster/clientbound/MonsterMonsterSpecialEffectBySkill version=gms_v72 ida=0x61cb1c
 func TestMonsterSpecialEffectBySkillBytesV72(t *testing.T) {

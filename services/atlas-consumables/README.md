@@ -40,6 +40,8 @@ The service is Kafka-driven and does not expose any REST endpoints. It maintains
 | `EVENT_TOPIC_COMPARTMENT_STATUS` | Topic for compartment status events |
 | `COMMAND_TOPIC_CHARACTER_BUFF` | Topic for character buff commands |
 | `COMMAND_TOPIC_PET` | Topic for pet commands |
+| `COMMAND_TOPIC_MONSTER` | Topic for monster commands (produces CATCH only) |
+| `EVENT_TOPIC_MONSTER_CATCH` | Topic for bridle (catch-item) capture outcomes (consumed) |
 
 ## Documentation
 

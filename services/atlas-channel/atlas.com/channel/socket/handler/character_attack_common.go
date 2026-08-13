@@ -698,6 +698,77 @@ func beaconTryApply(l logrus.FieldLogger, ai packetmodel.AttackInfo, skillLevel 
 	}
 }
 
+// attackCastTryApply runs the per-skill attack-cast handler registered for
+// castId, if any. It is the ATTACK-packet twin of the UseSkill dispatcher in
+// skill/handler/common.go, for skills the client delivers on a
+// melee/ranged/magic attack packet rather than USE_SKILL.
+//
+// Poison Mist (2111003) is the motivating case and the reason this exists:
+// it carries `damage`/`attackCount`/`mobCount` in Skill.wz, so the v83 client
+// sends it on opcode 0x2E (CharacterMagicAttackHandle) and never on USE_SKILL.
+// Registered on the use-skill registry it silently never fired -- the mist was
+// never created, so neither SPAWN_MIST nor the poison DoT ever happened.
+//
+// castId is the resolved version-blind Identity (the registry key); wireSkillId
+// is the raw per-version id the packet carried, which handlers put back on the
+// wire for the client to match against its own WZ.
+//
+// Failures are logged and swallowed, matching beaconTryApply and the projectile
+// / meso-explosion emits: by the time this runs the damage is applied and the
+// attack is broadcast, so nothing here may abort the pipeline.
+func attackCastTryApply(
+	l logrus.FieldLogger,
+	ctx context.Context,
+	wp writer.Producer,
+	f field.Model,
+	characterId uint32,
+	castId skill3.Identity,
+	wireSkillId skill3.Id,
+	skillLevel byte,
+	e effect.Model,
+) {
+	h, ok := handler.LookupAttackCast(castId)
+	if !ok {
+		return
+	}
+	if err := h(l)(ctx)(wp, f, characterId, wireSkillId, skillLevel, e); err != nil {
+		l.WithError(err).Errorf("Attack-cast handler for skill [%d] failed for character [%d].", wireSkillId, characterId)
+	}
+}
+
+// resolveAttackSkill finds the owned skill backing an attack's wire skill id,
+// reporting false when the character may not attack with it at all.
+//
+// The direct case is ownership. The indirect case is Aran's hidden combo
+// variants (Full Swing / Over Swing at two and three swings): the client sends
+// the variant's id once the combo count escalates the swing, but the variant is
+// never in the skill book -- no SP is spent on it and it is excluded from SP
+// reset. Its level lives on the parent, so the parent's Model is what backs the
+// attack, and an unowned parent is still a rejection: the client can only
+// produce the variant by escalating a swing it already has.
+//
+// The variant's own id stays on the wire for every downstream lookup that needs
+// it (the effect fetch keys on ai.SkillId(), and WZ carries a per-level effect
+// table for the variant at the same maxLevel as its parent).
+func resolveAttackSkill(skills []skill.Model, wireId skill3.Id) (skill.Model, bool) {
+	find := func(id skill3.Id) (skill.Model, bool) {
+		for _, sk := range skills {
+			if sk.Id() == id {
+				return sk, true
+			}
+		}
+		return skill.Model{}, false
+	}
+
+	if sk, ok := find(wireId); ok {
+		return sk, true
+	}
+	if parentId, ok := skill3.AranHiddenComboParent(wireId); ok {
+		return find(parentId)
+	}
+	return skill.Model{}, false
+}
+
 func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
@@ -726,12 +797,9 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 
 					if ai.SkillId() > 0 {
 						// Process skill
-						for _, tsk := range c.Skills() {
-							if tsk.Id() == skill3.Id(ai.SkillId()) {
-								sk = tsk
-							}
-						}
-						if sk.Id() == 0 {
+						var owned bool
+						sk, owned = resolveAttackSkill(c.Skills(), skill3.Id(ai.SkillId()))
+						if !owned {
 							l.Errorf("Character [%d] attempting to attack with skill [%d] which they do not own.", s.CharacterId(), ai.SkillId())
 							return session.NewProcessor(l, ctx).Destroy(s)
 						}
@@ -749,6 +817,22 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 								"character_id": s.CharacterId(),
 								"skill_id":     ai.SkillId(),
 							}).Debug("battleship_attack_rejected_not_riding")
+							return nil
+						}
+
+						// Energy Blast requires a full energy bar (task-216
+						// FR-6). Same soft-rejection posture as the battleship
+						// gate — before any cost, damage, or broadcast, and
+						// returning nil rather than destroying the session.
+						// The bar is NOT consumed by a successful cast; only
+						// the charged window's own timer resets it.
+						if permitted, bar := energyBlastPermitted(t, s.CharacterId(), attackId, attackIdOk); !permitted {
+							l.WithFields(logrus.Fields{
+								"character_id": s.CharacterId(),
+								"skill_id":     ai.SkillId(),
+								"energy_bar":   bar,
+							}).Debug("energy_blast_rejected_not_charged")
+							energyReannounceAuthoritative(l, ctx, wp, s)
 							return nil
 						}
 
@@ -941,6 +1025,29 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// so combo skill levels are already in hand.
 					if ai.AttackType() == packetmodel.AttackTypeMelee {
 						comboOrbTryUpdate(l, c, ai, comboOrbProductionDeps(l, ctx, s.Field(), s.CharacterId()))
+						// Aran combo eligibility rides the same fetch: the
+						// client sends ARAN_COMBO_COUNTER from CMob::OnHit at
+						// melee-hit frequency, and this keeps that path free
+						// of REST (task-217 design.md §3.5).
+						aranComboRefreshEligibility(l, ctx, s.Field(), c, skill2.NewProcessor(l, ctx).GetEffect)
+					}
+
+					// Energy Charge bar gain (task-216). Wider gate than Combo:
+					// every close-range attack, the Energy Charge aura's own
+					// touch damage (AttackTypeEnergy), and — on the ranged path
+					// only — Thunder Breaker Shark Wave. Fire-and-forget beside
+					// the combo emit: at most one Kafka message, zero REST, and
+					// no branch can fail the attack (NFR-1 / NFR-2). The
+					// character was fetched with SkillModelDecorator, so the
+					// energy skill level is already in hand.
+					//
+					// Note there is deliberately NO "don't refresh Energy Charge
+					// on its own touch damage" guard here (Cosmic's
+					// AbstractDealDamageHandler.java:183-184). Atlas's attack
+					// path applies no skill statups at all, so the aura cannot
+					// refresh itself — see TestEnergyChargeIsNotAnAttackCastHandler.
+					if energyChargeQualifies(ai.AttackType(), attackId, attackIdOk) {
+						energyChargeTryUpdate(l, set.Skill, c, ai, energyChargeProductionDeps(l, ctx, s.Field(), s.CharacterId()))
 					}
 
 					// Dragon Knight Sacrifice trades the caster's HP for the hit:
@@ -960,6 +1067,25 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 								l.WithError(herr).Errorf("Sacrifice: CHANGE_HP emit failed for caster [%d] skill [%d].", s.CharacterId(), ai.SkillId())
 							}
 						}
+					}
+
+					// Per-skill attack-cast dispatcher (Poison Mist, ...). This is
+					// the ATTACK-packet twin of the UseSkill dispatcher at
+					// skill/handler/common.go, for skills the client delivers on
+					// a melee/ranged/magic attack packet instead of USE_SKILL.
+					// It is a SEPARATE registry from handler.Lookup on purpose --
+					// see handler.AttackCastHandler's doc for why folding the two
+					// would double-fire dual-packet skills like Heal and zero out
+					// the attack-only skills' MP cost.
+					//
+					// Placed here, after damage/broadcast/projectile, with the
+					// same fire-and-forget posture as the emits above: the attack
+					// pipeline is already complete and a handler failure must
+					// never abort it. The WIRE skill id is passed (not the
+					// resolved Identity) because handlers put it on the wire for
+					// the client to match against its own WZ.
+					if attackIdOk && ai.SkillId() > 0 {
+						attackCastTryApply(l, ctx, wp, s.Field(), s.CharacterId(), attackId, skill3.Id(ai.SkillId()), sk.Level(), se)
 					}
 
 					// TODO apply attack effect (heal, mp consumption, dispel, cure all, combo reset, etc)

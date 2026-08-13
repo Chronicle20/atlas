@@ -6,3 +6,5 @@ ida:
     function: CCashShop::OnBuyNormal
     address: "0x44cbb2"
     decompile_sha256: 783eb6f3044c333b8bf07beb3b0349394f0ac8db9509f0279bb4a160d86cf7bd
+verifies:
+    - libs/atlas-packet/cash/serverbound/v48_test.go#TestBuyNormalBytesV48

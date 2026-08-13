@@ -1208,3 +1208,147 @@ Deletes all existing MTS configurations for a tenant and loads them from seed fi
 **Error Conditions**:
 - 400: Invalid tenant ID format
 - 500: Internal server error
+
+
+---
+
+### GET /tenants/{tenantId}/configurations/kite-configs
+
+Retrieves the kite (cash-shop item category 508 message-box) placement
+configuration for a tenant. One configuration per tenant — there is no
+`/seed` endpoint and no `{kiteConfigId}` sub-resource, matching the
+`rankings` resource shape.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "kite-configs",
+    "id": "string",
+    "attributes": {
+      "maxPerMap": 10,
+      "maxMessageLength": 182,
+      "blockedMapPrefixes": [91]
+    }
+  }
+}
+```
+
+- `maxPerMap` (int): Maximum number of kites simultaneously visible on a
+  single map. Default `10`.
+- `maxMessageLength` (int): Maximum character length of a kite'''s message
+  text. Default `182`.
+- `blockedMapPrefixes` (array of uint32): Map-id prefixes (the leading digit
+  group of a map id, e.g. `91` for the `9100000`-`9199999` cash-shop/event
+  range) where kites may not be placed. Default `[91]`.
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
+- 404: No kite-configs configuration found for tenant
+
+---
+
+### POST /tenants/{tenantId}/configurations/kite-configs
+
+Creates the kite-configs configuration for a tenant.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "kite-configs",
+    "attributes": {
+      "maxPerMap": 10,
+      "maxMessageLength": 182,
+      "blockedMapPrefixes": [91]
+    }
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "kite-configs",
+    "id": "string",
+    "attributes": {
+      "maxPerMap": 10,
+      "maxMessageLength": 182,
+      "blockedMapPrefixes": [91]
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body or tenant ID format
+- 500: Internal server error
+
+---
+
+### PATCH /tenants/{tenantId}/configurations/kite-configs
+
+Updates the existing kite-configs configuration for a tenant.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "kite-configs",
+    "attributes": {
+      "maxPerMap": 10,
+      "maxMessageLength": 182,
+      "blockedMapPrefixes": [91]
+    }
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "kite-configs",
+    "id": "string",
+    "attributes": {
+      "maxPerMap": 10,
+      "maxMessageLength": 182,
+      "blockedMapPrefixes": [91]
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body or tenant ID format
+- 404: No kite-configs configuration found for tenant
+- 500: Internal server error
+
+---
+
+### DELETE /tenants/{tenantId}/configurations/kite-configs
+
+Deletes the kite-configs configuration for a tenant.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**: None (204 No Content)
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
+- 500: Internal server error

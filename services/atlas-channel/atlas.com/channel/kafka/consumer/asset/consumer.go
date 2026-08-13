@@ -115,6 +115,8 @@ func enrichPetAsset(l logrus.FieldLogger, ctx context.Context, a asset.Model) as
 		SetCloseness(pm.Closeness()).
 		SetFullness(pm.Fullness()).
 		SetPetSlot(pm.Slot()).
+		SetPetDeadDate(pm.Expiration()).
+		SetPetSerialNumber(pm.SerialNumber()).
 		MustBuild()
 }
 

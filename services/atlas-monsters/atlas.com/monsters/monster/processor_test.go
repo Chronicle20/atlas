@@ -1217,6 +1217,12 @@ func TestBuildMistCreateBody(t *testing.T) {
 	if body.SourceSkillId != uint32(monster2.SkillTypeAreaPoison) || body.SourceSkillLevel != 5 {
 		t.Errorf("skill id/level: got (%d,%d)", body.SourceSkillId, body.SourceSkillLevel)
 	}
+	if body.TargetKind != mistKafka.TargetKindCharacter {
+		t.Fatalf("body.TargetKind = %q, want CHARACTER", body.TargetKind)
+	}
+	if body.EffectKind != mistKafka.EffectKindDisease {
+		t.Fatalf("body.EffectKind = %q, want DISEASE", body.EffectKind)
+	}
 }
 
 // TestBuildMistCreateBody_DurationCap verifies that absurdly long durations
@@ -1335,6 +1341,12 @@ func TestExecuteMist_ProducesMistCreateCommand(t *testing.T) {
 	}
 	if body.SourceSkillId != uint32(monster2.SkillTypeAreaPoison) || body.SourceSkillLevel != 5 {
 		t.Errorf("skill: got (%d,%d)", body.SourceSkillId, body.SourceSkillLevel)
+	}
+	if body.TargetKind != mistKafka.TargetKindCharacter {
+		t.Fatalf("body.TargetKind = %q, want CHARACTER", body.TargetKind)
+	}
+	if body.EffectKind != mistKafka.EffectKindDisease {
+		t.Fatalf("body.EffectKind = %q, want DISEASE", body.EffectKind)
 	}
 }
 

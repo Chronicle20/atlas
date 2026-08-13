@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -28,8 +29,16 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("/{templateId}", rest.RegisterHandler(l)(si)("get_configuration_template", handleGetConfigurationTemplateById(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{templateId}", rest.RegisterInputHandler[RestModel](l)(si)("update_configuration_template", handleUpdateConfigurationTemplate(db))).Methods(http.MethodPatch)
 			r.HandleFunc("/{templateId}", rest.RegisterHandler(l)(si)("delete_configuration_template", handleDeleteConfigurationTemplate(db))).Methods(http.MethodDelete)
+			r.HandleFunc("/{templateId}/reseed", rest.RegisterHandler(l)(si)("reseed_configuration_template", handleReseedConfigurationTemplate(db))).Methods(http.MethodPost)
 		}
 	}
+}
+
+// viewProcessor is the read/re-seed processor: the ordinary processor with the
+// shipped-template catalog attached, so drift is computable. The write paths
+// (create/update) deliberately do NOT need it.
+func viewProcessor(d *rest.HandlerDependency, db *gorm.DB) Processor {
+	return NewProcessor(d.Logger(), d.Context(), db).WithCatalog(ShippedCatalog())
 }
 
 func handleCreateConfigurationTemplate(db *gorm.DB) rest.InputHandler[RestModel] {
@@ -37,7 +46,24 @@ func handleCreateConfigurationTemplate(db *gorm.DB) rest.InputHandler[RestModel]
 		return func(w http.ResponseWriter, r *http.Request) {
 			templateId, err := NewProcessor(d.Logger(), d.Context(), db).Create(input)
 			if err != nil {
+				var ve *validationFailureError
+				if errors.As(err, &ve) {
+					w.Header().Set("Content-Type", "application/vnd.api+json")
+					w.WriteHeader(http.StatusBadRequest)
+					_ = json.NewEncoder(w).Encode(map[string]any{"errors": ve.AsJSONAPIErrors()})
+					return
+				}
 				d.Logger().WithError(err).Errorf("Unable to create configuration template.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			// Read back through the view provider so POST returns exactly
+			// what a subsequent GET returns - same attributes, same
+			// computed revisions (design D3).
+			view, err := viewProcessor(d, db).ViewByIdProvider(templateId)()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to read back created configuration template.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
@@ -45,14 +71,10 @@ func handleCreateConfigurationTemplate(db *gorm.DB) rest.InputHandler[RestModel]
 			// Set the Location header to the URL of the newly created resource
 			w.Header().Set("Location", "/configurations/templates/"+templateId.String())
 
-			// Get the created resource
-			input.Id = templateId.String()
-
-			// Return the created resource
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
 			w.WriteHeader(http.StatusCreated)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(input)
+			server.MarshalResponse[ViewRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(view)
 		}
 	}
 }
@@ -63,7 +85,7 @@ func handleGetConfigurationTemplate(db *gorm.DB) rest.GetHandler {
 			return rest.ParseMajorVersion(d.Logger(), func(majorVersion uint16) http.HandlerFunc {
 				return rest.ParseMinorVersion(d.Logger(), func(minorVersion uint16) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
-						cts, err := NewProcessor(d.Logger(), d.Context(), db).GetByRegionAndVersion(region, majorVersion, minorVersion)
+						cts, err := viewProcessor(d, db).ViewByRegionAndVersionProvider(region, majorVersion, minorVersion)()
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Unable to get configuration templates.")
 							server.WriteErrorResponse(d.Logger())(w)(err)
@@ -72,7 +94,7 @@ func handleGetConfigurationTemplate(db *gorm.DB) rest.GetHandler {
 
 						query := r.URL.Query()
 						queryParams := jsonapi.ParseQueryFields(&query)
-						server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(cts)
+						server.MarshalResponse[ViewRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(cts)
 					}
 				})
 			})
@@ -89,7 +111,7 @@ func handleGetConfigurationTemplates(db *gorm.DB) rest.GetHandler {
 				return
 			}
 
-			paged, err := NewProcessor(d.Logger(), d.Context(), db).AllProvider(page)()
+			paged, err := viewProcessor(d, db).AllViewProvider(page)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get configuration templates.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -98,7 +120,7 @@ func handleGetConfigurationTemplates(db *gorm.DB) rest.GetHandler {
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
+			server.MarshalPaginatedResponse[[]ViewRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }
@@ -107,7 +129,7 @@ func handleGetConfigurationTemplateById(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseTemplateId(d.Logger(), func(templateId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				cts, err := NewProcessor(d.Logger(), d.Context(), db).GetById(templateId)
+				cts, err := viewProcessor(d, db).ViewByIdProvider(templateId)()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get configuration templates.")
 					server.WriteErrorResponse(d.Logger())(w)(err)
@@ -116,7 +138,7 @@ func handleGetConfigurationTemplateById(db *gorm.DB) rest.GetHandler {
 
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(cts)
+				server.MarshalResponse[ViewRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(cts)
 			}
 		})
 	}
@@ -141,6 +163,7 @@ func handleUpdateConfigurationTemplate(db *gorm.DB) rest.InputHandler[RestModel]
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
+				w.WriteHeader(http.StatusNoContent)
 			}
 		})
 	}
@@ -153,6 +176,58 @@ func handleDeleteConfigurationTemplate(db *gorm.DB) rest.GetHandler {
 				err := NewProcessor(d.Logger(), d.Context(), db).DeleteById(templateId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to delete configuration template.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+			}
+		})
+	}
+}
+
+// writeJSONAPIError emits the same document shape validationFailureError
+// renders, for the statuses server.WriteErrorResponse cannot express (it maps
+// everything to 500/503). Keeps the re-seed endpoint's 404 and 409 consistent
+// with the existing 400s.
+func writeJSONAPIError(w http.ResponseWriter, status int, title string, detail string) {
+	w.Header().Set("Content-Type", "application/vnd.api+json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"errors": []map[string]any{{
+			"status": strconv.Itoa(status),
+			"title":  title,
+			"detail": detail,
+		}},
+	})
+}
+
+func handleReseedConfigurationTemplate(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTemplateId(d.Logger(), func(templateId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				err := viewProcessor(d, db).ReseedById(templateId)
+				if err == nil {
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+
+				switch {
+				case errors.Is(err, ErrTemplateNotFound):
+					writeJSONAPIError(w, http.StatusNotFound, "template not found", "No configuration template exists with id "+templateId.String()+".")
+				case errors.Is(err, ErrNoShippedTemplate):
+					writeJSONAPIError(w, http.StatusConflict, "no shipped template", "This image ships no seed file for the template's region and version, so there is nothing to reset to.")
+				default:
+					var ve *validationFailureError
+					if errors.As(err, &ve) {
+						// A broken seed file: CI-guarded, so this should not
+						// occur. Rendered identically to create/update
+						// validation failures.
+						w.Header().Set("Content-Type", "application/vnd.api+json")
+						w.WriteHeader(http.StatusBadRequest)
+						_ = json.NewEncoder(w).Encode(map[string]any{"errors": ve.AsJSONAPIErrors()})
+						return
+					}
+					d.Logger().WithError(err).Errorf("Unable to re-seed configuration template.")
 					server.WriteErrorResponse(d.Logger())(w)(err)
 				}
 			}

@@ -67,7 +67,7 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 				for i, e := range pe.Excludes() {
 					excludeIds[i] = e.ItemId()
 				}
-				_ = session.Announce(l)(ctx)(wp)(petpkt.PetExcludeResponseWriter)(petpkt.NewPetExcludeResponse(pe.OwnerId(), pe.Slot(), uint64(pe.Id()), excludeIds).Encode)(s)
+				_ = session.Announce(l)(ctx)(wp)(petpkt.PetExcludeResponseWriter)(petpkt.NewPetExcludeResponse(pe.OwnerId(), pe.Slot(), pe.SerialNumber(), excludeIds).Encode)(s)
 			}
 		}
 

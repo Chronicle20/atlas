@@ -33,7 +33,7 @@ func TestUpdateItem(t *testing.T) {
 	}
 	id := created[0].Id()
 
-	if err = processor.Update(id, 2000001, 3, "uncommon", 75); err != nil {
+	if err = processor.Update(id, 2000001, 3, "uncommon", 75, 0); err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}
 
@@ -83,7 +83,7 @@ func TestUpdateItemInvalidTier(t *testing.T) {
 	tests := []string{"", "epic", "COMMON", "legendary"}
 	for _, tier := range tests {
 		t.Run(tier, func(t *testing.T) {
-			err := processor.Update(id, 2000001, 3, tier, 75)
+			err := processor.Update(id, 2000001, 3, tier, 75, 0)
 			if !errors.Is(err, item.ErrInvalidTier) {
 				t.Fatalf("Expected ErrInvalidTier for tier %q, got %v", tier, err)
 			}
@@ -105,7 +105,7 @@ func TestUpdateItemNotFound(t *testing.T) {
 	processor, _, cleanup := test.CreateItemProcessor(t)
 	defer cleanup()
 
-	err := processor.Update(999999, 2000001, 3, "uncommon", 75)
+	err := processor.Update(999999, 2000001, 3, "uncommon", 75, 0)
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		t.Fatalf("Expected gorm.ErrRecordNotFound for nonexistent id, got %v", err)
 	}

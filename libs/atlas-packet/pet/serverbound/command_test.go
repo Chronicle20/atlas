@@ -92,7 +92,7 @@ func TestCommandBytesV79(t *testing.T) {
 // GMS_v48_1_DEVM.exe @port 13337: CPet::ParseCommand sub_58DF8A@0x58df8a send
 // block builds COutPacket(115)@0x58e1b8, Encode1(byName/v29)@0x58e1c7,
 // Encode1(command/v32)@0x58e1d2 — NO leading EncodeBuffer(petId,8) (v48 predates
-// multi-pet; hasLeadingPetId(GMS,48)=false). v61 op140 carries the petId.
+// multi-pet; HasLeadingPetId(GMS,48)=false). v61 op140 carries the petId.
 // packet-audit:verify packet=pet/serverbound/PetCommand version=gms_v48 ida=0x58df8a
 func TestCommandBytesV48(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 48, 1)

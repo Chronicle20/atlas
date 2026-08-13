@@ -8,8 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -731,5 +735,451 @@ func TestLegacyDurationUnitsNoExpirySaturates(t *testing.T) {
 	}
 	if got := legacyDurationUnits(time.Now().Add(-time.Minute)); got != 0 {
 		t.Fatalf("already-expired legacy duration: got %d want 0", got)
+	}
+}
+
+// --- task-195 / issue #1196: foreign (observer) disease blocks ---------------
+
+// TestCTSForeignDiseaseCarriesMobSkillKey pins the foreign per-stat block for a
+// mob-applied disease the client CAN render remotely. The v83 client reads one
+// Decode4 into the stat's REASON field, and CUser::UpdateAffectedSkillList
+// (@0x93e344) hands that reason to CUser::ShowAffectedSkillAni (@0x932da6),
+// which splits it as mobSkillId | (level << 16) and loads
+// MobSkill[id].level[lv].affected. Atlas used to write the disease amount here,
+// so the lookup resolved to nothing and observers saw no debuff at all.
+func TestCTSForeignDiseaseCarriesMobSkillKey(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
+	cts := NewCharacterTemporaryStat()
+	// Mob skill 123 (Stun) level 3, amount 100.
+	cts.AddStat(nil)(tn)(string(character.TemporaryStatTypeStun), 123, 100, 3, time.Now().Add(15*time.Second))
+
+	got := cts.EncodeForeign(nil, ctx)(nil)
+
+	// mask(16) + Short(mobSkillId) + Short(level) + nDefenseAtt + nDefenseState.
+	if len(got) != 16+4+2 {
+		t.Fatalf("foreign STUN length: got %d want %d", len(got), 16+4+2)
+	}
+	want := []byte{0x7b, 0x00, 0x03, 0x00} // 123, 3
+	if !bytes.Equal(got[16:20], want) {
+		t.Fatalf("foreign STUN reason: got % x want % x", got[16:20], want)
+	}
+	// The same 32-bit composite the client's Decode4 sees.
+	if key := binary.LittleEndian.Uint32(got[16:20]); key != 123|(3<<16) {
+		t.Fatalf("foreign STUN reason as Decode4: got %#x want %#x", key, 123|(3<<16))
+	}
+}
+
+// TestCTSForeignPoisonCarriesValueThenMobSkillKey pins POISON, the one disease
+// whose foreign block carries a value: the client tests CTS_Poison twice in a
+// row, reading Decode2 (nPoison, per-tick damage) then Decode4 (rPoison, the
+// mob-skill key).
+func TestCTSForeignPoisonCarriesValueThenMobSkillKey(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
+	cts := NewCharacterTemporaryStat()
+	// Mob skill 125 (Poison) level 4, 60 damage per tick.
+	cts.AddStat(nil)(tn)(string(character.TemporaryStatTypePoison), 125, 60, 4, time.Now().Add(15*time.Second))
+
+	got := cts.EncodeForeign(nil, ctx)(nil)
+
+	if len(got) != 16+6+2 {
+		t.Fatalf("foreign POISON length: got %d want %d", len(got), 16+6+2)
+	}
+	want := []byte{0x3c, 0x00, 0x7d, 0x00, 0x04, 0x00} // 60, 125, 4
+	if !bytes.Equal(got[16:22], want) {
+		t.Fatalf("foreign POISON block: got % x want % x", got[16:22], want)
+	}
+}
+
+// TestCTSForeignSlowIsMaskOnly pins that SLOW stays mask-only on the foreign
+// path. No supported client's SecondaryStat::DecodeForRemote has a CTS_Slow
+// branch (v83 xref on 0xbeffc0, v95 xref on 0xc6c9a0, block enumeration
+// elsewhere), so emitting a mob-skill key here would be 4 bytes the client
+// consumes as nDefenseAtt/nDefenseState.
+func TestCTSForeignSlowIsMaskOnly(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
+	cts := NewCharacterTemporaryStat()
+	cts.AddStat(nil)(tn)(string(character.TemporaryStatTypeSlow), 126, 80, 2, time.Now().Add(15*time.Second))
+
+	got := cts.EncodeForeign(nil, ctx)(nil)
+
+	if len(got) != 16+2 {
+		t.Fatalf("foreign SLOW length: got %d want %d (mask + defense bytes only)", len(got), 16+2)
+	}
+	// Bit 32 -> mask dword[2] (wire bytes 8-11) = 0x00000001.
+	if !bytes.Equal(got[8:12], []byte{0x01, 0x00, 0x00, 0x00}) {
+		t.Fatalf("foreign SLOW mask bit: got % x want 01 00 00 00", got[8:12])
+	}
+}
+
+// TestCTSForeignOrderMatchesClientReadOrder pins that foreign blocks are written
+// in SecondaryStat::DecodeForRemote's order, not the registry's shift order. The
+// remote decoder reads DARKNESS (shift 20) before SEAL (shift 19) — v83 code
+// positions 0x788289 and 0x7882d2 — so a shift sort swapped the two reasons and
+// each disease rendered the other's animation.
+func TestCTSForeignOrderMatchesClientReadOrder(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
+	cts := NewCharacterTemporaryStat()
+	cts.AddStat(nil)(tn)(string(character.TemporaryStatTypeSeal), 120, 1, 1, time.Now().Add(time.Minute))
+	cts.AddStat(nil)(tn)(string(character.TemporaryStatTypeDarkness), 121, 1, 2, time.Now().Add(time.Minute))
+
+	got := cts.EncodeForeign(nil, ctx)(nil)
+
+	if len(got) != 16+4+4+2 {
+		t.Fatalf("foreign SEAL+DARKNESS length: got %d want %d", len(got), 16+4+4+2)
+	}
+	darkness := []byte{0x79, 0x00, 0x02, 0x00} // mob skill 121 level 2
+	seal := []byte{0x78, 0x00, 0x01, 0x00}     // mob skill 120 level 1
+	if !bytes.Equal(got[16:20], darkness) {
+		t.Fatalf("first foreign block should be DARKNESS: got % x want % x", got[16:20], darkness)
+	}
+	if !bytes.Equal(got[20:24], seal) {
+		t.Fatalf("second foreign block should be SEAL: got % x want % x", got[20:24], seal)
+	}
+}
+
+// TestCTSForeignMultiDiseaseRoundTrip exercises encode/decode symmetry for a
+// multi-disease foreign body on every supported version — the ordering fix has
+// to move both sides together, or the second block decodes from the first
+// block's bytes.
+func TestCTSForeignMultiDiseaseRoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			input := NewCharacterTemporaryStat()
+			input.AddStat(nil)(tn)(string(character.TemporaryStatTypeSeal), 120, 1, 1, time.Now().Add(time.Minute))
+			input.AddStat(nil)(tn)(string(character.TemporaryStatTypeDarkness), 121, 1, 2, time.Now().Add(time.Minute))
+			input.AddStat(nil)(tn)(string(character.TemporaryStatTypePoison), 125, 60, 4, time.Now().Add(time.Minute))
+			input.AddStat(nil)(tn)(string(character.TemporaryStatTypeSpeed), 2001002, 20, 10, time.Now().Add(time.Minute))
+
+			output := NewCharacterTemporaryStat()
+			pt.RoundTrip(t, ctx, input.EncodeForeign, output.DecodeForeign, nil)
+
+			for _, c := range []struct {
+				name     character.TemporaryStatType
+				sourceId int32
+				level    byte
+			}{
+				{character.TemporaryStatTypeSeal, 120, 1},
+				{character.TemporaryStatTypeDarkness, 121, 2},
+				{character.TemporaryStatTypePoison, 125, 4},
+			} {
+				sv, ok := output.stats[c.name]
+				if !ok {
+					t.Fatalf("%s missing after round trip", c.name)
+				}
+				if sv.SourceId() != c.sourceId || sv.Level() != c.level {
+					t.Errorf("%s: got mobSkill %d level %d, want %d/%d", c.name, sv.SourceId(), sv.Level(), c.sourceId, c.level)
+				}
+			}
+			if sv := output.stats[character.TemporaryStatTypePoison]; sv.Value() != 60 {
+				t.Errorf("POISON value: got %v, want 60", sv.Value())
+			}
+		})
+	}
+}
+
+// TestForeignReadOrderCoversEveryValueCarryingStat is the guard behind
+// foreignOrderedTypes' shift-ordered tail: every stat that writes foreign bytes
+// must be named in foreignReadOrder, or it encodes at a position the client does
+// not read it from. Stats outside the list must be flag-only (zero bytes).
+func TestForeignReadOrderCoversEveryValueCarryingStat(t *testing.T) {
+	named := make(map[character.TemporaryStatType]bool, len(foreignReadOrder))
+	for _, n := range foreignReadOrder {
+		named[n] = true
+	}
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			reg := buildCharacterTemporaryStatRegistry(tn)
+			for _, st := range reg.inOrder {
+				if named[st.name] || baseStatNames[st.name] {
+					continue
+				}
+				w := response.NewWriter(nil)
+				st.foreignValueWriter(CharacterTemporaryStatValue{statType: st, value: 1, sourceId: 1, level: 1})(w)
+				if n := len(w.Bytes()); n != 0 {
+					t.Errorf("%s writes %d foreign bytes but is missing from foreignReadOrder", st.name, n)
+				}
+			}
+		})
+	}
+}
+
+// TestForeignReadOrderNamesOnlyRealStats keeps foreignReadOrder honest: a
+// mistyped or removed constant would silently fall through to the shift-ordered
+// tail. Every entry must exist in at least one supported version's registry.
+func TestForeignReadOrderNamesOnlyRealStats(t *testing.T) {
+	known := make(map[character.TemporaryStatType]bool)
+	for _, v := range pt.Variants {
+		tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+		for name := range buildCharacterTemporaryStatRegistry(tn).byName {
+			known[name] = true
+		}
+	}
+	for _, n := range foreignReadOrder {
+		if !known[n] {
+			t.Errorf("foreignReadOrder names %q, which no supported version's registry has", n)
+		}
+	}
+}
+
+// TestCTSEnergyChargePre95PopulatedBlock pins the ENERGY_CHARGE base block's
+// two leading int32s. The client reads nOption as the energy-bar reading:
+// GMS v83 IDB sub_7F9BAD computes fill = this[364] / this[365] * bar width,
+// where this[364] is the first field of the received two-state entry
+// (design.md §1.1). A zeroed nOption renders an empty bar no matter what the
+// buff actually holds.
+func TestCTSEnergyChargePre95PopulatedBlock(t *testing.T) {
+	pre95 := []struct {
+		name   string
+		region string
+		major  uint16
+	}{
+		{"GMS v72", "GMS", 72},
+		{"GMS v79", "GMS", 79},
+		{"GMS v83", "GMS", 83},
+		{"GMS v84", "GMS", 84},
+		{"GMS v87", "GMS", 87},
+		{"GMS v92", "GMS", 92},
+		{"GMS v95", "GMS", 95},
+		{"JMS v185", "JMS", 185},
+	}
+	for _, v := range pre95 {
+		t.Run(v.name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.region, v.major, 1)
+			tn, _ := tenant.Create([16]byte{}, v.region, v.major, 1)
+			input := NewCharacterTemporaryStat()
+			input.AddStat(nil)(tn)(string(character.TemporaryStatTypeEnergyCharge), 5110001, 4998, 1, time.Time{})
+
+			got := input.Encode(nil, ctx)(nil)
+
+			// 16 mask + 2 leading defense bytes + one 15-byte dynamic base block.
+			if len(got) != 16+2+15 {
+				t.Fatalf("energy charge packet length: got %d want %d", len(got), 16+2+15)
+			}
+			// nOption=4998 then rOption=5110001 as consecutive LE int32s.
+			head := []byte{0x86, 0x13, 0x00, 0x00, 0xF1, 0xF8, 0x4D, 0x00}
+			if !bytes.Contains(got, head) {
+				t.Fatalf("populated ENERGY_CHARGE head (nOption=4998,rOption=5110001) missing; got % x", got)
+			}
+		})
+	}
+}
+
+// TestCTSEnergyChargeV61PopulatedBlock covers GMS v61's narrower base block
+// (14 bytes: the third field is a bare Decode4, not the bool-prefixed
+// 5-byte time pair). Only the block width differs; the two leading int32s
+// are in the same place.
+func TestCTSEnergyChargeV61PopulatedBlock(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 61, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypeEnergyCharge), 5110001, 4998, 1, time.Time{})
+
+	got := input.Encode(nil, ctx)(nil)
+
+	if len(got) != 16+2+14 {
+		t.Fatalf("v61 energy charge packet length: got %d want %d", len(got), 16+2+14)
+	}
+	head := []byte{0x86, 0x13, 0x00, 0x00, 0xF1, 0xF8, 0x4D, 0x00}
+	if !bytes.Contains(got, head) {
+		t.Fatalf("v61 populated ENERGY_CHARGE head missing; got % x", got)
+	}
+}
+
+// TestCTSEnergyChargeRoundTrip guards encode/decode symmetry: the decoder is
+// shape-only, so a populated block must still be consumed byte-for-byte.
+func TestCTSEnergyChargeRoundTrip(t *testing.T) {
+	for _, v := range []struct {
+		region string
+		major  uint16
+	}{{"GMS", 61}, {"GMS", 83}, {"GMS", 95}, {"JMS", 185}} {
+		ctx := pt.CreateContext(v.region, v.major, 1)
+		tn, _ := tenant.Create([16]byte{}, v.region, v.major, 1)
+		input := NewCharacterTemporaryStat()
+		input.AddStat(nil)(tn)(string(character.TemporaryStatTypeEnergyCharge), 5110001, 4998, 1, time.Time{})
+		output := NewCharacterTemporaryStat()
+		pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	}
+}
+
+// TestCTSDashSpeedStaysZeroed is the negative half of the ENERGY_CHARGE fix:
+// the other twoStateDynamic members (DASH_SPEED, DASH_JUMP, UNDEAD) keep the
+// zeroed block, because no evidence was gathered for what their clients read
+// and this task must not make an unverified wire change to a verified cell
+// (design.md §1.1).
+func TestCTSDashSpeedStaysZeroed(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
+	input := NewCharacterTemporaryStat()
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypeDashSpeed), 5110001, 4998, 1, time.Time{})
+
+	got := input.Encode(nil, ctx)(nil)
+
+	block := got[18:]
+	for i := 0; i < 8; i++ {
+		if block[i] != 0x00 {
+			t.Fatalf("DASH_SPEED base block must stay zeroed; got % x", block)
+		}
+	}
+}
+
+// TestCTSServerOnlyStatsSkippedSilently proves PUPPET/SUMMON never reach the
+// wire and never log at ERROR (task-164 FR-1/FR-3, acceptance (a)). Both the
+// self and foreign encodes of a CTS holding only server-only stats must be
+// byte-identical to a freshly-constructed empty CTS, on EVERY supported tenant
+// version (FR-7/FR-7.1 — all seven registry classes, including the legacy
+// pre-v61 8-byte-mask class). The two AddStat calls must each log exactly one
+// DEBUG entry (skip trace) and nothing at ERROR.
+//
+// Zero expiry (time.Time{}) is used throughout: it saturates to a constant
+// duration on both the modern and legacy writers, so byte comparisons are
+// deterministic and need no offset arithmetic (design §5.1).
+func TestCTSServerOnlyStatsSkippedSilently(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			l, hook := testlog.NewNullLogger()
+			l.SetLevel(logrus.DebugLevel)
+
+			// sourceId/amount/level are arbitrary; only wire disposition matters.
+			input := NewCharacterTemporaryStat()
+			input.AddStat(l)(tn)(string(character.TemporaryStatTypePuppet), 1, 1, 1, time.Time{})
+			input.AddStat(l)(tn)(string(character.TemporaryStatTypeSummon), 2, 1, 1, time.Time{})
+
+			for _, e := range hook.AllEntries() {
+				if e.Level <= logrus.ErrorLevel {
+					t.Errorf("server-only stat add logged at %s: %q", e.Level, e.Message)
+				}
+			}
+			if got := len(hook.AllEntries()); got != 2 {
+				t.Errorf("expected exactly 2 DEBUG skip entries, got %d", got)
+			}
+			for _, e := range hook.AllEntries() {
+				if e.Level != logrus.DebugLevel {
+					t.Errorf("skip entry logged at %s, want DEBUG: %q", e.Level, e.Message)
+				}
+			}
+
+			empty := NewCharacterTemporaryStat()
+			if got, want := input.Encode(nil, ctx)(nil), empty.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("Encode with server-only stats differs from empty CTS:\ngot  % x\nwant % x", got, want)
+			}
+			if got, want := input.EncodeForeign(nil, ctx)(nil), empty.EncodeForeign(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("EncodeForeign with server-only stats differs from empty CTS:\ngot  % x\nwant % x", got, want)
+			}
+		})
+	}
+}
+
+// TestCTSAddStatUnknownNameStillErrors pins the existing behavior for
+// genuinely unregistered stat names (task-164 acceptance (d)): the stat is
+// dropped AND the ERROR log fires. Guards against the server-only skip
+// accidentally widening into a general silent-drop. Looped over every
+// supported version because the error path must NOT become version-dependent.
+func TestCTSAddStatUnknownNameStillErrors(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			l, hook := testlog.NewNullLogger()
+
+			input := NewCharacterTemporaryStat()
+			input.AddStat(l)(tn)("BOGUS", 1, 1, 1, time.Time{})
+
+			errorEntries := 0
+			for _, e := range hook.AllEntries() {
+				if e.Level == logrus.ErrorLevel {
+					errorEntries++
+					if e.Message != "Attempting to add buff [BOGUS], but cannot find it." {
+						t.Errorf("unexpected error message: %q", e.Message)
+					}
+				}
+			}
+			if errorEntries != 1 {
+				t.Errorf("expected exactly 1 ERROR entry for unknown stat, got %d", errorEntries)
+			}
+
+			empty := NewCharacterTemporaryStat()
+			if got, want := input.Encode(nil, ctx)(nil), empty.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("unknown stat leaked into encode:\ngot  % x\nwant % x", got, want)
+			}
+		})
+	}
+}
+
+// TestCTSMixedBuffServerOnlyByteInvariance proves a buff carrying both a wire
+// stat and server-only stats encodes byte-identically to the same buff without
+// the server-only stats (task-164 acceptance (b)), on EVERY supported tenant
+// version.
+//
+// Determinism: the self Encode path writes each per-stat duration as a function
+// of expiresAt evaluated at encode time, which is not stable across two Encode
+// calls. Passing the zero time saturates that field to a constant on both the
+// modern and legacy writers (pinned by TestNoExpiryStatEncodesSaturatedDuration
+// and TestLegacyDurationUnitsNoExpirySaturates), so the FULL byte slices compare
+// equal with no offset arithmetic — which also keeps this test correct on the
+// legacy pre-v61 class, whose mask is 8 bytes rather than 16 (design §5.1).
+//
+// Booster is the wire-stat probe because it is registered unconditionally
+// (shift 11, before any version gate), so it exists in every registry class and
+// sits inside the legacy mask's bits 0-46.
+func TestCTSMixedBuffServerOnlyByteInvariance(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			l, _ := testlog.NewNullLogger()
+
+			// Booster + the two server-only stats. sourceId/amount arbitrary;
+			// only wire disposition is under test.
+			mixed := NewCharacterTemporaryStat()
+			mixed.AddStat(l)(tn)(string(character.TemporaryStatTypeBooster), 1001, -2, 1, time.Time{})
+			mixed.AddStat(l)(tn)(string(character.TemporaryStatTypePuppet), 1002, 1, 1, time.Time{})
+			mixed.AddStat(l)(tn)(string(character.TemporaryStatTypeSummon), 1003, 1, 1, time.Time{})
+
+			plain := NewCharacterTemporaryStat()
+			plain.AddStat(l)(tn)(string(character.TemporaryStatTypeBooster), 1001, -2, 1, time.Time{})
+
+			if got, want := mixed.Encode(nil, ctx)(nil), plain.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("Encode differs:\ngot  % x\nwant % x", got, want)
+			}
+			if got, want := mixed.EncodeForeign(nil, ctx)(nil), plain.EncodeForeign(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("EncodeForeign differs:\ngot  % x\nwant % x", got, want)
+			}
+		})
+	}
+}
+
+// TestCTSPureServerOnlyBuffEncodesAsEmpty proves a buff whose changes are ALL
+// server-only yields exactly the empty-CTS body (task-164 acceptance (c),
+// FR-5/FR-6): mask claims nothing, no per-stat blocks, standard trailer. The
+// buff writers emit unconditionally, so these bytes are what an emitted
+// empty-mask GIVE_BUFF / cancel-reset carries — on every supported version,
+// including the legacy class where that mask is 8 zero bytes.
+func TestCTSPureServerOnlyBuffEncodesAsEmpty(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			tn, _ := tenant.Create([16]byte{}, v.Region, v.MajorVersion, v.MinorVersion)
+			l, _ := testlog.NewNullLogger()
+
+			pure := NewCharacterTemporaryStat()
+			pure.AddStat(l)(tn)(string(character.TemporaryStatTypePuppet), 1, 1, 1, time.Time{})
+
+			empty := NewCharacterTemporaryStat()
+			if got, want := pure.Encode(nil, ctx)(nil), empty.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("pure server-only Encode differs from empty CTS:\ngot  % x\nwant % x", got, want)
+			}
+			if got, want := pure.EncodeForeign(nil, ctx)(nil), empty.EncodeForeign(nil, ctx)(nil); !bytes.Equal(got, want) {
+				t.Errorf("pure server-only EncodeForeign differs from empty CTS:\ngot  % x\nwant % x", got, want)
+			}
+		})
 	}
 }

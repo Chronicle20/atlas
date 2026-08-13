@@ -40,6 +40,19 @@ metadata:
     argocd.argoproj.io/hook: PostDelete
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
 spec:
+  # `hook-delete-policy: HookSucceeded` cannot reap a PostDelete hook: Argo
+  # deletes hook resources during a reconciliation of the owning Application,
+  # but once the PostDelete hook succeeds Argo drops the Application's
+  # finalizer and the Application object is gone — there is no later reconcile
+  # left to collect the Job. Combined with the per-PR name (see above), every
+  # merged PR leaked one Completed Job plus its pod into `argocd` forever;
+  # Failed Jobs leaked regardless, since HookSucceeded only fires on success.
+  # The Job has no ownerReferences and lives in the long-lived `argocd`
+  # namespace, so neither cascading GC nor namespace deletion catches it.
+  # Hand the reaping to the k8s TTL-after-finished controller instead, which
+  # covers Complete and Failed alike. 24h leaves a full day of cleanup logs
+  # for the §9.4 orphan-recovery procedure before the Job disappears.
+  ttlSecondsAfterFinished: 86400
   backoffLimit: 0
   template:
     spec:

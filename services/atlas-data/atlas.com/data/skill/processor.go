@@ -14,8 +14,8 @@ import (
 )
 
 type Processor interface {
-	Register(s *document.Storage[string, RestModel], r model.Provider[[]RestModel]) error
-	RegisterSkill(path string) error
+	Register(s *document.Storage[string, RestModel], r model.Provider[Derivation]) (Stats, error)
+	RegisterSkill(path string) (Stats, error)
 }
 
 type ProcessorImpl struct {
@@ -38,22 +38,26 @@ func NewStorage(l logrus.FieldLogger, db *gorm.DB) *document.Storage[string, Res
 	return document.NewStorage(l, db, GetModelRegistry(), "SKILL")
 }
 
-func (p *ProcessorImpl) Register(s *document.Storage[string, RestModel], r model.Provider[[]RestModel]) error {
-	ms, err := r()
+func (p *ProcessorImpl) Register(s *document.Storage[string, RestModel], r model.Provider[Derivation]) (Stats, error) {
+	d, err := r()
 	if err != nil {
-		return err
+		return Stats{}, err
 	}
-	for _, m := range ms {
+	for _, m := range d.Models {
 		_, err = s.Add(p.ctx)(m)()
 		if err != nil {
-			return err
+			return Stats{}, err
 		}
 	}
-	return nil
+	return d.Stats, nil
 }
 
-func (p *ProcessorImpl) RegisterSkill(path string) error {
-	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		return p.Register(NewStorage(p.l, tx), Read(p.l)(p.ctx)(xml.FromPathProvider(path)))
+func (p *ProcessorImpl) RegisterSkill(path string) (Stats, error) {
+	var stats Stats
+	err := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		s, err := p.Register(NewStorage(p.l, tx), Read(p.l)(p.ctx)(xml.FromPathProvider(path)))
+		stats = s
+		return err
 	})
+	return stats, err
 }

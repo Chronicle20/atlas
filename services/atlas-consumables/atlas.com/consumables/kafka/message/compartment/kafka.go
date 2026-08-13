@@ -25,7 +25,10 @@ type Command[E any] struct {
 }
 
 type RequestReserveCommandBody struct {
-	TransactionId uuid.UUID  `json:"transactionId"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	// ExpirySeconds is the reservation TTL. Zero means the historical 30s
+	// default, so pre-task-205 producers keep working unchanged.
+	ExpirySeconds uint32     `json:"expirySeconds"`
 	Items         []ItemBody `json:"items"`
 }
 

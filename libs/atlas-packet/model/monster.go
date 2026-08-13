@@ -236,7 +236,7 @@ func (m *MonsterTemporaryStat) IsMovementAffectingStat(t tenant.Model) bool {
 // introduced at v79 (anchor CMob::OnStatSet DecodeBuffer(16)). Legacy range only
 // — v79/v83/84/87/95/jms are unchanged.
 func legacyMobStatMask(t tenant.Model) bool {
-	return t.IsRegion("GMS") && t.MajorVersion() < 79
+	return t.IsRegion("GMS") && !t.MajorAtLeast(79)
 }
 
 func (m *MonsterTemporaryStat) EncodeMask(_ logrus.FieldLogger, t tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
@@ -509,11 +509,39 @@ func (m *MonsterModel) SetTemporaryStat(stat *MonsterTemporaryStat) {
 	m.monsterTemporaryStat = *stat
 }
 
+// mobHasTeamAndEffectItem reports whether the mob-spawn body carries the trailing
+// team byte and effectItemId int.
+//
+// They arrived between v48 and v61 — the same boundary as the SET_FIELD
+// nNotifierCheck short and the NPC-spawn bEnabled byte. IDA: v48
+// CMobPool::OnMobEnterField @0x559445 reads Decode4(uniqueId) @0x559467,
+// Decode1 @0x559474, Decode4(templateId) @0x559481, hands the stat block to
+// sub_5531D5 @0x5531d5 (one Decode4 mask @0x5531ff, matching legacyMobStatMask)
+// and the position block to CMob::Init (sub_549040 @0x549040). That body reads
+// exactly seven fields — Decode2 @0x54908c (x), Decode2 @0x54909a (y),
+// Decode1 @0x5490ba (moveAction), Decode2 @0x5490d6 (fh), Decode2 @0x5490e0
+// (homeFh), Decode1 @0x5490ef (appearType), and Decode4 @0x54910a
+// (appearTypeOption) only when appearType == -3 || appearType >= 0 — then makes
+// no further CInPacket call.
+//
+// v61 CMob::Init @0x5c2717, v72 @0x6122d4 and v79 @0x6312a7 read nine: those
+// seven plus Decode1 (team) and Decode4 (effectItemId). Gating them on
+// MajorVersion() > 12 sent v48 five bytes it never reads on every mob spawn.
+func mobHasTeamAndEffectItem(t tenant.Model) bool {
+	return (t.IsRegion("GMS") && t.MajorAtLeast(61)) || t.Region() == "JMS"
+}
+
+// mobLegacyV12Tail reports the GMS v12-and-older tail, which is a bare int rather
+// than the team/effectItemId pair. v48 sits between the two: no tail at all.
+func mobLegacyV12Tail(t tenant.Model) bool {
+	return t.IsRegion("GMS") && t.MajorAtMost(12)
+}
+
 func (m *MonsterModel) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(13)) || t.IsRegion("JMS") {
 			w.WriteByteArray(m.monsterTemporaryStat.Encode(l, ctx)(options))
 		}
 		w.WriteInt16(m.x)
@@ -525,15 +553,14 @@ func (m *MonsterModel) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 		if m.appearType == MonsterAppearTypeRevived || m.appearType >= 0 {
 			w.WriteInt(m.appearTypeOption)
 		}
-		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
+		if mobHasTeamAndEffectItem(t) {
 			w.WriteInt8(m.team)
 			w.WriteInt(m.effectItemId)
 			if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
 				// v87+ monster phase field; v84..86 == v83 (off-by-one fix). delta §3.2
 				w.WriteInt(m.phase)
 			}
-		} else {
-			// TODO proper temp stat encoding for GMS v12
+		} else if mobLegacyV12Tail(t) {
 			w.WriteInt(0)
 		}
 		return w.Bytes()
@@ -543,7 +570,7 @@ func (m *MonsterModel) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 func (m *MonsterModel) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(13)) || t.IsRegion("JMS") {
 			m.monsterTemporaryStat.Decode(l, ctx)(r, options)
 		}
 		m.x = r.ReadInt16()
@@ -555,14 +582,14 @@ func (m *MonsterModel) Decode(l logrus.FieldLogger, ctx context.Context) func(r 
 		if m.appearType == MonsterAppearTypeRevived || m.appearType >= 0 {
 			m.appearTypeOption = r.ReadUint32()
 		}
-		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
+		if mobHasTeamAndEffectItem(t) {
 			m.team = r.ReadInt8()
 			m.effectItemId = r.ReadUint32()
 			if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" {
 				// v87+ monster phase field; v84..86 == v83 (off-by-one fix). delta §3.2
 				m.phase = r.ReadUint32()
 			}
-		} else {
+		} else if mobLegacyV12Tail(t) {
 			_ = r.ReadUint32()
 		}
 	}

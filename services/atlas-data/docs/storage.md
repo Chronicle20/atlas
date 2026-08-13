@@ -79,6 +79,8 @@ Trigram-searchable projection of ITEM_STRING documents, with item classification
 
 Per-map monster spawn counts, written alongside `map_search_index` whenever a MAP document is added (one row per distinct monster template spawning on the map).
 
+`tenant_id` is whichever tenant ingested the MAP document — for shared content that is the version-scoped canonical tenant, not a real tenant. Readers must therefore resolve the partition via `searchindex.ResolvePartitionTenantId` (own rows if any, else canonical) rather than scoping to the request tenant directly.
+
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | tenant_id | UUID | PRIMARY KEY (composite) | Tenant identifier |
@@ -92,6 +94,8 @@ Per-map monster spawn counts, written alongside `map_search_index` whenever a MA
 ### npc_spawn_index
 
 Per-map NPC spawn counts, written alongside `map_search_index` whenever a MAP document is added.
+
+`tenant_id` carries the same canonical-vs-real caveat as `monster_spawn_index` above.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|

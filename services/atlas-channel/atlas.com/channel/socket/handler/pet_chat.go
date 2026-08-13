@@ -18,13 +18,16 @@ func PetChatHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Produ
 		pk := pet2.ChatRequest{}
 		pk.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", pk.Operation(), pk.String())
-		p, err := pet.NewProcessor(l, ctx).GetById(uint32(pk.PetId()))
+		// The wire value is the client's pet serial (GW_ItemSlotBase::liCashItemSN),
+		// not the Atlas pet id — resolve it before anything downstream, which all
+		// keys on the Atlas id.
+		p, err := pet.NewProcessor(l, ctx).GetBySerialNumber(s.CharacterId(), pk.PetId())
 		if err != nil {
 			return
 		}
 		if p.OwnerId() != s.CharacterId() {
 			return
 		}
-		_ = message.NewProcessor(l, ctx).PetChat(s.Field(), pk.PetId(), pk.Msg(), s.CharacterId(), p.Slot(), pk.NType(), pk.NAction(), false)
+		_ = message.NewProcessor(l, ctx).PetChat(s.Field(), uint64(p.Id()), pk.Msg(), s.CharacterId(), p.Slot(), pk.NType(), pk.NAction(), false)
 	}
 }

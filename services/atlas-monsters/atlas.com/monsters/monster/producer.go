@@ -61,7 +61,10 @@ func stopControlStatusEventProvider(m Model, characterId uint32) model.Provider[
 	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusStopControl, statusEventStopControlBody{ActorId: characterId})
 }
 
-func damagedStatusEventProvider(m Model, observerId uint32, actorId uint32, boss bool, damageSource string, damageSummary []entry) model.Provider[[]kafka.Message] {
+// damagedStatusEventProvider builds the DAMAGED event. damage is the amount
+// this event applied (0 for a heal, which emits DAMAGED purely to refresh the
+// HP bar); damageSummary is the monster's cumulative per-character totals.
+func damagedStatusEventProvider(m Model, observerId uint32, actorId uint32, boss bool, damageSource string, damage uint32, damageSummary []entry) model.Provider[[]kafka.Message] {
 	var damageEntries []damageEntry
 	for _, e := range damageSummary {
 		damageEntries = append(damageEntries, damageEntry{
@@ -76,6 +79,7 @@ func damagedStatusEventProvider(m Model, observerId uint32, actorId uint32, boss
 		ObserverId:    observerId,
 		ActorId:       actorId,
 		Boss:          boss,
+		Damage:        damage,
 		DamageSource:  damageSource,
 		DamageEntries: damageEntries,
 	})
@@ -157,6 +161,35 @@ func killedStatusEventProvider(m Model, killerId uint32, boss bool, damageSummar
 		ActorId:       killerId,
 		Boss:          boss,
 		DamageEntries: damageEntries,
+	})
+}
+
+// catchResolvedEventProvider keys on the character, not the map: the dedicated
+// catch topic exists for atlas-consumables, whose ordering concern is
+// per-character reservation handling.
+func catchResolvedEventProvider(m Model, characterId uint32, itemId uint32, success bool, cause string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := statusEventFromField(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterCatchResolved, catchResolvedBody{
+		CharacterId: characterId,
+		ItemId:      itemId,
+		Success:     success,
+		Cause:       cause,
+	})
+	return producer.SingleMessageProvider(key, &value)
+}
+
+func caughtStatusEventProvider(m Model, characterId uint32, itemId uint32) model.Provider[[]kafka.Message] {
+	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusCaught, statusEventCaughtBody{
+		CharacterId: characterId,
+		ItemId:      itemId,
+	})
+}
+
+func catchFailedStatusEventProvider(m Model, characterId uint32, itemId uint32, cause string) model.Provider[[]kafka.Message] {
+	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusCatchFailed, statusEventCatchFailedBody{
+		CharacterId: characterId,
+		ItemId:      itemId,
+		Cause:       cause,
 	})
 }
 

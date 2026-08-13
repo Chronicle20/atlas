@@ -7,6 +7,7 @@ import (
 	"atlas-channel/data/skill/effect/statup"
 	"context"
 	"sort"
+	"time"
 
 	compartmentMsg "atlas-channel/kafka/message/compartment"
 	once "atlas-channel/kafka/once/compartment"
@@ -152,7 +153,7 @@ func emitStarConsume(l logrus.FieldLogger, ctx context.Context, characterId uint
 			continue
 		}
 		reserves := []compartmentMsg.ItemBody{{Source: draw.Slot, ItemId: draw.ItemId, Quantity: draw.Quantity}}
-		if rerr := cpp.RequestReserve(txId, characterId, inventory.TypeValueUse, reserves); rerr != nil {
+		if rerr := cpp.RequestReserve(txId, characterId, inventory.TypeValueUse, 30*time.Second, reserves); rerr != nil {
 			l.WithError(rerr).WithField("characterId", characterId).WithField("slot", draw.Slot).
 				Errorf("Unable to emit Shadow Stars reservation request.")
 		}

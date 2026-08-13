@@ -326,6 +326,18 @@ func candidatesFromFName(fname string) []candidate {
 	case "CUserLocal::OnSkillCooltimeSet":
 		// Struct is CharacterSkillCooldown.
 		return []candidate{{name: "CharacterSkillCooldown", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::RequestIncCombo", "CUserLocal__RequestIncCombo_send_0xA9", "CUserLocal__RequestIncCombo_send_0xBA":
+		// Aran combo-counter request (task-217). m_bHoldCombo guard +
+		// COutPacket(op) + SendPacket, zero Encode calls on every version.
+		// The registry's primary fname is the canonical CUserLocal::RequestIncCombo
+		// on all six versions, but the v84/v92 IDBs carry synthetic per-version
+		// rename suffixes (task-100 cluster-H / task-217 Task 12) — both literal
+		// export keys are handled here so report-gen resolves on those versions.
+		return []candidate{{name: "AranComboCounterRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "CUserLocal::OnIncComboResponse":
+		// Aran combo-counter echo (task-217). Decode4(count) -> m_nCombo,
+		// get_update_time(), DrawCombo(this). Struct is ShowCombo.
+		return []candidate{{name: "ShowCombo", pkg: "character", dir: csvpkg.DirClientbound}}
 	case "CUserRemote::OnSkillPrepare":
 		// Foreign skill-prepare relay. Struct is SkillPrepareForeign
 		// (character/clientbound; writer = "CharacterSkillPrepareForeign").
@@ -345,6 +357,19 @@ func candidatesFromFName(fname string) []candidate {
 	case "CUserRemote::OnAvatarModified":
 		// Struct is CharacterAppearanceUpdate.
 		return []candidate{{name: "CharacterAppearanceUpdate", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::RequestUpgradeTombEffect":
+		// Serverbound USE_DEATHITEM. Sent by CUIRevive::OnCreate at the death
+		// dialog; struct is UseDeathItem (character/serverbound): itemId u32 +
+		// x i32 + y i32. task-210. No pkg hint: "UseDeathItem" is unique across
+		// libs/atlas-packet/serverbound sub-domains (unlike SkillPrepare*, which
+		// collide and need the pkg-restricted walk / qualified report name).
+		return []candidate{{name: "UseDeathItem", dir: csvpkg.DirServerbound}}
+	case "CUserRemote::OnShowUpgradeTombEffect":
+		// Clientbound SHOW_UPGRADE_TOMB_EFFECT broadcast to bystanders. Struct is
+		// ShowUpgradeTombEffect (character/clientbound): characterId u32 (consumed
+		// by CUserPool::OnUserRemotePacket before the switch) + itemId u32 + x i32
+		// + y i32. task-210. No pkg hint: name is unique, see above.
+		return []candidate{{name: "ShowUpgradeTombEffect", dir: csvpkg.DirClientbound}}
 	// --- Character misc-state bucket ---
 	case "CUserRemote::OnSetActivePortableChair":
 		// Struct is CharacterChairShow; writer = "CharacterShowChair".
@@ -623,6 +648,41 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ErrorResponse", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::SendGivePopularityRequest":
 		return []candidate{{name: "Change", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendClaimRequest":
+		return []candidate{{name: "ClaimRequest", dir: csvpkg.DirServerbound}}
+
+	// CWvsContext::OnClaimResult / CWvsContext::OnSueCharacterResult (task-145
+	// FAM-CAP follow-up). Both are the SetSkillResponse-style "mode + optional
+	// payload" shape (design.md §3.1) — the IDA decompile shows one switch
+	// where at most one arm reads a body, not N distinct-body sub-handlers —
+	// so per DISPATCHER_FAMILY.md's narrow criteria neither is a true
+	// mode-prefix client dispatcher. But docs/packets/dispatchers/claim_result
+	// .yaml and sue_character_result.yaml legitimately exist as the per-version
+	// `operations` mode-table source of truth consumed by `packet-audit
+	// operations` (cmd/operations.go), and dispatcher-lint's FAM-CAP guard
+	// (FR-5.1) requires every file in that directory to be either
+	// discrete-implemented here or capped via families.yaml/the baseline —
+	// it does not special-case non-family operations tables. A families.yaml
+	// cap is the wrong disposition here: capping is unconditional per-op
+	// (matrix grade.go: `family: in.Families[baseFName(ref.FName)]`) and would
+	// silently demote the byte-fixtures task-145 Task 24 already verified
+	// (packet-audit:verify markers in claim_result_test.go /
+	// sue_character_result_test.go) from ✅ back to 🧩; the baseline is
+	// legacy-only and reached empty deliberately (DISPATCHER_FAMILY.md: "new
+	// families must be authored discrete-per-mode from the start"). So:
+	// discrete-per-mode registration. ClaimResultSuccess/ClaimResultNotice
+	// already carry #Success/#Notice packet-audit:fname markers in
+	// report/clientbound/claim_result.go — only this run.go wiring was
+	// missing. SueCharacterResult never branches its body (one `result byte`,
+	// same shape for every value), so it gets a single catch-all #Result arm —
+	// a lone #-entry for tool bookkeeping, not a false family claim (see the
+	// CWvsContext::ResignQuest#Action precedent above).
+	case "CWvsContext::OnClaimResult#Success":
+		return []candidate{{name: "ClaimResultSuccess", pkg: "report", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnClaimResult#Notice":
+		return []candidate{{name: "ClaimResultNotice", pkg: "report", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnSueCharacterResult#Result":
+		return []candidate{{name: "SueCharacterResult", pkg: "report", dir: csvpkg.DirClientbound}}
 
 	// --- merchant bucket (task-069, sub-phase 2f) ---
 	case "CWvsContext::OnEntrustedShopCheckResult#OpenShop":
@@ -1112,6 +1172,14 @@ func candidatesFromFName(fname string) []candidate {
 		// task-092 Cluster-D: MOB_DROP_PICKUP_REQUEST — atlas MobDropPickupRequest
 		// (handle = "MobDropPickupRequest"). Two Encode4 (mobCrc, dropId).
 		return []candidate{{name: "MobDropPickupRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendBridleItemUseRequest":
+		// task-212: USE_CATCH_ITEM — atlas UseCatchItem (handle =
+		// "MonsterCatchItemUseHandle"), in monster/serverbound because the
+		// request targets a field monster and carries its object id.
+		// Encode4 updateTime + Encode2 nPOS + Encode4 nItemID + Encode4 mobId,
+		// identical on gms_v48 @0x70e0c5 / v61 @0x832005 / v72 @0x90457d /
+		// v79 @0x9558e5 / v95 @0x9e08c0.
+		return []candidate{{name: "UseCatchItem", pkg: "monster", dir: csvpkg.DirServerbound}}
 	case "CMob::Update":
 		// task-092 Cluster-A: CMob::Update (the mob per-frame tick) builds THREE
 		// distinct serverbound COutPackets at distinct send-sites/opcodes:
@@ -2158,6 +2226,11 @@ func candidatesFromFName(fname string) []candidate {
 			{name: "ItemUseTripleMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
 			{name: "ItemUseMapleTV", dir: csvpkg.DirServerbound, pkg: "cash"},
 			{name: "ItemUseTeleportRock", dir: csvpkg.DirServerbound, pkg: "cash"},
+			// Pet-skill-pouch cash-slot type 28 (task-139/task-8, jms-only sender):
+			// the jump-table case-28 arm writes a bare 8-byte pet locker SN and
+			// nothing else (jms_v185 @0xaf1a42, entry 0xaf16df) — see
+			// item_use_pet_skill_test.go for the full decompile trail.
+			{name: "ItemUsePetSkill", dir: csvpkg.DirServerbound, pkg: "cash"},
 		}
 	// Item Megaphone (cash-slot type 14): the REAL send function, separate
 	// from the main dispatcher above (task-123 phase 19, gms_v95
@@ -2217,7 +2290,22 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "OperationTradeAddMeso", dir: csvpkg.DirServerbound, pkg: "interaction"}}
 	case "CTradingRoomDlg::Trade":
 		return []candidate{{name: "OperationTradeConfirm", dir: csvpkg.DirServerbound, pkg: "interaction"}}
-	case "CCashTradingRoomDlg::Trade":
+	// TRANSACTION (serverbound PLAYER_INTERACTION mode 0x14 on GMS v83+, 0x12 on
+	// jms_v185) is NOT a user action: it is the client's automatic CRC-attestation
+	// reply, emitted from the mode-17 clientbound receive handler
+	// CTradingRoomDlg::OnTrade. IDA-verified on gms_v83 @0x7c20bc
+	// (COutPacket(123); Encode1(0x14); Encode1(count); {Encode4 itemId, Encode4
+	// crc}...), gms_v95 @0x763f20 (COutPacket(144); Encode1(0x14); ...) and
+	// jms_v185 @0x845ed5 (COutPacket(0x7C); Encode1(0x12); ...).
+	//
+	// This case previously read CCashTradingRoomDlg::Trade. That was wrong: on
+	// both gms_v83 (@0x485dcd) and gms_v95 (@0x49e180) that function is the cash
+	// room's Trade BUTTON handler and encodes Encode1(0x11) — TRADE_CONFIRM —
+	// exactly like CTradingRoomDlg::Trade. It is left unlinked rather than
+	// re-pointed at OperationTradeConfirm, which CTradingRoomDlg::Trade already
+	// claims (two reports for one writer name in one version would collide).
+	// See docs/tasks/task-205-player-trade/version-matrix.md.
+	case "CTradingRoomDlg::OnTrade":
 		return []candidate{{name: "OperationTransaction", dir: csvpkg.DirServerbound, pkg: "interaction"}}
 	case "CPersonalShopDlg::PutItem":
 		return []candidate{{name: "OperationPersonalStorePutItem", dir: csvpkg.DirServerbound, pkg: "interaction"}}
@@ -2337,6 +2425,38 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "MiniRoomBalloon", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CUser::OnMiniRoomBalloon#Remove":
 		return []candidate{{name: "MiniRoomBalloonRemove", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// Trade-room clientbound arms (task-205). CMiniRoomBaseDlg::OnPacketBase's
+	// default case virtual-dispatches into CTradingRoomDlg::OnPacket, whose switch
+	// selects one of four arms. Each arm is its OWN base fname — deliberately NOT
+	// the CMiniRoomBaseDlg::OnPacketBase#Arm form the mini-game arms use: that form
+	// makes baseFName equal the PLAYER_INTERACTION clientbound registry fname, so
+	// matrix.Build CONSUMES the arms into that op row, which grades worst-of-all
+	// candidates and is ✅ on 8/10 versions today. Own fnames give each arm an
+	// independent sub-struct row that cannot degrade an existing cell — the same
+	// shape CEntrustedShopDlg::OnRefresh#UpdateMerchant below already has.
+	//
+	// Per-version dispatcher + arm addresses and mode bytes:
+	// docs/tasks/task-205-player-trade/version-matrix.md §1 (every one read from
+	// that version's own IDB). Bodies are byte-identical on every version that has
+	// the arm; only the mode byte moves, and it is config-resolved (DOM-25).
+	case "CTradingRoomDlg::OnPutItem":
+		return []candidate{{name: "InteractionTradePutItem", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CTradingRoomDlg::OnPutMoney":
+		return []candidate{{name: "InteractionTradeAddMeso", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// The confirm arm and the TRANSACTION sender are the SAME function
+	// (CTradingRoomDlg::OnTrade): it reads no body, then replies with the CRC
+	// attestation. The #TradeConfirm suffix keys the bodyless RECEIVE shape; the
+	// un-suffixed name above keys the SEND shape. baseFName strips the suffix, and
+	// no registry op carries that base fname, so both grade as sub-struct rows.
+	case "CTradingRoomDlg::OnTrade#TradeConfirm":
+		return []candidate{{name: "InteractionTradeConfirm", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// v79/v87/v92/v95 spell this arm CTradingRoomDlg::OnExceedLimit in their own
+	// symbols; the v83 MSVC symbol is held as the stable export key across
+	// versions (each export entry records the local spelling in its note).
+	// Version-ABSENT on jms_v185: its dispatcher @0x845d95 has exactly three cases
+	// (13/14/15) — full switch enumeration, not a failed name search.
+	case "CTradingRoomDlg::OnMesoLimitRefused":
+		return []candidate{{name: "InteractionTradeMesoLimit", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CEntrustedShopDlg::OnRefresh#UpdateMerchant":
 		// UPDATE_MERCHANT (mode 25) is the hired-merchant shop refresh. The
 		// dispatcher's default case virtual-dispatches into the concrete dialog;
@@ -2351,6 +2471,24 @@ func candidatesFromFName(fname string) []candidate {
 	// a SEPARATE dispatcher from OnCashItemResult.
 	case "CCashShop::OnQueryCashResult":
 		return []candidate{{name: "QueryResult", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Cash Shop Surprise — the STANDALONE CASHSHOP_CASH_ITEM_GACHAPON_RESULT
+	// opcode (task-207), routed by CCashShop::OnPacket (NOT the
+	// OnCashItemResult mode dispatcher). SUCCESS/FAILED are a runtime mode
+	// branch inside one function, not a switch-case, so there is a single
+	// bare-fname candidate rather than "#SUCCESS"/"#FAILED" synthetic arms.
+	case "CCashShop::OnCashItemGachaponResult":
+		// reportName override: the struct is CashItemGachaponResult* (already
+		// carrying the "Cash" prefix, unlike the pkg-stripped convention), so
+		// the default qualifiedWriterName(pkg,name) would double it to
+		// "CashCashItemGachaponResult" and split from the existing
+		// packet=cash/clientbound/CashItemGachaponResult markers/evidence.
+		return []candidate{{name: "CashItemGachaponResult", dir: csvpkg.DirClientbound, pkg: "cash", reportName: "CashItemGachaponResult"}}
+	// Cash Shop Surprise "Open" button send (task-207). CUICashItemGachapon
+	// is a top-level UI dialog, not a CCashShop sub-dispatcher arm.
+	// reportName override: see the CCashShop::OnCashItemGachaponResult case
+	// above — the struct is CashItemGachaponButton (already "Cash"-prefixed).
+	case "CUICashItemGachapon::OnButtonClicked":
+		return []candidate{{name: "CashItemGachaponButton", dir: csvpkg.DirServerbound, pkg: "cash", reportName: "CashItemGachaponButton"}}
 	// Vega's Spell result dialog — single mode byte (task-130 §2.2). v83 opcode
 	// 0x166 via CUIVega::OnPacket; v95 0x1AD.
 	case "CUIVega::OnVegaResult":

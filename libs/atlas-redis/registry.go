@@ -64,6 +64,21 @@ func (r *Registry[K, V]) Remove(ctx context.Context, key K) error {
 	return r.client.Del(ctx, rk).Err()
 }
 
+// RemoveExisting deletes the key and reports whether it existed. Redis DEL is
+// atomic and returns the number of keys removed, so under concurrency exactly
+// one caller observes true — the primitive callers need when a removal must
+// also be an exclusive claim (e.g. one monster, one catcher). Remove is
+// deliberately left alone: its callers do not need the verdict and changing its
+// signature would churn every one of them.
+func (r *Registry[K, V]) RemoveExisting(ctx context.Context, key K) (bool, error) {
+	rk := namespacedKey(r.namespace, r.keyFn(key))
+	n, err := r.client.Del(ctx, rk).Result()
+	if err != nil {
+		return false, fmt.Errorf("redis del: %w", err)
+	}
+	return n == 1, nil
+}
+
 // updateMaxRetries bounds the optimistic-lock retry loop in Update. Set high
 // enough to absorb contention from N concurrent writers hammering the same key
 // (each lost race only burns one retry; expected per-op retries scale roughly
@@ -108,6 +123,60 @@ func (r *Registry[K, V]) Update(ctx context.Context, key K, fn func(V) V) (V, er
 	// writer modified the key between WATCH and EXEC; the safe response is to
 	// re-read and re-apply fn. fn must be pure in its observable effects since
 	// it may run multiple times.
+	for i := 0; i < updateMaxRetries; i++ {
+		err := r.client.Watch(ctx, txFn, rk)
+		if err == nil {
+			return result, nil
+		}
+		if errors.Is(err, goredis.TxFailedErr) {
+			continue
+		}
+		return result, err
+	}
+	return result, fmt.Errorf("optimistic lock failed after %d retries", updateMaxRetries)
+}
+
+// UpdateWithTTL is Update with an explicit expiry on the write.
+//
+// Update's pipelined Set passes 0, and in Redis a SET without an expiry option
+// CLEARS any existing TTL — so a key created with PutWithTTL becomes immortal
+// on its first Update. Callers whose key must keep expiring across mutations
+// (e.g. a bounded-lifetime progress record) must use this variant and pass the
+// same ttl on every write. Update's zero-TTL behaviour is deliberately left
+// unchanged: every existing caller relies on it.
+//
+// fn may run multiple times (optimistic-lock retry) and must be pure.
+func (r *Registry[K, V]) UpdateWithTTL(ctx context.Context, key K, ttl time.Duration, fn func(V) V) (V, error) {
+	rk := namespacedKey(r.namespace, r.keyFn(key))
+
+	var result V
+	txFn := func(tx *goredis.Tx) error {
+		data, err := tx.Get(ctx, rk).Bytes()
+		if errors.Is(err, goredis.Nil) {
+			return ErrNotFound
+		}
+		if err != nil {
+			return err
+		}
+
+		current, err := r.unmarshal(data)
+		if err != nil {
+			return err
+		}
+
+		result = fn(current)
+		newData, err := r.marshal(result)
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.TxPipelined(ctx, func(pipe goredis.Pipeliner) error {
+			pipe.Set(ctx, rk, newData, ttl)
+			return nil
+		})
+		return err
+	}
+
 	for i := 0; i < updateMaxRetries; i++ {
 		err := r.client.Watch(ctx, txFn, rk)
 		if err == nil {

@@ -67,6 +67,12 @@ const (
 	EventKindMtsCustodyMoved    EventKind = "mts.custody_moved"
 	EventKindMtsCustodyError    EventKind = "mts.custody_error"
 
+	// Trade escrow custody (atlas-trades custody acks on
+	// EVENT_TOPIC_TRADE_CUSTODY_STATUS, task-205 design §5A.2).
+	EventKindTradeCustodyAccepted EventKind = "trade.custody_accepted"
+	EventKindTradeCustodyReleased EventKind = "trade.custody_released"
+	EventKindTradeCustodyError    EventKind = "trade.custody_error"
+
 	// Compartment (character inventory).
 	EventKindCompartmentCreated        EventKind = "compartment.created"
 	EventKindCompartmentCreationFailed EventKind = "compartment.creation_failed"
@@ -170,6 +176,13 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.AcceptToCharacter:    {EventKindCompartmentAccepted, EventKindCompartmentError},
 	sharedsaga.ReleaseFromStorage:   {EventKindStorageCompartmentReleased, EventKindStorageCompartmentError},
 
+	// Trade (task-205).
+	sharedsaga.TradeSettlement:  {}, // composite: expanded into release_from_trade×N + accept_to_character×N + award_mesos
+	sharedsaga.TradeUnwind:      {}, // composite: expanded into release_from_trade×N + accept_to_character×N + award_mesos
+	sharedsaga.TransferToTrade:  {}, // composite: expanded into release_from_character + accept_to_trade
+	sharedsaga.AcceptToTrade:    {EventKindTradeCustodyAccepted, EventKindTradeCustodyError},
+	sharedsaga.ReleaseFromTrade: {EventKindTradeCustodyReleased, EventKindTradeCustodyError},
+
 	// Cash shop.
 	sharedsaga.TransferToCashShop:   {}, // composite
 	sharedsaga.WithdrawFromCashShop: {}, // composite
@@ -199,25 +212,47 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.AwaitCharacterCreated: {EventKindCharacterCreated, EventKindCharacterCreationFailed},
 	sharedsaga.AwaitInventoryCreated: {EventKindInventoryCreated, EventKindInventoryCreationFailed},
 
-	// WarpToRandomPortal advances on the confirmed map change: atlas-character
-	// emits character.map_changed (tagged with the saga transactionId) after the
-	// warp lands, which handleCharacterMapChangedEvent turns into a StepCompleted.
-	// This is required for any saga that chains a step AFTER the warp — e.g. the
-	// teleport-rock consume_rock DestroyAsset (task-124). map_changed is a sound
-	// completion signal HERE because WarpToRandomPortal always targets a different
-	// map (teleport rock rejects same-map with mode 9; transports warp cross-map).
+	// All three warp actions advance on character.map_changed, tagged with the
+	// saga transactionId. atlas-maps warp.ProcessorImpl.ChangeMap
+	// (services/atlas-maps/atlas.com/maps/character/warp/processor.go) emits
+	// MAP_CHANGED *unconditionally* — there is no same-map short-circuit there
+	// or in changeMapFromCommand, so a portal-to-portal warp within one map
+	// acknowledges exactly like a cross-map one.
 	//
-	// WarpToPortal and WarpToSavedLocation share the same "handler fires and
-	// returns without StepCompleted" gap, but they can warp WITHIN the current map
-	// (portal-to-portal), where no map_changed fires — so map_changed is NOT a safe
-	// completion signal for them, and they stay self-completing {} below. Nothing
-	// chains a step after them today; when something needs to, complete them in the
-	// handler (or via a warp-ack event) rather than copying this map_changed entry.
-	sharedsaga.WarpToRandomPortal: {EventKindCharacterMapChanged},
+	// An earlier revision of this comment asserted the opposite and left
+	// WarpToPortal and WarpToSavedLocation self-completing ({}). That claim was
+	// false against the code, and every portal warp saga consequently ran to
+	// SAGA_TIMEOUT — including the ones that succeeded, which made FAILED
+	// worthless as a "the warp did not land" signal (task-184).
+	//
+	// If a same-map short-circuit is ever added to ChangeMap, these three
+	// entries break SILENTLY: the step hangs to timeout again with no error
+	// anywhere. This comment is the only coupling record between the two
+	// services.
+	//
+	// A second silent-degradation trap for whoever adds a fourth action here:
+	// the ForCharacter(characterId) guard in processor.go treats
+	// ExtractCharacterId(step) == 0 as "unconstrained" (deliberately, for
+	// actions never routed through ForCharacter). A new action added to this
+	// EventKindCharacterMapChanged entry whose payload has no case in
+	// ExtractCharacterId (character_extractor.go) also returns 0 — the guard
+	// then silently stops applying to it, with no compile error and no test
+	// failure. Add a case to ExtractCharacterId for any new action landing
+	// here.
+	//
+	// Correlation is (transactionId, characterId). handleCharacterMapChangedEvent
+	// passes ForCharacter(e.CharacterId) so the WarpPartyQuestMembersToMap
+	// fan-out — N warps stamped with one transactionId, see
+	// handleWarpPartyQuestMembers — cannot complete a later step belonging to a
+	// different character. The residual case it cannot separate is one saga in
+	// which the fan-out warps character X and a later step is a WarpToPortal
+	// also naming X; if that ever becomes necessary, give the follow-on warp
+	// its own saga rather than qualifying the correlation here.
+	sharedsaga.WarpToRandomPortal:  {EventKindCharacterMapChanged},
+	sharedsaga.WarpToPortal:        {EventKindCharacterMapChanged},
+	sharedsaga.WarpToSavedLocation: {EventKindCharacterMapChanged},
 
 	// Fire-and-forget / self-completing actions (no Kafka event advances them).
-	sharedsaga.WarpToPortal:               {},
-	sharedsaga.WarpToSavedLocation:        {},
 	sharedsaga.SaveLocation:               {},
 	sharedsaga.SendMessage:                {},
 	sharedsaga.FieldEffect:                {},
@@ -337,6 +372,11 @@ var outcomeTable = map[EventKind]EventOutcome{
 	EventKindMtsCustodyMoved:    OutcomeSuccess,
 	EventKindMtsCustodyError:    OutcomeFailure,
 
+	// Trade escrow custody.
+	EventKindTradeCustodyAccepted: OutcomeSuccess,
+	EventKindTradeCustodyReleased: OutcomeSuccess,
+	EventKindTradeCustodyError:    OutcomeFailure,
+
 	// Compartment (character inventory).
 	EventKindCompartmentCreated:        OutcomeSuccess,
 	EventKindCompartmentCreationFailed: OutcomeFailure,
@@ -390,6 +430,12 @@ const (
 	SkipReasonUnmatchedEvent     = "unmatched_event"
 	SkipReasonNilTransactionId   = "nil_transaction_id"
 	SkipReasonSagaTerminal       = "saga_terminal"
+	// SkipReasonCharacterIdMismatch: a character-scoped event (today only
+	// character.map_changed) carried a characterId that does not match the
+	// character named by the current step's payload. Expected traffic under
+	// the WarpPartyQuestMembersToMap fan-out, which stamps N warps with one
+	// transaction id — see saga/handler.go handleWarpPartyQuestMembers.
+	SkipReasonCharacterIdMismatch = "character_id_mismatch"
 )
 
 // LogSkip emits a debug-level structured log with a `reason` field.

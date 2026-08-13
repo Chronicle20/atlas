@@ -23,6 +23,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	petskill "github.com/Chronicle20/atlas/libs/atlas-constants/pet/skill"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
@@ -80,6 +81,8 @@ type Processor interface {
 	Evolve(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32) error
 	SetExcludeAndEmit(petId uint32, items []uint32) error
 	SetExclude(mb *message.Buffer) func(petId uint32) func(items []uint32) error
+	SetSkillAndEmit(petId uint32, skillKey string, enabled bool) error
+	SetSkill(mb *message.Buffer) func(petId uint32) func(skillKey string) func(enabled bool) error
 }
 
 type ProcessorImpl struct {
@@ -733,7 +736,18 @@ func (p *ProcessorImpl) EvaluateHunger(mb *message.Buffer) func(ownerId uint32) 
 					return err
 				}
 				if byte(newFullness) != pe.Fullness() {
-					err = mb.Put(pet.EnvStatusEventTopic, fullnessChangedEventProvider(pe, int8(int16(pe.Fullness())-newFullness)))
+					// Amount is signed and relative to the PREVIOUS fullness, so
+					// decay must report a negative delta (new-old) — the mirror of
+					// AwardFullness's positive +amount. Reporting old-new made every
+					// hunger tick look like a feed to atlas-channel, which replied
+					// with the pet's eat-reaction packet. The event body must also
+					// carry the post-decay fullness, not the stale pre-decay value.
+					var dm Model
+					dm, err = Clone(pe).SetFullness(byte(newFullness)).Build()
+					if err != nil {
+						return err
+					}
+					err = mb.Put(pet.EnvStatusEventTopic, fullnessChangedEventProvider(dm, int8(newFullness-int16(pe.Fullness()))))
 					if err != nil {
 						return err
 					}
@@ -1015,6 +1029,51 @@ func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(petId uint32) func(a
 			}
 			p.l.Infof("Awarded [%d] level for pet [%d].", amount, petId)
 			return nil
+		}
+	}
+}
+
+func (p *ProcessorImpl) SetSkillAndEmit(petId uint32, skillKey string, enabled bool) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.With(WithTransaction(tx)).SetSkill(mb)(petId)(skillKey)(enabled)
+		})
+	})
+}
+
+func (p *ProcessorImpl) SetSkill(mb *message.Buffer) func(petId uint32) func(skillKey string) func(enabled bool) error {
+	return func(petId uint32) func(skillKey string) func(enabled bool) error {
+		return func(skillKey string) func(enabled bool) error {
+			return func(enabled bool) error {
+				if _, ok := petskill.BitFor(petskill.Key(skillKey)); !ok {
+					p.l.Warnf("Received SET_SKILL for pet [%d] with unknown skill key [%s]. Dropping.", petId, skillKey)
+					return nil
+				}
+				txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+					pe, err := p.With(WithTransaction(tx)).GetById(petId)
+					if err != nil {
+						return err
+					}
+					newFlag := petskill.Apply(pe.Flag(), petskill.Key(skillKey), enabled)
+					if newFlag == pe.Flag() {
+						return nil
+					}
+					if err := updateFlag(tx)(petId, newFlag); err != nil {
+						return err
+					}
+					pe, err = Clone(pe).SetFlag(newFlag).Build()
+					if err != nil {
+						return err
+					}
+					return mb.Put(pet.EnvStatusEventTopic, flagChangedEventProvider(pe))
+				})
+				if txErr != nil {
+					p.l.WithError(txErr).Errorf("Unable to set skill [%s] to [%t] for pet [%d].", skillKey, enabled, petId)
+					return txErr
+				}
+				p.l.Infof("Set skill [%s] to [%t] for pet [%d].", skillKey, enabled, petId)
+				return nil
+			}
 		}
 	}
 }

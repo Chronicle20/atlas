@@ -31,6 +31,25 @@ func RequestItemConsumeCommandProvider(f field.Model, characterId character.Id, 
 	return producer.SingleMessageProvider(key, value)
 }
 
+func RequestItemConsumeWithPetCommandProvider(f field.Model, characterId character.Id, source slot.Position, itemId item.Id, quantity int16, petId uint64) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &consumable.Command[consumable.RequestItemConsumeBody]{
+		WorldId:     f.WorldId(),
+		ChannelId:   f.ChannelId(),
+		MapId:       f.MapId(),
+		Instance:    f.Instance(),
+		CharacterId: characterId,
+		Type:        consumable.CommandRequestItemConsume,
+		Body: consumable.RequestItemConsumeBody{
+			Source:   source,
+			ItemId:   itemId,
+			Quantity: quantity,
+			PetId:    petId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func RequestItemRewardCommandProvider(f field.Model, characterId character.Id, source slot.Position, itemId item.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &consumable.Command[consumable.RequestItemRewardBody]{
@@ -98,6 +117,24 @@ func RequestViciousHammerCommandProvider(f field.Model, characterId character.Id
 		Body: consumable.RequestViciousHammerBody{
 			HammerSlot: hammerSlot,
 			EquipSlot:  equipSlot,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func RequestCatchMonsterCommandProvider(f field.Model, characterId character.Id, source slot.Position, itemId item.Id, monsterUniqueId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &consumable.Command[consumable.RequestCatchMonsterBody]{
+		WorldId:     f.WorldId(),
+		ChannelId:   f.ChannelId(),
+		MapId:       f.MapId(),
+		Instance:    f.Instance(),
+		CharacterId: characterId,
+		Type:        consumable.CommandRequestCatchMonster,
+		Body: consumable.RequestCatchMonsterBody{
+			Source:          source,
+			ItemId:          itemId,
+			MonsterUniqueId: monsterUniqueId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

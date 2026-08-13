@@ -2,11 +2,11 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import type { Tenant } from "@/services/api/tenants.service";
 import {
   availabilityService,
-  type AvailabilityEntry,
+  type JobAvailabilityEntry,
 } from "@/services/api/availability.service";
 
 export interface JobAvailabilityResult {
-  jobs: AvailabilityEntry[];
+  jobs: JobAvailabilityEntry[];
 }
 
 export const jobAvailabilityKeys = {

@@ -36,6 +36,14 @@ const BansPage = lazyWithReload(() =>
 const BanDetailPage = lazyWithReload(() =>
   import("@/pages/BanDetailPage").then((m) => ({ default: m.BanDetailPage })),
 );
+const ReportsPage = lazyWithReload(() =>
+  import("@/pages/ReportsPage").then((m) => ({ default: m.ReportsPage })),
+);
+const ReportDetailPage = lazyWithReload(() =>
+  import("@/pages/ReportDetailPage").then((m) => ({
+    default: m.ReportDetailPage,
+  })),
+);
 const BaselinesPage = lazyWithReload(() =>
   import("@/pages/BaselinesPage").then((m) => ({ default: m.BaselinesPage })),
 );
@@ -55,6 +63,14 @@ const RewardPoolsPage = lazyWithReload(() =>
 const RewardPoolDetailPage = lazyWithReload(() =>
   import("@/pages/RewardPoolDetailPage").then((m) => ({
     default: m.RewardPoolDetailPage,
+  })),
+);
+const CouponsPage = lazyWithReload(() =>
+  import("@/pages/CouponsPage").then((m) => ({ default: m.CouponsPage })),
+);
+const CouponDetailPage = lazyWithReload(() =>
+  import("@/pages/CouponDetailPage").then((m) => ({
+    default: m.CouponDetailPage,
   })),
 );
 const GuildsPage = lazyWithReload(() =>
@@ -149,6 +165,11 @@ const ServiceDetailPage = lazyWithReload(() =>
 const SetupPage = lazyWithReload(() =>
   import("@/pages/SetupPage").then((m) => ({ default: m.SetupPage })),
 );
+const PacketMatrixPage = lazyWithReload(() =>
+  import("@/pages/PacketMatrixPage").then((m) => ({
+    default: m.PacketMatrixPage,
+  })),
+);
 const TemplatesPage = lazyWithReload(() =>
   import("@/pages/TemplatesPage").then((m) => ({ default: m.TemplatesPage })),
 );
@@ -230,6 +251,16 @@ const TenantsMtsConfigPage = lazyWithReload(() =>
     default: m.TenantsMtsConfigPage,
   })),
 );
+const TransportsPage = lazyWithReload(() =>
+  import("@/pages/TransportsPage").then((m) => ({
+    default: m.TransportsPage,
+  })),
+);
+const TransportRouteDetailPage = lazyWithReload(() =>
+  import("@/pages/TransportRouteDetailPage").then((m) => ({
+    default: m.TransportRouteDetailPage,
+  })),
+);
 
 function GachaponRedirect() {
   const { id } = useParams();
@@ -255,11 +286,21 @@ export function App() {
                     />
                     <Route path="/bans" element={<BansPage />} />
                     <Route path="/bans/:banId" element={<BanDetailPage />} />
+                    <Route path="/reports" element={<ReportsPage />} />
+                    <Route
+                      path="/reports/:reportId"
+                      element={<ReportDetailPage />}
+                    />
                     <Route path="/baselines" element={<BaselinesPage />} />
                     <Route path="/characters" element={<CharactersPage />} />
                     <Route
                       path="/characters/:id"
                       element={<CharacterDetailPage />}
+                    />
+                    <Route path="/coupons" element={<CouponsPage />} />
+                    <Route
+                      path="/coupons/:couponId"
+                      element={<CouponDetailPage />}
                     />
                     <Route path="/reward-pools" element={<RewardPoolsPage />} />
                     <Route
@@ -289,6 +330,11 @@ export function App() {
                     <Route
                       path="/maps/:id/portals/:portalId"
                       element={<PortalDetailPage />}
+                    />
+                    <Route path="/transports" element={<TransportsPage />} />
+                    <Route
+                      path="/transports/routes/:routeId"
+                      element={<TransportRouteDetailPage />}
                     />
                     <Route path="/merchants" element={<MerchantsPage />} />
                     <Route
@@ -347,6 +393,10 @@ export function App() {
                       element={<TemplatesCharacterPresetsPage />}
                     />
                     <Route path="/tenants" element={<TenantsPage />} />
+                    <Route
+                      path="/packet-matrix"
+                      element={<PacketMatrixPage />}
+                    />
                     <Route path="/tenants/:id" element={<TenantDetailPage />} />
                     <Route
                       path="/tenants/:id/handlers"

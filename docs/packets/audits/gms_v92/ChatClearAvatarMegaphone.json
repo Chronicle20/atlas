@@ -1,0 +1,21 @@
+{
+  "WriterName": "ChatClearAvatarMegaphone",
+  "IDAName": "CWvsContext::OnClearAvatarMegaphone",
+  "Address": "",
+  "Variant": "GMS/v92",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/chat/clientbound/avatar_megaphone.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "decompilation failed; hand-trace",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2,
+  "FlatInvalid": false
+}

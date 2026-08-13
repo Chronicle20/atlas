@@ -10,6 +10,15 @@ import {
   selectedPreset,
 } from "../presetEditorState";
 import type { CharacterPreset } from "@/types/models/template";
+import { FIXTURE_JOB_TREE } from "@/lib/jobs/__tests__/job-graph-fixtures";
+
+// The job badge's name comes from the tenant's job graph via
+// useJobNameLookup; mock it to the structural fixture rather than standing
+// up a QueryClientProvider for a component test that isn't about the graph.
+vi.mock("@/lib/hooks/api/useJobGraph", () => ({
+  useJobNameLookup: () => (id: number) =>
+    FIXTURE_JOB_TREE[id]?.name ?? `Job ${id}`,
+}));
 
 // Mock the heavy leaf sections/preview so this test targets assembly + kebab only.
 vi.mock("../PresetPreviewCard", () => ({

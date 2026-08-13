@@ -59,6 +59,7 @@ go_services = [
   "atlas-inventory",
   "atlas-invites",
   "atlas-keys",
+  "atlas-kites",
   "atlas-login",
   "atlas-map-actions",
   "atlas-maps",
@@ -93,6 +94,7 @@ go_services = [
   "atlas-storage",
   "atlas-summons",
   "atlas-tenants",
+  "atlas-trades",
   "atlas-transports",
   "atlas-world",
 ]

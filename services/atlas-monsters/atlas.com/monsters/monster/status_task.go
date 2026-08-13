@@ -63,10 +63,10 @@ func (t *StatusExpirationTask) processMonsterEffects(ten tenant.Model, m Model) 
 func (t *StatusExpirationTask) processDoTTick(ten tenant.Model, ctx context.Context, m Model, se StatusEffect) {
 	var totalDamage uint32
 
-	if se.HasStatus("POISON") {
+	if se.HasStatus(StatusPoison) {
 		totalDamage += t.calculatePoisonDamage(m, se)
 	}
-	if se.HasStatus("VENOM") {
+	if se.HasStatus(StatusVenom) {
 		totalDamage += t.calculateVenomDamage(se)
 	}
 
@@ -100,21 +100,27 @@ func (t *StatusExpirationTask) processDoTTick(ten tenant.Model, ctx context.Cont
 	_, _ = GetMonsterRegistry().UpdateStatusEffectLastTick(ten, m.UniqueId(), se.EffectId(), time.Now())
 
 	// Emit damaged event
-	_ = producer.ProviderImpl(t.l)(ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(ds.Monster, se.SourceCharacterId(), se.SourceCharacterId(), false, DamageSourceDamageOverTime, ds.Monster.DamageSummary()))
+	_ = producer.ProviderImpl(t.l)(ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(ds.Monster, se.SourceCharacterId(), se.SourceCharacterId(), false, DamageSourceDamageOverTime, totalDamage, ds.Monster.DamageSummary()))
 }
 
+// calculatePoisonDamage reads the per-tick magnitude ApplyStatusEffect
+// resolved and stored on the effect (ResolvePoisonDamage). Reading the stored
+// value rather than recomputing is what keeps the damage applied here and the
+// magnitude the client renders from identical.
+//
+// The recompute is a fallback for an effect that reached the registry without
+// passing through ApplyStatusEffect (older persisted state across a rolling
+// deploy); it is the same function, so it cannot diverge.
 func (t *StatusExpirationTask) calculatePoisonDamage(m Model, se StatusEffect) uint32 {
-	// Poison damage formula: maxHP / (70 - skillLevel)
-	divisor := int32(70) - int32(se.SourceSkillLevel())
-	if divisor <= 0 {
-		divisor = 1
+	if val, ok := se.Statuses()[StatusPoison]; ok && val > 0 {
+		return uint32(val)
 	}
-	return m.MaxHp() / uint32(divisor)
+	return uint32(ResolvePoisonDamage(m.MaxHp(), se.SourceSkillLevel()))
 }
 
 func (t *StatusExpirationTask) calculateVenomDamage(se StatusEffect) uint32 {
 	// Venom damage is the stat value applied to the effect
-	if val, ok := se.Statuses()["VENOM"]; ok && val > 0 {
+	if val, ok := se.Statuses()[StatusVenom]; ok && val > 0 {
 		return uint32(val)
 	}
 	return 0

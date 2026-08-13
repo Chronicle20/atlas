@@ -30,7 +30,11 @@ export function JobSkillsAddButton({ onAddMany }: JobSkillsAddButtonProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [pending, setPending] = useState<number | null>(null);
-  const jobs = usePresetJobOptions();
+  const {
+    options: jobs,
+    isPending: jobsPending,
+    isError: jobsError,
+  } = usePresetJobOptions();
 
   const term = search.trim().toLowerCase();
   const rows = term
@@ -128,7 +132,11 @@ export function JobSkillsAddButton({ onAddMany }: JobSkillsAddButtonProps) {
           )}
           {rows.length === 0 && manualId === undefined && (
             <li className="px-2 py-1 text-sm text-muted-foreground">
-              No matches.
+              {jobsPending
+                ? "Loading this tenant's job list…"
+                : jobsError
+                  ? "Couldn't load this tenant's job list."
+                  : "No matches."}
             </li>
           )}
         </ul>

@@ -1,0 +1,91 @@
+{
+  "service": "task-215-monster-magnet",
+  "path": "libs/atlas-packet, services/atlas-channel/atlas.com/channel, services/atlas-monsters/atlas.com/monsters",
+  "date": "2026-08-12",
+  "build": "pass",
+  "testsPassed": 3,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "libs/atlas-packet/model",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "libs/atlas-packet/model/skill_usage_info.go additions are consistent with the file's existing single-purpose scope (skill-usage decode)." },
+        { "id": "DOM-21", "name": "No atlas-constants duplication", "status": "pass", "evidence": "isMonsterMagnet resolves via constants.For(...).Skill.Resolve + skill.IsIdentity against skill.HeroMonsterMagnet/PaladinMonsterMagnet/DarkKnightMonsterMagnet." }
+      ]
+    },
+    {
+      "name": "services/atlas-channel/.../skill/handler/monstermagnet",
+      "type": "sub-domain",
+      "checks": [
+        { "id": "SUB-01", "name": "Business logic not in handler; uses processor", "status": "pass", "evidence": "monstermagnet.go:93-231 Apply orchestrates via monster.NewProcessor / character.NewProcessor seams." },
+        { "id": "SUB-02", "name": "Administrator/parent-processor owns writes", "status": "pass", "evidence": "No direct DB/registry write; routes through monster.Processor.ClearAggro/ForceControl." },
+        { "id": "SUB-04", "name": "No manual JSON parsing in handler", "status": "pass", "evidence": "grep for json.NewDecoder/json.Unmarshal/io.ReadAll in monstermagnet package non-test files: no matches." },
+        { "id": "DOM-13", "name": "No cross-domain logic bypassing processors", "status": "pass", "evidence": "Apply delegates to monster/character processors via replaceable seams, matching skill/handler/common.go's applyToMobs pattern." },
+        { "id": "DOM-28", "name": "No silent degradation on fallible calls", "status": "pass", "evidence": "monstermagnet.go:205-213 logs Warn/Error on every failed seam call rather than silently dropping." },
+        { "id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "monstermagnet_test.go uses per-scenario Test* funcs, not []struct{...}+t.Run; matches sibling package style." }
+      ]
+    },
+    {
+      "name": "services/atlas-channel/.../skill/handler (common.go, mob_select.go)",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "mob_select.go additions (MagnetRegion, clampToInt16, ExceedsMobCap) are mob-selection helpers consistent with the file's existing scope." }
+      ]
+    },
+    {
+      "name": "services/atlas-channel/.../monster",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "processor.go @@ -146,3 +148,17 @@ adds ClearAggro/ForceControl to Processor interface and ProcessorImpl." },
+        { "id": "FILE-03", "name": "Cross-service request funcs in requests.go", "status": "n/a", "evidence": "No new requests.RootUrl/GetRequest/PostRequest call site added; rectQueryFunc reuses pre-existing monster.Processor.GetInMapRect." },
+        { "id": "DOM-24", "name": "Kafka producer stubbed in tests that emit", "status": "pass", "evidence": "producer_magnet_test.go calls CommandProvider(...)() directly (pure model.Provider builders), never reaching producer.ProviderImpl; no stub required." }
+      ]
+    },
+    {
+      "name": "services/atlas-channel/.../kafka/message/monster",
+      "type": "support",
+      "checks": [
+        { "id": "kafka-contract-mirror", "name": "Mirrored contract matches atlas-monsters copy", "status": "pass", "evidence": "ClearAggroCommandBody (empty struct) and ForceControlCommandBody{CharacterId uint32 `json:\"characterId\"`} match field-for-field between kafka/message/monster/kafka.go and kafka/consumer/monster/kafka.go." }
+      ]
+    },
+    {
+      "name": "services/atlas-channel/.../data/skill/effect",
+      "type": "domain",
+      "checks": [
+        { "id": "FILE-02", "name": "RestModel/Extract in rest.go", "status": "pass", "evidence": "rest.go:44 Range field on RestModel; rest.go:124 rangeValue: rm.Range inside Extract." },
+        { "id": "DOM-04/05", "name": "Transform/Extract present", "status": "pass", "evidence": "New Range field threaded through the existing Extract function; TestExtractRange / TestExtractRangeAbsentIsZero cover it." }
+      ]
+    },
+    {
+      "name": "services/atlas-monsters/.../monster",
+      "type": "domain",
+      "checks": [
+        { "id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "processor.go @@ -1755,3 +1775,74 @@ adds ClearAggro/ForceControl." },
+        { "id": "FILE-05", "name": "Model/registry placement", "status": "pass", "evidence": "model.go gains ControlWithAggro; registry.go gains ControlMonsterWithAggro and ClearDamageEntries, consistent with pre-existing ControlMonster/DecayDamageEntries placement." },
+        { "id": "DOM-24", "name": "Kafka producer stubbed in tests that emit", "status": "pass", "evidence": "registry_test.go:26-28 pre-existing TestMain calling producertest.InstallNoop() covers the whole package including clear_aggro_test.go/force_control_test.go." },
+        { "id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "clear_aggro_test.go / force_control_test.go use per-scenario Test* funcs, matching sibling files (aggro_test.go, control_assignment_test.go)." }
+      ]
+    },
+    {
+      "name": "services/atlas-monsters/.../kafka/consumer/monster",
+      "type": "support",
+      "checks": [
+        { "id": "kafka-contract-mirror", "name": "Mirrored contract matches atlas-channel copy", "status": "pass", "evidence": "clearAggroCommandBody / forceControlCommandBody match the atlas-channel side field-for-field." }
+      ]
+    }
+  ],
+  "guardResults": {
+    "go_build": "pass (libs/atlas-packet, services/atlas-channel, services/atlas-monsters)",
+    "go_test_count1": "pass (all three modules)",
+    "go_vet": "pass (all three modules)",
+    "goroutine_guard": "pass (exit 0)",
+    "redis_key_guard": "pass (exit 0)",
+    "skill_job_id_guard": "pass (14 divergent consts checked, clean)"
+  },
+  "blocking": [],
+  "nonBlocking": [
+    "DOM-20: monster/clear_aggro_test.go, monster/force_control_test.go, and skill/handler/monstermagnet/monstermagnet_test.go use per-scenario test functions rather than table-driven []struct{...}+t.Run, though consistent with sibling test files in the same packages."
+  ]
+}

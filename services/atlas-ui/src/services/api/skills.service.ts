@@ -45,6 +45,40 @@ export interface SkillEffect {
   fixDamage?: number;
   bulletCount?: number;
   bulletConsume?: number;
+  // Skill.wz `common` keys (task-192). Keys are the Go JSON tags verbatim.
+  range?: number;
+  mastery?: number;
+  z?: number;
+  dot?: number;
+  cr?: number;
+  dotInterval?: number;
+  dotTime?: number;
+  damR?: number;
+  criticaldamageMin?: number;
+  criticaldamageMax?: number;
+  v?: number;
+  ignoreMobpdpR?: number;
+  epad?: number;
+  w?: number;
+  u?: number;
+  epdd?: number;
+  emdd?: number;
+  selfDestruction?: number;
+  asrR?: number;
+  t?: number;
+  er?: number;
+  pddR?: number;
+  terR?: number;
+  mddR?: number;
+  madX?: number;
+  padX?: number;
+  subProp?: number;
+  subTime?: number;
+  emhp?: number;
+  emmp?: number;
+  expR?: number;
+  mesoR?: number;
+  consumeItemId?: number;
   statups?: SkillEffectStatup[];
 }
 

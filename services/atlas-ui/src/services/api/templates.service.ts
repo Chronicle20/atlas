@@ -46,11 +46,26 @@ export interface TemplatesResponse {
   data: Template[];
 }
 
+/**
+ * Normalises the collections atlas-configurations serialises as `null`.
+ *
+ * templates.RestModel declares `NPCs []npcs.RestModel` / `Worlds
+ * []worlds.RestModel` without omitempty (templates/rest.go), so a template
+ * whose stored document has no `npcs` key - five of the eleven seeds,
+ * including template_jms_185_1.json - comes back as `"npcs": null`. That value
+ * then fails validateTemplate's Array.isArray check on the way back out, which
+ * broke every read-modify-write on those templates (the Packet Matrix's
+ * mark-unsupported / add / delete flows all round-trip the whole document).
+ * Absent and empty mean the same thing here, so read them as empty.
+ */
 function sortTemplate(template: Template): Template {
+  if (!template.attributes.socket) return template;
   return {
     ...template,
     attributes: {
       ...template.attributes,
+      npcs: template.attributes.npcs ?? [],
+      worlds: template.attributes.worlds ?? [],
       socket: {
         ...template.attributes.socket,
         handlers: [...template.attributes.socket.handlers].sort(
@@ -244,6 +259,20 @@ export const templatesService = {
     });
   },
 
+  /**
+   * Sparse read for the Packet Matrix: eleven templates at full attributes
+   * carry character templates, presets and equipment lists the matrix never
+   * reads.
+   *
+   * The result is READ-ONLY. It must never reach templatesService.update - a
+   * sparse document in the write path erases characters/worlds/cashShop. It
+   * lives under its own query key (socketKeys.matrix) for exactly that reason.
+   */
+  async getSocketMatrix(): Promise<Template[]> {
+    const url = `${BASE_PATH}?fields[templates]=region,majorVersion,minorVersion,socket`;
+    return fetchAll<Template>(url);
+  },
+
   async exists(id: string, options?: ServiceOptions): Promise<boolean> {
     try {
       await templatesService.getById(id, options);
@@ -273,18 +302,38 @@ export const templatesService = {
     return sortTemplate(response.data);
   },
 
+  /**
+   * Updates a template.
+   *
+   * `data` MUST be the WHOLE attribute document, not a partial: the request
+   * body replaces the stored configuration wholesale. Passing a sparsely
+   * fetched or partial object erases characters/worlds/cashShop, which is why
+   * throwIfInvalid runs first and rejects anything missing a required field.
+   *
+   * Transport is PATCH. atlas-configurations binds /configurations/templates/{id}
+   * to http.MethodPatch only (templates/resource.go) - there is no PUT route, so
+   * the previous api.put call could only ever have 405'd.
+   *
+   * That PATCH handler writes NO response body on success
+   * (handleUpdateConfigurationTemplate returns without marshalling anything), so
+   * api.patch resolves to undefined and `response.data` threw "Cannot read
+   * properties of undefined (reading 'data')". Fall back to the document we
+   * just sent, the same way tenantsService.updateTenantConfiguration does.
+   * Server-assigned values (character preset ids) still require a follow-up
+   * GET - this return value is the request echo, not a server read.
+   */
   async update(
     id: string,
-    data: Partial<TemplateAttributes>,
+    data: TemplateAttributes,
     options?: ServiceOptions,
   ): Promise<Template> {
     throwIfInvalid(data, options?.validate !== false);
-    const response = await api.put<TemplateResponse>(
+    const response = await api.patch<TemplateResponse | undefined>(
       `${BASE_PATH}/${id}`,
-      wrapTemplate(data as TemplateAttributes, id),
+      wrapTemplate(data, id),
       options,
     );
-    return sortTemplate(response.data);
+    return sortTemplate(response?.data ?? { id, attributes: data });
   },
 
   async patch(
@@ -292,22 +341,51 @@ export const templatesService = {
     data: Partial<TemplateAttributes>,
     options?: ServiceOptions,
   ): Promise<Template> {
-    const response = await api.patch<TemplateResponse>(
+    const response = await api.patch<TemplateResponse | undefined>(
       `${BASE_PATH}/${id}`,
       wrapTemplate(data as TemplateAttributes, id),
       options,
     );
-    return sortTemplate(response.data);
+    return sortTemplate(
+      response?.data ?? { id, attributes: data as TemplateAttributes },
+    );
   },
 
   async delete(id: string, options?: ServiceOptions): Promise<void> {
     return api.delete(`${BASE_PATH}/${id}`, options);
   },
 
+  /**
+   * Resets one template to the configuration shipped in the currently deployed
+   * image. Destructive: any edit made through the UI is overwritten.
+   *
+   * The endpoint returns 204 with no body, so there is nothing to sort or
+   * validate on the way back out - the caller invalidates and refetches.
+   *
+   * Templates are global (NFR-5), so this request must NOT carry tenant
+   * headers - unlike every other method on this service. `skipTenantHeaders`
+   * always wins here regardless of what the caller passed, because the
+   * endpoint is deliberately not tenant-scoped and TenantProvider sets a
+   * tenant globally on the shared ApiClient singleton.
+   */
+  async reseed(id: string, options?: ServiceOptions): Promise<void> {
+    await api.post<void>(`${BASE_PATH}/${id}/reseed`, undefined, {
+      ...options,
+      skipTenantHeaders: true,
+    });
+  },
+
   cloneTemplate(template: Template): TemplateAttributes {
     const cloned: TemplateAttributes = JSON.parse(
       JSON.stringify(template.attributes),
     );
+    // shippedRevision/storedRevision/seedDrift are computed on read by
+    // atlas-configurations, never persisted - cloning them would POST stale
+    // values for a template that doesn't exist yet. Matches the same three
+    // keys config-export.ts strips for the same reason.
+    delete (cloned as Partial<TemplateAttributes>).shippedRevision;
+    delete (cloned as Partial<TemplateAttributes>).storedRevision;
+    delete (cloned as Partial<TemplateAttributes>).seedDrift;
     cloned.region = "";
     cloned.majorVersion = 0;
     cloned.minorVersion = 0;
@@ -327,7 +405,7 @@ export const templatesService = {
   },
 
   async updateBatch(
-    updates: Array<{ id: string; data: Partial<TemplateAttributes> }>,
+    updates: Array<{ id: string; data: TemplateAttributes }>,
     options?: ServiceOptions,
     batchOptions?: BatchOptions,
   ): Promise<BatchResult<Template>> {

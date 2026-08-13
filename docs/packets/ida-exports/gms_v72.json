@@ -3,6 +3,67 @@
   "md5": "",
   "generated_at": "2026-07-01T15:41:36Z",
   "functions": {
+    "CTradingRoomDlg::OnPutItem": {
+      "address": "0x6fdce7",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (14 TRADE_PUT_ITEM; CTradingRoomDlg::OnPacket @0x6fdc9d dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "side (recipient-relative room side; indexes this[side + N] item grid)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "tradeSlot (1..9 within that side's grid)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "asset (GW_ItemSlotBase::Decode; model.Asset substruct)"
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnPutMoney": {
+      "address": "0x6fddbe",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (15 TRADE_ADD_MESO; CTradingRoomDlg::OnPacket @0x6fdc9d dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "side (recipient-relative room side)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "amount (ASSIGNED: this[side + N] = Decode4(), not accumulated)"
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnTrade#TradeConfirm": {
+      "address": "0x6fddec",
+      "direction": "clientbound",
+      "note": "Clientbound receive arm of CTradingRoomDlg::OnTrade. Same function as the serverbound TRANSACTION sender (interaction/serverbound/InteractionOperationTransaction), which is keyed on the un-suffixed CTradingRoomDlg::OnTrade; the #TradeConfirm suffix separates the two wire shapes (this arm is bodyless; the send carries count + {itemId, crc} pairs).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (16 TRADE_CONFIRM; CTradingRoomDlg::OnPacket @0x6fdc9d dispatch byte). The arm reads NO body."
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnMesoLimitRefused": {
+      "address": "0x6fde00",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (19 TRADE_MESO_LIMIT; CTradingRoomDlg::OnPacket @0x6fdc9d dispatch byte). The arm reads NO body."
+        }
+      ]
+    },
     "CCashShop::OnCashItemResult#LOAD_GIFT_FAILED": {
       "address": "0x471450",
       "direction": "clientbound",
@@ -140,6 +201,45 @@
         {
           "op": "Decode1",
           "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnStatusCoupon": {
+      "address": "0x4698d8",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v14) == 1 && v3",
+          "ref": "sub_4160CB"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v14) == 1 && v3"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v14) == 1 && v3",
+          "ref": "sub_4160CB"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v14) == 1 && v3"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v14) == 1 && v3 && v13",
+          "ref": "sub_4160CB"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v14) == 1 && v3 && v13"
         }
       ]
     },
@@ -10236,6 +10336,24 @@
         }
       ]
     },
+    "CUserLocal::RequestUpgradeTombEffect": {
+      "address": "0x867654",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "itemId (COutPacket::Encode4(0x541370) — hard-coded 5510000)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "x (v2 — m_ptRevive.x)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "y (v6 — m_ptRevive.y)"
+        }
+      ]
+    },
     "CUserLocal::SendBanMapByMobRequest": {
       "address": "0x86950c",
       "direction": "serverbound",
@@ -10995,19 +11113,20 @@
     },
     "CUserRemote::OnShowUpgradeTombEffect": {
       "address": "0x88d0e4",
-      "direction": "",
+      "direction": "clientbound",
+      "dispatcher": "per-user-remote",
       "calls": [
         {
           "op": "Decode4",
-          "comment": ""
+          "comment": "itemId (v3)"
         },
         {
           "op": "Decode4",
-          "comment": ""
+          "comment": "x (v4)"
         },
         {
           "op": "Decode4",
-          "comment": ""
+          "comment": "y (v5)"
         }
       ]
     },
@@ -15070,6 +15189,34 @@
         {
           "op": "Encode1",
           "comment": "petInfo @0x91c1fc"
+        }
+      ]
+    },
+    "CWvsContext::SendClaimRequest": {
+      "address": "0x91f2b4",
+      "direction": "serverbound",
+      "notes": "registry had zero CLAIM_REQUEST rows for v72 though the send-site was already named (task-145 Task 23b, 2026-08-05); func_query name_regex confirmed ?SendClaimRequest@CWvsContext@@... @0x91f2b4, size 0x6bf, identical to the v79@0x9711ff and v83@0xa2719c twins. Live decompile of 0x91f2b4 confirms COutPacket::COutPacket((COutPacket*)v48, 105) @0x91f749 (opcode 105 decimal / 0x69), then Encode1(v66=bChatClaim) @0x91f758, EncodeStr(targetName) @0x91f771, Encode1(v58=reasonType) @0x91f77c, EncodeStr(description) @0x91f795, and a guarded EncodeStr(chatLog) @0x91f80d gated on the same v66 (bChatClaim) that fed the first Encode1. CClientSocket::SendPacket @0x91f828. Byte-for-byte match to the v83/v95 shape.",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "bChatClaim (flag; also gates the trailing chatLog string below) @0x91f758"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "targetCharacterName @0x91f771"
+        },
+        {
+          "op": "Encode1",
+          "comment": "reasonType @0x91f77c"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "description @0x91f795"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "chatLog (only when bChatClaim) @0x91f80d",
+          "guard": "v66"
         }
       ]
     },
@@ -19931,6 +20078,29 @@
       "address": "0x91914f",
       "direction": "serverbound",
       "calls": []
+    },
+    "CWvsContext::SendBridleItemUseRequest": {
+      "address": "0x90457d",
+      "direction": "serverbound",
+      "note": "USE_CATCH_ITEM (task-212). CWvsContext::SendBridleItemUseRequest: update_time(Encode4), nPOS(Encode2), nItemID(Encode4), then the FindHitMobInRect-derived hit-mob object id (Encode4). Address per design.md/plan.md task-212 citation; confirmed via live decompile (idb_open/decompile) showing the item-class-227 gate and the GetBridleItem-equivalent lookup feeding COutPacket at the registry's USE_CATCH_ITEM opcode for this version.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hit-mob object id (FindHitMobInRect)"
+        }
+      ]
     }
   }
 }

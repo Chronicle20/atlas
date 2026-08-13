@@ -14,6 +14,25 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
+// hasWorldBalloons reports whether the world-info body carries the trailing
+// balloon block (a count short plus that many {x, y, message} entries).
+//
+// It arrived between v48 and v61 — the same boundary as the SET_FIELD
+// nNotifierCheck short, the NPC-spawn bEnabled byte and the mob team/effectItemId
+// pair. IDA: v48 CLogin::OnWorldInformation @0x50120a reads Decode1(worldId)
+// @0x501225 and, on the >= 0 arm, DecodeStr(name), Decode1(state) @0x501306,
+// DecodeStr(eventMessage), Decode2 @0x50133b, Decode2 @0x501348, Decode1
+// @0x501355, Decode1(channelCount) @0x50135d and the per-channel loop
+// {DecodeStr, Decode4 @0x5013af, Decode1 @0x5013bc, Decode1 @0x5013c9, Decode1}
+// — then returns at 0x5013dc with no further CInPacket call.
+//
+// v61 @0x56663f reads the identical prefix and then Decode2 @0x5667ea (balloon
+// count) followed by a {Decode2, Decode2, DecodeStr} loop @0x56681c/0x566827/
+// 0x566830. Writing the count to v48 left two unread bytes on every world entry.
+func hasWorldBalloons(t tenant.Model) bool {
+	return (t.IsRegion("GMS") && t.MajorAtLeast(61)) || t.Region() == "JMS"
+}
+
 const ServerListEntryWriter = "ServerListEntry"
 
 type ServerListEntry struct {
@@ -78,7 +97,7 @@ func (m ServerListEntry) Encode(l logrus.FieldLogger, ctx context.Context) func(
 			w.WriteBool(false) // adult channel
 		}
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
+		if hasWorldBalloons(t) {
 			w.WriteShort(uint16(len(m.balloons)))
 			for _, b := range m.balloons {
 				b.Write(w)
@@ -121,7 +140,7 @@ func (m *ServerListEntry) Decode(l logrus.FieldLogger, ctx context.Context) func
 			m.channelLoads[i] = model.NewChannelLoad(channel.Id(channelId), capacity)
 		}
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
+		if hasWorldBalloons(t) {
 			balloonCount := r.ReadUint16()
 			m.balloons = make([]model.WorldBalloon, balloonCount)
 			for i := uint16(0); i < balloonCount; i++ {

@@ -49,7 +49,6 @@ type Processor interface {
 	RelinquishControlOnHide(characterId uint32) error
 	RestoreCandidacyOnReveal(characterId uint32) error
 	FindNextController(idp model.Provider[[]uint32]) model.Operator[Model]
-	ControlOnEnter(enteringCharacterId uint32, idp model.Provider[[]uint32]) model.Operator[Model]
 	Damage(id uint32, characterId uint32, damages []uint32, attackType byte)
 	DamageFriendly(uniqueId uint32, attackerUniqueId uint32, observerUniqueId uint32)
 	Move(id uint32, x int16, y int16, fh int16, stance byte) error
@@ -65,6 +64,9 @@ type Processor interface {
 	RepickAndEmit(uniqueId uint32, reason RepickReason) error
 	DrainMp(f field.Model, uniqueId uint32, characterId uint32, skillId uint32, requestedAmount uint32) error
 	Kill(uniqueId uint32, characterId uint32)
+	Catch(uniqueId uint32, characterId uint32, itemId uint32)
+	ClearAggro(uniqueId uint32) error
+	ForceControl(uniqueId uint32, characterId uint32) error
 }
 
 // emitter publishes a kafka message provider to a topic. ProcessorImpl uses
@@ -383,49 +385,18 @@ func (p *ProcessorImpl) FindNextController(idp model.Provider[[]uint32]) model.O
 	}
 }
 
-// ControlOnEnter assigns a controller to a not-yet-controlled monster when a
-// character enters the field.
-//
-// When the chosen controller is the *entering* character, the assignment is
-// applied IN-PLACE in the registry WITHOUT emitting a StartControl event —
-// mirroring Create's in-place assignment. That character's client is still
-// loading the field and has NOT been sent this mob's Spawn packet yet; the
-// channel's spawnMonsterForSession sends Spawn-then-Control to it, preserving
-// the client invariant that Control never precedes Spawn. An early Control
-// packet makes the v79/v83 client materialize the mob from the Control body
-// (CMobPool::SetLocalMob -> CreateMob -> CMob::Init): a 0/1 stance then routes
-// to CMob::OnResolveMoveAction and null-derefs (crash), and a control-first
-// birth on a slope lands the mob below the surface (fall-through). See
-// docs/tasks/task-179-mob-spawn-stance-byte and the channel spawnMonsterForSession.
-//
-// When the chosen controller is an already-present player (who already has the
-// mob spawned on their client), the normal StartControl path — with event
-// emission — is used, since Control-first is safe there.
-func (p *ProcessorImpl) ControlOnEnter(enteringCharacterId uint32, idp model.Provider[[]uint32]) model.Operator[Model] {
-	return func(m Model) error {
-		cid, err := p.getControllerCandidate(m.Field(), m.X(), m.Y(), idp)
-		if err != nil {
-			return err
-		}
-
-		if cid == enteringCharacterId {
-			p.l.Debugf("Assigning entering controller [%d] for monster [%d] in field [%s] in-place (no StartControl event; channel sends Spawn-then-Control).", cid, m.UniqueId(), m.Field().Id())
-			if _, err = GetMonsterRegistry().ControlMonster(p.t, m.UniqueId(), cid); err != nil {
-				p.l.WithError(err).Errorf("Unable to assign entering controller [%d] for monster [%d] in field [%s].", cid, m.UniqueId(), m.Field().Id())
-			}
-			return err
-		}
-
-		_, err = p.StartControl(m.UniqueId(), cid)
-		if err != nil {
-			p.l.WithError(err).Errorf("Unable to start [%d] controlling [%d] in field [%s].", cid, m.UniqueId(), m.Field().Id())
-		}
-		return err
-	}
+// StartControl starts a character controlling a monster.
+func (p *ProcessorImpl) StartControl(uniqueId uint32, controllerId uint32) (Model, error) {
+	return p.startControl(uniqueId, controllerId, false)
 }
 
-// StartControl starts a character controlling a monster
-func (p *ProcessorImpl) StartControl(uniqueId uint32, controllerId uint32) (Model, error) {
+// startControl is the shared control-transfer core. forceAggro additionally
+// marks the new controller as holding aggro in the same atomic transition, so
+// the emitted START_CONTROL drives StartControlMonsterBody(m, true) on the
+// channel side. The stop-then-start sequencing, the START_CONTROL emission and
+// the RepickReasonControlChange semantics below are unchanged from before the
+// split — no caller writes controller state directly.
+func (p *ProcessorImpl) startControl(uniqueId uint32, controllerId uint32, forceAggro bool) (Model, error) {
 	m, err := p.GetById(uniqueId)
 	if err != nil {
 		return Model{}, err
@@ -438,7 +409,11 @@ func (p *ProcessorImpl) StartControl(uniqueId uint32, controllerId uint32) (Mode
 		}
 	}
 
-	m, err = GetMonsterRegistry().ControlMonster(p.t, uniqueId, controllerId)
+	if forceAggro {
+		m, err = GetMonsterRegistry().ControlMonsterWithAggro(p.t, uniqueId, controllerId)
+	} else {
+		m, err = GetMonsterRegistry().ControlMonster(p.t, uniqueId, controllerId)
+	}
 	if err == nil {
 		_ = p.emit(EnvEventTopicMonsterStatus, startControlStatusEventProvider(m))
 		// FR-2.3 parity: a controller-change must not start a fresh skill
@@ -448,6 +423,10 @@ func (p *ProcessorImpl) StartControl(uniqueId uint32, controllerId uint32) (Mode
 		// channel inbox serves the prediction into MoveMonsterAck and the
 		// client animates 12 simultaneous casts). Mirrors postExecute's
 		// ControllerHasAggro gate in UseSkill.
+		//
+		// A forced handover deliberately satisfies this gate: the mobs were
+		// just aggroed onto the caster, and the fan-out is bounded by the
+		// skill's WZ mobCount (<= 7), unlike the map-entry storm above.
 		if !m.ControllerHasAggro() {
 			p.l.Debugf("Controller-change picker: monster [%d] new controller [%d] has no aggro; skipping re-pick.", uniqueId, controllerId)
 		} else if rerr := p.RepickAndEmit(uniqueId, RepickReasonControlChange); rerr != nil {
@@ -585,6 +564,10 @@ func (p *ProcessorImpl) damageCore(m Model, characterId uint32, damages []uint32
 	hasLast := false
 	killed := false
 	firstHitObserved := false
+	// Sum of every line this attack landed -- the attack's damage, which is
+	// what the DAMAGED event reports. Lines are summed rather than reporting
+	// only the last one because a multi-line attack is one event.
+	var totalApplied uint32
 	nowMs := time.Now().UnixMilli()
 	for _, d := range damages {
 		s, err := GetMonsterRegistry().ApplyDamage(p.t, characterId, d, m.UniqueId(), nowMs)
@@ -593,6 +576,7 @@ func (p *ProcessorImpl) damageCore(m Model, characterId uint32, damages []uint32
 			break
 		}
 		last = s
+		totalApplied += s.VisibleDamage
 		hasLast = true
 		if s.WasFirstHit {
 			firstHitObserved = true
@@ -609,7 +593,7 @@ func (p *ProcessorImpl) damageCore(m Model, characterId uint32, damages []uint32
 
 	// Always emit damaged so the channel writes the final HP-bar packet,
 	// even when the attack lands a kill.
-	if err := p.emit(EnvEventTopicMonsterStatus, damagedStatusEventProvider(last.Monster, last.CharacterId, last.CharacterId, isBoss, DamageSourceCharacterAttack, last.Monster.DamageSummary())); err != nil {
+	if err := p.emit(EnvEventTopicMonsterStatus, damagedStatusEventProvider(last.Monster, last.CharacterId, last.CharacterId, isBoss, DamageSourceCharacterAttack, totalApplied, last.Monster.DamageSummary())); err != nil {
 		p.l.WithError(err).Errorf("Monster [%d] damaged, but unable to display that for the characters in the field.", last.Monster.UniqueId())
 	}
 
@@ -755,7 +739,7 @@ func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32,
 		return
 	}
 
-	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(s.Monster, observerUniqueId, attackerUniqueId, false, DamageSourceMonsterAttack, s.Monster.DamageSummary()))
+	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(s.Monster, observerUniqueId, attackerUniqueId, false, DamageSourceMonsterAttack, s.VisibleDamage, s.Monster.DamageSummary()))
 }
 
 // spawnRevives spawns the revive/next-phase monsters when a monster dies
@@ -1092,6 +1076,11 @@ func buildMistCreateBody(m Model, sd mobskill.Model, skillId byte, skillLevel by
 		TickIntervalMs:   1000,
 		SourceSkillId:    uint32(skillId),
 		SourceSkillLevel: uint32(skillLevel),
+		// Explicit rather than relying on atlas-maps' empty-value default.
+		// A monster AREA_POISON mist poisons CHARACTERS with a named status;
+		// the player-cast mists added in task-200 target MONSTERS with a DoT.
+		TargetKind: mistKafka.TargetKindCharacter,
+		EffectKind: mistKafka.EffectKindDisease,
 	}
 }
 
@@ -1202,7 +1191,7 @@ func (p *ProcessorImpl) executeHeal(m Model, observerId uint32, sd mobskill.Mode
 		healed := target.Heal(healAmount)
 		GetMonsterRegistry().UpdateMonster(p.t, targetId, healed)
 		// Emit a damaged event with 0 damage to trigger HP bar update
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(healed, observerId, m.UniqueId(), false, DamageSourceHeal, healed.DamageSummary()))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(healed, observerId, m.UniqueId(), false, DamageSourceHeal, 0, healed.DamageSummary()))
 	}
 
 	healMonster(m.UniqueId())
@@ -1392,6 +1381,22 @@ func (p *ProcessorImpl) ApplyStatusEffect(uniqueId uint32, effect StatusEffect) 
 				return errors.New("boss immunity")
 			}
 		}
+	}
+
+	if _, poison := effect.Statuses()[StatusPoison]; poison {
+		// Poison never lands the kill (StatusExpirationTask caps a tick at
+		// currentHP-1), so a monster already at 1 HP can only accumulate a
+		// status that will never do anything. Reject it rather than let a
+		// re-applying mist churn a permanent no-op effect.
+		if m.Hp() <= 1 {
+			p.l.Debugf("Monster [%d] is at [%d] HP. Poison rejected.", uniqueId, m.Hp())
+			return errors.New("poison floor")
+		}
+		// The POISON magnitude is target-derived, not caster-supplied: it
+		// depends on the monster's max HP, which the caster does not know.
+		// Resolve it here so the applied damage and the magnitude the client
+		// renders from come from one place.
+		effect = effect.WithStatus(StatusPoison, ResolvePoisonDamage(m.MaxHp(), effect.SourceSkillLevel()))
 	}
 
 	m, err = GetMonsterRegistry().ApplyStatusEffect(p.t, uniqueId, effect)
@@ -1769,4 +1774,75 @@ func Teardown(l logrus.FieldLogger) func() {
 			l.WithError(err).Errorf("Error destroying all monsters on teardown.")
 		}
 	}
+}
+
+// ClearAggro fully wipes the monster's damage-aggro table. Idempotent: wiping
+// an already-empty table emits nothing and returns nil (FR-4.5). A command
+// naming a monster that no longer exists is logged and dropped, not retried
+// into an error loop (FR-4.6).
+func (p *ProcessorImpl) ClearAggro(uniqueId uint32) error {
+	summary, err := GetMonsterRegistry().ClearDamageEntries(p.t, uniqueId)
+	if err != nil {
+		if errors.Is(err, errMonsterNotFound) {
+			p.l.Debugf("CLEAR_AGGRO for monster [%d]: monster no longer exists; dropping.", uniqueId)
+			return nil
+		}
+		return err
+	}
+	if summary.AggroFlippedOff {
+		_ = p.emit(EnvEventTopicMonsterStatus,
+			aggroChangedStatusEventProvider(summary.Monster, summary.ControllerCharacterId, false))
+	}
+	return nil
+}
+
+// ForceControl hands the monster's controller to characterId with the aggro
+// flag set, bypassing the picker election. Every rejection path is a logged
+// drop returning nil, never an error: these commands arrive from a client-driven
+// cast and a stale target must not wedge the consumer.
+func (p *ProcessorImpl) ForceControl(uniqueId uint32, characterId uint32) error {
+	m, err := p.GetById(uniqueId)
+	if err != nil {
+		p.l.Debugf("FORCE_CONTROL for monster [%d]: monster no longer exists; dropping.", uniqueId)
+		return nil
+	}
+
+	// FR-5.4 — forcing control to the current controller must not emit a
+	// redundant stop/start pair on every client in the field.
+	if m.ControlCharacterId() == characterId {
+		p.l.Debugf("FORCE_CONTROL for monster [%d]: character [%d] already controls it; no-op.", uniqueId, characterId)
+		return nil
+	}
+
+	ids, err := p.inFieldFn(m.Field())
+	if err != nil {
+		p.l.WithError(err).Debugf("FORCE_CONTROL for monster [%d]: unable to list characters in field [%s]; dropping.", uniqueId, m.Field().Id())
+		return nil
+	}
+	present := false
+	for _, id := range ids {
+		if id == characterId {
+			present = true
+			break
+		}
+	}
+	if !present {
+		p.l.Debugf("FORCE_CONTROL for monster [%d]: character [%d] is not in field [%s]; dropping.", uniqueId, characterId, m.Field().Id())
+		return nil
+	}
+
+	// A GM-hidden character must not be granted control: RelinquishControlOnHide
+	// actively strips control from hidden characters, so granting it here would
+	// produce an immediate flap.
+	if hiddenIds, herr := p.hiddenFn(); herr == nil {
+		if _, isHidden := hiddenIds[characterId]; isHidden {
+			p.l.Debugf("FORCE_CONTROL for monster [%d]: character [%d] is GM-hidden; dropping.", uniqueId, characterId)
+			return nil
+		}
+	}
+
+	if _, serr := p.startControl(uniqueId, characterId, true); serr != nil {
+		p.l.WithError(serr).Warnf("FORCE_CONTROL for monster [%d] to character [%d] failed.", uniqueId, characterId)
+	}
+	return nil
 }

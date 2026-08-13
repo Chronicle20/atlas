@@ -13,6 +13,7 @@ import (
 
 const (
 	EnvEventTopicMonsterStatus = "EVENT_TOPIC_MONSTER_STATUS"
+	EnvEventTopicMonsterCatch  = "EVENT_TOPIC_MONSTER_CATCH"
 
 	EventMonsterStatusCreated          = "CREATED"
 	EventMonsterStatusDestroyed        = "DESTROYED"
@@ -28,6 +29,10 @@ const (
 	EventMonsterStatusAggroChanged     = "AGGRO_CHANGED"
 	EventMonsterStatusNextSkillDecided = "NEXT_SKILL_DECIDED"
 	EventMonsterStatusMpChanged        = "MP_CHANGED"
+	EventMonsterStatusCaught           = "CAUGHT"
+	EventMonsterStatusCatchFailed      = "CATCH_FAILED"
+
+	EventMonsterCatchResolved = "CATCH_RESOLVED"
 
 	DamageSourceCharacterAttack = "CHARACTER_ATTACK"
 	DamageSourceMonsterAttack   = "MONSTER_ATTACK"
@@ -38,6 +43,16 @@ const (
 	MpChangeReasonSkillCast   = "SKILL_CAST"
 	MpChangeReasonBasicAttack = "BASIC_ATTACK"
 	MpChangeReasonRecovery    = "RECOVERY"
+
+	// Catch failure causes. The wire collapses all of them to a single byte
+	// (design §6.4), so these survive only in logs and in the channel's
+	// cause -> wire-reason mapping. UNRESOLVED means the attempt lost a race
+	// (monster gone, or another catcher claimed it) — the channel renders no
+	// failure packet for it, only the unlock.
+	CatchCauseSpeciesMismatch = "SPECIES_MISMATCH"
+	CatchCauseHpTooHigh       = "HP_TOO_HIGH"
+	CatchCauseRollFailed      = "ROLL_FAILED"
+	CatchCauseUnresolved      = "UNRESOLVED"
 )
 
 type statusEvent[E any] struct {
@@ -92,11 +107,16 @@ type statusEventStopControlBody struct {
 }
 
 type statusEventDamagedBody struct {
-	X             int16         `json:"x"`
-	Y             int16         `json:"y"`
-	ObserverId    uint32        `json:"observerId"`
-	ActorId       uint32        `json:"actorId"`
-	Boss          bool          `json:"boss"`
+	X          int16  `json:"x"`
+	Y          int16  `json:"y"`
+	ObserverId uint32 `json:"observerId"`
+	ActorId    uint32 `json:"actorId"`
+	Boss       bool   `json:"boss"`
+	// Damage is the amount THIS event applied. DamageEntries below is the
+	// monster's running per-character total and answers a different question
+	// (who gets the kill credit / drop ownership); a consumer that wants the
+	// number to render must read Damage, never the last DamageEntries element.
+	Damage        uint32        `json:"damage"`
 	DamageSource  string        `json:"damageSource"`
 	DamageEntries []damageEntry `json:"damageEntries"`
 }
@@ -164,6 +184,34 @@ type statusEventMpChangedBody struct {
 	Reason         string `json:"reason"`
 	Amount         uint32 `json:"amount"`
 	MonsterMpAfter uint32 `json:"monsterMpAfter"`
+}
+
+// catchResolvedBody is the economic outcome, published on the dedicated
+// low-volume EVENT_TOPIC_MONSTER_CATCH. atlas-consumables consumes it to commit
+// or cancel the item reservation; it must NOT be published on the status topic,
+// which carries a DAMAGED event per hit and whose every handler unmarshals every
+// message (design §4.2).
+type catchResolvedBody struct {
+	CharacterId uint32 `json:"characterId"`
+	ItemId      uint32 `json:"itemId"`
+	Success     bool   `json:"success"`
+	Cause       string `json:"cause"`
+}
+
+// statusEventCaughtBody is the presentation outcome, published on the status
+// topic immediately BEFORE DESTROYED. The status topic is keyed by MapId, so
+// that ordering is a partition guarantee — which matters because
+// CMobPool::OnMobPacket resolves the mob via GetMob and silently drops the
+// effect packet if the mob is already gone.
+type statusEventCaughtBody struct {
+	CharacterId uint32 `json:"characterId"`
+	ItemId      uint32 `json:"itemId"`
+}
+
+type statusEventCatchFailedBody struct {
+	CharacterId uint32 `json:"characterId"`
+	ItemId      uint32 `json:"itemId"`
+	Cause       string `json:"cause"`
 }
 
 // MarshalJSON ensures DamageEntries marshals as `[]` rather than `null` when nil.

@@ -4,6 +4,7 @@ import (
 	"atlas-channel/account"
 	"atlas-channel/battleship"
 	channel3 "atlas-channel/channel"
+	"atlas-channel/character/combo"
 	"atlas-channel/configuration/projection"
 	account2 "atlas-channel/kafka/consumer/account"
 	"atlas-channel/kafka/consumer/asset"
@@ -28,6 +29,7 @@ import (
 	incubatorconsumer "atlas-channel/kafka/consumer/incubator"
 	"atlas-channel/kafka/consumer/instance_transport"
 	"atlas-channel/kafka/consumer/invite"
+	kiteconsumer "atlas-channel/kafka/consumer/kite"
 	"atlas-channel/kafka/consumer/macro"
 	_map "atlas-channel/kafka/consumer/map"
 	megaphoneConsumer "atlas-channel/kafka/consumer/megaphone"
@@ -49,6 +51,7 @@ import (
 	"atlas-channel/kafka/consumer/pet"
 	"atlas-channel/kafka/consumer/quest"
 	"atlas-channel/kafka/consumer/reactor"
+	reportstatus "atlas-channel/kafka/consumer/report"
 	"atlas-channel/kafka/consumer/route"
 	rpsConsumer "atlas-channel/kafka/consumer/rps"
 	"atlas-channel/kafka/consumer/saga"
@@ -58,6 +61,7 @@ import (
 	summonConsumer "atlas-channel/kafka/consumer/summon"
 	"atlas-channel/kafka/consumer/system_message"
 	teleportrockConsumer "atlas-channel/kafka/consumer/teleportrock"
+	tradeConsumer "atlas-channel/kafka/consumer/trade"
 	walletConsumer "atlas-channel/kafka/consumer/wallet"
 	worldbroadcastConsumer "atlas-channel/kafka/consumer/worldbroadcast"
 	"atlas-channel/listener"
@@ -130,6 +134,8 @@ import (
 	questsb "github.com/Chronicle20/atlas/libs/atlas-packet/quest/serverbound"
 	reactorcb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
 	reactorsb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/serverbound"
+	reportcb "github.com/Chronicle20/atlas/libs/atlas-packet/report/clientbound"
+	reportsb "github.com/Chronicle20/atlas/libs/atlas-packet/report/serverbound"
 	rpscb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/clientbound"
 	rpssb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/serverbound"
 	socketcb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/clientbound"
@@ -231,6 +237,7 @@ func main() {
 	macro.InitConsumers(l)(cmf)(consumerGroupId)
 	buff.InitConsumers(l)(cmf)(consumerGroupId)
 	chalkboard.InitConsumers(l)(cmf)(consumerGroupId)
+	kiteconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	messenger.InitConsumers(l)(cmf)(consumerGroupId)
 	teleportrockConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	pet.InitConsumers(l)(cmf)(consumerGroupId)
@@ -242,6 +249,7 @@ func main() {
 	mtsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	walletConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
+	reportstatus.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
 	rpsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
@@ -252,6 +260,7 @@ func main() {
 	incubatorconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	merchantConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	minigameConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	tradeConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mountConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	megaphoneConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	worldbroadcastConsumer.InitConsumers(l)(cmf)(consumerGroupId)
@@ -316,6 +325,10 @@ func main() {
 
 	routine.Go(l, rt.Context(), func(_ context.Context) {
 		tasks.Register(l, rt.Context())(channel3.NewHeartbeat(l, rt.Context(), time.Second*10))
+	})
+
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(combo.NewDecayTick(l, rt.Context(), time.Second))
 	})
 
 	rt.TeardownFunc(session.Teardown(l))
@@ -413,6 +426,9 @@ func buildListener(
 		if err := register(buddylist.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(reportstatus.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(channel.InitHandlers(fl)(sc)(cfg.IPAddress, cfg.Port)(rh)); err != nil {
 			return nil, err
 		}
@@ -497,6 +513,9 @@ func buildListener(
 		if err := register(chalkboard.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(kiteconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(messenger.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -560,6 +579,9 @@ func buildListener(
 		if err := register(minigameConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(tradeConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(mountConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -616,6 +638,7 @@ func produceWriters() []string {
 		cashcb.CashShopOpenWriter,
 		cashcb.CashShopOperationWriter,
 		cashcb.CashQueryResultWriter,
+		cashcb.CashItemGachaponResultWriter,
 		cashcb.VegaScrollWriter,
 		monstercb.MonsterSpawnWriter,
 		monstercb.MonsterDestroyWriter,
@@ -663,6 +686,7 @@ func produceWriters() []string {
 		charcb.CharacterKeyMapWriter,
 		buddy2.BuddyOperationWriter,
 		charcb.CharacterExpressionWriter,
+		charcb.CharacterShowUpgradeTombEffectWriter,
 		npccb.NpcConversationWriter,
 		guildcb.GuildOperationWriter,
 		guildcb.GuildEmblemChangedWriter,
@@ -716,6 +740,8 @@ func produceWriters() []string {
 		fieldcb.KiteSpawnWriter,
 		fieldcb.KiteErrorWriter,
 		fieldcb.KiteDestroyWriter,
+		fieldcb.AffectedAreaCreatedWriter,
+		fieldcb.AffectedAreaRemovedWriter,
 		fieldcb.ClockWriter,
 		fieldcb.StopClockWriter,
 		fieldcb.OxQuizWriter,
@@ -770,6 +796,7 @@ func produceWriters() []string {
 		fieldcb.FieldTransportStateWriter,
 		storagecb.StorageOperationWriter,
 		charcb.CharacterHintWriter,
+		charcb.ShowComboWriter,
 		reactorcb.ReactorHitWriter,
 		npccb.GuideTalkWriter,
 		questcb.ScriptProgressWriter,
@@ -807,6 +834,10 @@ func produceWriters() []string {
 		tvCB.TvSetMessageWriter,
 		tvCB.TvClearMessageWriter,
 		tvCB.TvSendMessageResultWriter,
+		reportcb.SueCharacterResultWriter,
+		reportcb.ClaimResultWriter,
+		reportcb.ClaimAvailableTimeWriter,
+		reportcb.ClaimSvrStatusChangedWriter,
 	}
 }
 
@@ -827,6 +858,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[summonsb.SummonDamageHandle] = handler.SummonDamageHandleFunc
 	handlerMap[monstersb.MobCrcKeyChangedReplyHandle] = handler.MobCrcKeyChangedReplyHandleFunc
 	handlerMap[monstersb.MobDropPickupRequestHandle] = handler.MobDropPickupRequestHandleFunc
+	handlerMap[monstersb.UseCatchItemHandle] = handler.MonsterCatchItemUseHandleFunc
 	handlerMap[monstersb.FieldDamageMobHandle] = handler.FieldDamageMobHandleFunc
 	handlerMap[monstersb.MobDamageMobHandle] = handler.MobDamageMobHandleFunc
 	handlerMap[monstersb.MonsterBombHandle] = handler.MonsterBombHandleFunc
@@ -852,6 +884,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[fieldsb.MatchTableHandle] = handler.MatchTableHandleFunc
 	handlerMap[fieldsb.SlideRequestHandle] = handler.SlideRequestHandleFunc
 	handlerMap[fieldsb.SueCharacterHandle] = handler.SueCharacterHandleFunc
+	handlerMap[reportsb.ClaimRequestHandle] = handler.ClaimRequestHandleFunc
 	handlerMap[charsb.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[invsb.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
 	handlerMap[partysb.PartyOperationHandle] = handler.PartyOperationHandleFunc
@@ -860,6 +893,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[charsb.CharacterKeyMapChangeHandle] = handler.CharacterKeyMapChangeHandleFunc
 	handlerMap[buddy2.BuddyOperationHandle] = handler.BuddyOperationHandleFunc
 	handlerMap[charsb.CharacterExpressionHandle] = handler.CharacterExpressionHandleFunc
+	handlerMap[charsb.CharacterUseDeathItemHandle] = handler.CharacterUseDeathItemHandleFunc
 	handlerMap[npcsb.NPCStartConversationHandle] = handler.NPCStartConversationHandleFunc
 	handlerMap[npcsb.NPCContinueConversationHandle] = handler.NPCContinueConversationHandleFunc
 	handlerMap[guildsb.GuildOperationHandle] = handler.GuildOperationHandleFunc
@@ -883,6 +917,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterUseSkillHandle] = handler.CharacterUseSkillHandleFunc
 	handlerMap[handler.CharacterSkillPrepareHandle] = handler.CharacterSkillPrepareHandleFunc
 	handlerMap[charsb.CharacterBuffCancelHandle] = handler.CharacterBuffCancelHandleFunc
+	handlerMap[charsb.AranComboCounterHandle] = handler.AranComboCounterHandleFunc
 	handlerMap[charsb.CancelDebuffHandle] = handler.CancelDebuffHandleFunc
 	handlerMap[cashsb.CharacterCashItemUseHandle] = handler.CharacterCashItemUseHandleFunc
 	handlerMap[fieldsb.ItemUpgradeUpdateHandle] = handler.ItemUpgradeUpdateHandleFunc
@@ -910,6 +945,8 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[petsb.PetItemUseHandle] = handler.PetItemUseHandleFunc
 	handlerMap[cashsb.CashShopOperationHandle] = handler.CashShopOperationHandleFunc
 	handlerMap[cashsb.CashShopCheckWalletHandle] = handler.CashShopCheckWalletHandleFunc
+	handlerMap[cashsb.CashItemGachaponHandle] = handler.CashItemGachaponHandleFunc
+	handlerMap[cashsb.CashShopCouponCodeHandle] = handler.CashShopCouponCodeHandleFunc
 	handlerMap[npcsb.NPCShopHandle] = handler.NPCShopHandleFunc
 	handlerMap[invsb.CompartmentMergeRequestHandle] = handler.CompartmentMergeHandleFunc
 	handlerMap[invsb.CompartmentSortRequestHandle] = handler.CompartmentSortHandleFunc

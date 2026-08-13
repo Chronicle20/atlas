@@ -838,6 +838,9 @@ func (p *ProcessorImpl) RequestChangeMeso(transactionId uuid.UUID, characterId u
 		}
 		if amount > 0 && uint32(amount) > (math.MaxUint32-c.Meso()) {
 			p.l.Errorf("Transaction for character [%d] would result in a uint32 overflow. Rejecting transaction.", characterId)
+			rejectEmit = func() error {
+				return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(mesoOverflowErrorStatusEventProvider(transactionId, characterId, c.WorldId(), amount))
+			}
 			return ErrMesoOverflow
 		}
 
@@ -854,6 +857,13 @@ func (p *ProcessorImpl) RequestChangeMeso(transactionId uuid.UUID, characterId u
 	if errors.Is(txErr, ErrNotEnoughMeso) && rejectEmit != nil {
 		_ = rejectEmit()
 		return nil
+	}
+	// Deliberate asymmetry with the NOT_ENOUGH_MESO path above: overflow keeps
+	// returning the error so the REST/command caller still logs a failure. The
+	// emission is additive — the saga is driven by the event either way. Do not
+	// "harmonise" these two into one branch.
+	if errors.Is(txErr, ErrMesoOverflow) && rejectEmit != nil {
+		_ = rejectEmit()
 	}
 	return txErr
 }
@@ -1083,13 +1093,29 @@ func (p *ProcessorImpl) RequestDistributeSp(transactionId uuid.UUID, characterId
 		})
 	})
 	if txErr != nil {
+		// Logged, not just returned: every caller of this method discards the
+		// error (the Kafka consumer and the channel handler both `_ =` it) and
+		// nothing is written back to the client, so a rejected distribution --
+		// "not enough sp" being the common one -- is otherwise indistinguishable
+		// from a dropped packet. Without this line the only way to tell why a
+		// skill did not level is to read the character row by hand.
+		p.l.WithError(txErr).Errorf("Unable to distribute [%d] sp to skill [%d] for character [%d].", amount, skillId, characterId)
 		return txErr
 	}
 
+	// The SP has already been debited by the transaction above; if the skill
+	// create/update fails the character is left short the SP with nothing to
+	// show for it, which is exactly the state worth a loud log.
 	if val := c.GetSkill(skillId); val.Id() != skillId {
-		_ = skill2.NewProcessor(p.l, p.ctx).RequestCreate(characterId, skillId, byte(amount), 0, time.Time{})
+		if err := skill2.NewProcessor(p.l, p.ctx).RequestCreate(characterId, skillId, byte(amount), 0, time.Time{}); err != nil {
+			p.l.WithError(err).Errorf("Unable to create skill [%d] for character [%d] after debiting [%d] sp.", skillId, characterId, amount)
+			return err
+		}
 	} else {
-		_ = skill2.NewProcessor(p.l, p.ctx).RequestUpdate(characterId, skillId, val.Level()+byte(amount), val.MasterLevel(), val.Expiration())
+		if err := skill2.NewProcessor(p.l, p.ctx).RequestUpdate(characterId, skillId, val.Level()+byte(amount), val.MasterLevel(), val.Expiration()); err != nil {
+			p.l.WithError(err).Errorf("Unable to update skill [%d] for character [%d] after debiting [%d] sp.", skillId, characterId, amount)
+			return err
+		}
 	}
 	return nil
 }

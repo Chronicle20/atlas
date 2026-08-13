@@ -41,5 +41,6 @@ func modelFromEntity(e entity) (Model, error) {
 		SetQuantity(e.Quantity).
 		SetTier(e.Tier).
 		SetWeight(e.Weight).
+		SetCommodityId(e.CommodityId).
 		Build()
 }

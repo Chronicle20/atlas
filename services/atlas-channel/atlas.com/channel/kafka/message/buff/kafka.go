@@ -80,6 +80,14 @@ type UpdateStatValueCommandBody struct {
 	Operation string `json:"operation"`
 	Amount    int32  `json:"amount"`
 	Cap       int32  `json:"cap"`
+	// CreateIfMissing turns INCREMENT into an accumulator upsert: with no buff
+	// for SourceId, atlas-buffs creates one with NoExpiry carrying a single
+	// StatType change of min(Amount, Cap) and emits APPLIED. Opt-in.
+	// (task-216 design.md §4.2)
+	CreateIfMissing bool `json:"createIfMissing,omitempty"`
+	// Level is the source skill level stamped on a buff created by
+	// CreateIfMissing. Ignored otherwise.
+	Level byte `json:"level,omitempty"`
 }
 
 const (
@@ -132,6 +140,10 @@ type StatUpdatedStatusEventBody struct {
 
 const (
 	EventStatusTypeBerserk = "BERSERK"
+
+	// EventStatusTypePeriodicEffect mirrors atlas-buffs' periodic visual pulse
+	// (task-214).
+	EventStatusTypePeriodicEffect = "PERIODIC_EFFECT"
 )
 
 // BerserkStatusEventBody mirrors atlas-buffs' berserk broadcast tick
@@ -145,4 +157,15 @@ type BerserkStatusEventBody struct {
 	CharacterLevel byte       `json:"characterLevel"`
 	SkillLevel     byte       `json:"skillLevel"`
 	Active         bool       `json:"active"`
+}
+
+// PeriodicEffectStatusEventBody mirrors atlas-buffs' periodic visual pulse
+// (task-214). One event per periodic tick whose source skill has a `special`
+// WZ node; becomes the SKILL_SPECIAL user effect on the caster's own session
+// plus the foreign variant for everyone else on their map. StatType is
+// diagnostic only -- this consumer does not branch on it.
+type PeriodicEffectStatusEventBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	SkillId   uint32     `json:"skillId"`
+	StatType  string     `json:"statType"`
 }

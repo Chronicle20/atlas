@@ -49,6 +49,7 @@ func spawnEventProvider(m Model, tm *TemporalData) model.Provider[[]kafka.Messag
 			Y:          tm.Y(),
 			Stance:     tm.Stance(),
 			FH:         tm.FH(),
+			CashId:     m.CashId(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -168,6 +169,20 @@ func excludeChangedEventProvider(m Model) model.Provider[[]kafka.Message] {
 		Type:    pet.StatusEventTypeExcludeChanged,
 		Body: pet.ExcludeChangedStatusEventBody{
 			Items: items,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func flagChangedEventProvider(m Model) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.OwnerId()))
+	value := &pet.StatusEvent[pet.FlagChangedStatusEventBody]{
+		PetId:   m.Id(),
+		OwnerId: m.OwnerId(),
+		Type:    pet.StatusEventTypeFlagChanged,
+		Body: pet.FlagChangedStatusEventBody{
+			Slot: m.Slot(),
+			Flag: m.Flag(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

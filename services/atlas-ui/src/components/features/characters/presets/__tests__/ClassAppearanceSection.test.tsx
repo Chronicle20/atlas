@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ClassAppearanceSection } from "../ClassAppearanceSection";
 import { DEFAULT_PRESET_ATTRIBUTES } from "../presetEditorState";
-import { JOB_LIST } from "@/lib/jobs/job-advancement-tree";
+import { FIXTURE_JOBS_SORTED } from "@/lib/jobs/__tests__/job-graph-fixtures";
 
 // Radix Select/Dialog rely on DOM APIs jsdom does not implement.
 Element.prototype.hasPointerCapture ||= () => false;
@@ -37,6 +37,12 @@ const jobOptionsMock = vi.fn();
 vi.mock("@/lib/hooks/usePresetJobOptions", () => ({
   usePresetJobOptions: () => jobOptionsMock(),
 }));
+// JobCombobox's fallback name (id outside the options above) reads the
+// tenant's job graph via useJobNameLookup; mock it rather than standing up a
+// QueryClientProvider for a test about class/appearance selection.
+vi.mock("@/lib/hooks/api/useJobGraph", () => ({
+  useJobNameLookup: () => (id: number) => `Job ${id}`,
+}));
 
 // Enumeration fixture: male bases 30000 (colors 0,2) and 30030 (colors 0,1);
 // female base 31000 (colors 0,1). 21xxx faces are female by id convention.
@@ -44,7 +50,11 @@ const HAIR_IDS = [30000, 30002, 30030, 30031, 31000, 31001];
 const FACE_IDS = [20000, 20001, 20002, 21000, 21001];
 
 beforeEach(() => {
-  jobOptionsMock.mockReturnValue(JOB_LIST.filter((j) => j.id < 1000));
+  jobOptionsMock.mockReturnValue({
+    options: FIXTURE_JOBS_SORTED.filter((j) => j.id < 1000),
+    isPending: false,
+    isError: false,
+  });
   useFaceIdsMock.mockReturnValue({
     data: FACE_IDS,
     isLoading: false,

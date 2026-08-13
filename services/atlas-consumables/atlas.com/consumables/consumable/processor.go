@@ -17,6 +17,7 @@ import (
 	compartment2 "atlas-consumables/kafka/message/compartment"
 	"atlas-consumables/kafka/message/consumable"
 	foodmsg "atlas-consumables/kafka/message/food"
+	"atlas-consumables/kafka/message/monsterbook"
 	sagamsg "atlas-consumables/kafka/message/saga"
 	assetOnce "atlas-consumables/kafka/once/asset"
 	once "atlas-consumables/kafka/once/compartment"
@@ -38,6 +39,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -56,12 +58,15 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-var ErrPetCannotConsume = errors.New("pet cannot consume")
+var (
+	ErrPetCannotConsume = errors.New("pet cannot consume")
+	ErrPetCannotLearn   = errors.New("pet cannot learn")
+)
 
 type ItemConsumer func(l logrus.FieldLogger) func(ctx context.Context) error
 
 type Processor interface {
-	RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) error
+	RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16, petId uint64) error
 	RequestFeed(worldId world.Id, characterId uint32, slot int16, itemId item2.Id) error
 	ConsumeError(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error
 	RequestScroll(characterId uint32, scrollSlot int16, equipSlot int16, whiteScroll bool, legendarySpirit bool) error
@@ -75,6 +80,7 @@ type Processor interface {
 	RequestItemReward(characterId uint32, itemId item2.Id, source int16) error
 	RequestViciousHammer(characterId uint32, hammerSlot int16, equipSlot int16) error
 	RequestSkillBookUse(f field.Model, characterId uint32, slot int16, itemId item2.Id) error
+	RequestCatchMonster(f field.Model, characterId uint32, slot int16, itemId item2.Id, monsterUniqueId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -253,7 +259,7 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 	}
 }
 
-func (p *ProcessorImpl) RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
+func (p *ProcessorImpl) RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16, petId uint64) error {
 	transactionId := uuid.New()
 	p.l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
 	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
@@ -275,6 +281,18 @@ func (p *ProcessorImpl) RequestItemConsume(c channel.Model, characterId uint32, 
 		itemConsumer = ConsumeCashPetFood(transactionId, characterId, slot, itemId)
 	} else if item2.GetClassification(itemId) == item2.ClassificationConsumableSummoningSack {
 		itemConsumer = ConsumeSummoningSack(transactionId, c, characterId, slot, itemId)
+	} else if item2.GetClassification(itemId) == item2.ClassificationPetSkill {
+		itemConsumer = ConsumePetSkillPouch(transactionId, characterId, slot, itemId, petId)
+	} else if item2.GetClassification(itemId) == item2.ClassificationConsumableMonsterCard {
+		itemConsumer = ConsumeMonsterCard(transactionId, characterId, slot, itemId, it)
+	} else if routesToMorphCoupon(itemId) {
+		// Transformation (morph) coupon, classification 530, CASH compartment.
+		// Must precede the reward-table fallback below: that fallback queries the
+		// *consumable* data resource, which has no cash items, so a 530 item would
+		// fall through to ConsumeBare and be destroyed with no effect applied.
+		// Deliberately NOT in usesStandardConsumer — ConsumeStandard hard-codes
+		// inventory2.TypeValueUse and fetches from the same consumable resource.
+		itemConsumer = ConsumeMorphCoupon(transactionId, characterId, slot, itemId)
 	} else if ci, derr := p.cdp.GetById(uint32(itemId)); derr == nil && validateRewardTable(ci.Rewards()) == nil {
 		// Reward-box (random reward) item arriving through the generic
 		// item-use request. This is the path taken on client versions that
@@ -301,7 +319,7 @@ func (p *ProcessorImpl) RequestItemConsume(c channel.Model, characterId uint32, 
 
 	_, err := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
 
-	err = p.cpp.RequestReserve(transactionId, characterId, it, []compartment.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: quantity}})
+	err = p.cpp.RequestReserve(transactionId, characterId, it, 30*time.Second, []compartment.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: quantity}})
 	if err != nil {
 		return err
 	}
@@ -335,7 +353,7 @@ func (p *ProcessorImpl) RequestFeed(worldId world.Id, characterId uint32, slot i
 		return err
 	}
 
-	return p.cpp.RequestReserve(transactionId, characterId, it, []compartment.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: 1}})
+	return p.cpp.RequestReserve(transactionId, characterId, it, 30*time.Second, []compartment.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: 1}})
 }
 
 // ConsumeFeed commits the reserved revitalizer and, on success, emits the
@@ -371,6 +389,9 @@ func (p *ProcessorImpl) ConsumeError(characterId uint32, transactionId uuid.UUID
 	if errors.Is(err, ErrPetCannotConsume) {
 		errorType = consumable.ErrorTypePetCannotConsume
 	}
+	if errors.Is(err, ErrPetCannotLearn) {
+		errorType = consumable.ErrorTypePetCannotLearn
+	}
 
 	cErr = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ErrorEventProvider(ts.Id(characterId), errorType))
 	if cErr != nil {
@@ -394,6 +415,45 @@ func ConsumeBare(transactionId uuid.UUID, characterId uint32, slot int16, itemId
 				return p.ConsumeError(characterId, transactionId, inventoryType, slot, err)
 			}
 			l.Debugf("Character [%d] bare-consumed item [%d] from slot [%d] (transaction [%s]).", characterId, itemId, slot, transactionId.String())
+			return nil
+		}
+	}
+}
+
+// ConsumeMonsterCard commits a reserved monster card (classification 238) and,
+// on success, emits MONSTER_BOOK.CARD_PICKED_UP so the card registers in the
+// character's monster book.
+//
+// Cards normally never reach the inventory — atlas-inventory's consume-on-pickup
+// divert registers them straight off the field drop. A card that did land in the
+// inventory (a pickup predating the consumeOnPickup parse fix, a GM grant, a
+// trade) is still usable from the USE tab, and without this branch the request
+// fell through to ConsumeBare: the card was destroyed and nothing registered.
+//
+// The card is consumed unconditionally, including when atlas-monster-book
+// rejects it as a duplicate — inventory-resident cards are the exception, not
+// the norm, and a consume-always path keeps this a single fire-and-forget emit
+// rather than a book round-trip inside the reservation window.
+func ConsumeMonsterCard(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id, inventoryType inventory2.Type) ItemConsumer {
+	return func(l logrus.FieldLogger) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			p := NewProcessor(l, ctx)
+			if err := compartment.NewProcessor(l, ctx).ConsumeItem(characterId, inventoryType, transactionId, slot); err != nil {
+				return p.ConsumeError(characterId, transactionId, inventoryType, slot, err)
+			}
+
+			t, err := tenant.FromContext(ctx)()
+			if err != nil {
+				l.WithError(err).Errorf("Character [%d] consumed monster card [%d] but tenant is absent from context; the card will not register.", characterId, itemId)
+				return err
+			}
+
+			err = producer.ProviderImpl(l)(ctx)(monsterbook.EnvCommandTopic)(MonsterBookCardPickedUpCommandProvider(t.Id(), characterId, transactionId, uint32(itemId)))
+			if err != nil {
+				l.WithError(err).Errorf("Character [%d] consumed monster card [%d] but MONSTER_BOOK.CARD_PICKED_UP emission failed; the card will not register.", characterId, itemId)
+				return err
+			}
+			l.Debugf("Character [%d] consumed monster card [%d] from slot [%d] (transaction [%s]).", characterId, itemId, slot, transactionId.String())
 			return nil
 		}
 	}
@@ -497,7 +557,7 @@ func ConsumePetFood(transactionId uuid.UUID, characterId uint32, slot int16, ite
 				inc = byte(val)
 			}
 
-			err = pp.AwardFullness(characterId, pe.Id(), inc)
+			err = pp.AwardFullness(characterId, uint32(pe.Id()), inc)
 			if err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -536,7 +596,7 @@ func ConsumeCashPetFood(transactionId uuid.UUID, characterId uint32, slot int16,
 				inc = byte(val)
 			}
 
-			err = pp.AwardFullness(characterId, pe.Id(), inc)
+			err = pp.AwardFullness(characterId, uint32(pe.Id()), inc)
 			if err != nil {
 				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -544,6 +604,51 @@ func ConsumeCashPetFood(transactionId uuid.UUID, characterId uint32, slot int16,
 			err = cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
 			if err != nil {
 				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+			return nil
+		}
+	}
+}
+
+// ConsumePetSkillPouch applies a 0519 pet skill pouch: validates the wire
+// petId against ownership and spawn state, emits SET_SKILL for each skill key
+// the item's data carries (add=grant, add=0=remove), then commits the cash
+// reservation. Skill keys are data-driven from item WZ attributes — never
+// hardcoded per item id.
+func ConsumePetSkillPouch(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id, petId uint64) ItemConsumer {
+	return func(l logrus.FieldLogger) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			p := NewProcessor(l, ctx)
+			pp := pet.NewProcessor(l, ctx)
+			cpp := compartment.NewProcessor(l, ctx)
+
+			if petId == 0 || petId > math.MaxUint32 {
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueCash, slot, ErrPetCannotLearn)
+			}
+
+			ci, err := cash.NewProcessor(l, ctx).GetById(uint32(itemId))
+			if err != nil {
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueCash, slot, err)
+			}
+			skills := ci.PetSkills()
+			if len(skills) == 0 {
+				l.Warnf("Cash item [%d] is classification 519 but carries no pet skill keys; data missing or stale ingest.", itemId)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueCash, slot, errors.New("pet skill data missing"))
+			}
+
+			pe, err := pp.GetById(petId)
+			if err != nil || pe.OwnerId() != characterId || !pet.Spawned(pe) {
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueCash, slot, ErrPetCannotLearn)
+			}
+
+			for _, sk := range skills {
+				if err := pp.SetSkill(characterId, uint32(petId), sk, ci.PetSkillAdd()); err != nil {
+					return p.ConsumeError(characterId, transactionId, inventory2.TypeValueCash, slot, err)
+				}
+			}
+
+			if err := cpp.ConsumeItem(characterId, inventory2.TypeValueCash, transactionId, slot); err != nil {
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueCash, slot, err)
 			}
 			return nil
 		}
@@ -657,7 +762,7 @@ func (p *ProcessorImpl) RequestScroll(characterId uint32, scrollSlot int16, equi
 	handler := compartment.Consume(ConsumeScroll(transactionId, characterId, scrollItem, equipSlot, whiteScrollItem, legendarySpirit))
 	_, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
 
-	err = cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueUse, reserves)
+	err = cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueUse, 30*time.Second, reserves)
 	if err != nil {
 		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, err)
 	}
@@ -1022,7 +1127,7 @@ func (p *ProcessorImpl) RequestItemReward(characterId uint32, itemId item2.Id, s
 		return p.rewardError(characterId, err)
 	}
 
-	err = p.cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueUse, []compartment.Reserves{{Slot: source, ItemId: uint32(itemId), Quantity: 1}})
+	err = p.cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueUse, 30*time.Second, []compartment.Reserves{{Slot: source, ItemId: uint32(itemId), Quantity: 1}})
 	if err != nil {
 		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, source, err)
 	}
@@ -1302,7 +1407,7 @@ func (p *ProcessorImpl) RequestViciousHammer(characterId uint32, hammerSlot int1
 	handler := compartment.Consume(ConsumeViciousHammer(transactionId, characterId, hammer, equipSlot))
 	_, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
 
-	err = p.cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueCash, []compartment.Reserves{{
+	err = p.cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueCash, 30*time.Second, []compartment.Reserves{{
 		Slot:     hammerSlot,
 		ItemId:   hammer.TemplateId(),
 		Quantity: 1,

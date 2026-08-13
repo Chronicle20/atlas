@@ -8,52 +8,59 @@ import (
 )
 
 type RestModel struct {
-	WeaponAttack         int16              `json:"weaponAttack"`
-	MagicAttack          int16              `json:"magicAttack"`
-	WeaponDefense        int16              `json:"weaponDefense"`
-	MagicDefense         int16              `json:"magicDefense"`
-	Accuracy             int16              `json:"accuracy"`
-	Avoidability         int16              `json:"avoidability"`
-	Speed                int16              `json:"speed"`
-	Jump                 int16              `json:"jump"`
-	Hp                   uint16             `json:"hp"`
-	Mp                   uint16             `json:"mp"`
-	HPR                  float64            `json:"hpR"`
-	MPR                  float64            `json:"mpR"`
-	MHPRRate             uint16             `json:"MHPRRate"`
-	MMPRRate             uint16             `json:"MMPRRate"`
-	MobSkill             uint16             `json:"mobSkill"`
-	MobSkillLevel        uint16             `json:"mobSkillLevel"`
-	MHPR                 byte               `json:"mhpr"`
-	MMPR                 byte               `json:"mmpr"`
-	HPConsume            uint16             `json:"HPConsume"`
-	MPConsume            uint16             `json:"MPConsume"`
-	Duration             int32              `json:"duration"`
-	Target               uint32             `json:"target"`
-	Barrier              int32              `json:"barrier"`
-	Mob                  uint32             `json:"mob"`
-	OverTime             bool               `json:"overTime"`
-	RepeatEffect         bool               `json:"repeatEffect"`
-	MoveTo               int32              `json:"moveTo"`
-	CP                   uint32             `json:"cp"`
-	NuffSkill            uint32             `json:"nuffSkill"`
-	Skill                bool               `json:"skill"`
-	X                    int16              `json:"x"`
-	Y                    int16              `json:"y"`
-	MobCount             uint32             `json:"mobCount"`
-	MoneyConsume         uint32             `json:"moneyConsume"`
-	Cooldown             uint32             `json:"cooldown"`
-	MorphId              uint32             `json:"morphId"`
-	Ghost                uint32             `json:"ghost"`
-	Fatigue              uint32             `json:"fatigue"`
-	Berserk              uint32             `json:"berserk"`
-	Booster              uint32             `json:"booster"`
-	Prop                 float64            `json:"prop"`
-	ItemConsume          uint32             `json:"itemConsume"`
-	ItemConsumeAmount    uint32             `json:"itemConsumeAmount"`
-	Damage               uint32             `json:"damage"`
-	AttackCount          uint32             `json:"attackCount"`
-	FixDamage            int32              `json:"fixDamage"`
+	WeaponAttack      int16   `json:"weaponAttack"`
+	MagicAttack       int16   `json:"magicAttack"`
+	WeaponDefense     int16   `json:"weaponDefense"`
+	MagicDefense      int16   `json:"magicDefense"`
+	Accuracy          int16   `json:"accuracy"`
+	Avoidability      int16   `json:"avoidability"`
+	Speed             int16   `json:"speed"`
+	Jump              int16   `json:"jump"`
+	Hp                uint16  `json:"hp"`
+	Mp                uint16  `json:"mp"`
+	HPR               float64 `json:"hpR"`
+	MPR               float64 `json:"mpR"`
+	MHPRRate          uint16  `json:"MHPRRate"`
+	MMPRRate          uint16  `json:"MMPRRate"`
+	MobSkill          uint16  `json:"mobSkill"`
+	MobSkillLevel     uint16  `json:"mobSkillLevel"`
+	MHPR              byte    `json:"mhpr"`
+	MMPR              byte    `json:"mmpr"`
+	HPConsume         uint16  `json:"HPConsume"`
+	MPConsume         uint16  `json:"MPConsume"`
+	Duration          int32   `json:"duration"`
+	Target            uint32  `json:"target"`
+	Barrier           int32   `json:"barrier"`
+	Mob               uint32  `json:"mob"`
+	OverTime          bool    `json:"overTime"`
+	RepeatEffect      bool    `json:"repeatEffect"`
+	MoveTo            int32   `json:"moveTo"`
+	CP                uint32  `json:"cp"`
+	NuffSkill         uint32  `json:"nuffSkill"`
+	Skill             bool    `json:"skill"`
+	X                 int16   `json:"x"`
+	Y                 int16   `json:"y"`
+	MobCount          uint32  `json:"mobCount"`
+	Range             int32   `json:"range"`
+	MoneyConsume      uint32  `json:"moneyConsume"`
+	Cooldown          uint32  `json:"cooldown"`
+	MorphId           uint32  `json:"morphId"`
+	Ghost             uint32  `json:"ghost"`
+	Fatigue           uint32  `json:"fatigue"`
+	Berserk           uint32  `json:"berserk"`
+	Booster           uint32  `json:"booster"`
+	Prop              float64 `json:"prop"`
+	ItemConsume       uint32  `json:"itemConsume"`
+	ItemConsumeAmount uint32  `json:"itemConsumeAmount"`
+	Damage            uint32  `json:"damage"`
+	AttackCount       uint32  `json:"attackCount"`
+	FixDamage         int32   `json:"fixDamage"`
+	// Dot is the raw per-tick DoT magnitude. DotInterval and DotTime are
+	// MILLISECONDS -- atlas-data converts from WZ seconds at its reader
+	// (task-200 FR-1.2). Do not re-scale.
+	Dot                  int32              `json:"dot"`
+	DotInterval          int32              `json:"dotInterval"`
+	DotTime              int32              `json:"dotTime"`
 	LT                   *PointRestModel    `json:"lt,omitempty"`
 	RB                   *PointRestModel    `json:"rb,omitempty"`
 	BulletCount          uint16             `json:"bulletCount"`
@@ -114,6 +121,7 @@ func Extract(rm RestModel) (Model, error) {
 		x:                    rm.X,
 		y:                    rm.Y,
 		mobCount:             rm.MobCount,
+		rangeValue:           rm.Range,
 		moneyCon:             rm.MoneyConsume,
 		cooldown:             rm.Cooldown,
 		morphId:              rm.MorphId,
@@ -127,6 +135,9 @@ func Extract(rm RestModel) (Model, error) {
 		damage:               rm.Damage,
 		attackCount:          rm.AttackCount,
 		fixDamage:            rm.FixDamage,
+		dot:                  rm.Dot,
+		dotInterval:          rm.DotInterval,
+		dotTime:              rm.DotTime,
 		bulletCount:          rm.BulletCount,
 		bulletConsume:        rm.BulletConsume,
 		lt:                   lt,

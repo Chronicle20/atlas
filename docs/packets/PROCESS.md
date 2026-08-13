@@ -35,11 +35,11 @@ playbook — it re-checks a standing column instead of standing one up:
 
 ## Version set
 
-The coverage matrix tracks **9** client versions, in this column order (source:
+The coverage matrix tracks **10** client versions, in this column order (source:
 `matrix.VersionKeys` in `tools/packet-audit/internal/matrix/model.go`):
 
 `gms_v48`, `gms_v61`, `gms_v72`, `gms_v79`, `gms_v83`, `gms_v84`, `gms_v87`,
-`gms_v95`, `jms_v185`.
+`gms_v92`, `gms_v95`, `jms_v185`.
 
 Each has a registry (`docs/packets/registry/<key>.yaml`), an IDA export
 (`docs/packets/ida-exports/<key>.json`; `jms_v185` uses `gms_jms_185.json`), a
@@ -99,7 +99,7 @@ to disagree with them.
 
 ```yaml
 # packet-process-facts
-version_count: 9
+version_count: 10
 version_keys:
   - gms_v48
   - gms_v61
@@ -108,6 +108,7 @@ version_keys:
   - gms_v83
   - gms_v84
   - gms_v87
+  - gms_v92
   - gms_v95
   - jms_v185
 dispatcher_lint_baseline_families: []   # docs/packets/dispatcher-lint-baseline.yaml
@@ -144,7 +145,7 @@ Schema (`docs/tasks/<task>/coverage-manifest.yaml`):
 ops:                 # packets this task adds/changes coverage for.
   - CHARACTER_SPAWN                        # an op name (status.json `op`), OR
   - character/clientbound/CharacterSpawn   # a packet path (status.json `packet`)
-versions:            # version keys the task targets (subset of the 9).
+versions:            # version keys the task targets (subset of the 10).
   - gms_v83
   - gms_v84
 fields:              # OPTIONAL free-text notes of the specific gated fields touched.

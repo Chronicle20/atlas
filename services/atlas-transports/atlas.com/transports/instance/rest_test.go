@@ -5,10 +5,33 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
+
+func TestTransformRoute_PopulatesSecondsFields(t *testing.T) {
+	route, err := NewRouteBuilder("seconds-route").
+		SetStartMapId(_map.Id(100000000)).
+		SetTransitMapIds([]_map.Id{100000100}).
+		SetDestinationMapId(_map.Id(100000200)).
+		SetCapacity(5).
+		SetBoardingWindow(90 * time.Second).
+		SetTravelDuration(3 * time.Minute).
+		Build()
+
+	require.NoError(t, err)
+
+	rm, err := TransformRoute(route)
+	require.NoError(t, err)
+
+	assert.Equal(t, uint32(90), rm.BoardingWindowSeconds)
+	assert.Equal(t, uint32(180), rm.TravelDurationSeconds)
+	// Legacy nanosecond fields are untouched.
+	assert.Equal(t, 90*time.Second, rm.BoardingWindow)
+	assert.Equal(t, 3*time.Minute, rm.TravelDuration)
+}
 
 // TransformRoute is the layer-4 projection from the domain RouteModel to the
 // debug REST resource. None of the package's other tests call it directly,

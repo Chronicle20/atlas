@@ -16,7 +16,7 @@ Represents a scheduled transport route with scheduling configuration.
 | name | string | Route name |
 | startMapId | map.Id | Starting map ID |
 | stagingMapId | map.Id | Staging map ID (boarding area) |
-| enRouteMapIds | []map.Id | Maps traversed during transit |
+| enRouteMapIds | []map.Id | Parallel maps that hold characters during transit — **not** a sequence. Departure warps the staging map into `enRouteMapIds[0]` only; on arrival every entry is drained to the destination. |
 | destinationMapId | map.Id | Destination map ID |
 | observationMapId | map.Id | Map for observing transport status |
 | state | RouteState | Current route state |
@@ -25,6 +25,25 @@ Represents a scheduled transport route with scheduling configuration.
 | preDepartureDuration | time.Duration | Duration between boarding close and departure |
 | travelDuration | time.Duration | Duration of transit |
 | cycleInterval | time.Duration | Interval between trips |
+
+**Transition (transport/model.go)**
+
+`Model.Evaluate(now)` returns a `Transition` — the state the route is in, the
+state it moves to next, and `NextAt`, the absolute instant of that move.
+`processStateChange` is a thin wrapper over `Evaluate(now).State`, so the state
+machine has exactly one implementation.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| State | RouteState | The state at `now` |
+| NextState | RouteState | The state at `NextAt`; empty when `State` is `out_of_service` |
+| NextAt | time.Time | Zero when `State` is `out_of_service` |
+
+Schedule comparisons are time-of-day only (the schedule is computed once per
+reconcile and carries that day's date). `NextAt` is the governing time-of-day
+boundary projected onto the first instant strictly after `now`, in `now`'s own
+date and location, which is what makes it safe to serialise as an absolute
+timestamp.
 
 ### SharedVesselModel (transport/model.go)
 
@@ -40,7 +59,10 @@ Represents a shared vessel operating on two routes alternately.
 
 ### TripScheduleModel (transport/model.go)
 
-Represents a single scheduled trip.
+Represents a single scheduled trip. `boardingOpen`, `boardingClosed`,
+`departure`, and `arrival` carry the date of the day the schedule was
+computed; only their time-of-day component is meaningful (see the Transition
+note above).
 
 | Field | Type | Description |
 |-------|------|-------------|

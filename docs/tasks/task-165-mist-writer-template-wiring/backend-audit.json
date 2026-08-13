@@ -1,0 +1,90 @@
+{
+  "service": "atlas-packet (field/clientbound) + atlas-channel (main.go wiring)",
+  "path": "libs/atlas-packet/field/clientbound, services/atlas-channel/atlas.com/channel",
+  "date": "2026-08-07",
+  "build": "pass",
+  "testsPassed": 5,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "scope": [
+    "libs/atlas-packet/field/clientbound/affected_area_created.go",
+    "libs/atlas-packet/field/clientbound/affected_area_removed.go",
+    "libs/atlas-packet/field/clientbound/affected_area_test.go",
+    "services/atlas-channel/atlas.com/channel/main.go"
+  ],
+  "domains": [
+    {
+      "name": "field/clientbound (packet-codec library package, no model.go/processor.go)",
+      "type": "support",
+      "checks": [
+        {
+          "id": "DOM-25",
+          "name": "Client wire values are config-resolved, never Go literals",
+          "status": "pass",
+          "evidence": "affected_area_created.go:19-21,117-118,129-130,162 only contain '+0x30'/'+0x48' memory-offset references inside comments; affected_area_test.go:78-86,238-246 ida= addresses are comment-only tags; wire body built purely from struct fields via response.Writer, no hardcoded opcode byte anywhere in the diff"
+        },
+        {
+          "id": "version-gating-idiom",
+          "name": "Uses MajorAtLeast/IsRegion, not raw MajorVersion() > N",
+          "status": "pass",
+          "evidence": "affected_area_created.go:119,122,126,132,134 all use t.IsRegion(\"GMS\")/t.MajorAtLeast(N); grep for 'MajorVersion() [><=]' returns zero matches; libs/atlas-tenant/tenant.go:88,93 confirm real exported methods"
+        },
+        {
+          "id": "multitenancy-context",
+          "name": "Tenant obtained from context, not threaded/cached",
+          "status": "pass",
+          "evidence": "affected_area_created.go:113 t := tenant.MustFromContext(ctx) called fresh inside Encode; struct at :55-70 holds no tenant/context field"
+        },
+        {
+          "id": "immutability",
+          "name": "Packet model immutable; Encode closure is pure over bound fields",
+          "status": "pass",
+          "evidence": "affected_area_created.go:56-69 unexported fields, no setters; :111 value receiver func (m AffectedAreaCreated) Encode; closure at :137-169 only reads m.* and appends to local w"
+        },
+        {
+          "id": "closure-writer-reuse",
+          "name": "Encoder writer is not reset per closure invocation",
+          "status": "warn",
+          "evidence": "affected_area_created.go:112 w := response.NewWriter(l) declared outside returned closure; pre-existing idiom unchanged by this diff (confirmed via git diff pre-image), shared by sibling writers, not introduced by task-165"
+        },
+        {
+          "id": "DOM-26",
+          "name": "No bare go statements introduced",
+          "status": "pass",
+          "evidence": "grep -nE '^\\s*go (func|[A-Za-z_])' over affected_area_created.go, affected_area_removed.go, main.go returns zero matches"
+        },
+        {
+          "id": "DOM-12-analog",
+          "name": "No os.Getenv introduced",
+          "status": "pass",
+          "evidence": "grep -n os.Getenv over affected_area_created.go, affected_area_removed.go returns zero matches"
+        },
+        {
+          "id": "DOM-21",
+          "name": "No duplication of atlas-constants types",
+          "status": "pass",
+          "evidence": "trailingWidth int (affected_area_created.go:23-29) is a private 3-value byte-width selector local to this codec, no equivalent in libs/atlas-constants"
+        }
+      ]
+    },
+    {
+      "name": "services/atlas-channel main.go (writer registration list)",
+      "type": "support",
+      "checks": [
+        {
+          "id": "writer-registration",
+          "name": "New writer consts registered by symbolic name",
+          "status": "pass",
+          "evidence": "main.go:719-720 fieldcb.AffectedAreaCreatedWriter, fieldcb.AffectedAreaRemovedWriter added to produceWriters() slice, referencing exported consts at affected_area_created.go:14 and affected_area_removed.go:13; additive-only +2 line diff"
+        }
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "closure-writer-reuse: libs/atlas-packet/field/clientbound/affected_area_created.go:112 declares *response.Writer outside the returned closure (pre-existing idiom, not introduced by this branch) — worth a fleet-wide follow-up if Encode's returned closure is ever cached/reused across calls"
+  ],
+  "notedNotAFinding": [
+    "Mist Kafka consumer (services/atlas-channel/atlas.com/channel/kafka/consumer/mist/consumer.go) passes phase=0 while the client derives expiry from phase*100+now — outside this branch's Go diff, already tracked as a follow-up per task brief"
+  ]
+}

@@ -272,23 +272,55 @@
   direction: clientbound
   opcode: 42
   fname: CWvsContext::OnClaimResult
+  packet: report/clientbound/ClaimResultSuccess
   provenance: ida-discovered
   ida:
     address: 9779200
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnClaimResult
+    @0x9718f4 (GMS_v79_1_DEVM.exe.i64, session 1438cecd), resolved via the
+    opcode dispatch table CWvsContext::OnPacket case 42 @0x953954. Decode1(mode)
+    @0x971909. mode==2 (Decode1 hasRemaining @0x971988, Decode4 remaining
+    @0x971992) is the only mode that reads beyond the mode byte --
+    ClaimResultSuccess. Every other reachable mode is a bare mode byte with no
+    further CInPacket reads -- ClaimResultNotice: 3->StringPool 3364 @0x971970,
+    0x41->3366 @0x97195a, 0x42->3367 @0x971944, 0x43->3368 @0x971aa2,
+    0x44->3369 @0x971b76, 0x45->3370 @0x971b62, 0x47->3375 @0x971aed (its own
+    CHATLOG_ADD+Notice arm), 0x48->3377 @0x971ad3. Modes 0, 1, 0x46, and every
+    other unlisted byte value fall through to an early return with no display
+    (still only the 1-byte mode already consumed by Decode1) -- matches the
+    Atlas modeset (3, 0x41-0x45, 0x47, 0x48) and the v72 structural shape
+    exactly (only the StringPool ids differ). packet: links to
+    ClaimResultSuccess; ClaimResultNotice is covered by the same decompile pass
+    (see claim_result_test.go) but is not independently registry-linked since
+    the op row carries a single packet field.'
 - op: CLAIM_AVAILABLE_TIME
   direction: clientbound
   opcode: 43
   fname: CWvsContext::OnSetClaimSvrAvailableTime
+  packet: report/clientbound/ClaimAvailableTime
   provenance: ida-discovered
   ida:
     address: 9779200
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnSetClaimSvrAvailableTime
+    @0x971b9b (GMS_v79_1_DEVM.exe.i64, session 1438cecd), resolved via the
+    opcode dispatch table CWvsContext::OnPacket case 43 @0x953961. Decode1(a2)
+    @0x971bac -> openHour (v3, stored at this+12116), Decode1(a2) @0x971bae ->
+    closeHour (result, stored at this+12117). Byte-identical to the Atlas
+    ClaimAvailableTime codec (2 bytes, no version branch).'
 - op: CLAIM_STATUS_CHANGED
   direction: clientbound
   opcode: 44
   fname: CWvsContext::OnClaimSvrStatusChanged
+  packet: report/clientbound/ClaimSvrStatusChanged
   provenance: ida-discovered
   ida:
     address: 9779200
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnClaimSvrStatusChanged
+    @0x971bc4 (GMS_v79_1_DEVM.exe.i64, session 1438cecd), resolved via the
+    opcode dispatch table CWvsContext::OnPacket case 44 @0x95396e. Decode1(a2)
+    @0x971bd4, cast nonzero->bool, stored at this+12120 (m_bClaimSvrConnected).
+    Byte-identical to the Atlas ClaimSvrStatusChanged codec (1 byte, no version
+    branch).'
 - op: SET_TAMING_MOB_INFO
   direction: clientbound
   opcode: 45
@@ -347,9 +379,19 @@
   direction: clientbound
   opcode: 52
   fname: CWvsContext::OnSueCharacterResult
+  packet: report/clientbound/SueCharacterResult
   provenance: ida-discovered
   ida:
     address: 9779200
+  note: 'task-145 Task 24 (2026-08-05): live decompile of CWvsContext::OnSueCharacterResult
+    @0x9735a5 (GMS_v79_1_DEVM.exe.i64, session 1438cecd), resolved via the opcode
+    dispatch table CWvsContext::OnPacket case 52 @0x953947. Decode1(a2) @0x9735b6
+    reads a single result byte (v2); v2 then drives a five-way branch (0/1/2/3/else)
+    purely to pick a StringPool notice id (2982/2983/2984/2985/2986) for a local
+    CHATLOG_ADD render, with no further CInPacket reads on any branch. Body is
+    exactly one byte, unconditionally -- byte-identical to the v61/v72 shape
+    already verified (only the opcode moves per-version: 0x34 on v61/v72/v79 vs
+    0x37 on v83+).'
 - op: TRADE_MONEY_LIMIT
   direction: clientbound
   opcode: 54
@@ -1231,6 +1273,7 @@
   direction: clientbound
   opcode: 181
   fname: CUserRemote::OnShowUpgradeTombEffect
+  packet: character/clientbound/ShowUpgradeTombEffect
   provenance: ida-discovered
   ida:
     address: 9211210
@@ -2458,6 +2501,14 @@
   ida:
     address: 6582679
   note: 'reply COutPacket(154); v83 MOB_CRC_KEY_CHANGED_REPLY=164 (d-10).'
+- op: CASH_ITEM_GACHAPON_BUTTON
+  direction: serverbound
+  opcode: 159
+  fname: CUICashItemGachapon::OnButtonClicked
+  packet: cash/serverbound/CashItemGachaponButton
+  provenance: ida-discovered
+  ida:
+    address: 9371046
 - op: PET_CHAT
   direction: serverbound
   opcode: 164
@@ -2506,6 +2557,32 @@
   ida:
     address: 4614123
   note: 'COutPacket(221)+Enc1(0x28=GET_PURCHASE_RECORD)+Enc4; v83 CASHSHOP_OPERATION=229 (d-8). purchase-record arm.'
+- op: COUPON_CODE
+  direction: serverbound
+  opcode: 222
+  fname: CCashShop::OnStatusCoupon
+  packet: cash/serverbound/CouponCode
+  provenance: manual
+  note: >-
+    task-206: the previous registry absence (and the matrix n-a) was
+    "nobody looked", not client-absence. CCashShop::OnStatusCoupon @ 0x46aa3e
+    builds COutPacket(0xDE) at 0x46aae4 (push 0DEh @ 0x46aadc =
+    CASHSHOP_OPERATION 221 + 1) and sends it at 0x46ab4d. Body is three
+    EncodeStr and no Encode1: EncodeStr(characterId) @ 0x46ab01,
+    EncodeStr(couponCode) @ 0x46ab1a, then EncodeStr(third) @ 0x46ab3e
+    guarded on characterId being non-empty (dead, characterId is never
+    populated) — the same shape as gms_v83. Empty codes are filtered client
+    side ("Please enter the coupon code." @ 0xabed1c, DoModal @ 0x46aaca).
+    See docs/tasks/task-206-cash-shop-coupon-codes/derivation.md.
+- op: CLAIM_REQUEST
+  direction: serverbound
+  opcode: 104
+  fname: CWvsContext::SendClaimRequest
+  packet: report/serverbound/ClaimRequest
+  provenance: ida-discovered
+  ida:
+    address: 0x9711ff
+  note: 'task-145 Task 23b (2026-08-05): registry correction -- the send-site was already named in the shipped v79 IDB (func_query name_regex confirmed ?SendClaimRequest@CWvsContext@@... @0x9711ff, size 0x6bf, identical to the v72@0x91f2b4 and v83@0xa2719c twins) but the registry had zero CLAIM_REQUEST rows for this version, so STATUS.md rendered the cell n-a (empty) instead of unimplemented -- a false negative, not a real absence. Live decompile of 0x9711ff confirms COutPacket::COutPacket((COutPacket*)v48, 104) @0x971694 (opcode 104 decimal / 0x68), followed by Encode1(v66=bChatClaim) @0x9716a3, EncodeStr(targetName) @0x9716bc, Encode1(v58=reasonType) @0x9716c7, EncodeStr(description) @0x9716e0, and a guarded EncodeStr(chatLog) @0x971758 gated on the same v66 (bChatClaim) that fed the first Encode1 -- the structural signature confirmed. CClientSocket::SendPacket @0x971773. Byte-for-byte match to the v83/v95 shape; needs no version branch. task-145 Task 24 (2026-08-05): independently re-decompiled 0x9711ff this pass (GMS_v79_1_DEVM.exe.i64, session 1438cecd) rather than trusting the Task-23b note blindly -- confirms every field/address above exactly. Added the `packet:` link to report/serverbound/ClaimRequest. Confirmed routed in template_gms_79_1.json (opCode 0x68, handler ClaimRequest, validator LoggedInValidator).'
 - op: QUEST_ACTION
   direction: serverbound
   opcode: 105
@@ -2692,6 +2769,15 @@
   ida:
     address: 9889222
   note: 'COutPacket(49)+Enc4(emotion); v83 FACE_EXPRESSION=0x33=51 (d-2).'
+- op: USE_DEATHITEM
+  direction: serverbound
+  opcode: 51
+  fname: CUserLocal::RequestUpgradeTombEffect
+  packet: character/serverbound/UseDeathItem
+  provenance: ida-discovered
+  ida:
+    address: 9121776
+  note: 'v79 CUserLocal::RequestUpgradeTombEffect @0x8b2ff0 builds COutPacket(51) and encodes itemId/x/y; renamed from sub_8b2ff0 during task-210. (task-210)'
 - op: USE_TELEPORT_ROCK
   direction: serverbound
   opcode: 82
@@ -2846,6 +2932,13 @@
   ida:
     address: 9790282
   note: 'v79 CWvsContext::SendConsumeCashItemUseRequest COutPacket(77); push 4Dh;a2 @0x9563b3. v83 USE_CASH_ITEM=0x4f=79 (d-2). delta doc serverbound (ida-read).'
+- op: USE_CATCH_ITEM
+  direction: serverbound
+  opcode: 79
+  fname: CWvsContext::SendBridleItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 9787621
 - op: USE_SKILL_BOOK
   direction: serverbound
   opcode: 80

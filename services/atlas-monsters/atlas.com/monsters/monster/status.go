@@ -11,6 +11,45 @@ const (
 	SourceTypePlayerSkill  = "PLAYER_SKILL"
 )
 
+const (
+	// StatusPoison is the damage-over-time status whose magnitude is the
+	// per-tick damage. Unlike most statuses its value is NOT supplied by the
+	// caster: it is derived per-monster at apply time (see
+	// ResolvePoisonDamage / ApplyStatusEffect) because it depends on the
+	// target's max HP.
+	StatusPoison = "POISON"
+	// StatusVenom carries its per-tick damage directly in the magnitude the
+	// caster sends.
+	StatusVenom = "VENOM"
+)
+
+// MaxPoisonDamage caps a single poison tick. The client renders the tick from
+// the signed 16-bit magnitude carried in the monster temporary-stat packet, so
+// a larger value cannot be transmitted faithfully.
+const MaxPoisonDamage int32 = 32767
+
+// ResolvePoisonDamage returns the per-tick poison magnitude for a monster with
+// maxHp poisoned by a skill at skillLevel: ceil(maxHp / (70 - skillLevel)),
+// capped at MaxPoisonDamage.
+//
+// The magnitude is resolved ONCE, at apply time, and stored in the status
+// effect's statuses map. That single value then serves both consumers: the
+// damage the tick applies (StatusExpirationTask.calculatePoisonDamage) and the
+// number the client renders for itself from the temporary-stat packet. Those
+// two must not be computed independently or they will drift.
+func ResolvePoisonDamage(maxHp uint32, skillLevel uint32) int32 {
+	divisor := int64(70) - int64(skillLevel)
+	if divisor <= 0 {
+		divisor = 1
+	}
+	// Integer ceiling division.
+	d := (int64(maxHp) + divisor - 1) / divisor
+	if d > int64(MaxPoisonDamage) {
+		return MaxPoisonDamage
+	}
+	return int32(d)
+}
+
 type StatusEffect struct {
 	effectId          uuid.UUID
 	sourceType        string
@@ -135,6 +174,19 @@ func (s StatusEffect) ShouldTick() bool {
 
 func (s StatusEffect) WithLastTick(t time.Time) StatusEffect {
 	s.lastTick = t
+	return s
+}
+
+// WithStatus returns a copy carrying statusType at the given magnitude. The
+// statuses map is copied rather than mutated: the receiver is shared with
+// whatever built it, and StatusEffect is treated as immutable everywhere else.
+func (s StatusEffect) WithStatus(statusType string, amount int32) StatusEffect {
+	next := make(map[string]int32, len(s.statuses)+1)
+	for k, v := range s.statuses {
+		next[k] = v
+	}
+	next[statusType] = amount
+	s.statuses = next
 	return s
 }
 

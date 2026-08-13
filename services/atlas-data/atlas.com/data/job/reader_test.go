@@ -90,12 +90,18 @@ func TestRead_EmptySkillNode_ProducesEmptyList(t *testing.T) {
 	require.Empty(t, ms[0].Skills)
 }
 
-func TestRead_MissingSkillNode_ProducesEmptyList(t *testing.T) {
+// TestRead_MissingSkillNode_ProducesNoModel is the task-202 FR-1.1 fix. A
+// numeric image with NO `skill` child is not a job document at all --
+// Skill.wz/Dragon/2200.img is an Evan/Mir ANIMATION image that shares the
+// real job image's name, and emitting an empty model for it let the
+// document upsert (last-write-wins on (tenant, type, document_id)) blank
+// the real 2200 document. Contrast TestRead_EmptySkillNode_ProducesEmptyList
+// below: a PRESENT but empty `skill` node is a real job with zero skills
+// (Cygnus 4th job, 1112.img) and must still produce a document. These two
+// cases differ only on node presence and must never share a helper.
+func TestRead_MissingSkillNode_ProducesNoModel(t *testing.T) {
 	ms := readAll(t, noSkillNodeXML)
-	require.Len(t, ms, 1)
-	require.Equal(t, uint32(900), ms[0].Id)
-	require.NotNil(t, ms[0].Skills)
-	require.Empty(t, ms[0].Skills)
+	require.Empty(t, ms)
 }
 
 func TestRead_NonNumericImage_ProducesNothingAndNoError(t *testing.T) {

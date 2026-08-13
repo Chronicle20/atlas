@@ -292,6 +292,33 @@ const (
 	ShadowerSmokescreen                       Identity = 4221006
 	ShadowerBoomerangStep                     Identity = 4221007
 	ShadowerHerosWill                         Identity = 4221008
+	BladeRecruitKataraMastery                 Identity = 4300000
+	BladeRecruitTripleStab                    Identity = 4301001
+	BladeRecruitKataraBooster                 Identity = 4301002
+	BladeAcolyteEndure                        Identity = 4310000
+	BladeAcolyteShadowResistance              Identity = 4310004
+	BladeAcolyteSelfHaste                     Identity = 4311001
+	BladeAcolyteFatalBlow                     Identity = 4311002
+	BladeAcolyteSlashStorm                    Identity = 4311003
+	BladeSpecialistTornadoSpin                Identity = 4321000
+	BladeSpecialistTornadoSpinAttack          Identity = 4321001
+	BladeSpecialistFlashbang                  Identity = 4321002
+	BladeSpecialistFlashJump                  Identity = 4321003
+	BladeLordAdvancedDarkSight                Identity = 4330001
+	BladeLordBloodyStorm                      Identity = 4331000
+	BladeLordMirrorImage                      Identity = 4331002
+	BladeLordOwlSpirit                        Identity = 4331003
+	BladeLordUpperStab                        Identity = 4331004
+	BladeLordFlyingAssaulter                  Identity = 4331005
+	BladeMasterVenom                          Identity = 4340001
+	BladeMasterMapleWarrior                   Identity = 4341000
+	BladeMasterFinalCut                       Identity = 4341002
+	BladeMasterMonsterBomb                    Identity = 4341003
+	BladeMasterSuddenRaid                     Identity = 4341004
+	BladeMasterChainsOfHell                   Identity = 4341005
+	BladeMasterMirroredTarget                 Identity = 4341006
+	BladeMasterThorns                         Identity = 4341007
+	BladeMasterHerosWill                      Identity = 4341008
 	PirateBulletTime                          Identity = 5000000
 	PirateFlashFist                           Identity = 5001001
 	PirateSommersaultKick                     Identity = 5001002
@@ -482,6 +509,7 @@ const (
 	ThunderBreakerStage3Spark                 Identity = 15111006
 	ThunderBreakerStage3SharkWave             Identity = 15111007
 	LegendBlessOfNymph                        Identity = 20000012
+	LegendComboAbility                        Identity = 20000017
 	LegendThreeSnails                         Identity = 20001000
 	LegendRecovery                            Identity = 20001001
 	LegendNimbleFeet                          Identity = 20001002
@@ -862,6 +890,33 @@ var identityNames = map[Identity]string{
 	ShadowerSmokescreen:                       "Shadower Smokescreen",
 	ShadowerBoomerangStep:                     "Shadower Boomerang Step",
 	ShadowerHerosWill:                         "Shadower Heros Will",
+	BladeRecruitKataraMastery:                 "Katara Mastery",
+	BladeRecruitTripleStab:                    "Triple Stab",
+	BladeRecruitKataraBooster:                 "Katara Booster",
+	BladeAcolyteEndure:                        "Endure",
+	BladeAcolyteShadowResistance:              "Shadow Resistance",
+	BladeAcolyteSelfHaste:                     "Self Haste",
+	BladeAcolyteFatalBlow:                     "Fatal Blow",
+	BladeAcolyteSlashStorm:                    "Slash Storm",
+	BladeSpecialistTornadoSpin:                "Tornado Spin",
+	BladeSpecialistTornadoSpinAttack:          "Tornado Spin (Attack)",
+	BladeSpecialistFlashbang:                  "Flashbang",
+	BladeSpecialistFlashJump:                  "Flash Jump",
+	BladeLordAdvancedDarkSight:                "Advanced Dark Sight",
+	BladeLordBloodyStorm:                      "Bloody Storm",
+	BladeLordMirrorImage:                      "Mirror Image",
+	BladeLordOwlSpirit:                        "Owl Spirit",
+	BladeLordUpperStab:                        "Upper Stab",
+	BladeLordFlyingAssaulter:                  "Flying Assaulter",
+	BladeMasterVenom:                          "Venom",
+	BladeMasterMapleWarrior:                   "Maple Warrior",
+	BladeMasterFinalCut:                       "Final Cut",
+	BladeMasterMonsterBomb:                    "Monster Bomb",
+	BladeMasterSuddenRaid:                     "Sudden Raid",
+	BladeMasterChainsOfHell:                   "Chains of Hell",
+	BladeMasterMirroredTarget:                 "Mirrored Target",
+	BladeMasterThorns:                         "Thorns",
+	BladeMasterHerosWill:                      "Hero's Will",
 	PirateBulletTime:                          "Pirate Bullet Time",
 	PirateFlashFist:                           "Pirate Flash Fist",
 	PirateSommersaultKick:                     "Pirate Sommersault Kick",
@@ -1052,6 +1107,7 @@ var identityNames = map[Identity]string{
 	ThunderBreakerStage3Spark:                 "Thunder Breaker Stage3 Spark",
 	ThunderBreakerStage3SharkWave:             "Thunder Breaker Stage3 Shark Wave",
 	LegendBlessOfNymph:                        "Legend Bless Of Nymph",
+	LegendComboAbility:                        "Legend Combo Ability",
 	LegendThreeSnails:                         "Legend Three Snails",
 	LegendRecovery:                            "Legend Recovery",
 	LegendNimbleFeet:                          "Legend Nimble Feet",

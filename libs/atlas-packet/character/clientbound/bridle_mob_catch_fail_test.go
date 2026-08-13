@@ -36,3 +36,27 @@ func TestBridleMobCatchFail(t *testing.T) {
 		})
 	}
 }
+
+// TestBridleMobCatchFailLegacyBytes pins the v61/v72/v79 cells (design.md §3,
+// task-212). Each is byte-identical to the v83 baseline: Decode1 (reason) +
+// Decode4 (itemId) + Decode4 (unused trailing int32), confirmed in the
+// checked-in ida-exports.
+//
+// packet-audit:verify packet=character/clientbound/CharacterBridleMobCatchFail version=gms_v61 ida=0x8307f3
+// packet-audit:verify packet=character/clientbound/CharacterBridleMobCatchFail version=gms_v72 ida=0x902b46
+// packet-audit:verify packet=character/clientbound/CharacterBridleMobCatchFail version=gms_v79 ida=0x953dc2
+func TestBridleMobCatchFailLegacyBytes(t *testing.T) {
+	input := NewBridleMobCatchFail(0x01, 0x00226CA0, 0x00)
+	want := []byte{
+		0x01,                   // reason byte
+		0xA0, 0x6C, 0x22, 0x00, // itemId int32 LE
+		0x00, 0x00, 0x00, 0x00, // unused int32 LE
+	}
+	for _, major := range []uint16{61, 72, 79} {
+		ctx := pt.CreateContext("GMS", major, 1)
+		got := input.Encode(nil, ctx)(nil)
+		if !bytes.Equal(got, want) {
+			t.Errorf("v%d BridleMobCatchFail bytes:\n got % x\nwant % x", major, got, want)
+		}
+	}
+}

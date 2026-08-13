@@ -51,3 +51,59 @@ func Lookup(id skill2.Identity) (Handler, bool) {
 func Unregister(id skill2.Identity) {
 	delete(registry, id)
 }
+
+// AttackCastHandler is the per-skill cast handler invoked from processAttack
+// (character_attack_common.go) for skills the client delivers on an ATTACK
+// packet instead of USE_SKILL.
+//
+// This is a SEPARATE registry from Handler above, and the separation is
+// load-bearing rather than stylistic:
+//
+//   - Some skills are dual-packet. Heal sends a magic-attack packet for the
+//     undead damage AND a use-skill packet for the party heal, so invoking the
+//     Handler registry from both dispatch sites would run Heal's handler twice
+//     per cast.
+//   - The Handler registry doubles as the "this handler owns the HP/MP cost"
+//     signal that makes processAttack skip its generic cost block. An
+//     attack-only skill has no buff-side packet to charge the cost on, so it
+//     must NOT appear in that registry or it would cast for free (task-200:
+//     Poison Mist 2111003 is a `damage`/`attackCount`/`mobCount` attack skill;
+//     the client never sends USE_SKILL for it, so registering it as a Handler
+//     both never fired and silently zeroed its 21+ MP cost).
+//
+// The signature takes the resolved skill id and level directly rather than a
+// packetmodel.SkillUsageInfo: processAttack has an AttackInfo, and
+// synthesizing a SkillUsageInfo would hand handlers zero-valued
+// AffectedMobIds / AffectedPartyMemberBitmap fields that look real.
+type AttackCastHandler func(l logrus.FieldLogger) func(ctx context.Context) func(
+	wp writer.Producer,
+	f field.Model,
+	characterId uint32,
+	skillId skill2.Id,
+	skillLevel byte,
+	e effect.Model,
+) error
+
+// attackCastRegistry is keyed on skill2.Identity for the same version-blind
+// reason as registry above.
+var attackCastRegistry = map[skill2.Identity]AttackCastHandler{}
+
+// RegisterAttackCast installs an AttackCastHandler for the given skill
+// identity. Intended to be called from package init() in per-skill
+// subpackages.
+func RegisterAttackCast(id skill2.Identity, h AttackCastHandler) {
+	attackCastRegistry[id] = h
+}
+
+// LookupAttackCast returns the registered AttackCastHandler for the skill
+// identity, if any.
+func LookupAttackCast(id skill2.Identity) (AttackCastHandler, bool) {
+	h, ok := attackCastRegistry[id]
+	return h, ok
+}
+
+// UnregisterAttackCast removes an AttackCastHandler from the registry.
+// Exposed for tests only; production code should never call this.
+func UnregisterAttackCast(id skill2.Identity) {
+	delete(attackCastRegistry, id)
+}

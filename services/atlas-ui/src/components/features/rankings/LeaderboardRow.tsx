@@ -4,7 +4,7 @@ import { useTenant } from "@/context/tenant-context";
 import { useCharacter } from "@/lib/hooks/api/useCharacters";
 import { useInventory } from "@/lib/hooks/api/useInventory";
 import { OptimizedCharacterRenderer } from "@/components/features/characters/OptimizedCharacterRenderer";
-import { jobName } from "@/lib/jobs/job-advancement-tree";
+import { useJobNameLookup } from "@/lib/hooks/api/useJobGraph";
 import { Badge } from "@/components/ui/badge";
 import type { Asset } from "@/services/api/inventory.service";
 import type { RankingEntry } from "@/services/api/rankings.service";
@@ -33,6 +33,7 @@ export function LeaderboardRow({ entry, view }: LeaderboardRowProps) {
   const rank = view === "overall" ? a.rank : a.jobRank;
   const move = view === "overall" ? a.rankMove : a.jobRankMove;
   const { activeTenant } = useTenant();
+  const jobName = useJobNameLookup();
   // Lazy per-row appearance fetch. Fails open: when the tenant isn't ready
   // yet or the character fetch errors/hasn't resolved, render a neutral
   // placeholder instead of blocking the row's text cells.

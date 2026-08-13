@@ -1,6 +1,10 @@
 package cmd
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestApplyCommentInsertsAboveStruct(t *testing.T) {
 	src := "package x\n\ntype Foo struct {\n\ta byte\n}\n"
@@ -64,5 +68,71 @@ type NotACodec struct{}
 	got := codecStructs(src)
 	if len(got) != 2 {
 		t.Fatalf("got %v, want [Foo Bar]", got)
+	}
+}
+
+func TestReportHasUnresolvedRow(t *testing.T) {
+	tests := []struct {
+		name string
+		rows []struct{ Verdict int }
+		want bool
+	}{
+		{"no rows", nil, false},
+		{"all resolved states", []struct{ Verdict int }{{0}, {1}, {2}, {3}}, false},
+		{"one unresolved row (VerdictUnresolved=4)", []struct{ Verdict int }{{0}, {4}, {2}}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := reportHasUnresolvedRow(tt.rows); got != tt.want {
+				t.Errorf("reportHasUnresolvedRow(%v) = %v, want %v", tt.rows, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestLoadReportFNamesSkipsUnresolvedReport locks in the task-28 fix: a
+// report whose IDA side never actually resolved (diff.VerdictUnresolved,
+// numeric 4) must not win WriterName->IDAName priority, even when it is the
+// ONLY report for that writer. Modeled directly on the real case that
+// motivated the guard: gms_v92/CashItemUseVegaScroll.json is the sole
+// report for that writer and carries a Verdict:4 row; without the skip it
+// would silently overwrite the hand-verified, arm-suffixed
+// "...SendConsumeCashItemUseRequest#VegaScroll" doc comment with a weaker,
+// unsuffixed fname. A refactor that drops the skip should fail this test.
+func TestLoadReportFNamesSkipsUnresolvedReport(t *testing.T) {
+	dir := t.TempDir()
+	writeRawAuditReport(t, dir, "gms_v92", "CashItemUseVegaScroll.json", `{
+		"WriterName": "CashItemUseVegaScroll",
+		"IDAName": "CWvsContext::SendConsumeCashItemUseRequest",
+		"Rows": [{"Verdict": 4}, {"Verdict": 2}]
+	}`)
+	// A normal, fully-resolved report for a different writer must still
+	// resolve normally — the skip must not be over-broad.
+	writeRawAuditReport(t, dir, "gms_v95", "Ping.json", `{
+		"WriterName": "Ping",
+		"IDAName": "CClientSocket::OnAliveReq",
+		"Rows": [{"Verdict": 0}]
+	}`)
+
+	out, err := loadReportFNames(dir)
+	if err != nil {
+		t.Fatalf("loadReportFNames: %v", err)
+	}
+	if got, ok := out["CashItemUseVegaScroll"]; ok {
+		t.Errorf("CashItemUseVegaScroll should have been skipped (unresolved row), but resolved to %q", got)
+	}
+	if got, want := out["Ping"], "CClientSocket::OnAliveReq"; got != want {
+		t.Errorf("Ping fname = %q, want %q", got, want)
+	}
+}
+
+func writeRawAuditReport(t *testing.T, auditsDir, version, filename, content string) {
+	t.Helper()
+	vdir := filepath.Join(auditsDir, version)
+	if err := os.MkdirAll(vdir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(vdir, filename), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }

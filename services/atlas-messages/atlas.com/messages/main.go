@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-messages/chat"
 	"atlas-messages/command"
 	"atlas-messages/command/buff"
 	"atlas-messages/command/character"
@@ -18,6 +19,8 @@ import (
 
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
@@ -28,9 +31,40 @@ const serviceName = "atlas-messages"
 
 var consumerGroupId = consumergroup.Resolve("Messages Service")
 
+// Server carries the JSON:API base URL/prefix used to marshal resource
+// links. /api/chat/history (chat history for atlas-ban report corroboration)
+// is routed through nginx/ingress (deploy/shared/routes.conf) and is
+// reachable at the ingress host WITHOUT AUTHENTICATION today — it exposes
+// captured player chat, including whispers, to anything that can reach that
+// host. Accepted on the basis that API authentication is coming; see
+// docs/tasks/task-145-player-reports/scope-amendment.md Amendment 2. Do not
+// describe this endpoint as server-to-server only.
+type Server struct {
+	baseUrl string
+	prefix  string
+}
+
+func (s Server) GetBaseURL() string {
+	return s.baseUrl
+}
+
+func (s Server) GetPrefix() string {
+	return s.prefix
+}
+
+func GetServer() Server {
+	return Server{
+		baseUrl: "",
+		prefix:  "/api/",
+	}
+}
+
 func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
+
+	rc := atlasredis.Connect(l)
+	chat.InitRegistry(rc)
 
 	command.Registry().Add(help.HelpCommandProducer)
 	command.Registry().Add(_map.WarpCommandProducer)
@@ -71,6 +105,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
+		AddRouteInitializer(chat.InitResource(GetServer())).
 		Run()
 
 	rt.Wait()

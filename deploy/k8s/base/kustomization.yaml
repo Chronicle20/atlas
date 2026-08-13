@@ -30,6 +30,7 @@ resources:
   - atlas-kafka-precreate.yaml
   - atlas-invites.yaml
   - atlas-keys.yaml
+  - atlas-kites.yaml
   - atlas-login.yaml
   - atlas-map-actions.yaml
   - atlas-maps.yaml
@@ -65,6 +66,7 @@ resources:
   - atlas-storage.yaml
   - atlas-summons.yaml
   - atlas-tenants.yaml
+  - atlas-trades.yaml
   - atlas-transports.yaml
   - atlas-ui.yaml
   - atlas-world.yaml
@@ -93,3 +95,68 @@ patches:
         name: any
         annotations:
           argocd.argoproj.io/sync-wave: "10"
+
+  # Baseline memory resources for every service container (index 0 -- the
+  # seed-catalog component appends git-sync at the end, so index 0 is always
+  # the app). Without requests the scheduler places atlas pods blind, which
+  # is what let one node sit at 80% memory while another idled at 47%.
+  #
+  # Services observe a 14d peak of 9-52Mi, so 32Mi request / 256Mi limit is
+  # roughly the real steady state with 5-25x burst headroom. Services that
+  # need more are overridden immediately below; ordering matters, kustomize
+  # applies patches in sequence and the last write wins.
+  - target:
+      kind: Deployment
+    patch: |
+      - op: add
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            memory: 32Mi
+          limits:
+            memory: 256Mi
+
+  # atlas-data parses WZ data sets; 14d peak is 247Mi.
+  - target:
+      kind: Deployment
+      name: atlas-data
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            memory: 64Mi
+          limits:
+            memory: 512Mi
+
+  # atlas-channel is the player-facing channel server. Its 45Mi peak reflects
+  # the observed window rather than a full load, so it gets extra headroom.
+  - target:
+      kind: Deployment
+      name: atlas-channel
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            memory: 64Mi
+          limits:
+            memory: 512Mi
+
+  # Restores atlas-renders' own tuning, which the baseline patch above would
+  # otherwise flatten. See docs/tasks/task-071-.../lazy-map-render.md: each pod
+  # holds an open *wz.File whose parsed property trees grow toward 100-200MB
+  # across a working set of popular maps.
+  - target:
+      kind: Deployment
+      name: atlas-renders
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "2"
+            memory: "2Gi"

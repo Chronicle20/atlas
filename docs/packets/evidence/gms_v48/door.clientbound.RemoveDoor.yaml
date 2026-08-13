@@ -1,0 +1,10 @@
+packet: door/clientbound/RemoveDoor
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CTownPortalPool::OnTownPortalRemoved
+    address: "0x5e3b40"
+    decompile_sha256: 86c42d062f2e4578a2be1e33b868ff0b270cb67c16290bffe119251356c90205
+verifies:
+    - libs/atlas-packet/door/clientbound/v48_test.go#TestRemoveDoorBytesV48

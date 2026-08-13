@@ -196,18 +196,16 @@ func handleGetMonsterMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 					return
 				}
 
-				t, terr := tenant.FromContext(d.Context())()
-				if terr != nil {
+				// Guard before SpawnMapsFor, which resolves the tenant with
+				// MustFromContext and would panic on a tenant-less request.
+				if _, terr := tenant.FromContext(d.Context())(); terr != nil {
 					d.Logger().WithError(terr).Errorf("Unable to resolve tenant for monster-maps request.")
 					server.WriteErrorResponse(d.Logger())(w)(terr)
 					return
 				}
 
-				var rows []SpawnIndexEntity
-				if err := db.WithContext(d.Context()).
-					Where("tenant_id = ? AND monster_id = ?", t.Id(), monsterId).
-					Order("spawn_count DESC, name ASC").
-					Find(&rows).Error; err != nil {
+				rows, err := SpawnMapsFor(db, d.Context(), monsterId)
+				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to query monster spawn index for monster %d.", monsterId)
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return

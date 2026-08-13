@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashShopOperationBuyWorldTransfer
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::SendBuyTransferWorldItemPacket
+    address: "0x44fbfc"
+    decompile_sha256: 76cc3757cc4d0f0f9c71cf08affcf3de4da2cab0cc503eabb9989db23c5f2318
+verifies:
+    - libs/atlas-packet/cash/serverbound/v48_test.go#TestBuyWorldTransferBytesV48

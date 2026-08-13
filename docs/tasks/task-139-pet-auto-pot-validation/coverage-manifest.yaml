@@ -1,0 +1,133 @@
+# coverage-manifest — task-139 pet auto-pot validation + pet skill pouches
+#
+# Written by Task 15 (legacy version coverage: codec gate, fixtures, matrix,
+# data check), the last implementation task before the branch's final
+# verification sweep. Declares every op x version this BRANCH (not just
+# Task 15) adds/changes coverage for in libs/atlas-packet, per
+# docs/packets/PROCESS.md's coverage-manifest schema, so
+# packet-completeness-critic can diff this against the branch's actual git +
+# matrix delta at review time.
+
+ops:
+  # PET_AUTO_POT (pet/serverbound/PetItemUse, CWvsContext::SendStatChangeItem-
+  # UseRequestByPetQ). Task 15 version-gated the leading petId
+  # ((GMS && MajorAtLeast(61)) || JMS) so gms_v48's petId-less wire decodes
+  # correctly (Task 12 depends on the decoded petId being exactly 0 when the
+  # client sent none). All nine matrix cells promoted to verified this task:
+  # five (gms_v83/v84/v87/v95, jms_v185) were already verified pre-branch and
+  # are asserted byte-identical (unchanged); gms_v61/v72/v79 gained byte
+  # fixtures (no codec change — confirmed byte-for-byte via IDA); gms_v48
+  # moved n-a(⬜) -> verified(✅) (the codec change plus a registry-op add,
+  # since the op was previously absent from docs/packets/registry/gms_v48.yaml).
+  - PET_AUTO_POT
+
+  # Pet cash-asset trailer (Task 3, model/asset.go
+  # Asset.encodePetCashItemInfo — the pet sub-body of the cash-asset family
+  # embedded in CharacterInfo / CashShopInventory / inventory-load packets).
+  # Not its own status.json op row (it is a shared sub-encoder, not an
+  # independently-dispatched packet), so declared by packet path. Two
+  # version-width gates were added/fixed this branch:
+  #   - remainLife (Encode4): GMS>=72 || JMS (absent v48/v61; v72 was the
+  #     first GW_ItemSlotPet::RawDecode revision to read it)
+  #   - trailing attribute (Encode2): GMS>=79 || JMS (v72 does not read it;
+  #     v79 is the first revision to add it)
+  # both IDA-verified per version (v48 @0x49c77e, v61 @0x4b52f2, v72
+  # @0x4d06dd, v79 @0x4d84c4, v83 @0x4e4219). Also carries the config-resolved
+  # usPetSkill wire mask (resolvePetSkillWireMask + the new
+  # atlas_packet.ResolveCode16 helper in libs/atlas-packet/resolve.go, DOM-25 —
+  # a soft-miss lookup, not a packet codec in its own right).
+  - model/asset
+
+  # jms type-28 cash-slot arm (Task 8): CWvsContext::SendConsumeCashItemUse-
+  # Request's case-28 body, wrapped as its own audit-only struct
+  # (cash/serverbound/CashItemUsePetSkill) alongside its megaphone/teleport-
+  # rock/etc. siblings that already share this same dispatcher fname. Bare
+  # 8-byte pet locker SN. It DOES have its own row in status.json (kind:
+  # sub-struct, packet: cash/serverbound/CashItemUsePetSkill) — the row is
+  # what carries the jms_v185 verified cell; only the shared dispatcher
+  # (CWvsContext::SendConsumeCashItemUseRequest) is common, not the matrix
+  # row itself. (Final-review correction: an earlier draft of this note said
+  # "no separate matrix row," which was wrong.) Task 15 fixed this struct's
+  # `packet-audit:verify` marker (it was prose, not the
+  # `packet=/version=/ida=` k=v form matrix --check requires), pinned its
+  # evidence record, added the missing candidatesFromFName linkage in
+  # tools/packet-audit/cmd/run.go (without which no audit report could ever
+  # be generated for it — "dangling evidence" until this task), generated
+  # its report, and added its packet-audit:fname comment (fname-doc --check
+  # was failing on it) — none of that was Task 15's nominal scope, but it
+  # was blocking a clean matrix --check exit 0, which is a required Task 15
+  # gate.
+  - cash/serverbound/CashItemUsePetSkill
+
+  # libs/atlas-packet/resolve.go (root package atlas_packet, no subdir): adds
+  # ResolveCode16, a soft-miss config lookup helper called from model/asset's
+  # resolvePetSkillWireMask. Not a packet codec in its own right (no version
+  # gate lives here — the version-dependent behavior is entirely in
+  # model/asset.go's call sites, which are claimed above) and carries no
+  # independent status.json row. Declared here as its own entry (rather than
+  # left to the model/asset `fields` prose) so packet-completeness-critic's
+  # directory-match rule doesn't fall back to prose (final-review fix,
+  # flagged by the completeness critic as a cosmetic CHANGED-BUT-UNCLAIMED
+  # gap).
+  - libs/atlas-packet/resolve.go
+
+versions:
+  - gms_v48
+  - gms_v61
+  - gms_v72
+  - gms_v79
+  - gms_v83
+  - gms_v84
+  - gms_v87
+  # Added post-merge. gms_v92 was a declared exclusion for most of this
+  # branch's life (design §3.6: "partial bring-up template carrying no pet
+  # handlers at all"). Merging main invalidated that premise — main added a
+  # PetItemUseHandle entry at opCode 0xC8 — and because the socket handler
+  # fails closed on an unconfigured skillGate, the merged combination rejected
+  # every v92 auto-pot with `skill_gate_unconfigured`. gms_92 therefore now
+  # carries options.skillGate ("equipAbility", IDA-verified on the v92 IDB:
+  # CUserLocal::TryConsumePetHP 0x8f3700 / TryConsumePetMP 0x8f3a20 fuse the
+  # secured CPet+356/+364 and +368/+376 worn-equip pairs, neither consulting
+  # usPetSkill) plus the petSkill writer table.
+  #
+  # Both v92 cells have since been taken through the leaf verify procedure and
+  # are now resolved (superseding this entry's earlier "wired but not verified"
+  # note):
+  #   - PET_AUTO_POT x gms_v92: partial -> verified. Byte fixture
+  #     TestItemUseBytesV92 in libs/atlas-packet/pet/serverbound/item_use_test.go,
+  #     marker ida=0x9b3a00, tier-1 evidence pinned at
+  #     docs/packets/evidence/gms_v92/pet.serverbound.PetItemUse.yaml. Opcode
+  #     ground-truthed from COutPacket::COutPacket(&pkt, 0xC8) = 200, matching
+  #     the registry. Wire order is byte-identical to the v61/v72/v79/v83
+  #     siblings, so no wire-divergence commit was needed.
+  #   - cash/serverbound/CashItemUsePetSkill x gms_v92: incomplete -> n-a,
+  #     recorded in docs/packets/audits/gms_v92/_unimplemented.json with the
+  #     full positive proof (case 28 IS uniquely dispatched at 0x9c4dfe but its
+  #     entire body is COutPacket dtor + ZXString dtor + jmp to the function
+  #     epilogue; no Encode*, no SendPacket reachable; the separate cash-slot
+  #     dispatcher at 0x9d1010 has no pet-skill arm either). This closes the
+  #     "v92 correlate" question the coverage doc left open.
+  - gms_v92
+  - gms_v95
+  - jms_v185
+
+fields:
+  - "pet/serverbound/PetItemUse: leading petId u64 gated (GMS && MajorAtLeast(61)) || JMS==Region(); absent (decodes as 0) on gms_v48 only. Body order buffSkill(bool)+updateTime(u32)+source(i16)+itemId(u32) is unconditional and byte-identical on every version."
+  - "model/asset Asset.encodePetCashItemInfo: remainLife (Encode4) gated GMS>=72||JMS; trailing attribute (Encode2) gated GMS>=79||JMS. gms_v48/v61 write neither trailer field; gms_v72 writes remainLife only; gms_v79+ and jms write both."
+  - "model/asset resolvePetSkillWireMask — usPetSkill wire-bit provenance, stated exactly so the evidence standard is not overstated. The field itself IS present on every version: GW_ItemSlotPet::RawDecode reads usPetSkill into the secured pair +81/+85 (immediately after petAttribute +73/+77) on v48 @0x49c77e and v92 @0x4f0820, both confirmed this pass, consistent with the already-cited v61/v72/v79/v83 addresses. The BIT VALUE is a different matter: autoSpeaking=0x100 is IDA-verified on gms_v83 ONLY (CPet::AutoSpeakingByEvent @0x70761f, design §3.5) and is applied family-wide to every GMS template — gms_48/61/72/79/84/87/92/95 all carry it on that single v83 verification, NOT on per-version evidence. Direct v48/v92 verification was attempted and FAILED to resolve: neither IDB has a named AutoSpeakingByEvent, and the CPet consumers inspected (CPet::Init, the closeness/fullness refresh, the petAttribute apply, and v48 CPet::ParseCommand) read +59/+63, +67/+69 and +73/+77 but never +81/+85. That is INCONCLUSIVE, not negative: a control test proved insn_query's op_any does not match displacements (it returned 0 against two known-positive sites), so the search for a consumer was invalid rather than empty. Blast radius if the extrapolation is wrong is confined to a mis-set auto-speaking flag — per design §1.1 GMS auto-pot gates on worn-equip ability bits and never reads usPetSkill, so no gating or security behaviour depends on this bit."
+  - "cash/serverbound/CashItemUsePetSkill: single 8-byte pet locker SN, no update_time in this arm (already consumed once in the shared SendConsumeCashItemUseRequest header). jms_v185 only — sender does not exist pre-v87 (task-8 finding)."
+  - "RESOLVED (this pass, full IDA sweep of all 8 GMS versions — see docs/tasks/task-139-pet-auto-pot-validation/cash-item-use-pet-skill-coverage.md for the complete per-version evidence table): the type-28 switch arm of CWvsContext::SendConsumeCashItemUseRequest is n-a on every GMS version, but for THREE distinct reasons, not one uniform 'no case' claim. (1) gms_v72/v79/v83/v84/v87: the compiler-generated default-case comment at the switch's range check explicitly lists 28 among the default values — no case-28 arm exists at all (v83 @0xa0a6e0 and v87 @0xa9ffa8 confirm the final-review's original partial finding at the same addresses; v72/v79/v84 are new sweep results). (2) gms_v48/v61: case 28 IS uniquely dispatched, but it is a DIFFERENT feature, not pet-skill: v48's arm (@0x7103aa) encodes Encode1+6xEncodeStr, a multi-line broadcast-message shape matching the already-verified cash/serverbound/CashItemUseMegaphone struct (evidently a different megaphone price tier reusing the same case-number band); v61's arm (@0x834a4e) is a 5-instruction event-map-range gate (sub_832700, checks field+252 against [910000000,910000022]) that writes zero packet bytes and jumps straight to the shared cleanup. Neither references a pet object; v48's separate cash-SLOT dispatcher (SendCashSlotItemUseRequest @0x719901, the structural analog for locker-SN items) also has no pet-skill-teach arm among its types 8/9/11. (3) gms_v95: case 28 IS uniquely dispatched ($LN2090_1 @0x9f06be) but its entire body is ZArray<unsigned char>::RemoveAll() (discarding the already-encoded common header) + a ZXString destructor + a jump straight into the function's own epilogue — no Encode call of any kind, no SendPacket reachable from it; selecting a type-28 item on v95 sends nothing on the wire at all. All 8 GMS cells were recorded n-a via docs/packets/audits/<version>/_unimplemented.json entries (packet: cash/serverbound/CashItemUsePetSkill) — NOT via feature-na-evidence.yaml, which only governs RowOp family-consistency and has no effect on RowSubStruct grading (verified directly from tools/packet-audit/internal/matrix/{build,grade}.go: gradeSubStructCell checks in.Unimplemented[vk][pkt], never feature-na-evidence). jms_v185 remains verified, unchanged. `packet-audit matrix --check`/`fname-doc --check`/`operations --check` all exit 0 after regeneration."
+
+out_of_scope:
+  # Pre-existing on main before this branch (not touched by task-139): the
+  # other pet/serverbound codecs' own hasLeadingPetId version gate (an
+  # earlier, already-landed legacy-bringup task added libs/atlas-packet/pet/
+  # serverbound/legacy.go + wired command.go/chat.go/drop_pick_up.go/
+  # movement.go to it). PetItemUse was the one remaining pet serverbound
+  # codec that still unconditionally read the leading petId; Task 15 is what
+  # brings it into that same pattern. Listed here only so the critic doesn't
+  # mistake "same helper, same directory" for this task having touched them.
+  - pet/serverbound/PetCommand
+  - pet/serverbound/PetChat
+  - pet/serverbound/PetDropPickUp
+  - pet/serverbound/PetMovement

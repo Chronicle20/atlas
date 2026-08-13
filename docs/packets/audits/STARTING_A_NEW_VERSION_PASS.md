@@ -17,11 +17,17 @@ Baseline versions (existing columns):
 | `gms_v83`  | GMS 83.1  | `services/atlas-configurations/seed-data/templates/template_gms_83_1.json`  | `docs/packets/ida-exports/gms_v83.json`  |
 | `gms_v84`  | GMS 84.1  | `services/atlas-configurations/seed-data/templates/template_gms_84_1.json`  | `docs/packets/ida-exports/gms_v84.json`  |
 | `gms_v87`  | GMS 87.1  | `services/atlas-configurations/seed-data/templates/template_gms_87_1.json`  | `docs/packets/ida-exports/gms_v87.json`  |
+| `gms_v92`  | GMS 92.1  | `services/atlas-configurations/seed-data/templates/template_gms_92_1.json`  | `docs/packets/ida-exports/gms_v92.json`  |
 | `gms_v95`  | GMS 95.1  | `services/atlas-configurations/seed-data/templates/template_gms_95_1.json`  | `docs/packets/ida-exports/gms_v95.json`  |
 | `jms_v185` | JMS 185.1 | `services/atlas-configurations/seed-data/templates/template_jms_185_1.json` | `docs/packets/ida-exports/gms_jms_185.json` |
 
-Adding a new version (e.g. `gms_v92`) means running through §1 once, then
-iterating on §3 until the declared scope is satisfied.
+Adding a new version means running through §1 once, then iterating on §3
+until the declared scope is satisfied. Task 28 (gms_v92, this table's newest
+row) additionally had to backfill ~65 template-wiring gaps the bring-up
+exposed — see `docs/tasks/task-145-player-reports/scope-amendment.md` Task 28
+and its report for the full account; a genuinely NEW version's template
+starts empty rather than partially-wired, so expect a comparable amount of
+template work, not just the four column-registration artefacts below.
 
 ---
 
@@ -434,7 +440,7 @@ Flags:
   -tiers string
         tier-1 membership YAML (default "docs/packets/evidence/tiers.yaml")
   -versions string
-        comma-separated version keys (default "gms_v48,gms_v61,gms_v72,gms_v79,gms_v83,gms_v84,gms_v87,gms_v95,jms_v185")
+        comma-separated version keys (default "gms_v48,gms_v61,gms_v72,gms_v79,gms_v83,gms_v84,gms_v87,gms_v92,gms_v95,jms_v185")
 ```
 
 The new version column appears automatically, pre-filled from applicability: ⬜

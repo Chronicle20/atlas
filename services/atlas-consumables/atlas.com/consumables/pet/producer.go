@@ -9,7 +9,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-func awardFullnessCommandProvider(actorId uint32, petId uint64, amount byte) model.Provider[[]kafka.Message] {
+func awardFullnessCommandProvider(actorId uint32, petId uint32, amount byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(petId))
 	value := &message.Command[message.AwardFullnessCommandBody]{
 		ActorId: actorId,
@@ -17,6 +17,20 @@ func awardFullnessCommandProvider(actorId uint32, petId uint64, amount byte) mod
 		Type:    message.CommandAwardFullness,
 		Body: message.AwardFullnessCommandBody{
 			Amount: amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func setSkillCommandProvider(actorId uint32, petId uint32, skill string, enabled bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(petId))
+	value := &message.Command[message.SetSkillCommandBody]{
+		ActorId: actorId,
+		PetId:   petId,
+		Type:    message.CommandSetSkill,
+		Body: message.SetSkillCommandBody{
+			Skill:   skill,
+			Enabled: enabled,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

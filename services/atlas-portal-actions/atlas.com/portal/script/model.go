@@ -77,5 +77,9 @@ type ProcessResult struct {
 	Allow       bool
 	MatchedRule string
 	Operations  []operation.Model
-	Error       error
+	// CharacterMoved reports that a moving operation was successfully
+	// dispatched, so the client will be unlocked by the resulting SET_FIELD
+	// and MUST NOT be unlocked again here (task-184 FR-2.3).
+	CharacterMoved bool
+	Error          error
 }

@@ -49,6 +49,7 @@ use (
 	./services/atlas-inventory/atlas.com/inventory
 	./services/atlas-invites/atlas.com/invites
 	./services/atlas-keys/atlas.com/keys
+	./services/atlas-kites/atlas.com/kites
 	./services/atlas-login/atlas.com/login
 	./services/atlas-map-actions/atlas.com/map-actions
 	./services/atlas-maps/atlas.com/maps
@@ -83,6 +84,7 @@ use (
 	./services/atlas-storage/atlas.com/storage
 	./services/atlas-summons/atlas.com/summons
 	./services/atlas-tenants/atlas.com/tenants
+	./services/atlas-trades/atlas.com/trades
 	./services/atlas-transports/atlas.com/transports
 	./services/atlas-world/atlas.com/world
 	./tools/catalog-lint

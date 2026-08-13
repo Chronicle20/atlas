@@ -21,6 +21,7 @@ a service-local copy.
 |---|---|---|
 | [`asset`](./asset) | `Id`, `Quantity` (item-instance ids); `Flag` bitset + `HasFlag` / `SetFlag` / `ClearFlag` | Anything dealing with concrete item instances on a character. |
 | [`channel`](./channel) | `Id` (`byte`), `StatusType` | Channel identifiers in routing or socket code. **Don't redeclare as `string` or `uint8`.** |
+| [`coupon`](./coupon) | `MaxCodeLength`, `Normalize`, `Plausible` | Cash-shop coupon code normalization (trim + uppercase) and the cheap plausibility gate before a DB lookup. Codes are stored normalized; the `(tenant_id, code)` unique index is the case-insensitivity guarantee. |
 | [`constants`](./constants) | `For(region, major, minor) SkillJobSet` | The tenant-keyed entry point for version-aware skill/job identity resolution — bundles a tenant version's `skill.Set` + `job.Set` (see `skill`/`job` below). Falls back to the canonical GMS 83.1 baseline for an unprovisioned version. |
 | [`character`](./character) | `Id` (`uint32`), temporary stat constants | Character ID parameters; do not invent `int` / `string` aliases. |
 | [`field`](./field) | `Id` (`string`) | Field/instance string identifiers (distinct from `map.Id`). |
@@ -33,6 +34,7 @@ a service-local copy.
 | [`map`](./map) | `Id` (`uint32`), field-limit constants | Map IDs in routing, drop tables, spawn rules. |
 | [`miniroom`](./miniroom) | Mini-room (`CMiniRoom`) type bytes: `Omok`=1, `MatchCards`=2, `Trade`=3, `PersonalShop`=4, `MerchantShop`=5, `CashTrade`=6 | The room-type discriminator on mini-room create/enter/balloon packets and mini-game room/record events. **Don't redeclare 1/2 as local omok/match-card consts.** |
 | [`monster`](./monster) | `Id`, monster status / skill constants | Monster IDs and per-monster status flags. |
+| [`pet/skill`](./pet/skill) | `Key`, `Flag`, `All`, `BitFor`, `Has`, `Apply` | Pet skill semantic keys and canonical storage bits (0519 pouch items). |
 | [`point`](./point) | `X`, `Y` (`int16`) | Map coordinates — keep them typed, don't pass raw ints. |
 | [`skill`](./skill) | `Id`, `Identity`, `Set`, `Resolve`/`Wire`/`Available`, summon-movement constants | Player and mob skill IDs. `Id` is the single-version-blind convention (v83-era numbering); `Identity` is the version-independent stable name, resolved to a tenant version's actual wire `Id` via `constants.For(...).Skill` — use `Identity` + `constants.For` for any version-sensitive skill logic (skill IDs were reassigned across client versions, e.g. `5101004` = Super GM Hide pre-v62 but Brawler Corkscrew Blow from v62 onward; see docs/tasks/task-187-version-aware-id-semantics). |
 | [`stat`](./stat) | `Type` | Character stat keys. |

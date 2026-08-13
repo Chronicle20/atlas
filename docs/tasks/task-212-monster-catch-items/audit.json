@@ -1,0 +1,182 @@
+{
+  "service": "atlas-monsters,atlas-consumables,atlas-channel",
+  "path": "services/atlas-monsters/atlas.com/monsters,services/atlas-consumables/atlas.com/consumables,services/atlas-channel/atlas.com/channel",
+  "date": "2026-08-10",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "services/atlas-monsters/atlas.com/monsters/monster",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "FILE-01",
+          "name": "Processor logic in processor.go",
+          "status": "fail",
+          "evidence": "services/atlas-monsters/atlas.com/monsters/monster/catch.go:108,173,181 - ProcessorImpl methods Catch/emitCatchFailure/emitCatchUnresolved live in a bare topic-named file, not processor.go or processor_catch.go"
+        },
+        {
+          "id": "DOM-24",
+          "name": "Kafka producer stubbed in tests",
+          "status": "pass",
+          "evidence": "services/atlas-monsters/atlas.com/monsters/monster/catch_test.go:44-63 - ProcessorImpl constructed with a custom emit override that never touches the real producer; monster/registry_test.go:26-28 TestMain calls producertest.InstallNoop()"
+        },
+        {
+          "id": "DOM-23",
+          "name": "Kafka topic naming convention",
+          "status": "pass",
+          "evidence": "deploy/k8s/base/env-configmap.yaml:136 EVENT_TOPIC_MONSTER_CATCH: \"EVENT_TOPIC_MONSTER_CATCH\"; services/atlas-monsters/atlas.com/monsters/monster/kafka.go:16 EnvEventTopicMonsterCatch constant; no literal manifest override found"
+        },
+        {
+          "id": "DOM-21",
+          "name": "No duplication of atlas-constants types",
+          "status": "pass",
+          "evidence": "services/atlas-consumables/atlas.com/consumables/consumable/catch.go:34 uses item2.GetClassification/item2.ClassificationConsumableCatchItem; new constant added to libs/atlas-constants/item/constants.go:41"
+        },
+        {
+          "id": "DOM-25",
+          "name": "Client wire values config-resolved",
+          "status": "pass",
+          "evidence": "services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go bridleFailReason resolves semantic cause strings to wire bytes; domain services emit only semantic causes"
+        },
+        {
+          "id": "DOM-26",
+          "name": "Goroutines via routine.Go",
+          "status": "pass",
+          "evidence": "tools/goroutine-guard.sh exit 0"
+        },
+        {
+          "id": "DOM-22",
+          "name": "Dockerfile matches go.mod",
+          "status": "pass",
+          "evidence": "N/A - no go.mod changes in atlas-monsters/atlas-consumables/atlas-channel"
+        }
+      ]
+    },
+    {
+      "name": "services/atlas-monsters/atlas.com/monsters/monster/consumable",
+      "type": "support (REST client)",
+      "checks": [
+        {
+          "id": "FILE-05",
+          "name": "Builder in builder.go",
+          "status": "fail",
+          "evidence": "services/atlas-monsters/atlas.com/monsters/monster/consumable/model.go:21-33 - ModelBuilder defined inside model.go instead of a separate builder.go"
+        },
+        {
+          "id": "FILE-02",
+          "name": "RestModel + Transform + JSON:API methods in rest.go",
+          "status": "pass",
+          "evidence": "services/atlas-monsters/atlas.com/monsters/monster/consumable/rest.go - RestModel, Extract, GetName/GetID/SetID all present"
+        },
+        {
+          "id": "FILE-03",
+          "name": "Cross-service request funcs in requests.go",
+          "status": "pass",
+          "evidence": "services/atlas-monsters/atlas.com/monsters/monster/consumable/requests.go:14-20 getBaseRequest/requestById"
+        },
+        {
+          "id": "EXT-01",
+          "name": "JSON:API relationship interface methods",
+          "status": "fail",
+          "evidence": "services/atlas-monsters/atlas.com/monsters/monster/consumable/rest.go - no SetToOneReferenceID/SetToManyReferenceIDs on RestModel"
+        },
+        {
+          "id": "EXT-02",
+          "name": "httptest-backed integration test",
+          "status": "fail",
+          "evidence": "services/atlas-monsters/atlas.com/monsters/monster/consumable/rest_test.go - only unit-tests Extract() and NewModelBuilder(), no httptest.NewServer fixture roundtrip"
+        },
+        {
+          "id": "EXT-03",
+          "name": "404 vs other-failure distinction",
+          "status": "pass",
+          "evidence": "services/atlas-monsters/atlas.com/monsters/monster/consumable/processor.go:31-33 - GetById forwards raw error untranslated, no incorrect collapsing"
+        },
+        {
+          "id": "EXT-04",
+          "name": "RootUrl used, not hardcoded",
+          "status": "pass",
+          "evidence": "services/atlas-monsters/atlas.com/monsters/monster/consumable/requests.go:15 requests.RootUrl(\"DATA\")"
+        }
+      ]
+    },
+    {
+      "name": "services/atlas-consumables/atlas.com/consumables/consumable",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "FILE-01",
+          "name": "Processor logic in processor.go",
+          "status": "fail",
+          "evidence": "services/atlas-consumables/atlas.com/consumables/consumable/catch.go:53,131 - ProcessorImpl methods RequestCatchMonster/catchError live in a bare topic-named file, not processor.go or processor_catch.go"
+        },
+        {
+          "id": "DOM-24",
+          "name": "Kafka producer stubbed in tests",
+          "status": "fail",
+          "evidence": "services/atlas-consumables/atlas.com/consumables/consumable/catch_test.go:81-121 - service-local stubWriter installed via raw producer.ConfigWriterFactory instead of the shared producertest package, plus mid-package reinstall of producertest.InstallCapturing() in t.Cleanup"
+        }
+      ]
+    },
+    {
+      "name": "services/atlas-consumables/atlas.com/consumables/monster",
+      "type": "support (REST/Kafka client)",
+      "checks": [
+        {
+          "id": "FILE-01",
+          "name": "Processor logic in processor.go",
+          "status": "pass",
+          "evidence": "services/atlas-consumables/atlas.com/consumables/monster/processor.go:15,42 - interface and RequestCatch implementation both in processor.go"
+        }
+      ]
+    },
+    {
+      "name": "services/atlas-consumables/atlas.com/consumables/catchdelay",
+      "type": "support",
+      "checks": [
+        {
+          "id": "FILE-06",
+          "name": "No package-named catch-all file",
+          "status": "pass",
+          "evidence": "services/atlas-consumables/atlas.com/consumables/catchdelay/registry.go - single-purpose Redis-backed registry, not a multi-responsibility file"
+        }
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel/consumable",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "FILE-01",
+          "name": "Processor logic in processor.go",
+          "status": "pass",
+          "evidence": "services/atlas-channel/atlas.com/channel/consumable/processor.go - RequestCatchMonster method added alongside interface; producer.go holds RequestCatchMonsterCommandProvider"
+        }
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel/socket/handler,writer",
+      "type": "sub-domain",
+      "checks": [
+        {
+          "id": "SUB-01",
+          "name": "Business logic not in handler",
+          "status": "pass",
+          "evidence": "services/atlas-channel/atlas.com/channel/socket/handler/monster_catch_item_use.go:28 - handler delegates to consumable.NewProcessor(...).RequestCatchMonster only"
+        }
+      ]
+    }
+  ],
+  "blocking": [
+    "FILE-01: services/atlas-monsters/atlas.com/monsters/monster/catch.go:108,173,181 - ProcessorImpl methods in a bare topic-named file",
+    "FILE-01: services/atlas-consumables/atlas.com/consumables/consumable/catch.go:53,131 - ProcessorImpl methods in a bare topic-named file",
+    "FILE-05: services/atlas-monsters/atlas.com/monsters/monster/consumable/model.go:21-33 - Builder inside model.go instead of builder.go",
+    "DOM-24: services/atlas-consumables/atlas.com/consumables/consumable/catch_test.go:81-121 - service-local stub writer + mid-package reinstall instead of shared producertest package",
+    "EXT-01: services/atlas-monsters/atlas.com/monsters/monster/consumable/rest.go - missing SetToOneReferenceID/SetToManyReferenceIDs",
+    "EXT-02: services/atlas-monsters/atlas.com/monsters/monster/consumable/rest_test.go - no httptest-backed integration test"
+  ],
+  "nonBlocking": []
+}

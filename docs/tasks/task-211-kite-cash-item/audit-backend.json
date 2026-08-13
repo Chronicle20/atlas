@@ -1,0 +1,83 @@
+{
+  "service": "atlas-kites (+ atlas-packet, atlas-channel, atlas-tenants diff)",
+  "path": "services/atlas-kites, libs/atlas-packet, services/atlas-channel, services/atlas-tenants",
+  "date": "2026-08-10",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "atlas-kites/kite",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists", "status": "pass", "evidence": "kite/builder.go"},
+        {"id": "DOM-04", "name": "Transform function", "status": "pass", "evidence": "kite/rest.go:51"},
+        {"id": "DOM-05", "name": "TransformSlice/SliceMap in list handler", "status": "pass", "evidence": "kite/resource.go:91"},
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "kite/processor.go:56"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "kite/resource.go:38,76"},
+        {"id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "kite/resource.go:49-54,91-96"},
+        {"id": "DOM-12", "name": "No os.Getenv in handlers", "status": "pass", "evidence": "kite/resource.go"},
+        {"id": "DOM-14", "name": "Handlers don't call providers directly", "status": "pass", "evidence": "kite/resource.go calls NewProcessor(...) only"},
+        {"id": "DOM-17", "name": "Error->HTTP mapping", "status": "pass", "evidence": "kite/resource.go:40-46"},
+        {"id": "DOM-18", "name": "JSON:API interface on RestModel", "status": "pass", "evidence": "kite/rest.go:34-49"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "kite/processor_test.go, kite/registry_test.go"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in tests", "status": "pass", "evidence": "kite/processor_test.go NewProcessorWithProvider injection; kafka/consumer/character/consumer_test.go producertest.InstallCapturing()"},
+        {"id": "error-swallow", "name": "Redis error not conflated with not-found/empty", "status": "fail", "evidence": "character/registry.go:40-44 GetInMap swallows errors to nil; consumed by kite/processor.go:300-322 InMapModelProvider whose doc (292-299) claims the opposite guarantee"}
+      ]
+    },
+    {
+      "name": "atlas-kites/character",
+      "type": "support",
+      "checks": [
+        {"id": "error-discard", "name": "Registry writes discard errors silently", "status": "fail", "evidence": "character/registry.go:32-38 AddCharacter/RemoveCharacter use _ = ... with no log"}
+      ]
+    },
+    {
+      "name": "atlas-kites/configuration",
+      "type": "support (REST client)",
+      "checks": [
+        {"id": "FILE-01..04", "name": "Per-responsibility files, no catch-all", "status": "pass", "evidence": "registry.go, rest.go, requests.go each hold their own responsibility"},
+        {"id": "EXT-01", "name": "Relationship interface stubs on RestModel", "status": "fail", "evidence": "configuration/rest.go:8-26 RestModel has no SetToOneReferenceID/SetToManyReferenceIDs"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "configuration/rest_test.go only unit-tests Extract; no httptest fixture for requestForTenant/defaultFetcher"},
+        {"id": "EXT-03", "name": "404 vs other-error distinction", "status": "fail", "evidence": "configuration/registry.go:76-80 GetTenantConfig treats every fetch error identically, no errors.Is(requests.ErrNotFound)"},
+        {"id": "EXT-04", "name": "RootUrl(domain), no hardcode", "status": "pass", "evidence": "configuration/requests.go:16-18 requests.RootUrl(\"TENANTS\")"}
+      ]
+    },
+    {
+      "name": "atlas-channel/kite",
+      "type": "support (REST client)",
+      "checks": [
+        {"id": "FILE-01..06", "name": "One responsibility per file, no catch-all", "status": "pass", "evidence": "model.go, builder.go, processor.go, producer.go, requests.go, rest.go"},
+        {"id": "EXT-01", "name": "Relationship interface stubs on RestModel", "status": "fail", "evidence": "kite/rest.go:16-29 RestModel has no SetToOneReferenceID/SetToManyReferenceIDs"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "pass", "evidence": "kite/processor_drain_test.go TestInMapModelProviderDrainsBeyondOnePage / TestInMapModelProviderRequestsInstanceScopedPath"},
+        {"id": "EXT-04", "name": "RootUrl(domain), no hardcode", "status": "pass", "evidence": "kite/requests.go:15-17 requests.RootUrl(\"KITES\")"}
+      ]
+    },
+    {
+      "name": "atlas-tenants/configuration (kite-configs addition)",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01/02", "name": "Symbols in correct per-responsibility files despite shared multi-resource package", "status": "pass", "evidence": "processor.go:1729-1885, rest.go:595-682, resource.go:1162-1398 kite-config additions each land in the file matching their responsibility"}
+      ]
+    },
+    {
+      "name": "DOM-21/DOM-25 spot checks",
+      "type": "cross-cutting",
+      "checks": [
+        {"id": "DOM-21", "name": "Category-508 reuses item.ClassificationMessageBanner", "status": "pass", "evidence": "socket/handler/character_cash_item_use.go:841"},
+        {"id": "DOM-21", "name": "IsMapBlocked vs map.IsFreeMarketRoom", "status": "pass (reviewed, distinct semantics)", "evidence": "configuration/model.go:35-43 mirrors client's own coarse prefix gate, not the narrow WZ-verified room range in map/model.go:47"},
+        {"id": "DOM-25", "name": "KiteDestroyAnimationType hardcoded flag", "status": "pass (reviewed, fixed protocol invariant)", "evidence": "field/clientbound/kite_destroy.go:21-28; call site kafka/consumer/kite/consumer.go:87-92 always passes KiteDestroyAnimated with rationale comment"}
+      ]
+    }
+  ],
+  "blocking": [
+    "error-swallow: atlas-kites/character/registry.go:40-44 GetInMap swallows Redis errors, undermining kite/processor.go's documented loud-failure guarantee for the per-map cap check",
+    "EXT-01: atlas-kites/configuration/rest.go and atlas-channel/kite/rest.go RestModels missing SetToOneReferenceID/SetToManyReferenceIDs",
+    "EXT-02: atlas-kites/configuration has no httptest-backed round-trip test for the atlas-tenants kite-configs fetch"
+  ],
+  "nonBlocking": [
+    "error-discard: atlas-kites/character/registry.go AddCharacter/RemoveCharacter silently discard Redis errors",
+    "EXT-03: atlas-kites/configuration.GetTenantConfig does not distinguish 404 from transport/5xx failures"
+  ]
+}

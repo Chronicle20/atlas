@@ -50,6 +50,18 @@ type ProcessorMock struct {
 	MtsConfigByIdProviderFunc  func(tenantID uuid.UUID, configID string) model.Provider[map[string]interface{}]
 	AllMtsConfigsProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
 
+	// Trade config operations
+	CreateTradeConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(config map[string]interface{}) (configuration.Model, error)
+	CreateTradeConfigAndEmitFunc func(tenantID uuid.UUID, config map[string]interface{}) (configuration.Model, error)
+	UpdateTradeConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) func(config map[string]interface{}) (configuration.Model, error)
+	UpdateTradeConfigAndEmitFunc func(tenantID uuid.UUID, configID string, config map[string]interface{}) (configuration.Model, error)
+	DeleteTradeConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) error
+	DeleteTradeConfigAndEmitFunc func(tenantID uuid.UUID, configID string) error
+	GetTradeConfigByIdFunc       func(tenantID uuid.UUID, configID string) (map[string]interface{}, error)
+	GetAllTradeConfigsFunc       func(tenantID uuid.UUID) ([]map[string]interface{}, error)
+	TradeConfigByIdProviderFunc  func(tenantID uuid.UUID, configID string) model.Provider[map[string]interface{}]
+	AllTradeConfigsProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
+
 	// Rankings operations
 	CreateRankingsFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(rankings map[string]interface{}) (configuration.Model, error)
 	CreateRankingsAndEmitFunc func(tenantID uuid.UUID, rankings map[string]interface{}) (configuration.Model, error)
@@ -60,9 +72,20 @@ type ProcessorMock struct {
 	GetRankingsFunc           func(tenantID uuid.UUID) (map[string]interface{}, error)
 	RankingsProviderFunc      func(tenantID uuid.UUID) model.Provider[map[string]interface{}]
 
+	// Kite config operations
+	CreateKiteConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error)
+	CreateKiteConfigAndEmitFunc func(tenantID uuid.UUID, cfg map[string]interface{}) (configuration.Model, error)
+	UpdateKiteConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error)
+	UpdateKiteConfigAndEmitFunc func(tenantID uuid.UUID, cfg map[string]interface{}) (configuration.Model, error)
+	DeleteKiteConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) error
+	DeleteKiteConfigAndEmitFunc func(tenantID uuid.UUID) error
+	GetKiteConfigFunc           func(tenantID uuid.UUID) (map[string]interface{}, error)
+	KiteConfigProviderFunc      func(tenantID uuid.UUID) model.Provider[map[string]interface{}]
+
 	// Seed operations
-	SeedRpsRewardsFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
-	SeedMtsConfigsFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedRpsRewardsFunc   func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedMtsConfigsFunc   func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedTradeConfigsFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
 
 	// Vessel operations
 	CreateVesselFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(vessel map[string]interface{}) (configuration.Model, error)
@@ -481,6 +504,104 @@ func (m *ProcessorMock) AllMtsConfigsProvider(tenantID uuid.UUID) model.Provider
 	}
 }
 
+// CreateTradeConfig is a mock implementation
+func (m *ProcessorMock) CreateTradeConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(config map[string]interface{}) (configuration.Model, error) {
+	if m.CreateTradeConfigFunc != nil {
+		return m.CreateTradeConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(config map[string]interface{}) (configuration.Model, error) {
+		return func(config map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// CreateTradeConfigAndEmit is a mock implementation
+func (m *ProcessorMock) CreateTradeConfigAndEmit(tenantID uuid.UUID, config map[string]interface{}) (configuration.Model, error) {
+	if m.CreateTradeConfigAndEmitFunc != nil {
+		return m.CreateTradeConfigAndEmitFunc(tenantID, config)
+	}
+	return configuration.Model{}, nil
+}
+
+// UpdateTradeConfig is a mock implementation
+func (m *ProcessorMock) UpdateTradeConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) func(config map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateTradeConfigFunc != nil {
+		return m.UpdateTradeConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(configID string) func(config map[string]interface{}) (configuration.Model, error) {
+		return func(configID string) func(config map[string]interface{}) (configuration.Model, error) {
+			return func(config map[string]interface{}) (configuration.Model, error) {
+				return configuration.Model{}, nil
+			}
+		}
+	}
+}
+
+// UpdateTradeConfigAndEmit is a mock implementation
+func (m *ProcessorMock) UpdateTradeConfigAndEmit(tenantID uuid.UUID, configID string, config map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateTradeConfigAndEmitFunc != nil {
+		return m.UpdateTradeConfigAndEmitFunc(tenantID, configID, config)
+	}
+	return configuration.Model{}, nil
+}
+
+// DeleteTradeConfig is a mock implementation
+func (m *ProcessorMock) DeleteTradeConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) error {
+	if m.DeleteTradeConfigFunc != nil {
+		return m.DeleteTradeConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(configID string) error {
+		return func(configID string) error {
+			return nil
+		}
+	}
+}
+
+// DeleteTradeConfigAndEmit is a mock implementation
+func (m *ProcessorMock) DeleteTradeConfigAndEmit(tenantID uuid.UUID, configID string) error {
+	if m.DeleteTradeConfigAndEmitFunc != nil {
+		return m.DeleteTradeConfigAndEmitFunc(tenantID, configID)
+	}
+	return nil
+}
+
+// GetTradeConfigById is a mock implementation
+func (m *ProcessorMock) GetTradeConfigById(tenantID uuid.UUID, configID string) (map[string]interface{}, error) {
+	if m.GetTradeConfigByIdFunc != nil {
+		return m.GetTradeConfigByIdFunc(tenantID, configID)
+	}
+	return map[string]interface{}{}, nil
+}
+
+// GetAllTradeConfigs is a mock implementation
+func (m *ProcessorMock) GetAllTradeConfigs(tenantID uuid.UUID) ([]map[string]interface{}, error) {
+	if m.GetAllTradeConfigsFunc != nil {
+		return m.GetAllTradeConfigsFunc(tenantID)
+	}
+	return []map[string]interface{}{}, nil
+}
+
+// TradeConfigByIdProvider is a mock implementation
+func (m *ProcessorMock) TradeConfigByIdProvider(tenantID uuid.UUID, configID string) model.Provider[map[string]interface{}] {
+	if m.TradeConfigByIdProviderFunc != nil {
+		return m.TradeConfigByIdProviderFunc(tenantID, configID)
+	}
+	return func() (map[string]interface{}, error) {
+		return map[string]interface{}{}, nil
+	}
+}
+
+// AllTradeConfigsProvider is a mock implementation
+func (m *ProcessorMock) AllTradeConfigsProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}] {
+	if m.AllTradeConfigsProviderFunc != nil {
+		return m.AllTradeConfigsProviderFunc(tenantID)
+	}
+	return func() ([]map[string]interface{}, error) {
+		return []map[string]interface{}{}, nil
+	}
+}
+
 // SeedRpsRewards is a mock implementation
 func (m *ProcessorMock) SeedRpsRewards(tenantID uuid.UUID) (configuration.SeedResult, error) {
 	if m.SeedRpsRewardsFunc != nil {
@@ -595,6 +716,14 @@ func (m *ProcessorMock) SeedMtsConfigs(tenantID uuid.UUID) (configuration.SeedRe
 	return configuration.SeedResult{}, nil
 }
 
+// SeedTradeConfigs is a mock implementation
+func (m *ProcessorMock) SeedTradeConfigs(tenantID uuid.UUID) (configuration.SeedResult, error) {
+	if m.SeedTradeConfigsFunc != nil {
+		return m.SeedTradeConfigsFunc(tenantID)
+	}
+	return configuration.SeedResult{}, nil
+}
+
 // CreateRankings is a mock implementation
 func (m *ProcessorMock) CreateRankings(mb *message.Buffer) func(tenantID uuid.UUID) func(rankings map[string]interface{}) (configuration.Model, error) {
 	if m.CreateRankingsFunc != nil {
@@ -665,6 +794,82 @@ func (m *ProcessorMock) GetRankings(tenantID uuid.UUID) (map[string]interface{},
 func (m *ProcessorMock) RankingsProvider(tenantID uuid.UUID) model.Provider[map[string]interface{}] {
 	if m.RankingsProviderFunc != nil {
 		return m.RankingsProviderFunc(tenantID)
+	}
+	return func() (map[string]interface{}, error) {
+		return map[string]interface{}{}, nil
+	}
+}
+
+// CreateKiteConfig is a mock implementation
+func (m *ProcessorMock) CreateKiteConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error) {
+	if m.CreateKiteConfigFunc != nil {
+		return m.CreateKiteConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error) {
+		return func(cfg map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// CreateKiteConfigAndEmit is a mock implementation
+func (m *ProcessorMock) CreateKiteConfigAndEmit(tenantID uuid.UUID, cfg map[string]interface{}) (configuration.Model, error) {
+	if m.CreateKiteConfigAndEmitFunc != nil {
+		return m.CreateKiteConfigAndEmitFunc(tenantID, cfg)
+	}
+	return configuration.Model{}, nil
+}
+
+// UpdateKiteConfig is a mock implementation
+func (m *ProcessorMock) UpdateKiteConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateKiteConfigFunc != nil {
+		return m.UpdateKiteConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error) {
+		return func(cfg map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// UpdateKiteConfigAndEmit is a mock implementation
+func (m *ProcessorMock) UpdateKiteConfigAndEmit(tenantID uuid.UUID, cfg map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateKiteConfigAndEmitFunc != nil {
+		return m.UpdateKiteConfigAndEmitFunc(tenantID, cfg)
+	}
+	return configuration.Model{}, nil
+}
+
+// DeleteKiteConfig is a mock implementation
+func (m *ProcessorMock) DeleteKiteConfig(mb *message.Buffer) func(tenantID uuid.UUID) error {
+	if m.DeleteKiteConfigFunc != nil {
+		return m.DeleteKiteConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) error {
+		return nil
+	}
+}
+
+// DeleteKiteConfigAndEmit is a mock implementation
+func (m *ProcessorMock) DeleteKiteConfigAndEmit(tenantID uuid.UUID) error {
+	if m.DeleteKiteConfigAndEmitFunc != nil {
+		return m.DeleteKiteConfigAndEmitFunc(tenantID)
+	}
+	return nil
+}
+
+// GetKiteConfig is a mock implementation
+func (m *ProcessorMock) GetKiteConfig(tenantID uuid.UUID) (map[string]interface{}, error) {
+	if m.GetKiteConfigFunc != nil {
+		return m.GetKiteConfigFunc(tenantID)
+	}
+	return map[string]interface{}{}, nil
+}
+
+// KiteConfigProvider is a mock implementation
+func (m *ProcessorMock) KiteConfigProvider(tenantID uuid.UUID) model.Provider[map[string]interface{}] {
+	if m.KiteConfigProviderFunc != nil {
+		return m.KiteConfigProviderFunc(tenantID)
 	}
 	return func() (map[string]interface{}, error) {
 		return map[string]interface{}{}, nil

@@ -3,12 +3,13 @@ package reward
 import "strconv"
 
 type RestModel struct {
-	Id         string `json:"-"`
-	ItemId     uint32 `json:"itemId"`
-	Quantity   uint32 `json:"quantity"`
-	Tier       string `json:"tier"`
-	Weight     uint32 `json:"weight"`
-	GachaponId string `json:"gachaponId"`
+	Id          string `json:"-"`
+	ItemId      uint32 `json:"itemId"`
+	Quantity    uint32 `json:"quantity"`
+	Tier        string `json:"tier"`
+	Weight      uint32 `json:"weight"`
+	GachaponId  string `json:"gachaponId"`
+	CommodityId uint32 `json:"commodityId"`
 }
 
 func (r RestModel) GetName() string {
@@ -26,11 +27,12 @@ func (r *RestModel) SetID(idStr string) error {
 
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:         strconv.Itoa(int(m.ItemId())),
-		ItemId:     m.ItemId(),
-		Quantity:   m.Quantity(),
-		Tier:       m.Tier(),
-		Weight:     m.Weight(),
-		GachaponId: m.GachaponId(),
+		Id:          strconv.Itoa(int(m.ItemId())),
+		ItemId:      m.ItemId(),
+		Quantity:    m.Quantity(),
+		Tier:        m.Tier(),
+		Weight:      m.Weight(),
+		GachaponId:  m.GachaponId(),
+		CommodityId: m.CommodityId(),
 	}, nil
 }

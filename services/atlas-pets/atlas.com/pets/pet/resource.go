@@ -116,12 +116,36 @@ func createPetExpiration(provided time.Time, now time.Time) time.Time {
 	return provided
 }
 
+// SlotUnspawned is the slot value for a pet that is not currently out. Slots
+// 0..2 are the three active pet positions.
+const SlotUnspawned = int8(-1)
+
+// createPetSlot forces a newly created pet to start unspawned.
+//
+// Slot is a plain int8 on the wire, so an absent "slot" field is indistinguishable
+// from a deliberate 0 — and 0 means "spawned in the first pet position". Neither
+// producer sends the field (atlas-cashshop's pet RestModel has no Slot at all;
+// atlas-inventory posts a bare model), so every pet was being created already
+// spawned. Two purchases then both sat in slot 0, which is a state Spawn itself
+// can never produce: the client shows one pet it never summoned and cannot
+// dismiss, and the hunger task decays both, so slot 0's displayed fullness
+// alternates between two different pets.
+//
+// Spawning is an explicit action (Processor.Spawn, which assigns the slot and
+// shifts existing pets); creation must never confer it. This mirrors
+// createPetName / createPetLevel / createPetExpiration, which exist because the
+// same bare-POST path under-specifies those fields too.
+func createPetSlot() int8 {
+	return SlotUnspawned
+}
+
 func handleCreate(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		p := NewProcessor(d.Logger(), d.Context(), d.DB())
 		i.Name = createPetName(i.Name)
 		i.Level = createPetLevel(i.Level)
 		i.Expiration = createPetExpiration(i.Expiration, time.Now())
+		i.Slot = createPetSlot()
 		ip, err := model.Map(Extract)(model.FixedProvider(i))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to create model from input.")

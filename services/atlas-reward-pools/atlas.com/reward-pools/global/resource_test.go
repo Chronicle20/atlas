@@ -3,8 +3,10 @@ package global
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -35,7 +37,11 @@ func setupGlobalRouter(db *gorm.DB) *mux.Router {
 }
 
 func requestWithTenant(method, url string, tenantId uuid.UUID) *http.Request {
-	req, err := http.NewRequest(method, url, nil)
+	return requestWithTenantBody(method, url, tenantId, nil)
+}
+
+func requestWithTenantBody(method, url string, tenantId uuid.UUID, body io.Reader) *http.Request {
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		panic(err)
 	}
@@ -56,6 +62,55 @@ func seedGlobalItem(t *testing.T, db *gorm.DB, tenantId uuid.UUID, id uint32, it
 		Build()
 	require.NoError(t, err)
 	require.NoError(t, CreateItem(db, m))
+}
+
+// TestCreateGlobalItemWithoutClientSuppliedId drives POST /global-items with
+// the UI's JSON:API creation payload, which carries no `data.id` — the row id
+// is server-generated. api2go calls SetID("") for it, which must not fail the
+// request. Mirrors item.TestCreateItemWithoutClientSuppliedId.
+func TestCreateGlobalItemWithoutClientSuppliedId(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, Migration)
+	tenantId := uuid.New()
+
+	srv := httptest.NewServer(setupGlobalRouter(db))
+	defer srv.Close()
+
+	body := `{"data":{"type":"global-gachapon-items","attributes":{"itemId":2000000,"quantity":1,"tier":"rare"}}}`
+	req := requestWithTenantBody(http.MethodPost, srv.URL+"/global-items", tenantId, strings.NewReader(body))
+
+	resp, err := (&http.Client{}).Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+
+	// Read it back through the router so the assertion covers the persisted
+	// row, not just the status code.
+	getResp, err := (&http.Client{}).Do(requestWithTenant(http.MethodGet, srv.URL+"/global-items", tenantId))
+	require.NoError(t, err)
+	defer func() { _ = getResp.Body.Close() }()
+
+	var doc jsonapi.Document
+	require.NoError(t, json.NewDecoder(getResp.Body).Decode(&doc))
+	require.NotNil(t, doc.Data)
+	require.Len(t, doc.Data.DataArray, 1)
+
+	var attrs JSONModel
+	require.NoError(t, json.Unmarshal(doc.Data.DataArray[0].Attributes, &attrs))
+	assert.EqualValues(t, 2000000, attrs.ItemId)
+	assert.Equal(t, "rare", attrs.Tier)
+}
+
+// TestSetIDAcceptsEmptyId pins the unmarshal-level contract directly.
+func TestSetIDAcceptsEmptyId(t *testing.T) {
+	var rm RestModel
+	require.NoError(t, rm.SetID(""))
+	assert.EqualValues(t, 0, rm.Id)
+
+	require.NoError(t, rm.SetID("7"))
+	assert.EqualValues(t, 7, rm.Id)
+
+	assert.Error(t, rm.SetID("not-a-number"), "a genuinely malformed id must still be rejected")
 }
 
 // TestGetAllGlobalItemsPaginates drives GET /global-items (bare, no tier

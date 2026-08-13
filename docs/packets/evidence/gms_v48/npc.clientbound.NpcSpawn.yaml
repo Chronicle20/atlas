@@ -1,0 +1,11 @@
+packet: npc/clientbound/NpcSpawn
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CNpcPool::OnNpcEnterField
+    address: "0x56d527"
+    decompile_sha256: 73d89c8b9e65288a203126756957153e33bfb1d0ff2b0f35327f7f25637f796e
+verifies:
+    - libs/atlas-packet/npc/clientbound/spawn_v48_test.go#TestNpcSpawnByteOutputV48
+    - libs/atlas-packet/npc/clientbound/spawn_v48_test.go#TestNpcSpawnEnabledFlagBoundary

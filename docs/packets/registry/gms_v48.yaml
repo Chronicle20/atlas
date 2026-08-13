@@ -325,14 +325,14 @@
   provenance: ida-discovered
   ida:
     address: 7393813
-- op: INCUBATOR_RESULT
+- op: ENTRUSTED_SHOP_CHECK_RESULT
   direction: clientbound
   opcode: 42
-  fname: CWvsContext::OnIncubatorResult
+  fname: CWvsContext::OnEntrustedShopCheckResult
   provenance: ida-discovered
   ida:
-    address: 7393813
-  note: 'v48 groups incubator early (v61 op 66); reordered. delta doc a.'
+    address: 7468842
+  note: 'task-188: CWvsContext::OnPacket @0x70d215 dispatches case 42 to OnEntrustedShopCheckResult @0x71f72a. Previously registered as INCUBATOR_RESULT (with the note "v48 groups incubator early (v61 op 66); reordered. delta doc a."); the v61-anchored FName->Op join slipped one slot because v48 has an EntrustedShopCheckResult arm at 42 that the anchor lacks, which shifted INCUBATOR_RESULT (real 56) and SHOP_SCANNER_RESULT (real 57) down with it.'
 - op: SKILL_LEARN_ITEM_RESULT
   direction: clientbound
   opcode: 43
@@ -408,21 +408,24 @@
   ida:
     address: 7393813
   note: 'broadcast dispatcher; operations table arms 0-9 (NARROWER than v61 0-10; NO item-megaphone arm). delta doc b.'
-- op: SHOP_SCANNER_RESULT
+- op: INCUBATOR_RESULT
   direction: clientbound
   opcode: 56
-  fname: CWvsContext::OnShopScannerResult
+  fname: CWvsContext::OnIncubatorResult
   provenance: ida-discovered
   ida:
-    address: 7393813
-- op: IDA_0X039
+    address: 7469617
+  note: 'task-188: CWvsContext::OnPacket @0x70d215 case 56 -> OnIncubatorResult @0x71fa31. Was registered at 42; see the ENTRUSTED_SHOP_CHECK_RESULT note.'
+- op: SHOP_SCANNER_RESULT
   direction: clientbound
   opcode: 57
-  fname: sub_71FF8E
+  fname: CWvsContext::OnShopScannerResult
+  fname_alts:
+  - sub_71FF8E
   provenance: ida-discovered
   ida:
     address: 7470990
-  note: 'unnamed CWvsContext sub (57-63 block = v61 buddy/friend + upper-tail region); v61 op-identity body-map DEFERRED (see remaining).'
+  note: 'task-188: no longer an unnamed placeholder - CWvsContext::OnPacket @0x70d215 case 57 dispatches to ?OnShopScannerResult@CWvsContext@@ @0x71ff8e (the IDB names it; sub_71FF8E was the same address). Was registered at 56; see the ENTRUSTED_SHOP_CHECK_RESULT note.'
 - op: IDA_0X03A
   direction: clientbound
   opcode: 58
@@ -603,26 +606,26 @@
   ida:
     address: 5012313
   note: "base case 'T'(84); FIELD_EFFECT family."
-- op: FIELD_OBSTACLE_ONOFF_LIST
-  direction: clientbound
-  opcode: 85
-  fname: CField::OnFieldObstacleOnOffStatus
-  fname_alts:
-  - sub_4C930A
-  provenance: manual
-  ida:
-    address: 5018378
-  note: "base case 'U'(85); FIELD_OBSTACLE family (v61 105). delta doc a."
 - op: BLOW_WEATHER
   direction: clientbound
-  opcode: 86
+  opcode: 85
   fname: CField::OnBlowWeather
   fname_alts:
+  - sub_4C930A
+  provenance: ida-discovered
+  ida:
+    address: 5018378
+  note: "task-188: base case 'U'(85). The IDB names 0x4c930a ?OnBlowWeather@CField@@, and its body reads Decode1 @0x4c9328 + Decode4(itemId) @0x4c932e + get_consume_cash_item_type @0x47742e + DecodeStr(message) @0x4c9558. Previously this slot was labelled FIELD_OBSTACLE_ONOFF_LIST and BLOW_WEATHER sat at 86; the labels were shifted one slot against the addresses, which were already correct. FIELD_OBSTACLE_ONOFF_LIST is not registered for v48 - CField::OnFieldObstacleOnOff/Status do not resolve in this IDB."
+- op: PLAY_JUKEBOX
+  direction: clientbound
+  opcode: 86
+  fname: CField::OnPlayJukeBox
+  fname_alts:
   - sub_4C95F2
-  provenance: manual
+  provenance: ida-discovered
   ida:
     address: 5019122
-  note: "base case 'V'(86); BLOW_WEATHER (v61 106). delta doc a."
+  note: "task-188: base case 'V'(86). The IDB names 0x4c95f2 ?OnPlayJukeBox@CField@@. This slot previously carried BLOW_WEATHER, which is really 85."
 - op: ADMIN_RESULT
   direction: clientbound
   opcode: 87
@@ -730,6 +733,24 @@
     address: 7022966
   note: 'sub_6B2710 case a1==101 -> sub_6B2976. (common 102-124 -> sub_6B2A51; remote 125-143 -> sub_6B2AE4; local 144-155 -> sub_6B2C6D: leaf ops DEFERRED, see remaining.)'
 
+# ---------------- clientbound: CAffectedAreaPool::OnPacket @0x42182f ----------------
+- op: SPAWN_MIST
+  direction: clientbound
+  opcode: 202
+  fname: CAffectedAreaPool::OnAffectedAreaCreated
+  provenance: ida-discovered
+  ida:
+    address: 4331604
+  note: 'CAffectedAreaPool::OnPacket @0x42182f: sub eax, 0CAh / jz -> OnAffectedAreaCreated @0x421854. Case constant READ from disasm (0x421833), not derived from v61.'
+- op: REMOVE_MIST
+  direction: clientbound
+  opcode: 203
+  fname: CAffectedAreaPool::OnAffectedAreaRemoved
+  provenance: ida-discovered
+  ida:
+    address: 4333183
+  note: 'CAffectedAreaPool::OnPacket @0x42182f: dec eax / jnz ret -> OnAffectedAreaRemoved @0x421e7f for a1==0xCB. Case constant READ from disasm (0x42183a).'
+
 # ---------------- clientbound: CCashShop::OnPacket @0x4534d6 ----------------
 - op: IDA_0X0FE
   direction: clientbound
@@ -754,13 +775,13 @@
   provenance: ida-discovered
   ida:
     address: 4535510
-- op: CASHSHOP_CASH_ITEM_GACHAPON_RESULT
-  direction: clientbound
-  opcode: 257
-  fname: CCashShop::OnCashItemGachaponResult
-  provenance: ida-discovered
-  ida:
-    address: 4535510
+# task-207: opcode 257's fname CCashShop::OnCashItemGachaponResult was a
+# mis-attribution. v48's handler at 0x4536b9 is a verified 3-line
+# stub — CInPacket::Decode1(a2) written straight into a CWvsContext flag byte
+# — not a gachapon result (design.md §1.1; feature-na-evidence.yaml carries
+# the full proof). Row removed so the cell grades n-a rather than a false
+# ❌; StateNA derives solely from registry absence
+# (internal/matrix/grade.go), not from feature-na-evidence.yaml alone.
 - op: CASHSHOP_CHECK_NAME_CHANGE
   direction: clientbound
   opcode: 258
@@ -1184,6 +1205,14 @@
   ida:
     address: 5748606
   note: 'send-site 0x58e90b: COutPacket(114)+EncBuffer(petId,8)+Enc1(type)+Enc1(action)+EncStr(msg). v61 PET_CHAT=139.'
+- op: PET_AUTO_POT
+  direction: serverbound
+  opcode: 117
+  fname: CWvsContext::SendStatChangeItemUseRequestByPetQ
+  provenance: ida-discovered
+  ida:
+    address: 7396493
+  note: 'task-139 re-harvest (was unresolved/n-a; the IDB symbol carries a double-underscore rename, CWvsContext__SendStatChangeItemUseRequestByPetQ, per IDA''s Class::Method identifier restriction). send-site 0x70dc8d: COutPacket(117)+Encode1(a4=buffSkill)@0x70dcd5+Encode4(v7=updateTime)@0x70dce3+Encode2(a2=source/slot)@0x70dcee+Encode4(a3=itemId)@0x70dcf9 — NO leading EncodeBuffer(petSN,8) (v48 predates multi-pet). v61 op142 is the first version to carry the petSN. Corrects the prior false n-a (op was absent from the registry, an artifact of the encoder being unresolved at the original harvest time, not genuine absence).'
 - op: SUMMON_ATTACK
   direction: serverbound
   opcode: 121
@@ -1237,6 +1266,24 @@
   ida:
     address: 5748606
   note: 'send-site 0x44a44d etc: COutPacket(160), CCashShop cash-purchase family (OnBuy/OnBuyCouple/OnBuyFriendship/OnBuyPackage/OnGift/OnSetWish all COutPacket(160)+Enc1(sub-op)). v61 CASHSHOP_OPERATION=196.'
+- op: COUPON_CODE
+  direction: serverbound
+  opcode: 161
+  fname: CCashShop::OnStatusCoupon
+  packet: cash/serverbound/CouponCode
+  provenance: manual
+  note: >-
+    task-206: the previous registry absence (and the matrix n-a) was
+    "nobody looked", not client-absence. CCashShop::OnStatusCoupon @ 0x44d2e7
+    builds COutPacket(0xA1) at 0x44d348 (push 0A1h @ 0x44d340 =
+    CASHSHOP_OPERATION 160 + 1) and sends it at 0x44d3b1. Body is three
+    EncodeStr and no Encode1: EncodeStr(characterId) @ 0x44d365,
+    EncodeStr(couponCode) @ 0x44d37e, then EncodeStr(third) @ 0x44d3a2
+    guarded on characterId being non-empty (dead, characterId is never
+    populated) — the same shape as gms_v83. v48 alone has NO client-side
+    empty-code guard: the "Please enter the coupon code." literal is absent
+    from the whole binary, so an empty coupon code can reach the server.
+    See docs/tasks/task-206-cash-shop-coupon-codes/derivation.md.
 - op: GENERAL_CHAT
   direction: serverbound
   opcode: 40
@@ -1568,3 +1615,207 @@
   ida:
     address: 7397387   # 0x70e00b
   note: 'v48 SendTamingMobFoodItemUseRequest COutPacket(61) @0x70e00b; Encode4(update_time)·Encode2(slot)·Encode4(itemId); guard nItemID/10000==226 (taming-mob food). Corrects prior false n-a (op was absent from registry). task-138.'
+
+# ---------------- clientbound: object pools (task-188) ----------------
+# The Stage-B registry deliberately deferred the mob/npc/drop pool leaves. Their
+# opcodes are read directly off each pool's own numeric dispatcher in the v48
+# client, not shifted from v61:
+#   CMobPool::OnPacket  @0x559340 - 158 enter / 159 leave / 160 change-controller
+#   CNpcPool::OnPacket  @0x56d413 - 177 enter / 178 leave / 179 change-controller
+#   CDropPool::OnPacket @0x4aaccf - 193 enter / 194 leave
+# Op names match the gms_v61 dictionary; only the codes differ.
+- op: SPAWN_MONSTER
+  direction: clientbound
+  opcode: 158
+  fname: CMobPool::OnMobEnterField
+  provenance: ida-discovered
+  ida:
+    address: 5608517
+- op: KILL_MONSTER
+  direction: clientbound
+  opcode: 159
+  fname: CMobPool::OnMobLeaveField
+  provenance: ida-discovered
+  ida:
+    address: 5608827
+- op: SPAWN_MONSTER_CONTROL
+  direction: clientbound
+  opcode: 160
+  fname: CMobPool::OnMobChangeController
+  provenance: ida-discovered
+  ida:
+    address: 5609232
+- op: SPAWN_NPC
+  direction: clientbound
+  opcode: 177
+  fname: CNpcPool::OnNpcEnterField
+  provenance: ida-discovered
+  ida:
+    address: 5690663
+- op: REMOVE_NPC
+  direction: clientbound
+  opcode: 178
+  fname: CNpcPool::OnNpcLeaveField
+  provenance: ida-discovered
+  ida:
+    address: 5690809
+- op: SPAWN_NPC_REQUEST_CONTROLLER
+  direction: clientbound
+  opcode: 179
+  fname: CNpcPool::OnNpcChangeController
+  provenance: ida-discovered
+  ida:
+    address: 5690903
+- op: DROP_ITEM_FROM_MAPOBJECT
+  direction: clientbound
+  opcode: 193
+  fname: CDropPool::OnDropEnterField
+  provenance: ida-discovered
+  ida:
+    address: 4893940
+- op: REMOVE_ITEM_FROM_MAP
+  direction: clientbound
+  opcode: 194
+  fname: CDropPool::OnDropLeaveField
+  provenance: ida-discovered
+  ida:
+    address: 4897018
+
+# ------------- clientbound: reactor / town-portal / message-box pools (task-188) -------------
+# Same deferred-pool-leaf gap as the mob/npc/drop block above. Opcodes read off each
+# pool's own numeric dispatcher in the v48 client; all differ from v61's:
+#   CTownPortalPool::OnPacket  @0x5e318d - 206 created / 207 removed   (v61: 212/213)
+#   CMessageBoxPool::OnPacket  @0x54329b - 197 fail / 198 enter / 199 leave (v61: 207/208/209)
+#   CReactorPool::OnPacket     @0x5a5390 - 210 change-state / 212 enter / 213 leave (v61: 214/216/217)
+- op: SPAWN_DOOR
+  direction: clientbound
+  opcode: 206
+  fname: CTownPortalPool::OnTownPortalCreated
+  provenance: ida-discovered
+  ida:
+    address: 6173106
+- op: REMOVE_DOOR
+  direction: clientbound
+  opcode: 207
+  fname: CTownPortalPool::OnTownPortalRemoved
+  provenance: ida-discovered
+  ida:
+    address: 6175552
+- op: CANNOT_SPAWN_KITE
+  direction: clientbound
+  opcode: 197
+  fname: CMessageBoxPool::OnCreateFailed
+  provenance: ida-discovered
+  ida:
+    address: 5518030
+- op: SPAWN_KITE
+  direction: clientbound
+  opcode: 198
+  fname: CMessageBoxPool::OnMessageBoxEnterField
+  provenance: ida-discovered
+  ida:
+    address: 5518071
+- op: REMOVE_KITE
+  direction: clientbound
+  opcode: 199
+  fname: CMessageBoxPool::OnMessageBoxLeaveField
+  provenance: ida-discovered
+  ida:
+    address: 5519582
+- op: REACTOR_HIT
+  direction: clientbound
+  opcode: 210
+  fname: CReactorPool::OnReactorChangeState
+  provenance: ida-discovered
+  ida:
+    address: 5919684
+- op: REACTOR_SPAWN
+  direction: clientbound
+  opcode: 212
+  fname: CReactorPool::OnReactorEnterField
+  provenance: ida-discovered
+  ida:
+    address: 5919924
+- op: REACTOR_DESTROY
+  direction: clientbound
+  opcode: 213
+  fname: CReactorPool::OnReactorLeaveField
+  provenance: ida-discovered
+  ida:
+    address: 5920907
+
+# ------------- serverbound: item-use / mob pickup (task-188) -------------
+# Opcodes are the COutPacket ctor argument at each send-site:
+#   CWvsContext::SendPetFoodItemUseRequest @0x70df2f - COutPacket(60)
+#   CWvsContext::SendUpgradeItemUseRequest @0x70da60 - COutPacket(66)
+#   CMob::SendDropPickUpRequest            @0x55220a - COutPacket(131)
+- op: PET_FOOD
+  direction: serverbound
+  opcode: 60
+  fname: CWvsContext::SendPetFoodItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 7397167
+- op: USE_CATCH_ITEM
+  direction: serverbound
+  opcode: 63
+  fname: CWvsContext::SendBridleItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 7397573
+- op: USE_UPGRADE_SCROLL
+  direction: serverbound
+  opcode: 66
+  fname: CWvsContext::SendUpgradeItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 7395936
+- op: MOB_DROP_PICKUP_REQUEST
+  direction: serverbound
+  opcode: 131
+  fname: CMob::SendDropPickUpRequest
+  provenance: ida-discovered
+  ida:
+    address: 5579274
+
+- op: SPAWN_PET
+  direction: clientbound
+  opcode: 109
+  fname: CUser::OnPetPacket
+  provenance: ida-discovered
+  ida:
+    address: 6890011
+  note: 'CUser::OnPetPacket @0x69221b is reached from CUserPool::OnUserCommonPacket @0x6b2a51 for opcodes 108-115; inside it, 109 is the spawn arm and 110 the destroy arm (111 CPet::OnMove, 112 OnAction, 113 OnNameChanged). v61 uses 127.'
+- op: MOB_AFFECTED
+  direction: clientbound
+  opcode: 168
+  fname: CMob::OnAffected
+  provenance: ida-discovered
+  ida:
+    address: 5574988
+  note: 'CMobPool::OnMobPacket @0x559390 switches 162 OnMove / 163 OnCtrlAck / 165 OnStatSet / 166 OnStatReset / 167 OnSuspendReset / 168 OnAffected / 169 OnDamaged / 170 OnSpecialEffectBySkill. v61 uses 184.'
+- op: CATCH_MONSTER
+  direction: clientbound
+  opcode: 172
+  fname: CMob::OnCatchEffect
+  fname_alts:
+    - sub_5511F4
+  provenance: manual
+  note: 'task-212 design F-1. IDA v48 CMobPool::OnMobPacket (0x559390) case 172 (0x0AC) dispatches to unnamed sub_5511F4 (0x5511F4), one Decode1 read; canonical fname CMob::OnCatchEffect kept as best-effort label per precedent (gms_v92.yaml CATCH_MONSTER), unnamed function recorded as alt.'
+- op: CATCH_MONSTER_WITH_ITEM
+  direction: clientbound
+  opcode: 173
+  fname: CMob::OnEffectByItem
+  fname_alts:
+    - sub_551481
+  provenance: manual
+  note: 'task-212 design F-2. IDA v48 CMobPool::OnMobPacket (0x559390) case 173 (0x0AD) dispatches to unnamed sub_551481 (0x551481), Decode4 only (no trailing result byte) -- one field shorter than every other version''s CMob::OnEffectByItem, which also reads Decode1.'
+- op: SPAWN_PET
+  direction: serverbound
+  opcode: 77
+  fname: CWvsContext::SendActivatePetRequest
+  provenance: ida-discovered
+  ida:
+    address: 7459096
+  note: 'Serverbound twin of the clientbound SPAWN_PET above. CWvsContext::SendActivatePetRequest @0x71d118 builds COutPacket(77) and encodes Encode4(tick) + Encode2(slot).'
+

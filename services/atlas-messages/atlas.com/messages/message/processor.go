@@ -2,6 +2,7 @@ package message
 
 import (
 	"atlas-messages/character"
+	"atlas-messages/chat"
 	"atlas-messages/command"
 	message2 "atlas-messages/kafka/message/message"
 	"context"
@@ -30,12 +31,19 @@ type ProcessorImpl struct {
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
-	p := &ProcessorImpl{
+	return NewProcessorWithClients(l, ctx, character.NewProcessor(l, ctx))
+}
+
+// NewProcessorWithClients constructs a Processor with an explicit
+// character.Processor implementation. Production callers use NewProcessor;
+// callers that already hold a character.Processor (or a substitute, e.g.
+// tests) inject it here.
+func NewProcessorWithClients(l logrus.FieldLogger, ctx context.Context, cp character.Processor) Processor {
+	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
-		cp:  character.NewProcessor(l, ctx),
+		cp:  cp,
 	}
-	return p
 }
 
 func (p *ProcessorImpl) HandleGeneral(f field.Model, actorId uint32, message string, balloonOnly bool) error {
@@ -53,6 +61,8 @@ func (p *ProcessorImpl) HandleGeneral(f field.Model, actorId uint32, message str
 		}
 		return err
 	}
+
+	p.captureLine(f, actorId, c.Name(), message2.ChatTypeGeneral, message)
 
 	err = producer.ProviderImpl(p.l)(p.ctx)(message2.EnvEventTopicChat)(generalChatEventProvider(f, actorId, message, balloonOnly))
 	if err != nil {
@@ -76,6 +86,8 @@ func (p *ProcessorImpl) HandleMulti(f field.Model, actorId uint32, message strin
 		}
 		return err
 	}
+
+	p.captureLine(f, actorId, c.Name(), chatType, message)
 
 	err = producer.ProviderImpl(p.l)(p.ctx)(message2.EnvEventTopicChat)(multiChatEventProvider(f, actorId, message, chatType, recipients))
 	if err != nil {
@@ -110,6 +122,8 @@ func (p *ProcessorImpl) HandleWhisper(f field.Model, actorId uint32, message str
 		return errors.New("not in world")
 	}
 
+	p.captureLine(f, actorId, c.Name(), message2.ChatTypeWhisper, message)
+
 	err = producer.ProviderImpl(p.l)(p.ctx)(message2.EnvEventTopicChat)(whisperChatEventProvider(f, actorId, message, tc.Id()))
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to relay message from character [%d].", c.Id())
@@ -123,6 +137,8 @@ func (p *ProcessorImpl) HandleMessenger(f field.Model, actorId uint32, message s
 		p.l.WithError(err).Errorf("Unable to locate character chatting [%d].", actorId)
 		return err
 	}
+
+	p.captureLine(f, actorId, c.Name(), message2.ChatTypeMessenger, message)
 
 	err = producer.ProviderImpl(p.l)(p.ctx)(message2.EnvEventTopicChat)(messengerChatEventProvider(f, actorId, message, recipients))
 	if err != nil {
@@ -146,4 +162,12 @@ func (p *ProcessorImpl) IssuePinkText(f field.Model, actorId uint32, message str
 		p.l.WithError(err).Errorf("Unable to relay message from actorId [%d].", actorId)
 	}
 	return err
+}
+
+// captureLine records a player-authored chat line for report corroboration.
+// Best-effort: a Redis outage logs a warning and never blocks the chat flow.
+func (p *ProcessorImpl) captureLine(f field.Model, senderId uint32, senderName string, chatType string, text string) {
+	if err := chat.NewProcessor(p.l, p.ctx).Capture(f, senderId, senderName, chatType, text); err != nil {
+		p.l.WithError(err).Warnf("Unable to capture chat line for character [%d].", senderId)
+	}
 }

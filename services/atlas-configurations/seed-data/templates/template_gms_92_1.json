@@ -506,6 +506,33 @@
         ]
       },
       {
+        "opCode": "0x4F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseHandle",
+        "fname": "CWvsContext::SendStatChangeItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x52",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseSummonBagHandle",
+        "fname": "CWvsContext::SendMobSummonItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x53",
+        "validator": "LoggedInValidator",
+        "handler": "PetFoodHandle",
+        "fname": "CWvsContext::SendPetFoodItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x54",
         "validator": "LoggedInValidator",
         "handler": "MountFoodHandle",
@@ -555,6 +582,24 @@
         "validator": "LoggedInValidator",
         "handler": "TeleportRockUseHandle",
         "fname": "CWvsContext::SendMapTransferItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x5C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseTownScrollHandle",
+        "fname": "CWvsContext::SendPortalScrollUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x5D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseScrollHandle",
+        "fname": "CWvsContext::SendUpgradeItemUseRequest",
         "services": [
           "channel"
         ]

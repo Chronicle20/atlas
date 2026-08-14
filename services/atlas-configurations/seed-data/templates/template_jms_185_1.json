@@ -516,6 +516,15 @@
         ]
       },
       {
+        "opCode": "0x43",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseSummonBagHandle",
+        "fname": "CWvsContext::SendMobSummonItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x44",
         "validator": "LoggedInValidator",
         "handler": "PetFoodHandle",
@@ -565,6 +574,15 @@
         "validator": "LoggedInValidator",
         "handler": "TeleportRockUseHandle",
         "fname": "CWvsContext::SendMapTransferItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x4D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseTownScrollHandle",
+        "fname": "CWvsContext::SendPortalScrollUseRequest",
         "services": [
           "channel"
         ]

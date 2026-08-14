@@ -147,7 +147,6 @@ func TestResetPetExpirationRejectsZeroLife(t *testing.T) {
 
 	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap).WithCashProcessor(lifeCashMock(0))
 
-	mb = message.NewBuffer()
 	want := time.Now().Add(24 * time.Hour)
 	if err := cp.ResetPetExpirationAndEmit(uuid.New(), characterId, 9, want, sourceTemplateId); err == nil {
 		t.Fatal("expected rejection when the source item has no info/life")
@@ -177,7 +176,6 @@ func TestResetPetExpirationRejectsOverCap(t *testing.T) {
 
 	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap).WithCashProcessor(lifeCashMock(90))
 
-	mb = message.NewBuffer()
 	forged := time.Now().Add(200 * 24 * time.Hour)
 	if err := cp.ResetPetExpirationAndEmit(uuid.New(), characterId, 9, forged, sourceTemplateId); err == nil {
 		t.Fatal("expected ResetPetExpirationAndEmit to reject an over-cap request, got nil error")
@@ -206,7 +204,6 @@ func TestResetPetExpirationHonorsInBoundsRequest(t *testing.T) {
 
 	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap).WithCashProcessor(lifeCashMock(90))
 
-	mb = message.NewBuffer()
 	want := time.Now().Add(90*24*time.Hour - time.Minute).Truncate(time.Second)
 	if err := cp.ResetPetExpirationAndEmit(uuid.New(), characterId, 9, want, sourceTemplateId); err != nil {
 		t.Fatalf("ResetPetExpirationAndEmit: %v", err)

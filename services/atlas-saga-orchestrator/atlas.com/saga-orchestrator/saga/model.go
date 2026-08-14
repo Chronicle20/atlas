@@ -30,23 +30,24 @@ type (
 
 // Saga type constants
 const (
-	InventoryTransaction = sharedsaga.InventoryTransaction
-	QuestReward          = sharedsaga.QuestReward
-	TradeTransaction     = sharedsaga.TradeTransaction
-	TradeStaging         = sharedsaga.TradeStaging
-	CharacterCreation    = sharedsaga.CharacterCreation
-	StorageOperation     = sharedsaga.StorageOperation
-	CharacterRespawn     = sharedsaga.CharacterRespawn
-	GachaponTransaction  = sharedsaga.GachaponTransaction
-	PetEvolution         = sharedsaga.PetEvolution
-	ItemTagUse           = sharedsaga.ItemTagUse
-	SealingLockUse       = sharedsaga.SealingLockUse
-	IncubatorUse         = sharedsaga.IncubatorUse
-	PointReset           = sharedsaga.PointReset
-	MesoSackUse          = sharedsaga.MesoSackUse
-	MtsOperation         = sharedsaga.MtsOperation
-	NoteSend             = sharedsaga.NoteSend
-	SkillBookUse         = sharedsaga.SkillBookUse
+	InventoryTransaction  = sharedsaga.InventoryTransaction
+	QuestReward           = sharedsaga.QuestReward
+	TradeTransaction      = sharedsaga.TradeTransaction
+	TradeStaging          = sharedsaga.TradeStaging
+	CharacterCreation     = sharedsaga.CharacterCreation
+	StorageOperation      = sharedsaga.StorageOperation
+	CharacterRespawn      = sharedsaga.CharacterRespawn
+	GachaponTransaction   = sharedsaga.GachaponTransaction
+	PetEvolution          = sharedsaga.PetEvolution
+	ItemTagUse            = sharedsaga.ItemTagUse
+	SealingLockUse        = sharedsaga.SealingLockUse
+	IncubatorUse          = sharedsaga.IncubatorUse
+	ExpirationExtenderUse = sharedsaga.ExpirationExtenderUse
+	PointReset            = sharedsaga.PointReset
+	MesoSackUse           = sharedsaga.MesoSackUse
+	MtsOperation          = sharedsaga.MtsOperation
+	NoteSend              = sharedsaga.NoteSend
+	SkillBookUse          = sharedsaga.SkillBookUse
 )
 
 // Status constants
@@ -221,6 +222,9 @@ const (
 	SetAssetOwner   = sharedsaga.SetAssetOwner
 	ApplyAssetLock  = sharedsaga.ApplyAssetLock
 	IncubatorResult = sharedsaga.IncubatorResult
+
+	// Expiration extender actions
+	ExtendAssetExpiration = sharedsaga.ExtendAssetExpiration
 )
 
 // Re-exported payload types from shared library
@@ -327,6 +331,7 @@ type (
 	ApplyAssetLockPayload               = sharedsaga.ApplyAssetLockPayload
 	IncubatorResultPayload              = sharedsaga.IncubatorResultPayload
 	CreateNotePayload                   = sharedsaga.CreateNotePayload
+	ExtendAssetExpirationPayload        = sharedsaga.ExtendAssetExpirationPayload
 	// Megaphone / world broadcast payload types
 	EmitMegaphonePayload         = sharedsaga.EmitMegaphonePayload
 	EnqueueWorldBroadcastPayload = sharedsaga.EnqueueWorldBroadcastPayload
@@ -1609,6 +1614,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ApplyAssetLock:
 		var payload ApplyAssetLockPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ExtendAssetExpiration:
+		var payload ExtendAssetExpirationPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

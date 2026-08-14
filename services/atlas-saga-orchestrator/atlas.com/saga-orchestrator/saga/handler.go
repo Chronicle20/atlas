@@ -174,6 +174,7 @@ type Handler interface {
 	handleEmitMegaphone(s Saga, st Step[any]) error
 	handleEnqueueWorldBroadcast(s Saga, st Step[any]) error
 	handleCreateNote(s Saga, st Step[any]) error
+	handleExtendAssetExpiration(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -948,6 +949,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleSetAssetOwner, true
 	case ApplyAssetLock:
 		return h.handleApplyAssetLock, true
+	case ExtendAssetExpiration:
+		return h.handleExtendAssetExpiration, true
 	case IncubatorResult:
 		return h.handleIncubatorResult, true
 	case EmitMegaphone:
@@ -1144,6 +1147,20 @@ func (h *HandlerImpl) handleApplyAssetLock(s Saga, st Step[any]) error {
 	err := h.compP.RequestApplyLock(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Expiration)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to apply asset lock.")
+		return err
+	}
+	return nil
+}
+
+// handleExtendAssetExpiration handles the ExtendAssetExpiration action
+func (h *HandlerImpl) handleExtendAssetExpiration(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ExtendAssetExpirationPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+	err := h.compP.RequestExtendExpiration(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Expiration, payload.ExtenderTemplateId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to extend asset expiration.")
 		return err
 	}
 	return nil

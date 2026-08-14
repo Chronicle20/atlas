@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
@@ -75,6 +76,14 @@ func Unregister(id skill2.Identity) {
 // packetmodel.SkillUsageInfo: processAttack has an AttackInfo, and
 // synthesizing a SkillUsageInfo would hand handlers zero-valued
 // AffectedMobIds / AffectedPartyMemberBitmap fields that look real.
+//
+// castOrigin is the world point the attack packet itself nominated for the
+// cast, or nil when the packet carries none. Today only the thrown-grenade
+// skills supply one (AttackInfo.GrenadeX/GrenadeY); every other attack leaves
+// it nil and a handler that needs a position falls back to the caster's own.
+// It is a pointer rather than a zero-valued point because (0,0) is a legal map
+// coordinate -- a value type could not distinguish "the packet said origin
+// (0,0)" from "the packet said nothing".
 type AttackCastHandler func(l logrus.FieldLogger) func(ctx context.Context) func(
 	wp writer.Producer,
 	f field.Model,
@@ -82,6 +91,7 @@ type AttackCastHandler func(l logrus.FieldLogger) func(ctx context.Context) func
 	skillId skill2.Id,
 	skillLevel byte,
 	e effect.Model,
+	castOrigin *point.Model,
 ) error
 
 // attackCastRegistry is keyed on skill2.Identity for the same version-blind

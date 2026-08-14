@@ -43,14 +43,13 @@ func (p *ProjectilePlan) Shortfall() bool {
 }
 
 type ProjectileProcessor interface {
-	Plan(c character.Model, ai packetmodel.AttackInfo, se effect.Model) (*ProjectilePlan, bool)
+	Plan(c character.Model, ai packetmodel.AttackInfo, se effect.Model, getBuffs func(characterId uint32) ([]buff.Model, error)) (*ProjectilePlan, bool)
 	Emit(characterId uint32, plan *ProjectilePlan) error
 }
 
 type ProjectileProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
-	bp  buff.Processor
 	cpp compartment.Processor
 }
 
@@ -58,12 +57,11 @@ func NewProjectileProcessor(l logrus.FieldLogger, ctx context.Context) Projectil
 	return &ProjectileProcessorImpl{
 		l:   l,
 		ctx: ctx,
-		bp:  buff.NewProcessor(l, ctx),
 		cpp: compartment.NewProcessor(l, ctx),
 	}
 }
 
-func (p *ProjectileProcessorImpl) Plan(c character.Model, ai packetmodel.AttackInfo, se effect.Model) (*ProjectilePlan, bool) {
+func (p *ProjectileProcessorImpl) Plan(c character.Model, ai packetmodel.AttackInfo, se effect.Model, getBuffs func(characterId uint32) ([]buff.Model, error)) (*ProjectilePlan, bool) {
 	if ai.AttackType() != packetmodel.AttackTypeRanged {
 		return nil, false
 	}
@@ -96,7 +94,7 @@ func (p *ProjectileProcessorImpl) Plan(c character.Model, ai packetmodel.AttackI
 		return nil, false
 	}
 
-	buffs, err := p.bp.GetByCharacterId(c.Id())
+	buffs, err := getBuffs(c.Id())
 	if err != nil {
 		// Treat a buff-lookup failure as "no buffs" so consumption still fires.
 		// Soul Arrow is a gameplay-critical skip but we'd rather over-consume than

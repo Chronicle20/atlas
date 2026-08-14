@@ -184,9 +184,12 @@ func (m Model) HasSPTable() bool {
 
 func (m Model) Sp() []uint16 {
 	s := strings.Split(m.sp, ",")
-	sps := make([]uint16, 0)
+	sps := make([]uint16, 0, len(s))
 	for _, x := range s {
-		sp, err := strconv.ParseUint(x, 10, 16)
+		// atlas-character serves the table as ", "-separated. ParseUint rejects
+		// a leading space, so an untrimmed entry is dropped silently and the
+		// table collapses to its first element.
+		sp, err := strconv.ParseUint(strings.TrimSpace(x), 10, 16)
 		if err == nil {
 			sps = append(sps, uint16(sp))
 		}
@@ -195,7 +198,13 @@ func (m Model) Sp() []uint16 {
 }
 
 func (m Model) RemainingSp() uint16 {
-	return m.Sp()[m.skillBook()]
+	// Bounds-checked: this runs on the character-data encode path, where a
+	// panic drops the whole packet.
+	sps := m.Sp()
+	if b := int(m.skillBook()); b < len(sps) {
+		return sps[b]
+	}
+	return 0
 }
 
 func (m Model) skillBook() uint16 {

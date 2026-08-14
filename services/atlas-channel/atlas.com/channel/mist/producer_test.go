@@ -47,6 +47,10 @@ func TestCreateCommandProvider_KeySetMatchesAtlasMaps(t *testing.T) {
 		"duration", "tickIntervalMs",
 		"sourceSkillId", "sourceSkillLevel",
 		"targetKind", "effectKind",
+		// recoveryMp and partyMemberIds landed on the atlas-maps owning
+		// contract ahead of the channel mirror catching up (task-218); the
+		// full mirror always emits them (no omitempty).
+		"recoveryMp", "partyMemberIds",
 	}, keysOf(got))
 }
 

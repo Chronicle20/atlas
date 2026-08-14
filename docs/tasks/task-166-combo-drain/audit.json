@@ -1,0 +1,80 @@
+{
+  "service": "atlas-channel",
+  "path": "services/atlas-channel/atlas.com/channel",
+  "date": "2026-08-13",
+  "scope": "task-166-combo-drain: socket/handler/character_attack_combo_drain.go, character_attack_combo_drain_test.go, character_attack_common.go, character_attack_projectile.go",
+  "build": "pass",
+  "testsPassed": null,
+  "testsFailed": 0,
+  "testsNote": "go test ./... -count=1: every package ok or [no test files]; socket/handler package (all 4 changed files) fully green including 11 TestComboDrainTryProc subtests and 2 TestNewAttackBuffLoader subtests",
+  "overallStatus": "needs-work",
+  "reviewer": "backend-guidelines-reviewer",
+  "domains": [
+    {
+      "name": "socket/handler",
+      "type": "support",
+      "note": "No model.go; packet-dispatch layer, not a REST-domain package. DOM-01..DOM-20 not applicable to this package's idiom.",
+      "checks": [
+        {
+          "id": "DOM-21",
+          "name": "libs/atlas-constants reuse for gate stat",
+          "status": "pass",
+          "evidence": "character_attack_combo_drain.go:35,140 uses charconst.TemporaryStatTypeComboDrain; defined once at libs/atlas-constants/character/temporary_stat.go:75"
+        },
+        {
+          "id": "DOM-24",
+          "name": "Kafka producer stubbed in tests that emit",
+          "status": "pass",
+          "evidence": "N/A - character_attack_combo_drain_test.go:291-311 uses pure in-process fakes (recordingChangeHP, countingBuffs); no real producer/emit path exercised"
+        },
+        {
+          "id": "DOM-26",
+          "name": "No bare go statements",
+          "status": "pass",
+          "evidence": "grep for bare `go` statements over the 4 changed files (excluding _test.go) returns no matches"
+        },
+        {
+          "id": "DOM-28",
+          "name": "No silent degradation on fetch failure",
+          "status": "pass",
+          "evidence": "character_attack_combo_drain.go:97-153 logs Warn (loader, :107) and Debug (proc, :137) on failure and skips the heal; not a model.Decorator[Model] enrichment (canonical DOM-28 shape), mirrors pre-existing loadEffectiveStats idiom (character_attack_common.go:898-912); design.md settles 'log-and-swallow' as intended. No degrade.Observe metric increment - recorded as non-blocking observation."
+        },
+        {
+          "id": "FILE-06",
+          "name": "No package-named catch-all file",
+          "status": "pass",
+          "evidence": "character_attack_combo_drain.go carries a single responsibility; no Processor/RestModel/entity/requests roles exist anywhere in this package"
+        },
+        {
+          "id": "CUSTOM-01",
+          "name": "ProjectileProcessor.Plan signature change respects processor conventions",
+          "status": "pass",
+          "evidence": "character_attack_projectile.go:45,64 (interface+impl updated), :50-56 (bp field dropped), :58-62 (constructor updated); buff import still used at :46,197,215,245; grep -rl ProjectileProcessor over module returns only the two changed files"
+        },
+        {
+          "id": "CUSTOM-02",
+          "name": "Integer conversion / overflow safety in heal arithmetic",
+          "status": "pass",
+          "evidence": "character_attack_combo_drain.go:60-68 (uint64 sum, documented safe for 15x15xMaxUint32), :76-88 (early saturate at totalDamage>=3276700, post-multiply reclamp, no uint64 overflow path); TestComboDrainHealAmount boundary cases pass"
+        },
+        {
+          "id": "CUSTOM-03",
+          "name": "Test discipline: production constructors, no *_testhelpers.go, real-behavior assertions",
+          "status": "pass",
+          "evidence": "no new *_testhelpers.go file; uses production buff.NewBuff constructor and pre-existing testField helper (mystic_door_enter_test.go:30); table-driven tests with t.Run assert observable call counts (e.g. multi-monster single-600-call assertion)"
+        },
+        {
+          "id": "CUSTOM-04",
+          "name": "No TODO/stub/dead code introduced; no Cosmic citation in source comments",
+          "status": "fail",
+          "evidence": "character_attack_combo_drain_test.go:173: '// Pins the anti-Cosmic-quirk AC: ...' cites a reference-server implementation (Cosmic) in an Atlas Go source comment, violating the standing project convention (owner directive, task-127) banning such citations outside docs/tasks/ analysis docs. Non-blocking (comment-only, no functional impact); no functional TODOs or stubs found - the target // TODO Combo Drain was correctly replaced and unrelated pre-existing // TODO markers are untouched out-of-scope items."
+        }
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "character_attack_combo_drain_test.go:173 - remove 'Cosmic' citation from comment per no-Cosmic-in-source-comments convention",
+    "DOM-28: newAttackBuffLoader/comboDrainTryProc degraded-fetch path (character_attack_combo_drain.go:97-153) does not increment atlas_enrichment_degraded_total; matches design.md's explicit log-and-swallow decision and mirrors existing loadEffectiveStats precedent, flagged for awareness only"
+    ]
+}

@@ -2,6 +2,7 @@ package poisonmist
 
 import (
 	"atlas-channel/data/skill/effect"
+	"atlas-channel/skill/handler/mistcast"
 	"context"
 	"errors"
 	"strings"
@@ -78,7 +79,7 @@ func run(t *testing.T, e effect.Model) (*[]mistmsg.CreateCommandBody, *test.Hook
 	// The WIRE skill id is passed, not the resolved Identity: 2111003 on all
 	// eleven provisioned versions, and the handler forwards it verbatim
 	// because the client compares it against its own WZ.
-	err := Apply(l)(context.Background())(nil, testField(), testCharId, skill2.Id(testSkillId), testLevel, e)
+	err := Apply(l)(context.Background())(nil, testField(), testCharId, skill2.Id(testSkillId), testLevel, e, nil)
 	require.NoError(t, err)
 	return emitted, hook
 }
@@ -104,7 +105,7 @@ func TestApply_HappyPath_EmitsExactlyOneCreate(t *testing.T) {
 	require.Equal(t, int32(0), b.DiseaseValue)       // design D1c -- magnitude unread for POISON
 	require.Equal(t, int64(4000), b.DiseaseDuration) // design D1a -- per-target = mist lifetime
 	require.Equal(t, int64(4000), b.Duration)
-	require.Equal(t, PlayerMistTickIntervalMs, b.TickIntervalMs)
+	require.Equal(t, mistcast.PlayerMistTickIntervalMs, b.TickIntervalMs)
 	require.Equal(t, testSkillId, b.SourceSkillId) // WIRE id -- the client compares it
 	require.Equal(t, uint32(testLevel), b.SourceSkillLevel)
 }
@@ -118,22 +119,22 @@ func TestApply_ZeroLifetime_Rejected(t *testing.T) {
 
 // TestApply_LifetimeShorterThanOneTick_Rejected covers FR-6.2: a mist that
 // expires before its first re-apply tick is an invisible no-op. Pinned at the
-// gate's actual boundary (PlayerMistTickIntervalMs - 1ms), not an arbitrary
+// gate's actual boundary (mistcast.PlayerMistTickIntervalMs - 1ms), not an arbitrary
 // small value, so a future change to the constant can't silently widen or
 // narrow what this test proves.
 func TestApply_LifetimeShorterThanOneTick_Rejected(t *testing.T) {
-	emitted, hook := run(t, stubEffect(int32(PlayerMistTickIntervalMs)-1, -110, -82, 110, 83))
+	emitted, hook := run(t, stubEffect(int32(mistcast.PlayerMistTickIntervalMs)-1, -110, -82, 110, 83))
 	require.Empty(t, *emitted)
 	requireLogged(t, hook, "lifetime shorter than one tick")
 }
 
 // TestApply_LifetimeEqualToOneTick_Accepted pins the other side of the FR-6.2
-// boundary: a duration exactly equal to PlayerMistTickIntervalMs must NOT be
+// boundary: a duration exactly equal to mistcast.PlayerMistTickIntervalMs must NOT be
 // rejected. This also covers the shortest legitimate Poison Mist cast --
 // level 1's 4000ms lifetime (task-200 design §2.1 table) -- which must always
 // clear this gate.
 func TestApply_LifetimeEqualToOneTick_Accepted(t *testing.T) {
-	emitted, _ := run(t, stubEffect(int32(PlayerMistTickIntervalMs), -110, -82, 110, 83))
+	emitted, _ := run(t, stubEffect(int32(mistcast.PlayerMistTickIntervalMs), -110, -82, 110, 83))
 	require.Len(t, *emitted, 1)
 }
 
@@ -147,7 +148,7 @@ func TestApply_DegenerateRectangle_Rejected(t *testing.T) {
 // TestApply_ImplausibleLifetime_Rejected covers FR-6.4. The largest legitimate
 // `time` for 2111003 is 40s at level 30, so 5 minutes can only be corrupt data.
 func TestApply_ImplausibleLifetime_Rejected(t *testing.T) {
-	emitted, hook := run(t, stubEffect(MaxPlayerMistDurationMs+1, -110, -82, 110, 83))
+	emitted, hook := run(t, stubEffect(mistcast.MaxPlayerMistDurationMs+1, -110, -82, 110, 83))
 	require.Empty(t, *emitted)
 	requireLogged(t, hook, "implausible lifetime")
 }
@@ -157,7 +158,7 @@ func TestApply_ImplausibleLifetime_Rejected(t *testing.T) {
 func TestApply_CasterLoadFailure_EmitsNothingAndReturnsNil(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	emitted := harness(t, errors.New("character service down"))
-	err := Apply(l)(context.Background())(nil, testField(), testCharId, skill2.Id(testSkillId), testLevel, stubEffect(4000, -110, -82, 110, 83))
+	err := Apply(l)(context.Background())(nil, testField(), testCharId, skill2.Id(testSkillId), testLevel, stubEffect(4000, -110, -82, 110, 83), nil)
 	require.NoError(t, err)
 	require.Empty(t, *emitted)
 }

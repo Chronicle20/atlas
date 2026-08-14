@@ -20,3 +20,6 @@ families:
     - SPAWN_DRAGON
     - MOVE_DRAGON
     - REMOVE_DRAGON
+  skill_macro:
+    - SKILL_MACRO
+    - MACRO_SYS_DATA_INIT

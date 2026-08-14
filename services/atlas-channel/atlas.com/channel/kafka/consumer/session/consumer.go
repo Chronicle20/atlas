@@ -33,13 +33,11 @@ import (
 	buddypkt "github.com/Chronicle20/atlas/libs/atlas-packet/buddy"
 	buddyCB "github.com/Chronicle20/atlas/libs/atlas-packet/buddy/clientbound"
 	channelpkt "github.com/Chronicle20/atlas/libs/atlas-packet/channel/clientbound"
-	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	guildpkt "github.com/Chronicle20/atlas/libs/atlas-packet/guild"
 	guildcb "github.com/Chronicle20/atlas/libs/atlas-packet/guild/clientbound"
-	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	notepkt "github.com/Chronicle20/atlas/libs/atlas-packet/note"
 	notecb "github.com/Chronicle20/atlas/libs/atlas-packet/note/clientbound"
 	reportcb "github.com/Chronicle20/atlas/libs/atlas-packet/report/clientbound"
@@ -365,12 +363,12 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						sort.Slice(sms, func(i, j int) bool {
 							return sms[i].Id() < sms[j].Id()
 						})
-						mms := make([]packetmodel.Macro, 0)
+						ems := make([]charcb.SkillMacroEntry, 0)
 						for _, sm := range sms {
-							mms = append(mms, packetmodel.NewMacro(sm.Name(), sm.Shout(), sm.SkillId1(), sm.SkillId2(), sm.SkillId3()))
+							ems = append(ems, charcb.NewSkillMacroEntry(sm.Name(), sm.Shout(), sm.SkillId1(), sm.SkillId2(), sm.SkillId3()))
 						}
-						macros := packetmodel.NewMacros(mms...)
-						err = session.Announce(l)(ctx)(wp)(charpkt.CharacterSkillMacroWriter)(macros.Encode)(s)
+						macros := charcb.NewSkillMacro(ems...)
+						err = session.Announce(l)(ctx)(wp)(charcb.CharacterSkillMacroWriter)(macros.Encode)(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 						}

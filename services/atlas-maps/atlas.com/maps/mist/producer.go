@@ -37,6 +37,7 @@ func createdEventProvider(t tenant.Model, m Mist) model.Provider[[]kafka.Message
 			Duration:         int64(m.Duration() / time.Millisecond),
 			ElemAttr:         m.ElemAttr(),
 			SkillDelay:       m.SkillDelay(),
+			EffectKind:       m.EffectKind(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

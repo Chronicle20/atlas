@@ -129,8 +129,15 @@ func (m CharacterStatistics) Encode(l logrus.FieldLogger, ctx context.Context) f
 		}
 		w.WriteShort(m.ap)
 
-		if m.hasSPTable {
-			// WriteRemainingSkillInfo — currently a stub (no bytes written)
+		if m.hasSPTable && t.IsRegion("GMS") && t.MajorAtLeast(84) {
+			// Evan extended SP: byte count + count x (masterLevelIdx, sp) byte-pairs.
+			// GMS v87 GW_CharacterStat::Decode @0x501d0e takes this arm when
+			// job/100 == 22 || job == 2001, delegating to ExtendSP::Decode
+			// @0x5019be, which ALWAYS consumes the count byte. Writing zero bytes
+			// here leaves the packet one byte short and closes the client with
+			// error 38. 0 = no SP allocated, matching the CHARACTER_DATA path in
+			// atlas-packet/character/data.go.
+			w.WriteByte(0)
 		} else {
 			w.WriteShort(m.sp)
 		}
@@ -215,8 +222,12 @@ func (m *CharacterStatistics) Decode(_ logrus.FieldLogger, ctx context.Context) 
 		}
 		m.ap = r.ReadUint16()
 
-		if m.hasSPTable {
-			// ReadRemainingSkillInfo — currently a stub (no bytes read)
+		// Mirror of Encode: the Evan extended-SP block replaces nSP from GMS v84.
+		if m.hasSPTable && t.IsRegion("GMS") && t.MajorAtLeast(84) {
+			for i := int(r.ReadByte()); i > 0; i-- {
+				_ = r.ReadByte() // masterLevelIdx
+				_ = r.ReadByte() // sp
+			}
 		} else {
 			m.sp = r.ReadUint16()
 		}

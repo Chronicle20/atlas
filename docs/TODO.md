@@ -148,7 +148,7 @@ Location: `socket/handler/character_attack_common.go`
 - [ ] Slow
 - [ ] Blind
 - [ ] Paladin / White Knight charges
-- [ ] Combo Drain
+- [x] Combo Drain
 - [ ] Mortal Blow
 - [ ] Three Snails consumption
 - [ ] Heavens Hammer

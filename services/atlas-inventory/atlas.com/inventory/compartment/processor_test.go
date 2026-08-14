@@ -3,6 +3,8 @@ package compartment_test
 import (
 	"atlas-inventory/asset"
 	"atlas-inventory/compartment"
+	"atlas-inventory/data/cash"
+	cashmock "atlas-inventory/data/cash/mock"
 	"atlas-inventory/data/consumable"
 	dcp "atlas-inventory/data/consumable/mock"
 	"atlas-inventory/kafka/message"
@@ -36,6 +38,7 @@ import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -116,7 +119,7 @@ func testDatabase(t *testing.T, l logrus.FieldLogger) *gorm.DB {
 	database.RegisterTenantCallbacks(l, db)
 
 	var migrators []func(db *gorm.DB) error
-	migrators = append(migrators, asset.Migration, compartment.Migration)
+	migrators = append(migrators, asset.Migration, compartment.Migration, outbox.Migration)
 
 	for _, migrator := range migrators {
 		if err := migrator(db); err != nil {
@@ -1474,5 +1477,150 @@ func TestRequestReserveProcessesEveryRequest(t *testing.T) {
 		if q := compartment.GetReservationRegistry().GetReservedQuantity(te, characterId, inventory.TypeValueUse, slot); q == 0 {
 			t.Errorf("slot %d: expected a reservation, got 0 reserved", slot)
 		}
+	}
+}
+
+// TestExtendAssetExpirationRejectsOverCap is the D1 trust-boundary guard: a
+// forged command asking for far more than the extender's maxDays ceiling
+// must be REJECTED outright, never clamped down to the cap. The asset's
+// stored expiration must be byte-for-byte unchanged after the rejection.
+func TestExtendAssetExpirationRejectsOverCap(t *testing.T) {
+	characterId := uint32(600)
+	templateId := uint32(1040010)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	ap := asset.NewProcessor(l, ctx, db)
+	cpMock := &cashmock.ProcessorMock{
+		GetByIdFunc: func(itemId uint32) (cash.Model, error) {
+			return cash.NewModelBuilder(itemId).SetAddTime(604800).SetMaxDays(30).Build(), nil
+		},
+	}
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap).WithCashProcessor(cpMock)
+
+	c, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueEquip, 24)
+	if err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+
+	slot := int16(-5)
+	base := time.Now().Add(120 * time.Hour).Truncate(time.Second)
+	m := asset.NewBuilder(c.Id(), templateId).SetSlot(slot).SetCreatedAt(time.Now()).SetExpiration(base).Build()
+	if _, err := ap.CreateFromModel(mb)(uuid.New(), characterId, m); err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+
+	forged := time.Now().Add(10 * 365 * 24 * time.Hour)
+	if err := cp.ExtendAssetExpirationAndEmit(uuid.New(), characterId, inventory.TypeValueEquip, slot, forged, 5500001); err == nil {
+		t.Fatalf("expected ExtendAssetExpirationAndEmit to reject an over-cap request, got nil error")
+	}
+
+	got, err := ap.GetBySlot(c.Id(), slot)
+	if err != nil {
+		t.Fatalf("Failed to reload asset: %v", err)
+	}
+	if !got.Expiration().Equal(base) {
+		t.Errorf("Expiration = %v, want unchanged %v", got.Expiration(), base)
+	}
+}
+
+// TestExtendAssetExpirationHonorsInBoundsRequest verifies that a request
+// well within the extender's maxDays ceiling is honoured verbatim.
+func TestExtendAssetExpirationHonorsInBoundsRequest(t *testing.T) {
+	characterId := uint32(601)
+	templateId := uint32(1040010)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	ap := asset.NewProcessor(l, ctx, db)
+	cpMock := &cashmock.ProcessorMock{
+		GetByIdFunc: func(itemId uint32) (cash.Model, error) {
+			return cash.NewModelBuilder(itemId).SetAddTime(604800).SetMaxDays(30).Build(), nil
+		},
+	}
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap).WithCashProcessor(cpMock)
+
+	c, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueEquip, 24)
+	if err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+
+	slot := int16(-5)
+	base := time.Now().Add(120 * time.Hour).Truncate(time.Second)
+	m := asset.NewBuilder(c.Id(), templateId).SetSlot(slot).SetCreatedAt(time.Now()).SetExpiration(base).Build()
+	if _, err := ap.CreateFromModel(mb)(uuid.New(), characterId, m); err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+
+	want := base.Add(168 * time.Hour) // +7d, well inside the 30d cap
+	if err := cp.ExtendAssetExpirationAndEmit(uuid.New(), characterId, inventory.TypeValueEquip, slot, want, 5500001); err != nil {
+		t.Fatalf("ExtendAssetExpirationAndEmit: %v", err)
+	}
+
+	got, err := ap.GetBySlot(c.Id(), slot)
+	if err != nil {
+		t.Fatalf("Failed to reload asset: %v", err)
+	}
+	if !got.Expiration().Equal(want) {
+		t.Errorf("Expiration = %v, want %v", got.Expiration(), want)
+	}
+}
+
+// TestExtendAssetExpirationRejectsZeroMaxDays verifies that an extender whose
+// cash data carries no maxDays ceiling (a data/config gap, or a forged
+// extenderTemplateId that doesn't resolve to a real extender) is rejected
+// rather than treated as an unbounded cap, and that the asset is left
+// unchanged.
+func TestExtendAssetExpirationRejectsZeroMaxDays(t *testing.T) {
+	characterId := uint32(602)
+	templateId := uint32(1040010)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	ap := asset.NewProcessor(l, ctx, db)
+	cpMock := &cashmock.ProcessorMock{
+		GetByIdFunc: func(itemId uint32) (cash.Model, error) {
+			return cash.NewModelBuilder(itemId).SetAddTime(604800).SetMaxDays(0).Build(), nil
+		},
+	}
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap).WithCashProcessor(cpMock)
+
+	c, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueEquip, 24)
+	if err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+
+	slot := int16(-5)
+	base := time.Now().Add(120 * time.Hour).Truncate(time.Second)
+	m := asset.NewBuilder(c.Id(), templateId).SetSlot(slot).SetCreatedAt(time.Now()).SetExpiration(base).Build()
+	if _, err := ap.CreateFromModel(mb)(uuid.New(), characterId, m); err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+
+	if err := cp.ExtendAssetExpirationAndEmit(uuid.New(), characterId, inventory.TypeValueEquip, slot, base.Add(time.Hour), 5500001); err == nil {
+		t.Fatal("expected rejection when the extender has no maxDays ceiling")
+	}
+
+	got, err := ap.GetBySlot(c.Id(), slot)
+	if err != nil {
+		t.Fatalf("Failed to reload asset: %v", err)
+	}
+	if !got.Expiration().Equal(base) {
+		t.Errorf("Expiration = %v, want unchanged %v", got.Expiration(), base)
 	}
 }

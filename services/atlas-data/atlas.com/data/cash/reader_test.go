@@ -882,6 +882,49 @@ const testPetSkillXML = `
 </imgdir>
 `
 
+const testRemoteMerchantXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="0545.img">
+  <imgdir name="5450000">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="npc" value="9090000"/>
+      <int name="slotMax" value="100"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="5451000">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="slotMax" value="100"/>
+    </imgdir>
+  </imgdir>
+</imgdir>
+`
+
+// TestRead_ParsesInfoNpcForRemoteMerchantItems pins task-221 FR-1: a cash
+// item's info/npc value (the NPC template a remote-merchant item opens, e.g.
+// 9090000 for MiuMiu's Travel Store) must be exposed on RestModel, and must
+// default to 0 when the item has no info/npc node.
+func TestRead_ParsesInfoNpcForRemoteMerchantItems(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testRemoteMerchantXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rmm) != 2 {
+		t.Fatalf("len(rmm) = %d, want 2", len(rmm))
+	}
+
+	if got := rmm[strconv.Itoa(5450000)].Npc; got != 9090000 {
+		t.Errorf("5450000 Npc = %d, want 9090000", got)
+	}
+	if got := rmm[strconv.Itoa(5451000)].Npc; got != 0 {
+		t.Errorf("5451000 Npc = %d, want 0 (item has no info/npc)", got)
+	}
+}
+
 func TestReaderPetSkills(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
@@ -913,6 +956,86 @@ func TestReaderPetSkills(t *testing.T) {
 		}
 		if rm.PetSkillAdd != c.add {
 			t.Errorf("[%s] PetSkillAdd = %t, want %t", c.id, rm.PetSkillAdd, c.add)
+		}
+	}
+}
+
+const testSandglassXML = `<?xml version="1.0" encoding="UTF-8"?>
+<imgdir name="0550.img">
+  <imgdir name="05500000">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="slotMax" value="1"/>
+      <int name="addTime" value="86400"/>
+      <int name="maxDays" value="30"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05500001">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="slotMax" value="1"/>
+      <int name="addTime" value="604800"/>
+      <int name="maxDays" value="30"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05500002">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="slotMax" value="1"/>
+      <int name="addTime" value="1728000"/>
+      <int name="maxDays" value="30"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05500005">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="slotMax" value="1"/>
+      <int name="addTime" value="4320000"/>
+      <int name="maxDays" value="30"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05500006">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="slotMax" value="1"/>
+      <int name="addTime" value="8553600"/>
+      <int name="maxDays" value="30"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05500009">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="slotMax" value="1"/>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+func TestReaderSandglassAddTimeAndMaxDays(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testSandglassXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		id      int
+		addTime uint32
+		maxDays uint32
+	}{
+		{5500000, 86400, 30},
+		{5500001, 604800, 30},
+		{5500002, 1728000, 30},
+		{5500005, 4320000, 30},
+		{5500006, 8553600, 30},
+		{5500009, 0, 0}, // both fields absent -> default 0
+	}
+	for _, c := range cases {
+		rm := rmm[strconv.Itoa(c.id)]
+		if rm.AddTime != c.addTime {
+			t.Errorf("AddTime(%d) = %d, want %d", c.id, rm.AddTime, c.addTime)
+		}
+		if rm.MaxDays != c.maxDays {
+			t.Errorf("MaxDays(%d) = %d, want %d", c.id, rm.MaxDays, c.maxDays)
 		}
 	}
 }

@@ -2562,11 +2562,11 @@
 - op: SKILL_MACRO
   direction: serverbound
   opcode: 109
-  fname: sub_6022DB
+  fname: CMacroSysMan::FlushToSvr
   provenance: ida-discovered
   ida:
     address: 6175200
-  note: 'v72 COutPacket(109) verified via global COutPacket-ctor harvest @0x5e39e0; Δ+1 vs v79 op 108 (mid/field/social Δ+1).'
+  note: 'task-226: fname corrected — prior entry carried sub_6022DB, v79''s address-derived symbol wrongly copied onto v72. Address 0x5e39e0 was and remains correct: decompile reads COutPacket::COutPacket(pkt, 109), confirming it as the real sender. Renamed CMacroSysMan::FlushToSvr in the v72 IDB.'
 - op: LOTTERY_ITEM_USE_REQUEST
   direction: serverbound
   opcode: 111

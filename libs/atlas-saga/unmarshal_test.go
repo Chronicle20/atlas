@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
 func TestUnmarshalRebalanceAPStep(t *testing.T) {
@@ -1232,5 +1234,60 @@ func TestUnmarshalTransferToTradeStep(t *testing.T) {
 	}
 	if p.Quantity != 3 {
 		t.Errorf("quantity: expected 3, got %d", p.Quantity)
+	}
+}
+
+func TestUnmarshalStep_OpenNpcShop(t *testing.T) {
+	raw := []byte(`{
+		"stepId": "open_npc_shop",
+		"status": "pending",
+		"action": "open_npc_shop",
+		"payload": {"characterId": 1234, "worldId": 0, "channelId": 1, "npcTemplateId": 9090000}
+	}`)
+
+	var s Step[any]
+	if err := json.Unmarshal(raw, &s); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	p, ok := s.Payload.(OpenNpcShopPayload)
+	if !ok {
+		t.Fatalf("payload type = %T, want OpenNpcShopPayload", s.Payload)
+	}
+	if p.CharacterId != 1234 || p.NpcTemplateId != 9090000 || p.ChannelId != channel.Id(1) {
+		t.Errorf("payload = %+v", p)
+	}
+}
+
+func TestUnmarshalExtendAssetExpirationStep(t *testing.T) {
+	data := []byte(`{"stepId":"extend_asset_expiration","status":"pending","action":"extend_asset_expiration","payload":{"characterId":12345,"inventoryType":1,"slot":-11,"expiration":"2026-09-12T00:00:00Z","extenderTemplateId":5500001}}`)
+	var s Step[any]
+	if err := json.Unmarshal(data, &s); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	p, ok := s.Payload.(ExtendAssetExpirationPayload)
+	if !ok {
+		t.Fatalf("payload type = %T, want ExtendAssetExpirationPayload", s.Payload)
+	}
+	if p.CharacterId != 12345 {
+		t.Errorf("CharacterId = %d, want 12345", p.CharacterId)
+	}
+	if p.InventoryType != 1 {
+		t.Errorf("InventoryType = %d, want 1", p.InventoryType)
+	}
+	if p.Slot != -11 {
+		t.Errorf("Slot = %d, want -11", p.Slot)
+	}
+	if p.ExtenderTemplateId != 5500001 {
+		t.Errorf("ExtenderTemplateId = %d, want 5500001", p.ExtenderTemplateId)
+	}
+	want := time.Date(2026, 9, 12, 0, 0, 0, 0, time.UTC)
+	if !p.Expiration.Equal(want) {
+		t.Errorf("Expiration = %v, want %v", p.Expiration, want)
+	}
+}
+
+func TestExpirationExtenderUseSagaTypeValue(t *testing.T) {
+	if ExpirationExtenderUse != Type("expiration_extender_use") {
+		t.Fatalf("ExpirationExtenderUse = %q, want %q", ExpirationExtenderUse, "expiration_extender_use")
 	}
 }

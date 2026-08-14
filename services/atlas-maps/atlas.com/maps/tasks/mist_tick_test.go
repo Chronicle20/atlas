@@ -4,6 +4,7 @@ import (
 	"atlas-maps/mist"
 	"context"
 	"encoding/json"
+	"io"
 	"sync"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
@@ -54,15 +56,54 @@ func (m *recordingProducer) Messages(topic string) []kafka.Message {
 	return append([]kafka.Message(nil), m.messages[topic]...)
 }
 
+// MessagesOn is an alias for Messages(topic), named to read naturally at
+// call sites like rec.MessagesOn(EnvCommandTopicCharacter).
+func (m *recordingProducer) MessagesOn(topic string) []kafka.Message {
+	return m.Messages(topic)
+}
+
+// AllMessages returns every message recorded across all topics, for
+// assertions that nothing at all was emitted.
+func (m *recordingProducer) AllMessages() []kafka.Message {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []kafka.Message
+	for _, msgs := range m.messages {
+		out = append(out, msgs...)
+	}
+	return out
+}
+
 func mkTickTenant() tenant.Model {
 	t, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	return t
 }
 
-func newTestMistTick(t *testing.T, reg *mist.Registry, rec *recordingProducer, posLookup PositionLookup) *MistTick {
+// attachLogHook wires a logrus test hook into mt's logger so a test can
+// assert on the last logged message (e.g. an unknown-effect-kind warning).
+func attachLogHook(t *testing.T, mt *MistTick) *test.Hook {
+	t.Helper()
+	logger := logrus.New()
+	logger.SetOutput(io.Discard)
+	hook := test.NewLocal(logger)
+	mt.l = logger
+	return hook
+}
+
+// lastMessage returns the message of the most recently logged entry, or
+// empty string if nothing was logged.
+func lastMessage(hook *test.Hook) string {
+	entry := hook.LastEntry()
+	if entry == nil {
+		return ""
+	}
+	return entry.Message
+}
+
+func newTestMistTick(t *testing.T, reg *mist.Registry, rec *recordingProducer, charLookup CharacterLookup) *MistTick {
 	t.Helper()
 	logger, _ := test.NewNullLogger()
-	mt := NewMistTick(logger, 1000, posLookup)
+	mt := NewMistTick(logger, 1000, charLookup)
 	mt.registry = reg
 	mt.producerProvider = func(ctx context.Context) producer.Provider {
 		return rec.Provider()
@@ -79,8 +120,8 @@ func TestMistTick_ExpiredMist_DestroysAndEmits(t *testing.T) {
 	tt := mkTickTenant()
 	reg := mist.NewTestRegistry()
 	rec := newRecordingProducer()
-	posLookup := func(ctx context.Context, cid uint32) (int16, int16, error) {
-		return 0, 0, nil
+	charLookup := func(ctx context.Context, cid uint32) (int16, int16, uint16, error) {
+		return 0, 0, 1, nil
 	}
 
 	f := field.NewBuilder(0, 0, 100000000).SetInstance(uuid.Nil).Build()
@@ -95,7 +136,7 @@ func TestMistTick_ExpiredMist_DestroysAndEmits(t *testing.T) {
 		Build()
 	require.NoError(t, reg.Add(tt, expiredMist))
 
-	mt := newTestMistTick(t, reg, rec, posLookup)
+	mt := newTestMistTick(t, reg, rec, charLookup)
 	mt.runOnce(context.Background())
 
 	// Registry: mist removed.
@@ -118,14 +159,14 @@ func TestMistTick_LiveMist_AppliesDiseaseToContainedCharacters(t *testing.T) {
 
 	const insideId = uint32(1001)
 	const outsideId = uint32(1002)
-	posLookup := func(ctx context.Context, cid uint32) (int16, int16, error) {
+	charLookup := func(ctx context.Context, cid uint32) (int16, int16, uint16, error) {
 		switch cid {
 		case insideId:
-			return 10, 10, nil
+			return 10, 10, 1, nil
 		case outsideId:
-			return 5000, 5000, nil
+			return 5000, 5000, 1, nil
 		}
-		return 0, 0, nil
+		return 0, 0, 1, nil
 	}
 
 	f := field.NewBuilder(0, 0, 100000000).SetInstance(uuid.Nil).Build()
@@ -141,7 +182,7 @@ func TestMistTick_LiveMist_AppliesDiseaseToContainedCharacters(t *testing.T) {
 		Build()
 	require.NoError(t, reg.Add(tt, liveMist))
 
-	mt := newTestMistTick(t, reg, rec, posLookup)
+	mt := newTestMistTick(t, reg, rec, charLookup)
 	mt.charsInField = func(t tenant.Model, ff field.Model) []uint32 {
 		return []uint32{insideId, outsideId}
 	}
@@ -183,9 +224,9 @@ func TestMistTick_DifferentInstances_DoNotCrossApply(t *testing.T) {
 	rec := newRecordingProducer()
 
 	const otherInstanceCharId = uint32(2001)
-	posLookup := func(ctx context.Context, cid uint32) (int16, int16, error) {
+	charLookup := func(ctx context.Context, cid uint32) (int16, int16, uint16, error) {
 		// Return a coordinate that would be inside the mist if it were checked.
-		return 10, 10, nil
+		return 10, 10, 1, nil
 	}
 
 	instanceA := uuid.MustParse("aaaaaaaa-0000-0000-0000-000000000001")
@@ -205,7 +246,7 @@ func TestMistTick_DifferentInstances_DoNotCrossApply(t *testing.T) {
 		Build()
 	require.NoError(t, reg.Add(tt, mistOnA))
 
-	mt := newTestMistTick(t, reg, rec, posLookup)
+	mt := newTestMistTick(t, reg, rec, charLookup)
 	mt.charsInField = func(tnt tenant.Model, f field.Model) []uint32 {
 		// Only return the otherInstanceCharId for instanceB. The mist lives on instanceA,
 		// so when MistTick asks for characters in fA it must not see instance-B chars.

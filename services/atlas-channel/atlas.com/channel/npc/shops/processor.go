@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -15,7 +16,7 @@ import (
 type Processor interface {
 	ByTemplateIdProvider(templateId uint32) model.Provider[Model]
 	GetShop(template uint32) (Model, error)
-	EnterShop(characterId uint32, npcTemplateId uint32) error
+	EnterShop(transactionId uuid.UUID, characterId uint32, npcTemplateId uint32) error
 	ExitShop(characterId uint32) error
 	BuyItem(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error
 	SellItem(characterId uint32, slot int16, itemTemplateId uint32, quantity uint32) error
@@ -45,9 +46,12 @@ func (p *ProcessorImpl) GetShop(template uint32) (Model, error) {
 	return p.ByTemplateIdProvider(template)()
 }
 
-func (p *ProcessorImpl) EnterShop(characterId uint32, npcTemplateId uint32) error {
+// EnterShop issues an ENTER command. transactionId is uuid.Nil for the
+// ordinary NPC-talk path; the remote-merchant flow drives ENTER from a saga
+// step instead and never calls this.
+func (p *ProcessorImpl) EnterShop(transactionId uuid.UUID, characterId uint32, npcTemplateId uint32) error {
 	p.l.Debugf("Character [%d] is entering NPC shop [%d].", characterId, npcTemplateId)
-	return producer.ProviderImpl(p.l)(p.ctx)(shops2.EnvCommandTopic)(ShopEnterCommandProvider(characterId, npcTemplateId))
+	return producer.ProviderImpl(p.l)(p.ctx)(shops2.EnvCommandTopic)(ShopEnterCommandProvider(transactionId, characterId, npcTemplateId))
 }
 
 func (p *ProcessorImpl) ExitShop(characterId uint32) error {

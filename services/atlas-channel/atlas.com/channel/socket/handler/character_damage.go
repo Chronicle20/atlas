@@ -43,6 +43,7 @@ type damageMitigationDeps struct {
 	changeMP           func(f field.Model, characterId uint32, amount int16) error
 	requestChangeMeso  func(f field.Model, characterId uint32, actorId uint32, actorType string, amount int32) error
 	damageMonster      func(f field.Model, monsterId uint32, characterId uint32, damages []uint32, attackType byte) error
+	inProtectiveMist   func(f field.Model, characterId uint32, x, y int16) bool
 	getChakra          func(characterId uint32) (chakra.Entry, bool)
 	clearChakra        func(characterId uint32) bool
 }
@@ -97,6 +98,7 @@ func CharacterDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			changeMP:           cp.ChangeMP,
 			requestChangeMeso:  cp.RequestChangeMeso,
 			damageMonster:      mp.Damage,
+			inProtectiveMist:   newSmokeCheck(l, ctx, t),
 			getChakra: func(characterId uint32) (chakra.Entry, bool) {
 				return chakra.GetRegistry().Get(t, characterId, time.Now())
 			},
@@ -184,6 +186,25 @@ func processDamageTaken(
 	deps damageMitigationDeps,
 ) {
 	characterId := c.Id()
+
+	// Smokescreen: a character standing in a protection mist owned by
+	// themselves or an online party member takes nothing at all. This is a
+	// SHORT-CIRCUIT, not another mitigation term, because that is what the
+	// client does: CUserLocal::SetDamaged jumps to the function epilogue on a
+	// positive IsSmokeAreaByPoint (v95 SetDamaged+0x1ef -> loc_93651F),
+	// before the miss roll, Power Guard, Meso Guard, Achilles and Magic
+	// Guard, and before the damage packet is built. Returning here is what
+	// keeps reflect and Meso Guard amounts from being computed off damage the
+	// shield zeroed (FR-4.5).
+	//
+	// Server-authoritative: the position comes from the character model, the
+	// rectangle from the mist event, the party from the party service. An
+	// honest client in smoke sends nothing, so this exists to stop a crafted
+	// one claiming damage it did not take.
+	if deps.inProtectiveMist != nil && deps.inProtectiveMist(f, characterId, c.X(), c.Y()) {
+		l.Debugf("Character [%d] shielded by a protection mist in map [%d]; damage [%d] dropped.", characterId, f.MapId(), p.Damage())
+		return
+	}
 
 	// Block sentinel: the client sends damage == -1 for a fully blocked
 	// hit (Guardian, Fake/Shadow Shifter, GUARD, v95 Mechanic Perfect

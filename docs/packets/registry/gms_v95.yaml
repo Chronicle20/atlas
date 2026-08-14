@@ -2536,6 +2536,7 @@
   direction: serverbound
   opcode: 66
   fname: CShopDlg::SetRet
+  packet: npc/serverbound/NpcShop
   fname_alts:
     - CShopDlg::SendRechargeRequest
     - CShopDlg::SendSellRequest

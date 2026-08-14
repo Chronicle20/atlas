@@ -673,3 +673,56 @@ func TestReaderPetAbilities(t *testing.T) {
 		t.Errorf("PetAbilities = %v, want [consumeHP]", rm.PetAbilities)
 	}
 }
+
+const testNotExtendXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="01402046.img">
+  <imgdir name="info">
+    <int name="reqLevel" value="30"/>
+    <int name="notExtend" value="1"/>
+  </imgdir>
+</imgdir>
+`
+
+const testNotExtendFalseXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="01402047.img">
+  <imgdir name="info">
+    <int name="reqLevel" value="30"/>
+    <int name="notExtend" value="0"/>
+  </imgdir>
+</imgdir>
+`
+
+const testNotExtendAbsentXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="01402048.img">
+  <imgdir name="info">
+    <int name="reqLevel" value="30"/>
+  </imgdir>
+</imgdir>
+`
+
+func TestReaderNotExtend(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	cases := []struct {
+		name string
+		xml  string
+		want bool
+	}{
+		{"present true", testNotExtendXML, true},
+		{"present false", testNotExtendFalseXML, false},
+		{"absent defaults false", testNotExtendAbsentXML, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			rm, err := Read(l)(xml.FromByteArrayProvider([]byte(c.xml)))()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if rm.NotExtend != c.want {
+				t.Errorf("NotExtend = %v, want %v", rm.NotExtend, c.want)
+			}
+		})
+	}
+}

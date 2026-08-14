@@ -519,6 +519,29 @@ func (m StatusMessageIncreaseExperience) String() string {
 	return fmt.Sprintf("increase experience [%d] white [%t]", m.amount, m.white)
 }
 
+// gmsIncExpTrailingPair reports whether the IncEXP status message carries the
+// final partyEXPRingEXP + cakePieEventBonus pair. GMS v87+, and every non-GMS
+// region (JMS v185 follows v87 here, as the existing gates in this file do).
+//
+// Counting the trailing Decode4s after partyBonusEventRate in each client's
+// CWvsContext::OnMessage case-3 arm:
+//
+//	v83 @0xa21ac5 - FOUR (@0xa21b7c/b86/b90/b9a)
+//	v84 @0xa6cfd7 - FOUR (@0xa6d08e/098/0a2/0ac)   [unnamed; case 3 of
+//	                CWvsContext::OnMessage @0xa6bdd9]
+//	v87 @0xab9234 - SIX  (@0xab92eb/2f5/2ff/309/313/31d)
+//	v95           - SIX  (the version this read was written against)
+//
+// This was gated >= 95, so v87 was sent FOUR ints where the client reads SIX:
+// the packet ran 8 bytes short, the client read past the end and closed with
+// error 38. It only became reachable once monsters could actually die -- before
+// the v87 magic-attack decode fix nothing was ever killed, so no EXP message
+// was ever sent (task-218 field report: "Meteor Shower caused damage but
+// crashed the client").
+func gmsIncExpTrailingPair(t tenant.Model) bool {
+	return t.Region() != "GMS" || t.MajorVersion() >= 87
+}
+
 func (m StatusMessageIncreaseExperience) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
@@ -574,7 +597,8 @@ func (m StatusMessageIncreaseExperience) Encode(l logrus.FieldLogger, ctx contex
 			if !(t.Region() == "GMS" && t.MajorVersion() < 83) {
 				w.WriteInt32(m.rainbowWeekEventEXP)
 			}
-			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			// See gmsIncExpTrailingPair — v87+, NOT v95+.
+			if gmsIncExpTrailingPair(t) {
 				w.WriteInt32(m.partyEXPRingEXP)
 				w.WriteInt32(m.cakePieEventBonus)
 			}
@@ -626,7 +650,8 @@ func (m *StatusMessageIncreaseExperience) Decode(_ logrus.FieldLogger, ctx conte
 			if !(t.Region() == "GMS" && t.MajorVersion() < 83) {
 				m.rainbowWeekEventEXP = r.ReadInt32()
 			}
-			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			// Mirror of Encode — see gmsIncExpTrailingPair.
+			if gmsIncExpTrailingPair(t) {
 				m.partyEXPRingEXP = r.ReadInt32()
 				m.cakePieEventBonus = r.ReadInt32()
 			}

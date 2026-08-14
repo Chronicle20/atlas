@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcShopOperationOverLevelRequirement
+direction: clientbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#OverLevelRequirement
+    address: "0x6e0390"
+    decompile_sha256: 7bc30853191026c88e71ca21d59af86eb6804a0501f5c5deaf58c5ec66365636

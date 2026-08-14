@@ -315,6 +315,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}
 		s.Payload = any(payload).(T)
+	case OpenNpcShop:
+		var payload OpenNpcShopPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
 	case DepositToStorage:
 		var payload DepositToStoragePayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
@@ -581,6 +587,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case ApplyAssetLock:
 		var payload ApplyAssetLockPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case ExtendAssetExpiration:
+		var payload ExtendAssetExpirationPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

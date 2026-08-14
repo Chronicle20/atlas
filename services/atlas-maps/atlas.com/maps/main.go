@@ -110,11 +110,11 @@ func main() {
 
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	// posLookup resolves a character's world coordinates via the
+	// charLookup resolves a character's world coordinates and HP via the
 	// atlas-character REST client. The closure is recreated per-call so
 	// each lookup runs against the caller's tenant-scoped context.
-	posLookup := func(ctx context.Context, characterId uint32) (int16, int16, error) {
-		return characterClient.NewProcessor(l, ctx).Position(characterId)
+	charLookup := func(ctx context.Context, characterId uint32) (int16, int16, uint16, error) {
+		return characterClient.NewProcessor(l, ctx).Snapshot(characterId)
 	}
 
 	routine.Go(l, rt.Context(), func(_ context.Context) {
@@ -124,7 +124,7 @@ func main() {
 		tasks.Register(l, rt.Context())(tasks.NewWeather(l, time.Second))
 	})
 	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(tasks.NewMistTick(l, 1000, posLookup))
+		tasks.Register(l, rt.Context())(tasks.NewMistTick(l, 1000, charLookup))
 	})
 
 	server.New(l).

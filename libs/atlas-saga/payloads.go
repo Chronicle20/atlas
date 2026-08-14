@@ -501,6 +501,18 @@ type ShowStoragePayload struct {
 	AccountId   uint32     `json:"accountId"`   // AccountId that owns the storage
 }
 
+// OpenNpcShopPayload represents the payload required to open an NPC's shop for
+// a character. Unlike ShowStorage this step is NOT self-completing: it waits
+// for the npc-shop status topic to report ENTERED or ENTER_ERROR, which is what
+// lets a following destroy step consume the cash item only once the shop
+// actually opened (task-221 FR-4.3).
+type OpenNpcShopPayload struct {
+	CharacterId   uint32     `json:"characterId"`   // CharacterId the shop is opened for
+	WorldId       world.Id   `json:"worldId"`       // WorldId associated with the action
+	ChannelId     channel.Id `json:"channelId"`     // ChannelId associated with the action
+	NpcTemplateId uint32     `json:"npcTemplateId"` // NPC template whose shop to open
+}
+
 // DepositToStoragePayload represents the payload required to deposit an item to account storage.
 type DepositToStoragePayload struct {
 	CharacterId   uint32    `json:"characterId"`   // CharacterId initiating the deposit
@@ -1099,6 +1111,21 @@ type ApplyAssetLockPayload struct {
 	InventoryType byte      `json:"inventoryType"` // Type of inventory (1=equip, 2=use, 3=setup, 4=etc, 5=cash)
 	Slot          int16     `json:"slot"`          // Slot of the asset to lock (negative for equipped slots, positive for inventory slots)
 	Expiration    time.Time `json:"expiration"`    // Expiration time to apply to the asset
+}
+
+// ExtendAssetExpirationPayload represents the payload required to extend the expiration of a time-limited asset in a specific inventory slot.
+//
+// Expiration is ABSOLUTE, never a duration: Kafka delivery here is
+// at-least-once, and a duration-shaped payload would stack a second extension
+// on redelivery. ExtenderTemplateId names the item-expiration extender being
+// consumed so atlas-inventory can independently re-derive the maxDays cap
+// rather than trusting the channel-computed timestamp.
+type ExtendAssetExpirationPayload struct {
+	CharacterId        uint32    `json:"characterId"`        // CharacterId associated with the action
+	InventoryType      byte      `json:"inventoryType"`      // Type of inventory (1=equip, 2=use, 3=setup, 4=etc, 5=cash)
+	Slot               int16     `json:"slot"`               // Slot of the asset to extend (negative for equipped slots, positive for inventory slots)
+	Expiration         time.Time `json:"expiration"`         // Absolute expiration to set on the asset
+	ExtenderTemplateId uint32    `json:"extenderTemplateId"` // Template id of the extender being consumed, for server-side cap re-derivation
 }
 
 // IncubatorResultPayload represents the payload required to deliver the result of an incubator use to a character.

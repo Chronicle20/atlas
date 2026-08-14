@@ -1,0 +1,10 @@
+packet: character/serverbound/CharacterSkillMacroHandle
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CMacroSysMan::FlushToSvr
+    address: "0x6a3466"
+    decompile_sha256: f19d069615dedefd8c5307214c2fb759cb868fc7b3de386ea5efd342f8b4f070
+verifies:
+    - libs/atlas-packet/character/serverbound/skill_macro_test.go#TestSkillMacroDecode
